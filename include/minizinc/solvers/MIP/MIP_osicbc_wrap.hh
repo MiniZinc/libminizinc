@@ -75,11 +75,11 @@ public:
 
   static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
   static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
-  static std::string getId(void);
-  static std::string getName(void);
-  static std::vector<std::string> getTags(void);
-  static std::vector<std::string> getStdFlags(void);
-  static std::vector<std::string> getRequiredFlags(void) { return {}; };
+  static std::string getId();
+  static std::string getName();
+  static std::vector<std::string> getTags();
+  static std::vector<std::string> getStdFlags();
+  static std::vector<std::string> getRequiredFlags() { return {}; };
 
   void printVersion(std::ostream&);
   void printHelp(std::ostream&);

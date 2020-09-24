@@ -92,7 +92,7 @@ void ParamConfig::add_value(const ASTString& key, Expression* e) {
   }
 }
 
-const std::vector<std::string>& ParamConfig::argv(void) { return _values; }
+const std::vector<std::string>& ParamConfig::argv() { return _values; }
 
 void ParamConfig::blacklist(const std::string& param) { _blacklist.insert(param); }
 

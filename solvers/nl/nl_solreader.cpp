@@ -269,6 +269,6 @@ void NLSolns2Out::parse_sol(const string& filename) {
   out->feedRawDataChunk("\n");
 }
 
-ostream& NLSolns2Out::getLog(void) { return verbose ? out->getLog() : dummy_ofstream; }
+ostream& NLSolns2Out::getLog() { return verbose ? out->getLog() : dummy_ofstream; }
 
 }  // namespace MiniZinc

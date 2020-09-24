@@ -43,7 +43,7 @@ struct Ctx {
   /// Boolen negation flag
   bool neg;
   /// Default constructor (root context)
-  Ctx(void) : b(C_ROOT), i(C_MIX), neg(false) {}
+  Ctx() : b(C_ROOT), i(C_MIX), neg(false) {}
   /// Copy constructor
   Ctx(const Ctx& ctx) : b(ctx.b), i(ctx.i), neg(ctx.neg) {}
   /// Assignment operator
@@ -140,15 +140,15 @@ protected:
 
 public:
   EnvI(Model* orig0, std::ostream& outstream0 = std::cout, std::ostream& errstream0 = std::cerr);
-  ~EnvI(void);
-  long long int genId(void);
+  ~EnvI();
+  long long int genId();
   /// Set minimum new temporary id to \a i+1
   void minId(unsigned int i) { ids = std::max(ids, i + 1); }
   void cse_map_insert(Expression* e, const EE& ee);
   CSEMap::iterator cse_map_find(Expression* e);
   void cse_map_remove(Expression* e);
-  CSEMap::iterator cse_map_end(void);
-  void dump(void);
+  CSEMap::iterator cse_map_end();
+  void dump();
 
   unsigned int registerEnum(VarDeclI* vdi);
   VarDeclI* getEnum(unsigned int i) const;
@@ -166,8 +166,8 @@ public:
   void vo_add_exp(VarDecl* vd);
   void annotateFromCallStack(Expression* e);
   void fail(const std::string& msg = std::string());
-  bool failed(void) const;
-  Model* flat(void);
+  bool failed() const;
+  Model* flat();
   void swap();
   void swap_output() { std::swap(model, output); }
   ASTString reifyId(const ASTString& id);
@@ -183,8 +183,8 @@ public:
   void copyPathMapsAndState(EnvI& env);
   /// deprecated, use Solns2Out
   std::ostream& evalOutput(std::ostream& os);
-  void createErrorStack(void);
-  Call* surroundingCall(void) const;
+  void createErrorStack();
+  Call* surroundingCall() const;
 
   void cleanupExceptOutput();
 };
@@ -250,7 +250,7 @@ public:
         break;
     }
   }
-  static ASTString id_eq(void) { return constants().ids.int_.eq; }
+  static ASTString id_eq() { return constants().ids.int_.eq; }
   typedef IntBounds Bounds;
   static bool finite(const IntBounds& ib) { return ib.l.isFinite() && ib.u.isFinite(); }
   static bool finite(const IntVal& v) { return v.isFinite(); }
@@ -364,7 +364,7 @@ public:
         break;
     }
   }
-  static ASTString id_eq(void) { return constants().ids.float_.eq; }
+  static ASTString id_eq() { return constants().ids.float_.eq; }
   typedef FloatBounds Bounds;
   static bool finite(const FloatBounds& ib) { return ib.l.isFinite() && ib.u.isFinite(); }
   static bool finite(const FloatVal& v) { return v.isFinite(); }

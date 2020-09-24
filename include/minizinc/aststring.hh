@@ -45,11 +45,11 @@ public:
   ASTString& operator=(const ASTString& s) = default;
 
   /// Size of the string
-  size_t size(void) const;
+  size_t size() const;
   /// Underlying C string object
-  const char* c_str(void) const;
+  const char* c_str() const;
   /// Underlying string implementation
-  ASTStringData* aststr(void) const { return _s; }
+  ASTStringData* aststr() const { return _s; }
 
   /// Return if string is equal to \a s
   bool operator==(const ASTString& s) const;
@@ -80,10 +80,10 @@ public:
   int levenshteinDistance(const ASTString& s) const;
 
   /// Compute hash value of string
-  size_t hash(void) const;
+  size_t hash() const;
 
   /// Mark string during garbage collection
-  void mark(void) const;
+  void mark() const;
 };
 
 /**
@@ -156,9 +156,9 @@ public:
   /// Allocate and initialise as \a s
   static ASTStringData* a(const std::string& s);
   /// Return underlying C-style string
-  const char* c_str(void) const { return _data + sizeof(size_t); }
+  const char* c_str() const { return _data + sizeof(size_t); }
   /// Return size of string
-  size_t size(void) const {
+  size_t size() const {
     return static_cast<unsigned int>(_size) - static_cast<unsigned int>(sizeof(size_t)) - 1;
   }
   /// Access character at position \a i
@@ -167,9 +167,9 @@ public:
     return _data[sizeof(size_t) + i];
   }
   /// Return hash value of string
-  size_t hash(void) const { return reinterpret_cast<const size_t*>(_data)[0]; }
+  size_t hash() const { return reinterpret_cast<const size_t*>(_data)[0]; }
   /// Mark for garbage collection
-  void mark(void) const { _gc_mark = 1; }
+  void mark() const { _gc_mark = 1; }
 
 protected:
   /// GC Destructor
@@ -181,9 +181,9 @@ protected:
 
 inline ASTString::ASTString(const std::string& s) : _s(ASTStringData::a(s)) {}
 
-inline size_t ASTString::size(void) const { return _s != nullptr ? _s->size() : 0; }
-inline const char* ASTString::c_str(void) const { return _s != nullptr ? _s->c_str() : nullptr; }
-inline void ASTString::mark(void) const {
+inline size_t ASTString::size() const { return _s != nullptr ? _s->size() : 0; }
+inline const char* ASTString::c_str() const { return _s != nullptr ? _s->c_str() : nullptr; }
+inline void ASTString::mark() const {
   if (_s != nullptr) {
     _s->mark();
   }
@@ -246,7 +246,7 @@ inline size_t ASTString::find(char ch, size_t pos) const noexcept {
   return std::string::npos;
 }
 
-inline size_t ASTString::hash(void) const { return _s != nullptr ? _s->hash() : 0; }
+inline size_t ASTString::hash() const { return _s != nullptr ? _s->hash() : 0; }
 
 }  // namespace MiniZinc
 

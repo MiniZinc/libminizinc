@@ -50,7 +50,7 @@ public:
   void unify(EnvI& env, Model* m, Id* id0, Id* id1);
 
   /// Clear all entries
-  void clear(void);
+  void clear();
 };
 
 class CollectOccurrencesE : public EVisitor {

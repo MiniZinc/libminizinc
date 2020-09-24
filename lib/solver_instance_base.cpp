@@ -18,9 +18,9 @@
 
 namespace MiniZinc {
 
-SolverInstanceBase::Status SolverInstanceBase::solve(void) { return SolverInstance__ERROR; }
+SolverInstanceBase::Status SolverInstanceBase::solve() { return SolverInstance__ERROR; }
 
-void SolverInstanceBase::reset(void) { assert(false); }
+void SolverInstanceBase::reset() { assert(false); }
 
 void SolverInstanceBase::resetWithConstraints(Model::iterator begin, Model::iterator end) {
   assert(false);

@@ -31,13 +31,13 @@ private:
   int _width;
   bool _flatZinc;
 
-  void init(void);
+  void init();
   void p(Document* d);
   void p(const Item* i);
 
 public:
   Printer(std::ostream& os, int width = 80, bool flatZinc = true, EnvI* env = nullptr);
-  ~Printer(void);
+  ~Printer();
 
   void print(const Expression* e);
   void print(const Item* i);

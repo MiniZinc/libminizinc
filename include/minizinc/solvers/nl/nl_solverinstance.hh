@@ -35,15 +35,15 @@ protected:
 public:
   NLSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
 
-  ~NLSolverInstance(void);
+  ~NLSolverInstance();
 
-  Status next(void) { return SolverInstance::Status::ERROR; }
+  Status next() { return SolverInstance::Status::ERROR; }
 
-  Status solve(void);
+  Status solve();
 
-  void processFlatZinc(void);
+  void processFlatZinc();
 
-  void resetSolver(void);
+  void resetSolver();
 
 protected:
   Expression* getSolutionValue(Id* id);
@@ -57,11 +57,11 @@ protected:
                                          SolverInstanceBase::Options* opt);
 
 public:
-  NL_SolverFactory(void);
-  virtual SolverInstanceBase::Options* createOptions(void);
+  NL_SolverFactory();
+  virtual SolverInstanceBase::Options* createOptions();
   virtual std::string getDescription(SolverInstanceBase::Options* opt = nullptr);
   virtual std::string getVersion(SolverInstanceBase::Options* opt = nullptr);
-  virtual std::string getId(void);
+  virtual std::string getId();
   virtual bool processOption(SolverInstanceBase::Options* opt, int& i,
                              std::vector<std::string>& argv);
   virtual void printHelp(std::ostream& os);

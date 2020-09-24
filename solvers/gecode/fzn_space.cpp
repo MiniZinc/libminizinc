@@ -101,7 +101,7 @@ FznSpace::FznSpace(FznSpace& f) : Space(f) {
   _solveType = f._solveType;
 }
 
-Gecode::Space* FznSpace::copy(void) { return new FznSpace(*this); }
+Gecode::Space* FznSpace::copy() { return new FznSpace(*this); }
 
 void FznSpace::constrain(const Space& s) {
   if (_optVarIsInt) {

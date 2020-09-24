@@ -29,7 +29,7 @@ protected:
 
 public:
   /// Default constructor
-  ASTIntVec(void) : _v(nullptr) {}
+  ASTIntVec() : _v(nullptr) {}
   /// Constructor
   ASTIntVec(ASTIntVecO* v) : _v(v) {}
   /// Constructor
@@ -40,17 +40,17 @@ public:
   ASTIntVec& operator=(const ASTIntVec& s);
 
   /// Size of vector
-  unsigned int size(void) const;
+  unsigned int size() const;
   /// Element access
   int& operator[](unsigned int i);
   /// Element access
   int operator[](unsigned int i) const;
   /// Iterator begin
-  int* begin(void);
+  int* begin();
   /// Iterator end
-  int* end(void);
+  int* end();
   /// Mark as alive for garbage collection
-  void mark(void) const;
+  void mark() const;
 };
 
 template <class>
@@ -67,7 +67,7 @@ protected:
 
 public:
   /// Default constructor
-  ASTExprVec(void) : _v(nullptr) {}
+  ASTExprVec() : _v(nullptr) {}
   /// Constructor
   ASTExprVec(ASTExprVecO<T*>* v) : _v(v) {}
   /// Constructor
@@ -79,20 +79,20 @@ public:
   ASTExprVec& operator=(const ASTExprVec& v);
 
   /// Size of vector
-  unsigned int size(void) const;
+  unsigned int size() const;
   /// Element access
   T*& operator[](unsigned int i);
   /// Element access
   T* operator[](unsigned int i) const;
   /// Iterator begin
-  T** begin(void);
+  T** begin();
   /// Iterator end
-  T** end(void);
+  T** end();
 
   /// Return vector object
-  ASTExprVecO<T*>* vec(void) const;
+  ASTExprVecO<T*>* vec() const;
   /// Mark as alive for garbage collection
-  void mark(void) const;
+  void mark() const;
 };
 
 /// Garbage collected integer vector
@@ -105,7 +105,7 @@ public:
   /// Allocate and initialise from \a v
   static ASTIntVecO* a(const std::vector<int>& v);
   /// Return size
-  unsigned int size(void) const { return static_cast<unsigned int>(_size / sizeof(int)); }
+  unsigned int size() const { return static_cast<unsigned int>(_size / sizeof(int)); }
   /// Return element at position \a i
   int& operator[](unsigned int i) {
     assert(i < size());
@@ -117,11 +117,11 @@ public:
     return reinterpret_cast<const int*>(_data)[i];
   }
   /// Iterator begin
-  int* begin(void) { return reinterpret_cast<int*>(_data); }
+  int* begin() { return reinterpret_cast<int*>(_data); }
   /// Iterator end
-  int* end(void) { return begin() + size(); }
+  int* end() { return begin() + size(); }
   /// Mark as alive for garbage collection
-  void mark(void) const { _gc_mark = 1; }
+  void mark() const { _gc_mark = 1; }
 };
 
 /// Garbage collected vector of expressions
@@ -134,8 +134,8 @@ protected:
 public:
   /// Allocate and initialise from \a v
   static ASTExprVecO* a(const std::vector<T>& v);
-  unsigned int size(void) const { return static_cast<unsigned int>(_size); }
-  bool empty(void) const { return size() == 0; }
+  unsigned int size() const { return static_cast<unsigned int>(_size); }
+  bool empty() const { return size() == 0; }
   T& operator[](int i) {
     assert(i < static_cast<int>(size()));
     return reinterpret_cast<T&>(_data[i]);
@@ -145,13 +145,13 @@ public:
     return reinterpret_cast<T>(_data[i]);
   }
   /// Iterator begin
-  T* begin(void) { return reinterpret_cast<T*>(_data); }
+  T* begin() { return reinterpret_cast<T*>(_data); }
   /// Iterator end
-  T* end(void) { return begin() + size(); }
+  T* end() { return begin() + size(); }
   /// Mark as alive for garbage collection
-  void mark(void) const { _gc_mark = 1; }
+  void mark() const { _gc_mark = 1; }
   /// Check if flag is set
-  bool flag(void) const { return _flag_1; }
+  bool flag() const { return _flag_1; }
   /// Set flag
   void flag(bool f) { _flag_1 = f; }
 };
@@ -178,12 +178,12 @@ inline ASTIntVec& ASTIntVec::operator=(const ASTIntVec& v) {
   return *this;
 }
 
-inline unsigned int ASTIntVec::size(void) const { return _v != nullptr ? _v->size() : 0; }
+inline unsigned int ASTIntVec::size() const { return _v != nullptr ? _v->size() : 0; }
 inline int& ASTIntVec::operator[](unsigned int i) { return (*_v)[i]; }
 inline int ASTIntVec::operator[](unsigned int i) const { return (*_v)[i]; }
-inline int* ASTIntVec::begin(void) { return _v != nullptr ? _v->begin() : nullptr; }
-inline int* ASTIntVec::end(void) { return _v != nullptr ? _v->end() : nullptr; }
-inline void ASTIntVec::mark(void) const {
+inline int* ASTIntVec::begin() { return _v != nullptr ? _v->begin() : nullptr; }
+inline int* ASTIntVec::end() { return _v != nullptr ? _v->end() : nullptr; }
+inline void ASTIntVec::mark() const {
   if (_v != nullptr) {
     _v->mark();
   }
@@ -200,7 +200,7 @@ inline ASTExprVec<T>& ASTExprVec<T>::operator=(const ASTExprVec<T>& v) {
   return *this;
 }
 template <class T>
-inline unsigned int ASTExprVec<T>::size(void) const {
+inline unsigned int ASTExprVec<T>::size() const {
   return _v ? _v->size() : 0;
 }
 template <class T>
@@ -212,19 +212,19 @@ inline T* ASTExprVec<T>::operator[](unsigned int i) const {
   return (*_v)[i];
 }
 template <class T>
-inline T** ASTExprVec<T>::begin(void) {
+inline T** ASTExprVec<T>::begin() {
   return _v ? _v->begin() : nullptr;
 }
 template <class T>
-inline T** ASTExprVec<T>::end(void) {
+inline T** ASTExprVec<T>::end() {
   return _v ? _v->end() : nullptr;
 }
 template <class T>
-inline ASTExprVecO<T*>* ASTExprVec<T>::vec(void) const {
+inline ASTExprVecO<T*>* ASTExprVec<T>::vec() const {
   return _v;
 }
 template <class T>
-inline void ASTExprVec<T>::mark(void) const {
+inline void ASTExprVec<T>::mark() const {
   if (_v) {
     _v->mark();
   }

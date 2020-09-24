@@ -89,7 +89,7 @@ void VarOccurrences::unify(EnvI& env, Model* m, Id* id0_0, Id* id1_0) {
   id0->redirect(id1);
 }
 
-void VarOccurrences::clear(void) {
+void VarOccurrences::clear() {
   _m.clear();
   idx.clear();
 }

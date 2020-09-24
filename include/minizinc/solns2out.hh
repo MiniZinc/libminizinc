@@ -188,7 +188,7 @@ public:
     _log << data << std::flush;
     return true;
   }
-  std::ostream& getLog(void) { return _err_log; }
+  std::ostream& getLog() { return _err_log; }
 };
 
 }  // namespace MiniZinc

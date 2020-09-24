@@ -92,10 +92,10 @@ inline IntLit* IntLit::aEnum(IntVal v, unsigned int enumId) {
   return il;
 }
 
-inline ASTString Location::LocVec::filename(void) const {
+inline ASTString Location::LocVec::filename() const {
   return static_cast<ASTStringData*>(_data[0]);
 }
-inline unsigned int Location::LocVec::first_line(void) const {
+inline unsigned int Location::LocVec::first_line() const {
   if (_size == 2) {
     static const unsigned int pointerBits = sizeof(void*) * 8;
     auto* il = static_cast<IntLit*>(_data[1]);
@@ -111,7 +111,7 @@ inline unsigned int Location::LocVec::first_line(void) const {
     return il->v().toInt();
   }
 }
-inline unsigned int Location::LocVec::last_line(void) const {
+inline unsigned int Location::LocVec::last_line() const {
   if (_size == 2) {
     static const unsigned int pointerBits = sizeof(void*) * 8;
     auto* il = static_cast<IntLit*>(_data[1]);
@@ -130,7 +130,7 @@ inline unsigned int Location::LocVec::last_line(void) const {
     return il->v().toInt();
   }
 }
-inline unsigned int Location::LocVec::first_column(void) const {
+inline unsigned int Location::LocVec::first_column() const {
   if (_size == 2) {
     static const unsigned int pointerBits = sizeof(void*) * 8;
     auto* il = static_cast<IntLit*>(_data[1]);
@@ -148,7 +148,7 @@ inline unsigned int Location::LocVec::first_column(void) const {
     return il->v().toInt();
   }
 }
-inline unsigned int Location::LocVec::last_column(void) const {
+inline unsigned int Location::LocVec::last_column() const {
   if (_size == 2) {
     static const unsigned int pointerBits = sizeof(void*) * 8;
     auto* il = static_cast<IntLit*>(_data[1]);
@@ -253,7 +253,7 @@ inline Id::Id(const Location& loc, long long int idn0, VarDecl* decl)
 
 inline void Id::decl(VarDecl* d) { _decl = d; }
 
-inline ASTString Id::v(void) const {
+inline ASTString Id::v() const {
   if ((_decl != nullptr) && _decl->isa<Id>()) {
     Expression* d = _decl;
     while ((d != nullptr) && d->isa<Id>()) {
@@ -266,7 +266,7 @@ inline ASTString Id::v(void) const {
   }
 }
 
-inline long long int Id::idn(void) const {
+inline long long int Id::idn() const {
   if ((_decl != nullptr) && _decl->isa<Id>()) {
     Expression* d = _decl;
     while ((d != nullptr) && d->isa<Id>()) {
@@ -459,11 +459,11 @@ inline UnOp::UnOp(const Location& loc, UnOpType op, Expression* e)
   rehash();
 }
 
-inline bool Call::hasId(void) const {
+inline bool Call::hasId() const {
   return (reinterpret_cast<ptrdiff_t>(_u_id._decl) & static_cast<ptrdiff_t>(1)) == 0;
 }
 
-inline ASTString Call::id(void) const { return hasId() ? _u_id._id : decl()->id(); }
+inline ASTString Call::id() const { return hasId() ? _u_id._id : decl()->id(); }
 
 inline void Call::id(const ASTString& i) {
   _u_id._id = i;
@@ -471,7 +471,7 @@ inline void Call::id(const ASTString& i) {
   assert(decl() == nullptr);
 }
 
-inline FunctionI* Call::decl(void) const {
+inline FunctionI* Call::decl() const {
   return hasId() ? nullptr
                  : reinterpret_cast<FunctionI*>(reinterpret_cast<ptrdiff_t>(_u_id._decl) &
                                                 ~static_cast<ptrdiff_t>(1));
@@ -567,7 +567,7 @@ inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, Id* id, Expression* e
   rehash();
 }
 
-inline Expression* VarDecl::e(void) const {
+inline Expression* VarDecl::e() const {
   return (_e == nullptr || _e->isUnboxedVal()) ? _e : _e->untag();
 }
 
@@ -576,11 +576,11 @@ inline void VarDecl::e(Expression* rhs) {
   _e = rhs;
 }
 
-inline bool VarDecl::toplevel(void) const { return _flag_1; }
+inline bool VarDecl::toplevel() const { return _flag_1; }
 inline void VarDecl::toplevel(bool t) { _flag_1 = t; }
-inline bool VarDecl::introduced(void) const { return _flag_2; }
+inline bool VarDecl::introduced() const { return _flag_2; }
 inline void VarDecl::introduced(bool t) { _flag_2 = t; }
-inline bool VarDecl::evaluated(void) const { return _e->isUnboxedVal() || _e->isTagged(); }
+inline bool VarDecl::evaluated() const { return _e->isUnboxedVal() || _e->isTagged(); }
 inline void VarDecl::evaluated(bool t) {
   if (!_e->isUnboxedVal()) {
     if (t) {
@@ -636,7 +636,7 @@ inline SolveI* SolveI::max(const Location& loc, Expression* e) {
   si->_sec_id = ST_MAX;
   return si;
 }
-inline SolveI::SolveType SolveI::st(void) const { return static_cast<SolveType>(_sec_id); }
+inline SolveI::SolveType SolveI::st() const { return static_cast<SolveType>(_sec_id); }
 inline void SolveI::st(SolveI::SolveType s) { _sec_id = s; }
 
 inline OutputI::OutputI(const Location& loc, Expression* e) : Item(loc, II_OUT), _e(e) {}

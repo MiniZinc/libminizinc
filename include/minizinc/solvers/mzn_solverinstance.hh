@@ -36,15 +36,15 @@ private:
 public:
   MZNSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
 
-  ~MZNSolverInstance(void);
+  ~MZNSolverInstance();
 
-  Status next(void) { return SolverInstance::ERROR; }
+  Status next() { return SolverInstance::ERROR; }
 
-  Status solve(void);
+  Status solve();
 
-  void processFlatZinc(void);
+  void processFlatZinc();
 
-  void resetSolver(void);
+  void resetSolver();
 };
 
 class MZN_SolverFactory : public SolverFactory {
@@ -53,11 +53,11 @@ protected:
                                          SolverInstanceBase::Options* opt);
 
 public:
-  MZN_SolverFactory(void);
-  virtual SolverInstanceBase::Options* createOptions(void);
+  MZN_SolverFactory();
+  virtual SolverInstanceBase::Options* createOptions();
   virtual std::string getDescription(SolverInstanceBase::Options* opt = nullptr);
   virtual std::string getVersion(SolverInstanceBase::Options* opt = nullptr);
-  virtual std::string getId(void);
+  virtual std::string getId();
   virtual bool processOption(SolverInstanceBase::Options* opt, int& i,
                              std::vector<std::string>& argv);
   virtual void printHelp(std::ostream& os);

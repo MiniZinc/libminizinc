@@ -14,6 +14,6 @@
 namespace MiniZinc {
 class Cplex_SolverFactoryInitialiser {
 public:
-  Cplex_SolverFactoryInitialiser(void);
+  Cplex_SolverFactoryInitialiser();
 };
 }  // namespace MiniZinc

@@ -64,7 +64,7 @@ string MIP_gurobi_wrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt
   }
 }
 
-vector<string> MIP_gurobi_wrapper::getRequiredFlags(void) {
+vector<string> MIP_gurobi_wrapper::getRequiredFlags() {
   MIP_gurobi_wrapper mgw(nullptr);
   try {
     mgw.checkDLL();
@@ -82,7 +82,7 @@ vector<string> MIP_gurobi_wrapper::getTags() { return {"mip", "float", "api"}; }
 
 vector<string> MIP_gurobi_wrapper::getStdFlags() { return {"-i", "-p", "-s", "-v"}; }
 
-const vector<string> gurobiDLLs(void) {
+const vector<string> gurobiDLLs() {
   const vector<string> versions = {
       "913", "912", "911", "910", "903",  // Potential future versions which should load correctly
       "902", "901", "900", "811", "810", "801", "800", "752",

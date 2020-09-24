@@ -9,6 +9,6 @@
 namespace MiniZinc {
 class NL_SolverFactoryInitialiser {
 public:
-  NL_SolverFactoryInitialiser(void);
+  NL_SolverFactoryInitialiser();
 };
 }  // namespace MiniZinc

@@ -35,7 +35,7 @@ class CallArgItem {
 public:
   EnvI& env;
   CallArgItem(EnvI& env0);
-  ~CallArgItem(void);
+  ~CallArgItem();
 };
 
 }  // namespace MiniZinc

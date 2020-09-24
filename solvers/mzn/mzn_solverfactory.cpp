@@ -5,5 +5,5 @@ namespace MiniZinc {
 namespace {
 void getWrapper() { static MZN_SolverFactory _mzn_solverfactory; }
 }  // namespace
-MZN_SolverFactoryInitialiser::MZN_SolverFactoryInitialiser(void) { getWrapper(); }
+MZN_SolverFactoryInitialiser::MZN_SolverFactoryInitialiser() { getWrapper(); }
 }  // namespace MiniZinc

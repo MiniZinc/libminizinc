@@ -119,15 +119,15 @@ protected:
 public:
   GecodeVariable(vartype t, unsigned int index) : _t(t), _index(index), _boolAliasIndex(-1) {}
 
-  bool isint(void) const { return _t == INT_TYPE; }
+  bool isint() const { return _t == INT_TYPE; }
 
-  bool isbool(void) const { return _t == BOOL_TYPE; }
+  bool isbool() const { return _t == BOOL_TYPE; }
 
-  bool isfloat(void) const { return _t == FLOAT_TYPE; }
+  bool isfloat() const { return _t == FLOAT_TYPE; }
 
-  bool isset(void) const { return _t == SET_TYPE; }
+  bool isset() const { return _t == SET_TYPE; }
 
-  bool hasBoolAlias(void) { return _boolAliasIndex >= 0; }
+  bool hasBoolAlias() { return _boolAliasIndex >= 0; }
 
   /// set the index in FznSpace::bv of the Boolean variable that corresponds to the int variable
   void setBoolAliasIndex(int index) {
@@ -136,9 +136,9 @@ public:
     _boolAliasIndex = index;
   }
 
-  int boolAliasIndex(void) { return _boolAliasIndex; }
+  int boolAliasIndex() { return _boolAliasIndex; }
 
-  int index(void) { return _index; }
+  int index() { return _index; }
 
   Gecode::IntVar& intVar(MiniZinc::FznSpace* space) {
     assert(_t == INT_TYPE);
@@ -227,23 +227,23 @@ public:
   Gecode::Search::Options engine_options;
 
   GecodeSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
-  virtual ~GecodeSolverInstance(void);
+  virtual ~GecodeSolverInstance();
 
-  virtual Status next(void);
-  virtual void processFlatZinc(void);
-  virtual Status solve(void);
-  virtual void resetSolver(void);
+  virtual Status next();
+  virtual void processFlatZinc();
+  virtual Status solve();
+  virtual void resetSolver();
 
   // Presolve the currently loaded model, updating variables with the same
   // names in the given Model* m.
   bool presolve(Model* m = nullptr);
   bool sac(bool toFixedPoint, bool shaving);
-  void printStatistics(void);
+  void printStatistics();
 
   void processSolution(bool last_sol = false);
   virtual Expression* getSolutionValue(Id* id);
 
-  Gecode::Space* getGecodeModel(void);
+  Gecode::Space* getGecodeModel();
 
   // helpers for getting correct int bounds
   bool valueWithinBounds(double b);
@@ -327,13 +327,13 @@ public:
   void insertVar(Id* id, GecodeVariable gv);
 
 protected:
-  void registerConstraints(void);
+  void registerConstraints();
   void registerConstraint(std::string name, poster p);
 
   /// creates the gecode branchers // TODO: what is decay, ignoreUnknown -> do we need all the args?
   void createBranchers(Annotation& ann, Expression* additionalAnn, int seed, double decay,
                        bool ignoreUnknown, std::ostream& err);
-  void prepareEngine(void);
+  void prepareEngine();
   void setSearchStrategyFromAnnotation(
       std::vector<Expression*> flatAnn, std::vector<bool>& iv_searched,
       std::vector<bool>& bv_searched,
@@ -359,8 +359,8 @@ protected:
 
 class Gecode_SolverFactory : public SolverFactory {
 public:
-  Gecode_SolverFactory(void);
-  SolverInstanceBase::Options* createOptions(void);
+  Gecode_SolverFactory();
+  SolverInstanceBase::Options* createOptions();
   SolverInstanceBase* doCreateSI(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
   std::string getDescription(SolverInstanceBase::Options* opt = nullptr);
   std::string getVersion(SolverInstanceBase::Options* opt = nullptr);

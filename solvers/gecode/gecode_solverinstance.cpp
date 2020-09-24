@@ -23,7 +23,7 @@ using namespace Gecode;
 
 namespace MiniZinc {
 
-Gecode_SolverFactory::Gecode_SolverFactory(void) {
+Gecode_SolverFactory::Gecode_SolverFactory() {
   SolverConfig sc("org.minizinc.gecode_presolver", GECODE_VERSION);
   sc.name("Presolver");
   sc.mznlib("-Ggecode_presolver");
@@ -35,7 +35,7 @@ Gecode_SolverFactory::Gecode_SolverFactory(void) {
   SolverConfigs::registerBuiltinSolver(sc);
 }
 
-SolverInstanceBase::Options* Gecode_SolverFactory::createOptions(void) { return new GecodeOptions; }
+SolverInstanceBase::Options* Gecode_SolverFactory::createOptions() { return new GecodeOptions; }
 
 SolverInstanceBase* Gecode_SolverFactory::doCreateSI(Env& env, std::ostream& log,
                                                      SolverInstanceBase::Options* opt) {
@@ -163,10 +163,10 @@ void Gecode_SolverFactory::printHelp(ostream& os) {
 
 class GecodeEngine {
 public:
-  virtual FznSpace* next(void) = 0;
-  virtual bool stopped(void) = 0;
-  virtual ~GecodeEngine(void) {}
-  virtual Gecode::Search::Statistics statistics(void) = 0;
+  virtual FznSpace* next() = 0;
+  virtual bool stopped() = 0;
+  virtual ~GecodeEngine() {}
+  virtual Gecode::Search::Statistics statistics() = 0;
 };
 
 template <template <class> class Engine, template <class, template <class> class> class Meta>
@@ -175,9 +175,9 @@ class MetaEngine : public GecodeEngine {
 
 public:
   MetaEngine(FznSpace* s, Search::Options& o) : e(s, o) {}
-  virtual FznSpace* next(void) { return e.next(); }
-  virtual bool stopped(void) { return e.stopped(); }
-  virtual Gecode::Search::Statistics statistics(void) { return e.statistics(); }
+  virtual FznSpace* next() { return e.next(); }
+  virtual bool stopped() { return e.stopped(); }
+  virtual Gecode::Search::Statistics statistics() { return e.statistics(); }
 };
 
 GecodeSolverInstance::GecodeSolverInstance(Env& env, std::ostream& log,
@@ -191,7 +191,7 @@ GecodeSolverInstance::GecodeSolverInstance(Env& env, std::ostream& log,
   _flat = env.flat();
 }
 
-GecodeSolverInstance::~GecodeSolverInstance(void) {
+GecodeSolverInstance::~GecodeSolverInstance() {
   delete engine;
   // delete _current_space;
   // delete _solution; // TODO: is this necessary?
@@ -208,7 +208,7 @@ void GecodeSolverInstance::registerConstraint(std::string name, poster p) {
   _constraintRegistry.add(name, p);
 }
 
-void GecodeSolverInstance::registerConstraints(void) {
+void GecodeSolverInstance::registerConstraints() {
   GCLock lock;
   registerConstraint("all_different_int", GecodeConstraints::p_distinct);
   registerConstraint("all_different_offset", GecodeConstraints::p_distinctOffset);
@@ -461,7 +461,7 @@ inline bool GecodeSolverInstance::valueWithinBounds(double b) {
   return bo >= Gecode::Int::Limits::min && bo <= Gecode::Int::Limits::max;
 }
 
-void GecodeSolverInstance::processFlatZinc(void) {
+void GecodeSolverInstance::processFlatZinc() {
   auto& _opt = static_cast<GecodeOptions&>(*_options);
   _only_range_domains = _opt.only_range_domains;
   _run_sac = _opt.sac;
@@ -781,7 +781,7 @@ public:
   GecodeSolverInstance& si;
   IntSetRanges& isr;
   GecodeRangeIter(GecodeSolverInstance& gsi, IntSetRanges& isr0) : si(gsi), isr(isr0) {}
-  int min(void) const {
+  int min() const {
     long long int val = isr.min().toInt();
     if (si.valueWithinBounds(val)) {
       return (int)val;
@@ -791,7 +791,7 @@ public:
       throw InternalError(ssm.str());
     }
   }
-  int max(void) const {
+  int max() const {
     long long int val = isr.max().toInt();
     if (si.valueWithinBounds(val)) {
       return (int)val;
@@ -801,9 +801,9 @@ public:
       throw InternalError(ssm.str());
     }
   }
-  int width(void) const { return isr.width().toInt(); }
-  bool operator()(void) { return isr(); }
-  void operator++(void) { ++isr; }
+  int width() const { return isr.width().toInt(); }
+  bool operator()() { return isr(); }
+  void operator++() { ++isr; }
 };
 
 Gecode::IntSet GecodeSolverInstance::arg2intset(EnvI& envi, Expression* arg) {
@@ -1161,7 +1161,7 @@ GecodeSolver::Variable GecodeSolverInstance::resolveVar(Expression* e) {
   }
 }
 
-SolverInstance::Status GecodeSolverInstance::next(void) {
+SolverInstance::Status GecodeSolverInstance::next() {
   GCLock lock;
   prepareEngine();
 
@@ -1177,7 +1177,7 @@ SolverInstance::Status GecodeSolverInstance::next(void) {
   }
 }
 
-void GecodeSolverInstance::resetSolver(void) {
+void GecodeSolverInstance::resetSolver() {
   assert(false);  // TODO: implement
 }
 
@@ -1230,7 +1230,7 @@ Expression* GecodeSolverInstance::getSolutionValue(Id* id) {
   }
 }
 
-void GecodeSolverInstance::prepareEngine(void) {
+void GecodeSolverInstance::prepareEngine() {
   GCLock lock;
   auto& _opt = static_cast<GecodeOptions&>(*_options);
   if (engine == nullptr) {
@@ -1299,7 +1299,7 @@ void GecodeSolverInstance::prepareEngine(void) {
   }
 }
 
-void GecodeSolverInstance::printStatistics(void) {
+void GecodeSolverInstance::printStatistics() {
   EnvI& env = _env.envi();
   Gecode::Search::Statistics stat = engine->statistics();
   env.outstream << "%%%mzn-stat: variables="
@@ -1367,7 +1367,7 @@ void GecodeSolverInstance::processSolution(bool last_sol) {
   }
 }
 
-SolverInstanceBase::Status GecodeSolverInstance::solve(void) {
+SolverInstanceBase::Status GecodeSolverInstance::solve() {
   GCLock lock;
   SolverInstanceBase::Status ret;
 
@@ -1437,7 +1437,7 @@ public:
 
 class IntVarRangesBwd : public Int::IntVarImpBwd {
 public:
-  IntVarRangesBwd(void) {}
+  IntVarRangesBwd() {}
   IntVarRangesBwd(const IntVar& x) : Int::IntVarImpBwd(x.varimp()) {}
   void init(const IntVar& x) { Int::IntVarImpBwd(x.varimp()); }
 };

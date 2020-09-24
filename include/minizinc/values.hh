@@ -105,20 +105,20 @@ private:
   }
 
 public:
-  IntVal(void) : _v(0), _infinity(false) {}
+  IntVal() : _v(0), _infinity(false) {}
   IntVal(long long int v) : _v(v), _infinity(false) {}
   IntVal(const FloatVal& v);
 
-  long long int toInt(void) const {
+  long long int toInt() const {
     if (!isFinite()) {
       throw ArithmeticError("arithmetic operation on infinite value");
     }
     return _v;
   }
 
-  bool isFinite(void) const { return !_infinity; }
-  bool isPlusInfinity(void) const { return _infinity && _v == 1; }
-  bool isMinusInfinity(void) const { return _infinity && _v == -1; }
+  bool isFinite() const { return !_infinity; }
+  bool isPlusInfinity() const { return _infinity && _v == 1; }
+  bool isMinusInfinity() const { return _infinity && _v == -1; }
 
   IntVal& operator+=(const IntVal& x) {
     if (!(isFinite() && x.isFinite())) {
@@ -200,9 +200,9 @@ public:
     return result;
   }
 
-  static const IntVal minint(void);
-  static const IntVal maxint(void);
-  static const IntVal infinity(void);
+  static const IntVal minint();
+  static const IntVal maxint();
+  static const IntVal infinity();
 
   /// Infinity-safe addition
   IntVal plus(int x) const {
@@ -221,7 +221,7 @@ public:
     }
   }
 
-  size_t hash(void) const {
+  size_t hash() const {
     std::hash<long long int> longhash;
     return longhash(_v);
   }
@@ -343,7 +343,7 @@ class FloatVal {
 private:
   double _v;
   bool _infinity;
-  void checkOverflow(void) {
+  void checkOverflow() {
     if (!std::isfinite(_v)) {
       throw ArithmeticError("overflow in floating point operation");
     }
@@ -351,20 +351,20 @@ private:
   FloatVal(double v, bool infinity) : _v(v), _infinity(infinity) { checkOverflow(); }
 
 public:
-  FloatVal(void) : _v(0.0), _infinity(false) {}
+  FloatVal() : _v(0.0), _infinity(false) {}
   FloatVal(double v) : _v(v), _infinity(false) { checkOverflow(); }
   FloatVal(const IntVal& v) : _v(static_cast<double>(v._v)), _infinity(!v.isFinite()) {}
 
-  double toDouble(void) const {
+  double toDouble() const {
     if (!isFinite()) {
       throw ArithmeticError("arithmetic operation on infinite value");
     }
     return _v;
   }
 
-  bool isFinite(void) const { return !_infinity; }
-  bool isPlusInfinity(void) const { return _infinity && _v == 1.0; }
-  bool isMinusInfinity(void) const { return _infinity && _v == -1.0; }
+  bool isFinite() const { return !_infinity; }
+  bool isPlusInfinity() const { return _infinity && _v == 1.0; }
+  bool isMinusInfinity() const { return _infinity && _v == -1.0; }
 
   FloatVal& operator+=(const FloatVal& x) {
     if (!(isFinite() && x.isFinite())) {
@@ -438,7 +438,7 @@ public:
     return ret;
   }
 
-  static const FloatVal infinity(void);
+  static const FloatVal infinity();
 
   /// Infinity-safe addition
   FloatVal plus(int x) {
@@ -457,7 +457,7 @@ public:
     }
   }
 
-  size_t hash(void) const {
+  size_t hash() const {
     std::hash<double> doublehash;
     return doublehash(_v);
   }
@@ -580,7 +580,7 @@ public:
     /// Construct range from \a m to \a n
     Range(IntVal m, IntVal n) : min(m), max(n) {}
     /// Default constructor
-    Range(void) {}
+    Range() {}
   };
 
 private:
@@ -589,7 +589,7 @@ private:
   /// Return range at position \a i
   const Range& get(int i) const { return reinterpret_cast<const Range*>(_data)[i]; }
   /// Construct empty set
-  IntSetVal(void) : ASTChunk(0) {}
+  IntSetVal() : ASTChunk(0) {}
   /// Construct set of single range
   IntSetVal(IntVal m, IntVal n);
   /// Construct set from \a s
@@ -606,11 +606,11 @@ private:
 
 public:
   /// Return number of ranges
-  int size(void) const { return static_cast<int>(_size / sizeof(Range)); }
+  int size() const { return static_cast<int>(_size / sizeof(Range)); }
   /// Return minimum, or infinity if set is empty
-  IntVal min(void) const { return size() == 0 ? IntVal::infinity() : get(0).min; }
+  IntVal min() const { return size() == 0 ? IntVal::infinity() : get(0).min; }
   /// Return maximum, or minus infinity if set is empty
-  IntVal max(void) const { return size() == 0 ? -IntVal::infinity() : get(size() - 1).max; }
+  IntVal max() const { return size() == 0 ? -IntVal::infinity() : get(size() - 1).max; }
   /// Return minimum of range \a i
   IntVal min(int i) const {
     assert(i < size());
@@ -631,7 +631,7 @@ public:
     }
   }
   /// Return cardinality
-  IntVal card(void) const {
+  IntVal card() const {
     IntVal c = 0;
     for (int i = size(); (i--) != 0;) {
       if (width(i).isFinite()) {
@@ -644,7 +644,7 @@ public:
   }
 
   /// Allocate empty set from context
-  static IntSetVal* a(void) {
+  static IntSetVal* a() {
     auto* r = static_cast<IntSetVal*>(ASTChunk::alloc(0));
     new (r) IntSetVal();
     return r;
@@ -730,7 +730,7 @@ public:
   }
 
   /// Mark for garbage collection
-  void mark(void) { _gc_mark = 1; }
+  void mark() { _gc_mark = 1; }
 };
 
 /// Iterator over an IntSetVal
@@ -744,15 +744,15 @@ public:
   /// Constructor
   IntSetRanges(const IntSetVal* r) : rs(r), n(0) {}
   /// Check if iterator is still valid
-  bool operator()(void) const { return n < rs->size(); }
+  bool operator()() const { return n < rs->size(); }
   /// Move to next range
-  void operator++(void) { ++n; }
+  void operator++() { ++n; }
   /// Return minimum of current range
-  IntVal min(void) const { return rs->min(n); }
+  IntVal min() const { return rs->min(n); }
   /// Return maximum of current range
-  IntVal max(void) const { return rs->max(n); }
+  IntVal max() const { return rs->max(n); }
   /// Return width of current range
-  IntVal width(void) const { return rs->width(n); }
+  IntVal width() const { return rs->width(n); }
 };
 
 template <class Char, class Traits>
@@ -794,7 +794,7 @@ public:
     /// Construct range from \a m to \a n
     Range(FloatVal m, FloatVal n) : min(m), max(n) {}
     /// Default constructor
-    Range(void) {}
+    Range() {}
   };
 
 private:
@@ -803,7 +803,7 @@ private:
   /// Return range at position \a i
   const Range& get(int i) const { return reinterpret_cast<const Range*>(_data)[i]; }
   /// Construct empty set
-  FloatSetVal(void) : ASTChunk(0) {}
+  FloatSetVal() : ASTChunk(0) {}
   /// Construct set of single range
   FloatSetVal(FloatVal m, FloatVal n);
   /// Construct set from \a s
@@ -820,11 +820,11 @@ private:
 
 public:
   /// Return number of ranges
-  int size(void) const { return static_cast<int>(_size / sizeof(Range)); }
+  int size() const { return static_cast<int>(_size / sizeof(Range)); }
   /// Return minimum, or infinity if set is empty
-  FloatVal min(void) const { return size() == 0 ? FloatVal::infinity() : get(0).min; }
+  FloatVal min() const { return size() == 0 ? FloatVal::infinity() : get(0).min; }
   /// Return maximum, or minus infinity if set is empty
-  FloatVal max(void) const { return size() == 0 ? -FloatVal::infinity() : get(size() - 1).max; }
+  FloatVal max() const { return size() == 0 ? -FloatVal::infinity() : get(size() - 1).max; }
   /// Return minimum of range \a i
   FloatVal min(int i) const {
     assert(i < size());
@@ -845,7 +845,7 @@ public:
     }
   }
   /// Return cardinality
-  FloatVal card(void) const {
+  FloatVal card() const {
     FloatVal c = 0;
     for (int i = size(); (i--) != 0;) {
       if (width(i).isFinite()) {
@@ -858,7 +858,7 @@ public:
   }
 
   /// Allocate empty set from context
-  static FloatSetVal* a(void) {
+  static FloatSetVal* a() {
     auto* r = static_cast<FloatSetVal*>(ASTChunk::alloc(0));
     new (r) FloatSetVal();
     return r;
@@ -944,7 +944,7 @@ public:
   }
 
   /// Mark for garbage collection
-  void mark(void) { _gc_mark = 1; }
+  void mark() { _gc_mark = 1; }
 };
 
 /// Iterator over an IntSetVal
@@ -958,15 +958,15 @@ public:
   /// Constructor
   FloatSetRanges(const FloatSetVal* r) : rs(r), n(0) {}
   /// Check if iterator is still valid
-  bool operator()(void) const { return n < rs->size(); }
+  bool operator()() const { return n < rs->size(); }
   /// Move to next range
-  void operator++(void) { ++n; }
+  void operator++() { ++n; }
   /// Return minimum of current range
-  FloatVal min(void) const { return rs->min(n); }
+  FloatVal min() const { return rs->min(n); }
   /// Return maximum of current range
-  FloatVal max(void) const { return rs->max(n); }
+  FloatVal max() const { return rs->max(n); }
   /// Return width of current range
-  FloatVal width(void) const { return rs->width(n); }
+  FloatVal width() const { return rs->width(n); }
 };
 
 template <class Char, class Traits>

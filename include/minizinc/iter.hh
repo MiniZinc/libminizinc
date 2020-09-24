@@ -41,13 +41,13 @@ protected:
   /// Maximum of current range
   Val ma;
   /// %Set range such that iteration stops
-  void finish(void);
+  void finish();
 
 public:
   /// \name Constructors and initialization
   //@{
   /// Default constructor
-  MinMax(void);
+  MinMax();
   /// Initialize with range \a min to \a max
   MinMax(Val min, Val max);
   //@}
@@ -55,47 +55,47 @@ public:
   /// \name Iteration control
   //@{
   /// Test whether iterator is still at a range or done
-  bool operator()(void) const;
+  bool operator()() const;
   //@}
 
   /// \name Range access
   //@{
   /// Return smallest value of range
-  Val min(void) const;
+  Val min() const;
   /// Return largest value of range
-  Val max(void) const;
+  Val max() const;
   /// Return width of range (distance between minimum and maximum)
-  Val width(void) const;
+  Val width() const;
   //@}
 };
 
 template <class Val>
-inline void MinMax<Val>::finish(void) {
+inline void MinMax<Val>::finish() {
   mi = 1;
   ma = 0;
 }
 
 template <class Val>
-inline MinMax<Val>::MinMax(void) {}
+inline MinMax<Val>::MinMax() {}
 
 template <class Val>
 inline MinMax<Val>::MinMax(Val min, Val max) : mi(min), ma(max) {}
 
 template <class Val>
-inline bool MinMax<Val>::operator()(void) const {
+inline bool MinMax<Val>::operator()() const {
   return mi <= ma;
 }
 
 template <class Val>
-inline Val MinMax<Val>::min(void) const {
+inline Val MinMax<Val>::min() const {
   return mi;
 }
 template <class Val>
-inline Val MinMax<Val>::max(void) const {
+inline Val MinMax<Val>::max() const {
   return ma;
 }
 template <class Val>
-inline Val MinMax<Val>::width(void) const {
+inline Val MinMax<Val>::width() const {
   if (mi > ma) {
     return 0;
   }
@@ -123,19 +123,19 @@ public:
   /// \name Iteration control
   //@{
   /// Test whether iterator is still at a range or done
-  bool operator()(void) const;
+  bool operator()() const;
   /// Move iterator to next range (if possible)
-  void operator++(void);
+  void operator++();
   //@}
 
   /// \name Range access
   //@{
   /// Return smallest value of range
-  Val min(void) const;
+  Val min() const;
   /// Return largest value of range
-  Val max(void) const;
+  Val max() const;
   /// Return width of range (distance between minimum and maximum)
-  Val width(void) const;
+  Val width() const;
   //@}
 };
 
@@ -160,26 +160,26 @@ inline Bounded<Val, I> Bounded<Val, I>::minmaxiter(I& i, Val min, Val max) {
 }
 
 template <class Val, class I>
-inline bool Bounded<Val, I>::operator()(void) const {
+inline bool Bounded<Val, I>::operator()() const {
   return i() && (!use_max || i.min() <= _max);
 }
 template <class Val, class I>
-inline void Bounded<Val, I>::operator++(void) {
+inline void Bounded<Val, I>::operator++() {
   ++i;
   while (i() && use_min && i.max() < _min) {
     ++i;
   }
 }
 template <class Val, class I>
-inline Val Bounded<Val, I>::min(void) const {
+inline Val Bounded<Val, I>::min() const {
   return use_min ? std::max(_min, i.min()) : i.min();
 }
 template <class Val, class I>
-inline Val Bounded<Val, I>::max(void) const {
+inline Val Bounded<Val, I>::max() const {
   return use_max ? std::min(_max, i.max()) : i.max();
 }
 template <class Val, class I>
-inline Val Bounded<Val, I>::width(void) const {
+inline Val Bounded<Val, I>::width() const {
   if (min() > max()) {
     return 0;
   }
@@ -202,42 +202,42 @@ public:
   /// \name Iteration control
   //@{
   /// Test whether iterator is still at a range or done
-  bool operator()(void) const;
+  bool operator()() const;
   /// Move iterator to next range (if possible)
-  void operator++(void);
+  void operator++();
   //@}
 
   /// \name Range access
   //@{
   /// Return smallest value of range
-  Val min(void) const;
+  Val min() const;
   /// Return largest value of range
-  Val max(void) const;
+  Val max() const;
   /// Return width of range (distance between minimum and maximum)
-  Val width(void) const;
+  Val width() const;
   //@}
 };
 
 template <class Val>
 inline Const<Val>::Const(Val min0, Val max0) : _min(min0), _max(max0), done(min0 > max0) {}
 template <class Val>
-inline bool Const<Val>::operator()(void) const {
+inline bool Const<Val>::operator()() const {
   return !done;
 }
 template <class Val>
-inline void Const<Val>::operator++(void) {
+inline void Const<Val>::operator++() {
   done = true;
 }
 template <class Val>
-inline Val Const<Val>::min(void) const {
+inline Val Const<Val>::min() const {
   return _min;
 }
 template <class Val>
-inline Val Const<Val>::max(void) const {
+inline Val Const<Val>::max() const {
   return _max;
 }
 template <class Val>
-inline Val Const<Val>::width(void) const {
+inline Val Const<Val>::width() const {
   if (min() > max()) {
     return 0;
   }
@@ -264,7 +264,7 @@ public:
   /// \name Constructors and initialization
   //@{
   /// Default constructor
-  Union(void);
+  Union();
   /// Initialize with iterator \a i and \a j
   Union(I& i, J& j);
   /// Initialize with iterator \a i and \a j
@@ -274,7 +274,7 @@ public:
   /// \name Iteration control
   //@{
   /// Move iterator to next range (if possible)
-  void operator++(void);
+  void operator++();
   //@}
 };
 
@@ -314,7 +314,7 @@ inline FloatVal nextLower(const FloatVal& x) {
  */
 
 template <class Val, class I, class J>
-inline void Union<Val, I, J>::operator++(void) {
+inline void Union<Val, I, J>::operator++() {
   if (!i() && !j()) {
     MinMax<Val>::finish();
     return;
@@ -353,7 +353,7 @@ next:
 }
 
 template <class Val, class I, class J>
-inline Union<Val, I, J>::Union(void) {}
+inline Union<Val, I, J>::Union() {}
 
 template <class Val, class I, class J>
 inline Union<Val, I, J>::Union(I& i0, J& j0) : i(i0), j(j0) {
@@ -384,7 +384,7 @@ public:
   /// \name Constructors and initialization
   //@{
   /// Default constructor
-  Inter(void);
+  Inter();
   /// Initialize with iterator \a i and \a j
   Inter(I& i, J& j);
   /// Initialize with iterator \a i and \a j
@@ -394,7 +394,7 @@ public:
   /// \name Iteration control
   //@{
   /// Move iterator to next range (if possible)
-  void operator++(void);
+  void operator++();
   //@}
 };
 
@@ -404,7 +404,7 @@ public:
  */
 
 template <class Val, class I, class J>
-inline void Inter<Val, I, J>::operator++(void) {
+inline void Inter<Val, I, J>::operator++() {
   if (!i() || !j()) {
     goto done;
   }
@@ -436,7 +436,7 @@ done:
 }
 
 template <class Val, class I, class J>
-inline Inter<Val, I, J>::Inter(void) {}
+inline Inter<Val, I, J>::Inter() {}
 
 template <class Val, class I, class J>
 inline Inter<Val, I, J>::Inter(I& i0, J& j0) : i(i0), j(j0) {
@@ -468,7 +468,7 @@ public:
   /// \name Constructors and initialization
   //@{
   /// Default constructor
-  Diff(void);
+  Diff();
   /// Initialize with iterator \a i and \a j
   Diff(I& i, J& j);
   /// Initialize with iterator \a i and \a j
@@ -478,12 +478,12 @@ public:
   /// \name Iteration control
   //@{
   /// Move iterator to next range (if possible)
-  void operator++(void);
+  void operator++();
   //@}
 };
 
 template <class Val, class I, class J>
-inline void Diff<Val, I, J>::operator++(void) {
+inline void Diff<Val, I, J>::operator++() {
   // Precondition: mi <= ma
   // Task: find next mi greater than ma
   while (true) {
@@ -528,7 +528,7 @@ inline void Diff<Val, I, J>::operator++(void) {
 }
 
 template <class Val, class I, class J>
-inline Diff<Val, I, J>::Diff(void) {}
+inline Diff<Val, I, J>::Diff() {}
 
 template <class Val, class I, class J>
 inline Diff<Val, I, J>::Diff(I& i0, J& j0) : i(i0), j(j0) {
@@ -569,13 +569,13 @@ protected:
   /// End of current range
   IntVal max;
   /// Initialize iterator
-  void start(void);
+  void start();
 
 public:
   /// \name Constructors and initialization
   //@{
   /// Default constructor
-  ToValues(void);
+  ToValues();
   /// Initialize with values from range iterator \a i
   ToValues(I& i);
   /// Initialize with values from range iterator \a i
@@ -585,23 +585,23 @@ public:
   /// \name Iteration control
   //@{
   /// Test whether iterator is still at a value or done
-  bool operator()(void) const;
+  bool operator()() const;
   /// Move iterator to next value (if possible)
-  void operator++(void);
+  void operator++();
   //@}
 
   /// \name Value access
   //@{
   /// Return current value
-  IntVal val(void) const;
+  IntVal val() const;
   //@}
 };
 
 template <class I>
-inline ToValues<I>::ToValues(void) {}
+inline ToValues<I>::ToValues() {}
 
 template <class I>
-inline void ToValues<I>::start(void) {
+inline void ToValues<I>::start() {
   if (i()) {
     cur = i.min();
     max = i.max();
@@ -623,12 +623,12 @@ inline void ToValues<I>::init(I& i0) {
 }
 
 template <class I>
-inline bool ToValues<I>::operator()(void) const {
+inline bool ToValues<I>::operator()() const {
   return (cur <= max);
 }
 
 template <class I>
-inline void ToValues<I>::operator++(void) {
+inline void ToValues<I>::operator++() {
   ++cur;
   if (cur > max) {
     ++i;
@@ -640,7 +640,7 @@ inline void ToValues<I>::operator++(void) {
 }
 
 template <class I>
-inline IntVal ToValues<I>::val(void) const {
+inline IntVal ToValues<I>::val() const {
   return cur;
 }
 

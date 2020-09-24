@@ -24,7 +24,7 @@ using namespace std;
 
 namespace MiniZinc {
 
-MZN_SolverFactory::MZN_SolverFactory(void) {
+MZN_SolverFactory::MZN_SolverFactory() {
   SolverConfig sc("org.minizinc.mzn-mzn",
                   MZN_VERSION_MAJOR "." MZN_VERSION_MINOR "." MZN_VERSION_PATCH);
   sc.name("Generic MiniZinc driver");
@@ -59,7 +59,7 @@ void MZN_SolverFactory::printHelp(ostream& os) {
      << "  --mzn-sigint\n     Send SIGINT instead of SIGTERM.\n";
 }
 
-SolverInstanceBase::Options* MZN_SolverFactory::createOptions(void) { return new MZNSolverOptions; }
+SolverInstanceBase::Options* MZN_SolverFactory::createOptions() { return new MZNSolverOptions; }
 
 SolverInstanceBase* MZN_SolverFactory::doCreateSI(Env& env, std::ostream& log,
                                                   SolverInstanceBase::Options* opt) {
@@ -141,9 +141,9 @@ MZNSolverInstance::MZNSolverInstance(Env& env, std::ostream& log,
                                      SolverInstanceBase::Options* options)
     : SolverInstanceBase(env, log, options) {}
 
-MZNSolverInstance::~MZNSolverInstance(void) {}
+MZNSolverInstance::~MZNSolverInstance() {}
 
-SolverInstance::Status MZNSolverInstance::solve(void) {
+SolverInstance::Status MZNSolverInstance::solve() {
   auto& opt = static_cast<MZNSolverOptions&>(*_options);
   if (opt.mzn_solver.empty()) {
     throw InternalError("No MiniZinc solver specified");
@@ -180,8 +180,8 @@ SolverInstance::Status MZNSolverInstance::solve(void) {
   return exitCode == 0 ? SolverInstance::UNKNOWN : SolverInstance::ERROR;
 }
 
-void MZNSolverInstance::processFlatZinc(void) {}
+void MZNSolverInstance::processFlatZinc() {}
 
-void MZNSolverInstance::resetSolver(void) {}
+void MZNSolverInstance::resetSolver() {}
 
 }  // namespace MiniZinc

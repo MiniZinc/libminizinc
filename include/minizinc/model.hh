@@ -92,15 +92,15 @@ protected:
 
 public:
   /// Construct empty model
-  Model(void);
+  Model();
   /// Destructor
-  virtual ~Model(void);
+  virtual ~Model();
 
   /// Add \a i to the model
   void addItem(Item* i);
 
   /// Get parent model
-  Model* parent(void) const { return _parent; }
+  Model* parent() const { return _parent; }
   /// Set parent model to \a p
   void setParent(Model* p) {
     assert(_parent == nullptr);
@@ -108,9 +108,9 @@ public:
   }
 
   /// Get file name
-  ASTString filename(void) const { return _filename; }
+  ASTString filename() const { return _filename; }
   /// Get file path
-  ASTString filepath(void) const { return _filepath; }
+  ASTString filepath() const { return _filepath; }
   /// Set file name
   void setFilename(const std::string& f) {
     assert(_filename.size() == 0);
@@ -131,11 +131,11 @@ public:
   /// Register a builtin function item
   void registerFn(EnvI& env, FunctionI* fi);
   /// Sort functions by type
-  void sortFn(void);
+  void sortFn();
   /// Check that registered functions do not clash wrt overloading
   void checkFnOverloading(EnvI& env);
   /// Fix function table after type checking
-  void fixFnMap(void);
+  void fixFnMap();
   /// Return function declaration for \a id matching \a args
   FunctionI* matchFn(EnvI& env, const ASTString& id, const std::vector<Expression*>& args,
                      bool strictEnums) const;
@@ -156,40 +156,40 @@ public:
   /// Return item \a i
   const Item* operator[](int i) const;
   /// Return number of items
-  unsigned int size(void) const;
+  unsigned int size() const;
 
   typedef std::vector<Item*>::iterator iterator;
   typedef std::vector<Item*>::const_iterator const_iterator;
 
   /// Iterator for beginning of items
-  iterator begin(void);
+  iterator begin();
   /// Iterator for beginning of items
-  const_iterator begin(void) const;
+  const_iterator begin() const;
   /// Iterator for end of items
-  iterator end(void);
+  iterator end();
   /// Iterator for end of items
-  const_iterator end(void) const;
+  const_iterator end() const;
 
-  ConstraintIterator begin_constraints(void);
-  ConstraintIterator end_constraints(void);
-  VarDeclIterator begin_vardecls(void);
-  VarDeclIterator end_vardecls(void);
-  FunctionIterator begin_functions(void);
-  FunctionIterator end_functions(void);
+  ConstraintIterator begin_constraints();
+  ConstraintIterator end_constraints();
+  VarDeclIterator begin_vardecls();
+  VarDeclIterator end_vardecls();
+  FunctionIterator begin_functions();
+  FunctionIterator end_functions();
 
-  SolveI* solveItem(void);
+  SolveI* solveItem();
 
-  OutputI* outputItem(void);
+  OutputI* outputItem();
   void setOutputItem(OutputI* oi);
 
   /// Add a file-level documentation comment
   void addDocComment(std::string s) { _docComment += s; }
 
   /// Return the file-level documentation comment
-  const std::string& docComment(void) const { return _docComment; }
+  const std::string& docComment() const { return _docComment; }
 
   /// Remove all items marked as removed
-  void compact(void);
+  void compact();
 
   /// Get the stored function declarations
   FnDecls& getFnDecls() { return fnDecls; }
@@ -321,19 +321,19 @@ private:
 
 public:
   Env(Model* m = nullptr, std::ostream& outstream = std::cout, std::ostream& errstream = std::cerr);
-  ~Env(void);
+  ~Env();
 
-  Model* model(void);
+  Model* model();
   void model(Model* m);
-  Model* flat(void);
+  Model* flat();
   void swap();
-  Model* output(void);
-  EnvI& envi(void);
-  const EnvI& envi(void) const;
+  Model* output();
+  EnvI& envi();
+  const EnvI& envi() const;
   std::ostream& dumpErrorStack(std::ostream& os);
-  const std::vector<std::string>& warnings(void);
-  void clearWarnings(void);
-  unsigned int maxCallStack(void) const;
+  const std::vector<std::string>& warnings();
+  void clearWarnings();
+  unsigned int maxCallStack() const;
   std::ostream& evalOutput(std::ostream& os);
 };
 
@@ -342,7 +342,7 @@ public:
   EnvI& env;
   CallStackItem(EnvI& env0, Expression* e);
   CallStackItem(EnvI& env0, Id* ident, IntVal i);
-  ~CallStackItem(void);
+  ~CallStackItem();
 };
 
 /// Visitor for model items

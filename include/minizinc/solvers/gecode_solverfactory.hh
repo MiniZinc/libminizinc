@@ -14,6 +14,6 @@
 namespace MiniZinc {
 class Gecode_SolverFactoryInitialiser {
 public:
-  Gecode_SolverFactoryInitialiser(void);
+  Gecode_SolverFactoryInitialiser();
 };
 }  // namespace MiniZinc

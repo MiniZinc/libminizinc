@@ -94,7 +94,7 @@ std::string Type::toString(EnvI& env) const {
   return oss.str();
 }
 
-std::string Type::nonEnumToString(void) const {
+std::string Type::nonEnumToString() const {
   std::ostringstream oss;
   if (_dim > 0) {
     oss << "array[int";

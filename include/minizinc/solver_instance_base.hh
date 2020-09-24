@@ -60,7 +60,7 @@ public:
     assert(&_env);
     return &_env;
   }
-  virtual Env& env(void) const { return *getEnv(); }
+  virtual Env& env() const { return *getEnv(); }
 
   Solns2Out* getSolns2Out() const {
     assert(pS2Out);
@@ -71,27 +71,27 @@ public:
   virtual void printSolution();
   //     virtual void printSolution(ostream& );  // deprecated
   /// print statistics in form of comments
-  virtual void printStatistics(void) {}
+  virtual void printStatistics() {}
   virtual void printStatisticsLine(bool fLegend = false) {}
 
   /// find the next solution
-  virtual Status next(void) = 0;
+  virtual Status next() = 0;
   /// generate the solver-instance-representation from the flatzinc model
-  virtual void processFlatZinc(void) = 0;
+  virtual void processFlatZinc() = 0;
   /// clean up input model & flatzinc
   void cleanupForNonincrementalSolving() { getEnv()->envi().cleanupExceptOutput(); }
   /// solve the problem instance (according to the solve specification in the flatzinc model)
-  virtual Status solve(void);
+  virtual Status solve();
   /// return reason for status given by solve
-  virtual StatusReason reason(void) { return _status_reason; }
-  virtual Status status(void) { return _status; }
+  virtual StatusReason reason() { return _status_reason; }
+  virtual Status status() { return _status; }
 
   /// reset the model to its core (removing temporary cts) and the solver to the root node of the
   /// search
-  void reset(void);
+  void reset();
   /// reset the solver to the root node of the search TODO: difference between reset() and
   /// resetSolver()?
-  virtual void resetSolver(void) = 0;
+  virtual void resetSolver() = 0;
   /// reset the solver and add temporary constraints given by the iterator
   virtual void resetWithConstraints(Model::iterator begin, Model::iterator end);
   /// add permanent constraints given by the iterator to the solver instance

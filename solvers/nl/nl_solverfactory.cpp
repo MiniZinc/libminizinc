@@ -6,5 +6,5 @@ namespace {
 void getWrapper() { static NL_SolverFactory _nl_solverfactory; }
 }  // namespace
 
-NL_SolverFactoryInitialiser::NL_SolverFactoryInitialiser(void) { getWrapper(); }
+NL_SolverFactoryInitialiser::NL_SolverFactoryInitialiser() { getWrapper(); }
 }  // namespace MiniZinc

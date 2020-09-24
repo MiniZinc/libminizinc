@@ -21,7 +21,7 @@
 
 namespace MiniZinc {
 
-GC*& GC::gc(void) {
+GC*& GC::gc() {
 #if defined(HAS_DECLSPEC_THREAD)
   __declspec(thread) static GC* gc = NULL;
 #elif defined(HAS_ATTR_THREAD)
@@ -32,13 +32,13 @@ GC*& GC::gc(void) {
   return gc;
 }
 
-bool GC::locked(void) {
+bool GC::locked() {
   assert(gc());
   return gc()->_lock_count > 0;
 }
 
-GCLock::GCLock(void) { GC::lock(); }
-GCLock::~GCLock(void) { GC::unlock(); }
+GCLock::GCLock() { GC::lock(); }
+GCLock::~GCLock() { GC::unlock(); }
 
 class FreeListNode : public ASTNode {
 public:
@@ -108,7 +108,7 @@ protected:
   /// Trail
   std::vector<TItem> trail;
 
-  Heap(void)
+  Heap()
       : _page(nullptr),
         _rootset(nullptr),
         _roots(nullptr),
@@ -187,7 +187,7 @@ protected:
 
   /// Allocate one object of type T (no initialisation)
   template <typename T>
-  T* alloc(void) {
+  T* alloc() {
     return static_cast<T*>(alloc(sizeof(T)));
   }
 
@@ -209,7 +209,7 @@ protected:
     return alloc(size);
   }
 
-  void trigger(void) {
+  void trigger() {
 #ifdef MINIZINC_GC_STATS
     std::cerr << "GC\n\talloced " << (_alloced_mem / 1024) << "\n\tfree " << (_free_mem / 1024)
               << "\n\tdiff " << ((_alloced_mem - _free_mem) / 1024) << "\n\tthreshold "
@@ -236,13 +236,13 @@ protected:
               << (_gc_threshold / 1024) << "\n";
 #endif
   }
-  void rungc(void) {
+  void rungc() {
     if (_alloced_mem > _gc_threshold) {
       trigger();
     }
   }
-  void mark(void);
-  void sweep(void);
+  void mark();
+  void sweep();
 
   static size_t nodesize(ASTNode* n) {
     static const size_t _nodesize[Item::II_END + 1] = {
@@ -345,7 +345,7 @@ void GC::setTimeout(unsigned long long int t) {
   gc()->_timeout_timer.reset();
 }
 
-void GC::lock(void) {
+void GC::lock() {
   if (gc() == nullptr) {
     gc() = new GC();
   }
@@ -365,12 +365,12 @@ void GC::lock(void) {
   }
   gc()->_lock_count++;
 }
-void GC::unlock(void) {
+void GC::unlock() {
   assert(locked());
   gc()->_lock_count--;
 }
 
-void GC::trigger(void) {
+void GC::trigger() {
   if (!locked()) {
     gc()->_heap->trigger();
   }
@@ -384,7 +384,7 @@ const size_t GC::Heap::_fl_size[GC::Heap::_max_fl + 1] = {
     sizeof(Item) + 5 * sizeof(void*), sizeof(Item) + 6 * sizeof(void*),
 };
 
-GC::GC(void) : _heap(new Heap()), _lock_count(0), _timeout(0), _timeout_counter(0) {}
+GC::GC() : _heap(new Heap()), _lock_count(0), _timeout(0), _timeout_counter(0) {}
 
 void GC::add(GCMarker* m) {
   GC* gc = GC::gc();
@@ -423,7 +423,7 @@ void* GC::alloc(size_t size) {
   return ret;
 }
 
-void GC::Heap::mark(void) {
+void GC::Heap::mark() {
 #if defined(MINIZINC_GC_STATS)
   std::cerr << "================= mark =================: ";
   gc_stats.clear();
@@ -494,7 +494,7 @@ void GC::Heap::mark(void) {
 #endif
 }
 
-void GC::Heap::sweep(void) {
+void GC::Heap::sweep() {
 #if defined(MINIZINC_GC_STATS)
   std::cerr << "=============== GC sweep =============\n";
 #endif
@@ -621,7 +621,7 @@ void* ASTChunk::alloc(size_t size) {
   return GC::gc()->alloc(s);
 }
 
-void GC::mark(void) {
+void GC::mark() {
   GC* gc = GC::gc();
   if (!gc->_heap->trail.empty()) {
     gc->_heap->trail.back().mark = true;
@@ -631,7 +631,7 @@ void GC::trail(Expression** l, Expression* v) {
   GC* gc = GC::gc();
   gc->_heap->trail.emplace_back(l, v);
 }
-void GC::untrail(void) {
+void GC::untrail() {
   GC* gc = GC::gc();
   while (!gc->_heap->trail.empty() && !gc->_heap->trail.back().mark) {
     *gc->_heap->trail.back().l = gc->_heap->trail.back().v;
@@ -641,7 +641,7 @@ void GC::untrail(void) {
     gc->_heap->trail.back().mark = false;
   }
 }
-size_t GC::maxMem(void) {
+size_t GC::maxMem() {
   GC* gc = GC::gc();
   return gc->_heap->_max_alloced_mem;
 }
@@ -674,7 +674,7 @@ KeepAlive::KeepAlive(Expression* e) : _e(e), _p(nullptr), _n(nullptr) {
     GC::gc()->addKeepAlive(this);
   }
 }
-KeepAlive::~KeepAlive(void) {
+KeepAlive::~KeepAlive() {
   if ((_e != nullptr) && !_e->isUnboxedVal()) {
     GC::gc()->removeKeepAlive(this);
   }
@@ -747,7 +747,7 @@ WeakRef::WeakRef(Expression* e) : _e(e), _p(nullptr), _n(nullptr), _valid(true) 
     GC::gc()->addWeakRef(this);
   }
 }
-WeakRef::~WeakRef(void) {
+WeakRef::~WeakRef() {
   if ((_e != nullptr) && !_e->isUnboxedVal()) {
     GC::gc()->removeWeakRef(this);
   }
@@ -780,9 +780,9 @@ WeakRef& WeakRef::operator=(const WeakRef& e) {
   return *this;
 }
 
-ASTNodeWeakMap::ASTNodeWeakMap(void) : _p(nullptr), _n(nullptr) { GC::gc()->addNodeWeakMap(this); }
+ASTNodeWeakMap::ASTNodeWeakMap() : _p(nullptr), _n(nullptr) { GC::gc()->addNodeWeakMap(this); }
 
-ASTNodeWeakMap::~ASTNodeWeakMap(void) { GC::gc()->removeNodeWeakMap(this); }
+ASTNodeWeakMap::~ASTNodeWeakMap() { GC::gc()->removeNodeWeakMap(this); }
 
 void ASTNodeWeakMap::insert(ASTNode* n0, ASTNode* n1) { _m.insert(std::make_pair(n0, n1)); }
 

@@ -2179,7 +2179,7 @@ Expression* b_set_to_ranges_float(EnvI& env, Call* call) {
   return al;
 }
 
-std::default_random_engine& rnd_generator(void) {
+std::default_random_engine& rnd_generator() {
   // TODO: initiate with seed if given as annotation/in command line
   static std::default_random_engine g;
   return g;

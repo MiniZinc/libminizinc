@@ -28,7 +28,7 @@ public:
   void reg(const ASTString& call, optimizer);
   ConstraintStatus process(EnvI& env, Item* i, Call* c, Expression*& rewrite);
 
-  static OptimizeRegistry& registry(void);
+  static OptimizeRegistry& registry();
 };
 
 }  // namespace MiniZinc

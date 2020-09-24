@@ -50,13 +50,13 @@ public:
   /// Find \a e in map
   iterator find(Expression* e) { return _m.find(e); }
   /// Begin of iterator
-  iterator begin(void) { return _m.begin(); }
+  iterator begin() { return _m.begin(); }
   /// End of iterator
-  iterator end(void) { return _m.end(); }
+  iterator end() { return _m.end(); }
   /// Remove binding of \a e from map
   void remove(Expression* e) { _m.erase(e); }
   /// Remove all elements from the map
-  void clear(void) { _m.clear(); }
+  void clear() { _m.clear(); }
 };
 
 /// Equality test for identifiers
@@ -90,15 +90,15 @@ public:
   /// Find \a e in map
   iterator find(Id* e) { return _m.find(e); }
   /// Begin of iterator
-  iterator begin(void) { return _m.begin(); }
+  iterator begin() { return _m.begin(); }
   /// End of iterator
-  iterator end(void) { return _m.end(); }
+  iterator end() { return _m.end(); }
   /// Remove binding of \a e from map
   void remove(Id* e) { _m.erase(e); }
   /// Return number of elements in the map
-  int size(void) const { return _m.size(); }
+  int size() const { return _m.size(); }
   /// Remove all elements from the map
-  void clear(void) { _m.clear(); }
+  void clear() { _m.clear(); }
   T& get(Id* ident) {
     auto it = find(ident);
     //       assert(it != _m.end());
@@ -143,14 +143,14 @@ public:
   /// Find \a e in map
   iterator find(KeepAlive& e) { return _m.find(e); }
   /// Begin of iterator
-  iterator begin(void) { return _m.begin(); }
+  iterator begin() { return _m.begin(); }
   /// End of iterator
-  iterator end(void) { return _m.end(); }
+  iterator end() { return _m.end(); }
   /// Remove binding of \a e from map
   void remove(KeepAlive& e) { _m.erase(e); }
   void clear() { _m.clear(); }
   template <class D>
-  void dump(void) {
+  void dump() {
     for (auto i = _m.begin(); i != _m.end(); ++i) {
       std::cerr << D::k(i->first()) << ": " << D::d(i->second) << std::endl;
     }
@@ -164,7 +164,7 @@ protected:
   typedef std::unordered_set<Expression*, ExpressionHash, ExpressionEq>::iterator Iter;
 
 public:
-  ExpressionSetIter(void) : _empty(false) {}
+  ExpressionSetIter() : _empty(false) {}
   ExpressionSetIter(bool) : _empty(true) {}
   ExpressionSetIter(const Iter& i) : Iter(i), _empty(false) {}
   bool operator==(const ExpressionSetIter& i) const {
@@ -188,15 +188,15 @@ public:
   /// Find \a e in map
   ExpressionSetIter find(Expression* e) { return _s.find(e); }
   /// Begin of iterator
-  ExpressionSetIter begin(void) { return _s.begin(); }
+  ExpressionSetIter begin() { return _s.begin(); }
   /// End of iterator
-  ExpressionSetIter end(void) { return _s.end(); }
+  ExpressionSetIter end() { return _s.end(); }
   /// Remove binding of \a e from map
   void remove(Expression* e) { _s.erase(e); }
   bool contains(Expression* e) { return find(e) != end(); }
   /// Remove all elements from the map
-  void clear(void) { _s.clear(); }
-  bool isEmpty(void) const { return _s.begin() == _s.end(); }
+  void clear() { _s.clear(); }
+  bool isEmpty() const { return _s.begin() == _s.end(); }
 };
 
 }  // namespace MiniZinc

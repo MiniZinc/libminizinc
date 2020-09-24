@@ -23,7 +23,7 @@
 
 namespace MiniZinc {
 
-Scopes::Scopes(void) {
+Scopes::Scopes() {
   s.emplace_back();
   s.back().toplevel = true;
 }
@@ -50,7 +50,7 @@ void Scopes::push(bool toplevel) {
   s.back().toplevel = toplevel;
 }
 
-void Scopes::pop(void) { s.pop_back(); }
+void Scopes::pop() { s.pop_back(); }
 
 VarDecl* Scopes::find(Id* ident) {
   int cur = static_cast<int>(s.size()) - 1;

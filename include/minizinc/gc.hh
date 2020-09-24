@@ -95,7 +95,7 @@ protected:
   /// Constructor
   ASTChunk(size_t size, unsigned int id = ASTNode::NID_CHUNK);
   /// Actual size of object in memory
-  size_t memsize(void) const {
+  size_t memsize() const {
     size_t s = sizeof(ASTChunk) + (_size <= 4 ? 0 : _size - 4) * sizeof(char);
     s += ((8 - (s & 7)) & 7);
     return s;
@@ -118,7 +118,7 @@ protected:
   /// Constructor
   ASTVec(size_t size);
   /// Actual size of object in memory
-  size_t memsize(void) const {
+  size_t memsize() const {
     size_t s = sizeof(ASTVec) + (_size <= 2 ? 0 : _size - 2) * sizeof(void*);
     s += ((8 - (s & 7)) & 7);
     return s;
@@ -159,9 +159,9 @@ private:
   /// Timer for timeout
   Timer _timeout_timer;
   /// Return thread-local GC object
-  static GC*& gc(void);
+  static GC*& gc();
   /// Constructor
-  GC(void);
+  GC();
 
   /// Allocate garbage collected memory
   void* alloc(size_t size);
@@ -175,39 +175,39 @@ private:
 
 public:
   /// Acquire garbage collector lock for this thread
-  static void lock(void);
+  static void lock();
   /// Release garbage collector lock for this thread
-  static void unlock(void);
+  static void unlock();
   /// Manually trigger garbage collector (must be unlocked)
-  static void trigger(void);
+  static void trigger();
   /// Test if garbage collector is locked
-  static bool locked(void);
+  static bool locked();
   /// Add model \a m to root set
   static void add(GCMarker* m);
   /// Remove model \a m from root set
   static void remove(GCMarker* m);
 
   /// Put a mark on the trail
-  static void mark(void);
+  static void mark();
   /// Add a trail entry
   static void trail(Expression**, Expression*);
   /// Untrail to previous mark
-  static void untrail(void);
+  static void untrail();
 
   /// Set timeout of \a t milliseconds, 0 means disable
   static void setTimeout(unsigned long long int t);
 
   /// Return maximum allocated memory (high water mark)
-  static size_t maxMem(void);
+  static size_t maxMem();
 };
 
 /// Automatic garbage collection lock
 class GCLock {
 public:
   /// Acquire lock
-  GCLock(void);
+  GCLock();
   /// Release lock upon destruction
-  ~GCLock(void);
+  ~GCLock();
 };
 
 /// Expression wrapper that is a member of the root set
@@ -221,12 +221,12 @@ private:
 
 public:
   KeepAlive(Expression* e = nullptr);
-  ~KeepAlive(void);
+  ~KeepAlive();
   KeepAlive(const KeepAlive& e);
   KeepAlive& operator=(const KeepAlive& e);
-  Expression* operator()(void) { return _e; }
-  Expression* operator()(void) const { return _e; }
-  KeepAlive* next(void) const { return _n; }
+  Expression* operator()() { return _e; }
+  Expression* operator()() const { return _e; }
+  KeepAlive* next() const { return _n; }
 };
 
 /// Expression wrapper that is a member of the root set
@@ -241,12 +241,12 @@ private:
 
 public:
   WeakRef(Expression* e = nullptr);
-  ~WeakRef(void);
+  ~WeakRef();
   WeakRef(const WeakRef& e);
   WeakRef& operator=(const WeakRef& e);
-  Expression* operator()(void) { return _valid ? _e : nullptr; }
-  Expression* operator()(void) const { return _valid ? _e : nullptr; }
-  WeakRef* next(void) const { return _n; }
+  Expression* operator()() { return _valid ? _e : nullptr; }
+  Expression* operator()() const { return _valid ? _e : nullptr; }
+  WeakRef* next() const { return _n; }
 };
 
 class ASTNodeWeakMap {
@@ -260,12 +260,12 @@ protected:
   typedef std::unordered_map<ASTNode*, ASTNode*> NodeMap;
   ASTNodeWeakMap* _p;
   ASTNodeWeakMap* _n;
-  ASTNodeWeakMap* next(void) const { return _n; }
+  ASTNodeWeakMap* next() const { return _n; }
   NodeMap _m;
 
 public:
-  ASTNodeWeakMap(void);
-  ~ASTNodeWeakMap(void);
+  ASTNodeWeakMap();
+  ~ASTNodeWeakMap();
   void insert(ASTNode* n0, ASTNode* n1);
   ASTNode* find(ASTNode* n);
   void clear() { _m.clear(); }

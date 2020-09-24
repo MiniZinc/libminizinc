@@ -20,8 +20,8 @@ namespace MiniZinc {
 class FlatteningError : public LocationException {
 public:
   FlatteningError(EnvI& env, const Location& loc, const std::string& msg);
-  ~FlatteningError(void) throw() {}
-  virtual const char* what(void) const throw() { return "MiniZinc: flattening error"; }
+  ~FlatteningError() throw() {}
+  virtual const char* what() const throw() { return "MiniZinc: flattening error"; }
 };
 
 /// Options for the flattener
@@ -53,7 +53,7 @@ struct FlatteningOptions {
   /// Output detailed timing information for flattening
   bool detailedTiming;
   /// Default constructor
-  FlatteningOptions(void)
+  FlatteningOptions()
       : keepOutputInFzn(false),
         verbose(false),
         only_toplevel_paths(false),
@@ -111,7 +111,7 @@ struct FlatModelStatistics {
   /// Number of linear expressions eliminated using path compression
   int n_lin_del;
   /// Constructor
-  FlatModelStatistics(void)
+  FlatModelStatistics()
       : n_int_vars(0),
         n_bool_vars(0),
         n_float_vars(0),

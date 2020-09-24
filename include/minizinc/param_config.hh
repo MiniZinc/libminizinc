@@ -42,7 +42,7 @@ public:
   /// When the key is found in the config, then if it's false the negated flag is used
   void negated_flag(const std::string& flag, const std::string& negated);
   /// Return the arguments represented by this configuration
-  const std::vector<std::string>& argv(void);
+  const std::vector<std::string>& argv();
 };
 
 class ParamException : public Exception {
@@ -50,9 +50,9 @@ public:
   /// Construct with message \a msg
   ParamException(const std::string& msg) : Exception(msg) {}
   /// Destructor
-  ~ParamException(void) throw() {}
+  ~ParamException() throw() {}
   /// Return description
-  virtual const char* what(void) const throw() { return "MiniZinc: solver parameter error"; }
+  virtual const char* what() const throw() { return "MiniZinc: solver parameter error"; }
 };
 }  // namespace MiniZinc
 

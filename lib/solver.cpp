@@ -65,7 +65,7 @@
 using namespace std;
 using namespace MiniZinc;
 
-SolverInitialiser::SolverInitialiser(void) {
+SolverInitialiser::SolverInitialiser() {
 #ifdef HAS_GUROBI
   Gurobi_SolverFactoryInitialiser _gurobi_init;
 #endif

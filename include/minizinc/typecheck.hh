@@ -27,14 +27,14 @@ protected:
     /// Map from identifiers to declarations
     DeclMap m;
     /// Constructor
-    Scope(void) : toplevel(false) {}
+    Scope() : toplevel(false) {}
   };
   /// Stack of scopes
   std::vector<Scope> s;
 
 public:
   /// Constructor
-  Scopes(void);
+  Scopes();
 
   /// Add a variable declaration
   void add(EnvI& env, VarDecl* vd);
@@ -42,7 +42,7 @@ public:
   /// Push a new scope
   void push(bool toplevel);
   /// Pop topmost scope
-  void pop(void);
+  void pop();
 
   /// Return declaration for \a ident, or NULL if not found
   VarDecl* find(Id* ident);

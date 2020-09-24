@@ -5,5 +5,5 @@ namespace MiniZinc {
 namespace {
 void getWrapper() { static Gecode_SolverFactory _gecode_solverfactory; }
 }  // namespace
-Gecode_SolverFactoryInitialiser::Gecode_SolverFactoryInitialiser(void) { getWrapper(); }
+Gecode_SolverFactoryInitialiser::Gecode_SolverFactoryInitialiser() { getWrapper(); }
 }  // namespace MiniZinc

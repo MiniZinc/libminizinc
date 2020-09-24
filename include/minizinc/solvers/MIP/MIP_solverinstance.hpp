@@ -5,7 +5,7 @@
 namespace MiniZinc {
 
 template <class MIPWrapper>
-MIP_SolverFactory<MIPWrapper>::MIP_SolverFactory(void) {
+MIP_SolverFactory<MIPWrapper>::MIP_SolverFactory() {
   SolverConfig sc(getId(), MIPWrapper::getVersion());
   sc.name(MIPWrapper::getName());
   sc.mznlib(MIPWrapper::getMznLib());
@@ -220,7 +220,7 @@ void MIP_solverinstance<MIPWrapper>::processMultipleObjectives(const Annotation&
 }
 
 template <class MIPWrapper>
-void MIP_solverinstance<MIPWrapper>::processFlatZinc(void) {
+void MIP_solverinstance<MIPWrapper>::processFlatZinc() {
   mip_wrap->fVerbose = _options->verbose;
 
   SolveI* solveItem = getEnv()->flat()->solveItem();
@@ -449,7 +449,7 @@ void MIP_solverinstance<MIPWrapper>::printStatisticsLine(bool fLegend) {
 }
 
 template <class MIPWrapper>
-void MIP_solverinstance<MIPWrapper>::printStatistics(void) {
+void MIP_solverinstance<MIPWrapper>::printStatistics() {
   //   auto nn = std::chrono::system_clock::now();
   //   auto n_c = std::chrono::system_clock::to_time_t( nn );
   {
@@ -515,7 +515,7 @@ void HandleCutCallback(const MIP_wrapper::Output& out, MIP_wrapper::CutInput& in
 }
 
 template <class MIPWrapper>
-SolverInstance::Status MIP_solverinstance<MIPWrapper>::solve(void) {
+SolverInstance::Status MIP_solverinstance<MIPWrapper>::solve() {
   SolveI* solveItem = getEnv()->flat()->solveItem();
   int nProbType = 0;
   if (solveItem->st() != SolveI::SolveType::ST_SAT) {

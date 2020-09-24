@@ -30,7 +30,7 @@ using namespace std;
 
 namespace MiniZinc {
 
-FZN_SolverFactory::FZN_SolverFactory(void) {
+FZN_SolverFactory::FZN_SolverFactory() {
   SolverConfig sc("org.minizinc.mzn-fzn",
                   MZN_VERSION_MAJOR "." MZN_VERSION_MINOR "." MZN_VERSION_PATCH);
   sc.name("Generic FlatZinc driver");
@@ -89,7 +89,7 @@ void FZN_SolverFactory::printHelp(ostream& os) {
         "port.\n";
 }
 
-SolverInstanceBase::Options* FZN_SolverFactory::createOptions(void) { return new FZNSolverOptions; }
+SolverInstanceBase::Options* FZN_SolverFactory::createOptions() { return new FZNSolverOptions; }
 
 SolverInstanceBase* FZN_SolverFactory::doCreateSI(Env& env, std::ostream& log,
                                                   SolverInstanceBase::Options* opt) {
@@ -216,9 +216,9 @@ FZNSolverInstance::FZNSolverInstance(Env& env, std::ostream& log,
                                      SolverInstanceBase::Options* options)
     : SolverInstanceBase(env, log, options), _fzn(env.flat()), _ozn(env.output()) {}
 
-FZNSolverInstance::~FZNSolverInstance(void) {}
+FZNSolverInstance::~FZNSolverInstance() {}
 
-SolverInstance::Status FZNSolverInstance::solve(void) {
+SolverInstance::Status FZNSolverInstance::solve() {
   auto& opt = static_cast<FZNSolverOptions&>(*_options);
   if (opt.fzn_solver.empty()) {
     throw InternalError("No FlatZinc solver specified");
@@ -327,9 +327,9 @@ SolverInstance::Status FZNSolverInstance::solve(void) {
   }
 }
 
-void FZNSolverInstance::processFlatZinc(void) {}
+void FZNSolverInstance::processFlatZinc() {}
 
-void FZNSolverInstance::resetSolver(void) {}
+void FZNSolverInstance::resetSolver() {}
 
 Expression* FZNSolverInstance::getSolutionValue(Id* id) {
   assert(false);

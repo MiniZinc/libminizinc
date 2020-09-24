@@ -51,7 +51,7 @@ private:
 
 public:
   /// Default constructor
-  Type(void)
+  Type()
       : _ti(TI_PAR),
         _bt(BT_UNKNOWN),
         _st(ST_PLAIN),
@@ -61,7 +61,7 @@ public:
         _dim(0) {}
 
   /// Access type-inst
-  TypeInst ti(void) const { return static_cast<TypeInst>(_ti); }
+  TypeInst ti() const { return static_cast<TypeInst>(_ti); }
   /// Set type-inst
   void ti(const TypeInst& t) {
     _ti = t;
@@ -71,32 +71,32 @@ public:
   }
 
   /// Access basic type
-  BaseType bt(void) const { return static_cast<BaseType>(_bt); }
+  BaseType bt() const { return static_cast<BaseType>(_bt); }
   /// Set basic type
   void bt(const BaseType& b) { _bt = b; }
 
   /// Access set type
-  SetType st(void) const { return static_cast<SetType>(_st); }
+  SetType st() const { return static_cast<SetType>(_st); }
   /// Set set type
   void st(const SetType& s) { _st = s; }
 
   /// Access opt type
-  OptType ot(void) const { return static_cast<OptType>(_ot); }
+  OptType ot() const { return static_cast<OptType>(_ot); }
   /// Set opt type
   void ot(const OptType& o) { _ot = o; }
 
   /// Access var-in-par type
-  bool cv(void) const { return static_cast<ContainsVarType>(_cv) == CV_YES; }
+  bool cv() const { return static_cast<ContainsVarType>(_cv) == CV_YES; }
   /// Set var-in-par type
   void cv(bool b) { _cv = b ? CV_YES : CV_NO; }
 
   /// Access enum identifier
-  unsigned int enumId(void) const { return _enumId; }
+  unsigned int enumId() const { return _enumId; }
   /// Set enum identifier
   void enumId(unsigned int eid) { _enumId = eid; }
 
   /// Access dimensions
-  int dim(void) const { return _dim; }
+  int dim() const { return _dim; }
   /// Set dimensions
   void dim(int d) {
     _dim = d;
@@ -156,39 +156,39 @@ public:
   static Type unboxedint;
   static Type unboxedfloat;
 
-  bool isunknown(void) const { return bt() == BT_UNKNOWN; }
-  bool isplain(void) const { return _dim == 0 && st() == ST_PLAIN && ot() == OT_PRESENT; }
-  bool isint(void) const { return _dim == 0 && st() == ST_PLAIN && bt() == BT_INT; }
-  bool isbot(void) const { return bt() == BT_BOT; }
-  bool isfloat(void) const { return _dim == 0 && st() == ST_PLAIN && bt() == BT_FLOAT; }
-  bool isbool(void) const { return _dim == 0 && st() == ST_PLAIN && bt() == BT_BOOL; }
-  bool isstring(void) const { return isplain() && bt() == BT_STRING; }
-  bool isvar(void) const { return ti() != TI_PAR; }
-  bool isvarbool(void) const {
+  bool isunknown() const { return bt() == BT_UNKNOWN; }
+  bool isplain() const { return _dim == 0 && st() == ST_PLAIN && ot() == OT_PRESENT; }
+  bool isint() const { return _dim == 0 && st() == ST_PLAIN && bt() == BT_INT; }
+  bool isbot() const { return bt() == BT_BOT; }
+  bool isfloat() const { return _dim == 0 && st() == ST_PLAIN && bt() == BT_FLOAT; }
+  bool isbool() const { return _dim == 0 && st() == ST_PLAIN && bt() == BT_BOOL; }
+  bool isstring() const { return isplain() && bt() == BT_STRING; }
+  bool isvar() const { return ti() != TI_PAR; }
+  bool isvarbool() const {
     return ti() == TI_VAR && _dim == 0 && st() == ST_PLAIN && bt() == BT_BOOL && ot() == OT_PRESENT;
   }
-  bool isvarfloat(void) const {
+  bool isvarfloat() const {
     return ti() == TI_VAR && _dim == 0 && st() == ST_PLAIN && bt() == BT_FLOAT &&
            ot() == OT_PRESENT;
   }
-  bool isvarint(void) const {
+  bool isvarint() const {
     return ti() == TI_VAR && _dim == 0 && st() == ST_PLAIN && bt() == BT_INT && ot() == OT_PRESENT;
   }
-  bool ispar(void) const { return ti() == TI_PAR; }
-  bool isopt(void) const { return ot() == OT_OPTIONAL; }
-  bool ispresent(void) const { return ot() == OT_PRESENT; }
-  bool is_set(void) const { return _dim == 0 && st() == ST_SET; }
-  bool isintset(void) const { return is_set() && (bt() == BT_INT || bt() == BT_BOT); }
-  bool isboolset(void) const { return is_set() && (bt() == BT_BOOL || bt() == BT_BOT); }
-  bool isfloatset(void) const { return is_set() && (bt() == BT_FLOAT || bt() == BT_BOT); }
-  bool isann(void) const { return isplain() && bt() == BT_ANN; }
-  bool isintarray(void) const {
+  bool ispar() const { return ti() == TI_PAR; }
+  bool isopt() const { return ot() == OT_OPTIONAL; }
+  bool ispresent() const { return ot() == OT_PRESENT; }
+  bool is_set() const { return _dim == 0 && st() == ST_SET; }
+  bool isintset() const { return is_set() && (bt() == BT_INT || bt() == BT_BOT); }
+  bool isboolset() const { return is_set() && (bt() == BT_BOOL || bt() == BT_BOT); }
+  bool isfloatset() const { return is_set() && (bt() == BT_FLOAT || bt() == BT_BOT); }
+  bool isann() const { return isplain() && bt() == BT_ANN; }
+  bool isintarray() const {
     return _dim == 1 && st() == ST_PLAIN && ot() == OT_PRESENT && bt() == BT_INT;
   }
-  bool isboolarray(void) const {
+  bool isboolarray() const {
     return _dim == 1 && st() == ST_PLAIN && ot() == OT_PRESENT && bt() == BT_BOOL;
   }
-  bool isintsetarray(void) const { return _dim == 1 && st() == ST_SET && bt() == BT_INT; }
+  bool isintsetarray() const { return _dim == 1 && st() == ST_SET && bt() == BT_INT; }
 
   bool operator==(const Type& t) const {
     return ti() == t.ti() && bt() == t.bt() && st() == t.st() && ot() == t.ot() && _dim == t._dim;
@@ -196,7 +196,7 @@ public:
   bool operator!=(const Type& t) const { return !this->operator==(t); }
   // protected:
 
-  int toInt(void) const {
+  int toInt() const {
     return +((1 - static_cast<int>(_st)) << 28) + (static_cast<int>(_bt) << 24) +
            (static_cast<int>(_ti) << 21) + (static_cast<int>(_ot) << 20) +
            (static_cast<int>(_enumId) << 8) + (_dim == -1 ? 1 : (_dim == 0 ? 0 : _dim + 1));
@@ -213,7 +213,7 @@ public:
     return t;
   }
   std::string toString(EnvI& env) const;
-  std::string nonEnumToString(void) const;
+  std::string nonEnumToString() const;
 
 public:
   /// Check if \a bt0 is a subtype of \a bt1

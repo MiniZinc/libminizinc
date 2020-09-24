@@ -451,7 +451,7 @@ public:
   std::unordered_map<std::string, SolverConfig> builtinSolvers;
 };
 
-BuiltinSolverConfigs& builtinSolverConfigs(void) {
+BuiltinSolverConfigs& builtinSolverConfigs() {
   static BuiltinSolverConfigs c;
   return c;
 }
@@ -476,7 +476,7 @@ void SolverConfigs::addConfig(const MiniZinc::SolverConfig& sc) {
   }
 }
 
-std::vector<std::string> SolverConfigs::solverConfigsPath(void) const { return _solver_path; }
+std::vector<std::string> SolverConfigs::solverConfigsPath() const { return _solver_path; }
 
 SolverConfigs::SolverConfigs(std::ostream& log) {
 #ifdef _MSC_VER

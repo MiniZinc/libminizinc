@@ -25,7 +25,7 @@ namespace MiniZinc {
 namespace FileUtils {
 
 /// Return full path to current executable
-std::string progpath(void);
+std::string progpath();
 /// Test if \a filename exists
 bool file_exists(const std::string& filename);
 /// Test if \a dirname exists and is a directory
@@ -46,15 +46,15 @@ bool is_absolute(const std::string& path);
 std::vector<std::string> directory_list(const std::string& dir,
                                         const std::string& ext = std::string("*"));
 /// Return share/minizinc directory if present anywhere above the executable
-std::string share_directory(void);
+std::string share_directory();
 /// Return current working directory
-std::string working_directory(void);
+std::string working_directory();
 /// Get global configuration file name (in share/minizinc directory)
-std::string global_config_file(void);
+std::string global_config_file();
 /// Get per-user configuration file name (usually in home directory or AppData directory)
-std::string user_config_file(void);
+std::string user_config_file();
 /// Get per-user configuration directory name (usually in home directory or AppData directory)
-std::string user_config_dir(void);
+std::string user_config_dir();
 /// Parse command line \a s into individual arguments
 std::vector<std::string> parseCmdLine(const std::string& s);
 /// Combine individual arguments \a cmd into properly quoted command line
@@ -74,8 +74,8 @@ public:
   // Constructor for file with extension \a ext
   TmpFile(const std::string& ext);
   /// Destructor (removes file)
-  ~TmpFile(void);
-  std::string name(void) const { return _name; }
+  ~TmpFile();
+  std::string name() const { return _name; }
 };
 
 /// Create a temporary directory
@@ -85,10 +85,10 @@ private:
 
 public:
   // Constructor for difrectory
-  TmpDir(void);
+  TmpDir();
   /// Destructor (removes directory)
-  ~TmpDir(void);
-  std::string name(void) const { return _name; }
+  ~TmpDir();
+  std::string name() const { return _name; }
 };
 
 /// Inflate string \a s

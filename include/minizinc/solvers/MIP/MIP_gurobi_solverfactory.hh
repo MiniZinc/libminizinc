@@ -14,6 +14,6 @@
 namespace MiniZinc {
 class Gurobi_SolverFactoryInitialiser {
 public:
-  Gurobi_SolverFactoryInitialiser(void);
+  Gurobi_SolverFactoryInitialiser();
 };
 }  // namespace MiniZinc

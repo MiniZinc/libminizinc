@@ -58,9 +58,9 @@ bool Model::FnEntry::compare(const Model::FnEntry& e1, const Model::FnEntry& e2)
   return false;
 }
 
-Model::Model(void) : _parent(nullptr), _solveItem(nullptr), _outputItem(nullptr) {}
+Model::Model() : _parent(nullptr), _solveItem(nullptr), _outputItem(nullptr) {}
 
-Model::~Model(void) {
+Model::~Model() {
   for (auto* i : _items) {
     if (auto* ii = i->dyn_cast<IncludeI>()) {
       if (ii->own()) {
@@ -71,12 +71,12 @@ Model::~Model(void) {
   }
 }
 
-VarDeclIterator Model::begin_vardecls(void) { return VarDeclIterator(this, begin()); }
-VarDeclIterator Model::end_vardecls(void) { return VarDeclIterator(this, end()); }
-ConstraintIterator Model::begin_constraints(void) { return ConstraintIterator(this, begin()); }
-ConstraintIterator Model::end_constraints(void) { return ConstraintIterator(this, end()); }
-FunctionIterator Model::begin_functions(void) { return FunctionIterator(this, begin()); }
-FunctionIterator Model::end_functions(void) { return FunctionIterator(this, end()); }
+VarDeclIterator Model::begin_vardecls() { return VarDeclIterator(this, begin()); }
+VarDeclIterator Model::end_vardecls() { return VarDeclIterator(this, end()); }
+ConstraintIterator Model::begin_constraints() { return ConstraintIterator(this, begin()); }
+ConstraintIterator Model::end_constraints() { return ConstraintIterator(this, end()); }
+FunctionIterator Model::begin_functions() { return FunctionIterator(this, begin()); }
+FunctionIterator Model::end_functions() { return FunctionIterator(this, end()); }
 
 SolveI* Model::solveItem() { return _solveItem; }
 
@@ -319,7 +319,7 @@ void Model::mergeStdLib(EnvI& env, Model* m) const {
   }
 }
 
-void Model::sortFn(void) {
+void Model::sortFn() {
   Model* m = this;
   while (m->_parent != nullptr) {
     m = m->_parent;
@@ -330,7 +330,7 @@ void Model::sortFn(void) {
   }
 }
 
-void Model::fixFnMap(void) {
+void Model::fixFnMap() {
   Model* m = this;
   while (m->_parent != nullptr) {
     m = m->_parent;
@@ -657,17 +657,17 @@ const Item* Model::operator[](int i) const {
   assert(i < _items.size());
   return _items[i];
 }
-unsigned int Model::size(void) const { return static_cast<unsigned int>(_items.size()); }
+unsigned int Model::size() const { return static_cast<unsigned int>(_items.size()); }
 
-std::vector<Item*>::iterator Model::begin(void) { return _items.begin(); }
+std::vector<Item*>::iterator Model::begin() { return _items.begin(); }
 
-std::vector<Item*>::const_iterator Model::begin(void) const { return _items.begin(); }
+std::vector<Item*>::const_iterator Model::begin() const { return _items.begin(); }
 
-std::vector<Item*>::iterator Model::end(void) { return _items.end(); }
+std::vector<Item*>::iterator Model::end() { return _items.end(); }
 
-std::vector<Item*>::const_iterator Model::end(void) const { return _items.end(); }
+std::vector<Item*>::const_iterator Model::end() const { return _items.end(); }
 
-void Model::compact(void) {
+void Model::compact() {
   struct {
     bool operator()(const Item* i) { return i->removed(); }
   } isremoved;

@@ -26,7 +26,7 @@ namespace MiniZinc {
 
 class SolverInitialiser {
 public:
-  SolverInitialiser(void);
+  SolverInitialiser();
 };
 
 class SolverFactory;
@@ -88,7 +88,7 @@ public:
 
 public:
   /// Create solver-specific options object
-  virtual SolverInstanceBase::Options* createOptions(void) = 0;
+  virtual SolverInstanceBase::Options* createOptions() = 0;
   /// Function createSI also adds each SI to the local storage
   SolverInstanceBase* createSI(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
   /// also providing a manual destroy function.
@@ -107,7 +107,7 @@ public:
 
   virtual std::string getDescription(SolverInstanceBase::Options* opt = nullptr) = 0;
   virtual std::string getVersion(SolverInstanceBase::Options* opt = nullptr) = 0;
-  virtual std::string getId(void) = 0;
+  virtual std::string getId() = 0;
   virtual void printHelp(std::ostream&) {}
 };  // SolverFactory
 

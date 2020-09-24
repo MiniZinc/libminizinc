@@ -717,13 +717,13 @@ EnvI::EnvI(Model* model0, std::ostream& outstream0, std::ostream& errstream0)
       std::pair<ASTString, ASTString>(constants().ids.clause, constants().ids.bool_clause_reif));
   reifyMap.insert({constants().ids.bool_not, constants().ids.bool_not});
 }
-EnvI::~EnvI(void) {
+EnvI::~EnvI() {
   delete _flat;
   delete output;
   delete model;
   delete orig_model;
 }
-long long int EnvI::genId(void) { return ids++; }
+long long int EnvI::genId() { return ids++; }
 void EnvI::cse_map_insert(Expression* e, const EE& ee) {
   KeepAlive ka(e);
   cse_map.insert(ka, WW(ee.r(), ee.b()));
@@ -760,8 +760,8 @@ void EnvI::cse_map_remove(Expression* e) {
   KeepAlive ka(e);
   cse_map.remove(ka);
 }
-EnvI::CSEMap::iterator EnvI::cse_map_end(void) { return cse_map.end(); }
-void EnvI::dump(void) {
+EnvI::CSEMap::iterator EnvI::cse_map_end() { return cse_map.end(); }
+void EnvI::dump() {
   struct EED {
     static std::string k(Expression* e) {
       std::ostringstream oss;
@@ -1019,7 +1019,7 @@ void EnvI::vo_add_exp(VarDecl* vd) {
     modifiedVarDecls.push_back(idx);
   }
 }
-Model* EnvI::flat(void) { return _flat; }
+Model* EnvI::flat() { return _flat; }
 void EnvI::swap() {
   Model* tmp = model;
   model = _flat;
@@ -1056,7 +1056,7 @@ void EnvI::addWarning(const std::string& msg) {
   }
 }
 
-void EnvI::createErrorStack(void) {
+void EnvI::createErrorStack() {
   errorStack.clear();
   for (auto i = static_cast<unsigned int>(callStack.size()); (i--) != 0U;) {
     Expression* e = callStack[i]->untag();
@@ -1066,7 +1066,7 @@ void EnvI::createErrorStack(void) {
   }
 }
 
-Call* EnvI::surroundingCall(void) const {
+Call* EnvI::surroundingCall() const {
   if (callStack.size() >= 2) {
     return callStack[callStack.size() - 2]->untag()->dyn_cast<Call>();
   }
@@ -1101,7 +1101,7 @@ CallStackItem::CallStackItem(EnvI& env0, Id* ident, IntVal i) : env(env0) {
   env.callStack.push_back(ee);
   env.maxCallStack = std::max(env.maxCallStack, static_cast<unsigned int>(env.callStack.size()));
 }
-CallStackItem::~CallStackItem(void) {
+CallStackItem::~CallStackItem() {
   Expression* e = env.callStack.back()->untag();
   if (e->isa<VarDecl>()) {
     env.idStack.pop_back();
@@ -1120,17 +1120,17 @@ FlatteningError::FlatteningError(EnvI& env, const Location& loc, const std::stri
 
 Env::Env(Model* m, std::ostream& outstream, std::ostream& errstream)
     : e(new EnvI(m, outstream, errstream)) {}
-Env::~Env(void) { delete e; }
+Env::~Env() { delete e; }
 
-Model* Env::model(void) { return e->model; }
+Model* Env::model() { return e->model; }
 void Env::model(Model* m) { e->model = m; }
-Model* Env::flat(void) { return e->flat(); }
+Model* Env::flat() { return e->flat(); }
 void Env::swap() { e->swap(); }
-Model* Env::output(void) { return e->output; }
+Model* Env::output() { return e->output; }
 
 std::ostream& Env::evalOutput(std::ostream& os) { return e->evalOutput(os); }
-EnvI& Env::envi(void) { return *e; }
-const EnvI& Env::envi(void) const { return *e; }
+EnvI& Env::envi() { return *e; }
+const EnvI& Env::envi() const { return *e; }
 std::ostream& Env::dumpErrorStack(std::ostream& os) { return e->dumpStack(os, true); }
 
 bool EnvI::dumpPath(std::ostream& os, bool force) {
@@ -1477,11 +1477,11 @@ std::ostream& EnvI::evalOutput(std::ostream& os) {
   return os;
 }
 
-const std::vector<std::string>& Env::warnings(void) { return envi().warnings; }
+const std::vector<std::string>& Env::warnings() { return envi().warnings; }
 
-void Env::clearWarnings(void) { envi().warnings.clear(); }
+void Env::clearWarnings() { envi().warnings.clear(); }
 
-unsigned int Env::maxCallStack(void) const { return envi().maxCallStack; }
+unsigned int Env::maxCallStack() const { return envi().maxCallStack; }
 
 void checkIndexSets(EnvI& env, VarDecl* vd, Expression* e) {
   ASTExprVec<TypeInst> tis = vd->ti()->ranges();
@@ -2800,7 +2800,7 @@ public:
   ItemTimer(const Location& loc, TimingMap* tm)
       : _loc(loc), _tm(tm), _start(std::chrono::high_resolution_clock::now()) {}
 
-  ~ItemTimer(void) {
+  ~ItemTimer() {
     if (_tm != nullptr) {
       std::chrono::high_resolution_clock::time_point end =
           std::chrono::high_resolution_clock::now();

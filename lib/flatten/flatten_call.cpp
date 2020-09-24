@@ -322,7 +322,7 @@ public:
       env.ignorePartial = true;
     }
   }
-  ~IgnorePartial(void) { env.ignorePartial = ignorePartial; }
+  ~IgnorePartial() { env.ignorePartial = ignorePartial; }
 };
 
 EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {

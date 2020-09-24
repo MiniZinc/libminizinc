@@ -56,7 +56,7 @@ namespace MiniZinc {
 namespace FileUtils {
 
 #ifdef HAS_PIDPATH
-std::string progpath(void) {
+std::string progpath() {
   pid_t pid = getpid();
   char path[PROC_PIDPATHINFO_MAXSIZE];
   int ret = proc_pidpath(pid, path, sizeof(path));
@@ -283,7 +283,7 @@ std::vector<std::string> directory_list(const std::string& dir, const std::strin
   return entries;
 }
 
-std::string working_directory(void) {
+std::string working_directory() {
 #ifdef _MSC_VER
   wchar_t wd[FILENAME_MAX];
   if (!_wgetcwd(wd, FILENAME_MAX)) return "";
@@ -297,7 +297,7 @@ std::string working_directory(void) {
 #endif
 }
 
-std::string share_directory(void) {
+std::string share_directory() {
 #ifdef _WIN32
   if (wchar_t* MZNSTDLIBDIR = _wgetenv(L"MZN_STDLIB_DIR")) {
     return wideToUtf8(MZNSTDLIBDIR);
@@ -323,7 +323,7 @@ std::string share_directory(void) {
   return "";
 }
 
-std::string user_config_dir(void) {
+std::string user_config_dir() {
 #ifdef _MSC_VER
   HRESULT hr;
   PWSTR pszPath = NULL;
@@ -347,7 +347,7 @@ std::string user_config_dir(void) {
 #endif
 }
 
-std::string global_config_file(void) {
+std::string global_config_file() {
   std::string sd = share_directory();
   if (sd.empty()) {
     return "";
@@ -355,7 +355,7 @@ std::string global_config_file(void) {
   return sd + "/Preferences.json";
 }
 
-std::string user_config_file(void) { return user_config_dir() + "/Preferences.json"; }
+std::string user_config_file() { return user_config_dir() + "/Preferences.json"; }
 
 TmpFile::TmpFile(const std::string& ext) {
 #ifdef _WIN32
@@ -386,7 +386,7 @@ TmpFile::TmpFile(const std::string& ext) {
 #endif
 }
 
-TmpFile::~TmpFile(void) {
+TmpFile::~TmpFile() {
 #ifdef _WIN32
   _wremove(utf8ToWide(_name).c_str());  // TODO: Is this necessary?
   for (auto& n : _tmpNames) {
@@ -400,7 +400,7 @@ TmpFile::~TmpFile(void) {
 #endif
 }
 
-TmpDir::TmpDir(void) {
+TmpDir::TmpDir() {
 #ifdef _WIN32
   WCHAR szTempFileName[MAX_PATH];
   WCHAR lpTempPathBuffer[MAX_PATH];
@@ -456,7 +456,7 @@ int remove_file(const char* fpath, const struct stat*, int, struct FTW*) { retur
 }  // namespace
 #endif
 
-TmpDir::~TmpDir(void) {
+TmpDir::~TmpDir() {
 #ifdef _WIN32
   remove_dir(_name);
 #else

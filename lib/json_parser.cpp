@@ -29,7 +29,7 @@ protected:
   Token(TokenT t0) : t(t0) {}
 
 public:
-  Token(void) : t(T_EOF) {}
+  Token() : t(T_EOF) {}
   std::string s;
   int i;
   double d;
@@ -46,7 +46,7 @@ public:
   static Token colon() { return Token(T_COLON); }
   static Token eof() { return Token(T_EOF); }
   static Token null() { return Token(T_NULL); }
-  string toString(void) {
+  string toString() {
     switch (t) {
       case T_LIST_OPEN:
         return "[";
@@ -83,7 +83,7 @@ public:
   }
 };
 
-Location JSONParser::errLocation(void) const {
+Location JSONParser::errLocation() const {
   Location loc(filename, line, column, line, column);
   return loc;
 }

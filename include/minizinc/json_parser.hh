@@ -24,7 +24,7 @@ class JSONError : public LocationException {
 public:
   JSONError(EnvI& env, const Location& loc, const std::string& msg)
       : LocationException(env, loc, msg) {}
-  virtual const char* what(void) const throw() { return "MiniZinc: JSON parsing error"; }
+  virtual const char* what() const throw() { return "MiniZinc: JSON parsing error"; }
 };
 
 class JSONParser {
@@ -49,7 +49,7 @@ protected:
   int line;
   int column;
   std::string filename;
-  Location errLocation(void) const;
+  Location errLocation() const;
   Token readToken(std::istream& is);
   void expectToken(std::istream& is, TokenT t);
   std::string expectString(std::istream& is);

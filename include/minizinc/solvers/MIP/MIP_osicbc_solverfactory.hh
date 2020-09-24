@@ -14,6 +14,6 @@
 namespace MiniZinc {
 class OSICBC_SolverFactoryInitialiser {
 public:
-  OSICBC_SolverFactoryInitialiser(void);
+  OSICBC_SolverFactoryInitialiser();
 };
 }  // namespace MiniZinc

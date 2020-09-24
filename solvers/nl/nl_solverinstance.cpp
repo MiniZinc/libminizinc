@@ -26,7 +26,7 @@ namespace MiniZinc {
  * **/
 // Solver Factory
 
-NL_SolverFactory::NL_SolverFactory(void) {
+NL_SolverFactory::NL_SolverFactory() {
   SolverConfig sc("org.minizinc.mzn-nl",
                   MZN_VERSION_MAJOR "." MZN_VERSION_MINOR "." MZN_VERSION_PATCH);
   sc.name("Generic Non Linear driver");
@@ -68,7 +68,7 @@ void NL_SolverFactory::printHelp(ostream& os) {
       ;
 }
 
-SolverInstanceBase::Options* NL_SolverFactory::createOptions(void) { return new NLSolverOptions; }
+SolverInstanceBase::Options* NL_SolverFactory::createOptions() { return new NLSolverOptions; }
 
 SolverInstanceBase* NL_SolverFactory::doCreateSI(Env& env, std::ostream& log,
                                                  SolverInstanceBase::Options* opt) {
@@ -117,13 +117,13 @@ NLSolverInstance::NLSolverInstance(Env& env, std::ostream& log,
                                    SolverInstanceBase::Options* options)
     : SolverInstanceBase(env, log, options), _fzn(env.flat()), _ozn(env.output()) {}
 
-NLSolverInstance::~NLSolverInstance(void) {}
+NLSolverInstance::~NLSolverInstance() {}
 
-void NLSolverInstance::processFlatZinc(void) {}
+void NLSolverInstance::processFlatZinc() {}
 
-void NLSolverInstance::resetSolver(void) {}
+void NLSolverInstance::resetSolver() {}
 
-SolverInstance::Status NLSolverInstance::solve(void) {
+SolverInstance::Status NLSolverInstance::solve() {
   // Get the options
   auto& opt = static_cast<NLSolverOptions&>(*_options);
 

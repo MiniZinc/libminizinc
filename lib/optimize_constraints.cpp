@@ -29,7 +29,7 @@ OptimizeRegistry::ConstraintStatus OptimizeRegistry::process(EnvI& env, MiniZinc
   return CS_NONE;
 }
 
-OptimizeRegistry& OptimizeRegistry::registry(void) {
+OptimizeRegistry& OptimizeRegistry::registry() {
   static OptimizeRegistry reg;
   return reg;
 }
@@ -468,7 +468,7 @@ private:
   Model* _keepAliveModel;
 
 public:
-  Register(void) {
+  Register() {
     GCLock lock;
     _keepAliveModel = new Model;
     ASTString id_element("array_int_element");
@@ -492,7 +492,7 @@ public:
     OptimizeRegistry::registry().reg(constants().ids.int_.ne, o_int_ne);
     OptimizeRegistry::registry().reg(constants().ids.int_.le, o_int_le);
   }
-  ~Register(void) { delete _keepAliveModel; }
+  ~Register() { delete _keepAliveModel; }
 } _r;
 
 }  // namespace Optimizers

@@ -76,8 +76,8 @@ public:
   /// copy constructor
   FznSpace(FznSpace&);
   /// standard constructor
-  FznSpace(void) : _optVarIsInt(true), _optVarIdx(-1), _copyAuxVars(true){};
-  ~FznSpace(void) {}
+  FznSpace() : _optVarIsInt(true), _optVarIdx(-1), _copyAuxVars(true){};
+  ~FznSpace() {}
 
   /// get the index of the Boolean variable in bv; return -1 if not exists
   int getBoolAliasIndex(Gecode::BoolVar bvar) {
@@ -94,7 +94,7 @@ protected:
   /// Implement optimization
   virtual void constrain(const Space& s);
   /// Copy function
-  virtual Gecode::Space* copy(void);
+  virtual Gecode::Space* copy();
 };
 
 }  // namespace MiniZinc

@@ -66,7 +66,7 @@ protected:
 
 public:
   /// Construct empty location
-  ParserLocation(void) : _first_line(1), _last_line(1), _first_column(0), _last_column(0) {}
+  ParserLocation() : _first_line(1), _last_line(1), _first_column(0), _last_column(0) {}
 
   /// Construct location
   ParserLocation(const ASTString& filename, unsigned int first_line, unsigned int first_column,
@@ -77,22 +77,22 @@ public:
         _first_column(first_column),
         _last_column(last_column) {}
 
-  ASTString filename(void) const { return _filename; }
+  ASTString filename() const { return _filename; }
   void filename(const ASTString& f) { _filename = f; }
 
-  unsigned int first_line(void) const { return _first_line; }
+  unsigned int first_line() const { return _first_line; }
   void first_line(unsigned int l) { _first_line = l; }
 
-  unsigned int last_line(void) const { return _last_line; }
+  unsigned int last_line() const { return _last_line; }
   void last_line(unsigned int l) { _last_line = l; }
 
-  unsigned int first_column(void) const { return _first_column; }
+  unsigned int first_column() const { return _first_column; }
   void first_column(unsigned int c) { _first_column = c; }
 
-  unsigned int last_column(void) const { return _last_column; }
+  unsigned int last_column() const { return _last_column; }
   void last_column(unsigned int c) { _last_column = c; }
 
-  std::string toString(void) const {
+  std::string toString() const {
     std::ostringstream oss;
     oss << _filename << ":" << _first_line << "." << _first_column;
     if (_first_line != _last_line) {
@@ -125,18 +125,18 @@ protected:
   public:
     static LocVec* a(const ASTString& filename, unsigned int first_line, unsigned int first_column,
                      unsigned int last_line, unsigned int last_column);
-    void mark(void) {
+    void mark() {
       _gc_mark = 1;
       if (_data[0] != nullptr) {
         static_cast<ASTStringData*>(_data[0])->mark();
       }
     }
 
-    ASTString filename(void) const;
-    unsigned int first_line(void) const;
-    unsigned int last_line(void) const;
-    unsigned int first_column(void) const;
-    unsigned int last_column(void) const;
+    ASTString filename() const;
+    unsigned int first_line() const;
+    unsigned int last_line() const;
+    unsigned int first_column() const;
+    unsigned int last_column() const;
   };
 
   union LI {
@@ -144,7 +144,7 @@ protected:
     ptrdiff_t t;
   } _loc_info;
 
-  LocVec* lv(void) const {
+  LocVec* lv() const {
     LI li = _loc_info;
     li.t &= ~static_cast<ptrdiff_t>(1);
     return li.lv;
@@ -152,7 +152,7 @@ protected:
 
 public:
   /// Construct empty location
-  Location(void) { _loc_info.lv = nullptr; }
+  Location() { _loc_info.lv = nullptr; }
 
   /// Construct location
   Location(const ASTString& filename, unsigned int first_line, unsigned int first_column,
@@ -169,36 +169,36 @@ public:
   }
 
   /// Return string representation
-  std::string toString(void) const;
+  std::string toString() const;
 
   /// Return filename
-  ASTString filename(void) const { return lv() != nullptr ? lv()->filename() : ASTString(); }
+  ASTString filename() const { return lv() != nullptr ? lv()->filename() : ASTString(); }
 
   /// Return first line number
-  unsigned int first_line(void) const { return lv() != nullptr ? lv()->first_line() : 0; }
+  unsigned int first_line() const { return lv() != nullptr ? lv()->first_line() : 0; }
 
   /// Return last line number
-  unsigned int last_line(void) const { return lv() != nullptr ? lv()->last_line() : 0; }
+  unsigned int last_line() const { return lv() != nullptr ? lv()->last_line() : 0; }
 
   /// Return first column number
-  unsigned int first_column(void) const { return lv() != nullptr ? lv()->first_column() : 0; }
+  unsigned int first_column() const { return lv() != nullptr ? lv()->first_column() : 0; }
 
   /// Return last column number
-  unsigned int last_column(void) const { return lv() != nullptr ? lv()->last_column() : 0; }
+  unsigned int last_column() const { return lv() != nullptr ? lv()->last_column() : 0; }
 
   /// Return whether location is introduced by the compiler
-  bool is_introduced(void) const { return _loc_info.lv == nullptr || ((_loc_info.t & 1) != 0); }
+  bool is_introduced() const { return _loc_info.lv == nullptr || ((_loc_info.t & 1) != 0); }
 
   /// Mark as alive for garbage collection
-  void mark(void) const;
+  void mark() const;
 
   /// Return location with introduced flag set
-  Location introduce(void) const;
+  Location introduce() const;
 
   /// Location used for un-allocated expressions
   static Location nonalloc;
 
-  ParserLocation parserLocation(void) const {
+  ParserLocation parserLocation() const {
     return ParserLocation(filename(), first_line(), first_column(), last_line(), last_column());
   }
 };
@@ -238,18 +238,18 @@ private:
   Annotation& operator=(const Annotation&);
 
 public:
-  Annotation(void) : _s(nullptr) {}
-  ~Annotation(void);
+  Annotation() : _s(nullptr) {}
+  ~Annotation();
   bool contains(Expression* e) const;
   bool containsCall(const ASTString& id) const;
-  bool isEmpty(void) const;
-  ExpressionSetIter begin(void) const;
-  ExpressionSetIter end(void) const;
+  bool isEmpty() const;
+  ExpressionSetIter begin() const;
+  ExpressionSetIter end() const;
   void add(Expression* e);
   void add(std::vector<Expression*> e);
   void remove(Expression* e);
   void removeCall(const ASTString& id);
-  void clear(void);
+  void clear();
   void merge(const Annotation& ann);
   Call* getCall(const ASTString& id) const;
 
@@ -300,7 +300,7 @@ public:
     EID_END = E_TIID
   };
 
-  bool isUnboxedVal(void) const {
+  bool isUnboxedVal() const {
     if (sizeof(double) <= sizeof(void*)) {
       // bit 1 or bit 0 is set
       return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) != 0;
@@ -309,7 +309,7 @@ public:
       return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) != 0;
     }
   }
-  bool isUnboxedInt(void) const {
+  bool isUnboxedInt() const {
     if (sizeof(double) <= sizeof(void*)) {
       // bit 1 is set, bit 0 is not set
       return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) == 2;
@@ -318,28 +318,28 @@ public:
       return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) == 1;
     }
   }
-  bool isUnboxedFloatVal(void) const {
+  bool isUnboxedFloatVal() const {
     // bit 0 is set (and doubles fit inside pointers)
     return (sizeof(double) <= sizeof(void*)) &&
            (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) == 1;
   }
 
-  ExpressionId eid(void) const {
+  ExpressionId eid() const {
     return isUnboxedInt() ? E_INTLIT
                           : isUnboxedFloatVal() ? E_FLOATLIT : static_cast<ExpressionId>(_id);
   }
 
-  const Location& loc(void) const { return isUnboxedVal() ? Location::nonalloc : _loc; }
+  const Location& loc() const { return isUnboxedVal() ? Location::nonalloc : _loc; }
   void loc(const Location& l) {
     if (!isUnboxedVal()) {
       _loc = l;
     }
   }
-  const Type& type(void) const {
+  const Type& type() const {
     return isUnboxedInt() ? Type::unboxedint : isUnboxedFloatVal() ? Type::unboxedfloat : _type;
   }
   void type(const Type& t);
-  size_t hash(void) const {
+  size_t hash() const {
     return isUnboxedInt() ? unboxedIntToIntVal().hash()
                           : isUnboxedFloatVal() ? unboxedFloatToFloatVal().hash() : _hash;
   }
@@ -354,7 +354,7 @@ protected:
   }
 
   /// Compute base hash value
-  void init_hash(void) { _hash = cmb_hash(0, _id); }
+  void init_hash() { _hash = cmb_hash(0, _id); }
 
   /// Check if \a e0 and \a e1 are equal
   static bool equal_internal(const Expression* e0, const Expression* e1);
@@ -364,7 +364,7 @@ protected:
       : ASTNode(eid), _type(t), _loc(loc) {}
 
 public:
-  IntVal unboxedIntToIntVal(void) const {
+  IntVal unboxedIntToIntVal() const {
     assert(isUnboxedInt());
     if (sizeof(double) <= sizeof(void*)) {
       unsigned long long int i = reinterpret_cast<ptrdiff_t>(this) & ~static_cast<ptrdiff_t>(7);
@@ -412,7 +412,7 @@ public:
       return reinterpret_cast<IntLit*>(ubi_p);
     }
   }
-  FloatVal unboxedFloatToFloatVal(void) const {
+  FloatVal unboxedFloatToFloatVal() const {
     assert(isUnboxedFloatVal());
     union {
       double d;
@@ -457,7 +457,7 @@ public:
     return _u.p;
   }
 
-  bool isTagged(void) const {
+  bool isTagged() const {
     // only bit 2 is set
     if (isUnboxedVal()) {
       return false;
@@ -469,7 +469,7 @@ public:
     }
   }
 
-  Expression* tag(void) const {
+  Expression* tag() const {
     assert(!isUnboxedVal());
     if (sizeof(double) <= sizeof(void*)) {
       return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) |
@@ -479,7 +479,7 @@ public:
                                            static_cast<ptrdiff_t>(2));
     }
   }
-  Expression* untag(void) {
+  Expression* untag() {
     if (isUnboxedVal()) {
       return this;
     }
@@ -494,7 +494,7 @@ public:
 
   /// Test if expression is of type \a T
   template <class T>
-  bool isa(void) const {
+  bool isa() const {
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wtautological-undefined-compare"
@@ -510,24 +510,24 @@ public:
   }
   /// Cast expression to type \a T*
   template <class T>
-  T* cast(void) {
+  T* cast() {
     assert(isa<T>());
     return static_cast<T*>(this);
   }
   /// Cast expression to type \a const T*
   template <class T>
-  const T* cast(void) const {
+  const T* cast() const {
     assert(isa<T>());
     return static_cast<const T*>(this);
   }
   /// Cast expression to type \a T* or NULL if types do not match
   template <class T>
-  T* dyn_cast(void) {
+  T* dyn_cast() {
     return isa<T>() ? static_cast<T*>(this) : nullptr;
   }
   /// Cast expression to type \a const T* or NULL if types do not match
   template <class T>
-  const T* dyn_cast(void) const {
+  const T* dyn_cast() const {
     return isa<T>() ? static_cast<const T*>(this) : nullptr;
   }
 
@@ -558,8 +558,8 @@ public:
   /// Add annotation \a ann to the expression
   void addAnnotations(std::vector<Expression*> ann);
 
-  const Annotation& ann(void) const { return isUnboxedVal() ? Annotation::empty : _ann; }
-  Annotation& ann(void) { return isUnboxedVal() ? Annotation::empty : _ann; }
+  const Annotation& ann() const { return isUnboxedVal() ? Annotation::empty : _ann; }
+  Annotation& ann() { return isUnboxedVal() ? Annotation::empty : _ann; }
 
   /// Return hash value of \a e
   static size_t hash(const Expression* e) { return e == nullptr ? 0 : e->hash(); }
@@ -583,9 +583,9 @@ public:
   /// The identifier of this expression type
   static const ExpressionId eid = E_INTLIT;
   /// Access value
-  IntVal v(void) const { return isUnboxedInt() ? unboxedIntToIntVal() : _v; }
+  IntVal v() const { return isUnboxedInt() ? unboxedIntToIntVal() : _v; }
   /// Recompute hash value
-  void rehash(void);
+  void rehash();
   /// Allocate literal
   static IntLit* a(IntVal v);
   /// Allocate literal for enumerated type (only used internally for generators)
@@ -603,9 +603,9 @@ public:
   /// The identifier of this expression type
   static const ExpressionId eid = E_FLOATLIT;
   /// Access value
-  FloatVal v(void) const { return isUnboxedFloatVal() ? unboxedFloatToFloatVal() : _v; }
+  FloatVal v() const { return isUnboxedFloatVal() ? unboxedFloatToFloatVal() : _v; }
   /// Recompute hash value
-  void rehash(void);
+  void rehash();
   /// Allocate literal
   static FloatLit* a(FloatVal v);
 };
@@ -633,21 +633,21 @@ public:
   /// Construct set
   SetLit(const Location& loc, FloatSetVal* fsv);
   /// Access value
-  ASTExprVec<Expression> v(void) const { return _v; }
+  ASTExprVec<Expression> v() const { return _v; }
   /// Set value
   void v(const ASTExprVec<Expression>& val) { _v = val; }
   /// Access integer set value if present
-  IntSetVal* isv(void) const {
+  IntSetVal* isv() const {
     return (type().bt() == Type::BT_INT || type().bt() == Type::BT_BOOL) ? _u.isv : nullptr;
   }
   /// Set integer set value
   void isv(IntSetVal* val) { _u.isv = val; }
   /// Access float set value if present
-  FloatSetVal* fsv(void) const { return type().bt() == Type::BT_FLOAT ? _u.fsv : nullptr; }
+  FloatSetVal* fsv() const { return type().bt() == Type::BT_FLOAT ? _u.fsv : nullptr; }
   /// Set integer set value
   void fsv(FloatSetVal* val) { _u.fsv = val; }
   /// Recompute hash value
-  void rehash(void);
+  void rehash();
 };
 /// \brief Boolean literal expression
 class BoolLit : public Expression {
@@ -661,9 +661,9 @@ public:
   /// Constructor
   BoolLit(const Location& loc, bool v);
   /// Access value
-  bool v(void) const { return _v; }
+  bool v() const { return _v; }
   /// Recompute hash value
-  void rehash(void);
+  void rehash();
 };
 /// \brief String literal expression
 class StringLit : public Expression {
@@ -679,11 +679,11 @@ public:
   /// Constructor
   StringLit(const Location& loc, const ASTString& v);
   /// Access value
-  ASTString v(void) const { return _v; }
+  ASTString v() const { return _v; }
   /// Set value
   void v(const ASTString& val) { _v = val; }
   /// Recompute hash value
-  void rehash(void);
+  void rehash();
 };
 /// \brief Identifier expression
 class Id : public Expression {
@@ -708,14 +708,14 @@ public:
   /// Constructor (\a decl may be NULL)
   Id(const Location& loc, long long int idn, VarDecl* decl);
   /// Access identifier
-  ASTString v(void) const;
-  inline bool hasStr(void) const {
+  ASTString v() const;
+  inline bool hasStr() const {
     return (reinterpret_cast<ptrdiff_t>(_v_or_idn.idn) & static_cast<ptrdiff_t>(1)) == 0;
   }
   /// Set identifier
   void v(const ASTString& val) { _v_or_idn.val = val; }
   /// Access identifier number
-  long long int idn(void) const;
+  long long int idn() const;
   /// Set identifier number
   void idn(long long int n) {
     _v_or_idn.idn =
@@ -723,9 +723,9 @@ public:
     rehash();
   }
   /// Return identifier or X_INTRODUCED plus identifier number
-  ASTString str(void) const;
+  ASTString str() const;
   /// Access declaration
-  VarDecl* decl(void) const {
+  VarDecl* decl() const {
     Expression* d = _decl;
     while ((d != nullptr) && d->isa<Id>()) {
       d = d->cast<Id>()->_decl;
@@ -740,7 +740,7 @@ public:
     _decl = id;
   }
   /// Recompute hash value
-  void rehash(void);
+  void rehash();
   /// Levenshtein distance to \a other identifier
   int levenshteinDistance(Id* other) const;
 };
@@ -758,13 +758,13 @@ public:
   /// Constructor
   TIId(const Location& loc, const ASTString& v);
   /// Access identifier
-  ASTString v(void) const { return _v; }
+  ASTString v() const { return _v; }
   /// Set identifier
   void v(const ASTString& val) { _v = val; }
   /// Check whether it is an enum identifier (starting with two $ signs)
-  bool isEnum(void) const { return _v.c_str()[0] == '$'; }
+  bool isEnum() const { return _v.c_str()[0] == '$'; }
   /// Recompute hash value
-  void rehash(void);
+  void rehash();
 };
 /// \brief Anonymous variable expression
 class AnonVar : public Expression {
@@ -774,7 +774,7 @@ public:
   /// Constructor
   AnonVar(const Location& loc);
   /// Recompute hash value
-  void rehash(void);
+  void rehash();
 };
 /// \brief Array literal expression
 class ArrayLit : public Expression {
@@ -823,12 +823,12 @@ public:
   /// Constructor (one-dimensional)
   ArrayLit(const Location& loc, const std::vector<KeepAlive>& v);
   /// Recompute hash value
-  void rehash(void);
+  void rehash();
 
   // The following methods are only used for copying
 
   /// Access value
-  ASTExprVec<Expression> getVec(void) const {
+  ASTExprVec<Expression> getVec() const {
     assert(!_flag_2);
     return _u._v;
   }
@@ -838,26 +838,26 @@ public:
     _u._v = val.vec();
   }
   /// Get underlying array (if this is an array slice) or NULL
-  ArrayLit* getSliceLiteral(void) const { return _flag_2 ? _u._al : nullptr; }
+  ArrayLit* getSliceLiteral() const { return _flag_2 ? _u._al : nullptr; }
   /// Get underlying _dims vector
-  ASTIntVec dimsInternal(void) const { return _dims; }
+  ASTIntVec dimsInternal() const { return _dims; }
 
   /// Return number of dimensions
-  int dims(void) const;
+  int dims() const;
   /// Return minimum index of dimension \a i
   int min(int i) const;
   /// Return maximum index of dimension \a i
   int max(int i) const;
   /// Return the length of the array
-  int length(void) const;
+  int length() const;
   /// Turn into 1d array (only used at the end of flattening)
-  void make1d(void);
+  void make1d();
   /// Check if this array was produced by flattening
-  bool flat(void) const { return _flag_1; }
+  bool flat() const { return _flag_1; }
   /// Set whether this array was produced by flattening
   void flat(bool b) { _flag_1 = b; }
   /// Return size of underlying array
-  unsigned int size(void) const { return (_flag_2 || _u._v->flag()) ? length() : _u._v->size(); }
+  unsigned int size() const { return (_flag_2 || _u._v->flag()) ? length() : _u._v->size(); }
   /// Access element \a i
   Expression* operator[](int i) const {
     return (_flag_2 || _u._v->flag()) ? slice_get(i) : (*_u._v)[i];
@@ -887,15 +887,15 @@ public:
   /// Constructor
   ArrayAccess(const Location& loc, Expression* v, ASTExprVec<Expression> idx);
   /// Access value
-  Expression* v(void) const { return _v; }
+  Expression* v() const { return _v; }
   /// Set value
   void v(Expression* val) { _v = val; }
   /// Access index sets
-  ASTExprVec<Expression> idx(void) const { return _idx; }
+  ASTExprVec<Expression> idx() const { return _idx; }
   /// Set index sets
   void idx(const ASTExprVec<Expression>& idx) { _idx = idx; }
   /// Recompute hash value
-  void rehash(void);
+  void rehash();
 };
 /**
  * \brief Generators for comprehensions
@@ -936,7 +936,7 @@ struct Generators {
   /// %Generators
   std::vector<Generator> _g;
   /// Constructor
-  Generators(void) {}
+  Generators() {}
 };
 /// \brief An expression representing an array- or set-comprehension
 class Comprehension : public Expression {
@@ -956,12 +956,12 @@ public:
   /// Constructor
   Comprehension(const Location& loc, Expression* e, Generators& g, bool set);
   /// Recompute hash value
-  void rehash(void);
+  void rehash();
   /// Whether comprehension is a set
-  bool set(void) const;
+  bool set() const;
 
   /// Return number of generators
-  int n_generators(void) const;
+  int n_generators() const;
   /// Return "in" expression for generator \a i
   Expression* in(int i);
   /// Return "in" expression for generator \a i
@@ -977,7 +977,7 @@ public:
   /// Return where clause for generator \a i
   const Expression* where(int i) const;
   /// Return generator body
-  Expression* e(void) const { return _e; }
+  Expression* e() const { return _e; }
   /// Set generator body
   void e(Expression* e0) { _e = e0; }
   /// Re-construct (used for copying)
@@ -1000,17 +1000,17 @@ public:
   static const ExpressionId eid = E_ITE;
   /// Constructor
   ITE(const Location& loc, const std::vector<Expression*>& e_if_then, Expression* e_else);
-  int size(void) const { return static_cast<int>(_e_if_then.size() / 2); }
+  int size() const { return static_cast<int>(_e_if_then.size() / 2); }
   Expression* e_if(int i) { return _e_if_then[2 * i]; }
   Expression* e_then(int i) { return _e_if_then[2 * i + 1]; }
-  Expression* e_else(void) { return _e_else; }
+  Expression* e_else() { return _e_else; }
   const Expression* e_if(int i) const { return _e_if_then[2 * i]; }
   const Expression* e_then(int i) const { return _e_if_then[2 * i + 1]; }
-  const Expression* e_else(void) const { return _e_else; }
+  const Expression* e_else() const { return _e_else; }
   void e_then(int i, Expression* e) { _e_if_then[2 * i + 1] = e; }
   void e_else(Expression* e) { _e_else = e; }
   /// Recompute hash value
-  void rehash(void);
+  void rehash();
   /// Re-construct (used for copying)
   void init(const std::vector<Expression*>& e_if_then, Expression* e_else);
 };
@@ -1062,11 +1062,11 @@ public:
   /// Constructor
   BinOp(const Location& loc, Expression* e0, BinOpType op, Expression* e1);
   /// Access left hand side
-  Expression* lhs(void) const { return _e0; }
+  Expression* lhs() const { return _e0; }
   /// Set left hand side
   void lhs(Expression* e) { _e0 = e; }
   /// Access right hand side
-  Expression* rhs(void) const { return _e1; }
+  Expression* rhs() const { return _e1; }
   /// Set right hand side
   void rhs(Expression* e) { _e1 = e; }
   /// Access argument \a i
@@ -1075,17 +1075,17 @@ public:
     return i == 0 ? _e0 : _e1;
   }
   /// Return number of arguments
-  unsigned int n_args(void) const { return 2; }
+  unsigned int n_args() const { return 2; }
   /// Access declaration
-  FunctionI* decl(void) const { return _decl; }
+  FunctionI* decl() const { return _decl; }
   /// Set declaration
   void decl(FunctionI* f) { _decl = f; }
   /// Return string representation of the operator
-  ASTString opToString(void) const;
+  ASTString opToString() const;
   /// Recompute hash value
-  void rehash(void);
+  void rehash();
   /// Return operator type
-  BinOpType op(void) const;
+  BinOpType op() const;
   /// Morph into a call
   Call* morph(const ASTString& ident, const std::vector<Expression*>& args);
 };
@@ -1106,7 +1106,7 @@ public:
   /// Constructor
   UnOp(const Location& loc, UnOpType op, Expression* e);
   /// Access expression
-  Expression* e(void) const { return _e0; }
+  Expression* e() const { return _e0; }
   /// Set expression
   void e(Expression* e0) { _e0 = e0; }
   /// Access argument \a i
@@ -1115,16 +1115,16 @@ public:
     return _e0;
   }
   /// Return number of arguments
-  unsigned int n_args(void) const { return 1; }
+  unsigned int n_args() const { return 1; }
   /// Access declaration
-  FunctionI* decl(void) const { return _decl; }
+  FunctionI* decl() const { return _decl; }
   /// Set declaration
   void decl(FunctionI* f) { _decl = f; }
-  ASTString opToString(void) const;
+  ASTString opToString() const;
   /// Recompute hash value
-  void rehash(void);
+  void rehash();
   /// Return operator type
-  UnOpType op(void) const;
+  UnOpType op() const;
 };
 
 /// \brief A predicate or function call expression
@@ -1145,7 +1145,7 @@ protected:
     ASTExprVecO<Expression*>* _args;
   } _u;
   /// Check if _u_id contains an id or a decl
-  bool hasId(void) const;
+  bool hasId() const;
 
 public:
   /// The identifier of this expression type
@@ -1155,11 +1155,11 @@ public:
   /// Constructor
   Call(const Location& loc, const ASTString& id, const std::vector<Expression*>& args);
   /// Access identifier
-  ASTString id(void) const;
+  ASTString id() const;
   /// Set identifier (overwrites decl)
   void id(const ASTString& i);
   /// Number of arguments
-  unsigned int n_args(void) const {
+  unsigned int n_args() const {
     return _u._oneArg->isUnboxedVal() || _u._oneArg->isTagged() ? 1 : _u._args->size();
   }
   /// Access argument \a i
@@ -1192,11 +1192,11 @@ public:
     }
   }
   /// Access declaration
-  FunctionI* decl(void) const;
+  FunctionI* decl() const;
   /// Set declaration (overwrites id)
   void decl(FunctionI* f);
   /// Recompute hash value
-  void rehash(void);
+  void rehash();
 };
 /// \brief A variable declaration expression
 class VarDecl : public Expression {
@@ -1225,40 +1225,40 @@ public:
   VarDecl(const Location& loc, TypeInst* ti, Id* id, Expression* e = nullptr);
 
   /// Access TypeInst
-  TypeInst* ti(void) const { return _ti; }
+  TypeInst* ti() const { return _ti; }
   /// Set TypeInst
   void ti(TypeInst* t) { _ti = t; }
   /// Access identifier
-  Id* id(void) const { return _id; }
+  Id* id() const { return _id; }
   /// Access initialisation expression
-  Expression* e(void) const;
+  Expression* e() const;
   /// Set initialisation expression
   void e(Expression* rhs);
   /// Access flattened version
-  VarDecl* flat(void) { return _flat() != nullptr ? _flat()->cast<VarDecl>() : nullptr; }
+  VarDecl* flat() { return _flat() != nullptr ? _flat()->cast<VarDecl>() : nullptr; }
   /// Set flattened version
   void flat(VarDecl* vd);
 
   /// Recompute hash value
-  void rehash(void);
+  void rehash();
   /// Whether variable is toplevel
-  bool toplevel(void) const;
+  bool toplevel() const;
   /// Whether variable is toplevel
   void toplevel(bool t);
   /// Whether variable is introduced
-  bool introduced(void) const;
+  bool introduced() const;
   /// Whether variable is introduced
   void introduced(bool t);
   /// Whether variable has been evaluated
-  bool evaluated(void) const;
+  bool evaluated() const;
   /// Whether variable has been evaluated
   void evaluated(bool t);
   /// Access payload
-  int payload(void) const { return _payload; }
+  int payload() const { return _payload; }
   /// Set payload
   void payload(int i) { _payload = i; }
   /// Put current value on trail
-  void trail(void);
+  void trail();
 };
 
 class EnvI;
@@ -1284,19 +1284,19 @@ public:
   /// Constructor
   Let(const Location& loc, const std::vector<Expression*>& let, Expression* in);
   /// Recompute hash value
-  void rehash(void);
+  void rehash();
 
   /// Access local declarations
-  ASTExprVec<Expression> let(void) const { return _let; }
+  ASTExprVec<Expression> let() const { return _let; }
   /// Access local declarations
-  ASTExprVec<Expression> let_orig(void) const { return _let_orig; }
+  ASTExprVec<Expression> let_orig() const { return _let_orig; }
   /// Access body
-  Expression* in(void) const { return _in; }
+  Expression* in() const { return _in; }
 
   /// Remember current let bindings
-  void pushbindings(void);
+  void pushbindings();
   /// Restore previous let bindings
-  void popbindings(void);
+  void popbindings();
 };
 
 /// \brief Type-inst expression
@@ -1317,24 +1317,24 @@ public:
   TypeInst(const Location& loc, const Type& t, Expression* domain = nullptr);
 
   /// Access ranges
-  ASTExprVec<TypeInst> ranges(void) const { return _ranges; }
+  ASTExprVec<TypeInst> ranges() const { return _ranges; }
   /// Access domain
-  Expression* domain(void) const { return _domain; }
+  Expression* domain() const { return _domain; }
   //// Set domain
   void domain(Expression* d) { _domain = d; }
 
   /// Set ranges to \a ranges
   void setRanges(const std::vector<TypeInst*>& ranges);
-  bool isarray(void) const { return _ranges.size() > 0; }
-  bool hasTiVariable(void) const;
+  bool isarray() const { return _ranges.size() > 0; }
+  bool hasTiVariable() const;
   /// Recompute hash value
-  void rehash(void);
+  void rehash();
   /// Check if domain is computed from right hand side of variable
-  bool computedDomain(void) const { return _flag_1; }
+  bool computedDomain() const { return _flag_1; }
   /// Set if domain is computed from right hand side of variable
   void setComputedDomain(bool b) { _flag_1 = b; }
   /// Check if this TypeInst represents an enum
-  bool isEnum(void) const { return _flag_2; }
+  bool isEnum() const { return _flag_2; }
   /// Set if this TypeInst represents an enum
   void setIsEnum(bool b) { _flag_2 = b; }
 };
@@ -1359,9 +1359,9 @@ public:
     II_FUN,
     II_END = II_FUN
   };
-  ItemId iid(void) const { return static_cast<ItemId>(_id); }
+  ItemId iid() const { return static_cast<ItemId>(_id); }
 
-  const Location& loc(void) const { return _loc; }
+  const Location& loc() const { return _loc; }
 
 protected:
   /// Constructor
@@ -1370,29 +1370,29 @@ protected:
 public:
   /// Test if item is of type \a T
   template <class T>
-  bool isa(void) const {
+  bool isa() const {
     return _id == T::iid;
   }
   /// Cast item to type \a T*
   template <class T>
-  T* cast(void) {
+  T* cast() {
     assert(isa<T>());
     return static_cast<T*>(this);
   }
   /// Cast expression to type \a const T*
   template <class T>
-  const T* cast(void) const {
+  const T* cast() const {
     assert(isa<T>());
     return static_cast<const T*>(this);
   }
   /// Cast item to type \a T* or NULL if types do not match
   template <class T>
-  T* dyn_cast(void) {
+  T* dyn_cast() {
     return isa<T>() ? static_cast<T*>(this) : nullptr;
   }
   /// Cast item to type \a const T* or NULL if types do not match
   template <class T>
-  const T* dyn_cast(void) const {
+  const T* dyn_cast() const {
     return isa<T>() ? static_cast<const T*>(this) : NULL;
   }
 
@@ -1418,11 +1418,11 @@ public:
   }
 
   /// Check if item should be removed
-  bool removed(void) const { return _flag_1; }
+  bool removed() const { return _flag_1; }
   /// Set flag to remove item
-  void remove(void) { _flag_1 = true; }
+  void remove() { _flag_1 = true; }
   /// Unset remove item flag (only possible if not already removed by compact())
-  void unremove(void) { _flag_1 = false; }
+  void unremove() { _flag_1 = false; }
 
   /// Mark alive for garbage collection
 #if defined(MINIZINC_GC_STATS)
@@ -1430,7 +1430,7 @@ public:
 #else
   static void mark(Item* item);
 #endif
-  bool has_mark(void) { return _gc_mark != 0U; }
+  bool has_mark() { return _gc_mark != 0U; }
 };
 
 class Model;
@@ -1449,18 +1449,18 @@ public:
   /// Constructor
   IncludeI(const Location& loc, const ASTString& f);
   /// Access filename
-  ASTString f(void) const { return _f; }
+  ASTString f() const { return _f; }
   /// Set filename
   void f(const ASTString& nf) { _f = nf; }
   /// Access model
-  Model* m(void) const { return _m; }
+  Model* m() const { return _m; }
   /// Set the model
   void m(Model* m0, bool own = true) {
     assert(_m == nullptr || m0 == nullptr);
     _m = m0;
     _flag_2 = own;
   }
-  bool own(void) const { return _flag_2; }
+  bool own() const { return _flag_2; }
 };
 
 /// \brief Variable declaration item
@@ -1475,11 +1475,11 @@ public:
   /// Constructor
   VarDeclI(const Location& loc, VarDecl* e);
   /// Access expression
-  VarDecl* e(void) const { return _e; }
+  VarDecl* e() const { return _e; }
   /// Set expression
   void e(VarDecl* vd) { _e = vd; }
   /// Flag used during compilation
-  bool flag(void) const { return _flag_2; }
+  bool flag() const { return _flag_2; }
   /// Set flag used during compilation
   void flag(bool b) { _flag_2 = b; }
 };
@@ -1502,13 +1502,13 @@ public:
   /// Constructor
   AssignI(const Location& loc, const ASTString& id, Expression* e);
   /// Access identifier
-  ASTString id(void) const { return _id; }
+  ASTString id() const { return _id; }
   /// Access expression
-  Expression* e(void) const { return _e; }
+  Expression* e() const { return _e; }
   /// Set expression
   void e(Expression* e0) { _e = e0; }
   /// Access declaration
-  VarDecl* decl(void) const { return _decl; }
+  VarDecl* decl() const { return _decl; }
   /// Set declaration
   void decl(VarDecl* d) { _decl = d; }
 };
@@ -1525,11 +1525,11 @@ public:
   /// Constructor
   ConstraintI(const Location& loc, Expression* e);
   /// Access expression
-  Expression* e(void) const { return _e; }
+  Expression* e() const { return _e; }
   /// Set expression
   void e(Expression* e0) { _e = e0; }
   /// Flag used during compilation
-  bool flag(void) const { return _flag_2; }
+  bool flag() const { return _flag_2; }
   /// Set flag used during compilation
   void flag(bool b) { _flag_2 = b; }
 };
@@ -1556,15 +1556,15 @@ public:
   /// Allocate solve maximize item
   static SolveI* max(const Location& loc, Expression* e);
   /// Access solve annotation
-  const Annotation& ann(void) const { return _ann; }
+  const Annotation& ann() const { return _ann; }
   /// Access solve annotation
-  Annotation& ann(void) { return _ann; }
+  Annotation& ann() { return _ann; }
   /// Access expression for optimisation
-  Expression* e(void) const { return _e; }
+  Expression* e() const { return _e; }
   /// Set expression for optimisation
   void e(Expression* e0) { _e = e0; }
   /// Return type of solving
-  SolveType st(void) const;
+  SolveType st() const;
   /// Set type of solving
   void st(SolveType s);
 };
@@ -1581,7 +1581,7 @@ public:
   /// Constructor
   OutputI(const Location& loc, Expression* e);
   /// Access expression
-  Expression* e(void) const { return _e; }
+  Expression* e() const { return _e; }
   /// Update expression
   void e(Expression* e) { _e = e; }
 };
@@ -1639,17 +1639,17 @@ public:
             const ASTExprVec<VarDecl>& params, Expression* e = nullptr, bool from_stdlib = false);
 
   /// Access identifier
-  ASTString id(void) const { return _id; }
+  ASTString id() const { return _id; }
   /// Access TypeInst
-  TypeInst* ti(void) const { return _ti; }
+  TypeInst* ti() const { return _ti; }
   /// Access parameters
-  ASTExprVec<VarDecl> params(void) const { return _params; }
+  ASTExprVec<VarDecl> params() const { return _params; }
   /// Access annotation
-  const Annotation& ann(void) const { return _ann; }
+  const Annotation& ann() const { return _ann; }
   /// Access annotation
-  Annotation& ann(void) { return _ann; }
+  Annotation& ann() { return _ann; }
   /// Access body
-  Expression* e(void) const { return _e; }
+  Expression* e() const { return _e; }
   /// Set body
   void e(Expression* b) { _e = b; }
 
@@ -1664,7 +1664,7 @@ public:
   Type argtype(EnvI& env, const std::vector<Expression*>& ta, int n);
 
   /// Return whether function is defined in the standard library
-  bool from_stdlib(void) const { return _from_stdlib; };
+  bool from_stdlib() const { return _from_stdlib; };
 };
 
 /**
@@ -1981,7 +1981,7 @@ public:
   /// Keep track of allocated float literals
   std::unordered_map<FloatVal, WeakRef> floatMap;
   /// Constructor
-  Constants(void);
+  Constants();
   /// Return shared BoolLit
   BoolLit* boollit(bool b) { return b ? lit_true : lit_false; }
   static const int max_array_size = std::numeric_limits<int>::max() / 2;
@@ -1990,7 +1990,7 @@ public:
 };
 
 /// Return static instance
-Constants& constants(void);
+Constants& constants();
 
 }  // namespace MiniZinc
 

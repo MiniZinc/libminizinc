@@ -1959,13 +1959,13 @@ bool PrettyPrinter::simplify(int item, int line, std::vector<int>* vec) {
 
 Printer::Printer(std::ostream& os, int width, bool flatZinc, EnvI* env0)
     : env(env0), ism(nullptr), printer(nullptr), _os(os), _width(width), _flatZinc(flatZinc) {}
-void Printer::init(void) {
+void Printer::init() {
   if (ism == nullptr) {
     ism = new ItemDocumentMapper();
     printer = new PrettyPrinter(_width, 4, true, true);
   }
 }
-Printer::~Printer(void) {
+Printer::~Printer() {
   delete printer;
   delete ism;
 }

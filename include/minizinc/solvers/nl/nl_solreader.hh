@@ -110,6 +110,6 @@ public:
   void parse_sol(const string& filename);
 
   bool feedRawDataChunk(const char* data);
-  std::ostream& getLog(void);
+  std::ostream& getLog();
 };
 }  // namespace MiniZinc

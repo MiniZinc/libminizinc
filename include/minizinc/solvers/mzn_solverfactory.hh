@@ -14,6 +14,6 @@
 namespace MiniZinc {
 class MZN_SolverFactoryInitialiser {
 public:
-  MZN_SolverFactoryInitialiser(void);
+  MZN_SolverFactoryInitialiser();
 };
 }  // namespace MiniZinc

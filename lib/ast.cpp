@@ -77,13 +77,13 @@ Type Type::unboxedfloat = Type::parfloat();
 
 Annotation Annotation::empty;
 
-std::string Location::toString(void) const {
+std::string Location::toString() const {
   std::ostringstream oss;
   oss << filename() << ":" << first_line() << "." << first_column();
   return oss.str();
 }
 
-void Location::mark(void) const {
+void Location::mark() const {
   if (lv() != nullptr) {
     lv()->mark();
   }
@@ -235,19 +235,19 @@ void Expression::mark(Expression* e) {
 #undef pushstack
 #undef pushall
 
-void IntLit::rehash(void) {
+void IntLit::rehash() {
   init_hash();
   std::hash<IntVal> h;
   cmb_hash(h(_v));
 }
 
-void FloatLit::rehash(void) {
+void FloatLit::rehash() {
   init_hash();
   std::hash<FloatVal> h;
   cmb_hash(h(_v));
 }
 
-void SetLit::rehash(void) {
+void SetLit::rehash() {
   init_hash();
   if (isv() != nullptr) {
     std::hash<IntVal> h;
@@ -268,18 +268,18 @@ void SetLit::rehash(void) {
   }
 }
 
-void BoolLit::rehash(void) {
+void BoolLit::rehash() {
   init_hash();
   std::hash<bool> h;
   cmb_hash(h(_v));
 }
 
-void StringLit::rehash(void) {
+void StringLit::rehash() {
   init_hash();
   cmb_hash(_v.hash());
 }
 
-void Id::rehash(void) {
+void Id::rehash() {
   init_hash();
   std::hash<long long int> h;
   if (idn() == -1) {
@@ -306,14 +306,14 @@ ASTString Id::str() const {
   return oss.str();
 }
 
-void TIId::rehash(void) {
+void TIId::rehash() {
   init_hash();
   cmb_hash(_v.hash());
 }
 
-void AnonVar::rehash(void) { init_hash(); }
+void AnonVar::rehash() { init_hash(); }
 
-int ArrayLit::dims(void) const {
+int ArrayLit::dims() const {
   return _flag_2 ? ((_dims.size() - 2 * _u._al->dims()) / 2)
                  : (_dims.size() == 0 ? 1 : _dims.size() / 2);
 }
@@ -331,7 +331,7 @@ int ArrayLit::max(int i) const {
   }
   return _dims[2 * i + 1];
 }
-int ArrayLit::length(void) const {
+int ArrayLit::length() const {
   if (dims() == 0) {
     return 0;
   }
@@ -341,7 +341,7 @@ int ArrayLit::length(void) const {
   }
   return l;
 }
-void ArrayLit::make1d(void) {
+void ArrayLit::make1d() {
   if (_dims.size() != 0) {
     GCLock lock;
     if (_flag_2) {
@@ -465,7 +465,7 @@ ArrayLit::ArrayLit(const Location& loc, const std::vector<Expression*>& v,
   rehash();
 }
 
-void ArrayLit::rehash(void) {
+void ArrayLit::rehash() {
   init_hash();
   std::hash<int> h;
   for (int _dim : _dims) {
@@ -481,7 +481,7 @@ void ArrayLit::rehash(void) {
   }
 }
 
-void ArrayAccess::rehash(void) {
+void ArrayAccess::rehash() {
   init_hash();
   cmb_hash(Expression::hash(_v));
   std::hash<unsigned int> h;
@@ -545,8 +545,8 @@ Generator::Generator(int pos, Expression* where) {
   _where = where;
 }
 
-bool Comprehension::set(void) const { return _flag_1; }
-void Comprehension::rehash(void) {
+bool Comprehension::set() const { return _flag_1; }
+void Comprehension::rehash() {
   init_hash();
   std::hash<unsigned int> h;
   cmb_hash(h(static_cast<unsigned int>(set())));
@@ -561,7 +561,7 @@ void Comprehension::rehash(void) {
   }
 }
 
-int Comprehension::n_generators(void) const { return _g_idx.size() - 1; }
+int Comprehension::n_generators() const { return _g_idx.size() - 1; }
 Expression* Comprehension::in(int i) { return _g[_g_idx[i]]; }
 const Expression* Comprehension::in(int i) const { return _g[_g_idx[i]]; }
 const Expression* Comprehension::where(int i) const { return _g[_g_idx[i] + 1]; }
@@ -592,13 +592,13 @@ bool Comprehension::containsBoundVariable(Expression* e) {
         _found = true;
       }
     }
-    bool found(void) const { return _found; }
+    bool found() const { return _found; }
   } _fv(decls);
   topDown(_fv, e);
   return _fv.found();
 }
 
-void ITE::rehash(void) {
+void ITE::rehash() {
   init_hash();
   std::hash<unsigned int> h;
   cmb_hash(h(_e_if_then.size()));
@@ -608,8 +608,8 @@ void ITE::rehash(void) {
   cmb_hash(Expression::hash(e_else()));
 }
 
-BinOpType BinOp::op(void) const { return static_cast<BinOpType>(_sec_id); }
-void BinOp::rehash(void) {
+BinOpType BinOp::op() const { return static_cast<BinOpType>(_sec_id); }
+void BinOp::rehash() {
   init_hash();
   std::hash<int> h;
   cmb_hash(h(static_cast<int>(op())));
@@ -660,7 +660,7 @@ public:
   Id* sBOT_DOTDOT;
   Id* sBOT_NOT;
 
-  OpToString(void) {
+  OpToString() {
     GCLock lock;
 
     sBOT_PLUS = new Id(Location(), "'+'", nullptr);
@@ -694,7 +694,7 @@ public:
     sBOT_NOT = new Id(Location(), "'not'", nullptr);
   }
 
-  static OpToString& o(void) {
+  static OpToString& o() {
     static OpToString _o;
     return _o;
   }
@@ -733,7 +733,7 @@ public:
 };
 }  // namespace
 
-ASTString BinOp::opToString(void) const {
+ASTString BinOp::opToString() const {
   switch (op()) {
     case BOT_PLUS:
       return OpToString::o().sBOT_PLUS->v();
@@ -797,15 +797,15 @@ ASTString BinOp::opToString(void) const {
   }
 }
 
-UnOpType UnOp::op(void) const { return static_cast<UnOpType>(_sec_id); }
-void UnOp::rehash(void) {
+UnOpType UnOp::op() const { return static_cast<UnOpType>(_sec_id); }
+void UnOp::rehash() {
   init_hash();
   std::hash<int> h;
   cmb_hash(h(static_cast<int>(_sec_id)));
   cmb_hash(Expression::hash(_e0));
 }
 
-ASTString UnOp::opToString(void) const {
+ASTString UnOp::opToString() const {
   switch (op()) {
     case UOT_PLUS:
       return OpToString::o().sBOT_PLUS->v();
@@ -819,7 +819,7 @@ ASTString UnOp::opToString(void) const {
   }
 }
 
-void Call::rehash(void) {
+void Call::rehash() {
   init_hash();
   cmb_hash(id().hash());
   std::hash<FunctionI*> hf;
@@ -831,21 +831,21 @@ void Call::rehash(void) {
   }
 }
 
-void VarDecl::trail(void) {
+void VarDecl::trail() {
   GC::trail(&_e, e());
   if (_ti->ranges().size() > 0) {
     GC::trail(reinterpret_cast<Expression**>(&_ti), _ti);
   }
 }
 
-void VarDecl::rehash(void) {
+void VarDecl::rehash() {
   init_hash();
   cmb_hash(Expression::hash(_ti));
   cmb_hash(_id->hash());
   cmb_hash(Expression::hash(_e));
 }
 
-void Let::rehash(void) {
+void Let::rehash() {
   init_hash();
   cmb_hash(Expression::hash(_in));
   std::hash<unsigned int> h;
@@ -872,7 +872,7 @@ Let::Let(const Location& loc, const std::vector<Expression*>& let, Expression* i
   rehash();
 }
 
-void Let::pushbindings(void) {
+void Let::pushbindings() {
   GC::mark();
   for (unsigned int i = 0, j = 0; i < _let.size(); i++) {
     if (auto* vd = _let[i]->dyn_cast<VarDecl>()) {
@@ -884,7 +884,7 @@ void Let::pushbindings(void) {
     }
   }
 }
-void Let::popbindings(void) {
+void Let::popbindings() {
   for (auto& i : _let) {
     if (auto* vd = i->dyn_cast<VarDecl>()) {
       GC::untrail();
@@ -893,7 +893,7 @@ void Let::popbindings(void) {
   }
 }
 
-void TypeInst::rehash(void) {
+void TypeInst::rehash() {
   init_hash();
   std::hash<unsigned int> h;
   unsigned int rsize = _ranges.size();
@@ -917,7 +917,7 @@ void TypeInst::setRanges(const std::vector<TypeInst*>& ranges) {
   rehash();
 }
 
-bool TypeInst::hasTiVariable(void) const {
+bool TypeInst::hasTiVariable() const {
   if ((domain() != nullptr) && domain()->isa<TIId>()) {
     return true;
   }
@@ -1480,7 +1480,7 @@ bool Expression::equal_internal(const Expression* e0, const Expression* e1) {
   }
 }
 
-Constants::Constants(void) {
+Constants::Constants() {
   GCLock lock;
   auto* ti = new TypeInst(Location(), Type::parbool());
   lit_true = new BoolLit(Location(), true);
@@ -1951,22 +1951,22 @@ void Constants::mark(MINIZINC_GC_STAT_ARGS) {
 
 const int Constants::max_array_size;
 
-Constants& constants(void) {
+Constants& constants() {
   static Constants _c;
   return _c;
 }
 
-Annotation::~Annotation(void) { delete _s; }
+Annotation::~Annotation() { delete _s; }
 
 bool Annotation::contains(Expression* e) const { return (_s != nullptr) && _s->contains(e); }
 
-bool Annotation::isEmpty(void) const { return _s == nullptr || _s->isEmpty(); }
+bool Annotation::isEmpty() const { return _s == nullptr || _s->isEmpty(); }
 
-ExpressionSetIter Annotation::begin(void) const {
+ExpressionSetIter Annotation::begin() const {
   return _s == nullptr ? ExpressionSetIter(true) : _s->begin();
 }
 
-ExpressionSetIter Annotation::end(void) const {
+ExpressionSetIter Annotation::end() const {
   return _s == nullptr ? ExpressionSetIter(true) : _s->end();
 }
 
@@ -2041,7 +2041,7 @@ bool Annotation::containsCall(const MiniZinc::ASTString& id) const {
   return false;
 }
 
-void Annotation::clear(void) {
+void Annotation::clear() {
   if (_s != nullptr) {
     _s->clear();
   }

@@ -82,7 +82,7 @@ void dll_close(void* dll) {
 
 #endif
 
-const vector<string>& CPLEXDLLs(void) {
+const vector<string>& CPLEXDLLs() {
   static const vector<string> sCPLEXDLLs = {"cplex12100", "cplex1290", "cplex1280", "cplex1270"};
   return sCPLEXDLLs;
 }
@@ -250,7 +250,7 @@ string MIP_cplex_wrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt)
   return v;
 }
 
-vector<string> MIP_cplex_wrapper::getRequiredFlags(void) {
+vector<string> MIP_cplex_wrapper::getRequiredFlags() {
   int status;
   Options options;
   try {

@@ -16,7 +16,7 @@ namespace MiniZinc {
 CallArgItem::CallArgItem(EnvI& env0) : env(env0) {
   env.idStack.push_back(static_cast<int>(env.callStack.size()));
 }
-CallArgItem::~CallArgItem(void) { env.idStack.pop_back(); }
+CallArgItem::~CallArgItem() { env.idStack.pop_back(); }
 
 Expression* createDummyValue(EnvI& env, const Type& t) {
   if (t.dim() > 0) {

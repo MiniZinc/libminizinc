@@ -406,7 +406,7 @@ Env* Flattener::multiPassFlatten(const vector<unique_ptr<Pass> >& passes) {
 class FlattenTimeout {
 public:
   FlattenTimeout(unsigned long long int t) { GC::setTimeout(t); }
-  ~FlattenTimeout(void) { GC::setTimeout(0); }
+  ~FlattenTimeout() { GC::setTimeout(0); }
 };
 
 void Flattener::flatten(const std::string& modelString, const std::string& modelName) {

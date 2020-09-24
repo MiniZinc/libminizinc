@@ -126,7 +126,7 @@ public:
       : _fzncmd(fzncmd), pS2Out(pso), timelimit(tl), sigint(si) {
     assert(nullptr != pS2Out);
   }
-  int run(void) {
+  int run() {
 #ifdef _WIN32
     SetConsoleCtrlHandler(handleInterrupt, TRUE);
 

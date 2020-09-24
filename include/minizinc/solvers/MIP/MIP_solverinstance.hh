@@ -100,21 +100,21 @@ public:
   }
   virtual MIP_wrapper* getMIPWrapper() const { return mip_wrap.get(); }
 
-  virtual Status next(void) {
+  virtual Status next() {
     assert(0);
     return SolverInstance::UNKNOWN;
   }
-  virtual void processFlatZinc(void);
+  virtual void processFlatZinc();
   virtual void processWarmstartAnnotations(const Annotation& ann);
   virtual void processSearchAnnotations(const Annotation& ann);
   virtual void processMultipleObjectives(const Annotation& ann);
-  virtual Status solve(void);
-  virtual void resetSolver(void) {}
+  virtual Status solve();
+  virtual void resetSolver() {}
 
   virtual void genCuts(const MIP_wrapper::Output&, MIP_wrapper::CutInput&, bool fMIPSol);
 
   //       void assignSolutionToOutput();   // needs to be public for the callback?
-  virtual void printStatistics(void);
+  virtual void printStatistics();
   virtual void printStatisticsLine(bool fLegend = false);
 
 public:
@@ -127,14 +127,14 @@ public:
 
   Expression* getSolutionValue(Id* id);
 
-  void registerConstraints(void);
+  void registerConstraints();
 };  // MIP_solverinstance
 
 template <class MIPWrapper>
 class MIP_SolverFactory : public SolverFactory {
 public:
-  MIP_SolverFactory(void);
-  SolverInstanceBase::Options* createOptions(void) { return new typename MIPWrapper::Options; }
+  MIP_SolverFactory();
+  SolverInstanceBase::Options* createOptions() { return new typename MIPWrapper::Options; }
   SolverInstanceBase* doCreateSI(Env& env, std::ostream& log, SolverInstanceBase::Options* opt) {
     return new MIP_solverinstance<MIPWrapper>(env, log,
                                               static_cast<typename MIPWrapper::Options*>(opt));
