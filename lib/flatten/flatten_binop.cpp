@@ -460,9 +460,9 @@ Expression* get_linexp(Expression* e) {
 }
 
 template <class Lit>
-void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE& ret, Expression* le0,
-                          Expression* le1, BinOpType& bot, bool doubleNeg, std::vector<EE>& ees,
-                          std::vector<KeepAlive>& args, ASTString& callid) {
+void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE& ret,
+                          Expression* le0, Expression* le1, BinOpType& bot, bool doubleNeg,
+                          std::vector<EE>& ees, std::vector<KeepAlive>& args, ASTString& callid) {
   typedef typename LinearTraits<Lit>::Val Val;
   std::vector<Val> coeffv;
   std::vector<KeepAlive> alv;

@@ -13,7 +13,8 @@
 
 namespace MiniZinc {
 
-EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b, bool doNotFollowChains) {
+EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
+              bool doNotFollowChains) {
   CallStackItem _csi(env, e);
   EE ret;
   Id* id = e->cast<Id>();

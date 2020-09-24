@@ -640,7 +640,8 @@ void NLFile::nlcons_le(const Call& c, const NLToken& x, const NLToken& y) {
  *  Warnings:   - Creates a logical constraint
  *              - Only use for conmparisons that cannot be expressed with '=' xor '<='.
  */
-void NLFile::nlcons_predicate(const Call& c, NLToken::OpCode oc, const NLToken& x, const NLToken& y) {
+void NLFile::nlcons_predicate(const Call& c, NLToken::OpCode oc, const NLToken& x,
+                              const NLToken& y) {
   // Create the Logical Constraint and set the data
   NLLogicalCons cons(logical_constraints.size());
 
@@ -658,8 +659,8 @@ void NLFile::nlcons_predicate(const Call& c, NLToken::OpCode oc, const NLToken& 
 }
 
 /** Create a non linear constraint with a binary operator: x OPERATOR y = z */
-void NLFile::nlcons_operator_binary(const Call& c, NLToken::OpCode oc, const NLToken& x, const NLToken& y,
-                                    const NLToken& z) {
+void NLFile::nlcons_operator_binary(const Call& c, NLToken::OpCode oc, const NLToken& x,
+                                    const NLToken& y, const NLToken& z) {
   // Create the Algebraic Constraint and set the data
   NLAlgCons cons;
 
@@ -714,8 +715,8 @@ void NLFile::nlcons_operator_binary(const Call& c, NLToken::OpCode oc, const NLT
 /** Create a non linear constraint with a binary operator: x OPERATOR y = z.
  *  OPERATOR is now a Multiop, with a count of 2 (so the choice of the method to use depends on the
  * LN implementation) */
-void NLFile::nlcons_operator_binary(const Call& c, NLToken::MOpCode moc, const NLToken& x, const NLToken& y,
-                                    const NLToken& z) {
+void NLFile::nlcons_operator_binary(const Call& c, NLToken::MOpCode moc, const NLToken& x,
+                                    const NLToken& y, const NLToken& z) {
   // Create the Algebraic Constraint and set the data
   NLAlgCons cons;
 
@@ -768,7 +769,8 @@ void NLFile::nlcons_operator_binary(const Call& c, NLToken::MOpCode moc, const N
 }
 
 /** Create a non linear constraint with an unary operator: OPERATOR x = y */
-void NLFile::nlcons_operator_unary(const Call& c, NLToken::OpCode oc, const NLToken& x, const NLToken& y) {
+void NLFile::nlcons_operator_unary(const Call& c, NLToken::OpCode oc, const NLToken& x,
+                                   const NLToken& y) {
   // Create the Algebraic Constraint and set the data
   NLAlgCons cons;
 

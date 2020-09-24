@@ -15,9 +15,10 @@
 #include <minizinc/solvers/gecode/fzn_space.hh>
 #include <minizinc/solvers/gecode/gecode_constraints.hh>
 #include <minizinc/solvers/gecode_solverinstance.hh>
-#include <utility>
 
 #include "aux_brancher.hh"
+
+#include <utility>
 
 using namespace std;
 using namespace Gecode;

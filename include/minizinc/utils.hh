@@ -68,7 +68,9 @@ namespace MiniZinc {
     }                                           \
   } while (0)
 
-inline bool beginswith(const std::string& s, const std::string& t) { return s.compare(0, t.length(), t) == 0; }
+inline bool beginswith(const std::string& s, const std::string& t) {
+  return s.compare(0, t.length(), t) == 0;
+}
 
 inline void checkIOStatus(bool fOk, const std::string& msg, bool fHard = true) {
   if (!fOk) {

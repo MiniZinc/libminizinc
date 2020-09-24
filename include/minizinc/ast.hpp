@@ -408,7 +408,8 @@ inline ArrayAccess::ArrayAccess(const Location& loc, Expression* v,
   rehash();
 }
 
-inline ArrayAccess::ArrayAccess(const Location& loc, Expression* v, const ASTExprVec<Expression>& idx)
+inline ArrayAccess::ArrayAccess(const Location& loc, Expression* v,
+                                const ASTExprVec<Expression>& idx)
     : Expression(loc, E_ARRAYACCESS, Type()) {
   _v = v;
   _idx = idx;

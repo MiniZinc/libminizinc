@@ -1,5 +1,6 @@
 #include <minizinc/solvers/nl/nl_components.hh>
 #include <minizinc/solvers/nl/nl_file.hh>
+
 #include <utility>
 
 namespace MiniZinc {

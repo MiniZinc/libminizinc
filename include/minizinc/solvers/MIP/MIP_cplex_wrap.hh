@@ -93,7 +93,8 @@ public:
   virtual void setVarUB(int iVar, double ub);
   /// Indicator constraint: x[iBVar]==bVal -> lin constr
   virtual void addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind, double* rmatval,
-                                      LinConType sense, double rhs, const std::string& rowName = "");
+                                      LinConType sense, double rhs,
+                                      const std::string& rowName = "");
   virtual bool addWarmStart(const std::vector<VarId>& vars, const std::vector<double>& vals);
   /// adding an implication
   //     virtual void addImpl() = 0;

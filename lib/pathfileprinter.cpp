@@ -21,7 +21,8 @@ using std::vector;
 
 PathFilePrinter::PathFilePrinter(std::ostream& o, EnvI&) : os(o), constraint_index(0) {}
 
-void PathFilePrinter::addBetterName(Id* id, const string& name, const string& path, bool overwrite = false) {
+void PathFilePrinter::addBetterName(Id* id, const string& name, const string& path,
+                                    bool overwrite = false) {
   string oname;
   string opath;
 

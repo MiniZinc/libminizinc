@@ -170,7 +170,8 @@ public:
 
 private:
   /// adding a variable just internally (in Phase 1 only that). Not to be used directly.
-  virtual VarId addVarLocal(double obj, double lb, double ub, VarType vt, const std::string& name = "") {
+  virtual VarId addVarLocal(double obj, double lb, double ub, VarType vt,
+                            const std::string& name = "") {
     //       cerr << "  addVarLocal: colObj.size() == " << colObj.size()
     //         << " obj == " <<obj
     //         << " lb == " << lb
@@ -260,7 +261,8 @@ public:
                       int mask = MaskConsType_Normal, const std::string& rowName = "") = 0;
   /// Indicator constraint: x[iBVar]==bVal -> lin constr
   virtual void addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind, double* rmatval,
-                                      LinConType sense, double rhs, const std::string& rowName = "") {
+                                      LinConType sense, double rhs,
+                                      const std::string& rowName = "") {
     throw std::runtime_error("Indicator constraints not supported. ");
   }
   virtual void addMinimum(int iResultVar, int nnz, int* ind, const std::string& rowName = "") {

@@ -190,7 +190,8 @@ public:
   virtual void setVarUB(int iVar, double ub);
   /// Indicator constraint: x[iBVar]==bVal -> lin constr
   virtual void addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind, double* rmatval,
-                                      LinConType sense, double rhs, const std::string& rowName = "");
+                                      LinConType sense, double rhs,
+                                      const std::string& rowName = "");
   virtual void addMinimum(int iResultVar, int nnz, int* ind, const std::string& rowName = "");
 
   /// Times constraint: var[x]*var[y] == var[z]

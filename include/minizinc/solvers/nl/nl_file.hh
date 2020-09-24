@@ -195,12 +195,14 @@ public:
   void nlcons_predicate(const Call& c, NLToken::OpCode oc, const NLToken& x, const NLToken& y);
 
   /** Create a non linear constraint with a binary operator: x OPERATOR y = z */
-  void nlcons_operator_binary(const Call& c, NLToken::OpCode oc, const NLToken& x, const NLToken& y, const NLToken& z);
+  void nlcons_operator_binary(const Call& c, NLToken::OpCode oc, const NLToken& x, const NLToken& y,
+                              const NLToken& z);
 
   /** Create a non linear constraint with a binary operator: x OPERATOR y = z.
    *  OPERATOR is now a Multiop, with a count of 2 (so the choice of the method to use depends on
    * the LN implementation) */
-  void nlcons_operator_binary(const Call& c, NLToken::MOpCode moc, const NLToken& x, const NLToken& y, const NLToken& z);
+  void nlcons_operator_binary(const Call& c, NLToken::MOpCode moc, const NLToken& x,
+                              const NLToken& y, const NLToken& z);
 
   /** Create a non linear constraint with an unary operator: OPERATOR x = y */
   void nlcons_operator_unary(const Call& c, NLToken::OpCode oc, const NLToken& x, const NLToken& y);

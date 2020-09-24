@@ -24,7 +24,8 @@ TypeInst* eval_typeinst(EnvI& env, const Ctx& ctx, VarDecl* vd);
 KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e);
 KeepAlive conj(EnvI& env, VarDecl* b, const Ctx& ctx, const std::vector<EE>& e);
 
-VarDecl* newVarDecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDecl* origVd, Expression* rhs);
+VarDecl* newVarDecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDecl* origVd,
+                    Expression* rhs);
 
 KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e);
 

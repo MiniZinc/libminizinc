@@ -191,7 +191,8 @@ public:
 
 void setComputedDomain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_computed);
 EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
-EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b, bool doNotFollowChains);
+EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
+              bool doNotFollowChains);
 
 class CmpExpIdx {
 public:

@@ -222,7 +222,8 @@ public:
   //     virtual void addImpl() = 0;
   /// Indicator constraint: x[iBVar]==bVal -> lin constr
   virtual void addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind, double* rmatval,
-                                      LinConType sense, double rhs, const std::string& rowName = "");
+                                      LinConType sense, double rhs,
+                                      const std::string& rowName = "");
   /// Bounds disj for SCIP
   virtual void addBoundsDisj(int n, double* fUB, double* bnd, int* vars, int nF, double* fUBF,
                              double* bndF, int* varsF, const std::string& rowName = "");
