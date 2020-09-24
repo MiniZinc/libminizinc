@@ -25,10 +25,10 @@
 #include <string>
 
 #ifdef HAS_PIDPATH
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <libproc.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 #elif defined(HAS_GETMODULEFILENAME) || defined(HAS_GETFILEATTRIBUTES)
 #define NOMINMAX  // Ensure the words min/max remain available

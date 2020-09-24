@@ -27,9 +27,9 @@ const auto SolverInstance__ERROR = MiniZinc::SolverInstance::ERROR;  // before w
 #include <unistd.h>
 #endif
 #include <condition_variable>
+#include <csignal>
 #include <deque>
 #include <mutex>
-#include <signal.h>
 #include <string>
 #include <sys/types.h>
 #include <thread>
