@@ -54,7 +54,8 @@ FindMUS's enumeration algorithm HierMUS.
 
   ``fzn`` --structure normal --depth fzn --shrink-alg map_qx
 
-``--no-leftover`` Do not print leftover candidate on timeout
+``--no-leftover``
+  Do not print leftover candidate on timeout
   If FindMUS is exploring an unsatisfiable subset when it runs out of time,
   it behaves as if the set could not be reduced to a smaller set and prints
   it as an MUS. The ``--no-leftover`` setting disables this behaviour as
@@ -74,8 +75,8 @@ FindMUS's enumeration algorithm HierMUS.
 
   ``brief`` Same as the default output mode but without outputting the traces (paths)
 
-  ``human`` Tries to format the MUS in a more readable form grouping constraints by
-      their constraint names
+  ``human``
+  Tries to format the MUS in a more readable form grouping constraints by their constraint names
 
 
 **Compiler Options**
@@ -141,7 +142,8 @@ in later versions of the tool.
 ``--solver-timelimit &lt;ms&gt``
   Set hard time limit for solver in milliseconds. (Default: 1100)
 
-``--adapt-timelimit`` Automatically tighten solver timelimit based on
+``--adapt-timelimit``
+  Automatically tighten solver timelimit based on
   performance during initial sanity check (prove background is SAT,
   background + entire foreground is UNSAT)
 
