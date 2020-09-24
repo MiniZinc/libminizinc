@@ -466,7 +466,7 @@ void SolverConfigs::addConfig(const MiniZinc::SolverConfig& sc) {
   std::string name = sc.name();
   name = stringToLower(name);
   sc_tags.push_back(name);
-  for (auto t : sc_tags) {
+  for (const auto& t : sc_tags) {
     auto it = _tags.find(t);
     if (it == _tags.end()) {
       _tags.insert(std::make_pair(t, std::vector<int>({newIdx})));
@@ -484,7 +484,7 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
 #else
   const char* PATHSEP = ":";
 #endif
-  for (auto sc : builtinSolverConfigs().builtinSolvers) {
+  for (const auto& sc : builtinSolverConfigs().builtinSolvers) {
     addConfig(sc.second);
   }
   std::string mzn_solver_path = getEnv("MZN_SOLVER_PATH");
@@ -527,7 +527,7 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
             if (auto* ai = i->dyn_cast<AssignI>()) {
               if (ai->id() == "mzn_solver_path") {
                 std::vector<std::string> sp = getStringList(ai);
-                for (auto s : sp) {
+                for (const auto& s : sp) {
                   _solver_path.push_back(s);
                 }
               } else if (ai->id() == "mzn_lib_dir") {
@@ -647,7 +647,7 @@ vector<string> SolverConfigs::solvers() const {
     if (!def_id.empty() && sc.id() == def_id) {
       oss << ", default solver";
     }
-    for (std::string t : sc.tags()) {
+    for (const std::string& t : sc.tags()) {
       oss << ", " << t;
     }
     oss << ")";

@@ -64,7 +64,7 @@ std::string progpath() {
     return "";
   } else {
     std::string p(path);
-    size_t slash = p.find_last_of("/");
+    size_t slash = p.find_last_of('/');
     if (slash != std::string::npos) {
       p = p.substr(0, slash);
     }
@@ -231,7 +231,7 @@ std::string find_executable(const std::string& filename) {
   std::string pathItem;
   std::stringstream pathStream(path);
   while (std::getline(pathStream, pathItem, pathsep)) {
-    std::string fileWithPath = pathItem + "/" + filename;
+    std::string fileWithPath = pathItem.append("/").append(filename);
     if (file_exists(fileWithPath)) {
       return fileWithPath;
     }
@@ -266,7 +266,8 @@ std::vector<std::string> directory_list(const std::string& dir, const std::strin
     while ((dp = readdir(dirp)) != nullptr) {
       std::string fileName(dp->d_name);
       struct stat info;
-      if (stat((dir + "/" + fileName).c_str(), &info) == 0 && ((info.st_mode & S_IFREG) != 0)) {
+      if (stat(((dir + "/").append(fileName)).c_str(), &info) == 0 &&
+          ((info.st_mode & S_IFREG) != 0)) {
         if (ext == "*") {
           entries.push_back(fileName);
         } else {

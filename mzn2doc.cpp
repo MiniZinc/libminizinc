@@ -249,7 +249,7 @@ int main(int argc, char** argv) {
         }
         std::string basename = output_base;
         std::string basedir;
-        size_t lastSlash = output_base.find_last_of("/");
+        size_t lastSlash = output_base.find_last_of('/');
         if (lastSlash != std::string::npos) {
           basedir = basename.substr(0, lastSlash) + "/";
           basename = basename.substr(lastSlash + 1, std::string::npos);

@@ -750,7 +750,7 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0,
   using namespace std::chrono;
   steady_clock::time_point startTime = steady_clock::now();
   std::vector<std::string> args = {exeName};
-  for (auto a : args0) {
+  for (const auto& a : args0) {
     args.push_back(a);
   }
   switch (processOptions(args)) {

@@ -243,7 +243,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
     }
   }
 
-  for (auto f : datafiles) {
+  for (const auto& f : datafiles) {
     GCLock lock;
     if (f.size() >= 6 && f.substr(f.size() - 5, string::npos) == ".json") {
       JSONParser jp(env.envi());

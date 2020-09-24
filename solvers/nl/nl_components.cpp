@@ -440,7 +440,7 @@ ostream& NLAlgCons::print_on(ostream& os, const NLFile& nl_file) const {
   if (expression_graph.empty()) {
     os << "n0   # No non linear part coded as the value '0'" << endl;
   } else {
-    for (auto t : expression_graph) {
+    for (const auto& t : expression_graph) {
       t.print_on(os, nl_file);
       os << endl;
     }
@@ -463,7 +463,7 @@ ostream& NLAlgCons::print_on(ostream& os, const NLFile& nl_file) const {
 /** Printing. */
 ostream& NLLogicalCons::print_on(ostream& os, const NLFile& nl_file) const {
   os << "L" << index << "   # Logical constraint " << name << endl;
-  for (auto t : expression_graph) {
+  for (const auto& t : expression_graph) {
     t.print_on(os, nl_file);
     os << endl;
   }

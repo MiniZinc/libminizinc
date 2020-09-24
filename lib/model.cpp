@@ -469,7 +469,7 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
 
       ASTString mostSimilar;
       int minEdits = 3;
-      for (auto decls : m->fnmap) {
+      for (const auto& decls : m->fnmap) {
         if (std::abs(static_cast<int>(c->id().size()) - static_cast<int>(decls.first.size())) <=
             3) {
           int edits = c->id().levenshteinDistance(decls.first);

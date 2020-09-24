@@ -41,7 +41,7 @@ std::string trim(const std::string& s0) {
   if (first_line_indent == std::string::npos) {
     return "";
   }
-  size_t first_nl = s.find("\n");
+  size_t first_nl = s.find('\n');
   std::ostringstream oss;
   if (first_line_indent == first_nl) {
     // first line is empty
@@ -59,7 +59,7 @@ std::string trim(const std::string& s0) {
   if (unindent == std::string::npos) {
     return oss.str();
   }
-  size_t pos = s.find("\n", first_nl + 1);
+  size_t pos = s.find('\n', first_nl + 1);
   if (unindent == 0 || unindent > pos) {
     oss << s.substr(first_nl + 1, std::string::npos);
     return oss.str();
@@ -75,7 +75,7 @@ std::string trim(const std::string& s0) {
     } else {
       lastpos = pos + 1 + unindent;
     }
-    pos = (lastpos == std::string::npos ? lastpos : s.find("\n", lastpos));
+    pos = (lastpos == std::string::npos ? lastpos : s.find('\n', lastpos));
   }
   if (lastpos != std::string::npos) {
     oss << s.substr(lastpos, std::string::npos);
@@ -292,11 +292,11 @@ GroupMap::Map::iterator GroupMap::find(const std::string& n) {
 void addToGroup(Group& gm, const std::string& group, DocItem& di) {
   std::vector<std::string> subgroups;
   size_t lastpos = 0;
-  size_t pos = group.find(".");
+  size_t pos = group.find('.');
   while (pos != std::string::npos) {
     subgroups.push_back(group.substr(lastpos, pos - lastpos));
     lastpos = pos + 1;
-    pos = group.find(".", lastpos);
+    pos = group.find('.', lastpos);
   }
   subgroups.push_back(group.substr(lastpos, std::string::npos));
 
@@ -330,11 +330,11 @@ void setGroupDesc(Group& maingroup, const std::string& group, const std::string&
 
   std::vector<std::string> subgroups;
   size_t lastpos = 0;
-  size_t pos = group.find(".");
+  size_t pos = group.find('.');
   while (pos != std::string::npos) {
     subgroups.push_back(group.substr(lastpos, pos - lastpos));
     lastpos = pos + 1;
-    pos = group.find(".", lastpos);
+    pos = group.find('.', lastpos);
   }
   subgroups.push_back(group.substr(lastpos, std::string::npos));
 
@@ -808,7 +808,7 @@ public:
 
           std::string filename =
               std::string(f_body->loc().filename().c_str(), f_body->loc().filename().size());
-          size_t lastSlash = filename.find_last_of("/");
+          size_t lastSlash = filename.find_last_of('/');
           if (lastSlash != std::string::npos) {
             filename = filename.substr(lastSlash + 1, std::string::npos);
           }
@@ -913,7 +913,7 @@ std::vector<HtmlDocument> HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m,
     int curIdx = stack.back().idx;
     Group* p = stack.back().p;
     stack.pop_back();
-    for (auto it : g.items) {
+    for (const auto& it : g.items) {
       index.emplace_back(it.id, it.sig, g.fullPath, g.htmlName);
     }
     ret.emplace_back(g.fullPath, g.htmlName,
@@ -958,7 +958,7 @@ std::vector<HtmlDocument> HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m,
         } else {
           oss << cur.id << " (";
           bool first = true;
-          for (auto i_ie : curEntries) {
+          for (const auto& i_ie : curEntries) {
             if (first) {
               first = false;
             } else {
@@ -992,7 +992,7 @@ std::vector<HtmlDocument> HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m,
     oss_header << "<a class='mzn-nav-up' href='" << g.getAnchor(0, 1) << "' title='" << g.htmlName
                << "'>&#8679;</a> ";
     bool first = true;
-    for (auto is : idxSections) {
+    for (const auto& is : idxSections) {
       if (first) {
         first = false;
       } else {
@@ -1066,7 +1066,7 @@ protected:
       if (s[pos + 1] == ')') {
         // remove trailing whitespace
         std::string t = s.substr(lastpos, pos - lastpos);
-        size_t t_end = t.find_last_not_of(" ");
+        size_t t_end = t.find_last_not_of(' ');
         if (t_end != std::string::npos) {
           t_end++;
         }
@@ -1077,7 +1077,7 @@ protected:
       lastpos = pos + 2;
       if (s[pos + 1] == '(') {
         oss2 << ":math:`";
-        lastpos = s.find_first_not_of(" ", lastpos);
+        lastpos = s.find_first_not_of(' ', lastpos);
       } else {
         oss2 << "`";
       }
@@ -1093,7 +1093,7 @@ protected:
       if (s[pos + 1] == ']') {
         // remove trailing whitespace
         std::string t = s.substr(lastpos, pos - lastpos);
-        size_t t_end = t.find_last_not_of(" ");
+        size_t t_end = t.find_last_not_of(' ');
         if (t_end != std::string::npos) {
           t_end++;
         }
@@ -1104,7 +1104,7 @@ protected:
       lastpos = pos + 2;
       if (s[pos + 1] == '[') {
         oss3 << "``";
-        lastpos = s.find_first_not_of(" ", lastpos);
+        lastpos = s.find_first_not_of(' ', lastpos);
       } else {
         oss3 << "``";
       }
@@ -1191,7 +1191,7 @@ public:
       std::string sig = vdi->e()->type().toString(env) + " " +
                         std::string(vdi->e()->id()->str().c_str(), vdi->e()->id()->str().size());
 
-      std::string myMainGroup = group.substr(0, group.find_first_of("."));
+      std::string myMainGroup = group.substr(0, group.find_first_of('.'));
       auto it = _maingroup.subgroups.find(myMainGroup);
       os << ".. index::\n";
       if (it != _maingroup.subgroups.m.end()) {
@@ -1266,7 +1266,7 @@ public:
 
       std::ostringstream os;
       std::ostringstream fs;
-      std::string myMainGroup = group.substr(0, group.find_first_of("."));
+      std::string myMainGroup = group.substr(0, group.find_first_of('.'));
       auto it = _maingroup.subgroups.find(myMainGroup);
       os << ".. index::\n";
       if (it != _maingroup.subgroups.m.end()) {

@@ -19,7 +19,9 @@ Checks: '-*,
   performance-unnecessary-value-param,
   readability-named-parameter,
   readability-non-const-parameter,
-  modernize-use-override
+  modernize-use-override,
+  performance-for-range-copy,
+  performance-faster-string-find
 '
 WarningsAsErrors:  '*'
 HeaderFilterRegex: '^include/minizinc'

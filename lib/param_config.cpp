@@ -97,7 +97,7 @@ const std::vector<std::string>& ParamConfig::argv() { return _values; }
 void ParamConfig::blacklist(const std::string& param) { _blacklist.insert(param); }
 
 void ParamConfig::blacklist(const std::vector<std::string>& params) {
-  for (auto param : params) {
+  for (const auto& param : params) {
     _blacklist.insert(param);
   }
 }

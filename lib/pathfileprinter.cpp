@@ -48,7 +48,7 @@ string path2name(const string& path) {
   size_t idpos = path.rfind("id:");
   if (idpos != string::npos) {
     idpos += 3;
-    size_t semi = path.find(";", idpos);
+    size_t semi = path.find(';', idpos);
     if (semi != string::npos) {
       // Variable name
       name << path.substr(idpos, semi - idpos);
@@ -60,7 +60,7 @@ string path2name(const string& path) {
         ilpos = path.find("il:", ilpos);
         if (ilpos != string::npos) {
           ilpos += 3;
-          semi = path.find(";", ilpos);
+          semi = path.find(';', ilpos);
           if (semi != string::npos) {
             if (dim == 0) {
               name << "[";
@@ -78,7 +78,7 @@ string path2name(const string& path) {
       }
 
       // Check for anon
-      if (path.find(":anon") != string::npos || path.find("=") != string::npos) {
+      if (path.find(":anon") != string::npos || path.find('=') != string::npos) {
         name.str("");
         name.clear();
       }
@@ -158,7 +158,7 @@ void PathFilePrinter::print(Item* item) {
       } else {
         string name = np.first;
         os << name;
-        if (name.find("?") != string::npos) {
+        if (name.find('?') != string::npos) {
           os << "(" << *id << ")";
         }
         os << "\t";

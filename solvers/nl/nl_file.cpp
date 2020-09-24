@@ -1442,7 +1442,7 @@ ostream& NLFile::print_on(ostream& os) const {
 
     // Print the 'b' segment
     os << "b   # Bounds on variables (" << n_var() << ")" << endl;
-    for (auto n : vnames) {
+    for (const auto& n : vnames) {
       NLVar v = variables.at(n);
       v.bound.print_on(os, n);
       os << endl;
@@ -1455,7 +1455,7 @@ ostream& NLFile::print_on(ostream& os) const {
     // For now, it is NOT clear if the network constraint should appear in the range constraint or
     // not. To be determine if later implemented.
     os << "r   # Bounds on algebraic constraint bodies (" << cnames.size() << ")" << endl;
-    for (auto n : cnames) {
+    for (const auto& n : cnames) {
       NLAlgCons c = constraints.at(n);
       c.range.print_on(os, n);
       os << endl;
@@ -1463,7 +1463,7 @@ ostream& NLFile::print_on(ostream& os) const {
   }
 
   // Print the Algebraic Constraints
-  for (auto n : cnames) {
+  for (const auto& n : cnames) {
     NLAlgCons c = constraints.at(n);
     c.print_on(os, *this);
   }

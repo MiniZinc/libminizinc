@@ -142,7 +142,7 @@ void ppFloatVal(std::ostream& os, const FloatVal& fv, bool hexFloat) {
     } else {
       oss << std::setprecision(std::numeric_limits<double>::digits10 + 1);
       oss << fv;
-      if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos) {
+      if (oss.str().find('e') == std::string::npos && oss.str().find('.') == std::string::npos) {
         oss << ".0";
       }
       os << oss.str();
