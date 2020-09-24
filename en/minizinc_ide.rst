@@ -71,36 +71,21 @@ Selecting one of the built-in solvers from the drop-down menu activates its defa
     The solver configuration window
 
 
-:numref:`fig-solver-conf` shows the configuration window. The first section (marked with a ``1`` in a red circle) contains a drop-down menu to select the *solver configuration*. In this case, a built-in configuration for the COIN-BC solver was selected. You can make this configuration the default (the MiniZinc IDE will remember this setting), you can reset all values to the defaults, and you can make a clone of the configuration. Cloning a configuration is useful if you want to be able to quickly switch between different sets of options.
+:numref:`fig-solver-conf` shows the configuration window. The first section (marked with a ``1`` in a red circle) contains a drop-down menu to select the *solver configuration*. In this case, a built-in configuration for the Gecode solver was selected. You can make this configuration the default (the MiniZinc IDE will remember this setting), you can reset all values to the defaults, and you can make a clone of the configuration. Cloning a configuration is useful if you want to be able to quickly switch between different sets of options. Solver configurations can be saved once cloned/modified as ``.mpc`` files to be reused later. This is done by selecting *Save solver configuration from the *File* menu. The concrete solver used is also shown in this section.
 
-Note that any changes to the built-in configurations will be lost when you close the IDE. Any changes to a cloned configuration are saved as part of the *project* (see :numref:`ch-ide-projects`).
+The *Options* section allows you configure common settings which can remain persistent as you switch between configurations. This behaviour can be switched off by unticking the *Maintain these options across solver configurations checkbox*. This area contains two subsections described below.
 
-The *Solving* section below contains a number of general options. First of all, it shows the concrete solver used in this configuration. Below that, you can set a time limit, after which the execution will be stopped. The built-in configurations all use the "default behaviour" (marked with a ``2``), which is to print all intermediate solutions for optimisation problems, and stop after the first found solution for satisfaction problems. To change this, you can select *User-defined behavior* instead (marked with a ``3``).
+The *Solving* subsection contains a number of general options. You can set a time limit, after which the execution will be stopped. The behaviour selector controls which kinds of solutions a solver should produce. The "default behaviour" (marked with a ``2``) is to print all intermediate solutions for optimisation problems, and stop after the first found solution for satisfaction problems. To change this, you can select *User-defined behavior* instead (marked with a ``3``).
 
-The next section, *Compiler options* (marked with a ``4``), controls different aspects of the compilation from MiniZinc to FlatZinc for the selected solver. The first two checkboxes control verbosity and statistics output of the compiler. The drop-down below controls the optimisation level of the compiler, i.e., how much effort it should spend on creating the best possible FlatZinc representation for the given model. The two input fields below allow you to specify additional data (passed into the compilation as if it was part of a ``.dzn`` file) and additional command line options for the compiler.
+The *Output* subsection (marked with a ``4``) allows you to control what extra information, if any, the compiler/solver should produce. This includes verbosity options, statistics options and extra timing information where supported.
 
-The *Solver options* section (marked with a ``5``) contains configuration options for the selected solver. Only options that are supported by the solver will be available, others will be grayed out (e.g., the selected solver in :numref:`fig-solver-conf` does not support setting a random seed, or free search).
+The *Advanced Options* section contains options for more fine-grained control of the compilation and solving of your instance. These options are less commonly used, and as such the settings are unique to each solver configuration. It contains three subsections described below.
 
-Finally, the *Output options* section gives you control over the output behaviour. The first tick box enables you to clear the *Output* window automatically every time you run a model. The second option inserts timing information into the stream of solutions. The third check box (*Check solutions*) is described in :numref:`ch-ide-solution-checking` below. The *Compress solution output* option is useful for problems that produce a lot (read: thousands) of solutions, which can slow down and clutter the output window. The compression works by printing just the number of solutions rather than the solutions themselves. For example, the following model would produce 1000 solutions when run with *User-defined behavior* and solution limit set to 0:
+The *Compiling* subsection (marked with a ``5``) controls different aspects of the compilation from MiniZinc to FlatZinc for the selected solver. The drop-down controls the optimisation level of the compiler, i.e., how much effort it should spend on creating the best possible FlatZinc representation for the given model. The input field below allows you to specify additional data (passed into the compilation as if it was part of a ``.dzn`` file).
 
-.. code-block:: minizinc
+The *Solving* subsection (marked with a ``6``) contains configuration options for the selected solver, such as the number of threads to use for solvers which support parallelism, the seed to use for random number generation, and whether or not to enable free search (i.e. permitting the solver to ignore search annotations). Only options that are supported by the solver will be available, others will be greyed out.
 
-  var 1..1000: x;
-  solve satisfy;
-
-When runnning with compression set to 100, MiniZinc will output the first 100 solutions, and then a sequence of output like this:
-
-.. code-block:: none
-
-  [ 100 more solutions ]
-  [ 200 more solutions ]
-  [ 400 more solutions ]
-  [ 199 more solutions ]
-  x = 1000;
-  ----------
-  ==========
-  
-The number of solutions captured by one of the ``... more solutions`` lines is doubled each time, in order to keep the overall output low. The last solution produced by the solver will always be printed (since, in the case of optimisation problems, the last solution is the best one found).
+Finally, the *Extra configuration parameters* subsection allows you to enter any extra options supported by a solver, as well as custom ones where necessary. These options are passed to the ``minizinc`` command in the same manner as described in :numref:`ch-param-files`. The *Add parameter* button (marked with a ``7``) opens a drop-down presenting any known options supported by a solver (with a convenience option to add all of them), as well as an option to add a custom parameter. The values associated with each added parameter can be edited by double clicking on the corresponding *Value* cell in the table. Adding a custom parameter requires you to  specify the corresponding command-line flag in the first column, the data-type in the second, and the value in the third. The *Remove parameter* button can be used to remove the currently highlighted parameters.
 
 .. _ch-ide-solution-checking:
 
@@ -252,6 +237,36 @@ Some solvers open an independent application with its own graphical user interfa
 Finally, you can select which command line flags are supported by the solver. This controls which options will be available in the solver configuration window.
 
 Solver configurations that are edited or created through the IDE are saved in a configuration file in a standard location. These solvers are therefore available the next time the IDE is started, as well as through the ``minizinc`` command line tool.
+
+Output options
+~~~~~~~~~~~~~~
+
+There are also a number of output-related options. The first tick box (*Check solutions*) enables checking as described in :numref:`ch-ide-solution-checking`. The second tick box enables you to clear the *Output* window automatically every time you run a model. The third *Compress solution output* option is useful for problems that produce a lot (read: thousands) of solutions, which can slow down and clutter the output window. The compression works by printing just the number of solutions rather than the solutions themselves. For example, the following model would produce 1000 solutions when run with *User-defined behavior* and solution limit set to 0:
+
+.. code-block:: minizinc
+
+  var 1..1000: x;
+  solve satisfy;
+
+When runnning with compression set to 100, MiniZinc will output the first 100 solutions, and then a sequence of output like this:
+
+.. code-block:: none
+
+  [ 99 more solutions ]
+  x = 200;
+  ----------
+  [ 199 more solutions ]
+  x = 400;
+  ----------
+  [ 399 more solutions ]
+  x = 800;
+  ----------
+  [ 199 more solutions ]
+  x = 1000;
+  ----------
+  ==========
+  
+The number of solutions captured by one of the ``... more solutions`` lines is doubled each time, in order to keep the overall output low. The last solution produced by the solver will always be printed (since, in the case of optimisation problems, the last solution is the best one found).
 
 .. .. _sec-ide-vis:
 ..
