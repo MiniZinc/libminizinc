@@ -76,7 +76,7 @@ protected:
     /// Initialize choice for brancher \a b
     Choice(const Brancher& b, bool fail0) : Gecode::Choice(b, 1), fail(fail0) {}
     /// Report size occupied
-    virtual size_t size(void) const { return sizeof(Choice); }
+    virtual size_t size() const { return sizeof(Choice); }
     /// Archive into \a e
     virtual void archive(Gecode::Archive& e) const {
       Gecode::Choice::archive(e);

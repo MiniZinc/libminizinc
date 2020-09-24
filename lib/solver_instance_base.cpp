@@ -71,7 +71,7 @@ void SolverInstanceBase2::printSolution() {
 }
 
 //   void
-//   SolverInstanceBase::assignSolutionToOutput(void) {
+//   SolverInstanceBase::assignSolutionToOutput() {
 //     for (VarDeclIterator it = getEnv()->output()->begin_vardecls(); it !=
 //     getEnv()->output()->end_vardecls(); ++it) {
 //       if (it->e()->e() == NULL) {

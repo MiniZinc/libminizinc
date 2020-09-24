@@ -30,7 +30,7 @@ struct GCStat {
   int keepalive;
   int inmodel;
   size_t total;
-  GCStat(void) : first(0), second(0), keepalive(0), inmodel(0), total(0) {}
+  GCStat() : first(0), second(0), keepalive(0), inmodel(0), total(0) {}
 };
 
 #define MINIZINC_GC_STAT_ARGS std::map<int, GCStat>& gc_stats

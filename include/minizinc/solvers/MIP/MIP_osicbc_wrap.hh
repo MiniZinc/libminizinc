@@ -147,7 +147,7 @@ public:
   //     virtual double getTime() = 0;
 
 protected:
-  //     OsiSolverInterface& getOsiSolver(void) { return osi; }
+  //     OsiSolverInterface& getOsiSolver() { return osi; }
 
   void wrap_assert(bool, const std::string&, bool fTerm = true);
 

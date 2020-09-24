@@ -72,7 +72,7 @@ std::string progpath() {
   }
 }
 #elif defined(HAS_GETMODULEFILENAME)
-std::string progpath(void) {
+std::string progpath() {
   wchar_t path[MAX_PATH];
   int ret = GetModuleFileNameW(NULL, path, MAX_PATH);
   if (ret <= 0) {
@@ -87,7 +87,7 @@ std::string progpath(void) {
   }
 }
 #else
-std::string progpath(void) {
+std::string progpath() {
   const int bufsz = 2000;
   char path[bufsz + 1];
   ssize_t sz = readlink("/proc/self/exe", path, bufsz);

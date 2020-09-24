@@ -39,9 +39,9 @@ public:
     /// Construct with message \a msg
     PluginError(const std::string& msg) : Exception(msg) {}
     /// Destructor
-    ~PluginError(void) throw() {}
+    ~PluginError() throw() {}
     /// Return description
-    virtual const char* what(void) const throw() { return "MiniZinc: plugin loading error"; }
+    virtual const char* what() const throw() { return "MiniZinc: plugin loading error"; }
   };
 
   /// Load a plugin with given DLL path

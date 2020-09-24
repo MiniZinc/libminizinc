@@ -300,7 +300,7 @@ typedef struct mz_stream_s
 typedef mz_stream *mz_streamp;
 
 /* Returns the version string of miniz.c. */
-const char *mz_version(void);
+const char *mz_version();
 
 /* mz_deflateInit() initializes a compressor with default options: */
 /* Parameters: */
