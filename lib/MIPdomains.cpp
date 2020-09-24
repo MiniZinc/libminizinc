@@ -362,8 +362,8 @@ private:
     lin_exp_int = env.model->matchFn(env, constants().ids.lin_exp, int_lin_eq_t, false);
     lin_exp_float = env.model->matchFn(env, constants().ids.lin_exp, float_lin_eq_t, false);
 
-    return (!((int_lin_eq != nullptr) && (int_lin_le != nullptr) && (float_lin_eq != nullptr) &&
-              (float_lin_le != nullptr)));
+    return (int_lin_eq != nullptr) && (int_lin_le != nullptr) && (float_lin_eq != nullptr) &&
+           (float_lin_le != nullptr);
     // say something...
 
     //       std::cerr << "  lin_exp_int=" << lin_exp_int << std::endl;
