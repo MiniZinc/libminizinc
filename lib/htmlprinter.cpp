@@ -192,16 +192,16 @@ public:
     int cur_t = -1;
     const char* dt[] = {"par", "var", "fun"};
     const char* dt_desc[] = {"Parameters", "Variables", "Functions and Predicates"};
-    for (std::vector<DocItem>::const_iterator it = items.begin(); it != items.end(); ++it) {
-      if (it->t != cur_t) {
+    for (const auto& item : items) {
+      if (item.t != cur_t) {
         if (cur_t != -1) {
           oss << "</div>\n";
         }
-        cur_t = it->t;
+        cur_t = item.t;
         oss << "<div class='mzn-decl-type-" << dt[cur_t] << "'>\n";
         oss << "<div class='mzn-decl-type-heading'>" << dt_desc[cur_t] << "</div>\n";
       }
-      oss << it->doc;
+      oss << item.doc;
     }
     if (cur_t != -1) {
       oss << "</div>\n";
@@ -253,22 +253,22 @@ public:
 
       int cur_t = -1;
       int nHeadings = 0;
-      for (std::vector<DocItem>::const_iterator it = items.begin(); it != items.end(); ++it) {
-        if (it->t != cur_t) {
-          cur_t = it->t;
+      for (const auto& item : items) {
+        if (item.t != cur_t) {
+          cur_t = item.t;
           nHeadings++;
         }
       }
       cur_t = -1;
       const char* dt_desc[] = {"Parameters", "Variables", "Functions and Predicates"};
-      for (std::vector<DocItem>::const_iterator it = items.begin(); it != items.end(); ++it) {
-        if (it->t != cur_t) {
-          cur_t = it->t;
+      for (const auto& item : items) {
+        if (item.t != cur_t) {
+          cur_t = item.t;
           if (nHeadings > 1) {
             oss << rstHeading(dt_desc[cur_t], subgroups.m.empty() ? level + 1 : level + 2);
           }
         }
-        oss << it->doc;
+        oss << item.doc;
       }
     }
     return oss.str();
