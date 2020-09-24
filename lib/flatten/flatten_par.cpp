@@ -13,7 +13,7 @@
 
 namespace MiniZinc {
 
-EE flatten_par(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
+EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   EE ret;
   if (e->type().cv()) {
     KeepAlive ka = flat_cv_exp(env, ctx, e);

@@ -68,9 +68,9 @@ namespace MiniZinc {
     }                                           \
   } while (0)
 
-inline bool beginswith(std::string s, std::string t) { return s.compare(0, t.length(), t) == 0; }
+inline bool beginswith(const std::string& s, const std::string& t) { return s.compare(0, t.length(), t) == 0; }
 
-inline void checkIOStatus(bool fOk, std::string msg, bool fHard = true) {
+inline void checkIOStatus(bool fOk, const std::string& msg, bool fHard = true) {
   if (!fOk) {
 #ifdef _MSC_VER
     char errBuf[1024];
@@ -84,11 +84,11 @@ inline void checkIOStatus(bool fOk, std::string msg, bool fHard = true) {
 }
 
 template <class T>
-inline bool assignStr(T*, const std::string) {
+inline bool assignStr(T*, const std::string&) {
   return false;
 }
 template <>
-inline bool assignStr(std::string* pS, const std::string s) {
+inline bool assignStr(std::string* pS, const std::string& s) {
   *pS = s;
   return true;
 }

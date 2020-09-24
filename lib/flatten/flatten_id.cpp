@@ -13,7 +13,7 @@
 
 namespace MiniZinc {
 
-EE flatten_id(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b, bool doNotFollowChains) {
+EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b, bool doNotFollowChains) {
   CallStackItem _csi(env, e);
   EE ret;
   Id* id = e->cast<Id>();
@@ -67,10 +67,11 @@ EE flatten_id(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b, bool do
       aa->type(tt);
       aanot->type(aa->type());
       cp->type(id->type());
-      ctx.neg = false;
       ka = cp;
     }
-    ret = flat_exp(env, ctx, ka(), r, b);
+    Ctx nctx = ctx;
+    nctx.neg = false;
+    ret = flat_exp(env, nctx, ka(), r, b);
   } else {
     GCLock lock;
     VarDecl* vd = id->decl()->flat();
@@ -236,7 +237,7 @@ EE flatten_id(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b, bool do
   return ret;
 }
 
-EE flatten_id(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
+EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   return flatten_id(env, ctx, e, r, b, false);
 }
 

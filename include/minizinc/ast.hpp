@@ -200,7 +200,7 @@ inline SetLit::SetLit(const Location& loc, const std::vector<Expression*>& v)
   rehash();
 }
 
-inline SetLit::SetLit(const Location& loc, ASTExprVec<Expression> v)
+inline SetLit::SetLit(const Location& loc, const ASTExprVec<Expression>& v)
     : Expression(loc, E_SETLIT, Type()), _v(v) {
   _u.isv = nullptr;
   rehash();
@@ -408,7 +408,7 @@ inline ArrayAccess::ArrayAccess(const Location& loc, Expression* v,
   rehash();
 }
 
-inline ArrayAccess::ArrayAccess(const Location& loc, Expression* v, ASTExprVec<Expression> idx)
+inline ArrayAccess::ArrayAccess(const Location& loc, Expression* v, const ASTExprVec<Expression>& idx)
     : Expression(loc, E_ARRAYACCESS, Type()) {
   _v = v;
   _idx = idx;
@@ -592,7 +592,7 @@ inline void VarDecl::evaluated(bool t) {
 }
 inline void VarDecl::flat(VarDecl* vd) { _flat = WeakRef(vd); }
 
-inline TypeInst::TypeInst(const Location& loc, const Type& type, ASTExprVec<TypeInst> ranges,
+inline TypeInst::TypeInst(const Location& loc, const Type& type, const ASTExprVec<TypeInst>& ranges,
                           Expression* domain)
     : Expression(loc, E_TI, type), _ranges(ranges), _domain(domain) {
   _flag_1 = false;

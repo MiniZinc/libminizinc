@@ -345,12 +345,12 @@ void MIP_xpress_wrapper::doAddVars(size_t n, double* obj, double* lb, double* ub
 }
 
 void MIP_xpress_wrapper::addRow(int nnz, int* rmatind, double* rmatval, LinConType sense,
-                                double rhs, int mask, string rowName) {
+                                double rhs, int mask, const string& rowName) {
   addConstraint(nnz, rmatind, rmatval, sense, rhs, mask, rowName);
 }
 
 XPRBctr MIP_xpress_wrapper::addConstraint(int nnz, int* rmatind, double* rmatval, LinConType sense,
-                                          double rhs, int mask, string rowName) {
+                                          double rhs, int mask, const string& rowName) {
   nRows++;
   XPRBctr constraint = plugin->XPRBnewctr(problem, rowName.c_str(), convertConstraintType(sense));
   for (int i = 0; i < nnz; ++i) {
@@ -436,7 +436,7 @@ void MIP_xpress_wrapper::setVarBounds(int iVar, double lb, double ub) {
 
 void MIP_xpress_wrapper::addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind,
                                                 double* rmatval, LinConType sense, double rhs,
-                                                string rowName) {
+                                                const string& rowName) {
   if (bVal != 0 && bVal != 1) {
     throw XpressException("indicator bval not in 0/1");
   }
@@ -445,7 +445,7 @@ void MIP_xpress_wrapper::addIndicatorConstraint(int iBVar, int bVal, int nnz, in
 }
 
 bool MIP_xpress_wrapper::addWarmStart(const std::vector<VarId>& vars,
-                                      const std::vector<double> vals) {
+                                      const std::vector<double>& vals) {
   XPRBsol warmstart = plugin->XPRBnewsol(problem);
   for (size_t ii = 0; ii < vars.size(); ii++) {
     plugin->XPRBsetsolvar(warmstart, variables[vars[ii]], vals[ii]);

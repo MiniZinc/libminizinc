@@ -13,7 +13,7 @@
 
 namespace MiniZinc {
 
-EE flatten_unop(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
+EE flatten_unop(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   CallStackItem _csi(env, e);
   EE ret;
   UnOp* uo = e->cast<UnOp>();

@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <utility>
 #include <vector>
 //#include <map>
 #include <minizinc/solver_instance_defs.hh>
@@ -169,7 +170,7 @@ public:
 
 private:
   /// adding a variable just internally (in Phase 1 only that). Not to be used directly.
-  virtual VarId addVarLocal(double obj, double lb, double ub, VarType vt, std::string name = "") {
+  virtual VarId addVarLocal(double obj, double lb, double ub, VarType vt, const std::string& name = "") {
     //       cerr << "  addVarLocal: colObj.size() == " << colObj.size()
     //         << " obj == " <<obj
     //         << " lb == " << lb
@@ -202,7 +203,7 @@ public:
   void setProbType(int t) { nProbType = t; }
 
   /// adding a variable, at once to the solver, this is for the 2nd phase
-  virtual VarId addVar(double obj, double lb, double ub, VarType vt, std::string name = "") {
+  virtual VarId addVar(double obj, double lb, double ub, VarType vt, const std::string& name = "") {
     //       cerr << "  AddVar: " << lb << ":   ";
     VarId res = addVarLocal(obj, lb, ub, vt, name);
     if (fPhase1Over) {
@@ -256,19 +257,19 @@ public:
   virtual void setVarUB(int iVar, double ub) { throw 0; }
   /// adding a linear constraint
   virtual void addRow(int nnz, int* rmatind, double* rmatval, LinConType sense, double rhs,
-                      int mask = MaskConsType_Normal, std::string rowName = "") = 0;
+                      int mask = MaskConsType_Normal, const std::string& rowName = "") = 0;
   /// Indicator constraint: x[iBVar]==bVal -> lin constr
   virtual void addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind, double* rmatval,
-                                      LinConType sense, double rhs, std::string rowName = "") {
+                                      LinConType sense, double rhs, const std::string& rowName = "") {
     throw std::runtime_error("Indicator constraints not supported. ");
   }
-  virtual void addMinimum(int iResultVar, int nnz, int* ind, std::string rowName = "") {
+  virtual void addMinimum(int iResultVar, int nnz, int* ind, const std::string& rowName = "") {
     throw std::runtime_error("This backend does not support the Minimum constraint");
   }
 
   /// Bounds disj for SCIP
   virtual void addBoundsDisj(int n, double* fUB, double* bnd, int* vars, int nF, double* fUBF,
-                             double* bndF, int* varsF, std::string rowName = "") {
+                             double* bndF, int* varsF, const std::string& rowName = "") {
     throw std::runtime_error("Bounds disjunctions not supported. ");
   }
   /// Times constraint: var[x]*var[y] == var[z]
@@ -278,17 +279,17 @@ public:
 
   /// Cumulative, currently SCIP only
   virtual void addCumulative(int nnz, int* rmatind, double* d, double* r, double b,
-                             std::string rowName = "") {
+                             const std::string& rowName = "") {
     throw std::runtime_error("Cumulative constraints not supported. ");
   }
   /// 0: model-defined level, 1: free, 2: uniform search
   virtual int getFreeSearch() { return 1; }
   /// Return 0 if ignoring searches
-  virtual bool addSearch(const std::vector<VarId>& vars, const std::vector<int> pri) {
+  virtual bool addSearch(const std::vector<VarId>& vars, const std::vector<int>& pri) {
     return false;
   }
   /// Return 0 if ignoring warm starts
-  virtual bool addWarmStart(const std::vector<VarId>& vars, const std::vector<double> vals) {
+  virtual bool addWarmStart(const std::vector<VarId>& vars, const std::vector<double>& vals) {
     return false;
   }
 

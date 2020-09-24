@@ -213,7 +213,7 @@ struct SortByName {
 
 }  // namespace
 
-SolverConfig SolverConfig::load(string filename) {
+SolverConfig SolverConfig::load(const string& filename) {
   SolverConfig sc;
   sc._configFile = FileUtils::file_path(filename);
   ostringstream errstream;

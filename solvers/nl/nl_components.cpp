@@ -1,5 +1,6 @@
 #include <minizinc/solvers/nl/nl_components.hh>
 #include <minizinc/solvers/nl/nl_file.hh>
+#include <utility>
 
 namespace MiniZinc {
 
@@ -141,7 +142,7 @@ void NLBound::update_eq(double new_eq) {
 }
 
 /** Printing with a name. */
-ostream& NLBound::print_on(ostream& os, string vname) const {
+ostream& NLBound::print_on(ostream& os, const string& vname) const {
   switch (tag) {
     case LB_UB: {
       os << "0 " << lb << " " << ub << "   # " << lb << " =< " << vname << " =< " << ub;
@@ -352,7 +353,7 @@ NLToken NLToken::n(double value) {
 NLToken NLToken::v(string vname) {
   NLToken tok;
   tok.kind = Kind::VARIABLE;
-  tok.str = vname;
+  tok.str = std::move(vname);
   return tok;
 }
 

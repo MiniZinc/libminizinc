@@ -168,7 +168,7 @@ public:
   typedef std::string ArrayVal;
   static std::string e(EnvI& env, Expression* e) { return eval_string(env, e); }
   static Expression* exp(const std::string& e) { return new StringLit(Location(), e); }
-  static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {}
+  static void checkRetVal(EnvI& env, const Val& v, FunctionI* fi) {}
   Expression* flatten(EnvI&, Expression*) {
     throw InternalError("evaluating var assignment generator inside par expression not supported");
   }

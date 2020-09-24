@@ -183,7 +183,7 @@ public:
   void setOutputItem(OutputI* oi);
 
   /// Add a file-level documentation comment
-  void addDocComment(std::string s) { _docComment += s; }
+  void addDocComment(const std::string& s) { _docComment += s; }
 
   /// Return the file-level documentation comment
   const std::string& docComment() const { return _docComment; }

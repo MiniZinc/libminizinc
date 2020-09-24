@@ -101,15 +101,15 @@ public:
 public:
   virtual void doAddVars(size_t n, double* obj, double* lb, double* ub, VarType* vt, string* names);
   virtual void addRow(int nnz, int* rmatind, double* rmatval, LinConType sense, double rhs,
-                      int mask = MaskConsType_Normal, string rowName = "");
+                      int mask = MaskConsType_Normal, const string& rowName = "");
   virtual void setObjSense(int s);
   virtual void solve();
   virtual void setVarLB(int iVar, double lb);
   virtual void setVarUB(int iVar, double ub);
   virtual void setVarBounds(int iVar, double lb, double ub);
   virtual void addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind, double* rmatval,
-                                      LinConType sense, double rhs, std::string rowName = "");
-  virtual bool addWarmStart(const std::vector<VarId>& vars, const std::vector<double> vals);
+                                      LinConType sense, double rhs, const std::string& rowName = "");
+  virtual bool addWarmStart(const std::vector<VarId>& vars, const std::vector<double>& vals);
 
   virtual int getNCols() { return variables.size(); }
   virtual int getNRows() { return nRows; }
@@ -150,6 +150,6 @@ private:
   int convertVariableType(VarType varType);
   int convertObjectiveSense(int s);
   XPRBctr addConstraint(int nnz, int* rmatind, double* rmatval, LinConType sense, double rhs,
-                        int mask, string rowName);
+                        int mask, const string& rowName);
   void addDummyConstraint();
 };

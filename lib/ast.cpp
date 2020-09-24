@@ -102,7 +102,7 @@ void Expression::addAnnotation(Expression* ann) {
     _ann.add(ann);
   }
 }
-void Expression::addAnnotations(std::vector<Expression*> ann) {
+void Expression::addAnnotations(const std::vector<Expression*>& ann) {
   if (!isUnboxedVal()) {
     for (auto& i : ann) {
       if (i != nullptr) {
@@ -2059,7 +2059,7 @@ void Annotation::merge(const Annotation& ann) {
   }
 }
 
-Expression* getAnnotation(const Annotation& ann, std::string str) {
+Expression* getAnnotation(const Annotation& ann, const std::string& str) {
   for (ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
     Expression* e = *i;
     if ((e->isa<Id>() && e->cast<Id>()->str() == str) ||

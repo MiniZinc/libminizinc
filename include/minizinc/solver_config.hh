@@ -93,7 +93,7 @@ protected:
 
 public:
   /// Load solver configuration from \a filename
-  static SolverConfig load(std::string filename);
+  static SolverConfig load(const std::string& filename);
   /// Default constructor
   SolverConfig() {}
   /// Constructor

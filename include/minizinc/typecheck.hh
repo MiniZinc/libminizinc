@@ -94,5 +94,5 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
 void output_model_variable_types(Env& env, Model* m, std::ostream& os,
                                  const std::vector<std::string>& skipDirs);
 
-std::string createEnumToStringName(Id* ident, std::string prefix);
+std::string createEnumToStringName(Id* ident, const std::string& prefix);
 }  // namespace MiniZinc

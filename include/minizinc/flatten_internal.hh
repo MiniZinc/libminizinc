@@ -88,7 +88,7 @@ public:
   struct WW {
     WeakRef r;
     WeakRef b;
-    WW(WeakRef r0, WeakRef b0) : r(r0), b(b0) {}
+    WW(const WeakRef& r0, const WeakRef& b0) : r(r0), b(b0) {}
   };
   typedef KeepAliveMap<WW> CSEMap;
   bool ignorePartial;
@@ -190,8 +190,8 @@ public:
 };
 
 void setComputedDomain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_computed);
-EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
-EE flatten_id(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b, bool doNotFollowChains);
+EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
+EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b, bool doNotFollowChains);
 
 class CmpExpIdx {
 public:

@@ -354,7 +354,7 @@ void MIP_scip_wrapper::setVarUB(int iVar, double ub) {
 
 void MIP_scip_wrapper::addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind,
                                               double* rmatval, MIP_wrapper::LinConType sense,
-                                              double rhs, string rowName) {
+                                              double rhs, const string& rowName) {
   MZN_ASSERT_HARD_MSG(0 <= bVal && 1 >= bVal, "SCIP: addIndicatorConstraint: bVal not 0/1");
   //// Make sure in order to notice the indices of lazy constr: also here?   TODO
   //  ++ nRows;

@@ -132,7 +132,7 @@ bool MIP_osicbc_wrapper::Options::processOption(int& i, std::vector<std::string>
   return true;
 }
 
-void MIP_osicbc_wrapper::wrap_assert(bool cond, string msg, bool fTerm) {
+void MIP_osicbc_wrapper::wrap_assert(bool cond, const string& msg, bool fTerm) {
   if (!cond) {
     //       strcpy(osicbc_buffer, "[NO ERROR STRING GIVEN]");
     //       CBCgeterrorstring (env, status, osicbc_buffer);
@@ -159,7 +159,7 @@ void MIP_osicbc_wrapper::doAddVars(size_t n, double* obj, double* lb, double* ub
 
 void MIP_osicbc_wrapper::addRow(int nnz, int* rmatind, double* rmatval,
                                 MIP_wrapper::LinConType sense, double rhs, int mask,
-                                string rowName) {
+                                const string& rowName) {
   /// Convert var types:
   double rlb = rhs, rub = rhs;
   switch (sense) {
@@ -193,7 +193,7 @@ void MIP_osicbc_wrapper::addRow(int nnz, int* rmatind, double* rmatval,
 }
 
 bool MIP_osicbc_wrapper::addWarmStart(const std::vector<VarId>& vars,
-                                      const std::vector<double> vals) {
+                                      const std::vector<double>& vals) {
   assert(vars.size() == vals.size());
   static_assert(sizeof(VarId) == sizeof(int), "VarId should be (u)int currently");
   for (int i = 0; i < vars.size(); ++i) {

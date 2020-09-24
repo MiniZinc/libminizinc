@@ -113,7 +113,7 @@ protected:
   GeasTypes::Variable& resolveVar(Expression* e);
   bool addSolutionNoGood();
 
-  void registerConstraint(std::string name, poster p);
+  void registerConstraint(const std::string& name, poster p);
   void registerConstraints();
 };
 

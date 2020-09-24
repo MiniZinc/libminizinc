@@ -13,7 +13,7 @@
 
 namespace MiniZinc {
 
-EE flatten_let(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
+EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   CallStackItem _csi(env, e);
   EE ret;
   Let* let = e->cast<Let>();

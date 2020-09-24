@@ -13,7 +13,7 @@
 
 namespace MiniZinc {
 
-EE flatten_comp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
+EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   CallStackItem _csi(env, e);
   EE ret;
   auto* c = e->cast<Comprehension>();
@@ -184,7 +184,7 @@ EE flatten_comp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
   class EvalF : public EvalBase {
   public:
     Ctx ctx;
-    EvalF(Ctx ctx0) : ctx(ctx0) {}
+    EvalF(const Ctx& ctx0) : ctx(ctx0) {}
     typedef EE ArrayVal;
     EE e(EnvI& env, Expression* e0) {
       VarDecl* b = ctx.b == C_ROOT ? constants().var_true : nullptr;

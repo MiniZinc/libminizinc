@@ -123,7 +123,7 @@ bool contains_dups(std::vector<KeepAlive>& x, std::vector<KeepAlive>& y) {
 }
 
 template <class Lit>
-void flatten_linexp_call(EnvI& env, Ctx ctx, Ctx nctx, ASTString& cid, Call* c, EE& ret, VarDecl* b,
+void flatten_linexp_call(EnvI& env, Ctx ctx, const Ctx& nctx, ASTString& cid, Call* c, EE& ret, VarDecl* b,
                          VarDecl* r, std::vector<EE>& args_ee, std::vector<KeepAlive>& args) {
   typedef typename LinearTraits<Lit>::Val Val;
   Expression* al_arg = (cid == constants().ids.sum ? args_ee[0].r() : args_ee[1].r());
@@ -325,7 +325,7 @@ public:
   ~IgnorePartial() { env.ignorePartial = ignorePartial; }
 };
 
-EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
+EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarDecl* b) {
   EE ret;
   Call* c = e->cast<Call>();
   IgnorePartial ignorePartial(env, c);
@@ -341,6 +341,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     throw InternalError(ss.str());
   }
 
+  Ctx ctx = input_ctx;
   Ctx nctx = ctx;
   nctx.neg = false;
   ASTString cid = c->id();

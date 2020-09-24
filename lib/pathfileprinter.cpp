@@ -21,7 +21,7 @@ using std::vector;
 
 PathFilePrinter::PathFilePrinter(std::ostream& o, EnvI&) : os(o), constraint_index(0) {}
 
-void PathFilePrinter::addBetterName(Id* id, string name, string path, bool overwrite = false) {
+void PathFilePrinter::addBetterName(Id* id, const string& name, const string& path, bool overwrite = false) {
   string oname;
   string opath;
 
@@ -41,7 +41,7 @@ void PathFilePrinter::addBetterName(Id* id, string name, string path, bool overw
   betternames[id] = NamePair(oname, opath);
 }
 
-string path2name(string path) {
+string path2name(const string& path) {
   std::stringstream name;
 
   size_t idpos = path.rfind("id:");

@@ -212,7 +212,7 @@ bool MIP_gurobi_wrapper::Options::processOption(int& i, std::vector<std::string>
   return true;
 }
 
-void MIP_gurobi_wrapper::wrap_assert(bool cond, string msg, bool fTerm) {
+void MIP_gurobi_wrapper::wrap_assert(bool cond, const string& msg, bool fTerm) {
   if (!cond) {
     gurobi_buffer = "[NO ERROR STRING GIVEN]";
     if (error != 0) {
@@ -445,7 +445,7 @@ static char getGRBSense(MIP_wrapper::LinConType s) {
 
 void MIP_gurobi_wrapper::addRow(int nnz, int* rmatind, double* rmatval,
                                 MIP_wrapper::LinConType sense, double rhs, int mask,
-                                string rowName) {
+                                const string& rowName) {
   //// Make sure in order to notice the indices of lazy constr:
   ++nRows;
   /// Convert var types:
@@ -474,7 +474,7 @@ void MIP_gurobi_wrapper::addRow(int nnz, int* rmatind, double* rmatval,
 
 void MIP_gurobi_wrapper::addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind,
                                                 double* rmatval, MIP_wrapper::LinConType sense,
-                                                double rhs, string rowName) {
+                                                double rhs, const string& rowName) {
   wrap_assert(0 <= bVal && 1 >= bVal, "Gurobi: addIndicatorConstraint: bVal not 0/1");
   //// Make sure in order to notice the indices of lazy constr: also here?   TODO
   ++nRows;
@@ -484,7 +484,7 @@ void MIP_gurobi_wrapper::addIndicatorConstraint(int iBVar, int bVal, int nnz, in
   wrap_assert(error == 0, "Failed to add indicator constraint.");
 }
 
-void MIP_gurobi_wrapper::addMinimum(int iResultVar, int nnz, int* ind, std::string rowName) {
+void MIP_gurobi_wrapper::addMinimum(int iResultVar, int nnz, int* ind, const std::string& rowName) {
   error = dll_GRBaddgenconstrMin(model, rowName.c_str(), iResultVar, nnz, (const int*)ind,
                                  GRB_INFINITY);
   wrap_assert(error == 0, "Failed: GRBaddgenconstrMin.");
@@ -500,7 +500,7 @@ void MIP_gurobi_wrapper::addTimes(int x, int y, int z, const string& rowName) {
   wrap_assert(error == 0, "Failed: GRBaddqconstr.");
 }
 
-bool MIP_gurobi_wrapper::addSearch(const std::vector<VarId>& vars, const std::vector<int> pri) {
+bool MIP_gurobi_wrapper::addSearch(const std::vector<VarId>& vars, const std::vector<int>& pri) {
   assert(vars.size() == pri.size());
   static_assert(sizeof(VarId) == sizeof(int), "VarId should be (u)int currently");
   error = dll_GRBsetintattrlist(model, "BranchPriority", static_cast<int>(vars.size()),
@@ -512,7 +512,7 @@ bool MIP_gurobi_wrapper::addSearch(const std::vector<VarId>& vars, const std::ve
 int MIP_gurobi_wrapper::getFreeSearch() { return options->nFreeSearch; }
 
 bool MIP_gurobi_wrapper::addWarmStart(const std::vector<VarId>& vars,
-                                      const std::vector<double> vals) {
+                                      const std::vector<double>& vals) {
   assert(vars.size() == vals.size());
   static_assert(sizeof(VarId) == sizeof(int), "VarId should be (u)int currently");
   // error = GRBsetdblattrelement(model, "Start", 0, 1.0);

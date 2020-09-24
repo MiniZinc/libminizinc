@@ -825,7 +825,7 @@ public:
   StringDocument(std::string s) : stringDocument(std::move(s)) {}
 
   std::string getString() { return stringDocument; }
-  void setString(std::string s) { stringDocument = s; }
+  void setString(std::string s) { stringDocument = std::move(s); }
 };
 
 class DocumentList : public Document {
@@ -860,13 +860,13 @@ public:
     }
   }
 
-  void addStringToList(std::string s) { addDocumentToList(new StringDocument(s)); }
+  void addStringToList(std::string s) { addDocumentToList(new StringDocument(std::move(s))); }
 
   void addBreakPoint(bool b = false) { addDocumentToList(new BreakPoint(b)); }
 
   std::vector<Document*> getDocs() { return docs; }
 
-  void setList(std::vector<Document*> ld) { docs = ld; }
+  void setList(std::vector<Document*> ld) { docs = std::move(ld); }
 
   std::string getBeginToken() { return beginToken; }
 
@@ -883,9 +883,9 @@ public:
 
 DocumentList::DocumentList(std::string _beginToken, std::string _separator, std::string _endToken,
                            bool _alignment) {
-  beginToken = _beginToken;
-  separator = _separator;
-  endToken = _endToken;
+  beginToken = std::move(_beginToken);
+  separator = std::move(_separator);
+  endToken = std::move(_endToken);
   alignment = _alignment;
   unbreakable = false;
 }

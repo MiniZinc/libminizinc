@@ -87,14 +87,14 @@ public:
 
   /// adding a linear constraint
   virtual void addRow(int nnz, int* rmatind, double* rmatval, LinConType sense, double rhs,
-                      int mask = MaskConsType_Normal, std::string rowName = "");
+                      int mask = MaskConsType_Normal, const std::string& rowName = "");
   virtual void setVarBounds(int iVar, double lb, double ub);
   virtual void setVarLB(int iVar, double lb);
   virtual void setVarUB(int iVar, double ub);
   /// Indicator constraint: x[iBVar]==bVal -> lin constr
   virtual void addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind, double* rmatval,
-                                      LinConType sense, double rhs, std::string rowName = "");
-  virtual bool addWarmStart(const std::vector<VarId>& vars, const std::vector<double> vals);
+                                      LinConType sense, double rhs, const std::string& rowName = "");
+  virtual bool addWarmStart(const std::vector<VarId>& vars, const std::vector<double>& vals);
   /// adding an implication
   //     virtual void addImpl() = 0;
   virtual void setObjSense(int s);  // +/-1 for max/min
@@ -205,7 +205,7 @@ public:
                           char const* filetype_str);
 
 protected:
-  void wrap_assert(bool, std::string, bool fTerm = true);
+  void wrap_assert(bool, const std::string&, bool fTerm = true);
 
   /// Need to consider the 100 status codes in CPLEX and change with every version? TODO
   Status convertStatus(int cplexStatus);

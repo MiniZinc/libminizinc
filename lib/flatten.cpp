@@ -330,7 +330,7 @@ bool isfalse(EnvI& env, Expression* e) {
   return false;
 }
 
-EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
+EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
 KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e);
 
 /// Use bounds from ovd for vd if they are better.
@@ -536,7 +536,7 @@ void addPathAnnotation(EnvI& env, Expression* e) {
   }
 }
 
-VarDecl* newVarDecl(EnvI& env, Ctx ctx, TypeInst* ti, Id* origId, VarDecl* origVd,
+VarDecl* newVarDecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDecl* origVd,
                     Expression* rhs) {
   VarDecl* vd = nullptr;
 
@@ -2434,7 +2434,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
   }
 }
 
-KeepAlive conj(EnvI& env, VarDecl* b, Ctx ctx, const std::vector<EE>& e) {
+KeepAlive conj(EnvI& env, VarDecl* b, const Ctx& ctx, const std::vector<EE>& e) {
   if (!ctx.neg) {
     std::vector<Expression*> nontrue;
     for (const auto& i : e) {
@@ -2523,7 +2523,7 @@ KeepAlive conj(EnvI& env, VarDecl* b, Ctx ctx, const std::vector<EE>& e) {
   }
 }
 
-TypeInst* eval_typeinst(EnvI& env, Ctx ctx, VarDecl* vd) {
+TypeInst* eval_typeinst(EnvI& env, const Ctx& ctx, VarDecl* vd) {
   bool hasTiVars = (vd->ti()->domain() != nullptr) && vd->ti()->domain()->isa<TIId>();
   for (unsigned int i = 0; i < vd->ti()->ranges().size(); i++) {
     hasTiVars = hasTiVars || ((vd->ti()->ranges()[i]->domain() != nullptr) &&

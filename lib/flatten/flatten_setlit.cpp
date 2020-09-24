@@ -13,7 +13,7 @@
 
 namespace MiniZinc {
 
-EE flatten_setlit(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
+EE flatten_setlit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   CallStackItem _csi(env, e);
   EE ret;
   auto* sl = e->cast<SetLit>();

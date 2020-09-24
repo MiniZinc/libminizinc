@@ -33,7 +33,7 @@ namespace MiniZinc {
 using std::string;
 using std::vector;
 
-Env* changeLibrary(Env& e, vector<string>& includePaths, string globals_dir,
+Env* changeLibrary(Env& e, vector<string>& includePaths, const string& globals_dir,
                    CompilePassFlags& compflags, bool verbose = false) {
   GCLock lock;
   CopyMap cm;

@@ -217,7 +217,7 @@ public:
     return oss.str();
   }
 
-  static std::string rstHeading(std::string s, int level) {
+  static std::string rstHeading(const std::string& s, int level) {
     std::vector<char> levelChar({'#', '=', '-', '^', '+', '"'});
     std::ostringstream oss;
     oss << s << "\n";
@@ -317,7 +317,7 @@ void addToGroup(Group& gm, const std::string& group, DocItem& di) {
   }
 }
 
-void setGroupDesc(Group& maingroup, const std::string& group, std::string htmlName, std::string s) {
+void setGroupDesc(Group& maingroup, const std::string& group, const std::string& htmlName, const std::string& s) {
   if (group == "MAIN") {
     if (!maingroup.htmlName.empty()) {
       std::cerr << "Warning: two descriptions for group `" << group << "'\n";

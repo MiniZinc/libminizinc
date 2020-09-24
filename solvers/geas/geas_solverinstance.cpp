@@ -19,7 +19,7 @@ GeasSolverInstance::GeasSolverInstance(Env& env, std::ostream& log,
   registerConstraints();
 }
 
-void GeasSolverInstance::registerConstraint(std::string name, poster p) {
+void GeasSolverInstance::registerConstraint(const std::string& name, poster p) {
   _constraintRegistry.add("geas_" + name, p);
   _constraintRegistry.add(name, p);
 }

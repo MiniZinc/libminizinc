@@ -29,7 +29,7 @@
 using namespace MiniZinc;
 using namespace std;
 
-bool beginswith(string s, string t) { return s.compare(0, t.length(), t) == 0; }
+bool beginswith(const string& s, const string& t) { return s.compare(0, t.length(), t) == 0; }
 
 int main(int argc, char** argv) {
   string filename;

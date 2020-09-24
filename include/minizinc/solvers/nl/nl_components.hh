@@ -162,7 +162,7 @@ public:
   /** *** *** *** Printing Methods *** *** *** **/
 
   /** Print the bound with a comment containing the name of the variable/constraint. */
-  ostream& print_on(ostream& o, string vname) const;
+  ostream& print_on(ostream& o, const string& vname) const;
 
   /** Printing with 'body' as the name of the variable/constraint. */
   ostream& print_on(ostream& o) const;

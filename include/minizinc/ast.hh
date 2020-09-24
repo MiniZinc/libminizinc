@@ -257,7 +257,7 @@ public:
 };
 
 /// returns the Annotation specified by the string; returns NULL if not exists
-Expression* getAnnotation(const Annotation& ann, std::string str);
+Expression* getAnnotation(const Annotation& ann, const std::string& str);
 
 /// returns the Annotation specified by the string; returns NULL if not exists
 Expression* getAnnotation(const Annotation& ann, const ASTString& str);
@@ -556,7 +556,7 @@ public:
   void addAnnotation(Expression* ann);
 
   /// Add annotation \a ann to the expression
-  void addAnnotations(std::vector<Expression*> ann);
+  void addAnnotations(const std::vector<Expression*>& ann);
 
   const Annotation& ann() const { return isUnboxedVal() ? Annotation::empty : _ann; }
   Annotation& ann() { return isUnboxedVal() ? Annotation::empty : _ann; }
@@ -627,7 +627,7 @@ public:
   /// Construct set \$f\{v1,\dots,vn\}\$f
   SetLit(const Location& loc, const std::vector<Expression*>& v);
   /// Construct set \$f\{v1,\dots,vn\}\$f
-  SetLit(const Location& loc, ASTExprVec<Expression> v);
+  SetLit(const Location& loc, const ASTExprVec<Expression>& v);
   /// Construct set
   SetLit(const Location& loc, IntSetVal* isv);
   /// Construct set
@@ -885,7 +885,7 @@ public:
   /// Constructor
   ArrayAccess(const Location& loc, Expression* v, const std::vector<Expression*>& idx);
   /// Constructor
-  ArrayAccess(const Location& loc, Expression* v, ASTExprVec<Expression> idx);
+  ArrayAccess(const Location& loc, Expression* v, const ASTExprVec<Expression>& idx);
   /// Access value
   Expression* v() const { return _v; }
   /// Set value
@@ -1311,7 +1311,7 @@ public:
   /// The identifier of this expression type
   static const ExpressionId eid = E_TI;
   /// Constructor
-  TypeInst(const Location& loc, const Type& t, ASTExprVec<TypeInst> ranges,
+  TypeInst(const Location& loc, const Type& t, const ASTExprVec<TypeInst>& ranges,
            Expression* domain = nullptr);
   /// Constructor
   TypeInst(const Location& loc, const Type& t, Expression* domain = nullptr);

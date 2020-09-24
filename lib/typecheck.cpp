@@ -3017,7 +3017,7 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
   os << "\n}\n";
 }
 
-std::string createEnumToStringName(Id* ident, std::string prefix) {
+std::string createEnumToStringName(Id* ident, const std::string& prefix) {
   std::ostringstream ss;
   if (ident->str().c_str()[0] == '\'') {
     ss << "'" << prefix << ident->str().substr(1);

@@ -460,7 +460,7 @@ Expression* get_linexp(Expression* e) {
 }
 
 template <class Lit>
-void flatten_linexp_binop(EnvI& env, Ctx ctx, VarDecl* r, VarDecl* b, EE& ret, Expression* le0,
+void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE& ret, Expression* le0,
                           Expression* le1, BinOpType& bot, bool doubleNeg, std::vector<EE>& ees,
                           std::vector<KeepAlive>& args, ASTString& callid) {
   typedef typename LinearTraits<Lit>::Val Val;
@@ -799,7 +799,8 @@ void flatten_linexp_binop(EnvI& env, Ctx ctx, VarDecl* r, VarDecl* b, EE& ret, E
   }
 }
 
-EE flatten_binop(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
+EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarDecl* b) {
+  Ctx ctx = input_ctx;
   CallStackItem _csi(env, e);
   EE ret;
   auto* bo = e->cast<BinOp>();

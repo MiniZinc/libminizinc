@@ -104,11 +104,11 @@ public:
 
   /// adding a linear constraint
   virtual void addRow(int nnz, int* rmatind, double* rmatval, LinConType sense, double rhs,
-                      int mask = MaskConsType_Normal, std::string rowName = "");
+                      int mask = MaskConsType_Normal, const std::string& rowName = "");
   /// adding an implication
   //     virtual void addImpl() = 0;
 
-  virtual bool addWarmStart(const std::vector<VarId>& vars, const std::vector<double> vals);
+  virtual bool addWarmStart(const std::vector<VarId>& vars, const std::vector<double>& vals);
 
   virtual void setObjSense(int s);  // +/-1 for max/min
 
@@ -149,7 +149,7 @@ public:
 protected:
   //     OsiSolverInterface& getOsiSolver(void) { return osi; }
 
-  void wrap_assert(bool, std::string, bool fTerm = true);
+  void wrap_assert(bool, const std::string&, bool fTerm = true);
 
   /// Need to consider the 100 status codes in OSICBC and change with every version? TODO
   Status convertStatus(CbcModel* pModel);

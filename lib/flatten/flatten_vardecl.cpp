@@ -13,7 +13,7 @@
 
 namespace MiniZinc {
 
-EE flatten_vardecl(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
+EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   CallStackItem _csi(env, e);
   EE ret;
   GCLock lock;

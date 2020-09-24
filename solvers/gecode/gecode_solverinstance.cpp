@@ -15,6 +15,7 @@
 #include <minizinc/solvers/gecode/fzn_space.hh>
 #include <minizinc/solvers/gecode/gecode_constraints.hh>
 #include <minizinc/solvers/gecode_solverinstance.hh>
+#include <utility>
 
 #include "aux_brancher.hh"
 
@@ -197,7 +198,7 @@ GecodeSolverInstance::~GecodeSolverInstance() {
   // delete _solution; // TODO: is this necessary?
 }
 
-void GecodeSolverInstance::registerConstraint(std::string name, poster p) {
+void GecodeSolverInstance::registerConstraint(const std::string& name, poster p) {
   std::stringstream ss;
   ss << "gecode_" << name;
   _constraintRegistry.add(ss.str(), p);
@@ -1431,7 +1432,7 @@ SolverInstanceBase::Status GecodeSolverInstance::solve() {
 class IntVarComp {
 public:
   std::vector<Gecode::IntVar> iv;
-  IntVarComp(std::vector<Gecode::IntVar> b) { iv = b; }
+  IntVarComp(std::vector<Gecode::IntVar> b) { iv = std::move(b); }
   int operator()(int a, int b) { return static_cast<int>(iv[a].size() < iv[b].size()); }
 };
 

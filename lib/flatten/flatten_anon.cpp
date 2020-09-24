@@ -13,7 +13,7 @@
 
 namespace MiniZinc {
 
-EE flatten_anon(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
+EE flatten_anon(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   CallStackItem _csi(env, e);
   EE ret;
   auto* av = e->cast<AnonVar>();

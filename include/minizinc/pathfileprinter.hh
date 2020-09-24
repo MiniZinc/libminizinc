@@ -29,7 +29,7 @@ private:
   std::ostream& os;
   int constraint_index;
 
-  void addBetterName(Id* id, std::string name, std::string path, bool overwrite);
+  void addBetterName(Id* id, const std::string& name, const std::string& path, bool overwrite);
 
 public:
   PathFilePrinter(std::ostream& o, EnvI& envi);

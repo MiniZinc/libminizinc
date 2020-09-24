@@ -212,24 +212,24 @@ public:
 
   /// adding a linear constraint
   virtual void addRow(int nnz, int* rmatind, double* rmatval, LinConType sense, double rhs,
-                      int mask = MaskConsType_Normal, std::string rowName = "") {
+                      int mask = MaskConsType_Normal, const std::string& rowName = "") {
     SCIP_PLUGIN_CALL(addRow_SCIP(nnz, rmatind, rmatval, sense, rhs, mask, rowName));
   }
   virtual SCIP_RETCODE addRow_SCIP(int nnz, int* rmatind, double* rmatval, LinConType sense,
                                    double rhs, int mask = MaskConsType_Normal,
-                                   std::string rowName = "");
+                                   const std::string& rowName = "");
   /// adding an implication
   //     virtual void addImpl() = 0;
   /// Indicator constraint: x[iBVar]==bVal -> lin constr
   virtual void addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind, double* rmatval,
-                                      LinConType sense, double rhs, std::string rowName = "");
+                                      LinConType sense, double rhs, const std::string& rowName = "");
   /// Bounds disj for SCIP
   virtual void addBoundsDisj(int n, double* fUB, double* bnd, int* vars, int nF, double* fUBF,
-                             double* bndF, int* varsF, std::string rowName = "");
+                             double* bndF, int* varsF, const std::string& rowName = "");
 
   /// Cumulative, currently SCIP only
   virtual void addCumulative(int nnz, int* rmatind, double* d, double* r, double b,
-                             std::string rowName = "");
+                             const std::string& rowName = "");
 
   /// Times constraint: var[x]*var[y] == var[z]
   virtual void addTimes(int x, int y, int z, const std::string& rowName = "");

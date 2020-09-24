@@ -184,21 +184,21 @@ public:
 
   /// adding a linear constraint
   virtual void addRow(int nnz, int* rmatind, double* rmatval, LinConType sense, double rhs,
-                      int mask = MaskConsType_Normal, std::string rowName = "");
+                      int mask = MaskConsType_Normal, const std::string& rowName = "");
   virtual void setVarBounds(int iVar, double lb, double ub);
   virtual void setVarLB(int iVar, double lb);
   virtual void setVarUB(int iVar, double ub);
   /// Indicator constraint: x[iBVar]==bVal -> lin constr
   virtual void addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind, double* rmatval,
-                                      LinConType sense, double rhs, std::string rowName = "");
-  virtual void addMinimum(int iResultVar, int nnz, int* ind, std::string rowName = "");
+                                      LinConType sense, double rhs, const std::string& rowName = "");
+  virtual void addMinimum(int iResultVar, int nnz, int* ind, const std::string& rowName = "");
 
   /// Times constraint: var[x]*var[y] == var[z]
   virtual void addTimes(int x, int y, int z, const std::string& rowName = "");
 
   virtual int getFreeSearch();
-  virtual bool addSearch(const std::vector<VarId>& vars, const std::vector<int> pri);
-  virtual bool addWarmStart(const std::vector<VarId>& vars, const std::vector<double> vals);
+  virtual bool addSearch(const std::vector<VarId>& vars, const std::vector<int>& pri);
+  virtual bool addWarmStart(const std::vector<VarId>& vars, const std::vector<double>& vals);
   virtual bool defineMultipleObjectives(const MultipleObjectives& mo);
 
   int nRows = 0;  // to count rows in order tp notice lazy constraints
@@ -244,7 +244,7 @@ public:
   //     virtual double getTime() = 0;
 
 protected:
-  void wrap_assert(bool, std::string, bool fTerm = true);
+  void wrap_assert(bool, const std::string&, bool fTerm = true);
 
   /// Need to consider the 100 status codes in GUROBI and change with every version? TODO
   Status convertStatus(int gurobiStatus);

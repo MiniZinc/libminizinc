@@ -67,7 +67,7 @@ void classify_conjunct(Expression* e, IdMap<int>& eq_occurrences,
   other_branches.push_back(e);
 }
 
-EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
+EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   CallStackItem _csi(env, e);
   ITE* ite = e->cast<ITE>();
 

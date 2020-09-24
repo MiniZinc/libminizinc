@@ -346,7 +346,7 @@ bool MIP_cplex_wrapper::Options::processOption(int& i, std::vector<std::string>&
   return true;
 }
 
-void MIP_cplex_wrapper::wrap_assert(bool cond, string msg, bool fTerm) {
+void MIP_cplex_wrapper::wrap_assert(bool cond, const string& msg, bool fTerm) {
   if (!cond) {
     strcpy(cplex_buffer, "[NO ERROR STRING GIVEN]");
     dll_CPXgeterrorstring(env, status, cplex_buffer);
@@ -444,7 +444,7 @@ static char getCPLEXConstrSense(MIP_wrapper::LinConType sense) {
 
 void MIP_cplex_wrapper::addRow(int nnz, int* rmatind, double* rmatval,
                                MIP_wrapper::LinConType sense, double rhs, int mask,
-                               string rowName) {
+                               const string& rowName) {
   /// Convert var types:
   char ssense = getCPLEXConstrSense(sense);
   const int ccnt = 0;
@@ -470,7 +470,7 @@ void MIP_cplex_wrapper::addRow(int nnz, int* rmatind, double* rmatval,
 
 void MIP_cplex_wrapper::addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind,
                                                double* rmatval, MIP_wrapper::LinConType sense,
-                                               double rhs, string rowName) {
+                                               double rhs, const string& rowName) {
   wrap_assert(0 <= bVal && 1 >= bVal, "mzn-cplex: addIndicatorConstraint: bVal not 0/1");
   char ssense = getCPLEXConstrSense(sense);
   status = dll_CPXaddindconstr(env, lp, iBVar, 1 - bVal, nnz, rhs, ssense, rmatind, rmatval,
@@ -479,7 +479,7 @@ void MIP_cplex_wrapper::addIndicatorConstraint(int iBVar, int bVal, int nnz, int
 }
 
 bool MIP_cplex_wrapper::addWarmStart(const std::vector<VarId>& vars,
-                                     const std::vector<double> vals) {
+                                     const std::vector<double>& vals) {
   assert(vars.size() == vals.size());
   const char* sMSName = "MZNMS";
   int msindex = -1;
