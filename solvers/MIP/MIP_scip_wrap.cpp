@@ -299,7 +299,7 @@ SCIP_RETCODE MIP_scip_wrapper::delSCIPVars() {
 
 SCIP_RETCODE MIP_scip_wrapper::addRow_SCIP(int nnz, int* rmatind, double* rmatval,
                                            MIP_wrapper::LinConType sense, double rhs, int mask,
-                                           string rowName) {
+                                           const string& rowName) {
   /// Convert var types:
   double lh = -SCIPinfinityPlugin(plugin, scip), rh = SCIPinfinityPlugin(plugin, scip);
   switch (sense) {
@@ -388,7 +388,8 @@ void MIP_scip_wrapper::addIndicatorConstraint(int iBVar, int bVal, int nnz, int*
 }
 
 void MIP_scip_wrapper::addBoundsDisj(int n, double* fUB, double* bnd, int* vars, int nF,
-                                     double* fUBF, double* bndF, int* varsF, string rowName) {
+                                     double* fUBF, double* bndF, int* varsF,
+                                     const string& rowName) {
   SCIP_CONS* cons;
   std::vector<SCIP_VAR*> v(n + nF);
   std::vector<SCIP_BOUNDTYPE> bt(n + nF);
@@ -412,7 +413,7 @@ void MIP_scip_wrapper::addBoundsDisj(int n, double* fUB, double* bnd, int* vars,
 }
 
 void MIP_scip_wrapper::addCumulative(int nnz, int* rmatind, double* d, double* r, double b,
-                                     string rowName) {
+                                     const string& rowName) {
   SCIP_CONS* cons;
   vector<SCIP_VAR*> ab(nnz);
   vector<int> nd(nnz), nr(nnz);
