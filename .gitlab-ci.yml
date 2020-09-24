@@ -31,6 +31,16 @@ check:format:
     - cmake --build . --target format
   tags: [linux, docker]
 
+check:analyse:
+  stage: check
+  image: dekker1/minibuild:clang-tidy
+  script:
+    - mkdir -p build
+    - cd build
+    - cmake -GNinja .. -DCLANG_CXX_CLANG_TIDY="clang-tidy" -DCMAKE_BUILD_TYPE="Debug"
+    - cmake --build . --config Debug
+  tags: [linux, docker]
+
 # ----------- Build MiniZinc -----------
 
 .build_template: &build_definition
