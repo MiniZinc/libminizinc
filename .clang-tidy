@@ -17,7 +17,8 @@ Checks: '-*,
   bugprone-unhandled-self-assignment,
   modernize-deprecated-headers,
   performance-unnecessary-value-param,
-  readability-named-parameter
+  readability-named-parameter,
+  readability-non-const-parameter
 '
 WarningsAsErrors:  '*'
 HeaderFilterRegex: '^include/minizinc'
