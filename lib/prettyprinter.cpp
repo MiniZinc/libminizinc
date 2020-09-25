@@ -161,6 +161,7 @@ private:
   bool _flatZinc;
   EnvI* _env;
   std::ostream& _os;
+
 public:
   PlainPrinter(std::ostream& os, bool flatZinc, EnvI* env)
       : _env(env), _os(os), _flatZinc(flatZinc) {}
@@ -273,7 +274,7 @@ public:
               _os << "}";
               if (!sl.isv()->max(sl.isv()->size() - 1).isFinite()) {
                 _os << " union " << sl.isv()->min(sl.isv()->size() - 1) << ".."
-                   << sl.isv()->max(sl.isv()->size() - 1);
+                    << sl.isv()->max(sl.isv()->size() - 1);
               }
             }
           }
@@ -845,8 +846,8 @@ public:
       delete *it;
     }
   }
-  DocumentList(std::string beginToken = "", std::string separator = "",
-               std::string endToken = "", bool alignment = true);
+  DocumentList(std::string beginToken = "", std::string separator = "", std::string endToken = "",
+               bool alignment = true);
 
   void addDocumentToList(Document* d) {
     _docs.push_back(d);

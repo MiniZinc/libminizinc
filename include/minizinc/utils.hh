@@ -209,7 +209,8 @@ inline void split(const std::string& str, std::vector<std::string>& words) {
 
 /// Puts the strings' c_str()s into the 2nd argument.
 /// The latter is only valid as long as the former isn't changed.
-inline void vec_string2vec_pchar(const std::vector<std::string>& vS, std::vector<const char*>& vPC) {
+inline void vec_string2vec_pchar(const std::vector<std::string>& vS,
+                                 std::vector<const char*>& vPC) {
   vPC.resize(vS.size());
   for (size_t i = 0; i < vS.size(); ++i) {
     vPC[i] = vS[i].c_str();

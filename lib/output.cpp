@@ -18,7 +18,7 @@ namespace MiniZinc {
 void output_vardecls(EnvI& env, Item* ci, Expression* e);
 
 bool cannot_use_rhs_for_output(EnvI& env, Expression* e,
-                           std::unordered_set<FunctionI*>& seen_functions) {
+                               std::unordered_set<FunctionI*>& seen_functions) {
   if (e == nullptr) {
     return true;
   }
@@ -362,7 +362,8 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e) {
       auto idx = reallyFlat != nullptr ? env.outputFlatVarOccurrences.idx.find(reallyFlat->id())
                                        : env.outputFlatVarOccurrences.idx.end();
       auto idx2 = env.outputVarOccurrences.idx.find(vd->id());
-      if (idx == env.outputFlatVarOccurrences.idx.end() && idx2 == env.outputVarOccurrences.idx.end()) {
+      if (idx == env.outputFlatVarOccurrences.idx.end() &&
+          idx2 == env.outputVarOccurrences.idx.end()) {
         auto* nvi = new VarDeclI(Location().introduce(), copy(env, env.cmap, vd)->cast<VarDecl>());
         Type t = nvi->e()->ti()->type();
         if (t.ti() != Type::TI_PAR) {
@@ -503,7 +504,7 @@ void process_deletions(EnvI& e) {
 }
 
 void create_dzn_output_item(EnvI& e, bool outputObjective, bool includeOutputItem, bool hasChecker,
-                         bool outputForChecker) {
+                            bool outputForChecker) {
   std::vector<Expression*> outputVars;
 
   class DZNOVisitor : public ItemVisitor {
@@ -649,7 +650,8 @@ void create_dzn_output_item(EnvI& e, bool outputObjective, bool includeOutputIte
   e.model->addItem(newOutputItem);
 }
 
-ArrayLit* create__json_output(EnvI& e, bool outputObjective, bool includeOutputItem, bool hasChecker) {
+ArrayLit* create__json_output(EnvI& e, bool outputObjective, bool includeOutputItem,
+                              bool hasChecker) {
   std::vector<Expression*> outputVars;
   outputVars.push_back(new StringLit(Location().introduce(), "{\n"));
 
@@ -773,14 +775,16 @@ ArrayLit* create__json_output(EnvI& e, bool outputObjective, bool includeOutputI
   outputVars.push_back(new StringLit(Location().introduce(), "\n}\n"));
   return new ArrayLit(Location().introduce(), outputVars);
 }
-void create_json_output_item(EnvI& e, bool outputObjective, bool includeOutputItem, bool hasChecker) {
-  auto* newOutputItem = new OutputI(
-      Location().introduce(), create__json_output(e, outputObjective, includeOutputItem, hasChecker));
+void create_json_output_item(EnvI& e, bool outputObjective, bool includeOutputItem,
+                             bool hasChecker) {
+  auto* newOutputItem =
+      new OutputI(Location().introduce(),
+                  create__json_output(e, outputObjective, includeOutputItem, hasChecker));
   e.model->addItem(newOutputItem);
 }
 
 void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outputObjective,
-                  bool includeOutputItem, bool hasChecker) {
+                   bool includeOutputItem, bool hasChecker) {
   // Create new output model
   OutputI* outputItem = nullptr;
   GCLock lock;

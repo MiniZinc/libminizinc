@@ -188,8 +188,8 @@ public:
   bool statistics = false;
   bool allSolutions = false;
   int nSolutions = -1;
-  unsigned int c_d = 8; // NOLINT(readability-identifier-naming)
-  unsigned int a_d = 2; // NOLINT(readability-identifier-naming)
+  unsigned int c_d = 8;  // NOLINT(readability-identifier-naming)
+  unsigned int a_d = 2;  // NOLINT(readability-identifier-naming)
   int nodes = 0;
   int fails = 0;
   int time = 0;

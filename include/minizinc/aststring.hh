@@ -47,7 +47,7 @@ public:
   /// Size of the string
   size_t size() const;
   /// Underlying C string object
-  const char* c_str() const; // NOLINT(readability-identifier-naming)
+  const char* c_str() const;  // NOLINT(readability-identifier-naming)
   /// Underlying string implementation
   ASTStringData* aststr() const { return _s; }
 

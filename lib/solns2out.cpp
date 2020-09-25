@@ -148,8 +148,8 @@ void Solns2Out::initFromOzn(const std::string& filename) {
   {
     _env = new Env();
     std::stringstream errstream;
-    if ((_outputModel = parse(*_env, filenames, std::vector<std::string>(), "", "", _includePaths, false,
-                         false, false, false, errstream)) != nullptr) {
+    if ((_outputModel = parse(*_env, filenames, std::vector<std::string>(), "", "", _includePaths,
+                              false, false, false, false, errstream)) != nullptr) {
       std::vector<TypeError> typeErrors;
       _env->model(_outputModel);
       MZN_ASSERT_HARD_MSG(_env, "solns2out: could not allocate Env");
@@ -189,7 +189,7 @@ void Solns2Out::restoreDefaults() {
 void Solns2Out::parseAssignments(string& solution) {
   std::vector<SyntaxError> se;
   unique_ptr<Model> sm(parse_from_string(*_env, solution, "solution received from solver",
-                                       _includePaths, false, true, false, false, _log, se));
+                                         _includePaths, false, true, false, false, _log, se));
   if (sm.get() == nullptr) {
     throw Error("solns2out_base: could not parse solution");
   }
@@ -540,7 +540,9 @@ Solns2Out::~Solns2Out() {
   }
 }
 
-ostream& Solns2Out::getOutput() { return (((_outStream.get() != nullptr) && _outStream->good()) ? *_outStream : _os); }
+ostream& Solns2Out::getOutput() {
+  return (((_outStream.get() != nullptr) && _outStream->good()) ? *_outStream : _os);
+}
 
 ostream& Solns2Out::getLog() { return _log; }
 

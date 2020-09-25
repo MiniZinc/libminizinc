@@ -173,8 +173,7 @@ void p_int_lin_cmp(GecodeSolverInstance& s, IntRelType irt, const Call* call) {
     }
   } else {
     IntVarArgs iv = s.arg2intvarargs(vars);
-    linear(*s.currentSpace, ia, iv, irt, call->arg(2)->cast<IntLit>()->v().toInt(),
-           s.ann2icl(ann));
+    linear(*s.currentSpace, ia, iv, irt, call->arg(2)->cast<IntLit>()->v().toInt(), s.ann2icl(ann));
   }
 }
 void p_int_lin_cmp_reif(GecodeSolverInstance& s, IntRelType irt, ReifyMode rm, const Call* call) {
@@ -285,8 +284,7 @@ void p_bool_lin_cmp(GecodeSolverInstance& s, IntRelType irt, const Call* call) {
     linear(*s.currentSpace, ia, iv, irt,
            s.resolveVar(call->arg(2)->cast<Id>()->decl()).intVar(s.currentSpace), s.ann2icl(ann));
   } else {
-    linear(*s.currentSpace, ia, iv, irt, call->arg(2)->cast<IntLit>()->v().toInt(),
-           s.ann2icl(ann));
+    linear(*s.currentSpace, ia, iv, irt, call->arg(2)->cast<IntLit>()->v().toInt(), s.ann2icl(ann));
   }
 }
 void p_bool_lin_cmp_reif(GecodeSolverInstance& s, IntRelType irt, ReifyMode rm, const Call* call) {
@@ -524,23 +522,23 @@ void p_bool_lt_imp(SolverInstanceBase& s, const Call* call) {
   p_bool_cmp_reif(static_cast<GecodeSolverInstance&>(s), IRT_LE, RM_IMP, call);
 }
 
-#define BOOL_OP(op)                                                                              \
-  BoolVar b0 = gi.arg2boolvar(call->arg(0));                                                     \
-  BoolVar b1 = gi.arg2boolvar(call->arg(1));                                                     \
-  if (!call->arg(2)->type().isvar() && call->arg(2)->type().isbool()) {                          \
+#define BOOL_OP(op)                                                                            \
+  BoolVar b0 = gi.arg2boolvar(call->arg(0));                                                   \
+  BoolVar b1 = gi.arg2boolvar(call->arg(1));                                                   \
+  if (!call->arg(2)->type().isvar() && call->arg(2)->type().isbool()) {                        \
     rel(*gi.currentSpace, b0, op, b1, call->arg(2)->cast<BoolLit>()->v(), gi.ann2icl(ann));    \
-  } else {                                                                                       \
+  } else {                                                                                     \
     rel(*gi.currentSpace, b0, op, b1,                                                          \
         gi.resolveVar(gi.getVarDecl(call->arg(2))).boolVar(gi.currentSpace), gi.ann2icl(ann)); \
   }
 
-#define BOOL_ARRAY_OP(op)                                                                        \
-  BoolVarArgs bv = gi.arg2boolvarargs(call->arg(0));                                             \
-  if (call->argCount() == 1) {                                                                     \
+#define BOOL_ARRAY_OP(op)                                                                      \
+  BoolVarArgs bv = gi.arg2boolvarargs(call->arg(0));                                           \
+  if (call->argCount() == 1) {                                                                 \
     rel(*gi.currentSpace, op, bv, 1, gi.ann2icl(ann));                                         \
-  } else if (!call->arg(1)->type().isvar() && call->arg(1)->type().isbool()) {                   \
+  } else if (!call->arg(1)->type().isvar() && call->arg(1)->type().isbool()) {                 \
     rel(*gi.currentSpace, op, bv, call->arg(1)->cast<BoolLit>()->v(), gi.ann2icl(ann));        \
-  } else {                                                                                       \
+  } else {                                                                                     \
     rel(*gi.currentSpace, op, bv,                                                              \
         gi.resolveVar(gi.getVarDecl(call->arg(1))).boolVar(gi.currentSpace), gi.ann2icl(ann)); \
   }
@@ -661,8 +659,7 @@ void p_bool_l_imp(SolverInstanceBase& s, const Call* call) {
         static_cast<int>(call->arg(2)->cast<BoolLit>()->v()), gi.ann2icl(ann));
   } else {
     rel(*gi.currentSpace, b1, BoolOpType::BOT_IMP, b0,
-        gi.resolveVar(call->arg(2)->cast<Id>()->decl()).boolVar(gi.currentSpace),
-        gi.ann2icl(ann));
+        gi.resolveVar(call->arg(2)->cast<Id>()->decl()).boolVar(gi.currentSpace), gi.ann2icl(ann));
   }
 }
 void p_bool_r_imp(SolverInstanceBase& s, const Call* call) {
@@ -1592,7 +1589,7 @@ void p_float_ne(SolverInstanceBase& s, const Call* ce) {
     GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s); \
     FloatVar x = gi.arg2floatvar(ce->arg(0));                         \
     FloatVar y = gi.arg2floatvar(ce->arg(1));                         \
-    Op(*gi.currentSpace, x, y);                                     \
+    Op(*gi.currentSpace, x, y);                                       \
   }
 P_FLOAT_OP(acos)
 P_FLOAT_OP(asin)

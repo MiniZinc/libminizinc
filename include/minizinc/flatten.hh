@@ -87,29 +87,29 @@ void populate_output(Env& e);
 /// Statistics on flat models
 struct FlatModelStatistics {
   /// Number of integer variables
-  int n_int_vars; // NOLINT(readability-identifier-naming)
+  int n_int_vars;  // NOLINT(readability-identifier-naming)
   /// Number of bool variables
-  int n_bool_vars; // NOLINT(readability-identifier-naming)
+  int n_bool_vars;  // NOLINT(readability-identifier-naming)
   /// Number of float variables
-  int n_float_vars; // NOLINT(readability-identifier-naming)
+  int n_float_vars;  // NOLINT(readability-identifier-naming)
   /// Number of set variables
-  int n_set_vars; // NOLINT(readability-identifier-naming)
+  int n_set_vars;  // NOLINT(readability-identifier-naming)
   /// Number of bool constraints
-  int n_bool_ct; // NOLINT(readability-identifier-naming)
+  int n_bool_ct;  // NOLINT(readability-identifier-naming)
   /// Number of integer constraints
-  int n_int_ct; // NOLINT(readability-identifier-naming)
+  int n_int_ct;  // NOLINT(readability-identifier-naming)
   /// Number of float constraints
-  int n_float_ct; // NOLINT(readability-identifier-naming)
+  int n_float_ct;  // NOLINT(readability-identifier-naming)
   /// Number of set constraints
-  int n_set_ct; // NOLINT(readability-identifier-naming)
+  int n_set_ct;  // NOLINT(readability-identifier-naming)
   /// Number of reified constraints evaluated
-  int n_reif_ct; // NOLINT(readability-identifier-naming)
+  int n_reif_ct;  // NOLINT(readability-identifier-naming)
   /// Number of half-reified constraints evaluated
-  int n_imp_ct; // NOLINT(readability-identifier-naming)
+  int n_imp_ct;  // NOLINT(readability-identifier-naming)
   /// Number of implications eliminated using path compression
-  int n_imp_del; // NOLINT(readability-identifier-naming)
+  int n_imp_del;  // NOLINT(readability-identifier-naming)
   /// Number of linear expressions eliminated using path compression
-  int n_lin_del; // NOLINT(readability-identifier-naming)
+  int n_lin_del;  // NOLINT(readability-identifier-naming)
   /// Constructor
   FlatModelStatistics()
       : n_int_vars(0),

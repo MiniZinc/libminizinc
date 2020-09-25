@@ -26,7 +26,7 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e);
 
 /// Create initial output model
 void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outputObjective,
-                  bool includeOutputItem, bool hasChecker);
+                   bool includeOutputItem, bool hasChecker);
 /// Finalise output model after flattening is complete
 void finalise_output(EnvI& e);
 
@@ -34,6 +34,6 @@ void finalise_output(EnvI& e);
 void cleanup_output(EnvI& env);
 
 ArrayLit* create__json_output(EnvI& env, bool outputObjective, bool includeOutputItem,
-                           bool hasChecker);
+                              bool hasChecker);
 
 }  // namespace MiniZinc

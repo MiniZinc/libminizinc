@@ -89,7 +89,8 @@ bool ImpCompressor::trackItem(Item* i) {
           storeItem(vdi->e(), i);
           return true;
           // x ::ctx_pos = pred(...); potentially: pred_imp(..., x); i.e. x -> pred(...)
-        } else if (_env.fopts.enableHalfReification && vdi->e()->ann().contains(constants().ctx.pos)) {
+        } else if (_env.fopts.enableHalfReification &&
+                   vdi->e()->ann().contains(constants().ctx.pos)) {
           GCLock lock;
           auto cid = _env.halfReifyId(c->id());
           std::vector<Type> args;

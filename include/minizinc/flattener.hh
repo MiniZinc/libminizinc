@@ -111,7 +111,7 @@ private:
     bool outputOutputItem = false;
     bool compileSolutionCheckModel = false;
   } _flags;
-  
+
   int _optMIPDmaxIntvEE = 0;
   double _optMIPDmaxDensEE = 0.0;
 

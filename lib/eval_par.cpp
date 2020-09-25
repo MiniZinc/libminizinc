@@ -2882,7 +2882,7 @@ public:
         bounds.emplace_back(0.0, 0.0);
       } else {
         bounds.emplace_back(static_cast<double>(result.first.toInt()),
-                             static_cast<double>(result.second.toInt()));
+                            static_cast<double>(result.second.toInt()));
       }
     } else if (c.id() == "abs") {
       BottomUpIterator<ComputeFloatBounds> cbi(*this);

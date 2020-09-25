@@ -258,12 +258,12 @@ void unify(EnvI& env, std::vector<VarDecl*>& deletedVarDecls, Id* id0, Id* id1) 
 
 void substitute_fixed_vars(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarDecls);
 void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
-                            std::deque<int>& vardeclQueue, std::deque<Item*>& constraintQueue,
-                            std::vector<Item*>& toRemove, std::vector<VarDecl*>& deletedVarDecls,
-                            std::unordered_map<Expression*, int>& nonFixedLiteralCount);
+                              std::deque<int>& vardeclQueue, std::deque<Item*>& constraintQueue,
+                              std::vector<Item*>& toRemove, std::vector<VarDecl*>& deletedVarDecls,
+                              std::unordered_map<Expression*, int>& nonFixedLiteralCount);
 
 bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarDecls,
-                        std::deque<Item*>& constraintQueue, std::deque<int>& vardeclQueue);
+                         std::deque<Item*>& constraintQueue, std::deque<int>& vardeclQueue);
 
 void push_vardecl(EnvI& env, VarDeclI* vdi, int vd_idx, std::deque<int>& q) {
   if (!vdi->removed() && !vdi->flag()) {
@@ -397,7 +397,8 @@ void optimize(Env& env, bool chain_compression) {
               for (unsigned int j = al->size(); (j--) != 0U;) {
                 if (Id* id = (*al)[j]->dynamicCast<Id>()) {
                   if (id->decl()->ti()->domain() == nullptr) {
-                    toAssignBoolVars.push_back(envi.varOccurrences.idx.find(id->decl()->id())->second);
+                    toAssignBoolVars.push_back(
+                        envi.varOccurrences.idx.find(id->decl()->id())->second);
                   } else if (id->decl()->ti()->domain() == constants().literalFalse) {
                     env.envi().fail();
                     id->decl()->e(constants().literalTrue);
@@ -588,7 +589,8 @@ void optimize(Env& env, bool chain_compression) {
         CollectDecls cd(envi.varOccurrences, deletedVarDecls, bi);
         top_down(cd, bi->cast<ConstraintI>()->e());
         bi->remove();
-        push_vardecl(envi, envi.varOccurrences.idx.find(finalId->decl()->id())->second, vardeclQueue);
+        push_vardecl(envi, envi.varOccurrences.idx.find(finalId->decl()->id())->second,
+                     vardeclQueue);
         push_dependent_constraints(envi, finalId, constraintQueue);
       }  // todo: for var decls, we could unify the variable with the remaining finalId (the RHS)
     }
@@ -624,7 +626,8 @@ void optimize(Env& env, bool chain_compression) {
               // Variable assigned to id, so fix id
               if (id->decl()->ti()->domain() == nullptr) {
                 id->decl()->ti()->domain(vd->ti()->domain());
-                push_vardecl(envi, envi.varOccurrences.idx.find(id->decl()->id())->second, vardeclQueue);
+                push_vardecl(envi, envi.varOccurrences.idx.find(id->decl()->id())->second,
+                             vardeclQueue);
               } else if (id->decl()->ti()->domain() != vd->ti()->domain()) {
                 env.envi().fail();
               }
@@ -638,7 +641,8 @@ void optimize(Env& env, bool chain_compression) {
                   if (Id* id = (*al)[i]->dynamicCast<Id>()) {
                     if (id->decl()->ti()->domain() == nullptr) {
                       id->decl()->ti()->domain(constants().literalTrue);
-                      push_vardecl(envi, envi.varOccurrences.idx.find(id->decl()->id())->second, vardeclQueue);
+                      push_vardecl(envi, envi.varOccurrences.idx.find(id->decl()->id())->second,
+                                   vardeclQueue);
                     } else if (id->decl()->ti()->domain() == constants().literalFalse) {
                       env.envi().fail();
                       remove = true;
@@ -657,7 +661,8 @@ void optimize(Env& env, bool chain_compression) {
                     if (Id* id = (*al)[j]->dynamicCast<Id>()) {
                       if (id->decl()->ti()->domain() == nullptr) {
                         id->decl()->ti()->domain(constants().boollit(!ispos));
-                        push_vardecl(envi, envi.varOccurrences.idx.find(id->decl()->id())->second, vardeclQueue);
+                        push_vardecl(envi, envi.varOccurrences.idx.find(id->decl()->id())->second,
+                                     vardeclQueue);
                       } else if (id->decl()->ti()->domain() == constants().boollit(ispos)) {
                         env.envi().fail();
                         remove = true;
@@ -689,8 +694,9 @@ void optimize(Env& env, bool chain_compression) {
                   auto ait = envi.varOccurrences.itemMap.find(vdi->e()->id()->decl()->id());
                   if (ait != envi.varOccurrences.itemMap.end()) {
                     for (auto* aitem : ait->second) {
-                      simplify_bool_constraint(envi, aitem, vd, remove, vardeclQueue, constraintQueue,
-                                             toRemove, deletedVarDecls, nonFixedLiteralCount);
+                      simplify_bool_constraint(envi, aitem, vd, remove, vardeclQueue,
+                                               constraintQueue, toRemove, deletedVarDecls,
+                                               nonFixedLiteralCount);
                     }
                   }
                   continue;
@@ -698,7 +704,7 @@ void optimize(Env& env, bool chain_compression) {
               }
               // Simplify the constraint *item (which depends on this variable)
               simplify_bool_constraint(envi, *item, vd, remove, vardeclQueue, constraintQueue,
-                                     toRemove, deletedVarDecls, nonFixedLiteralCount);
+                                       toRemove, deletedVarDecls, nonFixedLiteralCount);
             }
           }
           // Actually remove all items that have become unnecessary in the step above
@@ -741,7 +747,8 @@ void optimize(Env& env, bool chain_compression) {
           if (item->removed()) {
             // This variable was removed because of unification, so we look up the
             // variable it was unified to
-            item = m[envi.varOccurrences.find(item->cast<VarDeclI>()->e()->id()->decl())]->cast<VarDeclI>();
+            item = m[envi.varOccurrences.find(item->cast<VarDeclI>()->e()->id()->decl())]
+                       ->cast<VarDeclI>();
           }
           item->cast<VarDeclI>()->flag(false);
           c = Expression::dynamicCast<Call>(item->cast<VarDeclI>()->e()->e());
@@ -911,12 +918,14 @@ void optimize(Env& env, bool chain_compression) {
               VarDecl* vd_out =
                   (*envi.output)[envi.outputFlatVarOccurrences.find(cur)]->cast<VarDeclI>()->e();
               vd_out->e(val);
-              CollectDecls cd(envi.varOccurrences, deletedVarDecls, m[cur_idx->second]->cast<VarDeclI>());
+              CollectDecls cd(envi.varOccurrences, deletedVarDecls,
+                              m[cur_idx->second]->cast<VarDeclI>());
               top_down(cd, cur->e());
               (*envi.flat())[cur_idx->second]->remove();
             }
           } else {
-            CollectDecls cd(envi.varOccurrences, deletedVarDecls, m[cur_idx->second]->cast<VarDeclI>());
+            CollectDecls cd(envi.varOccurrences, deletedVarDecls,
+                            m[cur_idx->second]->cast<VarDeclI>());
             top_down(cd, cur->e());
             (*envi.flat())[cur_idx->second]->remove();
           }
@@ -1004,7 +1013,7 @@ void substitute_fixed_vars(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVa
 }
 
 bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarDecls,
-                        std::deque<Item*>& constraintQueue, std::deque<int>& vardeclQueue) {
+                         std::deque<Item*>& constraintQueue, std::deque<int>& vardeclQueue) {
   Expression* con_e;
   bool is_true;
   bool is_false;
@@ -1100,8 +1109,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
               canRemove = true;
             } else {
               FloatVal value = eval_float(env, arg);
-              if (LinearTraits<FloatLit>::domainContains(eval_floatset(env, ti->domain()),
-                                                          value)) {
+              if (LinearTraits<FloatLit>::domainContains(eval_floatset(env, ti->domain()), value)) {
                 ti->domain(new BinOp(Location().introduce(), arg, BOT_DOTDOT, arg));
                 ti->setComputedDomain(false);
                 canRemove = true;
@@ -1407,9 +1415,9 @@ int decrement_non_fixed_vars(std::unordered_map<Expression*, int>& nonFixedLiter
 }
 
 void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
-                            std::deque<int>& vardeclQueue, std::deque<Item*>& constraintQueue,
-                            std::vector<Item*>& toRemove, std::vector<VarDecl*>& deletedVarDecls,
-                            std::unordered_map<Expression*, int>& nonFixedLiteralCount) {
+                              std::deque<int>& vardeclQueue, std::deque<Item*>& constraintQueue,
+                              std::vector<Item*>& toRemove, std::vector<VarDecl*>& deletedVarDecls,
+                              std::unordered_map<Expression*, int>& nonFixedLiteralCount) {
   if (ii->isa<SolveI>()) {
     remove = false;
     return;

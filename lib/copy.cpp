@@ -255,7 +255,7 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
           assert(!c->decl(i, j)->e());
         }
         g.g.emplace_back(vv, copy(env, m, c->in(i), followIds, copyFundecls, isFlatModel),
-                          copy(env, m, c->where(i), followIds, copyFundecls, isFlatModel));
+                         copy(env, m, c->where(i), followIds, copyFundecls, isFlatModel));
       }
       cc->init(copy(env, m, c->e(), followIds, copyFundecls, isFlatModel), g);
       ret = cc;

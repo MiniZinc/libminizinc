@@ -34,6 +34,7 @@ class Model;
 class VarDeclIteratorContainer {
 private:
   Model* _m;
+
 public:
   VarDeclIteratorContainer(Model* m) : _m(m) {}
   VarDeclIterator begin();
@@ -43,6 +44,7 @@ public:
 class ConstraintIteratorContainer {
 private:
   Model* _m;
+
 public:
   ConstraintIteratorContainer(Model* m) : _m(m) {}
   ConstraintIterator begin();
@@ -52,6 +54,7 @@ public:
 class FunctionIteratorContainer {
 private:
   Model* _m;
+
 public:
   FunctionIteratorContainer(Model* m) : _m(m) {}
   FunctionIterator begin();
@@ -116,7 +119,7 @@ protected:
   /// Store some declarations
   struct FnDecls {
     using TCheckedDecl = std::pair<bool, FunctionI*>;  // bool means that it was checked
-    TCheckedDecl boundsDisj = {false, nullptr};       // SCIP's bound disjunction
+    TCheckedDecl boundsDisj = {false, nullptr};        // SCIP's bound disjunction
   } _fnDecls;
 
 public:
@@ -202,7 +205,7 @@ public:
   ConstraintIteratorContainer constraints();
   VarDeclIteratorContainer vardecls();
   FunctionIteratorContainer functions();
-  
+
   SolveI* solveItem();
 
   OutputI* outputItem();

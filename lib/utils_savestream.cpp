@@ -26,7 +26,9 @@ using namespace MiniZinc;
 
 // StreamRedir::StreamRedir(FILE *s0) : d_s0(s0) { }
 
-StreamRedir::StreamRedir(FILE* s0, FILE* s1, bool fFlush) : _file0(s0) { replaceStream(s1, fFlush); }
+StreamRedir::StreamRedir(FILE* s0, FILE* s1, bool fFlush) : _file0(s0) {
+  replaceStream(s1, fFlush);
+}
 StreamRedir::~StreamRedir() { restore(); }
 
 void StreamRedir::replaceStream(FILE* s1, bool fFlush) {

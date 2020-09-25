@@ -1060,7 +1060,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
           VarDecl* reif_b;
           if (r == nullptr || (r != nullptr && r->e() != nullptr)) {
             reif_b = new_vardecl(env, Ctx(), new TypeInst(Location().introduce(), Type::varbool()),
-                                nullptr, nullptr, nullptr);
+                                 nullptr, nullptr, nullptr);
             add_ctx_ann(reif_b, ctx.b);
             if (reif_b->ti()->domain() != nullptr) {
               if (reif_b->ti()->domain() == constants().literalTrue) {

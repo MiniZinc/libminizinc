@@ -363,8 +363,9 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
           toString += std::to_string(p) + "_";
         }
 
-        auto* fi = new FunctionI(Location().introduce(), create_enum_to_string_name(ident, toString),
-                                 ti_fi, fi_params, ite);
+        auto* fi =
+            new FunctionI(Location().introduce(), create_enum_to_string_name(ident, toString),
+                          ti_fi, fi_params, ite);
         enumItems->addItem(fi);
       } else {
         // This is an enum constructor C(E)
@@ -460,9 +461,9 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
                       sl_absent_dzn);
 
           Call* toEnumE = new Call(Location().introduce(), "to_enum", {otherEnumId, deopt});
-          Call* toString =
-              new Call(Location().introduce(), create_enum_to_string_name(otherEnumId, "_toString_"),
-                       {toEnumE, vd_ab->id(), vd_aj->id()});
+          Call* toString = new Call(Location().introduce(),
+                                    create_enum_to_string_name(otherEnumId, "_toString_"),
+                                    {toEnumE, vd_ab->id(), vd_aj->id()});
 
           auto* openOther =
               new StringLit(Location().introduce(), std::string(c->id().c_str()) + "(");
@@ -488,8 +489,9 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
             XtoString += std::to_string(p) + "_";
           }
 
-          auto* fi = new FunctionI(Location().introduce(), create_enum_to_string_name(ident, XtoString),
-                                   ti_fi, fi_params, ite);
+          auto* fi =
+              new FunctionI(Location().introduce(), create_enum_to_string_name(ident, XtoString),
+                            ti_fi, fi_params, ite);
           enumItems->addItem(fi);
         }
 
@@ -566,8 +568,9 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
     fi_params[0] = vd_aa;
     fi_params[1] = vd_ab;
     fi_params[2] = vd_aj;
-    auto* fi = new FunctionI(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
-                             ti_fi, fi_params, ite);
+    auto* fi =
+        new FunctionI(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
+                      ti_fi, fi_params, ite);
     enumItems->addItem(fi);
 
     /*
@@ -634,8 +637,9 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
     _toString_ENUMArgs[0] = aa_xxi;
     _toString_ENUMArgs[1] = vd_b->id();
     _toString_ENUMArgs[2] = vd_j->id();
-    Call* _toString_ENUM = new Call(
-        Location().introduce(), create_enum_to_string_name(ident, "_toString_"), _toString_ENUMArgs);
+    Call* _toString_ENUM =
+        new Call(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
+                 _toString_ENUMArgs);
 
     std::vector<Expression*> index_set_xx_args(1);
     index_set_xx_args[0] = vd_xx->id();
@@ -667,8 +671,9 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
     fi_params[0] = vd_x;
     fi_params[1] = vd_b;
     fi_params[2] = vd_j;
-    auto* fi = new FunctionI(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
-                             ti_fi, fi_params, let);
+    auto* fi =
+        new FunctionI(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
+                      ti_fi, fi_params, let);
     enumItems->addItem(fi);
   }
 
@@ -703,8 +708,9 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
     _toString_ENUMArgs[0] = idx_i->id();
     _toString_ENUMArgs[1] = vd_b->id();
     _toString_ENUMArgs[2] = vd_j->id();
-    Call* _toString_ENUM = new Call(
-        Location().introduce(), create_enum_to_string_name(ident, "_toString_"), _toString_ENUMArgs);
+    Call* _toString_ENUM =
+        new Call(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
+                 _toString_ENUMArgs);
 
     std::vector<Expression*> deopt_args(1);
     deopt_args[0] = vd_x->id();
@@ -753,8 +759,9 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
     fi_params[0] = vd_x;
     fi_params[1] = vd_b;
     fi_params[2] = vd_j;
-    auto* fi = new FunctionI(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
-                             ti_fi, fi_params, ite);
+    auto* fi =
+        new FunctionI(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
+                      ti_fi, fi_params, ite);
     enumItems->addItem(fi);
   }
 
@@ -811,8 +818,9 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
     _toString_ENUMArgs[0] = aa_xxi;
     _toString_ENUMArgs[1] = vd_b->id();
     _toString_ENUMArgs[2] = vd_j->id();
-    Call* _toString_ENUM = new Call(
-        Location().introduce(), create_enum_to_string_name(ident, "_toString_"), _toString_ENUMArgs);
+    Call* _toString_ENUM =
+        new Call(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
+                 _toString_ENUMArgs);
 
     std::vector<Expression*> index_set_xx_args(1);
     index_set_xx_args[0] = vd_xx->id();
@@ -844,8 +852,9 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
     fi_params[0] = vd_x;
     fi_params[1] = vd_b;
     fi_params[2] = vd_j;
-    auto* fi = new FunctionI(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
-                             ti_fi, fi_params, let);
+    auto* fi =
+        new FunctionI(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
+                      ti_fi, fi_params, let);
     enumItems->addItem(fi);
   }
 }

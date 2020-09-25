@@ -799,8 +799,8 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
           _cbui.pOutput->x = si.getColSolution();  // change the pointer?
           MIP_wrapper::CutInput cuts;
           _cbui.cutcbfn(*_cbui.pOutput, cuts, _cbui.psi,
-                       (info.options & 128) != 0);  // options&128: integer candidate
-          for (const auto& cut : cuts) {            // Convert cut sense
+                        (info.options & 128) != 0);  // options&128: integer candidate
+          for (const auto& cut : cuts) {             // Convert cut sense
             OsiRowCut rc;
             switch (cut.sense) {
               case LQ:

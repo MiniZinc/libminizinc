@@ -246,7 +246,7 @@ public:
       // At this point the child should be stopped/stopping
       if (!doneStderr || !doneStdout) {
         if (!_interruptCondition.wait_for(lck, std::chrono::milliseconds(200),
-                           [&] { return doneStderr && doneStdout; })) {
+                                          [&] { return doneStderr && doneStdout; })) {
           // Force terminate the child after 200ms
           TerminateJobObject(hJobObject, 0);
         };
@@ -343,7 +343,8 @@ public:
       while (!done) {
         FD_SET(pipes[1][0], &fdset);
         FD_SET(pipes[2][0], &fdset);
-        int sel = select(FD_SETSIZE, &fdset, nullptr, nullptr, _timelimit == 0 ? nullptr : &timeout);
+        int sel =
+            select(FD_SETSIZE, &fdset, nullptr, nullptr, _timelimit == 0 ? nullptr : &timeout);
         if (sel == -1) {
           if (errno != EINTR) {
             // some error has happened

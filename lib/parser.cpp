@@ -307,8 +307,8 @@ Model* parse(Env& env, const vector<string>& filenames, const vector<string>& da
 }
 
 Model* parse_data(Env& env, Model* model, const vector<string>& datafiles,
-                 const vector<string>& includePaths, bool isFlatZinc, bool ignoreStdlib,
-                 bool parseDocComments, bool verbose, ostream& err) {
+                  const vector<string>& includePaths, bool isFlatZinc, bool ignoreStdlib,
+                  bool parseDocComments, bool verbose, ostream& err) {
   vector<string> filenames;
   std::vector<SyntaxError> se;
   parse(env, model, filenames, datafiles, "", "", includePaths, isFlatZinc, ignoreStdlib,
@@ -317,9 +317,9 @@ Model* parse_data(Env& env, Model* model, const vector<string>& datafiles,
 }
 
 Model* parse_from_string(Env& env, const string& text, const string& filename,
-                       const vector<string>& ip, bool isFlatZinc, bool ignoreStdlib,
-                       bool parseDocComments, bool verbose, ostream& err,
-                       std::vector<SyntaxError>& syntaxErrors) {
+                         const vector<string>& ip, bool isFlatZinc, bool ignoreStdlib,
+                         bool parseDocComments, bool verbose, ostream& err,
+                         std::vector<SyntaxError>& syntaxErrors) {
   vector<string> filenames;
   vector<string> datafiles;
   Model* model;

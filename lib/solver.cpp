@@ -200,39 +200,40 @@ void MznSolver::printUsage() {
   _os << _executableName << ": ";
   if (ifMzn2Fzn()) {
     _os << "MiniZinc to FlatZinc converter.\n"
-       << "Usage: " << _executableName
-       << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl;
+        << "Usage: " << _executableName
+        << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl;
   } else if (ifSolns2out()) {
     _os << "Solutions to output translator.\n"
-       << "Usage: " << _executableName << "  [<options>] <model>.ozn" << std::endl;
+        << "Usage: " << _executableName << "  [<options>] <model>.ozn" << std::endl;
   } else {
     _os << "MiniZinc driver.\n"
-       << "Usage: " << _executableName
-       << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...] or just <flat>.fzn"
-       << std::endl;
+        << "Usage: " << _executableName
+        << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...] or just <flat>.fzn"
+        << std::endl;
   }
 }
 
 void MznSolver::printHelp(const std::string& selectedSolver) {
   printUsage();
   _os << "General options:" << std::endl
-     << "  --help, -h\n    Print this help message." << std::endl
-     << "  --version\n    Print version information." << std::endl
-     << "  --solvers\n    Print list of available solvers." << std::endl
-     << "  --time-limit <ms>\n    Stop after <ms> milliseconds (includes compilation and solving)."
-     << std::endl
-     << "  --solver <solver id>, --solver <solver config file>.msc\n    Select solver to use."
-     << std::endl
-     << "  --help <solver id>\n    Print help for a particular solver." << std::endl
-     << "  -v, -l, --verbose\n    Print progress/log statements. Note that some solvers may log to "
-        "stdout."
-     << std::endl
-     << "  --verbose-compilation\n    Print progress/log statements for compilation." << std::endl
-     << "  -s, --statistics\n    Print statistics." << std::endl
-     << "  --compiler-statistics\n    Print statistics for compilation." << std::endl
-     << "  -c, --compile\n    Compile only (do not run solver)." << std::endl
-     << "  --config-dirs\n    Output configuration directories." << std::endl
-     << "  --param-file <file>\n    Load parameters from the given JSON file." << std::endl;
+      << "  --help, -h\n    Print this help message." << std::endl
+      << "  --version\n    Print version information." << std::endl
+      << "  --solvers\n    Print list of available solvers." << std::endl
+      << "  --time-limit <ms>\n    Stop after <ms> milliseconds (includes compilation and solving)."
+      << std::endl
+      << "  --solver <solver id>, --solver <solver config file>.msc\n    Select solver to use."
+      << std::endl
+      << "  --help <solver id>\n    Print help for a particular solver." << std::endl
+      << "  -v, -l, --verbose\n    Print progress/log statements. Note that some solvers may log "
+         "to "
+         "stdout."
+      << std::endl
+      << "  --verbose-compilation\n    Print progress/log statements for compilation." << std::endl
+      << "  -s, --statistics\n    Print statistics." << std::endl
+      << "  --compiler-statistics\n    Print statistics for compilation." << std::endl
+      << "  -c, --compile\n    Compile only (do not run solver)." << std::endl
+      << "  --config-dirs\n    Output configuration directories." << std::endl
+      << "  --param-file <file>\n    Load parameters from the given JSON file." << std::endl;
 
   if (selectedSolver.empty()) {
     _flt.printHelp(_os);
@@ -569,7 +570,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
                 bool success = _sf->processOption(_siOpt, i, additionalArgs_s);
                 if (!success) {
                   _log << "Solver backend " << solverId << " does not recognise option "
-                      << additionalArgs_s[i] << "." << endl;
+                       << additionalArgs_s[i] << "." << endl;
                   return OPTION_ERROR;
                 }
               }
@@ -613,7 +614,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
                 bool success = _sf->processOption(_siOpt, i, additionalArgs);
                 if (!success) {
                   _log << "Solver backend " << solverId << " does not recognise option "
-                      << additionalArgs[i] << "." << endl;
+                       << additionalArgs[i] << "." << endl;
                   return OPTION_ERROR;
                 }
               }
@@ -691,7 +692,8 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       } else {
         std::string executable_name(argv[0]);
         executable_name = executable_name.substr(executable_name.find_last_of("/\\") + 1);
-        _log << executable_name << ": Unrecognized option or bad format `" << argv[i] << "'" << endl;
+        _log << executable_name << ": Unrecognized option or bad format `" << argv[i] << "'"
+             << endl;
         return OPTION_ERROR;
       }
     }
@@ -704,7 +706,8 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       } else {
         std::string executable_name(argv[0]);
         executable_name = executable_name.substr(executable_name.find_last_of("/\\") + 1);
-        _log << executable_name << ": Unrecognized option or bad format `" << argv[i] << "'" << endl;
+        _log << executable_name << ": Unrecognized option or bad format `" << argv[i] << "'"
+             << endl;
         return OPTION_ERROR;
       }
     }
@@ -828,7 +831,7 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0,
         } else {
           // Solver does not support -a
           _log << "WARNING: Solver does not support all solutions for satisfaction problems."
-              << endl;
+               << endl;
         }
       }
       if (!is_sat_problem && _flagIntermediate) {

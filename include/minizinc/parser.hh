@@ -31,7 +31,9 @@ extern "C" int isatty(int);
 #pragma warning(disable : 4065)
 #endif
 
-namespace MiniZinc{ class ParserLocation; }
+namespace MiniZinc {
+class ParserLocation;
+}
 #define YYLTYPE MiniZinc::ParserLocation
 #define YYLTYPE_IS_DECLARED 1
 #define YYLTYPE_IS_TRIVIAL 0
@@ -155,12 +157,12 @@ Model* parse(Env& env, const std::vector<std::string>& filename,
              std::ostream& err);
 
 Model* parse_from_string(Env& env, const std::string& model, const std::string& filename,
-                       const std::vector<std::string>& includePaths, bool isFlatZinc,
-                       bool ignoreStdlib, bool parseDocComments, bool verbose, std::ostream& err,
-                       std::vector<SyntaxError>& syntaxErrors);
+                         const std::vector<std::string>& includePaths, bool isFlatZinc,
+                         bool ignoreStdlib, bool parseDocComments, bool verbose, std::ostream& err,
+                         std::vector<SyntaxError>& syntaxErrors);
 
 Model* parse_data(Env& env, Model* m, const std::vector<std::string>& datafiles,
-                 const std::vector<std::string>& includePaths, bool isFlatZinc, bool ignoreStdlib,
-                 bool parseDocComments, bool verbose, std::ostream& err);
+                  const std::vector<std::string>& includePaths, bool isFlatZinc, bool ignoreStdlib,
+                  bool parseDocComments, bool verbose, std::ostream& err);
 
 }  // namespace MiniZinc

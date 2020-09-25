@@ -27,8 +27,7 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     if ((id != nullptr) && (id->decl()->flat() == nullptr || id->decl()->toplevel())) {
       VarDecl* vd = id->decl()->flat();
       if (vd == nullptr) {
-        vd =
-            flat_exp(env, Ctx(), id->decl(), nullptr, constants().varTrue).r()->cast<Id>()->decl();
+        vd = flat_exp(env, Ctx(), id->decl(), nullptr, constants().varTrue).r()->cast<Id>()->decl();
         id->decl()->flat(vd);
         auto* al = follow_id(vd->id())->cast<ArrayLit>();
         if (al->size() == 0) {

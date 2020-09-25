@@ -103,11 +103,11 @@ add_library(mzn
   include/minizinc/solver_instance_base.hh
   include/minizinc/statistics.hh
   include/minizinc/support/regex.hh
-  include/minizinc/thirdparty/b64/cdecode.h
-  include/minizinc/thirdparty/b64/cencode.h
-  include/minizinc/thirdparty/b64/decode.h
-  include/minizinc/thirdparty/b64/encode.h
-  include/minizinc/thirdparty/miniz.h
+  include/minizinc/_thirdparty/b64/cdecode.h
+  include/minizinc/_thirdparty/b64/cencode.h
+  include/minizinc/_thirdparty/b64/decode.h
+  include/minizinc/_thirdparty/b64/encode.h
+  include/minizinc/_thirdparty/miniz.h
   include/minizinc/timer.hh
   include/minizinc/type.hh
   include/minizinc/typecheck.hh

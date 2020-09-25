@@ -165,7 +165,7 @@ public:
 
   Location(const ParserLocation& loc) {
     _locInfo.lv = LocVec::a(loc.filename(), loc.firstLine(), loc.firstColumn(), loc.lastLine(),
-                             loc.lastColumn());
+                            loc.lastColumn());
   }
 
   /// Return string representation
@@ -1748,11 +1748,11 @@ public:
     ASTString int2float;
     ASTString bool2float;
     ASTString assert;
-    ASTString mzn_deprecate; // NOLINT(readability-identifier-naming)
+    ASTString mzn_deprecate;  // NOLINT(readability-identifier-naming)
     ASTString trace;
 
     ASTString sum;
-    ASTString lin_exp; // NOLINT(readability-identifier-naming)
+    ASTString lin_exp;  // NOLINT(readability-identifier-naming)
     ASTString element;
 
     ASTString show;
@@ -1760,9 +1760,9 @@ public:
     ASTString output;
 
     struct {
-      ASTString lin_eq; // NOLINT(readability-identifier-naming)
-      ASTString lin_le; // NOLINT(readability-identifier-naming)
-      ASTString lin_ne; // NOLINT(readability-identifier-naming)
+      ASTString lin_eq;  // NOLINT(readability-identifier-naming)
+      ASTString lin_le;  // NOLINT(readability-identifier-naming)
+      ASTString lin_ne;  // NOLINT(readability-identifier-naming)
       ASTString plus;
       ASTString minus;
       ASTString times;
@@ -1774,13 +1774,13 @@ public:
       ASTString ge;
       ASTString eq;
       ASTString ne;
-    } int_; // NOLINT(readability-identifier-naming)
+    } int_;  // NOLINT(readability-identifier-naming)
 
     struct {
-      ASTString lin_eq; // NOLINT(readability-identifier-naming)
-      ASTString lin_le; // NOLINT(readability-identifier-naming)
-      ASTString lin_ne; // NOLINT(readability-identifier-naming)
-      ASTString plus;   
+      ASTString lin_eq;  // NOLINT(readability-identifier-naming)
+      ASTString lin_le;  // NOLINT(readability-identifier-naming)
+      ASTString lin_ne;  // NOLINT(readability-identifier-naming)
+      ASTString plus;
       ASTString minus;
       ASTString times;
       ASTString div;
@@ -1791,13 +1791,13 @@ public:
       ASTString ge;
       ASTString eq;
       ASTString ne;
-    } int_reif; // NOLINT(readability-identifier-naming)
+    } int_reif;  // NOLINT(readability-identifier-naming)
 
     struct {
-      ASTString lin_eq; // NOLINT(readability-identifier-naming)
-      ASTString lin_le; // NOLINT(readability-identifier-naming)
-      ASTString lin_lt; // NOLINT(readability-identifier-naming)
-      ASTString lin_ne; // NOLINT(readability-identifier-naming)
+      ASTString lin_eq;  // NOLINT(readability-identifier-naming)
+      ASTString lin_le;  // NOLINT(readability-identifier-naming)
+      ASTString lin_lt;  // NOLINT(readability-identifier-naming)
+      ASTString lin_ne;  // NOLINT(readability-identifier-naming)
       ASTString plus;
       ASTString minus;
       ASTString times;
@@ -1811,13 +1811,13 @@ public:
       ASTString ne;
       ASTString in;
       ASTString dom;
-    } float_; // NOLINT(readability-identifier-naming)
+    } float_;  // NOLINT(readability-identifier-naming)
 
     struct {
-      ASTString lin_eq; // NOLINT(readability-identifier-naming)
-      ASTString lin_le; // NOLINT(readability-identifier-naming)
-      ASTString lin_lt; // NOLINT(readability-identifier-naming)
-      ASTString lin_ne; // NOLINT(readability-identifier-naming)
+      ASTString lin_eq;  // NOLINT(readability-identifier-naming)
+      ASTString lin_le;  // NOLINT(readability-identifier-naming)
+      ASTString lin_lt;  // NOLINT(readability-identifier-naming)
+      ASTString lin_ne;  // NOLINT(readability-identifier-naming)
       ASTString plus;
       ASTString minus;
       ASTString times;
@@ -1830,23 +1830,23 @@ public:
       ASTString eq;
       ASTString ne;
       ASTString in;
-    } float_reif; // NOLINT(readability-identifier-naming)
+    } float_reif;  // NOLINT(readability-identifier-naming)
 
-    ASTString bool_eq; // NOLINT(readability-identifier-naming)
-    ASTString bool_eq_reif; // NOLINT(readability-identifier-naming)
-    ASTString bool_not; // NOLINT(readability-identifier-naming)
-    ASTString array_bool_or; // NOLINT(readability-identifier-naming)
-    ASTString array_bool_and; // NOLINT(readability-identifier-naming)
-    ASTString bool_clause; // NOLINT(readability-identifier-naming)
-    ASTString bool_clause_reif; // NOLINT(readability-identifier-naming)
-    ASTString bool_xor; // NOLINT(readability-identifier-naming)
-    ASTString set_eq; // NOLINT(readability-identifier-naming)
-    ASTString set_in; // NOLINT(readability-identifier-naming)
-    ASTString set_subset; // NOLINT(readability-identifier-naming)
-    ASTString set_card; // NOLINT(readability-identifier-naming)
+    ASTString bool_eq;           // NOLINT(readability-identifier-naming)
+    ASTString bool_eq_reif;      // NOLINT(readability-identifier-naming)
+    ASTString bool_not;          // NOLINT(readability-identifier-naming)
+    ASTString array_bool_or;     // NOLINT(readability-identifier-naming)
+    ASTString array_bool_and;    // NOLINT(readability-identifier-naming)
+    ASTString bool_clause;       // NOLINT(readability-identifier-naming)
+    ASTString bool_clause_reif;  // NOLINT(readability-identifier-naming)
+    ASTString bool_xor;          // NOLINT(readability-identifier-naming)
+    ASTString set_eq;            // NOLINT(readability-identifier-naming)
+    ASTString set_in;            // NOLINT(readability-identifier-naming)
+    ASTString set_subset;        // NOLINT(readability-identifier-naming)
+    ASTString set_card;          // NOLINT(readability-identifier-naming)
     ASTString pow;
 
-    ASTString introduced_var; // NOLINT(readability-identifier-naming)
+    ASTString introduced_var;  // NOLINT(readability-identifier-naming)
     ASTString anonEnumFromStrings;
   } ids;
 
@@ -1859,71 +1859,71 @@ public:
   } ctx;
   /// Common annotations
   struct {
-    Id* output_var; // NOLINT(readability-identifier-naming)
-    ASTString output_array; // NOLINT(readability-identifier-naming)
-    Id* add_to_output; // NOLINT(readability-identifier-naming)
-    Id* output_only; // NOLINT(readability-identifier-naming)
-    Id* mzn_check_var; // NOLINT(readability-identifier-naming)
-    ASTString mzn_check_enum_var; // NOLINT(readability-identifier-naming)
-    Id* is_defined_var; // NOLINT(readability-identifier-naming)
-    ASTString defines_var; // NOLINT(readability-identifier-naming)
-    Id* is_reverse_map; // NOLINT(readability-identifier-naming)
-    Id* promise_total; // NOLINT(readability-identifier-naming)
-    Id* maybe_partial; // NOLINT(readability-identifier-naming)
-    ASTString doc_comment; // NOLINT(readability-identifier-naming)
-    ASTString mzn_path; // NOLINT(readability-identifier-naming)
-    ASTString is_introduced; // NOLINT(readability-identifier-naming)
-    Id* user_cut;         // NOLINT(readability-identifier-naming) // MIP
-    Id* lazy_constraint;  // NOLINT(readability-identifier-naming) // MIP
-    Id* mzn_break_here;   // NOLINT(readability-identifier-naming)
-    Id* rhs_from_assignment; // NOLINT(readability-identifier-naming)
-    Id* domain_change_constraint; // NOLINT(readability-identifier-naming)
-    ASTString mzn_deprecated; // NOLINT(readability-identifier-naming)
-    Id* mzn_was_undefined; // NOLINT(readability-identifier-naming)
-    Id* array_check_form; // NOLINT(readability-identifier-naming)
+    Id* output_var;                // NOLINT(readability-identifier-naming)
+    ASTString output_array;        // NOLINT(readability-identifier-naming)
+    Id* add_to_output;             // NOLINT(readability-identifier-naming)
+    Id* output_only;               // NOLINT(readability-identifier-naming)
+    Id* mzn_check_var;             // NOLINT(readability-identifier-naming)
+    ASTString mzn_check_enum_var;  // NOLINT(readability-identifier-naming)
+    Id* is_defined_var;            // NOLINT(readability-identifier-naming)
+    ASTString defines_var;         // NOLINT(readability-identifier-naming)
+    Id* is_reverse_map;            // NOLINT(readability-identifier-naming)
+    Id* promise_total;             // NOLINT(readability-identifier-naming)
+    Id* maybe_partial;             // NOLINT(readability-identifier-naming)
+    ASTString doc_comment;         // NOLINT(readability-identifier-naming)
+    ASTString mzn_path;            // NOLINT(readability-identifier-naming)
+    ASTString is_introduced;       // NOLINT(readability-identifier-naming)
+    Id* user_cut;                  // NOLINT(readability-identifier-naming) // MIP
+    Id* lazy_constraint;           // NOLINT(readability-identifier-naming) // MIP
+    Id* mzn_break_here;            // NOLINT(readability-identifier-naming)
+    Id* rhs_from_assignment;       // NOLINT(readability-identifier-naming)
+    Id* domain_change_constraint;  // NOLINT(readability-identifier-naming)
+    ASTString mzn_deprecated;      // NOLINT(readability-identifier-naming)
+    Id* mzn_was_undefined;         // NOLINT(readability-identifier-naming)
+    Id* array_check_form;          // NOLINT(readability-identifier-naming)
   } ann;
 
   /// Command line options
-  struct {  /// basic MiniZinc command line options
-    ASTString cmdlineData_str; // NOLINT(readability-identifier-naming)
-    ASTString cmdlineData_short_str; // NOLINT(readability-identifier-naming)
-    ASTString datafile_str; // NOLINT(readability-identifier-naming)
-    ASTString datafile_short_str; // NOLINT(readability-identifier-naming)
-    ASTString globalsDir_str; // NOLINT(readability-identifier-naming)
-    ASTString globalsDir_alt_str; // NOLINT(readability-identifier-naming)
-    ASTString globalsDir_short_str; // NOLINT(readability-identifier-naming)
-    ASTString help_str; // NOLINT(readability-identifier-naming)
-    ASTString help_short_str; // NOLINT(readability-identifier-naming)
-    ASTString ignoreStdlib_str; // NOLINT(readability-identifier-naming)
-    ASTString include_str; // NOLINT(readability-identifier-naming)
-    ASTString inputFromStdin_str; // NOLINT(readability-identifier-naming)
-    ASTString instanceCheckOnly_str; // NOLINT(readability-identifier-naming)
-    ASTString no_optimize_str; // NOLINT(readability-identifier-naming)
-    ASTString no_optimize_alt_str; // NOLINT(readability-identifier-naming)
-    ASTString no_outputOzn_str; // NOLINT(readability-identifier-naming)
-    ASTString no_outputOzn_short_str; // NOLINT(readability-identifier-naming)
-    ASTString no_typecheck_str; // NOLINT(readability-identifier-naming)
-    ASTString newfzn_str; // NOLINT(readability-identifier-naming)
-    ASTString outputBase_str; // NOLINT(readability-identifier-naming)
-    ASTString outputFznToStdout_str; // NOLINT(readability-identifier-naming)
-    ASTString outputFznToStdout_alt_str; // NOLINT(readability-identifier-naming)
-    ASTString outputOznToFile_str; // NOLINT(readability-identifier-naming)
-    ASTString outputOznToStdout_str; // NOLINT(readability-identifier-naming)
-    ASTString outputFznToFile_str; // NOLINT(readability-identifier-naming)
-    ASTString outputFznToFile_alt_str; // NOLINT(readability-identifier-naming)
-    ASTString outputFznToFile_short_str; // NOLINT(readability-identifier-naming)
-    ASTString rangeDomainsOnly_str; // NOLINT(readability-identifier-naming)
-    ASTString statistics_str; // NOLINT(readability-identifier-naming)
-    ASTString statistics_short_str; // NOLINT(readability-identifier-naming)
-    ASTString stdlib_str; // NOLINT(readability-identifier-naming)
-    ASTString verbose_str; // NOLINT(readability-identifier-naming)
-    ASTString verbose_short_str; // NOLINT(readability-identifier-naming)
-    ASTString version_str; // NOLINT(readability-identifier-naming)
-    ASTString werror_str; // NOLINT(readability-identifier-naming)
+  struct {                                /// basic MiniZinc command line options
+    ASTString cmdlineData_str;            // NOLINT(readability-identifier-naming)
+    ASTString cmdlineData_short_str;      // NOLINT(readability-identifier-naming)
+    ASTString datafile_str;               // NOLINT(readability-identifier-naming)
+    ASTString datafile_short_str;         // NOLINT(readability-identifier-naming)
+    ASTString globalsDir_str;             // NOLINT(readability-identifier-naming)
+    ASTString globalsDir_alt_str;         // NOLINT(readability-identifier-naming)
+    ASTString globalsDir_short_str;       // NOLINT(readability-identifier-naming)
+    ASTString help_str;                   // NOLINT(readability-identifier-naming)
+    ASTString help_short_str;             // NOLINT(readability-identifier-naming)
+    ASTString ignoreStdlib_str;           // NOLINT(readability-identifier-naming)
+    ASTString include_str;                // NOLINT(readability-identifier-naming)
+    ASTString inputFromStdin_str;         // NOLINT(readability-identifier-naming)
+    ASTString instanceCheckOnly_str;      // NOLINT(readability-identifier-naming)
+    ASTString no_optimize_str;            // NOLINT(readability-identifier-naming)
+    ASTString no_optimize_alt_str;        // NOLINT(readability-identifier-naming)
+    ASTString no_outputOzn_str;           // NOLINT(readability-identifier-naming)
+    ASTString no_outputOzn_short_str;     // NOLINT(readability-identifier-naming)
+    ASTString no_typecheck_str;           // NOLINT(readability-identifier-naming)
+    ASTString newfzn_str;                 // NOLINT(readability-identifier-naming)
+    ASTString outputBase_str;             // NOLINT(readability-identifier-naming)
+    ASTString outputFznToStdout_str;      // NOLINT(readability-identifier-naming)
+    ASTString outputFznToStdout_alt_str;  // NOLINT(readability-identifier-naming)
+    ASTString outputOznToFile_str;        // NOLINT(readability-identifier-naming)
+    ASTString outputOznToStdout_str;      // NOLINT(readability-identifier-naming)
+    ASTString outputFznToFile_str;        // NOLINT(readability-identifier-naming)
+    ASTString outputFznToFile_alt_str;    // NOLINT(readability-identifier-naming)
+    ASTString outputFznToFile_short_str;  // NOLINT(readability-identifier-naming)
+    ASTString rangeDomainsOnly_str;       // NOLINT(readability-identifier-naming)
+    ASTString statistics_str;             // NOLINT(readability-identifier-naming)
+    ASTString statistics_short_str;       // NOLINT(readability-identifier-naming)
+    ASTString stdlib_str;                 // NOLINT(readability-identifier-naming)
+    ASTString verbose_str;                // NOLINT(readability-identifier-naming)
+    ASTString verbose_short_str;          // NOLINT(readability-identifier-naming)
+    ASTString version_str;                // NOLINT(readability-identifier-naming)
+    ASTString werror_str;                 // NOLINT(readability-identifier-naming)
 
     struct {
-      ASTString all_sols_str; // NOLINT(readability-identifier-naming)
-      ASTString fzn_solver_str; // NOLINT(readability-identifier-naming)
+      ASTString all_sols_str;    // NOLINT(readability-identifier-naming)
+      ASTString fzn_solver_str;  // NOLINT(readability-identifier-naming)
     } solver;
 
   } cli;
@@ -1959,11 +1959,11 @@ public:
       ASTString allSols;
       ASTString numSols;
       ASTString threads;
-      ASTString fzn_solver; // NOLINT(readability-identifier-naming)
-      ASTString fzn_flags;  // NOLINT(readability-identifier-naming)
-      ASTString fzn_flag;   // NOLINT(readability-identifier-naming)
-      ASTString fzn_time_limit_ms; // NOLINT(readability-identifier-naming)
-      ASTString fzn_sigint; // NOLINT(readability-identifier-naming)
+      ASTString fzn_solver;         // NOLINT(readability-identifier-naming)
+      ASTString fzn_flags;          // NOLINT(readability-identifier-naming)
+      ASTString fzn_flag;           // NOLINT(readability-identifier-naming)
+      ASTString fzn_time_limit_ms;  // NOLINT(readability-identifier-naming)
+      ASTString fzn_sigint;         // NOLINT(readability-identifier-naming)
     } solver;
 
   } opts;
@@ -1974,7 +1974,7 @@ public:
     ASTString io;
     ASTString solver;
     ASTString translation;
-  } cli_cat; // NOLINT(readability-identifier-naming)
+  } cli_cat;  // NOLINT(readability-identifier-naming)
 
   /// Keep track of allocated integer literals
   std::unordered_map<IntVal, WeakRef> integerMap;

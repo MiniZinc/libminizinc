@@ -792,7 +792,7 @@ MIP_cplex_wrapper::Status MIP_cplex_wrapper::convertStatus(int cplexStatus) {
     case CPXMIP_OPTIMAL:
       s = Status::OPT;
       wrapAssert(dll_CPXgetsolnpoolnumsolns(env, lp) != 0, "Optimality reported but pool empty?",
-                  false);
+                 false);
       break;
     case CPXMIP_INFEASIBLE:
       s = Status::UNSAT;
@@ -810,7 +810,7 @@ MIP_cplex_wrapper::Status MIP_cplex_wrapper::convertStatus(int cplexStatus) {
     case CPXMIP_FAIL_FEAS_NO_TREE:
       s = Status::SAT;
       wrapAssert(dll_CPXgetsolnpoolnumsolns(env, lp) != 0, "Feasibility reported but pool empty?",
-                  false);
+                 false);
       break;
     case CPXMIP_UNBOUNDED:
       s = Status::UNBND;
@@ -861,7 +861,7 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
   //    wrapAssert(!status, "  CPLEX Warning: Failure to measure CPU time.", false);
   status = dll_CPXsetintparam(env, CPX_PARAM_MIPCBREDLP, CPX_OFF);  // Access original model
   wrapAssert(status == 0, "  CPLEX Warning: Failure to set access original model in callbacks.",
-              false);
+             false);
   if (!options->sExportModel.empty()) {
     status = dll_CPXwriteprob(env, lp, options->sExportModel.c_str(), nullptr);
     wrapAssert(status == 0, "Failed to write LP to disk.", false);

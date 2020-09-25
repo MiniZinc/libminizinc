@@ -228,8 +228,8 @@ bool is_reverse_map(BinOp* e) { return e->ann().contains(constants().ann.is_reve
 
 template <class Lit>
 void collect_linexps(EnvI& env, typename LinearTraits<Lit>::Val in_c, Expression* exp,
-                    std::vector<typename LinearTraits<Lit>::Val>& coeffs,
-                    std::vector<KeepAlive>& vars, typename LinearTraits<Lit>::Val& constval) {
+                     std::vector<typename LinearTraits<Lit>::Val>& coeffs,
+                     std::vector<KeepAlive>& vars, typename LinearTraits<Lit>::Val& constval) {
   typedef typename LinearTraits<Lit>::Val Val;
   struct StackItem {
     Expression* e;
@@ -1121,8 +1121,8 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
           Ctx nctx = ctx;
           nctx.neg = negArgs;
           nctx.b = negArgs ? C_NEG : C_ROOT;
-          ret =
-              flat_exp(env, nctx, constants().literalTrue, constants().varTrue, constants().varTrue);
+          ret = flat_exp(env, nctx, constants().literalTrue, constants().varTrue,
+                         constants().varTrue);
         }
         break;
       }
@@ -1136,8 +1136,8 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
           Ctx nctx = ctx;
           nctx.neg = negArgs;
           nctx.b = negArgs ? C_NEG : C_ROOT;
-          ret =
-              flat_exp(env, nctx, constants().literalTrue, constants().varTrue, constants().varTrue);
+          ret = flat_exp(env, nctx, constants().literalTrue, constants().varTrue,
+                         constants().varTrue);
           break;
         } else {
           Ctx nctx = ctx;
@@ -1418,13 +1418,14 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
                 env.fail();
               } else if (changeDom) {
                 set_computed_domain(env, ident->decl(), new SetLit(Location().introduce(), newdom),
-                                  false);
+                                    false);
                 if (ident->decl()->e() == nullptr && newdom->min() == newdom->max() &&
                     !vd->type().isSet()) {
                   ident->decl()->e(IntLit::a(newdom->min()));
                 }
               }
-              ident = ident->decl()->e() != nullptr ? ident->decl()->e()->dynamicCast<Id>() : nullptr;
+              ident =
+                  ident->decl()->e() != nullptr ? ident->decl()->e()->dynamicCast<Id>() : nullptr;
             }
           }
           ret.r = bind(env, ctx, r, constants().literalTrue);

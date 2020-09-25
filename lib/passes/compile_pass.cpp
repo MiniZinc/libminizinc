@@ -34,7 +34,7 @@ using std::string;
 using std::vector;
 
 Env* change_library(Env& e, vector<string>& includePaths, const string& globals_dir,
-                   CompilePassFlags& compflags, bool verbose = false) {
+                    CompilePassFlags& compflags, bool verbose = false) {
   GCLock lock;
   CopyMap cm;
   Model* m = e.envi().originalModel != nullptr ? e.envi().originalModel : e.envi().model;
@@ -71,7 +71,7 @@ Env* change_library(Env& e, vector<string>& includePaths, const string& globals_
   std::ostringstream dummy_file;
   dummy_file << m->filepath() << "_Dummy.mzn";
   Model* inc_mod = parse_from_string(*fenv, ss.str(), dummy_file.str(), new_includePaths, false,
-                                   false, true, verbose, std::cerr, syntax_errors);
+                                     false, true, verbose, std::cerr, syntax_errors);
   if (inc_mod == nullptr) {
     for (const SyntaxError& se : syntax_errors) {
       std::cerr << std::endl;

@@ -537,7 +537,7 @@ void add_path_annotation(EnvI& env, Expression* e) {
 }
 
 VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDecl* origVd,
-                    Expression* rhs) {
+                     Expression* rhs) {
   VarDecl* vd = nullptr;
 
   // Is this vardecl already in the FlatZinc (for unification)
@@ -651,7 +651,7 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
 }
 
 #define MZN_FILL_REIFY_MAP(T, ID) \
-  _reifyMap.insert(                \
+  _reifyMap.insert(               \
       std::pair<ASTString, ASTString>(constants().ids.T.ID, constants().ids.T##reif.ID));
 
 EnvI::EnvI(Model* model0, std::ostream& outstream0, std::ostream& errstream0)
@@ -669,7 +669,7 @@ EnvI::EnvI(Model* model0, std::ostream& outstream0, std::ostream& errstream0)
       inRedundantConstraint(0),
       inMaybePartial(0),
       inReverseMapVar(false),
-      counters({0,0,0,0}),
+      counters({0, 0, 0, 0}),
       pathUse(0),
       _flat(new Model),
       _failed(false),
@@ -709,7 +709,7 @@ EnvI::EnvI(Model* model0, std::ostream& outstream0, std::ostream& errstream0)
   _reifyMap.insert(
       std::pair<ASTString, ASTString>(constants().ids.bool_eq, constants().ids.bool_eq_reif));
   _reifyMap.insert(std::pair<ASTString, ASTString>(constants().ids.bool_clause,
-                                                  constants().ids.bool_clause_reif));
+                                                   constants().ids.bool_clause_reif));
   _reifyMap.insert(
       std::pair<ASTString, ASTString>(constants().ids.clause, constants().ids.bool_clause_reif));
   _reifyMap.insert({constants().ids.bool_not, constants().ids.bool_not});
@@ -2871,8 +2871,8 @@ void flatten(Env& e, FlatteningOptions opt) {
               ub = std::max(ub, vi);
             }
             GCLock lock;
-            set_computed_domain(env, v->e(), new SetLit(Location().introduce(), IntSetVal::a(lb, ub)),
-                              true);
+            set_computed_domain(env, v->e(),
+                                new SetLit(Location().introduce(), IntSetVal::a(lb, ub)), true);
           } else if (v->e()->type().bt() == Type::BT_FLOAT &&
                      v->e()->type().st() == Type::ST_PLAIN) {
             FloatVal lb = FloatVal::infinity();
@@ -2884,7 +2884,7 @@ void flatten(Env& e, FlatteningOptions opt) {
             }
             GCLock lock;
             set_computed_domain(env, v->e(),
-                              new SetLit(Location().introduce(), FloatSetVal::a(lb, ub)), true);
+                                new SetLit(Location().introduce(), FloatSetVal::a(lb, ub)), true);
           }
         } else if (v->e()->type().isvar() || v->e()->type().isAnn()) {
           (void)flatten_id(env, Ctx(), v->e()->id(), nullptr, constants().varTrue, true);
@@ -3216,8 +3216,8 @@ void flatten(Env& e, FlatteningOptions opt) {
         if (auto* vdi = m[i]->dynamicCast<VarDeclI>()) {
           VarDecl* vd = vdi->e();
           if (vd->e() != nullptr) {
-            bool isTrueVar =
-                vd->type().isbool() && Expression::equal(vd->ti()->domain(), constants().literalTrue);
+            bool isTrueVar = vd->type().isbool() &&
+                             Expression::equal(vd->ti()->domain(), constants().literalTrue);
             if (Call* c = vd->e()->dynamicCast<Call>()) {
               GCLock lock;
               Call* nc = nullptr;
@@ -3375,7 +3375,8 @@ void flatten(Env& e, FlatteningOptions opt) {
                   } else {
                     FunctionI* decl = nullptr;
                     if (c->type().isbool() && vd->type().isbool()) {
-                      if (env.fopts.enableHalfReification && vd->ann().contains(constants().ctx.pos)) {
+                      if (env.fopts.enableHalfReification &&
+                          vd->ann().contains(constants().ctx.pos)) {
                         cid = env.halfReifyId(c->id());
                         decl = env.model->matchFn(env, cid, args, false);
                         if (decl == nullptr) {
@@ -3816,7 +3817,8 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd) 
     }
     if (vdi != nullptr && is_fixed && env.varOccurrences.occurrences(vd) == 0) {
       if (is_output(vd)) {
-        VarDecl* vd_output = (*env.output)[env.outputFlatVarOccurrences.find(vd)]->cast<VarDeclI>()->e();
+        VarDecl* vd_output =
+            (*env.output)[env.outputFlatVarOccurrences.find(vd)]->cast<VarDeclI>()->e();
         if (vd_output->e() == nullptr) {
           vd_output->e(vd->e());
         }

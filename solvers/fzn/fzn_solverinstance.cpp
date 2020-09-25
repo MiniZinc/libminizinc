@@ -94,12 +94,12 @@ void FZNSolverFactory::printHelp(ostream& os) {
 SolverInstanceBase::Options* FZNSolverFactory::createOptions() { return new FZNSolverOptions; }
 
 SolverInstanceBase* FZNSolverFactory::doCreateSI(Env& env, std::ostream& log,
-                                                  SolverInstanceBase::Options* opt) {
+                                                 SolverInstanceBase::Options* opt) {
   return new FZNSolverInstance(env, log, opt);
 }
 
 bool FZNSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
-                                      std::vector<std::string>& argv) {
+                                     std::vector<std::string>& argv) {
   auto& _opt = static_cast<FZNSolverOptions&>(*opt);
   CLOParser cop(i, argv);
   string buffer;
@@ -180,7 +180,7 @@ bool FZNSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
 }
 
 void FZNSolverFactory::setAcceptedFlags(SolverInstanceBase::Options* opt,
-                                         const std::vector<MZNFZNSolverFlag>& flags) {
+                                        const std::vector<MZNFZNSolverFlag>& flags) {
   auto& _opt = static_cast<FZNSolverOptions&>(*opt);
   _opt.fznSolverFlags.clear();
   for (const auto& f : flags) {

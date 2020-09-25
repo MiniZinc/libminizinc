@@ -32,116 +32,123 @@ using namespace MiniZinc;
 
 void Flattener::printVersion(ostream& os) {
   _os << "MiniZinc to FlatZinc converter, version " << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR
-     << "." << MZN_VERSION_PATCH;
+      << "." << MZN_VERSION_PATCH;
   if (!std::string(MZN_BUILD_REF).empty()) {
     _os << ", build " << MZN_BUILD_REF;
   }
   _os << std::endl;
   _os << "Copyright (C) 2014-" << string(__DATE__).substr(7, 4)
-     << " Monash University, NICTA, Data61" << std::endl;
+      << " Monash University, NICTA, Data61" << std::endl;
 }
 
 void Flattener::printHelp(ostream& os) {
   _os << std::endl
-     << "Flattener input options:" << std::endl
-     << "  --instance-check-only\n    Check the model instance (including data) for errors, but do "
-        "not\n    convert to FlatZinc."
-     << std::endl
-     << "  -e, --model-check-only\n    Check the model (without requiring data) for errors, but do "
-        "not\n    convert to FlatZinc."
-     << std::endl
-     << "  --model-interface-only\n    Only extract parameters and output variables." << std::endl
-     << "  --model-types-only\n    Only output variable (enum) type information." << std::endl
-     << "  --no-optimize\n    Do not optimize the FlatZinc" << std::endl
-     << "  --no-chain-compression\n    Do not simplify chains of implication constraints."
-     << std::endl
-     << "  -d <file>, --data <file>\n    File named <file> contains data used by the model."
-     << std::endl
-     << "  -D <data>, --cmdline-data <data>\n    Include the given data assignment in the model."
-     << std::endl
-     << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
-     << "  -G <dir>, --globals-dir <dir>, --mzn-globals-dir <dir>\n    Search for included globals "
-        "in <stdlib>/<dir>."
-     << std::endl
-     << "  -, --input-from-stdin\n    Read problem from standard input" << std::endl
-     << "  -I <dir>, --search-dir <dir>\n    Additionally search for included files in <dir>."
-     << std::endl
-     << "  -D \"fMIPdomains=true\"\n    Switch on MIPDomain Unification" << std::endl
-     << "  --MIPDMaxIntvEE <n>\n    MIPD: max integer domain subinterval length to enforce "
-        "equality encoding, default "
-     << _optMIPDmaxIntvEE << std::endl
-     << "  --MIPDMaxDensEE <n>\n    MIPD: max domain cardinality to N subintervals ratio\n    to "
-        "enforce equality encoding, default "
-     << _optMIPDmaxDensEE << ", either condition triggers" << std::endl
-     << "  --only-range-domains\n    When no MIPdomains: all domains contiguous, holes replaced by "
-        "inequalities"
-     << std::endl
-     << "  --allow-multiple-assignments\n    Allow multiple assignments to the same variable (e.g. "
-        "in dzn)"
-     << std::endl
-     << "  --no-half-reifications\n    Only use fully reified constraints, even when a half "
-        "reified constraint is defined."
-     << std::endl
-     << "  --compile-solution-checker <file>.mzc.mzn\n    Compile solution checker model"
-     << std::endl
-     << std::endl
-     << "Flattener two-pass options:" << std::endl
-     << "  --two-pass\n    Flatten twice to make better flattening decisions for the target"
-     << std::endl
+      << "Flattener input options:" << std::endl
+      << "  --instance-check-only\n    Check the model instance (including data) for errors, but "
+         "do "
+         "not\n    convert to FlatZinc."
+      << std::endl
+      << "  -e, --model-check-only\n    Check the model (without requiring data) for errors, but "
+         "do "
+         "not\n    convert to FlatZinc."
+      << std::endl
+      << "  --model-interface-only\n    Only extract parameters and output variables." << std::endl
+      << "  --model-types-only\n    Only output variable (enum) type information." << std::endl
+      << "  --no-optimize\n    Do not optimize the FlatZinc" << std::endl
+      << "  --no-chain-compression\n    Do not simplify chains of implication constraints."
+      << std::endl
+      << "  -d <file>, --data <file>\n    File named <file> contains data used by the model."
+      << std::endl
+      << "  -D <data>, --cmdline-data <data>\n    Include the given data assignment in the model."
+      << std::endl
+      << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
+      << "  -G <dir>, --globals-dir <dir>, --mzn-globals-dir <dir>\n    Search for included "
+         "globals "
+         "in <stdlib>/<dir>."
+      << std::endl
+      << "  -, --input-from-stdin\n    Read problem from standard input" << std::endl
+      << "  -I <dir>, --search-dir <dir>\n    Additionally search for included files in <dir>."
+      << std::endl
+      << "  -D \"fMIPdomains=true\"\n    Switch on MIPDomain Unification" << std::endl
+      << "  --MIPDMaxIntvEE <n>\n    MIPD: max integer domain subinterval length to enforce "
+         "equality encoding, default "
+      << _optMIPDmaxIntvEE << std::endl
+      << "  --MIPDMaxDensEE <n>\n    MIPD: max domain cardinality to N subintervals ratio\n    to "
+         "enforce equality encoding, default "
+      << _optMIPDmaxDensEE << ", either condition triggers" << std::endl
+      << "  --only-range-domains\n    When no MIPdomains: all domains contiguous, holes replaced "
+         "by "
+         "inequalities"
+      << std::endl
+      << "  --allow-multiple-assignments\n    Allow multiple assignments to the same variable "
+         "(e.g. "
+         "in dzn)"
+      << std::endl
+      << "  --no-half-reifications\n    Only use fully reified constraints, even when a half "
+         "reified constraint is defined."
+      << std::endl
+      << "  --compile-solution-checker <file>.mzc.mzn\n    Compile solution checker model"
+      << std::endl
+      << std::endl
+      << "Flattener two-pass options:" << std::endl
+      << "  --two-pass\n    Flatten twice to make better flattening decisions for the target"
+      << std::endl
 #ifdef HAS_GECODE
-     << "  --use-gecode\n    Perform root-node-propagation with Gecode (adds --two-pass)"
-     << std::endl
-     << "  --shave\n    Probe bounds of all variables at the root node (adds --use-gecode)"
-     << std::endl
-     << "  --sac\n    Probe values of all variables at the root node (adds --use-gecode)"
-     << std::endl
-     << "  --pre-passes <n>\n    Number of times to apply shave/sac pass (0 = fixed-point, 1 = "
-        "default)"
-     << std::endl
+      << "  --use-gecode\n    Perform root-node-propagation with Gecode (adds --two-pass)"
+      << std::endl
+      << "  --shave\n    Probe bounds of all variables at the root node (adds --use-gecode)"
+      << std::endl
+      << "  --sac\n    Probe values of all variables at the root node (adds --use-gecode)"
+      << std::endl
+      << "  --pre-passes <n>\n    Number of times to apply shave/sac pass (0 = fixed-point, 1 = "
+         "default)"
+      << std::endl
 #endif
-     << "  -O<n>\n    Two-pass optimisation levels:" << std::endl
-     << "    -O0:    Disable optimize (--no-optimize)  -O1:    Single pass (default)" << std::endl
-     << "    -O2:    Same as: --two-pass"
+      << "  -O<n>\n    Two-pass optimisation levels:" << std::endl
+      << "    -O0:    Disable optimize (--no-optimize)  -O1:    Single pass (default)" << std::endl
+      << "    -O2:    Same as: --two-pass"
 #ifdef HAS_GECODE
-     << "               -O3:    Same as: --use-gecode" << std::endl
-     << "    -O4:    Same as: --shave                  -O5:    Same as: --sac" << std::endl
+      << "               -O3:    Same as: --use-gecode" << std::endl
+      << "    -O4:    Same as: --shave                  -O5:    Same as: --sac" << std::endl
 #else
-     << "\n    -O3,4,5:    Disabled [Requires MiniZinc with built-in Gecode support]" << std::endl
+      << "\n    -O3,4,5:    Disabled [Requires MiniZinc with built-in Gecode support]" << std::endl
 #endif
-     << "  -g\n    Debug mode: Forces -O0 and records all domain changes as constraints instead of "
-        "applying them"
-     << std::endl
-     << std::endl;
+      << "  -g\n    Debug mode: Forces -O0 and records all domain changes as constraints instead "
+         "of "
+         "applying them"
+      << std::endl
+      << std::endl;
   _os << "Flattener output options:" << std::endl
-     << "  --no-output-ozn, -O-\n    Do not output ozn file" << std::endl
-     << "  --output-base <name>\n    Base name for output files" << std::endl
-     << (_fOutputByDefault
-             ? "  -o <file>, --fzn <file>, --output-to-file <file>, --output-fzn-to-file <file>\n"
-             : "  --fzn <file>, --output-fzn-to-file <file>\n")
-     << "    Filename for generated FlatZinc output" << std::endl
-     << "  --ozn, --output-ozn-to-file <file>\n    Filename for model output specification (--ozn- "
-        "for none)"
-     << std::endl
-     << "  --keep-paths\n    Don't remove path annotations from FlatZinc" << std::endl
-     << "  --output-paths\n    Output a symbol table (.paths file)" << std::endl
-     << "  --output-paths-to-file <file>\n    Output a symbol table (.paths file) to <file>"
-     << std::endl
-     << "  --output-detailed-timing\n    Output detailed profiling information of compilation time"
-     << std::endl
-     << "  --output-to-stdout, --output-fzn-to-stdout\n    Print generated FlatZinc to standard "
-        "output"
-     << std::endl
-     << "  --output-ozn-to-stdout\n    Print model output specification to standard output"
-     << std::endl
-     << "  --output-paths-to-stdout\n    Output symbol table to standard output" << std::endl
-     << "  --output-mode <item|dzn|json|checker>\n    Create output according to output item "
-        "(default), or output compatible\n    with dzn or json format, or for solution checking"
-     << std::endl
-     << "  --output-objective\n    Print value of objective function in dzn or json output"
-     << std::endl
-     << "  --output-output-item\n    Print the output item as a string in the dzn or json output"
-     << std::endl
-     << "  -Werror\n    Turn warnings into errors" << std::endl;
+      << "  --no-output-ozn, -O-\n    Do not output ozn file" << std::endl
+      << "  --output-base <name>\n    Base name for output files" << std::endl
+      << (_fOutputByDefault
+              ? "  -o <file>, --fzn <file>, --output-to-file <file>, --output-fzn-to-file <file>\n"
+              : "  --fzn <file>, --output-fzn-to-file <file>\n")
+      << "    Filename for generated FlatZinc output" << std::endl
+      << "  --ozn, --output-ozn-to-file <file>\n    Filename for model output specification "
+         "(--ozn- "
+         "for none)"
+      << std::endl
+      << "  --keep-paths\n    Don't remove path annotations from FlatZinc" << std::endl
+      << "  --output-paths\n    Output a symbol table (.paths file)" << std::endl
+      << "  --output-paths-to-file <file>\n    Output a symbol table (.paths file) to <file>"
+      << std::endl
+      << "  --output-detailed-timing\n    Output detailed profiling information of compilation time"
+      << std::endl
+      << "  --output-to-stdout, --output-fzn-to-stdout\n    Print generated FlatZinc to standard "
+         "output"
+      << std::endl
+      << "  --output-ozn-to-stdout\n    Print model output specification to standard output"
+      << std::endl
+      << "  --output-paths-to-stdout\n    Output symbol table to standard output" << std::endl
+      << "  --output-mode <item|dzn|json|checker>\n    Create output according to output item "
+         "(default), or output compatible\n    with dzn or json format, or for solution checking"
+      << std::endl
+      << "  --output-objective\n    Print value of objective function in dzn or json output"
+      << std::endl
+      << "  --output-output-item\n    Print the output item as a string in the dzn or json output"
+      << std::endl
+      << "  -Werror\n    Turn warnings into errors" << std::endl;
 }
 
 bool Flattener::processOption(int& i, std::vector<std::string>& argv) {
@@ -174,7 +181,7 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv) {
   } else if (cop.getOption("--output-base", &_flagOutputBase)) {
     // Parsed by reference
   } else if (cop.getOption(_fOutputByDefault ? "-o --fzn --output-to-file --output-fzn-to-file"
-                                            : "--fzn --output-fzn-to-file",
+                                             : "--fzn --output-fzn-to-file",
                            &_flagOutputFzn)) {
   } else if (cop.getOption("--output-paths-to-file", &_flagOutputPaths)) {
     _fopts.collectMznPaths = true;
@@ -293,7 +300,7 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv) {
       }
       default: {
         _log << "% Error: Unsupported optimisation level, cannot process -O" << intBuffer << "."
-            << std::endl;
+             << std::endl;
         return false;
       }
     }
@@ -457,13 +464,13 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
   if (_filenames.end() != find(_filenames.begin(), _filenames.end(), _flagOutputFzn) ||
       _datafiles.end() != find(_datafiles.begin(), _datafiles.end(), _flagOutputFzn)) {
     _log << "  WARNING: fzn filename '" << _flagOutputFzn << "' matches an input file, ignoring."
-        << endl;
+         << endl;
     _flagOutputFzn = "";
   }
   if (_filenames.end() != find(_filenames.begin(), _filenames.end(), _flagOutputOzn) ||
       _datafiles.end() != find(_datafiles.begin(), _datafiles.end(), _flagOutputOzn)) {
     _log << "  WARNING: ozn filename '" << _flagOutputOzn << "' matches an input file, ignoring."
-        << endl;
+         << endl;
     _flagOutputOzn = "";
   }
 
@@ -752,7 +759,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           env = out_env;
           if (_flags.verbose) {
             _log << " done (" << _starttime.stoptime() << "),"
-                << " max stack depth " << env->maxCallStack() << std::endl;
+                 << " max stack depth " << env->maxCallStack() << std::endl;
           }
         }
 

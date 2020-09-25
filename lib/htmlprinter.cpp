@@ -318,7 +318,7 @@ void add_to_group(Group& gm, const std::string& group, DocItem& di) {
 }
 
 void set_group_desc(Group& maingroup, const std::string& group, const std::string& htmlName,
-                  const std::string& s) {
+                    const std::string& s) {
   if (group == "MAIN") {
     if (!maingroup.htmlName.empty()) {
       std::cerr << "Warning: two descriptions for group `" << group << "'\n";

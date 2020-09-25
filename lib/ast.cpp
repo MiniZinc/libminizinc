@@ -315,7 +315,7 @@ void AnonVar::rehash() { initHash(); }
 
 int ArrayLit::dims() const {
   return _flag2 ? ((_dims.size() - 2 * _u.al->dims()) / 2)
-                 : (_dims.size() == 0 ? 1 : _dims.size() / 2);
+                : (_dims.size() == 0 ? 1 : _dims.size() / 2);
 }
 int ArrayLit::min(int i) const {
   if (_dims.size() == 0) {
@@ -630,35 +630,35 @@ namespace {
 
 class OpToString : public GCMarker {
 public:
-  Id* sBOT_PLUS; // NOLINT(readability-identifier-naming)
-  Id* sBOT_MINUS; // NOLINT(readability-identifier-naming)
-  Id* sBOT_MULT; // NOLINT(readability-identifier-naming)
-  Id* sBOT_DIV; // NOLINT(readability-identifier-naming)
-  Id* sBOT_IDIV; // NOLINT(readability-identifier-naming)
-  Id* sBOT_MOD; // NOLINT(readability-identifier-naming)
-  Id* sBOT_POW; // NOLINT(readability-identifier-naming)
-  Id* sBOT_LE; // NOLINT(readability-identifier-naming)
-  Id* sBOT_LQ; // NOLINT(readability-identifier-naming)
-  Id* sBOT_GR; // NOLINT(readability-identifier-naming)
-  Id* sBOT_GQ; // NOLINT(readability-identifier-naming)
-  Id* sBOT_EQ; // NOLINT(readability-identifier-naming)
-  Id* sBOT_NQ; // NOLINT(readability-identifier-naming)
-  Id* sBOT_IN; // NOLINT(readability-identifier-naming)
-  Id* sBOT_SUBSET; // NOLINT(readability-identifier-naming)
-  Id* sBOT_SUPERSET; // NOLINT(readability-identifier-naming)
-  Id* sBOT_UNION; // NOLINT(readability-identifier-naming)
-  Id* sBOT_DIFF; // NOLINT(readability-identifier-naming)
-  Id* sBOT_SYMDIFF; // NOLINT(readability-identifier-naming)
-  Id* sBOT_INTERSECT; // NOLINT(readability-identifier-naming)
-  Id* sBOT_PLUSPLUS; // NOLINT(readability-identifier-naming)
-  Id* sBOT_EQUIV; // NOLINT(readability-identifier-naming)
-  Id* sBOT_IMPL; // NOLINT(readability-identifier-naming)
-  Id* sBOT_RIMPL; // NOLINT(readability-identifier-naming)
-  Id* sBOT_OR; // NOLINT(readability-identifier-naming)
-  Id* sBOT_AND; // NOLINT(readability-identifier-naming)
-  Id* sBOT_XOR; // NOLINT(readability-identifier-naming)
-  Id* sBOT_DOTDOT; // NOLINT(readability-identifier-naming)
-  Id* sBOT_NOT; // NOLINT(readability-identifier-naming)
+  Id* sBOT_PLUS;       // NOLINT(readability-identifier-naming)
+  Id* sBOT_MINUS;      // NOLINT(readability-identifier-naming)
+  Id* sBOT_MULT;       // NOLINT(readability-identifier-naming)
+  Id* sBOT_DIV;        // NOLINT(readability-identifier-naming)
+  Id* sBOT_IDIV;       // NOLINT(readability-identifier-naming)
+  Id* sBOT_MOD;        // NOLINT(readability-identifier-naming)
+  Id* sBOT_POW;        // NOLINT(readability-identifier-naming)
+  Id* sBOT_LE;         // NOLINT(readability-identifier-naming)
+  Id* sBOT_LQ;         // NOLINT(readability-identifier-naming)
+  Id* sBOT_GR;         // NOLINT(readability-identifier-naming)
+  Id* sBOT_GQ;         // NOLINT(readability-identifier-naming)
+  Id* sBOT_EQ;         // NOLINT(readability-identifier-naming)
+  Id* sBOT_NQ;         // NOLINT(readability-identifier-naming)
+  Id* sBOT_IN;         // NOLINT(readability-identifier-naming)
+  Id* sBOT_SUBSET;     // NOLINT(readability-identifier-naming)
+  Id* sBOT_SUPERSET;   // NOLINT(readability-identifier-naming)
+  Id* sBOT_UNION;      // NOLINT(readability-identifier-naming)
+  Id* sBOT_DIFF;       // NOLINT(readability-identifier-naming)
+  Id* sBOT_SYMDIFF;    // NOLINT(readability-identifier-naming)
+  Id* sBOT_INTERSECT;  // NOLINT(readability-identifier-naming)
+  Id* sBOT_PLUSPLUS;   // NOLINT(readability-identifier-naming)
+  Id* sBOT_EQUIV;      // NOLINT(readability-identifier-naming)
+  Id* sBOT_IMPL;       // NOLINT(readability-identifier-naming)
+  Id* sBOT_RIMPL;      // NOLINT(readability-identifier-naming)
+  Id* sBOT_OR;         // NOLINT(readability-identifier-naming)
+  Id* sBOT_AND;        // NOLINT(readability-identifier-naming)
+  Id* sBOT_XOR;        // NOLINT(readability-identifier-naming)
+  Id* sBOT_DOTDOT;     // NOLINT(readability-identifier-naming)
+  Id* sBOT_NOT;        // NOLINT(readability-identifier-naming)
 
   OpToString() {
     GCLock lock;
@@ -1490,7 +1490,7 @@ Constants::Constants() {
   varIgnore = new VarDecl(Location(), ti, "_bool_ignore");
   absent = new Id(Location(), "_absent", nullptr);
   varRedef = new FunctionI(Location(), "__internal_varRedef",
-                            new TypeInst(Location(), Type::varbool()), std::vector<VarDecl*>());
+                           new TypeInst(Location(), Type::varbool()), std::vector<VarDecl*>());
   Type absent_t;
   absent_t.bt(Type::BT_BOT);
   absent_t.dim(0);

@@ -64,12 +64,12 @@ void MZNSolverFactory::printHelp(ostream& os) {
 SolverInstanceBase::Options* MZNSolverFactory::createOptions() { return new MZNSolverOptions; }
 
 SolverInstanceBase* MZNSolverFactory::doCreateSI(Env& env, std::ostream& log,
-                                                  SolverInstanceBase::Options* opt) {
+                                                 SolverInstanceBase::Options* opt) {
   return new MZNSolverInstance(env, log, opt);
 }
 
 void MZNSolverFactory::setAcceptedFlags(SolverInstanceBase::Options* opt,
-                                         const std::vector<MZNFZNSolverFlag>& flags) {
+                                        const std::vector<MZNFZNSolverFlag>& flags) {
   auto& _opt = static_cast<MZNSolverOptions&>(*opt);
   _opt.mznSolverFlags.clear();
   for (const auto& f : flags) {
@@ -82,7 +82,7 @@ void MZNSolverFactory::setAcceptedFlags(SolverInstanceBase::Options* opt,
 }
 
 bool MZNSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
-                                      std::vector<std::string>& argv) {
+                                     std::vector<std::string>& argv) {
   auto& _opt = static_cast<MZNSolverOptions&>(*opt);
   CLOParser cop(i, argv);
   string buffer;

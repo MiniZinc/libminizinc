@@ -225,7 +225,8 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
   for (int i = 0; i < ite->size() && !foundTrueBranch; i++) {
     bool cond = true;
     EE e_if;
-    if (ite->ifExpr(i)->isa<Call>() && ite->ifExpr(i)->cast<Call>()->id() == "mzn_in_root_context") {
+    if (ite->ifExpr(i)->isa<Call>() &&
+        ite->ifExpr(i)->cast<Call>()->id() == "mzn_in_root_context") {
       e_if = EE(constants().boollit(ctx.b == C_ROOT), constants().literalTrue);
     } else {
       Ctx cmix_not_negated;
@@ -473,7 +474,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     if (b == nullptr) {
       CallStackItem _csi(env, new StringLit(Location().introduce(), "b"));
       b = new_vardecl(env, Ctx(), new TypeInst(Location().introduce(), Type::varbool()), nullptr,
-                     nullptr, nullptr);
+                      nullptr, nullptr);
     }
     ret.b = b->id();
 

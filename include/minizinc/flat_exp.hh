@@ -25,7 +25,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e);
 KeepAlive conj(EnvI& env, VarDecl* b, const Ctx& ctx, const std::vector<EE>& e);
 
 VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDecl* origVd,
-                    Expression* rhs);
+                     Expression* rhs);
 
 KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e);
 

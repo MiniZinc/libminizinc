@@ -284,7 +284,8 @@ void GeasSolverInstance::processFlatZinc() {
   }
 
   // Post constraints
-  for (ConstraintIterator it = _flat->constraints().begin(); it != _flat->constraints().end(); ++it) {
+  for (ConstraintIterator it = _flat->constraints().begin(); it != _flat->constraints().end();
+       ++it) {
     if (!it->removed()) {
       if (auto* c = it->e()->dynamicCast<Call>()) {
         _constraintRegistry.post(c);
@@ -713,12 +714,12 @@ GeasSolverFactory::GeasSolverFactory() {
 SolverInstanceBase::Options* GeasSolverFactory::createOptions() { return new GeasOptions; }
 
 SolverInstanceBase* GeasSolverFactory::doCreateSI(Env& env, std::ostream& log,
-                                                   SolverInstanceBase::Options* opt) {
+                                                  SolverInstanceBase::Options* opt) {
   return new GeasSolverInstance(env, log, opt);
 }
 
 bool GeasSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
-                                       std::vector<std::string>& argv) {
+                                      std::vector<std::string>& argv) {
   auto* _opt = static_cast<GeasOptions*>(opt);
   if (argv[i] == "-a" || argv[i] == "--all-solutions") {
     _opt->allSolutions = true;

@@ -77,7 +77,9 @@ FunctionIteratorContainer Model::functions() { return FunctionIteratorContainer(
 
 VarDeclIterator VarDeclIteratorContainer::begin() { return VarDeclIterator(_m, _m->begin()); }
 VarDeclIterator VarDeclIteratorContainer::end() { return VarDeclIterator(_m, _m->end()); }
-ConstraintIterator ConstraintIteratorContainer::begin() { return ConstraintIterator(_m, _m->begin()); }
+ConstraintIterator ConstraintIteratorContainer::begin() {
+  return ConstraintIterator(_m, _m->begin());
+}
 ConstraintIterator ConstraintIteratorContainer::end() { return ConstraintIterator(_m, _m->end()); }
 FunctionIterator FunctionIteratorContainer::begin() { return FunctionIterator(_m, _m->begin()); }
 FunctionIterator FunctionIteratorContainer::end() { return FunctionIterator(_m, _m->end()); }
@@ -388,8 +390,8 @@ void Model::checkFnOverloading(EnvI& env) {
 
 namespace {
 int match_idx(std::vector<FunctionI*>& matched, Expression*& botarg, EnvI& env,
-             const std::vector<Model::FnEntry>& v, const std::vector<Expression*>& args,
-             bool strictEnums) {
+              const std::vector<Model::FnEntry>& v, const std::vector<Expression*>& args,
+              bool strictEnums) {
   botarg = nullptr;
   for (unsigned int i = 0; i < v.size(); i++) {
     const std::vector<Type>& fi_t = v[i].t;
@@ -555,7 +557,8 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
           }
         } else {
           oss << "    (requires " << i.fi->params().size() << " argument"
-              << (i.fi->params().size() == 1 ? "" : "s") << ", but " << c->argCount() << " given)\n";
+              << (i.fi->params().size() == 1 ? "" : "s") << ", but " << c->argCount()
+              << " given)\n";
         }
       }
       throw TypeError(env, c->loc(), oss.str());

@@ -23,7 +23,6 @@ class PathFilePrinter {
   typedef std::pair<std::string, std::string> NamePair;
   typedef std::unordered_map<Id*, NamePair> NameMap;
 
-
 private:
   NameMap _betternames;
   std::ostream& _os;

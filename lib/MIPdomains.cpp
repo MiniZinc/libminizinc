@@ -534,7 +534,8 @@ private:
       }
     }
     // Iterate thru original __POST constraints to mark constrained vars:
-    for (ConstraintIterator ic = mFlat.constraints().begin(); ic != mFlat.constraints().end(); ++ic) {
+    for (ConstraintIterator ic = mFlat.constraints().begin(); ic != mFlat.constraints().end();
+         ++ic) {
       if (ic->removed()) {
         continue;
       }
@@ -699,7 +700,8 @@ private:
     }
 
     DBGOUT_MIPD("  CHECK ALL CONSTRAINTS for 2-var equations:");
-    for (ConstraintIterator ic = mFlat.constraints().begin(); ic != mFlat.constraints().end(); ++ic) {
+    for (ConstraintIterator ic = mFlat.constraints().begin(); ic != mFlat.constraints().end();
+         ++ic) {
       //         std::cerr << "  SEE constraint: " << "      ";
       //         debugprint(&*ic);
       //         debugprint(c->decl());
@@ -1663,7 +1665,8 @@ private:
         std::vector<Expression*> pp;
         auto bnds = sDomain.getBounds();
         const long long iMin = mipd.expr2ExprArray(
-            mipd.vVarDescr[cls.varRef1->payload()].pEqEncoding->e()->dynamicCast<Call>()->arg(1), pp);
+            mipd.vVarDescr[cls.varRef1->payload()].pEqEncoding->e()->dynamicCast<Call>()->arg(1),
+            pp);
         MZN_MIPD__assert_hard(pp.size() >= bnds.right - bnds.left + 1);
         MZN_MIPD__assert_hard(iMin <= bnds.left);
         for (const auto& intv : SS) {
