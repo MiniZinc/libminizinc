@@ -227,21 +227,21 @@ public:
   Gecode::Search::Options engineOptions;
 
   GecodeSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
-  virtual ~GecodeSolverInstance();
+  ~GecodeSolverInstance() override;
 
-  virtual Status next();
-  virtual void processFlatZinc();
-  virtual Status solve();
-  virtual void resetSolver();
+  Status next() override;
+  void processFlatZinc() override;
+  Status solve() override;
+  void resetSolver() override;
 
   // Presolve the currently loaded model, updating variables with the same
   // names in the given Model* m.
   bool presolve(Model* m = nullptr);
   bool sac(bool toFixedPoint, bool shaving);
-  void printStatistics();
+  void printStatistics() override;
 
   void processSolution(bool last_sol = false);
-  virtual Expression* getSolutionValue(Id* id);
+  Expression* getSolutionValue(Id* id) override;
 
   Gecode::Space* getGecodeModel();
 
@@ -360,14 +360,15 @@ protected:
 class GecodeSolverFactory : public SolverFactory {
 public:
   GecodeSolverFactory();
-  SolverInstanceBase::Options* createOptions();
-  SolverInstanceBase* doCreateSI(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
-  std::string getDescription(SolverInstanceBase::Options* opt = nullptr);
-  std::string getVersion(SolverInstanceBase::Options* opt = nullptr);
-  std::string getId() { return "org.minizinc.gecode_presolver"; }
-  virtual bool processOption(SolverInstanceBase::Options* opt, int& i,
-                             std::vector<std::string>& argv);
-  void printHelp(std::ostream& os);
+  SolverInstanceBase::Options* createOptions() override;
+  SolverInstanceBase* doCreateSI(Env& env, std::ostream& log,
+                                 SolverInstanceBase::Options* opt) override;
+  std::string getDescription(SolverInstanceBase::Options* opt = nullptr) override;
+  std::string getVersion(SolverInstanceBase::Options* opt = nullptr) override;
+  std::string getId() override { return "org.minizinc.gecode_presolver"; }
+  bool processOption(SolverInstanceBase::Options* opt, int& i,
+                     std::vector<std::string>& argv) override;
+  void printHelp(std::ostream& os) override;
 };
 
 }  // namespace MiniZinc

@@ -70,15 +70,15 @@ public:
   void* operator new(size_t size);
 
   /// Placement-new
-  void* operator new(size_t, void* n) throw() { return n; }
+  void* operator new(size_t /*s*/, void* n) throw() { return n; }
 
   /// Delete node (no-op)
-  void operator delete(void*, size_t) throw() {}
+  void operator delete(void* /*n*/, size_t /*s*/) throw() {}
   /// Delete node (no-op)
-  void operator delete(void*, void*) throw() {}
+  void operator delete(void* /*n*/, void* /*m*/) throw() {}
 
   /// Delete node (no-op)
-  void operator delete(void*) throw() {}
+  void operator delete(void* /*n*/) throw() {}
 };
 
 /**
@@ -190,7 +190,7 @@ public:
   /// Put a mark on the trail
   static void mark();
   /// Add a trail entry
-  static void trail(Expression**, Expression*);
+  static void trail(Expression** l, Expression* v);
   /// Untrail to previous mark
   static void untrail();
 

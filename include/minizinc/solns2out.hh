@@ -96,7 +96,7 @@ public:
   Solns2Out(std::ostream& os, std::ostream& log, std::string stdlibDir);
 
   bool processOption(int& i, std::vector<std::string>& argv);
-  void printHelp(std::ostream&);
+  void printHelp(std::ostream& os);
 
   /// The output model (~.ozn) can be passed in 1 way in this base class:
   /// passing Env* containing output()
@@ -107,7 +107,7 @@ public:
   /// by e.g. SolverInstance::assignSolutionToOutput() )
   /// In the 1st case, (part of) the assignment text is passed as follows,
   /// original end-of-lines need to be there as well
-  bool feedRawDataChunk(const char*);
+  bool feedRawDataChunk(const char* data);
 
   SolverInstance::Status status = SolverInstance::UNKNOWN;
   bool fStatusPrinted = false;
@@ -116,7 +116,7 @@ public:
   void declNewOutput();
 
   /// This can be used by assignSolutionToOutput()
-  DE& findOutputVar(ASTString);
+  DE& findOutputVar(const ASTString& name);
 
   /// In the other case,
   /// the evaluation procedures print output/status to os
@@ -130,7 +130,7 @@ public:
   /// This means the solver exits
   bool evalStatus(SolverInstance::Status status);
 
-  void printStatistics(std::ostream&);
+  void printStatistics(std::ostream& os);
 
   Env* getEnv() const { return _env; }
   Model* getModel() const {
@@ -167,7 +167,7 @@ protected:
   void createInputMap();
   void restoreDefaults();
   /// Parsing fznsolver's complete raw text output
-  void parseAssignments(std::string&);
+  void parseAssignments(std::string& solution);
   /// Checking solution against checker model
   void checkSolution(std::ostream& os);
   void checkStatistics(std::ostream& os);

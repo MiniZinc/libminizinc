@@ -48,12 +48,12 @@ public:
   Flattener(std::ostream& os, std::ostream& log, std::string stdlibDir);
   ~Flattener();
   bool processOption(int& i, std::vector<std::string>& argv);
-  void printVersion(std::ostream&);
-  void printHelp(std::ostream&);
+  void printVersion(std::ostream& os);
+  void printHelp(std::ostream& os);
 
   void flatten(const std::string& modelString = std::string(),
                const std::string& modelName = std::string("stdin"));
-  void printStatistics(std::ostream&);
+  void printStatistics(std::ostream& os);
 
   void setFlagVerbose(bool f) { _flags.verbose = f; }
   bool getFlagVerbose() const { return _flags.verbose; }

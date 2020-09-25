@@ -164,7 +164,7 @@ void Solns2Out::initFromOzn(const std::string& filename) {
   }
 }
 
-Solns2Out::DE& Solns2Out::findOutputVar(ASTString name) {
+Solns2Out::DE& Solns2Out::findOutputVar(const ASTString& name) {
   declNewOutput();
   auto it = _declmap.find(name);
   MZN_ASSERT_HARD_MSG(_declmap.end() != it, "solns2out_base: unexpected id in output: " << name);

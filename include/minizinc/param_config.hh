@@ -50,9 +50,9 @@ public:
   /// Construct with message \a msg
   ParamException(const std::string& msg) : Exception(msg) {}
   /// Destructor
-  ~ParamException() throw() {}
+  ~ParamException() throw() override {}
   /// Return description
-  virtual const char* what() const throw() { return "MiniZinc: solver parameter error"; }
+  const char* what() const throw() override { return "MiniZinc: solver parameter error"; }
 };
 }  // namespace MiniZinc
 

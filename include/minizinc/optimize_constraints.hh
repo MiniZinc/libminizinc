@@ -25,7 +25,7 @@ protected:
   ASTStringMap<optimizer> _m;
 
 public:
-  void reg(const ASTString& call, optimizer);
+  void reg(const ASTString& call, optimizer opt);
   ConstraintStatus process(EnvI& env, Item* i, Call* c, Expression*& rewrite);
 
   static OptimizeRegistry& registry();

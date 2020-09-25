@@ -57,7 +57,7 @@ public:
     int nonConvex = 2;
     std::string sGurobiDLL;
     bool processOption(int& i, std::vector<std::string>& argv);
-    static void printHelp(std::ostream&);
+    static void printHelp(std::ostream& os);
   };
 
 private:
@@ -158,7 +158,7 @@ public:
       openGUROBI();
     }
   }
-  virtual ~MIP_gurobi_wrapper() { closeGUROBI(); }
+  ~MIP_gurobi_wrapper() override { closeGUROBI(); }
 
   static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
   static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
@@ -179,45 +179,45 @@ public:
   void closeGUROBI();
 
   /// actual adding new variables to the solver
-  virtual void doAddVars(size_t n, double* obj, double* lb, double* ub, VarType* vt,
-                         std::string* names);
+  void doAddVars(size_t n, double* obj, double* lb, double* ub, VarType* vt,
+                 std::string* names) override;
 
   /// adding a linear constraint
-  virtual void addRow(int nnz, int* rmatind, double* rmatval, LinConType sense, double rhs,
-                      int mask = MaskConsType_Normal, const std::string& rowName = "");
-  virtual void setVarBounds(int iVar, double lb, double ub);
-  virtual void setVarLB(int iVar, double lb);
-  virtual void setVarUB(int iVar, double ub);
+  void addRow(int nnz, int* rmatind, double* rmatval, LinConType sense, double rhs,
+              int mask = MaskConsType_Normal, const std::string& rowName = "") override;
+  void setVarBounds(int iVar, double lb, double ub) override;
+  void setVarLB(int iVar, double lb) override;
+  void setVarUB(int iVar, double ub) override;
   /// Indicator constraint: x[iBVar]==bVal -> lin constr
-  virtual void addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind, double* rmatval,
-                                      LinConType sense, double rhs,
-                                      const std::string& rowName = "");
-  virtual void addMinimum(int iResultVar, int nnz, int* ind, const std::string& rowName = "");
+  void addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind, double* rmatval,
+                              LinConType sense, double rhs,
+                              const std::string& rowName = "") override;
+  void addMinimum(int iResultVar, int nnz, int* ind, const std::string& rowName = "") override;
 
   /// Times constraint: var[x]*var[y] == var[z]
-  virtual void addTimes(int x, int y, int z, const std::string& rowName = "");
+  void addTimes(int x, int y, int z, const std::string& rowName = "") override;
 
-  virtual int getFreeSearch();
-  virtual bool addSearch(const std::vector<VarId>& vars, const std::vector<int>& pri);
-  virtual bool addWarmStart(const std::vector<VarId>& vars, const std::vector<double>& vals);
-  virtual bool defineMultipleObjectives(const MultipleObjectives& mo);
+  int getFreeSearch() override;
+  bool addSearch(const std::vector<VarId>& vars, const std::vector<int>& pri) override;
+  bool addWarmStart(const std::vector<VarId>& vars, const std::vector<double>& vals) override;
+  bool defineMultipleObjectives(const MultipleObjectives& mo) override;
 
   int nRows = 0;  // to count rows in order tp notice lazy constraints
   std::vector<int> nLazyIdx;
   std::vector<int> nLazyValue;
   /// adding an implication
   //     virtual void addImpl() = 0;
-  virtual void setObjSense(int s);  // +/-1 for max/min
+  void setObjSense(int s) override;  // +/-1 for max/min
 
-  virtual double getInfBound() { return GRB_INFINITY; }
+  double getInfBound() override { return GRB_INFINITY; }
 
-  virtual int getNCols() {
+  int getNCols() override {
     dll_GRBupdatemodel(model);
     int cols;
     error = dll_GRBgetintattr(model, GRB_INT_ATTR_NUMVARS, &cols);
     return cols;
   }
-  virtual int getNRows() {
+  int getNRows() override {
     dll_GRBupdatemodel(model);
     int cols;
     error = dll_GRBgetintattr(model, GRB_INT_ATTR_NUMCONSTRS, &cols);
@@ -227,25 +227,25 @@ public:
   //     void setObjUB(double ub) { objUB = ub; }
   //     void addQPUniform(double c) { qpu = c; } // also sets problem type to MIQP unless c=0
 
-  virtual void solve();
+  void solve() override;
 
   /// OUTPUT:
-  virtual const double* getValues() { return output.x; }
-  virtual double getObjValue() { return output.objVal; }
-  virtual double getBestBound() { return output.bestBound; }
-  virtual double getCPUTime() { return output.dCPUTime; }
+  const double* getValues() override { return output.x; }
+  double getObjValue() override { return output.objVal; }
+  double getBestBound() override { return output.bestBound; }
+  double getCPUTime() override { return output.dCPUTime; }
 
-  virtual Status getStatus() { return output.status; }
-  virtual std::string getStatusName() { return output.statusName; }
+  Status getStatus() override { return output.status; }
+  std::string getStatusName() override { return output.statusName; }
 
-  virtual int getNNodes() { return output.nNodes; }
-  virtual int getNOpen() { return output.nOpenNodes; }
+  int getNNodes() override { return output.nNodes; }
+  int getNOpen() override { return output.nOpenNodes; }
 
   //     virtual int getNNodes() = 0;
   //     virtual double getTime() = 0;
 
 protected:
-  void wrapAssert(bool, const std::string&, bool fTerm = true);
+  void wrapAssert(bool cond, const std::string& msg, bool fTerm = true);
 
   /// Need to consider the 100 status codes in GUROBI and change with every version? TODO
   Status convertStatus(int gurobiStatus);

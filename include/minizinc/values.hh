@@ -318,7 +318,7 @@ public:
   bool operator()(const MiniZinc::IntVal& s0, const MiniZinc::IntVal& s1) const { return s0 == s1; }
 };
 
-inline MiniZinc::FloatVal abs(const MiniZinc::FloatVal&);
+inline MiniZinc::FloatVal abs(const MiniZinc::FloatVal& x);
 }  // namespace std
 
 namespace std {

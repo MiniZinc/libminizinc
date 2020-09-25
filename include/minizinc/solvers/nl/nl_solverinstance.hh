@@ -35,15 +35,15 @@ protected:
 public:
   NLSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
 
-  ~NLSolverInstance();
+  ~NLSolverInstance() override;
 
-  Status next() { return SolverInstance::Status::ERROR; }
+  Status next() override { return SolverInstance::Status::ERROR; }
 
-  Status solve();
+  Status solve() override;
 
-  void processFlatZinc();
+  void processFlatZinc() override;
 
-  void resetSolver();
+  void resetSolver() override;
 
 protected:
   Expression* getSolutionValue(Id* id);
@@ -53,18 +53,18 @@ protected:
 
 class NL_SolverFactory : public SolverFactory {
 protected:
-  virtual SolverInstanceBase* doCreateSI(Env& env, std::ostream& log,
-                                         SolverInstanceBase::Options* opt);
+  SolverInstanceBase* doCreateSI(Env& env, std::ostream& log,
+                                 SolverInstanceBase::Options* opt) override;
 
 public:
   NL_SolverFactory();
-  virtual SolverInstanceBase::Options* createOptions();
-  virtual std::string getDescription(SolverInstanceBase::Options* opt = nullptr);
-  virtual std::string getVersion(SolverInstanceBase::Options* opt = nullptr);
-  virtual std::string getId();
-  virtual bool processOption(SolverInstanceBase::Options* opt, int& i,
-                             std::vector<std::string>& argv);
-  virtual void printHelp(std::ostream& os);
+  SolverInstanceBase::Options* createOptions() override;
+  std::string getDescription(SolverInstanceBase::Options* opt = nullptr) override;
+  std::string getVersion(SolverInstanceBase::Options* opt = nullptr) override;
+  std::string getId() override;
+  bool processOption(SolverInstanceBase::Options* opt, int& i,
+                     std::vector<std::string>& argv) override;
+  void printHelp(std::ostream& os) override;
   // void setAcceptedFlags(SolverInstanceBase::Options* opt, const std::vector<MZNFZNSolverFlag>&
   // flags);
 };

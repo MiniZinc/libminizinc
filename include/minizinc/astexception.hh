@@ -25,8 +25,8 @@ protected:
 
 public:
   SyntaxError(const Location& loc, const std::string& msg) : Exception(msg), _loc(loc) {}
-  virtual ~SyntaxError() throw() {}
-  virtual const char* what() const throw() { return "MiniZinc: syntax error"; }
+  ~SyntaxError() throw() override {}
+  const char* what() const throw() override { return "MiniZinc: syntax error"; }
   const Location& loc() const { return _loc; }
 };
 
@@ -36,7 +36,7 @@ protected:
 
 public:
   LocationException(EnvI& env, const Location& loc, const std::string& msg);
-  virtual ~LocationException() throw() {}
+  ~LocationException() throw() override {}
   const Location& loc() const { return _loc; }
 };
 
@@ -44,8 +44,8 @@ class TypeError : public LocationException {
 public:
   TypeError(EnvI& env, const Location& loc, const std::string& msg)
       : LocationException(env, loc, msg) {}
-  ~TypeError() throw() {}
-  virtual const char* what() const throw() { return "MiniZinc: type error"; }
+  ~TypeError() throw() override {}
+  const char* what() const throw() override { return "MiniZinc: type error"; }
 };
 
 class EvalError : public LocationException {
@@ -58,8 +58,8 @@ public:
     ss << msg << " '" << name << "'";
     _msg = ss.str();
   }
-  ~EvalError() throw() {}
-  virtual const char* what() const throw() { return "MiniZinc: evaluation error"; }
+  ~EvalError() throw() override {}
+  const char* what() const throw() override { return "MiniZinc: evaluation error"; }
 };
 
 class ModelInconsistent : public LocationException {
@@ -67,15 +67,17 @@ public:
   ModelInconsistent(EnvI& env, const Location& loc, const std::string& msg = "")
       : LocationException(env, loc,
                           "model inconsistency detected" + (msg.empty() ? msg : ":  ") + msg) {}
-  ~ModelInconsistent() throw() {}
-  virtual const char* what() const throw() { return "MiniZinc: warning"; }
+  ~ModelInconsistent() throw() override {}
+  const char* what() const throw() override { return "MiniZinc: warning"; }
 };
 
 class ResultUndefinedError : public LocationException {
 public:
   ResultUndefinedError(EnvI& env, const Location& loc, const std::string& msg);
-  ~ResultUndefinedError() throw() {}
-  virtual const char* what() const throw() { return "MiniZinc: result of evaluation is undefined"; }
+  ~ResultUndefinedError() throw() override {}
+  const char* what() const throw() override {
+    return "MiniZinc: result of evaluation is undefined";
+  }
 };
 
 }  // namespace MiniZinc

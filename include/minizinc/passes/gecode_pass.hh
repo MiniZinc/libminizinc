@@ -23,7 +23,7 @@ class GecodePass : public Pass {
 public:
   GecodePass(GecodeOptions* gopts);
 
-  Env* run(Env* e, std::ostream& log);
+  Env* run(Env* e, std::ostream& log) override;
 };
 
 }  // namespace MiniZinc

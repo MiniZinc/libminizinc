@@ -74,10 +74,10 @@ public:
   MiniZinc::SolveI::SolveType solveType;
 
   /// copy constructor
-  FznSpace(FznSpace&);
+  FznSpace(FznSpace& f);
   /// standard constructor
   FznSpace() : optVarIsInt(true), optVarIdx(-1), copyAuxVars(true) {}
-  ~FznSpace() {}
+  ~FznSpace() override {}
 
   /// get the index of the Boolean variable in bv; return -1 if not exists
   int getBoolAliasIndex(const Gecode::BoolVar& bvar) {
@@ -92,9 +92,9 @@ public:
 
 protected:
   /// Implement optimization
-  virtual void constrain(const Space& s);
+  void constrain(const Space& s) override;
   /// Copy function
-  virtual Gecode::Space* copy();
+  Gecode::Space* copy() override;
 };
 
 }  // namespace MiniZinc

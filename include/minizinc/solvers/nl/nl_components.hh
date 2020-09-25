@@ -70,9 +70,9 @@ public:
   }
 
   /** Exception interface */
-  virtual const char* what() const noexcept { return report.c_str(); }
+  const char* what() const noexcept override { return report.c_str(); }
 
-  ~NLException() noexcept = default;
+  ~NLException() noexcept override = default;
 };
 
 #ifdef assert

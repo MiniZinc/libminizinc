@@ -36,31 +36,31 @@ private:
 public:
   MZNSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
 
-  ~MZNSolverInstance();
+  ~MZNSolverInstance() override;
 
-  Status next() { return SolverInstance::ERROR; }
+  Status next() override { return SolverInstance::ERROR; }
 
-  Status solve();
+  Status solve() override;
 
-  void processFlatZinc();
+  void processFlatZinc() override;
 
-  void resetSolver();
+  void resetSolver() override;
 };
 
 class MZNSolverFactory : public SolverFactory {
 protected:
-  virtual SolverInstanceBase* doCreateSI(Env& env, std::ostream& log,
-                                         SolverInstanceBase::Options* opt);
+  SolverInstanceBase* doCreateSI(Env& env, std::ostream& log,
+                                 SolverInstanceBase::Options* opt) override;
 
 public:
   MZNSolverFactory();
-  virtual SolverInstanceBase::Options* createOptions();
-  virtual std::string getDescription(SolverInstanceBase::Options* opt = nullptr);
-  virtual std::string getVersion(SolverInstanceBase::Options* opt = nullptr);
-  virtual std::string getId();
-  virtual bool processOption(SolverInstanceBase::Options* opt, int& i,
-                             std::vector<std::string>& argv);
-  virtual void printHelp(std::ostream& os);
+  SolverInstanceBase::Options* createOptions() override;
+  std::string getDescription(SolverInstanceBase::Options* opt = nullptr) override;
+  std::string getVersion(SolverInstanceBase::Options* opt = nullptr) override;
+  std::string getId() override;
+  bool processOption(SolverInstanceBase::Options* opt, int& i,
+                     std::vector<std::string>& argv) override;
+  void printHelp(std::ostream& os) override;
   void setAcceptedFlags(SolverInstanceBase::Options* opt,
                         const std::vector<MZNFZNSolverFlag>& flags);
 };

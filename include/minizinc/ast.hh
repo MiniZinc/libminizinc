@@ -1676,47 +1676,47 @@ public:
 class EVisitor {
 public:
   /// Visit integer literal
-  void vIntLit(const IntLit&) {}
+  void vIntLit(const IntLit& /*il*/) {}
   /// Visit floating point literal
-  void vFloatLit(const FloatLit&) {}
+  void vFloatLit(const FloatLit& /*fl*/) {}
   /// Visit Boolean literal
-  void vBoolLit(const BoolLit&) {}
+  void vBoolLit(const BoolLit& /*bl*/) {}
   /// Visit set literal
-  void vSetLit(const SetLit&) {}
+  void vSetLit(const SetLit& /*sl*/) {}
   /// Visit string literal
-  void vStringLit(const StringLit&) {}
+  void vStringLit(const StringLit& /*sl*/) {}
   /// Visit identifier
-  void vId(const Id&) {}
+  void vId(const Id& /*ident*/) {}
   /// Visit anonymous variable
-  void vAnonVar(const AnonVar&) {}
+  void vAnonVar(const AnonVar& /*x*/) {}
   /// Visit array literal
-  void vArrayLit(const ArrayLit&) {}
+  void vArrayLit(const ArrayLit& /*al*/) {}
   /// Visit array access
-  void vArrayAccess(const ArrayAccess&) {}
+  void vArrayAccess(const ArrayAccess& /*aa*/) {}
   /// Visit array comprehension
-  void vComprehension(const Comprehension&) {}
+  void vComprehension(const Comprehension& /*c*/) {}
   /// Visit array comprehension (only generator \a gen_i)
-  void vComprehensionGenerator(const Comprehension&, int gen_i) { (void)gen_i; }
+  void vComprehensionGenerator(const Comprehension& /*c*/, int /*gen_i*/) {}
   /// Visit if-then-else
-  void vITE(const ITE&) {}
+  void vITE(const ITE& /*ite*/) {}
   /// Visit binary operator
-  void vBinOp(const BinOp&) {}
+  void vBinOp(const BinOp& /*bo*/) {}
   /// Visit unary operator
-  void vUnOp(const UnOp&) {}
+  void vUnOp(const UnOp& /*uo*/) {}
   /// Visit call
-  void vCall(const Call&) {}
+  void vCall(const Call& /*c*/) {}
   /// Visit let
-  void vLet(const Let&) {}
+  void vLet(const Let& /*let*/) {}
   /// Visit variable declaration
-  void vVarDecl(const VarDecl&) {}
+  void vVarDecl(const VarDecl& /*vd*/) {}
   /// Visit type inst
-  void vTypeInst(const TypeInst&) {}
+  void vTypeInst(const TypeInst& /*ti*/) {}
   /// Visit TIId
-  void vTIId(const TIId&) {}
+  void vTIId(const TIId& /*tiid*/) {}
   /// Determine whether to enter node
-  bool enter(Expression* e) { return true; }
+  bool enter(Expression* /*e*/) { return true; }
   /// Exit node after processing has finished
-  void exit(Expression* e) {}
+  void exit(Expression* /*e*/) {}
 };
 
 /// Statically allocated constants

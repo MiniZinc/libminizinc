@@ -165,7 +165,7 @@ protected:
 
 public:
   ExpressionSetIter() : _empty(false) {}
-  ExpressionSetIter(bool) : _empty(true) {}
+  ExpressionSetIter(bool /*b*/) : _empty(true) {}
   ExpressionSetIter(const Iter& i) : Iter(i), _empty(false) {}
   bool operator==(const ExpressionSetIter& i) const {
     return (_empty && i._empty) || static_cast<const Iter&>(*this) == static_cast<const Iter&>(i);

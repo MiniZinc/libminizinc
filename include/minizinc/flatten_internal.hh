@@ -163,7 +163,7 @@ public:
   void flatAddItem(Item* i);
   void flatRemoveItem(ConstraintI* i);
   void flatRemoveItem(VarDeclI* i);
-  void flatRemoveExpr(Expression* e, Item*);
+  void flatRemoveExpr(Expression* e, Item* i);
 
   void voAddExp(VarDecl* vd);
   void annotateFromCallStack(Expression* e);

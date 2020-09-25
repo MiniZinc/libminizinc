@@ -123,7 +123,7 @@ public:
   // Default impl requires a Solns2Out object set up
   virtual void assignSolutionToOutput();
   /// Print solution to setup dest
-  virtual void printSolution();
+  void printSolution() override;
 
 protected:
   std::vector<VarDecl*>

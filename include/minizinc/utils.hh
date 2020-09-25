@@ -86,7 +86,7 @@ inline void check_io_status(bool fOk, const std::string& msg, bool fHard = true)
 }
 
 template <class T>
-inline bool assign_string(T*, const std::string&) {
+inline bool assign_string(T* /*t*/, const std::string& /*s*/) {
   return false;
 }
 template <>

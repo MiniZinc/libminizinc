@@ -63,7 +63,7 @@ public:
     std::string cbc_cmdOptions;
 
     bool processOption(int& i, std::vector<std::string>& argv);
-    static void printHelp(std::ostream&);
+    static void printHelp(std::ostream& os);
   };
 
 private:
@@ -71,7 +71,7 @@ private:
 
 public:
   MIP_osicbc_wrapper(Options* opt) : options(opt) { openOSICBC(); }
-  virtual ~MIP_osicbc_wrapper() { closeOSICBC(); }
+  ~MIP_osicbc_wrapper() override { closeOSICBC(); }
 
   static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
   static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
@@ -93,33 +93,33 @@ public:
   void closeOSICBC() {}
 
   /// actual adding new variables to the solver
-  virtual void doAddVars(size_t n, double* obj, double* lb, double* ub, VarType* vt,
-                         std::string* names);
+  void doAddVars(size_t n, double* obj, double* lb, double* ub, VarType* vt,
+                 std::string* names) override;
 
-  void addPhase1Vars() {
+  void addPhase1Vars() override {
     if (fVerbose) {
       std::cerr << "  MIP_osicbc_wrapper: delaying physical addition of variables..." << std::endl;
     }
   }
 
   /// adding a linear constraint
-  virtual void addRow(int nnz, int* rmatind, double* rmatval, LinConType sense, double rhs,
-                      int mask = MaskConsType_Normal, const std::string& rowName = "");
+  void addRow(int nnz, int* rmatind, double* rmatval, LinConType sense, double rhs,
+              int mask = MaskConsType_Normal, const std::string& rowName = "") override;
   /// adding an implication
   //     virtual void addImpl() = 0;
 
-  virtual bool addWarmStart(const std::vector<VarId>& vars, const std::vector<double>& vals);
+  bool addWarmStart(const std::vector<VarId>& vars, const std::vector<double>& vals) override;
 
-  virtual void setObjSense(int s);  // +/-1 for max/min
+  void setObjSense(int s) override;  // +/-1 for max/min
 
-  virtual double getInfBound() { return osi.getInfinity(); }
+  double getInfBound() override { return osi.getInfinity(); }
 
-  virtual int getNCols() {
+  int getNCols() override {
     int nc = osi.getNumCols();
     return nc != 0 ? nc : colLB.size();
   }
-  virtual int getNColsModel() { return osi.getNumCols(); }
-  virtual int getNRows() {
+  int getNColsModel() override { return osi.getNumCols(); }
+  int getNRows() override {
     if (!rowlb.empty()) {
       return rowlb.size();
     }
@@ -129,19 +129,19 @@ public:
   //     void setObjUB(double ub) { objUB = ub; }
   //     void addQPUniform(double c) { qpu = c; } // also sets problem type to MIQP unless c=0
 
-  virtual void solve();
+  void solve() override;
 
   /// OUTPUT:
-  virtual const double* getValues() { return output.x; }
-  virtual double getObjValue() { return output.objVal; }
-  virtual double getBestBound() { return output.bestBound; }
-  virtual double getCPUTime() { return output.dCPUTime; }
+  const double* getValues() override { return output.x; }
+  double getObjValue() override { return output.objVal; }
+  double getBestBound() override { return output.bestBound; }
+  double getCPUTime() override { return output.dCPUTime; }
 
-  virtual Status getStatus() { return output.status; }
-  virtual std::string getStatusName() { return output.statusName; }
+  Status getStatus() override { return output.status; }
+  std::string getStatusName() override { return output.statusName; }
 
-  virtual int getNNodes() { return output.nNodes; }
-  virtual int getNOpen() { return output.nOpenNodes; }
+  int getNNodes() override { return output.nNodes; }
+  int getNOpen() override { return output.nOpenNodes; }
 
   //     virtual int getNNodes() = 0;
   //     virtual double getTime() = 0;
@@ -149,7 +149,7 @@ public:
 protected:
   //     OsiSolverInterface& getOsiSolver() { return osi; }
 
-  void wrapAssert(bool, const std::string&, bool fTerm = true);
+  void wrapAssert(bool cond, const std::string& msg, bool fTerm = true);
 
   /// Need to consider the 100 status codes in OSICBC and change with every version? TODO
   Status convertStatus(CbcModel* pModel);

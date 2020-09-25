@@ -37,7 +37,7 @@ public:
   virtual int getMask() = 0;
   /// Adds new cuts to the 2nd parameter
   virtual void generate(const MIP_wrapper::Output&, MIP_wrapper::CutInput&) = 0;
-  virtual void print(std::ostream&) {}
+  virtual void print(std::ostream& /*os*/) {}
 };
 
 /// XBZ cut generator
@@ -49,10 +49,10 @@ public:
   XBZCutGen(MIP_wrapper* pw) : pMIP(pw) {}
   std::vector<MIP_wrapper::VarId> varX, varB;
   /// Say what type of cuts
-  virtual int getMask() { return MIP_wrapper::MaskConsType_Usercut; }
+  int getMask() override { return MIP_wrapper::MaskConsType_Usercut; }
   MIP_wrapper::VarId varZ;
-  void generate(const MIP_wrapper::Output&, MIP_wrapper::CutInput&);
-  void print(std::ostream&);
+  void generate(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInput& cutsIn) override;
+  void print(std::ostream& os) override;
 };
 
 /// SEC cut generator for circuit
@@ -63,15 +63,15 @@ class SECCutGen : public CutGen {
 public:
   SECCutGen(MIP_wrapper* pw) : pMIP(pw) {}
   /// Say what type of cuts
-  virtual int getMask() {
+  int getMask() override {
     return MIP_wrapper::MaskConsType_Lazy | MIP_wrapper::MaskConsType_Usercut;
   }
   std::vector<MIP_wrapper::VarId> varXij;
   int nN = 0;  // N nodes
   /// returns error message if fails
   std::string validate() const;
-  void generate(const MIP_wrapper::Output&, MIP_wrapper::CutInput&);
-  void print(std::ostream&);
+  void generate(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInput& cutsIn) override;
+  void print(std::ostream& os) override;
 };
 
 template <class MIPWrapper>
@@ -100,22 +100,23 @@ public:
   }
   virtual MIP_wrapper* getMIPWrapper() const { return mip_wrap.get(); }
 
-  virtual Status next() {
+  Status next() override {
     assert(0);
     return SolverInstance::UNKNOWN;
   }
-  virtual void processFlatZinc();
+  void processFlatZinc() override;
   virtual void processWarmstartAnnotations(const Annotation& ann);
   virtual void processSearchAnnotations(const Annotation& ann);
   virtual void processMultipleObjectives(const Annotation& ann);
-  virtual Status solve();
-  virtual void resetSolver() {}
+  Status solve() override;
+  void resetSolver() override {}
 
-  virtual void genCuts(const MIP_wrapper::Output&, MIP_wrapper::CutInput&, bool fMIPSol);
+  virtual void genCuts(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInput& cutsIn,
+                       bool fMIPSol);
 
   //       void assignSolutionToOutput();   // needs to be public for the callback?
-  virtual void printStatistics();
-  virtual void printStatisticsLine(bool fLegend = false);
+  void printStatistics() override;
+  void printStatisticsLine(bool fLegend = false) override;
 
 public:
   /// creates a var for a literal, if necessary
@@ -125,7 +126,7 @@ public:
   std::pair<double, bool> exprToConstEasy(Expression* e);
   double exprToConst(Expression* e);
 
-  Expression* getSolutionValue(Id* id);
+  Expression* getSolutionValue(Id* id) override;
 
   void registerConstraints();
 };  // MIP_solverinstance
@@ -134,16 +135,18 @@ template <class MIPWrapper>
 class MIP_SolverFactory : public SolverFactory {
 public:
   MIP_SolverFactory();
-  SolverInstanceBase::Options* createOptions() { return new typename MIPWrapper::Options; }
-  SolverInstanceBase* doCreateSI(Env& env, std::ostream& log, SolverInstanceBase::Options* opt) {
+  SolverInstanceBase::Options* createOptions() override { return new typename MIPWrapper::Options; }
+  SolverInstanceBase* doCreateSI(Env& env, std::ostream& log,
+                                 SolverInstanceBase::Options* opt) override {
     return new MIP_solverinstance<MIPWrapper>(env, log,
                                               static_cast<typename MIPWrapper::Options*>(opt));
   }
-  bool processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv);
-  std::string getDescription(SolverInstanceBase::Options* opt = nullptr);
-  std::string getVersion(SolverInstanceBase::Options* opt = nullptr);
-  std::string getId();
-  void printHelp(std::ostream& os) { MIPWrapper::Options::printHelp(os); }
+  bool processOption(SolverInstanceBase::Options* opt, int& i,
+                     std::vector<std::string>& argv) override;
+  std::string getDescription(SolverInstanceBase::Options* opt = nullptr) override;
+  std::string getVersion(SolverInstanceBase::Options* opt = nullptr) override;
+  std::string getId() override;
+  void printHelp(std::ostream& os) override { MIPWrapper::Options::printHelp(os); }
 };
 
 }  // namespace MiniZinc

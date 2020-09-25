@@ -290,8 +290,8 @@ public:
   /// Construct with message \a msg
   ConfigException(const std::string& msg) : Exception(msg) {}
   /// Destructor
-  ~ConfigException() throw() {}
+  ~ConfigException() throw() override {}
   /// Return description
-  virtual const char* what() const throw() { return "MiniZinc: configuration error"; }
+  const char* what() const throw() override { return "MiniZinc: configuration error"; }
 };
 }  // namespace MiniZinc

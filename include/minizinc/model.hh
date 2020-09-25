@@ -71,7 +71,7 @@ public:
     FunctionI* fi;
     bool isPolymorphic;
     FnEntry(FunctionI* fi0);
-    bool operator<(const FnEntry&) const;
+    bool operator<(const FnEntry& f) const;
     static bool compare(const FnEntry& e1, const FnEntry& e2);
   };
 
@@ -126,7 +126,7 @@ public:
   /// Construct empty model
   Model();
   /// Destructor
-  virtual ~Model();
+  ~Model() override;
 
   /// Add \a i to the model
   void addItem(Item* i);
@@ -378,23 +378,23 @@ public:
 class ItemVisitor {
 public:
   /// Enter model
-  bool enterModel(Model* m) { return true; }
+  bool enterModel(Model* /*m*/) { return true; }
   /// Enter item
-  bool enter(Item* m) { return true; }
+  bool enter(Item* /*m*/) { return true; }
   /// Visit include item
-  void vIncludeI(IncludeI*) {}
+  void vIncludeI(IncludeI* /*ii*/) {}
   /// Visit variable declaration
-  void vVarDeclI(VarDeclI*) {}
+  void vVarDeclI(VarDeclI* /*vdi*/) {}
   /// Visit assign item
-  void vAssignI(AssignI*) {}
+  void vAssignI(AssignI* /*ai*/) {}
   /// Visit constraint item
-  void vConstraintI(ConstraintI*) {}
+  void vConstraintI(ConstraintI* /*ci*/) {}
   /// Visit solve item
-  void vSolveI(SolveI*) {}
+  void vSolveI(SolveI* /*si*/) {}
   /// Visit output item
-  void vOutputI(OutputI*) {}
+  void vOutputI(OutputI* /*oi*/) {}
   /// Visit function item
-  void vFunctionI(FunctionI*) {}
+  void vFunctionI(FunctionI* /*fi*/) {}
 };
 
 /// Iterator over items in a model and all its included models

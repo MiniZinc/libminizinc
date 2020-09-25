@@ -34,8 +34,8 @@ class SolverFactory;
 /// SolverRegistry is a storage for all SolverFactories in linked modules
 class SolverRegistry {
 public:
-  void addSolverFactory(SolverFactory*);
-  void removeSolverFactory(SolverFactory*);
+  void addSolverFactory(SolverFactory* sf);
+  void removeSolverFactory(SolverFactory* sf);
   typedef std::vector<SolverFactory*> SFStorage;
   const SFStorage& getSolverFactories() const { return _sfstorage; }
 
@@ -108,7 +108,7 @@ public:
   virtual std::string getDescription(SolverInstanceBase::Options* opt = nullptr) = 0;
   virtual std::string getVersion(SolverInstanceBase::Options* opt = nullptr) = 0;
   virtual std::string getId() = 0;
-  virtual void printHelp(std::ostream&) {}
+  virtual void printHelp(std::ostream& /*os*/) {}
 };  // SolverFactory
 
 // Class MznSolver coordinates flattening and solving.
