@@ -24,7 +24,7 @@ using namespace std;
 
 namespace MiniZinc {
 
-MZN_SolverFactory::MZN_SolverFactory() {
+MZNSolverFactory::MZNSolverFactory() {
   SolverConfig sc("org.minizinc.mzn-mzn",
                   MZN_VERSION_MAJOR "." MZN_VERSION_MINOR "." MZN_VERSION_PATCH);
   sc.name("Generic MiniZinc driver");
@@ -38,18 +38,18 @@ MZN_SolverFactory::MZN_SolverFactory() {
   SolverConfigs::registerBuiltinSolver(sc);
 }
 
-string MZN_SolverFactory::getDescription(SolverInstanceBase::Options* /*opt*/) {
+string MZNSolverFactory::getDescription(SolverInstanceBase::Options* /*opt*/) {
   string v = "MZN solver plugin, compiled  " __DATE__ "  " __TIME__;
   return v;
 }
 
-string MZN_SolverFactory::getVersion(SolverInstanceBase::Options* /*opt*/) {
+string MZNSolverFactory::getVersion(SolverInstanceBase::Options* /*opt*/) {
   return MZN_VERSION_MAJOR;
 }
 
-string MZN_SolverFactory::getId() { return "org.minizinc.mzn-mzn"; }
+string MZNSolverFactory::getId() { return "org.minizinc.mzn-mzn"; }
 
-void MZN_SolverFactory::printHelp(ostream& os) {
+void MZNSolverFactory::printHelp(ostream& os) {
   os << "MZN-MZN plugin options:" << std::endl
      << "  -m, --minizinc-cmd <exe>\n     the backend solver filename.\n"
      << "  --mzn-flags <options>, --minizinc-flags <options>\n     Specify option to be passed to "
@@ -61,27 +61,27 @@ void MZN_SolverFactory::printHelp(ostream& os) {
      << "  --mzn-sigint\n     Send SIGINT instead of SIGTERM.\n";
 }
 
-SolverInstanceBase::Options* MZN_SolverFactory::createOptions() { return new MZNSolverOptions; }
+SolverInstanceBase::Options* MZNSolverFactory::createOptions() { return new MZNSolverOptions; }
 
-SolverInstanceBase* MZN_SolverFactory::doCreateSI(Env& env, std::ostream& log,
+SolverInstanceBase* MZNSolverFactory::doCreateSI(Env& env, std::ostream& log,
                                                   SolverInstanceBase::Options* opt) {
   return new MZNSolverInstance(env, log, opt);
 }
 
-void MZN_SolverFactory::setAcceptedFlags(SolverInstanceBase::Options* opt,
+void MZNSolverFactory::setAcceptedFlags(SolverInstanceBase::Options* opt,
                                          const std::vector<MZNFZNSolverFlag>& flags) {
   auto& _opt = static_cast<MZNSolverOptions&>(*opt);
-  _opt.mzn_solver_flags.clear();
+  _opt.mznSolverFlags.clear();
   for (const auto& f : flags) {
     if (f.n == "-t") {
-      _opt.supports_t = true;
+      _opt.supportsT = true;
     } else {
-      _opt.mzn_solver_flags.push_back(f);
+      _opt.mznSolverFlags.push_back(f);
     }
   }
 }
 
-bool MZN_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
+bool MZNSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
                                       std::vector<std::string>& argv) {
   auto& _opt = static_cast<MZNSolverOptions&>(*opt);
   CLOParser cop(i, argv);
@@ -89,34 +89,34 @@ bool MZN_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
   int nn = -1;
 
   if (cop.getOption("-m --minizinc-cmd", &buffer)) {
-    _opt.mzn_solver = buffer;
+    _opt.mznSolver = buffer;
   } else if (cop.getOption("--mzn-flags --minizinc-flags", &buffer)) {
-    std::vector<std::string> cmdLine = FileUtils::parseCmdLine(buffer);
+    std::vector<std::string> cmdLine = FileUtils::parse_cmd_line(buffer);
     for (auto& s : cmdLine) {
-      _opt.mzn_flags.push_back(s);
+      _opt.mznFlags.push_back(s);
     }
   } else if (cop.getOption("-t --solver-time-limit --mzn-time-limit", &nn)) {
-    _opt.mzn_time_limit_ms = nn;
-    if (_opt.supports_t) {
-      _opt.solver_time_limit_ms = nn;
-      _opt.mzn_time_limit_ms += 1000;  // kill 1 second after solver should have stopped
+    _opt.mznTimeLimitMilliseconds = nn;
+    if (_opt.supportsT) {
+      _opt.solverTimeLimitMilliseconds = nn;
+      _opt.mznTimeLimitMilliseconds += 1000;  // kill 1 second after solver should have stopped
     }
   } else if (cop.getOption("--mzn-sigint")) {
-    _opt.mzn_sigint = true;
+    _opt.mznSigint = true;
   } else if (cop.getOption("--mzn-flag --minizinc-flag", &buffer)) {
-    _opt.mzn_flags.push_back(buffer);
+    _opt.mznFlags.push_back(buffer);
   } else if (cop.getOption("--solver-statistics")) {
     _opt.printStatistics = true;
   } else if (cop.getOption("--verbose-solving")) {
     _opt.verbose = true;
   } else {
-    for (auto& mznf : _opt.mzn_solver_flags) {
+    for (auto& mznf : _opt.mznSolverFlags) {
       if (mznf.t == MZNFZNSolverFlag::FT_ARG && cop.getOption(mznf.n.c_str(), &buffer)) {
-        _opt.mzn_flags.push_back(mznf.n);
-        _opt.mzn_flags.push_back(buffer);
+        _opt.mznFlags.push_back(mznf.n);
+        _opt.mznFlags.push_back(buffer);
         return true;
       } else if (mznf.t == MZNFZNSolverFlag::FT_NOARG && cop.getOption(mznf.n.c_str())) {
-        _opt.mzn_flags.push_back(mznf.n);
+        _opt.mznFlags.push_back(mznf.n);
         return true;
       }
     }
@@ -131,7 +131,7 @@ bool MZN_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
     std::string extension = input_file.substr(last_dot, string::npos);
     if (extension == ".mzn" || extension == ".mzc" || extension == ".fzn" || extension == ".dzn" ||
         extension == ".json") {
-      _opt.mzn_flags.push_back(input_file);
+      _opt.mznFlags.push_back(input_file);
     } else {
       return false;
     }
@@ -147,13 +147,13 @@ MZNSolverInstance::~MZNSolverInstance() {}
 
 SolverInstance::Status MZNSolverInstance::solve() {
   auto& opt = static_cast<MZNSolverOptions&>(*_options);
-  if (opt.mzn_solver.empty()) {
+  if (opt.mznSolver.empty()) {
     throw InternalError("No MiniZinc solver specified");
   }
   /// Passing options to solver
   vector<string> cmd_line;
-  cmd_line.push_back(opt.mzn_solver);
-  for (auto& f : opt.mzn_flags) {
+  cmd_line.push_back(opt.mznSolver);
+  for (auto& f : opt.mznFlags) {
     cmd_line.push_back(f);
   }
   if (opt.printStatistics) {
@@ -167,14 +167,14 @@ SolverInstance::Status MZNSolverInstance::solve() {
     }
     _log << std::endl;
   }
-  if (opt.solver_time_limit_ms != 0) {
+  if (opt.solverTimeLimitMilliseconds != 0) {
     cmd_line.emplace_back("-t");
     std::ostringstream oss;
-    oss << opt.solver_time_limit_ms;
+    oss << opt.solverTimeLimitMilliseconds;
     cmd_line.push_back(oss.str());
   }
-  int timelimit = opt.mzn_time_limit_ms;
-  bool sigint = opt.mzn_sigint;
+  int timelimit = opt.mznTimeLimitMilliseconds;
+  bool sigint = opt.mznSigint;
   Solns2Log s2l(getSolns2Out()->getOutput(), _log);
   Process<Solns2Log> proc(cmd_line, &s2l, timelimit, sigint);
   int exitCode = proc.run();

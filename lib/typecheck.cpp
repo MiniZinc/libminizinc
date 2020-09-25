@@ -24,20 +24,20 @@
 namespace MiniZinc {
 
 Scopes::Scopes() {
-  s.emplace_back();
-  s.back().toplevel = true;
+  _s.emplace_back();
+  _s.back().toplevel = true;
 }
 
 void Scopes::add(EnvI& env, VarDecl* vd) {
-  if (!s.back().toplevel && vd->ti()->isEnum() && (vd->e() != nullptr)) {
+  if (!_s.back().toplevel && vd->ti()->isEnum() && (vd->e() != nullptr)) {
     throw TypeError(env, vd->loc(), "enums are only allowed at top level");
   }
   if (vd->id()->idn() == -1 && vd->id()->v() == "") {
     return;
   }
-  auto vdi = s.back().m.find(vd->id());
-  if (vdi == s.back().m.end()) {
-    s.back().m.insert(vd->id(), vd);
+  auto vdi = _s.back().m.find(vd->id());
+  if (vdi == _s.back().m.end()) {
+    _s.back().m.insert(vd->id(), vd);
   } else {
     std::ostringstream ss;
     ss << "identifier `" << vd->id()->str() << "' already defined";
@@ -46,18 +46,18 @@ void Scopes::add(EnvI& env, VarDecl* vd) {
 }
 
 void Scopes::push(bool toplevel) {
-  s.emplace_back();
-  s.back().toplevel = toplevel;
+  _s.emplace_back();
+  _s.back().toplevel = toplevel;
 }
 
-void Scopes::pop() { s.pop_back(); }
+void Scopes::pop() { _s.pop_back(); }
 
 VarDecl* Scopes::find(Id* ident) {
-  int cur = static_cast<int>(s.size()) - 1;
+  int cur = static_cast<int>(_s.size()) - 1;
   for (;;) {
-    auto vdi = s[cur].m.find(ident);
-    if (vdi == s[cur].m.end()) {
-      if (s[cur].toplevel) {
+    auto vdi = _s[cur].m.find(ident);
+    if (vdi == _s[cur].m.end()) {
+      if (_s[cur].toplevel) {
         if (cur > 0) {
           cur = 0;
         } else {
@@ -74,10 +74,10 @@ VarDecl* Scopes::find(Id* ident) {
 
 VarDecl* Scopes::findSimilar(Id* ident) {
   VarDecl* mostSimilar = nullptr;
-  int cur = static_cast<int>(s.size()) - 1;
+  int cur = static_cast<int>(_s.size()) - 1;
   int minEdits = 3;
   for (;;) {
-    for (auto decls : s[cur].m) {
+    for (auto decls : _s[cur].m) {
       int edits = ident->levenshteinDistance(decls.first);
       if (edits < minEdits && std::abs(static_cast<int>(ident->v().size()) -
                                        static_cast<int>(decls.first->v().size())) <= 3) {
@@ -85,7 +85,7 @@ VarDecl* Scopes::findSimilar(Id* ident) {
         mostSimilar = decls.second;
       }
     }
-    if (s[cur].toplevel) {
+    if (_s[cur].toplevel) {
       if (cur > 0) {
         cur = 0;
       } else {
@@ -102,8 +102,8 @@ struct VarDeclCmp {
   std::unordered_map<VarDecl*, int>& _pos;
   VarDeclCmp(std::unordered_map<VarDecl*, int>& pos) : _pos(pos) {}
   bool operator()(Expression* e0, Expression* e1) {
-    if (auto* vd0 = Expression::dyn_cast<VarDecl>(e0)) {
-      if (auto* vd1 = Expression::dyn_cast<VarDecl>(e1)) {
+    if (auto* vd0 = Expression::dynamicCast<VarDecl>(e0)) {
+      if (auto* vd1 = Expression::dynamicCast<VarDecl>(e1)) {
         return _pos[vd0] < _pos[vd1];
       } else {
         return true;
@@ -133,20 +133,20 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
   GCLock lock;
 
   Id* ident = vd->id();
-  Call* c = vd->e()->dyn_cast<Call>();
-  auto* al = vd->e()->dyn_cast<ArrayLit>();
+  Call* c = vd->e()->dynamicCast<Call>();
+  auto* al = vd->e()->dynamicCast<ArrayLit>();
 
   std::vector<Expression*> parts;
   if (vd->e()->isa<SetLit>()) {
     parts.push_back(vd->e());
-  } else if ((al != nullptr) || ((c != nullptr) && c->id() == "anon_enum" && c->n_args() == 1 &&
+  } else if ((al != nullptr) || ((c != nullptr) && c->id() == "anon_enum" && c->argCount() == 1 &&
                                  c->arg(0)->isa<ArrayLit>())) {
     if (c != nullptr) {
       al = c->arg(0)->cast<ArrayLit>();
     }
     std::vector<Expression*> enumIds(al->size());
     for (unsigned int i = 0; i < al->size(); i++) {
-      if (Id* eid = (*al)[i]->dyn_cast<Id>()) {
+      if (Id* eid = (*al)[i]->dynamicCast<Id>()) {
         enumIds[i] = eid;
       } else {
         std::ostringstream ss;
@@ -157,7 +157,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
     parts.push_back(new SetLit(vd->e()->loc(), enumIds));
   } else if (c != nullptr) {
     if (c->id() == "enumFromConstructors") {
-      if (c->n_args() != 1 || !c->arg(0)->isa<ArrayLit>()) {
+      if (c->argCount() != 1 || !c->arg(0)->isa<ArrayLit>()) {
         throw TypeError(env, c->loc(),
                         "enumFromConstructors used with incorrect argument type (only supports "
                         "array literals)");
@@ -176,7 +176,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
 
   std::vector<Expression*> partCardinality;
   for (unsigned int p = 0; p < parts.size(); p++) {
-    if (auto* sl = parts[p]->dyn_cast<SetLit>()) {
+    if (auto* sl = parts[p]->dynamicCast<SetLit>()) {
       for (unsigned int i = 0; i < sl->v().size(); i++) {
         if (!sl->v()[i]->isa<Id>()) {
           throw TypeError(
@@ -206,7 +206,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
       }
 
       std::string name =
-          createEnumToStringName(ident, "_enum_to_string_" + std::to_string(p) + "_");
+          create_enum_to_string_name(ident, "_enum_to_string_" + std::to_string(p) + "_");
       std::vector<Expression*> al_args(sl->v().size());
       for (unsigned int i = 0; i < sl->v().size(); i++) {
         std::string str(sl->v()[i]->cast<Id>()->str().c_str());
@@ -278,10 +278,10 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
         toString += std::to_string(p) + "_";
       }
 
-      auto* fi = new FunctionI(Location().introduce(), createEnumToStringName(ident, toString),
+      auto* fi = new FunctionI(Location().introduce(), create_enum_to_string_name(ident, toString),
                                ti_fi, fi_params, ite);
       enumItems->addItem(fi);
-    } else if (Call* c = parts[p]->dyn_cast<Call>()) {
+    } else if (Call* c = parts[p]->dynamicCast<Call>()) {
       if (c->id() == "anon_enum") {
         Type tx = Type::parint();
         tx.ot(Type::OT_OPTIONAL);
@@ -363,13 +363,13 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
           toString += std::to_string(p) + "_";
         }
 
-        auto* fi = new FunctionI(Location().introduce(), createEnumToStringName(ident, toString),
+        auto* fi = new FunctionI(Location().introduce(), create_enum_to_string_name(ident, toString),
                                  ti_fi, fi_params, ite);
         enumItems->addItem(fi);
       } else {
         // This is an enum constructor C(E)
 
-        if (c->n_args() != 1 || !c->arg(0)->isa<Id>()) {
+        if (c->argCount() != 1 || !c->arg(0)->isa<Id>()) {
           throw TypeError(env, c->loc(),
                           "enum constructors must have a single identifier as argument");
         }
@@ -461,7 +461,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
 
           Call* toEnumE = new Call(Location().introduce(), "to_enum", {otherEnumId, deopt});
           Call* toString =
-              new Call(Location().introduce(), createEnumToStringName(otherEnumId, "_toString_"),
+              new Call(Location().introduce(), create_enum_to_string_name(otherEnumId, "_toString_"),
                        {toEnumE, vd_ab->id(), vd_aj->id()});
 
           auto* openOther =
@@ -488,7 +488,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
             XtoString += std::to_string(p) + "_";
           }
 
-          auto* fi = new FunctionI(Location().introduce(), createEnumToStringName(ident, XtoString),
+          auto* fi = new FunctionI(Location().introduce(), create_enum_to_string_name(ident, XtoString),
                                    ti_fi, fi_params, ite);
           enumItems->addItem(fi);
         }
@@ -546,7 +546,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
         Call* c = new Call(Location().introduce(), "to_enum", {vd->id(), bo});
         aa = c;
       }
-      Call* c = new Call(Location().introduce(), createEnumToStringName(ident, toString),
+      Call* c = new Call(Location().introduce(), create_enum_to_string_name(ident, toString),
                          {aa, vd_ab->id(), vd_aj->id()});
       if (i < parts.size() - 1) {
         auto* bo = new BinOp(Location().introduce(), deopt, BOT_LQ, partCardinality[i]);
@@ -566,7 +566,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
     fi_params[0] = vd_aa;
     fi_params[1] = vd_ab;
     fi_params[2] = vd_aj;
-    auto* fi = new FunctionI(Location().introduce(), createEnumToStringName(ident, "_toString_"),
+    auto* fi = new FunctionI(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
                              ti_fi, fi_params, ite);
     enumItems->addItem(fi);
 
@@ -635,7 +635,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
     _toString_ENUMArgs[1] = vd_b->id();
     _toString_ENUMArgs[2] = vd_j->id();
     Call* _toString_ENUM = new Call(
-        Location().introduce(), createEnumToStringName(ident, "_toString_"), _toString_ENUMArgs);
+        Location().introduce(), create_enum_to_string_name(ident, "_toString_"), _toString_ENUMArgs);
 
     std::vector<Expression*> index_set_xx_args(1);
     index_set_xx_args[0] = vd_xx->id();
@@ -645,7 +645,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
     Generator gen(gen_exps, index_set_xx, nullptr);
 
     Generators generators;
-    generators._g.push_back(gen);
+    generators.g.push_back(gen);
     auto* comp = new Comprehension(Location().introduce(), _toString_ENUM, generators, false);
 
     std::vector<Expression*> join_args(2);
@@ -667,7 +667,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
     fi_params[0] = vd_x;
     fi_params[1] = vd_b;
     fi_params[2] = vd_j;
-    auto* fi = new FunctionI(Location().introduce(), createEnumToStringName(ident, "_toString_"),
+    auto* fi = new FunctionI(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
                              ti_fi, fi_params, let);
     enumItems->addItem(fi);
   }
@@ -704,7 +704,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
     _toString_ENUMArgs[1] = vd_b->id();
     _toString_ENUMArgs[2] = vd_j->id();
     Call* _toString_ENUM = new Call(
-        Location().introduce(), createEnumToStringName(ident, "_toString_"), _toString_ENUMArgs);
+        Location().introduce(), create_enum_to_string_name(ident, "_toString_"), _toString_ENUMArgs);
 
     std::vector<Expression*> deopt_args(1);
     deopt_args[0] = vd_x->id();
@@ -720,7 +720,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
     Generator gen(gen_exps, deopt, nullptr);
 
     Generators generators;
-    generators._g.push_back(gen);
+    generators.g.push_back(gen);
     auto* comp = new Comprehension(Location().introduce(), _toString_ENUM, generators, false);
 
     std::vector<Expression*> join_args(2);
@@ -753,7 +753,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
     fi_params[0] = vd_x;
     fi_params[1] = vd_b;
     fi_params[2] = vd_j;
-    auto* fi = new FunctionI(Location().introduce(), createEnumToStringName(ident, "_toString_"),
+    auto* fi = new FunctionI(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
                              ti_fi, fi_params, ite);
     enumItems->addItem(fi);
   }
@@ -812,7 +812,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
     _toString_ENUMArgs[1] = vd_b->id();
     _toString_ENUMArgs[2] = vd_j->id();
     Call* _toString_ENUM = new Call(
-        Location().introduce(), createEnumToStringName(ident, "_toString_"), _toString_ENUMArgs);
+        Location().introduce(), create_enum_to_string_name(ident, "_toString_"), _toString_ENUMArgs);
 
     std::vector<Expression*> index_set_xx_args(1);
     index_set_xx_args[0] = vd_xx->id();
@@ -822,7 +822,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
     Generator gen(gen_exps, index_set_xx, nullptr);
 
     Generators generators;
-    generators._g.push_back(gen);
+    generators.g.push_back(gen);
     auto* comp = new Comprehension(Location().introduce(), _toString_ENUM, generators, false);
 
     std::vector<Expression*> join_args(2);
@@ -844,7 +844,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
     fi_params[0] = vd_x;
     fi_params[1] = vd_b;
     fi_params[2] = vd_j;
-    auto* fi = new FunctionI(Location().introduce(), createEnumToStringName(ident, "_toString_"),
+    auto* fi = new FunctionI(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
                              ti_fi, fi_params, let);
     enumItems->addItem(fi);
   }
@@ -957,9 +957,9 @@ void TopoSorter::run(EnvI& env, Expression* e) {
     case Expression::E_COMP: {
       auto* ce = e->cast<Comprehension>();
       scopes.push(false);
-      for (int i = 0; i < ce->n_generators(); i++) {
+      for (int i = 0; i < ce->numberOfGenerators(); i++) {
         run(env, ce->in(i));
-        for (int j = 0; j < ce->n_decls(i); j++) {
+        for (int j = 0; j < ce->numberOfDecls(i); j++) {
           run(env, ce->decl(i, j));
           scopes.add(env, ce->decl(i, j));
         }
@@ -973,10 +973,10 @@ void TopoSorter::run(EnvI& env, Expression* e) {
     case Expression::E_ITE: {
       ITE* ite = e->cast<ITE>();
       for (int i = 0; i < ite->size(); i++) {
-        run(env, ite->e_if(i));
-        run(env, ite->e_then(i));
+        run(env, ite->ifExpr(i));
+        run(env, ite->thenExpr(i));
       }
-      run(env, ite->e_else());
+      run(env, ite->elseExpr());
     } break;
     case Expression::E_BINOP: {
       auto* be = e->cast<BinOp>();
@@ -986,7 +986,7 @@ void TopoSorter::run(EnvI& env, Expression* e) {
       while (!todo.empty()) {
         Expression* be = todo.back();
         todo.pop_back();
-        if (auto* e_bo = be->dyn_cast<BinOp>()) {
+        if (auto* e_bo = be->dynamicCast<BinOp>()) {
           todo.push_back(e_bo->lhs());
           todo.push_back(e_bo->rhs());
           for (ExpressionSetIter it = e_bo->ann().begin(); it != e_bo->ann().end(); ++it) {
@@ -1003,7 +1003,7 @@ void TopoSorter::run(EnvI& env, Expression* e) {
     } break;
     case Expression::E_CALL: {
       Call* ce = e->cast<Call>();
-      for (unsigned int i = 0; i < ce->n_args(); i++) {
+      for (unsigned int i = 0; i < ce->argCount(); i++) {
         run(env, ce->arg(i));
       }
     } break;
@@ -1036,7 +1036,7 @@ void TopoSorter::run(EnvI& env, Expression* e) {
       scopes.push(false);
       for (unsigned int i = 0; i < let->let().size(); i++) {
         run(env, let->let()[i]);
-        if (auto* vd = let->let()[i]->dyn_cast<VarDecl>()) {
+        if (auto* vd = let->let()[i]->dynamicCast<VarDecl>()) {
           scopes.add(env, vd);
         }
       }
@@ -1044,10 +1044,10 @@ void TopoSorter::run(EnvI& env, Expression* e) {
       VarDeclCmp poscmp(pos);
       std::stable_sort(let->let().begin(), let->let().end(), poscmp);
       for (unsigned int i = 0, j = 0; i < let->let().size(); i++) {
-        if (auto* vd = let->let()[i]->dyn_cast<VarDecl>()) {
-          let->let_orig()[j++] = vd->e();
+        if (auto* vd = let->let()[i]->dynamicCast<VarDecl>()) {
+          let->letOrig()[j++] = vd->e();
           for (unsigned int k = 0; k < vd->ti()->ranges().size(); k++) {
-            let->let_orig()[j++] = vd->ti()->ranges()[k]->domain();
+            let->letOrig()[j++] = vd->ti()->ranges()[k]->domain();
           }
         }
       }
@@ -1083,10 +1083,10 @@ KeepAlive addCoercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t) 
     std::vector<Expression*> slice;
     GCLock lock;
     for (unsigned int i = 0; i < aa->idx().size(); i++) {
-      if (aa->idx()[i]->type().is_set()) {
+      if (aa->idx()[i]->type().isSet()) {
         bool needIdxSet = true;
         bool needInter = true;
-        if (auto* sl = aa->idx()[i]->dyn_cast<SetLit>()) {
+        if (auto* sl = aa->idx()[i]->dynamicCast<SetLit>()) {
           if ((sl->isv() != nullptr) && sl->isv()->size() == 1) {
             if (sl->isv()->min().isFinite() && sl->isv()->max().isFinite()) {
               args.push_back(sl);
@@ -1152,7 +1152,7 @@ KeepAlive addCoercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t) 
     if (e->type().isvar()) {
       throw TypeError(env, e->loc(), "cannot coerce var set into array");
     }
-    if (e->type().isopt()) {
+    if (e->type().isOpt()) {
       throw TypeError(env, e->loc(), "cannot coerce opt set into array");
     }
     std::vector<Expression*> set2a_args(1);
@@ -1213,7 +1213,7 @@ public:
   /// Check annotations when expression is finished
   void exit(Expression* e) {
     for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it) {
-      if (!(*it)->type().isann()) {
+      if (!(*it)->type().isAnn()) {
         throw TypeError(_env, (*it)->loc(),
                         "expected annotation, got `" + (*it)->type().toString(_env) + "'");
       }
@@ -1263,8 +1263,8 @@ public:
       if (enumId != vi_t.enumId()) {
         enumId = 0;
       }
-      if (!Type::bt_subtype(vi_t, ty, true)) {
-        if (ty.bt() == Type::BT_UNKNOWN || Type::bt_subtype(ty, vi_t, true)) {
+      if (!Type::btSubtype(vi_t, ty, true)) {
+        if (ty.bt() == Type::BT_UNKNOWN || Type::btSubtype(ty, vi_t, true)) {
           ty.bt(vi_t.bt());
         } else {
           throw TypeError(_env, sl.loc(), "non-uniform set literal");
@@ -1314,7 +1314,7 @@ public:
       if (vi == constants().absent) {
         haveAbsents = true;
       }
-      auto* av = vi->dyn_cast<AnonVar>();
+      auto* av = vi->dynamicCast<AnonVar>();
       if (av != nullptr) {
         ty.ti(Type::TI_VAR);
         anons.push_back(av);
@@ -1324,7 +1324,7 @@ public:
       if (vi->type().cv()) {
         ty.cv(true);
       }
-      if (vi->type().isopt()) {
+      if (vi->type().isOpt()) {
         ty.ot(Type::OT_OPTIONAL);
       }
 
@@ -1355,13 +1355,13 @@ public:
           } else {
             unsigned int tyEnumId = ty.enumId();
             ty.enumId(vi->type().enumId());
-            if (Type::bt_subtype(ty, vi->type(), true)) {
+            if (Type::btSubtype(ty, vi->type(), true)) {
               ty.bt(vi->type().bt());
             }
             if (tyEnumId != vi->type().enumId()) {
               ty.enumId(0);
             }
-            if (!Type::bt_subtype(vi->type(), ty, true) || ty.st() != vi->type().st()) {
+            if (!Type::btSubtype(vi->type(), ty, true) || ty.st() != vi->type().st()) {
               throw TypeError(_env, al.loc(), "non-uniform array literal");
             }
           }
@@ -1436,7 +1436,7 @@ public:
       for (unsigned int i = 0; i < arrayEnumIds.size() - 1; i++) {
         Expression* aai = aa.idx()[i];
         // Check if index is slice operator, and convert to correct enum type
-        if (auto* aai_sl = aai->dyn_cast<SetLit>()) {
+        if (auto* aai_sl = aai->dynamicCast<SetLit>()) {
           if (IntSetVal* aai_isv = aai_sl->isv()) {
             if (aai_isv->min() == -IntVal::infinity() && aai_isv->max() == IntVal::infinity()) {
               Type aai_sl_t = aai_sl->type();
@@ -1444,15 +1444,15 @@ public:
               aai_sl->type(aai_sl_t);
             }
           }
-        } else if (auto* aai_bo = aai->dyn_cast<BinOp>()) {
+        } else if (auto* aai_bo = aai->dynamicCast<BinOp>()) {
           if (aai_bo->op() == BOT_DOTDOT) {
             Type aai_bo_t = aai_bo->type();
-            if (auto* il = aai_bo->lhs()->dyn_cast<IntLit>()) {
+            if (auto* il = aai_bo->lhs()->dynamicCast<IntLit>()) {
               if (il->v() == -IntVal::infinity()) {
                 // Expression is ..X, so result gets enum type of X
                 aai_bo_t.enumId(aai_bo->rhs()->type().enumId());
               }
-            } else if (auto* il = aai_bo->rhs()->dyn_cast<IntLit>()) {
+            } else if (auto* il = aai_bo->rhs()->dynamicCast<IntLit>()) {
               if (il->v() == IntVal::infinity()) {
                 // Expression is X.., so result gets enum type of X
                 aai_bo_t.enumId(aai_bo->lhs()->type().enumId());
@@ -1461,7 +1461,7 @@ public:
             aai_bo->type(aai_bo_t);
           }
         }
-        if (aai->type().is_set()) {
+        if (aai->type().isSet()) {
           newArrayEnumids.push_back(arrayEnumIds[i]);
         }
 
@@ -1500,7 +1500,7 @@ public:
                         "array index must be `int' or `set of int', but is `" +
                             aai->type().toString(_env) + "'");
       }
-      if (aai->type().is_set()) {
+      if (aai->type().isSet()) {
         if (isVarAccess || aai->type().isvar()) {
           throw TypeError(_env, aa.loc(),
                           "array slicing with variable range or index not supported");
@@ -1512,7 +1512,7 @@ public:
         aa.idx()[i] = addCoercion(_env, _model, aai, Type::varint())();
       }
 
-      if (aai->type().isopt()) {
+      if (aai->type().isOpt()) {
         tt.ot(Type::OT_OPTIONAL);
       }
       if (aai->type().isvar()) {
@@ -1544,8 +1544,8 @@ public:
     whereMap_t whereMap;
     int declCount = 0;
 
-    for (int i = 0; i < c.n_generators(); i++) {
-      for (int j = 0; j < c.n_decls(i); j++) {
+    for (int i = 0; i < c.numberOfGenerators(); i++) {
+      for (int j = 0; j < c.numberOfDecls(i); j++) {
         generatorMap[c.decl(i, j)] = std::pair<int, int>(i, declCount++);
         whereMap[c.decl(i, j)] = std::vector<Expression*>();
       }
@@ -1585,7 +1585,7 @@ public:
           while (!wherePartsStack.empty()) {
             Expression* e = wherePartsStack.back();
             wherePartsStack.pop_back();
-            if (auto* bo = e->dyn_cast<BinOp>()) {
+            if (auto* bo = e->dynamicCast<BinOp>()) {
               if (bo->op() == BOT_AND) {
                 wherePartsStack.push_back(bo->rhs());
                 wherePartsStack.push_back(bo->lhs());
@@ -1615,7 +1615,7 @@ public:
                   decl_idx = it->second.second;
                   decl = ident.decl();
                   int gen = it->second.first;
-                  while (comp->in(gen) == nullptr && gen < comp->n_generators() - 1) {
+                  while (comp->in(gen) == nullptr && gen < comp->numberOfGenerators() - 1) {
                     decl_idx++;
                     gen++;
                     decl = comp->decl(gen, 0);
@@ -1623,7 +1623,7 @@ public:
                 }
               }
             } flg(generatorMap, &c);
-            topDown(flg, wp);
+            top_down(flg, wp);
             whereMap[flg.decl].push_back(wp);
           }
         }
@@ -1636,9 +1636,9 @@ public:
     {
       GCLock lock;
       Generators generators;
-      for (int i = 0; i < c.n_generators(); i++) {
+      for (int i = 0; i < c.numberOfGenerators(); i++) {
         std::vector<VarDecl*> decls;
-        for (int j = 0; j < c.n_decls(i); j++) {
+        for (int j = 0; j < c.numberOfDecls(i); j++) {
           decls.push_back(c.decl(i, j));
           KeepAlive c_in =
               c.in(i) != nullptr ? addCoercion(_env, _model, c.in(i), c.in(i)->type()) : nullptr;
@@ -1649,16 +1649,16 @@ public:
               GCLock lock;
               auto* bo =
                   new BinOp(Location().introduce(), whereExpr, BOT_AND, whereMap[c.decl(i, j)][k]);
-              Type bo_t = whereMap[c.decl(i, j)][k]->type().ispar() && whereExpr->type().ispar()
+              Type bo_t = whereMap[c.decl(i, j)][k]->type().isPar() && whereExpr->type().isPar()
                               ? Type::parbool()
                               : Type::varbool();
               bo->type(bo_t);
               whereExpr = bo;
             }
-            generators._g.emplace_back(decls, c_in(), whereExpr);
+            generators.g.emplace_back(decls, c_in(), whereExpr);
             decls.clear();
-          } else if (j == c.n_decls(i) - 1) {
-            generators._g.emplace_back(decls, c_in(), nullptr);
+          } else if (j == c.numberOfDecls(i) - 1) {
+            generators.g.emplace_back(decls, c_in(), nullptr);
             decls.clear();
           }
         }
@@ -1697,7 +1697,7 @@ public:
     if (g_in == nullptr) {
       // This is an "assignment generator" (i = expr)
       assert(c.where(gen_i) != nullptr);
-      assert(c.n_decls(gen_i) == 1);
+      assert(c.numberOfDecls(gen_i) == 1);
       const Type& ty_where = c.where(gen_i)->type();
       c.decl(gen_i, 0)->type(ty_where);
       c.decl(gen_i, 0)->ti()->type(ty_where);
@@ -1721,7 +1721,7 @@ public:
         }
         ty_id.dim(0);
       }
-      for (int j = 0; j < c.n_decls(gen_i); j++) {
+      for (int j = 0; j < c.numberOfDecls(gen_i); j++) {
         c.decl(gen_i, j)->type(ty_id);
         c.decl(gen_i, j)->ti()->type(ty_id);
       }
@@ -1730,28 +1730,28 @@ public:
   /// Visit if-then-else
   void vITE(ITE& ite) {
     bool mustBeBool = false;
-    if (ite.e_else() == nullptr) {
+    if (ite.elseExpr() == nullptr) {
       // this is an "if <cond> then <expr> endif" so the <expr> must be bool
-      ite.e_else(constants().boollit(true));
+      ite.elseExpr(constants().boollit(true));
       mustBeBool = true;
     }
-    Type tret = ite.e_else()->type();
+    Type tret = ite.elseExpr()->type();
     std::vector<AnonVar*> anons;
     bool allpar = !(tret.isvar());
     if (tret.isunknown()) {
-      if (auto* av = ite.e_else()->dyn_cast<AnonVar>()) {
+      if (auto* av = ite.elseExpr()->dynamicCast<AnonVar>()) {
         allpar = false;
         anons.push_back(av);
       } else {
-        throw TypeError(_env, ite.e_else()->loc(),
+        throw TypeError(_env, ite.elseExpr()->loc(),
                         "cannot infer type of expression in `else' branch of conditional");
       }
     }
-    bool allpresent = !(tret.isopt());
+    bool allpresent = !(tret.isOpt());
     bool varcond = false;
     for (int i = 0; i < ite.size(); i++) {
-      Expression* eif = ite.e_if(i);
-      Expression* ethen = ite.e_then(i);
+      Expression* eif = ite.ifExpr(i);
+      Expression* ethen = ite.thenExpr(i);
       varcond = varcond || (eif->type() == Type::varbool());
       if (eif->type() != Type::parbool() && eif->type() != Type::varbool()) {
         throw TypeError(
@@ -1762,7 +1762,7 @@ public:
         tret.cv(true);
       }
       if (ethen->type().isunknown()) {
-        if (auto* av = ethen->dyn_cast<AnonVar>()) {
+        if (auto* av = ethen->dynamicCast<AnonVar>()) {
           allpar = false;
           anons.push_back(av);
         } else {
@@ -1780,15 +1780,15 @@ public:
                           std::string("conditional without `else' branch must have bool type, ") +
                               "but `then' branch has type `" + ethen->type().toString(_env) + "'");
         }
-        if ((!ethen->type().isbot() && !Type::bt_subtype(ethen->type(), tret, true) &&
-             !Type::bt_subtype(tret, ethen->type(), true)) ||
+        if ((!ethen->type().isbot() && !Type::btSubtype(ethen->type(), tret, true) &&
+             !Type::btSubtype(tret, ethen->type(), true)) ||
             ethen->type().st() != tret.st() || ethen->type().dim() != tret.dim()) {
           throw TypeError(_env, ethen->loc(),
                           "type mismatch in branches of conditional. `then' branch has type `" +
                               ethen->type().toString(_env) + "', but `else' branch has type `" +
                               tret.toString(_env) + "'");
         }
-        if (Type::bt_subtype(tret, ethen->type(), true)) {
+        if (Type::btSubtype(tret, ethen->type(), true)) {
           tret.bt(ethen->type().bt());
         }
         if (tret.enumId() != 0 && ethen->type().enumId() == 0) {
@@ -1797,7 +1797,7 @@ public:
         if (ethen->type().isvar()) {
           allpar = false;
         }
-        if (ethen->type().isopt()) {
+        if (ethen->type().isOpt()) {
           allpresent = false;
         }
         if (ethen->type().cv()) {
@@ -1811,9 +1811,9 @@ public:
       anon->type(tret_var);
     }
     for (int i = 0; i < ite.size(); i++) {
-      ite.e_then(i, addCoercion(_env, _model, ite.e_then(i), tret)());
+      ite.thenExpr(i, addCoercion(_env, _model, ite.thenExpr(i), tret)());
     }
-    ite.e_else(addCoercion(_env, _model, ite.e_else(), tret)());
+    ite.elseExpr(addCoercion(_env, _model, ite.elseExpr(), tret)());
     /// TODO: perhaps extend flattener to array types, but for now throw an error
     if (varcond && tret.dim() > 0) {
       throw TypeError(_env, ite.loc(), "conditional with var condition cannot have array type");
@@ -1849,11 +1849,11 @@ public:
       if (bop.lhs()->type().isint() && bop.rhs()->type().isint() &&
           (bop.op() == BOT_EQ || bop.op() == BOT_GQ || bop.op() == BOT_GR || bop.op() == BOT_NQ ||
            bop.op() == BOT_LE || bop.op() == BOT_LQ)) {
-        Call* call = bop.lhs()->dyn_cast<Call>();
+        Call* call = bop.lhs()->dynamicCast<Call>();
         Expression* rhs = bop.rhs();
         BinOpType bot = bop.op();
         if (call == nullptr) {
-          call = bop.rhs()->dyn_cast<Call>();
+          call = bop.rhs()->dynamicCast<Call>();
           rhs = bop.lhs();
           switch (bop.op()) {
             case BOT_LQ:
@@ -1874,9 +1874,9 @@ public:
         }
         if ((call != nullptr) && (call->id() == "count" || call->id() == "sum") &&
             call->type().isvar()) {
-          if (call->n_args() == 1 && call->arg(0)->isa<Comprehension>()) {
+          if (call->argCount() == 1 && call->arg(0)->isa<Comprehension>()) {
             auto* comp = call->arg(0)->cast<Comprehension>();
-            auto* inner_bo = comp->e()->dyn_cast<BinOp>();
+            auto* inner_bo = comp->e()->dynamicCast<BinOp>();
             if (inner_bo != nullptr) {
               if (inner_bo->op() == BOT_EQ && inner_bo->lhs()->type().isint()) {
                 Expression* generated = inner_bo->lhs();
@@ -1932,7 +1932,7 @@ public:
                 }
               }
             }
-          } else if (call->n_args() == 2 && call->arg(0)->type().isintarray() &&
+          } else if (call->argCount() == 2 && call->arg(0)->type().isIntArray() &&
                      call->arg(1)->type().isint()) {
             GCLock lock;
             ASTString cid;
@@ -2003,14 +2003,14 @@ public:
 
   /// Visit call
   void vCall(Call& call) {
-    std::vector<Expression*> args(call.n_args());
+    std::vector<Expression*> args(call.argCount());
     for (auto i = static_cast<unsigned int>(args.size()); (i--) != 0U;) {
       args[i] = call.arg(i);
     }
     FunctionI* fi = _model->matchFn(_env, &call, true, true);
     if ((fi->e() != nullptr) && fi->e()->isa<Call>()) {
       Call* next_call = fi->e()->cast<Call>();
-      if ((next_call->decl() != nullptr) && next_call->n_args() == fi->params().size() &&
+      if ((next_call->decl() != nullptr) && next_call->argCount() == fi->params().size() &&
           _model->sameOverloading(_env, args, fi, next_call->decl())) {
         bool macro = true;
         for (unsigned int i = 0; i < fi->params().size(); i++) {
@@ -2033,7 +2033,7 @@ public:
 
     bool cv = false;
     for (unsigned int i = 0; i < args.size(); i++) {
-      if (auto* c = call.arg(i)->dyn_cast<Comprehension>()) {
+      if (auto* c = call.arg(i)->dynamicCast<Comprehension>()) {
         Type t_before = c->e()->type();
         Type t = fi->argtype(_env, args, i);
         t.dim(0);
@@ -2053,9 +2053,9 @@ public:
     // Replace par enums with their string versions
     if (call.id() == "format" || call.id() == "show" || call.id() == "showDzn" ||
         call.id() == "showJSON") {
-      if (call.arg(call.n_args() - 1)->type().ispar()) {
-        int enumId = call.arg(call.n_args() - 1)->type().enumId();
-        if (enumId != 0 && call.arg(call.n_args() - 1)->type().dim() != 0) {
+      if (call.arg(call.argCount() - 1)->type().isPar()) {
+        int enumId = call.arg(call.argCount() - 1)->type().enumId();
+        if (enumId != 0 && call.arg(call.argCount() - 1)->type().dim() != 0) {
           const std::vector<unsigned int>& enumIds = _env.getArrayEnum(enumId);
           enumId = enumIds[enumIds.size() - 1];
         }
@@ -2065,7 +2065,7 @@ public:
             Id* ti_id = _env.getEnum(enumId)->e()->id();
             GCLock lock;
             std::vector<Expression*> args(3);
-            args[0] = call.arg(call.n_args() - 1);
+            args[0] = call.arg(call.argCount() - 1);
             if (args[0]->type().dim() > 1) {
               std::vector<Expression*> a1dargs(1);
               a1dargs[0] = args[0];
@@ -2077,7 +2077,7 @@ public:
             }
             args[1] = constants().boollit(call.id() == "showDzn");
             args[2] = constants().boollit(call.id() == "showJSON");
-            ASTString enumName(createEnumToStringName(ti_id, "_toString_"));
+            ASTString enumName(create_enum_to_string_name(ti_id, "_toString_"));
             call.id(enumName);
             call.args(args);
             if (call.id() == "showDzn") {
@@ -2097,7 +2097,7 @@ public:
     if (Call* deprecated = fi->ann().getCall(constants().ann.mzn_deprecated)) {
       // rewrite this call into a call to mzn_deprecate(..., e)
       GCLock lock;
-      std::vector<Expression*> params(call.n_args());
+      std::vector<Expression*> params(call.argCount());
       for (unsigned int i = 0; i < params.size(); i++) {
         params[i] = call.arg(i);
       }
@@ -2121,14 +2121,14 @@ public:
     for (unsigned int i = 0, j = 0; i < let.let().size(); i++) {
       Expression* li = let.let()[i];
       cv = cv || li->type().cv();
-      if (auto* vdi = li->dyn_cast<VarDecl>()) {
-        if (vdi->e() == nullptr && vdi->type().is_set() && vdi->type().isvar() &&
+      if (auto* vdi = li->dynamicCast<VarDecl>()) {
+        if (vdi->e() == nullptr && vdi->type().isSet() && vdi->type().isvar() &&
             vdi->ti()->domain() == nullptr) {
           std::ostringstream ss;
           ss << "set element type for `" << vdi->id()->str() << "' is not finite";
           _typeErrors.emplace_back(_env, vdi->loc(), ss.str());
         }
-        if (vdi->type().ispar() && (vdi->e() == nullptr)) {
+        if (vdi->type().isPar() && (vdi->e() == nullptr)) {
           std::ostringstream ss;
           ss << "let variable `" << vdi->id()->v() << "' must be initialised";
           throw TypeError(_env, vdi->loc(), ss.str());
@@ -2139,9 +2139,9 @@ public:
              << vdi->id()->str() << "'";
           _typeErrors.emplace_back(_env, vdi->loc(), ss.str());
         }
-        let.let_orig()[j++] = vdi->e();
+        let.letOrig()[j++] = vdi->e();
         for (unsigned int k = 0; k < vdi->ti()->ranges().size(); k++) {
-          let.let_orig()[j++] = vdi->ti()->ranges()[k]->domain();
+          let.letOrig()[j++] = vdi->ti()->ranges()[k]->domain();
         }
       }
       isVar |= li->type().isvar();
@@ -2253,7 +2253,7 @@ public:
       tt.cv(true);
     }
     if (ti.domain() != nullptr) {
-      if (TIId* tiid = ti.domain()->dyn_cast<TIId>()) {
+      if (TIId* tiid = ti.domain()->dynamicCast<TIId>()) {
         if (tiid->isEnum()) {
           tt.bt(Type::BT_INT);
         }
@@ -2323,8 +2323,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         return true;
       }
     } _combiner(combinedModel);
-    iterItems(_combiner, origModel);
-    env.envi().orig_model = origModel;
+    iter_items(_combiner, origModel);
+    env.envi().originalModel = origModel;
     env.envi().model = combinedModel;
     m = combinedModel;
   } else {
@@ -2350,7 +2350,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       fis.push_back(i);
     }
   } _tsvf(env.envi(), m, functionItems);
-  iterItems(_tsvf, m);
+  iter_items(_tsvf, m);
 
   class TSV0 : public ItemVisitor {
   public:
@@ -2409,20 +2409,20 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       }
     }
   } _tsv0(env.envi(), ts, m, assignItems, enumItems, isFlatZinc);
-  iterItems(_tsv0, m);
+  iter_items(_tsv0, m);
   if (_tsv0.objective != nullptr) {
     m->addItem(_tsv0.objective);
     ts.add(env.envi(), _tsv0.objective, true, enumItems);
   }
 
   for (unsigned int i = 0; i < enumItems->size(); i++) {
-    if (auto* ai = (*enumItems)[i]->dyn_cast<AssignI>()) {
+    if (auto* ai = (*enumItems)[i]->dynamicCast<AssignI>()) {
       assignItems.push_back(ai);
-    } else if (auto* vdi = (*enumItems)[i]->dyn_cast<VarDeclI>()) {
+    } else if (auto* vdi = (*enumItems)[i]->dynamicCast<VarDeclI>()) {
       m->addItem(vdi);
       ts.add(env.envi(), vdi, false, enumItems);
     } else {
-      auto* fi = (*enumItems)[i]->dyn_cast<FunctionI>();
+      auto* fi = (*enumItems)[i]->dynamicCast<FunctionI>();
       m->addItem(fi);
       m->registerFn(env.envi(), fi);
       functionItems.push_back(fi);
@@ -2463,7 +2463,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
   }
 
   for (auto& i : *enumItems2) {
-    if (auto* vdi = i->dyn_cast<VarDeclI>()) {
+    if (auto* vdi = i->dynamicCast<VarDeclI>()) {
       m->addItem(vdi);
       ts.add(env.envi(), vdi, false, enumItems);
     } else {
@@ -2508,7 +2508,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       ts.scopes.pop();
     }
   } _tsv1(env.envi(), ts);
-  iterItems(_tsv1, m);
+  iter_items(_tsv1, m);
 
   m->sortFn();
 
@@ -2518,8 +2518,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         if (i0->isa<IncludeI>()) {
           return !i1->isa<IncludeI>();
         }
-        if (auto* vdi0 = i0->dyn_cast<VarDeclI>()) {
-          if (auto* vdi1 = i1->dyn_cast<VarDeclI>()) {
+        if (auto* vdi0 = i0->dynamicCast<VarDeclI>()) {
+          if (auto* vdi1 = i1->dynamicCast<VarDeclI>()) {
             return vdi0->e()->payload() < vdi1->e()->payload();
           } else {
             return !i1->isa<IncludeI>();
@@ -2571,7 +2571,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           _typeErrors.emplace_back(env, i->e()->loc(), ss.str());
         }
         VarDecl* vdi = i->e();
-        if (vdi->e() == nullptr && vdi->type().is_set() && vdi->type().isvar() &&
+        if (vdi->e() == nullptr && vdi->type().isSet() && vdi->type().isvar() &&
             vdi->ti()->domain() == nullptr) {
           std::ostringstream ss;
           ss << "set element type for `" << vdi->id()->str() << "' is not finite";
@@ -2598,7 +2598,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           _typeErrors.emplace_back(env, i->loc(), ss.str());
           // Assign to "true" constant to avoid generating further errors that the parameter
           // is undefined
-          i->decl()->e(constants().lit_true);
+          i->decl()->e(constants().literalTrue);
         }
       }
       void vConstraintI(ConstraintI* i) {
@@ -2612,7 +2612,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       void vSolveI(SolveI* i) {
         for (ExpressionSetIter it = i->ann().begin(); it != i->ann().end(); ++it) {
           bu_ty.run(*it);
-          if (!(*it)->type().isann()) {
+          if (!(*it)->type().isAnn()) {
             throw TypeError(env, (*it)->loc(),
                             "expected annotation, got `" + (*it)->type().toString(env) + "'");
           }
@@ -2621,7 +2621,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         if (i->e() != nullptr) {
           Type et = i->e()->type();
 
-          bool needOptCoercion = et.isopt() && et.isint();
+          bool needOptCoercion = et.isOpt() && et.isint();
           if (needOptCoercion) {
             et.ot(Type::OT_PRESENT);
           }
@@ -2658,7 +2658,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       void vFunctionI(FunctionI* i) {
         for (ExpressionSetIter it = i->ann().begin(); it != i->ann().end(); ++it) {
           bu_ty.run(*it);
-          if (!(*it)->type().isann()) {
+          if (!(*it)->type().isAnn()) {
             throw TypeError(env, (*it)->loc(),
                             "expected annotation, got `" + (*it)->type().toString(env) + "'");
           }
@@ -2671,7 +2671,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
                               i->ti()->type().toString(env) + "', body type is `" +
                               i->e()->type().toString(env) + "'");
         }
-        if ((i->e() != nullptr) && i->e()->type().ispar() && i->ti()->type().isvar()) {
+        if ((i->e() != nullptr) && i->e()->type().isPar() && i->ti()->type().isvar()) {
           // this is a par function declared as var, so change declared return type
           Type i_t = i->ti()->type();
           i_t.ti(Type::TI_PAR);
@@ -2682,7 +2682,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         }
       }
     } _tsv2(env.envi(), m, bu_ty, typeErrors);
-    iterItems(_tsv2, m);
+    iter_items(_tsv2, m);
   }
 
   class TSV3 : public ItemVisitor {
@@ -2706,7 +2706,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     }
   } _tsv3(env.envi(), m);
   if (typeErrors.empty()) {
-    iterItems(_tsv3, m);
+    iter_items(_tsv3, m);
   }
 
   try {
@@ -2716,8 +2716,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
   }
 
   for (auto& decl : ts.decls) {
-    if (decl->toplevel() && decl->type().ispar() && !decl->type().isann() && decl->e() == nullptr) {
-      if (decl->type().isopt() && decl->type().dim() == 0) {
+    if (decl->toplevel() && decl->type().isPar() && !decl->type().isAnn() && decl->e() == nullptr) {
+      if (decl->type().isOpt() && decl->type().dim() == 0) {
         decl->e(constants().absent);
         decl->addAnnotation(constants().ann.mzn_was_undefined);
       } else if (!ignoreUndefinedParameters) {
@@ -2882,7 +2882,7 @@ void output_model_variable_types(Env& env, Model* m, std::ostream& os,
     VInfVisitor(Env& env0, const std::vector<std::string>& skipDirs)
         : env(env0), skip_dirs(skipDirs), had_var(false), had_enum(false) {}
     bool enter(Item* i) {
-      if (auto* ii = i->dyn_cast<IncludeI>()) {
+      if (auto* ii = i->dynamicCast<IncludeI>()) {
         std::string prefix =
             ii->m()->filepath().substr(0, ii->m()->filepath().size() - ii->f().size());
         for (const auto& skip_dir : skip_dirs) {
@@ -2894,14 +2894,14 @@ void output_model_variable_types(Env& env, Model* m, std::ostream& os,
       return true;
     }
     void vVarDeclI(VarDeclI* vdi) {
-      if (!vdi->e()->type().isann() && !vdi->e()->ti()->isEnum()) {
+      if (!vdi->e()->type().isAnn() && !vdi->e()->ti()->isEnum()) {
         if (had_var) {
           oss_vars << ",\n";
         }
         output_var_desc_json(env, vdi->e(), oss_vars, true);
         had_var = true;
       } else if (vdi->e()->type().st() == Type::ST_SET && vdi->e()->type().enumId() != 0 &&
-                 !vdi->e()->type().isann()) {
+                 !vdi->e()->type().isAnn()) {
         if (had_enum) {
           oss_enums << ", ";
         }
@@ -2910,7 +2910,7 @@ void output_model_variable_types(Env& env, Model* m, std::ostream& os,
       }
     }
   } _vinf(env, skipDirs);
-  iterItems(_vinf, m);
+  iter_items(_vinf, m);
   os << "{\"var_types\": {";
   os << "\n  \"vars\": {\n" << _vinf.oss_vars.str() << "\n  },";
   os << "\n  \"enums\": [" << _vinf.oss_enums.str() << "]\n";
@@ -2941,7 +2941,7 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
           method("sat"),
           output_item(false) {}
     bool enter(Item* i) {
-      if (auto* ii = i->dyn_cast<IncludeI>()) {
+      if (auto* ii = i->dynamicCast<IncludeI>()) {
         std::string prefix =
             ii->m()->filepath().substr(0, ii->m()->filepath().size() - ii->f().size());
         for (const auto& skip_dir : skip_dirs) {
@@ -2959,7 +2959,7 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
     }
     void vVarDeclI(VarDeclI* vdi) {
       VarDecl* vd = vdi->e();
-      if (vd->type().ispar() && !vd->type().isann() &&
+      if (vd->type().isPar() && !vd->type().isAnn() &&
           (vd->e() == nullptr || (vd->e() == constants().absent &&
                                   vd->ann().contains(constants().ann.mzn_was_undefined)))) {
         if (had_input) {
@@ -3005,7 +3005,7 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
     }
     void vOutputI(OutputI* oi) { output_item = true; }
   } _ifc(env, skipDirs);
-  iterItems(_ifc, m);
+  iter_items(_ifc, m);
   os << "{\n  \"input\" : {\n"
      << _ifc.oss_input.str() << "\n  },\n  \"output\" : {\n"
      << _ifc.oss_output.str() << "\n  }";
@@ -3017,7 +3017,7 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
   os << "\n}\n";
 }
 
-std::string createEnumToStringName(Id* ident, const std::string& prefix) {
+std::string create_enum_to_string_name(Id* ident, const std::string& prefix) {
   std::ostringstream ss;
   if (ident->str().c_str()[0] == '\'') {
     ss << "'" << prefix << ident->str().substr(1);

@@ -52,7 +52,7 @@ void SolverInstanceBase::printSolution() {
   if (_options->printStatistics) {
     printStatistics();  // Insert stats before sol separator
   }
-  if (nullptr == pS2Out) {
+  if (nullptr == _pS2Out) {
     getEnv()->evalOutput(std::cout);  // deprecated
     std::cout << oss.str();
     if ((!oss.str().empty()) && '\n' != oss.str().back()) {
@@ -72,8 +72,8 @@ void SolverInstanceBase2::printSolution() {
 
 //   void
 //   SolverInstanceBase::assignSolutionToOutput() {
-//     for (VarDeclIterator it = getEnv()->output()->begin_vardecls(); it !=
-//     getEnv()->output()->end_vardecls(); ++it) {
+//     for (VarDeclIterator it = getEnv()->output()->vardecls().begin(); it !=
+//     getEnv()->output()->vardecls().end(); ++it) {
 //       if (it->e()->e() == NULL) {
 //         it->e()->e(getSolutionValue(it->e()->id()));
 //       }
@@ -84,12 +84,12 @@ void SolverInstanceBase2::assignSolutionToOutput() {
   GCLock lock;
 
   MZN_ASSERT_HARD_MSG(
-      nullptr != pS2Out,
+      nullptr != _pS2Out,
       "Setup a Solns2Out object to use default solution extraction/reporting procs");
 
   if (_varsWithOutput.empty()) {
-    for (VarDeclIterator it = getEnv()->flat()->begin_vardecls();
-         it != getEnv()->flat()->end_vardecls(); ++it) {
+    for (VarDeclIterator it = getEnv()->flat()->vardecls().begin();
+         it != getEnv()->flat()->vardecls().end(); ++it) {
       if (!it->removed()) {
         VarDecl* vd = it->e();
         if (!vd->ann().isEmpty()) {
@@ -102,33 +102,33 @@ void SolverInstanceBase2::assignSolutionToOutput() {
     }
   }
 
-  pS2Out->declNewOutput();  // Even for empty output decl
+  _pS2Out->declNewOutput();  // Even for empty output decl
 
   // iterate over set of ids that have an output annotation && obtain their right hand side from the
   // flat model
   for (auto* vd : _varsWithOutput) {
     // std::cout << "DEBUG: Looking at var-decl with output-annotation: " << *vd << std::endl;
-    if (Call* output_array_ann = Expression::dyn_cast<Call>(
-            getAnnotation(vd->ann(), constants().ann.output_array.aststr()))) {
+    if (Call* output_array_ann = Expression::dynamicCast<Call>(
+            get_annotation(vd->ann(), constants().ann.output_array.aststr()))) {
       assert(vd->e());
 
-      if (auto* al = vd->e()->dyn_cast<ArrayLit>()) {
+      if (auto* al = vd->e()->dynamicCast<ArrayLit>()) {
         std::vector<Expression*> array_elems;
         ArrayLit& array = *al;
         for (unsigned int j = 0; j < array.size(); j++) {
-          if (Id* id = array[j]->dyn_cast<Id>()) {
+          if (Id* id = array[j]->dynamicCast<Id>()) {
             // std::cout << "DEBUG: getting solution value from " << *id  << " : " << id->v() <<
             // std::endl;
             array_elems.push_back(getSolutionValue(id));
-          } else if (auto* floatLit = array[j]->dyn_cast<FloatLit>()) {
+          } else if (auto* floatLit = array[j]->dynamicCast<FloatLit>()) {
             array_elems.push_back(floatLit);
-          } else if (auto* intLit = array[j]->dyn_cast<IntLit>()) {
+          } else if (auto* intLit = array[j]->dynamicCast<IntLit>()) {
             array_elems.push_back(intLit);
-          } else if (auto* boolLit = array[j]->dyn_cast<BoolLit>()) {
+          } else if (auto* boolLit = array[j]->dynamicCast<BoolLit>()) {
             array_elems.push_back(boolLit);
-          } else if (auto* setLit = array[j]->dyn_cast<SetLit>()) {
+          } else if (auto* setLit = array[j]->dynamicCast<SetLit>()) {
             array_elems.push_back(setLit);
-          } else if (auto* strLit = array[j]->dyn_cast<StringLit>()) {
+          } else if (auto* strLit = array[j]->dynamicCast<StringLit>()) {
             array_elems.push_back(strLit);
           } else {
             std::ostringstream oss;
@@ -139,9 +139,9 @@ void SolverInstanceBase2::assignSolutionToOutput() {
         GCLock lock;
         ArrayLit* dims;
         Expression* e = output_array_ann->arg(0);
-        if (auto* al = e->dyn_cast<ArrayLit>()) {
+        if (auto* al = e->dynamicCast<ArrayLit>()) {
           dims = al;
-        } else if (Id* id = e->dyn_cast<Id>()) {
+        } else if (Id* id = e->dynamicCast<Id>()) {
           dims = id->decl()->e()->cast<ArrayLit>();
         } else {
           throw -1;

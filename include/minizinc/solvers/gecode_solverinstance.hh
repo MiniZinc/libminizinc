@@ -179,17 +179,17 @@ class GecodeEngine;
 
 class GecodeOptions : public SolverInstanceBase::Options {
 public:
-  bool allow_unbounded_vars = false;
-  bool only_range_domains = false;
+  bool allowUnboundedVars = false;
+  bool onlyRangeDomains = false;
   bool sac = false;
   bool shave = false;
   bool verbose = false;
-  int pre_passes = 0;
+  int prePasses = 0;
   bool statistics = false;
-  bool all_solutions = false;
-  int n_solutions = -1;
-  unsigned int c_d = 8;
-  unsigned int a_d = 2;
+  bool allSolutions = false;
+  int nSolutions = -1;
+  unsigned int c_d = 8; // NOLINT(readability-identifier-naming)
+  unsigned int a_d = 2; // NOLINT(readability-identifier-naming)
   int nodes = 0;
   int fails = 0;
   int time = 0;
@@ -199,24 +199,24 @@ public:
 
 class GecodeSolverInstance : public SolverInstanceImpl<GecodeSolver> {
 private:
-  bool _print_stats;
-  bool _only_range_domains;
-  bool _run_sac;
-  bool _run_shave;
-  unsigned int _pre_passes;
-  bool _all_solutions;
-  int _n_max_solutions;
-  int _n_found_solutions;
-  bool _allow_unbounded_vars;
+  bool _printStats;
+  bool _onlyRangeDomains;
+  bool _runSac;
+  bool _runShave;
+  unsigned int _prePasses;
+  bool _allSolutions;
+  int _nMaxSolutions;
+  int _nFoundSolutions;
+  bool _allowUnboundedVars;
   Model* _flat;
 
 public:
   /// the Gecode space that will be/has been solved
-  FznSpace* _current_space;
+  FznSpace* currentSpace;
   /// the solution (or NULL if does not exist or not yet computed)
-  FznSpace* _solution;
+  FznSpace* solution;
   /// the variable declarations with output annotations
-  std::vector<VarDecl*> _varsWithOutput;
+  std::vector<VarDecl*> varsWithOutput;
   /// declaration map for processing and printing output
   // typedef std::pair<VarDecl*,Expression*> DE;
   // ASTStringMap<DE>::t _declmap;
@@ -224,7 +224,7 @@ public:
   std::unordered_map<VarDecl*, std::vector<Expression*>*> arrayMap;
   /// The solver engine
   GecodeEngine* engine;
-  Gecode::Search::Options engine_options;
+  Gecode::Search::Options engineOptions;
 
   GecodeSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
   virtual ~GecodeSolverInstance();
@@ -357,9 +357,9 @@ protected:
       Gecode::Rnd& rnd, double decay, bool ignoreUnknown, std::ostream& err);
 };
 
-class Gecode_SolverFactory : public SolverFactory {
+class GecodeSolverFactory : public SolverFactory {
 public:
-  Gecode_SolverFactory();
+  GecodeSolverFactory();
   SolverInstanceBase::Options* createOptions();
   SolverInstanceBase* doCreateSI(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
   std::string getDescription(SolverInstanceBase::Options* opt = nullptr);

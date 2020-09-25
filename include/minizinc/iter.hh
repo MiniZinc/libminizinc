@@ -37,9 +37,9 @@ template <class Val>
 class MinMax {
 protected:
   /// Minimum of current range
-  Val mi;
+  Val _mi;
   /// Maximum of current range
-  Val ma;
+  Val _ma;
   /// %Set range such that iteration stops
   void finish();
 
@@ -71,36 +71,36 @@ public:
 
 template <class Val>
 inline void MinMax<Val>::finish() {
-  mi = 1;
-  ma = 0;
+  _mi = 1;
+  _ma = 0;
 }
 
 template <class Val>
 inline MinMax<Val>::MinMax() {}
 
 template <class Val>
-inline MinMax<Val>::MinMax(Val min, Val max) : mi(min), ma(max) {}
+inline MinMax<Val>::MinMax(Val min, Val max) : _mi(min), _ma(max) {}
 
 template <class Val>
 inline bool MinMax<Val>::operator()() const {
-  return mi <= ma;
+  return _mi <= _ma;
 }
 
 template <class Val>
 inline Val MinMax<Val>::min() const {
-  return mi;
+  return _mi;
 }
 template <class Val>
 inline Val MinMax<Val>::max() const {
-  return ma;
+  return _ma;
 }
 template <class Val>
 inline Val MinMax<Val>::width() const {
-  if (mi > ma) {
+  if (_mi > _ma) {
     return 0;
   }
-  if (mi.isFinite() && ma.isFinite()) {
-    return ma - mi + 1;
+  if (_mi.isFinite() && _ma.isFinite()) {
+    return _ma - _mi + 1;
   }
   return Val::infinity();
 }
@@ -108,11 +108,11 @@ inline Val MinMax<Val>::width() const {
 template <class Val, class I>
 class Bounded {
 protected:
-  I i;
+  I _i;
   Val _min;
-  bool use_min;
+  bool _useMin;
   Val _max;
-  bool use_max;
+  bool _useMax;
   Bounded(I& i, Val min0, bool umin0, Val max0, bool umax0);
 
 public:
@@ -140,10 +140,10 @@ public:
 };
 
 template <class Val, class I>
-inline Bounded<Val, I>::Bounded(I& i0, Val min0, bool umin0, Val max0, bool umax0)
-    : i(i0), _min(min0), use_min(umin0), _max(max0), use_max(umax0) {
-  while (i() && use_min && i.max() < _min) {
-    ++i;
+inline Bounded<Val, I>::Bounded(I& i, Val min0, bool umin0, Val max0, bool umax0)
+    : _i(i), _min(min0), _useMin(umin0), _max(max0), _useMax(umax0) {
+  while (_i() && _useMin && _i.max() < _min) {
+    ++_i;
   }
 }
 template <class Val, class I>
@@ -161,22 +161,22 @@ inline Bounded<Val, I> Bounded<Val, I>::minmaxiter(I& i, Val min, Val max) {
 
 template <class Val, class I>
 inline bool Bounded<Val, I>::operator()() const {
-  return i() && (!use_max || i.min() <= _max);
+  return _i() && (!_useMax || _i.min() <= _max);
 }
 template <class Val, class I>
 inline void Bounded<Val, I>::operator++() {
-  ++i;
-  while (i() && use_min && i.max() < _min) {
-    ++i;
+  ++_i;
+  while (_i() && _useMin && _i.max() < _min) {
+    ++_i;
   }
 }
 template <class Val, class I>
 inline Val Bounded<Val, I>::min() const {
-  return use_min ? std::max(_min, i.min()) : i.min();
+  return _useMin ? std::max(_min, _i.min()) : _i.min();
 }
 template <class Val, class I>
 inline Val Bounded<Val, I>::max() const {
-  return use_max ? std::min(_max, i.max()) : i.max();
+  return _useMax ? std::min(_max, _i.max()) : _i.max();
 }
 template <class Val, class I>
 inline Val Bounded<Val, I>::width() const {
@@ -194,7 +194,7 @@ class Const {
 protected:
   Val _min;
   Val _max;
-  bool done;
+  bool _done;
 
 public:
   Const(Val min0, Val max0);
@@ -219,14 +219,14 @@ public:
 };
 
 template <class Val>
-inline Const<Val>::Const(Val min0, Val max0) : _min(min0), _max(max0), done(min0 > max0) {}
+inline Const<Val>::Const(Val min0, Val max0) : _min(min0), _max(max0), _done(min0 > max0) {}
 template <class Val>
 inline bool Const<Val>::operator()() const {
-  return !done;
+  return !_done;
 }
 template <class Val>
 inline void Const<Val>::operator++() {
-  done = true;
+  _done = true;
 }
 template <class Val>
 inline Val Const<Val>::min() const {
@@ -256,9 +256,9 @@ template <class Val, class I, class J>
 class Union : public MinMax<Val> {
 protected:
   /// First iterator
-  I i;
+  I _i;
   /// Second iterator
-  J j;
+  J _j;
 
 public:
   /// \name Constructors and initialization
@@ -293,15 +293,15 @@ inline bool overlaps(const FloatVal& x, const FloatVal& y) {
   }
   return x >= y;
 }
-inline IntVal nextHigher(const IntVal& x) { return x.plus(1); }
-inline IntVal nextLower(const IntVal& x) { return x.minus(1); }
-inline FloatVal nextHigher(const FloatVal& x) {
+inline IntVal next_higher(const IntVal& x) { return x.plus(1); }
+inline IntVal next_lower(const IntVal& x) { return x.minus(1); }
+inline FloatVal next_higher(const FloatVal& x) {
   if (x.isFinite()) {
     return std::nextafter(x.toDouble(), INFINITY);
   }
   return x;
 }
-inline FloatVal nextLower(const FloatVal& x) {
+inline FloatVal next_lower(const FloatVal& x) {
   if (x.isFinite()) {
     return std::nextafter(x.toDouble(), -INFINITY);
   }
@@ -315,39 +315,39 @@ inline FloatVal nextLower(const FloatVal& x) {
 
 template <class Val, class I, class J>
 inline void Union<Val, I, J>::operator++() {
-  if (!i() && !j()) {
+  if (!_i() && !_j()) {
     MinMax<Val>::finish();
     return;
   }
 
-  if (!i() || (j() && (!overlaps(j.max(), i.min())))) {
-    MinMax<Val>::mi = j.min();
-    MinMax<Val>::ma = j.max();
-    ++j;
+  if (!_i() || (_j() && (!overlaps(_j.max(), _i.min())))) {
+    MinMax<Val>::_mi = _j.min();
+    MinMax<Val>::_ma = _j.max();
+    ++_j;
     return;
   }
-  if (!j() || (i() && (!overlaps(i.max(), j.min())))) {
-    MinMax<Val>::mi = i.min();
-    MinMax<Val>::ma = i.max();
-    ++i;
+  if (!_j() || (_i() && (!overlaps(_i.max(), _j.min())))) {
+    MinMax<Val>::_mi = _i.min();
+    MinMax<Val>::_ma = _i.max();
+    ++_i;
     return;
   }
 
-  MinMax<Val>::mi = std::min(i.min(), j.min());
-  MinMax<Val>::ma = std::max(i.max(), j.max());
+  MinMax<Val>::_mi = std::min(_i.min(), _j.min());
+  MinMax<Val>::_ma = std::max(_i.max(), _j.max());
 
-  ++i;
-  ++j;
+  ++_i;
+  ++_j;
 
 next:
-  if (i() && (overlaps(MinMax<Val>::ma, i.min()))) {
-    MinMax<Val>::ma = std::max(MinMax<Val>::ma, i.max());
-    ++i;
+  if (_i() && (overlaps(MinMax<Val>::_ma, _i.min()))) {
+    MinMax<Val>::_ma = std::max(MinMax<Val>::_ma, _i.max());
+    ++_i;
     goto next;
   }
-  if (j() && (overlaps(MinMax<Val>::ma, j.min()))) {
-    MinMax<Val>::ma = std::max(MinMax<Val>::ma, j.max());
-    ++j;
+  if (_j() && (overlaps(MinMax<Val>::_ma, _j.min()))) {
+    MinMax<Val>::_ma = std::max(MinMax<Val>::_ma, _j.max());
+    ++_j;
     goto next;
   }
 }
@@ -356,14 +356,14 @@ template <class Val, class I, class J>
 inline Union<Val, I, J>::Union() {}
 
 template <class Val, class I, class J>
-inline Union<Val, I, J>::Union(I& i0, J& j0) : i(i0), j(j0) {
+inline Union<Val, I, J>::Union(I& i, J& j) : _i(i), _j(j) {
   operator++();
 }
 
 template <class Val, class I, class J>
-inline void Union<Val, I, J>::init(I& i0, J& j0) {
-  i = i0;
-  j = j0;
+inline void Union<Val, I, J>::init(I& i, J& j) {
+  _i = i;
+  _j = j;
   operator++();
 }
 
@@ -376,9 +376,9 @@ template <class Val, class I, class J>
 class Inter : public MinMax<Val> {
 protected:
   /// First iterator
-  I i;
+  I _i;
   /// Second iterator
-  J j;
+  J _j;
 
 public:
   /// \name Constructors and initialization
@@ -405,30 +405,30 @@ public:
 
 template <class Val, class I, class J>
 inline void Inter<Val, I, J>::operator++() {
-  if (!i() || !j()) {
+  if (!_i() || !_j()) {
     goto done;
   }
   do {
-    while (i() && (i.max() < j.min())) {
-      ++i;
+    while (_i() && (_i.max() < _j.min())) {
+      ++_i;
     }
-    if (!i()) {
+    if (!_i()) {
       goto done;
     }
-    while (j() && (j.max() < i.min())) {
-      ++j;
+    while (_j() && (_j.max() < _i.min())) {
+      ++_j;
     }
-    if (!j()) {
+    if (!_j()) {
       goto done;
     }
-  } while (i.max() < j.min());
+  } while (_i.max() < _j.min());
   // Now the intervals overlap: consume the smaller interval
-  MinMax<Val>::ma = std::min(i.max(), j.max());
-  MinMax<Val>::mi = std::max(i.min(), j.min());
-  if (i.max() < j.max()) {
-    ++i;
+  MinMax<Val>::_ma = std::min(_i.max(), _j.max());
+  MinMax<Val>::_mi = std::max(_i.min(), _j.min());
+  if (_i.max() < _j.max()) {
+    ++_i;
   } else {
-    ++j;
+    ++_j;
   }
   return;
 done:
@@ -439,14 +439,14 @@ template <class Val, class I, class J>
 inline Inter<Val, I, J>::Inter() {}
 
 template <class Val, class I, class J>
-inline Inter<Val, I, J>::Inter(I& i0, J& j0) : i(i0), j(j0) {
+inline Inter<Val, I, J>::Inter(I& i, J& j) : _i(i), _j(j) {
   operator++();
 }
 
 template <class Val, class I, class J>
-inline void Inter<Val, I, J>::init(I& i0, J& j0) {
-  i = i0;
-  j = j0;
+inline void Inter<Val, I, J>::init(I& i, J& j) {
+  _i = i;
+  _j = j;
   operator++();
 }
 
@@ -460,9 +460,9 @@ template <class Val, class I, class J>
 class Diff : public MinMax<Val> {
 protected:
   /// Iterator from which to subtract
-  I i;
+  I _i;
   /// Iterator to be subtracted
-  J j;
+  J _j;
 
 public:
   /// \name Constructors and initialization
@@ -487,39 +487,39 @@ inline void Diff<Val, I, J>::operator++() {
   // Precondition: mi <= ma
   // Task: find next mi greater than ma
   while (true) {
-    if (!i()) {
+    if (!_i()) {
       break;
     }
-    bool isInfinite = (!MinMax<Val>::ma.isFinite() && MinMax<Val>::ma > 0);
-    MinMax<Val>::mi = nextHigher(MinMax<Val>::ma);
-    MinMax<Val>::ma = i.max();
-    if (isInfinite || MinMax<Val>::mi > i.max()) {
-      ++i;
-      if (!i()) {
+    bool isInfinite = (!MinMax<Val>::_ma.isFinite() && MinMax<Val>::_ma > 0);
+    MinMax<Val>::_mi = next_higher(MinMax<Val>::_ma);
+    MinMax<Val>::_ma = _i.max();
+    if (isInfinite || MinMax<Val>::_mi > _i.max()) {
+      ++_i;
+      if (!_i()) {
         break;
       }
-      MinMax<Val>::mi = i.min();
-      MinMax<Val>::ma = i.max();
+      MinMax<Val>::_mi = _i.min();
+      MinMax<Val>::_ma = _i.max();
     }
-    while (j() && (j.max() < MinMax<Val>::mi)) {
-      ++j;
+    while (_j() && (_j.max() < MinMax<Val>::_mi)) {
+      ++_j;
     }
-    if (j() && (j.min() <= MinMax<Val>::ma)) {
+    if (_j() && (_j.min() <= MinMax<Val>::_ma)) {
       // Now the interval [mi ... ma] must be shrunken
       // Is [mi ... ma] completely consumed?
-      if ((MinMax<Val>::mi >= j.min()) && (MinMax<Val>::ma <= j.max())) {
+      if ((MinMax<Val>::_mi >= _j.min()) && (MinMax<Val>::_ma <= _j.max())) {
         continue;
       }
       // Does [mi ... ma] overlap on the left?
-      if (j.min() <= MinMax<Val>::mi) {
-        MinMax<Val>::mi = nextHigher(j.max());
+      if (_j.min() <= MinMax<Val>::_mi) {
+        MinMax<Val>::_mi = next_higher(_j.max());
         // Search for max!
-        ++j;
-        if (j() && (j.min() <= MinMax<Val>::ma)) {
-          MinMax<Val>::ma = nextLower(j.min());
+        ++_j;
+        if (_j() && (_j.min() <= MinMax<Val>::_ma)) {
+          MinMax<Val>::_ma = next_lower(_j.min());
         }
       } else {
-        MinMax<Val>::ma = nextLower(j.min());
+        MinMax<Val>::_ma = next_lower(_j.min());
       }
     }
     return;
@@ -531,25 +531,25 @@ template <class Val, class I, class J>
 inline Diff<Val, I, J>::Diff() {}
 
 template <class Val, class I, class J>
-inline Diff<Val, I, J>::Diff(I& i0, J& j0) : i(i0), j(j0) {
-  if (!i()) {
+inline Diff<Val, I, J>::Diff(I& i, J& j) : _i(i), _j(j) {
+  if (!_i()) {
     MinMax<Val>::finish();
   } else {
-    MinMax<Val>::mi = nextLower(i.min());
-    MinMax<Val>::ma = MinMax<Val>::mi;
+    MinMax<Val>::_mi = next_lower(_i.min());
+    MinMax<Val>::_ma = MinMax<Val>::_mi;
     operator++();
   }
 }
 
 template <class Val, class I, class J>
-inline void Diff<Val, I, J>::init(I& i0, J& j0) {
-  i = i0;
-  j = j0;
-  if (!i()) {
+inline void Diff<Val, I, J>::init(I& i, J& j) {
+  _i = i;
+  _j = j;
+  if (!_i()) {
     MinMax<Val>::finish();
   } else {
-    MinMax<Val>::mi = nextLower(i.min());
-    MinMax<Val>::ma = MinMax<Val>::mi;
+    MinMax<Val>::_mi = next_lower(_i.min());
+    MinMax<Val>::_ma = MinMax<Val>::_mi;
     operator++();
   }
 }
@@ -563,11 +563,11 @@ template <class I>
 class ToValues {
 protected:
   /// Range iterator used
-  I i;
+  I _i;
   /// Current value
-  IntVal cur;
+  IntVal _cur;
   /// End of current range
-  IntVal max;
+  IntVal _max;
   /// Initialize iterator
   void start();
 
@@ -602,46 +602,46 @@ inline ToValues<I>::ToValues() {}
 
 template <class I>
 inline void ToValues<I>::start() {
-  if (i()) {
-    cur = i.min();
-    max = i.max();
+  if (_i()) {
+    _cur = _i.min();
+    _max = _i.max();
   } else {
-    cur = 1;
-    max = 0;
+    _cur = 1;
+    _max = 0;
   }
 }
 
 template <class I>
-inline ToValues<I>::ToValues(I& i0) : i(i0) {
+inline ToValues<I>::ToValues(I& i) : _i(i) {
   start();
 }
 
 template <class I>
-inline void ToValues<I>::init(I& i0) {
-  i = i0;
+inline void ToValues<I>::init(I& i) {
+  _i = i;
   start();
 }
 
 template <class I>
 inline bool ToValues<I>::operator()() const {
-  return (cur <= max);
+  return (_cur <= _max);
 }
 
 template <class I>
 inline void ToValues<I>::operator++() {
-  ++cur;
-  if (cur > max) {
-    ++i;
-    if (i()) {
-      cur = i.min();
-      max = i.max();
+  ++_cur;
+  if (_cur > _max) {
+    ++_i;
+    if (_i()) {
+      _cur = _i.min();
+      _max = _i.max();
     }
   }
 }
 
 template <class I>
 inline IntVal ToValues<I>::val() const {
-  return cur;
+  return _cur;
 }
 
 /**
@@ -795,7 +795,7 @@ inline bool less(I& i, J& j) {
 }
 
 template <class I, class J>
-inline bool lessEq(I& i, J& j) {
+inline bool less_eq(I& i, J& j) {
   while (i()) {
     if (!j()) {
       return false;

@@ -504,11 +504,11 @@ private:
     GCLock lock;
     Model& mFlat = *getEnv()->flat();
     // First, cleanup VarDecls' payload which stores index in vVarDescr
-    for (VarDeclIterator ivd = mFlat.begin_vardecls(); ivd != mFlat.end_vardecls(); ++ivd) {
+    for (VarDeclIterator ivd = mFlat.vardecls().begin(); ivd != mFlat.vardecls().end(); ++ivd) {
       ivd->e()->payload(-1);
     }
     // Now add variables with non-contiguous domain
-    for (VarDeclIterator ivd = mFlat.begin_vardecls(); ivd != mFlat.end_vardecls(); ++ivd) {
+    for (VarDeclIterator ivd = mFlat.vardecls().begin(); ivd != mFlat.vardecls().end(); ++ivd) {
       VarDecl* vd0 = ivd->e();
       bool fNonCtg = false;
       if (vd0->type().isint()) {  // currently only for int vars   TODO
@@ -534,16 +534,16 @@ private:
       }
     }
     // Iterate thru original __POST constraints to mark constrained vars:
-    for (ConstraintIterator ic = mFlat.begin_constraints(); ic != mFlat.end_constraints(); ++ic) {
+    for (ConstraintIterator ic = mFlat.constraints().begin(); ic != mFlat.constraints().end(); ++ic) {
       if (ic->removed()) {
         continue;
       }
-      if (Call* c = ic->e()->dyn_cast<Call>()) {
+      if (Call* c = ic->e()->dynamicCast<Call>()) {
         auto ipct = mCallTypes.find(c->decl());
         if (ipct != mCallTypes.end()) {
           // No ! here because might be deleted immediately in later versions.
           //             ic->remove();                              // mark removed at once
-          MZN_MIPD__assert_hard(c->n_args() > 1);
+          MZN_MIPD__assert_hard(c->argCount() > 1);
           ++MIPD__stats[N_POSTs__all];
           VarDecl* vd0 = expr2VarDecl(c->arg(0));
           if (nullptr == vd0) {
@@ -595,7 +595,7 @@ private:
     if (!fCheckArg) {
       MZN_MIPD__assert_hard(vd->payload() >= 0);
     }
-    if (Id* id = vd->e()->dyn_cast<Id>()) {
+    if (Id* id = vd->e()->dynamicCast<Id>()) {
       //         const int f1 = ( vd->payload()>=0 );
       //         const int f2 = ( id->decl()->payload()>=0 );
       if (!fCheckArg || (id->decl()->payload() >= 0)) {
@@ -614,12 +614,12 @@ private:
         }
         return true;  // in any case
       }
-    } else if (Call* c = vd->e()->dyn_cast<Call>()) {
+    } else if (Call* c = vd->e()->dynamicCast<Call>()) {
       if (lin_exp_int == c->decl() || lin_exp_float == c->decl()) {
         //             std::cerr << "  !E call " << std::flush;
         //             debugprint(c);
-        MZN_MIPD__assert_hard(c->n_args() == 3);
-        //           ArrayLit* al = c->args()[1]->dyn_cast<ArrayLit>();
+        MZN_MIPD__assert_hard(c->argCount() == 3);
+        //           ArrayLit* al = c->args()[1]->dynamicCast<ArrayLit>();
         auto* al = follow_id(c->arg(1))->cast<ArrayLit>();
         MZN_MIPD__assert_hard(al);
         MZN_MIPD__assert_hard(al->size() >= 1);
@@ -686,7 +686,7 @@ private:
     Model& mFlat = *getEnv()->flat();
 
     DBGOUT_MIPD("  CHECK ALL INITEXPR if they access a touched variable:");
-    for (VarDeclIterator ivd = mFlat.begin_vardecls(); ivd != mFlat.end_vardecls(); ++ivd) {
+    for (VarDeclIterator ivd = mFlat.vardecls().begin(); ivd != mFlat.vardecls().end(); ++ivd) {
       if (ivd->removed()) {
         continue;
       }
@@ -699,20 +699,20 @@ private:
     }
 
     DBGOUT_MIPD("  CHECK ALL CONSTRAINTS for 2-var equations:");
-    for (ConstraintIterator ic = mFlat.begin_constraints(); ic != mFlat.end_constraints(); ++ic) {
+    for (ConstraintIterator ic = mFlat.constraints().begin(); ic != mFlat.constraints().end(); ++ic) {
       //         std::cerr << "  SEE constraint: " << "      ";
       //         debugprint(&*ic);
       //         debugprint(c->decl());
       if (ic->removed()) {
         continue;
       }
-      if (Call* c = ic->e()->dyn_cast<Call>()) {
+      if (Call* c = ic->e()->dynamicCast<Call>()) {
         const bool fIntLinEq = int_lin_eq == c->decl();
         const bool fFloatLinEq = float_lin_eq == c->decl();
         if (fIntLinEq || fFloatLinEq) {
           //             std::cerr << "  !E call " << std::flush;
           //             debugprint(c);
-          MZN_MIPD__assert_hard(c->n_args() == 3);
+          MZN_MIPD__assert_hard(c->argCount() == 3);
           auto* al = follow_id(c->arg(1))->cast<ArrayLit>();
           MZN_MIPD__assert_hard(al);
           if (al->size() == 2) {  // 2-term eqn
@@ -743,7 +743,7 @@ private:
             }
           } else {  // larger eqns
             // TODO should be here?
-            auto* eVD = getAnnotation(c->ann(), constants().ann.defines_var);
+            auto* eVD = get_annotation(c->ann(), constants().ann.defines_var);
             if (eVD != nullptr) {
               if (sCallLinEqN.end() != sCallLinEqN.find(c)) {
                 continue;
@@ -751,9 +751,9 @@ private:
               sCallLinEqN.insert(c);  // memorize this call
               DBGOUT_MIPD("       REG N-call ");
               DBGOUT_MIPD_SELF(debugprint(c));
-              Call* pC = eVD->dyn_cast<Call>();
+              Call* pC = eVD->dynamicCast<Call>();
               MZN_MIPD__assert_hard(pC);
-              MZN_MIPD__assert_hard(pC->n_args());
+              MZN_MIPD__assert_hard(pC->argCount());
               // Checking all but adding only touched defined vars? Seems too long.
               VarDecl* vd = expr2VarDecl(pC->arg(0));
               if ((vd != nullptr) && vd->payload() >= 0) {  // only if touched
@@ -765,12 +765,12 @@ private:
           }
         } else
             //             const bool fI2F = (int2float==c->decl());
-            //             const bool fIVR = (constants().var_redef==c->decl());
+            //             const bool fIVR = (constants().varRedef==c->decl());
             //             if ( fI2F || fIVR ) {
-            if (int2float == c->decl() || constants().var_redef == c->decl()) {
+            if (int2float == c->decl() || constants().varRedef == c->decl()) {
           //             std::cerr << "  !E call " << std::flush;
           //             debugprint(c);
-          MZN_MIPD__assert_hard(c->n_args() == 2);
+          MZN_MIPD__assert_hard(c->argCount() == 2);
           LinEq2Vars led;
           //             led.vd.resize(2);
           led.vd[0] = expr2VarDecl(c->arg(0));
@@ -812,11 +812,11 @@ private:
   // linexp: z = a^T x+b
   // _lin_eq: a^T x == b
   bool findOrAddDefining(Expression* exp, Call* pC) {
-    Id* pId = exp->dyn_cast<Id>();
+    Id* pId = exp->dynamicCast<Id>();
     MZN_MIPD__assert_hard(pId);
     VarDecl* vd = pId->decl();
     MZN_MIPD__assert_hard(vd);
-    MZN_MIPD__assert_hard(pC->n_args() == 3);
+    MZN_MIPD__assert_hard(pC->argCount() == 3);
 
     TLinExpLin rhsLin;
     NViewData nVRest;
@@ -1242,9 +1242,9 @@ private:
       // process calls. Can use the constr type info.
       auto& aCalls = mipd.vVarDescr[vd->payload()].aCalls;
       for (Item* pItem : aCalls) {
-        auto* pCI = pItem->dyn_cast<ConstraintI>();
+        auto* pCI = pItem->dynamicCast<ConstraintI>();
         MZN_MIPD__assert_hard(pCI != nullptr);
-        Call* pCall = pCI->e()->dyn_cast<Call>();
+        Call* pCall = pCI->e()->dynamicCast<Call>();
         MZN_MIPD__assert_hard(pCall != nullptr);
         DBGOUT_MIPD__("PROPAG CALL  ");
         DBGOUT_MIPD_SELF(debugprint(pCall));
@@ -1381,14 +1381,14 @@ private:
       std::vector<Expression*> pp;
       auto bnds = sDomain.getBounds();
       const long long iMin = mipd.expr2ExprArray(
-          mipd.vVarDescr[cls.varRef1->payload()].pEqEncoding->e()->dyn_cast<Call>()->arg(1), pp);
+          mipd.vVarDescr[cls.varRef1->payload()].pEqEncoding->e()->dynamicCast<Call>()->arg(1), pp);
       MZN_MIPD__assert_hard(pp.size() >= bnds.right - bnds.left + 1);
       MZN_MIPD__assert_hard(iMin <= bnds.left);
       long long vEE = iMin;
       DBGOUT_MIPD__(
           "   SYNC EQ_ENCODE( "
           << (*cls.varRef1) << ",   bitflags: "
-          << *(mipd.vVarDescr[cls.varRef1->payload()].pEqEncoding->e()->dyn_cast<Call>()->arg(1))
+          << *(mipd.vVarDescr[cls.varRef1->payload()].pEqEncoding->e()->dynamicCast<Call>()->arg(1))
           << " ):  SETTING 0 FLAGS FOR VALUES: ");
       for (const auto& intv : sDomain) {
         for (; vEE < intv.left; ++vEE) {
@@ -1396,9 +1396,9 @@ private:
             return;
           }
           if (pp[vEE - iMin]->isa<Id>()) {
-            if (pp[vEE - iMin]->dyn_cast<Id>()->decl()->type().isvar()) {
+            if (pp[vEE - iMin]->dynamicCast<Id>()->decl()->type().isvar()) {
               DBGOUT_MIPD__(vEE << ", ");
-              setVarDomain(pp[vEE - iMin]->dyn_cast<Id>()->decl(), 0.0, 0.0);
+              setVarDomain(pp[vEE - iMin]->dynamicCast<Id>()->decl(), 0.0, 0.0);
             }
           }
         }
@@ -1406,9 +1406,9 @@ private:
       }
       for (; vEE < static_cast<long long>(iMin + pp.size()); ++vEE) {
         if (pp[vEE - iMin]->isa<Id>()) {
-          if (pp[vEE - iMin]->dyn_cast<Id>()->decl()->type().isvar()) {
+          if (pp[vEE - iMin]->dynamicCast<Id>()->decl()->type().isvar()) {
             DBGOUT_MIPD__(vEE << ", ");
-            setVarDomain(pp[vEE - iMin]->dyn_cast<Id>()->decl(), 0.0, 0.0);
+            setVarDomain(pp[vEE - iMin]->dynamicCast<Id>()->decl(), 0.0, 0.0);
           }
         }
       }
@@ -1478,9 +1478,9 @@ private:
         // process calls. Can use the constr type info.
         auto& aCalls = mipd.vVarDescr[vd->payload()].aCalls;
         for (Item* pItem : aCalls) {
-          auto* pCI = pItem->dyn_cast<ConstraintI>();
+          auto* pCI = pItem->dynamicCast<ConstraintI>();
           MZN_MIPD__assert_hard(pCI);
-          Call* pCall = pCI->e()->dyn_cast<Call>();
+          Call* pCall = pCI->e()->dynamicCast<Call>();
           MZN_MIPD__assert_hard(pCall);
           DBGOUT_MIPD__("IMPL CALL  ");
           DBGOUT_MIPD_SELF(debugprint(pCall));
@@ -1613,7 +1613,7 @@ private:
                       cls.varRef1->ti()->type().isint()
                           ? 1
                           : 2;  // need the type of the variable to be constr
-                  MZN_MIPD__assert_hard(static_cast<unsigned int>(nIdxInd) < pCall->n_args());
+                  MZN_MIPD__assert_hard(static_cast<unsigned int>(nIdxInd) < pCall->argCount());
                   Expression* pInd = pCall->arg(nIdxInd);
                   if (fLE && rhs < bnds.right) {
                     if (rhs >= bnds.left) {
@@ -1663,7 +1663,7 @@ private:
         std::vector<Expression*> pp;
         auto bnds = sDomain.getBounds();
         const long long iMin = mipd.expr2ExprArray(
-            mipd.vVarDescr[cls.varRef1->payload()].pEqEncoding->e()->dyn_cast<Call>()->arg(1), pp);
+            mipd.vVarDescr[cls.varRef1->payload()].pEqEncoding->e()->dynamicCast<Call>()->arg(1), pp);
         MZN_MIPD__assert_hard(pp.size() >= bnds.right - bnds.left + 1);
         MZN_MIPD__assert_hard(iMin <= bnds.left);
         for (const auto& intv : SS) {
@@ -1766,7 +1766,7 @@ private:
           DBGOUT_MIPD__(" ] * [ "); for (auto v
                                          : vars) {
             MZN_MIPD__assert_hard(!v->isa<VarDecl>());
-            if (v->isa<Id>()) DBGOUT_MIPD__(v->dyn_cast<Id>()->str() << ',');
+            if (v->isa<Id>()) DBGOUT_MIPD__(v->dynamicCast<Id>()->str() << ',');
             //             else if ( v->isa<VarDecl>() )
             //               MZN_MIPD__assert_hard ("addLinConstr: only id's as variables allowed");
             else
@@ -1794,7 +1794,7 @@ private:
               Call* i2f = new Call(Location().introduce(), constants().ids.int2float, i2f_args);
               i2f->type(Type::varfloat());
               i2f->decl(mipd.getEnv()->model()->matchFn(mipd.getEnv()->envi(), i2f, false));
-              EE ret = flat_exp(mipd.getEnv()->envi(), Ctx(), i2f, nullptr, constants().var_true);
+              EE ret = flat_exp(mipd.getEnv()->envi(), Ctx(), i2f, nullptr, constants().varTrue);
               nx.push_back(ret.r());
             } else {
               nx.push_back(vars[i]);  // ->id();   once passing a general expression
@@ -1833,7 +1833,7 @@ private:
           fDecl = mipd.int_lin_eq;
         }
       }
-      if (mipd.getEnv()->envi().cse_map_end() != mipd.getEnv()->envi().cse_map_find(args[0])) {
+      if (mipd.getEnv()->envi().cseMapEnd() != mipd.getEnv()->envi().cseMapFind(args[0])) {
         DBGOUT_MIPD__(" Found expr ");
         DBGOUT_MIPD_SELF(debugprint(args[0]));
       }
@@ -1846,7 +1846,7 @@ private:
     /// domain / reif set of one variable into that for a!her
     void convertIntSet(Expression* e, SetOfIntvReal& s, VarDecl* varTarget, double A, double B) {
       MZN_MIPD__assert_hard(A != 0.0);
-      if (e->type().isintset()) {
+      if (e->type().isIntSet()) {
         IntSetVal* S = eval_intset(mipd.getEnv()->envi(), e);
         IntSetRanges domr(S);
         for (; domr(); ++domr) {  // * A + B
@@ -1862,7 +1862,7 @@ private:
                               : IntvReal::infPlus()));
         }
       } else {
-        assert(e->type().isfloatset());
+        assert(e->type().isFloatSet());
         FloatSetVal* S = eval_floatset(mipd.getEnv()->envi(), e);
         FloatSetRanges domr(S);
         for (; domr(); ++domr) {  // * A + B
@@ -1937,11 +1937,11 @@ private:
     // The requirement to have actual variable objects
     // might be a limitation if more optimizations are done before...
     // Might need to flexibilize this                       TODO
-    //       MZN_MIPD__assert_hard_msg( ! arg->dyn_cast<IntLit>(),
+    //       MZN_MIPD__assert_hard_msg( ! arg->dynamicCast<IntLit>(),
     //                                  "Expression " << *arg << " is an IntLit!" );
-    //       MZN_MIPD__assert_hard( ! arg->dyn_cast<FloatLit>() );
-    //       MZN_MIPD__assert_hard( ! arg->dyn_cast<BoolLit>() );
-    Id* id = arg->dyn_cast<Id>();
+    //       MZN_MIPD__assert_hard( ! arg->dynamicCast<FloatLit>() );
+    //       MZN_MIPD__assert_hard( ! arg->dynamicCast<BoolLit>() );
+    Id* id = arg->dynamicCast<Id>();
     //       MZN_MIPD__assert_hard(id);
     if (nullptr == id) {
       return nullptr;  // the call using this should be ignored?
@@ -1974,11 +1974,11 @@ private:
   }
 
   double expr2Const(Expression* arg) {
-    if (auto* il = arg->dyn_cast<IntLit>()) {
+    if (auto* il = arg->dynamicCast<IntLit>()) {
       return (static_cast<double>(il->v().toInt()));
-    } else if (auto* fl = arg->dyn_cast<FloatLit>()) {
+    } else if (auto* fl = arg->dynamicCast<FloatLit>()) {
       return (fl->v().toDouble());
-    } else if (auto* bl = arg->dyn_cast<BoolLit>()) {
+    } else if (auto* bl = arg->dynamicCast<BoolLit>()) {
       return static_cast<double>(bl->v());
     } else {
       MZN_MIPD__assert_hard_msg(0,
@@ -2244,7 +2244,7 @@ void SetOfIntervals<N>::split2Bits() {
 
 bool MIPD::fVerbose = false;
 
-void MIPdomains(Env& env, bool fVerbose, int nmi, double dmd) {
+void mip_domains(Env& env, bool fVerbose, int nmi, double dmd) {
   MIPD mipd(&env, fVerbose, nmi, dmd);
   if (!mipd.MIPdomains()) {
     GCLock lock;

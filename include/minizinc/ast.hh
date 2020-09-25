@@ -56,49 +56,49 @@ protected:
   /// Source code file name
   ASTString _filename;
   /// Line where expression starts
-  unsigned int _first_line;
+  unsigned int _firstLine;
   /// Line where expression ends
-  unsigned int _last_line;
+  unsigned int _lastLine;
   /// Column where expression starts
-  unsigned int _first_column;
+  unsigned int _firstColumn;
   /// Column where expression ends
-  unsigned int _last_column;
+  unsigned int _lastColumn;
 
 public:
   /// Construct empty location
-  ParserLocation() : _first_line(1), _last_line(1), _first_column(0), _last_column(0) {}
+  ParserLocation() : _firstLine(1), _lastLine(1), _firstColumn(0), _lastColumn(0) {}
 
   /// Construct location
   ParserLocation(const ASTString& filename, unsigned int first_line, unsigned int first_column,
                  unsigned int last_line, unsigned int last_column)
       : _filename(filename),
-        _first_line(first_line),
-        _last_line(last_line),
-        _first_column(first_column),
-        _last_column(last_column) {}
+        _firstLine(first_line),
+        _lastLine(last_line),
+        _firstColumn(first_column),
+        _lastColumn(last_column) {}
 
   ASTString filename() const { return _filename; }
   void filename(const ASTString& f) { _filename = f; }
 
-  unsigned int first_line() const { return _first_line; }
-  void first_line(unsigned int l) { _first_line = l; }
+  unsigned int firstLine() const { return _firstLine; }
+  void firstLine(unsigned int l) { _firstLine = l; }
 
-  unsigned int last_line() const { return _last_line; }
-  void last_line(unsigned int l) { _last_line = l; }
+  unsigned int lastLine() const { return _lastLine; }
+  void lastLine(unsigned int l) { _lastLine = l; }
 
-  unsigned int first_column() const { return _first_column; }
-  void first_column(unsigned int c) { _first_column = c; }
+  unsigned int firstColumn() const { return _firstColumn; }
+  void firstColumn(unsigned int c) { _firstColumn = c; }
 
-  unsigned int last_column() const { return _last_column; }
-  void last_column(unsigned int c) { _last_column = c; }
+  unsigned int lastColumn() const { return _lastColumn; }
+  void lastColumn(unsigned int c) { _lastColumn = c; }
 
   std::string toString() const {
     std::ostringstream oss;
-    oss << _filename << ":" << _first_line << "." << _first_column;
-    if (_first_line != _last_line) {
-      oss << "-" << _last_line << "." << _last_column;
-    } else if (_first_column != _last_column) {
-      oss << "-" << _last_column;
+    oss << _filename << ":" << _firstLine << "." << _firstColumn;
+    if (_firstLine != _lastLine) {
+      oss << "-" << _lastLine << "." << _lastColumn;
+    } else if (_firstColumn != _lastColumn) {
+      oss << "-" << _lastColumn;
     }
     return oss.str();
   }
@@ -126,33 +126,33 @@ protected:
     static LocVec* a(const ASTString& filename, unsigned int first_line, unsigned int first_column,
                      unsigned int last_line, unsigned int last_column);
     void mark() {
-      _gc_mark = 1;
+      _gcMark = 1;
       if (_data[0] != nullptr) {
         static_cast<ASTStringData*>(_data[0])->mark();
       }
     }
 
     ASTString filename() const;
-    unsigned int first_line() const;
-    unsigned int last_line() const;
-    unsigned int first_column() const;
-    unsigned int last_column() const;
+    unsigned int firstLine() const;
+    unsigned int lastLine() const;
+    unsigned int firstColumn() const;
+    unsigned int lastColumn() const;
   };
 
   union LI {
     LocVec* lv;
     ptrdiff_t t;
-  } _loc_info;
+  } _locInfo;
 
   LocVec* lv() const {
-    LI li = _loc_info;
+    LI li = _locInfo;
     li.t &= ~static_cast<ptrdiff_t>(1);
     return li.lv;
   }
 
 public:
   /// Construct empty location
-  Location() { _loc_info.lv = nullptr; }
+  Location() { _locInfo.lv = nullptr; }
 
   /// Construct location
   Location(const ASTString& filename, unsigned int first_line, unsigned int first_column,
@@ -160,12 +160,12 @@ public:
     if (last_line < first_line) {
       throw InternalError("invalid location");
     }
-    _loc_info.lv = LocVec::a(filename, first_line, first_column, last_line, last_column);
+    _locInfo.lv = LocVec::a(filename, first_line, first_column, last_line, last_column);
   }
 
   Location(const ParserLocation& loc) {
-    _loc_info.lv = LocVec::a(loc.filename(), loc.first_line(), loc.first_column(), loc.last_line(),
-                             loc.last_column());
+    _locInfo.lv = LocVec::a(loc.filename(), loc.firstLine(), loc.firstColumn(), loc.lastLine(),
+                             loc.lastColumn());
   }
 
   /// Return string representation
@@ -175,19 +175,19 @@ public:
   ASTString filename() const { return lv() != nullptr ? lv()->filename() : ASTString(); }
 
   /// Return first line number
-  unsigned int first_line() const { return lv() != nullptr ? lv()->first_line() : 0; }
+  unsigned int firstLine() const { return lv() != nullptr ? lv()->firstLine() : 0; }
 
   /// Return last line number
-  unsigned int last_line() const { return lv() != nullptr ? lv()->last_line() : 0; }
+  unsigned int lastLine() const { return lv() != nullptr ? lv()->lastLine() : 0; }
 
   /// Return first column number
-  unsigned int first_column() const { return lv() != nullptr ? lv()->first_column() : 0; }
+  unsigned int firstColumn() const { return lv() != nullptr ? lv()->firstColumn() : 0; }
 
   /// Return last column number
-  unsigned int last_column() const { return lv() != nullptr ? lv()->last_column() : 0; }
+  unsigned int lastColumn() const { return lv() != nullptr ? lv()->lastColumn() : 0; }
 
   /// Return whether location is introduced by the compiler
-  bool is_introduced() const { return _loc_info.lv == nullptr || ((_loc_info.t & 1) != 0); }
+  bool isIntroduced() const { return _locInfo.lv == nullptr || ((_locInfo.t & 1) != 0); }
 
   /// Mark as alive for garbage collection
   void mark() const;
@@ -199,7 +199,7 @@ public:
   static Location nonalloc;
 
   ParserLocation parserLocation() const {
-    return ParserLocation(filename(), first_line(), first_column(), last_line(), last_column());
+    return ParserLocation(filename(), firstLine(), firstColumn(), lastLine(), lastColumn());
   }
 };
 
@@ -215,11 +215,11 @@ std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& o
   } else {
     s << loc.filename();
   }
-  s << ":" << loc.first_line() << "." << loc.first_column();
-  if (loc.first_line() != loc.last_line()) {
-    s << "-" << loc.last_line() << "." << loc.last_column();
-  } else if (loc.first_column() != loc.last_column()) {
-    s << "-" << loc.last_column();
+  s << ":" << loc.firstLine() << "." << loc.firstColumn();
+  if (loc.firstLine() != loc.lastLine()) {
+    s << "-" << loc.lastLine() << "." << loc.lastColumn();
+  } else if (loc.firstColumn() != loc.lastColumn()) {
+    s << "-" << loc.lastColumn();
   }
 
   return os << s.str();
@@ -257,10 +257,10 @@ public:
 };
 
 /// returns the Annotation specified by the string; returns NULL if not exists
-Expression* getAnnotation(const Annotation& ann, const std::string& str);
+Expression* get_annotation(const Annotation& ann, const std::string& str);
 
 /// returns the Annotation specified by the string; returns NULL if not exists
-Expression* getAnnotation(const Annotation& ann, const ASTString& str);
+Expression* get_annotation(const Annotation& ann, const ASTString& str);
 
 /**
  * \brief Base class for expressions
@@ -346,18 +346,18 @@ public:
 
 protected:
   /// Combination function for hash values
-  void cmb_hash(size_t h) { _hash ^= h + 0x9e3779b9 + (_hash << 6) + (_hash >> 2); }
+  void combineHash(size_t h) { _hash ^= h + 0x9e3779b9 + (_hash << 6) + (_hash >> 2); }
   /// Combination function for hash values
-  size_t cmb_hash(size_t seed, size_t h) {
+  size_t combineHash(size_t seed, size_t h) {
     seed ^= h + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     return seed;
   }
 
   /// Compute base hash value
-  void init_hash() { _hash = cmb_hash(0, _id); }
+  void initHash() { _hash = combineHash(0, _id); }
 
   /// Check if \a e0 and \a e1 are equal
-  static bool equal_internal(const Expression* e0, const Expression* e1);
+  static bool equalInternal(const Expression* e0, const Expression* e1);
 
   /// Constructor
   Expression(const Location& loc, const ExpressionId& eid, const Type& t)
@@ -522,12 +522,12 @@ public:
   }
   /// Cast expression to type \a T* or NULL if types do not match
   template <class T>
-  T* dyn_cast() {
+  T* dynamicCast() {
     return isa<T>() ? static_cast<T*>(this) : nullptr;
   }
   /// Cast expression to type \a const T* or NULL if types do not match
   template <class T>
-  const T* dyn_cast() const {
+  const T* dynamicCast() const {
     return isa<T>() ? static_cast<const T*>(this) : nullptr;
   }
 
@@ -543,13 +543,13 @@ public:
   }
   /// Cast expression to type \a T* or NULL if types do not match
   template <class T>
-  static T* dyn_cast(Expression* e) {
-    return e == nullptr ? nullptr : e->dyn_cast<T>();
+  static T* dynamicCast(Expression* e) {
+    return e == nullptr ? nullptr : e->dynamicCast<T>();
   }
   /// Cast expression to type \a const T* or NULL if types do not match
   template <class T>
-  static const T* dyn_cast(const Expression* e) {
-    return e == nullptr ? NULL : e->dyn_cast<T>();
+  static const T* dynamicCast(const Expression* e) {
+    return e == nullptr ? NULL : e->dynamicCast<T>();
   }
 
   /// Add annotation \a ann to the expression
@@ -694,7 +694,7 @@ protected:
     ASTString val;
     /// The predicate or function declaration (or NULL)
     void* idn;
-  } _v_or_idn = {nullptr};
+  } _vOrIdn = {nullptr};
   /// The declaration corresponding to this identifier (may be NULL)
   Expression* _decl;
 
@@ -710,15 +710,15 @@ public:
   /// Access identifier
   ASTString v() const;
   inline bool hasStr() const {
-    return (reinterpret_cast<ptrdiff_t>(_v_or_idn.idn) & static_cast<ptrdiff_t>(1)) == 0;
+    return (reinterpret_cast<ptrdiff_t>(_vOrIdn.idn) & static_cast<ptrdiff_t>(1)) == 0;
   }
   /// Set identifier
-  void v(const ASTString& val) { _v_or_idn.val = val; }
+  void v(const ASTString& val) { _vOrIdn.val = val; }
   /// Access identifier number
   long long int idn() const;
   /// Set identifier number
   void idn(long long int n) {
-    _v_or_idn.idn =
+    _vOrIdn.idn =
         reinterpret_cast<void*>((static_cast<ptrdiff_t>(n) << 1) | static_cast<ptrdiff_t>(1));
     rehash();
   }
@@ -783,13 +783,13 @@ class ArrayLit : public Expression {
 protected:
   /// The array
   union {
-    /// An expression vector (if _flag_2==false)
-    ASTExprVecO<Expression*>* _v;
-    /// Another array literal (if _flag_2==true)
-    ArrayLit* _al;
+    /// An expression vector (if _flag2==false)
+    ASTExprVecO<Expression*>* v;
+    /// Another array literal (if _flag2==true)
+    ArrayLit* al;
   } _u;
   /// The declared array dimensions
-  // If _flag_2 is true, then this is an array view. In that case,
+  // If _flag2 is true, then this is an array view. In that case,
   // the _dims array holds the sliced dimensions
   ASTIntVec _dims;
   /// Set compressed vector (initial repetitions are removed)
@@ -799,9 +799,9 @@ public:
   /// Index conversion from slice to original
   int origIdx(int i) const;
   /// Get element \a i of a sliced array
-  Expression* slice_get(int i) const;
+  Expression* getSlice(int i) const;
   /// Set element \a i of a sliced array
-  void slice_set(int i, Expression* e);
+  void setSlice(int i, Expression* e);
 
 public:
   /// The identifier of this expression type
@@ -829,16 +829,16 @@ public:
 
   /// Access value
   ASTExprVec<Expression> getVec() const {
-    assert(!_flag_2);
-    return _u._v;
+    assert(!_flag2);
+    return _u.v;
   }
   /// Set value
   void setVec(const ASTExprVec<Expression>& val) {
-    assert(!_flag_2);
-    _u._v = val.vec();
+    assert(!_flag2);
+    _u.v = val.vec();
   }
   /// Get underlying array (if this is an array slice) or NULL
-  ArrayLit* getSliceLiteral() const { return _flag_2 ? _u._al : nullptr; }
+  ArrayLit* getSliceLiteral() const { return _flag2 ? _u.al : nullptr; }
   /// Get underlying _dims vector
   ASTIntVec dimsInternal() const { return _dims; }
 
@@ -853,21 +853,21 @@ public:
   /// Turn into 1d array (only used at the end of flattening)
   void make1d();
   /// Check if this array was produced by flattening
-  bool flat() const { return _flag_1; }
+  bool flat() const { return _flag1; }
   /// Set whether this array was produced by flattening
-  void flat(bool b) { _flag_1 = b; }
+  void flat(bool b) { _flag1 = b; }
   /// Return size of underlying array
-  unsigned int size() const { return (_flag_2 || _u._v->flag()) ? length() : _u._v->size(); }
+  unsigned int size() const { return (_flag2 || _u.v->flag()) ? length() : _u.v->size(); }
   /// Access element \a i
   Expression* operator[](int i) const {
-    return (_flag_2 || _u._v->flag()) ? slice_get(i) : (*_u._v)[i];
+    return (_flag2 || _u.v->flag()) ? getSlice(i) : (*_u.v)[i];
   }
   /// Set element \a i
   void set(int i, Expression* e) {
-    if (_flag_2 || _u._v->flag()) {
-      slice_set(i, e);
+    if (_flag2 || _u.v->flag()) {
+      setSlice(i, e);
     } else {
-      (*_u._v)[i] = e;
+      (*_u.v)[i] = e;
     }
   }
 };
@@ -934,7 +934,7 @@ public:
 /// \brief A list of generators with one where-expression
 struct Generators {
   /// %Generators
-  std::vector<Generator> _g;
+  std::vector<Generator> g;
   /// Constructor
   Generators() {}
 };
@@ -948,7 +948,7 @@ protected:
   /// A list of generator expressions
   ASTExprVec<Expression> _g;
   /// A list of indices where generators start
-  ASTIntVec _g_idx;
+  ASTIntVec _gIndex;
 
 public:
   /// The identifier of this expression type
@@ -961,13 +961,13 @@ public:
   bool set() const;
 
   /// Return number of generators
-  int n_generators() const;
+  int numberOfGenerators() const;
   /// Return "in" expression for generator \a i
   Expression* in(int i);
   /// Return "in" expression for generator \a i
   const Expression* in(int i) const;
   /// Return number of declarations for generator \a i
-  int n_decls(int i) const;
+  int numberOfDecls(int i) const;
   /// Return declaration \a i for generator \a gen
   VarDecl* decl(int gen, int i);
   /// Return declaration \a i for generator \a gen
@@ -991,24 +991,24 @@ class ITE : public Expression {
 
 protected:
   /// List of if-then-pairs
-  ASTExprVec<Expression> _e_if_then;
+  ASTExprVec<Expression> _eIfThen;
   /// Else-expression
-  Expression* _e_else;
+  Expression* _eElse;
 
 public:
   /// The identifier of this expression type
   static const ExpressionId eid = E_ITE;
   /// Constructor
   ITE(const Location& loc, const std::vector<Expression*>& e_if_then, Expression* e_else);
-  int size() const { return static_cast<int>(_e_if_then.size() / 2); }
-  Expression* e_if(int i) { return _e_if_then[2 * i]; }
-  Expression* e_then(int i) { return _e_if_then[2 * i + 1]; }
-  Expression* e_else() { return _e_else; }
-  const Expression* e_if(int i) const { return _e_if_then[2 * i]; }
-  const Expression* e_then(int i) const { return _e_if_then[2 * i + 1]; }
-  const Expression* e_else() const { return _e_else; }
-  void e_then(int i, Expression* e) { _e_if_then[2 * i + 1] = e; }
-  void e_else(Expression* e) { _e_else = e; }
+  int size() const { return static_cast<int>(_eIfThen.size() / 2); }
+  Expression* ifExpr(int i) { return _eIfThen[2 * i]; }
+  Expression* thenExpr(int i) { return _eIfThen[2 * i + 1]; }
+  Expression* elseExpr() { return _eElse; }
+  const Expression* ifExpr(int i) const { return _eIfThen[2 * i]; }
+  const Expression* thenExpr(int i) const { return _eIfThen[2 * i + 1]; }
+  const Expression* elseExpr() const { return _eElse; }
+  void thenExpr(int i, Expression* e) { _eIfThen[2 * i + 1] = e; }
+  void elseExpr(Expression* e) { _eElse = e; }
   /// Recompute hash value
   void rehash();
   /// Re-construct (used for copying)
@@ -1075,7 +1075,7 @@ public:
     return i == 0 ? _e0 : _e1;
   }
   /// Return number of arguments
-  unsigned int n_args() const { return 2; }
+  unsigned int argCount() const { return 2; }
   /// Access declaration
   FunctionI* decl() const { return _decl; }
   /// Set declaration
@@ -1115,7 +1115,7 @@ public:
     return _e0;
   }
   /// Return number of arguments
-  unsigned int n_args() const { return 1; }
+  unsigned int argCount() const { return 1; }
   /// Access declaration
   FunctionI* decl() const { return _decl; }
   /// Set declaration
@@ -1134,17 +1134,17 @@ class Call : public Expression {
 protected:
   union {
     /// Identifier of called predicate or function
-    ASTString _id;
+    ASTString id;
     /// The predicate or function declaration (or NULL)
-    FunctionI* _decl;
-  } _u_id = {nullptr};
+    FunctionI* decl;
+  } _uId = {nullptr};
   union {
     /// Single-argument call (tagged pointer)
-    Expression* _oneArg;
+    Expression* oneArg;
     /// Arguments to the call
-    ASTExprVecO<Expression*>* _args;
+    ASTExprVecO<Expression*>* args;
   } _u;
-  /// Check if _u_id contains an id or a decl
+  /// Check if _uId contains an id or a decl
   bool hasId() const;
 
 public:
@@ -1159,36 +1159,36 @@ public:
   /// Set identifier (overwrites decl)
   void id(const ASTString& i);
   /// Number of arguments
-  unsigned int n_args() const {
-    return _u._oneArg->isUnboxedVal() || _u._oneArg->isTagged() ? 1 : _u._args->size();
+  unsigned int argCount() const {
+    return _u.oneArg->isUnboxedVal() || _u.oneArg->isTagged() ? 1 : _u.args->size();
   }
   /// Access argument \a i
   Expression* arg(int i) const {
-    assert(i < n_args());
-    if (_u._oneArg->isUnboxedVal() || _u._oneArg->isTagged()) {
+    assert(i < argCount());
+    if (_u.oneArg->isUnboxedVal() || _u.oneArg->isTagged()) {
       assert(i == 0);
-      return _u._oneArg->isUnboxedVal() ? _u._oneArg : _u._oneArg->untag();
+      return _u.oneArg->isUnboxedVal() ? _u.oneArg : _u.oneArg->untag();
     } else {
-      return (*_u._args)[i];
+      return (*_u.args)[i];
     }
   }
   /// Set argument \a i
   void arg(int i, Expression* e) {
-    assert(i < n_args());
-    if (_u._oneArg->isUnboxedVal() || _u._oneArg->isTagged()) {
+    assert(i < argCount());
+    if (_u.oneArg->isUnboxedVal() || _u.oneArg->isTagged()) {
       assert(i == 0);
-      _u._oneArg = e->isUnboxedVal() ? e : e->tag();
+      _u.oneArg = e->isUnboxedVal() ? e : e->tag();
     } else {
-      (*_u._args)[i] = e;
+      (*_u.args)[i] = e;
     }
   }
   /// Set arguments
   void args(const ASTExprVec<Expression>& a) {
     if (a.size() == 1) {
-      _u._oneArg = a[0]->isUnboxedVal() ? a[0] : a[0]->tag();
+      _u.oneArg = a[0]->isUnboxedVal() ? a[0] : a[0]->tag();
     } else {
-      _u._args = a.vec();
-      assert(!_u._oneArg->isTagged());
+      _u.args = a.vec();
+      assert(!_u.oneArg->isTagged());
     }
   }
   /// Access declaration
@@ -1274,7 +1274,7 @@ protected:
   /// List of local declarations
   ASTExprVec<Expression> _let;
   /// Copy of original local declarations
-  ASTExprVec<Expression> _let_orig;
+  ASTExprVec<Expression> _letOrig;
   /// Body of the let
   Expression* _in;
 
@@ -1289,7 +1289,7 @@ public:
   /// Access local declarations
   ASTExprVec<Expression> let() const { return _let; }
   /// Access local declarations
-  ASTExprVec<Expression> let_orig() const { return _let_orig; }
+  ASTExprVec<Expression> letOrig() const { return _letOrig; }
   /// Access body
   Expression* in() const { return _in; }
 
@@ -1330,13 +1330,13 @@ public:
   /// Recompute hash value
   void rehash();
   /// Check if domain is computed from right hand side of variable
-  bool computedDomain() const { return _flag_1; }
+  bool computedDomain() const { return _flag1; }
   /// Set if domain is computed from right hand side of variable
-  void setComputedDomain(bool b) { _flag_1 = b; }
+  void setComputedDomain(bool b) { _flag1 = b; }
   /// Check if this TypeInst represents an enum
-  bool isEnum() const { return _flag_2; }
+  bool isEnum() const { return _flag2; }
   /// Set if this TypeInst represents an enum
-  void setIsEnum(bool b) { _flag_2 = b; }
+  void setIsEnum(bool b) { _flag2 = b; }
 };
 
 /**
@@ -1365,7 +1365,7 @@ public:
 
 protected:
   /// Constructor
-  Item(const Location& loc, const ItemId& iid) : ASTNode(iid), _loc(loc) { _flag_1 = false; }
+  Item(const Location& loc, const ItemId& iid) : ASTNode(iid), _loc(loc) { _flag1 = false; }
 
 public:
   /// Test if item is of type \a T
@@ -1387,12 +1387,12 @@ public:
   }
   /// Cast item to type \a T* or NULL if types do not match
   template <class T>
-  T* dyn_cast() {
+  T* dynamicCast() {
     return isa<T>() ? static_cast<T*>(this) : nullptr;
   }
   /// Cast item to type \a const T* or NULL if types do not match
   template <class T>
-  const T* dyn_cast() const {
+  const T* dynamicCast() const {
     return isa<T>() ? static_cast<const T*>(this) : NULL;
   }
 
@@ -1408,21 +1408,21 @@ public:
   }
   /// Cast item to type \a T* or NULL if types do not match
   template <class T>
-  static T* dyn_cast(Item* i) {
-    return i == nullptr ? nullptr : i->dyn_cast<T>();
+  static T* dynamicCast(Item* i) {
+    return i == nullptr ? nullptr : i->dynamicCast<T>();
   }
   /// Cast item to type \a const T* or NULL if types do not match
   template <class T>
-  static const T* dyn_cast(const Item* i) {
-    return i == nullptr ? NULL : i->dyn_cast<T>();
+  static const T* dynamicCast(const Item* i) {
+    return i == nullptr ? NULL : i->dynamicCast<T>();
   }
 
   /// Check if item should be removed
-  bool removed() const { return _flag_1; }
+  bool removed() const { return _flag1; }
   /// Set flag to remove item
-  void remove() { _flag_1 = true; }
+  void remove() { _flag1 = true; }
   /// Unset remove item flag (only possible if not already removed by compact())
-  void unremove() { _flag_1 = false; }
+  void unremove() { _flag1 = false; }
 
   /// Mark alive for garbage collection
 #if defined(MINIZINC_GC_STATS)
@@ -1430,7 +1430,7 @@ public:
 #else
   static void mark(Item* item);
 #endif
-  bool has_mark() { return _gc_mark != 0U; }
+  bool hasMark() { return _gcMark != 0U; }
 };
 
 class Model;
@@ -1458,9 +1458,9 @@ public:
   void m(Model* m0, bool own = true) {
     assert(_m == nullptr || m0 == nullptr);
     _m = m0;
-    _flag_2 = own;
+    _flag2 = own;
   }
-  bool own() const { return _flag_2; }
+  bool own() const { return _flag2; }
 };
 
 /// \brief Variable declaration item
@@ -1479,9 +1479,9 @@ public:
   /// Set expression
   void e(VarDecl* vd) { _e = vd; }
   /// Flag used during compilation
-  bool flag() const { return _flag_2; }
+  bool flag() const { return _flag2; }
   /// Set flag used during compilation
-  void flag(bool b) { _flag_2 = b; }
+  void flag(bool b) { _flag2 = b; }
 };
 
 /// \brief Assign item
@@ -1529,9 +1529,9 @@ public:
   /// Set expression
   void e(Expression* e0) { _e = e0; }
   /// Flag used during compilation
-  bool flag() const { return _flag_2; }
+  bool flag() const { return _flag2; }
   /// Set flag used during compilation
-  void flag(bool b) { _flag_2 = b; }
+  void flag(bool b) { _flag2 = b; }
 };
 
 /// \brief Solve item
@@ -1602,7 +1602,7 @@ protected:
   /// Function body (or NULL)
   Expression* _e;
   /// Whether function is defined in the standard library
-  bool _from_stdlib;
+  bool _fromStdLib;
 
 public:
   /// The identifier of this item type
@@ -1629,7 +1629,7 @@ public:
     builtin_b b;
     builtin_s s;
     builtin_str str;
-  } _builtins;
+  } builtins;
 
   /// Constructor
   FunctionI(const Location& loc, const std::string& id, TypeInst* ti,
@@ -1664,7 +1664,7 @@ public:
   Type argtype(EnvI& env, const std::vector<Expression*>& ta, int n);
 
   /// Return whether function is defined in the standard library
-  bool from_stdlib() const { return _from_stdlib; };
+  bool fromStdLib() const { return _fromStdLib; };
 };
 
 /**
@@ -1723,36 +1723,36 @@ public:
 class Constants : public GCMarker {
 public:
   /// Literal true
-  BoolLit* lit_true;
+  BoolLit* literalTrue;
   /// Variable bound to true
-  VarDecl* var_true;
+  VarDecl* varTrue;
   /// Literal false
-  BoolLit* lit_false;
+  BoolLit* literalFalse;
   /// Variable bound to false
-  VarDecl* var_false;
+  VarDecl* varFalse;
   /// Special variable to signal compiler to ignore result
-  VarDecl* var_ignore;
+  VarDecl* varIgnore;
   /// Infinite set
   SetLit* infinity;
   /// Function item used to keep track of redefined variables
-  FunctionI* var_redef;
+  FunctionI* varRedef;
   /// Literal absent value
   Expression* absent;
   /// Identifiers for builtins
   struct {
     ASTString forall;
-    ASTString forall_reif;
+    ASTString forallReif;
     ASTString exists;
     ASTString clause;
     ASTString bool2int;
     ASTString int2float;
     ASTString bool2float;
     ASTString assert;
-    ASTString mzn_deprecate;
+    ASTString mzn_deprecate; // NOLINT(readability-identifier-naming)
     ASTString trace;
 
     ASTString sum;
-    ASTString lin_exp;
+    ASTString lin_exp; // NOLINT(readability-identifier-naming)
     ASTString element;
 
     ASTString show;
@@ -1760,9 +1760,9 @@ public:
     ASTString output;
 
     struct {
-      ASTString lin_eq;
-      ASTString lin_le;
-      ASTString lin_ne;
+      ASTString lin_eq; // NOLINT(readability-identifier-naming)
+      ASTString lin_le; // NOLINT(readability-identifier-naming)
+      ASTString lin_ne; // NOLINT(readability-identifier-naming)
       ASTString plus;
       ASTString minus;
       ASTString times;
@@ -1774,13 +1774,13 @@ public:
       ASTString ge;
       ASTString eq;
       ASTString ne;
-    } int_;
+    } int_; // NOLINT(readability-identifier-naming)
 
     struct {
-      ASTString lin_eq;
-      ASTString lin_le;
-      ASTString lin_ne;
-      ASTString plus;
+      ASTString lin_eq; // NOLINT(readability-identifier-naming)
+      ASTString lin_le; // NOLINT(readability-identifier-naming)
+      ASTString lin_ne; // NOLINT(readability-identifier-naming)
+      ASTString plus;   
       ASTString minus;
       ASTString times;
       ASTString div;
@@ -1791,13 +1791,13 @@ public:
       ASTString ge;
       ASTString eq;
       ASTString ne;
-    } int_reif;
+    } int_reif; // NOLINT(readability-identifier-naming)
 
     struct {
-      ASTString lin_eq;
-      ASTString lin_le;
-      ASTString lin_lt;
-      ASTString lin_ne;
+      ASTString lin_eq; // NOLINT(readability-identifier-naming)
+      ASTString lin_le; // NOLINT(readability-identifier-naming)
+      ASTString lin_lt; // NOLINT(readability-identifier-naming)
+      ASTString lin_ne; // NOLINT(readability-identifier-naming)
       ASTString plus;
       ASTString minus;
       ASTString times;
@@ -1811,13 +1811,13 @@ public:
       ASTString ne;
       ASTString in;
       ASTString dom;
-    } float_;
+    } float_; // NOLINT(readability-identifier-naming)
 
     struct {
-      ASTString lin_eq;
-      ASTString lin_le;
-      ASTString lin_lt;
-      ASTString lin_ne;
+      ASTString lin_eq; // NOLINT(readability-identifier-naming)
+      ASTString lin_le; // NOLINT(readability-identifier-naming)
+      ASTString lin_lt; // NOLINT(readability-identifier-naming)
+      ASTString lin_ne; // NOLINT(readability-identifier-naming)
       ASTString plus;
       ASTString minus;
       ASTString times;
@@ -1830,23 +1830,23 @@ public:
       ASTString eq;
       ASTString ne;
       ASTString in;
-    } float_reif;
+    } float_reif; // NOLINT(readability-identifier-naming)
 
-    ASTString bool_eq;
-    ASTString bool_eq_reif;
-    ASTString bool_not;
-    ASTString array_bool_or;
-    ASTString array_bool_and;
-    ASTString bool_clause;
-    ASTString bool_clause_reif;
-    ASTString bool_xor;
-    ASTString set_eq;
-    ASTString set_in;
-    ASTString set_subset;
-    ASTString set_card;
+    ASTString bool_eq; // NOLINT(readability-identifier-naming)
+    ASTString bool_eq_reif; // NOLINT(readability-identifier-naming)
+    ASTString bool_not; // NOLINT(readability-identifier-naming)
+    ASTString array_bool_or; // NOLINT(readability-identifier-naming)
+    ASTString array_bool_and; // NOLINT(readability-identifier-naming)
+    ASTString bool_clause; // NOLINT(readability-identifier-naming)
+    ASTString bool_clause_reif; // NOLINT(readability-identifier-naming)
+    ASTString bool_xor; // NOLINT(readability-identifier-naming)
+    ASTString set_eq; // NOLINT(readability-identifier-naming)
+    ASTString set_in; // NOLINT(readability-identifier-naming)
+    ASTString set_subset; // NOLINT(readability-identifier-naming)
+    ASTString set_card; // NOLINT(readability-identifier-naming)
     ASTString pow;
 
-    ASTString introduced_var;
+    ASTString introduced_var; // NOLINT(readability-identifier-naming)
     ASTString anonEnumFromStrings;
   } ids;
 
@@ -1859,71 +1859,71 @@ public:
   } ctx;
   /// Common annotations
   struct {
-    Id* output_var;
-    ASTString output_array;
-    Id* add_to_output;
-    Id* output_only;
-    Id* mzn_check_var;
-    ASTString mzn_check_enum_var;
-    Id* is_defined_var;
-    ASTString defines_var;
-    Id* is_reverse_map;
-    Id* promise_total;
-    Id* maybe_partial;
-    ASTString doc_comment;
-    ASTString mzn_path;
-    ASTString is_introduced;
-    Id* user_cut;         // MIP
-    Id* lazy_constraint;  // MIP
-    Id* mzn_break_here;
-    Id* rhs_from_assignment;
-    Id* domain_change_constraint;
-    ASTString mzn_deprecated;
-    Id* mzn_was_undefined;
-    Id* array_check_form;
+    Id* output_var; // NOLINT(readability-identifier-naming)
+    ASTString output_array; // NOLINT(readability-identifier-naming)
+    Id* add_to_output; // NOLINT(readability-identifier-naming)
+    Id* output_only; // NOLINT(readability-identifier-naming)
+    Id* mzn_check_var; // NOLINT(readability-identifier-naming)
+    ASTString mzn_check_enum_var; // NOLINT(readability-identifier-naming)
+    Id* is_defined_var; // NOLINT(readability-identifier-naming)
+    ASTString defines_var; // NOLINT(readability-identifier-naming)
+    Id* is_reverse_map; // NOLINT(readability-identifier-naming)
+    Id* promise_total; // NOLINT(readability-identifier-naming)
+    Id* maybe_partial; // NOLINT(readability-identifier-naming)
+    ASTString doc_comment; // NOLINT(readability-identifier-naming)
+    ASTString mzn_path; // NOLINT(readability-identifier-naming)
+    ASTString is_introduced; // NOLINT(readability-identifier-naming)
+    Id* user_cut;         // NOLINT(readability-identifier-naming) // MIP
+    Id* lazy_constraint;  // NOLINT(readability-identifier-naming) // MIP
+    Id* mzn_break_here;   // NOLINT(readability-identifier-naming)
+    Id* rhs_from_assignment; // NOLINT(readability-identifier-naming)
+    Id* domain_change_constraint; // NOLINT(readability-identifier-naming)
+    ASTString mzn_deprecated; // NOLINT(readability-identifier-naming)
+    Id* mzn_was_undefined; // NOLINT(readability-identifier-naming)
+    Id* array_check_form; // NOLINT(readability-identifier-naming)
   } ann;
 
   /// Command line options
   struct {  /// basic MiniZinc command line options
-    ASTString cmdlineData_str;
-    ASTString cmdlineData_short_str;
-    ASTString datafile_str;
-    ASTString datafile_short_str;
-    ASTString globalsDir_str;
-    ASTString globalsDir_alt_str;
-    ASTString globalsDir_short_str;
-    ASTString help_str;
-    ASTString help_short_str;
-    ASTString ignoreStdlib_str;
-    ASTString include_str;
-    ASTString inputFromStdin_str;
-    ASTString instanceCheckOnly_str;
-    ASTString no_optimize_str;
-    ASTString no_optimize_alt_str;
-    ASTString no_outputOzn_str;
-    ASTString no_outputOzn_short_str;
-    ASTString no_typecheck_str;
-    ASTString newfzn_str;
-    ASTString outputBase_str;
-    ASTString outputFznToStdout_str;
-    ASTString outputFznToStdout_alt_str;
-    ASTString outputOznToFile_str;
-    ASTString outputOznToStdout_str;
-    ASTString outputFznToFile_str;
-    ASTString outputFznToFile_alt_str;
-    ASTString outputFznToFile_short_str;
-    ASTString rangeDomainsOnly_str;
-    ASTString statistics_str;
-    ASTString statistics_short_str;
-    ASTString stdlib_str;
-    ASTString verbose_str;
-    ASTString verbose_short_str;
-    ASTString version_str;
-    ASTString werror_str;
+    ASTString cmdlineData_str; // NOLINT(readability-identifier-naming)
+    ASTString cmdlineData_short_str; // NOLINT(readability-identifier-naming)
+    ASTString datafile_str; // NOLINT(readability-identifier-naming)
+    ASTString datafile_short_str; // NOLINT(readability-identifier-naming)
+    ASTString globalsDir_str; // NOLINT(readability-identifier-naming)
+    ASTString globalsDir_alt_str; // NOLINT(readability-identifier-naming)
+    ASTString globalsDir_short_str; // NOLINT(readability-identifier-naming)
+    ASTString help_str; // NOLINT(readability-identifier-naming)
+    ASTString help_short_str; // NOLINT(readability-identifier-naming)
+    ASTString ignoreStdlib_str; // NOLINT(readability-identifier-naming)
+    ASTString include_str; // NOLINT(readability-identifier-naming)
+    ASTString inputFromStdin_str; // NOLINT(readability-identifier-naming)
+    ASTString instanceCheckOnly_str; // NOLINT(readability-identifier-naming)
+    ASTString no_optimize_str; // NOLINT(readability-identifier-naming)
+    ASTString no_optimize_alt_str; // NOLINT(readability-identifier-naming)
+    ASTString no_outputOzn_str; // NOLINT(readability-identifier-naming)
+    ASTString no_outputOzn_short_str; // NOLINT(readability-identifier-naming)
+    ASTString no_typecheck_str; // NOLINT(readability-identifier-naming)
+    ASTString newfzn_str; // NOLINT(readability-identifier-naming)
+    ASTString outputBase_str; // NOLINT(readability-identifier-naming)
+    ASTString outputFznToStdout_str; // NOLINT(readability-identifier-naming)
+    ASTString outputFznToStdout_alt_str; // NOLINT(readability-identifier-naming)
+    ASTString outputOznToFile_str; // NOLINT(readability-identifier-naming)
+    ASTString outputOznToStdout_str; // NOLINT(readability-identifier-naming)
+    ASTString outputFznToFile_str; // NOLINT(readability-identifier-naming)
+    ASTString outputFznToFile_alt_str; // NOLINT(readability-identifier-naming)
+    ASTString outputFznToFile_short_str; // NOLINT(readability-identifier-naming)
+    ASTString rangeDomainsOnly_str; // NOLINT(readability-identifier-naming)
+    ASTString statistics_str; // NOLINT(readability-identifier-naming)
+    ASTString statistics_short_str; // NOLINT(readability-identifier-naming)
+    ASTString stdlib_str; // NOLINT(readability-identifier-naming)
+    ASTString verbose_str; // NOLINT(readability-identifier-naming)
+    ASTString verbose_short_str; // NOLINT(readability-identifier-naming)
+    ASTString version_str; // NOLINT(readability-identifier-naming)
+    ASTString werror_str; // NOLINT(readability-identifier-naming)
 
     struct {
-      ASTString all_sols_str;
-      ASTString fzn_solver_str;
+      ASTString all_sols_str; // NOLINT(readability-identifier-naming)
+      ASTString fzn_solver_str; // NOLINT(readability-identifier-naming)
     } solver;
 
   } cli;
@@ -1959,11 +1959,11 @@ public:
       ASTString allSols;
       ASTString numSols;
       ASTString threads;
-      ASTString fzn_solver;
-      ASTString fzn_flags;
-      ASTString fzn_flag;
-      ASTString fzn_time_limit_ms;
-      ASTString fzn_sigint;
+      ASTString fzn_solver; // NOLINT(readability-identifier-naming)
+      ASTString fzn_flags;  // NOLINT(readability-identifier-naming)
+      ASTString fzn_flag;   // NOLINT(readability-identifier-naming)
+      ASTString fzn_time_limit_ms; // NOLINT(readability-identifier-naming)
+      ASTString fzn_sigint; // NOLINT(readability-identifier-naming)
     } solver;
 
   } opts;
@@ -1974,7 +1974,7 @@ public:
     ASTString io;
     ASTString solver;
     ASTString translation;
-  } cli_cat;
+  } cli_cat; // NOLINT(readability-identifier-naming)
 
   /// Keep track of allocated integer literals
   std::unordered_map<IntVal, WeakRef> integerMap;
@@ -1983,7 +1983,7 @@ public:
   /// Constructor
   Constants();
   /// Return shared BoolLit
-  BoolLit* boollit(bool b) { return b ? lit_true : lit_false; }
+  BoolLit* boollit(bool b) { return b ? literalTrue : literalFalse; }
   static const int max_array_size = std::numeric_limits<int>::max() / 2;
 
   void mark(MINIZINC_GC_STAT_ARGS) override;

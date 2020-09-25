@@ -53,6 +53,6 @@
 namespace MiniZinc {
 
 /// Linearize domain constraints in \a env
-void MIPdomains(Env& env, bool fVerbose = false, int = 0, double = 3.0);
+void mip_domains(Env& env, bool fVerbose = false, int = 0, double = 3.0);
 
 }  // namespace MiniZinc

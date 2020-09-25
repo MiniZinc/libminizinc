@@ -20,11 +20,11 @@ namespace MiniZinc {
 
 class GeasOptions : public SolverInstanceBase::Options {
 public:
-  bool all_solutions = false;
+  bool allSolutions = false;
   int conflicts = 0;
-  bool free_search = false;
-  int nr_solutions = 1;
-  int obj_probe_limit = 0;
+  bool freeSearch = false;
+  int nrSolutions = 1;
+  int objProbeLimit = 0;
   bool statistics = false;
   std::chrono::milliseconds time = std::chrono::milliseconds(0);
 };
@@ -36,26 +36,26 @@ public:
 protected:
   Type _t;  // Type of the variable
   union {
-    geas::patom_t _bv;
-    geas::fp::fpvar _fv;
-    geas::intvar _iv;
+    geas::patom_t bv;
+    geas::fp::fpvar fv;
+    geas::intvar iv;
   };
 
 public:
-  explicit GeasVariable(const geas::patom_t& bv) : _t(BOOL_TYPE), _bv(bv){};
-  explicit GeasVariable(const geas::fp::fpvar& fv) : _t(FLOAT_TYPE), _fv(fv){};
-  explicit GeasVariable(const geas::intvar& iv) : _t(INT_TYPE), _iv(iv){};
+  explicit GeasVariable(const geas::patom_t& bv0) : _t(BOOL_TYPE), bv(bv0){};
+  explicit GeasVariable(const geas::fp::fpvar& fv0) : _t(FLOAT_TYPE), fv(fv0){};
+  explicit GeasVariable(const geas::intvar& iv0) : _t(INT_TYPE), iv(iv0){};
 
   GeasVariable(const GeasVariable& gv) : _t(gv._t) {
     switch (_t) {
       case BOOL_TYPE:
-        _bv = gv._bv;
+        bv = gv.bv;
         break;
       case FLOAT_TYPE:
-        _fv = gv._fv;
+        fv = gv.fv;
         break;
       case INT_TYPE:
-        _iv = gv._iv;
+        iv = gv.iv;
         break;
     }
   }
@@ -64,9 +64,9 @@ public:
   bool isFloat() const { return _t == FLOAT_TYPE; }
   bool isInt() const { return _t == INT_TYPE; }
 
-  geas::patom_t boolVar() { return _bv; }
-  geas::fp::fpvar floatVar() { return _fv; }
-  geas::intvar intVar() { return _iv; }
+  geas::patom_t boolVar() { return bv; }
+  geas::fp::fpvar floatVar() { return fv; }
+  geas::intvar intVar() { return iv; }
 };
 
 class GeasTypes {
@@ -80,7 +80,7 @@ public:
   GeasSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
   ~GeasSolverInstance() override = default;
   void processFlatZinc() override;
-  geas::solver_data* solver_data() { return _solver.data; }
+  geas::solver_data* solverData() { return _solver.data; }
   geas::solver& solver() { return _solver; }
 
   Status solve() override;
@@ -107,8 +107,8 @@ protected:
   geas::solver _solver;
   Model* _flat;
 
-  SolveI::SolveType _obj_type = SolveI::ST_SAT;
-  std::unique_ptr<GeasTypes::Variable> _obj_var;
+  SolveI::SolveType _objType = SolveI::ST_SAT;
+  std::unique_ptr<GeasTypes::Variable> _objVar;
 
   GeasTypes::Variable& resolveVar(Expression* e);
   bool addSolutionNoGood();
@@ -117,9 +117,9 @@ protected:
   void registerConstraints();
 };
 
-class Geas_SolverFactory : public SolverFactory {
+class GeasSolverFactory : public SolverFactory {
 public:
-  Geas_SolverFactory();
+  GeasSolverFactory();
   SolverInstanceBase::Options* createOptions() override;
   SolverInstanceBase* doCreateSI(Env& env, std::ostream& log,
                                  SolverInstanceBase::Options* opt) override;

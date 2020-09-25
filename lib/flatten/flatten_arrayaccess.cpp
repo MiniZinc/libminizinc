@@ -28,10 +28,10 @@ EE flatten_arrayaccess(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, Var
 start_flatten_arrayaccess:
   for (unsigned int i = 0; i < aa->idx().size(); i++) {
     Expression* tmp = follow_id_to_decl(aa->idx()[i]);
-    if (auto* vd = tmp->dyn_cast<VarDecl>()) {
+    if (auto* vd = tmp->dynamicCast<VarDecl>()) {
       tmp = vd->id();
     }
-    if (tmp->type().ispar()) {
+    if (tmp->type().isPar()) {
       ArrayLit* al;
       if (eev.r()->isa<ArrayLit>()) {
         al = eev.r()->cast<ArrayLit>();
@@ -59,10 +59,10 @@ start_flatten_arrayaccess:
       std::vector<int> stack;
       for (unsigned int j = 0; j < aa->idx().size(); j++) {
         Expression* tmp = follow_id_to_decl(aa->idx()[j]);
-        if (auto* vd = tmp->dyn_cast<VarDecl>()) {
+        if (auto* vd = tmp->dynamicCast<VarDecl>()) {
           tmp = vd->id();
         }
-        if (tmp->type().ispar()) {
+        if (tmp->type().isPar()) {
           GCLock lock;
           idx[j] = eval_int(env, tmp).toInt();
         } else {
@@ -79,14 +79,14 @@ start_flatten_arrayaccess:
         {
           GCLock lock;
           ka = eval_arrayaccess(env, al, idx, success);
-          if (!success && env.in_maybe_partial == 0) {
+          if (!success && env.inMaybePartial == 0) {
             ResultUndefinedError warning(env, al->loc(), "array access out of bounds");
           }
         }
         ees.emplace_back(nullptr, constants().boollit(success));
         ees.emplace_back(nullptr, eev.b());
-        if (aa->type().isbool() && !aa->type().isopt()) {
-          ret.b = bind(env, Ctx(), b, constants().lit_true);
+        if (aa->type().isbool() && !aa->type().isOpt()) {
+          ret.b = bind(env, Ctx(), b, constants().literalTrue);
           ees.emplace_back(nullptr, ka());
           ret.r = conj(env, r, ctx, ees);
         } else {
@@ -105,13 +105,13 @@ start_flatten_arrayaccess:
             GCLock lock;
             Expression* al_idx = eval_arrayaccess(env, al, idx, success);
             if (!success) {
-              if (env.in_maybe_partial == 0) {
+              if (env.inMaybePartial == 0) {
                 ResultUndefinedError warning(env, al->loc(), "array access out of bounds");
               }
-              ees.emplace_back(nullptr, constants().lit_false);
+              ees.emplace_back(nullptr, constants().literalFalse);
               ees.emplace_back(nullptr, eev.b());
-              if (aa->type().isbool() && !aa->type().isopt()) {
-                ret.b = bind(env, Ctx(), b, constants().lit_true);
+              if (aa->type().isbool() && !aa->type().isOpt()) {
+                ret.b = bind(env, Ctx(), b, constants().literalTrue);
                 ret.r = conj(env, r, ctx, ees);
               } else {
                 ret.b = conj(env, b, ctx, ees);
@@ -167,7 +167,7 @@ start_flatten_arrayaccess:
       }
       al = follow_id(id)->cast<ArrayLit>();
     }
-    if (aa_inner->v()->type().ispar()) {
+    if (aa_inner->v()->type().isPar()) {
       KeepAlive ka_al_inner = flat_cv_exp(env, ctx, aa_inner->v());
       auto* al_inner = ka_al_inner()->cast<ArrayLit>();
       std::vector<Expression*> composed_e(al_inner->size());
@@ -203,7 +203,7 @@ flatten_arrayaccess:
   dimctx.neg = false;
   for (unsigned int i = 0; i < aa->idx().size(); i++) {
     Expression* tmp = follow_id_to_decl(aa->idx()[i]);
-    if (auto* vd = tmp->dyn_cast<VarDecl>()) {
+    if (auto* vd = tmp->dynamicCast<VarDecl>()) {
       tmp = vd->id();
     }
     ees.push_back(flat_exp(env, dimctx, tmp, nullptr, nullptr));
@@ -212,7 +212,7 @@ flatten_arrayaccess:
 
   bool parAccess = true;
   for (unsigned int i = 0; i < aa->idx().size(); i++) {
-    if (!ees[i].r()->type().ispar()) {
+    if (!ees[i].r()->type().isPar()) {
       parAccess = false;
       break;
     }
@@ -242,12 +242,12 @@ flatten_arrayaccess:
       }
       ka = eval_arrayaccess(env, al, dims, success);
     }
-    if (!success && env.in_maybe_partial == 0) {
+    if (!success && env.inMaybePartial == 0) {
       ResultUndefinedError warning(env, al->loc(), "array access out of bounds");
     }
     ees.emplace_back(nullptr, constants().boollit(success));
-    if (aa->type().isbool() && !aa->type().isopt()) {
-      ret.b = bind(env, Ctx(), b, constants().lit_true);
+    if (aa->type().isbool() && !aa->type().isOpt()) {
+      ret.b = bind(env, Ctx(), b, constants().literalTrue);
       ees.emplace_back(nullptr, ka());
       ret.r = conj(env, r, ctx, ees);
     } else {
@@ -278,7 +278,7 @@ flatten_arrayaccess:
     elemctx.neg = false;
     EE ee = flat_exp(env, elemctx, ka(), nullptr, nullptr);
     ees.push_back(ee);
-    if (aa->type().isbool() && !aa->type().isopt()) {
+    if (aa->type().isbool() && !aa->type().isOpt()) {
       ee.b = ee.r;
       ees.push_back(ee);
       ret.r = conj(env, r, ctx, ees);

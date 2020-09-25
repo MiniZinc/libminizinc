@@ -170,7 +170,7 @@ void GeasSolverInstance::processFlatZinc() {
   auto _opt = static_cast<GeasOptions&>(*_options);
   // Create variables
   zero = _solver.new_intvar(0, 0);
-  for (auto it = _flat->begin_vardecls(); it != _flat->end_vardecls(); ++it) {
+  for (auto it = _flat->vardecls().begin(); it != _flat->vardecls().end(); ++it) {
     if (!it->removed() && it->e()->type().isvar() && it->e()->type().dim() == 0) {
       VarDecl* vd = it->e();
 
@@ -284,9 +284,9 @@ void GeasSolverInstance::processFlatZinc() {
   }
 
   // Post constraints
-  for (ConstraintIterator it = _flat->begin_constraints(); it != _flat->end_constraints(); ++it) {
+  for (ConstraintIterator it = _flat->constraints().begin(); it != _flat->constraints().end(); ++it) {
     if (!it->removed()) {
-      if (auto* c = it->e()->dyn_cast<Call>()) {
+      if (auto* c = it->e()->dynamicCast<Call>()) {
         _constraintRegistry.post(c);
       }
     }
@@ -294,12 +294,12 @@ void GeasSolverInstance::processFlatZinc() {
   // Set objective
   SolveI* si = _flat->solveItem();
   if (si->e() != nullptr) {
-    _obj_type = si->st();
-    if (_obj_type == SolveI::ST_MIN) {
-      _obj_var = std::unique_ptr<GeasTypes::Variable>(new GeasTypes::Variable(resolveVar(si->e())));
-    } else if (_obj_type == SolveI::ST_MAX) {
-      _obj_type = SolveI::ST_MIN;
-      _obj_var = std::unique_ptr<GeasTypes::Variable>(new GeasTypes::Variable(-asIntVar(si->e())));
+    _objType = si->st();
+    if (_objType == SolveI::ST_MIN) {
+      _objVar = std::unique_ptr<GeasTypes::Variable>(new GeasTypes::Variable(resolveVar(si->e())));
+    } else if (_objType == SolveI::ST_MAX) {
+      _objType = SolveI::ST_MIN;
+      _objVar = std::unique_ptr<GeasTypes::Variable>(new GeasTypes::Variable(-asIntVar(si->e())));
     }
   }
   if (!si->ann().isEmpty()) {
@@ -315,15 +315,15 @@ void GeasSolverInstance::processFlatZinc() {
           assert(vars->size() == vals->size());
           vec<geas::patom_t> ws(vars->size());
 
-          if (vars->type().isintarray()) {
-            assert(vals->type().isintarray());
+          if (vars->type().isIntArray()) {
+            assert(vals->type().isIntArray());
             for (int i = 0; i < vars->size(); ++i) {
               geas::intvar var = asIntVar((*vars)[i]);
               int val = asInt((*vals)[i]);
               ws.push(var == val);
             }
-          } else if (vars->type().isboolarray()) {
-            assert(vals->type().isboolarray());
+          } else if (vars->type().isBoolArray()) {
+            assert(vals->type().isBoolArray());
             for (int i = 0; i < vars->size(); ++i) {
               geas::patom_t var = asBoolVar((*vars)[i]);
               bool val = asBool((*vals)[i]);
@@ -383,7 +383,7 @@ void GeasSolverInstance::processFlatZinc() {
         }
 
         geas::brancher* b = geas::basic_brancher(select, choice, pids);
-        if (_opt.free_search) {
+        if (_opt.freeSearch) {
           vec<geas::brancher*> brv({b, _solver.data->last_branch});
           _solver.data->branchers.push(geas::toggle_brancher(brv));
         } else {
@@ -399,11 +399,11 @@ bool GeasSolverInstance::addSolutionNoGood() {
   geas::model solution = _solver.get_model();
   vec<geas::clause_elt> clause;
   for (auto& var : _varsWithOutput) {
-    if (Expression::dyn_cast<Call>(
-            getAnnotation(var->ann(), constants().ann.output_array.aststr())) != nullptr) {
-      if (auto* al = var->e()->dyn_cast<ArrayLit>()) {
+    if (Expression::dynamicCast<Call>(
+            get_annotation(var->ann(), constants().ann.output_array.aststr())) != nullptr) {
+      if (auto* al = var->e()->dynamicCast<ArrayLit>()) {
         for (unsigned int j = 0; j < al->size(); j++) {
-          if (Id* id = (*al)[j]->dyn_cast<Id>()) {
+          if (Id* id = (*al)[j]->dynamicCast<Id>()) {
             auto geas_var = resolveVar(id);
             if (geas_var.isBool()) {
               geas::patom_t bv = geas_var.boolVar();
@@ -449,10 +449,10 @@ SolverInstanceBase::Status MiniZinc::GeasSolverInstance::solve() {
       return geas_time(timeout - std::chrono::high_resolution_clock::now()).count();
     }
   };
-  if (_obj_type == SolveI::ST_SAT) {
+  if (_objType == SolveI::ST_SAT) {
     int nr_solutions = 0;
     geas::solver::result res = geas::solver::UNKNOWN;
-    while ((_opt.all_solutions || nr_solutions < _opt.nr_solutions) && remaining_time() >= 0.0) {
+    while ((_opt.allSolutions || nr_solutions < _opt.nrSolutions) && remaining_time() >= 0.0) {
       res = _solver.solve({remaining_time(), _opt.conflicts - _solver.data->stats.conflicts});
       printSolution();
       if (res != geas::solver::SAT) {
@@ -489,10 +489,10 @@ SolverInstanceBase::Status MiniZinc::GeasSolverInstance::solve() {
         break;
     }
   } else {
-    assert(_obj_type == SolveI::ST_MIN);
+    assert(_objType == SolveI::ST_MIN);
     // TODO: Add float objectives
-    assert(_obj_var->isInt());
-    geas::intvar obj = _obj_var->intVar();
+    assert(_objVar->isInt());
+    geas::intvar obj = _objVar->intVar();
     geas::solver::result res;
     while (true) {
       res = _solver.solve({remaining_time(), _opt.conflicts - _solver.data->stats.conflicts});
@@ -501,13 +501,13 @@ SolverInstanceBase::Status MiniZinc::GeasSolverInstance::solve() {
         break;
       }
       status = SolverInstance::SAT;
-      if (_opt.all_solutions) {
+      if (_opt.allSolutions) {
         printSolution();
       }
       obj_val = _solver.get_model()[obj];
 
       int step = 1;
-      while (_opt.obj_probe_limit > 0) {
+      while (_opt.objProbeLimit > 0) {
         geas::intvar::val_t assumed_obj;
         assumed_obj = obj_val - step;
         assumed_obj = obj.lb(_solver.data) > assumed_obj ? obj.lb(_solver.data) : assumed_obj;
@@ -515,13 +515,13 @@ SolverInstanceBase::Status MiniZinc::GeasSolverInstance::solve() {
           _solver.retract();
           break;
         }
-        res = _solver.solve({remaining_time(), _opt.obj_probe_limit});
+        res = _solver.solve({remaining_time(), _opt.objProbeLimit});
         _solver.retract();
         if (res != geas::solver::SAT) {
           break;
         }
         step *= 2;
-        if (_opt.all_solutions) {
+        if (_opt.allSolutions) {
           printSolution();
         }
         obj_val = _solver.get_model()[obj];
@@ -545,7 +545,7 @@ SolverInstanceBase::Status MiniZinc::GeasSolverInstance::solve() {
       if (res == geas::solver::UNSAT) {
         status = SolverInstance::OPT;
       }
-      if (!_opt.all_solutions) {
+      if (!_opt.allSolutions) {
         printSolution();
       }
     }
@@ -582,11 +582,11 @@ Expression* GeasSolverInstance::getSolutionValue(Id* id) {
 void GeasSolverInstance::resetSolver() { assert(false); }
 
 GeasTypes::Variable& GeasSolverInstance::resolveVar(Expression* e) {
-  if (auto* id = e->dyn_cast<Id>()) {
+  if (auto* id = e->dynamicCast<Id>()) {
     return _variableMap.get(id->decl()->id());
-  } else if (auto* vd = e->dyn_cast<VarDecl>()) {
+  } else if (auto* vd = e->dynamicCast<VarDecl>()) {
     return _variableMap.get(vd->id()->decl()->id());
-  } else if (auto* aa = e->dyn_cast<ArrayAccess>()) {
+  } else if (auto* aa = e->dynamicCast<ArrayAccess>()) {
     auto* ad = aa->v()->cast<Id>()->decl();
     auto idx = aa->idx()[0]->cast<IntLit>()->v().toInt();
     auto* al = eval_array_lit(_env.envi(), ad->e());
@@ -612,7 +612,7 @@ geas::patom_t GeasSolverInstance::asBoolVar(Expression* e) {
     assert(var.isBool());
     return var.boolVar();
   } else {
-    if (auto* bl = e->dyn_cast<BoolLit>()) {
+    if (auto* bl = e->dynamicCast<BoolLit>()) {
       return bl->v() ? geas::at_True : geas::at_False;
     } else {
       std::stringstream ssm;
@@ -645,9 +645,9 @@ geas::intvar GeasSolverInstance::asIntVar(Expression* e) {
     return var.intVar();
   } else {
     IntVal i;
-    if (auto* il = e->dyn_cast<IntLit>()) {
+    if (auto* il = e->dynamicCast<IntLit>()) {
       i = il->v().toInt();
-    } else if (auto* bl = e->dyn_cast<BoolLit>()) {
+    } else if (auto* bl = e->dynamicCast<BoolLit>()) {
       i = static_cast<long long>(bl->v());
     } else {
       std::stringstream ssm;
@@ -683,7 +683,7 @@ void GeasSolverInstance::printStatistics() {
   out << "%%%mzn-stat: learntLiterals=" << st.num_learnt_lits << std::endl;  // TODO: Statistic name
 }
 
-Geas_SolverFactory::Geas_SolverFactory() {
+GeasSolverFactory::GeasSolverFactory() {
   SolverConfig sc("org.minizinc.geas", getVersion(nullptr));
   sc.name("Geas");
   sc.mznlib("-Ggeas");
@@ -710,18 +710,18 @@ Geas_SolverFactory::Geas_SolverFactory() {
   SolverConfigs::registerBuiltinSolver(sc);
 };
 
-SolverInstanceBase::Options* Geas_SolverFactory::createOptions() { return new GeasOptions; }
+SolverInstanceBase::Options* GeasSolverFactory::createOptions() { return new GeasOptions; }
 
-SolverInstanceBase* Geas_SolverFactory::doCreateSI(Env& env, std::ostream& log,
+SolverInstanceBase* GeasSolverFactory::doCreateSI(Env& env, std::ostream& log,
                                                    SolverInstanceBase::Options* opt) {
   return new GeasSolverInstance(env, log, opt);
 }
 
-bool Geas_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
+bool GeasSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
                                        std::vector<std::string>& argv) {
   auto* _opt = static_cast<GeasOptions*>(opt);
   if (argv[i] == "-a" || argv[i] == "--all-solutions") {
-    _opt->all_solutions = true;
+    _opt->allSolutions = true;
   } else if (argv[i] == "--conflicts") {
     if (++i == argv.size()) {
       return false;
@@ -731,14 +731,14 @@ bool Geas_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
       _opt->conflicts = nodes;
     }
   } else if (argv[i] == "-f") {
-    _opt->free_search = true;
+    _opt->freeSearch = true;
   } else if (argv[i] == "-n") {
     if (++i == argv.size()) {
       return false;
     }
     int n = atoi(argv[i].c_str());
     if (n >= 0) {
-      _opt->nr_solutions = n;
+      _opt->nrSolutions = n;
     }
   } else if (argv[i] == "--obj-probe") {
     if (++i == argv.size()) {
@@ -746,7 +746,7 @@ bool Geas_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
     }
     int limit = atoi(argv[i].c_str());
     if (limit >= 0) {
-      _opt->obj_probe_limit = limit;
+      _opt->objProbeLimit = limit;
     }
   } else if (argv[i] == "--solver-statistics" || argv[i] == "-s") {
     _opt->statistics = true;
@@ -764,7 +764,7 @@ bool Geas_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
   return true;
 }
 
-void Geas_SolverFactory::printHelp(std::ostream& os) {
+void GeasSolverFactory::printHelp(std::ostream& os) {
   os << "Geas solver plugin options:" << std::endl
      << "  --conflicts <int>" << std::endl
      << "    Limit the maximum number of conflicts to be used during solving." << std::endl

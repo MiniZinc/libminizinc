@@ -36,7 +36,7 @@ std::string MIP_wrapper::getMznLib() { return "-Glinear"; }
 namespace MiniZinc {
 namespace SCIPConstraints {
 
-bool CheckAnnUserCut(const Call* call) {
+bool check_ann_user_cut(const Call* call) {
   if (!call->ann().isEmpty()) {
     if (call->ann().contains(constants().ann.user_cut)) {
       return true;
@@ -44,7 +44,7 @@ bool CheckAnnUserCut(const Call* call) {
   }
   return false;
 }
-bool CheckAnnLazyConstraint(const Call* call) {
+bool check_ann_lazy_constraint(const Call* call) {
   if (!call->ann().isEmpty()) {
     if (call->ann().contains(constants().ann.lazy_constraint)) {
       return true;
@@ -52,10 +52,10 @@ bool CheckAnnLazyConstraint(const Call* call) {
   }
   return false;
 }
-int GetMaskConsType(const Call* call) {
+int get_mask_cons_type(const Call* call) {
   int mask = 0;
-  const bool fUC = CheckAnnUserCut(call);
-  const bool fLC = CheckAnnLazyConstraint(call);
+  const bool fUC = check_ann_user_cut(call);
+  const bool fLC = check_ann_lazy_constraint(call);
   if (fUC) {
     mask |= MIP_wrapper::MaskConsType_Usercut;
   }

@@ -20,27 +20,27 @@ namespace MiniZinc {
 class ChainCompressor {
 public:
   ChainCompressor(EnvI& env, Model& m, std::vector<VarDecl*>& deletedVarDecls)
-      : env(env), m(m), deletedVarDecls(deletedVarDecls){};
+      : _env(env), _m(m), _deletedVarDecls(deletedVarDecls){};
 
   virtual bool trackItem(Item* i) = 0;
 
   virtual void compress() = 0;
 
 protected:
-  EnvI& env;
-  Model& m;
-  std::vector<VarDecl*>& deletedVarDecls;
+  EnvI& _env;
+  Model& _m;
+  std::vector<VarDecl*>& _deletedVarDecls;
 
-  std::multimap<VarDecl*, Item*> items;
+  std::multimap<VarDecl*, Item*> _items;
   typedef std::multimap<VarDecl*, Item*>::iterator iterator;
 
-  void storeItem(VarDecl* v, Item* i) { items.emplace(v, i); }
+  void storeItem(VarDecl* v, Item* i) { _items.emplace(v, i); }
 
   void updateCount();
 
-  unsigned long count(VarDecl* v) { return items.count(v); }
+  unsigned long count(VarDecl* v) { return _items.count(v); }
 
-  std::pair<iterator, iterator> find(VarDecl* v) { return items.equal_range(v); };
+  std::pair<iterator, iterator> find(VarDecl* v) { return _items.equal_range(v); };
 
   void removeItem(Item* i);
   int addItem(Item* i);
@@ -53,14 +53,14 @@ class ImpCompressor : public ChainCompressor {
 public:
   ImpCompressor(EnvI& env, Model& m, std::vector<VarDecl*>& deletedVarDecls,
                 std::vector<int>& boolConstraints0)
-      : ChainCompressor(env, m, deletedVarDecls), boolConstraints(boolConstraints0){};
+      : ChainCompressor(env, m, deletedVarDecls), _boolConstraints(boolConstraints0){};
 
   bool trackItem(Item* i) override;
 
   void compress() override;
 
 protected:
-  std::vector<int>& boolConstraints;
+  std::vector<int>& _boolConstraints;
 
   // Compress two implications. e.g. (x -> y) /\ (y -> z) => x -> z
   // In this case i: (y -> z), newLHS: x
@@ -85,13 +85,13 @@ public:
   void compress() override;
 
 protected:
-  std::map<VarDecl*, VarDecl*> aliasMap;
+  std::map<VarDecl*, VarDecl*> _aliasMap;
 
   /// Replace the use a variable within an inequality
   /// e.g. i: int_lin_le([1,2,3], [a,b,c], 10), oldVar: a, newVar d -> int_lin_le([1,2,3], [d,b,c],
   /// 10) Occurrence count is updated for variables involved.
   template <class Lit>
-  void LEReplaceVar(Item* i, VarDecl* oldVar, VarDecl* newVar);
+  void leReplaceVar(Item* i, VarDecl* oldVar, VarDecl* newVar);
 
   /// Check if the bounds of two Variables are equal
   bool eqBounds(Expression* a, Expression* b);

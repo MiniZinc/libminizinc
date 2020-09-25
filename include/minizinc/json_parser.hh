@@ -42,13 +42,13 @@ protected:
     T_BOOL,
     T_NULL,
     T_EOF
-  } t;
+  } _t;
 
   class Token;
-  EnvI& env;
-  int line;
-  int column;
-  std::string filename;
+  EnvI& _env;
+  int _line;
+  int _column;
+  std::string _filename;
   Location errLocation() const;
   Token readToken(std::istream& is);
   void expectToken(std::istream& is, TokenT t);
@@ -61,7 +61,7 @@ protected:
   void parse(Model* m, std::istream& is, bool ignoreUnknown);
 
 public:
-  JSONParser(EnvI& env0) : env(env0) {}
+  JSONParser(EnvI& env) : _env(env) {}
   /// Parses \a filename as MiniZinc data and creates assign items in \a m
   void parse(Model* m, const std::string& filename, bool ignoreUnknown = false);
   /// Parses \a data as JSON-encoded MiniZinc data and creates assign items in \a m

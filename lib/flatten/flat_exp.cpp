@@ -18,7 +18,7 @@ CallArgItem::CallArgItem(EnvI& env0) : env(env0) {
 }
 CallArgItem::~CallArgItem() { env.idStack.pop_back(); }
 
-Expression* createDummyValue(EnvI& env, const Type& t) {
+Expression* create_dummy_value(EnvI& env, const Type& t) {
   if (t.dim() > 0) {
     Expression* ret = new ArrayLit(Location().introduce(), std::vector<Expression*>());
     Type ret_t = t;
@@ -111,7 +111,7 @@ EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   };
 
   int dispatch =
-      (e->type().ispar() && !e->isa<Let>() && !e->isa<VarDecl>() && e->type().bt() != Type::BT_ANN)
+      (e->type().isPar() && !e->isa<Let>() && !e->isa<VarDecl>() && e->type().bt() != Type::BT_ANN)
           ? 0
           : e->eid() - Expression::E_INTLIT + 1;
 

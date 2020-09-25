@@ -44,7 +44,7 @@ std::string eval_string(EnvI& env, Expression* e);
 /// Evaluate a par expression \a e and return it wrapped in a literal
 Expression* eval_par(EnvI& env, Expression* e);
 /// Check if variable declaration \a vd satisfies the domain and index set constraints
-void checkParDeclaration(EnvI& env, VarDecl* vd);
+void check_par_declaration(EnvI& env, VarDecl* vd);
 
 /// Representation for bounds of an integer expression
 struct IntBounds {
@@ -86,7 +86,7 @@ IntSetVal* compute_intset_bounds(EnvI& env, Expression* e);
 class EvalBase {
 public:
   /// Evaluate bool expression that may contain variables
-  bool eval_bool_cv(EnvI& env, Expression* e);
+  bool evalBoolCV(EnvI& env, Expression* e);
 };
 
 template <class Eval>
@@ -107,13 +107,13 @@ void eval_comp_set(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, Int
     e->decl(gen, id)->e(IntLit::a(i));
   }
   CallStackItem csi(env, e->decl(gen, id)->id(), i);
-  if (id == e->n_decls(gen) - 1) {
+  if (id == e->numberOfDecls(gen) - 1) {
     bool where = true;
     if (e->where(gen) != nullptr && !e->where(gen)->type().isvar()) {
-      where = eval.eval_bool_cv(env, e->where(gen));
+      where = eval.evalBoolCV(env, e->where(gen));
     }
     if (where) {
-      if (gen == e->n_generators() - 1) {
+      if (gen == e->numberOfGenerators() - 1) {
         a.push_back(eval.e(env, e->e()));
       } else {
         if (e->in(gen + 1) == nullptr) {
@@ -154,7 +154,7 @@ void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, I
   CallStackItem csi(env, e->decl(gen, id)->id(), i);
   if (in() == nullptr) {
     // this is an assignment generator
-    Expression* asn = e->where(gen)->type().ispar() ? eval_par(env, e->where(gen))
+    Expression* asn = e->where(gen)->type().isPar() ? eval_par(env, e->where(gen))
                                                     : eval.flatten(env, e->where(gen));
     e->decl(gen, id)->e(asn);
     e->rehash();
@@ -163,13 +163,13 @@ void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, I
     e->decl(gen, id)->e((*al)[static_cast<int>(i.toInt())]);
     e->rehash();
   }
-  if (id == e->n_decls(gen) - 1) {
+  if (id == e->numberOfDecls(gen) - 1) {
     bool where = true;
     if (e->in(gen) != nullptr && e->where(gen) != nullptr && !e->where(gen)->type().isvar()) {
-      where = eval.eval_bool_cv(env, e->where(gen));
+      where = eval.evalBoolCV(env, e->where(gen));
     }
     if (where) {
-      if (gen == e->n_generators() - 1) {
+      if (gen == e->numberOfGenerators() - 1) {
         a.push_back(eval.e(env, e->e()));
       } else {
         if (e->in(gen + 1) == nullptr) {

@@ -22,7 +22,7 @@ namespace MiniZinc {
 namespace GeasConstraints {
 
 #define SI static_cast<GeasSolverInstance&>(s)
-#define SD SI.solver_data()
+#define SD SI.solverData()
 #define SOL SI.solver()
 #define EXPR(X) call->arg(X)
 #define BOOL(X) SI.asBool(EXPR(X))
@@ -33,7 +33,7 @@ namespace GeasConstraints {
 #define INTARRAY(X) SI.asInt(ARRAY(X))
 #define INTVAR(X) SI.asIntVar(EXPR(X))
 #define INTVARARRAY(X) SI.asIntVar(ARRAY(X))
-#define PAR(X) call->arg(X)->type().ispar()
+#define PAR(X) call->arg(X)->type().isPar()
 #define ARRAY(X) eval_array_lit(s.env().envi(), call->arg(X))
 
 void p_int_eq(SolverInstanceBase& s, const Call* call) { geas::int_eq(SD, INTVAR(0), INTVAR(1)); }
@@ -404,7 +404,7 @@ void p_bool_and(SolverInstanceBase& s, const Call* call) {
 }
 
 void p_bool_xor(SolverInstanceBase& s, const Call* call) {
-  if (call->n_args() == 2) {
+  if (call->argCount() == 2) {
     p_bool_ne(s, call);
   } else {
     p_bool_ne_reif(s, call);
@@ -626,7 +626,7 @@ void p_array_var_int_element(SolverInstanceBase& s, const Call* call) {
     SOL.post(SI.asIntVar((*ARRAY(1))[INT(0) - 1]) == INT(2));
   } else if (PAR(0)) {
     Expression* elem = (*ARRAY(1))[INT(0) - 1];
-    if (elem->type().ispar()) {
+    if (elem->type().isPar()) {
       return p_array_int_element(s, call);
     } else {
       geas::int_eq(SD, SI.asIntVar(elem), INTVAR(2));
@@ -658,7 +658,7 @@ void p_array_var_bool_element(SolverInstanceBase& s, const Call* call) {
                      : ~SI.asBoolVar((*ARRAY(1))[INT(0) - 1]));
   } else if (PAR(0)) {
     Expression* elem = (*ARRAY(1))[INT(0) - 1];
-    if (elem->type().ispar()) {
+    if (elem->type().isPar()) {
       return p_array_bool_element(s, call);
     } else {
       geas::add_clause(SD, BOOLVAR(2), ~SI.asBoolVar(elem));

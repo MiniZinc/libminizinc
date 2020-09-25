@@ -34,7 +34,7 @@ void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
         FunctionI::builtin_e b, bool fromGlobals = false) {
   FunctionI* fi = m->matchFn(env, id, t, false);
   if (fi != nullptr) {
-    fi->_builtins.e = b;
+    fi->builtins.e = b;
   } else if (!fromGlobals) {
     std::ostringstream ss;
     ss << "no definition found for builtin " << id;
@@ -45,7 +45,7 @@ void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
         FunctionI::builtin_f b, bool fromGlobals = false) {
   FunctionI* fi = m->matchFn(env, id, t, false);
   if (fi != nullptr) {
-    fi->_builtins.f = b;
+    fi->builtins.f = b;
   } else if (!fromGlobals) {
     std::ostringstream ss;
     ss << "no definition found for builtin " << id;
@@ -56,7 +56,7 @@ void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
         FunctionI::builtin_i b, bool fromGlobals = false) {
   FunctionI* fi = m->matchFn(env, id, t, false);
   if (fi != nullptr) {
-    fi->_builtins.i = b;
+    fi->builtins.i = b;
   } else if (!fromGlobals) {
     std::ostringstream ss;
     ss << "no definition found for builtin " << id;
@@ -67,7 +67,7 @@ void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
         FunctionI::builtin_b b, bool fromGlobals = false) {
   FunctionI* fi = m->matchFn(env, id, t, false);
   if (fi != nullptr) {
-    fi->_builtins.b = b;
+    fi->builtins.b = b;
   } else if (!fromGlobals) {
     std::ostringstream ss;
     ss << "no definition found for builtin " << id;
@@ -78,7 +78,7 @@ void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
         FunctionI::builtin_s b, bool fromGlobals = false) {
   FunctionI* fi = m->matchFn(env, id, t, false);
   if (fi != nullptr) {
-    fi->_builtins.s = b;
+    fi->builtins.s = b;
   } else if (!fromGlobals) {
     std::ostringstream ss;
     ss << "no definition found for builtin " << id;
@@ -89,7 +89,7 @@ void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
         FunctionI::builtin_str b, bool fromGlobals = false) {
   FunctionI* fi = m->matchFn(env, id, t, false);
   if (fi != nullptr) {
-    fi->_builtins.str = b;
+    fi->builtins.str = b;
   } else if (!fromGlobals) {
     std::ostringstream ss;
     ss << "no definition found for builtin " << id;
@@ -98,9 +98,9 @@ void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
 }
 
 IntVal b_int_min(EnvI& env, Call* call) {
-  switch (call->n_args()) {
+  switch (call->argCount()) {
     case 1:
-      if (call->arg(0)->type().is_set()) {
+      if (call->arg(0)->type().isSet()) {
         throw EvalError(env, call->arg(0)->loc(), "sets not supported");
       } else {
         GCLock lock;
@@ -123,9 +123,9 @@ IntVal b_int_min(EnvI& env, Call* call) {
 }
 
 IntVal b_int_max(EnvI& env, Call* call) {
-  switch (call->n_args()) {
+  switch (call->argCount()) {
     case 1:
-      if (call->arg(0)->type().is_set()) {
+      if (call->arg(0)->type().isSet()) {
         throw EvalError(env, call->arg(0)->loc(), "sets not supported");
       } else {
         GCLock lock;
@@ -251,24 +251,24 @@ IntVal b_arg_max_float(EnvI& env, Call* call) {
 }
 
 IntVal b_abs_int(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   return std::abs(eval_int(env, call->arg(0)));
 }
 
 FloatVal b_abs_float(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   return std::abs(eval_float(env, call->arg(0)));
 }
 
 bool b_has_bounds_int(EnvI& env, Call* call) {
-  if (call->n_args() != 1) {
+  if (call->argCount() != 1) {
     throw EvalError(env, Location(), "dynamic type error");
   }
   IntBounds ib = compute_int_bounds(env, call->arg(0));
   return ib.valid && ib.l.isFinite() && ib.u.isFinite();
 }
 bool b_has_bounds_float(EnvI& env, Call* call) {
-  if (call->n_args() != 1) {
+  if (call->argCount() != 1) {
     throw EvalError(env, Location(), "dynamic type error");
   }
   FloatBounds fb = compute_float_bounds(env, call->arg(0));
@@ -284,7 +284,7 @@ IntVal lb_varoptint(EnvI& env, Expression* e) {
   }
 }
 IntVal b_lb_varoptint(EnvI& env, Call* call) {
-  if (call->n_args() != 1) {
+  if (call->argCount() != 1) {
     throw EvalError(env, Location(), "dynamic type error");
   }
   return lb_varoptint(env, call->arg(0));
@@ -350,13 +350,13 @@ Expression* b_deopt_expr(EnvI& env, Call* call) {
 };
 
 IntVal b_array_lb_int(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   Expression* e = follow_id_to_decl(call->arg(0));
 
   bool foundMin = false;
   IntVal array_lb = -IntVal::infinity();
 
-  if (auto* vd = e->dyn_cast<VarDecl>()) {
+  if (auto* vd = e->dynamicCast<VarDecl>()) {
     if (vd->ti()->domain() != nullptr) {
       GCLock lock;
       IntSetVal* isv = eval_intset(env, vd->ti()->domain());
@@ -406,20 +406,20 @@ IntVal ub_varoptint(EnvI& env, Expression* e) {
   }
 }
 IntVal b_ub_varoptint(EnvI& env, Call* call) {
-  if (call->n_args() != 1) {
+  if (call->argCount() != 1) {
     throw EvalError(env, Location(), "dynamic type error");
   }
   return ub_varoptint(env, call->arg(0));
 }
 
 IntVal b_array_ub_int(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   Expression* e = follow_id_to_decl(call->arg(0));
 
   bool foundMax = false;
   IntVal array_ub = IntVal::infinity();
 
-  if (auto* vd = e->dyn_cast<VarDecl>()) {
+  if (auto* vd = e->dynamicCast<VarDecl>()) {
     if (vd->ti()->domain() != nullptr) {
       GCLock lock;
       IntSetVal* isv = eval_intset(env, vd->ti()->domain());
@@ -461,7 +461,7 @@ b_array_ub_int_done:
 }
 
 IntVal b_idiv(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   IntVal a = eval_int(env, call->arg(0));
   IntVal b = eval_int(env, call->arg(1));
   if (b == 0) {
@@ -470,7 +470,7 @@ IntVal b_idiv(EnvI& env, Call* call) {
   return a / b;
 }
 IntVal b_mod(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   IntVal a = eval_int(env, call->arg(0));
   IntVal b = eval_int(env, call->arg(1));
   if (b == 0) {
@@ -479,7 +479,7 @@ IntVal b_mod(EnvI& env, Call* call) {
   return a % b;
 }
 FloatVal b_fdiv(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   FloatVal a = eval_float(env, call->arg(0));
   FloatVal b = eval_float(env, call->arg(1));
   if (b == 0.0) {
@@ -488,14 +488,14 @@ FloatVal b_fdiv(EnvI& env, Call* call) {
   return a / b;
 }
 IntSetVal* b_dotdot(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   IntVal a = eval_int(env, call->arg(0));
   IntVal b = eval_int(env, call->arg(1));
   return IntSetVal::a(a, b);
 }
 
 IntVal b_sum_int(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   if (al->size() == 0) {
@@ -509,7 +509,7 @@ IntVal b_sum_int(EnvI& env, Call* call) {
 }
 
 IntVal b_product_int(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   if (al->size() == 0) {
@@ -523,7 +523,7 @@ IntVal b_product_int(EnvI& env, Call* call) {
 }
 
 FloatVal b_product_float(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   if (al->size() == 0) {
@@ -554,26 +554,26 @@ FloatVal ub_varoptfloat(EnvI& env, Expression* e) {
 }
 
 FloatVal b_lb_varoptfloat(EnvI& env, Call* call) {
-  if (call->n_args() != 1) {
+  if (call->argCount() != 1) {
     throw EvalError(env, Location(), "dynamic type error");
   }
   return lb_varoptfloat(env, call->arg(0));
 }
 FloatVal b_ub_varoptfloat(EnvI& env, Call* call) {
-  if (call->n_args() != 1) {
+  if (call->argCount() != 1) {
     throw EvalError(env, Location(), "dynamic type error");
   }
   return ub_varoptfloat(env, call->arg(0));
 }
 
 FloatVal b_array_lb_float(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   Expression* e = follow_id_to_decl(call->arg(0));
 
   bool foundMin = false;
   FloatVal array_lb = 0.0;
 
-  if (auto* vd = e->dyn_cast<VarDecl>()) {
+  if (auto* vd = e->dynamicCast<VarDecl>()) {
     if (vd->ti()->domain() != nullptr) {
       FloatSetVal* fsv = eval_floatset(env, vd->ti()->domain());
       array_lb = fsv->min();
@@ -619,13 +619,13 @@ b_array_lb_float_done:
 }
 
 FloatVal b_array_ub_float(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   Expression* e = follow_id_to_decl(call->arg(0));
 
   bool foundMax = false;
   FloatVal array_ub = 0.0;
 
-  if (auto* vd = e->dyn_cast<VarDecl>()) {
+  if (auto* vd = e->dynamicCast<VarDecl>()) {
     if (vd->ti()->domain() != nullptr) {
       FloatSetVal* fsv = eval_floatset(env, vd->ti()->domain());
       array_ub = fsv->max();
@@ -671,7 +671,7 @@ b_array_ub_float_done:
 }
 
 FloatVal b_sum_float(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   if (al->size() == 0) {
@@ -685,9 +685,9 @@ FloatVal b_sum_float(EnvI& env, Call* call) {
 }
 
 FloatVal b_float_min(EnvI& env, Call* call) {
-  switch (call->n_args()) {
+  switch (call->argCount()) {
     case 1:
-      if (call->arg(0)->type().is_set()) {
+      if (call->arg(0)->type().isSet()) {
         throw EvalError(env, call->arg(0)->loc(), "sets not supported");
       } else {
         GCLock lock;
@@ -710,9 +710,9 @@ FloatVal b_float_min(EnvI& env, Call* call) {
 }
 
 FloatVal b_float_max(EnvI& env, Call* call) {
-  switch (call->n_args()) {
+  switch (call->argCount()) {
     case 1:
-      if (call->arg(0)->type().is_set()) {
+      if (call->arg(0)->type().isSet()) {
         throw EvalError(env, call->arg(0)->loc(), "sets not supported");
       } else {
         GCLock lock;
@@ -766,7 +766,7 @@ IntSetVal* b_index_set(EnvI& env, Expression* e, int i) {
   return eval_intset(env, id->decl()->ti()->ranges()[i - 1]->domain());
 }
 bool b_index_sets_agree(EnvI& env, Call* call) {
-  if (call->n_args() != 2) {
+  if (call->argCount() != 2) {
     throw EvalError(env, Location(), "index_sets_agree needs exactly two arguments");
   }
   GCLock lock;
@@ -785,55 +785,55 @@ bool b_index_sets_agree(EnvI& env, Call* call) {
   return true;
 }
 IntSetVal* b_index_set1(EnvI& env, Call* call) {
-  if (call->n_args() != 1) {
+  if (call->argCount() != 1) {
     throw EvalError(env, Location(), "index_set needs exactly one argument");
   }
   return b_index_set(env, call->arg(0), 1);
 }
 IntSetVal* b_index_set2(EnvI& env, Call* call) {
-  if (call->n_args() != 1) {
+  if (call->argCount() != 1) {
     throw EvalError(env, Location(), "index_set needs exactly one argument");
   }
   return b_index_set(env, call->arg(0), 2);
 }
 IntSetVal* b_index_set3(EnvI& env, Call* call) {
-  if (call->n_args() != 1) {
+  if (call->argCount() != 1) {
     throw EvalError(env, Location(), "index_set needs exactly one argument");
   }
   return b_index_set(env, call->arg(0), 3);
 }
 IntSetVal* b_index_set4(EnvI& env, Call* call) {
-  if (call->n_args() != 1) {
+  if (call->argCount() != 1) {
     throw EvalError(env, Location(), "index_set needs exactly one argument");
   }
   return b_index_set(env, call->arg(0), 4);
 }
 IntSetVal* b_index_set5(EnvI& env, Call* call) {
-  if (call->n_args() != 1) {
+  if (call->argCount() != 1) {
     throw EvalError(env, Location(), "index_set needs exactly one argument");
   }
   return b_index_set(env, call->arg(0), 5);
 }
 IntSetVal* b_index_set6(EnvI& env, Call* call) {
-  if (call->n_args() != 1) {
+  if (call->argCount() != 1) {
     throw EvalError(env, Location(), "index_set needs exactly one argument");
   }
   return b_index_set(env, call->arg(0), 6);
 }
 
 IntVal b_min_parsetint(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   IntSetVal* isv = eval_intset(env, call->arg(0));
   return isv->min();
 }
 IntVal b_max_parsetint(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   IntSetVal* isv = eval_intset(env, call->arg(0));
   return isv->max();
 }
 IntSetVal* b_lb_set(EnvI& env, Call* e) {
   Expression* ee = follow_id_to_value(e->arg(0));
-  if (ee->type().ispar()) {
+  if (ee->type().isPar()) {
     return eval_intset(env, ee);
   }
   return IntSetVal::a();
@@ -846,7 +846,7 @@ IntSetVal* b_ub_set(EnvI& env, Expression* e) {
   throw EvalError(env, e->loc(), "cannot determine bounds of set expression");
 }
 IntSetVal* b_ub_set(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   return b_ub_set(env, call->arg(0));
 }
 bool b_has_ub_set(EnvI& env, Call* call) {
@@ -873,7 +873,7 @@ bool b_has_ub_set(EnvI& env, Call* call) {
 }
 
 IntSetVal* b_array_ub_set(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   if (al->size() == 0) {
@@ -934,12 +934,12 @@ IntSetVal* b_dom_varint(EnvI& env, Expression* e) {
   }
 }
 IntSetVal* b_dom_varint(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   return b_dom_varint(env, call->arg(0));
 }
 
 IntSetVal* b_dom_bounds_array(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   Expression* arg_e = call->arg(0);
   Expression* e = follow_id_to_decl(arg_e);
 
@@ -947,7 +947,7 @@ IntSetVal* b_dom_bounds_array(EnvI& env, Call* call) {
   IntVal array_lb = -IntVal::infinity();
   IntVal array_ub = IntVal::infinity();
 
-  if (auto* vd = e->dyn_cast<VarDecl>()) {
+  if (auto* vd = e->dynamicCast<VarDecl>()) {
     if (vd->ti()->domain() != nullptr) {
       GCLock lock;
       IntSetVal* isv = eval_intset(env, vd->ti()->domain());
@@ -996,7 +996,7 @@ b_array_lb_int_done:
 }
 
 IntSetVal* b_dom_array(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   Expression* ae = call->arg(0);
   ArrayLit* al = nullptr;
   while (al == nullptr) {
@@ -1039,7 +1039,7 @@ IntSetVal* b_dom_array(EnvI& env, Call* call) {
   return isv;
 }
 IntSetVal* b_compute_div_bounds(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   IntBounds bx = compute_int_bounds(env, call->arg(0));
   if (!bx.valid) {
     throw EvalError(env, call->arg(0)->loc(), "cannot determine bounds");
@@ -1085,6 +1085,7 @@ IntSetVal* b_compute_div_bounds(EnvI& env, Call* call) {
   return IntSetVal::a(min, max);
 }
 
+// NOLINTNEXTLINE(readability-identifier-naming)
 ArrayLit* b_arrayXd(EnvI& env, Call* call, int d) {
   GCLock lock;
   bool check_form = call->ann().contains(constants().ann.array_check_form);
@@ -1149,6 +1150,7 @@ Expression* b_array4d(EnvI& env, Call* call) { return b_arrayXd(env, call, 4); }
 Expression* b_array5d(EnvI& env, Call* call) { return b_arrayXd(env, call, 5); }
 Expression* b_array6d(EnvI& env, Call* call) { return b_arrayXd(env, call, 6); }
 
+// NOLINTNEXTLINE(readability-identifier-naming)
 Expression* b_arrayXd(EnvI& env, Call* call) {
   GCLock lock;
   ArrayLit* al0 = eval_array_lit(env, call->arg(0));
@@ -1186,7 +1188,7 @@ IntVal b_length(EnvI& env, Call* call) {
 IntVal b_bool2int(EnvI& env, Call* call) { return eval_bool(env, call->arg(0)) ? 1 : 0; }
 
 bool b_forall_par(EnvI& env, Call* call) {
-  if (call->n_args() != 1) {
+  if (call->argCount() != 1) {
     throw EvalError(env, Location(), "forall needs exactly one argument");
   }
   GCLock lock;
@@ -1199,7 +1201,7 @@ bool b_forall_par(EnvI& env, Call* call) {
   return true;
 }
 bool b_exists_par(EnvI& env, Call* call) {
-  if (call->n_args() != 1) {
+  if (call->argCount() != 1) {
     throw EvalError(env, Location(), "exists needs exactly one argument");
   }
   GCLock lock;
@@ -1212,7 +1214,7 @@ bool b_exists_par(EnvI& env, Call* call) {
   return false;
 }
 bool b_clause_par(EnvI& env, Call* call) {
-  if (call->n_args() != 2) {
+  if (call->argCount() != 2) {
     throw EvalError(env, Location(), "clause needs exactly two arguments");
   }
   GCLock lock;
@@ -1231,7 +1233,7 @@ bool b_clause_par(EnvI& env, Call* call) {
   return false;
 }
 bool b_xorall_par(EnvI& env, Call* call) {
-  if (call->n_args() != 1) {
+  if (call->argCount() != 1) {
     throw EvalError(env, Location(), "xorall needs exactly one argument");
   }
   GCLock lock;
@@ -1243,7 +1245,7 @@ bool b_xorall_par(EnvI& env, Call* call) {
   return count % 2 == 1;
 }
 bool b_iffall_par(EnvI& env, Call* call) {
-  if (call->n_args() != 1) {
+  if (call->argCount() != 1) {
     throw EvalError(env, Location(), "xorall needs exactly one argument");
   }
   GCLock lock;
@@ -1255,12 +1257,12 @@ bool b_iffall_par(EnvI& env, Call* call) {
   return count % 2 == 0;
 }
 bool b_not_par(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   return !eval_bool(env, call->arg(0));
 }
 
 IntVal b_card(EnvI& env, Call* call) {
-  if (call->n_args() != 1) {
+  if (call->argCount() != 1) {
     throw EvalError(env, Location(), "card needs exactly one argument");
   }
   IntSetVal* isv = eval_intset(env, call->arg(0));
@@ -1275,7 +1277,7 @@ Expression* exp_is_fixed(EnvI& env, Expression* e) {
     if (cur == nullptr) {
       return nullptr;
     }
-    if (cur->type().ispar()) {
+    if (cur->type().isPar()) {
       return eval_par(env, cur);
     }
     switch (cur->eid()) {
@@ -1309,12 +1311,12 @@ Expression* exp_is_fixed(EnvI& env, Expression* e) {
 }
 
 bool b_is_fixed(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   return exp_is_fixed(env, call->arg(0)) != nullptr;
 }
 
 bool b_is_fixed_array(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   if (al->size() == 0) {
@@ -1329,12 +1331,12 @@ bool b_is_fixed_array(EnvI& env, Call* call) {
 }
 
 bool b_is_same(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   return follow_id_to_decl(call->arg(0)) == follow_id_to_decl(call->arg(1));
 }
 
 Expression* b_fix(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   Expression* ret = exp_is_fixed(env, call->arg(0));
   if (ret == nullptr) {
     throw EvalError(env, call->arg(0)->loc(), "expression is not fixed");
@@ -1348,7 +1350,7 @@ FloatVal b_fix_float(EnvI& env, Call* call) { return eval_float(env, b_fix(env, 
 IntSetVal* b_fix_set(EnvI& env, Call* call) { return eval_intset(env, b_fix(env, call)); }
 
 Expression* b_fix_array(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   std::vector<Expression*> fixed(al->size());
@@ -1366,7 +1368,7 @@ Expression* b_fix_array(EnvI& env, Call* call) {
 }
 
 bool b_has_ann(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   Expression* expr = call->arg(0);
   if (!expr->isa<Id>()) {
     // Argument is a literal, unable to verify annotations
@@ -1379,14 +1381,14 @@ bool b_has_ann(EnvI& env, Call* call) {
   }
   auto* key = ann->cast<Call>();
   if (Call* c = expr->ann().getCall(key->id())) {
-    if (c->n_args() != key->n_args()) {
+    if (c->argCount() != key->argCount()) {
       return false;
     }
-    for (int i = 0; i < c->n_args(); ++i) {
+    for (int i = 0; i < c->argCount(); ++i) {
       if (c->arg(i)->type() != key->arg(i)->type()) {
         return false;
       }
-      if (c->arg(i)->type().ispar()) {
+      if (c->arg(i)->type().isPar()) {
         GCLock lock;
         Expression* check_eq = new BinOp(Location().introduce(), c->arg(i), BOT_EQ, key->arg(i));
         check_eq->type(Type::parbool());
@@ -1409,7 +1411,7 @@ bool b_has_ann(EnvI& env, Call* call) {
 }
 
 bool b_annotate(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   Expression* expr = call->arg(0);
   if (!expr->isa<Id>()) {
     // Argument is a literal, unable to annotate
@@ -1423,10 +1425,10 @@ bool b_annotate(EnvI& env, Call* call) {
   Expression* ann = call->arg(1);
   var_decl->ann().add(ann);
   // Increase usage count of the annotation
-  if (auto* ann_decl = follow_id_to_decl(ann)->dyn_cast<VarDecl>()) {
-    auto var_it = env.vo.idx.find(var_decl->id());
-    assert(var_it != env.vo.idx.end());
-    env.vo.add(ann_decl, (*env.model)[var_it->second]);
+  if (auto* ann_decl = follow_id_to_decl(ann)->dynamicCast<VarDecl>()) {
+    auto var_it = env.varOccurrences.idx.find(var_decl->id());
+    assert(var_it != env.varOccurrences.idx.end());
+    env.varOccurrences.add(ann_decl, (*env.model)[var_it->second]);
   }
   return true;
 }
@@ -1475,7 +1477,7 @@ FloatVal b_sqrt(EnvI& env, Call* call) {
 }
 
 bool b_assert_bool(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   GCLock lock;
   if (eval_bool(env, call->arg(0))) {
     return true;
@@ -1487,7 +1489,7 @@ bool b_assert_bool(EnvI& env, Call* call) {
 }
 
 Expression* b_assert(EnvI& env, Call* call) {
-  assert(call->n_args() == 3);
+  assert(call->argCount() == 3);
   GCLock lock;
   if (eval_bool(env, call->arg(0))) {
     return call->arg(2);
@@ -1499,7 +1501,7 @@ Expression* b_assert(EnvI& env, Call* call) {
 }
 
 Expression* b_mzn_deprecate(EnvI& env, Call* call) {
-  assert(call->n_args() == 4);
+  assert(call->argCount() == 4);
   GCLock lock;
   std::string fnName = eval_string(env, call->arg(0));
   if (env.deprecationWarnings.find(fnName) == env.deprecationWarnings.end()) {
@@ -1525,30 +1527,30 @@ Expression* b_trace(EnvI& env, Call* call) {
   GCLock lock;
   auto* msg = eval_par(env, call->arg(0))->cast<StringLit>();
   env.errstream << msg->v();
-  return call->n_args() == 1 ? constants().lit_true : call->arg(1);
+  return call->argCount() == 1 ? constants().literalTrue : call->arg(1);
 }
 
 Expression* b_trace_stdout(EnvI& env, Call* call) {
   GCLock lock;
   auto* msg = eval_par(env, call->arg(0))->cast<StringLit>();
   env.outstream << msg->v();
-  return call->n_args() == 1 ? constants().lit_true : call->arg(1);
+  return call->argCount() == 1 ? constants().literalTrue : call->arg(1);
 }
 
 Expression* b_trace_logstream(EnvI& env, Call* call) {
   GCLock lock;
   auto* msg = eval_par(env, call->arg(0))->cast<StringLit>();
   env.logstream << msg->v();
-  return call->n_args() == 1 ? constants().lit_true : call->arg(1);
+  return call->argCount() == 1 ? constants().literalTrue : call->arg(1);
 }
 std::string b_logstream(EnvI& env, Call* call) { return env.logstream.str(); }
 
 bool b_in_redundant_constraint(EnvI& env, Call* /*call*/) {
-  return env.in_redundant_constraint > 0;
+  return env.inRedundantConstraint > 0;
 }
 
 Expression* b_set2array(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   GCLock lock;
   IntSetVal* isv = eval_intset(env, call->arg(0));
   std::vector<Expression*> elems;
@@ -1572,20 +1574,20 @@ std::string show(EnvI& env, Expression* exp) {
   GCLock lock;
   Printer p(oss, 0, false);
   Expression* e = follow_id_to_decl(exp);
-  if (auto* vd = e->dyn_cast<VarDecl>()) {
+  if (auto* vd = e->dynamicCast<VarDecl>()) {
     if ((vd->e() != nullptr) && !vd->e()->isa<Call>()) {
       e = vd->e();
     } else {
       e = vd->id();
     }
   }
-  if (e->type().ispar()) {
+  if (e->type().isPar()) {
     e = eval_par(env, e);
   }
   if (e->type().dim() > 0) {
     e = eval_array_lit(env, e);
   }
-  if (auto* al = e->dyn_cast<ArrayLit>()) {
+  if (auto* al = e->dynamicCast<ArrayLit>()) {
     oss << "[";
     for (unsigned int i = 0; i < al->size(); i++) {
       p.print((*al)[i]);
@@ -1600,7 +1602,7 @@ std::string show(EnvI& env, Expression* exp) {
   return oss.str();
 }
 std::string b_show(EnvI& env, Call* call) { return show(env, call->arg(0)); }
-std::string b_showDznId(EnvI& env, Call* call) {
+std::string b_show_dzn_id(EnvI& env, Call* call) {
   GCLock lock;
   std::string s = eval_string(env, call->arg(0));
   size_t nonIdChar =
@@ -1615,7 +1617,7 @@ std::string b_showDznId(EnvI& env, Call* call) {
 std::string b_show_json_basic(EnvI& env, Expression* e) {
   std::ostringstream oss;
   Printer p(oss, 0, false);
-  if (auto* sl = e->dyn_cast<SetLit>()) {
+  if (auto* sl = e->dynamicCast<SetLit>()) {
     oss << "{ \"set\" : [";
     if (IntSetVal* isv = sl->isv()) {
       bool first = true;
@@ -1640,12 +1642,12 @@ std::string b_show_json_basic(EnvI& env, Expression* e) {
           oss << ",";
         }
         if (fsr.min() == fsr.max()) {
-          ppFloatVal(oss, fsr.min());
+          pp_floatval(oss, fsr.min());
         } else {
           oss << "[";
-          ppFloatVal(oss, fsr.min());
+          pp_floatval(oss, fsr.min());
           oss << ",";
-          ppFloatVal(oss, fsr.max());
+          pp_floatval(oss, fsr.max());
           oss << "]";
         }
       }
@@ -1676,7 +1678,7 @@ std::string b_show_json(EnvI& env, Call* call) {
     p.print(e);
     return oss.str();
   } else {
-    if (auto* al = e->dyn_cast<ArrayLit>()) {
+    if (auto* al = e->dynamicCast<ArrayLit>()) {
       std::vector<unsigned int> dims(al->dims() - 1);
       if (!dims.empty()) {
         dims[0] = al->max(al->dims() - 1) - al->min(al->dims() - 1) + 1;
@@ -1714,49 +1716,49 @@ std::string b_show_json(EnvI& env, Call* call) {
   }
 }
 
-Expression* b_outputJSON(EnvI& env, Call* call) {
-  return createJSONOutput(env, false, false, false);
+Expression* b_output_json(EnvI& env, Call* call) {
+  return create__json_output(env, false, false, false);
 }
-Expression* b_outputJSONParameters(EnvI& env, Call* call) {
+Expression* b_output_json_parameters(EnvI& env, Call* call) {
   std::vector<Expression*> outputVars;
   outputVars.push_back(new StringLit(Location().introduce(), "{\n"));
 
   class JSONParVisitor : public ItemVisitor {
   protected:
-    EnvI& e;
-    std::vector<Expression*>& outputVars;
-    bool first_var;
+    EnvI& _e;
+    std::vector<Expression*>& _outputVars;
+    bool _firstVar;
 
   public:
-    JSONParVisitor(EnvI& e0, std::vector<Expression*>& outputVars0)
-        : e(e0), outputVars(outputVars0), first_var(true) {}
+    JSONParVisitor(EnvI& e, std::vector<Expression*>& outputVars)
+        : _e(e), _outputVars(outputVars), _firstVar(true) {}
     void vVarDeclI(VarDeclI* vdi) {
       VarDecl* vd = vdi->e();
       if (vd->ann().contains(constants().ann.rhs_from_assignment)) {
         std::ostringstream s;
-        if (first_var) {
-          first_var = false;
+        if (_firstVar) {
+          _firstVar = false;
         } else {
           s << ",\n";
         }
         s << "  \"" << vd->id()->str() << "\""
           << " : ";
         auto* sl = new StringLit(Location().introduce(), s.str());
-        outputVars.push_back(sl);
+        _outputVars.push_back(sl);
 
         std::vector<Expression*> showArgs(1);
         showArgs[0] = vd->id();
         Call* show = new Call(Location().introduce(), "showJSON", showArgs);
         show->type(Type::parstring());
-        FunctionI* fi = e.model->matchFn(e, show, false);
+        FunctionI* fi = _e.model->matchFn(_e, show, false);
         assert(fi);
         show->decl(fi);
-        outputVars.push_back(show);
+        _outputVars.push_back(show);
       }
     }
   } jsonov(env, outputVars);
 
-  iterItems(jsonov, env.model);
+  iter_items(jsonov, env.model);
   outputVars.push_back(new StringLit(Location().introduce(), "\n}\n"));
   return new ArrayLit(Location().introduce(), outputVars);
 }
@@ -1766,12 +1768,12 @@ std::string b_format(EnvI& env, Call* call) {
   int prec = -1;
   GCLock lock;
   Expression* e;
-  if (call->n_args() > 1) {
+  if (call->argCount() > 1) {
     width = static_cast<int>(eval_int(env, call->arg(0)).toInt());
-    if (call->n_args() == 2) {
+    if (call->argCount() == 2) {
       e = eval_par(env, call->arg(1));
     } else {
-      assert(call->n_args() == 3);
+      assert(call->argCount() == 3);
       prec = static_cast<int>(eval_int(env, call->arg(1)).toInt());
       if (prec < 0) {
         throw EvalError(env, call->arg(1)->loc(), "output precision cannot be negative");
@@ -1871,11 +1873,11 @@ std::string b_format_justify_string(EnvI& env, Call* call) {
 }
 
 std::string b_show_int(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   GCLock lock;
   Expression* e = eval_par(env, call->arg(1));
   std::ostringstream oss;
-  if (auto* iv = e->dyn_cast<IntLit>()) {
+  if (auto* iv = e->dynamicCast<IntLit>()) {
     int justify = static_cast<int>(eval_int(env, call->arg(0)).toInt());
     std::ostringstream oss_length;
     oss_length << iv->v();
@@ -1903,11 +1905,11 @@ std::string b_show_int(EnvI& env, Call* call) {
 }
 
 std::string b_show_float(EnvI& env, Call* call) {
-  assert(call->n_args() == 3);
+  assert(call->argCount() == 3);
   GCLock lock;
   Expression* e = eval_par(env, call->arg(2));
   std::ostringstream oss;
-  if (auto* fv = e->dyn_cast<FloatLit>()) {
+  if (auto* fv = e->dynamicCast<FloatLit>()) {
     int justify = static_cast<int>(eval_int(env, call->arg(0)).toInt());
     int prec = static_cast<int>(eval_int(env, call->arg(1)).toInt());
     if (prec < 0) {
@@ -1945,7 +1947,7 @@ std::string b_file_path(EnvI& /*env*/, Call* call) {
 }
 
 std::string b_concat(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   std::ostringstream oss;
@@ -1956,7 +1958,7 @@ std::string b_concat(EnvI& env, Call* call) {
 }
 
 std::string b_join(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   std::string sep = eval_string(env, call->arg(0));
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(1));
@@ -1971,7 +1973,7 @@ std::string b_join(EnvI& env, Call* call) {
 }
 
 IntSetVal* b_array_union(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   if (al->size() == 0) {
     return IntSetVal::a();
@@ -1987,7 +1989,7 @@ IntSetVal* b_array_union(EnvI& env, Call* call) {
 }
 
 IntSetVal* b_array_intersect(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   std::vector<IntSetVal::Range> ranges;
   if (al->size() > 0) {
@@ -2037,7 +2039,7 @@ IntSetVal* b_array_intersect(EnvI& env, Call* call) {
 }
 
 Expression* b_sort_by_int(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   ArrayLit* order_e = eval_array_lit(env, call->arg(1));
   std::vector<IntVal> order(order_e->size());
@@ -2062,7 +2064,7 @@ Expression* b_sort_by_int(EnvI& env, Call* call) {
 }
 
 Expression* b_sort_by_float(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   ArrayLit* order_e = eval_array_lit(env, call->arg(1));
   std::vector<FloatVal> order(order_e->size());
@@ -2087,7 +2089,7 @@ Expression* b_sort_by_float(EnvI& env, Call* call) {
 }
 
 Expression* b_sort(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   std::vector<Expression*> sorted(al->size());
   for (auto i = static_cast<unsigned int>(sorted.size()); (i--) != 0U;) {
@@ -2116,7 +2118,7 @@ Expression* b_sort(EnvI& env, Call* call) {
 }
 
 Expression* b_inverse(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   if (al->size() == 0) {
     return al;
@@ -2156,7 +2158,7 @@ Expression* b_inverse(EnvI& env, Call* call) {
 }
 
 Expression* b_set_to_ranges_int(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   IntSetVal* isv = eval_intset(env, call->arg(0));
   std::vector<Expression*> v(isv->size() * 2);
   for (unsigned int i = 0; i < isv->size(); i++) {
@@ -2169,7 +2171,7 @@ Expression* b_set_to_ranges_int(EnvI& env, Call* call) {
 }
 
 Expression* b_set_to_ranges_float(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   FloatSetVal* fsv = eval_floatset(env, call->arg(0));
   std::vector<Expression*> v(fsv->size() * 2);
   for (unsigned int i = 0; i < fsv->size(); i++) {
@@ -2188,7 +2190,7 @@ std::default_random_engine& rnd_generator() {
 }
 
 FloatVal b_normal_float_float(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   const double mean = eval_float(env, call->arg(0)).toDouble();
   const double stdv = eval_float(env, call->arg(1)).toDouble();
   std::normal_distribution<double> distribution(mean, stdv);
@@ -2197,7 +2199,7 @@ FloatVal b_normal_float_float(EnvI& env, Call* call) {
 }
 
 FloatVal b_normal_int_float(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   const double mean = double(eval_int(env, call->arg(0)).toInt());
   const double stdv = eval_float(env, call->arg(1)).toDouble();
   std::normal_distribution<double> distribution(mean, stdv);
@@ -2206,7 +2208,7 @@ FloatVal b_normal_int_float(EnvI& env, Call* call) {
 }
 
 FloatVal b_uniform_float(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   const double lb = eval_float(env, call->arg(0)).toDouble();
   const double ub = eval_float(env, call->arg(1)).toDouble();
   if (lb > ub) {
@@ -2221,7 +2223,7 @@ FloatVal b_uniform_float(EnvI& env, Call* call) {
 }
 
 IntVal b_uniform_int(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   const long long int lb = eval_int(env, call->arg(0)).toInt();
   const long long int ub = eval_int(env, call->arg(1)).toInt();
   if (lb > ub) {
@@ -2236,7 +2238,7 @@ IntVal b_uniform_int(EnvI& env, Call* call) {
 }
 
 IntVal b_poisson_int(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   long long int mean = eval_int(env, call->arg(0)).toInt();
   std::poisson_distribution<long long int> distribution(mean);
   // return a sample from the distribution
@@ -2244,7 +2246,7 @@ IntVal b_poisson_int(EnvI& env, Call* call) {
 }
 
 IntVal b_poisson_float(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   double mean = eval_float(env, call->arg(0)).toDouble();
   std::poisson_distribution<long long int> distribution(mean);
   // return a sample from the distribution
@@ -2252,7 +2254,7 @@ IntVal b_poisson_float(EnvI& env, Call* call) {
 }
 
 FloatVal b_gamma_float_float(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   const double alpha = eval_float(env, call->arg(0)).toDouble();
   const double beta = eval_float(env, call->arg(1)).toDouble();
   std::gamma_distribution<double> distribution(alpha, beta);
@@ -2261,7 +2263,7 @@ FloatVal b_gamma_float_float(EnvI& env, Call* call) {
 }
 
 FloatVal b_gamma_int_float(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   const double alpha = eval_float(env, call->arg(0)).toDouble();
   const double beta = eval_float(env, call->arg(1)).toDouble();
   std::gamma_distribution<double> distribution(alpha, beta);
@@ -2270,7 +2272,7 @@ FloatVal b_gamma_int_float(EnvI& env, Call* call) {
 }
 
 FloatVal b_weibull_int_float(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   const double shape = double(eval_int(env, call->arg(0)).toInt());
   if (shape < 0) {
     std::stringstream ssm;
@@ -2291,7 +2293,7 @@ FloatVal b_weibull_int_float(EnvI& env, Call* call) {
 }
 
 FloatVal b_weibull_float_float(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   const double shape = eval_float(env, call->arg(0)).toDouble();
   if (shape < 0) {
     std::stringstream ssm;
@@ -2312,7 +2314,7 @@ FloatVal b_weibull_float_float(EnvI& env, Call* call) {
 }
 
 FloatVal b_exponential_float(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   const double lambda = eval_float(env, call->arg(0)).toDouble();
   if (lambda < 0) {
     std::stringstream ssm;
@@ -2326,7 +2328,7 @@ FloatVal b_exponential_float(EnvI& env, Call* call) {
 }
 
 FloatVal b_exponential_int(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   const double lambda = double(eval_int(env, call->arg(0)).toInt());
   if (lambda < 0) {
     std::stringstream ssm;
@@ -2340,7 +2342,7 @@ FloatVal b_exponential_int(EnvI& env, Call* call) {
 }
 
 FloatVal b_lognormal_float_float(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   const double mean = eval_float(env, call->arg(0)).toDouble();
   const double stdv = eval_float(env, call->arg(1)).toDouble();
   std::lognormal_distribution<double> distribution(mean, stdv);
@@ -2349,7 +2351,7 @@ FloatVal b_lognormal_float_float(EnvI& env, Call* call) {
 }
 
 FloatVal b_lognormal_int_float(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   const double mean = double(eval_int(env, call->arg(0)).toInt());
   const double stdv = eval_float(env, call->arg(1)).toDouble();
   std::lognormal_distribution<double> distribution(mean, stdv);
@@ -2358,7 +2360,7 @@ FloatVal b_lognormal_int_float(EnvI& env, Call* call) {
 }
 
 FloatVal b_chisquared_float(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   const double lambda = eval_float(env, call->arg(0)).toDouble();
   std::exponential_distribution<double> distribution(lambda);
   // return a sample from the distribution
@@ -2366,7 +2368,7 @@ FloatVal b_chisquared_float(EnvI& env, Call* call) {
 }
 
 FloatVal b_chisquared_int(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   const double lambda = double(eval_int(env, call->arg(0)).toInt());
   std::exponential_distribution<double> distribution(lambda);
   // return a sample from the distribution
@@ -2374,7 +2376,7 @@ FloatVal b_chisquared_int(EnvI& env, Call* call) {
 }
 
 FloatVal b_cauchy_float_float(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   const double mean = eval_float(env, call->arg(0)).toDouble();
   const double scale = eval_float(env, call->arg(1)).toDouble();
   std::cauchy_distribution<double> distribution(mean, scale);
@@ -2383,7 +2385,7 @@ FloatVal b_cauchy_float_float(EnvI& env, Call* call) {
 }
 
 FloatVal b_cauchy_int_float(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   const double mean = double(eval_int(env, call->arg(0)).toInt());
   const double scale = eval_float(env, call->arg(1)).toDouble();
   std::cauchy_distribution<double> distribution(mean, scale);
@@ -2392,7 +2394,7 @@ FloatVal b_cauchy_int_float(EnvI& env, Call* call) {
 }
 
 FloatVal b_fdistribution_float_float(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   const double d1 = eval_float(env, call->arg(0)).toDouble();
   const double d2 = eval_float(env, call->arg(1)).toDouble();
   std::fisher_f_distribution<double> distribution(d1, d2);
@@ -2401,7 +2403,7 @@ FloatVal b_fdistribution_float_float(EnvI& env, Call* call) {
 }
 
 FloatVal b_fdistribution_int_int(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   const double d1 = double(eval_int(env, call->arg(0)).toInt());
   const double d2 = double(eval_int(env, call->arg(1)).toInt());
   std::fisher_f_distribution<double> distribution(d1, d2);
@@ -2410,7 +2412,7 @@ FloatVal b_fdistribution_int_int(EnvI& env, Call* call) {
 }
 
 FloatVal b_tdistribution_float(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   const double sampleSize = eval_float(env, call->arg(0)).toDouble();
   std::student_t_distribution<double> distribution(sampleSize);
   // return a sample from the distribution
@@ -2418,7 +2420,7 @@ FloatVal b_tdistribution_float(EnvI& env, Call* call) {
 }
 
 FloatVal b_tdistribution_int(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   const double sampleSize = double(eval_int(env, call->arg(0)).toInt());
   std::student_t_distribution<double> distribution(sampleSize);
   // return a sample from the distribution
@@ -2426,7 +2428,7 @@ FloatVal b_tdistribution_int(EnvI& env, Call* call) {
 }
 
 IntVal b_discrete_distribution(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   if (al->dims() != 1) {
@@ -2452,7 +2454,7 @@ IntVal b_discrete_distribution(EnvI& env, Call* call) {
 }
 
 bool b_bernoulli(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   const double p = eval_float(env, call->arg(0)).toDouble();
   std::bernoulli_distribution distribution(p);
   // return a sample from the distribution
@@ -2460,7 +2462,7 @@ bool b_bernoulli(EnvI& env, Call* call) {
 }
 
 IntVal b_binomial(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   double t = double(eval_int(env, call->arg(0)).toInt());
   double p = eval_float(env, call->arg(1)).toDouble();
   std::binomial_distribution<long long int> distribution(t, p);
@@ -2469,49 +2471,49 @@ IntVal b_binomial(EnvI& env, Call* call) {
 }
 
 FloatVal b_atan(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   GCLock lock;
   FloatVal f = eval_float(env, call->arg(0));
   return std::atan(f.toDouble());
 }
 
 FloatVal b_cos(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   GCLock lock;
   FloatVal f = eval_float(env, call->arg(0));
   return std::cos(f.toDouble());
 }
 
 FloatVal b_sin(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   GCLock lock;
   FloatVal f = eval_float(env, call->arg(0));
   return std::sin(f.toDouble());
 }
 
 FloatVal b_asin(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   GCLock lock;
   FloatVal f = eval_float(env, call->arg(0));
   return std::asin(f.toDouble());
 }
 
 FloatVal b_acos(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   GCLock lock;
   FloatVal f = eval_float(env, call->arg(0));
   return std::acos(f.toDouble());
 }
 
 FloatVal b_tan(EnvI& env, Call* call) {
-  assert(call->n_args() == 1);
+  assert(call->argCount() == 1);
   GCLock lock;
   FloatVal f = eval_float(env, call->arg(0));
   return std::tan(f.toDouble());
 }
 
 IntVal b_to_enum(EnvI& env, Call* call) {
-  assert(call->n_args() == 2);
+  assert(call->argCount() == 2);
   IntSetVal* isv = eval_intset(env, call->arg(0));
   IntVal v = eval_int(env, call->arg(1));
   if (!isv->contains(v)) {
@@ -2564,7 +2566,7 @@ Expression* b_slice(EnvI& env, Call* call) {
     }
   }
 
-  std::vector<std::pair<int, int>> newDims(call->n_args() - 2);
+  std::vector<std::pair<int, int>> newDims(call->argCount() - 2);
   for (unsigned int i = 0; i < newDims.size(); i++) {
     IntSetVal* isv = eval_intset(env, call->arg(2 + i));
     if (isv->size() == 0) {
@@ -2629,7 +2631,7 @@ Expression* b_regular_from_string(EnvI& env, Call* call) {
         if (it == env.reverseEnum.end()) {
           throw std::runtime_error("Unknown identifier: " + id2);
         }
-        auto* id2_vd = it->second->dyn_cast<VarDeclI>();
+        auto* id2_vd = it->second->dynamicCast<VarDeclI>();
         if (id2_vd == nullptr) {
           throw std::runtime_error("identifier " + id2 + " is not an enum constant");
         }
@@ -2642,7 +2644,7 @@ Expression* b_regular_from_string(EnvI& env, Call* call) {
       if (it == env.reverseEnum.end()) {
         throw std::runtime_error("Unknown identifier: " + id2);
       }
-      if (auto* id1_vdi = it->second->dyn_cast<VarDeclI>()) {
+      if (auto* id1_vdi = it->second->dynamicCast<VarDeclI>()) {
         // this is not an enum constructor, simply output both values
         IntVal result1 = eval_int(env, id1_vdi->e()->id());
         IntVal result2 = eval_int(env, arg);
@@ -2677,7 +2679,7 @@ Expression* b_regular_from_string(EnvI& env, Call* call) {
     if (it == env.reverseEnum.end()) {
       throw std::runtime_error("Unknown identifier: " + id1);
     }
-    auto* id1_vd = it->second->dyn_cast<VarDeclI>();
+    auto* id1_vd = it->second->dynamicCast<VarDeclI>();
     if (id1_vd == nullptr) {
       throw std::runtime_error("identifier " + id1 + " is not an enum constant");
     }
@@ -2746,15 +2748,15 @@ Expression* b_regular_from_string(EnvI& env, Call* call) {
 
 Expression* b_show_checker_output(EnvI& env, Call* call) {
   // Get checker output
-  env.checker_output.flush();
-  std::string output = env.checker_output.str();
+  env.checkerOutput.flush();
+  std::string output = env.checkerOutput.str();
   // Reset checker output
-  env.checker_output.str("");
-  env.checker_output.clear();
+  env.checkerOutput.str("");
+  env.checkerOutput.clear();
   return new StringLit(call->loc().introduce(), output);
 }
 
-void registerBuiltins(Env& e) {
+void register_builtins(Env& e) {
   EnvI& env = e.envi();
   Model* m = env.model;
 
@@ -3399,7 +3401,7 @@ void registerBuiltins(Env& e) {
   {
     std::vector<Type> t(1);
     t[0] = Type::parstring();
-    rb(env, m, ASTString("showDznId"), t, b_showDznId);
+    rb(env, m, ASTString("showDznId"), t, b_show_dzn_id);
   }
   {
     std::vector<Type> t(3);
@@ -3429,8 +3431,8 @@ void registerBuiltins(Env& e) {
   }
   {
     std::vector<Type> t;
-    rb(env, m, ASTString("outputJSON"), t, b_outputJSON);
-    rb(env, m, ASTString("outputJSONParameters"), t, b_outputJSONParameters);
+    rb(env, m, ASTString("outputJSON"), t, b_output_json);
+    rb(env, m, ASTString("outputJSONParameters"), t, b_output_json_parameters);
   }
   {
     std::vector<Type> t(2);

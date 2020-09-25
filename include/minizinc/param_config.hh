@@ -28,7 +28,7 @@ protected:
   std::vector<std::string> _values;
   std::unordered_set<std::string> _blacklist;
   std::unordered_map<std::string, std::string> _bool_switches;
-  void add_value(const ASTString& flag, Expression* e);
+  void addValue(const ASTString& flag, Expression* e);
 
 public:
   ParamConfig() {}
@@ -40,7 +40,7 @@ public:
   void blacklist(const std::vector<std::string>& disallowed);
   /// Add boolean switch
   /// When the key is found in the config, then if it's false the negated flag is used
-  void negated_flag(const std::string& flag, const std::string& negated);
+  void negatedFlag(const std::string& flag, const std::string& negated);
   /// Return the arguments represented by this configuration
   const std::vector<std::string>& argv();
 };

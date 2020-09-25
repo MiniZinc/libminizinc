@@ -12,8 +12,8 @@
 #pragma once
 
 namespace MiniZinc {
-class Gecode_SolverFactoryInitialiser {
+class GecodeSolverFactoryInitialiser {
 public:
-  Gecode_SolverFactoryInitialiser();
+  GecodeSolverFactoryInitialiser();
 };
 }  // namespace MiniZinc

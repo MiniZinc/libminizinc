@@ -43,8 +43,8 @@ std::string get_file_contents(std::ifstream& in) {
     in.read(&contents[0], contents.size());
     in.close();
     if (!contents.empty() && contents[0] == '@') {
-      contents = MiniZinc::FileUtils::decodeBase64(contents);
-      MiniZinc::FileUtils::inflateString(contents);
+      contents = MiniZinc::FileUtils::decode_base64(contents);
+      MiniZinc::FileUtils::inflate_string(contents);
     }
     return (contents);
   }
@@ -134,7 +134,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
     include_file("stdlib.mzn", true);  // Added last, so it is processed first
   }
   // } else {
-  //   include_file("flatzinc_builtins.mzn", true);
+  //   include_file("flatzincbuiltins.mzn", true);
   // }
 
   while (!files.empty()) {
@@ -306,7 +306,7 @@ Model* parse(Env& env, const vector<string>& filenames, const vector<string>& da
   return model;
 }
 
-Model* parseData(Env& env, Model* model, const vector<string>& datafiles,
+Model* parse_data(Env& env, Model* model, const vector<string>& datafiles,
                  const vector<string>& includePaths, bool isFlatZinc, bool ignoreStdlib,
                  bool parseDocComments, bool verbose, ostream& err) {
   vector<string> filenames;
@@ -316,7 +316,7 @@ Model* parseData(Env& env, Model* model, const vector<string>& datafiles,
   return model;
 }
 
-Model* parseFromString(Env& env, const string& text, const string& filename,
+Model* parse_from_string(Env& env, const string& text, const string& filename,
                        const vector<string>& ip, bool isFlatZinc, bool ignoreStdlib,
                        bool parseDocComments, bool verbose, ostream& err,
                        std::vector<SyntaxError>& syntaxErrors) {

@@ -29,6 +29,35 @@ class FunctionIterator;
 class CopyMap;
 class EnvI;
 
+class Model;
+
+class VarDeclIteratorContainer {
+private:
+  Model* _m;
+public:
+  VarDeclIteratorContainer(Model* m) : _m(m) {}
+  VarDeclIterator begin();
+  VarDeclIterator end();
+};
+
+class ConstraintIteratorContainer {
+private:
+  Model* _m;
+public:
+  ConstraintIteratorContainer(Model* m) : _m(m) {}
+  ConstraintIterator begin();
+  ConstraintIterator end();
+};
+
+class FunctionIteratorContainer {
+private:
+  Model* _m;
+public:
+  FunctionIteratorContainer(Model* m) : _m(m) {}
+  FunctionIterator begin();
+  FunctionIterator end();
+};
+
 /// A MiniZinc model
 class Model : public GCMarker {
   friend Model* copy(EnvI& env, CopyMap& cm, Model* m, bool isFlatModel);
@@ -62,12 +91,12 @@ protected:
   /// Type of map from identifiers to function declarations
   using FnMap = ASTStringMap<std::vector<FnEntry>>;
   /// Map from identifiers to function declarations
-  FnMap fnmap;
+  FnMap _fnmap;
 
   /// Type of map from Type (represented as int) to reverse mapper functions
   using RevMapperMap = std::unordered_map<int, FunctionI*>;
   /// Map from Type (represented as int) to reverse mapper functions
-  RevMapperMap revmapmap;
+  RevMapperMap _revmapmap;
 
   /// Filename of the model
   ASTString _filename;
@@ -87,8 +116,8 @@ protected:
   /// Store some declarations
   struct FnDecls {
     using TCheckedDecl = std::pair<bool, FunctionI*>;  // bool means that it was checked
-    TCheckedDecl bounds_disj = {false, nullptr};       // SCIP's bound disjunction
-  } fnDecls;
+    TCheckedDecl boundsDisj = {false, nullptr};       // SCIP's bound disjunction
+  } _fnDecls;
 
 public:
   /// Construct empty model
@@ -170,13 +199,10 @@ public:
   /// Iterator for end of items
   const_iterator end() const;
 
-  ConstraintIterator begin_constraints();
-  ConstraintIterator end_constraints();
-  VarDeclIterator begin_vardecls();
-  VarDeclIterator end_vardecls();
-  FunctionIterator begin_functions();
-  FunctionIterator end_functions();
-
+  ConstraintIteratorContainer constraints();
+  VarDeclIteratorContainer vardecls();
+  FunctionIteratorContainer functions();
+  
   SolveI* solveItem();
 
   OutputI* outputItem();
@@ -192,7 +218,7 @@ public:
   void compact();
 
   /// Get the stored function declarations
-  FnDecls& getFnDecls() { return fnDecls; }
+  FnDecls& getFnDecls() { return _fnDecls; }
 };
 
 class VarDeclIterator {
@@ -317,7 +343,7 @@ class EnvI;
 /// Environment
 class Env {
 private:
-  EnvI* e;
+  EnvI* _e;
 
 public:
   Env(Model* m = nullptr, std::ostream& outstream = std::cout, std::ostream& errstream = std::cerr);
@@ -372,10 +398,10 @@ public:
 template <class I>
 class ItemIter {
 protected:
-  I& iter;
+  I& _iter;
 
 public:
-  ItemIter(I& iter0) : iter(iter0) {}
+  ItemIter(I& iter) : _iter(iter) {}
   void run(Model* m) {
     std::unordered_set<Model*> seen;
     std::vector<Model*> models;
@@ -384,7 +410,7 @@ public:
     while (!models.empty()) {
       Model* cm = models.back();
       models.pop_back();
-      if (!iter.enterModel(cm)) {
+      if (!_iter.enterModel(cm)) {
         continue;
       }
       std::vector<Model*> includedModels;
@@ -392,7 +418,7 @@ public:
         if (i->removed()) {
           continue;
         }
-        if (!iter.enter(i)) {
+        if (!_iter.enter(i)) {
           continue;
         }
         switch (i->iid()) {
@@ -401,25 +427,25 @@ public:
               includedModels.push_back(i->cast<IncludeI>()->m());
               seen.insert(i->cast<IncludeI>()->m());
             }
-            iter.vIncludeI(i->cast<IncludeI>());
+            _iter.vIncludeI(i->cast<IncludeI>());
             break;
           case Item::II_VD:
-            iter.vVarDeclI(i->cast<VarDeclI>());
+            _iter.vVarDeclI(i->cast<VarDeclI>());
             break;
           case Item::II_ASN:
-            iter.vAssignI(i->cast<AssignI>());
+            _iter.vAssignI(i->cast<AssignI>());
             break;
           case Item::II_CON:
-            iter.vConstraintI(i->cast<ConstraintI>());
+            _iter.vConstraintI(i->cast<ConstraintI>());
             break;
           case Item::II_SOL:
-            iter.vSolveI(i->cast<SolveI>());
+            _iter.vSolveI(i->cast<SolveI>());
             break;
           case Item::II_OUT:
-            iter.vOutputI(i->cast<OutputI>());
+            _iter.vOutputI(i->cast<OutputI>());
             break;
           case Item::II_FUN:
-            iter.vFunctionI(i->cast<FunctionI>());
+            _iter.vFunctionI(i->cast<FunctionI>());
             break;
         }
       }
@@ -432,7 +458,7 @@ public:
 
 /// Run iterator \a i over all items of model \a m
 template <class I>
-void iterItems(I& i, Model* m) {
+void iter_items(I& i, Model* m) {
   ItemIter<I>(i).run(m);
 }
 

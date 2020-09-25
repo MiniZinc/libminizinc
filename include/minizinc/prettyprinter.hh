@@ -24,9 +24,9 @@ class PrettyPrinter;
 
 class Printer {
 private:
-  EnvI* env;
-  ItemDocumentMapper* ism;
-  PrettyPrinter* printer;
+  EnvI* _env;
+  ItemDocumentMapper* _ism;
+  PrettyPrinter* _printer;
   std::ostream& _os;
   int _width;
   bool _flatZinc;
@@ -92,7 +92,7 @@ std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& o
   return os << s.str();
 }
 
-void ppFloatVal(std::ostream& os, const FloatVal& fv, bool hexFloat = false);
+void pp_floatval(std::ostream& os, const FloatVal& fv, bool hexFloat = false);
 
 }  // namespace MiniZinc
 

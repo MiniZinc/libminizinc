@@ -36,7 +36,7 @@ inline bool Expression::equal(const Expression* e0, const Expression* e1) {
   if (e0->hash() != e1->hash()) {
     return false;
   }
-  return equal_internal(e0, e1);
+  return equalInternal(e0, e1);
 }
 
 inline void Expression::type(const Type& t) {
@@ -95,7 +95,7 @@ inline IntLit* IntLit::aEnum(IntVal v, unsigned int enumId) {
 inline ASTString Location::LocVec::filename() const {
   return static_cast<ASTStringData*>(_data[0]);
 }
-inline unsigned int Location::LocVec::first_line() const {
+inline unsigned int Location::LocVec::firstLine() const {
   if (_size == 2) {
     static const unsigned int pointerBits = sizeof(void*) * 8;
     auto* il = static_cast<IntLit*>(_data[1]);
@@ -111,7 +111,7 @@ inline unsigned int Location::LocVec::first_line() const {
     return il->v().toInt();
   }
 }
-inline unsigned int Location::LocVec::last_line() const {
+inline unsigned int Location::LocVec::lastLine() const {
   if (_size == 2) {
     static const unsigned int pointerBits = sizeof(void*) * 8;
     auto* il = static_cast<IntLit*>(_data[1]);
@@ -130,7 +130,7 @@ inline unsigned int Location::LocVec::last_line() const {
     return il->v().toInt();
   }
 }
-inline unsigned int Location::LocVec::first_column() const {
+inline unsigned int Location::LocVec::firstColumn() const {
   if (_size == 2) {
     static const unsigned int pointerBits = sizeof(void*) * 8;
     auto* il = static_cast<IntLit*>(_data[1]);
@@ -148,7 +148,7 @@ inline unsigned int Location::LocVec::first_column() const {
     return il->v().toInt();
   }
 }
-inline unsigned int Location::LocVec::last_column() const {
+inline unsigned int Location::LocVec::lastColumn() const {
   if (_size == 2) {
     static const unsigned int pointerBits = sizeof(void*) * 8;
     auto* il = static_cast<IntLit*>(_data[1]);
@@ -262,7 +262,7 @@ inline ASTString Id::v() const {
     return d->cast<VarDecl>()->id()->v();
   } else {
     assert(hasStr());
-    return _v_or_idn.val;
+    return _vOrIdn.val;
   }
 }
 
@@ -277,7 +277,7 @@ inline long long int Id::idn() const {
     if (hasStr()) {
       return -1;
     }
-    long long int i = reinterpret_cast<ptrdiff_t>(_v_or_idn.idn) & ~static_cast<ptrdiff_t>(1);
+    long long int i = reinterpret_cast<ptrdiff_t>(_vOrIdn.idn) & ~static_cast<ptrdiff_t>(1);
     return i >> 1;
   }
 }
@@ -297,10 +297,10 @@ inline AnonVar::AnonVar(const Location& loc) : Expression(loc, E_ANON, Type()) {
 inline ArrayLit::ArrayLit(const Location& loc, ArrayLit& v,
                           const std::vector<std::pair<int, int> >& dims)
     : Expression(loc, E_ARRAYLIT, Type()) {
-  _flag_1 = false;
-  _flag_2 = v._flag_2;
-  if (_flag_2) {
-    _u._al = v._u._al;
+  _flag1 = false;
+  _flag2 = v._flag2;
+  if (_flag2) {
+    _u.al = v._u.al;
     std::vector<int> d(dims.size() * 2 + v._dims.size() - v.dims() * 2);
     for (auto i = static_cast<unsigned int>(dims.size()); (i--) != 0U;) {
       d[i * 2] = dims[i].first;
@@ -308,7 +308,7 @@ inline ArrayLit::ArrayLit(const Location& loc, ArrayLit& v,
     }
     int sliceOffset = static_cast<int>(dims.size()) * 2;
     int origSliceOffset = v.dims() * 2;
-    for (int i = 0; i < _u._al->dims() * 2; i++) {
+    for (int i = 0; i < _u.al->dims() * 2; i++) {
       d[sliceOffset + i] = v._dims[origSliceOffset + i];
     }
     _dims = ASTIntVec(d);
@@ -318,32 +318,32 @@ inline ArrayLit::ArrayLit(const Location& loc, ArrayLit& v,
       d[i * 2] = dims[i].first;
       d[i * 2 + 1] = dims[i].second;
     }
-    if (v._u._v->flag() || d.size() != 2 || d[0] != 1) {
+    if (v._u.v->flag() || d.size() != 2 || d[0] != 1) {
       // only allocate dims vector if it is not a 1d array indexed from 1
       _dims = ASTIntVec(d);
     }
-    _u._v = v._u._v;
+    _u.v = v._u.v;
   }
   rehash();
 }
 
 inline ArrayLit::ArrayLit(const Location& loc, ArrayLit& v) : Expression(loc, E_ARRAYLIT, Type()) {
-  _flag_1 = false;
-  _flag_2 = v._flag_2;
-  if (_flag_2) {
-    _u._al = v._u._al;
+  _flag1 = false;
+  _flag2 = v._flag2;
+  if (_flag2) {
+    _u.al = v._u.al;
     std::vector<int> d(2 + v._dims.size() - v.dims() * 2);
     d[0] = 1;
     d[1] = v.size();
     int sliceOffset = 2;
     int origSliceOffset = v.dims() * 2;
-    for (int i = 0; i < _u._al->dims() * 2; i++) {
+    for (int i = 0; i < _u.al->dims() * 2; i++) {
       d[sliceOffset + i] = v._dims[origSliceOffset + i];
     }
     _dims = ASTIntVec(d);
   } else {
-    _u._v = v._u._v;
-    if (_u._v->flag()) {
+    _u.v = v._u.v;
+    if (_u.v->flag()) {
       std::vector<int> d(2);
       d[0] = 1;
       d[1] = v.length();
@@ -357,8 +357,8 @@ inline ArrayLit::ArrayLit(const Location& loc, ArrayLit& v) : Expression(loc, E_
 
 inline ArrayLit::ArrayLit(const Location& loc, const std::vector<Expression*>& v)
     : Expression(loc, E_ARRAYLIT, Type()) {
-  _flag_1 = false;
-  _flag_2 = false;
+  _flag1 = false;
+  _flag2 = false;
   std::vector<int> d(2);
   d[0] = 1;
   d[1] = static_cast<int>(v.size());
@@ -368,8 +368,8 @@ inline ArrayLit::ArrayLit(const Location& loc, const std::vector<Expression*>& v
 
 inline ArrayLit::ArrayLit(const Location& loc, const std::vector<KeepAlive>& v)
     : Expression(loc, E_ARRAYLIT, Type()) {
-  _flag_1 = false;
-  _flag_2 = false;
+  _flag1 = false;
+  _flag2 = false;
   std::vector<int> d(2);
   d[0] = 1;
   d[1] = static_cast<int>(v.size());
@@ -383,8 +383,8 @@ inline ArrayLit::ArrayLit(const Location& loc, const std::vector<KeepAlive>& v)
 
 inline ArrayLit::ArrayLit(const Location& loc, const std::vector<std::vector<Expression*> >& v)
     : Expression(loc, E_ARRAYLIT, Type()) {
-  _flag_1 = false;
-  _flag_2 = false;
+  _flag1 = false;
+  _flag2 = false;
   std::vector<int> dims(4);
   dims[0] = 1;
   dims[1] = static_cast<int>(v.size());
@@ -420,7 +420,7 @@ inline void Comprehension::init(Expression* e, Generators& g) {
   _e = e;
   std::vector<Expression*> es;
   std::vector<int> idx;
-  for (auto& i : g._g) {
+  for (auto& i : g.g) {
     idx.push_back(static_cast<int>(es.size()));
     es.push_back(i._in);
     es.push_back(i._where);
@@ -430,17 +430,17 @@ inline void Comprehension::init(Expression* e, Generators& g) {
   }
   idx.push_back(static_cast<int>(es.size()));
   _g = ASTExprVec<Expression>(es);
-  _g_idx = ASTIntVec(idx);
+  _gIndex = ASTIntVec(idx);
   rehash();
 }
 inline Comprehension::Comprehension(const Location& loc, Expression* e, Generators& g, bool set)
     : Expression(loc, E_COMP, Type()) {
-  _flag_1 = set;
+  _flag1 = set;
   init(e, g);
 }
 inline void ITE::init(const std::vector<Expression*>& e_if_then, Expression* e_else) {
-  _e_if_then = ASTExprVec<Expression>(e_if_then);
-  _e_else = e_else;
+  _eIfThen = ASTExprVec<Expression>(e_if_then);
+  _eElse = e_else;
   rehash();
 }
 inline ITE::ITE(const Location& loc, const std::vector<Expression*>& e_if_then, Expression* e_else)
@@ -450,48 +450,48 @@ inline ITE::ITE(const Location& loc, const std::vector<Expression*>& e_if_then, 
 
 inline BinOp::BinOp(const Location& loc, Expression* e0, BinOpType op, Expression* e1)
     : Expression(loc, E_BINOP, Type()), _e0(e0), _e1(e1), _decl(nullptr) {
-  _sec_id = op;
+  _secondaryId = op;
   rehash();
 }
 
 inline UnOp::UnOp(const Location& loc, UnOpType op, Expression* e)
     : Expression(loc, E_UNOP, Type()), _e0(e), _decl(nullptr) {
-  _sec_id = op;
+  _secondaryId = op;
   rehash();
 }
 
 inline bool Call::hasId() const {
-  return (reinterpret_cast<ptrdiff_t>(_u_id._decl) & static_cast<ptrdiff_t>(1)) == 0;
+  return (reinterpret_cast<ptrdiff_t>(_uId.decl) & static_cast<ptrdiff_t>(1)) == 0;
 }
 
-inline ASTString Call::id() const { return hasId() ? _u_id._id : decl()->id(); }
+inline ASTString Call::id() const { return hasId() ? _uId.id : decl()->id(); }
 
 inline void Call::id(const ASTString& i) {
-  _u_id._id = i;
+  _uId.id = i;
   assert(hasId());
   assert(decl() == nullptr);
 }
 
 inline FunctionI* Call::decl() const {
   return hasId() ? nullptr
-                 : reinterpret_cast<FunctionI*>(reinterpret_cast<ptrdiff_t>(_u_id._decl) &
+                 : reinterpret_cast<FunctionI*>(reinterpret_cast<ptrdiff_t>(_uId.decl) &
                                                 ~static_cast<ptrdiff_t>(1));
 }
 
 inline void Call::decl(FunctionI* f) {
   assert(f != nullptr);
-  _u_id._decl =
+  _uId.decl =
       reinterpret_cast<FunctionI*>(reinterpret_cast<ptrdiff_t>(f) | static_cast<ptrdiff_t>(1));
 }
 
 inline Call::Call(const Location& loc, const std::string& id0, const std::vector<Expression*>& args)
     : Expression(loc, E_CALL, Type()) {
-  _flag_1 = false;
+  _flag1 = false;
   id(ASTString(id0));
   if (args.size() == 1) {
-    _u._oneArg = args[0]->isUnboxedVal() ? args[0] : args[0]->tag();
+    _u.oneArg = args[0]->isUnboxedVal() ? args[0] : args[0]->tag();
   } else {
-    _u._args = ASTExprVec<Expression>(args).vec();
+    _u.args = ASTExprVec<Expression>(args).vec();
   }
   rehash();
   assert(hasId());
@@ -500,12 +500,12 @@ inline Call::Call(const Location& loc, const std::string& id0, const std::vector
 
 inline Call::Call(const Location& loc, const ASTString& id0, const std::vector<Expression*>& args)
     : Expression(loc, E_CALL, Type()) {
-  _flag_1 = false;
+  _flag1 = false;
   id(ASTString(id0));
   if (args.size() == 1) {
-    _u._oneArg = args[0]->isUnboxedVal() ? args[0] : args[0]->tag();
+    _u.oneArg = args[0]->isUnboxedVal() ? args[0] : args[0]->tag();
   } else {
-    _u._args = ASTExprVec<Expression>(args).vec();
+    _u.args = ASTExprVec<Expression>(args).vec();
   }
   rehash();
   assert(hasId());
@@ -517,8 +517,8 @@ inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, const ASTString& id, 
       _id(nullptr),
       _flat(nullptr) {
   _id = new Id(loc, id, this);
-  _flag_1 = true;
-  _flag_2 = false;
+  _flag1 = true;
+  _flag2 = false;
   _ti = ti;
   _e = e;
   _id->type(type());
@@ -531,8 +531,8 @@ inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, long long int idn, Ex
       _id(nullptr),
       _flat(nullptr) {
   _id = new Id(loc, idn, this);
-  _flag_1 = true;
-  _flag_2 = false;
+  _flag1 = true;
+  _flag2 = false;
   _ti = ti;
   _e = e;
   _id->type(type());
@@ -543,8 +543,8 @@ inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, long long int idn, Ex
 inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, const std::string& id, Expression* e)
     : Expression(loc, E_VARDECL, ti->type()), _id(nullptr), _flat(nullptr) {
   _id = new Id(loc, ASTString(id), this);
-  _flag_1 = true;
-  _flag_2 = false;
+  _flag1 = true;
+  _flag2 = false;
   _ti = ti;
   _e = e;
   _id->type(type());
@@ -559,8 +559,8 @@ inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, Id* id, Expression* e
   } else {
     _id = new Id(loc, id->idn(), this);
   }
-  _flag_1 = true;
-  _flag_2 = false;
+  _flag1 = true;
+  _flag2 = false;
   _ti = ti;
   _e = e;
   _id->type(type());
@@ -577,10 +577,10 @@ inline void VarDecl::e(Expression* rhs) {
   _e = rhs;
 }
 
-inline bool VarDecl::toplevel() const { return _flag_1; }
-inline void VarDecl::toplevel(bool t) { _flag_1 = t; }
-inline bool VarDecl::introduced() const { return _flag_2; }
-inline void VarDecl::introduced(bool t) { _flag_2 = t; }
+inline bool VarDecl::toplevel() const { return _flag1; }
+inline void VarDecl::toplevel(bool t) { _flag1 = t; }
+inline bool VarDecl::introduced() const { return _flag2; }
+inline void VarDecl::introduced(bool t) { _flag2 = t; }
 inline bool VarDecl::evaluated() const { return _e->isUnboxedVal() || _e->isTagged(); }
 inline void VarDecl::evaluated(bool t) {
   if (!_e->isUnboxedVal()) {
@@ -596,15 +596,15 @@ inline void VarDecl::flat(VarDecl* vd) { _flat = WeakRef(vd); }
 inline TypeInst::TypeInst(const Location& loc, const Type& type, const ASTExprVec<TypeInst>& ranges,
                           Expression* domain)
     : Expression(loc, E_TI, type), _ranges(ranges), _domain(domain) {
-  _flag_1 = false;
-  _flag_2 = false;
+  _flag1 = false;
+  _flag2 = false;
   rehash();
 }
 
 inline TypeInst::TypeInst(const Location& loc, const Type& type, Expression* domain)
     : Expression(loc, E_TI, type), _domain(domain) {
-  _flag_1 = false;
-  _flag_2 = false;
+  _flag1 = false;
+  _flag2 = false;
   rehash();
 }
 
@@ -624,21 +624,21 @@ inline ConstraintI::ConstraintI(const Location& loc, Expression* e) : Item(loc, 
 inline SolveI::SolveI(const Location& loc, Expression* e) : Item(loc, II_SOL), _e(e) {}
 inline SolveI* SolveI::sat(const Location& loc) {
   auto* si = new SolveI(loc, nullptr);
-  si->_sec_id = ST_SAT;
+  si->_secondaryId = ST_SAT;
   return si;
 }
 inline SolveI* SolveI::min(const Location& loc, Expression* e) {
   auto* si = new SolveI(loc, e);
-  si->_sec_id = ST_MIN;
+  si->_secondaryId = ST_MIN;
   return si;
 }
 inline SolveI* SolveI::max(const Location& loc, Expression* e) {
   auto* si = new SolveI(loc, e);
-  si->_sec_id = ST_MAX;
+  si->_secondaryId = ST_MAX;
   return si;
 }
-inline SolveI::SolveType SolveI::st() const { return static_cast<SolveType>(_sec_id); }
-inline void SolveI::st(SolveI::SolveType s) { _sec_id = s; }
+inline SolveI::SolveType SolveI::st() const { return static_cast<SolveType>(_secondaryId); }
+inline void SolveI::st(SolveI::SolveType s) { _secondaryId = s; }
 
 inline OutputI::OutputI(const Location& loc, Expression* e) : Item(loc, II_OUT), _e(e) {}
 
@@ -649,24 +649,24 @@ inline FunctionI::FunctionI(const Location& loc, const std::string& id, TypeInst
       _ti(ti),
       _params(ASTExprVec<VarDecl>(params)),
       _e(e),
-      _from_stdlib(from_stdlib) {
-  _builtins.e = nullptr;
-  _builtins.b = nullptr;
-  _builtins.f = nullptr;
-  _builtins.i = nullptr;
-  _builtins.s = nullptr;
-  _builtins.str = nullptr;
+      _fromStdLib(from_stdlib) {
+  builtins.e = nullptr;
+  builtins.b = nullptr;
+  builtins.f = nullptr;
+  builtins.i = nullptr;
+  builtins.s = nullptr;
+  builtins.str = nullptr;
 }
 
 inline FunctionI::FunctionI(const Location& loc, const ASTString& id, TypeInst* ti,
                             const ASTExprVec<VarDecl>& params, Expression* e, bool from_stdlib)
-    : Item(loc, II_FUN), _id(id), _ti(ti), _params(params), _e(e), _from_stdlib(from_stdlib) {
-  _builtins.e = nullptr;
-  _builtins.b = nullptr;
-  _builtins.f = nullptr;
-  _builtins.i = nullptr;
-  _builtins.s = nullptr;
-  _builtins.str = nullptr;
+    : Item(loc, II_FUN), _id(id), _ti(ti), _params(params), _e(e), _fromStdLib(from_stdlib) {
+  builtins.e = nullptr;
+  builtins.b = nullptr;
+  builtins.f = nullptr;
+  builtins.i = nullptr;
+  builtins.s = nullptr;
+  builtins.str = nullptr;
 }
 
 }  // namespace MiniZinc

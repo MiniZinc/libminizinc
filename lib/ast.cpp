@@ -79,7 +79,7 @@ Annotation Annotation::empty;
 
 std::string Location::toString() const {
   std::ostringstream oss;
-  oss << filename() << ":" << first_line() << "." << first_column();
+  oss << filename() << ":" << firstLine() << "." << firstColumn();
   return oss.str();
 }
 
@@ -91,8 +91,8 @@ void Location::mark() const {
 
 Location Location::introduce() const {
   Location l = *this;
-  if (l._loc_info.lv != nullptr) {
-    l._loc_info.t |= 1;
+  if (l._locInfo.lv != nullptr) {
+    l._locInfo.t |= 1;
   }
   return l;
 }
@@ -142,8 +142,8 @@ void Expression::mark(Expression* e) {
   while (!stack.empty()) {
     const Expression* cur = stack.back();
     stack.pop_back();
-    if (!cur->isUnboxedVal() && cur->_gc_mark == 0) {
-      cur->_gc_mark = 1;
+    if (!cur->isUnboxedVal() && cur->_gcMark == 0) {
+      cur->_gcMark = 1;
       cur->loc().mark();
       pushann(cur->ann());
       switch (cur->eid()) {
@@ -171,10 +171,10 @@ void Expression::mark(Expression* e) {
           pushstack(cur->cast<Id>()->decl());
           break;
         case Expression::E_ARRAYLIT:
-          if (cur->_flag_2) {
-            pushstack(cur->cast<ArrayLit>()->_u._al);
+          if (cur->_flag2) {
+            pushstack(cur->cast<ArrayLit>()->_u.al);
           } else {
-            pushall(ASTExprVec<Expression>(cur->cast<ArrayLit>()->_u._v));
+            pushall(ASTExprVec<Expression>(cur->cast<ArrayLit>()->_u.v));
           }
           cur->cast<ArrayLit>()->_dims.mark();
           break;
@@ -185,11 +185,11 @@ void Expression::mark(Expression* e) {
         case Expression::E_COMP:
           pushstack(cur->cast<Comprehension>()->_e);
           pushall(cur->cast<Comprehension>()->_g);
-          cur->cast<Comprehension>()->_g_idx.mark();
+          cur->cast<Comprehension>()->_gIndex.mark();
           break;
         case Expression::E_ITE:
-          pushstack(cur->cast<ITE>()->e_else());
-          pushall(cur->cast<ITE>()->_e_if_then);
+          pushstack(cur->cast<ITE>()->elseExpr());
+          pushall(cur->cast<ITE>()->_eIfThen);
           break;
         case Expression::E_BINOP:
           pushstack(cur->cast<BinOp>()->lhs());
@@ -200,12 +200,12 @@ void Expression::mark(Expression* e) {
           break;
         case Expression::E_CALL:
           cur->cast<Call>()->id().mark();
-          for (unsigned int i = cur->cast<Call>()->n_args(); (i--) != 0U;) {
+          for (unsigned int i = cur->cast<Call>()->argCount(); (i--) != 0U;) {
             pushstack(cur->cast<Call>()->arg(i));
           }
-          if (!cur->cast<Call>()->_u._oneArg->isUnboxedVal() &&
-              !cur->cast<Call>()->_u._oneArg->isTagged()) {
-            cur->cast<Call>()->_u._args->mark();
+          if (!cur->cast<Call>()->_u.oneArg->isUnboxedVal() &&
+              !cur->cast<Call>()->_u.oneArg->isTagged()) {
+            cur->cast<Call>()->_u.args->mark();
           }
           if (FunctionI* fi = cur->cast<Call>()->decl()) {
             Item::mark(fi);
@@ -218,7 +218,7 @@ void Expression::mark(Expression* e) {
           break;
         case Expression::E_LET:
           pushall(cur->cast<Let>()->let());
-          pushall(cur->cast<Let>()->_let_orig);
+          pushall(cur->cast<Let>()->_letOrig);
           pushstack(cur->cast<Let>()->in());
           break;
         case Expression::E_TI:
@@ -236,56 +236,56 @@ void Expression::mark(Expression* e) {
 #undef pushall
 
 void IntLit::rehash() {
-  init_hash();
+  initHash();
   std::hash<IntVal> h;
-  cmb_hash(h(_v));
+  combineHash(h(_v));
 }
 
 void FloatLit::rehash() {
-  init_hash();
+  initHash();
   std::hash<FloatVal> h;
-  cmb_hash(h(_v));
+  combineHash(h(_v));
 }
 
 void SetLit::rehash() {
-  init_hash();
+  initHash();
   if (isv() != nullptr) {
     std::hash<IntVal> h;
     for (IntSetRanges r0(isv()); r0(); ++r0) {
-      cmb_hash(h(r0.min()));
-      cmb_hash(h(r0.max()));
+      combineHash(h(r0.min()));
+      combineHash(h(r0.max()));
     }
   } else if (fsv() != nullptr) {
     std::hash<FloatVal> h;
     for (FloatSetRanges r0(fsv()); r0(); ++r0) {
-      cmb_hash(h(r0.min()));
-      cmb_hash(h(r0.max()));
+      combineHash(h(r0.min()));
+      combineHash(h(r0.max()));
     }
   } else {
     for (unsigned int i = v().size(); (i--) != 0U;) {
-      cmb_hash(Expression::hash(_v[i]));
+      combineHash(Expression::hash(_v[i]));
     }
   }
 }
 
 void BoolLit::rehash() {
-  init_hash();
+  initHash();
   std::hash<bool> h;
-  cmb_hash(h(_v));
+  combineHash(h(_v));
 }
 
 void StringLit::rehash() {
-  init_hash();
-  cmb_hash(_v.hash());
+  initHash();
+  combineHash(_v.hash());
 }
 
 void Id::rehash() {
-  init_hash();
+  initHash();
   std::hash<long long int> h;
   if (idn() == -1) {
-    cmb_hash(v().hash());
+    combineHash(v().hash());
   } else {
-    cmb_hash(h(idn()));
+    combineHash(h(idn()));
   }
 }
 
@@ -307,14 +307,14 @@ ASTString Id::str() const {
 }
 
 void TIId::rehash() {
-  init_hash();
-  cmb_hash(_v.hash());
+  initHash();
+  combineHash(_v.hash());
 }
 
-void AnonVar::rehash() { init_hash(); }
+void AnonVar::rehash() { initHash(); }
 
 int ArrayLit::dims() const {
-  return _flag_2 ? ((_dims.size() - 2 * _u._al->dims()) / 2)
+  return _flag2 ? ((_dims.size() - 2 * _u.al->dims()) / 2)
                  : (_dims.size() == 0 ? 1 : _dims.size() / 2);
 }
 int ArrayLit::min(int i) const {
@@ -327,7 +327,7 @@ int ArrayLit::min(int i) const {
 int ArrayLit::max(int i) const {
   if (_dims.size() == 0) {
     assert(i == 0);
-    return _u._v->size();
+    return _u.v->size();
   }
   return _dims[2 * i + 1];
 }
@@ -344,8 +344,8 @@ int ArrayLit::length() const {
 void ArrayLit::make1d() {
   if (_dims.size() != 0) {
     GCLock lock;
-    if (_flag_2) {
-      std::vector<int> d(2 + _u._al->dims() * 2);
+    if (_flag2) {
+      std::vector<int> d(2 + _u.al->dims() * 2);
       int dimOffset = dims() * 2;
       d[0] = 1;
       d[1] = length();
@@ -363,54 +363,54 @@ void ArrayLit::make1d() {
 }
 
 int ArrayLit::origIdx(int i) const {
-  assert(_flag_2);
+  assert(_flag2);
   int curIdx = i;
   int multiplyer = 1;
   int oIdx = 0;
   int sliceOffset = dims() * 2;
-  for (int curDim = _u._al->dims() - 1; curDim >= 0; curDim--) {
+  for (int curDim = _u.al->dims() - 1; curDim >= 0; curDim--) {
     oIdx +=
         multiplyer *
         ((curIdx % (_dims[sliceOffset + curDim * 2 + 1] - _dims[sliceOffset + curDim * 2] + 1)) +
-         (_dims[sliceOffset + curDim * 2] - _u._al->min(curDim)));
+         (_dims[sliceOffset + curDim * 2] - _u.al->min(curDim)));
     curIdx = curIdx / (_dims[sliceOffset + curDim * 2 + 1] - _dims[sliceOffset + curDim * 2] + 1);
-    multiplyer *= (_u._al->max(curDim) - _u._al->min(curDim) + 1);
+    multiplyer *= (_u.al->max(curDim) - _u.al->min(curDim) + 1);
   }
   return oIdx;
 }
 
-Expression* ArrayLit::slice_get(int i) const {
-  if (!_flag_2) {
-    assert(_u._v->flag());
-    int off = length() - _u._v->size();
-    return i <= off ? (*_u._v)[0] : (*_u._v)[i - off];
+Expression* ArrayLit::getSlice(int i) const {
+  if (!_flag2) {
+    assert(_u.v->flag());
+    int off = length() - _u.v->size();
+    return i <= off ? (*_u.v)[0] : (*_u.v)[i - off];
   } else {
-    assert(_flag_2);
-    return (*_u._al)[origIdx(i)];
+    assert(_flag2);
+    return (*_u.al)[origIdx(i)];
   }
 }
 
-void ArrayLit::slice_set(int i, Expression* e) {
-  if (!_flag_2) {
-    assert(_u._v->flag());
-    int off = length() - _u._v->size();
+void ArrayLit::setSlice(int i, Expression* e) {
+  if (!_flag2) {
+    assert(_u.v->flag());
+    int off = length() - _u.v->size();
     if (i <= off) {
-      (*_u._v)[0] = e;
+      (*_u.v)[0] = e;
     } else {
-      (*_u._v)[i - off] = e;
+      (*_u.v)[i - off] = e;
     }
   } else {
-    assert(_flag_2);
-    _u._al->set(origIdx(i), e);
+    assert(_flag2);
+    _u.al->set(origIdx(i), e);
   }
 }
 
 ArrayLit::ArrayLit(const Location& loc, ArrayLit* v, const std::vector<std::pair<int, int> >& dims,
                    const std::vector<std::pair<int, int> >& slice)
     : Expression(loc, E_ARRAYLIT, Type()) {
-  _flag_1 = false;
-  _flag_2 = true;
-  _u._al = v;
+  _flag1 = false;
+  _flag2 = true;
+  _u.al = v;
   assert(slice.size() == v->dims());
   std::vector<int> d(dims.size() * 2 + 2 * slice.size());
   for (auto i = static_cast<unsigned int>(dims.size()); (i--) != 0U;) {
@@ -439,11 +439,11 @@ void ArrayLit::compress(const std::vector<Expression*>& v, const std::vector<int
       compress[i++] = v[k];
     }
     compress.resize(i);
-    _u._v = ASTExprVec<Expression>(compress).vec();
-    _u._v->flag(true);
+    _u.v = ASTExprVec<Expression>(compress).vec();
+    _u.v->flag(true);
     _dims = ASTIntVec(dims);
   } else {
-    _u._v = ASTExprVec<Expression>(v).vec();
+    _u.v = ASTExprVec<Expression>(v).vec();
     if (dims.size() != 2 || dims[0] != 1) {
       // only allocate dims vector if it is not a 1d array indexed from 1
       _dims = ASTIntVec(dims);
@@ -454,8 +454,8 @@ void ArrayLit::compress(const std::vector<Expression*>& v, const std::vector<int
 ArrayLit::ArrayLit(const Location& loc, const std::vector<Expression*>& v,
                    const std::vector<std::pair<int, int> >& dims)
     : Expression(loc, E_ARRAYLIT, Type()) {
-  _flag_1 = false;
-  _flag_2 = false;
+  _flag1 = false;
+  _flag2 = false;
   std::vector<int> d(dims.size() * 2);
   for (auto i = static_cast<unsigned int>(dims.size()); (i--) != 0U;) {
     d[i * 2] = dims[i].first;
@@ -466,28 +466,28 @@ ArrayLit::ArrayLit(const Location& loc, const std::vector<Expression*>& v,
 }
 
 void ArrayLit::rehash() {
-  init_hash();
+  initHash();
   std::hash<int> h;
   for (int _dim : _dims) {
-    cmb_hash(h(_dim));
+    combineHash(h(_dim));
   }
-  if (_flag_2) {
-    cmb_hash(Expression::hash(_u._al));
+  if (_flag2) {
+    combineHash(Expression::hash(_u.al));
   } else {
-    for (unsigned int i = _u._v->size(); (i--) != 0U;) {
-      cmb_hash(h(i));
-      cmb_hash(Expression::hash((*_u._v)[i]));
+    for (unsigned int i = _u.v->size(); (i--) != 0U;) {
+      combineHash(h(i));
+      combineHash(Expression::hash((*_u.v)[i]));
     }
   }
 }
 
 void ArrayAccess::rehash() {
-  init_hash();
-  cmb_hash(Expression::hash(_v));
+  initHash();
+  combineHash(Expression::hash(_v));
   std::hash<unsigned int> h;
-  cmb_hash(h(_idx.size()));
+  combineHash(h(_idx.size()));
   for (unsigned int i = _idx.size(); (i--) != 0U;) {
-    cmb_hash(Expression::hash(_idx[i]));
+    combineHash(Expression::hash(_idx[i]));
   }
 }
 
@@ -545,38 +545,38 @@ Generator::Generator(int pos, Expression* where) {
   _where = where;
 }
 
-bool Comprehension::set() const { return _flag_1; }
+bool Comprehension::set() const { return _flag1; }
 void Comprehension::rehash() {
-  init_hash();
+  initHash();
   std::hash<unsigned int> h;
-  cmb_hash(h(static_cast<unsigned int>(set())));
-  cmb_hash(Expression::hash(_e));
-  cmb_hash(h(_g_idx.size()));
-  for (unsigned int i = _g_idx.size(); (i--) != 0U;) {
-    cmb_hash(h(_g_idx[i]));
+  combineHash(h(static_cast<unsigned int>(set())));
+  combineHash(Expression::hash(_e));
+  combineHash(h(_gIndex.size()));
+  for (unsigned int i = _gIndex.size(); (i--) != 0U;) {
+    combineHash(h(_gIndex[i]));
   }
-  cmb_hash(h(_g.size()));
+  combineHash(h(_g.size()));
   for (unsigned int i = _g.size(); (i--) != 0U;) {
-    cmb_hash(Expression::hash(_g[i]));
+    combineHash(Expression::hash(_g[i]));
   }
 }
 
-int Comprehension::n_generators() const { return _g_idx.size() - 1; }
-Expression* Comprehension::in(int i) { return _g[_g_idx[i]]; }
-const Expression* Comprehension::in(int i) const { return _g[_g_idx[i]]; }
-const Expression* Comprehension::where(int i) const { return _g[_g_idx[i] + 1]; }
-Expression* Comprehension::where(int i) { return _g[_g_idx[i] + 1]; }
+int Comprehension::numberOfGenerators() const { return _gIndex.size() - 1; }
+Expression* Comprehension::in(int i) { return _g[_gIndex[i]]; }
+const Expression* Comprehension::in(int i) const { return _g[_gIndex[i]]; }
+const Expression* Comprehension::where(int i) const { return _g[_gIndex[i] + 1]; }
+Expression* Comprehension::where(int i) { return _g[_gIndex[i] + 1]; }
 
-int Comprehension::n_decls(int i) const { return _g_idx[i + 1] - _g_idx[i] - 2; }
-VarDecl* Comprehension::decl(int gen, int i) { return _g[_g_idx[gen] + 2 + i]->cast<VarDecl>(); }
+int Comprehension::numberOfDecls(int i) const { return _gIndex[i + 1] - _gIndex[i] - 2; }
+VarDecl* Comprehension::decl(int gen, int i) { return _g[_gIndex[gen] + 2 + i]->cast<VarDecl>(); }
 const VarDecl* Comprehension::decl(int gen, int i) const {
-  return _g[_g_idx[gen] + 2 + i]->cast<VarDecl>();
+  return _g[_gIndex[gen] + 2 + i]->cast<VarDecl>();
 }
 
 bool Comprehension::containsBoundVariable(Expression* e) {
   std::unordered_set<VarDecl*> decls;
-  for (unsigned int i = 0; i < n_generators(); i++) {
-    for (unsigned int j = 0; j < n_decls(i); j++) {
+  for (unsigned int i = 0; i < numberOfGenerators(); i++) {
+    for (unsigned int j = 0; j < numberOfDecls(i); j++) {
       decls.insert(decl(i, j));
     }
   }
@@ -594,32 +594,32 @@ bool Comprehension::containsBoundVariable(Expression* e) {
     }
     bool found() const { return _found; }
   } _fv(decls);
-  topDown(_fv, e);
+  top_down(_fv, e);
   return _fv.found();
 }
 
 void ITE::rehash() {
-  init_hash();
+  initHash();
   std::hash<unsigned int> h;
-  cmb_hash(h(_e_if_then.size()));
-  for (unsigned int i = _e_if_then.size(); (i--) != 0U;) {
-    cmb_hash(Expression::hash(_e_if_then[i]));
+  combineHash(h(_eIfThen.size()));
+  for (unsigned int i = _eIfThen.size(); (i--) != 0U;) {
+    combineHash(Expression::hash(_eIfThen[i]));
   }
-  cmb_hash(Expression::hash(e_else()));
+  combineHash(Expression::hash(elseExpr()));
 }
 
-BinOpType BinOp::op() const { return static_cast<BinOpType>(_sec_id); }
+BinOpType BinOp::op() const { return static_cast<BinOpType>(_secondaryId); }
 void BinOp::rehash() {
-  init_hash();
+  initHash();
   std::hash<int> h;
-  cmb_hash(h(static_cast<int>(op())));
-  cmb_hash(Expression::hash(_e0));
-  cmb_hash(Expression::hash(_e1));
+  combineHash(h(static_cast<int>(op())));
+  combineHash(Expression::hash(_e0));
+  combineHash(Expression::hash(_e1));
 }
 
 Call* BinOp::morph(const ASTString& ident, const std::vector<Expression*>& args) {
   _id = Call::eid;
-  _flag_1 = true;
+  _flag1 = true;
   Call* c = cast<Call>();
   c->id(ident);
   c->args(args);
@@ -630,35 +630,35 @@ namespace {
 
 class OpToString : public GCMarker {
 public:
-  Id* sBOT_PLUS;
-  Id* sBOT_MINUS;
-  Id* sBOT_MULT;
-  Id* sBOT_DIV;
-  Id* sBOT_IDIV;
-  Id* sBOT_MOD;
-  Id* sBOT_POW;
-  Id* sBOT_LE;
-  Id* sBOT_LQ;
-  Id* sBOT_GR;
-  Id* sBOT_GQ;
-  Id* sBOT_EQ;
-  Id* sBOT_NQ;
-  Id* sBOT_IN;
-  Id* sBOT_SUBSET;
-  Id* sBOT_SUPERSET;
-  Id* sBOT_UNION;
-  Id* sBOT_DIFF;
-  Id* sBOT_SYMDIFF;
-  Id* sBOT_INTERSECT;
-  Id* sBOT_PLUSPLUS;
-  Id* sBOT_EQUIV;
-  Id* sBOT_IMPL;
-  Id* sBOT_RIMPL;
-  Id* sBOT_OR;
-  Id* sBOT_AND;
-  Id* sBOT_XOR;
-  Id* sBOT_DOTDOT;
-  Id* sBOT_NOT;
+  Id* sBOT_PLUS; // NOLINT(readability-identifier-naming)
+  Id* sBOT_MINUS; // NOLINT(readability-identifier-naming)
+  Id* sBOT_MULT; // NOLINT(readability-identifier-naming)
+  Id* sBOT_DIV; // NOLINT(readability-identifier-naming)
+  Id* sBOT_IDIV; // NOLINT(readability-identifier-naming)
+  Id* sBOT_MOD; // NOLINT(readability-identifier-naming)
+  Id* sBOT_POW; // NOLINT(readability-identifier-naming)
+  Id* sBOT_LE; // NOLINT(readability-identifier-naming)
+  Id* sBOT_LQ; // NOLINT(readability-identifier-naming)
+  Id* sBOT_GR; // NOLINT(readability-identifier-naming)
+  Id* sBOT_GQ; // NOLINT(readability-identifier-naming)
+  Id* sBOT_EQ; // NOLINT(readability-identifier-naming)
+  Id* sBOT_NQ; // NOLINT(readability-identifier-naming)
+  Id* sBOT_IN; // NOLINT(readability-identifier-naming)
+  Id* sBOT_SUBSET; // NOLINT(readability-identifier-naming)
+  Id* sBOT_SUPERSET; // NOLINT(readability-identifier-naming)
+  Id* sBOT_UNION; // NOLINT(readability-identifier-naming)
+  Id* sBOT_DIFF; // NOLINT(readability-identifier-naming)
+  Id* sBOT_SYMDIFF; // NOLINT(readability-identifier-naming)
+  Id* sBOT_INTERSECT; // NOLINT(readability-identifier-naming)
+  Id* sBOT_PLUSPLUS; // NOLINT(readability-identifier-naming)
+  Id* sBOT_EQUIV; // NOLINT(readability-identifier-naming)
+  Id* sBOT_IMPL; // NOLINT(readability-identifier-naming)
+  Id* sBOT_RIMPL; // NOLINT(readability-identifier-naming)
+  Id* sBOT_OR; // NOLINT(readability-identifier-naming)
+  Id* sBOT_AND; // NOLINT(readability-identifier-naming)
+  Id* sBOT_XOR; // NOLINT(readability-identifier-naming)
+  Id* sBOT_DOTDOT; // NOLINT(readability-identifier-naming)
+  Id* sBOT_NOT; // NOLINT(readability-identifier-naming)
 
   OpToString() {
     GCLock lock;
@@ -797,12 +797,12 @@ ASTString BinOp::opToString() const {
   }
 }
 
-UnOpType UnOp::op() const { return static_cast<UnOpType>(_sec_id); }
+UnOpType UnOp::op() const { return static_cast<UnOpType>(_secondaryId); }
 void UnOp::rehash() {
-  init_hash();
+  initHash();
   std::hash<int> h;
-  cmb_hash(h(static_cast<int>(_sec_id)));
-  cmb_hash(Expression::hash(_e0));
+  combineHash(h(static_cast<int>(_secondaryId)));
+  combineHash(Expression::hash(_e0));
 }
 
 ASTString UnOp::opToString() const {
@@ -820,14 +820,14 @@ ASTString UnOp::opToString() const {
 }
 
 void Call::rehash() {
-  init_hash();
-  cmb_hash(id().hash());
+  initHash();
+  combineHash(id().hash());
   std::hash<FunctionI*> hf;
-  cmb_hash(hf(decl()));
+  combineHash(hf(decl()));
   std::hash<unsigned int> hu;
-  cmb_hash(hu(n_args()));
-  for (unsigned int i = 0; i < n_args(); i++) {
-    cmb_hash(Expression::hash(arg(i)));
+  combineHash(hu(argCount()));
+  for (unsigned int i = 0; i < argCount(); i++) {
+    combineHash(Expression::hash(arg(i)));
   }
 }
 
@@ -839,19 +839,19 @@ void VarDecl::trail() {
 }
 
 void VarDecl::rehash() {
-  init_hash();
-  cmb_hash(Expression::hash(_ti));
-  cmb_hash(_id->hash());
-  cmb_hash(Expression::hash(_e));
+  initHash();
+  combineHash(Expression::hash(_ti));
+  combineHash(_id->hash());
+  combineHash(Expression::hash(_e));
 }
 
 void Let::rehash() {
-  init_hash();
-  cmb_hash(Expression::hash(_in));
+  initHash();
+  combineHash(Expression::hash(_in));
   std::hash<unsigned int> h;
-  cmb_hash(h(_let.size()));
+  combineHash(h(_let.size()));
   for (unsigned int i = _let.size(); (i--) != 0U;) {
-    cmb_hash(Expression::hash(_let[i]));
+    combineHash(Expression::hash(_let[i]));
   }
 }
 
@@ -860,14 +860,14 @@ Let::Let(const Location& loc, const std::vector<Expression*>& let, Expression* i
   _let = ASTExprVec<Expression>(let);
   std::vector<Expression*> vde;
   for (auto* i : let) {
-    if (auto* vd = Expression::dyn_cast<VarDecl>(i)) {
+    if (auto* vd = Expression::dynamicCast<VarDecl>(i)) {
       vde.push_back(vd->e());
       for (unsigned int i = 0; i < vd->ti()->ranges().size(); i++) {
         vde.push_back(vd->ti()->ranges()[i]->domain());
       }
     }
   }
-  _let_orig = ASTExprVec<Expression>(vde);
+  _letOrig = ASTExprVec<Expression>(vde);
   _in = in;
   rehash();
 }
@@ -875,18 +875,18 @@ Let::Let(const Location& loc, const std::vector<Expression*>& let, Expression* i
 void Let::pushbindings() {
   GC::mark();
   for (unsigned int i = 0, j = 0; i < _let.size(); i++) {
-    if (auto* vd = _let[i]->dyn_cast<VarDecl>()) {
+    if (auto* vd = _let[i]->dynamicCast<VarDecl>()) {
       vd->trail();
-      vd->e(_let_orig[j++]);
+      vd->e(_letOrig[j++]);
       for (unsigned int k = 0; k < vd->ti()->ranges().size(); k++) {
-        vd->ti()->ranges()[k]->domain(_let_orig[j++]);
+        vd->ti()->ranges()[k]->domain(_letOrig[j++]);
       }
     }
   }
 }
 void Let::popbindings() {
   for (auto& i : _let) {
-    if (auto* vd = i->dyn_cast<VarDecl>()) {
+    if (auto* vd = i->dynamicCast<VarDecl>()) {
       GC::untrail();
       break;
     }
@@ -894,14 +894,14 @@ void Let::popbindings() {
 }
 
 void TypeInst::rehash() {
-  init_hash();
+  initHash();
   std::hash<unsigned int> h;
   unsigned int rsize = _ranges.size();
-  cmb_hash(h(rsize));
+  combineHash(h(rsize));
   for (unsigned int i = rsize; (i--) != 0U;) {
-    cmb_hash(Expression::hash(_ranges[i]));
+    combineHash(Expression::hash(_ranges[i]));
   }
-  cmb_hash(Expression::hash(domain()));
+  combineHash(Expression::hash(domain()));
 }
 
 void TypeInst::setRanges(const std::vector<TypeInst*>& ranges) {
@@ -930,19 +930,19 @@ bool TypeInst::hasTiVariable() const {
 }
 
 namespace {
-Type getType(Expression* e) { return e->type(); }
-Type getType(const Type& t) { return t; }
-const Location& getLoc(Expression* e, FunctionI* /*fi*/) { return e->loc(); }
-const Location& getLoc(const Type& /*t*/, FunctionI* fi) { return fi->loc(); }
+Type get_type(Expression* e) { return e->type(); }
+Type get_type(const Type& t) { return t; }
+const Location& get_loc(Expression* e, FunctionI* /*fi*/) { return e->loc(); }
+const Location& get_loc(const Type& /*t*/, FunctionI* fi) { return fi->loc(); }
 
-bool isaTIId(Expression* e) {
-  if (TIId* t = Expression::dyn_cast<TIId>(e)) {
+bool isa_tiid(Expression* e) {
+  if (TIId* t = Expression::dynamicCast<TIId>(e)) {
     return !t->v().beginsWith("$");
   }
   return false;
 }
-bool isaEnumTIId(Expression* e) {
-  if (TIId* t = Expression::dyn_cast<TIId>(e)) {
+bool isa_enum_tiid(Expression* e) {
+  if (TIId* t = Expression::dynamicCast<TIId>(e)) {
     return t->v().beginsWith("$");
   }
   return false;
@@ -950,7 +950,7 @@ bool isaEnumTIId(Expression* e) {
 
 template <class T>
 Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strictEnum) {
-  if (fi->id() == constants().var_redef->id()) {
+  if (fi->id() == constants().varRedef->id()) {
     return Type::varbool();
   }
   Type ret = fi->ti()->type();
@@ -959,7 +959,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
     dh = fi->ti()->domain()->cast<TIId>()->v();
   }
   ASTString rh;
-  if (fi->ti()->ranges().size() == 1 && isaTIId(fi->ti()->ranges()[0]->domain())) {
+  if (fi->ti()->ranges().size() == 1 && isa_tiid(fi->ti()->ranges()[0]->domain())) {
     rh = fi->ti()->ranges()[0]->domain()->cast<TIId>()->v();
   }
 
@@ -968,7 +968,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
     TypeInst* tii = fi->params()[i]->ti();
     if (tii->domain() && tii->domain()->isa<TIId>()) {
       ASTString tiid = tii->domain()->cast<TIId>()->v();
-      Type tiit = getType(ta[i]);
+      Type tiit = get_type(ta[i]);
       if (tiit.enumId() != 0 && tiit.dim() > 0) {
         const std::vector<unsigned int>& enumIds = env.getArrayEnum(tiit.enumId());
         tiit.enumId(enumIds[enumIds.size() - 1]);
@@ -977,7 +977,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
       if (tii->type().st() == Type::ST_SET) {
         tiit.st(Type::ST_PLAIN);
       }
-      if (isaEnumTIId(tii->domain())) {
+      if (isa_enum_tiid(tii->domain())) {
         tiit.st(Type::ST_SET);
       }
       auto it = tmap.find(tiid);
@@ -987,7 +987,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
         if (it->second.dim() > 0) {
           std::ostringstream ss;
           ss << "type-inst variable $" << tiid << " used in both array and non-array position";
-          throw TypeError(env, getLoc(ta[i], fi), ss.str());
+          throw TypeError(env, get_loc(ta[i], fi), ss.str());
         } else {
           Type tiit_par = tiit;
           tiit_par.ti(Type::TI_PAR);
@@ -1011,18 +1011,18 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
             std::ostringstream ss;
             ss << "type-inst variable $" << tiid << " instantiated with different types ("
                << tiit.toString(env) << " vs " << it->second.toString(env) << ")";
-            throw TypeError(env, getLoc(ta[i], fi), ss.str());
+            throw TypeError(env, get_loc(ta[i], fi), ss.str());
           }
         }
       }
     }
-    if (tii->ranges().size() == 1 && isaTIId(tii->ranges()[0]->domain())) {
+    if (tii->ranges().size() == 1 && isa_tiid(tii->ranges()[0]->domain())) {
       ASTString tiid = tii->ranges()[0]->domain()->cast<TIId>()->v();
-      Type orig_tiit = getType(ta[i]);
+      Type orig_tiit = get_type(ta[i]);
       if (orig_tiit.dim() == 0) {
         std::ostringstream ss;
         ss << "type-inst variable $" << tiid << " must be an array index";
-        throw TypeError(env, getLoc(ta[i], fi), ss.str());
+        throw TypeError(env, get_loc(ta[i], fi), ss.str());
       }
       Type tiit = Type::top(orig_tiit.dim());
       if (orig_tiit.enumId() != 0) {
@@ -1041,19 +1041,19 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
         if (it->second.dim() == 0) {
           std::ostringstream ss;
           ss << "type-inst variable $" << tiid << " used in both array and non-array position";
-          throw TypeError(env, getLoc(ta[i], fi), ss.str());
+          throw TypeError(env, get_loc(ta[i], fi), ss.str());
         } else if (it->second != tiit) {
           std::ostringstream ss;
           ss << "type-inst variable $" << tiid << " instantiated with different types ("
              << tiit.toString(env) + " vs " << it->second.toString(env) << ")";
-          throw TypeError(env, getLoc(ta[i], fi), ss.str());
+          throw TypeError(env, get_loc(ta[i], fi), ss.str());
         }
       }
     } else if (tii->ranges().size() > 0) {
       for (unsigned int j = 0; j < tii->ranges().size(); j++) {
-        if (isaEnumTIId(tii->ranges()[j]->domain())) {
+        if (isa_enum_tiid(tii->ranges()[j]->domain())) {
           ASTString enumTIId = tii->ranges()[j]->domain()->cast<TIId>()->v();
-          Type tiit = getType(ta[i]);
+          Type tiit = get_type(ta[i]);
           Type enumIdT;
           if (tiit.enumId() != 0) {
             unsigned int enumId = env.getArrayEnum(tiit.enumId())[j];
@@ -1070,7 +1070,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
             if (it->second.enumId() != enumIdT.enumId()) {
               std::ostringstream ss;
               ss << "type-inst variable $" << enumTIId << " used for different enum types";
-              throw TypeError(env, getLoc(ta[i], fi), ss.str());
+              throw TypeError(env, get_loc(ta[i], fi), ss.str());
             }
           }
         }
@@ -1134,7 +1134,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
     }
 
     for (unsigned int i = 0; i < fi->ti()->ranges().size(); i++) {
-      if (isaEnumTIId(fi->ti()->ranges()[i]->domain())) {
+      if (isa_enum_tiid(fi->ti()->ranges()[i]->domain())) {
         ASTString enumTIId = fi->ti()->ranges()[i]->domain()->cast<TIId>()->v();
         auto it = tmap.find(enumTIId);
         if (it == tmap.end()) {
@@ -1161,10 +1161,10 @@ void Item::mark(Item* item, MINIZINC_GC_STAT_ARGS) {
 #else
 void Item::mark(Item* item) {
 #endif
-  if (item->has_mark()) {
+  if (item->hasMark()) {
     return;
   }
-  item->_gc_mark = 1;
+  item->_gcMark = 1;
   item->loc().mark();
   switch (item->iid()) {
     case Item::II_INC:
@@ -1256,7 +1256,7 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, int n) {
   }
 }
 
-bool Expression::equal_internal(const Expression* e0, const Expression* e1) {
+bool Expression::equalInternal(const Expression* e0, const Expression* e1) {
   switch (e0->eid()) {
     case Expression::E_INTLIT:
       return e0->cast<IntLit>()->v() == e1->cast<IntLit>()->v();
@@ -1365,8 +1365,8 @@ bool Expression::equal_internal(const Expression* e0, const Expression* e1) {
           return false;
         }
       }
-      for (unsigned int i = 0; i < c0->_g_idx.size(); i++) {
-        if (c0->_g_idx[i] != c1->_g_idx[i]) {
+      for (unsigned int i = 0; i < c0->_gIndex.size(); i++) {
+        if (c0->_gIndex[i] != c1->_gIndex[i]) {
           return false;
         }
       }
@@ -1375,15 +1375,15 @@ bool Expression::equal_internal(const Expression* e0, const Expression* e1) {
     case Expression::E_ITE: {
       const ITE* i0 = e0->cast<ITE>();
       const ITE* i1 = e1->cast<ITE>();
-      if (i0->_e_if_then.size() != i1->_e_if_then.size()) {
+      if (i0->_eIfThen.size() != i1->_eIfThen.size()) {
         return false;
       }
-      for (unsigned int i = i0->_e_if_then.size(); (i--) != 0U;) {
-        if (!Expression::equal(i0->_e_if_then[i], i1->_e_if_then[i])) {
+      for (unsigned int i = i0->_eIfThen.size(); (i--) != 0U;) {
+        if (!Expression::equal(i0->_eIfThen[i], i1->_eIfThen[i])) {
           return false;
         }
       }
-      return Expression::equal(i0->e_else(), i1->e_else());
+      return Expression::equal(i0->elseExpr(), i1->elseExpr());
     }
     case Expression::E_BINOP: {
       const auto* b0 = e0->cast<BinOp>();
@@ -1419,10 +1419,10 @@ bool Expression::equal_internal(const Expression* e0, const Expression* e1) {
       if (c0->decl() != c1->decl()) {
         return false;
       }
-      if (c0->n_args() != c1->n_args()) {
+      if (c0->argCount() != c1->argCount()) {
         return false;
       }
-      for (unsigned int i = 0; i < c0->n_args(); i++) {
+      for (unsigned int i = 0; i < c0->argCount(); i++) {
         if (!Expression::equal(c0->arg(i), c1->arg(i))) {
           return false;
         }
@@ -1483,13 +1483,13 @@ bool Expression::equal_internal(const Expression* e0, const Expression* e1) {
 Constants::Constants() {
   GCLock lock;
   auto* ti = new TypeInst(Location(), Type::parbool());
-  lit_true = new BoolLit(Location(), true);
-  var_true = new VarDecl(Location(), ti, "_bool_true", lit_true);
-  lit_false = new BoolLit(Location(), false);
-  var_false = new VarDecl(Location(), ti, "_bool_false", lit_false);
-  var_ignore = new VarDecl(Location(), ti, "_bool_ignore");
+  literalTrue = new BoolLit(Location(), true);
+  varTrue = new VarDecl(Location(), ti, "_bool_true", literalTrue);
+  literalFalse = new BoolLit(Location(), false);
+  varFalse = new VarDecl(Location(), ti, "_bool_false", literalFalse);
+  varIgnore = new VarDecl(Location(), ti, "_bool_ignore");
   absent = new Id(Location(), "_absent", nullptr);
-  var_redef = new FunctionI(Location(), "__internal_var_redef",
+  varRedef = new FunctionI(Location(), "__internal_varRedef",
                             new TypeInst(Location(), Type::varbool()), std::vector<VarDecl*>());
   Type absent_t;
   absent_t.bt(Type::BT_BOT);
@@ -1502,7 +1502,7 @@ Constants::Constants() {
   infinity = new SetLit(Location(), isv_infty);
 
   ids.forall = ASTString("forall");
-  ids.forall_reif = ASTString("forall_reif");
+  ids.forallReif = ASTString("forallReif");
   ids.exists = ASTString("exists");
   ids.clause = ASTString("clause");
   ids.bool2int = ASTString("bool2int");
@@ -1731,15 +1731,15 @@ Constants::Constants() {
 };
 
 void Constants::mark(MINIZINC_GC_STAT_ARGS) {
-  Expression::mark(lit_true);
-  Expression::mark(var_true);
-  Expression::mark(lit_false);
-  Expression::mark(var_false);
-  Expression::mark(var_ignore);
+  Expression::mark(literalTrue);
+  Expression::mark(varTrue);
+  Expression::mark(literalFalse);
+  Expression::mark(varFalse);
+  Expression::mark(varIgnore);
 #if defined(MINIZINC_GC_STATS)
-  Item::mark(var_redef, gc_stats);
+  Item::mark(varRedef, gc_stats);
 #else
-  Item::mark(var_redef);
+  Item::mark(varRedef);
 #endif
   Expression::mark(absent);
   Expression::mark(infinity);
@@ -2002,7 +2002,7 @@ void Annotation::removeCall(const ASTString& id) {
   }
   std::vector<Expression*> toRemove;
   for (ExpressionSetIter it = _s->begin(); it != _s->end(); ++it) {
-    if (Call* c = (*it)->dyn_cast<Call>()) {
+    if (Call* c = (*it)->dynamicCast<Call>()) {
       if (c->id() == id) {
         toRemove.push_back(*it);
       }
@@ -2018,7 +2018,7 @@ Call* Annotation::getCall(const ASTString& id) const {
     return nullptr;
   }
   for (ExpressionSetIter it = _s->begin(); it != _s->end(); ++it) {
-    if (Call* c = (*it)->dyn_cast<Call>()) {
+    if (Call* c = (*it)->dynamicCast<Call>()) {
       if (c->id() == id) {
         return c;
       }
@@ -2032,7 +2032,7 @@ bool Annotation::containsCall(const MiniZinc::ASTString& id) const {
     return false;
   }
   for (ExpressionSetIter it = _s->begin(); it != _s->end(); ++it) {
-    if (Call* c = (*it)->dyn_cast<Call>()) {
+    if (Call* c = (*it)->dynamicCast<Call>()) {
       if (c->id() == id) {
         return true;
       }
@@ -2059,7 +2059,7 @@ void Annotation::merge(const Annotation& ann) {
   }
 }
 
-Expression* getAnnotation(const Annotation& ann, const std::string& str) {
+Expression* get_annotation(const Annotation& ann, const std::string& str) {
   for (ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
     Expression* e = *i;
     if ((e->isa<Id>() && e->cast<Id>()->str() == str) ||
@@ -2069,7 +2069,7 @@ Expression* getAnnotation(const Annotation& ann, const std::string& str) {
   }
   return nullptr;
 }
-Expression* getAnnotation(const Annotation& ann, const ASTString& str) {
+Expression* get_annotation(const Annotation& ann, const ASTString& str) {
   for (ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
     Expression* e = *i;
     if ((e->isa<Id>() && e->cast<Id>()->str() == str) ||

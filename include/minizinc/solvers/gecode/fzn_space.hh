@@ -31,52 +31,52 @@ public:
   /// The integer variables
   std::vector<Gecode::IntVar> iv;
   /// The introduced integer variables
-  Gecode::IntVarArray iv_aux;
+  Gecode::IntVarArray ivAux;
   /// Indicates whether an integer variable is introduced by mzn2fzn
-  std::vector<bool> iv_introduced;
+  std::vector<bool> ivIntroduced;
   /// Indicates whether an integer variable is defined
-  std::vector<bool> iv_defined;
+  std::vector<bool> ivDefined;
   /// The Boolean variables
   std::vector<Gecode::BoolVar> bv;
   /// The introduced Boolean variables
-  Gecode::BoolVarArray bv_aux;
+  Gecode::BoolVarArray bvAux;
   /// Indicates whether a Boolean variable is introduced by mzn2fzn
-  std::vector<bool> bv_introduced;
+  std::vector<bool> bvIntroduced;
   /// Indicates whether a Boolean variable is defined
-  std::vector<bool> bv_defined;
+  std::vector<bool> bvDefined;
 #ifdef GECODE_HAS_SET_VARS
   /// The set variables
   std::vector<Gecode::SetVar> sv;
   /// The introduced set variables
-  Gecode::SetVarArray sv_aux;
+  Gecode::SetVarArray svAux;
   /// Indicates whether a set variable is introduced by mzn2fzn
-  std::vector<bool> sv_introduced;
+  std::vector<bool> svIntroduced;
   /// Indicates whether a set variable is introduced by mzn2fzn
-  std::vector<bool> sv_defined;
+  std::vector<bool> svDefined;
 #endif
 #ifdef GECODE_HAS_FLOAT_VARS
   /// The float variables
   std::vector<Gecode::FloatVar> fv;
   /// The introduced float variables
-  Gecode::FloatVarArray fv_aux;
+  Gecode::FloatVarArray fvAux;
   /// Indicates whether a float variable is introduced by mzn2fzn
-  std::vector<bool> fv_introduced;
+  std::vector<bool> fvIntroduced;
   /// Indicates whether a float variable is defined
-  std::vector<bool> fv_defined;
+  std::vector<bool> fvDefined;
 #endif
   /// Indicates if the objective variable is integer (float otherwise)
-  bool _optVarIsInt;
+  bool optVarIsInt;
   /// Index of the variable to optimize
-  int _optVarIdx;
+  int optVarIdx;
   /// Whether the introduced variables still need to be copied
-  bool _copyAuxVars;
+  bool copyAuxVars;
   /// solve type (SAT, MIN or MAX)
-  MiniZinc::SolveI::SolveType _solveType;
+  MiniZinc::SolveI::SolveType solveType;
 
   /// copy constructor
   FznSpace(FznSpace&);
   /// standard constructor
-  FznSpace() : _optVarIsInt(true), _optVarIdx(-1), _copyAuxVars(true){};
+  FznSpace() : optVarIsInt(true), optVarIdx(-1), copyAuxVars(true) {}
   ~FznSpace() {}
 
   /// get the index of the Boolean variable in bv; return -1 if not exists

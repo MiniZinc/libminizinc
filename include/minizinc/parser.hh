@@ -31,6 +31,11 @@ extern "C" int isatty(int);
 #pragma warning(disable : 4065)
 #endif
 
+namespace MiniZinc{ class ParserLocation; }
+#define YYLTYPE MiniZinc::ParserLocation
+#define YYLTYPE_IS_DECLARED 1
+#define YYLTYPE_IS_TRIVIAL 0
+
 #include <minizinc/astexception.hh>
 #include <minizinc/file_utils.hh>
 #include <minizinc/model.hh>
@@ -149,12 +154,12 @@ Model* parse(Env& env, const std::vector<std::string>& filename,
              bool isFlatZinc, bool ignoreStdlib, bool parseDocComments, bool verbose,
              std::ostream& err);
 
-Model* parseFromString(Env& env, const std::string& model, const std::string& filename,
+Model* parse_from_string(Env& env, const std::string& model, const std::string& filename,
                        const std::vector<std::string>& includePaths, bool isFlatZinc,
                        bool ignoreStdlib, bool parseDocComments, bool verbose, std::ostream& err,
                        std::vector<SyntaxError>& syntaxErrors);
 
-Model* parseData(Env& env, Model* m, const std::vector<std::string>& datafiles,
+Model* parse_data(Env& env, Model* m, const std::vector<std::string>& datafiles,
                  const std::vector<std::string>& includePaths, bool isFlatZinc, bool ignoreStdlib,
                  bool parseDocComments, bool verbose, std::ostream& err);
 

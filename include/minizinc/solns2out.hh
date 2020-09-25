@@ -38,16 +38,16 @@ namespace MiniZinc {
 /// could facilitate exhange of raw/final outputs in a portfolio
 class Solns2Out {
 protected:
-  std::unique_ptr<Env> pEnv_guard;
-  Env* pEnv = nullptr;
-  Model* pOutput = nullptr;
+  std::unique_ptr<Env> _envGuard;
+  Env* _env = nullptr;
+  Model* _outputModel = nullptr;
 
   typedef std::pair<VarDecl*, KeepAlive> DE;
-  ManagedASTStringMap<DE> declmap;
-  Expression* outputExpr = nullptr;
-  std::string checkerModel;
-  std::string statisticsCheckerModel;
-  bool fNewSol2Print = false;  // should be set for evalOutput to work
+  ManagedASTStringMap<DE> _declmap;
+  Expression* _outputExpr = nullptr;
+  std::string _checkerModel;
+  std::string _statisticsCheckerModel;
+  bool _fNewSol2Print = false;  // should be set for evalOutput to work
 
 public:
   std::string solution;
@@ -55,41 +55,41 @@ public:
   int nLinesIgnore = 0;
 
   struct Options {
-    std::string flag_output_file;
-    bool flag_output_comments = true;
-    bool flag_output_flush = true;
-    bool flag_output_time = false;
-    int flag_ignore_lines = 0;
-    bool flag_unique = true;
-    bool flag_canonicalize = false;
-    bool flag_standaloneSolns2Out = false;
-    std::string flag_output_noncanonical;
-    std::string flag_output_raw;
-    int flag_number_output = -1;
+    std::string flagOutputFile;
+    bool flagOutputComments = true;
+    bool flagOutputFlush = true;
+    bool flagOutputTime = false;
+    int flagIgnoreLines = 0;
+    bool flagUnique = true;
+    bool flagCanonicalize = false;
+    bool flagStandaloneSolns2Out = false;
+    std::string flagOutputNoncanonical;
+    std::string flagOutputRaw;
+    int flagNumberOutput = -1;
     /// Default values, also used for input
-    const char* const solution_separator_00 = "----------";
-    const char* const unsatisfiable_msg_00 = "=====UNSATISFIABLE=====";
-    const char* const unbounded_msg_00 = "=====UNBOUNDED=====";
-    const char* const unsatorunbnd_msg_00 = "=====UNSATorUNBOUNDED=====";
-    const char* const unknown_msg_00 = "=====UNKNOWN=====";
-    const char* const error_msg_00 = "=====ERROR=====";
-    const char* const search_complete_msg_00 = "==========";
+    const char* const solutionSeparatorDef = "----------";
+    const char* const unsatisfiableMsgDef = "=====UNSATISFIABLE=====";
+    const char* const unboundedMsgDef = "=====UNBOUNDED=====";
+    const char* const unsatorunbndMsgDef = "=====UNSATorUNBOUNDED=====";
+    const char* const unknownMsgDef = "=====UNKNOWN=====";
+    const char* const errorMsgDef = "=====ERROR=====";
+    const char* const searchCompleteMsgDef = "==========";
     /// Output values
-    std::string solution_separator = solution_separator_00;
-    std::string solution_comma = "";
-    std::string unsatisfiable_msg = unsatisfiable_msg_00;
-    std::string unbounded_msg = unbounded_msg_00;
-    std::string unsatorunbnd_msg = unsatorunbnd_msg_00;
-    std::string unknown_msg = unknown_msg_00;
-    std::string error_msg = error_msg_00;
-    std::string search_complete_msg = search_complete_msg_00;
-  } _opt;
+    std::string solutionSeparator = solutionSeparatorDef;
+    std::string solutionComma = "";
+    std::string unsatisfiableMsg = unsatisfiableMsgDef;
+    std::string unboundedMsg = unboundedMsgDef;
+    std::string unsatorunbndMsg = unsatorunbndMsgDef;
+    std::string unknownMsg = unknownMsgDef;
+    std::string errorMsg = errorMsgDef;
+    std::string searchCompleteMsg = searchCompleteMsgDef;
+  } opt;
 
   struct Statistics {
     int nSolns = 0;
     int nFails = 0;
     int nNodes = 0;
-  } _stats;
+  } stats;
 
 public:
   ~Solns2Out();
@@ -132,7 +132,7 @@ public:
 
   void printStatistics(std::ostream&);
 
-  Env* getEnv() const { return pEnv; }
+  Env* getEnv() const { return _env; }
   Model* getModel() const {
     assert(getEnv()->output());
     return getEnv()->output();
@@ -144,26 +144,26 @@ public:
   std::ostream& getLog();
 
 private:
-  Timer starttime;
+  Timer _starttime;
 
-  std::unique_ptr<std::ostream> pOut;  // file output
-  std::unique_ptr<std::ostream> pOfs_non_canon;
-  std::unique_ptr<std::ostream> pOfs_raw;
-  std::set<std::string> sSolsCanon;
-  std::string line_part;  // non-finished line from last chunk
+  std::unique_ptr<std::ostream> _outStream;  // file output
+  std::unique_ptr<std::ostream> _outStreamNonCanon;
+  std::unique_ptr<std::ostream> _outStreamRaw;
+  std::set<std::string> _sSolsCanon;
+  std::string _linePart;  // non-finished line from last chunk
 
   /// Initialise from ozn file
   void initFromOzn(const std::string& filename);
 
 protected:
-  std::ostream& os;
-  std::ostream& log;
-  std::vector<std::string> includePaths;
-  std::string stdlibDir;
+  std::ostream& _os;
+  std::ostream& _log;
+  std::vector<std::string> _includePaths;
+  std::string _stdlibDir;
 
   // Basically open output
   void init();
-  std::map<std::string, SolverInstance::Status> mapInputStatus;
+  std::map<std::string, SolverInstance::Status> _mapInputStatus;
   void createInputMap();
   void restoreDefaults();
   /// Parsing fznsolver's complete raw text output
@@ -171,24 +171,24 @@ protected:
   /// Checking solution against checker model
   void checkSolution(std::ostream& os);
   void checkStatistics(std::ostream& os);
-  bool __evalOutput(std::ostream& os);
-  bool __evalOutputFinal(bool flag_flush);
-  bool __evalStatusMsg(SolverInstance::Status status);
+  bool evalOutputInternal(std::ostream& os);
+  bool evalOutputFinalInternal(bool flag_flush);
+  bool evalStatusMsg(SolverInstance::Status status);
 };
 
 // Passthrough Solns2Out class
 class Solns2Log {
 private:
   std::ostream& _log;
-  std::ostream& _err_log;
+  std::ostream& _errLog;
 
 public:
-  Solns2Log(std::ostream& log, std::ostream& errLog) : _log(log), _err_log(errLog) {}
+  Solns2Log(std::ostream& log, std::ostream& errLog) : _log(log), _errLog(errLog) {}
   bool feedRawDataChunk(const char* data) {
     _log << data << std::flush;
     return true;
   }
-  std::ostream& getLog() { return _err_log; }
+  std::ostream& getLog() { return _errLog; }
 };
 
 }  // namespace MiniZinc

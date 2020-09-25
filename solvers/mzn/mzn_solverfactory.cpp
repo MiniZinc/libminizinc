@@ -3,7 +3,7 @@
 
 namespace MiniZinc {
 namespace {
-void getWrapper() { static MZN_SolverFactory _mzn_solverfactory; }
+void get_wrapper() { static MZNSolverFactory _mzn_solverfactory; }
 }  // namespace
-MZN_SolverFactoryInitialiser::MZN_SolverFactoryInitialiser() { getWrapper(); }
+MZNSolverFactoryInitialiser::MZNSolverFactoryInitialiser() { get_wrapper(); }
 }  // namespace MiniZinc

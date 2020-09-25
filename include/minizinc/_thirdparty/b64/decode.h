@@ -16,7 +16,7 @@ namespace base64
 {
 	extern "C"
 	{
-		#include <minizinc/thirdparty/b64/cdecode.h>
+		#include <minizinc/_thirdparty/b64/cdecode.h>
 	}
 
 	struct decoder

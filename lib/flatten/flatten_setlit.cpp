@@ -27,8 +27,8 @@ EE flatten_setlit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl*
   bool hadOpt = false;
   for (auto i = static_cast<unsigned int>(elems.size()); (i--) != 0U;) {
     elems[i] = elems_ee[i].r();
-    allPar = allPar && elems[i]->type().ispar();
-    hadOpt = hadOpt || elems[i]->type().isopt();
+    allPar = allPar && elems[i]->type().isPar();
+    hadOpt = hadOpt || elems[i]->type().isOpt();
   }
 
   ret.b = conj(env, b, Ctx(), elems_ee);
@@ -55,7 +55,7 @@ EE flatten_setlit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl*
     assert(fi);
     assert(env.isSubtype(fi->rtype(env, args, false), cc->type(), false));
     cc->decl(fi);
-    EE ee = flat_exp(env, Ctx(), cc, nullptr, constants().var_true);
+    EE ee = flat_exp(env, Ctx(), cc, nullptr, constants().varTrue);
     ret.r = bind(env, Ctx(), r, ee.r());
   }
   return ret;

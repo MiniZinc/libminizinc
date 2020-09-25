@@ -147,13 +147,13 @@ void NLSolns2Out::parse_sol(const string& filename) {
   switch (sol.status) {
     case NL_Solver_Status::PARSE_ERROR: {
       DEBUG_MSG("NL_Solver_Status: PARSE ERROR" << endl);
-      out->feedRawDataChunk(out->_opt.error_msg_00);
+      out->feedRawDataChunk(out->opt.errorMsgDef);
       break;
     }
 
     case NL_Solver_Status::UNKNOWN: {
       DEBUG_MSG("NL_Solver_Status: UNKNOWN" << endl);
-      out->feedRawDataChunk(out->_opt.unknown_msg_00);
+      out->feedRawDataChunk(out->opt.unknownMsgDef);
       break;
     }
 
@@ -222,10 +222,10 @@ void NLSolns2Out::parse_sol(const string& filename) {
 
       string s = sb.str();
       out->feedRawDataChunk(s.c_str());
-      out->feedRawDataChunk(out->_opt.solution_separator_00);
+      out->feedRawDataChunk(out->opt.solutionSeparatorDef);
       if (nl_file.objective.is_optimisation()) {
         out->feedRawDataChunk("\n");
-        out->feedRawDataChunk(out->_opt.search_complete_msg_00);
+        out->feedRawDataChunk(out->opt.searchCompleteMsgDef);
       }
 
       break;
@@ -233,31 +233,31 @@ void NLSolns2Out::parse_sol(const string& filename) {
 
     case NL_Solver_Status::UNCERTAIN: {
       DEBUG_MSG("NL_Solver_Status: UNCERTAIN" << endl);
-      out->feedRawDataChunk(out->_opt.unknown_msg_00);
+      out->feedRawDataChunk(out->opt.unknownMsgDef);
       break;
     }
 
     case NL_Solver_Status::INFEASIBLE: {
       DEBUG_MSG("NL_Solver_Status: INFEASIBLE" << endl);
-      out->feedRawDataChunk(out->_opt.unsatisfiable_msg_00);
+      out->feedRawDataChunk(out->opt.unsatisfiableMsgDef);
       break;
     }
 
     case NL_Solver_Status::UNBOUNDED: {
       DEBUG_MSG("NL_Solver_Status: UNBOUNDED" << endl);
-      out->feedRawDataChunk(out->_opt.unbounded_msg_00);
+      out->feedRawDataChunk(out->opt.unboundedMsgDef);
       break;
     }
 
     case NL_Solver_Status::LIMIT: {
       DEBUG_MSG("NL_Solver_Status: LIMIT" << endl);
-      out->feedRawDataChunk(out->_opt.unknown_msg_00);
+      out->feedRawDataChunk(out->opt.unknownMsgDef);
       break;
     }
 
     case NL_Solver_Status::INTERRUPTED: {
       DEBUG_MSG("NL_Solver_Status: INTERRUPTED" << endl);
-      out->feedRawDataChunk(out->_opt.unknown_msg_00);
+      out->feedRawDataChunk(out->opt.unknownMsgDef);
       break;
     }
 

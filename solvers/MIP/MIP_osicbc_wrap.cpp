@@ -132,7 +132,7 @@ bool MIP_osicbc_wrapper::Options::processOption(int& i, std::vector<std::string>
   return true;
 }
 
-void MIP_osicbc_wrapper::wrap_assert(bool cond, const string& msg, bool fTerm) {
+void MIP_osicbc_wrapper::wrapAssert(bool cond, const string& msg, bool fTerm) {
   if (!cond) {
     //       strcpy(osicbc_buffer, "[NO ERROR STRING GIVEN]");
     //       CBCgeterrorstring (env, status, osicbc_buffer);
@@ -154,7 +154,7 @@ void MIP_osicbc_wrapper::doAddVars(size_t n, double* obj, double* lb, double* ub
   vector<CoinPackedVectorBase*> pCpv(n, &cpv);
   osi.addCols(n, pCpv.data(), lb, ub, obj);  // setting integer & names later
   //   status = CBCnewcols (env, lp, n, obj, lb, ub, &ctype[0], &pcNames[0]);
-  //   wrap_assert( !status,  "Failed to declare variables." );
+  //   wrapAssert( !status,  "Failed to declare variables." );
 }
 
 void MIP_osicbc_wrapper::addRow(int nnz, int* rmatind, double* rmatval,
@@ -332,7 +332,7 @@ public:
 protected:
   // data goes here
   EventUserInfo ui;
-  double bestSolutionValue_ = DBL_MAX;  // always min
+  double bestSolutionValue = DBL_MAX;  // always min
 };
 //-------------------------------------------------------------------
 // Default Constructor
@@ -393,8 +393,8 @@ CbcEventHandler::CbcAction MyEventHandler3::event(CbcEvent whichEvent) {
     if (whichEvent == solution || whichEvent == heuristicSolution) {
       // John Forrest  27.2.16:
       // check not duplicate
-      if (model_->getObjValue() < bestSolutionValue_) {
-        bestSolutionValue_ = model_->getObjValue();
+      if (model_->getObjValue() < bestSolutionValue) {
+        bestSolutionValue = model_->getObjValue();
         // If preprocessing was done solution will be to processed model
         //       int numberColumns = model_->getNumCols();
         const double* bestSolution = model_->bestSolution();
@@ -563,7 +563,7 @@ MIP_osicbc_wrapper::Status MIP_osicbc_wrapper::convertStatus(CbcModel* pModel) {
   if (pModel->isProvenOptimal()) {
     s = Status::OPT;
     output.statusName = "Optimal";
-    //        wrap_assert(osi., "Optimality reported but pool empty?", false);
+    //        wrapAssert(osi., "Optimality reported but pool empty?", false);
   } else if (pModel->isProvenInfeasible()) {
     s = Status::UNSAT;
     output.statusName = "Infeasible";
@@ -591,7 +591,7 @@ MIP_osicbc_wrapper::Status MIP_osicbc_wrapper::convertStatus() {
   if (osi.isProvenOptimal()) {
     s = Status::OPT;
     output.statusName = "Optimal";
-    //        wrap_assert(osi., "Optimality reported but pool empty?", false);
+    //        wrapAssert(osi., "Optimality reported but pool empty?", false);
   } else if (osi.isProvenPrimalInfeasible()) {
     s = Status::UNSAT;
     output.statusName = "Infeasible";
@@ -779,26 +779,26 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
       /// This class is passed to CBC to organize cut callbacks
       /// We need original solutions here (combinatorial cuts)
       class CutCallback : public CglCutGenerator {
-        MIP_wrapper::CBUserInfo& cbui;
+        MIP_wrapper::CBUserInfo& _cbui;
 
       public:
-        CutCallback(MIP_wrapper::CBUserInfo& ui) : cbui(ui) {}
-        CglCutGenerator* clone() const override { return new CutCallback(cbui); }
+        CutCallback(MIP_wrapper::CBUserInfo& ui) : _cbui(ui) {}
+        CglCutGenerator* clone() const override { return new CutCallback(_cbui); }
         /// Make sure this overrides but we might need to compile this with old CBC as well
         bool needsOriginalModel() const /*override*/ { return true; }
         void generateCuts(const OsiSolverInterface& si, OsiCuts& cs,
                           const CglTreeInfo info = CglTreeInfo()) override {
-          cbui.pOutput->nCols = si.getNumCols();
+          _cbui.pOutput->nCols = si.getNumCols();
           MZN_ASSERT_HARD_MSG(
-              cbui.pOutput->nCols == ((MIP_wrapper*)(cbui.wrapper))->colNames.size(),
+              _cbui.pOutput->nCols == ((MIP_wrapper*)(_cbui.wrapper))->colNames.size(),
               "CBC cut callback: current model is different? Ncols="
-                  << cbui.pOutput->nCols << ", originally "
-                  << ((MIP_wrapper*)(cbui.wrapper))->colNames.size()
+                  << _cbui.pOutput->nCols << ", originally "
+                  << ((MIP_wrapper*)(_cbui.wrapper))->colNames.size()
                   << ". If you have an old version of CBC, to use combinatorial cuts"
                      " run with --cbcArgs '-preprocess off'");
-          cbui.pOutput->x = si.getColSolution();  // change the pointer?
+          _cbui.pOutput->x = si.getColSolution();  // change the pointer?
           MIP_wrapper::CutInput cuts;
-          cbui.cutcbfn(*cbui.pOutput, cuts, cbui.psi,
+          _cbui.cutcbfn(*_cbui.pOutput, cuts, _cbui.psi,
                        (info.options & 128) != 0);  // options&128: integer candidate
           for (const auto& cut : cuts) {            // Convert cut sense
             OsiRowCut rc;
@@ -872,7 +872,7 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
     vector<string> argvS;
     MiniZinc::split(cbc_cmdOptions, argvS);
     vector<const char*> argv;
-    MiniZinc::vecString2vecPChar(argvS, argv);
+    MiniZinc::vec_string2vec_pchar(argvS, argv);
     if (fVerbose) cerr << "  Calling CbcMain1 with options '" << cbc_cmdOptions << "'..." << endl;
     CbcMain1(argv.size(), argv.data(), model, callBack);
 #endif
@@ -899,7 +899,7 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
       //       int cur_numcols = osi.getNumCols ();
       assert(cur_numcols == colObj.size());
 
-      wrap_assert(model.getColSolution() != nullptr, "Failed to get variable values.");
+      wrapAssert(model.getColSolution() != nullptr, "Failed to get variable values.");
       x.assign(model.getColSolution(), model.getColSolution() + cur_numcols);  // ColSolution();
       output.x = x.data();
       //       output.x = osi.getColSolution();

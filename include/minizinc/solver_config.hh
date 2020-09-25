@@ -30,13 +30,13 @@ public:
   struct ExtraFlag {
     std::string flag;
     std::string description;
-    std::string flag_type;
-    std::string default_value;
+    std::string flagType;
+    std::string defaultValue;
     ExtraFlag(std::string f, std::string d, std::string t = "bool", std::string v = "false")
         : flag(std::move(f)),
           description(std::move(d)),
-          flag_type(std::move(t)),
-          default_value(std::move(v)) {}
+          flagType(std::move(t)),
+          defaultValue(std::move(v)) {}
   };
 
 protected:
@@ -49,11 +49,11 @@ protected:
   /// The path to the executable
   std::string _executable;
   /// The path to the executable, after resolving
-  std::string _executable_resolved;
+  std::string _executableResolved;
   /// The path to the solver's MiniZinc library
   std::string _mznlib;
   /// The path to the solver's MiniZinc library, after resolving
-  std::string _mznlib_resolved;
+  std::string _mznlibResolved;
   /// Version string
   std::string _version;
   /// MiniZinc library version
@@ -120,7 +120,7 @@ public:
   void executable(const std::string& s) { _executable = s; }
 
   /// Return resolved executable path
-  std::string executable_resolved() const { return _executable_resolved; }
+  std::string executableResolved() const { return _executableResolved; }
 
   /// Return MiniZinc library path
   std::string mznlib() const { return _mznlib; }
@@ -128,7 +128,7 @@ public:
   void mznlib(const std::string& s) { _mznlib = s; }
 
   /// Return resolved MiniZinc library path
-  std::string mznlib_resolved() const { return _mznlib_resolved; }
+  std::string mznlibResolved() const { return _mznlibResolved; }
 
   /// Return required MiniZinc library version
   int mznlibVersion() const { return _mznlibVersion; }
@@ -237,7 +237,7 @@ protected:
   /// The MiniZinc library directory
   std::string _mznlibDir;
   /// The solver configurations path
-  std::vector<std::string> _solver_path;
+  std::vector<std::string> _solverPath;
   typedef std::unordered_map<std::string, std::string> DefaultMap;
   /// Mapping from tag to default solver for that tag
   DefaultMap _tagDefault;

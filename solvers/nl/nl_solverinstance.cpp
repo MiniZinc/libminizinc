@@ -136,9 +136,9 @@ SolverInstance::Status NLSolverInstance::solve() {
 
   if (opt.do_keepfile) {
     // Keep file: output next to original file
-    ASTString file_mzn = _env.envi().orig_model != nullptr ? _env.envi().orig_model->filepath()
+    ASTString file_mzn = _env.envi().originalModel != nullptr ? _env.envi().originalModel->filepath()
                                                            : _env.envi().model->filepath();
-    string file_base = std::string(file_mzn.substr(0, file_mzn.find_last_of('.')));
+    string file_base = std::string(file_mzn.substr(0, file_mzn.findLastOf('.')));
     file_nl = file_base + ".nl";
     file_sol = file_base + ".sol";
   } else {
@@ -165,14 +165,14 @@ SolverInstance::Status NLSolverInstance::solve() {
   try {
     // --- --- --- Create the NL data
     // Analyse the variable declarations
-    for (VarDeclIterator it = _fzn->begin_vardecls(); it != _fzn->end_vardecls(); ++it) {
+    for (VarDeclIterator it = _fzn->vardecls().begin(); it != _fzn->vardecls().end(); ++it) {
       if (!it->removed()) {
         Item& item = *it;
         analyse(&item);
       }
     }
     // Analyse the contraints
-    for (ConstraintIterator it = _fzn->begin_constraints(); it != _fzn->end_constraints(); ++it) {
+    for (ConstraintIterator it = _fzn->constraints().begin(); it != _fzn->constraints().end(); ++it) {
       if (!it->removed()) {
         Item& item = *it;
         analyse(&item);

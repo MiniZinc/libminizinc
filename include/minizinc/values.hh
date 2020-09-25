@@ -730,29 +730,30 @@ public:
   }
 
   /// Mark for garbage collection
-  void mark() { _gc_mark = 1; }
+  void mark() { _gcMark = 1; }
 };
 
 /// Iterator over an IntSetVal
 class IntSetRanges {
+protected:
   /// The set value
-  const IntSetVal* rs;
+  const IntSetVal* _rs;
   /// The current range
-  int n;
+  int _n;
 
 public:
   /// Constructor
-  IntSetRanges(const IntSetVal* r) : rs(r), n(0) {}
+  IntSetRanges(const IntSetVal* r) : _rs(r), _n(0) {}
   /// Check if iterator is still valid
-  bool operator()() const { return n < rs->size(); }
+  bool operator()() const { return _n < _rs->size(); }
   /// Move to next range
-  void operator++() { ++n; }
+  void operator++() { ++_n; }
   /// Return minimum of current range
-  IntVal min() const { return rs->min(n); }
+  IntVal min() const { return _rs->min(_n); }
   /// Return maximum of current range
-  IntVal max() const { return rs->max(n); }
+  IntVal max() const { return _rs->max(_n); }
   /// Return width of current range
-  IntVal width() const { return rs->width(n); }
+  IntVal width() const { return _rs->width(_n); }
 };
 
 template <class Char, class Traits>
@@ -944,29 +945,29 @@ public:
   }
 
   /// Mark for garbage collection
-  void mark() { _gc_mark = 1; }
+  void mark() { _gcMark = 1; }
 };
 
 /// Iterator over an IntSetVal
 class FloatSetRanges {
   /// The set value
-  const FloatSetVal* rs;
+  const FloatSetVal* _rs;
   /// The current range
-  int n;
+  int _n;
 
 public:
   /// Constructor
-  FloatSetRanges(const FloatSetVal* r) : rs(r), n(0) {}
+  FloatSetRanges(const FloatSetVal* r) : _rs(r), _n(0) {}
   /// Check if iterator is still valid
-  bool operator()() const { return n < rs->size(); }
+  bool operator()() const { return _n < _rs->size(); }
   /// Move to next range
-  void operator++() { ++n; }
+  void operator++() { ++_n; }
   /// Return minimum of current range
-  FloatVal min() const { return rs->min(n); }
+  FloatVal min() const { return _rs->min(_n); }
   /// Return maximum of current range
-  FloatVal max() const { return rs->max(n); }
+  FloatVal max() const { return _rs->max(_n); }
   /// Return width of current range
-  FloatVal width() const { return rs->width(n); }
+  FloatVal width() const { return _rs->width(_n); }
 };
 
 template <class Char, class Traits>

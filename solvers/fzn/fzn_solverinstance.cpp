@@ -30,7 +30,7 @@ using namespace std;
 
 namespace MiniZinc {
 
-FZN_SolverFactory::FZN_SolverFactory() {
+FZNSolverFactory::FZNSolverFactory() {
   SolverConfig sc("org.minizinc.mzn-fzn",
                   MZN_VERSION_MAJOR "." MZN_VERSION_MINOR "." MZN_VERSION_PATCH);
   sc.name("Generic FlatZinc driver");
@@ -42,18 +42,18 @@ FZN_SolverFactory::FZN_SolverFactory() {
   SolverConfigs::registerBuiltinSolver(sc);
 }
 
-string FZN_SolverFactory::getDescription(SolverInstanceBase::Options* /*opt*/) {
+string FZNSolverFactory::getDescription(SolverInstanceBase::Options* /*opt*/) {
   string v = "FZN solver plugin, compiled  " __DATE__ "  " __TIME__;
   return v;
 }
 
-string FZN_SolverFactory::getVersion(SolverInstanceBase::Options* /*opt*/) {
+string FZNSolverFactory::getVersion(SolverInstanceBase::Options* /*opt*/) {
   return MZN_VERSION_MAJOR;
 }
 
-string FZN_SolverFactory::getId() { return "org.minizinc.mzn-fzn"; }
+string FZNSolverFactory::getId() { return "org.minizinc.mzn-fzn"; }
 
-void FZN_SolverFactory::printHelp(ostream& os) {
+void FZNSolverFactory::printHelp(ostream& os) {
   os << "MZN-FZN plugin options:" << std::endl
      << "  --fzn-cmd , --flatzinc-cmd <exe>\n     the backend solver filename.\n"
      << "  -b, --backend, --solver-backend <be>\n     the backend codename. Currently passed to "
@@ -91,14 +91,14 @@ void FZN_SolverFactory::printHelp(ostream& os) {
         "port.\n";
 }
 
-SolverInstanceBase::Options* FZN_SolverFactory::createOptions() { return new FZNSolverOptions; }
+SolverInstanceBase::Options* FZNSolverFactory::createOptions() { return new FZNSolverOptions; }
 
-SolverInstanceBase* FZN_SolverFactory::doCreateSI(Env& env, std::ostream& log,
+SolverInstanceBase* FZNSolverFactory::doCreateSI(Env& env, std::ostream& log,
                                                   SolverInstanceBase::Options* opt) {
   return new FZNSolverInstance(env, log, opt);
 }
 
-bool FZN_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
+bool FZNSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
                                       std::vector<std::string>& argv) {
   auto& _opt = static_cast<FZNSolverOptions&>(*opt);
   CLOParser cop(i, argv);
@@ -106,70 +106,70 @@ bool FZN_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
   int nn = -1;
 
   if (cop.getOption("--fzn-cmd --flatzinc-cmd", &buffer)) {
-    _opt.fzn_solver = buffer;
+    _opt.fznSolver = buffer;
   } else if (cop.getOption("-b --backend --solver-backend", &buffer)) {
     _opt.backend = buffer;
   } else if (cop.getOption("--fzn-flags --flatzinc-flags", &buffer)) {
-    std::vector<std::string> cmdLine = FileUtils::parseCmdLine(buffer);
+    std::vector<std::string> cmdLine = FileUtils::parse_cmd_line(buffer);
     for (auto& s : cmdLine) {
-      _opt.fzn_flags.push_back(s);
+      _opt.fznFlags.push_back(s);
     }
   } else if (cop.getOption("-t --solver-time-limit --fzn-time-limit", &nn)) {
-    _opt.fzn_time_limit_ms = nn;
-    if (_opt.supports_t) {
-      _opt.solver_time_limit_ms = nn;
-      _opt.fzn_time_limit_ms += 1000;  // kill 1 second after solver should have stopped
+    _opt.fznTimeLimitMilliseconds = nn;
+    if (_opt.supportsT) {
+      _opt.solverTimeLimitMilliseconds = nn;
+      _opt.fznTimeLimitMilliseconds += 1000;  // kill 1 second after solver should have stopped
     }
   } else if (cop.getOption("--fzn-sigint")) {
-    _opt.fzn_sigint = true;
+    _opt.fznSigint = true;
   } else if (cop.getOption("--fzn-needs-paths")) {
-    _opt.fzn_needs_paths = true;
+    _opt.fznNeedsPaths = true;
   } else if (cop.getOption("--fzn-output-passthrough")) {
-    _opt.fzn_output_passthrough = true;
+    _opt.fznOutputPassthrough = true;
   } else if (cop.getOption("--fzn-flag --flatzinc-flag", &buffer)) {
-    _opt.fzn_flags.push_back(buffer);
-  } else if (_opt.supports_n && cop.getOption("-n --num-solutions", &nn)) {
+    _opt.fznFlags.push_back(buffer);
+  } else if (_opt.supportsN && cop.getOption("-n --num-solutions", &nn)) {
     _opt.numSols = nn;
   } else if (cop.getOption("-a")) {
-    _opt.fzn_flags.emplace_back("-a");
+    _opt.fznFlags.emplace_back("-a");
   } else if (cop.getOption("-i")) {
-    _opt.fzn_flags.emplace_back("-i");
-  } else if (_opt.supports_n_o && cop.getOption("-n-o --num-optimal", &nn)) {
-    _opt.num_optimal = (nn != 0);
-  } else if (_opt.supports_a_o && cop.getOption("-a-o --all-opt --all-optimal")) {
-    _opt.all_optimal = true;
+    _opt.fznFlags.emplace_back("-i");
+  } else if (_opt.supportsNO && cop.getOption("-n-o --num-optimal", &nn)) {
+    _opt.numOptimal = (nn != 0);
+  } else if (_opt.supportsAO && cop.getOption("-a-o --all-opt --all-optimal")) {
+    _opt.allOptimal = true;
   } else if (cop.getOption("-p --parallel", &nn)) {
-    if (_opt.supports_p) {
+    if (_opt.supportsP) {
       _opt.parallel = to_string(nn);
     }
   } else if (cop.getOption("-k --keep-files")) {
     // Deprecated option! Does nothing.
   } else if (cop.getOption("-r --seed --random-seed", &buffer)) {
-    if (_opt.supports_r) {
-      _opt.fzn_flags.emplace_back("-r");
-      _opt.fzn_flags.push_back(buffer);
+    if (_opt.supportsR) {
+      _opt.fznFlags.emplace_back("-r");
+      _opt.fznFlags.push_back(buffer);
     }
   } else if (cop.getOption("-s --solver-statistics")) {
-    if (_opt.supports_s) {
+    if (_opt.supportsS) {
       _opt.printStatistics = true;
     }
   } else if (cop.getOption("-v --verbose-solving")) {
     _opt.verbose = true;
   } else if (cop.getOption("-f --free-search")) {
-    if (_opt.supports_f) {
-      _opt.fzn_flags.emplace_back("-f");
+    if (_opt.supportsF) {
+      _opt.fznFlags.emplace_back("-f");
     }
-  } else if (_opt.supports_cpprofiler && cop.getOption("--cp-profiler", &buffer)) {
-    _opt.fzn_flags.emplace_back("--cp-profiler");
-    _opt.fzn_flags.push_back(buffer);
+  } else if (_opt.supportsCpprofiler && cop.getOption("--cp-profiler", &buffer)) {
+    _opt.fznFlags.emplace_back("--cp-profiler");
+    _opt.fznFlags.push_back(buffer);
   } else {
-    for (auto& fznf : _opt.fzn_solver_flags) {
+    for (auto& fznf : _opt.fznSolverFlags) {
       if (fznf.t == MZNFZNSolverFlag::FT_ARG && cop.getOption(fznf.n.c_str(), &buffer)) {
-        _opt.fzn_flags.push_back(fznf.n);
-        _opt.fzn_flags.push_back(buffer);
+        _opt.fznFlags.push_back(fznf.n);
+        _opt.fznFlags.push_back(buffer);
         return true;
       } else if (fznf.t == MZNFZNSolverFlag::FT_NOARG && cop.getOption(fznf.n.c_str())) {
-        _opt.fzn_flags.push_back(fznf.n);
+        _opt.fznFlags.push_back(fznf.n);
         return true;
       }
     }
@@ -179,37 +179,37 @@ bool FZN_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
   return true;
 }
 
-void FZN_SolverFactory::setAcceptedFlags(SolverInstanceBase::Options* opt,
+void FZNSolverFactory::setAcceptedFlags(SolverInstanceBase::Options* opt,
                                          const std::vector<MZNFZNSolverFlag>& flags) {
   auto& _opt = static_cast<FZNSolverOptions&>(*opt);
-  _opt.fzn_solver_flags.clear();
+  _opt.fznSolverFlags.clear();
   for (const auto& f : flags) {
     if (f.n == "-a") {
-      _opt.supports_a = true;
+      _opt.supportsA = true;
     } else if (f.n == "-n") {
-      _opt.supports_n = true;
+      _opt.supportsN = true;
     } else if (f.n == "-f") {
-      _opt.supports_f = true;
+      _opt.supportsF = true;
     } else if (f.n == "-p") {
-      _opt.supports_p = true;
+      _opt.supportsP = true;
     } else if (f.n == "-s") {
-      _opt.supports_s = true;
+      _opt.supportsS = true;
     } else if (f.n == "-r") {
-      _opt.supports_r = true;
+      _opt.supportsR = true;
     } else if (f.n == "-v") {
-      _opt.supports_v = true;
+      _opt.supportsV = true;
     } else if (f.n == "-t") {
-      _opt.supports_t = true;
+      _opt.supportsT = true;
     } else if (f.n == "-i") {
-      _opt.supports_i = true;
+      _opt.supportsI = true;
     } else if (f.n == "-n-o") {
-      _opt.supports_n_o = true;
+      _opt.supportsNO = true;
     } else if (f.n == "-a-o") {
-      _opt.supports_a_o = true;
+      _opt.supportsAO = true;
     } else if (f.n == "--cp-profiler") {
-      _opt.supports_cpprofiler = true;
+      _opt.supportsCpprofiler = true;
     } else {
-      _opt.fzn_solver_flags.push_back(f);
+      _opt.fznSolverFlags.push_back(f);
     }
   }
 }
@@ -222,28 +222,28 @@ FZNSolverInstance::~FZNSolverInstance() {}
 
 SolverInstance::Status FZNSolverInstance::solve() {
   auto& opt = static_cast<FZNSolverOptions&>(*_options);
-  if (opt.fzn_solver.empty()) {
+  if (opt.fznSolver.empty()) {
     throw InternalError("No FlatZinc solver specified");
   }
   /// Passing options to solver
   vector<string> cmd_line;
-  cmd_line.push_back(opt.fzn_solver);
+  cmd_line.push_back(opt.fznSolver);
   string sBE = opt.backend;
   bool is_sat = _fzn->solveItem()->st() == SolveI::SolveType::ST_SAT;
   if (!sBE.empty()) {
     cmd_line.emplace_back("-b");
     cmd_line.push_back(sBE);
   }
-  for (auto& f : opt.fzn_flags) {
+  for (auto& f : opt.fznFlags) {
     cmd_line.push_back(f);
   }
-  if (opt.all_optimal && !is_sat) {
+  if (opt.allOptimal && !is_sat) {
     cmd_line.emplace_back("-a-o");
   }
-  if (static_cast<int>(opt.num_optimal) != 1 && !is_sat) {
+  if (static_cast<int>(opt.numOptimal) != 1 && !is_sat) {
     cmd_line.emplace_back("-n-o");
     ostringstream oss;
-    oss << opt.num_optimal;
+    oss << opt.numOptimal;
     cmd_line.push_back(oss.str());
   }
   if (opt.numSols != 1 && is_sat) {
@@ -261,14 +261,14 @@ SolverInstance::Status FZNSolverInstance::solve() {
   if (opt.printStatistics) {
     cmd_line.emplace_back("-s");
   }
-  if (opt.solver_time_limit_ms != 0) {
+  if (opt.solverTimeLimitMilliseconds != 0) {
     cmd_line.emplace_back("-t");
     std::ostringstream oss;
-    oss << opt.solver_time_limit_ms;
+    oss << opt.solverTimeLimitMilliseconds;
     cmd_line.push_back(oss.str());
   }
   if (opt.verbose) {
-    if (opt.supports_v) {
+    if (opt.supportsV) {
       cmd_line.emplace_back("-v");
     }
     std::cerr << "Using FZN solver " << cmd_line[0] << " for solving, parameters: ";
@@ -277,25 +277,25 @@ SolverInstance::Status FZNSolverInstance::solve() {
     }
     cerr << std::endl;
   }
-  int timelimit = opt.fzn_time_limit_ms;
-  bool sigint = opt.fzn_sigint;
+  int timelimit = opt.fznTimeLimitMilliseconds;
+  bool sigint = opt.fznSigint;
 
   FileUtils::TmpFile fznFile(".fzn");
   std::ofstream os(FILE_PATH(fznFile.name()));
   Printer p(os, 0, true);
-  for (FunctionIterator it = _fzn->begin_functions(); it != _fzn->end_functions(); ++it) {
+  for (FunctionIterator it = _fzn->functions().begin(); it != _fzn->functions().end(); ++it) {
     if (!it->removed()) {
       Item& item = *it;
       p.print(&item);
     }
   }
-  for (VarDeclIterator it = _fzn->begin_vardecls(); it != _fzn->end_vardecls(); ++it) {
+  for (VarDeclIterator it = _fzn->vardecls().begin(); it != _fzn->vardecls().end(); ++it) {
     if (!it->removed()) {
       Item& item = *it;
       p.print(&item);
     }
   }
-  for (ConstraintIterator it = _fzn->begin_constraints(); it != _fzn->end_constraints(); ++it) {
+  for (ConstraintIterator it = _fzn->constraints().begin(); it != _fzn->constraints().end(); ++it) {
     if (!it->removed()) {
       Item& item = *it;
       p.print(&item);
@@ -305,7 +305,7 @@ SolverInstance::Status FZNSolverInstance::solve() {
   cmd_line.push_back(fznFile.name());
 
   FileUtils::TmpFile* pathsFile = nullptr;
-  if (opt.fzn_needs_paths) {
+  if (opt.fznNeedsPaths) {
     pathsFile = new FileUtils::TmpFile(".paths");
     std::ofstream ofs(FILE_PATH(pathsFile->name()));
     PathFilePrinter pfp(ofs, _env.envi());
@@ -315,7 +315,7 @@ SolverInstance::Status FZNSolverInstance::solve() {
     cmd_line.push_back(pathsFile->name());
   }
 
-  if (!opt.fzn_output_passthrough) {
+  if (!opt.fznOutputPassthrough) {
     Process<Solns2Out> proc(cmd_line, getSolns2Out(), timelimit, sigint);
     int exitStatus = proc.run();
     delete pathsFile;

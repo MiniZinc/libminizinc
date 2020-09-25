@@ -22,21 +22,21 @@ FznSpace::FznSpace(FznSpace& f) : Space(f) {
   for (unsigned int i = 0; i < iv.size(); i++) {
     iv[i].update(*this, f.iv[i]);
   }
-  for (auto&& i : f.iv_introduced) {
-    iv_introduced.push_back(i);
+  for (auto&& i : f.ivIntroduced) {
+    ivIntroduced.push_back(i);
   }
-  for (auto&& i : f.iv_defined) {
-    iv_defined.push_back(i);
+  for (auto&& i : f.ivDefined) {
+    ivDefined.push_back(i);
   }
-  if (f._copyAuxVars) {
+  if (f.copyAuxVars) {
     IntVarArgs iva;
-    for (int i = 0; i < f.iv_aux.size(); i++) {
-      if (!f.iv_aux[i].assigned()) {
+    for (int i = 0; i < f.ivAux.size(); i++) {
+      if (!f.ivAux[i].assigned()) {
         iva << IntVar();
-        iva[iva.size() - 1].update(*this, f.iv_aux[i]);
+        iva[iva.size() - 1].update(*this, f.ivAux[i]);
       }
     }
-    iv_aux = IntVarArray(*this, iva);
+    ivAux = IntVarArray(*this, iva);
   }
 
   // boolean variables
@@ -44,18 +44,18 @@ FznSpace::FznSpace(FznSpace& f) : Space(f) {
   for (unsigned int i = 0; i < bv.size(); i++) {
     bv[i].update(*this, f.bv[i]);
   }
-  if (f._copyAuxVars) {
+  if (f.copyAuxVars) {
     BoolVarArgs bva;
-    for (int i = 0; i < f.bv_aux.size(); i++) {
-      if (!f.bv_aux[i].assigned()) {
+    for (int i = 0; i < f.bvAux.size(); i++) {
+      if (!f.bvAux[i].assigned()) {
         bva << BoolVar();
-        bva[bva.size() - 1].update(*this, f.bv_aux[i]);
+        bva[bva.size() - 1].update(*this, f.bvAux[i]);
       }
     }
-    bv_aux = BoolVarArray(*this, bva);
+    bvAux = BoolVarArray(*this, bva);
   }
-  for (auto&& i : f.bv_introduced) {
-    bv_introduced.push_back(i);
+  for (auto&& i : f.bvIntroduced) {
+    bvIntroduced.push_back(i);
   }
 
 #ifdef GECODE_HAS_SET_VARS
@@ -63,18 +63,18 @@ FznSpace::FznSpace(FznSpace& f) : Space(f) {
   for (unsigned int i = 0; i < sv.size(); i++) {
     sv[i].update(*this, f.sv[i]);
   }
-  if (f._copyAuxVars) {
+  if (f.copyAuxVars) {
     SetVarArgs sva;
-    for (int i = 0; i < f.sv_aux.size(); i++) {
-      if (!f.sv_aux[i].assigned()) {
+    for (int i = 0; i < f.svAux.size(); i++) {
+      if (!f.svAux[i].assigned()) {
         sva << SetVar();
-        sva[sva.size() - 1].update(*this, f.sv_aux[i]);
+        sva[sva.size() - 1].update(*this, f.svAux[i]);
       }
     }
-    sv_aux = SetVarArray(*this, sva);
+    svAux = SetVarArray(*this, sva);
   }
-  for (auto&& i : f.sv_introduced) {
-    sv_introduced.push_back(i);
+  for (auto&& i : f.svIntroduced) {
+    svIntroduced.push_back(i);
   }
 #endif
 
@@ -83,39 +83,39 @@ FznSpace::FznSpace(FznSpace& f) : Space(f) {
   for (unsigned int i = 0; i < fv.size(); i++) {
     fv[i].update(*this, f.fv[i]);
   }
-  if (f._copyAuxVars) {
+  if (f.copyAuxVars) {
     FloatVarArgs fva;
-    for (int i = 0; i < f.fv_aux.size(); i++) {
-      if (!f.fv_aux[i].assigned()) {
+    for (int i = 0; i < f.fvAux.size(); i++) {
+      if (!f.fvAux[i].assigned()) {
         fva << FloatVar();
-        fva[fva.size() - 1].update(*this, f.fv_aux[i]);
+        fva[fva.size() - 1].update(*this, f.fvAux[i]);
       }
     }
-    fv_aux = FloatVarArray(*this, fva);
+    fvAux = FloatVarArray(*this, fva);
   }
 #endif
 
-  _optVarIsInt = f._optVarIsInt;
-  _optVarIdx = f._optVarIdx;
-  _copyAuxVars = f._copyAuxVars;
-  _solveType = f._solveType;
+  optVarIsInt = f.optVarIsInt;
+  optVarIdx = f.optVarIdx;
+  copyAuxVars = f.copyAuxVars;
+  solveType = f.solveType;
 }
 
 Gecode::Space* FznSpace::copy() { return new FznSpace(*this); }
 
 void FznSpace::constrain(const Space& s) {
-  if (_optVarIsInt) {
-    if (_solveType == MiniZinc::SolveI::SolveType::ST_MIN) {
-      rel(*this, iv[_optVarIdx], IRT_LE, static_cast<const FznSpace*>(&s)->iv[_optVarIdx].val());
-    } else if (_solveType == MiniZinc::SolveI::SolveType::ST_MAX) {
-      rel(*this, iv[_optVarIdx], IRT_GR, static_cast<const FznSpace*>(&s)->iv[_optVarIdx].val());
+  if (optVarIsInt) {
+    if (solveType == MiniZinc::SolveI::SolveType::ST_MIN) {
+      rel(*this, iv[optVarIdx], IRT_LE, static_cast<const FznSpace*>(&s)->iv[optVarIdx].val());
+    } else if (solveType == MiniZinc::SolveI::SolveType::ST_MAX) {
+      rel(*this, iv[optVarIdx], IRT_GR, static_cast<const FznSpace*>(&s)->iv[optVarIdx].val());
     }
   } else {
 #ifdef GECODE_HAS_FLOAT_VARS
-    if (_solveType == MiniZinc::SolveI::SolveType::ST_MIN) {
-      rel(*this, fv[_optVarIdx], FRT_LE, static_cast<const FznSpace*>(&s)->fv[_optVarIdx].val());
-    } else if (_solveType == MiniZinc::SolveI::SolveType::ST_MAX) {
-      rel(*this, fv[_optVarIdx], FRT_GR, static_cast<const FznSpace*>(&s)->fv[_optVarIdx].val());
+    if (solveType == MiniZinc::SolveI::SolveType::ST_MIN) {
+      rel(*this, fv[optVarIdx], FRT_LE, static_cast<const FznSpace*>(&s)->fv[optVarIdx].val());
+    } else if (solveType == MiniZinc::SolveI::SolveType::ST_MAX) {
+      rel(*this, fv[optVarIdx], FRT_GR, static_cast<const FznSpace*>(&s)->fv[optVarIdx].val());
     }
 #endif
   }

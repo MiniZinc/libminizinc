@@ -21,16 +21,16 @@ namespace GecodeConstraints {
 #define PosterImpl(X) void X(SolverInstanceBase& s, const Call* ce)
 
 PosterImpl(p_distinct);
-PosterImpl(p_distinctOffset);
+PosterImpl(p_distinct_offset);
 PosterImpl(p_all_equal);
-void p_int_CMP(GecodeSolverInstance& s, Gecode::IntRelType irt, const Call* ce);
+void p_int_cmp(GecodeSolverInstance& s, Gecode::IntRelType irt, const Call* ce);
 PosterImpl(p_int_eq);
 PosterImpl(p_int_ne);
 PosterImpl(p_int_ge);
 PosterImpl(p_int_gt);
 PosterImpl(p_int_le);
 PosterImpl(p_int_lt);
-void p_int_CMP_reif(GecodeSolverInstance& s, Gecode::IntRelType irt, Gecode::ReifyMode rm,
+void p_int_cmp_reif(GecodeSolverInstance& s, Gecode::IntRelType irt, Gecode::ReifyMode rm,
                     const Call* call);
 ///* Comparisons */
 PosterImpl(p_int_eq_reif);
@@ -45,8 +45,8 @@ PosterImpl(p_int_ge_imp);
 PosterImpl(p_int_gt_imp);
 PosterImpl(p_int_le_imp);
 PosterImpl(p_int_lt_imp);
-void p_int_lin_CMP(GecodeSolverInstance& s, Gecode::IntRelType irt, const Call* call);
-void p_int_lin_CMP_reif(GecodeSolverInstance& s, Gecode::IntRelType irt, Gecode::ReifyMode rm,
+void p_int_lin_cmp(GecodeSolverInstance& s, Gecode::IntRelType irt, const Call* call);
+void p_int_lin_cmp_reif(GecodeSolverInstance& s, Gecode::IntRelType irt, Gecode::ReifyMode rm,
                         const Call* call);
 PosterImpl(p_int_lin_eq);
 PosterImpl(p_int_lin_eq_reif);
@@ -66,8 +66,8 @@ PosterImpl(p_int_lin_ge_imp);
 PosterImpl(p_int_lin_gt);
 PosterImpl(p_int_lin_gt_reif);
 PosterImpl(p_int_lin_gt_imp);
-void p_bool_lin_CMP(GecodeSolverInstance& s, Gecode::IntRelType irt, const Call* call);
-void p_bool_lin_CMP_reif(GecodeSolverInstance& s, Gecode::IntRelType irt, Gecode::ReifyMode rm,
+void p_bool_lin_cmp(GecodeSolverInstance& s, Gecode::IntRelType irt, const Call* call);
+void p_bool_lin_cmp_reif(GecodeSolverInstance& s, Gecode::IntRelType irt, Gecode::ReifyMode rm,
                          const Call* call);
 PosterImpl(p_bool_lin_eq);
 PosterImpl(p_bool_lin_eq_reif);
@@ -99,8 +99,8 @@ PosterImpl(p_int_max);
 PosterImpl(p_int_negate);
 
 ///* Boolean constraints */
-void p_bool_CMP(GecodeSolverInstance& s, Gecode::IntRelType irt, const Call* call);
-void p_bool_CMP_reif(GecodeSolverInstance& s, Gecode::IntRelType irt, Gecode::ReifyMode rm,
+void p_bool_cmp(GecodeSolverInstance& s, Gecode::IntRelType irt, const Call* call);
+void p_bool_cmp_reif(GecodeSolverInstance& s, Gecode::IntRelType irt, Gecode::ReifyMode rm,
                      const Call* call);
 PosterImpl(p_bool_eq);
 PosterImpl(p_bool_eq_reif);

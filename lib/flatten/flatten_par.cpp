@@ -18,17 +18,17 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
   if (e->type().cv()) {
     KeepAlive ka = flat_cv_exp(env, ctx, e);
     ret.r = bind(env, ctx, r, ka());
-    ret.b = bind(env, Ctx(), b, constants().lit_true);
+    ret.b = bind(env, Ctx(), b, constants().literalTrue);
     return ret;
   }
   if (e->type().dim() > 0) {
     EnvI::CSEMap::iterator it;
-    Id* id = e->dyn_cast<Id>();
+    Id* id = e->dynamicCast<Id>();
     if ((id != nullptr) && (id->decl()->flat() == nullptr || id->decl()->toplevel())) {
       VarDecl* vd = id->decl()->flat();
       if (vd == nullptr) {
         vd =
-            flat_exp(env, Ctx(), id->decl(), nullptr, constants().var_true).r()->cast<Id>()->decl();
+            flat_exp(env, Ctx(), id->decl(), nullptr, constants().varTrue).r()->cast<Id>()->decl();
         id->decl()->flat(vd);
         auto* al = follow_id(vd->id())->cast<ArrayLit>();
         if (al->size() == 0) {
@@ -37,16 +37,16 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
           } else {
             ret.r = bind(env, ctx, r, al);
           }
-          ret.b = bind(env, Ctx(), b, constants().lit_true);
+          ret.b = bind(env, Ctx(), b, constants().literalTrue);
           return ret;
         }
       }
       ret.r = bind(env, ctx, r, e->cast<Id>()->decl()->flat()->id());
-      ret.b = bind(env, Ctx(), b, constants().lit_true);
+      ret.b = bind(env, Ctx(), b, constants().literalTrue);
       return ret;
-    } else if ((it = env.cse_map_find(e)) != env.cse_map_end()) {
+    } else if ((it = env.cseMapFind(e)) != env.cseMapEnd()) {
       ret.r = bind(env, ctx, r, it->second.r()->cast<VarDecl>()->id());
-      ret.b = bind(env, Ctx(), b, constants().lit_true);
+      ret.b = bind(env, Ctx(), b, constants().literalTrue);
       return ret;
     } else {
       GCLock lock;
@@ -57,12 +57,12 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
         } else {
           ret.r = bind(env, ctx, r, al);
         }
-        ret.b = bind(env, Ctx(), b, constants().lit_true);
+        ret.b = bind(env, Ctx(), b, constants().literalTrue);
         return ret;
       }
-      if ((it = env.cse_map_find(al)) != env.cse_map_end()) {
+      if ((it = env.cseMapFind(al)) != env.cseMapEnd()) {
         ret.r = bind(env, ctx, r, it->second.r()->cast<VarDecl>()->id());
-        ret.b = bind(env, Ctx(), b, constants().lit_true);
+        ret.b = bind(env, Ctx(), b, constants().literalTrue);
         return ret;
       }
       std::vector<TypeInst*> ranges(al->dims());
@@ -74,23 +74,23 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
       ASTExprVec<TypeInst> ranges_v(ranges);
       assert(!al->type().isbot());
       auto* ti = new TypeInst(e->loc(), al->type(), ranges_v, nullptr);
-      VarDecl* vd = newVarDecl(env, ctx, ti, nullptr, nullptr, al);
+      VarDecl* vd = new_vardecl(env, ctx, ti, nullptr, nullptr, al);
       EE ee(vd, nullptr);
-      env.cse_map_insert(al, ee);
-      env.cse_map_insert(vd->e(), ee);
+      env.cseMapInsert(al, ee);
+      env.cseMapInsert(vd->e(), ee);
 
       ret.r = bind(env, ctx, r, vd->id());
-      ret.b = bind(env, Ctx(), b, constants().lit_true);
+      ret.b = bind(env, Ctx(), b, constants().literalTrue);
       return ret;
     }
   }
   GCLock lock;
   try {
     ret.r = bind(env, ctx, r, eval_par(env, e));
-    ret.b = bind(env, Ctx(), b, constants().lit_true);
+    ret.b = bind(env, Ctx(), b, constants().literalTrue);
   } catch (ResultUndefinedError&) {
-    ret.r = createDummyValue(env, e->type());
-    ret.b = bind(env, Ctx(), b, constants().lit_false);
+    ret.r = create_dummy_value(env, e->type());
+    ret.b = bind(env, Ctx(), b, constants().literalFalse);
   }
   return ret;
 }

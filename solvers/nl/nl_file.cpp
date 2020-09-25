@@ -104,7 +104,7 @@ void NLFile::add_vdecl(const VarDecl& vd, const TypeInst& ti, const Expression& 
 
     // Look for the annotation "output_array"
     for (ExpressionSetIter it = vd.ann().begin(); it != vd.ann().end(); ++it) {
-      Call* c = (*it)->dyn_cast<Call>();
+      Call* c = (*it)->dynamicCast<Call>();
       if (c != nullptr && c->id() == (constants().ann.output_array)) {
         NLArray array;
         array.name = name;
@@ -383,7 +383,7 @@ void NLFile::analyse_constraint(const Call& c) {
 
 /** Create a token from an expression representing a variable */
 NLToken NLFile::get_tok_var_int(const Expression* e) {
-  if (e->type().ispar()) {
+  if (e->type().isPar()) {
     // Constant
     long long value = e->cast<IntLit>()->v().toInt();
     return NLToken::n(value);
@@ -398,7 +398,7 @@ NLToken NLFile::get_tok_var_int(const Expression* e) {
 /** Create a token from an expression representing either a variable or a floating point numeric
  * value. */
 NLToken NLFile::get_tok_var_fp(const Expression* e) {
-  if (e->type().ispar()) {
+  if (e->type().isPar()) {
     // Constant
     double value = e->cast<FloatLit>()->v().toDouble();
     return NLToken::n(value);
@@ -412,7 +412,7 @@ NLToken NLFile::get_tok_var_fp(const Expression* e) {
 
 /** Create a token from an expression representing either a variable. */
 NLToken NLFile::get_tok_var(const Expression* e) {
-  assert(!e->type().ispar());
+  assert(!e->type().isPar());
   // Variable
   VarDecl& vd = *(e->cast<Id>()->decl());
   string n = get_vname(vd);

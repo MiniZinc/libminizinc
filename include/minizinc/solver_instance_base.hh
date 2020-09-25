@@ -28,7 +28,7 @@ namespace MiniZinc {
 class SolverInstanceBase {
 protected:
   Env& _env;
-  Solns2Out* pS2Out = nullptr;
+  Solns2Out* _pS2Out = nullptr;
   std::ostream& _log;
 
 public:
@@ -40,19 +40,21 @@ public:
     bool printStatistics = false;
   };
 
+protected:
   std::unique_ptr<Options> _options;
 
   typedef SolverInstance::Status Status;
   typedef SolverInstance::StatusReason StatusReason;
   Status _status;
-  StatusReason _status_reason;
+  StatusReason _statusReason;
 
+public:
   SolverInstanceBase(Env& env, std::ostream& log, Options* options)
       : _env(env),
         _log(log),
         _options(options),
         _status(SolverInstance::UNKNOWN),
-        _status_reason(SolverInstance::SR_OK) {}
+        _statusReason(SolverInstance::SR_OK) {}
   virtual ~SolverInstanceBase() {}
 
   /// Set/get the environment:
@@ -63,10 +65,10 @@ public:
   virtual Env& env() const { return *getEnv(); }
 
   Solns2Out* getSolns2Out() const {
-    assert(pS2Out);
-    return pS2Out;
+    assert(_pS2Out);
+    return _pS2Out;
   }
-  void setSolns2Out(Solns2Out* s2o) { pS2Out = s2o; }
+  void setSolns2Out(Solns2Out* s2o) { _pS2Out = s2o; }
 
   virtual void printSolution();
   //     virtual void printSolution(ostream& );  // deprecated
@@ -83,8 +85,10 @@ public:
   /// solve the problem instance (according to the solve specification in the flatzinc model)
   virtual Status solve();
   /// return reason for status given by solve
-  virtual StatusReason reason() { return _status_reason; }
+  virtual StatusReason reason() { return _statusReason; }
   virtual Status status() { return _status; }
+  void setStatus(Status s) { _status = s; }
+  Options* options() { return _options.get(); }
 
   /// reset the model to its core (removing temporary cts) and the solver to the root node of the
   /// search

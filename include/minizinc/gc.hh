@@ -50,20 +50,20 @@ class ASTNode {
 
 protected:
   /// Mark for garbage collection
-  mutable unsigned int _gc_mark : 1;
+  mutable unsigned int _gcMark : 1;
   /// Id of the node
   unsigned int _id : 7;
   /// Secondary id
-  unsigned int _sec_id : 7;
+  unsigned int _secondaryId : 7;
   /// Flag
-  unsigned int _flag_1 : 1;
+  unsigned int _flag1 : 1;
   /// Flag
-  unsigned int _flag_2 : 1;
+  unsigned int _flag2 : 1;
 
   enum BaseNodes { NID_FL, NID_CHUNK, NID_VEC, NID_STR, NID_END = NID_STR };
 
   /// Constructor
-  ASTNode(unsigned int id) : _gc_mark(0), _id(id) {}
+  ASTNode(unsigned int id) : _gcMark(0), _id(id) {}
 
 public:
   /// Allocate node
@@ -151,13 +151,13 @@ private:
   /// The memory controlled by the collector
   Heap* _heap;
   /// Count how many locks are currently active
-  unsigned int _lock_count;
+  unsigned int _lockCount;
   /// Timeout in milliseconds
   unsigned long long int _timeout;
   /// Counter for timeout
-  int _timeout_counter;
+  int _timeoutCount;
   /// Timer for timeout
-  Timer _timeout_timer;
+  Timer _timeoutTimer;
   /// Return thread-local GC object
   static GC*& gc();
   /// Constructor
@@ -279,9 +279,9 @@ class GCMarker {
 
 private:
   /// Previous object in root set list
-  GCMarker* _roots_prev = nullptr;
+  GCMarker* _rootsPrev = nullptr;
   /// Next object in root set list
-  GCMarker* _roots_next = nullptr;
+  GCMarker* _rootsNext = nullptr;
 
 protected:
   /// Mark garbage collected objects that

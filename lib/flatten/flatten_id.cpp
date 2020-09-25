@@ -19,8 +19,8 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
   EE ret;
   Id* id = e->cast<Id>();
   if (id->decl() == nullptr) {
-    if (id->type().isann()) {
-      ret.b = bind(env, Ctx(), b, constants().lit_true);
+    if (id->type().isAnn()) {
+      ret.b = bind(env, Ctx(), b, constants().literalTrue);
       ret.r = bind(env, ctx, r, e);
       return ret;
     } else {
@@ -30,7 +30,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
   if (!doNotFollowChains) {
     Expression* id_f = follow_id_to_decl(id);
     if (id_f == constants().absent) {
-      ret.b = bind(env, Ctx(), b, constants().lit_true);
+      ret.b = bind(env, Ctx(), b, constants().literalTrue);
       ret.r = bind(env, ctx, r, id_f);
     } else {
       id = id_f->cast<VarDecl>()->id();
@@ -56,7 +56,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
       Generator gen(gen_id, idxset, nullptr);
       std::vector<Expression*> idx(1);
       Generators gens;
-      gens._g.push_back(gen);
+      gens.g.push_back(gen);
       UnOp* aanot = new UnOp(id->loc(), UOT_NOT, nullptr);
       auto* cp = new Comprehension(id->loc(), aanot, gens, false);
       Id* bodyidx = cp->decl(0, 0)->id();
@@ -78,19 +78,19 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
     VarDecl* vd = id->decl()->flat();
     Expression* rete = nullptr;
     if (vd == nullptr) {
-      if (id->decl()->e() == nullptr || id->decl()->e()->type().isann() ||
+      if (id->decl()->e() == nullptr || id->decl()->e()->type().isAnn() ||
           id->decl()->e()->type().isvar() || id->decl()->e()->type().cv() ||
           id->decl()->e()->type().dim() > 0) {
         // New top-level id, need to copy into env.m
         vd =
-            flat_exp(env, Ctx(), id->decl(), nullptr, constants().var_true).r()->cast<Id>()->decl();
+            flat_exp(env, Ctx(), id->decl(), nullptr, constants().varTrue).r()->cast<Id>()->decl();
       } else {
         vd = id->decl();
       }
     }
-    ret.b = bind(env, Ctx(), b, constants().lit_true);
+    ret.b = bind(env, Ctx(), b, constants().literalTrue);
     if (vd->e() != nullptr) {
-      if (vd->e()->type().ispar() && vd->e()->type().dim() == 0) {
+      if (vd->e()->type().isPar() && vd->e()->type().dim() == 0) {
         rete = eval_par(env, vd->e());
         if (vd->toplevel() && (vd->ti()->domain() != nullptr) && !vd->ti()->computedDomain()) {
           // need to check if domain includes RHS value
@@ -174,7 +174,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
       for (int i = 0; i < static_cast<int>(asize.toInt()); i++) {
         CallStackItem csi(env, IntLit::a(i));
         auto* vti = new TypeInst(Location().introduce(), tt, vd->ti()->domain());
-        VarDecl* nvd = newVarDecl(env, Ctx(), vti, nullptr, vd, nullptr);
+        VarDecl* nvd = new_vardecl(env, Ctx(), vti, nullptr, vd, nullptr);
         elems[i] = nvd->id();
       }
       // After introducing variables for each array element, the original domain can be
@@ -184,31 +184,31 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
       auto* al = new ArrayLit(Location().introduce(), elems, dims);
       al->type(vd->type());
       vd->e(al);
-      env.vo_add_exp(vd);
+      env.voAddExp(vd);
       EE ee;
       ee.r = vd;
-      env.cse_map_insert(vd->e(), ee);
+      env.cseMapInsert(vd->e(), ee);
     }
     if (rete == nullptr) {
       if (!vd->toplevel()) {
         // create new VarDecl in toplevel, if decl doesnt exist yet
-        auto it = env.cse_map_find(vd->e());
-        if (it == env.cse_map_end()) {
+        auto it = env.cseMapFind(vd->e());
+        if (it == env.cseMapEnd()) {
           Expression* vde = follow_id(vd->e());
-          ArrayLit* vdea = vde != nullptr ? vde->dyn_cast<ArrayLit>() : nullptr;
+          ArrayLit* vdea = vde != nullptr ? vde->dynamicCast<ArrayLit>() : nullptr;
           if ((vdea != nullptr) && vdea->size() == 0) {
             // Do not create names for empty arrays but return array literal directly
             rete = vdea;
           } else {
-            VarDecl* nvd = newVarDecl(env, ctx, eval_typeinst(env, ctx, vd), nullptr, vd, nullptr);
+            VarDecl* nvd = new_vardecl(env, ctx, eval_typeinst(env, ctx, vd), nullptr, vd, nullptr);
 
             if (vd->e() != nullptr) {
-              (void)flat_exp(env, Ctx(), vd->e(), nvd, constants().var_true);
+              (void)flat_exp(env, Ctx(), vd->e(), nvd, constants().varTrue);
             }
             vd = nvd;
             EE ee(vd, nullptr);
             if (vd->e() != nullptr) {
-              env.cse_map_insert(vd->e(), ee);
+              env.cseMapInsert(vd->e(), ee);
             }
           }
         } else {
@@ -223,7 +223,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
         if (id->type().bt() == Type::BT_ANN && (vd->e() != nullptr)) {
           rete = vd->e();
         } else {
-          auto* vda = vd->dyn_cast<ArrayLit>();
+          auto* vda = vd->dynamicCast<ArrayLit>();
           if ((vda != nullptr) && vda->size() == 0) {
             // Do not create names for empty arrays but return array literal directly
             rete = vda;

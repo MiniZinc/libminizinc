@@ -91,24 +91,24 @@ template <class S2O>
 class Process {
 protected:
   std::vector<std::string> _fzncmd;
-  S2O* pS2Out;
-  int timelimit;
-  bool sigint;
+  S2O* _pS2Out;
+  int _timelimit;
+  bool _sigint;
 #ifdef _WIN32
   static BOOL WINAPI handleInterrupt(DWORD fdwCtrlType) {
     switch (fdwCtrlType) {
       case CTRL_C_EVENT: {
         std::unique_lock<std::mutex> lck(i_mtx);
         hadInterrupt = true;
-        i_cv.notify_all();
+        _interruptCondition.notify_all();
         return TRUE;
       }
       default:
         return FALSE;
     }
   }
-  static std::mutex i_mtx;
-  static std::condition_variable i_cv;
+  static std::mutex _interruptMutex;
+  static std::condition_variable _interruptCondition;
 #else
   static void handleInterrupt(int signal) {
     if (signal == SIGINT) {
@@ -123,8 +123,8 @@ protected:
 
 public:
   Process(std::vector<std::string>& fzncmd, S2O* pso, int tl, bool si)
-      : _fzncmd(fzncmd), pS2Out(pso), timelimit(tl), sigint(si) {
-    assert(nullptr != pS2Out);
+      : _fzncmd(fzncmd), _pS2Out(pso), _timelimit(tl), _sigint(si) {
+    assert(nullptr != _pS2Out);
   }
   int run() {
 #ifdef _WIN32
@@ -179,7 +179,7 @@ public:
     siStartInfo.hStdInput = g_hChildStd_IN_Rd;
     siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
 
-    std::string cmdline = FileUtils::combineCmdLine(_fzncmd);
+    std::string cmdline = FileUtils::combine_cmd_line(_fzncmd);
     wchar_t* cmdstr = _wcsdup(FileUtils::utf8ToWide(cmdline).c_str());
 
     HANDLE hJobObject = CreateJobObject(NULL, NULL);
@@ -233,19 +233,19 @@ public:
       auto shouldStop = [&] { return hadInterrupt || (doneStderr && doneStdout); };
       std::unique_lock<std::mutex> lck(i_mtx);
       if (timelimit != 0) {
-        if (!i_cv.wait_for(lck, std::chrono::milliseconds(timelimit), shouldStop)) {
+        if (!_interruptCondition.wait_for(lck, std::chrono::milliseconds(timelimit), shouldStop)) {
           // If we timed out, generate an interrupt but ignore it ourselves
           bool oldHadInterrupt = hadInterrupt;
           GenerateConsoleCtrlEvent(CTRL_C_EVENT, 0);
-          i_cv.wait(lck, [&] { return hadInterrupt; });
+          _interruptCondition.wait(lck, [&] { return hadInterrupt; });
           hadInterrupt = oldHadInterrupt;
         }
       } else {
-        i_cv.wait(lck, shouldStop);
+        _interruptCondition.wait(lck, shouldStop);
       }
       // At this point the child should be stopped/stopping
       if (!doneStderr || !doneStdout) {
-        if (!i_cv.wait_for(lck, std::chrono::milliseconds(200),
+        if (!_interruptCondition.wait_for(lck, std::chrono::milliseconds(200),
                            [&] { return doneStderr && doneStdout; })) {
           // Force terminate the child after 200ms
           TerminateJobObject(hJobObject, 0);
@@ -270,7 +270,7 @@ public:
           {
             // Make sure thrTimeout terminates
             std::unique_lock<std::mutex> lck(i_mtx);
-            i_cv.notify_all();
+            _interruptCondition.notify_all();
           }
           thrTimeout.join();
           SetConsoleCtrlHandler(handleInterrupt, FALSE);
@@ -285,7 +285,7 @@ public:
     {
       // Make sure thrTimeout terminates
       std::unique_lock<std::mutex> lck(i_mtx);
-      i_cv.notify_all();
+      _interruptCondition.notify_all();
     }
     thrTimeout.join();
     DWORD exitCode = 0;
@@ -320,8 +320,8 @@ public:
       gettimeofday(&starttime, nullptr);
 
       struct timeval timeout_orig;
-      timeout_orig.tv_sec = timelimit / 1000;
-      timeout_orig.tv_usec = (timelimit % 1000) * 1000;
+      timeout_orig.tv_sec = _timelimit / 1000;
+      timeout_orig.tv_usec = (_timelimit % 1000) * 1000;
       struct timeval timeout = timeout_orig;
 
       hadInterrupt = false;
@@ -334,7 +334,7 @@ public:
       sigfillset(&sa.sa_mask);
       sigaction(SIGINT, &sa, &old_sa_int);
       sigaction(SIGTERM, &sa, &old_sa_term);
-      int signal = sigint ? SIGINT : SIGTERM;
+      int signal = _sigint ? SIGINT : SIGTERM;
       bool handledInterrupt = false;
       bool handledTerm = false;
 
@@ -343,7 +343,7 @@ public:
       while (!done) {
         FD_SET(pipes[1][0], &fdset);
         FD_SET(pipes[2][0], &fdset);
-        int sel = select(FD_SETSIZE, &fdset, nullptr, nullptr, timelimit == 0 ? nullptr : &timeout);
+        int sel = select(FD_SETSIZE, &fdset, nullptr, nullptr, _timelimit == 0 ? nullptr : &timeout);
         if (sel == -1) {
           if (errno != EINTR) {
             // some error has happened
@@ -364,7 +364,7 @@ public:
         }
         if (timeoutImmediately) {
           // Set timeout to immediately expire
-          timelimit = -1;
+          _timelimit = -1;
           timeout.tv_sec = 0;
           timeout.tv_usec = 0;
           timeout_orig = timeout;
@@ -374,7 +374,7 @@ public:
         }
 
         bool killed = false;
-        if (timelimit != 0) {
+        if (_timelimit != 0) {
           timeval currentTime;
           gettimeofday(&currentTime, nullptr);
           if (sel != 0) {
@@ -427,19 +427,19 @@ public:
               if (1 == i) {
                 //                       cerr << "mzn-fzn: raw chunk stdout:::  " << flush;
                 //                       cerr << buffer << flush;
-                pS2Out->feedRawDataChunk(buffer);
+                _pS2Out->feedRawDataChunk(buffer);
               } else {
-                pS2Out->getLog() << buffer << std::flush;
+                _pS2Out->getLog() << buffer << std::flush;
               }
             } else if (1 == i) {
-              pS2Out->feedRawDataChunk("\n");  // in case last chunk did not end with \n
+              _pS2Out->feedRawDataChunk("\n");  // in case last chunk did not end with \n
               addedNl = true;
               done = true;
             }
           }
         }
         if (killed && !addedNl) {
-          pS2Out->feedRawDataChunk("\n");  // in case last chunk did not end with \n
+          _pS2Out->feedRawDataChunk("\n");  // in case last chunk did not end with \n
         }
       }
 
@@ -510,7 +510,7 @@ bool Process<S2O>::hadInterrupt;
 template <class S2O>
 std::mutex Process<S2O>::i_mtx;
 template <class S2O>
-std::condition_variable Process<S2O>::i_cv;
+std::condition_variable Process<S2O>::_interruptCondition;
 #else
 template <class S2O>
 bool Process<S2O>::hadTerm;

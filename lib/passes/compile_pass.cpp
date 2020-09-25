@@ -33,11 +33,11 @@ namespace MiniZinc {
 using std::string;
 using std::vector;
 
-Env* changeLibrary(Env& e, vector<string>& includePaths, const string& globals_dir,
+Env* change_library(Env& e, vector<string>& includePaths, const string& globals_dir,
                    CompilePassFlags& compflags, bool verbose = false) {
   GCLock lock;
   CopyMap cm;
-  Model* m = e.envi().orig_model != nullptr ? e.envi().orig_model : e.envi().model;
+  Model* m = e.envi().originalModel != nullptr ? e.envi().originalModel : e.envi().model;
   auto* new_mod = new Model();
   new_mod->setFilename(m->filename());
   new_mod->setFilepath(m->filepath());
@@ -52,7 +52,7 @@ Env* changeLibrary(Env& e, vector<string>& includePaths, const string& globals_d
   // Collect include items
   vector<ASTString> include_names;
   for (Item* item : *m) {
-    if (auto* inc = item->dyn_cast<IncludeI>()) {
+    if (auto* inc = item->dynamicCast<IncludeI>()) {
       include_names.push_back(inc->m()->filepath());
     } else {
       new_mod->addItem(copy(e.envi(), cm, item));
@@ -70,7 +70,7 @@ Env* changeLibrary(Env& e, vector<string>& includePaths, const string& globals_d
   // std::cerr);
   std::ostringstream dummy_file;
   dummy_file << m->filepath() << "_Dummy.mzn";
-  Model* inc_mod = parseFromString(*fenv, ss.str(), dummy_file.str(), new_includePaths, false,
+  Model* inc_mod = parse_from_string(*fenv, ss.str(), dummy_file.str(), new_includePaths, false,
                                    false, true, verbose, std::cerr, syntax_errors);
   if (inc_mod == nullptr) {
     for (const SyntaxError& se : syntax_errors) {
@@ -91,36 +91,36 @@ Env* changeLibrary(Env& e, vector<string>& includePaths, const string& globals_d
 CompilePass::CompilePass(Env* e, FlatteningOptions& opts, CompilePassFlags& cflags,
                          string globals_library, vector<string> include_paths, bool change_lib,
                          bool ignore_unknown)
-    : env(e),
-      fopts(opts),
-      compflags(cflags),
-      library(std::move(globals_library)),
-      includePaths(std::move(include_paths)),
-      change_library(change_lib),
-      ignore_unknown_ids(ignore_unknown) {}
+    : _env(e),
+      _fopts(opts),
+      _compflags(cflags),
+      _library(std::move(globals_library)),
+      _includePaths(std::move(include_paths)),
+      _changeLibrary(change_lib),
+      _ignoreUnknownIds(ignore_unknown) {}
 
 Env* CompilePass::run(Env* store, std::ostream& log) {
   Timer lasttime;
-  if (compflags.verbose) {
-    log << "\n\tCompilePass: Flatten with \'" << library << "\' library ...\n";
+  if (_compflags.verbose) {
+    log << "\n\tCompilePass: Flatten with \'" << _library << "\' library ...\n";
   }
 
   Env* new_env;
-  if (change_library) {
-    new_env = changeLibrary(*env, includePaths, library, compflags, compflags.verbose);
+  if (_changeLibrary) {
+    new_env = change_library(*_env, _includePaths, _library, _compflags, _compflags.verbose);
     if (new_env == nullptr) {
       return nullptr;
     }
     new_env->envi().copyPathMapsAndState(store->envi());
   } else {
-    new_env = env;
+    new_env = _env;
   }
-  new_env->envi().ignoreUnknownIds = ignore_unknown_ids;
+  new_env->envi().ignoreUnknownIds = _ignoreUnknownIds;
 
   vector<TypeError> typeErrors;
   MiniZinc::typecheck(*new_env, new_env->model(), typeErrors,
-                      compflags.model_check_only || compflags.model_interface_only,
-                      compflags.allow_multi_assign);
+                      _compflags.modelCheckOnly || _compflags.modelInterfaceOnly,
+                      _compflags.allowMultiAssign);
   if (!typeErrors.empty()) {
     std::ostringstream errstream;
     for (auto& typeError : typeErrors) {
@@ -130,12 +130,12 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
     throw Error(errstream.str());
   }
 
-  registerBuiltins(*new_env);
+  register_builtins(*new_env);
 
   try {
-    flatten(*new_env, fopts);
+    flatten(*new_env, _fopts);
   } catch (LocationException& e) {
-    if (compflags.verbose) {
+    if (_compflags.verbose) {
       log << std::endl;
     }
     std::ostringstream errstream;
@@ -145,40 +145,40 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
     throw Error(errstream.str());
   }
 
-  if (!compflags.noMIPdomains) {
-    if (compflags.verbose) {
+  if (!_compflags.noMIPdomains) {
+    if (_compflags.verbose) {
       log << "MIP domains ...";
     }
-    MIPdomains(*new_env, compflags.statistics);
-    if (compflags.verbose) {
+    mip_domains(*new_env, _compflags.statistics);
+    if (_compflags.verbose) {
       log << " done (" << lasttime.stoptime() << ")" << std::endl;
     }
   }
 
-  if (compflags.optimize) {
-    if (compflags.verbose) {
+  if (_compflags.optimize) {
+    if (_compflags.verbose) {
       log << "Optimizing ...";
     }
-    optimize(*new_env, compflags.chain_compression);
-    if (compflags.verbose) {
+    optimize(*new_env, _compflags.chainCompression);
+    if (_compflags.verbose) {
       log << " done (" << lasttime.stoptime() << ")" << std::endl;
     }
   }
 
   for (const auto& i : new_env->warnings()) {
-    log << (compflags.werror ? "\n  ERROR: " : "\n  WARNING: ") << i;
+    log << (_compflags.werror ? "\n  ERROR: " : "\n  WARNING: ") << i;
   }
-  if (compflags.werror && !new_env->warnings().empty()) {
+  if (_compflags.werror && !new_env->warnings().empty()) {
     throw Error("errors encountered");
   }
   new_env->clearWarnings();
 
-  if (!compflags.newfzn) {
-    if (compflags.verbose) {
+  if (!_compflags.newfzn) {
+    if (_compflags.verbose) {
       log << "Converting to old FlatZinc ...";
     }
     oldflatzinc(*new_env);
-    if (compflags.verbose) {
+    if (_compflags.verbose) {
       log << " done (" << lasttime.stoptime() << ")" << std::endl;
     }
   } else {
@@ -186,7 +186,7 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
     new_env->output()->compact();
   }
 
-  if (compflags.verbose) {
+  if (_compflags.verbose) {
     log << " done (" << lasttime.stoptime() << ")" << std::endl;
   }
 

@@ -245,7 +245,7 @@ public:
   //     virtual double getTime() = 0;
 
 protected:
-  void wrap_assert(bool, const std::string&, bool fTerm = true);
+  void wrapAssert(bool, const std::string&, bool fTerm = true);
 
   /// Need to consider the 100 status codes in GUROBI and change with every version? TODO
   Status convertStatus(int gurobiStatus);

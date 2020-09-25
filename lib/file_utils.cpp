@@ -16,9 +16,9 @@
 #include <minizinc/config.hh>
 #include <minizinc/exception.hh>
 #include <minizinc/file_utils.hh>
-#include <minizinc/thirdparty/b64/decode.h>
-#include <minizinc/thirdparty/b64/encode.h>
-#include <minizinc/thirdparty/miniz.h>
+#include <minizinc/_thirdparty/b64/decode.h>
+#include <minizinc/_thirdparty/b64/encode.h>
+#include <minizinc/_thirdparty/miniz.h>
 
 #include <cstring>
 #include <sstream>
@@ -374,11 +374,11 @@ TmpFile::TmpFile(const std::string& ext) {
   } while (!didCopy);
   _name += ext;
 #else
-  _tmpfile_desc = -1;
+  _tmpfileDesc = -1;
   _name = "/tmp/mznfileXXXXXX" + ext;
   char* tmpfile = strndup(_name.c_str(), _name.size());
-  _tmpfile_desc = mkstemps(tmpfile, ext.size());
-  if (_tmpfile_desc == -1) {
+  _tmpfileDesc = mkstemps(tmpfile, ext.size());
+  if (_tmpfileDesc == -1) {
     ::free(tmpfile);
     throw InternalError("Error occurred when creating temporary file");
   }
@@ -395,8 +395,8 @@ TmpFile::~TmpFile() {
   }
 #else
   remove(_name.c_str());
-  if (_tmpfile_desc != -1) {
-    close(_tmpfile_desc);
+  if (_tmpfileDesc != -1) {
+    close(_tmpfileDesc);
   }
 #endif
 }
@@ -468,7 +468,7 @@ TmpDir::~TmpDir() {
 #endif
 }
 
-std::vector<std::string> parseCmdLine(const std::string& s) {
+std::vector<std::string> parse_cmd_line(const std::string& s) {
   // Break the string up at whitespace, except inside quotes, but ignore escaped quotes
   std::vector<std::string> c;
   size_t cur = 0;
@@ -556,7 +556,7 @@ std::vector<std::string> parseCmdLine(const std::string& s) {
   return c;
 }
 
-std::string combineCmdLine(const std::vector<std::string>& cmd) {
+std::string combine_cmd_line(const std::vector<std::string>& cmd) {
   std::ostringstream ret;
   for (unsigned int i = 0; i < cmd.size(); i++) {
     const auto& c = cmd[i];
@@ -603,7 +603,7 @@ std::string combineCmdLine(const std::vector<std::string>& cmd) {
   return ret.str();
 }
 
-void inflateString(std::string& s) {
+void inflate_string(std::string& s) {
   auto* cc = reinterpret_cast<unsigned char*>(&s[0]);
   // autodetect compressed string
   if (s.size() >= 2 && ((cc[0] == 0x1F && cc[1] == 0x8B)     // gzip
@@ -695,7 +695,7 @@ void inflateString(std::string& s) {
   }
 }
 
-std::string deflateString(const std::string& s) {
+std::string deflate_string(const std::string& s) {
   mz_ulong compressedLength = compressBound(static_cast<mz_ulong>(s.size()));
   auto* cmpr = static_cast<unsigned char*>(::malloc(compressedLength * sizeof(unsigned char)));
   int status = compress(cmpr, &compressedLength, reinterpret_cast<const unsigned char*>(&s[0]),
@@ -709,7 +709,7 @@ std::string deflateString(const std::string& s) {
   return ret;
 }
 
-std::string encodeBase64(const std::string& s) {
+std::string encode_base64(const std::string& s) {
   base64::encoder E;
   std::ostringstream oss;
   oss << "@";  // add leading "@" to distinguish from valid MiniZinc code
@@ -718,7 +718,7 @@ std::string encodeBase64(const std::string& s) {
   return oss.str();
 }
 
-std::string decodeBase64(const std::string& s) {
+std::string decode_base64(const std::string& s) {
   if (s.empty() || s[0] != '@') {
     throw InternalError("string is not base64 encoded");
   }

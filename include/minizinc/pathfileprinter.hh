@@ -23,11 +23,11 @@ class PathFilePrinter {
   typedef std::pair<std::string, std::string> NamePair;
   typedef std::unordered_map<Id*, NamePair> NameMap;
 
-  NameMap betternames;
 
 private:
-  std::ostream& os;
-  int constraint_index;
+  NameMap _betternames;
+  std::ostream& _os;
+  int _constraintIndex;
 
   void addBetterName(Id* id, const std::string& name, const std::string& path, bool overwrite);
 

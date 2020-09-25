@@ -19,13 +19,13 @@ namespace MiniZinc {
 class VarOccurrences {
 public:
   typedef std::unordered_set<Item*> Items;
-  IdMap<Items> _m;
+  IdMap<Items> itemMap;
   IdMap<int> idx;
 
   /// Add \a to the index
-  void add_idx(VarDeclI* i, int idx_i);
+  void addIndex(VarDeclI* i, int idx_i);
   /// Add \a to the index
-  void add_idx(VarDecl* e, int idx_i);
+  void addIndex(VarDecl* e, int idx_i);
   /// Find index of \a vd
   int find(VarDecl* vd);
   /// Remove index of \a vd
@@ -88,7 +88,7 @@ public:
     } else {
       /// TODO: test if id's domain is a superset of the right hand side
       /// this currently only tests for equality, and for Boolean domains
-      if (Id* ident = vd->e()->dyn_cast<Id>()) {
+      if (Id* ident = vd->e()->dynamicCast<Id>()) {
         if (Expression::equal(ident->decl()->ti()->domain(), vd->ti()->domain())) {
           return true;
         }
@@ -108,7 +108,7 @@ public:
   }
 };
 
-bool isOutput(VarDecl* vd);
+bool is_output(VarDecl* vd);
 
 /// Simplyfy models in \a env
 void optimize(Env& env, bool chain_compression = true);

@@ -289,7 +289,7 @@ GroupMap::Map::iterator GroupMap::find(const std::string& n) {
   return m.end();
 }
 
-void addToGroup(Group& gm, const std::string& group, DocItem& di) {
+void add_to_group(Group& gm, const std::string& group, DocItem& di) {
   std::vector<std::string> subgroups;
   size_t lastpos = 0;
   size_t pos = group.find('.');
@@ -317,7 +317,7 @@ void addToGroup(Group& gm, const std::string& group, DocItem& di) {
   }
 }
 
-void setGroupDesc(Group& maingroup, const std::string& group, const std::string& htmlName,
+void set_group_desc(Group& maingroup, const std::string& group, const std::string& htmlName,
                   const std::string& s) {
   if (group == "MAIN") {
     if (!maingroup.htmlName.empty()) {
@@ -359,7 +359,7 @@ void setGroupDesc(Group& maingroup, const std::string& group, const std::string&
   }
 }
 
-std::string extractArgWord(std::string& s, size_t n) {
+std::string extract_arg_word(std::string& s, size_t n) {
   size_t start = n;
   while (start < s.size() && s[start] != ' ' && s[start] != '\t') {
     start++;
@@ -376,7 +376,7 @@ std::string extractArgWord(std::string& s, size_t n) {
   return ret;
 }
 
-std::string makeHTMLId(const std::string& ident) {
+std::string make_html_id(const std::string& ident) {
   std::ostringstream oss;
   oss << "I";
   bool prevWasSym = false;
@@ -457,22 +457,22 @@ std::string makeHTMLId(const std::string& ident) {
 
 class CollectFunctionsVisitor : public ItemVisitor {
 protected:
-  EnvI& env;
+  EnvI& _env;
   HtmlDocOutput::FunMap& _funmap;
   bool _includeStdLib;
 
 public:
-  CollectFunctionsVisitor(EnvI& env0, HtmlDocOutput::FunMap& funmap, bool includeStdLib)
-      : env(env0), _funmap(funmap), _includeStdLib(includeStdLib) {}
+  CollectFunctionsVisitor(EnvI& env, HtmlDocOutput::FunMap& funmap, bool includeStdLib)
+      : _env(env), _funmap(funmap), _includeStdLib(includeStdLib) {}
   bool enterModel(Model* m) { return _includeStdLib || m->filename() != "stdlib.mzn"; }
   void vFunctionI(FunctionI* fi) {
     if (Call* docstring =
-            Expression::dyn_cast<Call>(getAnnotation(fi->ann(), constants().ann.doc_comment))) {
-      std::string ds = eval_string(env, docstring->arg(0));
+            Expression::dynamicCast<Call>(get_annotation(fi->ann(), constants().ann.doc_comment))) {
+      std::string ds = eval_string(_env, docstring->arg(0));
       std::string group("main");
       size_t group_idx = ds.find("@group");
       if (group_idx != std::string::npos) {
-        group = HtmlDocOutput::extractArgWord(ds, group_idx);
+        group = HtmlDocOutput::extract_arg_word(ds, group_idx);
       }
       _funmap.insert(std::make_pair(fi, group));
     }
@@ -481,7 +481,7 @@ public:
 
 class PrintHtmlVisitor : public ItemVisitor {
 protected:
-  EnvI& env;
+  EnvI& _env;
   HtmlDocOutput::Group& _maingroup;
   HtmlDocOutput::FunMap& _funmap;
   bool _includeStdLib;
@@ -612,9 +612,9 @@ protected:
   }
 
 public:
-  PrintHtmlVisitor(EnvI& env0, HtmlDocOutput::Group& mg, HtmlDocOutput::FunMap& fm,
+  PrintHtmlVisitor(EnvI& env, HtmlDocOutput::Group& mg, HtmlDocOutput::FunMap& fm,
                    bool includeStdLib)
-      : env(env0), _maingroup(mg), _funmap(fm), _includeStdLib(includeStdLib) {}
+      : _env(env), _maingroup(mg), _funmap(fm), _includeStdLib(includeStdLib) {}
   bool enterModel(Model* m) {
     if (!_includeStdLib && m->filename() == "stdlib.mzn") {
       return false;
@@ -642,7 +642,7 @@ public:
         std::string groupHTMLName = dc.substr(doc_start, end - doc_start);
 
         size_t next = dc.find("@groupdef", gpos + 1);
-        HtmlDocOutput::setGroupDesc(
+        HtmlDocOutput::set_group_desc(
             _maingroup, groupName, groupHTMLName,
             addHTML(dc.substr(end, next == std::string::npos ? next : next - end)));
         gpos = next;
@@ -652,19 +652,19 @@ public:
   }
   /// Visit variable declaration
   void vVarDeclI(VarDeclI* vdi) {
-    if (Call* docstring = Expression::dyn_cast<Call>(
-            getAnnotation(vdi->e()->ann(), constants().ann.doc_comment))) {
-      std::string ds = eval_string(env, docstring->arg(0));
+    if (Call* docstring = Expression::dynamicCast<Call>(
+            get_annotation(vdi->e()->ann(), constants().ann.doc_comment))) {
+      std::string ds = eval_string(_env, docstring->arg(0));
       std::string group("main");
       size_t group_idx = ds.find("@group");
       if (group_idx != std::string::npos) {
-        group = HtmlDocOutput::extractArgWord(ds, group_idx);
+        group = HtmlDocOutput::extract_arg_word(ds, group_idx);
       }
 
       std::ostringstream os;
       std::string sig =
-          vdi->e()->type().toString(env) + " " + std::string(vdi->e()->id()->str().c_str());
-      os << "<div class='mzn-vardecl' id='" << HtmlDocOutput::makeHTMLId(sig) << "'>\n";
+          vdi->e()->type().toString(_env) + " " + std::string(vdi->e()->id()->str().c_str());
+      os << "<div class='mzn-vardecl' id='" << HtmlDocOutput::make_html_id(sig) << "'>\n";
       os << "<div class='mzn-vardecl-code'>\n";
       if (vdi->e()->ti()->type() == Type::ann()) {
         os << "<span class='mzn-kw'>annotation</span> ";
@@ -677,20 +677,20 @@ public:
       os << "</div></div>";
       GCLock lock;
       HtmlDocOutput::DocItem di(
-          vdi->e()->type().ispar() ? HtmlDocOutput::DocItem::T_PAR : HtmlDocOutput::DocItem::T_VAR,
+          vdi->e()->type().isPar() ? HtmlDocOutput::DocItem::T_PAR : HtmlDocOutput::DocItem::T_VAR,
           sig, sig, os.str());
-      HtmlDocOutput::addToGroup(_maingroup, group, di);
+      HtmlDocOutput::add_to_group(_maingroup, group, di);
     }
   }
   /// Visit function item
   void vFunctionI(FunctionI* fi) {
     if (Call* docstring =
-            Expression::dyn_cast<Call>(getAnnotation(fi->ann(), constants().ann.doc_comment))) {
-      std::string ds = eval_string(env, docstring->arg(0));
+            Expression::dynamicCast<Call>(get_annotation(fi->ann(), constants().ann.doc_comment))) {
+      std::string ds = eval_string(_env, docstring->arg(0));
       std::string group("main");
       size_t group_idx = ds.find("@group");
       if (group_idx != std::string::npos) {
-        group = HtmlDocOutput::extractArgWord(ds, group_idx);
+        group = HtmlDocOutput::extract_arg_word(ds, group_idx);
       }
 
       size_t param_idx = ds.find("@param");
@@ -732,7 +732,7 @@ public:
       }
 
       std::ostringstream os;
-      os << "<div class='mzn-fundecl' id='" << HtmlDocOutput::makeHTMLId(sig) << "'>\n";
+      os << "<div class='mzn-fundecl' id='" << HtmlDocOutput::make_html_id(sig) << "'>\n";
       os << "<div class='mzn-fundecl-code'>";
       os << "<a href='javascript:void(0)' onclick='revealMore(this)' "
             "class='mzn-fundecl-more'>&#9664;</a>";
@@ -784,11 +784,11 @@ public:
         bool alias;
         do {
           alias = false;
-          Call* c = Expression::dyn_cast<Call>(f_body->e());
-          if ((c != nullptr) && c->n_args() == f_body->params().size()) {
+          Call* c = Expression::dynamicCast<Call>(f_body->e());
+          if ((c != nullptr) && c->argCount() == f_body->params().size()) {
             bool sameParams = true;
             for (unsigned int i = 0; i < f_body->params().size(); i++) {
-              Id* ident = c->arg(i)->dyn_cast<Id>();
+              Id* ident = c->arg(i)->dynamicCast<Id>();
               if (ident == nullptr || ident->decl() != f_body->params()[i] ||
                   ident->str() != c->decl()->params()[i]->id()->str()) {
                 sameParams = false;
@@ -817,7 +817,7 @@ public:
           os << "<div class='mzn-fundecl-body'>";
           os << body_os.str();
           os << "</div>\n";
-          os << "(standard decomposition from " << filename << ":" << f_body->loc().first_line()
+          os << "(standard decomposition from " << filename << ":" << f_body->loc().firstLine()
              << ")";
           os << "</div>";
         }
@@ -855,7 +855,7 @@ public:
 
       HtmlDocOutput::DocItem di(HtmlDocOutput::DocItem::T_FUN,
                                 std::string(fi->id().c_str(), fi->id().size()), sig, os.str());
-      HtmlDocOutput::addToGroup(_maingroup, group, di);
+      HtmlDocOutput::add_to_group(_maingroup, group, di);
     }
   }
 };
@@ -867,9 +867,9 @@ std::vector<HtmlDocument> HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m,
   Group g(basename, basename);
   FunMap funMap;
   CollectFunctionsVisitor fv(env, funMap, includeStdLib);
-  iterItems(fv, m);
+  iter_items(fv, m);
   PrintHtmlVisitor phv(env, g, funMap, includeStdLib);
-  iterItems(phv, m);
+  iter_items(phv, m);
 
   std::vector<HtmlDocument> ret;
 
@@ -953,7 +953,7 @@ std::vector<HtmlDocument> HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m,
         IndexEntry& cur = curEntries[0];
         if (curEntries.size() == 1) {
           oss << cur.id << " <a href='" << cur.link << ".html#"
-              << HtmlDocOutput::makeHTMLId(cur.sig) << "'>"
+              << HtmlDocOutput::make_html_id(cur.sig) << "'>"
               << "(" << cur.groupName << ")</a>";
         } else {
           oss << cur.id << " (";
@@ -964,7 +964,7 @@ std::vector<HtmlDocument> HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m,
             } else {
               oss << ", ";
             }
-            oss << "<a href='" << i_ie.link << ".html#" << HtmlDocOutput::makeHTMLId(i_ie.sig)
+            oss << "<a href='" << i_ie.link << ".html#" << HtmlDocOutput::make_html_id(i_ie.sig)
                 << "'>";
             oss << i_ie.groupName << "</a>";
           }
@@ -1013,7 +1013,7 @@ std::vector<HtmlDocument> HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m,
 
 class PrintRSTVisitor : public ItemVisitor {
 protected:
-  EnvI& env;
+  EnvI& _env;
   HtmlDocOutput::Group& _maingroup;
   HtmlDocOutput::FunMap& _funmap;
   bool _includeStdLib;
@@ -1139,9 +1139,9 @@ protected:
   }
 
 public:
-  PrintRSTVisitor(EnvI& env0, HtmlDocOutput::Group& mg, HtmlDocOutput::FunMap& fm,
+  PrintRSTVisitor(EnvI& env, HtmlDocOutput::Group& mg, HtmlDocOutput::FunMap& fm,
                   bool includeStdLib)
-      : env(env0), _maingroup(mg), _funmap(fm), _includeStdLib(includeStdLib) {}
+      : _env(env), _maingroup(mg), _funmap(fm), _includeStdLib(includeStdLib) {}
   bool enterModel(Model* m) {
     if (!_includeStdLib && m->filename() == "stdlib.mzn") {
       return false;
@@ -1171,7 +1171,7 @@ public:
         size_t next = dc.find("@groupdef", gpos + 1);
         std::string groupDesc = dc.substr(end, next == std::string::npos ? next : next - end);
         replaceArgsRST(groupDesc);
-        HtmlDocOutput::setGroupDesc(_maingroup, groupName, groupHTMLName, groupDesc);
+        HtmlDocOutput::set_group_desc(_maingroup, groupName, groupHTMLName, groupDesc);
         gpos = next;
       }
     }
@@ -1179,16 +1179,16 @@ public:
   }
   /// Visit variable declaration
   void vVarDeclI(VarDeclI* vdi) {
-    if (Call* docstring = Expression::dyn_cast<Call>(
-            getAnnotation(vdi->e()->ann(), constants().ann.doc_comment))) {
-      std::string ds = eval_string(env, docstring->arg(0));
+    if (Call* docstring = Expression::dynamicCast<Call>(
+            get_annotation(vdi->e()->ann(), constants().ann.doc_comment))) {
+      std::string ds = eval_string(_env, docstring->arg(0));
       std::string group("main");
       size_t group_idx = ds.find("@group");
       if (group_idx != std::string::npos) {
-        group = HtmlDocOutput::extractArgWord(ds, group_idx);
+        group = HtmlDocOutput::extract_arg_word(ds, group_idx);
       }
       std::ostringstream os;
-      std::string sig = vdi->e()->type().toString(env) + " " +
+      std::string sig = vdi->e()->type().toString(_env) + " " +
                         std::string(vdi->e()->id()->str().c_str(), vdi->e()->id()->str().size());
 
       std::string myMainGroup = group.substr(0, group.find_first_of('.'));
@@ -1211,20 +1211,20 @@ public:
       os << HtmlDocOutput::trim(ds) << "\n\n";
       GCLock lock;
       HtmlDocOutput::DocItem di(
-          vdi->e()->type().ispar() ? HtmlDocOutput::DocItem::T_PAR : HtmlDocOutput::DocItem::T_VAR,
+          vdi->e()->type().isPar() ? HtmlDocOutput::DocItem::T_PAR : HtmlDocOutput::DocItem::T_VAR,
           sig, sig, os.str());
-      HtmlDocOutput::addToGroup(_maingroup, group, di);
+      HtmlDocOutput::add_to_group(_maingroup, group, di);
     }
   }
   /// Visit function item
   void vFunctionI(FunctionI* fi) {
     if (Call* docstring =
-            Expression::dyn_cast<Call>(getAnnotation(fi->ann(), constants().ann.doc_comment))) {
-      std::string ds = eval_string(env, docstring->arg(0));
+            Expression::dynamicCast<Call>(get_annotation(fi->ann(), constants().ann.doc_comment))) {
+      std::string ds = eval_string(_env, docstring->arg(0));
       std::string group("main");
       size_t group_idx = ds.find("@group");
       if (group_idx != std::string::npos) {
-        group = HtmlDocOutput::extractArgWord(ds, group_idx);
+        group = HtmlDocOutput::extract_arg_word(ds, group_idx);
       }
 
       size_t param_idx = ds.find("@param");
@@ -1341,11 +1341,11 @@ public:
         bool alias;
         do {
           alias = false;
-          Call* c = Expression::dyn_cast<Call>(f_body->e());
-          if ((c != nullptr) && c->n_args() == f_body->params().size()) {
+          Call* c = Expression::dynamicCast<Call>(f_body->e());
+          if ((c != nullptr) && c->argCount() == f_body->params().size()) {
             bool sameParams = true;
             for (unsigned int i = 0; i < f_body->params().size(); i++) {
-              Id* ident = c->arg(i)->dyn_cast<Id>();
+              Id* ident = c->arg(i)->dynamicCast<Id>();
               if (ident == nullptr || ident->decl() != f_body->params()[i] ||
                   ident->str() != c->decl()->params()[i]->id()->str()) {
                 sameParams = false;
@@ -1367,8 +1367,8 @@ public:
             os << ".. only:: builder_html\n\n";
             os << "    `More... <https://github.com/MiniZinc/libminizinc/blob/" << MZN_VERSION_MAJOR
                << "." << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH << "/share/minizinc/std/"
-               << filename.substr(filePos, std::string::npos) << "#L" << f_body->loc().first_line()
-               << "-L" << f_body->loc().last_line() << ">`__\n\n";
+               << filename.substr(filePos, std::string::npos) << "#L" << f_body->loc().firstLine()
+               << "-L" << f_body->loc().lastLine() << ">`__\n\n";
           }
         }
       }
@@ -1384,7 +1384,7 @@ public:
 
       HtmlDocOutput::DocItem di(HtmlDocOutput::DocItem::T_FUN,
                                 std::string(fi->id().c_str(), fi->id().size()), sig, os.str());
-      HtmlDocOutput::addToGroup(_maingroup, group, di);
+      HtmlDocOutput::add_to_group(_maingroup, group, di);
     }
   }
 };
@@ -1396,9 +1396,9 @@ std::vector<HtmlDocument> RSTPrinter::printRST(EnvI& env, MiniZinc::Model* m,
   Group g(basename, basename);
   FunMap funMap;
   CollectFunctionsVisitor fv(env, funMap, includeStdLib);
-  iterItems(fv, m);
+  iter_items(fv, m);
   PrintRSTVisitor prv(env, g, funMap, includeStdLib);
-  iterItems(prv, m);
+  iter_items(prv, m);
 
   std::vector<HtmlDocument> ret;
 

@@ -16,24 +16,24 @@ namespace MiniZinc {
 
 void CopyMap::insert(Expression* e0, Expression* e1) {
   if (!e0->isUnboxedVal() && !e1->isUnboxedVal()) {
-    node_m.insert(e0, e1);
+    _nodeMap.insert(e0, e1);
   }
 }
-Expression* CopyMap::find(Expression* e) { return static_cast<Expression*>(node_m.find(e)); }
-void CopyMap::insert(Item* e0, Item* e1) { node_m.insert(e0, e1); }
-Item* CopyMap::find(Item* e) { return static_cast<Item*>(node_m.find(e)); }
-void CopyMap::insert(Model* e0, Model* e1) { model_m.insert(std::make_pair(e0, e1)); }
+Expression* CopyMap::find(Expression* e) { return static_cast<Expression*>(_nodeMap.find(e)); }
+void CopyMap::insert(Item* e0, Item* e1) { _nodeMap.insert(e0, e1); }
+Item* CopyMap::find(Item* e) { return static_cast<Item*>(_nodeMap.find(e)); }
+void CopyMap::insert(Model* e0, Model* e1) { _modelMap.insert(std::make_pair(e0, e1)); }
 Model* CopyMap::find(Model* e) {
-  auto it = model_m.find(e);
-  if (it == model_m.end()) {
+  auto it = _modelMap.find(e);
+  if (it == _modelMap.end()) {
     return nullptr;
   }
   return it->second;
 }
-void CopyMap::insert(IntSetVal* e0, IntSetVal* e1) { node_m.insert(e0, e1); }
-IntSetVal* CopyMap::find(IntSetVal* e) { return static_cast<IntSetVal*>(node_m.find(e)); }
-void CopyMap::insert(FloatSetVal* e0, FloatSetVal* e1) { node_m.insert(e0, e1); }
-FloatSetVal* CopyMap::find(FloatSetVal* e) { return static_cast<FloatSetVal*>(node_m.find(e)); }
+void CopyMap::insert(IntSetVal* e0, IntSetVal* e1) { _nodeMap.insert(e0, e1); }
+IntSetVal* CopyMap::find(IntSetVal* e) { return static_cast<IntSetVal*>(_nodeMap.find(e)); }
+void CopyMap::insert(FloatSetVal* e0, FloatSetVal* e1) { _nodeMap.insert(e0, e1); }
+FloatSetVal* CopyMap::find(FloatSetVal* e) { return static_cast<FloatSetVal*>(_nodeMap.find(e)); }
 
 Location copy_location(CopyMap& m, const Location& _loc) { return _loc; }
 Location copy_location(CopyMap& m, Expression* e) { return copy_location(m, e->loc()); }
@@ -245,16 +245,16 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
       auto* cc = new Comprehension(copy_location(m, e), nullptr, g, c->set());
       m.insert(c, cc);
 
-      for (int i = 0; i < c->n_generators(); i++) {
+      for (int i = 0; i < c->numberOfGenerators(); i++) {
         std::vector<VarDecl*> vv;
-        for (int j = 0; j < c->n_decls(i); j++) {
+        for (int j = 0; j < c->numberOfDecls(i); j++) {
           vv.push_back(static_cast<VarDecl*>(
               copy(env, m, c->decl(i, j), followIds, copyFundecls, isFlatModel)));
           // Comprehension VarDecl should not be assigned to a particular value when copying the
           // full comprehension
           assert(!c->decl(i, j)->e());
         }
-        g._g.emplace_back(vv, copy(env, m, c->in(i), followIds, copyFundecls, isFlatModel),
+        g.g.emplace_back(vv, copy(env, m, c->in(i), followIds, copyFundecls, isFlatModel),
                           copy(env, m, c->where(i), followIds, copyFundecls, isFlatModel));
       }
       cc->init(copy(env, m, c->e(), followIds, copyFundecls, isFlatModel), g);
@@ -266,10 +266,10 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
       m.insert(e, c);
       std::vector<Expression*> ifthen(2 * ite->size());
       for (unsigned int i = ite->size(); (i--) != 0U;) {
-        ifthen[2 * i] = copy(env, m, ite->e_if(i), followIds, copyFundecls, isFlatModel);
-        ifthen[2 * i + 1] = copy(env, m, ite->e_then(i), followIds, copyFundecls, isFlatModel);
+        ifthen[2 * i] = copy(env, m, ite->ifExpr(i), followIds, copyFundecls, isFlatModel);
+        ifthen[2 * i + 1] = copy(env, m, ite->thenExpr(i), followIds, copyFundecls, isFlatModel);
       }
-      c->init(ifthen, copy(env, m, ite->e_else(), followIds, copyFundecls, isFlatModel));
+      c->init(ifthen, copy(env, m, ite->elseExpr(), followIds, copyFundecls, isFlatModel));
       ret = c;
     } break;
     case Expression::E_BINOP: {
@@ -314,7 +314,7 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
       }
 
       m.insert(e, c);
-      std::vector<Expression*> args(ca->n_args());
+      std::vector<Expression*> args(ca->argCount());
       for (auto i = static_cast<unsigned int>(args.size()); (i--) != 0U;) {
         args[i] = copy(env, m, ca->arg(i), followIds, copyFundecls, isFlatModel);
       }
@@ -353,8 +353,8 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
       }
       Let* c = new Let(copy_location(m, e), let,
                        copy(env, m, l->in(), followIds, copyFundecls, isFlatModel));
-      for (unsigned int i = l->_let_orig.size(); (i--) != 0U;) {
-        c->_let_orig[i] = copy(env, m, l->_let_orig[i], followIds, copyFundecls, isFlatModel);
+      for (unsigned int i = l->_letOrig.size(); (i--) != 0U;) {
+        c->_letOrig[i] = copy(env, m, l->_letOrig[i], followIds, copyFundecls, isFlatModel);
       }
 
       m.insert(e, c);
@@ -484,12 +484,12 @@ Item* copy(EnvI& env, CopyMap& m, Item* i, bool followIds, bool copyFundecls, bo
           copy_location(m, i), f->id(),
           static_cast<TypeInst*>(copy(env, m, f->ti(), followIds, copyFundecls, isFlatModel)),
           params, copy(env, m, f->e(), followIds, copyFundecls, isFlatModel));
-      c->_builtins.e = f->_builtins.e;
-      c->_builtins.i = f->_builtins.i;
-      c->_builtins.f = f->_builtins.f;
-      c->_builtins.b = f->_builtins.b;
-      c->_builtins.s = f->_builtins.s;
-      c->_builtins.str = f->_builtins.str;
+      c->builtins.e = f->builtins.e;
+      c->builtins.i = f->builtins.i;
+      c->builtins.f = f->builtins.f;
+      c->builtins.b = f->builtins.b;
+      c->builtins.s = f->builtins.s;
+      c->builtins.str = f->builtins.str;
 
       copy_ann(env, m, f->ann(), c->ann(), followIds, copyFundecls, isFlatModel);
       m.insert(i, c);
@@ -518,7 +518,7 @@ Model* copy(EnvI& env, CopyMap& cm, Model* m, bool isFlatModel) {
     c->addItem(copy(env, cm, i, false, true));
   }
 
-  for (auto& it : m->fnmap) {
+  for (auto& it : m->_fnmap) {
     for (auto& i : it.second) {
       c->registerFn(env, copy(env, cm, i.fi, false, true, isFlatModel)->cast<FunctionI>());
     }

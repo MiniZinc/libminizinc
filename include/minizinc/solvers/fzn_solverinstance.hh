@@ -19,39 +19,39 @@ namespace MiniZinc {
 
 class FZNSolverOptions : public SolverInstanceBase::Options {
 public:
-  std::string fzn_solver;
+  std::string fznSolver;
   std::string backend;
-  std::vector<std::string> fzn_flags;
+  std::vector<std::string> fznFlags;
   int numSols = 1;
   std::string parallel;
-  int fzn_time_limit_ms = 0;
-  int solver_time_limit_ms = 0;
-  bool fzn_sigint = false;
+  int fznTimeLimitMilliseconds = 0;
+  int solverTimeLimitMilliseconds = 0;
+  bool fznSigint = false;
   /// Number of (optimal) solutions to output
-  bool num_optimal = true;
-  bool all_optimal = false;
+  bool numOptimal = true;
+  bool allOptimal = false;
 
-  bool fzn_needs_paths = false;
-  bool fzn_output_passthrough = false;
+  bool fznNeedsPaths = false;
+  bool fznOutputPassthrough = false;
 
-  bool supports_a = false;
-  bool supports_n = false;
-  bool supports_f = false;
-  bool supports_p = false;
-  bool supports_s = false;
-  bool supports_r = false;
-  bool supports_v = false;
-  bool supports_t = false;
-  bool supports_i = false;
-  bool supports_n_o = false;
-  bool supports_a_o = false;
-  bool supports_cpprofiler = false;
-  std::vector<MZNFZNSolverFlag> fzn_solver_flags;
+  bool supportsA = false;
+  bool supportsN = false;
+  bool supportsF = false;
+  bool supportsP = false;
+  bool supportsS = false;
+  bool supportsR = false;
+  bool supportsV = false;
+  bool supportsT = false;
+  bool supportsI = false;
+  bool supportsNO = false;
+  bool supportsAO = false;
+  bool supportsCpprofiler = false;
+  std::vector<MZNFZNSolverFlag> fznSolverFlags;
 };
 
 class FZNSolverInstance : public SolverInstanceBase {
 private:
-  std::string _fzn_solver;
+  std::string _fznSolver;
 
 protected:
   Model* _fzn;
@@ -74,13 +74,13 @@ protected:
   Expression* getSolutionValue(Id* id);
 };
 
-class FZN_SolverFactory : public SolverFactory {
+class FZNSolverFactory : public SolverFactory {
 protected:
   virtual SolverInstanceBase* doCreateSI(Env& env, std::ostream& log,
                                          SolverInstanceBase::Options* opt);
 
 public:
-  FZN_SolverFactory();
+  FZNSolverFactory();
   virtual SolverInstanceBase::Options* createOptions();
   virtual std::string getDescription(SolverInstanceBase::Options* opt = nullptr);
   virtual std::string getVersion(SolverInstanceBase::Options* opt = nullptr);

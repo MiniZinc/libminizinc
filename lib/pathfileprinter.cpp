@@ -19,15 +19,15 @@ namespace MiniZinc {
 using std::string;
 using std::vector;
 
-PathFilePrinter::PathFilePrinter(std::ostream& o, EnvI& /*env*/) : os(o), constraint_index(0) {}
+PathFilePrinter::PathFilePrinter(std::ostream& o, EnvI& /*env*/) : _os(o), _constraintIndex(0) {}
 
 void PathFilePrinter::addBetterName(Id* id, const string& name, const string& path,
                                     bool overwrite = false) {
   string oname;
   string opath;
 
-  auto it = betternames.find(id);
-  if (it != betternames.end()) {
+  auto it = _betternames.find(id);
+  if (it != _betternames.end()) {
     oname = it->second.first;
     opath = it->second.second;
   }
@@ -39,7 +39,7 @@ void PathFilePrinter::addBetterName(Id* id, const string& name, const string& pa
     opath = path;
   }
 
-  betternames[id] = NamePair(oname, opath);
+  _betternames[id] = NamePair(oname, opath);
 }
 
 string path2name(const string& path) {
@@ -90,15 +90,15 @@ string path2name(const string& path) {
 
 void PathFilePrinter::print(Model* m) {
   // Build map
-  for (VarDeclIterator vdit = m->begin_vardecls(); vdit != m->end_vardecls(); ++vdit) {
+  for (VarDeclIterator vdit = m->vardecls().begin(); vdit != m->vardecls().end(); ++vdit) {
     VarDecl* e = vdit->e();
     for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it) {
-      if (Call* ca = (*it)->dyn_cast<Call>()) {
+      if (Call* ca = (*it)->dynamicCast<Call>()) {
         ASTString cid = ca->id();
         if (cid == constants().ann.output_array) {
-          if (auto* rhs = e->e()->dyn_cast<ArrayLit>()) {
+          if (auto* rhs = e->e()->dynamicCast<ArrayLit>()) {
             for (unsigned int ind = 0; ind < rhs->size(); ind++) {
-              if (Id* id = (*rhs)[ind]->dyn_cast<Id>()) {
+              if (Id* id = (*rhs)[ind]->dynamicCast<Id>()) {
                 std::stringstream bettername;
                 bettername << *e->id() << "[";
 
@@ -145,33 +145,33 @@ void PathFilePrinter::print(Model* m) {
 }
 
 void PathFilePrinter::print(Item* item) {
-  if (auto* vdi = item->dyn_cast<VarDeclI>()) {
+  if (auto* vdi = item->dynamicCast<VarDeclI>()) {
     Id* id = vdi->e()->id();
-    NamePair np = betternames[id];
+    NamePair np = _betternames[id];
     if (!np.first.empty() || !np.second.empty()) {
       // FlatZinc name
-      os << *id << "\t";
+      _os << *id << "\t";
 
       // Nice name
       if (np.first.empty()) {
-        os << *id << "\t";
+        _os << *id << "\t";
       } else {
         string name = np.first;
-        os << name;
+        _os << name;
         if (name.find('?') != string::npos) {
-          os << "(" << *id << ")";
+          _os << "(" << *id << ")";
         }
-        os << "\t";
+        _os << "\t";
       }
 
       // Path
-      os << np.second << std::endl;
+      _os << np.second << std::endl;
     }
-  } else if (auto* ci = item->dyn_cast<ConstraintI>()) {
+  } else if (auto* ci = item->dynamicCast<ConstraintI>()) {
     StringLit* sl = nullptr;
     Expression* e = ci->e();
     for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it) {
-      if (Call* ca = (*it)->dyn_cast<Call>()) {
+      if (Call* ca = (*it)->dynamicCast<Call>()) {
         ASTString cid = ca->id();
         if (cid == constants().ann.mzn_path) {
           sl = ca->arg(0)->cast<StringLit>();
@@ -179,15 +179,15 @@ void PathFilePrinter::print(Item* item) {
       }
     }
 
-    os << constraint_index << "\t";
-    os << constraint_index << "\t";
+    _os << _constraintIndex << "\t";
+    _os << _constraintIndex << "\t";
     if (sl != nullptr) {
-      os << sl->v();
+      _os << sl->v();
     } else {
-      os << "";
+      _os << "";
     }
-    os << std::endl;
-    constraint_index++;
+    _os << std::endl;
+    _constraintIndex++;
   }
 }
 }  // namespace MiniZinc

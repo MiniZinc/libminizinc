@@ -28,15 +28,15 @@ protected:
   /// Stack item
   struct C {
     /// Expression on the stack
-    Expression* _e;
+    Expression* e;
     /// Whether this expression has been visited before
-    bool _done;
+    bool done;
     /// If part of a generator expression, which one it is
-    int _gen_i;
+    int genNumber;
     /// Constructor
-    C(Expression* e) : _e(e), _done(false), _gen_i(-1) {}
+    C(Expression* e0) : e(e0), done(false), genNumber(-1) {}
     /// Constructor for generator expression
-    C(Expression* e, int gen_i) : _e(e), _done(true), _gen_i(gen_i) {}
+    C(Expression* e0, int genNumber0) : e(e0), done(true), genNumber(genNumber0) {}
   };
 
   /// Push all elements of \a v onto \a stack
@@ -55,7 +55,7 @@ public:
 };
 
 template <class T>
-void bottomUp(T& t, Expression* e) {
+void bottom_up(T& t, Expression* e) {
   BottomUpIterator<T>(t).run(e);
 }
 
@@ -84,7 +84,7 @@ public:
 };
 
 template <class T>
-void topDown(T& t, Expression* root) {
+void top_down(T& t, Expression* root) {
   TopDownIterator<T>(t).run(root);
 }
 
@@ -98,76 +98,76 @@ void BottomUpIterator<T>::run(Expression* root) {
   }
   while (!stack.empty()) {
     C& c = stack.back();
-    if (c._e == nullptr) {
+    if (c.e == nullptr) {
       stack.pop_back();
       continue;
     }
-    if (c._done) {
-      switch (c._e->eid()) {
+    if (c.done) {
+      switch (c.e->eid()) {
         case Expression::E_INTLIT:
-          _t.vIntLit(*c._e->template cast<IntLit>());
+          _t.vIntLit(*c.e->template cast<IntLit>());
           break;
         case Expression::E_FLOATLIT:
-          _t.vFloatLit(*c._e->template cast<FloatLit>());
+          _t.vFloatLit(*c.e->template cast<FloatLit>());
           break;
         case Expression::E_SETLIT:
-          _t.vSetLit(*c._e->template cast<SetLit>());
+          _t.vSetLit(*c.e->template cast<SetLit>());
           break;
         case Expression::E_BOOLLIT:
-          _t.vBoolLit(*c._e->template cast<BoolLit>());
+          _t.vBoolLit(*c.e->template cast<BoolLit>());
           break;
         case Expression::E_STRINGLIT:
-          _t.vStringLit(*c._e->template cast<StringLit>());
+          _t.vStringLit(*c.e->template cast<StringLit>());
           break;
         case Expression::E_ID:
-          _t.vId(*c._e->template cast<Id>());
+          _t.vId(*c.e->template cast<Id>());
           break;
         case Expression::E_ANON:
-          _t.vAnonVar(*c._e->template cast<AnonVar>());
+          _t.vAnonVar(*c.e->template cast<AnonVar>());
           break;
         case Expression::E_ARRAYLIT:
-          _t.vArrayLit(*c._e->template cast<ArrayLit>());
+          _t.vArrayLit(*c.e->template cast<ArrayLit>());
           break;
         case Expression::E_ARRAYACCESS:
-          _t.vArrayAccess(*c._e->template cast<ArrayAccess>());
+          _t.vArrayAccess(*c.e->template cast<ArrayAccess>());
           break;
         case Expression::E_COMP:
-          if (c._gen_i >= 0) {
-            _t.vComprehensionGenerator(*c._e->template cast<Comprehension>(), c._gen_i);
+          if (c.genNumber >= 0) {
+            _t.vComprehensionGenerator(*c.e->template cast<Comprehension>(), c.genNumber);
           } else {
-            _t.vComprehension(*c._e->template cast<Comprehension>());
+            _t.vComprehension(*c.e->template cast<Comprehension>());
           }
           break;
         case Expression::E_ITE:
-          _t.vITE(*c._e->template cast<ITE>());
+          _t.vITE(*c.e->template cast<ITE>());
           break;
         case Expression::E_BINOP:
-          _t.vBinOp(*c._e->template cast<BinOp>());
+          _t.vBinOp(*c.e->template cast<BinOp>());
           break;
         case Expression::E_UNOP:
-          _t.vUnOp(*c._e->template cast<UnOp>());
+          _t.vUnOp(*c.e->template cast<UnOp>());
           break;
         case Expression::E_CALL:
-          _t.vCall(*c._e->template cast<Call>());
+          _t.vCall(*c.e->template cast<Call>());
           break;
         case Expression::E_VARDECL:
-          _t.vVarDecl(*c._e->template cast<VarDecl>());
+          _t.vVarDecl(*c.e->template cast<VarDecl>());
           break;
         case Expression::E_LET:
-          _t.vLet(*c._e->template cast<Let>());
+          _t.vLet(*c.e->template cast<Let>());
           break;
         case Expression::E_TI:
-          _t.vTypeInst(*c._e->template cast<TypeInst>());
+          _t.vTypeInst(*c.e->template cast<TypeInst>());
           break;
         case Expression::E_TIID:
-          _t.vTIId(*c._e->template cast<TIId>());
+          _t.vTIId(*c.e->template cast<TIId>());
           break;
       }
-      _t.exit(c._e);
+      _t.exit(c.e);
       stack.pop_back();
     } else {
-      c._done = true;
-      Expression* ce = c._e;
+      c.done = true;
+      Expression* ce = c.e;
       for (ExpressionSetIter it = ce->ann().begin(); it != ce->ann().end(); ++it) {
         if (_t.enter(*it)) {
           stack.push_back(C(*it));
@@ -198,8 +198,8 @@ void BottomUpIterator<T>::run(Expression* root) {
           case Expression::E_COMP: {
             auto* comp = ce->template cast<Comprehension>();
             stack.push_back(C(comp->e()));
-            for (unsigned int i = comp->n_generators(); (i--) != 0U;) {
-              for (unsigned int j = comp->n_decls(i); (j--) != 0U;) {
+            for (unsigned int i = comp->numberOfGenerators(); (i--) != 0U;) {
+              for (unsigned int j = comp->numberOfDecls(i); (j--) != 0U;) {
                 stack.push_back(C(comp->decl(i, j)));
               }
               if (comp->in(i) != nullptr) {
@@ -214,10 +214,10 @@ void BottomUpIterator<T>::run(Expression* root) {
           } break;
           case Expression::E_ITE: {
             ITE* ite = ce->template cast<ITE>();
-            stack.push_back(C(ite->e_else()));
+            stack.push_back(C(ite->elseExpr()));
             for (int i = 0; i < ite->size(); i++) {
-              stack.push_back(C(ite->e_if(i)));
-              stack.push_back(C(ite->e_then(i)));
+              stack.push_back(C(ite->ifExpr(i)));
+              stack.push_back(C(ite->thenExpr(i)));
             }
           } break;
           case Expression::E_BINOP:
@@ -228,7 +228,7 @@ void BottomUpIterator<T>::run(Expression* root) {
             stack.push_back(C(ce->template cast<UnOp>()->e()));
             break;
           case Expression::E_CALL:
-            for (unsigned int i = 0; i < ce->template cast<Call>()->n_args(); i++) {
+            for (unsigned int i = 0; i < ce->template cast<Call>()->argCount(); i++) {
               stack.push_back(ce->template cast<Call>()->arg(i));
             }
             break;
@@ -246,7 +246,7 @@ void BottomUpIterator<T>::run(Expression* root) {
             break;
         }
       } else {
-        c._e = nullptr;
+        c.e = nullptr;
       }
     }
   }
@@ -308,10 +308,10 @@ void TopDownIterator<T>::run(Expression* root) {
         _t.vComprehension(*e->template cast<Comprehension>());
         {
           auto* comp = e->template cast<Comprehension>();
-          for (unsigned int i = comp->n_generators(); (i--) != 0U;) {
+          for (unsigned int i = comp->numberOfGenerators(); (i--) != 0U;) {
             stack.push_back(comp->where(i));
             stack.push_back(comp->in(i));
-            for (unsigned int j = comp->n_decls(i); (j--) != 0U;) {
+            for (unsigned int j = comp->numberOfDecls(i); (j--) != 0U;) {
               stack.push_back(comp->decl(i, j));
             }
           }
@@ -322,10 +322,10 @@ void TopDownIterator<T>::run(Expression* root) {
         _t.vITE(*e->template cast<ITE>());
         {
           ITE* ite = e->template cast<ITE>();
-          stack.push_back(ite->e_else());
+          stack.push_back(ite->elseExpr());
           for (int i = 0; i < ite->size(); i++) {
-            stack.push_back(ite->e_if(i));
-            stack.push_back(ite->e_then(i));
+            stack.push_back(ite->ifExpr(i));
+            stack.push_back(ite->thenExpr(i));
           }
         }
         break;
@@ -340,7 +340,7 @@ void TopDownIterator<T>::run(Expression* root) {
         break;
       case Expression::E_CALL:
         _t.vCall(*e->template cast<Call>());
-        for (unsigned int i = 0; i < e->template cast<Call>()->n_args(); i++) {
+        for (unsigned int i = 0; i < e->template cast<Call>()->argCount(); i++) {
           stack.push_back(e->template cast<Call>()->arg(i));
         }
         break;

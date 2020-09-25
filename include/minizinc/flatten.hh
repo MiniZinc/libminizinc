@@ -31,15 +31,15 @@ struct FlatteningOptions {
   /// Verbose output during flattening
   bool verbose;
   /// Only use paths for variables introduced by file 0 (the MiniZinc model)
-  bool only_toplevel_paths;
+  bool onlyToplevelPaths;
   /// Construct and collect mzn_paths for expressions and VarDeclI during flattening
-  bool collect_mzn_paths;
+  bool collectMznPaths;
   /// Do not apply domain changes but insert them as constraints (useful for debugging)
-  bool record_domain_changes;
+  bool recordDomainChanges;
   /// Only range domains for old linearization. Set from redefs to true if not here
   bool onlyRangeDomains;
   /// Allow the use of Half Reifications
-  bool enable_imp;
+  bool enableHalfReification;
   /// Timeout for flattening in milliseconds (0 means no timeout)
   unsigned long long int timeout;
   /// Create standard, DZN or JSON output
@@ -56,11 +56,11 @@ struct FlatteningOptions {
   FlatteningOptions()
       : keepOutputInFzn(false),
         verbose(false),
-        only_toplevel_paths(false),
-        collect_mzn_paths(false),
-        record_domain_changes(false),
+        onlyToplevelPaths(false),
+        collectMznPaths(false),
+        recordDomainChanges(false),
         onlyRangeDomains(false),
-        enable_imp(true),
+        enableHalfReification(true),
         timeout(0),
         outputMode(OUTPUT_ITEM),
         outputObjective(false),
@@ -82,34 +82,34 @@ void flatten(Env& m, FlatteningOptions opt = FlatteningOptions());
 void oldflatzinc(Env& m);
 
 /// Populate FlatZinc output model
-void populateOutput(Env& e);
+void populate_output(Env& e);
 
 /// Statistics on flat models
 struct FlatModelStatistics {
   /// Number of integer variables
-  int n_int_vars;
+  int n_int_vars; // NOLINT(readability-identifier-naming)
   /// Number of bool variables
-  int n_bool_vars;
+  int n_bool_vars; // NOLINT(readability-identifier-naming)
   /// Number of float variables
-  int n_float_vars;
+  int n_float_vars; // NOLINT(readability-identifier-naming)
   /// Number of set variables
-  int n_set_vars;
+  int n_set_vars; // NOLINT(readability-identifier-naming)
   /// Number of bool constraints
-  int n_bool_ct;
+  int n_bool_ct; // NOLINT(readability-identifier-naming)
   /// Number of integer constraints
-  int n_int_ct;
+  int n_int_ct; // NOLINT(readability-identifier-naming)
   /// Number of float constraints
-  int n_float_ct;
+  int n_float_ct; // NOLINT(readability-identifier-naming)
   /// Number of set constraints
-  int n_set_ct;
+  int n_set_ct; // NOLINT(readability-identifier-naming)
   /// Number of reified constraints evaluated
-  int n_reif_ct;
+  int n_reif_ct; // NOLINT(readability-identifier-naming)
   /// Number of half-reified constraints evaluated
-  int n_imp_ct;
+  int n_imp_ct; // NOLINT(readability-identifier-naming)
   /// Number of implications eliminated using path compression
-  int n_imp_del;
+  int n_imp_del; // NOLINT(readability-identifier-naming)
   /// Number of linear expressions eliminated using path compression
-  int n_lin_del;
+  int n_lin_del; // NOLINT(readability-identifier-naming)
   /// Constructor
   FlatModelStatistics()
       : n_int_vars(0),

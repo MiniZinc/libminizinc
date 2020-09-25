@@ -65,24 +65,24 @@ BCtx operator-(const BCtx& c);
 class EnvI {
 public:
   Model* model;
-  Model* orig_model;
+  Model* originalModel;
   Model* output;
-  VarOccurrences vo;
-  VarOccurrences output_vo;
+  VarOccurrences varOccurrences;
+  VarOccurrences outputVarOccurrences;
 
   std::ostream& outstream;
   std::ostream& errstream;
   std::stringstream logstream;
-  std::stringstream checker_output;
+  std::stringstream checkerOutput;
 
   // The current pass number (used for unifying and disabling path construction in final pass)
-  unsigned int current_pass_no;
+  unsigned int currentPassNumber;
   // Used for disabling path construction in final pass
-  unsigned int final_pass_no;
+  unsigned int finalPassNumber;
   // Used for disabling path construction past the maxPathDepth of previous passes
   unsigned int maxPathDepth;
 
-  VarOccurrences output_vo_flat;
+  VarOccurrences outputFlatVarOccurrences;
   CopyMap cmap;
   IdMap<KeepAlive> reverseMappers;
   struct WW {
@@ -98,23 +98,24 @@ public:
   std::vector<int> idStack;
   unsigned int maxCallStack;
   std::vector<std::string> warnings;
-  bool collect_vardecls;
   std::vector<int> modifiedVarDecls;
   std::unordered_set<std::string> deprecationWarnings;
-  int in_redundant_constraint;
-  int in_maybe_partial;
-  int n_reif_ct;
-  int n_imp_ct;
-  int n_imp_del;
-  int n_lin_del;
-  bool in_reverse_map_var;
+  int inRedundantConstraint;
+  int inMaybePartial;
+  struct {
+    int reifConstraints;
+    int impConstraints;
+    int impDel;
+    int linDel;
+  } counters;
+  bool inReverseMapVar;
   FlatteningOptions fopts;
   unsigned int pathUse;
   ASTStringMap<Item*> reverseEnum;
 
   struct PathVar {
     KeepAlive decl;
-    unsigned int pass_no;
+    unsigned int passNumber;
   };
   // Store mapping from path string to (VarDecl, pass_no) tuples
   typedef std::unordered_map<std::string, PathVar> PathMap;
@@ -123,31 +124,32 @@ public:
   std::vector<KeepAlive> checkVars;
 
 protected:
-  CSEMap cse_map;
+  CSEMap _cseMap;
   Model* _flat;
   bool _failed;
-  unsigned int ids;
-  ASTStringMap<ASTString> reifyMap;
-  PathMap pathMap;
-  ReversePathMap reversePathMap;
-  ASTStringSet filenameSet;
+  unsigned int _ids;
+  ASTStringMap<ASTString> _reifyMap;
+  PathMap _pathMap;
+  ReversePathMap _reversePathMap;
+  ASTStringSet _filenameSet;
   typedef std::unordered_map<VarDeclI*, unsigned int> EnumMap;
-  EnumMap enumMap;
-  std::vector<VarDeclI*> enumVarDecls;
+  EnumMap _enumMap;
+  std::vector<VarDeclI*> _enumVarDecls;
   typedef std::unordered_map<std::string, unsigned int> ArrayEnumMap;
-  ArrayEnumMap arrayEnumMap;
-  std::vector<std::vector<unsigned int> > arrayEnumDecls;
+  ArrayEnumMap _arrayEnumMap;
+  std::vector<std::vector<unsigned int> > _arrayEnumDecls;
+  bool _collectVardecls;
 
 public:
   EnvI(Model* orig0, std::ostream& outstream0 = std::cout, std::ostream& errstream0 = std::cerr);
   ~EnvI();
   long long int genId();
   /// Set minimum new temporary id to \a i+1
-  void minId(unsigned int i) { ids = std::max(ids, i + 1); }
-  void cse_map_insert(Expression* e, const EE& ee);
-  CSEMap::iterator cse_map_find(Expression* e);
-  void cse_map_remove(Expression* e);
-  CSEMap::iterator cse_map_end();
+  void minId(unsigned int i) { _ids = std::max(_ids, i + 1); }
+  void cseMapInsert(Expression* e, const EE& ee);
+  CSEMap::iterator cseMapFind(Expression* e);
+  void cseMapRemove(Expression* e);
+  CSEMap::iterator cseMapEnd();
   void dump();
 
   unsigned int registerEnum(VarDeclI* vdi);
@@ -163,22 +165,22 @@ public:
   void flatRemoveItem(VarDeclI* i);
   void flatRemoveExpr(Expression* e, Item*);
 
-  void vo_add_exp(VarDecl* vd);
+  void voAddExp(VarDecl* vd);
   void annotateFromCallStack(Expression* e);
   void fail(const std::string& msg = std::string());
   bool failed() const;
   Model* flat();
   void swap();
-  void swap_output() { std::swap(model, output); }
+  void swapOutput() { std::swap(model, output); }
   ASTString reifyId(const ASTString& id);
   ASTString halfReifyId(const ASTString& id);
   std::ostream& dumpStack(std::ostream& os, bool errStack);
   bool dumpPath(std::ostream& os, bool force = false);
   void addWarning(const std::string& msg);
   void collectVarDecls(bool b);
-  PathMap& getPathMap() { return pathMap; }
-  ReversePathMap& getReversePathMap() { return reversePathMap; }
-  ASTStringSet& getFilenameSet() { return filenameSet; }
+  PathMap& getPathMap() { return _pathMap; }
+  ReversePathMap& getReversePathMap() { return _reversePathMap; }
+  ASTStringSet& getFilenameSet() { return _filenameSet; }
 
   void copyPathMapsAndState(EnvI& env);
   /// deprecated, use Solns2Out
@@ -189,7 +191,7 @@ public:
   void cleanupExceptOutput();
 };
 
-void setComputedDomain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_computed);
+void set_computed_domain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_computed);
 EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
 EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
               bool doNotFollowChains);
@@ -251,37 +253,38 @@ public:
         break;
     }
   }
+  // NOLINTNEXTLINE(readability-identifier-naming)
   static ASTString id_eq() { return constants().ids.int_.eq; }
   typedef IntBounds Bounds;
   static bool finite(const IntBounds& ib) { return ib.l.isFinite() && ib.u.isFinite(); }
   static bool finite(const IntVal& v) { return v.isFinite(); }
-  static Bounds compute_bounds(EnvI& env, Expression* e) { return compute_int_bounds(env, e); }
+  static Bounds computeBounds(EnvI& env, Expression* e) { return compute_int_bounds(env, e); }
   typedef IntSetVal* Domain;
-  static Domain eval_domain(EnvI& env, Expression* e) { return eval_intset(env, e); }
-  static Expression* new_domain(Val v) {
+  static Domain evalDomain(EnvI& env, Expression* e) { return eval_intset(env, e); }
+  static Expression* newDomain(Val v) {
     return new SetLit(Location().introduce(), IntSetVal::a(v, v));
   }
-  static Expression* new_domain(Val v0, Val v1) {
+  static Expression* newDomain(Val v0, Val v1) {
     return new SetLit(Location().introduce(), IntSetVal::a(v0, v1));
   }
-  static Expression* new_domain(Domain d) { return new SetLit(Location().introduce(), d); }
-  static bool domain_contains(Domain dom, Val v) { return dom->contains(v); }
-  static bool domain_equals(Domain dom, Val v) {
+  static Expression* newDomain(Domain d) { return new SetLit(Location().introduce(), d); }
+  static bool domainContains(Domain dom, Val v) { return dom->contains(v); }
+  static bool domainEquals(Domain dom, Val v) {
     return dom->size() == 1 && dom->min(0) == v && dom->max(0) == v;
   }
-  static bool domain_equals(Domain dom1, Domain dom2) {
+  static bool domainEquals(Domain dom1, Domain dom2) {
     IntSetRanges d1(dom1);
     IntSetRanges d2(dom2);
     return Ranges::equal(d1, d2);
   }
-  static bool domain_tighter(Domain dom, Bounds b) {
+  static bool domainTighter(Domain dom, Bounds b) {
     return !b.valid || dom->min() > b.l || dom->max() < b.u;
   }
-  static bool domain_intersects(Domain dom, Val v0, Val v1) {
+  static bool domainIntersects(Domain dom, Val v0, Val v1) {
     return (v0 > v1) || (dom->size() > 0 && dom->min(0) <= v1 && v0 <= dom->max(dom->size() - 1));
   }
-  static bool domain_empty(Domain dom) { return dom->size() == 0; }
-  static Domain limit_domain(BinOpType bot, Domain dom, Val v) {
+  static bool domainEmpty(Domain dom) { return dom->size() == 0; }
+  static Domain limitDomain(BinOpType bot, Domain dom, Val v) {
     IntSetRanges dr(dom);
     IntSetVal* ndomain;
     switch (bot) {
@@ -312,17 +315,17 @@ public:
     }
     return ndomain;
   }
-  static Domain intersect_domain(Domain dom, Val v0, Val v1) {
+  static Domain intersectDomain(Domain dom, Val v0, Val v1) {
     IntSetRanges dr(dom);
     Ranges::Const<IntVal> c(v0, v1);
     Ranges::Inter<IntVal, IntSetRanges, Ranges::Const<IntVal> > inter(dr, c);
     return IntSetVal::ai(inter);
   }
-  static Val floor_div(Val v0, Val v1) {
+  static Val floorDiv(Val v0, Val v1) {
     return static_cast<long long int>(
         floor(static_cast<double>(v0.toInt()) / static_cast<double>(v1.toInt())));
   }
-  static Val ceil_div(Val v0, Val v1) {
+  static Val ceilDiv(Val v0, Val v1) {
     return static_cast<long long int>(ceil(static_cast<double>(v0.toInt()) / v1.toInt()));
   }
   static IntLit* newLit(Val v) { return IntLit::a(v); }
@@ -365,41 +368,42 @@ public:
         break;
     }
   }
+  // NOLINTNEXTLINE(readability-identifier-naming)
   static ASTString id_eq() { return constants().ids.float_.eq; }
   typedef FloatBounds Bounds;
   static bool finite(const FloatBounds& ib) { return ib.l.isFinite() && ib.u.isFinite(); }
   static bool finite(const FloatVal& v) { return v.isFinite(); }
-  static Bounds compute_bounds(EnvI& env, Expression* e) { return compute_float_bounds(env, e); }
+  static Bounds computeBounds(EnvI& env, Expression* e) { return compute_float_bounds(env, e); }
   typedef FloatSetVal* Domain;
-  static Domain eval_domain(EnvI& env, Expression* e) { return eval_floatset(env, e); }
+  static Domain evalDomain(EnvI& env, Expression* e) { return eval_floatset(env, e); }
 
-  static Expression* new_domain(Val v) {
+  static Expression* newDomain(Val v) {
     return new SetLit(Location().introduce(), FloatSetVal::a(v, v));
   }
-  static Expression* new_domain(Val v0, Val v1) {
+  static Expression* newDomain(Val v0, Val v1) {
     return new SetLit(Location().introduce(), FloatSetVal::a(v0, v1));
   }
-  static Expression* new_domain(Domain d) { return new SetLit(Location().introduce(), d); }
-  static bool domain_contains(Domain dom, Val v) { return dom->contains(v); }
-  static bool domain_equals(Domain dom, Val v) {
+  static Expression* newDomain(Domain d) { return new SetLit(Location().introduce(), d); }
+  static bool domainContains(Domain dom, Val v) { return dom->contains(v); }
+  static bool domainEquals(Domain dom, Val v) {
     return dom->size() == 1 && dom->min(0) == v && dom->max(0) == v;
   }
 
-  static bool domain_tighter(Domain dom, Bounds b) {
+  static bool domainTighter(Domain dom, Bounds b) {
     return !b.valid || dom->min() > b.l || dom->max() < b.u;
   }
-  static bool domain_intersects(Domain dom, Val v0, Val v1) {
+  static bool domainIntersects(Domain dom, Val v0, Val v1) {
     return (v0 > v1) || (dom->size() > 0 && dom->min(0) <= v1 && v0 <= dom->max(dom->size() - 1));
   }
-  static bool domain_empty(Domain dom) { return dom->size() == 0; }
+  static bool domainEmpty(Domain dom) { return dom->size() == 0; }
 
-  static bool domain_equals(Domain dom1, Domain dom2) {
+  static bool domainEquals(Domain dom1, Domain dom2) {
     FloatSetRanges d1(dom1);
     FloatSetRanges d2(dom2);
     return Ranges::equal(d1, d2);
   }
 
-  static Domain intersect_domain(Domain dom, Val v0, Val v1) {
+  static Domain intersectDomain(Domain dom, Val v0, Val v1) {
     if (dom != nullptr) {
       FloatSetRanges dr(dom);
       Ranges::Const<FloatVal> c(v0, v1);
@@ -410,7 +414,7 @@ public:
       return d;
     }
   }
-  static Domain limit_domain(BinOpType bot, Domain dom, Val v) {
+  static Domain limitDomain(BinOpType bot, Domain dom, Val v) {
     FloatSetRanges dr(dom);
     FloatSetVal* ndomain;
     switch (bot) {
@@ -439,8 +443,8 @@ public:
     }
     return ndomain;
   }
-  static Val floor_div(Val v0, Val v1) { return v0 / v1; }
-  static Val ceil_div(Val v0, Val v1) { return v0 / v1; }
+  static Val floorDiv(Val v0, Val v1) { return v0 / v1; }
+  static Val ceilDiv(Val v0, Val v1) { return v0 / v1; }
   static FloatLit* newLit(Val v) { return FloatLit::a(v); }
 };
 
@@ -451,7 +455,7 @@ void simplify_lin(std::vector<typename LinearTraits<Lit>::Val>& c, std::vector<K
   for (auto i = static_cast<unsigned int>(idx.size()); i--;) {
     idx[i] = i;
     Expression* e = follow_id_to_decl(x[i]());
-    if (auto* vd = e->dyn_cast<VarDecl>()) {
+    if (auto* vd = e->dynamicCast<VarDecl>()) {
       if (vd->e() && vd->e()->isa<Lit>()) {
         x[i] = vd->e();
       } else {
@@ -464,7 +468,7 @@ void simplify_lin(std::vector<typename LinearTraits<Lit>::Val>& c, std::vector<K
   std::sort(idx.begin(), idx.end(), CmpExpIdx(x));
   unsigned int ci = 0;
   for (; ci < x.size(); ci++) {
-    if (Lit* il = x[idx[ci]]()->dyn_cast<Lit>()) {
+    if (Lit* il = x[idx[ci]]()->dynamicCast<Lit>()) {
       d += c[idx[ci]] * il->v();
       c[idx[ci]] = 0;
     } else {
@@ -475,7 +479,7 @@ void simplify_lin(std::vector<typename LinearTraits<Lit>::Val>& c, std::vector<K
     if (Expression::equal(x[idx[i]](), x[idx[ci]]())) {
       c[idx[ci]] += c[idx[i]];
       c[idx[i]] = 0;
-    } else if (Lit* il = x[idx[i]]()->dyn_cast<Lit>()) {
+    } else if (Lit* il = x[idx[i]]()->dynamicCast<Lit>()) {
       d += c[idx[i]] * il->v();
       c[idx[i]] = 0;
     } else {

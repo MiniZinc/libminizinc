@@ -21,7 +21,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
 
   bool isvarset = false;
   if (c->set()) {
-    for (int i = 0; i < c->n_generators(); i++) {
+    for (int i = 0; i < c->numberOfGenerators(); i++) {
       Expression* g_in = c->in(i);
       if (g_in != nullptr) {
         const Type& ty_in = g_in->type();
@@ -39,12 +39,12 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
     }
   }
 
-  if (c->type().isopt() || isvarset) {
-    std::vector<Expression*> in(c->n_generators());
-    std::vector<Expression*> orig_where(c->n_generators());
+  if (c->type().isOpt() || isvarset) {
+    std::vector<Expression*> in(c->numberOfGenerators());
+    std::vector<Expression*> orig_where(c->numberOfGenerators());
     std::vector<Expression*> where;
     GCLock lock;
-    for (int i = 0; i < c->n_generators(); i++) {
+    for (int i = 0; i < c->numberOfGenerators(); i++) {
       if (c->in(i) == nullptr) {
         in[i] = nullptr;
         orig_where[i] = c->where(i);
@@ -56,7 +56,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
           ub->type(Type::parsetint());
           ub->decl(env.model->matchFn(env, ub, false));
           in[i] = ub;
-          for (int j = 0; j < c->n_decls(i); j++) {
+          for (int j = 0; j < c->numberOfDecls(i); j++) {
             auto* bo = new BinOp(Location().introduce(), c->decl(i, j)->id(), BOT_IN, c->in(i));
             bo->type(Type::varbool());
             where.push_back(bo);
@@ -75,14 +75,14 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
             while (!todo.empty()) {
               BinOp* bo = todo.back();
               todo.pop_back();
-              if (bo->rhs()->type().ispar()) {
+              if (bo->rhs()->type().isPar()) {
                 parWhere.push_back(bo->rhs());
               } else if (bo->rhs()->isa<BinOp>() && bo->rhs()->cast<BinOp>()->op() == BOT_AND) {
                 todo.push_back(bo->rhs()->cast<BinOp>());
               } else {
                 where.push_back(bo->rhs());
               }
-              if (bo->lhs()->type().ispar()) {
+              if (bo->lhs()->type().isPar()) {
                 parWhere.push_back(bo->lhs());
               } else if (bo->lhs()->isa<BinOp>() && bo->lhs()->cast<BinOp>()->op() == BOT_AND) {
                 todo.push_back(bo->lhs()->cast<BinOp>());
@@ -122,12 +122,12 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
     }
     if (!where.empty()) {
       Generators gs;
-      for (int i = 0; i < c->n_generators(); i++) {
-        std::vector<VarDecl*> vds(c->n_decls(i));
-        for (int j = 0; j < c->n_decls(i); j++) {
+      for (int i = 0; i < c->numberOfGenerators(); i++) {
+        std::vector<VarDecl*> vds(c->numberOfDecls(i));
+        for (int j = 0; j < c->numberOfDecls(i); j++) {
           vds[j] = c->decl(i, j);
         }
-        gs._g.emplace_back(vds, in[i], orig_where[i]);
+        gs.g.emplace_back(vds, in[i], orig_where[i]);
       }
       Expression* cond;
       if (where.size() > 1) {
@@ -187,14 +187,14 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
     EvalF(const Ctx& ctx0) : ctx(ctx0) {}
     typedef EE ArrayVal;
     EE e(EnvI& env, Expression* e0) {
-      VarDecl* b = ctx.b == C_ROOT ? constants().var_true : nullptr;
-      VarDecl* r = (ctx.b == C_ROOT && e0->type().isbool() && !e0->type().isopt())
-                       ? constants().var_true
+      VarDecl* b = ctx.b == C_ROOT ? constants().varTrue : nullptr;
+      VarDecl* r = (ctx.b == C_ROOT && e0->type().isbool() && !e0->type().isOpt())
+                       ? constants().varTrue
                        : nullptr;
       return flat_exp(env, ctx, e0, r, b);
     }
     Expression* flatten(EnvI& env, Expression* e0) {
-      return flat_exp(env, Ctx(), e0, nullptr, constants().var_true).r();
+      return flat_exp(env, Ctx(), e0, nullptr, constants().varTrue).r();
     }
   } _evalf(ctx);
   std::vector<EE> elems_ee;
@@ -212,7 +212,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
     if (elemType == Type::bot()) {
       elemType = elems[i]->type();
     }
-    if (!elems[i]->type().ispar()) {
+    if (!elems[i]->type().isPar()) {
       allPar = false;
     }
   }
@@ -232,7 +232,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
   {
     GCLock lock;
     if (c->set()) {
-      if (c->type().ispar() && allPar) {
+      if (c->type().isPar() && allPar) {
         auto* sl = new SetLit(c->loc(), elems);
         sl->type(elemType);
         Expression* slr = eval_par(env, sl);
@@ -247,7 +247,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
         Call* a2s = new Call(Location().introduce(), "array2set", {alr});
         a2s->decl(env.model->matchFn(env, a2s, false));
         a2s->type(a2s->decl()->rtype(env, {alr}, false));
-        EE ee = flat_exp(env, Ctx(), a2s, nullptr, constants().var_true);
+        EE ee = flat_exp(env, Ctx(), a2s, nullptr, constants().varTrue);
         ka = ee.r();
       }
     } else {
@@ -259,7 +259,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
   }
   assert(!ka()->type().isbot());
   if (wasUndefined) {
-    ret.b = bind(env, Ctx(), b, constants().lit_false);
+    ret.b = bind(env, Ctx(), b, constants().literalFalse);
   } else {
     ret.b = conj(env, b, Ctx(), elems_ee);
   }

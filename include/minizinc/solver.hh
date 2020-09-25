@@ -37,14 +37,14 @@ public:
   void addSolverFactory(SolverFactory*);
   void removeSolverFactory(SolverFactory*);
   typedef std::vector<SolverFactory*> SFStorage;
-  const SFStorage& getSolverFactories() const { return sfstorage; }
+  const SFStorage& getSolverFactories() const { return _sfstorage; }
 
 private:
-  SFStorage sfstorage;
+  SFStorage _sfstorage;
 };  // SolverRegistry
 
 /// this function returns the global SolverRegistry object
-SolverRegistry* getGlobalSolverRegistry();
+SolverRegistry* get_global_solver_registry();
 
 /// Representation of flags that can be passed to solvers
 class MZNFZNSolverFlag {
@@ -78,13 +78,13 @@ protected:
   /// doCreateSI should be implemented to actually allocate a SolverInstance using new()
   virtual SolverInstanceBase* doCreateSI(Env&, std::ostream&, SolverInstanceBase::Options* opt) = 0;
   typedef std::vector<std::unique_ptr<SolverInstanceBase> > SIStorage;
-  SIStorage sistorage;
+  SIStorage _sistorage;
 
 protected:
-  SolverFactory() { getGlobalSolverRegistry()->addSolverFactory(this); }
+  SolverFactory() { get_global_solver_registry()->addSolverFactory(this); }
 
 public:
-  virtual ~SolverFactory() { getGlobalSolverRegistry()->removeSolverFactory(this); }
+  virtual ~SolverFactory() { get_global_solver_registry()->removeSolverFactory(this); }
 
 public:
   /// Create solver-specific options object
@@ -114,37 +114,37 @@ public:
 // Class MznSolver coordinates flattening and solving.
 class MznSolver {
 private:
-  SolverInitialiser _solver_init;
+  SolverInitialiser _solverInit;
   enum OptionStatus { OPTION_OK, OPTION_ERROR, OPTION_FINISH };
   /// Solver configurations
-  SolverConfigs solver_configs;
-  Flattener flt;
-  SolverInstanceBase* si = nullptr;
-  SolverInstanceBase::Options* si_opt = nullptr;
-  SolverFactory* sf = nullptr;
-  bool is_mzn2fzn = false;
+  SolverConfigs _solverConfigs;
+  Flattener _flt;
+  SolverInstanceBase* _si = nullptr;
+  SolverInstanceBase::Options* _siOpt = nullptr;
+  SolverFactory* _sf = nullptr;
+  bool _isMzn2fzn = false;
 
-  std::string executable_name;
-  std::ostream& os;
-  std::ostream& log;
+  std::string _executableName;
+  std::ostream& _os;
+  std::ostream& _log;
 
   // These have special handling here as the stdFlags they correspond to
   // depend on the method and whether the solver supports the flag
-  bool supports_a = false;
-  bool supports_i = false;
-  bool flag_all_satisfaction = false;
-  bool flag_intermediate = false;
+  bool _supportsA = false;
+  bool _supportsI = false;
+  bool _flagAllSatisfaction = false;
+  bool _flagIntermediate = false;
 
 public:
   Solns2Out s2out;
 
   /// global options
-  bool flag_verbose = false;
-  bool flag_statistics = false;
-  bool flag_compiler_verbose = false;
-  bool flag_compiler_statistics = false;
-  bool flag_is_solns2out = false;
-  int flag_overall_time_limit = 0;
+  bool flagVerbose = false;
+  bool flagStatistics = false;
+  bool flagCompilerVerbose = false;
+  bool flagCompilerStatistics = false;
+  bool flagIsSolns2out = false;
+  int flagOverallTimeLimit = 0;
 
 public:
   MznSolver(std::ostream& os = std::cout, std::ostream& log = std::cerr);
@@ -156,14 +156,14 @@ public:
                              const std::string& modelName = std::string("stdin"));
   OptionStatus processOptions(std::vector<std::string>& argv);
   SolverFactory* getSF() {
-    assert(sf);
-    return sf;
+    assert(_sf);
+    return _sf;
   }
-  SolverInstanceBase::Options* getSI_OPT() {
-    assert(si_opt);
-    return si_opt;
+  SolverInstanceBase::Options* getSIOptions() {
+    assert(_siOpt);
+    return _siOpt;
   }
-  bool get_flag_verbose() { return flag_verbose; /*getFlt()->get_flag_verbose();*/ }
+  bool getFlagVerbose() { return flagVerbose; /*getFlt()->getFlagVerbose();*/ }
   void printUsage();
 
 private:
@@ -171,7 +171,7 @@ private:
   /// Flatten model
   void flatten(const std::string& modelString = std::string(),
                const std::string& modelName = std::string("stdin"));
-  size_t getNSolvers() { return getGlobalSolverRegistry()->getSolverFactories().size(); }
+  size_t getNSolvers() { return get_global_solver_registry()->getSolverFactories().size(); }
   /// If building a flattening exe only.
   bool ifMzn2Fzn();
   bool ifSolns2out();
@@ -179,12 +179,12 @@ private:
   void addSolverInterface(SolverFactory* sf);
   SolverInstance::Status solve();
 
-  SolverInstance::Status getFltStatus() { return flt.status; }
+  SolverInstance::Status getFltStatus() { return _flt.status; }
   SolverInstanceBase* getSI() {
-    assert(si);
-    return si;
+    assert(_si);
+    return _si;
   }
-  bool get_flag_statistics() { return flag_statistics; }
+  bool getFlagStatistics() { return flagStatistics; }
 };
 
 }  // namespace MiniZinc

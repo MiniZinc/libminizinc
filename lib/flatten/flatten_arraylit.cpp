@@ -18,7 +18,7 @@ EE flatten_arraylit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDec
   EE ret;
   auto* al = e->cast<ArrayLit>();
   if (al->flat()) {
-    ret.b = bind(env, Ctx(), b, constants().lit_true);
+    ret.b = bind(env, Ctx(), b, constants().literalTrue);
     ret.r = bind(env, Ctx(), r, al);
   } else {
     std::vector<EE> elems_ee(al->size());

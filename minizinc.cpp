@@ -55,30 +55,30 @@ int main(int argc, const char** argv) {
       fSuccess = (slv.run(args, "", argv[0]) != SolverInstance::ERROR);
 #endif
     } catch (const LocationException& e) {
-      if (slv.get_flag_verbose()) {
+      if (slv.getFlagVerbose()) {
         std::cerr << std::endl;
       }
       std::cerr << e.loc() << ":" << std::endl;
       std::cerr << e.what() << ": " << e.msg() << std::endl;
     } catch (const Exception& e) {
-      if (slv.get_flag_verbose()) {
+      if (slv.getFlagVerbose()) {
         std::cerr << std::endl;
       }
       std::string what = e.what();
       std::cerr << what << (what.empty() ? "" : ": ") << e.msg() << std::endl;
     } catch (const std::exception& e) {
-      if (slv.get_flag_verbose()) {
+      if (slv.getFlagVerbose()) {
         std::cerr << std::endl;
       }
       std::cerr << e.what() << std::endl;
     } catch (...) {
-      if (slv.get_flag_verbose()) {
+      if (slv.getFlagVerbose()) {
         std::cerr << std::endl;
       }
       std::cerr << "  UNKNOWN EXCEPTION." << std::endl;
     }
 
-    if (slv.get_flag_verbose()) {
+    if (slv.getFlagVerbose()) {
       std::cerr << "   Done (";
       std::cerr << "overall time " << starttime.stoptime() << ")." << std::endl;
     }

@@ -47,7 +47,7 @@ public:
   /// Size of the string
   size_t size() const;
   /// Underlying C string object
-  const char* c_str() const;
+  const char* c_str() const; // NOLINT(readability-identifier-naming)
   /// Underlying string implementation
   ASTStringData* aststr() const { return _s; }
 
@@ -72,7 +72,7 @@ public:
   /// Returns a substring [pos, pos+count).
   std::string substr(size_t pos = 0, size_t count = std::string::npos) const;
   // Finds the last character equal to one of characters in the given character sequence.
-  size_t find_last_of(char ch, size_t pos = std::string::npos) const noexcept;
+  size_t findLastOf(char ch, size_t pos = std::string::npos) const noexcept;
   // Finds the first character equal to the given character sequence.
   size_t find(char ch, size_t pos = 0) const noexcept;
 
@@ -156,6 +156,7 @@ public:
   /// Allocate and initialise as \a s
   static ASTStringData* a(const std::string& s);
   /// Return underlying C-style string
+  // NOLINTNEXTLINE(readability-identifier-naming)
   const char* c_str() const { return _data + sizeof(size_t); }
   /// Return size of string
   size_t size() const {
@@ -169,7 +170,7 @@ public:
   /// Return hash value of string
   size_t hash() const { return reinterpret_cast<const size_t*>(_data)[0]; }
   /// Mark for garbage collection
-  void mark() const { _gc_mark = 1; }
+  void mark() const { _gcMark = 1; }
 
 protected:
   /// GC Destructor
@@ -182,6 +183,7 @@ protected:
 inline ASTString::ASTString(const std::string& s) : _s(ASTStringData::a(s)) {}
 
 inline size_t ASTString::size() const { return _s != nullptr ? _s->size() : 0; }
+// NOLINTNEXTLINE(readability-identifier-naming)
 inline const char* ASTString::c_str() const { return _s != nullptr ? _s->c_str() : nullptr; }
 inline void ASTString::mark() const {
   if (_s != nullptr) {
@@ -223,7 +225,7 @@ inline std::string ASTString::substr(size_t pos, size_t count) const {
   }
   return std::string(c_str() + pos, std::min(size() - pos, count));
 }
-inline size_t ASTString::find_last_of(char ch, size_t pos) const noexcept {
+inline size_t ASTString::findLastOf(char ch, size_t pos) const noexcept {
   const char* str = c_str();
   for (int i = std::min(size() - 1, pos); i >= 0; --i) {
     if (str[i] == ch) {

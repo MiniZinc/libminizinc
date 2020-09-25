@@ -20,23 +20,23 @@ struct CompilePassFlags {
   bool verbose;
   bool statistics;
   bool optimize;
-  bool chain_compression;
+  bool chainCompression;
   bool newfzn;
   bool werror;
-  bool model_check_only;
-  bool model_interface_only;
-  bool allow_multi_assign;
+  bool modelCheckOnly;
+  bool modelInterfaceOnly;
+  bool allowMultiAssign;
 };
 
 class CompilePass : public Pass {
 private:
-  Env* env;
-  FlatteningOptions fopts;
-  CompilePassFlags compflags;
-  std::string library;
-  std::vector<std::string> includePaths;
-  bool change_library;
-  bool ignore_unknown_ids;
+  Env* _env;
+  FlatteningOptions _fopts;
+  CompilePassFlags _compflags;
+  std::string _library;
+  std::vector<std::string> _includePaths;
+  bool _changeLibrary;
+  bool _ignoreUnknownIds;
 
 public:
   CompilePass(Env* e, FlatteningOptions& opts, CompilePassFlags& cflags,

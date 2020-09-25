@@ -62,7 +62,7 @@ Model::Model() : _parent(nullptr), _solveItem(nullptr), _outputItem(nullptr) {}
 
 Model::~Model() {
   for (auto* i : _items) {
-    if (auto* ii = i->dyn_cast<IncludeI>()) {
+    if (auto* ii = i->dynamicCast<IncludeI>()) {
       if (ii->own()) {
         delete ii->m();
         ii->m(nullptr);
@@ -71,12 +71,16 @@ Model::~Model() {
   }
 }
 
-VarDeclIterator Model::begin_vardecls() { return VarDeclIterator(this, begin()); }
-VarDeclIterator Model::end_vardecls() { return VarDeclIterator(this, end()); }
-ConstraintIterator Model::begin_constraints() { return ConstraintIterator(this, begin()); }
-ConstraintIterator Model::end_constraints() { return ConstraintIterator(this, end()); }
-FunctionIterator Model::begin_functions() { return FunctionIterator(this, begin()); }
-FunctionIterator Model::end_functions() { return FunctionIterator(this, end()); }
+VarDeclIteratorContainer Model::vardecls() { return VarDeclIteratorContainer(this); }
+ConstraintIteratorContainer Model::constraints() { return ConstraintIteratorContainer(this); }
+FunctionIteratorContainer Model::functions() { return FunctionIteratorContainer(this); }
+
+VarDeclIterator VarDeclIteratorContainer::begin() { return VarDeclIterator(_m, _m->begin()); }
+VarDeclIterator VarDeclIteratorContainer::end() { return VarDeclIterator(_m, _m->end()); }
+ConstraintIterator ConstraintIteratorContainer::begin() { return ConstraintIterator(_m, _m->begin()); }
+ConstraintIterator ConstraintIteratorContainer::end() { return ConstraintIterator(_m, _m->end()); }
+FunctionIterator FunctionIteratorContainer::begin() { return FunctionIterator(_m, _m->begin()); }
+FunctionIterator FunctionIteratorContainer::end() { return FunctionIterator(_m, _m->end()); }
 
 SolveI* Model::solveItem() { return _solveItem; }
 
@@ -109,14 +113,14 @@ void Model::setOutputItem(OutputI* oi) {
 
 namespace {
 /// Return lowest possible base type given other type-inst restrictions
-Type::BaseType lowestBt(const Type& t) {
+Type::BaseType lowest_bt(const Type& t) {
   if (t.st() == Type::ST_SET && t.ti() == Type::TI_VAR) {
     return Type::BT_INT;
   }
   return Type::BT_BOOL;
 }
 /// Return highest possible base type given other type-inst restrictions
-Type::BaseType highestBt(const Type& t) {
+Type::BaseType highest_bt(const Type& t) {
   if (t.st() == Type::ST_SET && t.ti() == Type::TI_VAR) {
     return Type::BT_INT;
   }
@@ -148,7 +152,7 @@ void Model::addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& en
             if (id0->v() == id1->v()) {
               // Found parameter with same type variable
               // Initialise to lowest concrete base type (bool)
-              cur.t[j].bt(lowestBt(cur.t[j]));
+              cur.t[j].bt(lowest_bt(cur.t[j]));
               t.push_back(&cur.t[j]);
             }
           }
@@ -179,15 +183,15 @@ void Model::addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& en
       }
 
       Type& back_t = *type_ids[stack.back()][0];
-      if (back_t.bt() == highestBt(back_t) && back_t.st() == Type::ST_SET) {
+      if (back_t.bt() == highest_bt(back_t) && back_t.st() == Type::ST_SET) {
         // last type, remove this item
         stack.pop_back();
       } else {
-        if (back_t.bt() == highestBt(back_t)) {
+        if (back_t.bt() == highest_bt(back_t)) {
           // Create set type for current item
           for (auto& i : type_ids[stack.back()]) {
             i->st(Type::ST_SET);
-            i->bt(lowestBt(*i));
+            i->bt(lowest_bt(*i));
           }
         } else {
           // Increment type of current item
@@ -199,7 +203,7 @@ void Model::addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& en
         // Reset types of all further items and push them
         for (unsigned int i = stack.back() + 1; i < type_ids.size(); i++) {
           for (auto& j : type_ids[i]) {
-            j->bt(lowestBt(*j));
+            j->bt(lowest_bt(*j));
           }
           stack.push_back(i);
         }
@@ -213,13 +217,13 @@ void Model::registerFn(EnvI& env, FunctionI* fi) {
   while (m->_parent != nullptr) {
     m = m->_parent;
   }
-  auto i_id = m->fnmap.find(fi->id());
-  if (i_id == m->fnmap.end()) {
+  auto i_id = m->_fnmap.find(fi->id());
+  if (i_id == m->_fnmap.end()) {
     // new element
     std::vector<FnEntry> v;
     FnEntry fe(fi);
     addPolymorphicInstances(fe, v);
-    m->fnmap.insert(std::pair<ASTString, std::vector<FnEntry> >(fi->id(), v));
+    m->_fnmap.insert(std::pair<ASTString, std::vector<FnEntry> >(fi->id(), v));
   } else {
     // add to list of existing elements
     std::vector<FnEntry>& v = i_id->second;
@@ -267,21 +271,21 @@ void Model::registerFn(EnvI& env, FunctionI* fi) {
                       "return type var bool");
     }
     Type t = fi->params()[0]->type();
-    revmapmap.insert(std::pair<int, FunctionI*>(t.toInt(), fi));
+    _revmapmap.insert(std::pair<int, FunctionI*>(t.toInt(), fi));
   }
 }
 
 FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Type>& t,
                           bool strictEnums) {
-  if (id == constants().var_redef->id()) {
-    return constants().var_redef;
+  if (id == constants().varRedef->id()) {
+    return constants().varRedef;
   }
   Model* m = this;
   while (m->_parent != nullptr) {
     m = m->_parent;
   }
-  auto i_id = m->fnmap.find(id);
-  if (i_id == m->fnmap.end()) {
+  auto i_id = m->_fnmap.find(id);
+  if (i_id == m->_fnmap.end()) {
     return nullptr;
   }
   std::vector<FnEntry>& v = i_id->second;
@@ -310,9 +314,9 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Type
 }
 
 void Model::mergeStdLib(EnvI& env, Model* m) const {
-  for (const auto& it : fnmap) {
+  for (const auto& it : _fnmap) {
     for (const auto& cit : it.second) {
-      if (cit.fi->from_stdlib()) {
+      if (cit.fi->fromStdLib()) {
         m->registerFn(env, cit.fi);
       }
     }
@@ -324,7 +328,7 @@ void Model::sortFn() {
   while (m->_parent != nullptr) {
     m = m->_parent;
   }
-  for (auto& it : m->fnmap) {
+  for (auto& it : m->_fnmap) {
     // Sort all functions by type
     std::sort(it.second.begin(), it.second.end());
   }
@@ -335,7 +339,7 @@ void Model::fixFnMap() {
   while (m->_parent != nullptr) {
     m = m->_parent;
   }
-  for (auto& it : m->fnmap) {
+  for (auto& it : m->_fnmap) {
     for (auto& i : it.second) {
       for (unsigned int j = 0; j < i.t.size(); j++) {
         if (i.t[j].isunknown()) {
@@ -351,7 +355,7 @@ void Model::checkFnOverloading(EnvI& env) {
   while (m->_parent != nullptr) {
     m = m->_parent;
   }
-  for (auto& it : m->fnmap) {
+  for (auto& it : m->_fnmap) {
     std::vector<FnEntry>& fs = it.second;
     for (unsigned int i = 0; i < fs.size() - 1; i++) {
       FunctionI* cur = fs[i].fi;
@@ -383,7 +387,7 @@ void Model::checkFnOverloading(EnvI& env) {
 }
 
 namespace {
-int matchIdx(std::vector<FunctionI*>& matched, Expression*& botarg, EnvI& env,
+int match_idx(std::vector<FunctionI*>& matched, Expression*& botarg, EnvI& env,
              const std::vector<Model::FnEntry>& v, const std::vector<Expression*>& args,
              bool strictEnums) {
   botarg = nullptr;
@@ -421,21 +425,21 @@ int matchIdx(std::vector<FunctionI*>& matched, Expression*& botarg, EnvI& env,
 
 FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Expression*>& args,
                           bool strictEnums) const {
-  if (id == constants().var_redef->id()) {
-    return constants().var_redef;
+  if (id == constants().varRedef->id()) {
+    return constants().varRedef;
   }
   const Model* m = this;
   while (m->_parent != nullptr) {
     m = m->_parent;
   }
-  auto it = m->fnmap.find(id);
-  if (it == m->fnmap.end()) {
+  auto it = m->_fnmap.find(id);
+  if (it == m->_fnmap.end()) {
     return nullptr;
   }
   const std::vector<FnEntry>& v = it->second;
   std::vector<FunctionI*> matched;
   Expression* botarg;
-  (void)matchIdx(matched, botarg, env, v, args, strictEnums);
+  (void)match_idx(matched, botarg, env, v, args, strictEnums);
   if (matched.empty()) {
     return nullptr;
   }
@@ -453,15 +457,15 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Expr
 }
 
 FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotFound) const {
-  if (c->id() == constants().var_redef->id()) {
-    return constants().var_redef;
+  if (c->id() == constants().varRedef->id()) {
+    return constants().varRedef;
   }
   const Model* m = this;
   while (m->_parent != nullptr) {
     m = m->_parent;
   }
-  auto it = m->fnmap.find(c->id());
-  if (it == m->fnmap.end()) {
+  auto it = m->_fnmap.find(c->id());
+  if (it == m->_fnmap.end()) {
     if (throwIfNotFound) {
       std::ostringstream oss;
       oss << "no function or predicate with name `";
@@ -469,7 +473,7 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
 
       ASTString mostSimilar;
       int minEdits = 3;
-      for (const auto& decls : m->fnmap) {
+      for (const auto& decls : m->_fnmap) {
         if (std::abs(static_cast<int>(c->id().size()) - static_cast<int>(decls.first.size())) <=
             3) {
           int edits = c->id().levenshteinDistance(decls.first);
@@ -494,9 +498,9 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
     std::cerr << "try " << *v[i].fi;
 #endif
-    if (fi_t.size() == c->n_args()) {
+    if (fi_t.size() == c->argCount()) {
       bool match = true;
-      for (unsigned int j = 0; j < c->n_args(); j++) {
+      for (unsigned int j = 0; j < c->argCount(); j++) {
         if (!env.isSubtype(c->arg(j)->type(), fi_t[j], strictEnums)) {
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
           std::cerr << c->arg(j)->type().toString(env) << " does not match "
@@ -524,9 +528,9 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
       std::ostringstream oss;
       oss << "no function or predicate with this signature found: `";
       oss << c->id() << "(";
-      for (unsigned int i = 0; i < c->n_args(); i++) {
+      for (unsigned int i = 0; i < c->argCount(); i++) {
         oss << c->arg(i)->type().toString(env);
-        if (i < c->n_args() - 1) {
+        if (i < c->argCount() - 1) {
           oss << ",";
         }
       }
@@ -539,8 +543,8 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
         i.fi->e(nullptr);
         pp.print(i.fi);
         i.fi->e(body);
-        if (fi_t.size() == c->n_args()) {
-          for (unsigned int j = 0; j < c->n_args(); j++) {
+        if (fi_t.size() == c->argCount()) {
+          for (unsigned int j = 0; j < c->argCount(); j++) {
             if (!env.isSubtype(c->arg(j)->type(), fi_t[j], strictEnums)) {
               oss << "    (argument " << (j + 1) << " expects type " << fi_t[j].toString(env);
               oss << ", but type " << c->arg(j)->type().toString(env) << " given)\n";
@@ -551,7 +555,7 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
           }
         } else {
           oss << "    (requires " << i.fi->params().size() << " argument"
-              << (i.fi->params().size() == 1 ? "" : "s") << ", but " << c->n_args() << " given)\n";
+              << (i.fi->params().size() == 1 ? "" : "s") << ", but " << c->argCount() << " given)\n";
         }
       }
       throw TypeError(env, c->loc(), oss.str());
@@ -572,7 +576,7 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
 }
 
 namespace {
-int firstOverloaded(EnvI& env, const std::vector<Model::FnEntry>& v_f, int i_f) {
+int first_overloaded(EnvI& env, const std::vector<Model::FnEntry>& v_f, int i_f) {
   int first_i_f = i_f;
   for (; (first_i_f--) != 0;) {
     // find first instance overloaded on subtypes
@@ -600,27 +604,27 @@ bool Model::sameOverloading(EnvI& env, const std::vector<Expression*>& args, Fun
   while (m->_parent != nullptr) {
     m = m->_parent;
   }
-  auto it_f = m->fnmap.find(f->id());
-  auto it_g = m->fnmap.find(g->id());
-  assert(it_f != m->fnmap.end());
-  assert(it_g != m->fnmap.end());
+  auto it_f = m->_fnmap.find(f->id());
+  auto it_g = m->_fnmap.find(g->id());
+  assert(it_f != m->_fnmap.end());
+  assert(it_g != m->_fnmap.end());
   const std::vector<FnEntry>& v_f = it_f->second;
   const std::vector<FnEntry>& v_g = it_g->second;
 
   std::vector<FunctionI*> dummyMatched;
   Expression* dummyBotarg;
-  int i_f = matchIdx(dummyMatched, dummyBotarg, env, v_f, args, true);
+  int i_f = match_idx(dummyMatched, dummyBotarg, env, v_f, args, true);
   if (i_f == -1) {
     return false;
   }
-  int i_g = matchIdx(dummyMatched, dummyBotarg, env, v_g, args, true);
+  int i_g = match_idx(dummyMatched, dummyBotarg, env, v_g, args, true);
   if (i_g == -1) {
     return false;
   }
   assert(i_f < v_f.size());
   assert(i_g < v_g.size());
-  unsigned int first_i_f = firstOverloaded(env, v_f, i_f);
-  unsigned int first_i_g = firstOverloaded(env, v_g, i_g);
+  unsigned int first_i_f = first_overloaded(env, v_f, i_f);
+  unsigned int first_i_g = first_overloaded(env, v_g, i_g);
   if (i_f - first_i_f != i_g - first_i_g) {
     // not the same number of overloaded versions
     return false;
@@ -641,8 +645,8 @@ FunctionI* Model::matchRevMap(EnvI& env, const Type& t0) const {
   }
   Type t = t0;
   t.enumId(0);
-  auto it = revmapmap.find(t.toInt());
-  if (it != revmapmap.end()) {
+  auto it = _revmapmap.find(t.toInt());
+  if (it != _revmapmap.end()) {
     return it->second;
   } else {
     return nullptr;

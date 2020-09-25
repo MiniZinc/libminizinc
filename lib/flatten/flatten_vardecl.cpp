@@ -36,16 +36,16 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
       }
     }
     bool reuseVarId =
-        v->type().isann() || (v->toplevel() && v->id()->idn() == -1 &&
+        v->type().isAnn() || (v->toplevel() && v->id()->idn() == -1 &&
                               v->id()->v().c_str()[0] != '\'' && v->id()->v().c_str()[0] != '_');
-    VarDecl* vd = newVarDecl(env, ctx, ti, reuseVarId ? v->id() : nullptr, v, nullptr);
+    VarDecl* vd = new_vardecl(env, ctx, ti, reuseVarId ? v->id() : nullptr, v, nullptr);
     v->flat(vd);
     Ctx nctx;
     if ((v->e() != nullptr) && v->e()->type().bt() == Type::BT_BOOL) {
       nctx.b = C_MIX;
     }
     if (v->e() != nullptr) {
-      (void)flat_exp(env, nctx, v->e(), vd, constants().var_true);
+      (void)flat_exp(env, nctx, v->e(), vd, constants().varTrue);
       if (v->e()->type().dim() > 0) {
         Expression* ee = follow_id_to_decl(vd->e());
         if (ee->isa<VarDecl>()) {
@@ -55,7 +55,7 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
         auto* al = ee->cast<ArrayLit>();
         if (vd->ti()->domain() != nullptr) {
           for (unsigned int i = 0; i < al->size(); i++) {
-            if (Id* ali_id = (*al)[i]->dyn_cast<Id>()) {
+            if (Id* ali_id = (*al)[i]->dynamicCast<Id>()) {
               if (ali_id != constants().absent && ali_id->decl()->ti()->domain() == nullptr) {
                 ali_id->decl()->ti()->domain(vd->ti()->domain());
               }
@@ -69,7 +69,7 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
   } else {
     ret.r = bind(env, Ctx(), r, it);
   }
-  ret.b = bind(env, Ctx(), b, constants().lit_true);
+  ret.b = bind(env, Ctx(), b, constants().literalTrue);
   return ret;
 }
 }  // namespace MiniZinc

@@ -3,8 +3,8 @@
 
 namespace MiniZinc {
 namespace {
-void getWrapper() { static NL_SolverFactory _nl_solverfactory; }
+void get_wrapper() { static NL_SolverFactory _nl_solverfactory; }
 }  // namespace
 
-NL_SolverFactoryInitialiser::NL_SolverFactoryInitialiser() { getWrapper(); }
+NL_SolverFactoryInitialiser::NL_SolverFactoryInitialiser() { get_wrapper(); }
 }  // namespace MiniZinc

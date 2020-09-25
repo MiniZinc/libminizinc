@@ -102,17 +102,17 @@ public:
   virtual bool status(const Gecode::Space& _home) const {
     if (done) return false;
     const MiniZinc::FznSpace& home = static_cast<const MiniZinc::FznSpace&>(_home);
-    for (int i = 0; i < home.iv_aux.size(); i++)
-      if (!home.iv_aux[i].assigned()) return true;
-    for (int i = 0; i < home.bv_aux.size(); i++)
-      if (!home.bv_aux[i].assigned()) return true;
+    for (int i = 0; i < home.ivAux.size(); i++)
+      if (!home.ivAux[i].assigned()) return true;
+    for (int i = 0; i < home.bvAux.size(); i++)
+      if (!home.bvAux[i].assigned()) return true;
 #ifdef GECODE_HAS_SET_VARS
-    for (int i = 0; i < home.sv_aux.size(); i++)
-      if (!home.sv_aux[i].assigned()) return true;
+    for (int i = 0; i < home.svAux.size(); i++)
+      if (!home.svAux[i].assigned()) return true;
 #endif
 #ifdef GECODE_HAS_FLOAT_VARS
-    for (int i = 0; i < home.fv_aux.size(); i++)
-      if (!home.fv_aux[i].assigned()) return true;
+    for (int i = 0; i < home.fvAux.size(); i++)
+      if (!home.fvAux[i].assigned()) return true;
 #endif
     // No non-assigned variables left
     return false;
@@ -121,14 +121,14 @@ public:
   virtual Choice* choice(Gecode::Space& home) {
     done = true;
     MiniZinc::FznSpace& fzs = static_cast<MiniZinc::FznSpace&>(*home.clone());
-    fzs._copyAuxVars = false;
-    Gecode::branch(fzs, fzs.iv_aux, int_varsel, int_valsel);
-    Gecode::branch(fzs, fzs.bv_aux, bool_varsel, bool_valsel);
+    fzs.copyAuxVars = false;
+    Gecode::branch(fzs, fzs.ivAux, int_varsel, int_valsel);
+    Gecode::branch(fzs, fzs.bvAux, bool_varsel, bool_valsel);
 #ifdef GECODE_HAS_SET_VARS
-    Gecode::branch(fzs, fzs.sv_aux, set_varsel, set_valsel);
+    Gecode::branch(fzs, fzs.svAux, set_varsel, set_valsel);
 #endif
 #ifdef GECODE_HAS_FLOAT_VARS
-    Gecode::branch(fzs, fzs.fv_aux, float_varsel, float_valsel);
+    Gecode::branch(fzs, fzs.fvAux, float_varsel, float_valsel);
 #endif
     Gecode::Search::Options opt;
     opt.clone = false;

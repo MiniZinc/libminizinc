@@ -72,7 +72,7 @@ inline bool beginswith(const std::string& s, const std::string& t) {
   return s.compare(0, t.length(), t) == 0;
 }
 
-inline void checkIOStatus(bool fOk, const std::string& msg, bool fHard = true) {
+inline void check_io_status(bool fOk, const std::string& msg, bool fHard = true) {
   if (!fOk) {
 #ifdef _MSC_VER
     char errBuf[1024];
@@ -86,22 +86,22 @@ inline void checkIOStatus(bool fOk, const std::string& msg, bool fHard = true) {
 }
 
 template <class T>
-inline bool assignStr(T*, const std::string&) {
+inline bool assign_string(T*, const std::string&) {
   return false;
 }
 template <>
-inline bool assignStr(std::string* pS, const std::string& s) {
+inline bool assign_string(std::string* pS, const std::string& s) {
   *pS = s;
   return true;
 }
 
 /// A simple per-cmdline option parser
 class CLOParser {
-  int& i;  // current item
-  std::vector<std::string>& argv;
+  int& _i;  // current item
+  std::vector<std::string>& _argv;
 
 public:
-  CLOParser(int& ii, std::vector<std::string>& av) : i(ii), argv(av) {}
+  CLOParser(int& ii, std::vector<std::string>& av) : _i(ii), _argv(av) {}
   template <class Value = int>
   inline bool get(const char* names,           // space-separated option list
                   Value* pResult = nullptr,    // pointer to value storage
@@ -116,10 +116,10 @@ public:
   ) {
     assert(nullptr == strchr(names, ','));
     assert(nullptr == strchr(names, ';'));
-    if (i >= argv.size()) {
+    if (_i >= _argv.size()) {
       return false;
     }
-    std::string arg(argv[i]);
+    std::string arg(_argv[_i]);
     /// Separate keywords
     std::string keyword;
     std::istringstream iss(names);
@@ -140,22 +140,22 @@ public:
         if (nullptr == pResult) {
           return true;
         }
-        i++;
-        if (i >= argv.size()) {
-          --i;
+        _i++;
+        if (_i >= _argv.size()) {
+          --_i;
           return fValueOptional;
         }
-        arg = argv[i];
+        arg = _argv[_i];
       }
       assert(pResult);
-      if (assignStr(pResult, arg)) {
+      if (assign_string(pResult, arg)) {
         return true;
       }
       std::istringstream iss(arg);
       Value tmp;
       if (!(iss >> tmp)) {
         if (!combinedArg) {
-          --i;
+          --_i;
         }
         if (fValueOptional) {
           return true;
@@ -173,17 +173,17 @@ public:
 
 /// This class prints a value if non-0 and adds comma if not 1st time
 class HadOne {
-  bool fHadOne = false;
+  bool _fHadOne = false;
 
 public:
   template <class N>
   std::string operator()(const N& val, const char* descr = nullptr) {
     std::ostringstream oss;
     if (val) {
-      if (fHadOne) {
+      if (_fHadOne) {
         oss << ", ";
       }
-      fHadOne = true;
+      _fHadOne = true;
       oss << val;
       if (descr) {
         oss << descr;
@@ -191,9 +191,9 @@ public:
     }
     return oss.str();
   }
-  void reset() { fHadOne = false; }
-  operator bool() const { return fHadOne; }
-  bool operator!() const { return !fHadOne; }
+  void reset() { _fHadOne = false; }
+  operator bool() const { return _fHadOne; }
+  bool operator!() const { return !_fHadOne; }
 };
 
 /// Split a string into words
@@ -209,7 +209,7 @@ inline void split(const std::string& str, std::vector<std::string>& words) {
 
 /// Puts the strings' c_str()s into the 2nd argument.
 /// The latter is only valid as long as the former isn't changed.
-inline void vecString2vecPChar(const std::vector<std::string>& vS, std::vector<const char*>& vPC) {
+inline void vec_string2vec_pchar(const std::vector<std::string>& vS, std::vector<const char*>& vPC) {
   vPC.resize(vS.size());
   for (size_t i = 0; i < vS.size(); ++i) {
     vPC[i] = vS[i].c_str();

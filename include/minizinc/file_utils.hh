@@ -56,9 +56,9 @@ std::string user_config_file();
 /// Get per-user configuration directory name (usually in home directory or AppData directory)
 std::string user_config_dir();
 /// Parse command line \a s into individual arguments
-std::vector<std::string> parseCmdLine(const std::string& s);
+std::vector<std::string> parse_cmd_line(const std::string& s);
 /// Combine individual arguments \a cmd into properly quoted command line
-std::string combineCmdLine(const std::vector<std::string>& cmd);
+std::string combine_cmd_line(const std::vector<std::string>& cmd);
 
 /// Create a temporary file
 class TmpFile {
@@ -68,7 +68,7 @@ private:
   std::vector<std::string> _tmpNames;
 #endif
 #ifndef _WIN32
-  int _tmpfile_desc;
+  int _tmpfileDesc;
 #endif
 public:
   // Constructor for file with extension \a ext
@@ -92,13 +92,13 @@ public:
 };
 
 /// Inflate string \a s
-void inflateString(std::string& s);
+void inflate_string(std::string& s);
 /// Deflate string \a s
-std::string deflateString(const std::string& s);
+std::string deflate_string(const std::string& s);
 /// Encode string into base 64
-std::string encodeBase64(const std::string& s);
+std::string encode_base64(const std::string& s);
 /// Decode string from base 64
-std::string decodeBase64(const std::string& s);
+std::string decode_base64(const std::string& s);
 
 #ifdef _WIN32
 /// Convert UTF-16 string to UTF-8

@@ -174,21 +174,21 @@ public:
   bool isvarint() const {
     return ti() == TI_VAR && _dim == 0 && st() == ST_PLAIN && bt() == BT_INT && ot() == OT_PRESENT;
   }
-  bool ispar() const { return ti() == TI_PAR; }
-  bool isopt() const { return ot() == OT_OPTIONAL; }
-  bool ispresent() const { return ot() == OT_PRESENT; }
-  bool is_set() const { return _dim == 0 && st() == ST_SET; }
-  bool isintset() const { return is_set() && (bt() == BT_INT || bt() == BT_BOT); }
-  bool isboolset() const { return is_set() && (bt() == BT_BOOL || bt() == BT_BOT); }
-  bool isfloatset() const { return is_set() && (bt() == BT_FLOAT || bt() == BT_BOT); }
-  bool isann() const { return isplain() && bt() == BT_ANN; }
-  bool isintarray() const {
+  bool isPar() const { return ti() == TI_PAR; }
+  bool isOpt() const { return ot() == OT_OPTIONAL; }
+  bool isPresent() const { return ot() == OT_PRESENT; }
+  bool isSet() const { return _dim == 0 && st() == ST_SET; }
+  bool isIntSet() const { return isSet() && (bt() == BT_INT || bt() == BT_BOT); }
+  bool isBoolSet() const { return isSet() && (bt() == BT_BOOL || bt() == BT_BOT); }
+  bool isFloatSet() const { return isSet() && (bt() == BT_FLOAT || bt() == BT_BOT); }
+  bool isAnn() const { return isplain() && bt() == BT_ANN; }
+  bool isIntArray() const {
     return _dim == 1 && st() == ST_PLAIN && ot() == OT_PRESENT && bt() == BT_INT;
   }
-  bool isboolarray() const {
+  bool isBoolArray() const {
     return _dim == 1 && st() == ST_PLAIN && ot() == OT_PRESENT && bt() == BT_BOOL;
   }
-  bool isintsetarray() const { return _dim == 1 && st() == ST_SET && bt() == BT_INT; }
+  bool isIntSetArray() const { return _dim == 1 && st() == ST_SET && bt() == BT_INT; }
 
   bool operator==(const Type& t) const {
     return ti() == t.ti() && bt() == t.bt() && st() == t.st() && ot() == t.ot() && _dim == t._dim;
@@ -217,7 +217,7 @@ public:
 
 public:
   /// Check if \a bt0 is a subtype of \a bt1
-  static bool bt_subtype(const Type& t0, const Type& t1, bool strictEnums) {
+  static bool btSubtype(const Type& t0, const Type& t1, bool strictEnums) {
     if (t0.bt() == t1.bt() &&
         (!strictEnums || t0.dim() != 0 || (t0.enumId() == t1.enumId() || t1.enumId() == 0))) {
       return true;
@@ -235,7 +235,7 @@ public:
   /// Check if this type is a subtype of \a t
   bool isSubtypeOf(const Type& t, bool strictEnums) const {
     if (_dim == 0 && t._dim != 0 && st() == ST_SET && t.st() == ST_PLAIN && bt() != BT_FLOAT &&
-        (bt() == BT_BOT || bt_subtype(*this, t, false) || t.bt() == BT_TOP) && ti() == TI_PAR &&
+        (bt() == BT_BOT || btSubtype(*this, t, false) || t.bt() == BT_TOP) && ti() == TI_PAR &&
         (ot() == OT_PRESENT || ot() == t.ot())) {
       return true;
     }
@@ -244,11 +244,11 @@ public:
       return false;
     }
     // same type, this is present or both optional
-    if (ti() == t.ti() && bt_subtype(*this, t, strictEnums) && st() == t.st()) {
+    if (ti() == t.ti() && btSubtype(*this, t, strictEnums) && st() == t.st()) {
       return ot() == OT_PRESENT || ot() == t.ot();
     }
     // this is par other than that same type as t
-    if (ti() == TI_PAR && bt_subtype(*this, t, strictEnums) && st() == t.st()) {
+    if (ti() == TI_PAR && btSubtype(*this, t, strictEnums) && st() == t.st()) {
       return ot() == OT_PRESENT || ot() == t.ot();
     }
     if (ti() == TI_PAR && t.bt() == BT_BOT) {

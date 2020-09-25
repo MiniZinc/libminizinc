@@ -34,7 +34,7 @@ GC*& GC::gc() {
 
 bool GC::locked() {
   assert(gc());
-  return gc()->_lock_count > 0;
+  return gc()->_lockCount > 0;
 }
 
 GCLock::GCLock() { GC::lock(); }
@@ -45,7 +45,7 @@ public:
   FreeListNode* next;
   size_t size;
   FreeListNode(size_t s, FreeListNode* n) : ASTNode(ASTNode::NID_FL), next(n), size(s) {
-    _gc_mark = 1;
+    _gcMark = 1;
   }
   FreeListNode(size_t s) : ASTNode(ASTNode::NID_FL), next(nullptr), size(s) {}
 };
@@ -67,7 +67,7 @@ class GC::Heap {
   std::map<int, GCStat> gc_stats;
 #endif
 protected:
-  static const size_t _min_gc_threshold;
+  static const size_t _min_gcThreshold;
 
   HeapPage* _page;
   GCMarker* _rootset;
@@ -77,7 +77,7 @@ protected:
   static const int _max_fl = 5;
   FreeListNode* _fl[_max_fl + 1];
   static const size_t _fl_size[_max_fl + 1];
-  int _fl_slot(size_t _size) {
+  int freelistSlot(size_t _size) {
     size_t size = _size;
     assert(size <= _fl_size[_max_fl]);
     assert(size >= _fl_size[0]);
@@ -90,13 +90,13 @@ protected:
   }
 
   /// Total amount of memory allocated
-  size_t _alloced_mem;
+  size_t _allocedMem;
   /// Total amount of memory currently free
-  size_t _free_mem;
+  size_t _freeMem;
   /// Memory threshold for next garbage collection
-  size_t _gc_threshold;
+  size_t _gcThreshold;
   /// High water mark of all allocated memory
-  size_t _max_alloced_mem;
+  size_t _maxAllocedMem;
 
   /// A trail item
   struct TItem {
@@ -106,7 +106,7 @@ protected:
     TItem(Expression** l0, Expression* v0) : l(l0), v(v0), mark(false) {}
   };
   /// Trail
-  std::vector<TItem> trail;
+  std::vector<TItem> _trail;
 
   Heap()
       : _page(nullptr),
@@ -114,10 +114,10 @@ protected:
         _roots(nullptr),
         _weakRefs(nullptr),
         _nodeWeakMaps(nullptr),
-        _alloced_mem(0),
-        _free_mem(0),
-        _gc_threshold(_min_gc_threshold),
-        _max_alloced_mem(0) {
+        _allocedMem(0),
+        _freeMem(0),
+        _gcThreshold(_min_gcThreshold),
+        _maxAllocedMem(0) {
     for (int i = _max_fl + 1; (i--) != 0;) {
       _fl[i] = nullptr;
     }
@@ -137,9 +137,9 @@ protected:
 #ifndef NDEBUG
     memset(newPage, 255, sizeof(HeapPage) + s - 1);
 #endif
-    _alloced_mem += s;
-    _max_alloced_mem = std::max(_max_alloced_mem, _alloced_mem);
-    _free_mem += s;
+    _allocedMem += s;
+    _maxAllocedMem = std::max(_maxAllocedMem, _allocedMem);
+    _freeMem += s;
     if (exact && (_page != nullptr)) {
       new (newPage) HeapPage(_page->next, s);
       _page->next = newPage;
@@ -151,12 +151,12 @@ protected:
           // Remainder of page can be added to free lists
           auto* fln = reinterpret_cast<FreeListNode*>(_page->data + _page->used);
           _page->used += ns;
-          new (fln) FreeListNode(ns, _fl[_fl_slot(ns)]);
-          _fl[_fl_slot(ns)] = fln;
+          new (fln) FreeListNode(ns, _fl[freelistSlot(ns)]);
+          _fl[freelistSlot(ns)] = fln;
         } else {
           // Waste a little memory (less than smallest free list slot)
-          _free_mem -= ns;
-          assert(_alloced_mem >= _free_mem);
+          _freeMem -= ns;
+          assert(_allocedMem >= _freeMem);
         }
       }
       new (newPage) HeapPage(_page, s);
@@ -175,13 +175,13 @@ protected:
     }
     char* ret = p->data + p->used;
     p->used += size;
-    _free_mem -= size;
+    _freeMem -= size;
     if (p->size - p->used < _fl_size[0]) {
-      _free_mem -= (p->size - p->used);
-      _alloced_mem -= (p->size - p->used);
+      _freeMem -= (p->size - p->used);
+      _allocedMem -= (p->size - p->used);
       p->size = p->used;
     }
-    assert(_alloced_mem >= _free_mem);
+    assert(_allocedMem >= _freeMem);
     return ret;
   }
 
@@ -198,12 +198,12 @@ protected:
   }
 
   void* fl(size_t size) {
-    int slot = _fl_slot(size);
+    int slot = freelistSlot(size);
     assert(slot <= _max_fl);
     if (_fl[slot] != nullptr) {
       FreeListNode* p = _fl[slot];
       _fl[slot] = p->next;
-      _free_mem -= size;
+      _freeMem -= size;
       return p;
     }
     return alloc(size);
@@ -211,11 +211,11 @@ protected:
 
   void trigger() {
 #ifdef MINIZINC_GC_STATS
-    std::cerr << "GC\n\talloced " << (_alloced_mem / 1024) << "\n\tfree " << (_free_mem / 1024)
-              << "\n\tdiff " << ((_alloced_mem - _free_mem) / 1024) << "\n\tthreshold "
-              << (_gc_threshold / 1024) << "\n";
+    std::cerr << "GC\n\talloced " << (_allocedMem / 1024) << "\n\tfree " << (_freeMem / 1024)
+              << "\n\tdiff " << ((_allocedMem - _freeMem) / 1024) << "\n\tthreshold "
+              << (_gcThreshold / 1024) << "\n";
 #endif
-    size_t old_free = _free_mem;
+    size_t old_free = _freeMem;
     mark();
     sweep();
     // GC strategy:
@@ -224,20 +224,20 @@ protected:
     //   b) the free list memory (after GC) is less than 50% of the allocated memory
     // otherwise (i.e., we have been able to increase the free list, and it is now more
     // than 50% of overall allocated memory), keep threshold at allocated memory
-    if ((old_free != 0 && static_cast<double>(old_free) / static_cast<double>(_free_mem) > 0.9) ||
-        static_cast<double>(_free_mem) / _alloced_mem < 0.5) {
-      _gc_threshold = std::max(_min_gc_threshold, static_cast<size_t>(_alloced_mem * 1.5));
+    if ((old_free != 0 && static_cast<double>(old_free) / static_cast<double>(_freeMem) > 0.9) ||
+        static_cast<double>(_freeMem) / _allocedMem < 0.5) {
+      _gcThreshold = std::max(_min_gcThreshold, static_cast<size_t>(_allocedMem * 1.5));
     } else {
-      _gc_threshold = std::max(_min_gc_threshold, _alloced_mem);
+      _gcThreshold = std::max(_min_gcThreshold, _allocedMem);
     }
 #ifdef MINIZINC_GC_STATS
-    std::cerr << "done\n\talloced " << (_alloced_mem / 1024) << "\n\tfree " << (_free_mem / 1024)
-              << "\n\tdiff " << ((_alloced_mem - _free_mem) / 1024) << "\n\tthreshold "
-              << (_gc_threshold / 1024) << "\n";
+    std::cerr << "done\n\talloced " << (_allocedMem / 1024) << "\n\tfree " << (_freeMem / 1024)
+              << "\n\tdiff " << ((_allocedMem - _freeMem) / 1024) << "\n\tthreshold "
+              << (_gcThreshold / 1024) << "\n";
 #endif
   }
   void rungc() {
-    if (_alloced_mem > _gc_threshold) {
+    if (_allocedMem > _gcThreshold) {
       trigger();
     }
   }
@@ -289,7 +289,7 @@ protected:
         ns = static_cast<ASTVec*>(n)->memsize();
         break;
       case Call::eid:
-        ns = n->_flag_1 ? _nodesize[BinOp::eid] : _nodesize[Call::eid];
+        ns = n->_flag1 ? _nodesize[BinOp::eid] : _nodesize[Call::eid];
         break;
       default:
         assert(n->_id <= Item::II_END);
@@ -301,7 +301,7 @@ protected:
   }
 };
 
-const size_t GC::Heap::_min_gc_threshold = 10LL * 1024LL;
+const size_t GC::Heap::_min_gcThreshold = 10LL * 1024LL;
 
 #ifdef MINIZINC_GC_STATS
 const char* GC::Heap::_nodeid[] = {
@@ -342,7 +342,7 @@ void GC::setTimeout(unsigned long long int t) {
     gc() = new GC();
   }
   gc()->_timeout = t;
-  gc()->_timeout_timer.reset();
+  gc()->_timeoutTimer.reset();
 }
 
 void GC::lock() {
@@ -352,22 +352,22 @@ void GC::lock() {
   // If a timeout has been specified, first check counter
   // before checking timer (counter is much cheaper, introduces
   // less overhead)
-  if (gc()->_timeout > 0 && gc()->_timeout_counter++ > 500) {
-    gc()->_timeout_counter = 0;
-    if (gc()->_timeout_timer.ms() > gc()->_timeout) {
+  if (gc()->_timeout > 0 && gc()->_timeoutCount++ > 500) {
+    gc()->_timeoutCount = 0;
+    if (gc()->_timeoutTimer.ms() > gc()->_timeout) {
       gc()->_timeout = 0;
-      gc()->_timeout_counter = 0;
+      gc()->_timeoutCount = 0;
       throw Timeout();
     }
   }
-  if (gc()->_lock_count == 0) {
+  if (gc()->_lockCount == 0) {
     gc()->_heap->rungc();
   }
-  gc()->_lock_count++;
+  gc()->_lockCount++;
 }
 void GC::unlock() {
   assert(locked());
-  gc()->_lock_count--;
+  gc()->_lockCount--;
 }
 
 void GC::trigger() {
@@ -384,29 +384,29 @@ const size_t GC::Heap::_fl_size[GC::Heap::_max_fl + 1] = {
     sizeof(Item) + 5 * sizeof(void*), sizeof(Item) + 6 * sizeof(void*),
 };
 
-GC::GC() : _heap(new Heap()), _lock_count(0), _timeout(0), _timeout_counter(0) {}
+GC::GC() : _heap(new Heap()), _lockCount(0), _timeout(0), _timeoutCount(0) {}
 
 void GC::add(GCMarker* m) {
   GC* gc = GC::gc();
   if (gc->_heap->_rootset != nullptr) {
-    m->_roots_next = gc->_heap->_rootset;
-    m->_roots_prev = m->_roots_next->_roots_prev;
-    m->_roots_prev->_roots_next = m;
-    m->_roots_next->_roots_prev = m;
+    m->_rootsNext = gc->_heap->_rootset;
+    m->_rootsPrev = m->_rootsNext->_rootsPrev;
+    m->_rootsPrev->_rootsNext = m;
+    m->_rootsNext->_rootsPrev = m;
   } else {
-    gc->_heap->_rootset = m->_roots_next = m->_roots_prev = m;
+    gc->_heap->_rootset = m->_rootsNext = m->_rootsPrev = m;
   }
 }
 
 void GC::remove(GCMarker* m) {
   GC* gc = GC::gc();
-  if (m->_roots_next == m) {
+  if (m->_rootsNext == m) {
     gc->_heap->_rootset = nullptr;
   } else {
-    m->_roots_next->_roots_prev = m->_roots_prev;
-    m->_roots_prev->_roots_next = m->_roots_next;
+    m->_rootsNext->_rootsPrev = m->_rootsPrev;
+    m->_rootsPrev->_rootsNext = m->_rootsNext;
     if (m == gc->_heap->_rootset) {
-      gc->_heap->_rootset = m->_roots_prev;
+      gc->_heap->_rootset = m->_rootsPrev;
     }
   }
 }
@@ -430,7 +430,7 @@ void GC::Heap::mark() {
 #endif
 
   for (KeepAlive* e = _roots; e != nullptr; e = e->next()) {
-    if (((*e)() != nullptr) && (*e)()->_gc_mark == 0) {
+    if (((*e)() != nullptr) && (*e)()->_gcMark == 0) {
       Expression::mark((*e)());
 #if defined(MINIZINC_GC_STATS)
       gc_stats[(*e)()->_id].keepalive++;
@@ -447,11 +447,11 @@ void GC::Heap::mark() {
   }
   do {
     m->mark();
-    m = m->_roots_next;
+    m = m->_rootsNext;
   } while (m != _rootset);
 
-  for (auto i = static_cast<unsigned int>(trail.size()); (i--) != 0U;) {
-    Expression::mark(trail[i].v);
+  for (auto i = static_cast<unsigned int>(_trail.size()); (i--) != 0U;) {
+    Expression::mark(_trail[i].v);
   }
 
   bool fixPrev = false;
@@ -463,7 +463,7 @@ void GC::Heap::mark() {
       prevWr->_n = nullptr;
       prevWr->_p = nullptr;
     }
-    if (((*wr)() != nullptr) && (*wr)()->_gc_mark == 0) {
+    if (((*wr)() != nullptr) && (*wr)()->_gcMark == 0) {
       wr->_e = nullptr;
       wr->_valid = false;
       fixPrev = true;
@@ -479,7 +479,7 @@ void GC::Heap::mark() {
   for (ASTNodeWeakMap* wr = _nodeWeakMaps; wr != nullptr; wr = wr->next()) {
     std::vector<ASTNode*> toRemove;
     for (auto n : wr->_m) {
-      if (n.first->_gc_mark == 0 || n.second->_gc_mark == 0) {
+      if (n.first->_gcMark == 0 || n.second->_gcMark == 0) {
         toRemove.push_back(n.first);
       }
     }
@@ -519,7 +519,7 @@ void GC::Heap::sweep() {
       stats.first++;
       stats.total += ns;
 #endif
-      if (n->_gc_mark == 0) {
+      if (n->_gcMark == 0) {
         switch (n->_id) {
           case Item::II_FUN:
             static_cast<FunctionI*>(n)->ann().~Annotation();
@@ -551,7 +551,7 @@ void GC::Heap::sweep() {
 #endif
         wholepage = false;
         if (n->_id != ASTNode::NID_FL) {
-          n->_gc_mark = 0;
+          n->_gcMark = 0;
         }
       }
       off += ns;
@@ -568,23 +568,23 @@ void GC::Heap::sweep() {
       }
       HeapPage* pf = p;
       p = p->next;
-      _alloced_mem -= pf->size;
+      _allocedMem -= pf->size;
       if (pf->size - pf->used >= _fl_size[0]) {
-        _free_mem -= (pf->size - pf->used);
+        _freeMem -= (pf->size - pf->used);
       }
-      assert(_alloced_mem >= _free_mem);
+      assert(_allocedMem >= _freeMem);
       ::free(pf);
     } else {
       for (auto ni : freeNodes) {
         auto* fln = static_cast<FreeListNode*>(ni.n);
-        new (fln) FreeListNode(ni.ns, _fl[_fl_slot(ni.ns)]);
-        _fl[_fl_slot(ni.ns)] = fln;
-        _free_mem += ni.ns;
+        new (fln) FreeListNode(ni.ns, _fl[freelistSlot(ni.ns)]);
+        _fl[freelistSlot(ni.ns)] = fln;
+        _freeMem += ni.ns;
 #if defined(MINIZINC_GC_STATS)
         gc_stats[fln->_id].second++;
 #endif
       }
-      assert(_alloced_mem >= _free_mem);
+      assert(_allocedMem >= _freeMem);
       prev = p;
       p = p->next;
     }
@@ -623,27 +623,27 @@ void* ASTChunk::alloc(size_t size) {
 
 void GC::mark() {
   GC* gc = GC::gc();
-  if (!gc->_heap->trail.empty()) {
-    gc->_heap->trail.back().mark = true;
+  if (!gc->_heap->_trail.empty()) {
+    gc->_heap->_trail.back().mark = true;
   }
 }
 void GC::trail(Expression** l, Expression* v) {
   GC* gc = GC::gc();
-  gc->_heap->trail.emplace_back(l, v);
+  gc->_heap->_trail.emplace_back(l, v);
 }
 void GC::untrail() {
   GC* gc = GC::gc();
-  while (!gc->_heap->trail.empty() && !gc->_heap->trail.back().mark) {
-    *gc->_heap->trail.back().l = gc->_heap->trail.back().v;
-    gc->_heap->trail.pop_back();
+  while (!gc->_heap->_trail.empty() && !gc->_heap->_trail.back().mark) {
+    *gc->_heap->_trail.back().l = gc->_heap->_trail.back().v;
+    gc->_heap->_trail.pop_back();
   }
-  if (!gc->_heap->trail.empty()) {
-    gc->_heap->trail.back().mark = false;
+  if (!gc->_heap->_trail.empty()) {
+    gc->_heap->_trail.back().mark = false;
   }
 }
 size_t GC::maxMem() {
   GC* gc = GC::gc();
-  return gc->_heap->_max_alloced_mem;
+  return gc->_heap->_maxAllocedMem;
 }
 
 void* ASTNode::operator new(size_t size) { return GC::gc()->alloc(size); }

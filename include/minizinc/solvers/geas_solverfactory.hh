@@ -12,8 +12,8 @@
 #pragma once
 
 namespace MiniZinc {
-class Geas_SolverFactoryInitialiser {
+class GeasSolverFactoryInitialiser {
 public:
-  Geas_SolverFactoryInitialiser();
+  GeasSolverFactoryInitialiser();
 };
 }  // namespace MiniZinc

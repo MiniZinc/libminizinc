@@ -16,7 +16,7 @@ namespace base64
 {
 	extern "C" 
 	{
-		#include <minizinc/thirdparty/b64/cencode.h>
+		#include <minizinc/_thirdparty/b64/cencode.h>
 	}
 
 	struct encoder

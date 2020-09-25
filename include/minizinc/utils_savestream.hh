@@ -18,19 +18,19 @@ namespace MiniZinc {
 /// Helper class to redirect, e.g., stdout to stderr
 class StreamRedir {
   /// The stream to be changed
-  FILE* const d_s0;
+  FILE* const _file0;
   /*
    * Structure for retaining information about a stream, sufficient to
    * recreate that stream later on.
    * See
    * https://stackoverflow.com/questions/4760201/how-do-i-suppress-output-while-using-a-dynamic-library
    */
-  struct stream_info {
+  struct StreamInfo {
     int fd = -1;
     fpos_t pos;
   };
   /// The original stream
-  stream_info d_si;
+  StreamInfo _streamInfo;
 
 public:
   /// Constructs with the stream to be changed

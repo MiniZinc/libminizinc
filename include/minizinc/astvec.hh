@@ -121,7 +121,7 @@ public:
   /// Iterator end
   int* end() { return begin() + size(); }
   /// Mark as alive for garbage collection
-  void mark() const { _gc_mark = 1; }
+  void mark() const { _gcMark = 1; }
 };
 
 /// Garbage collected vector of expressions
@@ -149,16 +149,16 @@ public:
   /// Iterator end
   T* end() { return begin() + size(); }
   /// Mark as alive for garbage collection
-  void mark() const { _gc_mark = 1; }
+  void mark() const { _gcMark = 1; }
   /// Check if flag is set
-  bool flag() const { return _flag_1; }
+  bool flag() const { return _flag1; }
   /// Set flag
-  void flag(bool f) { _flag_1 = f; }
+  void flag(bool f) { _flag1 = f; }
 };
 
 template <class T>
 ASTExprVecO<T>::ASTExprVecO(const std::vector<T>& v) : ASTVec(v.size()) {
-  _flag_1 = false;
+  _flag1 = false;
   for (auto i = static_cast<unsigned int>(v.size()); (i--) != 0U;) {
     (*this)[i] = v[i];
   }

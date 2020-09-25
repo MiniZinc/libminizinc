@@ -25,8 +25,8 @@ void ParamConfig::load(const std::string& filename) {
       GCLock lock;
       jp.parse(&m, filename);
       for (auto& i : m) {
-        if (auto* ai = i->dyn_cast<AssignI>()) {
-          add_value(ai->id(), ai->e());
+        if (auto* ai = i->dynamicCast<AssignI>()) {
+          addValue(ai->id(), ai->e());
         }
       }
     } catch (ParamException& e) {
@@ -39,7 +39,7 @@ void ParamConfig::load(const std::string& filename) {
   }
 }
 
-void ParamConfig::add_value(const ASTString& key, Expression* e) {
+void ParamConfig::addValue(const ASTString& key, Expression* e) {
   std::stringstream flag_ss;
   if (!key.beginsWith("-")) {
     flag_ss << "--";
@@ -56,7 +56,7 @@ void ParamConfig::add_value(const ASTString& key, Expression* e) {
     case Expression::E_ARRAYLIT: {
       auto* al = e->cast<ArrayLit>();
       for (auto* exp : al->getVec()) {
-        add_value(flag, exp);
+        addValue(flag, exp);
       }
       break;
     }
@@ -102,7 +102,7 @@ void ParamConfig::blacklist(const std::vector<std::string>& params) {
   }
 }
 
-void ParamConfig::negated_flag(const std::string& flag, const std::string& off) {
+void ParamConfig::negatedFlag(const std::string& flag, const std::string& off) {
   _bool_switches.insert(std::make_pair(flag, off));
 }
 

@@ -33,7 +33,7 @@ EE flatten_unop(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
         break;
       case UOT_MINUS: {
         GC::lock();
-        if (UnOp* uo_inner = uo->e()->dyn_cast<UnOp>()) {
+        if (UnOp* uo_inner = uo->e()->dynamicCast<UnOp>()) {
           if (uo_inner->op() == UOT_MINUS) {
             ret = flat_exp(env, ctx, uo_inner->e(), r, b);
             break;

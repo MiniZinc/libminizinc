@@ -26,24 +26,24 @@ using namespace MiniZinc;
 
 // StreamRedir::StreamRedir(FILE *s0) : d_s0(s0) { }
 
-StreamRedir::StreamRedir(FILE* s0, FILE* s1, bool fFlush) : d_s0(s0) { replaceStream(s1, fFlush); }
+StreamRedir::StreamRedir(FILE* s0, FILE* s1, bool fFlush) : _file0(s0) { replaceStream(s1, fFlush); }
 StreamRedir::~StreamRedir() { restore(); }
 
 void StreamRedir::replaceStream(FILE* s1, bool fFlush) {
   if (fFlush) {
-    fflush(d_s0);
+    fflush(_file0);
   }
-  fgetpos(d_s0, &(d_si.pos));
-  d_si.fd = dup(fileno(d_s0));
-  dup2(fileno(s1), fileno(d_s0));
+  fgetpos(_file0, &(_streamInfo.pos));
+  _streamInfo.fd = dup(fileno(_file0));
+  dup2(fileno(s1), fileno(_file0));
 }
 
 void StreamRedir::restore(bool fFLush) {
   if (fFLush) {
-    fflush(d_s0);
+    fflush(_file0);
   }
-  dup2(d_si.fd, fileno(d_s0));
-  close(d_si.fd);
-  clearerr(d_s0);
-  fsetpos(d_s0, &(d_si.pos));
+  dup2(_streamInfo.fd, fileno(_file0));
+  close(_streamInfo.fd);
+  clearerr(_file0);
+  fsetpos(_file0, &(_streamInfo.pos));
 }
