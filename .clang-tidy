@@ -22,7 +22,8 @@ Checks: '-*,
   modernize-use-override,
   performance-for-range-copy,
   performance-faster-string-find,
-  readability-identifier-naming
+  readability-identifier-naming,
+  readability-named-parameter
 '
 WarningsAsErrors:  ''
 HeaderFilterRegex: 'include/minizinc/[A-Za-z].*'
