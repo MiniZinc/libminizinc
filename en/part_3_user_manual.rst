@@ -11,8 +11,7 @@ User Manual
    checkers
    globalizer
    find_mus
+   cpprofiler
    jupyter
    python
    installation_detailed
-
-..   cpprofiler

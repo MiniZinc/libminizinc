@@ -1,26 +1,18 @@
 CP-Profiler
 ================
 
-CP-Profiler provides search tree visualisations for executions of constraint programming solvers.
+CP-Profiler provides search tree visualisations for executions of constraint programming solvers from within the MiniZinc IDE.
 
-Connecting a Solver Execution
------------------------------
+This integration is currently experimental.
 
-1. Starting CP-Profiler
+Using the profiler
+------------------
 
-``./cp-profiler``
-
-This starts a local TCP server listening on one of the available ports (6565 by default).
-
-Additionally, a mzn file and a paths file (produced by the MiniZinc compiler) can be specified in order to let the profiler operate on the variable names used in the MiniZinc model:
-
-``./cp-profiler --mzn model.mzn --paths model.paths``
-
-2. Executing a supported solver
+The profiler can be activated by selecting *Show search profiler* from the *View* menu, or by starting a solver with profiling enabled through the *Profile search option in the *Run* dropdown button menu. This starts a local TCP server listening on one of the available ports (6565 by default) which can be seen in at the bottom of the profiler window.
 
 The solver must implement the profiling protocol (see below). Integration libraries are available if you wish to extend your solver to work with CP-Profiler.
 
-When a new execution is connected to the profiler it will be added to the list of executions displayed at the top of the main window. For example, in the image below execution *golomb6a.fzn* is shown to be added to the profiler.
+When a new execution is connected to the profiler it will be added to the list of executions displayed at the top of the profiler window. For example, in the image below execution *golomb6a.fzn* is shown to be added to the profiler.
 To display the execution (traditional visualisation), select its name from the list and click the *Show Tree* button. Note that the solver can still be running the execution, in which case the profiler will draw the search tree in real time.
 
 .. image:: figures/cpprofiler/doc_conductor.png
