@@ -396,14 +396,14 @@ void MIP_gurobi_wrapper::closeGUROBI() {
     dll_GRBfreeenv(env);
   }
   /// and at last:
-//   MIP_wrapper::cleanup();
+//   MIPWrapper::cleanup();
 #ifdef GUROBI_PLUGIN
   // dll_close(gurobi_dll);    // Is called too many times, disabling. 2019-05-06
 #endif
 }
 
 void MIP_gurobi_wrapper::doAddVars(size_t n, double* obj, double* lb, double* ub,
-                                   MIP_wrapper::VarType* vt, string* names) {
+                                   MIPWrapper::VarType* vt, string* names) {
   /// Convert var types:
   vector<char> ctype(n);
   vector<char*> pcNames(n);
@@ -420,7 +420,7 @@ void MIP_gurobi_wrapper::doAddVars(size_t n, double* obj, double* lb, double* ub
         ctype[i] = GRB_BINARY;
         break;
       default:
-        throw runtime_error("  MIP_wrapper: unknown variable type");
+        throw runtime_error("  MIPWrapper: unknown variable type");
     }
   }
   error = dll_GRBaddvars(model, static_cast<int>(n), 0, nullptr, nullptr, nullptr, obj, lb, ub,
@@ -430,13 +430,13 @@ void MIP_gurobi_wrapper::doAddVars(size_t n, double* obj, double* lb, double* ub
   wrapAssert(error == 0, "Failed to update model.");
 }
 
-static char get_grb_sense(MIP_wrapper::LinConType s) {
+static char get_grb_sense(MIPWrapper::LinConType s) {
   switch (s) {
-    case MIP_wrapper::LQ:
+    case MIPWrapper::LQ:
       return GRB_LESS_EQUAL;
-    case MIP_wrapper::EQ:
+    case MIPWrapper::EQ:
       return GRB_EQUAL;
-    case MIP_wrapper::GQ:
+    case MIPWrapper::GQ:
       return GRB_GREATER_EQUAL;
     default:
       throw runtime_error("  MIP_gurobi_wrapper: unknown constraint sense");
@@ -444,7 +444,7 @@ static char get_grb_sense(MIP_wrapper::LinConType s) {
 }
 
 void MIP_gurobi_wrapper::addRow(int nnz, int* rmatind, double* rmatval,
-                                MIP_wrapper::LinConType sense, double rhs, int mask,
+                                MIPWrapper::LinConType sense, double rhs, int mask,
                                 const string& rowName) {
   //// Make sure in order to notice the indices of lazy constr:
   ++nRows;
@@ -473,7 +473,7 @@ void MIP_gurobi_wrapper::addRow(int nnz, int* rmatind, double* rmatval,
 }
 
 void MIP_gurobi_wrapper::addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind,
-                                                double* rmatval, MIP_wrapper::LinConType sense,
+                                                double* rmatval, MIPWrapper::LinConType sense,
                                                 double rhs, const string& rowName) {
   wrapAssert(0 <= bVal && 1 >= bVal, "Gurobi: addIndicatorConstraint: bVal not 0/1");
   //// Make sure in order to notice the indices of lazy constr: also here?   TODO
@@ -556,7 +556,7 @@ void MIP_gurobi_wrapper::setVarUB(int iVar, double ub) {
 /// SolutionCallback ------------------------------------------------------------------------
 /// Gurobi ensures thread-safety
 static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void* usrdata) {
-  auto* info = (MIP_wrapper::CBUserInfo*)usrdata;
+  auto* info = (MIPWrapper::CBUserInfo*)usrdata;
   auto* gw = static_cast<MIP_gurobi_wrapper*>(info->wrapper);
 
   double nodecnt = 0.0, actnodes = 0.0, objVal = 0.0;
@@ -594,7 +594,7 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
       newincumbent = 1;
       // Not confirmed yet, see lazy cuts
       //      info->pOutput->objVal = objVal;
-      //      info->pOutput->status = MIP_wrapper::SAT;
+      //      info->pOutput->status = MIPWrapper::SAT;
       //      info->pOutput->statusName = "feasible from a callback";
     }
     if (newincumbent != 0) {
@@ -609,13 +609,13 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
 
     /// Callback for lazy cuts
     /// Before printing
-    if ((info->cutcbfn != nullptr) && ((info->cutMask & MIP_wrapper::MaskConsType_Lazy) != 0)) {
-      MIP_wrapper::CutInput cutInput;
+    if ((info->cutcbfn != nullptr) && ((info->cutMask & MIPWrapper::MaskConsType_Lazy) != 0)) {
+      MIPWrapper::CutInput cutInput;
       cerr << "  GRB: GRB_CB_MIPSOL (" << objVal << ") -> cut callback " << endl;
       info->cutcbfn(*info->pOutput, cutInput, info->psi, true);
       for (auto& cd : cutInput) {
-        //         assert( cd.mask & MIP_wrapper::MaskConsType_Lazy );
-        if ((cd.mask & MIP_wrapper::MaskConsType_Lazy) != 0) {  // take only lazy constr generators
+        //         assert( cd.mask & MIPWrapper::MaskConsType_Lazy );
+        if ((cd.mask & MIPWrapper::MaskConsType_Lazy) != 0) {  // take only lazy constr generators
           int error =
               gw->dll_GRBcblazy(cbdata, static_cast<int>(cd.rmatind.size()), cd.rmatind.data(),
                                 cd.rmatval.data(), get_grb_sense(cd.sense), cd.rhs);
@@ -633,7 +633,7 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
       if (fabs(info->pOutput->objVal - objVal) > 1e-12 * (1.0 + fabs(objVal))) {
         newincumbent = 1;
         info->pOutput->objVal = objVal;
-        info->pOutput->status = MIP_wrapper::SAT;
+        info->pOutput->status = MIPWrapper::SAT;
         info->pOutput->statusName = "feasible from a callback";
       }
     }
@@ -658,24 +658,24 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
     int status;
     gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPNODE_STATUS, &status);
     if (status == GRB_OPTIMAL && (info->cutcbfn != nullptr)) {  // if cut handler given
-      MIP_wrapper::Output outpRlx;
+      MIPWrapper::Output outpRlx;
       outpRlx.x = info->pOutput->x;  // using the sol output storage  TODO?
       outpRlx.nCols = info->pOutput->nCols;
       assert(outpRlx.x && outpRlx.nCols);
       //       dll_GRBcbget(cbdata, where, GRB_CB_MIPNODE_RELOBJ, outpRlx.objVal);
       gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPNODE_REL, (void*)outpRlx.x);
       //       cerr << "  GRB: GRB_CB_MIPNODE -> cut callback " << endl;
-      MIP_wrapper::CutInput cutInput;
+      MIPWrapper::CutInput cutInput;
       info->cutcbfn(outpRlx, cutInput, info->psi, false);
       //       static int nCuts=0;
       //       nCuts += cutInput.size();
       //       if ( cutInput.size() )
       //         cerr << "\n   N CUTS:  " << nCuts << endl;
       for (auto& cd : cutInput) {
-        if ((cd.mask & (MIP_wrapper::MaskConsType_Usercut | MIP_wrapper::MaskConsType_Lazy)) == 0) {
+        if ((cd.mask & (MIPWrapper::MaskConsType_Usercut | MIPWrapper::MaskConsType_Lazy)) == 0) {
           throw runtime_error("Cut callback: should be user/lazy");
         }
-        if ((cd.mask & MIP_wrapper::MaskConsType_Usercut) != 0) {
+        if ((cd.mask & MIPWrapper::MaskConsType_Usercut) != 0) {
           int error =
               gw->dll_GRBcbcut(cbdata, static_cast<int>(cd.rmatind.size()), cd.rmatind.data(),
                                cd.rmatval.data(), get_grb_sense(cd.sense), cd.rhs);
@@ -683,7 +683,7 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
             cerr << "  GRB_wrapper: failed to add user cut. " << endl;
           }
         }
-        if ((cd.mask & MIP_wrapper::MaskConsType_Lazy) != 0) {
+        if ((cd.mask & MIPWrapper::MaskConsType_Lazy) != 0) {
           int error =
               gw->dll_GRBcblazy(cbdata, static_cast<int>(cd.rmatind.size()), cd.rmatind.data(),
                                 cd.rmatval.data(), get_grb_sense(cd.sense), cd.rhs);

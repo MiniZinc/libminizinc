@@ -24,8 +24,8 @@
 #include <unordered_map>
 
 /// Facilitate lhs computation of a cut
-inline double computeSparse(int n, const int* ind, const double* coef, const double* dense,
-                            int nVarsDense) {
+inline double compute_sparse(int n, const int* ind, const double* coef, const double* dense,
+                             int nVarsDense) {
   assert(ind && coef && dense);
   double val = 0.0;
   for (int i = 0; i < n; ++i) {
@@ -36,12 +36,12 @@ inline double computeSparse(int n, const int* ind, const double* coef, const dou
   return val;
 }
 
-class MIP_wrapper;
+class MIPWrapper;
 
 /// An abstract MIP wrapper.
 /// Does not include MZN stuff so can be used independently
 /// although it's limited to the MZN solving needs.
-class MIP_wrapper {
+class MIPWrapper {
 public:
   typedef int VarId;  // CPLEX uses int
   enum VarType { REAL, INT, BINARY };
@@ -108,8 +108,8 @@ public:
       rmatval.push_back(c);
     }
     double computeViol(const double* x, int nCols) {
-      double lhs =
-          computeSparse(static_cast<int>(rmatind.size()), rmatind.data(), rmatval.data(), x, nCols);
+      double lhs = compute_sparse(static_cast<int>(rmatind.size()), rmatind.data(), rmatval.data(),
+                                  x, nCols);
       if (LQ == sense) {
         return lhs - rhs;
       } else if (GQ == sense) {
@@ -131,16 +131,16 @@ public:
                                 bool fMIPSol  // if with a MIP feas sol - lazy cuts only
   );
   struct CBUserInfo {
-    MIP_wrapper* wrapper = nullptr;
-    MIP_wrapper::Output* pOutput = nullptr;
-    MIP_wrapper::Output* pCutOutput = nullptr;
-    void* psi = nullptr;  // external info. Intended to keep MIP_solverinstance
+    MIPWrapper* wrapper = nullptr;
+    MIPWrapper::Output* pOutput = nullptr;
+    MIPWrapper::Output* pCutOutput = nullptr;
+    void* psi = nullptr;  // external info. Intended to keep MIPSolverinstance
     SolCallbackFn solcbfn = nullptr;
     CutCallbackFn cutcbfn = nullptr;
     /// Union of all flags used for the registered callback cuts
     /// See MaskConstrType_..
     /// Solvers need to know this
-    /// In MIP_solverinstance, class CutGen defines getMask() which should return that
+    /// In MIPSolverinstance, class CutGen defines getMask() which should return that
     int cutMask = 0;             // can be any combination of User/Lazy
     bool fVerb = false;          // used in Gurobi
     bool printed = false;        // whether any solution was output
@@ -150,8 +150,8 @@ public:
   CBUserInfo cbui;
 
 public:
-  MIP_wrapper() { cbui.wrapper = this; }
-  virtual ~MIP_wrapper() { /* cleanup(); */
+  MIPWrapper() { cbui.wrapper = this; }
+  virtual ~MIPWrapper() { /* cleanup(); */
   }
 
   /// derived should overload and call the ancestor
@@ -240,7 +240,7 @@ public:
     assert(0 == getNColsModel());
     assert(!fPhase1Over);
     if (fVerbose) {
-      std::cerr << "  MIP_wrapper: adding the " << colObj.size() << " Phase-1 variables..."
+      std::cerr << "  MIPWrapper: adding the " << colObj.size() << " Phase-1 variables..."
                 << std::flush;
     }
     if (!colObj.empty()) {

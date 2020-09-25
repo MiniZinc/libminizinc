@@ -25,7 +25,7 @@
 #include <coin/OsiClpSolverInterface.hpp>
 // #include <coin/CbcSolver.hpp>
 
-class MIP_osicbc_wrapper : public MIP_wrapper {
+class MIP_osicbc_wrapper : public MIPWrapper {
   //     OsiCbcSolverInterface osi;   // deprecated in Cbc 2.9.6
   OsiClpSolverInterface osi;
   //     CoinPackedMatrix* matrix = 0;

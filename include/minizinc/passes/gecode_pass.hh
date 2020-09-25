@@ -18,7 +18,7 @@ namespace MiniZinc {
 class GecodeOptions;
 
 class GecodePass : public Pass {
-  GecodeOptions* gopts;
+  GecodeOptions* _gopts;
 
 public:
   GecodePass(GecodeOptions* gopts);

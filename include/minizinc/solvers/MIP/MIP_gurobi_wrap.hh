@@ -19,7 +19,7 @@ extern "C" {
 #include <gurobi_c.h>  // need GUROBI_HOME defined
 }
 
-class MIP_gurobi_wrapper : public MIP_wrapper {
+class MIP_gurobi_wrapper : public MIPWrapper {
   GRBenv* env = nullptr;
   GRBmodel* model = nullptr;
 #ifdef GUROBI_PLUGIN

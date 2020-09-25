@@ -5,7 +5,7 @@
 namespace MiniZinc {
 
 template <class MIPWrapper>
-MIP_SolverFactory<MIPWrapper>::MIP_SolverFactory() {
+MIPSolverFactory<MIPWrapper>::MIPSolverFactory() {
   SolverConfig sc(getId(), MIPWrapper::getVersion());
   sc.name(MIPWrapper::getName());
   sc.mznlib(MIPWrapper::getMznLib());
@@ -19,8 +19,8 @@ MIP_SolverFactory<MIPWrapper>::MIP_SolverFactory() {
 }
 
 template <class MIPWrapper>
-bool MIP_SolverFactory<MIPWrapper>::processOption(SolverInstanceBase::Options* opt, int& i,
-                                                  std::vector<std::string>& argv) {
+bool MIPSolverFactory<MIPWrapper>::processOption(SolverInstanceBase::Options* opt, int& i,
+                                                 std::vector<std::string>& argv) {
   if (argv[i] == "--verbose-solving") {
     opt->verbose = true;
     return true;
@@ -33,33 +33,33 @@ bool MIP_SolverFactory<MIPWrapper>::processOption(SolverInstanceBase::Options* o
 }
 
 template <class MIPWrapper>
-std::string MIP_SolverFactory<MIPWrapper>::getDescription(SolverInstanceBase::Options* opt) {
+std::string MIPSolverFactory<MIPWrapper>::getDescription(SolverInstanceBase::Options* opt) {
   std::string v =
       "MIP solver plugin, compiled " __DATE__ ", using: " + MIPWrapper::getDescription(opt);
   return v;
 }
 
 template <class MIPWrapper>
-std::string MIP_SolverFactory<MIPWrapper>::getVersion(SolverInstanceBase::Options* opt) {
+std::string MIPSolverFactory<MIPWrapper>::getVersion(SolverInstanceBase::Options* opt) {
   return MIPWrapper::getVersion(opt);
 }
 
 template <class MIPWrapper>
-std::string MIP_SolverFactory<MIPWrapper>::getId() {
+std::string MIPSolverFactory<MIPWrapper>::getId() {
   return "org.minizinc.mip." + MIPWrapper::getId();
 }
 
 template <class MIPWrapper>
-MIP_solver::Variable MIP_solverinstance<MIPWrapper>::exprToVar(Expression* arg) {
+MIPSolver::Variable MIPSolverinstance<MIPWrapper>::exprToVar(Expression* arg) {
   if (Id* ident = arg->dynamicCast<Id>()) {
     return _variableMap.get(ident->decl()->id());
   } else {
-    return mip_wrap->addLitVar(exprToConst(arg));
+    return _mipWrapper->addLitVar(exprToConst(arg));
   }
 }
 
 template <class MIPWrapper>
-void MIP_solverinstance<MIPWrapper>::exprToVarArray(Expression* arg, std::vector<VarId>& vars) {
+void MIPSolverinstance<MIPWrapper>::exprToVarArray(Expression* arg, std::vector<VarId>& vars) {
   ArrayLit* al = eval_array_lit(getEnv()->envi(), arg);
   vars.clear();
   vars.reserve(al->size());
@@ -69,7 +69,7 @@ void MIP_solverinstance<MIPWrapper>::exprToVarArray(Expression* arg, std::vector
 }
 
 template <class MIPWrapper>
-std::pair<double, bool> MIP_solverinstance<MIPWrapper>::exprToConstEasy(Expression* e) {
+std::pair<double, bool> MIPSolverinstance<MIPWrapper>::exprToConstEasy(Expression* e) {
   std::pair<double, bool> res{0.0, true};
   if (auto* il = e->dynamicCast<IntLit>()) {
     res.first = (static_cast<double>(il->v().toInt()));
@@ -84,7 +84,7 @@ std::pair<double, bool> MIP_solverinstance<MIPWrapper>::exprToConstEasy(Expressi
 }
 
 template <class MIPWrapper>
-double MIP_solverinstance<MIPWrapper>::exprToConst(Expression* e) {
+double MIPSolverinstance<MIPWrapper>::exprToConst(Expression* e) {
   const auto e2ce = exprToConstEasy(e);
   if (!e2ce.second) {
     std::ostringstream oss;
@@ -95,7 +95,7 @@ double MIP_solverinstance<MIPWrapper>::exprToConst(Expression* e) {
 }
 
 template <class MIPWrapper>
-void MIP_solverinstance<MIPWrapper>::exprToArray(Expression* arg, std::vector<double>& vals) {
+void MIPSolverinstance<MIPWrapper>::exprToArray(Expression* arg, std::vector<double>& vals) {
   ArrayLit* al = eval_array_lit(getEnv()->envi(), arg);
   vals.clear();
   vals.reserve(al->size());
@@ -105,13 +105,13 @@ void MIP_solverinstance<MIPWrapper>::exprToArray(Expression* arg, std::vector<do
 }
 
 template <class MIPWrapper>
-void MIP_solverinstance<MIPWrapper>::processSearchAnnotations(const Annotation& ann) {
+void MIPSolverinstance<MIPWrapper>::processSearchAnnotations(const Annotation& ann) {
   if (1 == getMIPWrapper()->getFreeSearch()) {
     return;
   }
   std::vector<Expression*> aAnns;
   flattenSearchAnnotations(ann, aAnns);
-  std::vector<MIP_solverinstance::VarId> vars;
+  std::vector<MIPSolverinstance::VarId> vars;
   std::vector<int> aPri;  // priorities
   int nArrayAnns = 0;
   for (auto iA = 0; iA < aAnns.size(); ++iA) {
@@ -151,7 +151,7 @@ void MIP_solverinstance<MIPWrapper>::processSearchAnnotations(const Annotation& 
 }
 
 template <class MIPWrapper>
-void MIP_solverinstance<MIPWrapper>::processWarmstartAnnotations(const Annotation& ann) {
+void MIPSolverinstance<MIPWrapper>::processWarmstartAnnotations(const Annotation& ann) {
   int nVal = 0;
   for (ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
     Expression* e = *i;
@@ -167,7 +167,7 @@ void MIP_solverinstance<MIPWrapper>::processWarmstartAnnotations(const Annotatio
       } else if (c->id() == "warm_start") {
         MZN_ASSERT_HARD_MSG(c->argCount() >= 2, "ERROR: warm_start needs 2 array args");
         std::vector<double> coefs;
-        std::vector<MIP_solverinstance::VarId> vars;
+        std::vector<MIPSolverinstance::VarId> vars;
 
         /// Process coefs & vars together to eliminate literals (problem with Gurobi's
         /// updatemodel()'s)
@@ -202,7 +202,7 @@ void MIP_solverinstance<MIPWrapper>::processWarmstartAnnotations(const Annotatio
 }
 
 template <class MIPWrapper>
-void MIP_solverinstance<MIPWrapper>::processMultipleObjectives(const Annotation& ann) {
+void MIPSolverinstance<MIPWrapper>::processMultipleObjectives(const Annotation& ann) {
   MultipleObjectives mo;
   flattenMultipleObjectives(ann, mo);
   if (mo.size() != 0U) {
@@ -220,8 +220,8 @@ void MIP_solverinstance<MIPWrapper>::processMultipleObjectives(const Annotation&
 }
 
 template <class MIPWrapper>
-void MIP_solverinstance<MIPWrapper>::processFlatZinc() {
-  mip_wrap->fVerbose = _options->verbose;
+void MIPSolverinstance<MIPWrapper>::processFlatZinc() {
+  _mipWrapper->fVerbose = _options->verbose;
 
   SolveI* solveItem = getEnv()->flat()->solveItem();
   VarDecl* objVd = nullptr;
@@ -253,11 +253,11 @@ void MIP_solverinstance<MIPWrapper>::processFlatZinc() {
     }
     if (vd->type().dim() == 0 && it->e()->type().isvar() && !it->removed()) {
       MiniZinc::TypeInst* ti = it->e()->ti();
-      MIP_wrapper::VarType vType = MIP_wrapper::VarType::REAL;  // fInt = false;
+      typename MIPWrapper::VarType vType = MIPWrapper::VarType::REAL;  // fInt = false;
       if (ti->type().isvarint() || ti->type().isint()) {
-        vType = MIP_wrapper::VarType::INT;
+        vType = MIPWrapper::VarType::INT;
       } else if (ti->type().isvarbool() || ti->type().isbool()) {
-        vType = MIP_wrapper::VarType::BINARY;
+        vType = MIPWrapper::VarType::BINARY;
       } else if (!(ti->type().isvarfloat() || ti->type().isfloat())) {
         std::stringstream ssm;
         ssm << "This type of var is not handled by MIP: " << *it << std::endl;
@@ -268,7 +268,7 @@ void MIP_solverinstance<MIPWrapper>::processFlatZinc() {
       }
       double lb = 0.0, ub = 1.0;  // for bool
       if (ti->domain() != nullptr) {
-        if (MIP_wrapper::VarType::REAL == vType) {
+        if (MIPWrapper::VarType::REAL == vType) {
           FloatBounds fb = compute_float_bounds(getEnv()->envi(), it->e()->id());
           if (fb.valid) {
             lb = fb.l.toDouble();
@@ -277,7 +277,7 @@ void MIP_solverinstance<MIPWrapper>::processFlatZinc() {
             lb = 1.0;
             ub = 0.0;
           }
-        } else if (MIP_wrapper::VarType::INT == vType) {
+        } else if (MIPWrapper::VarType::INT == vType) {
           IntBounds ib = compute_int_bounds(getEnv()->envi(), it->e()->id());
           if (ib.valid) {  // Normally should be
             lb = static_cast<double>(ib.l.toInt());
@@ -287,14 +287,14 @@ void MIP_solverinstance<MIPWrapper>::processFlatZinc() {
             ub = 0;
           }
         }
-      } else if (MIP_wrapper::VarType::BINARY != vType) {
+      } else if (MIPWrapper::VarType::BINARY != vType) {
         lb = -getMIPWrapper()->getInfBound();  // if just 1 bound inf, using MZN's default?  TODO
         ub = -lb;
       }
 
       //       IntSetVal* dom = eval_intset(env,vdi->e()->ti()->domain());
       //       if (dom->size() > 1)
-      //         throw runtime_error("MIP_solverinstance: domains with holes ! supported, use
+      //         throw runtime_error("MIPSolverinstance: domains with holes ! supported, use
       //         --MIPdomains");
 
       VarId res;
@@ -345,16 +345,17 @@ void MIP_solverinstance<MIPWrapper>::processFlatZinc() {
       assert(res == _variableMap.get(id));
     }
   }
-  if (mip_wrap->fVerbose && (!mip_wrap->sLitValues.empty())) {
-    std::cerr << "  MIP_solverinstance: during Phase 1,  " << mip_wrap->nLitVars
-              << " literals with " << mip_wrap->sLitValues.size() << " values used." << std::endl;
+  if (_mipWrapper->fVerbose && (!_mipWrapper->sLitValues.empty())) {
+    std::cerr << "  MIPSolverinstance: during Phase 1,  " << _mipWrapper->nLitVars
+              << " literals with " << _mipWrapper->sLitValues.size() << " values used."
+              << std::endl;
   }
   if (!getMIPWrapper()->fPhase1Over) {
     getMIPWrapper()->addPhase1Vars();
   }
 
-  if (mip_wrap->fVerbose) {
-    std::cerr << "  MIP_solverinstance: adding constraints..." << std::flush;
+  if (_mipWrapper->fVerbose) {
+    std::cerr << "  MIPSolverinstance: adding constraints..." << std::flush;
   }
 
   for (ConstraintIterator it = getEnv()->flat()->constraints().begin();
@@ -366,16 +367,16 @@ void MIP_solverinstance<MIPWrapper>::processFlatZinc() {
     }
   }
 
-  if (mip_wrap->fVerbose) {
-    std::cerr << " done, " << mip_wrap->getNRows() << " rows && " << mip_wrap->getNCols()
+  if (_mipWrapper->fVerbose) {
+    std::cerr << " done, " << _mipWrapper->getNRows() << " rows && " << _mipWrapper->getNCols()
               << " columns in total.";
-    if (mip_wrap->nIndicatorConstr != 0) {
-      std::cerr << "  " << mip_wrap->nIndicatorConstr << " indicator constraints." << std::endl;
+    if (_mipWrapper->nIndicatorConstr != 0) {
+      std::cerr << "  " << _mipWrapper->nIndicatorConstr << " indicator constraints." << std::endl;
     }
     std::cerr << std::endl;
-    if (!mip_wrap->sLitValues.empty()) {
-      std::cerr << "  MIP_solverinstance: overall,  " << mip_wrap->nLitVars << " literals with "
-                << mip_wrap->sLitValues.size() << " values used." << std::endl;
+    if (!_mipWrapper->sLitValues.empty()) {
+      std::cerr << "  MIPSolverinstance: overall,  " << _mipWrapper->nLitVars << " literals with "
+                << _mipWrapper->sLitValues.size() << " values used." << std::endl;
     }
   }
 
@@ -387,11 +388,11 @@ void MIP_solverinstance<MIPWrapper>::processFlatZinc() {
 }  // processFlatZinc
 
 template <class MIPWrapper>
-Expression* MIP_solverinstance<MIPWrapper>::getSolutionValue(Id* id) {
+Expression* MIPSolverinstance<MIPWrapper>::getSolutionValue(Id* id) {
   id = id->decl()->id();
 
   if (id->type().isvar()) {
-    MIP_solver::Variable var = exprToVar(id);
+    MIPSolver::Variable var = exprToVar(id);
     double val = getMIPWrapper()->getValues()[var];
     switch (id->type().bt()) {
       case Type::BT_INT:
@@ -409,10 +410,10 @@ Expression* MIP_solverinstance<MIPWrapper>::getSolutionValue(Id* id) {
 }
 
 template <class MIPWrapper>
-void MIP_solverinstance<MIPWrapper>::genCuts(const MIP_wrapper::Output& slvOut,
-                                             MIP_wrapper::CutInput& cutsIn, bool fMIPSol) {
-  for (auto& pCG : cutGenerators) {
-    if (!fMIPSol || ((pCG->getMask() & MIP_wrapper::MaskConsType_Lazy) != 0)) {
+void MIPSolverinstance<MIPWrapper>::genCuts(const typename MIPWrapper::Output& slvOut,
+                                            typename MIPWrapper::CutInput& cutsIn, bool fMIPSol) {
+  for (auto& pCG : _cutGenerators) {
+    if (!fMIPSol || ((pCG->getMask() & MIPWrapper::MaskConsType_Lazy) != 0)) {
       pCG->generate(slvOut, cutsIn);
     }
   }
@@ -420,26 +421,26 @@ void MIP_solverinstance<MIPWrapper>::genCuts(const MIP_wrapper::Output& slvOut,
 }
 
 template <class MIPWrapper>
-void MIP_solverinstance<MIPWrapper>::printStatisticsLine(bool fLegend) {
+void MIPSolverinstance<MIPWrapper>::printStatisticsLine(bool fLegend) {
   //   auto nn = std::chrono::system_clock::now();
   //   auto n_c = std::chrono::system_clock::to_time_t( nn );
   {
     std::ios oldState(nullptr);
     oldState.copyfmt(_log);
     _log.precision(12);
-    _log << "  % MIP Status: " << mip_wrap->getStatusName() << std::endl;
+    _log << "  % MIP Status: " << _mipWrapper->getStatusName() << std::endl;
     if (fLegend) {
       _log << "  % obj, bound, time wall/CPU, nodes (left): ";
     }
-    _log << mip_wrap->getObjValue() << ",  ";
-    _log << mip_wrap->getBestBound() << ",  ";
+    _log << _mipWrapper->getObjValue() << ",  ";
+    _log << _mipWrapper->getBestBound() << ",  ";
     _log.setf(std::ios::fixed);
     _log.precision(1);
-    _log << mip_wrap->getWallTimeElapsed() << "/";
-    _log << mip_wrap->getCPUTime() << ",  ";
-    _log << mip_wrap->getNNodes();
-    if (mip_wrap->getNOpen() != 0) {
-      _log << " ( " << mip_wrap->getNOpen() << " )";
+    _log << _mipWrapper->getWallTimeElapsed() << "/";
+    _log << _mipWrapper->getCPUTime() << ",  ";
+    _log << _mipWrapper->getNNodes();
+    if (_mipWrapper->getNOpen() != 0) {
+      _log << " ( " << _mipWrapper->getNOpen() << " )";
     }
     //       _log << "    " << std::ctime( &n_c );
     //  ctime already adds EOL.     os << endl;
@@ -449,7 +450,7 @@ void MIP_solverinstance<MIPWrapper>::printStatisticsLine(bool fLegend) {
 }
 
 template <class MIPWrapper>
-void MIP_solverinstance<MIPWrapper>::printStatistics() {
+void MIPSolverinstance<MIPWrapper>::printStatistics() {
   //   auto nn = std::chrono::system_clock::now();
   //   auto n_c = std::chrono::system_clock::to_time_t( nn );
   {
@@ -458,18 +459,18 @@ void MIP_solverinstance<MIPWrapper>::printStatistics() {
     std::ios oldState(nullptr);
     oldState.copyfmt(env.outstream);
     env.outstream.precision(12);
-    env.outstream << "%%%mzn-stat: objective=" << mip_wrap->getObjValue() << std::endl;
+    env.outstream << "%%%mzn-stat: objective=" << _mipWrapper->getObjValue() << std::endl;
     ;
-    env.outstream << "%%%mzn-stat: objectiveBound=" << mip_wrap->getBestBound() << std::endl;
+    env.outstream << "%%%mzn-stat: objectiveBound=" << _mipWrapper->getBestBound() << std::endl;
     ;
-    env.outstream << "%%%mzn-stat: nodes=" << mip_wrap->getNNodes() << std::endl;
+    env.outstream << "%%%mzn-stat: nodes=" << _mipWrapper->getNNodes() << std::endl;
     ;
-    if (mip_wrap->getNOpen() != 0) {
-      env.outstream << "%%%mzn-stat: openNodes=" << mip_wrap->getNOpen() << std::endl;
+    if (_mipWrapper->getNOpen() != 0) {
+      env.outstream << "%%%mzn-stat: openNodes=" << _mipWrapper->getNOpen() << std::endl;
     };
     env.outstream.setf(std::ios::fixed);
     env.outstream.precision(4);
-    env.outstream << "%%%mzn-stat: solveTime=" << mip_wrap->getWallTimeElapsed() << std::endl;
+    env.outstream << "%%%mzn-stat: solveTime=" << _mipWrapper->getWallTimeElapsed() << std::endl;
     ;
     env.outstream.copyfmt(oldState);
 
@@ -478,9 +479,9 @@ void MIP_solverinstance<MIPWrapper>::printStatistics() {
 }
 
 template <class MIPWrapper>
-void HandleSolutionCallback(const MIP_wrapper::Output& out, void* pp) {
+void handle_solution_callback(const typename MIPWrapper::Output& out, void* pp) {
   // multi-threading? TODO
-  auto* pSI = static_cast<MIP_solverinstance<MIPWrapper>*>(pp);
+  auto* pSI = static_cast<MIPSolverinstance<MIPWrapper>*>(pp);
   assert(pSI);
   /// Not for -a:
   //   if (fabs(pSI->lastIncumbent - out.objVal) > 1e-12*(1.0 + fabs(out.objVal))) {
@@ -504,10 +505,10 @@ void HandleSolutionCallback(const MIP_wrapper::Output& out, void* pp) {
 }
 
 template <class MIPWrapper>
-void HandleCutCallback(const MIP_wrapper::Output& out, MIP_wrapper::CutInput& in, void* pp,
-                       bool fMIPSol) {
+void handle_cut_callback(const typename MIPWrapper::Output& out, typename MIPWrapper::CutInput& in,
+                         void* pp, bool fMIPSol) {
   // multi-threading? TODO
-  auto* pSI = static_cast<MIP_solverinstance<MIPWrapper>*>(pp);
+  auto* pSI = static_cast<MIPSolverinstance<MIPWrapper>*>(pp);
   assert(pSI);
   assert(&out);
   assert(&in);
@@ -515,7 +516,7 @@ void HandleCutCallback(const MIP_wrapper::Output& out, MIP_wrapper::CutInput& in
 }
 
 template <class MIPWrapper>
-SolverInstance::Status MIP_solverinstance<MIPWrapper>::solve() {
+SolverInstance::Status MIPSolverinstance<MIPWrapper>::solve() {
   SolveI* solveItem = getEnv()->flat()->solveItem();
   int nProbType = 0;
   if (solveItem->st() != SolveI::SolveType::ST_SAT) {
@@ -523,43 +524,43 @@ SolverInstance::Status MIP_solverinstance<MIPWrapper>::solve() {
       getMIPWrapper()->setObjSense(1);
       getMIPWrapper()->setProbType(1);
       nProbType = 1;
-      if (mip_wrap->fVerbose) {
-        std::cerr << "    MIP_solverinstance: this is a MAXimization problem." << std::endl;
+      if (_mipWrapper->fVerbose) {
+        std::cerr << "    MIPSolverinstance: this is a MAXimization problem." << std::endl;
       }
     } else {
       getMIPWrapper()->setObjSense(-1);
       getMIPWrapper()->setProbType(-1);
       nProbType = -1;
-      if (mip_wrap->fVerbose) {
-        std::cerr << "    MIP_solverinstance: this is a MINimization problem." << std::endl;
+      if (_mipWrapper->fVerbose) {
+        std::cerr << "    MIPSolverinstance: this is a MINimization problem." << std::endl;
       }
     }
-    if (mip_wrap->fVerbose) {
-      std::cerr << "    MIP_solverinstance: bounds for the objective function: " << dObjVarLB
-                << ", " << dObjVarUB << std::endl;
+    if (_mipWrapper->fVerbose) {
+      std::cerr << "    MIPSolverinstance: bounds for the objective function: " << dObjVarLB << ", "
+                << dObjVarUB << std::endl;
     }
   } else {
     getMIPWrapper()->setProbType(0);
-    if (mip_wrap->fVerbose) {
-      std::cerr << "    MIP_solverinstance: this is a SATisfiability problem." << std::endl;
+    if (_mipWrapper->fVerbose) {
+      std::cerr << "    MIPSolverinstance: this is a SATisfiability problem." << std::endl;
     }
   }
 
   lastIncumbent = 1e200;  // for callbacks
-  MIP_wrapper::Status sw;
+  typename MIPWrapper::Status sw;
   if (SolverInstance::UNSAT == _status) {  // already deduced - exit now
     return _status;
   }
   if (getMIPWrapper()->getNCols()) {  // If any variables, we need to run solver just to get values?
-    getMIPWrapper()->provideSolutionCallback(HandleSolutionCallback<MIPWrapper>, this);
-    if (!cutGenerators.empty()) {  // only then, can modify presolve
-      getMIPWrapper()->provideCutCallback(HandleCutCallback<MIPWrapper>, this);
+    getMIPWrapper()->provideSolutionCallback(handle_solution_callback<MIPWrapper>, this);
+    if (!_cutGenerators.empty()) {  // only then, can modify presolve
+      getMIPWrapper()->provideCutCallback(handle_cut_callback<MIPWrapper>, this);
     }
     ////////////// clean up envi /////////////////
     {
       /// Removing for now - need access to output variables  TODO
       //       cleanupForNonincrementalSolving();
-      if (GC::locked() && mip_wrap->fVerbose) {
+      if (GC::locked() && _mipWrapper->fVerbose) {
         std::cerr << "WARNING: GC is locked before SolverInstance::solve()! Wasting memory."
                   << std::endl;
       }
@@ -570,41 +571,41 @@ SolverInstance::Status MIP_solverinstance<MIPWrapper>::solve() {
     //   printStatistics(cout, 1);   MznSolver does this (if it wants)
     sw = getMIPWrapper()->getStatus();
   } else {
-    if (mip_wrap->fVerbose) {
-      std::cerr << "  MIP_solverinstance: no constraints - skipping actual solution phase."
+    if (_mipWrapper->fVerbose) {
+      std::cerr << "  MIPSolverinstance: no constraints - skipping actual solution phase."
                 << std::endl;
     }
-    sw = MIP_wrapper::Status::OPT;
+    sw = MIPWrapper::Status::OPT;
     printSolution();
   }
   SolverInstance::Status s = SolverInstance::UNKNOWN;
   switch (sw) {
-    case MIP_wrapper::Status::OPT:
+    case MIPWrapper::Status::OPT:
       if (0 != nProbType) {
         s = SolverInstance::OPT;
       } else {
         s = SolverInstance::SAT;  // For SAT problems, just say SAT unless we know it's complete
       }
       break;
-    case MIP_wrapper::Status::SAT:
+    case MIPWrapper::Status::SAT:
       s = SolverInstance::SAT;
       break;
-    case MIP_wrapper::Status::UNSAT:
+    case MIPWrapper::Status::UNSAT:
       s = SolverInstance::UNSAT;
       break;
-    case MIP_wrapper::Status::UNBND:
+    case MIPWrapper::Status::UNBND:
       s = SolverInstance::UNBND;
       break;
-    case MIP_wrapper::Status::UNSATorUNBND:
+    case MIPWrapper::Status::UNSATorUNBND:
       s = SolverInstance::UNSATorUNBND;
       break;
-    case MIP_wrapper::Status::UNKNOWN:
+    case MIPWrapper::Status::UNKNOWN:
       s = SolverInstance::UNKNOWN;
       break;
     default:
       s = SolverInstance::ERROR;
   }
-  _pS2Out->stats.nNodes = mip_wrap->getNNodes();
+  _pS2Out->stats.nNodes = _mipWrapper->getNNodes();
   return s;
 }
 
@@ -618,7 +619,8 @@ int get_mask_cons_type(const Call* call);
 /// Input: a prefix, a counter, and the original call.
 /// If the call has a path annotation, that is used,
 /// otherwise pfx << cnt.
-inline std::string makeConstrName(const char* pfx, int cnt, const Expression* cOrig = nullptr) {
+inline std::string make_constraint_name(const char* pfx, int cnt,
+                                        const Expression* cOrig = nullptr) {
   Call* mznp;
   std::ostringstream ss;
   if (nullptr != cOrig && ((mznp = cOrig->ann().getCall(constants().ann.mzn_path)) != nullptr)) {
@@ -635,7 +637,7 @@ inline std::string makeConstrName(const char* pfx, int cnt, const Expression* cO
 /// Gurobi 8.1.0 complains about duplicates, CPLEX 12.8.0 just ignores repeats
 /// An example for duplicated indices was on 72a9b64f with two floats equated
 template <class Idx>
-void removeDuplicates(std::vector<Idx>& rmi, std::vector<double>& rmv) {
+void remove_duplicates(std::vector<Idx>& rmi, std::vector<double>& rmv) {
   std::unordered_map<Idx, double> linExp;
   for (int i = rmi.size(); i--;) {
     linExp[rmi[i]] += rmv[i];
@@ -654,14 +656,14 @@ void removeDuplicates(std::vector<Idx>& rmi, std::vector<double>& rmv) {
 }
 
 template <class MIPWrapper>
-void p_lin(SolverInstanceBase& si, const Call* call, MIP_wrapper::LinConType lt) {
-  auto& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
+void p_lin(SolverInstanceBase& si, const Call* call, typename MIPWrapper::LinConType lt) {
+  auto& gi = dynamic_cast<MIPSolverinstance<MIPWrapper>&>(si);
   Env& _env = gi.env();
   //     ArrayLit* al = eval_array_lit(_env.envi(), args[0]);
   //     int nvars = al->v().size();
   std::vector<double> coefs;
   //     gi.exprToArray(args[0], coefs);
-  std::vector<typename MIP_solverinstance<MIPWrapper>::VarId> vars;
+  std::vector<typename MIPSolverinstance<MIPWrapper>::VarId> vars;
   //     gi.exprToVarArray(args[1], vars);
   IntVal ires;
   FloatVal fres;
@@ -695,9 +697,9 @@ void p_lin(SolverInstanceBase& si, const Call* call, MIP_wrapper::LinConType lt)
 
   /// Check feas-ty
   if (coefs.empty()) {
-    if ((MIP_wrapper::LinConType::EQ == lt && 1e-5 < fabs(rhs)) ||
-        (MIP_wrapper::LinConType::LQ == lt && -1e-5 > (rhs)) ||
-        (MIP_wrapper::LinConType::GQ == lt && 1e-5 < (rhs))) {
+    if ((MIPWrapper::LinConType::EQ == lt && 1e-5 < fabs(rhs)) ||
+        (MIPWrapper::LinConType::LQ == lt && -1e-5 > (rhs)) ||
+        (MIPWrapper::LinConType::GQ == lt && 1e-5 < (rhs))) {
       si.setStatus(SolverInstance::UNSAT);
       if (gi.getMIPWrapper()->fVerbose) {
         std::cerr << "  Constraint '" << *call << "' seems infeasible: simplified to 0 (rel) "
@@ -705,37 +707,37 @@ void p_lin(SolverInstanceBase& si, const Call* call, MIP_wrapper::LinConType lt)
       }
     }
   } else {
-    removeDuplicates(vars, coefs);
+    remove_duplicates(vars, coefs);
     // See if the solver adds indexation itself: no.
-    gi.getMIPWrapper()->addRow(static_cast<int>(coefs.size()), &vars[0], &coefs[0], lt, rhs,
-                               get_mask_cons_type(call),
-                               makeConstrName("p_lin_", (gi.getMIPWrapper()->nAddedRows++), call));
+    gi.getMIPWrapper()->addRow(
+        static_cast<int>(coefs.size()), &vars[0], &coefs[0], lt, rhs, get_mask_cons_type(call),
+        make_constraint_name("p_lin_", (gi.getMIPWrapper()->nAddedRows++), call));
   }
 }
 
 template <class MIPWrapper>
 void p_int_lin_le(SolverInstanceBase& si, const Call* call) {
-  p_lin<MIPWrapper>(si, call, MIP_wrapper::LQ);
+  p_lin<MIPWrapper>(si, call, MIPWrapper::LQ);
 }
 template <class MIPWrapper>
 void p_int_lin_eq(SolverInstanceBase& si, const Call* call) {
-  p_lin<MIPWrapper>(si, call, MIP_wrapper::EQ);
+  p_lin<MIPWrapper>(si, call, MIPWrapper::EQ);
 }
 template <class MIPWrapper>
 void p_float_lin_le(SolverInstanceBase& si, const Call* call) {
-  p_lin<MIPWrapper>(si, call, MIP_wrapper::LQ);
+  p_lin<MIPWrapper>(si, call, MIPWrapper::LQ);
 }
 template <class MIPWrapper>
 void p_float_lin_eq(SolverInstanceBase& si, const Call* call) {
-  p_lin<MIPWrapper>(si, call, MIP_wrapper::EQ);
+  p_lin<MIPWrapper>(si, call, MIPWrapper::EQ);
 }
 
 // The non-_lin constraints happen in a failed model || in a non-optimized one:
 template <class MIPWrapper>
-void p_non_lin(SolverInstanceBase& si, const Call* call, MIP_wrapper::LinConType nCmp) {
-  auto& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
+void p_non_lin(SolverInstanceBase& si, const Call* call, typename MIPWrapper::LinConType nCmp) {
+  auto& gi = dynamic_cast<MIPSolverinstance<MIPWrapper>&>(si);
   std::vector<double> coefs;
-  std::vector<MIP_solver::Variable> vars;
+  std::vector<MIPSolver::Variable> vars;
   double rhs = 0.0;
   if (call->arg(0)->isa<Id>()) {
     coefs.push_back(1.0);
@@ -751,9 +753,9 @@ void p_non_lin(SolverInstanceBase& si, const Call* call, MIP_wrapper::LinConType
   }
   /// Check feas-ty
   if (coefs.empty()) {
-    if ((MIP_wrapper::LinConType::EQ == nCmp && 1e-5 < fabs(rhs)) ||
-        (MIP_wrapper::LinConType::LQ == nCmp && -1e-5 > (rhs)) ||
-        (MIP_wrapper::LinConType::GQ == nCmp && 1e-5 < (rhs))) {
+    if ((MIPWrapper::LinConType::EQ == nCmp && 1e-5 < fabs(rhs)) ||
+        (MIPWrapper::LinConType::LQ == nCmp && -1e-5 > (rhs)) ||
+        (MIPWrapper::LinConType::GQ == nCmp && 1e-5 < (rhs))) {
       si.setStatus(SolverInstance::UNSAT);
       if (gi.getMIPWrapper()->fVerbose) {
         std::cerr << "  Constraint '" << *call << "' seems infeasible: simplified to 0 (rel) "
@@ -761,29 +763,29 @@ void p_non_lin(SolverInstanceBase& si, const Call* call, MIP_wrapper::LinConType
       }
     }
   } else {
-    removeDuplicates(vars, coefs);
-    gi.getMIPWrapper()->addRow(static_cast<int>(vars.size()), &vars[0], &coefs[0], nCmp, rhs,
-                               get_mask_cons_type(call),
-                               makeConstrName("p_eq_", (gi.getMIPWrapper()->nAddedRows++), call));
+    remove_duplicates(vars, coefs);
+    gi.getMIPWrapper()->addRow(
+        static_cast<int>(vars.size()), &vars[0], &coefs[0], nCmp, rhs, get_mask_cons_type(call),
+        make_constraint_name("p_eq_", (gi.getMIPWrapper()->nAddedRows++), call));
   }
 }
 template <class MIPWrapper>
 void p_eq(SolverInstanceBase& si, const Call* call) {
-  p_non_lin<MIPWrapper>(si, call, MIP_wrapper::EQ);
+  p_non_lin<MIPWrapper>(si, call, MIPWrapper::EQ);
 }
 template <class MIPWrapper>
 void p_le(SolverInstanceBase& si, const Call* call) {
-  p_non_lin<MIPWrapper>(si, call, MIP_wrapper::LQ);
+  p_non_lin<MIPWrapper>(si, call, MIPWrapper::LQ);
 }
 
 /// var1<=0 if var2==0
 template <class MIPWrapper>
 void p_indicator_le0_if0(SolverInstanceBase& si, const Call* call) {
-  auto& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
+  auto& gi = dynamic_cast<MIPSolverinstance<MIPWrapper>&>(si);
   /// Looking at the bounded variable and the flag
   bool f1const = 0, f2const = 0;
   double val1, val2;
-  MIP_solver::Variable var1, var2;
+  MIPSolver::Variable var1, var2;
   if (call->arg(0)->isa<Id>()) {
     var1 = gi.exprToVar(call->arg(0));
   } else {
@@ -816,8 +818,8 @@ void p_indicator_le0_if0(SolverInstanceBase& si, const Call* call) {
   } else {
     double coef = 1.0;
     gi.getMIPWrapper()->addIndicatorConstraint(
-        var2, 0, 1, &var1, &coef, MIP_wrapper::LinConType::LQ, 0.0,
-        makeConstrName("p_ind_", (gi.getMIPWrapper()->nAddedRows++), call));
+        var2, 0, 1, &var1, &coef, MIPWrapper::LinConType::LQ, 0.0,
+        make_constraint_name("p_ind_", (gi.getMIPWrapper()->nAddedRows++), call));
     ++gi.getMIPWrapper()->nIndicatorConstr;
   }
 }
@@ -825,14 +827,14 @@ void p_indicator_le0_if0(SolverInstanceBase& si, const Call* call) {
 /// var1==var2 if var3==1
 template <class MIPWrapper>
 void p_indicator_eq_if1(SolverInstanceBase& si, const Call* call) {
-  auto& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
+  auto& gi = dynamic_cast<MIPSolverinstance<MIPWrapper>&>(si);
   std::vector<double> coefs;
-  std::vector<MIP_solver::Variable> vars;
+  std::vector<MIPSolver::Variable> vars;
   double rhs = 0.0;
   /// Looking at the bounded variables and the flag
   bool f1const = 0, f2const = 0, fBconst = 0;
   double val1, val2, valB;
-  MIP_solver::Variable var1, var2, varB;
+  MIPSolver::Variable var1, var2, varB;
   if (call->arg(0)->isa<Id>()) {
     var1 = gi.exprToVar(call->arg(0));
     coefs.push_back(1.0);
@@ -872,18 +874,19 @@ void p_indicator_eq_if1(SolverInstanceBase& si, const Call* call) {
     }
   } else if (fBconst) {
     if (val2 > 0.999999) {  // so  var1<=0
-      removeDuplicates(vars, coefs);
-      gi.getMIPWrapper()->addRow(static_cast<int>(vars.size()), &vars[0], &coefs[0],
-                                 MIP_wrapper::LinConType::EQ, rhs, MIP_wrapper::MaskConsType_Normal,
-                                 makeConstrName("p_eq_", (gi.getMIPWrapper()->nAddedRows++), call));
+      remove_duplicates(vars, coefs);
+      gi.getMIPWrapper()->addRow(
+          static_cast<int>(vars.size()), &vars[0], &coefs[0], MIPWrapper::LinConType::EQ, rhs,
+          MIPWrapper::MaskConsType_Normal,
+          make_constraint_name("p_eq_", (gi.getMIPWrapper()->nAddedRows++), call));
     }
   } else {
     std::ostringstream ss;
     ss << "p_ind_" << (gi.getMIPWrapper()->nAddedRows++);
     gi.getMIPWrapper()->addIndicatorConstraint(
         varB, 1, static_cast<int>(coefs.size()), vars.data(), coefs.data(),
-        MIP_wrapper::LinConType::EQ, rhs,
-        makeConstrName("p_ind_", (gi.getMIPWrapper()->nAddedRows++), call));
+        MIPWrapper::LinConType::EQ, rhs,
+        make_constraint_name("p_ind_", (gi.getMIPWrapper()->nAddedRows++), call));
     ++gi.getMIPWrapper()->nIndicatorConstr;
   }
 }
@@ -891,13 +894,13 @@ void p_indicator_eq_if1(SolverInstanceBase& si, const Call* call) {
 /// Cumulative
 template <class MIPWrapper>
 void p_cumulative(SolverInstanceBase& si, const Call* call) {
-  auto& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
+  auto& gi = dynamic_cast<MIPSolverinstance<MIPWrapper>&>(si);
 
   std::unique_ptr<SECCutGen> pCG(new SECCutGen(gi.getMIPWrapper()));
 
   assert(call->argCount() == 4);
 
-  std::vector<MIP_solver::Variable> startTimes;
+  std::vector<MIPSolver::Variable> startTimes;
   gi.exprToVarArray(call->arg(0), startTimes);
   std::vector<double> durations, demands;
   gi.exprToArray(call->arg(1), durations);
@@ -906,13 +909,13 @@ void p_cumulative(SolverInstanceBase& si, const Call* call) {
 
   gi.getMIPWrapper()->addCumulative(
       startTimes.size(), startTimes.data(), durations.data(), demands.data(), b,
-      makeConstrName("p_cumulative_", (gi.getMIPWrapper()->nAddedRows++), call));
+      make_constraint_name("p_cumulative_", (gi.getMIPWrapper()->nAddedRows++), call));
 }
 
 /// The XBZ cut generator
 template <class MIPWrapper>
-void p_XBZ_cutgen(SolverInstanceBase& si, const Call* call) {
-  auto& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
+void p_xbz_cutgen(SolverInstanceBase& si, const Call* call) {
+  auto& gi = dynamic_cast<MIPSolverinstance<MIPWrapper>&>(si);
 
   //     auto pCG = make_unique<XBZCutGen>();
   std::unique_ptr<XBZCutGen> pCG(new XBZCutGen(gi.getMIPWrapper()));
@@ -930,8 +933,8 @@ void p_XBZ_cutgen(SolverInstanceBase& si, const Call* call) {
 
 /// Initialize the SEC cut generator
 template <class MIPWrapper>
-void p_SEC_cutgen(SolverInstanceBase& si, const Call* call) {
-  auto& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
+void p_sec_cutgen(SolverInstanceBase& si, const Call* call) {
+  auto& gi = dynamic_cast<MIPSolverinstance<MIPWrapper>&>(si);
 
   std::unique_ptr<SECCutGen> pCG(new SECCutGen(gi.getMIPWrapper()));
 
@@ -951,10 +954,10 @@ void p_SEC_cutgen(SolverInstanceBase& si, const Call* call) {
 /// SCIP's bound disj
 template <class MIPWrapper>
 void p_bounds_disj(SolverInstanceBase& si, const Call* call) {
-  auto& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
+  auto& gi = dynamic_cast<MIPSolverinstance<MIPWrapper>&>(si);
   assert(6 == call->argCount());
   std::vector<double> fUB, fUBF, bnd, bndF;
-  std::vector<MIP_solver::Variable> vars, varsF;
+  std::vector<MIPSolver::Variable> vars, varsF;
   gi.exprToArray(call->arg(0), fUB);
   gi.exprToArray(call->arg(3), fUBF);
   gi.exprToArray(call->arg(1), bnd);
@@ -964,37 +967,38 @@ void p_bounds_disj(SolverInstanceBase& si, const Call* call) {
   double coef = 1.0;
   gi.getMIPWrapper()->addBoundsDisj(
       fUB.size(), fUB.data(), bnd.data(), vars.data(), fUBF.size(), fUBF.data(), bndF.data(),
-      varsF.data(), makeConstrName("p_bounds_disj_", (gi.getMIPWrapper()->nAddedRows++), call));
+      varsF.data(),
+      make_constraint_name("p_bounds_disj_", (gi.getMIPWrapper()->nAddedRows++), call));
 }
 
 template <class MIPWrapper>
 void p_array_minimum(SolverInstanceBase& si, const Call* call) {
-  auto& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
+  auto& gi = dynamic_cast<MIPSolverinstance<MIPWrapper>&>(si);
   assert(2 == call->argCount());
   auto res = gi.exprToVar(call->arg(0));
-  std::vector<MIP_solver::Variable> args;
+  std::vector<MIPSolver::Variable> args;
   gi.exprToVarArray(call->arg(1), args);
   gi.getMIPWrapper()->addMinimum(
       res, args.size(), args.data(),
-      makeConstrName("p_minimum_", (gi.getMIPWrapper()->nAddedRows++), call));
+      make_constraint_name("p_minimum_", (gi.getMIPWrapper()->nAddedRows++), call));
 }
 
 /// fzn_[int/float]_times
 template <class MIPWrapper>
 void p_times(SolverInstanceBase& si, const Call* call) {
-  auto& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
+  auto& gi = dynamic_cast<MIPSolverinstance<MIPWrapper>&>(si);
   assert(3 == call->argCount());
   auto x = gi.exprToVar(call->arg(0));
   auto y = gi.exprToVar(call->arg(1));
   auto z = gi.exprToVar(call->arg(2));
   gi.getMIPWrapper()->addTimes(
-      x, y, z, makeConstrName("p_times_", (gi.getMIPWrapper()->nAddedRows++), call));
+      x, y, z, make_constraint_name("p_times_", (gi.getMIPWrapper()->nAddedRows++), call));
 }
 
 }  // namespace SCIPConstraints
 
 template <class MIPWrapper>
-void MIP_solverinstance<MIPWrapper>::registerConstraints() {
+void MIPSolverinstance<MIPWrapper>::registerConstraints() {
   GCLock lock;
   _constraintRegistry.add("int2float", SCIPConstraints::p_eq<MIPWrapper>);
   _constraintRegistry.add("bool_eq",
@@ -1013,8 +1017,8 @@ void MIP_solverinstance<MIPWrapper>::registerConstraints() {
 
   /// XBZ cut generator
   _constraintRegistry.add("array_var_float_element__XBZ_lb__cutgen",
-                          SCIPConstraints::p_XBZ_cutgen<MIPWrapper>);
-  _constraintRegistry.add("circuit__SECcuts", SCIPConstraints::p_SEC_cutgen<MIPWrapper>);
+                          SCIPConstraints::p_xbz_cutgen<MIPWrapper>);
+  _constraintRegistry.add("circuit__SECcuts", SCIPConstraints::p_sec_cutgen<MIPWrapper>);
 
   //////////////// GLOBALS / GENERAL CONSTRAINTS /////////////////////////////////////////
   /// Indicators, if supported by the solver

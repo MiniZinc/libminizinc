@@ -22,9 +22,9 @@ namespace MiniZinc {
 #define GETMIPWRAPPER MIP_WrapperFactory::GetDefaultMIPWrapper()
 #endif
 
-class MIP_solver {
+class MIPSolver {
 public:
-  typedef MIP_wrapper::VarId Variable;
+  typedef MIPWrapper::VarId Variable;
   typedef MiniZinc::Statistics Statistics;
 };
 
@@ -36,56 +36,56 @@ public:
   /// Say what type of cuts
   virtual int getMask() = 0;
   /// Adds new cuts to the 2nd parameter
-  virtual void generate(const MIP_wrapper::Output&, MIP_wrapper::CutInput&) = 0;
+  virtual void generate(const MIPWrapper::Output&, MIPWrapper::CutInput&) = 0;
   virtual void print(std::ostream& /*os*/) {}
 };
 
 /// XBZ cut generator
 class XBZCutGen : public CutGen {
   XBZCutGen() {}
-  MIP_wrapper* pMIP = nullptr;
+  MIPWrapper* _pMIP = nullptr;
 
 public:
-  XBZCutGen(MIP_wrapper* pw) : pMIP(pw) {}
-  std::vector<MIP_wrapper::VarId> varX, varB;
+  XBZCutGen(MIPWrapper* pw) : _pMIP(pw) {}
+  std::vector<MIPWrapper::VarId> varX, varB;
   /// Say what type of cuts
-  int getMask() override { return MIP_wrapper::MaskConsType_Usercut; }
-  MIP_wrapper::VarId varZ;
-  void generate(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInput& cutsIn) override;
+  int getMask() override { return MIPWrapper::MaskConsType_Usercut; }
+  MIPWrapper::VarId varZ;
+  void generate(const MIPWrapper::Output& slvOut, MIPWrapper::CutInput& cutsIn) override;
   void print(std::ostream& os) override;
 };
 
 /// SEC cut generator for circuit
 class SECCutGen : public CutGen {
   SECCutGen() {}
-  MIP_wrapper* pMIP = nullptr;
+  MIPWrapper* _pMIP = nullptr;
 
 public:
-  SECCutGen(MIP_wrapper* pw) : pMIP(pw) {}
+  SECCutGen(MIPWrapper* pw) : _pMIP(pw) {}
   /// Say what type of cuts
   int getMask() override {
-    return MIP_wrapper::MaskConsType_Lazy | MIP_wrapper::MaskConsType_Usercut;
+    return MIPWrapper::MaskConsType_Lazy | MIPWrapper::MaskConsType_Usercut;
   }
-  std::vector<MIP_wrapper::VarId> varXij;
+  std::vector<MIPWrapper::VarId> varXij;
   int nN = 0;  // N nodes
   /// returns error message if fails
   std::string validate() const;
-  void generate(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInput& cutsIn) override;
+  void generate(const MIPWrapper::Output& slvOut, MIPWrapper::CutInput& cutsIn) override;
   void print(std::ostream& os) override;
 };
 
 template <class MIPWrapper>
-class MIP_solverinstance : public SolverInstanceImpl<MIP_solver> {
+class MIPSolverinstance : public SolverInstanceImpl<MIPSolver> {
   using SolverInstanceBase::_log;
 
 protected:
-  const std::unique_ptr<MIP_wrapper> mip_wrap;
-  std::vector<std::unique_ptr<CutGen> > cutGenerators;
+  const std::unique_ptr<MIPWrapper> _mipWrapper;
+  std::vector<std::unique_ptr<CutGen> > _cutGenerators;
 
 public:
   void registerCutGenerator(std::unique_ptr<CutGen>&& pCG) {
     getMIPWrapper()->cbui.cutMask |= pCG->getMask();
-    cutGenerators.push_back(move(pCG));
+    _cutGenerators.push_back(move(pCG));
   }
 
 public:
@@ -93,12 +93,12 @@ public:
   double dObjVarLB = -1e300, dObjVarUB = 1e300;
 
 public:
-  MIP_solverinstance(Env& env, std::ostream& log, typename MIPWrapper::Options* opt)
-      : SolverInstanceImpl(env, log, opt), mip_wrap(new MIPWrapper(opt)) {
-    assert(mip_wrap.get());
+  MIPSolverinstance(Env& env, std::ostream& log, typename MIPWrapper::Options* opt)
+      : SolverInstanceImpl(env, log, opt), _mipWrapper(new MIPWrapper(opt)) {
+    assert(_mipWrapper.get());
     registerConstraints();
   }
-  virtual MIP_wrapper* getMIPWrapper() const { return mip_wrap.get(); }
+  virtual MIPWrapper* getMIPWrapper() const { return _mipWrapper.get(); }
 
   Status next() override {
     assert(0);
@@ -111,8 +111,8 @@ public:
   Status solve() override;
   void resetSolver() override {}
 
-  virtual void genCuts(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInput& cutsIn,
-                       bool fMIPSol);
+  virtual void genCuts(const typename MIPWrapper::Output& slvOut,
+                       typename MIPWrapper::CutInput& cutsIn, bool fMIPSol);
 
   //       void assignSolutionToOutput();   // needs to be public for the callback?
   void printStatistics() override;
@@ -129,17 +129,17 @@ public:
   Expression* getSolutionValue(Id* id) override;
 
   void registerConstraints();
-};  // MIP_solverinstance
+};  // MIPSolverinstance
 
 template <class MIPWrapper>
-class MIP_SolverFactory : public SolverFactory {
+class MIPSolverFactory : public SolverFactory {
 public:
-  MIP_SolverFactory();
+  MIPSolverFactory();
   SolverInstanceBase::Options* createOptions() override { return new typename MIPWrapper::Options; }
   SolverInstanceBase* doCreateSI(Env& env, std::ostream& log,
                                  SolverInstanceBase::Options* opt) override {
-    return new MIP_solverinstance<MIPWrapper>(env, log,
-                                              static_cast<typename MIPWrapper::Options*>(opt));
+    return new MIPSolverinstance<MIPWrapper>(env, log,
+                                             static_cast<typename MIPWrapper::Options*>(opt));
   }
   bool processOption(SolverInstanceBase::Options* opt, int& i,
                      std::vector<std::string>& argv) override;

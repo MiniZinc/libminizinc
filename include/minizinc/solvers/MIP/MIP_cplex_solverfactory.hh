@@ -12,8 +12,8 @@
 #pragma once
 
 namespace MiniZinc {
-class Cplex_SolverFactoryInitialiser {
+class CplexSolverFactoryInitialiser {
 public:
-  Cplex_SolverFactoryInitialiser();
+  CplexSolverFactoryInitialiser();
 };
 }  // namespace MiniZinc

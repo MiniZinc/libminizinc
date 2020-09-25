@@ -70,7 +70,7 @@ SolverInitialiser::SolverInitialiser() {
   Gurobi_SolverFactoryInitialiser _gurobi_init;
 #endif
 #ifdef HAS_CPLEX
-  static Cplex_SolverFactoryInitialiser _cplex_init;
+  static CplexSolverFactoryInitialiser _cplex_init;
 #endif
 #ifdef HAS_OSICBC
   static OSICBC_SolverFactoryInitialiser _osicbc_init;
@@ -277,8 +277,8 @@ void MznSolver::printHelp(const std::string& selectedSolver) {
   }
 }
 
-void addFlags(const std::string& sep, const std::vector<std::string>& in_args,
-              std::vector<std::string>& out_args) {
+void add_flags(const std::string& sep, const std::vector<std::string>& in_args,
+               std::vector<std::string>& out_args) {
   for (const std::string& arg : in_args) {
     out_args.push_back(sep);
     out_args.push_back(arg);
@@ -542,7 +542,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               }
 
               if (!fzn_mzn_flags.empty()) {
-                addFlags("--mzn-flag", fzn_mzn_flags, additionalArgs_s);
+                add_flags("--mzn-flag", fzn_mzn_flags, additionalArgs_s);
               }
 
               // This should maybe be moved to fill in fzn_mzn_flags when
@@ -591,9 +591,9 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               }
               if (!fzn_mzn_flags.empty()) {
                 if (sc.supportsFzn()) {
-                  addFlags("--fzn-flag", fzn_mzn_flags, additionalArgs);
+                  add_flags("--fzn-flag", fzn_mzn_flags, additionalArgs);
                 } else {
-                  addFlags("--nl-flag", fzn_mzn_flags, additionalArgs);
+                  add_flags("--nl-flag", fzn_mzn_flags, additionalArgs);
                 }
               }
               if (sc.needsPathsFile()) {

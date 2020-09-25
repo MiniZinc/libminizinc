@@ -146,7 +146,7 @@ void MIP_osicbc_wrapper::wrapAssert(bool cond, const string& msg, bool fTerm) {
 }
 
 void MIP_osicbc_wrapper::doAddVars(size_t n, double* obj, double* lb, double* ub,
-                                   MIP_wrapper::VarType* vt, string* names) {
+                                   MIPWrapper::VarType* vt, string* names) {
   /// Convert var types:
   //   vector<char> ctype(n);
   //   vector<char*> pcNames(n);
@@ -158,7 +158,7 @@ void MIP_osicbc_wrapper::doAddVars(size_t n, double* obj, double* lb, double* ub
 }
 
 void MIP_osicbc_wrapper::addRow(int nnz, int* rmatind, double* rmatval,
-                                MIP_wrapper::LinConType sense, double rhs, int mask,
+                                MIPWrapper::LinConType sense, double rhs, int mask,
                                 const string& rowName) {
   /// Convert var types:
   double rlb = rhs, rub = rhs;
@@ -172,7 +172,7 @@ void MIP_osicbc_wrapper::addRow(int nnz, int* rmatind, double* rmatval,
       rub = osi.getInfinity();
       break;
     default:
-      throw runtime_error("  MIP_wrapper: unknown constraint type");
+      throw runtime_error("  MIPWrapper: unknown constraint type");
   }
   // ignoring mask for now.  TODO
   // 1-by-1 too slow:
@@ -301,7 +301,7 @@ static void
 */
 
 struct EventUserInfo {
-  MIP_wrapper::CBUserInfo* pCbui = nullptr;
+  MIPWrapper::CBUserInfo* pCbui = nullptr;
   CglPreProcess* pPP = nullptr;
 };
 
@@ -456,7 +456,7 @@ CbcEventHandler::CbcAction MyEventHandler3::event(CbcEvent whichEvent) {
         }
         ui.pCbui->pOutput->objVal = objVal;
         //         origModel->getObjValue();
-        ui.pCbui->pOutput->status = MIP_wrapper::SAT;
+        ui.pCbui->pOutput->status = MIPWrapper::SAT;
         ui.pCbui->pOutput->statusName = "feasible from a callback";
         ui.pCbui->pOutput->bestBound = bestBnd;
         ui.pCbui->pOutput->dWallTime =
@@ -621,7 +621,7 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
     //     osi.addRows(rowStarts.size(), rowStarts.data(),
     //                 columns.data(), element.data(), rowlb.data(), rowub.data());
     /// So:
-    MIP_wrapper::addPhase1Vars();  // only now
+    MIPWrapper::addPhase1Vars();  // only now
     if (fVerbose) {
       cerr << "  MIP_osicbc_wrapper: adding constraints physically..." << flush;
     }
@@ -779,10 +779,10 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
       /// This class is passed to CBC to organize cut callbacks
       /// We need original solutions here (combinatorial cuts)
       class CutCallback : public CglCutGenerator {
-        MIP_wrapper::CBUserInfo& _cbui;
+        MIPWrapper::CBUserInfo& _cbui;
 
       public:
-        CutCallback(MIP_wrapper::CBUserInfo& ui) : _cbui(ui) {}
+        CutCallback(MIPWrapper::CBUserInfo& ui) : _cbui(ui) {}
         CglCutGenerator* clone() const override { return new CutCallback(_cbui); }
         /// Make sure this overrides but we might need to compile this with old CBC as well
         bool needsOriginalModel() const /*override*/ { return true; }
@@ -790,14 +790,14 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
                           const CglTreeInfo info = CglTreeInfo()) override {
           _cbui.pOutput->nCols = si.getNumCols();
           MZN_ASSERT_HARD_MSG(
-              _cbui.pOutput->nCols == ((MIP_wrapper*)(_cbui.wrapper))->colNames.size(),
+              _cbui.pOutput->nCols == ((MIPWrapper*)(_cbui.wrapper))->colNames.size(),
               "CBC cut callback: current model is different? Ncols="
                   << _cbui.pOutput->nCols << ", originally "
-                  << ((MIP_wrapper*)(_cbui.wrapper))->colNames.size()
+                  << ((MIPWrapper*)(_cbui.wrapper))->colNames.size()
                   << ". If you have an old version of CBC, to use combinatorial cuts"
                      " run with --cbcArgs '-preprocess off'");
           _cbui.pOutput->x = si.getColSolution();  // change the pointer?
-          MIP_wrapper::CutInput cuts;
+          MIPWrapper::CutInput cuts;
           _cbui.cutcbfn(*_cbui.pOutput, cuts, _cbui.psi,
                         (info.options & 128) != 0);  // options&128: integer candidate
           for (const auto& cut : cuts) {             // Convert cut sense

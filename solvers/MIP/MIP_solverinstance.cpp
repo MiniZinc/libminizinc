@@ -31,7 +31,7 @@
 
 using namespace std;
 
-std::string MIP_wrapper::getMznLib() { return "-Glinear"; }
+std::string MIPWrapper::getMznLib() { return "-Glinear"; }
 
 namespace MiniZinc {
 namespace SCIPConstraints {
@@ -57,27 +57,27 @@ int get_mask_cons_type(const Call* call) {
   const bool fUC = check_ann_user_cut(call);
   const bool fLC = check_ann_lazy_constraint(call);
   if (fUC) {
-    mask |= MIP_wrapper::MaskConsType_Usercut;
+    mask |= MIPWrapper::MaskConsType_Usercut;
   }
   if (fLC) {
-    mask |= MIP_wrapper::MaskConsType_Lazy;
+    mask |= MIPWrapper::MaskConsType_Lazy;
   }
   if (!fUC && !fLC) {
-    mask |= MIP_wrapper::MaskConsType_Normal;
+    mask |= MIPWrapper::MaskConsType_Normal;
   }
   return mask;
-  //       return MIP_wrapper::MaskConsType_Normal;    // recognition fails
+  //       return MIPWrapper::MaskConsType_Normal;    // recognition fails
 }
 }  // namespace SCIPConstraints
 }  // namespace MiniZinc
 
 using namespace MiniZinc;
 
-void XBZCutGen::generate(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInput& cutsIn) {
-  assert(pMIP);
+void XBZCutGen::generate(const MIPWrapper::Output& slvOut, MIPWrapper::CutInput& cutsIn) {
+  assert(_pMIP);
   const int n = static_cast<int>(varX.size());
   assert(n == varB.size());
-  MIP_wrapper::CutDef cut(MIP_wrapper::GQ, MIP_wrapper::MaskConsType_Usercut);
+  MIPWrapper::CutDef cut(MIPWrapper::GQ, MIPWrapper::MaskConsType_Usercut);
   cut.addVar(varZ, -1.0);
   for (int i = 0; i < n; ++i) {
     const int ix = varX[i];
@@ -86,8 +86,8 @@ void XBZCutGen::generate(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInpu
     assert(ib >= 0 && ib < slvOut.nCols);
     const double theXi = slvOut.x[ix];
     const double theBi = slvOut.x[ib];
-    const double LBXi = pMIP->colLB[ix];
-    const double UBXi = pMIP->colUB[ix];  // tighter bounds from presolve?  TODO
+    const double LBXi = _pMIP->colLB[ix];
+    const double UBXi = _pMIP->colUB[ix];  // tighter bounds from presolve?  TODO
     bool fi = (theXi + LBXi * (theBi - 1.0) - UBXi * theBi < 0.0);
     if (fi) {
       cut.addVar(ix, 1.0);
@@ -128,16 +128,16 @@ std::string SECCutGen::validate() const {
   std::ostringstream oss;
   /// Check that diagonal flows are 0
   for (int i = 0; i < nN; ++i) {
-    if (pMIP->colUB[varXij[i * nN + i]] > 0.0) {
+    if (_pMIP->colUB[varXij[i * nN + i]] > 0.0) {
       oss << "SECutGen with " << nN << " cities: diagonal flow " << (i + 1)
-          << " has UB=" << pMIP->colUB[varXij[i * nN + i]] << "\n";
+          << " has UB=" << _pMIP->colUB[varXij[i * nN + i]] << "\n";
     }
   }
   return oss.str();
 }
 
-void SECCutGen::generate(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInput& cutsIn) {
-  assert(pMIP);
+void SECCutGen::generate(const MIPWrapper::Output& slvOut, MIPWrapper::CutInput& cutsIn) {
+  assert(_pMIP);
   /// Extract graph, converting to undirected
   typedef map<pair<int, int>, double> TMapFlow;
   TMapFlow mapFlow;
@@ -169,8 +169,8 @@ void SECCutGen::generate(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInpu
   mc.solve();
   /// Check if violation
   if (mc.wMinCut <= 1.999) {
-    MIP_wrapper::CutDef cut(MIP_wrapper::GQ,
-                            MIP_wrapper::MaskConsType_Lazy | MIP_wrapper::MaskConsType_Usercut);
+    MIPWrapper::CutDef cut(MIPWrapper::GQ,
+                           MIPWrapper::MaskConsType_Lazy | MIPWrapper::MaskConsType_Usercut);
     cut.rhs = 1.0;
     int nCutSize = 0;
     constexpr int nElemPrint = 20;
