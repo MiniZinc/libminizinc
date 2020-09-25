@@ -7,6 +7,7 @@ add_library(minizinc_mip OBJECT
   solvers/MIP/MIP_solverinstance.cpp
 
   include/minizinc/plugin.hh
+  include/minizinc/solvers/MIP/MIP_wrap.hh
   include/minizinc/solvers/MIP/MIP_solverinstance.hh
   include/minizinc/solvers/MIP/MIP_solverinstance.hpp
 )
