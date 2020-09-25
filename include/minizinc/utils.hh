@@ -157,12 +157,7 @@ public:
         if (!combinedArg) {
           --_i;
         }
-        if (fValueOptional) {
-          return true;
-        }
-        // Not print because another agent can handle this option
-        //           cerr << "\nBad value for " << keyword << ": " << arg << endl;
-        return false;
+        return fValueOptional;
       }
       *pResult = tmp;
       return true;
