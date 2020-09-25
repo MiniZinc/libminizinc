@@ -509,7 +509,7 @@ template <class S2O>
 bool Process<S2O>::hadInterrupt;
 #ifdef _WIN32
 template <class S2O>
-std::mutex Process<S2O>::i_mtx;
+std::mutex Process<S2O>::_interruptMutex;
 template <class S2O>
 std::condition_variable Process<S2O>::_interruptCondition;
 #else
