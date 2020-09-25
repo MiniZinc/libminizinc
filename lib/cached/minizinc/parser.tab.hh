@@ -195,18 +195,18 @@ union YYSTYPE
  long long int iValue; char* sValue; bool bValue; double dValue;
          MiniZinc::Item* item;
          MiniZinc::VarDecl* vardeclexpr;
-         std::vector<MiniZinc::VarDecl*>* vardeclexpr_v;
+         std::vector<MiniZinc::VarDecl*>* vardeclexprs;
          MiniZinc::TypeInst* tiexpr;
-         std::vector<MiniZinc::TypeInst*>* tiexpr_v;
+         std::vector<MiniZinc::TypeInst*>* tiexprs;
          MiniZinc::Expression* expression;
-         std::vector<MiniZinc::Expression*>* expression_v;
-         std::vector<std::vector<MiniZinc::Expression*> >* expression_vv;
-         std::vector<std::vector<std::vector<MiniZinc::Expression*> > >* expression_vvv;
+         std::vector<MiniZinc::Expression*>* expressions1d;
+         std::vector<std::vector<MiniZinc::Expression*> >* expressions2d;
+         std::vector<std::vector<std::vector<MiniZinc::Expression*> > >* expressions3d;
          MiniZinc::Generator* generator;
-         std::vector<MiniZinc::Generator>* generator_v;
-         std::vector<std::string>* string_v;
-         std::vector<std::pair<MiniZinc::Expression*,MiniZinc::Expression*> >* expression_p;
-         MiniZinc::Generators* generators;
+         std::vector<MiniZinc::Generator>* generators;
+         std::vector<std::string>* strings;
+         std::vector<std::pair<MiniZinc::Expression*,MiniZinc::Expression*> >* expressionPairs;
+         MiniZinc::Generators* generatorsPointer;
        
 
 

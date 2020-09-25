@@ -95,10 +95,10 @@ using namespace MiniZinc;
 
 #define YYLLOC_DEFAULT(Current, Rhs, N) \
   (Current).filename(Rhs[1].filename()); \
-  (Current).first_line(Rhs[1].first_line()); \
-  (Current).first_column(Rhs[1].first_column()); \
-  (Current).last_line(Rhs[N].last_line()); \
-  (Current).last_column(Rhs[N].last_column());
+  (Current).firstLine(Rhs[1].firstLine()); \
+  (Current).firstColumn(Rhs[1].firstColumn()); \
+  (Current).lastLine(Rhs[N].lastLine()); \
+  (Current).lastColumn(Rhs[N].lastColumn());
 
 int mzn_yyparse(void*);
 int mzn_yylex(YYSTYPE*, YYLTYPE*, void* scanner);
@@ -119,7 +119,7 @@ void yyerror(YYLTYPE* location, void* parm, const string& str) {
     pp->err << "(included from file '" << m->filename() << "')" << endl;
   }
   pp->err << location->toString() << ":" << endl;
-  pp->printCurrentLine(location->first_column(),location->last_column());
+  pp->printCurrentLine(location->firstColumn(),location->lastColumn());
   pp->err << "Error: " << str << std::endl;
   pp->hadError = true;
   pp->syntaxErrors.push_back(SyntaxError(Location(*location), str));
@@ -3223,11 +3223,11 @@ yyreduce:
   case 15:
       { (yyval.item) = (yyvsp[0].item);
         ParserState* pp = static_cast<ParserState*>(parm);
-        if (FunctionI* fi = Item::dyn_cast<FunctionI>((yyval.item))) {
+        if (FunctionI* fi = Item::dynamicCast<FunctionI>((yyval.item))) {
           if (pp->parseDocComments) {
             fi->ann().add(createDocComment((yylsp[-1]),(yyvsp[-1].sValue)));
           }
-        } else if (VarDeclI* vdi = Item::dyn_cast<VarDeclI>((yyval.item))) {
+        } else if (VarDeclI* vdi = Item::dynamicCast<VarDeclI>((yyval.item))) {
           if (pp->parseDocComments) {
             vdi->e()->addAnnotation(createDocComment((yylsp[-1]),(yyvsp[-1].sValue)));
           }
@@ -3298,19 +3298,19 @@ yyreduce:
     break;
 
   case 36:
-      { if ((yyvsp[-1].vardeclexpr) && (yyvsp[0].expression_v)) (yyvsp[-1].vardeclexpr)->addAnnotations(*(yyvsp[0].expression_v));
+      { if ((yyvsp[-1].vardeclexpr) && (yyvsp[0].expressions1d)) (yyvsp[-1].vardeclexpr)->addAnnotations(*(yyvsp[0].expressions1d));
         if ((yyvsp[-1].vardeclexpr))
           (yyval.item) = new VarDeclI((yyloc),(yyvsp[-1].vardeclexpr));
-        delete (yyvsp[0].expression_v);
+        delete (yyvsp[0].expressions1d);
       }
     break;
 
   case 37:
       { if ((yyvsp[-3].vardeclexpr)) (yyvsp[-3].vardeclexpr)->e((yyvsp[0].expression));
-        if ((yyvsp[-3].vardeclexpr) && (yyvsp[-2].expression_v)) (yyvsp[-3].vardeclexpr)->addAnnotations(*(yyvsp[-2].expression_v));
+        if ((yyvsp[-3].vardeclexpr) && (yyvsp[-2].expressions1d)) (yyvsp[-3].vardeclexpr)->addAnnotations(*(yyvsp[-2].expressions1d));
         if ((yyvsp[-3].vardeclexpr))
           (yyval.item) = new VarDeclI((yyloc),(yyvsp[-3].vardeclexpr));
-        delete (yyvsp[-2].expression_v);
+        delete (yyvsp[-2].expressions1d);
       }
     break;
 
@@ -3319,8 +3319,8 @@ yyreduce:
         TypeInst* ti = new TypeInst((yyloc),Type::parsetint());
         ti->setIsEnum(true);
         VarDecl* vd = new VarDecl((yyloc),ti,(yyvsp[-1].sValue));
-        if ((yyvsp[-1].sValue) && (yyvsp[0].expression_v))
-          vd->addAnnotations(*(yyvsp[0].expression_v));
+        if ((yyvsp[-1].sValue) && (yyvsp[0].expressions1d))
+          vd->addAnnotations(*(yyvsp[0].expressions1d));
         free((yyvsp[-1].sValue));
         (yyval.item) = new VarDeclI((yyloc),vd);
       }
@@ -3328,21 +3328,21 @@ yyreduce:
 
   case 39:
       {
-        if ((yyvsp[0].expression_v)) {
+        if ((yyvsp[0].expressions1d)) {
           TypeInst* ti = new TypeInst((yyloc),Type::parsetint());
           ti->setIsEnum(true);
           Expression* e;
-          if ((yyvsp[0].expression_v)->size()==1) {
-            e = (*(yyvsp[0].expression_v))[0];
+          if ((yyvsp[0].expressions1d)->size()==1) {
+            e = (*(yyvsp[0].expressions1d))[0];
           } else {
-            ArrayLit* al = new ArrayLit((yyloc),*(yyvsp[0].expression_v));
+            ArrayLit* al = new ArrayLit((yyloc),*(yyvsp[0].expressions1d));
             e = new Call((yyloc), ASTString("enumFromConstructors"), {al});
           }
           VarDecl* vd = new VarDecl((yyloc),ti,(yyvsp[-3].sValue),e);
           (yyval.item) = new VarDeclI((yyloc),vd);
         }
         free((yyvsp[-3].sValue));
-        delete (yyvsp[0].expression_v);
+        delete (yyvsp[0].expressions1d);
       }
     break;
 
@@ -3351,36 +3351,36 @@ yyreduce:
         TypeInst* ti = new TypeInst((yyloc),Type::parsetint());
         ti->setIsEnum(true);
         vector<Expression*> args;
-        args.push_back(new ArrayLit((yyloc),*(yyvsp[-1].expression_v)));
+        args.push_back(new ArrayLit((yyloc),*(yyvsp[-1].expressions1d)));
         Call* sl = new Call((yyloc), constants().ids.anonEnumFromStrings, args);
         VarDecl* vd = new VarDecl((yyloc),ti,(yyvsp[-5].sValue),sl);
-        if ((yyvsp[-5].sValue) && (yyvsp[-4].expression_v))
-          vd->addAnnotations(*(yyvsp[-4].expression_v));
+        if ((yyvsp[-5].sValue) && (yyvsp[-4].expressions1d))
+          vd->addAnnotations(*(yyvsp[-4].expressions1d));
         free((yyvsp[-5].sValue));
-        delete (yyvsp[-1].expression_v);
+        delete (yyvsp[-1].expressions1d);
         (yyval.item) = new VarDeclI((yyloc),vd);
       }
     break;
 
   case 41:
       {
-        (yyval.expression_v) = new std::vector<Expression*>({(yyvsp[0].expression)});
+        (yyval.expressions1d) = new std::vector<Expression*>({(yyvsp[0].expression)});
       }
     break;
 
   case 42:
       {
-        (yyval.expression_v) = (yyvsp[-2].expression_v);
-        if ((yyval.expression_v)) {
-          (yyval.expression_v)->push_back((yyvsp[0].expression));
+        (yyval.expressions1d) = (yyvsp[-2].expressions1d);
+        if ((yyval.expressions1d)) {
+          (yyval.expressions1d)->push_back((yyvsp[0].expression));
         }
       }
     break;
 
   case 43:
       {
-        (yyval.expression) = new SetLit((yyloc), *(yyvsp[-1].expression_v));
-        delete (yyvsp[-1].expression_v);
+        (yyval.expression) = new SetLit((yyloc), *(yyvsp[-1].expressions1d));
+        delete (yyvsp[-1].expressions1d);
       }
     break;
 
@@ -3393,34 +3393,34 @@ yyreduce:
     break;
 
   case 45:
-      { (yyval.expression_v) = new std::vector<Expression*>(); }
+      { (yyval.expressions1d) = new std::vector<Expression*>(); }
     break;
 
   case 46:
-      { (yyval.expression_v) = new std::vector<Expression*>();
-        (yyval.expression_v)->push_back(new StringLit((yyloc), (yyvsp[0].sValue))); free((yyvsp[0].sValue));
+      { (yyval.expressions1d) = new std::vector<Expression*>();
+        (yyval.expressions1d)->push_back(new StringLit((yyloc), (yyvsp[0].sValue))); free((yyvsp[0].sValue));
       }
     break;
 
   case 47:
-      { (yyval.expression_v) = (yyvsp[-2].expression_v);
-        if ((yyval.expression_v)) (yyval.expression_v)->push_back(new StringLit((yyloc), (yyvsp[0].sValue)));
+      { (yyval.expressions1d) = (yyvsp[-2].expressions1d);
+        if ((yyval.expressions1d)) (yyval.expressions1d)->push_back(new StringLit((yyloc), (yyvsp[0].sValue)));
         free((yyvsp[0].sValue));
       }
     break;
 
   case 48:
-      { (yyval.expression_v) = new std::vector<Expression*>(); }
+      { (yyval.expressions1d) = new std::vector<Expression*>(); }
     break;
 
   case 49:
-      { (yyval.expression_v) = new std::vector<Expression*>();
-        (yyval.expression_v)->push_back(new Id((yyloc),(yyvsp[0].sValue),nullptr)); free((yyvsp[0].sValue));
+      { (yyval.expressions1d) = new std::vector<Expression*>();
+        (yyval.expressions1d)->push_back(new Id((yyloc),(yyvsp[0].sValue),nullptr)); free((yyvsp[0].sValue));
       }
     break;
 
   case 50:
-      { (yyval.expression_v) = (yyvsp[-2].expression_v); if ((yyval.expression_v)) (yyval.expression_v)->push_back(new Id((yyloc),(yyvsp[0].sValue),nullptr)); free((yyvsp[0].sValue)); }
+      { (yyval.expressions1d) = (yyvsp[-2].expressions1d); if ((yyval.expressions1d)) (yyval.expressions1d)->push_back(new Id((yyloc),(yyvsp[0].sValue),nullptr)); free((yyvsp[0].sValue)); }
     break;
 
   case 51:
@@ -3442,22 +3442,22 @@ yyreduce:
 
   case 54:
       { (yyval.item) = SolveI::sat((yyloc));
-        if ((yyval.item) && (yyvsp[-1].expression_v)) (yyval.item)->cast<SolveI>()->ann().add(*(yyvsp[-1].expression_v));
-        delete (yyvsp[-1].expression_v);
+        if ((yyval.item) && (yyvsp[-1].expressions1d)) (yyval.item)->cast<SolveI>()->ann().add(*(yyvsp[-1].expressions1d));
+        delete (yyvsp[-1].expressions1d);
       }
     break;
 
   case 55:
       { (yyval.item) = SolveI::min((yyloc),(yyvsp[0].expression));
-        if ((yyval.item) && (yyvsp[-2].expression_v)) (yyval.item)->cast<SolveI>()->ann().add(*(yyvsp[-2].expression_v));
-        delete (yyvsp[-2].expression_v);
+        if ((yyval.item) && (yyvsp[-2].expressions1d)) (yyval.item)->cast<SolveI>()->ann().add(*(yyvsp[-2].expressions1d));
+        delete (yyvsp[-2].expressions1d);
       }
     break;
 
   case 56:
       { (yyval.item) = SolveI::max((yyloc),(yyvsp[0].expression));
-        if ((yyval.item) && (yyvsp[-2].expression_v)) (yyval.item)->cast<SolveI>()->ann().add(*(yyvsp[-2].expression_v));
-        delete (yyvsp[-2].expression_v);
+        if ((yyval.item) && (yyvsp[-2].expressions1d)) (yyval.item)->cast<SolveI>()->ann().add(*(yyvsp[-2].expressions1d));
+        delete (yyvsp[-2].expressions1d);
       }
     break;
 
@@ -3468,66 +3468,66 @@ yyreduce:
   case 58:
       {
         ParserState* pp = static_cast<ParserState*>(parm);
-        if ((yyvsp[-2].vardeclexpr_v)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-3].sValue),new TypeInst((yyloc),
-                                   Type::varbool()),*(yyvsp[-2].vardeclexpr_v),(yyvsp[0].expression),pp->isSTDLib);
-        if ((yyval.item) && (yyvsp[-1].expression_v)) (yyval.item)->cast<FunctionI>()->ann().add(*(yyvsp[-1].expression_v));
+        if ((yyvsp[-2].vardeclexprs)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-3].sValue),new TypeInst((yyloc),
+                                   Type::varbool()),*(yyvsp[-2].vardeclexprs),(yyvsp[0].expression),pp->isSTDLib);
+        if ((yyval.item) && (yyvsp[-1].expressions1d)) (yyval.item)->cast<FunctionI>()->ann().add(*(yyvsp[-1].expressions1d));
         free((yyvsp[-3].sValue));
-        delete (yyvsp[-2].vardeclexpr_v);
-        delete (yyvsp[-1].expression_v);
+        delete (yyvsp[-2].vardeclexprs);
+        delete (yyvsp[-1].expressions1d);
       }
     break;
 
   case 59:
       {
         ParserState* pp = static_cast<ParserState*>(parm);
-        if ((yyvsp[-2].vardeclexpr_v)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-3].sValue),new TypeInst((yyloc),
-                                   Type::parbool()),*(yyvsp[-2].vardeclexpr_v),(yyvsp[0].expression),pp->isSTDLib);
-        if ((yyval.item) && (yyvsp[-1].expression_v)) (yyval.item)->cast<FunctionI>()->ann().add(*(yyvsp[-1].expression_v));
+        if ((yyvsp[-2].vardeclexprs)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-3].sValue),new TypeInst((yyloc),
+                                   Type::parbool()),*(yyvsp[-2].vardeclexprs),(yyvsp[0].expression),pp->isSTDLib);
+        if ((yyval.item) && (yyvsp[-1].expressions1d)) (yyval.item)->cast<FunctionI>()->ann().add(*(yyvsp[-1].expressions1d));
         free((yyvsp[-3].sValue));
-        delete (yyvsp[-2].vardeclexpr_v);
-        delete (yyvsp[-1].expression_v);
+        delete (yyvsp[-2].vardeclexprs);
+        delete (yyvsp[-1].expressions1d);
       }
     break;
 
   case 60:
-      { if ((yyvsp[-2].vardeclexpr_v)) (yyval.item) = new FunctionI((yyloc),std::string((yyvsp[-4].sValue))+"⁻¹",new TypeInst((yyloc),
-                                   Type::varbool()),*(yyvsp[-2].vardeclexpr_v),(yyvsp[0].expression));
-        if ((yyval.item) && (yyvsp[-1].expression_v)) (yyval.item)->cast<FunctionI>()->ann().add(*(yyvsp[-1].expression_v));
+      { if ((yyvsp[-2].vardeclexprs)) (yyval.item) = new FunctionI((yyloc),std::string((yyvsp[-4].sValue))+"⁻¹",new TypeInst((yyloc),
+                                   Type::varbool()),*(yyvsp[-2].vardeclexprs),(yyvsp[0].expression));
+        if ((yyval.item) && (yyvsp[-1].expressions1d)) (yyval.item)->cast<FunctionI>()->ann().add(*(yyvsp[-1].expressions1d));
         free((yyvsp[-4].sValue));
-        delete (yyvsp[-2].vardeclexpr_v);
-        delete (yyvsp[-1].expression_v);
+        delete (yyvsp[-2].vardeclexprs);
+        delete (yyvsp[-1].expressions1d);
       }
     break;
 
   case 61:
-      { if ((yyvsp[-2].vardeclexpr_v)) (yyval.item) = new FunctionI((yyloc),std::string((yyvsp[-4].sValue))+"⁻¹",new TypeInst((yyloc),
-                                   Type::parbool()),*(yyvsp[-2].vardeclexpr_v),(yyvsp[0].expression));
-        if ((yyval.item) && (yyvsp[-1].expression_v)) (yyval.item)->cast<FunctionI>()->ann().add(*(yyvsp[-1].expression_v));
+      { if ((yyvsp[-2].vardeclexprs)) (yyval.item) = new FunctionI((yyloc),std::string((yyvsp[-4].sValue))+"⁻¹",new TypeInst((yyloc),
+                                   Type::parbool()),*(yyvsp[-2].vardeclexprs),(yyvsp[0].expression));
+        if ((yyval.item) && (yyvsp[-1].expressions1d)) (yyval.item)->cast<FunctionI>()->ann().add(*(yyvsp[-1].expressions1d));
         free((yyvsp[-4].sValue));
-        delete (yyvsp[-2].vardeclexpr_v);
-        delete (yyvsp[-1].expression_v);
+        delete (yyvsp[-2].vardeclexprs);
+        delete (yyvsp[-1].expressions1d);
       }
     break;
 
   case 62:
       {
         ParserState* pp = static_cast<ParserState*>(parm);
-        if ((yyvsp[-2].vardeclexpr_v)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-3].sValue),(yyvsp[-5].tiexpr),*(yyvsp[-2].vardeclexpr_v),(yyvsp[0].expression),pp->isSTDLib);
-        if ((yyval.item) && (yyvsp[-1].expression_v)) (yyval.item)->cast<FunctionI>()->ann().add(*(yyvsp[-1].expression_v));
+        if ((yyvsp[-2].vardeclexprs)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-3].sValue),(yyvsp[-5].tiexpr),*(yyvsp[-2].vardeclexprs),(yyvsp[0].expression),pp->isSTDLib);
+        if ((yyval.item) && (yyvsp[-1].expressions1d)) (yyval.item)->cast<FunctionI>()->ann().add(*(yyvsp[-1].expressions1d));
         free((yyvsp[-3].sValue));
-        delete (yyvsp[-2].vardeclexpr_v);
-        delete (yyvsp[-1].expression_v);
+        delete (yyvsp[-2].vardeclexprs);
+        delete (yyvsp[-1].expressions1d);
       }
     break;
 
   case 63:
       {
         ParserState* pp = static_cast<ParserState*>(parm);
-        if ((yyvsp[-3].vardeclexpr_v)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-5].sValue),(yyvsp[-7].tiexpr),*(yyvsp[-3].vardeclexpr_v),(yyvsp[0].expression),pp->isSTDLib);
-        if ((yyval.item) && (yyvsp[-1].expression_v)) (yyval.item)->cast<FunctionI>()->ann().add(*(yyvsp[-1].expression_v));
+        if ((yyvsp[-3].vardeclexprs)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-5].sValue),(yyvsp[-7].tiexpr),*(yyvsp[-3].vardeclexprs),(yyvsp[0].expression),pp->isSTDLib);
+        if ((yyval.item) && (yyvsp[-1].expressions1d)) (yyval.item)->cast<FunctionI>()->ann().add(*(yyvsp[-1].expressions1d));
         free((yyvsp[-5].sValue));
-        delete (yyvsp[-3].vardeclexpr_v);
-        delete (yyvsp[-1].expression_v);
+        delete (yyvsp[-3].vardeclexprs);
+        delete (yyvsp[-1].expressions1d);
       }
     break;
 
@@ -3535,14 +3535,14 @@ yyreduce:
       {
         ParserState* pp = static_cast<ParserState*>(parm);
         TypeInst* ti=new TypeInst((yylsp[-2]),Type::ann());
-        if ((yyvsp[0].vardeclexpr_v)==nullptr || (yyvsp[0].vardeclexpr_v)->empty()) {
+        if ((yyvsp[0].vardeclexprs)==nullptr || (yyvsp[0].vardeclexprs)->empty()) {
           VarDecl* vd = new VarDecl((yyloc),ti,(yyvsp[-1].sValue));
           (yyval.item) = new VarDeclI((yyloc),vd);
         } else {
-          (yyval.item) = new FunctionI((yyloc),(yyvsp[-1].sValue),ti,*(yyvsp[0].vardeclexpr_v),nullptr,pp->isSTDLib);
+          (yyval.item) = new FunctionI((yyloc),(yyvsp[-1].sValue),ti,*(yyvsp[0].vardeclexprs),nullptr,pp->isSTDLib);
         }
         free((yyvsp[-1].sValue));
-        delete (yyvsp[0].vardeclexpr_v);
+        delete (yyvsp[0].vardeclexprs);
       }
     break;
 
@@ -3550,8 +3550,8 @@ yyreduce:
       {
         ParserState* pp = static_cast<ParserState*>(parm);
         TypeInst* ti=new TypeInst((yylsp[-4]),Type::ann());
-        if ((yyvsp[-2].vardeclexpr_v)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-3].sValue),ti,*(yyvsp[-2].vardeclexpr_v),(yyvsp[0].expression),pp->isSTDLib);
-        delete (yyvsp[-2].vardeclexpr_v);
+        if ((yyvsp[-2].vardeclexprs)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-3].sValue),ti,*(yyvsp[-2].vardeclexprs),(yyvsp[0].expression),pp->isSTDLib);
+        delete (yyvsp[-2].vardeclexprs);
       }
     break;
 
@@ -3564,35 +3564,35 @@ yyreduce:
     break;
 
   case 68:
-      { (yyval.vardeclexpr_v)=new vector<VarDecl*>(); }
+      { (yyval.vardeclexprs)=new vector<VarDecl*>(); }
     break;
 
   case 69:
-      { (yyval.vardeclexpr_v)=(yyvsp[-1].vardeclexpr_v); }
+      { (yyval.vardeclexprs)=(yyvsp[-1].vardeclexprs); }
     break;
 
   case 70:
-      { (yyval.vardeclexpr_v)=new vector<VarDecl*>(); }
+      { (yyval.vardeclexprs)=new vector<VarDecl*>(); }
     break;
 
   case 71:
-      { (yyval.vardeclexpr_v)=new vector<VarDecl*>(); }
+      { (yyval.vardeclexprs)=new vector<VarDecl*>(); }
     break;
 
   case 72:
-      { (yyval.vardeclexpr_v)=(yyvsp[-1].vardeclexpr_v); }
+      { (yyval.vardeclexprs)=(yyvsp[-1].vardeclexprs); }
     break;
 
   case 73:
-      { (yyval.vardeclexpr_v)=new vector<VarDecl*>();
+      { (yyval.vardeclexprs)=new vector<VarDecl*>();
         if ((yyvsp[0].vardeclexpr)) (yyvsp[0].vardeclexpr)->toplevel(false);
-        if ((yyvsp[0].vardeclexpr)) (yyval.vardeclexpr_v)->push_back((yyvsp[0].vardeclexpr)); }
+        if ((yyvsp[0].vardeclexpr)) (yyval.vardeclexprs)->push_back((yyvsp[0].vardeclexpr)); }
     break;
 
   case 74:
-      { (yyval.vardeclexpr_v)=(yyvsp[-2].vardeclexpr_v);
+      { (yyval.vardeclexprs)=(yyvsp[-2].vardeclexprs);
         if ((yyvsp[0].vardeclexpr)) (yyvsp[0].vardeclexpr)->toplevel(false);
-        if ((yyvsp[-2].vardeclexpr_v) && (yyvsp[0].vardeclexpr)) (yyvsp[-2].vardeclexpr_v)->push_back((yyvsp[0].vardeclexpr)); }
+        if ((yyvsp[-2].vardeclexprs) && (yyvsp[0].vardeclexpr)) (yyvsp[-2].vardeclexprs)->push_back((yyvsp[0].vardeclexpr)); }
     break;
 
   case 77:
@@ -3610,22 +3610,22 @@ yyreduce:
     break;
 
   case 80:
-      { (yyval.tiexpr_v)=(yyvsp[-1].tiexpr_v); }
+      { (yyval.tiexprs)=(yyvsp[-1].tiexprs); }
     break;
 
   case 81:
-      { (yyval.tiexpr_v)=new vector<TypeInst*>(); (yyval.tiexpr_v)->push_back((yyvsp[0].tiexpr)); }
+      { (yyval.tiexprs)=new vector<TypeInst*>(); (yyval.tiexprs)->push_back((yyvsp[0].tiexpr)); }
     break;
 
   case 82:
-      { (yyval.tiexpr_v)=(yyvsp[-2].tiexpr_v); if ((yyvsp[-2].tiexpr_v) && (yyvsp[0].tiexpr)) (yyvsp[-2].tiexpr_v)->push_back((yyvsp[0].tiexpr)); }
+      { (yyval.tiexprs)=(yyvsp[-2].tiexprs); if ((yyvsp[-2].tiexprs) && (yyvsp[0].tiexpr)) (yyvsp[-2].tiexprs)->push_back((yyvsp[0].tiexpr)); }
     break;
 
   case 84:
       {
         (yyval.tiexpr) = (yyvsp[0].tiexpr);
-        if ((yyval.tiexpr) && (yyvsp[-3].tiexpr_v)) (yyval.tiexpr)->setRanges(*(yyvsp[-3].tiexpr_v));
-        delete (yyvsp[-3].tiexpr_v);
+        if ((yyval.tiexpr) && (yyvsp[-3].tiexprs)) (yyval.tiexpr)->setRanges(*(yyvsp[-3].tiexprs));
+        delete (yyvsp[-3].tiexprs);
       }
     break;
 
@@ -3755,11 +3755,11 @@ yyreduce:
     break;
 
   case 104:
-      { (yyval.expression_v)=new std::vector<MiniZinc::Expression*>; (yyval.expression_v)->push_back((yyvsp[0].expression)); }
+      { (yyval.expressions1d)=new std::vector<MiniZinc::Expression*>; (yyval.expressions1d)->push_back((yyvsp[0].expression)); }
     break;
 
   case 105:
-      { (yyval.expression_v)=(yyvsp[-2].expression_v); if ((yyval.expression_v) && (yyvsp[0].expression)) (yyval.expression_v)->push_back((yyvsp[0].expression)); }
+      { (yyval.expressions1d)=(yyvsp[-2].expressions1d); if ((yyval.expressions1d) && (yyvsp[0].expression)) (yyval.expressions1d)->push_back((yyvsp[0].expression)); }
     break;
 
   case 106:
@@ -3793,11 +3793,11 @@ yyreduce:
     break;
 
   case 111:
-      { (yyval.expression_v)=new std::vector<MiniZinc::Expression*>; (yyval.expression_v)->push_back((yyvsp[0].expression)); }
+      { (yyval.expressions1d)=new std::vector<MiniZinc::Expression*>; (yyval.expressions1d)->push_back((yyvsp[0].expression)); }
     break;
 
   case 112:
-      { (yyval.expression_v)=(yyvsp[-2].expression_v); if ((yyval.expression_v) && (yyvsp[0].expression)) (yyval.expression_v)->push_back((yyvsp[0].expression)); }
+      { (yyval.expressions1d)=(yyvsp[-2].expressions1d); if ((yyval.expressions1d) && (yyvsp[0].expression)) (yyval.expressions1d)->push_back((yyvsp[0].expression)); }
     break;
 
   case 114:
@@ -4132,7 +4132,7 @@ yyreduce:
     break;
 
   case 178:
-      { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[0].expression_vv)); delete (yyvsp[0].expression_vv); }
+      { if ((yyvsp[0].expressions2d)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[0].expressions2d)); delete (yyvsp[0].expressions2d); }
     break;
 
   case 179:
@@ -4140,7 +4140,7 @@ yyreduce:
     break;
 
   case 180:
-      { if ((yyvsp[-1].expression_vv)) (yyval.expression)=new BinOp((yyloc),createArrayAccess((yyloc), (yyvsp[-3].expression), *(yyvsp[-1].expression_vv)), BOT_POW, IntLit::a(-1)); delete (yyvsp[-1].expression_vv); }
+      { if ((yyvsp[-1].expressions2d)) (yyval.expression)=new BinOp((yyloc),createArrayAccess((yyloc), (yyvsp[-3].expression), *(yyvsp[-1].expressions2d)), BOT_POW, IntLit::a(-1)); delete (yyvsp[-1].expressions2d); }
     break;
 
   case 181:
@@ -4148,8 +4148,8 @@ yyreduce:
     break;
 
   case 182:
-      { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), new Id((yylsp[-1]),(yyvsp[-1].sValue),nullptr), *(yyvsp[0].expression_vv));
-        free((yyvsp[-1].sValue)); delete (yyvsp[0].expression_vv); }
+      { if ((yyvsp[0].expressions2d)) (yyval.expression)=createArrayAccess((yyloc), new Id((yylsp[-1]),(yyvsp[-1].sValue),nullptr), *(yyvsp[0].expressions2d));
+        free((yyvsp[-1].sValue)); delete (yyvsp[0].expressions2d); }
     break;
 
   case 183:
@@ -4157,8 +4157,8 @@ yyreduce:
     break;
 
   case 184:
-      { if ((yyvsp[-1].expression_vv)) (yyval.expression)=new BinOp((yyloc),createArrayAccess((yyloc), new Id((yylsp[-2]),(yyvsp[-2].sValue),nullptr), *(yyvsp[-1].expression_vv)), BOT_POW, IntLit::a(-1));
-        free((yyvsp[-2].sValue)); delete (yyvsp[-1].expression_vv); }
+      { if ((yyvsp[-1].expressions2d)) (yyval.expression)=new BinOp((yyloc),createArrayAccess((yyloc), new Id((yylsp[-2]),(yyvsp[-2].sValue),nullptr), *(yyvsp[-1].expressions2d)), BOT_POW, IntLit::a(-1));
+        free((yyvsp[-2].sValue)); delete (yyvsp[-1].expressions2d); }
     break;
 
   case 185:
@@ -4166,8 +4166,8 @@ yyreduce:
     break;
 
   case 186:
-      { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), new AnonVar((yyloc)), *(yyvsp[0].expression_vv));
-        delete (yyvsp[0].expression_vv); }
+      { if ((yyvsp[0].expressions2d)) (yyval.expression)=createArrayAccess((yyloc), new AnonVar((yyloc)), *(yyvsp[0].expressions2d));
+        delete (yyvsp[0].expressions2d); }
     break;
 
   case 187:
@@ -4175,8 +4175,8 @@ yyreduce:
     break;
 
   case 188:
-      { if ((yyvsp[-1].expression_vv)) (yyval.expression)=new BinOp((yyloc),createArrayAccess((yyloc), new AnonVar((yyloc)), *(yyvsp[-1].expression_vv)), BOT_POW, IntLit::a(-1));
-        delete (yyvsp[-1].expression_vv); }
+      { if ((yyvsp[-1].expressions2d)) (yyval.expression)=new BinOp((yyloc),createArrayAccess((yyloc), new AnonVar((yyloc)), *(yyvsp[-1].expressions2d)), BOT_POW, IntLit::a(-1));
+        delete (yyvsp[-1].expressions2d); }
     break;
 
   case 189:
@@ -4220,8 +4220,8 @@ yyreduce:
     break;
 
   case 200:
-      { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expression_vv));
-        delete (yyvsp[0].expression_vv); }
+      { if ((yyvsp[0].expressions2d)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expressions2d));
+        delete (yyvsp[0].expressions2d); }
     break;
 
   case 201:
@@ -4229,13 +4229,13 @@ yyreduce:
     break;
 
   case 202:
-      { if ((yyvsp[-1].expression_vv)) (yyval.expression)=new BinOp((yyloc),createArrayAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expression_vv)), BOT_POW, IntLit::a(-1));
-        delete (yyvsp[-1].expression_vv); }
+      { if ((yyvsp[-1].expressions2d)) (yyval.expression)=new BinOp((yyloc),createArrayAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expressions2d)), BOT_POW, IntLit::a(-1));
+        delete (yyvsp[-1].expressions2d); }
     break;
 
   case 204:
-      { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expression_vv));
-        delete (yyvsp[0].expression_vv); }
+      { if ((yyvsp[0].expressions2d)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expressions2d));
+        delete (yyvsp[0].expressions2d); }
     break;
 
   case 205:
@@ -4243,13 +4243,13 @@ yyreduce:
     break;
 
   case 206:
-      { if ((yyvsp[-1].expression_vv)) (yyval.expression)=new BinOp((yyloc),createArrayAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expression_vv)), BOT_POW, IntLit::a(-1));
-        delete (yyvsp[-1].expression_vv); }
+      { if ((yyvsp[-1].expressions2d)) (yyval.expression)=new BinOp((yyloc),createArrayAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expressions2d)), BOT_POW, IntLit::a(-1));
+        delete (yyvsp[-1].expressions2d); }
     break;
 
   case 208:
-      { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expression_vv));
-        delete (yyvsp[0].expression_vv); }
+      { if ((yyvsp[0].expressions2d)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expressions2d));
+        delete (yyvsp[0].expressions2d); }
     break;
 
   case 209:
@@ -4257,13 +4257,13 @@ yyreduce:
     break;
 
   case 210:
-      { if ((yyvsp[-1].expression_vv)) (yyval.expression)=new BinOp((yyloc),createArrayAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expression_vv)), BOT_POW, IntLit::a(-1));
-        delete (yyvsp[-1].expression_vv); }
+      { if ((yyvsp[-1].expressions2d)) (yyval.expression)=new BinOp((yyloc),createArrayAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expressions2d)), BOT_POW, IntLit::a(-1));
+        delete (yyvsp[-1].expressions2d); }
     break;
 
   case 212:
-      { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expression_vv));
-        delete (yyvsp[0].expression_vv); }
+      { if ((yyvsp[0].expressions2d)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expressions2d));
+        delete (yyvsp[0].expressions2d); }
     break;
 
   case 213:
@@ -4271,13 +4271,13 @@ yyreduce:
     break;
 
   case 214:
-      { if ((yyvsp[-1].expression_vv)) (yyval.expression)=new BinOp((yyloc),createArrayAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expression_vv)), BOT_POW, IntLit::a(-1));
-        delete (yyvsp[-1].expression_vv); }
+      { if ((yyvsp[-1].expressions2d)) (yyval.expression)=new BinOp((yyloc),createArrayAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expressions2d)), BOT_POW, IntLit::a(-1));
+        delete (yyvsp[-1].expressions2d); }
     break;
 
   case 216:
-      { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expression_vv));
-        delete (yyvsp[0].expression_vv); }
+      { if ((yyvsp[0].expressions2d)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expressions2d));
+        delete (yyvsp[0].expressions2d); }
     break;
 
   case 217:
@@ -4285,13 +4285,13 @@ yyreduce:
     break;
 
   case 218:
-      { if ((yyvsp[-1].expression_vv)) (yyval.expression)=new BinOp((yyloc),createArrayAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expression_vv)), BOT_POW, IntLit::a(-1));
-        delete (yyvsp[-1].expression_vv); }
+      { if ((yyvsp[-1].expressions2d)) (yyval.expression)=new BinOp((yyloc),createArrayAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expressions2d)), BOT_POW, IntLit::a(-1));
+        delete (yyvsp[-1].expressions2d); }
     break;
 
   case 220:
-      { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expression_vv));
-        delete (yyvsp[0].expression_vv); }
+      { if ((yyvsp[0].expressions2d)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expressions2d));
+        delete (yyvsp[0].expressions2d); }
     break;
 
   case 221:
@@ -4299,18 +4299,18 @@ yyreduce:
     break;
 
   case 222:
-      { if ((yyvsp[-1].expression_vv)) (yyval.expression)=new BinOp((yyloc),createArrayAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expression_vv)), BOT_POW, IntLit::a(-1));
-        delete (yyvsp[-1].expression_vv); }
+      { if ((yyvsp[-1].expressions2d)) (yyval.expression)=new BinOp((yyloc),createArrayAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expressions2d)), BOT_POW, IntLit::a(-1));
+        delete (yyvsp[-1].expressions2d); }
     break;
 
   case 225:
-      { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expression_vv));
-        delete (yyvsp[0].expression_vv); }
+      { if ((yyvsp[0].expressions2d)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expressions2d));
+        delete (yyvsp[0].expressions2d); }
     break;
 
   case 227:
-      { if ((yyvsp[-1].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expression_vv));
-        delete (yyvsp[-1].expression_vv); }
+      { if ((yyvsp[-1].expressions2d)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expressions2d));
+        delete (yyvsp[-1].expressions2d); }
     break;
 
   case 228:
@@ -4324,34 +4324,34 @@ yyreduce:
     break;
 
   case 230:
-      { if ((yyvsp[-1].expression_v)) (yyval.expression)=new BinOp((yyloc), new Call((yyloc), ASTString("format"), *(yyvsp[-1].expression_v)), BOT_PLUSPLUS, new StringLit((yyloc),(yyvsp[0].sValue)));
+      { if ((yyvsp[-1].expressions1d)) (yyval.expression)=new BinOp((yyloc), new Call((yyloc), ASTString("format"), *(yyvsp[-1].expressions1d)), BOT_PLUSPLUS, new StringLit((yyloc),(yyvsp[0].sValue)));
         free((yyvsp[0].sValue));
-        delete (yyvsp[-1].expression_v);
+        delete (yyvsp[-1].expressions1d);
       }
     break;
 
   case 231:
-      { if ((yyvsp[-2].expression_v)) (yyval.expression)=new BinOp((yyloc), new Call((yyloc), ASTString("format"), *(yyvsp[-2].expression_v)), BOT_PLUSPLUS,
+      { if ((yyvsp[-2].expressions1d)) (yyval.expression)=new BinOp((yyloc), new Call((yyloc), ASTString("format"), *(yyvsp[-2].expressions1d)), BOT_PLUSPLUS,
                              new BinOp((yyloc), new StringLit((yyloc),(yyvsp[-1].sValue)), BOT_PLUSPLUS, (yyvsp[0].expression)));
         free((yyvsp[-1].sValue));
-        delete (yyvsp[-2].expression_v);
+        delete (yyvsp[-2].expressions1d);
       }
     break;
 
   case 232:
-      { (yyval.expression_vv)=new std::vector<std::vector<Expression*> >();
-        if ((yyvsp[-1].expression_v)) {
-          (yyval.expression_vv)->push_back(*(yyvsp[-1].expression_v));
-          delete (yyvsp[-1].expression_v);
+      { (yyval.expressions2d)=new std::vector<std::vector<Expression*> >();
+        if ((yyvsp[-1].expressions1d)) {
+          (yyval.expressions2d)->push_back(*(yyvsp[-1].expressions1d));
+          delete (yyvsp[-1].expressions1d);
         }
       }
     break;
 
   case 233:
-      { (yyval.expression_vv)=(yyvsp[-3].expression_vv);
-        if ((yyval.expression_vv) && (yyvsp[-1].expression_v)) {
-          (yyval.expression_vv)->push_back(*(yyvsp[-1].expression_v));
-          delete (yyvsp[-1].expression_v);
+      { (yyval.expressions2d)=(yyvsp[-3].expressions2d);
+        if ((yyval.expressions2d) && (yyvsp[-1].expressions1d)) {
+          (yyval.expressions2d)->push_back(*(yyvsp[-1].expressions1d));
+          delete (yyvsp[-1].expressions1d);
         }
       }
     break;
@@ -4361,58 +4361,58 @@ yyreduce:
     break;
 
   case 235:
-      { if ((yyvsp[-1].expression_v)) (yyval.expression) = new SetLit((yyloc), *(yyvsp[-1].expression_v));
-        delete (yyvsp[-1].expression_v); }
+      { if ((yyvsp[-1].expressions1d)) (yyval.expression) = new SetLit((yyloc), *(yyvsp[-1].expressions1d));
+        delete (yyvsp[-1].expressions1d); }
     break;
 
   case 236:
-      { if ((yyvsp[-1].generators)) (yyval.expression) = new Comprehension((yyloc), (yyvsp[-3].expression), *(yyvsp[-1].generators), true);
-        delete (yyvsp[-1].generators);
+      { if ((yyvsp[-1].generatorsPointer)) (yyval.expression) = new Comprehension((yyloc), (yyvsp[-3].expression), *(yyvsp[-1].generatorsPointer), true);
+        delete (yyvsp[-1].generatorsPointer);
       }
     break;
 
   case 237:
-      { if ((yyvsp[0].generator_v)) (yyval.generators)=new Generators; (yyval.generators)->_g = *(yyvsp[0].generator_v); delete (yyvsp[0].generator_v); }
+      { if ((yyvsp[0].generators)) (yyval.generatorsPointer)=new Generators; (yyval.generatorsPointer)->g = *(yyvsp[0].generators); delete (yyvsp[0].generators); }
     break;
 
   case 239:
-      { (yyval.generator_v)=new std::vector<Generator>; if ((yyvsp[0].generator)) (yyval.generator_v)->push_back(*(yyvsp[0].generator)); delete (yyvsp[0].generator); }
+      { (yyval.generators)=new std::vector<Generator>; if ((yyvsp[0].generator)) (yyval.generators)->push_back(*(yyvsp[0].generator)); delete (yyvsp[0].generator); }
     break;
 
   case 240:
-      { (yyval.generator_v)=new std::vector<Generator>; if ((yyvsp[0].generator)) (yyval.generator_v)->push_back(*(yyvsp[0].generator)); delete (yyvsp[0].generator); }
+      { (yyval.generators)=new std::vector<Generator>; if ((yyvsp[0].generator)) (yyval.generators)->push_back(*(yyvsp[0].generator)); delete (yyvsp[0].generator); }
     break;
 
   case 241:
-      { (yyval.generator_v)=new std::vector<Generator>;
-        if ((yyvsp[-2].generator)) (yyval.generator_v)->push_back(*(yyvsp[-2].generator));
-        if ((yyvsp[-2].generator) && (yyvsp[0].expression)) (yyval.generator_v)->push_back(Generator((yyval.generator_v)->size(),(yyvsp[0].expression)));
+      { (yyval.generators)=new std::vector<Generator>;
+        if ((yyvsp[-2].generator)) (yyval.generators)->push_back(*(yyvsp[-2].generator));
+        if ((yyvsp[-2].generator) && (yyvsp[0].expression)) (yyval.generators)->push_back(Generator((yyval.generators)->size(),(yyvsp[0].expression)));
         delete (yyvsp[-2].generator);
       }
     break;
 
   case 242:
-      { (yyval.generator_v)=(yyvsp[-2].generator_v); if ((yyval.generator_v) && (yyvsp[0].generator)) (yyval.generator_v)->push_back(*(yyvsp[0].generator)); delete (yyvsp[0].generator); }
+      { (yyval.generators)=(yyvsp[-2].generators); if ((yyval.generators) && (yyvsp[0].generator)) (yyval.generators)->push_back(*(yyvsp[0].generator)); delete (yyvsp[0].generator); }
     break;
 
   case 243:
-      { (yyval.generator_v)=(yyvsp[-2].generator_v); if ((yyval.generator_v) && (yyvsp[0].generator)) (yyval.generator_v)->push_back(*(yyvsp[0].generator)); delete (yyvsp[0].generator); }
+      { (yyval.generators)=(yyvsp[-2].generators); if ((yyval.generators) && (yyvsp[0].generator)) (yyval.generators)->push_back(*(yyvsp[0].generator)); delete (yyvsp[0].generator); }
     break;
 
   case 244:
-      { (yyval.generator_v)=(yyvsp[-4].generator_v);
-        if ((yyval.generator_v) && (yyvsp[-2].generator)) (yyval.generator_v)->push_back(*(yyvsp[-2].generator));
-        if ((yyval.generator_v) && (yyvsp[-2].generator) && (yyvsp[0].expression)) (yyval.generator_v)->push_back(Generator((yyval.generator_v)->size(),(yyvsp[0].expression)));
+      { (yyval.generators)=(yyvsp[-4].generators);
+        if ((yyval.generators) && (yyvsp[-2].generator)) (yyval.generators)->push_back(*(yyvsp[-2].generator));
+        if ((yyval.generators) && (yyvsp[-2].generator) && (yyvsp[0].expression)) (yyval.generators)->push_back(Generator((yyval.generators)->size(),(yyvsp[0].expression)));
         delete (yyvsp[-2].generator);
       }
     break;
 
   case 245:
-      { if ((yyvsp[-2].string_v) && (yyvsp[0].expression)) (yyval.generator)=new Generator(*(yyvsp[-2].string_v),(yyvsp[0].expression),nullptr); else (yyval.generator)=nullptr; delete (yyvsp[-2].string_v); }
+      { if ((yyvsp[-2].strings) && (yyvsp[0].expression)) (yyval.generator)=new Generator(*(yyvsp[-2].strings),(yyvsp[0].expression),nullptr); else (yyval.generator)=nullptr; delete (yyvsp[-2].strings); }
     break;
 
   case 246:
-      { if ((yyvsp[-4].string_v) && (yyvsp[-2].expression)) (yyval.generator)=new Generator(*(yyvsp[-4].string_v),(yyvsp[-2].expression),(yyvsp[0].expression)); else (yyval.generator)=nullptr; delete (yyvsp[-4].string_v); }
+      { if ((yyvsp[-4].strings) && (yyvsp[-2].expression)) (yyval.generator)=new Generator(*(yyvsp[-4].strings),(yyvsp[-2].expression),(yyvsp[0].expression)); else (yyval.generator)=nullptr; delete (yyvsp[-4].strings); }
     break;
 
   case 247:
@@ -4420,11 +4420,11 @@ yyreduce:
     break;
 
   case 249:
-      { (yyval.string_v)=new std::vector<std::string>; (yyval.string_v)->push_back((yyvsp[0].sValue)); free((yyvsp[0].sValue)); }
+      { (yyval.strings)=new std::vector<std::string>; (yyval.strings)->push_back((yyvsp[0].sValue)); free((yyvsp[0].sValue)); }
     break;
 
   case 250:
-      { (yyval.string_v)=(yyvsp[-2].string_v); if ((yyval.string_v) && (yyvsp[0].sValue)) (yyval.string_v)->push_back((yyvsp[0].sValue)); free((yyvsp[0].sValue)); }
+      { (yyval.strings)=(yyvsp[-2].strings); if ((yyval.strings) && (yyvsp[0].sValue)) (yyval.strings)->push_back((yyvsp[0].sValue)); free((yyvsp[0].sValue)); }
     break;
 
   case 251:
@@ -4432,7 +4432,7 @@ yyreduce:
     break;
 
   case 252:
-      { if ((yyvsp[-1].expression_v)) (yyval.expression)=new ArrayLit((yyloc), *(yyvsp[-1].expression_v)); delete (yyvsp[-1].expression_v); }
+      { if ((yyvsp[-1].expressions1d)) (yyval.expression)=new ArrayLit((yyloc), *(yyvsp[-1].expressions1d)); delete (yyvsp[-1].expressions1d); }
     break;
 
   case 253:
@@ -4440,12 +4440,12 @@ yyreduce:
     break;
 
   case 254:
-      { if ((yyvsp[-1].expression_vv)) {
-          (yyval.expression)=new ArrayLit((yyloc), *(yyvsp[-1].expression_vv));
-          for (unsigned int i=1; i<(yyvsp[-1].expression_vv)->size(); i++)
-            if ((*(yyvsp[-1].expression_vv))[i].size() != (*(yyvsp[-1].expression_vv))[i-1].size())
+      { if ((yyvsp[-1].expressions2d)) {
+          (yyval.expression)=new ArrayLit((yyloc), *(yyvsp[-1].expressions2d));
+          for (unsigned int i=1; i<(yyvsp[-1].expressions2d)->size(); i++)
+            if ((*(yyvsp[-1].expressions2d))[i].size() != (*(yyvsp[-1].expressions2d))[i-1].size())
               yyerror(&(yylsp[-1]), parm, "syntax error, all sub-arrays of 2d array literal must have the same length");
-          delete (yyvsp[-1].expression_vv);
+          delete (yyvsp[-1].expressions2d);
         } else {
           (yyval.expression) = nullptr;
         }
@@ -4453,12 +4453,12 @@ yyreduce:
     break;
 
   case 255:
-      { if ((yyvsp[-2].expression_vv)) {
-          (yyval.expression)=new ArrayLit((yyloc), *(yyvsp[-2].expression_vv));
-          for (unsigned int i=1; i<(yyvsp[-2].expression_vv)->size(); i++)
-            if ((*(yyvsp[-2].expression_vv))[i].size() != (*(yyvsp[-2].expression_vv))[i-1].size())
+      { if ((yyvsp[-2].expressions2d)) {
+          (yyval.expression)=new ArrayLit((yyloc), *(yyvsp[-2].expressions2d));
+          for (unsigned int i=1; i<(yyvsp[-2].expressions2d)->size(); i++)
+            if ((*(yyvsp[-2].expressions2d))[i].size() != (*(yyvsp[-2].expressions2d))[i-1].size())
               yyerror(&(yylsp[-2]), parm, "syntax error, all sub-arrays of 2d array literal must have the same length");
-          delete (yyvsp[-2].expression_vv);
+          delete (yyvsp[-2].expressions2d);
         } else {
           (yyval.expression) = nullptr;
         }
@@ -4467,38 +4467,38 @@ yyreduce:
 
   case 256:
     {
-      if ((yyvsp[-1].expression_vvv)) {
+      if ((yyvsp[-1].expressions3d)) {
         std::vector<std::pair<int,int> > dims(3);
-        dims[0] = std::pair<int,int>(1,static_cast<int>((yyvsp[-1].expression_vvv)->size()));
-        if ((yyvsp[-1].expression_vvv)->size()==0) {
+        dims[0] = std::pair<int,int>(1,static_cast<int>((yyvsp[-1].expressions3d)->size()));
+        if ((yyvsp[-1].expressions3d)->size()==0) {
           dims[1] = std::pair<int,int>(1,0);
           dims[2] = std::pair<int,int>(1,0);
         } else {
-          dims[1] = std::pair<int,int>(1,static_cast<int>((*(yyvsp[-1].expression_vvv))[0].size()));
-          if ((*(yyvsp[-1].expression_vvv))[0].size()==0) {
+          dims[1] = std::pair<int,int>(1,static_cast<int>((*(yyvsp[-1].expressions3d))[0].size()));
+          if ((*(yyvsp[-1].expressions3d))[0].size()==0) {
             dims[2] = std::pair<int,int>(1,0);
           } else {
-            dims[2] = std::pair<int,int>(1,static_cast<int>((*(yyvsp[-1].expression_vvv))[0][0].size()));
+            dims[2] = std::pair<int,int>(1,static_cast<int>((*(yyvsp[-1].expressions3d))[0][0].size()));
           }
         }
         std::vector<Expression*> a;
         for (int i=0; i<dims[0].second; i++) {
-          if ((*(yyvsp[-1].expression_vvv))[i].size() != dims[1].second) {
+          if ((*(yyvsp[-1].expressions3d))[i].size() != dims[1].second) {
             yyerror(&(yylsp[-1]), parm, "syntax error, all sub-arrays of 3d array literal must have the same length");
           } else {
             for (int j=0; j<dims[1].second; j++) {
-              if ((*(yyvsp[-1].expression_vvv))[i][j].size() != dims[2].second) {
+              if ((*(yyvsp[-1].expressions3d))[i][j].size() != dims[2].second) {
                 yyerror(&(yylsp[-1]), parm, "syntax error, all sub-arrays of 3d array literal must have the same length");
               } else {
                 for (int k=0; k<dims[2].second; k++) {
-                  a.push_back((*(yyvsp[-1].expression_vvv))[i][j][k]);
+                  a.push_back((*(yyvsp[-1].expressions3d))[i][j][k]);
                 }
               }
             }
           }
         }
         (yyval.expression) = new ArrayLit((yyloc),a,dims);
-        delete (yyvsp[-1].expression_vvv);
+        delete (yyvsp[-1].expressions3d);
       } else {
         (yyval.expression) = nullptr;
       }
@@ -4506,38 +4506,38 @@ yyreduce:
     break;
 
   case 257:
-      { (yyval.expression_vvv)=new std::vector<std::vector<std::vector<MiniZinc::Expression*> > >;
+      { (yyval.expressions3d)=new std::vector<std::vector<std::vector<MiniZinc::Expression*> > >;
       }
     break;
 
   case 258:
-      { (yyval.expression_vvv)=new std::vector<std::vector<std::vector<MiniZinc::Expression*> > >;
-        if ((yyvsp[-1].expression_vv)) (yyval.expression_vvv)->push_back(*(yyvsp[-1].expression_vv));
-        delete (yyvsp[-1].expression_vv);
+      { (yyval.expressions3d)=new std::vector<std::vector<std::vector<MiniZinc::Expression*> > >;
+        if ((yyvsp[-1].expressions2d)) (yyval.expressions3d)->push_back(*(yyvsp[-1].expressions2d));
+        delete (yyvsp[-1].expressions2d);
       }
     break;
 
   case 259:
-      { (yyval.expression_vvv)=(yyvsp[-4].expression_vvv);
-        if ((yyval.expression_vvv) && (yyvsp[-1].expression_vv)) (yyval.expression_vvv)->push_back(*(yyvsp[-1].expression_vv));
-        delete (yyvsp[-1].expression_vv);
+      { (yyval.expressions3d)=(yyvsp[-4].expressions3d);
+        if ((yyval.expressions3d) && (yyvsp[-1].expressions2d)) (yyval.expressions3d)->push_back(*(yyvsp[-1].expressions2d));
+        delete (yyvsp[-1].expressions2d);
       }
     break;
 
   case 260:
-      { (yyval.expression_vv)=new std::vector<std::vector<MiniZinc::Expression*> >;
-        if ((yyvsp[0].expression_v)) (yyval.expression_vv)->push_back(*(yyvsp[0].expression_v));
-        delete (yyvsp[0].expression_v);
+      { (yyval.expressions2d)=new std::vector<std::vector<MiniZinc::Expression*> >;
+        if ((yyvsp[0].expressions1d)) (yyval.expressions2d)->push_back(*(yyvsp[0].expressions1d));
+        delete (yyvsp[0].expressions1d);
       }
     break;
 
   case 261:
-      { (yyval.expression_vv)=(yyvsp[-2].expression_vv); if ((yyval.expression_vv) && (yyvsp[0].expression_v)) (yyval.expression_vv)->push_back(*(yyvsp[0].expression_v)); delete (yyvsp[0].expression_v); }
+      { (yyval.expressions2d)=(yyvsp[-2].expressions2d); if ((yyval.expressions2d) && (yyvsp[0].expressions1d)) (yyval.expressions2d)->push_back(*(yyvsp[0].expressions1d)); delete (yyvsp[0].expressions1d); }
     break;
 
   case 262:
-      { if ((yyvsp[-1].generators)) (yyval.expression)=new Comprehension((yyloc), (yyvsp[-3].expression), *(yyvsp[-1].generators), false);
-        delete (yyvsp[-1].generators);
+      { if ((yyvsp[-1].generatorsPointer)) (yyval.expression)=new Comprehension((yyloc), (yyvsp[-3].expression), *(yyvsp[-1].generatorsPointer), false);
+        delete (yyvsp[-1].generatorsPointer);
       }
     break;
 
@@ -4555,23 +4555,23 @@ yyreduce:
         std::vector<Expression*> iexps;
         iexps.push_back((yyvsp[-6].expression));
         iexps.push_back((yyvsp[-4].expression));
-        if ((yyvsp[-3].expression_v)) {
-          for (unsigned int i=0; i<(yyvsp[-3].expression_v)->size(); i+=2) {
-            iexps.push_back((*(yyvsp[-3].expression_v))[i]);
-            iexps.push_back((*(yyvsp[-3].expression_v))[i+1]);
+        if ((yyvsp[-3].expressions1d)) {
+          for (unsigned int i=0; i<(yyvsp[-3].expressions1d)->size(); i+=2) {
+            iexps.push_back((*(yyvsp[-3].expressions1d))[i]);
+            iexps.push_back((*(yyvsp[-3].expressions1d))[i+1]);
           }
         }
         (yyval.expression)=new ITE((yyloc), iexps,(yyvsp[-1].expression));
-        delete (yyvsp[-3].expression_v);
+        delete (yyvsp[-3].expressions1d);
       }
     break;
 
   case 265:
-      { (yyval.expression_v)=new std::vector<MiniZinc::Expression*>; }
+      { (yyval.expressions1d)=new std::vector<MiniZinc::Expression*>; }
     break;
 
   case 266:
-      { (yyval.expression_v)=(yyvsp[-4].expression_v); if ((yyval.expression_v) && (yyvsp[-2].expression) && (yyvsp[0].expression)) { (yyval.expression_v)->push_back((yyvsp[-2].expression)); (yyval.expression_v)->push_back((yyvsp[0].expression)); } }
+      { (yyval.expressions1d)=(yyvsp[-4].expressions1d); if ((yyval.expressions1d) && (yyvsp[-2].expression) && (yyvsp[0].expression)) { (yyval.expressions1d)->push_back((yyvsp[-2].expression)); (yyval.expressions1d)->push_back((yyvsp[0].expression)); } }
     break;
 
   case 267:
@@ -4738,23 +4738,23 @@ yyreduce:
 
   case 300:
       { 
-        if ((yyvsp[-1].expression_p)!=nullptr) {
+        if ((yyvsp[-1].expressionPairs)!=nullptr) {
           bool hadWhere = false;
           std::vector<Expression*> args;
-          for (unsigned int i=0; i<(yyvsp[-1].expression_p)->size(); i++) {
-            if ((*(yyvsp[-1].expression_p))[i].second) {
+          for (unsigned int i=0; i<(yyvsp[-1].expressionPairs)->size(); i++) {
+            if ((*(yyvsp[-1].expressionPairs))[i].second) {
               yyerror(&(yylsp[-1]), parm, "syntax error, 'where' expression outside generator call");
               hadWhere = true;
               (yyval.expression)=nullptr;
             }
-            args.push_back((*(yyvsp[-1].expression_p))[i].first);
+            args.push_back((*(yyvsp[-1].expressionPairs))[i].first);
           }
           if (!hadWhere) {
             (yyval.expression)=new Call((yyloc), (yyvsp[-3].sValue), args);
           }
         }
         free((yyvsp[-3].sValue));
-        delete (yyvsp[-1].expression_p);
+        delete (yyvsp[-1].expressionPairs);
       }
     break;
 
@@ -4762,36 +4762,36 @@ yyreduce:
       { 
         vector<Generator> gens;
         vector<Id*> ids;
-        if ((yyvsp[-4].expression_p)) {
-          for (unsigned int i=0; i<(yyvsp[-4].expression_p)->size(); i++) {
-            if (Id* id = Expression::dyn_cast<Id>((*(yyvsp[-4].expression_p))[i].first)) {
-              if ((*(yyvsp[-4].expression_p))[i].second) {
-                ParserLocation loc = (*(yyvsp[-4].expression_p))[i].second->loc().parserLocation();
+        if ((yyvsp[-4].expressionPairs)) {
+          for (unsigned int i=0; i<(yyvsp[-4].expressionPairs)->size(); i++) {
+            if (Id* id = Expression::dynamicCast<Id>((*(yyvsp[-4].expressionPairs))[i].first)) {
+              if ((*(yyvsp[-4].expressionPairs))[i].second) {
+                ParserLocation loc = (*(yyvsp[-4].expressionPairs))[i].second->loc().parserLocation();
                 yyerror(&loc, parm, "illegal where expression in generator call");
               }
               ids.push_back(id);
             } else {
-              if (BinOp* boe = Expression::dyn_cast<BinOp>((*(yyvsp[-4].expression_p))[i].first)) {
+              if (BinOp* boe = Expression::dynamicCast<BinOp>((*(yyvsp[-4].expressionPairs))[i].first)) {
                 if (boe->lhs() && boe->rhs()) {
-                  Id* id = Expression::dyn_cast<Id>(boe->lhs());
+                  Id* id = Expression::dynamicCast<Id>(boe->lhs());
                   if (id && boe->op() == BOT_IN) {
                     ids.push_back(id);
-                    gens.push_back(Generator(ids,boe->rhs(),(*(yyvsp[-4].expression_p))[i].second));
+                    gens.push_back(Generator(ids,boe->rhs(),(*(yyvsp[-4].expressionPairs))[i].second));
                     ids = vector<Id*>();
                   } else if (id && boe->op() == BOT_EQ && ids.empty()) {
                     ids.push_back(id);
                     gens.push_back(Generator(ids,nullptr,boe->rhs()));
-                    if ((*(yyvsp[-4].expression_p))[i].second) {
-                      gens.push_back(Generator(gens.size(),(*(yyvsp[-4].expression_p))[i].second));
+                    if ((*(yyvsp[-4].expressionPairs))[i].second) {
+                      gens.push_back(Generator(gens.size(),(*(yyvsp[-4].expressionPairs))[i].second));
                     }
                     ids = vector<Id*>();
                   } else {
-                    ParserLocation loc = (*(yyvsp[-4].expression_p))[i].first->loc().parserLocation();
+                    ParserLocation loc = (*(yyvsp[-4].expressionPairs))[i].first->loc().parserLocation();
                     yyerror(&loc, parm, "illegal expression in generator call");
                   }
                 }
               } else {
-                ParserLocation loc = (*(yyvsp[-4].expression_p))[i].first->loc().parserLocation();
+                ParserLocation loc = (*(yyvsp[-4].expressionPairs))[i].first->loc().parserLocation();
                 yyerror(&loc, parm, "illegal expression in generator call");
               }
             }
@@ -4804,35 +4804,35 @@ yyreduce:
         if (pp->hadError) {
           (yyval.expression)=nullptr;
         } else {
-          Generators g; g._g = gens;
+          Generators g; g.g = gens;
           Comprehension* ac = new Comprehension((yyloc), (yyvsp[-1].expression),g,false);
           vector<Expression*> args; args.push_back(ac);
           (yyval.expression)=new Call((yyloc), (yyvsp[-6].sValue), args);
         }
         free((yyvsp[-6].sValue));
-        delete (yyvsp[-4].expression_p);
+        delete (yyvsp[-4].expressionPairs);
       }
     break;
 
   case 302:
       {
-        if ((yyvsp[-1].expression_p)!=nullptr) {
+        if ((yyvsp[-1].expressionPairs)!=nullptr) {
           bool hadWhere = false;
           std::vector<Expression*> args;
-          for (unsigned int i=0; i<(yyvsp[-1].expression_p)->size(); i++) {
-            if ((*(yyvsp[-1].expression_p))[i].second) {
+          for (unsigned int i=0; i<(yyvsp[-1].expressionPairs)->size(); i++) {
+            if ((*(yyvsp[-1].expressionPairs))[i].second) {
               yyerror(&(yylsp[-1]), parm, "syntax error, 'where' expression outside generator call");
               hadWhere = true;
               (yyval.expression)=nullptr;
             }
-            args.push_back((*(yyvsp[-1].expression_p))[i].first);
+            args.push_back((*(yyvsp[-1].expressionPairs))[i].first);
           }
           if (!hadWhere) {
             (yyval.expression)=new Call((yyloc), std::string((yyvsp[-4].sValue))+"⁻¹", args);
           }
         }
         free((yyvsp[-4].sValue));
-        delete (yyvsp[-1].expression_p);
+        delete (yyvsp[-1].expressionPairs);
       }
     break;
 
@@ -4840,36 +4840,36 @@ yyreduce:
       {
         vector<Generator> gens;
         vector<Id*> ids;
-        if ((yyvsp[-4].expression_p)) {
-          for (unsigned int i=0; i<(yyvsp[-4].expression_p)->size(); i++) {
-            if (Id* id = Expression::dyn_cast<Id>((*(yyvsp[-4].expression_p))[i].first)) {
-              if ((*(yyvsp[-4].expression_p))[i].second) {
-                ParserLocation loc = (*(yyvsp[-4].expression_p))[i].second->loc().parserLocation();
+        if ((yyvsp[-4].expressionPairs)) {
+          for (unsigned int i=0; i<(yyvsp[-4].expressionPairs)->size(); i++) {
+            if (Id* id = Expression::dynamicCast<Id>((*(yyvsp[-4].expressionPairs))[i].first)) {
+              if ((*(yyvsp[-4].expressionPairs))[i].second) {
+                ParserLocation loc = (*(yyvsp[-4].expressionPairs))[i].second->loc().parserLocation();
                 yyerror(&loc, parm, "illegal where expression in generator call");
               }
               ids.push_back(id);
             } else {
-              if (BinOp* boe = Expression::dyn_cast<BinOp>((*(yyvsp[-4].expression_p))[i].first)) {
+              if (BinOp* boe = Expression::dynamicCast<BinOp>((*(yyvsp[-4].expressionPairs))[i].first)) {
                 if (boe->lhs() && boe->rhs()) {
-                  Id* id = Expression::dyn_cast<Id>(boe->lhs());
+                  Id* id = Expression::dynamicCast<Id>(boe->lhs());
                   if (id && boe->op() == BOT_IN) {
                     ids.push_back(id);
-                    gens.push_back(Generator(ids,boe->rhs(),(*(yyvsp[-4].expression_p))[i].second));
+                    gens.push_back(Generator(ids,boe->rhs(),(*(yyvsp[-4].expressionPairs))[i].second));
                     ids = vector<Id*>();
                   } else if (id && boe->op() == BOT_EQ && ids.empty()) {
                     ids.push_back(id);
                     gens.push_back(Generator(ids,nullptr,boe->rhs()));
-                    if ((*(yyvsp[-4].expression_p))[i].second) {
-                      gens.push_back(Generator(gens.size(),(*(yyvsp[-4].expression_p))[i].second));
+                    if ((*(yyvsp[-4].expressionPairs))[i].second) {
+                      gens.push_back(Generator(gens.size(),(*(yyvsp[-4].expressionPairs))[i].second));
                     }
                     ids = vector<Id*>();
                   } else {
-                    ParserLocation loc = (*(yyvsp[-4].expression_p))[i].first->loc().parserLocation();
+                    ParserLocation loc = (*(yyvsp[-4].expressionPairs))[i].first->loc().parserLocation();
                     yyerror(&loc, parm, "illegal expression in generator call");
                   }
                 }
               } else {
-                ParserLocation loc = (*(yyvsp[-4].expression_p))[i].first->loc().parserLocation();
+                ParserLocation loc = (*(yyvsp[-4].expressionPairs))[i].first->loc().parserLocation();
                 yyerror(&loc, parm, "illegal expression in generator call");
               }
             }
@@ -4882,43 +4882,43 @@ yyreduce:
         if (pp->hadError) {
           (yyval.expression)=nullptr;
         } else {
-          Generators g; g._g = gens;
+          Generators g; g.g = gens;
           Comprehension* ac = new Comprehension((yyloc), (yyvsp[-1].expression),g,false);
           vector<Expression*> args; args.push_back(ac);
           (yyval.expression)=new Call((yyloc), std::string((yyvsp[-7].sValue))+"⁻¹", args);
         }
         free((yyvsp[-7].sValue));
-        delete (yyvsp[-4].expression_p);
+        delete (yyvsp[-4].expressionPairs);
       }
     break;
 
   case 305:
-      { (yyval.expression_p)=new vector<pair<Expression*,Expression*> >;
+      { (yyval.expressionPairs)=new vector<pair<Expression*,Expression*> >;
         if ((yyvsp[0].expression)) {
-          (yyval.expression_p)->push_back(pair<Expression*,Expression*>((yyvsp[0].expression),nullptr));
+          (yyval.expressionPairs)->push_back(pair<Expression*,Expression*>((yyvsp[0].expression),nullptr));
         }
       }
     break;
 
   case 306:
-      { (yyval.expression_p)=new vector<pair<Expression*,Expression*> >;
+      { (yyval.expressionPairs)=new vector<pair<Expression*,Expression*> >;
         if ((yyvsp[-2].expression) && (yyvsp[0].expression)) {
-          (yyval.expression_p)->push_back(pair<Expression*,Expression*>((yyvsp[-2].expression),(yyvsp[0].expression)));
+          (yyval.expressionPairs)->push_back(pair<Expression*,Expression*>((yyvsp[-2].expression),(yyvsp[0].expression)));
         }
       }
     break;
 
   case 307:
-      { (yyval.expression_p)=(yyvsp[-2].expression_p); if ((yyval.expression_p) && (yyvsp[0].expression)) (yyval.expression_p)->push_back(pair<Expression*,Expression*>((yyvsp[0].expression),nullptr)); }
+      { (yyval.expressionPairs)=(yyvsp[-2].expressionPairs); if ((yyval.expressionPairs) && (yyvsp[0].expression)) (yyval.expressionPairs)->push_back(pair<Expression*,Expression*>((yyvsp[0].expression),nullptr)); }
     break;
 
   case 308:
-      { (yyval.expression_p)=(yyvsp[-4].expression_p); if ((yyval.expression_p) && (yyvsp[-2].expression) && (yyvsp[0].expression)) (yyval.expression_p)->push_back(pair<Expression*,Expression*>((yyvsp[-2].expression),(yyvsp[0].expression))); }
+      { (yyval.expressionPairs)=(yyvsp[-4].expressionPairs); if ((yyval.expressionPairs) && (yyvsp[-2].expression) && (yyvsp[0].expression)) (yyval.expressionPairs)->push_back(pair<Expression*,Expression*>((yyvsp[-2].expression),(yyvsp[0].expression))); }
     break;
 
   case 309:
-      { if ((yyvsp[-3].expression_v) && (yyvsp[0].expression)) {
-          (yyval.expression)=new Let((yyloc), *(yyvsp[-3].expression_v), (yyvsp[0].expression)); delete (yyvsp[-3].expression_v);
+      { if ((yyvsp[-3].expressions1d) && (yyvsp[0].expression)) {
+          (yyval.expression)=new Let((yyloc), *(yyvsp[-3].expressions1d), (yyvsp[0].expression)); delete (yyvsp[-3].expressions1d);
         } else {
           (yyval.expression)=nullptr;
         }
@@ -4926,8 +4926,8 @@ yyreduce:
     break;
 
   case 310:
-      { if ((yyvsp[-4].expression_v) && (yyvsp[0].expression)) {
-          (yyval.expression)=new Let((yyloc), *(yyvsp[-4].expression_v), (yyvsp[0].expression)); delete (yyvsp[-4].expression_v);
+      { if ((yyvsp[-4].expressions1d) && (yyvsp[0].expression)) {
+          (yyval.expression)=new Let((yyloc), *(yyvsp[-4].expressions1d), (yyvsp[0].expression)); delete (yyvsp[-4].expressions1d);
         } else {
           (yyval.expression)=nullptr;
         }
@@ -4935,28 +4935,28 @@ yyreduce:
     break;
 
   case 311:
-      { (yyval.expression_v)=new vector<Expression*>; (yyval.expression_v)->push_back((yyvsp[0].vardeclexpr)); }
+      { (yyval.expressions1d)=new vector<Expression*>; (yyval.expressions1d)->push_back((yyvsp[0].vardeclexpr)); }
     break;
 
   case 312:
-      { (yyval.expression_v)=new vector<Expression*>;
+      { (yyval.expressions1d)=new vector<Expression*>;
         if ((yyvsp[0].item)) {
           ConstraintI* ce = (yyvsp[0].item)->cast<ConstraintI>();
-          (yyval.expression_v)->push_back(ce->e());
+          (yyval.expressions1d)->push_back(ce->e());
           ce->e(nullptr);
         }
       }
     break;
 
   case 313:
-      { (yyval.expression_v)=(yyvsp[-2].expression_v); if ((yyval.expression_v) && (yyvsp[0].vardeclexpr)) (yyval.expression_v)->push_back((yyvsp[0].vardeclexpr)); }
+      { (yyval.expressions1d)=(yyvsp[-2].expressions1d); if ((yyval.expressions1d) && (yyvsp[0].vardeclexpr)) (yyval.expressions1d)->push_back((yyvsp[0].vardeclexpr)); }
     break;
 
   case 314:
-      { (yyval.expression_v)=(yyvsp[-2].expression_v);
-        if ((yyval.expression_v) && (yyvsp[0].item)) {
+      { (yyval.expressions1d)=(yyvsp[-2].expressions1d);
+        if ((yyval.expressions1d) && (yyvsp[0].item)) {
           ConstraintI* ce = (yyvsp[0].item)->cast<ConstraintI>();
-          (yyval.expression_v)->push_back(ce->e());
+          (yyval.expressions1d)->push_back(ce->e());
           ce->e(nullptr);
         }
       }
@@ -4965,8 +4965,8 @@ yyreduce:
   case 317:
       { (yyval.vardeclexpr) = (yyvsp[-1].vardeclexpr);
         if ((yyval.vardeclexpr)) (yyval.vardeclexpr)->toplevel(false);
-        if ((yyval.vardeclexpr) && (yyvsp[0].expression_v)) (yyval.vardeclexpr)->addAnnotations(*(yyvsp[0].expression_v));
-        delete (yyvsp[0].expression_v);
+        if ((yyval.vardeclexpr) && (yyvsp[0].expressions1d)) (yyval.vardeclexpr)->addAnnotations(*(yyvsp[0].expressions1d));
+        delete (yyvsp[0].expressions1d);
       }
     break;
 
@@ -4975,13 +4975,13 @@ yyreduce:
         (yyval.vardeclexpr) = (yyvsp[-3].vardeclexpr);
         if ((yyval.vardeclexpr)) (yyval.vardeclexpr)->loc((yyloc));
         if ((yyval.vardeclexpr)) (yyval.vardeclexpr)->toplevel(false);
-        if ((yyval.vardeclexpr) && (yyvsp[-2].expression_v)) (yyval.vardeclexpr)->addAnnotations(*(yyvsp[-2].expression_v));
-        delete (yyvsp[-2].expression_v);
+        if ((yyval.vardeclexpr) && (yyvsp[-2].expressions1d)) (yyval.vardeclexpr)->addAnnotations(*(yyvsp[-2].expressions1d));
+        delete (yyvsp[-2].expressions1d);
       }
     break;
 
   case 319:
-      { (yyval.expression_v)=nullptr; }
+      { (yyval.expressions1d)=nullptr; }
     break;
 
   case 321:
@@ -4993,13 +4993,13 @@ yyreduce:
     break;
 
   case 323:
-      { (yyval.expression_v)=new std::vector<Expression*>(1);
-        (*(yyval.expression_v))[0] = (yyvsp[0].expression);
+      { (yyval.expressions1d)=new std::vector<Expression*>(1);
+        (*(yyval.expressions1d))[0] = (yyvsp[0].expression);
       }
     break;
 
   case 324:
-      { (yyval.expression_v)=(yyvsp[-2].expression_v); if ((yyval.expression_v)) (yyval.expression_v)->push_back((yyvsp[0].expression)); }
+      { (yyval.expressions1d)=(yyvsp[-2].expressions1d); if ((yyval.expressions1d)) (yyval.expressions1d)->push_back((yyvsp[0].expression)); }
     break;
 
   case 325:

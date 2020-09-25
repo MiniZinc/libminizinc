@@ -1080,15 +1080,15 @@ namespace MiniZinc {
 #define YY_USER_ACTION \
   { MiniZinc::ParserState* parm =  \
       static_cast<MiniZinc::ParserState*>(yyget_extra(yyscanner)); \
-    yylloc->first_line(yylloc->last_line()); \
-    yylloc->first_column(yylloc->last_column()+1); \
+    yylloc->firstLine(yylloc->lastLine()); \
+    yylloc->firstColumn(yylloc->lastColumn()+1); \
     if(parm->hadNewline) { \
       parm->hadNewline=false; \
       parm->lineStartPos += parm->nTokenNextStart; \
       parm->nTokenNextStart=1; \
-      yylloc->last_line(yylloc->last_line()+1); \
-      yylloc->first_line(yylloc->last_line()); \
-      yylloc->first_column(1); \
+      yylloc->lastLine(yylloc->lastLine()+1); \
+      yylloc->firstLine(yylloc->lastLine()); \
+      yylloc->firstColumn(1); \
     } \
     if(yytext[0] == '\n') { \
       parm->hadNewline=true; \
@@ -1096,7 +1096,7 @@ namespace MiniZinc {
     } else { \
       parm->nTokenNextStart+=yyleng; \
     } \
-    yylloc->last_column(yylloc->first_column()+::MiniZinc::utf8len(yytext)-1); \
+    yylloc->lastColumn(yylloc->firstColumn()+::MiniZinc::utf8len(yytext)-1); \
   }
 
 namespace MiniZinc {
