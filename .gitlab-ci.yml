@@ -158,9 +158,7 @@ include:
 
 trigger:findmus:
   stage: trigger
-  image: dekker1/minibuild:package
-  script:
-  - "curl --request POST --form token=$TRIGGER --form ref=master https://gitlab.com/api/v4/projects/minizinc%2FFindMUS/trigger/pipeline"
-  dependencies: []
-  tags: [linux, docker]
+  trigger:
+    project: minizinc/FindMUS
+    branch: develop
   only: [develop]
