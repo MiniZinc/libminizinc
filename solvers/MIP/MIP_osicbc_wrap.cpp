@@ -38,7 +38,7 @@ using namespace std;
 
 #define WANT_SOLUTION
 
-string MIP_osicbc_wrapper::getDescription(MiniZinc::SolverInstanceBase::Options* /*opt*/) {
+string MIPosicbcWrapper::getDescription(MiniZinc::SolverInstanceBase::Options* /*opt*/) {
   string v = "MIP wrapper for COIN-BC ";
   v += CBC_VERSION;  // E.g., 2.9 stable or 2.9.7 latest release
   v += ",  using CLP ";
@@ -47,21 +47,21 @@ string MIP_osicbc_wrapper::getDescription(MiniZinc::SolverInstanceBase::Options*
   return v;
 }
 
-string MIP_osicbc_wrapper::getVersion(MiniZinc::SolverInstanceBase::Options* /*opt*/) {
+string MIPosicbcWrapper::getVersion(MiniZinc::SolverInstanceBase::Options* /*opt*/) {
   return string(CBC_VERSION) + "/" + string(CLP_VERSION);
 }
 
-string MIP_osicbc_wrapper::getId() { return "coin-bc"; }
+string MIPosicbcWrapper::getId() { return "coin-bc"; }
 
-string MIP_osicbc_wrapper::getName() { return "COIN-BC"; }
+string MIPosicbcWrapper::getName() { return "COIN-BC"; }
 
-vector<string> MIP_osicbc_wrapper::getTags() {
+vector<string> MIPosicbcWrapper::getTags() {
   return {"mip", "float", "api", "osicbc", "coinbc", "cbc"};
 }
 
-vector<string> MIP_osicbc_wrapper::getStdFlags() { return {"-i", "-p", "-s", "-v"}; }
+vector<string> MIPosicbcWrapper::getStdFlags() { return {"-i", "-p", "-s", "-v"}; }
 
-void MIP_osicbc_wrapper::Options::printHelp(ostream& os) {
+void MIPosicbcWrapper::Options::printHelp(ostream& os) {
   os << "COIN-BC MIP wrapper options:"
      << std::endl
      // -s                  print statistics
@@ -99,10 +99,10 @@ void MIP_osicbc_wrapper::Options::printHelp(ostream& os) {
      << std::endl;
 }
 
-bool MIP_osicbc_wrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
+bool MIPosicbcWrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
   MiniZinc::CLOParser cop(i, argv);
   if (cop.get("-i")) {
-    flag_intermediate = true;
+    flagIntermediate = true;
   } else if (string(argv[i]) == "-f") {
     //     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
   } else if (cop.get("--writeModel", &sExportModel)) {
@@ -117,7 +117,7 @@ bool MIP_osicbc_wrapper::Options::processOption(int& i, std::vector<std::string>
     // Parsed by referenced
   } else if (cop.get("--writeParam", &sWriteParams)) {
     // Parsed by referenced
-  } else if (cop.get("--cbcArgs --cbcFlags --cbc-flags --solver-flags", &cbc_cmdOptions)) {
+  } else if (cop.get("--cbcArgs --cbcFlags --cbc-flags --solver-flags", &cbcCmdOptions)) {
     // Parsed by referenced
   } else if (cop.get("--absGap", &absGap)) {
     // Parsed by referenced
@@ -132,11 +132,11 @@ bool MIP_osicbc_wrapper::Options::processOption(int& i, std::vector<std::string>
   return true;
 }
 
-void MIP_osicbc_wrapper::wrapAssert(bool cond, const string& msg, bool fTerm) {
+void MIPosicbcWrapper::wrapAssert(bool cond, const string& msg, bool fTerm) {
   if (!cond) {
-    //       strcpy(osicbc_buffer, "[NO ERROR STRING GIVEN]");
-    //       CBCgeterrorstring (env, status, osicbc_buffer);
-    string msgAll = ("  MIP_osicbc_wrapper runtime error:  " + msg + "  " + osicbc_buffer);
+    //       strcpy(_osicbcBuffer, "[NO ERROR STRING GIVEN]");
+    //       CBCgeterrorstring (env, status, _osicbcBuffer);
+    string msgAll = ("  MIPosicbcWrapper runtime error:  " + msg + "  " + _osicbcBuffer);
     cerr << msgAll << endl;
     if (fTerm) {
       cerr << "TERMINATING." << endl;
@@ -145,31 +145,30 @@ void MIP_osicbc_wrapper::wrapAssert(bool cond, const string& msg, bool fTerm) {
   }
 }
 
-void MIP_osicbc_wrapper::doAddVars(size_t n, double* obj, double* lb, double* ub,
-                                   MIPWrapper::VarType* vt, string* names) {
+void MIPosicbcWrapper::doAddVars(size_t n, double* obj, double* lb, double* ub,
+                                 MIPWrapper::VarType* vt, string* names) {
   /// Convert var types:
   //   vector<char> ctype(n);
   //   vector<char*> pcNames(n);
   CoinPackedVector cpv;
   vector<CoinPackedVectorBase*> pCpv(n, &cpv);
-  osi.addCols(n, pCpv.data(), lb, ub, obj);  // setting integer & names later
+  _osi.addCols(n, pCpv.data(), lb, ub, obj);  // setting integer & names later
   //   status = CBCnewcols (env, lp, n, obj, lb, ub, &ctype[0], &pcNames[0]);
   //   wrapAssert( !status,  "Failed to declare variables." );
 }
 
-void MIP_osicbc_wrapper::addRow(int nnz, int* rmatind, double* rmatval,
-                                MIPWrapper::LinConType sense, double rhs, int mask,
-                                const string& rowName) {
+void MIPosicbcWrapper::addRow(int nnz, int* rmatind, double* rmatval, MIPWrapper::LinConType sense,
+                              double rhs, int mask, const string& rowName) {
   /// Convert var types:
   double rlb = rhs, rub = rhs;
   switch (sense) {
     case LQ:
-      rlb = -osi.getInfinity();
+      rlb = -_osi.getInfinity();
       break;
     case EQ:
       break;
     case GQ:
-      rub = osi.getInfinity();
+      rub = _osi.getInfinity();
       break;
     default:
       throw runtime_error("  MIPWrapper: unknown constraint type");
@@ -178,7 +177,7 @@ void MIP_osicbc_wrapper::addRow(int nnz, int* rmatind, double* rmatval,
   // 1-by-1 too slow:
   //   try {
   //     CoinPackedVector cpv(nnz, rmatind, rmatval);
-  //     osi.addRow(cpv, rlb, rub);
+  //     _osi.addRow(cpv, rlb, rub);
   //   } catch (const CoinError& err) {
   //     cerr << "  COIN-OR Error: " << err.message() << endl;
   //     throw runtime_error(err.message());
@@ -187,17 +186,17 @@ void MIP_osicbc_wrapper::addRow(int nnz, int* rmatind, double* rmatval,
   //   rowStarts.push_back(columns.size());
   //   columns.insert(columns.end(), rmatind, rmatind + nnz);
   //   element.insert(element.end(), rmatval, rmatval + nnz);
-  rows.emplace_back(nnz, rmatind, rmatval);
-  rowlb.push_back(rlb);
-  rowub.push_back(rub);
+  _rows.emplace_back(nnz, rmatind, rmatval);
+  _rowlb.push_back(rlb);
+  _rowub.push_back(rub);
 }
 
-bool MIP_osicbc_wrapper::addWarmStart(const std::vector<VarId>& vars,
-                                      const std::vector<double>& vals) {
+bool MIPosicbcWrapper::addWarmStart(const std::vector<VarId>& vars,
+                                    const std::vector<double>& vals) {
   assert(vars.size() == vals.size());
   static_assert(sizeof(VarId) == sizeof(int), "VarId should be (u)int currently");
   for (int i = 0; i < vars.size(); ++i) {
-    warmstart[vars[i]] = vals[i];
+    _warmstart[vars[i]] = vals[i];
   }
   return true;
 }
@@ -331,22 +330,22 @@ public:
 
 protected:
   // data goes here
-  EventUserInfo ui;
-  double bestSolutionValue = DBL_MAX;  // always min
+  EventUserInfo _ui;
+  double _bestSolutionValue = DBL_MAX;  // always min
 };
 //-------------------------------------------------------------------
 // Default Constructor
 //-------------------------------------------------------------------
-MyEventHandler3::MyEventHandler3(EventUserInfo& u_) : CbcEventHandler(), ui(u_) { assert(0); }
+MyEventHandler3::MyEventHandler3(EventUserInfo& u_) : CbcEventHandler(), _ui(u_) { assert(0); }
 
 //-------------------------------------------------------------------
 // Copy constructor
 //-------------------------------------------------------------------
-MyEventHandler3::MyEventHandler3(const MyEventHandler3& rhs) : CbcEventHandler(rhs), ui(rhs.ui) {}
+MyEventHandler3::MyEventHandler3(const MyEventHandler3& rhs) : CbcEventHandler(rhs), _ui(rhs._ui) {}
 
 // Constructor with pointer to model
 MyEventHandler3::MyEventHandler3(CbcModel* model, EventUserInfo& u_)
-    : CbcEventHandler(model), ui(u_) {}
+    : CbcEventHandler(model), _ui(u_) {}
 
 //-------------------------------------------------------------------
 // Destructor
@@ -360,7 +359,7 @@ MyEventHandler3& MyEventHandler3::operator=(const MyEventHandler3& rhs) {
   if (this != &rhs) {
     CbcEventHandler::operator=(rhs);
   }
-  ui = rhs.ui;
+  _ui = rhs._ui;
   return *this;
 }
 //-------------------------------------------------------------------
@@ -393,8 +392,8 @@ CbcEventHandler::CbcAction MyEventHandler3::event(CbcEvent whichEvent) {
     if (whichEvent == solution || whichEvent == heuristicSolution) {
       // John Forrest  27.2.16:
       // check not duplicate
-      if (model_->getObjValue() < bestSolutionValue) {
-        bestSolutionValue = model_->getObjValue();
+      if (model_->getObjValue() < _bestSolutionValue) {
+        _bestSolutionValue = model_->getObjValue();
         // If preprocessing was done solution will be to processed model
         //       int numberColumns = model_->getNumCols();
         const double* bestSolution = model_->bestSolution();
@@ -430,47 +429,47 @@ CbcEventHandler::CbcAction MyEventHandler3::event(CbcEvent whichEvent) {
             }
           }
           solver->resolve();
-          cbcPreProcessPointer->postProcess(*solver, false);
+          cbcPreProcessPointer->postProcess(*solver, 0);
           delete solver;
           origModel = cbcPreProcessPointer->originalModel();
-          ui.pCbui->pOutput->x = origModel->getColSolution();
+          _ui.pCbui->pOutput->x = origModel->getColSolution();
         } else {
           origModel = model_->solver();
-          ui.pCbui->pOutput->x = bestSolution;
+          _ui.pCbui->pOutput->x = bestSolution;
         }
-        if (ui.pCbui->fVerb) {
+        if (_ui.pCbui->fVerb) {
           cerr << " % OBJ VAL RAW: " << model_->getObjValue() << "  OBJ VAL ORIG(?): " << objVal
                << " % BND RAW: " << model_->getBestPossibleObjValue() << "  BND ORIG(?): "
                << bestBnd
                //         << "  &prepro: " << cbcPreProcessPointer
                //         << "  &model_._solver(): " << model_->solver()
-               << "  orig NCols: " << ui.pCbui->pOutput->nCols
+               << "  orig NCols: " << _ui.pCbui->pOutput->nCols
                << "  prepro NCols:  " << model_->getNumCols();
         }
-        assert(origModel->getNumCols() == ui.pCbui->pOutput->nCols);
-        if (ui.pCbui->fVerb) {
-          if (ui.pCbui->pOutput->nObjVarIndex >= 0) {
-            cerr << "  objVAR: " << ui.pCbui->pOutput->x[ui.pCbui->pOutput->nObjVarIndex];
+        assert(origModel->getNumCols() == _ui.pCbui->pOutput->nCols);
+        if (_ui.pCbui->fVerb) {
+          if (_ui.pCbui->pOutput->nObjVarIndex >= 0) {
+            cerr << "  objVAR: " << _ui.pCbui->pOutput->x[_ui.pCbui->pOutput->nObjVarIndex];
           }
           cerr << endl;
         }
-        ui.pCbui->pOutput->objVal = objVal;
+        _ui.pCbui->pOutput->objVal = objVal;
         //         origModel->getObjValue();
-        ui.pCbui->pOutput->status = MIPWrapper::SAT;
-        ui.pCbui->pOutput->statusName = "feasible from a callback";
-        ui.pCbui->pOutput->bestBound = bestBnd;
-        ui.pCbui->pOutput->dWallTime =
+        _ui.pCbui->pOutput->status = MIPWrapper::SAT;
+        _ui.pCbui->pOutput->statusName = "feasible from a callback";
+        _ui.pCbui->pOutput->bestBound = bestBnd;
+        _ui.pCbui->pOutput->dWallTime =
             std::chrono::duration<double>(std::chrono::steady_clock::now() -
-                                          ui.pCbui->pOutput->dWallTime0)
+                                          _ui.pCbui->pOutput->dWallTime0)
                 .count();
-        ui.pCbui->pOutput->dCPUTime = model_->getCurrentSeconds();
-        ui.pCbui->pOutput->nNodes = model_->getNodeCount();
-        ui.pCbui->pOutput->nOpenNodes = -1;  // model_->getNodeCount2();
+        _ui.pCbui->pOutput->dCPUTime = model_->getCurrentSeconds();
+        _ui.pCbui->pOutput->nNodes = model_->getNodeCount();
+        _ui.pCbui->pOutput->nOpenNodes = -1;  // model_->getNodeCount2();
 
         /// Call the user function:
-        if (ui.pCbui->solcbfn != nullptr) {
-          (*(ui.pCbui->solcbfn))(*(ui.pCbui->pOutput), ui.pCbui->psi);
-          ui.pCbui->printed = true;
+        if (_ui.pCbui->solcbfn != nullptr) {
+          (*(_ui.pCbui->solcbfn))(*(_ui.pCbui->pOutput), _ui.pCbui->psi);
+          _ui.pCbui->printed = true;
         }
         return noAction;  // carry on
       } else {
@@ -557,13 +556,13 @@ int MyEventHandler4::event(Event whichEvent) {
 }
 // end SolutionCallback ---------------------------------------------------------------------
 
-MIP_osicbc_wrapper::Status MIP_osicbc_wrapper::convertStatus(CbcModel* pModel) {
+MIPosicbcWrapper::Status MIPosicbcWrapper::convertStatus(CbcModel* pModel) {
   Status s = Status::UNKNOWN;
   /* Converting the status. */
   if (pModel->isProvenOptimal()) {
     s = Status::OPT;
     output.statusName = "Optimal";
-    //        wrapAssert(osi., "Optimality reported but pool empty?", false);
+    //        wrapAssert(_osi., "Optimality reported but pool empty?", false);
   } else if (pModel->isProvenInfeasible()) {
     s = Status::UNSAT;
     output.statusName = "Infeasible";
@@ -585,28 +584,28 @@ MIP_osicbc_wrapper::Status MIP_osicbc_wrapper::convertStatus(CbcModel* pModel) {
   return s;
 }
 
-MIP_osicbc_wrapper::Status MIP_osicbc_wrapper::convertStatus() {
+MIPosicbcWrapper::Status MIPosicbcWrapper::convertStatus() {
   Status s = Status::UNKNOWN;
   /* Converting the status. */
-  if (osi.isProvenOptimal()) {
+  if (_osi.isProvenOptimal()) {
     s = Status::OPT;
     output.statusName = "Optimal";
-    //        wrapAssert(osi., "Optimality reported but pool empty?", false);
-  } else if (osi.isProvenPrimalInfeasible()) {
+    //        wrapAssert(_osi., "Optimality reported but pool empty?", false);
+  } else if (_osi.isProvenPrimalInfeasible()) {
     s = Status::UNSAT;
     output.statusName = "Infeasible";
-  } else if (osi.isProvenDualInfeasible()) {
+  } else if (_osi.isProvenDualInfeasible()) {
     s = Status::UNBND;
     output.statusName = "Dual infeasible";
     //        s = Status::UNSATorUNBND;
-  } else if (osi.isAbandoned()) {
+  } else if (_osi.isAbandoned()) {
     s = Status::__ERROR;
     output.statusName = "Abandoned";
   } else if  // wrong: (pModel->getColSolution())
-      (fabs(osi.getObjValue()) < osi.getInfinity()) {
+      (fabs(_osi.getObjValue()) < _osi.getInfinity()) {
     s = Status::SAT;
     output.statusName = "Feasible";
-    cout << " getSolverObjValue(as minim) == " << osi.getObjValue() << endl;
+    cout << " getSolverObjValue(as minim) == " << _osi.getObjValue() << endl;
   } else {
     s = Status::UNKNOWN;
     output.statusName = "Unknown";
@@ -614,29 +613,29 @@ MIP_osicbc_wrapper::Status MIP_osicbc_wrapper::convertStatus() {
   return s;
 }
 
-void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
+void MIPosicbcWrapper::solve() {  // Move into ancestor?
   try {
     /// Not using CoinPackedMatrix any more, so need to add all constraints at once:
     /// But this gives segf:
-    //     osi.addRows(rowStarts.size(), rowStarts.data(),
+    //     _osi.addRows(rowStarts.size(), rowStarts.data(),
     //                 columns.data(), element.data(), rowlb.data(), rowub.data());
     /// So:
     MIPWrapper::addPhase1Vars();  // only now
     if (fVerbose) {
-      cerr << "  MIP_osicbc_wrapper: adding constraints physically..." << flush;
+      cerr << "  MIPosicbcWrapper: adding constraints physically..." << flush;
     }
-    vector<CoinPackedVectorBase*> pRows(rowlb.size());
-    for (int i = 0; i < rowlb.size(); ++i) {
-      pRows[i] = &rows[i];
+    vector<CoinPackedVectorBase*> pRows(_rowlb.size());
+    for (int i = 0; i < _rowlb.size(); ++i) {
+      pRows[i] = &_rows[i];
     }
-    osi.addRows(rowlb.size(), pRows.data(), rowlb.data(), rowub.data());
+    _osi.addRows(_rowlb.size(), pRows.data(), _rowlb.data(), _rowub.data());
     //     rowStarts.clear();
     //     columns.clear();
     //     element.clear();
     pRows.clear();
-    rows.clear();
-    rowlb.clear();
-    rowub.clear();
+    _rows.clear();
+    _rowlb.clear();
+    _rowub.clear();
     if (fVerbose) {
       cerr << " done." << endl;
     }
@@ -651,23 +650,23 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
           integer_vars.push_back(i);
         }
       }
-      osi.setInteger(integer_vars.data(), integer_vars.size());
+      _osi.setInteger(integer_vars.data(), integer_vars.size());
     }
-    if (!options->sExportModel.empty()) {
+    if (!_options->sExportModel.empty()) {
       // Not implemented for OsiClp:
-      //       osi.setColNames(colNames, 0, colObj.size(), 0);
+      //       _osi.setColNames(colNames, 0, colObj.size(), 0);
       vector<const char*> colN(colObj.size());
       for (int j = 0; j < colNames.size(); ++j) {
         colN[j] = colNames[j].c_str();
       }
-      osi.writeMpsNative(options->sExportModel.c_str(), nullptr, colN.data());
+      _osi.writeMpsNative(_options->sExportModel.c_str(), nullptr, colN.data());
     }
 
     // Tell solver to return fast if presolve or initial solve infeasible
-    osi.getModelPtr()->setMoreSpecialOptions(3);
+    _osi.getModelPtr()->setMoreSpecialOptions(3);
     // allow Clp to handle interrupts
     MyEventHandler4 clpEventHandler;
-    osi.getModelPtr()->passInEventHandler(&clpEventHandler);
+    _osi.getModelPtr()->passInEventHandler(&clpEventHandler);
 
     /* switch on/off output to the screen */
     class NullCoinMessageHandler : public CoinMessageHandler {
@@ -685,8 +684,8 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 
     // #define __USE_CbcSolver__  -- not linked rev2274
     /// FOR WARMSTART
-    for (const auto& vv : warmstart) {
-      osi.setColName(vv.first, colNames[vv.first]);
+    for (const auto& vv : _warmstart) {
+      _osi.setColName(vv.first, colNames[vv.first]);
     }
 #ifdef __USE_CbcSolver__
     CbcSolver control(osi);
@@ -694,28 +693,28 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
     control.fillValuesInSolver();
     CbcModel& model = *control.model();
 #else
-    CbcModel model(osi);
+    CbcModel model(_osi);
 #endif
     //     CbcSolver control(osi);
     //     control.solve();
-    if (options->absGap >= 0.0) {
-      model.setAllowableGap(options->absGap);
+    if (_options->absGap >= 0.0) {
+      model.setAllowableGap(_options->absGap);
     }
-    if (options->relGap >= 0.0) {
-      model.setAllowableFractionGap(options->relGap);
+    if (_options->relGap >= 0.0) {
+      model.setAllowableFractionGap(_options->relGap);
     }
-    if (options->intTol >= 0.0) {
-      model.setIntegerTolerance(options->intTol);
+    if (_options->intTol >= 0.0) {
+      model.setIntegerTolerance(_options->intTol);
     }
     //     model.setCutoffIncrement( objDiff );
 
     /// WARMSTART
     {
       std::vector<std::pair<std::string, double> > mipstart;
-      for (const auto& vv : warmstart) {
+      for (const auto& vv : _warmstart) {
         mipstart.emplace_back(colNames[vv.first], vv.second);
       }
-      warmstart.clear();
+      _warmstart.clear();
       model.setMIPStart(mipstart);
     }
 
@@ -730,9 +729,9 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
     } stderrHandler;
 
     if (fVerbose) {
-      //        osi.messageHandler()->setLogLevel(1);
-      //        osi.getModelPtr()->setLogLevel(1);
-      //        osi.getRealSolverPtr()->messageHandler()->setLogLevel(0);
+      //        _osi.messageHandler()->setLogLevel(1);
+      //        _osi.getModelPtr()->setLogLevel(1);
+      //        _osi.getRealSolverPtr()->messageHandler()->setLogLevel(0);
       // DOES NOT WORK:                                                     TODO
       //        model.passInMessageHandler( &stderrHandler );
       msgStderr.setLogLevel(0, 1);
@@ -744,14 +743,14 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
       model.messageHandler()->setLogLevel(0);
       model.setLogLevel(0);
       model.solver()->setHintParam(OsiDoReducePrint, true, OsiHintTry);
-      //       osi.passInMessageHandler(&nullHandler);
-      //       osi.messageHandler()->setLogLevel(0);
-      //       osi.setHintParam(OsiDoReducePrint, true, OsiHintTry);
+      //       _osi.passInMessageHandler(&nullHandler);
+      //       _osi.messageHandler()->setLogLevel(0);
+      //       _osi.setHintParam(OsiDoReducePrint, true, OsiHintTry);
     }
 
-    if (options->nTimeout != 0) {
-      //       osi.setMaximumSeconds(nTimeout);
-      model.setMaximumSeconds(static_cast<double>(options->nTimeout) / 1000.0);
+    if (_options->nTimeout != 0) {
+      //       _osi.setMaximumSeconds(nTimeout);
+      model.setMaximumSeconds(static_cast<double>(_options->nTimeout) / 1000.0);
     }
 
     /// TODO
@@ -765,7 +764,7 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
     //    x.resize(output.nCols);
     //    output.x = &x[0];
 
-    if (options->flag_intermediate && (cbui.solcbfn != nullptr)) {
+    if (_options->flagIntermediate && (cbui.solcbfn != nullptr)) {
       // Event handler. Should be after CbcMain0()?
       EventUserInfo ui;
       ui.pCbui = &cbui;
@@ -823,21 +822,21 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
       model.addCutGenerator(&ccb, 10, "MZN_cuts", true, true);  // also at solution
     }
 
-    if (1 < options->nThreads) {
-      options->cbc_cmdOptions += " -threads ";
+    if (1 < _options->nThreads) {
+      _options->cbcCmdOptions += " -threads ";
       ostringstream oss;
-      oss << options->nThreads;
-      options->cbc_cmdOptions += oss.str();
+      oss << _options->nThreads;
+      _options->cbcCmdOptions += oss.str();
     }
-    options->cbc_cmdOptions += " -solve";
-    options->cbc_cmdOptions += " -quit";
+    _options->cbcCmdOptions += " -solve";
+    _options->cbcCmdOptions += " -quit";
 
     cbui.pOutput->dWallTime0 = output.dWallTime0 = std::chrono::steady_clock::now();
     output.dCPUTime = clock();
 
     /* OLD: Optimize the problem and obtain solution. */
     //       model.branchAndBound();
-    //       osi.branchAndBound();
+    //       _osi.branchAndBound();
 
     /// TAKEN FORM DRIVER3.CPP, seems to use most features:
 //      CbcMain0(model);
@@ -846,17 +845,17 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 //        CbcMain1(3,argv2,model);
 #ifdef __USE_CbcSolver__
     if (fVerbose)
-      cerr << "  Calling control.solve() with options '" << options->cbc_cmdOptions << "'..."
+      cerr << "  Calling control.solve() with options '" << options->cbcCmdOptions << "'..."
            << endl;
-    control.solve(options->cbc_cmdOptions.c_str(), 1);
+    control.solve(options->cbcCmdOptions.c_str(), 1);
 #else
 #define __USE_callCbc1__
 #ifdef __USE_callCbc1__
     if (fVerbose) {
-      cerr << "  Calling callCbc with options '" << options->cbc_cmdOptions << "'..." << endl;
+      cerr << "  Calling callCbc with options '" << _options->cbcCmdOptions << "'..." << endl;
     }
-    callCbc(options->cbc_cmdOptions, model);
-//     callCbc1(cbc_cmdOptions, model, callBack);
+    callCbc(_options->cbcCmdOptions, model);
+//     callCbc1(cbcCmdOptions, model, callBack);
 // What is callBack() for?    TODO
 #else
     CbcMain0(model);
@@ -870,10 +869,10 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
        but this will do
     */
     vector<string> argvS;
-    MiniZinc::split(cbc_cmdOptions, argvS);
+    MiniZinc::split(cbcCmdOptions, argvS);
     vector<const char*> argv;
     MiniZinc::vec_string2vec_pchar(argvS, argv);
-    if (fVerbose) cerr << "  Calling CbcMain1 with options '" << cbc_cmdOptions << "'..." << endl;
+    if (fVerbose) cerr << "  Calling CbcMain1 with options '" << cbcCmdOptions << "'..." << endl;
     CbcMain1(argv.size(), argv.data(), model, callBack);
 #endif
 #endif
@@ -888,7 +887,7 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
     /// Continuing to fill the output object:
     if (Status::OPT == output.status || Status::SAT == output.status) {
       output.objVal = model.getObjValue();
-      //      output.objVal = osi.getObjValue();
+      //      output.objVal = _osi.getObjValue();
 
       /* The size of the problem should be obtained by asking OSICBC what
           the actual size is, rather than using what was passed to CBCcopylp.
@@ -896,21 +895,21 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
           columns, respectively.  */   // ?????????????? TODO
 
       int cur_numcols = model.getNumCols();
-      //       int cur_numcols = osi.getNumCols ();
+      //       int cur_numcols = _osi.getNumCols ();
       assert(cur_numcols == colObj.size());
 
       wrapAssert(model.getColSolution() != nullptr, "Failed to get variable values.");
-      x.assign(model.getColSolution(), model.getColSolution() + cur_numcols);  // ColSolution();
-      output.x = x.data();
-      //       output.x = osi.getColSolution();
-      if ((cbui.solcbfn != nullptr) && (!options->flag_intermediate || !cbui.printed)) {
+      _x.assign(model.getColSolution(), model.getColSolution() + cur_numcols);  // ColSolution();
+      output.x = _x.data();
+      //       output.x = _osi.getColSolution();
+      if ((cbui.solcbfn != nullptr) && (!_options->flagIntermediate || !cbui.printed)) {
         cbui.solcbfn(output, cbui.psi);
       }
     }
     output.bestBound = model.getBestPossibleObjValue();
     //    output.bestBound = -1;
     output.nNodes = model.getNodeCount();
-    //    output.nNodes = osi.getNodeCount();
+    //    output.nNodes = _osi.getNodeCount();
     output.nOpenNodes = -1;
 
   } catch (CoinError& err) {
@@ -918,7 +917,7 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
   }
 }
 
-void MIP_osicbc_wrapper::setObjSense(int s) { osi.setObjSense(-s); }
+void MIPosicbcWrapper::setObjSense(int s) { _osi.setObjSense(-s); }
 
 /*
 

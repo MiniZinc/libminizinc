@@ -849,11 +849,11 @@ void MIPCplexWrapper::solve() {  // Move into ancestor?
       _status = dll_CPXaddfuncdest(_env, chnl[i], nullptr, msgfunction);
     }
     //     status = dll_CPXsetintparam(env, CPXPARAM_ScreenOutput,
-    //       fVerbose ? CPX_ON : CPX_OFF);  // also when flag_intermediate?  TODO
+    //       fVerbose ? CPX_ON : CPX_OFF);  // also when flagIntermediate?  TODO
     //     wrapAssert(!status, "  CPLEX Warning: Failure to switch screen indicator.", false);
   }
   _status = dll_CPXsetintparam(_env, CPXPARAM_MIP_Display,
-                               fVerbose ? 2 : 0);  // also when flag_intermediate?  TODO
+                               fVerbose ? 2 : 0);  // also when flagIntermediate?  TODO
   wrapAssert(_status == 0, "  CPLEX Warning: Failure to switch logging.", false);
   /// Make it wall time by default, 12.8
   //    status =  dll_CPXsetintparam (env, CPXPARAM_ClockType, 1);            // CPU time
@@ -1033,7 +1033,7 @@ void MIPCplexWrapper::solve() {  // Move into ancestor?
     output.x = &_x[0];
     _status = dll_CPXgetx(_env, _lp, &_x[0], 0, cur_numcols - 1);
     wrapAssert(_status == 0, "Failed to get variable values.");
-    if (cbui.solcbfn != nullptr /*&& (!_options->flag_intermediate || !cbui.printed)*/) {
+    if (cbui.solcbfn != nullptr /*&& (!_options->flagIntermediate || !cbui.printed)*/) {
       cbui.solcbfn(output, cbui.psi);
     }
   }

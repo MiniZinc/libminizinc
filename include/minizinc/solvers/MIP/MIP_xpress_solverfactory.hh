@@ -12,8 +12,8 @@
 #pragma once
 
 namespace MiniZinc {
-class Xpress_SolverFactoryInitialiser {
+class XpressSolverFactoryInitialiser {
 public:
-  Xpress_SolverFactoryInitialiser(void);
+  XpressSolverFactoryInitialiser();
 };
 }  // namespace MiniZinc

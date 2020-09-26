@@ -51,8 +51,10 @@ const ArrayLit& NLFile::getArrayLit(const Expression* e) {
       const ArrayLit& al = *e->cast<ArrayLit>();
       return al;
     }
+
+    default:
+      should_not_happen("Could not read array from expression.");
   }
-  should_not_happen("Could not read array from expression.");
 }
 
 /** Create a vector of double from a vector containing Expression being IntLit. */
@@ -1404,6 +1406,9 @@ void NLFile::phase2() {
       }
       case NLBound::EQ: {
         ++algConsEqCount;
+      }
+      default: {
+        break;
       }
     }
   }

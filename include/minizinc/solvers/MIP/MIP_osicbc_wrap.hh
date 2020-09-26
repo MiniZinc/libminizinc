@@ -25,23 +25,23 @@
 #include <coin/OsiClpSolverInterface.hpp>
 // #include <coin/CbcSolver.hpp>
 
-class MIP_osicbc_wrapper : public MIPWrapper {
+class MIPosicbcWrapper : public MIPWrapper {
   //     OsiCbcSolverInterface osi;   // deprecated in Cbc 2.9.6
-  OsiClpSolverInterface osi;
+  OsiClpSolverInterface _osi;
   //     CoinPackedMatrix* matrix = 0;
-  int error;
-  std::string osicbc_buffer;  // [CBC_MESSAGEBUFSIZE];
+  int _error;
+  std::string _osicbcBuffer;  // [CBC_MESSAGEBUFSIZE];
                               //     string          osicbc_status_buffer; // [CBC_MESSAGEBUFSIZE];
 
-  std::vector<double> x;
+  std::vector<double> _x;
 
   // To add constraints:
   //     vector<int> rowStarts, columns;
-  std::vector<CoinPackedVector> rows;
+  std::vector<CoinPackedVector> _rows;
   std::vector<double>  // element,
-      rowlb, rowub;
+      _rowlb, _rowub;
 
-  std::unordered_map<VarId, double> warmstart;  // this accumulates warmstart infos
+  std::unordered_map<VarId, double> _warmstart;  // this accumulates warmstart infos
 
 public:
   class Options : public MiniZinc::SolverInstanceBase::Options {
@@ -53,25 +53,25 @@ public:
     double nWorkMemLimit = -1;
     std::string sReadParams;
     std::string sWriteParams;
-    bool flag_intermediate = false;
+    bool flagIntermediate = false;
 
     double absGap = -1;
     double relGap = 1e-8;
     double intTol = 1e-8;
     double objDiff = 1.0;
 
-    std::string cbc_cmdOptions;
+    std::string cbcCmdOptions;
 
     bool processOption(int& i, std::vector<std::string>& argv);
     static void printHelp(std::ostream& os);
   };
 
 private:
-  Options* options = nullptr;
+  Options* _options = nullptr;
 
 public:
-  MIP_osicbc_wrapper(Options* opt) : options(opt) { openOSICBC(); }
-  ~MIP_osicbc_wrapper() override { closeOSICBC(); }
+  MIPosicbcWrapper(Options* opt) : _options(opt) { openOSICBC(); }
+  ~MIPosicbcWrapper() override { closeOSICBC(); }
 
   static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
   static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
@@ -98,7 +98,7 @@ public:
 
   void addPhase1Vars() override {
     if (fVerbose) {
-      std::cerr << "  MIP_osicbc_wrapper: delaying physical addition of variables..." << std::endl;
+      std::cerr << "  MIPosicbcWrapper: delaying physical addition of variables..." << std::endl;
     }
   }
 
@@ -112,18 +112,18 @@ public:
 
   void setObjSense(int s) override;  // +/-1 for max/min
 
-  double getInfBound() override { return osi.getInfinity(); }
+  double getInfBound() override { return _osi.getInfinity(); }
 
   int getNCols() override {
-    int nc = osi.getNumCols();
+    int nc = _osi.getNumCols();
     return nc != 0 ? nc : colLB.size();
   }
-  int getNColsModel() override { return osi.getNumCols(); }
+  int getNColsModel() override { return _osi.getNumCols(); }
   int getNRows() override {
-    if (!rowlb.empty()) {
-      return rowlb.size();
+    if (!_rowlb.empty()) {
+      return _rowlb.size();
     }
-    return osi.getNumRows();
+    return _osi.getNumRows();
   }
 
   //     void setObjUB(double ub) { objUB = ub; }

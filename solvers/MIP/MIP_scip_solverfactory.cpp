@@ -4,10 +4,7 @@
 
 namespace MiniZinc {
 namespace {
-void get_wrapper() {
-  static MIPSolverFactory<MIP_scip_wrapper> _scip_solver_factory;
-  return;
-}
+void get_wrapper() { static MIPSolverFactory<MIPScipWrapper> _scip_solver_factory; }
 }  // namespace
-SCIP_SolverFactoryInitialiser::SCIP_SolverFactoryInitialiser(void) { get_wrapper(); }
+SCIPSolverFactoryInitialiser::SCIPSolverFactoryInitialiser() { get_wrapper(); }
 }  // namespace MiniZinc

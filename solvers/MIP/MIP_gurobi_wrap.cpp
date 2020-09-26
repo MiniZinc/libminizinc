@@ -43,16 +43,16 @@
 
 using namespace std;
 
-string MIP_gurobi_wrapper::getDescription(MiniZinc::SolverInstanceBase::Options* opt) {
+string MIPGurobiWrapper::getDescription(MiniZinc::SolverInstanceBase::Options* opt) {
   ostringstream oss;
   oss << "MIP wrapper for Gurobi library " << getVersion();
   oss << ".  Compiled  " __DATE__ "  " __TIME__;
   return oss.str();
 }
 
-string MIP_gurobi_wrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt) {
+string MIPGurobiWrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt) {
   ostringstream oss;
-  MIP_gurobi_wrapper mgw(nullptr);  // to avoid opening the env
+  MIPGurobiWrapper mgw(nullptr);  // to avoid opening the env
   try {
     mgw.checkDLL();
     int major, minor, technical;
@@ -64,8 +64,8 @@ string MIP_gurobi_wrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt
   }
 }
 
-vector<string> MIP_gurobi_wrapper::getRequiredFlags() {
-  MIP_gurobi_wrapper mgw(nullptr);
+vector<string> MIPGurobiWrapper::getRequiredFlags() {
+  MIPGurobiWrapper mgw(nullptr);
   try {
     mgw.checkDLL();
     return {};
@@ -74,13 +74,13 @@ vector<string> MIP_gurobi_wrapper::getRequiredFlags() {
   }
 }
 
-string MIP_gurobi_wrapper::getId() { return "gurobi"; }
+string MIPGurobiWrapper::getId() { return "gurobi"; }
 
-string MIP_gurobi_wrapper::getName() { return "Gurobi"; }
+string MIPGurobiWrapper::getName() { return "Gurobi"; }
 
-vector<string> MIP_gurobi_wrapper::getTags() { return {"mip", "float", "api"}; }
+vector<string> MIPGurobiWrapper::getTags() { return {"mip", "float", "api"}; }
 
-vector<string> MIP_gurobi_wrapper::getStdFlags() { return {"-i", "-p", "-s", "-v"}; }
+vector<string> MIPGurobiWrapper::getStdFlags() { return {"-i", "-p", "-s", "-v"}; }
 
 const vector<string> gurobi_dlls() {
   const vector<string> versions = {
@@ -107,7 +107,7 @@ const vector<string> gurobi_dlls() {
   return dlls;
 }
 
-void MIP_gurobi_wrapper::Options::printHelp(ostream& os) {
+void MIPGurobiWrapper::Options::printHelp(ostream& os) {
   os << "GUROBI MIP wrapper options:"
      << std::endl
      // -s                  print statistics
@@ -176,11 +176,11 @@ void MIP_gurobi_wrapper::Options::printHelp(ostream& os) {
      << std::endl;
 }
 
-bool MIP_gurobi_wrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
+bool MIPGurobiWrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
   MiniZinc::CLOParser cop(i, argv);
   std::string buf;
   if (cop.get("-i")) {
-    flag_intermediate = true;
+    flagIntermediate = true;
   } else if (string(argv[i]) == "-f") {
   } else if (string(argv[i]) == "--fixed-search") {
     nFreeSearch = 0;
@@ -212,15 +212,15 @@ bool MIP_gurobi_wrapper::Options::processOption(int& i, std::vector<std::string>
   return true;
 }
 
-void MIP_gurobi_wrapper::wrapAssert(bool cond, const string& msg, bool fTerm) {
+void MIPGurobiWrapper::wrapAssert(bool cond, const string& msg, bool fTerm) {
   if (!cond) {
-    gurobi_buffer = "[NO ERROR STRING GIVEN]";
-    if (error != 0) {
-      gurobi_buffer = dll_GRBgeterrormsg(env);
+    _gurobiBuffer = "[NO ERROR STRING GIVEN]";
+    if (_error != 0) {
+      _gurobiBuffer = dll_GRBgeterrormsg(_env);
     }
     string msgAll =
-        ("  MIP_gurobi_wrapper runtime error:  " + gurobi_buffer + "\nMessage from caller: " + msg);
-    cerr << msgAll << "\nGurobi error code: " << error << endl;
+        ("  MIPGurobiWrapper runtime error:  " + _gurobiBuffer + "\nMessage from caller: " + msg);
+    cerr << msgAll << "\nGurobi error code: " << _error << endl;
     if (fTerm) {
       cerr << "TERMINATING." << endl;
       throw runtime_error(msgAll);
@@ -268,62 +268,62 @@ void dll_close(void* dll) {
 
 #endif
 
-void MIP_gurobi_wrapper::checkDLL() {
+void MIPGurobiWrapper::checkDLL() {
 #ifdef GUROBI_PLUGIN
-  gurobi_dll = nullptr;
-  if ((options != nullptr) && (!options->sGurobiDLL.empty())) {
-    gurobi_dll = dll_open(options->sGurobiDLL.c_str());
+  _gurobiDll = nullptr;
+  if ((_options != nullptr) && (!_options->sGurobiDLL.empty())) {
+    _gurobiDll = dll_open(_options->sGurobiDLL.c_str());
   } else {
     for (const auto& s : gurobi_dlls()) {
-      gurobi_dll = dll_open(s.c_str());
-      if (nullptr != gurobi_dll) {
+      _gurobiDll = dll_open(s.c_str());
+      if (nullptr != _gurobiDll) {
         break;
       }
     }
   }
 
-  if (gurobi_dll == nullptr) {
-    if (options == nullptr || options->sGurobiDLL.empty()) {
+  if (_gurobiDll == nullptr) {
+    if (_options == nullptr || _options->sGurobiDLL.empty()) {
       throw MiniZinc::InternalError("cannot load gurobi dll, specify --gurobi-dll");
     } else {
-      throw MiniZinc::InternalError("cannot load gurobi dll `" + options->sGurobiDLL + "'");
+      throw MiniZinc::InternalError("cannot load gurobi dll `" + _options->sGurobiDLL + "'");
     }
   }
 
-  *(void**)(&dll_GRBversion) = dll_sym(gurobi_dll, "GRBversion");
-  *(void**)(&dll_GRBaddconstr) = dll_sym(gurobi_dll, "GRBaddconstr");
-  *(void**)(&dll_GRBaddgenconstrMin) = dll_sym(gurobi_dll, "GRBaddgenconstrMin");
-  *(void**)(&dll_GRBaddqconstr) = dll_sym(gurobi_dll, "GRBaddqconstr");
-  *(void**)(&dll_GRBaddgenconstrIndicator) = dll_sym(gurobi_dll, "GRBaddgenconstrIndicator");
-  *(void**)(&dll_GRBaddvars) = dll_sym(gurobi_dll, "GRBaddvars");
-  *(void**)(&dll_GRBcbcut) = dll_sym(gurobi_dll, "GRBcbcut");
-  *(void**)(&dll_GRBcbget) = dll_sym(gurobi_dll, "GRBcbget");
-  *(void**)(&dll_GRBcblazy) = dll_sym(gurobi_dll, "GRBcblazy");
-  *(void**)(&dll_GRBfreeenv) = dll_sym(gurobi_dll, "GRBfreeenv");
-  *(void**)(&dll_GRBfreemodel) = dll_sym(gurobi_dll, "GRBfreemodel");
-  *(void**)(&dll_GRBgetdblattr) = dll_sym(gurobi_dll, "GRBgetdblattr");
-  *(void**)(&dll_GRBgetdblattrarray) = dll_sym(gurobi_dll, "GRBgetdblattrarray");
-  *(void**)(&dll_GRBgetenv) = dll_sym(gurobi_dll, "GRBgetenv");
-  *(void**)(&dll_GRBgeterrormsg) = dll_sym(gurobi_dll, "GRBgeterrormsg");
-  *(void**)(&dll_GRBgetintattr) = dll_sym(gurobi_dll, "GRBgetintattr");
-  *(void**)(&dll_GRBloadenv) = dll_sym(gurobi_dll, "GRBloadenv");
-  *(void**)(&dll_GRBgetconcurrentenv) = dll_sym(gurobi_dll, "GRBgetconcurrentenv");
-  *(void**)(&dll_GRBnewmodel) = dll_sym(gurobi_dll, "GRBnewmodel");
-  *(void**)(&dll_GRBoptimize) = dll_sym(gurobi_dll, "GRBoptimize");
-  *(void**)(&dll_GRBreadparams) = dll_sym(gurobi_dll, "GRBreadparams");
-  *(void**)(&dll_GRBsetcallbackfunc) = dll_sym(gurobi_dll, "GRBsetcallbackfunc");
-  *(void**)(&dll_GRBsetdblparam) = dll_sym(gurobi_dll, "GRBsetdblparam");
-  *(void**)(&dll_GRBsetintattr) = dll_sym(gurobi_dll, "GRBsetintattr");
-  *(void**)(&dll_GRBsetintattrlist) = dll_sym(gurobi_dll, "GRBsetintattrlist");
-  *(void**)(&dll_GRBsetdblattrelement) = dll_sym(gurobi_dll, "GRBsetdblattrelement");
-  *(void**)(&dll_GRBsetdblattrlist) = dll_sym(gurobi_dll, "GRBsetdblattrlist");
-  *(void**)(&dll_GRBsetobjectiven) = dll_sym(gurobi_dll, "GRBsetobjectiven");
-  *(void**)(&dll_GRBsetintparam) = dll_sym(gurobi_dll, "GRBsetintparam");
-  *(void**)(&dll_GRBsetstrparam) = dll_sym(gurobi_dll, "GRBsetstrparam");
-  *(void**)(&dll_GRBterminate) = dll_sym(gurobi_dll, "GRBterminate");
-  *(void**)(&dll_GRBupdatemodel) = dll_sym(gurobi_dll, "GRBupdatemodel");
-  *(void**)(&dll_GRBwrite) = dll_sym(gurobi_dll, "GRBwrite");
-  *(void**)(&dll_GRBwriteparams) = dll_sym(gurobi_dll, "GRBwriteparams");
+  *(void**)(&dll_GRBversion) = dll_sym(_gurobiDll, "GRBversion");
+  *(void**)(&dll_GRBaddconstr) = dll_sym(_gurobiDll, "GRBaddconstr");
+  *(void**)(&dll_GRBaddgenconstrMin) = dll_sym(_gurobiDll, "GRBaddgenconstrMin");
+  *(void**)(&dll_GRBaddqconstr) = dll_sym(_gurobiDll, "GRBaddqconstr");
+  *(void**)(&dll_GRBaddgenconstrIndicator) = dll_sym(_gurobiDll, "GRBaddgenconstrIndicator");
+  *(void**)(&dll_GRBaddvars) = dll_sym(_gurobiDll, "GRBaddvars");
+  *(void**)(&dll_GRBcbcut) = dll_sym(_gurobiDll, "GRBcbcut");
+  *(void**)(&dll_GRBcbget) = dll_sym(_gurobiDll, "GRBcbget");
+  *(void**)(&dll_GRBcblazy) = dll_sym(_gurobiDll, "GRBcblazy");
+  *(void**)(&dll_GRBfreeenv) = dll_sym(_gurobiDll, "GRBfreeenv");
+  *(void**)(&dll_GRBfreemodel) = dll_sym(_gurobiDll, "GRBfreemodel");
+  *(void**)(&dll_GRBgetdblattr) = dll_sym(_gurobiDll, "GRBgetdblattr");
+  *(void**)(&dll_GRBgetdblattrarray) = dll_sym(_gurobiDll, "GRBgetdblattrarray");
+  *(void**)(&dll_GRBgetenv) = dll_sym(_gurobiDll, "GRBgetenv");
+  *(void**)(&dll_GRBgeterrormsg) = dll_sym(_gurobiDll, "GRBgeterrormsg");
+  *(void**)(&dll_GRBgetintattr) = dll_sym(_gurobiDll, "GRBgetintattr");
+  *(void**)(&dll_GRBloadenv) = dll_sym(_gurobiDll, "GRBloadenv");
+  *(void**)(&dll_GRBgetconcurrentenv) = dll_sym(_gurobiDll, "GRBgetconcurrentenv");
+  *(void**)(&dll_GRBnewmodel) = dll_sym(_gurobiDll, "GRBnewmodel");
+  *(void**)(&dll_GRBoptimize) = dll_sym(_gurobiDll, "GRBoptimize");
+  *(void**)(&dll_GRBreadparams) = dll_sym(_gurobiDll, "GRBreadparams");
+  *(void**)(&dll_GRBsetcallbackfunc) = dll_sym(_gurobiDll, "GRBsetcallbackfunc");
+  *(void**)(&dll_GRBsetdblparam) = dll_sym(_gurobiDll, "GRBsetdblparam");
+  *(void**)(&dll_GRBsetintattr) = dll_sym(_gurobiDll, "GRBsetintattr");
+  *(void**)(&dll_GRBsetintattrlist) = dll_sym(_gurobiDll, "GRBsetintattrlist");
+  *(void**)(&dll_GRBsetdblattrelement) = dll_sym(_gurobiDll, "GRBsetdblattrelement");
+  *(void**)(&dll_GRBsetdblattrlist) = dll_sym(_gurobiDll, "GRBsetdblattrlist");
+  *(void**)(&dll_GRBsetobjectiven) = dll_sym(_gurobiDll, "GRBsetobjectiven");
+  *(void**)(&dll_GRBsetintparam) = dll_sym(_gurobiDll, "GRBsetintparam");
+  *(void**)(&dll_GRBsetstrparam) = dll_sym(_gurobiDll, "GRBsetstrparam");
+  *(void**)(&dll_GRBterminate) = dll_sym(_gurobiDll, "GRBterminate");
+  *(void**)(&dll_GRBupdatemodel) = dll_sym(_gurobiDll, "GRBupdatemodel");
+  *(void**)(&dll_GRBwrite) = dll_sym(_gurobiDll, "GRBwrite");
+  *(void**)(&dll_GRBwriteparams) = dll_sym(_gurobiDll, "GRBwriteparams");
 
 #else
 
@@ -361,49 +361,49 @@ void MIP_gurobi_wrapper::checkDLL() {
 #endif
 }
 
-void MIP_gurobi_wrapper::openGUROBI() {
+void MIPGurobiWrapper::openGUROBI() {
   checkDLL();
 
   /* Initialize the GUROBI environment */
   {
     //   cout << "% " << flush;               // Gurobi 7.5.2 prints "Academic License..."
     MiniZinc::StreamRedir redirStdout(stdout, stderr);
-    error = dll_GRBloadenv(&env, nullptr);
+    _error = dll_GRBloadenv(&_env, nullptr);
   }
-  wrapAssert(error == 0, "Could not open GUROBI environment.");
-  error = dll_GRBsetintparam(env, "OutputFlag", 0);  // Switch off output
-  //   error = dll_GRBsetintparam(env, "LogToConsole",
-  //                            fVerbose ? 1 : 0);  // also when flag_intermediate?  TODO
+  wrapAssert(_error == 0, "Could not open GUROBI environment.");
+  _error = dll_GRBsetintparam(_env, "OutputFlag", 0);  // Switch off output
+  //   _error = dll_GRBsetintparam(_env, "LogToConsole",
+  //                            fVerbose ? 1 : 0);  // also when flagIntermediate?  TODO
   /* Create the problem. */
-  error =
-      dll_GRBnewmodel(env, &model, "mzn_gurobi", 0, nullptr, nullptr, nullptr, nullptr, nullptr);
-  wrapAssert(model != nullptr, "Failed to create LP.");
+  _error =
+      dll_GRBnewmodel(_env, &_model, "mzn_gurobi", 0, nullptr, nullptr, nullptr, nullptr, nullptr);
+  wrapAssert(_model != nullptr, "Failed to create LP.");
 }
 
-void MIP_gurobi_wrapper::closeGUROBI() {
+void MIPGurobiWrapper::closeGUROBI() {
   /* Free model */
 
   // If not allocated, skip
-  if (nullptr != model) {
+  if (nullptr != _model) {
     /* Free up the problem as allocated by GRB_createprob, if necessary */
-    dll_GRBfreemodel(model);
-    model = nullptr;
+    dll_GRBfreemodel(_model);
+    _model = nullptr;
   }
 
   /* Free environment */
 
-  if (nullptr != env) {
-    dll_GRBfreeenv(env);
+  if (nullptr != _env) {
+    dll_GRBfreeenv(_env);
   }
   /// and at last:
 //   MIPWrapper::cleanup();
 #ifdef GUROBI_PLUGIN
-  // dll_close(gurobi_dll);    // Is called too many times, disabling. 2019-05-06
+  // dll_close(_gurobiDll);    // Is called too many times, disabling. 2019-05-06
 #endif
 }
 
-void MIP_gurobi_wrapper::doAddVars(size_t n, double* obj, double* lb, double* ub,
-                                   MIPWrapper::VarType* vt, string* names) {
+void MIPGurobiWrapper::doAddVars(size_t n, double* obj, double* lb, double* ub,
+                                 MIPWrapper::VarType* vt, string* names) {
   /// Convert var types:
   vector<char> ctype(n);
   vector<char*> pcNames(n);
@@ -423,11 +423,11 @@ void MIP_gurobi_wrapper::doAddVars(size_t n, double* obj, double* lb, double* ub
         throw runtime_error("  MIPWrapper: unknown variable type");
     }
   }
-  error = dll_GRBaddvars(model, static_cast<int>(n), 0, nullptr, nullptr, nullptr, obj, lb, ub,
-                         &ctype[0], &pcNames[0]);
-  wrapAssert(error == 0, "Failed to declare variables.");
-  error = dll_GRBupdatemodel(model);
-  wrapAssert(error == 0, "Failed to update model.");
+  _error = dll_GRBaddvars(_model, static_cast<int>(n), 0, nullptr, nullptr, nullptr, obj, lb, ub,
+                          &ctype[0], &pcNames[0]);
+  wrapAssert(_error == 0, "Failed to declare variables.");
+  _error = dll_GRBupdatemodel(_model);
+  wrapAssert(_error == 0, "Failed to update model.");
 }
 
 static char get_grb_sense(MIPWrapper::LinConType s) {
@@ -439,20 +439,19 @@ static char get_grb_sense(MIPWrapper::LinConType s) {
     case MIPWrapper::GQ:
       return GRB_GREATER_EQUAL;
     default:
-      throw runtime_error("  MIP_gurobi_wrapper: unknown constraint sense");
+      throw runtime_error("  MIPGurobiWrapper: unknown constraint sense");
   }
 }
 
-void MIP_gurobi_wrapper::addRow(int nnz, int* rmatind, double* rmatval,
-                                MIPWrapper::LinConType sense, double rhs, int mask,
-                                const string& rowName) {
+void MIPGurobiWrapper::addRow(int nnz, int* rmatind, double* rmatval, MIPWrapper::LinConType sense,
+                              double rhs, int mask, const string& rowName) {
   //// Make sure in order to notice the indices of lazy constr:
   ++nRows;
   /// Convert var types:
   char ssense = get_grb_sense(sense);
   const char* pRName = rowName.c_str();
-  error = dll_GRBaddconstr(model, nnz, rmatind, rmatval, ssense, rhs, pRName);
-  wrapAssert(error == 0, "Failed to add constraint.");
+  _error = dll_GRBaddconstr(_model, nnz, rmatind, rmatval, ssense, rhs, pRName);
+  wrapAssert(_error == 0, "Failed to add constraint.");
   int nLazyAttr = 0;
   const bool fUser = (MaskConsType_Usercut & mask) != 0;
   const bool fLazy = (MaskConsType_Lazy & mask) != 0;
@@ -472,92 +471,92 @@ void MIP_gurobi_wrapper::addRow(int nnz, int* rmatind, double* rmatval,
   }
 }
 
-void MIP_gurobi_wrapper::addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind,
-                                                double* rmatval, MIPWrapper::LinConType sense,
-                                                double rhs, const string& rowName) {
+void MIPGurobiWrapper::addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind,
+                                              double* rmatval, MIPWrapper::LinConType sense,
+                                              double rhs, const string& rowName) {
   wrapAssert(0 <= bVal && 1 >= bVal, "Gurobi: addIndicatorConstraint: bVal not 0/1");
   //// Make sure in order to notice the indices of lazy constr: also here?   TODO
   ++nRows;
   char ssense = get_grb_sense(sense);
-  error = dll_GRBaddgenconstrIndicator(model, rowName.c_str(), iBVar, bVal, nnz, rmatind, rmatval,
-                                       ssense, rhs);
-  wrapAssert(error == 0, "Failed to add indicator constraint.");
+  _error = dll_GRBaddgenconstrIndicator(_model, rowName.c_str(), iBVar, bVal, nnz, rmatind, rmatval,
+                                        ssense, rhs);
+  wrapAssert(_error == 0, "Failed to add indicator constraint.");
 }
 
-void MIP_gurobi_wrapper::addMinimum(int iResultVar, int nnz, int* ind, const std::string& rowName) {
-  error = dll_GRBaddgenconstrMin(model, rowName.c_str(), iResultVar, nnz, (const int*)ind,
-                                 GRB_INFINITY);
-  wrapAssert(error == 0, "Failed: GRBaddgenconstrMin.");
+void MIPGurobiWrapper::addMinimum(int iResultVar, int nnz, int* ind, const std::string& rowName) {
+  _error = dll_GRBaddgenconstrMin(_model, rowName.c_str(), iResultVar, nnz, (const int*)ind,
+                                  GRB_INFINITY);
+  wrapAssert(_error == 0, "Failed: GRBaddgenconstrMin.");
 }
 
-void MIP_gurobi_wrapper::addTimes(int x, int y, int z, const string& rowName) {
+void MIPGurobiWrapper::addTimes(int x, int y, int z, const string& rowName) {
   /// As x*y - z == 0
   double zCoef = -1.0;
   double xyCoef = 1.0;
-  error =
-      dll_GRBaddqconstr(model, 1, &z, &zCoef, 1, &x, &y, &xyCoef, GRB_EQUAL, 0.0, rowName.c_str());
+  _error =
+      dll_GRBaddqconstr(_model, 1, &z, &zCoef, 1, &x, &y, &xyCoef, GRB_EQUAL, 0.0, rowName.c_str());
   /// Gurobi 9.0.1 says we cannot have GRB_EQUAL but seems to work.
-  wrapAssert(error == 0, "Failed: GRBaddqconstr.");
+  wrapAssert(_error == 0, "Failed: GRBaddqconstr.");
 }
 
-bool MIP_gurobi_wrapper::addSearch(const std::vector<VarId>& vars, const std::vector<int>& pri) {
+bool MIPGurobiWrapper::addSearch(const std::vector<VarId>& vars, const std::vector<int>& pri) {
   assert(vars.size() == pri.size());
   static_assert(sizeof(VarId) == sizeof(int), "VarId should be (u)int currently");
-  error = dll_GRBsetintattrlist(model, "BranchPriority", static_cast<int>(vars.size()),
-                                (int*)vars.data(), (int*)pri.data());
-  wrapAssert(error == 0, "Failed to add branching priorities");
+  _error = dll_GRBsetintattrlist(_model, "BranchPriority", static_cast<int>(vars.size()),
+                                 (int*)vars.data(), (int*)pri.data());
+  wrapAssert(_error == 0, "Failed to add branching priorities");
   return true;
 }
 
-int MIP_gurobi_wrapper::getFreeSearch() { return options->nFreeSearch; }
+int MIPGurobiWrapper::getFreeSearch() { return _options->nFreeSearch; }
 
-bool MIP_gurobi_wrapper::addWarmStart(const std::vector<VarId>& vars,
-                                      const std::vector<double>& vals) {
+bool MIPGurobiWrapper::addWarmStart(const std::vector<VarId>& vars,
+                                    const std::vector<double>& vals) {
   assert(vars.size() == vals.size());
   static_assert(sizeof(VarId) == sizeof(int), "VarId should be (u)int currently");
-  // error = GRBsetdblattrelement(model, "Start", 0, 1.0);
-  error = dll_GRBsetdblattrlist(model, "Start", static_cast<int>(vars.size()), (int*)vars.data(),
-                                (double*)vals.data());
-  wrapAssert(error == 0, "Failed to add warm start");
+  // _error = GRBsetdblattrelement(_model, "Start", 0, 1.0);
+  _error = dll_GRBsetdblattrlist(_model, "Start", static_cast<int>(vars.size()), (int*)vars.data(),
+                                 (double*)vals.data());
+  wrapAssert(_error == 0, "Failed to add warm start");
   return true;
 }
 
-bool MIP_gurobi_wrapper::defineMultipleObjectives(const MultipleObjectives& mo) {
+bool MIPGurobiWrapper::defineMultipleObjectives(const MultipleObjectives& mo) {
   setObjSense(1);  // Maximize
   for (int iobj = 0; iobj < mo.size(); ++iobj) {
     const auto& obj = mo.getObjectives()[iobj];
     int objvar = obj.getVariable();
     double coef = 1.0;
-    error = dll_GRBsetobjectiven(model, iobj, mo.size() - iobj, obj.getWeight(), 0.0, 0.0, nullptr,
-                                 0.0, 1, &objvar, &coef);
-    wrapAssert(error == 0, "Failed to set objective " + std::to_string(iobj));
+    _error = dll_GRBsetobjectiven(_model, iobj, mo.size() - iobj, obj.getWeight(), 0.0, 0.0,
+                                  nullptr, 0.0, 1, &objvar, &coef);
+    wrapAssert(_error == 0, "Failed to set objective " + std::to_string(iobj));
   }
   return true;
 }
 
-void MIP_gurobi_wrapper::setVarBounds(int iVar, double lb, double ub) {
+void MIPGurobiWrapper::setVarBounds(int iVar, double lb, double ub) {
   wrapAssert(lb <= ub, "mzn-gurobi: setVarBounds: lb>ub");
-  error = dll_GRBsetdblattrelement(model, GRB_DBL_ATTR_LB, iVar, lb);
-  wrapAssert(error == 0, "mzn-gurobi: failed to set var lb.");
-  error = dll_GRBsetdblattrelement(model, GRB_DBL_ATTR_UB, iVar, ub);
-  wrapAssert(error == 0, "mzn-gurobi: failed to set var ub.");
+  _error = dll_GRBsetdblattrelement(_model, GRB_DBL_ATTR_LB, iVar, lb);
+  wrapAssert(_error == 0, "mzn-gurobi: failed to set var lb.");
+  _error = dll_GRBsetdblattrelement(_model, GRB_DBL_ATTR_UB, iVar, ub);
+  wrapAssert(_error == 0, "mzn-gurobi: failed to set var ub.");
 }
 
-void MIP_gurobi_wrapper::setVarLB(int iVar, double lb) {
-  error = dll_GRBsetdblattrelement(model, GRB_DBL_ATTR_LB, iVar, lb);
-  wrapAssert(error == 0, "mzn-gurobi: failed to set var lb.");
+void MIPGurobiWrapper::setVarLB(int iVar, double lb) {
+  _error = dll_GRBsetdblattrelement(_model, GRB_DBL_ATTR_LB, iVar, lb);
+  wrapAssert(_error == 0, "mzn-gurobi: failed to set var lb.");
 }
 
-void MIP_gurobi_wrapper::setVarUB(int iVar, double ub) {
-  error = dll_GRBsetdblattrelement(model, GRB_DBL_ATTR_UB, iVar, ub);
-  wrapAssert(error == 0, "mzn-gurobi: failed to set var ub.");
+void MIPGurobiWrapper::setVarUB(int iVar, double ub) {
+  _error = dll_GRBsetdblattrelement(_model, GRB_DBL_ATTR_UB, iVar, ub);
+  wrapAssert(_error == 0, "mzn-gurobi: failed to set var ub.");
 }
 
 /// SolutionCallback ------------------------------------------------------------------------
 /// Gurobi ensures thread-safety
 static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void* usrdata) {
   auto* info = (MIPWrapper::CBUserInfo*)usrdata;
-  auto* gw = static_cast<MIP_gurobi_wrapper*>(info->wrapper);
+  auto* gw = static_cast<MIPGurobiWrapper*>(info->wrapper);
 
   double nodecnt = 0.0, actnodes = 0.0, objVal = 0.0;
   int solcnt = 0;
@@ -616,10 +615,10 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
       for (auto& cd : cutInput) {
         //         assert( cd.mask & MIPWrapper::MaskConsType_Lazy );
         if ((cd.mask & MIPWrapper::MaskConsType_Lazy) != 0) {  // take only lazy constr generators
-          int error =
+          int _error =
               gw->dll_GRBcblazy(cbdata, static_cast<int>(cd.rmatind.size()), cd.rmatind.data(),
                                 cd.rmatval.data(), get_grb_sense(cd.sense), cd.rhs);
-          if (error != 0) {
+          if (_error != 0) {
             cerr << "  GRB_wrapper: failed to add lazy cut. " << endl;
           } else {
             newincumbent = -1;
@@ -676,18 +675,18 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
           throw runtime_error("Cut callback: should be user/lazy");
         }
         if ((cd.mask & MIPWrapper::MaskConsType_Usercut) != 0) {
-          int error =
+          int _error =
               gw->dll_GRBcbcut(cbdata, static_cast<int>(cd.rmatind.size()), cd.rmatind.data(),
                                cd.rmatval.data(), get_grb_sense(cd.sense), cd.rhs);
-          if (error != 0) {
+          if (_error != 0) {
             cerr << "  GRB_wrapper: failed to add user cut. " << endl;
           }
         }
         if ((cd.mask & MIPWrapper::MaskConsType_Lazy) != 0) {
-          int error =
+          int _error =
               gw->dll_GRBcblazy(cbdata, static_cast<int>(cd.rmatind.size()), cd.rmatind.data(),
                                 cd.rmatval.data(), get_grb_sense(cd.sense), cd.rhs);
-          if (error != 0) {
+          if (_error != 0) {
             cerr << "  GRB_wrapper: failed to add lazy cut. " << endl;
           }
         }
@@ -698,7 +697,7 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
 } /* END logcallback */
 // end SolutionCallback ---------------------------------------------------------------------
 
-MIP_gurobi_wrapper::Status MIP_gurobi_wrapper::convertStatus(int gurobiStatus) {
+MIPGurobiWrapper::Status MIPGurobiWrapper::convertStatus(int gurobiStatus) {
   Status s = Status::UNKNOWN;
   ostringstream oss;
   /* Converting the status. */
@@ -716,52 +715,52 @@ MIP_gurobi_wrapper::Status MIP_gurobi_wrapper::convertStatus(int gurobiStatus) {
     s = Status::UNBND;
   } else {
     int solcount = 0;
-    error = dll_GRBgetintattr(model, "SolCount", &solcount);
-    wrapAssert(error == 0, "  Failure to access solution count.", false);
+    _error = dll_GRBgetintattr(_model, "SolCount", &solcount);
+    wrapAssert(_error == 0, "  Failure to access solution count.", false);
     if (solcount != 0) {
       s = Status::SAT;
     }
     oss << "Gurobi stopped with status " << gurobiStatus;
   }
-  output.statusName = gurobi_status_buffer = oss.str();
+  output.statusName = _gurobiStatusBuffer = oss.str();
   return s;
 }
 
-void MIP_gurobi_wrapper::solve() {    // Move into ancestor?
-  error = dll_GRBupdatemodel(model);  // for model export
-  wrapAssert(error == 0, "Failed to update model.");
+void MIPGurobiWrapper::solve() {        // Move into ancestor?
+  _error = dll_GRBupdatemodel(_model);  // for model export
+  wrapAssert(_error == 0, "Failed to update model.");
 
   /// ADDING LAZY CONSTRAINTS IF ANY
   if (!nLazyIdx.empty()) {
     assert(nLazyIdx.size() == nLazyValue.size());
     if (fVerbose) {
-      cerr << "  MIP_gurobi_wrapper: marking " << nLazyIdx.size() << " lazy cuts." << endl;
+      cerr << "  MIPGurobiWrapper: marking " << nLazyIdx.size() << " lazy cuts." << endl;
     }
-    error = dll_GRBsetintattrlist(model, "Lazy", static_cast<int>(nLazyIdx.size()), nLazyIdx.data(),
-                                  nLazyValue.data());
-    wrapAssert(error == 0, "Failed to set constraint attribute.");
+    _error = dll_GRBsetintattrlist(_model, "Lazy", static_cast<int>(nLazyIdx.size()),
+                                   nLazyIdx.data(), nLazyValue.data());
+    wrapAssert(_error == 0, "Failed to set constraint attribute.");
     nLazyIdx.clear();
     nLazyValue.clear();
-    error = dll_GRBupdatemodel(model);  // for model export
-    wrapAssert(error == 0, "Failed to update model after modifying some constraint attr.");
+    _error = dll_GRBupdatemodel(_model);  // for model export
+    wrapAssert(_error == 0, "Failed to update model after modifying some constraint attr.");
   }
 
   /////////////// Last-minute solver options //////////////////
   /* Turn on output to file */
-  error = dll_GRBsetstrparam(dll_GRBgetenv(model), "LogFile",
-                             "");  // FAILS to switch off in Ubuntu 15.04
-                                   /* Turn on output to the screen */
-  error = dll_GRBsetintparam(dll_GRBgetenv(model), "OutputFlag",
-                             /*fVerbose ? 1 :*/ 0);  // switch off, redirect in callback
-  //    error = dll_GRBsetintparam(dll_GRBgetenv(model), "LogToConsole",
-  //                             fVerbose ? 1 : 0);  // also when flag_intermediate?  TODO
-  wrapAssert(error == 0, "  GUROBI Warning: Failure to switch screen indicator.", false);
-  //    error =  dll_GRB_setintparam (env, GRB_PARAM_ClockType, 1);            // CPU time
-  //    error =  dll_GRB_setintparam (env, GRB_PARAM_MIP_Strategy_CallbackReducedLP, GRB__OFF); //
+  _error = dll_GRBsetstrparam(dll_GRBgetenv(_model), "LogFile",
+                              "");  // FAILS to switch off in Ubuntu 15.04
+                                    /* Turn on output to the screen */
+  _error = dll_GRBsetintparam(dll_GRBgetenv(_model), "OutputFlag",
+                              /*fVerbose ? 1 :*/ 0);  // switch off, redirect in callback
+  //    _error = dll_GRBsetintparam(dll_GRBgetenv(_model), "LogToConsole",
+  //                             fVerbose ? 1 : 0);  // also when flagIntermediate?  TODO
+  wrapAssert(_error == 0, "  GUROBI Warning: Failure to switch screen indicator.", false);
+  //    _error =  dll_GRB_setintparam (_env, GRB_PARAM_ClockType, 1);            // CPU time
+  //    _error =  dll_GRB_setintparam (_env, GRB_PARAM_MIP_Strategy_CallbackReducedLP, GRB__OFF); //
   //    Access original model
-  if (!options->sExportModel.empty()) {
-    error = dll_GRBwrite(model, options->sExportModel.c_str());
-    wrapAssert(error == 0, "Failed to write LP to disk.", false);
+  if (!_options->sExportModel.empty()) {
+    _error = dll_GRBwrite(_model, _options->sExportModel.c_str());
+    wrapAssert(_error == 0, "Failed to write LP to disk.", false);
   }
 
   /// TODO
@@ -770,68 +769,71 @@ void MIP_gurobi_wrapper::solve() {    // Move into ancestor?
   //       _ilogurobi->use(SolutionCallback(_iloenv, lastObjVal, *this));
   // Turn off GUROBI logging
 
-  if (options->nThreads > 0) {
-    error = dll_GRBsetintparam(dll_GRBgetenv(model), GRB_INT_PAR_THREADS, options->nThreads);
+  if (_options->nThreads > 0) {
+    _error = dll_GRBsetintparam(dll_GRBgetenv(_model), GRB_INT_PAR_THREADS, _options->nThreads);
     //      int nn;    // THE SETTING FAILS TO WORK IN 6.0.5.
-    //      error = dll_getintparam(env, GRB_INT_PAR_THREADS, &nn);
+    //      _error = dll_getintparam(_env, GRB_INT_PAR_THREADS, &nn);
     //      cerr << "Set " << nThreads << " threads, reported " << nn << endl;
-    wrapAssert(error == 0, "Failed to set GRB_INT_PAR_THREADS.", false);
+    wrapAssert(_error == 0, "Failed to set GRB_INT_PAR_THREADS.", false);
   }
 
-  if (options->nTimeout1000 > 0) {
-    error = dll_GRBsetdblparam(dll_GRBgetenv(model), GRB_DBL_PAR_TIMELIMIT,
-                               static_cast<double>(options->nTimeout1000) / 1000.0);
-    wrapAssert(error == 0, "Failed to set GRB_PARAM_TimeLimit.", false);
+  if (_options->nTimeout1000 > 0) {
+    _error = dll_GRBsetdblparam(dll_GRBgetenv(_model), GRB_DBL_PAR_TIMELIMIT,
+                                static_cast<double>(_options->nTimeout1000) / 1000.0);
+    wrapAssert(_error == 0, "Failed to set GRB_PARAM_TimeLimit.", false);
   }
 
-  if (options->nSolLimit > 0) {
-    error = dll_GRBsetintparam(dll_GRBgetenv(model), GRB_INT_PAR_SOLUTIONLIMIT, options->nSolLimit);
-    wrapAssert(error == 0, "Failed to set GRB_INT_PAR_SOLLIMIT.", false);
+  if (_options->nSolLimit > 0) {
+    _error =
+        dll_GRBsetintparam(dll_GRBgetenv(_model), GRB_INT_PAR_SOLUTIONLIMIT, _options->nSolLimit);
+    wrapAssert(_error == 0, "Failed to set GRB_INT_PAR_SOLLIMIT.", false);
   }
 
-  if (options->nSeed >= 0) {
-    error = dll_GRBsetintparam(dll_GRBgetenv(model), GRB_INT_PAR_SEED, options->nSeed);
-    wrapAssert(error == 0, "Failed to set GRB_INT_PAR_SEED.", false);
+  if (_options->nSeed >= 0) {
+    _error = dll_GRBsetintparam(dll_GRBgetenv(_model), GRB_INT_PAR_SEED, _options->nSeed);
+    wrapAssert(_error == 0, "Failed to set GRB_INT_PAR_SEED.", false);
   }
 
-  if (options->nWorkMemLimit > 0 && options->nWorkMemLimit < 1e200) {
-    error = dll_GRBsetdblparam(dll_GRBgetenv(model), "NodefileStart", options->nWorkMemLimit);
-    wrapAssert(error == 0, "Failed to set NodefileStart.", false);
+  if (_options->nWorkMemLimit > 0 && _options->nWorkMemLimit < 1e200) {
+    _error = dll_GRBsetdblparam(dll_GRBgetenv(_model), "NodefileStart", _options->nWorkMemLimit);
+    wrapAssert(_error == 0, "Failed to set NodefileStart.", false);
   }
 
-  if (!options->sNodefileDir.empty()) {
-    error = dll_GRBsetstrparam(dll_GRBgetenv(model), "NodefileDir", options->sNodefileDir.c_str());
-    wrapAssert(error == 0, "Failed to set NodefileDir.", false);
+  if (!_options->sNodefileDir.empty()) {
+    _error =
+        dll_GRBsetstrparam(dll_GRBgetenv(_model), "NodefileDir", _options->sNodefileDir.c_str());
+    wrapAssert(_error == 0, "Failed to set NodefileDir.", false);
   }
 
-  if (options->absGap >= 0.0) {
-    error = dll_GRBsetdblparam(dll_GRBgetenv(model), "MIPGapAbs", options->absGap);
-    wrapAssert(error == 0, "Failed to set  MIPGapAbs.", false);
+  if (_options->absGap >= 0.0) {
+    _error = dll_GRBsetdblparam(dll_GRBgetenv(_model), "MIPGapAbs", _options->absGap);
+    wrapAssert(_error == 0, "Failed to set  MIPGapAbs.", false);
   }
-  if (options->nMIPFocus > 0) {
-    error = dll_GRBsetintparam(dll_GRBgetenv(model), GRB_INT_PAR_MIPFOCUS, options->nMIPFocus);
-    wrapAssert(error == 0, "Failed to set GRB_INT_PAR_MIPFOCUS.", false);
+  if (_options->nMIPFocus > 0) {
+    _error = dll_GRBsetintparam(dll_GRBgetenv(_model), GRB_INT_PAR_MIPFOCUS, _options->nMIPFocus);
+    wrapAssert(_error == 0, "Failed to set GRB_INT_PAR_MIPFOCUS.", false);
   }
 
-  if (options->relGap >= 0.0) {
-    error = dll_GRBsetdblparam(dll_GRBgetenv(model), "MIPGap", options->relGap);
-    wrapAssert(error == 0, "Failed to set  MIPGap.", false);
+  if (_options->relGap >= 0.0) {
+    _error = dll_GRBsetdblparam(dll_GRBgetenv(_model), "MIPGap", _options->relGap);
+    wrapAssert(_error == 0, "Failed to set  MIPGap.", false);
   }
-  if (options->intTol >= 0.0) {
-    error = dll_GRBsetdblparam(dll_GRBgetenv(model), "IntFeasTol", options->intTol);
-    wrapAssert(error == 0, "Failed to set   IntFeasTol.", false);
+  if (_options->intTol >= 0.0) {
+    _error = dll_GRBsetdblparam(dll_GRBgetenv(_model), "IntFeasTol", _options->intTol);
+    wrapAssert(_error == 0, "Failed to set   IntFeasTol.", false);
   }
-  if (options->feasTol >= 0.0) {
-    error = dll_GRBsetdblparam(dll_GRBgetenv(model), "FeasibilityTol", options->feasTol);
-    wrapAssert(error == 0, "Failed to set   FeasTol.", false);
+  if (_options->feasTol >= 0.0) {
+    _error = dll_GRBsetdblparam(dll_GRBgetenv(_model), "FeasibilityTol", _options->feasTol);
+    wrapAssert(_error == 0, "Failed to set   FeasTol.", false);
   }
-  if (options->nonConvex >= 0) {
+  if (_options->nonConvex >= 0) {
 #ifdef GRB_INT_PAR_NONCONVEX
     int major, minor, technical;
     dll_GRBversion(&major, &minor, &technical);
     if (major >= 9) {
-      error = dll_GRBsetintparam(dll_GRBgetenv(model), GRB_INT_PAR_NONCONVEX, options->nonConvex);
-      wrapAssert(error == 0, "Failed to set   " GRB_INT_PAR_NONCONVEX, false);
+      _error =
+          dll_GRBsetintparam(dll_GRBgetenv(_model), GRB_INT_PAR_NONCONVEX, _options->nonConvex);
+      wrapAssert(_error == 0, "Failed to set   " GRB_INT_PAR_NONCONVEX, false);
     } else {
       std::cerr << "WARNING: Non-convex solving is unavailable in this version of Gurobi"
                 << std::endl;
@@ -844,13 +846,13 @@ void MIP_gurobi_wrapper::solve() {    // Move into ancestor?
 
   /// Solution callback
   output.nCols = static_cast<int>(colObj.size());
-  x.resize(output.nCols);
-  output.x = &x[0];
+  _x.resize(output.nCols);
+  output.x = &_x[0];
   SolCallbackFn solcbfn = cbui.solcbfn;
   if (true) {  // NOLINT: Need for logging
     cbui.fVerb = fVerbose;
-    cbui.nTimeoutFeas = options->nTimeoutFeas1000 / 1000.0;
-    if (!options->flag_intermediate) {
+    cbui.nTimeoutFeas = _options->nTimeoutFeas1000 / 1000.0;
+    if (!_options->flagIntermediate) {
       cbui.solcbfn = nullptr;
     }
     if (cbui.cutcbfn != nullptr) {
@@ -858,44 +860,44 @@ void MIP_gurobi_wrapper::solve() {    // Move into ancestor?
       if ((cbui.cutMask & MaskConsType_Usercut) != 0) {
         // For user cuts, needs to keep some info after presolve
         if (fVerbose) {
-          cerr << "  MIP_gurobi_wrapper: user cut callback enabled, setting PreCrush=1" << endl;
+          cerr << "  MIPGurobiWrapper: user cut callback enabled, setting PreCrush=1" << endl;
         }
-        error = dll_GRBsetintparam(dll_GRBgetenv(model), GRB_INT_PAR_PRECRUSH, 1);
-        wrapAssert(error == 0, "Failed to set GRB_INT_PAR_PRECRUSH.", false);
+        _error = dll_GRBsetintparam(dll_GRBgetenv(_model), GRB_INT_PAR_PRECRUSH, 1);
+        wrapAssert(_error == 0, "Failed to set GRB_INT_PAR_PRECRUSH.", false);
       }
       if ((cbui.cutMask & MaskConsType_Lazy) != 0) {
         // For lazy cuts, Gurobi disables some presolves
         if (fVerbose) {
-          cerr << "  MIP_gurobi_wrapper: lazy cut callback enabled, setting LazyConstraints=1"
+          cerr << "  MIPGurobiWrapper: lazy cut callback enabled, setting LazyConstraints=1"
                << endl;
         }
-        error = dll_GRBsetintparam(dll_GRBgetenv(model), GRB_INT_PAR_LAZYCONSTRAINTS, 1);
-        wrapAssert(error == 0, "Failed to set GRB_INT_PAR_LAZYCONSTRAINTS.", false);
+        _error = dll_GRBsetintparam(dll_GRBgetenv(_model), GRB_INT_PAR_LAZYCONSTRAINTS, 1);
+        wrapAssert(_error == 0, "Failed to set GRB_INT_PAR_LAZYCONSTRAINTS.", false);
       }
     }
-    error = dll_GRBsetcallbackfunc(model, solcallback, (void*)&cbui);
-    wrapAssert(error == 0, "Failed to set callback", false);
+    _error = dll_GRBsetcallbackfunc(_model, solcallback, (void*)&cbui);
+    wrapAssert(_error == 0, "Failed to set callback", false);
   }
 
   /// after all modifs
-  if (!options->sReadParams.empty()) {
-    error = dll_GRBreadparams(dll_GRBgetenv(model), options->sReadParams.c_str());
-    wrapAssert(error == 0, "Failed to read GUROBI parameters.", false);
+  if (!_options->sReadParams.empty()) {
+    _error = dll_GRBreadparams(dll_GRBgetenv(_model), _options->sReadParams.c_str());
+    wrapAssert(_error == 0, "Failed to read GUROBI parameters.", false);
   }
 
-  if (!options->sWriteParams.empty()) {
-    error = dll_GRBwriteparams(dll_GRBgetenv(model), options->sWriteParams.c_str());
-    wrapAssert(error == 0, "Failed to write GUROBI parameters.", false);
+  if (!_options->sWriteParams.empty()) {
+    _error = dll_GRBwriteparams(dll_GRBgetenv(_model), _options->sWriteParams.c_str());
+    wrapAssert(_error == 0, "Failed to write GUROBI parameters.", false);
   }
 
   /* See if we should set up concurrent solving */
-  if (!options->sConcurrentParamFiles.empty()) {
+  if (!_options->sConcurrentParamFiles.empty()) {
     int iSetting = -1;
-    for (const auto& paramFile : options->sConcurrentParamFiles) {
+    for (const auto& paramFile : _options->sConcurrentParamFiles) {
       ++iSetting;
-      auto* env_i = dll_GRBgetconcurrentenv(model, iSetting);
-      error = dll_GRBreadparams(env_i, paramFile.c_str());
-      wrapAssert(error == 0, ("Failed to read GUROBI parameters from file " + paramFile).c_str(),
+      auto* env_i = dll_GRBgetconcurrentenv(_model, iSetting);
+      _error = dll_GRBreadparams(env_i, paramFile.c_str());
+      wrapAssert(_error == 0, ("Failed to read GUROBI parameters from file " + paramFile).c_str(),
                  false);
     }
   }
@@ -904,32 +906,32 @@ void MIP_gurobi_wrapper::solve() {    // Move into ancestor?
   output.dCPUTime = cbui.pOutput->cCPUTime0 = std::clock();
 
   /* Optimize the problem and obtain solution. */
-  error = dll_GRBoptimize(model);
-  wrapAssert(error == 0, "Failed to optimize MIP.");
+  _error = dll_GRBoptimize(_model);
+  wrapAssert(_error == 0, "Failed to optimize MIP.");
 
   output.dWallTime =
       std::chrono::duration<double>(std::chrono::steady_clock::now() - output.dWallTime0).count();
   output.dCPUTime = (std::clock() - output.dCPUTime) / CLOCKS_PER_SEC;
 
   int solstat;
-  error = dll_GRBgetintattr(model, GRB_INT_ATTR_STATUS, &solstat);
-  wrapAssert(error == 0, "Failed to get MIP status.", false);
+  _error = dll_GRBgetintattr(_model, GRB_INT_ATTR_STATUS, &solstat);
+  wrapAssert(_error == 0, "Failed to get MIP status.", false);
   output.status = convertStatus(solstat);
 
   /// Continuing to fill the output object:
   if (Status::OPT == output.status || Status::SAT == output.status) {
-    error = dll_GRBgetdblattr(model, GRB_DBL_ATTR_OBJVAL, &output.objVal);
-    wrapAssert(error == 0, "No MIP objective value available.");
+    _error = dll_GRBgetdblattr(_model, GRB_DBL_ATTR_OBJVAL, &output.objVal);
+    wrapAssert(_error == 0, "No MIP objective value available.");
 
     //    int cur_numrows = dll_GRB_getnumrows (env, lp);
     int cur_numcols = getNCols();
     assert(cur_numcols == colObj.size());
 
-    x.resize(cur_numcols);
-    output.x = &x[0];
-    error = dll_GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, cur_numcols, (double*)output.x);
-    wrapAssert(error == 0, "Failed to get variable values.");
-    if (!options->flag_intermediate && (solcbfn != nullptr)) {
+    _x.resize(cur_numcols);
+    output.x = &_x[0];
+    _error = dll_GRBgetdblattrarray(_model, GRB_DBL_ATTR_X, 0, cur_numcols, (double*)output.x);
+    wrapAssert(_error == 0, "Failed to get variable values.");
+    if (!_options->flagIntermediate && (solcbfn != nullptr)) {
       solcbfn(output, cbui.psi);
     }
   }
@@ -937,18 +939,18 @@ void MIP_gurobi_wrapper::solve() {    // Move into ancestor?
                          ? std::numeric_limits<double>::quiet_NaN()
                          : std::numeric_limits<double>::max();
   int nObj = 0;
-  dll_GRBgetintattr(model, GRB_INT_ATTR_NUMOBJ, &nObj);
+  dll_GRBgetintattr(_model, GRB_INT_ATTR_NUMOBJ, &nObj);
   if (1 >= nObj) {
-    error = dll_GRBgetdblattr(model, GRB_DBL_ATTR_OBJBOUNDC, &output.bestBound);
-    wrapAssert(error == 0, "Failed to get the best bound.", false);
+    _error = dll_GRBgetdblattr(_model, GRB_DBL_ATTR_OBJBOUNDC, &output.bestBound);
+    wrapAssert(_error == 0, "Failed to get the best bound.", false);
   }
   double nNodes = -1;
-  error = dll_GRBgetdblattr(model, GRB_DBL_ATTR_NODECOUNT, &nNodes);
+  _error = dll_GRBgetdblattr(_model, GRB_DBL_ATTR_NODECOUNT, &nNodes);
   output.nNodes = static_cast<int>(nNodes);
   output.nOpenNodes = 0;
 }
 
-void MIP_gurobi_wrapper::setObjSense(int s) {
-  error = dll_GRBsetintattr(model, GRB_INT_ATTR_MODELSENSE, s > 0 ? GRB_MAXIMIZE : GRB_MINIMIZE);
-  wrapAssert(error == 0, "Failed to set obj sense.");
+void MIPGurobiWrapper::setObjSense(int s) {
+  _error = dll_GRBsetintattr(_model, GRB_INT_ATTR_MODELSENSE, s > 0 ? GRB_MAXIMIZE : GRB_MINIMIZE);
+  wrapAssert(_error == 0, "Failed to set obj sense.");
 }

@@ -12,8 +12,8 @@
 #pragma once
 
 namespace MiniZinc {
-class OSICBC_SolverFactoryInitialiser {
+class OSICBCSolverFactoryInitialiser {
 public:
-  OSICBC_SolverFactoryInitialiser();
+  OSICBCSolverFactoryInitialiser();
 };
 }  // namespace MiniZinc
