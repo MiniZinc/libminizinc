@@ -98,7 +98,7 @@ protected:
   static BOOL WINAPI handleInterrupt(DWORD fdwCtrlType) {
     switch (fdwCtrlType) {
       case CTRL_C_EVENT: {
-        std::unique_lock<std::mutex> lck(i_mtx);
+        std::unique_lock<std::mutex> lck(_interruptMutex);
         hadInterrupt = true;
         _interruptCondition.notify_all();
         return TRUE;
@@ -227,13 +227,13 @@ public:
     std::deque<std::string> outputQueue;
     thread thrStdout(&ReadPipePrint<S2O>, g_hChildStd_OUT_Rd, &doneStdout, nullptr, &outputQueue,
                      &pipeMutex, &cv_mutex, &cv);
-    thread thrStderr(&ReadPipePrint<S2O>, g_hChildStd_ERR_Rd, &doneStderr, &pS2Out->getLog(),
+    thread thrStderr(&ReadPipePrint<S2O>, g_hChildStd_ERR_Rd, &doneStderr, &_pS2Out->getLog(),
                      nullptr, &pipeMutex, nullptr, nullptr);
     thread thrTimeout([&] {
       auto shouldStop = [&] { return hadInterrupt || (doneStderr && doneStdout); };
-      std::unique_lock<std::mutex> lck(i_mtx);
-      if (timelimit != 0) {
-        if (!_interruptCondition.wait_for(lck, std::chrono::milliseconds(timelimit), shouldStop)) {
+      std::unique_lock<std::mutex> lck(_interruptMutex);
+      if (_timelimit != 0) {
+        if (!_interruptCondition.wait_for(lck, std::chrono::milliseconds(_timelimit), shouldStop)) {
           // If we timed out, generate an interrupt but ignore it ourselves
           bool oldHadInterrupt = hadInterrupt;
           GenerateConsoleCtrlEvent(CTRL_C_EVENT, 0);
@@ -258,7 +258,7 @@ public:
       cv.wait(lk, [&] { return !outputQueue.empty(); });
       while (!outputQueue.empty()) {
         try {
-          pS2Out->feedRawDataChunk(outputQueue.front().c_str());
+          _pS2Out->feedRawDataChunk(outputQueue.front().c_str());
           outputQueue.pop_front();
         } catch (...) {
           TerminateJobObject(hJobObject, 0);
@@ -269,7 +269,7 @@ public:
           thrStderr.join();
           {
             // Make sure thrTimeout terminates
-            std::unique_lock<std::mutex> lck(i_mtx);
+            std::unique_lock<std::mutex> lck(_interruptMutex);
             _interruptCondition.notify_all();
           }
           thrTimeout.join();
@@ -284,7 +284,7 @@ public:
     thrStderr.join();
     {
       // Make sure thrTimeout terminates
-      std::unique_lock<std::mutex> lck(i_mtx);
+      std::unique_lock<std::mutex> lck(_interruptMutex);
       _interruptCondition.notify_all();
     }
     thrTimeout.join();
