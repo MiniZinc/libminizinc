@@ -179,9 +179,9 @@ public:
   SetOfIntervals(Iter i1, Iter i2) : Base(i1, i2) {}
   /// Number of integer values in all the intervals
   /// Assumes the interval bounds are ints
-  int card_int() const;
+  int cardInt() const;
   /// Max interval length
-  N max_interval() const;
+  N maxInterval() const;
   /// Special insert function: check if interval is ok
   iterator insert(const Interval<N>& iv) {
     if (iv.left > iv.right) {
@@ -231,7 +231,7 @@ std::ostream& operator<<(std::ostream& os, const SetOfIntervals<N>& soi) {
 }
 
 template <class Coefs, class Vars>
-class LinEq__ {
+class LinEqHelper {
 public:
   Coefs coefs;
   Vars vd;
@@ -239,7 +239,7 @@ public:
 };
 
 template <class Coefs, class Vars>
-static std::ostream& operator<<(std::ostream& os, LinEq__<Coefs, Vars>& led) {
+static std::ostream& operator<<(std::ostream& os, LinEqHelper<Coefs, Vars>& led) {
   os << "( [";
   for (auto c : led.coefs) {
     os << c << ' ';
@@ -252,8 +252,8 @@ static std::ostream& operator<<(std::ostream& os, LinEq__<Coefs, Vars>& led) {
   return os;
 }
 
-typedef LinEq__<std::array<double, 2>, std::array<VarDecl*, 2> > LinEq2Vars;
-typedef LinEq__<std::vector<double>, std::vector<VarDecl*> > LinEq;
+typedef LinEqHelper<std::array<double, 2>, std::array<VarDecl*, 2> > LinEq2Vars;
+typedef LinEqHelper<std::vector<double>, std::vector<VarDecl*> > LinEq;
 //     struct LinEq2Vars {
 //       std::array<double, 2> coefs;
 //       std::array<PVarDecl, 2> vd = { { 0, 0 } };
@@ -290,26 +290,26 @@ static std::vector<T> make_vec(T t1, T t2, T t3, T t4) {
 class MIPD {
 public:
   MIPD(Env* env, bool fV, int nmi, double dmd)
-      : nMaxIntv2Bits(nmi), dMaxNValueDensity(dmd), __env(env) {
+      : nMaxIntv2Bits(nmi), dMaxNValueDensity(dmd), _env(env) {
     getEnv();
     fVerbose = fV;
   }
   static bool fVerbose;
   const int nMaxIntv2Bits = 0;           // Maximal interval length to enforce equality encoding
-  const double dMaxNValueDensity = 3.0;  // Maximal ratio card_int() / size() of a domain
+  const double dMaxNValueDensity = 3.0;  // Maximal ratio cardInt() / size() of a domain
                                          // to enforce ee
-  bool MIPdomains() {
+  bool doMIPdomains() {
     MIPD__stats[N_POSTs__NSubintvMin] = 1e100;
     MIPD__stats[N_POSTs__SubSizeMin] = 1e100;
 
     if (!registerLinearConstraintDecls()) {
       return true;
     }
-    if (!register__POSTconstraintDecls()) {  // not declared => no conversions
+    if (!registerPOSTConstraintDecls()) {  // not declared => no conversions
       return true;
     }
-    register__POSTvariables();
-    if (vVarDescr.empty()) {
+    registerPOSTVariables();
+    if (_vVarDescr.empty()) {
       return true;
     }
     constructVarViewCliques();
@@ -323,25 +323,35 @@ public:
   }
 
 private:
-  Env* __env = nullptr;
+  Env* _env = nullptr;
   Env* getEnv() {
-    MZN_MIPD__assert_hard(__env);
-    return __env;
+    MZN_MIPD__assert_hard(_env);
+    return _env;
   }
 
   typedef VarDecl* PVarDecl;
 
+  // NOLINTNEXTLINE(readability-identifier-naming)
   FunctionI* int_lin_eq;
+  // NOLINTNEXTLINE(readability-identifier-naming)
   FunctionI* int_lin_le;
+  // NOLINTNEXTLINE(readability-identifier-naming)
   FunctionI* float_lin_eq;
+  // NOLINTNEXTLINE(readability-identifier-naming)
   FunctionI* float_lin_le;
+  // NOLINTNEXTLINE(readability-identifier-naming)
   FunctionI* int2float;
+  // NOLINTNEXTLINE(readability-identifier-naming)
   FunctionI* lin_exp_int;
+  // NOLINTNEXTLINE(readability-identifier-naming)
   FunctionI* lin_exp_float;
 
+  // NOLINTNEXTLINE(readability-identifier-naming)
   std::vector<Type> int_lin_eq_t = make_vec(Type::parint(1), Type::varint(1), Type::parint());
+  // NOLINTNEXTLINE(readability-identifier-naming)
   std::vector<Type> float_lin_eq_t =
       make_vec(Type::parfloat(1), Type::varfloat(1), Type::parfloat());
+  // NOLINTNEXTLINE(readability-identifier-naming)
   std::vector<Type> t_VIVF = make_vec(Type::varint(), Type::varfloat());
 
   //     double float_lt_EPS_coef__ = 1e-5;
@@ -382,33 +392,48 @@ private:
   //   std::set<FunctionI*> funcs;
 
   /// Possible function param sets
+  // NOLINTNEXTLINE(readability-identifier-naming)
   std::vector<Type> t_VII = make_vec(Type::varint(), Type::parint());
+  // NOLINTNEXTLINE(readability-identifier-naming)
   std::vector<Type> t_VIVI = make_vec(Type::varint(), Type::varint());
+  // NOLINTNEXTLINE(readability-identifier-naming)
   std::vector<Type> t_VIIVI = make_vec(Type::varint(), Type::parint(), Type::varint());
+  // NOLINTNEXTLINE(readability-identifier-naming)
   std::vector<Type> t_VFVI = make_vec(Type::varfloat(), Type::varint());
+  // NOLINTNEXTLINE(readability-identifier-naming)
   std::vector<Type> t_VFVF = make_vec(Type::varfloat(), Type::varfloat());
+  // NOLINTNEXTLINE(readability-identifier-naming)
   std::vector<Type> t_VFFVI = make_vec(Type::varfloat(), Type::parfloat(), Type::varint());
+  // NOLINTNEXTLINE(readability-identifier-naming)
   std::vector<Type> t_VFFVIF =
       make_vec(Type::varfloat(), Type::parfloat(), Type::varint(), Type::parfloat());
+  // NOLINTNEXTLINE(readability-identifier-naming)
   std::vector<Type> t_VFVIF = make_vec(Type::varfloat(), Type::varint(), Type::parfloat());
+  // NOLINTNEXTLINE(readability-identifier-naming)
   std::vector<Type> t_VFVIVF = make_vec(Type::varfloat(), Type::varint(), Type::varfloat());
+  // NOLINTNEXTLINE(readability-identifier-naming)
   std::vector<Type> t_VFVIVFF =
       make_vec(Type::varfloat(), Type::varint(), Type::varfloat(), Type::parfloat());
+  // NOLINTNEXTLINE(readability-identifier-naming)
   std::vector<Type> t_VFVFF = make_vec(Type::varfloat(), Type::varfloat(), Type::parfloat());
+  // NOLINTNEXTLINE(readability-identifier-naming)
   std::vector<Type> t_VFFF = make_vec(Type::varfloat(), Type::parfloat(), Type::parfloat());
   //     std::vector<Type> t_VFVFVIF({ Type::varfloat(), Type::varfloat(), Type::varint(),
   //     Type::parfloat() });
 
+  // NOLINTNEXTLINE(readability-identifier-naming)
   std::vector<Type> t_VIAVI = make_vec(Type::varint(), Type::varint(1));
+  // NOLINTNEXTLINE(readability-identifier-naming)
   std::vector<Type> t_VISI = make_vec(Type::varint(), Type::parsetint());
+  // NOLINTNEXTLINE(readability-identifier-naming)
   std::vector<Type> t_VISIVI = make_vec(Type::varint(), Type::parsetint(), Type::varint());
 
   //     std::vector<Type> t_intarray(1);
   //     t_intarray[0] = Type::parint(-1);
 
   typedef std::unordered_map<FunctionI*, DCT*> M__POSTCallTypes;
-  M__POSTCallTypes mCallTypes;  // actually declared in the input
-  std::vector<DCT> aCT;         // all possible
+  M__POSTCallTypes _mCallTypes;  // actually declared in the input
+  std::vector<DCT> _aCT;         // all possible
 
   // Fails:
   //   DomainCallType a = { NULL, t_VII, RIT_Halfreif, CT_Comparison, CMPT_EQ, VT_Float };
@@ -430,68 +455,93 @@ private:
     //       boolShort fPropagatedLargerEqns=0;
   };
 
-  std::vector<VarDescr> vVarDescr;
+  std::vector<VarDescr> _vVarDescr;
 
-  FunctionI *int_le_reif__POST = nullptr, *int_ge_reif__POST = nullptr,
-            *int_eq_reif__POST = nullptr, *int_ne__POST = nullptr, *float_le_reif__POST = nullptr,
-            *float_ge_reif__POST = nullptr, *aux_float_lt_zero_iff_1__POST = nullptr,
-            *float_eq_reif__POST = nullptr, *float_ne__POST = nullptr,
-            *aux_float_eq_zero_if_1__POST = nullptr, *aux_int_le_zero_if_1__POST = nullptr,
-            *aux_float_le_zero_if_1__POST = nullptr, *aux_float_lt_zero_if_1__POST = nullptr,
-            *equality_encoding__POST = nullptr, *set_in__POST = nullptr,
-            *set_in_reif__POST = nullptr;
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  FunctionI* int_le_reif__POST = nullptr;
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  FunctionI* int_ge_reif__POST = nullptr;
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  FunctionI* int_eq_reif__POST = nullptr;
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  FunctionI* int_ne__POST = nullptr;
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  FunctionI* float_le_reif__POST = nullptr;
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  FunctionI* float_ge_reif__POST = nullptr;
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  FunctionI* aux_float_lt_zero_iff_1__POST = nullptr;
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  FunctionI* float_eq_reif__POST = nullptr;
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  FunctionI* float_ne__POST = nullptr;
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  FunctionI* aux_float_eq_zero_if_1__POST = nullptr;
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  FunctionI* aux_int_le_zero_if_1__POST = nullptr;
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  FunctionI* aux_float_le_zero_if_1__POST = nullptr;
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  FunctionI* aux_float_lt_zero_if_1__POST = nullptr;
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  FunctionI* equality_encoding__POST = nullptr;
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  FunctionI* set_in__POST = nullptr;
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  FunctionI* set_in_reif__POST = nullptr;
 
-  bool register__POSTconstraintDecls() {
+  bool registerPOSTConstraintDecls() {
     EnvI& env = getEnv()->envi();
     GCLock lock;
 
-    aCT.clear();
-    aCT.emplace_back("int_le_reif__POST", t_VIIVI, RIT_Reif, CT_Comparison, CMPT_LE, VT_Int,
-                     int_le_reif__POST);
-    aCT.emplace_back("int_ge_reif__POST", t_VIIVI, RIT_Reif, CT_Comparison, CMPT_GE, VT_Int,
-                     int_ge_reif__POST);
-    aCT.emplace_back("int_eq_reif__POST", t_VIIVI, RIT_Reif, CT_Comparison, CMPT_EQ, VT_Int,
-                     int_eq_reif__POST);
-    aCT.emplace_back("int_ne__POST", t_VII, RIT_Static, CT_Comparison, CMPT_NE, VT_Int,
-                     int_ne__POST);
+    _aCT.clear();
+    _aCT.emplace_back("int_le_reif__POST", t_VIIVI, RIT_Reif, CT_Comparison, CMPT_LE, VT_Int,
+                      int_le_reif__POST);
+    _aCT.emplace_back("int_ge_reif__POST", t_VIIVI, RIT_Reif, CT_Comparison, CMPT_GE, VT_Int,
+                      int_ge_reif__POST);
+    _aCT.emplace_back("int_eq_reif__POST", t_VIIVI, RIT_Reif, CT_Comparison, CMPT_EQ, VT_Int,
+                      int_eq_reif__POST);
+    _aCT.emplace_back("int_ne__POST", t_VII, RIT_Static, CT_Comparison, CMPT_NE, VT_Int,
+                      int_ne__POST);
 
-    aCT.emplace_back("float_le_reif__POST", t_VFFVIF, RIT_Reif, CT_Comparison, CMPT_LE, VT_Float,
-                     float_le_reif__POST);
-    aCT.emplace_back("float_ge_reif__POST", t_VFFVIF, RIT_Reif, CT_Comparison, CMPT_GE, VT_Float,
-                     float_ge_reif__POST);
-    aCT.emplace_back("aux_float_lt_zero_iff_1__POST", t_VFVIF, RIT_Reif, CT_Comparison, CMPT_LT,
-                     VT_Float, aux_float_lt_zero_iff_1__POST);
-    aCT.emplace_back("float_eq_reif__POST", t_VFFVIF, RIT_Reif, CT_Comparison, CMPT_EQ, VT_Float,
-                     float_eq_reif__POST);
-    aCT.emplace_back("float_ne__POST", t_VFFF, RIT_Static, CT_Comparison, CMPT_NE, VT_Float,
-                     float_ne__POST);
+    _aCT.emplace_back("float_le_reif__POST", t_VFFVIF, RIT_Reif, CT_Comparison, CMPT_LE, VT_Float,
+                      float_le_reif__POST);
+    _aCT.emplace_back("float_ge_reif__POST", t_VFFVIF, RIT_Reif, CT_Comparison, CMPT_GE, VT_Float,
+                      float_ge_reif__POST);
+    _aCT.emplace_back("aux_float_lt_zero_iff_1__POST", t_VFVIF, RIT_Reif, CT_Comparison, CMPT_LT,
+                      VT_Float, aux_float_lt_zero_iff_1__POST);
+    _aCT.emplace_back("float_eq_reif__POST", t_VFFVIF, RIT_Reif, CT_Comparison, CMPT_EQ, VT_Float,
+                      float_eq_reif__POST);
+    _aCT.emplace_back("float_ne__POST", t_VFFF, RIT_Static, CT_Comparison, CMPT_NE, VT_Float,
+                      float_ne__POST);
 
-    aCT.emplace_back("aux_float_eq_zero_if_1__POST", t_VFVIVF, RIT_Halfreif, CT_Comparison,
-                     CMPT_EQ_0, VT_Float, aux_float_eq_zero_if_1__POST);
-    aCT.emplace_back("aux_int_le_zero_if_1__POST", t_VIVI, RIT_Halfreif, CT_Comparison, CMPT_LE_0,
-                     VT_Int, aux_int_le_zero_if_1__POST);
-    aCT.emplace_back("aux_float_le_zero_if_1__POST", t_VFVIVF, RIT_Halfreif, CT_Comparison,
-                     CMPT_LE_0, VT_Float, aux_float_le_zero_if_1__POST);
-    aCT.emplace_back("aux_float_lt_zero_if_1__POST", t_VFVIVFF, RIT_Halfreif, CT_Comparison,
-                     CMPT_LT_0, VT_Float, aux_float_lt_zero_if_1__POST);
+    _aCT.emplace_back("aux_float_eq_zero_if_1__POST", t_VFVIVF, RIT_Halfreif, CT_Comparison,
+                      CMPT_EQ_0, VT_Float, aux_float_eq_zero_if_1__POST);
+    _aCT.emplace_back("aux_int_le_zero_if_1__POST", t_VIVI, RIT_Halfreif, CT_Comparison, CMPT_LE_0,
+                      VT_Int, aux_int_le_zero_if_1__POST);
+    _aCT.emplace_back("aux_float_le_zero_if_1__POST", t_VFVIVF, RIT_Halfreif, CT_Comparison,
+                      CMPT_LE_0, VT_Float, aux_float_le_zero_if_1__POST);
+    _aCT.emplace_back("aux_float_lt_zero_if_1__POST", t_VFVIVFF, RIT_Halfreif, CT_Comparison,
+                      CMPT_LT_0, VT_Float, aux_float_lt_zero_if_1__POST);
 
-    aCT.emplace_back("equality_encoding__POST", t_VIAVI, RIT_Static, CT_Encode, CMPT_None, VT_Int,
-                     equality_encoding__POST);
-    aCT.emplace_back("set_in__POST", t_VISI, RIT_Static, CT_SetIn, CMPT_None, VT_Int, set_in__POST);
-    aCT.emplace_back("set_in_reif__POST", t_VISIVI, RIT_Reif, CT_SetIn, CMPT_None, VT_Int,
-                     set_in_reif__POST);
+    _aCT.emplace_back("equality_encoding__POST", t_VIAVI, RIT_Static, CT_Encode, CMPT_None, VT_Int,
+                      equality_encoding__POST);
+    _aCT.emplace_back("set_in__POST", t_VISI, RIT_Static, CT_SetIn, CMPT_None, VT_Int,
+                      set_in__POST);
+    _aCT.emplace_back("set_in_reif__POST", t_VISIVI, RIT_Reif, CT_SetIn, CMPT_None, VT_Int,
+                      set_in_reif__POST);
     /// Registering all declared & compatible __POST constraints
     /// (First, cleanup FunctionIs' payload:  -- ! doing now)
-    for (int i = 0; i < aCT.size(); ++i) {
-      FunctionI* fi = env.model->matchFn(env, ASTString(aCT[i].sFuncName), aCT[i].aParams, false);
+    for (int i = 0; i < _aCT.size(); ++i) {
+      FunctionI* fi = env.model->matchFn(env, ASTString(_aCT[i].sFuncName), _aCT[i].aParams, false);
       if (fi != nullptr) {
-        mCallTypes[fi] = aCT.data() + i;
-        aCT[i].pfi = fi;
+        _mCallTypes[fi] = _aCT.data() + i;
+        _aCT[i].pfi = fi;
         //         fi->pPayload = (void*)this;
-        //         std::cerr << "  FOund declaration: " << aCT[i].sFuncName << std::endl;
+        //         std::cerr << "  FOund declaration: " << _aCT[i].sFuncName << std::endl;
       } else {
-        aCT[i].pfi = nullptr;
-        DBGOUT_MIPD("  MIssing declaration: " << aCT[i].sFuncName);
+        _aCT[i].pfi = nullptr;
+        DBGOUT_MIPD("  MIssing declaration: " << _aCT[i].sFuncName);
         return false;
       }
     }
@@ -499,11 +549,11 @@ private:
   }
 
   /// Registering all __POST calls' domain-constrained variables
-  void register__POSTvariables() {
+  void registerPOSTVariables() {
     EnvI& env = getEnv()->envi();
     GCLock lock;
     Model& mFlat = *getEnv()->flat();
-    // First, cleanup VarDecls' payload which stores index in vVarDescr
+    // First, cleanup VarDecls' payload which stores index in _vVarDescr
     for (VarDeclIterator ivd = mFlat.vardecls().begin(); ivd != mFlat.vardecls().end(); ++ivd) {
       ivd->e()->payload(-1);
     }
@@ -521,8 +571,8 @@ private:
         DBGOUT_MIPD(" Variable " << vd0->id()->str() << ": non-contiguous domain "
                                  << (*(vd0->ti()->domain())));
         if (vd0->payload() == -1) {  // ! yet visited
-          vd0->payload(static_cast<int>(vVarDescr.size()));
-          vVarDescr.emplace_back(vd0, vd0->type().isint());  // can use /prmTypes/ as well
+          vd0->payload(static_cast<int>(_vVarDescr.size()));
+          _vVarDescr.emplace_back(vd0, vd0->type().isint());  // can use /prmTypes/ as well
           if (vd0->e() != nullptr) {
             checkInitExpr(vd0);
           }
@@ -540,8 +590,8 @@ private:
         continue;
       }
       if (Call* c = ic->e()->dynamicCast<Call>()) {
-        auto ipct = mCallTypes.find(c->decl());
-        if (ipct != mCallTypes.end()) {
+        auto ipct = _mCallTypes.find(c->decl());
+        if (ipct != _mCallTypes.end()) {
           // No ! here because might be deleted immediately in later versions.
           //             ic->remove();                              // mark removed at once
           MZN_MIPD__assert_hard(c->argCount() > 1);
@@ -558,8 +608,8 @@ private:
           }
           DBGOUT_MIPD__("  Call " << c->id().str() << " uses variable " << vd0->id()->str());
           if (vd0->payload() == -1) {  // ! yet visited
-            vd0->payload(static_cast<int>(vVarDescr.size()));
-            vVarDescr.emplace_back(vd0, vd0->type().isint());  // can use /prmTypes/ as well
+            vd0->payload(static_cast<int>(_vVarDescr.size()));
+            _vVarDescr.emplace_back(vd0, vd0->type().isint());  // can use /prmTypes/ as well
             // bounds/domains later for each involved var TODO
             if (vd0->e() != nullptr) {
               checkInitExpr(vd0);
@@ -569,17 +619,17 @@ private:
           }
           DBGOUT_MIPD("");
           if (equality_encoding__POST == c->decl()) {
-            MZN_MIPD__assert_hard(!vVarDescr[vd0->payload()].pEqEncoding);
-            vVarDescr[vd0->payload()].pEqEncoding = &*ic;
+            MZN_MIPD__assert_hard(!_vVarDescr[vd0->payload()].pEqEncoding);
+            _vVarDescr[vd0->payload()].pEqEncoding = &*ic;
             DBGOUT_MIPD(" Variable " << vd0->id()->str() << " has eq_encode.");
           }  // + if has aux_ constraints?
           else {
-            vVarDescr[vd0->payload()].aCalls.push_back(&*ic);
+            _vVarDescr[vd0->payload()].aCalls.push_back(&*ic);
           }
         }
       }
     }
-    MIPD__stats[N_POSTs__varsDirect] = static_cast<double>(vVarDescr.size());
+    MIPD__stats[N_POSTs__varsDirect] = static_cast<double>(_vVarDescr.size());
   }
 
   // Should only be called on a newly added variable
@@ -631,9 +681,9 @@ private:
           //             const int f2 = ( led.vd[1]->payload()>=0 );
           if (!fCheckArg || (led.vd[1]->payload() >= 0)) {
             // Can use a!her map here:
-            //               if ( sCallLinEq2.end() != sCallLinEq2.find(c) )
+            //               if ( _sCallLinEq2.end() != _sCallLinEq2.find(c) )
             //                 continue;
-            //               sCallLinEq2.insert(c);     // memorize this call
+            //               _sCallLinEq2.insert(c);     // memorize this call
             DBGOUT_MIPD__("  REG 1-LINEXP ");
             DBGOUT_MIPD_SELF(debugprint(vd));
             std::array<double, 1> coef0;
@@ -666,7 +716,7 @@ private:
     //       std::cerr << "  Model: " << std::endl;
     //       debugprint(getEnv()->flat());
 
-    //     TAgenda agenda(vVarDescr.size()), agendaNext;
+    //     TAgenda agenda(_vVarDescr.size()), agendaNext;
     //     for ( int i=0; i<agenda.size(); ++i )
     //       agenda[i] = i;
     bool fChanges;
@@ -676,7 +726,7 @@ private:
       propagateImplViews(fChanges);
     } while (fChanges);
 
-    MIPD__stats[N_POSTs__varsInvolved] = static_cast<double>(vVarDescr.size());
+    MIPD__stats[N_POSTs__varsInvolved] = static_cast<double>(_vVarDescr.size());
   }
 
   void propagateViews(bool& fChanges) {
@@ -723,10 +773,10 @@ private:
             // At least 1 touched var:
             if (nullptr != led.vd[0] && nullptr != led.vd[1]) {
               if (led.vd[0]->payload() >= 0 || led.vd[1]->payload() >= 0) {
-                if (sCallLinEq2.end() != sCallLinEq2.find(c)) {
+                if (_sCallLinEq2.end() != _sCallLinEq2.find(c)) {
                   continue;
                 }
-                sCallLinEq2.insert(c);  // memorize this call
+                _sCallLinEq2.insert(c);  // memorize this call
                 DBGOUT_MIPD("  REG 2-call ");
                 DBGOUT_MIPD_SELF(debugprint(c));
                 led.rhs = expr2Const(c->arg(2));
@@ -747,10 +797,10 @@ private:
             // TODO should be here?
             auto* eVD = get_annotation(c->ann(), constants().ann.defines_var);
             if (eVD != nullptr) {
-              if (sCallLinEqN.end() != sCallLinEqN.find(c)) {
+              if (_sCallLinEqN.end() != _sCallLinEqN.find(c)) {
                 continue;
               }
-              sCallLinEqN.insert(c);  // memorize this call
+              _sCallLinEqN.insert(c);  // memorize this call
               DBGOUT_MIPD("       REG N-call ");
               DBGOUT_MIPD_SELF(debugprint(c));
               Call* pC = eVD->dynamicCast<Call>();
@@ -779,10 +829,10 @@ private:
           led.vd[1] = expr2VarDecl(c->arg(1));
           // At least 1 touched var:
           if (led.vd[0]->payload() >= 0 || led.vd[1]->payload() >= 0) {
-            if (sCallInt2Float.end() != sCallInt2Float.find(c)) {
+            if (_sCallInt2Float.end() != _sCallInt2Float.find(c)) {
               continue;
             }
-            sCallInt2Float.insert(c);  // memorize this call
+            _sCallInt2Float.insert(c);  // memorize this call
             DBGOUT_MIPD("  REG call ");
             DBGOUT_MIPD_SELF(debugprint(c));
             led.rhs = 0.0;
@@ -806,7 +856,7 @@ private:
     double rhs;
   };
   typedef std::map<TLinExpLin, NViewData> NViewMap;
-  NViewMap mNViews;
+  NViewMap _mNViews;
 
   /// compare to an existing defining linexp, || just add it to the map
   /// adds only touched defined vars
@@ -855,8 +905,8 @@ private:
       rhsL.second /= coef1;
     }
 
-    auto it = mNViews.find(rhsLin);
-    if (mNViews.end() != it &&
+    auto it = _mNViews.find(rhsLin);
+    if (_mNViews.end() != it &&
         nVRest.pVarDefined != it->second.pVarDefined) {  // don't connect to itself
       LinEq2Vars leq;
       leq.vd = {{nVRest.pVarDefined, it->second.pVarDefined}};
@@ -867,7 +917,7 @@ private:
       return true;
     } else {
       if (vd->payload() >= 0) {  // only touched
-        mNViews[rhsLin] = nVRest;
+        _mNViews[rhsLin] = nVRest;
         return true;  // can lead to a new connection
       }
     }
@@ -883,7 +933,7 @@ private:
   }
 
   /// Could be better to mark the calls instead:
-  std::unordered_set<Call*> sCallLinEq2, sCallInt2Float, sCallLinEqN;
+  std::unordered_set<Call*> _sCallLinEq2, _sCallInt2Float, _sCallLinEqN;
 
   class TClique : public std::vector<LinEq2Vars> {  // need more info?
   public:
@@ -894,7 +944,7 @@ private:
     //       }
   };
   typedef std::vector<TClique> TCLiqueList;
-  TCLiqueList aCliques;
+  TCLiqueList _aCliques;
 
   /// register a 2-variable lin eq
   /// add it to the var clique, joining the participants' cliques if needed
@@ -916,13 +966,13 @@ private:
     int nCliqueAvailable = -1;
     for (auto* vd : led.vd) {
       if (vd->payload() < 0) {  // ! yet visited
-        vd->payload(static_cast<int>(vVarDescr.size()));
-        vVarDescr.emplace_back(vd, vd->type().isint());  // can use /prmTypes/ as well
+        vd->payload(static_cast<int>(_vVarDescr.size()));
+        _vVarDescr.emplace_back(vd, vd->type().isint());  // can use /prmTypes/ as well
         if (fCheckinitExpr && (vd->e() != nullptr)) {
           checkInitExpr(vd);
         }
       } else {
-        int nMaybeClq = vVarDescr[vd->payload()].nClique;
+        int nMaybeClq = _vVarDescr[vd->payload()].nClique;
         if (nMaybeClq >= 0) {
           nCliqueAvailable = nMaybeClq;
         }
@@ -931,21 +981,21 @@ private:
       }
     }
     if (nCliqueAvailable < 0) {  // no clique found
-      nCliqueAvailable = static_cast<int>(aCliques.size());
-      aCliques.resize(aCliques.size() + 1);
+      nCliqueAvailable = static_cast<int>(_aCliques.size());
+      _aCliques.resize(_aCliques.size() + 1);
     }
     DBGOUT_MIPD(" ...adding to clique " << nCliqueAvailable << " of size "
-                                        << aCliques[nCliqueAvailable].size());
-    TClique& clqNew = aCliques[nCliqueAvailable];
+                                        << _aCliques[nCliqueAvailable].size());
+    TClique& clqNew = _aCliques[nCliqueAvailable];
     clqNew.push_back(led);
     for (auto* vd : led.vd) {  // merging cliques
-      int& nMaybeClq = vVarDescr[vd->payload()].nClique;
+      int& nMaybeClq = _vVarDescr[vd->payload()].nClique;
       if (nMaybeClq >= 0 && nMaybeClq != nCliqueAvailable) {
-        TClique& clqOld = aCliques[nMaybeClq];
+        TClique& clqOld = _aCliques[nMaybeClq];
         MZN_MIPD__assert_hard(clqOld.size());
         for (auto& eq2 : clqOld) {
           for (auto* vd : eq2.vd) {  // point all the variables to the new clique
-            vVarDescr[vd->payload()].nClique = nCliqueAvailable;
+            _vVarDescr[vd->payload()].nClique = nCliqueAvailable;
           }
         }
         clqNew.insert(clqNew.end(), clqOld.begin(), clqOld.end());
@@ -958,8 +1008,8 @@ private:
 
   /// Finds a clique variable to which all domain constr are related
   class TCliqueSorter {
-    MIPD& mipd;
-    const int iVarStart;  // this is the first var to which all others are related
+    MIPD& _mipd;
+    const int _iVarStart;  // this is the first var to which all others are related
   public:
     //       VarDecl* varRef0=0;  // this is the first var to which all others are related
     VarDecl* varRef1 = nullptr;  // this is the 2nd main reference.
@@ -1081,17 +1131,17 @@ private:
     };
     LinEqGraph leg;
 
-    TCliqueSorter(MIPD* pm, int iv) : mipd(*pm), iVarStart(iv) {}
+    TCliqueSorter(MIPD* pm, int iv) : _mipd(*pm), _iVarStart(iv) {}
     void doRelate() {
-      MZN_MIPD__assert_hard(mipd.vVarDescr[iVarStart].nClique >= 0);
-      const TClique& clq = mipd.aCliques[mipd.vVarDescr[iVarStart].nClique];
+      MZN_MIPD__assert_hard(_mipd._vVarDescr[_iVarStart].nClique >= 0);
+      const TClique& clq = _mipd._aCliques[_mipd._vVarDescr[_iVarStart].nClique];
       for (const auto& eq2 : clq) {
         leg.addEdge(eq2);
       }
-      DBGOUT_MIPD(" Clique " << mipd.vVarDescr[iVarStart].nClique << ": " << leg.size()
+      DBGOUT_MIPD(" Clique " << _mipd._vVarDescr[_iVarStart].nClique << ": " << leg.size()
                              << " variables, " << clq.size() << " connections.");
       for (auto& it1 : leg) {
-        mipd.vVarDescr[it1.first->payload()].fDomainConstrProcessed = 1U;
+        _mipd._vVarDescr[it1.first->payload()].fDomainConstrProcessed = 1U;
       }
 
       // Propagate the 1st var's relations:
@@ -1101,10 +1151,10 @@ private:
       // 1. isInt 2. hasEqEncode 3. abs linFactor to ref0
       varRef1 = leg.begin()->first;
       std::array<double, 3> aCrit = {
-          {(double)mipd.vVarDescr[varRef1->payload()].fInt,
-           static_cast<double>(mipd.vVarDescr[varRef1->payload()].pEqEncoding != nullptr), 1.0}};
+          {(double)_mipd._vVarDescr[varRef1->payload()].fInt,
+           static_cast<double>(_mipd._vVarDescr[varRef1->payload()].pEqEncoding != nullptr), 1.0}};
       for (auto& it2 : mRef0) {
-        VarDescr& vard = mipd.vVarDescr[it2.first->payload()];
+        VarDescr& vard = _mipd._vVarDescr[it2.first->payload()];
         std::array<double, 3> aCrit1 = {{(double)vard.fInt,
                                          static_cast<double>(vard.pEqEncoding != nullptr),
                                          std::fabs(it2.second.first)}};
@@ -1131,18 +1181,18 @@ private:
     }
     void doProcess() {
       // Choose the main variable && relate all others to it
-      const int nClique = mipd.vVarDescr[iVarStart].nClique;
+      const int nClique = mipd._vVarDescr[iVarStart].nClique;
       if (nClique >= 0) {
         cls.doRelate();
       } else {
-        cls.varRef1 = mipd.vVarDescr[iVarStart].vd;
+        cls.varRef1 = mipd._vVarDescr[iVarStart].vd;
       }
       // Adding itself:
       cls.mRef1[cls.varRef1] = std::make_pair(1.0, 0.0);
 
       int iVarRef1 = cls.varRef1->payload();
-      MZN_MIPD__assert_hard(nClique == mipd.vVarDescr[iVarRef1].nClique);
-      cls.fRef1HasEqEncode = (mipd.vVarDescr[iVarRef1].pEqEncoding != nullptr);
+      MZN_MIPD__assert_hard(nClique == mipd._vVarDescr[iVarRef1].nClique);
+      cls.fRef1HasEqEncode = (mipd._vVarDescr[iVarRef1].pEqEncoding != nullptr);
 
       // First, construct the domain decomposition in any case
       //         projectVariableConstr( cls.varRef1, std::make_pair(1.0, 0.0) );
@@ -1179,7 +1229,7 @@ private:
           createDomainFlags();
         }
       }
-      implement__POSTs();
+      implementPOSTs();
 
       // Statistics
       if (sDomain.size() < MIPD__stats[N_POSTs__NSubintvMin]) {
@@ -1229,7 +1279,7 @@ private:
         } else {
           MZN_MIPD__FLATTENING_ERROR__IF_NOT(0, mipd.getEnv()->envi(), cls.varRef1->loc(),
                                              "Variable " << vd->id()->str() << " of type "
-                                                         << vd->type().toString(mipd.__env->envi())
+                                                         << vd->type().toString(mipd._env->envi())
                                                          << " has a domain.");
         }
         //           /// Deleting var domain:
@@ -1242,7 +1292,7 @@ private:
       }
       auto bnds = sDomain.getBounds();  // can change    TODO
       // process calls. Can use the constr type info.
-      auto& aCalls = mipd.vVarDescr[vd->payload()].aCalls;
+      auto& aCalls = mipd._vVarDescr[vd->payload()].aCalls;
       for (Item* pItem : aCalls) {
         auto* pCI = pItem->dynamicCast<ConstraintI>();
         MZN_MIPD__assert_hard(pCI != nullptr);
@@ -1251,8 +1301,8 @@ private:
         DBGOUT_MIPD__("PROPAG CALL  ");
         DBGOUT_MIPD_SELF(debugprint(pCall));
         // check the bounds for bool in reifs?                     TODO
-        auto ipct = mipd.mCallTypes.find(pCall->decl());
-        MZN_MIPD__assert_hard(mipd.mCallTypes.end() != ipct);
+        auto ipct = mipd._mCallTypes.find(pCall->decl());
+        MZN_MIPD__assert_hard(mipd._mCallTypes.end() != ipct);
         const DCT& dct = *ipct->second;
         int nCmpType_ADAPTED = dct.nCmpType;
         if (A < 0.0) {                            // negative factor
@@ -1383,14 +1433,16 @@ private:
       std::vector<Expression*> pp;
       auto bnds = sDomain.getBounds();
       const long long iMin = mipd.expr2ExprArray(
-          mipd.vVarDescr[cls.varRef1->payload()].pEqEncoding->e()->dynamicCast<Call>()->arg(1), pp);
+          mipd._vVarDescr[cls.varRef1->payload()].pEqEncoding->e()->dynamicCast<Call>()->arg(1),
+          pp);
       MZN_MIPD__assert_hard(pp.size() >= bnds.right - bnds.left + 1);
       MZN_MIPD__assert_hard(iMin <= bnds.left);
       long long vEE = iMin;
       DBGOUT_MIPD__(
           "   SYNC EQ_ENCODE( "
           << (*cls.varRef1) << ",   bitflags: "
-          << *(mipd.vVarDescr[cls.varRef1->payload()].pEqEncoding->e()->dynamicCast<Call>()->arg(1))
+          << *(mipd._vVarDescr[cls.varRef1->payload()].pEqEncoding->e()->dynamicCast<Call>()->arg(
+                 1))
           << " ):  SETTING 0 FLAGS FOR VALUES: ");
       for (const auto& intv : sDomain) {
         for (; vEE < intv.left; ++vEE) {
@@ -1427,8 +1479,8 @@ private:
     /// TODO What if a float's domain is discrete?
     void considerDenseEncoding() {
       if (cls.varRef1->id()->type().isint()) {
-        if (sDomain.max_interval() <= mipd.nMaxIntv2Bits ||
-            sDomain.card_int() <= mipd.dMaxNValueDensity * sDomain.size()) {
+        if (sDomain.maxInterval() <= mipd.nMaxIntv2Bits ||
+            sDomain.cardInt() <= mipd.dMaxNValueDensity * sDomain.size()) {
           sDomain.split2Bits();
           ++MIPD__stats[N_POSTs__clEEEnforced];
         }
@@ -1468,7 +1520,7 @@ private:
     }
 
     /// deletes them as well
-    void implement__POSTs() {
+    void implementPOSTs() {
       auto bnds = sDomain.getBounds();
       for (auto& iRef1 : cls.mRef1) {
         //           DBGOUT_MIPD__( "  MIPD: implementing constraints of variable  " );
@@ -1478,7 +1530,7 @@ private:
         const double A = eq1.first;  // vd = A*arg + B.  conversion
         const double B = eq1.second;
         // process calls. Can use the constr type info.
-        auto& aCalls = mipd.vVarDescr[vd->payload()].aCalls;
+        auto& aCalls = mipd._vVarDescr[vd->payload()].aCalls;
         for (Item* pItem : aCalls) {
           auto* pCI = pItem->dynamicCast<ConstraintI>();
           MZN_MIPD__assert_hard(pCI);
@@ -1487,8 +1539,8 @@ private:
           DBGOUT_MIPD__("IMPL CALL  ");
           DBGOUT_MIPD_SELF(debugprint(pCall));
           // check the bounds for bool in reifs?                     TODO
-          auto ipct = mipd.mCallTypes.find(pCall->decl());
-          MZN_MIPD__assert_hard(mipd.mCallTypes.end() != ipct);
+          auto ipct = mipd._mCallTypes.find(pCall->decl());
+          MZN_MIPD__assert_hard(mipd._mCallTypes.end() != ipct);
           const DCT& dct = *ipct->second;
           int nCmpType_ADAPTED = dct.nCmpType;
           if (A < 0.0) {                            // negative factor
@@ -1648,8 +1700,8 @@ private:
           pItem->remove();  // removing the call
         }
         // removing the eq_encoding call
-        if (mipd.vVarDescr[vd->payload()].pEqEncoding != nullptr) {
-          mipd.vVarDescr[vd->payload()].pEqEncoding->remove();
+        if (mipd._vVarDescr[vd->payload()].pEqEncoding != nullptr) {
+          mipd._vVarDescr[vd->payload()].pEqEncoding->remove();
         }
       }
     }
@@ -1665,7 +1717,7 @@ private:
         std::vector<Expression*> pp;
         auto bnds = sDomain.getBounds();
         const long long iMin = mipd.expr2ExprArray(
-            mipd.vVarDescr[cls.varRef1->payload()].pEqEncoding->e()->dynamicCast<Call>()->arg(1),
+            mipd._vVarDescr[cls.varRef1->payload()].pEqEncoding->e()->dynamicCast<Call>()->arg(1),
             pp);
         MZN_MIPD__assert_hard(pp.size() >= bnds.right - bnds.left + 1);
         MZN_MIPD__assert_hard(iMin <= bnds.left);
@@ -1911,21 +1963,21 @@ private:
   /// BUT when using k's eq_encode?
   /// And when subdividing into intervals
   bool decomposeDomains() {
-    //       for (int iClq=0; iClq<aCliques.size(); ++iClq ) {
-    //         TClique& clq = aCliques[iClq];
+    //       for (int iClq=0; iClq<_aCliques.size(); ++iClq ) {
+    //         TClique& clq = _aCliques[iClq];
     //       }
     bool fRetTrue = true;
-    for (int iVar = 0; iVar < vVarDescr.size(); ++iVar) {
-      //         VarDescr& var = vVarDescr[iVar];
-      if (vVarDescr[iVar].fDomainConstrProcessed == 0U) {
+    for (int iVar = 0; iVar < _vVarDescr.size(); ++iVar) {
+      //         VarDescr& var = _vVarDescr[iVar];
+      if (_vVarDescr[iVar].fDomainConstrProcessed == 0U) {
         GCLock lock;
         DomainDecomp dd(this, iVar);
         dd.doProcess();
-        vVarDescr[iVar].fDomainConstrProcessed = 1U;
+        _vVarDescr[iVar].fDomainConstrProcessed = 1U;
       }
     }
     // Clean up __POSTs:
-    for (auto& vVar : vVarDescr) {
+    for (auto& vVar : _vVarDescr) {
       for (auto* pCallI : vVar.aCalls) {
         pCallI->remove();
       }
@@ -2016,26 +2068,26 @@ private:
   }
 
   void printStats(std::ostream& os) {
-    //       if ( aCliques.empty() )
+    //       if ( _aCliques.empty() )
     //         return;
-    if (vVarDescr.empty()) {
+    if (_vVarDescr.empty()) {
       return;
     }
     int nc = 0;
-    for (auto& cl : aCliques) {
+    for (auto& cl : _aCliques) {
       if (!cl.empty()) {
         ++nc;
       }
     }
-    for (auto& var : vVarDescr) {
+    for (auto& var : _vVarDescr) {
       if (0 > var.nClique) {
         ++nc;  // 1-var cliques
       }
     }
-    //       os << "N cliques " << aCliques.size() << "  total, "
+    //       os << "N cliques " << _aCliques.size() << "  total, "
     //          << nc << " final" << std::endl;
     MZN_MIPD__assert_hard(nc);
-    MIPD__stats[N_POSTs__eqNmapsize] = static_cast<double>(mNViews.size());
+    MIPD__stats[N_POSTs__eqNmapsize] = static_cast<double>(_mNViews.size());
     double nSubintvAve = MIPD__stats[N_POSTs__NSubintvSum] / nc;
     MZN_MIPD__assert_hard(MIPD__stats[N_POSTs__NSubintvSum]);
     double dSubSizeAve = MIPD__stats[N_POSTs__SubSizeSum] / MIPD__stats[N_POSTs__NSubintvSum];
@@ -2217,7 +2269,7 @@ bool SetOfIntervals<N>::checkDisjunctStrict() {
 }
 /// Assumes integer interval bounds
 template <class N>
-int SetOfIntervals<N>::card_int() const {
+int SetOfIntervals<N>::cardInt() const {
   int nn = 0;
   for (auto it = this->begin(); it != this->end(); ++it) {
     ++nn;
@@ -2226,7 +2278,7 @@ int SetOfIntervals<N>::card_int() const {
   return nn;
 }
 template <class N>
-N SetOfIntervals<N>::max_interval() const {
+N SetOfIntervals<N>::maxInterval() const {
   N ll = -1;
   for (auto it = this->begin(); it != this->end(); ++it) {
     ll = std::max(ll, it->right - it->left);
@@ -2249,7 +2301,7 @@ bool MIPD::fVerbose = false;
 
 void mip_domains(Env& env, bool fVerbose, int nmi, double dmd) {
   MIPD mipd(&env, fVerbose, nmi, dmd);
-  if (!mipd.MIPdomains()) {
+  if (!mipd.doMIPdomains()) {
     GCLock lock;
     env.envi().fail();
   }
