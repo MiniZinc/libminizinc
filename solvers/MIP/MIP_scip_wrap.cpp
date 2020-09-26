@@ -256,12 +256,12 @@ SCIP_RETCODE MIP_scip_wrapper::closeSCIP() {
 
   delete plugin;
   /// and at last:
-  //   MIP_wrapper::cleanup();
+  //   MIPWrapper::cleanup();
   return SCIP_OKAY;
 }
 
 SCIP_RETCODE MIP_scip_wrapper::doAddVars_SCIP(size_t n, double* obj, double* lb, double* ub,
-                                              MIP_wrapper::VarType* vt, string* names) {
+                                              MIPWrapper::VarType* vt, string* names) {
   /// Convert var types:
   //   vector<char> ctype(n);
   //   vector<char*> pcNames(n);
@@ -279,7 +279,7 @@ SCIP_RETCODE MIP_scip_wrapper::doAddVars_SCIP(size_t n, double* obj, double* lb,
         ctype = SCIP_VARTYPE_BINARY;
         break;
       default:
-        throw runtime_error("  MIP_wrapper: unknown variable type");
+        throw runtime_error("  MIPWrapper: unknown variable type");
     }
     scipVars.resize(scipVars.size() + 1);
     if (fPhase1Over) assert(scipVars.size() == colObj.size());
@@ -298,7 +298,7 @@ SCIP_RETCODE MIP_scip_wrapper::delSCIPVars() {
 }
 
 SCIP_RETCODE MIP_scip_wrapper::addRow_SCIP(int nnz, int* rmatind, double* rmatval,
-                                           MIP_wrapper::LinConType sense, double rhs, int mask,
+                                           MIPWrapper::LinConType sense, double rhs, int mask,
                                            const string& rowName) {
   /// Convert var types:
   double lh = -SCIPinfinityPlugin(plugin, scip), rh = SCIPinfinityPlugin(plugin, scip);
@@ -313,7 +313,7 @@ SCIP_RETCODE MIP_scip_wrapper::addRow_SCIP(int nnz, int* rmatind, double* rmatva
       lh = rhs;
       break;
     default:
-      throw runtime_error("  MIP_wrapper: unknown constraint type");
+      throw runtime_error("  MIPWrapper: unknown constraint type");
   }
   const int ccnt = 0;
   const int rcnt = 1;
@@ -353,7 +353,7 @@ void MIP_scip_wrapper::setVarUB(int iVar, double ub) {
 }
 
 void MIP_scip_wrapper::addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind,
-                                              double* rmatval, MIP_wrapper::LinConType sense,
+                                              double* rmatval, MIPWrapper::LinConType sense,
                                               double rhs, const string& rowName) {
   MZN_ASSERT_HARD_MSG(0 <= bVal && 1 >= bVal, "SCIP: addIndicatorConstraint: bVal not 0/1");
   //// Make sure in order to notice the indices of lazy constr: also here?   TODO
@@ -479,7 +479,7 @@ static SCIP_DECL_EVENTEXIT(eventExitBestsol) { /*lint --e{715}*/
   return SCIP_OKAY;
 }
 
-static MIP_wrapper::CBUserInfo* cbuiPtr = 0;
+static MIPWrapper::CBUserInfo* cbuiPtr = 0;
 static SCIP_VAR** scipVarsPtr = 0;
 
 /** execution method of event handler */
@@ -505,7 +505,7 @@ static SCIP_DECL_EVENTEXEC(eventExecBestsol) { /*lint --e{715}*/
   if (fabs(cbuiPtr->pOutput->objVal - objVal) > 1e-12 * (1.0 + fabs(objVal))) {
     newincumbent = 1;
     cbuiPtr->pOutput->objVal = objVal;
-    cbuiPtr->pOutput->status = MIP_wrapper::SAT;
+    cbuiPtr->pOutput->status = MIPWrapper::SAT;
     cbuiPtr->pOutput->statusName = "feasible from a callback";
   }
 

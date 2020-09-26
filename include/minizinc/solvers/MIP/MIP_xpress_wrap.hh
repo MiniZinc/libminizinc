@@ -73,7 +73,7 @@ private:
   static const std::vector<std::string>& dlls();
 };
 
-class MIP_xpress_wrapper : public MIP_wrapper {
+class MIP_xpress_wrapper : public MIPWrapper {
 public:
   class Options : public MiniZinc::SolverInstanceBase::Options {
   public:

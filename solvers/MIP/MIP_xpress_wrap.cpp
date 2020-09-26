@@ -25,7 +25,7 @@
 #include <string>
 
 struct UserSolutionCallbackData {
-  MIP_wrapper::CBUserInfo* info;
+  MIPWrapper::CBUserInfo* info;
   XPRBprob* problem;
   vector<XPRBvar>* variables;
   XpressPlugin* plugin;
@@ -251,20 +251,20 @@ void MIP_xpress_wrapper::setOptions() {
   plugin->XPRSsetdblcontrol(xprsProblem, XPRS_MIPRELSTOP, options->relGap);
 }
 
-static MIP_wrapper::Status convertStatus(int xpressStatus) {
+static MIPWrapper::Status convertStatus(int xpressStatus) {
   switch (xpressStatus) {
     case XPRB_MIP_OPTIMAL:
-      return MIP_wrapper::Status::OPT;
+      return MIPWrapper::Status::OPT;
     case XPRB_MIP_INFEAS:
-      return MIP_wrapper::Status::UNSAT;
+      return MIPWrapper::Status::UNSAT;
     case XPRB_MIP_UNBOUNDED:
-      return MIP_wrapper::Status::UNBND;
+      return MIPWrapper::Status::UNBND;
     case XPRB_MIP_NO_SOL_FOUND:
-      return MIP_wrapper::Status::UNKNOWN;
+      return MIPWrapper::Status::UNKNOWN;
     case XPRB_MIP_NOT_LOADED:
-      return MIP_wrapper::Status::__ERROR;
+      return MIPWrapper::Status::__ERROR;
     default:
-      return MIP_wrapper::Status::UNKNOWN;
+      return MIPWrapper::Status::UNKNOWN;
   }
 }
 
@@ -316,7 +316,7 @@ static void setOutputAttributes(XpressPlugin* plugin, MIP_xpress_wrapper::Output
 
 static void XPRS_CC userSolNotifyCallback(XPRSprob xprsProblem, void* userData) {
   auto* data = (UserSolutionCallbackData*)userData;
-  MIP_wrapper::CBUserInfo* info = data->info;
+  MIPWrapper::CBUserInfo* info = data->info;
 
   setOutputAttributes(data->plugin, info->pOutput, xprsProblem);
 
@@ -455,11 +455,11 @@ bool MIP_xpress_wrapper::addWarmStart(const std::vector<VarId>& vars,
 
 int MIP_xpress_wrapper::convertConstraintType(LinConType sense) {
   switch (sense) {
-    case MIP_wrapper::LQ:
+    case MIPWrapper::LQ:
       return XPRB_L;
-    case MIP_wrapper::EQ:
+    case MIPWrapper::EQ:
       return XPRB_E;
-    case MIP_wrapper::GQ:
+    case MIPWrapper::GQ:
       return XPRB_G;
     default:
       throw XpressException("unkown constraint sense");

@@ -133,7 +133,7 @@ private:
   void load(void);
 };
 
-class MIP_scip_wrapper : public MIP_wrapper {
+class MIP_scip_wrapper : public MIPWrapper {
   SCIP* scip = 0;
   //     SCIP_Retcode           retcode = SCIP_OKAY;
   //     char          scip_buffer[SCIP_MESSAGEBUFSIZE];
