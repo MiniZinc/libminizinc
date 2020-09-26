@@ -96,7 +96,7 @@ std::string progpath() {
   } else {
     path[sz] = '\0';
     std::string p(path);
-    size_t slash = p.find_last_of("/");
+    size_t slash = p.find_last_of('/');
     if (slash != std::string::npos) {
       p = p.substr(0, slash);
     }
