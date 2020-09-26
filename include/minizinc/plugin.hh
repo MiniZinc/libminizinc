@@ -22,8 +22,8 @@
 #include <minizinc/exception.hh>
 #include <minizinc/file_utils.hh>
 
+#include <cstdlib>
 #include <sstream>
-#include <stdlib.h>
 #include <string>
 #include <vector>
 
@@ -39,9 +39,9 @@ public:
     /// Construct with message \a msg
     PluginError(const std::string& msg) : Exception(msg) {}
     /// Destructor
-    ~PluginError() throw() {}
+    ~PluginError() throw() override {}
     /// Return description
-    virtual const char* what() const throw() { return "MiniZinc: plugin loading error"; }
+    const char* what() const throw() override { return "MiniZinc: plugin loading error"; }
   };
 
   /// Load a plugin with given DLL path
@@ -58,11 +58,13 @@ public:
       open(file + ".so");
 #endif
     }
-    if (dll == nullptr) throw PluginError("Failed to load plugin " + file);
+    if (_dll == nullptr) {
+      throw PluginError("Failed to load plugin " + file);
+    }
   }
   /// Load a plugin by trying the given DLL file paths
   Plugin(const std::vector<std::string>& files) {
-    for (auto file : files) {
+    for (const auto& file : files) {
       if (MiniZinc::FileUtils::is_absolute(file)) {
         open(file);
       } else {
@@ -73,16 +75,19 @@ public:
         open(file + ".so");
 #endif
       }
-      if (dll != nullptr) return;
+      if (_dll != nullptr) {
+        return;
+      }
     }
     bool first = true;
     std::stringstream ss;
     ss << "Failed to load plugin. Tried ";
-    for (auto file : files) {
-      if (first)
+    for (const auto& file : files) {
+      if (first) {
         first = false;
-      else
+      } else {
         ss << ", ";
+      }
       ss << file;
     }
     throw PluginError(ss.str());
@@ -95,16 +100,18 @@ protected:
   void* symbol(const char* name) {
     void* ret;
 #ifdef _WIN32
-    ret = (void*)GetProcAddress((HMODULE)dll, (LPCSTR)name);
+    ret = (void*)GetProcAddress((HMODULE)_dll, (LPCSTR)name);
 #else
-    ret = dlsym(dll, name);
+    ret = dlsym(_dll, name);
 #endif
-    if (ret == nullptr) throw PluginError(std::string("Failed to load symbol ") + name);
+    if (ret == nullptr) {
+      throw PluginError(std::string("Failed to load symbol ") + name);
+    }
     return ret;
   }
 
 private:
-  void* dll;
+  void* _dll;
   void open(const std::string& file) {
 #ifdef _WIN32
     auto dir = MiniZinc::FileUtils::dir_name(file);
@@ -112,21 +119,21 @@ private:
       // Add the path with the DLL to the search path for dependency loading
       SetDllDirectoryW(MiniZinc::FileUtils::utf8ToWide(dir).c_str());
     }
-    dll = (void*)LoadLibrary((LPCSTR)file.c_str());
+    _dll = (void*)LoadLibrary((LPCSTR)file.c_str());
     if (!dir.empty()) {
       SetDllDirectoryW(nullptr);
     }
 #else
-    dll = dlopen(file.c_str(), RTLD_NOW);
+    _dll = dlopen(file.c_str(), RTLD_NOW);
 #endif
   }
   void close() {
 #ifdef _WIN32
-    FreeLibrary((HMODULE)dll);
+    FreeLibrary((HMODULE)_dll);
 #else
-    dlclose(dll);
+    dlclose(_dll);
 #endif
-    dll = nullptr;
+    _dll = nullptr;
   }
 };
 }  // namespace MiniZinc

@@ -98,8 +98,11 @@ VarDecl* Scopes::findSimilar(Id* ident) {
   return mostSimilar;
 }
 
-struct VarDeclCmp {
+class VarDeclCmp {
+private:
   std::unordered_map<VarDecl*, int>& _pos;
+
+public:
   VarDeclCmp(std::unordered_map<VarDecl*, int>& pos) : _pos(pos) {}
   bool operator()(Expression* e0, Expression* e1) {
     if (auto* vd0 = Expression::dynamicCast<VarDecl>(e0)) {
@@ -113,8 +116,11 @@ struct VarDeclCmp {
     }
   }
 };
-struct ItemCmp {
+class ItemCmp {
+private:
   std::unordered_map<VarDecl*, int>& _pos;
+
+public:
   ItemCmp(std::unordered_map<VarDecl*, int>& pos) : _pos(pos) {}
   bool operator()(Item* i0, Item* i1) {
     if (auto* vd0 = i0->cast<VarDeclI>()) {
@@ -129,7 +135,7 @@ struct ItemCmp {
   }
 };
 
-void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Model* enumItems) {
+void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Model* enumItems) {
   GCLock lock;
 
   Id* ident = vd->id();
@@ -869,7 +875,7 @@ void TopoSorter::add(EnvI& env, VarDeclI* vdi, bool handleEnums, Model* enumItem
     vd->type(vdt);
 
     if (vd->e() != nullptr) {
-      createEnumMapper(env, model, enumId, vd, enumItems);
+      create_enum_mapper(env, model, enumId, vd, enumItems);
     }
   }
   scopes.add(env, vd);
@@ -1082,7 +1088,7 @@ void TopoSorter::run(EnvI& env, Expression* e) {
   }
 }
 
-KeepAlive addCoercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t) {
+KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t) {
   if (e->isa<ArrayAccess>() && e->type().dim() > 0) {
     auto* aa = e->cast<ArrayAccess>();
     // Turn ArrayAccess into a slicing operation
@@ -1206,17 +1212,19 @@ KeepAlive addCoercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t) 
                   "cannot determine coercion from type " + e->type().toString(env) + " to type " +
                       funarg_t.toString(env));
 }
-KeepAlive addCoercion(EnvI& env, Model* m, Expression* e, Expression* funarg) {
-  return addCoercion(env, m, e, funarg->type());
+KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, Expression* funarg) {
+  return add_coercion(env, m, e, funarg->type());
 }
 
 template <bool ignoreVarDecl>
 class Typer {
-public:
+private:
   EnvI& _env;
   Model* _model;
   std::vector<TypeError>& _typeErrors;
   bool _ignoreUndefined;
+
+public:
   Typer(EnvI& env, Model* model, std::vector<TypeError>& typeErrors, bool ignoreUndefined)
       : _env(env), _model(model), _typeErrors(typeErrors), _ignoreUndefined(ignoreUndefined) {}
   /// Check annotations when expression is finished
@@ -1292,7 +1300,7 @@ public:
         }
       }
       for (unsigned int i = 0; i < sl.v().size(); i++) {
-        sl.v()[i] = addCoercion(_env, _model, sl.v()[i], ty)();
+        sl.v()[i] = add_coercion(_env, _model, sl.v()[i], ty)();
       }
     }
     sl.type(ty);
@@ -1401,7 +1409,7 @@ public:
         anon->type(at);
       }
       for (unsigned int i = 0; i < al.size(); i++) {
-        al.set(i, addCoercion(_env, _model, al[i], at)());
+        al.set(i, add_coercion(_env, _model, al[i], at)());
       }
     }
     if (ty.enumId() != 0) {
@@ -1421,7 +1429,7 @@ public:
         Type tv = aa.v()->type();
         tv.st(Type::ST_PLAIN);
         tv.dim(1);
-        aa.v(addCoercion(_env, _model, aa.v(), tv)());
+        aa.v(add_coercion(_env, _model, aa.v(), tv)());
       } else {
         std::ostringstream oss;
         oss << "array access attempted on expression of type `" << aa.v()->type().toString(_env)
@@ -1429,7 +1437,7 @@ public:
         throw TypeError(_env, aa.v()->loc(), oss.str());
       }
     } else if (aa.v()->isa<ArrayAccess>()) {
-      aa.v(addCoercion(_env, _model, aa.v(), aa.v()->type())());
+      aa.v(add_coercion(_env, _model, aa.v(), aa.v()->type())());
     }
     if (aa.v()->type().dim() != aa.idx().size()) {
       std::ostringstream oss;
@@ -1515,10 +1523,10 @@ public:
                           "array slicing with variable range or index not supported");
         }
         isSlice = true;
-        aa.idx()[i] = addCoercion(_env, _model, aai, Type::varsetint())();
+        aa.idx()[i] = add_coercion(_env, _model, aai, Type::varsetint())();
         n_dimensions++;
       } else {
-        aa.idx()[i] = addCoercion(_env, _model, aai, Type::varint())();
+        aa.idx()[i] = add_coercion(_env, _model, aai, Type::varint())();
       }
 
       if (aai->type().isOpt()) {
@@ -1609,23 +1617,23 @@ public:
           for (auto* wp : whereParts) {
             class FindLatestGen : public EVisitor {
             public:
-              int decl_idx;
+              int declIndex;
               VarDecl* decl;
               const genMap_t& generatorMap;
               Comprehension* comp;
               FindLatestGen(const genMap_t& generatorMap0, Comprehension* comp0)
-                  : decl_idx(-1),
+                  : declIndex(-1),
                     decl(comp0->decl(0, 0)),
                     generatorMap(generatorMap0),
                     comp(comp0) {}
               void vId(const Id& ident) {
                 auto it = generatorMap.find(ident.decl());
-                if (it != generatorMap.end() && it->second.second > decl_idx) {
-                  decl_idx = it->second.second;
+                if (it != generatorMap.end() && it->second.second > declIndex) {
+                  declIndex = it->second.second;
                   decl = ident.decl();
                   int gen = it->second.first;
                   while (comp->in(gen) == nullptr && gen < comp->numberOfGenerators() - 1) {
-                    decl_idx++;
+                    declIndex++;
                     gen++;
                     decl = comp->decl(gen, 0);
                   }
@@ -1650,7 +1658,7 @@ public:
         for (int j = 0; j < c.numberOfDecls(i); j++) {
           decls.push_back(c.decl(i, j));
           KeepAlive c_in =
-              c.in(i) != nullptr ? addCoercion(_env, _model, c.in(i), c.in(i)->type()) : nullptr;
+              c.in(i) != nullptr ? add_coercion(_env, _model, c.in(i), c.in(i)->type()) : nullptr;
           if (!whereMap[c.decl(i, j)].empty()) {
             // need a generator for all the decls up to this point
             Expression* whereExpr = whereMap[c.decl(i, j)][0];
@@ -1683,7 +1691,7 @@ public:
       }
       tt.st(Type::ST_SET);
       if (tt.isvar()) {
-        c.e(addCoercion(_env, _model, c.e(), Type::varint())());
+        c.e(add_coercion(_env, _model, c.e(), Type::varint())());
         tt.bt(Type::BT_INT);
       }
     } else {
@@ -1820,9 +1828,9 @@ public:
       anon->type(tret_var);
     }
     for (int i = 0; i < ite.size(); i++) {
-      ite.thenExpr(i, addCoercion(_env, _model, ite.thenExpr(i), tret)());
+      ite.thenExpr(i, add_coercion(_env, _model, ite.thenExpr(i), tret)());
     }
-    ite.elseExpr(addCoercion(_env, _model, ite.elseExpr(), tret)());
+    ite.elseExpr(add_coercion(_env, _model, ite.elseExpr(), tret)());
     /// TODO: perhaps extend flattener to array types, but for now throw an error
     if (varcond && tret.dim() > 0) {
       throw TypeError(_env, ite.loc(), "conditional with var condition cannot have array type");
@@ -1841,8 +1849,8 @@ public:
     args[0] = bop.lhs();
     args[1] = bop.rhs();
     if (FunctionI* fi = _model->matchFn(_env, bop.opToString(), args, true)) {
-      bop.lhs(addCoercion(_env, _model, bop.lhs(), fi->argtype(_env, args, 0))());
-      bop.rhs(addCoercion(_env, _model, bop.rhs(), fi->argtype(_env, args, 1))());
+      bop.lhs(add_coercion(_env, _model, bop.lhs(), fi->argtype(_env, args, 0))());
+      bop.rhs(add_coercion(_env, _model, bop.rhs(), fi->argtype(_env, args, 1))());
       args[0] = bop.lhs();
       args[1] = bop.rhs();
       Type ty = fi->rtype(_env, args, true);
@@ -1994,7 +2002,7 @@ public:
     std::vector<Expression*> args(1);
     args[0] = uop.e();
     if (FunctionI* fi = _model->matchFn(_env, uop.opToString(), args, true)) {
-      uop.e(addCoercion(_env, _model, uop.e(), fi->argtype(_env, args, 0))());
+      uop.e(add_coercion(_env, _model, uop.e(), fi->argtype(_env, args, 0))());
       args[0] = uop.e();
       Type ty = fi->rtype(_env, args, true);
       ty.cv(uop.e()->type().cv());
@@ -2046,7 +2054,7 @@ public:
         Type t_before = c->e()->type();
         Type t = fi->argtype(_env, args, i);
         t.dim(0);
-        c->e(addCoercion(_env, _model, c->e(), t)());
+        c->e(add_coercion(_env, _model, c->e(), t)());
         Type t_after = c->e()->type();
         if (t_before != t_after) {
           Type ct = c->type();
@@ -2054,7 +2062,7 @@ public:
           c->type(ct);
         }
       } else {
-        args[i] = addCoercion(_env, _model, call.arg(i), fi->argtype(_env, args, i))();
+        args[i] = add_coercion(_env, _model, call.arg(i), fi->argtype(_env, args, i))();
         call.arg(i, args[i]);
       }
       cv = cv || args[i]->type().cv();
@@ -2208,7 +2216,7 @@ public:
             _typeErrors.emplace_back(_env, vd.e()->loc(), ss.str());
           }
         } else {
-          vd.e(addCoercion(_env, _model, vd.e(), vd.ti()->type())());
+          vd.e(add_coercion(_env, _model, vd.e(), vd.ti()->type())());
         }
       } else {
         assert(!vd.type().isunknown());
@@ -2464,7 +2472,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         vd->e(ai->e());
         vd->ann().add(constants().ann.rhs_from_assignment);
         if (vd->ti()->isEnum()) {
-          createEnumMapper(env.envi(), m, vd->ti()->type().enumId(), vd, enumItems2);
+          create_enum_mapper(env.envi(), m, vd->ti()->type().enumId(), vd, enumItems2);
         }
       }
     }
@@ -2543,16 +2551,16 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
   {
     Typer<false> ty(env.envi(), m, typeErrors, ignoreUndefinedParameters);
-    BottomUpIterator<Typer<false> > bu_ty(ty);
+    BottomUpIterator<Typer<false> > bottomUpTyper(ty);
     for (auto& decl : ts.decls) {
       decl->payload(0);
-      bu_ty.run(decl->ti());
+      bottomUpTyper.run(decl->ti());
       ty.vVarDecl(*decl);
     }
     for (auto& functionItem : functionItems) {
-      bu_ty.run(functionItem->ti());
+      bottomUpTyper.run(functionItem->ti());
       for (unsigned int j = 0; j < functionItem->params().size(); j++) {
-        bu_ty.run(functionItem->params()[j]);
+        bottomUpTyper.run(functionItem->params()[j]);
       }
     }
   }
@@ -2561,72 +2569,75 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
   {
     Typer<true> ty(env.envi(), m, typeErrors, ignoreUndefinedParameters);
-    BottomUpIterator<Typer<true> > bu_ty(ty);
+    BottomUpIterator<Typer<true> > bottomUpTyper(ty);
 
     class TSV2 : public ItemVisitor {
-    public:
-      EnvI& env;
-      Model* m;
-      BottomUpIterator<Typer<true> >& bu_ty;
+    private:
+      EnvI& _env;
+      Model* _m;
+      BottomUpIterator<Typer<true> >& _bottomUpTyper;
       std::vector<TypeError>& _typeErrors;
+
+    public:
       TSV2(EnvI& env0, Model* m0, BottomUpIterator<Typer<true> >& b,
            std::vector<TypeError>& typeErrors)
-          : env(env0), m(m0), bu_ty(b), _typeErrors(typeErrors) {}
+          : _env(env0), _m(m0), _bottomUpTyper(b), _typeErrors(typeErrors) {}
       void vVarDeclI(VarDeclI* i) {
-        bu_ty.run(i->e());
+        _bottomUpTyper.run(i->e());
         if (i->e()->ti()->hasTiVariable()) {
           std::ostringstream ss;
           ss << "type-inst variables not allowed in type-inst for `" << i->e()->id()->str() << "'";
-          _typeErrors.emplace_back(env, i->e()->loc(), ss.str());
+          _typeErrors.emplace_back(_env, i->e()->loc(), ss.str());
         }
         VarDecl* vdi = i->e();
         if (vdi->e() == nullptr && vdi->type().isSet() && vdi->type().isvar() &&
             vdi->ti()->domain() == nullptr) {
           std::ostringstream ss;
           ss << "set element type for `" << vdi->id()->str() << "' is not finite";
-          _typeErrors.emplace_back(env, vdi->loc(), ss.str());
+          _typeErrors.emplace_back(_env, vdi->loc(), ss.str());
         }
         if (i->e()->ann().contains(constants().ann.output_only)) {
           if (vdi->e() == nullptr) {
             _typeErrors.emplace_back(
-                env, vdi->loc(),
+                _env, vdi->loc(),
                 "variables annotated with ::output_only must have a right hand side");
           } else if (vdi->e()->type().isvar()) {
-            _typeErrors.emplace_back(env, vdi->loc(),
+            _typeErrors.emplace_back(_env, vdi->loc(),
                                      "variables annotated with ::output_only must be par");
           }
         }
       }
       void vAssignI(AssignI* i) {
-        bu_ty.run(i->e());
-        if (!env.isSubtype(i->e()->type(), i->decl()->ti()->type(), true)) {
+        _bottomUpTyper.run(i->e());
+        if (!_env.isSubtype(i->e()->type(), i->decl()->ti()->type(), true)) {
           std::ostringstream ss;
           ss << "assignment value for `" << i->decl()->id()->str()
-             << "' has invalid type-inst: expected `" << i->decl()->ti()->type().toString(env)
-             << "', actual `" << i->e()->type().toString(env) << "'";
-          _typeErrors.emplace_back(env, i->loc(), ss.str());
+             << "' has invalid type-inst: expected `" << i->decl()->ti()->type().toString(_env)
+             << "', actual `" << i->e()->type().toString(_env) << "'";
+          _typeErrors.emplace_back(_env, i->loc(), ss.str());
           // Assign to "true" constant to avoid generating further errors that the parameter
           // is undefined
           i->decl()->e(constants().literalTrue);
         }
       }
       void vConstraintI(ConstraintI* i) {
-        bu_ty.run(i->e());
-        if (!env.isSubtype(i->e()->type(), Type::varbool(), true)) {
-          throw TypeError(env, i->loc(),
-                          "invalid type of constraint, expected `" + Type::varbool().toString(env) +
-                              "', actual `" + i->e()->type().toString(env) + "'");
+        _bottomUpTyper.run(i->e());
+        if (!_env.isSubtype(i->e()->type(), Type::varbool(), true)) {
+          throw TypeError(_env, i->loc(),
+                          "invalid type of constraint, expected `" +
+                              Type::varbool().toString(_env) + "', actual `" +
+                              i->e()->type().toString(_env) + "'");
         }
       }
       void vSolveI(SolveI* i) {
         for (ExpressionSetIter it = i->ann().begin(); it != i->ann().end(); ++it) {
-          bu_ty.run(*it);
+          _bottomUpTyper.run(*it);
           if (!(*it)->type().isAnn()) {
-            throw TypeError(env, (*it)->loc(),
-                            "expected annotation, got `" + (*it)->type().toString(env) + "'");
+            throw TypeError(_env, (*it)->loc(),
+                            "expected annotation, got `" + (*it)->type().toString(_env) + "'");
           }
         }
-        bu_ty.run(i->e());
+        _bottomUpTyper.run(i->e());
         if (i->e() != nullptr) {
           Type et = i->e()->type();
 
@@ -2635,11 +2646,11 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
             et.ot(Type::OT_PRESENT);
           }
 
-          if (!(env.isSubtype(et, Type::varint(), true) ||
-                env.isSubtype(et, Type::varfloat(), true))) {
-            throw TypeError(env, i->e()->loc(),
+          if (!(_env.isSubtype(et, Type::varint(), true) ||
+                _env.isSubtype(et, Type::varfloat(), true))) {
+            throw TypeError(_env, i->e()->loc(),
                             "objective has invalid type, expected int or float, actual `" +
-                                et.toString(env) + "'");
+                                et.toString(_env) + "'");
           }
 
           if (needOptCoercion) {
@@ -2648,7 +2659,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
             args[0] = i->e();
             args[1] = constants().boollit(i->st() == SolveI::ST_MAX);
             Call* c = new Call(Location().introduce(), ASTString("objective_deopt_"), args);
-            c->decl(env.model->matchFn(env, c, false));
+            c->decl(_env.model->matchFn(_env, c, false));
             assert(c->decl());
             c->type(et);
             i->e(c);
@@ -2656,29 +2667,29 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         }
       }
       void vOutputI(OutputI* i) {
-        bu_ty.run(i->e());
+        _bottomUpTyper.run(i->e());
         if (i->e()->type() != Type::parstring(1) && i->e()->type() != Type::bot(1)) {
-          throw TypeError(env, i->e()->loc(),
+          throw TypeError(_env, i->e()->loc(),
                           "invalid type in output item, expected `" +
-                              Type::parstring(1).toString(env) + "', actual `" +
-                              i->e()->type().toString(env) + "'");
+                              Type::parstring(1).toString(_env) + "', actual `" +
+                              i->e()->type().toString(_env) + "'");
         }
       }
       void vFunctionI(FunctionI* i) {
         for (ExpressionSetIter it = i->ann().begin(); it != i->ann().end(); ++it) {
-          bu_ty.run(*it);
+          _bottomUpTyper.run(*it);
           if (!(*it)->type().isAnn()) {
-            throw TypeError(env, (*it)->loc(),
-                            "expected annotation, got `" + (*it)->type().toString(env) + "'");
+            throw TypeError(_env, (*it)->loc(),
+                            "expected annotation, got `" + (*it)->type().toString(_env) + "'");
           }
         }
-        bu_ty.run(i->ti());
-        bu_ty.run(i->e());
-        if ((i->e() != nullptr) && !env.isSubtype(i->e()->type(), i->ti()->type(), true)) {
-          throw TypeError(env, i->e()->loc(),
+        _bottomUpTyper.run(i->ti());
+        _bottomUpTyper.run(i->e());
+        if ((i->e() != nullptr) && !_env.isSubtype(i->e()->type(), i->ti()->type(), true)) {
+          throw TypeError(_env, i->e()->loc(),
                           "return type of function does not match body, declared type is `" +
-                              i->ti()->type().toString(env) + "', body type is `" +
-                              i->e()->type().toString(env) + "'");
+                              i->ti()->type().toString(_env) + "', body type is `" +
+                              i->e()->type().toString(_env) + "'");
         }
         if ((i->e() != nullptr) && i->e()->type().isPar() && i->ti()->type().isvar()) {
           // this is a par function declared as var, so change declared return type
@@ -2687,10 +2698,10 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           i->ti()->type(i_t);
         }
         if (i->e() != nullptr) {
-          i->e(addCoercion(env, m, i->e(), i->ti()->type())());
+          i->e(add_coercion(_env, _m, i->e(), i->ti()->type())());
         }
       }
-    } _tsv2(env.envi(), m, bu_ty, typeErrors);
+    } _tsv2(env.envi(), m, bottomUpTyper, typeErrors);
     iter_items(_tsv2, m);
   }
 
@@ -2700,7 +2711,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     Model* m;
     OutputI* outputItem;
     TSV3(EnvI& env0, Model* m0) : env(env0), m(m0), outputItem(nullptr) {}
-    void vAssignI(AssignI* i) { i->decl()->e(addCoercion(env, m, i->e(), i->decl()->type())()); }
+    void vAssignI(AssignI* i) { i->decl()->e(add_coercion(env, m, i->e(), i->decl()->type())()); }
     void vOutputI(OutputI* oi) {
       if (outputItem == nullptr) {
         outputItem = oi;
@@ -2799,8 +2810,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 void typecheck(Env& env, Model* m, AssignI* ai) {
   std::vector<TypeError> typeErrors;
   Typer<true> ty(env.envi(), m, typeErrors, false);
-  BottomUpIterator<Typer<true> > bu_ty(ty);
-  bu_ty.run(ai->e());
+  BottomUpIterator<Typer<true> > bottomUpTyper(ty);
+  bottomUpTyper.run(ai->e());
   if (!typeErrors.empty()) {
     throw typeErrors[0];
   }
@@ -2883,18 +2894,18 @@ void output_model_variable_types(Env& env, Model* m, std::ostream& os,
   class VInfVisitor : public ItemVisitor {
   public:
     Env& env;
-    const std::vector<std::string>& skip_dirs;
-    bool had_var;
-    bool had_enum;
-    std::ostringstream oss_vars;
-    std::ostringstream oss_enums;
-    VInfVisitor(Env& env0, const std::vector<std::string>& skipDirs)
-        : env(env0), skip_dirs(skipDirs), had_var(false), had_enum(false) {}
+    const std::vector<std::string>& skipDirs;
+    bool hadVar;
+    bool hadEnum;
+    std::ostringstream ossVars;
+    std::ostringstream ossEnums;
+    VInfVisitor(Env& env0, const std::vector<std::string>& skipDirs0)
+        : env(env0), skipDirs(skipDirs0), hadVar(false), hadEnum(false) {}
     bool enter(Item* i) {
       if (auto* ii = i->dynamicCast<IncludeI>()) {
         std::string prefix =
             ii->m()->filepath().substr(0, ii->m()->filepath().size() - ii->f().size());
-        for (const auto& skip_dir : skip_dirs) {
+        for (const auto& skip_dir : skipDirs) {
           if (prefix.substr(0, skip_dir.size()) == skip_dir) {
             return false;
           }
@@ -2904,25 +2915,25 @@ void output_model_variable_types(Env& env, Model* m, std::ostream& os,
     }
     void vVarDeclI(VarDeclI* vdi) {
       if (!vdi->e()->type().isAnn() && !vdi->e()->ti()->isEnum()) {
-        if (had_var) {
-          oss_vars << ",\n";
+        if (hadVar) {
+          ossVars << ",\n";
         }
-        output_var_desc_json(env, vdi->e(), oss_vars, true);
-        had_var = true;
+        output_var_desc_json(env, vdi->e(), ossVars, true);
+        hadVar = true;
       } else if (vdi->e()->type().st() == Type::ST_SET && vdi->e()->type().enumId() != 0 &&
                  !vdi->e()->type().isAnn()) {
-        if (had_enum) {
-          oss_enums << ", ";
+        if (hadEnum) {
+          ossEnums << ", ";
         }
-        oss_enums << "\"" << *env.envi().getEnum(vdi->e()->type().enumId())->e()->id() << "\"";
-        had_enum = true;
+        ossEnums << "\"" << *env.envi().getEnum(vdi->e()->type().enumId())->e()->id() << "\"";
+        hadEnum = true;
       }
     }
   } _vinf(env, skipDirs);
   iter_items(_vinf, m);
   os << "{\"var_types\": {";
-  os << "\n  \"vars\": {\n" << _vinf.oss_vars.str() << "\n  },";
-  os << "\n  \"enums\": [" << _vinf.oss_enums.str() << "]\n";
+  os << "\n  \"vars\": {\n" << _vinf.ossVars.str() << "\n  },";
+  os << "\n  \"enums\": [" << _vinf.ossEnums.str() << "]\n";
   os << "}}\n";
 }
 
@@ -2931,38 +2942,38 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
   class IfcVisitor : public ItemVisitor {
   public:
     Env& env;
-    const std::vector<std::string> skip_dirs;
-    bool had_input;
-    bool had_output;
-    bool had_included_files;
-    bool had_add_to_output = false;
-    std::ostringstream oss_input;
-    std::ostringstream oss_output;
-    std::ostringstream oss_included_files;
+    const std::vector<std::string>& skipDirs;
+    bool hadInput;
+    bool hadOutput;
+    bool hadIncludedFiles;
+    bool hadAddToOutput = false;
+    std::ostringstream ossInput;
+    std::ostringstream ossOutput;
+    std::ostringstream ossIncludedFiles;
     std::string method;
-    bool output_item;
-    IfcVisitor(Env& env0, std::vector<std::string> skipDirs)
+    bool outputItem;
+    IfcVisitor(Env& env0, const std::vector<std::string>& skipDirs0)
         : env(env0),
-          skip_dirs(std::move(skipDirs)),
-          had_input(false),
-          had_output(false),
-          had_included_files(false),
+          skipDirs(skipDirs0),
+          hadInput(false),
+          hadOutput(false),
+          hadIncludedFiles(false),
           method("sat"),
-          output_item(false) {}
+          outputItem(false) {}
     bool enter(Item* i) {
       if (auto* ii = i->dynamicCast<IncludeI>()) {
         std::string prefix =
             ii->m()->filepath().substr(0, ii->m()->filepath().size() - ii->f().size());
-        for (const auto& skip_dir : skip_dirs) {
+        for (const auto& skip_dir : skipDirs) {
           if (prefix.substr(0, skip_dir.size()) == skip_dir) {
             return false;
           }
         }
-        if (had_included_files) {
-          oss_included_files << ",\n";
+        if (hadIncludedFiles) {
+          ossIncludedFiles << ",\n";
         }
-        oss_included_files << "    \"" << Printer::escapeStringLit(ii->m()->filepath()) << "\"";
-        had_included_files = true;
+        ossIncludedFiles << "    \"" << Printer::escapeStringLit(ii->m()->filepath()) << "\"";
+        hadIncludedFiles = true;
       }
       return true;
     }
@@ -2971,31 +2982,31 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
       if (vd->type().isPar() && !vd->type().isAnn() &&
           (vd->e() == nullptr || (vd->e() == constants().absent &&
                                   vd->ann().contains(constants().ann.mzn_was_undefined)))) {
-        if (had_input) {
-          oss_input << ",\n";
+        if (hadInput) {
+          ossInput << ",\n";
         }
-        output_var_desc_json(env, vd, oss_input);
-        had_input = true;
+        output_var_desc_json(env, vd, ossInput);
+        hadInput = true;
       } else {
         bool process_var = false;
         if (vd->ann().contains(constants().ann.add_to_output)) {
-          if (!had_add_to_output) {
-            oss_output.str("");
-            had_output = false;
+          if (!hadAddToOutput) {
+            ossOutput.str("");
+            hadOutput = false;
           }
-          had_add_to_output = true;
+          hadAddToOutput = true;
           process_var = true;
-        } else if (!had_add_to_output) {
+        } else if (!hadAddToOutput) {
           process_var =
               vd->type().isvar() &&
               (vd->e() == nullptr || vd->ann().contains(constants().ann.rhs_from_assignment));
         }
         if (process_var) {
-          if (had_output) {
-            oss_output << ",\n";
+          if (hadOutput) {
+            ossOutput << ",\n";
           }
-          output_var_desc_json(env, vd, oss_output);
-          had_output = true;
+          output_var_desc_json(env, vd, ossOutput);
+          hadOutput = true;
         }
       }
     }
@@ -3012,17 +3023,17 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
           break;
       }
     }
-    void vOutputI(OutputI* oi) { output_item = true; }
+    void vOutputI(OutputI* oi) { outputItem = true; }
   } _ifc(env, skipDirs);
   iter_items(_ifc, m);
   os << "{\n  \"input\" : {\n"
-     << _ifc.oss_input.str() << "\n  },\n  \"output\" : {\n"
-     << _ifc.oss_output.str() << "\n  }";
+     << _ifc.ossInput.str() << "\n  },\n  \"output\" : {\n"
+     << _ifc.ossOutput.str() << "\n  }";
   os << ",\n  \"method\": \"";
   os << _ifc.method;
   os << "\"";
-  os << ",\n  \"has_output_item\": " << (_ifc.output_item ? "true" : "false");
-  os << ",\n  \"included_files\": [\n" << _ifc.oss_included_files.str() << "\n  ]";
+  os << ",\n  \"has_outputItem\": " << (_ifc.outputItem ? "true" : "false");
+  os << ",\n  \"included_files\": [\n" << _ifc.ossIncludedFiles.str() << "\n  ]";
   os << "\n}\n";
 }
 

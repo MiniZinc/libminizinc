@@ -65,8 +65,8 @@ void ParamConfig::addValue(const ASTString& key, Expression* e) {
         _values.push_back(flag);
       } else {
         // If this flag has a negated version, use it
-        auto it = _bool_switches.find(flag);
-        if (it != _bool_switches.end()) {
+        auto it = _boolSwitches.find(flag);
+        if (it != _boolSwitches.end()) {
           _values.push_back(it->second);
         }
       }
@@ -103,7 +103,7 @@ void ParamConfig::blacklist(const std::vector<std::string>& params) {
 }
 
 void ParamConfig::negatedFlag(const std::string& flag, const std::string& off) {
-  _bool_switches.insert(std::make_pair(flag, off));
+  _boolSwitches.insert(std::make_pair(flag, off));
 }
 
 }  // namespace MiniZinc

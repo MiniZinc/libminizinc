@@ -27,25 +27,25 @@ using namespace std;
 namespace MiniZinc {
 
 namespace {
-std::string getString(AssignI* ai) {
+std::string get_string(AssignI* ai) {
   if (auto* sl = ai->e()->dynamicCast<StringLit>()) {
     return std::string(sl->v().c_str(), sl->v().size());
   }
   throw ConfigException("invalid configuration item (right hand side must be string)");
 }
-bool getBool(AssignI* ai) {
+bool get_bool(AssignI* ai) {
   if (auto* bl = ai->e()->dynamicCast<BoolLit>()) {
     return bl->v();
   }
   throw ConfigException("invalid configuration item (right hand side must be bool)");
 }
-int getInt(AssignI* ai) {
+int get_int(AssignI* ai) {
   if (auto* il = ai->e()->dynamicCast<IntLit>()) {
     return static_cast<int>(il->v().toInt());
   }
   throw ConfigException("invalid configuration item (right hand side must be int)");
 }
-std::vector<std::string> getStringList(AssignI* ai) {
+std::vector<std::string> get_string_list(AssignI* ai) {
   if (auto* al = ai->e()->dynamicCast<ArrayLit>()) {
     std::vector<std::string> ret;
     for (unsigned int i = 0; i < al->size(); i++) {
@@ -60,7 +60,7 @@ std::vector<std::string> getStringList(AssignI* ai) {
   }
   throw ConfigException("invalid configuration item (right hand side must be a list of strings)");
 }
-std::vector<std::pair<std::string, std::string> > getStringPairList(AssignI* ai) {
+std::vector<std::pair<std::string, std::string> > get_string_pair_list(AssignI* ai) {
   if (auto* al = ai->e()->dynamicCast<ArrayLit>()) {
     std::vector<std::pair<std::string, std::string> > ret;
     if (al->dims() != 2 || al->min(1) != 1 || al->max(1) != 2) {
@@ -83,7 +83,7 @@ std::vector<std::pair<std::string, std::string> > getStringPairList(AssignI* ai)
   throw ConfigException(
       "invalid configuration item (right hand side must be a 2d array of strings)");
 }
-std::vector<std::vector<std::string> > getDefaultOptionList(AssignI* ai) {
+std::vector<std::vector<std::string> > get_default_option_list(AssignI* ai) {
   if (auto* al = ai->e()->dynamicCast<ArrayLit>()) {
     std::vector<std::vector<std::string> > ret;
     if (al->size() == 0) {
@@ -117,7 +117,7 @@ std::vector<std::vector<std::string> > getDefaultOptionList(AssignI* ai) {
   throw ConfigException(
       "invalid configuration item (right hand side must be a 2d array of strings)");
 }
-std::vector<SolverConfig::ExtraFlag> getExtraFlagList(AssignI* ai) {
+std::vector<SolverConfig::ExtraFlag> get_extra_flag_list(AssignI* ai) {
   if (auto* al = ai->e()->dynamicCast<ArrayLit>()) {
     std::vector<SolverConfig::ExtraFlag> ret;
     if (al->size() == 0) {
@@ -165,7 +165,7 @@ std::vector<SolverConfig::ExtraFlag> getExtraFlagList(AssignI* ai) {
       "invalid configuration item (right hand side must be a 2d array of strings)");
 }
 
-std::string getEnv(const char* v) {
+std::string get_env(const char* v) {
   std::string ret;
 #ifdef _MSC_VER
   size_t len;
@@ -187,9 +187,9 @@ std::string getEnv(const char* v) {
   return ret;
 }
 
-char charToLower(char c) { return std::tolower(static_cast<unsigned char>(c)); }
-std::string stringToLower(std::string s) {
-  std::transform(s.begin(), s.end(), s.begin(), charToLower);
+char char_to_lower(char c) { return std::tolower(static_cast<unsigned char>(c)); }
+std::string string_to_lower(std::string s) {
+  std::transform(s.begin(), s.end(), s.begin(), char_to_lower);
   return s;
 }
 struct SortByLowercase {
@@ -245,13 +245,13 @@ SolverConfig SolverConfig::load(const string& filename) {
       for (auto& i : *m) {
         if (auto* ai = i->dynamicCast<AssignI>()) {
           if (ai->id() == "id") {
-            sc._id = getString(ai);
+            sc._id = get_string(ai);
             hadId = true;
           } else if (ai->id() == "name") {
-            sc._name = getString(ai);
+            sc._name = get_string(ai);
             hadName = true;
           } else if (ai->id() == "executable") {
-            std::string exePath = getString(ai);
+            std::string exePath = get_string(ai);
             sc._executable = exePath;
             std::string exe = FileUtils::find_executable(FileUtils::file_path(exePath, basePath));
             int nr_found = (int)(!exe.empty());
@@ -266,7 +266,7 @@ SolverConfig SolverConfig::load(const string& filename) {
               }
             }
           } else if (ai->id() == "mznlib") {
-            std::string libPath = getString(ai);
+            std::string libPath = get_string(ai);
             sc._mznlib = libPath;
             if (!libPath.empty()) {
               if (libPath[0] == '-') {
@@ -279,40 +279,40 @@ SolverConfig SolverConfig::load(const string& filename) {
               }
             }
           } else if (ai->id() == "version") {
-            sc._version = getString(ai);
+            sc._version = get_string(ai);
             hadVersion = true;
           } else if (ai->id() == "mznlibVersion") {
-            sc._mznlibVersion = getInt(ai);
+            sc._mznlibVersion = get_int(ai);
           } else if (ai->id() == "description") {
-            sc._description = getString(ai);
+            sc._description = get_string(ai);
           } else if (ai->id() == "contact") {
-            sc._contact = getString(ai);
+            sc._contact = get_string(ai);
           } else if (ai->id() == "website") {
-            sc._website = getString(ai);
+            sc._website = get_string(ai);
           } else if (ai->id() == "supportsMzn") {
-            sc._supportsMzn = getBool(ai);
+            sc._supportsMzn = get_bool(ai);
           } else if (ai->id() == "supportsFzn") {
-            sc._supportsFzn = getBool(ai);
+            sc._supportsFzn = get_bool(ai);
           } else if (ai->id() == "supportsNL") {
-            sc._supportsNL = getBool(ai);
+            sc._supportsNL = get_bool(ai);
           } else if (ai->id() == "needsSolns2Out") {
-            sc._needsSolns2Out = getBool(ai);
+            sc._needsSolns2Out = get_bool(ai);
           } else if (ai->id() == "isGUIApplication") {
-            sc._isGUIApplication = getBool(ai);
+            sc._isGUIApplication = get_bool(ai);
           } else if (ai->id() == "needsMznExecutable") {
-            sc._needsMznExecutable = getBool(ai);
+            sc._needsMznExecutable = get_bool(ai);
           } else if (ai->id() == "needsStdlibDir") {
-            sc._needsStdlibDir = getBool(ai);
+            sc._needsStdlibDir = get_bool(ai);
           } else if (ai->id() == "needsPathsFile") {
-            sc._needsPathsFile = getBool(ai);
+            sc._needsPathsFile = get_bool(ai);
           } else if (ai->id() == "tags") {
-            sc._tags = getStringList(ai);
+            sc._tags = get_string_list(ai);
           } else if (ai->id() == "stdFlags") {
-            sc._stdFlags = getStringList(ai);
+            sc._stdFlags = get_string_list(ai);
           } else if (ai->id() == "requiredFlags") {
-            sc._requiredFlags = getStringList(ai);
+            sc._requiredFlags = get_string_list(ai);
           } else if (ai->id() == "extraFlags") {
-            sc._extraFlags = getExtraFlagList(ai);
+            sc._extraFlags = get_extra_flag_list(ai);
           } else {
             std::ostringstream ss;
             ss << "invalid configuration item (" << ai->id() << ")";
@@ -451,7 +451,7 @@ public:
   std::unordered_map<std::string, SolverConfig> builtinSolvers;
 };
 
-BuiltinSolverConfigs& builtinSolverConfigs() {
+BuiltinSolverConfigs& builtin_solver_configs() {
   static BuiltinSolverConfigs c;
   return c;
 }
@@ -461,10 +461,10 @@ void SolverConfigs::addConfig(const MiniZinc::SolverConfig& sc) {
   _solvers.push_back(sc);
   std::vector<string> sc_tags = sc.tags();
   std::string id = sc.id();
-  id = stringToLower(id);
+  id = string_to_lower(id);
   sc_tags.push_back(id);
   std::string name = sc.name();
-  name = stringToLower(name);
+  name = string_to_lower(name);
   sc_tags.push_back(name);
   for (const auto& t : sc_tags) {
     auto it = _tags.find(t);
@@ -484,10 +484,10 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
 #else
   const char* PATHSEP = ":";
 #endif
-  for (const auto& sc : builtinSolverConfigs().builtinSolvers) {
+  for (const auto& sc : builtin_solver_configs().builtinSolvers) {
     addConfig(sc.second);
   }
-  std::string mzn_solver_path = getEnv("MZN_SOLVER_PATH");
+  std::string mzn_solver_path = get_env("MZN_SOLVER_PATH");
   while (!mzn_solver_path.empty()) {
     size_t next_sep = mzn_solver_path.find(PATHSEP);
     string cur_path = mzn_solver_path.substr(0, next_sep);
@@ -526,21 +526,22 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
           for (auto& i : *m) {
             if (auto* ai = i->dynamicCast<AssignI>()) {
               if (ai->id() == "mzn_solver_path") {
-                std::vector<std::string> sp = getStringList(ai);
+                std::vector<std::string> sp = get_string_list(ai);
                 for (const auto& s : sp) {
                   _solverPath.push_back(s);
                 }
               } else if (ai->id() == "mzn_lib_dir") {
-                _mznlibDir = getString(ai);
+                _mznlibDir = get_string(ai);
               } else if (ai->id() == "tagDefaults") {
-                std::vector<std::pair<std::string, std::string> > tagDefs = getStringPairList(ai);
+                std::vector<std::pair<std::string, std::string> > tagDefs =
+                    get_string_pair_list(ai);
                 for (auto& td : tagDefs) {
                   std::string tag = td.first;
                   std::string solver_id = td.second;
                   _tagDefault[tag] = solver_id;
                 }
               } else if (ai->id() == "solverDefaults") {
-                std::vector<std::vector<std::string> > solverDefs = getDefaultOptionList(ai);
+                std::vector<std::vector<std::string> > solverDefs = get_default_option_list(ai);
                 for (auto& sd : solverDefs) {
                   assert(sd.size() == 3);
                   std::string solver = sd[0];
@@ -690,8 +691,8 @@ std::string SolverConfigs::solverConfigsJSON() const {
 }
 
 namespace {
-std::string getTag(const std::string& t) { return t.substr(0, t.find('@')); }
-std::string getVersion(const std::string& t) {
+std::string get_tag(const std::string& t) { return t.substr(0, t.find('@')); }
+std::string get_version(const std::string& t) {
   size_t sep = t.find('@');
   return sep == string::npos ? "" : t.substr(sep + 1);
 }
@@ -707,7 +708,7 @@ const SolverConfig& SolverConfigs::config(const std::string& _s) {
     s = _s;
   }
   std::remove(s.begin(), s.end(), ' ');
-  s = stringToLower(s);
+  s = string_to_lower(s);
   std::vector<std::string> tags;
   std::istringstream iss(s);
   std::string next_s;
@@ -728,27 +729,27 @@ const SolverConfig& SolverConfigs::config(const std::string& _s) {
   } else {
     firstTag = tags[0];
   }
-  TagMap::const_iterator tag_it = _tags.find(getTag(firstTag));
+  TagMap::const_iterator tag_it = _tags.find(get_tag(firstTag));
 
   if (tag_it == _tags.end()) {
-    throw ConfigException("no solver with tag " + getTag(firstTag) + " found");
+    throw ConfigException("no solver with tag " + get_tag(firstTag) + " found");
   }
-  std::string tv = getVersion(firstTag);
+  std::string tv = get_version(firstTag);
   for (int sidx : tag_it->second) {
     if (tv.empty() || tv == _solvers[sidx].version()) {
       selectedSolvers.insert(sidx);
     }
   }
-  DefaultMap::const_iterator def_it = _tagDefault.find(getTag(firstTag));
+  DefaultMap::const_iterator def_it = _tagDefault.find(get_tag(firstTag));
   if (def_it != _tagDefault.end()) {
     defaultSolvers.insert(def_it->second);
   }
   for (unsigned int i = 1; i < tags.size(); i++) {
-    tag_it = _tags.find(getTag(tags[i]));
+    tag_it = _tags.find(get_tag(tags[i]));
     if (tag_it == _tags.end()) {
       throw ConfigException("no solver with tag " + tags[i] + " found");
     }
-    tv = getVersion(tags[i]);
+    tv = get_version(tags[i]);
     std::set<int> newSolvers;
     for (int sidx : tag_it->second) {
       if (tv.empty() || tv == _solvers[sidx].version()) {
@@ -762,7 +763,7 @@ const SolverConfig& SolverConfigs::config(const std::string& _s) {
     if (selectedSolvers.empty()) {
       throw ConfigException("no solver with tags " + s + " found");
     }
-    def_it = _tagDefault.find(getTag(tags[i]));
+    def_it = _tagDefault.find(get_tag(tags[i]));
     if (def_it != _tagDefault.end()) {
       defaultSolvers.insert(def_it->second);
     }
@@ -786,7 +787,7 @@ const SolverConfig& SolverConfigs::config(const std::string& _s) {
 }
 
 void SolverConfigs::registerBuiltinSolver(const SolverConfig& sc) {
-  builtinSolverConfigs().builtinSolvers.insert(make_pair(sc.id(), sc));
+  builtin_solver_configs().builtinSolvers.insert(make_pair(sc.id(), sc));
 }
 
 }  // namespace MiniZinc

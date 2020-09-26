@@ -27,7 +27,7 @@ class ParamConfig {
 protected:
   std::vector<std::string> _values;
   std::unordered_set<std::string> _blacklist;
-  std::unordered_map<std::string, std::string> _bool_switches;
+  std::unordered_map<std::string, std::string> _boolSwitches;
   void addValue(const ASTString& flag, Expression* e);
 
 public:
