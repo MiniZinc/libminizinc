@@ -1,7 +1,12 @@
-/**
- * Describe the structure of a NL file.
+/* -*- mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*- */
+
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/*
  * Main author: Matthieu Herrmann, Monash University, Melbourne, Australia. 2019
- **/
+ */
 
 #pragma once
 
@@ -13,8 +18,6 @@
 #include <ostream>
 #include <set>
 #include <string>
-
-using namespace std;
 
 // This files declare data-structure describing the various components of a nl files.
 // A nl files is composed of two main parts: a header and a list of segments.
@@ -42,46 +45,46 @@ public:
   /* *** *** *** Helpers *** *** *** */
 
   /** Create a string representing the name (and unique identifier) from an identifier. */
-  static string getVarName(const Id* id);
+  static std::string getVarName(const Id* id);
 
   /** Create a string representing the name (and unique identifier) of a variable from a variable
    * declaration. */
-  static string getVarName(const VarDecl& vd);
+  static std::string getVarName(const VarDecl& vd);
 
   /** Create a string representing the name (and unique identifier) of a constraint from a specific
    * call expression. */
-  static string getConstraintName(const Call& c);
+  static std::string getConstraintName(const Call& c);
 
   /** Extract an array literal from an expression. */
   static const ArrayLit& getArrayLit(const Expression* e);
 
   /** Create a vector of double from a vector containing Expression being integer literal IntLit. */
-  static vector<double> fromVecInt(const ArrayLit& v_int);
+  static std::vector<double> fromVecInt(const ArrayLit& v_int);
 
   /** Create a vector of double from a vector containing Expression being float literal FloatLit. */
-  static vector<double> fromVecFloat(const ArrayLit& v_fp);
+  static std::vector<double> fromVecFloat(const ArrayLit& v_fp);
 
   /** Create a vector of variable names from a vector containing Expression being identifier Id. */
-  static vector<string> fromVecId(const ArrayLit& v_id);
+  static std::vector<std::string> fromVecId(const ArrayLit& v_id);
 
   /* *** *** *** Phase 1: collecting data from MZN *** *** *** */
 
   // Variables collection, identified by name
   // Needs ordering, see phase 2
-  map<string, NLVar> variables = {};
+  std::map<std::string, NLVar> variables = {};
 
   // Algebraic constraints collection, identified by name
   // Needs ordering, see phase 2
-  map<string, NLAlgCons> constraints = {};
+  std::map<std::string, NLAlgCons> constraints = {};
 
   // Logical constraints do not need ordering:
-  vector<NLLogicalCons> logicalConstraints = {};
+  std::vector<NLLogicalCons> logicalConstraints = {};
 
   // Objective field. Only one, so we do not need ordering.
   NLObjective objective = {};
 
   // Output arrays
-  vector<NLArray> outputArrays = {};
+  std::vector<NLArray> outputArrays = {};
 
   /** Add a solve goal in the NL File. In our case, we can only have one and only one solve goal. */
   void addSolve(SolveI::SolveType st, const Expression* e);
@@ -106,10 +109,10 @@ public:
   void addVarDecl(const VarDecl& vd, const TypeInst& ti, const Expression& rhs);
 
   /** Add an integer variable declaration to the NL File. */
-  void addVarDeclInteger(const string& name, const IntSetVal* isv, bool to_report);
+  void addVarDeclInteger(const std::string& name, const IntSetVal* isv, bool to_report);
 
   /** Add a floating point variable declaration to the NL File. */
-  void addVarDeclFloat(const string& name, const FloatSetVal* fsv, bool to_report);
+  void addVarDeclFloat(const std::string& name, const FloatSetVal* fsv, bool to_report);
 
   // --- --- --- Constraints analysis
 
@@ -138,8 +141,8 @@ public:
    *  of coefficients and variables.
    *  ONLY USE FOR CONSTRAINTS, NOT OBJECTIVES!
    */
-  void makeSigmaMult(vector<NLToken>& expressionGraph, const vector<double>& coeffs,
-                     const vector<string>& vars);
+  void makeSigmaMult(std::vector<NLToken>& expressionGraph, const std::vector<double>& coeffs,
+                     const std::vector<std::string>& vars);
 
   // --- --- --- Linear Builders
   // Use an array of literals 'coeffs' := c.arg(0), an array of variables 'vars' := c.arg(1),
@@ -150,20 +153,20 @@ public:
   // (we only have floating point in NL)
 
   /** Create a linear constraint [coeffs] *+ [vars] = value. */
-  void linconsEq(const Call& c, const vector<double>& coeffs, const vector<string>& vars,
-                 const NLToken& value);
+  void linconsEq(const Call& c, const std::vector<double>& coeffs,
+                 const std::vector<std::string>& vars, const NLToken& value);
 
   /** Create a linear constraint [coeffs] *+ [vars] <= value. */
-  void linconsLe(const Call& c, const vector<double>& coeffs, const vector<string>& vars,
-                 const NLToken& value);
+  void linconsLe(const Call& c, const std::vector<double>& coeffs,
+                 const std::vector<std::string>& vars, const NLToken& value);
 
   /** Create a linear logical constraint [coeffs] *+ [vars] PREDICATE value.
    *  Use a generic comparison operator.
    *  Warnings:   - Creates a logical constraint
    *              - Only use for conmparisons that cannot be expressed with '=' xor '<='.
    */
-  void linconsPredicate(const Call& c, NLToken::OpCode oc, const vector<double>& coeffs,
-                        const vector<string>& vars, const NLToken& value);
+  void linconsPredicate(const Call& c, NLToken::OpCode oc, const std::vector<double>& coeffs,
+                        const std::vector<std::string>& vars, const NLToken& value);
 
   // --- --- --- Non Linear Builders
   // For predicates, uses 2 variables or literals: x := c.arg(0), y := c.arg(1)
@@ -469,49 +472,49 @@ public:
 
   /** Non Linear Continuous Variables in BOTH an objective and a constraint. */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  vector<string> vname_nlcv_both = {};
+  std::vector<std::string> vname_nlcv_both = {};
 
   /** Non Linear Integer Variables in BOTH an objective and a constraint. */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  vector<string> vname_nliv_both = {};
+  std::vector<std::string> vname_nliv_both = {};
 
   /** Non Linear Continuous Variables in CONStraints only. */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  vector<string> vname_nlcv_cons = {};
+  std::vector<std::string> vname_nlcv_cons = {};
 
   /** Non Linear Integer Variables in CONStraints only. */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  vector<string> vname_nliv_cons = {};
+  std::vector<std::string> vname_nliv_cons = {};
 
   /** Non Linear Continuous Variables in OBJectives only. */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  vector<string> vname_nlcv_obj = {};
+  std::vector<std::string> vname_nlcv_obj = {};
 
   /** Non Linear Integer Variables in OBJectives only. */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  vector<string> vname_nliv_obj = {};
+  std::vector<std::string> vname_nliv_obj = {};
 
   /** Linear arcs. (Network not implemented) */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  vector<string> vname_larc_all = {};
+  std::vector<std::string> vname_larc_all = {};
 
   /** Linear Continuous Variables (ALL of them). */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  vector<string> vname_lcv_all = {};
+  std::vector<std::string> vname_lcv_all = {};
 
   /** Binary Variables (ALL of them). */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  vector<string> vname_bv_all = {};
+  std::vector<std::string> vname_bv_all = {};
 
   /** Linear Integer Variables (ALL of them). */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  vector<string> vname_liv_all = {};
+  std::vector<std::string> vname_liv_all = {};
 
   /** Contained all ordered variable names. Mapping variable index -> variable name */
-  vector<string> vnames = {};
+  std::vector<std::string> vnames = {};
 
   /** Mapping variable name -> variable index */
-  map<string, int> variableIndexes = {};
+  std::map<std::string, int> variableIndexes = {};
 
   // --- --- --- Simple tests
 
@@ -575,27 +578,27 @@ public:
 
   /** Nonlinear general constraints. */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  vector<string> cnames_nl_general = {};
+  std::vector<std::string> cnames_nl_general = {};
 
   /** Nonlinear network constraints. */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  vector<string> cnames_nl_network = {};
+  std::vector<std::string> cnames_nl_network = {};
 
   /** Linear network constraints. */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  vector<string> cnames_lin_network = {};
+  std::vector<std::string> cnames_lin_network = {};
 
   /** Linear general constraints. */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  vector<string> cnames_lin_general = {};
+  std::vector<std::string> cnames_lin_general = {};
 
   /** Contained all ordered algebraic (and network if they were implemented) constraints names.
    *  Mapping constraint index -> constraint name
    */
-  vector<string> cnames = {};
+  std::vector<std::string> cnames = {};
 
   /** Mapping constraint name -> contraint index */
-  map<string, int> constraintIndexes = {};
+  std::map<std::string, int> constraintIndexes = {};
 
   // Count of algebraic constraints:
   // The header needs to know how many range algebraic constraints and equality algebraic
@@ -615,7 +618,7 @@ public:
    *  Note: this is not the 'Printable' interface as we do not pass any nl_file (that would be
    * 'this') as a reference.
    */
-  ostream& printToStream(ostream& o) const;
+  std::ostream& printToStream(std::ostream& o) const;
 
 private:
   int _jacobianCount = 0;

@@ -1,3 +1,9 @@
+/* -*- mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*- */
+
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
 #pragma once
 
 #include <minizinc/solns2out.hh>
@@ -8,8 +14,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
-using namespace std;
 
 // Reading a .sol file.
 // Note: I did not find any description of the format, so I did a bit of reverse engineering.
@@ -75,15 +79,15 @@ enum NL_Solver_Status {
 class NLSol {
 public:
   // --- --- --- Fields
-  string message;
+  std::string message;
   NL_Solver_Status status;
-  vector<double> values;
+  std::vector<double> values;
 
   // --- --- --- Constructors
 
   NLSol() = default;
 
-  NLSol(string mes, NL_Solver_Status st, vector<double> res)
+  NLSol(std::string mes, NL_Solver_Status st, std::vector<double> res)
       : message(std::move(mes)), status(st), values(std::move(res)) {}
 
   // --- --- --- Static functions
@@ -107,7 +111,7 @@ public:
   NLSolns2Out(Solns2Out* out0, NLFile& nl_file0, bool verbose0)
       : _out(out0), _nlFile(nl_file0), _inLine(false), _verbose(verbose0) {}
 
-  void parseSolution(const string& filename);
+  void parseSolution(const std::string& filename);
 
   bool feedRawDataChunk(const char* data);
   std::ostream& getLog();

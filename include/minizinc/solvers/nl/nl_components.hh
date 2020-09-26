@@ -1,3 +1,9 @@
+/* -*- mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*- */
+
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
 #pragma once
 
 //#include <assert.h>
@@ -8,8 +14,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
-using namespace std;
 
 /*  A NL File is composed of a header and several segments.
 Adding items in the nl file is done through adding segment (or adding item in a segment).
@@ -30,42 +34,42 @@ namespace MiniZinc {
 /** Exception when translating
  *  Code mostly taken from https://www.softwariness.com/articles/assertions-in-cpp/
  */
-class NLException : public exception {
+class NLException : public std::exception {
 public:
   // --- --- --- Fields
   const char* expression;
   const char* file;
   int line;
-  string message;
-  string report;
+  std::string message;
+  std::string report;
 
   /** Exception constructor. Use with the macro assert/should_not_happen.
    * If not, WARNING: stream must be a std::ostringstream&
    * We only use a ostreamé so we can use the standard "<<" operator, which is returning a ostream&
    */
-  NLException(const char* expression, const char* file, int line, ostream& stream)
+  NLException(const char* expression, const char* file, int line, std::ostream& stream)
       : expression(expression), file(file), line(line) {
     message = static_cast<std::ostringstream&>(stream).str();
     std::ostringstream outputStream;
 
     if (expression == nullptr) {
       outputStream << "Something should not have happen in file '" << file << "' line " << line
-                   << ". Message:" << endl;
+                   << ". Message:" << std::endl;
       if (!message.empty()) {
-        outputStream << message << endl;
+        outputStream << message << std::endl;
       } else {
-        outputStream << "No message provided..." << endl;
+        outputStream << "No message provided..." << std::endl;
       }
     } else {
-      string expressionString = expression;
+      std::string expressionString = expression;
       if (expressionString == "false" || expressionString == "0" || expressionString == "FALSE") {
         outputStream << "Unreachable code assertion";
       } else {
         outputStream << "Assertion '" << expression << "'";
       }
-      outputStream << " failed in file '" << file << "' line " << line << endl;
+      outputStream << " failed in file '" << file << "' line " << line << std::endl;
     }
-    outputStream << "Note: the NL component is still in development!" << endl;
+    outputStream << "Note: the NL component is still in development!" << std::endl;
     report = outputStream.str();
   }
 
@@ -162,10 +166,10 @@ public:
   /** *** *** *** Printing Methods *** *** *** **/
 
   /** Print the bound with a comment containing the name of the variable/constraint. */
-  ostream& printToStream(ostream& o, const string& vname) const;
+  std::ostream& printToStream(std::ostream& o, const std::string& vname) const;
 
   /** Printing with 'body' as the name of the variable/constraint. */
-  ostream& printToStream(ostream& o) const;
+  std::ostream& printToStream(std::ostream& o) const;
 };
 
 /** A Declared variable.
@@ -178,7 +182,7 @@ public:
 class NLVar {
 public:
   /** Variable name. */
-  string name;
+  std::string name;
 
   /** Is the variable an integer variable? Else is a floating point variable. */
   bool isInteger = false;
@@ -205,7 +209,7 @@ public:
   NLVar() = default;
 
   /** Constructor with declare time information */
-  NLVar(string name, bool isInteger, bool to_report, NLBound bound)
+  NLVar(std::string name, bool isInteger, bool to_report, NLBound bound)
       : name(std::move(name)), isInteger(isInteger), toReport(to_report), bound(bound) {}
 
   /** Copy constructor, with update on bound */
@@ -221,18 +225,18 @@ public:
   /** Array item; if the string is empty, use the value. */
   class Item {
   public:
-    string variable;
+    std::string variable;
     double value;
   };
 
   /** Array name */
-  string name;
+  std::string name;
 
   /** Dimensions part, e.g. array2d( '0..4', '0..5' [ .... ]) */
-  vector<string> dimensions;
+  std::vector<std::string> dimensions;
 
   /** Related variables */
-  vector<Item> items;
+  std::vector<Item> items;
 
   /** Is this an array or integers or floats? */
   bool isInteger = false;
@@ -347,7 +351,8 @@ public:
   Kind kind;
   double numericValue;  // if kind==NUMERIC
   int argCount;         // if kind==FUNCALL or kind==MOP
-  string str;   // if kind==STRING or kind=VARIABLE (variable name) or kind=FUNCALL (function name)
+  std::string
+      str;      // if kind==STRING or kind=VARIABLE (variable name) or kind=FUNCALL (function name)
   OpCode oc;    // if kind==OP
   MOpCode moc;  // if kind==MOP
 
@@ -357,7 +362,7 @@ public:
 
   static NLToken n(double value);
 
-  static NLToken v(string vname);
+  static NLToken v(std::string vname);
 
   static NLToken o(OpCode opc);
 
@@ -370,7 +375,7 @@ public:
 
   /* *** *** *** Printable *** *** *** */
 
-  ostream& printToStream(ostream& o, const NLFile& nl_file) const;
+  std::ostream& printToStream(std::ostream& o, const NLFile& nl_file) const;
 };
 
 /** A algebraic constraint.
@@ -380,7 +385,7 @@ public:
 class NLAlgCons {
 public:
   /** Constraint name, also acts as identifier. */
-  string name;
+  std::string name;
 
   /** Bound on the algebraic constraint.
    *  Used when producing the unique r of the NL file.
@@ -391,18 +396,19 @@ public:
    *  Used to produce a new, standalone, C segment.
    *  If the expression graph is empty (linear constraint), produce the expression graph 'n0'
    */
-  vector<NLToken> expressionGraph = {};
+  std::vector<NLToken> expressionGraph = {};
 
   /** Jacobian, used for the linear part. Identify a variable by its name and associate a
    * coefficent. Used to produce a new, standalone, J segment.
    */
-  vector<pair<string, double>> jacobian = {};
+  std::vector<std::pair<std::string, double>> jacobian = {};
 
   /** Method to build the var_coeff vector.
    *  The NLFile is used to access the variables through their name in order to increase their
    * jacobian count.
    */
-  void setJacobian(const vector<string>& vnames, const vector<double>& coeffs, NLFile* nl_file);
+  void setJacobian(const std::vector<std::string>& vnames, const std::vector<double>& coeffs,
+                   NLFile* nl_file);
 
   /* *** *** *** Helpers *** *** *** */
 
@@ -411,7 +417,7 @@ public:
 
   /* *** *** *** Printable *** *** *** */
 
-  ostream& printToStream(ostream& o, const NLFile& nl_file) const;
+  std::ostream& printToStream(std::ostream& o, const NLFile& nl_file) const;
 };
 
 /** A logical constraint.
@@ -423,7 +429,7 @@ public:
 class NLLogicalCons {
 public:
   /** Constraint name, also acts as identifier. */
-  string name;
+  std::string name;
 
   /** Index */
   int index = -1;
@@ -432,14 +438,14 @@ public:
    *  Used to produce a new, standalone, L segment.
    *  If the expression graph is empty (linear constraint), produce the expression graph 'n0'
    */
-  vector<NLToken> expressionGraph = {};
+  std::vector<NLToken> expressionGraph = {};
 
   /* *** *** *** Constructor *** *** *** */
   NLLogicalCons(int idx) : index(idx) {}
 
   /* *** *** *** Printable *** *** *** */
 
-  ostream& printToStream(ostream& o, const NLFile& nl_file) const;
+  std::ostream& printToStream(std::ostream& o, const NLFile& nl_file) const;
 };
 
 /** The header. */
@@ -447,7 +453,7 @@ class NLHeader {
 public:
   /* *** *** *** Printable *** *** *** */
 
-  ostream& printToStream(ostream& o, const NLFile& nl_file) const;
+  std::ostream& printToStream(std::ostream& o, const NLFile& nl_file) const;
 };
 
 /** An Objective
@@ -467,17 +473,17 @@ public:
 
   /* *** *** *** Fields *** *** *** */
   MinMax minmax = UNDEF;
-  vector<NLToken> expressionGraph = {};  // If empty, produce a 'n0' when printing
+  std::vector<NLToken> expressionGraph = {};  // If empty, produce a 'n0' when printing
 
   /* *** *** *** Gradient *** *** *** */
 
   /** Gradient, used for the linear part. Identify a variable by its name and associate a
    * coefficent. Used to produce a new, standalone, G segment.
    */
-  vector<pair<string, double>> gradient = {};
+  std::vector<std::pair<std::string, double>> gradient = {};
 
   /** Method to build the var_coeff vector. */
-  void setGradient(const vector<string>& vnames, const vector<double>& coeffs);
+  void setGradient(const std::vector<std::string>& vnames, const std::vector<double>& coeffs);
 
   int gradientCount() const;
 
@@ -492,7 +498,7 @@ public:
   NLObjective() = default;
 
   /* *** *** *** Printable *** *** *** */
-  ostream& printToStream(ostream& o, const NLFile& nl_file) const;
+  std::ostream& printToStream(std::ostream& o, const NLFile& nl_file) const;
 };
 
 }  // namespace MiniZinc
