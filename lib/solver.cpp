@@ -89,7 +89,7 @@ SolverInitialiser::SolverInitialiser() {
 #endif
   static FZNSolverFactoryInitialiser _fzn_init;
   static MZNSolverFactoryInitialiser _mzn_init;
-  static NL_SolverFactoryInitialiser _nl_init;
+  static NLSolverFactoryInitialiser _nl_init;
 }
 
 MZNFZNSolverFlag MZNFZNSolverFlag::std(const std::string& n0) {

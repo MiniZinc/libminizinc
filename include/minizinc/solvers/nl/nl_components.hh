@@ -147,25 +147,25 @@ public:
   NLBound() = default;
   NLBound(Bound tag, double lb, double ub);
 
-  static NLBound make_bounded(double lb, double ub);
-  static NLBound make_ub_bounded(double ub);
-  static NLBound make_lb_bounded(double lb);
-  static NLBound make_nobound();
-  static NLBound make_equal(double val);
+  static NLBound makeBounded(double lb, double ub);
+  static NLBound makeUBBounded(double ub);
+  static NLBound makeLBBounded(double lb);
+  static NLBound makeNoBound();
+  static NLBound makeEqual(double val);
 
   /** *** *** *** Update the lower or upper bound *** *** *** **/
   // Note: this method are "additive only": we cannot use them to remove a a bound.
-  void update_lb(double new_lb);
-  void update_ub(double new_ub);
-  void update_eq(double new_eq);
+  void updateLB(double new_lb);
+  void updateUB(double new_ub);
+  void updateEq(double new_eq);
 
   /** *** *** *** Printing Methods *** *** *** **/
 
   /** Print the bound with a comment containing the name of the variable/constraint. */
-  ostream& print_on(ostream& o, const string& vname) const;
+  ostream& printToStream(ostream& o, const string& vname) const;
 
   /** Printing with 'body' as the name of the variable/constraint. */
-  ostream& print_on(ostream& o) const;
+  ostream& printToStream(ostream& o) const;
 };
 
 /** A Declared variable.
@@ -181,20 +181,20 @@ public:
   string name;
 
   /** Is the variable an integer variable? Else is a floating point variable. */
-  bool is_integer = false;
+  bool isInteger = false;
 
   /** Is this variable flagged to be reported? */
-  bool to_report = false;
+  bool toReport = false;
 
   /** Is the variable appearing in a nonlinear constraint (including logical constraint, L segment).
    */
-  bool is_in_nl_constraint = false;
+  bool isInNLConstraint = false;
 
   /** Is the variable appearing non linearly in the objective? */
-  bool is_in_nl_objective = false;
+  bool isInNLObjective = false;
 
   /** Number of occurrences in Jacobian. */
-  long jacobian_count = 0;
+  long jacobianCount = 0;
 
   /** The bound over this variable.
    *  Used when producing the unique 'b' segment of the NL file.
@@ -205,11 +205,11 @@ public:
   NLVar() = default;
 
   /** Constructor with declare time information */
-  NLVar(string name, bool is_integer, bool to_report, NLBound bound)
-      : name(std::move(name)), is_integer(is_integer), to_report(to_report), bound(bound) {}
+  NLVar(string name, bool isInteger, bool to_report, NLBound bound)
+      : name(std::move(name)), isInteger(isInteger), toReport(to_report), bound(bound) {}
 
   /** Copy constructor, with update on bound */
-  NLVar copy_with_bound(NLBound bound) const;
+  NLVar copyWithBound(NLBound bound) const;
 };
 
 /** A NLArray:
@@ -235,7 +235,7 @@ public:
   vector<Item> items;
 
   /** Is this an array or integers or floats? */
-  bool is_integer = false;
+  bool isInteger = false;
 };
 
 /** A token from an 'expression graph'.
@@ -337,16 +337,16 @@ public:
   };
 
   /** Obtain the name of an operator from its opcode. */
-  static const char* get_name(OpCode oc);
+  static const char* getName(OpCode oc);
 
   /** Obtain the name of an operator (with multiple operands) from its opcode. */
-  static const char* get_name(MOpCode moc);
+  static const char* getName(MOpCode moc);
 
   /* *** *** *** Fields *** *** *** */
 
   Kind kind;
-  double numeric_value;  // if kind==NUMERIC
-  int nb_args;           // if kind==FUNCALL or kind==MOP
+  double numericValue;  // if kind==NUMERIC
+  int argCount;         // if kind==FUNCALL or kind==MOP
   string str;   // if kind==STRING or kind=VARIABLE (variable name) or kind=FUNCALL (function name)
   OpCode oc;    // if kind==OP
   MOpCode moc;  // if kind==MOP
@@ -364,13 +364,13 @@ public:
   static NLToken mo(MOpCode mopc, int nb);
 
   /* *** *** *** Query *** *** *** */
-  bool is_variable() const;
+  bool isVariable() const;
 
-  bool is_constant() const;
+  bool isConstant() const;
 
   /* *** *** *** Printable *** *** *** */
 
-  ostream& print_on(ostream& o, const NLFile& nl_file) const;
+  ostream& printToStream(ostream& o, const NLFile& nl_file) const;
 };
 
 /** A algebraic constraint.
@@ -391,7 +391,7 @@ public:
    *  Used to produce a new, standalone, C segment.
    *  If the expression graph is empty (linear constraint), produce the expression graph 'n0'
    */
-  vector<NLToken> expression_graph = {};
+  vector<NLToken> expressionGraph = {};
 
   /** Jacobian, used for the linear part. Identify a variable by its name and associate a
    * coefficent. Used to produce a new, standalone, J segment.
@@ -402,16 +402,16 @@ public:
    *  The NLFile is used to access the variables through their name in order to increase their
    * jacobian count.
    */
-  void set_jacobian(const vector<string>& vnames, const vector<double>& coeffs, NLFile* nl_file);
+  void setJacobian(const vector<string>& vnames, const vector<double>& coeffs, NLFile* nl_file);
 
   /* *** *** *** Helpers *** *** *** */
 
-  /** A constraint is considered linear if the expression_graph is empty. */
-  bool is_linear() const;
+  /** A constraint is considered linear if the expressionGraph is empty. */
+  bool isLinear() const;
 
   /* *** *** *** Printable *** *** *** */
 
-  ostream& print_on(ostream& o, const NLFile& nl_file) const;
+  ostream& printToStream(ostream& o, const NLFile& nl_file) const;
 };
 
 /** A logical constraint.
@@ -432,14 +432,14 @@ public:
    *  Used to produce a new, standalone, L segment.
    *  If the expression graph is empty (linear constraint), produce the expression graph 'n0'
    */
-  vector<NLToken> expression_graph = {};
+  vector<NLToken> expressionGraph = {};
 
   /* *** *** *** Constructor *** *** *** */
   NLLogicalCons(int idx) : index(idx) {}
 
   /* *** *** *** Printable *** *** *** */
 
-  ostream& print_on(ostream& o, const NLFile& nl_file) const;
+  ostream& printToStream(ostream& o, const NLFile& nl_file) const;
 };
 
 /** The header. */
@@ -447,7 +447,7 @@ class NLHeader {
 public:
   /* *** *** *** Printable *** *** *** */
 
-  ostream& print_on(ostream& o, const NLFile& nl_file) const;
+  ostream& printToStream(ostream& o, const NLFile& nl_file) const;
 };
 
 /** An Objective
@@ -467,7 +467,7 @@ public:
 
   /* *** *** *** Fields *** *** *** */
   MinMax minmax = UNDEF;
-  vector<NLToken> expression_graph = {};  // If empty, produce a 'n0' when printing
+  vector<NLToken> expressionGraph = {};  // If empty, produce a 'n0' when printing
 
   /* *** *** *** Gradient *** *** *** */
 
@@ -477,22 +477,22 @@ public:
   vector<pair<string, double>> gradient = {};
 
   /** Method to build the var_coeff vector. */
-  void set_gradient(const vector<string>& vnames, const vector<double>& coeffs);
+  void setGradient(const vector<string>& vnames, const vector<double>& coeffs);
 
-  int gradient_count() const;
+  int gradientCount() const;
 
   /* *** *** *** Helpers *** *** *** */
-  bool is_defined() const;
+  bool isDefined() const;
 
-  bool is_linear() const;
+  bool isLinear() const;
 
-  bool is_optimisation() const;
+  bool isOptimisation() const;
 
   /* *** *** *** Constructor *** *** *** */
   NLObjective() = default;
 
   /* *** *** *** Printable *** *** *** */
-  ostream& print_on(ostream& o, const NLFile& nl_file) const;
+  ostream& printToStream(ostream& o, const NLFile& nl_file) const;
 };
 
 }  // namespace MiniZinc

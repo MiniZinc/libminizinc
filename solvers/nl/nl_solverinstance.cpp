@@ -26,7 +26,7 @@ namespace MiniZinc {
  * **/
 // Solver Factory
 
-NL_SolverFactory::NL_SolverFactory() {
+NLSolverFactory::NLSolverFactory() {
   SolverConfig sc("org.minizinc.mzn-nl",
                   MZN_VERSION_MAJOR "." MZN_VERSION_MINOR "." MZN_VERSION_PATCH);
   sc.name("Generic Non Linear driver");
@@ -39,18 +39,18 @@ NL_SolverFactory::NL_SolverFactory() {
   SolverConfigs::registerBuiltinSolver(sc);
 }
 
-string NL_SolverFactory::getDescription(SolverInstanceBase::Options* /*opt*/) {
+string NLSolverFactory::getDescription(SolverInstanceBase::Options* /*opt*/) {
   string v = "NL solver plugin, compiled  " __DATE__ "  " __TIME__;
   return v;
 }
 
-string NL_SolverFactory::getVersion(SolverInstanceBase::Options* /*opt*/) {
+string NLSolverFactory::getVersion(SolverInstanceBase::Options* /*opt*/) {
   return MZN_VERSION_MAJOR;
 }
 
-string NL_SolverFactory::getId() { return "org.minizinc.mzn-nl"; }
+string NLSolverFactory::getId() { return "org.minizinc.mzn-nl"; }
 
-void NL_SolverFactory::printHelp(ostream& os) {
+void NLSolverFactory::printHelp(ostream& os) {
   os << "MZN-NL plugin options" << std::endl
      << "  --nl-cmd , --nonlinear-cmd <exe>\n     The backend solver filename.\n"
      << "  --nl-flags <options>\n     Specify option to be passed to the NL solver.\n"
@@ -70,38 +70,38 @@ void NL_SolverFactory::printHelp(ostream& os) {
       ;
 }
 
-SolverInstanceBase::Options* NL_SolverFactory::createOptions() { return new NLSolverOptions; }
+SolverInstanceBase::Options* NLSolverFactory::createOptions() { return new NLSolverOptions; }
 
-SolverInstanceBase* NL_SolverFactory::doCreateSI(Env& env, std::ostream& log,
-                                                 SolverInstanceBase::Options* opt) {
+SolverInstanceBase* NLSolverFactory::doCreateSI(Env& env, std::ostream& log,
+                                                SolverInstanceBase::Options* opt) {
   return new NLSolverInstance(env, log, opt);
 }
 
-bool NL_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
-                                     std::vector<std::string>& argv) {
+bool NLSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
+                                    std::vector<std::string>& argv) {
   auto& _opt = static_cast<NLSolverOptions&>(*opt);
   CLOParser cop(i, argv);
   string buffer;
 
   int nn = -1;
   if (cop.getOption("--nl-cmd --nonlinear-cmd", &buffer)) {
-    _opt.nl_solver = buffer;
+    _opt.nlSolver = buffer;
   } else if (cop.getOption("--hexafloat")) {
-    _opt.do_hexafloat = true;
+    _opt.doHexafloat = true;
   } else if (cop.getOption("--keepfile")) {
-    _opt.do_keepfile = true;
+    _opt.doKeepfile = true;
   } else if (cop.getOption("-s --solver-statistics")) {
     // ignore statistics flags for now
   } else if (cop.getOption("-v --verbose-solving")) {
     _opt.verbose = true;
   } else {
-    for (auto& fznf : _opt.nl_solver_flags) {
+    for (auto& fznf : _opt.nlSolverFlags) {
       if (fznf.t == MZNFZNSolverFlag::FT_ARG && cop.getOption(fznf.n.c_str(), &buffer)) {
-        _opt.nl_flags.push_back(fznf.n);
-        _opt.nl_flags.push_back(buffer);
+        _opt.nlFlags.push_back(fznf.n);
+        _opt.nlFlags.push_back(buffer);
         return true;
       } else if (fznf.t == MZNFZNSolverFlag::FT_NOARG && cop.getOption(fznf.n.c_str())) {
-        _opt.nl_flags.push_back(fznf.n);
+        _opt.nlFlags.push_back(fznf.n);
         return true;
       }
     }
@@ -134,7 +134,7 @@ SolverInstance::Status NLSolverInstance::solve() {
   string file_sol;  // Ouput of the solver
   FileUtils::TmpDir* tmpdir = nullptr;
 
-  if (opt.do_keepfile) {
+  if (opt.doKeepfile) {
     // Keep file: output next to original file
     ASTString file_mzn = _env.envi().originalModel != nullptr
                              ? _env.envi().originalModel->filepath()
@@ -150,7 +150,7 @@ SolverInstance::Status NLSolverInstance::solve() {
   }
   std::ofstream outfile(FILE_PATH(file_nl));
   // Configure floating point output
-  if (opt.do_hexafloat) {
+  if (opt.doHexafloat) {
     outfile << hexfloat;
   } else {
     outfile.precision(numeric_limits<double>::digits10 + 2);
@@ -183,22 +183,22 @@ SolverInstance::Status NLSolverInstance::solve() {
     // Analyse the goal
     analyse(_fzn->solveItem());
     // Phase 2
-    nl_file.phase_2();
+    _nlFile.phase2();
     // Print to the files
-    nl_file.print_on(outfile);
+    _nlFile.printToStream(outfile);
 
     // --- --- --- Call the solver
-    NLSolns2Out s2o = NLSolns2Out(out, nl_file, opt.verbose);
+    NLSolns2Out s2o = NLSolns2Out(out, _nlFile, opt.verbose);
     vector<string> cmd_line;
 
-    if (opt.nl_solver.empty()) {
+    if (opt.nlSolver.empty()) {
       delete tmpdir;
       tmpdir = nullptr;
       outfile.close();
       throw InternalError("No NL solver specified");
     }
 
-    cmd_line.push_back(opt.nl_solver);
+    cmd_line.push_back(opt.nlSolver);
     cmd_line.push_back(file_nl);
     cmd_line.emplace_back("-AMPL");
     Process<NLSolns2Out> proc(cmd_line, &s2o, 0, true);
@@ -206,7 +206,7 @@ SolverInstance::Status NLSolverInstance::solve() {
 
     if (exitStatus == 0) {
       // Parse the result
-      s2o.parse_sol(file_sol);
+      s2o.parseSolution(file_sol);
     }
 
   } catch (const NLException& e) {
@@ -255,7 +255,7 @@ void NLSolverInstance::analyse(const Item* i) {
       const VarDecl& vd = *i->cast<VarDeclI>()->e();
       const TypeInst& ti = *vd.ti()->cast<TypeInst>();
       const Expression& rhs = *vd.e();
-      nl_file.add_vdecl(vd, ti, rhs);
+      _nlFile.addVarDecl(vd, ti, rhs);
     } break;
 
     case Item::II_ASN: {
@@ -271,7 +271,7 @@ void NLSolverInstance::analyse(const Item* i) {
       if (e->eid() == Expression::E_CALL) {
         const Call& c = *e->cast<Call>();
         DEBUG_MSG("     " << c.id() << " ");
-        nl_file.analyse_constraint(c);
+        _nlFile.analyseConstraint(c);
       } else {
         DEBUG_MSG("     Contraint is not a builtin call.");
         assert(false);
@@ -281,7 +281,7 @@ void NLSolverInstance::analyse(const Item* i) {
     // Case of the 'solve' directive
     case Item::II_SOL: {
       const SolveI& si = *i->cast<SolveI>();
-      nl_file.add_solve(si.st(), si.e());
+      _nlFile.addSolve(si.st(), si.e());
     } break;
 
     case Item::II_OUT: {

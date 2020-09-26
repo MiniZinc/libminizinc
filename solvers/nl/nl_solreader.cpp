@@ -5,7 +5,7 @@ namespace MiniZinc {
 // *** *** *** NLSol *** *** ***
 
 // Parse a string into a NLSol object
-NLSol NLSol::parse_sol(istream& in) {
+NLSol NLSol::parseSolution(istream& in) {
   string buffer;
   string msg;
   vector<double> vec;
@@ -121,16 +121,16 @@ bool NLSolns2Out::feedRawDataChunk(const char* data) {
 
     while (getline(ss, to)) {
       if (ss.eof()) {
-        if (in_line) {  // Must complete a line, and the line is not over yet
+        if (_inLine) {  // Must complete a line, and the line is not over yet
           getLog() << to << endl;
         } else {  // Start an incomple line
           getLog() << "% " << to;
-          in_line = true;
+          _inLine = true;
         }
       } else {
-        if (in_line) {  // Must complete a line, and the line is over.
+        if (_inLine) {  // Must complete a line, and the line is over.
           getLog() << to << endl;
-          in_line = false;
+          _inLine = false;
         } else {  // Full line
           getLog() << "% " << to << endl;
         }
@@ -140,20 +140,20 @@ bool NLSolns2Out::feedRawDataChunk(const char* data) {
   return true;
 }
 
-void NLSolns2Out::parse_sol(const string& filename) {
+void NLSolns2Out::parseSolution(const string& filename) {
   ifstream f(FILE_PATH(filename));
-  NLSol sol = NLSol::parse_sol(f);
+  NLSol sol = NLSol::parseSolution(f);
 
   switch (sol.status) {
     case NL_Solver_Status::PARSE_ERROR: {
       DEBUG_MSG("NL_Solver_Status: PARSE ERROR" << endl);
-      out->feedRawDataChunk(out->opt.errorMsgDef);
+      _out->feedRawDataChunk(_out->opt.errorMsgDef);
       break;
     }
 
     case NL_Solver_Status::UNKNOWN: {
       DEBUG_MSG("NL_Solver_Status: UNKNOWN" << endl);
-      out->feedRawDataChunk(out->opt.unknownMsgDef);
+      _out->feedRawDataChunk(_out->opt.unknownMsgDef);
       break;
     }
 
@@ -166,12 +166,12 @@ void NLSolns2Out::parse_sol(const string& filename) {
                              // the answer for a fp value.
       sb.precision(numeric_limits<double>::digits10 + 2);
 
-      for (int i = 0; i < nl_file.variables.size(); ++i) {
-        string n = nl_file.vnames[i];
-        NLVar v = nl_file.variables[n];
-        if (v.to_report) {
+      for (int i = 0; i < _nlFile.variables.size(); ++i) {
+        string n = _nlFile.vnames[i];
+        NLVar v = _nlFile.variables[n];
+        if (v.toReport) {
           sb << v.name << " = ";
-          if (v.is_integer) {
+          if (v.isInteger) {
             long value = sol.values[i];
             sb << value;
           } else {
@@ -183,7 +183,7 @@ void NLSolns2Out::parse_sol(const string& filename) {
       }
 
       // Output the arrays
-      for (auto& a : nl_file.output_arrays) {
+      for (auto& a : _nlFile.outputArrays) {
         sb << a.name << " = array" << a.dimensions.size() << "d( ";
         for (const string& s : a.dimensions) {
           sb << s << ", ";
@@ -194,7 +194,7 @@ void NLSolns2Out::parse_sol(const string& filename) {
 
           // Case of the literals
           if (item.variable.empty()) {
-            if (a.is_integer) {
+            if (a.isInteger) {
               long value = item.value;
               sb << value;
             } else {
@@ -202,8 +202,8 @@ void NLSolns2Out::parse_sol(const string& filename) {
               sb << value;
             }
           } else {
-            int index = nl_file.variable_indexes.at(item.variable);
-            if (a.is_integer) {
+            int index = _nlFile.variableIndexes.at(item.variable);
+            if (a.isInteger) {
               long value = sol.values[index];
               sb << value;
             } else {
@@ -221,11 +221,11 @@ void NLSolns2Out::parse_sol(const string& filename) {
       }
 
       string s = sb.str();
-      out->feedRawDataChunk(s.c_str());
-      out->feedRawDataChunk(out->opt.solutionSeparatorDef);
-      if (nl_file.objective.is_optimisation()) {
-        out->feedRawDataChunk("\n");
-        out->feedRawDataChunk(out->opt.searchCompleteMsgDef);
+      _out->feedRawDataChunk(s.c_str());
+      _out->feedRawDataChunk(_out->opt.solutionSeparatorDef);
+      if (_nlFile.objective.isOptimisation()) {
+        _out->feedRawDataChunk("\n");
+        _out->feedRawDataChunk(_out->opt.searchCompleteMsgDef);
       }
 
       break;
@@ -233,42 +233,42 @@ void NLSolns2Out::parse_sol(const string& filename) {
 
     case NL_Solver_Status::UNCERTAIN: {
       DEBUG_MSG("NL_Solver_Status: UNCERTAIN" << endl);
-      out->feedRawDataChunk(out->opt.unknownMsgDef);
+      _out->feedRawDataChunk(_out->opt.unknownMsgDef);
       break;
     }
 
     case NL_Solver_Status::INFEASIBLE: {
       DEBUG_MSG("NL_Solver_Status: INFEASIBLE" << endl);
-      out->feedRawDataChunk(out->opt.unsatisfiableMsgDef);
+      _out->feedRawDataChunk(_out->opt.unsatisfiableMsgDef);
       break;
     }
 
     case NL_Solver_Status::UNBOUNDED: {
       DEBUG_MSG("NL_Solver_Status: UNBOUNDED" << endl);
-      out->feedRawDataChunk(out->opt.unboundedMsgDef);
+      _out->feedRawDataChunk(_out->opt.unboundedMsgDef);
       break;
     }
 
     case NL_Solver_Status::LIMIT: {
       DEBUG_MSG("NL_Solver_Status: LIMIT" << endl);
-      out->feedRawDataChunk(out->opt.unknownMsgDef);
+      _out->feedRawDataChunk(_out->opt.unknownMsgDef);
       break;
     }
 
     case NL_Solver_Status::INTERRUPTED: {
       DEBUG_MSG("NL_Solver_Status: INTERRUPTED" << endl);
-      out->feedRawDataChunk(out->opt.unknownMsgDef);
+      _out->feedRawDataChunk(_out->opt.unknownMsgDef);
       break;
     }
 
     default:
-      should_not_happen("parse_sol: switch on status with unknown code: " << sol.status);
+      should_not_happen("parseSolution: switch on status with unknown code: " << sol.status);
   }
 
   // "Finish" the feed
-  out->feedRawDataChunk("\n");
+  _out->feedRawDataChunk("\n");
 }
 
-ostream& NLSolns2Out::getLog() { return verbose ? out->getLog() : dummy_ofstream; }
+ostream& NLSolns2Out::getLog() { return _verbose ? _out->getLog() : _dummyOfstream; }
 
 }  // namespace MiniZinc

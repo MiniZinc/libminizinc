@@ -88,26 +88,26 @@ public:
 
   // --- --- --- Static functions
 
-  static NLSol parse_sol(std::istream& in);
+  static NLSol parseSolution(std::istream& in);
 };
 
 /** Our version of Solns2Out **/
 
 class NLSolns2Out {
 private:
-  Solns2Out* out;
-  NLFile& nl_file;
-  std::ofstream dummy_ofstream;
+  Solns2Out* _out;
+  NLFile& _nlFile;
+  std::ofstream _dummyOfstream;
 
   // Controls for feedRawDataChunk
-  bool in_line;
-  bool verbose;
+  bool _inLine;
+  bool _verbose;
 
 public:
   NLSolns2Out(Solns2Out* out0, NLFile& nl_file0, bool verbose0)
-      : out(out0), nl_file(nl_file0), in_line(false), verbose(verbose0) {}
+      : _out(out0), _nlFile(nl_file0), _inLine(false), _verbose(verbose0) {}
 
-  void parse_sol(const string& filename);
+  void parseSolution(const string& filename);
 
   bool feedRawDataChunk(const char* data);
   std::ostream& getLog();

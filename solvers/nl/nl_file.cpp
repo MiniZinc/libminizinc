@@ -15,7 +15,7 @@ namespace MiniZinc {
 /** *** *** *** Helpers *** *** *** **/
 
 /** Create a string representing the name (and unique identifier) from an identifier. */
-string NLFile::get_vname(const Id* id) {
+string NLFile::getVarName(const Id* id) {
   stringstream os;
   if (id->idn() != -1) {
     os << "X_INTRODUCED_" << id->idn() << "_";
@@ -28,11 +28,11 @@ string NLFile::get_vname(const Id* id) {
 
 /** Create a string representing the name (and unique identifier) of a variable from a variable
  * declaration. */
-string NLFile::get_vname(const VarDecl& vd) { return get_vname(vd.id()); }
+string NLFile::getVarName(const VarDecl& vd) { return getVarName(vd.id()); }
 
 /** Create a string representing the name (and unique identifier) of a constraint from a specific
  * call expression. */
-string NLFile::get_cname(const Call& c) {
+string NLFile::getConstraintName(const Call& c) {
   stringstream os;
   os << c.id() << "_" << static_cast<const void*>(&c);  // use the memory address as unique ID.
   string name = os.str();
@@ -40,10 +40,10 @@ string NLFile::get_cname(const Call& c) {
 }
 
 /** Obtain the vector of an array, either from an identifier or an array litteral */
-const ArrayLit& NLFile::get_arraylit(const Expression* e) {
+const ArrayLit& NLFile::getArrayLit(const Expression* e) {
   switch (e->eid()) {
     case Expression::E_ID: {
-      return get_arraylit(
+      return getArrayLit(
           e->cast<Id>()->decl()->e());  // Follow the pointer to the expression of the declaration
     }
 
@@ -56,7 +56,7 @@ const ArrayLit& NLFile::get_arraylit(const Expression* e) {
 }
 
 /** Create a vector of double from a vector containing Expression being IntLit. */
-vector<double> NLFile::from_vec_int(const ArrayLit& v_int) {
+vector<double> NLFile::fromVecInt(const ArrayLit& v_int) {
   vector<double> v = {};
   for (unsigned int i = 0; i < v_int.size(); ++i) {
     double d = v_int[i]->cast<IntLit>()->v().toInt();
@@ -66,7 +66,7 @@ vector<double> NLFile::from_vec_int(const ArrayLit& v_int) {
 }
 
 /** Create a vector of double from a vector containing Expression being FloatLit. */
-vector<double> NLFile::from_vec_fp(const ArrayLit& v_fp) {
+vector<double> NLFile::fromVecFloat(const ArrayLit& v_fp) {
   vector<double> v = {};
   for (unsigned int i = 0; i < v_fp.size(); ++i) {
     double d = v_fp[i]->cast<FloatLit>()->v().toDouble();
@@ -76,10 +76,10 @@ vector<double> NLFile::from_vec_fp(const ArrayLit& v_fp) {
 }
 
 /** Create a vector of variable names from a vector containing Expression being identifier Id. */
-vector<string> NLFile::from_vec_id(const ArrayLit& v_id) {
+vector<string> NLFile::fromVecId(const ArrayLit& v_id) {
   vector<string> v = {};
   for (unsigned int i = 0; i < v_id.size(); ++i) {
-    string s = get_vname(*(v_id[i]->cast<Id>()->decl()));
+    string s = getVarName(*(v_id[i]->cast<Id>()->decl()));
     v.push_back(s);
   }
   return v;
@@ -88,14 +88,14 @@ vector<string> NLFile::from_vec_id(const ArrayLit& v_id) {
 /** *** *** *** Phase 1: collecting data from MZN *** *** *** **/
 
 /** Add a variable declaration in the NL File.
- *  This function pre-analyse the declaration VarDecl, then delegate to add_vdecl_integer or
- * add_vdecl_fp. In flatzinc, arrays always have a rhs: the can always be replaced by their
+ *  This function pre-analyse the declaration VarDecl, then delegate to addVarDeclInteger or
+ * addVarDeclFloat. In flatzinc, arrays always have a rhs: the can always be replaced by their
  * definition (following the pointer starting at the ID) Hence, we do not reproduce arrays in the NL
  * file.
  */
-void NLFile::add_vdecl(const VarDecl& vd, const TypeInst& ti, const Expression& rhs) {
+void NLFile::addVarDecl(const VarDecl& vd, const TypeInst& ti, const Expression& rhs) {
   // Get the name
-  string name = get_vname(vd);
+  string name = getVarName(vd);
   // Discriminate according to the type:
   if (ti.isEnum()) {
     should_not_happen("Enum type in the flatzinc");
@@ -108,10 +108,10 @@ void NLFile::add_vdecl(const VarDecl& vd, const TypeInst& ti, const Expression& 
       if (c != nullptr && c->id() == (constants().ann.output_array)) {
         NLArray array;
         array.name = name;
-        array.is_integer = ti.type().bt() == Type::BT_INT;
+        array.isInteger = ti.type().bt() == Type::BT_INT;
 
         // Search the 'annotation' array
-        const ArrayLit& aa = get_arraylit(c->arg(0));
+        const ArrayLit& aa = getArrayLit(c->arg(0));
         for (int i = 0; i < aa.size(); ++i) {
           IntSetVal* r = aa[i]->cast<SetLit>()->isv();
           stringstream ss;
@@ -120,32 +120,32 @@ void NLFile::add_vdecl(const VarDecl& vd, const TypeInst& ti, const Expression& 
         }
 
         // Search the 'real' array. Items can be an identifier or a litteral.
-        const ArrayLit& ra = get_arraylit(&rhs);
+        const ArrayLit& ra = getArrayLit(&rhs);
         for (int i = 0; i < ra.size(); ++i) {
           NLArray::Item item;
 
           if (ra[i]->isa<Id>()) {
-            item.variable = get_vname(ra[i]->cast<Id>());
+            item.variable = getVarName(ra[i]->cast<Id>());
           } else if (ra[i]->isa<IntLit>()) {
-            assert(array.is_integer);
+            assert(array.isInteger);
             item.value = ra[i]->cast<IntLit>()->v().toInt();
           } else {
-            assert(!array.is_integer);  // Floating point
+            assert(!array.isInteger);  // Floating point
             item.value = ra[i]->cast<FloatLit>()->v().toDouble();
           }
 
           array.items.push_back(item);
         }
 
-        output_arrays.push_back(array);
+        outputArrays.push_back(array);
 
         break;
       }
     }
   } else {
     // Check if the variable needs to be reported
-    bool to_report = vd.ann().contains(constants().ann.output_var);
-    DEBUG_MSG("     '" << name << "' to be reported? " << to_report);
+    bool toReport = vd.ann().contains(constants().ann.output_var);
+    DEBUG_MSG("     '" << name << "' to be reported? " << toReport);
 
     // variable declaration
     const Type& type = ti.type();
@@ -164,63 +164,63 @@ void NLFile::add_vdecl(const VarDecl& vd, const TypeInst& ti, const Expression& 
       if (domain != nullptr) {
         isv = domain->cast<SetLit>()->isv();
       }
-      add_vdecl_integer(name, isv, to_report);
+      addVarDeclInteger(name, isv, toReport);
     } else {
       // Floating point
       FloatSetVal* fsv = nullptr;
       if (domain != nullptr) {
         fsv = domain->cast<SetLit>()->fsv();
       }
-      add_vdecl_fp(name, fsv, to_report);
+      addVarDeclFloat(name, fsv, toReport);
     }
   }
 }
 
 /** Add an integer variable declaration to the NL File. */
-void NLFile::add_vdecl_integer(const string& name, const IntSetVal* isv, bool to_report) {
+void NLFile::addVarDeclInteger(const string& name, const IntSetVal* isv, bool toReport) {
   // Check that we do not have naming conflict
   assert(variables.find(name) == variables.end());
 
   // Check the domain.
   NLBound bound;
   if (isv == nullptr) {
-    bound = NLBound::make_nobound();
+    bound = NLBound::makeNoBound();
   } else if (isv->size() == 1) {
     long long lb = isv->min(0).toInt();
     long long ub = isv->max(0).toInt();
-    bound = NLBound::make_bounded(lb, ub);
+    bound = NLBound::makeBounded(lb, ub);
   } else {
     should_not_happen("Range: switch on mzn_opt_only_range_domains" << endl);
   }
   // Create the variable and update the NLFile
-  NLVar v = NLVar(name, true, to_report, bound);
+  NLVar v = NLVar(name, true, toReport, bound);
   variables[name] = v;
 }
 
 /** Add a floating point variable declaration to the NL File. */
-void NLFile::add_vdecl_fp(const string& name, const FloatSetVal* fsv, bool to_report) {
+void NLFile::addVarDeclFloat(const string& name, const FloatSetVal* fsv, bool toReport) {
   // Check that we do not have naming conflict
   assert(variables.find(name) == variables.end());
   // Check the domain.
   NLBound bound;
   if (fsv == nullptr) {
-    bound = NLBound::make_nobound();
+    bound = NLBound::makeNoBound();
   } else if (fsv->size() == 1) {
     double lb = fsv->min(0).toDouble();
     double ub = fsv->max(0).toDouble();
-    bound = NLBound::make_bounded(lb, ub);
+    bound = NLBound::makeBounded(lb, ub);
   } else {
     should_not_happen("Range: switch on mzn_opt_only_range_domains" << std::endl);
   }
   // Create the variable and update the NLFile
-  NLVar v = NLVar(name, false, to_report, bound);
+  NLVar v = NLVar(name, false, toReport, bound);
   variables[name] = v;
 }
 
 // --- --- --- Constraints analysis
 
 /** Dispatcher for constraint analysis. */
-void NLFile::analyse_constraint(const Call& c) {
+void NLFile::analyseConstraint(const Call& c) {
   // ID of the call
   auto id = c.id();
   // Constants for integer builtins
@@ -382,7 +382,7 @@ void NLFile::analyse_constraint(const Call& c) {
 // --- --- --- Helpers
 
 /** Create a token from an expression representing a variable */
-NLToken NLFile::get_tok_var_int(const Expression* e) {
+NLToken NLFile::getTokenFromVarOrInt(const Expression* e) {
   if (e->type().isPar()) {
     // Constant
     long long value = e->cast<IntLit>()->v().toInt();
@@ -390,14 +390,14 @@ NLToken NLFile::get_tok_var_int(const Expression* e) {
   } else {
     // Variable
     VarDecl& vd = *(e->cast<Id>()->decl());
-    string n = get_vname(vd);
+    string n = getVarName(vd);
     return NLToken::v(n);
   }
 }
 
 /** Create a token from an expression representing either a variable or a floating point numeric
  * value. */
-NLToken NLFile::get_tok_var_fp(const Expression* e) {
+NLToken NLFile::getTokenFromVarOrFloat(const Expression* e) {
   if (e->type().isPar()) {
     // Constant
     double value = e->cast<FloatLit>()->v().toDouble();
@@ -405,71 +405,71 @@ NLToken NLFile::get_tok_var_fp(const Expression* e) {
   } else {
     // Variable
     VarDecl& vd = *(e->cast<Id>()->decl());
-    string n = get_vname(vd);
+    string n = getVarName(vd);
     return NLToken::v(n);
   }
 }
 
 /** Create a token from an expression representing either a variable. */
-NLToken NLFile::get_tok_var(const Expression* e) {
+NLToken NLFile::getTokenFromVar(const Expression* e) {
   assert(!e->type().isPar());
   // Variable
   VarDecl& vd = *(e->cast<Id>()->decl());
-  string n = get_vname(vd);
+  string n = getVarName(vd);
   return NLToken::v(n);
 }
 
 /** Update an expression graph (only by appending token) with a linear combination
  *  of coefficients and variables. Count as "non linear" for the variables occuring here.
  */
-void NLFile::make_SigmaMult(vector<NLToken>& expression_graph, const vector<double>& coeffs,
-                            const vector<string>& vars) {
+void NLFile::makeSigmaMult(vector<NLToken>& expressionGraph, const vector<double>& coeffs,
+                           const vector<string>& vars) {
   assert(coeffs.size() == vars.size());
   assert(coeffs.size() >= 2);
 
   // Create a sum of products.
   // WARNING: OPSUMLIST needs at least 3 operands! We need a special case for the sum of 2.
   if (coeffs.size() == 2) {
-    expression_graph.push_back(NLToken::o(NLToken::OpCode::OPPLUS));
+    expressionGraph.push_back(NLToken::o(NLToken::OpCode::OPPLUS));
   } else {
-    expression_graph.push_back(NLToken::mo(NLToken::MOpCode::OPSUMLIST, coeffs.size()));
+    expressionGraph.push_back(NLToken::mo(NLToken::MOpCode::OPSUMLIST, coeffs.size()));
   }
 
   // Component of the sum. Simplify multiplication by one.
   for (unsigned int i = 0; i < coeffs.size(); ++i) {
     // Product if coeff !=1
     if (coeffs[i] != 1) {
-      expression_graph.push_back(NLToken::o(NLToken::OpCode::OPMULT));
-      expression_graph.push_back(NLToken::n(coeffs[i]));
+      expressionGraph.push_back(NLToken::o(NLToken::OpCode::OPMULT));
+      expressionGraph.push_back(NLToken::n(coeffs[i]));
     }
     // Set the variable as "non linear"
-    expression_graph.push_back(NLToken::v(vars[i]));
+    expressionGraph.push_back(NLToken::v(vars[i]));
   }
 }
 
 // --- --- --- Linear Builders
 
 /** Create a linear constraint [coeffs] *+ [vars] = value. */
-void NLFile::lincons_eq(const Call& c, const vector<double>& coeffs, const vector<string>& vars,
-                        const NLToken& value) {
+void NLFile::linconsEq(const Call& c, const vector<double>& coeffs, const vector<string>& vars,
+                       const NLToken& value) {
   // Create the Algebraic Constraint and set the data
   NLAlgCons cons;
 
   // Get the name of the constraint
-  string cname = get_cname(c);
+  string cname = getConstraintName(c);
   cons.name = cname;
 
-  if (value.is_constant()) {
+  if (value.isConstant()) {
     // Create the bound of the constraint
-    NLBound bound = NLBound::make_equal(value.numeric_value);
+    NLBound bound = NLBound::makeEqual(value.numericValue);
     cons.range = bound;
     // No non linear part: leave the expression graph empty.
     // Linear part: set the jacobian
-    cons.set_jacobian(vars, coeffs, this);
+    cons.setJacobian(vars, coeffs, this);
   } else {
     // Create the bound of the constraint = 0 and change the Jacobian to incorporate a -1 on the
     // variable in 'value'
-    NLBound bound = NLBound::make_equal(0);
+    NLBound bound = NLBound::makeEqual(0);
     cons.range = bound;
     // No non linear part: leave the expression graph empty.
     // Linear part: set the jacobian
@@ -477,7 +477,7 @@ void NLFile::lincons_eq(const Call& c, const vector<double>& coeffs, const vecto
     coeffs_.push_back(-1);
     vector<string> vars_(vars);
     vars_.push_back(value.str);
-    cons.set_jacobian(vars_, coeffs_, this);
+    cons.setJacobian(vars_, coeffs_, this);
   }
 
   // Add the constraint in our mapping
@@ -485,26 +485,26 @@ void NLFile::lincons_eq(const Call& c, const vector<double>& coeffs, const vecto
 }
 
 /** Create a linear constraint [coeffs] *+ [vars] <= value. */
-void NLFile::lincons_le(const Call& c, const vector<double>& coeffs, const vector<string>& vars,
-                        const NLToken& value) {
+void NLFile::linconsLe(const Call& c, const vector<double>& coeffs, const vector<string>& vars,
+                       const NLToken& value) {
   // Create the Algebraic Constraint and set the data
   NLAlgCons cons;
 
   // Get the name of the constraint
-  string cname = get_cname(c);
+  string cname = getConstraintName(c);
   cons.name = cname;
 
-  if (value.is_constant()) {
+  if (value.isConstant()) {
     // Create the bound of the constraint
-    NLBound bound = NLBound::make_ub_bounded(value.numeric_value);
+    NLBound bound = NLBound::makeUBBounded(value.numericValue);
     cons.range = bound;
     // No non linear part: leave the expression graph empty.
     // Linear part: set the jacobian
-    cons.set_jacobian(vars, coeffs, this);
+    cons.setJacobian(vars, coeffs, this);
   } else {
     // Create the bound of the constraint = 0 and change the Jacobian to incorporate a -1 on the
     // variable in 'value'
-    NLBound bound = NLBound::make_ub_bounded(0);
+    NLBound bound = NLBound::makeUBBounded(0);
     cons.range = bound;
     // No non linear part: leave the expression graph empty.
     // Linear part: set the jacobian
@@ -512,7 +512,7 @@ void NLFile::lincons_le(const Call& c, const vector<double>& coeffs, const vecto
     coeffs_.push_back(-1);
     vector<string> vars_(vars);
     vars_.push_back(value.str);
-    cons.set_jacobian(vars_, coeffs_, this);
+    cons.setJacobian(vars_, coeffs_, this);
   }
 
   // Add the constraint in our mapping
@@ -524,27 +524,27 @@ void NLFile::lincons_le(const Call& c, const vector<double>& coeffs, const vecto
  *  Warnings:   - Creates a logical constraint
  *              - Only use for conmparisons that cannot be expressed with '=' xor '<='.
  */
-void NLFile::lincons_predicate(const Call& c, NLToken::OpCode oc, const vector<double>& coeffs,
-                               const vector<string>& vars, const NLToken& value) {
+void NLFile::linconsPredicate(const Call& c, NLToken::OpCode oc, const vector<double>& coeffs,
+                              const vector<string>& vars, const NLToken& value) {
   // Create the Logical Constraint and set the data
-  NLLogicalCons cons(logical_constraints.size());
+  NLLogicalCons cons(logicalConstraints.size());
 
   // Get the name of the constraint
-  string cname = get_cname(c);
+  string cname = getConstraintName(c);
   cons.name = cname;
 
   // Create the expression graph (Note: no Jacobian associated with a logical constraint).
   // 1) Push the comparison operator, e.g. "!= operand1 operand2"
-  cons.expression_graph.push_back(NLToken::o(oc));
+  cons.expressionGraph.push_back(NLToken::o(oc));
 
   // 2) Operand1 := sum of product
-  make_SigmaMult(cons.expression_graph, coeffs, vars);
+  makeSigmaMult(cons.expressionGraph, coeffs, vars);
 
   // 3) Operand 2 := value.
-  cons.expression_graph.push_back(value);
+  cons.expressionGraph.push_back(value);
 
   // Store the constraint
-  logical_constraints.push_back(cons);
+  logicalConstraints.push_back(cons);
 }
 
 // --- --- --- Non Linear Builders
@@ -558,36 +558,36 @@ void NLFile::lincons_predicate(const Call& c, NLToken::OpCode oc, const vector<d
  *  Use the jacobian and the bound on constraint to translate into x - y = 0
  *  Simply update the bound if one is a constant.
  */
-void NLFile::nlcons_eq(const Call& c, const NLToken& x, const NLToken& y) {
+void NLFile::nlconsEq(const Call& c, const NLToken& x, const NLToken& y) {
   if (x.kind != y.kind) {
-    if (x.is_constant()) {
+    if (x.isConstant()) {
       // Update bound on y
-      double value = x.numeric_value;
+      double value = x.numericValue;
       NLVar& v = variables.at(y.str);
-      v.bound.update_eq(value);
+      v.bound.updateEq(value);
     } else {
       // Update bound on x
-      double value = y.numeric_value;
+      double value = y.numericValue;
       NLVar& v = variables.at(x.str);
-      v.bound.update_eq(value);
+      v.bound.updateEq(value);
     }
   } else if (x.str != y.str) {  // both must be variables anyway.
-    assert(x.is_variable() && y.is_variable());
+    assert(x.isVariable() && y.isVariable());
     // Create the Algebraic Constraint and set the data
     NLAlgCons cons;
 
     // Get the name of the constraint
-    string cname = get_cname(c);
+    string cname = getConstraintName(c);
     cons.name = cname;
 
     // Create the bound of the constraint: equal 0
-    NLBound bound = NLBound::make_equal(0);
+    NLBound bound = NLBound::makeEqual(0);
     cons.range = bound;
 
     // Create the jacobian
     vector<double> coeffs = {1, -1};
     vector<string> vars = {x.str, y.str};
-    cons.set_jacobian(vars, coeffs, this);
+    cons.setJacobian(vars, coeffs, this);
 
     // Store the constraint
     constraints[cname] = cons;
@@ -598,37 +598,37 @@ void NLFile::nlcons_eq(const Call& c, const NLToken& x, const NLToken& y) {
  *  Use the jacobian and the bound on constraint to translate into x - y <= 0
  *  Simply update the bound if one is a constant.
  */
-void NLFile::nlcons_le(const Call& c, const NLToken& x, const NLToken& y) {
+void NLFile::nlconsLe(const Call& c, const NLToken& x, const NLToken& y) {
   if (x.kind != y.kind) {
-    if (x.is_constant()) {
+    if (x.isConstant()) {
       // Update lower bound on y
-      double value = x.numeric_value;
+      double value = x.numericValue;
       NLVar& v = variables.at(y.str);
-      v.bound.update_lb(value);
+      v.bound.updateLB(value);
     } else {
       // Update upper bound on x
-      double value = y.numeric_value;
+      double value = y.numericValue;
       NLVar& v = variables.at(x.str);
-      v.bound.update_ub(value);
+      v.bound.updateUB(value);
     }
   } else if (x.str != y.str) {  // both must be variables anyway.
-    assert(x.is_variable() && y.is_variable());
+    assert(x.isVariable() && y.isVariable());
 
     // Create the Algebraic Constraint and set the data
     NLAlgCons cons;
 
     // Get the name of the constraint
-    string cname = get_cname(c);
+    string cname = getConstraintName(c);
     cons.name = cname;
 
     // Create the bound of the constraint: <= 0
-    NLBound bound = NLBound::make_ub_bounded(0);
+    NLBound bound = NLBound::makeUBBounded(0);
     cons.range = bound;
 
     // Create the jacobian
     vector<double> coeffs = {1, -1};
     vector<string> vars = {x.str, y.str};
-    cons.set_jacobian(vars, coeffs, this);
+    cons.setJacobian(vars, coeffs, this);
 
     // Store the constraint
     constraints[cname] = cons;
@@ -640,43 +640,43 @@ void NLFile::nlcons_le(const Call& c, const NLToken& x, const NLToken& y) {
  *  Warnings:   - Creates a logical constraint
  *              - Only use for conmparisons that cannot be expressed with '=' xor '<='.
  */
-void NLFile::nlcons_predicate(const Call& c, NLToken::OpCode oc, const NLToken& x,
-                              const NLToken& y) {
+void NLFile::nlconsPredicate(const Call& c, NLToken::OpCode oc, const NLToken& x,
+                             const NLToken& y) {
   // Create the Logical Constraint and set the data
-  NLLogicalCons cons(logical_constraints.size());
+  NLLogicalCons cons(logicalConstraints.size());
 
   // Get the name of the constraint
-  string cname = get_cname(c);
+  string cname = getConstraintName(c);
   cons.name = cname;
 
   // Create the expression graph
-  cons.expression_graph.push_back(NLToken::o(oc));
-  cons.expression_graph.push_back(x);
-  cons.expression_graph.push_back(y);
+  cons.expressionGraph.push_back(NLToken::o(oc));
+  cons.expressionGraph.push_back(x);
+  cons.expressionGraph.push_back(y);
 
   // Store the constraint
-  logical_constraints.push_back(cons);
+  logicalConstraints.push_back(cons);
 }
 
 /** Create a non linear constraint with a binary operator: x OPERATOR y = z */
-void NLFile::nlcons_operator_binary(const Call& c, NLToken::OpCode oc, const NLToken& x,
-                                    const NLToken& y, const NLToken& z) {
+void NLFile::nlconsOperatorBinary(const Call& c, NLToken::OpCode oc, const NLToken& x,
+                                  const NLToken& y, const NLToken& z) {
   // Create the Algebraic Constraint and set the data
   NLAlgCons cons;
 
   // Get the name of the constraint
-  string cname = get_cname(c);
+  string cname = getConstraintName(c);
   cons.name = cname;
 
   // If z is a constant, use the bound, else use the jacobian
-  if (z.is_constant()) {
+  if (z.isConstant()) {
     // Create the bound of the constraint with the numeric value of z
-    NLBound bound = NLBound::make_equal(z.numeric_value);
+    NLBound bound = NLBound::makeEqual(z.numericValue);
     cons.range = bound;
   } else {
     // Else, use a constraint bound = 0 and use the jacobian to substract z from the result.
     // Create the bound of the constraint to 0
-    NLBound bound = NLBound::make_equal(0);
+    NLBound bound = NLBound::makeEqual(0);
     cons.range = bound;
 
     vector<double> coeffs = {};
@@ -684,13 +684,13 @@ void NLFile::nlcons_operator_binary(const Call& c, NLToken::OpCode oc, const NLT
 
     // If x is a variable different from y (and must be different from z), give it 0 for the linear
     // part
-    if (x.is_variable() && x.str != y.str) {
+    if (x.isVariable() && x.str != y.str) {
       assert(x.str != z.str);
       coeffs.push_back(0);
       vars.push_back(x.str);
     }
     // Same as above for y.
-    if (y.is_variable()) {
+    if (y.isVariable()) {
       assert(y.str != z.str);
       coeffs.push_back(0);
       vars.push_back(y.str);
@@ -700,13 +700,13 @@ void NLFile::nlcons_operator_binary(const Call& c, NLToken::OpCode oc, const NLT
     vars.push_back(z.str);
 
     // Finish jacobian
-    cons.set_jacobian(vars, coeffs, this);
+    cons.setJacobian(vars, coeffs, this);
   }
 
   // Create the expression graph using the operand code 'oc'
-  cons.expression_graph.push_back(NLToken::o(oc));
-  cons.expression_graph.push_back(x);
-  cons.expression_graph.push_back(y);
+  cons.expressionGraph.push_back(NLToken::o(oc));
+  cons.expressionGraph.push_back(x);
+  cons.expressionGraph.push_back(y);
 
   // Store the constraint
   constraints[cname] = cons;
@@ -715,24 +715,24 @@ void NLFile::nlcons_operator_binary(const Call& c, NLToken::OpCode oc, const NLT
 /** Create a non linear constraint with a binary operator: x OPERATOR y = z.
  *  OPERATOR is now a Multiop, with a count of 2 (so the choice of the method to use depends on the
  * LN implementation) */
-void NLFile::nlcons_operator_binary(const Call& c, NLToken::MOpCode moc, const NLToken& x,
-                                    const NLToken& y, const NLToken& z) {
+void NLFile::nlconsOperatorBinary(const Call& c, NLToken::MOpCode moc, const NLToken& x,
+                                  const NLToken& y, const NLToken& z) {
   // Create the Algebraic Constraint and set the data
   NLAlgCons cons;
 
   // Get the name of the constraint
-  string cname = get_cname(c);
+  string cname = getConstraintName(c);
   cons.name = cname;
 
   // If z is a constant, use the bound, else use the jacobian
-  if (z.is_constant()) {
+  if (z.isConstant()) {
     // Create the bound of the constraint with the numeric value of z
-    NLBound bound = NLBound::make_equal(z.numeric_value);
+    NLBound bound = NLBound::makeEqual(z.numericValue);
     cons.range = bound;
   } else {
     // Else, use a constraint bound = 0 and use the jacobian to substract vres from the result.
     // Create the bound of the constraint to 0
-    NLBound bound = NLBound::make_equal(0);
+    NLBound bound = NLBound::makeEqual(0);
     cons.range = bound;
 
     vector<double> coeffs = {};
@@ -740,13 +740,13 @@ void NLFile::nlcons_operator_binary(const Call& c, NLToken::MOpCode moc, const N
 
     // If x is a variable different from y (and must be different from z), give it 0 for the linear
     // part
-    if (x.is_variable() && x.str != y.str) {
+    if (x.isVariable() && x.str != y.str) {
       assert(x.str != z.str);
       coeffs.push_back(0);
       vars.push_back(x.str);
     }
     // Same as above for y.
-    if (y.is_variable()) {
+    if (y.isVariable()) {
       assert(y.str != z.str);
       coeffs.push_back(0);
       vars.push_back(y.str);
@@ -756,44 +756,44 @@ void NLFile::nlcons_operator_binary(const Call& c, NLToken::MOpCode moc, const N
     vars.push_back(z.str);
 
     // Finish jacobian
-    cons.set_jacobian(vars, coeffs, this);
+    cons.setJacobian(vars, coeffs, this);
   }
 
   // Create the expression graph using the operand code 'oc'
-  cons.expression_graph.push_back(NLToken::mo(moc, 2));
-  cons.expression_graph.push_back(x);
-  cons.expression_graph.push_back(y);
+  cons.expressionGraph.push_back(NLToken::mo(moc, 2));
+  cons.expressionGraph.push_back(x);
+  cons.expressionGraph.push_back(y);
 
   // Store the constraint
   constraints[cname] = cons;
 }
 
 /** Create a non linear constraint with an unary operator: OPERATOR x = y */
-void NLFile::nlcons_operator_unary(const Call& c, NLToken::OpCode oc, const NLToken& x,
-                                   const NLToken& y) {
+void NLFile::nlconsOperatorUnary(const Call& c, NLToken::OpCode oc, const NLToken& x,
+                                 const NLToken& y) {
   // Create the Algebraic Constraint and set the data
   NLAlgCons cons;
 
   // Get the name of the constraint
-  string cname = get_cname(c);
+  string cname = getConstraintName(c);
   cons.name = cname;
 
   // If y is a constant, use the bound, else use the jacobian
-  if (y.is_constant()) {
+  if (y.isConstant()) {
     // Create the bound of the constraint with the numeric value of y
-    NLBound bound = NLBound::make_equal(y.numeric_value);
+    NLBound bound = NLBound::makeEqual(y.numericValue);
     cons.range = bound;
   } else {
     // Else, use a constraint bound = 0 and use the jacobian to substract y from the result.
     // Create the bound of the constraint to 0
-    NLBound bound = NLBound::make_equal(0);
+    NLBound bound = NLBound::makeEqual(0);
     cons.range = bound;
 
     vector<double> coeffs = {};
     vector<string> vars = {};
 
     // If x is a variable (must be different from y), give it '0' for the linear part
-    if (x.is_variable()) {
+    if (x.isVariable()) {
       assert(x.str != y.str);
       coeffs.push_back(0);
       vars.push_back(x.str);
@@ -804,42 +804,42 @@ void NLFile::nlcons_operator_unary(const Call& c, NLToken::OpCode oc, const NLTo
     vars.push_back(y.str);
 
     // Finish jacobian
-    cons.set_jacobian(vars, coeffs, this);
+    cons.setJacobian(vars, coeffs, this);
   }
 
   // Create the expression graph using the operand code 'oc'
-  cons.expression_graph.push_back(NLToken::o(oc));
-  cons.expression_graph.push_back(x);
+  cons.expressionGraph.push_back(NLToken::o(oc));
+  cons.expressionGraph.push_back(x);
 
   // Store the constraint
   constraints[cname] = cons;
 }
 
 /** Create a non linear constraint, specialized for log2 unary operator: Log2(x) = y */
-void NLFile::nlcons_operator_unary_log2(const Call& c, const NLToken& x, const NLToken& y) {
+void NLFile::nlconsOperatorUnaryLog2(const Call& c, const NLToken& x, const NLToken& y) {
   // Create the Algebraic Constraint and set the data
   NLAlgCons cons;
 
   // Get the name of the constraint
-  string cname = get_cname(c);
+  string cname = getConstraintName(c);
   cons.name = cname;
 
   // If y is a constant, use the bound, else use the jacobian
-  if (y.is_constant()) {
+  if (y.isConstant()) {
     // Create the bound of the constraint with the numeric value of y
-    NLBound bound = NLBound::make_equal(y.numeric_value);
+    NLBound bound = NLBound::makeEqual(y.numericValue);
     cons.range = bound;
   } else {
     // Else, use a constraint bound = 0 and use the jacobian to substract vres from the result.
     // Create the bound of the constraint to 0
-    NLBound bound = NLBound::make_equal(0);
+    NLBound bound = NLBound::makeEqual(0);
     cons.range = bound;
 
     vector<double> coeffs = {};
     vector<string> vars = {};
 
     // If x is a variable (must be different from y), give it '0' for the linear part
-    if (x.is_variable()) {
+    if (x.isVariable()) {
       assert(x.str != y.str);
       coeffs.push_back(0);
       vars.push_back(x.str);
@@ -849,15 +849,15 @@ void NLFile::nlcons_operator_unary_log2(const Call& c, const NLToken& x, const N
     vars.push_back(y.str);
 
     // Finish jacobian
-    cons.set_jacobian(vars, coeffs, this);
+    cons.setJacobian(vars, coeffs, this);
   }
 
   // Create the expression graph with log2(x) = ln(x)/ln(2)
-  cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::OPDIV));
-  cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::OP_log));
-  cons.expression_graph.push_back(x);
-  cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::OP_log));
-  cons.expression_graph.push_back(NLToken::n(2));
+  cons.expressionGraph.push_back(NLToken::o(NLToken::OpCode::OPDIV));
+  cons.expressionGraph.push_back(NLToken::o(NLToken::OpCode::OP_log));
+  cons.expressionGraph.push_back(x);
+  cons.expressionGraph.push_back(NLToken::o(NLToken::OpCode::OP_log));
+  cons.expressionGraph.push_back(NLToken::n(2));
 
   // Store the constraint
   constraints[cname] = cons;
@@ -866,325 +866,376 @@ void NLFile::nlcons_operator_unary_log2(const Call& c, const NLToken& x, const N
 // --- --- --- Integer Linear Constraints
 
 /** Linar constraint: [coeffs] *+ [vars] = value */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consint_lin_eq(const Call& c) {
   // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
-  vector<double> coeffs = from_vec_int(get_arraylit(c.arg(0)));
-  vector<string> vars = from_vec_id(get_arraylit(c.arg(1)));
-  NLToken value = get_tok_var_int(c.arg(2));
+  vector<double> coeffs = fromVecInt(getArrayLit(c.arg(0)));
+  vector<string> vars = fromVecId(getArrayLit(c.arg(1)));
+  NLToken value = getTokenFromVarOrInt(c.arg(2));
   // Create the constraint
-  lincons_eq(c, coeffs, vars, value);
+  linconsEq(c, coeffs, vars, value);
 }
 
 /** Linar constraint: [coeffs] *+ [vars] =< value */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consint_lin_le(const Call& c) {
   // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
-  vector<double> coeffs = from_vec_int(get_arraylit(c.arg(0)));
-  vector<string> vars = from_vec_id(get_arraylit(c.arg(1)));
-  NLToken value = get_tok_var_int(c.arg(2));
+  vector<double> coeffs = fromVecInt(getArrayLit(c.arg(0)));
+  vector<string> vars = fromVecId(getArrayLit(c.arg(1)));
+  NLToken value = getTokenFromVarOrInt(c.arg(2));
   // Create the constraint
-  lincons_le(c, coeffs, vars, value);
+  linconsLe(c, coeffs, vars, value);
 }
 
 /** Linar constraint: [coeffs] *+ [vars] != value */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consint_lin_ne(const Call& c) {
   // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
-  vector<double> coeffs = from_vec_int(get_arraylit(c.arg(0)));
-  vector<string> vars = from_vec_id(get_arraylit(c.arg(1)));
-  NLToken value = get_tok_var_int(c.arg(2));
+  vector<double> coeffs = fromVecInt(getArrayLit(c.arg(0)));
+  vector<string> vars = fromVecId(getArrayLit(c.arg(1)));
+  NLToken value = getTokenFromVarOrInt(c.arg(2));
   // Create the constraint
-  lincons_predicate(c, NLToken::OpCode::NE, coeffs, vars, value);
+  linconsPredicate(c, NLToken::OpCode::NE, coeffs, vars, value);
 }
 
 // --- --- --- Integer Non Linear Predicate Constraints
 
 /** Non linear constraint x = y */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consint_eq(const Call& c) {
-  nlcons_eq(c, get_tok_var_int(c.arg(0)), get_tok_var_int(c.arg(1)));
+  nlconsEq(c, getTokenFromVarOrInt(c.arg(0)), getTokenFromVarOrInt(c.arg(1)));
 }
 
 /** Non linear constraint x <= y */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consint_le(const Call& c) {
-  nlcons_le(c, get_tok_var_int(c.arg(0)), get_tok_var_int(c.arg(1)));
+  nlconsLe(c, getTokenFromVarOrInt(c.arg(0)), getTokenFromVarOrInt(c.arg(1)));
 }
 
 /** Non linear constraint x != y */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consint_ne(const Call& c) {
-  nlcons_predicate(c, NLToken::OpCode::NE, get_tok_var_int(c.arg(0)), get_tok_var_int(c.arg(1)));
+  nlconsPredicate(c, NLToken::OpCode::NE, getTokenFromVarOrInt(c.arg(0)),
+                  getTokenFromVarOrInt(c.arg(1)));
 }
 
 // --- --- --- Integer Non Linear Binary Operator Constraints
 
 /** Non linear constraint x + y = z */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consint_plus(const Call& c) {
-  nlcons_operator_binary(c, NLToken::OpCode::OPPLUS, get_tok_var_int(c.arg(0)),
-                         get_tok_var_int(c.arg(1)), get_tok_var_int(c.arg(2)));
+  nlconsOperatorBinary(c, NLToken::OpCode::OPPLUS, getTokenFromVarOrInt(c.arg(0)),
+                       getTokenFromVarOrInt(c.arg(1)), getTokenFromVarOrInt(c.arg(2)));
 }
 
 /** Non linear constraint x * y = z */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consint_times(const Call& c) {
-  nlcons_operator_binary(c, NLToken::OpCode::OPMULT, get_tok_var_int(c.arg(0)),
-                         get_tok_var_int(c.arg(1)), get_tok_var_int(c.arg(2)));
+  nlconsOperatorBinary(c, NLToken::OpCode::OPMULT, getTokenFromVarOrInt(c.arg(0)),
+                       getTokenFromVarOrInt(c.arg(1)), getTokenFromVarOrInt(c.arg(2)));
 }
 
 /** Non linear constraint x / y = z */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consint_div(const Call& c) {
-  nlcons_operator_binary(c, NLToken::OpCode::OPDIV, get_tok_var_int(c.arg(0)),
-                         get_tok_var_int(c.arg(1)), get_tok_var_int(c.arg(2)));
+  nlconsOperatorBinary(c, NLToken::OpCode::OPDIV, getTokenFromVarOrInt(c.arg(0)),
+                       getTokenFromVarOrInt(c.arg(1)), getTokenFromVarOrInt(c.arg(2)));
 }
 
 /** Non linear constraint x mod y = z */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consint_mod(const Call& c) {
-  nlcons_operator_binary(c, NLToken::OpCode::OPREM, get_tok_var_int(c.arg(0)),
-                         get_tok_var_int(c.arg(1)), get_tok_var_int(c.arg(2)));
+  nlconsOperatorBinary(c, NLToken::OpCode::OPREM, getTokenFromVarOrInt(c.arg(0)),
+                       getTokenFromVarOrInt(c.arg(1)), getTokenFromVarOrInt(c.arg(2)));
 }
 
 /** Non linear constraint x pow y = z */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::int_pow(const Call& c) {
-  nlcons_operator_binary(c, NLToken::OpCode::OPPOW, get_tok_var_int(c.arg(0)),
-                         get_tok_var_int(c.arg(1)), get_tok_var_int(c.arg(2)));
+  nlconsOperatorBinary(c, NLToken::OpCode::OPPOW, getTokenFromVarOrInt(c.arg(0)),
+                       getTokenFromVarOrInt(c.arg(1)), getTokenFromVarOrInt(c.arg(2)));
 }
 
 /** Non linear constraint max(x, y) = z */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::int_max(const Call& c) {
-  nlcons_operator_binary(c, NLToken::MOpCode::MAXLIST, get_tok_var_int(c.arg(0)),
-                         get_tok_var_int(c.arg(1)), get_tok_var_int(c.arg(2)));
+  nlconsOperatorBinary(c, NLToken::MOpCode::MAXLIST, getTokenFromVarOrInt(c.arg(0)),
+                       getTokenFromVarOrInt(c.arg(1)), getTokenFromVarOrInt(c.arg(2)));
 }
 
 /** Non linear constraint min(x, y) = z */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::int_min(const Call& c) {
-  nlcons_operator_binary(c, NLToken::MOpCode::MINLIST, get_tok_var_int(c.arg(0)),
-                         get_tok_var_int(c.arg(1)), get_tok_var_int(c.arg(2)));
+  nlconsOperatorBinary(c, NLToken::MOpCode::MINLIST, getTokenFromVarOrInt(c.arg(0)),
+                       getTokenFromVarOrInt(c.arg(1)), getTokenFromVarOrInt(c.arg(2)));
 }
 
 // --- --- --- Integer Non Linear Unary Operator Constraints
 
 /** Non linear constraint abs x = y */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::int_abs(const Call& c) {
-  nlcons_operator_unary(c, NLToken::OpCode::ABS, get_tok_var_int(c.arg(0)),
-                        get_tok_var_int(c.arg(1)));
+  nlconsOperatorUnary(c, NLToken::OpCode::ABS, getTokenFromVarOrInt(c.arg(0)),
+                      getTokenFromVarOrInt(c.arg(1)));
 }
 
 // --- --- --- Floating Point Linear Constraints
 
 /** Linar constraint: [coeffs] *+ [vars] = value */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consfp_lin_eq(const Call& c) {
   // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
-  vector<double> coeffs = from_vec_fp(get_arraylit(c.arg(0)));
-  vector<string> vars = from_vec_id(get_arraylit(c.arg(1)));
-  NLToken value = get_tok_var_fp(c.arg(2));
+  vector<double> coeffs = fromVecFloat(getArrayLit(c.arg(0)));
+  vector<string> vars = fromVecId(getArrayLit(c.arg(1)));
+  NLToken value = getTokenFromVarOrFloat(c.arg(2));
   // Create the constraint
-  lincons_eq(c, coeffs, vars, value);
+  linconsEq(c, coeffs, vars, value);
 }
 
 /** Linar constraint: [coeffs] *+ [vars] = value */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consfp_lin_le(const Call& c) {
   // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
-  vector<double> coeffs = from_vec_fp(get_arraylit(c.arg(0)));
-  vector<string> vars = from_vec_id(get_arraylit(c.arg(1)));
-  NLToken value = get_tok_var_fp(c.arg(2));
+  vector<double> coeffs = fromVecFloat(getArrayLit(c.arg(0)));
+  vector<string> vars = fromVecId(getArrayLit(c.arg(1)));
+  NLToken value = getTokenFromVarOrFloat(c.arg(2));
   // Create the constraint
-  lincons_le(c, coeffs, vars, value);
+  linconsLe(c, coeffs, vars, value);
 }
 
 /** Linar constraint: [coeffs] *+ [vars] != value */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consfp_lin_ne(const Call& c) {
   // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
-  vector<double> coeffs = from_vec_fp(get_arraylit(c.arg(0)));
-  vector<string> vars = from_vec_id(get_arraylit(c.arg(1)));
-  NLToken value = get_tok_var_fp(c.arg(2));
+  vector<double> coeffs = fromVecFloat(getArrayLit(c.arg(0)));
+  vector<string> vars = fromVecId(getArrayLit(c.arg(1)));
+  NLToken value = getTokenFromVarOrFloat(c.arg(2));
   // Create the constraint
-  lincons_predicate(c, NLToken::OpCode::NE, coeffs, vars, value);
+  linconsPredicate(c, NLToken::OpCode::NE, coeffs, vars, value);
 }
 
 /** Linar constraint: [coeffs] *+ [vars] < value */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consfp_lin_lt(const Call& c) {
   // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
-  vector<double> coeffs = from_vec_fp(get_arraylit(c.arg(0)));
-  vector<string> vars = from_vec_id(get_arraylit(c.arg(1)));
-  NLToken value = get_tok_var_fp(c.arg(2));
+  vector<double> coeffs = fromVecFloat(getArrayLit(c.arg(0)));
+  vector<string> vars = fromVecId(getArrayLit(c.arg(1)));
+  NLToken value = getTokenFromVarOrFloat(c.arg(2));
   // Create the constraint
-  lincons_predicate(c, NLToken::OpCode::LT, coeffs, vars, value);
+  linconsPredicate(c, NLToken::OpCode::LT, coeffs, vars, value);
 }
 
 // --- --- --- Floating Point Non Linear Predicate Constraints
 
 /** Non linear constraint x = y */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consfp_eq(const Call& c) {
-  nlcons_eq(c, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)));
+  nlconsEq(c, getTokenFromVarOrFloat(c.arg(0)), getTokenFromVarOrFloat(c.arg(1)));
 }
 
 /** Non linear constraint x <= y */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consfp_le(const Call& c) {
-  nlcons_le(c, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)));
+  nlconsLe(c, getTokenFromVarOrFloat(c.arg(0)), getTokenFromVarOrFloat(c.arg(1)));
 }
 
 /** Non linear constraint x != y */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consfp_ne(const Call& c) {
-  nlcons_predicate(c, NLToken::OpCode::NE, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)));
+  nlconsPredicate(c, NLToken::OpCode::NE, getTokenFromVarOrFloat(c.arg(0)),
+                  getTokenFromVarOrFloat(c.arg(1)));
 }
 
 /** Non linear constraint x < y */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consfp_lt(const Call& c) {
-  nlcons_predicate(c, NLToken::OpCode::LT, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)));
+  nlconsPredicate(c, NLToken::OpCode::LT, getTokenFromVarOrFloat(c.arg(0)),
+                  getTokenFromVarOrFloat(c.arg(1)));
 }
 
 // --- --- --- Floating Point Non Linear Binary Operator Constraints
 
 /** Non linear constraint x + y = z */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consfp_plus(const Call& c) {
-  nlcons_operator_binary(c, NLToken::OpCode::OPPLUS, get_tok_var_fp(c.arg(0)),
-                         get_tok_var_fp(c.arg(1)), get_tok_var_fp(c.arg(2)));
+  nlconsOperatorBinary(c, NLToken::OpCode::OPPLUS, getTokenFromVarOrFloat(c.arg(0)),
+                       getTokenFromVarOrFloat(c.arg(1)), getTokenFromVarOrFloat(c.arg(2)));
 }
 
 /** Non linear constraint x - y = z */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consfp_minus(const Call& c) {
-  nlcons_operator_binary(c, NLToken::OpCode::OPMINUS, get_tok_var_fp(c.arg(0)),
-                         get_tok_var_fp(c.arg(1)), get_tok_var_fp(c.arg(2)));
+  nlconsOperatorBinary(c, NLToken::OpCode::OPMINUS, getTokenFromVarOrFloat(c.arg(0)),
+                       getTokenFromVarOrFloat(c.arg(1)), getTokenFromVarOrFloat(c.arg(2)));
 }
 
 /** Non linear constraint x * y = z */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consfp_times(const Call& c) {
-  nlcons_operator_binary(c, NLToken::OpCode::OPMULT, get_tok_var_fp(c.arg(0)),
-                         get_tok_var_fp(c.arg(1)), get_tok_var_fp(c.arg(2)));
+  nlconsOperatorBinary(c, NLToken::OpCode::OPMULT, getTokenFromVarOrFloat(c.arg(0)),
+                       getTokenFromVarOrFloat(c.arg(1)), getTokenFromVarOrFloat(c.arg(2)));
 }
 
 /** Non linear constraint x / y = z */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consfp_div(const Call& c) {
-  nlcons_operator_binary(c, NLToken::OpCode::OPDIV, get_tok_var_fp(c.arg(0)),
-                         get_tok_var_fp(c.arg(1)), get_tok_var_fp(c.arg(2)));
+  nlconsOperatorBinary(c, NLToken::OpCode::OPDIV, getTokenFromVarOrFloat(c.arg(0)),
+                       getTokenFromVarOrFloat(c.arg(1)), getTokenFromVarOrFloat(c.arg(2)));
 }
 
 /** Non linear constraint x mod y = z */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consfp_mod(const Call& c) {
-  nlcons_operator_binary(c, NLToken::OpCode::OPREM, get_tok_var_fp(c.arg(0)),
-                         get_tok_var_fp(c.arg(1)), get_tok_var_fp(c.arg(2)));
+  nlconsOperatorBinary(c, NLToken::OpCode::OPREM, getTokenFromVarOrFloat(c.arg(0)),
+                       getTokenFromVarOrFloat(c.arg(1)), getTokenFromVarOrFloat(c.arg(2)));
 }
 
 /** Non linear constraint x pow y = z */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::float_pow(const Call& c) {
-  nlcons_operator_binary(c, NLToken::OpCode::OPPOW, get_tok_var_fp(c.arg(0)),
-                         get_tok_var_fp(c.arg(1)), get_tok_var_fp(c.arg(2)));
+  nlconsOperatorBinary(c, NLToken::OpCode::OPPOW, getTokenFromVarOrFloat(c.arg(0)),
+                       getTokenFromVarOrFloat(c.arg(1)), getTokenFromVarOrFloat(c.arg(2)));
 }
 
 /** Non linear constraint max(x, y) = z */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::float_max(const Call& c) {
-  nlcons_operator_binary(c, NLToken::MOpCode::MAXLIST, get_tok_var_fp(c.arg(0)),
-                         get_tok_var_fp(c.arg(1)), get_tok_var_fp(c.arg(2)));
+  nlconsOperatorBinary(c, NLToken::MOpCode::MAXLIST, getTokenFromVarOrFloat(c.arg(0)),
+                       getTokenFromVarOrFloat(c.arg(1)), getTokenFromVarOrFloat(c.arg(2)));
 }
 
 /** Non linear constraint min(x, y) = z */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::float_min(const Call& c) {
-  nlcons_operator_binary(c, NLToken::MOpCode::MINLIST, get_tok_var_fp(c.arg(0)),
-                         get_tok_var_fp(c.arg(1)), get_tok_var_fp(c.arg(2)));
+  nlconsOperatorBinary(c, NLToken::MOpCode::MINLIST, getTokenFromVarOrFloat(c.arg(0)),
+                       getTokenFromVarOrFloat(c.arg(1)), getTokenFromVarOrFloat(c.arg(2)));
 }
 
 // --- --- --- Floating Point Non Linear Unary operator Constraints
 
 /** Non linear constraint abs x = y */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::float_abs(const Call& c) {
-  nlcons_operator_unary(c, NLToken::OpCode::ABS, get_tok_var_fp(c.arg(0)),
-                        get_tok_var_fp(c.arg(1)));
+  nlconsOperatorUnary(c, NLToken::OpCode::ABS, getTokenFromVarOrFloat(c.arg(0)),
+                      getTokenFromVarOrFloat(c.arg(1)));
 }
 
 /** Non linear constraint acos x = y */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::float_acos(const Call& c) {
-  nlcons_operator_unary(c, NLToken::OpCode::OP_acos, get_tok_var_fp(c.arg(0)),
-                        get_tok_var_fp(c.arg(1)));
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_acos, getTokenFromVarOrFloat(c.arg(0)),
+                      getTokenFromVarOrFloat(c.arg(1)));
 }
 
 /** Non linear constraint acosh x = y */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::float_acosh(const Call& c) {
-  nlcons_operator_unary(c, NLToken::OpCode::OP_acosh, get_tok_var_fp(c.arg(0)),
-                        get_tok_var_fp(c.arg(1)));
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_acosh, getTokenFromVarOrFloat(c.arg(0)),
+                      getTokenFromVarOrFloat(c.arg(1)));
 }
 
 /** Non linear constraint asin x = y */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::float_asin(const Call& c) {
-  nlcons_operator_unary(c, NLToken::OpCode::OP_asin, get_tok_var_fp(c.arg(0)),
-                        get_tok_var_fp(c.arg(1)));
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_asin, getTokenFromVarOrFloat(c.arg(0)),
+                      getTokenFromVarOrFloat(c.arg(1)));
 }
 
 /** Non linear constraint asinh x = y */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::float_asinh(const Call& c) {
-  nlcons_operator_unary(c, NLToken::OpCode::OP_asinh, get_tok_var_fp(c.arg(0)),
-                        get_tok_var_fp(c.arg(1)));
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_asinh, getTokenFromVarOrFloat(c.arg(0)),
+                      getTokenFromVarOrFloat(c.arg(1)));
 }
 
 /** Non linear constraint atan x = y */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::float_atan(const Call& c) {
-  nlcons_operator_unary(c, NLToken::OpCode::OP_atan, get_tok_var_fp(c.arg(0)),
-                        get_tok_var_fp(c.arg(1)));
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_atan, getTokenFromVarOrFloat(c.arg(0)),
+                      getTokenFromVarOrFloat(c.arg(1)));
 }
 
 /** Non linear constraint atanh x = y */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::float_atanh(const Call& c) {
-  nlcons_operator_unary(c, NLToken::OpCode::OP_atanh, get_tok_var_fp(c.arg(0)),
-                        get_tok_var_fp(c.arg(1)));
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_atanh, getTokenFromVarOrFloat(c.arg(0)),
+                      getTokenFromVarOrFloat(c.arg(1)));
 }
 
 /** Non linear constraint cos x = y */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::float_cos(const Call& c) {
-  nlcons_operator_unary(c, NLToken::OpCode::OP_cos, get_tok_var_fp(c.arg(0)),
-                        get_tok_var_fp(c.arg(1)));
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_cos, getTokenFromVarOrFloat(c.arg(0)),
+                      getTokenFromVarOrFloat(c.arg(1)));
 }
 
 /** Non linear constraint cosh x = y */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::float_cosh(const Call& c) {
-  nlcons_operator_unary(c, NLToken::OpCode::OP_cosh, get_tok_var_fp(c.arg(0)),
-                        get_tok_var_fp(c.arg(1)));
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_cosh, getTokenFromVarOrFloat(c.arg(0)),
+                      getTokenFromVarOrFloat(c.arg(1)));
 }
 
 /** Non linear constraint exp x = y */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::float_exp(const Call& c) {
-  nlcons_operator_unary(c, NLToken::OpCode::OP_exp, get_tok_var_fp(c.arg(0)),
-                        get_tok_var_fp(c.arg(1)));
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_exp, getTokenFromVarOrFloat(c.arg(0)),
+                      getTokenFromVarOrFloat(c.arg(1)));
 }
 
 /** Non linear constraint ln x = y */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::float_ln(const Call& c) {
-  nlcons_operator_unary(c, NLToken::OpCode::OP_log, get_tok_var_fp(c.arg(0)),
-                        get_tok_var_fp(c.arg(1)));
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_log, getTokenFromVarOrFloat(c.arg(0)),
+                      getTokenFromVarOrFloat(c.arg(1)));
 }
 
 /** Non linear constraint log10 x = y */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::float_log10(const Call& c) {
-  nlcons_operator_unary(c, NLToken::OpCode::OP_log10, get_tok_var_fp(c.arg(0)),
-                        get_tok_var_fp(c.arg(1)));
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_log10, getTokenFromVarOrFloat(c.arg(0)),
+                      getTokenFromVarOrFloat(c.arg(1)));
 }
 
 /** Non linear constraint log2 x = y */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::float_log2(const Call& c) {
-  nlcons_operator_unary_log2(c, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)));
+  nlconsOperatorUnaryLog2(c, getTokenFromVarOrFloat(c.arg(0)), getTokenFromVarOrFloat(c.arg(1)));
 }
 
 /** Non linear constraint sqrt x = y */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::float_sqrt(const Call& c) {
-  nlcons_operator_unary(c, NLToken::OpCode::OP_sqrt, get_tok_var_fp(c.arg(0)),
-                        get_tok_var_fp(c.arg(1)));
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_sqrt, getTokenFromVarOrFloat(c.arg(0)),
+                      getTokenFromVarOrFloat(c.arg(1)));
 }
 
 /** Non linear constraint sin x = y */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::float_sin(const Call& c) {
-  nlcons_operator_unary(c, NLToken::OpCode::OP_sin, get_tok_var_fp(c.arg(0)),
-                        get_tok_var_fp(c.arg(1)));
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_sin, getTokenFromVarOrFloat(c.arg(0)),
+                      getTokenFromVarOrFloat(c.arg(1)));
 }
 
 /** Non linear constraint sinh x = y */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::float_sinh(const Call& c) {
-  nlcons_operator_unary(c, NLToken::OpCode::OP_sinh, get_tok_var_fp(c.arg(0)),
-                        get_tok_var_fp(c.arg(1)));
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_sinh, getTokenFromVarOrFloat(c.arg(0)),
+                      getTokenFromVarOrFloat(c.arg(1)));
 }
 
 /** Non linear constraint tan x = y */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::float_tan(const Call& c) {
-  nlcons_operator_unary(c, NLToken::OpCode::OP_tan, get_tok_var_fp(c.arg(0)),
-                        get_tok_var_fp(c.arg(1)));
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_tan, getTokenFromVarOrFloat(c.arg(0)),
+                      getTokenFromVarOrFloat(c.arg(1)));
 }
 
 /** Non linear constraint tanh x = y */
+// NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::float_tanh(const Call& c) {
-  nlcons_operator_unary(c, NLToken::OpCode::OP_tanh, get_tok_var_fp(c.arg(0)),
-                        get_tok_var_fp(c.arg(1)));
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_tanh, getTokenFromVarOrFloat(c.arg(0)),
+                      getTokenFromVarOrFloat(c.arg(1)));
 }
 
 // --- --- --- Other
@@ -1195,18 +1246,18 @@ void NLFile::float_tanh(const Call& c) {
 void NLFile::int2float(const Call& c) {
   vector<double> coeffs = {1, -1};
   vector<string> vars = {};
-  vars.push_back(get_tok_var(c.arg(0)).str);
-  vars.push_back(get_tok_var(c.arg(1)).str);
+  vars.push_back(getTokenFromVar(c.arg(0)).str);
+  vars.push_back(getTokenFromVar(c.arg(1)).str);
   // Create the constraint
-  lincons_eq(c, coeffs, vars, NLToken::n(0));
+  linconsEq(c, coeffs, vars, NLToken::n(0));
 }
 
 // --- --- --- Objective
 
 /** Add a solve goal in the NL File. In our case, we can only have one and only one solve goal. */
-void NLFile::add_solve(SolveI::SolveType st, const Expression* e) {
+void NLFile::addSolve(SolveI::SolveType st, const Expression* e) {
   // We can only have one objective. Prevent override.
-  assert(!objective.is_defined());
+  assert(!objective.isDefined());
 
   switch (st) {
     case SolveI::SolveType::ST_SAT: {
@@ -1217,53 +1268,53 @@ void NLFile::add_solve(SolveI::SolveType st, const Expression* e) {
     case SolveI::SolveType::ST_MIN: {
       // Maximize an objective represented by a variable
       objective.minmax = objective.MINIMIZE;
-      string v = get_tok_var(e).str;
+      string v = getTokenFromVar(e).str;
       // Use the gradient
       vector<double> coeffs = {1};
       vector<string> vars = {v};
-      objective.set_gradient(vars, coeffs);
+      objective.setGradient(vars, coeffs);
       break;
     }
     case SolveI::SolveType::ST_MAX: {
       // Maximize an objective represented by a variable
       objective.minmax = objective.MAXIMIZE;
-      string v = get_tok_var(e).str;
+      string v = getTokenFromVar(e).str;
       // Use the gradient
       vector<double> coeffs = {1};
       vector<string> vars = {v};
-      objective.set_gradient(vars, coeffs);
+      objective.setGradient(vars, coeffs);
       break;
     }
   }
 
   // Ensure that the obejctive is now defined.
-  assert(objective.is_defined());
+  assert(objective.isDefined());
 }
 
 /* *** *** *** Phase 2: processing *** *** *** */
 
-void NLFile::phase_2() {
+void NLFile::phase2() {
   // --- --- --- Go over all constraint (algebraic AND logical) and mark non linear variables
   for (auto const& n_c : constraints) {
-    for (auto const& tok : n_c.second.expression_graph) {
-      if (tok.is_variable()) {
-        variables.at(tok.str).is_in_nl_constraint = true;
+    for (auto const& tok : n_c.second.expressionGraph) {
+      if (tok.isVariable()) {
+        variables.at(tok.str).isInNLConstraint = true;
       }
     }
   }
 
-  for (auto const& c : logical_constraints) {
-    for (auto const& tok : c.expression_graph) {
-      if (tok.is_variable()) {
-        variables.at(tok.str).is_in_nl_constraint = true;
+  for (auto const& c : logicalConstraints) {
+    for (auto const& tok : c.expressionGraph) {
+      if (tok.isVariable()) {
+        variables.at(tok.str).isInNLConstraint = true;
       }
     }
   }
 
   // --- --- --- Go over the objective and mark non linear variables
-  for (auto const& tok : objective.expression_graph) {
-    if (tok.is_variable()) {
-      variables.at(tok.str).is_in_nl_objective = true;
+  for (auto const& tok : objective.expressionGraph) {
+    if (tok.isVariable()) {
+      variables.at(tok.str).isInNLObjective = true;
     }
   }
 
@@ -1272,35 +1323,35 @@ void NLFile::phase_2() {
     const NLVar& v = name_var.second;
 
     // Accumulate jacobian count
-    _jacobian_count += v.jacobian_count;
+    _jacobianCount += v.jacobianCount;
 
     // First check non linear variables in BOTH objective and constraint.
-    if (v.is_in_nl_objective && v.is_in_nl_constraint) {
-      if (v.is_integer) {
+    if (v.isInNLObjective && v.isInNLConstraint) {
+      if (v.isInteger) {
         vname_nliv_both.push_back(v.name);
       } else {
         vname_nlcv_both.push_back(v.name);
       }
     }
     // Variables in non linear constraint ONLY
-    else if (!v.is_in_nl_objective && v.is_in_nl_constraint) {
-      if (v.is_integer) {
+    else if (!v.isInNLObjective && v.isInNLConstraint) {
+      if (v.isInteger) {
         vname_nliv_cons.push_back(v.name);
       } else {
         vname_nlcv_cons.push_back(v.name);
       }
     }
     // Variables in non linear objective ONLY
-    else if (v.is_in_nl_objective && !v.is_in_nl_constraint) {
-      if (v.is_integer) {
+    else if (v.isInNLObjective && !v.isInNLConstraint) {
+      if (v.isInteger) {
         vname_nliv_obj.push_back(v.name);
       } else {
         vname_nlcv_obj.push_back(v.name);
       }
     }
     // Variables not appearing nonlinearly
-    else if (!v.is_in_nl_objective && !v.is_in_nl_constraint) {
-      if (v.is_integer) {
+    else if (!v.isInNLObjective && !v.isInNLConstraint) {
+      if (v.isInteger) {
         vname_liv_all.push_back(v.name);
       } else {
         vname_lcv_all.push_back(v.name);
@@ -1332,7 +1383,7 @@ void NLFile::phase_2() {
 
   // Create the mapping name->index
   for (int i = 0; i < vnames.size(); ++i) {
-    variable_indexes[vnames[i]] = i;
+    variableIndexes[vnames[i]] = i;
   }
 
   // --- --- --- Constraint ordering, couting, and indexing
@@ -1340,7 +1391,7 @@ void NLFile::phase_2() {
     const NLAlgCons& c = name_cons.second;
 
     // Sort by linearity. We do not have network constraint.
-    if (c.is_linear()) {
+    if (c.isLinear()) {
       cnames_lin_general.push_back(c.name);
     } else {
       cnames_nl_general.push_back(c.name);
@@ -1349,10 +1400,10 @@ void NLFile::phase_2() {
     // Count the number of ranges and eqns constraints
     switch (c.range.tag) {
       case NLBound::LB_UB: {
-        ++nb_alg_cons_range;
+        ++algConsRangeCount;
       }
       case NLBound::EQ: {
-        ++nb_alg_cons_eq;
+        ++algConsEqCount;
       }
     }
   }
@@ -1365,86 +1416,88 @@ void NLFile::phase_2() {
 
   // Create the mapping name->index
   for (int i = 0; i < cnames.size(); ++i) {
-    constraint_indexes[cnames[i]] = i;
+    constraintIndexes[cnames[i]] = i;
   }
 }
 
 // --- --- --- Simple tests
 
-bool NLFile::has_integer_vars() const { return (nlvbi() + nlvci() + nlvoi() + niv()) > 0; }
+bool NLFile::hasIntegerVars() const {
+  return (lvbiCount() + lvciCount() + lvoiCount() + ivCount()) > 0;
+}
 
-bool NLFile::has_continous_vars() const { return !has_integer_vars(); }
+bool NLFile::hasContinousVars() const { return !hasIntegerVars(); }
 
 // --- --- --- Counts
 
 /** Jacobian count. */
-int NLFile::jacobian_count() const { return _jacobian_count; }
+int NLFile::jacobianCount() const { return _jacobianCount; }
 
 /** Total number of variables. */
-int NLFile::n_var() const { return variables.size(); }
+int NLFile::varCount() const { return variables.size(); }
 
 /** Number of variables appearing nonlinearly in constraints. */
-int NLFile::nlvc() const {
+int NLFile::lvcCount() const {
   // Variables in both + variables in constraint only (integer+continuous)
-  return nlvb() + vname_nliv_cons.size() + vname_nlcv_cons.size();
+  return lvbCount() + vname_nliv_cons.size() + vname_nlcv_cons.size();
 }
 
 /** Number of variables appearing nonlinearly in objectives. */
-int NLFile::nlvo() const {
+int NLFile::lvoCount() const {
   // Variables in both + variables in objective only (integer+continuous)
-  return nlvb() + vname_nliv_obj.size() + vname_nlcv_obj.size();
+  return lvbCount() + vname_nliv_obj.size() + vname_nlcv_obj.size();
 }
 
 /** Number of variables appearing nonlinearly in both constraints and objectives.*/
-int NLFile::nlvb() const { return vname_nlcv_both.size() + vname_nliv_both.size(); }
+int NLFile::lvbCount() const { return vname_nlcv_both.size() + vname_nliv_both.size(); }
 
 /** Number of integer variables appearing nonlinearly in both constraints and objectives.*/
-int NLFile::nlvbi() const { return vname_nliv_both.size(); }
+int NLFile::lvbiCount() const { return vname_nliv_both.size(); }
 
 /** Number of integer variables appearing nonlinearly in constraints **only**.*/
-int NLFile::nlvci() const { return vname_nliv_cons.size(); }
+int NLFile::lvciCount() const { return vname_nliv_cons.size(); }
 
 /** Number of integer variables appearing nonlinearly in objectives **only**.*/
-int NLFile::nlvoi() const { return vname_nliv_obj.size(); }
+int NLFile::lvoiCount() const { return vname_nliv_obj.size(); }
 
 /** Number of linear arcs. Network nor implemented, so always 0.*/
-int NLFile::nwv() const { return vname_larc_all.size(); }
+int NLFile::wvCount() const { return vname_larc_all.size(); }
 
 /** Number of "other" integer variables.*/
-int NLFile::niv() const { return vname_liv_all.size(); }
+int NLFile::ivCount() const { return vname_liv_all.size(); }
 
 /** Number of binary variables.*/
-int NLFile::nbv() const { return vname_bv_all.size(); }
+int NLFile::bvCount() const { return vname_bv_all.size(); }
 
 /** *** *** *** Printable *** *** *** **/
 // Note:  * empty line not allowed
 //        * comment only not allowed
-ostream& NLFile::print_on(ostream& os) const {
+ostream& NLFile::printToStream(ostream& os) const {
   // Print the header
   {
     NLHeader header;
-    header.print_on(os, *this);
+    header.printToStream(os, *this);
   }
   os << endl;
 
   // Print the unique segments about the variables
-  if (n_var() > 1) {
+  if (varCount() > 1) {
     // Print the 'k' segment Maybe to adjust with the presence of 'J' segments
-    os << "k" << (n_var() - 1)
+    os << "k" << (varCount() - 1)
        << "   # Cumulative Sum of non-zero in the jacobian matrix's (nbvar-1) columns." << endl;
     int acc = 0;
     // Note stop before the last var. Total jacobian count is in the header.
-    for (int i = 0; i < n_var() - 1; ++i) {
+    for (int i = 0; i < varCount() - 1; ++i) {
       string name = vnames[i];
-      acc += variables.at(name).jacobian_count;
+      acc += variables.at(name).jacobianCount;
       os << acc << "   # " << name << endl;
     }
 
     // Print the 'b' segment
-    os << "b   # Bounds on variables (" << n_var() << ")" << endl;
+    os << "b   # Bounds on variables (" << varCount() << ")" << endl;
     for (const auto& n : vnames) {
       NLVar v = variables.at(n);
-      v.bound.print_on(os, n);
+      v.bound.printToStream(os, n);
       os << endl;
     }
   }
@@ -1457,7 +1510,7 @@ ostream& NLFile::print_on(ostream& os) const {
     os << "r   # Bounds on algebraic constraint bodies (" << cnames.size() << ")" << endl;
     for (const auto& n : cnames) {
       NLAlgCons c = constraints.at(n);
-      c.range.print_on(os, n);
+      c.range.printToStream(os, n);
       os << endl;
     }
   }
@@ -1465,16 +1518,16 @@ ostream& NLFile::print_on(ostream& os) const {
   // Print the Algebraic Constraints
   for (const auto& n : cnames) {
     NLAlgCons c = constraints.at(n);
-    c.print_on(os, *this);
+    c.printToStream(os, *this);
   }
 
   // Print the Logical constraint
-  for (const auto& lc : logical_constraints) {
-    lc.print_on(os, *this);
+  for (const auto& lc : logicalConstraints) {
+    lc.printToStream(os, *this);
   }
 
   // Print the objective
-  objective.print_on(os, *this);
+  objective.printToStream(os, *this);
   return os;
 }
 

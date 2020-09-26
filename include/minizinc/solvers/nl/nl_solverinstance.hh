@@ -15,22 +15,19 @@ namespace MiniZinc {
 
 class NLSolverOptions : public SolverInstanceBase::Options {
 public:
-  std::string nl_solver;
-  std::vector<std::string> nl_flags;
-  std::vector<MZNFZNSolverFlag> nl_solver_flags;
-  bool do_hexafloat = false;
-  bool do_keepfile = false;
+  std::string nlSolver;
+  std::vector<std::string> nlFlags;
+  std::vector<MZNFZNSolverFlag> nlSolverFlags;
+  bool doHexafloat = false;
+  bool doKeepfile = false;
 };
 
 class NLSolverInstance : public SolverInstanceBase {
-private:
-  std::string _fzn_solver;
-
 protected:
   Model* _fzn;
   Model* _ozn;
 
-  NLFile nl_file;
+  NLFile _nlFile;
 
 public:
   NLSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
@@ -51,13 +48,13 @@ protected:
   void analyse(const Item* i);
 };
 
-class NL_SolverFactory : public SolverFactory {
+class NLSolverFactory : public SolverFactory {
 protected:
   SolverInstanceBase* doCreateSI(Env& env, std::ostream& log,
                                  SolverInstanceBase::Options* opt) override;
 
 public:
-  NL_SolverFactory();
+  NLSolverFactory();
   SolverInstanceBase::Options* createOptions() override;
   std::string getDescription(SolverInstanceBase::Options* opt = nullptr) override;
   std::string getVersion(SolverInstanceBase::Options* opt = nullptr) override;
