@@ -25,10 +25,8 @@ check:format:
   stage: check
   image: dekker1/minibuild:clang-format
   script:
-    - mkdir -p build
-    - cd build
-    - cmake -GNinja .. -DCLANG_FORMAT_EXECUTABLE="run-clang-format" -DCLANG_FORMAT_FLAGS="--color always"
-    - cmake --build . --target format
+    - cmake -S . -B build -GNinja -DCLANG_FORMAT_EXECUTABLE="run-clang-format" -DCLANG_FORMAT_FLAGS="--color always"
+    - cmake --build build --target format
   tags: [linux, docker]
   only:
     changes:
@@ -38,16 +36,23 @@ check:format:
 check:analyse:
   stage: check
   image: dekker1/minibuild:clang-tidy
+  variables:
+    MZNARCH: "linux"
+    CMAKE_ARCH: "Ninja"
+  before_script: *download_script
   script:
-    - mkdir -p build
-    - cd build
-    - cmake -GNinja .. -DCMAKE_CXX_CLANG_TIDY="clang-tidy" -DCMAKE_BUILD_TYPE="Debug"
-    - cmake --build . --config Debug
+    - sh download.sh vendor master vendor:${MZNARCH} vendor.zip
+    - unzip -q vendor.zip
+    - cmake -S . -B build -G"$CMAKE_ARCH" -DCMAKE_CXX_CLANG_TIDY="clang-tidy" -DCMAKE_BUILD_TYPE="Debug"
+    - cmake --build build --config Debug
   tags: [linux, docker]
   only:
     changes:
       - "**/*.{cpp,c,h,hh,hpp}"
       - .clang-tidy
+  cache:
+    key: "$CI_JOB_NAME"
+    paths: [.ccache, vendor.zip*]
 
 # ----------- Build MiniZinc -----------
 
@@ -57,11 +62,8 @@ check:analyse:
   script:
     - sh download.sh vendor master vendor:${MZNARCH} vendor.zip
     - unzip -q vendor.zip
-    - mkdir -p build
-    - cd build
-    - cmake -G"$CMAKE_ARCH" -DCMAKE_BUILD_TYPE=Release -v .. -DBUILD_REF=$CI_PIPELINE_ID -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
-    - cmake --build .  --config Release
-    - cmake --build .  --config Release --target install
+    - cmake -S . -B build -G"$CMAKE_ARCH" -DCMAKE_BUILD_TYPE=Release -DBUILD_REF=$CI_PIPELINE_ID -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
+    - cmake --build build --config Release --target install
   artifacts:
     paths: [minizinc/]
   cache:
@@ -105,11 +107,8 @@ build:win64:
   script:
     - sh download.sh vendor master vendor:%MZNARCH% vendor.zip
     - unzip -q vendor.zip
-    - if not exist "build" mkdir build
-    - cd build
-    - cmake -G"%CMAKE_ARCH%" .. -DBUILD_REF=%CI_PIPELINE_ID% -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
-    - cmake --build .  --config Release
-    - cmake --build .  --config Release --target install
+    - cmake -S . -B build -G"%CMAKE_ARCH%" -DBUILD_REF=%CI_PIPELINE_ID% -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
+    - cmake --build build --config Release --target install
   artifacts:
     paths: [minizinc/]
   cache:
@@ -131,11 +130,8 @@ build:wasm_complete:
     - apt-get update && apt-get install -qq python3
     - sh download.sh vendor master vendor:wasm vendor.zip
     - unzip -q vendor.zip
-    - mkdir -p build
-    - cd build
-    - emcmake cmake -G"$CMAKE_ARCH" -DCMAKE_FIND_ROOT_PATH="/" -DCMAKE_BUILD_TYPE=MinSizeRel -v .. -DBUILD_REF=$CI_PIPELINE_ID -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
-    - cmake --build .  --config MinSizeRel
-    - cmake --build .  --config MinSizeRel --target install
+    - emcmake cmake -S . -B build -G"$CMAKE_ARCH" -DCMAKE_FIND_ROOT_PATH="/" -DCMAKE_BUILD_TYPE=MinSizeRel -v -DBUILD_REF=$CI_PIPELINE_ID -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
+    - cmake --build build --config MinSizeRel --target install
   artifacts:
     paths: [minizinc/]
   cache:
@@ -155,11 +151,8 @@ build:wasm_minimal:
     - apt-get update && apt-get install -qq python3
     - sh download.sh vendor master vendor:wasm vendor.zip
     - unzip -q vendor.zip
-    - mkdir -p build
-    - cd build
-    - emcmake cmake -G"$CMAKE_ARCH" -DCMAKE_BUILD_TYPE=MinSizeRel -v .. -DBUILD_REF=$CI_PIPELINE_ID -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
-    - cmake --build .  --config MinSizeRel
-    - cmake --build .  --config MinSizeRel --target install
+    - emcmake cmake -S . -B build -G"$CMAKE_ARCH" -DCMAKE_BUILD_TYPE=MinSizeRel -v -DBUILD_REF=$CI_PIPELINE_ID -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
+    - cmake --build build --config MinSizeRel --target install
   artifacts:
     paths: [minizinc/]
   cache:
