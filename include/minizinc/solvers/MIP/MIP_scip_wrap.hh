@@ -228,8 +228,10 @@ private:
 public:
   MIPScipWrapper(Options* opt) : _options(opt) { SCIP_PLUGIN_CALL(openSCIP()); }
   ~MIPScipWrapper() override {
-    SCIP_PLUGIN_CALL(delSCIPVars());
-    SCIP_PLUGIN_CALL(closeSCIP());
+    SCIP_RETCODE ret = delSCIPVars();
+    assert(ret == SCIP_OKAY);
+    ret = closeSCIP();
+    assert(ret == SCIP_OKAY);
   }
 
   static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt = nullptr);

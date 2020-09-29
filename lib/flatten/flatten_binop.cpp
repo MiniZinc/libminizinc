@@ -110,7 +110,6 @@ ASTString op_to_builtin(Expression* op_lhs, Expression* op_rhs, BinOpType bot) {
     case BOT_MULT:
       return builtin + "times";
     case BOT_DIV:
-      return builtin + "div";
     case BOT_IDIV:
       return builtin + "div";
     case BOT_MOD:
@@ -158,7 +157,7 @@ ASTString op_to_builtin(Expression* op_lhs, Expression* op_rhs, BinOpType bot) {
       return constants().ids.bool_xor;
     default:
       assert(false);
-      return ASTString("");
+      return ASTString();
   }
 }
 

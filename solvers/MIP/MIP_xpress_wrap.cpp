@@ -219,18 +219,18 @@ void MIPxpressWrapper::Options::printHelp(ostream& os) {
 
 bool MIPxpressWrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
   MiniZinc::CLOParser cop(i, argv);
-  if (cop.get("--msgLevel", &msgLevel)) {
-  } else if (cop.get("--logFile", &logFile)) {
-  } else if (cop.get("--solver-time-limit", &timeout)) {
-  } else if (cop.get("-n --numSolutions", &numSolutions)) {
-  } else if (cop.get("--writeModel", &writeModelFile)) {
-  } else if (cop.get("--writeModelFormat", &writeModelFormat)) {
-  } else if (cop.get("--relGap", &relGap)) {
-  } else if (cop.get("--absGap", &absGap)) {
+  if (cop.get("--msgLevel", &msgLevel)) {                         // NOLINT: Allow repeated empty if
+  } else if (cop.get("--logFile", &logFile)) {                    // NOLINT: Allow repeated empty if
+  } else if (cop.get("--solver-time-limit", &timeout)) {          // NOLINT: Allow repeated empty if
+  } else if (cop.get("-n --numSolutions", &numSolutions)) {       // NOLINT: Allow repeated empty if
+  } else if (cop.get("--writeModel", &writeModelFile)) {          // NOLINT: Allow repeated empty if
+  } else if (cop.get("--writeModelFormat", &writeModelFormat)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("--relGap", &relGap)) {                      // NOLINT: Allow repeated empty if
+  } else if (cop.get("--absGap", &absGap)) {                      // NOLINT: Allow repeated empty if
   } else if (cop.get("-i")) {
     intermediateSolutions = true;
-  } else if (cop.get("--xpress-root", &xprsRoot)) {
-  } else if (cop.get("--xpress-password", &xprsPassword)) {
+  } else if (cop.get("--xpress-root", &xprsRoot)) {          // NOLINT: Allow repeated empty if
+  } else if (cop.get("--xpress-password", &xprsPassword)) {  // NOLINT: Allow repeated empty if
   } else {
     return false;
   }

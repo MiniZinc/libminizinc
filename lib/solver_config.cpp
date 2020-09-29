@@ -273,9 +273,6 @@ SolverConfig SolverConfig::load(const string& filename) {
             if (!libPath.empty()) {
               if (libPath[0] == '-') {
                 sc._mznlibResolved = libPath;
-              } else if (libPath.size() > 2 && libPath[0] == '.' &&
-                         (libPath[1] == '/' || (libPath[1] == '.' && libPath[2] == '/'))) {
-                sc._mznlibResolved = FileUtils::file_path(libPath, basePath);
               } else {
                 sc._mznlibResolved = FileUtils::file_path(libPath, basePath);
               }
@@ -709,7 +706,7 @@ const SolverConfig& SolverConfigs::config(const std::string& _s) {
   } else {
     s = _s;
   }
-  std::remove(s.begin(), s.end(), ' ');
+  s.erase(std::remove(s.begin(), s.end(), ' '), s.end());
   s = string_to_lower(s);
   std::vector<std::string> tags;
   std::istringstream iss(s);

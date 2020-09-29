@@ -218,19 +218,10 @@ void SolverInstanceBase::flattenMultObjComponent(const Annotation& ann,
   Call* c = e->cast<Call>();
   obj.setVariable(c->arg(0));
   const auto id = c->id();
-  if (id == "min_goal") {
+  if (id == "min_goal" || id == "int_min_goal" || id == "float_min_goal") {
     obj.setWeight(-1.0);
-  } else if (id == "int_min_goal") {
-    obj.setWeight(-1.0);
-  } else if (id == "float_min_goal") {
-    obj.setWeight(-1.0);
-  } else if (id == "max_goal") {
-    obj.setWeight(1.0);
-  } else if (id == "int_max_goal") {
-    obj.setWeight(1.0);
-  } else if (id == "float_max_goal") {
-    obj.setWeight(1.0);
-  } else if (id == "sat_goal") {
+  } else if (id == "sat_goal" || id == "max_goal" || id == "int_max_goal" ||
+             id == "float_max_goal") {
     obj.setWeight(1.0);
   } else {
     MZN_ASSERT_HARD_MSG(false, "unknown goal: " << id);

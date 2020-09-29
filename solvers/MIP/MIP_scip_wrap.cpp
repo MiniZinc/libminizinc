@@ -205,19 +205,19 @@ bool MIPScipWrapper::Options::processOption(int& i, vector<string>& argv) {
   MiniZinc::CLOParser cop(i, argv);
   if (cop.get("-i")) {
     flagIntermediate = true;
-  } else if (string(argv[i]) == "-f") {
+  } else if (string(argv[i]) == "-f") {  // NOLINT: Allow repeated empty if
     //     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
-  } else if (cop.get("--writeModel", &sExportModel)) {
-  } else if (cop.get("-p", &nThreads)) {
-  } else if (cop.get("--solver-time-limit", &nTimeout)) {
-  } else if (cop.get("--workmem", &nWorkMemLimit)) {
-  } else if (cop.get("--readParam", &sReadParams)) {
-  } else if (cop.get("--writeParam", &sWriteParams)) {
-  } else if (cop.get("--absGap", &absGap)) {
-  } else if (cop.get("--relGap", &relGap)) {
-  } else if (cop.get("--intTol", &intTol)) {
+  } else if (cop.get("--writeModel", &sExportModel)) {     // NOLINT: Allow repeated empty if
+  } else if (cop.get("-p", &nThreads)) {                   // NOLINT: Allow repeated empty if
+  } else if (cop.get("--solver-time-limit", &nTimeout)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("--workmem", &nWorkMemLimit)) {       // NOLINT: Allow repeated empty if
+  } else if (cop.get("--readParam", &sReadParams)) {       // NOLINT: Allow repeated empty if
+  } else if (cop.get("--writeParam", &sWriteParams)) {     // NOLINT: Allow repeated empty if
+  } else if (cop.get("--absGap", &absGap)) {               // NOLINT: Allow repeated empty if
+  } else if (cop.get("--relGap", &relGap)) {               // NOLINT: Allow repeated empty if
+  } else if (cop.get("--intTol", &intTol)) {               // NOLINT: Allow repeated empty if
     //   } else if ( cop.get( "--objDiff", &objDiff ) ) {
-  } else if (cop.get("--scip-dll", &scipDll)) {
+  } else if (cop.get("--scip-dll", &scipDll)) {  // NOLINT: Allow repeated empty if
   } else {
     return false;
   }

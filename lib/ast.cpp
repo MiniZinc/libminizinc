@@ -114,23 +114,23 @@ void Expression::addAnnotations(const std::vector<Expression*>& ann) {
 
 #define pushstack(e)      \
   do {                    \
-    if (e != NULL) {      \
+    if ((e) != nullptr) { \
       stack.push_back(e); \
     }                     \
   } while (0)
-#define pushall(v)                              \
-  do {                                          \
-    v.mark();                                   \
-    for (unsigned int i = 0; i < v.size(); i++) \
-      if (v[i] != NULL) {                       \
-        stack.push_back(v[i]);                  \
-      }                                         \
+#define pushall(v)                                \
+  do {                                            \
+    (v).mark();                                   \
+    for (unsigned int i = 0; i < (v).size(); i++) \
+      if ((v)[i] != nullptr) {                    \
+        stack.push_back((v)[i]);                  \
+      }                                           \
   } while (0)
-#define pushann(a)                                                \
-  do {                                                            \
-    for (ExpressionSetIter it = a.begin(); it != a.end(); ++it) { \
-      pushstack(*it);                                             \
-    }                                                             \
+#define pushann(a)                                                    \
+  do {                                                                \
+    for (ExpressionSetIter it = (a).begin(); it != (a).end(); ++it) { \
+      pushstack(*it);                                                 \
+    }                                                                 \
   } while (0)
 void Expression::mark(Expression* e) {
   if (e == nullptr || e->isUnboxedVal()) {

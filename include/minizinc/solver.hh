@@ -84,7 +84,14 @@ protected:
   SolverFactory() { get_global_solver_registry()->addSolverFactory(this); }
 
 public:
-  virtual ~SolverFactory() { get_global_solver_registry()->removeSolverFactory(this); }
+  virtual ~SolverFactory() {
+    try {
+      get_global_solver_registry()->removeSolverFactory(this);
+    } catch (std::exception&) {
+      assert(false);  // Assert that the solver registry can be obtained and the solver factory
+                      // safely removed
+    }
+  }
 
 public:
   /// Create solver-specific options object

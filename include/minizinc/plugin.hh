@@ -28,7 +28,7 @@
 #include <vector>
 
 /// Convenience macro for loading symbols
-#define load_symbol(name) *(void**)(&name) = symbol(#name)
+#define load_symbol(name) *(void**)(&(name)) = symbol(#name)
 
 namespace MiniZinc {
 /// Base class for plugins loaded from DLLs

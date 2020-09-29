@@ -32,57 +32,40 @@ int precedence(const Expression* e) {
       case BOT_EQUIV:
         return 1200;
       case BOT_IMPL:
-        return 1100;
       case BOT_RIMPL:
         return 1100;
       case BOT_OR:
-        return 1000;
       case BOT_XOR:
         return 1000;
       case BOT_AND:
         return 900;
       case BOT_LE:
-        return 800;
       case BOT_LQ:
-        return 800;
       case BOT_GR:
-        return 800;
       case BOT_GQ:
-        return 800;
       case BOT_EQ:
-        return 800;
       case BOT_NQ:
         return 800;
       case BOT_IN:
-        return 700;
       case BOT_SUBSET:
-        return 700;
       case BOT_SUPERSET:
         return 700;
       case BOT_UNION:
-        return 600;
       case BOT_DIFF:
-        return 600;
       case BOT_SYMDIFF:
         return 600;
       case BOT_DOTDOT:
         return 500;
       case BOT_PLUS:
-        return 400;
       case BOT_MINUS:
         return 400;
       case BOT_MULT:
-        return 300;
       case BOT_IDIV:
-        return 300;
       case BOT_MOD:
-        return 300;
       case BOT_DIV:
-        return 300;
       case BOT_INTERSECT:
         return 300;
       case BOT_POW:
-        return 200;
       case BOT_PLUSPLUS:
         return 200;
       default:

@@ -323,22 +323,25 @@ bool MIPCplexWrapper::Options::processOption(int& i, std::vector<std::string>& a
   MiniZinc::CLOParser cop(i, argv);
   if (cop.get("-i")) {
     flagIntermediate = true;
-  } else if (string(argv[i]) == "-f") {
+  } else if (string(argv[i]) == "-f") {  // NOLINT: Allow repeated empty if
     //     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
-  } else if (cop.get("--mipfocus --mipFocus --MIPFocus --MIPfocus", &nMIPFocus)) {
-  } else if (cop.get("--writeModel", &sExportModel)) {
-  } else if (cop.get("-p", &nThreads)) {
-  } else if (cop.get("--solver-time-limit", &nTimeout)) {
-  } else if (cop.get("-n --num-solutions", &nSolLimit)) {
-  } else if (cop.get("-r --random-seed", &nSeed)) {
-  } else if (cop.get("--workmem --nodefilestart", &nWorkMemLimit)) {
-  } else if (cop.get("--nodefiledir --NodefileDir", &sNodefileDir)) {
-  } else if (cop.get("--readParam", &sReadParams)) {
-  } else if (cop.get("--writeParam", &sWriteParams)) {
-  } else if (cop.get("--absGap", &absGap)) {
-  } else if (cop.get("--relGap", &relGap)) {
-  } else if (cop.get("--intTol", &intTol)) {
-  } else if (cop.get("--cplex-dll", &sCPLEXDLL)) {
+  } else if (cop.get("--mipfocus --mipFocus --MIPFocus --MIPfocus",
+                     &nMIPFocus)) {                        // NOLINT: Allow repeated empty if
+  } else if (cop.get("--writeModel", &sExportModel)) {     // NOLINT: Allow repeated empty if
+  } else if (cop.get("-p", &nThreads)) {                   // NOLINT: Allow repeated empty if
+  } else if (cop.get("--solver-time-limit", &nTimeout)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("-n --num-solutions", &nSolLimit)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("-r --random-seed", &nSeed)) {        // NOLINT: Allow repeated empty if
+  } else if (cop.get("--workmem --nodefilestart",
+                     &nWorkMemLimit)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("--nodefiledir --NodefileDir",
+                     &sNodefileDir)) {                  // NOLINT: Allow repeated empty if
+  } else if (cop.get("--readParam", &sReadParams)) {    // NOLINT: Allow repeated empty if
+  } else if (cop.get("--writeParam", &sWriteParams)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("--absGap", &absGap)) {            // NOLINT: Allow repeated empty if
+  } else if (cop.get("--relGap", &relGap)) {            // NOLINT: Allow repeated empty if
+  } else if (cop.get("--intTol", &intTol)) {            // NOLINT: Allow repeated empty if
+  } else if (cop.get("--cplex-dll", &sCPLEXDLL)) {      // NOLINT: Allow repeated empty if
     //   } else if ( cop.get( "--objDiff", &objDiff ) ) {
   } else {
     return false;
@@ -395,7 +398,7 @@ void MIPCplexWrapper::closeCPLEX() {
   /* Free up the CPLEX environment, if necessary */
   if (_env != nullptr) {
     _status = dll_CPXcloseCPLEX(&_env);
-    wrapAssert(_status == 0, "Could not close CPLEX environment.");
+    assert(_status == 0);  // Assume CPLEX environment is closed correctly
   }
   /// and at last:
 //   MIPWrapper::cleanup();

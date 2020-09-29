@@ -66,32 +66,39 @@ bool Solns2Out::processOption(int& i, std::vector<std::string>& argv) {
   std::string oznfile;
   if (cop.getOption("--ozn-file", &oznfile)) {
     initFromOzn(oznfile);
-  } else if (cop.getOption("-o --output-to-file", &opt.flagOutputFile)) {
+  } else if (cop.getOption("-o --output-to-file",
+                           &opt.flagOutputFile)) {  // NOLINT: Allow repeated empty if
     // Parsed by reference
   } else if (cop.getOption("--no-flush-output")) {
     opt.flagOutputFlush = false;
   } else if (cop.getOption("--no-output-comments")) {
     opt.flagOutputComments = false;
-  } else if (cop.getOption("-i --ignore-lines --ignore-leading-lines", &opt.flagIgnoreLines)) {
+  } else if (cop.getOption("-i --ignore-lines --ignore-leading-lines",
+                           &opt.flagIgnoreLines)) {  // NOLINT: Allow repeated empty if
     // Parsed by reference
   } else if (cop.getOption("--output-time")) {
     opt.flagOutputTime = true;
   } else if (cop.getOption("--soln-sep --soln-separator --solution-separator",
-                           &opt.solutionSeparator)) {
+                           &opt.solutionSeparator)) {  // NOLINT: Allow repeated empty if
     // Parsed by reference
-  } else if (cop.getOption("--soln-comma --solution-comma", &opt.solutionComma)) {
+  } else if (cop.getOption("--soln-comma --solution-comma",
+                           &opt.solutionComma)) {  // NOLINT: Allow repeated empty if
     // Parsed by reference
-  } else if (cop.getOption("--unsat-msg --unsatisfiable-msg", &opt.unsatisfiableMsg)) {
+  } else if (cop.getOption("--unsat-msg --unsatisfiable-msg",
+                           &opt.unsatisfiableMsg)) {  // NOLINT: Allow repeated empty if
     // Parsed by reference
-  } else if (cop.getOption("--unbounded-msg", &opt.unboundedMsg)) {
+  } else if (cop.getOption("--unbounded-msg",
+                           &opt.unboundedMsg)) {  // NOLINT: Allow repeated empty if
     // Parsed by reference
-  } else if (cop.getOption("--unsatorunbnd-msg", &opt.unsatorunbndMsg)) {
+  } else if (cop.getOption("--unsatorunbnd-msg",
+                           &opt.unsatorunbndMsg)) {  // NOLINT: Allow repeated empty if
     // Parsed by reference
-  } else if (cop.getOption("--unknown-msg", &opt.unknownMsg)) {
+  } else if (cop.getOption("--unknown-msg", &opt.unknownMsg)) {  // NOLINT: Allow repeated empty if
     // Parsed by reference
-  } else if (cop.getOption("--error-msg", &opt.errorMsg)) {
+  } else if (cop.getOption("--error-msg", &opt.errorMsg)) {  // NOLINT: Allow repeated empty if
     // Parsed by reference
-  } else if (cop.getOption("--search-complete-msg", &opt.searchCompleteMsg)) {
+  } else if (cop.getOption("--search-complete-msg",
+                           &opt.searchCompleteMsg)) {  // NOLINT: Allow repeated empty if
     // Parsed by reference
   } else if (cop.getOption("--unique")) {
     opt.flagUnique = true;
@@ -100,9 +107,10 @@ bool Solns2Out::processOption(int& i, std::vector<std::string>& argv) {
   } else if (cop.getOption("-c --canonicalize")) {
     opt.flagCanonicalize = true;
   } else if (cop.getOption("--output-non-canonical --output-non-canon",
-                           &opt.flagOutputNoncanonical)) {
+                           &opt.flagOutputNoncanonical)) {  // NOLINT: Allow repeated empty if
     // Parsed by reference
-  } else if (cop.getOption("--output-raw", &opt.flagOutputRaw)) {
+  } else if (cop.getOption("--output-raw",
+                           &opt.flagOutputRaw)) {  // NOLINT: Allow repeated empty if
     // Parsed by reference
   } else if (opt.flagStandaloneSolns2Out) {
     std::string oznfile(argv[i]);

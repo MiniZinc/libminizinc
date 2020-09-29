@@ -163,7 +163,6 @@ std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& o
 BCtx operator+(const BCtx& c) {
   switch (c) {
     case C_ROOT:
-      return C_POS;
     case C_POS:
       return C_POS;
     case C_NEG:
@@ -179,7 +178,6 @@ BCtx operator+(const BCtx& c) {
 BCtx operator-(const BCtx& c) {
   switch (c) {
     case C_ROOT:
-      return C_NEG;
     case C_POS:
       return C_NEG;
     case C_NEG:
@@ -1099,17 +1097,21 @@ CallStackItem::CallStackItem(EnvI& env0, Id* ident, IntVal i) : env(env0) {
   env.maxCallStack = std::max(env.maxCallStack, static_cast<unsigned int>(env.callStack.size()));
 }
 CallStackItem::~CallStackItem() {
-  Expression* e = env.callStack.back()->untag();
-  if (e->isa<VarDecl>()) {
-    env.idStack.pop_back();
+  try {
+    Expression* e = env.callStack.back()->untag();
+    if (e->isa<VarDecl>()) {
+      env.idStack.pop_back();
+    }
+    if (e->isa<Call>() && e->cast<Call>()->id() == "redundant_constraint") {
+      env.inRedundantConstraint--;
+    }
+    if (e->ann().contains(constants().ann.maybe_partial)) {
+      env.inMaybePartial--;
+    }
+    env.callStack.pop_back();
+  } catch (std::exception&) {
+    assert(false);  // Invariant: These Env vector operations will never throw an exception
   }
-  if (e->isa<Call>() && e->cast<Call>()->id() == "redundant_constraint") {
-    env.inRedundantConstraint--;
-  }
-  if (e->ann().contains(constants().ann.maybe_partial)) {
-    env.inMaybePartial--;
-  }
-  env.callStack.pop_back();
 }
 
 FlatteningError::FlatteningError(EnvI& env, const Location& loc, const std::string& msg)
@@ -1801,10 +1803,9 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
         case Expression::E_TIID:
         case Expression::E_SETLIT:
         case Expression::E_VARDECL:
+        case Expression::E_BINOP:  // TODO: should not happen once operators are evaluated
+        case Expression::E_UNOP:   // TODO: should not happen once operators are evaluated
           return e;
-        case Expression::E_BINOP:
-        case Expression::E_UNOP:
-          return e;  /// TODO: should not happen once operators are evaluated
         case Expression::E_ARRAYACCESS:
         case Expression::E_COMP:
         case Expression::E_ITE:
@@ -2798,16 +2799,20 @@ public:
       : _loc(loc), _tm(tm), _start(std::chrono::high_resolution_clock::now()) {}
 
   ~ItemTimer() {
-    if (_tm != nullptr) {
-      std::chrono::high_resolution_clock::time_point end =
-          std::chrono::high_resolution_clock::now();
-      unsigned int line = _loc.firstLine();
-      auto it = _tm->find(std::make_pair(_loc.filename(), line));
-      if (it != _tm->end()) {
-        it->second += end - _start;
-      } else {
-        _tm->insert(std::make_pair(std::make_pair(_loc.filename(), line), end - _start));
+    try {
+      if (_tm != nullptr) {
+        std::chrono::high_resolution_clock::time_point end =
+            std::chrono::high_resolution_clock::now();
+        unsigned int line = _loc.firstLine();
+        auto it = _tm->find(std::make_pair(_loc.filename(), line));
+        if (it != _tm->end()) {
+          it->second += end - _start;
+        } else {
+          _tm->insert(std::make_pair(std::make_pair(_loc.filename(), line), end - _start));
+        }
       }
+    } catch (std::exception& e) {
+      assert(false);  // Invariant: Operations on the TimingMap will not throw an exception
     }
   }
 
@@ -4260,15 +4265,12 @@ FlatModelStatistics statistics(Env& m) {
             for (unsigned int i = 0; i < call->argCount(); i++) {
               Type t = call->arg(i)->type();
               if (t.isvar()) {
-                if (t.st() == Type::ST_SET) {
-                  all_t = t;
-                } else if (t.bt() == Type::BT_FLOAT && all_t.st() != Type::ST_SET) {
-                  all_t = t;
-                } else if (t.bt() == Type::BT_INT && all_t.bt() != Type::BT_FLOAT &&
-                           all_t.st() != Type::ST_SET) {
-                  all_t = t;
-                } else if (t.bt() == Type::BT_BOOL && all_t.bt() != Type::BT_INT &&
-                           all_t.bt() != Type::BT_FLOAT && all_t.st() != Type::ST_SET) {
+                if (t.st() == Type::ST_SET ||
+                    (t.bt() == Type::BT_FLOAT && all_t.st() != Type::ST_SET) ||
+                    (t.bt() == Type::BT_INT && all_t.bt() != Type::BT_FLOAT &&
+                     all_t.st() != Type::ST_SET) ||
+                    (t.bt() == Type::BT_BOOL && all_t.bt() != Type::BT_INT &&
+                     all_t.bt() != Type::BT_FLOAT && all_t.st() != Type::ST_SET)) {
                   all_t = t;
                 }
               }

@@ -68,9 +68,7 @@ std::string trim(const std::string& s0) {
   while (pos != std::string::npos) {
     oss << s.substr(lastpos, pos - lastpos) << "\n";
     size_t next_indent = s.find_first_not_of(" \t", pos + 1);
-    if (next_indent == std::string::npos) {
-      lastpos = next_indent;
-    } else if (next_indent - (pos + 1) < unindent) {
+    if (next_indent == std::string::npos || next_indent - (pos + 1) < unindent) {
       lastpos = next_indent;
     } else {
       lastpos = pos + 1 + unindent;
@@ -417,9 +415,7 @@ std::string make_html_id(const std::string& ident) {
         oss << "-tk";
         break;
       case ' ':
-        break;
       case '\t':
-        break;
       case '\n':
         break;
       case ':':

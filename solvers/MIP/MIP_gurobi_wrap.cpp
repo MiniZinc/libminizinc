@@ -181,30 +181,39 @@ bool MIPGurobiWrapper::Options::processOption(int& i, std::vector<std::string>& 
   std::string buf;
   if (cop.get("-i")) {
     flagIntermediate = true;
-  } else if (string(argv[i]) == "-f") {
-  } else if (string(argv[i]) == "--fixed-search") {
+  } else if (string(argv[i]) == "-f") {              // NOLINT: Allow repeated empty if
+  } else if (string(argv[i]) == "--fixed-search") {  // NOLINT: Allow repeated empty if
     nFreeSearch = 0;
-  } else if (string(argv[i]) == "--uniform-search") {
+  } else if (string(argv[i]) == "--uniform-search") {  // NOLINT: Allow repeated empty if
     nFreeSearch = 2;
-  } else if (cop.get("--mipfocus --mipFocus --MIPFocus --MIPfocus", &nMIPFocus)) {
-  } else if (cop.get("--writeModel --exportModel --writemodel --exportmodel", &sExportModel)) {
-  } else if (cop.get("-p", &nThreads)) {
-  } else if (cop.get("--solver-time-limit --solver-time", &nTimeout1000)) {
-  } else if (cop.get("--solver-time-limit-feas --solver-tlf", &nTimeoutFeas1000)) {
-  } else if (cop.get("-n --num-solutions", &nSolLimit)) {
-  } else if (cop.get("-r --random-seed", &nSeed)) {
-  } else if (cop.get("--workmem --nodefilestart", &nWorkMemLimit)) {
-  } else if (cop.get("--nodefiledir --NodefileDir", &sNodefileDir)) {
-  } else if (cop.get("--readParam --readParams", &sReadParams)) {
-  } else if (cop.get("--writeParam --writeParams", &sWriteParams)) {
+  } else if (cop.get("--mipfocus --mipFocus --MIPFocus --MIPfocus",
+                     &nMIPFocus)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("--writeModel --exportModel --writemodel --exportmodel",
+                     &sExportModel)) {    // NOLINT: Allow repeated empty if
+  } else if (cop.get("-p", &nThreads)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("--solver-time-limit --solver-time",
+                     &nTimeout1000)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("--solver-time-limit-feas --solver-tlf",
+                     &nTimeoutFeas1000)) {                 // NOLINT: Allow repeated empty if
+  } else if (cop.get("-n --num-solutions", &nSolLimit)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("-r --random-seed", &nSeed)) {        // NOLINT: Allow repeated empty if
+  } else if (cop.get("--workmem --nodefilestart",
+                     &nWorkMemLimit)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("--nodefiledir --NodefileDir",
+                     &sNodefileDir)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("--readParam --readParams",
+                     &sReadParams)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("--writeParam --writeParams",
+                     &sWriteParams)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--readConcurrentParam --readConcurrentParams", &buf)) {
     sConcurrentParamFiles.push_back(buf);
-  } else if (cop.get("--absGap", &absGap)) {
-  } else if (cop.get("--relGap", &relGap)) {
-  } else if (cop.get("--feasTol", &feasTol)) {
-  } else if (cop.get("--intTol", &intTol)) {
-  } else if (cop.get("--nonConvex --nonconvex --NonConvex", &nonConvex)) {
-  } else if (cop.get("--gurobi-dll", &sGurobiDLL)) {
+  } else if (cop.get("--absGap", &absGap)) {    // NOLINT: Allow repeated empty if
+  } else if (cop.get("--relGap", &relGap)) {    // NOLINT: Allow repeated empty if
+  } else if (cop.get("--feasTol", &feasTol)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("--intTol", &intTol)) {    // NOLINT: Allow repeated empty if
+  } else if (cop.get("--nonConvex --nonconvex --NonConvex",
+                     &nonConvex)) {                   // NOLINT: Allow repeated empty if
+  } else if (cop.get("--gurobi-dll", &sGurobiDLL)) {  // NOLINT: Allow repeated empty if
     //   } else if ( cop.get( "--objDiff", &objDiff ) ) {
   } else {
     return false;

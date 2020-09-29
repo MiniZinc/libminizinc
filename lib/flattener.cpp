@@ -178,14 +178,13 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv) {
     _flags.chainCompression = false;
   } else if (cop.getOption("--no-output-ozn -O-")) {
     _flags.noOutputOzn = true;
-  } else if (cop.getOption("--output-base", &_flagOutputBase)) {
+  } else if (cop.getOption("--output-base", &_flagOutputBase)) {  // NOLINT: Allow repeated empty if
     // Parsed by reference
   } else if (cop.getOption(_fOutputByDefault ? "-o --fzn --output-to-file --output-fzn-to-file"
                                              : "--fzn --output-fzn-to-file",
-                           &_flagOutputFzn)) {
-  } else if (cop.getOption("--output-paths-to-file", &_flagOutputPaths)) {
-    _fopts.collectMznPaths = true;
-  } else if (cop.getOption("--output-paths")) {
+                           &_flagOutputFzn)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.getOption("--output-paths") ||
+             cop.getOption("--output-paths-to-file", &_flagOutputPaths)) {
     _fopts.collectMznPaths = true;
   } else if (cop.getOption("--output-to-stdout --output-fzn-to-stdout")) {
     _flags.outputFznStdout = true;
@@ -219,9 +218,10 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv) {
       return false;
     }
     _datafiles.push_back(buffer);
-  } else if (cop.getOption("--stdlib-dir", &_stdLibDir)) {
+  } else if (cop.getOption("--stdlib-dir", &_stdLibDir)) {  // NOLINT: Allow repeated empty if
     // Parsed by reference
-  } else if (cop.getOption("-G --globals-dir --mzn-globals-dir", &_globalsDir)) {
+  } else if (cop.getOption("-G --globals-dir --mzn-globals-dir",
+                           &_globalsDir)) {  // NOLINT: Allow repeated empty if
     // Parsed by reference
   } else if (cop.getOption("-D --cmdline-data", &buffer)) {
     _datafiles.push_back("cmd:/" + buffer);
@@ -231,9 +231,11 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv) {
     _flags.onlyRangeDomains = true;
   } else if (cop.getOption("--no-MIPdomains")) {  // internal
     _flags.noMIPdomains = true;
-  } else if (cop.getOption("--MIPDMaxIntvEE", &_optMIPDmaxIntvEE)) {
+  } else if (cop.getOption("--MIPDMaxIntvEE",
+                           &_optMIPDmaxIntvEE)) {  // NOLINT: Allow repeated empty if
     // Parsed by reference
-  } else if (cop.getOption("--MIPDMaxDensEE", &_optMIPDmaxDensEE)) {
+  } else if (cop.getOption("--MIPDMaxDensEE",
+                           &_optMIPDmaxDensEE)) {  // NOLINT: Allow repeated empty if
     // Parsed by reference
   } else if (cop.getOption("-Werror")) {
     _flags.werror = true;

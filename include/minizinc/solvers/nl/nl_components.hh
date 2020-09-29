@@ -84,18 +84,18 @@ public:
 #endif
 
 /** Should not happen macro */
-#define should_not_happen(MESSAGE)                    \
-  do {                                                \
-    ostringstream oss;                                \
-    oss << MESSAGE;                                   \
-    throw NLException(NULL, __FILE__, __LINE__, oss); \
+#define should_not_happen(MESSAGE)                           \
+  do {                                                       \
+    ostringstream oss;                                       \
+    oss << MESSAGE; /* NOLINT(bugprone-macro-parentheses) */ \
+    throw NLException(NULL, __FILE__, __LINE__, oss);        \
   } while (false)
 
 /* CMake febug build flag: double negation... because... ? */
 #ifndef NDEBUG
-#define DEBUG_MSG(STR)                          \
-  do {                                          \
-    std::cerr << "%[NL DEBUG] " << STR << endl; \
+#define DEBUG_MSG(STR)                                                                   \
+  do {                                                                                   \
+    std::cerr << "%[NL DEBUG] " << STR << endl; /* NOLINT(bugprone-macro-parentheses) */ \
   } while (false)
 #define assert(EXPRESSION)                                     \
   do {                                                         \

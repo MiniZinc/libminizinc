@@ -2203,7 +2203,8 @@ public:
           vd.type(vet);
         } else if (!_env.isSubtype(vet, vdt, true)) {
           if (vet == Type::bot(1) && vd.e()->isa<ArrayLit>() &&
-              vd.e()->cast<ArrayLit>()->size() == 0 && vdt.dim() != 0) {
+              vd.e()->cast<ArrayLit>()->size() == 0 &&
+              vdt.dim() != 0) {  // NOLINT(bugprone-branch-clone): see TODO in other branch
             // this is okay: assigning an empty array (one-dimensional) to an array variable
           } else if (vd.ti()->isEnum() && vet == Type::parsetint()) {
             // let's ignore this for now (TODO: add an annotation to make sure only

@@ -671,9 +671,10 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
 
     CLOParser cop(i, argv);  // For special handling of -a, -i and -n-i
     for (i = 1; i < argc; ++i) {
-      if (!ifMzn2Fzn() ? s2out.processOption(i, argv) : false) {
+      if (!ifMzn2Fzn() ? s2out.processOption(i, argv) : false) {  // NOLINT: Allow repeated empty if
         // Processed by Solns2Out
-      } else if ((!isMznMzn || _isMzn2fzn) && _flt.processOption(i, argv)) {
+      } else if ((!isMznMzn || _isMzn2fzn) &&
+                 _flt.processOption(i, argv)) {  // NOLINT: Allow repeated empty if
         // Processed by Flattener
       } else if ((_supportsA || _supportsI) && cop.get("-a --all --all-solns --all-solutions")) {
         _flagAllSatisfaction = true;
@@ -687,7 +688,8 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
         _flagAllSatisfaction = true;
       } else if (cop.get("--disable-all-satisfaction")) {
         _flagAllSatisfaction = false;
-      } else if (_sf != nullptr && _sf->processOption(_siOpt, i, argv)) {
+      } else if (_sf != nullptr &&
+                 _sf->processOption(_siOpt, i, argv)) {  // NOLINT: Allow repeated empty if
         // Processed by Solver Factory
       } else {
         std::string executable_name(argv[0]);
@@ -729,14 +731,8 @@ SolverInstance::Status MznSolver::solve() {
   }
   SolverInstance::Status status = getSI()->solve();
   GCLock lock;
-  if (status == SolverInstance::SAT || status == SolverInstance::OPT) {
-    if (!getSI()->getSolns2Out()->fStatusPrinted) {
-      getSI()->getSolns2Out()->evalStatus(status);
-    }
-  } else {
-    if (!getSI()->getSolns2Out()->fStatusPrinted) {
-      getSI()->getSolns2Out()->evalStatus(status);
-    }
+  if (!getSI()->getSolns2Out()->fStatusPrinted) {
+    getSI()->getSolns2Out()->evalStatus(status);
   }
   if (_siOpt->printStatistics) {
     getSI()->printStatistics();

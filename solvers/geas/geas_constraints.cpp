@@ -21,7 +21,7 @@
 namespace MiniZinc {
 namespace GeasConstraints {
 
-#define SI static_cast<GeasSolverInstance&>(s)
+#define SI (static_cast<GeasSolverInstance&>(s))
 #define SD SI.solverData()
 #define SOL SI.solver()
 #define EXPR(X) call->arg(X)

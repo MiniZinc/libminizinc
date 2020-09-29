@@ -58,14 +58,14 @@ namespace MiniZinc {
       throw InternalError(#c);    \
     }                             \
   } while (0)
-#define MZN_ASSERT_HARD_MSG(c, e)               \
-  do {                                          \
-    if (!(c)) {                                 \
-      __MZN_PRINT_SRCLOC(#c, e);                \
-      std::ostringstream oss;                   \
-      oss << "not " << #c << ":  " << e;        \
-      throw MiniZinc::InternalError(oss.str()); \
-    }                                           \
+#define MZN_ASSERT_HARD_MSG(c, e)                                                 \
+  do {                                                                            \
+    if (!(c)) {                                                                   \
+      __MZN_PRINT_SRCLOC(#c, e);                                                  \
+      std::ostringstream oss;                                                     \
+      oss << "not " << #c << ":  " << e; /* NOLINT(bugprone-macro-parentheses) */ \
+      throw MiniZinc::InternalError(oss.str());                                   \
+    }                                                                             \
   } while (0)
 
 inline bool beginswith(const std::string& s, const std::string& t) {
