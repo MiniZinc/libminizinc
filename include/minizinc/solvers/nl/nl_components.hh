@@ -453,7 +453,7 @@ class NLHeader {
 public:
   /* *** *** *** Printable *** *** *** */
 
-  std::ostream& printToStream(std::ostream& o, const NLFile& nl_file) const;
+  static std::ostream& printToStream(std::ostream& o, const NLFile& nl_file);
 };
 
 /** An Objective

@@ -96,7 +96,7 @@ public:
   Solns2Out(std::ostream& os, std::ostream& log, std::string stdlibDir);
 
   bool processOption(int& i, std::vector<std::string>& argv);
-  void printHelp(std::ostream& os);
+  static void printHelp(std::ostream& os);
 
   /// The output model (~.ozn) can be passed in 1 way in this base class:
   /// passing Env* containing output()

@@ -115,7 +115,7 @@ public:
   GroupMap subgroups;
   std::vector<DocItem> items;
 
-  std::string getAnchor(int level, int indivFileLevel) {
+  std::string getAnchor(int level, int indivFileLevel) const {
     if (level < indivFileLevel) {
       return fullPath + ".html";
     }
@@ -459,7 +459,7 @@ protected:
 public:
   CollectFunctionsVisitor(EnvI& env, HtmlDocOutput::FunMap& funmap, bool includeStdLib)
       : _env(env), _funmap(funmap), _includeStdLib(includeStdLib) {}
-  bool enterModel(Model* m) { return _includeStdLib || m->filename() != "stdlib.mzn"; }
+  bool enterModel(Model* m) const { return _includeStdLib || m->filename() != "stdlib.mzn"; }
   void vFunctionI(FunctionI* fi) {
     if (Call* docstring =
             Expression::dynamicCast<Call>(get_annotation(fi->ann(), constants().ann.doc_comment))) {
@@ -481,7 +481,7 @@ protected:
   HtmlDocOutput::FunMap& _funmap;
   bool _includeStdLib;
 
-  std::vector<std::string> replaceArgs(std::string& s) {
+  static std::vector<std::string> replaceArgs(std::string& s) {
     std::vector<std::string> replacements;
     std::ostringstream oss;
     size_t lastpos = 0;
@@ -526,7 +526,7 @@ protected:
     return replacements;
   }
 
-  std::pair<std::string, std::string> extractArgLine(std::string& s, size_t n) {
+  static std::pair<std::string, std::string> extractArgLine(std::string& s, size_t n) {
     size_t start = n;
     while (start < s.size() && s[start] != ' ' && s[start] != '\t') {
       start++;
@@ -549,7 +549,7 @@ protected:
     return make_pair(arg, ret);
   }
 
-  std::string addHTML(const std::string& s) {
+  static std::string addHTML(const std::string& s) {
     std::ostringstream oss;
     size_t lastpos = 0;
     size_t pos = s.find('\n');
@@ -1013,7 +1013,7 @@ protected:
   HtmlDocOutput::FunMap& _funmap;
   bool _includeStdLib;
 
-  std::vector<std::string> replaceArgsRST(std::string& s) {
+  static std::vector<std::string> replaceArgsRST(std::string& s) {
     std::vector<std::string> replacements;
     std::ostringstream oss;
     size_t lastpos = 0;
@@ -1110,7 +1110,7 @@ protected:
     return replacements;
   }
 
-  std::pair<std::string, std::string> extractArgLine(std::string& s, size_t n) {
+  static std::pair<std::string, std::string> extractArgLine(std::string& s, size_t n) {
     size_t start = n;
     while (start < s.size() && s[start] != ' ' && s[start] != '\t') {
       start++;

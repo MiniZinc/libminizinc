@@ -483,7 +483,7 @@ ostream& NLLogicalCons::printToStream(ostream& os, const NLFile& nl_file) const 
 /** Printing the header.
  *  The header is composed of then lines that we describe as we proceed.
  *  A '#' starts a comment until the end of the line. However, it cannot be a line on its own!*/
-ostream& NLHeader::printToStream(ostream& os, const NLFile& nl_file) const {
+ostream& NLHeader::printToStream(ostream& os, const NLFile& nl_file) {
   // 1st line:
   // 'g': file will be in text format
   // other numbers: as given in the doc (no other explanation...)

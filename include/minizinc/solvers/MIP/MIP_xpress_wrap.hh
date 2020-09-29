@@ -181,9 +181,9 @@ private:
   void setUserSolutionCallback();
   void setOptions();
   void writeModelIfRequested();
-  int convertConstraintType(LinConType sense);
-  int convertVariableType(VarType varType);
-  int convertObjectiveSense(int s);
+  static int convertConstraintType(LinConType sense);
+  static int convertVariableType(VarType varType);
+  static int convertObjectiveSense(int s);
   XPRBctr addConstraint(int nnz, int* rmatind, double* rmatval, LinConType sense, double rhs,
                         int mask, const string& rowName);
   void addDummyConstraint();

@@ -341,7 +341,7 @@ class FloatVal {
 private:
   double _v;
   bool _infinity;
-  void checkOverflow() {
+  void checkOverflow() const {
     if (!std::isfinite(_v)) {
       throw ArithmeticError("overflow in floating point operation");
     }
@@ -698,7 +698,7 @@ public:
   }
 
   /// Check if set contains \a v
-  bool contains(const IntVal& v) {
+  bool contains(const IntVal& v) const {
     for (int i = 0; i < size(); i++) {
       if (v < min(i)) {
         return false;
@@ -711,7 +711,7 @@ public:
   }
 
   /// Check if it is equal to \a s
-  bool equal(const IntSetVal* s) {
+  bool equal(const IntSetVal* s) const {
     if (size() != s->size()) {
       return false;
     }
@@ -911,7 +911,7 @@ public:
   }
 
   /// Check if set contains \a v
-  bool contains(const FloatVal& v) {
+  bool contains(const FloatVal& v) const {
     for (int i = 0; i < size(); i++) {
       if (v < min(i)) {
         return false;
@@ -924,7 +924,7 @@ public:
   }
 
   /// Check if it is equal to \a s
-  bool equal(const FloatSetVal* s) {
+  bool equal(const FloatSetVal* s) const {
     if (size() != s->size()) {
       return false;
     }

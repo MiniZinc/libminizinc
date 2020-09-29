@@ -781,7 +781,7 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
         CutCallback(MIPWrapper::CBUserInfo& ui) : _cbui(ui) {}
         CglCutGenerator* clone() const override { return new CutCallback(_cbui); }
         /// Make sure this overrides but we might need to compile this with old CBC as well
-        bool needsOriginalModel() const /*override*/ { return true; }
+        static bool needsOriginalModel() /*override*/ { return true; }
         void generateCuts(const OsiSolverInterface& si, OsiCuts& cs,
                           const CglTreeInfo info = CglTreeInfo()) override {
           _cbui.pOutput->nCols = si.getNumCols();

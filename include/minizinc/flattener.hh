@@ -60,7 +60,7 @@ public:
   void setFlagStatistics(bool f) { _flags.statistics = f; }
   bool getFlagStatistics() const { return _flags.statistics; }
   void setFlagTimelimit(unsigned long long int t) { _fopts.timeout = t; }
-  unsigned long long int getFlagTimelimit() { return _fopts.timeout; }
+  unsigned long long int getFlagTimelimit() const { return _fopts.timeout; }
   void setFlagOutputByDefault(bool f) { _fOutputByDefault = f; }
   Env* getEnv() const {
     assert(_pEnv.get());

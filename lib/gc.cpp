@@ -77,7 +77,7 @@ protected:
   static const int _max_fl = 5;
   FreeListNode* _fl[_max_fl + 1];
   static const size_t _fl_size[_max_fl + 1];
-  int freelistSlot(size_t _size) {
+  static int freelistSlot(size_t _size) {
     size_t size = _size;
     assert(size <= _fl_size[_max_fl]);
     assert(size >= _fl_size[0]);

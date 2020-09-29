@@ -125,24 +125,25 @@ public:
   /** Create a token from an expression representing a variable.
    * ONLY USE FOR CONSTRAINT, NOT OBJECTIVES! (UPDATE VARIABLES FLAG FOR CONSTRAINTS)
    */
-  NLToken getTokenFromVar(const Expression* e);
+  static NLToken getTokenFromVar(const Expression* e);
 
   /** Create a token from an expression representing either a variable or an integer numeric value.
    * ONLY USE FOR CONSTRAINT, NOT OBJECTIVES!
    */
-  NLToken getTokenFromVarOrInt(const Expression* e);
+  static NLToken getTokenFromVarOrInt(const Expression* e);
 
   /** Create a token from an expression representing either a variable or a floating point numeric
    * value. ONLY USE FOR CONSTRAINT, NOT OBJECTIVES!
    */
-  NLToken getTokenFromVarOrFloat(const Expression* e);
+  static NLToken getTokenFromVarOrFloat(const Expression* e);
 
   /** Update an expression graph (only by appending token) with a linear combination
    *  of coefficients and variables.
    *  ONLY USE FOR CONSTRAINTS, NOT OBJECTIVES!
    */
-  void makeSigmaMult(std::vector<NLToken>& expressionGraph, const std::vector<double>& coeffs,
-                     const std::vector<std::string>& vars);
+  static void makeSigmaMult(std::vector<NLToken>& expressionGraph,
+                            const std::vector<double>& coeffs,
+                            const std::vector<std::string>& vars);
 
   // --- --- --- Linear Builders
   // Use an array of literals 'coeffs' := c.arg(0), an array of variables 'vars' := c.arg(1),

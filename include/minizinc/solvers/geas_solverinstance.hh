@@ -64,9 +64,9 @@ public:
   bool isFloat() const { return _t == FLOAT_TYPE; }
   bool isInt() const { return _t == INT_TYPE; }
 
-  geas::patom_t boolVar() { return bv; }
-  geas::fp::fpvar floatVar() { return fv; }
-  geas::intvar intVar() { return iv; }
+  geas::patom_t boolVar() const { return bv; }
+  geas::fp::fpvar floatVar() const { return fv; }
+  geas::intvar intVar() const { return iv; }
 };
 
 class GeasTypes {
@@ -80,7 +80,7 @@ public:
   GeasSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
   ~GeasSolverInstance() override = default;
   void processFlatZinc() override;
-  geas::solver_data* solverData() { return _solver.data; }
+  geas::solver_data* solverData() const { return _solver.data; }
   geas::solver& solver() { return _solver; }
 
   Status solve() override;

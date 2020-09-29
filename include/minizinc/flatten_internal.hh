@@ -157,7 +157,7 @@ public:
   unsigned int registerArrayEnum(const std::vector<unsigned int>& arrayEnum);
   const std::vector<unsigned int>& getArrayEnum(unsigned int i) const;
   /// Check if \a t1 is a subtype of \a t2 (including enumerated types if \a strictEnum is true)
-  bool isSubtype(const Type& t1, const Type& t2, bool strictEnum);
+  bool isSubtype(const Type& t1, const Type& t2, bool strictEnum) const;
   bool hasReverseMapper(Id* ident) { return reverseMappers.find(ident) != reverseMappers.end(); }
 
   void flatAddItem(Item* i);
@@ -173,7 +173,7 @@ public:
   void swap();
   void swapOutput() { std::swap(model, output); }
   ASTString reifyId(const ASTString& id);
-  ASTString halfReifyId(const ASTString& id);
+  static ASTString halfReifyId(const ASTString& id);
   std::ostream& dumpStack(std::ostream& os, bool errStack);
   bool dumpPath(std::ostream& os, bool force = false);
   void addWarning(const std::string& msg);

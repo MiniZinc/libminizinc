@@ -77,7 +77,7 @@ public:
 
 protected:
   /// Add all instances of polymorphic entry \a fe to \a entries
-  void addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& entries);
+  static void addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& entries);
 
   void mark(MINIZINC_GC_STAT_ARGS) override {
     _filepath.mark();
@@ -378,9 +378,9 @@ public:
 class ItemVisitor {
 public:
   /// Enter model
-  bool enterModel(Model* /*m*/) { return true; }
+  static bool enterModel(Model* /*m*/) { return true; }
   /// Enter item
-  bool enter(Item* /*m*/) { return true; }
+  static bool enter(Item* /*m*/) { return true; }
   /// Visit include item
   void vIncludeI(IncludeI* /*ii*/) {}
   /// Visit variable declaration

@@ -105,7 +105,7 @@ bool cannot_use_rhs_for_output(EnvI& env, Expression* e,
     /// Visit TIId
     void vTIId(const TIId& /*tiid*/) {}
     /// Determine whether to enter node
-    bool enter(Expression* /*e*/) { return success; }
+    bool enter(Expression* /*e*/) const { return success; }
   } _v(env, seen_functions);
   top_down(_v, e);
 
@@ -129,7 +129,7 @@ void copy_output(EnvI& e) {
   struct CopyOutput : public EVisitor {
     EnvI& env;
     CopyOutput(EnvI& env0) : env(env0) {}
-    void vId(Id& _id) { _id.decl(_id.decl()->flat()); }
+    static void vId(Id& _id) { _id.decl(_id.decl()->flat()); }
     void vCall(Call& c) {
       std::vector<Type> tv(c.argCount());
       for (unsigned int i = c.argCount(); (i--) != 0U;) {
@@ -181,9 +181,9 @@ void make_par(EnvI& env, Expression* e) {
   class Par : public EVisitor {
   public:
     /// Visit variable declaration
-    void vVarDecl(VarDecl& vd) { vd.ti()->type(vd.type()); }
+    static void vVarDecl(VarDecl& vd) { vd.ti()->type(vd.type()); }
     /// Determine whether to enter node
-    bool enter(Expression* e) {
+    static bool enter(Expression* e) {
       Type t = e->type();
       t.ti(Type::TI_PAR);
       e->type(t);
@@ -816,7 +816,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
   public:
     EnvI& env;
     CollectFunctions(EnvI& env0) : env(env0) {}
-    bool enter(Expression* e) {
+    static bool enter(Expression* e) {
       if (e->type().isvar()) {
         Type t = e->type();
         t.ti(Type::TI_PAR);

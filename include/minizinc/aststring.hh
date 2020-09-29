@@ -174,7 +174,7 @@ public:
 
 protected:
   /// GC Destructor
-  void destroy() {
+  void destroy() const {
     assert(interner().find({this->c_str(), this->size()}) != interner().end());
     interner().erase({this->c_str(), this->size()});
   };

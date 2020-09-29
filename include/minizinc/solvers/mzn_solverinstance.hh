@@ -61,8 +61,8 @@ public:
   bool processOption(SolverInstanceBase::Options* opt, int& i,
                      std::vector<std::string>& argv) override;
   void printHelp(std::ostream& os) override;
-  void setAcceptedFlags(SolverInstanceBase::Options* opt,
-                        const std::vector<MZNFZNSolverFlag>& flags);
+  static void setAcceptedFlags(SolverInstanceBase::Options* opt,
+                               const std::vector<MZNFZNSolverFlag>& flags);
 };
 
 }  // namespace MiniZinc

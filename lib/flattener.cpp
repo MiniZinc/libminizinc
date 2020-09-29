@@ -854,10 +854,10 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
         if ((_fopts.collectMznPaths || _flags.twoPass) && !_flags.keepMznPaths) {
           class RemovePathAnnotations : public ItemVisitor {
           public:
-            void removePath(Annotation& a) const { a.removeCall(constants().ann.mzn_path); }
-            void vVarDeclI(VarDeclI* vdi) const { removePath(vdi->e()->ann()); }
-            void vConstraintI(ConstraintI* ci) const { removePath(ci->e()->ann()); }
-            void vSolveI(SolveI* si) const {
+            static void removePath(Annotation& a) { a.removeCall(constants().ann.mzn_path); }
+            static void vVarDeclI(VarDeclI* vdi) { removePath(vdi->e()->ann()); }
+            static void vConstraintI(ConstraintI* ci) { removePath(ci->e()->ann()); }
+            static void vSolveI(SolveI* si) {
               removePath(si->ann());
               if (Expression* e = si->e()) {
                 removePath(e->ann());

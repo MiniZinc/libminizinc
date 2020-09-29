@@ -109,7 +109,7 @@ public:
   typedef Expression* ArrayVal;
   static IntLit* e(EnvI& env, Expression* e) { return IntLit::a(eval_int(env, e)); }
   static Expression* exp(IntLit* e) { return e; }
-  Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
+  static Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
     throw InternalError("evaluating var assignment generator inside par expression not supported");
   }
 };
@@ -128,7 +128,7 @@ public:
       }
     }
   }
-  Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
+  static Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
     throw InternalError("evaluating var assignment generator inside par expression not supported");
   }
 };
@@ -147,7 +147,7 @@ public:
       }
     }
   }
-  Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
+  static Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
     throw InternalError("evaluating var assignment generator inside par expression not supported");
   }
 };
@@ -157,7 +157,7 @@ public:
   typedef Expression* ArrayVal;
   static FloatLit* e(EnvI& env, Expression* e) { return FloatLit::a(eval_float(env, e)); }
   static Expression* exp(Expression* e) { return e; }
-  Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
+  static Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
     throw InternalError("evaluating var assignment generator inside par expression not supported");
   }
 };
@@ -168,7 +168,7 @@ public:
   static std::string e(EnvI& env, Expression* e) { return eval_string(env, e); }
   static Expression* exp(const std::string& e) { return new StringLit(Location(), e); }
   static void checkRetVal(EnvI& env, const Val& v, FunctionI* fi) {}
-  Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
+  static Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
     throw InternalError("evaluating var assignment generator inside par expression not supported");
   }
 };
@@ -180,7 +180,7 @@ public:
     return new StringLit(Location(), eval_string(env, e));
   }
   static Expression* exp(Expression* e) { return e; }
-  Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
+  static Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
     throw InternalError("evaluating var assignment generator inside par expression not supported");
   }
 };
@@ -190,7 +190,7 @@ public:
   typedef Expression* ArrayVal;
   static BoolLit* e(EnvI& env, Expression* e) { return constants().boollit(eval_bool(env, e)); }
   static Expression* exp(Expression* e) { return e; }
-  Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
+  static Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
     throw InternalError("evaluating var assignment generator inside par expression not supported");
   }
 };
@@ -200,7 +200,7 @@ public:
   static bool e(EnvI& env, Expression* e) { return eval_bool(env, e); }
   static Expression* exp(bool e) { return constants().boollit(e); }
   static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {}
-  Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
+  static Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
     throw InternalError("evaluating var assignment generator inside par expression not supported");
   }
 };
@@ -210,7 +210,7 @@ public:
   typedef Expression* ArrayVal;
   static ArrayLit* e(EnvI& env, Expression* e) { return eval_array_lit(env, e); }
   static Expression* exp(Expression* e) { return e; }
-  Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
+  static Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
     throw InternalError("evaluating var assignment generator inside par expression not supported");
   }
 };
@@ -291,7 +291,7 @@ public:
       }
     }
   }
-  Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
+  static Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
     throw InternalError("evaluating var assignment generator inside par expression not supported");
   }
 };
@@ -311,7 +311,7 @@ public:
       }
     }
   }
-  Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
+  static Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
     throw InternalError("evaluating var assignment generator inside par expression not supported");
   }
 };
@@ -331,7 +331,7 @@ public:
       }
     }
   }
-  Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
+  static Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
     throw InternalError("evaluating var assignment generator inside par expression not supported");
   }
 };
@@ -345,7 +345,7 @@ public:
     return sl;
   }
   static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {}
-  Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
+  static Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
     throw InternalError("evaluating var assignment generator inside par expression not supported");
   }
 };
@@ -355,7 +355,7 @@ public:
   typedef Expression* ArrayVal;
   static SetLit* e(EnvI& env, Expression* e) { return eval_set_lit(env, e); }
   static Expression* exp(Expression* e) { return e; }
-  Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
+  static Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
     throw InternalError("evaluating var assignment generator inside par expression not supported");
   }
 };
@@ -365,7 +365,7 @@ public:
   typedef Expression* ArrayVal;
   static SetLit* e(EnvI& env, Expression* e) { return new SetLit(e->loc(), eval_floatset(env, e)); }
   static Expression* exp(Expression* e) { return e; }
-  Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
+  static Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
     throw InternalError("evaluating var assignment generator inside par expression not supported");
   }
 };
@@ -379,7 +379,7 @@ public:
     return sl;
   }
   static Expression* exp(Expression* e) { return e; }
-  Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
+  static Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
     throw InternalError("evaluating var assignment generator inside par expression not supported");
   }
 };
@@ -389,7 +389,7 @@ public:
   typedef Expression* ArrayVal;
   static Expression* e(EnvI& env, Expression* e) { return copy(env, e, true); }
   static Expression* exp(Expression* e) { return e; }
-  Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
+  static Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
     throw InternalError("evaluating var assignment generator inside par expression not supported");
   }
 };
@@ -400,7 +400,7 @@ public:
   static Expression* e(EnvI& env, Expression* e) { return eval_par(env, e); }
   static Expression* exp(Expression* e) { return e; }
   static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {}
-  Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
+  static Expression* flatten(EnvI& /*env*/, Expression* /*e*/) {
     throw InternalError("evaluating var assignment generator inside par expression not supported");
   }
 };

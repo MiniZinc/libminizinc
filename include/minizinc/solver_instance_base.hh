@@ -81,7 +81,7 @@ public:
   /// generate the solver-instance-representation from the flatzinc model
   virtual void processFlatZinc() = 0;
   /// clean up input model & flatzinc
-  void cleanupForNonincrementalSolving() { getEnv()->envi().cleanupExceptOutput(); }
+  void cleanupForNonincrementalSolving() const { getEnv()->envi().cleanupExceptOutput(); }
   /// solve the problem instance (according to the solve specification in the flatzinc model)
   virtual Status solve();
   /// return reason for status given by solve
@@ -92,7 +92,7 @@ public:
 
   /// reset the model to its core (removing temporary cts) and the solver to the root node of the
   /// search
-  void reset();
+  static void reset();
   /// reset the solver to the root node of the search TODO: difference between reset() and
   /// resetSolver()?
   virtual void resetSolver() = 0;
@@ -105,8 +105,8 @@ protected:
   /// flatten the search annotations, pushing them into the vector \a out
   void flattenSearchAnnotations(const Annotation& ann, std::vector<Expression*>& out);
 
-  void flattenMultipleObjectives(const Annotation& ann, MultipleObjectives& mo);
-  void flattenMultObjComponent(const Annotation& ann, MultipleObjectives::Objective& obj);
+  void flattenMultipleObjectives(const Annotation& ann, MultipleObjectives& mo) const;
+  static void flattenMultObjComponent(const Annotation& ann, MultipleObjectives::Objective& obj);
 
 private:
   SolverInstanceBase(const SolverInstanceBase&);

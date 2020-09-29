@@ -186,14 +186,14 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
     Ctx ctx;
     EvalF(const Ctx& ctx0) : ctx(ctx0) {}
     typedef EE ArrayVal;
-    EE e(EnvI& env, Expression* e0) {
+    EE e(EnvI& env, Expression* e0) const {
       VarDecl* b = ctx.b == C_ROOT ? constants().varTrue : nullptr;
       VarDecl* r = (ctx.b == C_ROOT && e0->type().isbool() && !e0->type().isOpt())
                        ? constants().varTrue
                        : nullptr;
       return flat_exp(env, ctx, e0, r, b);
     }
-    Expression* flatten(EnvI& env, Expression* e0) {
+    static Expression* flatten(EnvI& env, Expression* e0) {
       return flat_exp(env, Ctx(), e0, nullptr, constants().varTrue).r();
     }
   } _evalf(ctx);

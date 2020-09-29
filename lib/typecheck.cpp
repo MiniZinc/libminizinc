@@ -2327,7 +2327,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     public:
       Model* m;
       Combiner(Model* m0) : m(m0) {}
-      bool enter(Item* i) {
+      bool enter(Item* i) const {
         if (!i->isa<IncludeI>()) {
           m->addItem(i);
         }

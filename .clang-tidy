@@ -1,6 +1,8 @@
 ---
 Checks: '-*,
   readability-else-after-return,
+  readability-make-member-function-const,
+  readability-convert-member-functions-to-static,
   bugprone-*,
   modernize-deprecated-headers,
   modernize-loop-convert,

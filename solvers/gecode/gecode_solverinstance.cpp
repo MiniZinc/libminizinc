@@ -803,7 +803,7 @@ public:
     throw InternalError(ssm.str());
   }
   int width() const { return static_cast<int>(isr.width().toInt()); }
-  bool operator()() { return isr(); }
+  bool operator()() const { return isr(); }
   void operator++() { ++isr; }
 };
 
@@ -1441,10 +1441,10 @@ class IntVarRangesBwd : public Int::IntVarImpBwd {
 public:
   IntVarRangesBwd() {}
   IntVarRangesBwd(const IntVar& x) : Int::IntVarImpBwd(x.varimp()) {}
-  void init(const IntVar& x) { Int::IntVarImpBwd(x.varimp()); }
+  static void init(const IntVar& x) { Int::IntVarImpBwd(x.varimp()); }
 };
 
-bool GecodeSolverInstance::sac(bool toFixedPoint = false, bool shaving = false) {
+bool GecodeSolverInstance::sac(bool toFixedPoint = false, bool shaving = false) const {
   if (currentSpace->status() == SS_FAILED) {
     return false;
   }

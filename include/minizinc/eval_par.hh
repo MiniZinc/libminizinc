@@ -86,7 +86,7 @@ IntSetVal* compute_intset_bounds(EnvI& env, Expression* e);
 class EvalBase {
 public:
   /// Evaluate bool expression that may contain variables
-  bool evalBoolCV(EnvI& env, Expression* e);
+  static bool evalBoolCV(EnvI& env, Expression* e);
 };
 
 template <class Eval>

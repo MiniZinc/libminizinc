@@ -344,7 +344,7 @@ protected:
   /// Combination function for hash values
   void combineHash(size_t h) { _hash ^= h + 0x9e3779b9 + (_hash << 6) + (_hash >> 2); }
   /// Combination function for hash values
-  size_t combineHash(size_t seed, size_t h) {
+  static size_t combineHash(size_t seed, size_t h) {
     seed ^= h + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     return seed;
   }
@@ -1064,7 +1064,7 @@ public:
     return i == 0 ? _e0 : _e1;
   }
   /// Return number of arguments
-  unsigned int argCount() const { return 2; }
+  static unsigned int argCount() { return 2; }
   /// Access declaration
   FunctionI* decl() const { return _decl; }
   /// Set declaration
@@ -1104,7 +1104,7 @@ public:
     return _e0;
   }
   /// Return number of arguments
-  unsigned int argCount() const { return 1; }
+  static unsigned int argCount() { return 1; }
   /// Access declaration
   FunctionI* decl() const { return _decl; }
   /// Set declaration
@@ -1649,7 +1649,7 @@ public:
   Type rtype(EnvI& env, const std::vector<Type>& ta, bool strictEnums);
   /** \brief Compute expected type of argument \a n given argument types \a ta
    */
-  Type argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned int n);
+  Type argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned int n) const;
 
   /// Return whether function is defined in the standard library
   bool fromStdLib() const { return _fromStdLib; };
@@ -1702,7 +1702,7 @@ public:
   /// Visit TIId
   void vTIId(const TIId& /*tiid*/) {}
   /// Determine whether to enter node
-  bool enter(Expression* /*e*/) { return true; }
+  static bool enter(Expression* /*e*/) { return true; }
   /// Exit node after processing has finished
   void exit(Expression* /*e*/) {}
 };

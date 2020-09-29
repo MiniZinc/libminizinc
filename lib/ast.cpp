@@ -588,7 +588,7 @@ bool Comprehension::containsBoundVariable(Expression* e) {
 
   public:
     FindVar(std::unordered_set<VarDecl*>& decls) : _decls(decls), _found(false) {}
-    bool enter(Expression* /*e*/) { return !_found; }
+    bool enter(Expression* /*e*/) const { return !_found; }
     void vId(Id& ident) {
       if (_decls.find(ident.decl()) != _decls.end()) {
         _found = true;
@@ -1224,7 +1224,7 @@ Type FunctionI::rtype(EnvI& env, const std::vector<Type>& ta, bool strictEnums) 
   return return_type(env, this, ta, strictEnums);
 }
 
-Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned int n) {
+Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned int n) const {
   TypeInst* tii = params()[n]->ti();
   if ((tii->domain() != nullptr) && tii->domain()->isa<TIId>()) {
     Type ty = ta[n]->type();

@@ -165,9 +165,9 @@ MznSolver::~MznSolver() {
   GC::trigger();
 }
 
-bool MznSolver::ifMzn2Fzn() { return _isMzn2fzn; }
+bool MznSolver::ifMzn2Fzn() const { return _isMzn2fzn; }
 
-bool MznSolver::ifSolns2out() { return s2out.opt.flagStandaloneSolns2Out; }
+bool MznSolver::ifSolns2out() const { return s2out.opt.flagStandaloneSolns2Out; }
 
 void MznSolver::addSolverInterface(SolverFactory* sf) {
   _si = _sf->createSI(*_flt.getEnv(), _log, _siOpt);

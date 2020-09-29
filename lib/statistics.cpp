@@ -28,10 +28,10 @@ void Statistics::nodes(unsigned long long n) { _nodes = n; }
 void Statistics::failures(unsigned long long f) { _failures = f; }
 void Statistics::objective(double o) { _objective = o; }
 
-unsigned long long Statistics::time() { return _time; };
-unsigned long long Statistics::nodes() { return _nodes; };
-unsigned long long Statistics::failures() { return _failures; };
-double Statistics::objective() { return _objective; };
+unsigned long long Statistics::time() const { return _time; };
+unsigned long long Statistics::nodes() const { return _nodes; };
+unsigned long long Statistics::failures() const { return _failures; };
+double Statistics::objective() const { return _objective; };
 
 Statistics& Statistics::operator+=(Statistics& s) {
   _time += s.time();

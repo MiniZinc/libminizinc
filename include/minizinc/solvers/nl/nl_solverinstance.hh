@@ -43,7 +43,7 @@ public:
   void resetSolver() override;
 
 protected:
-  Expression* getSolutionValue(Id* id);
+  static Expression* getSolutionValue(Id* id);
 
   void analyse(const Item* i);
 };

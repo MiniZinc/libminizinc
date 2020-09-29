@@ -978,7 +978,7 @@ public:
     }
   }
   /// Determine whether to enter node
-  bool enter(Expression* e) { return !e->isa<Id>(); }
+  static bool enter(Expression* e) { return !e->isa<Id>(); }
   void remove(EnvI& env, Item* item, std::vector<VarDecl*>& deletedVarDecls) {
     for (auto& i : _removed) {
       i->ann().remove(constants().ann.is_defined_var);

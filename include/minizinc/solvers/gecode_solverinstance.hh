@@ -127,7 +127,7 @@ public:
 
   bool isset() const { return _t == SET_TYPE; }
 
-  bool hasBoolAlias() { return _boolAliasIndex >= 0; }
+  bool hasBoolAlias() const { return _boolAliasIndex >= 0; }
 
   /// set the index in FznSpace::bv of the Boolean variable that corresponds to the int variable
   void setBoolAliasIndex(unsigned int index) {
@@ -135,24 +135,24 @@ public:
     _boolAliasIndex = static_cast<int>(index);
   }
 
-  int boolAliasIndex() { return _boolAliasIndex; }
+  int boolAliasIndex() const { return _boolAliasIndex; }
 
-  unsigned int index() { return _index; }
+  unsigned int index() const { return _index; }
 
-  Gecode::IntVar& intVar(MiniZinc::FznSpace* space) {
+  Gecode::IntVar& intVar(MiniZinc::FznSpace* space) const {
     assert(_t == INT_TYPE);
     assert(_index < space->iv.size());
     return space->iv[_index];
   }
 
-  Gecode::BoolVar& boolVar(MiniZinc::FznSpace* space) {
+  Gecode::BoolVar& boolVar(MiniZinc::FznSpace* space) const {
     assert(_t == BOOL_TYPE);
     assert(_index < space->bv.size());
     return space->bv[_index];
   }
 
 #ifdef GECODE_HAS_FLOAT_VARS
-  Gecode::FloatVar& floatVar(MiniZinc::FznSpace* space) {
+  Gecode::FloatVar& floatVar(MiniZinc::FznSpace* space) const {
     assert(_t == FLOAT_TYPE);
     assert(_index < space->fv.size());
     return space->fv[_index];
@@ -160,7 +160,7 @@ public:
 #endif
 
 #ifdef GECODE_HAS_SET_VARS
-  Gecode::SetVar& setVar(MiniZinc::FznSpace* space) {
+  Gecode::SetVar& setVar(MiniZinc::FznSpace* space) const {
     assert(_t == SET_TYPE);
     assert(_index < space->sv.size());
     return space->sv[_index];
@@ -236,7 +236,7 @@ public:
   // Presolve the currently loaded model, updating variables with the same
   // names in the given Model* m.
   bool presolve(Model* m = nullptr);
-  bool sac(bool toFixedPoint, bool shaving);
+  bool sac(bool toFixedPoint, bool shaving) const;
   void printStatistics() override;
 
   void processSolution(bool last_sol = false);
@@ -245,13 +245,13 @@ public:
   Gecode::Space* getGecodeModel();
 
   // helpers for getting correct int bounds
-  bool valueWithinBounds(double b);
+  static bool valueWithinBounds(double b);
 
   // helper functions for processing flatzinc constraints
   /// Convert \a arg (array of integers) to IntArgs
-  Gecode::IntArgs arg2intargs(Expression* arg, int offset = 0);
+  static Gecode::IntArgs arg2intargs(Expression* arg, int offset = 0);
   /// Convert \a arg (array of Booleans) to IntArgs
-  Gecode::IntArgs arg2boolargs(Expression* arg, int offset = 0);
+  static Gecode::IntArgs arg2boolargs(Expression* arg, int offset = 0);
   /// Convert \a n to IntSet
   Gecode::IntSet arg2intset(EnvI& envi, Expression* sl);
   /// Convert \a n to IntSetArgs
@@ -275,7 +275,7 @@ public:
   bool isBoolArray(ArrayLit* a, int& singleInt);
 #ifdef GECODE_HAS_FLOAT_VARS
   /// Convert \a n to FloatValArgs
-  Gecode::FloatValArgs arg2floatargs(Expression* arg, int offset = 0);
+  static Gecode::FloatValArgs arg2floatargs(Expression* arg, int offset = 0);
   /// Convert \a n to FloatVar
   Gecode::FloatVar arg2floatvar(Expression* n);
   /// Convert \a n to FloatVarArgs
@@ -283,34 +283,34 @@ public:
 #endif
   /// Convert \a ann to IntConLevel
 
-  MZ_IntConLevel ann2icl(const Annotation& ann);
+  static MZ_IntConLevel ann2icl(const Annotation& ann);
 
   /// convert the annotation \a s int variable selection to the respective Gecode var selection
-  Gecode::TieBreak<Gecode::IntVarBranch> ann2ivarsel(const ASTString s, Gecode::Rnd& rnd,
-                                                     double decay);
+  static Gecode::TieBreak<Gecode::IntVarBranch> ann2ivarsel(const ASTString s, Gecode::Rnd& rnd,
+                                                            double decay);
   /// convert the annotation \a s int value selection to the respective Gecode val selection
-  Gecode::IntValBranch ann2ivalsel(const ASTString s, std::string& r0, std::string& r1,
-                                   Gecode::Rnd& rnd);
+  static Gecode::IntValBranch ann2ivalsel(const ASTString s, std::string& r0, std::string& r1,
+                                          Gecode::Rnd& rnd);
   /// convert assign value selection
-  Gecode::IntAssign ann2asnivalsel(const ASTString s, Gecode::Rnd& rnd);
+  static Gecode::IntAssign ann2asnivalsel(const ASTString s, Gecode::Rnd& rnd);
 
-  Gecode::TieBreak<Gecode::BoolVarBranch> ann2bvarsel(const ASTString s, Gecode::Rnd& rnd,
-                                                      double decay);
+  static Gecode::TieBreak<Gecode::BoolVarBranch> ann2bvarsel(const ASTString s, Gecode::Rnd& rnd,
+                                                             double decay);
   /// convert the annotation \a s int value selection to the respectbve Gecode val selection
-  Gecode::BoolValBranch ann2bvalsel(const ASTString s, std::string& r0, std::string& r1,
-                                    Gecode::Rnd& rnd);
+  static Gecode::BoolValBranch ann2bvalsel(const ASTString s, std::string& r0, std::string& r1,
+                                           Gecode::Rnd& rnd);
   /// convert assign value selection
-  Gecode::BoolAssign ann2asnbvalsel(const ASTString s, Gecode::Rnd& rnd);
+  static Gecode::BoolAssign ann2asnbvalsel(const ASTString s, Gecode::Rnd& rnd);
 
 #ifdef GECODE_HAS_SET_VARS
-  Gecode::SetVarBranch ann2svarsel(const ASTString s, Gecode::Rnd& rnd, double decay);
-  Gecode::SetValBranch ann2svalsel(const ASTString s, std::string& r0, std::string& r1,
-                                   Gecode::Rnd& rnd);
+  static Gecode::SetVarBranch ann2svarsel(const ASTString s, Gecode::Rnd& rnd, double decay);
+  static Gecode::SetValBranch ann2svalsel(const ASTString s, std::string& r0, std::string& r1,
+                                          Gecode::Rnd& rnd);
 #endif
 #ifdef GECODE_HAS_FLOAT_VARS
-  Gecode::TieBreak<Gecode::FloatVarBranch> ann2fvarsel(const ASTString s, Gecode::Rnd& rnd,
-                                                       double decay);
-  Gecode::FloatValBranch ann2fvalsel(const ASTString s, std::string& r0, std::string& r1);
+  static Gecode::TieBreak<Gecode::FloatVarBranch> ann2fvarsel(const ASTString s, Gecode::Rnd& rnd,
+                                                              double decay);
+  static Gecode::FloatValBranch ann2fvalsel(const ASTString s, std::string& r0, std::string& r1);
 #endif
   /// Returns the VarDecl of \a expr and throws an InternalError if not possible
   VarDecl* getVarDecl(Expression* expr);

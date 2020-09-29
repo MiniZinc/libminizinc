@@ -924,7 +924,7 @@ private:
     return false;
   }
 
-  void propagateImplViews(bool& fChanges) {
+  static void propagateImplViews(bool& fChanges) {
     //      EnvI& env = getEnv()->envi();
     GCLock lock;
 
@@ -1765,7 +1765,7 @@ private:
       }
     }
 
-    void setVarDomain(VarDecl* vd, double lb, double ub) {
+    static void setVarDomain(VarDecl* vd, double lb, double ub) {
       // need to check if the new range is in the previous bounds...   TODO
       if (vd->type().isfloat()) {
         //           if ( 0.0==lb && 0.0==ub ) {
@@ -1987,7 +1987,7 @@ private:
     return fRetTrue;
   }
 
-  VarDecl* expr2VarDecl(Expression* arg) {
+  static VarDecl* expr2VarDecl(Expression* arg) {
     // The requirement to have actual variable objects
     // might be a limitation if more optimizations are done before...
     // Might need to flexibilize this                       TODO
@@ -2027,7 +2027,7 @@ private:
     return al->min(0);
   }
 
-  double expr2Const(Expression* arg) {
+  static double expr2Const(Expression* arg) {
     if (auto* il = arg->dynamicCast<IntLit>()) {
       return (static_cast<double>(il->v().toInt()));
     }

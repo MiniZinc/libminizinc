@@ -318,6 +318,7 @@ bool Solns2Out::evalOutput(const string& s_ExtraInfo) {
   return true;
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static): Appears static without Gecode
 void Solns2Out::checkSolution(std::ostream& oss) {
 #ifdef HAS_GECODE
 
@@ -388,6 +389,7 @@ void Solns2Out::checkSolution(std::ostream& oss) {
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static): Appears static without Gecode
 void Solns2Out::checkStatistics(std::ostream& oss) {
 #ifdef HAS_GECODE
 

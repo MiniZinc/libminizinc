@@ -946,7 +946,7 @@ const std::vector<unsigned int>& EnvI::getArrayEnum(unsigned int i) const {
   assert(i > 0 && i <= _arrayEnumDecls.size());
   return _arrayEnumDecls[i - 1];
 }
-bool EnvI::isSubtype(const Type& t1, const Type& t2, bool strictEnums) {
+bool EnvI::isSubtype(const Type& t1, const Type& t2, bool strictEnums) const {
   if (!t1.isSubtypeOf(t2, strictEnums)) {
     return false;
   }
@@ -2643,9 +2643,9 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
         Ctx ctx;
         EvalFlatCvExp(Ctx& ctx0) : ctx(ctx0) {}
         typedef Expression* ArrayVal;
-        Expression* e(EnvI& env, Expression* e) { return flat_cv_exp(env, ctx, e)(); }
+        Expression* e(EnvI& env, Expression* e) const { return flat_cv_exp(env, ctx, e)(); }
         static Expression* exp(Expression* e) { return e; }
-        Expression* flatten(EnvI& env, Expression* e0) {
+        static Expression* flatten(EnvI& env, Expression* e0) {
           return flat_exp(env, Ctx(), e0, nullptr, constants().varTrue).r();
         }
 
@@ -2842,7 +2842,7 @@ void flatten(Env& e, FlatteningOptions opt) {
       ItemTimer::TimingMap* timingMap;
       FV(EnvI& env0, bool& hadSolveItem0, ItemTimer::TimingMap* timingMap0)
           : env(env0), hadSolveItem(hadSolveItem0), timingMap(timingMap0) {}
-      bool enter(Item* i) { return !(i->isa<ConstraintI>() && env.failed()); }
+      bool enter(Item* i) const { return !(i->isa<ConstraintI>() && env.failed()); }
       void vVarDeclI(VarDeclI* v) {
         ItemTimer item_timer(v->loc(), timingMap);
         v->e()->ann().remove(constants().ann.output_var);

@@ -36,10 +36,10 @@ public:
   void failures(unsigned long long f);
   void objective(double o);
 
-  unsigned long long time();
-  unsigned long long nodes();
-  unsigned long long failures();
-  double objective();
+  unsigned long long time() const;
+  unsigned long long nodes() const;
+  unsigned long long failures() const;
+  double objective() const;
 
   Statistics& operator+=(Statistics& s);
 

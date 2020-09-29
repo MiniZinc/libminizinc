@@ -46,7 +46,7 @@ public:
   static Token colon() { return Token(T_COLON); }
   static Token eof() { return Token(T_EOF); }
   static Token null() { return Token(T_NULL); }
-  string toString() {
+  string toString() const {
     switch (t) {
       case T_LIST_OPEN:
         return "[";

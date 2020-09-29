@@ -189,7 +189,8 @@ void SolverInstanceBase::flattenSearchAnnotations(const Annotation& ann,
   }
 }
 
-void SolverInstanceBase::flattenMultipleObjectives(const Annotation& ann, MultipleObjectives& mo) {
+void SolverInstanceBase::flattenMultipleObjectives(const Annotation& ann,
+                                                   MultipleObjectives& mo) const {
   int nGoalH = 0;
   for (ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
     MZN_ASSERT_HARD_MSG(0 == nGoalH++, "Several goal hierarchies provided");

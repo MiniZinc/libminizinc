@@ -16,7 +16,7 @@ public:
   std::vector<bool> parities;
   double wMinCut = 1e100;
   /// Invocation
-  void solve();
+  static void solve();
 };
 
 }  // namespace Algorithms

@@ -170,7 +170,7 @@ public:
     assert(_siOpt);
     return _siOpt;
   }
-  bool getFlagVerbose() { return flagVerbose; /*getFlt()->getFlagVerbose();*/ }
+  bool getFlagVerbose() const { return flagVerbose; /*getFlt()->getFlagVerbose();*/ }
   void printUsage();
 
 private:
@@ -178,20 +178,20 @@ private:
   /// Flatten model
   void flatten(const std::string& modelString = std::string(),
                const std::string& modelName = std::string("stdin"));
-  size_t getNSolvers() { return get_global_solver_registry()->getSolverFactories().size(); }
+  static size_t getNSolvers() { return get_global_solver_registry()->getSolverFactories().size(); }
   /// If building a flattening exe only.
-  bool ifMzn2Fzn();
-  bool ifSolns2out();
+  bool ifMzn2Fzn() const;
+  bool ifSolns2out() const;
   void addSolverInterface();
   void addSolverInterface(SolverFactory* sf);
   SolverInstance::Status solve();
 
-  SolverInstance::Status getFltStatus() { return _flt.status; }
+  SolverInstance::Status getFltStatus() const { return _flt.status; }
   SolverInstanceBase* getSI() {
     assert(_si);
     return _si;
   }
-  bool getFlagStatistics() { return flagStatistics; }
+  bool getFlagStatistics() const { return flagStatistics; }
 };
 
 }  // namespace MiniZinc

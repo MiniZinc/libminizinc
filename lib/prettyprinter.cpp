@@ -782,7 +782,7 @@ private:
 public:
   Document() : _level(0) {}
   virtual ~Document() {}
-  int getLevel() { return _level; }
+  int getLevel() const { return _level; }
   // Make this object a child of "d".
   virtual void setParent(Document* d) { _level = d->_level + 1; }
 };
@@ -796,7 +796,7 @@ public:
   BreakPoint(bool ds) { _dontSimplify = ds; }
   ~BreakPoint() override {}
   void setDontSimplify(bool b) { _dontSimplify = b; }
-  bool getDontSimplify() { return _dontSimplify; }
+  bool getDontSimplify() const { return _dontSimplify; }
 };
 
 class StringDocument : public Document {
@@ -859,11 +859,11 @@ public:
 
   std::string getSeparator() { return _separator; }
 
-  bool getUnbreakable() { return _unbreakable; }
+  bool getUnbreakable() const { return _unbreakable; }
 
   void setUnbreakable(bool b) { _unbreakable = b; }
 
-  bool getAlignment() { return _alignment; }
+  bool getAlignment() const { return _alignment; }
 };
 
 DocumentList::DocumentList(std::string beginToken, std::string separator, std::string endToken,
@@ -892,7 +892,7 @@ public:
 
   int getLength() const { return _lineLength; }
   int getIndentation() const { return _indentation; }
-  int getSpaceLeft(int maxwidth);
+  int getSpaceLeft(int maxwidth) const;
   void addString(const std::string& s);
   void concatenateLines(Line& l);
 
@@ -908,7 +908,7 @@ public:
   }
 };
 
-int Line::getSpaceLeft(int maxwidth) { return maxwidth - _lineLength - _indentation; }
+int Line::getSpaceLeft(int maxwidth) const { return maxwidth - _lineLength - _indentation; }
 void Line::addString(const std::string& s) {
   _lineLength += static_cast<int>(s.size());
   _text.push_back(s);
@@ -1085,17 +1085,17 @@ Document* tiexpression_to_document(const Type& type, const Expression* e) {
 class ExpressionDocumentMapper {
 public:
   typedef Document* ret;
-  ret mapIntLit(const IntLit& il) {
+  static ret mapIntLit(const IntLit& il) {
     std::ostringstream oss;
     oss << il.v();
     return new StringDocument(oss.str());
   }
-  ret mapFloatLit(const FloatLit& fl) {
+  static ret mapFloatLit(const FloatLit& fl) {
     std::ostringstream oss;
     pp_floatval(oss, fl.v());
     return new StringDocument(oss.str());
   }
-  ret mapSetLit(const SetLit& sl) {
+  static ret mapSetLit(const SetLit& sl) {
     DocumentList* dl;
     if (sl.isv() != nullptr) {
       if (sl.type().bt() == Type::BT_BOOL) {
@@ -1172,15 +1172,15 @@ public:
     }
     return dl;
   }
-  ret mapBoolLit(const BoolLit& bl) {
+  static ret mapBoolLit(const BoolLit& bl) {
     return new StringDocument(std::string(bl.v() ? "true" : "false"));
   }
-  ret mapStringLit(const StringLit& sl) {
+  static ret mapStringLit(const StringLit& sl) {
     std::ostringstream oss;
     oss << "\"" << Printer::escapeStringLit(sl.v()) << "\"";
     return new StringDocument(oss.str());
   }
-  ret mapId(const Id& id) {
+  static ret mapId(const Id& id) {
     if (&id == constants().absent) {
       return new StringDocument("<>");
     }
@@ -1191,13 +1191,13 @@ public:
     oss << "X_INTRODUCED_" << id.idn() << "_";
     return new StringDocument(oss.str());
   }
-  ret mapTIId(const TIId& id) {
+  static ret mapTIId(const TIId& id) {
     std::ostringstream ss;
     ss << "$" << id.v();
     return new StringDocument(ss.str());
   }
-  ret mapAnonVar(const AnonVar& /*v*/) { return new StringDocument("_"); }
-  ret mapArrayLit(const ArrayLit& al) {
+  static ret mapAnonVar(const AnonVar& /*v*/) { return new StringDocument("_"); }
+  static ret mapArrayLit(const ArrayLit& al) {
     /// TODO: test multi-dimensional arrays handling
     DocumentList* dl;
     unsigned int n = al.dims();
@@ -1239,7 +1239,7 @@ public:
     }
     return dl;
   }
-  ret mapArrayAccess(const ArrayAccess& aa) {
+  static ret mapArrayAccess(const ArrayAccess& aa) {
     auto* dl = new DocumentList("", "", "");
 
     dl->addDocumentToList(expression_to_document(aa.v()));
@@ -1250,7 +1250,7 @@ public:
     dl->addDocumentToList(args);
     return dl;
   }
-  ret mapComprehension(const Comprehension& c) {
+  static ret mapComprehension(const Comprehension& c) {
     std::ostringstream oss;
     DocumentList* dl;
     if (c.set()) {
@@ -1287,7 +1287,7 @@ public:
 
     return dl;
   }
-  ret mapITE(const ITE& ite) {
+  static ret mapITE(const ITE& ite) {
     auto* dl = new DocumentList("", "", "");
     for (int i = 0; i < ite.size(); i++) {
       std::string beg = (i == 0 ? "if " : " elseif ");
@@ -1314,7 +1314,7 @@ public:
 
     return dl;
   }
-  ret mapBinOp(const BinOp& bo) {
+  static ret mapBinOp(const BinOp& bo) {
     Parentheses ps = need_parentheses(&bo, bo.lhs(), bo.rhs());
     DocumentList* opLeft;
     DocumentList* dl;
@@ -1435,7 +1435,7 @@ public:
 
     return dl;
   }
-  ret mapUnOp(const UnOp& uo) {
+  static ret mapUnOp(const UnOp& uo) {
     auto* dl = new DocumentList("", "", "");
     std::string op;
     switch (uo.op()) {
@@ -1465,7 +1465,7 @@ public:
     dl->addDocumentToList(unop);
     return dl;
   }
-  ret mapCall(const Call& c) {
+  static ret mapCall(const Call& c) {
     if (c.argCount() == 1) {
       /*
        * if we have only one argument, and this is an array comprehension,
@@ -1530,7 +1530,7 @@ public:
     }
     return dl;
   }
-  ret mapVarDecl(const VarDecl& vd) {
+  static ret mapVarDecl(const VarDecl& vd) {
     std::ostringstream oss;
     auto* dl = new DocumentList("", "", "");
     dl->addDocumentToList(expression_to_document(vd.ti()));
@@ -1555,7 +1555,7 @@ public:
     }
     return dl;
   }
-  ret mapLet(const Let& l) {
+  static ret mapLet(const Let& l) {
     auto* letin = new DocumentList("", "", "", false);
     auto* lets = new DocumentList("", " ", "", true);
     auto* inexpr = new DocumentList("", "", "");
@@ -1593,7 +1593,7 @@ public:
     dl->addStringToList(")");
     return dl;
   }
-  ret mapTypeInst(const TypeInst& ti) {
+  static ret mapTypeInst(const TypeInst& ti) {
     auto* dl = new DocumentList("", "", "");
     if (ti.isarray()) {
       dl->addStringToList("array [");
@@ -1635,28 +1635,28 @@ Document* expression_to_document(const Expression* e) {
 class ItemDocumentMapper {
 public:
   typedef Document* ret;
-  ret mapIncludeI(const IncludeI& ii) {
+  static ret mapIncludeI(const IncludeI& ii) {
     std::ostringstream oss;
     oss << "include \"" << ii.f() << "\";";
     return new StringDocument(oss.str());
   }
-  ret mapVarDeclI(const VarDeclI& vi) {
+  static ret mapVarDeclI(const VarDeclI& vi) {
     auto* dl = new DocumentList("", " ", ";");
     dl->addDocumentToList(expression_to_document(vi.e()));
     return dl;
   }
-  ret mapAssignI(const AssignI& ai) {
+  static ret mapAssignI(const AssignI& ai) {
     auto* dl = new DocumentList("", " = ", ";");
     dl->addStringToList(std::string(ai.id().c_str(), ai.id().size()));
     dl->addDocumentToList(expression_to_document(ai.e()));
     return dl;
   }
-  ret mapConstraintI(const ConstraintI& ci) {
+  static ret mapConstraintI(const ConstraintI& ci) {
     auto* dl = new DocumentList("constraint ", " ", ";");
     dl->addDocumentToList(expression_to_document(ci.e()));
     return dl;
   }
-  ret mapSolveI(const SolveI& si) {
+  static ret mapSolveI(const SolveI& si) {
     auto* dl = new DocumentList("", "", ";");
     dl->addStringToList("solve");
     if (!si.ann().isEmpty()) {
@@ -1677,12 +1677,12 @@ public:
     }
     return dl;
   }
-  ret mapOutputI(const OutputI& oi) {
+  static ret mapOutputI(const OutputI& oi) {
     auto* dl = new DocumentList("output ", " ", ";");
     dl->addDocumentToList(expression_to_document(oi.e()));
     return dl;
   }
-  ret mapFunctionI(const FunctionI& fi) {
+  static ret mapFunctionI(const FunctionI& fi) {
     DocumentList* dl;
     if (fi.ti()->type().isAnn() && fi.e() == nullptr) {
       dl = new DocumentList("annotation ", " ", ";", false);
