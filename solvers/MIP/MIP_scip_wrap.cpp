@@ -432,7 +432,8 @@ void MIPScipWrapper::addCumulative(int nnz, int* rmatind, double* d, double* r, 
                                    const string& rowName) {
   SCIP_CONS* cons;
   vector<SCIP_VAR*> ab(nnz);
-  vector<int> nd(nnz), nr(nnz);
+  vector<int> nd(nnz);
+  vector<int> nr(nnz);
 
   for (int j = 0; j < nnz; ++j) {
     ab[j] = _scipVars[rmatind[j]];

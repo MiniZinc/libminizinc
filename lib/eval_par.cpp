@@ -628,17 +628,17 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
   return nullptr;
 }
 
-Expression* eval_arrayaccess(EnvI& env, ArrayLit* al, const std::vector<IntVal>& dims,
+Expression* eval_arrayaccess(EnvI& env, ArrayLit* al, const std::vector<IntVal>& idx,
                              bool& success) {
   success = true;
-  assert(al->dims() == dims.size());
+  assert(al->dims() == idx.size());
   IntVal realidx = 0;
   int realdim = 1;
   for (int i = 0; i < al->dims(); i++) {
     realdim *= al->max(i) - al->min(i) + 1;
   }
   for (int i = 0; i < al->dims(); i++) {
-    IntVal ix = dims[i];
+    IntVal ix = idx[i];
     if (ix < al->min(i) || ix > al->max(i)) {
       success = false;
       Type t = al->type();

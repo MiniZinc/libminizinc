@@ -187,7 +187,6 @@ public:
   // NOLINTNEXTLINE(readability-identifier-naming)
   int(__stdcall* dll_GRBgetintparam)(GRBenv* env, const char* paramname, int* valueP);
 
-public:
   MIPGurobiWrapper(Options* opt) : _options(opt) {
     if (opt != nullptr) {
       openGUROBI();

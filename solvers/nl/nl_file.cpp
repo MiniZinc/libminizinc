@@ -1485,7 +1485,7 @@ ostream& NLFile::printToStream(ostream& os) const {
   // Print the header
   {
     NLHeader header;
-    header.printToStream(os, *this);
+    NLHeader::printToStream(os, *this);
   }
   os << endl;
 

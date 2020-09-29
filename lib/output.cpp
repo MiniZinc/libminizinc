@@ -15,8 +15,6 @@
 
 namespace MiniZinc {
 
-void output_vardecls(EnvI& env, Item* ci, Expression* e);
-
 bool cannot_use_rhs_for_output(EnvI& env, Expression* e,
                                std::unordered_set<FunctionI*>& seen_functions) {
   if (e == nullptr) {

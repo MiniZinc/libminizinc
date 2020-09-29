@@ -215,7 +215,6 @@ public:
   std::string toString(EnvI& env) const;
   std::string nonEnumToString() const;
 
-public:
   /// Check if \a bt0 is a subtype of \a bt1
   static bool btSubtype(const Type& t0, const Type& t1, bool strictEnums) {
     if (t0.bt() == t1.bt() &&

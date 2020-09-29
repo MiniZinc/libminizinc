@@ -131,7 +131,6 @@ private:
   XpressPlugin* _plugin = nullptr;
 
 public:
-public:
   void doAddVars(size_t n, double* obj, double* lb, double* ub, VarType* vt,
                  string* names) override;
   void addRow(int nnz, int* rmatind, double* rmatval, LinConType sense, double rhs,

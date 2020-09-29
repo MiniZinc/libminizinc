@@ -409,8 +409,6 @@ Expression* copy(EnvI& env, Expression* e, bool followIds, bool copyFundecls, bo
   return copy(env, m, e, followIds, copyFundecls, isFlatModel);
 }
 
-Model* copy(EnvI& env, CopyMap& cm, Model* m, bool isFlatModel);
-
 Item* copy(EnvI& env, CopyMap& m, Item* i, bool followIds, bool copyFundecls, bool isFlatModel) {
   if (i == nullptr) {
     return nullptr;

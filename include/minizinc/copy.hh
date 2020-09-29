@@ -64,6 +64,6 @@ Expression* copy(EnvI& env, CopyMap& map, Expression* e, bool followIds = false,
 Item* copy(EnvI& env, CopyMap& map, Item* i, bool followIds = false, bool copyFundecls = false,
            bool isFlatModel = false);
 /// Create a deep copy of model \a m
-Model* copy(EnvI& env, CopyMap& map, Model* m, bool isFlatModel = false);
+Model* copy(EnvI& env, CopyMap& cm, Model* m, bool isFlatModel = false);
 
 }  // namespace MiniZinc

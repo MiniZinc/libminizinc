@@ -792,7 +792,6 @@ public:
   /// Set element \a i of a sliced array
   void setSlice(unsigned int i, Expression* e);
 
-public:
   /// The identifier of this expression type
   static const ExpressionId eid = E_ARRAYLIT;
   /// Constructor

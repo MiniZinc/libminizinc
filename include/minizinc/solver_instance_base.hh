@@ -142,7 +142,7 @@ protected:
 
 public:
   Registry(SolverInstanceBase& base) : _base(base) {}
-  void add(const ASTString name, poster p);
+  void add(ASTString name, poster p);
   void add(const std::string& name, poster p);
   void post(Call* c);
   void cleanup() { _registry.clear(); }

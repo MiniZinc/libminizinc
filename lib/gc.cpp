@@ -414,7 +414,7 @@ void GC::remove(GCMarker* m) {
 void* GC::alloc(size_t size) {
   assert(locked());
   void* ret;
-  if (size < _heap->_fl_size[0] || size > _heap->_fl_size[_heap->_max_fl]) {
+  if (size < GC::Heap::_fl_size[0] || size > GC::Heap::_fl_size[GC::Heap::_max_fl]) {
     ret = _heap->alloc(size, true);
   } else {
     ret = _heap->fl(size);

@@ -161,7 +161,8 @@ void MIPosicbcWrapper::doAddVars(size_t n, double* obj, double* lb, double* ub,
 void MIPosicbcWrapper::addRow(int nnz, int* rmatind, double* rmatval, MIPWrapper::LinConType sense,
                               double rhs, int mask, const string& rowName) {
   /// Convert var types:
-  double rlb = rhs, rub = rhs;
+  double rlb = rhs;
+  double rub = rhs;
   switch (sense) {
     case LQ:
       rlb = -_osi.getInfinity();
@@ -337,7 +338,7 @@ protected:
 //-------------------------------------------------------------------
 // Default Constructor
 //-------------------------------------------------------------------
-MyEventHandler3::MyEventHandler3(EventUserInfo& u_) : CbcEventHandler(), _ui(u_) { assert(0); }
+MyEventHandler3::MyEventHandler3(EventUserInfo& u_) : _ui(u_) { assert(0); }
 
 //-------------------------------------------------------------------
 // Copy constructor
@@ -515,7 +516,7 @@ protected:
 //-------------------------------------------------------------------
 // Default Constructor
 //-------------------------------------------------------------------
-MyEventHandler4::MyEventHandler4() : ClpEventHandler() {}
+MyEventHandler4::MyEventHandler4() {}
 
 //-------------------------------------------------------------------
 // Copy constructor

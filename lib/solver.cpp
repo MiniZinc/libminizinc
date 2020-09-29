@@ -239,7 +239,7 @@ void MznSolver::printHelp(const std::string& selectedSolver) {
     _flt.printHelp(_os);
     _os << endl;
     if (!ifMzn2Fzn()) {
-      s2out.printHelp(_os);
+      Solns2Out::printHelp(_os);
       _os << endl;
     }
     _os << "Available solvers (get help using --help <solver id>):" << endl;
@@ -302,7 +302,8 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
     flagIsSolns2out = true;
   }
   bool compileSolutionChecker = false;
-  int i = 1, j = 1;
+  int i = 1;
+  int j = 1;
   int argc = static_cast<int>(argv.size());
   if (argc < 2) {
     return OPTION_ERROR;
@@ -532,7 +533,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
 
             if (sc.supportsMzn()) {
               isMznMzn = true;
-              static_cast<MZNSolverFactory*>(_sf)->setAcceptedFlags(_siOpt, acceptedFlags);
+              MZNSolverFactory::setAcceptedFlags(_siOpt, acceptedFlags);
               std::vector<std::string> additionalArgs_s;
               additionalArgs_s.emplace_back("-m");
               if (!sc.executableResolved().empty()) {
@@ -578,7 +579,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               // supports fzn or nl
               std::vector<std::string> additionalArgs;
               if (sc.supportsFzn()) {
-                static_cast<FZNSolverFactory*>(_sf)->setAcceptedFlags(_siOpt, acceptedFlags);
+                FZNSolverFactory::setAcceptedFlags(_siOpt, acceptedFlags);
                 additionalArgs.emplace_back("--fzn-cmd");
               } else {
                 // supports nl

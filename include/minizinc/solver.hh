@@ -80,7 +80,6 @@ protected:
   typedef std::vector<std::unique_ptr<SolverInstanceBase> > SIStorage;
   SIStorage _sistorage;
 
-protected:
   SolverFactory() { get_global_solver_registry()->addSolverFactory(this); }
 
 public:
@@ -93,7 +92,6 @@ public:
     }
   }
 
-public:
   /// Create solver-specific options object
   virtual SolverInstanceBase::Options* createOptions() = 0;
   /// Function createSI also adds each SI to the local storage
@@ -102,7 +100,6 @@ public:
   /// there is no need to call it upon overall finish - that is taken care of
   void destroySI(SolverInstanceBase* pSI);
 
-public:
   /// Process an item in the command line.
   /// Leaving this now like this because this seems simpler.
   /// We can also pass options internally between modules in this way
@@ -153,7 +150,6 @@ public:
   bool flagIsSolns2out = false;
   int flagOverallTimeLimit = 0;
 
-public:
   MznSolver(std::ostream& os = std::cout, std::ostream& log = std::cerr);
   ~MznSolver();
 

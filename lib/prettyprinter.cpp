@@ -1747,17 +1747,17 @@ private:
 
   void addItem();
 
-  void addLine(int indentation, bool bp = false, bool ds = false, int level = 0);
+  void addLine(int indentation, bool bp = false, bool simpl = false, int level = 0);
   static std::string printSpaces(int n);
   const std::vector<Line>& getCurrentItemLines() const;
 
-  void printDocument(Document* d, bool alignment, int startColAlignment,
-                     const std::string& before = "", const std::string& after = "");
-  void printDocList(DocumentList* d, int startColAlignment, const std::string& before = "",
+  void printDocument(Document* d, bool alignment, int alignmentCol, const std::string& before = "",
+                     const std::string& after = "");
+  void printDocList(DocumentList* d, int alignmentCol, const std::string& before = "",
                     const std::string& after = "");
-  void printStringDoc(StringDocument* d, bool alignment, int startColAlignment,
+  void printStringDoc(StringDocument* d, bool alignment, int alignmentCol,
                       const std::string& before = "", const std::string& after = "");
-  void printString(const std::string& s, bool alignment, int startColAlignment);
+  void printString(const std::string& s, bool alignment, int alignmentCol);
   bool simplify(int item, int line, std::vector<int>* vec);
   void simplifyItem(int item);
 };
@@ -1889,7 +1889,8 @@ void PrettyPrinter::printDocList(DocumentList* d, int alignmentCol, const std::s
       }
       bp = true;
     }
-    std::string af, be;
+    std::string af;
+    std::string be;
     if (i != vectorSize - 1) {
       if (bp || lastVisibleElementIndex <= i) {
         af = "";
@@ -1963,25 +1964,25 @@ void Printer::p(const Item* i) {
   Document* d;
   switch (i->iid()) {
     case Item::II_INC:
-      d = _ism->mapIncludeI(*i->cast<IncludeI>());
+      d = ItemDocumentMapper::mapIncludeI(*i->cast<IncludeI>());
       break;
     case Item::II_VD:
-      d = _ism->mapVarDeclI(*i->cast<VarDeclI>());
+      d = ItemDocumentMapper::mapVarDeclI(*i->cast<VarDeclI>());
       break;
     case Item::II_ASN:
-      d = _ism->mapAssignI(*i->cast<AssignI>());
+      d = ItemDocumentMapper::mapAssignI(*i->cast<AssignI>());
       break;
     case Item::II_CON:
-      d = _ism->mapConstraintI(*i->cast<ConstraintI>());
+      d = ItemDocumentMapper::mapConstraintI(*i->cast<ConstraintI>());
       break;
     case Item::II_SOL:
-      d = _ism->mapSolveI(*i->cast<SolveI>());
+      d = ItemDocumentMapper::mapSolveI(*i->cast<SolveI>());
       break;
     case Item::II_OUT:
-      d = _ism->mapOutputI(*i->cast<OutputI>());
+      d = ItemDocumentMapper::mapOutputI(*i->cast<OutputI>());
       break;
     case Item::II_FUN:
-      d = _ism->mapFunctionI(*i->cast<FunctionI>());
+      d = ItemDocumentMapper::mapFunctionI(*i->cast<FunctionI>());
       break;
   }
   p(d);

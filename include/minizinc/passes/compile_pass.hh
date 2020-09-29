@@ -43,7 +43,7 @@ public:
               std::string globals_library, std::vector<std::string> include_paths, bool change_lib,
               bool ignore_unknown);
 
-  Env* run(Env* env, std::ostream& log) override;
+  Env* run(Env* store, std::ostream& log) override;
   ~CompilePass() override;
 };
 

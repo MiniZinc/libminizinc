@@ -250,8 +250,14 @@ bool is_totaladd_bounds_disj(EnvI& env, Expression* arg, Call* c_orig) {
   if (nullptr == pArrayLit) {
     return false;
   }
-  std::vector<Expression*> isUBI, bndI, varI,  // integer bounds and vars
-      isUBF, bndF, varF;                       // float bounds and vars
+  // integer bounds and vars
+  std::vector<Expression*> isUBI;
+  std::vector<Expression*> bndI;
+  std::vector<Expression*> varI;
+  // float bounds and vars
+  std::vector<Expression*> isUBF;
+  std::vector<Expression*> bndF;
+  std::vector<Expression*> varF;
   for (unsigned int i = pArrayLit->size(); (i--) != 0U;) {
     auto* pId = pArrayLit->operator[](i)->dynamicCast<Id>();
     if (nullptr == pId) {
@@ -271,7 +277,8 @@ bool is_totaladd_bounds_disj(EnvI& env, Expression* arg, Call* c_orig) {
       return false;
     }
     /// See if one is a constant and one a variable
-    Expression *pConst = nullptr, *pVar = nullptr;
+    Expression* pConst = nullptr;
+    Expression* pVar = nullptr;
     bool fFloat = false;
     bool isUB = false;
     for (unsigned int j = pCall->argCount(); (j--) != 0U;) {
@@ -328,6 +335,7 @@ public:
   ~IgnorePartial() { env.ignorePartial = ignorePartial; }
 };
 
+// NOLINTNEXTLINE(readability-function-size): TODO??
 EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarDecl* b) {
   EE ret;
   Call* c = e->cast<Call>();

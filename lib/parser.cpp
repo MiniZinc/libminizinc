@@ -28,7 +28,6 @@ using namespace std;
 
 int mzn_yylex_init(void** scanner);
 void mzn_yyset_extra(void* user_defined, void* yyscanner);
-int mzn_yyparse(void*);
 int mzn_yylex_destroy(void* scanner);
 
 namespace {
@@ -287,9 +286,9 @@ error:
 }
 
 Model* parse(Env& env, const vector<string>& filenames, const vector<string>& datafiles,
-             const string& textModel, const string& textModelName, const vector<string>& ip,
-             bool isFlatZinc, bool ignoreStdlib, bool parseDocComments, bool verbose,
-             ostream& err) {
+             const string& textModel, const string& textModelName,
+             const vector<string>& includePaths, bool isFlatZinc, bool ignoreStdlib,
+             bool parseDocComments, bool verbose, ostream& err) {
   if (filenames.empty() && textModel.empty()) {
     err << "Error: no model given" << std::endl;
     return nullptr;
@@ -301,8 +300,8 @@ Model* parse(Env& env, const vector<string>& filenames, const vector<string>& da
     model = new Model();
   }
   std::vector<SyntaxError> se;
-  parse(env, model, filenames, datafiles, textModel, textModelName, ip, isFlatZinc, ignoreStdlib,
-        parseDocComments, verbose, err, se);
+  parse(env, model, filenames, datafiles, textModel, textModelName, includePaths, isFlatZinc,
+        ignoreStdlib, parseDocComments, verbose, err, se);
   return model;
 }
 
@@ -317,7 +316,7 @@ Model* parse_data(Env& env, Model* model, const vector<string>& datafiles,
 }
 
 Model* parse_from_string(Env& env, const string& text, const string& filename,
-                         const vector<string>& ip, bool isFlatZinc, bool ignoreStdlib,
+                         const vector<string>& includePaths, bool isFlatZinc, bool ignoreStdlib,
                          bool parseDocComments, bool verbose, ostream& err,
                          std::vector<SyntaxError>& syntaxErrors) {
   vector<string> filenames;
@@ -327,7 +326,7 @@ Model* parse_from_string(Env& env, const string& text, const string& filename,
     GCLock lock;
     model = new Model();
   }
-  parse(env, model, filenames, datafiles, text, filename, ip, isFlatZinc, ignoreStdlib,
+  parse(env, model, filenames, datafiles, text, filename, includePaths, isFlatZinc, ignoreStdlib,
         parseDocComments, verbose, err, syntaxErrors);
   return model;
 }

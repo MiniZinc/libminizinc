@@ -328,9 +328,6 @@ bool isfalse(EnvI& env, Expression* e) {
   return false;
 }
 
-EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
-KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e);
-
 /// Use bounds from ovd for vd if they are better.
 /// Returns true if ovd's bounds are better.
 bool update_bounds(EnvI& envi, VarDecl* ovd, VarDecl* vd) {

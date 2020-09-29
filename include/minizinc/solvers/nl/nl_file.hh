@@ -109,10 +109,10 @@ public:
   void addVarDecl(const VarDecl& vd, const TypeInst& ti, const Expression& rhs);
 
   /** Add an integer variable declaration to the NL File. */
-  void addVarDeclInteger(const std::string& name, const IntSetVal* isv, bool to_report);
+  void addVarDeclInteger(const std::string& name, const IntSetVal* isv, bool toReport);
 
   /** Add a floating point variable declaration to the NL File. */
-  void addVarDeclFloat(const std::string& name, const FloatSetVal* fsv, bool to_report);
+  void addVarDeclFloat(const std::string& name, const FloatSetVal* fsv, bool toReport);
 
   // --- --- --- Constraints analysis
 

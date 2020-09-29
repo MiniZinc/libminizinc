@@ -88,11 +88,9 @@ public:
     _cutGenerators.push_back(move(pCG));
   }
 
-public:
   double lastIncumbent;
   double dObjVarLB = -1e300, dObjVarUB = 1e300;
 
-public:
   MIPSolverinstance(Env& env, std::ostream& log, typename MIPWrapper::Options* opt)
       : SolverInstanceImpl(env, log, opt), _mipWrapper(new MIPWrapper(opt)) {
     assert(_mipWrapper.get());
@@ -118,11 +116,10 @@ public:
   void printStatistics() override;
   void printStatisticsLine(bool fLegend = false) override;
 
-public:
   /// creates a var for a literal, if necessary
-  VarId exprToVar(Expression* e);
-  void exprToArray(Expression* e, std::vector<double>& vals);
-  void exprToVarArray(Expression* e, std::vector<VarId>& vars);
+  VarId exprToVar(Expression* arg);
+  void exprToArray(Expression* arg, std::vector<double>& vals);
+  void exprToVarArray(Expression* arg, std::vector<VarId>& vars);
   std::pair<double, bool> exprToConstEasy(Expression* e);
   double exprToConst(Expression* e);
 

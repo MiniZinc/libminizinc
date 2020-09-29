@@ -156,7 +156,7 @@ Model* parse(Env& env, const std::vector<std::string>& filename,
              bool isFlatZinc, bool ignoreStdlib, bool parseDocComments, bool verbose,
              std::ostream& err);
 
-Model* parse_from_string(Env& env, const std::string& model, const std::string& filename,
+Model* parse_from_string(Env& env, const std::string& text, const std::string& filename,
                          const std::vector<std::string>& includePaths, bool isFlatZinc,
                          bool ignoreStdlib, bool parseDocComments, bool verbose, std::ostream& err,
                          std::vector<SyntaxError>& syntaxErrors);

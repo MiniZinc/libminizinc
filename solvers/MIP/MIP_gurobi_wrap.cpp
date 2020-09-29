@@ -55,7 +55,9 @@ string MIPGurobiWrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt) 
   MIPGurobiWrapper mgw(nullptr);  // to avoid opening the env
   try {
     mgw.checkDLL();
-    int major, minor, technical;
+    int major;
+    int minor;
+    int technical;
     mgw.dll_GRBversion(&major, &minor, &technical);
     oss << major << '.' << minor << '.' << technical;
     return oss.str();
@@ -82,7 +84,7 @@ vector<string> MIPGurobiWrapper::getTags() { return {"mip", "float", "api"}; }
 
 vector<string> MIPGurobiWrapper::getStdFlags() { return {"-i", "-p", "-s", "-v"}; }
 
-const vector<string> gurobi_dlls() {
+vector<string> gurobi_dlls() {
   const vector<string> versions = {
       "913", "912", "911", "910", "903",  // Potential future versions which should load correctly
       "902", "901", "900", "811", "810", "801", "800", "752",
@@ -566,7 +568,9 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
   auto* info = (MIPWrapper::CBUserInfo*)usrdata;
   auto* gw = static_cast<MIPGurobiWrapper*>(info->wrapper);
 
-  double nodecnt = 0.0, actnodes = 0.0, objVal = 0.0;
+  double nodecnt = 0.0;
+  double actnodes = 0.0;
+  double objVal = 0.0;
   int solcnt = 0;
   int newincumbent = 0;
 
@@ -836,7 +840,9 @@ void MIPGurobiWrapper::solve() {        // Move into ancestor?
   }
   if (_options->nonConvex >= 0) {
 #ifdef GRB_INT_PAR_NONCONVEX
-    int major, minor, technical;
+    int major;
+    int minor;
+    int technical;
     dll_GRBversion(&major, &minor, &technical);
     if (major >= 9) {
       _error =
@@ -905,8 +911,7 @@ void MIPGurobiWrapper::solve() {        // Move into ancestor?
       ++iSetting;
       auto* env_i = dll_GRBgetconcurrentenv(_model, iSetting);
       _error = dll_GRBreadparams(env_i, paramFile.c_str());
-      wrapAssert(_error == 0, ("Failed to read GUROBI parameters from file " + paramFile).c_str(),
-                 false);
+      wrapAssert(_error == 0, "Failed to read GUROBI parameters from file " + paramFile, false);
     }
   }
 

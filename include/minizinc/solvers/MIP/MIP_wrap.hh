@@ -56,7 +56,6 @@ public:
   static const int MaskConsType_Lazy = 4;
   enum Status { OPT, SAT, UNSAT, UNBND, UNSATorUNBND, UNKNOWN, __ERROR };
 
-public:
   /// Columns for SCIP upfront and with obj coefs:
   std::vector<double> colObj, colLB, colUB;
   std::vector<VarType> colTypes;
@@ -67,13 +66,11 @@ public:
   //     double objUB;
   //     double qpu;
 
-public:
   /// Parameter
   bool fVerbose = false;
 
   int nProbType = -2;  // +-1: max/min; 0: sat
 
-public:
   struct Output {
     Status status;
     std::string statusName = "Untouched";
@@ -124,7 +121,6 @@ public:
   /// Cut callback fills one
   typedef std::vector<CutDef> CutInput;
 
-public:
   /// solution callback handler, the wrapper might not have these callbacks implemented
   typedef void (*SolCallbackFn)(const Output&, void*);
   /// cut callback handler, the wrapper might not have these callbacks implemented
@@ -150,7 +146,6 @@ public:
   };
   CBUserInfo cbui;
 
-public:
   MIPWrapper() { cbui.wrapper = this; }
   virtual ~MIPWrapper() { /* cleanup(); */
   }
@@ -166,7 +161,6 @@ public:
   //     virtual void printVersion(ostream& os) { os << "Abstract MIP wrapper"; }
   //     virtual void printHelp(ostream& ) { }
 
-public:
   bool fPhase1Over = false;
 
 private:

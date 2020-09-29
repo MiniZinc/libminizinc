@@ -265,7 +265,8 @@ void MIPSolverinstance<MIPWrapper>::processFlatZinc() {
             << "\nRemove the variable or add a constraint so it is redefined." << std::endl;
         throw InternalError(ssm.str());
       }
-      double lb = 0.0, ub = 1.0;  // for bool
+      double lb = 0.0;
+      double ub = 1.0;  // for bool
       if (ti->domain() != nullptr) {
         if (MIPWrapper::VarType::REAL == vType) {
           FloatBounds fb = compute_float_bounds(getEnv()->envi(), it->e()->id());
@@ -782,9 +783,12 @@ template <class MIPWrapper>
 void p_indicator_le0_if0(SolverInstanceBase& si, const Call* call) {
   auto& gi = dynamic_cast<MIPSolverinstance<MIPWrapper>&>(si);
   /// Looking at the bounded variable and the flag
-  bool f1const = 0, f2const = 0;
-  double val1, val2;
-  MIPSolver::Variable var1, var2;
+  bool f1const = 0;
+  bool f2const = 0;
+  double val1;
+  double val2;
+  MIPSolver::Variable var1;
+  MIPSolver::Variable var2;
   if (call->arg(0)->isa<Id>()) {
     var1 = gi.exprToVar(call->arg(0));
   } else {
@@ -831,9 +835,15 @@ void p_indicator_eq_if1(SolverInstanceBase& si, const Call* call) {
   std::vector<MIPSolver::Variable> vars;
   double rhs = 0.0;
   /// Looking at the bounded variables and the flag
-  bool f1const = 0, f2const = 0, fBconst = 0;
-  double val1, val2, valB;
-  MIPSolver::Variable var1, var2, varB;
+  bool f1const = 0;
+  bool f2const = 0;
+  bool fBconst = 0;
+  double val1;
+  double val2;
+  double valB;
+  MIPSolver::Variable var1;
+  MIPSolver::Variable var2;
+  MIPSolver::Variable varB;
   if (call->arg(0)->isa<Id>()) {
     var1 = gi.exprToVar(call->arg(0));
     coefs.push_back(1.0);
@@ -901,7 +911,8 @@ void p_cumulative(SolverInstanceBase& si, const Call* call) {
 
   std::vector<MIPSolver::Variable> startTimes;
   gi.exprToVarArray(call->arg(0), startTimes);
-  std::vector<double> durations, demands;
+  std::vector<double> durations;
+  std::vector<double> demands;
   gi.exprToArray(call->arg(1), durations);
   gi.exprToArray(call->arg(2), demands);
   double b = gi.exprToConst(call->arg(3));
@@ -955,8 +966,12 @@ template <class MIPWrapper>
 void p_bounds_disj(SolverInstanceBase& si, const Call* call) {
   auto& gi = dynamic_cast<MIPSolverinstance<MIPWrapper>&>(si);
   assert(6 == call->argCount());
-  std::vector<double> fUB, fUBF, bnd, bndF;
-  std::vector<MIPSolver::Variable> vars, varsF;
+  std::vector<double> fUB;
+  std::vector<double> fUBF;
+  std::vector<double> bnd;
+  std::vector<double> bndF;
+  std::vector<MIPSolver::Variable> vars;
+  std::vector<MIPSolver::Variable> varsF;
   gi.exprToArray(call->arg(0), fUB);
   gi.exprToArray(call->arg(3), fUBF);
   gi.exprToArray(call->arg(1), bnd);

@@ -374,7 +374,7 @@ Flattener::Flattener(std::ostream& os, std::ostream& log, std::string stdlibDir)
     : _os(os), _log(log), _stdLibDir(std::move(stdlibDir)) {}
 
 Flattener::~Flattener() {
-  if (_pEnv.get() != nullptr) {  // ??? TODO
+  if (_pEnv != nullptr) {  // ??? TODO
     if (_isFlatzinc) {
       _pEnv->swap();
     }

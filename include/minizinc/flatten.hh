@@ -75,11 +75,11 @@ public:
   virtual ~Pass(){};
 };
 
-/// Flatten model \a m
-void flatten(Env& m, FlatteningOptions opt = FlatteningOptions());
+/// Flatten model in environment \a e
+void flatten(Env& e, FlatteningOptions opt = FlatteningOptions());
 
-/// Translate \a m into old FlatZinc syntax
-void oldflatzinc(Env& m);
+/// Translate model in environment \a e into old FlatZinc syntax
+void oldflatzinc(Env& e);
 
 /// Populate FlatZinc output model
 void populate_output(Env& e);

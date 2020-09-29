@@ -314,7 +314,7 @@ public:
       close(pipes[0][1]);
 
       fd_set fdset;
-      FD_ZERO(&fdset);
+      FD_ZERO(&fdset);  // NOLINT(readability-isolate-declaration)
 
       struct timeval starttime;
       gettimeofday(&starttime, nullptr);

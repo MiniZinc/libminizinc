@@ -49,6 +49,6 @@ using namespace Gecode;
 using namespace MiniZinc;
 
 // Parsing function
-std::unique_ptr<REG> regex_from_string(const std::string& expression, const IntSetVal& domain);
+std::unique_ptr<REG> regex_from_string(const std::string& regex_str, const IntSetVal& domain);
 
 #endif  // HAS_GECODE

@@ -92,7 +92,7 @@ bool ImpCompressor::trackItem(Item* i) {
         }
         if (_env.fopts.enableHalfReification && vdi->e()->ann().contains(constants().ctx.pos)) {
           GCLock lock;
-          auto cid = _env.halfReifyId(c->id());
+          auto cid = EnvI::halfReifyId(c->id());
           std::vector<Type> args;
           args.reserve(c->argCount() + 1);
           for (int j = 0; j < c->argCount(); ++j) {
@@ -266,7 +266,7 @@ ConstraintI* ImpCompressor::constructClause(Expression* pos, Expression* neg) {
 ConstraintI* ImpCompressor::constructHalfReif(Call* call, Id* control) {
   assert(_env.fopts.enableHalfReification);
   assert(GC::locked());
-  auto cid = _env.halfReifyId(call->id());
+  auto cid = EnvI::halfReifyId(call->id());
   std::vector<Expression*> args(call->argCount());
   for (int i = 0; i < call->argCount(); ++i) {
     args[i] = call->arg(i);

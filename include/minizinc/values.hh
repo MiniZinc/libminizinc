@@ -200,9 +200,9 @@ public:
     return result;
   }
 
-  static const IntVal minint();
-  static const IntVal maxint();
-  static const IntVal infinity();
+  static IntVal minint();
+  static IntVal maxint();
+  static IntVal infinity();
 
   /// Infinity-safe addition
   IntVal plus(int x) const {
@@ -436,7 +436,7 @@ public:
     return ret;
   }
 
-  static const FloatVal infinity();
+  static FloatVal infinity();
 
   /// Infinity-safe addition
   FloatVal plus(int x) {

@@ -35,9 +35,9 @@ public:
   /// Constructor
   ASTIntVec(const std::vector<int>& v);
   /// Copy constructor
-  ASTIntVec(const ASTIntVec& s);
+  ASTIntVec(const ASTIntVec& v);
   /// Assignment operator
-  ASTIntVec& operator=(const ASTIntVec& s);
+  ASTIntVec& operator=(const ASTIntVec& v);
 
   /// Size of vector
   unsigned int size() const;
@@ -140,7 +140,7 @@ public:
     assert(i < static_cast<int>(size()));
     return reinterpret_cast<T&>(_data[i]);
   }
-  const T operator[](unsigned int i) const {
+  T operator[](unsigned int i) const {
     assert(i < static_cast<int>(size()));
     return reinterpret_cast<T>(_data[i]);
   }

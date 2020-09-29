@@ -1263,7 +1263,8 @@ private:
       const double A = eq1.first;  // vd = A*arg + B.  conversion
       const double B = eq1.second;
       // process domain info
-      double lb = B, ub = A + B;  // projected bounds for bool
+      double lb = B;
+      double ub = A + B;  // projected bounds for bool
       if (vd->ti()->domain() != nullptr) {
         if (vd->type().isint() || vd->type().isfloat()) {  // INT VAR OR FLOAT VAR
           SetOfIntvReal sD1;
@@ -1326,7 +1327,7 @@ private:
               const double rhs = (mipd.aux_float_lt_zero_iff_1__POST == pCall->decl())
                                      ? B /* + A*0.0, relating to 0 */
                                      // The 2nd argument is constant:
-                                     : A * mipd.expr2Const(pCall->arg(1)) + B;
+                                     : A * MIPD::expr2Const(pCall->arg(1)) + B;
               const double rhsUp = rndUpIfInt(cls.varRef1, rhs);
               const double rhsDown = rndDownIfInt(cls.varRef1, rhs);
               const double rhsRnd = rndIfInt(cls.varRef1, rhs);
@@ -1359,7 +1360,7 @@ private:
             } else if (RIT_Static == dct.nReifType) {
               // _ne, later maybe static ineq                                 TODO
               MZN_MIPD__assert_hard(CMPT_NE == dct.nCmpType);
-              const double rhs = A * mipd.expr2Const(pCall->arg(1)) + B;
+              const double rhs = A * MIPD::expr2Const(pCall->arg(1)) + B;
               const double rhsRnd = rndIfInt(cls.varRef1, rhs);
               bool fSkipNE = (cls.varRef1->type().isint() && std::fabs(rhs - rhsRnd) > INT_EPS);
               if (!fSkipNE) {
@@ -1490,7 +1491,8 @@ private:
     /// && constrains sum(flags)==1
     void createDomainFlags() {
       std::vector<Expression*> vVars(sDomain.size());  // flags for each subinterval
-      std::vector<double> vIntvLB(sDomain.size() + 1), vIntvUB__(sDomain.size() + 1);
+      std::vector<double> vIntvLB(sDomain.size() + 1);
+      std::vector<double> vIntvUB__(sDomain.size() + 1);
       int i = 0;
       double dMaxIntv = -1.0;
       for (const auto& intv : sDomain) {
@@ -1560,7 +1562,7 @@ private:
                 const double rhs = (mipd.aux_float_lt_zero_iff_1__POST == pCall->decl())
                                        ? B /* + A*0.0, relating to 0 */
                                        // The 2nd argument is constant:
-                                       : A * mipd.expr2Const(pCall->arg(1)) + B;
+                                       : A * MIPD::expr2Const(pCall->arg(1)) + B;
                 const double rhsUp = rndUpIfInt(cls.varRef1, rhs);
                 const double rhsDown = rndDownIfInt(cls.varRef1, rhs);
                 const double rhsRnd = rndIfBothInt(
@@ -1675,7 +1677,7 @@ private:
                       std::vector<Expression*> vars = {cls.varRef1->id(), pInd};
                       addLinConstr(coefs, vars, CMPT_LE, bnds.right);
                     } else {
-                      setVarDomain(mipd.expr2VarDecl(pInd), 0.0, 0.0);
+                      setVarDomain(MIPD::expr2VarDecl(pInd), 0.0, 0.0);
                     }
                   }
                   if (fGE && rhs > bnds.left) {
@@ -1684,7 +1686,7 @@ private:
                       std::vector<Expression*> vars = {cls.varRef1->id(), pInd};
                       addLinConstr(coefs, vars, CMPT_LE, -bnds.left);
                     } else {
-                      setVarDomain(mipd.expr2VarDecl(pInd), 0.0, 0.0);
+                      setVarDomain(MIPD::expr2VarDecl(pInd), 0.0, 0.0);
                     }
                   }
                 }
@@ -1709,7 +1711,7 @@ private:
     void relateReifFlag(Expression* expFlag, const SetOfIntvReal& SS, EnumReifType nRT = RIT_Reif) {
       MZN_MIPD__assert_hard(RIT_Reif == nRT || RIT_Halfreif == nRT);
       //         MZN_MIPD__assert_hard( sDomain.size()>=2 );
-      VarDecl* varFlag = mipd.expr2VarDecl(expFlag);
+      VarDecl* varFlag = MIPD::expr2VarDecl(expFlag);
       std::vector<Expression*> vIntvFlags;
       if (cls.fRef1HasEqEncode) {  // use eq_encoding
         MZN_MIPD__assert_hard(varFlag->type().isint());
@@ -1935,10 +1937,10 @@ private:
     }
 
     /// compute the delta for float strict ineq
-    double computeDelta(VarDecl* var, VarDecl* varOrig, IntvReal bnds, double A, Call* pCall,
-                        int nArg) {
+    static double computeDelta(VarDecl* var, VarDecl* varOrig, IntvReal bnds, double A, Call* pCall,
+                               int nArg) {
       double delta = varOrig->type().isfloat()
-                         ? mipd.expr2Const(pCall->arg(nArg))
+                         ? MIPD::expr2Const(pCall->arg(nArg))
                          // * ( bnds.right-bnds.left )   ABANDONED 12.4.18 due to #207
                          : std::fabs(A);  // delta should be scaled as well
       if (var->type().isint()) {          // the projected-onto variable

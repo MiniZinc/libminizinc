@@ -198,7 +198,7 @@ void Solns2Out::parseAssignments(string& solution) {
   std::vector<SyntaxError> se;
   unique_ptr<Model> sm(parse_from_string(*_env, solution, "solution received from solver",
                                          _includePaths, false, true, false, false, _log, se));
-  if (sm.get() == nullptr) {
+  if (sm == nullptr) {
     throw Error("solns2out_base: could not parse solution");
   }
   solution = "";
@@ -268,7 +268,7 @@ bool Solns2Out::evalOutput(const string& s_ExtraInfo) {
     }
     ++stats.nSolns;
     if (opt.flagCanonicalize) {
-      if (_outStreamNonCanon.get() != nullptr) {
+      if (_outStreamNonCanon != nullptr) {
         if (_outStreamNonCanon->good()) {
           (*_outStreamNonCanon) << oss.str();
           (*_outStreamNonCanon) << comments;
@@ -551,7 +551,7 @@ Solns2Out::~Solns2Out() {
 }
 
 ostream& Solns2Out::getOutput() {
-  return (((_outStream.get() != nullptr) && _outStream->good()) ? *_outStream : _os);
+  return (((_outStream != nullptr) && _outStream->good()) ? *_outStream : _os);
 }
 
 ostream& Solns2Out::getLog() { return _log; }
@@ -601,7 +601,7 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
           if (opt.flagOutputFlush) {
             getOutput().flush();
           }
-          if (_outStreamNonCanon.get() != nullptr) {
+          if (_outStreamNonCanon != nullptr) {
             if (_outStreamNonCanon->good()) {
               (*_outStreamNonCanon) << line << '\n';
             }
@@ -623,8 +623,8 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
       }
     }
   }
-  if (_outStreamRaw.get() != nullptr) {
-    (*_outStreamRaw.get()) << data;
+  if (_outStreamRaw != nullptr) {
+    *_outStreamRaw << data;
     if (opt.flagOutputFlush) {
       _outStreamRaw->flush();
     }

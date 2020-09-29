@@ -177,7 +177,8 @@ void GeasSolverInstance::processFlatZinc() {
       if (vd->type().isbool()) {
         if (vd->e() == nullptr) {
           Expression* domain = vd->ti()->domain();
-          long long int lb, ub;
+          long long int lb;
+          long long int ub;
           if (domain != nullptr) {
             IntBounds ib = compute_int_bounds(_env.envi(), domain);
             lb = ib.l.toInt();
@@ -208,7 +209,8 @@ void GeasSolverInstance::processFlatZinc() {
       } else if (vd->type().isfloat()) {
         if (vd->e() == nullptr) {
           Expression* domain = vd->ti()->domain();
-          double lb, ub;
+          double lb;
+          double ub;
           if (domain != nullptr) {
             FloatBounds fb = compute_float_bounds(_env.envi(), vd->id());
             lb = fb.l.toDouble();

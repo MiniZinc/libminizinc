@@ -166,7 +166,7 @@ void SECCutGen::generate(const MIPWrapper::Output& slvOut, MIPWrapper::CutInput&
     mc.edges.push_back(mf.first);
     mc.weights.push_back(mf.second);
   }
-  mc.solve();
+  Algorithms::MinCut::solve();
   /// Check if violation
   if (mc.wMinCut <= 1.999) {
     MIPWrapper::CutDef cut(MIPWrapper::GQ,

@@ -234,8 +234,8 @@ public:
   void resetSolver() override;
 
   // Presolve the currently loaded model, updating variables with the same
-  // names in the given Model* m.
-  bool presolve(Model* m = nullptr);
+  // names in the given Model* originalModel.
+  bool presolve(Model* originalModel = nullptr);
   bool sac(bool toFixedPoint, bool shaving) const;
   void printStatistics() override;
 
@@ -253,7 +253,7 @@ public:
   /// Convert \a arg (array of Booleans) to IntArgs
   static Gecode::IntArgs arg2boolargs(Expression* arg, int offset = 0);
   /// Convert \a n to IntSet
-  Gecode::IntSet arg2intset(EnvI& envi, Expression* sl);
+  Gecode::IntSet arg2intset(EnvI& envi, Expression* arg);
   /// Convert \a n to IntSetArgs
   Gecode::IntSetArgs arg2intsetargs(EnvI& envi, Expression* arg, int offset = 0);
   /// Convert \a arg to IntVarArgs
@@ -277,7 +277,7 @@ public:
   /// Convert \a n to FloatValArgs
   static Gecode::FloatValArgs arg2floatargs(Expression* arg, int offset = 0);
   /// Convert \a n to FloatVar
-  Gecode::FloatVar arg2floatvar(Expression* n);
+  Gecode::FloatVar arg2floatvar(Expression* e);
   /// Convert \a n to FloatVarArgs
   Gecode::FloatVarArgs arg2floatvarargs(Expression* arg, int offset = 0);
 #endif
@@ -286,38 +286,38 @@ public:
   static MZ_IntConLevel ann2icl(const Annotation& ann);
 
   /// convert the annotation \a s int variable selection to the respective Gecode var selection
-  static Gecode::TieBreak<Gecode::IntVarBranch> ann2ivarsel(const ASTString s, Gecode::Rnd& rnd,
+  static Gecode::TieBreak<Gecode::IntVarBranch> ann2ivarsel(ASTString s, Gecode::Rnd& rnd,
                                                             double decay);
   /// convert the annotation \a s int value selection to the respective Gecode val selection
-  static Gecode::IntValBranch ann2ivalsel(const ASTString s, std::string& r0, std::string& r1,
+  static Gecode::IntValBranch ann2ivalsel(ASTString s, std::string& r0, std::string& r1,
                                           Gecode::Rnd& rnd);
   /// convert assign value selection
-  static Gecode::IntAssign ann2asnivalsel(const ASTString s, Gecode::Rnd& rnd);
+  static Gecode::IntAssign ann2asnivalsel(ASTString s, Gecode::Rnd& rnd);
 
-  static Gecode::TieBreak<Gecode::BoolVarBranch> ann2bvarsel(const ASTString s, Gecode::Rnd& rnd,
+  static Gecode::TieBreak<Gecode::BoolVarBranch> ann2bvarsel(ASTString s, Gecode::Rnd& rnd,
                                                              double decay);
   /// convert the annotation \a s int value selection to the respectbve Gecode val selection
-  static Gecode::BoolValBranch ann2bvalsel(const ASTString s, std::string& r0, std::string& r1,
+  static Gecode::BoolValBranch ann2bvalsel(ASTString s, std::string& r0, std::string& r1,
                                            Gecode::Rnd& rnd);
   /// convert assign value selection
-  static Gecode::BoolAssign ann2asnbvalsel(const ASTString s, Gecode::Rnd& rnd);
+  static Gecode::BoolAssign ann2asnbvalsel(ASTString s, Gecode::Rnd& rnd);
 
 #ifdef GECODE_HAS_SET_VARS
-  static Gecode::SetVarBranch ann2svarsel(const ASTString s, Gecode::Rnd& rnd, double decay);
-  static Gecode::SetValBranch ann2svalsel(const ASTString s, std::string& r0, std::string& r1,
+  static Gecode::SetVarBranch ann2svarsel(ASTString s, Gecode::Rnd& rnd, double decay);
+  static Gecode::SetValBranch ann2svalsel(ASTString s, std::string& r0, std::string& r1,
                                           Gecode::Rnd& rnd);
 #endif
 #ifdef GECODE_HAS_FLOAT_VARS
-  static Gecode::TieBreak<Gecode::FloatVarBranch> ann2fvarsel(const ASTString s, Gecode::Rnd& rnd,
+  static Gecode::TieBreak<Gecode::FloatVarBranch> ann2fvarsel(ASTString s, Gecode::Rnd& rnd,
                                                               double decay);
-  static Gecode::FloatValBranch ann2fvalsel(const ASTString s, std::string& r0, std::string& r1);
+  static Gecode::FloatValBranch ann2fvalsel(ASTString s, std::string& r0, std::string& r1);
 #endif
   /// Returns the VarDecl of \a expr and throws an InternalError if not possible
   VarDecl* getVarDecl(Expression* expr);
   /// Returns the VarDecl of \a aa
   VarDecl* resolveArrayAccess(ArrayAccess* aa);
   /// Returns the VarDecl of \a array at index \a index
-  VarDecl* resolveArrayAccess(VarDecl* array, long long int index);
+  VarDecl* resolveArrayAccess(VarDecl* vd, long long int index);
 
   /// Returns the GecodeVariable representing the Id, VarDecl or ArrayAccess
   GecodeSolver::Variable resolveVar(Expression* e);

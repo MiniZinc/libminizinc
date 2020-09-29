@@ -141,7 +141,7 @@ protected:
   bool _collectVardecls;
 
 public:
-  EnvI(Model* orig0, std::ostream& outstream0 = std::cout, std::ostream& errstream0 = std::cerr);
+  EnvI(Model* model0, std::ostream& outstream0 = std::cout, std::ostream& errstream0 = std::cerr);
   ~EnvI();
   long long int genId();
   /// Set minimum new temporary id to \a i+1

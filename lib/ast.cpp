@@ -60,11 +60,12 @@ Location::LocVec::LocVec(const ASTString& filename, IntVal combined) : ASTVec(2)
   *(_data + 1) = IntLit::a(combined);
 }
 
-Location::LocVec::LocVec(const ASTString& filename, unsigned int fl, unsigned int first_column,
-                         unsigned int last_line, unsigned int last_column)
+Location::LocVec::LocVec(const ASTString& filename, unsigned int first_line,
+                         unsigned int first_column, unsigned int last_line,
+                         unsigned int last_column)
     : ASTVec(5) {
   *(_data + 0) = filename.aststr();
-  *(_data + 1) = IntLit::a(fl);
+  *(_data + 1) = IntLit::a(first_line);
   *(_data + 2) = IntLit::a(last_line);
   *(_data + 3) = IntLit::a(first_column);
   *(_data + 4) = IntLit::a(last_column);

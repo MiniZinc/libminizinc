@@ -72,7 +72,6 @@ EE flatten_call(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
 EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
 EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
 EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
-EE flatten_error(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
 
 EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   if (e == nullptr) {

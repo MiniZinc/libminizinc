@@ -91,10 +91,10 @@ void MIPCplexWrapper::checkDLL() {
 #ifdef CPLEX_PLUGIN
   _cplexDll = nullptr;
   if (!_options->sCPLEXDLL.empty()) {
-    _cplexDll = dll_open(_options->sCPLEXDLL.c_str());
+    _cplexDll = dll_open(_options->sCPLEXDLL);
   } else {
     for (const auto& s : cplex_dlls()) {
-      _cplexDll = dll_open(s.c_str());
+      _cplexDll = dll_open(s);
       if (nullptr != _cplexDll) {
         break;
       }
@@ -505,7 +505,8 @@ bool MIPCplexWrapper::addWarmStart(const std::vector<VarId>& vars,
 
 void MIPCplexWrapper::setVarBounds(int iVar, double lb, double ub) {
   wrapAssert(lb <= ub, "mzn-cplex: setVarBounds: lb>ub");
-  char cl = 'L', cu = 'U';
+  char cl = 'L';
+  char cu = 'U';
   _status = dll_CPXchgbds(_env, _lp, 1, &iVar, &cl, &lb);
   wrapAssert(_status == 0, "Failed to set lower bound.");
   _status = dll_CPXchgbds(_env, _lp, 1, &iVar, &cu, &ub);

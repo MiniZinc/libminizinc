@@ -91,7 +91,6 @@ public:
     unsigned long long nNodes = 0;
   } stats;
 
-public:
   ~Solns2Out();
   Solns2Out(std::ostream& os, std::ostream& log, std::string stdlibDir);
 
@@ -171,7 +170,7 @@ protected:
   /// Checking solution against checker model
   void checkSolution(std::ostream& os);
   void checkStatistics(std::ostream& os);
-  bool evalOutputInternal(std::ostream& os);
+  bool evalOutputInternal(std::ostream& fout);
   bool evalOutputFinalInternal(bool flag_flush);
   bool evalStatusMsg(SolverInstance::Status status);
 };

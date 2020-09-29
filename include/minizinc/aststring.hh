@@ -77,7 +77,7 @@ public:
   size_t find(char ch, size_t pos = 0) const noexcept;
 
   /// Return Levenshtein distance to \a s
-  int levenshteinDistance(const ASTString& s) const;
+  int levenshteinDistance(const ASTString& other) const;
 
   /// Compute hash value of string
   size_t hash() const;

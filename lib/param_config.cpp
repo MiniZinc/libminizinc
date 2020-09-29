@@ -39,12 +39,12 @@ void ParamConfig::load(const std::string& filename) {
   }
 }
 
-void ParamConfig::addValue(const ASTString& key, Expression* e) {
+void ParamConfig::addValue(const ASTString& flag_input, Expression* e) {
   std::stringstream flag_ss;
-  if (!key.beginsWith("-")) {
+  if (!flag_input.beginsWith("-")) {
     flag_ss << "--";
   }
-  flag_ss << key;
+  flag_ss << flag_input;
   auto flag = flag_ss.str();
 
   if (_blacklist.count(flag) > 0) {
@@ -94,16 +94,16 @@ void ParamConfig::addValue(const ASTString& key, Expression* e) {
 
 const std::vector<std::string>& ParamConfig::argv() { return _values; }
 
-void ParamConfig::blacklist(const std::string& param) { _blacklist.insert(param); }
+void ParamConfig::blacklist(const std::string& disallowed) { _blacklist.insert(disallowed); }
 
-void ParamConfig::blacklist(const std::vector<std::string>& params) {
-  for (const auto& param : params) {
+void ParamConfig::blacklist(const std::vector<std::string>& disallowed) {
+  for (const auto& param : disallowed) {
     _blacklist.insert(param);
   }
 }
 
-void ParamConfig::negatedFlag(const std::string& flag, const std::string& off) {
-  _boolSwitches.insert(std::make_pair(flag, off));
+void ParamConfig::negatedFlag(const std::string& flag, const std::string& negated) {
+  _boolSwitches.insert(std::make_pair(flag, negated));
 }
 
 }  // namespace MiniZinc

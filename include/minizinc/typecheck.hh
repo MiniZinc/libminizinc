@@ -73,14 +73,14 @@ public:
   /// Get variable declaration from identifier \a id
   VarDecl* get(EnvI& env, const ASTString& id, const Location& loc);
 
-  VarDecl* checkId(EnvI& env, const ASTString& ident, const Location& loc);
+  VarDecl* checkId(EnvI& env, const ASTString& id_v, const Location& loc);
   VarDecl* checkId(EnvI& env, Id* ident, const Location& loc);
   /// Run the topological sorting for expression \a e
   void run(EnvI& env, Expression* e);
 };
 
 /// Type check the model \a m
-void typecheck(Env& env, Model* m, std::vector<TypeError>& typeErrors,
+void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
                bool ignoreUndefinedParameters, bool allowMultiAssignment, bool isFlatZinc = false);
 
 /// Type check new assign item \a ai in model \a m

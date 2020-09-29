@@ -514,7 +514,8 @@ void GecodeSolverInstance::processFlatZinc() {
         continue;
       }
       MiniZinc::TypeInst* ti = it->e()->ti();
-      bool isDefined, isIntroduced = false;
+      bool isDefined;
+      bool isIntroduced = false;
 
       if (vd->type().isint()) {
         if (it->e()->e() == nullptr) {  // if there is no initialisation expression
@@ -574,7 +575,8 @@ void GecodeSolverInstance::processFlatZinc() {
         currentSpace->ivDefined.push_back(isDefined);
 
       } else if (vd->type().isbool()) {
-        double lb = 0, ub = 1;
+        double lb = 0;
+        double ub = 1;
         if (it->e()->e() == nullptr) {  // there is NO initialisation expression
           Expression* domain = ti->domain();
           if (domain != nullptr) {
@@ -617,7 +619,8 @@ void GecodeSolverInstance::processFlatZinc() {
       } else if (vd->type().isfloat()) {
         if (it->e()->e() == nullptr) {  // there is NO initialisation expression
           Expression* domain = ti->domain();
-          double lb, ub;
+          double lb;
+          double ub;
           if (domain != nullptr) {
             FloatBounds fb = compute_float_bounds(_env.envi(), vd->id());
             lb = fb.l.toDouble();
@@ -1576,7 +1579,8 @@ bool GecodeSolverInstance::presolve(Model* originalModel) {
         Type::BaseType bt = vd->type().bt();
         if (bt == Type::BaseType::BT_INT && vd->type().st() == Type::ST_PLAIN) {
           IntVar intvar = it->second.intVar(currentSpace);
-          const long long int l = intvar.min(), u = intvar.max();
+          const long long int l = intvar.min();
+          const long long int u = intvar.max();
 
           if (l == u) {
             if (nvd->e() != nullptr) {
@@ -1596,7 +1600,8 @@ bool GecodeSolverInstance::presolve(Model* originalModel) {
           }
         } else if (bt == Type::BaseType::BT_BOOL) {
           BoolVar boolvar = it->second.boolVar(currentSpace);
-          int l = boolvar.min(), u = boolvar.max();
+          int l = boolvar.min();
+          int u = boolvar.max();
           if (l == u) {
             if (nvd->e() != nullptr) {
               nvd->ti()->domain(constants().boollit(l != 0));
@@ -1677,7 +1682,8 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
         iv_searched[idx] = true;
         names.push_back(getVarDecl((*vars)[i])->id()->str());
       }
-      std::string r0, r1;
+      std::string r0;
+      std::string r1;
       // BrancherHandle bh =
       branch(*currentSpace, va, ann2ivarsel(call->arg(1)->cast<Id>()->str(), rnd, decay),
              ann2ivalsel(call->arg(2)->cast<Id>()->str(), r0, r1, rnd), nullptr
@@ -1729,7 +1735,8 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
         names.push_back(getVarDecl((*vars)[i])->id()->str());
       }
 
-      std::string r0, r1;
+      std::string r0;
+      std::string r1;
       // BrancherHandle bh =
       branch(*currentSpace, va, ann2bvarsel(call->arg(1)->cast<Id>()->str(), rnd, decay),
              ann2bvalsel(call->arg(2)->cast<Id>()->str(), r0, r1, rnd), nullptr  //,
@@ -1768,7 +1775,8 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
         sv_searched[idx] = true;
         names.push_back(getVarDecl((*vars)[i])->id()->str());
       }
-      std::string r0, r1;
+      std::string r0;
+      std::string r1;
       // BrancherHandle bh =
       branch(*currentSpace, va, ann2svarsel(call->arg(1)->cast<Id>()->str(), rnd, decay),
              ann2svalsel(call->arg(2)->cast<Id>()->str(), r0, r1, rnd),
@@ -1829,7 +1837,8 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
         fv_searched[idx] = true;
         names.push_back(getVarDecl((*vars)[i])->id()->str());
       }
-      std::string r0, r1;
+      std::string r0;
+      std::string r1;
       // BrancherHandle bh =
       branch(*currentSpace, va, ann2fvarsel(call->arg(2)->cast<Id>()->str(), rnd, decay),
              ann2fvalsel(call->arg(3)->cast<Id>()->str(), r0, r1),

@@ -51,7 +51,7 @@ public:
   /// Constructor
   BottomUpIterator(T& t) : _t(t) {}
   /// Run iterator on expression \a e
-  void run(Expression* e);
+  void run(Expression* root);
 };
 
 template <class T>
@@ -80,7 +80,7 @@ public:
   /// Constructor
   TopDownIterator(T& t) : _t(t) {}
   /// Run iterator on expression \a e
-  void run(Expression* e);
+  void run(Expression* root);
 };
 
 template <class T>
