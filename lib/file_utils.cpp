@@ -62,14 +62,13 @@ std::string progpath() {
   int ret = proc_pidpath(pid, path, sizeof(path));
   if (ret <= 0) {
     return "";
-  } else {
-    std::string p(path);
-    size_t slash = p.find_last_of('/');
-    if (slash != std::string::npos) {
-      p = p.substr(0, slash);
-    }
-    return p;
   }
+  std::string p(path);
+  size_t slash = p.find_last_of('/');
+  if (slash != std::string::npos) {
+    p = p.substr(0, slash);
+  }
+  return p;
 }
 #elif defined(HAS_GETMODULEFILENAME)
 std::string progpath() {
@@ -77,14 +76,13 @@ std::string progpath() {
   int ret = GetModuleFileNameW(NULL, path, MAX_PATH);
   if (ret <= 0) {
     return "";
-  } else {
-    std::string p = wideToUtf8(path);
-    size_t slash = p.find_last_of("/\\");
-    if (slash != std::string::npos) {
-      p = p.substr(0, slash);
-    }
-    return p;
   }
+  std::string p = wideToUtf8(path);
+  size_t slash = p.find_last_of("/\\");
+  if (slash != std::string::npos) {
+    p = p.substr(0, slash);
+  }
+  return p;
 }
 #else
 std::string progpath() {
@@ -93,15 +91,14 @@ std::string progpath() {
   ssize_t sz = readlink("/proc/self/exe", path, bufsz);
   if (sz < 0) {
     return "";
-  } else {
-    path[sz] = '\0';
-    std::string p(path);
-    size_t slash = p.find_last_of('/');
-    if (slash != std::string::npos) {
-      p = p.substr(0, slash);
-    }
-    return p;
   }
+  path[sz] = '\0';
+  std::string p(path);
+  size_t slash = p.find_last_of('/');
+  if (slash != std::string::npos) {
+    p = p.substr(0, slash);
+  }
+  return p;
 }
 #endif
 
@@ -153,9 +150,8 @@ std::string file_path(const std::string& filename, const std::string& basePath) 
   if (rp == nullptr) {
     if (basePath.empty()) {
       return filename;
-    } else {
-      return file_path(basePath + "/" + filename);
     }
+    return file_path(basePath + "/" + filename);
   }
   std::string rp_s(rp);
   free(rp);

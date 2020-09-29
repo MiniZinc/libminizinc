@@ -279,9 +279,8 @@ IntVal lb_varoptint(EnvI& env, Expression* e) {
   IntBounds b = compute_int_bounds(env, e);
   if (b.valid) {
     return b.l;
-  } else {
-    return -IntVal::infinity();
   }
+  return -IntVal::infinity();
 }
 IntVal b_lb_varoptint(EnvI& env, Call* call) {
   if (call->argCount() != 1) {
@@ -401,9 +400,8 @@ IntVal ub_varoptint(EnvI& env, Expression* e) {
   IntBounds b = compute_int_bounds(env, e);
   if (b.valid) {
     return b.u;
-  } else {
-    return IntVal::infinity();
   }
+  return IntVal::infinity();
 }
 IntVal b_ub_varoptint(EnvI& env, Call* call) {
   if (call->argCount() != 1) {
@@ -540,17 +538,15 @@ FloatVal lb_varoptfloat(EnvI& env, Expression* e) {
   FloatBounds b = compute_float_bounds(env, e);
   if (b.valid) {
     return b.l;
-  } else {
-    throw EvalError(env, e->loc(), "cannot determine bounds");
   }
+  throw EvalError(env, e->loc(), "cannot determine bounds");
 }
 FloatVal ub_varoptfloat(EnvI& env, Expression* e) {
   FloatBounds b = compute_float_bounds(env, e);
   if (b.valid) {
     return b.u;
-  } else {
-    throw EvalError(env, e->loc(), "cannot determine bounds");
   }
+  throw EvalError(env, e->loc(), "cannot determine bounds");
 }
 
 FloatVal b_lb_varoptfloat(EnvI& env, Call* call) {
@@ -862,9 +858,9 @@ bool b_has_ub_set(EnvI& env, Call* call) {
         }
         if (id->decl()->e() == nullptr) {
           return id->decl()->ti()->domain() != nullptr;
-        } else {
-          e = id->decl()->e();
         }
+        e = id->decl()->e();
+
       } break;
       default:
         throw EvalError(env, e->loc(), "invalid argument to has_ub_set");
@@ -898,12 +894,10 @@ IntSetVal* b_dom_varint(EnvI& env, Expression* e) {
         IntBounds b = compute_int_bounds(env, e);
         if (b.valid) {
           return IntSetVal::a(b.l, b.u);
-        } else {
-          return IntSetVal::a(-IntVal::infinity(), IntVal::infinity());
         }
-      } else {
-        return eval_intset(env, lastid->decl()->ti()->domain());
+        return IntSetVal::a(-IntVal::infinity(), IntVal::infinity());
       }
+      return eval_intset(env, lastid->decl()->ti()->domain());
     }
     switch (cur->eid()) {
       case Expression::E_INTLIT: {
@@ -1012,12 +1006,12 @@ IntSetVal* b_dom_array(EnvI& env, Call* call) {
         if (id->decl()->e() == nullptr) {
           if (id->decl()->flat() == nullptr) {
             throw EvalError(env, id->loc(), "array without initialiser");
-          } else {
-            if (id->decl()->flat()->e() == nullptr) {
-              throw EvalError(env, id->loc(), "array without initialiser");
-            }
-            ae = id->decl()->flat()->e();
           }
+          if (id->decl()->flat()->e() == nullptr) {
+            throw EvalError(env, id->loc(), "array without initialiser");
+          }
+          ae = id->decl()->flat()->e();
+
         } else {
           ae = id->decl()->e();
         }
@@ -1290,7 +1284,8 @@ Expression* exp_is_fixed(EnvI& env, Expression* e) {
           if ((dom != nullptr) &&
               (dom->isa<IntLit>() || dom->isa<BoolLit>() || dom->isa<FloatLit>())) {
             return dom;
-          } else if ((dom != nullptr) && dom->isa<SetLit>()) {
+          }
+          if ((dom != nullptr) && dom->isa<SetLit>()) {
             auto* sl = dom->cast<SetLit>();
             auto* isv = sl->isv();
             if ((isv != nullptr) && isv->min() == isv->max()) {
@@ -1675,43 +1670,41 @@ std::string b_show_json(EnvI& env, Call* call) {
     Printer p(oss, 0, false);
     p.print(e);
     return oss.str();
-  } else {
-    if (auto* al = e->dynamicCast<ArrayLit>()) {
-      std::vector<unsigned int> dims(al->dims() - 1);
-      if (!dims.empty()) {
-        dims[0] = al->max(al->dims() - 1) - al->min(al->dims() - 1) + 1;
-      }
-
-      for (int i = 1; i < al->dims() - 1; i++) {
-        dims[i] = dims[i - 1] * (al->max(al->dims() - 1 - i) - al->min(al->dims() - 1 - i) + 1);
-      }
-
-      std::ostringstream oss;
-      oss << "[";
-      for (unsigned int i = 0; i < al->size(); i++) {
-        for (unsigned int dim : dims) {
-          if (i % dim == 0) {
-            oss << "[";
-          }
-        }
-        oss << b_show_json_basic(env, (*al)[i]);
-        for (unsigned int dim : dims) {
-          if (i % dim == dim - 1) {
-            oss << "]";
-          }
-        }
-
-        if (i < al->size() - 1) {
-          oss << ", ";
-        }
-      }
-      oss << "]";
-
-      return oss.str();
-    } else {
-      return b_show_json_basic(env, e);
-    }
   }
+  if (auto* al = e->dynamicCast<ArrayLit>()) {
+    std::vector<unsigned int> dims(al->dims() - 1);
+    if (!dims.empty()) {
+      dims[0] = al->max(al->dims() - 1) - al->min(al->dims() - 1) + 1;
+    }
+
+    for (int i = 1; i < al->dims() - 1; i++) {
+      dims[i] = dims[i - 1] * (al->max(al->dims() - 1 - i) - al->min(al->dims() - 1 - i) + 1);
+    }
+
+    std::ostringstream oss;
+    oss << "[";
+    for (unsigned int i = 0; i < al->size(); i++) {
+      for (unsigned int dim : dims) {
+        if (i % dim == 0) {
+          oss << "[";
+        }
+      }
+      oss << b_show_json_basic(env, (*al)[i]);
+      for (unsigned int dim : dims) {
+        if (i % dim == dim - 1) {
+          oss << "]";
+        }
+      }
+
+      if (i < al->size() - 1) {
+        oss << ", ";
+      }
+    }
+    oss << "]";
+
+    return oss.str();
+  }
+  return b_show_json_basic(env, e);
 }
 
 Expression* b_output_json(EnvI& env, Call* call) {
@@ -1795,7 +1788,8 @@ std::string b_format(EnvI& env, Call* call) {
     }
     formatted << i;
     return formatted.str();
-  } else if (e->type() == Type::parfloat()) {
+  }
+  if (e->type() == Type::parfloat()) {
     FloatVal i = eval_float(env, e);
     std::ostringstream formatted;
     if (width > 0) {
@@ -1811,33 +1805,31 @@ std::string b_format(EnvI& env, Call* call) {
     }
     formatted << i;
     return formatted.str();
-  } else {
-    std::string s = show(env, e);
-    if (prec >= 0 && prec < s.size()) {
-      s = s.substr(0, prec);
-    }
-    std::ostringstream oss;
-    if (s.size() < std::abs(width)) {
-      int addLeft = width < 0 ? 0 : (width - static_cast<int>(s.size()));
-      if (addLeft < 0) {
-        addLeft = 0;
-      }
-      int addRight = width < 0 ? (-width - static_cast<int>(s.size())) : 0;
-      if (addRight < 0) {
-        addRight = 0;
-      }
-      for (int i = addLeft; (i--) != 0;) {
-        oss << " ";
-      }
-      oss << s;
-      for (int i = addRight; (i--) != 0;) {
-        oss << " ";
-      }
-      return oss.str();
-    } else {
-      return s;
-    }
   }
+  std::string s = show(env, e);
+  if (prec >= 0 && prec < s.size()) {
+    s = s.substr(0, prec);
+  }
+  std::ostringstream oss;
+  if (s.size() < std::abs(width)) {
+    int addLeft = width < 0 ? 0 : (width - static_cast<int>(s.size()));
+    if (addLeft < 0) {
+      addLeft = 0;
+    }
+    int addRight = width < 0 ? (-width - static_cast<int>(s.size())) : 0;
+    if (addRight < 0) {
+      addRight = 0;
+    }
+    for (int i = addLeft; (i--) != 0;) {
+      oss << " ";
+    }
+    oss << s;
+    for (int i = addRight; (i--) != 0;) {
+      oss << " ";
+    }
+    return oss.str();
+  }
+  return s;
 }
 
 std::string b_format_justify_string(EnvI& env, Call* call) {
@@ -1865,9 +1857,8 @@ std::string b_format_justify_string(EnvI& env, Call* call) {
       oss << " ";
     }
     return oss.str();
-  } else {
-    return s;
   }
+  return s;
 }
 
 std::string b_show_int(EnvI& env, Call* call) {

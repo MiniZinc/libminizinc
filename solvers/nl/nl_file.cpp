@@ -397,12 +397,10 @@ NLToken NLFile::getTokenFromVarOrInt(const Expression* e) {
     // Constant
     double value = static_cast<double>(e->cast<IntLit>()->v().toInt());
     return NLToken::n(value);
-  } else {
-    // Variable
-    VarDecl& vd = *(e->cast<Id>()->decl());
-    string n = getVarName(vd);
-    return NLToken::v(n);
-  }
+  }  // Variable
+  VarDecl& vd = *(e->cast<Id>()->decl());
+  string n = getVarName(vd);
+  return NLToken::v(n);
 }
 
 /** Create a token from an expression representing either a variable or a floating point numeric
@@ -412,12 +410,10 @@ NLToken NLFile::getTokenFromVarOrFloat(const Expression* e) {
     // Constant
     double value = e->cast<FloatLit>()->v().toDouble();
     return NLToken::n(value);
-  } else {
-    // Variable
-    VarDecl& vd = *(e->cast<Id>()->decl());
-    string n = getVarName(vd);
-    return NLToken::v(n);
-  }
+  }  // Variable
+  VarDecl& vd = *(e->cast<Id>()->decl());
+  string n = getVarName(vd);
+  return NLToken::v(n);
 }
 
 /** Create a token from an expression representing either a variable. */

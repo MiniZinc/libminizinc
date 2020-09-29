@@ -700,21 +700,18 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       }
     }
     return OPTION_OK;
-
-  } else {
-    for (i = 1; i < argc; ++i) {
-      if (s2out.processOption(i, argv)) {
-        // Processed by Solns2Out
-      } else {
-        std::string executable_name(argv[0]);
-        executable_name = executable_name.substr(executable_name.find_last_of("/\\") + 1);
-        _log << executable_name << ": Unrecognized option or bad format `" << argv[i] << "'"
-             << endl;
-        return OPTION_ERROR;
-      }
-    }
-    return OPTION_OK;
   }
+  for (i = 1; i < argc; ++i) {
+    if (s2out.processOption(i, argv)) {
+      // Processed by Solns2Out
+    } else {
+      std::string executable_name(argv[0]);
+      executable_name = executable_name.substr(executable_name.find_last_of("/\\") + 1);
+      _log << executable_name << ": Unrecognized option or bad format `" << argv[i] << "'" << endl;
+      return OPTION_ERROR;
+    }
+  }
+  return OPTION_OK;
 }
 
 void MznSolver::flatten(const std::string& modelString, const std::string& modelName) {
@@ -842,10 +839,10 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0,
       return solve();
     }
     return SolverInstance::NONE;
-  } else {
-    if (!ifMzn2Fzn()) {
-      s2out.evalStatus(getFltStatus());
-    }
-    return getFltStatus();
-  }  //  Add evalOutput() here?   TODO
+  }
+  if (!ifMzn2Fzn()) {
+    s2out.evalStatus(getFltStatus());
+  }
+  return getFltStatus();
+  //  Add evalOutput() here?   TODO
 }

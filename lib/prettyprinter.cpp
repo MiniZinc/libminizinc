@@ -122,14 +122,14 @@ void pp_floatval(std::ostream& os, const FloatVal& fv, bool hexFloat) {
       //          std::hexfloat(oss);
       oss << fv.toDouble();
       os << oss.str();
-    } else {
-      oss << std::setprecision(std::numeric_limits<double>::digits10 + 1);
-      oss << fv;
-      if (oss.str().find('e') == std::string::npos && oss.str().find('.') == std::string::npos) {
-        oss << ".0";
-      }
-      os << oss.str();
     }
+    oss << std::setprecision(std::numeric_limits<double>::digits10 + 1);
+    oss << fv;
+    if (oss.str().find('e') == std::string::npos && oss.str().find('.') == std::string::npos) {
+      oss << ".0";
+    }
+    os << oss.str();
+
   } else {
     if (fv.isPlusInfinity()) {
       os << "infinity";
@@ -1186,11 +1186,10 @@ public:
     }
     if (id.idn() == -1) {
       return new StringDocument(std::string(id.v().c_str(), id.v().size()));
-    } else {
-      std::ostringstream oss;
-      oss << "X_INTRODUCED_" << id.idn() << "_";
-      return new StringDocument(oss.str());
     }
+    std::ostringstream oss;
+    oss << "X_INTRODUCED_" << id.idn() << "_";
+    return new StringDocument(oss.str());
   }
   ret mapTIId(const TIId& id) {
     std::ostringstream ss;
@@ -1930,14 +1929,13 @@ bool PrettyPrinter::simplify(int item, int line, std::vector<int>* vec) {
   if (_items[item][line].getLength() > _items[item][line - 1].getSpaceLeft(_maxwidth)) {
     _linesToSimplify[item].remove(vec, line, false);
     return false;
-  } else {
-    _linesToSimplify[item].remove(vec, line, true);
-    _items[item][line - 1].concatenateLines(_items[item][line]);
-    _items[item].erase(_items[item].begin() + line);
-
-    _linesToSimplify[item].decrementLine(vec, line);
-    _currentLine--;
   }
+  _linesToSimplify[item].remove(vec, line, true);
+  _items[item][line - 1].concatenateLines(_items[item][line]);
+  _items[item].erase(_items[item].begin() + line);
+
+  _linesToSimplify[item].decrementLine(vec, line);
+  _currentLine--;
 
   return true;
 }

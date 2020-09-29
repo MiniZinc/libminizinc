@@ -21,10 +21,9 @@ NLBound::NLBound(Bound tag, double lb, double ub) : tag(tag), lb(lb), ub(ub) {}
 NLBound NLBound::makeBounded(double lb, double ub) {
   if (lb == ub) {
     return makeEqual(lb);
-  } else {
-    assert(lb < ub);
-    return NLBound(LB_UB, lb, ub);
   }
+  assert(lb < ub);
+  return NLBound(LB_UB, lb, ub);
 }
 
 NLBound NLBound::makeUBBounded(double ub) { return NLBound(UB, 0, ub); }

@@ -112,11 +112,12 @@ public:
                                   x, nCols);
       if (LQ == sense) {
         return lhs - rhs;
-      } else if (GQ == sense) {
-        return rhs - lhs;
-      } else {
-        assert(0);
       }
+      if (GQ == sense) {
+        return rhs - lhs;
+      }
+      assert(0);
+
       return 0.0;
     }
   };

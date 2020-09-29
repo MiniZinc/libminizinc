@@ -788,21 +788,19 @@ public:
     long long int val = isr.min().toInt();
     if (si.valueWithinBounds(static_cast<double>(val))) {
       return (int)val;
-    } else {
-      std::stringstream ssm;
-      ssm << "GecodeRangeIter::min: Error: " << val << " outside 32-bit int." << std::endl;
-      throw InternalError(ssm.str());
     }
+    std::stringstream ssm;
+    ssm << "GecodeRangeIter::min: Error: " << val << " outside 32-bit int." << std::endl;
+    throw InternalError(ssm.str());
   }
   int max() const {
     long long int val = isr.max().toInt();
     if (si.valueWithinBounds(static_cast<double>(val))) {
       return (int)val;
-    } else {
-      std::stringstream ssm;
-      ssm << "GecodeRangeIter::max: Error: " << val << " outside 32-bit int." << std::endl;
-      throw InternalError(ssm.str());
     }
+    std::stringstream ssm;
+    ssm << "GecodeRangeIter::max: Error: " << val << " outside 32-bit int." << std::endl;
+    throw InternalError(ssm.str());
   }
   int width() const { return static_cast<int>(isr.width().toInt()); }
   bool operator()() { return isr(); }
@@ -986,7 +984,8 @@ bool GecodeSolverInstance::isBoolArray(ArrayLit* a, int& singleInt) {
   for (int i = static_cast<int>(a->length()); (i--) != 0;) {
     if ((*a)[i]->type().isbool()) {
       continue;
-    } else if (((*a)[i])->type().isvarint()) {
+    }
+    if (((*a)[i])->type().isvarint()) {
       GecodeVariable var = resolveVar(getVarDecl((*a)[i]));
       if (var.hasBoolAlias()) {
         if (singleInt != -1) {
@@ -1145,25 +1144,25 @@ VarDecl* GecodeSolverInstance::resolveArrayAccess(VarDecl* vd, long long int ind
     std::vector<Expression*>* exprs = it->second;
     Expression* expr = (*exprs)[index - 1];
     return expr->cast<VarDecl>();
-  } else {
-    std::stringstream ssm;
-    ssm << "Unknown array: " << vd->id();
-    throw InternalError(ssm.str());
   }
+  std::stringstream ssm;
+  ssm << "Unknown array: " << vd->id();
+  throw InternalError(ssm.str());
 }
 
 GecodeSolver::Variable GecodeSolverInstance::resolveVar(Expression* e) {
   if (Id* id = e->dynamicCast<Id>()) {
     return _variableMap.get(id->decl()->id());  // lookupVar(id->decl());
-  } else if (auto* vd = e->dynamicCast<VarDecl>()) {
-    return _variableMap.get(vd->id()->decl()->id());
-  } else if (auto* aa = e->dynamicCast<ArrayAccess>()) {
-    return _variableMap.get(resolveArrayAccess(aa)->id()->decl()->id());
-  } else {
-    std::stringstream ssm;
-    ssm << "Expected Id, VarDecl or ArrayAccess instead of \"" << *e << "\"";
-    throw InternalError(ssm.str());
   }
+  if (auto* vd = e->dynamicCast<VarDecl>()) {
+    return _variableMap.get(vd->id()->decl()->id());
+  }
+  if (auto* aa = e->dynamicCast<ArrayAccess>()) {
+    return _variableMap.get(resolveArrayAccess(aa)->id()->decl()->id());
+  }
+  std::stringstream ssm;
+  ssm << "Expected Id, VarDecl or ArrayAccess instead of \"" << *e << "\"";
+  throw InternalError(ssm.str());
 }
 
 SolverInstance::Status GecodeSolverInstance::next() {
@@ -1175,11 +1174,11 @@ SolverInstance::Status GecodeSolverInstance::next() {
   if (solution != nullptr) {
     assignSolutionToOutput();
     return SolverInstance::SAT;
-  } else if (engine->stopped()) {
-    return SolverInstance::UNKNOWN;
-  } else {
-    return SolverInstance::UNSAT;
   }
+  if (engine->stopped()) {
+    return SolverInstance::UNKNOWN;
+  }
+  return SolverInstance::UNSAT;
 }
 
 void GecodeSolverInstance::resetSolver() {
@@ -1210,9 +1209,8 @@ Expression* GecodeSolverInstance::getSolutionValue(Id* id) {
           vals.emplace_back(svv.val());
         }
         return new SetLit(Location().introduce(), IntSetVal::a(vals));
-      } else {
-        return new SetLit(Location().introduce(), IntSetVal::a(mi, ma));
       }
+      return new SetLit(Location().introduce(), IntSetVal::a(mi, ma));
     }
 #endif
     switch (id->type().bt()) {
@@ -1652,7 +1650,8 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
       // branchWithPlugin(c->args);
       std::cerr << "WARNING: Not supporting search annotation \"gecode_search\" yet." << std::endl;
       return;
-    } else if (i->isa<Call>() && i->cast<Call>()->id() == "int_search") {
+    }
+    if (i->isa<Call>() && i->cast<Call>()->id() == "int_search") {
       Call* call = i->cast<Call>();
       ArrayLit* vars = arg2arraylit(call->arg(0));
       if (vars->size() == 0) {  // empty array

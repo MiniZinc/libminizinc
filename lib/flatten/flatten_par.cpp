@@ -43,45 +43,45 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
       ret.r = bind(env, ctx, r, e->cast<Id>()->decl()->flat()->id());
       ret.b = bind(env, Ctx(), b, constants().literalTrue);
       return ret;
-    } else if ((it = env.cseMapFind(e)) != env.cseMapEnd()) {
+    }
+    if ((it = env.cseMapFind(e)) != env.cseMapEnd()) {
       ret.r = bind(env, ctx, r, it->second.r()->cast<VarDecl>()->id());
       ret.b = bind(env, Ctx(), b, constants().literalTrue);
       return ret;
-    } else {
-      GCLock lock;
-      auto* al = follow_id(eval_par(env, e))->cast<ArrayLit>();
-      if (al->size() == 0 || ((r != nullptr) && r->e() == nullptr)) {
-        if (r == nullptr) {
-          ret.r = al;
-        } else {
-          ret.r = bind(env, ctx, r, al);
-        }
-        ret.b = bind(env, Ctx(), b, constants().literalTrue);
-        return ret;
+    }
+    GCLock lock;
+    auto* al = follow_id(eval_par(env, e))->cast<ArrayLit>();
+    if (al->size() == 0 || ((r != nullptr) && r->e() == nullptr)) {
+      if (r == nullptr) {
+        ret.r = al;
+      } else {
+        ret.r = bind(env, ctx, r, al);
       }
-      if ((it = env.cseMapFind(al)) != env.cseMapEnd()) {
-        ret.r = bind(env, ctx, r, it->second.r()->cast<VarDecl>()->id());
-        ret.b = bind(env, Ctx(), b, constants().literalTrue);
-        return ret;
-      }
-      std::vector<TypeInst*> ranges(al->dims());
-      for (unsigned int i = 0; i < ranges.size(); i++) {
-        ranges[i] =
-            new TypeInst(e->loc(), Type(),
-                         new SetLit(Location().introduce(), IntSetVal::a(al->min(i), al->max(i))));
-      }
-      ASTExprVec<TypeInst> ranges_v(ranges);
-      assert(!al->type().isbot());
-      auto* ti = new TypeInst(e->loc(), al->type(), ranges_v, nullptr);
-      VarDecl* vd = new_vardecl(env, ctx, ti, nullptr, nullptr, al);
-      EE ee(vd, nullptr);
-      env.cseMapInsert(al, ee);
-      env.cseMapInsert(vd->e(), ee);
-
-      ret.r = bind(env, ctx, r, vd->id());
       ret.b = bind(env, Ctx(), b, constants().literalTrue);
       return ret;
     }
+    if ((it = env.cseMapFind(al)) != env.cseMapEnd()) {
+      ret.r = bind(env, ctx, r, it->second.r()->cast<VarDecl>()->id());
+      ret.b = bind(env, Ctx(), b, constants().literalTrue);
+      return ret;
+    }
+    std::vector<TypeInst*> ranges(al->dims());
+    for (unsigned int i = 0; i < ranges.size(); i++) {
+      ranges[i] =
+          new TypeInst(e->loc(), Type(),
+                       new SetLit(Location().introduce(), IntSetVal::a(al->min(i), al->max(i))));
+    }
+    ASTExprVec<TypeInst> ranges_v(ranges);
+    assert(!al->type().isbot());
+    auto* ti = new TypeInst(e->loc(), al->type(), ranges_v, nullptr);
+    VarDecl* vd = new_vardecl(env, ctx, ti, nullptr, nullptr, al);
+    EE ee(vd, nullptr);
+    env.cseMapInsert(al, ee);
+    env.cseMapInsert(vd->e(), ee);
+
+    ret.r = bind(env, ctx, r, vd->id());
+    ret.b = bind(env, Ctx(), b, constants().literalTrue);
+    return ret;
   }
   GCLock lock;
   try {

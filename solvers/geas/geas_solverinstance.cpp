@@ -444,11 +444,10 @@ SolverInstanceBase::Status MiniZinc::GeasSolverInstance::solve() {
   auto remaining_time = [_opt] {
     if (_opt.time == std::chrono::milliseconds(0)) {
       return 0.0;
-    } else {
-      using geas_time = std::chrono::duration<double>;
-      static auto timeout = std::chrono::high_resolution_clock::now() + _opt.time;
-      return geas_time(timeout - std::chrono::high_resolution_clock::now()).count();
     }
+    using geas_time = std::chrono::duration<double>;
+    static auto timeout = std::chrono::high_resolution_clock::now() + _opt.time;
+    return geas_time(timeout - std::chrono::high_resolution_clock::now()).count();
   };
   if (_objType == SolveI::ST_SAT) {
     int nr_solutions = 0;
@@ -458,13 +457,12 @@ SolverInstanceBase::Status MiniZinc::GeasSolverInstance::solve() {
       printSolution();
       if (res != geas::solver::SAT) {
         break;
-      } else {
-        nr_solutions++;
-        _solver.restart();
-        if (!addSolutionNoGood()) {
-          res = geas::solver::UNSAT;
-          break;
-        }
+      }
+      nr_solutions++;
+      _solver.restart();
+      if (!addSolutionNoGood()) {
+        res = geas::solver::UNSAT;
+        break;
       }
     }
     switch (res) {
@@ -585,18 +583,19 @@ void GeasSolverInstance::resetSolver() { assert(false); }
 GeasTypes::Variable& GeasSolverInstance::resolveVar(Expression* e) {
   if (auto* id = e->dynamicCast<Id>()) {
     return _variableMap.get(id->decl()->id());
-  } else if (auto* vd = e->dynamicCast<VarDecl>()) {
+  }
+  if (auto* vd = e->dynamicCast<VarDecl>()) {
     return _variableMap.get(vd->id()->decl()->id());
-  } else if (auto* aa = e->dynamicCast<ArrayAccess>()) {
+  }
+  if (auto* aa = e->dynamicCast<ArrayAccess>()) {
     auto* ad = aa->v()->cast<Id>()->decl();
     auto idx = aa->idx()[0]->cast<IntLit>()->v().toInt();
     auto* al = eval_array_lit(_env.envi(), ad->e());
     return _variableMap.get((*al)[idx]->cast<Id>());
-  } else {
-    std::stringstream ssm;
-    ssm << "Expected Id, VarDecl or ArrayAccess instead of \"" << *e << "\"";
-    throw InternalError(ssm.str());
   }
+  std::stringstream ssm;
+  ssm << "Expected Id, VarDecl or ArrayAccess instead of \"" << *e << "\"";
+  throw InternalError(ssm.str());
 }
 
 vec<bool> GeasSolverInstance::asBool(ArrayLit* al) {
@@ -612,15 +611,13 @@ geas::patom_t GeasSolverInstance::asBoolVar(Expression* e) {
     GeasVariable& var = resolveVar(follow_id_to_decl(e));
     assert(var.isBool());
     return var.boolVar();
-  } else {
-    if (auto* bl = e->dynamicCast<BoolLit>()) {
-      return bl->v() ? geas::at_True : geas::at_False;
-    } else {
-      std::stringstream ssm;
-      ssm << "Expected bool or int literal instead of: " << *e;
-      throw InternalError(ssm.str());
-    }
   }
+  if (auto* bl = e->dynamicCast<BoolLit>()) {
+    return bl->v() ? geas::at_True : geas::at_False;
+  }
+  std::stringstream ssm;
+  ssm << "Expected bool or int literal instead of: " << *e;
+  throw InternalError(ssm.str());
 }
 
 vec<geas::patom_t> GeasSolverInstance::asBoolVar(ArrayLit* al) {
@@ -644,24 +641,22 @@ geas::intvar GeasSolverInstance::asIntVar(Expression* e) {
     GeasVariable& var = resolveVar(follow_id_to_decl(e));
     assert(var.isInt());
     return var.intVar();
-  } else {
-    IntVal i;
-    if (auto* il = e->dynamicCast<IntLit>()) {
-      i = il->v().toInt();
-    } else if (auto* bl = e->dynamicCast<BoolLit>()) {
-      i = static_cast<long long>(bl->v());
-    } else {
-      std::stringstream ssm;
-      ssm << "Expected bool or int literal instead of: " << *e;
-      throw InternalError(ssm.str());
-    }
-    if (i == 0) {
-      return zero;
-    } else {
-      return _solver.new_intvar(static_cast<geas::intvar::val_t>(i.toInt()),
-                                static_cast<geas::intvar::val_t>(i.toInt()));
-    }
   }
+  IntVal i;
+  if (auto* il = e->dynamicCast<IntLit>()) {
+    i = il->v().toInt();
+  } else if (auto* bl = e->dynamicCast<BoolLit>()) {
+    i = static_cast<long long>(bl->v());
+  } else {
+    std::stringstream ssm;
+    ssm << "Expected bool or int literal instead of: " << *e;
+    throw InternalError(ssm.str());
+  }
+  if (i == 0) {
+    return zero;
+  }
+  return _solver.new_intvar(static_cast<geas::intvar::val_t>(i.toInt()),
+                            static_cast<geas::intvar::val_t>(i.toInt()));
 }
 
 vec<geas::intvar> GeasSolverInstance::asIntVar(ArrayLit* al) {

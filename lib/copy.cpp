@@ -154,22 +154,22 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
           }
         }
         return curId;
-      } else {
-        Id* c;
-        if (id->decl() != nullptr) {
-          auto* vd =
-              static_cast<VarDecl*>(copy(env, m, id->decl(), followIds, copyFundecls, isFlatModel));
-          c = vd->id();
-        } else {
-          if (id->idn() != -1) {
-            c = new Id(copy_location(m, e), id->idn(), nullptr);
-          } else {
-            c = new Id(copy_location(m, e), id->v(), nullptr);
-          }
-        }
-        m.insert(e, c);
-        ret = c;
       }
+      Id* c;
+      if (id->decl() != nullptr) {
+        auto* vd =
+            static_cast<VarDecl*>(copy(env, m, id->decl(), followIds, copyFundecls, isFlatModel));
+        c = vd->id();
+      } else {
+        if (id->idn() != -1) {
+          c = new Id(copy_location(m, e), id->idn(), nullptr);
+        } else {
+          c = new Id(copy_location(m, e), id->v(), nullptr);
+        }
+      }
+      m.insert(e, c);
+      ret = c;
+
     } break;
     case Expression::E_ANON: {
       auto* c = new AnonVar(copy_location(m, e));

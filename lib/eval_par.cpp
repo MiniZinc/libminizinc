@@ -99,9 +99,8 @@ bool EvalBase::evalBoolCV(EnvI& env, Expression* e) {
   GCLock lock;
   if (e->type().cv()) {
     return eval_bool(env, flat_cv_exp(env, Ctx(), e)());
-  } else {
-    return eval_bool(env, e);
   }
+  return eval_bool(env, e);
 };
 
 class EvalIntLit : public EvalBase {
@@ -569,12 +568,12 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
         ret->flat(al0->flat() && al1->flat());
         ret->type(e->type());
         return ret;
-      } else {
-        if ((bo->decl() != nullptr) && (bo->decl()->e() != nullptr)) {
-          return eval_call<EvalArrayLitCopy, BinOp>(env, bo);
-        }
-        throw EvalError(env, e->loc(), "not an array expression", bo->opToString());
       }
+      if ((bo->decl() != nullptr) && (bo->decl()->e() != nullptr)) {
+        return eval_call<EvalArrayLitCopy, BinOp>(env, bo);
+      }
+      throw EvalError(env, e->loc(), "not an array expression", bo->opToString());
+
     } break;
     case Expression::E_UNOP: {
       UnOp* uo = e->cast<UnOp>();
@@ -682,9 +681,8 @@ Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e) {
   Expression* ret = eval_arrayaccess(env, e, success);
   if (success) {
     return ret;
-  } else {
-    throw ResultUndefinedError(env, e->loc(), "array access out of bounds");
   }
+  throw ResultUndefinedError(env, e->loc(), "array access out of bounds");
 }
 
 SetLit* eval_set_lit(EnvI& env, Expression* e) {
@@ -868,7 +866,8 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
   if (auto* sl = e->dynamicCast<SetLit>()) {
     if (sl->fsv() != nullptr) {
       return sl->fsv();
-    } else if (sl->isv() != nullptr) {
+    }
+    if (sl->isv() != nullptr) {
       IntSetRanges isr(sl->isv());
       return FloatSetVal::ai(isr);
     }
@@ -1651,7 +1650,8 @@ IntVal eval_int(EnvI& env, Expression* e) {
 FloatVal eval_float(EnvI& env, Expression* e) {
   if (e->type().isint()) {
     return static_cast<double>(eval_int(env, e).toInt());
-  } else if (e->type().isbool()) {
+  }
+  if (e->type().isbool()) {
     return static_cast<double>(eval_bool(env, e));
   }
   CallStackItem csi(env, e);
@@ -1882,7 +1882,7 @@ std::string eval_string(EnvI& env, Expression* e) {
     } break;
     default:
       assert(false);
-      return nullptr;
+      return "";
   }
 }
 
@@ -1964,9 +1964,8 @@ Expression* eval_par(EnvI& env, Expression* e) {
       }
       if (id->decl()->e() == nullptr) {
         return id;
-      } else {
-        return eval_par(env, id->decl()->e());
       }
+      return eval_par(env, id->decl()->e());
     }
     case Expression::E_STRINGLIT:
       return e;
@@ -2033,24 +2032,22 @@ Expression* eval_par(EnvI& env, Expression* e) {
           if (c->decl() != nullptr) {
             if (c->decl()->builtins.e != nullptr) {
               return eval_par(env, c->decl()->builtins.e(env, c));
-            } else {
-              if (c->decl()->e() == nullptr) {
-                if (c->id() == "deopt" && Expression::equal(c->arg(0), constants().absent)) {
-                  throw ResultUndefinedError(env, e->loc(), "deopt(<>) is undefined");
-                }
-                return c;
+            }
+            if (c->decl()->e() == nullptr) {
+              if (c->id() == "deopt" && Expression::equal(c->arg(0), constants().absent)) {
+                throw ResultUndefinedError(env, e->loc(), "deopt(<>) is undefined");
               }
-              return eval_call<EvalPar>(env, c);
+              return c;
             }
-          } else {
-            std::vector<Expression*> args(c->argCount());
-            for (unsigned int i = 0; i < args.size(); i++) {
-              args[i] = eval_par(env, c->arg(i));
-            }
-            Call* nc = new Call(c->loc(), c->id(), args);
-            nc->type(c->type());
-            return nc;
+            return eval_call<EvalPar>(env, c);
           }
+          std::vector<Expression*> args(c->argCount());
+          for (unsigned int i = 0; i < args.size(); i++) {
+            args[i] = eval_par(env, c->arg(i));
+          }
+          Call* nc = new Call(c->loc(), c->id(), args);
+          nc->type(c->type());
+          return nc;
         }
         case Expression::E_BINOP: {
           auto* bo = e->cast<BinOp>();
@@ -2538,9 +2535,9 @@ IntBounds compute_int_bounds(EnvI& env, Expression* e) {
     if (cb.valid) {
       assert(cb.bounds.size() == 1);
       return IntBounds(cb.bounds.back().first, cb.bounds.back().second, true);
-    } else {
-      return IntBounds(0, 0, false);
     }
+    return IntBounds(0, 0, false);
+
   } catch (ResultUndefinedError&) {
     return IntBounds(0, 0, false);
   }
@@ -2946,9 +2943,9 @@ FloatBounds compute_float_bounds(EnvI& env, Expression* e) {
     if (cb.valid) {
       assert(!cb.bounds.empty());
       return FloatBounds(cb.bounds.back().first, cb.bounds.back().second, true);
-    } else {
-      return FloatBounds(0.0, 0.0, false);
     }
+    return FloatBounds(0.0, 0.0, false);
+
   } catch (ResultUndefinedError&) {
     return FloatBounds(0.0, 0.0, false);
   }
@@ -2976,9 +2973,8 @@ public:
     if (e->type().isPar()) {
       bounds.push_back(eval_intset(env, e));
       return false;
-    } else {
-      return true;
     }
+    return true;
   }
   /// Visit set literal
   void vSetLit(const SetLit& sl) {
@@ -3185,9 +3181,9 @@ IntSetVal* compute_intset_bounds(EnvI& env, Expression* e) {
     cbi.run(e);
     if (cb.valid) {
       return cb.bounds.back();
-    } else {
-      return nullptr;
     }
+    return nullptr;
+
   } catch (ResultUndefinedError&) {
     return nullptr;
   }
@@ -3240,9 +3236,8 @@ Expression* follow_id_to_value(Expression* e) {
       return vd->e();
     }
     return vd->id();
-  } else {
-    return decl;
   }
+  return decl;
 }
 
 }  // namespace MiniZinc

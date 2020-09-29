@@ -208,17 +208,15 @@ public:
   IntVal plus(int x) const {
     if (isFinite()) {
       return safePlus(_v, x);
-    } else {
-      return *this;
     }
+    return *this;
   }
   /// Infinity-safe subtraction
   IntVal minus(int x) const {
     if (isFinite()) {
       return safeMinus(_v, x);
-    } else {
-      return *this;
     }
+    return *this;
   }
 
   size_t hash() const {
@@ -288,11 +286,11 @@ std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& o
                                              const IntVal& s) {
   if (s.isMinusInfinity()) {
     return os << "-infinity";
-  } else if (s.isPlusInfinity()) {
-    return os << "infinity";
-  } else {
-    return os << s.toInt();
   }
+  if (s.isPlusInfinity()) {
+    return os << "infinity";
+  }
+  return os << s.toInt();
 }
 
 }  // namespace MiniZinc
@@ -444,17 +442,15 @@ public:
   FloatVal plus(int x) {
     if (isFinite()) {
       return (*this) + x;
-    } else {
-      return *this;
     }
+    return *this;
   }
   /// Infinity-safe subtraction
   FloatVal minus(int x) {
     if (isFinite()) {
       return (*this) - x;
-    } else {
-      return *this;
     }
+    return *this;
   }
 
   size_t hash() const {
@@ -507,11 +503,11 @@ std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& o
                                              const FloatVal& s) {
   if (s.isMinusInfinity()) {
     return os << "-infinity";
-  } else if (s.isPlusInfinity()) {
-    return os << "infinity";
-  } else {
-    return os << s.toDouble();
   }
+  if (s.isPlusInfinity()) {
+    return os << "infinity";
+  }
+  return os << s.toDouble();
 }
 
 inline IntVal::IntVal(const FloatVal& v)
@@ -626,9 +622,8 @@ public:
     assert(i < size());
     if (min(i).isFinite() && max(i).isFinite()) {
       return max(i) - min(i) + 1;
-    } else {
-      return IntVal::infinity();
     }
+    return IntVal::infinity();
   }
   /// Return cardinality
   IntVal card() const {
@@ -654,11 +649,10 @@ public:
   static IntSetVal* a(IntVal m, IntVal n) {
     if (m > n) {
       return a();
-    } else {
-      auto* r = static_cast<IntSetVal*>(ASTChunk::alloc(sizeof(Range)));
-      new (r) IntSetVal(m, n);
-      return r;
     }
+    auto* r = static_cast<IntSetVal*>(ASTChunk::alloc(sizeof(Range)));
+    new (r) IntSetVal(m, n);
+    return r;
   }
 
   /// Allocate set using iterator \a i
@@ -841,9 +835,8 @@ public:
     assert(i < size());
     if (min(i).isFinite() && max(i).isFinite() && min(i) == max(i)) {
       return 1;
-    } else {
-      return IntVal::infinity();
     }
+    return IntVal::infinity();
   }
   /// Return cardinality
   FloatVal card() const {
@@ -869,11 +862,10 @@ public:
   static FloatSetVal* a(FloatVal m, FloatVal n) {
     if (m > n) {
       return a();
-    } else {
-      auto* r = static_cast<FloatSetVal*>(ASTChunk::alloc(sizeof(Range)));
-      new (r) FloatSetVal(m, n);
-      return r;
     }
+    auto* r = static_cast<FloatSetVal*>(ASTChunk::alloc(sizeof(Range)));
+    new (r) FloatSetVal(m, n);
+    return r;
   }
 
   /// Allocate set using iterator \a i

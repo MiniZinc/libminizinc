@@ -463,44 +463,43 @@ public:
         kill(getpid(), SIGTERM);
       }
       return exitStatus;
-    } else {
-      if (setpgid(0, 0) == -1) {
-        throw InternalError("Failed to set pgid of subprocess");
-      }
-      close(STDOUT_FILENO);
-      close(STDERR_FILENO);
-      close(STDIN_FILENO);
-      dup2(pipes[0][0], STDIN_FILENO);
-      dup2(pipes[1][1], STDOUT_FILENO);
-      dup2(pipes[2][1], STDERR_FILENO);
-      close(pipes[0][0]);
-      close(pipes[0][1]);
-      close(pipes[1][1]);
-      close(pipes[1][0]);
-      close(pipes[2][1]);
-      close(pipes[2][0]);
-
-      std::vector<char*> cmd_line;
-      for (auto& iCmdl : _fzncmd) {
-        cmd_line.push_back(strdup(iCmdl.c_str()));
-      }
-
-      char** argv = new char*[cmd_line.size() + 1];
-      for (unsigned int i = 0; i < cmd_line.size(); i++) {
-        argv[i] = cmd_line[i];
-      }
-      argv[cmd_line.size()] = nullptr;
-
-      int status = execvp(argv[0], argv);  // execvp only returns if an error occurs.
-      assert(status == -1);                // the returned value will always be -1
-      std::stringstream ssm;
-      ssm << "Error occurred when executing FZN solver with command \"";
-      for (auto& s : cmd_line) {
-        ssm << s << ' ';
-      }
-      ssm << "\".";
-      throw InternalError(ssm.str());
     }
+    if (setpgid(0, 0) == -1) {
+      throw InternalError("Failed to set pgid of subprocess");
+    }
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
+    close(STDIN_FILENO);
+    dup2(pipes[0][0], STDIN_FILENO);
+    dup2(pipes[1][1], STDOUT_FILENO);
+    dup2(pipes[2][1], STDERR_FILENO);
+    close(pipes[0][0]);
+    close(pipes[0][1]);
+    close(pipes[1][1]);
+    close(pipes[1][0]);
+    close(pipes[2][1]);
+    close(pipes[2][0]);
+
+    std::vector<char*> cmd_line;
+    for (auto& iCmdl : _fzncmd) {
+      cmd_line.push_back(strdup(iCmdl.c_str()));
+    }
+
+    char** argv = new char*[cmd_line.size() + 1];
+    for (unsigned int i = 0; i < cmd_line.size(); i++) {
+      argv[i] = cmd_line[i];
+    }
+    argv[cmd_line.size()] = nullptr;
+
+    int status = execvp(argv[0], argv);  // execvp only returns if an error occurs.
+    assert(status == -1);                // the returned value will always be -1
+    std::stringstream ssm;
+    ssm << "Error occurred when executing FZN solver with command \"";
+    for (auto& s : cmd_line) {
+      ssm << s << ' ';
+    }
+    ssm << "\".";
+    throw InternalError(ssm.str());
   }
 #endif
 };

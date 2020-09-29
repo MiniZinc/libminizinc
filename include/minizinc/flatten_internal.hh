@@ -410,10 +410,9 @@ public:
       Ranges::Const<FloatVal> c(v0, v1);
       Ranges::Inter<FloatVal, FloatSetRanges, Ranges::Const<FloatVal> > inter(dr, c);
       return FloatSetVal::ai(inter);
-    } else {
-      Domain d = FloatSetVal::a(v0, v1);
-      return d;
     }
+    Domain d = FloatSetVal::a(v0, v1);
+    return d;
   }
   static Domain limitDomain(BinOpType bot, Domain dom, Val v) {
     FloatSetRanges dr(dom);

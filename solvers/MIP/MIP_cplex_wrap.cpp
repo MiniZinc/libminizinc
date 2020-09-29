@@ -104,9 +104,8 @@ void MIPCplexWrapper::checkDLL() {
   if (_cplexDll == nullptr) {
     if (_options->sCPLEXDLL.empty()) {
       throw MiniZinc::InternalError("cannot load cplex dll, specify --cplex-dll");
-    } else {
-      throw MiniZinc::InternalError("cannot load cplex dll `" + _options->sCPLEXDLL + "'");
     }
+    throw MiniZinc::InternalError("cannot load cplex dll `" + _options->sCPLEXDLL + "'");
   }
 
   *(void**)(&dll_CPXaddfuncdest) = dll_sym(_cplexDll, "CPXaddfuncdest");

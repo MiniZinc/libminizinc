@@ -915,11 +915,10 @@ private:
       put2VarsConnection(leq, false);
       ++MIPD__stats[nVD != 0 ? N_POSTs__eqNlineq : N_POSTs__initexprN];
       return true;
-    } else {
-      if (vd->payload() >= 0) {  // only touched
-        _mNViews[rhsLin] = nVRest;
-        return true;  // can lead to a new connection
-      }
+    }
+    if (vd->payload() >= 0) {  // only touched
+      _mNViews[rhsLin] = nVRest;
+      return true;  // can lead to a new connection
     }
 
     return false;
@@ -2031,15 +2030,16 @@ private:
   double expr2Const(Expression* arg) {
     if (auto* il = arg->dynamicCast<IntLit>()) {
       return (static_cast<double>(il->v().toInt()));
-    } else if (auto* fl = arg->dynamicCast<FloatLit>()) {
-      return (fl->v().toDouble());
-    } else if (auto* bl = arg->dynamicCast<BoolLit>()) {
-      return static_cast<double>(bl->v());
-    } else {
-      MZN_MIPD__assert_hard_msg(0,
-                                "unexpected expression instead of an int/float/bool literal: eid="
-                                    << arg->eid() << " while E_INTLIT=" << Expression::E_INTLIT);
     }
+    if (auto* fl = arg->dynamicCast<FloatLit>()) {
+      return (fl->v().toDouble());
+    }
+    if (auto* bl = arg->dynamicCast<BoolLit>()) {
+      return static_cast<double>(bl->v());
+    }
+    MZN_MIPD__assert_hard_msg(0, "unexpected expression instead of an int/float/bool literal: eid="
+                                     << arg->eid() << " while E_INTLIT=" << Expression::E_INTLIT);
+
     return 0.0;
   }
 

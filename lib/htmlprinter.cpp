@@ -118,9 +118,8 @@ public:
   std::string getAnchor(int level, int indivFileLevel) {
     if (level < indivFileLevel) {
       return fullPath + ".html";
-    } else {
-      return "#" + fullPath;
     }
+    return "#" + fullPath;
   }
 
   std::string toHTML(int level, int indivFileLevel, Group* parent, unsigned int idx,

@@ -473,15 +473,12 @@ CbcEventHandler::CbcAction MyEventHandler3::event(CbcEvent whichEvent) {
           _ui.pCbui->printed = true;
         }
         return noAction;  // carry on
-      } else {
-        return noAction;  // carry on
       }
-    } else {
-      return noAction;
+      return noAction;  // carry on
     }
-  } else {
-    return noAction;  // carry on
+    return noAction;
   }
+  return noAction;  // carry on
 }
 
 /** This is so user can trap events and do useful stuff.
@@ -551,9 +548,8 @@ int MyEventHandler4::event(Event whichEvent) {
   if ((cancelAsap & 1) != 0) {
     //     printf("Clp got cancel\n");
     return 5;
-  } else {
-    return -1;
   }
+  return -1;
 }
 // end SolutionCallback ---------------------------------------------------------------------
 

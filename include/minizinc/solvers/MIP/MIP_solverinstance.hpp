@@ -24,12 +24,12 @@ bool MIPSolverFactory<MIPWrapper>::processOption(SolverInstanceBase::Options* op
   if (argv[i] == "--verbose-solving") {
     opt->verbose = true;
     return true;
-  } else if (argv[i] == "--solver-statistics") {
+  }
+  if (argv[i] == "--solver-statistics") {
     opt->printStatistics = true;
     return true;
-  } else {
-    return static_cast<typename MIPWrapper::Options&>(*opt).processOption(i, argv);
   }
+  return static_cast<typename MIPWrapper::Options&>(*opt).processOption(i, argv);
 }
 
 template <class MIPWrapper>
@@ -53,9 +53,8 @@ template <class MIPWrapper>
 MIPSolver::Variable MIPSolverinstance<MIPWrapper>::exprToVar(Expression* arg) {
   if (Id* ident = arg->dynamicCast<Id>()) {
     return _variableMap.get(ident->decl()->id());
-  } else {
-    return _mipWrapper->addLitVar(exprToConst(arg));
   }
+  return _mipWrapper->addLitVar(exprToConst(arg));
 }
 
 template <class MIPWrapper>

@@ -292,9 +292,8 @@ void Id::rehash() {
 int Id::levenshteinDistance(Id* other) const {
   if (idn() != -1 || other->idn() != -1) {
     return std::numeric_limits<int>::max();
-  } else {
-    return v().levenshteinDistance(other->v());
   }
+  return v().levenshteinDistance(other->v());
 }
 
 ASTString Id::str() const {
@@ -384,10 +383,9 @@ Expression* ArrayLit::getSlice(unsigned int i) const {
     assert(_u.v->flag());
     int off = static_cast<int>(length()) - static_cast<int>(_u.v->size());
     return i <= off ? (*_u.v)[0] : (*_u.v)[i - off];
-  } else {
-    assert(_flag2);
-    return (*_u.al)[origIdx(i)];
   }
+  assert(_flag2);
+  return (*_u.al)[origIdx(i)];
 }
 
 void ArrayLit::setSlice(unsigned int i, Expression* e) {
@@ -992,31 +990,30 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
           std::ostringstream ss;
           ss << "type-inst variable $" << tiid << " used in both array and non-array position";
           throw TypeError(env, get_loc(ta[i], fi), ss.str());
+        }
+        Type tiit_par = tiit;
+        tiit_par.ti(Type::TI_PAR);
+        tiit_par.ot(Type::OT_PRESENT);
+        Type its_par = it->second;
+        its_par.ti(Type::TI_PAR);
+        its_par.ot(Type::OT_PRESENT);
+        if (tiit_par.bt() == Type::BT_TOP || tiit_par.bt() == Type::BT_BOT) {
+          tiit_par.bt(its_par.bt());
+        }
+        if (its_par.bt() == Type::BT_TOP || its_par.bt() == Type::BT_BOT) {
+          its_par.bt(tiit_par.bt());
+        }
+        if (env.isSubtype(tiit_par, its_par, strictEnum)) {
+          if (it->second.bt() == Type::BT_TOP) {
+            it->second.bt(tiit.bt());
+          }
+        } else if (env.isSubtype(its_par, tiit_par, strictEnum)) {
+          it->second = tiit_par;
         } else {
-          Type tiit_par = tiit;
-          tiit_par.ti(Type::TI_PAR);
-          tiit_par.ot(Type::OT_PRESENT);
-          Type its_par = it->second;
-          its_par.ti(Type::TI_PAR);
-          its_par.ot(Type::OT_PRESENT);
-          if (tiit_par.bt() == Type::BT_TOP || tiit_par.bt() == Type::BT_BOT) {
-            tiit_par.bt(its_par.bt());
-          }
-          if (its_par.bt() == Type::BT_TOP || its_par.bt() == Type::BT_BOT) {
-            its_par.bt(tiit_par.bt());
-          }
-          if (env.isSubtype(tiit_par, its_par, strictEnum)) {
-            if (it->second.bt() == Type::BT_TOP) {
-              it->second.bt(tiit.bt());
-            }
-          } else if (env.isSubtype(its_par, tiit_par, strictEnum)) {
-            it->second = tiit_par;
-          } else {
-            std::ostringstream ss;
-            ss << "type-inst variable $" << tiid << " instantiated with different types ("
-               << tiit.toString(env) << " vs " << it->second.toString(env) << ")";
-            throw TypeError(env, get_loc(ta[i], fi), ss.str());
-          }
+          std::ostringstream ss;
+          ss << "type-inst variable $" << tiid << " instantiated with different types ("
+             << tiit.toString(env) << " vs " << it->second.toString(env) << ")";
+          throw TypeError(env, get_loc(ta[i], fi), ss.str());
         }
       }
     }
@@ -1046,7 +1043,8 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
           std::ostringstream ss;
           ss << "type-inst variable $" << tiid << " used in both array and non-array position";
           throw TypeError(env, get_loc(ta[i], fi), ss.str());
-        } else if (it->second != tiit) {
+        }
+        if (it->second != tiit) {
           std::ostringstream ss;
           ss << "type-inst variable $" << tiid << " instantiated with different types ("
              << tiit.toString(env) + " vs " << it->second.toString(env) << ")";
@@ -1255,9 +1253,8 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
       }
     }
     return ty;
-  } else {
-    return tii->type();
   }
+  return tii->type();
 }
 
 bool Expression::equalInternal(const Expression* e0, const Expression* e1) {
@@ -1274,31 +1271,29 @@ bool Expression::equalInternal(const Expression* e0, const Expression* e1) {
           IntSetRanges r0(s0->isv());
           IntSetRanges r1(s1->isv());
           return Ranges::equal(r0, r1);
-        } else {
-          return false;
         }
-      } else if (s0->fsv() != nullptr) {
+        return false;
+      }
+      if (s0->fsv() != nullptr) {
         if (s1->fsv() != nullptr) {
           FloatSetRanges r0(s0->fsv());
           FloatSetRanges r1(s1->fsv());
           return Ranges::equal(r0, r1);
-        } else {
-          return false;
         }
-      } else {
-        if ((s1->isv() != nullptr) || (s1->fsv() != nullptr)) {
-          return false;
-        }
-        if (s0->v().size() != s1->v().size()) {
-          return false;
-        }
-        for (unsigned int i = 0; i < s0->v().size(); i++) {
-          if (!Expression::equal(s0->v()[i], s1->v()[i])) {
-            return false;
-          }
-        }
-        return true;
+        return false;
       }
+      if ((s1->isv() != nullptr) || (s1->fsv() != nullptr)) {
+        return false;
+      }
+      if (s0->v().size() != s1->v().size()) {
+        return false;
+      }
+      for (unsigned int i = 0; i < s0->v().size(); i++) {
+        if (!Expression::equal(s0->v()[i], s1->v()[i])) {
+          return false;
+        }
+      }
+      return true;
     }
     case Expression::E_BOOLLIT:
       return e0->cast<BoolLit>()->v() == e1->cast<BoolLit>()->v();

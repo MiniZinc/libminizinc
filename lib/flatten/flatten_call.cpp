@@ -30,7 +30,8 @@ Call* same_call(EnvI& env, Expression* e, const ASTString& id) {
   if (c != nullptr) {
     if (c->id() == id) {
       return ce->cast<Call>();
-    } else if (c->id() == constants().ids.int2float) {
+    }
+    if (c->id() == constants().ids.int2float) {
       Expression* i2f = follow_id(c->arg(0));
       Call* i2fc = Expression::dynamicCast<Call>(i2f);
       if ((i2fc != nullptr) && i2fc->id() == id && id == constants().ids.lin_exp) {
@@ -196,7 +197,8 @@ void flatten_linexp_call(EnvI& env, Ctx ctx, const Ctx& nctx, ASTString& cid, Ca
     ret.b = conj(env, b, Ctx(), args_ee);
     ret.r = bind(env, ctx, r, LinearTraits<Lit>::newLit(d));
     return;
-  } else if (coeffv.size() == 1 && coeffv[0] == 1 && d == 0) {
+  }
+  if (coeffv.size() == 1 && coeffv[0] == 1 && d == 0) {
     ret.b = conj(env, b, Ctx(), args_ee);
     ret.r = bind(env, ctx, r, alv[0]());
     return;
@@ -780,7 +782,8 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
           ret.b = bind(env, Ctx(), b, constants().literalTrue);
           ret.r = bind(env, ctx, r, constants().literalFalse);
           return ret;
-        } else if (pos_alv.size() == 1) {
+        }
+        if (pos_alv.size() == 1) {
           ret.b = bind(env, Ctx(), b, constants().literalTrue);
           ret.r = bind(env, ctx, r, pos_alv[0]());
           return ret;
@@ -855,7 +858,8 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
         ret.b = bind(env, Ctx(), b, constants().literalTrue);
         ret.r = bind(env, ctx, r, constants().literalTrue);
         return ret;
-      } else if (alv.size() == 1) {
+      }
+      if (alv.size() == 1) {
         ret.b = bind(env, Ctx(), b, constants().literalTrue);
         ret.r = bind(env, ctx, r, alv[0]());
         return ret;

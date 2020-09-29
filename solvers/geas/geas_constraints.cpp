@@ -628,9 +628,9 @@ void p_array_var_int_element(SolverInstanceBase& s, const Call* call) {
     Expression* elem = (*ARRAY(1))[INT(0) - 1];
     if (elem->type().isPar()) {
       return p_array_int_element(s, call);
-    } else {
-      geas::int_eq(SD, SI.asIntVar(elem), INTVAR(2));
     }
+    geas::int_eq(SD, SI.asIntVar(elem), INTVAR(2));
+
   } else if (PAR(2)) {
     for (int j = 0; j < ARRAY(1)->size(); ++j) {
       Expression* elem = (*ARRAY(1))[j];
@@ -660,10 +660,10 @@ void p_array_var_bool_element(SolverInstanceBase& s, const Call* call) {
     Expression* elem = (*ARRAY(1))[INT(0) - 1];
     if (elem->type().isPar()) {
       return p_array_bool_element(s, call);
-    } else {
-      geas::add_clause(SD, BOOLVAR(2), ~SI.asBoolVar(elem));
-      geas::add_clause(SD, ~BOOLVAR(2), SI.asBoolVar(elem));
     }
+    geas::add_clause(SD, BOOLVAR(2), ~SI.asBoolVar(elem));
+    geas::add_clause(SD, ~BOOLVAR(2), SI.asBoolVar(elem));
+
   } else if (PAR(2)) {
     for (int j = 0; j < ARRAY(1)->size(); ++j) {
       Expression* elem = (*ARRAY(1))[j];

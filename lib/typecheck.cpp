@@ -108,12 +108,10 @@ public:
     if (auto* vd0 = Expression::dynamicCast<VarDecl>(e0)) {
       if (auto* vd1 = Expression::dynamicCast<VarDecl>(e1)) {
         return _pos[vd0] < _pos[vd1];
-      } else {
-        return true;
       }
-    } else {
-      return false;
+      return true;
     }
+    return false;
   }
 };
 class ItemCmp {
@@ -126,12 +124,10 @@ public:
     if (auto* vd0 = i0->cast<VarDeclI>()) {
       if (auto* vd1 = i1->cast<VarDeclI>()) {
         return _pos[vd0->e()] < _pos[vd1->e()];
-      } else {
-        return true;
       }
-    } else {
-      return false;
+      return true;
     }
+    return false;
   }
 };
 
@@ -1942,10 +1938,9 @@ public:
                     std::ostringstream ss;
                     ss << "could not replace binary operator by call to " << cid;
                     throw InternalError(ss.str());
-                  } else {
-                    Call* newCall = bop.morph(cid, args);
-                    newCall->decl(newCall_decl);
                   }
+                  Call* newCall = bop.morph(cid, args);
+                  newCall->decl(newCall_decl);
                 }
               }
             }
@@ -1981,10 +1976,9 @@ public:
               std::ostringstream ss;
               ss << "could not replace binary operator by call to " << cid;
               throw InternalError(ss.str());
-            } else {
-              Call* newCall = bop.morph(cid, args);
-              newCall->decl(newCall_decl);
             }
+            Call* newCall = bop.morph(cid, args);
+            newCall->decl(newCall_decl);
           }
         }
       }
@@ -2258,11 +2252,10 @@ public:
                             "array index set expression has invalid type, expected `set of int', "
                             "actual `set of " +
                                 ri->type().toString(_env) + "'");
-          } else {
-            throw TypeError(_env, ri->loc(),
-                            "cannot use `" + ri->type().toString(_env) +
-                                "' as array index set (did you mean `int'?)");
           }
+          throw TypeError(_env, ri->loc(),
+                          "cannot use `" + ri->type().toString(_env) +
+                              "' as array index set (did you mean `int'?)");
         }
       }
       tt.dim(foundTIId ? -1 : static_cast<int>(ti.ranges().size()));
@@ -2539,9 +2532,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         if (auto* vdi0 = i0->dynamicCast<VarDeclI>()) {
           if (auto* vdi1 = i1->dynamicCast<VarDeclI>()) {
             return vdi0->e()->payload() < vdi1->e()->payload();
-          } else {
-            return !i1->isa<IncludeI>();
           }
+          return !i1->isa<IncludeI>();
         }
         return false;
       }
@@ -2765,9 +2757,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       } catch (TypeError&) {
         if (vd_k()->cast<VarDecl>()->type().isvar()) {
           continue;  // var can be undefined
-        } else {
-          throw;
         }
+        throw;
       }
       vd->ann().add(constants().ann.mzn_check_var);
       if (vd->type().enumId() != 0) {

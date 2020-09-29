@@ -244,9 +244,9 @@ void* dll_open(const char* file) {
 #ifdef HAS_DLFCN_H
   if (MiniZinc::FileUtils::is_absolute(file)) {
     return dlopen(file, RTLD_NOW);
-  } else {
-    return dlopen((std::string("lib") + file + ".so").c_str(), RTLD_NOW);
   }
+  return dlopen((std::string("lib") + file + ".so").c_str(), RTLD_NOW);
+
 #else
   if (MiniZinc::FileUtils::is_absolute(file)) {
     return LoadLibrary(file);
@@ -294,9 +294,8 @@ void MIPGurobiWrapper::checkDLL() {
   if (_gurobiDll == nullptr) {
     if (_options == nullptr || _options->sGurobiDLL.empty()) {
       throw MiniZinc::InternalError("cannot load gurobi dll, specify --gurobi-dll");
-    } else {
-      throw MiniZinc::InternalError("cannot load gurobi dll `" + _options->sGurobiDLL + "'");
     }
+    throw MiniZinc::InternalError("cannot load gurobi dll `" + _options->sGurobiDLL + "'");
   }
 
   *(void**)(&dll_GRBversion) = dll_sym(_gurobiDll, "GRBversion");

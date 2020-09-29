@@ -304,19 +304,15 @@ public:
     if (sizeof(double) <= sizeof(void*)) {
       // bit 1 or bit 0 is set
       return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) != 0;
-    } else {
-      // bit 0 is set
-      return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) != 0;
-    }
+    }  // bit 0 is set
+    return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) != 0;
   }
   bool isUnboxedInt() const {
     if (sizeof(double) <= sizeof(void*)) {
       // bit 1 is set, bit 0 is not set
       return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) == 2;
-    } else {
-      // bit 0 is set
-      return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) == 1;
-    }
+    }  // bit 0 is set
+    return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) == 1;
   }
   bool isUnboxedFloatVal() const {
     // bit 0 is set (and doubles fit inside pointers)
@@ -371,18 +367,15 @@ public:
       bool pos = ((reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(4)) == 0);
       if (pos) {
         return static_cast<long long int>(i >> 3);
-      } else {
-        return -(static_cast<long long int>(i >> 3));
       }
-    } else {
-      unsigned long long int i = reinterpret_cast<ptrdiff_t>(this) & ~static_cast<ptrdiff_t>(3);
-      bool pos = ((reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(2)) == 0);
-      if (pos) {
-        return static_cast<long long int>(i >> 2);
-      } else {
-        return -(static_cast<long long int>(i >> 2));
-      }
+      return -(static_cast<long long int>(i >> 3));
     }
+    unsigned long long int i = reinterpret_cast<ptrdiff_t>(this) & ~static_cast<ptrdiff_t>(3);
+    bool pos = ((reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(2)) == 0);
+    if (pos) {
+      return static_cast<long long int>(i >> 2);
+    }
+    return -(static_cast<long long int>(i >> 2));
   }
   static IntLit* intToUnboxedInt(long long int i) {
     static const unsigned int pointerBits = sizeof(void*) * 8;
@@ -398,19 +391,18 @@ public:
         ubi_p = ubi_p | static_cast<ptrdiff_t>(4);
       }
       return reinterpret_cast<IntLit*>(ubi_p);
-    } else {
-      static const long long int maxUnboxedVal =
-          (static_cast<long long int>(1) << (pointerBits - 2)) - static_cast<long long int>(1);
-      if (i < -maxUnboxedVal || i > maxUnboxedVal) {
-        return nullptr;
-      }
-      long long int j = i < 0 ? -i : i;
-      ptrdiff_t ubi_p = (static_cast<ptrdiff_t>(j) << 2) | static_cast<ptrdiff_t>(1);
-      if (i < 0) {
-        ubi_p = ubi_p | static_cast<ptrdiff_t>(2);
-      }
-      return reinterpret_cast<IntLit*>(ubi_p);
     }
+    static const long long int maxUnboxedVal =
+        (static_cast<long long int>(1) << (pointerBits - 2)) - static_cast<long long int>(1);
+    if (i < -maxUnboxedVal || i > maxUnboxedVal) {
+      return nullptr;
+    }
+    long long int j = i < 0 ? -i : i;
+    ptrdiff_t ubi_p = (static_cast<ptrdiff_t>(j) << 2) | static_cast<ptrdiff_t>(1);
+    if (i < 0) {
+      ubi_p = ubi_p | static_cast<ptrdiff_t>(2);
+    }
+    return reinterpret_cast<IntLit*>(ubi_p);
   }
   FloatVal unboxedFloatToFloatVal() const {
     assert(isUnboxedFloatVal());
@@ -464,9 +456,8 @@ public:
     }
     if (sizeof(double) <= sizeof(void*)) {
       return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(7)) == 4;
-    } else {
-      return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) == 2;
     }
+    return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) == 2;
   }
 
   Expression* tag() const {
@@ -474,10 +465,9 @@ public:
     if (sizeof(double) <= sizeof(void*)) {
       return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) |
                                            static_cast<ptrdiff_t>(4));
-    } else {
-      return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) |
-                                           static_cast<ptrdiff_t>(2));
     }
+    return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) |
+                                         static_cast<ptrdiff_t>(2));
   }
   Expression* untag() {
     if (isUnboxedVal()) {
@@ -486,10 +476,9 @@ public:
     if (sizeof(double) <= sizeof(void*)) {
       return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) &
                                            ~static_cast<ptrdiff_t>(4));
-    } else {
-      return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) &
-                                           ~static_cast<ptrdiff_t>(2));
     }
+    return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) &
+                                         ~static_cast<ptrdiff_t>(2));
   }
 
   /// Test if expression is of type \a T
@@ -1168,9 +1157,8 @@ public:
     if (_u.oneArg->isUnboxedVal() || _u.oneArg->isTagged()) {
       assert(i == 0U);
       return _u.oneArg->isUnboxedVal() ? _u.oneArg : _u.oneArg->untag();
-    } else {
-      return (*_u.args)[i];
     }
+    return (*_u.args)[i];
   }
   /// Set argument \a i
   void arg(unsigned int i, Expression* e) {

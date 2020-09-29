@@ -1084,7 +1084,8 @@ Expression* is_fixed_domain(EnvI& env, VarDecl* vd) {
     if (sl->type().bt() == Type::BT_INT) {
       IntSetVal* isv = eval_intset(env, sl);
       return isv->min() == isv->max() ? IntLit::a(isv->min()) : nullptr;
-    } else if (sl->type().bt() == Type::BT_FLOAT) {
+    }
+    if (sl->type().bt() == Type::BT_FLOAT) {
       FloatSetVal* fsv = eval_floatset(env, sl);
       return fsv->min() == fsv->max() ? FloatLit::a(fsv->min()) : nullptr;
     }

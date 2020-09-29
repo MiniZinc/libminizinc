@@ -100,7 +100,8 @@ bool NLSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
         _opt.nlFlags.push_back(fznf.n);
         _opt.nlFlags.push_back(buffer);
         return true;
-      } else if (fznf.t == MZNFZNSolverFlag::FT_NOARG && cop.getOption(fznf.n.c_str())) {
+      }
+      if (fznf.t == MZNFZNSolverFlag::FT_NOARG && cop.getOption(fznf.n.c_str())) {
         _opt.nlFlags.push_back(fznf.n);
         return true;
       }

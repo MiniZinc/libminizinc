@@ -1387,13 +1387,12 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
 int bool_state(EnvI& env, Expression* e) {
   if (e->type().isPar()) {
     return static_cast<int>(eval_bool(env, e));
-  } else {
-    Id* id = e->cast<Id>();
-    if (id->decl()->ti()->domain() == nullptr) {
-      return 2;
-    }
-    return static_cast<int>(id->decl()->ti()->domain() == constants().literalTrue);
   }
+  Id* id = e->cast<Id>();
+  if (id->decl()->ti()->domain() == nullptr) {
+    return 2;
+  }
+  return static_cast<int>(id->decl()->ti()->domain() == constants().literalTrue);
 }
 
 int decrement_non_fixed_vars(std::unordered_map<Expression*, int>& nonFixedLiteralCount, Call* c) {
@@ -1411,10 +1410,9 @@ int decrement_non_fixed_vars(std::unordered_map<Expression*, int>& nonFixedLiter
     }
     nonFixedLiteralCount.insert(std::make_pair(c, nonFixedVars));
     return nonFixedVars;
-  } else {
-    it->second--;
-    return it->second;
   }
+  it->second--;
+  return it->second;
 }
 
 void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
@@ -1549,7 +1547,8 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
               subsumed = true;
               i = 2;  // break out of outer loop
               break;
-            } else if (Id* id = (*al)[j]->dynamicCast<Id>()) {
+            }
+            if (Id* id = (*al)[j]->dynamicCast<Id>()) {
               if (id->decl()->ti()->domain() != nullptr) {
                 bool idv = (id->decl()->ti()->domain() == constants().literalTrue);
                 if (unit != idv) {

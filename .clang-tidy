@@ -1,5 +1,6 @@
 ---
 Checks: '-*,
+  readability-else-after-return,
   bugprone-*,
   modernize-deprecated-headers,
   modernize-loop-convert,

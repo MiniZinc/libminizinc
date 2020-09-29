@@ -178,9 +178,9 @@ vector<string> MIPxpressWrapper::getRequiredFlags() {
     p2.XPRSfree();
     if (ret == 0 || ret == 32) {
       return {};
-    } else {
-      return {"--xpress-password"};
     }
+    return {"--xpress-password"};
+
   } catch (MiniZinc::Plugin::PluginError&) {
     return {"--xpress-root"};
   }

@@ -23,9 +23,8 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
       ret.b = bind(env, Ctx(), b, constants().literalTrue);
       ret.r = bind(env, ctx, r, e);
       return ret;
-    } else {
-      throw FlatteningError(env, e->loc(), "undefined identifier");
     }
+    throw FlatteningError(env, e->loc(), "undefined identifier");
   }
   if (!doNotFollowChains) {
     Expression* id_f = follow_id_to_decl(id);

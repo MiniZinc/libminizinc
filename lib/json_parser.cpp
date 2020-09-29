@@ -381,7 +381,8 @@ Expression* JSONParser::parseObject(istream& is) {
         res = IntSetVal::ai(u);
       }
       return new SetLit(Location().introduce(), res);
-    } else if (listT == T_FLOAT) {
+    }
+    if (listT == T_FLOAT) {
       unsigned int n = elems.size() / 2;
       auto* res = FloatSetVal::a();
       for (unsigned int i = 0; i < n; i++) {
@@ -419,13 +420,13 @@ Expression* JSONParser::parseObject(istream& is) {
         break;
     }
     return new SetLit(Location().introduce(), elems_e);
-  } else if (objid.s == "e") {
+  }
+  if (objid.s == "e") {
     Token next = parseEnumString(is);
     expectToken(is, T_OBJ_CLOSE);
     return new Id(Location().introduce(), ASTString(next.s), nullptr);
-  } else {
-    throw JSONError(_env, errLocation(), "invalid object");
   }
+  throw JSONError(_env, errLocation(), "invalid object");
 }
 
 ArrayLit* JSONParser::parseArray(std::istream& is) {

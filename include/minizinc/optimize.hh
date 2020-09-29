@@ -85,17 +85,16 @@ public:
   static bool varIsFree(VarDecl* vd) {
     if (vd->e() == nullptr || vd->ti()->domain() == nullptr || vd->ti()->computedDomain()) {
       return true;
-    } else {
-      /// TODO: test if id's domain is a superset of the right hand side
-      /// this currently only tests for equality, and for Boolean domains
-      if (Id* ident = vd->e()->dynamicCast<Id>()) {
-        if (Expression::equal(ident->decl()->ti()->domain(), vd->ti()->domain())) {
-          return true;
-        }
-      } else if (vd->e() == vd->ti()->domain()) {
+    }  /// TODO: test if id's domain is a superset of the right hand side
+    /// this currently only tests for equality, and for Boolean domains
+    if (Id* ident = vd->e()->dynamicCast<Id>()) {
+      if (Expression::equal(ident->decl()->ti()->domain(), vd->ti()->domain())) {
         return true;
       }
+    } else if (vd->e() == vd->ti()->domain()) {
+      return true;
     }
+
     return false;
   }
 

@@ -39,18 +39,17 @@ bool Model::FnEntry::compare(const Model::FnEntry& e1, const Model::FnEntry& e2)
       if (e1.t[i] != e2.t[i]) {
         if (e1.t[i].isSubtypeOf(e2.t[i], true)) {
           return true;
-        } else {
-          if (e2.t[i].isSubtypeOf(e1.t[i], true)) {
+        }
+        if (e2.t[i].isSubtypeOf(e1.t[i], true)) {
+          return false;
+        }
+        switch (e1.t[i].cmp(e2.t[i])) {
+          case -1:
+            return true;
+          case 1:
             return false;
-          }
-          switch (e1.t[i].cmp(e2.t[i])) {
-            case -1:
-              return true;
-            case 1:
-              return false;
-            default:
-              assert(false);
-          }
+          default:
+            assert(false);
         }
       }
     }
@@ -232,7 +231,8 @@ void Model::registerFn(EnvI& env, FunctionI* fi) {
     for (auto& i : v) {
       if (i.fi == fi) {
         return;
-      } else if (i.fi->params().size() == fi->params().size()) {
+      }
+      if (i.fi->params().size() == fi->params().size()) {
         bool alleq = true;
         for (unsigned int j = 0; j < fi->params().size(); j++) {
           Type t1 = i.fi->params()[j]->type();
@@ -249,17 +249,16 @@ void Model::registerFn(EnvI& env, FunctionI* fi) {
             throw TypeError(
                 env, fi->loc(),
                 "function with the same type already defined in " + i.fi->loc().toString());
-          } else {
-            if ((fi->e() != nullptr) || i.isPolymorphic) {
-              if (Call* deprecated = i.fi->ann().getCall(constants().ann.mzn_deprecated)) {
-                fi->ann().add(deprecated);
-              }
-              i = fi;
-            } else if (Call* deprecated = fi->ann().getCall(constants().ann.mzn_deprecated)) {
-              i.fi->ann().add(deprecated);
-            }
-            return;
           }
+          if ((fi->e() != nullptr) || i.isPolymorphic) {
+            if (Call* deprecated = i.fi->ann().getCall(constants().ann.mzn_deprecated)) {
+              fi->ann().add(deprecated);
+            }
+            i = fi;
+          } else if (Call* deprecated = fi->ann().getCall(constants().ann.mzn_deprecated)) {
+            i.fi->ann().add(deprecated);
+          }
+          return;
         }
       }
     }
@@ -651,9 +650,8 @@ FunctionI* Model::matchRevMap(EnvI& env, const Type& t0) const {
   auto it = _revmapmap.find(t.toInt());
   if (it != _revmapmap.end()) {
     return it->second;
-  } else {
-    return nullptr;
   }
+  return nullptr;
 }
 
 Item*& Model::operator[](unsigned int i) {

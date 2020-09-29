@@ -540,7 +540,8 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
     ees[2].b = constants().boollit(result);
     ret.r = conj(env, r, ctx, ees);
     return;
-  } else if (coeffv.size() == 1 && std::abs(coeffv[0]) == 1) {
+  }
+  if (coeffv.size() == 1 && std::abs(coeffv[0]) == 1) {
     if (coeffv[0] == -1) {
       switch (bot) {
         case BOT_LE:
@@ -600,7 +601,8 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
         ees[2].b = constants().literalTrue;
         ret.r = conj(env, r, ctx, ees);
         return;
-      } else if (failed) {
+      }
+      if (failed) {
         ees[2].b = constants().literalFalse;
         ret.r = conj(env, r, ctx, ees);
         return;
@@ -670,7 +672,8 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
           if (LinearTraits<Lit>::domainEmpty(ndomain)) {
             ret.r = bind(env, ctx, r, constants().literalFalse);
             return;
-          } else if (!LinearTraits<Lit>::domainEquals(domain, ndomain)) {
+          }
+          if (!LinearTraits<Lit>::domainEquals(domain, ndomain)) {
             ret.r = bind(env, ctx, r, constants().literalTrue);
             set_computed_domain(env, vd, LinearTraits<Lit>::newDomain(ndomain), false);
 
@@ -929,15 +932,14 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
           }
           ret.r = bind(env, ctx, r, constants().literalTrue);
           break;
-        } else {
-          GC::lock();
-          Call* c = aggregate_and_or_ops(env, bo, negArgs, bot);
-          KeepAlive ka(c);
-          GC::unlock();
-          ret = flat_exp(env, ctx, c, r, b);
-          if (Id* id = ret.r()->dynamicCast<Id>()) {
-            add_ctx_ann(id->decl(), ctx.b);
-          }
+        }
+        GC::lock();
+        Call* c = aggregate_and_or_ops(env, bo, negArgs, bot);
+        KeepAlive ka(c);
+        GC::unlock();
+        ret = flat_exp(env, ctx, c, r, b);
+        if (Id* id = ret.r()->dynamicCast<Id>()) {
+          add_ctx_ann(id->decl(), ctx.b);
         }
         break;
       }
@@ -1027,7 +1029,8 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
           KeepAlive ka = mklinexp<IntLit>(env, coeff, 0, e0r, nullptr);
           ret = flat_exp(env, ctx, ka(), r, b);
           break;
-        } else if (e1r->type().isPar() && e1r->type().isfloat()) {
+        }
+        if (e1r->type().isPar() && e1r->type().isfloat()) {
           FloatVal coeff = eval_float(env, e1r);
           KeepAlive ka = mklinexp<FloatLit>(env, coeff, 0.0, e0r, nullptr);
           ret = flat_exp(env, ctx, ka(), r, b);
@@ -1047,11 +1050,10 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
           if (coeff == 1.0) {
             ret = flat_exp(env, ctx, e0r, r, b);
             break;
-          } else {
-            KeepAlive ka = mklinexp<FloatLit>(env, 1.0 / coeff, 0.0, e0r, nullptr);
-            ret = flat_exp(env, ctx, ka(), r, b);
-            break;
           }
+          KeepAlive ka = mklinexp<FloatLit>(env, 1.0 / coeff, 0.0, e0r, nullptr);
+          ret = flat_exp(env, ctx, ka(), r, b);
+          break;
         }
       }
 
@@ -1138,13 +1140,12 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
           ret = flat_exp(env, nctx, constants().literalTrue, constants().varTrue,
                          constants().varTrue);
           break;
-        } else {
-          Ctx nctx = ctx;
-          nctx.neg = !negArgs;
-          nctx.b = !negArgs ? C_NEG : C_ROOT;
-          ret = flat_exp(env, nctx, boe0, constants().varTrue, constants().varTrue);
-          break;
         }
+        Ctx nctx = ctx;
+        nctx.neg = !negArgs;
+        nctx.b = !negArgs ? C_NEG : C_ROOT;
+        ret = flat_exp(env, nctx, boe0, constants().varTrue, constants().varTrue);
+        break;
       }
       GC::lock();
       std::vector<Expression*> args;
@@ -1193,48 +1194,46 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
         bot = BOT_XOR;
         ctx0.b = ctx1.b = C_MIX;
         goto flatten_bool_op;
-      } else {
-        if (!boe1->type().isOpt() && istrue(env, boe0)) {
-          return flat_exp(env, ctx, boe1, r, b);
-        }
-        if (!boe0->type().isOpt() && istrue(env, boe1)) {
-          return flat_exp(env, ctx, boe0, r, b);
-        }
-        if (!boe0->type().isOpt() && !boe1->type().isOpt() && (r != nullptr) &&
-            r == constants().varTrue) {
-          if (boe1->type().isPar() || boe1->isa<Id>()) {
-            std::swap(boe0, boe1);
-          }
-          if (istrue(env, boe0)) {
-            return flat_exp(env, ctx1, boe1, r, b);
-          } else if (isfalse(env, boe0)) {
-            ctx1.neg = true;
-            ctx1.b = -ctx1.b;
-            return flat_exp(env, ctx1, boe1, r, b);
-          } else {
-            ctx0.b = C_MIX;
-            EE e0 = flat_exp(env, ctx0, boe0, nullptr, nullptr);
-            if (istrue(env, e0.r())) {
-              return flat_exp(env, ctx1, boe1, r, b);
-            } else if (isfalse(env, e0.r())) {
-              ctx1.neg = true;
-              ctx1.b = -ctx1.b;
-              return flat_exp(env, ctx1, boe1, r, b);
-            } else {
-              Id* id = e0.r()->cast<Id>();
-              ctx1.b = C_MIX;
-              (void)flat_exp(env, ctx1, boe1, id->decl(), constants().varTrue);
-              add_ctx_ann(id->decl(), ctx1.b);
-              ret.b = bind(env, Ctx(), b, constants().literalTrue);
-              ret.r = bind(env, Ctx(), r, constants().literalTrue);
-            }
-          }
-          break;
-        } else {
-          ctx0.b = ctx1.b = C_MIX;
-          goto flatten_bool_op;
-        }
       }
+      if (!boe1->type().isOpt() && istrue(env, boe0)) {
+        return flat_exp(env, ctx, boe1, r, b);
+      }
+      if (!boe0->type().isOpt() && istrue(env, boe1)) {
+        return flat_exp(env, ctx, boe0, r, b);
+      }
+      if (!boe0->type().isOpt() && !boe1->type().isOpt() && (r != nullptr) &&
+          r == constants().varTrue) {
+        if (boe1->type().isPar() || boe1->isa<Id>()) {
+          std::swap(boe0, boe1);
+        }
+        if (istrue(env, boe0)) {
+          return flat_exp(env, ctx1, boe1, r, b);
+        }
+        if (isfalse(env, boe0)) {
+          ctx1.neg = true;
+          ctx1.b = -ctx1.b;
+          return flat_exp(env, ctx1, boe1, r, b);
+        }
+        ctx0.b = C_MIX;
+        EE e0 = flat_exp(env, ctx0, boe0, nullptr, nullptr);
+        if (istrue(env, e0.r())) {
+          return flat_exp(env, ctx1, boe1, r, b);
+        }
+        if (isfalse(env, e0.r())) {
+          ctx1.neg = true;
+          ctx1.b = -ctx1.b;
+          return flat_exp(env, ctx1, boe1, r, b);
+        }
+        Id* id = e0.r()->cast<Id>();
+        ctx1.b = C_MIX;
+        (void)flat_exp(env, ctx1, boe1, id->decl(), constants().varTrue);
+        add_ctx_ann(id->decl(), ctx1.b);
+        ret.b = bind(env, Ctx(), b, constants().literalTrue);
+        ret.r = bind(env, Ctx(), r, constants().literalTrue);
+        break;
+      }
+      ctx0.b = ctx1.b = C_MIX;
+      goto flatten_bool_op;
     case BOT_XOR:
       if (ctx.neg) {
         ctx.neg = false;
@@ -1429,7 +1428,8 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
           }
           ret.r = bind(env, ctx, r, constants().literalTrue);
           break;
-        } else if (vd->ti()->domain() != nullptr) {
+        }
+        if (vd->ti()->domain() != nullptr) {
           // check if current domain is already subsumed or falsified by this constraint
           GCLock lock;
           IntSetVal* check_dom = eval_intset(env, e1.r());

@@ -60,12 +60,11 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expres
     }
     if (failed) {
       return OptimizeRegistry::CS_FAILED;
-    } else {
-      return OptimizeRegistry::CS_ENTAILED;
     }
-  } else if (coeffs.size() == 1 &&
-             (ii->isa<ConstraintI>() ||
-              ii->cast<VarDeclI>()->e()->ti()->domain() == constants().literalTrue)) {
+    return OptimizeRegistry::CS_ENTAILED;
+  }
+  if (coeffs.size() == 1 && (ii->isa<ConstraintI>() || ii->cast<VarDeclI>()->e()->ti()->domain() ==
+                                                           constants().literalTrue)) {
     VarDecl* vd = x[0]()->cast<Id>()->decl();
     IntSetVal* domain =
         vd->ti()->domain() != nullptr ? eval_intset(env, vd->ti()->domain()) : nullptr;
@@ -83,10 +82,10 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expres
         nc->type(Type::varbool());
         rewrite = nc;
         return OptimizeRegistry::CS_REWRITE;
-      } else {
-        return OptimizeRegistry::CS_FAILED;
       }
-    } else if (c->id() == constants().ids.int_.lin_le) {
+      return OptimizeRegistry::CS_FAILED;
+    }
+    if (c->id() == constants().ids.int_.lin_le) {
       IntVal ac = std::abs(coeffs[0]);
       IntVal rd = eval_int(env, c->arg(2)) - d;
       IntVal ad = std::abs(rd);
@@ -110,13 +109,15 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expres
         if (swapSign) {
           if (domain->max() < nd) {
             return OptimizeRegistry::CS_FAILED;
-          } else if (domain->min() >= nd) {
+          }
+          if (domain->min() >= nd) {
             return OptimizeRegistry::CS_ENTAILED;
           }
         } else {
           if (domain->min() > nd) {
             return OptimizeRegistry::CS_FAILED;
-          } else if (domain->max() <= nd) {
+          }
+          if (domain->max() <= nd) {
             return OptimizeRegistry::CS_ENTAILED;
           }
         }
@@ -187,7 +188,8 @@ OptimizeRegistry::ConstraintStatus o_lin_exp(EnvI& env, Item* i, Call* c, Expres
     if (coeffs.empty()) {
       rewrite = IntLit::a(d);
       return OptimizeRegistry::CS_REWRITE;
-    } else if (coeffs.size() < al_c->size()) {
+    }
+    if (coeffs.size() < al_c->size()) {
       if (coeffs.size() == 1 && coeffs[0] == 1 && d == 0) {
         rewrite = x[0]();
         return OptimizeRegistry::CS_REWRITE;
@@ -280,9 +282,8 @@ OptimizeRegistry::ConstraintStatus o_clause(EnvI& env, Item* i, Call* c, Express
   }
   if (subsumed) {
     return OptimizeRegistry::CS_ENTAILED;
-  } else {
-    return OptimizeRegistry::CS_OK;
   }
+  return OptimizeRegistry::CS_OK;
 }
 
 OptimizeRegistry::ConstraintStatus o_not(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
@@ -348,12 +349,10 @@ OptimizeRegistry::ConstraintStatus o_times(EnvI& env, Item* i, Call* c, Expressi
       // this is the functional version of times
       rewrite = result;
       return OptimizeRegistry::CS_REWRITE;
-    } else {
-      // this is the relational version of times
-      assert(c->argCount() == 3);
-      rewrite = new Call(Location().introduce(), constants().ids.int_.eq, {c->arg(2), result});
-      return OptimizeRegistry::CS_REWRITE;
-    }
+    }  // this is the relational version of times
+    assert(c->argCount() == 3);
+    rewrite = new Call(Location().introduce(), constants().ids.int_.eq, {c->arg(2), result});
+    return OptimizeRegistry::CS_REWRITE;
   }
   return OptimizeRegistry::CS_OK;
 }
@@ -364,7 +363,8 @@ OptimizeRegistry::ConstraintStatus o_set_in(EnvI& env, Item* i, Call* c, Express
       IntSetVal* isv = eval_intset(env, c->arg(1));
       return isv->contains(eval_int(env, c->arg(0))) ? OptimizeRegistry::CS_ENTAILED
                                                      : OptimizeRegistry::CS_FAILED;
-    } else if (Id* ident = c->arg(0)->dynamicCast<Id>()) {
+    }
+    if (Id* ident = c->arg(0)->dynamicCast<Id>()) {
       VarDecl* vd = ident->decl();
       IntSetVal* isv = eval_intset(env, c->arg(1));
       if (vd->ti()->domain() != nullptr) {

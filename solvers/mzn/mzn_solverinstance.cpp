@@ -115,7 +115,8 @@ bool MZNSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
         _opt.mznFlags.push_back(mznf.n);
         _opt.mznFlags.push_back(buffer);
         return true;
-      } else if (mznf.t == MZNFZNSolverFlag::FT_NOARG && cop.getOption(mznf.n.c_str())) {
+      }
+      if (mznf.t == MZNFZNSolverFlag::FT_NOARG && cop.getOption(mznf.n.c_str())) {
         _opt.mznFlags.push_back(mznf.n);
         return true;
       }

@@ -76,9 +76,8 @@ inline IntLit* IntLit::a(MiniZinc::IntVal v) {
       it->second = il;
     }
     return il;
-  } else {
-    return it->second()->cast<IntLit>();
   }
+  return it->second()->cast<IntLit>();
 }
 
 inline IntLit* IntLit::aEnum(IntVal v, unsigned int enumId) {
@@ -106,10 +105,9 @@ inline unsigned int Location::LocVec::firstLine() const {
     } ui;
     ui.i = il->v().toInt();
     return static_cast<unsigned int>(ui.u & mask);
-  } else {
-    auto* il = static_cast<IntLit*>(_data[1]);
-    return il->v().toInt();
   }
+  auto* il = static_cast<IntLit*>(_data[1]);
+  return il->v().toInt();
 }
 inline unsigned int Location::LocVec::lastLine() const {
   if (_size == 2) {
@@ -125,10 +123,9 @@ inline unsigned int Location::LocVec::lastLine() const {
     ui.i = il->v().toInt();
     // return first line (8 bit) + offset (7 bit)
     return static_cast<unsigned int>((ui.u & mask) + ((ui.u >> first_line_size) & offsetmask));
-  } else {
-    auto* il = static_cast<IntLit*>(_data[2]);
-    return il->v().toInt();
   }
+  auto* il = static_cast<IntLit*>(_data[2]);
+  return il->v().toInt();
 }
 inline unsigned int Location::LocVec::firstColumn() const {
   if (_size == 2) {
@@ -143,10 +140,9 @@ inline unsigned int Location::LocVec::firstColumn() const {
     ui.i = il->v().toInt();
     // return first line (8 bit) + offset (7 bit)
     return static_cast<unsigned int>((ui.u >> first_col_offset) & mask);
-  } else {
-    auto* il = static_cast<IntLit*>(_data[3]);
-    return il->v().toInt();
   }
+  auto* il = static_cast<IntLit*>(_data[3]);
+  return il->v().toInt();
 }
 inline unsigned int Location::LocVec::lastColumn() const {
   if (_size == 2) {
@@ -161,10 +157,9 @@ inline unsigned int Location::LocVec::lastColumn() const {
     ui.i = il->v().toInt();
     // return first line (8 bit) + offset (7 bit)
     return static_cast<unsigned int>((ui.u >> last_col_offset) & mask);
-  } else {
-    auto* il = static_cast<IntLit*>(_data[4]);
-    return il->v().toInt();
   }
+  auto* il = static_cast<IntLit*>(_data[4]);
+  return il->v().toInt();
 }
 
 inline FloatLit::FloatLit(const Location& loc, FloatVal v)
@@ -189,9 +184,8 @@ inline FloatLit* FloatLit::a(MiniZinc::FloatVal v) {
       it->second = fl;
     }
     return fl;
-  } else {
-    return it->second()->cast<FloatLit>();
   }
+  return it->second()->cast<FloatLit>();
 }
 
 inline SetLit::SetLit(const Location& loc, const std::vector<Expression*>& v)
@@ -260,10 +254,9 @@ inline ASTString Id::v() const {
       d = d->cast<Id>()->_decl;
     }
     return d->cast<VarDecl>()->id()->v();
-  } else {
-    assert(hasStr());
-    return _vOrIdn.val;
   }
+  assert(hasStr());
+  return _vOrIdn.val;
 }
 
 inline long long int Id::idn() const {
@@ -273,13 +266,12 @@ inline long long int Id::idn() const {
       d = d->cast<Id>()->_decl;
     }
     return d->cast<VarDecl>()->id()->idn();
-  } else {
-    if (hasStr()) {
-      return -1;
-    }
-    long long int i = reinterpret_cast<ptrdiff_t>(_vOrIdn.idn) & ~static_cast<ptrdiff_t>(1);
-    return i >> 1;
   }
+  if (hasStr()) {
+    return -1;
+  }
+  long long int i = reinterpret_cast<ptrdiff_t>(_vOrIdn.idn) & ~static_cast<ptrdiff_t>(1);
+  return i >> 1;
 }
 
 inline TIId::TIId(const Location& loc, const std::string& v)

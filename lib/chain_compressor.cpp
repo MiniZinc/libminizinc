@@ -89,8 +89,8 @@ bool ImpCompressor::trackItem(Item* i) {
           storeItem(vdi->e(), i);
           return true;
           // x ::ctx_pos = pred(...); potentially: pred_imp(..., x); i.e. x -> pred(...)
-        } else if (_env.fopts.enableHalfReification &&
-                   vdi->e()->ann().contains(constants().ctx.pos)) {
+        }
+        if (_env.fopts.enableHalfReification && vdi->e()->ann().contains(constants().ctx.pos)) {
           GCLock lock;
           auto cid = _env.halfReifyId(c->id());
           std::vector<Type> args;
@@ -197,9 +197,11 @@ bool ImpCompressor::compressItem(Item* i, VarDecl* newLHS) {
       removeItem(i);
       return true;
       // Given (x -> y) /\ (y -> pred(...)), produce x -> pred(...)
-    } else if (c->id() == "mzn_reverse_map_var") {
+    }
+    if (c->id() == "mzn_reverse_map_var") {
       return true;
-    } else if (c->id().endsWith("_imp")) {
+    }
+    if (c->id().endsWith("_imp")) {
       replaceCallArgument(i, c, c->argCount() - 1, newLHS->id());
       trackItem(i);
       return true;
@@ -218,7 +220,8 @@ bool ImpCompressor::compressItem(Item* i, VarDecl* newLHS) {
       }
       return true;
       // x ::ctx_pos = pred(...); potentially: pred_imp(..., x); i.e. x -> pred(...)
-    } else if (vdi->e()->ann().contains(constants().ctx.pos)) {
+    }
+    if (vdi->e()->ann().contains(constants().ctx.pos)) {
       ConstraintI* nci = constructHalfReif(c, newLHS->id());
       assert(nci);
       addItem(nci);
@@ -488,36 +491,35 @@ void LECompressor::leReplaceVar(Item* i, VarDecl* oldVar, VarDecl* newVar) {
     i->remove();
     _env.counters.linDel++;
     return;
-  } else {
-    std::vector<Expression*> coeffs_e(coeffs.size());
-    std::vector<Expression*> x_e(coeffs.size());
-    for (unsigned int j = 0; j < coeffs.size(); j++) {
-      coeffs_e[j] = Lit::a(coeffs[j]);
-      x_e[j] = x[j]();
-      Expression* decl = follow_id_to_decl(x_e[j]);
-      if (decl && decl->cast<VarDecl>() == newVar) {
-        storeItem(newVar, i);
-      }
-    }
-
-    if (auto* arg0 = call->arg(0)->dynamicCast<ArrayLit>()) {
-      arg0->setVec(coeffs_e);
-    } else {
-      auto* al_c_new = new ArrayLit(al_c->loc().introduce(), coeffs_e);
-      al_c_new->type(al_c->type());
-      call->arg(0, al_c_new);
-    }
-
-    if (auto* arg1 = call->arg(1)->dynamicCast<ArrayLit>()) {
-      arg1->setVec(x_e);
-    } else {
-      auto* al_x_new = new ArrayLit(al_x->loc().introduce(), x_e);
-      al_x_new->type(al_x->type());
-      call->arg(1, al_x_new);
-    }
-
-    call->arg(2, Lit::a(d));
   }
+  std::vector<Expression*> coeffs_e(coeffs.size());
+  std::vector<Expression*> x_e(coeffs.size());
+  for (unsigned int j = 0; j < coeffs.size(); j++) {
+    coeffs_e[j] = Lit::a(coeffs[j]);
+    x_e[j] = x[j]();
+    Expression* decl = follow_id_to_decl(x_e[j]);
+    if (decl && decl->cast<VarDecl>() == newVar) {
+      storeItem(newVar, i);
+    }
+  }
+
+  if (auto* arg0 = call->arg(0)->dynamicCast<ArrayLit>()) {
+    arg0->setVec(coeffs_e);
+  } else {
+    auto* al_c_new = new ArrayLit(al_c->loc().introduce(), coeffs_e);
+    al_c_new->type(al_c->type());
+    call->arg(0, al_c_new);
+  }
+
+  if (auto* arg1 = call->arg(1)->dynamicCast<ArrayLit>()) {
+    arg1->setVec(x_e);
+  } else {
+    auto* al_x_new = new ArrayLit(al_x->loc().introduce(), x_e);
+    al_x_new->type(al_x->type());
+    call->arg(1, al_x_new);
+  }
+
+  call->arg(2, Lit::a(d));
 
   // Add new occurences
   CollectOccurrencesE ce(_env.varOccurrences, i);

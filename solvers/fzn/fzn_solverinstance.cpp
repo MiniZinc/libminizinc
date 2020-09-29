@@ -168,7 +168,8 @@ bool FZNSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
         _opt.fznFlags.push_back(fznf.n);
         _opt.fznFlags.push_back(buffer);
         return true;
-      } else if (fznf.t == MZNFZNSolverFlag::FT_NOARG && cop.getOption(fznf.n.c_str())) {
+      }
+      if (fznf.t == MZNFZNSolverFlag::FT_NOARG && cop.getOption(fznf.n.c_str())) {
         _opt.fznFlags.push_back(fznf.n);
         return true;
       }
@@ -320,13 +321,12 @@ SolverInstance::Status FZNSolverInstance::solve() {
     int exitStatus = proc.run();
     delete pathsFile;
     return exitStatus == 0 ? getSolns2Out()->status : SolverInstance::ERROR;
-  } else {
-    Solns2Log s2l(getSolns2Out()->getOutput(), _log);
-    Process<Solns2Log> proc(cmd_line, &s2l, timelimit, sigint);
-    int exitStatus = proc.run();
-    delete pathsFile;
-    return exitStatus == 0 ? SolverInstance::NONE : SolverInstance::ERROR;
   }
+  Solns2Log s2l(getSolns2Out()->getOutput(), _log);
+  Process<Solns2Log> proc(cmd_line, &s2l, timelimit, sigint);
+  int exitStatus = proc.run();
+  delete pathsFile;
+  return exitStatus == 0 ? SolverInstance::NONE : SolverInstance::ERROR;
 }
 
 void FZNSolverInstance::processFlatZinc() {}

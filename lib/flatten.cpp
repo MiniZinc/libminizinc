@@ -209,15 +209,17 @@ void dump_ee_r(const std::vector<EE>& ee) {
 std::tuple<BCtx, bool> ann_to_ctx(VarDecl* vd) {
   if (vd->ann().contains(constants().ctx.root)) {
     return std::make_tuple(C_ROOT, true);
-  } else if (vd->ann().contains(constants().ctx.mix)) {
-    return std::make_tuple(C_MIX, true);
-  } else if (vd->ann().contains(constants().ctx.pos)) {
-    return std::make_tuple(C_POS, true);
-  } else if (vd->ann().contains(constants().ctx.neg)) {
-    return std::make_tuple(C_NEG, true);
-  } else {
-    return std::make_tuple(C_MIX, false);
   }
+  if (vd->ann().contains(constants().ctx.mix)) {
+    return std::make_tuple(C_MIX, true);
+  }
+  if (vd->ann().contains(constants().ctx.pos)) {
+    return std::make_tuple(C_POS, true);
+  }
+  if (vd->ann().contains(constants().ctx.neg)) {
+    return std::make_tuple(C_NEG, true);
+  }
+  return std::make_tuple(C_MIX, false);
 }
 
 void add_ctx_ann(VarDecl* vd, BCtx& c) {
@@ -304,10 +306,9 @@ bool istrue(EnvI& env, Expression* e) {
     if (e->type().cv()) {
       KeepAlive r = flat_cv_exp(env, Ctx(), e);
       return eval_bool(env, r());
-    } else {
-      GCLock lock;
-      return eval_bool(env, e);
     }
+    GCLock lock;
+    return eval_bool(env, e);
   }
   return false;
 }
@@ -320,10 +321,9 @@ bool isfalse(EnvI& env, Expression* e) {
     if (e->type().cv()) {
       KeepAlive r = flat_cv_exp(env, Ctx(), e);
       return !eval_bool(env, r());
-    } else {
-      GCLock lock;
-      return !eval_bool(env, e);
     }
+    GCLock lock;
+    return !eval_bool(env, e);
   }
   return false;
 }
@@ -466,11 +466,11 @@ std::string get_path(EnvI& env) {
 inline Location get_loc(EnvI& env, Expression* e1, Expression* e2) {
   if (e1 != nullptr) {
     return e1->loc().introduce();
-  } else if (e2 != nullptr) {
-    return e2->loc().introduce();
-  } else {
-    return Location().introduce();
   }
+  if (e2 != nullptr) {
+    return e2->loc().introduce();
+  }
+  return Location().introduce();
 }
 inline Id* get_id(EnvI& env, Id* origId) {
   return origId != nullptr ? origId : new Id(Location().introduce(), env.genId(), nullptr);
@@ -1026,9 +1026,8 @@ ASTString EnvI::reifyId(const ASTString& id) {
     std::ostringstream ss;
     ss << id << "_reif";
     return {ss.str()};
-  } else {
-    return it->second;
   }
+  return it->second;
 }
 #undef MZN_FILL_REIFY_MAP
 ASTString EnvI::halfReifyId(const ASTString& id) {
@@ -1614,7 +1613,8 @@ bool check_domain_constraints(EnvI& env, Call* c) {
             new SetLit(Location().introduce(), IntSetVal::a(lb, IntVal::infinity())));
       }
       return false;
-    } else if (e1->type().isPar() && e0->isa<Id>()) {
+    }
+    if (e1->type().isPar() && e0->isa<Id>()) {
       // less than
       Id* id = e0->cast<Id>();
       IntVal ub = eval_int(env, e1);
@@ -1728,706 +1728,705 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
             id = id->decl()->e() != nullptr ? id->decl()->e()->dynamicCast<Id>() : nullptr;
           }
           return constants().literalTrue;
-        } else {
-          GC::lock();
-          Call* bn = new Call(e->loc(), constants().ids.bool_not, {e});
-          bn->type(e->type());
-          bn->decl(env.model->matchFn(env, bn, false));
-          KeepAlive ka(bn);
-          GC::unlock();
-          EE ee = flat_exp(env, Ctx(), bn, vd, constants().varTrue);
-          return ee.r;
         }
+        GC::lock();
+        Call* bn = new Call(e->loc(), constants().ids.bool_not, {e});
+        bn->type(e->type());
+        bn->decl(env.model->matchFn(env, bn, false));
+        KeepAlive ka(bn);
+        GC::unlock();
+        EE ee = flat_exp(env, Ctx(), bn, vd, constants().varTrue);
+        return ee.r;
       }
       return constants().literalTrue;
-    } else {
-      GC::lock();
-      Call* bn = new Call(e->loc(), constants().ids.bool_not, {e});
-      bn->type(e->type());
-      bn->decl(env.model->matchFn(env, bn, false));
-      KeepAlive ka(bn);
-      GC::unlock();
-      EE ee = flat_exp(env, Ctx(), bn, vd, constants().varTrue);
-      return ee.r;
+    }
+    GC::lock();
+    Call* bn = new Call(e->loc(), constants().ids.bool_not, {e});
+    bn->type(e->type());
+    bn->decl(env.model->matchFn(env, bn, false));
+    KeepAlive ka(bn);
+    GC::unlock();
+    EE ee = flat_exp(env, Ctx(), bn, vd, constants().varTrue);
+    return ee.r;
+  }
+  if (vd == constants().varTrue) {
+    if (!istrue(env, e)) {
+      if (Id* id = e->dynamicCast<Id>()) {
+        assert(id->decl() != nullptr);
+        while (id != nullptr) {
+          if ((id->decl()->ti()->domain() != nullptr) && isfalse(env, id->decl()->ti()->domain())) {
+            GCLock lock;
+            env.flatAddItem(new ConstraintI(Location().introduce(), constants().literalFalse));
+          } else if (id->decl()->ti()->domain() == nullptr) {
+            GCLock lock;
+            std::vector<Expression*> args(2);
+            args[0] = id;
+            args[1] = constants().literalTrue;
+            Call* c = new Call(Location().introduce(), constants().ids.bool_eq, args);
+            c->decl(env.model->matchFn(env, c, false));
+            c->type(c->decl()->rtype(env, args, false));
+            if (c->decl()->e() != nullptr) {
+              flat_exp(env, Ctx(), c, constants().varTrue, constants().varTrue);
+            }
+            id->decl()->ti()->domain(constants().literalTrue);
+          }
+          id = id->decl()->e() != nullptr ? id->decl()->e()->dynamicCast<Id>() : nullptr;
+        }
+      } else {
+        GCLock lock;
+        // extract domain information from added constraint if possible
+        if (!e->isa<Call>() || check_domain_constraints(env, e->cast<Call>())) {
+          env.flatAddItem(new ConstraintI(Location().introduce(), e));
+        }
+      }
+    }
+    return constants().literalTrue;
+  }
+  if (vd == constants().varFalse) {
+    if (!isfalse(env, e)) {
+      throw InternalError("not supported yet");
+    }
+    return constants().literalTrue;
+  }
+  if (vd == nullptr) {
+    if (e == nullptr) {
+      return nullptr;
+    }
+    switch (e->eid()) {
+      case Expression::E_INTLIT:
+      case Expression::E_FLOATLIT:
+      case Expression::E_BOOLLIT:
+      case Expression::E_STRINGLIT:
+      case Expression::E_ANON:
+      case Expression::E_ID:
+      case Expression::E_TIID:
+      case Expression::E_SETLIT:
+      case Expression::E_VARDECL:
+      case Expression::E_BINOP:  // TODO: should not happen once operators are evaluated
+      case Expression::E_UNOP:   // TODO: should not happen once operators are evaluated
+        return e;
+      case Expression::E_ARRAYACCESS:
+      case Expression::E_COMP:
+      case Expression::E_ITE:
+      case Expression::E_LET:
+      case Expression::E_TI:
+        throw InternalError("unevaluated expression");
+      case Expression::E_ARRAYLIT: {
+        GCLock lock;
+        auto* al = e->cast<ArrayLit>();
+        /// TODO: review if limit of 10 is a sensible choice
+        if (al->type().bt() == Type::BT_ANN || al->size() <= 10) {
+          return e;
+        }
+
+        auto it = env.cseMapFind(al);
+        if (it != env.cseMapEnd()) {
+          return it->second.r()->cast<VarDecl>()->id();
+        }
+
+        std::vector<TypeInst*> ranges(al->dims());
+        for (unsigned int i = 0; i < ranges.size(); i++) {
+          ranges[i] = new TypeInst(
+              e->loc(), Type(),
+              new SetLit(Location().introduce(), IntSetVal::a(al->min(i), al->max(i))));
+        }
+        ASTExprVec<TypeInst> ranges_v(ranges);
+        assert(!al->type().isbot());
+        Expression* domain = nullptr;
+        if (al->size() > 0 && (*al)[0]->type().isint()) {
+          IntVal min = IntVal::infinity();
+          IntVal max = -IntVal::infinity();
+          for (unsigned int i = 0; i < al->size(); i++) {
+            IntBounds ib = compute_int_bounds(env, (*al)[i]);
+            if (!ib.valid) {
+              min = -IntVal::infinity();
+              max = IntVal::infinity();
+              break;
+            }
+            min = std::min(min, ib.l);
+            max = std::max(max, ib.u);
+          }
+          if (min != -IntVal::infinity() && max != IntVal::infinity()) {
+            domain = new SetLit(Location().introduce(), IntSetVal::a(min, max));
+          }
+        }
+        auto* ti = new TypeInst(e->loc(), al->type(), ranges_v, domain);
+        if (domain != nullptr) {
+          ti->setComputedDomain(true);
+        }
+
+        VarDecl* nvd = new_vardecl(env, ctx, ti, nullptr, nullptr, al);
+        EE ee(nvd, nullptr);
+        env.cseMapInsert(al, ee);
+        env.cseMapInsert(nvd->e(), ee);
+        return nvd->id();
+      }
+      case Expression::E_CALL: {
+        if (e->type().isAnn()) {
+          return e;
+        }
+        GCLock lock;
+        /// TODO: handle array types
+        auto* ti = new TypeInst(Location().introduce(), e->type());
+        VarDecl* nvd = new_vardecl(env, ctx, ti, nullptr, nullptr, e);
+        if (nvd->e()->type().bt() == Type::BT_INT && nvd->e()->type().dim() == 0) {
+          IntSetVal* ibv = nullptr;
+          if (nvd->e()->type().isSet()) {
+            ibv = compute_intset_bounds(env, nvd->e());
+          } else {
+            IntBounds ib = compute_int_bounds(env, nvd->e());
+            if (ib.valid) {
+              ibv = IntSetVal::a(ib.l, ib.u);
+            }
+          }
+          if (ibv != nullptr) {
+            Id* id = nvd->id();
+            while (id != nullptr) {
+              if (id->decl()->ti()->domain() != nullptr) {
+                IntSetVal* domain = eval_intset(env, id->decl()->ti()->domain());
+                IntSetRanges dr(domain);
+                IntSetRanges ibr(ibv);
+                Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> i(dr, ibr);
+                IntSetVal* newibv = IntSetVal::ai(i);
+                if (ibv->card() == newibv->card()) {
+                  id->decl()->ti()->setComputedDomain(true);
+                } else {
+                  ibv = newibv;
+                }
+              } else {
+                id->decl()->ti()->setComputedDomain(true);
+              }
+              if (id->type().st() == Type::ST_PLAIN && ibv->size() == 0) {
+                env.fail();
+              } else {
+                id->decl()->ti()->domain(new SetLit(Location().introduce(), ibv));
+              }
+              id = id->decl()->e() != nullptr ? id->decl()->e()->dynamicCast<Id>() : nullptr;
+            }
+          }
+        } else if (nvd->e()->type().isbool()) {
+          add_ctx_ann(nvd, ctx.b);
+        } else if (nvd->e()->type().bt() == Type::BT_FLOAT && nvd->e()->type().dim() == 0) {
+          FloatBounds fb = compute_float_bounds(env, nvd->e());
+          FloatSetVal* ibv = LinearTraits<FloatLit>::intersectDomain(nullptr, fb.l, fb.u);
+          if (fb.valid) {
+            Id* id = nvd->id();
+            while (id != nullptr) {
+              if (id->decl()->ti()->domain() != nullptr) {
+                FloatSetVal* domain = eval_floatset(env, id->decl()->ti()->domain());
+                FloatSetVal* ndomain = LinearTraits<FloatLit>::intersectDomain(domain, fb.l, fb.u);
+                if ((ibv != nullptr) && ndomain == domain) {
+                  id->decl()->ti()->setComputedDomain(true);
+                } else {
+                  ibv = ndomain;
+                }
+              } else {
+                id->decl()->ti()->setComputedDomain(true);
+              }
+              if (LinearTraits<FloatLit>::domainEmpty(ibv)) {
+                env.fail();
+              } else {
+                id->decl()->ti()->domain(new SetLit(Location(), ibv));
+              }
+              id = id->decl()->e() != nullptr ? id->decl()->e()->dynamicCast<Id>() : nullptr;
+            }
+          }
+        }
+
+        return nvd->id();
+      }
+      default:
+        assert(false);
+        return nullptr;
     }
   } else {
-    if (vd == constants().varTrue) {
-      if (!istrue(env, e)) {
-        if (Id* id = e->dynamicCast<Id>()) {
-          assert(id->decl() != nullptr);
+    if (vd->e() == nullptr) {
+      Expression* ret = e;
+      if (e == nullptr || (e->type().isPar() && e->type().isbool())) {
+        GCLock lock;
+        bool isTrue = (e == nullptr || eval_bool(env, e));
+
+        // Check if redefinition of bool_eq exists, if yes call it
+        std::vector<Expression*> args(2);
+        args[0] = vd->id();
+        args[1] = constants().boollit(isTrue);
+        Call* c = new Call(Location().introduce(), constants().ids.bool_eq, args);
+        c->decl(env.model->matchFn(env, c, false));
+        c->type(c->decl()->rtype(env, args, false));
+        bool didRewrite = false;
+        if (c->decl()->e() != nullptr) {
+          flat_exp(env, Ctx(), c, constants().varTrue, constants().varTrue);
+          didRewrite = true;
+        }
+
+        vd->e(constants().boollit(isTrue));
+        if (vd->ti()->domain() != nullptr) {
+          if (vd->ti()->domain() != vd->e()) {
+            env.fail();
+            return vd->id();
+          }
+        } else {
+          vd->ti()->domain(vd->e());
+          vd->ti()->setComputedDomain(true);
+        }
+        if (didRewrite) {
+          return vd->id();
+        }
+      } else {
+        if (e->type().dim() > 0) {
+          // Check that index sets match
+          env.errorStack.clear();
+          check_index_sets(env, vd, e);
+          auto* al =
+              Expression::dynamicCast<ArrayLit>(e->isa<Id>() ? e->cast<Id>()->decl()->e() : e);
+          if ((al != nullptr) && (vd->ti()->domain() != nullptr) &&
+              !vd->ti()->domain()->isa<TIId>()) {
+            if (e->type().bt() == Type::BT_INT) {
+              IntSetVal* isv = eval_intset(env, vd->ti()->domain());
+              for (unsigned int i = 0; i < al->size(); i++) {
+                if (Id* id = (*al)[i]->dynamicCast<Id>()) {
+                  if (id == constants().absent) {
+                    continue;
+                  }
+                  VarDecl* vdi = id->decl();
+                  if (vdi->ti()->domain() == nullptr) {
+                    vdi->ti()->domain(vd->ti()->domain());
+                  } else {
+                    IntSetVal* vdi_dom = eval_intset(env, vdi->ti()->domain());
+                    IntSetRanges isvr(isv);
+                    IntSetRanges vdi_domr(vdi_dom);
+                    Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> inter(isvr, vdi_domr);
+                    IntSetVal* newdom = IntSetVal::ai(inter);
+                    if (newdom->size() == 0) {
+                      env.fail();
+                    } else {
+                      IntSetRanges vdi_domr2(vdi_dom);
+                      IntSetRanges newdomr(newdom);
+                      if (!Ranges::equal(vdi_domr2, newdomr)) {
+                        vdi->ti()->domain(new SetLit(Location().introduce(), newdom));
+                        vdi->ti()->setComputedDomain(false);
+                      }
+                    }
+                  }
+                } else {
+                  // at this point, can only be a constant
+                  assert((*al)[i]->type().isPar());
+                  if (e->type().st() == Type::ST_PLAIN) {
+                    IntVal iv = eval_int(env, (*al)[i]);
+                    if (!isv->contains(iv)) {
+                      std::ostringstream oss;
+                      oss << "value " << iv << " outside declared array domain " << *isv;
+                      env.fail(oss.str());
+                    }
+                  } else {
+                    IntSetVal* aisv = eval_intset(env, (*al)[i]);
+                    IntSetRanges aisv_r(aisv);
+                    IntSetRanges isv_r(isv);
+                    if (!Ranges::subset(aisv_r, isv_r)) {
+                      std::ostringstream oss;
+                      oss << "value " << *aisv << " outside declared array domain " << *isv;
+                      env.fail(oss.str());
+                    }
+                  }
+                }
+              }
+              vd->ti()->setComputedDomain(true);
+            } else if (e->type().bt() == Type::BT_FLOAT) {
+              FloatSetVal* fsv = eval_floatset(env, vd->ti()->domain());
+              for (unsigned int i = 0; i < al->size(); i++) {
+                if (Id* id = (*al)[i]->dynamicCast<Id>()) {
+                  VarDecl* vdi = id->decl();
+                  if (vdi->ti()->domain() == nullptr) {
+                    vdi->ti()->domain(vd->ti()->domain());
+                  } else {
+                    FloatSetVal* vdi_dom = eval_floatset(env, vdi->ti()->domain());
+                    FloatSetRanges fsvr(fsv);
+                    FloatSetRanges vdi_domr(vdi_dom);
+                    Ranges::Inter<FloatVal, FloatSetRanges, FloatSetRanges> inter(fsvr, vdi_domr);
+                    FloatSetVal* newdom = FloatSetVal::ai(inter);
+                    if (newdom->size() == 0) {
+                      env.fail();
+                    } else {
+                      FloatSetRanges vdi_domr2(vdi_dom);
+                      FloatSetRanges newdomr(newdom);
+                      if (!Ranges::equal(vdi_domr2, newdomr)) {
+                        vdi->ti()->domain(new SetLit(Location().introduce(), newdom));
+                        vdi->ti()->setComputedDomain(false);
+                      }
+                    }
+                  }
+                } else {
+                  // at this point, can only be a constant
+                  assert((*al)[i]->type().isPar());
+                  FloatVal fv = eval_float(env, (*al)[i]);
+                  if (!fsv->contains(fv)) {
+                    std::ostringstream oss;
+                    oss << "value " << fv << " outside declared array domain " << *fsv;
+                    env.fail(oss.str());
+                  }
+                }
+              }
+              vd->ti()->setComputedDomain(true);
+            }
+          }
+        } else if (Id* e_id = e->dynamicCast<Id>()) {
+          if (e_id == vd->id()) {
+            ret = vd->id();
+          } else {
+            ASTString cid;
+            if (e->type().isint()) {
+              if (e->type().isOpt()) {
+                cid = ASTString("int_opt_eq");
+              } else {
+                cid = constants().ids.int_.eq;
+              }
+            } else if (e->type().isbool()) {
+              if (e->type().isOpt()) {
+                cid = ASTString("bool_opt_eq");
+              } else {
+                cid = constants().ids.bool_eq;
+              }
+            } else if (e->type().isSet()) {
+              cid = constants().ids.set_eq;
+            } else if (e->type().isfloat()) {
+              cid = constants().ids.float_.eq;
+            }
+            if (cid != "" && env.hasReverseMapper(vd->id())) {
+              GCLock lock;
+              std::vector<Expression*> args(2);
+              args[0] = vd->id();
+              args[1] = e_id;
+              Call* c = new Call(Location().introduce(), cid, args);
+              c->decl(env.model->matchFn(env, c, false));
+              c->type(c->decl()->rtype(env, args, false));
+              if (c->type().isbool() && ctx.b != C_ROOT) {
+                add_ctx_ann(vd, ctx.b);
+                add_ctx_ann(e_id->decl(), ctx.b);
+              }
+              if (c->decl()->e() != nullptr) {
+                flat_exp(env, Ctx(), c, constants().varTrue, constants().varTrue);
+                ret = vd->id();
+                vd->e(e);
+                env.voAddExp(vd);
+              }
+            }
+          }
+        }
+
+        if (ret != vd->id()) {
+          vd->e(ret);
+          add_path_annotation(env, ret);
+          env.voAddExp(vd);
+          ret = vd->id();
+        }
+        Id* vde_id = Expression::dynamicCast<Id>(vd->e());
+        if (vde_id == constants().absent) {
+          // no need to do anything
+        } else if ((vde_id != nullptr) && vde_id->decl()->ti()->domain() == nullptr) {
+          if (vd->ti()->domain() != nullptr) {
+            GCLock lock;
+            Expression* vd_dom = eval_par(env, vd->ti()->domain());
+            vde_id->decl()->ti()->domain(vd_dom);
+          }
+        } else if ((vd->e() != nullptr) && vd->e()->type().bt() == Type::BT_INT &&
+                   vd->e()->type().dim() == 0) {
+          GCLock lock;
+          IntSetVal* ibv = nullptr;
+          if (vd->e()->type().isSet()) {
+            ibv = compute_intset_bounds(env, vd->e());
+          } else {
+            IntBounds ib = compute_int_bounds(env, vd->e());
+            if (ib.valid) {
+              Call* call = vd->e()->dynamicCast<Call>();
+              if ((call != nullptr) && call->id() == constants().ids.lin_exp) {
+                ArrayLit* al = eval_array_lit(env, call->arg(1));
+                if (al->size() == 1) {
+                  IntBounds check_zeroone = compute_int_bounds(env, (*al)[0]);
+                  if (check_zeroone.l == 0 && check_zeroone.u == 1) {
+                    ArrayLit* coeffs = eval_array_lit(env, call->arg(0));
+                    std::vector<IntVal> newdom(2);
+                    newdom[0] = 0;
+                    newdom[1] = eval_int(env, (*coeffs)[0]) + eval_int(env, call->arg(2));
+                    ibv = IntSetVal::a(newdom);
+                  }
+                }
+              }
+              if (ibv == nullptr) {
+                ibv = IntSetVal::a(ib.l, ib.u);
+              }
+            }
+          }
+          if (ibv != nullptr) {
+            if (vd->ti()->domain() != nullptr) {
+              IntSetVal* domain = eval_intset(env, vd->ti()->domain());
+              IntSetRanges dr(domain);
+              IntSetRanges ibr(ibv);
+              Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> i(dr, ibr);
+              IntSetVal* newibv = IntSetVal::ai(i);
+              if (newibv->card() == 0) {
+                env.fail();
+              } else if (ibv->card() == newibv->card()) {
+                vd->ti()->setComputedDomain(true);
+              } else {
+                ibv = newibv;
+              }
+            } else {
+              vd->ti()->setComputedDomain(true);
+            }
+            SetLit* ibv_l = nullptr;
+            if (Id* rhs_ident = vd->e()->dynamicCast<Id>()) {
+              if (rhs_ident->decl()->ti()->domain() != nullptr) {
+                IntSetVal* rhs_domain = eval_intset(env, rhs_ident->decl()->ti()->domain());
+                IntSetRanges dr(rhs_domain);
+                IntSetRanges ibr(ibv);
+                Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> i(dr, ibr);
+                IntSetVal* rhs_newibv = IntSetVal::ai(i);
+                if (rhs_domain->card() != rhs_newibv->card()) {
+                  ibv_l = new SetLit(Location().introduce(), rhs_newibv);
+                  rhs_ident->decl()->ti()->domain(ibv_l);
+                  rhs_ident->decl()->ti()->setComputedDomain(false);
+                  if (rhs_ident->decl()->type().isOpt()) {
+                    std::vector<Expression*> args(2);
+                    args[0] = rhs_ident;
+                    args[1] = ibv_l;
+                    Call* c = new Call(Location().introduce(), "var_dom", args);
+                    c->type(Type::varbool());
+                    c->decl(env.model->matchFn(env, c, false));
+                    (void)flat_exp(env, Ctx(), c, constants().varTrue, constants().varTrue);
+                  }
+                } else if (ibv->card() != rhs_newibv->card()) {
+                  ibv_l = new SetLit(Location().introduce(), rhs_newibv);
+                }
+              }
+            }
+            if (ibv_l == nullptr) {
+              ibv_l = new SetLit(Location().introduce(), ibv);
+            }
+            vd->ti()->domain(ibv_l);
+
+            if (vd->type().isOpt()) {
+              std::vector<Expression*> args(2);
+              args[0] = vd->id();
+              args[1] = ibv_l;
+              Call* c = new Call(Location().introduce(), "var_dom", args);
+              c->type(Type::varbool());
+              c->decl(env.model->matchFn(env, c, false));
+              (void)flat_exp(env, Ctx(), c, constants().varTrue, constants().varTrue);
+            }
+          }
+        } else if ((vd->e() != nullptr) && vd->e()->type().bt() == Type::BT_FLOAT &&
+                   vd->e()->type().dim() == 0) {
+          GCLock lock;
+          FloatSetVal* fbv = nullptr;
+          FloatBounds fb = compute_float_bounds(env, vd->e());
+          if (fb.valid) {
+            fbv = FloatSetVal::a(fb.l, fb.u);
+          }
+          if (fbv != nullptr) {
+            if (vd->ti()->domain() != nullptr) {
+              FloatSetVal* domain = eval_floatset(env, vd->ti()->domain());
+              FloatSetRanges dr(domain);
+              FloatSetRanges fbr(fbv);
+              Ranges::Inter<FloatVal, FloatSetRanges, FloatSetRanges> i(dr, fbr);
+              FloatSetVal* newfbv = FloatSetVal::ai(i);
+              if (newfbv->size() == 0) {
+                env.fail();
+              }
+              FloatSetRanges dr_eq(domain);
+              FloatSetRanges newfbv_eq(newfbv);
+              if (Ranges::equal(dr_eq, newfbv_eq)) {
+                vd->ti()->setComputedDomain(true);
+              } else {
+                fbv = newfbv;
+              }
+            } else {
+              vd->ti()->setComputedDomain(true);
+            }
+            SetLit* fbv_l = nullptr;
+            if (Id* rhs_ident = vd->e()->dynamicCast<Id>()) {
+              if (rhs_ident->decl()->ti()->domain() != nullptr) {
+                FloatSetVal* rhs_domain = eval_floatset(env, rhs_ident->decl()->ti()->domain());
+                FloatSetRanges dr(rhs_domain);
+                FloatSetRanges ibr(fbv);
+                Ranges::Inter<FloatVal, FloatSetRanges, FloatSetRanges> i(dr, ibr);
+                FloatSetVal* rhs_newfbv = FloatSetVal::ai(i);
+                if (rhs_domain->card() != rhs_newfbv->card()) {
+                  fbv_l = new SetLit(Location().introduce(), rhs_newfbv);
+                  rhs_ident->decl()->ti()->domain(fbv_l);
+                  rhs_ident->decl()->ti()->setComputedDomain(false);
+                  if (rhs_ident->decl()->type().isOpt()) {
+                    std::vector<Expression*> args(2);
+                    args[0] = rhs_ident;
+                    args[1] = fbv_l;
+                    Call* c = new Call(Location().introduce(), "var_dom", args);
+                    c->type(Type::varbool());
+                    c->decl(env.model->matchFn(env, c, false));
+                    (void)flat_exp(env, Ctx(), c, constants().varTrue, constants().varTrue);
+                  }
+                } else if (fbv->card() != rhs_newfbv->card()) {
+                  fbv_l = new SetLit(Location().introduce(), rhs_newfbv);
+                }
+              }
+            }
+            fbv_l = new SetLit(Location().introduce(), fbv);
+            vd->ti()->domain(fbv_l);
+
+            if (vd->type().isOpt()) {
+              std::vector<Expression*> args(2);
+              args[0] = vd->id();
+              args[1] = fbv_l;
+              Call* c = new Call(Location().introduce(), "var_dom", args);
+              c->type(Type::varbool());
+              c->decl(env.model->matchFn(env, c, false));
+              (void)flat_exp(env, Ctx(), c, constants().varTrue, constants().varTrue);
+            }
+          }
+        }
+      }
+      return ret;
+    }
+    if (vd == e) {
+      return vd->id();
+    }
+    if (vd->e() != e) {
+      e = follow_id_to_decl(e);
+      if (vd == e) {
+        return vd->id();
+      }
+      switch (e->eid()) {
+        case Expression::E_BOOLLIT: {
+          Id* id = vd->id();
           while (id != nullptr) {
             if ((id->decl()->ti()->domain() != nullptr) &&
-                isfalse(env, id->decl()->ti()->domain())) {
+                eval_bool(env, id->decl()->ti()->domain()) == e->cast<BoolLit>()->v()) {
+              return constants().literalTrue;
+            }
+            if ((id->decl()->ti()->domain() != nullptr) &&
+                eval_bool(env, id->decl()->ti()->domain()) != e->cast<BoolLit>()->v()) {
               GCLock lock;
               env.flatAddItem(new ConstraintI(Location().introduce(), constants().literalFalse));
-            } else if (id->decl()->ti()->domain() == nullptr) {
+            } else {
               GCLock lock;
               std::vector<Expression*> args(2);
               args[0] = id;
-              args[1] = constants().literalTrue;
+              args[1] = e;
               Call* c = new Call(Location().introduce(), constants().ids.bool_eq, args);
               c->decl(env.model->matchFn(env, c, false));
               c->type(c->decl()->rtype(env, args, false));
               if (c->decl()->e() != nullptr) {
                 flat_exp(env, Ctx(), c, constants().varTrue, constants().varTrue);
               }
-              id->decl()->ti()->domain(constants().literalTrue);
+              id->decl()->ti()->domain(e);
             }
             id = id->decl()->e() != nullptr ? id->decl()->e()->dynamicCast<Id>() : nullptr;
           }
-        } else {
-          GCLock lock;
-          // extract domain information from added constraint if possible
-          if (!e->isa<Call>() || check_domain_constraints(env, e->cast<Call>())) {
-            env.flatAddItem(new ConstraintI(Location().introduce(), e));
-          }
+          return constants().literalTrue;
         }
-      }
-      return constants().literalTrue;
-    } else if (vd == constants().varFalse) {
-      if (!isfalse(env, e)) {
-        throw InternalError("not supported yet");
-      }
-      return constants().literalTrue;
-    } else if (vd == nullptr) {
-      if (e == nullptr) {
-        return nullptr;
-      }
-      switch (e->eid()) {
-        case Expression::E_INTLIT:
-        case Expression::E_FLOATLIT:
-        case Expression::E_BOOLLIT:
-        case Expression::E_STRINGLIT:
-        case Expression::E_ANON:
-        case Expression::E_ID:
-        case Expression::E_TIID:
-        case Expression::E_SETLIT:
-        case Expression::E_VARDECL:
-        case Expression::E_BINOP:  // TODO: should not happen once operators are evaluated
-        case Expression::E_UNOP:   // TODO: should not happen once operators are evaluated
-          return e;
-        case Expression::E_ARRAYACCESS:
-        case Expression::E_COMP:
-        case Expression::E_ITE:
-        case Expression::E_LET:
-        case Expression::E_TI:
-          throw InternalError("unevaluated expression");
-        case Expression::E_ARRAYLIT: {
-          GCLock lock;
-          auto* al = e->cast<ArrayLit>();
-          /// TODO: review if limit of 10 is a sensible choice
-          if (al->type().bt() == Type::BT_ANN || al->size() <= 10) {
-            return e;
+        case Expression::E_VARDECL: {
+          auto* e_vd = e->cast<VarDecl>();
+          if (vd->e() == e_vd->id() || e_vd->e() == vd->id()) {
+            return vd->id();
           }
-
-          auto it = env.cseMapFind(al);
-          if (it != env.cseMapEnd()) {
-            return it->second.r()->cast<VarDecl>()->id();
-          }
-
-          std::vector<TypeInst*> ranges(al->dims());
-          for (unsigned int i = 0; i < ranges.size(); i++) {
-            ranges[i] = new TypeInst(
-                e->loc(), Type(),
-                new SetLit(Location().introduce(), IntSetVal::a(al->min(i), al->max(i))));
-          }
-          ASTExprVec<TypeInst> ranges_v(ranges);
-          assert(!al->type().isbot());
-          Expression* domain = nullptr;
-          if (al->size() > 0 && (*al)[0]->type().isint()) {
-            IntVal min = IntVal::infinity();
-            IntVal max = -IntVal::infinity();
-            for (unsigned int i = 0; i < al->size(); i++) {
-              IntBounds ib = compute_int_bounds(env, (*al)[i]);
-              if (!ib.valid) {
-                min = -IntVal::infinity();
-                max = IntVal::infinity();
-                break;
-              }
-              min = std::min(min, ib.l);
-              max = std::max(max, ib.u);
-            }
-            if (min != -IntVal::infinity() && max != IntVal::infinity()) {
-              domain = new SetLit(Location().introduce(), IntSetVal::a(min, max));
-            }
-          }
-          auto* ti = new TypeInst(e->loc(), al->type(), ranges_v, domain);
-          if (domain != nullptr) {
-            ti->setComputedDomain(true);
-          }
-
-          VarDecl* nvd = new_vardecl(env, ctx, ti, nullptr, nullptr, al);
-          EE ee(nvd, nullptr);
-          env.cseMapInsert(al, ee);
-          env.cseMapInsert(nvd->e(), ee);
-          return nvd->id();
-        }
-        case Expression::E_CALL: {
-          if (e->type().isAnn()) {
-            return e;
+          if (e->type().dim() != 0) {
+            throw InternalError("not supported yet");
           }
           GCLock lock;
-          /// TODO: handle array types
-          auto* ti = new TypeInst(Location().introduce(), e->type());
-          VarDecl* nvd = new_vardecl(env, ctx, ti, nullptr, nullptr, e);
-          if (nvd->e()->type().bt() == Type::BT_INT && nvd->e()->type().dim() == 0) {
-            IntSetVal* ibv = nullptr;
-            if (nvd->e()->type().isSet()) {
-              ibv = compute_intset_bounds(env, nvd->e());
-            } else {
-              IntBounds ib = compute_int_bounds(env, nvd->e());
-              if (ib.valid) {
-                ibv = IntSetVal::a(ib.l, ib.u);
-              }
-            }
-            if (ibv != nullptr) {
-              Id* id = nvd->id();
-              while (id != nullptr) {
-                if (id->decl()->ti()->domain() != nullptr) {
-                  IntSetVal* domain = eval_intset(env, id->decl()->ti()->domain());
-                  IntSetRanges dr(domain);
-                  IntSetRanges ibr(ibv);
-                  Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> i(dr, ibr);
-                  IntSetVal* newibv = IntSetVal::ai(i);
-                  if (ibv->card() == newibv->card()) {
-                    id->decl()->ti()->setComputedDomain(true);
-                  } else {
-                    ibv = newibv;
-                  }
-                } else {
-                  id->decl()->ti()->setComputedDomain(true);
-                }
-                if (id->type().st() == Type::ST_PLAIN && ibv->size() == 0) {
-                  env.fail();
-                } else {
-                  id->decl()->ti()->domain(new SetLit(Location().introduce(), ibv));
-                }
-                id = id->decl()->e() != nullptr ? id->decl()->e()->dynamicCast<Id>() : nullptr;
-              }
-            }
-          } else if (nvd->e()->type().isbool()) {
-            add_ctx_ann(nvd, ctx.b);
-          } else if (nvd->e()->type().bt() == Type::BT_FLOAT && nvd->e()->type().dim() == 0) {
-            FloatBounds fb = compute_float_bounds(env, nvd->e());
-            FloatSetVal* ibv = LinearTraits<FloatLit>::intersectDomain(nullptr, fb.l, fb.u);
-            if (fb.valid) {
-              Id* id = nvd->id();
-              while (id != nullptr) {
-                if (id->decl()->ti()->domain() != nullptr) {
-                  FloatSetVal* domain = eval_floatset(env, id->decl()->ti()->domain());
-                  FloatSetVal* ndomain =
-                      LinearTraits<FloatLit>::intersectDomain(domain, fb.l, fb.u);
-                  if ((ibv != nullptr) && ndomain == domain) {
-                    id->decl()->ti()->setComputedDomain(true);
-                  } else {
-                    ibv = ndomain;
-                  }
-                } else {
-                  id->decl()->ti()->setComputedDomain(true);
-                }
-                if (LinearTraits<FloatLit>::domainEmpty(ibv)) {
-                  env.fail();
-                } else {
-                  id->decl()->ti()->domain(new SetLit(Location(), ibv));
-                }
-                id = id->decl()->e() != nullptr ? id->decl()->e()->dynamicCast<Id>() : nullptr;
-              }
-            }
+          ASTString cid;
+          if (e->type().isint()) {
+            cid = constants().ids.int_.eq;
+          } else if (e->type().isbool()) {
+            cid = constants().ids.bool_eq;
+          } else if (e->type().isSet()) {
+            cid = constants().ids.set_eq;
+          } else if (e->type().isfloat()) {
+            cid = constants().ids.float_.eq;
+          } else {
+            throw InternalError("not yet implemented");
           }
-
-          return nvd->id();
-        }
-        default:
-          assert(false);
-          return nullptr;
-      }
-    } else {
-      if (vd->e() == nullptr) {
-        Expression* ret = e;
-        if (e == nullptr || (e->type().isPar() && e->type().isbool())) {
-          GCLock lock;
-          bool isTrue = (e == nullptr || eval_bool(env, e));
-
-          // Check if redefinition of bool_eq exists, if yes call it
           std::vector<Expression*> args(2);
           args[0] = vd->id();
-          args[1] = constants().boollit(isTrue);
-          Call* c = new Call(Location().introduce(), constants().ids.bool_eq, args);
+          args[1] = e_vd->id();
+          Call* c = new Call(vd->loc().introduce(), cid, args);
           c->decl(env.model->matchFn(env, c, false));
           c->type(c->decl()->rtype(env, args, false));
-          bool didRewrite = false;
-          if (c->decl()->e() != nullptr) {
-            flat_exp(env, Ctx(), c, constants().varTrue, constants().varTrue);
-            didRewrite = true;
-          }
-
-          vd->e(constants().boollit(isTrue));
-          if (vd->ti()->domain() != nullptr) {
-            if (vd->ti()->domain() != vd->e()) {
-              env.fail();
-              return vd->id();
-            }
-          } else {
-            vd->ti()->domain(vd->e());
-            vd->ti()->setComputedDomain(true);
-          }
-          if (didRewrite) {
-            return vd->id();
-          }
-        } else {
-          if (e->type().dim() > 0) {
-            // Check that index sets match
-            env.errorStack.clear();
-            check_index_sets(env, vd, e);
-            auto* al =
-                Expression::dynamicCast<ArrayLit>(e->isa<Id>() ? e->cast<Id>()->decl()->e() : e);
-            if ((al != nullptr) && (vd->ti()->domain() != nullptr) &&
-                !vd->ti()->domain()->isa<TIId>()) {
-              if (e->type().bt() == Type::BT_INT) {
-                IntSetVal* isv = eval_intset(env, vd->ti()->domain());
-                for (unsigned int i = 0; i < al->size(); i++) {
-                  if (Id* id = (*al)[i]->dynamicCast<Id>()) {
-                    if (id == constants().absent) {
-                      continue;
-                    }
-                    VarDecl* vdi = id->decl();
-                    if (vdi->ti()->domain() == nullptr) {
-                      vdi->ti()->domain(vd->ti()->domain());
-                    } else {
-                      IntSetVal* vdi_dom = eval_intset(env, vdi->ti()->domain());
-                      IntSetRanges isvr(isv);
-                      IntSetRanges vdi_domr(vdi_dom);
-                      Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> inter(isvr, vdi_domr);
-                      IntSetVal* newdom = IntSetVal::ai(inter);
-                      if (newdom->size() == 0) {
-                        env.fail();
-                      } else {
-                        IntSetRanges vdi_domr2(vdi_dom);
-                        IntSetRanges newdomr(newdom);
-                        if (!Ranges::equal(vdi_domr2, newdomr)) {
-                          vdi->ti()->domain(new SetLit(Location().introduce(), newdom));
-                          vdi->ti()->setComputedDomain(false);
-                        }
-                      }
-                    }
-                  } else {
-                    // at this point, can only be a constant
-                    assert((*al)[i]->type().isPar());
-                    if (e->type().st() == Type::ST_PLAIN) {
-                      IntVal iv = eval_int(env, (*al)[i]);
-                      if (!isv->contains(iv)) {
-                        std::ostringstream oss;
-                        oss << "value " << iv << " outside declared array domain " << *isv;
-                        env.fail(oss.str());
-                      }
-                    } else {
-                      IntSetVal* aisv = eval_intset(env, (*al)[i]);
-                      IntSetRanges aisv_r(aisv);
-                      IntSetRanges isv_r(isv);
-                      if (!Ranges::subset(aisv_r, isv_r)) {
-                        std::ostringstream oss;
-                        oss << "value " << *aisv << " outside declared array domain " << *isv;
-                        env.fail(oss.str());
-                      }
-                    }
-                  }
-                }
-                vd->ti()->setComputedDomain(true);
-              } else if (e->type().bt() == Type::BT_FLOAT) {
-                FloatSetVal* fsv = eval_floatset(env, vd->ti()->domain());
-                for (unsigned int i = 0; i < al->size(); i++) {
-                  if (Id* id = (*al)[i]->dynamicCast<Id>()) {
-                    VarDecl* vdi = id->decl();
-                    if (vdi->ti()->domain() == nullptr) {
-                      vdi->ti()->domain(vd->ti()->domain());
-                    } else {
-                      FloatSetVal* vdi_dom = eval_floatset(env, vdi->ti()->domain());
-                      FloatSetRanges fsvr(fsv);
-                      FloatSetRanges vdi_domr(vdi_dom);
-                      Ranges::Inter<FloatVal, FloatSetRanges, FloatSetRanges> inter(fsvr, vdi_domr);
-                      FloatSetVal* newdom = FloatSetVal::ai(inter);
-                      if (newdom->size() == 0) {
-                        env.fail();
-                      } else {
-                        FloatSetRanges vdi_domr2(vdi_dom);
-                        FloatSetRanges newdomr(newdom);
-                        if (!Ranges::equal(vdi_domr2, newdomr)) {
-                          vdi->ti()->domain(new SetLit(Location().introduce(), newdom));
-                          vdi->ti()->setComputedDomain(false);
-                        }
-                      }
-                    }
-                  } else {
-                    // at this point, can only be a constant
-                    assert((*al)[i]->type().isPar());
-                    FloatVal fv = eval_float(env, (*al)[i]);
-                    if (!fsv->contains(fv)) {
-                      std::ostringstream oss;
-                      oss << "value " << fv << " outside declared array domain " << *fsv;
-                      env.fail(oss.str());
-                    }
-                  }
-                }
-                vd->ti()->setComputedDomain(true);
-              }
-            }
-          } else if (Id* e_id = e->dynamicCast<Id>()) {
-            if (e_id == vd->id()) {
-              ret = vd->id();
-            } else {
-              ASTString cid;
-              if (e->type().isint()) {
-                if (e->type().isOpt()) {
-                  cid = ASTString("int_opt_eq");
-                } else {
-                  cid = constants().ids.int_.eq;
-                }
-              } else if (e->type().isbool()) {
-                if (e->type().isOpt()) {
-                  cid = ASTString("bool_opt_eq");
-                } else {
-                  cid = constants().ids.bool_eq;
-                }
-              } else if (e->type().isSet()) {
-                cid = constants().ids.set_eq;
-              } else if (e->type().isfloat()) {
-                cid = constants().ids.float_.eq;
-              }
-              if (cid != "" && env.hasReverseMapper(vd->id())) {
-                GCLock lock;
-                std::vector<Expression*> args(2);
-                args[0] = vd->id();
-                args[1] = e_id;
-                Call* c = new Call(Location().introduce(), cid, args);
-                c->decl(env.model->matchFn(env, c, false));
-                c->type(c->decl()->rtype(env, args, false));
-                if (c->type().isbool() && ctx.b != C_ROOT) {
-                  add_ctx_ann(vd, ctx.b);
-                  add_ctx_ann(e_id->decl(), ctx.b);
-                }
-                if (c->decl()->e() != nullptr) {
-                  flat_exp(env, Ctx(), c, constants().varTrue, constants().varTrue);
-                  ret = vd->id();
-                  vd->e(e);
-                  env.voAddExp(vd);
-                }
-              }
-            }
-          }
-
-          if (ret != vd->id()) {
-            vd->e(ret);
-            add_path_annotation(env, ret);
-            env.voAddExp(vd);
-            ret = vd->id();
-          }
-          Id* vde_id = Expression::dynamicCast<Id>(vd->e());
-          if (vde_id == constants().absent) {
-            // no need to do anything
-          } else if ((vde_id != nullptr) && vde_id->decl()->ti()->domain() == nullptr) {
-            if (vd->ti()->domain() != nullptr) {
-              GCLock lock;
-              Expression* vd_dom = eval_par(env, vd->ti()->domain());
-              vde_id->decl()->ti()->domain(vd_dom);
-            }
-          } else if ((vd->e() != nullptr) && vd->e()->type().bt() == Type::BT_INT &&
-                     vd->e()->type().dim() == 0) {
-            GCLock lock;
-            IntSetVal* ibv = nullptr;
-            if (vd->e()->type().isSet()) {
-              ibv = compute_intset_bounds(env, vd->e());
-            } else {
-              IntBounds ib = compute_int_bounds(env, vd->e());
-              if (ib.valid) {
-                Call* call = vd->e()->dynamicCast<Call>();
-                if ((call != nullptr) && call->id() == constants().ids.lin_exp) {
-                  ArrayLit* al = eval_array_lit(env, call->arg(1));
-                  if (al->size() == 1) {
-                    IntBounds check_zeroone = compute_int_bounds(env, (*al)[0]);
-                    if (check_zeroone.l == 0 && check_zeroone.u == 1) {
-                      ArrayLit* coeffs = eval_array_lit(env, call->arg(0));
-                      std::vector<IntVal> newdom(2);
-                      newdom[0] = 0;
-                      newdom[1] = eval_int(env, (*coeffs)[0]) + eval_int(env, call->arg(2));
-                      ibv = IntSetVal::a(newdom);
-                    }
-                  }
-                }
-                if (ibv == nullptr) {
-                  ibv = IntSetVal::a(ib.l, ib.u);
-                }
-              }
-            }
-            if (ibv != nullptr) {
-              if (vd->ti()->domain() != nullptr) {
-                IntSetVal* domain = eval_intset(env, vd->ti()->domain());
-                IntSetRanges dr(domain);
-                IntSetRanges ibr(ibv);
-                Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> i(dr, ibr);
-                IntSetVal* newibv = IntSetVal::ai(i);
-                if (newibv->card() == 0) {
-                  env.fail();
-                } else if (ibv->card() == newibv->card()) {
-                  vd->ti()->setComputedDomain(true);
-                } else {
-                  ibv = newibv;
-                }
-              } else {
-                vd->ti()->setComputedDomain(true);
-              }
-              SetLit* ibv_l = nullptr;
-              if (Id* rhs_ident = vd->e()->dynamicCast<Id>()) {
-                if (rhs_ident->decl()->ti()->domain() != nullptr) {
-                  IntSetVal* rhs_domain = eval_intset(env, rhs_ident->decl()->ti()->domain());
-                  IntSetRanges dr(rhs_domain);
-                  IntSetRanges ibr(ibv);
-                  Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> i(dr, ibr);
-                  IntSetVal* rhs_newibv = IntSetVal::ai(i);
-                  if (rhs_domain->card() != rhs_newibv->card()) {
-                    ibv_l = new SetLit(Location().introduce(), rhs_newibv);
-                    rhs_ident->decl()->ti()->domain(ibv_l);
-                    rhs_ident->decl()->ti()->setComputedDomain(false);
-                    if (rhs_ident->decl()->type().isOpt()) {
-                      std::vector<Expression*> args(2);
-                      args[0] = rhs_ident;
-                      args[1] = ibv_l;
-                      Call* c = new Call(Location().introduce(), "var_dom", args);
-                      c->type(Type::varbool());
-                      c->decl(env.model->matchFn(env, c, false));
-                      (void)flat_exp(env, Ctx(), c, constants().varTrue, constants().varTrue);
-                    }
-                  } else if (ibv->card() != rhs_newibv->card()) {
-                    ibv_l = new SetLit(Location().introduce(), rhs_newibv);
-                  }
-                }
-              }
-              if (ibv_l == nullptr) {
-                ibv_l = new SetLit(Location().introduce(), ibv);
-              }
-              vd->ti()->domain(ibv_l);
-
-              if (vd->type().isOpt()) {
-                std::vector<Expression*> args(2);
-                args[0] = vd->id();
-                args[1] = ibv_l;
-                Call* c = new Call(Location().introduce(), "var_dom", args);
-                c->type(Type::varbool());
-                c->decl(env.model->matchFn(env, c, false));
-                (void)flat_exp(env, Ctx(), c, constants().varTrue, constants().varTrue);
-              }
-            }
-          } else if ((vd->e() != nullptr) && vd->e()->type().bt() == Type::BT_FLOAT &&
-                     vd->e()->type().dim() == 0) {
-            GCLock lock;
-            FloatSetVal* fbv = nullptr;
-            FloatBounds fb = compute_float_bounds(env, vd->e());
-            if (fb.valid) {
-              fbv = FloatSetVal::a(fb.l, fb.u);
-            }
-            if (fbv != nullptr) {
-              if (vd->ti()->domain() != nullptr) {
-                FloatSetVal* domain = eval_floatset(env, vd->ti()->domain());
-                FloatSetRanges dr(domain);
-                FloatSetRanges fbr(fbv);
-                Ranges::Inter<FloatVal, FloatSetRanges, FloatSetRanges> i(dr, fbr);
-                FloatSetVal* newfbv = FloatSetVal::ai(i);
-                if (newfbv->size() == 0) {
-                  env.fail();
-                }
-                FloatSetRanges dr_eq(domain);
-                FloatSetRanges newfbv_eq(newfbv);
-                if (Ranges::equal(dr_eq, newfbv_eq)) {
-                  vd->ti()->setComputedDomain(true);
-                } else {
-                  fbv = newfbv;
-                }
-              } else {
-                vd->ti()->setComputedDomain(true);
-              }
-              SetLit* fbv_l = nullptr;
-              if (Id* rhs_ident = vd->e()->dynamicCast<Id>()) {
-                if (rhs_ident->decl()->ti()->domain() != nullptr) {
-                  FloatSetVal* rhs_domain = eval_floatset(env, rhs_ident->decl()->ti()->domain());
-                  FloatSetRanges dr(rhs_domain);
-                  FloatSetRanges ibr(fbv);
-                  Ranges::Inter<FloatVal, FloatSetRanges, FloatSetRanges> i(dr, ibr);
-                  FloatSetVal* rhs_newfbv = FloatSetVal::ai(i);
-                  if (rhs_domain->card() != rhs_newfbv->card()) {
-                    fbv_l = new SetLit(Location().introduce(), rhs_newfbv);
-                    rhs_ident->decl()->ti()->domain(fbv_l);
-                    rhs_ident->decl()->ti()->setComputedDomain(false);
-                    if (rhs_ident->decl()->type().isOpt()) {
-                      std::vector<Expression*> args(2);
-                      args[0] = rhs_ident;
-                      args[1] = fbv_l;
-                      Call* c = new Call(Location().introduce(), "var_dom", args);
-                      c->type(Type::varbool());
-                      c->decl(env.model->matchFn(env, c, false));
-                      (void)flat_exp(env, Ctx(), c, constants().varTrue, constants().varTrue);
-                    }
-                  } else if (fbv->card() != rhs_newfbv->card()) {
-                    fbv_l = new SetLit(Location().introduce(), rhs_newfbv);
-                  }
-                }
-              }
-              fbv_l = new SetLit(Location().introduce(), fbv);
-              vd->ti()->domain(fbv_l);
-
-              if (vd->type().isOpt()) {
-                std::vector<Expression*> args(2);
-                args[0] = vd->id();
-                args[1] = fbv_l;
-                Call* c = new Call(Location().introduce(), "var_dom", args);
-                c->type(Type::varbool());
-                c->decl(env.model->matchFn(env, c, false));
-                (void)flat_exp(env, Ctx(), c, constants().varTrue, constants().varTrue);
-              }
-            }
-          }
-        }
-        return ret;
-      } else if (vd == e) {
-        return vd->id();
-      } else if (vd->e() != e) {
-        e = follow_id_to_decl(e);
-        if (vd == e) {
+          flat_exp(env, Ctx(), c, constants().varTrue, constants().varTrue);
           return vd->id();
         }
-        switch (e->eid()) {
-          case Expression::E_BOOLLIT: {
-            Id* id = vd->id();
-            while (id != nullptr) {
-              if ((id->decl()->ti()->domain() != nullptr) &&
-                  eval_bool(env, id->decl()->ti()->domain()) == e->cast<BoolLit>()->v()) {
-                return constants().literalTrue;
-              } else if ((id->decl()->ti()->domain() != nullptr) &&
-                         eval_bool(env, id->decl()->ti()->domain()) != e->cast<BoolLit>()->v()) {
-                GCLock lock;
-                env.flatAddItem(new ConstraintI(Location().introduce(), constants().literalFalse));
-              } else {
-                GCLock lock;
-                std::vector<Expression*> args(2);
-                args[0] = id;
-                args[1] = e;
-                Call* c = new Call(Location().introduce(), constants().ids.bool_eq, args);
-                c->decl(env.model->matchFn(env, c, false));
-                c->type(c->decl()->rtype(env, args, false));
-                if (c->decl()->e() != nullptr) {
-                  flat_exp(env, Ctx(), c, constants().varTrue, constants().varTrue);
-                }
-                id->decl()->ti()->domain(e);
-              }
-              id = id->decl()->e() != nullptr ? id->decl()->e()->dynamicCast<Id>() : nullptr;
+        case Expression::E_CALL: {
+          Call* c = e->cast<Call>();
+          GCLock lock;
+          Call* nc;
+          std::vector<Expression*> args;
+          if (c->id() == constants().ids.lin_exp) {
+            auto* le_c = follow_id(c->arg(0))->cast<ArrayLit>();
+            std::vector<Expression*> ncoeff(le_c->size());
+            for (auto i = static_cast<unsigned int>(ncoeff.size()); (i--) != 0U;) {
+              ncoeff[i] = (*le_c)[i];
             }
-            return constants().literalTrue;
-          }
-          case Expression::E_VARDECL: {
-            auto* e_vd = e->cast<VarDecl>();
-            if (vd->e() == e_vd->id() || e_vd->e() == vd->id()) {
-              return vd->id();
+            ncoeff.push_back(IntLit::a(-1));
+            args.push_back(new ArrayLit(Location().introduce(), ncoeff));
+            args[0]->type(le_c->type());
+            auto* le_x = follow_id(c->arg(1))->cast<ArrayLit>();
+            std::vector<Expression*> nx(le_x->size());
+            for (auto i = static_cast<unsigned int>(nx.size()); (i--) != 0U;) {
+              nx[i] = (*le_x)[i];
             }
-            if (e->type().dim() != 0) {
-              throw InternalError("not supported yet");
-            }
-            GCLock lock;
-            ASTString cid;
-            if (e->type().isint()) {
-              cid = constants().ids.int_.eq;
-            } else if (e->type().isbool()) {
-              cid = constants().ids.bool_eq;
-            } else if (e->type().isSet()) {
-              cid = constants().ids.set_eq;
-            } else if (e->type().isfloat()) {
-              cid = constants().ids.float_.eq;
-            } else {
-              throw InternalError("not yet implemented");
-            }
-            std::vector<Expression*> args(2);
-            args[0] = vd->id();
-            args[1] = e_vd->id();
-            Call* c = new Call(vd->loc().introduce(), cid, args);
-            c->decl(env.model->matchFn(env, c, false));
-            c->type(c->decl()->rtype(env, args, false));
-            flat_exp(env, Ctx(), c, constants().varTrue, constants().varTrue);
-            return vd->id();
-          }
-          case Expression::E_CALL: {
-            Call* c = e->cast<Call>();
-            GCLock lock;
-            Call* nc;
-            std::vector<Expression*> args;
-            if (c->id() == constants().ids.lin_exp) {
-              auto* le_c = follow_id(c->arg(0))->cast<ArrayLit>();
-              std::vector<Expression*> ncoeff(le_c->size());
-              for (auto i = static_cast<unsigned int>(ncoeff.size()); (i--) != 0U;) {
-                ncoeff[i] = (*le_c)[i];
-              }
-              ncoeff.push_back(IntLit::a(-1));
-              args.push_back(new ArrayLit(Location().introduce(), ncoeff));
-              args[0]->type(le_c->type());
-              auto* le_x = follow_id(c->arg(1))->cast<ArrayLit>();
-              std::vector<Expression*> nx(le_x->size());
-              for (auto i = static_cast<unsigned int>(nx.size()); (i--) != 0U;) {
-                nx[i] = (*le_x)[i];
-              }
-              nx.push_back(vd->id());
-              args.push_back(new ArrayLit(Location().introduce(), nx));
-              args[1]->type(le_x->type());
-              args.push_back(c->arg(2));
-              nc = new Call(c->loc().introduce(), constants().ids.lin_exp, args);
-              nc->decl(env.model->matchFn(env, nc, false));
-              if (nc->decl() == nullptr) {
-                std::ostringstream ss;
-                ss << "undeclared function or predicate " << nc->id();
-                throw InternalError(ss.str());
-              }
-              nc->type(nc->decl()->rtype(env, args, false));
-              auto* bop = new BinOp(nc->loc(), nc, BOT_EQ, IntLit::a(0));
-              bop->type(Type::varbool());
-              flat_exp(env, Ctx(), bop, constants().varTrue, constants().varTrue);
-              return vd->id();
-            } else {
-              args.resize(c->argCount());
-              for (auto i = static_cast<unsigned int>(args.size()); (i--) != 0U;) {
-                args[i] = c->arg(i);
-              }
-              args.push_back(vd->id());
-              ASTString nid = c->id();
-
-              if (c->id() == constants().ids.exists) {
-                nid = constants().ids.array_bool_or;
-              } else if (c->id() == constants().ids.forall) {
-                nid = constants().ids.array_bool_and;
-              } else if (vd->type().isbool()) {
-                if (env.fopts.enableHalfReification && vd->ann().contains(constants().ctx.pos)) {
-                  nid = env.halfReifyId(c->id());
-                  if (env.model->matchFn(env, nid, args, false) == nullptr) {
-                    nid = env.reifyId(c->id());
-                  }
-                } else {
-                  nid = env.reifyId(c->id());
-                }
-              }
-              nc = new Call(c->loc().introduce(), nid, args);
-            }
-            FunctionI* nc_decl = env.model->matchFn(env, nc, false);
-            if (nc_decl == nullptr) {
+            nx.push_back(vd->id());
+            args.push_back(new ArrayLit(Location().introduce(), nx));
+            args[1]->type(le_x->type());
+            args.push_back(c->arg(2));
+            nc = new Call(c->loc().introduce(), constants().ids.lin_exp, args);
+            nc->decl(env.model->matchFn(env, nc, false));
+            if (nc->decl() == nullptr) {
               std::ostringstream ss;
               ss << "undeclared function or predicate " << nc->id();
               throw InternalError(ss.str());
             }
-            nc->decl(nc_decl);
             nc->type(nc->decl()->rtype(env, args, false));
-            make_defined_var(vd, nc);
-            flat_exp(env, Ctx(), nc, constants().varTrue, constants().varTrue);
+            auto* bop = new BinOp(nc->loc(), nc, BOT_EQ, IntLit::a(0));
+            bop->type(Type::varbool());
+            flat_exp(env, Ctx(), bop, constants().varTrue, constants().varTrue);
             return vd->id();
-          } break;
-          default:
-            throw InternalError("not supported yet");
-        }
-      } else {
-        return e;
+          }
+          args.resize(c->argCount());
+          for (auto i = static_cast<unsigned int>(args.size()); (i--) != 0U;) {
+            args[i] = c->arg(i);
+          }
+          args.push_back(vd->id());
+          ASTString nid = c->id();
+
+          if (c->id() == constants().ids.exists) {
+            nid = constants().ids.array_bool_or;
+          } else if (c->id() == constants().ids.forall) {
+            nid = constants().ids.array_bool_and;
+          } else if (vd->type().isbool()) {
+            if (env.fopts.enableHalfReification && vd->ann().contains(constants().ctx.pos)) {
+              nid = env.halfReifyId(c->id());
+              if (env.model->matchFn(env, nid, args, false) == nullptr) {
+                nid = env.reifyId(c->id());
+              }
+            } else {
+              nid = env.reifyId(c->id());
+            }
+          }
+          nc = new Call(c->loc().introduce(), nid, args);
+          FunctionI* nc_decl = env.model->matchFn(env, nc, false);
+          if (nc_decl == nullptr) {
+            std::ostringstream ss;
+            ss << "undeclared function or predicate " << nc->id();
+            throw InternalError(ss.str());
+          }
+          nc->decl(nc_decl);
+          nc->type(nc->decl()->rtype(env, args, false));
+          make_defined_var(vd, nc);
+          flat_exp(env, Ctx(), nc, constants().varTrue, constants().varTrue);
+          return vd->id();
+        } break;
+        default:
+          throw InternalError("not supported yet");
       }
+    } else {
+      return e;
     }
   }
 }
@@ -2446,79 +2445,76 @@ KeepAlive conj(EnvI& env, VarDecl* b, const Ctx& ctx, const std::vector<EE>& e) 
     }
     if (nontrue.empty()) {
       return bind(env, Ctx(), b, constants().literalTrue);
-    } else if (nontrue.size() == 1) {
+    }
+    if (nontrue.size() == 1) {
       return bind(env, ctx, b, nontrue[0]);
-    } else {
-      if (b == constants().varTrue) {
-        for (auto& i : nontrue) {
-          bind(env, ctx, b, i);
-        }
-        return constants().literalTrue;
-      } else {
-        GC::lock();
-        std::vector<Expression*> args;
-        auto* al = new ArrayLit(Location().introduce(), nontrue);
-        al->type(Type::varbool(1));
-        args.push_back(al);
-        Call* ret = new Call(nontrue[0]->loc().introduce(), constants().ids.forall, args);
-        ret->decl(env.model->matchFn(env, ret, false));
-        ret->type(ret->decl()->rtype(env, args, false));
-        KeepAlive ka(ret);
-        GC::unlock();
-        return flat_exp(env, ctx, ret, b, constants().varTrue).r;
-      }
     }
-  } else {
-    Ctx nctx = ctx;
-    nctx.neg = false;
-    nctx.b = -nctx.b;
-    // negated
-    std::vector<Expression*> nonfalse;
-    for (const auto& i : e) {
-      if (istrue(env, i.b())) {
-        continue;
+    if (b == constants().varTrue) {
+      for (auto& i : nontrue) {
+        bind(env, ctx, b, i);
       }
-      if (isfalse(env, i.b())) {
-        return bind(env, Ctx(), b, constants().literalTrue);
-      }
-      nonfalse.push_back(i.b());
+      return constants().literalTrue;
     }
-    if (nonfalse.empty()) {
-      return bind(env, Ctx(), b, constants().literalFalse);
-    } else if (nonfalse.size() == 1) {
-      GC::lock();
-      UnOp* uo = new UnOp(nonfalse[0]->loc(), UOT_NOT, nonfalse[0]);
-      uo->type(Type::varbool());
-      KeepAlive ka(uo);
-      GC::unlock();
-      return flat_exp(env, nctx, uo, b, constants().varTrue).r;
-    } else {
-      if (b == constants().varFalse) {
-        for (auto& i : nonfalse) {
-          bind(env, nctx, b, i);
-        }
-        return constants().literalFalse;
-      } else {
-        GC::lock();
-        std::vector<Expression*> args;
-        for (auto& i : nonfalse) {
-          UnOp* uo = new UnOp(i->loc(), UOT_NOT, i);
-          uo->type(Type::varbool());
-          i = uo;
-        }
-        auto* al = new ArrayLit(Location().introduce(), nonfalse);
-        al->type(Type::varbool(1));
-        args.push_back(al);
-        Call* ret = new Call(Location().introduce(), constants().ids.exists, args);
-        ret->decl(env.model->matchFn(env, ret, false));
-        ret->type(ret->decl()->rtype(env, args, false));
-        assert(ret->decl());
-        KeepAlive ka(ret);
-        GC::unlock();
-        return flat_exp(env, nctx, ret, b, constants().varTrue).r;
-      }
-    }
+    GC::lock();
+    std::vector<Expression*> args;
+    auto* al = new ArrayLit(Location().introduce(), nontrue);
+    al->type(Type::varbool(1));
+    args.push_back(al);
+    Call* ret = new Call(nontrue[0]->loc().introduce(), constants().ids.forall, args);
+    ret->decl(env.model->matchFn(env, ret, false));
+    ret->type(ret->decl()->rtype(env, args, false));
+    KeepAlive ka(ret);
+    GC::unlock();
+    return flat_exp(env, ctx, ret, b, constants().varTrue).r;
   }
+  Ctx nctx = ctx;
+  nctx.neg = false;
+  nctx.b = -nctx.b;
+  // negated
+  std::vector<Expression*> nonfalse;
+  for (const auto& i : e) {
+    if (istrue(env, i.b())) {
+      continue;
+    }
+    if (isfalse(env, i.b())) {
+      return bind(env, Ctx(), b, constants().literalTrue);
+    }
+    nonfalse.push_back(i.b());
+  }
+  if (nonfalse.empty()) {
+    return bind(env, Ctx(), b, constants().literalFalse);
+  }
+  if (nonfalse.size() == 1) {
+    GC::lock();
+    UnOp* uo = new UnOp(nonfalse[0]->loc(), UOT_NOT, nonfalse[0]);
+    uo->type(Type::varbool());
+    KeepAlive ka(uo);
+    GC::unlock();
+    return flat_exp(env, nctx, uo, b, constants().varTrue).r;
+  }
+  if (b == constants().varFalse) {
+    for (auto& i : nonfalse) {
+      bind(env, nctx, b, i);
+    }
+    return constants().literalFalse;
+  }
+  GC::lock();
+  std::vector<Expression*> args;
+  for (auto& i : nonfalse) {
+    UnOp* uo = new UnOp(i->loc(), UOT_NOT, i);
+    uo->type(Type::varbool());
+    i = uo;
+  }
+  auto* al = new ArrayLit(Location().introduce(), nonfalse);
+  al->type(Type::varbool(1));
+  args.push_back(al);
+  Call* ret = new Call(Location().introduce(), constants().ids.exists, args);
+  ret->decl(env.model->matchFn(env, ret, false));
+  ret->type(ret->decl()->rtype(env, args, false));
+  assert(ret->decl());
+  KeepAlive ka(ret);
+  GC::unlock();
+  return flat_exp(env, nctx, ret, b, constants().varTrue).r;
 }
 
 TypeInst* eval_typeinst(EnvI& env, const Ctx& ctx, VarDecl* vd) {
@@ -2541,27 +2537,25 @@ TypeInst* eval_typeinst(EnvI& env, const Ctx& ctx, VarDecl* vd) {
     }
     return new TypeInst(Location().introduce(), vd->e()->type(), dims,
                         flat_cv_exp(env, ctx, vd->ti()->domain())());
-  } else {
-    std::vector<TypeInst*> dims(vd->ti()->ranges().size());
-    for (unsigned int i = 0; i < vd->ti()->ranges().size(); i++) {
-      if (vd->ti()->ranges()[i]->domain() != nullptr) {
-        KeepAlive range = flat_cv_exp(env, ctx, vd->ti()->ranges()[i]->domain());
-        IntSetVal* isv = eval_intset(env, range());
-        if (isv->size() > 1) {
-          throw EvalError(env, vd->ti()->ranges()[i]->domain()->loc(),
-                          "array index set must be contiguous range");
-        }
-        auto* sl = new SetLit(vd->ti()->ranges()[i]->loc(), isv);
-        sl->type(Type::parsetint());
-        dims[i] = new TypeInst(vd->ti()->ranges()[i]->loc(), Type(), sl);
-      } else {
-        dims[i] = new TypeInst(vd->ti()->ranges()[i]->loc(), Type(), nullptr);
-      }
-    }
-    Type t =
-        ((vd->e() != nullptr) && !vd->e()->type().isbot()) ? vd->e()->type() : vd->ti()->type();
-    return new TypeInst(vd->ti()->loc(), t, dims, flat_cv_exp(env, ctx, vd->ti()->domain())());
   }
+  std::vector<TypeInst*> dims(vd->ti()->ranges().size());
+  for (unsigned int i = 0; i < vd->ti()->ranges().size(); i++) {
+    if (vd->ti()->ranges()[i]->domain() != nullptr) {
+      KeepAlive range = flat_cv_exp(env, ctx, vd->ti()->ranges()[i]->domain());
+      IntSetVal* isv = eval_intset(env, range());
+      if (isv->size() > 1) {
+        throw EvalError(env, vd->ti()->ranges()[i]->domain()->loc(),
+                        "array index set must be contiguous range");
+      }
+      auto* sl = new SetLit(vd->ti()->ranges()[i]->loc(), isv);
+      sl->type(Type::parsetint());
+      dims[i] = new TypeInst(vd->ti()->ranges()[i]->loc(), Type(), sl);
+    } else {
+      dims[i] = new TypeInst(vd->ti()->ranges()[i]->loc(), Type(), nullptr);
+    }
+  }
+  Type t = ((vd->e() != nullptr) && !vd->e()->type().isbot()) ? vd->e()->type() : vd->ti()->type();
+  return new TypeInst(vd->ti()->loc(), t, dims, flat_cv_exp(env, ctx, vd->ti()->domain())());
 }
 
 KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
@@ -2684,15 +2678,13 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
           Expression* slr = eval_par(env, sl);
           slr->type(t);
           return slr;
-        } else {
-          throw InternalError("var set comprehensions not supported yet");
         }
-      } else {
-        auto* alr = new ArrayLit(Location().introduce(), a);
-        alr->type(t);
-        alr->flat(true);
-        return alr;
+        throw InternalError("var set comprehensions not supported yet");
       }
+      auto* alr = new ArrayLit(Location().introduce(), a);
+      alr->type(t);
+      alr->flat(true);
+      return alr;
     }
     case Expression::E_ITE: {
       ITE* ite = e->cast<ITE>();
@@ -2713,7 +2705,8 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
           return constants().literalFalse;
         }
         return eval_par(env, flat_cv_exp(env, ctx, bo->rhs())());
-      } else if (bo->op() == BOT_OR) {
+      }
+      if (bo->op() == BOT_OR) {
         GCLock lock;
         Expression* lhs = flat_cv_exp(env, ctx, bo->lhs())();
         if (eval_bool(env, lhs)) {
@@ -2774,10 +2767,9 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
           throw ResultUndefinedError(env, e->loc(), ss.str());
         }
         return ee.r();
-      } else {
-        nc->type(nct);
-        return eval_par(env, nc);
       }
+      nc->type(nct);
+      return eval_par(env, nc);
     }
     case Expression::E_LET: {
       Let* l = e->cast<Let>();
@@ -4033,14 +4025,16 @@ Expression* cleanup_constraint(EnvI& env, std::unordered_set<Item*>& globals, Ex
       globals.insert(vc->decl());
     }
     return ce;
-  } else if (Id* id = ce->dynamicCast<Id>()) {
+  }
+  if (Id* id = ce->dynamicCast<Id>()) {
     // Ex: constraint b; => constraint bool_eq(b, true);
     std::vector<Expression*> args(2);
     args[0] = id;
     args[1] = constants().literalTrue;
     GCLock lock;
     return new Call(Location().introduce(), constants().ids.bool_eq, args);
-  } else if (auto* bl = ce->dynamicCast<BoolLit>()) {
+  }
+  if (auto* bl = ce->dynamicCast<BoolLit>()) {
     // Ex: true => delete; false => bool_eq(false, true);
     if (!bl->v()) {
       GCLock lock;
@@ -4049,12 +4043,10 @@ Expression* cleanup_constraint(EnvI& env, std::unordered_set<Item*>& globals, Ex
       args[1] = constants().literalTrue;
       Call* neq = new Call(Location().introduce(), constants().ids.bool_eq, args);
       return neq;
-    } else {
-      return nullptr;
     }
-  } else {
-    return ce;
+    return nullptr;
   }
+  return ce;
 }
 
 void oldflatzinc(Env& e) {
