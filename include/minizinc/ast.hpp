@@ -307,7 +307,7 @@ inline ArrayLit::ArrayLit(const Location& loc, ArrayLit& v,
       d[i * 2 + 1] = dims[i].second;
     }
     int sliceOffset = static_cast<int>(dims.size()) * 2;
-    int origSliceOffset = v.dims() * 2;
+    unsigned int origSliceOffset = v.dims() * 2;
     for (int i = 0; i < _u.al->dims() * 2; i++) {
       d[sliceOffset + i] = v._dims[origSliceOffset + i];
     }
@@ -336,7 +336,7 @@ inline ArrayLit::ArrayLit(const Location& loc, ArrayLit& v) : Expression(loc, E_
     d[0] = 1;
     d[1] = v.size();
     int sliceOffset = 2;
-    int origSliceOffset = v.dims() * 2;
+    unsigned int origSliceOffset = v.dims() * 2;
     for (int i = 0; i < _u.al->dims() * 2; i++) {
       d[sliceOffset + i] = v._dims[origSliceOffset + i];
     }

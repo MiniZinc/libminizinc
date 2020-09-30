@@ -30,7 +30,7 @@ void ChainCompressor::removeItem(Item* i) {
 
 int ChainCompressor::addItem(Item* i) {
   _env.flatAddItem(i);
-  int item_idx = _env.flat()->size() - 1;
+  int item_idx = static_cast<int>(_env.flat()->size()) - 1;
   trackItem(i);
   return item_idx;
 }

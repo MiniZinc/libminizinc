@@ -185,10 +185,10 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
       }
       if (ArrayLit* sliceView = al->getSliceLiteral()) {
         ASTIntVec dimsInternal = al->dimsInternal();
-        int sliceDims = sliceView->dims();
-        int dimsOffset = al->dims() * 2;
+        unsigned int sliceDims = sliceView->dims();
+        unsigned int dimsOffset = al->dims() * 2;
         std::vector<std::pair<int, int>> slice(sliceDims);
-        for (int i = 0; i < sliceDims; i++) {
+        for (unsigned int i = 0; i < sliceDims; i++) {
           slice[i].first = dimsInternal[dimsOffset + i * 2];
           slice[i].second = dimsInternal[dimsOffset + i * 2 + 1];
         }

@@ -1445,7 +1445,7 @@ private:
                  1))
           << " ):  SETTING 0 FLAGS FOR VALUES: ");
       for (const auto& intv : sDomain) {
-        for (; vEE < intv.left; ++vEE) {
+        for (; static_cast<double>(vEE) < intv.left; ++vEE) {
           if (vEE >= static_cast<long long>(iMin + pp.size())) {
             return;
           }
@@ -1911,9 +1911,9 @@ private:
             std::swap(mmin, mmax);
           }
           s.insert(IntvReal(  // * A + B
-              mmin.isFinite() ? rndUpIfInt(varTarget, (mmin.toInt() * A + B))
+              mmin.isFinite() ? rndUpIfInt(varTarget, (static_cast<double>(mmin.toInt()) * A + B))
                               : IntvReal::infMinus(),
-              mmax.isFinite() ? rndDownIfInt(varTarget, (mmax.toInt() * A + B))
+              mmax.isFinite() ? rndDownIfInt(varTarget, (static_cast<double>(mmax.toInt()) * A + B))
                               : IntvReal::infPlus()));
         }
       } else {

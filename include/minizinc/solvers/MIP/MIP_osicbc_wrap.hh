@@ -116,7 +116,7 @@ public:
 
   int getNCols() override {
     int nc = _osi.getNumCols();
-    return nc != 0 ? nc : colLB.size();
+    return nc != 0 ? nc : static_cast<int>(colLB.size());
   }
   int getNColsModel() override { return _osi.getNumCols(); }
   int getNRows() override {

@@ -187,7 +187,9 @@ std::string get_env(const char* v) {
   return ret;
 }
 
-char char_to_lower(char c) { return std::tolower(static_cast<unsigned char>(c)); }
+char char_to_lower(char c) {
+  return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+}
 std::string string_to_lower(std::string s) {
   std::transform(s.begin(), s.end(), s.begin(), char_to_lower);
   return s;

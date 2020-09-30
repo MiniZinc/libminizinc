@@ -18,7 +18,7 @@ std::string Type::toString(EnvI& env) const {
   std::ostringstream oss;
   if (_dim > 0) {
     oss << "array[";
-    if (_enumId != 0) {
+    if (_enumId != 0U) {
       const std::vector<unsigned int>& arrayEnumIds = env.getArrayEnum(_enumId);
       for (unsigned int i = 0; i < arrayEnumIds.size() - 1; i++) {
         if (i != 0) {
@@ -41,23 +41,23 @@ std::string Type::toString(EnvI& env) const {
   if (_dim < 0) {
     oss << "array[$_] of ";
   }
-  switch (_ti) {
+  switch (static_cast<int>(_ti)) {
     case TI_PAR:
       break;
     case TI_VAR:
       oss << "var ";
       break;
   }
-  if (_ot == OT_OPTIONAL) {
+  if (static_cast<OptType>(_ot) == OT_OPTIONAL) {
     oss << "opt ";
   }
-  if (_st == ST_SET) {
+  if (static_cast<SetType>(_st) == ST_SET) {
     oss << "set of ";
   }
-  switch (_bt) {
+  switch (static_cast<BaseType>(_bt)) {
     case BT_INT: {
       unsigned int enumId;
-      if (_enumId != 0 && _dim > 0) {
+      if (_enumId != 0U && _dim > 0) {
         const std::vector<unsigned int>& arrayEnumIds = env.getArrayEnum(_enumId);
         enumId = arrayEnumIds[arrayEnumIds.size() - 1];
       } else {
@@ -106,20 +106,20 @@ std::string Type::nonEnumToString() const {
   if (_dim < 0) {
     oss << "array[$_] of ";
   }
-  switch (_ti) {
+  switch (static_cast<TypeInst>(_ti)) {
     case TI_PAR:
       break;
     case TI_VAR:
       oss << "var ";
       break;
   }
-  if (_ot == OT_OPTIONAL) {
+  if (static_cast<OptType>(_ot) == OT_OPTIONAL) {
     oss << "opt ";
   }
-  if (_st == ST_SET) {
+  if (static_cast<SetType>(_st) == ST_SET) {
     oss << "set of ";
   }
-  switch (_bt) {
+  switch (static_cast<BaseType>(_bt)) {
     case BT_INT:
       oss << "int";
       break;

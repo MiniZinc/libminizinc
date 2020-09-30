@@ -41,9 +41,9 @@ Location::LocVec* Location::LocVec::a(const ASTString& filename, unsigned int fi
     if (first_line < (1 << 20) && last_line - first_line < (1 << 20) && first_column < (1 << 10) &&
         last_column < (1 << 10)) {
       long long int combined = first_line;
-      combined |= (static_cast<unsigned long long int>(last_line - first_line)) << 20;
-      combined |= (static_cast<unsigned long long int>(first_column)) << (20 + 20);
-      combined |= (static_cast<unsigned long long int>(last_column)) << (20 + 20 + 10);
+      combined |= (static_cast<long long int>(last_line - first_line)) << 20;
+      combined |= (static_cast<long long int>(first_column)) << (20 + 20);
+      combined |= (static_cast<long long int>(last_column)) << (20 + 20 + 10);
       auto* v = static_cast<LocVec*>(alloc(2));
       new (v) LocVec(filename, combined);
       return v;
@@ -142,8 +142,8 @@ void Expression::mark(Expression* e) {
   while (!stack.empty()) {
     const Expression* cur = stack.back();
     stack.pop_back();
-    if (!cur->isUnboxedVal() && cur->_gcMark == 0) {
-      cur->_gcMark = 1;
+    if (!cur->isUnboxedVal() && cur->_gcMark == 0U) {
+      cur->_gcMark = 1U;
       cur->loc().mark();
       pushann(cur->ann());
       switch (cur->eid()) {
@@ -313,29 +313,29 @@ void TIId::rehash() {
 
 void AnonVar::rehash() { initHash(); }
 
-int ArrayLit::dims() const {
+unsigned int ArrayLit::dims() const {
   return _flag2 ? ((_dims.size() - 2 * _u.al->dims()) / 2)
                 : (_dims.size() == 0 ? 1 : _dims.size() / 2);
 }
-int ArrayLit::min(int i) const {
+int ArrayLit::min(unsigned int i) const {
   if (_dims.size() == 0) {
     assert(i == 0);
     return 1;
   }
   return _dims[2 * i];
 }
-int ArrayLit::max(int i) const {
+int ArrayLit::max(unsigned int i) const {
   if (_dims.size() == 0) {
     assert(i == 0);
-    return _u.v->size();
+    return static_cast<int>(_u.v->size());
   }
   return _dims[2 * i + 1];
 }
-int ArrayLit::length() const {
+unsigned int ArrayLit::length() const {
   if (dims() == 0) {
     return 0;
   }
-  int l = max(0) - min(0) + 1;
+  unsigned int l = max(0) - min(0) + 1;
   for (int i = 1; i < dims(); i++) {
     l *= (max(i) - min(i) + 1);
   }
@@ -346,7 +346,7 @@ void ArrayLit::make1d() {
     GCLock lock;
     if (_flag2) {
       std::vector<int> d(2 + _u.al->dims() * 2);
-      int dimOffset = dims() * 2;
+      unsigned int dimOffset = dims() * 2;
       d[0] = 1;
       d[1] = length();
       for (unsigned int i = 2; i < d.size(); i++) {
@@ -362,13 +362,13 @@ void ArrayLit::make1d() {
   }
 }
 
-int ArrayLit::origIdx(int i) const {
+unsigned int ArrayLit::origIdx(unsigned int i) const {
   assert(_flag2);
-  int curIdx = i;
+  unsigned int curIdx = i;
   int multiplyer = 1;
-  int oIdx = 0;
-  int sliceOffset = dims() * 2;
-  for (int curDim = _u.al->dims() - 1; curDim >= 0; curDim--) {
+  unsigned int oIdx = 0;
+  unsigned int sliceOffset = dims() * 2;
+  for (int curDim = static_cast<int>(_u.al->dims()) - 1; curDim >= 0; curDim--) {
     oIdx +=
         multiplyer *
         ((curIdx % (_dims[sliceOffset + curDim * 2 + 1] - _dims[sliceOffset + curDim * 2] + 1)) +
@@ -379,10 +379,10 @@ int ArrayLit::origIdx(int i) const {
   return oIdx;
 }
 
-Expression* ArrayLit::getSlice(int i) const {
+Expression* ArrayLit::getSlice(unsigned int i) const {
   if (!_flag2) {
     assert(_u.v->flag());
-    int off = length() - _u.v->size();
+    int off = static_cast<int>(length()) - static_cast<int>(_u.v->size());
     return i <= off ? (*_u.v)[0] : (*_u.v)[i - off];
   } else {
     assert(_flag2);
@@ -390,10 +390,10 @@ Expression* ArrayLit::getSlice(int i) const {
   }
 }
 
-void ArrayLit::setSlice(int i, Expression* e) {
+void ArrayLit::setSlice(unsigned int i, Expression* e) {
   if (!_flag2) {
     assert(_u.v->flag());
-    int off = length() - _u.v->size();
+    int off = static_cast<int>(length()) - static_cast<int>(_u.v->size());
     if (i <= off) {
       (*_u.v)[0] = e;
     } else {
@@ -475,7 +475,7 @@ void ArrayLit::rehash() {
     combineHash(Expression::hash(_u.al));
   } else {
     for (unsigned int i = _u.v->size(); (i--) != 0U;) {
-      combineHash(h(i));
+      combineHash(h(static_cast<int>(i)));
       combineHash(Expression::hash((*_u.v)[i]));
     }
   }
@@ -561,15 +561,19 @@ void Comprehension::rehash() {
   }
 }
 
-int Comprehension::numberOfGenerators() const { return _gIndex.size() - 1; }
-Expression* Comprehension::in(int i) { return _g[_gIndex[i]]; }
-const Expression* Comprehension::in(int i) const { return _g[_gIndex[i]]; }
-const Expression* Comprehension::where(int i) const { return _g[_gIndex[i] + 1]; }
-Expression* Comprehension::where(int i) { return _g[_gIndex[i] + 1]; }
+unsigned int Comprehension::numberOfGenerators() const { return _gIndex.size() - 1; }
+Expression* Comprehension::in(unsigned int i) { return _g[_gIndex[i]]; }
+const Expression* Comprehension::in(unsigned int i) const { return _g[_gIndex[i]]; }
+const Expression* Comprehension::where(unsigned int i) const { return _g[_gIndex[i] + 1]; }
+Expression* Comprehension::where(unsigned int i) { return _g[_gIndex[i] + 1]; }
 
-int Comprehension::numberOfDecls(int i) const { return _gIndex[i + 1] - _gIndex[i] - 2; }
-VarDecl* Comprehension::decl(int gen, int i) { return _g[_gIndex[gen] + 2 + i]->cast<VarDecl>(); }
-const VarDecl* Comprehension::decl(int gen, int i) const {
+unsigned int Comprehension::numberOfDecls(unsigned int i) const {
+  return _gIndex[i + 1] - _gIndex[i] - 2;
+}
+VarDecl* Comprehension::decl(unsigned int gen, unsigned int i) {
+  return _g[_gIndex[gen] + 2 + i]->cast<VarDecl>();
+}
+const VarDecl* Comprehension::decl(unsigned int gen, unsigned int i) const {
   return _g[_gIndex[gen] + 2 + i]->cast<VarDecl>();
 }
 
@@ -1222,7 +1226,7 @@ Type FunctionI::rtype(EnvI& env, const std::vector<Type>& ta, bool strictEnums) 
   return return_type(env, this, ta, strictEnums);
 }
 
-Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, int n) {
+Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned int n) {
   TypeInst* tii = params()[n]->ti();
   if ((tii->domain() != nullptr) && tii->domain()->isa<TIId>()) {
     Type ty = ta[n]->type();

@@ -585,9 +585,9 @@ public:
 
 private:
   /// Return range at position \a i
-  Range& get(int i) { return reinterpret_cast<Range*>(_data)[i]; }
+  Range& get(unsigned int i) { return reinterpret_cast<Range*>(_data)[i]; }
   /// Return range at position \a i
-  const Range& get(int i) const { return reinterpret_cast<const Range*>(_data)[i]; }
+  const Range& get(unsigned int i) const { return reinterpret_cast<const Range*>(_data)[i]; }
   /// Construct empty set
   IntSetVal() : ASTChunk(0) {}
   /// Construct set of single range
@@ -606,23 +606,23 @@ private:
 
 public:
   /// Return number of ranges
-  int size() const { return static_cast<int>(_size / sizeof(Range)); }
+  unsigned int size() const { return static_cast<int>(_size / sizeof(Range)); }
   /// Return minimum, or infinity if set is empty
   IntVal min() const { return size() == 0 ? IntVal::infinity() : get(0).min; }
   /// Return maximum, or minus infinity if set is empty
   IntVal max() const { return size() == 0 ? -IntVal::infinity() : get(size() - 1).max; }
   /// Return minimum of range \a i
-  IntVal min(int i) const {
+  IntVal min(unsigned int i) const {
     assert(i < size());
     return get(i).min;
   }
   /// Return maximum of range \a i
-  IntVal max(int i) const {
+  IntVal max(unsigned int i) const {
     assert(i < size());
     return get(i).max;
   }
   /// Return width of range \a i
-  IntVal width(int i) const {
+  IntVal width(unsigned int i) const {
     assert(i < size());
     if (min(i).isFinite() && max(i).isFinite()) {
       return max(i) - min(i) + 1;
@@ -633,7 +633,7 @@ public:
   /// Return cardinality
   IntVal card() const {
     IntVal c = 0;
-    for (int i = size(); (i--) != 0;) {
+    for (unsigned int i = size(); (i--) != 0U;) {
       if (width(i).isFinite()) {
         c += width(i);
       } else {
@@ -800,9 +800,9 @@ public:
 
 private:
   /// Return range at position \a i
-  Range& get(int i) { return reinterpret_cast<Range*>(_data)[i]; }
+  Range& get(unsigned int i) { return reinterpret_cast<Range*>(_data)[i]; }
   /// Return range at position \a i
-  const Range& get(int i) const { return reinterpret_cast<const Range*>(_data)[i]; }
+  const Range& get(unsigned int i) const { return reinterpret_cast<const Range*>(_data)[i]; }
   /// Construct empty set
   FloatSetVal() : ASTChunk(0) {}
   /// Construct set of single range
@@ -821,23 +821,23 @@ private:
 
 public:
   /// Return number of ranges
-  int size() const { return static_cast<int>(_size / sizeof(Range)); }
+  unsigned int size() const { return static_cast<int>(_size / sizeof(Range)); }
   /// Return minimum, or infinity if set is empty
   FloatVal min() const { return size() == 0 ? FloatVal::infinity() : get(0).min; }
   /// Return maximum, or minus infinity if set is empty
   FloatVal max() const { return size() == 0 ? -FloatVal::infinity() : get(size() - 1).max; }
   /// Return minimum of range \a i
-  FloatVal min(int i) const {
+  FloatVal min(unsigned int i) const {
     assert(i < size());
     return get(i).min;
   }
   /// Return maximum of range \a i
-  FloatVal max(int i) const {
+  FloatVal max(unsigned int i) const {
     assert(i < size());
     return get(i).max;
   }
   /// Return width of range \a i
-  FloatVal width(int i) const {
+  FloatVal width(unsigned int i) const {
     assert(i < size());
     if (min(i).isFinite() && max(i).isFinite() && min(i) == max(i)) {
       return 1;
@@ -848,7 +848,7 @@ public:
   /// Return cardinality
   FloatVal card() const {
     FloatVal c = 0;
-    for (int i = size(); (i--) != 0;) {
+    for (unsigned int i = size(); (i--) != 0U;) {
       if (width(i).isFinite()) {
         c += width(i);
       } else {

@@ -942,7 +942,7 @@ void p_sec_cutgen(SolverInstanceBase& si, const Call* call) {
   gi.exprToVarArray(call->arg(0), pCG->varXij);  // WHAT ABOUT CONSTANTS?
   const double dN = sqrt(pCG->varXij.size());
   MZN_ASSERT_HARD(fabs(dN - round(dN)) < 1e-6);  // should be a square matrix
-  pCG->nN = round(dN);
+  pCG->nN = static_cast<int>(round(dN));
   const auto sVld = pCG->validate();
   MZN_ASSERT_HARD_MSG(sVld.empty(), "ERROR(s): " << sVld);
   //     cout << "  NEXT_CUTGEN" << endl;

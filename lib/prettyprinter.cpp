@@ -357,7 +357,7 @@ public:
         break;
       case Expression::E_ARRAYLIT: {
         const ArrayLit& al = *e->cast<ArrayLit>();
-        int n = al.dims();
+        unsigned int n = al.dims();
         if (n == 1 && al.min(0) == 1) {
           _os << "[";
           for (unsigned int i = 0; i < al.size(); i++) {
@@ -1218,7 +1218,7 @@ public:
   ret mapArrayLit(const ArrayLit& al) {
     /// TODO: test multi-dimensional arrays handling
     DocumentList* dl;
-    int n = al.dims();
+    unsigned int n = al.dims();
     if (n == 1 && al.min(0) == 1) {
       dl = new DocumentList("[", ", ", "]");
       for (unsigned int i = 0; i < al.size(); i++) {

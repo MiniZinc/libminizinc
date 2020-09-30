@@ -1319,7 +1319,7 @@ public:
   /// Visit array literal
   void vArrayLit(ArrayLit& al) {
     Type ty;
-    ty.dim(al.dims());
+    ty.dim(static_cast<int>(al.dims()));
     std::vector<AnonVar*> anons;
     bool haveAbsents = false;
     bool haveInferredType = false;
@@ -2071,8 +2071,8 @@ public:
     if (call.id() == "format" || call.id() == "show" || call.id() == "showDzn" ||
         call.id() == "showJSON") {
       if (call.arg(call.argCount() - 1)->type().isPar()) {
-        int enumId = call.arg(call.argCount() - 1)->type().enumId();
-        if (enumId != 0 && call.arg(call.argCount() - 1)->type().dim() != 0) {
+        unsigned int enumId = call.arg(call.argCount() - 1)->type().enumId();
+        if (enumId != 0U && call.arg(call.argCount() - 1)->type().dim() != 0) {
           const std::vector<unsigned int>& enumIds = _env.getArrayEnum(enumId);
           enumId = enumIds[enumIds.size() - 1];
         }
@@ -2264,7 +2264,7 @@ public:
           }
         }
       }
-      tt.dim(foundTIId ? -1 : ti.ranges().size());
+      tt.dim(foundTIId ? -1 : static_cast<int>(ti.ranges().size()));
     }
     if ((ti.domain() != nullptr) && ti.domain()->type().cv()) {
       tt.cv(true);

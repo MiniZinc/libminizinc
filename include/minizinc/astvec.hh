@@ -136,11 +136,11 @@ public:
   static ASTExprVecO* a(const std::vector<T>& v);
   unsigned int size() const { return static_cast<unsigned int>(_size); }
   bool empty() const { return size() == 0; }
-  T& operator[](int i) {
+  T& operator[](unsigned int i) {
     assert(i < static_cast<int>(size()));
     return reinterpret_cast<T&>(_data[i]);
   }
-  const T operator[](int i) const {
+  const T operator[](unsigned int i) const {
     assert(i < static_cast<int>(size()));
     return reinterpret_cast<T>(_data[i]);
   }

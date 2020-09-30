@@ -1650,7 +1650,7 @@ IntVal eval_int(EnvI& env, Expression* e) {
 
 FloatVal eval_float(EnvI& env, Expression* e) {
   if (e->type().isint()) {
-    return FloatVal(eval_int(env, e).toInt());
+    return static_cast<double>(eval_int(env, e).toInt());
   } else if (e->type().isbool()) {
     return static_cast<double>(eval_bool(env, e));
   }

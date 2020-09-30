@@ -190,7 +190,7 @@ IntVal b_arg_min_int(EnvI& env, Call* call) {
     IntVal mi = eval_int(env, (*al)[i]);
     if (mi < m) {
       m = mi;
-      m_idx = i;
+      m_idx = static_cast<int>(i);
     }
   }
   return m_idx + al->min(0);
@@ -208,7 +208,7 @@ IntVal b_arg_max_int(EnvI& env, Call* call) {
     IntVal mi = eval_int(env, (*al)[i]);
     if (mi > m) {
       m = mi;
-      m_idx = i;
+      m_idx = static_cast<int>(i);
     }
   }
   return m_idx + al->min(0);
@@ -226,7 +226,7 @@ IntVal b_arg_min_float(EnvI& env, Call* call) {
     FloatVal mi = eval_float(env, (*al)[i]);
     if (mi < m) {
       m = mi;
-      m_idx = i;
+      m_idx = static_cast<int>(i);
     }
   }
   return m_idx + al->min(0);
@@ -244,7 +244,7 @@ IntVal b_arg_max_float(EnvI& env, Call* call) {
     FloatVal mi = eval_float(env, (*al)[i]);
     if (mi > m) {
       m = mi;
-      m_idx = i;
+      m_idx = static_cast<int>(i);
     }
   }
   return m_idx + al->min(0);
@@ -1442,7 +1442,7 @@ IntVal b_floor(EnvI& env, Call* call) {
 }
 IntVal b_round(EnvI& env, Call* call) {
   /// Cast to int truncates, so cannot just add 0.5 and cast
-  return static_cast<IntVal>(std::round(eval_float(env, call->arg(0)).toDouble()));
+  return {static_cast<long long>(std::round(eval_float(env, call->arg(0)).toDouble()))};
 }
 FloatVal b_log10(EnvI& env, Call* call) {
   return std::log10(eval_float(env, call->arg(0)).toDouble());
@@ -2000,7 +2000,7 @@ IntSetVal* b_array_intersect(EnvI& env, Call* call) {
         IntVal max = i0r.max();
         // Intersect with all other intervals
       restart:
-        for (int j = al->size(); (j--) != 0;) {
+        for (unsigned int j = al->size(); (j--) != 0U;) {
           IntSetRanges ij(eval_intset(env, (*al)[j]));
           // Skip intervals that are too small
           while (ij() && (ij.max() < min)) {
@@ -2238,7 +2238,7 @@ IntVal b_uniform_int(EnvI& env, Call* call) {
 IntVal b_poisson_int(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
   long long int mean = eval_int(env, call->arg(0)).toInt();
-  std::poisson_distribution<long long int> distribution(mean);
+  std::poisson_distribution<long long int> distribution(static_cast<double>(mean));
   // return a sample from the distribution
   return IntVal(distribution(rnd_generator()));
 }
@@ -2597,8 +2597,8 @@ Expression* b_regular_from_string(EnvI& env, Call* call) {
       dom = IntSetVal::ai(u);
     }
   }
-  int card = dom->max().toInt() - dom->min().toInt() + 1;
-  int offset = 1 - dom->min().toInt();
+  long long int card = dom->max().toInt() - dom->min().toInt() + 1;
+  int offset = 1 - static_cast<int>(dom->min().toInt());
 
   // Replace all occurrences of enum constructor calls
   std::regex constructor_call(
@@ -2695,7 +2695,7 @@ Expression* b_regular_from_string(EnvI& env, Call* call) {
   DFA dfa = DFA(*regex);
 
   std::vector<std::vector<Expression*>> reg_trans(
-      dfa.n_states(), std::vector<Expression*>(card, IntLit::a(IntVal(0))));
+      dfa.n_states(), std::vector<Expression*>(static_cast<size_t>(card), IntLit::a(IntVal(0))));
 
   DFA::Transitions trans(dfa);
   while (trans()) {

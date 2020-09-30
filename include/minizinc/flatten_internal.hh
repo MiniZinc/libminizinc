@@ -326,7 +326,8 @@ public:
         floor(static_cast<double>(v0.toInt()) / static_cast<double>(v1.toInt())));
   }
   static Val ceilDiv(Val v0, Val v1) {
-    return static_cast<long long int>(ceil(static_cast<double>(v0.toInt()) / v1.toInt()));
+    return static_cast<long long int>(
+        ceil(static_cast<double>(v0.toInt()) / static_cast<double>(v1.toInt())));
   }
   static IntLit* newLit(Val v) { return IntLit::a(v); }
 };

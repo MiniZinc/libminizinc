@@ -203,11 +203,9 @@ void NLSolns2Out::parseSolution(const string& filename) {
           // Case of the literals
           if (item.variable.empty()) {
             if (a.isInteger) {
-              long value = item.value;
-              sb << value;
+              sb << static_cast<long long int>(item.value);
             } else {
-              double value = item.value;
-              sb << value;
+              sb << item.value;
             }
           } else {
             int index = _nlFile.variableIndexes.at(item.variable);

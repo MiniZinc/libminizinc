@@ -130,15 +130,14 @@ public:
   bool hasBoolAlias() { return _boolAliasIndex >= 0; }
 
   /// set the index in FznSpace::bv of the Boolean variable that corresponds to the int variable
-  void setBoolAliasIndex(int index) {
+  void setBoolAliasIndex(unsigned int index) {
     assert(_t == INT_TYPE);
-    assert(index >= 0);
-    _boolAliasIndex = index;
+    _boolAliasIndex = static_cast<int>(index);
   }
 
   int boolAliasIndex() { return _boolAliasIndex; }
 
-  int index() { return _index; }
+  unsigned int index() { return _index; }
 
   Gecode::IntVar& intVar(MiniZinc::FznSpace* space) {
     assert(_t == INT_TYPE);
@@ -184,7 +183,7 @@ public:
   bool sac = false;
   bool shave = false;
   bool verbose = false;
-  int prePasses = 0;
+  unsigned int prePasses = 0;
   bool statistics = false;
   bool allSolutions = false;
   int nSolutions = -1;
@@ -318,7 +317,7 @@ public:
   /// Returns the VarDecl of \a aa
   VarDecl* resolveArrayAccess(ArrayAccess* aa);
   /// Returns the VarDecl of \a array at index \a index
-  VarDecl* resolveArrayAccess(VarDecl* array, int index);
+  VarDecl* resolveArrayAccess(VarDecl* array, long long int index);
 
   /// Returns the GecodeVariable representing the Id, VarDecl or ArrayAccess
   GecodeSolver::Variable resolveVar(Expression* e);

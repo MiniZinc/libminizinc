@@ -416,7 +416,7 @@ int match_idx(std::vector<FunctionI*>& matched, Expression*& botarg, EnvI& env,
       if (match) {
         matched.push_back(v[i].fi);
         if (botarg == nullptr) {
-          return i;
+          return static_cast<int>(i);
         }
       }
     }
@@ -656,11 +656,11 @@ FunctionI* Model::matchRevMap(EnvI& env, const Type& t0) const {
   }
 }
 
-Item*& Model::operator[](int i) {
+Item*& Model::operator[](unsigned int i) {
   assert(i < _items.size());
   return _items[i];
 }
-const Item* Model::operator[](int i) const {
+const Item* Model::operator[](unsigned int i) const {
   assert(i < _items.size());
   return _items[i];
 }

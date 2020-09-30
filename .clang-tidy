@@ -1,5 +1,6 @@
 ---
 Checks: '-*,
+  bugprone-narrowing-conversions,
   bugprone-unhandled-self-assignment,
   modernize-deprecated-headers,
   modernize-loop-convert,

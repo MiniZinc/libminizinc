@@ -40,7 +40,7 @@ public:
     std::string sExportModel;
     int nTimeout1000 = -1;
     int nTimeoutFeas1000 = -1;
-    long int nSolLimit = -1;
+    int nSolLimit = -1;
     int nSeed = -1;
     double nWorkMemLimit = 0.5;
     std::string sNodefileDir;

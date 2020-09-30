@@ -86,9 +86,9 @@ public:
   } opt;
 
   struct Statistics {
-    int nSolns = 0;
-    int nFails = 0;
-    int nNodes = 0;
+    unsigned long long nSolns = 0;
+    unsigned long long nFails = 0;
+    unsigned long long nNodes = 0;
   } stats;
 
 public:

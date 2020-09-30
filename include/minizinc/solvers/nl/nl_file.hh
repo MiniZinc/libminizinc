@@ -528,34 +528,34 @@ public:
   // taken from "hooking your solver" and used in the above explanatios
 
   /** Total number of variables. */
-  int varCount() const;
+  unsigned int varCount() const;
 
   /** Number of variables appearing nonlinearly in constraints. */
-  int lvcCount() const;
+  unsigned int lvcCount() const;
 
   /** Number of variables appearing nonlinearly in objectives. */
-  int lvoCount() const;
+  unsigned int lvoCount() const;
 
   /** Number of variables appearing nonlinearly in both constraints and objectives.*/
-  int lvbCount() const;
+  unsigned int lvbCount() const;
 
   /** Number of integer variables appearing nonlinearly in both constraints and objectives.*/
-  int lvbiCount() const;
+  unsigned int lvbiCount() const;
 
   /** Number of integer variables appearing nonlinearly in constraints **only**.*/
-  int lvciCount() const;
+  unsigned int lvciCount() const;
 
   /** Number of integer variables appearing nonlinearly in objectives **only**.*/
-  int lvoiCount() const;
+  unsigned int lvoiCount() const;
 
   /** Number of linear arcs .*/
-  int wvCount() const;
+  unsigned int wvCount() const;
 
   /** Number of "other" integer variables.*/
-  int ivCount() const;
+  unsigned int ivCount() const;
 
   /** Number of binary variables.*/
-  int bvCount() const;
+  unsigned int bvCount() const;
 
   /** Accumulation of Jacobian counts. */
   int jacobianCount() const;

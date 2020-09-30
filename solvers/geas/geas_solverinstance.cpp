@@ -314,7 +314,7 @@ void GeasSolverInstance::processFlatZinc() {
           auto* vars = eval_array_lit(env().envi(), call->arg(0));
           auto* vals = eval_array_lit(env().envi(), call->arg(1));
           assert(vars->size() == vals->size());
-          vec<geas::patom_t> ws(vars->size());
+          vec<geas::patom_t> ws(static_cast<int>(vars->size()));
 
           if (vars->type().isIntArray()) {
             assert(vals->type().isIntArray());
@@ -403,7 +403,7 @@ bool GeasSolverInstance::addSolutionNoGood() {
     if (Expression::dynamicCast<Call>(
             get_annotation(var->ann(), constants().ann.output_array.aststr())) != nullptr) {
       if (auto* al = var->e()->dynamicCast<ArrayLit>()) {
-        for (unsigned int j = 0; j < al->size(); j++) {
+        for (int j = 0; j < al->size(); j++) {
           if (Id* id = (*al)[j]->dynamicCast<Id>()) {
             auto geas_var = resolveVar(id);
             if (geas_var.isBool()) {
@@ -600,7 +600,7 @@ GeasTypes::Variable& GeasSolverInstance::resolveVar(Expression* e) {
 }
 
 vec<bool> GeasSolverInstance::asBool(ArrayLit* al) {
-  vec<bool> vec(al->size());
+  vec<bool> vec(static_cast<int>(al->size()));
   for (int i = 0; i < al->size(); ++i) {
     vec[i] = asBool((*al)[i]);
   }
@@ -624,7 +624,7 @@ geas::patom_t GeasSolverInstance::asBoolVar(Expression* e) {
 }
 
 vec<geas::patom_t> GeasSolverInstance::asBoolVar(ArrayLit* al) {
-  vec<geas::patom_t> vec(al->size());
+  vec<geas::patom_t> vec(static_cast<int>(al->size()));
   for (int i = 0; i < al->size(); ++i) {
     vec[i] = this->asBoolVar((*al)[i]);
   }
@@ -632,7 +632,7 @@ vec<geas::patom_t> GeasSolverInstance::asBoolVar(ArrayLit* al) {
 }
 
 vec<int> GeasSolverInstance::asInt(ArrayLit* al) {
-  vec<int> vec(al->size());
+  vec<int> vec(static_cast<int>(al->size()));
   for (int i = 0; i < al->size(); ++i) {
     vec[i] = this->asInt((*al)[i]);
   }
@@ -665,7 +665,7 @@ geas::intvar GeasSolverInstance::asIntVar(Expression* e) {
 }
 
 vec<geas::intvar> GeasSolverInstance::asIntVar(ArrayLit* al) {
-  vec<geas::intvar> vec(al->size());
+  vec<geas::intvar> vec(static_cast<int>(al->size()));
   for (int i = 0; i < al->size(); ++i) {
     vec[i] = this->asIntVar((*al)[i]);
   }

@@ -69,7 +69,7 @@ const ArrayLit& NLFile::getArrayLit(const Expression* e) {
 vector<double> NLFile::fromVecInt(const ArrayLit& v_int) {
   vector<double> v = {};
   for (unsigned int i = 0; i < v_int.size(); ++i) {
-    double d = v_int[i]->cast<IntLit>()->v().toInt();
+    double d = static_cast<double>(v_int[i]->cast<IntLit>()->v().toInt());
     v.push_back(d);
   }
   return v;
@@ -138,7 +138,7 @@ void NLFile::addVarDecl(const VarDecl& vd, const TypeInst& ti, const Expression&
             item.variable = getVarName(ra[i]->cast<Id>());
           } else if (ra[i]->isa<IntLit>()) {
             assert(array.isInteger);
-            item.value = ra[i]->cast<IntLit>()->v().toInt();
+            item.value = static_cast<double>(ra[i]->cast<IntLit>()->v().toInt());
           } else {
             assert(!array.isInteger);  // Floating point
             item.value = ra[i]->cast<FloatLit>()->v().toDouble();
@@ -196,8 +196,8 @@ void NLFile::addVarDeclInteger(const string& name, const IntSetVal* isv, bool to
   if (isv == nullptr) {
     bound = NLBound::makeNoBound();
   } else if (isv->size() == 1) {
-    long long lb = isv->min(0).toInt();
-    long long ub = isv->max(0).toInt();
+    double lb = static_cast<double>(isv->min(0).toInt());
+    double ub = static_cast<double>(isv->max(0).toInt());
     bound = NLBound::makeBounded(lb, ub);
   } else {
     should_not_happen("Range: switch on mzn_opt_only_range_domains" << endl);
@@ -395,7 +395,7 @@ void NLFile::analyseConstraint(const Call& c) {
 NLToken NLFile::getTokenFromVarOrInt(const Expression* e) {
   if (e->type().isPar()) {
     // Constant
-    long long value = e->cast<IntLit>()->v().toInt();
+    double value = static_cast<double>(e->cast<IntLit>()->v().toInt());
     return NLToken::n(value);
   } else {
     // Variable
@@ -1447,40 +1447,40 @@ bool NLFile::hasContinousVars() const { return !hasIntegerVars(); }
 int NLFile::jacobianCount() const { return _jacobianCount; }
 
 /** Total number of variables. */
-int NLFile::varCount() const { return variables.size(); }
+unsigned int NLFile::varCount() const { return variables.size(); }
 
 /** Number of variables appearing nonlinearly in constraints. */
-int NLFile::lvcCount() const {
+unsigned int NLFile::lvcCount() const {
   // Variables in both + variables in constraint only (integer+continuous)
   return lvbCount() + vname_nliv_cons.size() + vname_nlcv_cons.size();
 }
 
 /** Number of variables appearing nonlinearly in objectives. */
-int NLFile::lvoCount() const {
+unsigned int NLFile::lvoCount() const {
   // Variables in both + variables in objective only (integer+continuous)
   return lvbCount() + vname_nliv_obj.size() + vname_nlcv_obj.size();
 }
 
 /** Number of variables appearing nonlinearly in both constraints and objectives.*/
-int NLFile::lvbCount() const { return vname_nlcv_both.size() + vname_nliv_both.size(); }
+unsigned int NLFile::lvbCount() const { return vname_nlcv_both.size() + vname_nliv_both.size(); }
 
 /** Number of integer variables appearing nonlinearly in both constraints and objectives.*/
-int NLFile::lvbiCount() const { return vname_nliv_both.size(); }
+unsigned int NLFile::lvbiCount() const { return vname_nliv_both.size(); }
 
 /** Number of integer variables appearing nonlinearly in constraints **only**.*/
-int NLFile::lvciCount() const { return vname_nliv_cons.size(); }
+unsigned int NLFile::lvciCount() const { return vname_nliv_cons.size(); }
 
 /** Number of integer variables appearing nonlinearly in objectives **only**.*/
-int NLFile::lvoiCount() const { return vname_nliv_obj.size(); }
+unsigned int NLFile::lvoiCount() const { return vname_nliv_obj.size(); }
 
 /** Number of linear arcs. Network nor implemented, so always 0.*/
-int NLFile::wvCount() const { return vname_larc_all.size(); }
+unsigned int NLFile::wvCount() const { return vname_larc_all.size(); }
 
 /** Number of "other" integer variables.*/
-int NLFile::ivCount() const { return vname_liv_all.size(); }
+unsigned int NLFile::ivCount() const { return vname_liv_all.size(); }
 
 /** Number of binary variables.*/
-int NLFile::bvCount() const { return vname_bv_all.size(); }
+unsigned int NLFile::bvCount() const { return vname_bv_all.size(); }
 
 /** *** *** *** Printable *** *** *** **/
 // Note:  * empty line not allowed

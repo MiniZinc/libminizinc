@@ -84,7 +84,7 @@ public:
     for (unsigned int i = 0; i < bv.size(); i++) {
       if (bv[i].varimp() == bvar.varimp()) {
         // std::cout << "DEBUG: settings bool alias of variable to index " << i << std::endl;
-        return i;
+        return static_cast<int>(i);
       }
     }
     return -1;  // we should have found the boolvar in bv

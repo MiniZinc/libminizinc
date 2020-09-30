@@ -258,20 +258,22 @@ void unify(EnvI& env, std::vector<VarDecl*>& deletedVarDecls, Id* id0, Id* id1) 
 
 void substitute_fixed_vars(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarDecls);
 void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
-                              std::deque<int>& vardeclQueue, std::deque<Item*>& constraintQueue,
-                              std::vector<Item*>& toRemove, std::vector<VarDecl*>& deletedVarDecls,
+                              std::deque<unsigned int>& vardeclQueue,
+                              std::deque<Item*>& constraintQueue, std::vector<Item*>& toRemove,
+                              std::vector<VarDecl*>& deletedVarDecls,
                               std::unordered_map<Expression*, int>& nonFixedLiteralCount);
 
 bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarDecls,
-                         std::deque<Item*>& constraintQueue, std::deque<int>& vardeclQueue);
+                         std::deque<Item*>& constraintQueue,
+                         std::deque<unsigned int>& vardeclQueue);
 
-void push_vardecl(EnvI& env, VarDeclI* vdi, int vd_idx, std::deque<int>& q) {
+void push_vardecl(EnvI& env, VarDeclI* vdi, unsigned int vd_idx, std::deque<unsigned int>& q) {
   if (!vdi->removed() && !vdi->flag()) {
     vdi->flag(true);
     q.push_back(vd_idx);
   }
 }
-void push_vardecl(EnvI& env, int vd_idx, std::deque<int>& q) {
+void push_vardecl(EnvI& env, unsigned int vd_idx, std::deque<unsigned int>& q) {
   push_vardecl(env, (*env.flat())[vd_idx]->cast<VarDeclI>(), vd_idx, q);
 }
 
@@ -311,7 +313,7 @@ void optimize(Env& env, bool chain_compression) {
     // Queue of constraint and variable items that still need to be optimised
     std::deque<Item*> constraintQueue;
     // Queue of variable declarations (indexes into the model) that still need to be optimised
-    std::deque<int> vardeclQueue;
+    std::deque<unsigned int> vardeclQueue;
 
     std::vector<int> boolConstraints;
 
@@ -1013,7 +1015,8 @@ void substitute_fixed_vars(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVa
 }
 
 bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarDecls,
-                         std::deque<Item*>& constraintQueue, std::deque<int>& vardeclQueue) {
+                         std::deque<Item*>& constraintQueue,
+                         std::deque<unsigned int>& vardeclQueue) {
   Expression* con_e;
   bool is_true;
   bool is_false;
@@ -1399,7 +1402,7 @@ int decrement_non_fixed_vars(std::unordered_map<Expression*, int>& nonFixedLiter
     int nonFixedVars = 0;
     for (unsigned int i = 0; i < c->argCount(); i++) {
       auto* al = follow_id(c->arg(i))->cast<ArrayLit>();
-      nonFixedVars += al->size();
+      nonFixedVars += static_cast<int>(al->size());
       for (unsigned int j = al->size(); (j--) != 0U;) {
         if ((*al)[j]->type().isPar()) {
           nonFixedVars--;
@@ -1415,8 +1418,9 @@ int decrement_non_fixed_vars(std::unordered_map<Expression*, int>& nonFixedLiter
 }
 
 void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
-                              std::deque<int>& vardeclQueue, std::deque<Item*>& constraintQueue,
-                              std::vector<Item*>& toRemove, std::vector<VarDecl*>& deletedVarDecls,
+                              std::deque<unsigned int>& vardeclQueue,
+                              std::deque<Item*>& constraintQueue, std::vector<Item*>& toRemove,
+                              std::vector<VarDecl*>& deletedVarDecls,
                               std::unordered_map<Expression*, int>& nonFixedLiteralCount) {
   if (ii->isa<SolveI>()) {
     remove = false;
@@ -1535,7 +1539,7 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
         for (unsigned int i = 0; i < c->argCount(); i++) {
           bool unit = (i == 0 ? isConjunction : !isConjunction);
           auto* al = follow_id(c->arg(i))->cast<ArrayLit>();
-          realNonFixed += al->size();
+          realNonFixed += static_cast<int>(al->size());
           for (unsigned int j = al->size(); (j--) != 0U;) {
             if ((*al)[j]->type().isPar() ||
                 ((*al)[j]->cast<Id>()->decl()->ti()->domain() != nullptr)) {
@@ -1554,8 +1558,8 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
                   break;
                 }
               } else {
-                nonfixed_i = i;
-                nonfixed_j = j;
+                nonfixed_i = static_cast<int>(i);
+                nonfixed_j = static_cast<int>(j);
               }
             }
           }

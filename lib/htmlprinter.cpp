@@ -125,7 +125,7 @@ public:
     }
   }
 
-  std::string toHTML(int level, int indivFileLevel, Group* parent, int idx,
+  std::string toHTML(int level, int indivFileLevel, Group* parent, unsigned int idx,
                      const std::string& basename, bool generateIndex) {
     std::ostringstream oss;
 

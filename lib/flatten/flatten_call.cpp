@@ -250,7 +250,7 @@ bool is_totaladd_bounds_disj(EnvI& env, Expression* arg, Call* c_orig) {
   }
   std::vector<Expression*> isUBI, bndI, varI,  // integer bounds and vars
       isUBF, bndF, varF;                       // float bounds and vars
-  for (int i = pArrayLit->size(); (i--) != 0;) {
+  for (unsigned int i = pArrayLit->size(); (i--) != 0U;) {
     auto* pId = pArrayLit->operator[](i)->dynamicCast<Id>();
     if (nullptr == pId) {
       return false;
@@ -272,7 +272,7 @@ bool is_totaladd_bounds_disj(EnvI& env, Expression* arg, Call* c_orig) {
     Expression *pConst = nullptr, *pVar = nullptr;
     bool fFloat = false;
     bool isUB = false;
-    for (int j = pCall->argCount(); (j--) != 0;) {
+    for (unsigned int j = pCall->argCount(); (j--) != 0U;) {
       if (auto* pF = pCall->arg(j)->dynamicCast<FloatLit>()) {
         pConst = pF;
         fFloat = true;

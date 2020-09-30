@@ -533,7 +533,7 @@ static SCIP_DECL_EVENTEXEC(eventExecBestsol) { /*lint --e{715}*/
         _cb_plugin, _cb_plugin->SCIPgetSolVals(scip, bestsol, cbuiPtr->pOutput->nCols, _scipVarsPtr,
                                                (double*)cbuiPtr->pOutput->x));
     //       wrap_assert(!retcode, "Failed to get variable values.");
-    cbuiPtr->pOutput->nNodes = _cb_plugin->SCIPgetNNodes(scip);
+    cbuiPtr->pOutput->nNodes = static_cast<int>(_cb_plugin->SCIPgetNNodes(scip));
     cbuiPtr->pOutput->nOpenNodes = _cb_plugin->SCIPgetNNodesLeft(scip);
     cbuiPtr->pOutput->bestBound = _cb_plugin->SCIPgetDualbound(scip);
 
@@ -723,7 +723,7 @@ SCIP_RETCODE MIPScipWrapper::solveSCIP() {  // Move into ancestor?
       cbui.solcbfn(output, cbui.psi);
     }
   }
-  output.nNodes = _plugin->SCIPgetNNodes(_scip);
+  output.nNodes = static_cast<int>(_plugin->SCIPgetNNodes(_scip));
   output.nOpenNodes = _plugin->SCIPgetNNodesLeft(_scip);  // SCIP_getnodeleftcnt (env, lp);
 
   SCIP_PLUGIN_CALL_R(_plugin, _plugin->SCIPfreeTransform(_scip));

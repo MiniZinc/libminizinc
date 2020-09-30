@@ -369,7 +369,7 @@ Expression* JSONParser::parseObject(istream& is) {
     expectToken(is, T_OBJ_CLOSE);
 
     if (listT == T_INT) {
-      int n = elems.size() / 2;
+      unsigned int n = elems.size() / 2;
       auto* res = IntSetVal::a();
       for (unsigned int i = 0; i < n; i++) {
         IntVal m(elems[2 * i].i);
@@ -382,7 +382,7 @@ Expression* JSONParser::parseObject(istream& is) {
       }
       return new SetLit(Location().introduce(), res);
     } else if (listT == T_FLOAT) {
-      int n = elems.size() / 2;
+      unsigned int n = elems.size() / 2;
       auto* res = FloatSetVal::a();
       for (unsigned int i = 0; i < n; i++) {
         FloatVal m(elems[2 * i].d);

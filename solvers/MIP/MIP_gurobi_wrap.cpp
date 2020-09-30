@@ -527,8 +527,8 @@ bool MIPGurobiWrapper::defineMultipleObjectives(const MultipleObjectives& mo) {
     const auto& obj = mo.getObjectives()[iobj];
     int objvar = obj.getVariable();
     double coef = 1.0;
-    _error = dll_GRBsetobjectiven(_model, iobj, mo.size() - iobj, obj.getWeight(), 0.0, 0.0,
-                                  nullptr, 0.0, 1, &objvar, &coef);
+    _error = dll_GRBsetobjectiven(_model, iobj, static_cast<int>(mo.size()) - iobj, obj.getWeight(),
+                                  0.0, 0.0, nullptr, 0.0, 1, &objvar, &coef);
     wrapAssert(_error == 0, "Failed to set objective " + std::to_string(iobj));
   }
   return true;

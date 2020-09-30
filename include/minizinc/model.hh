@@ -184,9 +184,9 @@ public:
   void mergeStdLib(EnvI& env, Model* m) const;
 
   /// Return item \a i
-  Item*& operator[](int i);
+  Item*& operator[](unsigned int i);
   /// Return item \a i
-  const Item* operator[](int i) const;
+  const Item* operator[](unsigned int i) const;
   /// Return number of items
   unsigned int size() const;
 

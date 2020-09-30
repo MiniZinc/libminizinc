@@ -797,11 +797,11 @@ protected:
 
 public:
   /// Index conversion from slice to original
-  int origIdx(int i) const;
+  unsigned int origIdx(unsigned int i) const;
   /// Get element \a i of a sliced array
-  Expression* getSlice(int i) const;
+  Expression* getSlice(unsigned int i) const;
   /// Set element \a i of a sliced array
-  void setSlice(int i, Expression* e);
+  void setSlice(unsigned int i, Expression* e);
 
 public:
   /// The identifier of this expression type
@@ -843,13 +843,13 @@ public:
   ASTIntVec dimsInternal() const { return _dims; }
 
   /// Return number of dimensions
-  int dims() const;
+  unsigned int dims() const;
   /// Return minimum index of dimension \a i
-  int min(int i) const;
+  int min(unsigned int i) const;
   /// Return maximum index of dimension \a i
-  int max(int i) const;
+  int max(unsigned int i) const;
   /// Return the length of the array
-  int length() const;
+  unsigned int length() const;
   /// Turn into 1d array (only used at the end of flattening)
   void make1d();
   /// Check if this array was produced by flattening
@@ -859,11 +859,11 @@ public:
   /// Return size of underlying array
   unsigned int size() const { return (_flag2 || _u.v->flag()) ? length() : _u.v->size(); }
   /// Access element \a i
-  Expression* operator[](int i) const {
+  Expression* operator[](unsigned int i) const {
     return (_flag2 || _u.v->flag()) ? getSlice(i) : (*_u.v)[i];
   }
   /// Set element \a i
-  void set(int i, Expression* e) {
+  void set(unsigned int i, Expression* e) {
     if (_flag2 || _u.v->flag()) {
       setSlice(i, e);
     } else {
@@ -961,21 +961,21 @@ public:
   bool set() const;
 
   /// Return number of generators
-  int numberOfGenerators() const;
+  unsigned int numberOfGenerators() const;
   /// Return "in" expression for generator \a i
-  Expression* in(int i);
+  Expression* in(unsigned int i);
   /// Return "in" expression for generator \a i
-  const Expression* in(int i) const;
+  const Expression* in(unsigned int i) const;
   /// Return number of declarations for generator \a i
-  int numberOfDecls(int i) const;
+  unsigned int numberOfDecls(unsigned int i) const;
   /// Return declaration \a i for generator \a gen
-  VarDecl* decl(int gen, int i);
+  VarDecl* decl(unsigned int gen, unsigned int i);
   /// Return declaration \a i for generator \a gen
-  const VarDecl* decl(int gen, int i) const;
+  const VarDecl* decl(unsigned int gen, unsigned int i) const;
   /// Return where clause for generator \a i
-  Expression* where(int i);
+  Expression* where(unsigned int i);
   /// Return where clause for generator \a i
-  const Expression* where(int i) const;
+  const Expression* where(unsigned int i) const;
   /// Return generator body
   Expression* e() const { return _e; }
   /// Set generator body
@@ -1000,14 +1000,14 @@ public:
   static const ExpressionId eid = E_ITE;
   /// Constructor
   ITE(const Location& loc, const std::vector<Expression*>& e_if_then, Expression* e_else);
-  int size() const { return static_cast<int>(_eIfThen.size() / 2); }
-  Expression* ifExpr(int i) { return _eIfThen[2 * i]; }
-  Expression* thenExpr(int i) { return _eIfThen[2 * i + 1]; }
+  unsigned int size() const { return static_cast<int>(_eIfThen.size() / 2); }
+  Expression* ifExpr(unsigned int i) { return _eIfThen[2 * i]; }
+  Expression* thenExpr(unsigned int i) { return _eIfThen[2 * i + 1]; }
   Expression* elseExpr() { return _eElse; }
-  const Expression* ifExpr(int i) const { return _eIfThen[2 * i]; }
-  const Expression* thenExpr(int i) const { return _eIfThen[2 * i + 1]; }
+  const Expression* ifExpr(unsigned int i) const { return _eIfThen[2 * i]; }
+  const Expression* thenExpr(unsigned int i) const { return _eIfThen[2 * i + 1]; }
   const Expression* elseExpr() const { return _eElse; }
-  void thenExpr(int i, Expression* e) { _eIfThen[2 * i + 1] = e; }
+  void thenExpr(unsigned int i, Expression* e) { _eIfThen[2 * i + 1] = e; }
   void elseExpr(Expression* e) { _eElse = e; }
   /// Recompute hash value
   void rehash();
@@ -1163,20 +1163,20 @@ public:
     return _u.oneArg->isUnboxedVal() || _u.oneArg->isTagged() ? 1 : _u.args->size();
   }
   /// Access argument \a i
-  Expression* arg(int i) const {
+  Expression* arg(unsigned int i) const {
     assert(i < argCount());
     if (_u.oneArg->isUnboxedVal() || _u.oneArg->isTagged()) {
-      assert(i == 0);
+      assert(i == 0U);
       return _u.oneArg->isUnboxedVal() ? _u.oneArg : _u.oneArg->untag();
     } else {
       return (*_u.args)[i];
     }
   }
   /// Set argument \a i
-  void arg(int i, Expression* e) {
+  void arg(unsigned int i, Expression* e) {
     assert(i < argCount());
     if (_u.oneArg->isUnboxedVal() || _u.oneArg->isTagged()) {
-      assert(i == 0);
+      assert(i == 0U);
       _u.oneArg = e->isUnboxedVal() ? e : e->tag();
     } else {
       (*_u.args)[i] = e;
@@ -1661,7 +1661,7 @@ public:
   Type rtype(EnvI& env, const std::vector<Type>& ta, bool strictEnums);
   /** \brief Compute expected type of argument \a n given argument types \a ta
    */
-  Type argtype(EnvI& env, const std::vector<Expression*>& ta, int n);
+  Type argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned int n);
 
   /// Return whether function is defined in the standard library
   bool fromStdLib() const { return _fromStdLib; };

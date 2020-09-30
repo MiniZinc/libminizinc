@@ -277,7 +277,7 @@ protected:
         sizeof(FunctionI)       // II_FUN
     };
     size_t ns;
-    switch (n->_id) {
+    switch (static_cast<int>(n->_id)) {
       case ASTNode::NID_FL:
         ns = static_cast<FreeListNode*>(n)->size;
         break;
@@ -430,7 +430,7 @@ void GC::Heap::mark() {
 #endif
 
   for (KeepAlive* e = _roots; e != nullptr; e = e->next()) {
-    if (((*e)() != nullptr) && (*e)()->_gcMark == 0) {
+    if (((*e)() != nullptr) && (*e)()->_gcMark == 0U) {
       Expression::mark((*e)());
 #if defined(MINIZINC_GC_STATS)
       gc_stats[(*e)()->_id].keepalive++;
@@ -463,7 +463,7 @@ void GC::Heap::mark() {
       prevWr->_n = nullptr;
       prevWr->_p = nullptr;
     }
-    if (((*wr)() != nullptr) && (*wr)()->_gcMark == 0) {
+    if (((*wr)() != nullptr) && (*wr)()->_gcMark == 0U) {
       wr->_e = nullptr;
       wr->_valid = false;
       fixPrev = true;
@@ -479,7 +479,7 @@ void GC::Heap::mark() {
   for (ASTNodeWeakMap* wr = _nodeWeakMaps; wr != nullptr; wr = wr->next()) {
     std::vector<ASTNode*> toRemove;
     for (auto n : wr->_m) {
-      if (n.first->_gcMark == 0 || n.second->_gcMark == 0) {
+      if (n.first->_gcMark == 0U || n.second->_gcMark == 0U) {
         toRemove.push_back(n.first);
       }
     }
@@ -519,8 +519,8 @@ void GC::Heap::sweep() {
       stats.first++;
       stats.total += ns;
 #endif
-      if (n->_gcMark == 0) {
-        switch (n->_id) {
+      if (n->_gcMark == 0U) {
+        switch (static_cast<int>(n->_id)) {
           case Item::II_FUN:
             static_cast<FunctionI*>(n)->ann().~Annotation();
             break;
@@ -535,7 +535,8 @@ void GC::Heap::sweep() {
             static_cast<VarDecl*>(n)->flat(nullptr);
             // fall through
           default:
-            if (n->_id >= ASTNode::NID_END + 1 && n->_id <= Expression::EID_END) {
+            if (n->_id >= static_cast<unsigned int>(ASTNode::NID_END) + 1 &&
+                n->_id <= static_cast<unsigned int>(Expression::EID_END)) {
               static_cast<Expression*>(n)->ann().~Annotation();
             }
         }
@@ -550,7 +551,7 @@ void GC::Heap::sweep() {
         stats.second++;
 #endif
         wholepage = false;
-        if (n->_id != ASTNode::NID_FL) {
+        if (n->_id != static_cast<unsigned int>(ASTNode::NID_FL)) {
           n->_gcMark = 0;
         }
       }

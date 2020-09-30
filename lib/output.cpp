@@ -197,8 +197,8 @@ void make_par(EnvI& env, Expression* e) {
     Decls(EnvI& env0) : env(env0) {}
     void vCall(Call& c) {
       if (c.id() == "format" || c.id() == "show" || c.id() == "showDzn" || c.id() == "showJSON") {
-        int enumId = c.arg(c.argCount() - 1)->type().enumId();
-        if (enumId != 0 && c.arg(c.argCount() - 1)->type().dim() != 0) {
+        unsigned int enumId = c.arg(c.argCount() - 1)->type().enumId();
+        if (enumId != 0U && c.arg(c.argCount() - 1)->type().dim() != 0) {
           const std::vector<unsigned int>& enumIds = env.getArrayEnum(enumId);
           enumId = enumIds[enumIds.size() - 1];
         }
@@ -375,9 +375,9 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e) {
         ClearAnnotations::run(nvi->e());
         nvi->e()->introduced(false);
         if (reallyFlat != nullptr) {
-          env.outputFlatVarOccurrences.addIndex(reallyFlat, env.output->size());
+          env.outputFlatVarOccurrences.addIndex(reallyFlat, static_cast<int>(env.output->size()));
         }
-        env.outputVarOccurrences.addIndex(nvi, env.output->size());
+        env.outputVarOccurrences.addIndex(nvi, static_cast<int>(env.output->size()));
         env.outputVarOccurrences.add(nvi->e(), ci);
         env.output->addItem(nvi);
 
@@ -1042,7 +1042,8 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
               }
             }
             if ((reallyFlat != nullptr) && env.outputFlatVarOccurrences.find(reallyFlat) == -1) {
-              env.outputFlatVarOccurrences.addIndex(reallyFlat, env.output->size());
+              env.outputFlatVarOccurrences.addIndex(reallyFlat,
+                                                    static_cast<int>(env.output->size()));
             }
           }
         } else {
@@ -1054,7 +1055,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
           }
         }
         make_par(env, vdi_copy->e());
-        env.outputVarOccurrences.addIndex(vdi_copy, env.output->size());
+        env.outputVarOccurrences.addIndex(vdi_copy, static_cast<int>(env.output->size()));
         CollectOccurrencesE ce(env.outputVarOccurrences, vdi_copy);
         top_down(ce, vdi_copy->e());
         env.output->addItem(vdi_copy);
@@ -1252,7 +1253,7 @@ void finalise_output(EnvI& e) {
             vd->type(vdt);
             vd->ti()->type(vdt);
           }
-          e.outputVarOccurrences.addIndex(item->cast<VarDeclI>(), i);
+          e.outputVarOccurrences.addIndex(item->cast<VarDeclI>(), static_cast<int>(i));
           CollectOccurrencesE ce(e.outputVarOccurrences, item);
           top_down(ce, vd);
         } break;

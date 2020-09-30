@@ -788,7 +788,7 @@ void EnvI::flatAddItem(Item* i) {
       auto* vd = i->cast<VarDeclI>();
       add_path_annotation(*this, vd->e());
       toAnnotate = vd->e()->e();
-      varOccurrences.addIndex(vd, _flat->size() - 1);
+      varOccurrences.addIndex(vd, static_cast<int>(_flat->size()) - 1);
       toAdd = vd->e();
       break;
     }
@@ -1273,13 +1273,13 @@ std::ostream& EnvI::dumpStack(std::ostream& os, bool errStack) {
   }
 
   ASTString curloc_f;
-  int curloc_l = -1;
+  unsigned int curloc_l = -1;
 
   if (lastError == 0 && !stack.empty() && stack[0]->untag()->isa<Id>()) {
     Expression* e = stack[0]->untag();
     ASTString newloc_f = e->loc().filename();
     if (!e->loc().isIntroduced()) {
-      int newloc_l = e->loc().firstLine();
+      unsigned int newloc_l = e->loc().firstLine();
       os << "  " << newloc_f << ":" << newloc_l << ":" << std::endl;
       os << "  in variable declaration " << *e << std::endl;
     }
@@ -1291,7 +1291,7 @@ std::ostream& EnvI::dumpStack(std::ostream& os, bool errStack) {
       if (e->loc().isIntroduced()) {
         continue;
       }
-      int newloc_l = e->loc().firstLine();
+      unsigned int newloc_l = e->loc().firstLine();
       if (newloc_f != curloc_f || newloc_l != curloc_l) {
         os << "  " << newloc_f << ":" << newloc_l << ":" << std::endl;
         curloc_f = newloc_f;
@@ -1426,7 +1426,7 @@ void populate_output(Env& env) {
             s << *idxset << ",";
           }
           Type t = vd_t;
-          vd_t.dim(dims->size());
+          vd_t.dim(static_cast<int>(dims->size()));
           vd_output->type(t);
           vd_output->ti(new TypeInst(Location().introduce(), vd_t, ranges));
         }
@@ -2793,7 +2793,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
 class ItemTimer {
 public:
   using TimingMap =
-      std::map<std::pair<ASTString, int>, std::chrono::high_resolution_clock::duration>;
+      std::map<std::pair<ASTString, unsigned int>, std::chrono::high_resolution_clock::duration>;
   ItemTimer(const Location& loc, TimingMap* tm)
       : _loc(loc), _tm(tm), _start(std::chrono::high_resolution_clock::now()) {}
 
@@ -2801,7 +2801,7 @@ public:
     if (_tm != nullptr) {
       std::chrono::high_resolution_clock::time_point end =
           std::chrono::high_resolution_clock::now();
-      int line = _loc.firstLine();
+      unsigned int line = _loc.firstLine();
       auto it = _tm->find(std::make_pair(_loc.filename(), line));
       if (it != _tm->end()) {
         it->second += end - _start;
@@ -2959,7 +2959,7 @@ void flatten(Env& e, FlatteningOptions opt) {
     // Flatten remaining redefinitions
     Model& m = *e.flat();
     int startItem = 0;
-    int endItem = m.size() - 1;
+    int endItem = static_cast<int>(m.size()) - 1;
 
     FunctionI* int_lin_eq;
     {
@@ -3568,7 +3568,7 @@ void flatten(Env& e, FlatteningOptions opt) {
       }
 
       startItem = endItem + 1;
-      endItem = m.size() - 1;
+      endItem = static_cast<int>(m.size()) - 1;
     }
 
     // Add redefinitions for output variables that may have been redefined since create_output
@@ -4067,7 +4067,7 @@ void oldflatzinc(Env& e) {
 
   EnvI& env = e.envi();
 
-  int msize = m->size();
+  unsigned int msize = m->size();
 
   // Predicate declarations of solver builtins
   std::unordered_set<Item*> globals;
