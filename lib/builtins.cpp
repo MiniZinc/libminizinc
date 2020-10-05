@@ -154,10 +154,10 @@ IntVal b_arg_min_bool(EnvI& env, Call* call) {
     throw ResultUndefinedError(env, al->loc(), "arg_min of empty array is undefined");
   }
   assert(al->dims() == 1);
-  for (int i = 0; i < al->size(); ++i) {
+  for (unsigned int i = 0; i < al->size(); i++) {
     bool val = eval_bool(env, (*al)[i]);
     if (!val) {
-      return i + al->min(0);
+      return IntVal(i) + al->min(0);
     }
   }
   return al->min(0);
@@ -169,10 +169,10 @@ IntVal b_arg_max_bool(EnvI& env, Call* call) {
     throw ResultUndefinedError(env, al->loc(), "arg_max of empty array is undefined");
   }
   assert(al->dims() == 1);
-  for (int i = 0; i < al->size(); ++i) {
+  for (unsigned int i = 0; i < al->size(); i++) {
     bool val = eval_bool(env, (*al)[i]);
     if (val) {
-      return i + al->min(0);
+      return IntVal(i) + al->min(0);
     }
   }
   return al->min(0);
@@ -185,15 +185,15 @@ IntVal b_arg_min_int(EnvI& env, Call* call) {
   }
   assert(al->dims() == 1);
   IntVal m = eval_int(env, (*al)[0]);
-  int m_idx = 0;
+  unsigned int m_idx = 0;
   for (unsigned int i = 1; i < al->size(); i++) {
     IntVal mi = eval_int(env, (*al)[i]);
     if (mi < m) {
       m = mi;
-      m_idx = static_cast<int>(i);
+      m_idx = i;
     }
   }
-  return m_idx + al->min(0);
+  return IntVal(m_idx) + al->min(0);
 }
 IntVal b_arg_max_int(EnvI& env, Call* call) {
   GCLock lock;
@@ -203,15 +203,15 @@ IntVal b_arg_max_int(EnvI& env, Call* call) {
   }
   assert(al->dims() == 1);
   IntVal m = eval_int(env, (*al)[0]);
-  int m_idx = 0;
+  unsigned int m_idx = 0;
   for (unsigned int i = 1; i < al->size(); i++) {
     IntVal mi = eval_int(env, (*al)[i]);
     if (mi > m) {
       m = mi;
-      m_idx = static_cast<int>(i);
+      m_idx = i;
     }
   }
-  return m_idx + al->min(0);
+  return IntVal(m_idx) + al->min(0);
 }
 IntVal b_arg_min_float(EnvI& env, Call* call) {
   GCLock lock;
@@ -221,15 +221,15 @@ IntVal b_arg_min_float(EnvI& env, Call* call) {
   }
   assert(al->dims() == 1);
   FloatVal m = eval_float(env, (*al)[0]);
-  int m_idx = 0;
+  unsigned int m_idx = 0;
   for (unsigned int i = 1; i < al->size(); i++) {
     FloatVal mi = eval_float(env, (*al)[i]);
     if (mi < m) {
       m = mi;
-      m_idx = static_cast<int>(i);
+      m_idx = i;
     }
   }
-  return m_idx + al->min(0);
+  return IntVal(m_idx) + al->min(0);
 }
 IntVal b_arg_max_float(EnvI& env, Call* call) {
   GCLock lock;
@@ -239,15 +239,15 @@ IntVal b_arg_max_float(EnvI& env, Call* call) {
   }
   assert(al->dims() == 1);
   FloatVal m = eval_float(env, (*al)[0]);
-  int m_idx = 0;
+  unsigned int m_idx = 0;
   for (unsigned int i = 1; i < al->size(); i++) {
     FloatVal mi = eval_float(env, (*al)[i]);
     if (mi > m) {
       m = mi;
-      m_idx = static_cast<int>(i);
+      m_idx = i;
     }
   }
-  return m_idx + al->min(0);
+  return IntVal(m_idx) + al->min(0);
 }
 
 IntVal b_abs_int(EnvI& env, Call* call) {

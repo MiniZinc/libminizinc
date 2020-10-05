@@ -1440,7 +1440,7 @@ bool NLFile::hasContinousVars() const { return !hasIntegerVars(); }
 // --- --- --- Counts
 
 /** Jacobian count. */
-int NLFile::jacobianCount() const { return _jacobianCount; }
+unsigned int NLFile::jacobianCount() const { return _jacobianCount; }
 
 /** Total number of variables. */
 unsigned int NLFile::varCount() const { return variables.size(); }
@@ -1494,7 +1494,7 @@ ostream& NLFile::printToStream(ostream& os) const {
     // Print the 'k' segment Maybe to adjust with the presence of 'J' segments
     os << "k" << (varCount() - 1)
        << "   # Cumulative Sum of non-zero in the jacobian matrix's (nbvar-1) columns." << endl;
-    int acc = 0;
+    unsigned int acc = 0;
     // Note stop before the last var. Total jacobian count is in the header.
     for (int i = 0; i < varCount() - 1; ++i) {
       string name = vnames[i];

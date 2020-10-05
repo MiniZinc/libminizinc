@@ -198,7 +198,7 @@ public:
   bool isInNLObjective = false;
 
   /** Number of occurrences in Jacobian. */
-  int jacobianCount = 0;
+  unsigned int jacobianCount = 0;
 
   /** The bound over this variable.
    *  Used when producing the unique 'b' segment of the NL file.

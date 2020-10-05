@@ -1270,9 +1270,6 @@ std::ostream& EnvI::dumpStack(std::ostream& os, bool errStack) {
     }
   }
 
-  ASTString curloc_f;
-  unsigned int curloc_l = -1;
-
   if (lastError == 0 && !stack.empty() && stack[0]->untag()->isa<Id>()) {
     Expression* e = stack[0]->untag();
     ASTString newloc_f = e->loc().filename();
@@ -1282,6 +1279,9 @@ std::ostream& EnvI::dumpStack(std::ostream& os, bool errStack) {
       os << "  in variable declaration " << *e << std::endl;
     }
   } else {
+    ASTString curloc_f;
+    long long int curloc_l = -1;
+
     for (int i = lastError - 1; i >= 0; i--) {
       Expression* e = stack[i]->untag();
       bool isCompIter = stack[i]->isTagged();
@@ -1289,7 +1289,7 @@ std::ostream& EnvI::dumpStack(std::ostream& os, bool errStack) {
       if (e->loc().isIntroduced()) {
         continue;
       }
-      unsigned int newloc_l = e->loc().firstLine();
+      auto newloc_l = static_cast<long long int>(e->loc().firstLine());
       if (newloc_f != curloc_f || newloc_l != curloc_l) {
         os << "  " << newloc_f << ":" << newloc_l << ":" << std::endl;
         curloc_f = newloc_f;

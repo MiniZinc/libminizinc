@@ -559,7 +559,7 @@ public:
   unsigned int bvCount() const;
 
   /** Accumulation of Jacobian counts. */
-  int jacobianCount() const;
+  unsigned int jacobianCount() const;
 
   // Ordering of constraints according to "hooking your solver"
   /*  Meaning of the names:
@@ -622,7 +622,7 @@ public:
   std::ostream& printToStream(std::ostream& o) const;
 
 private:
-  int _jacobianCount = 0;
+  unsigned int _jacobianCount = 0;
 };
 
 }  // End of NameSpace MiniZinc
