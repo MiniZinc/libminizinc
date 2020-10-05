@@ -193,6 +193,7 @@ class Error:
     def __init__(self, **kwargs):
         self.type = yaml.Undefined
         self.message = yaml.Undefined
+        self.regex = yaml.Undefined
 
         for key, value in kwargs.items():
             setattr(self, key, value)
@@ -212,6 +213,9 @@ class Error:
 
         if self.message is not yaml.Undefined:
             return self.message == str(actual)
+
+        if self.regex is not yaml.Undefined:
+            return re.match(self.regex, str(actual), flags=re.M | re.S) is not None
 
         return True
 

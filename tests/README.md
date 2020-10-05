@@ -115,6 +115,8 @@ expected: # The obtained result must match one of these
       whitespace ignored 
 - !Error
   type: MiniZincError # Name of the error type
+  message: Exact error message # Exact error message string (avoid using this as it's generally not portable)
+  regex: .*type-inst must be par set.* # Regex the start of the string must match (run with M and S flags)
 ```
 
 For a test to pass, at least one expected result must be a subset of the obtained result. That is, the obtained result can have more attributes, but not less, and corresponding attributes must match.
