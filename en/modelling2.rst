@@ -838,7 +838,7 @@ colored blue.
 
   There are a number of built in operations on enumerated types:
 
-  - :mzn:`enum_next(X,x)`: returns the next value in after :mzn:`x` in the
+  - :mzn:`enum_next(X,x)`: returns the next value after :mzn:`x` in the
     enumerated type :mzn:`X`. This is a partial function, if :mzn:`x` is the last value in
     the enumerated type :mzn:`X` then the function returns :math:`\bot` causing the Boolean
     expression containing the expression to evaluate to :mzn:`false`.
@@ -855,6 +855,30 @@ colored blue.
   - :mzn:`card(X)`: returns the cardinality of an enumerated type :mzn:`X`.
   - :mzn:`min(X)`: returns the minimum element of of an enumerated type :mzn:`X`.
   - :mzn:`max(X)`: returns the maximum element of of an enumerated type :mzn:`X`.
+
+It is often useful to define an enumerated type by *extending* another enumerated type. A good example for this is adding a "don't care" value to a type. For instance, consider a typical assignment problem, where we have to assign chores to flatmates. The names of the flatmates are given as an enumerated type :mzn:`Flatmates`, and the chores as an enumerated type :mzn:`Chores`. 
+
+In the case where not every flatmate needs to be assigned a job, and not every chore needs to be assigned to a flatmate, we need to introduce a value that signals "no assignment". We can then use the :mzn:`alldifferent_except` constraint to constrain the assignment. 
+
+.. literalinclude:: examples/assignment-extend-enum.mzn
+  :language: minizinc
+  :name: ex-assignment-extend-enum
+  :caption: Model for an assignment problem using extended enumerated types (:download:`assignment-extend-enum.mzn <examples/assignment-extend-enum.mzn>`).
+
+The model is shown in :numref:`ex-assignment-extend-enum`. It introduces a new enumerated type :mzn:`ChoreOrNothing`, which is a combination of the :mzn:`Chores` type and a new constructor :mzn:`Nothing`. The :mzn:`Chores` type is *injected* into the new type via a *constructor function*. In this case, we chose the name :mzn:`C` for the constructor function, but you can use any valid identifier you like. The constructor function can then be used to coerce a value of type :mzn:`Chores` into a value of the new type :mzn:`ChoreOrNothing`. For example, we could write a constraint such as
+
+.. code-block:: minizinc
+
+  constraint assignment[Bert] = C(Vacuuming);
+
+This is required because the type :mzn:`ChoreOrNothing` is considered different from the type :mzn:`Chores` by the compiler, in order to avoid any ambiguities or accidental type conversions. The compiler also generates inverses of all constructor functions, to map back from the extended types into the base types. This can be seen in the output item, where :mzn:`C^-1` is used to map from :mzn:`ChoreOrNothing` back to :mzn:`Chores`. The inverse function can be written as ASCII using the :mzn:`^-1` notation, or using the unicode symbols :mzn:`⁻¹`, as in :mzn:`C⁻¹`.
+
+In the example above, we could have used option types, instead of adding a new value that acts essentially like the absent value :mzn:`<>`. However, extended enum types have some advantages in this scenario. For example, we can extend a type by multiple extra values (say, different reasons for not being assigned any chore). We can also combine multiple enumerated types into one. Consider the scenario in :numref:`ex-assignment-combine-enums` where we can assign chores to flatmates and/or robots. Flatmates have preferences for certain chores, while robots have integer benefits. The model also shows how to test if a value of the extended enum in fact belongs to the underlying enum: In the output item, the test :mzn:`w in F(Flatmates)` uses the :mzn:`F` constructor to translate the set :mzn:`Flatmates` into the :mzn:`Worker` type, which enables the use of the :mzn:`in` operator.
+
+.. literalinclude:: examples/assignment-combine-enums.mzn
+  :language: minizinc
+  :name: ex-assignment-combine-enums
+  :caption: Model for an assignment problem using combined enumerated types (:download:`assignment-combine-enums.mzn <examples/assignment-combine-enums.mzn>`).
 
 
 .. _sec-complex:
