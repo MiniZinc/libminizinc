@@ -198,6 +198,9 @@ public:
   /// Location used for un-allocated expressions
   static Location nonalloc;
 
+  /// Return true if this is a location for an unallocated expression
+  bool isNonAlloc() const { return this == &Location::nonalloc; }
+
   ParserLocation parserLocation() const {
     return ParserLocation(filename(), firstLine(), firstColumn(), lastLine(), lastColumn());
   }
