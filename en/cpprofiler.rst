@@ -1,3 +1,5 @@
+.. _ch-cp-profiler:
+
 CP-Profiler
 ================
 
@@ -18,125 +20,6 @@ To display the execution (traditional visualisation), select its name from the l
 .. image:: figures/cpprofiler/doc_conductor.png
   :alt: Profiler Conductor
 
-The protocol (high level)
--------------------------
-
-The following describes the protocol that a solver must implement to communicate with the profiler.
-
-The protocol distinguishes between the following types of messages: **Start**, **Restart**, **Done**, and **Node**.
-
-The **Start** message is sent at the beginning of the execution.
-The message has two optional parameters:
-
-- ``Name``: execution's descriptor to be presented to the user (e.g. the model's name)
-- ``Execution ID``: globally unique identifier used to distinguish between different executions.
-
-The **Restart** message is sent whenever a solver performs a restart in case of a restart-based search.
-
-The **Done** message is sent to the profiler at the end of the execution to indicate that no further nodes should be expected.
-
-The **Node** message is sent whenever a new node is explored by the solver and contains information necessary for reconstructing the search tree. The required parameters are:
-
-- ``Node ID``: unique node identifier in the execution.
-- ``Parent ID``: the identifier (``Node ID``) of the parent node. A root node can have an identifier of `-1`.
-- ``Alternative``: the node's position relative to its siblings; for the left-most child it is ``0``, for the second left-most it is ``1`` etc.
-- ``Number of Children``: the number of children nodes. If not known, can be set to ``0`` and the node will be extended with extra children later on if necessary.It is, however, advisable to specify the number of children the profiler should expect (for example, the yet to arrive nodes can be visualised to give a better idea about the search).
-- ``Status``: allows to distinguish between different types of nodes. Supported values are:
-     - *BRANCH*: internal node in the tree;
-     - *SOLUTION*: leaf node representing a solution;
-     - *FAILURE*: leaf node representing a failure;
-     - *SKIPPED*: leaf node representing unexplored search space due to backjumping.
-
-**Example**. The following sequence of nodes (excluding the `Start` and `Done` messages) produces the simple tree with three nodes:
-
-========= ===========  =============  ===============  ======================  ==========
-``Label`` ``Node ID``  ``Parent ID``  ``Alternative``  ``Number of Children``  ``Status`` 
-========= ===========  =============  ===============  ======================  ==========
-   Root        0           -1            -1                 2                    BRANCH  
-  Failure      1           0             0                  0                    FAILED  
- Solution      2           0             1                  0                    SOLVED  
-========= ===========  =============  ===============  ======================  ==========
-
-
-The protocol (low level)
-------------------------
-
-Each message starts with a four-byte integer encoding the size of the remainder of the message in bytes. This is followed by a single byte encoding the type of the message. The corresponding values are: ``Node``: ``0``, ``Done``: ``1``, ``Start``: ``2``, ``Restart``: ``3``.
-
-**Node message**
-
-In case the message is of the type ``Node``, the following fields are added in order: ``id``, ``pid``, ``alt``, ``children`` and ``status``.
-
-Node identifiers ``id`` and ``pid`` are represented using three four-byte integers: first identifies the identifier of the node within a thread, the second — the identifier of the restart (in a restart-based search), and the third — the identifier of the thread.
-The ``alt`` and ``children`` fields are represented by a single four byte integer each.
-The ``status`` field is represented by a single byte; its possible values are: *SOLVED*: 0, *FAILED*: 1, *BRANCH*: 2, *SKIPPED*: 3.
-All multi-byte integer values are encoded using the *two's compliment* notation in the *big-endian order*.
-
-Additionally, each node message can contain the following optional fields:
-  - ``label``: branching decision (or any arbitrary string to be drawn together with the node);
-  - ``nogood``: string representation of a newly generated nogood in a learning solver;
-  - ``info``: arbitrary information about the node.
-
-Field identifiers and their sizes in bytes:
-
-  ============   ========   ============
-  field name     field id   size (bytes)
-  ============   ========   ============
-    ``id``        n/a         12      
-    ``pid``       n/a         12      
-    ``alt``       n/a          4      
-  ``children``     n/a          4      
-   ``status``      n/a          1      
-    ``label``       0          any     
-   ``nogood``       1          any     
-    ``info``        2          any     
-
-  ============   ========   ============
-
-**Example**. The following is a possible correspondence between a solver and the profiler that generates a trivial tree. The order in which different fields arrive is shown from top to bottom (rows are numbered for convenience).
-
-*Message 1:*
-
-
-====== ====================================================================================== =============================
- Row    Bytes                                                                                 Interpretation           
-====== ====================================================================================== =============================  
- 1      ``00 00 00 21``                                                                       message size (33)             
- 2      ``02``                                                                                message type (*START*)        
- 3      ``02``                                                                                field (*info*)                
- 4      ``00 00 00 1B``                                                                       string size (27)              
- 5      ``7b 22 6e 61 6d 65 22 3a 20 22 6d 69 6e 69 6d 61 6c 20 65 78 61 6d 70 6c 65 22 7d``  '{"name": "minimal example"}' 
-====== ====================================================================================== =============================
-
-*Message 2:*
-
-===== =============== ========================
- Row  Bytes           Interpretation          
-===== =============== ========================
- 6    ``00 00 00 2B``  message size (43)       
- 7    ``00``           message type (**NODE**) 
- 8    ``00 00 00 00``  node id (0)             
- 9    ``FF FF FF FF``  node restart id (-1)    
- 10   ``FF FF FF FF``  node thread id (-1)     
- 11   ``FF FF FF FF``  parent id (-1)          
- 12   ``FF FF FF FF``  parent restart id (-1)  
- 13   ``FF FF FF FF``  parent thread id (-1)   
- 14   ``FF FF FF FF``  alternative (-1)        
- 15   ``00 00 00 02``  children (2)            
- 16   ``02``           status (*BRANCH*)       
- 17   ``00``           field (label)           
- 18   ``00 00 00 04``  string size (4)         
- 19   ``52 6f 6f 74``  'Root'                  
-===== =============== ========================
-
-*Message 3:*
-
-===== =============== ========================
- Row  Bytes           Interpretation          
-===== =============== ========================
- 20   ``00 00 00 01``  message size (1)        
- 21   ``01``           message type (**DONE**) 
-===== =============== ========================
 
 Traditional Tree Visualisation
 ------------------------------
@@ -280,7 +163,7 @@ Note that in this example the second (from the top) pattern is currently selecte
 The view on the right shows a "preview" (traditional visualisation) of one of the subtrees representing the selected pattern.
 The two rows below the show the result of computing the difference in labels on the path from the root to two of the subtrees representing the pattern (in this case it is the first two subtrees encountered when the tree is traversed in the depth-first-search order).
 
-.. image:: https://bitbucket.org/Msgmaxim/cp-profiler2/raw/dec396e2537294be8cdf18b9594441ac710e937b/docs/images/doc_ss_analysis_hist.png
+.. image:: figures/cpprofiler/doc_ss_analysis_hist.png
   :alt: Similar Subtree Analysis Summary
 
 TODO: discuss the two criteria
@@ -291,7 +174,7 @@ They way the length of horizontal bars is determined and the sorting criteria ca
 Whenever a pattern on the left hand side is selected, the corresponding subtrees will be highlighted on the traditional visualisation by drawing their outlines in grey.
 Additionally, if the option *Hide not selected* is enabled (top of the window), everything but the subtrees of the current pattern will be collapsed as shown in this example.
 
-.. image:: https://bitbucket.org/Msgmaxim/cp-profiler2/raw/dec396e2537294be8cdf18b9594441ac710e937b/docs/images/doc_ss_analysis.png
+.. image:: figures/cpprofiler/doc_ss_analysis.png
   :alt: Similar Subtrees Highlighted
 
 **Elimination of Subsumed Patterns**
@@ -396,6 +279,126 @@ The sorting criteria can be changed by clicking on corresponding column headers.
 
 This result can be saved to a file (by clicking the **Save Nogoods** button) for further examination.
 Each row in the resulting file will correspond to one nogood, and the tab character (``\t``)  will separate different columns.
+
+The protocol (high level)
+-------------------------
+
+The following describes the protocol that a solver must implement to communicate with the profiler.
+
+The protocol distinguishes between the following types of messages: **Start**, **Restart**, **Done**, and **Node**.
+
+The **Start** message is sent at the beginning of the execution.
+The message has two optional parameters:
+
+- ``Name``: execution's descriptor to be presented to the user (e.g. the model's name)
+- ``Execution ID``: globally unique identifier used to distinguish between different executions.
+
+The **Restart** message is sent whenever a solver performs a restart in case of a restart-based search.
+
+The **Done** message is sent to the profiler at the end of the execution to indicate that no further nodes should be expected.
+
+The **Node** message is sent whenever a new node is explored by the solver and contains information necessary for reconstructing the search tree. The required parameters are:
+
+- ``Node ID``: unique node identifier in the execution.
+- ``Parent ID``: the identifier (``Node ID``) of the parent node. A root node can have an identifier of `-1`.
+- ``Alternative``: the node's position relative to its siblings; for the left-most child it is ``0``, for the second left-most it is ``1`` etc.
+- ``Number of Children``: the number of children nodes. If not known, can be set to ``0`` and the node will be extended with extra children later on if necessary.It is, however, advisable to specify the number of children the profiler should expect (for example, the yet to arrive nodes can be visualised to give a better idea about the search).
+- ``Status``: allows to distinguish between different types of nodes. Supported values are:
+     - *BRANCH*: internal node in the tree;
+     - *SOLUTION*: leaf node representing a solution;
+     - *FAILURE*: leaf node representing a failure;
+     - *SKIPPED*: leaf node representing unexplored search space due to backjumping.
+
+**Example**. The following sequence of nodes (excluding the `Start` and `Done` messages) produces the simple tree with three nodes:
+
+========= ===========  =============  ===============  ======================  ==========
+``Label`` ``Node ID``  ``Parent ID``  ``Alternative``  ``Number of Children``  ``Status`` 
+========= ===========  =============  ===============  ======================  ==========
+   Root        0           -1            -1                 2                    BRANCH  
+  Failure      1           0             0                  0                    FAILED  
+ Solution      2           0             1                  0                    SOLVED  
+========= ===========  =============  ===============  ======================  ==========
+
+
+The protocol (low level)
+------------------------
+
+Each message starts with a four-byte integer encoding the size of the remainder of the message in bytes. This is followed by a single byte encoding the type of the message. The corresponding values are: ``Node``: ``0``, ``Done``: ``1``, ``Start``: ``2``, ``Restart``: ``3``.
+
+**Node message**
+
+In case the message is of the type ``Node``, the following fields are added in order: ``id``, ``pid``, ``alt``, ``children`` and ``status``.
+
+Node identifiers ``id`` and ``pid`` are represented using three four-byte integers: first identifies the identifier of the node within a thread, the second — the identifier of the restart (in a restart-based search), and the third — the identifier of the thread.
+The ``alt`` and ``children`` fields are represented by a single four byte integer each.
+The ``status`` field is represented by a single byte; its possible values are: *SOLVED*: 0, *FAILED*: 1, *BRANCH*: 2, *SKIPPED*: 3.
+All multi-byte integer values are encoded using the *two's compliment* notation in the *big-endian order*.
+
+Additionally, each node message can contain the following optional fields:
+  - ``label``: branching decision (or any arbitrary string to be drawn together with the node);
+  - ``nogood``: string representation of a newly generated nogood in a learning solver;
+  - ``info``: arbitrary information about the node.
+
+Field identifiers and their sizes in bytes:
+
+  ============   ========   ============
+  field name     field id   size (bytes)
+  ============   ========   ============
+    ``id``        n/a         12      
+    ``pid``       n/a         12      
+    ``alt``       n/a          4      
+  ``children``     n/a          4      
+   ``status``      n/a          1      
+    ``label``       0          any     
+   ``nogood``       1          any     
+    ``info``        2          any     
+
+  ============   ========   ============
+
+**Example**. The following is a possible correspondence between a solver and the profiler that generates a trivial tree. The order in which different fields arrive is shown from top to bottom (rows are numbered for convenience).
+
+*Message 1:*
+
+
+====== ====================================================================================== =============================
+ Row    Bytes                                                                                 Interpretation           
+====== ====================================================================================== =============================  
+ 1      ``00 00 00 21``                                                                       message size (33)             
+ 2      ``02``                                                                                message type (*START*)        
+ 3      ``02``                                                                                field (*info*)                
+ 4      ``00 00 00 1B``                                                                       string size (27)              
+ 5      ``7b 22 6e 61 6d 65 22 3a 20 22 6d 69 6e 69 6d 61 6c 20 65 78 61 6d 70 6c 65 22 7d``  '{"name": "minimal example"}' 
+====== ====================================================================================== =============================
+
+*Message 2:*
+
+===== =============== ========================
+ Row  Bytes           Interpretation          
+===== =============== ========================
+ 6    ``00 00 00 2B``  message size (43)       
+ 7    ``00``           message type (**NODE**) 
+ 8    ``00 00 00 00``  node id (0)             
+ 9    ``FF FF FF FF``  node restart id (-1)    
+ 10   ``FF FF FF FF``  node thread id (-1)     
+ 11   ``FF FF FF FF``  parent id (-1)          
+ 12   ``FF FF FF FF``  parent restart id (-1)  
+ 13   ``FF FF FF FF``  parent thread id (-1)   
+ 14   ``FF FF FF FF``  alternative (-1)        
+ 15   ``00 00 00 02``  children (2)            
+ 16   ``02``           status (*BRANCH*)       
+ 17   ``00``           field (label)           
+ 18   ``00 00 00 04``  string size (4)         
+ 19   ``52 6f 6f 74``  'Root'                  
+===== =============== ========================
+
+*Message 3:*
+
+===== =============== ========================
+ Row  Bytes           Interpretation          
+===== =============== ========================
+ 20   ``00 00 00 01``  message size (1)        
+ 21   ``01``           message type (**DONE**) 
+===== =============== ========================
 
 .. [1] Burch, M. et al., "Indented Pixel Tree Plots", 2010.
 .. [2] Kruskal, J. B. et al., "Icicle Plots: Better Displays for Hierarchical Clustering", 1983.

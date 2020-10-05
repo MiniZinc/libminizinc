@@ -119,6 +119,7 @@ For the Magic Series puzzle from :numref:`ex-magic-series2`, profiling using the
 
     Profiling results for the Magic Series problem (``n=10``)
 
+In addition to the simple statistics output, the IDE also ships an experimental integration of the CP-Profiler tool. This tool provides profiling information of the actual solving process. Since this requires integration with the backend solver, this is only available for a small number of solvers at the moment. See :numref:`ch-cp-profiler` for more details.
 
 .. _ch-ide-projects:
 
