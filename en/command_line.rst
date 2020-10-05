@@ -521,10 +521,10 @@ Command-line Parameter Files
 ----------------------------
 
 The ``minizinc`` tool is able to read command line options from one or more JSON files through use of the ``--param-file`` option.
-This option may be specified multiple times, and substitutes the options given in the JSON file in its place, meaning it can be combined with normal command-line options, as well as other ``--param-file``s.
+This option may be specified multiple times, and substitutes the options given in the JSON file in its place, meaning it can be combined with normal command-line options, as well as other ``--param-file`` configurations.
 MiniZinc also recognises the ``.mpc`` file extension for command line parameter files without requiring the ``--param-file`` option.
 
-As most ``minizinc`` options which take a single value are given the final one they are assigned, generally, later specifications of command-line parameter files will override options contained in previous ones, and later command-line options will override previous options.
+As most ``minizinc`` options which take a single value are given the final one they are assigned, later specifications of command-line parameter files will generally override options contained in previous ones, and later command-line options will override previous options.
 
 The given file must be in JSON format and contain a root object whose keys and values correspond to command line options and their values respectively.
 For long-form options which start with two dashes, the leading dashes may be omitted from the JSON object key name.
