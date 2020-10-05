@@ -382,10 +382,10 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
         /*
          function X: C(E: x) = to_enum(X,partCardinality.back()+x)
          function var X: C(var E: x) = to_enum(X,partCardinality.back()+x)
-         function opt X: C(opt E: x) = to_enum(X,partCardinality.back()+x)
-         function var opt X: C(var opt E: x) = to_enum(X,partCardinality.back()+x)
+         function opt X: C(opt E: x) = if occurs(x) then C(deopt(x)) else to_enum(x,<>) endif
+         function var opt X: C(var opt E: x) = if occurs(x) then C(deopt(x)) else to_enum(x,<>)
+         endif
          */
-        // TODO: also generate var and opt versions
         {
           Type Xt = Type::parint();
           Xt.enumId(enumId);
@@ -406,12 +406,78 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           env.reverseEnum[Cfn_id] = Cfn;
           enumItems->addItem(Cfn);
         }
+        {
+          Type Xt = Type::varint();
+          Xt.enumId(enumId);
+          auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
+          Type argT = Type::varint();
+          auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, otherEnumId);
+          auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
+          vd_x->toplevel(false);
+          Expression* realX;
+          if (partCardinality.empty()) {
+            realX = vd_x->id();
+          } else {
+            realX = new BinOp(Location().introduce(), partCardinality.back(), BOT_PLUS, vd_x->id());
+          }
+          Call* Cfn_body = new Call(Location().introduce(), "to_enum", {vd->id(), realX});
+
+          std::string Cfn_id(c->id().c_str());
+          auto* Cfn = new FunctionI(Location().introduce(), Cfn_id, Cfn_ti, {vd_x}, Cfn_body);
+          enumItems->addItem(Cfn);
+        }
+        {
+          Type Xt = Type::parint();
+          Xt.ot(Type::OT_OPTIONAL);
+          Xt.enumId(enumId);
+          auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
+          Type argT = Type::parint();
+          argT.ot(Type::OT_OPTIONAL);
+          auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, otherEnumId);
+          auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
+          std::string Cfn_id(c->id().c_str());
+          vd_x->toplevel(false);
+          Call* occurs = new Call(Location().introduce(), "occurs", {vd_x->id()});
+          Call* deopt = new Call(Location().introduce(), "deopt", {vd_x->id()});
+          Call* inv = new Call(Location().introduce(), Cfn_id, {deopt});
+          Call* toEnumAbsent =
+              new Call(Location().introduce(), "to_enum", {vd->id(), constants().absent});
+          ITE* ite = new ITE(Location().introduce(), {occurs, inv}, toEnumAbsent);
+          auto* Cfn = new FunctionI(Location().introduce(), Cfn_id, Cfn_ti, {vd_x}, ite);
+          enumItems->addItem(Cfn);
+        }
+        {
+          Type Xt = Type::varint();
+          Xt.ot(Type::OT_OPTIONAL);
+          Xt.enumId(enumId);
+          auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
+          Type argT = Type::varint();
+          argT.ot(Type::OT_OPTIONAL);
+          auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, otherEnumId);
+          auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
+          std::string Cfn_id(c->id().c_str());
+          vd_x->toplevel(false);
+          Call* occurs = new Call(Location().introduce(), "occurs", {vd_x->id()});
+          Call* deopt = new Call(Location().introduce(), "deopt", {vd_x->id()});
+          Call* toEnumAbsent =
+              new Call(Location().introduce(), "to_enum", {vd->id(), constants().absent});
+          Call* inv = new Call(Location().introduce(), Cfn_id, {deopt});
+          ITE* ite = new ITE(Location().introduce(), {occurs, inv}, toEnumAbsent);
+          auto* Cfn = new FunctionI(Location().introduce(), Cfn_id, Cfn_ti, {vd_x}, ite);
+          enumItems->addItem(Cfn);
+        }
         /*
-         function E: C_inv(X: x) = to_enum(E,x-partCardinality.back())
+         function E: C⁻¹(X: x) = to_enum(E,x-partCardinality.back())
+         function var E: C⁻¹(var X: x) = to_enum(E,x-partCardinality.back())
+         function opt E: C⁻¹(opt X: x) = if occurs(x) then C⁻¹(deopt(x)) else to_enum(x,<>) endif
+         function var opt E: C⁻¹(var opt X: x) = if occurs(x) then C⁻¹(deopt(x)) else to_enum(x,<>)
+         endif
          */
         {
           auto* toEfn_ti = new TypeInst(Location().introduce(), Type(), otherEnumId);
-          auto* toEfn_x_ti = new TypeInst(Location().introduce(), Type(), vd->id());
+          Type Xt = Type::parint();
+          Xt.enumId(enumId);
+          auto* toEfn_x_ti = new TypeInst(Location().introduce(), Xt, vd->id());
           auto* vd_x = new VarDecl(Location().introduce(), toEfn_x_ti, "x");
           vd_x->toplevel(false);
           Expression* realX;
@@ -423,9 +489,73 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           }
           Call* toEfn_body = new Call(Location().introduce(), "to_enum", {otherEnumId, realX});
 
-          auto* toEfn = new FunctionI(Location().introduce(), std::string(c->id().c_str()) + "⁻¹",
-                                      toEfn_ti, {vd_x}, toEfn_body);
+          std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
+          auto* toEfn =
+              new FunctionI(Location().introduce(), Cinv_id, toEfn_ti, {vd_x}, toEfn_body);
           enumItems->addItem(toEfn);
+        }
+        {
+          Type rT;
+          rT.ti(Type::TI_VAR);
+          auto* toEfn_ti = new TypeInst(Location().introduce(), rT, otherEnumId);
+          Type Xt = Type::varint();
+          Xt.enumId(enumId);
+          auto* toEfn_x_ti = new TypeInst(Location().introduce(), Xt, vd->id());
+          auto* vd_x = new VarDecl(Location().introduce(), toEfn_x_ti, "x");
+          vd_x->toplevel(false);
+          Expression* realX;
+          if (partCardinality.empty()) {
+            realX = vd_x->id();
+          } else {
+            realX =
+                new BinOp(Location().introduce(), vd_x->id(), BOT_MINUS, partCardinality.back());
+          }
+          Call* toEfn_body = new Call(Location().introduce(), "to_enum", {otherEnumId, realX});
+
+          std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
+          auto* toEfn =
+              new FunctionI(Location().introduce(), Cinv_id, toEfn_ti, {vd_x}, toEfn_body);
+          enumItems->addItem(toEfn);
+        }
+        {
+          Type rt = Type::parint();
+          rt.ot(Type::OT_OPTIONAL);
+          rt.enumId(enumId);
+          auto* Cfn_ti = new TypeInst(Location().introduce(), rt, vd->id());
+          Type argT = Type::parint();
+          argT.ot(Type::OT_OPTIONAL);
+          auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, otherEnumId);
+          auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
+          std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
+          vd_x->toplevel(false);
+          Call* occurs = new Call(Location().introduce(), "occurs", {vd_x->id()});
+          Call* deopt = new Call(Location().introduce(), "deopt", {vd_x->id()});
+          Call* inv = new Call(Location().introduce(), Cinv_id, {deopt});
+          Call* toEnumAbsent =
+              new Call(Location().introduce(), "to_enum", {vd->id(), constants().absent});
+          ITE* ite = new ITE(Location().introduce(), {occurs, inv}, toEnumAbsent);
+          auto* Cfn = new FunctionI(Location().introduce(), Cinv_id, Cfn_ti, {vd_x}, ite);
+          enumItems->addItem(Cfn);
+        }
+        {
+          Type rt = Type::varint();
+          rt.ot(Type::OT_OPTIONAL);
+          rt.enumId(enumId);
+          auto* Cfn_ti = new TypeInst(Location().introduce(), rt, vd->id());
+          Type argT = Type::varint();
+          argT.ot(Type::OT_OPTIONAL);
+          auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, otherEnumId);
+          auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
+          std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
+          vd_x->toplevel(false);
+          Call* occurs = new Call(Location().introduce(), "occurs", {vd_x->id()});
+          Call* deopt = new Call(Location().introduce(), "deopt", {vd_x->id()});
+          Call* inv = new Call(Location().introduce(), Cinv_id, {deopt});
+          Call* toEnumAbsent =
+              new Call(Location().introduce(), "to_enum", {vd->id(), constants().absent});
+          ITE* ite = new ITE(Location().introduce(), {occurs, inv}, toEnumAbsent);
+          auto* Cfn = new FunctionI(Location().introduce(), Cinv_id, Cfn_ti, {vd_x}, ite);
+          enumItems->addItem(Cfn);
         }
 
         /*
