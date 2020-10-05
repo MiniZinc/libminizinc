@@ -1,14 +1,11 @@
 # Main test config template
 .tests:
   stage: test
-  interruptible: true
   variables:
     PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
     MZN_SOLVER_PATH: "$CI_PROJECT_DIR/vendor/chuffed/share/minizinc/solvers/:$CI_PROJECT_DIR/vendor/gecode"
   before_script:
-    - curl --location --header "PRIVATE-TOKEN:$ACCESS_TOKEN" --silent https://gitlab.com/api/v4/snippets/1796163/raw | tr -d '\r' > download.sh
-    - sh download.sh vendor master bundle:${MZNARCH} vendor.zip
-    - unzip -q vendor.zip
+    - *download_vendor
     # TODO: Add gecode configuration to the Gecode solver
     - "echo '{\"id\":\"org.gecode.gecode\",\"name\":\"Gecode\",\"description\":\"Gecode FlatZinc executable\",\"version\":\"6.1.1\",\"mznlib\":\"share/gecode/mznlib\",\"executable\":\"bin/fzn-gecode\",\"tags\":[\"cp\",\"int\",\"float\",\"set\",\"restart\"],\"stdFlags\":[\"-a\",\"-f\",\"-n\",\"-p\",\"-r\",\"-s\",\"-t\"],\"extraFlags\":[[\"-c-d\",\"Recomputation commit distance\",\"int\",\"8\"],[\"-a-d\",\"Recomputation adaption distance\",\"int\",\"2\"],[\"-decay\",\"Decay factor\",\"float\",\"0.99\"],[\"-node\",\"Node cutoff\",\"int\",\"0\"],[\"-fail\",\"Failure cutoff\",\"int\",\"0\"],[\"-restart\",\"Restart sequence type\",\"opt:none:constant:linear:luby:geometric\",\"none\"],[\"-restart-base\",\"Base for geometric restart sequence\",\"float\",\"1.5\"],[\"-restart-scale\",\"Scale factor for restart sequence\",\"int\",\"250\"],[\"-nogoods\",\"Use no-goods from restarts\",\"bool\",\"false\"],[\"-nogoods-limit\",\"Depth limit for no-good extraction\",\"int\",\"128\"]],\"supportsMzn\":false,\"supportsFzn\":true,\"needsSolns2Out\":true,\"needsMznExecutable\":false,\"needsStdlibDir\":false,\"isGUIApplication\":false}' > vendor/gecode/gecode.msc"
     - export PATH=$CI_PROJECT_DIR/minizinc/bin:$PATH
@@ -56,10 +53,7 @@
     MZNARCH: "win64"
     MZN_SOLVER_PATH: "$CI_PROJECT_DIR/vendor/chuffed/share/minizinc/solvers;$CI_PROJECT_DIR/vendor/gecode"
   before_script:
-    - curl -o download.sh --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" --silent https://gitlab.com/api/v4/snippets/1796163/raw
-    - dos2unix download.sh
-    - sh download.sh vendor master bundle:%MZNARCH% vendor.zip
-    - unzip -q vendor.zip
+    - *download_vendor_win
     # TODO: Add gecode configuration to the Gecode solver
     - 'echo {"id":"org.gecode.gecode","name":"Gecode","description":"Gecode FlatZinc executable","version":"6.1.1","mznlib":"share/gecode/mznlib","executable":"bin/fzn-gecode","tags":["cp","int","float","set","restart"],"stdFlags":["-a","-f","-n","-p","-r","-s","-t"],"extraFlags":[["-c-d","Recomputation commit distance","int","8"],["-a-d","Recomputation adaption distance","int","2"],["-decay","Decay factor","float","0.99"],["-node","Node cutoff","int","0"],["-fail","Failure cutoff","int","0"],["-restart","Restart sequence type","opt:none:constant:linear:luby:geometric","none"],["-restart-base","Base for geometric restart sequence","float","1.5"],["-restart-scale","Scale factor for restart sequence","int","250"],["-nogoods","Use no-goods from restarts","bool","false"],["-nogoods-limit","Depth limit for no-good extraction","int","128"]],"supportsMzn":false,"supportsFzn":true,"needsSolns2Out":true,"needsMznExecutable":false,"needsStdlibDir":false,"isGUIApplication":false} > vendor/gecode/gecode.msc'
     - set PATH=%CI_PROJECT_DIR%/minizinc/bin;%PATH%
