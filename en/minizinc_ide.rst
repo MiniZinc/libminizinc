@@ -66,7 +66,7 @@ Selecting one of the built-in solvers from the drop-down menu activates its defa
 .. _fig-solver-conf:
 
 .. figure:: figures/solver-configuration.jpg
-    :figwidth: 700px
+    :width: 400px
   
     The solver configuration window
 
@@ -115,7 +115,7 @@ For the Magic Series puzzle from :numref:`ex-magic-series2`, profiling using the
 .. _fig-profile-magic-series:
 
 .. figure:: figures/magic-series-profiling.jpg
-    :figwidth: 600px
+    :width: 600px
 
     Profiling results for the Magic Series problem (``n=10``)
 
@@ -132,7 +132,7 @@ You can open a new project by selecting the *New project* option from the *File*
 .. _fig-project-explorer:
 
 .. figure:: figures/ide-project-explorer.jpg
-    :figwidth: 200px
+    :width: 200px
 
     Project explorer
 
@@ -167,7 +167,7 @@ You will have to enter the assignment-specific login details. By clicking the *R
 .. _fig-ide-submit:
 
 .. figure:: figures/ide-submit-coursera.jpg
-    :figwidth: 500px
+    :width: 500px
     
     Submitting to Coursera
 
@@ -182,7 +182,9 @@ The MiniZinc IDE can be configured through the *Preferences* dialog in the *Mini
 .. _fig-ide-gurobi:
 
 .. figure:: figures/ide-gurobi.jpg
-    :figwidth: 500px
+    :width: 500px
+    
+    Setting up MiniZinc to use the Gurobi MIP solver
 
 
 Locating the MiniZinc installation
@@ -214,12 +216,14 @@ On Windows, the CPLEX library is called ``cplexXXXX.dll`` and typically found in
 Adding new solvers
 ++++++++++++++++++
 
-The example in :numref:`fig-ide-preferences` shows a potential configuration for Gecode, which was installed in ``/home/me/gecode``.
+The example in :numref:`fig-ide-preferences` shows a potential configuration for the or-tools solver, which was installed in ``/Users/me/or-tools``.
 
 .. _fig-ide-preferences:
 
 .. figure:: figures/ide-preferences.jpg
-    :figwidth: 500px
+    :width: 500px
+    
+    Adding a new solver
 
 Each solver needs to be given 
 
