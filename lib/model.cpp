@@ -293,7 +293,7 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Type
   for (auto& i : v) {
     std::vector<Type>& fi_t = i.t;
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
-    std::cerr << "try " << *v[i].fi;
+    std::cerr << "try " << *i.fi;
 #endif
     if (fi_t.size() == t.size()) {
       bool match = true;
@@ -497,7 +497,7 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
   for (const auto& i : v) {
     const std::vector<Type>& fi_t = i.t;
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
-    std::cerr << "try " << *v[i].fi;
+    std::cerr << "try " << *i.fi;
 #endif
     if (fi_t.size() == c->argCount()) {
       bool match = true;
