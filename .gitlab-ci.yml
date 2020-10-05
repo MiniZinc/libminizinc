@@ -1,5 +1,4 @@
 stages:
-  - check
   - build
   - test
   - trigger
@@ -19,45 +18,11 @@ variables:
   CCACHE_DIR: "$CI_PROJECT_DIR/.ccache"
   CCACHE_MAXSIZE: "100M"
 
-# ----------- Quick check -----------
-
-check:format:
-  stage: check
-  image: dekker1/minibuild:clang-format
-  script:
-    - cmake -S . -B build -GNinja -DCLANG_FORMAT_EXECUTABLE="run-clang-format" -DCLANG_FORMAT_FLAGS="--color always"
-    - cmake --build build --target format
-  tags: [linux, docker]
-  only:
-    changes:
-      - "**/*.{cpp,c,h,hh,hpp}"
-      - .clang-format
-
-check:analyse:
-  stage: check
-  image: dekker1/minibuild:clang-tidy
-  variables:
-    MZNARCH: "linux"
-    CMAKE_ARCH: "Ninja"
-  before_script: *download_script
-  script:
-    - sh download.sh vendor master vendor:${MZNARCH} vendor.zip
-    - unzip -q vendor.zip
-    - cmake -S . -B build -G"$CMAKE_ARCH" -DCMAKE_CXX_CLANG_TIDY="clang-tidy" -DCMAKE_BUILD_TYPE="Debug"
-    - cmake --build build --config Debug
-  tags: [linux, docker]
-  only:
-    changes:
-      - "**/*.{cpp,c,h,hh,hpp}"
-      - .clang-tidy
-  cache:
-    key: "$CI_JOB_NAME"
-    paths: [.ccache, vendor.zip*]
-
 # ----------- Build MiniZinc -----------
 
 .build_template: &build_definition
   stage: build
+  interruptible: true
   before_script: *download_script
   script:
     - sh download.sh vendor master vendor:${MZNARCH} vendor.zip
@@ -69,8 +34,7 @@ check:analyse:
   cache:
     key: "$CI_JOB_NAME"
     paths: [.ccache, vendor.zip*]
-  # TODO: Uncomment when builds are required on merge request
-  # only: [refs, branches, tags, merge_requests]
+  only: [tags, merge_requests, pipelines, develop, master]
 
 build:linux:
   <<: *build_definition
@@ -98,6 +62,7 @@ build:osx:
 
 build:win64:
   stage: build
+  interruptible: true
   variables:
     MZNARCH: "win64"
     CMAKE_ARCH: "Visual Studio 15 2017 Win64"
@@ -115,12 +80,12 @@ build:win64:
     key: "win64"
     paths: [vendor.zip*]
   tags: [win64, cmake, cpp]
-  # TODO: Uncomment when builds are required on merge request
-  # only: [refs, branches, tags, merge_requests]
+  only: [tags, merge_requests, pipelines, develop, master]
 
 build:wasm_complete:
   image: emscripten/emsdk
   stage: build
+  interruptible: true
   variables:
     MZNARCH: "wasm"
     CMAKE_ARCH: "Unix Makefiles"
@@ -137,11 +102,13 @@ build:wasm_complete:
   cache:
     key: "$CI_JOB_NAME"
     paths: [.ccache, vendor.zip*]
+  only: [tags, merge_requests, pipelines, develop, master]
   when: manual
 
 build:wasm_minimal:
   image: emscripten/emsdk
   stage: build
+  interruptible: true
   variables:
     MZNARCH: "wasm"
     CMAKE_ARCH: "Unix Makefiles"
@@ -158,9 +125,51 @@ build:wasm_minimal:
   cache:
     key: "$CI_JOB_NAME"
     paths: [.ccache, vendor.zip*]
+  only: [tags, merge_requests, pipelines, develop, master]
   when: manual
 
 # ----------- Test Suite -----------
+
+test:format:
+  stage: test
+  interruptible: true
+  image: dekker1/minibuild:clang-format
+  script:
+    - cmake -S . -B build -GNinja -DCLANG_FORMAT_EXECUTABLE="run-clang-format" -DCLANG_FORMAT_FLAGS="--color always"
+    - cmake --build build --target format
+  tags: [linux, docker]
+  only:
+    changes:
+      - "**/*.{cpp,c,h,hh,hpp}"
+      - .clang-format
+    refs:
+      - merge_requests
+  needs: []
+
+test:analyse:
+  stage: test
+  interruptible: true
+  image: dekker1/minibuild:clang-tidy
+  variables:
+    MZNARCH: "linux"
+    CMAKE_ARCH: "Ninja"
+  before_script: *download_script
+  script:
+    - sh download.sh vendor master vendor:${MZNARCH} vendor.zip
+    - unzip -q vendor.zip
+    - cmake -S . -B build -G"$CMAKE_ARCH" -DCMAKE_CXX_CLANG_TIDY="clang-tidy" -DCMAKE_BUILD_TYPE="Debug"
+    - cmake --build build --config Debug
+  tags: [linux, docker]
+  only:
+    changes:
+      - "**/*.{cpp,c,h,hh,hpp}"
+      - .clang-tidy
+    refs:
+      - merge_requests
+  cache:
+    key: "$CI_JOB_NAME"
+    paths: [.ccache, vendor.zip*]
+  needs: []
 
 include: 
 - local: '/tests/.gitlab-ci-testing-pipeline.yml'

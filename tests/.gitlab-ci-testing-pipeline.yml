@@ -1,6 +1,7 @@
 # Main test config template
 .tests:
   stage: test
+  interruptible: true
   variables:
     PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
     MZN_SOLVER_PATH: "$CI_PROJECT_DIR/vendor/chuffed/share/minizinc/solvers/:$CI_PROJECT_DIR/vendor/gecode"
@@ -27,6 +28,7 @@
   cache:
     key: "$CI_JOB_NAME"
     paths: [.cache/pip, vendor.zip*]
+  only: [merge_requests, pipelines, master]
 
 # Linux specific config
 .tests_linux:
@@ -76,7 +78,6 @@
 .tests_fast:
   script:
     - pytest
-  only: [pushes]
 
 .tests_full:
   script:
