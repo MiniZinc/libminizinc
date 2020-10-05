@@ -8,6 +8,9 @@
 /** @group stdlib.optiontypes Return value of \a x if \a x is not absent. Aborts 
   when evaluated on absent value. */
 function $T: deopt(opt $T: x);
+/** @group stdlib.optiontypes Return value of \a x if \a x is not absent. Aborts 
+  when evaluated on absent value. */
+function $$T: deopt(opt $$T: x);
 
 /** @group stdlib.optiontypes Return value \a x unchanged (since \a x is guaranteed
   to be non-optional). */
