@@ -49,6 +49,7 @@ Changes dealing with option types:
 - Add opt versions of several globals.
 - Define weak equality for var opt bool.
 - Add set_in definitions for var opt int.
+- Add opt versions of enumerated type functions (to_enum, enum_next, enum_prev etc).
 - Enable set literals with optional values (which will be ignored),
   including var set literals with var opt int elements.
 - Add opt version of float_dom to stdlib.
