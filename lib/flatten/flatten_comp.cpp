@@ -207,6 +207,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
   std::vector<Expression*> elems(elems_ee.size());
   Type elemType = Type::bot();
   bool allPar = true;
+  bool someOpt = false;
   for (auto i = static_cast<unsigned int>(elems.size()); (i--) != 0U;) {
     elems[i] = elems_ee[i].r();
     if (elemType == Type::bot()) {
@@ -215,6 +216,9 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
     if (!elems[i]->type().isPar()) {
       allPar = false;
     }
+    if (elems[i]->type().isOpt()) {
+      someOpt = true;
+    }
   }
   if (elemType.isbot()) {
     elemType = c->type();
@@ -222,6 +226,9 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
   }
   if (!allPar) {
     elemType.ti(Type::TI_VAR);
+  }
+  if (someOpt) {
+    elemType.ot(Type::OT_OPTIONAL);
   }
   if (c->set()) {
     elemType.st(Type::ST_SET);

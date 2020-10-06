@@ -58,7 +58,7 @@ Changes dealing with option types:
 - Add missing logical operators to var opt bool
 
 Minor changes:
-- Clean up code base and format using clang-format.
+- Clean up code base and format using clang-format and clang-tidy.
 - Update WebAssembly build for new versions of emscripten.
 - Support --cp-profiler option to activate search profiler for IDE.
 - Add --solver-json to output single solver config as JSON.
@@ -116,7 +116,9 @@ Minor changes:
   to test for expected ozn output.
 
 Bug fixes:
-
+- Fix error message for type errors in domains that are integer literals (#408).
+- Fix comprehensions over option types, which could cause crashes and incorrect
+  flattening (#407).
 - Fix the usage count of annotations added using the annotate function
 - Flatten "in" expressions in comprehensions when required.
 - Check if operator is built-in after evaluating arguments,
