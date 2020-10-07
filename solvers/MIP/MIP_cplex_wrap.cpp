@@ -282,7 +282,7 @@ void MIPCplexWrapper::Options::printHelp(ostream& os) {
         "balanced)"
      << std::endl
      << "  -i\n    print intermediate solutions for optimization problems" << std::endl
-     << "  -p <N>\n    use N threads, default: 1"
+     << "  -p <N>, --parallel <N>\n    use N threads, default: 1"
      << std::endl
      //   << "  --nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
      << "  --solver-time-limit <N>\n    stop search after N milliseconds wall time" << std::endl
@@ -327,7 +327,7 @@ bool MIPCplexWrapper::Options::processOption(int& i, std::vector<std::string>& a
   } else if (cop.get("--mipfocus --mipFocus --MIPFocus --MIPfocus",
                      &nMIPFocus)) {                        // NOLINT: Allow repeated empty if
   } else if (cop.get("--writeModel", &sExportModel)) {     // NOLINT: Allow repeated empty if
-  } else if (cop.get("-p", &nThreads)) {                   // NOLINT: Allow repeated empty if
+  } else if (cop.get("-p  --parallel", &nThreads)) {       // NOLINT: Allow repeated empty if
   } else if (cop.get("--solver-time-limit", &nTimeout)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("-n --num-solutions", &nSolLimit)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("-r --random-seed", &nSeed)) {        // NOLINT: Allow repeated empty if

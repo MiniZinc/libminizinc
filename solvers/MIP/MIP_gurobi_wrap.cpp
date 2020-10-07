@@ -127,7 +127,7 @@ void MIPGurobiWrapper::Options::printHelp(ostream& os) {
         "balanced)"
      << std::endl
      << "  -i\n    print intermediate solutions for optimization problems" << std::endl
-     << "  -p <N>\n    use N threads, default: 1."
+     << "  -p <N>, --parallel <N>\n    use N threads, default: 1."
      << std::endl
      //   << "  --nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
      << "  --solver-time-limit <N>, --solver-time\n"
@@ -191,8 +191,8 @@ bool MIPGurobiWrapper::Options::processOption(int& i, std::vector<std::string>& 
   } else if (cop.get("--mipfocus --mipFocus --MIPFocus --MIPfocus",
                      &nMIPFocus)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--writeModel --exportModel --writemodel --exportmodel",
-                     &sExportModel)) {    // NOLINT: Allow repeated empty if
-  } else if (cop.get("-p", &nThreads)) {  // NOLINT: Allow repeated empty if
+                     &sExportModel)) {               // NOLINT: Allow repeated empty if
+  } else if (cop.get("-p --parallel", &nThreads)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--solver-time-limit --solver-time",
                      &nTimeout1000)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--solver-time-limit-feas --solver-tlf",

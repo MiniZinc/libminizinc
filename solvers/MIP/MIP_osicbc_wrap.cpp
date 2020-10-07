@@ -77,7 +77,7 @@ void MIPosicbcWrapper::Options::printHelp(ostream& os) {
      << "  -i\n    print intermediate solutions for optimization problems\n"
         "    (not from FeasPump. Can be slow.)"
      << std::endl
-     << "  -p <N>\n    use N threads, default: 1. CBC should be configured with "
+     << "  -p <N>, --parallel <N>\n    use N threads, default: 1. CBC should be configured with "
         "--enable-cbc-parallel"
      << std::endl
      //   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
@@ -107,7 +107,7 @@ bool MIPosicbcWrapper::Options::processOption(int& i, std::vector<std::string>& 
     //     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
   } else if (cop.get("--writeModel", &sExportModel)) {  // NOLINT: Allow repeated empty if
     // Parsed by referenced
-  } else if (cop.get("-p", &nThreads)) {
+  } else if (cop.get("-p --parallel", &nThreads)) {
     // Parsed by referenced
   } else if (cop.get("--solver-time-limit", &nTimeout)) {  // NOLINT: Allow repeated empty if
     // Parsed by referenced

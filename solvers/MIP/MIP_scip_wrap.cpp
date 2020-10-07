@@ -174,7 +174,7 @@ void MIPScipWrapper::Options::printHelp(ostream& os) {
      //               << "--tuneParam         instruct SCIP to tune parameters instead of solving
      << "--writeModel <file> write model to <file> (.lp, .mps, ...?)" << std::endl
      << "-i                  print intermediate solutions for optimization problems" << std::endl
-     << "-p <N>              use N threads, default: 1"
+     << "-p <N>, --parallel <N>\n    use N threads, default: 1"
      << std::endl
      //   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
      << "--solver-time-limit <N>       stop search after N milliseconds" << std::endl
@@ -208,7 +208,7 @@ bool MIPScipWrapper::Options::processOption(int& i, vector<string>& argv) {
   } else if (string(argv[i]) == "-f") {  // NOLINT: Allow repeated empty if
     //     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
   } else if (cop.get("--writeModel", &sExportModel)) {     // NOLINT: Allow repeated empty if
-  } else if (cop.get("-p", &nThreads)) {                   // NOLINT: Allow repeated empty if
+  } else if (cop.get("-p --parallel", &nThreads)) {        // NOLINT: Allow repeated empty if
   } else if (cop.get("--solver-time-limit", &nTimeout)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--workmem", &nWorkMemLimit)) {       // NOLINT: Allow repeated empty if
   } else if (cop.get("--readParam", &sReadParams)) {       // NOLINT: Allow repeated empty if
