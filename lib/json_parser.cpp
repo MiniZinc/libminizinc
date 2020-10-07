@@ -572,7 +572,7 @@ void JSONParser::parse(Model* m, std::istream& is, bool ignoreUnknown) {
         bool has_index = std::any_of(ti->ranges().begin(), ti->ranges().end(),
                                      [](TypeInst* nti) { return nti->domain() != nullptr; });
         auto* al = e->dynamicCast<ArrayLit>();
-        if ((al != nullptr) && has_index &&
+        if ((al != nullptr) && has_index && al->size() > 0 &&
             (al->dims() == 1 || ti->ranges().size() == al->dims())) {
           std::string name = "array" + std::to_string(al->dims()) + "d";
           std::vector<Expression*> args(al->dims() + 1);
