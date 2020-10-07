@@ -540,6 +540,54 @@ Expression* JSONParser::parseExp(std::istream& is) {
   }
 }
 
+Expression* JSONParser::coerceArray(TypeInst* intendedTI, Expression* array) {
+  TypeInst& ti = *intendedTI;
+  auto* al = array->dynamicCast<ArrayLit>();
+  const Location& loc = al->loc();
+
+  if (al == nullptr || al->size() == 0) {
+    return array;  // Nothing to coerce
+  }
+  if (al->dims() != 1 && al->dims() != ti.ranges().size()) {
+    return array;  // Incompatible: TypeError will be thrown on original array
+  }
+
+  int missing_index = -1;
+  for (int i = 0; i < ti.ranges().size(); ++i) {
+    TypeInst* nti = ti.ranges()[i];
+    if (nti->domain() == nullptr) {
+      if (missing_index != -1) {
+        return array;  // More than one index set is missing. Cannot compute correct index sets.
+      }
+      missing_index = i;
+    }
+  }
+
+  std::vector<Expression*> args(ti.ranges().size() + 1);
+  Expression* missing_max = missing_index > 0 ? IntLit::a(al->size()) : nullptr;
+  for (int i = 0; i < ti.ranges().size(); ++i) {
+    if (i != missing_index) {
+      assert(ti.ranges()[i]->domain() != nullptr);
+      args[i] = ti.ranges()[i]->domain();
+      if (missing_index > 0) {
+        missing_max = new BinOp(loc.introduce(), missing_max, BOT_IDIV,
+                                new Call(Location().introduce(), "card", {args[i]}));
+      }
+    }
+  }
+  if (missing_index > 0) {
+    args[missing_index] = new BinOp(loc.introduce(), IntLit::a(1), BOT_DOTDOT, missing_max);
+  }
+  args[args.size() - 1] = al;
+
+  std::string name = "array" + std::to_string(ti.ranges().size()) + "d";
+  Call* c = new Call(al->loc().introduce(), name, args);
+  if (al->dims() != 1) {
+    c->addAnnotation(constants().ann.array_check_form);
+  }
+  return c;
+}
+
 void JSONParser::parse(Model* m, std::istream& is, bool ignoreUnknown) {
   _line = 0;
   _column = 0;
@@ -568,27 +616,7 @@ void JSONParser::parse(Model* m, std::istream& is, bool ignoreUnknown) {
     if (ident[0] != '_' && (!ignoreUnknown || it != knownIds.end())) {
       // Add correct index sets if they are non-standard
       if (it != knownIds.end() && it->second->isarray()) {
-        TypeInst* ti = it->second;
-        bool has_index = std::any_of(ti->ranges().begin(), ti->ranges().end(),
-                                     [](TypeInst* nti) { return nti->domain() != nullptr; });
-        auto* al = e->dynamicCast<ArrayLit>();
-        if ((al != nullptr) && has_index && al->size() > 0 &&
-            (al->dims() == 1 || ti->ranges().size() == al->dims())) {
-          std::string name = "array" + std::to_string(al->dims()) + "d";
-          std::vector<Expression*> args(al->dims() + 1);
-          for (int i = 0; i < al->dims(); ++i) {
-            if (ti->ranges()[i]->domain() != nullptr) {
-              args[i] = ti->ranges()[i]->domain();
-            } else {
-              args[i] = new SetLit(Location().introduce(), IntSetVal::a(al->min(i), al->max(i)));
-            }
-          }
-          args[al->dims()] = al;
-          e = new Call(al->loc().introduce(), name, args);
-          if (al->dims() != 1) {
-            e->addAnnotation(constants().ann.array_check_form);
-          }
-        }
+        e = coerceArray(it->second, e);
       }
       auto* ai = new AssignI(e->loc().introduce(), ident, e);
       m->addItem(ai);
