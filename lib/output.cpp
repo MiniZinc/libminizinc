@@ -566,6 +566,7 @@ void create_dzn_output_item(EnvI& e, bool outputObjective, bool includeOutputIte
       if (process_var) {
         std::ostringstream s;
         s << vd->id()->str() << " = ";
+        bool needArrayXd = false;
         if (vd->type().dim() > 0) {
           ArrayLit* al = nullptr;
           if ((vd->flat() != nullptr) && (vd->flat()->e() != nullptr)) {
@@ -573,17 +574,20 @@ void create_dzn_output_item(EnvI& e, bool outputObjective, bool includeOutputIte
           } else if (vd->e() != nullptr) {
             al = eval_array_lit(_e, vd->e());
           }
-          s << "array" << vd->type().dim() << "d(";
-          for (int i = 0; i < vd->type().dim(); i++) {
-            unsigned int enumId =
-                (vd->type().enumId() != 0 ? _e.getArrayEnum(vd->type().enumId())[i] : 0);
-            if (enumId != 0) {
-              s << _e.getEnum(enumId)->e()->id()->str() << ", ";
-            } else if (al != nullptr) {
-              s << al->min(i) << ".." << al->max(i) << ", ";
-            } else {
-              IntSetVal* idxset = eval_intset(_e, vd->ti()->ranges()[i]->domain());
-              s << *idxset << ", ";
+          if (al->size() > 0) {
+            needArrayXd = true;
+            s << "array" << vd->type().dim() << "d(";
+            for (int i = 0; i < vd->type().dim(); i++) {
+              unsigned int enumId =
+                  (vd->type().enumId() != 0 ? _e.getArrayEnum(vd->type().enumId())[i] : 0);
+              if (enumId != 0) {
+                s << _e.getEnum(enumId)->e()->id()->str() << ", ";
+              } else if (al != nullptr) {
+                s << al->min(i) << ".." << al->max(i) << ", ";
+              } else {
+                IntSetVal* idxset = eval_intset(_e, vd->ti()->ranges()[i]->domain());
+                s << *idxset << ", ";
+              }
             }
           }
         }
@@ -598,7 +602,7 @@ void create_dzn_output_item(EnvI& e, bool outputObjective, bool includeOutputIte
         assert(fi);
         show->decl(fi);
         _outputVars.push_back(show);
-        std::string ends = vd->type().dim() > 0 ? ")" : "";
+        std::string ends = needArrayXd ? ")" : "";
         ends += ";\n";
         auto* eol = new StringLit(Location().introduce(), ends);
         _outputVars.push_back(eol);
