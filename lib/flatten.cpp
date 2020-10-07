@@ -2856,29 +2856,31 @@ void flatten(Env& e, FlatteningOptions opt) {
           ArrayLit* al = eval_array_lit(env, v->e()->e());
           v->e()->e(al);
           check_index_sets(env, v->e(), v->e()->e());
-          if (v->e()->type().bt() == Type::BT_INT && v->e()->type().st() == Type::ST_PLAIN) {
-            IntVal lb = IntVal::infinity();
-            IntVal ub = -IntVal::infinity();
-            for (unsigned int i = 0; i < al->size(); i++) {
-              IntVal vi = eval_int(env, (*al)[i]);
-              lb = std::min(lb, vi);
-              ub = std::max(ub, vi);
+          if (al->size() > 0) {
+            if (v->e()->type().bt() == Type::BT_INT && v->e()->type().st() == Type::ST_PLAIN) {
+              IntVal lb = IntVal::infinity();
+              IntVal ub = -IntVal::infinity();
+              for (unsigned int i = 0; i < al->size(); i++) {
+                IntVal vi = eval_int(env, (*al)[i]);
+                lb = std::min(lb, vi);
+                ub = std::max(ub, vi);
+              }
+              GCLock lock;
+              set_computed_domain(env, v->e(),
+                                  new SetLit(Location().introduce(), IntSetVal::a(lb, ub)), true);
+            } else if (v->e()->type().bt() == Type::BT_FLOAT &&
+                       v->e()->type().st() == Type::ST_PLAIN) {
+              FloatVal lb = FloatVal::infinity();
+              FloatVal ub = -FloatVal::infinity();
+              for (unsigned int i = 0; i < al->size(); i++) {
+                FloatVal vi = eval_float(env, (*al)[i]);
+                lb = std::min(lb, vi);
+                ub = std::max(ub, vi);
+              }
+              GCLock lock;
+              set_computed_domain(env, v->e(),
+                                  new SetLit(Location().introduce(), FloatSetVal::a(lb, ub)), true);
             }
-            GCLock lock;
-            set_computed_domain(env, v->e(),
-                                new SetLit(Location().introduce(), IntSetVal::a(lb, ub)), true);
-          } else if (v->e()->type().bt() == Type::BT_FLOAT &&
-                     v->e()->type().st() == Type::ST_PLAIN) {
-            FloatVal lb = FloatVal::infinity();
-            FloatVal ub = -FloatVal::infinity();
-            for (unsigned int i = 0; i < al->size(); i++) {
-              FloatVal vi = eval_float(env, (*al)[i]);
-              lb = std::min(lb, vi);
-              ub = std::max(ub, vi);
-            }
-            GCLock lock;
-            set_computed_domain(env, v->e(),
-                                new SetLit(Location().introduce(), FloatSetVal::a(lb, ub)), true);
           }
         } else if (v->e()->type().isvar() || v->e()->type().isAnn()) {
           (void)flatten_id(env, Ctx(), v->e()->id(), nullptr, constants().varTrue, true);
