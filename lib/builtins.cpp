@@ -1423,7 +1423,7 @@ bool b_annotate(EnvI& env, Call* call) {
   if (auto* ann_decl = follow_id_to_decl(ann)->dynamicCast<VarDecl>()) {
     auto var_it = env.varOccurrences.idx.find(var_decl->id());
     assert(var_it != env.varOccurrences.idx.end());
-    env.varOccurrences.add(ann_decl, (*env.model)[var_it->second]);
+    env.varOccurrences.add(ann_decl, (*env.flat())[var_it->second]);
   }
   return true;
 }
