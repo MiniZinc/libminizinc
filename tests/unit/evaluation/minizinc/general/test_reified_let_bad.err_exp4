@@ -1,7 +1,0 @@
-mzn2fzn:
-  error: 
-  test_reified_let_bad.mzn:7 
-  In constraint. 
-  In '<->' expression. 
-  In let-variable 'y'. 
-  Let-variables with no definitions cannot appear in reified contexts.

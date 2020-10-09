@@ -1,4 +1,0 @@
-test_array1d_bad_4.mzn:2: error: 
-test_array1d_bad_4.mzn:2:   In variable declaration for b 
-test_array1d_bad_4.mzn:2:   Arrays have different index sets ([11..13] vs 
-test_array1d_bad_4.mzn:2:   [1..3]).

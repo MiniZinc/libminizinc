@@ -9,8 +9,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-%pure-parser
+%define api.pure
+
 %parse-param {void *parm}
+
+%define api.header.include {<minizinc/parser.tab.hh>}
+
 %lex-param {void* SCANNER}
 %{
 #define SCANNER static_cast<ParserState*>(parm)->yyscanner
@@ -19,51 +23,50 @@
 #include <map>
 #include <cerrno>
 
-namespace MiniZinc{ class Location; }
-#define YYLTYPE MiniZinc::Location
+namespace MiniZinc{ class ParserLocation; }
+#define YYLTYPE MiniZinc::ParserLocation
 #define YYLTYPE_IS_DECLARED 1
 #define YYLTYPE_IS_TRIVIAL 0
 
+#define YYMAXDEPTH 10000
+#define YYINITDEPTH 10000
+
 #include <minizinc/parser.hh>
 #include <minizinc/file_utils.hh>
-#include <minizinc/json_parser.hh>
 
 using namespace std;
 using namespace MiniZinc;
 
 #define YYLLOC_DEFAULT(Current, Rhs, N) \
-  Current.filename = Rhs[1].filename; \
-  Current.first_line = Rhs[1].first_line; \
-  Current.first_column = Rhs[1].first_column; \
-  Current.last_line = Rhs[N].last_line; \
-  Current.last_column = Rhs[N].last_column;
+  (Current).filename(Rhs[1].filename()); \
+  (Current).firstLine(Rhs[1].firstLine()); \
+  (Current).firstColumn(Rhs[1].firstColumn()); \
+  (Current).lastLine(Rhs[N].lastLine()); \
+  (Current).lastColumn(Rhs[N].lastColumn());
 
-int yyparse(void*);
-int yylex(YYSTYPE*, YYLTYPE*, void* scanner);
-int yylex_init (void** scanner);
-int yylex_destroy (void* scanner);
-int yyget_lineno (void* scanner);
-void yyset_extra (void* user_defined ,void* yyscanner );
+int mzn_yyparse(void*);
+int mzn_yylex(YYSTYPE*, YYLTYPE*, void* scanner);
+int mzn_yylex_init (void** scanner);
+int mzn_yylex_destroy (void* scanner);
+int mzn_yyget_lineno (void* scanner);
+void mzn_yyset_extra (void* user_defined ,void* yyscanner );
 
 extern int yydebug;
+
+namespace MiniZinc {
 
 void yyerror(YYLTYPE* location, void* parm, const string& str) {
   ParserState* pp = static_cast<ParserState*>(parm);
   Model* m = pp->model;
-  while (m->parent() != NULL) {
+  while (m->parent() != nullptr) {
     m = m->parent();
     pp->err << "(included from file '" << m->filename() << "')" << endl;
   }
-  pp->err << location->filename << ":"
-          << location->first_line << ":" << endl;
-  pp->printCurrentLine();
-  for (int i=0; i<static_cast<int>(location->first_column)-1; i++)
-    pp->err << " ";
-  for (unsigned int i=location->first_column; i<=location->last_column; i++)
-    pp->err << "^";
-  pp->err << std::endl << "Error: " << str << std::endl << std::endl;
+  pp->err << location->toString() << ":" << endl;
+  pp->printCurrentLine(location->firstColumn(),location->lastColumn());
+  pp->err << "Error: " << str << std::endl;
   pp->hadError = true;
-  pp->syntaxErrors.push_back(SyntaxError(*location, str));
+  pp->syntaxErrors.push_back(SyntaxError(Location(*location), str));
 }
 
 bool notInDatafile(YYLTYPE* location, void* parm, const string& item) {
@@ -75,364 +78,21 @@ bool notInDatafile(YYLTYPE* location, void* parm, const string& item) {
   return true;
 }
 
-void filepath(const string& f, string& dirname, string& basename) {
-  dirname = ""; basename = f;
-  for (size_t p=basename.find_first_of('/');
-       p!=string::npos;
-       dirname+=basename.substr(0,p+1),
-       basename=basename.substr(p+1),
-       p=basename.find_first_of('/')
-       ) {}
-}
-
-// fastest way to read a file into a string (especially big files)
-// see: http://insanecoding.blogspot.be/2011/11/how-to-read-in-file-in-c.html
-std::string get_file_contents(std::ifstream &in)
-{
-  if (in)
-  {
-    std::string contents;
-    in.seekg(0, std::ios::end);
-    contents.resize(static_cast<unsigned int>(in.tellg()));
-    in.seekg(0, std::ios::beg);
-    in.read(&contents[0], contents.size());
-    in.close();
-    return(contents);
-  }
-  throw(errno);
-}
-
-Expression* createDocComment(const Location& loc, const std::string& s) {
+Expression* createDocComment(const ParserLocation& loc, const std::string& s) {
   std::vector<Expression*> args(1);
   args[0] = new StringLit(loc, s);
-  Call* c = new Call(loc, constants().ann.doc_comment, args);
+  Call* c = new Call(Location(loc), constants().ann.doc_comment, args);
   c->type(Type::ann());
   return c;
 }
 
-Expression* createArrayAccess(const Location& loc, Expression* e, std::vector<std::vector<Expression*> >& idx) {
+Expression* createArrayAccess(const ParserLocation& loc, Expression* e, std::vector<std::vector<Expression*> >& idx) {
   Expression* ret = e;
   for (unsigned int i=0; i<idx.size(); i++) {
-    ret = new ArrayAccess(loc, ret, idx[i]);
+    ret = new ArrayAccess(Location(loc), ret, idx[i]);
   }
   return ret;
 }
-
-namespace MiniZinc {
-
-  Model* parseFromString(const string& text,
-                         const string& filename,
-                         const vector<string>& ip,
-                         bool ignoreStdlib,
-                         bool parseDocComments,
-                         bool verbose,
-                         ostream& err,
-                         std::vector<SyntaxError>& syntaxErrors) {
-    GCLock lock;
-
-    vector<string> includePaths;
-    for (unsigned int i=0; i<ip.size(); i++)
-      includePaths.push_back(ip[i]);
-
-    vector<pair<string,Model*> > files;
-    map<string,Model*> seenModels;
-
-    Model* model = new Model();
-    model->setFilename(filename);
-
-    if (!ignoreStdlib) {
-      Model* stdlib = new Model;
-      stdlib->setFilename("stdlib.mzn");
-      files.push_back(pair<string,Model*>("./",stdlib));
-      seenModels.insert(pair<string,Model*>("stdlib.mzn",stdlib));
-      IncludeI* stdlibinc = new IncludeI(Location(),stdlib->filename());
-      stdlibinc->m(stdlib,true);
-      model->addItem(stdlibinc);
-    }
-
-    model->setFilepath(filename);
-    bool isFzn;
-    if (filename=="") {
-      isFzn = false;
-    } else {
-      isFzn = (filename.compare(filename.length()-4,4,".fzn")==0);
-      isFzn |= (filename.compare(filename.length()-4,4,".ozn")==0);
-      isFzn |= (filename.compare(filename.length()-4,4,".szn")==0);
-    }
-    ParserState pp(filename,text, err, files, seenModels, model, false, isFzn, parseDocComments);
-    yylex_init(&pp.yyscanner);
-    yyset_extra(&pp, pp.yyscanner);
-    yyparse(&pp);
-    if (pp.yyscanner)
-    yylex_destroy(pp.yyscanner);
-    if (pp.hadError) {
-      goto error;
-    }
-
-    while (!files.empty()) {
-      pair<string,Model*>& np = files.back();
-      string parentPath = np.first;
-      Model* m = np.second;
-      files.pop_back();
-      string f(m->filename().str());
-
-      for (Model* p=m->parent(); p; p=p->parent()) {
-        if (f == p->filename().c_str()) {
-          err << "Error: cyclic includes: " << std::endl;
-          for (Model* pe=m; pe; pe=pe->parent()) {
-            err << "  " << pe->filename() << std::endl;
-          }
-          goto error;
-        }
-      }
-      ifstream file;
-      string fullname;
-      if (parentPath=="") {
-        fullname = filename;
-        if (FileUtils::file_exists(fullname)) {
-          file.open(fullname.c_str(), std::ios::binary);
-        }
-      } else {
-        includePaths.push_back(parentPath);
-        for (unsigned int i=0; i<includePaths.size(); i++) {
-          fullname = includePaths[i]+f;
-          if (FileUtils::file_exists(fullname)) {
-            file.open(fullname.c_str(), std::ios::binary);
-            if (file.is_open())
-              break;
-          }
-        }
-        includePaths.pop_back();
-      }
-      if (!file.is_open()) {
-        err << "Error: cannot open file '" << f << "'." << endl;
-        goto error;
-      }
-      if (verbose)
-        std::cerr << "processing file '" << fullname << "'" << endl;
-      std::string s = get_file_contents(file);
-
-      m->setFilepath(fullname);
-      bool isFzn = (fullname.compare(fullname.length()-4,4,".fzn")==0);
-      isFzn |= (fullname.compare(fullname.length()-4,4,".ozn")==0);
-      isFzn |= (fullname.compare(fullname.length()-4,4,".szn")==0);
-      ParserState pp(fullname,s, err, files, seenModels, m, false, isFzn, parseDocComments);
-      yylex_init(&pp.yyscanner);
-      yyset_extra(&pp, pp.yyscanner);
-      yyparse(&pp);
-      if (pp.yyscanner)
-      yylex_destroy(pp.yyscanner);
-      if (pp.hadError) {
-        goto error;
-      }
-    }
-
-    return model;
-  error:
-    for (unsigned int i=0; i<pp.syntaxErrors.size(); i++)
-      syntaxErrors.push_back(pp.syntaxErrors[i]);
-    delete model;
-    return NULL;
-  }
-
-  void parse(Env& env,
-             Model*& model,
-             const vector<string>& filenames,
-             const vector<string>& datafiles,
-             const vector<string>& ip,
-             bool ignoreStdlib,
-             bool parseDocComments,
-             bool verbose,
-             ostream& err) {
-    
-    vector<string> includePaths;
-    for (unsigned int i=0; i<ip.size(); i++)
-      includePaths.push_back(ip[i]);
-    
-    vector<pair<string,Model*> > files;
-    map<string,Model*> seenModels;
-    
-    if (filenames.size() > 0) {
-      GCLock lock;
-      string fileDirname; string fileBasename;
-      filepath(filenames[0], fileDirname, fileBasename);
-      model->setFilename(fileBasename);
-      
-      files.push_back(pair<string,Model*>("",model));
-      
-      for (unsigned int i=1; i<filenames.size(); i++) {
-        GCLock lock;
-        string dirName, baseName;
-        filepath(filenames[i], dirName, baseName);
-        
-        Model* includedModel = new Model;
-        includedModel->setFilename(baseName);
-        files.push_back(pair<string,Model*>(dirName,includedModel));
-        seenModels.insert(pair<string,Model*>(baseName,includedModel));
-        Location loc;
-        loc.filename=ASTString(filenames[0]);
-        IncludeI* inc = new IncludeI(loc,includedModel->filename());
-        inc->m(includedModel,true);
-        model->addItem(inc);
-      }
-    }
-    
-    if (!ignoreStdlib) {
-      GCLock lock;
-      Model* stdlib = new Model;
-      stdlib->setFilename("stdlib.mzn");
-      files.push_back(pair<string,Model*>("./",stdlib));
-      seenModels.insert(pair<string,Model*>("stdlib.mzn",stdlib));
-      Location stdlibloc;
-      stdlibloc.filename=ASTString(model->filename());
-      IncludeI* stdlibinc =
-      new IncludeI(stdlibloc,stdlib->filename());
-      stdlibinc->m(stdlib,true);
-      model->addItem(stdlibinc);
-    }
-    
-    while (!files.empty()) {
-      GCLock lock;
-      pair<string,Model*>& np = files.back();
-      string parentPath = np.first;
-      Model* m = np.second;
-      files.pop_back();
-      string f(m->filename().str());
-      
-      for (Model* p=m->parent(); p; p=p->parent()) {
-        if (f == p->filename().c_str()) {
-          err << "Error: cyclic includes: " << std::endl;
-          for (Model* pe=m; pe; pe=pe->parent()) {
-            err << "  " << pe->filename() << std::endl;
-          }
-          goto error;
-        }
-      }
-      ifstream file;
-      string fullname;
-      if (parentPath=="") {
-        if (filenames.size() == 0) {
-          err << "Internal error." << endl;
-          goto error;
-        }
-        fullname = filenames[0];
-        if (FileUtils::file_exists(fullname)) {
-          file.open(fullname.c_str(), std::ios::binary);
-        }
-      } else {
-        includePaths.push_back(parentPath);
-        for (unsigned int i=0; i<includePaths.size(); i++) {
-          fullname = includePaths[i]+f;
-          if (FileUtils::file_exists(fullname)) {
-            file.open(fullname.c_str(), std::ios::binary);
-            if (file.is_open())
-              break;
-          }
-        }
-        includePaths.pop_back();
-      }
-      if (!file.is_open()) {
-        err << "Error: cannot open file '" << f << "'." << endl;
-        goto error;
-      }
-      if (verbose)
-        std::cerr << "processing file '" << fullname << "'" << endl;
-      std::string s = get_file_contents(file);
-      
-      m->setFilepath(fullname);
-      bool isFzn = (fullname.compare(fullname.length()-4,4,".fzn")==0);
-      isFzn |= (fullname.compare(fullname.length()-4,4,".ozn")==0);
-      isFzn |= (fullname.compare(fullname.length()-4,4,".szn")==0);
-      ParserState pp(fullname,s, err, files, seenModels, m, false, isFzn, parseDocComments);
-      yylex_init(&pp.yyscanner);
-      yyset_extra(&pp, pp.yyscanner);
-      yyparse(&pp);
-      if (pp.yyscanner)
-        yylex_destroy(pp.yyscanner);
-      if (pp.hadError) {
-        goto error;
-      }
-    }
-    
-    for (unsigned int i=0; i<datafiles.size(); i++) {
-      GCLock lock;
-      string f = datafiles[i];
-      if (f.size()>6 && f.substr(f.size()-5,string::npos)==".json") {
-        JSONParser jp(env.envi());
-        jp.parse(model, f);
-      } else {
-        string s;
-        if (f.size() > 5 && f.substr(0,5)=="cmd:/") {
-          s = f.substr(5);
-        } else {
-          std::ifstream file;
-          file.open(f.c_str(), std::ios::binary);
-          if (!FileUtils::file_exists(f) || !file.is_open()) {
-            err << "Error: cannot open data file '" << f << "'." << endl;
-            goto error;
-          }
-          if (verbose)
-            std::cerr << "processing data file '" << f << "'" << endl;
-          s = get_file_contents(file);
-        }
-        
-        ParserState pp(f, s, err, files, seenModels, model, true, false, parseDocComments);
-        yylex_init(&pp.yyscanner);
-        yyset_extra(&pp, pp.yyscanner);
-        yyparse(&pp);
-        if (pp.yyscanner)
-          yylex_destroy(pp.yyscanner);
-        if (pp.hadError) {
-          goto error;
-        }
-      }
-    }
-    
-    return;
-  error:
-    delete model;
-    model = NULL;
-  }
-  
-  Model* parse(Env& env,
-               const vector<string>& filenames,
-               const vector<string>& datafiles,
-               const vector<string>& ip,
-               bool ignoreStdlib,
-               bool parseDocComments,
-               bool verbose,
-               ostream& err) {
-
-    if (filenames.empty()) {
-      err << "Error: no model given" << std::endl;
-      return NULL;
-    }
-
-    Model* model;
-    {
-      GCLock lock;
-      model = new Model();
-    }
-    parse(env, model, filenames, datafiles,
-          ip, ignoreStdlib, parseDocComments, verbose, err);
-    return model;
-  }
-
-  Model* parseData(Env& env,
-                   Model* model,
-                   const vector<string>& datafiles,
-                   const vector<string>& includePaths,
-                   bool ignoreStdlib,
-                   bool parseDocComments,
-                   bool verbose,
-                   ostream& err) {
-    
-    vector<string> filenames;
-    parse(env, model, filenames, datafiles, includePaths,
-          ignoreStdlib, parseDocComments, verbose, err);
-    return model;
-  }
-
 
 }
 
@@ -441,28 +101,27 @@ namespace MiniZinc {
 %union { long long int iValue; char* sValue; bool bValue; double dValue;
          MiniZinc::Item* item;
          MiniZinc::VarDecl* vardeclexpr;
-         std::vector<MiniZinc::VarDecl*>* vardeclexpr_v;
+         std::vector<MiniZinc::VarDecl*>* vardeclexprs;
          MiniZinc::TypeInst* tiexpr;
-         std::vector<MiniZinc::TypeInst*>* tiexpr_v;
+         std::vector<MiniZinc::TypeInst*>* tiexprs;
          MiniZinc::Expression* expression;
-         std::vector<MiniZinc::Expression*>* expression_v;
-         std::vector<std::vector<MiniZinc::Expression*> >* expression_vv;
-         std::vector<std::vector<std::vector<MiniZinc::Expression*> > >* expression_vvv;
+         std::vector<MiniZinc::Expression*>* expressions1d;
+         std::vector<std::vector<MiniZinc::Expression*> >* expressions2d;
+         std::vector<std::vector<std::vector<MiniZinc::Expression*> > >* expressions3d;
          MiniZinc::Generator* generator;
-         std::vector<MiniZinc::Generator>* generator_v;
-         std::vector<std::string>* string_v;
-         std::pair<std::vector<MiniZinc::Expression*>,
-                   MiniZinc::Expression*>* expression_p;
-         MiniZinc::Generators* generators;
+         std::vector<MiniZinc::Generator>* generators;
+         std::vector<std::string>* strings;
+         std::vector<std::pair<MiniZinc::Expression*,MiniZinc::Expression*> >* expressionPairs;
+         MiniZinc::Generators* generatorsPointer;
        }
 
 %locations
-%error-verbose
+%define parse.error verbose
 
 %initial-action
 {
   GCLock lock;
-  @$.filename = ASTString(static_cast<ParserState*>(parm)->filename);
+  @$.filename(ASTString(static_cast<ParserState*>(parm)->filename));
 }
 
 %token <iValue> MZN_INTEGER_LITERAL "integer literal" MZN_BOOL_LITERAL "bool literal"
@@ -525,6 +184,7 @@ namespace MiniZinc {
 %token MZN_INVALID_INTEGER_LITERAL "invalid integer literal"
 %token MZN_INVALID_FLOAT_LITERAL "invalid float literal"
 %token MZN_UNTERMINATED_STRING "unterminated string"
+%token MZN_END_OF_LINE_IN_STRING "end of line inside string literal"
 %token MZN_INVALID_NULL "null character"
 
 %token END 0 "end of file"
@@ -533,12 +193,14 @@ namespace MiniZinc {
 %token MZN_IMPL "->" MZN_RIMPL "<-"
 %token MZN_OR "\\/" MZN_XOR "xor"
 %token MZN_AND "/\\"
-%token MZN_LE "<" MZN_GR ">" MZN_LQ "<=" MZN_GQ ">=" MZN_EQ "=" MZN_NQ "!="
+%token MZN_LE "<" MZN_GR ">" MZN_LQ "<=" MZN_GQ ">=" MZN_EQ "=" MZN_NQ "!=" MZN_WEAK_EQ "~="
 %token MZN_IN "in" MZN_SUBSET "subset" MZN_SUPERSET "superset"
 %token MZN_UNION "union" MZN_DIFF "diff" MZN_SYMDIFF "symdiff"
 %token MZN_DOTDOT ".."
-%token MZN_PLUS "+" MZN_MINUS "-"
-%token MZN_MULT "*" MZN_DIV "/" MZN_IDIV "div" MZN_MOD "mod" MZN_INTERSECT "intersect"
+%token MZN_PLUS "+" MZN_MINUS "-" MZN_WEAK_PLUS "~+" MZN_WEAK_MINUS "~-"
+%token MZN_MULT "*" MZN_DIV "/" MZN_IDIV "div" MZN_MOD "mod" MZN_INTERSECT "intersect" MZN_WEAK_MULT "~*"
+%token MZN_POW "^"
+%token MZN_POW_MINUS1 "^-1"
 %token MZN_NOT "not"
 %token MZN_PLUSPLUS "++"
 %token MZN_COLONCOLON "::"
@@ -548,12 +210,13 @@ namespace MiniZinc {
 %left MZN_IMPL MZN_RIMPL
 %left MZN_OR MZN_XOR
 %left MZN_AND
-%nonassoc MZN_LE MZN_GR MZN_LQ MZN_GQ MZN_EQ MZN_NQ
+%nonassoc MZN_LE MZN_GR MZN_LQ MZN_GQ MZN_EQ MZN_NQ MZN_WEAK_EQ
 %nonassoc MZN_IN MZN_SUBSET MZN_SUPERSET
 %left MZN_UNION MZN_DIFF MZN_SYMDIFF MZN_INTERSECT 
 %nonassoc MZN_DOTDOT
-%left MZN_PLUS MZN_MINUS
-%left MZN_MULT MZN_DIV MZN_IDIV MZN_MOD
+%left MZN_PLUS MZN_MINUS MZN_WEAK_PLUS MZN_WEAK_MINUS
+%left MZN_MULT MZN_DIV MZN_IDIV MZN_MOD MZN_WEAK_MULT
+%left MZN_POW MZN_POW_MINUS1
 %nonassoc MZN_NOT
 %left MZN_PLUSPLUS
 %left MZN_QUOTED_IDENTIFIER
@@ -569,6 +232,7 @@ namespace MiniZinc {
 %token MZN_DOTDOT_QUOTED "'..'"
 %token MZN_PLUS_QUOTED "'+'" MZN_MINUS_QUOTED "'-'"
 %token MZN_MULT_QUOTED "'*'" MZN_DIV_QUOTED "'/'" MZN_IDIV_QUOTED "'div'" MZN_MOD_QUOTED "'mod'" MZN_INTERSECT_QUOTED "'intersect'"
+%token MZN_POW_QUOTED "'^'"
 %token MZN_NOT_QUOTED "'not'"
 %token MZN_COLONCOLON_QUOTED "'::'"
 %token MZN_PLUSPLUS_QUOTED "'++'"
@@ -576,26 +240,26 @@ namespace MiniZinc {
 %type <item> item item_tail include_item vardecl_item assign_item constraint_item solve_item output_item predicate_item annotation_item function_item
 
 %type <vardeclexpr> ti_expr_and_id ti_expr_and_id_or_anon let_vardecl_item
-%type <vardeclexpr_v> params params_list params_list_head
+%type <vardeclexprs> params params_list params_list_head
 %type <tiexpr> ti_expr base_ti_expr base_ti_expr_tail
-%type <tiexpr_v> ti_expr_list ti_expr_list_head
+%type <tiexprs> ti_expr_list ti_expr_list_head
 
-%type <expression> expr expr_atom_head
-%type <expression> set_expr string_expr string_quote_rest
+%type <expression> expr expr_atom_head expr_atom_head_nonstring array_access_expr
+%type <expression> set_expr string_expr string_quote_rest annotation_expr enum_construct
 %type <expression> simple_array_literal simple_array_literal_2d simple_array_comp if_then_else_expr call_expr quoted_op_call let_expr operation_item_tail set_literal set_comp
 
-%type <expression_v> expr_list expr_list_head elseif_list let_vardecl_item_list enum_id_list
-%type <expression_vv> simple_array_literal_2d_list array_access_tail
-%type <expression_vvv> simple_array_literal_3d_list
+%type <expressions1d> expr_list expr_list_head array_access_expr_list array_access_expr_list_head elseif_list let_vardecl_item_list enum_init enum_id_list string_lit_list
+%type <expressions2d> simple_array_literal_2d_list array_access_tail
+%type <expressions3d> simple_array_literal_3d_list
 
-%type <generators> comp_tail
-%type <generator> generator
-%type <generator_v> generator_list generator_list_head
-%type <string_v> id_list id_list_head
+%type <generatorsPointer> comp_tail
+%type <generator> generator generator_eq
+%type <generators> generator_list generator_list_head
+%type <strings> id_list id_list_head
 
-%type <expression_p> comp_or_expr
+%type <expressionPairs> comp_or_expr comp_or_expr_head
 
-%type <expression_v> annotations ne_annotations
+%type <expressions1d> annotations ne_annotations
 
 %type <iValue> quoted_op
 
@@ -652,6 +316,8 @@ item_list_head:
           GC::lock();
         }
       }
+    | item error_item_start
+{ yyerror(&@2, parm, "unexpected item, expecting ';' or end of file"); YYERROR; }
     | error ';' item
 
 doc_file_comments:
@@ -677,11 +343,11 @@ semi_or_none : | ';'
 item : MZN_DOC_COMMENT item_tail
       { $$ = $2;
         ParserState* pp = static_cast<ParserState*>(parm);
-        if (FunctionI* fi = Item::dyn_cast<FunctionI>($$)) {
+        if (FunctionI* fi = Item::dynamicCast<FunctionI>($$)) {
           if (pp->parseDocComments) {
             fi->ann().add(createDocComment(@1,$1));
           }
-        } else if (VarDeclI* vdi = Item::dyn_cast<VarDeclI>($$)) {
+        } else if (VarDeclI* vdi = Item::dynamicCast<VarDeclI>($$)) {
           if (pp->parseDocComments) {
             vdi->e()->addAnnotation(createDocComment(@1,$1));
           }
@@ -695,22 +361,26 @@ item : MZN_DOC_COMMENT item_tail
 
 item_tail :
       include_item
-      { $$=notInDatafile(&@$,parm,"include") ? $1 : NULL; }
+      { $$=notInDatafile(&@$,parm,"include") ? $1 : nullptr; }
     | vardecl_item
-      { $$=notInDatafile(&@$,parm,"variable declaration") ? $1 : NULL; }
+      { $$=notInDatafile(&@$,parm,"variable declaration") ? $1 : nullptr; }
     | assign_item
     | constraint_item
-      { $$=notInDatafile(&@$,parm,"constraint") ? $1 : NULL; }
+      { $$=notInDatafile(&@$,parm,"constraint") ? $1 : nullptr; }
     | solve_item
-      { $$=notInDatafile(&@$,parm,"solve") ? $1 : NULL; }
+      { $$=notInDatafile(&@$,parm,"solve") ? $1 : nullptr; }
     | output_item
-      { $$=notInDatafile(&@$,parm,"output") ? $1 : NULL; }
+      { $$=notInDatafile(&@$,parm,"output") ? $1 : nullptr; }
     | predicate_item
-      { $$=notInDatafile(&@$,parm,"predicate") ? $1 : NULL; }
+      { $$=notInDatafile(&@$,parm,"predicate") ? $1 : nullptr; }
     | function_item
-      { $$=notInDatafile(&@$,parm,"predicate") ? $1 : NULL; }
+      { $$=notInDatafile(&@$,parm,"predicate") ? $1 : nullptr; }
     | annotation_item
-      { $$=notInDatafile(&@$,parm,"annotation") ? $1 : NULL; }
+      { $$=notInDatafile(&@$,parm,"annotation") ? $1 : nullptr; }
+
+error_item_start : MZN_INCLUDE | MZN_ENUM | MZN_OUTPUT
+    | MZN_CONSTRAINT | MZN_SOLVE | MZN_PREDICATE | MZN_FUNCTION | MZN_TEST
+    | MZN_ANNOTATION
 
 include_item :
       MZN_INCLUDE MZN_STRING_LITERAL
@@ -722,11 +392,11 @@ include_item :
           Model* im = new Model;
           im->setParent(pp->model);
           im->setFilename($2);
-          string fpath, fbase; filepath(pp->filename, fpath, fbase);
+          string fpath = FileUtils::dir_name(pp->filename);
+          string fbase = FileUtils::base_name(pp->filename);
           if (fpath=="")
             fpath="./";
-          pair<string,Model*> pm(fpath, im);
-          pp->files.push_back(pm);
+          pp->files.emplace_back(im, ii, fpath, $2, pp->isSTDLib);
           ii->m(im);
           pp->seenModels.insert(pair<string,Model*>($2,im));
         } else {
@@ -749,34 +419,86 @@ vardecl_item :
           $$ = new VarDeclI(@$,$1);
         delete $2;
       }
-    | MZN_ENUM MZN_IDENTIFIER
+    | MZN_ENUM MZN_IDENTIFIER annotations
       {
         TypeInst* ti = new TypeInst(@$,Type::parsetint());
         ti->setIsEnum(true);
         VarDecl* vd = new VarDecl(@$,ti,$2);
+        if ($2 && $3)
+          vd->addAnnotations(*$3);
         free($2);
         $$ = new VarDeclI(@$,vd);
       }
-    | MZN_ENUM MZN_IDENTIFIER MZN_EQ '{' enum_id_list '}'
+    | MZN_ENUM MZN_IDENTIFIER annotations MZN_EQ enum_init
       {
-        TypeInst* ti = new TypeInst(@$,Type::parsetint());
-        ti->setIsEnum(true);
-        SetLit* sl = new SetLit(@$, *$5);
-        VarDecl* vd = new VarDecl(@$,ti,$2,sl);
+        if ($5) {
+          TypeInst* ti = new TypeInst(@$,Type::parsetint());
+          ti->setIsEnum(true);
+          Expression* e;
+          if ($5->size()==1) {
+            e = (*$5)[0];
+          } else {
+            ArrayLit* al = new ArrayLit(@$,*$5);
+            e = new Call(@$, ASTString("enumFromConstructors"), {al});
+          }
+          VarDecl* vd = new VarDecl(@$,ti,$2,e);
+          $$ = new VarDeclI(@$,vd);
+        }
         free($2);
         delete $5;
-        $$ = new VarDeclI(@$,vd);
       }
-    | MZN_ENUM MZN_IDENTIFIER MZN_EQ MZN_IDENTIFIER '(' expr ')'
+    | MZN_ENUM MZN_IDENTIFIER annotations MZN_EQ MZN_LEFT_BRACKET string_lit_list MZN_RIGHT_BRACKET
       {
         TypeInst* ti = new TypeInst(@$,Type::parsetint());
         ti->setIsEnum(true);
         vector<Expression*> args;
-        args.push_back($6);
-        Call* sl = new Call(@$, ASTString($4), args);
+        args.push_back(new ArrayLit(@$,*$6));
+        Call* sl = new Call(@$, constants().ids.anonEnumFromStrings, args);
         VarDecl* vd = new VarDecl(@$,ti,$2,sl);
+        if ($2 && $3)
+          vd->addAnnotations(*$3);
         free($2);
+        delete $6;
         $$ = new VarDeclI(@$,vd);
+      }
+
+enum_init :
+      enum_construct
+      {
+        $$ = new std::vector<Expression*>({$1});
+      }
+    | enum_init MZN_PLUSPLUS enum_construct
+      {
+        $$ = $1;
+        if ($$) {
+          $$->push_back($3);
+        }
+      }
+
+enum_construct :
+      '{' enum_id_list '}'
+      {
+        $$ = new SetLit(@$, *$2);
+        delete $2;
+      }
+    | MZN_IDENTIFIER '(' expr ')'
+      {
+        vector<Expression*> args({$3});
+        $$ = new Call(@$, ASTString($1), args);
+        free($1);
+      }
+
+string_lit_list :
+      // empty
+      { $$ = new std::vector<Expression*>(); }
+    | MZN_STRING_LITERAL
+      { $$ = new std::vector<Expression*>();
+        $$->push_back(new StringLit(@$, $1)); free($1);
+      }
+    | string_lit_list ',' MZN_STRING_LITERAL
+      { $$ = $1;
+        if ($$) $$->push_back(new StringLit(@$, $3));
+        free($3);
       }
 
 enum_id_list :
@@ -784,10 +506,10 @@ enum_id_list :
       { $$ = new std::vector<Expression*>(); }
     | MZN_IDENTIFIER
       { $$ = new std::vector<Expression*>();
-        $$->push_back(new Id(@$,$1,NULL)); free($1);
+        $$->push_back(new Id(@$,$1,nullptr)); free($1);
       }
     | enum_id_list ',' MZN_IDENTIFIER
-      { $$ = $1; if ($$) $$->push_back(new Id(@$,$3,NULL)); free($3); }
+      { $$ = $1; if ($$) $$->push_back(new Id(@$,$3,nullptr)); free($3); }
 
 assign_item :
       MZN_IDENTIFIER MZN_EQ expr
@@ -798,6 +520,11 @@ assign_item :
 constraint_item :
       MZN_CONSTRAINT expr
       { $$ = new ConstraintI(@$,$2);}
+    | MZN_CONSTRAINT MZN_COLONCOLON string_expr expr
+      { $$ = new ConstraintI(@$,$4);
+        if ($4 && $3)
+          $$->cast<ConstraintI>()->e()->ann().add(new Call(@2, ASTString("mzn_constraint_name"), {$3}));
+      }
 
 solve_item :
       MZN_SOLVE annotations MZN_SATISFY
@@ -822,32 +549,56 @@ output_item :
 
 predicate_item :
         MZN_PREDICATE MZN_IDENTIFIER params annotations operation_item_tail
-      { if ($3) $$ = new FunctionI(@$,$2,new TypeInst(@$,
-                                   Type::varbool()),*$3,$5);
+      {
+        ParserState* pp = static_cast<ParserState*>(parm);
+        if ($3) $$ = new FunctionI(@$,$2,new TypeInst(@$,
+                                   Type::varbool()),*$3,$5,pp->isSTDLib);
         if ($$ && $4) $$->cast<FunctionI>()->ann().add(*$4);
         free($2);
         delete $3;
         delete $4;
       }
       | MZN_TEST MZN_IDENTIFIER params annotations operation_item_tail
-      { if ($3) $$ = new FunctionI(@$,$2,new TypeInst(@$,
-                                   Type::parbool()),*$3,$5);
+      {
+        ParserState* pp = static_cast<ParserState*>(parm);
+        if ($3) $$ = new FunctionI(@$,$2,new TypeInst(@$,
+                                   Type::parbool()),*$3,$5,pp->isSTDLib);
         if ($$ && $4) $$->cast<FunctionI>()->ann().add(*$4);
         free($2);
         delete $3;
         delete $4;
       }
+      | MZN_PREDICATE MZN_IDENTIFIER MZN_POW_MINUS1 params annotations operation_item_tail
+      { if ($4) $$ = new FunctionI(@$,std::string($2)+"⁻¹",new TypeInst(@$,
+                                   Type::varbool()),*$4,$6);
+        if ($$ && $5) $$->cast<FunctionI>()->ann().add(*$5);
+        free($2);
+        delete $4;
+        delete $5;
+      }
+      | MZN_TEST MZN_IDENTIFIER MZN_POW_MINUS1 params annotations operation_item_tail
+      { if ($4) $$ = new FunctionI(@$,std::string($2)+"⁻¹",new TypeInst(@$,
+                                   Type::parbool()),*$4,$6);
+        if ($$ && $5) $$->cast<FunctionI>()->ann().add(*$5);
+        free($2);
+        delete $4;
+        delete $5;
+      }
 
 function_item :
         MZN_FUNCTION ti_expr ':' id_or_quoted_op params annotations operation_item_tail
-      { if ($5) $$ = new FunctionI(@$,$4,$2,*$5,$7);
+      {
+        ParserState* pp = static_cast<ParserState*>(parm);
+        if ($5) $$ = new FunctionI(@$,$4,$2,*$5,$7,pp->isSTDLib);
         if ($$ && $6) $$->cast<FunctionI>()->ann().add(*$6);
         free($4);
         delete $5;
         delete $6;
       }
       | ti_expr ':' MZN_IDENTIFIER '(' params_list ')' annotations operation_item_tail
-      { if ($5) $$ = new FunctionI(@$,$3,$1,*$5,$8);
+      {
+        ParserState* pp = static_cast<ParserState*>(parm);
+        if ($5) $$ = new FunctionI(@$,$3,$1,*$5,$8,pp->isSTDLib);
         if ($$ && $7) $$->cast<FunctionI>()->ann().add(*$7);
         free($3);
         delete $5;
@@ -857,25 +608,28 @@ function_item :
 annotation_item :
         MZN_ANNOTATION MZN_IDENTIFIER params
       {
+        ParserState* pp = static_cast<ParserState*>(parm);
         TypeInst* ti=new TypeInst(@1,Type::ann());
-        if ($3==NULL || $3->empty()) {
+        if ($3==nullptr || $3->empty()) {
           VarDecl* vd = new VarDecl(@$,ti,$2);
           $$ = new VarDeclI(@$,vd);
         } else {
-          $$ = new FunctionI(@$,$2,ti,*$3,NULL);
+          $$ = new FunctionI(@$,$2,ti,*$3,nullptr,pp->isSTDLib);
         }
         free($2);
         delete $3;
       }
     | MZN_ANNOTATION MZN_IDENTIFIER params MZN_EQ expr
-      { TypeInst* ti=new TypeInst(@1,Type::ann());
-        if ($3) $$ = new FunctionI(@$,$2,ti,*$3,$5);
+      {
+        ParserState* pp = static_cast<ParserState*>(parm);
+        TypeInst* ti=new TypeInst(@1,Type::ann());
+        if ($3) $$ = new FunctionI(@$,$2,ti,*$3,$5,pp->isSTDLib);
         delete $3;
       }
 
 operation_item_tail :
       /*empty*/
-      { $$=NULL; }
+      { $$=nullptr; }
     | MZN_EQ expr
       { $$=$2; }
 
@@ -1030,6 +784,39 @@ base_ti_expr_tail :
           free($1);
       }
 
+array_access_expr_list : array_access_expr_list_head comma_or_none
+
+array_access_expr_list_head :
+      array_access_expr
+      { $$=new std::vector<MiniZinc::Expression*>; $$->push_back($1); }
+    | array_access_expr_list_head ',' array_access_expr
+      { $$=$1; if ($$ && $3) $$->push_back($3); }
+
+array_access_expr :
+      expr
+      { $$ = $1; }
+    | MZN_DOTDOT
+      { $$=new SetLit(@$, IntSetVal::a(-IntVal::infinity(),IntVal::infinity())); }
+    | MZN_DOTDOT expr
+      { if ($2==nullptr) {
+          $$ = nullptr;
+        } else if ($2->isa<IntLit>()) {
+          $$=new SetLit(@$, IntSetVal::a(-IntVal::infinity(),$2->cast<IntLit>()->v()));
+        } else {
+          $$=new BinOp(@$, IntLit::a(-IntVal::infinity()), BOT_DOTDOT, $2);
+        }
+      }
+    | expr MZN_DOTDOT
+      { if ($1==nullptr) {
+          $$ = nullptr;
+        } else if ($1->isa<IntLit>()) {
+          $$=new SetLit(@$, IntSetVal::a($1->cast<IntLit>()->v(),IntVal::infinity()));
+        } else {
+          $$=new BinOp(@$, $1, BOT_DOTDOT, IntLit::a(IntVal::infinity()));
+        }
+      }
+
+
 expr_list : expr_list_head comma_or_none
 
 expr_list_head :
@@ -1042,7 +829,7 @@ expr_list_head :
 
 set_expr :
       expr_atom_head
-    | set_expr MZN_COLONCOLON expr_atom_head
+    | set_expr MZN_COLONCOLON annotation_expr
       { if ($1 && $3) $1->addAnnotation($3); $$=$1; }
     | set_expr MZN_UNION set_expr
       { $$=new BinOp(@$, $1, BOT_UNION, $3); }
@@ -1051,8 +838,8 @@ set_expr :
     | set_expr MZN_SYMDIFF set_expr
       { $$=new BinOp(@$, $1, BOT_SYMDIFF, $3); }
     | set_expr MZN_DOTDOT set_expr
-      { if ($1==NULL || $3==NULL) {
-          $$ = NULL;
+      { if ($1==nullptr || $3==nullptr) {
+          $$ = nullptr;
         } else if ($1->isa<IntLit>() && $3->isa<IntLit>()) {
           $$=new SetLit(@$, IntSetVal::a($1->cast<IntLit>()->v(),$3->cast<IntLit>()->v()));
         } else {
@@ -1060,8 +847,8 @@ set_expr :
         }
       }
     | MZN_DOTDOT_QUOTED '(' expr ',' expr ')'
-      { if ($3==NULL || $5==NULL) {
-          $$ = NULL;
+      { if ($3==nullptr || $5==nullptr) {
+          $$ = nullptr;
         } else if ($3->isa<IntLit>() && $5->isa<IntLit>()) {
           $$=new SetLit(@$, IntSetVal::a($3->cast<IntLit>()->v(),$5->cast<IntLit>()->v()));
         } else {
@@ -1084,6 +871,28 @@ set_expr :
       { $$=new BinOp(@$, $1, BOT_IDIV, $3); }
     | set_expr MZN_MOD set_expr
       { $$=new BinOp(@$, $1, BOT_MOD, $3); }
+    | set_expr MZN_POW set_expr
+      { $$=new BinOp(@$, $1, BOT_POW, $3); }
+    | set_expr MZN_WEAK_PLUS set_expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~+"), args);
+      }
+    | set_expr MZN_WEAK_MINUS set_expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~-"), args);
+      }
+    | set_expr MZN_WEAK_MULT set_expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~*"), args);
+      }
+    | set_expr MZN_WEAK_EQ set_expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~="), args);
+      }
     | set_expr MZN_QUOTED_IDENTIFIER set_expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
@@ -1096,8 +905,7 @@ set_expr :
       { if ($2 && $2->isa<IntLit>()) {
           $$ = IntLit::a(-$2->cast<IntLit>()->v());
         } else if ($2 && $2->isa<FloatLit>()) {
-          $2->cast<FloatLit>()->v(-$2->cast<FloatLit>()->v());
-          $$ = $2;
+          $$ = FloatLit::a(-$2->cast<FloatLit>()->v());
         } else {
           $$=new UnOp(@$, UOT_MINUS, $2);
         }
@@ -1107,7 +915,7 @@ set_expr :
 
 expr :
       expr_atom_head
-    | expr MZN_COLONCOLON expr_atom_head
+    | expr MZN_COLONCOLON annotation_expr
       { if ($1 && $3) $1->addAnnotation($3); $$=$1; }
     | expr MZN_EQUIV expr
       { $$=new BinOp(@$, $1, BOT_EQUIV, $3); }
@@ -1146,8 +954,8 @@ expr :
     | expr MZN_SYMDIFF expr
       { $$=new BinOp(@$, $1, BOT_SYMDIFF, $3); }
     | expr MZN_DOTDOT expr
-      { if ($1==NULL || $3==NULL) {
-          $$ = NULL;
+      { if ($1==nullptr || $3==nullptr) {
+          $$ = nullptr;
         } else if ($1->isa<IntLit>() && $3->isa<IntLit>()) {
           $$=new SetLit(@$, IntSetVal::a($1->cast<IntLit>()->v(),$3->cast<IntLit>()->v()));
         } else {
@@ -1155,8 +963,8 @@ expr :
         }
       }
     | MZN_DOTDOT_QUOTED '(' expr ',' expr ')'
-      { if ($3==NULL || $5==NULL) {
-          $$ = NULL;
+      { if ($3==nullptr || $5==nullptr) {
+          $$ = nullptr;
         } else if ($3->isa<IntLit>() && $5->isa<IntLit>()) {
           $$=new SetLit(@$, IntSetVal::a($3->cast<IntLit>()->v(),$5->cast<IntLit>()->v()));
         } else {
@@ -1179,6 +987,28 @@ expr :
       { $$=new BinOp(@$, $1, BOT_IDIV, $3); }
     | expr MZN_MOD expr
       { $$=new BinOp(@$, $1, BOT_MOD, $3); }
+    | expr MZN_POW expr
+      { $$=new BinOp(@$, $1, BOT_POW, $3); }
+    | expr MZN_WEAK_PLUS expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~+"), args);
+      }
+    | expr MZN_WEAK_MINUS expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~-"), args);
+      }
+    | expr MZN_WEAK_MULT expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~*"), args);
+      }
+    | expr MZN_WEAK_EQ expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~="), args);
+      }
     | expr MZN_QUOTED_IDENTIFIER expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
@@ -1198,66 +1028,129 @@ expr :
       { if ($2 && $2->isa<IntLit>()) {
           $$ = IntLit::a(-$2->cast<IntLit>()->v());
         } else if ($2 && $2->isa<FloatLit>()) {
-          $2->cast<FloatLit>()->v(-$2->cast<FloatLit>()->v());
-          $$ = $2;
+          $$ = FloatLit::a(-$2->cast<FloatLit>()->v());
         } else {
           $$=new UnOp(@$, UOT_MINUS, $2);
         }
       }
 
+
 expr_atom_head :
+      expr_atom_head_nonstring
+      { $$=$1; }
+    | string_expr
+      { $$=$1; }
+
+expr_atom_head_nonstring :
       '(' expr ')'
       { $$=$2; }
     | '(' expr ')' array_access_tail
       { if ($4) $$=createArrayAccess(@$, $2, *$4); delete $4; }
+    | '(' expr ')' MZN_POW_MINUS1
+      { $$=new BinOp(@$, $2, BOT_POW, IntLit::a(-1)); }
+    | '(' expr ')' array_access_tail MZN_POW_MINUS1
+      { if ($4) $$=new BinOp(@$,createArrayAccess(@$, $2, *$4), BOT_POW, IntLit::a(-1)); delete $4; }
     | MZN_IDENTIFIER
-      { $$=new Id(@$, $1, NULL); free($1); }
+      { $$=new Id(@$, $1, nullptr); free($1); }
     | MZN_IDENTIFIER array_access_tail
-      { if ($2) $$=createArrayAccess(@$, new Id(@1,$1,NULL), *$2);
+      { if ($2) $$=createArrayAccess(@$, new Id(@1,$1,nullptr), *$2);
+        free($1); delete $2; }
+    | MZN_IDENTIFIER MZN_POW_MINUS1
+      { $$=new BinOp(@$,new Id(@$, $1, nullptr), BOT_POW, IntLit::a(-1)); free($1); }
+    | MZN_IDENTIFIER array_access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, new Id(@1,$1,nullptr), *$2), BOT_POW, IntLit::a(-1));
         free($1); delete $2; }
     | MZN_UNDERSCORE
       { $$=new AnonVar(@$); }
     | MZN_UNDERSCORE array_access_tail
       { if ($2) $$=createArrayAccess(@$, new AnonVar(@$), *$2);
         delete $2; }
+    | MZN_UNDERSCORE MZN_POW_MINUS1
+      { $$=new BinOp(@$,new AnonVar(@$), BOT_POW, IntLit::a(-1)); }
+    | MZN_UNDERSCORE array_access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, new AnonVar(@$), *$2), BOT_POW, IntLit::a(-1));
+        delete $2; }
     | MZN_BOOL_LITERAL
       { $$=constants().boollit(($1!=0)); }
+    | MZN_BOOL_LITERAL MZN_POW_MINUS1
+      { $$=new BinOp(@$,constants().boollit(($1!=0)), BOT_POW, IntLit::a(-1)); }
     | MZN_INTEGER_LITERAL
       { $$=IntLit::a($1); }
+    | MZN_INTEGER_LITERAL MZN_POW_MINUS1
+      { $$=new BinOp(@$,IntLit::a($1), BOT_POW, IntLit::a(-1)); }
     | MZN_INFINITY
       { $$=IntLit::a(IntVal::infinity()); }
+    | MZN_INFINITY MZN_POW_MINUS1
+      { $$=new BinOp(@$,IntLit::a(IntVal::infinity()), BOT_POW, IntLit::a(-1)); }
     | MZN_FLOAT_LITERAL
-      { $$=new FloatLit(@$, $1); }
-    | string_expr
+      { $$=FloatLit::a($1); }
+    | MZN_FLOAT_LITERAL MZN_POW_MINUS1
+      { $$=new BinOp(@$,FloatLit::a($1), BOT_POW, IntLit::a(-1)); }
     | MZN_ABSENT
+      { $$=constants().absent; }
+    | MZN_ABSENT MZN_POW_MINUS1
       { $$=constants().absent; }
     | set_literal
     | set_literal array_access_tail
       { if ($2) $$=createArrayAccess(@$, $1, *$2);
         delete $2; }
+    | set_literal MZN_POW_MINUS1
+      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+    | set_literal array_access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+        delete $2; }
     | set_comp
     | set_comp array_access_tail
       { if ($2) $$=createArrayAccess(@$, $1, *$2);
+        delete $2; }
+    | set_comp MZN_POW_MINUS1
+      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+    | set_comp array_access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
         delete $2; }
     | simple_array_literal
     | simple_array_literal array_access_tail
       { if ($2) $$=createArrayAccess(@$, $1, *$2);
         delete $2; }
+    | simple_array_literal MZN_POW_MINUS1
+      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+    | simple_array_literal array_access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+        delete $2; }
     | simple_array_literal_2d
     | simple_array_literal_2d array_access_tail
       { if ($2) $$=createArrayAccess(@$, $1, *$2);
+        delete $2; }
+    | simple_array_literal_2d MZN_POW_MINUS1
+      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+    | simple_array_literal_2d array_access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
         delete $2; }
     | simple_array_comp
     | simple_array_comp array_access_tail
       { if ($2) $$=createArrayAccess(@$, $1, *$2);
         delete $2; }
+    | simple_array_comp MZN_POW_MINUS1
+      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+    | simple_array_comp array_access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+        delete $2; }
     | if_then_else_expr
     | if_then_else_expr array_access_tail
       { if ($2) $$=createArrayAccess(@$, $1, *$2);
         delete $2; }
+    | if_then_else_expr MZN_POW_MINUS1
+      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+    | if_then_else_expr array_access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+        delete $2; }
     | let_expr
     | call_expr
     | call_expr array_access_tail
+      { if ($2) $$=createArrayAccess(@$, $1, *$2);
+        delete $2; }
+    | call_expr MZN_POW_MINUS1
+    | call_expr array_access_tail MZN_POW_MINUS1
       { if ($2) $$=createArrayAccess(@$, $1, *$2);
         delete $2; }
 
@@ -1283,14 +1176,14 @@ string_quote_rest:
       }
 
 array_access_tail :
-      MZN_LEFT_BRACKET expr_list MZN_RIGHT_BRACKET
+      MZN_LEFT_BRACKET array_access_expr_list MZN_RIGHT_BRACKET
       { $$=new std::vector<std::vector<Expression*> >();
         if ($2) {
           $$->push_back(*$2);
           delete $2;
         }
       }
-    | array_access_tail MZN_LEFT_BRACKET expr_list MZN_RIGHT_BRACKET
+    | array_access_tail MZN_LEFT_BRACKET array_access_expr_list MZN_RIGHT_BRACKET
       { $$=$1;
         if ($$ && $3) {
           $$->push_back(*$3);
@@ -1313,21 +1206,40 @@ set_comp :
 
 comp_tail :
       generator_list
-      { if ($1) $$=new Generators; $$->_g = *$1; $$->_w = NULL; delete $1; }
-    | generator_list MZN_WHERE expr
-      { if ($1) $$=new Generators; $$->_g = *$1; $$->_w = $3; delete $1; }
+      { if ($1) $$=new Generators; $$->g = *$1; delete $1; }
 
 generator_list : generator_list_head comma_or_none
 
 generator_list_head :
       generator
       { $$=new std::vector<Generator>; if ($1) $$->push_back(*$1); delete $1; }
+    | generator_eq
+      { $$=new std::vector<Generator>; if ($1) $$->push_back(*$1); delete $1; }
+    | generator_eq MZN_WHERE expr
+      { $$=new std::vector<Generator>;
+        if ($1) $$->push_back(*$1);
+        if ($1 && $3) $$->push_back(Generator($$->size(),$3));
+        delete $1;
+      }
     | generator_list_head ',' generator
       { $$=$1; if ($$ && $3) $$->push_back(*$3); delete $3; }
+    | generator_list_head ',' generator_eq
+      { $$=$1; if ($$ && $3) $$->push_back(*$3); delete $3; }
+    | generator_list_head ',' generator_eq MZN_WHERE expr
+      { $$=$1;
+        if ($$ && $3) $$->push_back(*$3);
+        if ($$ && $3 && $5) $$->push_back(Generator($$->size(),$5));
+        delete $3;
+      }
 
 generator : 
       id_list MZN_IN expr
-      { if ($1 && $3) $$=new Generator(*$1,$3); else $$=NULL; delete $1; }
+      { if ($1 && $3) $$=new Generator(*$1,$3,nullptr); else $$=nullptr; delete $1; }
+    | id_list MZN_IN expr MZN_WHERE expr
+      { if ($1 && $3) $$=new Generator(*$1,$3,$5); else $$=nullptr; delete $1; }
+generator_eq :
+      MZN_IDENTIFIER MZN_EQ expr
+      { if ($3) $$=new Generator({$1},nullptr,$3); else $$=nullptr; free($1); }
 
 id_list : id_list_head comma_or_none
 
@@ -1354,7 +1266,7 @@ simple_array_literal_2d :
               yyerror(&@2, parm, "syntax error, all sub-arrays of 2d array literal must have the same length");
           delete $2;
         } else {
-          $$ = NULL;
+          $$ = nullptr;
         }
       }
     | MZN_LEFT_2D_BRACKET simple_array_literal_2d_list '|' MZN_RIGHT_2D_BRACKET
@@ -1365,35 +1277,35 @@ simple_array_literal_2d :
               yyerror(&@2, parm, "syntax error, all sub-arrays of 2d array literal must have the same length");
           delete $2;
         } else {
-          $$ = NULL;
+          $$ = nullptr;
         }
       }
     | MZN_LEFT_2D_BRACKET simple_array_literal_3d_list MZN_RIGHT_2D_BRACKET
     {
       if ($2) {
         std::vector<std::pair<int,int> > dims(3);
-        dims[0] = std::pair<int,int>(1,$2->size());
+        dims[0] = std::pair<int,int>(1,static_cast<int>($2->size()));
         if ($2->size()==0) {
           dims[1] = std::pair<int,int>(1,0);
           dims[2] = std::pair<int,int>(1,0);
         } else {
-          dims[1] = std::pair<int,int>(1,(*$2)[0].size());
+          dims[1] = std::pair<int,int>(1,static_cast<int>((*$2)[0].size()));
           if ((*$2)[0].size()==0) {
             dims[2] = std::pair<int,int>(1,0);
           } else {
-            dims[2] = std::pair<int,int>(1,(*$2)[0][0].size());
+            dims[2] = std::pair<int,int>(1,static_cast<int>((*$2)[0][0].size()));
           }
         }
         std::vector<Expression*> a;
-        for (unsigned int i=0; i<dims[0].second; i++) {
+        for (int i=0; i<dims[0].second; i++) {
           if ((*$2)[i].size() != dims[1].second) {
             yyerror(&@2, parm, "syntax error, all sub-arrays of 3d array literal must have the same length");
           } else {
-            for (unsigned int j=0; j<dims[1].second; j++) {
+            for (int j=0; j<dims[1].second; j++) {
               if ((*$2)[i][j].size() != dims[2].second) {
                 yyerror(&@2, parm, "syntax error, all sub-arrays of 3d array literal must have the same length");
               } else {
-                for (unsigned int k=0; k<dims[2].second; k++) {
+                for (int k=0; k<dims[2].second; k++) {
                   a.push_back((*$2)[i][j][k]);
                 }
               }
@@ -1403,7 +1315,7 @@ simple_array_literal_2d :
         $$ = new ArrayLit(@$,a,dims);
         delete $2;
       } else {
-        $$ = NULL;
+        $$ = nullptr;
       }
     }
 
@@ -1438,7 +1350,14 @@ simple_array_comp :
       }
 
 if_then_else_expr :
-      MZN_IF expr MZN_THEN expr elseif_list MZN_ELSE expr MZN_ENDIF
+      MZN_IF expr MZN_THEN expr MZN_ENDIF
+      {
+        std::vector<Expression*> iexps;
+        iexps.push_back($2);
+        iexps.push_back($4);
+        $$=new ITE(@$, iexps, nullptr);
+      }
+    | MZN_IF expr MZN_THEN expr elseif_list MZN_ELSE expr MZN_ENDIF
       {
         std::vector<Expression*> iexps;
         iexps.push_back($2);
@@ -1501,6 +1420,8 @@ quoted_op :
       { $$=BOT_MINUS; }
     | MZN_MULT_QUOTED
       { $$=BOT_MULT; }
+    | MZN_POW_QUOTED
+      { $$=BOT_POW; }
     | MZN_DIV_QUOTED
       { $$=BOT_DIV; }
     | MZN_IDIV_QUOTED
@@ -1517,7 +1438,7 @@ quoted_op :
 quoted_op_call :
       quoted_op '(' expr ',' expr ')'
       { if ($1==-1) {
-          $$=NULL;
+          $$=nullptr;
           yyerror(&@3, parm, "syntax error, unary operator with two arguments");
         } else {
           $$=new BinOp(@$, $3,static_cast<BinOpType>($1),$5);
@@ -1540,15 +1461,14 @@ quoted_op_call :
           break;
         }
         if (uot==-1)
-          $$=NULL;
+          $$=nullptr;
         else {
           if (uot==UOT_PLUS && $3 && ($3->isa<IntLit>() || $3->isa<FloatLit>())) {
             $$ = $3;
           } else if (uot==UOT_MINUS && $3 && $3->isa<IntLit>()) {
             $$ = IntLit::a(-$3->cast<IntLit>()->v());
           } else if (uot==UOT_MINUS && $3 && $3->isa<FloatLit>()) {
-            $3->cast<FloatLit>()->v(-$3->cast<FloatLit>()->v());
-            $$ = $3;
+            $$ = FloatLit::a(-$3->cast<FloatLit>()->v());
           } else {
             $$=new UnOp(@$, static_cast<UnOpType>(uot),$3);
           }
@@ -1558,14 +1478,25 @@ quoted_op_call :
 call_expr :
       MZN_IDENTIFIER '(' ')'
       { $$=new Call(@$, $1, std::vector<Expression*>()); free($1); }
+    | MZN_IDENTIFIER MZN_POW_MINUS1 '(' ')'
+      { $$=new Call(@$, std::string($1)+"⁻¹", std::vector<Expression*>()); free($1); }
     | quoted_op_call
     | MZN_IDENTIFIER '(' comp_or_expr ')'
       { 
-        if ($3==NULL || $3->second) {
-          yyerror(&@3, parm, "syntax error, 'where' expression outside generator call");
-          $$=NULL;
-        } else {
-          $$=new Call(@$, $1, $3->first);
+        if ($3!=nullptr) {
+          bool hadWhere = false;
+          std::vector<Expression*> args;
+          for (unsigned int i=0; i<$3->size(); i++) {
+            if ((*$3)[i].second) {
+              yyerror(&@3, parm, "syntax error, 'where' expression outside generator call");
+              hadWhere = true;
+              $$=nullptr;
+            }
+            args.push_back((*$3)[i].first);
+          }
+          if (!hadWhere) {
+            $$=new Call(@$, $1, args);
+          }
         }
         free($1);
         delete $3;
@@ -1573,25 +1504,38 @@ call_expr :
     | MZN_IDENTIFIER '(' comp_or_expr ')' '(' expr ')'
       { 
         vector<Generator> gens;
-        vector<ASTString> ids;
+        vector<Id*> ids;
         if ($3) {
-          for (unsigned int i=0; i<$3->first.size(); i++) {
-            if (Id* id = Expression::dyn_cast<Id>($3->first[i])) {
-              ids.push_back(id->v());
+          for (unsigned int i=0; i<$3->size(); i++) {
+            if (Id* id = Expression::dynamicCast<Id>((*$3)[i].first)) {
+              if ((*$3)[i].second) {
+                ParserLocation loc = (*$3)[i].second->loc().parserLocation();
+                yyerror(&loc, parm, "illegal where expression in generator call");
+              }
+              ids.push_back(id);
             } else {
-              if (BinOp* boe = Expression::dyn_cast<BinOp>($3->first[i])) {
+              if (BinOp* boe = Expression::dynamicCast<BinOp>((*$3)[i].first)) {
                 if (boe->lhs() && boe->rhs()) {
-                  Id* id = Expression::dyn_cast<Id>(boe->lhs());
+                  Id* id = Expression::dynamicCast<Id>(boe->lhs());
                   if (id && boe->op() == BOT_IN) {
-                    ids.push_back(id->v());
-                    gens.push_back(Generator(ids,boe->rhs()));
-                    ids = vector<ASTString>();
+                    ids.push_back(id);
+                    gens.push_back(Generator(ids,boe->rhs(),(*$3)[i].second));
+                    ids = vector<Id*>();
+                  } else if (id && boe->op() == BOT_EQ && ids.empty()) {
+                    ids.push_back(id);
+                    gens.push_back(Generator(ids,nullptr,boe->rhs()));
+                    if ((*$3)[i].second) {
+                      gens.push_back(Generator(gens.size(),(*$3)[i].second));
+                    }
+                    ids = vector<Id*>();
                   } else {
-                    yyerror(&@3, parm, "illegal expression in generator call");
+                    ParserLocation loc = (*$3)[i].first->loc().parserLocation();
+                    yyerror(&loc, parm, "illegal expression in generator call");
                   }
                 }
               } else {
-                yyerror(&@3, parm, "illegal expression in generator call");
+                ParserLocation loc = (*$3)[i].first->loc().parserLocation();
+                yyerror(&loc, parm, "illegal expression in generator call");
               }
             }
           }
@@ -1601,9 +1545,9 @@ call_expr :
         }
         ParserState* pp = static_cast<ParserState*>(parm);
         if (pp->hadError) {
-          $$=NULL;
+          $$=nullptr;
         } else {
-          Generators g; g._g = gens; g._w = $3->second;
+          Generators g; g.g = gens;
           Comprehension* ac = new Comprehension(@$, $6,g,false);
           vector<Expression*> args; args.push_back(ac);
           $$=new Call(@$, $1, args);
@@ -1611,34 +1555,114 @@ call_expr :
         free($1);
         delete $3;
       }
+    | MZN_IDENTIFIER MZN_POW_MINUS1 '(' comp_or_expr ')'
+      {
+        if ($4!=nullptr) {
+          bool hadWhere = false;
+          std::vector<Expression*> args;
+          for (unsigned int i=0; i<$4->size(); i++) {
+            if ((*$4)[i].second) {
+              yyerror(&@4, parm, "syntax error, 'where' expression outside generator call");
+              hadWhere = true;
+              $$=nullptr;
+            }
+            args.push_back((*$4)[i].first);
+          }
+          if (!hadWhere) {
+            $$=new Call(@$, std::string($1)+"⁻¹", args);
+          }
+        }
+        free($1);
+        delete $4;
+      }
+    | MZN_IDENTIFIER MZN_POW_MINUS1 '(' comp_or_expr ')' '(' expr ')'
+      {
+        vector<Generator> gens;
+        vector<Id*> ids;
+        if ($4) {
+          for (unsigned int i=0; i<$4->size(); i++) {
+            if (Id* id = Expression::dynamicCast<Id>((*$4)[i].first)) {
+              if ((*$4)[i].second) {
+                ParserLocation loc = (*$4)[i].second->loc().parserLocation();
+                yyerror(&loc, parm, "illegal where expression in generator call");
+              }
+              ids.push_back(id);
+            } else {
+              if (BinOp* boe = Expression::dynamicCast<BinOp>((*$4)[i].first)) {
+                if (boe->lhs() && boe->rhs()) {
+                  Id* id = Expression::dynamicCast<Id>(boe->lhs());
+                  if (id && boe->op() == BOT_IN) {
+                    ids.push_back(id);
+                    gens.push_back(Generator(ids,boe->rhs(),(*$4)[i].second));
+                    ids = vector<Id*>();
+                  } else if (id && boe->op() == BOT_EQ && ids.empty()) {
+                    ids.push_back(id);
+                    gens.push_back(Generator(ids,nullptr,boe->rhs()));
+                    if ((*$4)[i].second) {
+                      gens.push_back(Generator(gens.size(),(*$4)[i].second));
+                    }
+                    ids = vector<Id*>();
+                  } else {
+                    ParserLocation loc = (*$4)[i].first->loc().parserLocation();
+                    yyerror(&loc, parm, "illegal expression in generator call");
+                  }
+                }
+              } else {
+                ParserLocation loc = (*$4)[i].first->loc().parserLocation();
+                yyerror(&loc, parm, "illegal expression in generator call");
+              }
+            }
+          }
+        }
+        if (ids.size() != 0) {
+          yyerror(&@4, parm, "illegal expression in generator call");
+        }
+        ParserState* pp = static_cast<ParserState*>(parm);
+        if (pp->hadError) {
+          $$=nullptr;
+        } else {
+          Generators g; g.g = gens;
+          Comprehension* ac = new Comprehension(@$, $7,g,false);
+          vector<Expression*> args; args.push_back(ac);
+          $$=new Call(@$, std::string($1)+"⁻¹", args);
+        }
+        free($1);
+        delete $4;
+      }
 
-comp_or_expr :
-      expr_list
-      { $$=new pair<vector<Expression*>,Expression*>;
-        if ($1) $$->first=*$1;
-        $$->second=NULL;
-        delete $1;
+comp_or_expr : comp_or_expr_head comma_or_none
+
+comp_or_expr_head :
+      expr
+      { $$=new vector<pair<Expression*,Expression*> >;
+        if ($1) {
+          $$->push_back(pair<Expression*,Expression*>($1,nullptr));
+        }
       }
-    | expr_list MZN_WHERE expr
-      { $$=new pair<vector<Expression*>,Expression*>;
-        if ($1) $$->first=*$1;
-        $$->second=$3;
-        delete $1;
+    | expr MZN_WHERE expr
+      { $$=new vector<pair<Expression*,Expression*> >;
+        if ($1 && $3) {
+          $$->push_back(pair<Expression*,Expression*>($1,$3));
+        }
       }
+    | comp_or_expr_head ',' expr
+      { $$=$1; if ($$ && $3) $$->push_back(pair<Expression*,Expression*>($3,nullptr)); }
+    | comp_or_expr_head ',' expr MZN_WHERE expr
+      { $$=$1; if ($$ && $3 && $5) $$->push_back(pair<Expression*,Expression*>($3,$5)); }
 
 let_expr :
       MZN_LET '{' let_vardecl_item_list '}' MZN_IN expr %prec PREC_ANNO
       { if ($3 && $6) {
           $$=new Let(@$, *$3, $6); delete $3;
         } else {
-          $$=NULL;
+          $$=nullptr;
         }
       }
     | MZN_LET '{' let_vardecl_item_list comma_or_semi '}' MZN_IN expr %prec PREC_ANNO
       { if ($3 && $7) {
           $$=new Let(@$, *$3, $7); delete $3;
         } else {
-          $$=NULL;
+          $$=nullptr;
         }
       }
 
@@ -1650,7 +1674,7 @@ let_vardecl_item_list :
         if ($1) {
           ConstraintI* ce = $1->cast<ConstraintI>();
           $$->push_back(ce->e());
-          ce->e(NULL);
+          ce->e(nullptr);
         }
       }
     | let_vardecl_item_list comma_or_semi let_vardecl_item
@@ -1660,7 +1684,7 @@ let_vardecl_item_list :
         if ($$ && $3) {
           ConstraintI* ce = $3->cast<ConstraintI>();
           $$->push_back(ce->e());
-          ce->e(NULL);
+          ce->e(nullptr);
         }
       }
 
@@ -1684,20 +1708,28 @@ let_vardecl_item :
 
 annotations :
       /* empty */
-      { $$=NULL; }
+      { $$=nullptr; }
     | ne_annotations
 
+annotation_expr :
+      expr_atom_head_nonstring
+      { $$ = $1; }
+    | string_expr
+      { $$ = new Call(@1, ASTString("mzn_expression_name"), {$1}); }
+
 ne_annotations :
-      MZN_COLONCOLON expr_atom_head
+      MZN_COLONCOLON annotation_expr
       { $$=new std::vector<Expression*>(1);
         (*$$)[0] = $2;
       }
-    | ne_annotations MZN_COLONCOLON expr_atom_head
+    | ne_annotations MZN_COLONCOLON annotation_expr
       { $$=$1; if ($$) $$->push_back($3); }
 
 id_or_quoted_op :
       MZN_IDENTIFIER
       { $$=$1; }
+    | MZN_IDENTIFIER MZN_POW_MINUS1
+      { $$=strdup((std::string($1)+"⁻¹").c_str()); }
     | MZN_EQUIV_QUOTED
       { $$=strdup("'<->'"); }
     | MZN_IMPL_QUOTED
@@ -1742,6 +1774,8 @@ id_or_quoted_op :
       { $$=strdup("'-'"); }
     | MZN_MULT_QUOTED
       { $$=strdup("'*'"); }
+    | MZN_POW_QUOTED
+      { $$=strdup("'^'"); }
     | MZN_DIV_QUOTED
       { $$=strdup("'/'"); }
     | MZN_IDIV_QUOTED

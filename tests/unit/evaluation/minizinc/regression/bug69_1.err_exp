@@ -1,7 +1,0 @@
-mzn2fzn:
-  error: 
-  bug69_1.mzn:9 
-  In constraint. 
-  In 'p' expression. 
-  In argument 1. 
-  Argument is out of range.

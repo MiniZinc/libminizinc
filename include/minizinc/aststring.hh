@@ -9,210 +9,259 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __MINIZINC_ASTSTRING_HH__
-#define __MINIZINC_ASTSTRING_HH__
+#pragma once
 
 #include <minizinc/gc.hh>
-#include <minizinc/stl_map_set.hh>
-#include <string>
+
+#include <algorithm>
 #include <cstring>
 #include <functional>
 #include <iostream>
-
-namespace MiniZinc {
-  
-  class ASTStringO;
-  
-  /**
-   * \brief Handler for ASTStringO objects
-   */
-  class ASTString {
-  protected:
-    /// String
-    ASTStringO* _s;
-  public:
-    /// Default constructor
-    ASTString(void) : _s(NULL) {}
-    /// Constructor
-    ASTString(ASTStringO* s) : _s(s) {}
-    /// Constructor
-    ASTString(const std::string& s);
-    /// Copy constructor
-    ASTString(const ASTString& s);
-    /// Assignment operator
-    ASTString& operator= (const ASTString& s);
-
-    /// Size of the string
-    unsigned int size(void) const;
-    /// Underlying C string object
-    const char* c_str(void) const;
-    /// Conversion to STL string
-    std::string str(void) const;
-    /// Underlying string implementation
-    ASTStringO* aststr(void) const { return _s; }
-
-    /// Return if string is equal to \a s
-    bool operator== (const ASTString& s) const;
-    /// Return if string is not equal to \a s
-    bool operator!= (const ASTString& s) const;
-
-    /// Return if string is equal to \a s
-    bool operator== (const std::string& s) const;
-    /// Return if string is not equal to \a s
-    bool operator!= (const std::string& s) const;
-
-    /// Return if string ends with \a s
-    bool endsWith(const std::string& s) const;
-
-    /// Return if string begins with \a s
-    bool beginsWith(const std::string& s) const;
-
-    /// Compute hash value of string
-    size_t hash(void) const;
-    
-    /// Mark string during garbage collection
-    void mark(void) const;
-  };
-
-  /// Hash map from strings to \a T
-  template<typename T>
-  struct ASTStringMap {
-    /// The map type specialised for ASTString
-    typedef UNORDERED_NAMESPACE::unordered_map<ASTString,T> t;
-  };
-
-  /**
-   * \brief Print integer set \a s
-   * \relates Gecode::IntSet
-   */
-  template<class Char, class Traits>
-  std::basic_ostream<Char,Traits>&
-  operator <<(std::basic_ostream<Char,Traits>& os, const ASTString& s) {
-    return s.size()==0 ? os : (os << s.c_str());
-  }
-
-}
-
-OPEN_HASH_NAMESPACE {
-  template<>
-  struct hash<MiniZinc::ASTString> {
-  public:
-    size_t operator()(const MiniZinc::ASTString& s) const;
-  };
-CLOSE_HASH_NAMESPACE }
-
-namespace std {
-  template<>
-  struct equal_to<MiniZinc::ASTString> {
-  public:
-    bool operator()(const MiniZinc::ASTString& s0,
-                    const MiniZinc::ASTString& s1) const;
-  };
-}
+#include <string>
+#include <unordered_map>
 
 namespace MiniZinc {
 
-  /**
-   * \brief Garbage collected string
-   */
-  class ASTStringO : public ASTChunk {
-  protected:
-    /// Constructor
-    ASTStringO(const std::string& s);
-  public:
-    /// Allocate and initialise as \a s
-    static ASTStringO* a(const std::string& s);
-    /// Return underlying C-style string
-    const char* c_str(void) const { return _data+sizeof(size_t); }
-    /// Conversion to STL string
-    std::string str(void) const { return std::string(c_str()); }
-    /// Return size of string
-    unsigned int size(void) const { return _size-sizeof(size_t)-1; }
-    /// Access character at position \a i
-    char operator[](unsigned int i) {
-      assert(i<size()); return _data[sizeof(size_t)+i];
-    }
-    /// Return hash value of string
-    size_t hash(void) const {
-      return reinterpret_cast<const size_t*>(_data)[0];
-    }
-    /// Mark for garbage collection
-    void mark(void) const {
-      _gc_mark = 1;
-    }
-  };
+class ASTStringData;
 
-  inline
-  ASTString::ASTString(const std::string& s) : _s(ASTStringO::a(s)) {}
-  inline
-  ASTString::ASTString(const ASTString& s) : _s(s._s) {}
-  inline ASTString&
-  ASTString::operator= (const ASTString& s) {
-    _s = s._s;
-    return *this;
-  }
-  inline unsigned int
-  ASTString::size(void) const {
-    return _s ? _s->size() : 0;
-  }
-  inline const char*
-  ASTString::c_str(void) const { return _s ? _s->c_str() : NULL; }
-  inline std::string
-  ASTString::str(void) const { return _s ? _s->str() : std::string(""); }
-  inline void
-  ASTString::mark(void) const { if (_s) _s->mark(); }
+/**
+ * \brief Handle for an interned garbage collected string
+ */
+class ASTString {
+protected:
+  /// String
+  ASTStringData* _s = nullptr;
 
-  inline bool
-  ASTString::operator== (const ASTString& s) const {
-    return size()==s.size() &&
-      (size()==0 || strncmp(_s->c_str(),s._s->c_str(),size())==0);
-  }
-  inline bool
-  ASTString::operator!= (const ASTString& s) const {
-    return !(*this == s);
-  }
-  inline bool
-  ASTString::operator== (const std::string& s) const {
-    return size()==s.size() &&
-      (size()==0 || strncmp(_s->c_str(),s.c_str(),size())==0);
-  }
-  inline bool
-  ASTString::operator!= (const std::string& s) const {
-    return !(*this == s);
-  }
-  inline bool
-  ASTString::endsWith(const std::string &s) const {
-    return size() >= s.size() &&
-      (size() == 0 || strncmp(_s->c_str()+size()-s.size(), s.c_str(), s.size())==0);
-  }
-  inline bool
-  ASTString::beginsWith(const std::string &s) const {
-    return size() >= s.size() &&
-    (size() == 0 || strncmp(_s->c_str(), s.c_str(), s.size())==0);
-  }
-  
-  inline size_t
-  ASTString::hash(void) const {
-    return _s ? _s->hash() : 0;
-  }
+public:
+  /// Default constructor
+  ASTString() = default;
+  /// Constructor
+  ASTString(const std::string& s);
+  /// Constructor
+  ASTString(ASTStringData* s) : _s(s){};
+  /// Copy constructor
+  ASTString(const ASTString& s) = default;
+  /// Assignment operator
+  ASTString& operator=(const ASTString& s) = default;
 
+  /// Size of the string
+  size_t size() const;
+  /// Underlying C string object
+  const char* c_str() const;  // NOLINT(readability-identifier-naming)
+  /// Underlying string implementation
+  ASTStringData* aststr() const { return _s; }
+
+  /// Return if string is equal to \a s
+  bool operator==(const ASTString& s) const;
+  /// Return if string is not equal to \a s
+  bool operator!=(const ASTString& s) const;
+  /// Return if string is less than \a s
+  bool operator<(const ASTString& s) const;
+
+  /// Return if string is equal to \a s
+  bool operator==(const std::string& s) const;
+  /// Return if string is not equal to \a s
+  bool operator!=(const std::string& s) const;
+
+  /// Return if string ends with \a s
+  bool endsWith(const std::string& s) const;
+
+  /// Return if string begins with \a s
+  bool beginsWith(const std::string& s) const;
+
+  /// Returns a substring [pos, pos+count).
+  std::string substr(size_t pos = 0, size_t count = std::string::npos) const;
+  // Finds the last character equal to one of characters in the given character sequence.
+  size_t findLastOf(char ch, size_t pos = std::string::npos) const noexcept;
+  // Finds the first character equal to the given character sequence.
+  size_t find(char ch, size_t pos = 0) const noexcept;
+
+  /// Return Levenshtein distance to \a s
+  int levenshteinDistance(const ASTString& other) const;
+
+  /// Compute hash value of string
+  size_t hash() const;
+
+  /// Mark string during garbage collection
+  void mark() const;
+};
+
+/**
+ * \brief Print String \a s
+ */
+template <class Char, class Traits>
+std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& os,
+                                             const ASTString& s) {
+  return s.size() == 0 ? os : (os << s.c_str());
 }
 
-OPEN_HASH_NAMESPACE {
-  inline size_t
-  hash<MiniZinc::ASTString>::operator()(
-                                        const MiniZinc::ASTString& s) const {
-    return s.hash();
-  }
-CLOSE_HASH_NAMESPACE }
+}  // namespace MiniZinc
 
 namespace std {
-  inline bool
-  equal_to<MiniZinc::ASTString>::operator()(const MiniZinc::ASTString& s0,
-                                            const MiniZinc::ASTString& s1) 
-                                            const {
-      return s0==s1;
+template <>
+struct hash<MiniZinc::ASTString> {
+public:
+  size_t operator()(const MiniZinc::ASTString& s) const;
+};
+
+template <>
+struct equal_to<MiniZinc::ASTString> {
+public:
+  bool operator()(const MiniZinc::ASTString& s0, const MiniZinc::ASTString& s1) const;
+};
+template <>
+struct less<MiniZinc::ASTString> {
+public:
+  bool operator()(const MiniZinc::ASTString& s0, const MiniZinc::ASTString& s1) const;
+};
+}  // namespace std
+
+namespace MiniZinc {
+
+struct CStringHash {
+public:
+  // FIXME: This is not an amazing hash function
+  size_t operator()(const std::pair<const char*, size_t>& s) const {
+    size_t result = 0;
+    const size_t prime = 31;
+    for (size_t i = 0; i < s.second; ++i) {
+      result = s.first[i] + (result * prime);
+    }
+    return result;
+  }
+};
+struct CStringEquals {
+public:
+  bool operator()(const std::pair<const char*, size_t>& s0,
+                  const std::pair<const char*, size_t>& s1) const {
+    return s0.second == s1.second && (strncmp(s0.first, s1.first, s0.second) == 0);
+  }
+};
+
+/**
+ * \brief Garbage collected interned string
+ */
+class ASTStringData : public ASTChunk {
+  friend class GC::Heap;
+
+protected:
+  /// Interning Hash Map
+  using Interner = std::unordered_map<std::pair<const char*, size_t>, ASTStringData*, CStringHash,
+                                      CStringEquals>;
+  static Interner& interner();
+  /// Constructor
+  ASTStringData(const std::string& s);
+
+public:
+  /// Allocate and initialise as \a s
+  static ASTStringData* a(const std::string& s);
+  /// Return underlying C-style string
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  const char* c_str() const { return _data + sizeof(size_t); }
+  /// Return size of string
+  size_t size() const {
+    return static_cast<unsigned int>(_size) - static_cast<unsigned int>(sizeof(size_t)) - 1;
+  }
+  /// Access character at position \a i
+  char operator[](unsigned int i) {
+    assert(i < size());
+    return _data[sizeof(size_t) + i];
+  }
+  /// Return hash value of string
+  size_t hash() const { return reinterpret_cast<const size_t*>(_data)[0]; }
+  /// Mark for garbage collection
+  void mark() const { _gcMark = 1; }
+
+protected:
+  /// GC Destructor
+  void destroy() const {
+    assert(interner().find({this->c_str(), this->size()}) != interner().end());
+    interner().erase({this->c_str(), this->size()});
+  };
+};
+
+inline ASTString::ASTString(const std::string& s) : _s(ASTStringData::a(s)) {}
+
+inline size_t ASTString::size() const { return _s != nullptr ? _s->size() : 0; }
+// NOLINTNEXTLINE(readability-identifier-naming)
+inline const char* ASTString::c_str() const { return _s != nullptr ? _s->c_str() : nullptr; }
+inline void ASTString::mark() const {
+  if (_s != nullptr) {
+    _s->mark();
   }
 }
 
-#endif
+inline bool ASTString::operator==(const ASTString& s) const { return _s == s._s; }
+inline bool ASTString::operator!=(const ASTString& s) const { return _s != s._s; }
+inline bool ASTString::operator<(const ASTString& s) const {
+  if (size() == 0) {
+    return 0 < s.size();
+  }
+  unsigned int size = std::min(_s->size(), s.size());
+  int cmp = strncmp(_s->c_str(), s.c_str(), size);
+  if (cmp == 0) {
+    return _s->size() < s.size();
+  }
+  return cmp < 0;
+}
+inline bool ASTString::operator==(const std::string& s) const {
+  return size() == s.size() && (size() == 0 || strncmp(_s->c_str(), s.c_str(), size()) == 0);
+}
+inline bool ASTString::operator!=(const std::string& s) const { return !(*this == s); }
+inline bool ASTString::endsWith(const std::string& s) const {
+  return size() >= s.size() &&
+         (size() == 0 || strncmp(_s->c_str() + size() - s.size(), s.c_str(), s.size()) == 0);
+}
+inline bool ASTString::beginsWith(const std::string& s) const {
+  return size() >= s.size() && (size() == 0 || strncmp(_s->c_str(), s.c_str(), s.size()) == 0);
+}
+
+inline std::string ASTString::substr(size_t pos, size_t count) const {
+  if (pos > size()) {
+    throw std::out_of_range("ASTString::substr pos out of range");
+  }
+  if (count == std::string::npos) {
+    return std::string(c_str() + pos, size() - pos);
+  }
+  return std::string(c_str() + pos, std::min(size() - pos, count));
+}
+inline size_t ASTString::findLastOf(char ch, size_t pos) const noexcept {
+  const char* str = c_str();
+  for (int i = std::min(size() - 1, pos); i >= 0; --i) {
+    if (str[i] == ch) {
+      return i;
+    }
+  }
+  return std::string::npos;
+}
+
+inline size_t ASTString::find(char ch, size_t pos) const noexcept {
+  if (pos >= size()) {
+    return std::string::npos;
+  }
+  const char* str = c_str();
+  for (int i = pos; i < size(); ++i) {
+    if (str[i] == ch) {
+      return i;
+    }
+  }
+  return std::string::npos;
+}
+
+inline size_t ASTString::hash() const { return _s != nullptr ? _s->hash() : 0; }
+
+}  // namespace MiniZinc
+
+namespace std {
+inline size_t hash<MiniZinc::ASTString>::operator()(const MiniZinc::ASTString& s) const {
+  return s.hash();
+}
+inline bool equal_to<MiniZinc::ASTString>::operator()(const MiniZinc::ASTString& s0,
+                                                      const MiniZinc::ASTString& s1) const {
+  return s0 == s1;
+}
+inline bool less<MiniZinc::ASTString>::operator()(const MiniZinc::ASTString& s0,
+                                                  const MiniZinc::ASTString& s1) const {
+  return s0 < s1;
+}
+}  // namespace std

@@ -1,5 +1,0 @@
-#!/bin/sh
-
-MZNFZN_EXEC=${MZNFZN-mzn-fzn}
-
-$MZNFZN_EXEC -G g12_fd -b fd $*

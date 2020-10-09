@@ -1,7 +1,0 @@
-assert_bad_2.mzn:10: error: 
-assert_bad_2.mzn:10:   In variable declaration for b 
-assert_bad_2.mzn:10:   In assigned value 
-assert_bad_2.mzn:10:   In array comprehension 
-assert_bad_2.mzn:10:   In head expression 
-assert_bad_2.mzn:10:   In assert application 
-assert_bad_2.mzn:10:   Assertion failure: that's odd...

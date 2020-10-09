@@ -1,2 +1,0 @@
-MiniZinc: flattening error: free variable in non-positive context
- in file test_negated_let_bad.mzn:4

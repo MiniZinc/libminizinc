@@ -1,0 +1,100 @@
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, Arial, Helvetica, sans-serif;
+	font-size: 16px;
+	padding: 15px;
+}
+
+h1 {
+    margin: 0;
+    text-transform: capitalize;
+}
+
+h4 {
+	margin: 0;
+}
+
+#results-table {
+    font-size: 16px;
+}
+
+#results-table th, #results-table td {
+    padding: 15px;
+}
+
+.diffs {
+	max-width: calc(100vw - 100px);
+	max-height: 80vh;
+	overflow: auto;
+}
+
+.diff_next, .diff_header {
+	padding: 8px 15px !important;
+}
+
+.log {
+	background-color: #f4f4f4;
+	max-width: calc(100vw - 100px);
+}
+
+.diff {
+    font-family: monospace;
+    color: #000;
+	min-width: 700px;
+	margin-bottom: 15px;
+}
+
+.diff * {
+    border-color: #e6e6e6;
+}
+
+.diff td {
+    padding: 0 5px !important;
+    border: 0 !important;
+}
+
+hr {
+    border: solid 1px #EEE;
+}
+
+.diff_sub {
+	background-color: rgb(255, 206, 206);
+	color: red;
+}
+
+.diff_add {
+	background-color: rgb(206, 255, 206);
+	color: green;
+}
+
+.diff_chg {
+    background-color: rgb(255, 252, 206);
+	color: rgb(192, 125, 0);
+}
+
+td.diff_header {
+	color: #CCC;
+}
+
+.sort-icon {
+	margin-right: 10px;
+	margin-top: 8px;
+}
+
+.copy-button {
+	padding: 10px;
+	background: #FEFEFE;
+	border: solid 1px #CCC;
+	border-radius: 5px;
+	margin-bottom: 5px;
+	cursor: pointer;
+}
+
+.copy-button:hover {
+	background: #FAFAFA;
+}
+
+.hidden-textarea {
+	position: absolute;
+	left: -9999px;
+}

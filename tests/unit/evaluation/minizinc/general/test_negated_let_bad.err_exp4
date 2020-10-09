@@ -1,7 +1,0 @@
-mzn2fzn:
-  error: 
-  test_negated_let_bad.mzn:6 
-  In constraint. 
-  In 'not' expression. 
-  In let-variable 'y'. 
-  Let-variables with no definitions cannot appear in reified contexts.

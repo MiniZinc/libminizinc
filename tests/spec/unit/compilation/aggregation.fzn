@@ -1,0 +1,6 @@
+array [1..2] of int: X_INTRODUCED_3_ = [1,1];
+var 1..4: X_INTRODUCED_0_;
+var 1..4: X_INTRODUCED_1_;
+array [1..2] of var int: xs:: output_array([1..2]) = [X_INTRODUCED_0_,X_INTRODUCED_1_];
+constraint int_lin_le(X_INTRODUCED_3_,[X_INTRODUCED_0_,X_INTRODUCED_1_],5);
+solve  satisfy;

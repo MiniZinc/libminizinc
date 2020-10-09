@@ -9,29 +9,26 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __MINIZINC_OPTIMIZE_CONSTRAINTS_HH__
-#define __MINIZINC_OPTIMIZE_CONSTRAINTS_HH__
+#pragma once
 
-#include <minizinc/hash.hh>
 #include <minizinc/flatten_internal.hh>
+#include <minizinc/hash.hh>
 
 namespace MiniZinc {
-  
-  class OptimizeRegistry {
-  public:
-    enum ConstraintStatus { CS_NONE, CS_OK, CS_FAILED, CS_ENTAILED, CS_REWRITE };
-    typedef ConstraintStatus (*optimizer) (EnvI& env, Item* i, Call* c, Expression*& rewrite);
-  protected:
-    ASTStringMap<optimizer>::t _m;
-  public:
-    
-    void reg(const ASTString& call, optimizer);
-    ConstraintStatus process(EnvI& env, Item* i, Call* c, Expression*& rewrite);
-    
-    static OptimizeRegistry& registry(void);
-  };
-  
-}
 
-#endif
+class OptimizeRegistry {
+public:
+  enum ConstraintStatus { CS_NONE, CS_OK, CS_FAILED, CS_ENTAILED, CS_REWRITE };
+  typedef ConstraintStatus (*optimizer)(EnvI& env, Item* i, Call* c, Expression*& rewrite);
 
+protected:
+  ASTStringMap<optimizer> _m;
+
+public:
+  void reg(const ASTString& call, optimizer opt);
+  ConstraintStatus process(EnvI& env, Item* i, Call* c, Expression*& rewrite);
+
+  static OptimizeRegistry& registry();
+};
+
+}  // namespace MiniZinc

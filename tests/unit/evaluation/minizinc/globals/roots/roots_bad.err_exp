@@ -1,8 +1,0 @@
-mzn2fzn:
-  error: 
-  roots_bad.mzn:11 
-  In constraint. 
-  In 'roots' expression. 
-  In 'assert' expression. 
-  Assertion failure: "roots: upper bound of 's' must be a subset of the index 
-  set of 'x'"

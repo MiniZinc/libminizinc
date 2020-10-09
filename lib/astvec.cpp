@@ -13,17 +13,16 @@
 
 namespace MiniZinc {
 
-  ASTIntVecO::ASTIntVecO(const std::vector<int>& v)
-    : ASTChunk(sizeof(int)*v.size()) {
-    for (unsigned int i=v.size(); i--;)
-      (*this)[i] = v[i];
+ASTIntVecO::ASTIntVecO(const std::vector<int>& v) : ASTChunk(sizeof(int) * v.size()) {
+  for (auto i = static_cast<unsigned int>(v.size()); (i--) != 0U;) {
+    (*this)[i] = v[i];
   }
-
-  ASTIntVecO*
-  ASTIntVecO::a(const std::vector<int>& v) {
-    ASTIntVecO* ao = static_cast<ASTIntVecO*>(alloc(sizeof(int)*v.size()));
-    new (ao) ASTIntVecO(v);
-    return ao;
-  }
-  
 }
+
+ASTIntVecO* ASTIntVecO::a(const std::vector<int>& v) {
+  auto* ao = static_cast<ASTIntVecO*>(alloc(sizeof(int) * v.size()));
+  new (ao) ASTIntVecO(v);
+  return ao;
+}
+
+}  // namespace MiniZinc

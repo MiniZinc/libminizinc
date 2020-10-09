@@ -1,6 +1,0 @@
-MiniZinc: flattening error: 
-  test_reified_let_bad.mzn:8:
-  in binary '<->' operator expression
-  in let expression
-  in variable declaration for 'y'
-  free variable in non-positive context

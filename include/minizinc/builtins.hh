@@ -9,16 +9,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __MINIZINC_BUILTINS_HH__
-#define __MINIZINC_BUILTINS_HH__
+#pragma once
 
 #include <minizinc/model.hh>
 
 namespace MiniZinc {
-  
-  /// Add builtins to the functions defined in \a m
-  void registerBuiltins(Env& env, Model* m);
-  
-}
 
-#endif
+/// Add builtins to the functions defined in \a env.model()
+void register_builtins(Env& env);
+
+}  // namespace MiniZinc

@@ -6,6 +6,11 @@
 %-----------------------------------------------------------------------------%
 %---------- USER and LAZY CUTS -----------------------------------------------%
 /*
+   PLEASE NOTE:
+   If you export FZN file with lazy_constraint/user_cut annotations,
+   their declarations are not exported currently (as of 7.11.17).
+   WORKAROUND: when solving that fzn, add -G linear,
+   e.g., as follows: mzn-cplex -G linear model.fzn
  * For Gurobi, the constraints marked as MIP_cut and/or MIP_lazy are added
  * into the overall model and marked with the foll values of Lazy attribute:
  *   ::MIP_lazy             1
@@ -20,20 +25,66 @@ ann: MIP_cut = user_cut;         %% MIP_cut: make sure no feasible solutions are
                                  %% -- seems better on average but in CPLEX, wrong LB e.g. on carpet-cutting
 ann: MIP_lazy = lazy_constraint;
 
-%-----------------------------------------------------------------------------%
-bool: fMZN__UseIndicators=false;    %% Pass on indicator constraints, CPLEX only.  [DISABLED]
-    %% Reifs give wrong result on 2012/amaze, so using implications only
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% "GENERAL" constraints %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+opt bool: fIndConstr;          %% User option, e.g., with -D
+                               %% Attention: as of MZN 2.4.3, you also need -DfMIPdomains=false
+bool: fMZN__UseIndicators =    %% Pass on indicator constraints
+           if absent( fIndConstr ) then false
+           else deopt( fIndConstr ) endif;
+    %% CPLEX 12.6.2 Concert: reifs give wrong result on 2012/amaze, so using implications only
+    
+%% MAX/MIN
+opt bool: MinMaxGeneral;       %% User option, e.g., with -D
+                               %% pass on min/max to the backend as fzn_array_float_minimum
+bool: MZN__MinMaxGeneral = if absent(MinMaxGeneral) then false else deopt(MinMaxGeneral) endif;
 
+%% CUMULATIVE
+opt bool: CumulativeSolverConfig;               %% As set in share/minizinc/Preferences.json
+opt bool: Cumulative;          %% User option, e.g., with -D
+bool: MZN__Cumulative_Fixed_d_r = if occurs(Cumulative) then deopt(Cumulative)
+                      elseif occurs(CumulativeSolverConfig) then deopt(CumulativeSolverConfig)
+                      else false endif;
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Quadratic expressions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% --------------------------------------------------------------------------------------- %
+%% Forward float_times as fzn_float_times
+opt bool: QuadrFloatSolverConfig;             %% As set in share/minizinc/Preferences.json
+opt bool: QuadrFloat;                         %% User option, e.g., with -D
+bool: MZN__QuadrFloat = if occurs(QuadrFloat) then deopt(QuadrFloat)
+                      elseif occurs(QuadrFloatSolverConfig) then deopt(QuadrFloatSolverConfig)
+                      else false endif;
+
+%% Forward int_times as fzn_int_times
+opt bool: QuadrIntSolverConfig;               %% As set in share/minizinc/Preferences.json
+opt bool: QuadrInt;                           %% User option, e.g., with -D
+bool: QuadrIntFinal = if occurs(QuadrInt) then deopt(QuadrInt)
+                      elseif occurs(QuadrIntSolverConfig) then deopt(QuadrIntSolverConfig)
+                      else false endif;
+opt int: QuadrIntCard;          %% Convert int_times to fzn_int_times if the minimum
+                                %% of x, y's domain cardinalities as at least QuadrIntCard
+int: MZN__QuadrIntCard = if occurs(QuadrIntCard) then deopt(QuadrIntCard)
+                         elseif QuadrIntFinal then 0 else infinity endif;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Subtour elimination in circuit %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% --------------------------------------------------------------------------------------- %
+opt int: nSECcuts;       %% 0,1: use MTZ formulation
+int: nMZN__fSECcuts =    %% 1,2: pass on circuit constraints to the MIP_solverinstance's cut gen
+           if absent( nSECcuts ) then 0
+           else deopt( nSECcuts ) endif;
+
+    
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% MIPdomains %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % --------------------------------------------------------------------------------------- %
+%% Paper: %   Belov, Stuckey, Tack, Wallace. Improved Linearization of Constraint Programming Models. CP 2016 Proceedings.
   %%% The below option enables translation of domain constraints into the ...POST predicates.
   %%% The code in MIPdomains.cpp processes them and also non-contiguous domains
   %%% (only-range-domains is then standardly off). MIPdomains.cpp needs all the required
   %%% __POST predicates to be declared to kick in.
-opt bool: fMIPDomains;           %% unary decomposition constraints (...__POST) to FlatZinc
+opt bool: fMIPDomains;           %% unified decomposition constraints (...__POST) to FlatZinc
 opt bool: fMIPdomains;           %% Can be defined from cmdline: -D "fMIPdomains=false"
 bool: fPostprocessDomains =      %% True to pass all domain-related
-           if absent( fMIPdomains ) /\ absent( fMIPDomains ) then true     %% seems best for Gurobi & CBC
+           if absent( fMIPdomains ) /\ absent( fMIPDomains ) then true
            elseif not absent( fMIPdomains ) then deopt( fMIPdomains )
            else deopt( fMIPDomains )
            endif;
@@ -46,7 +97,7 @@ bool: fPostproDom_DIFF =         %% Specialized for differences: x<y <-> z=x-y<0
            if absent( fMIPdomDiff ) then false                             %% seems best for Gurobi, worse for CBC
            else deopt( fMIPdomDiff ) endif;
 
-mzn_opt_only_range_domains = not fPostprocessDomains;
+mzn_opt_only_range_domains = not fPostprocessDomains;   %% currently unused
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Avoid creating new int vars %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % --------------------------------------------------------------------------------------- %
@@ -54,6 +105,9 @@ opt bool: fAvoidNewInts;
 bool: fAvoidNI =                  %% Actually this is only for ..._lin_..., not for just x-y
            if absent( fAvoidNewInts ) then false
            else deopt( fAvoidNewInts ) endif;
+opt bool: fNewVarsInAuxEq;
+bool: fAuxIntEqOLD00 = if absent(fNewVarsInAuxEq) then false else deopt(fNewVarsInAuxEq) endif;
+bool: fAuxFloatEqOLD00 = if absent(fNewVarsInAuxEq) then false else deopt(fNewVarsInAuxEq) endif;
 
 %%%%%%%%%%%%%%%%%%%%%  Redundant constraints ---------------------------------------------- %
 bool: fMZN__IgnoreRedundantCumulative=false;
@@ -94,7 +148,13 @@ int: nMZN__UnaryLenMax_setInReif = nMZN__UnaryLenMax__ALL;
 %-----------------------------------------------------------------------------%
 % Strict inequality
 % The relative epsilon
-float: float_lt_EPS_coef__ = 1e-03;
+%%% Has the problem that when relating to upper bound of various differences,
+%%% getting different absolute eps...?
+%% float: float_lt_EPS_coef__ = 1e-03; ABANDONED 12.4.18 due to #207
+%%% Absolute one, used everywhere
+%%% Might make no sense for floats with smaller domains etc.
+opt float: float_EPS;
+float: float_lt_EPS = if absent( float_EPS ) then 1e-6 else deopt( float_EPS ) endif;
 
 %-----------------------------------------------------------------------------%
 %%% Set =true to PRINT TRACING messages for some constraints:

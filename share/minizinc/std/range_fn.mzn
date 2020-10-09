@@ -8,6 +8,6 @@ include "range.mzn";
 function var set of int: range(array[int] of var int: x, var set of int: s) 
     ::promise_total =
     let {
-      var set of lb_array(x)..ub_array(x): t;
-      constraint range(x,s,t);
+      var set of lb_array(x)..ub_array(x): t ::is_defined_var;
+      constraint range(x,s,t) ::defines_var(t);
     } in t;

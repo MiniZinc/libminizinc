@@ -1,5 +1,0 @@
-assert_bad_1.mzn:12:
-  error: 
-  In constraint item 
-  In assert application 
-  Assertion failure: a not decreasing

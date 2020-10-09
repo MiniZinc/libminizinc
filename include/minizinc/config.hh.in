@@ -4,11 +4,11 @@
 
 #define MZN_VERSION_PATCH "${libminizinc_VERSION_PATCH}"
 
+#define MZN_BUILD_REF "${BUILD_REF}"
+
 #cmakedefine HAS_DECLSPEC_THREAD
 
 #cmakedefine HAS_ATTR_THREAD
-
-#cmakedefine MZN_NEED_TR1
 
 #cmakedefine HAS_PIDPATH
 
@@ -18,8 +18,12 @@
 
 #cmakedefine HAS_MEMCPY_S
 
+#cmakedefine COMPILE_BOOST_MINCUT
+
 #cmakedefine HAS_DLFCN_H
 
 #cmakedefine HAS_WINDOWS_H
 
-#cmakedefine HAS_GUROBI_PLUGIN
+#cmakedefine GUROBI_PLUGIN
+
+#cmakedefine CPLEX_PLUGIN

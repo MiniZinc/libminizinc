@@ -1,3 +1,6 @@
+include "fzn_regular.mzn";
+include "fzn_regular_reif.mzn";
+
 /** @group globals.extensional
   The sequence of values in array \a x (which must all be in the range 1..\a S)
   is accepted by the DFA of \a Q states with input 1..\a S and transition
@@ -23,23 +26,10 @@ predicate regular(array[int] of var int: x, int: Q, int: S,
         % parser thinks it's a generator call!
     assert((q0 in 1..Q),
         "regular: start state 'q0' not in 1..Q",
-
     assert(F subset 1..Q,
         "regular: final states in 'F' contain states outside 1..Q",
 
-        let {
-            % If x has index set m..n-1, then a[m] holds the initial state
-            % (q0), and a[i+1] holds the state we're in after  processing
-            % x[i].  If a[n] is in F, then we succeed (ie. accept the string).
-              int: m = min(index_set(x)),
-              int: n = max(index_set(x)) + 1,
-              array[m..n] of var 1..Q: a
-            } in
-        a[m] = q0 /\                    % Set a[0].
-        forall(i in index_set(x)) (
-            x[i] in 1..S /\             % Do this in case it's a var.
-            a[i+1] = d[a[i], x[i]]      % Determine a[i+1].
-        ) /\
-        a[n] in F                       % Check the final state is in F.
+        fzn_regular(x,Q,S,d,q0,F)
 
      ))))));
+

@@ -6,21 +6,18 @@
 % simplify ordering constraints on expressions of complex types.
 %-----------------------------------------------------------------------------%
 predicate comparison_rel_array(array[int] of var -1..1: rels, var -1..1: rel) =
-    let { int: l = min(index_set(rels)),
-          int: u = max(index_set(rels)),
-          array[l-1..u] of var -1..1: r }
-    in
-        r[l-1] = 0  % initial state (before first array position) is 'equal'
-        /\
-        forall (i in l..u) (
-            % new state: as given array at current position if
-            % previous state is 'equal', otherwise previous state
-            %
-            % r[i] = (if r[i-1] = 0 then rels[i] else r[i-1] endif)
-            (r[i-1]  = 0 -> r[i] = rels[i])
-            /\
-            (r[i-1] != 0 -> r[i] = r[i-1])
-        )
-        /\
-        r[u] = rel; % final state (at last array position)
-
+          let { var int: firstneg = arg_min(rels);
+                var int: firstpos = arg_max(rels); } in
+          % if they only consist of one number then return it
+          if firstneg = firstpos then
+	        rel = rels[min(index_set(rels))]
+          else
+                %% if there are no -1 then it must be +1
+                if rels[firstneg] = 0 then rel = +1 
+                %% otherwise if ther are no +1 it must be -1
+                elseif rels[firstpos] = 0 then rel = -1 
+                %% otherwise if a neg appears earlier than -1
+                elseif firstneg < firstpos then rel = -1
+                %% otherwise +1
+                else rel = +1
+          endif;

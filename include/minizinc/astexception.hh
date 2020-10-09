@@ -9,79 +9,75 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __MINIZINC_ASTEXCEPTION_HH__
-#define __MINIZINC_ASTEXCEPTION_HH__
+#pragma once
 
-#include <minizinc/exception.hh>
 #include <minizinc/ast.hh>
+#include <minizinc/exception.hh>
 #include <minizinc/model.hh>
+
 #include <string>
 
 namespace MiniZinc {
-  
-  class SyntaxError : public Exception {
-  protected:
-    Location _loc;
-  public:
-    SyntaxError(const Location& loc, const std::string& msg)
-    : Exception(msg), _loc(loc) {}
-    virtual ~SyntaxError(void) throw() {}
-    virtual const char* what(void) const throw() {
-      return "MiniZinc: syntax error";
-    }
-    const Location& loc(void) const { return _loc; }
-  };
 
-  class LocationException : public Exception {
-  protected:
-    Location _loc;
-  public:
-    LocationException(EnvI& env, const Location& loc, const std::string& msg);
-    virtual ~LocationException(void) throw() {}
-    const Location& loc(void) const { return _loc; }
-  };
+class SyntaxError : public Exception {
+protected:
+  Location _loc;
 
-  class TypeError : public LocationException {
-  public:
-    TypeError(EnvI& env, const Location& loc, const std::string& msg)
-      : LocationException(env,loc,msg) {}
-    ~TypeError(void) throw() {}
-    virtual const char* what(void) const throw() {
-      return "MiniZinc: type error";
-    }
-  };
+public:
+  SyntaxError(const Location& loc, const std::string& msg) : Exception(msg), _loc(loc) {}
+  ~SyntaxError() throw() override {}
+  const char* what() const throw() override { return "MiniZinc: syntax error"; }
+  const Location& loc() const { return _loc; }
+};
 
-  class EvalError : public LocationException {
-  public:
-    EvalError(EnvI& env, const Location& loc, const std::string& msg)
-      : LocationException(env,loc,msg) {}
-    EvalError(EnvI& env, const Location& loc, const std::string& msg, const ASTString& name)
-      : LocationException(env,loc,msg+" '"+name.str()+"'") {}
-    ~EvalError(void) throw() {}
-    virtual const char* what(void) const throw() {
-      return "MiniZinc: evaluation error";
-    }
-  };
+class LocationException : public Exception {
+protected:
+  Location _loc;
 
-  class ModelInconsistent : public LocationException {
-  public:
-    ModelInconsistent(EnvI& env, const Location& loc)
-      : LocationException(env,loc,"model inconsistency detected") {}
-    ~ModelInconsistent(void) throw() {}
-    virtual const char* what(void) const throw() {
-      return "MiniZinc: warning";
-    }
-  };
+public:
+  LocationException(EnvI& env, const Location& loc, const std::string& msg);
+  ~LocationException() throw() override {}
+  const Location& loc() const { return _loc; }
+};
 
-  class ResultUndefinedError : public LocationException {
-  public:
-    ResultUndefinedError(EnvI& env, const Location& loc, const std::string& msg);
-    ~ResultUndefinedError(void) throw() {}
-    virtual const char* what(void) const throw() {
-      return "MiniZinc: result of evaluation is undefined";
-    }
-  };
-  
-}
+class TypeError : public LocationException {
+public:
+  TypeError(EnvI& env, const Location& loc, const std::string& msg)
+      : LocationException(env, loc, msg) {}
+  ~TypeError() throw() override {}
+  const char* what() const throw() override { return "MiniZinc: type error"; }
+};
 
-#endif
+class EvalError : public LocationException {
+public:
+  EvalError(EnvI& env, const Location& loc, const std::string& msg)
+      : LocationException(env, loc, msg) {}
+  EvalError(EnvI& env, const Location& loc, const std::string& msg, const ASTString& name)
+      : LocationException(env, loc, "") {
+    std::ostringstream ss;
+    ss << msg << " '" << name << "'";
+    _msg = ss.str();
+  }
+  ~EvalError() throw() override {}
+  const char* what() const throw() override { return "MiniZinc: evaluation error"; }
+};
+
+class ModelInconsistent : public LocationException {
+public:
+  ModelInconsistent(EnvI& env, const Location& loc, const std::string& msg = "")
+      : LocationException(env, loc,
+                          "model inconsistency detected" + (msg.empty() ? msg : ":  ") + msg) {}
+  ~ModelInconsistent() throw() override {}
+  const char* what() const throw() override { return "MiniZinc: warning"; }
+};
+
+class ResultUndefinedError : public LocationException {
+public:
+  ResultUndefinedError(EnvI& env, const Location& loc, const std::string& msg);
+  ~ResultUndefinedError() throw() override {}
+  const char* what() const throw() override {
+    return "MiniZinc: result of evaluation is undefined";
+  }
+};
+
+}  // namespace MiniZinc
