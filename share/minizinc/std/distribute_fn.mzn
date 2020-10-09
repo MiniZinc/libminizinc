@@ -5,7 +5,7 @@ include "distribute.mzn";
   \a base. The values in \a value need not be distinct.
 */
 function array[int] of var int: distribute(array[int] of var int: value,
-                                           array[int] of var int: base) :: promise_total =
+                                           array[$X] of var int: base) :: promise_total =
   let { array[index_set(value)] of var 0..length(base): card;
-        constraint distribute(card, value, base); } 
+        constraint distribute(card, value, array1d(base)); } 
   in card;
