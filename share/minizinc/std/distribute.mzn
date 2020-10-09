@@ -7,8 +7,8 @@ include "fzn_distribute_reif.mzn";
 */
 predicate distribute(array[int] of var int: card,
                      array[int] of var int: value,
-                     array[int] of var int: base) =
+                     array[$X] of var int: base) =
     assert(index_set(card) == index_set(value),
         "distribute: card and value arrays must have identical index sets",
-        fzn_distribute(card, value, base)
+        fzn_distribute(card, value, array1d(base))
     );
