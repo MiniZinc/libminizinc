@@ -1,7 +1,7 @@
 include "distribute.mzn";
 
 /** @group globals.counting
-  Returns an array of the number of occurences of \a value[\p i] in
+  Returns an array of the number of occurrences of \a value[\p i] in
   \a base. The values in \a value need not be distinct.
 */
 function array[int] of var int: distribute(array[int] of var int: value,

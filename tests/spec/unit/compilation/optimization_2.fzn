@@ -1,0 +1,10 @@
+var 1..2: x:: output_var;
+var set of 1..10: y:: output_var;
+constraint set_in_reif(2,y,false);
+constraint bool_not(false,true);
+constraint set_in_reif(4,y,false);
+constraint set_in_reif(6,y,false);
+constraint set_in_reif(8,y,false);
+constraint set_in_reif(10,y,false);
+constraint set_in_reif(x,y,false);
+solve  satisfy;

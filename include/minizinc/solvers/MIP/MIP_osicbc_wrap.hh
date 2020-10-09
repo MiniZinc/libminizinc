@@ -1,4 +1,4 @@
- 
+
 /* -*- mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*- */
 
 /*
@@ -10,115 +10,148 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __MIP_OSICBC_WRAPPER_H__
-#define __MIP_OSICBC_WRAPPER_H__
+#pragma once
 
+#include <minizinc/solver_instance_base.hh>
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
-                    // CMakeLists.txt needs OSICBC_HOME defined
-// #include <CoinPackedVector.hpp>
-// #include <CoinPackedMatrix.hpp>
-// #include <CoinShallowPackedVector.hpp>
-// #include <CoinTime.hpp>
-// #include <OsiSolverInterface.hpp>
-//  #include <OsiCbcSolverInterface.hpp>
-#include <OsiClpSolverInterface.hpp>
-#include <CbcModel.hpp>
-// #include <CbcSolver.hpp>
+// CMakeLists.txt needs OSICBC_HOME defined
+// #include <coin/CoinPackedVector.hpp>
+// #include <coin/CoinPackedMatrix.hpp>
+// #include <coin/CoinShallowPackedVector.hpp>
+// #include <coin/CoinTime.hpp>
+// #include <coin/OsiSolverInterface.hpp>
+//  #include <coin/OsiCbcSolverInterface.hpp>
+#include <coin/CbcModel.hpp>
+#include <coin/OsiClpSolverInterface.hpp>
+// #include <coin/CbcSolver.hpp>
 
+class MIPosicbcWrapper : public MIPWrapper {
+  //     OsiCbcSolverInterface osi;   // deprecated in Cbc 2.9.6
+  OsiClpSolverInterface _osi;
+  //     CoinPackedMatrix* matrix = 0;
+  int _error;
+  std::string _osicbcBuffer;  // [CBC_MESSAGEBUFSIZE];
+                              //     string          osicbc_status_buffer; // [CBC_MESSAGEBUFSIZE];
 
-class MIP_osicbc_wrapper : public MIP_wrapper {
-//     OsiCbcSolverInterface osi;   // deprecated in Cbc 2.9.6
-    OsiClpSolverInterface osi;
-//     CoinPackedMatrix* matrix = 0;
-    int             error;
-    string          osicbc_buffer;   // [CBC_MESSAGEBUFSIZE];
-//     string          osicbc_status_buffer; // [CBC_MESSAGEBUFSIZE];
-    
-    vector<double> x;
-    
-    // To add constraints:
-//     vector<int> rowStarts, columns;
-    vector<CoinPackedVector> rows;
-    vector<double> //element,
-      rowlb, rowub;
+  std::vector<double> _x;
 
+  // To add constraints:
+  //     vector<int> rowStarts, columns;
+  std::vector<CoinPackedVector> _rows;
+  std::vector<double>  // element,
+      _rowlb, _rowub;
+
+  std::unordered_map<VarId, double> _warmstart;  // this accumulates warmstart infos
+
+public:
+  class Options : public MiniZinc::SolverInstanceBase::Options {
   public:
-    MIP_osicbc_wrapper() { openOSICBC(); }
-    virtual ~MIP_osicbc_wrapper() { closeOSICBC(); }
-    
-    bool processOption(int& i, int argc, const char** argv);
-    void printVersion(ostream& );
-    void printHelp(ostream& );
-//       Statistics& getStatistics() { return _statistics; }
+    int nThreads = 1;
+    std::string sExportModel;
+    int nTimeout = 0;
+    long int nSolLimit = -1;
+    double nWorkMemLimit = -1;
+    std::string sReadParams;
+    std::string sWriteParams;
+    bool flagIntermediate = false;
 
-//      IloConstraintArray *userCuts, *lazyConstraints;
+    double absGap = -1;
+    double relGap = 1e-8;
+    double intTol = 1e-8;
+    double objDiff = 1.0;
 
-    /// derived should overload and call the ancestor
-//     virtual void cleanup();
-    void openOSICBC() { }
-    void closeOSICBC() { }
-    
-    /// actual adding new variables to the solver
-    virtual void doAddVars(size_t n, double *obj, double *lb, double *ub,
-      VarType *vt, string *names);
-    
-    void addPhase1Vars() {
-      if (fVerbose)
-        cerr << "  MIP_osicbc_wrapper: delaying physical addition of variables..." << endl;
+    std::string cbcCmdOptions;
+
+    bool processOption(int& i, std::vector<std::string>& argv);
+    static void printHelp(std::ostream& os);
+  };
+
+private:
+  Options* _options = nullptr;
+
+public:
+  MIPosicbcWrapper(Options* opt) : _options(opt) { openOSICBC(); }
+  ~MIPosicbcWrapper() override { closeOSICBC(); }
+
+  static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
+  static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
+  static std::string getId();
+  static std::string getName();
+  static std::vector<std::string> getTags();
+  static std::vector<std::string> getStdFlags();
+  static std::vector<std::string> getRequiredFlags() { return {}; };
+
+  void printVersion(std::ostream&);
+  void printHelp(std::ostream&);
+  //       Statistics& getStatistics() { return _statistics; }
+
+  //      IloConstraintArray *userCuts, *lazyConstraints;
+
+  /// derived should overload and call the ancestor
+  //     virtual void cleanup();
+  void openOSICBC() {}
+  void closeOSICBC() {}
+
+  /// actual adding new variables to the solver
+  void doAddVars(size_t n, double* obj, double* lb, double* ub, VarType* vt,
+                 std::string* names) override;
+
+  void addPhase1Vars() override {
+    if (fVerbose) {
+      std::cerr << "  MIPosicbcWrapper: delaying physical addition of variables..." << std::endl;
     }
+  }
 
-    /// adding a linear constraint
-    virtual void addRow(int nnz, int *rmatind, double* rmatval,
-                        LinConType sense, double rhs,
-                        int mask = MaskConsType_Normal,
-                        string rowName = "");
-    /// adding an implication
-//     virtual void addImpl() = 0;
-    virtual void setObjSense(int s);   // +/-1 for max/min
-    
-    virtual double getInfBound() { return osi.getInfinity(); }
-                        
-    virtual int getNCols() {
-      int nc = osi.getNumCols();
-      return nc ? nc : colLB.size();
+  /// adding a linear constraint
+  void addRow(int nnz, int* rmatind, double* rmatval, LinConType sense, double rhs,
+              int mask = MaskConsType_Normal, const std::string& rowName = "") override;
+  /// adding an implication
+  //     virtual void addImpl() = 0;
+
+  bool addWarmStart(const std::vector<VarId>& vars, const std::vector<double>& vals) override;
+
+  void setObjSense(int s) override;  // +/-1 for max/min
+
+  double getInfBound() override { return _osi.getInfinity(); }
+
+  int getNCols() override {
+    int nc = _osi.getNumCols();
+    return nc != 0 ? nc : static_cast<int>(colLB.size());
+  }
+  int getNColsModel() override { return _osi.getNumCols(); }
+  int getNRows() override {
+    if (!_rowlb.empty()) {
+      return _rowlb.size();
     }
-    virtual int getNColsModel() {
-      return osi.getNumCols();
-    }
-    virtual int getNRows() {
-      if (rowlb.size())
-        return rowlb.size();
-      return osi.getNumRows();
-    }
-                        
-//     void setObjUB(double ub) { objUB = ub; }
-//     void addQPUniform(double c) { qpu = c; } // also sets problem type to MIQP unless c=0
+    return _osi.getNumRows();
+  }
 
-    virtual void solve(); 
-    
-    /// OUTPUT:
-    virtual const double* getValues() { return output.x; }
-    virtual double getObjValue() { return output.objVal; }
-    virtual double getBestBound() { return output.bestBound; }
-    virtual double getCPUTime() { return output.dCPUTime; }
-    
-    virtual Status getStatus()  { return output.status; }
-    virtual string getStatusName() { return output.statusName; }
+  //     void setObjUB(double ub) { objUB = ub; }
+  //     void addQPUniform(double c) { qpu = c; } // also sets problem type to MIQP unless c=0
 
-     virtual int getNNodes() { return output.nNodes; }
-     virtual int getNOpen() { return output.nOpenNodes; }
+  void solve() override;
 
-//     virtual int getNNodes() = 0;
-//     virtual double getTime() = 0;
-    
-  protected:
-//     OsiSolverInterface& getOsiSolver(void) { return osi; }
+  /// OUTPUT:
+  const double* getValues() override { return output.x; }
+  double getObjValue() override { return output.objVal; }
+  double getBestBound() override { return output.bestBound; }
+  double getCPUTime() override { return output.dCPUTime; }
 
-    void wrap_assert(bool , string , bool fTerm=true);
-    
-    /// Need to consider the 100 status codes in OSICBC and change with every version? TODO
-    Status convertStatus(CbcModel *pModel);
-    Status convertStatus();
+  Status getStatus() override { return output.status; }
+  std::string getStatusName() override { return output.statusName; }
+
+  int getNNodes() override { return output.nNodes; }
+  int getNOpen() override { return output.nOpenNodes; }
+
+  //     virtual int getNNodes() = 0;
+  //     virtual double getTime() = 0;
+
+protected:
+  //     OsiSolverInterface& getOsiSolver() { return osi; }
+
+  void wrapAssert(bool cond, const std::string& msg, bool fTerm = true);
+
+  /// Need to consider the 100 status codes in OSICBC and change with every version? TODO
+  Status convertStatus(CbcModel* pModel);
+  Status convertStatus();
 };
-
-#endif  // __MIP_OSICBC_WRAPPER_H__

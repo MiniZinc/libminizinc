@@ -1,98 +1,251 @@
 stages:
   - build
   - test
+  - trigger
 
-build:osx:
+.download_vendor: &download_vendor
+  - curl --location --header "PRIVATE-TOKEN:$ACCESS_TOKEN" --silent https://gitlab.com/api/v4/snippets/1796163/raw | tr -d '\r' > download.sh
+  - sh download.sh vendor master bundle:${MZNARCH} vendor.zip
+  - unzip -q vendor.zip
+
+.download_vendor: &download_vendor_win
+  - curl -o download.sh --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" --silent https://gitlab.com/api/v4/snippets/1796163/raw
+  - dos2unix download.sh
+  - sh download.sh vendor master vendor:%MZNARCH% vendor.zip
+  - unzip -q vendor.zip
+
+variables:
+  # CCache settings
+  CCACHE_DIR: "$CI_PROJECT_DIR/.ccache"
+  CCACHE_MAXSIZE: "100M"
+
+default:
+  interruptible: true
+
+# ----------- Build MiniZinc -----------
+
+.build:
   stage: build
+  interruptible: true
+  before_script:
+    - *download_vendor
   script:
-     - mkdir build
-     - cd build
-     - cmake -GXcode ..
-     - cmake --build . --config Debug
-     - cp Debug/mzn2fzn Debug/mzn-fzn Debug/solns2out ../
+    - cmake -S . -B build -G"$CMAKE_ARCH" -DCMAKE_BUILD_TYPE=Release -DBUILD_REF=$CI_PIPELINE_ID -DUSE_PROPRIETARY=OFF -DGecode_ROOT="$CI_PROJECT_DIR/vendor/gecode" -DGurobi_ROOT="$CI_PROJECT_DIR/vendor/gurobi" -DCPlex_ROOT="$CI_PROJECT_DIR/vendor/CPLEX_Studio/cplex" -DOsiCBC_ROOT="$CI_PROJECT_DIR/vendor/cbc" -DSCIP_ROOT="$CI_PROJECT_DIR/vendor/scip" -DXpress_ROOT="$CI_PROJECT_DIR/vendor/xpressmp" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
+    - cmake --build build --config Release --target install
   artifacts:
-     paths:
-       - mzn2fzn
-       - mzn-fzn
-       - solns2out
-     expire_in: 2h
-  only:
-     - develop
-  tags:
-     - mac
+    paths: [minizinc/]
+  cache:
+    key: "$CI_JOB_NAME"
+    paths: [.ccache, vendor.zip*]
+  only: [tags, merge_requests, pipelines, develop, master]
 
 build:linux:
-  image: guidotack/build-minizinc:1.0
-  stage: build
+  extends: .build
+  image: dekker1/minibuild:cpp
+  variables:
+    MZNARCH: "linux"
+    CMAKE_ARCH: "Ninja"
+  tags: [linux, docker]
+
+build:musl:
+  extends: .build
+  image: dekker1/minibuild:alpine
+  variables:
+    MZNARCH: "musl"
+    CMAKE_ARCH: "Ninja"
+  tags: [linux, docker]
+
+build:osx:
+  extends: .build
+  variables:
+    MZNARCH: "osx"
+    CMAKE_ARCH: "Ninja"
+  tags: [osx, cmake, cpp]
+
+build:win64:
+  extends: .build
+  variables:
+    MZNARCH: "win64"
+    CMAKE_ARCH: "Visual Studio 15 2017 Win64"
+  before_script:
+    - *download_vendor_win
   script:
-    - mkdir build
-    - cd build
-    - cmake ..
-    - cmake --build .
-    - cp mzn2fzn mzn-fzn solns2out ../
+    - cmake -S . -B build -G"%CMAKE_ARCH%" -DBUILD_REF=%CI_PIPELINE_ID% -DUSE_PROPRIETARY=OFF -DGecode_ROOT="%CI_PROJECT_DIR%/vendor/gecode" -DGurobi_ROOT="%CI_PROJECT_DIR%/vendor/gurobi" -DCPlex_ROOT="%CI_PROJECT_DIR%/vendor/CPLEX_Studio/cplex" -DOsiCBC_ROOT="%CI_PROJECT_DIR%/vendor/cbc" -DSCIP_ROOT="%CI_PROJECT_DIR%/vendor/scip" -DXpress_ROOT="%CI_PROJECT_DIR%/vendor/xpressmp" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
+    - cmake --build build --config Release --target install
+  cache:
+    key: "win64"
+    paths: [vendor.zip*]
+  tags: [win64, cmake, cpp]
+  only: [tags, merge_requests, pipelines, develop, master]
+
+build:wasm_complete:
+  extends: .build
+  image: emscripten/emsdk
+  variables:
+    MZNARCH: "wasm"
+    CMAKE_ARCH: "Unix Makefiles"
+  script:
+    - apt-get update && apt-get install -qq python3
+    - emcmake cmake -S . -B build -G"$CMAKE_ARCH" -DCMAKE_FIND_ROOT_PATH="/" -DCMAKE_BUILD_TYPE=MinSizeRel -v -DBUILD_REF=$CI_PIPELINE_ID -DUSE_PROPRIETARY=OFF -DGecode_ROOT="$CI_PROJECT_DIR/vendor/gecode" -DGurobi_ROOT="$CI_PROJECT_DIR/vendor/gurobi" -DCPlex_ROOT="$CI_PROJECT_DIR/vendor/CPLEX_Studio/cplex" -DOsiCBC_ROOT="$CI_PROJECT_DIR/vendor/cbc" -DSCIP_ROOT="$CI_PROJECT_DIR/vendor/scip" -DXpress_ROOT="$CI_PROJECT_DIR/vendor/xpressmp" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
+    - cmake --build build --config MinSizeRel --target install
+  tags: [docker, high-mem]
+  when: manual
+
+build:wasm_minimal:
+  extends: .build
+  image: emscripten/emsdk
+  variables:
+    MZNARCH: "wasm"
+    CMAKE_ARCH: "Unix Makefiles"
+  script:
+    - apt-get update && apt-get install -qq python3
+    - emcmake cmake -S . -B build -G"$CMAKE_ARCH" -DCMAKE_BUILD_TYPE=MinSizeRel -v -DBUILD_REF=$CI_PIPELINE_ID -DUSE_PROPRIETARY=OFF -DGecode_ROOT="$CI_PROJECT_DIR/vendor/gecode" -DGurobi_ROOT="$CI_PROJECT_DIR/vendor/gurobi" -DCPlex_ROOT="$CI_PROJECT_DIR/vendor/CPLEX_Studio/cplex" -DOsiCBC_ROOT="$CI_PROJECT_DIR/vendor/cbc" -DSCIP_ROOT="$CI_PROJECT_DIR/vendor/scip" -DXpress_ROOT="$CI_PROJECT_DIR/vendor/xpressmp" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
+    - cmake --build build --config MinSizeRel --target install
+  tags: [docker]
+  when: manual
+
+# ----------- Test Suite -----------
+
+test:format:
+  stage: test
+  image: dekker1/minibuild:clang-format
+  script:
+    - cmake -S . -B build -GNinja -DCLANG_FORMAT_EXECUTABLE="run-clang-format" -DCLANG_FORMAT_FLAGS="--color always"
+    - cmake --build build --target format
+  tags: [linux, docker]
+  only:
+    changes:
+      - "**/*.{cpp,c,h,hh,hpp}"
+      - .clang-format
+    refs:
+      - merge_requests
+  needs: []
+
+test:analyse:
+  extends: .build
+  stage: test
+  image: dekker1/minibuild:clang-tidy
+  variables:
+    MZNARCH: "linux"
+    CMAKE_ARCH: "Ninja"
+  script:
+    - cmake -S . -B build -G"$CMAKE_ARCH" -DCMAKE_CXX_CLANG_TIDY="clang-tidy" -DCMAKE_BUILD_TYPE="Debug" -DGecode_ROOT="$CI_PROJECT_DIR/vendor/gecode" -DGurobi_ROOT="$CI_PROJECT_DIR/vendor/gurobi" -DCPlex_ROOT="$CI_PROJECT_DIR/vendor/CPLEX_Studio/cplex" -DOsiCBC_ROOT="$CI_PROJECT_DIR/vendor/cbc" -DSCIP_ROOT="$CI_PROJECT_DIR/vendor/scip" -DXpress_ROOT="$CI_PROJECT_DIR/vendor/xpressmp"
+    - cmake --build build --config Debug
+  tags: [linux, docker]
+  only:
+    changes:
+      - "**/*.{cpp,c,h,hh,hpp}"
+      - .clang-tidy
+    refs:
+      - merge_requests
+  needs: []
+
+.tests:
+  stage: test
+  variables:
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+    MZN_SOLVER_PATH: "$CI_PROJECT_DIR/vendor/chuffed/share/minizinc/solvers/:$CI_PROJECT_DIR/vendor/gecode"
+  before_script:
+    - *download_vendor
+    # TODO: Add gecode configuration to the Gecode solver
+    - "echo '{\"id\":\"org.gecode.gecode\",\"name\":\"Gecode\",\"description\":\"Gecode FlatZinc executable\",\"version\":\"6.1.1\",\"mznlib\":\"share/gecode/mznlib\",\"executable\":\"bin/fzn-gecode\",\"tags\":[\"cp\",\"int\",\"float\",\"set\",\"restart\"],\"stdFlags\":[\"-a\",\"-f\",\"-n\",\"-p\",\"-r\",\"-s\",\"-t\"],\"extraFlags\":[[\"-c-d\",\"Recomputation commit distance\",\"int\",\"8\"],[\"-a-d\",\"Recomputation adaption distance\",\"int\",\"2\"],[\"-decay\",\"Decay factor\",\"float\",\"0.99\"],[\"-node\",\"Node cutoff\",\"int\",\"0\"],[\"-fail\",\"Failure cutoff\",\"int\",\"0\"],[\"-restart\",\"Restart sequence type\",\"opt:none:constant:linear:luby:geometric\",\"none\"],[\"-restart-base\",\"Base for geometric restart sequence\",\"float\",\"1.5\"],[\"-restart-scale\",\"Scale factor for restart sequence\",\"int\",\"250\"],[\"-nogoods\",\"Use no-goods from restarts\",\"bool\",\"false\"],[\"-nogoods-limit\",\"Depth limit for no-good extraction\",\"int\",\"128\"]],\"supportsMzn\":false,\"supportsFzn\":true,\"needsSolns2Out\":true,\"needsMznExecutable\":false,\"needsStdlibDir\":false,\"isGUIApplication\":false}' > vendor/gecode/gecode.msc"
+    - export PATH=$CI_PROJECT_DIR/minizinc/bin:$PATH
+    - minizinc --solvers
+    - cd tests
+    - python3 -m venv env
+    - source env/bin/activate
+    - pip install -r requirements.txt
+  after_script:
+    - echo "Test results at https://minizinc.gitlab.io/-/minizinc/-/jobs/${CI_JOB_ID}/artifacts/tests/output/report.html"
   artifacts:
-     paths:
-       - mzn2fzn
-       - mzn-fzn
-       - solns2out
-     expire_in: 2h
-  only:
-     - develop
-  tags:
-     - linux
+    when: always
+    paths:
+    - tests/output
+    reports:
+      junit: tests/output/junit*.xml
+  cache:
+    key: "$CI_JOB_NAME"
+    paths: [.cache/pip, vendor.zip*]
+  only: [merge_requests, pipelines, master]
 
-test:mzn20_fd:osx:
-  stage: test
+# Linux specific config
+.tests_linux:
+  extends: .tests
+  image: python:latest
+  variables:
+    MZNARCH: "linux"
+  tags: [linux, docker]
+  dependencies: ["build:linux"]
+  needs: ["build:linux"]
+
+# OSX specific config
+.tests_osx:
+  extends: .tests
+  variables:
+    MZNARCH: "osx"
+  tags: [osx]
+  dependencies: ["build:osx"]
+  needs: ["build:osx"]
+
+# Windows specific config
+.tests_win64:
+  extends: .tests
+  variables:
+    MZNARCH: "win64"
+    MZN_SOLVER_PATH: "$CI_PROJECT_DIR/vendor/chuffed/share/minizinc/solvers;$CI_PROJECT_DIR/vendor/gecode"
+  before_script:
+    - *download_vendor_win
+    # TODO: Add gecode configuration to the Gecode solver
+    - 'echo {"id":"org.gecode.gecode","name":"Gecode","description":"Gecode FlatZinc executable","version":"6.1.1","mznlib":"share/gecode/mznlib","executable":"bin/fzn-gecode","tags":["cp","int","float","set","restart"],"stdFlags":["-a","-f","-n","-p","-r","-s","-t"],"extraFlags":[["-c-d","Recomputation commit distance","int","8"],["-a-d","Recomputation adaption distance","int","2"],["-decay","Decay factor","float","0.99"],["-node","Node cutoff","int","0"],["-fail","Failure cutoff","int","0"],["-restart","Restart sequence type","opt:none:constant:linear:luby:geometric","none"],["-restart-base","Base for geometric restart sequence","float","1.5"],["-restart-scale","Scale factor for restart sequence","int","250"],["-nogoods","Use no-goods from restarts","bool","false"],["-nogoods-limit","Depth limit for no-good extraction","int","128"]],"supportsMzn":false,"supportsFzn":true,"needsSolns2Out":true,"needsMznExecutable":false,"needsStdlibDir":false,"isGUIApplication":false} > vendor/gecode/gecode.msc'
+    - set PATH=%CI_PROJECT_DIR%/minizinc/bin;%PATH%
+    - cd tests
+    - python -m venv env
+    - call env\Scripts\activate.bat
+    - pip install -r requirements.txt
+  after_script:
+    - 'echo Test results at https://minizinc.gitlab.io/-/minizinc/-/jobs/%CI_JOB_ID%/artifacts/tests/output/report.html'
+  tags: [win64]
+  dependencies: ["build:win64"]
+  needs: ["build:win64"]
+  cache:
+    key: win64
+
+.tests_fast:
   script:
-     - cd tests
-     - export PATH="$(pwd)/..":"$(pwd)/scripts":"$PATH"
-     - bash run-tests mzn20_fd .mzn unit examples
-  dependencies:
-     - build:osx
-  only:
-     - develop
-  tags:
-     - mac
+    - pytest
 
-test:mzn-fzn_fd:osx:
-  stage: test
+.tests_full:
   script:
-     - cd tests
-     - export PATH="$(pwd)/..":"$(pwd)/scripts":"$PATH"
-     - bash run-tests mzn-fzn_fd .mzn unit examples
-  dependencies:
-     - build:osx
-  only:
-     - develop
-  tags:
-     - mac
+    - pytest --all-suites
+  when: manual
 
+test:linux:fast:
+  extends: [.tests_linux, .tests_fast]
 
-test:mzn20_fd:linux:
-  image: guidotack/build-minizinc:1.0
-  stage: test
-  script:
-     - cd tests
-     - export PATH="$(pwd)/..":"$(pwd)/scripts":"$PATH"
-     - bash run-tests mzn20_fd .mzn unit examples
-  dependencies:
-     - build:linux
-  only:
-     - develop
-  tags:
-     - linux
+test:linux:full:
+  extends: [.tests_linux, .tests_full]
 
-test:mzn-fzn_fd:linux:
-  image: guidotack/build-minizinc:1.0
-  stage: test
-  script:
-     - cd tests
-     - export PATH="$(pwd)/..":"$(pwd)/scripts":"$PATH"
-     - bash run-tests mzn-fzn_fd .mzn unit examples
-  dependencies:
-     - build:linux
-  only:
-     - develop
-  tags:
-     - linux
+test:osx:fast:
+  extends: [.tests_osx, .tests_fast]
 
+test:osx:full:
+  extends: [.tests_osx, .tests_full]
+
+test:win64:fast:
+  extends: [.tests_win64, .tests_fast]
+  cache:
+    key: test_win64_fast
+
+test:win64:full:
+  extends: [.tests_win64, .tests_full]
+  cache:
+    key: test_win64_full
+
+# ----------- Trigger FindMUS pipeline -----------
+
+trigger:findmus:
+  stage: trigger
+  trigger:
+    project: minizinc/FindMUS
+    branch: develop
+  only: [develop]

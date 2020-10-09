@@ -1,4 +1,4 @@
-import psutil, shlex, subprocess, resource, timeit, re, sys
+import timeit, re, sys, os
 import utils, json_config
 
 ## TODO Keyline/value dictionaries: entries == json_config.s_CommentKey are ignored. Make it a parameter
@@ -14,20 +14,32 @@ def on_terminate(proc):
 ##############################################################################################
 ###################### MZN instance execution + result parsing low-level #####################
 ##############################################################################################
-## runCmd. Actually should be used for checking as well.
+## runCmdCmdline using system(). Actually used for checking as well.
+## run the specified shell command string and return the time.
+## can add ulimit etc.
+## s1, s2: filenames for strout, stderr
+## dictCmd: commands for Win and non-Win
+## meml: list of 2 values, soft & hard limits as N bytes
+def runCmdCmdline( s_Cmd, s1, s2, dictCmd, timeo, bVerbose=False, meml=None ):
+    tm = timeit.default_timer()
+    setCmd = dictCmd["windows"] if "win" in sys.platform and "cygwin" not in sys.platform else dictCmd["non-windows"]
+    sCmd = setCmd["runVerbose" if bVerbose else "runSilent"].format(meml[1], timeo, s_Cmd, s1, s2)
+    print( "\n  RUNNING:", sCmd )
+    os.system(sCmd)
+    tm = timeit.default_timer() - tm
+    return tm
+
+
+## runCmd using psutils. Actually should be used for checking as well.
 ## run the specified shell command string and return the popen result.
 ## TODO catch intermediate solutions if needed
 ## meml: list of 2 values, soft & hard limits as N bytes
 def runCmd( s_Cmd, b_Shell=False, timeo=None, meml=None ):
+    import psutil, shlex, subprocess, resource
     if b_Shell:
         l_Cmd = s_Cmd
     else:
         l_Cmd = shlex.split( s_Cmd )
-    if None!=meml:
-        if hasattr( resource, 'RLIMIT_RSS' ):  ## TODO move into preexec_fn for parallel tests?
-            resource.setrlimit( resource.RLIMIT_RSS, ( meml[0], meml[1] ) )
-        else:
-            print( "  ... but the OS doesn't support RLIMIT_RSS." )
     tm = timeit.default_timer()
     ################# In the following, the subprocess.RUN method fails to kill shell calls on Linux
     #try:
@@ -38,6 +50,11 @@ def runCmd( s_Cmd, b_Shell=False, timeo=None, meml=None ):
     ################# Using psutils
     proc = psutil.Popen(l_Cmd, shell=b_Shell,
           universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if None!=meml:
+        if hasattr( psutil, 'RLIMIT_AS' ):  ## TODO move into preexec_fn for parallel tests?
+            proc.rlimit( resource.RLIMIT_AS, ( meml[0]*1000, meml[1]*1000 ) )
+        else:
+            print( "  ... but the OS doesn't support RLIMIT_AS." )
     completed = Output()
     try:
         completed.stdout, completed.stderr = proc.communicate(timeout=timeo)
@@ -47,7 +64,7 @@ def runCmd( s_Cmd, b_Shell=False, timeo=None, meml=None ):
         for p in procs:
             p.terminate()
         try:
-            completed.stdout, completed.stderr = proc.communicate(timeout=3)
+            completed.stdout, completed.stderr = proc.communicate(timeout=1)
         except subprocess.TimeoutExpired as te:
             print ( " hard_kill. ", end='' )
             procs = psutil.Process().children(recursive=True)
@@ -138,6 +155,7 @@ def checkKeyvalues( line, dictVal, result ):
                         s_Val = lSL[ paramArray[2]-1 ]
  ##               d_Val = try_float( s_Val ) 
                         result[key] = s_Val             ### [ d_Val, s_Val ] Need here?
+##                        print( "                checkKeyval: result[{}] = '{}'".format(key, s_Val) )
                     else:
                         print( "ERROR: Parsing output line ", lSL,
                               ": regex key '", paramArray[0],

@@ -9,64 +9,42 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __MINIZINC_TIMER_HH__
-#define __MINIZINC_TIMER_HH__
+#pragma once
 
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <sys/time.h>
-#endif
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <ratio>
+#include <sstream>
 
 namespace MiniZinc {
-  
-  class Timer {
-  protected:
-#ifdef _WIN32
-    LARGE_INTEGER time;
-    LARGE_INTEGER freq;
-#else
-    timeval time;
-#endif
-  public:
-    /// Construct timer
-    Timer(void) {
-#ifdef _WIN32
-      QueryPerformanceFrequency(&freq);
-      QueryPerformanceCounter(&time);
-#else
-      gettimeofday(&time, NULL);
-#endif
-    }
-    /// Reset timer
-    void reset(void) {
-#ifdef _WIN32
-      QueryPerformanceCounter(&time);
-#else
-      gettimeofday(&time, NULL);
-#endif
-    }
-    /// Return milliseconds since timer was last reset
-    double ms(void) const {
-#ifdef _WIN32
-      LARGE_INTEGER now;
-      QueryPerformanceCounter(&now);
-      return (static_cast<double>(now.QuadPart-time.QuadPart) / freq.QuadPart) * 1000.0;
-#else
-      timeval now;
-      gettimeofday(&now, NULL);
-      timeval diff;
-      diff.tv_sec = now.tv_sec - time.tv_sec;
-      diff.tv_usec = now.tv_usec - time.tv_usec;
-      if (diff.tv_usec < 0) {
-        diff.tv_sec--;
-        diff.tv_usec += 1000000;
-      }
-      return static_cast<double>(diff.tv_sec) * 1000.0 + static_cast<double>(diff.tv_usec) / 1000.0;
-#endif
-    }
-  };
-  
-}
 
-#endif
+class Timer {
+protected:
+  std::chrono::steady_clock::time_point _last;
+
+public:
+  /// Construct timer
+  Timer() : _last(std::chrono::steady_clock::now()) {}
+  /// Reset timer
+  void reset() { _last = std::chrono::steady_clock::now(); }
+  /// Return milliseconds since timer was last reset
+  long long int ms() const {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() -
+                                                                 _last)
+        .count();
+  }
+  /// Return seconds since timer was last reset
+  double s() const {
+    return std::chrono::duration_cast<std::chrono::duration<double> >(
+               std::chrono::steady_clock::now() - _last)
+        .count();
+  }
+  std::string stoptime() const {
+    std::ostringstream oss;
+    oss << std::setprecision(2) << std::fixed << s() << " s";
+    return oss.str();
+  }
+};
+
+}  // namespace MiniZinc

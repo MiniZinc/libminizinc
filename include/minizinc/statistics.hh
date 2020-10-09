@@ -9,43 +9,40 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __MINIZINC_STATISTICS_HH__
-#define __MINIZINC_STATISTICS_HH__
+#pragma once
+
 #include <iterator>
 
 namespace MiniZinc {
 
-  class Statistics {
-    protected:
-      // time in milliseconds
-      unsigned long long _time;
-      // search nodes
-      unsigned long long _nodes;
-      // failures/ backtracks
-      unsigned long long _failures;
-      // current objective value
-      double _objective;
+class Statistics {
+protected:
+  // time in milliseconds
+  unsigned long long _time;
+  // search nodes
+  unsigned long long _nodes;
+  // failures/ backtracks
+  unsigned long long _failures;
+  // current objective value
+  double _objective;
 
-    public:
-      Statistics() : _time(0), _nodes(0), _failures(0) {}
+public:
+  Statistics() : _time(0), _nodes(0), _failures(0) {}
 
-      virtual void print(std::ostream& os);
-      virtual void printLine(std::ostream& os);
+  virtual void print(std::ostream& os);
 
-      void time(unsigned long long t);
-      void nodes(unsigned long long n);
-      void failures(unsigned long long f);
-      void objective(double o);
+  void time(unsigned long long t);
+  void nodes(unsigned long long n);
+  void failures(unsigned long long f);
+  void objective(double o);
 
-      unsigned long long time();
-      unsigned long long nodes();
-      unsigned long long failures();
-      double objective();
+  unsigned long long time() const;
+  unsigned long long nodes() const;
+  unsigned long long failures() const;
+  double objective() const;
 
-      Statistics& operator+=(Statistics& s);
-      
-      virtual void cleanup() { _time = _nodes = _failures = 0; }
-  };
-}
+  Statistics& operator+=(Statistics& s);
 
-#endif
+  virtual void cleanup() { _time = _nodes = _failures = 0; }
+};
+}  // namespace MiniZinc

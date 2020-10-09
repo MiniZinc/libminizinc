@@ -1,5 +1,0 @@
-test_reified_let_bad.mzn:5:
-MiniZinc: flattening error: free variable in non-positive context
-while evaluating
-  let expression in file test_reified_let_bad.mzn:5.20
-  binary operator @<-> in file test_reified_let_bad.mzn:5.12

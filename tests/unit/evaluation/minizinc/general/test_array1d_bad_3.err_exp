@@ -1,6 +1,0 @@
-test_array1d_bad_3.mzn:1: error: 
-test_array1d_bad_3.mzn:1:   In variable declaration for a 
-test_array1d_bad_3.mzn:1:   In assigned value 
-test_array1d_bad_3.mzn:1:   In array1d application 
-test_array1d_bad_3.mzn:1:   Index range size error (actual size 4, expected 
-test_array1d_bad_3.mzn:1:   size 3).

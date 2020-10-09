@@ -3,8 +3,9 @@
 
 
 predicate symmetry_breaking_constraint(var bool: b) =
-    (b) :: MIP_lazy %:: MIP_cut   %% MIP_cut wrong in CPLEX 12.6.3
+    (b) %:: MIP_lazy %:: MIP_cut   %% MIP_cut wrong in CPLEX 12.6.3
     %% Symm breaking as lazy is 1% better in Gurobi 6.5.2 on the Challenges 2012-2015
+    %% But caused a bug in 7.5.1 - switched off
     %% true    %% TO omit all symmetry_breaking_constraint's
     ;
 

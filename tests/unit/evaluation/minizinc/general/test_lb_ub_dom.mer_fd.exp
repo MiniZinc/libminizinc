@@ -1,1 +1,0 @@
-flatzinc: error: variables of type `array of var float' are not supported by the FD solver backend.

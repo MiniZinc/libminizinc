@@ -1,0 +1,12 @@
+{
+  "int_set" : { "set" : [[1,2],[4,5],7,9]},
+  "float_set" : { "set" : [1.0,2.0]},
+  "array_1d_float" : [1.0, 2.0, 3.0],
+  "array_2d_bool" : [[true]],
+  "array_3d_int" : [[[1, 2], [3, 4]], [[5, 6], [7, 8]]],
+  "array_opt_float" : [1.5, null],
+  "x" : 1,
+  "y" : 2.0,
+  "z" : true,
+  "o" : null
+}

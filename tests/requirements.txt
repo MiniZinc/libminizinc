@@ -1,0 +1,7 @@
+PyYAML==5.3
+pytest==6.*
+py==1.9.*
+pytest-html==2.*
+pytest-xdist==2.*
+pytest-instafail==0.4.*
+minizinc==0.4.*

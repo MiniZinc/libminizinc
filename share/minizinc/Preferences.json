@@ -1,0 +1,12 @@
+{
+  "tagDefaults": [
+    ["", "org.gecode.gecode"]
+  ],
+  "solverDefaults" : [
+    ["org.minizinc.mip.gurobi", "-DQuadrIntSolverConfig=true", ""],
+    ["org.minizinc.mip.gurobi", "-DQuadrFloatSolverConfig=true", ""],
+    ["org.minizinc.mip.scip", "-DCumulativeSolverConfig=true", ""],
+    ["org.minizinc.mip.scip", "-DQuadrIntSolverConfig=true", ""],
+    ["org.minizinc.mip.scip", "-DQuadrFloatSolverConfig=true", ""]
+  ]
+}

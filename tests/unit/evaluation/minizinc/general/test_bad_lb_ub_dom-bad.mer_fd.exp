@@ -1,5 +1,0 @@
-test_bad_lb_ub_dom-bad.mzn:3: error: 
-test_bad_lb_ub_dom-bad.mzn:3:   In variable declaration for y 
-test_bad_lb_ub_dom-bad.mzn:3:   In first argument of range expression 
-test_bad_lb_ub_dom-bad.mzn:3:   In lb application 
-test_bad_lb_ub_dom-bad.mzn:3:   Variable x has no declared lower bound.

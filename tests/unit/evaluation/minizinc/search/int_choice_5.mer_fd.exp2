@@ -1,4 +1,0 @@
-/tmp/minizinc.int_choice_5.23200.fzn:173: warning: value choice method `indomain_random' is not supported by the FD solver backend.
-/tmp/minizinc.int_choice_5.23200.fzn:173: this int_search/4 annotation will be ignored.
-q = array1d(1..8, [4, 2, 7, 3, 6, 8, 5, 1]);
-----------

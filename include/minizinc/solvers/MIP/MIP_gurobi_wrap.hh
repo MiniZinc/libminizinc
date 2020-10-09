@@ -1,4 +1,4 @@
- 
+
 /* -*- mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*- */
 
 /*
@@ -10,165 +10,277 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __MIP_GUROBI_WRAPPER_H__
-#define __MIP_GUROBI_WRAPPER_H__
+#pragma once
 
+#include <minizinc/solver_instance_base.hh>
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
+
 extern "C" {
-  #include <gurobi_c.h>     // need GUROBI_HOME defined
+#include <gurobi_c.h>  // need GUROBI_HOME defined
 }
 
-class MIP_gurobi_wrapper : public MIP_wrapper {
-    GRBenv        * env = 0;
-    GRBmodel      * model = 0;
-#ifdef HAS_GUROBI_PLUGIN
-    void          * gurobi_dll;
+class MIPGurobiWrapper : public MIPWrapper {
+  GRBenv* _env = nullptr;
+  GRBmodel* _model = nullptr;
+#ifdef GUROBI_PLUGIN
+  void* _gurobiDll;
 #endif
-  int             error;
-    string          gurobi_buffer;   // [GRB_MESSAGEBUFSIZE];
-    string          gurobi_status_buffer; // [GRB_MESSAGEBUFSIZE];
-    
-    vector<double> x;
+  int _error;
+  std::string _gurobiBuffer;        // [GRB_MESSAGEBUFSIZE];
+  std::string _gurobiStatusBuffer;  // [GRB_MESSAGEBUFSIZE];
 
+  std::vector<double> _x;
+
+public:
+  class Options : public MiniZinc::SolverInstanceBase::Options {
   public:
-    void (__stdcall *dll_GRBversion) (int*, int*, int*);
-    
-    int (__stdcall *dll_GRBaddconstr) (GRBmodel *model, int numnz, int *cind, double *cval,
-                             char sense, double rhs, const char *constrname);
+    int nMIPFocus = 0;
+    int nFreeSearch = 1;
+    int nThreads = 1;
+    std::string sExportModel;
+    int nTimeout1000 = -1;
+    int nTimeoutFeas1000 = -1;
+    int nSolLimit = -1;
+    int nSeed = -1;
+    double nWorkMemLimit = 0.5;
+    std::string sNodefileDir;
+    std::string sReadParams;
+    std::string sWriteParams;
+    std::vector<std::string> sConcurrentParamFiles;
+    bool flagIntermediate = false;
 
-    int (__stdcall *dll_GRBaddvars) (GRBmodel *model, int numvars, int numnz,
-                           int *vbeg, int *vind, double *vval,
-                           double *obj, double *lb, double *ub, char *vtype,
-                           char **varnames);
+    double absGap = -1;
+    double relGap = 1e-8;
+    double feasTol = 1e-8;
+    double intTol = 1e-8;
+    double objDiff = 1.0;
+    int nonConvex = 2;
+    std::string sGurobiDLL;
+    bool processOption(int& i, std::vector<std::string>& argv);
+    static void printHelp(std::ostream& os);
+  };
 
-    int (__stdcall *dll_GRBcbcut) (void *cbdata, int cutlen, const int *cutind, const double *cutval,
-                         char cutsense, double cutrhs);
+private:
+  Options* _options = nullptr;
 
-    int (__stdcall *dll_GRBcbget) (void *cbdata, int where, int what, void *resultP);
+public:
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  void(__stdcall* dll_GRBversion)(int*, int*, int*);
 
-    int (__stdcall *dll_GRBcblazy) (void *cbdata, int lazylen, const int *lazyind,
-                          const double *lazyval, char lazysense, double lazyrhs);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBaddconstr)(GRBmodel* model, int numnz, int* cind, double* cval, char sense,
+                                   double rhs, const char* constrname);
 
-    void (__stdcall *dll_GRBfreeenv) (GRBenv *env);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBaddgenconstrMin)(GRBmodel* model, const char* name, int resvar, int nvars,
+                                         const int* vars, double constant);
 
-    int (__stdcall *dll_GRBfreemodel) (GRBmodel *model);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBaddqconstr)(GRBmodel* model, int numlnz, int* lind, double* lval,
+                                    int numqnz, int* qrow, int* qcol, double* qval, char sense,
+                                    double rhs, const char* QCname);
 
-    int (__stdcall *dll_GRBgetdblattr) (GRBmodel *model, const char *attrname, double *valueP);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBaddgenconstrIndicator)(GRBmodel* model, const char* name, int binvar,
+                                               int binval, int nvars, const int* ind,
+                                               const double* val, char sense, double rhs);
 
-    int (__stdcall *dll_GRBgetdblattrarray) (GRBmodel *model, const char *attrname,
-                                   int first, int len, double *values);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBaddvars)(GRBmodel* model, int numvars, int numnz, int* vbeg, int* vind,
+                                 double* vval, double* obj, double* lb, double* ub, char* vtype,
+                                 char** varnames);
 
-    GRBenv * (__stdcall *dll_GRBgetenv) (GRBmodel *model);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBcbcut)(void* cbdata, int cutlen, const int* cutind, const double* cutval,
+                               char cutsense, double cutrhs);
 
-    const char * (__stdcall *dll_GRBgeterrormsg) (GRBenv *env);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBcbget)(void* cbdata, int where, int what, void* resultP);
 
-    int (__stdcall *dll_GRBgetintattr) (GRBmodel *model, const char *attrname, int *valueP);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBcblazy)(void* cbdata, int lazylen, const int* lazyind,
+                                const double* lazyval, char lazysense, double lazyrhs);
 
-    int (__stdcall *dll_GRBloadenv) (GRBenv **envP, const char *logfilename);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  void(__stdcall* dll_GRBfreeenv)(GRBenv* env);
 
-    int (__stdcall *dll_GRBnewmodel) (GRBenv *env, GRBmodel **modelP, const char *Pname, int numvars,
-                            double *obj, double *lb, double *ub, char *vtype,
-                            char **varnames);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBfreemodel)(GRBmodel* model);
 
-    int (__stdcall *dll_GRBoptimize) (GRBmodel *model);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBgetdblattr)(GRBmodel* model, const char* attrname, double* valueP);
 
-    int (__stdcall *dll_GRBreadparams) (GRBenv *env, const char *filename);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBgetdblattrarray)(GRBmodel* model, const char* attrname, int first, int len,
+                                         double* values);
 
-    int (__stdcall *dll_GRBsetcallbackfunc) (GRBmodel *model,
-                                   int (__stdcall *cb)(CB_ARGS),
-                                   void  *usrdata);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  GRBenv*(__stdcall* dll_GRBgetenv)(GRBmodel* model);
 
-    int (__stdcall *dll_GRBsetdblparam) (GRBenv *env, const char *paramname, double value);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  const char*(__stdcall* dll_GRBgeterrormsg)(GRBenv* env);
 
-    int (__stdcall *dll_GRBsetintparam) (GRBenv *env, const char *paramname, int value);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBgetintattr)(GRBmodel* model, const char* attrname, int* valueP);
 
-    int (__stdcall *dll_GRBsetintattr) (GRBmodel *model, const char *attrname, int newvalue);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBloadenv)(GRBenv** envP, const char* logfilename);
 
-    int (__stdcall *dll_GRBsetintattrlist) (GRBmodel *model, const char *attrname,
-                    int len, int *ind, int *newvalues);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  GRBenv*(__stdcall* dll_GRBgetconcurrentenv)(GRBmodel* model, int num);
 
-    int (__stdcall *dll_GRBsetstrparam) (GRBenv *env, const char *paramname, const char *value);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBnewmodel)(GRBenv* env, GRBmodel** modelP, const char* Pname, int numvars,
+                                  double* obj, double* lb, double* ub, char* vtype,
+                                  char** varnames);
 
-    int (__stdcall *dll_GRBupdatemodel) (GRBmodel *model);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBoptimize)(GRBmodel* model);
 
-    int (__stdcall *dll_GRBwrite) (GRBmodel *model, const char *filename);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBreadparams)(GRBenv* env, const char* filename);
 
-    int (__stdcall *dll_GRBwriteparams) (GRBenv *env, const char *filename);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBsetcallbackfunc)(GRBmodel* model, int(__stdcall* cb)(CB_ARGS),
+                                         void* usrdata);
 
-    int (__stdcall *dll_GRBgetintparam) (GRBenv *env, const char *paramname, int *valueP);
-    
-  public:
-    MIP_gurobi_wrapper() { openGUROBI(); }
-    /// This constructor is to check DLL only, GRBversion does not need a license
-    MIP_gurobi_wrapper( int ) { }
-    virtual ~MIP_gurobi_wrapper() { closeGUROBI(); }
-    
-    bool processOption(int& i, int argc, const char** argv);
-    void printVersion(ostream& );
-    void printHelp(ostream& );
-//       Statistics& getStatistics() { return _statistics; }
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBsetdblparam)(GRBenv* env, const char* paramname, double value);
 
-//      IloConstraintArray *userCuts, *lazyConstraints;
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBsetintparam)(GRBenv* env, const char* paramname, int value);
 
-    /// derived should overload and call the ancestor
-//     virtual void cleanup();
-    
-    void checkDLL();
-    void openGUROBI();
-    void closeGUROBI();
-    
-    /// actual adding new variables to the solver
-    virtual void doAddVars(size_t n, double *obj, double *lb, double *ub,
-      VarType *vt, string *names);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBsetintattr)(GRBmodel* model, const char* attrname, int newvalue);
 
-    /// adding a linear constraint
-    virtual void addRow(int nnz, int *rmatind, double* rmatval,
-                        LinConType sense, double rhs,
-                        int mask = MaskConsType_Normal,
-                        string rowName = "");
-    int nRows=0;    // to count rows in order tp notice lazy constraints
-    std::vector<int> nLazyIdx;
-    std::vector<int> nLazyValue;
-    /// adding an implication
-//     virtual void addImpl() = 0;
-    virtual void setObjSense(int s);   // +/-1 for max/min
-    
-    virtual double getInfBound() { return GRB_INFINITY; }
-                        
-    virtual int getNCols() {
-      dll_GRBupdatemodel(model);
-      int cols; error = dll_GRBgetintattr(model, GRB_INT_ATTR_NUMVARS, &cols); return cols;
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBsetdblattrelement)(GRBmodel* model, const char* attrname, int iv, double v);
+
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBsetintattrlist)(GRBmodel* model, const char* attrname, int len, int* ind,
+                                        int* newvalues);
+
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBsetdblattrlist)(GRBmodel* model, const char* attrname, int len, int* ind,
+                                        double* newvalues);
+
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBsetobjectiven)(GRBmodel* model, int index, int priority, double weight,
+                                       double abstol, double reltol, const char* name,
+                                       double constant, int lnz, int* lind, double* lval);
+
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBsetstrparam)(GRBenv* env, const char* paramname, const char* value);
+
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  void(__stdcall* dll_GRBterminate)(GRBmodel* model);
+
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBupdatemodel)(GRBmodel* model);
+
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBwrite)(GRBmodel* model, const char* filename);
+
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBwriteparams)(GRBenv* env, const char* filename);
+
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBgetintparam)(GRBenv* env, const char* paramname, int* valueP);
+
+  MIPGurobiWrapper(Options* opt) : _options(opt) {
+    if (opt != nullptr) {
+      openGUROBI();
     }
-    virtual int getNRows() {
-      dll_GRBupdatemodel(model);
-      int cols; error = dll_GRBgetintattr(model, GRB_INT_ATTR_NUMCONSTRS, &cols); return cols;
-    }
-                        
-//     void setObjUB(double ub) { objUB = ub; }
-//     void addQPUniform(double c) { qpu = c; } // also sets problem type to MIQP unless c=0
+  }
+  ~MIPGurobiWrapper() override { closeGUROBI(); }
 
-    virtual void solve(); 
-    
-    /// OUTPUT:
-    virtual const double* getValues() { return output.x; }
-    virtual double getObjValue() { return output.objVal; }
-    virtual double getBestBound() { return output.bestBound; }
-    virtual double getCPUTime() { return output.dCPUTime; }
-    
-    virtual Status getStatus()  { return output.status; }
-    virtual string getStatusName() { return output.statusName; }
+  static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
+  static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
+  static std::string getId();
+  static std::string getName();
+  static std::vector<std::string> getTags();
+  static std::vector<std::string> getStdFlags();
+  static std::vector<std::string> getRequiredFlags();
+  //       Statistics& getStatistics() { return _statistics; }
 
-     virtual int getNNodes() { return output.nNodes; }
-     virtual int getNOpen() { return output.nOpenNodes; }
+  //      IloConstraintArray *userCuts, *lazyConstraints;
 
-//     virtual int getNNodes() = 0;
-//     virtual double getTime() = 0;
-    
-  protected:
-    void wrap_assert(bool , string , bool fTerm=true);
-    
-    /// Need to consider the 100 status codes in GUROBI and change with every version? TODO
-    Status convertStatus(int gurobiStatus);
+  /// derived should overload and call the ancestor
+  //     virtual void cleanup();
+
+  void checkDLL();
+  void openGUROBI();
+  void closeGUROBI();
+
+  /// actual adding new variables to the solver
+  void doAddVars(size_t n, double* obj, double* lb, double* ub, VarType* vt,
+                 std::string* names) override;
+
+  /// adding a linear constraint
+  void addRow(int nnz, int* rmatind, double* rmatval, LinConType sense, double rhs,
+              int mask = MaskConsType_Normal, const std::string& rowName = "") override;
+  void setVarBounds(int iVar, double lb, double ub) override;
+  void setVarLB(int iVar, double lb) override;
+  void setVarUB(int iVar, double ub) override;
+  /// Indicator constraint: x[iBVar]==bVal -> lin constr
+  void addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind, double* rmatval,
+                              LinConType sense, double rhs,
+                              const std::string& rowName = "") override;
+  void addMinimum(int iResultVar, int nnz, int* ind, const std::string& rowName = "") override;
+
+  /// Times constraint: var[x]*var[y] == var[z]
+  void addTimes(int x, int y, int z, const std::string& rowName = "") override;
+
+  int getFreeSearch() override;
+  bool addSearch(const std::vector<VarId>& vars, const std::vector<int>& pri) override;
+  bool addWarmStart(const std::vector<VarId>& vars, const std::vector<double>& vals) override;
+  bool defineMultipleObjectives(const MultipleObjectives& mo) override;
+
+  int nRows = 0;  // to count rows in order tp notice lazy constraints
+  std::vector<int> nLazyIdx;
+  std::vector<int> nLazyValue;
+  /// adding an implication
+  //     virtual void addImpl() = 0;
+  void setObjSense(int s) override;  // +/-1 for max/min
+
+  double getInfBound() override { return GRB_INFINITY; }
+
+  int getNCols() override {
+    dll_GRBupdatemodel(_model);
+    int cols;
+    _error = dll_GRBgetintattr(_model, GRB_INT_ATTR_NUMVARS, &cols);
+    return cols;
+  }
+  int getNRows() override {
+    dll_GRBupdatemodel(_model);
+    int cols;
+    _error = dll_GRBgetintattr(_model, GRB_INT_ATTR_NUMCONSTRS, &cols);
+    return cols;
+  }
+
+  //     void setObjUB(double ub) { objUB = ub; }
+  //     void addQPUniform(double c) { qpu = c; } // also sets problem type to MIQP unless c=0
+
+  void solve() override;
+
+  /// OUTPUT:
+  const double* getValues() override { return output.x; }
+  double getObjValue() override { return output.objVal; }
+  double getBestBound() override { return output.bestBound; }
+  double getCPUTime() override { return output.dCPUTime; }
+
+  Status getStatus() override { return output.status; }
+  std::string getStatusName() override { return output.statusName; }
+
+  int getNNodes() override { return output.nNodes; }
+  int getNOpen() override { return output.nOpenNodes; }
+
+  //     virtual int getNNodes() = 0;
+  //     virtual double getTime() = 0;
+
+protected:
+  void wrapAssert(bool cond, const std::string& msg, bool fTerm = true);
+
+  /// Need to consider the 100 status codes in GUROBI and change with every version? TODO
+  Status convertStatus(int gurobiStatus);
 };
-
-#endif  // __MIP_GUROBI_WRAPPER_H__

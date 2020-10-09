@@ -1,6 +1,0 @@
-mzn2fzn:
-  error: 
-  assert_bad_1.mzn:12 
-  In constraint. 
-  In 'assert' expression. 
-  Assertion failure: "a not decreasing"

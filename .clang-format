@@ -1,0 +1,21 @@
+---
+BasedOnStyle: Google
+
+ColumnLimit: 100
+DerivePointerAlignment: false
+AccessModifierOffset: -2
+
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex:           '^(<minizinc/)'
+    Priority:        0
+    SortPriority:    0
+  - Regex:           '^(<(coin|geas|gecode|ilcplex|scip)/)'
+    Priority:        3
+    SortPriority:    3
+  - Regex:           '^(<)'
+    Priority:        2
+    SortPriority:    2
+  - Regex:           '.*'
+    Priority:        1
+    SortPriority:    1

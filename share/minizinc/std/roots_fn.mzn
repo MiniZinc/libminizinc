@@ -5,6 +5,6 @@ include "roots.mzn";
 */
 function var set of int: roots(array[int] of var int: x, 
                                var set of int: t) :: promise_total =
-  let { var set of index_set(x): s;
-        constraint roots(x,s,t) } 
+  let { var set of index_set(x): s ::is_defined_var;
+        constraint roots(x,s,t) ::defines_var(s); } 
   in s;

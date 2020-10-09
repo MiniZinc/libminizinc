@@ -1,6 +1,0 @@
-MiniZinc: evaluation error: 
-  roots_bad.mzn:8:
-  in call 'roots'
-  /Users/tack/Programming/libmzn/tests/../share/minizinc/std/roots.mzn:6:
-  in call 'assert'
-  Assertion failed: roots: upper bound of 's' must be a subset of the index set of 'x'

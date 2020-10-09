@@ -1,8 +1,0 @@
-MiniZinc: evaluation error: 
-  error_in_comprehension.mzn:3:
-  in variable declaration for 'neighbours'
-  error_in_comprehension.mzn:4:
-  in set comprehension expression
-  in set literal
-  in array access
-  array access out of bounds

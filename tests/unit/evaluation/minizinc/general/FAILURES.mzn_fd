@@ -1,8 +1,0 @@
-./anon_var_flatten.mzn (mzn_fd)
-./test_lb_ub_array_int.mzn (mzn_fd)
-./test_let_with_annotation.mzn (mzn_fd)
-./test_negated_let_bad.mzn (mzn_fd)
-./test_reified_element_constraint.mzn (mzn_fd)
-./test_reified_let_bad.mzn (mzn_fd)
-./test_string_cmp.mzn (mzn_fd)
-./test_var_prod.mzn (mzn_fd)

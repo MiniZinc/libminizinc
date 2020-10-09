@@ -33,4 +33,3 @@ predicate member(array[int] of var set of int: x, var set of int: y) =
 */
 predicate member(var set of int: x, var int: y) =
     set_member(x, y);
-
