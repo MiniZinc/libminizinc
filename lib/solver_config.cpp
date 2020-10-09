@@ -169,7 +169,7 @@ std::string get_env(const char* v) {
   std::string ret;
 #ifdef _MSC_VER
   size_t len;
-  getenv_s(&len, NULL, 0, v);
+  getenv_s(&len, nullptr, 0, v);
   if (len > 0) {
     char* p = static_cast<char*>(malloc(len * sizeof(char)));
     getenv_s(&len, p, len, v);

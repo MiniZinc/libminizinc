@@ -2433,7 +2433,7 @@ IntVal b_discrete_distribution(EnvI& env, Call* call) {
 #ifdef _MSC_VER
   std::size_t i(0);
   std::discrete_distribution<long long int> distribution(
-      weights.size(), 0.0, 1.0, [&weights, &i](double) { return weights[i++]; });
+      weights.size(), 0.0, 1.0, [&weights, &i](double d) { return weights[i++]; });
 #else
   std::discrete_distribution<long long int> distribution(weights.begin(), weights.end());
 #endif

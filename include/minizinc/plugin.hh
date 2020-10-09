@@ -117,7 +117,7 @@ private:
     auto dir = MiniZinc::FileUtils::dir_name(file);
     if (!dir.empty()) {
       // Add the path with the DLL to the search path for dependency loading
-      SetDllDirectoryW(MiniZinc::FileUtils::utf8ToWide(dir).c_str());
+      SetDllDirectoryW(MiniZinc::FileUtils::utf8_to_wide(dir).c_str());
     }
     _dll = (void*)LoadLibrary((LPCSTR)file.c_str());
     if (!dir.empty()) {

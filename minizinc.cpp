@@ -46,8 +46,10 @@ int main(int argc, const char** argv) {
     try {
       std::vector<std::string> args(argc - 1);
 #ifdef _WIN32
-      for (int i = 1; i < argc; i++) args[i - 1] = FileUtils::wideToUtf8(argv[i]);
-      fSuccess = (slv.run(args, "", FileUtils::wideToUtf8(argv[0])) != SolverInstance::ERROR);
+      for (int i = 1; i < argc; i++) {
+        args[i - 1] = FileUtils::wide_to_utf8(argv[i]);
+      }
+      fSuccess = (slv.run(args, "", FileUtils::wide_to_utf8(argv[0])) != SolverInstance::ERROR);
 #else
       for (int i = 1; i < argc; i++) {
         args[i - 1] = argv[i];

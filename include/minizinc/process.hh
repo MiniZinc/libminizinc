@@ -180,7 +180,7 @@ public:
     siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
 
     std::string cmdline = FileUtils::combine_cmd_line(_fzncmd);
-    wchar_t* cmdstr = _wcsdup(FileUtils::utf8ToWide(cmdline).c_str());
+    wchar_t* cmdstr = _wcsdup(FileUtils::utf8_to_wide(cmdline).c_str());
 
     HANDLE hJobObject = CreateJobObject(NULL, NULL);
 
@@ -198,7 +198,7 @@ public:
     if (!processStarted) {
       std::stringstream ssm;
       ssm << "Error occurred when executing FZN solver with command \""
-          << FileUtils::wideToUtf8(cmdstr) << "\".";
+          << FileUtils::wide_to_utf8(cmdstr) << "\".";
       throw InternalError(ssm.str());
     }
 

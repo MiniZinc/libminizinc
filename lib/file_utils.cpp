@@ -73,11 +73,11 @@ std::string progpath() {
 #elif defined(HAS_GETMODULEFILENAME)
 std::string progpath() {
   wchar_t path[MAX_PATH];
-  int ret = GetModuleFileNameW(NULL, path, MAX_PATH);
+  int ret = GetModuleFileNameW(nullptr, path, MAX_PATH);
   if (ret <= 0) {
     return "";
   }
-  std::string p = wideToUtf8(path);
+  std::string p = wide_to_utf8(path);
   size_t slash = p.find_last_of("/\\");
   if (slash != std::string::npos) {
     p = p.substr(0, slash);
@@ -104,9 +104,9 @@ std::string progpath() {
 
 bool file_exists(const std::string& filename) {
 #if defined(HAS_GETFILEATTRIBUTES)
-  DWORD dwAttrib = GetFileAttributesW(utf8ToWide(filename).c_str());
+  DWORD dwAttrib = GetFileAttributesW(utf8_to_wide(filename).c_str());
 
-  return (dwAttrib != INVALID_FILE_ATTRIBUTES && !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+  return dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY) == 0;
 #else
   struct stat info;
   return stat(filename.c_str(), &info) == 0 && ((info.st_mode & S_IFREG) != 0);
@@ -115,9 +115,9 @@ bool file_exists(const std::string& filename) {
 
 bool directory_exists(const std::string& dirname) {
 #if defined(HAS_GETFILEATTRIBUTES)
-  DWORD dwAttrib = GetFileAttributesW(utf8ToWide(dirname).c_str());
+  DWORD dwAttrib = GetFileAttributesW(utf8_to_wide(dirname).c_str());
 
-  return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+  return dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY) != 0;
 #else
   struct stat info;
   return stat(dirname.c_str(), &info) == 0 && ((info.st_mode & S_IFDIR) != 0);
@@ -126,22 +126,23 @@ bool directory_exists(const std::string& dirname) {
 
 std::string file_path(const std::string& filename, const std::string& basePath) {
 #ifdef _MSC_VER
-  LPWSTR lpBuffer, lpFilePart;
-  DWORD nBufferLength = GetFullPathNameW(utf8ToWide(filename).c_str(), 0, 0, &lpFilePart);
-  if (!(lpBuffer = (LPWSTR)LocalAlloc(LMEM_FIXED, sizeof(WCHAR) * nBufferLength))) return 0;
+  LPWSTR lpFilePart;
+  DWORD nBufferLength = GetFullPathNameW(utf8_to_wide(filename).c_str(), 0, nullptr, &lpFilePart);
+  auto lpBuffer = static_cast<LPWSTR>(LocalAlloc(LMEM_FIXED, sizeof(WCHAR) * nBufferLength));
+  if (lpBuffer == nullptr) {
+    return "";
+  }
+
   std::string ret;
   DWORD error =
-      GetFullPathNameW(utf8ToWide(filename).c_str(), nBufferLength, lpBuffer, &lpFilePart);
+      GetFullPathNameW(utf8_to_wide(filename).c_str(), nBufferLength, lpBuffer, &lpFilePart);
   DWORD fileAttr = GetFileAttributesW(lpBuffer);
   DWORD lastError = GetLastError();
 
   if (error == 0 || (fileAttr == INVALID_FILE_ATTRIBUTES && lastError != NO_ERROR)) {
-    if (basePath.empty())
-      ret = filename;
-    else
-      ret = file_path(basePath + "/" + filename);
+    ret = basePath.empty() ? filename : file_path(basePath + "/" + filename);
   } else {
-    ret = wideToUtf8(lpBuffer);
+    ret = wide_to_utf8(lpBuffer);
   }
   LocalFree(lpBuffer);
   return ret;
@@ -188,9 +189,10 @@ std::string base_name(const std::string& filename) {
 bool is_absolute(const std::string& path) {
 #ifdef _MSC_VER
   if (path.size() > 2 &&
-      ((path[0] == '\\' && path[1] == '\\') || (path[0] == '/' && path[1] == '/')))
+      ((path[0] == '\\' && path[1] == '\\') || (path[0] == '/' && path[1] == '/'))) {
     return true;
-  return !PathIsRelativeW(utf8ToWide(path).c_str());
+  }
+  return PathIsRelativeW(utf8_to_wide(path).c_str()) == FALSE;
 #else
   return path.empty() ? false : (path[0] == '/');
 #endif
@@ -204,7 +206,8 @@ std::string find_executable(const std::string& filename) {
 #ifdef _MSC_VER
     if (FileUtils::file_exists(filename + ".exe")) {
       return filename + ".exe";
-    } else if (FileUtils::file_exists(filename + ".bat")) {
+    }
+    if (FileUtils::file_exists(filename + ".bat")) {
       return filename + ".bat";
     }
 #endif
@@ -234,7 +237,8 @@ std::string find_executable(const std::string& filename) {
 #ifdef _MSC_VER
     if (FileUtils::file_exists(fileWithPath + ".exe")) {
       return fileWithPath + ".exe";
-    } else if (FileUtils::file_exists(fileWithPath + ".bat")) {
+    }
+    if (FileUtils::file_exists(fileWithPath + ".bat")) {
       return fileWithPath + ".bat";
     }
 #endif
@@ -246,13 +250,13 @@ std::vector<std::string> directory_list(const std::string& dir, const std::strin
   std::vector<std::string> entries;
 #ifdef _MSC_VER
   WIN32_FIND_DATAW findData;
-  HANDLE hFind = ::FindFirstFileW(utf8ToWide(dir + "/*." + ext).c_str(), &findData);
+  HANDLE hFind = ::FindFirstFileW(utf8_to_wide(dir + "/*." + ext).c_str(), &findData);
   if (hFind != INVALID_HANDLE_VALUE) {
     do {
-      if (!(findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-        entries.push_back(wideToUtf8(findData.cFileName));
+      if ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+        entries.push_back(wide_to_utf8(findData.cFileName));
       }
-    } while (::FindNextFileW(hFind, &findData));
+    } while (::FindNextFileW(hFind, &findData) == TRUE);
     ::FindClose(hFind);
   }
 #else
@@ -283,8 +287,10 @@ std::vector<std::string> directory_list(const std::string& dir, const std::strin
 std::string working_directory() {
 #ifdef _MSC_VER
   wchar_t wd[FILENAME_MAX];
-  if (!_wgetcwd(wd, FILENAME_MAX)) return "";
-  return wideToUtf8(wd);
+  if (_wgetcwd(wd, FILENAME_MAX) == FALSE) {
+    return "";
+  }
+  return wide_to_utf8(wd);
 #else
   char wd[FILENAME_MAX];
   if (getcwd(wd, sizeof(wd)) == nullptr) {
@@ -297,7 +303,7 @@ std::string working_directory() {
 std::string share_directory() {
 #ifdef _WIN32
   if (wchar_t* MZNSTDLIBDIR = _wgetenv(L"MZN_STDLIB_DIR")) {
-    return wideToUtf8(MZNSTDLIBDIR);
+    return wide_to_utf8(MZNSTDLIBDIR);
   }
 #else
   if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
@@ -323,17 +329,16 @@ std::string share_directory() {
 std::string user_config_dir() {
 #ifdef _MSC_VER
   HRESULT hr;
-  PWSTR pszPath = NULL;
+  PWSTR pszPath = nullptr;
 
-  hr = SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, NULL, &pszPath);
+  hr = SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, nullptr, &pszPath);
   if (SUCCEEDED(hr)) {
-    auto configPath = wideToUtf8(pszPath);
+    auto configPath = wide_to_utf8(pszPath);
     CoTaskMemFree(pszPath);
     if (configPath.empty()) {
       return "";
-    } else {
-      return configPath + "/MiniZinc";
     }
+    return configPath + "/MiniZinc";
   }
   return "";
 #else
@@ -364,9 +369,9 @@ TmpFile::TmpFile(const std::string& ext) {
     GetTempPathW(MAX_PATH, lpTempPathBuffer);
     GetTempFileNameW(lpTempPathBuffer, L"tmp_mzn_", 0, szTempFileName);
 
-    _name = wideToUtf8(szTempFileName);
+    _name = wide_to_utf8(szTempFileName);
     _tmpNames.push_back(_name);
-    didCopy = CopyFileW(szTempFileName, utf8ToWide(_name + ext).c_str(), true);
+    didCopy = CopyFileW(szTempFileName, utf8_to_wide(_name + ext).c_str(), TRUE) == TRUE;
   } while (!didCopy);
   _name += ext;
 #else
@@ -385,9 +390,9 @@ TmpFile::TmpFile(const std::string& ext) {
 
 TmpFile::~TmpFile() {
 #ifdef _WIN32
-  _wremove(utf8ToWide(_name).c_str());  // TODO: Is this necessary?
+  _wremove(utf8_to_wide(_name).c_str());  // TODO: Is this necessary?
   for (auto& n : _tmpNames) {
-    _wremove(utf8ToWide(n).c_str());
+    _wremove(utf8_to_wide(n).c_str());
   }
 #else
   remove(_name.c_str());
@@ -405,9 +410,9 @@ TmpDir::TmpDir() {
   GetTempPathW(MAX_PATH, lpTempPathBuffer);
   GetTempFileNameW(lpTempPathBuffer, L"tmp_mzn_", 0, szTempFileName);
 
-  _name = wideToUtf8(szTempFileName);
+  _name = wide_to_utf8(szTempFileName);
   DeleteFileW(szTempFileName);
-  CreateDirectoryW(szTempFileName, NULL);
+  CreateDirectoryW(szTempFileName, nullptr);
 #else
   _name = "/tmp/mzndirXXXXXX";
   char* tmpfile = strndup(_name.c_str(), _name.size());
@@ -426,15 +431,15 @@ namespace {
 void remove_dir(const std::string& d) {
   HANDLE dh;
   WIN32_FIND_DATAW info;
-  auto dw = utf8ToWide(d);
+  auto dw = utf8_to_wide(d);
   auto pattern = dw + L"\\*.*";
   dh = ::FindFirstFileW(pattern.c_str(), &info);
   if (dh != INVALID_HANDLE_VALUE) {
     do {
       if (info.cFileName[0] != L'.') {
         auto fp = dw + L"\\" + info.cFileName;
-        if (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-          remove_dir(wideToUtf8(fp));
+        if ((info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0) {
+          remove_dir(wide_to_utf8(fp));
         } else {
           ::SetFileAttributesW(fp.c_str(), FILE_ATTRIBUTE_NORMAL);
           ::DeleteFileW(fp.c_str());
@@ -727,7 +732,7 @@ std::string decode_base64(const std::string& s) {
 }
 
 #ifdef _WIN32
-std::string wideToUtf8(const wchar_t* str, int size) {
+std::string wide_to_utf8(const wchar_t* str, int size) {
   int buffer_size = WideCharToMultiByte(CP_UTF8, 0, str, size, nullptr, 0, nullptr, nullptr);
   if (buffer_size == 0) {
     return "";
@@ -737,9 +742,9 @@ std::string wideToUtf8(const wchar_t* str, int size) {
   return result;
 }
 
-std::string wideToUtf8(const std::wstring& str) { return wideToUtf8(str.c_str(), -1); }
+std::string wide_to_utf8(const std::wstring& str) { return wide_to_utf8(str.c_str(), -1); }
 
-std::wstring utf8ToWide(const std::string& str) {
+std::wstring utf8_to_wide(const std::string& str) {
   int buffer_size = MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, str.c_str(), -1, nullptr, 0);
   if (buffer_size == 0) {
     return L"";

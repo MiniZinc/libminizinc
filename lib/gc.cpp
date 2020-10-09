@@ -23,7 +23,7 @@ namespace MiniZinc {
 
 GC*& GC::gc() {
 #if defined(HAS_DECLSPEC_THREAD)
-  __declspec(thread) static GC* gc = NULL;
+  __declspec(thread) static GC* gc = nullptr;
 #elif defined(HAS_ATTR_THREAD)
   static __thread GC* gc = nullptr;
 #else
