@@ -170,7 +170,7 @@ bool MznSolver::ifMzn2Fzn() const { return _isMzn2fzn; }
 bool MznSolver::ifSolns2out() const { return s2out.opt.flagStandaloneSolns2Out; }
 
 void MznSolver::addSolverInterface(SolverFactory* sf) {
-  _si = _sf->createSI(*_flt.getEnv(), _log, _siOpt);
+  _si = sf->createSI(*_flt.getEnv(), _log, _siOpt);
   assert(_si);
   if (s2out.getEnv() == nullptr) {
     s2out.initFromEnv(_flt.getEnv());
@@ -180,7 +180,7 @@ void MznSolver::addSolverInterface(SolverFactory* sf) {
     _log
         //     << "  ---------------------------------------------------------------------------\n"
         << "      % SOLVING PHASE\n"
-        << _sf->getDescription(_siOpt) << endl;
+        << sf->getDescription(_siOpt) << endl;
   }
 }
 
@@ -364,7 +364,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       return OPTION_FINISH;
     }
     if (argv[i] == "--version") {
-      _flt.printVersion(cout);
+      Flattener::printVersion(cout);
       return OPTION_FINISH;
     }
     if (argv[i] == "--solvers") {

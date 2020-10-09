@@ -48,8 +48,8 @@ public:
   Flattener(std::ostream& os, std::ostream& log, std::string stdlibDir);
   ~Flattener();
   bool processOption(int& i, std::vector<std::string>& argv);
-  void printVersion(std::ostream& os);
-  void printHelp(std::ostream& os);
+  static void printVersion(std::ostream& os);
+  void printHelp(std::ostream& os) const;
 
   void flatten(const std::string& modelString = std::string(),
                const std::string& modelName = std::string("stdin"));
