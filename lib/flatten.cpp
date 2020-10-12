@@ -304,7 +304,9 @@ bool istrue(EnvI& env, Expression* e) {
   }
   if (e->type() == Type::parbool()) {
     if (e->type().cv()) {
-      KeepAlive r = flat_cv_exp(env, Ctx(), e);
+      Ctx ctx;
+      ctx.b = C_MIX;
+      KeepAlive r = flat_cv_exp(env, ctx, e);
       return eval_bool(env, r());
     }
     GCLock lock;
@@ -319,7 +321,9 @@ bool isfalse(EnvI& env, Expression* e) {
   }
   if (e->type() == Type::parbool()) {
     if (e->type().cv()) {
-      KeepAlive r = flat_cv_exp(env, Ctx(), e);
+      Ctx ctx;
+      ctx.b = C_MIX;
+      KeepAlive r = flat_cv_exp(env, ctx, e);
       return !eval_bool(env, r());
     }
     GCLock lock;

@@ -109,10 +109,11 @@ EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
       &flatten_error         //      E_TIID
   };
 
-  int dispatch =
-      (e->type().isPar() && !e->isa<Let>() && !e->isa<VarDecl>() && e->type().bt() != Type::BT_ANN)
-          ? 0
-          : e->eid() - Expression::E_INTLIT + 1;
+  bool is_par = e->type().isPar() &&
+                (!e->type().cv() || !e->type().isbool() || ctx.b != C_ROOT || e->isa<BoolLit>()) &&
+                !e->isa<Let>() && !e->isa<VarDecl>() && e->type().bt() != Type::BT_ANN;
+
+  int dispatch = is_par ? 0 : e->eid() - Expression::E_INTLIT + 1;
 
   return flattener_dispatch[dispatch](env, ctx, e, r, b);
 }

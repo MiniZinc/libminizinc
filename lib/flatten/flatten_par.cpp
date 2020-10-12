@@ -16,7 +16,9 @@ namespace MiniZinc {
 EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   EE ret;
   if (e->type().cv()) {
-    KeepAlive ka = flat_cv_exp(env, ctx, e);
+    Ctx nctx;
+    nctx.b = ctx.b == C_ROOT ? C_ROOT : C_MIX;
+    KeepAlive ka = flat_cv_exp(env, nctx, e);
     ret.r = bind(env, ctx, r, ka());
     ret.b = bind(env, Ctx(), b, constants().literalTrue);
     return ret;
