@@ -6,13 +6,25 @@
 namespace MiniZinc {
 
 template <class MIPWrapper>
-MIPSolverFactory<MIPWrapper>::MIPSolverFactory() {
-  SolverConfig sc(getId(), MIPWrapper::getVersion());
+MIPSolverFactory<MIPWrapper>::MIPSolverFactory() : _factoryOptions() {
+  for (auto& flag : MIPWrapper::getFactoryFlags()) {
+    get_global_solver_registry()->addFactoryFlag(flag, this);
+  }
+}
+
+template <class MIPWrapper>
+bool MIPSolverFactory<MIPWrapper>::processFactoryOption(int& i, std::vector<std::string>& argv) {
+  return _factoryOptions.processOption(i, argv);
+}
+
+template <class MIPWrapper>
+void MIPSolverFactory<MIPWrapper>::factoryOptionsFinished() {
+  SolverConfig sc(getId(), MIPWrapper::getVersion(_factoryOptions, nullptr));
   sc.name(MIPWrapper::getName());
   sc.mznlib(MIPWrapper::getMznLib());
   sc.mznlibVersion(1);
   sc.supportsMzn(true);
-  sc.description("MiniZinc MIP solver plugin");
+  sc.description(MIPWrapper::getDescription(_factoryOptions, nullptr));
   sc.requiredFlags(MIPWrapper::getRequiredFlags());
   sc.tags(MIPWrapper::getTags());
   sc.stdFlags(MIPWrapper::getStdFlags());
@@ -35,14 +47,14 @@ bool MIPSolverFactory<MIPWrapper>::processOption(SolverInstanceBase::Options* op
 
 template <class MIPWrapper>
 std::string MIPSolverFactory<MIPWrapper>::getDescription(SolverInstanceBase::Options* opt) {
-  std::string v =
-      "MIP solver plugin, compiled " __DATE__ ", using: " + MIPWrapper::getDescription(opt);
+  std::string v = "MIP solver plugin, compiled " __DATE__ ", using: " +
+                  MIPWrapper::getDescription(_factoryOptions, opt);
   return v;
 }
 
 template <class MIPWrapper>
 std::string MIPSolverFactory<MIPWrapper>::getVersion(SolverInstanceBase::Options* opt) {
-  return MIPWrapper::getVersion(opt);
+  return MIPWrapper::getVersion(_factoryOptions, opt);
 }
 
 template <class MIPWrapper>

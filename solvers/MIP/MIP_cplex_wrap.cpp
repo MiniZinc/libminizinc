@@ -90,8 +90,8 @@ const vector<string>& cplex_dlls() {
 void MIPCplexWrapper::checkDLL() {
 #ifdef CPLEX_PLUGIN
   _cplexDll = nullptr;
-  if (!_options->sCPLEXDLL.empty()) {
-    _cplexDll = dll_open(_options->sCPLEXDLL);
+  if (!_factoryOptions.cplexDll.empty()) {
+    _cplexDll = dll_open(_factoryOptions.cplexDll);
   } else {
     for (const auto& s : cplex_dlls()) {
       _cplexDll = dll_open(s);
@@ -102,10 +102,10 @@ void MIPCplexWrapper::checkDLL() {
   }
 
   if (_cplexDll == nullptr) {
-    if (_options->sCPLEXDLL.empty()) {
+    if (_factoryOptions.cplexDll.empty()) {
       throw MiniZinc::InternalError("cannot load cplex dll, specify --cplex-dll");
     }
-    throw MiniZinc::InternalError("cannot load cplex dll `" + _options->sCPLEXDLL + "'");
+    throw MiniZinc::InternalError("cannot load cplex dll `" + _factoryOptions.cplexDll + "'");
   }
 
   *(void**)(&dll_CPXaddfuncdest) = dll_sym(_cplexDll, "CPXaddfuncdest");
@@ -208,13 +208,14 @@ void MIPCplexWrapper::checkDLL() {
 #endif
 }
 
-string MIPCplexWrapper::getDescription(MiniZinc::SolverInstanceBase::Options* opt) {
+string MIPCplexWrapper::getDescription(FactoryOptions& factoryOpt,
+                                       MiniZinc::SolverInstanceBase::Options* opt) {
   string v = "MIP wrapper for IBM ILOG CPLEX  ";
   int status;
   Options def_options;
   Options* options = opt != nullptr ? static_cast<Options*>(opt) : &def_options;
   try {
-    MIPCplexWrapper mcw(options);
+    MIPCplexWrapper mcw(factoryOpt, options);
     CPXENVptr env = mcw.dll_CPXopenCPLEX(&status);
     if (env != nullptr) {
       v += mcw.dll_CPXversion(env);
@@ -229,13 +230,14 @@ string MIPCplexWrapper::getDescription(MiniZinc::SolverInstanceBase::Options* op
   return v;
 }
 
-string MIPCplexWrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt) {
+string MIPCplexWrapper::getVersion(FactoryOptions& factoryOpt,
+                                   MiniZinc::SolverInstanceBase::Options* opt) {
   string v;
   int status;
   Options def_options;
   Options* options = opt != nullptr ? static_cast<Options*>(opt) : &def_options;
   try {
-    MIPCplexWrapper mcw(options);
+    MIPCplexWrapper mcw(factoryOpt, options);
     CPXENVptr env = mcw.dll_CPXopenCPLEX(&status);
     if (env != nullptr) {
       v += mcw.dll_CPXversion(env);
@@ -251,9 +253,10 @@ string MIPCplexWrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt) {
 
 vector<string> MIPCplexWrapper::getRequiredFlags() {
   int status;
+  MIPCplexWrapper::FactoryOptions factoryOptions;
   Options options;
   try {
-    MIPCplexWrapper mcw(&options);
+    MIPCplexWrapper mcw(factoryOptions, &options);
     CPXENVptr env = mcw.dll_CPXopenCPLEX(&status);
     if (env != nullptr) {
       return {};
@@ -262,6 +265,8 @@ vector<string> MIPCplexWrapper::getRequiredFlags() {
   }
   return {"--cplex-dll"};
 }
+
+vector<string> MIPCplexWrapper::getFactoryFlags() { return {"--cplex-dll"}; }
 
 string MIPCplexWrapper::getId() { return "cplex"; }
 
@@ -318,6 +323,11 @@ void MIPCplexWrapper::Options::printHelp(ostream& os) {
      << std::endl;
 }
 
+bool MIPCplexWrapper::FactoryOptions::processOption(int& i, std::vector<std::string>& argv) {
+  MiniZinc::CLOParser cop(i, argv);
+  return cop.get("--cplex-dll", &cplexDll);
+}
+
 bool MIPCplexWrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
   MiniZinc::CLOParser cop(i, argv);
   if (cop.get("-i")) {
@@ -340,7 +350,6 @@ bool MIPCplexWrapper::Options::processOption(int& i, std::vector<std::string>& a
   } else if (cop.get("--absGap", &absGap)) {            // NOLINT: Allow repeated empty if
   } else if (cop.get("--relGap", &relGap)) {            // NOLINT: Allow repeated empty if
   } else if (cop.get("--intTol", &intTol)) {            // NOLINT: Allow repeated empty if
-  } else if (cop.get("--cplex-dll", &sCPLEXDLL)) {      // NOLINT: Allow repeated empty if
     //   } else if ( cop.get( "--objDiff", &objDiff ) ) {
   } else {
     return false;

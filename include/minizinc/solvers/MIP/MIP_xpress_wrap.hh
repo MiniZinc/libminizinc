@@ -18,16 +18,6 @@
 
 using namespace std;
 
-/// xprs.dll depends on this library
-class XprlPlugin : MiniZinc::Plugin {
-public:
-  XprlPlugin();
-  XprlPlugin(const std::string& dll);
-
-private:
-  static const std::vector<std::string>& dlls();
-};
-
 class XpressPlugin : MiniZinc::Plugin {
 public:
   XpressPlugin();
@@ -108,6 +98,13 @@ private:
 
 class MIPxpressWrapper : public MIPWrapper {
 public:
+  class FactoryOptions {
+  public:
+    bool processOption(int& i, std::vector<std::string>& argv);
+
+    std::string xpressDll;
+  };
+
   class Options : public MiniZinc::SolverInstanceBase::Options {
   public:
     int msgLevel = 0;
@@ -121,13 +118,12 @@ public:
     bool intermediateSolutions = false;
     bool processOption(int& i, std::vector<std::string>& argv);
     std::string xprsPassword;
-    std::string xprsRoot;
     static void printHelp(std::ostream& os);
   };
 
 private:
+  FactoryOptions& _factoryOptions;
   Options* _options = nullptr;
-  XprlPlugin* _pluginDep = nullptr;
   XpressPlugin* _plugin = nullptr;
 
 public:
@@ -157,16 +153,22 @@ public:
   int getNNodes() override { return output.nNodes; }
   int getNOpen() override { return output.nOpenNodes; }
 
-  MIPxpressWrapper(Options* opt) : _options(opt) { openXpress(); };
+  MIPxpressWrapper(FactoryOptions& factoryOpt, Options* opt)
+      : _factoryOptions(factoryOpt), _options(opt) {
+    openXpress();
+  };
   ~MIPxpressWrapper() override { closeXpress(); };
 
-  static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
-  static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
+  static std::string getDescription(FactoryOptions& factoryOpt,
+                                    MiniZinc::SolverInstanceBase::Options* opt = nullptr);
+  static std::string getVersion(FactoryOptions& factoryOpt,
+                                MiniZinc::SolverInstanceBase::Options* opt = nullptr);
   static std::string getId();
   static std::string getName();
   static std::vector<std::string> getTags();
   static std::vector<std::string> getStdFlags();
   static std::vector<std::string> getRequiredFlags();
+  static std::vector<std::string> getFactoryFlags();
 
 private:
   XPRBprob _problem;

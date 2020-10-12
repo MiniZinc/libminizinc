@@ -254,6 +254,10 @@ public:
    * uses platform specific separators (: on Unix-like systems, ; on Windows).
    */
   SolverConfigs(std::ostream& log);
+
+  /// Populate the solver configurations
+  void populate(std::ostream& log);
+
   /// Return configuration for solver \a s
   /// The string can be a comma separated list of tags, in which case a
   /// solver that matches all tags will be returned. The tag can also be
@@ -282,6 +286,8 @@ public:
   }
   /// MiniZinc library directory
   const std::string& mznlibDir() const { return _mznlibDir; }
+  /// Default options for the solver with the given ID
+  std::vector<std::string> defaultOptions(const std::string& id);
 };
 
 /// An exception thrown when encountering an error in a solver configuration

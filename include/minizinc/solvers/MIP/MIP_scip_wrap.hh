@@ -200,6 +200,13 @@ class MIPScipWrapper : public MIPWrapper {
   std::vector<double> _x;
 
 public:
+  class FactoryOptions {
+  public:
+    bool processOption(int& i, std::vector<std::string>& argv);
+
+    std::string scipDll;
+  };
+
   class Options : public MiniZinc::SolverInstanceBase::Options {
   public:
     int nThreads = 1;
@@ -215,18 +222,21 @@ public:
     double intTol = 1e-8;
     double objDiff = 1.0;
 
-    std::string scipDll;
 
     bool processOption(int& i, std::vector<std::string>& argv);
     static void printHelp(std::ostream& os);
   };
 
 private:
+  FactoryOptions& _factoryOptions;
   Options* _options = nullptr;
   ScipPlugin* _plugin = nullptr;
 
 public:
-  MIPScipWrapper(Options* opt) : _options(opt) { SCIP_PLUGIN_CALL(openSCIP()); }
+  MIPScipWrapper(FactoryOptions& factoryOpt, Options* opt)
+      : _factoryOptions(factoryOpt), _options(opt) {
+    SCIP_PLUGIN_CALL(openSCIP());
+  }
   ~MIPScipWrapper() override {
     SCIP_RETCODE ret = delSCIPVars();
     assert(ret == SCIP_OKAY);
@@ -234,13 +244,16 @@ public:
     assert(ret == SCIP_OKAY);
   }
 
-  static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
-  static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
+  static std::string getDescription(FactoryOptions& factoryOpt,
+                                    MiniZinc::SolverInstanceBase::Options* opt = nullptr);
+  static std::string getVersion(FactoryOptions& factoryOpt,
+                                MiniZinc::SolverInstanceBase::Options* opt = nullptr);
   static std::string getId();
   static std::string getName();
   static std::vector<std::string> getTags();
   static std::vector<std::string> getStdFlags();
   static std::vector<std::string> getRequiredFlags();
+  static std::vector<std::string> getFactoryFlags();
 
   bool processOption(int& i, int argc, const char** argv);
   void printVersion(std::ostream& os);

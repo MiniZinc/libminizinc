@@ -38,7 +38,8 @@ using namespace std;
 
 #define WANT_SOLUTION
 
-string MIPosicbcWrapper::getDescription(MiniZinc::SolverInstanceBase::Options* /*opt*/) {
+string MIPosicbcWrapper::getDescription(FactoryOptions& factoryOpt,
+                                        MiniZinc::SolverInstanceBase::Options* /*opt*/) {
   string v = "MIP wrapper for COIN-BC ";
   v += CBC_VERSION;  // E.g., 2.9 stable or 2.9.7 latest release
   v += ",  using CLP ";
@@ -47,7 +48,8 @@ string MIPosicbcWrapper::getDescription(MiniZinc::SolverInstanceBase::Options* /
   return v;
 }
 
-string MIPosicbcWrapper::getVersion(MiniZinc::SolverInstanceBase::Options* /*opt*/) {
+string MIPosicbcWrapper::getVersion(FactoryOptions& factoryOpt,
+                                    MiniZinc::SolverInstanceBase::Options* /*opt*/) {
   return string(CBC_VERSION) + "/" + string(CLP_VERSION);
 }
 

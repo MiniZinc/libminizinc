@@ -43,16 +43,18 @@
 
 using namespace std;
 
-string MIPGurobiWrapper::getDescription(MiniZinc::SolverInstanceBase::Options* opt) {
+string MIPGurobiWrapper::getDescription(FactoryOptions& factoryOpt,
+                                        MiniZinc::SolverInstanceBase::Options* opt) {
   ostringstream oss;
-  oss << "MIP wrapper for Gurobi library " << getVersion();
+  oss << "MIP wrapper for Gurobi library " << getVersion(factoryOpt, nullptr);
   oss << ".  Compiled  " __DATE__ "  " __TIME__;
   return oss.str();
 }
 
-string MIPGurobiWrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt) {
+string MIPGurobiWrapper::getVersion(FactoryOptions& factoryOpt,
+                                    MiniZinc::SolverInstanceBase::Options* opt) {
   ostringstream oss;
-  MIPGurobiWrapper mgw(nullptr);  // to avoid opening the env
+  MIPGurobiWrapper mgw(factoryOpt, nullptr);  // to avoid opening the env
   try {
     mgw.checkDLL();
     int major;
@@ -67,7 +69,8 @@ string MIPGurobiWrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt) 
 }
 
 vector<string> MIPGurobiWrapper::getRequiredFlags() {
-  MIPGurobiWrapper mgw(nullptr);
+  FactoryOptions factoryOpt;
+  MIPGurobiWrapper mgw(factoryOpt, nullptr);
   try {
     mgw.checkDLL();
     return {};
@@ -75,6 +78,8 @@ vector<string> MIPGurobiWrapper::getRequiredFlags() {
     return {"--gurobi-dll"};
   }
 }
+
+vector<string> MIPGurobiWrapper::getFactoryFlags() { return {"--gurobi-dll"}; }
 
 string MIPGurobiWrapper::getId() { return "gurobi"; }
 
@@ -178,6 +183,11 @@ void MIPGurobiWrapper::Options::printHelp(ostream& os) {
      << std::endl;
 }
 
+bool MIPGurobiWrapper::FactoryOptions::processOption(int& i, std::vector<std::string>& argv) {
+  MiniZinc::CLOParser cop(i, argv);
+  return cop.get("--gurobi-dll", &gurobiDll);
+}
+
 bool MIPGurobiWrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
   MiniZinc::CLOParser cop(i, argv);
   std::string buf;
@@ -214,8 +224,7 @@ bool MIPGurobiWrapper::Options::processOption(int& i, std::vector<std::string>& 
   } else if (cop.get("--feasTol", &feasTol)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--intTol", &intTol)) {    // NOLINT: Allow repeated empty if
   } else if (cop.get("--nonConvex --nonconvex --NonConvex",
-                     &nonConvex)) {                   // NOLINT: Allow repeated empty if
-  } else if (cop.get("--gurobi-dll", &sGurobiDLL)) {  // NOLINT: Allow repeated empty if
+                     &nonConvex)) {  // NOLINT: Allow repeated empty if
     //   } else if ( cop.get( "--objDiff", &objDiff ) ) {
   } else {
     return false;
@@ -282,8 +291,8 @@ void dll_close(void* dll) {
 void MIPGurobiWrapper::checkDLL() {
 #ifdef GUROBI_PLUGIN
   _gurobiDll = nullptr;
-  if ((_options != nullptr) && (!_options->sGurobiDLL.empty())) {
-    _gurobiDll = dll_open(_options->sGurobiDLL.c_str());
+  if (!_factoryOptions.gurobiDll.empty()) {
+    _gurobiDll = dll_open(_factoryOptions.gurobiDll.c_str());
   } else {
     for (const auto& s : gurobi_dlls()) {
       _gurobiDll = dll_open(s.c_str());
@@ -294,10 +303,10 @@ void MIPGurobiWrapper::checkDLL() {
   }
 
   if (_gurobiDll == nullptr) {
-    if (_options == nullptr || _options->sGurobiDLL.empty()) {
+    if (_factoryOptions.gurobiDll.empty()) {
       throw MiniZinc::InternalError("cannot load gurobi dll, specify --gurobi-dll");
     }
-    throw MiniZinc::InternalError("cannot load gurobi dll `" + _options->sGurobiDLL + "'");
+    throw MiniZinc::InternalError("cannot load gurobi dll `" + _factoryOptions.gurobiDll + "'");
   }
 
   *(void**)(&dll_GRBversion) = dll_sym(_gurobiDll, "GRBversion");

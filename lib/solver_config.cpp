@@ -483,9 +483,6 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
 #else
   const char* PATHSEP = ":";
 #endif
-  for (const auto& sc : builtin_solver_configs().builtinSolvers) {
-    addConfig(sc.second);
-  }
   std::string mzn_solver_path = get_env("MZN_SOLVER_PATH");
   while (!mzn_solver_path.empty()) {
     size_t next_sep = mzn_solver_path.find(PATHSEP);
@@ -600,6 +597,13 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
     _solverPath.emplace_back("/usr/share/minizinc/solvers");
   }
 #endif
+}
+
+void SolverConfigs::populate(std::ostream& log) {
+  for (const auto& sc : builtin_solver_configs().builtinSolvers) {
+    addConfig(sc.second);
+  }
+
   for (const string& cur_path : _solverPath) {
     std::vector<std::string> configFiles = FileUtils::directory_list(cur_path, "msc");
     for (auto& configFile : configFiles) {
@@ -616,16 +620,7 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
 
   // Add default options to loaded solver configurations
   for (auto& sc : _solvers) {
-    SolverDefaultMap::const_iterator it = _solverDefaultOptions.find(sc.id());
-    if (it != _solverDefaultOptions.end()) {
-      std::vector<std::string> defaultOptions;
-      for (const auto& df : it->second) {
-        if (!df.empty()) {
-          defaultOptions.push_back(df);
-        }
-      }
-      sc.defaultFlags(defaultOptions);
-    }
+    sc.defaultFlags(defaultOptions(sc.id()));
   }
 }
 
@@ -783,6 +778,20 @@ const SolverConfig& SolverConfigs::config(const std::string& _s) {
     selectedSolver = *selectedSolvers.begin();
   }
   return _solvers[selectedSolver];
+}
+
+std::vector<std::string> SolverConfigs::defaultOptions(const std::string& id) {
+  auto it = _solverDefaultOptions.find(id);
+  if (it != _solverDefaultOptions.end()) {
+    std::vector<std::string> defaultOptions;
+    for (const auto& df : it->second) {
+      if (!df.empty()) {
+        defaultOptions.push_back(df);
+      }
+    }
+    return defaultOptions;
+  }
+  return {};
 }
 
 void SolverConfigs::registerBuiltinSolver(const SolverConfig& sc) {

@@ -36,23 +36,6 @@ public:
   XpressException(const string& msg) : runtime_error(" MIPxpressWrapper: " + msg) {}
 };
 
-XprlPlugin::XprlPlugin() : Plugin(XprlPlugin::dlls()) {}
-
-XprlPlugin::XprlPlugin(const std::string& dll_file) : Plugin(dll_file) {}
-
-const std::vector<std::string>& XprlPlugin::dlls() {
-  static std::vector<std::string> ret = {
-#ifdef _WIN32
-      "xprl", "C:\\xpressmp\\bin\\xprl.dll"
-#elif __APPLE__
-      "libxprl", " /Applications/FICO Xpress/xpressmp/lib/libxprl.dylib"
-#else
-      "libxprl", "/opt/xpressmp/lib/libxprl.so"
-#endif
-  };
-  return ret;
-}
-
 XpressPlugin::XpressPlugin() : Plugin(XpressPlugin::dlls()) { loadDll(); }
 
 XpressPlugin::XpressPlugin(const std::string& dll_file) : Plugin(dll_file) { loadDll(); }
@@ -108,22 +91,9 @@ const std::vector<std::string>& XpressPlugin::dlls() {
 }
 
 void MIPxpressWrapper::openXpress() {
-  if (!_options->xprsRoot.empty()) {
-    auto base = MiniZinc::FileUtils::file_path(_options->xprsRoot);
-#ifdef _WIN32
-    auto xprl = MiniZinc::FileUtils::file_path("bin/xprl.dll", base);
-    auto xprs = MiniZinc::FileUtils::file_path("bin/xprs.dll", base);
-#elif __APPLE__
-    auto xprl = MiniZinc::FileUtils::file_path("lib/libxprl.dylib", base);
-    auto xprs = MiniZinc::FileUtils::file_path("lib/libxprs.dylib", base);
-#else
-    auto xprl = MiniZinc::FileUtils::file_path("lib/libxprl.so", base);
-    auto xprs = MiniZinc::FileUtils::file_path("lib/libxprs.so", base);
-#endif
-    _pluginDep = new XprlPlugin(xprl);
-    _plugin = new XpressPlugin(xprs);
+  if (!_factoryOptions.xpressDll.empty()) {
+    _plugin = new XpressPlugin(_factoryOptions.xpressDll);
   } else {
-    _pluginDep = new XprlPlugin();
     _plugin = new XpressPlugin();
   }
 
@@ -148,22 +118,24 @@ void MIPxpressWrapper::closeXpress() {
   _plugin->XPRBdelprob(_problem);
   _plugin->XPRSfree();
   delete _plugin;
-  delete _pluginDep;
 }
 
-string MIPxpressWrapper::getDescription(MiniZinc::SolverInstanceBase::Options* opt) {
+string MIPxpressWrapper::getDescription(FactoryOptions& factoryOpt,
+                                        MiniZinc::SolverInstanceBase::Options* opt) {
   ostringstream oss;
-  oss << "  MIP wrapper for FICO Xpress Optimiser version " << getVersion(opt);
+  oss << "  MIP wrapper for FICO Xpress Optimiser version " << getVersion(factoryOpt, opt);
   oss << ".  Compiled  " __DATE__ "  " __TIME__;
   return oss.str();
 }
 
-string MIPxpressWrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt) {
+string MIPxpressWrapper::getVersion(FactoryOptions& factoryOpt,
+                                    MiniZinc::SolverInstanceBase::Options* opt) {
   try {
-    XprlPlugin p1;
-    XpressPlugin p2;
+    auto* p =
+        factoryOpt.xpressDll.empty() ? new XpressPlugin : new XpressPlugin(factoryOpt.xpressDll);
     char v[16];
-    p2.XPRSgetversion(v);
+    p->XPRSgetversion(v);
+    delete p;
     return v;
   } catch (MiniZinc::Plugin::PluginError&) {
     return "<unknown version>";
@@ -172,19 +144,20 @@ string MIPxpressWrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt) 
 
 vector<string> MIPxpressWrapper::getRequiredFlags() {
   try {
-    XprlPlugin p1;
-    XpressPlugin p2;
-    int ret = p2.XPRSinit(nullptr);
-    p2.XPRSfree();
+    XpressPlugin p;
+    int ret = p.XPRSinit(nullptr);
+    p.XPRSfree();
     if (ret == 0 || ret == 32) {
       return {};
     }
     return {"--xpress-password"};
 
   } catch (MiniZinc::Plugin::PluginError&) {
-    return {"--xpress-root"};
+    return {"--xpress-dll"};
   }
 }
+
+vector<string> MIPxpressWrapper::getFactoryFlags() { return {"--xpress-dll"}; };
 
 string MIPxpressWrapper::getId() { return "xpress"; }
 
@@ -211,10 +184,14 @@ void MIPxpressWrapper::Options::printHelp(ostream& os) {
         "default: "
      << 0.0001 << std::endl
      << "-i                   print intermediate solution, default: false" << std::endl
-     << "--xpress-root <dir>      Xpress installation directory (usually named xpressmp)"
-     << std::endl
+     << "--xpress-dll <file>      Xpress DLL file (xprs.dll)" << std::endl
      << "--xpress-password <dir>  directory where xpauth.xpr is located (optional)" << std::endl
      << std::endl;
+}
+
+bool MIPxpressWrapper::FactoryOptions::processOption(int& i, std::vector<std::string>& argv) {
+  MiniZinc::CLOParser cop(i, argv);
+  return cop.get("--xpress-dll", &xpressDll);
 }
 
 bool MIPxpressWrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
@@ -229,7 +206,6 @@ bool MIPxpressWrapper::Options::processOption(int& i, std::vector<std::string>& 
   } else if (cop.get("--absGap", &absGap)) {                      // NOLINT: Allow repeated empty if
   } else if (cop.get("-i")) {
     intermediateSolutions = true;
-  } else if (cop.get("--xpress-root", &xprsRoot)) {          // NOLINT: Allow repeated empty if
   } else if (cop.get("--xpress-password", &xprsPassword)) {  // NOLINT: Allow repeated empty if
   } else {
     return false;

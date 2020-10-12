@@ -33,6 +33,13 @@ class MIPCplexWrapper : public MIPWrapper {
 #endif
 
 public:
+  class FactoryOptions {
+  public:
+    bool processOption(int& i, std::vector<std::string>& argv);
+
+    std::string cplexDll;
+  };
+
   class Options : public MiniZinc::SolverInstanceBase::Options {
   public:
     int nMIPFocus = 0;
@@ -51,25 +58,31 @@ public:
     double relGap = 1e-8;
     double intTol = 1e-8;
     double objDiff = 1.0;
-    std::string sCPLEXDLL;
     bool processOption(int& i, std::vector<std::string>& argv);
     static void printHelp(std::ostream& os);
   };
 
 private:
+  FactoryOptions& _factoryOptions;
   Options* _options = nullptr;
 
 public:
-  MIPCplexWrapper(Options* opt) : _options(opt) { openCPLEX(); }
+  MIPCplexWrapper(FactoryOptions& factoryOpt, Options* opt)
+      : _factoryOptions(factoryOpt), _options(opt) {
+    openCPLEX();
+  }
   ~MIPCplexWrapper() override { closeCPLEX(); }
 
-  static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
-  static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
+  static std::string getDescription(FactoryOptions& factoryOpt,
+                                    MiniZinc::SolverInstanceBase::Options* opt = nullptr);
+  static std::string getVersion(FactoryOptions& factoryOpt,
+                                MiniZinc::SolverInstanceBase::Options* opt = nullptr);
   static std::string getId();
   static std::string getName();
   static std::vector<std::string> getTags();
   static std::vector<std::string> getStdFlags();
   static std::vector<std::string> getRequiredFlags();
+  static std::vector<std::string> getFactoryFlags();
 
   //       Statistics& getStatistics() { return _statistics; }
 

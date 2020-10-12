@@ -132,17 +132,21 @@ void ScipPlugin::load() {
     }                                                                         \
   }
 
-string MIPScipWrapper::getDescription(MiniZinc::SolverInstanceBase::Options* opt) {
+string MIPScipWrapper::getDescription(FactoryOptions& factoryOpt,
+                                      MiniZinc::SolverInstanceBase::Options* opt) {
   ostringstream oss;
-  oss << "MIP wrapper for SCIP " << getVersion(opt) << ". Compiled  " __DATE__ "  " __TIME__;
+  oss << "MIP wrapper for SCIP " << getVersion(factoryOpt, opt)
+      << ". Compiled  " __DATE__ "  " __TIME__;
   return oss.str();
 }
-string MIPScipWrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt) {
+string MIPScipWrapper::getVersion(FactoryOptions& factoryOpt,
+                                  MiniZinc::SolverInstanceBase::Options* opt) {
   try {
-    ScipPlugin p;
+    auto* p = factoryOpt.scipDll.empty() ? new ScipPlugin() : new ScipPlugin(factoryOpt.scipDll);
     ostringstream oss;
-    oss << p.SCIPmajorVersion() << '.' << p.SCIPminorVersion() << '.' << p.SCIPtechVersion() << '.'
-        << p.SCIPsubversion();
+    oss << p->SCIPmajorVersion() << '.' << p->SCIPminorVersion() << '.' << p->SCIPtechVersion()
+        << '.' << p->SCIPsubversion();
+    delete p;
     return oss.str();
   } catch (MiniZinc::Plugin::PluginError&) {
     return "<unknown version>";
@@ -156,6 +160,8 @@ vector<string> MIPScipWrapper::getRequiredFlags() {
     return {"--scip-dll"};
   }
 }
+
+vector<string> MIPScipWrapper::getFactoryFlags() { return {"--scip-dll"}; };
 
 string MIPScipWrapper::getId() { return "scip"; }
 
@@ -185,7 +191,8 @@ void MIPScipWrapper::Options::printHelp(ostream& os) {
      //   << "--tuneParam         instruct SCIP to tune parameters instead of solving   NOT IMPL"
 
      << "--absGap <n>        absolute gap |primal-dual| to stop" << std::endl
-     << "--relGap <n>        relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 "
+     << "--relGap <n>        relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set "
+        "<0 "
         "to use backend's default"
      << std::endl
      << "--intTol <n>        integrality tolerance for a variable. Default 1e-8"
@@ -199,6 +206,11 @@ void MIPScipWrapper::Options::printHelp(ostream& os) {
 
 static inline bool beginswith(const string& s, const string& t) {
   return s.compare(0, t.length(), t) == 0;
+}
+
+bool MIPScipWrapper::FactoryOptions::processOption(int& i, std::vector<std::string>& argv) {
+  MiniZinc::CLOParser cop(i, argv);
+  return cop.get("--scip-dll", &scipDll);
 }
 
 bool MIPScipWrapper::Options::processOption(int& i, vector<string>& argv) {
@@ -217,7 +229,6 @@ bool MIPScipWrapper::Options::processOption(int& i, vector<string>& argv) {
   } else if (cop.get("--relGap", &relGap)) {               // NOLINT: Allow repeated empty if
   } else if (cop.get("--intTol", &intTol)) {               // NOLINT: Allow repeated empty if
     //   } else if ( cop.get( "--objDiff", &objDiff ) ) {
-  } else if (cop.get("--scip-dll", &scipDll)) {  // NOLINT: Allow repeated empty if
   } else {
     return false;
   }
@@ -242,10 +253,10 @@ void MIPScipWrapper::SCIP_PLUGIN_CALL(SCIP_RETCODE retcode, const string& msg, b
 }
 
 SCIP_RETCODE MIPScipWrapper::openSCIP() {
-  if (_options->scipDll.empty()) {
+  if (_factoryOptions.scipDll.empty()) {
     _plugin = new ScipPlugin();
   } else {
-    _plugin = new ScipPlugin(_options->scipDll);
+    _plugin = new ScipPlugin(_factoryOptions.scipDll);
   }
 
   SCIP_PLUGIN_CALL_R(_plugin, _plugin->SCIPcreate(&_scip));

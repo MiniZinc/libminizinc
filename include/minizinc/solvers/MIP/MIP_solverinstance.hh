@@ -91,8 +91,9 @@ public:
   double lastIncumbent;
   double dObjVarLB = -1e300, dObjVarUB = 1e300;
 
-  MIPSolverinstance(Env& env, std::ostream& log, typename MIPWrapper::Options* opt)
-      : SolverInstanceImpl(env, log, opt), _mipWrapper(new MIPWrapper(opt)) {
+  MIPSolverinstance(Env& env, std::ostream& log, typename MIPWrapper::FactoryOptions& factoryOpt,
+                    typename MIPWrapper::Options* opt)
+      : SolverInstanceImpl(env, log, opt), _mipWrapper(new MIPWrapper(factoryOpt, opt)) {
     assert(_mipWrapper.get());
     registerConstraints();
   }
@@ -132,10 +133,12 @@ template <class MIPWrapper>
 class MIPSolverFactory : public SolverFactory {
 public:
   MIPSolverFactory();
+  bool processFactoryOption(int& i, std::vector<std::string>& argv) override;
+  void factoryOptionsFinished() override;
   SolverInstanceBase::Options* createOptions() override { return new typename MIPWrapper::Options; }
   SolverInstanceBase* doCreateSI(Env& env, std::ostream& log,
                                  SolverInstanceBase::Options* opt) override {
-    return new MIPSolverinstance<MIPWrapper>(env, log,
+    return new MIPSolverinstance<MIPWrapper>(env, log, _factoryOptions,
                                              static_cast<typename MIPWrapper::Options*>(opt));
   }
   bool processOption(SolverInstanceBase::Options* opt, int& i,
@@ -144,6 +147,9 @@ public:
   std::string getVersion(SolverInstanceBase::Options* opt = nullptr) override;
   std::string getId() override;
   void printHelp(std::ostream& os) override { MIPWrapper::Options::printHelp(os); }
+
+private:
+  typename MIPWrapper::FactoryOptions _factoryOptions;
 };
 
 }  // namespace MiniZinc

@@ -44,6 +44,12 @@ class MIPosicbcWrapper : public MIPWrapper {
   std::unordered_map<VarId, double> _warmstart;  // this accumulates warmstart infos
 
 public:
+  class FactoryOptions {
+  public:
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+    bool processOption(int& i, std::vector<std::string>& argv) { return false; }
+  };
+
   class Options : public MiniZinc::SolverInstanceBase::Options {
   public:
     int nThreads = 1;
@@ -70,16 +76,19 @@ private:
   Options* _options = nullptr;
 
 public:
-  MIPosicbcWrapper(Options* opt) : _options(opt) { openOSICBC(); }
+  MIPosicbcWrapper(FactoryOptions& factoryOpt, Options* opt) : _options(opt) { openOSICBC(); }
   ~MIPosicbcWrapper() override { closeOSICBC(); }
 
-  static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
-  static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
+  static std::string getDescription(FactoryOptions& factoryOpt,
+                                    MiniZinc::SolverInstanceBase::Options* opt = nullptr);
+  static std::string getVersion(FactoryOptions& factoryOpt,
+                                MiniZinc::SolverInstanceBase::Options* opt = nullptr);
   static std::string getId();
   static std::string getName();
   static std::vector<std::string> getTags();
   static std::vector<std::string> getStdFlags();
   static std::vector<std::string> getRequiredFlags() { return {}; };
+  static std::vector<std::string> getFactoryFlags() { return {}; };
 
   void printVersion(std::ostream&);
   void printHelp(std::ostream&);

@@ -121,6 +121,17 @@ void SolverRegistry::removeSolverFactory(SolverFactory* pSF) {
   _sfstorage.erase(it);
 }
 
+void SolverRegistry::addFactoryFlag(const std::string& flag, SolverFactory* sf) {
+  assert(sf);
+  _factoryFlagStorage.push_back(std::make_pair(flag, sf));
+}
+
+void SolverRegistry::removeFactoryFlag(const std::string& flag, SolverFactory* sf) {
+  assert(sf);
+  auto it = find(_factoryFlagStorage.begin(), _factoryFlagStorage.end(), std::make_pair(flag, sf));
+  _factoryFlagStorage.erase(it);
+}
+
 /// Function createSI also adds each SI to the local storage
 SolverInstanceBase* SolverFactory::createSI(Env& env, std::ostream& log,
                                             SolverInstanceBase::Options* opt) {
@@ -353,6 +364,51 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       }
     }
   }
+
+  // Process any registered factory flags
+  const auto& factoryFlags = get_global_solver_registry()->getFactoryFlags();
+  std::unordered_map<std::string, std::vector<std::string>> reducedSolverDefaults;
+  if (!factoryFlags.empty()) {
+    // Process solver default factory flags
+    for (const auto& factoryFlag : factoryFlags) {
+      auto factoryId = factoryFlag.second->getId();
+      if (reducedSolverDefaults.count(factoryId) == 0) {
+        reducedSolverDefaults.insert({factoryId, _solverConfigs.defaultOptions(factoryId)});
+      }
+      auto& defaultArgs = reducedSolverDefaults.find(factoryId)->second;
+      std::vector<std::string> keep;
+      for (i = 0; i < defaultArgs.size(); i++) {
+        if (defaultArgs[i] != factoryFlag.first ||
+            !factoryFlag.second->processFactoryOption(i, defaultArgs)) {
+          keep.push_back(defaultArgs[i]);
+        }
+      }
+      defaultArgs = keep;
+    }
+    // Process command line factory flags
+    std::vector<std::string> remaining = {argv[0]};
+    for (i = 1; i < argc; i++) {
+      bool ok = false;
+      for (const auto& factoryFlag : factoryFlags) {
+        if (argv[i] == factoryFlag.first && factoryFlag.second->processFactoryOption(i, argv)) {
+          ok = true;
+          break;
+        }
+      }
+      if (!ok) {
+        remaining.push_back(argv[i]);
+      }
+    }
+    argv = remaining;
+    argc = remaining.size();
+  }
+  for (auto* sf : get_global_solver_registry()->getSolverFactories()) {
+    // Notify solver factories that factory flags are done
+    sf->factoryOptionsFinished();
+  }
+
+  // After this point all solver configurations must be available
+  _solverConfigs.populate(_log);
 
   for (i = 1; i < argc; ++i) {
     if (argv[i] == "-h" || argv[i] == "--help") {
@@ -644,10 +700,14 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               }
             }
           }
-          if (!sc.defaultFlags().empty()) {
+          auto reducedDefaultFlags = reducedSolverDefaults.find(sc.id());
+          const auto& defaultFlags = reducedDefaultFlags == reducedSolverDefaults.end()
+                                         ? sc.defaultFlags()
+                                         : reducedDefaultFlags->second;
+          if (!defaultFlags.empty()) {
             std::vector<std::string> addedArgs;
             addedArgs.push_back(argv[0]);  // excutable name
-            for (const auto& df : sc.defaultFlags()) {
+            for (const auto& df : defaultFlags) {
               addedArgs.push_back(df);
             }
             for (int i = 1; i < argv.size(); i++) {
