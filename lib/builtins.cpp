@@ -1475,7 +1475,15 @@ FloatVal b_sqrt(EnvI& env, Call* call) {
 bool b_assert_bool(EnvI& env, Call* call) {
   assert(call->argCount() == 2);
   GCLock lock;
-  if (eval_bool(env, call->arg(0))) {
+  Expression* cond_e;
+  if (call->arg(0)->type().cv()) {
+    Ctx ctx;
+    ctx.b = C_MIX;
+    cond_e = flat_cv_exp(env, ctx, call->arg(0))();
+  } else {
+    cond_e = call->arg(0);
+  }
+  if (eval_bool(env, cond_e)) {
     return true;
   }
   Expression* msg_e;
@@ -1492,7 +1500,15 @@ bool b_assert_bool(EnvI& env, Call* call) {
 Expression* b_assert(EnvI& env, Call* call) {
   assert(call->argCount() == 3);
   GCLock lock;
-  if (eval_bool(env, call->arg(0))) {
+  Expression* cond_e;
+  if (call->arg(0)->type().cv()) {
+    Ctx ctx;
+    ctx.b = C_MIX;
+    cond_e = flat_cv_exp(env, ctx, call->arg(0))();
+  } else {
+    cond_e = call->arg(0);
+  }
+  if (eval_bool(env, cond_e)) {
     return call->arg(2);
   }
   Expression* msg_e;
