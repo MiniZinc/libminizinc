@@ -1430,6 +1430,16 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
   auto* vdi = ii->dynamicCast<VarDeclI>();
   if (ci != nullptr) {
     e = ci->e();
+
+    if (vd->ti()->domain() != nullptr) {
+      if (Call* definedVarCall = e->ann().getCall(constants().ann.defines_var)) {
+        if (Expression::equal(definedVarCall->arg(0), vd->id())) {
+          e->ann().removeCall(constants().ann.defines_var);
+          vd->ann().remove(constants().ann.is_defined_var);
+        }
+      }
+    }
+
   } else if (vdi != nullptr) {
     e = vdi->e()->e();
     if (e == nullptr) {
