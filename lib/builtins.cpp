@@ -16,6 +16,7 @@
 #include <minizinc/config.hh>
 #include <minizinc/eval_par.hh>
 #include <minizinc/file_utils.hh>
+#include <minizinc/flat_exp.hh>
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/output.hh>
 #include <minizinc/prettyprinter.hh>
@@ -1477,9 +1478,14 @@ bool b_assert_bool(EnvI& env, Call* call) {
   if (eval_bool(env, call->arg(0))) {
     return true;
   }
-  auto* err = eval_par(env, call->arg(1))->cast<StringLit>();
+  Expression* msg_e;
+  if (call->arg(1)->type().cv()) {
+    msg_e = flat_cv_exp(env, Ctx(), call->arg(1))();
+  } else {
+    msg_e = call->arg(1);
+  }
   std::ostringstream ss;
-  ss << "Assertion failed: " << err->v();
+  ss << "Assertion failed: " << eval_string(env, msg_e);
   throw EvalError(env, call->arg(0)->loc(), ss.str());
 }
 
@@ -1489,9 +1495,14 @@ Expression* b_assert(EnvI& env, Call* call) {
   if (eval_bool(env, call->arg(0))) {
     return call->arg(2);
   }
-  auto* err = eval_par(env, call->arg(1))->cast<StringLit>();
+  Expression* msg_e;
+  if (call->arg(1)->type().cv()) {
+    msg_e = flat_cv_exp(env, Ctx(), call->arg(1))();
+  } else {
+    msg_e = call->arg(1);
+  }
   std::ostringstream ss;
-  ss << "Assertion failed: " << err->v();
+  ss << "Assertion failed: " << eval_string(env, msg_e);
   throw EvalError(env, call->arg(0)->loc(), ss.str());
 }
 
@@ -1512,29 +1523,49 @@ Expression* b_mzn_deprecate(EnvI& env, Call* call) {
 
 bool b_abort(EnvI& env, Call* call) {
   GCLock lock;
-  auto* err = eval_par(env, call->arg(0))->cast<StringLit>();
+  Expression* msg_e;
+  if (call->arg(0)->type().cv()) {
+    msg_e = flat_cv_exp(env, Ctx(), call->arg(0))();
+  } else {
+    msg_e = call->arg(0);
+  }
   std::ostringstream ss;
-  ss << "Abort: " << err->v();
+  ss << "Abort: " << eval_string(env, msg_e);
   throw EvalError(env, call->arg(0)->loc(), ss.str());
 }
 
 Expression* b_trace(EnvI& env, Call* call) {
   GCLock lock;
-  auto* msg = eval_par(env, call->arg(0))->cast<StringLit>();
-  env.errstream << msg->v();
+  Expression* msg_e;
+  if (call->arg(0)->type().cv()) {
+    msg_e = flat_cv_exp(env, Ctx(), call->arg(0))();
+  } else {
+    msg_e = call->arg(0);
+  }
+  env.errstream << eval_string(env, msg_e);
   return call->argCount() == 1 ? constants().literalTrue : call->arg(1);
 }
 
 Expression* b_trace_stdout(EnvI& env, Call* call) {
   GCLock lock;
-  auto* msg = eval_par(env, call->arg(0))->cast<StringLit>();
-  env.outstream << msg->v();
+  Expression* msg_e;
+  if (call->arg(0)->type().cv()) {
+    msg_e = flat_cv_exp(env, Ctx(), call->arg(0))();
+  } else {
+    msg_e = call->arg(0);
+  }
+  env.errstream << eval_string(env, msg_e);
   return call->argCount() == 1 ? constants().literalTrue : call->arg(1);
 }
 
 Expression* b_trace_logstream(EnvI& env, Call* call) {
   GCLock lock;
-  auto* msg = eval_par(env, call->arg(0))->cast<StringLit>();
+  StringLit* msg;
+  if (call->arg(0)->type().cv()) {
+    msg = flat_cv_exp(env, Ctx(), call->arg(0))()->cast<StringLit>();
+  } else {
+    msg = eval_par(env, call->arg(0))->cast<StringLit>();
+  }
   env.logstream << msg->v();
   return call->argCount() == 1 ? constants().literalTrue : call->arg(1);
 }
