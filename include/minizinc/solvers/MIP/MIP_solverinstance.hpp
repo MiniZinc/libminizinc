@@ -1,6 +1,7 @@
 #include <minizinc/solvers/MIP/MIP_solverinstance.hh>
 
 #include <chrono>
+#include <queue>
 
 namespace MiniZinc {
 
@@ -114,13 +115,12 @@ void MIPSolverinstance<MIPWrapper>::processSearchAnnotations(const Annotation& a
   std::vector<int> aPri;  // priorities
 
   /// Annotations that may be useful for custom search strategies in e.g. SCIP
-  std::vector<std::string> variableSelection(flattenedAnns.size());
-  std::vector<std::string> valueSelection(flattenedAnns.size());
+  std::deque<std::string> variableSelection;
+  std::deque<std::string> valueSelection;
 
   int nArrayAnns = 0;
   auto priority = flattenedAnns.size();  // Variables at front get highest pri
   for (const auto& annExpression : flattenedAnns) {
-    --priority;
     /// Skip expressions that are not meaningful or we cannot process
     if (!annExpression->isa<Call>()) {
       continue;
@@ -139,19 +139,19 @@ void MIPSolverinstance<MIPWrapper>::processSearchAnnotations(const Annotation& a
     }
 
     /// Save the variable selection and the value selection strategies, indexed on priority.
-    /// If the 'continue' condictions above trigger, some entries may be empty strings.
-    /// Empty strings will be converted to enum 'unknown' which will use a default strategy
+    /// Rules are ordered by ascending priorities, i.e. rules with lower priorities are at the front
+    /// so that we can index them by priority.
     const auto cVarSel = annotation->arg(1)->cast<Id>()->str();
     const auto cValSel = annotation->arg(2)->cast<Id>()->str();
-    variableSelection[priority] = cVarSel.c_str();
-    valueSelection[priority] = cValSel.c_str();
+    variableSelection.push_front(cVarSel.c_str());
+    valueSelection.push_front(cValSel.c_str());
 
     ++nArrayAnns;
 
     /// Take the variables and append them with set prioirty.
     std::vector<MIPSolverinstance::VarId> annVars;
     exprToVarArray(annotation->arg(0), annVars);
-    aPri.insert(aPri.end(), annVars.size(), priority);
+    aPri.insert(aPri.end(), annVars.size(), --priority);
     std::move(annVars.begin(), annVars.end(), std::back_inserter(vars));
   }
 
@@ -161,6 +161,15 @@ void MIPSolverinstance<MIPWrapper>::processSearchAnnotations(const Annotation& a
 
   if (getMIPWrapper()->getFreeSearch() == MIPWrapper::SearchType::UNIFORM_SEARCH) {
     std::fill(aPri.begin(), aPri.end(), 1);
+    /// It is an error here to use variableSelection / valueSelection since
+    /// we can't index them anymore. Makes no sense to use them for uniform search anyway.
+    variableSelection.clear();
+    valueSelection.clear();
+  } else {
+    /// Subtract offset of remaining priority so that priorities start at 0,
+    /// so that we can index variableSelection and valueSelection by priority.
+    std::transform(aPri.cbegin(), aPri.cend(), aPri.begin(),
+                   [priority](const int p) { return p - priority; });
   }
 
   // Try adding to solver
