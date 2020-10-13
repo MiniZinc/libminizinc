@@ -46,7 +46,7 @@ default:
   artifacts:
     paths: [minizinc/]
   cache:
-    key: "$CI_JOB_NAME"
+    key: "$CI_JOB_STAGE:$CI_JOB_NAME"
     paths: [.ccache, vendor.zip*]
   only: [tags, merge_requests, pipelines, develop, master]
 
@@ -84,7 +84,7 @@ build:win64:
     - cmake -S . -B build -G"%CMAKE_ARCH%" -DBUILD_REF=%CI_PIPELINE_ID% -DUSE_PROPRIETARY=OFF -DGecode_ROOT="%CI_PROJECT_DIR%/vendor/gecode" -DGurobi_ROOT="%CI_PROJECT_DIR%/vendor/gurobi" -DCPlex_ROOT="%CI_PROJECT_DIR%/vendor/CPLEX_Studio/cplex" -DOsiCBC_ROOT="%CI_PROJECT_DIR%/vendor/cbc" -DSCIP_ROOT="%CI_PROJECT_DIR%/vendor/scip" -DXpress_ROOT="%CI_PROJECT_DIR%/vendor/xpressmp" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
     - cmake --build build --config Release --target install
   cache:
-    key: "win64"
+    key: "build_win64"
     paths: [vendor.zip*]
   tags: [win64, cmake, cpp]
   only: [tags, merge_requests, pipelines, develop, master]
@@ -175,7 +175,7 @@ test:analyse:
     reports:
       junit: tests/output/junit*.xml
   cache:
-    key: "$CI_JOB_NAME"
+    key: "$CI_JOB_STAGE:$CI_JOB_NAME"
     paths: [.cache/pip, vendor.zip*]
   only: [merge_requests, pipelines, master]
 
@@ -219,7 +219,7 @@ test:analyse:
   dependencies: ["build:win64"]
   needs: ["build:win64"]
   cache:
-    key: win64
+    key: test_win64
 
 .tests_fast:
   script:
