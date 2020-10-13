@@ -56,6 +56,9 @@ public:
   static const int MaskConsType_Lazy = 4;
   enum Status { OPT, SAT, UNSAT, UNBND, UNSATorUNBND, UNKNOWN, __ERROR };
 
+  /// Search strategy for the solver
+  enum SearchType { FIXED_SEARCH = 0, FREE_SEARCH = 1, UNIFORM_SEARCH = 2 };
+
   /// Columns for SCIP upfront and with obj coefs:
   std::vector<double> colObj, colLB, colUB;
   std::vector<VarType> colTypes;
@@ -280,7 +283,7 @@ public:
     throw std::runtime_error("Cumulative constraints not supported. ");
   }
   /// 0: model-defined level, 1: free, 2: uniform search
-  virtual int getFreeSearch() { return 1; }
+  virtual int getFreeSearch() { return SearchType::FREE_SEARCH; }
   /// Return 0 if ignoring searches
   virtual bool addSearch(const std::vector<VarId>& vars, const std::vector<int>& pri) {
     return false;

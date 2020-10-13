@@ -185,9 +185,9 @@ bool MIPGurobiWrapper::Options::processOption(int& i, std::vector<std::string>& 
     flagIntermediate = true;
   } else if (string(argv[i]) == "-f") {              // NOLINT: Allow repeated empty if
   } else if (string(argv[i]) == "--fixed-search") {  // NOLINT: Allow repeated empty if
-    nFreeSearch = 0;
+    nFreeSearch = MIPGurobiWrapper::SearchType::FIXED_SEARCH;
   } else if (string(argv[i]) == "--uniform-search") {  // NOLINT: Allow repeated empty if
-    nFreeSearch = 2;
+    nFreeSearch = MIPGurobiWrapper::SearchType::UNIFORM_SEARCH;
   } else if (cop.get("--mipfocus --mipFocus --MIPFocus --MIPfocus",
                      &nMIPFocus)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--writeModel --exportModel --writemodel --exportmodel",
