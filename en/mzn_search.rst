@@ -205,7 +205,7 @@ value selection).
   Example ways to constrain a variable are:
 
   - :mzn:`indomain_min`: assign the variable its smallest domain value,
-  - :mzn:`indomain_median`: assign the variable its median domain value,
+  - :mzn:`indomain_median`: assign the variable its median domain value (or the smaller of the two middle values in case of an even number of elements in the domain),
   - :mzn:`indomain_random`: assign the variable a random value from its domain, and
   - :mzn:`indomain_split` bisect the variables domain excluding the upper half.
 
