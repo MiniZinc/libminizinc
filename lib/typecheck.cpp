@@ -1892,6 +1892,9 @@ public:
               Type bo_t = whereMap[c.decl(i, j)][k]->type().isPar() && whereExpr->type().isPar()
                               ? Type::parbool()
                               : Type::varbool();
+              if (whereMap[c.decl(i, j)][k]->type().cv() || whereExpr->type().cv()) {
+                bo_t.cv(true);
+              }
               bo->type(bo_t);
               whereExpr = bo;
             }
