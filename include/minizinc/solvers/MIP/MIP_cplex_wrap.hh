@@ -13,6 +13,7 @@
 #pragma once
 
 #include <minizinc/config.hh>
+#include <minizinc/solver_config.hh>
 #include <minizinc/solver_instance_base.hh>
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
 
@@ -58,6 +59,9 @@ public:
     double relGap = 1e-8;
     double intTol = 1e-8;
     double objDiff = 1.0;
+
+    std::unordered_map<std::string, std::string> extraParams;
+
     bool processOption(int& i, std::vector<std::string>& argv);
     static void printHelp(std::ostream& os);
   };
@@ -83,6 +87,10 @@ public:
   static std::vector<std::string> getStdFlags();
   static std::vector<std::string> getRequiredFlags();
   static std::vector<std::string> getFactoryFlags();
+
+  static std::vector<MiniZinc::SolverConfig::ExtraFlag> getExtraFlags(FactoryOptions& factoryOpt) {
+    return {};
+  };
 
   //       Statistics& getStatistics() { return _statistics; }
 

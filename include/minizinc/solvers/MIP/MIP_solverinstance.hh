@@ -150,6 +150,7 @@ public:
 
 private:
   typename MIPWrapper::FactoryOptions _factoryOptions;
+  std::vector<SolverConfig::ExtraFlag> _extraFlags;
 };
 
 }  // namespace MiniZinc

@@ -26,6 +26,29 @@ using namespace std;
 
 namespace MiniZinc {
 
+bool SolverConfig::ExtraFlag::validate(const std::string& v) const {
+  try {
+    switch (flagType) {
+      case FlagType::T_BOOL:
+      case FlagType::T_STRING:
+        return range.empty() || std::find(range.begin(), range.end(), v) != range.end();
+      case FlagType::T_INT: {
+        long long i = stoll(v);
+        return range.empty() || (i >= stoll(range[0]) && i <= stoll(range[1]));
+      }
+      case FlagType::T_FLOAT: {
+        double i = stod(v);
+        return range.empty() || (i >= stod(range[0]) && i <= stod(range[1]));
+      }
+    }
+  } catch (const invalid_argument&) {
+    return false;
+  } catch (const out_of_range&) {
+    return false;
+  }
+  return false;
+}
+
 namespace {
 std::string get_string(AssignI* ai) {
   if (auto* sl = ai->e()->dynamicCast<StringLit>()) {
@@ -139,21 +162,44 @@ std::vector<SolverConfig::ExtraFlag> get_extra_flag_list(AssignI* ai) {
       auto* sl2 = (*al)[i + 1]->dynamicCast<StringLit>();
       StringLit* sl3 = haveType ? (*al)[i + 2]->dynamicCast<StringLit>() : nullptr;
       StringLit* sl4 = haveDefault ? (*al)[i + 3]->dynamicCast<StringLit>() : nullptr;
-      std::string opt_type =
+      std::string opt_type_full =
           sl3 != nullptr ? std::string(sl3->v().c_str(), sl3->v().size()) : "bool";
+      std::vector<std::string> opt_range;
       std::string opt_def;
       if (sl4 != nullptr) {
         opt_def = std::string(sl4->v().c_str(), sl4->v().size());
-      } else if (opt_type == "bool") {
+      } else if (opt_type_full == "bool") {
         opt_def = "false";
-      } else if (opt_type == "int") {
+      } else if (opt_type_full == "int") {
         opt_def = "0";
-      } else if (opt_type == "float") {
+      } else if (opt_type_full == "float") {
         opt_def = "0.0";
       }
+      size_t split = opt_type_full.find(":");
+      std::string opt_type = opt_type_full.substr(0, split);
+      SolverConfig::ExtraFlag::FlagType flag_type;
+      if (opt_type == "bool") {
+        flag_type = SolverConfig::ExtraFlag::FlagType::T_BOOL;
+      } else if (opt_type == "int") {
+        flag_type = SolverConfig::ExtraFlag::FlagType::T_INT;
+      } else if (opt_type == "float") {
+        flag_type = SolverConfig::ExtraFlag::FlagType::T_FLOAT;
+      } else if (opt_type == "string" || opt_type == "opt") {
+        flag_type = SolverConfig::ExtraFlag::FlagType::T_STRING;
+      }
+      if (split != std::string::npos) {
+        opt_type_full = opt_type_full.substr(split + 1);
+        while (!opt_type_full.empty()) {
+          split = opt_type_full.find(":");
+          opt_range.push_back(opt_type_full.substr(0, split));
+          opt_type_full = split == std::string::npos ? "" : opt_type_full.substr(split + 1);
+        }
+      }
+
       if ((sl1 != nullptr) && (sl2 != nullptr)) {
         ret.emplace_back(std::string(sl1->v().c_str(), sl1->v().size()),
-                         std::string(sl2->v().c_str(), sl2->v().size()), opt_type, opt_def);
+                         std::string(sl2->v().c_str(), sl2->v().size()), flag_type, opt_range,
+                         opt_def);
       } else {
         throw ConfigException(
             "invalid configuration item (right hand side must be a 2d array of strings)");
@@ -413,8 +459,26 @@ std::string SolverConfig::toJSON(const SolverConfigs& configs) const {
     oss << "  \"extraFlags\": [";
     for (unsigned int j = 0; j < extraFlags().size(); j++) {
       oss << "\n    ["
-          << "\"" << extraFlags()[j].flag << "\",\"" << extraFlags()[j].description << "\",\"";
-      oss << extraFlags()[j].flagType << "\",\"" << extraFlags()[j].defaultValue << "\"]";
+          << "\"" << Printer::escapeStringLit(extraFlags()[j].flag) << "\",\""
+          << Printer::escapeStringLit(extraFlags()[j].description) << "\",\"";
+      switch (extraFlags()[j].flagType) {
+        case ExtraFlag::FlagType::T_BOOL:
+          oss << "bool";
+          break;
+        case ExtraFlag::FlagType::T_INT:
+          oss << "int";
+          break;
+        case ExtraFlag::FlagType::T_FLOAT:
+          oss << "float";
+          break;
+        case ExtraFlag::FlagType::T_STRING:
+          oss << (extraFlags()[j].range.empty() ? "string" : "opt");
+          break;
+      }
+      for (const auto& v : extraFlags()[j].range) {
+        oss << ":" << Printer::escapeStringLit(v);
+      }
+      oss << "\",\"" << Printer::escapeStringLit(extraFlags()[j].defaultValue) << "\"]";
       if (j < extraFlags().size() - 1) {
         oss << ",";
       }

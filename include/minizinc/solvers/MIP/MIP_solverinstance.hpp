@@ -19,6 +19,7 @@ bool MIPSolverFactory<MIPWrapper>::processFactoryOption(int& i, std::vector<std:
 
 template <class MIPWrapper>
 void MIPSolverFactory<MIPWrapper>::factoryOptionsFinished() {
+  _extraFlags = MIPWrapper::getExtraFlags(_factoryOptions);
   SolverConfig sc(getId(), MIPWrapper::getVersion(_factoryOptions, nullptr));
   sc.name(MIPWrapper::getName());
   sc.mznlib(MIPWrapper::getMznLib());
@@ -28,21 +29,47 @@ void MIPSolverFactory<MIPWrapper>::factoryOptionsFinished() {
   sc.requiredFlags(MIPWrapper::getRequiredFlags());
   sc.tags(MIPWrapper::getTags());
   sc.stdFlags(MIPWrapper::getStdFlags());
+  sc.extraFlags(_extraFlags);
   SolverConfigs::registerBuiltinSolver(sc);
 }
 
 template <class MIPWrapper>
 bool MIPSolverFactory<MIPWrapper>::processOption(SolverInstanceBase::Options* opt, int& i,
                                                  std::vector<std::string>& argv) {
-  if (argv[i] == "--verbose-solving") {
-    opt->verbose = true;
+  CLOParser cop(i, argv);
+  auto& options = static_cast<typename MIPWrapper::Options&>(*opt);
+
+  if (cop.get("-v --verbose-solving")) {
+    options.verbose = true;
     return true;
   }
-  if (argv[i] == "--solver-statistics") {
-    opt->printStatistics = true;
+  if (cop.get("-s --solver-statistics")) {
+    options.printStatistics = true;
     return true;
   }
-  return static_cast<typename MIPWrapper::Options&>(*opt).processOption(i, argv);
+  if (options.processOption(i, argv)) {
+    return true;
+  }
+
+  // Add any command line extra flags
+  for (const auto& flag : _extraFlags) {
+    if (flag.flagType == SolverConfig::ExtraFlag::FlagType::T_BOOL && flag.range.empty() &&
+        cop.get(flag.flag.c_str())) {
+      options.extraParams.emplace(flag.flag, "true");
+      return true;
+    }
+
+    std::string buffer;
+    if (cop.get(flag.flag.c_str(), &buffer)) {
+      if (flag.validate(buffer)) {
+        options.extraParams.emplace(flag.flag, buffer);
+        return true;
+      }
+      return false;
+    }
+  }
+
+  return false;
 }
 
 template <class MIPWrapper>

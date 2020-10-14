@@ -28,15 +28,21 @@ class SolverConfig {
 public:
   /// Extra command line flags supported by solver
   struct ExtraFlag {
+    enum FlagType { T_BOOL, T_INT, T_FLOAT, T_STRING };
     std::string flag;
     std::string description;
-    std::string flagType;
+    FlagType flagType;
+    std::vector<std::string> range;
     std::string defaultValue;
-    ExtraFlag(std::string f, std::string d, std::string t = "bool", std::string v = "false")
+    ExtraFlag(std::string f, std::string d, FlagType t = T_BOOL, std::vector<std::string> r = {},
+              std::string v = "false")
         : flag(std::move(f)),
           description(std::move(d)),
-          flagType(std::move(t)),
+          flagType(t),
+          range(std::move(r)),
           defaultValue(std::move(v)) {}
+
+    bool validate(const std::string& v) const;
   };
 
 protected:

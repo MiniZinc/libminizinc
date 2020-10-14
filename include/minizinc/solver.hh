@@ -69,8 +69,8 @@ public:
   static MZNFZNSolverFlag noarg(const std::string& n) { return MZNFZNSolverFlag(FT_NOARG, n); }
   /// Create solver flag from standard flag
   static MZNFZNSolverFlag std(const std::string& n);
-  /// Create solver flag from extra flag with name \a n and type \a t
-  static MZNFZNSolverFlag extra(const std::string& n, const std::string& t);
+  /// Create solver flag from extra flag
+  static MZNFZNSolverFlag extra(const SolverConfig::ExtraFlag& ef);
 };
 
 /// SolverFactory's descendants create, store and destroy SolverInstances

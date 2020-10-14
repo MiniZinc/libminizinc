@@ -10,6 +10,7 @@
 #pragma once
 
 #include <minizinc/plugin.hh>
+#include <minizinc/solver_config.hh>
 #include <minizinc/solver_instance_base.hh>
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
 
@@ -116,8 +117,12 @@ public:
     double absGap = 0;
     double relGap = 0.0001;
     bool intermediateSolutions = false;
-    bool processOption(int& i, std::vector<std::string>& argv);
+
     std::string xprsPassword;
+
+    std::unordered_map<std::string, std::string> extraParams;
+
+    bool processOption(int& i, std::vector<std::string>& argv);
     static void printHelp(std::ostream& os);
   };
 
@@ -169,6 +174,10 @@ public:
   static std::vector<std::string> getStdFlags();
   static std::vector<std::string> getRequiredFlags();
   static std::vector<std::string> getFactoryFlags();
+
+  static std::vector<MiniZinc::SolverConfig::ExtraFlag> getExtraFlags(FactoryOptions& factoryOpt) {
+    return {};
+  };
 
 private:
   XPRBprob _problem;

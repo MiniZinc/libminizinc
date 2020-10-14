@@ -100,8 +100,11 @@ MZNFZNSolverFlag MZNFZNSolverFlag::std(const std::string& n0) {
   return MZNFZNSolverFlag(FT_NOARG, n0);
 }
 
-MZNFZNSolverFlag MZNFZNSolverFlag::extra(const std::string& n0, const std::string& t0) {
-  return MZNFZNSolverFlag(t0 == "bool" ? FT_NOARG : FT_ARG, n0);
+MZNFZNSolverFlag MZNFZNSolverFlag::extra(const SolverConfig::ExtraFlag& ef) {
+  return MZNFZNSolverFlag(
+      ef.flagType == SolverConfig::ExtraFlag::FlagType::T_BOOL && ef.range.empty() ? FT_NOARG
+                                                                                   : FT_ARG,
+      ef.flag);
 }
 
 // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -573,7 +576,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               acceptedFlags.push_back(MZNFZNSolverFlag::std(sf));
             }
             for (const auto& ef : sc.extraFlags()) {
-              acceptedFlags.push_back(MZNFZNSolverFlag::extra(ef.flag, ef.flagType));
+              acceptedFlags.push_back(MZNFZNSolverFlag::extra(ef));
             }
 
             // Collect arguments required for underlying exe

@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include <minizinc/solver_config.hh>
 #include <minizinc/solver_instance_base.hh>
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
 // CMakeLists.txt needs OSICBC_HOME defined
@@ -68,6 +69,8 @@ public:
 
     std::vector<std::string> cbcCmdOptions;
 
+    std::unordered_map<std::string, std::string> extraParams;
+
     bool processOption(int& i, std::vector<std::string>& argv);
     static void printHelp(std::ostream& os);
   };
@@ -89,6 +92,10 @@ public:
   static std::vector<std::string> getStdFlags();
   static std::vector<std::string> getRequiredFlags() { return {}; };
   static std::vector<std::string> getFactoryFlags() { return {}; };
+
+  static std::vector<MiniZinc::SolverConfig::ExtraFlag> getExtraFlags(FactoryOptions& factoryOpt) {
+    return {};
+  };
 
   void printVersion(std::ostream&);
   void printHelp(std::ostream&);
