@@ -412,14 +412,14 @@ std::string SolverConfig::toJSON(const SolverConfigs& configs) const {
   if (!extraFlags().empty()) {
     oss << "  \"extraFlags\": [";
     for (unsigned int j = 0; j < extraFlags().size(); j++) {
-      oss << "["
+      oss << "\n    ["
           << "\"" << extraFlags()[j].flag << "\",\"" << extraFlags()[j].description << "\",\"";
       oss << extraFlags()[j].flagType << "\",\"" << extraFlags()[j].defaultValue << "\"]";
       if (j < extraFlags().size() - 1) {
         oss << ",";
       }
     }
-    oss << "],\n";
+    oss << "\n  ],\n";
   }
 
   if (!tags().empty()) {
