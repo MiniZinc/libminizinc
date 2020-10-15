@@ -107,6 +107,7 @@ void set_computed_domain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_co
       throw EvalError(envi, domain->loc(),
                       "Unable to create domain constraint for reverse mapped variable");
     }
+    vd->ti()->domain(domain);
     return;
   }
   if (!envi.fopts.recordDomainChanges || vd->ann().contains(constants().ann.is_defined_var) ||
