@@ -227,7 +227,7 @@ SolverConfig SolverConfig::load(const string& filename) {
       try {
         m = new Model;
         GCLock lock;
-        jp.parse(m, filename);
+        jp.parse(m, filename, false);
       } catch (JSONError& e) {
         delete m;
         m = nullptr;
@@ -515,7 +515,7 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
           try {
             m = new Model;
             GCLock lock;
-            jp.parse(m, cf);
+            jp.parse(m, cf, false);
           } catch (JSONError&) {
             delete m;
             m = nullptr;

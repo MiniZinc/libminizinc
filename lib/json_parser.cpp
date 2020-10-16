@@ -230,6 +230,10 @@ JSONParser::Token JSONParser::readToken(istream& is) {
         break;
     }
   }
+  if (result.empty()) {
+    // EOF
+    return Token();
+  }
   throw JSONError(_env, errLocation(), "unexpected token `" + string(result) + "'");
 }
 
@@ -246,6 +250,13 @@ string JSONParser::expectString(istream& is) {
     throw JSONError(_env, errLocation(), "unexpected token, expected string");
   }
   return rt.s;
+}
+
+void JSONParser::expectEof(istream& is) {
+  Token rt = readToken(is);
+  if (rt.t != T_EOF) {
+    throw JSONError(_env, errLocation(), "unexpected token, expected end of file");
+  }
 }
 
 JSONParser::Token JSONParser::parseEnumString(istream& is) {
@@ -516,7 +527,7 @@ list_done:
   return new ArrayLit(Location().introduce(), exps, dims);
 }
 
-Expression* JSONParser::parseExp(std::istream& is) {
+Expression* JSONParser::parseExp(std::istream& is, bool parseObjects) {
   Token next = readToken(is);
   switch (next.t) {
     case T_INT:
@@ -531,7 +542,7 @@ Expression* JSONParser::parseExp(std::istream& is) {
     case T_NULL:
       return constants().absent;
     case T_OBJ_OPEN:
-      return parseObject(is);
+      return parseObjects ? parseObject(is) : nullptr;
     case T_LIST_OPEN:
       return parseArray(is);
     default:
@@ -588,12 +599,10 @@ Expression* JSONParser::coerceArray(TypeInst* intendedTI, Expression* array) {
   return c;
 }
 
-void JSONParser::parse(Model* m, std::istream& is, bool ignoreUnknown) {
-  _line = 0;
-  _column = 0;
-  expectToken(is, T_OBJ_OPEN);
+void JSONParser::parseModel(Model* m, std::istream& is, bool isData) {
+  // precondition: found T_OBJ_OPEN
   ASTStringMap<TypeInst*> knownIds;
-  if (ignoreUnknown) {
+  if (isData) {
     // Collect known VarDecl ids from model and includes
     class VarDeclVisitor : public ItemVisitor {
     private:
@@ -611,15 +620,24 @@ void JSONParser::parse(Model* m, std::istream& is, bool ignoreUnknown) {
   for (;;) {
     string ident = expectString(is);
     expectToken(is, T_COLON);
-    Expression* e = parseExp(is);
+    Expression* e = parseExp(is, isData);
     auto it = knownIds.find(ident);
-    if (ident[0] != '_' && (!ignoreUnknown || it != knownIds.end())) {
-      // Add correct index sets if they are non-standard
-      if (it != knownIds.end() && it->second->isarray()) {
-        e = coerceArray(it->second, e);
+    if (ident[0] != '_' && (!isData || it != knownIds.end())) {
+      if (e == nullptr) {
+        // This is a nested object
+        auto* subModel = new Model;
+        parseModel(subModel, is, isData);
+        auto* ii = new IncludeI(Location().introduce(), ident);
+        ii->m(subModel, true);
+        m->addItem(ii);
+      } else {
+        // Add correct index sets if they are non-standard
+        if (it != knownIds.end() && it->second->isarray()) {
+          e = coerceArray(it->second, e);
+        }
+        auto* ai = new AssignI(e->loc().introduce(), ident, e);
+        m->addItem(ai);
       }
-      auto* ai = new AssignI(e->loc().introduce(), ident, e);
-      m->addItem(ai);
     }
     Token next = readToken(is);
     if (next.t == T_OBJ_CLOSE) {
@@ -631,20 +649,26 @@ void JSONParser::parse(Model* m, std::istream& is, bool ignoreUnknown) {
   }
 }
 
-void JSONParser::parse(Model* m, const std::string& filename0, bool ignoreUnknown) {
+void JSONParser::parse(Model* m, const std::string& filename0, bool isData) {
   _filename = filename0;
   ifstream is(FILE_PATH(_filename), ios::in);
   if (!is.good()) {
     throw JSONError(_env, Location().introduce(), "cannot open file " + _filename);
   }
-  parse(m, is, ignoreUnknown);
+  _line = 0;
+  _column = 0;
+  expectToken(is, T_OBJ_OPEN);
+  parseModel(m, is, isData);
+  expectEof(is);
 }
 
-void JSONParser::parseFromString(Model* m, const std::string& data, bool ignoreUnknown) {
+void JSONParser::parseFromString(Model* m, const std::string& data, bool isData) {
   istringstream iss(data);
   _line = 0;
   _column = 0;
-  parse(m, iss, ignoreUnknown);
+  expectToken(iss, T_OBJ_OPEN);
+  parseModel(m, iss, isData);
+  expectEof(iss);
 }
 
 namespace {
