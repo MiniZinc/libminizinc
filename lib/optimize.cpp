@@ -1144,7 +1144,6 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
     } else if ((is_true || is_false) && c->id() == constants().ids.int_.le &&
                ((c->arg(0)->isa<Id>() && c->arg(1)->type().isPar()) ||
                 (c->arg(1)->isa<Id>() && c->arg(0)->type().isPar()))) {
-      // todo: does this every happen? int_le shouldn't be generated any more
       Id* ident = c->arg(0)->isa<Id>() ? c->arg(0)->cast<Id>() : c->arg(1)->cast<Id>();
       Expression* arg = c->arg(0)->isa<Id>() ? c->arg(1) : c->arg(0);
       IntSetVal* domain = ident->decl()->ti()->domain() != nullptr
@@ -1154,28 +1153,33 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
         BinOpType bot =
             c->arg(0)->isa<Id>() ? (is_true ? BOT_LQ : BOT_GR) : (is_true ? BOT_GQ : BOT_LE);
         IntSetVal* newDomain = LinearTraits<IntLit>::limitDomain(bot, domain, eval_int(env, arg));
-        ident->decl()->ti()->domain(new SetLit(Location().introduce(), newDomain));
-        ident->decl()->ti()->setComputedDomain(false);
-
-        if (newDomain->min() == newDomain->max()) {
-          push_dependent_constraints(env, ident, constraintQueue);
-        }
-        CollectDecls cd(env.varOccurrences, deletedVarDecls, ii);
-        top_down(cd, c);
-
-        if (auto* vdi = ii->dynamicCast<VarDeclI>()) {
-          vdi->e()->e(constants().boollit(is_true));
-          push_dependent_constraints(env, vdi->e()->id(), constraintQueue);
-          if (env.varOccurrences.occurrences(vdi->e()) == 0) {
-            if (is_output(vdi->e())) {
-              VarDecl* vd_out =
-                  (*env.output)[env.outputFlatVarOccurrences.find(vdi->e())]->cast<VarDeclI>()->e();
-              vd_out->e(constants().boollit(is_true));
-            }
-            vdi->remove();
-          }
+        if (newDomain->card() == 0) {
+          env.fail();
         } else {
-          ii->remove();
+          ident->decl()->ti()->domain(new SetLit(Location().introduce(), newDomain));
+          ident->decl()->ti()->setComputedDomain(false);
+
+          if (newDomain->min() == newDomain->max()) {
+            push_dependent_constraints(env, ident, constraintQueue);
+          }
+          CollectDecls cd(env.varOccurrences, deletedVarDecls, ii);
+          top_down(cd, c);
+
+          if (auto* vdi = ii->dynamicCast<VarDeclI>()) {
+            vdi->e()->e(constants().boollit(is_true));
+            push_dependent_constraints(env, vdi->e()->id(), constraintQueue);
+            if (env.varOccurrences.occurrences(vdi->e()) == 0) {
+              if (is_output(vdi->e())) {
+                VarDecl* vd_out = (*env.output)[env.outputFlatVarOccurrences.find(vdi->e())]
+                                      ->cast<VarDeclI>()
+                                      ->e();
+                vd_out->e(constants().boollit(is_true));
+              }
+              vdi->remove();
+            }
+          } else {
+            ii->remove();
+          }
         }
       }
     } else if (c->id() == constants().ids.bool2int) {
