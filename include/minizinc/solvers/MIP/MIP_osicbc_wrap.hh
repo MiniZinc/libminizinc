@@ -60,7 +60,7 @@ public:
     double intTol = 1e-8;
     double objDiff = 1.0;
 
-    std::string cbcCmdOptions;
+    std::vector<std::string> cbcCmdOptions;
 
     bool processOption(int& i, std::vector<std::string>& argv);
     static void printHelp(std::ostream& os);

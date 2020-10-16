@@ -52,12 +52,12 @@ string MZNSolverFactory::getId() { return "org.minizinc.mzn-mzn"; }
 void MZNSolverFactory::printHelp(ostream& os) {
   os << "MZN-MZN plugin options:" << std::endl
      << "  -m, --minizinc-cmd <exe>\n     the backend solver filename.\n"
-     << "  --mzn-flags <options>, --minizinc-flags <options>\n     Specify option to be passed to "
-        "the MiniZinc interpreter.\n"
-     << "  --mzn-flag <option>, --minizinc-flag <option>\n     As above, but for a single option "
-        "string that need to be quoted in a shell.\n"
-     << "  -t <ms>, --solver-time-limit <ms>, --mzn-time-limit <ms>\n     Set time limit for "
-        "solving.\n"
+     << "  --mzn-flags <options>, --minizinc-flags <options>, --backend-flags <options>\n"
+        "     Specify option to be passed to the MiniZinc interpreter.\n"
+     << "  --mzn-flag <option>, --minizinc-flag <option>, --backend-flag <option>\n"
+        "     As above, but for a single option string that need to be quoted in a shell.\n"
+     << "  -t <ms>, --solver-time-limit <ms>, --mzn-time-limit <ms>\n"
+        "     Set time limit for solving.\n"
      << "  --mzn-sigint\n     Send SIGINT instead of SIGTERM.\n";
 }
 
@@ -90,7 +90,7 @@ bool MZNSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
 
   if (cop.getOption("-m --minizinc-cmd", &buffer)) {
     _opt.mznSolver = buffer;
-  } else if (cop.getOption("--mzn-flags --minizinc-flags", &buffer)) {
+  } else if (cop.getOption("--mzn-flags --minizinc-flags --backend-flags", &buffer)) {
     std::vector<std::string> cmdLine = FileUtils::parse_cmd_line(buffer);
     for (auto& s : cmdLine) {
       _opt.mznFlags.push_back(s);
@@ -103,7 +103,7 @@ bool MZNSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
     }
   } else if (cop.getOption("--mzn-sigint")) {
     _opt.mznSigint = true;
-  } else if (cop.getOption("--mzn-flag --minizinc-flag", &buffer)) {
+  } else if (cop.getOption("--mzn-flag --minizinc-flag --backend-flag", &buffer)) {
     _opt.mznFlags.push_back(buffer);
   } else if (cop.getOption("--solver-statistics")) {
     _opt.printStatistics = true;

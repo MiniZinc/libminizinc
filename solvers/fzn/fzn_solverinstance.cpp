@@ -58,10 +58,10 @@ void FZNSolverFactory::printHelp(ostream& os) {
      << "  --fzn-cmd , --flatzinc-cmd <exe>\n     the backend solver filename.\n"
      << "  -b, --backend, --solver-backend <be>\n     the backend codename. Currently passed to "
         "the solver.\n"
-     << "  --fzn-flags <options>, --flatzinc-flags <options>\n     Specify option to be passed to "
-        "the FlatZinc interpreter.\n"
-     << "  --fzn-flag <option>, --flatzinc-flag <option>\n     As above, but for a single option "
-        "string that need to be quoted in a shell.\n"
+     << "  --fzn-flags <options>, --flatzinc-flags <options> --backend-flags <options>\n"
+        "     Specify option to be passed to the FlatZinc interpreter.\n"
+     << "  --fzn-flag <option>, --flatzinc-flag <option>, --backend-flag\n"
+        "     As above, but for a single option string that need to be quoted in a shell.\n"
      << "  -t <ms>, --solver-time-limit <ms>, --fzn-time-limit <ms>\n     Set time limit (in "
         "milliseconds) for solving.\n"
      << "  --fzn-sigint\n     Send SIGINT instead of SIGTERM.\n"
@@ -109,7 +109,7 @@ bool FZNSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
     _opt.fznSolver = buffer;
   } else if (cop.getOption("-b --backend --solver-backend", &buffer)) {
     _opt.backend = buffer;
-  } else if (cop.getOption("--fzn-flags --flatzinc-flags", &buffer)) {
+  } else if (cop.getOption("--fzn-flags --flatzinc-flags --backend-flags", &buffer)) {
     std::vector<std::string> cmdLine = FileUtils::parse_cmd_line(buffer);
     for (auto& s : cmdLine) {
       _opt.fznFlags.push_back(s);
@@ -126,7 +126,7 @@ bool FZNSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
     _opt.fznNeedsPaths = true;
   } else if (cop.getOption("--fzn-output-passthrough")) {
     _opt.fznOutputPassthrough = true;
-  } else if (cop.getOption("--fzn-flag --flatzinc-flag", &buffer)) {
+  } else if (cop.getOption("--fzn-flag --flatzinc-flag --backend-flag", &buffer)) {
     _opt.fznFlags.push_back(buffer);
   } else if (_opt.supportsN && cop.getOption("-n --num-solutions", &nn)) {
     _opt.numSols = nn;

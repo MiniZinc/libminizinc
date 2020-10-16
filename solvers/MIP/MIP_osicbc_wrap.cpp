@@ -68,8 +68,11 @@ void MIPosicbcWrapper::Options::printHelp(ostream& os) {
      //            << "  --readParam <file>  read OSICBC parameters from file
      //               << "--writeParam <file> write OSICBC parameters to file
      //               << "--tuneParam         instruct OSICBC to tune parameters instead of solving
-     << "  --cbcArgs, --cbcFlags, --cbc-flags \"args\"\n"
+     << "  --cbcArgs, --cbcFlags, --cbc-flags, --backend-flags \"args\"\n"
         "    command-line args passed to callCbc, e.g., \"-cuts off -preprocess off -passc 1\"."
+     << std::endl
+     << "  --cbcArg, --cbcFlag, --cbc-flag, --backend-flag \"args\"\n"
+        "    same as above but with a single flag."
      << std::endl
      //  \"-preprocess off\" recommended in 2.9.6
      << "  --writeModel <file>" << endl
@@ -101,6 +104,7 @@ void MIPosicbcWrapper::Options::printHelp(ostream& os) {
 
 bool MIPosicbcWrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
   MiniZinc::CLOParser cop(i, argv);
+  std::string buffer;
   if (cop.get("-i")) {
     flagIntermediate = true;
   } else if (string(argv[i]) == "-f") {  // NOLINT: Allow repeated empty if
@@ -117,9 +121,13 @@ bool MIPosicbcWrapper::Options::processOption(int& i, std::vector<std::string>& 
     // Parsed by referenced
   } else if (cop.get("--writeParam", &sWriteParams)) {  // NOLINT: Allow repeated empty if
     // Parsed by referenced
-  } else if (cop.get("--cbcArgs --cbcFlags --cbc-flags --solver-flags",
-                     &cbcCmdOptions)) {  // NOLINT: Allow repeated empty if
-    // Parsed by referenced
+  } else if (cop.get("--cbcArgs --cbcFlags --cbc-flags --solver-flags --backend-flags", &buffer)) {
+    auto cmdLine = MiniZinc::FileUtils::parse_cmd_line(buffer);
+    for (auto& s : cmdLine) {
+      cbcCmdOptions.push_back(s);
+    }
+  } else if (cop.get("--cbcArg --cbcFlag --cbc-flag --solver-flag --backend-flag", &buffer)) {
+    cbcCmdOptions.push_back(buffer);
   } else if (cop.get("--absGap", &absGap)) {  // NOLINT: Allow repeated empty if
     // Parsed by referenced
   } else if (cop.get("--relGap", &relGap)) {  // NOLINT: Allow repeated empty if
@@ -821,13 +829,21 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
     }
 
     if (1 < _options->nThreads) {
-      _options->cbcCmdOptions += " -threads ";
+      _options->cbcCmdOptions.emplace_back("-threads");
       ostringstream oss;
       oss << _options->nThreads;
-      _options->cbcCmdOptions += oss.str();
+      _options->cbcCmdOptions.push_back(oss.str());
     }
-    _options->cbcCmdOptions += " -solve";
-    _options->cbcCmdOptions += " -quit";
+    _options->cbcCmdOptions.emplace_back("-solve");
+    _options->cbcCmdOptions.emplace_back("-quit");
+
+    auto cbc_argc = _options->cbcCmdOptions.size() + 1;
+    std::vector<const char*> cbc_argv;
+    cbc_argv.reserve(cbc_argc);
+    cbc_argv.push_back("cbc");
+    for (const auto& arg : _options->cbcCmdOptions) {
+      cbc_argv.push_back(arg.c_str());
+    }
 
     cbui.pOutput->dWallTime0 = output.dWallTime0 = std::chrono::steady_clock::now();
     output.dCPUTime = clock();
@@ -850,9 +866,14 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
 #define __USE_callCbc1__
 #ifdef __USE_callCbc1__
     if (fVerbose) {
-      cerr << "  Calling callCbc with options '" << _options->cbcCmdOptions << "'..." << endl;
+      cerr << "  Calling CbcMain with command 'cbc";
+      for (const auto& arg : _options->cbcCmdOptions) {
+        cerr << " " << arg;
+      }
+      cerr << "'..." << endl;
     }
-    callCbc(_options->cbcCmdOptions, model);
+    CbcMain(cbc_argc, &cbc_argv[0], model);
+    // callCbc(_options->cbcCmdOptions, model);
 //     callCbc1(cbcCmdOptions, model, callBack);
 // What is callBack() for?    TODO
 #else
