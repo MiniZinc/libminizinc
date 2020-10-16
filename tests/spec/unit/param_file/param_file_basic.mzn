@@ -3,7 +3,7 @@
 !Test
 solvers: [gecode]
 options:
-  param-file: './spec/unit/general/test_param_file.json'
+  param-file: './spec/unit/param_file/param_file_basic.json'
 expected: !Result
   status: SATISFIED
   solution: !Solution
