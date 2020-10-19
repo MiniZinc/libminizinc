@@ -93,9 +93,7 @@ public:
   static std::vector<std::string> getRequiredFlags() { return {}; };
   static std::vector<std::string> getFactoryFlags() { return {}; };
 
-  static std::vector<MiniZinc::SolverConfig::ExtraFlag> getExtraFlags(FactoryOptions& factoryOpt) {
-    return {};
-  };
+  static std::vector<MiniZinc::SolverConfig::ExtraFlag> getExtraFlags(FactoryOptions& factoryOpt);
 
   void printVersion(std::ostream&);
   void printHelp(std::ostream&);

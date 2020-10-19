@@ -143,6 +143,78 @@ bool MIPosicbcWrapper::Options::processOption(int& i, std::vector<std::string>& 
   return true;
 }
 
+namespace {
+void remove_chars(std::string& s, const std::string& cs) {
+  for (char c : cs) {
+    auto i = s.find(c);
+    while (i != std::string::npos) {
+      s.erase(i, 1);
+      i = s.find(c);
+    }
+  }
+}
+}  // namespace
+
+std::vector<MiniZinc::SolverConfig::ExtraFlag> MIPosicbcWrapper::getExtraFlags(
+    FactoryOptions& factoryOpt) {
+  OsiClpSolverInterface osi;
+  CbcModel model(osi);
+  CbcSolverUsefulData info;
+  CbcMain0(model, info);
+
+  std::vector<MiniZinc::SolverConfig::ExtraFlag> res;
+  res.reserve(info.parameters_.size());
+
+  for (auto param : info.parameters_) {
+    auto name = param.name();
+    if (name == "?" || name == "???" || name == "allCommands" || name == "moreSpecialOptions" ||
+        name == "moreTune" || name == "mipOptions" || name == "moreMipOptions" ||
+        name == "more2MipOptions") {
+      continue;
+    }
+
+    // strip braces from name
+    remove_chars(name, "()");
+    auto desc = param.shortHelp();
+    auto t = param.type();
+    MiniZinc::SolverConfig::ExtraFlag::FlagType param_type;
+    std::vector<std::string> param_range;
+    std::string param_default;
+    if (t <= 100) {
+      param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_FLOAT;
+      param_range.push_back(std::to_string(param.lowerDoubleValue()));
+      param_range.push_back(std::to_string(param.upperDoubleValue()));
+      param_default = std::to_string(param.doubleParameter(model));
+    } else if (t <= 200) {
+      param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_INT;
+      param_range.push_back(std::to_string(param.lowerIntValue()));
+      param_range.push_back(std::to_string(param.upperIntValue()));
+      param_default = std::to_string(param.intParameter(model));
+    } else if (t <= 400) {
+      auto allowed = param.definedKeywords();
+      if (allowed.size() == 2 && (allowed[0] == "on" && allowed[1] == "off" ||
+                                  allowed[0] == "off" && allowed[1] == "on")) {
+        param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_BOOL;
+      } else {
+        param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_STRING;
+      }
+      for (auto v : allowed) {
+        remove_chars(v, "!?");
+        param_range.push_back(v);
+      }
+      param_default = param.currentOption();
+      remove_chars(param_default, "!?");
+    } else {
+      // action, not parameter, so skip
+      continue;
+    }
+
+    res.emplace_back("--cbc-" + name, desc, param_type, param_range, param_default);
+  }
+
+  return res;
+}
+
 void MIPosicbcWrapper::wrapAssert(bool cond, const string& msg, bool fTerm) {
   if (!cond) {
     //       strcpy(_osicbcBuffer, "[NO ERROR STRING GIVEN]");
@@ -828,6 +900,12 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
       };
       CutCallback ccb(cbui);
       model.addCutGenerator(&ccb, 10, "MZN_cuts", true, true);  // also at solution
+    }
+
+    // Process extra flags options
+    for (const auto& it : _options->extraParams) {
+      _options->cbcCmdOptions.push_back(it.first.substr(5));
+      _options->cbcCmdOptions.push_back(it.second);
     }
 
     if (1 < _options->nThreads) {
