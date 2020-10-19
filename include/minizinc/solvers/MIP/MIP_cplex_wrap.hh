@@ -88,9 +88,7 @@ public:
   static std::vector<std::string> getRequiredFlags();
   static std::vector<std::string> getFactoryFlags();
 
-  static std::vector<MiniZinc::SolverConfig::ExtraFlag> getExtraFlags(FactoryOptions& factoryOpt) {
-    return {};
-  };
+  static std::vector<MiniZinc::SolverConfig::ExtraFlag> getExtraFlags(FactoryOptions& factoryOpt);
 
   //       Statistics& getStatistics() { return _statistics; }
 
@@ -271,6 +269,27 @@ public:
   // NOLINTNEXTLINE(readability-identifier-naming)
   int (*dll_CPXwriteprob)(CPXCENVptr env, CPXCLPptr lp, char const* filename_str,
                           char const* filetype_str);
+
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int (*dll_CPXgetparamname)(CPXCENVptr env, int whichparam, char* name_str);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int (*dll_CPXgetparamnum)(CPXCENVptr env, char const* name_str, int* whichparam_p);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int (*dll_CPXgetparamtype)(CPXCENVptr env, int whichparam, int* paramtype);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int (*dll_CPXinfodblparam)(CPXCENVptr env, int whichparam, double* defvalue_p, double* minvalue_p,
+                             double* maxvalue_p);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int (*dll_CPXinfointparam)(CPXCENVptr env, int whichparam, CPXINT* defvalue_p, CPXINT* minvalue_p,
+                             CPXINT* maxvalue_p);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int (*dll_CPXinfolongparam)(CPXCENVptr env, int whichparam, CPXLONG* defvalue_p,
+                              CPXLONG* minvalue_p, CPXLONG* maxvalue_p);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int (*dll_CPXinfostrparam)(CPXCENVptr env, int whichparam, char* defvalue_str);
+
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int (*dll_CPXsetlongparam)(CPXENVptr env, int whichparam, CPXLONG newvalue);
 
 protected:
   void wrapAssert(bool cond, const std::string& msg, bool fTerm = true);
