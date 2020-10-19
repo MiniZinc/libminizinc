@@ -91,6 +91,24 @@ public:
   struct Xbprob*(XB_CC* XPRBnewprob)(const char* name);
   // NOLINTNEXTLINE(readability-identifier-naming)
   int(XB_CC* XPRBdelprob)(struct Xbprob* prob);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(XPRS_CC* XPRSgetcontrolinfo)(XPRSprob prob, const char* sCaName, int* iHeaderId,
+                                   int* iTypeinfo);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(XPRS_CC* XPRSgetintcontrol)(XPRSprob prob, int _index, int* _ivalue);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(XPRS_CC* XPRSgetintcontrol64)(XPRSprob prob, int _index, XPRSint64* _ivalue);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(XPRS_CC* XPRSgetdblcontrol)(XPRSprob prob, int _index, double* _dvalue);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(XPRS_CC* XPRSgetstrcontrol)(XPRSprob prob, int _index, char* _svalue);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(XPRS_CC* XPRSsetintcontrol64)(XPRSprob prob, int _index, XPRSint64 _ivalue);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(XPRS_CC* XPRSgetstringcontrol)(XPRSprob prob, int _index, char* _svalue, int _svaluesize,
+                                     int* _controlsize);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(XPRS_CC* XPRSsetstrcontrol)(XPRSprob prob, int _index, const char* _svalue);
 
 private:
   void loadDll();
@@ -175,9 +193,7 @@ public:
   static std::vector<std::string> getRequiredFlags();
   static std::vector<std::string> getFactoryFlags();
 
-  static std::vector<MiniZinc::SolverConfig::ExtraFlag> getExtraFlags(FactoryOptions& factoryOpt) {
-    return {};
-  };
+  static std::vector<MiniZinc::SolverConfig::ExtraFlag> getExtraFlags(FactoryOptions& factoryOpt);
 
 private:
   XPRBprob _problem;

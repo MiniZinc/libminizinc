@@ -74,6 +74,14 @@ void XpressPlugin::loadDll() {
   load_symbol(XPRBaddmipsol);
   load_symbol(XPRBnewprob);
   load_symbol(XPRBdelprob);
+  load_symbol(XPRSgetcontrolinfo);
+  load_symbol(XPRSgetintcontrol);
+  load_symbol(XPRSgetintcontrol64);
+  load_symbol(XPRSgetdblcontrol);
+  load_symbol(XPRSgetstrcontrol);
+  load_symbol(XPRSsetintcontrol64);
+  load_symbol(XPRSgetstringcontrol);
+  load_symbol(XPRSsetstrcontrol);
 }
 
 const std::vector<std::string>& XpressPlugin::dlls() {
@@ -167,6 +175,338 @@ vector<string> MIPxpressWrapper::getTags() { return {"mip", "float", "api"}; }
 
 vector<string> MIPxpressWrapper::getStdFlags() { return {"-i", "-s"}; }
 
+vector<MiniZinc::SolverConfig::ExtraFlag> MIPxpressWrapper::getExtraFlags(
+    FactoryOptions& factoryOpt) {
+  try {
+    Options opts;
+    MIPxpressWrapper p(factoryOpt, &opts);
+
+    auto* prb = p._plugin->XPRBgetXPRSprob(p._problem);
+    // Using string parameter names because there doesn't seem to be a way to recover
+    // the name from a parameter ID number
+    static std::vector<std::string> all_params = {
+        "algaftercrossover",
+        "algafternetwork",
+        "autoperturb",
+        "backtrack",
+        "backtracktie",
+        "baralg",
+        "barcrash",
+        "bardualstop",
+        "barfreescale",
+        "bargapstop",
+        "bargaptarget",
+        "barindeflimit",
+        "bariterlimit",
+        "barkernel",
+        "barobjscale",
+        "barorder",
+        "barorderthreads",
+        "baroutput",
+        "barpresolveops",
+        "barprimalstop",
+        "barregularize",
+        "barrhsscale",
+        "barsolution",
+        "barstart",
+        "barstartweight",
+        "barstepstop",
+        "barthreads",
+        "barcores",
+        "bigm",
+        "bigmmethod",
+        "branchchoice",
+        "branchdisj",
+        "branchstructural",
+        "breadthfirst",
+        "cachesize",
+        "callbackfrommasterthread",
+        "choleskyalg",
+        "choleskytol",
+        "conflictcuts",
+        "concurrentthreads",
+        "corespercpu",
+        "covercuts",
+        "cpuplatform",
+        "cputime",
+        "crash",
+        "crossover",
+        "crossoveraccuracytol",
+        "crossoveriterlimit",
+        "crossoverops",
+        "crossoverthreads",
+        "cstyle",
+        "cutdepth",
+        "cutfactor",
+        "cutfreq",
+        "cutstrategy",
+        "cutselect",
+        "defaultalg",
+        "densecollimit",
+        "deterministic",
+        "dualgradient",
+        "dualize",
+        "dualizeops",
+        "dualperturb",
+        "dualstrategy",
+        "dualthreads",
+        "eigenvaluetol",
+        "elimfillin",
+        "elimtol",
+        "etatol",
+        "extracols",
+        "extraelems",
+        "extramipents",
+        "extrapresolve",
+        "extraqcelements",
+        "extraqcrows",
+        "extrarows",
+        "extrasetelems",
+        "extrasets",
+        "feasibilitypump",
+        "feastol",
+        "feastoltarget",
+        "forceoutput",
+        "forceparalleldual",
+        "globalfilebias",
+        "globalfileloginterval",
+        "gomcuts",
+        "heurbeforelp",
+        "heurdepth",
+        "heurdiveiterlimit",
+        "heurdiverandomize",
+        "heurdivesoftrounding",
+        "heurdivespeedup",
+        "heurdivestrategy",
+        "heurforcespecialobj",
+        "heurfreq",
+        "heurmaxsol",
+        "heurnodes",
+        "heursearcheffort",
+        "heursearchfreq",
+        "heursearchrootcutfreq",
+        "heursearchrootselect",
+        "heursearchtreeselect",
+        "heurstrategy",
+        "heurthreads",
+        "historycosts",
+        "ifcheckconvexity",
+        "indlinbigm",
+        "indprelinbigm",
+        "invertfreq",
+        "invertmin",
+        "keepbasis",
+        "keepnrows",
+        "l1cache",
+        "linelength",
+        "lnpbest",
+        "lnpiterlimit",
+        "lpflags",
+        "lpiterlimit",
+        "lprefineiterlimit",
+        "localchoice",
+        "lpfolding",
+        "lplog",
+        "lplogdelay",
+        "lplogstyle",
+        "lpthreads",
+        "markowitztol",
+        "matrixtol",
+        "maxchecksonmaxcuttime",
+        "maxchecksonmaxtime",
+        "maxmcoeffbufferelems",
+        "maxcuttime",
+        "maxglobalfilesize",
+        "maxiis",
+        "maximpliedbound",
+        "maxlocalbacktrack",
+        "maxmemoryhard",
+        "maxmemorysoft",
+        "maxmiptasks",
+        "maxmipsol",
+        "maxnode",
+        "maxpagelines",
+        "maxscalefactor",
+        "maxtime",
+        "mipabscutoff",
+        "mipabsgapnotify",
+        "mipabsgapnotifybound",
+        "mipabsgapnotifyobj",
+        "mipabsstop",
+        "mipaddcutoff",
+        "mipdualreductions",
+        "mipfracreduce",
+        "mipkappafreq",
+        "miplog",
+        "mippresolve",
+        "miprampup",
+        "miqcpalg",
+        "miprefineiterlimit",
+        "miprelcutoff",
+        "miprelgapnotify",
+        "miprelstop",
+        "mipterminationmethod",
+        "mipthreads",
+        "miptol",
+        "miptoltarget",
+        "mps18compatible",
+        "mpsboundname",
+        "mpsecho",
+        "mpsformat",
+        "mpsobjname",
+        "mpsrangename",
+        "mpsrhsname",
+        "mutexcallbacks",
+        "netcuts",
+        "nodeselection",
+        "objscalefactor",
+        "optimalitytol",
+        "optimalitytoltarget",
+        "outputlog",
+        "outputmask",
+        "outputtol",
+        "penalty",
+        "perturb",
+        "pivottol",
+        "ppfactor",
+        "preanalyticcenter",
+        "prebasisred",
+        "prebndredcone",
+        "prebndredquad",
+        "precoefelim",
+        "precomponents",
+        "precomponentseffort",
+        "preconedecomp",
+        "preconvertseparable",
+        "predomcol",
+        "predomrow",
+        "preduprow",
+        "preelimquad",
+        "preimplications",
+        "prelindep",
+        "preobjcutdetect",
+        "prepermute",
+        "prepermuteseed",
+        "preprobing",
+        "preprotectdual",
+        "presolve",
+        "presolvemaxgrow",
+        "presolveops",
+        "presolvepasses",
+        "presort",
+        "pricingalg",
+        "primalops",
+        "primalperturb",
+        "primalunshift",
+        "pseudocost",
+        "qccuts",
+        "qcrootalg",
+        "qsimplexops",
+        "quadraticunshift",
+        "randomseed",
+        "refactor",
+        "refineops",
+        "relaxtreememorylimit",
+        "relpivottol",
+        "repairindefiniteq",
+        "repairinfeasmaxtime",
+        "resourcestrategy",
+        "rootpresolve",
+        "sbbest",
+        "sbeffort",
+        "sbestimate",
+        "sbiterlimit",
+        "sbselect",
+        "scaling",
+        "sifting",
+        "sleeponthreadwait",
+        "sosreftol",
+        "symmetry",
+        "symselect",
+        "threads",
+        "trace",
+        "treecompression",
+        "treecovercuts",
+        "treecutselect",
+        "treediagnostics",
+        "treegomcuts",
+        "treememorylimit",
+        "treememorysavingtarget",
+        "treepresolve",
+        "treepresolve_keepbasis",
+        "treeqccuts",
+        "tunerhistory",
+        "tunermaxtime",
+        "tunermethod",
+        "tunermethodfile",
+        "tunermode",
+        "tuneroutput",
+        "tuneroutputpath",
+        "tunerpermute",
+        "tunerrootalg",
+        "tunersessionname",
+        "tunertarget",
+        "tunerthreads",
+        "usersolheuristic",
+        "varselection",
+        //"version"
+    };
+    std::vector<MiniZinc::SolverConfig::ExtraFlag> res;
+    for (auto param : all_params) {
+      int n;
+      int t;
+      p._plugin->XPRSgetcontrolinfo(prb, param.c_str(), &n, &t);
+      MiniZinc::SolverConfig::ExtraFlag::FlagType param_type;
+      std::string param_default;
+      switch (t) {
+        case XPRS_TYPE_INT: {
+          int d;
+          p._plugin->XPRSgetintcontrol(prb, n, &d);
+          param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_INT;
+          param_default = to_string(d);
+          break;
+        }
+        case XPRS_TYPE_INT64: {
+          XPRSint64 d;
+          p._plugin->XPRSgetintcontrol64(prb, n, &d);
+          param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_INT;
+          param_default = to_string(d);
+          break;
+        }
+        case XPRS_TYPE_DOUBLE: {
+          double d;
+          p._plugin->XPRSgetdblcontrol(prb, n, &d);
+          param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_FLOAT;
+          param_default = to_string(d);
+          break;
+        }
+        case XPRS_TYPE_STRING: {
+          int l;
+          p._plugin->XPRSgetstringcontrol(prb, n, nullptr, 0, &l);
+          char* d = (char*)malloc(l);
+          p._plugin->XPRSgetstringcontrol(prb, n, d, l, &l);
+          param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_STRING;
+          param_default = d;
+          break;
+        }
+        default:
+          continue;
+      }
+      // TODO: Some of these parameters have min/max or are categorical, but there's no way
+      // to programatically get the possible values. We could manually maintain it, but it's
+      // probably not worth doing.
+      std::vector<std::string> param_range; // unused for now
+      res.emplace_back("--xpress-" + param, param, param_type, param_range, param_default);
+    }
+    return res;
+  } catch (MiniZinc::Plugin::PluginError&) {
+    return {};
+  } catch (XpressPlugin&) {
+    return {};
+  }
+  return {};
+}
+
 void MIPxpressWrapper::Options::printHelp(ostream& os) {
   os << "XPRESS MIP wrapper options:" << std::endl
      << "--msgLevel <n>       print solver output, default: 0" << std::endl
@@ -226,6 +566,29 @@ void MIPxpressWrapper::setOptions() {
   _plugin->XPRSsetintcontrol(xprsProblem, XPRS_MAXMIPSOL, _options->numSolutions);
   _plugin->XPRSsetdblcontrol(xprsProblem, XPRS_MIPABSSTOP, _options->absGap);
   _plugin->XPRSsetdblcontrol(xprsProblem, XPRS_MIPRELSTOP, _options->relGap);
+
+  for (auto& it : _options->extraParams) {
+    auto name = it.first.substr(9);
+    int n;
+    int t;
+    _plugin->XPRSgetcontrolinfo(xprsProblem, name.c_str(), &n, &t);
+    switch (t) {
+      case XPRS_TYPE_INT:
+        _plugin->XPRSsetintcontrol(xprsProblem, n, stoi(it.second));
+        break;
+      case XPRS_TYPE_INT64:
+        _plugin->XPRSsetintcontrol64(xprsProblem, n, stoll(it.second));
+        break;
+      case XPRS_TYPE_DOUBLE:
+        _plugin->XPRSsetdblcontrol(xprsProblem, n, stod(it.second));
+        break;
+      case XPRS_TYPE_STRING:
+        _plugin->XPRSsetstrcontrol(xprsProblem, n, it.second.c_str());
+        break;
+      default:
+        throw XpressException("Unknown type for parameter " + name);
+    }
+  }
 }
 
 static MIPWrapper::Status convert_status(int xpressStatus) {
