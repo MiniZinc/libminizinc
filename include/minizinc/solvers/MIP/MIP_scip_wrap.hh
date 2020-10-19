@@ -184,6 +184,56 @@ public:
   int(__stdcall* SCIPgetNVars)(SCIP* scip);
   // NOLINTNEXTLINE(readability-identifier-naming)
   int(__stdcall* SCIPgetNConss)(SCIP* scip);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_PARAM**(__stdcall* SCIPgetParams)(SCIP* scip);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* SCIPgetNParams)(SCIP* scip);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  const char*(__stdcall* SCIPparamGetName)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_PARAMTYPE(__stdcall* SCIPparamGetType)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  const char*(__stdcall* SCIPparamGetDesc)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_Bool(__stdcall* SCIPparamGetBoolDefault)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  char*(__stdcall* SCIPparamGetCharAllowedValues)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  char(__stdcall* SCIPparamGetCharDefault)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* SCIPparamGetIntDefault)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* SCIPparamGetIntMin)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* SCIPparamGetIntMax)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_Longint(__stdcall* SCIPparamGetLongintDefault)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_Longint(__stdcall* SCIPparamGetLongintMin)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_Longint(__stdcall* SCIPparamGetLongintMax)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_Real(__stdcall* SCIPparamGetRealDefault)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_Real(__stdcall* SCIPparamGetRealMin)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_Real(__stdcall* SCIPparamGetRealMax)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  char*(__stdcall* SCIPparamGetStringDefault)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_PARAM*(__stdcall* SCIPgetParam)(SCIP* scip, const char* name);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_RETCODE(__stdcall* SCIPchgBoolParam)(SCIP* scip, SCIP_PARAM* param, SCIP_Bool value);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_RETCODE(__stdcall* SCIPchgIntParam)(SCIP* scip, SCIP_PARAM* param, int value);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_RETCODE(__stdcall* SCIPchgLongintParam)(SCIP* scip, SCIP_PARAM* param, SCIP_Longint value);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_RETCODE(__stdcall* SCIPchgRealParam)(SCIP* scip, SCIP_PARAM* param, SCIP_Real value);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_RETCODE(__stdcall* SCIPchgCharParam)(SCIP* scip, SCIP_PARAM* param, char value);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_RETCODE(__stdcall* SCIPchgStringParam)(SCIP* scip, SCIP_PARAM* param, const char* value);
 
 private:
   void load();
@@ -257,9 +307,7 @@ public:
   static std::vector<std::string> getRequiredFlags();
   static std::vector<std::string> getFactoryFlags();
 
-  static std::vector<MiniZinc::SolverConfig::ExtraFlag> getExtraFlags(FactoryOptions& factoryOpt) {
-    return {};
-  };
+  static std::vector<MiniZinc::SolverConfig::ExtraFlag> getExtraFlags(FactoryOptions& factoryOpt);
 
   bool processOption(int& i, int argc, const char** argv);
   void printVersion(std::ostream& os);

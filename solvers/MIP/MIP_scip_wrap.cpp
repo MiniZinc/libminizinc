@@ -120,6 +120,31 @@ void ScipPlugin::load() {
   load_symbol(SCIPmessagePrintError);
   load_symbol(SCIPgetNVars);
   load_symbol(SCIPgetNConss);
+  load_symbol(SCIPgetParams);
+  load_symbol(SCIPgetNParams);
+  load_symbol(SCIPparamGetName);
+  load_symbol(SCIPparamGetType);
+  load_symbol(SCIPparamGetDesc);
+  load_symbol(SCIPparamGetBoolDefault);
+  load_symbol(SCIPparamGetCharAllowedValues);
+  load_symbol(SCIPparamGetCharDefault);
+  load_symbol(SCIPparamGetIntDefault);
+  load_symbol(SCIPparamGetIntMin);
+  load_symbol(SCIPparamGetIntMax);
+  load_symbol(SCIPparamGetLongintDefault);
+  load_symbol(SCIPparamGetLongintMin);
+  load_symbol(SCIPparamGetLongintMax);
+  load_symbol(SCIPparamGetRealDefault);
+  load_symbol(SCIPparamGetRealMin);
+  load_symbol(SCIPparamGetRealMax);
+  load_symbol(SCIPparamGetStringDefault);
+  load_symbol(SCIPgetParam);
+  load_symbol(SCIPchgBoolParam);
+  load_symbol(SCIPchgIntParam);
+  load_symbol(SCIPchgLongintParam);
+  load_symbol(SCIPchgRealParam);
+  load_symbol(SCIPchgCharParam);
+  load_symbol(SCIPchgStringParam);
 }
 
 #define SCIP_PLUGIN_CALL_R(plugin, x)                                         \
@@ -274,6 +299,79 @@ SCIP_RETCODE MIPScipWrapper::closeSCIP() {
   /// and at last:
   //   MIPWrapper::cleanup();
   return SCIP_OKAY;
+}
+
+std::vector<MiniZinc::SolverConfig::ExtraFlag> MIPScipWrapper::getExtraFlags(
+    FactoryOptions& factoryOpt) {
+  try {
+    MIPScipWrapper msw(factoryOpt, nullptr);
+    auto* params = msw._plugin->SCIPgetParams(msw._scip);
+    int num_params = msw._plugin->SCIPgetNParams(msw._scip);
+    std::vector<MiniZinc::SolverConfig::ExtraFlag> res;
+    res.reserve(num_params);
+    for (int i = 0; i < num_params; i++) {
+      auto* param = params[i];
+      std::string name = std::string(msw._plugin->SCIPparamGetName(param));
+      if (name == "lp/threads" || name == "limits/time" || name == "limits/memory" ||
+          name == "limits/absgap" || name == "limits/gap" || name == "numerics/feastol") {
+        // Handled by stdFlags
+        continue;
+      }
+      // Replace / in param name with _ (can't use - as some names have - in them already)
+      auto type = msw._plugin->SCIPparamGetType(param);
+      std::string desc(msw._plugin->SCIPparamGetDesc(param));
+      MiniZinc::SolverConfig::ExtraFlag::FlagType param_type;
+      std::vector<std::string> param_range;
+      std::string param_default;
+      switch (type) {
+        case SCIP_ParamType::SCIP_PARAMTYPE_BOOL:
+          param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_BOOL;
+          param_range = {"true", "false"};
+          param_default = msw._plugin->SCIPparamGetBoolDefault(param) != 0 ? "true" : "false";
+          break;
+        case SCIP_ParamType::SCIP_PARAMTYPE_CHAR: {
+          param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_STRING;
+          param_default = msw._plugin->SCIPparamGetCharDefault(param);
+          auto* allowed_values = msw._plugin->SCIPparamGetCharAllowedValues(param);
+          if (allowed_values != nullptr) {
+            for (int i = 0; i < strlen(allowed_values); i++) {
+              param_range.emplace_back(1, allowed_values[i]);
+            }
+          }
+          break;
+        }
+        case SCIP_ParamType::SCIP_PARAMTYPE_INT:
+          param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_INT;
+          param_range.push_back(std::to_string(msw._plugin->SCIPparamGetIntMin(param)));
+          param_range.push_back(std::to_string(msw._plugin->SCIPparamGetIntMax(param)));
+          param_default = std::to_string(msw._plugin->SCIPparamGetIntDefault(param));
+          break;
+        case SCIP_ParamType::SCIP_PARAMTYPE_LONGINT:
+          param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_INT;
+          param_range.push_back(std::to_string(msw._plugin->SCIPparamGetLongintMin(param)));
+          param_range.push_back(std::to_string(msw._plugin->SCIPparamGetLongintMax(param)));
+          param_default = std::to_string(msw._plugin->SCIPparamGetLongintDefault(param));
+          break;
+        case SCIP_ParamType::SCIP_PARAMTYPE_REAL:
+          param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_FLOAT;
+          param_range.push_back(std::to_string(msw._plugin->SCIPparamGetRealMin(param)));
+          param_range.push_back(std::to_string(msw._plugin->SCIPparamGetRealMax(param)));
+          param_default = std::to_string(msw._plugin->SCIPparamGetRealDefault(param));
+          break;
+        case SCIP_ParamType::SCIP_PARAMTYPE_STRING:
+          param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_STRING;
+          param_default = msw._plugin->SCIPparamGetStringDefault(param);
+          break;
+        default:
+          break;
+      }
+      res.emplace_back("--scip-" + name, desc, param_type, param_range, param_default);
+    }
+    return res;
+  } catch (MiniZinc::Plugin::PluginError&) {
+    return {};
+  }
+  return {};
 }
 
 SCIP_RETCODE MIPScipWrapper::doAddVarsSCIP(size_t n, double* obj, double* lb, double* ub,
@@ -690,6 +788,42 @@ SCIP_RETCODE MIPScipWrapper::solveSCIP() {  // Move into ancestor?
     _scipVarsPtr = &_scipVars[0];
     //       retcode = SCIP_setinfocallbackfunc (env, solcallback, &cbui);
     //       wrap_assert(!retcode, "Failed to set solution callback", false);
+  }
+
+  // Process extra flags options
+  for (auto& it : _options->extraParams) {
+    auto name = it.first.substr(7);
+    std::replace(name.begin(), name.end(), '_', '/');
+    auto* param = _plugin->SCIPgetParam(_scip, name.c_str());
+    if (param == nullptr) {
+      continue;
+    }
+    auto type = _plugin->SCIPparamGetType(param);
+    switch (type) {
+      case SCIP_ParamType::SCIP_PARAMTYPE_BOOL:
+        SCIP_PLUGIN_CALL_R(_plugin, _plugin->SCIPchgBoolParam(_scip, param, it.second == "true"));
+        break;
+      case SCIP_ParamType::SCIP_PARAMTYPE_CHAR:
+        if (!it.second.empty()) {
+          SCIP_PLUGIN_CALL_R(_plugin,
+                             _plugin->SCIPchgCharParam(_scip, param, it.second.c_str()[0]));
+        }
+        break;
+      case SCIP_ParamType::SCIP_PARAMTYPE_INT:
+        SCIP_PLUGIN_CALL_R(_plugin, _plugin->SCIPchgIntParam(_scip, param, stoi(it.second)));
+        break;
+      case SCIP_ParamType::SCIP_PARAMTYPE_LONGINT:
+        SCIP_PLUGIN_CALL_R(_plugin, _plugin->SCIPchgLongintParam(_scip, param, stoll(it.second)));
+        break;
+      case SCIP_ParamType::SCIP_PARAMTYPE_REAL:
+        SCIP_PLUGIN_CALL_R(_plugin, _plugin->SCIPchgRealParam(_scip, param, stod(it.second)));
+        break;
+      case SCIP_ParamType::SCIP_PARAMTYPE_STRING:
+        SCIP_PLUGIN_CALL_R(_plugin, _plugin->SCIPchgStringParam(_scip, param, it.second.c_str()));
+        break;
+      default:
+        break;
+    }
   }
 
   if (!_options->sReadParams.empty()) {
