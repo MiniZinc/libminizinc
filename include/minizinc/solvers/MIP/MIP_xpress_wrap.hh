@@ -136,6 +136,9 @@ public:
     double relGap = 0.0001;
     bool intermediateSolutions = false;
 
+    int numThreads = 0;
+    int randomSeed = 0;
+
     std::string xprsPassword;
 
     std::unordered_map<std::string, std::string> extraParams;
