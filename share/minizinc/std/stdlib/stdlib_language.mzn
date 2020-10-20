@@ -31,3 +31,10 @@ test mzn_check_only_range_domains() =
   if absent(mzn_opt_only_range_domains) then false
   else deopt(mzn_opt_only_range_domains) endif;
 
+/** @group stdlib.options Whether to generate defines_var annotations */
+opt bool: mzn_opt_annotate_defines_var;
+
+/** @group stdlib.options Check whether to generate defines_var annotations */
+test mzn_check_annotate_defines_var() =
+  if absent(mzn_opt_annotate_defines_var) then true
+  else deopt(mzn_opt_annotate_defines_var) endif;

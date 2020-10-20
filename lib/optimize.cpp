@@ -355,6 +355,14 @@ void optimize(Env& env, bool chain_compression) {
                  c->arg(1)->cast<Id>()->decl()->e() == nullptr)) {
               // Equality constraint between two identifiers: unify
 
+              if (Call* defVar = c->ann().getCall(constants().ann.defines_var)) {
+                // First, remove defines_var/is_defined_var annotations if present
+                if (Expression::equal(defVar->arg(0), c->arg(0))) {
+                  c->arg(0)->cast<Id>()->decl()->ann().remove(constants().ann.is_defined_var);
+                } else {
+                  c->arg(1)->cast<Id>()->decl()->ann().remove(constants().ann.is_defined_var);
+                }
+              }
               unify(envi, deletedVarDecls, c->arg(0)->cast<Id>(), c->arg(1)->cast<Id>());
               {
                 VarDecl* vd = c->arg(0)->cast<Id>()->decl();
@@ -378,6 +386,14 @@ void optimize(Env& env, bool chain_compression) {
                      (*al_x)[1]->cast<Id>()->decl()->e() == nullptr)) {
                   // Equality constraint between two identifiers: unify
 
+                  if (Call* defVar = c->ann().getCall(constants().ann.defines_var)) {
+                    // First, remove defines_var/is_defined_var annotations if present
+                    if (Expression::equal(defVar->arg(0), (*al_x)[0])) {
+                      (*al_x)[0]->cast<Id>()->decl()->ann().remove(constants().ann.is_defined_var);
+                    } else {
+                      (*al_x)[1]->cast<Id>()->decl()->ann().remove(constants().ann.is_defined_var);
+                    }
+                  }
                   unify(envi, deletedVarDecls, (*al_x)[0]->cast<Id>(), (*al_x)[1]->cast<Id>());
                   {
                     VarDecl* vd = (*al_x)[0]->cast<Id>()->decl();
@@ -431,6 +447,14 @@ void optimize(Env& env, bool chain_compression) {
           // unify variable with the identifier it's assigned to
           Id* id1 = vdi->e()->e()->cast<Id>();
           vdi->e()->e(nullptr);
+
+          // Transfer is_defined_var annotation
+          if (id1->decl()->ann().contains(constants().ann.is_defined_var)) {
+            vdi->e()->ann().add(constants().ann.is_defined_var);
+          } else if (vdi->e()->ann().contains(constants().ann.is_defined_var)) {
+            id1->decl()->ann().add(constants().ann.is_defined_var);
+          }
+
           unify(envi, deletedVarDecls, vdi->e()->id(), id1);
           push_dependent_constraints(envi, id1, constraintQueue);
         }
@@ -1038,6 +1062,14 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
       if (is_true && c->arg(0)->isa<Id>() && c->arg(1)->isa<Id>() &&
           (c->arg(0)->cast<Id>()->decl()->e() == nullptr ||
            c->arg(1)->cast<Id>()->decl()->e() == nullptr)) {
+        if (Call* defVar = c->ann().getCall(constants().ann.defines_var)) {
+          // First, remove defines_var/is_defined_var annotations if present
+          if (Expression::equal(defVar->arg(0), c->arg(0))) {
+            c->arg(0)->cast<Id>()->decl()->ann().remove(constants().ann.is_defined_var);
+          } else {
+            c->arg(1)->cast<Id>()->decl()->ann().remove(constants().ann.is_defined_var);
+          }
+        }
         unify(env, deletedVarDecls, c->arg(0)->cast<Id>(), c->arg(1)->cast<Id>());
         push_dependent_constraints(env, c->arg(0)->cast<Id>(), constraintQueue);
         CollectDecls cd(env.varOccurrences, deletedVarDecls, ii);
@@ -1345,6 +1377,12 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
                 vdi->e()->type().dim() == 0) {
               Id* id1 = vdi->e()->e()->cast<Id>();
               vdi->e()->e(nullptr);
+              // Transfer is_defined_var annotation
+              if (id1->decl()->ann().contains(constants().ann.is_defined_var)) {
+                vdi->e()->ann().add(constants().ann.is_defined_var);
+              } else if (vdi->e()->ann().contains(constants().ann.is_defined_var)) {
+                id1->decl()->ann().add(constants().ann.is_defined_var);
+              }
               unify(env, deletedVarDecls, vdi->e()->id(), id1);
               push_dependent_constraints(env, id1, constraintQueue);
             }
@@ -1636,6 +1674,12 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
               // this is a clause, exists or forall with a single non-fixed variable,
               // assigned to a non-fixed variable => turn into simple equality
               vdi->e()->e(nullptr);
+              // Transfer is_defined_var annotation
+              if (ident->decl()->ann().contains(constants().ann.is_defined_var)) {
+                vdi->e()->ann().add(constants().ann.is_defined_var);
+              } else if (vdi->e()->ann().contains(constants().ann.is_defined_var)) {
+                ident->decl()->ann().add(constants().ann.is_defined_var);
+              }
               unify(env, deletedVarDecls, vdi->e()->id(), ident);
               push_dependent_constraints(env, ident, constraintQueue);
             } else {

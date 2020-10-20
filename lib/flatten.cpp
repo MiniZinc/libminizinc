@@ -1606,7 +1606,7 @@ bool check_domain_constraints(EnvI& env, Call* c) {
         }
         IntSetRanges dr(domain);
         Ranges::Const<IntVal> cr(lb, IntVal::infinity());
-        Ranges::Inter<IntVal, IntSetRanges, Ranges::Const<IntVal> > i(dr, cr);
+        Ranges::Inter<IntVal, IntSetRanges, Ranges::Const<IntVal>> i(dr, cr);
         IntSetVal* newibv = IntSetVal::ai(i);
         id->decl()->ti()->domain(new SetLit(Location().introduce(), newibv));
         id->decl()->ti()->setComputedDomain(false);
@@ -1631,7 +1631,7 @@ bool check_domain_constraints(EnvI& env, Call* c) {
         }
         IntSetRanges dr(domain);
         Ranges::Const<IntVal> cr(-IntVal::infinity(), ub);
-        Ranges::Inter<IntVal, IntSetRanges, Ranges::Const<IntVal> > i(dr, cr);
+        Ranges::Inter<IntVal, IntSetRanges, Ranges::Const<IntVal>> i(dr, cr);
         IntSetVal* newibv = IntSetVal::ai(i);
         id->decl()->ti()->domain(new SetLit(Location().introduce(), newibv));
         id->decl()->ti()->setComputedDomain(false);
@@ -1672,7 +1672,7 @@ bool check_domain_constraints(EnvI& env, Call* c) {
           }
           IntSetRanges dr(domain);
           Ranges::Const<IntVal> cr(lb, ub);
-          Ranges::Inter<IntVal, IntSetRanges, Ranges::Const<IntVal> > i(dr, cr);
+          Ranges::Inter<IntVal, IntSetRanges, Ranges::Const<IntVal>> i(dr, cr);
           IntSetVal* newibv = IntSetVal::ai(i);
           id->decl()->ti()->domain(new SetLit(Location().introduce(), newibv));
           id->decl()->ti()->setComputedDomain(false);
@@ -2613,7 +2613,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
       for (unsigned int i = 0; i < al->size(); i++) {
         es[i] = flat_cv_exp(env, ctx, (*al)[i])();
       }
-      std::vector<std::pair<int, int> > dims(al->dims());
+      std::vector<std::pair<int, int>> dims(al->dims());
       for (int i = 0; i < al->dims(); i++) {
         dims[i] = std::make_pair(al->min(i), al->max(i));
       }
@@ -3655,7 +3655,7 @@ void flatten(Env& e, FlatteningOptions opt) {
   }
 }
 
-void clear_internal_annotations(Expression* e) {
+void clear_internal_annotations(Expression* e, bool keepDefinesVar) {
   e->ann().remove(constants().ann.promise_total);
   e->ann().remove(constants().ann.maybe_partial);
   e->ann().remove(constants().ann.add_to_output);
@@ -3665,7 +3665,8 @@ void clear_internal_annotations(Expression* e) {
   std::vector<Expression*> removeAnns;
   for (ExpressionSetIter anns = e->ann().begin(); anns != e->ann().end(); ++anns) {
     if (Call* c = (*anns)->dynamicCast<Call>()) {
-      if (c->id() == constants().ann.defines_var && c->arg(0)->type().isPar()) {
+      if (c->id() == constants().ann.defines_var &&
+          (!keepDefinesVar || c->arg(0)->type().isPar())) {
         removeAnns.push_back(c);
       }
     }
@@ -3675,7 +3676,8 @@ void clear_internal_annotations(Expression* e) {
   }
 }
 
-std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd) {
+std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd,
+                                         bool keepDefinesVar) {
   std::vector<Expression*> added_constraints;
 
   // In FlatZinc par variables have RHSs, not domains
@@ -3750,7 +3752,7 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd) 
         }
         // Post new constraint
         if (ve != constants().literalTrue) {
-          clear_internal_annotations(ve);
+          clear_internal_annotations(ve, keepDefinesVar);
           added_constraints.push_back(ve);
         }
       }
@@ -3805,7 +3807,7 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd) 
             make_defined_var(vd, nc);
           }
           nc->ann().merge(c->ann());
-          clear_internal_annotations(nc);
+          clear_internal_annotations(nc, keepDefinesVar);
           added_constraints.push_back(nc);
         } else {
           assert(vd->e()->eid() == Expression::E_ID || vd->e()->eid() == Expression::E_BOOLLIT);
@@ -3891,7 +3893,7 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd) 
         make_defined_var(vd, nc);
         nc->ann().merge(cc->ann());
 
-        clear_internal_annotations(nc);
+        clear_internal_annotations(nc, keepDefinesVar);
         added_constraints.push_back(nc);
       } else {
         // RHS must be literal or Id
@@ -3964,8 +3966,9 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd) 
   return added_constraints;
 }
 
-Expression* cleanup_constraint(EnvI& env, std::unordered_set<Item*>& globals, Expression* ce) {
-  clear_internal_annotations(ce);
+Expression* cleanup_constraint(EnvI& env, std::unordered_set<Item*>& globals, Expression* ce,
+                               bool keepDefinesVar) {
+  clear_internal_annotations(ce, keepDefinesVar);
 
   if (Call* vc = ce->dynamicCast<Call>()) {
     for (unsigned int i = 0; i < vc->argCount(); i++) {
@@ -4056,13 +4059,23 @@ Expression* cleanup_constraint(EnvI& env, std::unordered_set<Item*>& globals, Ex
 void oldflatzinc(Env& e) {
   Model* m = e.flat();
 
-  // Mark annotations and optional variables for removal
-  for (auto* item : *m) {
-    if (auto* vdi = item->dynamicCast<VarDeclI>()) {
-      if (item->cast<VarDeclI>()->e()->type().ot() == Type::OT_OPTIONAL ||
-          item->cast<VarDeclI>()->e()->type().bt() == Type::BT_ANN) {
-        item->remove();
-      }
+  // Check wheter we need to keep defines_var annotations
+  bool keepDefinesVar = true;
+  {
+    GCLock lock;
+    Call* c = new Call(Location().introduce(), "mzn_check_annotate_defines_var", {});
+    c->type(Type::parbool());
+    FunctionI* fi = e.model()->matchFn(e.envi(), c, true);
+    if (fi != nullptr) {
+      c->decl(fi);
+      keepDefinesVar = eval_bool(e.envi(), c);
+    }
+  }
+
+  // Mark annotations and optional variables for removal, and clear flags
+  for (auto& vdi : m->vardecls()) {
+    if (vdi.e()->type().ot() == Type::OT_OPTIONAL || vdi.e()->type().bt() == Type::BT_ANN) {
+      vdi.remove();
     }
   }
 
@@ -4073,6 +4086,10 @@ void oldflatzinc(Env& e) {
   // Predicate declarations of solver builtins
   std::unordered_set<Item*> globals;
 
+  // Variables mapped to the index of the constraint that defines them
+  enum DFS_STATUS { DFS_UNKNOWN, DFS_SEEN, DFS_DONE };
+  std::unordered_map<VarDecl*, std::pair<int, DFS_STATUS>> definition_map;
+
   // Record indices of VarDeclIs with Id RHS for sorting & unification
   std::vector<int> declsWithIds;
   for (int i = 0; i < msize; i++) {
@@ -4082,7 +4099,8 @@ void oldflatzinc(Env& e) {
     if (auto* vdi = (*m)[i]->dynamicCast<VarDeclI>()) {
       GCLock lock;
       VarDecl* vd = vdi->e();
-      std::vector<Expression*> added_constraints = cleanup_vardecl(e.envi(), vdi, vd);
+      std::vector<Expression*> added_constraints =
+          cleanup_vardecl(e.envi(), vdi, vd, keepDefinesVar);
       // Record whether this VarDecl is equal to an Id (aliasing)
       if ((vd->e() != nullptr) && vd->e()->isa<Id>()) {
         declsWithIds.push_back(i);
@@ -4091,15 +4109,27 @@ void oldflatzinc(Env& e) {
         vdi->e()->payload(i);
       }
       for (auto* nc : added_constraints) {
-        Expression* new_ce = cleanup_constraint(e.envi(), globals, nc);
+        Expression* new_ce = cleanup_constraint(e.envi(), globals, nc, keepDefinesVar);
         if (new_ce != nullptr) {
           e.envi().flatAddItem(new ConstraintI(Location().introduce(), new_ce));
         }
       }
     } else if (auto* ci = (*m)[i]->dynamicCast<ConstraintI>()) {
-      Expression* new_ce = cleanup_constraint(e.envi(), globals, ci->e());
+      Expression* new_ce = cleanup_constraint(e.envi(), globals, ci->e(), keepDefinesVar);
       if (new_ce != nullptr) {
         ci->e(new_ce);
+        if (keepDefinesVar) {
+          if (Call* defines_var = new_ce->ann().getCall(constants().ann.defines_var)) {
+            if (Id* ident = defines_var->arg(0)->dynamicCast<Id>()) {
+              if (definition_map.find(ident->decl()) != definition_map.end()) {
+                // This is the second definition, remove it
+                new_ce->ann().removeCall(constants().ann.defines_var);
+              } else {
+                definition_map.insert({ident->decl(), {i, DFS_UNKNOWN}});
+              }
+            }
+          }
+        }
       } else {
         ci->remove();
       }
@@ -4110,13 +4140,14 @@ void oldflatzinc(Env& e) {
         for (unsigned int i = 0; i < let->let().size(); i++) {
           Expression* let_e = let->let()[i];
           if (auto* vd = let_e->dynamicCast<VarDecl>()) {
-            std::vector<Expression*> added_constraints = cleanup_vardecl(e.envi(), nullptr, vd);
+            std::vector<Expression*> added_constraints =
+                cleanup_vardecl(e.envi(), nullptr, vd, keepDefinesVar);
             new_let.push_back(vd);
             for (auto* nc : added_constraints) {
               new_let.push_back(nc);
             }
           } else {
-            Expression* new_ce = cleanup_constraint(e.envi(), globals, let_e);
+            Expression* new_ce = cleanup_constraint(e.envi(), globals, let_e, keepDefinesVar);
             if (new_ce != nullptr) {
               new_let.push_back(new_ce);
             }
@@ -4132,6 +4163,77 @@ void oldflatzinc(Env& e) {
         auto* constantobj = new VarDecl(Location().introduce(), ti, e.envi().genId(), si->e());
         si->e(constantobj->id());
         e.envi().flatAddItem(new VarDeclI(Location().introduce(), constantobj));
+      }
+    }
+  }
+
+  if (keepDefinesVar) {
+    // Detect and break cycles in defines_var annotations
+    std::vector<VarDecl*> definesStack;
+    auto checkId = [&definesStack, &definition_map, &m](VarDecl* cur, Id* ident) {
+      if (cur == ident->decl()) {
+        // Never push the variable we're currently looking at
+        return;
+      }
+      auto it = definition_map.find(ident->decl());
+      if (it != definition_map.end()) {
+        if (it->second.second == 0) {
+          // not yet visited, push
+          definesStack.push_back(it->first);
+        } else if (it->second.second == 1) {
+          // Found a cycle through variable ident
+          // Break cycle by removing annotations
+          ident->decl()->ann().remove(constants().ann.is_defined_var);
+          Call* c = (*m)[it->second.first]->cast<ConstraintI>()->e()->cast<Call>();
+          c->ann().removeCall(constants().ann.defines_var);
+        }
+      }
+    };
+    for (auto& it : definition_map) {
+      if (it.second.second == 0) {
+        // not yet visited
+        definesStack.push_back(it.first);
+        while (!definesStack.empty()) {
+          VarDecl* cur = definesStack.back();
+          if (definition_map[cur].second != DFS_UNKNOWN) {
+            // already visited (or already finished), now finished
+            definition_map[cur].second = DFS_DONE;
+            definesStack.pop_back();
+          } else {
+            // now visited and on stack
+            definition_map[cur].second = DFS_SEEN;
+            if (Call* c = (*m)[definition_map[cur].first]
+                              ->cast<ConstraintI>()
+                              ->e()
+                              ->dynamicCast<Call>()) {
+              // Variable is defined by a call, push all arguments
+              for (unsigned int i = 0; i < c->argCount(); i++) {
+                if (c->arg(i)->type().isPar()) {
+                  continue;
+                }
+                if (Id* ident = c->arg(i)->dynamicCast<Id>()) {
+                  if (ident->type().dim() > 0) {
+                    if (auto* al = Expression::dynamicCast<ArrayLit>(ident->decl()->e())) {
+                      for (auto* e : al->getVec()) {
+                        if (auto* ident = e->dynamicCast<Id>()) {
+                          checkId(cur, ident);
+                        }
+                      }
+                    }
+                  } else if (ident->type().isvar()) {
+                    checkId(cur, ident);
+                  }
+                } else if (auto* al = c->arg(i)->dynamicCast<ArrayLit>()) {
+                  for (auto* e : al->getVec()) {
+                    if (auto* ident = e->dynamicCast<Id>()) {
+                      checkId(cur, ident);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     }
   }
