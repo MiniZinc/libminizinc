@@ -1,5 +1,5 @@
 /***
- @groupdef annotations Annotations
+ @groupdef stdlib.annotations Annotations
 
  These annotations control evaluation and solving behaviour.
 */
