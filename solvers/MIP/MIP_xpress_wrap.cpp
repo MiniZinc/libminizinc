@@ -122,8 +122,9 @@ void MIPxpressWrapper::checkDLL() {
   } else {
     paths.emplace_back("");  // Try builtin xpress dirs
     auto dir = MiniZinc::FileUtils::dir_name(_plugin->path());
-    if (!dir.empty()) {
-      paths.push_back(dir + "/xpauth.xpr");  // Try dir with DLL
+    auto file = dir + "/../bin/xpauth.xpr";
+    if (!dir.empty() && MiniZinc::FileUtils::file_exists(file)) {
+      paths.push_back(file);  // Try the bin dir license file if it exists
     }
   }
 
