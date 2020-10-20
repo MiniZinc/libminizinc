@@ -5,15 +5,6 @@
 % These functions are used internally by the compiler.
 %
 
-% Inclusion of count constraints for internal redefinitions of hidden counting constraints
-include "count_eq.mzn";
-include "count_geq.mzn";
-include "count_leq.mzn";
-include "count_neq.mzn";
-include "count_gt.mzn";
-include "count_lt.mzn";
-include "count_fn.mzn";
-
 % domain constraints
 predicate var_dom(var int:x, set of int: s) =
   if has_bounds(x) /\ dom(x) subset s then true
