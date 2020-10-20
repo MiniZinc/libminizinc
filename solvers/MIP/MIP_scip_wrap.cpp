@@ -177,7 +177,7 @@ string MIPScipWrapper::getVersion(FactoryOptions& factoryOpt,
     return "<unknown version>";
   }
 }
-vector<string> MIPScipWrapper::getRequiredFlags() {
+vector<string> MIPScipWrapper::getRequiredFlags(FactoryOptions& factoryOpt) {
   try {
     ScipPlugin p;
     return {};

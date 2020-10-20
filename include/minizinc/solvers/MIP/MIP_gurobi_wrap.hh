@@ -238,7 +238,7 @@ public:
   static std::string getName();
   static std::vector<std::string> getTags();
   static std::vector<std::string> getStdFlags();
-  static std::vector<std::string> getRequiredFlags();
+  static std::vector<std::string> getRequiredFlags(FactoryOptions& factoryOpt);
   static std::vector<std::string> getFactoryFlags();
 
   static std::vector<MiniZinc::SolverConfig::ExtraFlag> getExtraFlags(FactoryOptions& factoryOpt);

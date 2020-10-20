@@ -68,7 +68,7 @@ string MIPGurobiWrapper::getVersion(FactoryOptions& factoryOpt,
   }
 }
 
-vector<string> MIPGurobiWrapper::getRequiredFlags() {
+vector<string> MIPGurobiWrapper::getRequiredFlags(FactoryOptions& f) {
   FactoryOptions factoryOpt;
   MIPGurobiWrapper mgw(factoryOpt, nullptr);
   try {

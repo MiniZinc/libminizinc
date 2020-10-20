@@ -46,36 +46,14 @@ public:
 
   /// Load a plugin with given DLL path
   Plugin(const std::string& file) {
-    if (MiniZinc::FileUtils::is_absolute(file)) {
-      open(file);
-    } else {
-      // TODO: this should probably check that there is no current file extension
-#ifdef _WIN32
-      open(file + ".dll");
-#elif __APPLE__
-      open(file + ".dylib");
-#else
-      open(file + ".so");
-#endif
-    }
-    if (_dll == nullptr) {
+    if (!open(file)) {
       throw PluginError("Failed to load plugin " + file);
     }
   }
   /// Load a plugin by trying the given DLL file paths
   Plugin(const std::vector<std::string>& files) {
     for (const auto& file : files) {
-      if (MiniZinc::FileUtils::is_absolute(file)) {
-        open(file);
-      } else {
-        // TODO: this should probably check that there is no current file extension
-#ifdef _WIN32
-        open(file + ".dll");
-#else
-        open(file + ".so");
-#endif
-      }
-      if (_dll != nullptr) {
+      if (open(file)) {
         return;
       }
     }
@@ -95,6 +73,9 @@ public:
 
   ~Plugin() { close(); }
 
+  /// Get the path to the loaded DLL
+  const std::string& path() { return _loaded; }
+
 protected:
   /// Load a symbol from this DLL
   void* symbol(const char* name) {
@@ -112,7 +93,18 @@ protected:
 
 private:
   void* _dll;
-  void open(const std::string& file) {
+  std::string _loaded;
+  bool open(const std::string& file) {
+#ifdef _WIN32
+    const std::string ext = ".dll";
+#elif __APPLE__
+    const std::string ext = ".dylib";
+#else
+    const std::string ext = ".so";
+#endif
+    bool hasExt =
+        file.size() >= ext.size() && file.compare(file.size() - ext.size(), ext.size(), ext) == 0;
+    auto path = hasExt || MiniZinc::FileUtils::is_absolute(file) ? file : file + ext;
 #ifdef _WIN32
     auto dir = MiniZinc::FileUtils::dir_name(file);
     if (!dir.empty()) {
@@ -126,6 +118,12 @@ private:
 #else
     _dll = dlopen(file.c_str(), RTLD_NOW);
 #endif
+    if (_dll != nullptr) {
+      _loaded = file;
+      return true;
+    }
+
+    return false;
   }
   void close() {
 #ifdef _WIN32

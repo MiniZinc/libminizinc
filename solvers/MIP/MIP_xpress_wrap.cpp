@@ -98,27 +98,7 @@ const std::vector<std::string>& XpressPlugin::dlls() {
 }
 
 void MIPxpressWrapper::openXpress() {
-  if (!_factoryOptions.xpressDll.empty()) {
-    _plugin = new XpressPlugin(_factoryOptions.xpressDll);
-  } else {
-    _plugin = new XpressPlugin();
-  }
-
-  int ret = _plugin->XPRSinit(
-      !_factoryOptions.xprsPassword.empty() ? _factoryOptions.xprsPassword.c_str() : nullptr);
-  if (ret != 0) {
-    char message[512];
-    _plugin->XPRSgetlicerrmsg(message, 512);
-    // Return code of 32 means student licence, but otherwise it's an error
-    if (ret == 32) {
-      if (_options->verbose) {
-        std::cerr << message << std::endl;
-      }
-    } else {
-      throw XpressException(message);
-    }
-  }
-
+  checkDLL();
   _problem = _plugin->XPRBnewprob(nullptr);
   _xpressObj = _plugin->XPRBnewctr(_problem, nullptr, XB_N);
 }
@@ -127,6 +107,45 @@ void MIPxpressWrapper::closeXpress() {
   _plugin->XPRBdelprob(_problem);
   _plugin->XPRSfree();
   delete _plugin;
+}
+
+void MIPxpressWrapper::checkDLL() {
+  if (!_factoryOptions.xpressDll.empty()) {
+    _plugin = new XpressPlugin(_factoryOptions.xpressDll);
+  } else {
+    _plugin = new XpressPlugin();
+  }
+
+  std::vector<std::string> paths;
+  if (!_factoryOptions.xprsPassword.empty()) {
+    paths.push_back(_factoryOptions.xprsPassword);
+  } else {
+    paths.emplace_back("");  // Try builtin xpress dirs
+    auto dir = MiniZinc::FileUtils::dir_name(_plugin->path());
+    if (!dir.empty()) {
+      paths.push_back(dir + "/xpauth.xpr");  // Try dir with DLL
+    }
+  }
+
+  for (const auto& path : paths) {
+    int ret = _plugin->XPRSinit(path.empty() ? nullptr : path.c_str());
+    if (ret == 0) {
+      return;
+    }
+    // Return code of 32 means student licence, but otherwise it's an error
+    if (ret == 32) {
+      if (_options->verbose) {
+        char message[512];
+        _plugin->XPRSgetlicerrmsg(message, 512);
+        std::cerr << message << std::endl;
+      }
+      return;
+    }
+  }
+
+  char message[512];
+  _plugin->XPRSgetlicerrmsg(message, 512);
+  throw XpressException(message);
 }
 
 string MIPxpressWrapper::getDescription(FactoryOptions& factoryOpt,
@@ -151,18 +170,31 @@ string MIPxpressWrapper::getVersion(FactoryOptions& factoryOpt,
   }
 }
 
-vector<string> MIPxpressWrapper::getRequiredFlags() {
-  try {
-    XpressPlugin p;
-    int ret = p.XPRSinit(nullptr);
-    p.XPRSfree();
-    if (ret == 0 || ret == 32) {
-      return {};
+vector<string> MIPxpressWrapper::getRequiredFlags(FactoryOptions& factoryOpt) {
+  Options opts;
+  FactoryOptions triedFactoryOpts;
+  vector<string> ret;
+  // TODO: This is more complex than it should be
+  // We only know if --xpress-password is required if we have the DLL available
+  // So we have to try the user supplied --xpress-dll if given
+  while (true) {
+    try {
+      // Try opening without considering factory options
+      MIPxpressWrapper w(triedFactoryOpts, &opts);
+      return ret;
+    } catch (MiniZinc::Plugin::PluginError&) {
+      ret.emplace_back("--xpress-dll");  // The DLL needs to be given
+      if (triedFactoryOpts.xpressDll == factoryOpt.xpressDll) {
+        return ret;
+      }
+      triedFactoryOpts.xpressDll = factoryOpt.xpressDll;
+    } catch (XpressException&) {
+      ret.emplace_back("--xpress-password");  // The license needs to be given
+      if (triedFactoryOpts.xprsPassword == factoryOpt.xprsPassword) {
+        return ret;
+      }
+      triedFactoryOpts.xprsPassword = factoryOpt.xprsPassword;
     }
-    return {"--xpress-password"};
-
-  } catch (MiniZinc::Plugin::PluginError&) {
-    return {"--xpress-dll"};
   }
 }
 

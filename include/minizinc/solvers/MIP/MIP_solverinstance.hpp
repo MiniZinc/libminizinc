@@ -26,7 +26,7 @@ void MIPSolverFactory<MIPWrapper>::factoryOptionsFinished() {
   sc.mznlibVersion(1);
   sc.supportsMzn(true);
   sc.description(MIPWrapper::getDescription(_factoryOptions, nullptr));
-  sc.requiredFlags(MIPWrapper::getRequiredFlags());
+  sc.requiredFlags(MIPWrapper::getRequiredFlags(_factoryOptions));
   sc.tags(MIPWrapper::getTags());
   sc.stdFlags(MIPWrapper::getStdFlags());
   sc.extraFlags(_extraFlags);

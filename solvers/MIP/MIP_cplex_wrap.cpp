@@ -266,9 +266,9 @@ string MIPCplexWrapper::getVersion(FactoryOptions& factoryOpt,
   return v;
 }
 
-vector<string> MIPCplexWrapper::getRequiredFlags() {
+vector<string> MIPCplexWrapper::getRequiredFlags(FactoryOptions& f) {
   int status;
-  MIPCplexWrapper::FactoryOptions factoryOptions;
+  FactoryOptions factoryOptions;
   Options options;
   try {
     MIPCplexWrapper mcw(factoryOptions, &options);
