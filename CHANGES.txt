@@ -5,6 +5,55 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.5.1
+=============
+
+Changes:
+- Rewrite alldifferent_except_0 to fzn_alldifferent_except_0, to enable solvers
+  to implement that constraint if it is available (#414).
+- Propagate domains for variables even when reverse-mapped. This ensures that
+  variables with multiple encodings can be created with the tightest possible
+  bounds.
+- Fail instead of producing empty domains when simplifying int_le constraints.
+- Allow parsing of nested objects in parameter configuration files.
+- Add --backend-flags option to provide a uniform way of passing flags to an
+  underlying solver.
+- Add extra flags support to the MIP solver interfaces, allowing parameters
+  to be set in the IDE.
+- Improve automatic detection of the Xpress solver and license file.
+- Allow the use of spaces in the --solver flag argument.
+- Automatically add the last part of the solver ID as a tag.
+- Improve handling of var functions in output, automatically creating par
+  versions of var functions if possible.
+
+Bug fixes:
+- Fix parsing of empty multidimensional JSON arrays.
+- Allow use of --parallel long form option in MIP solvers.
+- Fix item lookup when increasing annotation usage in annotate builtin.
+- Fix JSON array coercion to handle arrays with 1 unknown index.
+- Don't try to access array dimensions for output of empty multi-dimensional
+  arrays.
+- Print verbose version information to stderr instead of stdout.
+- Fix context handling when flattening par expressions that contain variables
+  (#415).
+- Flatten string expressions if they contain variable parts in
+  assert/abort/trace calls.
+- Fix breakage on older versions of Windows due to UTF-8 conversion failing.
+- Remove defines_var/is_defined_var annotations when simplifying boolean
+  constraints.
+- Fix transfer of cv status from where parts to newly generated conjunctions
+  during typechecking.
+- Fix multiple issues with the defined_var / is_defined_var annotations.
+- Move all included files from stdlib into solver_redefinitions.mzn, so that
+  solver redefinitions are not marked as belonging to the standard library
+  (#416).
+- Fix documentation group for standard annotations (#417).
+- Show correct version of solver plugins which have their DLLs specified using
+  a command-line parameter (#411).
+- Fix arbitrary flag support for NL solvers.
+- Kill child processes if exception occurs during solns2out on Unix-like
+  platforms.
+
 Version 2.5.0
 =============
 
