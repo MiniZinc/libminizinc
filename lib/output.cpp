@@ -184,6 +184,7 @@ void make_par(EnvI& env, Expression* e) {
     static bool enter(Expression* e) {
       Type t = e->type();
       t.ti(Type::TI_PAR);
+      t.cv(false);
       e->type(t);
       return true;
     }
