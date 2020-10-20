@@ -122,6 +122,7 @@ public:
     bool processOption(int& i, std::vector<std::string>& argv);
 
     std::string xpressDll;
+    std::string xprsPassword;
   };
 
   class Options : public MiniZinc::SolverInstanceBase::Options {
@@ -138,8 +139,6 @@ public:
 
     int numThreads = 0;
     int randomSeed = 0;
-
-    std::string xprsPassword;
 
     std::unordered_map<std::string, std::string> extraParams;
 

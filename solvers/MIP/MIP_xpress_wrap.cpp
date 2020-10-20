@@ -89,8 +89,7 @@ const std::vector<std::string>& XpressPlugin::dlls() {
 #ifdef _WIN32
       "xprs", "C:\\xpressmp\\bin\\xprs.dll"
 #elif __APPLE__
-      "libxprs"
-      " /Applications/FICO Xpress/xpressmp/lib/libxprs.dylib"
+      "libxprs", "/Applications/FICO Xpress/xpressmp/lib/libxprs.dylib"
 #else
       "libxprs", "/opt/xpressmp/lib/libxprs.so"
 #endif
@@ -105,14 +104,16 @@ void MIPxpressWrapper::openXpress() {
     _plugin = new XpressPlugin();
   }
 
-  int ret =
-      _plugin->XPRSinit(!_options->xprsPassword.empty() ? _options->xprsPassword.c_str() : nullptr);
+  int ret = _plugin->XPRSinit(
+      !_factoryOptions.xprsPassword.empty() ? _factoryOptions.xprsPassword.c_str() : nullptr);
   if (ret != 0) {
     char message[512];
     _plugin->XPRSgetlicerrmsg(message, 512);
     // Return code of 32 means student licence, but otherwise it's an error
     if (ret == 32) {
-      std::cerr << message << std::endl;
+      if (_options->verbose) {
+        std::cerr << message << std::endl;
+      }
     } else {
       throw XpressException(message);
     }
@@ -165,7 +166,9 @@ vector<string> MIPxpressWrapper::getRequiredFlags() {
   }
 }
 
-vector<string> MIPxpressWrapper::getFactoryFlags() { return {"--xpress-dll"}; };
+vector<string> MIPxpressWrapper::getFactoryFlags() {
+  return {"--xpress-dll", "--xpress-password"};
+};
 
 string MIPxpressWrapper::getId() { return "xpress"; }
 
@@ -323,7 +326,12 @@ void MIPxpressWrapper::Options::printHelp(ostream& os) {
 
 bool MIPxpressWrapper::FactoryOptions::processOption(int& i, std::vector<std::string>& argv) {
   MiniZinc::CLOParser cop(i, argv);
-  return cop.get("--xpress-dll", &xpressDll);
+  if (cop.get("--xpress-dll", &xpressDll)) {                 // NOLINT: Allow repeated empty if
+  } else if (cop.get("--xpress-password", &xprsPassword)) {  // NOLINT: Allow repeated empty if
+  } else {
+    return false;
+  }
+  return true;
 }
 
 bool MIPxpressWrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
@@ -338,7 +346,6 @@ bool MIPxpressWrapper::Options::processOption(int& i, std::vector<std::string>& 
   } else if (cop.get("--absGap", &absGap)) {                      // NOLINT: Allow repeated empty if
   } else if (cop.get("-i")) {
     intermediateSolutions = true;
-  } else if (cop.get("--xpress-password", &xprsPassword)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("-p --parallel", &numThreads)) {
   } else if (cop.get("-r --seed --random-seed", &randomSeed)) {
   } else {
