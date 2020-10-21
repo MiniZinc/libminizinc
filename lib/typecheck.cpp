@@ -1778,8 +1778,8 @@ public:
   /// Visit array comprehension
   void vComprehension(Comprehension& c) {
     Type tt = c.e()->type();
-    typedef std::unordered_map<VarDecl*, std::pair<int, int> > genMap_t;
-    typedef std::unordered_map<VarDecl*, std::vector<Expression*> > whereMap_t;
+    typedef std::unordered_map<VarDecl*, std::pair<int, int>> genMap_t;
+    typedef std::unordered_map<VarDecl*, std::vector<Expression*>> whereMap_t;
     genMap_t generatorMap;
     whereMap_t whereMap;
     int declCount = 0;
@@ -2587,7 +2587,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     TSVFuns(EnvI& env0, Model* model0, std::vector<FunctionI*>& fis0)
         : env(env0), model(model0), fis(fis0) {}
     void vFunctionI(FunctionI* i) {
-      model->registerFn(env, i);
+      (void)model->registerFn(env, i);
       fis.push_back(i);
     }
   } _tsvf(env.envi(), m, functionItems);
@@ -2665,7 +2665,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     } else {
       auto* fi = (*enumItems)[i]->dynamicCast<FunctionI>();
       m->addItem(fi);
-      m->registerFn(env.envi(), fi);
+      (void)m->registerFn(env.envi(), fi);
       functionItems.push_back(fi);
     }
   }
@@ -2710,7 +2710,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     } else {
       auto* fi = i->cast<FunctionI>();
       m->addItem(fi);
-      m->registerFn(env.envi(), fi);
+      (void)m->registerFn(env.envi(), fi);
       functionItems.push_back(fi);
     }
   }
@@ -2774,7 +2774,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
   {
     Typer<false> ty(env.envi(), m, typeErrors, ignoreUndefinedParameters);
-    BottomUpIterator<Typer<false> > bottomUpTyper(ty);
+    BottomUpIterator<Typer<false>> bottomUpTyper(ty);
     for (auto& decl : ts.decls) {
       decl->payload(0);
       bottomUpTyper.run(decl->ti());
@@ -2792,17 +2792,17 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
   {
     Typer<true> ty(env.envi(), m, typeErrors, ignoreUndefinedParameters);
-    BottomUpIterator<Typer<true> > bottomUpTyper(ty);
+    BottomUpIterator<Typer<true>> bottomUpTyper(ty);
 
     class TSV2 : public ItemVisitor {
     private:
       EnvI& _env;
       Model* _m;
-      BottomUpIterator<Typer<true> >& _bottomUpTyper;
+      BottomUpIterator<Typer<true>>& _bottomUpTyper;
       std::vector<TypeError>& _typeErrors;
 
     public:
-      TSV2(EnvI& env0, Model* m0, BottomUpIterator<Typer<true> >& b,
+      TSV2(EnvI& env0, Model* m0, BottomUpIterator<Typer<true>>& b,
            std::vector<TypeError>& typeErrors)
           : _env(env0), _m(m0), _bottomUpTyper(b), _typeErrors(typeErrors) {}
       void vVarDeclI(VarDeclI* i) {
@@ -2952,6 +2952,184 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     iter_items(_tsv3, m);
   }
 
+  // Create a par version of each function that returns par and
+  // that has a body that can be made par
+  std::unordered_map<FunctionI*, std::pair<bool, std::vector<FunctionI*>>> fnsToMakePar;
+  for (auto& f : m->functions()) {
+    if (f.id() == "mzn_reverse_map_var") {
+      continue;
+    }
+    if (f.e() != nullptr && f.ti()->type().bt() != Type::BT_ANN) {
+      bool foundVar = false;
+      for (auto* p : f.params()) {
+        if (p->type().isvar()) {
+          foundVar = true;
+          break;
+        }
+      }
+      if (foundVar) {
+        // create par version of parameter types
+        std::vector<Type> tv;
+        for (auto* p : f.params()) {
+          Type t = p->type();
+          t.cv(false);
+          t.ti(Type::TI_PAR);
+          tv.push_back(t);
+        }
+        // check if specialised par version of function already exists
+        FunctionI* fi_par = m->matchFn(env.envi(), f.id(), tv, false);
+        bool parIsUsable = false;
+        if (fi_par != nullptr) {
+          bool foundVar = false;
+          for (auto* p : fi_par->params()) {
+            if (p->type().isvar()) {
+              foundVar = true;
+              break;
+            }
+          }
+          parIsUsable = !foundVar;
+        }
+        if (!parIsUsable) {
+          // check if body of f doesn't contain any free variables in lets,
+          // and all calls in the body have par versions available
+          class CheckParBody : public EVisitor {
+          public:
+            EnvI& env;
+            Model* m;
+            CheckParBody(EnvI& env0, Model* m0) : env(env0), m(m0) {}
+            bool isPar = true;
+            std::vector<FunctionI*> deps;
+            bool enter(Expression* e) const {
+              // if we have already found a var, don't continue
+              return isPar;
+            }
+            void vLet(const Let& let) {
+              // check if any of the declared variables does not have a RHS
+              for (auto* e : let.let()) {
+                if (auto* vd = e->dynamicCast<VarDecl>()) {
+                  if (vd->e() == nullptr) {
+                    isPar = false;
+                    break;
+                  }
+                }
+              }
+            }
+            void vCall(const Call& c) {
+              if (!c.type().isAnn()) {
+                FunctionI* decl = c.decl();
+                // create par version of parameter types
+                std::vector<Type> tv;
+                for (auto* p : decl->params()) {
+                  Type t = p->type();
+                  t.cv(false);
+                  t.ti(Type::TI_PAR);
+                  tv.push_back(t);
+                }
+                // check if specialised par version of function already exists
+                FunctionI* decl_par = m->matchFn(env, decl->id(), tv, false);
+                bool parIsUsable = false;
+                if (decl_par->ti()->type().isPar() && decl_par->e() == nullptr &&
+                    decl_par->fromStdLib()) {
+                  parIsUsable = true;
+                } else {
+                  bool foundVar = false;
+                  for (auto* p : decl_par->params()) {
+                    if (p->type().isvar()) {
+                      foundVar = true;
+                      break;
+                    }
+                  }
+                  parIsUsable = !foundVar;
+                }
+                if (!parIsUsable) {
+                  deps.push_back(decl_par);
+                }
+              }
+            }
+          } cpb(env.envi(), m);
+          top_down(cpb, f.e());
+          if (cpb.isPar) {
+            fnsToMakePar.insert({&f, {false, cpb.deps}});
+          }
+        } else {
+          fnsToMakePar.insert({fi_par, {true, std::vector<FunctionI*>()}});
+        }
+      }
+    }
+  }
+
+  // Repeatedly remove functions whose dependencies cannot be made par
+  bool didRemove;
+  do {
+    didRemove = false;
+    std::vector<FunctionI*> toRemove;
+    for (auto& p : fnsToMakePar) {
+      for (auto* dep : p.second.second) {
+        if (fnsToMakePar.find(dep) == fnsToMakePar.end()) {
+          toRemove.push_back(p.first);
+        }
+      }
+    }
+    if (!toRemove.empty()) {
+      didRemove = true;
+      for (auto* p : toRemove) {
+        fnsToMakePar.erase(p);
+      }
+    }
+  } while (didRemove);
+
+  // Create par versions of remaining functions
+  {
+    // First step: copy and register functions
+    std::vector<FunctionI*> parFunctions;
+    CopyMap parCopyMap;
+    for (auto& p : fnsToMakePar) {
+      if (!p.second.first) {
+        GCLock lock;
+        auto* cp = copy(env.envi(), parCopyMap, p.first)->cast<FunctionI>();
+        for (auto* v : cp->params()) {
+          Type vt = v->ti()->type();
+          vt.ti(Type::TI_PAR);
+          v->ti()->type(vt);
+          v->type(vt);
+        }
+        Type cpt(cp->ti()->type());
+        cpt.ti(Type::TI_PAR);
+        cp->ti()->type(cpt);
+        bool didRegister = m->registerFn(env.envi(), cp, true, false);
+        if (didRegister) {
+          m->addItem(cp);
+          parFunctions.push_back(cp);
+        }
+      }
+    }
+
+    // Second step: make function bodies par
+    // (needs to happen in a separate second step so that
+    //  matchFn will find the correct par function from first step)
+    class MakeFnPar : public EVisitor {
+    public:
+      EnvI& env;
+      Model* m;
+      MakeFnPar(EnvI& env0, Model* m0) : env(env0), m(m0) {}
+      static bool enter(Expression* e) {
+        Type t(e->type());
+        t.ti(Type::TI_PAR);
+        t.cv(false);
+        e->type(t);
+        return true;
+      }
+      void vCall(Call& c) {
+        FunctionI* decl = m->matchFn(env, &c, false);
+        c.decl(decl);
+      }
+    } _mfp(env.envi(), m);
+
+    for (auto* p : parFunctions) {
+      bottom_up(_mfp, p->e());
+    }
+  }
+
   try {
     m->checkFnOverloading(env.envi());
   } catch (TypeError& e) {
@@ -3032,7 +3210,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 void typecheck(Env& env, Model* m, AssignI* ai) {
   std::vector<TypeError> typeErrors;
   Typer<true> ty(env.envi(), m, typeErrors, false);
-  BottomUpIterator<Typer<true> > bottomUpTyper(ty);
+  BottomUpIterator<Typer<true>> bottomUpTyper(ty);
   bottomUpTyper.run(ai->e());
   if (!typeErrors.empty()) {
     throw typeErrors[0];

@@ -161,7 +161,7 @@ public:
   }
 
   /// Register a builtin function item
-  void registerFn(EnvI& env, FunctionI* fi);
+  bool registerFn(EnvI& env, FunctionI* fi, bool keepSorted = false, bool throwIfDuplicate = true);
   /// Sort functions by type
   void sortFn();
   /// Check that registered functions do not clash wrt overloading

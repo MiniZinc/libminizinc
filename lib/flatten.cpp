@@ -3580,35 +3580,7 @@ void flatten(Env& e, FlatteningOptions opt) {
             (it = env.reverseMappers.find(vdi->e()->id())) != env.reverseMappers.end()) {
           GCLock lock;
           Call* rhs = copy(env, env.cmap, it->second())->cast<Call>();
-          std::vector<Type> tv(rhs->argCount());
-          for (unsigned int i = rhs->argCount(); (i--) != 0U;) {
-            tv[i] = rhs->arg(i)->type();
-            tv[i].ti(Type::TI_PAR);
-          }
-          FunctionI* decl = env.output->matchFn(env, rhs->id(), tv, false);
-          Type t;
-          if (decl == nullptr) {
-            FunctionI* origdecl = env.model->matchFn(env, rhs->id(), tv, false);
-            if (origdecl == nullptr) {
-              std::ostringstream ss;
-              ss << "function " << rhs->id() << " is used in output, par version needed";
-              throw FlatteningError(env, rhs->loc(), ss.str());
-            }
-            if (origdecl->fromStdLib()) {
-              decl = copy(env, env.cmap, origdecl)->cast<FunctionI>();
-              CollectOccurrencesE ce(env.outputVarOccurrences, decl);
-              top_down(ce, decl->e());
-              top_down(ce, decl->ti());
-              for (unsigned int i = decl->params().size(); (i--) != 0U;) {
-                top_down(ce, decl->params()[i]);
-              }
-              env.output->registerFn(env, decl);
-              env.output->addItem(decl);
-            } else {
-              decl = origdecl;
-            }
-          }
-          rhs->decl(decl);
+          check_output_par_fn(env, rhs);
           output_vardecls(env, vdi, rhs);
 
           remove_is_output(vdi->e()->flat());
