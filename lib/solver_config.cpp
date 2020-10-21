@@ -765,7 +765,6 @@ const SolverConfig& SolverConfigs::config(const std::string& _s) {
   } else {
     s = _s;
   }
-  s.erase(std::remove(s.begin(), s.end(), ' '), s.end());
   s = string_to_lower(s);
   std::vector<std::string> tags;
   std::istringstream iss(s);
