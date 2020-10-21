@@ -294,140 +294,151 @@ vector<string> MIPCplexWrapper::getStdFlags() { return {"-i", "-p", "-s", "-v"};
 vector<MiniZinc::SolverConfig::ExtraFlag> MIPCplexWrapper::getExtraFlags(
     FactoryOptions& factoryOpt) {
   // CPLEX doesn't seem to have a way to enumerate all parameters
-  static std::vector<int> all_params = {
-      CPXPARAM_Advance, CPXPARAM_Barrier_Algorithm, CPXPARAM_Barrier_ColNonzeros,
-      CPXPARAM_Barrier_ConvergeTol, CPXPARAM_Barrier_Crossover, CPXPARAM_Barrier_Display,
-      CPXPARAM_Barrier_Limits_Corrections, CPXPARAM_Barrier_Limits_Growth,
-      CPXPARAM_Barrier_Limits_Iteration, CPXPARAM_Barrier_Limits_ObjRange,
-      CPXPARAM_Barrier_Ordering, CPXPARAM_Barrier_QCPConvergeTol, CPXPARAM_Barrier_StartAlg,
-      CPXPARAM_Benders_Strategy, CPXPARAM_Benders_Tolerances_feasibilitycut,
-      CPXPARAM_Benders_Tolerances_optimalitycut, CPXPARAM_Benders_WorkerAlgorithm,
-      CPXPARAM_ClockType, CPXPARAM_Conflict_Algorithm, CPXPARAM_Conflict_Display, CPXPARAM_CPUmask,
-      CPXPARAM_DetTimeLimit, CPXPARAM_DistMIP_Rampup_DetTimeLimit, CPXPARAM_DistMIP_Rampup_Duration,
-      CPXPARAM_DistMIP_Rampup_TimeLimit, CPXPARAM_Emphasis_Memory,
-      // CPXPARAM_Emphasis_MIP,
-      CPXPARAM_Emphasis_Numerical, CPXPARAM_Feasopt_Mode, CPXPARAM_Feasopt_Tolerance,
-      CPXPARAM_LPMethod, CPXPARAM_MIP_Cuts_BQP, CPXPARAM_MIP_Cuts_Cliques, CPXPARAM_MIP_Cuts_Covers,
-      CPXPARAM_MIP_Cuts_Disjunctive, CPXPARAM_MIP_Cuts_FlowCovers, CPXPARAM_MIP_Cuts_Gomory,
-      CPXPARAM_MIP_Cuts_GUBCovers, CPXPARAM_MIP_Cuts_Implied, CPXPARAM_MIP_Cuts_LiftProj,
-      CPXPARAM_MIP_Cuts_LocalImplied, CPXPARAM_MIP_Cuts_MCFCut, CPXPARAM_MIP_Cuts_MIRCut,
-      CPXPARAM_MIP_Cuts_PathCut, CPXPARAM_MIP_Cuts_RLT, CPXPARAM_MIP_Cuts_ZeroHalfCut,
-      // CPXPARAM_MIP_Display,
-      CPXPARAM_MIP_Interval, CPXPARAM_MIP_Limits_AggForCut, CPXPARAM_MIP_Limits_AuxRootThreads,
-      CPXPARAM_MIP_Limits_CutPasses, CPXPARAM_MIP_Limits_CutsFactor,
-      CPXPARAM_MIP_Limits_EachCutLimit, CPXPARAM_MIP_Limits_GomoryCand,
-      CPXPARAM_MIP_Limits_GomoryPass, CPXPARAM_MIP_Limits_Nodes, CPXPARAM_MIP_Limits_PolishTime,
-      CPXPARAM_MIP_Limits_Populate, CPXPARAM_MIP_Limits_ProbeDetTime, CPXPARAM_MIP_Limits_ProbeTime,
-      CPXPARAM_MIP_Limits_RepairTries,
-      // CPXPARAM_MIP_Limits_Solutions,
-      CPXPARAM_MIP_Limits_StrongCand, CPXPARAM_MIP_Limits_StrongIt, CPXPARAM_MIP_Limits_TreeMemory,
-      CPXPARAM_MIP_OrderType, CPXPARAM_MIP_PolishAfter_AbsMIPGap, CPXPARAM_MIP_PolishAfter_DetTime,
-      CPXPARAM_MIP_PolishAfter_MIPGap, CPXPARAM_MIP_PolishAfter_Nodes,
-      CPXPARAM_MIP_PolishAfter_Solutions, CPXPARAM_MIP_PolishAfter_Time, CPXPARAM_MIP_Pool_AbsGap,
-      CPXPARAM_MIP_Pool_Capacity, CPXPARAM_MIP_Pool_Intensity, CPXPARAM_MIP_Pool_RelGap,
-      CPXPARAM_MIP_Pool_Replace, CPXPARAM_MIP_Strategy_Backtrack, CPXPARAM_MIP_Strategy_BBInterval,
-      CPXPARAM_MIP_Strategy_Branch,
-      // CPXPARAM_MIP_Strategy_CallbackReducedLP,
-      CPXPARAM_MIP_Strategy_Dive,
-      // CPXPARAM_MIP_Strategy_File,
-      CPXPARAM_MIP_Strategy_FPHeur, CPXPARAM_MIP_Strategy_HeuristicEffort,
-      CPXPARAM_MIP_Strategy_HeuristicFreq, CPXPARAM_MIP_Strategy_KappaStats,
-      CPXPARAM_MIP_Strategy_LBHeur, CPXPARAM_MIP_Strategy_MIQCPStrat,
-      CPXPARAM_MIP_Strategy_NodeSelect, CPXPARAM_MIP_Strategy_Order,
-      CPXPARAM_MIP_Strategy_PresolveNode, CPXPARAM_MIP_Strategy_Probe,
-      CPXPARAM_MIP_Strategy_RINSHeur,
-      // CPXPARAM_MIP_Strategy_Search,
-      CPXPARAM_MIP_Strategy_StartAlgorithm, CPXPARAM_MIP_Strategy_SubAlgorithm,
-      CPXPARAM_MIP_Strategy_VariableSelect, CPXPARAM_MIP_SubMIP_StartAlg,
-      CPXPARAM_MIP_SubMIP_SubAlg, CPXPARAM_MIP_SubMIP_NodeLimit, CPXPARAM_MIP_SubMIP_Scale,
-      // CPXPARAM_MIP_Tolerances_AbsMIPGap,
-      CPXPARAM_MIP_Tolerances_Linearization,
-      // CPXPARAM_MIP_Tolerances_Integrality,
-      CPXPARAM_MIP_Tolerances_LowerCutoff,
-      // CPXPARAM_MIP_Tolerances_MIPGap,
-      CPXPARAM_MIP_Tolerances_ObjDifference, CPXPARAM_MIP_Tolerances_RelObjDifference,
-      CPXPARAM_MIP_Tolerances_UpperCutoff, CPXPARAM_MultiObjective_Display,
-      CPXPARAM_Network_Display, CPXPARAM_Network_Iterations, CPXPARAM_Network_NetFind,
-      CPXPARAM_Network_Pricing, CPXPARAM_Network_Tolerances_Feasibility,
-      CPXPARAM_Network_Tolerances_Optimality, CPXPARAM_OptimalityTarget, CPXPARAM_Output_CloneLog,
-      CPXPARAM_Output_IntSolFilePrefix, CPXPARAM_Output_MPSLong, CPXPARAM_Output_WriteLevel,
-      CPXPARAM_Parallel, CPXPARAM_ParamDisplay, CPXPARAM_Preprocessing_Aggregator,
-      CPXPARAM_Preprocessing_BoundStrength, CPXPARAM_Preprocessing_CoeffReduce,
-      CPXPARAM_Preprocessing_Dependency, CPXPARAM_Preprocessing_Dual, CPXPARAM_Preprocessing_Fill,
-      CPXPARAM_Preprocessing_Folding,
-      // CPXPARAM_Preprocessing_Linear,
-      CPXPARAM_Preprocessing_NumPass, CPXPARAM_Preprocessing_Presolve,
-      CPXPARAM_Preprocessing_QCPDuals, CPXPARAM_Preprocessing_QPMakePSD,
-      CPXPARAM_Preprocessing_QToLin, CPXPARAM_Preprocessing_Reduce, CPXPARAM_Preprocessing_Relax,
-      CPXPARAM_Preprocessing_RepeatPresolve, CPXPARAM_Preprocessing_Symmetry, CPXPARAM_QPMethod,
-      // CPXPARAM_RandomSeed,
-      CPXPARAM_Read_APIEncoding, CPXPARAM_Read_Constraints, CPXPARAM_Read_DataCheck,
-      CPXPARAM_Read_FileEncoding, CPXPARAM_Read_Nonzeros, CPXPARAM_Read_QPNonzeros,
-      CPXPARAM_Read_Scale, CPXPARAM_Read_Variables, CPXPARAM_Read_WarningLimit, CPXPARAM_Record,
-      CPXPARAM_ScreenOutput, CPXPARAM_Sifting_Algorithm, CPXPARAM_Sifting_Simplex,
-      CPXPARAM_Sifting_Display, CPXPARAM_Sifting_Iterations, CPXPARAM_Simplex_Crash,
-      CPXPARAM_Simplex_DGradient, CPXPARAM_Simplex_Display, CPXPARAM_Simplex_DynamicRows,
-      CPXPARAM_Simplex_Limits_Iterations, CPXPARAM_Simplex_Limits_LowerObj,
-      CPXPARAM_Simplex_Limits_Perturbation, CPXPARAM_Simplex_Limits_Singularity,
-      CPXPARAM_Simplex_Limits_UpperObj, CPXPARAM_Simplex_Perturbation_Constant,
-      CPXPARAM_Simplex_Perturbation_Indicator, CPXPARAM_Simplex_PGradient, CPXPARAM_Simplex_Pricing,
-      CPXPARAM_Simplex_Refactor, CPXPARAM_Simplex_Tolerances_Feasibility,
-      CPXPARAM_Simplex_Tolerances_Markowitz, CPXPARAM_Simplex_Tolerances_Optimality,
-      CPXPARAM_SolutionType,
-      // CPXPARAM_Threads,
-      // CPXPARAM_TimeLimit,
-      CPXPARAM_Tune_DetTimeLimit, CPXPARAM_Tune_Display, CPXPARAM_Tune_Measure,
-      CPXPARAM_Tune_Repeat, CPXPARAM_Tune_TimeLimit,
-      // CPXPARAM_WorkDir,
-      // CPXPARAM_WorkMem,
-      CPX_PARAM_ADVIND, CPX_PARAM_AGGFILL, CPX_PARAM_AGGIND, CPX_PARAM_CLOCKTYPE, CPX_PARAM_CRAIND,
-      CPX_PARAM_DEPIND, CPX_PARAM_DPRIIND, CPX_PARAM_PRICELIM, CPX_PARAM_EPMRK, CPX_PARAM_EPOPT,
-      CPX_PARAM_EPPER, CPX_PARAM_EPRHS, CPX_PARAM_SIMDISPLAY, CPX_PARAM_ITLIM, CPX_PARAM_ROWREADLIM,
-      CPX_PARAM_NETFIND, CPX_PARAM_COLREADLIM, CPX_PARAM_NZREADLIM, CPX_PARAM_OBJLLIM,
-      CPX_PARAM_OBJULIM, CPX_PARAM_PERIND, CPX_PARAM_PERLIM, CPX_PARAM_PPRIIND, CPX_PARAM_PREIND,
-      CPX_PARAM_REINV, CPX_PARAM_SCAIND, CPX_PARAM_SCRIND, CPX_PARAM_SINGLIM, CPX_PARAM_TILIM,
-      CPX_PARAM_PREDUAL, CPX_PARAM_PREPASS, CPX_PARAM_DATACHECK, CPX_PARAM_REDUCE,
-      CPX_PARAM_PRELINEAR, CPX_PARAM_LPMETHOD, CPX_PARAM_QPMETHOD, CPX_PARAM_WORKDIR,
-      CPX_PARAM_WORKMEM, CPX_PARAM_THREADS, CPX_PARAM_CONFLICTALG, CPX_PARAM_CONFLICTDISPLAY,
-      CPX_PARAM_SIFTDISPLAY, CPX_PARAM_SIFTALG, CPX_PARAM_SIFTITLIM, CPX_PARAM_MPSLONGNUM,
-      CPX_PARAM_MEMORYEMPHASIS, CPX_PARAM_NUMERICALEMPHASIS, CPX_PARAM_FEASOPTMODE,
-      CPX_PARAM_PARALLELMODE, CPX_PARAM_TUNINGMEASURE, CPX_PARAM_TUNINGREPEAT,
-      CPX_PARAM_TUNINGTILIM, CPX_PARAM_TUNINGDISPLAY, CPX_PARAM_WRITELEVEL, CPX_PARAM_RANDOMSEED,
-      CPX_PARAM_DETTILIM, CPX_PARAM_FILEENCODING, CPX_PARAM_APIENCODING, CPX_PARAM_OPTIMALITYTARGET,
-      CPX_PARAM_CLONELOG, CPX_PARAM_TUNINGDETTILIM, CPX_PARAM_CPUMASK, CPX_PARAM_SOLUTIONTYPE,
-      CPX_PARAM_WARNLIM, CPX_PARAM_SIFTSIM, CPX_PARAM_DYNAMICROWS, CPX_PARAM_RECORD,
-      CPX_PARAM_PARAMDISPLAY, CPX_PARAM_FOLDING, CPX_PARAM_WORKERALG, CPX_PARAM_BENDERSSTRATEGY,
-      CPX_PARAM_BENDERSFEASCUTTOL, CPX_PARAM_BENDERSOPTCUTTOL, CPX_PARAM_MULTIOBJDISPLAY,
-      CPX_PARAM_BRDIR, CPX_PARAM_BTTOL, CPX_PARAM_CLIQUES, CPX_PARAM_COEREDIND, CPX_PARAM_COVERS,
-      CPX_PARAM_CUTLO, CPX_PARAM_CUTUP, CPX_PARAM_EPAGAP, CPX_PARAM_EPGAP, CPX_PARAM_EPINT,
-      CPX_PARAM_MIPDISPLAY, CPX_PARAM_MIPINTERVAL, CPX_PARAM_INTSOLLIM, CPX_PARAM_NODEFILEIND,
-      CPX_PARAM_NODELIM, CPX_PARAM_NODESEL, CPX_PARAM_OBJDIF, CPX_PARAM_MIPORDIND,
-      CPX_PARAM_RELOBJDIF, CPX_PARAM_STARTALG, CPX_PARAM_SUBALG, CPX_PARAM_TRELIM, CPX_PARAM_VARSEL,
-      CPX_PARAM_BNDSTRENIND, CPX_PARAM_HEURFREQ, CPX_PARAM_MIPORDTYPE, CPX_PARAM_CUTSFACTOR,
-      CPX_PARAM_RELAXPREIND, CPX_PARAM_PRESLVND, CPX_PARAM_BBINTERVAL, CPX_PARAM_FLOWCOVERS,
-      CPX_PARAM_IMPLBD, CPX_PARAM_PROBE, CPX_PARAM_GUBCOVERS, CPX_PARAM_STRONGCANDLIM,
-      CPX_PARAM_STRONGITLIM, CPX_PARAM_FRACCAND, CPX_PARAM_FRACCUTS, CPX_PARAM_FRACPASS,
-      CPX_PARAM_FLOWPATHS, CPX_PARAM_MIRCUTS, CPX_PARAM_DISJCUTS, CPX_PARAM_AGGCUTLIM,
-      // CPX_PARAM_MIPCBREDLP,
-      CPX_PARAM_CUTPASS, CPX_PARAM_MIPEMPHASIS, CPX_PARAM_SYMMETRY, CPX_PARAM_DIVETYPE,
-      CPX_PARAM_RINSHEUR, CPX_PARAM_LBHEUR, CPX_PARAM_REPEATPRESOLVE, CPX_PARAM_PROBETIME,
-      CPX_PARAM_POLISHTIME, CPX_PARAM_REPAIRTRIES, CPX_PARAM_EPLIN, CPX_PARAM_EPRELAX,
-      CPX_PARAM_FPHEUR, CPX_PARAM_EACHCUTLIM, CPX_PARAM_SOLNPOOLCAPACITY, CPX_PARAM_SOLNPOOLREPLACE,
-      CPX_PARAM_SOLNPOOLGAP, CPX_PARAM_SOLNPOOLAGAP, CPX_PARAM_SOLNPOOLINTENSITY,
-      CPX_PARAM_POPULATELIM, CPX_PARAM_MIPSEARCH, CPX_PARAM_MIQCPSTRAT, CPX_PARAM_ZEROHALFCUTS,
-      CPX_PARAM_HEUREFFORT, CPX_PARAM_POLISHAFTEREPAGAP, CPX_PARAM_POLISHAFTEREPGAP,
-      CPX_PARAM_POLISHAFTERNODE, CPX_PARAM_POLISHAFTERINTSOL, CPX_PARAM_POLISHAFTERTIME,
-      CPX_PARAM_MCFCUTS, CPX_PARAM_MIPKAPPASTATS, CPX_PARAM_AUXROOTTHREADS,
-      CPX_PARAM_INTSOLFILEPREFIX, CPX_PARAM_PROBEDETTIME, CPX_PARAM_POLISHAFTERDETTIME,
-      CPX_PARAM_LANDPCUTS, CPX_PARAM_RAMPUPDURATION, CPX_PARAM_RAMPUPDETTILIM,
-      CPX_PARAM_RAMPUPTILIM, CPX_PARAM_LOCALIMPLBD, CPX_PARAM_BQPCUTS, CPX_PARAM_RLTCUTS,
-      CPX_PARAM_SUBMIPSTARTALG, CPX_PARAM_SUBMIPSUBALG, CPX_PARAM_SUBMIPSCAIND,
-      CPX_PARAM_SUBMIPNODELIMIT, CPX_PARAM_BAREPCOMP, CPX_PARAM_BARGROWTH, CPX_PARAM_BAROBJRNG,
-      CPX_PARAM_BARALG, CPX_PARAM_BARCOLNZ, CPX_PARAM_BARDISPLAY, CPX_PARAM_BARITLIM,
-      CPX_PARAM_BARMAXCOR, CPX_PARAM_BARORDER, CPX_PARAM_BARSTARTALG, CPX_PARAM_BARCROSSALG,
-      CPX_PARAM_BARQCPEPCOMP, CPX_PARAM_QPNZREADLIM, CPX_PARAM_CALCQCPDUALS, CPX_PARAM_QPMAKEPSDIND,
-      CPX_PARAM_QTOLININD, CPX_PARAM_NETITLIM, CPX_PARAM_NETEPOPT, CPX_PARAM_NETEPRHS,
-      CPX_PARAM_NETPPRIIND, CPX_PARAM_NETDISPLAY};
+  static std::vector<std::string> all_params = {
+      "CPXPARAM_Advance", "CPXPARAM_Barrier_Algorithm", "CPXPARAM_Barrier_ColNonzeros",
+      "CPXPARAM_Barrier_ConvergeTol", "CPXPARAM_Barrier_Crossover", "CPXPARAM_Barrier_Display",
+      "CPXPARAM_Barrier_Limits_Corrections", "CPXPARAM_Barrier_Limits_Growth",
+      "CPXPARAM_Barrier_Limits_Iteration", "CPXPARAM_Barrier_Limits_ObjRange",
+      "CPXPARAM_Barrier_Ordering", "CPXPARAM_Barrier_QCPConvergeTol", "CPXPARAM_Barrier_StartAlg",
+      "CPXPARAM_Benders_Strategy", "CPXPARAM_Benders_Tolerances_feasibilitycut",
+      "CPXPARAM_Benders_Tolerances_optimalitycut", "CPXPARAM_Benders_WorkerAlgorithm",
+      "CPXPARAM_ClockType", "CPXPARAM_Conflict_Algorithm", "CPXPARAM_Conflict_Display",
+      "CPXPARAM_CPUmask", "CPXPARAM_DetTimeLimit", "CPXPARAM_DistMIP_Rampup_DetTimeLimit",
+      "CPXPARAM_DistMIP_Rampup_Duration", "CPXPARAM_DistMIP_Rampup_TimeLimit",
+      "CPXPARAM_Emphasis_Memory",
+      // "CPXPARAM_Emphasis_MIP",
+      "CPXPARAM_Emphasis_Numerical", "CPXPARAM_Feasopt_Mode", "CPXPARAM_Feasopt_Tolerance",
+      "CPXPARAM_LPMethod", "CPXPARAM_MIP_Cuts_BQP", "CPXPARAM_MIP_Cuts_Cliques",
+      "CPXPARAM_MIP_Cuts_Covers", "CPXPARAM_MIP_Cuts_Disjunctive", "CPXPARAM_MIP_Cuts_FlowCovers",
+      "CPXPARAM_MIP_Cuts_Gomory", "CPXPARAM_MIP_Cuts_GUBCovers", "CPXPARAM_MIP_Cuts_Implied",
+      "CPXPARAM_MIP_Cuts_LiftProj", "CPXPARAM_MIP_Cuts_LocalImplied", "CPXPARAM_MIP_Cuts_MCFCut",
+      "CPXPARAM_MIP_Cuts_MIRCut", "CPXPARAM_MIP_Cuts_PathCut", "CPXPARAM_MIP_Cuts_RLT",
+      "CPXPARAM_MIP_Cuts_ZeroHalfCut",
+      // "CPXPARAM_MIP_Display",
+      "CPXPARAM_MIP_Interval", "CPXPARAM_MIP_Limits_AggForCut",
+      "CPXPARAM_MIP_Limits_AuxRootThreads", "CPXPARAM_MIP_Limits_CutPasses",
+      "CPXPARAM_MIP_Limits_CutsFactor", "CPXPARAM_MIP_Limits_EachCutLimit",
+      "CPXPARAM_MIP_Limits_GomoryCand", "CPXPARAM_MIP_Limits_GomoryPass",
+      "CPXPARAM_MIP_Limits_Nodes", "CPXPARAM_MIP_Limits_PolishTime", "CPXPARAM_MIP_Limits_Populate",
+      "CPXPARAM_MIP_Limits_ProbeDetTime", "CPXPARAM_MIP_Limits_ProbeTime",
+      "CPXPARAM_MIP_Limits_RepairTries",
+      // "CPXPARAM_MIP_Limits_Solutions",
+      "CPXPARAM_MIP_Limits_StrongCand", "CPXPARAM_MIP_Limits_StrongIt",
+      "CPXPARAM_MIP_Limits_TreeMemory", "CPXPARAM_MIP_OrderType",
+      "CPXPARAM_MIP_PolishAfter_AbsMIPGap", "CPXPARAM_MIP_PolishAfter_DetTime",
+      "CPXPARAM_MIP_PolishAfter_MIPGap", "CPXPARAM_MIP_PolishAfter_Nodes",
+      "CPXPARAM_MIP_PolishAfter_Solutions", "CPXPARAM_MIP_PolishAfter_Time",
+      "CPXPARAM_MIP_Pool_AbsGap", "CPXPARAM_MIP_Pool_Capacity", "CPXPARAM_MIP_Pool_Intensity",
+      "CPXPARAM_MIP_Pool_RelGap", "CPXPARAM_MIP_Pool_Replace", "CPXPARAM_MIP_Strategy_Backtrack",
+      "CPXPARAM_MIP_Strategy_BBInterval", "CPXPARAM_MIP_Strategy_Branch",
+      // "CPXPARAM_MIP_Strategy_CallbackReducedLP",
+      "CPXPARAM_MIP_Strategy_Dive",
+      // "CPXPARAM_MIP_Strategy_File",
+      "CPXPARAM_MIP_Strategy_FPHeur", "CPXPARAM_MIP_Strategy_HeuristicEffort",
+      "CPXPARAM_MIP_Strategy_HeuristicFreq", "CPXPARAM_MIP_Strategy_KappaStats",
+      "CPXPARAM_MIP_Strategy_LBHeur", "CPXPARAM_MIP_Strategy_MIQCPStrat",
+      "CPXPARAM_MIP_Strategy_NodeSelect", "CPXPARAM_MIP_Strategy_Order",
+      "CPXPARAM_MIP_Strategy_PresolveNode", "CPXPARAM_MIP_Strategy_Probe",
+      "CPXPARAM_MIP_Strategy_RINSHeur",
+      // "CPXPARAM_MIP_Strategy_Search",
+      "CPXPARAM_MIP_Strategy_StartAlgorithm", "CPXPARAM_MIP_Strategy_SubAlgorithm",
+      "CPXPARAM_MIP_Strategy_VariableSelect", "CPXPARAM_MIP_SubMIP_StartAlg",
+      "CPXPARAM_MIP_SubMIP_SubAlg", "CPXPARAM_MIP_SubMIP_NodeLimit", "CPXPARAM_MIP_SubMIP_Scale",
+      // "CPXPARAM_MIP_Tolerances_AbsMIPGap",
+      "CPXPARAM_MIP_Tolerances_Linearization",
+      // "CPXPARAM_MIP_Tolerances_Integrality",
+      "CPXPARAM_MIP_Tolerances_LowerCutoff",
+      // "CPXPARAM_MIP_Tolerances_MIPGap",
+      "CPXPARAM_MIP_Tolerances_ObjDifference", "CPXPARAM_MIP_Tolerances_RelObjDifference",
+      "CPXPARAM_MIP_Tolerances_UpperCutoff", "CPXPARAM_MultiObjective_Display",
+      "CPXPARAM_Network_Display", "CPXPARAM_Network_Iterations", "CPXPARAM_Network_NetFind",
+      "CPXPARAM_Network_Pricing", "CPXPARAM_Network_Tolerances_Feasibility",
+      "CPXPARAM_Network_Tolerances_Optimality", "CPXPARAM_OptimalityTarget",
+      "CPXPARAM_Output_CloneLog", "CPXPARAM_Output_IntSolFilePrefix", "CPXPARAM_Output_MPSLong",
+      "CPXPARAM_Output_WriteLevel", "CPXPARAM_Parallel", "CPXPARAM_ParamDisplay",
+      "CPXPARAM_Preprocessing_Aggregator", "CPXPARAM_Preprocessing_BoundStrength",
+      "CPXPARAM_Preprocessing_CoeffReduce", "CPXPARAM_Preprocessing_Dependency",
+      "CPXPARAM_Preprocessing_Dual", "CPXPARAM_Preprocessing_Fill",
+      "CPXPARAM_Preprocessing_Folding",
+      // "CPXPARAM_Preprocessing_Linear",
+      "CPXPARAM_Preprocessing_NumPass", "CPXPARAM_Preprocessing_Presolve",
+      "CPXPARAM_Preprocessing_QCPDuals", "CPXPARAM_Preprocessing_QPMakePSD",
+      "CPXPARAM_Preprocessing_QToLin", "CPXPARAM_Preprocessing_Reduce",
+      "CPXPARAM_Preprocessing_Relax", "CPXPARAM_Preprocessing_RepeatPresolve",
+      "CPXPARAM_Preprocessing_Symmetry", "CPXPARAM_QPMethod",
+      // "CPXPARAM_RandomSeed",
+      "CPXPARAM_Read_APIEncoding", "CPXPARAM_Read_Constraints", "CPXPARAM_Read_DataCheck",
+      "CPXPARAM_Read_FileEncoding", "CPXPARAM_Read_Nonzeros", "CPXPARAM_Read_QPNonzeros",
+      "CPXPARAM_Read_Scale", "CPXPARAM_Read_Variables", "CPXPARAM_Read_WarningLimit",
+      "CPXPARAM_Record", "CPXPARAM_ScreenOutput", "CPXPARAM_Sifting_Algorithm",
+      "CPXPARAM_Sifting_Simplex", "CPXPARAM_Sifting_Display", "CPXPARAM_Sifting_Iterations",
+      "CPXPARAM_Simplex_Crash", "CPXPARAM_Simplex_DGradient", "CPXPARAM_Simplex_Display",
+      "CPXPARAM_Simplex_DynamicRows", "CPXPARAM_Simplex_Limits_Iterations",
+      "CPXPARAM_Simplex_Limits_LowerObj", "CPXPARAM_Simplex_Limits_Perturbation",
+      "CPXPARAM_Simplex_Limits_Singularity", "CPXPARAM_Simplex_Limits_UpperObj",
+      "CPXPARAM_Simplex_Perturbation_Constant", "CPXPARAM_Simplex_Perturbation_Indicator",
+      "CPXPARAM_Simplex_PGradient", "CPXPARAM_Simplex_Pricing", "CPXPARAM_Simplex_Refactor",
+      "CPXPARAM_Simplex_Tolerances_Feasibility", "CPXPARAM_Simplex_Tolerances_Markowitz",
+      "CPXPARAM_Simplex_Tolerances_Optimality", "CPXPARAM_SolutionType",
+      // "CPXPARAM_Threads",
+      // "CPXPARAM_TimeLimit",
+      "CPXPARAM_Tune_DetTimeLimit", "CPXPARAM_Tune_Display", "CPXPARAM_Tune_Measure",
+      "CPXPARAM_Tune_Repeat", "CPXPARAM_Tune_TimeLimit",
+      // "CPXPARAM_WorkDir",
+      // "CPXPARAM_WorkMem",
+      "CPX_PARAM_ADVIND", "CPX_PARAM_AGGFILL", "CPX_PARAM_AGGIND", "CPX_PARAM_CLOCKTYPE",
+      "CPX_PARAM_CRAIND", "CPX_PARAM_DEPIND", "CPX_PARAM_DPRIIND", "CPX_PARAM_PRICELIM",
+      "CPX_PARAM_EPMRK", "CPX_PARAM_EPOPT", "CPX_PARAM_EPPER", "CPX_PARAM_EPRHS",
+      "CPX_PARAM_SIMDISPLAY", "CPX_PARAM_ITLIM", "CPX_PARAM_ROWREADLIM", "CPX_PARAM_NETFIND",
+      "CPX_PARAM_COLREADLIM", "CPX_PARAM_NZREADLIM", "CPX_PARAM_OBJLLIM", "CPX_PARAM_OBJULIM",
+      "CPX_PARAM_PERIND", "CPX_PARAM_PERLIM", "CPX_PARAM_PPRIIND", "CPX_PARAM_PREIND",
+      "CPX_PARAM_REINV", "CPX_PARAM_SCAIND", "CPX_PARAM_SCRIND", "CPX_PARAM_SINGLIM",
+      "CPX_PARAM_TILIM", "CPX_PARAM_PREDUAL", "CPX_PARAM_PREPASS", "CPX_PARAM_DATACHECK",
+      "CPX_PARAM_REDUCE", "CPX_PARAM_PRELINEAR", "CPX_PARAM_LPMETHOD", "CPX_PARAM_QPMETHOD",
+      "CPX_PARAM_WORKDIR", "CPX_PARAM_WORKMEM", "CPX_PARAM_THREADS", "CPX_PARAM_CONFLICTALG",
+      "CPX_PARAM_CONFLICTDISPLAY", "CPX_PARAM_SIFTDISPLAY", "CPX_PARAM_SIFTALG",
+      "CPX_PARAM_SIFTITLIM", "CPX_PARAM_MPSLONGNUM", "CPX_PARAM_MEMORYEMPHASIS",
+      "CPX_PARAM_NUMERICALEMPHASIS", "CPX_PARAM_FEASOPTMODE", "CPX_PARAM_PARALLELMODE",
+      "CPX_PARAM_TUNINGMEASURE", "CPX_PARAM_TUNINGREPEAT", "CPX_PARAM_TUNINGTILIM",
+      "CPX_PARAM_TUNINGDISPLAY", "CPX_PARAM_WRITELEVEL", "CPX_PARAM_RANDOMSEED",
+      "CPX_PARAM_DETTILIM", "CPX_PARAM_FILEENCODING", "CPX_PARAM_APIENCODING",
+      "CPX_PARAM_OPTIMALITYTARGET", "CPX_PARAM_CLONELOG", "CPX_PARAM_TUNINGDETTILIM",
+      "CPX_PARAM_CPUMASK", "CPX_PARAM_SOLUTIONTYPE", "CPX_PARAM_WARNLIM", "CPX_PARAM_SIFTSIM",
+      "CPX_PARAM_DYNAMICROWS", "CPX_PARAM_RECORD", "CPX_PARAM_PARAMDISPLAY", "CPX_PARAM_FOLDING",
+      "CPX_PARAM_WORKERALG", "CPX_PARAM_BENDERSSTRATEGY", "CPX_PARAM_BENDERSFEASCUTTOL",
+      "CPX_PARAM_BENDERSOPTCUTTOL", "CPX_PARAM_MULTIOBJDISPLAY", "CPX_PARAM_BRDIR",
+      "CPX_PARAM_BTTOL", "CPX_PARAM_CLIQUES", "CPX_PARAM_COEREDIND", "CPX_PARAM_COVERS",
+      "CPX_PARAM_CUTLO", "CPX_PARAM_CUTUP", "CPX_PARAM_EPAGAP", "CPX_PARAM_EPGAP",
+      "CPX_PARAM_EPINT", "CPX_PARAM_MIPDISPLAY", "CPX_PARAM_MIPINTERVAL", "CPX_PARAM_INTSOLLIM",
+      "CPX_PARAM_NODEFILEIND", "CPX_PARAM_NODELIM", "CPX_PARAM_NODESEL", "CPX_PARAM_OBJDIF",
+      "CPX_PARAM_MIPORDIND", "CPX_PARAM_RELOBJDIF", "CPX_PARAM_STARTALG", "CPX_PARAM_SUBALG",
+      "CPX_PARAM_TRELIM", "CPX_PARAM_VARSEL", "CPX_PARAM_BNDSTRENIND", "CPX_PARAM_HEURFREQ",
+      "CPX_PARAM_MIPORDTYPE", "CPX_PARAM_CUTSFACTOR", "CPX_PARAM_RELAXPREIND", "CPX_PARAM_PRESLVND",
+      "CPX_PARAM_BBINTERVAL", "CPX_PARAM_FLOWCOVERS", "CPX_PARAM_IMPLBD", "CPX_PARAM_PROBE",
+      "CPX_PARAM_GUBCOVERS", "CPX_PARAM_STRONGCANDLIM", "CPX_PARAM_STRONGITLIM",
+      "CPX_PARAM_FRACCAND", "CPX_PARAM_FRACCUTS", "CPX_PARAM_FRACPASS", "CPX_PARAM_FLOWPATHS",
+      "CPX_PARAM_MIRCUTS", "CPX_PARAM_DISJCUTS", "CPX_PARAM_AGGCUTLIM",
+      // "CPX_PARAM_MIPCBREDLP",
+      "CPX_PARAM_CUTPASS", "CPX_PARAM_MIPEMPHASIS", "CPX_PARAM_SYMMETRY", "CPX_PARAM_DIVETYPE",
+      "CPX_PARAM_RINSHEUR", "CPX_PARAM_LBHEUR", "CPX_PARAM_REPEATPRESOLVE", "CPX_PARAM_PROBETIME",
+      "CPX_PARAM_POLISHTIME", "CPX_PARAM_REPAIRTRIES", "CPX_PARAM_EPLIN", "CPX_PARAM_EPRELAX",
+      "CPX_PARAM_FPHEUR", "CPX_PARAM_EACHCUTLIM", "CPX_PARAM_SOLNPOOLCAPACITY",
+      "CPX_PARAM_SOLNPOOLREPLACE", "CPX_PARAM_SOLNPOOLGAP", "CPX_PARAM_SOLNPOOLAGAP",
+      "CPX_PARAM_SOLNPOOLINTENSITY", "CPX_PARAM_POPULATELIM", "CPX_PARAM_MIPSEARCH",
+      "CPX_PARAM_MIQCPSTRAT", "CPX_PARAM_ZEROHALFCUTS", "CPX_PARAM_HEUREFFORT",
+      "CPX_PARAM_POLISHAFTEREPAGAP", "CPX_PARAM_POLISHAFTEREPGAP", "CPX_PARAM_POLISHAFTERNODE",
+      "CPX_PARAM_POLISHAFTERINTSOL", "CPX_PARAM_POLISHAFTERTIME", "CPX_PARAM_MCFCUTS",
+      "CPX_PARAM_MIPKAPPASTATS", "CPX_PARAM_AUXROOTTHREADS", "CPX_PARAM_INTSOLFILEPREFIX",
+      "CPX_PARAM_PROBEDETTIME", "CPX_PARAM_POLISHAFTERDETTIME", "CPX_PARAM_LANDPCUTS",
+      "CPX_PARAM_RAMPUPDURATION", "CPX_PARAM_RAMPUPDETTILIM", "CPX_PARAM_RAMPUPTILIM",
+      "CPX_PARAM_LOCALIMPLBD", "CPX_PARAM_BQPCUTS", "CPX_PARAM_RLTCUTS", "CPX_PARAM_SUBMIPSTARTALG",
+      "CPX_PARAM_SUBMIPSUBALG", "CPX_PARAM_SUBMIPSCAIND", "CPX_PARAM_SUBMIPNODELIMIT",
+      "CPX_PARAM_BAREPCOMP", "CPX_PARAM_BARGROWTH", "CPX_PARAM_BAROBJRNG", "CPX_PARAM_BARALG",
+      "CPX_PARAM_BARCOLNZ", "CPX_PARAM_BARDISPLAY", "CPX_PARAM_BARITLIM", "CPX_PARAM_BARMAXCOR",
+      "CPX_PARAM_BARORDER", "CPX_PARAM_BARSTARTALG", "CPX_PARAM_BARCROSSALG",
+      "CPX_PARAM_BARQCPEPCOMP", "CPX_PARAM_QPNZREADLIM", "CPX_PARAM_CALCQCPDUALS",
+      "CPX_PARAM_QPMAKEPSDIND", "CPX_PARAM_QTOLININD", "CPX_PARAM_NETITLIM", "CPX_PARAM_NETEPOPT",
+      "CPX_PARAM_NETEPRHS", "CPX_PARAM_NETPPRIIND", "CPX_PARAM_NETDISPLAY"};
   int status;
   Options def_options;
   try {
@@ -437,11 +448,14 @@ vector<MiniZinc::SolverConfig::ExtraFlag> MIPCplexWrapper::getExtraFlags(
       return {};
     }
     std::vector<MiniZinc::SolverConfig::ExtraFlag> res;
-    for (auto param : all_params) {
-      char name[CPX_STR_PARAM_MAX];
+    for (auto& param : all_params) {
+      int num;
       int type;
-      mcw.dll_CPXgetparamname(env, param, name);
-      mcw.dll_CPXgetparamtype(env, param, &type);
+      if (mcw.dll_CPXgetparamnum(env, param.c_str(), &num) != 0) {
+        // Param not available
+        continue;
+      }
+      mcw.dll_CPXgetparamtype(env, num, &type);
       MiniZinc::SolverConfig::ExtraFlag::FlagType param_type;
       std::vector<std::string> param_range;
       std::string param_default;
@@ -450,7 +464,7 @@ vector<MiniZinc::SolverConfig::ExtraFlag> MIPCplexWrapper::getExtraFlags(
           CPXINT def;
           CPXINT min;
           CPXINT max;
-          mcw.dll_CPXinfointparam(env, param, &def, &min, &max);
+          mcw.dll_CPXinfointparam(env, num, &def, &min, &max);
           param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_INT;
           param_range.push_back(std::to_string(min));
           param_range.push_back(std::to_string(max));
@@ -461,7 +475,7 @@ vector<MiniZinc::SolverConfig::ExtraFlag> MIPCplexWrapper::getExtraFlags(
           CPXLONG def;
           CPXLONG min;
           CPXLONG max;
-          mcw.dll_CPXinfolongparam(env, param, &def, &min, &max);
+          mcw.dll_CPXinfolongparam(env, num, &def, &min, &max);
           param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_INT;
           param_range.push_back(std::to_string(min));
           param_range.push_back(std::to_string(max));
@@ -472,7 +486,7 @@ vector<MiniZinc::SolverConfig::ExtraFlag> MIPCplexWrapper::getExtraFlags(
           double def;
           double min;
           double max;
-          mcw.dll_CPXinfodblparam(env, param, &def, &min, &max);
+          mcw.dll_CPXinfodblparam(env, num, &def, &min, &max);
           param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_FLOAT;
           param_range.push_back(std::to_string(min));
           param_range.push_back(std::to_string(max));
@@ -481,7 +495,7 @@ vector<MiniZinc::SolverConfig::ExtraFlag> MIPCplexWrapper::getExtraFlags(
         }
         case CPX_PARAMTYPE_STRING: {
           char def[CPX_STR_PARAM_MAX];
-          mcw.dll_CPXinfostrparam(env, param, def);
+          mcw.dll_CPXinfostrparam(env, num, def);
           param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_STRING;
           param_default = std::string(def);
           break;
@@ -489,10 +503,9 @@ vector<MiniZinc::SolverConfig::ExtraFlag> MIPCplexWrapper::getExtraFlags(
         default:
           continue;
       }
-      res.emplace_back("--cplex-" + std::string(name), std::string(name), param_type, param_range,
-                       param_default);
-      return res;
+      res.emplace_back("--cplex-" + param, param, param_type, param_range, param_default);
     }
+    return res;
   } catch (MiniZinc::InternalError&) {
     return {};
   }
