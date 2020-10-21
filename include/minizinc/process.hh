@@ -428,7 +428,16 @@ public:
               if (1 == i) {
                 //                       cerr << "mzn-fzn: raw chunk stdout:::  " << flush;
                 //                       cerr << buffer << flush;
-                _pS2Out->feedRawDataChunk(buffer);
+                try {
+                  _pS2Out->feedRawDataChunk(buffer);
+                } catch (...) {
+                  // Exception during solns2out, kill process and re-throw
+                  if (killpg(childPID, SIGKILL) == -1) {
+                    // Fallback to killing the child if killing the process group fails
+                    kill(childPID, SIGKILL);
+                  }
+                  throw;
+                }
               } else {
                 _pS2Out->getLog() << buffer << std::flush;
               }
