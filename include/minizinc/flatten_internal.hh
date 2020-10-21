@@ -18,6 +18,9 @@
 
 #include <cmath>
 
+// TODO: Should this be a command line option? It doesn't seem too expensive
+// #define OUTPUT_CALLTREE
+
 namespace MiniZinc {
 
 /// Result of evaluation
@@ -81,6 +84,11 @@ public:
   unsigned int finalPassNumber;
   // Used for disabling path construction past the maxPathDepth of previous passes
   unsigned int maxPathDepth;
+
+#ifdef OUTPUT_CALLTREE
+  // Call stack depth
+  int callDepth = 0;
+#endif
 
   VarOccurrences outputFlatVarOccurrences;
   CopyMap cmap;

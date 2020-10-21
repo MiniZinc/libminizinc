@@ -113,6 +113,21 @@ EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
                 (!e->type().cv() || !e->type().isbool() || ctx.b != C_ROOT || e->isa<BoolLit>()) &&
                 !e->isa<Let>() && !e->isa<VarDecl>() && e->type().bt() != Type::BT_ANN;
 
+#ifdef OUTPUT_CALLTREE
+  if (auto* call = e->dynamicCast<Call>()) {
+    for (int i = 0; i < env.callDepth; ++i) {
+      std::cerr << "──";
+    }
+    std::cerr << *call << std::endl;
+    env.callDepth++;
+
+    EE ee = flatten_call(env, ctx, e, r, b);
+
+    env.callDepth--;
+    return ee;
+  }
+#endif
+
   int dispatch = is_par ? 0 : e->eid() - Expression::E_INTLIT + 1;
 
   return flattener_dispatch[dispatch](env, ctx, e, r, b);
