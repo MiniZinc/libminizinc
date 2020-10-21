@@ -699,11 +699,11 @@ GeasSolverFactory::GeasSolverFactory() {
   sc.extraFlags({
       SolverConfig::ExtraFlag("--conflicts",
                               "Limit the maximum number of conflicts to be used during solving.",
-                              "int", "0"),
+                              SolverConfig::ExtraFlag::FlagType::T_INT, {}, "0"),
       SolverConfig::ExtraFlag(
           "--obj-probe",
           "Number of conflicts to use to probe for better solutions after a new solution is found.",
-          "int", "0"),
+          SolverConfig::ExtraFlag::FlagType::T_INT, {}, "0"),
   });
   SolverConfigs::registerBuiltinSolver(sc);
 };
