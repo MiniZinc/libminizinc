@@ -523,11 +523,16 @@ void SolverConfigs::addConfig(const MiniZinc::SolverConfig& sc) {
   int newIdx = static_cast<int>(_solvers.size());
   _solvers.push_back(sc);
   std::vector<string> sc_tags = sc.tags();
-  std::string id = sc.id();
-  id = string_to_lower(id);
+  std::string id = string_to_lower(sc.id());
+  std::string name = string_to_lower(sc.name());
   sc_tags.push_back(id);
-  std::string name = sc.name();
-  name = string_to_lower(name);
+  size_t last_dot = id.find_last_of('.');
+  if (last_dot != std::string::npos) {
+    std::string last_id = id.substr(last_dot + 1);
+    if (last_id != name) {
+      sc_tags.push_back(last_id);
+    }
+  }
   sc_tags.push_back(name);
   for (const auto& t : sc_tags) {
     auto it = _tags.find(t);
