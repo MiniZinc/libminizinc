@@ -115,7 +115,15 @@
 <annotation> ::= <identifier>
                | <identifier> "(" <ann-expr> "," ... ")"
 
-<ann-expr>   := <expr>
-              | <annotation>
+<ann-expr>   := <basic-ann-expr>
+              | "[" [ <basic-ann-expr> "," ... ] "]"
+
+<basic-ann-expr>   := <basic-literal-expr>
+                    | <string-literal>
+                    | <annotation>
+
+<string-contents> ::= ([^"\n\] | \[^\n(])*
+
+<string-literal> ::= """ <string-contents> """
 
 % End of FlatZinc grammar
