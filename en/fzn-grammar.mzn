@@ -20,11 +20,9 @@
 <par-type> ::= <basic-par-type>
              | "array" "[" <index-set> "]" "of" <basic-par-type>
 
-<basic-var-type> ::= "var" "bool"
-                   | "var" "int"
+<basic-var-type> ::= "var" <basic-par-type>
                    | "var" <int-literal> ".." <int-literal>
                    | "var" "{" <int-literal> "," ... "}"
-                   | "var" "float"
                    | "var" <float-literal> ".." <float-literal>
                    | "var" "set" "of" <int-literal> ".." <int-literal>
                    | "var" "set" "of" "{" [ <int-literal> "," ... ] "}"
@@ -40,7 +38,6 @@
                           | "{" <int-literal> "," ... "}"
                           | "set" "of" <int-literal> .. <int-literal>
                           | "set" "of" "{" [  <int-literal> "," ... ] "}"
-                          | "var" "set" "of" "int"
 
 <pred-param-type> ::= <basic-pred-param-type>
                     | "array" "[" <pred-index-set> "]" "of" <basic-pred-param-type>
