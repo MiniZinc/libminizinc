@@ -15,7 +15,7 @@ array[H,W] of var bool: l; % is there a light
 % filled squares have no lights
 constraint forall(i in H, j in W where b[i,j] != E)(l[i,j] == false);
 % lights next to filled numbered square agree
-include "boolsum.mzn";
+
 constraint forall(i in H, j in W where b[i,j] in N)(
     bool_sum_eq([ l[i1,j1] | i1 in i-1..i+1, j1 in j-1..j+1 where
                              abs(i1 - i) + abs(j1 - j) == 1 /\
