@@ -37,7 +37,6 @@ default:
 
 .build:
   stage: build
-  interruptible: true
   before_script:
     - *download_vendor
   script:
@@ -251,6 +250,36 @@ test:win64:full:
   extends: [.tests_win64, .tests_full]
   cache:
     key: test_win64_full
+
+# ----------- Documentation -----------
+
+documentation:
+  stage: test
+  image: guidotack/sphinx-doc:latest
+  variables:
+    MZNARCH: "linux"
+  before_script:
+    - *download_bundle
+  script:
+    - cp $CI_PROJECT_DIR/share/minizinc/gecode_presolver/gecode.mzn $CI_PROJECT_DIR/share/minizinc/std/
+    - cp $CI_PROJECT_DIR/vendor/chuffed/share/minizinc/chuffed/chuffed.mzn $CI_PROJECT_DIR/share/minizinc/std/
+    - echo 'include "globals.mzn"; include "gecode.mzn"; include "chuffed.mzn";' > $CI_PROJECT_DIR/share/minizinc/std/all.mzn
+    - ./minizinc/bin/mzn2doc --rst-output --include-stdlib --output-base $CI_PROJECT_DIR/docs/en/lib $CI_PROJECT_DIR/share/minizinc/std/all.mzn
+    - ./minizinc/bin/mzn2doc --rst-output --include-stdlib --output-base $CI_PROJECT_DIR/docs/chi/lib $CI_PROJECT_DIR/share/minizinc/std/all.mzn
+    - cd $CI_PROJECT_DIR/docs/en
+    - make html latexpdf
+    - cd $CI_PROJECT_DIR/docs/chi
+    - make html latexpdf
+  artifacts:
+    paths:
+      - docs/en/_build
+      - docs/chi/_build
+  tags:
+    - linux
+    - docker
+  only: [tags, merge_requests, pipelines, develop, master]
+  dependencies: ["build:linux"]
+  needs: ["build:linux"]
 
 # ----------- Trigger FindMUS pipeline -----------
 
