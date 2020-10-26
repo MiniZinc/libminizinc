@@ -1,0 +1,7 @@
+output ["end = "++format(end)++"\n"]++[(show_int(digs,s[i,j])++" ")++if j==last then "\n" else "" endif | i in JOB, j in TASK, ];
+set of int: JOB = 1..5;
+set of int: TASK = 1..5;
+int: last = 5;
+int: digs = 2;
+array [JOB,TASK] of int: s;
+int: end = 30;

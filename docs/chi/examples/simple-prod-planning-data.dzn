@@ -1,0 +1,9 @@
+% 简单批量生产计划模型的数据文件
+Products = { BananaCake, ChocolateCake };
+profit = [400, 450]; % 以分为单位
+
+Resources = { Flour, Banana, Sugar, Butter, Cocoa };
+capacity = [4000, 6, 2000, 500, 500];
+
+consumption= [| 250, 2, 75, 100, 0,
+              | 200, 0, 150, 150, 75 |];

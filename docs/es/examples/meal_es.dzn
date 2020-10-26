@@ -1,0 +1,20 @@
+FOOD = { icecream, banana, chocolatecake, lasagna,
+          steak, rice, chips, brocolli, beans} ;
+
+dd = [| icecream,      1200,  50,  10, 120,  400     % Helado
+      | banana,         800, 120,   5,  20,  120     % Plátano
+      | chocolatecake, 2500, 400,  20, 100,  600     % Torta de Chocolate
+      | lasagna,       3000, 200, 100, 250,  450     % Lasaña
+      | steak,         1800, 800,  50, 100, 1200     % Carne
+      | rice,          1200,  50,   5,  20,  100     % Arroz
+      | chips,         2000,  50, 200, 200,  250     % Papas fritas
+      | brocolli,       700, 100,  10,  10,  125     % Brocoli
+      | beans,         1900, 250,  60,  90,  150 |]; % Frijoles
+
+min_energy = 3300;
+min_protein = 500;
+max_salt = 180;
+max_fat = 320;
+desserts = { icecream, banana, chocolatecake };
+mains = { lasagna, steak, rice };
+sides = { chips, brocolli, beans };

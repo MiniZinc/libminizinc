@@ -1,0 +1,19 @@
+% 变量
+var 2.0 .. 8.0: x1;
+var 2.0 .. 6.0: y1;
+var 3.0 .. 7.0: x2;
+var 3.0 .. 5.0: y2;
+%
+var -5.0..5.0:   FLOAT01;
+var -25.0..25.0: FLOAT02;
+var -3.0..3.0:   FLOAT03;
+var -9.0..9.0:   FLOAT04;
+var 25.0..34.0:  FLOAT05;
+% 约束
+constraint float_plus(FLOAT01, x2, x1);
+constraint float_plus(FLOAT03, y2, y1);
+constraint float_plus(FLOAT02, FLOAT04, FLOAT05);
+constraint float_times(FLOAT01, FLOAT01, FLOAT02);
+constraint float_times(FLOAT03, FLOAT03, FLOAT04);
+%
+solve satisfy;
