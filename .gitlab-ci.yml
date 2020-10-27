@@ -76,17 +76,17 @@ build:win64:
   extends: .build
   variables:
     MZNARCH: "win64"
-    CMAKE_ARCH: "Visual Studio 15 2017 Win64"
+    CMAKE_ARCH: "Ninja"
+    BUILDCACHE_DIR: "$CI_PROJECT_DIR/.ccache"
+    BUILDCACHE_MAX_CACHE_SIZE: "104857600"
   before_script:
     - *download_vendor_win
   script:
-    - cmake -S . -B build -G"%CMAKE_ARCH%" -DBUILD_REF=%CI_PIPELINE_ID% -DUSE_PROPRIETARY=OFF -DGecode_ROOT="%CI_PROJECT_DIR%/vendor/gecode" -DGurobi_ROOT="%CI_PROJECT_DIR%/vendor/gurobi" -DCPlex_ROOT="%CI_PROJECT_DIR%/vendor/CPLEX_Studio/cplex" -DOsiCBC_ROOT="%CI_PROJECT_DIR%/vendor/cbc" -DSCIP_ROOT="%CI_PROJECT_DIR%/vendor/scip" -DXpress_ROOT="%CI_PROJECT_DIR%/vendor/xpressmp" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
+    - cmake -S . -B build -G"%CMAKE_ARCH%" -DCMAKE_BUILD_TYPE=Release -DBUILD_REF=%CI_PIPELINE_ID% -DCCACHE_PROGRAM:STRING=buildcache -DUSE_PROPRIETARY=OFF -DGecode_ROOT="%CI_PROJECT_DIR%/vendor/gecode" -DGurobi_ROOT="%CI_PROJECT_DIR%/vendor/gurobi" -DCPlex_ROOT="%CI_PROJECT_DIR%/vendor/CPLEX_Studio/cplex" -DOsiCBC_ROOT="%CI_PROJECT_DIR%/vendor/cbc" -DSCIP_ROOT="%CI_PROJECT_DIR%/vendor/scip" -DXpress_ROOT="%CI_PROJECT_DIR%/vendor/xpressmp" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
     - cmake --build build --config Release --target install
   cache:
     key: "build_win64"
-    paths: [vendor.zip*]
-  tags: [win64, cmake, cpp]
-  only: [tags, merge_requests, pipelines, develop, master]
+  tags: [win64, cmake, cpp, ninja, buildcache]
 
 build:wasm_complete:
   extends: .build
