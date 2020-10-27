@@ -29,7 +29,11 @@ void ParamConfig::load(const std::string& filename) {
         if (auto* ai = i->dynamicCast<AssignI>()) {
           addValue(ai->id(), ai->e());
         } else if (auto* ii = i->dynamicCast<IncludeI>()) {
-          _values.push_back(ParamConfig::flagName(ii->f()));
+          auto flag = ParamConfig::flagName(ii->f());
+          if (_blacklist.count(flag) > 0) {
+            throw ParamException("Parameter '" + flag + "' is not allowed in configuration file");
+          }
+          _values.push_back(flag);
           _values.push_back(ParamConfig::modelToString(*(ii->m())));
         }
       }
