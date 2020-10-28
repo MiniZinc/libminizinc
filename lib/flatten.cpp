@@ -2571,7 +2571,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
   if (e->type().isvar()) {
     EE ee = flat_exp(env, ctx, e, nullptr, nullptr);
     if (isfalse(env, ee.b())) {
-      throw FlatteningError(env, e->loc(), "cannot flatten partial function in this position");
+      throw ResultUndefinedError(env, e->loc(), "");
     }
     return ee.r();
   }
