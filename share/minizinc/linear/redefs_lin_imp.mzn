@@ -7,8 +7,6 @@ predicate int_le_imp(var int: x, var int: y, var bool: b) =
     if fix(b) then x<=y else true endif
   elseif ub(x)<=lb(y) then true
   elseif lb(x)>ub(y) then (not b)
-  % elseif fPostprocessDomains /\ fPostproDom_DIFF then
-  %   % TODO MIPDomains
   else
     aux_int_le_if_1(x, y, b)
   endif;
@@ -34,9 +32,7 @@ predicate int_eq_imp(var int: x, var int: y, var bool: b) =
       endif
     elseif is_fixed(y) then
       int_eq_imp(x, fix(y), b)
-    % elseif fPostprocessDomains /\ fPostproDom_DIFF then
-    % % TODO MIPDomains
-    else
+    else                             %% Simple disjunction
       aux_int_eq_if_1(x, y, b)
     endif
   else
@@ -50,10 +46,8 @@ predicate int_eq_imp(var int: x, int: y, var bool: b) =
   elseif y in dom(x) then
     if is_fixed(x) then
       b -> (y = fix(x))
-    % elseif fPostprocessDomains then
-    % % TODO MIPDomains
     else
-      aux_int_eq_if_1(x, y, b)
+      aux_int_eq_if_1(x, y, b)       %% Simple disjunction
     endif
   else
     not b
@@ -74,10 +68,8 @@ predicate int_ne_imp(var int: x, var int: y, var bool: b) =
       endif
     elseif is_fixed(y) then
       int_ne_imp(x, fix(y), b)
-    % elseif fPostprocessDomains /\ fPostproDom_DIFF then
-    % % TODO MIPDomains
     else
-      aux_int_ne_if_1(x, y, b)
+      aux_int_ne_if_1(x, y, b)       %% Simple disjunction
     endif
   endif;
 
@@ -90,10 +82,11 @@ predicate int_ne_imp(var int: x, int: y, var bool: b) =
   else
     if is_fixed(x) then
       b -> (y != fix(x))
-    % elseif fPostprocessDomains then
-    % % TODO MIPDomains
     else
-      aux_int_ne_if_1(x, y, b)
+      let {
+        var bool: be = (x==y),  %% Reuse unary encoding / MIPD in mixed context
+      } in
+        b -> not be             %% TODO check the negative context is not propagated
     endif
   endif;
 
@@ -158,8 +151,6 @@ predicate float_le_imp(var float: x, var float: y, var bool: b) =
     if fix(b) then x <= y else true endif
   elseif ub(x) <= lb(y) then true
   elseif lb(x) > ub(y) then (not b)
-  % elseif fPostprocessDomains /\ fPostproDom_DIFF then
-  % % TODO MIPDomains
   else
     aux_float_le_if_1(x, y, b)
   endif;
@@ -168,8 +159,6 @@ predicate float_le_imp(var float: x, var float: y, var bool: b) =
 predicate float_lt_imp(var float: x, var float: y, var bool: b) =
   if is_fixed(b) then
     if fix(b) then (x < y) else true endif
-  % elseif fPostprocessDomains /\ fPostproDom_DIFF then
-  % % TODO MIPDomains
   else
     aux_float_lt_if_1(x, y, b)
   endif;
@@ -182,8 +171,6 @@ predicate float_eq_imp(var float: x, var float: y, var bool: b) =
     not b
   elseif is_fixed(x) /\ is_fixed(y) then
     b -> (fix(x) == fix(y))
-  % elseif fPostprocessDomains /\ fPostproDom_DIFF then
-  % % TODO MIPDomains
   else
     aux_float_eq_if_1(x, y, b)
   endif;
@@ -196,8 +183,6 @@ predicate float_ne_imp(var float: x, var float: y, var bool: b) =
     true
   elseif is_fixed(x) /\ is_fixed(y) then
     b -> (fix(x) != fix(y))
-  % elseif fPostprocessDomains /\ fPostproDom_DIFF then
-  % % TODO MIPDomains
   else
     aux_float_ne_if_1(x, y, b)
   endif;
