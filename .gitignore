@@ -32,3 +32,4 @@ __pycache__/
 .vscode/settings.json
 _build/
 *.pyc
+.cache/
