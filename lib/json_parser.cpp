@@ -575,18 +575,18 @@ Expression* JSONParser::coerceArray(TypeInst* intendedTI, Expression* array) {
   }
 
   std::vector<Expression*> args(ti.ranges().size() + 1);
-  Expression* missing_max = missing_index > 0 ? IntLit::a(al->size()) : nullptr;
+  Expression* missing_max = missing_index >= 0 ? IntLit::a(al->size()) : nullptr;
   for (int i = 0; i < ti.ranges().size(); ++i) {
     if (i != missing_index) {
       assert(ti.ranges()[i]->domain() != nullptr);
       args[i] = ti.ranges()[i]->domain();
-      if (missing_index > 0) {
+      if (missing_index >= 0) {
         missing_max = new BinOp(loc.introduce(), missing_max, BOT_IDIV,
                                 new Call(Location().introduce(), "card", {args[i]}));
       }
     }
   }
-  if (missing_index > 0) {
+  if (missing_index >= 0) {
     args[missing_index] = new BinOp(loc.introduce(), IntLit::a(1), BOT_DOTDOT, missing_max);
   }
   args[args.size() - 1] = al;

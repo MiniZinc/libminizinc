@@ -3,5 +3,6 @@
   "offset2d": [[1, 2], [3, 4]],
   "coerce1d": [1, 2, 3, 4, 5, 6],
   "coerceCalc": [1, 2, 3, 4],
+  "singleUndef": [1, 2, 3],
   "ndimEmpty": []
 }
