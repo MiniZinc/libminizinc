@@ -21,13 +21,16 @@ namespace MiniZinc {
 class Scopes {
 protected:
   typedef IdMap<VarDecl*> DeclMap;
+  enum ScopeType { ST_TOPLEVEL, ST_FUN, ST_INNER };
   struct Scope {
-    /// Whether this scope is toplevel
-    bool toplevel;
     /// Map from identifiers to declarations
     DeclMap m;
+    /// Type of this scope
+    ScopeType st;
     /// Constructor
-    Scope() : toplevel(false) {}
+    Scope(ScopeType st0) : st(st0) {}
+    /// Whether this scope is toplevel
+    bool toplevel() const { return st == ST_TOPLEVEL; }
   };
   /// Stack of scopes
   std::vector<Scope> _s;
@@ -39,8 +42,12 @@ public:
   /// Add a variable declaration
   void add(EnvI& env, VarDecl* vd);
 
+  /// Push a new toplevel scope
+  void pushToplevel();
+  /// Push a new function scope
+  void pushFun();
   /// Push a new scope
-  void push(bool toplevel);
+  void push();
   /// Pop topmost scope
   void pop();
 

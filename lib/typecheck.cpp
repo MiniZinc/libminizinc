@@ -23,18 +23,40 @@
 
 namespace MiniZinc {
 
-Scopes::Scopes() {
-  _s.emplace_back();
-  _s.back().toplevel = true;
-}
+Scopes::Scopes() { _s.emplace_back(ST_TOPLEVEL); }
 
 void Scopes::add(EnvI& env, VarDecl* vd) {
-  if (!_s.back().toplevel && vd->ti()->isEnum() && (vd->e() != nullptr)) {
+  if (!_s.back().toplevel() && vd->ti()->isEnum() && (vd->e() != nullptr)) {
     throw TypeError(env, vd->loc(), "enums are only allowed at top level");
   }
   if (vd->id()->idn() == -1 && vd->id()->v() == "") {
     return;
   }
+  // If the current scope is ST_INNER, check if vd shadows another
+  // declaration from the same functional or toplevel scope
+  if (_s.back().st == ST_INNER) {
+    assert(_s.size() > 1);  // at least toplevel scope above
+    for (int i = static_cast<int>(_s.size()) - 2; i >= 0; i--) {
+      auto previous = _s[i].m.find(vd->id());
+      if (previous != _s[i].m.end()) {
+        std::ostringstream oss;
+        ASTString warnloc_f = vd->loc().filename();
+        unsigned int warnloc_l = vd->id()->loc().firstLine();
+        unsigned int warnloc_c = vd->id()->loc().firstColumn();
+        unsigned int earlier_l = previous->second->id()->loc().firstLine();
+        unsigned int earlier_c = previous->second->id()->loc().firstColumn();
+        oss << "\n  " << warnloc_f << ":" << warnloc_l << "." << warnloc_c << ":\n";
+        oss << "  Variable `" << *vd->id() << "' shadows variable with the same name in line "
+            << earlier_l << "." << earlier_c;
+        env.addWarning(oss.str());
+        break;
+      }
+      if (_s[i].st != ST_INNER) {
+        break;
+      }
+    }
+  }
+
   auto vdi = _s.back().m.find(vd->id());
   if (vdi == _s.back().m.end()) {
     _s.back().m.insert(vd->id(), vd);
@@ -45,10 +67,11 @@ void Scopes::add(EnvI& env, VarDecl* vd) {
   }
 }
 
-void Scopes::push(bool toplevel) {
-  _s.emplace_back();
-  _s.back().toplevel = toplevel;
-}
+void Scopes::pushToplevel() { _s.emplace_back(ST_TOPLEVEL); }
+
+void Scopes::pushFun() { _s.emplace_back(ST_FUN); }
+
+void Scopes::push() { _s.emplace_back(ST_INNER); }
 
 void Scopes::pop() { _s.pop_back(); }
 
@@ -57,7 +80,7 @@ VarDecl* Scopes::find(Id* ident) {
   for (;;) {
     auto vdi = _s[cur].m.find(ident);
     if (vdi == _s[cur].m.end()) {
-      if (_s[cur].toplevel) {
+      if (_s[cur].toplevel()) {
         if (cur > 0) {
           cur = 0;
         } else {
@@ -85,7 +108,7 @@ VarDecl* Scopes::findSimilar(Id* ident) {
         mostSimilar = decls.second;
       }
     }
-    if (_s[cur].toplevel) {
+    if (_s[cur].toplevel()) {
       if (cur > 0) {
         cur = 0;
       } else {
@@ -1134,7 +1157,7 @@ VarDecl* TopoSorter::checkId(EnvI& env, Id* ident, const Location& loc) {
   auto pi = pos.find(decl);
   if (pi == pos.end()) {
     // new id
-    scopes.push(true);
+    scopes.pushToplevel();
     run(env, decl);
     scopes.pop();
   } else {
@@ -1194,7 +1217,7 @@ void TopoSorter::run(EnvI& env, Expression* e) {
     } break;
     case Expression::E_COMP: {
       auto* ce = e->cast<Comprehension>();
-      scopes.push(false);
+      scopes.push();
       for (int i = 0; i < ce->numberOfGenerators(); i++) {
         run(env, ce->in(i));
         for (int j = 0; j < ce->numberOfDecls(i); j++) {
@@ -1271,7 +1294,7 @@ void TopoSorter::run(EnvI& env, Expression* e) {
       break;
     case Expression::E_LET: {
       Let* let = e->cast<Let>();
-      scopes.push(false);
+      scopes.push();
       for (unsigned int i = 0; i < let->let().size(); i++) {
         run(env, let->let()[i]);
         if (auto* vd = let->let()[i]->dynamicCast<VarDecl>()) {
@@ -2741,7 +2764,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       for (ExpressionSetIter it = fi->ann().begin(); it != fi->ann().end(); ++it) {
         ts.run(env, *it);
       }
-      ts.scopes.push(false);
+      ts.scopes.pushFun();
       for (unsigned int i = 0; i < fi->params().size(); i++) {
         ts.scopes.add(env, fi->params()[i]);
       }
