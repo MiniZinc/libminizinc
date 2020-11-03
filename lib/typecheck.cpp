@@ -2991,7 +2991,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         }
         if (!parIsUsable) {
           // check if body of f doesn't contain any free variables in lets,
-          // and all calls in the body have par versions available
+          // all calls in the body have par versions available,
+          // and all toplevel identifiers used in the body of f are par
           class CheckParBody : public EVisitor {
           public:
             EnvI& env;
@@ -3002,6 +3003,11 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
             bool enter(Expression* e) const {
               // if we have already found a var, don't continue
               return isPar;
+            }
+            void vId(const Id& ident) {
+              if (ident.decl() != nullptr && ident.type().isvar() && ident.decl()->toplevel()) {
+                isPar = false;
+              }
             }
             void vLet(const Let& let) {
               // check if any of the declared variables does not have a RHS
