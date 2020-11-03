@@ -310,6 +310,11 @@ std::string share_directory() {
     return std::string(MZNSTDLIBDIR);
   }
 #endif
+  // NOLINTNEXTLINE(readability-redundant-string-init)
+  std::string static_stdlib_dir(MZN_STATIC_STDLIB_DIR);
+  if (FileUtils::file_exists(static_stdlib_dir + "/std/stdlib.mzn")) {
+    return static_stdlib_dir;
+  }
   std::string mypath = FileUtils::progpath();
   int depth = 0;
   for (char i : mypath) {
