@@ -11,6 +11,7 @@ include "redefinitions-2.1.mzn";
 include "redefinitions-2.1.1.mzn";
 include "redefinitions-2.2.1.mzn";
 include "redefinitions-2.3.3.mzn";
+include "redefinitions-2.5.2.mzn";
 
 % Inclusion of count constraints for internal redefinitions of hidden counting constraints
 include "count_eq.mzn";

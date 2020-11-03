@@ -194,6 +194,24 @@ function var int: element_mt(var int: idx, array[int] of var int: x) :: promise_
     constraint array_var_int_element_nonshifted(idx2,x,r) ::defines_var(r);
   } in r;
 
+function var int: element_t(var int: idx1, var int: idx2, array[int,int] of var int: x) :: promise_total =
+  let {
+    var dom_bounds_array(x): r ::is_defined_var;
+    constraint idx1 in index_set_1of2(x);
+    constraint idx2 in index_set_2of2(x);
+    constraint array_var_int_element2d_nonshifted(idx1,idx2,x,r) ::defines_var(r);
+  } in r;
+
+function var int: element_mt(var int: idx1, var int: idx2, array[int,int] of var int: x) :: promise_total =
+  let {
+    var lb_array(x)..ub_array(x): r ::is_defined_var;
+    var min(index_set_1of2(x))..max(index_set_1of2(x)): idx1_2;
+    var min(index_set_2of2(x))..max(index_set_2of2(x)): idx2_2;
+    constraint (idx1 in index_set_1of2(x) /\ idx2 in index_set_2of2(x)) -> (idx1_2=idx1 /\ idx2_2=idx2);
+    constraint (idx1 in index_set_1of2(x) /\ idx2 in index_set_2of2(x)) \/ (idx1_2=min(index_set_1of2(x)) /\ idx2_2=min(index_set_2of2(x)));
+    constraint array_var_int_element2d_nonshifted(idx1_2,idx2_2,x,r) ::defines_var(r);
+  } in r;
+
 function var int: element(var int: idx, array[int] of var int: x) =
   if mzn_in_root_context(idx) then let {
     constraint idx in index_set(x)
@@ -209,22 +227,21 @@ function var int: element(var int: idx1, var int: idx2,
                           array[int,int] of var int: x) =
   let {
     int: dim = card(index_set_2of2(x));
-    int: min_flat = min(index_set_1of2(x))*dim+min(index_set_2of2(x))-1;
   } in if mzn_in_root_context(idx1) then
          let {
            constraint idx1 in index_set_1of2(x);
            constraint idx2 in index_set_2of2(x);
-         } in element_t( (idx1*dim+idx2-min_flat)::domain, array1d(x))
+         } in element_t(idx1, idx2, x)
        elseif
        ((has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of2(x)) /\ ub(idx1) <= max(index_set_1of2(x)))
         /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of2(x)) /\ ub(idx2) <= max(index_set_2of2(x))))
        then
-         element_t( (idx1*dim+idx2-min_flat)::domain, array1d(x))
+         element_t(idx1,idx2,x)
        else
          let {
            constraint idx1 in index_set_1of2(x);
            constraint idx2 in index_set_2of2(x);
-         } in element_mt( (idx1*dim+idx2-min_flat)::domain, array1d(x))
+         } in element_mt(idx1,idx2,x)
        endif;
 
 function var int: element(var int: idx1, var int: idx2, var int: idx3,
@@ -422,6 +439,24 @@ function var float: element_mt(var int: idx, array[int] of var float: x) :: prom
     constraint array_var_float_element_nonshifted(idx2,x,r) ::defines_var(r);
   } in r;
 
+function var float: element_t(var int: idx1, var int: idx2, array[int,int] of var float: x) :: promise_total =
+  let {
+    var lb_array(x)..ub_array(x): r ::is_defined_var;
+    constraint idx1 in index_set_1of2(x);
+    constraint idx2 in index_set_2of2(x);
+    constraint array_var_float_element2d_nonshifted(idx1,idx2,x,r) ::defines_var(r);
+  } in r;
+
+function var float: element_mt(var int: idx1, var int: idx2, array[int,int] of var float: x) :: promise_total =
+  let {
+    var lb_array(x)..ub_array(x): r ::is_defined_var;
+    var min(index_set_1of2(x))..max(index_set_1of2(x)): idx1_2;
+    var min(index_set_2of2(x))..max(index_set_2of2(x)): idx2_2;
+    constraint (idx1 in index_set_1of2(x) /\ idx2 in index_set_2of2(x)) -> (idx1_2=idx1 /\ idx2_2=idx2);
+    constraint (idx1 in index_set_1of2(x) /\ idx2 in index_set_2of2(x)) \/ (idx1_2=min(index_set_1of2(x)) /\ idx2_2=min(index_set_2of2(x)));
+    constraint array_var_float_element2d_nonshifted(idx1_2,idx2_2,x,r) ::defines_var(r);
+  } in r;
+
 function var float: element(var int: idx, array[int] of var float: x) =
   if mzn_in_root_context(idx) then let {
     constraint idx in index_set(x)
@@ -437,22 +472,21 @@ function var float: element(var int: idx1, var int: idx2,
                             array[int,int] of var float: x) =
   let {
     int: dim = card(index_set_2of2(x));
-    int: min_flat = min(index_set_1of2(x))*dim+min(index_set_2of2(x))-1;
   } in if mzn_in_root_context(idx1) then
          let {
            constraint idx1 in index_set_1of2(x);
            constraint idx2 in index_set_2of2(x);
-         } in element_t( (idx1*dim+idx2-min_flat)::domain, array1d(x))
+         } in element_t(idx1,idx2,x)
        elseif (
           (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of2(x)) /\ ub(idx1) <= max(index_set_1of2(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of2(x)) /\ ub(idx2) <= max(index_set_2of2(x))) )
        then
-         element_t( (idx1*dim+idx2-min_flat)::domain, array1d(x))
+         element_t(idx1,idx2,x)
        else
          let {
            constraint idx1 in index_set_1of2(x);
            constraint idx2 in index_set_2of2(x);
-         } in element_mt( (idx1*dim+idx2-min_flat)::domain, array1d(x))
+         } in element_mt(idx1,idx2,x)
        endif;
 
 function var float: element(var int: idx1, var int: idx2, var int: idx3,
@@ -648,6 +682,24 @@ function var set of int: element_mt(var int: idx, array[int] of var set of int: 
     constraint array_var_set_element_nonshifted(idx2,x,r) ::defines_var(r);
   } in r;
 
+function var set of int: element_t(var int: idx1, var int: idx2, array[int,int] of var set of int: x) :: promise_total =
+  let {
+    var set of min(ub_array(x))..max(ub_array(x)): r ::is_defined_var;
+    constraint idx1 in index_set_1of2(x);
+    constraint idx2 in index_set_2of2(x);
+    constraint array_var_set_element2d_nonshifted(idx1,idx2,x,r) ::defines_var(r);
+  } in r;
+
+function var set of int: element_mt(var int: idx1, var int: idx2, array[int,int] of var set of int: x) :: promise_total =
+  let {
+    var set of min(ub_array(x))..max(ub_array(x)): r ::is_defined_var;
+    var min(index_set_1of2(x))..max(index_set_1of2(x)): idx1_2;
+    var min(index_set_2of2(x))..max(index_set_2of2(x)): idx2_2;
+    constraint (idx1 in index_set_1of2(x) /\ idx2 in index_set_2of2(x)) -> (idx1_2=idx1 /\ idx2_2=idx2);
+    constraint (idx1 in index_set_1of2(x) /\ idx2 in index_set_2of2(x)) \/ (idx1_2=min(index_set_1of2(x)) /\ idx2_2=min(index_set_2of2(x)));
+    constraint array_var_set_element2d_nonshifted(idx1_2,idx2_2,x,r) ::defines_var(r);
+  } in r;
+
 function var set of int: element(var int: idx, array[int] of var set of int: x) =
   if mzn_in_root_context(idx) then let {
     constraint idx in index_set(x)
@@ -663,22 +715,21 @@ function var set of int: element(var int: idx1, var int: idx2,
                                  array[int,int] of var set of int: x) =
   let {
     int: dim = card(index_set_2of2(x));
-    int: min_flat = min(index_set_1of2(x))*dim+min(index_set_2of2(x))-1;
   } in if mzn_in_root_context(idx1) then
          let {
            constraint idx1 in index_set_1of2(x);
            constraint idx2 in index_set_2of2(x);
-         } in element_t( (idx1*dim+idx2-min_flat)::domain, array1d(x))
+         } in element_t(idx1,idx2,x)
        elseif (
           (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of2(x)) /\ ub(idx1) <= max(index_set_1of2(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of2(x)) /\ ub(idx2) <= max(index_set_2of2(x))) )
        then
-         element_t( (idx1*dim+idx2-min_flat)::domain, array1d(x))
+         element_t(idx1,idx2,x)
        else
          let {
            constraint idx1 in index_set_1of2(x);
            constraint idx2 in index_set_2of2(x);
-         } in element_mt( (idx1*dim+idx2-min_flat)::domain, array1d(x))
+         } in element_mt(idx1,idx2,x)
        endif;
 
 function var set of int: element(var int: idx1, var int: idx2, var int: idx3,
@@ -842,6 +893,24 @@ function var bool: element_mt(var int: idx, array[int] of var bool: x) :: promis
     constraint array_var_bool_element_nonshifted(idx2,x,r) ::defines_var(r);
   } in r;
 
+function var bool: element_t(var int: idx1, var int: idx2, array[int,int] of var bool: x) :: promise_total =
+  let {
+    var bool: r ::is_defined_var;
+    constraint idx1 in index_set_1of2(x);
+    constraint idx2 in index_set_2of2(x);
+    constraint array_var_bool_element2d_nonshifted(idx1,idx2,x,r) ::defines_var(r);
+  } in r;
+
+function var bool: element_mt(var int: idx1, var int: idx2, array[int,int] of var bool: x) :: promise_total =
+  let {
+    var bool: r ::is_defined_var;
+    var min(index_set_1of2(x))..max(index_set_1of2(x)): idx1_2;
+    var min(index_set_2of2(x))..max(index_set_2of2(x)): idx2_2;
+    constraint (idx1 in index_set_1of2(x) /\ idx2 in index_set_2of2(x)) -> (idx1_2=idx1 /\ idx2_2=idx2);
+    constraint (idx1 in index_set_1of2(x) /\ idx2 in index_set_2of2(x)) \/ (idx1_2=min(index_set_1of2(x)) /\ idx2_2=min(index_set_2of2(x)));
+    constraint array_var_bool_element2d_nonshifted(idx1_2,idx2_2,x,r) ::defines_var(r);
+  } in r;
+
 function var bool: element(var int: idx, array[int] of var bool: x) =
   if mzn_in_root_context(idx) then
     idx in index_set(x) /\ element_t(idx,x)
@@ -851,25 +920,24 @@ function var bool: element(var int: idx, array[int] of var bool: x) =
   endif;
 
 function var bool: element(var int: idx1, var int: idx2,
-                          array[int,int] of var bool: x) =
+                           array[int,int] of var bool: x) =
   let {
     int: dim = card(index_set_2of2(x));
-    int: min_flat = min(index_set_1of2(x))*dim+min(index_set_2of2(x))-1;
   } in if mzn_in_root_context(idx1) then
          let {
            constraint idx1 in index_set_1of2(x);
            constraint idx2 in index_set_2of2(x);
-         } in element_t( (idx1*dim+idx2-min_flat)::domain, array1d(x))
-       elseif (
-          (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of2(x)) /\ ub(idx1) <= max(index_set_1of2(x)))
-       /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of2(x)) /\ ub(idx2) <= max(index_set_2of2(x))) )
+         } in element_t(idx1, idx2, x)
+       elseif
+       ((has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of2(x)) /\ ub(idx1) <= max(index_set_1of2(x)))
+        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of2(x)) /\ ub(idx2) <= max(index_set_2of2(x))))
        then
-         element_t( (idx1*dim+idx2-min_flat)::domain, array1d(x))
+         element_t(idx1,idx2,x)
        else
          let {
            constraint idx1 in index_set_1of2(x);
            constraint idx2 in index_set_2of2(x);
-         } in element_mt( (idx1*dim+idx2-min_flat)::domain, array1d(x))
+         } in element_mt(idx1,idx2,x)
        endif;
 
 function var bool: element(var int: idx1, var int: idx2, var int: idx3,
