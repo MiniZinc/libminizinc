@@ -192,7 +192,7 @@ public:
 
   void copyPathMapsAndState(EnvI& env);
   /// deprecated, use Solns2Out
-  std::ostream& evalOutput(std::ostream& os);
+  std::ostream& evalOutput(std::ostream& os, std::ostream& log);
   void createErrorStack();
   Call* surroundingCall() const;
 

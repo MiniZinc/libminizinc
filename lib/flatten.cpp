@@ -1128,7 +1128,9 @@ Model* Env::flat() { return _e->flat(); }
 void Env::swap() { _e->swap(); }
 Model* Env::output() { return _e->output; }
 
-std::ostream& Env::evalOutput(std::ostream& os) { return _e->evalOutput(os); }
+std::ostream& Env::evalOutput(std::ostream& os, std::ostream& log) {
+  return _e->evalOutput(os, log);
+}
 EnvI& Env::envi() { return *_e; }
 const EnvI& Env::envi() const { return *_e; }
 std::ostream& Env::dumpErrorStack(std::ostream& os) { return _e->dumpStack(os, true); }
@@ -1459,9 +1461,9 @@ void populate_output(Env& env) {
   envi.flat()->mergeStdLib(envi, _output);
 }
 
-std::ostream& EnvI::evalOutput(std::ostream& os) {
+std::ostream& EnvI::evalOutput(std::ostream& os, std::ostream& log) {
   GCLock lock;
-
+  warnings.clear();
   ArrayLit* al = eval_array_lit(*this, output->outputItem()->e());
   bool fLastEOL = true;
   for (unsigned int i = 0; i < al->size(); i++) {
@@ -1473,6 +1475,9 @@ std::ostream& EnvI::evalOutput(std::ostream& os) {
   }
   if (!fLastEOL) {
     os << '\n';
+  }
+  for (auto w : warnings) {
+    log << "  WARNING: " << w << "\n";
   }
   return os;
 }

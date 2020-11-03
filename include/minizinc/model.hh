@@ -363,7 +363,7 @@ public:
   const std::vector<std::string>& warnings();
   void clearWarnings();
   unsigned int maxCallStack() const;
-  std::ostream& evalOutput(std::ostream& os);
+  std::ostream& evalOutput(std::ostream& os, std::ostream& log);
 };
 
 class CallStackItem {

@@ -424,7 +424,7 @@ void Solns2Out::checkStatistics(std::ostream& oss) {
 
 bool Solns2Out::evalOutputInternal(ostream& fout) {
   if (nullptr != _outputExpr) {
-    _env->envi().evalOutput(fout);
+    _env->envi().evalOutput(fout, _log);
   }
   return true;
 }
