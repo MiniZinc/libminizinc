@@ -17,7 +17,6 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
   CallStackItem _csi(env, e);
   EE ret;
   Let* let = e->cast<Let>();
-  GC::mark();
   std::vector<EE> cs;
   std::vector<KeepAlive> flatmap;
   let->pushbindings();

@@ -887,14 +887,8 @@ void Let::pushbindings() {
     }
   }
 }
-void Let::popbindings() {
-  for (auto& i : _let) {
-    if (auto* vd = i->dynamicCast<VarDecl>()) {
-      GC::untrail();
-      break;
-    }
-  }
-}
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void Let::popbindings() { GC::untrail(); }
 
 void TypeInst::rehash() {
   initHash();
