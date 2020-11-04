@@ -104,6 +104,7 @@ void ScipPlugin::load() {
   load_symbol(SCIPgetDualbound);
   load_symbol(SCIPgetSolVals);
   load_symbol(SCIPgetBestSol);
+  load_symbol(SCIPgetNTotalNodes);
   load_symbol(SCIPgetNNodes);
   load_symbol(SCIPgetNNodesLeft);
   load_symbol(SCIPfreeTransform);
@@ -869,7 +870,7 @@ SCIP_RETCODE MIPScipWrapper::solveSCIP() {  // Move into ancestor?
       cbui.solcbfn(output, cbui.psi);
     }
   }
-  output.nNodes = static_cast<int>(_plugin->SCIPgetNNodes(_scip));
+  output.nNodes = static_cast<int>(_plugin->SCIPgetNTotalNodes(_scip));
   output.nOpenNodes = _plugin->SCIPgetNNodesLeft(_scip);  // SCIP_getnodeleftcnt (env, lp);
 
   SCIP_PLUGIN_CALL_R(_plugin, _plugin->SCIPfreeTransform(_scip));

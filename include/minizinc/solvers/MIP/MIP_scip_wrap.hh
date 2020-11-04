@@ -145,6 +145,8 @@ public:
   // NOLINTNEXTLINE(readability-identifier-naming)
   SCIP_SOL*(__stdcall* SCIPgetBestSol)(SCIP* scip);
   // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_Longint(__stdcall* SCIPgetNTotalNodes)(SCIP* scip);
+  // NOLINTNEXTLINE(readability-identifier-naming)
   SCIP_Longint(__stdcall* SCIPgetNNodes)(SCIP* scip);
   // NOLINTNEXTLINE(readability-identifier-naming)
   int(__stdcall* SCIPgetNNodesLeft)(SCIP* scip);
