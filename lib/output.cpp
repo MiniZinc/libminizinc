@@ -1162,8 +1162,8 @@ void finalise_output(EnvI& e) {
               } else if ((reallyFlat->e() != nullptr) && reallyFlat->e()->isa<ArrayLit>()) {
                 auto* al = reallyFlat->e()->cast<ArrayLit>();
                 for (unsigned int i = 0; i < al->size(); i++) {
-                  if (Id* id = (*al)[i]->dynamicCast<Id>()) {
-                    if (e.reverseMappers.find(id) != e.reverseMappers.end()) {
+                  if (Id* ident = follow_id_to_value((*al)[i])->dynamicCast<Id>()) {
+                    if (e.reverseMappers.find(ident) != e.reverseMappers.end()) {
                       needOutputAnn = false;
                       break;
                     }
