@@ -2284,6 +2284,18 @@ public:
           }
         }
         if (macro) {
+          // Call is not a macro if it has a reification implementation
+          GCLock lock;
+          ASTString reif_id = _env.reifyId(fi->id());
+          std::vector<Type> tt(fi->params().size() + 1);
+          for (unsigned int i = 0; i < fi->params().size(); i++) {
+            tt[i] = fi->params()[i]->type();
+          }
+          tt[fi->params().size()] = Type::varbool();
+
+          macro = _model->matchFn(_env, reif_id, tt, true) == nullptr;
+        }
+        if (macro) {
           call.decl(next_call->decl());
           for (ExpressionSetIter esi = next_call->ann().begin(); esi != next_call->ann().end();
                ++esi) {
