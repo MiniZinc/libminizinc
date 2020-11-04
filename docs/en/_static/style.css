@@ -22,3 +22,9 @@ div.code-block-caption {
 .logo {
   width: 100% !important;
 }
+p.doc-link-caption {
+  margin: 0;
+}
+.doc-link-caption .headerlink {
+  float: right;
+}
