@@ -270,10 +270,15 @@ documentation:
     - make html latexpdf
     - cd $CI_PROJECT_DIR/docs/chi
     - make html latexpdf
+    - mkdir -p $CI_PROJECT_DIR/docs-deploy/en
+    - mkdir -p $CI_PROJECT_DIR/docs-deploy/chi
+    - cp -r $CI_PROJECT_DIR/docs/en/_build/html/* $CI_PROJECT_DIR/docs-deploy/en/
+    - cp $CI_PROJECT_DIR/docs/en/_build/latex/MiniZinc.pdf $CI_PROJECT_DIR/docs-deploy/en/MiniZinc\ Handbook.pdf
+    - cp -r $CI_PROJECT_DIR/docs/chi/_build/html/* $CI_PROJECT_DIR/docs-deploy/chi/
+    - cp $CI_PROJECT_DIR/docs/chi/_build/latex/MiniZinc.pdf $CI_PROJECT_DIR/docs-deploy/chi/MiniZinc\ Handbook.pdf
   artifacts:
     paths:
-      - docs/en/_build
-      - docs/chi/_build
+      - docs-deploy
   tags:
     - linux
     - docker
