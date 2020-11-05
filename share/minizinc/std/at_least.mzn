@@ -30,4 +30,4 @@ predicate atleast(int: n, array[int] of var int: x, int: v) =
     at_least(n, x, v);
 
 predicate atleast(int: n, array[$X] of var set of int: x, set of int: v) =
-    at_least(n, array1d(x), v);
+    at_least(n, x, v);
