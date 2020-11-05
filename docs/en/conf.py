@@ -36,7 +36,7 @@ import inlinesyntaxhighlight
 extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
-    'defblock',
+    'defblock','bugref',
     'inlinesyntaxhighlight',
     'sphinxtogithub'
 ]

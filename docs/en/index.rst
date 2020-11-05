@@ -33,4 +33,5 @@ for any purpose, even commercially. However, you must give appropriate credit, p
   Indices and tables
   ------------------
 
+  * `Change log <changelog.html>`__
   * :ref:`genindex`
