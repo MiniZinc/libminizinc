@@ -219,7 +219,8 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv,
   } else if (cop.getOption("- --input-from-stdin")) {
     _flags.stdinInput = true;
   } else if (cop.getOption("-d --data", &buffer)) {
-    if (buffer.length() <= 4 || buffer.substr(buffer.length() - 4, string::npos) != ".dzn") {
+    auto last_dot = buffer.find_last_of('.');
+    if (last_dot == string::npos) {
       return false;
     }
     auto extension = buffer.substr(last_dot, string::npos);
