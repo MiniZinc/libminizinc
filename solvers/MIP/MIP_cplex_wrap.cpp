@@ -559,20 +559,24 @@ void MIPCplexWrapper::Options::printHelp(ostream& os) {
      << std::endl;
 }
 
-bool MIPCplexWrapper::FactoryOptions::processOption(int& i, std::vector<std::string>& argv) {
+bool MIPCplexWrapper::FactoryOptions::processOption(int& i, std::vector<std::string>& argv,
+                                                    const std::string& workingDir) {
   MiniZinc::CLOParser cop(i, argv);
   return cop.get("--cplex-dll", &cplexDll);
 }
 
-bool MIPCplexWrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
+bool MIPCplexWrapper::Options::processOption(int& i, std::vector<std::string>& argv,
+                                             const std::string& workingDir) {
   MiniZinc::CLOParser cop(i, argv);
+  std::string buffer;
   if (cop.get("-i")) {
     flagIntermediate = true;
   } else if (string(argv[i]) == "-f") {  // NOLINT: Allow repeated empty if
     //     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
   } else if (cop.get("--mipfocus --mipFocus --MIPFocus --MIPfocus",
-                     &nMIPFocus)) {                        // NOLINT: Allow repeated empty if
-  } else if (cop.get("--writeModel", &sExportModel)) {     // NOLINT: Allow repeated empty if
+                     &nMIPFocus)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("--writeModel", &buffer)) {
+    sExportModel = MiniZinc::FileUtils::file_path(buffer, workingDir);
   } else if (cop.get("-p  --parallel", &nThreads)) {       // NOLINT: Allow repeated empty if
   } else if (cop.get("--solver-time-limit", &nTimeout)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("-n --num-solutions", &nSolLimit)) {  // NOLINT: Allow repeated empty if
@@ -580,12 +584,14 @@ bool MIPCplexWrapper::Options::processOption(int& i, std::vector<std::string>& a
   } else if (cop.get("--workmem --nodefilestart",
                      &nWorkMemLimit)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--nodefiledir --NodefileDir",
-                     &sNodefileDir)) {                  // NOLINT: Allow repeated empty if
-  } else if (cop.get("--readParam", &sReadParams)) {    // NOLINT: Allow repeated empty if
-  } else if (cop.get("--writeParam", &sWriteParams)) {  // NOLINT: Allow repeated empty if
-  } else if (cop.get("--absGap", &absGap)) {            // NOLINT: Allow repeated empty if
-  } else if (cop.get("--relGap", &relGap)) {            // NOLINT: Allow repeated empty if
-  } else if (cop.get("--intTol", &intTol)) {            // NOLINT: Allow repeated empty if
+                     &sNodefileDir)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("--readParam", &buffer)) {
+    sReadParams = MiniZinc::FileUtils::file_path(buffer, workingDir);
+  } else if (cop.get("--writeParam", &buffer)) {
+    sWriteParams = MiniZinc::FileUtils::file_path(buffer, workingDir);
+  } else if (cop.get("--absGap", &absGap)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("--relGap", &relGap)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("--intTol", &intTol)) {  // NOLINT: Allow repeated empty if
     //   } else if ( cop.get( "--objDiff", &objDiff ) ) {
   } else {
     return false;

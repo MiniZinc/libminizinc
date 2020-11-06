@@ -82,7 +82,8 @@ void MZNSolverFactory::setAcceptedFlags(SolverInstanceBase::Options* opt,
 }
 
 bool MZNSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
-                                     std::vector<std::string>& argv) {
+                                     std::vector<std::string>& argv,
+                                     const std::string& workingDir) {
   auto& _opt = static_cast<MZNSolverOptions&>(*opt);
   CLOParser cop(i, argv);
   string buffer;

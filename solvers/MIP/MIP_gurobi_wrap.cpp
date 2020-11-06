@@ -183,12 +183,14 @@ void MIPGurobiWrapper::Options::printHelp(ostream& os) {
      << std::endl;
 }
 
-bool MIPGurobiWrapper::FactoryOptions::processOption(int& i, std::vector<std::string>& argv) {
+bool MIPGurobiWrapper::FactoryOptions::processOption(int& i, std::vector<std::string>& argv,
+                                                     const std::string& workingDir) {
   MiniZinc::CLOParser cop(i, argv);
   return cop.get("--gurobi-dll", &gurobiDll);
 }
 
-bool MIPGurobiWrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
+bool MIPGurobiWrapper::Options::processOption(int& i, std::vector<std::string>& argv,
+                                              const std::string& workingDir) {
   MiniZinc::CLOParser cop(i, argv);
   std::string buf;
   if (cop.get("-i")) {
@@ -200,8 +202,8 @@ bool MIPGurobiWrapper::Options::processOption(int& i, std::vector<std::string>& 
     nFreeSearch = MIPGurobiWrapper::SearchType::UNIFORM_SEARCH;
   } else if (cop.get("--mipfocus --mipFocus --MIPFocus --MIPfocus",
                      &nMIPFocus)) {  // NOLINT: Allow repeated empty if
-  } else if (cop.get("--writeModel --exportModel --writemodel --exportmodel",
-                     &sExportModel)) {               // NOLINT: Allow repeated empty if
+  } else if (cop.get("--writeModel --exportModel --writemodel --exportmodel", &buf)) {
+    sExportModel = MiniZinc::FileUtils::file_path(buf, workingDir);
   } else if (cop.get("-p --parallel", &nThreads)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--solver-time-limit --solver-time",
                      &nTimeout1000)) {  // NOLINT: Allow repeated empty if
@@ -213,12 +215,12 @@ bool MIPGurobiWrapper::Options::processOption(int& i, std::vector<std::string>& 
                      &nWorkMemLimit)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--nodefiledir --NodefileDir",
                      &sNodefileDir)) {  // NOLINT: Allow repeated empty if
-  } else if (cop.get("--readParam --readParams",
-                     &sReadParams)) {  // NOLINT: Allow repeated empty if
-  } else if (cop.get("--writeParam --writeParams",
-                     &sWriteParams)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("--readParam --readParams", &buf)) {
+    sReadParams = MiniZinc::FileUtils::file_path(buf, workingDir);
+  } else if (cop.get("--writeParam --writeParams", &buf)) {
+    sWriteParams = MiniZinc::FileUtils::file_path(buf, workingDir);
   } else if (cop.get("--readConcurrentParam --readConcurrentParams", &buf)) {
-    sConcurrentParamFiles.push_back(buf);
+    sConcurrentParamFiles.push_back(MiniZinc::FileUtils::file_path(buf, workingDir));
   } else if (cop.get("--absGap", &absGap)) {    // NOLINT: Allow repeated empty if
   } else if (cop.get("--relGap", &relGap)) {    // NOLINT: Allow repeated empty if
   } else if (cop.get("--feasTol", &feasTol)) {  // NOLINT: Allow repeated empty if

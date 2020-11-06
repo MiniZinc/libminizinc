@@ -48,7 +48,9 @@ public:
   class FactoryOptions {
   public:
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-    bool processOption(int& i, std::vector<std::string>& argv) { return false; }
+    bool processOption(int& i, std::vector<std::string>& argv, const std::string& workingDir) {
+      return false;
+    }
   };
 
   class Options : public MiniZinc::SolverInstanceBase::Options {
@@ -71,7 +73,8 @@ public:
 
     std::unordered_map<std::string, std::string> extraParams;
 
-    bool processOption(int& i, std::vector<std::string>& argv);
+    bool processOption(int& i, std::vector<std::string>& argv,
+                       const std::string& workingDir = std::string());
     static void printHelp(std::ostream& os);
   };
 

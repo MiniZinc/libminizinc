@@ -234,26 +234,32 @@ static inline bool beginswith(const string& s, const string& t) {
   return s.compare(0, t.length(), t) == 0;
 }
 
-bool MIPScipWrapper::FactoryOptions::processOption(int& i, std::vector<std::string>& argv) {
+bool MIPScipWrapper::FactoryOptions::processOption(int& i, std::vector<std::string>& argv,
+                                                   const std::string& workingDir) {
   MiniZinc::CLOParser cop(i, argv);
   return cop.get("--scip-dll", &scipDll);
 }
 
-bool MIPScipWrapper::Options::processOption(int& i, vector<string>& argv) {
+bool MIPScipWrapper::Options::processOption(int& i, vector<string>& argv,
+                                            const std::string& workingDir) {
   MiniZinc::CLOParser cop(i, argv);
+  std::string buffer;
   if (cop.get("-i")) {
     flagIntermediate = true;
   } else if (string(argv[i]) == "-f") {  // NOLINT: Allow repeated empty if
     //     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
-  } else if (cop.get("--writeModel", &sExportModel)) {     // NOLINT: Allow repeated empty if
+  } else if (cop.get("--writeModel", &buffer)) {
+    sExportModel = MiniZinc::FileUtils::file_path(buffer);
   } else if (cop.get("-p --parallel", &nThreads)) {        // NOLINT: Allow repeated empty if
   } else if (cop.get("--solver-time-limit", &nTimeout)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--workmem", &nWorkMemLimit)) {       // NOLINT: Allow repeated empty if
-  } else if (cop.get("--readParam", &sReadParams)) {       // NOLINT: Allow repeated empty if
-  } else if (cop.get("--writeParam", &sWriteParams)) {     // NOLINT: Allow repeated empty if
-  } else if (cop.get("--absGap", &absGap)) {               // NOLINT: Allow repeated empty if
-  } else if (cop.get("--relGap", &relGap)) {               // NOLINT: Allow repeated empty if
-  } else if (cop.get("--intTol", &intTol)) {               // NOLINT: Allow repeated empty if
+  } else if (cop.get("--readParam", &buffer)) {
+    sReadParams = MiniZinc::FileUtils::file_path(buffer);
+  } else if (cop.get("--writeParam", &buffer)) {
+    sWriteParams = MiniZinc::FileUtils::file_path(buffer);
+  } else if (cop.get("--absGap", &absGap)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("--relGap", &relGap)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("--intTol", &intTol)) {  // NOLINT: Allow repeated empty if
     //   } else if ( cop.get( "--objDiff", &objDiff ) ) {
   } else {
     return false;

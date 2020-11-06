@@ -133,7 +133,8 @@ template <class MIPWrapper>
 class MIPSolverFactory : public SolverFactory {
 public:
   MIPSolverFactory();
-  bool processFactoryOption(int& i, std::vector<std::string>& argv) override;
+  bool processFactoryOption(int& i, std::vector<std::string>& argv,
+                            const std::string& workingDir = std::string()) override;
   void factoryOptionsFinished() override;
   SolverInstanceBase::Options* createOptions() override { return new typename MIPWrapper::Options; }
   SolverInstanceBase* doCreateSI(Env& env, std::ostream& log,
@@ -141,8 +142,8 @@ public:
     return new MIPSolverinstance<MIPWrapper>(env, log, _factoryOptions,
                                              static_cast<typename MIPWrapper::Options*>(opt));
   }
-  bool processOption(SolverInstanceBase::Options* opt, int& i,
-                     std::vector<std::string>& argv) override;
+  bool processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv,
+                     const std::string& workingDir = std::string()) override;
   std::string getDescription(SolverInstanceBase::Options* opt = nullptr) override;
   std::string getVersion(SolverInstanceBase::Options* opt = nullptr) override;
   std::string getId() override;

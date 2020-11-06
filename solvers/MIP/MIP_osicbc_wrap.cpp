@@ -104,15 +104,16 @@ void MIPosicbcWrapper::Options::printHelp(ostream& os) {
      << std::endl;
 }
 
-bool MIPosicbcWrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
+bool MIPosicbcWrapper::Options::processOption(int& i, std::vector<std::string>& argv,
+                                              const std::string& workingDir) {
   MiniZinc::CLOParser cop(i, argv);
   std::string buffer;
   if (cop.get("-i")) {
     flagIntermediate = true;
   } else if (string(argv[i]) == "-f") {  // NOLINT: Allow repeated empty if
     //     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
-  } else if (cop.get("--writeModel", &sExportModel)) {  // NOLINT: Allow repeated empty if
-    // Parsed by referenced
+  } else if (cop.get("--writeModel", &buffer)) {
+    sExportModel = MiniZinc::FileUtils::file_path(buffer, workingDir);
   } else if (cop.get("-p --parallel", &nThreads)) {
     // Parsed by referenced
   } else if (cop.get("--solver-time-limit", &nTimeout)) {  // NOLINT: Allow repeated empty if

@@ -13,8 +13,9 @@ MIPSolverFactory<MIPWrapper>::MIPSolverFactory() : _factoryOptions() {
 }
 
 template <class MIPWrapper>
-bool MIPSolverFactory<MIPWrapper>::processFactoryOption(int& i, std::vector<std::string>& argv) {
-  return _factoryOptions.processOption(i, argv);
+bool MIPSolverFactory<MIPWrapper>::processFactoryOption(int& i, std::vector<std::string>& argv,
+                                                        const std::string& workingDir) {
+  return _factoryOptions.processOption(i, argv, workingDir);
 }
 
 template <class MIPWrapper>
@@ -35,7 +36,8 @@ void MIPSolverFactory<MIPWrapper>::factoryOptionsFinished() {
 
 template <class MIPWrapper>
 bool MIPSolverFactory<MIPWrapper>::processOption(SolverInstanceBase::Options* opt, int& i,
-                                                 std::vector<std::string>& argv) {
+                                                 std::vector<std::string>& argv,
+                                                 const std::string& workingDir) {
   CLOParser cop(i, argv);
   auto& options = static_cast<typename MIPWrapper::Options&>(*opt);
 
@@ -47,7 +49,7 @@ bool MIPSolverFactory<MIPWrapper>::processOption(SolverInstanceBase::Options* op
     options.printStatistics = true;
     return true;
   }
-  if (options.processOption(i, argv)) {
+  if (options.processOption(i, argv, workingDir)) {
     return true;
   }
 

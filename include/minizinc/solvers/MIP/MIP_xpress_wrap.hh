@@ -119,7 +119,7 @@ class MIPxpressWrapper : public MIPWrapper {
 public:
   class FactoryOptions {
   public:
-    bool processOption(int& i, std::vector<std::string>& argv);
+    bool processOption(int& i, std::vector<std::string>& argv, const std::string& workingDir);
 
     std::string xpressDll;
     std::string xprsPassword;
@@ -142,7 +142,8 @@ public:
 
     std::unordered_map<std::string, std::string> extraParams;
 
-    bool processOption(int& i, std::vector<std::string>& argv);
+    bool processOption(int& i, std::vector<std::string>& argv,
+                       const std::string& workingDir = std::string());
     static void printHelp(std::ostream& os);
   };
 

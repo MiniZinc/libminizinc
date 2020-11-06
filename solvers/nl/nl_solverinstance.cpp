@@ -79,7 +79,7 @@ SolverInstanceBase* NLSolverFactory::doCreateSI(Env& env, std::ostream& log,
 }
 
 bool NLSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
-                                    std::vector<std::string>& argv) {
+                                    std::vector<std::string>& argv, const std::string& workingDir) {
   auto& _opt = static_cast<NLSolverOptions&>(*opt);
   CLOParser cop(i, argv);
   string buffer;

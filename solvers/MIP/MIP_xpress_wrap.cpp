@@ -357,7 +357,8 @@ void MIPxpressWrapper::Options::printHelp(ostream& os) {
      << std::endl;
 }
 
-bool MIPxpressWrapper::FactoryOptions::processOption(int& i, std::vector<std::string>& argv) {
+bool MIPxpressWrapper::FactoryOptions::processOption(int& i, std::vector<std::string>& argv,
+                                                     const std::string& workingDir) {
   MiniZinc::CLOParser cop(i, argv);
   if (cop.get("--xpress-dll", &xpressDll)) {                 // NOLINT: Allow repeated empty if
   } else if (cop.get("--xpress-password", &xprsPassword)) {  // NOLINT: Allow repeated empty if
@@ -367,13 +368,17 @@ bool MIPxpressWrapper::FactoryOptions::processOption(int& i, std::vector<std::st
   return true;
 }
 
-bool MIPxpressWrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
+bool MIPxpressWrapper::Options::processOption(int& i, std::vector<std::string>& argv,
+                                              const std::string& workingDir) {
   MiniZinc::CLOParser cop(i, argv);
-  if (cop.get("--msgLevel", &msgLevel)) {                         // NOLINT: Allow repeated empty if
-  } else if (cop.get("--logFile", &logFile)) {                    // NOLINT: Allow repeated empty if
-  } else if (cop.get("--solver-time-limit", &timeout)) {          // NOLINT: Allow repeated empty if
-  } else if (cop.get("-n --numSolutions", &numSolutions)) {       // NOLINT: Allow repeated empty if
-  } else if (cop.get("--writeModel", &writeModelFile)) {          // NOLINT: Allow repeated empty if
+  std::string buffer;
+  if (cop.get("--msgLevel", &msgLevel)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("--logFile", &buffer)) {
+    logFile = MiniZinc::FileUtils::file_path(buffer, workingDir);
+  } else if (cop.get("--solver-time-limit", &timeout)) {     // NOLINT: Allow repeated empty if
+  } else if (cop.get("-n --numSolutions", &numSolutions)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("--writeModel", &buffer)) {
+    writeModelFile = MiniZinc::FileUtils::file_path(buffer, workingDir);
   } else if (cop.get("--writeModelFormat", &writeModelFormat)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--relGap", &relGap)) {                      // NOLINT: Allow repeated empty if
   } else if (cop.get("--absGap", &absGap)) {                      // NOLINT: Allow repeated empty if

@@ -130,8 +130,8 @@ public:
   std::string getVersion(SolverInstanceBase::Options* opt) override { return "0.0.1"; }
   std::string getId() override { return "org.minizinc.geas"; }
 
-  bool processOption(SolverInstanceBase::Options* opt, int& i,
-                     std::vector<std::string>& argv) override;
+  bool processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv,
+                     const std::string& workingDir = std::string()) override;
   void printHelp(std::ostream& os) override;
 };
 

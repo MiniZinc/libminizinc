@@ -716,7 +716,8 @@ SolverInstanceBase* GeasSolverFactory::doCreateSI(Env& env, std::ostream& log,
 }
 
 bool GeasSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
-                                      std::vector<std::string>& argv) {
+                                      std::vector<std::string>& argv,
+                                      const std::string& workingDir) {
   auto* _opt = static_cast<GeasOptions*>(opt);
   if (argv[i] == "-a" || argv[i] == "--all-solutions") {
     _opt->allSolutions = true;

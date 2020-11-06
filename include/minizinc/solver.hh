@@ -98,7 +98,10 @@ public:
   }
 
   /// Processes a previously registered factory flag.
-  virtual bool processFactoryOption(int& i, std::vector<std::string>& argv) { return false; };
+  virtual bool processFactoryOption(int& i, std::vector<std::string>& argv,
+                                    const std::string& workingDir = std::string()) {
+    return false;
+  };
   /// Called after any registered factory flags have been processed.
   virtual void factoryOptionsFinished(){};
 
@@ -115,7 +118,8 @@ public:
   /// We can also pass options internally between modules in this way
   /// and it only needs 1 format
   virtual bool processOption(SolverInstanceBase::Options* opt, int& i,
-                             std::vector<std::string>& argv) {
+                             std::vector<std::string>& argv,
+                             const std::string& workingDir = std::string()) {
     return false;
   }
 
