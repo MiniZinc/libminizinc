@@ -1,0 +1,8 @@
+{
+    "data": [
+        "inner_directory/data_file.dzn",
+        "inner_directory/data_file.json"
+    ],
+    "model": "inner_directory/model_file.mzn",
+    "search-dir": "includes"
+}
