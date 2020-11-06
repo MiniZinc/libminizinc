@@ -249,6 +249,10 @@ These options control aspects of the MiniZinc compiler.
 
     Do not optimize the FlatZinc
 
+.. option::  -m <file>, --model <file>
+
+    File named <file> contains the model.
+
 .. option::  -d <file>, --data <file>
 
     File named <file> contains data used by the model.
@@ -558,3 +562,27 @@ Running ``minizinc --verbose config.mpc -p 4 model.mzn`` (or ``minizinc --verbos
       model.mzn
 
 Note that since ``-p 4`` comes after ``-p 2``, its value overrides the previous one and so ``-p 4`` is used. However, the multiple ``--cmdline-data`` options do not override each other as ``--cmdline-data`` allows for specification of multiple strings of data.
+
+Configuration files may also be used as a convenient way to specify instances.
+
+For a configuration file ``instance.mpc``
+
+.. code-block:: json
+
+  {
+    "model": "model.mzn",
+    "data": "data.dzn"
+  }
+
+And another configuration file ``gecode.mpc``
+
+.. code-block:: json
+
+  {
+    "solver": "gecode",
+    "intermediate-solutions": true
+  }
+
+We can run the instance with ``minizinc gecode.mpc instance.mpc``. Note that the files ``model.dzn`` and ``data.dzn`` will be resolved relative to the location of the configuration file which specified them.
+
+In this way, multiple configuration files can be set up for different instances and solver configurations, then combined as required.
