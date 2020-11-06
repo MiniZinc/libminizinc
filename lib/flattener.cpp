@@ -57,6 +57,7 @@ void Flattener::printHelp(ostream& os) const {
      << "  --no-optimize\n    Do not optimize the FlatZinc" << std::endl
      << "  --no-chain-compression\n    Do not simplify chains of implication constraints."
      << std::endl
+     << "  -m <file>, --model <file>\n    File named <file> is the model." << std::endl
      << "  -d <file>, --data <file>\n    File named <file> contains data used by the model."
      << std::endl
      << "  -D <data>, --cmdline-data <data>\n    Include the given data assignment in the model."
@@ -344,6 +345,25 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv,
       _log << "Error: solution checker model must have extension .mzc.mzn" << std::endl;
       return false;
     }
+  } else if (cop.getOption("-m --model", &buffer)) {
+    if (buffer.length() <= 4) {
+      return false;
+    }
+    auto extension = buffer.substr(buffer.length() - 4, string::npos);
+    auto isChecker =
+        buffer.length() > 8 && buffer.substr(buffer.length() - 8, string::npos) == ".mzc.mzn";
+    if ((extension == ".mzn" && !isChecker) || extension == ".fzn") {
+      if (extension == ".fzn") {
+        _isFlatzinc = true;
+        if (_fOutputByDefault) {  // mzn2fzn mode
+          return false;
+        }
+      }
+      _filenames.push_back(FileUtils::file_path(buffer, workingDir));
+      return true;
+    }
+    _log << "Error: model must have extension .mzn (or .fzn)" << std::endl;
+    return false;
   } else {
     std::string input_file(argv[i]);
     if (input_file.length() <= 4) {
