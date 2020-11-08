@@ -802,6 +802,12 @@ const SolverConfig& SolverConfigs::config(const std::string& _s) {
       selectedSolvers.insert(sidx);
     }
   }
+  if (selectedSolvers.empty()) {
+    // No matching version, only matching tag
+    for (int sidx : tag_it->second) {
+      selectedSolvers.insert(sidx);
+    }
+  }
   DefaultMap::const_iterator def_it = _tagDefault.find(get_tag(firstTag));
   if (def_it != _tagDefault.end()) {
     defaultSolvers.insert(def_it->second);
