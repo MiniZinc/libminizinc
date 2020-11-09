@@ -53,42 +53,10 @@ predicate int_eq_imp(var int: x, int: y, var bool: b) =
     not b
   endif;
 
-%% var, var
-predicate int_ne_imp(var int: x, var int: y, var bool: b) =
-  if is_fixed(b) then
-    if fix(b) then (x != y) else true endif
-  elseif (ub(x) < lb(y)) \/ (lb(x) > ub(y)) then
-    true
-  else
-    if is_fixed(x) then
-      if is_fixed(y) then
-        b -> (fix(x) != fix(y))
-      else
-        int_ne_imp(y, fix(x), b)
-      endif
-    elseif is_fixed(y) then
-      int_ne_imp(x, fix(y), b)
-    else
-      aux_int_ne_if_1(x, y, b)       %% Simple disjunction
-    endif
-  endif;
-
-%% var, const
-predicate int_ne_imp(var int: x, int: y, var bool: b) =
-  if is_fixed(b) then
-    if fix(b) then (x != y) else true endif
-  elseif (ub(x) < lb(y)) \/ (lb(x) > ub(y)) then
-    true
-  else
-    if is_fixed(x) then
-      b -> (y != fix(x))
-    else
-      let {
-        var bool: be = (x==y),  %% Reuse unary encoding / MIPD in mixed context
-      } in
-        b -> not be             %% TODO check the negative context is not propagated
-    endif
-  endif;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% NOTE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%% Omitting int_(lin)_ne_imp %%%%%%%%%%%%%%%%%%%
+%% so it falls back to _reif, full reification, for performance %%
+%% TODO also for floats %%
 
 %-----------------------------------------------------------------------------%
 
@@ -130,18 +98,6 @@ predicate int_lin_eq_imp(array[int] of int: c, array[int] of var int: x,
     aux_int_eq_if_1(sum(i in index_set(x))(c[i] * x[i]), d, b)
   endif;
 
-%% lin_expr, const
-predicate int_lin_ne_imp(array[int] of int: c, array[int] of var int: x,
-                          int: d, var bool: b) =
-  if (d = 0) /\ (length(c) = 2) /\ (abs(c[1]) = 1) /\ (c[1] = -1 * c[2]) then
-      int_ne_imp(x[1], x[2], b)
-  elseif fPostprocessDomains /\ fPostproDom_DIFF then
-    int_ne_imp(sum(i in index_set(x))(c[i] * x[i]), d, b)
-  elseif fAvoidNI then
-    aux_float_ne_if_1(sum2float(c, x), d, b)
-  else
-    aux_int_ne_if_1(sum(i in index_set(x))(c[i] * x[i]), d, b)
-  endif;
 
 %-----------------------------------------------------------------------------%
 
