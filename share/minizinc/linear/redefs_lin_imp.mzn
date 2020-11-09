@@ -121,7 +121,7 @@ predicate int_lin_lt_imp(array[int] of int: c, array[int] of var int: x,
 predicate int_lin_eq_imp(array[int] of int: c, array[int] of var int: x,
                           int: d, var bool: b) =
   if (d = 0) /\ (length(c) = 2) /\ (abs(c[1]) = 1) /\ (c[1] = -1 * c[2]) then
-    int_ne_imp(x[1], x[2], b)
+    int_eq_imp(x[1], x[2], b)
   elseif fPostprocessDomains /\ fPostproDom_DIFF then
     int_eq_imp(sum(i in index_set(x))(c[i] * x[i]), d, b)
   elseif fAvoidNI then
