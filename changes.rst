@@ -4,6 +4,66 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
+.. _v2.5.2:
+
+`Version 2.5.2 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.5.2>`__
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(released 6 November 2020)
+
+Changes:
+^^^^^^^^
+
+-  Use full reification in int_ne_imp.
+-  Add support for redefining 2d element constraints in the solver library.
+-  Produce warning when shadowing a variable in a let or comprehension in the
+   same function (or toplevel) scope (:bugref:`419`).
+-  Rewrite symmetric_all_different to inverse (:bugref:`426`).
+-  Add link icons to globals etc in the reference documentation (:bugref:`425`).
+-  Make the nodes statistic show the total number of nodes across all restarts
+   for SCIP.
+-  Add support for multidimensional arrays in counting constraints (:bugref:`413`).
+-  Allow .json files to be specified using the --data option (in addition to
+   .dzn files).
+-  When specifying relative paths inside parameter configuration files,
+   resolve them relative to the config file.
+
+Bug fixes:
+^^^^^^^^^^
+
+-  Correctly add file extension to plugin libraries when omitted.
+-  Fix JSON array index coercion when the first index is undefined.
+-  Catch ResultUndefined exception when evaluating cv par expressions,
+   and turn into undefined result.
+-  Fix trailing for lets and comprehensions, resolving some issues with
+   recursive functions containing lets and/or comprehensions.
+-  Only create par version of functions that do not refer to any toplevel
+   variables (:bugref:`418`).
+-  Keep correct location information for identifiers.
+-  Print warnings from solns2out.
+-  Fix the removal of reverse mapped arrays when they contain aliases.
+-  Disallow macro replacement when call has reification implementation.
+-  Fix the behaviour of passing an invalid version hint to --solver.
+
+Changes in the IDE:
+^^^^^^^^^^^^^^^^^^^
+
+-  Properly resize extra flags table after adding parameters (:idebugref:`119`).
+-  Use the minimal configuration to check the model interface
+   (:idebugref:`118`).
+-  Allow omitting builtin solver version in project JSON.
+-  Don't mark as modified when loading non-synced solver configurations.
+-  Ensure the last open configuration in a project is selected when loaded.
+-  Fix the default values of solution truncation and output window clearing.
+-  Process unrecognised extra flags from old project configurations.
+-  Fix watching for modification of the additional data box.
+-  Fix the alignment of line numbers.
+-  Make behaviour controls more narrow to accommodate smaller window sizes.
+-  Defocus config window widgets when updating solver config so values of
+   currently edited fields are updated.
+-  Pass user input data correctly during compilation.
+-  Remove solns2out options from MiniZinc call when compiling.
+
 .. _v2.5.1:
 
 `Version 2.5.1 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.5.1>`__
