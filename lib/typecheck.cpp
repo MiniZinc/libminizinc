@@ -2469,11 +2469,12 @@ public:
             // let's ignore this for now (TODO: add an annotation to make sure only
             // compiler-generated ones are accepted)
           } else {
+            const Location& loc = vd.e()->loc().isNonAlloc() ? vd.loc() : vd.e()->loc();
             std::ostringstream ss;
             ss << "initialisation value for `" << vd.id()->str()
                << "' has invalid type-inst: expected `" << vd.ti()->type().toString(_env)
                << "', actual `" << vd.e()->type().toString(_env) << "'";
-            _typeErrors.emplace_back(_env, vd.e()->loc(), ss.str());
+            _typeErrors.emplace_back(_env, loc, ss.str());
           }
         } else {
           vd.e(add_coercion(_env, _model, vd.e(), vd.ti()->type())());
