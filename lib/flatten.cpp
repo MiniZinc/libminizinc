@@ -2098,7 +2098,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
             } else if (e->type().isfloat()) {
               cid = constants().ids.float_.eq;
             }
-            if (cid != "" && (env.hasReverseMapper(vd->id()) || env.hasReverseMapper(e_id))) {
+            if (cid != "" && env.hasReverseMapper(vd->id())) {
               GCLock lock;
               std::vector<Expression*> args(2);
               args[0] = vd->id();
