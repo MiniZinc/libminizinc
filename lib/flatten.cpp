@@ -27,6 +27,7 @@
 namespace MiniZinc {
 
 // Create domain constraints. Return true if successful.
+template <bool warning>
 bool create_explicit_domain_constraints(EnvI& envi, VarDecl* vd, Expression* domain) {
   std::vector<Call*> calls;
   Location iloc = Location().introduce();
@@ -35,6 +36,16 @@ bool create_explicit_domain_constraints(EnvI& envi, VarDecl* vd, Expression* dom
     assert(domain->type().isint() || domain->type().isIntSet());
     IntSetVal* isv = eval_intset(envi, domain);
     calls.push_back(new Call(iloc, constants().ids.set_subset, {vd->id(), new SetLit(iloc, isv)}));
+  } else if (domain->type().isbool()) {
+    calls.push_back(new Call(iloc, constants().ids.bool_eq, {vd->id(), domain}));
+  } else if (domain->type().isBoolSet()) {
+    IntSetVal* bsv = eval_boolset(envi, domain);
+    assert(bsv->size() == 1);
+    if (bsv->min() != bsv->max()) {
+      return true;  // Both values are still possible, no change
+    }
+    calls.push_back(
+        new Call(iloc, constants().ids.bool_eq, {vd->id(), constants().boollit(bsv->min() > 0)}));
   } else if (domain->type().isfloat() || domain->type().isFloatSet()) {
     FloatSetVal* fsv = eval_floatset(envi, domain);
     if (fsv->size() == 1) {  // Range based
@@ -85,8 +96,10 @@ bool create_explicit_domain_constraints(EnvI& envi, VarDecl* vd, Expression* dom
       calls.push_back(new Call(iloc, constants().ids.set_in, {vd->id(), new SetLit(iloc, isv)}));
     }
   } else {
-    std::cerr << "Warning: domain change not handled by -g mode: " << *vd->id() << " = " << *domain
-              << std::endl;
+    if (warning) {
+      std::cerr << "Warning: domain change not handled by -g mode: " << *vd->id() << " = "
+                << *domain << std::endl;
+    }
     return false;
   }
 
@@ -103,7 +116,7 @@ bool create_explicit_domain_constraints(EnvI& envi, VarDecl* vd, Expression* dom
 
 void set_computed_domain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_computed) {
   if (envi.hasReverseMapper(vd->id())) {
-    if (!create_explicit_domain_constraints(envi, vd, domain)) {
+    if (!create_explicit_domain_constraints<false>(envi, vd, domain)) {
       throw EvalError(envi, domain->loc(),
                       "Unable to create domain constraint for reverse mapped variable");
     }
@@ -112,7 +125,7 @@ void set_computed_domain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_co
   }
   if (!envi.fopts.recordDomainChanges || vd->ann().contains(constants().ann.is_defined_var) ||
       vd->introduced() || vd->type().dim() > 0 ||
-      !create_explicit_domain_constraints(envi, vd, domain)) {
+      !create_explicit_domain_constraints<true>(envi, vd, domain)) {
     vd->ti()->domain(domain);
     vd->ti()->setComputedDomain(is_computed);
   }
@@ -3400,7 +3413,8 @@ void flatten(Env& e, FlatteningOptions opt) {
                       if (decl == nullptr) {
                         std::ostringstream ss;
                         ss << "'" << c->id()
-                           << "' is used in a reified context but no reified version is available";
+                           << "' is used in a reified context but no reified version is "
+                              "available";
                         throw FlatteningError(env, c->loc(), ss.str());
                       }
                     } else {
