@@ -1,8 +1,7 @@
+from enum import Enum
 from . import yaml
 import minizinc as mzn
 from minizinc.helpers import check_result
-from dataclasses import dataclass
-from dataclasses import make_dataclass
 import pathlib
 import re
 
@@ -177,9 +176,19 @@ class Solution:
         Returns whether or not this solution is satisfied by an actual solution
         """
 
+        def convertEnums(data):
+            # Convert enums to strings so that normal equality can be used
+            if isinstance(data, Enum):
+                return data.name
+            if isinstance(data, list):
+                return [convertEnums(d) for d in data]
+            if isinstance(data, set):
+                return set(convertEnums(d) for d in data)
+            return data
+
         def in_other(k, v):
             try:
-                return v == getattr(other, k)
+                return v == convertEnums(getattr(other, k))
             except AttributeError:
                 return False
 
