@@ -1730,7 +1730,8 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
               if (c->decl()->e() != nullptr) {
                 flat_exp(env, Ctx(), c, constants().varTrue, constants().varTrue);
               }
-              id->decl()->ti()->domain(constants().literalFalse);
+              set_computed_domain(env, id->decl(), constants().literalFalse,
+                                  id->decl()->ti()->computedDomain());
             }
             id = id->decl()->e() != nullptr ? id->decl()->e()->dynamicCast<Id>() : nullptr;
           }
@@ -1775,7 +1776,8 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
             if (c->decl()->e() != nullptr) {
               flat_exp(env, Ctx(), c, constants().varTrue, constants().varTrue);
             }
-            id->decl()->ti()->domain(constants().literalTrue);
+            set_computed_domain(env, id->decl(), constants().literalTrue,
+                                id->decl()->ti()->computedDomain());
           }
           id = id->decl()->e() != nullptr ? id->decl()->e()->dynamicCast<Id>() : nullptr;
         }
@@ -1889,6 +1891,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
           if (ibv != nullptr) {
             Id* id = nvd->id();
             while (id != nullptr) {
+              bool is_computed = id->decl()->ti()->computedDomain();
               if (id->decl()->ti()->domain() != nullptr) {
                 IntSetVal* domain = eval_intset(env, id->decl()->ti()->domain());
                 IntSetRanges dr(domain);
@@ -1896,17 +1899,18 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
                 Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> i(dr, ibr);
                 IntSetVal* newibv = IntSetVal::ai(i);
                 if (ibv->card() == newibv->card()) {
-                  id->decl()->ti()->setComputedDomain(true);
+                  is_computed = true;
                 } else {
                   ibv = newibv;
                 }
               } else {
-                id->decl()->ti()->setComputedDomain(true);
+                is_computed = true;
               }
               if (id->type().st() == Type::ST_PLAIN && ibv->size() == 0) {
                 env.fail();
               } else {
-                id->decl()->ti()->domain(new SetLit(Location().introduce(), ibv));
+                set_computed_domain(env, id->decl(), new SetLit(Location().introduce(), ibv),
+                                    is_computed);
               }
               id = id->decl()->e() != nullptr ? id->decl()->e()->dynamicCast<Id>() : nullptr;
             }
@@ -1919,21 +1923,23 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
           if (fb.valid) {
             Id* id = nvd->id();
             while (id != nullptr) {
+              bool is_computed = id->decl()->ti()->computedDomain();
               if (id->decl()->ti()->domain() != nullptr) {
                 FloatSetVal* domain = eval_floatset(env, id->decl()->ti()->domain());
                 FloatSetVal* ndomain = LinearTraits<FloatLit>::intersectDomain(domain, fb.l, fb.u);
                 if ((ibv != nullptr) && ndomain == domain) {
-                  id->decl()->ti()->setComputedDomain(true);
+                  is_computed = true;
                 } else {
                   ibv = ndomain;
                 }
               } else {
-                id->decl()->ti()->setComputedDomain(true);
+                is_computed = true;
               }
               if (LinearTraits<FloatLit>::domainEmpty(ibv)) {
                 env.fail();
               } else {
-                id->decl()->ti()->domain(new SetLit(Location(), ibv));
+                set_computed_domain(env, id->decl(), new SetLit(Location().introduce(), ibv),
+                                    is_computed);
               }
               id = id->decl()->e() != nullptr ? id->decl()->e()->dynamicCast<Id>() : nullptr;
             }
@@ -1973,8 +1979,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
             return vd->id();
           }
         } else {
-          vd->ti()->domain(vd->e());
-          vd->ti()->setComputedDomain(true);
+          set_computed_domain(env, vd, vd->e(), true);
         }
         if (didRewrite) {
           return vd->id();
@@ -1997,7 +2002,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
                   }
                   VarDecl* vdi = id->decl();
                   if (vdi->ti()->domain() == nullptr) {
-                    vdi->ti()->domain(vd->ti()->domain());
+                    set_computed_domain(env, vdi, vd->ti()->domain(), vdi->ti()->computedDomain());
                   } else {
                     IntSetVal* vdi_dom = eval_intset(env, vdi->ti()->domain());
                     IntSetRanges isvr(isv);
@@ -2010,8 +2015,8 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
                       IntSetRanges vdi_domr2(vdi_dom);
                       IntSetRanges newdomr(newdom);
                       if (!Ranges::equal(vdi_domr2, newdomr)) {
-                        vdi->ti()->domain(new SetLit(Location().introduce(), newdom));
-                        vdi->ti()->setComputedDomain(false);
+                        set_computed_domain(env, vdi, new SetLit(Location().introduce(), newdom),
+                                            false);
                       }
                     }
                   }
@@ -2044,7 +2049,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
                 if (Id* id = (*al)[i]->dynamicCast<Id>()) {
                   VarDecl* vdi = id->decl();
                   if (vdi->ti()->domain() == nullptr) {
-                    vdi->ti()->domain(vd->ti()->domain());
+                    set_computed_domain(env, vdi, vd->ti()->domain(), vdi->ti()->computedDomain());
                   } else {
                     FloatSetVal* vdi_dom = eval_floatset(env, vdi->ti()->domain());
                     FloatSetRanges fsvr(fsv);
@@ -2057,8 +2062,8 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
                       FloatSetRanges vdi_domr2(vdi_dom);
                       FloatSetRanges newdomr(newdom);
                       if (!Ranges::equal(vdi_domr2, newdomr)) {
-                        vdi->ti()->domain(new SetLit(Location().introduce(), newdom));
-                        vdi->ti()->setComputedDomain(false);
+                        set_computed_domain(env, vdi, new SetLit(Location().introduce(), newdom),
+                                            false);
                       }
                     }
                   }
@@ -2133,7 +2138,8 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
           if (vd->ti()->domain() != nullptr) {
             GCLock lock;
             Expression* vd_dom = eval_par(env, vd->ti()->domain());
-            vde_id->decl()->ti()->domain(vd_dom);
+            set_computed_domain(env, vde_id->decl(), vd_dom,
+                                vde_id->decl()->ti()->computedDomain());
           }
         } else if ((vd->e() != nullptr) && vd->e()->type().bt() == Type::BT_INT &&
                    vd->e()->type().dim() == 0) {
@@ -2190,8 +2196,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
                 IntSetVal* rhs_newibv = IntSetVal::ai(i);
                 if (rhs_domain->card() != rhs_newibv->card()) {
                   ibv_l = new SetLit(Location().introduce(), rhs_newibv);
-                  rhs_ident->decl()->ti()->domain(ibv_l);
-                  rhs_ident->decl()->ti()->setComputedDomain(false);
+                  set_computed_domain(env, rhs_ident->decl(), ibv_l, false);
                   if (rhs_ident->decl()->type().isOpt()) {
                     std::vector<Expression*> args(2);
                     args[0] = rhs_ident;
@@ -2209,7 +2214,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
             if (ibv_l == nullptr) {
               ibv_l = new SetLit(Location().introduce(), ibv);
             }
-            vd->ti()->domain(ibv_l);
+            set_computed_domain(env, vd, ibv_l, vd->ti()->computedDomain());
 
             if (vd->type().isOpt()) {
               std::vector<Expression*> args(2);
@@ -2259,8 +2264,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
                 FloatSetVal* rhs_newfbv = FloatSetVal::ai(i);
                 if (rhs_domain->card() != rhs_newfbv->card()) {
                   fbv_l = new SetLit(Location().introduce(), rhs_newfbv);
-                  rhs_ident->decl()->ti()->domain(fbv_l);
-                  rhs_ident->decl()->ti()->setComputedDomain(false);
+                  set_computed_domain(env, rhs_ident->decl(), fbv_l, false);
                   if (rhs_ident->decl()->type().isOpt()) {
                     std::vector<Expression*> args(2);
                     args[0] = rhs_ident;
@@ -2276,7 +2280,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
               }
             }
             fbv_l = new SetLit(Location().introduce(), fbv);
-            vd->ti()->domain(fbv_l);
+            set_computed_domain(env, vd, fbv_l, vd->ti()->computedDomain());
 
             if (vd->type().isOpt()) {
               std::vector<Expression*> args(2);
@@ -2323,7 +2327,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
               if (c->decl()->e() != nullptr) {
                 flat_exp(env, Ctx(), c, constants().varTrue, constants().varTrue);
               }
-              id->decl()->ti()->domain(e);
+              set_computed_domain(env, id->decl(), e, id->decl()->ti()->computedDomain());
             }
             id = id->decl()->e() != nullptr ? id->decl()->e()->dynamicCast<Id>() : nullptr;
           }
