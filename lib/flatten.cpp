@@ -27,7 +27,6 @@
 namespace MiniZinc {
 
 // Create domain constraints. Return true if successful.
-template <bool warning>
 bool create_explicit_domain_constraints(EnvI& envi, VarDecl* vd, Expression* domain) {
   std::vector<Call*> calls;
   Location iloc = Location().introduce();
@@ -96,10 +95,6 @@ bool create_explicit_domain_constraints(EnvI& envi, VarDecl* vd, Expression* dom
       calls.push_back(new Call(iloc, constants().ids.set_in, {vd->id(), new SetLit(iloc, isv)}));
     }
   } else {
-    if (warning) {
-      std::cerr << "Warning: domain change not handled by -g mode: " << *vd->id() << " = "
-                << *domain << std::endl;
-    }
     return false;
   }
 
@@ -116,19 +111,25 @@ bool create_explicit_domain_constraints(EnvI& envi, VarDecl* vd, Expression* dom
 
 void set_computed_domain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_computed) {
   if (envi.hasReverseMapper(vd->id())) {
-    if (!create_explicit_domain_constraints<false>(envi, vd, domain)) {
-      throw EvalError(envi, domain->loc(),
-                      "Unable to create domain constraint for reverse mapped variable");
+    if (!create_explicit_domain_constraints(envi, vd, domain)) {
+      std::ostringstream ss;
+      ss << "Unable to create domain constraint for reverse mapped variable: " << *vd->id() << " = "
+         << *domain << std::endl;
+      throw EvalError(envi, domain->loc(), ss.str());
     }
     vd->ti()->domain(domain);
     return;
   }
-  if (!envi.fopts.recordDomainChanges || vd->ann().contains(constants().ann.is_defined_var) ||
-      vd->introduced() || vd->type().dim() > 0 ||
-      !create_explicit_domain_constraints<true>(envi, vd, domain)) {
-    vd->ti()->domain(domain);
-    vd->ti()->setComputedDomain(is_computed);
+  if (envi.fopts.recordDomainChanges && !vd->ann().contains(constants().ann.is_defined_var) &&
+      !vd->introduced() && !(vd->type().dim() > 0)) {
+    if (create_explicit_domain_constraints(envi, vd, domain)) {
+      return;
+    }
+    std::cerr << "Warning: domain change not handled by -g mode: " << *vd->id() << " = " << *domain
+              << std::endl;
   }
+  vd->ti()->domain(domain);
+  vd->ti()->setComputedDomain(is_computed);
 }
 
 /// Output operator for contexts
