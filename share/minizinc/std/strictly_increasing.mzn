@@ -10,23 +10,23 @@ include "analyse_all_different.mzn";
 %-----------------------------------------------------------------------------%
 
 /** @group globals.sort Requires that the array \a x is in a stricly increasing order (duplicates are *not* allowed). */
-predicate strictly_increasing(array[int] of var bool: x) =
-    analyse_all_different(x) /\
-    fzn_strictly_increasing_bool(x);
+predicate strictly_increasing(array[$X] of var bool: x) =
+    analyse_all_different(array1d(x)) /\
+    fzn_strictly_increasing_bool(array1d(x));
 
-predicate strictly_increasing_reif(array[int] of var bool: x, var bool: b) =
-    fzn_strictly_increasing_bool_reif(x,b);
-
-/** @group globals.sort Requires that the array \a x is in a stricly increasing order (duplicates are *not* allowed). */
-predicate strictly_increasing(array[int] of var int: x) =
-    analyse_all_different(x) /\
-    fzn_strictly_increasing_int(x);
+predicate strictly_increasing_reif(array[$X] of var bool: x, var bool: b) =
+    fzn_strictly_increasing_bool_reif(array1d(x),b);
 
 /** @group globals.sort Requires that the array \a x is in a stricly increasing order (duplicates are *not* allowed). */
-predicate strictly_increasing(array[int] of var opt int: x) =
-    analyse_all_different(x) /\
-    fzn_strictly_increasing_int_opt(x);
+predicate strictly_increasing(array[$X] of var int: x) =
+    analyse_all_different(array1d(x)) /\
+    fzn_strictly_increasing_int(array1d(x));
 
-predicate strictly_increasing_reif(array[int] of var int: x, var bool: b) =
-    fzn_strictly_increasing_int_reif(x,b);
+/** @group globals.sort Requires that the array \a x is in a stricly increasing order (duplicates are *not* allowed). */
+predicate strictly_increasing(array[$X] of var opt int: x) =
+    analyse_all_different(array1d(x)) /\
+    fzn_strictly_increasing_int_opt(array1d(x));
+
+predicate strictly_increasing_reif(array[$X] of var int: x, var bool: b) =
+    fzn_strictly_increasing_int_reif(array1d(x),b);
 
