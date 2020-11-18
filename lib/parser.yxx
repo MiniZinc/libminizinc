@@ -738,12 +738,20 @@ base_ti_expr :
           $$->type(tt);
         }
       }
-    | opt_opt MZN_SET MZN_OF base_ti_expr_tail
+    | MZN_SET MZN_OF base_ti_expr_tail
+      { $$ = $3;
+        if ($$) {
+          Type tt = $$->type();
+          tt.st(Type::ST_SET);
+          $$->type(tt);
+        }
+      }
+    | MZN_OPT MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $4;
         if ($$) {
           Type tt = $$->type();
           tt.st(Type::ST_SET);
-          if ($1) tt.ot(Type::OT_OPTIONAL);
+          tt.ot(Type::OT_OPTIONAL);
           $$->type(tt);
         }
       }
