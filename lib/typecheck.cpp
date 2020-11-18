@@ -3069,11 +3069,10 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
                 }
                 // check if specialised par version of function already exists
                 FunctionI* decl_par = m->matchFn(env, decl->id(), tv, false);
-                bool parIsUsable = false;
-                if (decl_par->ti()->type().isPar() && decl_par->e() == nullptr &&
-                    decl_par->fromStdLib()) {
+                bool parIsUsable = decl_par->ti()->type().isPar();
+                if (parIsUsable && decl_par->e() == nullptr && decl_par->fromStdLib()) {
                   parIsUsable = true;
-                } else {
+                } else if (parIsUsable) {
                   bool foundVar = false;
                   for (auto* p : decl_par->params()) {
                     if (p->type().isvar()) {
