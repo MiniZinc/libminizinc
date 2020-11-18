@@ -38,11 +38,21 @@ using namespace std;
 using namespace MiniZinc;
 
 #define YYLLOC_DEFAULT(Current, Rhs, N) \
-  (Current).filename(Rhs[1].filename()); \
-  (Current).firstLine(Rhs[1].firstLine()); \
-  (Current).firstColumn(Rhs[1].firstColumn()); \
-  (Current).lastLine(Rhs[N].lastLine()); \
-  (Current).lastColumn(Rhs[N].lastColumn());
+  do { \
+    if (N > 0) { \
+      (Current).filename(YYRHSLOC(Rhs, 1).filename()); \
+      (Current).firstLine(YYRHSLOC(Rhs, 1).firstLine()); \
+      (Current).firstColumn(YYRHSLOC(Rhs, 1).firstColumn()); \
+      (Current).lastLine(YYRHSLOC(Rhs, N).lastLine()); \
+      (Current).lastColumn(YYRHSLOC(Rhs, N).lastColumn()); \
+    } else { \
+      (Current).filename(YYRHSLOC(Rhs, 0).filename()); \
+      (Current).firstLine(YYRHSLOC(Rhs, 0).lastLine()); \
+      (Current).firstColumn(YYRHSLOC(Rhs, 0).lastColumn()); \
+      (Current).lastLine(YYRHSLOC(Rhs, 0).lastLine()); \
+      (Current).lastColumn(YYRHSLOC(Rhs, 0).lastColumn()); \
+    } \
+  } while (false)
 
 int mzn_yyparse(void*);
 int mzn_yylex(YYSTYPE*, YYLTYPE*, void* scanner);
