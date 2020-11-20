@@ -3164,6 +3164,23 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         FunctionI* decl = m->matchFn(env, &c, false);
         c.decl(decl);
       }
+      void vBinOp(BinOp& bo) {
+        if (bo.decl() != nullptr) {
+          std::vector<Type> ta(2);
+          ta[0] = bo.lhs()->type();
+          ta[1] = bo.rhs()->type();
+          FunctionI* decl = m->matchFn(env, bo.opToString(), ta, false);
+          bo.decl(decl);
+        }
+      }
+      void vUnOp(UnOp& uo) {
+        if (uo.decl() != nullptr) {
+          std::vector<Type> ta(1);
+          ta[0] = uo.e()->type();
+          FunctionI* decl = m->matchFn(env, uo.opToString(), ta, false);
+          uo.decl(decl);
+        }
+      }
     } _mfp(env.envi(), m);
 
     for (auto* p : parFunctions) {
