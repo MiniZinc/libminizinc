@@ -8,7 +8,7 @@ predicate fzn_bin_packing_load_reif(array[int] of var int: load,
             min(index_set(load)) <= bin[i] /\ bin[i] <= max(index_set(load))
         )
     /\  forall( assigned_bin in index_set(load) ) (
-            load[b] = sum ( i in index_set(bin) ) (
+            load[assigned_bin] = sum ( i in index_set(bin) ) (
                 w[i] * bool2int( bin[i] = assigned_bin )
             )
         ) );
