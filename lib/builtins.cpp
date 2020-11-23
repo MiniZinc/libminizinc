@@ -1550,6 +1550,36 @@ bool b_abort(EnvI& env, Call* call) {
   throw EvalError(env, call->arg(0)->loc(), ss.str());
 }
 
+Expression* b_mzn_symmetry_breaking_constraint(EnvI& env, Call* call) {
+  GCLock lock;
+  Call* check = new Call(Location().introduce(),
+                         ASTString("mzn_check_ignore_symmetry_breaking_constraints"), {});
+  check->type(Type::parbool());
+  check->decl(env.model->matchFn(env, check, false, true));
+  if (eval_bool(env, check)) {
+    return constants().literalTrue;
+  }
+  Call* nc = new Call(call->loc(), ASTString("symmetry_breaking_constraint"), {call->arg(0)});
+  nc->type(Type::varbool());
+  nc->decl(env.model->matchFn(env, nc, false, true));
+  return nc;
+}
+
+Expression* b_mzn_redundant_constraint(EnvI& env, Call* call) {
+  GCLock lock;
+  Call* check =
+      new Call(Location().introduce(), ASTString("mzn_check_ignore_redundant_constraints"), {});
+  check->type(Type::parbool());
+  check->decl(env.model->matchFn(env, check, false, true));
+  if (eval_bool(env, check)) {
+    return constants().literalTrue;
+  }
+  Call* nc = new Call(call->loc(), ASTString("redundant_constraint"), {call->arg(0)});
+  nc->type(Type::varbool());
+  nc->decl(env.model->matchFn(env, nc, false, true));
+  return nc;
+}
+
 Expression* b_trace(EnvI& env, Call* call) {
   GCLock lock;
   Expression* msg_e;
@@ -3088,6 +3118,12 @@ void register_builtins(Env& e) {
     rb(env, m, constants().ids.mzn_deprecate, t, b_mzn_deprecate);
     t[3] = Type::optvartop(-1);
     rb(env, m, constants().ids.mzn_deprecate, t, b_mzn_deprecate);
+  }
+  {
+    rb(env, m, constants().ids.mzn_symmetry_breaking_constraint, {Type::varbool()},
+       b_mzn_symmetry_breaking_constraint);
+    rb(env, m, constants().ids.mzn_redundant_constraint, {Type::varbool()},
+       b_mzn_redundant_constraint);
   }
   {
     std::vector<Type> t(1);

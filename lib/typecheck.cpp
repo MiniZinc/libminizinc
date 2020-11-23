@@ -2272,6 +2272,19 @@ public:
       args[i] = call.arg(i);
     }
     FunctionI* fi = _model->matchFn(_env, &call, true, true);
+
+    if (fi != nullptr && fi->id() == "symmetry_breaking_constraint" && fi->params().size() == 1 &&
+        fi->params()[0]->type().isbool()) {
+      GCLock lock;
+      call.id(ASTString("mzn_symmetry_breaking_constraint"));
+      fi = _model->matchFn(_env, &call, true, true);
+    } else if (fi != nullptr && fi->id() == "redundant_constraint" && fi->params().size() == 1 &&
+               fi->params()[0]->type().isbool()) {
+      GCLock lock;
+      call.id(ASTString("mzn_redundant_constraint"));
+      fi = _model->matchFn(_env, &call, true, true);
+    }
+
     if ((fi->e() != nullptr) && fi->e()->isa<Call>()) {
       Call* next_call = fi->e()->cast<Call>();
       if ((next_call->decl() != nullptr) && next_call->argCount() == fi->params().size() &&

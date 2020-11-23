@@ -1504,6 +1504,8 @@ Constants::Constants() {
   ids.bool2float = ASTString("bool2float");
   ids.assert = ASTString("assert");
   ids.mzn_deprecate = ASTString("mzn_deprecate");
+  ids.mzn_symmetry_breaking_constraint = ASTString("mzn_symmetry_breaking_constraint");
+  ids.mzn_redundant_constraint = ASTString("mzn_redundant_constraint");
   ids.trace = ASTString("trace");
 
   ids.sum = ASTString("sum");
@@ -1833,6 +1835,8 @@ void Constants::mark(MINIZINC_GC_STAT_ARGS) {
   ids.assert.mark();
   ids.mzn_deprecate.mark();
   ids.trace.mark();
+  ids.mzn_symmetry_breaking_constraint.mark();
+  ids.mzn_redundant_constraint.mark();
   ids.introduced_var.mark();
   ids.anonEnumFromStrings.mark();
   Expression::mark(ctx.root);

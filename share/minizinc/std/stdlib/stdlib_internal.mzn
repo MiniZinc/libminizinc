@@ -1218,3 +1218,10 @@ function var float: min_t(array[int] of var float: x) :: promise_total =
   } in m
   endif;
 
+/* These predicates are used to intercept symmetry_breaking_constraint and
+ * redundant_constraint calls in user models, so that they can be ignored
+ * if the corresponding options have been set.
+ */
+
+predicate mzn_symmetry_breaking_constraint(var bool: b);
+predicate mzn_redundant_constraint(var bool: b);
