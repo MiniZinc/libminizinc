@@ -205,14 +205,20 @@ might result in output
   ----------
   ==========
 
-and the statistics showing 89 failures required.
+and the statistics showing 117 failures required.
 
-We can add redundant constraints to the model. Since each number
-in the sequence counts the number of occurrences of a number we know
+We can add redundant constraints to the model to improve the performance.
+Since each number
+in the sequence counts the number of occurrences of a number, we know
 that they sum up to :mzn:`n`. Similarly we know that the sum of
 :mzn:`s[i] * i` must also add up to :mzn:`n` because the sequence is magic.
-Adding these constraints 
-gives the model in
+
+.. index::
+  single: redundant_constraint; example
+
+These constraints do not actually constrain the model further: any solution of the original model is still a solution of the new model that includes the redundant constraints. It is good practice to make the MiniZinc compiler aware that a constraint is redundant. That way, the compiler can decide to ignore the constraint for particular solvers, since not all solvers benefit from redundant constraints. We therefore wrap redundant constraints in a call to the library predicate :mzn:`redundant_constraint`.
+
+The magic sequence model with these redundant constraints is shown in
 :numref:`ex-magic-series2`.
 
 .. literalinclude:: examples/magic-series2.mzn
@@ -230,6 +236,11 @@ results in the same output, but with statistics showing just 14 failures
 explored. The redundant constraints have allowed the solver to prune the
 search much earlier.
 
+Because we wrapped the redundant constraints in the special predicate, we can now switch them off easily on the command line by setting the flag :mzn:`mzn_ignore_redundant_constraints=true`:
+
+.. code-block:: bash
+
+  $ minizinc --solver gecode --all-solutions --statistics magic-series2.mzn -D "n=16;mzn_ignore_redundant_constraints=true;"
 
 Modelling Choices
 -----------------
@@ -421,20 +432,31 @@ The basic idea behind symmetry breaking is to impose an *order*. For example, to
 
   constraint q[1] <= n div 2;
 
-Convince yourself that this would remove exactly half of the symmetric variants in :numref:`fig-queens-sym`. In order to remove *all* symmetry, we need to work a bit harder.
+Convince yourself that this would remove exactly half of the symmetric variants in :numref:`fig-queens-sym`. You can tell the compiler that a particular constraint is a symmetry breaking constraint by wrapping it in a special call:
 
-Whenever we can express all symmetries as permutations of the array of variables, a set of *lexicographic ordering constraints* can be used to break all symmetry. For example, if the array of variables is called :mzn:`x`, and reversing the array is a symmetry of the problem, then the following constraint will break that symmetry:
+.. index::
+  single: symmetry_breaking_constraint; example
 
 .. code-block:: minizinc
 
-  constraint lex_lesseq(x, reverse(x));
+  constraint symmetry_breaking_constraint(q[1] <= n div 2);
+
+This has the advantage that solvers can ignore the constraint or treat it differently. It also means that you can easily switch off symmetry breaking by setting :mzn:`mzn_ignore_symmetry_breaking_constraints=true`, either in your model, or a data file, or as extra data using the ``-D`` command line option.
+
+In order to remove *all* symmetry in the n-queens problem, we need to work a bit harder. Whenever we can express all symmetries as permutations of the array of variables, a set of *lexicographic ordering constraints* can be used to break all symmetry. For example, if the array of variables is called :mzn:`x`, and reversing the array is a symmetry of the problem, then the following constraint will break that symmetry:
+
+.. code-block:: minizinc
+
+  constraint symmetry_breaking_constraint(lex_lesseq(x, reverse(x)));
 
 How about two-dimensional arrays? Lexicographic ordering works just the same, we only have to coerce the arrays into one dimension. For example, the following breaks the symmetry of flipping the array along one of the diagonals (note the swapped indices in the second comprehension):
 
 .. code-block:: minizinc
 
   array[1..n,1..n] of var int: x;
-  constraint lex_lesseq([ x[i,j] | i,j in 1..n ], [ x[j,i] | i,j in 1..n ]);
+  constraint symmetry_breaking_constraint(
+    lex_lesseq([ x[i,j] | i,j in 1..n ], [ x[j,i] | i,j in 1..n ])
+  );
 
 The great thing about using lexicographic ordering constraints is that we can add multiple ones (to break several symmetries simultaneously), without them interfering with each other, as long as we keep the order in the first argument the same.
 
@@ -445,7 +467,7 @@ The full model, with added Boolean variables, channeling constraints and symmetr
 .. literalinclude:: examples/nqueens_sym.mzn
   :language: minizinc
   :name: ex-queens-sym
-  :start-after: % Alternative
+  :start-after: % Symmetry breaking
   :end-before: % search
   :caption: Partial model for n-queens with symmetry breaking (full model: :download:`nqueens_sym.mzn <examples/nqueens_sym.mzn>`).
 
