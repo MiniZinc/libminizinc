@@ -559,16 +559,16 @@ Expression* JSONParser::parseExp(std::istream& is, bool parseObjects, bool possi
   }
 }
 
-Expression* JSONParser::coerceArray(TypeInst* intendedTI, Expression* array) {
+Expression* JSONParser::coerceArray(TypeInst* intendedTI, ArrayLit* al) {
+  assert(al != nullptr);
   TypeInst& ti = *intendedTI;
-  auto* al = array->dynamicCast<ArrayLit>();
   const Location& loc = al->loc();
 
-  if (al == nullptr || al->size() == 0) {
-    return array;  // Nothing to coerce
+  if (al->size() == 0) {
+    return al;  // Nothing to coerce
   }
   if (al->dims() != 1 && al->dims() != ti.ranges().size()) {
-    return array;  // Incompatible: TypeError will be thrown on original array
+    return al;  // Incompatible: TypeError will be thrown on original array
   }
 
   int missing_index = -1;
@@ -576,7 +576,7 @@ Expression* JSONParser::coerceArray(TypeInst* intendedTI, Expression* array) {
     TypeInst* nti = ti.ranges()[i];
     if (nti->domain() == nullptr) {
       if (missing_index != -1) {
-        return array;  // More than one index set is missing. Cannot compute correct index sets.
+        return al;  // More than one index set is missing. Cannot compute correct index sets.
       }
       missing_index = i;
     }
@@ -640,9 +640,15 @@ void JSONParser::parseModel(Model* m, std::istream& is, bool isData) {
         ii->m(subModel, true);
         m->addItem(ii);
       } else {
-        // Add correct index sets if they are non-standard
-        if (it != knownIds.end() && it->second->isarray()) {
-          e = coerceArray(it->second, e);
+        auto* al = e->dynamicCast<ArrayLit>();
+        if (it != knownIds.end() && al != nullptr) {
+          if (it->second->isarray()) {
+            // Add correct index sets if they are non-standard
+            e = coerceArray(it->second, al);
+          } else if (it->second->type().isSet()) {
+            // Convert array to a set
+            e = new Call(Location().introduce(), "array2set", {al});
+          }
         }
         auto* ai = new AssignI(e->loc().introduce(), ident, e);
         m->addItem(ai);

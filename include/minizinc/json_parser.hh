@@ -60,7 +60,7 @@ protected:
   Expression* parseObject(std::istream& is, bool possibleString = true);
 
   void parseModel(Model* m, std::istream& is, bool isData);
-  static Expression* coerceArray(TypeInst* intendedTI, Expression* array);
+  static Expression* coerceArray(TypeInst* intendedTI, ArrayLit* al);
 
 public:
   JSONParser(EnvI& env) : _env(env) {}
