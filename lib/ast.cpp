@@ -1063,12 +1063,10 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
           // but the same enum
           if (it == tmap.end()) {
             tmap.insert(std::pair<ASTString, Type>(enumTIId, enumIdT));
-          } else {
-            if (it->second.enumId() != enumIdT.enumId()) {
-              std::ostringstream ss;
-              ss << "type-inst variable $" << enumTIId << " used for different enum types";
-              throw TypeError(env, get_loc(ta[i], fi), ss.str());
-            }
+          } else if (strictEnum && it->second.enumId() != enumIdT.enumId()) {
+            std::ostringstream ss;
+            ss << "type-inst variable $" << enumTIId << " used for different enum types";
+            throw TypeError(env, get_loc(ta[i], fi), ss.str());
           }
         }
       }
