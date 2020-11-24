@@ -276,7 +276,7 @@ JSONParser::Token JSONParser::parseEnumString(istream& is) {
   return next;
 }
 
-Expression* JSONParser::parseObject(istream& is) {
+Expression* JSONParser::parseObject(istream& is, bool possibleString) {
   // precondition: found T_OBJ_OPEN
   Token objid = readToken(is);
   if (objid.t != T_STRING) {
@@ -310,10 +310,10 @@ Expression* JSONParser::parseObject(istream& is) {
           elems.push_back(next);
           break;
         case T_STRING:
-          if (listT != T_COLON && listT != T_STRING) {
+          if (listT != T_COLON && listT != (possibleString ? T_STRING : T_OBJ_OPEN)) {
             throw JSONError(_env, errLocation(), "invalid set literal");
           }
-          listT = T_STRING;
+          listT = possibleString ? T_STRING : T_OBJ_OPEN;
           elems.push_back(next);
           break;
         case T_BOOL:
@@ -440,7 +440,7 @@ Expression* JSONParser::parseObject(istream& is) {
   throw JSONError(_env, errLocation(), "invalid object");
 }
 
-ArrayLit* JSONParser::parseArray(std::istream& is) {
+ArrayLit* JSONParser::parseArray(std::istream& is, bool possibleString) {
   // precondition: opening parenthesis has been read
   vector<Expression*> exps;
   vector<pair<int, int> > dims;
@@ -485,12 +485,17 @@ ArrayLit* JSONParser::parseArray(std::istream& is) {
         }
         exps.push_back(FloatLit::a(next.d));
         break;
-      case T_STRING:
+      case T_STRING: {
         if (!hadDim[curDim]) {
           dims[curDim].second++;
         }
-        exps.push_back(new StringLit(Location().introduce(), next.s));
+        if (possibleString) {
+          exps.push_back(new StringLit(Location().introduce(), next.s));
+        } else {
+          exps.push_back(new Id(Location().introduce(), ASTString(next.s), nullptr));
+        }
         break;
+      }
       case T_BOOL:
         if (!hadDim[curDim]) {
           dims[curDim].second++;
@@ -527,7 +532,7 @@ list_done:
   return new ArrayLit(Location().introduce(), exps, dims);
 }
 
-Expression* JSONParser::parseExp(std::istream& is, bool parseObjects) {
+Expression* JSONParser::parseExp(std::istream& is, bool parseObjects, bool possibleString) {
   Token next = readToken(is);
   switch (next.t) {
     case T_INT:
@@ -536,15 +541,18 @@ Expression* JSONParser::parseExp(std::istream& is, bool parseObjects) {
     case T_FLOAT:
       return FloatLit::a(next.d);
     case T_STRING:
+      if (!possibleString) {
+        return new Id(Location().introduce(), ASTString(next.s), nullptr);
+      }
       return new StringLit(Location().introduce(), next.s);
     case T_BOOL:
       return new BoolLit(Location().introduce(), next.b);
     case T_NULL:
       return constants().absent;
     case T_OBJ_OPEN:
-      return parseObjects ? parseObject(is) : nullptr;
+      return parseObjects ? parseObject(is, possibleString) : nullptr;
     case T_LIST_OPEN:
-      return parseArray(is);
+      return parseArray(is, possibleString);
     default:
       throw JSONError(_env, errLocation(), "cannot parse JSON file");
       break;
@@ -620,8 +628,9 @@ void JSONParser::parseModel(Model* m, std::istream& is, bool isData) {
   for (;;) {
     string ident = expectString(is);
     expectToken(is, T_COLON);
-    Expression* e = parseExp(is, isData);
     auto it = knownIds.find(ident);
+    bool possibleString = it == knownIds.end() || it->second->type().bt() != Type::BT_UNKNOWN;
+    Expression* e = parseExp(is, isData, possibleString);
     if (ident[0] != '_' && (!isData || it != knownIds.end())) {
       if (e == nullptr) {
         // This is a nested object

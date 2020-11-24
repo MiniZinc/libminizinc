@@ -1,7 +1,7 @@
 /***
 !Test
 extra_files:
-- coercion.json
+- coerce_indices.json
 expected: !Result
   solution: !Solution
   offset1d: [-10,-9,-8]

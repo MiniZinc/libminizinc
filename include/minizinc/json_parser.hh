@@ -55,9 +55,9 @@ protected:
   std::string expectString(std::istream& is);
   void expectEof(std::istream& is);
   Token parseEnumString(std::istream& is);
-  Expression* parseExp(std::istream& is, bool parseObjects = true);
-  ArrayLit* parseArray(std::istream& is);
-  Expression* parseObject(std::istream& is);
+  Expression* parseExp(std::istream& is, bool parseObjects = true, bool possibleString = true);
+  ArrayLit* parseArray(std::istream& is, bool possibleString = true);
+  Expression* parseObject(std::istream& is, bool possibleString = true);
 
   void parseModel(Model* m, std::istream& is, bool isData);
   static Expression* coerceArray(TypeInst* intendedTI, Expression* array);
