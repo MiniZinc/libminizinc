@@ -4,6 +4,62 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
+.. _v2.5.3:
+
+`Version 2.5.3 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.5.3>`__
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(released 24 November 2020)
+
+Changes:
+^^^^^^^^
+
+-  Fully reify -> (x != y) in the linear library.
+-  Allow printing of comprehensions using introduced variables.
+-  Allow increasing/decreasing over multidimensional arrays.
+-  Add mzn_ignore_symmetry_breaking_constraints and mzn_ignore_redundant_constraints
+   options, allowing the symmetry_breaking_constraint and redundant_constraint
+   predicates to be overridden, so that those constraints can be disabled independent
+   of the solver library that's being used (:bugref:`429`).
+-  Add automatic coercion of strings in JSON input data to enum constants where needed.
+-  Add automatic coercion of lists in JSON input data to sets where needed.
+
+Bug fixes:
+^^^^^^^^^^
+
+-  Fix int_lin_eq_imp in the linear library.
+-  Use variable declaration location for invalid type-inst error messages without
+   locations.
+-  Rewrite par versions of fzn_count_* into var versions, allowing solvers that
+   only redefine the bar version to use their built-in propagators even if the
+   value to count is fixed at compile time (:bugref:`427`).
+-  Add multi-level array construction for enumerated types when outputting in
+   JSON format.
+-  Ensure that functions can only be used as par if their return type is par
+   (:bugref:`431`).
+-  Fix parser default location macro, preventing loss of location filenames
+   in some cases.
+-  Fix parser rule for non-opt sets to give the correct starting location.
+-  Fix fzn_bin_packing_capa_reif.mzn and fzn_bin_packing_load_reif.mzn
+   (:bugref:`435`).
+-  Update decl for binary and unary operators when creating par versions of
+   functions (:bugref:`437`).
+-  Only throw type errors for enum type identifier mismatch in strict enums mode.
+-  Only post cumulative constraints if there is at least one task, preventing an
+   assertion about the lower bound from failing.
+ 
+Changes in the IDE:
+^^^^^^^^^^^^^^^^^^^
+
+-  Only reset config window item focus if it is still focused, preventing spurious
+   changes in focus during code checking.
+-  Fix handling of final statuses, including UNSAT (:idebugref:`123`).
+-  Remove -s flag support from Gecode Gist solver configuration (:idebugref:`125`).
+-  Fix crash when saving a project with no solver selected (:idebugref:`127`).
+-  Correctly remove temporary parameter configuration files after use
+   (:idebugref:`128`, :idebugref:`129`).
+-  Fix the time limit readout in the status bar when solving.
+
 .. _v2.5.2:
 
 `Version 2.5.2 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.5.2>`__
