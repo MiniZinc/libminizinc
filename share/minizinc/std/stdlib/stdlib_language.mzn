@@ -53,7 +53,7 @@ test mzn_check_ignore_symmetry_breaking_constraints() =
   if absent(mzn_ignore_symmetry_breaking_constraints) then false
   else deopt(mzn_ignore_symmetry_breaking_constraints) endif;
 
-/** @group stdlib.options Whether to ignore redundant constraints (default: true)
+/** @group stdlib.options Whether to ignore redundant constraints
   
     If not specified or set to false, it depends on the solver library whether
     constraints that are wrapped in a redundant_constraint call
