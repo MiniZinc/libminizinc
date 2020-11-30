@@ -259,21 +259,57 @@ void JSONParser::expectEof(istream& is) {
   }
 }
 
-JSONParser::Token JSONParser::parseEnumString(istream& is) {
+Expression* JSONParser::parseEnum(std::istream& is) {
   Token next = readToken(is);
-  if (next.t != T_STRING) {
-    throw JSONError(_env, errLocation(), "invalid enum object");
+  switch (next.t) {
+    case T_STRING:
+      // Enum identifier
+      return new Id(Location().introduce(), next.s, nullptr);
+    case T_OBJ_OPEN: {
+      // Enum object or enum constructor
+      auto k = expectString(is);
+      expectToken(is, T_COLON);
+      return parseEnumObject(is, k);
+    }
+    default:
+      throw JSONError(_env, errLocation(), "invalid enum object");
   }
-  if (next.s.empty()) {
-    throw JSONError(_env, errLocation(), "invalid enum identifier");
+}
+
+Expression* JSONParser::parseEnumObject(std::istream& is, const std::string& seen) {
+  // precondition: already parsed '{ "e" :' or '{ "c" :'
+  //               seen = "e" or "c"
+  auto key = seen;
+  Expression* e;
+  std::string c;
+
+  for (;;) {
+    if (key == "e") {
+      e = parseEnum(is);
+    } else if (key == "c") {
+      c = expectString(is);
+    } else {
+      throw JSONError(_env, errLocation(), "invalid enum object");
+    }
+
+    auto next = readToken(is);
+    switch (next.t) {
+      case T_COMMA:
+        key = expectString(is);
+        expectToken(is, T_COLON);
+        break;
+      case T_OBJ_CLOSE:
+        if (e == nullptr) {
+          throw JSONError(_env, errLocation(), "invalid enum object");
+        }
+        if (!c.empty()) {
+          return new Call(Location().introduce(), c, {e});
+        }
+        return e;
+      default:
+        throw JSONError(_env, errLocation(), "invalid enum object");
+    }
   }
-  size_t nonIdChar =
-      next.s.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_");
-  size_t nonIdBegin = next.s.find_first_of("0123456789_");
-  if (nonIdChar != std::string::npos || nonIdBegin == 0) {
-    next.s = "'" + next.s + "'";
-  }
-  return next;
 }
 
 Expression* JSONParser::parseObject(istream& is, bool possibleString) {
@@ -285,7 +321,8 @@ Expression* JSONParser::parseObject(istream& is, bool possibleString) {
   expectToken(is, T_COLON);
   if (objid.s == "set") {
     expectToken(is, T_LIST_OPEN);
-    vector<Token> elems;
+    vector<Expression*> exprs;
+    vector<pair<Token, Token>> ranges;
     TokenT listT = T_COLON;  // dummy marker
     for (Token next = readToken(is); next.t != T_LIST_CLOSE; next = readToken(is)) {
       switch (next.t) {
@@ -298,23 +335,25 @@ Expression* JSONParser::parseObject(istream& is, bool possibleString) {
           if (listT != T_FLOAT) {
             listT = T_INT;
           }
-          elems.push_back(next);
-          elems.push_back(next);
+          ranges.emplace_back(next, next);
           break;
         case T_FLOAT:
           if (listT == T_STRING || listT == T_OBJ_OPEN) {
             throw JSONError(_env, errLocation(), "invalid set literal");
           }
           listT = T_FLOAT;
-          elems.push_back(next);
-          elems.push_back(next);
+          ranges.emplace_back(next, next);
           break;
         case T_STRING:
-          if (listT != T_COLON && listT != (possibleString ? T_STRING : T_OBJ_OPEN)) {
+          if (listT != T_COLON && listT != T_STRING) {
             throw JSONError(_env, errLocation(), "invalid set literal");
           }
-          listT = possibleString ? T_STRING : T_OBJ_OPEN;
-          elems.push_back(next);
+          listT = T_STRING;
+          if (possibleString) {
+            exprs.push_back(new StringLit(Location().introduce(), next.s));
+          } else {
+            exprs.push_back(new Id(Location().introduce(), next.s, nullptr));
+          }
           break;
         case T_BOOL:
           if (listT == T_STRING || listT == T_OBJ_OPEN) {
@@ -323,56 +362,51 @@ Expression* JSONParser::parseObject(istream& is, bool possibleString) {
           if (listT == T_COLON) {
             listT = T_BOOL;
           }
-          elems.push_back(next);
+          exprs.push_back(constants().boollit(next.b));
           break;
         case T_OBJ_OPEN: {
           if (listT != T_COLON && listT != T_OBJ_OPEN) {
             throw JSONError(_env, errLocation(), "invalid set literal");
           }
           listT = T_OBJ_OPEN;
-          Token enumid = readToken(is);
-          if (enumid.t != T_STRING || enumid.s != "e") {
-            throw JSONError(_env, errLocation(), "invalid enum object");
-          }
+          Token t = readToken(is);
           expectToken(is, T_COLON);
-          Token next = parseEnumString(is);
-          expectToken(is, T_OBJ_CLOSE);
-          elems.push_back(next);
+          exprs.push_back(parseEnumObject(is, t.s));
           break;
         }
-        case T_LIST_OPEN:
+        case T_LIST_OPEN: {
           if (listT != T_COLON && listT != T_INT && listT != T_FLOAT) {
             throw JSONError(_env, errLocation(), "invalid set literal");
           }
 
-          next = readToken(is);
-          if (next.t == T_INT) {
+          Token range_min = readToken(is);
+          if (range_min.t == T_INT) {
             if (listT != T_FLOAT) {
               listT = T_INT;
             }
-          } else if (next.t == T_FLOAT) {
+          } else if (range_min.t == T_FLOAT) {
             listT = T_FLOAT;
           } else {
             throw JSONError(_env, errLocation(), "invalid set literal");
           }
-          elems.push_back(next);
 
           expectToken(is, T_COMMA);
 
-          next = readToken(is);
-          if (next.t == T_INT) {
+          Token range_max = readToken(is);
+          if (range_max.t == T_INT) {
             if (listT != T_FLOAT) {
               listT = T_INT;
             }
-          } else if (next.t == T_FLOAT) {
+          } else if (range_max.t == T_FLOAT) {
             listT = T_FLOAT;
           } else {
             throw JSONError(_env, errLocation(), "invalid set literal");
           }
-          elems.push_back(next);
+          ranges.emplace_back(range_min, range_max);
 
           expectToken(is, T_LIST_CLOSE);
           break;
+        }
         default:
           throw JSONError(_env, errLocation(), "invalid set literal");
       }
@@ -380,12 +414,9 @@ Expression* JSONParser::parseObject(istream& is, bool possibleString) {
     expectToken(is, T_OBJ_CLOSE);
 
     if (listT == T_INT) {
-      unsigned int n = elems.size() / 2;
       auto* res = IntSetVal::a();
-      for (unsigned int i = 0; i < n; i++) {
-        IntVal m(elems[2 * i].i);
-        IntVal n(elems[2 * i + 1].i);
-        auto* isv = IntSetVal::a(m, n);
+      for (const auto& range : ranges) {
+        auto* isv = IntSetVal::a(range.first.i, range.second.i);
         IntSetRanges isr(isv);
         IntSetRanges r(res);
         Ranges::Union<IntVal, IntSetRanges, IntSetRanges> u(isr, r);
@@ -394,12 +425,9 @@ Expression* JSONParser::parseObject(istream& is, bool possibleString) {
       return new SetLit(Location().introduce(), res);
     }
     if (listT == T_FLOAT) {
-      unsigned int n = elems.size() / 2;
       auto* res = FloatSetVal::a();
-      for (unsigned int i = 0; i < n; i++) {
-        FloatVal m(elems[2 * i].d);
-        FloatVal n(elems[2 * i + 1].d);
-        auto* fsv = FloatSetVal::a(m, n);
+      for (const auto& range : ranges) {
+        auto* fsv = FloatSetVal::a(range.first.d, range.second.d);
         FloatSetRanges fsr(fsv);
         FloatSetRanges r(res);
         Ranges::Union<FloatVal, FloatSetRanges, FloatSetRanges> u(fsr, r);
@@ -408,34 +436,10 @@ Expression* JSONParser::parseObject(istream& is, bool possibleString) {
       return new SetLit(Location().introduce(), res);
     }
 
-    vector<Expression*> elems_e(elems.size());
-    switch (listT) {
-      case T_COLON:
-        break;
-      case T_BOOL:
-        for (unsigned int i = 0; i < elems.size(); i++) {
-          elems_e[i] = new BoolLit(Location().introduce(), elems[i].b);
-        }
-        break;
-      case T_STRING:
-        for (unsigned int i = 0; i < elems.size(); i++) {
-          elems_e[i] = new StringLit(Location().introduce(), elems[i].s);
-        }
-        break;
-      case T_OBJ_OPEN:
-        for (unsigned int i = 0; i < elems.size(); i++) {
-          elems_e[i] = new Id(Location().introduce(), ASTString(elems[i].s), nullptr);
-        }
-        break;
-      default:
-        break;
-    }
-    return new SetLit(Location().introduce(), elems_e);
+    return new SetLit(Location().introduce(), exprs);
   }
-  if (objid.s == "e") {
-    Token next = parseEnumString(is);
-    expectToken(is, T_OBJ_CLOSE);
-    return new Id(Location().introduce(), ASTString(next.s), nullptr);
+  if (objid.s == "e" || objid.s == "c") {
+    return parseEnumObject(is, objid.s);
   }
   throw JSONError(_env, errLocation(), "invalid object");
 }
@@ -443,7 +447,7 @@ Expression* JSONParser::parseObject(istream& is, bool possibleString) {
 ArrayLit* JSONParser::parseArray(std::istream& is, bool possibleString) {
   // precondition: opening parenthesis has been read
   vector<Expression*> exps;
-  vector<pair<int, int> > dims;
+  vector<pair<int, int>> dims;
   dims.emplace_back(1, 0);
   vector<bool> hadDim;
   hadDim.push_back(false);
