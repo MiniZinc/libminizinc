@@ -326,7 +326,7 @@ public:
             id = id->decl()->id();
           }
           if (id->idn() == -1) {
-            _os << id->v();
+            _os << Printer::quoteId(id->v());
           } else {
             _os << "X_INTRODUCED_" << id->idn() << "_";
           }
@@ -575,7 +575,7 @@ public:
       } break;
       case Expression::E_CALL: {
         const Call& c = *e->cast<Call>();
-        _os << c.id() << "(";
+        _os << Printer::quoteId(c.id()) << "(";
         for (unsigned int i = 0; i < c.argCount(); i++) {
           p(c.arg(i));
           if (i < c.argCount() - 1) {
@@ -593,7 +593,7 @@ public:
         if (vd.id()->idn() != -1) {
           _os << " X_INTRODUCED_" << vd.id()->idn() << "_";
         } else if (vd.id()->v().size() != 0) {
-          _os << " " << vd.id()->v();
+          _os << " " << Printer::quoteId(vd.id()->v());
         }
         if (vd.introduced()) {
           _os << " ::var_is_introduced ";
@@ -714,7 +714,7 @@ public:
           p(fi.ti());
           _os << " : ";
         }
-        _os << fi.id();
+        _os << Printer::quoteId(fi.id());
         if (fi.paramCount() > 0) {
           _os << "(";
           for (unsigned int j = 0; j < fi.paramCount(); j++) {

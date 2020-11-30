@@ -35,9 +35,9 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
         }
       }
     }
-    bool reuseVarId =
-        v->type().isAnn() || (v->toplevel() && v->id()->idn() == -1 &&
-                              v->id()->v().c_str()[0] != '\'' && v->id()->v().c_str()[0] != '_');
+    bool reuseVarId = v->type().isAnn() || (v->toplevel() && v->id()->idn() == -1 &&
+                                            Printer::quoteId(v->id()->v()).c_str()[0] != '\'' &&
+                                            v->id()->v().c_str()[0] != '_');
     VarDecl* vd = new_vardecl(env, ctx, ti, reuseVarId ? v->id() : nullptr, v, nullptr);
     v->flat(vd);
     Ctx nctx;

@@ -344,8 +344,17 @@ _                 { return MZN_UNDERSCORE; }
 
 [A-Za-z][A-Za-z0-9_]* {
                     yylval->sValue = strdup(yytext); return MZN_IDENTIFIER; }
-"'"[^\\'\xa\xd\x0]*"'" {
-                    yylval->sValue = strdup(yytext); return MZN_IDENTIFIER; }
+"'"[^\\'\xa\xd\x0]+"'" {
+                    MiniZinc::ParserState* parm = 
+                    static_cast<MiniZinc::ParserState*>(yyget_extra(yyscanner));
+                    if (parm->isFlatZinc) {
+                      return QUOTED_IDENTIFIER;
+                    } else {
+                      yylval->sValue = strdup(yytext + 1);
+                      yylval->sValue[strlen(yytext)-2] = 0;
+                      return MZN_IDENTIFIER;
+                    }
+                    }
 _[A-Za-z][A-Za-z0-9_]* {
                     MiniZinc::ParserState* parm =
                     static_cast<MiniZinc::ParserState*>(yyget_extra(yyscanner));

@@ -269,13 +269,8 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           create_enum_to_string_name(ident, "_enum_to_string_" + std::to_string(p) + "_");
       std::vector<Expression*> al_args(sl->v().size());
       for (unsigned int i = 0; i < sl->v().size(); i++) {
-        std::string str(sl->v()[i]->cast<Id>()->str().c_str());
-        if (str.size() >= 2 && str[0] == '\'' && str[str.size() - 1] == '\'') {
-          al_args[i] =
-              new StringLit(Location().introduce(), ASTString(str.substr(1, str.size() - 2)));
-        } else {
-          al_args[i] = new StringLit(Location().introduce(), ASTString(str));
-        }
+        auto str = sl->v()[i]->cast<Id>()->str();
+        al_args[i] = new StringLit(Location().introduce(), str);
         /// TODO: reimplement reverseEnum with a symbol table into the model (so you can evalPar an
         /// expression)
       }
@@ -319,9 +314,10 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           Location().introduce(),
           {vd_aj->id(), new StringLit(Location().introduce(), ASTString("null"))}, sl_absent);
 
-      auto* json_e_quote = new StringLit(Location().introduce(), ASTString("{\"e\":\""));
-      auto* json_e_quote_end = new StringLit(Location().introduce(), ASTString("\"}"));
-      auto* quote_aa = new BinOp(Location().introduce(), json_e_quote, BOT_PLUSPLUS, aa);
+      auto* json_e_quote = new StringLit(Location().introduce(), ASTString("{\"e\":"));
+      auto* json_e_quote_end = new StringLit(Location().introduce(), ASTString("}"));
+      auto* quote_aa = new BinOp(Location().introduce(), json_e_quote, BOT_PLUSPLUS,
+                                 new Call(Location().introduce(), constants().ids.show, {aa}));
       auto* quote_aa2 = new BinOp(Location().introduce(), quote_aa, BOT_PLUSPLUS, json_e_quote_end);
 
       Call* quote_dzn = new Call(Location().introduce(), ASTString("showDznId"), {aa});
@@ -394,9 +390,9 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
         auto* json_e_quote = new StringLit(Location().introduce(), ASTString("{\"e\":\""));
         auto* json_e_quote_mid = new StringLit(Location().introduce(), ASTString("\", \"i\":"));
         auto* json_e_quote_end = new StringLit(Location().introduce(), ASTString("}"));
-        auto* construct_string_json =
-            new BinOp(Location().introduce(), json_e_quote, BOT_PLUSPLUS,
-                      new StringLit(Location().introduce(), ident->str()));
+        auto* construct_string_json = new BinOp(
+            Location().introduce(), json_e_quote, BOT_PLUSPLUS,
+            new StringLit(Location().introduce(), Printer::escapeStringLit(ident->str())));
         auto* construct_string_json_1a = new BinOp(Location().introduce(), construct_string_json,
                                                    BOT_PLUSPLUS, json_e_quote_mid);
         auto* construct_string_json_1b =
@@ -751,12 +747,15 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           Call* toString = new Call(Location().introduce(),
                                     create_enum_to_string_name(otherEnumId, "_toString_"),
                                     {toEnumE, vd_ab->id(), vd_aj->id()});
-
-          auto* openOther =
-              new StringLit(Location().introduce(), std::string(c->id().c_str()) + "(");
+          auto* c_quoted = new Call(Location().introduce(), "showDznId",
+                                    {new StringLit(Location().introduce(), c->id())});
+          auto* c_ident = new ITE(Location().introduce(), {vd_ab->id(), c_quoted},
+                                  new StringLit(Location().introduce(), c->id()));
+          auto* openOther = new BinOp(Location().introduce(), c_ident, BOT_PLUSPLUS,
+                                      new StringLit(Location().introduce(), "("));
           auto* openJson =
               new StringLit(Location().introduce(),
-                            "{ \"c\" : \"" + std::string(c->id().c_str()) + "\", \"e\" : ");
+                            "{ \"c\" : \"" + Printer::escapeStringLit(c->id()) + "\", \"e\" : ");
           ITE* openConstr = new ITE(Location().introduce(), {vd_aj->id(), openJson}, openOther);
           auto* closeJson = new StringLit(Location().introduce(), "}");
           auto* closeOther = new StringLit(Location().introduce(), ")");
@@ -3644,11 +3643,7 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
 
 std::string create_enum_to_string_name(Id* ident, const std::string& prefix) {
   std::ostringstream ss;
-  if (ident->str().c_str()[0] == '\'') {
-    ss << "'" << prefix << ident->str().substr(1);
-  } else {
-    ss << prefix << *ident;
-  }
+  ss << prefix << *ident;
   return ss.str();
 }
 

@@ -1700,13 +1700,7 @@ std::string b_show(EnvI& env, Call* call) { return show(env, call->arg(0)); }
 std::string b_show_dzn_id(EnvI& env, Call* call) {
   GCLock lock;
   std::string s = eval_string(env, call->arg(0));
-  size_t nonIdChar =
-      s.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_");
-  size_t nonIdBegin = s.find_first_of("0123456789_");
-  if (nonIdChar != std::string::npos || nonIdBegin == 0) {
-    s = "'" + s + "'";
-  }
-  return s;
+  return Printer::quoteId(s);
 }
 
 std::string b_show_json_basic(EnvI& env, Expression* e) {

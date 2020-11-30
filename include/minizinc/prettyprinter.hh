@@ -67,6 +67,41 @@ public:
     }
     return ret.str();
   }
+
+  template <class S>
+  static std::string quoteId(const S& s) {
+    char idChars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_";
+    char idBegin[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    const char* str = s.c_str();
+    if (str == nullptr) {
+      return "";
+    }
+    if (str[0] == '\'') {
+      // Already quoted
+      return std::string(str);
+    }
+    const std::vector<std::string> reserved = {
+        "ann",   "annotation", "any",      "array",    "bool",      "case",    "constraint",
+        "diff",  "div",        "else",     "elseif",   "endif",     "enum",    "false",
+        "float", "function",   "if",       "in",       "include",   "int",     "intersect",
+        "let",   "list",       "maximize", "minimize", "mod",       "not",     "of",
+        "op",    "opt",        "output",   "par",      "predicate", "record",  "satisfy",
+        "set",   "solve",      "string",   "subset",   "superset",  "symdiff", "test",
+        "then",  "true",       "tuple",    "type",     "union",     "var",     "where",
+        "xor"};
+    bool is_reserved =
+        std::find(reserved.begin(), reserved.end(), std::string(str)) != reserved.end();
+    if (is_reserved || strchr(idBegin, str[0]) == nullptr) {
+      return "'" + std::string(str) + "'";
+    }
+    auto n = s.size();
+    for (auto i = 1; i < n; i++) {
+      if (strchr(idChars, str[i]) == nullptr) {
+        return "'" + std::string(str) + "'";
+      }
+    }
+    return std::string(str);
+  }
 };
 
 /// Output operator for expressions

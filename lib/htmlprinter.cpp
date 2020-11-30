@@ -658,14 +658,14 @@ public:
 
       std::ostringstream os;
       std::string sig =
-          vdi->e()->type().toString(_env) + " " + std::string(vdi->e()->id()->str().c_str());
+          vdi->e()->type().toString(_env) + " " + Printer::quoteId(vdi->e()->id()->str());
       os << "<div class='mzn-vardecl' id='" << HtmlDocOutput::make_html_id(sig) << "'>\n";
       os << "<div class='mzn-vardecl-code'>\n";
       if (vdi->e()->ti()->type() == Type::ann()) {
         os << "<span class='mzn-kw'>annotation</span> ";
-        os << "<span class='mzn-fn-id'>" << *vdi->e()->id() << "</span>";
+        os << "<span class='mzn-fn-id'>" << Printer::quoteId(vdi->e()->id()->str()) << "</span>";
       } else {
-        os << *vdi->e()->ti() << ": " << *vdi->e()->id();
+        os << *vdi->e()->ti() << ": " << Printer::quoteId(vdi->e()->id()->str());
       }
       os << "</div><div class='mzn-vardecl-doc'>\n";
       os << addHTML(ds);
@@ -750,11 +750,11 @@ public:
         os << "<span class='mzn-kw'>function</span> <span class='mzn-ti'>" << *fi->ti()
            << "</span>: ";
       }
-      fs << fi->id() << "(";
-      os << "<span class='mzn-fn-id'>" << fi->id() << "</span>(";
+      fs << Printer::quoteId(fi->id()) << "(";
+      os << "<span class='mzn-fn-id'>" << Printer::quoteId(fi->id()) << "</span>(";
       size_t align = fs.str().size();
       for (unsigned int i = 0; i < fi->paramCount(); i++) {
-        fs << *fi->param(i)->ti() << ": " << *fi->param(i)->id();
+        fs << *fi->param(i)->ti() << ": " << Printer::quoteId(fi->param(i)->id()->str());
         if (i < fi->paramCount() - 1) {
           fs << ", ";
         }
@@ -762,7 +762,7 @@ public:
       bool splitArgs = (fs.str().size() > 70);
       for (unsigned int i = 0; i < fi->paramCount(); i++) {
         os << "<span class='mzn-ti'>" << *fi->param(i)->ti() << "</span>: "
-           << "<span class='mzn-id'>" << *fi->param(i)->id() << "</span>";
+           << "<span class='mzn-id'>" << Printer::quoteId(fi->param(i)->id()->str()) << "</span>";
         if (i < fi->paramCount() - 1) {
           os << ",";
           if (splitArgs) {
@@ -851,8 +851,8 @@ public:
       os << "</div>";
       os << "</div>";
 
-      HtmlDocOutput::DocItem di(HtmlDocOutput::DocItem::T_FUN,
-                                std::string(fi->id().c_str(), fi->id().size()), sig, os.str());
+      HtmlDocOutput::DocItem di(HtmlDocOutput::DocItem::T_FUN, Printer::quoteId(fi->id()), sig,
+                                os.str());
       HtmlDocOutput::add_to_group(_maingroup, group, di);
     }
   }
@@ -1186,24 +1186,25 @@ public:
         group = HtmlDocOutput::extract_arg_word(ds, group_idx);
       }
       std::ostringstream os;
-      std::string sig = vdi->e()->type().toString(_env) + " " +
-                        std::string(vdi->e()->id()->str().c_str(), vdi->e()->id()->str().size());
+      std::string sig =
+          vdi->e()->type().toString(_env) + " " + Printer::quoteId(vdi->e()->id()->str());
 
       std::string myMainGroup = group.substr(0, group.find_first_of('.'));
       auto it = _maingroup.subgroups.find(myMainGroup);
       os << ".. index::\n";
       if (it != _maingroup.subgroups.m.end()) {
-        os << "   pair: " << (*it)->htmlName << "; " << *vdi->e()->id() << "\n\n";
+        os << "   pair: " << (*it)->htmlName << "; " << Printer::quoteId(vdi->e()->id()->str())
+           << "\n\n";
       } else {
         std::cerr << "did not find " << myMainGroup << "\n";
-        os << "   single: " << *vdi->e()->id() << "\n\n";
+        os << "   single: " << Printer::quoteId(vdi->e()->id()->str()) << "\n\n";
       }
 
       os << ".. code-block:: minizinc\n\n";
       if (vdi->e()->ti()->type() == Type::ann()) {
-        os << "  annotation " << *vdi->e()->id();
+        os << "  annotation " << Printer::quoteId(vdi->e()->id()->str());
       } else {
-        os << "  " << *vdi->e()->ti() << ": " << *vdi->e()->id();
+        os << "  " << *vdi->e()->ti() << ": " << Printer::quoteId(vdi->e()->id()->str());
       }
       os << "\n\n";
       os << HtmlDocOutput::trim(ds) << "\n\n";
@@ -1272,10 +1273,10 @@ public:
       auto it = _maingroup.subgroups.find(myMainGroup);
       os << ".. index::\n";
       if (it != _maingroup.subgroups.m.end()) {
-        os << "   pair: " << (*it)->htmlName << "; " << fi->id() << "\n\n";
+        os << "   pair: " << (*it)->htmlName << "; " << Printer::quoteId(fi->id()) << "\n\n";
       } else {
         std::cerr << "did not find " << myMainGroup << "\n";
-        os << "   single: " << fi->id() << "\n\n";
+        os << "   single: " << Printer::quoteId(fi->id()) << "\n\n";
       }
       os << ".. code-block:: minizinc\n\n";
 
@@ -1288,7 +1289,7 @@ public:
       } else {
         fs << "function " << *fi->ti() << ": ";
       }
-      fs << fi->id() << "(";
+      fs << Printer::quoteId(fi->id()) << "(";
       os << "  " << fs.str();
       size_t align = fs.str().size();
       for (unsigned int i = 0; i < fi->paramCount(); i++) {
@@ -1296,7 +1297,7 @@ public:
         std::ostringstream fid;
         fid << *fi->param(i)->id();
         if (!fid.str().empty()) {
-          fs << ": " << *fi->param(i)->id();
+          fs << ": " << Printer::quoteId(fi->param(i)->id()->str());
         }
         if (i < fi->paramCount() - 1) {
           fs << ", ";
@@ -1308,7 +1309,7 @@ public:
         std::ostringstream fid;
         fid << *fi->param(i)->id();
         if (!fid.str().empty()) {
-          os << ": " << *fi->param(i)->id();
+          os << ": " << Printer::quoteId(fi->param(i)->id()->str());
         }
         if (i < fi->paramCount() - 1) {
           os << ",";
@@ -1384,8 +1385,8 @@ public:
       }
       os << "\n";
 
-      HtmlDocOutput::DocItem di(HtmlDocOutput::DocItem::T_FUN,
-                                std::string(fi->id().c_str(), fi->id().size()), sig, os.str());
+      HtmlDocOutput::DocItem di(HtmlDocOutput::DocItem::T_FUN, Printer::quoteId(fi->id()), sig,
+                                os.str());
       HtmlDocOutput::add_to_group(_maingroup, group, di);
     }
   }

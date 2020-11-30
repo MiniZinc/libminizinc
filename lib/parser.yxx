@@ -191,6 +191,10 @@ Expression* createArrayAccess(const ParserLocation& loc, Expression* e, std::vec
 // that contains identifiers starting with _
 %token FLATZINC_IDENTIFIER
 
+// Used to signal an error when parsing a FlatZinc file
+// that contains quoted identifiers
+%token QUOTED_IDENTIFIER
+
 %token MZN_INVALID_INTEGER_LITERAL "invalid integer literal"
 %token MZN_INVALID_FLOAT_LITERAL "invalid float literal"
 %token MZN_UNTERMINATED_STRING "unterminated string"

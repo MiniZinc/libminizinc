@@ -329,7 +329,7 @@ Identifiers have the following syntax:
 .. code-block:: minizincdef
 
   <ident> ::= [A-Za-z][A-Za-z0-9_]*       % excluding keywords
-            | "'" [^'\xa\xd\x0]* "'"
+            | "'" [^'\xa\xd\x0]+ "'"
 
 .. code-block:: minizinc
 
