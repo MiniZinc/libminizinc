@@ -326,7 +326,7 @@ vector<MiniZinc::SolverConfig::ExtraFlag> MIPxpressWrapper::getExtraFlags(
     return res;
   } catch (MiniZinc::Plugin::PluginError&) {
     return {};
-  } catch (XpressPlugin&) {
+  } catch (XpressException&) {
     return {};
   }
   return {};
