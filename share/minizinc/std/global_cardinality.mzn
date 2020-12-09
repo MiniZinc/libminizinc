@@ -9,5 +9,9 @@ predicate global_cardinality(array[$X] of var int: x,
                              array[$Y] of var int: counts) =
     assert(index_sets_agree(cover, counts),
         "global_cardinality: cover and counts must have identical index sets",
-        fzn_global_cardinality(array1d(x), array1d(cover), array1d(counts))
+        if length(x) == 0 then
+          forall(c in array1d(counts))(c = 0)
+        else
+          fzn_global_cardinality(array1d(x), array1d(cover), array1d(counts))
+        endif
     );

@@ -12,5 +12,9 @@ predicate global_cardinality_closed(array[$X] of var int: x,
     assert(index_sets_agree(cover, counts),
         "global_cardinality_closed: " ++
         "cover and counts must have identical index sets",
-        fzn_global_cardinality_closed(array1d(x), array1d(cover), array1d(counts))
+        if length(x) == 0 then
+          forall(c in array1d(counts))(c = 0)
+        else
+          fzn_global_cardinality_closed(array1d(x), array1d(cover), array1d(counts))
+        endif
     );
