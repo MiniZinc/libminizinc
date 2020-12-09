@@ -17,15 +17,15 @@ predicate at_most_reif(int: n, array[int] of var int: x, int: v, var bool: b) =
 /**  @group globals.counting
   Requires at most \a n variables in \a x to take the value \a v.
 */
-predicate at_most(int: n, array[int] of var set of int: x, set of int: v) =
-    fzn_at_most_set(n, x, v);
-predicate at_most_reif(int: n, array[int] of var set of int: x, set of int: v, var bool: b) =
-    fzn_at_most_set_reif(n, x, v,b);
+predicate at_most(int: n, array[$X] of var set of int: x, set of int: v) =
+    fzn_at_most_set(n, array1d(x), v);
+predicate at_most_reif(int: n, array[$X] of var set of int: x, set of int: v, var bool: b) =
+    fzn_at_most_set_reif(n, array1d(x), v,b);
 
 % Synonyms for the above.
 
 predicate atmost(int: n, array[int] of var int: x, int: v) =
     at_most(n, x, v);
 
-predicate atmost(int: n, array[int] of var set of int: x, set of int: v) =
+predicate atmost(int: n, array[$X] of var set of int: x, set of int: v) =
     at_most(n, x, v);

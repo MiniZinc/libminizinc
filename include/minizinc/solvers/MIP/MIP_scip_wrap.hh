@@ -13,6 +13,7 @@
 #pragma once
 
 #include <minizinc/plugin.hh>
+#include <minizinc/solver_config.hh>
 #include <minizinc/solver_instance_base.hh>
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
 
@@ -144,6 +145,8 @@ public:
   // NOLINTNEXTLINE(readability-identifier-naming)
   SCIP_SOL*(__stdcall* SCIPgetBestSol)(SCIP* scip);
   // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_Longint(__stdcall* SCIPgetNTotalNodes)(SCIP* scip);
+  // NOLINTNEXTLINE(readability-identifier-naming)
   SCIP_Longint(__stdcall* SCIPgetNNodes)(SCIP* scip);
   // NOLINTNEXTLINE(readability-identifier-naming)
   int(__stdcall* SCIPgetNNodesLeft)(SCIP* scip);
@@ -183,6 +186,56 @@ public:
   int(__stdcall* SCIPgetNVars)(SCIP* scip);
   // NOLINTNEXTLINE(readability-identifier-naming)
   int(__stdcall* SCIPgetNConss)(SCIP* scip);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_PARAM**(__stdcall* SCIPgetParams)(SCIP* scip);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* SCIPgetNParams)(SCIP* scip);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  const char*(__stdcall* SCIPparamGetName)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_PARAMTYPE(__stdcall* SCIPparamGetType)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  const char*(__stdcall* SCIPparamGetDesc)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_Bool(__stdcall* SCIPparamGetBoolDefault)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  char*(__stdcall* SCIPparamGetCharAllowedValues)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  char(__stdcall* SCIPparamGetCharDefault)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* SCIPparamGetIntDefault)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* SCIPparamGetIntMin)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* SCIPparamGetIntMax)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_Longint(__stdcall* SCIPparamGetLongintDefault)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_Longint(__stdcall* SCIPparamGetLongintMin)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_Longint(__stdcall* SCIPparamGetLongintMax)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_Real(__stdcall* SCIPparamGetRealDefault)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_Real(__stdcall* SCIPparamGetRealMin)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_Real(__stdcall* SCIPparamGetRealMax)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  char*(__stdcall* SCIPparamGetStringDefault)(SCIP_PARAM* param);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_PARAM*(__stdcall* SCIPgetParam)(SCIP* scip, const char* name);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_RETCODE(__stdcall* SCIPchgBoolParam)(SCIP* scip, SCIP_PARAM* param, SCIP_Bool value);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_RETCODE(__stdcall* SCIPchgIntParam)(SCIP* scip, SCIP_PARAM* param, int value);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_RETCODE(__stdcall* SCIPchgLongintParam)(SCIP* scip, SCIP_PARAM* param, SCIP_Longint value);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_RETCODE(__stdcall* SCIPchgRealParam)(SCIP* scip, SCIP_PARAM* param, SCIP_Real value);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_RETCODE(__stdcall* SCIPchgCharParam)(SCIP* scip, SCIP_PARAM* param, char value);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_RETCODE(__stdcall* SCIPchgStringParam)(SCIP* scip, SCIP_PARAM* param, const char* value);
 
 private:
   void load();
@@ -200,6 +253,13 @@ class MIPScipWrapper : public MIPWrapper {
   std::vector<double> _x;
 
 public:
+  class FactoryOptions {
+  public:
+    bool processOption(int& i, std::vector<std::string>& argv, const std::string& workingDir);
+
+    std::string scipDll;
+  };
+
   class Options : public MiniZinc::SolverInstanceBase::Options {
   public:
     int nThreads = 1;
@@ -215,18 +275,22 @@ public:
     double intTol = 1e-8;
     double objDiff = 1.0;
 
-    std::string scipDll;
+    std::unordered_map<std::string, std::string> extraParams;
 
-    bool processOption(int& i, std::vector<std::string>& argv);
+    bool processOption(int& i, std::vector<std::string>& argv, const std::string& workingDir);
     static void printHelp(std::ostream& os);
   };
 
 private:
+  FactoryOptions& _factoryOptions;
   Options* _options = nullptr;
   ScipPlugin* _plugin = nullptr;
 
 public:
-  MIPScipWrapper(Options* opt) : _options(opt) { SCIP_PLUGIN_CALL(openSCIP()); }
+  MIPScipWrapper(FactoryOptions& factoryOpt, Options* opt)
+      : _factoryOptions(factoryOpt), _options(opt) {
+    SCIP_PLUGIN_CALL(openSCIP());
+  }
   ~MIPScipWrapper() override {
     SCIP_RETCODE ret = delSCIPVars();
     assert(ret == SCIP_OKAY);
@@ -234,15 +298,21 @@ public:
     assert(ret == SCIP_OKAY);
   }
 
-  static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
-  static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
+  static std::string getDescription(FactoryOptions& factoryOpt,
+                                    MiniZinc::SolverInstanceBase::Options* opt = nullptr);
+  static std::string getVersion(FactoryOptions& factoryOpt,
+                                MiniZinc::SolverInstanceBase::Options* opt = nullptr);
   static std::string getId();
   static std::string getName();
   static std::vector<std::string> getTags();
   static std::vector<std::string> getStdFlags();
-  static std::vector<std::string> getRequiredFlags();
+  static std::vector<std::string> getRequiredFlags(FactoryOptions& factoryOpt);
+  static std::vector<std::string> getFactoryFlags();
 
-  bool processOption(int& i, int argc, const char** argv);
+  static std::vector<MiniZinc::SolverConfig::ExtraFlag> getExtraFlags(FactoryOptions& factoryOpt);
+
+  bool processOption(int& i, int argc, const char** argv,
+                     const std::string& workingDir = std::string());
   void printVersion(std::ostream& os);
   void printHelp(std::ostream& os);
   //       Statistics& getStatistics() { return _statistics; }

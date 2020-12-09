@@ -16,6 +16,7 @@
 #include <minizinc/config.hh>
 #include <minizinc/eval_par.hh>
 #include <minizinc/file_utils.hh>
+#include <minizinc/flat_exp.hh>
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/output.hh>
 #include <minizinc/prettyprinter.hh>
@@ -1474,24 +1475,50 @@ FloatVal b_sqrt(EnvI& env, Call* call) {
 bool b_assert_bool(EnvI& env, Call* call) {
   assert(call->argCount() == 2);
   GCLock lock;
-  if (eval_bool(env, call->arg(0))) {
+  Expression* cond_e;
+  if (call->arg(0)->type().cv()) {
+    Ctx ctx;
+    ctx.b = C_MIX;
+    cond_e = flat_cv_exp(env, ctx, call->arg(0))();
+  } else {
+    cond_e = call->arg(0);
+  }
+  if (eval_bool(env, cond_e)) {
     return true;
   }
-  auto* err = eval_par(env, call->arg(1))->cast<StringLit>();
+  Expression* msg_e;
+  if (call->arg(1)->type().cv()) {
+    msg_e = flat_cv_exp(env, Ctx(), call->arg(1))();
+  } else {
+    msg_e = call->arg(1);
+  }
   std::ostringstream ss;
-  ss << "Assertion failed: " << err->v();
+  ss << "Assertion failed: " << eval_string(env, msg_e);
   throw EvalError(env, call->arg(0)->loc(), ss.str());
 }
 
 Expression* b_assert(EnvI& env, Call* call) {
   assert(call->argCount() == 3);
   GCLock lock;
-  if (eval_bool(env, call->arg(0))) {
+  Expression* cond_e;
+  if (call->arg(0)->type().cv()) {
+    Ctx ctx;
+    ctx.b = C_MIX;
+    cond_e = flat_cv_exp(env, ctx, call->arg(0))();
+  } else {
+    cond_e = call->arg(0);
+  }
+  if (eval_bool(env, cond_e)) {
     return call->arg(2);
   }
-  auto* err = eval_par(env, call->arg(1))->cast<StringLit>();
+  Expression* msg_e;
+  if (call->arg(1)->type().cv()) {
+    msg_e = flat_cv_exp(env, Ctx(), call->arg(1))();
+  } else {
+    msg_e = call->arg(1);
+  }
   std::ostringstream ss;
-  ss << "Assertion failed: " << err->v();
+  ss << "Assertion failed: " << eval_string(env, msg_e);
   throw EvalError(env, call->arg(0)->loc(), ss.str());
 }
 
@@ -1512,29 +1539,79 @@ Expression* b_mzn_deprecate(EnvI& env, Call* call) {
 
 bool b_abort(EnvI& env, Call* call) {
   GCLock lock;
-  auto* err = eval_par(env, call->arg(0))->cast<StringLit>();
+  Expression* msg_e;
+  if (call->arg(0)->type().cv()) {
+    msg_e = flat_cv_exp(env, Ctx(), call->arg(0))();
+  } else {
+    msg_e = call->arg(0);
+  }
   std::ostringstream ss;
-  ss << "Abort: " << err->v();
+  ss << "Abort: " << eval_string(env, msg_e);
   throw EvalError(env, call->arg(0)->loc(), ss.str());
+}
+
+Expression* b_mzn_symmetry_breaking_constraint(EnvI& env, Call* call) {
+  GCLock lock;
+  Call* check = new Call(Location().introduce(),
+                         ASTString("mzn_check_ignore_symmetry_breaking_constraints"), {});
+  check->type(Type::parbool());
+  check->decl(env.model->matchFn(env, check, false, true));
+  if (eval_bool(env, check)) {
+    return constants().literalTrue;
+  }
+  Call* nc = new Call(call->loc(), ASTString("symmetry_breaking_constraint"), {call->arg(0)});
+  nc->type(Type::varbool());
+  nc->decl(env.model->matchFn(env, nc, false, true));
+  return nc;
+}
+
+Expression* b_mzn_redundant_constraint(EnvI& env, Call* call) {
+  GCLock lock;
+  Call* check =
+      new Call(Location().introduce(), ASTString("mzn_check_ignore_redundant_constraints"), {});
+  check->type(Type::parbool());
+  check->decl(env.model->matchFn(env, check, false, true));
+  if (eval_bool(env, check)) {
+    return constants().literalTrue;
+  }
+  Call* nc = new Call(call->loc(), ASTString("redundant_constraint"), {call->arg(0)});
+  nc->type(Type::varbool());
+  nc->decl(env.model->matchFn(env, nc, false, true));
+  return nc;
 }
 
 Expression* b_trace(EnvI& env, Call* call) {
   GCLock lock;
-  auto* msg = eval_par(env, call->arg(0))->cast<StringLit>();
-  env.errstream << msg->v();
+  Expression* msg_e;
+  if (call->arg(0)->type().cv()) {
+    msg_e = flat_cv_exp(env, Ctx(), call->arg(0))();
+  } else {
+    msg_e = call->arg(0);
+  }
+  env.errstream << eval_string(env, msg_e);
   return call->argCount() == 1 ? constants().literalTrue : call->arg(1);
 }
 
 Expression* b_trace_stdout(EnvI& env, Call* call) {
   GCLock lock;
-  auto* msg = eval_par(env, call->arg(0))->cast<StringLit>();
-  env.outstream << msg->v();
+  Expression* msg_e;
+  if (call->arg(0)->type().cv()) {
+    msg_e = flat_cv_exp(env, Ctx(), call->arg(0))();
+  } else {
+    msg_e = call->arg(0);
+  }
+  env.errstream << eval_string(env, msg_e);
   return call->argCount() == 1 ? constants().literalTrue : call->arg(1);
 }
 
 Expression* b_trace_logstream(EnvI& env, Call* call) {
   GCLock lock;
-  auto* msg = eval_par(env, call->arg(0))->cast<StringLit>();
+  StringLit* msg;
+  if (call->arg(0)->type().cv()) {
+    msg = flat_cv_exp(env, Ctx(), call->arg(0))()->cast<StringLit>();
+  } else {
+    msg = eval_par(env, call->arg(0))->cast<StringLit>();
+  }
   env.logstream << msg->v();
   return call->argCount() == 1 ? constants().literalTrue : call->arg(1);
 }
@@ -3041,6 +3118,12 @@ void register_builtins(Env& e) {
     rb(env, m, constants().ids.mzn_deprecate, t, b_mzn_deprecate);
     t[3] = Type::optvartop(-1);
     rb(env, m, constants().ids.mzn_deprecate, t, b_mzn_deprecate);
+  }
+  {
+    rb(env, m, constants().ids.mzn_symmetry_breaking_constraint, {Type::varbool()},
+       b_mzn_symmetry_breaking_constraint);
+    rb(env, m, constants().ids.mzn_redundant_constraint, {Type::varbool()},
+       b_mzn_redundant_constraint);
   }
   {
     std::vector<Type> t(1);

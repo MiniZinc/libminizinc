@@ -55,7 +55,8 @@ string GecodeSolverFactory::getVersion(SolverInstanceBase::Options* /*opt*/) {
 }
 
 bool GecodeSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
-                                        std::vector<std::string>& argv) {
+                                        std::vector<std::string>& argv,
+                                        const std::string& workingDir) {
   auto& _opt = static_cast<GecodeOptions&>(*opt);
   if (string(argv[i]) == "--allow-unbounded-vars") {
     _opt.allowUnboundedVars = true;

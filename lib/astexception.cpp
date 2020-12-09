@@ -22,7 +22,11 @@ LocationException::LocationException(EnvI& env, const Location& loc, const std::
 ResultUndefinedError::ResultUndefinedError(EnvI& env, const Location& loc, const std::string& msg)
     : LocationException(env, loc, msg) {
   if (env.inMaybePartial == 0) {
-    env.addWarning("undefined result becomes false in Boolean context\n  (" + msg + ")");
+    std::string warning = "undefined result becomes false in Boolean context";
+    if (!msg.empty()) {
+      warning += "\n  (" + msg + ")";
+    }
+    env.addWarning(warning);
   }
 }
 

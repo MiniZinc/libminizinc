@@ -624,9 +624,8 @@ void* ASTChunk::alloc(size_t size) {
 
 void GC::mark() {
   GC* gc = GC::gc();
-  if (!gc->_heap->_trail.empty()) {
-    gc->_heap->_trail.back().mark = true;
-  }
+  gc->_heap->_trail.emplace_back(nullptr, nullptr);
+  gc->_heap->_trail.back().mark = true;
 }
 void GC::trail(Expression** l, Expression* v) {
   GC* gc = GC::gc();
@@ -634,13 +633,13 @@ void GC::trail(Expression** l, Expression* v) {
 }
 void GC::untrail() {
   GC* gc = GC::gc();
-  while (!gc->_heap->_trail.empty() && !gc->_heap->_trail.back().mark) {
+  while (!gc->_heap->_trail.back().mark) {
     *gc->_heap->_trail.back().l = gc->_heap->_trail.back().v;
     gc->_heap->_trail.pop_back();
   }
-  if (!gc->_heap->_trail.empty()) {
-    gc->_heap->_trail.back().mark = false;
-  }
+  assert(gc->_heap->_trail.back().mark);
+  assert(!gc->_heap->_trail.empty());
+  gc->_heap->_trail.pop_back();
 }
 size_t GC::maxMem() {
   GC* gc = GC::gc();

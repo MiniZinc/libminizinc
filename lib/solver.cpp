@@ -100,8 +100,11 @@ MZNFZNSolverFlag MZNFZNSolverFlag::std(const std::string& n0) {
   return MZNFZNSolverFlag(FT_NOARG, n0);
 }
 
-MZNFZNSolverFlag MZNFZNSolverFlag::extra(const std::string& n0, const std::string& t0) {
-  return MZNFZNSolverFlag(t0 == "bool" ? FT_NOARG : FT_ARG, n0);
+MZNFZNSolverFlag MZNFZNSolverFlag::extra(const SolverConfig::ExtraFlag& ef) {
+  return MZNFZNSolverFlag(
+      ef.flagType == SolverConfig::ExtraFlag::FlagType::T_BOOL && ef.range.empty() ? FT_NOARG
+                                                                                   : FT_ARG,
+      ef.flag);
 }
 
 // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -119,6 +122,17 @@ void SolverRegistry::removeSolverFactory(SolverFactory* pSF) {
   auto it = find(_sfstorage.begin(), _sfstorage.end(), pSF);
   assert(pSF);
   _sfstorage.erase(it);
+}
+
+void SolverRegistry::addFactoryFlag(const std::string& flag, SolverFactory* sf) {
+  assert(sf);
+  _factoryFlagStorage.push_back(std::make_pair(flag, sf));
+}
+
+void SolverRegistry::removeFactoryFlag(const std::string& flag, SolverFactory* sf) {
+  assert(sf);
+  auto it = find(_factoryFlagStorage.begin(), _factoryFlagStorage.end(), std::make_pair(flag, sf));
+  _factoryFlagStorage.erase(it);
 }
 
 /// Function createSI also adds each SI to the local storage
@@ -305,54 +319,146 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
   int i = 1;
   int j = 1;
   int argc = static_cast<int>(argv.size());
+  std::vector<std::string> workingDirs = {""};
   if (argc < 2) {
     return OPTION_ERROR;
   }
 
   // Add params from a file if necessary
+  std::vector<std::string> paramFiles;
   for (i = 1; i < argc; ++i) {
-    string param_file;
-    bool used_flag = false;
+    string paramFile;
+    bool usedFlag = false;
+    bool pushWorkingDir = true;
 
     if (argv[i] == "--param-file") {
-      used_flag = true;
+      usedFlag = true;
       ++i;
       if (i == argc) {
         _log << "Argument required for --param-file" << endl;
         return OPTION_ERROR;
       }
-      param_file = argv[i];
+      paramFile = argv[i];
+    } else if (argv[i] == "--param-file-no-push") {
+      usedFlag = true;
+      pushWorkingDir = false;
+      ++i;
+      if (i == argc) {
+        _log << "Argument required for --param-file-no-push" << endl;
+        return OPTION_ERROR;
+      }
+      paramFile = argv[i];
+    } else if (argv[i] == "--push-working-directory") {
+      ++i;
+      workingDirs.push_back(argv[i]);
+    } else if (argv[i] == "--pop-working-directory") {
+      workingDirs.pop_back();
     } else {
       size_t last_dot = argv[i].find_last_of('.');
       if (last_dot != string::npos && argv[i].substr(last_dot, string::npos) == ".mpc") {
-        param_file = argv[i];
+        paramFile = argv[i];
       }
     }
 
-    if (!param_file.empty()) {
+    if (!paramFile.empty()) {
       try {
-        vector<string> new_args = {argv[0]};
+        auto paramFilePath = FileUtils::file_path(paramFile, workingDirs.back());
+        if (std::find(paramFiles.begin(), paramFiles.end(), paramFilePath) != paramFiles.end()) {
+          throw ParamException("Cyclic parameter configuration file");
+        }
         // add parameter file arguments
         ParamConfig pc;
-        pc.blacklist({"--param-file", "--solvers", "--solvers-json", "--solver-json", "--help",
-                      "-h", "--config-dirs"});
+        pc.blacklist(
+            {"--solvers", "--solvers-json", "--solver-json", "--help", "-h", "--config-dirs"});
         pc.negatedFlag("-i", "-n-i");
         pc.negatedFlag("--intermediate", "--no-intermediate");
         pc.negatedFlag("--intermediate-solutions", "--no-intermediate-solutions");
         pc.negatedFlag("--all-satisfaction", "--disable-all-satisfaction");
-        pc.load(param_file);
+        pc.load(paramFilePath);
 
-        auto to_insert = pc.argv();
-        auto remove = argv.begin() + (used_flag ? i - 1 : i);
-        auto insert = argv.erase(remove, argv.begin() + i + 1);
-        argv.insert(insert, to_insert.begin(), to_insert.end());
+        // Insert the new options
+        auto toInsert = pc.argv();
+        auto remove = argv.begin() + (usedFlag ? i - 1 : i);
+        auto position = argv.erase(remove, argv.begin() + i + 1);
+        if (pushWorkingDir) {
+          position =
+              argv.insert(position, {"--push-working-directory",
+                                     FileUtils::file_path(FileUtils::dir_name(paramFilePath))}) +
+              2;
+        }
+        position = argv.insert(position, toInsert.begin(), toInsert.end()) + toInsert.size();
+        if (pushWorkingDir) {
+          position = argv.insert(position, "--pop-working-directory") + 1;
+        }
+        paramFiles.push_back(paramFilePath);
         argc = argv.size();
+
+        // Have to process the newly added options
+        if (usedFlag) {
+          i -= 2;
+        } else {
+          i--;
+        }
       } catch (ParamException& e) {
         _log << "Solver parameter exception: " << e.msg() << endl;
         return OPTION_ERROR;
       }
     }
   }
+
+  // Process any registered factory flags
+  const auto& factoryFlags = get_global_solver_registry()->getFactoryFlags();
+  std::unordered_map<std::string, std::vector<std::string>> reducedSolverDefaults;
+  if (!factoryFlags.empty()) {
+    // Process solver default factory flags
+    for (const auto& factoryFlag : factoryFlags) {
+      auto factoryId = factoryFlag.second->getId();
+      if (reducedSolverDefaults.count(factoryId) == 0) {
+        reducedSolverDefaults.insert({factoryId, _solverConfigs.defaultOptions(factoryId)});
+      }
+      auto& defaultArgs = reducedSolverDefaults.find(factoryId)->second;
+      std::vector<std::string> keep;
+      for (i = 0; i < defaultArgs.size(); i++) {
+        if (defaultArgs[i] != factoryFlag.first ||
+            !factoryFlag.second->processFactoryOption(i, defaultArgs)) {
+          keep.push_back(defaultArgs[i]);
+        }
+      }
+      defaultArgs = keep;
+    }
+    // Process command line factory flags
+    std::vector<std::string> remaining = {argv[0]};
+    for (i = 1; i < argc; i++) {
+      bool ok = false;
+      if (argv[i] == "--push-working-directory") {
+        remaining.push_back(argv[i]);
+        i++;
+        workingDirs.push_back(argv[i]);
+      } else if (argv[i] == "--pop-working-directory") {
+        workingDirs.pop_back();
+      } else {
+        for (const auto& factoryFlag : factoryFlags) {
+          if (argv[i] == factoryFlag.first &&
+              factoryFlag.second->processFactoryOption(i, argv, workingDirs.back())) {
+            ok = true;
+            break;
+          }
+        }
+      }
+      if (!ok) {
+        remaining.push_back(argv[i]);
+      }
+    }
+    argv = remaining;
+    argc = remaining.size();
+  }
+  for (auto* sf : get_global_solver_registry()->getSolverFactories()) {
+    // Notify solver factories that factory flags are done
+    sf->factoryOptionsFinished();
+  }
+
+  // After this point all solver configurations must be available
+  _solverConfigs.populate(_log);
 
   for (i = 1; i < argc; ++i) {
     if (argv[i] == "-h" || argv[i] == "--help") {
@@ -517,7 +623,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               acceptedFlags.push_back(MZNFZNSolverFlag::std(sf));
             }
             for (const auto& ef : sc.extraFlags()) {
-              acceptedFlags.push_back(MZNFZNSolverFlag::extra(ef.flag, ef.flagType));
+              acceptedFlags.push_back(MZNFZNSolverFlag::extra(ef));
             }
 
             // Collect arguments required for underlying exe
@@ -644,10 +750,14 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               }
             }
           }
-          if (!sc.defaultFlags().empty()) {
+          auto reducedDefaultFlags = reducedSolverDefaults.find(sc.id());
+          const auto& defaultFlags = reducedDefaultFlags == reducedSolverDefaults.end()
+                                         ? sc.defaultFlags()
+                                         : reducedDefaultFlags->second;
+          if (!defaultFlags.empty()) {
             std::vector<std::string> addedArgs;
             addedArgs.push_back(argv[0]);  // excutable name
-            for (const auto& df : sc.defaultFlags()) {
+            for (const auto& df : defaultFlags) {
               addedArgs.push_back(df);
             }
             for (int i = 1; i < argv.size(); i++) {
@@ -672,10 +782,17 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
 
     CLOParser cop(i, argv);  // For special handling of -a, -i and -n-i
     for (i = 1; i < argc; ++i) {
-      if (!ifMzn2Fzn() ? s2out.processOption(i, argv) : false) {  // NOLINT: Allow repeated empty if
+      if (argv[i] == "--push-working-directory") {
+        i++;
+        workingDirs.push_back(argv[i]);
+      } else if (argv[i] == "--pop-working-directory") {
+        workingDirs.pop_back();
+      } else if (!ifMzn2Fzn() ? s2out.processOption(i, argv, workingDirs.back())
+                              : false) {  // NOLINT: Allow repeated empty if
         // Processed by Solns2Out
       } else if ((!isMznMzn || _isMzn2fzn) &&
-                 _flt.processOption(i, argv)) {  // NOLINT: Allow repeated empty if
+                 _flt.processOption(i, argv,
+                                    workingDirs.back())) {  // NOLINT: Allow repeated empty if
         // Processed by Flattener
       } else if ((_supportsA || _supportsI) && cop.get("-a --all --all-solns --all-solutions")) {
         _flagAllSatisfaction = true;
@@ -703,7 +820,12 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
     return OPTION_OK;
   }
   for (i = 1; i < argc; ++i) {
-    if (s2out.processOption(i, argv)) {
+    if (argv[i] == "--push-working-directory") {
+      i++;
+      workingDirs.push_back(argv[i]);
+    } else if (argv[i] == "--pop-working-directory") {
+      workingDirs.pop_back();
+    } else if (s2out.processOption(i, argv, workingDirs.back())) {
       // Processed by Solns2Out
     } else {
       std::string executable_name(argv[0]);

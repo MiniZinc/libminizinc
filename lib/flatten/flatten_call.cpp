@@ -382,6 +382,8 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
     }
   } else if (decl->e() == nullptr &&
              (cid == constants().ids.assert || cid == constants().ids.trace ||
+              cid == constants().ids.mzn_symmetry_breaking_constraint ||
+              cid == constants().ids.mzn_redundant_constraint ||
               cid == constants().ids.mzn_deprecate)) {
     if (cid == constants().ids.assert && c->argCount() == 2) {
       (void)decl->builtins.b(env, c);

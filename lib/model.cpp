@@ -172,8 +172,8 @@ void Model::addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& en
       if (stack.back() == final_id) {
         // If this instance isn't in entries yet, add it
         bool alreadyDefined = false;
-        for (auto& entrie : entries) {
-          if (entrie.t == cur.t) {
+        for (auto& entry : entries) {
+          if (entry.t == cur.t) {
             alreadyDefined = true;
             break;
           }
@@ -213,7 +213,7 @@ void Model::addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& en
   }
 }
 
-void Model::registerFn(EnvI& env, FunctionI* fi) {
+bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDuplicate) {
   Model* m = this;
   while (m->_parent != nullptr) {
     m = m->_parent;
@@ -230,7 +230,7 @@ void Model::registerFn(EnvI& env, FunctionI* fi) {
     std::vector<FnEntry>& v = i_id->second;
     for (auto& i : v) {
       if (i.fi == fi) {
-        return;
+        return true;
       }
       if (i.fi->params().size() == fi->params().size()) {
         bool alleq = true;
@@ -246,9 +246,12 @@ void Model::registerFn(EnvI& env, FunctionI* fi) {
         }
         if (alleq) {
           if ((i.fi->e() != nullptr) && (fi->e() != nullptr) && !i.isPolymorphic) {
-            throw TypeError(
-                env, fi->loc(),
-                "function with the same type already defined in " + i.fi->loc().toString());
+            if (throwIfDuplicate) {
+              throw TypeError(
+                  env, fi->loc(),
+                  "function with the same type already defined in " + i.fi->loc().toString());
+            }
+            return false;
           }
           if ((fi->e() != nullptr) || i.isPolymorphic) {
             if (Call* deprecated = i.fi->ann().getCall(constants().ann.mzn_deprecated)) {
@@ -258,12 +261,15 @@ void Model::registerFn(EnvI& env, FunctionI* fi) {
           } else if (Call* deprecated = fi->ann().getCall(constants().ann.mzn_deprecated)) {
             i.fi->ann().add(deprecated);
           }
-          return;
+          return true;
         }
       }
     }
     FnEntry fe(fi);
     addPolymorphicInstances(fe, v);
+    if (keepSorted) {
+      std::sort(i_id->second.begin(), i_id->second.end());
+    }
   }
   if (fi->id() == "mzn_reverse_map_var") {
     if (fi->params().size() != 1 || fi->ti()->type() != Type::varbool()) {
@@ -274,6 +280,7 @@ void Model::registerFn(EnvI& env, FunctionI* fi) {
     Type t = fi->params()[0]->type();
     _revmapmap.insert(std::pair<int, FunctionI*>(t.toInt(), fi));
   }
+  return true;
 }
 
 FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Type>& t,
@@ -318,10 +325,11 @@ void Model::mergeStdLib(EnvI& env, Model* m) const {
   for (const auto& it : _fnmap) {
     for (const auto& cit : it.second) {
       if (cit.fi->fromStdLib()) {
-        m->registerFn(env, cit.fi);
+        (void)m->registerFn(env, cit.fi);
       }
     }
   }
+  m->sortFn();
 }
 
 void Model::sortFn() {

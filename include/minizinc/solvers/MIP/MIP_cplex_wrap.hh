@@ -13,6 +13,7 @@
 #pragma once
 
 #include <minizinc/config.hh>
+#include <minizinc/solver_config.hh>
 #include <minizinc/solver_instance_base.hh>
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
 
@@ -33,6 +34,13 @@ class MIPCplexWrapper : public MIPWrapper {
 #endif
 
 public:
+  class FactoryOptions {
+  public:
+    bool processOption(int& i, std::vector<std::string>& argv, const std::string& workingDir);
+
+    std::string cplexDll;
+  };
+
   class Options : public MiniZinc::SolverInstanceBase::Options {
   public:
     int nMIPFocus = 0;
@@ -51,25 +59,37 @@ public:
     double relGap = 1e-8;
     double intTol = 1e-8;
     double objDiff = 1.0;
-    std::string sCPLEXDLL;
-    bool processOption(int& i, std::vector<std::string>& argv);
+
+    std::unordered_map<std::string, std::string> extraParams;
+
+    bool processOption(int& i, std::vector<std::string>& argv,
+                       const std::string& workingDir = std::string());
     static void printHelp(std::ostream& os);
   };
 
 private:
+  FactoryOptions& _factoryOptions;
   Options* _options = nullptr;
 
 public:
-  MIPCplexWrapper(Options* opt) : _options(opt) { openCPLEX(); }
+  MIPCplexWrapper(FactoryOptions& factoryOpt, Options* opt)
+      : _factoryOptions(factoryOpt), _options(opt) {
+    openCPLEX();
+  }
   ~MIPCplexWrapper() override { closeCPLEX(); }
 
-  static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
-  static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
+  static std::string getDescription(FactoryOptions& factoryOpt,
+                                    MiniZinc::SolverInstanceBase::Options* opt = nullptr);
+  static std::string getVersion(FactoryOptions& factoryOpt,
+                                MiniZinc::SolverInstanceBase::Options* opt = nullptr);
   static std::string getId();
   static std::string getName();
   static std::vector<std::string> getTags();
   static std::vector<std::string> getStdFlags();
-  static std::vector<std::string> getRequiredFlags();
+  static std::vector<std::string> getRequiredFlags(FactoryOptions& factoryOpt);
+  static std::vector<std::string> getFactoryFlags();
+
+  static std::vector<MiniZinc::SolverConfig::ExtraFlag> getExtraFlags(FactoryOptions& factoryOpt);
 
   //       Statistics& getStatistics() { return _statistics; }
 
@@ -250,6 +270,27 @@ public:
   // NOLINTNEXTLINE(readability-identifier-naming)
   int (*dll_CPXwriteprob)(CPXCENVptr env, CPXCLPptr lp, char const* filename_str,
                           char const* filetype_str);
+
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int (*dll_CPXgetparamname)(CPXCENVptr env, int whichparam, char* name_str);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int (*dll_CPXgetparamnum)(CPXCENVptr env, char const* name_str, int* whichparam_p);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int (*dll_CPXgetparamtype)(CPXCENVptr env, int whichparam, int* paramtype);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int (*dll_CPXinfodblparam)(CPXCENVptr env, int whichparam, double* defvalue_p, double* minvalue_p,
+                             double* maxvalue_p);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int (*dll_CPXinfointparam)(CPXCENVptr env, int whichparam, CPXINT* defvalue_p, CPXINT* minvalue_p,
+                             CPXINT* maxvalue_p);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int (*dll_CPXinfolongparam)(CPXCENVptr env, int whichparam, CPXLONG* defvalue_p,
+                              CPXLONG* minvalue_p, CPXLONG* maxvalue_p);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int (*dll_CPXinfostrparam)(CPXCENVptr env, int whichparam, char* defvalue_str);
+
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int (*dll_CPXsetlongparam)(CPXENVptr env, int whichparam, CPXLONG newvalue);
 
 protected:
   void wrapAssert(bool cond, const std::string& msg, bool fTerm = true);

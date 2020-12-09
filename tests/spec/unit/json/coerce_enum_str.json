@@ -1,0 +1,5 @@
+{
+  "d": "Mon",
+  "darr": ["Fri", "Sat", "Sun"],
+  "dset" : { "set" : ["Fri", "Sat", "Sun"]}
+}

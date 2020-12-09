@@ -161,7 +161,7 @@ public:
   }
 
   /// Register a builtin function item
-  void registerFn(EnvI& env, FunctionI* fi);
+  bool registerFn(EnvI& env, FunctionI* fi, bool keepSorted = false, bool throwIfDuplicate = true);
   /// Sort functions by type
   void sortFn();
   /// Check that registered functions do not clash wrt overloading
@@ -363,7 +363,7 @@ public:
   const std::vector<std::string>& warnings();
   void clearWarnings();
   unsigned int maxCallStack() const;
-  std::ostream& evalOutput(std::ostream& os);
+  std::ostream& evalOutput(std::ostream& os, std::ostream& log);
 };
 
 class CallStackItem {

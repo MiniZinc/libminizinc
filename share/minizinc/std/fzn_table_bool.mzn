@@ -10,7 +10,7 @@ predicate fzn_table_bool(array[int] of var bool: x, array[int, int] of bool: t) 
           int: ut = max(index_set_1of2(t)),
           var lt..ut: i,
           array[l..u, lt..ut] of bool: t_transposed =
-              array2d(l..u, lt..ut, [ t[i,j] | j in l..u, i in lt..ut ]) }
+              array2d(l..u, lt..ut, [ t[k,j] | j in l..u, k in lt..ut ]) }
     in
         forall(j in l..u) (
             % Having the variable index component at the left position

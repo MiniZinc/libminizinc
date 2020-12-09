@@ -1,5 +1,5 @@
 /***
- @groupdef annotations Annotations
+ @groupdef stdlib.annotations Annotations
 
  These annotations control evaluation and solving behaviour.
 */
@@ -273,7 +273,8 @@ annotation indomain_max;
 /** @group stdlib.annotations.search.choice Assign the value in the domain closest to
   the mean of its current bounds */
 annotation indomain_middle;
-/** @group stdlib.annotations.search.choice Assign the middle value in the domain */
+/** @group stdlib.annotations.search.choice Assign the middle value in the domain, or
+  the smaller of the two middle values in case of an even number of elements in the domain */
 annotation indomain_median;
 /** @group stdlib.annotations.search.choice Assign a random value from the domain */
 annotation indomain_random;

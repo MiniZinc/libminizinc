@@ -887,14 +887,8 @@ void Let::pushbindings() {
     }
   }
 }
-void Let::popbindings() {
-  for (auto& i : _let) {
-    if (auto* vd = i->dynamicCast<VarDecl>()) {
-      GC::untrail();
-      break;
-    }
-  }
-}
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void Let::popbindings() { GC::untrail(); }
 
 void TypeInst::rehash() {
   initHash();
@@ -1069,12 +1063,10 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
           // but the same enum
           if (it == tmap.end()) {
             tmap.insert(std::pair<ASTString, Type>(enumTIId, enumIdT));
-          } else {
-            if (it->second.enumId() != enumIdT.enumId()) {
-              std::ostringstream ss;
-              ss << "type-inst variable $" << enumTIId << " used for different enum types";
-              throw TypeError(env, get_loc(ta[i], fi), ss.str());
-            }
+          } else if (strictEnum && it->second.enumId() != enumIdT.enumId()) {
+            std::ostringstream ss;
+            ss << "type-inst variable $" << enumTIId << " used for different enum types";
+            throw TypeError(env, get_loc(ta[i], fi), ss.str());
           }
         }
       }
@@ -1510,6 +1502,8 @@ Constants::Constants() {
   ids.bool2float = ASTString("bool2float");
   ids.assert = ASTString("assert");
   ids.mzn_deprecate = ASTString("mzn_deprecate");
+  ids.mzn_symmetry_breaking_constraint = ASTString("mzn_symmetry_breaking_constraint");
+  ids.mzn_redundant_constraint = ASTString("mzn_redundant_constraint");
   ids.trace = ASTString("trace");
 
   ids.sum = ASTString("sum");
@@ -1839,6 +1833,8 @@ void Constants::mark(MINIZINC_GC_STAT_ARGS) {
   ids.assert.mark();
   ids.mzn_deprecate.mark();
   ids.trace.mark();
+  ids.mzn_symmetry_breaking_constraint.mark();
+  ids.mzn_redundant_constraint.mark();
   ids.introduced_var.mark();
   ids.anonEnumFromStrings.mark();
   Expression::mark(ctx.root);

@@ -365,8 +365,8 @@ public:
   std::string getDescription(SolverInstanceBase::Options* opt = nullptr) override;
   std::string getVersion(SolverInstanceBase::Options* opt = nullptr) override;
   std::string getId() override { return "org.minizinc.gecode_presolver"; }
-  bool processOption(SolverInstanceBase::Options* opt, int& i,
-                     std::vector<std::string>& argv) override;
+  bool processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv,
+                     const std::string& workingDir = std::string()) override;
   void printHelp(std::ostream& os) override;
 };
 

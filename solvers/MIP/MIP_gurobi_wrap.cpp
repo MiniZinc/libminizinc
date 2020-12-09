@@ -43,16 +43,18 @@
 
 using namespace std;
 
-string MIPGurobiWrapper::getDescription(MiniZinc::SolverInstanceBase::Options* opt) {
+string MIPGurobiWrapper::getDescription(FactoryOptions& factoryOpt,
+                                        MiniZinc::SolverInstanceBase::Options* opt) {
   ostringstream oss;
-  oss << "MIP wrapper for Gurobi library " << getVersion();
+  oss << "MIP wrapper for Gurobi library " << getVersion(factoryOpt, nullptr);
   oss << ".  Compiled  " __DATE__ "  " __TIME__;
   return oss.str();
 }
 
-string MIPGurobiWrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt) {
+string MIPGurobiWrapper::getVersion(FactoryOptions& factoryOpt,
+                                    MiniZinc::SolverInstanceBase::Options* opt) {
   ostringstream oss;
-  MIPGurobiWrapper mgw(nullptr);  // to avoid opening the env
+  MIPGurobiWrapper mgw(factoryOpt, nullptr);  // to avoid opening the env
   try {
     mgw.checkDLL();
     int major;
@@ -66,8 +68,9 @@ string MIPGurobiWrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt) 
   }
 }
 
-vector<string> MIPGurobiWrapper::getRequiredFlags() {
-  MIPGurobiWrapper mgw(nullptr);
+vector<string> MIPGurobiWrapper::getRequiredFlags(FactoryOptions& f) {
+  FactoryOptions factoryOpt;
+  MIPGurobiWrapper mgw(factoryOpt, nullptr);
   try {
     mgw.checkDLL();
     return {};
@@ -75,6 +78,8 @@ vector<string> MIPGurobiWrapper::getRequiredFlags() {
     return {"--gurobi-dll"};
   }
 }
+
+vector<string> MIPGurobiWrapper::getFactoryFlags() { return {"--gurobi-dll"}; }
 
 string MIPGurobiWrapper::getId() { return "gurobi"; }
 
@@ -178,20 +183,27 @@ void MIPGurobiWrapper::Options::printHelp(ostream& os) {
      << std::endl;
 }
 
-bool MIPGurobiWrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
+bool MIPGurobiWrapper::FactoryOptions::processOption(int& i, std::vector<std::string>& argv,
+                                                     const std::string& workingDir) {
+  MiniZinc::CLOParser cop(i, argv);
+  return cop.get("--gurobi-dll", &gurobiDll);
+}
+
+bool MIPGurobiWrapper::Options::processOption(int& i, std::vector<std::string>& argv,
+                                              const std::string& workingDir) {
   MiniZinc::CLOParser cop(i, argv);
   std::string buf;
   if (cop.get("-i")) {
     flagIntermediate = true;
   } else if (string(argv[i]) == "-f") {              // NOLINT: Allow repeated empty if
   } else if (string(argv[i]) == "--fixed-search") {  // NOLINT: Allow repeated empty if
-    nFreeSearch = 0;
+    nFreeSearch = MIPGurobiWrapper::SearchType::FIXED_SEARCH;
   } else if (string(argv[i]) == "--uniform-search") {  // NOLINT: Allow repeated empty if
-    nFreeSearch = 2;
+    nFreeSearch = MIPGurobiWrapper::SearchType::UNIFORM_SEARCH;
   } else if (cop.get("--mipfocus --mipFocus --MIPFocus --MIPfocus",
                      &nMIPFocus)) {  // NOLINT: Allow repeated empty if
-  } else if (cop.get("--writeModel --exportModel --writemodel --exportmodel",
-                     &sExportModel)) {               // NOLINT: Allow repeated empty if
+  } else if (cop.get("--writeModel --exportModel --writemodel --exportmodel", &buf)) {
+    sExportModel = MiniZinc::FileUtils::file_path(buf, workingDir);
   } else if (cop.get("-p --parallel", &nThreads)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--solver-time-limit --solver-time",
                      &nTimeout1000)) {  // NOLINT: Allow repeated empty if
@@ -203,19 +215,18 @@ bool MIPGurobiWrapper::Options::processOption(int& i, std::vector<std::string>& 
                      &nWorkMemLimit)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--nodefiledir --NodefileDir",
                      &sNodefileDir)) {  // NOLINT: Allow repeated empty if
-  } else if (cop.get("--readParam --readParams",
-                     &sReadParams)) {  // NOLINT: Allow repeated empty if
-  } else if (cop.get("--writeParam --writeParams",
-                     &sWriteParams)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("--readParam --readParams", &buf)) {
+    sReadParams = MiniZinc::FileUtils::file_path(buf, workingDir);
+  } else if (cop.get("--writeParam --writeParams", &buf)) {
+    sWriteParams = MiniZinc::FileUtils::file_path(buf, workingDir);
   } else if (cop.get("--readConcurrentParam --readConcurrentParams", &buf)) {
-    sConcurrentParamFiles.push_back(buf);
+    sConcurrentParamFiles.push_back(MiniZinc::FileUtils::file_path(buf, workingDir));
   } else if (cop.get("--absGap", &absGap)) {    // NOLINT: Allow repeated empty if
   } else if (cop.get("--relGap", &relGap)) {    // NOLINT: Allow repeated empty if
   } else if (cop.get("--feasTol", &feasTol)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--intTol", &intTol)) {    // NOLINT: Allow repeated empty if
   } else if (cop.get("--nonConvex --nonconvex --NonConvex",
-                     &nonConvex)) {                   // NOLINT: Allow repeated empty if
-  } else if (cop.get("--gurobi-dll", &sGurobiDLL)) {  // NOLINT: Allow repeated empty if
+                     &nonConvex)) {  // NOLINT: Allow repeated empty if
     //   } else if ( cop.get( "--objDiff", &objDiff ) ) {
   } else {
     return false;
@@ -252,9 +263,8 @@ void* dll_open(const char* file) {
 #else
   if (MiniZinc::FileUtils::is_absolute(file)) {
     return LoadLibrary(file);
-  } else {
-    return LoadLibrary((std::string(file) + ".dll").c_str());
   }
+  return LoadLibrary((std::string(file) + ".dll").c_str());
 #endif
 }
 void* dll_sym(void* dll, const char* sym) {
@@ -282,8 +292,8 @@ void dll_close(void* dll) {
 void MIPGurobiWrapper::checkDLL() {
 #ifdef GUROBI_PLUGIN
   _gurobiDll = nullptr;
-  if ((_options != nullptr) && (!_options->sGurobiDLL.empty())) {
-    _gurobiDll = dll_open(_options->sGurobiDLL.c_str());
+  if (!_factoryOptions.gurobiDll.empty()) {
+    _gurobiDll = dll_open(_factoryOptions.gurobiDll.c_str());
   } else {
     for (const auto& s : gurobi_dlls()) {
       _gurobiDll = dll_open(s.c_str());
@@ -294,10 +304,10 @@ void MIPGurobiWrapper::checkDLL() {
   }
 
   if (_gurobiDll == nullptr) {
-    if (_options == nullptr || _options->sGurobiDLL.empty()) {
+    if (_factoryOptions.gurobiDll.empty()) {
       throw MiniZinc::InternalError("cannot load gurobi dll, specify --gurobi-dll");
     }
-    throw MiniZinc::InternalError("cannot load gurobi dll `" + _options->sGurobiDLL + "'");
+    throw MiniZinc::InternalError("cannot load gurobi dll `" + _factoryOptions.gurobiDll + "'");
   }
 
   *(void**)(&dll_GRBversion) = dll_sym(_gurobiDll, "GRBversion");
@@ -334,6 +344,13 @@ void MIPGurobiWrapper::checkDLL() {
   *(void**)(&dll_GRBupdatemodel) = dll_sym(_gurobiDll, "GRBupdatemodel");
   *(void**)(&dll_GRBwrite) = dll_sym(_gurobiDll, "GRBwrite");
   *(void**)(&dll_GRBwriteparams) = dll_sym(_gurobiDll, "GRBwriteparams");
+  *(void**)(&dll_GRBemptyenv) = dll_sym(_gurobiDll, "GRBemptyenv");
+  *(void**)(&dll_GRBgetnumparams) = dll_sym(_gurobiDll, "GRBgetnumparams");
+  *(void**)(&dll_GRBgetparamname) = dll_sym(_gurobiDll, "GRBgetparamname");
+  *(void**)(&dll_GRBgetparamtype) = dll_sym(_gurobiDll, "GRBgetparamtype");
+  *(void**)(&dll_GRBgetintparaminfo) = dll_sym(_gurobiDll, "GRBgetintparaminfo");
+  *(void**)(&dll_GRBgetdblparaminfo) = dll_sym(_gurobiDll, "GRBgetdblparaminfo");
+  *(void**)(&dll_GRBgetstrparaminfo) = dll_sym(_gurobiDll, "GRBgetstrparaminfo");
 
 #else
 
@@ -367,6 +384,13 @@ void MIPGurobiWrapper::checkDLL() {
   dll_GRBupdatemodel = GRBupdatemodel;
   dll_GRBwrite = GRBwrite;
   dll_GRBwriteparams = GRBwriteparams;
+  dll_GRBemptyenv = GRBemptyenv;
+  dll_GRBgetnumparams = GRBgetnumparams;
+  dll_GRBgetparamname = GRBgetparamname;
+  dll_GRBgetparamtype = GRBgetparamtype;
+  dll_GRBgetintparaminfo = dll_GRBgetintparaminfo;
+  dll_GRBgetdblparaminfo = dll_GRBgetdblparaminfo;
+  dll_GRBgetstrparaminfo = dll_GRBgetstrparaminfo;
 
 #endif
 }
@@ -410,6 +434,83 @@ void MIPGurobiWrapper::closeGUROBI() {
 #ifdef GUROBI_PLUGIN
   // dll_close(_gurobiDll);    // Is called too many times, disabling. 2019-05-06
 #endif
+}
+
+std::vector<MiniZinc::SolverConfig::ExtraFlag> MIPGurobiWrapper::getExtraFlags(
+    FactoryOptions& factoryOpt) {
+  enum GurobiParamType { T_INT = 1, T_DOUBLE = 2, T_STRING = 3 };
+
+  MIPGurobiWrapper mgw(factoryOpt, nullptr);
+  GRBenv* env;
+  try {
+    mgw.checkDLL();
+    mgw.dll_GRBemptyenv(&env);
+    int num_params = mgw.dll_GRBgetnumparams(env);
+    std::vector<MiniZinc::SolverConfig::ExtraFlag> flags;
+    flags.reserve(num_params);
+    for (int i = 0; i < num_params; i++) {
+      char* name;
+      mgw.dll_GRBgetparamname(env, i, &name);
+      std::string param_name(name);
+      MiniZinc::SolverConfig::ExtraFlag::FlagType param_type;
+      std::vector<std::string> param_range;
+      std::string param_default;
+      int type = mgw.dll_GRBgetparamtype(env, name);
+      if (param_name == GRB_INT_PAR_THREADS || param_name == GRB_DBL_PAR_TIMELIMIT ||
+          param_name == GRB_INT_PAR_SOLUTIONLIMIT || param_name == GRB_INT_PAR_SEED ||
+          param_name == GRB_DBL_PAR_NODEFILESTART || param_name == GRB_STR_PAR_NODEFILEDIR ||
+          param_name == GRB_DBL_PAR_MIPGAPABS || param_name == GRB_INT_PAR_MIPFOCUS ||
+          param_name == GRB_DBL_PAR_MIPGAP || param_name == GRB_DBL_PAR_INTFEASTOL ||
+          param_name == GRB_DBL_PAR_FEASIBILITYTOL || param_name == GRB_INT_PAR_NONCONVEX ||
+          param_name == GRB_INT_PAR_PRECRUSH || param_name == GRB_INT_PAR_LAZYCONSTRAINTS ||
+          param_name == GRB_STR_PAR_DUMMY) {
+        // These parameters are handled by us or are not useful
+        continue;
+      }
+      switch (type) {
+        case T_INT: {
+          int current_value;
+          int min_value;
+          int max_value;
+          int default_value;
+          mgw.dll_GRBgetintparaminfo(env, name, &current_value, &min_value, &max_value,
+                                     &default_value);
+          param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_INT;
+          param_range = {std::to_string(min_value), std::to_string(max_value)};
+          param_default = std::to_string(default_value);
+          break;
+        }
+        case T_DOUBLE: {
+          double current_value;
+          double min_value;
+          double max_value;
+          double default_value;
+          mgw.dll_GRBgetdblparaminfo(env, name, &current_value, &min_value, &max_value,
+                                     &default_value);
+          param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_FLOAT;
+          param_range = {std::to_string(min_value), std::to_string(max_value)};
+          param_default = std::to_string(default_value);
+          break;
+        }
+        case T_STRING: {
+          char current_value[GRB_MAX_STRLEN];
+          char default_value[GRB_MAX_STRLEN];
+          mgw.dll_GRBgetstrparaminfo(env, name, current_value, default_value);
+          param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_STRING;
+          param_default = default_value;
+          break;
+        }
+        default:
+          break;
+      }
+      flags.emplace_back("--gurobi-" + param_name, param_name, param_type, param_range,
+                         param_default);
+    }
+    return flags;
+  } catch (MiniZinc::InternalError&) {
+    return {};
+  }
+  return {};
 }
 
 void MIPGurobiWrapper::doAddVars(size_t n, double* obj, double* lb, double* ub,
@@ -891,6 +992,28 @@ void MIPGurobiWrapper::solve() {        // Move into ancestor?
     }
     _error = dll_GRBsetcallbackfunc(_model, solcallback, (void*)&cbui);
     wrapAssert(_error == 0, "Failed to set callback", false);
+  }
+
+  // Process extra flags options
+  for (auto& it : _options->extraParams) {
+    auto name = it.first.substr(9);
+    int type = dll_GRBgetparamtype(dll_GRBgetenv(_model), name.c_str());
+    enum GurobiParamType { T_INT = 1, T_DOUBLE = 2, T_STRING = 3 };
+    switch (type) {
+      case T_INT:
+        _error = dll_GRBsetintparam(dll_GRBgetenv(_model), name.c_str(), stoi(it.second));
+        break;
+      case T_DOUBLE:
+        _error = dll_GRBsetdblparam(dll_GRBgetenv(_model), name.c_str(), stod(it.second));
+        break;
+      case T_STRING:
+        _error = dll_GRBsetstrparam(dll_GRBgetenv(_model), name.c_str(), it.second.c_str());
+        break;
+      default:
+        wrapAssert(false, "Could not determine type of parameter " + name, false);
+        break;
+    }
+    wrapAssert(_error == 0, "Failed to set parameter " + name + " = " + it.second, false);
   }
 
   /// after all modifs

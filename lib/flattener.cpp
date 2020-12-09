@@ -57,6 +57,7 @@ void Flattener::printHelp(ostream& os) const {
      << "  --no-optimize\n    Do not optimize the FlatZinc" << std::endl
      << "  --no-chain-compression\n    Do not simplify chains of implication constraints."
      << std::endl
+     << "  -m <file>, --model <file>\n    File named <file> is the model." << std::endl
      << "  -d <file>, --data <file>\n    File named <file> contains data used by the model."
      << std::endl
      << "  -D <data>, --cmdline-data <data>\n    Include the given data assignment in the model."
@@ -151,13 +152,14 @@ void Flattener::printHelp(ostream& os) const {
      << "  -Werror\n    Turn warnings into errors" << std::endl;
 }
 
-bool Flattener::processOption(int& i, std::vector<std::string>& argv) {
+bool Flattener::processOption(int& i, std::vector<std::string>& argv,
+                              const std::string& workingDir) {
   CLOParser cop(i, argv);
   string buffer;
   int intBuffer;
 
   if (cop.getOption("-I --search-dir", &buffer)) {
-    _includePaths.push_back(buffer + string("/"));
+    _includePaths.push_back(FileUtils::file_path(buffer + "/", workingDir));
   } else if (cop.getOption("--no-typecheck")) {
     _flags.typecheck = false;
   } else if (cop.getOption("--instance-check-only")) {
@@ -182,9 +184,12 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv) {
     // Parsed by reference
   } else if (cop.getOption(_fOutputByDefault ? "-o --fzn --output-to-file --output-fzn-to-file"
                                              : "--fzn --output-fzn-to-file",
-                           &_flagOutputFzn)) {  // NOLINT: Allow repeated empty if
-  } else if (cop.getOption("--output-paths") ||
-             cop.getOption("--output-paths-to-file", &_flagOutputPaths)) {
+                           &buffer)) {
+    _flagOutputFzn = FileUtils::file_path(buffer, workingDir);
+  } else if (cop.getOption("--output-paths")) {
+    _fopts.collectMznPaths = true;
+  } else if (cop.getOption("--output-paths-to-file", &buffer)) {
+    _flagOutputPaths = FileUtils::file_path(buffer, workingDir);
     _fopts.collectMznPaths = true;
   } else if (cop.getOption("--output-to-stdout --output-fzn-to-stdout")) {
     _flags.outputFznStdout = true;
@@ -214,12 +219,17 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv) {
   } else if (cop.getOption("- --input-from-stdin")) {
     _flags.stdinInput = true;
   } else if (cop.getOption("-d --data", &buffer)) {
-    if (buffer.length() <= 4 || buffer.substr(buffer.length() - 4, string::npos) != ".dzn") {
+    auto last_dot = buffer.find_last_of('.');
+    if (last_dot == string::npos) {
       return false;
     }
-    _datafiles.push_back(buffer);
-  } else if (cop.getOption("--stdlib-dir", &_stdLibDir)) {  // NOLINT: Allow repeated empty if
-    // Parsed by reference
+    auto extension = buffer.substr(last_dot, string::npos);
+    if (extension != ".dzn" && extension != ".json") {
+      return false;
+    }
+    _datafiles.push_back(FileUtils::file_path(buffer, workingDir));
+  } else if (cop.getOption("--stdlib-dir", &buffer)) {
+    _stdLibDir = FileUtils::file_path(buffer, workingDir);
   } else if (cop.getOption("-G --globals-dir --mzn-globals-dir",
                            &_globalsDir)) {  // NOLINT: Allow repeated empty if
     // Parsed by reference
@@ -307,8 +317,8 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv) {
       }
     }
     // ozn options must be after the -O<n> optimisation options
-  } else if (cop.getOption("--ozn --output-ozn-to-file", &_flagOutputOzn)) {
-    // Parsed by reference
+  } else if (cop.getOption("--ozn --output-ozn-to-file", &buffer)) {
+    _flagOutputOzn = FileUtils::file_path(buffer, workingDir);
   } else if (cop.getOption("-g")) {
     _flags.optimize = false;
     _flags.twoPass = false;
@@ -331,11 +341,30 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv) {
     if (buffer.length() >= 8 && buffer.substr(buffer.length() - 8, string::npos) == ".mzc.mzn") {
       _flags.compileSolutionCheckModel = true;
       _flags.modelCheckOnly = true;
-      _filenames.push_back(buffer);
+      _filenames.push_back(FileUtils::file_path(buffer, workingDir));
     } else {
       _log << "Error: solution checker model must have extension .mzc.mzn" << std::endl;
       return false;
     }
+  } else if (cop.getOption("-m --model", &buffer)) {
+    if (buffer.length() <= 4) {
+      return false;
+    }
+    auto extension = buffer.substr(buffer.length() - 4, string::npos);
+    auto isChecker =
+        buffer.length() > 8 && buffer.substr(buffer.length() - 8, string::npos) == ".mzc.mzn";
+    if ((extension == ".mzn" && !isChecker) || extension == ".fzn") {
+      if (extension == ".fzn") {
+        _isFlatzinc = true;
+        if (_fOutputByDefault) {  // mzn2fzn mode
+          return false;
+        }
+      }
+      _filenames.push_back(FileUtils::file_path(buffer, workingDir));
+      return true;
+    }
+    _log << "Error: model must have extension .mzn (or .fzn)" << std::endl;
+    return false;
   } else {
     std::string input_file(argv[i]);
     if (input_file.length() <= 4) {

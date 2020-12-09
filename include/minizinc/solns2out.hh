@@ -94,7 +94,8 @@ public:
   ~Solns2Out();
   Solns2Out(std::ostream& os, std::ostream& log, std::string stdlibDir);
 
-  bool processOption(int& i, std::vector<std::string>& argv);
+  bool processOption(int& i, std::vector<std::string>& argv,
+                     const std::string& workingDir = std::string());
   static void printHelp(std::ostream& os);
 
   /// The output model (~.ozn) can be passed in 1 way in this base class:

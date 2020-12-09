@@ -310,6 +310,11 @@ std::string share_directory() {
     return std::string(MZNSTDLIBDIR);
   }
 #endif
+  // NOLINTNEXTLINE(readability-redundant-string-init)
+  std::string static_stdlib_dir(MZN_STATIC_STDLIB_DIR);
+  if (FileUtils::file_exists(static_stdlib_dir + "/std/stdlib.mzn")) {
+    return static_stdlib_dir;
+  }
   std::string mypath = FileUtils::progpath();
   int depth = 0;
   for (char i : mypath) {
@@ -745,12 +750,12 @@ std::string wide_to_utf8(const wchar_t* str, int size) {
 std::string wide_to_utf8(const std::wstring& str) { return wide_to_utf8(str.c_str(), -1); }
 
 std::wstring utf8_to_wide(const std::string& str) {
-  int buffer_size = MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, str.c_str(), -1, nullptr, 0);
+  int buffer_size = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
   if (buffer_size == 0) {
     return L"";
   }
   std::wstring result(buffer_size - 1, '\0');
-  MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, str.c_str(), -1, &result[0], buffer_size);
+  MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, &result[0], buffer_size);
   return result;
 }
 #endif

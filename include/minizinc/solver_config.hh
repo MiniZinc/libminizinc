@@ -28,15 +28,21 @@ class SolverConfig {
 public:
   /// Extra command line flags supported by solver
   struct ExtraFlag {
+    enum FlagType { T_BOOL, T_INT, T_FLOAT, T_STRING };
     std::string flag;
     std::string description;
-    std::string flagType;
+    FlagType flagType;
+    std::vector<std::string> range;
     std::string defaultValue;
-    ExtraFlag(std::string f, std::string d, std::string t = "bool", std::string v = "false")
+    ExtraFlag(std::string f, std::string d, FlagType t = T_BOOL, std::vector<std::string> r = {},
+              std::string v = "false")
         : flag(std::move(f)),
           description(std::move(d)),
-          flagType(std::move(t)),
+          flagType(t),
+          range(std::move(r)),
           defaultValue(std::move(v)) {}
+
+    bool validate(const std::string& v) const;
   };
 
 protected:
@@ -254,6 +260,10 @@ public:
    * uses platform specific separators (: on Unix-like systems, ; on Windows).
    */
   SolverConfigs(std::ostream& log);
+
+  /// Populate the solver configurations
+  void populate(std::ostream& log);
+
   /// Return configuration for solver \a s
   /// The string can be a comma separated list of tags, in which case a
   /// solver that matches all tags will be returned. The tag can also be
@@ -282,6 +292,8 @@ public:
   }
   /// MiniZinc library directory
   const std::string& mznlibDir() const { return _mznlibDir; }
+  /// Default options for the solver with the given ID
+  std::vector<std::string> defaultOptions(const std::string& id);
 };
 
 /// An exception thrown when encountering an error in a solver configuration

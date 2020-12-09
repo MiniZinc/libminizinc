@@ -36,23 +36,6 @@ public:
   XpressException(const string& msg) : runtime_error(" MIPxpressWrapper: " + msg) {}
 };
 
-XprlPlugin::XprlPlugin() : Plugin(XprlPlugin::dlls()) {}
-
-XprlPlugin::XprlPlugin(const std::string& dll_file) : Plugin(dll_file) {}
-
-const std::vector<std::string>& XprlPlugin::dlls() {
-  static std::vector<std::string> ret = {
-#ifdef _WIN32
-      "xprl", "C:\\xpressmp\\bin\\xprl.dll"
-#elif __APPLE__
-      "libxprl", " /Applications/FICO Xpress/xpressmp/lib/libxprl.dylib"
-#else
-      "libxprl", "/opt/xpressmp/lib/libxprl.so"
-#endif
-  };
-  return ret;
-}
-
 XpressPlugin::XpressPlugin() : Plugin(XpressPlugin::dlls()) { loadDll(); }
 
 XpressPlugin::XpressPlugin(const std::string& dll_file) : Plugin(dll_file) { loadDll(); }
@@ -91,6 +74,14 @@ void XpressPlugin::loadDll() {
   load_symbol(XPRBaddmipsol);
   load_symbol(XPRBnewprob);
   load_symbol(XPRBdelprob);
+  load_symbol(XPRSgetcontrolinfo);
+  load_symbol(XPRSgetintcontrol);
+  load_symbol(XPRSgetintcontrol64);
+  load_symbol(XPRSgetdblcontrol);
+  load_symbol(XPRSgetstrcontrol);
+  load_symbol(XPRSsetintcontrol64);
+  load_symbol(XPRSgetstringcontrol);
+  load_symbol(XPRSsetstrcontrol);
 }
 
 const std::vector<std::string>& XpressPlugin::dlls() {
@@ -98,8 +89,7 @@ const std::vector<std::string>& XpressPlugin::dlls() {
 #ifdef _WIN32
       "xprs", "C:\\xpressmp\\bin\\xprs.dll"
 #elif __APPLE__
-      "libxprs"
-      " /Applications/FICO Xpress/xpressmp/lib/libxprs.dylib"
+      "libxprs", "/Applications/FICO Xpress/xpressmp/lib/libxprs.dylib"
 #else
       "libxprs", "/opt/xpressmp/lib/libxprs.so"
 #endif
@@ -108,38 +98,7 @@ const std::vector<std::string>& XpressPlugin::dlls() {
 }
 
 void MIPxpressWrapper::openXpress() {
-  if (!_options->xprsRoot.empty()) {
-    auto base = MiniZinc::FileUtils::file_path(_options->xprsRoot);
-#ifdef _WIN32
-    auto xprl = MiniZinc::FileUtils::file_path("bin/xprl.dll", base);
-    auto xprs = MiniZinc::FileUtils::file_path("bin/xprs.dll", base);
-#elif __APPLE__
-    auto xprl = MiniZinc::FileUtils::file_path("lib/libxprl.dylib", base);
-    auto xprs = MiniZinc::FileUtils::file_path("lib/libxprs.dylib", base);
-#else
-    auto xprl = MiniZinc::FileUtils::file_path("lib/libxprl.so", base);
-    auto xprs = MiniZinc::FileUtils::file_path("lib/libxprs.so", base);
-#endif
-    _pluginDep = new XprlPlugin(xprl);
-    _plugin = new XpressPlugin(xprs);
-  } else {
-    _pluginDep = new XprlPlugin();
-    _plugin = new XpressPlugin();
-  }
-
-  int ret =
-      _plugin->XPRSinit(!_options->xprsPassword.empty() ? _options->xprsPassword.c_str() : nullptr);
-  if (ret != 0) {
-    char message[512];
-    _plugin->XPRSgetlicerrmsg(message, 512);
-    // Return code of 32 means student licence, but otherwise it's an error
-    if (ret == 32) {
-      std::cerr << message << std::endl;
-    } else {
-      throw XpressException(message);
-    }
-  }
-
+  checkDLL();
   _problem = _plugin->XPRBnewprob(nullptr);
   _xpressObj = _plugin->XPRBnewctr(_problem, nullptr, XB_N);
 }
@@ -148,43 +107,101 @@ void MIPxpressWrapper::closeXpress() {
   _plugin->XPRBdelprob(_problem);
   _plugin->XPRSfree();
   delete _plugin;
-  delete _pluginDep;
 }
 
-string MIPxpressWrapper::getDescription(MiniZinc::SolverInstanceBase::Options* opt) {
+void MIPxpressWrapper::checkDLL() {
+  if (!_factoryOptions.xpressDll.empty()) {
+    _plugin = new XpressPlugin(_factoryOptions.xpressDll);
+  } else {
+    _plugin = new XpressPlugin();
+  }
+
+  std::vector<std::string> paths;
+  if (!_factoryOptions.xprsPassword.empty()) {
+    paths.push_back(_factoryOptions.xprsPassword);
+  } else {
+    paths.emplace_back("");  // Try builtin xpress dirs
+    auto dir = MiniZinc::FileUtils::dir_name(_plugin->path());
+    auto file = dir + "/../bin/xpauth.xpr";
+    if (!dir.empty() && MiniZinc::FileUtils::file_exists(file)) {
+      paths.push_back(file);  // Try the bin dir license file if it exists
+    }
+  }
+
+  for (const auto& path : paths) {
+    int ret = _plugin->XPRSinit(path.empty() ? nullptr : path.c_str());
+    if (ret == 0) {
+      return;
+    }
+    // Return code of 32 means student licence, but otherwise it's an error
+    if (ret == 32) {
+      if (_options->verbose) {
+        char message[512];
+        _plugin->XPRSgetlicerrmsg(message, 512);
+        std::cerr << message << std::endl;
+      }
+      return;
+    }
+  }
+
+  char message[512];
+  _plugin->XPRSgetlicerrmsg(message, 512);
+  throw XpressException(message);
+}
+
+string MIPxpressWrapper::getDescription(FactoryOptions& factoryOpt,
+                                        MiniZinc::SolverInstanceBase::Options* opt) {
   ostringstream oss;
-  oss << "  MIP wrapper for FICO Xpress Optimiser version " << getVersion(opt);
+  oss << "  MIP wrapper for FICO Xpress Optimiser version " << getVersion(factoryOpt, opt);
   oss << ".  Compiled  " __DATE__ "  " __TIME__;
   return oss.str();
 }
 
-string MIPxpressWrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt) {
+string MIPxpressWrapper::getVersion(FactoryOptions& factoryOpt,
+                                    MiniZinc::SolverInstanceBase::Options* opt) {
   try {
-    XprlPlugin p1;
-    XpressPlugin p2;
+    auto* p =
+        factoryOpt.xpressDll.empty() ? new XpressPlugin : new XpressPlugin(factoryOpt.xpressDll);
     char v[16];
-    p2.XPRSgetversion(v);
+    p->XPRSgetversion(v);
+    delete p;
     return v;
   } catch (MiniZinc::Plugin::PluginError&) {
     return "<unknown version>";
   }
 }
 
-vector<string> MIPxpressWrapper::getRequiredFlags() {
-  try {
-    XprlPlugin p1;
-    XpressPlugin p2;
-    int ret = p2.XPRSinit(nullptr);
-    p2.XPRSfree();
-    if (ret == 0 || ret == 32) {
-      return {};
+vector<string> MIPxpressWrapper::getRequiredFlags(FactoryOptions& factoryOpt) {
+  Options opts;
+  FactoryOptions triedFactoryOpts;
+  vector<string> ret;
+  // TODO: This is more complex than it should be
+  // We only know if --xpress-password is required if we have the DLL available
+  // So we have to try the user supplied --xpress-dll if given
+  while (true) {
+    try {
+      // Try opening without considering factory options
+      MIPxpressWrapper w(triedFactoryOpts, &opts);
+      return ret;
+    } catch (MiniZinc::Plugin::PluginError&) {
+      ret.emplace_back("--xpress-dll");  // The DLL needs to be given
+      if (triedFactoryOpts.xpressDll == factoryOpt.xpressDll) {
+        return ret;
+      }
+      triedFactoryOpts.xpressDll = factoryOpt.xpressDll;
+    } catch (XpressException&) {
+      ret.emplace_back("--xpress-password");  // The license needs to be given
+      if (triedFactoryOpts.xprsPassword == factoryOpt.xprsPassword) {
+        return ret;
+      }
+      triedFactoryOpts.xprsPassword = factoryOpt.xprsPassword;
     }
-    return {"--xpress-password"};
-
-  } catch (MiniZinc::Plugin::PluginError&) {
-    return {"--xpress-root"};
   }
 }
+
+vector<string> MIPxpressWrapper::getFactoryFlags() {
+  return {"--xpress-dll", "--xpress-password"};
+};
 
 string MIPxpressWrapper::getId() { return "xpress"; }
 
@@ -192,7 +209,128 @@ string MIPxpressWrapper::getName() { return "Xpress"; }
 
 vector<string> MIPxpressWrapper::getTags() { return {"mip", "float", "api"}; }
 
-vector<string> MIPxpressWrapper::getStdFlags() { return {"-i", "-s"}; }
+vector<string> MIPxpressWrapper::getStdFlags() { return {"-i", "-s", "-p", "-r"}; }
+
+vector<MiniZinc::SolverConfig::ExtraFlag> MIPxpressWrapper::getExtraFlags(
+    FactoryOptions& factoryOpt) {
+  try {
+    Options opts;
+    MIPxpressWrapper p(factoryOpt, &opts);
+
+    auto* prb = p._plugin->XPRBgetXPRSprob(p._problem);
+    // Using string parameter names because there doesn't seem to be a way to recover
+    // the name from a parameter ID number
+    static std::vector<std::string> all_params = {
+        "algaftercrossover", "algafternetwork", "autoperturb", "backtrack", "backtracktie",
+        "baralg", "barcrash", "bardualstop", "barfreescale", "bargapstop", "bargaptarget",
+        "barindeflimit", "bariterlimit", "barkernel", "barobjscale", "barorder", "barorderthreads",
+        "baroutput", "barpresolveops", "barprimalstop", "barregularize", "barrhsscale",
+        "barsolution", "barstart", "barstartweight", "barstepstop", "barthreads", "barcores",
+        "bigm", "bigmmethod", "branchchoice", "branchdisj", "branchstructural", "breadthfirst",
+        "cachesize", "callbackfrommasterthread", "choleskyalg", "choleskytol", "conflictcuts",
+        "concurrentthreads", "corespercpu", "covercuts", "cpuplatform", "cputime", "crash",
+        "crossover", "crossoveraccuracytol", "crossoveriterlimit", "crossoverops",
+        "crossoverthreads", "cstyle", "cutdepth", "cutfactor", "cutfreq", "cutstrategy",
+        "cutselect", "defaultalg", "densecollimit", "deterministic", "dualgradient", "dualize",
+        "dualizeops", "dualperturb", "dualstrategy", "dualthreads", "eigenvaluetol", "elimfillin",
+        "elimtol", "etatol", "extracols", "extraelems", "extramipents", "extrapresolve",
+        "extraqcelements", "extraqcrows", "extrarows", "extrasetelems", "extrasets",
+        "feasibilitypump", "feastol", "feastoltarget", "forceoutput", "forceparalleldual",
+        "globalfilebias", "globalfileloginterval", "gomcuts", "heurbeforelp", "heurdepth",
+        "heurdiveiterlimit", "heurdiverandomize", "heurdivesoftrounding", "heurdivespeedup",
+        "heurdivestrategy", "heurforcespecialobj", "heurfreq", "heurmaxsol", "heurnodes",
+        "heursearcheffort", "heursearchfreq", "heursearchrootcutfreq", "heursearchrootselect",
+        "heursearchtreeselect", "heurstrategy", "heurthreads", "historycosts", "ifcheckconvexity",
+        "indlinbigm", "indprelinbigm", "invertfreq", "invertmin", "keepbasis", "keepnrows",
+        "l1cache", "linelength", "lnpbest", "lnpiterlimit", "lpflags", "lpiterlimit",
+        "lprefineiterlimit", "localchoice", "lpfolding", "lplog", "lplogdelay", "lplogstyle",
+        "lpthreads", "markowitztol", "matrixtol", "maxchecksonmaxcuttime", "maxchecksonmaxtime",
+        "maxmcoeffbufferelems", "maxcuttime", "maxglobalfilesize", "maxiis", "maximpliedbound",
+        "maxlocalbacktrack", "maxmemoryhard", "maxmemorysoft", "maxmiptasks", "maxmipsol",
+        "maxnode", "maxpagelines", "maxscalefactor", "maxtime", "mipabscutoff", "mipabsgapnotify",
+        "mipabsgapnotifybound", "mipabsgapnotifyobj", "mipabsstop", "mipaddcutoff",
+        "mipdualreductions", "mipfracreduce", "mipkappafreq", "miplog", "mippresolve", "miprampup",
+        "miqcpalg", "miprefineiterlimit", "miprelcutoff", "miprelgapnotify", "miprelstop",
+        "mipterminationmethod", "mipthreads", "miptol", "miptoltarget", "mps18compatible",
+        "mpsboundname", "mpsecho", "mpsformat", "mpsobjname", "mpsrangename", "mpsrhsname",
+        "mutexcallbacks", "netcuts", "nodeselection", "objscalefactor", "optimalitytol",
+        "optimalitytoltarget", "outputlog", "outputmask", "outputtol", "penalty", "perturb",
+        "pivottol", "ppfactor", "preanalyticcenter", "prebasisred", "prebndredcone",
+        "prebndredquad", "precoefelim", "precomponents", "precomponentseffort", "preconedecomp",
+        "preconvertseparable", "predomcol", "predomrow", "preduprow", "preelimquad",
+        "preimplications", "prelindep", "preobjcutdetect", "prepermute", "prepermuteseed",
+        "preprobing", "preprotectdual", "presolve", "presolvemaxgrow", "presolveops",
+        "presolvepasses", "presort", "pricingalg", "primalops", "primalperturb", "primalunshift",
+        "pseudocost", "qccuts", "qcrootalg", "qsimplexops", "quadraticunshift",
+        //"randomseed",
+        "refactor", "refineops", "relaxtreememorylimit", "relpivottol", "repairindefiniteq",
+        "repairinfeasmaxtime", "resourcestrategy", "rootpresolve", "sbbest", "sbeffort",
+        "sbestimate", "sbiterlimit", "sbselect", "scaling", "sifting", "sleeponthreadwait",
+        "sosreftol", "symmetry", "symselect",
+        //"threads",
+        "trace", "treecompression", "treecovercuts", "treecutselect", "treediagnostics",
+        "treegomcuts", "treememorylimit", "treememorysavingtarget", "treepresolve",
+        "treepresolve_keepbasis", "treeqccuts", "tunerhistory", "tunermaxtime", "tunermethod",
+        "tunermethodfile", "tunermode", "tuneroutput", "tuneroutputpath", "tunerpermute",
+        "tunerrootalg", "tunersessionname", "tunertarget", "tunerthreads", "usersolheuristic",
+        "varselection",
+        //"version"
+    };
+    std::vector<MiniZinc::SolverConfig::ExtraFlag> res;
+    for (auto param : all_params) {
+      int n;
+      int t;
+      p._plugin->XPRSgetcontrolinfo(prb, param.c_str(), &n, &t);
+      MiniZinc::SolverConfig::ExtraFlag::FlagType param_type;
+      std::string param_default;
+      switch (t) {
+        case XPRS_TYPE_INT: {
+          int d;
+          p._plugin->XPRSgetintcontrol(prb, n, &d);
+          param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_INT;
+          param_default = to_string(d);
+          break;
+        }
+        case XPRS_TYPE_INT64: {
+          XPRSint64 d;
+          p._plugin->XPRSgetintcontrol64(prb, n, &d);
+          param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_INT;
+          param_default = to_string(d);
+          break;
+        }
+        case XPRS_TYPE_DOUBLE: {
+          double d;
+          p._plugin->XPRSgetdblcontrol(prb, n, &d);
+          param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_FLOAT;
+          param_default = to_string(d);
+          break;
+        }
+        case XPRS_TYPE_STRING: {
+          int l;
+          p._plugin->XPRSgetstringcontrol(prb, n, nullptr, 0, &l);
+          char* d = (char*)malloc(l);
+          p._plugin->XPRSgetstringcontrol(prb, n, d, l, &l);
+          param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_STRING;
+          param_default = d;
+          break;
+        }
+        default:
+          continue;
+      }
+      // TODO: Some of these parameters have min/max or are categorical, but there's no way
+      // to programatically get the possible values. We could manually maintain it, but it's
+      // probably not worth doing right now.
+      std::vector<std::string> param_range;  // unused for now
+      res.emplace_back("--xpress-" + param, param, param_type, param_range, param_default);
+    }
+    return res;
+  } catch (MiniZinc::Plugin::PluginError&) {
+    return {};
+  } catch (XpressPlugin&) {
+    return {};
+  }
+  return {};
+}
 
 void MIPxpressWrapper::Options::printHelp(ostream& os) {
   os << "XPRESS MIP wrapper options:" << std::endl
@@ -211,26 +349,43 @@ void MIPxpressWrapper::Options::printHelp(ostream& os) {
         "default: "
      << 0.0001 << std::endl
      << "-i                   print intermediate solution, default: false" << std::endl
-     << "--xpress-root <dir>      Xpress installation directory (usually named xpressmp)"
-     << std::endl
+     << "-r <N>, --seed <N>, --random-seed <N>" << std::endl
+     << "    random seed, integer"
+     << "-p <N>, --parallel <N>   use N threads" << std::endl
+     << "--xpress-dll <file>      Xpress DLL file (xprs.dll/libxprs.so/libxprs.dylib)" << std::endl
      << "--xpress-password <dir>  directory where xpauth.xpr is located (optional)" << std::endl
      << std::endl;
 }
 
-bool MIPxpressWrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
+bool MIPxpressWrapper::FactoryOptions::processOption(int& i, std::vector<std::string>& argv,
+                                                     const std::string& workingDir) {
   MiniZinc::CLOParser cop(i, argv);
-  if (cop.get("--msgLevel", &msgLevel)) {                         // NOLINT: Allow repeated empty if
-  } else if (cop.get("--logFile", &logFile)) {                    // NOLINT: Allow repeated empty if
-  } else if (cop.get("--solver-time-limit", &timeout)) {          // NOLINT: Allow repeated empty if
-  } else if (cop.get("-n --numSolutions", &numSolutions)) {       // NOLINT: Allow repeated empty if
-  } else if (cop.get("--writeModel", &writeModelFile)) {          // NOLINT: Allow repeated empty if
+  if (cop.get("--xpress-dll", &xpressDll)) {                 // NOLINT: Allow repeated empty if
+  } else if (cop.get("--xpress-password", &xprsPassword)) {  // NOLINT: Allow repeated empty if
+  } else {
+    return false;
+  }
+  return true;
+}
+
+bool MIPxpressWrapper::Options::processOption(int& i, std::vector<std::string>& argv,
+                                              const std::string& workingDir) {
+  MiniZinc::CLOParser cop(i, argv);
+  std::string buffer;
+  if (cop.get("--msgLevel", &msgLevel)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("--logFile", &buffer)) {
+    logFile = MiniZinc::FileUtils::file_path(buffer, workingDir);
+  } else if (cop.get("--solver-time-limit", &timeout)) {     // NOLINT: Allow repeated empty if
+  } else if (cop.get("-n --numSolutions", &numSolutions)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("--writeModel", &buffer)) {
+    writeModelFile = MiniZinc::FileUtils::file_path(buffer, workingDir);
   } else if (cop.get("--writeModelFormat", &writeModelFormat)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--relGap", &relGap)) {                      // NOLINT: Allow repeated empty if
   } else if (cop.get("--absGap", &absGap)) {                      // NOLINT: Allow repeated empty if
   } else if (cop.get("-i")) {
     intermediateSolutions = true;
-  } else if (cop.get("--xpress-root", &xprsRoot)) {          // NOLINT: Allow repeated empty if
-  } else if (cop.get("--xpress-password", &xprsPassword)) {  // NOLINT: Allow repeated empty if
+  } else if (cop.get("-p --parallel", &numThreads)) {
+  } else if (cop.get("-r --seed --random-seed", &randomSeed)) {
   } else {
     return false;
   }
@@ -250,6 +405,37 @@ void MIPxpressWrapper::setOptions() {
   _plugin->XPRSsetintcontrol(xprsProblem, XPRS_MAXMIPSOL, _options->numSolutions);
   _plugin->XPRSsetdblcontrol(xprsProblem, XPRS_MIPABSSTOP, _options->absGap);
   _plugin->XPRSsetdblcontrol(xprsProblem, XPRS_MIPRELSTOP, _options->relGap);
+
+  if (_options->numThreads > 0) {
+    _plugin->XPRSsetintcontrol(xprsProblem, XPRS_THREADS, _options->numThreads);
+  }
+
+  if (_options->randomSeed != 0) {
+    _plugin->XPRSsetintcontrol(xprsProblem, XPRS_RANDOMSEED, _options->randomSeed);
+  }
+
+  for (auto& it : _options->extraParams) {
+    auto name = it.first.substr(9);
+    int n;
+    int t;
+    _plugin->XPRSgetcontrolinfo(xprsProblem, name.c_str(), &n, &t);
+    switch (t) {
+      case XPRS_TYPE_INT:
+        _plugin->XPRSsetintcontrol(xprsProblem, n, stoi(it.second));
+        break;
+      case XPRS_TYPE_INT64:
+        _plugin->XPRSsetintcontrol64(xprsProblem, n, stoll(it.second));
+        break;
+      case XPRS_TYPE_DOUBLE:
+        _plugin->XPRSsetdblcontrol(xprsProblem, n, stod(it.second));
+        break;
+      case XPRS_TYPE_STRING:
+        _plugin->XPRSsetstrcontrol(xprsProblem, n, it.second.c_str());
+        break;
+      default:
+        throw XpressException("Unknown type for parameter " + name);
+    }
+  }
 }
 
 static MIPWrapper::Status convert_status(int xpressStatus) {

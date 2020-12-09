@@ -142,6 +142,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
     string parentPath = np.dirName;
     Model* m = np.m;
     bool isModelString = np.isModelString;
+    bool isSTDLib = np.isSTDLib;
     IncludeI* np_ii = np.ii;
     string f(np.fileName);
     files.pop_back();
@@ -189,13 +190,14 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
             string deprecatedBaseName = FileUtils::base_name(deprecatedName);
             auto* includedModel = new Model;
             includedModel->setFilename(deprecatedBaseName);
-            files.emplace_back(includedModel, nullptr, "", deprecatedName, np.isSTDLib);
+            files.emplace_back(includedModel, nullptr, "", deprecatedName, isSTDLib, false);
             seenModels.insert(pair<string, Model*>(deprecatedBaseName, includedModel));
             Location loc(ASTString(deprecatedName), 0, 0, 0, 0);
             auto* inc = new IncludeI(loc, includedModel->filename());
             inc->m(includedModel, true);
             m->addItem(inc);
-            files.emplace_back(includedModel, inc, deprecatedName, deprecatedBaseName, np.isSTDLib);
+            files.emplace_back(includedModel, inc, deprecatedName, deprecatedBaseName, isSTDLib,
+                               false);
           }
         }
         includePaths.pop_back();
@@ -226,7 +228,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
       fullname = f;
       s = parentPath;
     }
-    ParserState pp(fullname, s, err, files, seenModels, m, false, isFzn, np.isSTDLib,
+    ParserState pp(fullname, s, err, files, seenModels, m, false, isFzn, isSTDLib,
                    parseDocComments);
     mzn_yylex_init(&pp.yyscanner);
     mzn_yyset_extra(&pp, pp.yyscanner);

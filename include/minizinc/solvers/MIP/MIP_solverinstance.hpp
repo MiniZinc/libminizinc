@@ -1,47 +1,89 @@
 #include <minizinc/solvers/MIP/MIP_solverinstance.hh>
 
 #include <chrono>
+#include <queue>
 
 namespace MiniZinc {
 
 template <class MIPWrapper>
-MIPSolverFactory<MIPWrapper>::MIPSolverFactory() {
-  SolverConfig sc(getId(), MIPWrapper::getVersion());
+MIPSolverFactory<MIPWrapper>::MIPSolverFactory() : _factoryOptions() {
+  for (auto& flag : MIPWrapper::getFactoryFlags()) {
+    get_global_solver_registry()->addFactoryFlag(flag, this);
+  }
+}
+
+template <class MIPWrapper>
+bool MIPSolverFactory<MIPWrapper>::processFactoryOption(int& i, std::vector<std::string>& argv,
+                                                        const std::string& workingDir) {
+  return _factoryOptions.processOption(i, argv, workingDir);
+}
+
+template <class MIPWrapper>
+void MIPSolverFactory<MIPWrapper>::factoryOptionsFinished() {
+  _extraFlags = MIPWrapper::getExtraFlags(_factoryOptions);
+  SolverConfig sc(getId(), MIPWrapper::getVersion(_factoryOptions, nullptr));
   sc.name(MIPWrapper::getName());
   sc.mznlib(MIPWrapper::getMznLib());
   sc.mznlibVersion(1);
   sc.supportsMzn(true);
-  sc.description("MiniZinc MIP solver plugin");
-  sc.requiredFlags(MIPWrapper::getRequiredFlags());
+  sc.description(MIPWrapper::getDescription(_factoryOptions, nullptr));
+  sc.requiredFlags(MIPWrapper::getRequiredFlags(_factoryOptions));
   sc.tags(MIPWrapper::getTags());
   sc.stdFlags(MIPWrapper::getStdFlags());
+  sc.extraFlags(_extraFlags);
   SolverConfigs::registerBuiltinSolver(sc);
 }
 
 template <class MIPWrapper>
 bool MIPSolverFactory<MIPWrapper>::processOption(SolverInstanceBase::Options* opt, int& i,
-                                                 std::vector<std::string>& argv) {
-  if (argv[i] == "--verbose-solving") {
-    opt->verbose = true;
+                                                 std::vector<std::string>& argv,
+                                                 const std::string& workingDir) {
+  CLOParser cop(i, argv);
+  auto& options = static_cast<typename MIPWrapper::Options&>(*opt);
+
+  if (cop.get("-v --verbose-solving")) {
+    options.verbose = true;
     return true;
   }
-  if (argv[i] == "--solver-statistics") {
-    opt->printStatistics = true;
+  if (cop.get("-s --solver-statistics")) {
+    options.printStatistics = true;
     return true;
   }
-  return static_cast<typename MIPWrapper::Options&>(*opt).processOption(i, argv);
+  if (options.processOption(i, argv, workingDir)) {
+    return true;
+  }
+
+  // Add any command line extra flags
+  for (const auto& flag : _extraFlags) {
+    if (flag.flagType == SolverConfig::ExtraFlag::FlagType::T_BOOL && flag.range.empty() &&
+        cop.get(flag.flag.c_str())) {
+      options.extraParams.emplace(flag.flag, "true");
+      return true;
+    }
+
+    std::string buffer;
+    if (cop.get(flag.flag.c_str(), &buffer)) {
+      if (flag.validate(buffer)) {
+        options.extraParams.emplace(flag.flag, buffer);
+        return true;
+      }
+      return false;
+    }
+  }
+
+  return false;
 }
 
 template <class MIPWrapper>
 std::string MIPSolverFactory<MIPWrapper>::getDescription(SolverInstanceBase::Options* opt) {
-  std::string v =
-      "MIP solver plugin, compiled " __DATE__ ", using: " + MIPWrapper::getDescription(opt);
+  std::string v = "MIP solver plugin, compiled " __DATE__ ", using: " +
+                  MIPWrapper::getDescription(_factoryOptions, opt);
   return v;
 }
 
 template <class MIPWrapper>
 std::string MIPSolverFactory<MIPWrapper>::getVersion(SolverInstanceBase::Options* opt) {
-  return MIPWrapper::getVersion(opt);
+  return MIPWrapper::getVersion(_factoryOptions, opt);
 }
 
 template <class MIPWrapper>
@@ -105,47 +147,79 @@ void MIPSolverinstance<MIPWrapper>::exprToArray(Expression* arg, std::vector<dou
 
 template <class MIPWrapper>
 void MIPSolverinstance<MIPWrapper>::processSearchAnnotations(const Annotation& ann) {
-  if (1 == getMIPWrapper()->getFreeSearch()) {
+  if (getMIPWrapper()->getFreeSearch() == MIPWrapper::SearchType::FREE_SEARCH) {
     return;
   }
-  std::vector<Expression*> aAnns;
-  flattenSearchAnnotations(ann, aAnns);
+  std::vector<Expression*> flattenedAnns;
+  flattenSearchAnnotations(ann, flattenedAnns);
   std::vector<MIPSolverinstance::VarId> vars;
   std::vector<int> aPri;  // priorities
+
+  /// Annotations that may be useful for custom search strategies in e.g. SCIP
+  std::deque<std::string> variableSelection;
+  std::deque<std::string> valueSelection;
+
   int nArrayAnns = 0;
-  for (auto iA = 0; iA < aAnns.size(); ++iA) {
-    const auto& pE = aAnns[iA];
-    if (pE->isa<Call>()) {
-      Call* pC = pE->cast<Call>();
-      const auto cId = pC->id();
-      if (cId == "int_search" || cId == "float_search") {
-        ArrayLit* alV = nullptr;
-        if ((pC->argCount() == 0U) || nullptr == (alV = eval_array_lit(_env.envi(), pC->arg(0)))) {
-          std::cerr << "  SEARCH ANN: '" << (*pC) << "'  is unknown. " << std::endl;
-          continue;
-        }
-        ++nArrayAnns;
-        for (unsigned int i = 0; i < alV->size(); i++) {
-          if (Id* ident = (*alV)[i]->dynamicCast<Id>()) {
-            vars.push_back(exprToVar(ident));
-            aPri.push_back(static_cast<int>(aAnns.size()) - iA);  // level search by default
-          }                                                       // else ignore
-        }
-      }
+  auto priority = flattenedAnns.size();  // Variables at front get highest pri
+  for (const auto& annExpression : flattenedAnns) {
+    /// Skip expressions that are not meaningful or we cannot process
+    if (!annExpression->isa<Call>()) {
+      continue;
     }
+
+    Call* annotation = annExpression->cast<Call>();
+    const auto annotation_type = annotation->id();
+    if (annotation_type != "int_search" && annotation_type != "float_search") {
+      continue;
+    }
+
+    if ((annotation->argCount() == 0U) ||
+        nullptr == eval_array_lit(_env.envi(), annotation->arg(0))) {
+      std::cerr << "  SEARCH ANN: '" << (*annotation) << "'  is unknown. " << std::endl;
+      continue;
+    }
+
+    /// Save the variable selection and the value selection strategies, indexed on priority.
+    /// Rules are ordered by ascending priorities, i.e. rules with lower priorities are at the front
+    /// so that we can index them by priority.
+    const auto cVarSel = annotation->arg(1)->cast<Id>()->str();
+    const auto cValSel = annotation->arg(2)->cast<Id>()->str();
+    variableSelection.push_front(cVarSel.c_str());
+    valueSelection.push_front(cValSel.c_str());
+
+    ++nArrayAnns;
+
+    /// Take the variables and append them with set prioirty.
+    std::vector<MIPSolverinstance::VarId> annVars;
+    exprToVarArray(annotation->arg(0), annVars);
+    aPri.insert(aPri.end(), annVars.size(), --priority);
+    std::move(annVars.begin(), annVars.end(), std::back_inserter(vars));
   }
-  if (!vars.empty()) {
-    if (2 == getMIPWrapper()->getFreeSearch()) {
-      for (int i = 0; i < vars.size(); ++i) {
-        aPri[i] = 1;  // vars.size()-i;                                    // descending
-      }
-    }
-    if (!getMIPWrapper()->addSearch(vars, aPri)) {
-      std::cerr << "\nWARNING: MIP backend seems to ignore search strategy." << std::endl;
-    } else {
-      std::cerr << "  MIP: added " << vars.size() << " variable branching priorities from "
-                << nArrayAnns << " arrays." << std::endl;
-    }
+
+  if (vars.empty()) {
+    return;
+  }
+
+  if (getMIPWrapper()->getFreeSearch() == MIPWrapper::SearchType::UNIFORM_SEARCH) {
+    std::fill(aPri.begin(), aPri.end(), 1);
+    /// It is an error here to use variableSelection / valueSelection since
+    /// we can't index them anymore. Makes no sense to use them for uniform search anyway.
+    variableSelection.clear();
+    valueSelection.clear();
+  } else {
+    /// Subtract offset of remaining priority so that priorities start at 0,
+    /// so that we can index variableSelection and valueSelection by priority.
+    std::transform(aPri.cbegin(), aPri.cend(), aPri.begin(),
+                   [priority](const int p) { return p - priority; });
+  }
+
+  // Try adding to solver
+  const auto successfullyAddedAnnotations = getMIPWrapper()->addSearch(vars, aPri);
+  if (!successfullyAddedAnnotations) {
+    std::cerr << "\nWARNING: MIP backend seems to ignore search strategy." << std::endl;
+  } else {
+    std::cerr << "  MIP: added " << vars.size() << " variable branching priorities from "
+              << nArrayAnns << " arrays." << std::endl;
   }
 }
 

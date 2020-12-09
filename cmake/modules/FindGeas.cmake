@@ -21,7 +21,7 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Geas
   FOUND_VAR GEAS_FOUND
   REQUIRED_VARS GEAS_INCLUDE GEAS_LIBRARY
-  FAIL_MESSAGE "Could NOT find Geas, use GEAS_ROOT to hint its location"
+  FAIL_MESSAGE "Could NOT find Geas, use Geas_ROOT to hint its location"
 )
 
 mark_as_advanced(GEAS_INCLUDE GEAS_LIBRARY)

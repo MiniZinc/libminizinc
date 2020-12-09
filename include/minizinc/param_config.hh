@@ -29,6 +29,8 @@ protected:
   std::unordered_set<std::string> _blacklist;
   std::unordered_map<std::string, std::string> _boolSwitches;
   void addValue(const ASTString& flag, Expression* e);
+  static std::string flagName(const ASTString& flag);
+  static std::string modelToString(Model& model);
 
 public:
   ParamConfig() {}

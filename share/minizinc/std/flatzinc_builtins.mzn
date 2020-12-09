@@ -402,3 +402,37 @@ predicate int_pow_fixed(var int: x, int: y, var int: z);
 
 /** @group flatzinc.twothreethree Constrains \a x \( \in \) \a S */
 predicate float_set_in(var float: x, set of float: S);
+
+/***
+  @groupdef flatzinc.twofivetwo FlatZinc builtins added in MiniZinc 2.5.2.
+
+  These functions and predicates define built-in operations of the MiniZinc language
+  that have been added in MiniZinc 2.5.2. Solvers that support these natively need
+  to include a file called redefinitions-2.5.2.mzn in their solver library that
+  redefines these predicates as builtins.
+
+*/
+
+/** @group flatzinc.twofivetwo Element constraint on 2d array with MiniZinc index set, constrains \a x[\a idx1,idx2] = \a c
+  This can be overridden in a solver that can perform the index calculation more efficiently than using
+  a MiniZinc decomposition.
+*/
+predicate array_var_int_element2d_nonshifted(var int: idx1, var int: idx2, array[int,int] of var int: x, var int: c);
+
+/** @group flatzinc.twofivetwo Element constraint on 2d array with MiniZinc index set, constrains \a x[\a idx1,idx2] = \a c
+  This can be overridden in a solver that can perform the index calculation more efficiently than using
+  a MiniZinc decomposition.
+*/
+predicate array_var_bool_element2d_nonshifted(var int: idx1, var int: idx2, array[int,int] of var bool: x, var bool: c);
+
+/** @group flatzinc.twofivetwo Element constraint on 2d array with MiniZinc index set, constrains \a x[\a idx1,idx2] = \a c
+  This can be overridden in a solver that can perform the index calculation more efficiently than using
+  a MiniZinc decomposition.
+*/
+predicate array_var_float_element2d_nonshifted(var int: idx1, var int: idx2, array[int,int] of var float: x, var float: c);
+
+/** @group flatzinc.twofivetwo Element constraint on 2d array with MiniZinc index set, constrains \a x[\a idx1,idx2] = \a c
+  This can be overridden in a solver that can perform the index calculation more efficiently than using
+  a MiniZinc decomposition.
+*/
+predicate array_var_set_element2d_nonshifted(var int: idx1, var int: idx2, array[int,int] of var set of int: x, var set of int: c);

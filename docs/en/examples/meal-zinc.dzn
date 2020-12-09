@@ -1,0 +1,22 @@
+enum Name = { icecream, banana, chocolate_cake, lasagna, 
+              steak, rice, chips, brocolli, beans };
+
+meal_items = { (icecream,       1200,  50,  10, 120,  400),
+               (banana,          800, 120,   5,  20,  120),
+               (chocolate_cake, 2500, 400,  20, 100,  600),
+               (lasagna,        3000, 200, 100, 250,  450),
+               (steak,          1800, 800,  50, 100, 1200),
+               (rice,           1200,  50,   5,  20,  100),
+               (chips,          2000,  50, 200, 200,  250),
+               (brocolli,        700, 100,  10,  10,  125),
+               (beans,          1900, 250,  60,  90,  150) };
+
+min_energy  = 3300;
+min_protein = 500;
+
+max_salt = 180;
+max_fat  = 320;
+
+desserts = { icecream, banana, chocolate_cake };
+mains    = { lasagna, steak, beans };
+sides    = { rice, chips, brocolli };

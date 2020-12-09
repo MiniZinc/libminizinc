@@ -10,6 +10,7 @@
 #pragma once
 
 #include <minizinc/plugin.hh>
+#include <minizinc/solver_config.hh>
 #include <minizinc/solver_instance_base.hh>
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
 
@@ -18,17 +19,7 @@
 
 using namespace std;
 
-/// xprs.dll depends on this library
-class XprlPlugin : MiniZinc::Plugin {
-public:
-  XprlPlugin();
-  XprlPlugin(const std::string& dll);
-
-private:
-  static const std::vector<std::string>& dlls();
-};
-
-class XpressPlugin : MiniZinc::Plugin {
+class XpressPlugin : public MiniZinc::Plugin {
 public:
   XpressPlugin();
   XpressPlugin(const std::string& dll);
@@ -100,6 +91,24 @@ public:
   struct Xbprob*(XB_CC* XPRBnewprob)(const char* name);
   // NOLINTNEXTLINE(readability-identifier-naming)
   int(XB_CC* XPRBdelprob)(struct Xbprob* prob);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(XPRS_CC* XPRSgetcontrolinfo)(XPRSprob prob, const char* sCaName, int* iHeaderId,
+                                   int* iTypeinfo);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(XPRS_CC* XPRSgetintcontrol)(XPRSprob prob, int _index, int* _ivalue);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(XPRS_CC* XPRSgetintcontrol64)(XPRSprob prob, int _index, XPRSint64* _ivalue);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(XPRS_CC* XPRSgetdblcontrol)(XPRSprob prob, int _index, double* _dvalue);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(XPRS_CC* XPRSgetstrcontrol)(XPRSprob prob, int _index, char* _svalue);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(XPRS_CC* XPRSsetintcontrol64)(XPRSprob prob, int _index, XPRSint64 _ivalue);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(XPRS_CC* XPRSgetstringcontrol)(XPRSprob prob, int _index, char* _svalue, int _svaluesize,
+                                     int* _controlsize);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(XPRS_CC* XPRSsetstrcontrol)(XPRSprob prob, int _index, const char* _svalue);
 
 private:
   void loadDll();
@@ -108,6 +117,14 @@ private:
 
 class MIPxpressWrapper : public MIPWrapper {
 public:
+  class FactoryOptions {
+  public:
+    bool processOption(int& i, std::vector<std::string>& argv, const std::string& workingDir);
+
+    std::string xpressDll;
+    std::string xprsPassword;
+  };
+
   class Options : public MiniZinc::SolverInstanceBase::Options {
   public:
     int msgLevel = 0;
@@ -119,15 +136,20 @@ public:
     double absGap = 0;
     double relGap = 0.0001;
     bool intermediateSolutions = false;
-    bool processOption(int& i, std::vector<std::string>& argv);
-    std::string xprsPassword;
-    std::string xprsRoot;
+
+    int numThreads = 0;
+    int randomSeed = 0;
+
+    std::unordered_map<std::string, std::string> extraParams;
+
+    bool processOption(int& i, std::vector<std::string>& argv,
+                       const std::string& workingDir = std::string());
     static void printHelp(std::ostream& os);
   };
 
 private:
+  FactoryOptions& _factoryOptions;
   Options* _options = nullptr;
-  XprlPlugin* _pluginDep = nullptr;
   XpressPlugin* _plugin = nullptr;
 
 public:
@@ -157,16 +179,24 @@ public:
   int getNNodes() override { return output.nNodes; }
   int getNOpen() override { return output.nOpenNodes; }
 
-  MIPxpressWrapper(Options* opt) : _options(opt) { openXpress(); };
+  MIPxpressWrapper(FactoryOptions& factoryOpt, Options* opt)
+      : _factoryOptions(factoryOpt), _options(opt) {
+    openXpress();
+  };
   ~MIPxpressWrapper() override { closeXpress(); };
 
-  static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
-  static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
+  static std::string getDescription(FactoryOptions& factoryOpt,
+                                    MiniZinc::SolverInstanceBase::Options* opt = nullptr);
+  static std::string getVersion(FactoryOptions& factoryOpt,
+                                MiniZinc::SolverInstanceBase::Options* opt = nullptr);
   static std::string getId();
   static std::string getName();
   static std::vector<std::string> getTags();
   static std::vector<std::string> getStdFlags();
-  static std::vector<std::string> getRequiredFlags();
+  static std::vector<std::string> getRequiredFlags(FactoryOptions& factoryOpt);
+  static std::vector<std::string> getFactoryFlags();
+
+  static std::vector<MiniZinc::SolverConfig::ExtraFlag> getExtraFlags(FactoryOptions& factoryOpt);
 
 private:
   XPRBprob _problem;
@@ -176,6 +206,8 @@ private:
 
   void openXpress();
   void closeXpress();
+
+  void checkDLL();
 
   void setUserSolutionCallback();
   void setOptions();

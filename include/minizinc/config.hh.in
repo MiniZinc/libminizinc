@@ -6,6 +6,8 @@
 
 #define MZN_BUILD_REF "${BUILD_REF}"
 
+#define MZN_STATIC_STDLIB_DIR "${MZN_STATIC_STDLIB_DIR}"
+
 #cmakedefine HAS_DECLSPEC_THREAD
 
 #cmakedefine HAS_ATTR_THREAD

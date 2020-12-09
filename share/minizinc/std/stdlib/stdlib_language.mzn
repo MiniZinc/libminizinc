@@ -31,3 +31,38 @@ test mzn_check_only_range_domains() =
   if absent(mzn_opt_only_range_domains) then false
   else deopt(mzn_opt_only_range_domains) endif;
 
+/** @group stdlib.options Whether to generate defines_var annotations */
+opt bool: mzn_opt_annotate_defines_var;
+
+/** @group stdlib.options Check whether to generate defines_var annotations */
+test mzn_check_annotate_defines_var() =
+  if absent(mzn_opt_annotate_defines_var) then true
+  else deopt(mzn_opt_annotate_defines_var) endif;
+
+/** @group stdlib.options Whether to ignore symmetry breaking constraints
+ 
+    If not specified or set to false, it depends on the solver library whether
+    constraints that are wrapped in a symmetry_breaking_constraint call
+    are in fact compiled. If set to true, they are not compiled, independent
+    of the solver library.
+ */
+opt bool: mzn_ignore_symmetry_breaking_constraints;
+
+/** @group stdlib.options Check whether to ignore symmetry breaking constraints */
+test mzn_check_ignore_symmetry_breaking_constraints() =
+  if absent(mzn_ignore_symmetry_breaking_constraints) then false
+  else deopt(mzn_ignore_symmetry_breaking_constraints) endif;
+
+/** @group stdlib.options Whether to ignore redundant constraints
+  
+    If not specified or set to false, it depends on the solver library whether
+    constraints that are wrapped in a redundant_constraint call
+    are in fact compiled. If set to true, they are not compiled, independent
+    of the solver library.
+ */
+opt bool: mzn_ignore_redundant_constraints;
+
+/** @group stdlib.options Check whether to ignore redundant constraints */
+test mzn_check_ignore_redundant_constraints() =
+  if absent(mzn_ignore_redundant_constraints) then false
+  else deopt(mzn_ignore_redundant_constraints) endif;

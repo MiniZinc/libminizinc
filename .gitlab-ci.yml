@@ -5,13 +5,24 @@ stages:
 
 .download_vendor: &download_vendor
   - curl --location --header "PRIVATE-TOKEN:$ACCESS_TOKEN" --silent https://gitlab.com/api/v4/snippets/1796163/raw | tr -d '\r' > download.sh
-  - sh download.sh vendor master bundle:${MZNARCH} vendor.zip
+  - sh download.sh vendor master vendor:${MZNARCH} vendor.zip
   - unzip -q vendor.zip
 
 .download_vendor: &download_vendor_win
   - curl -o download.sh --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" --silent https://gitlab.com/api/v4/snippets/1796163/raw
   - dos2unix download.sh
   - sh download.sh vendor master vendor:%MZNARCH% vendor.zip
+  - unzip -q vendor.zip
+
+.download_bundle: &download_bundle
+  - curl --location --header "PRIVATE-TOKEN:$ACCESS_TOKEN" --silent https://gitlab.com/api/v4/snippets/1796163/raw | tr -d '\r' > download.sh
+  - sh download.sh vendor master bundle:${MZNARCH} vendor.zip
+  - unzip -q vendor.zip
+
+.download_bundle: &download_bundle_win
+  - curl -o download.sh --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" --silent https://gitlab.com/api/v4/snippets/1796163/raw
+  - dos2unix download.sh
+  - sh download.sh vendor master bundle:%MZNARCH% vendor.zip
   - unzip -q vendor.zip
 
 variables:
@@ -26,7 +37,6 @@ default:
 
 .build:
   stage: build
-  interruptible: true
   before_script:
     - *download_vendor
   script:
@@ -35,7 +45,7 @@ default:
   artifacts:
     paths: [minizinc/]
   cache:
-    key: "$CI_JOB_NAME"
+    key: "$CI_JOB_STAGE:$CI_JOB_NAME"
     paths: [.ccache, vendor.zip*]
   only: [tags, merge_requests, pipelines, develop, master]
 
@@ -66,17 +76,17 @@ build:win64:
   extends: .build
   variables:
     MZNARCH: "win64"
-    CMAKE_ARCH: "Visual Studio 15 2017 Win64"
+    CMAKE_ARCH: "Ninja"
+    BUILDCACHE_DIR: "$CI_PROJECT_DIR/.ccache"
+    BUILDCACHE_MAX_CACHE_SIZE: "104857600"
   before_script:
     - *download_vendor_win
   script:
-    - cmake -S . -B build -G"%CMAKE_ARCH%" -DBUILD_REF=%CI_PIPELINE_ID% -DUSE_PROPRIETARY=OFF -DGecode_ROOT="%CI_PROJECT_DIR%/vendor/gecode" -DGurobi_ROOT="%CI_PROJECT_DIR%/vendor/gurobi" -DCPlex_ROOT="%CI_PROJECT_DIR%/vendor/CPLEX_Studio/cplex" -DOsiCBC_ROOT="%CI_PROJECT_DIR%/vendor/cbc" -DSCIP_ROOT="%CI_PROJECT_DIR%/vendor/scip" -DXpress_ROOT="%CI_PROJECT_DIR%/vendor/xpressmp" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
+    - cmake -S . -B build -G"%CMAKE_ARCH%" -DCMAKE_BUILD_TYPE=Release -DBUILD_REF=%CI_PIPELINE_ID% -DCCACHE_PROGRAM:STRING=buildcache -DUSE_PROPRIETARY=OFF -DGecode_ROOT="%CI_PROJECT_DIR%/vendor/gecode" -DGurobi_ROOT="%CI_PROJECT_DIR%/vendor/gurobi" -DCPlex_ROOT="%CI_PROJECT_DIR%/vendor/CPLEX_Studio/cplex" -DOsiCBC_ROOT="%CI_PROJECT_DIR%/vendor/cbc" -DSCIP_ROOT="%CI_PROJECT_DIR%/vendor/scip" -DXpress_ROOT="%CI_PROJECT_DIR%/vendor/xpressmp" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
     - cmake --build build --config Release --target install
   cache:
-    key: "win64"
-    paths: [vendor.zip*]
-  tags: [win64, cmake, cpp]
-  only: [tags, merge_requests, pipelines, develop, master]
+    key: "build_win64"
+  tags: [win64, cmake, cpp, ninja, buildcache]
 
 build:wasm_complete:
   extends: .build
@@ -146,7 +156,7 @@ test:analyse:
     PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
     MZN_SOLVER_PATH: "$CI_PROJECT_DIR/vendor/chuffed/share/minizinc/solvers/:$CI_PROJECT_DIR/vendor/gecode"
   before_script:
-    - *download_vendor
+    - *download_bundle
     # TODO: Add gecode configuration to the Gecode solver
     - "echo '{\"id\":\"org.gecode.gecode\",\"name\":\"Gecode\",\"description\":\"Gecode FlatZinc executable\",\"version\":\"6.1.1\",\"mznlib\":\"share/gecode/mznlib\",\"executable\":\"bin/fzn-gecode\",\"tags\":[\"cp\",\"int\",\"float\",\"set\",\"restart\"],\"stdFlags\":[\"-a\",\"-f\",\"-n\",\"-p\",\"-r\",\"-s\",\"-t\"],\"extraFlags\":[[\"-c-d\",\"Recomputation commit distance\",\"int\",\"8\"],[\"-a-d\",\"Recomputation adaption distance\",\"int\",\"2\"],[\"-decay\",\"Decay factor\",\"float\",\"0.99\"],[\"-node\",\"Node cutoff\",\"int\",\"0\"],[\"-fail\",\"Failure cutoff\",\"int\",\"0\"],[\"-restart\",\"Restart sequence type\",\"opt:none:constant:linear:luby:geometric\",\"none\"],[\"-restart-base\",\"Base for geometric restart sequence\",\"float\",\"1.5\"],[\"-restart-scale\",\"Scale factor for restart sequence\",\"int\",\"250\"],[\"-nogoods\",\"Use no-goods from restarts\",\"bool\",\"false\"],[\"-nogoods-limit\",\"Depth limit for no-good extraction\",\"int\",\"128\"]],\"supportsMzn\":false,\"supportsFzn\":true,\"needsSolns2Out\":true,\"needsMznExecutable\":false,\"needsStdlibDir\":false,\"isGUIApplication\":false}' > vendor/gecode/gecode.msc"
     - export PATH=$CI_PROJECT_DIR/minizinc/bin:$PATH
@@ -164,7 +174,7 @@ test:analyse:
     reports:
       junit: tests/output/junit*.xml
   cache:
-    key: "$CI_JOB_NAME"
+    key: "$CI_JOB_STAGE:$CI_JOB_NAME"
     paths: [.cache/pip, vendor.zip*]
   only: [merge_requests, pipelines, master]
 
@@ -194,7 +204,7 @@ test:analyse:
     MZNARCH: "win64"
     MZN_SOLVER_PATH: "$CI_PROJECT_DIR/vendor/chuffed/share/minizinc/solvers;$CI_PROJECT_DIR/vendor/gecode"
   before_script:
-    - *download_vendor_win
+    - *download_bundle_win
     # TODO: Add gecode configuration to the Gecode solver
     - 'echo {"id":"org.gecode.gecode","name":"Gecode","description":"Gecode FlatZinc executable","version":"6.1.1","mznlib":"share/gecode/mznlib","executable":"bin/fzn-gecode","tags":["cp","int","float","set","restart"],"stdFlags":["-a","-f","-n","-p","-r","-s","-t"],"extraFlags":[["-c-d","Recomputation commit distance","int","8"],["-a-d","Recomputation adaption distance","int","2"],["-decay","Decay factor","float","0.99"],["-node","Node cutoff","int","0"],["-fail","Failure cutoff","int","0"],["-restart","Restart sequence type","opt:none:constant:linear:luby:geometric","none"],["-restart-base","Base for geometric restart sequence","float","1.5"],["-restart-scale","Scale factor for restart sequence","int","250"],["-nogoods","Use no-goods from restarts","bool","false"],["-nogoods-limit","Depth limit for no-good extraction","int","128"]],"supportsMzn":false,"supportsFzn":true,"needsSolns2Out":true,"needsMznExecutable":false,"needsStdlibDir":false,"isGUIApplication":false} > vendor/gecode/gecode.msc'
     - set PATH=%CI_PROJECT_DIR%/minizinc/bin;%PATH%
@@ -208,7 +218,7 @@ test:analyse:
   dependencies: ["build:win64"]
   needs: ["build:win64"]
   cache:
-    key: win64
+    key: test_win64
 
 .tests_fast:
   script:
@@ -240,6 +250,41 @@ test:win64:full:
   extends: [.tests_win64, .tests_full]
   cache:
     key: test_win64_full
+
+# ----------- Documentation -----------
+
+documentation:
+  stage: test
+  image: guidotack/sphinx-doc:latest
+  variables:
+    MZNARCH: "linux"
+  before_script:
+    - *download_bundle
+  script:
+    - cp $CI_PROJECT_DIR/share/minizinc/gecode_presolver/gecode.mzn $CI_PROJECT_DIR/share/minizinc/std/
+    - cp $CI_PROJECT_DIR/vendor/chuffed/share/minizinc/chuffed/chuffed.mzn $CI_PROJECT_DIR/share/minizinc/std/
+    - echo 'include "globals.mzn"; include "gecode.mzn"; include "chuffed.mzn";' > $CI_PROJECT_DIR/share/minizinc/std/all.mzn
+    - ./minizinc/bin/mzn2doc --rst-output --include-stdlib --output-base $CI_PROJECT_DIR/docs/en/lib $CI_PROJECT_DIR/share/minizinc/std/all.mzn
+    - ./minizinc/bin/mzn2doc --rst-output --include-stdlib --output-base $CI_PROJECT_DIR/docs/chi/lib $CI_PROJECT_DIR/share/minizinc/std/all.mzn
+    - cd $CI_PROJECT_DIR/docs/en
+    - make html latexpdf
+    - cd $CI_PROJECT_DIR/docs/chi
+    - make html latexpdf
+    - mkdir -p $CI_PROJECT_DIR/docs-deploy/en
+    - mkdir -p $CI_PROJECT_DIR/docs-deploy/chi
+    - cp -r $CI_PROJECT_DIR/docs/en/_build/html/* $CI_PROJECT_DIR/docs-deploy/en/
+    - cp $CI_PROJECT_DIR/docs/en/_build/latex/MiniZinc.pdf $CI_PROJECT_DIR/docs-deploy/en/MiniZinc\ Handbook.pdf
+    - cp -r $CI_PROJECT_DIR/docs/chi/_build/html/* $CI_PROJECT_DIR/docs-deploy/chi/
+    - cp $CI_PROJECT_DIR/docs/chi/_build/latex/MiniZinc.pdf $CI_PROJECT_DIR/docs-deploy/chi/MiniZinc\ Handbook.pdf
+  artifacts:
+    paths:
+      - docs-deploy
+  tags:
+    - linux
+    - docker
+  only: [tags, merge_requests, pipelines, develop, master]
+  dependencies: ["build:linux"]
+  needs: ["build:linux"]
 
 # ----------- Trigger FindMUS pipeline -----------
 

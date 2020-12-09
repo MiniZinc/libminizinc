@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include <minizinc/solver_config.hh>
 #include <minizinc/solver_instance_base.hh>
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
 // CMakeLists.txt needs OSICBC_HOME defined
@@ -44,6 +45,14 @@ class MIPosicbcWrapper : public MIPWrapper {
   std::unordered_map<VarId, double> _warmstart;  // this accumulates warmstart infos
 
 public:
+  class FactoryOptions {
+  public:
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+    bool processOption(int& i, std::vector<std::string>& argv, const std::string& workingDir) {
+      return false;
+    }
+  };
+
   class Options : public MiniZinc::SolverInstanceBase::Options {
   public:
     int nThreads = 1;
@@ -60,9 +69,12 @@ public:
     double intTol = 1e-8;
     double objDiff = 1.0;
 
-    std::string cbcCmdOptions;
+    std::vector<std::string> cbcCmdOptions;
 
-    bool processOption(int& i, std::vector<std::string>& argv);
+    std::unordered_map<std::string, std::string> extraParams;
+
+    bool processOption(int& i, std::vector<std::string>& argv,
+                       const std::string& workingDir = std::string());
     static void printHelp(std::ostream& os);
   };
 
@@ -70,16 +82,21 @@ private:
   Options* _options = nullptr;
 
 public:
-  MIPosicbcWrapper(Options* opt) : _options(opt) { openOSICBC(); }
+  MIPosicbcWrapper(FactoryOptions& factoryOpt, Options* opt) : _options(opt) { openOSICBC(); }
   ~MIPosicbcWrapper() override { closeOSICBC(); }
 
-  static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
-  static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
+  static std::string getDescription(FactoryOptions& factoryOpt,
+                                    MiniZinc::SolverInstanceBase::Options* opt = nullptr);
+  static std::string getVersion(FactoryOptions& factoryOpt,
+                                MiniZinc::SolverInstanceBase::Options* opt = nullptr);
   static std::string getId();
   static std::string getName();
   static std::vector<std::string> getTags();
   static std::vector<std::string> getStdFlags();
-  static std::vector<std::string> getRequiredFlags() { return {}; };
+  static std::vector<std::string> getRequiredFlags(FactoryOptions& factoryOpt) { return {}; };
+  static std::vector<std::string> getFactoryFlags() { return {}; };
+
+  static std::vector<MiniZinc::SolverConfig::ExtraFlag> getExtraFlags(FactoryOptions& factoryOpt);
 
   void printVersion(std::ostream&);
   void printHelp(std::ostream&);

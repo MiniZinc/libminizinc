@@ -38,9 +38,14 @@ public:
   void removeSolverFactory(SolverFactory* sf);
   typedef std::vector<SolverFactory*> SFStorage;
   const SFStorage& getSolverFactories() const { return _sfstorage; }
+  typedef std::vector<std::pair<std::string, SolverFactory*>> FactoryFlagStorage;
+  void addFactoryFlag(const std::string& flag, SolverFactory* sf);
+  void removeFactoryFlag(const std::string& flag, SolverFactory* sf);
+  const FactoryFlagStorage& getFactoryFlags() const { return _factoryFlagStorage; }
 
 private:
   SFStorage _sfstorage;
+  FactoryFlagStorage _factoryFlagStorage;
 };  // SolverRegistry
 
 /// this function returns the global SolverRegistry object
@@ -64,8 +69,8 @@ public:
   static MZNFZNSolverFlag noarg(const std::string& n) { return MZNFZNSolverFlag(FT_NOARG, n); }
   /// Create solver flag from standard flag
   static MZNFZNSolverFlag std(const std::string& n);
-  /// Create solver flag from extra flag with name \a n and type \a t
-  static MZNFZNSolverFlag extra(const std::string& n, const std::string& t);
+  /// Create solver flag from extra flag
+  static MZNFZNSolverFlag extra(const SolverConfig::ExtraFlag& ef);
 };
 
 /// SolverFactory's descendants create, store and destroy SolverInstances
@@ -77,7 +82,7 @@ class SolverFactory {
 protected:
   /// doCreateSI should be implemented to actually allocate a SolverInstance using new()
   virtual SolverInstanceBase* doCreateSI(Env&, std::ostream&, SolverInstanceBase::Options* opt) = 0;
-  typedef std::vector<std::unique_ptr<SolverInstanceBase> > SIStorage;
+  typedef std::vector<std::unique_ptr<SolverInstanceBase>> SIStorage;
   SIStorage _sistorage;
 
   SolverFactory() { get_global_solver_registry()->addSolverFactory(this); }
@@ -92,6 +97,14 @@ public:
     }
   }
 
+  /// Processes a previously registered factory flag.
+  virtual bool processFactoryOption(int& i, std::vector<std::string>& argv,
+                                    const std::string& workingDir = std::string()) {
+    return false;
+  };
+  /// Called after any registered factory flags have been processed.
+  virtual void factoryOptionsFinished(){};
+
   /// Create solver-specific options object
   virtual SolverInstanceBase::Options* createOptions() = 0;
   /// Function createSI also adds each SI to the local storage
@@ -105,7 +118,8 @@ public:
   /// We can also pass options internally between modules in this way
   /// and it only needs 1 format
   virtual bool processOption(SolverInstanceBase::Options* opt, int& i,
-                             std::vector<std::string>& argv) {
+                             std::vector<std::string>& argv,
+                             const std::string& workingDir = std::string()) {
     return false;
   }
 

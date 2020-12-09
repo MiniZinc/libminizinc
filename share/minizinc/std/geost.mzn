@@ -155,11 +155,6 @@ predicate geost_smallest_bb(
             set of int: DIMS    = 1..k;
             set of int: SHAPES  = 1..length(shape);
             set of int: OBJECTS = index_set(kind);
-        } in
-    % Two useful definitions
-    let {
-        set of int: DIMS    = 1..k;
-        set of int: OBJECTS = index_set(kind); 
     } in (
     assert(
         % Sanity check

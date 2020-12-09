@@ -1,19 +1,3 @@
-include "fzn_if_then_else_int.mzn";
-include "fzn_if_then_else_opt_int.mzn";
-include "fzn_if_then_else_var_int.mzn";
-include "fzn_if_then_else_var_opt_int.mzn";
-include "fzn_if_then_else_bool.mzn";
-include "fzn_if_then_else_opt_bool.mzn";
-include "fzn_if_then_else_var_bool.mzn";
-include "fzn_if_then_else_var_opt_bool.mzn";
-include "fzn_if_then_else_float.mzn";
-include "fzn_if_then_else_opt_float.mzn";
-include "fzn_if_then_else_var_float.mzn";
-include "fzn_if_then_else_var_opt_float.mzn";
-include "fzn_if_then_else_set.mzn";
-include "fzn_if_then_else_var_set.mzn";
-include "fzn_if_then_else_partiality.mzn";
-
 /***
   @groupdef stdlib.ifthenelse Conditionals
 

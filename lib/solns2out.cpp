@@ -61,14 +61,14 @@ void Solns2Out::printHelp(ostream& os) {
      << "  --no-flush-output\n    Don't flush output stream after every line." << std::endl;
 }
 
-bool Solns2Out::processOption(int& i, std::vector<std::string>& argv) {
+bool Solns2Out::processOption(int& i, std::vector<std::string>& argv,
+                              const std::string& workingDir) {
   CLOParser cop(i, argv);
-  std::string oznfile;
-  if (cop.getOption("--ozn-file", &oznfile)) {
-    initFromOzn(oznfile);
-  } else if (cop.getOption("-o --output-to-file",
-                           &opt.flagOutputFile)) {  // NOLINT: Allow repeated empty if
-    // Parsed by reference
+  std::string buffer;
+  if (cop.getOption("--ozn-file", &buffer)) {
+    initFromOzn(FileUtils::file_path(buffer, workingDir));
+  } else if (cop.getOption("-o --output-to-file", &buffer)) {
+    opt.flagOutputFile = buffer;
   } else if (cop.getOption("--no-flush-output")) {
     opt.flagOutputFlush = false;
   } else if (cop.getOption("--no-output-comments")) {
@@ -424,7 +424,7 @@ void Solns2Out::checkStatistics(std::ostream& oss) {
 
 bool Solns2Out::evalOutputInternal(ostream& fout) {
   if (nullptr != _outputExpr) {
-    _env->envi().evalOutput(fout);
+    _env->envi().evalOutput(fout, _log);
   }
   return true;
 }

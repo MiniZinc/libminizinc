@@ -1,0 +1,29 @@
+
+
+Requerimientos previos
+======================
+
+Paso 1: Instalar el administrador de paquetes para macOS (https://brew.sh/).
+Para ello se debe de ejecutar el siguente comando en una terminal de macOS.
+
+``
+/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+``
+
+Paso 2: Ejecutar en un terminal de OSx el siguiente comando:
+
+``
+brew install docutils
+``
+
+Paso 3: Instala el packete Sphinx mediante el siguiente comando:
+``
+sudo pip install Sphinx
+sudo pip install sphinx_bootstrap_theme
+``
+
+Para la compilación de los textos se debe de ejecutar el script.
+
+``
+make epub
+``

@@ -399,7 +399,12 @@ public:
         _os << " | ";
         for (int i = 0; i < c.numberOfGenerators(); i++) {
           for (int j = 0; j < c.numberOfDecls(i); j++) {
-            _os << c.decl(i, j)->id()->v();
+            auto* ident = c.decl(i, j)->id();
+            if (ident->idn() == -1) {
+              _os << ident->v();
+            } else {
+              _os << "X_INTRODUCED_" << ident->idn() << "_";
+            }
             if (j < c.numberOfDecls(i) - 1) {
               _os << ",";
             }
@@ -1265,8 +1270,14 @@ public:
       auto* gen = new DocumentList("", "", "");
       auto* idents = new DocumentList("", ", ", "");
       for (int j = 0; j < c.numberOfDecls(i); j++) {
-        idents->addStringToList(
-            std::string(c.decl(i, j)->id()->v().c_str(), c.decl(i, j)->id()->v().size()));
+        std::ostringstream ss;
+        Id* ident = c.decl(i, j)->id();
+        if (ident->idn() == -1) {
+          ss << ident->v();
+        } else {
+          ss << "X_INTRODUCED_" << ident->idn() << "_";
+        }
+        idents->addStringToList(ss.str());
       }
       gen->addDocumentToList(idents);
       if (c.in(i) == nullptr) {

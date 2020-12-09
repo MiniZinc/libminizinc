@@ -230,6 +230,10 @@ JSONParser::Token JSONParser::readToken(istream& is) {
         break;
     }
   }
+  if (result.empty()) {
+    // EOF
+    return Token();
+  }
   throw JSONError(_env, errLocation(), "unexpected token `" + string(result) + "'");
 }
 
@@ -246,6 +250,13 @@ string JSONParser::expectString(istream& is) {
     throw JSONError(_env, errLocation(), "unexpected token, expected string");
   }
   return rt.s;
+}
+
+void JSONParser::expectEof(istream& is) {
+  Token rt = readToken(is);
+  if (rt.t != T_EOF) {
+    throw JSONError(_env, errLocation(), "unexpected token, expected end of file");
+  }
 }
 
 JSONParser::Token JSONParser::parseEnumString(istream& is) {
@@ -265,7 +276,7 @@ JSONParser::Token JSONParser::parseEnumString(istream& is) {
   return next;
 }
 
-Expression* JSONParser::parseObject(istream& is) {
+Expression* JSONParser::parseObject(istream& is, bool possibleString) {
   // precondition: found T_OBJ_OPEN
   Token objid = readToken(is);
   if (objid.t != T_STRING) {
@@ -299,10 +310,10 @@ Expression* JSONParser::parseObject(istream& is) {
           elems.push_back(next);
           break;
         case T_STRING:
-          if (listT != T_COLON && listT != T_STRING) {
+          if (listT != T_COLON && listT != (possibleString ? T_STRING : T_OBJ_OPEN)) {
             throw JSONError(_env, errLocation(), "invalid set literal");
           }
-          listT = T_STRING;
+          listT = possibleString ? T_STRING : T_OBJ_OPEN;
           elems.push_back(next);
           break;
         case T_BOOL:
@@ -429,7 +440,7 @@ Expression* JSONParser::parseObject(istream& is) {
   throw JSONError(_env, errLocation(), "invalid object");
 }
 
-ArrayLit* JSONParser::parseArray(std::istream& is) {
+ArrayLit* JSONParser::parseArray(std::istream& is, bool possibleString) {
   // precondition: opening parenthesis has been read
   vector<Expression*> exps;
   vector<pair<int, int> > dims;
@@ -474,12 +485,17 @@ ArrayLit* JSONParser::parseArray(std::istream& is) {
         }
         exps.push_back(FloatLit::a(next.d));
         break;
-      case T_STRING:
+      case T_STRING: {
         if (!hadDim[curDim]) {
           dims[curDim].second++;
         }
-        exps.push_back(new StringLit(Location().introduce(), next.s));
+        if (possibleString) {
+          exps.push_back(new StringLit(Location().introduce(), next.s));
+        } else {
+          exps.push_back(new Id(Location().introduce(), ASTString(next.s), nullptr));
+        }
         break;
+      }
       case T_BOOL:
         if (!hadDim[curDim]) {
           dims[curDim].second++;
@@ -516,7 +532,7 @@ list_done:
   return new ArrayLit(Location().introduce(), exps, dims);
 }
 
-Expression* JSONParser::parseExp(std::istream& is) {
+Expression* JSONParser::parseExp(std::istream& is, bool parseObjects, bool possibleString) {
   Token next = readToken(is);
   switch (next.t) {
     case T_INT:
@@ -525,31 +541,34 @@ Expression* JSONParser::parseExp(std::istream& is) {
     case T_FLOAT:
       return FloatLit::a(next.d);
     case T_STRING:
+      if (!possibleString) {
+        return new Id(Location().introduce(), ASTString(next.s), nullptr);
+      }
       return new StringLit(Location().introduce(), next.s);
     case T_BOOL:
       return new BoolLit(Location().introduce(), next.b);
     case T_NULL:
       return constants().absent;
     case T_OBJ_OPEN:
-      return parseObject(is);
+      return parseObjects ? parseObject(is, possibleString) : nullptr;
     case T_LIST_OPEN:
-      return parseArray(is);
+      return parseArray(is, possibleString);
     default:
       throw JSONError(_env, errLocation(), "cannot parse JSON file");
       break;
   }
 }
 
-Expression* JSONParser::coerceArray(TypeInst* intendedTI, Expression* array) {
+Expression* JSONParser::coerceArray(TypeInst* intendedTI, ArrayLit* al) {
+  assert(al != nullptr);
   TypeInst& ti = *intendedTI;
-  auto* al = array->dynamicCast<ArrayLit>();
   const Location& loc = al->loc();
 
-  if (al == nullptr || al->size() == 0) {
-    return array;  // Nothing to coerce
+  if (al->size() == 0) {
+    return al;  // Nothing to coerce
   }
   if (al->dims() != 1 && al->dims() != ti.ranges().size()) {
-    return array;  // Incompatible: TypeError will be thrown on original array
+    return al;  // Incompatible: TypeError will be thrown on original array
   }
 
   int missing_index = -1;
@@ -557,25 +576,25 @@ Expression* JSONParser::coerceArray(TypeInst* intendedTI, Expression* array) {
     TypeInst* nti = ti.ranges()[i];
     if (nti->domain() == nullptr) {
       if (missing_index != -1) {
-        return array;  // More than one index set is missing. Cannot compute correct index sets.
+        return al;  // More than one index set is missing. Cannot compute correct index sets.
       }
       missing_index = i;
     }
   }
 
   std::vector<Expression*> args(ti.ranges().size() + 1);
-  Expression* missing_max = missing_index > 0 ? IntLit::a(al->size()) : nullptr;
+  Expression* missing_max = missing_index >= 0 ? IntLit::a(al->size()) : nullptr;
   for (int i = 0; i < ti.ranges().size(); ++i) {
     if (i != missing_index) {
       assert(ti.ranges()[i]->domain() != nullptr);
       args[i] = ti.ranges()[i]->domain();
-      if (missing_index > 0) {
+      if (missing_index >= 0) {
         missing_max = new BinOp(loc.introduce(), missing_max, BOT_IDIV,
                                 new Call(Location().introduce(), "card", {args[i]}));
       }
     }
   }
-  if (missing_index > 0) {
+  if (missing_index >= 0) {
     args[missing_index] = new BinOp(loc.introduce(), IntLit::a(1), BOT_DOTDOT, missing_max);
   }
   args[args.size() - 1] = al;
@@ -588,12 +607,10 @@ Expression* JSONParser::coerceArray(TypeInst* intendedTI, Expression* array) {
   return c;
 }
 
-void JSONParser::parse(Model* m, std::istream& is, bool ignoreUnknown) {
-  _line = 0;
-  _column = 0;
-  expectToken(is, T_OBJ_OPEN);
+void JSONParser::parseModel(Model* m, std::istream& is, bool isData) {
+  // precondition: found T_OBJ_OPEN
   ASTStringMap<TypeInst*> knownIds;
-  if (ignoreUnknown) {
+  if (isData) {
     // Collect known VarDecl ids from model and includes
     class VarDeclVisitor : public ItemVisitor {
     private:
@@ -611,15 +628,31 @@ void JSONParser::parse(Model* m, std::istream& is, bool ignoreUnknown) {
   for (;;) {
     string ident = expectString(is);
     expectToken(is, T_COLON);
-    Expression* e = parseExp(is);
     auto it = knownIds.find(ident);
-    if (ident[0] != '_' && (!ignoreUnknown || it != knownIds.end())) {
-      // Add correct index sets if they are non-standard
-      if (it != knownIds.end() && it->second->isarray()) {
-        e = coerceArray(it->second, e);
+    bool possibleString = it == knownIds.end() || it->second->type().bt() != Type::BT_UNKNOWN;
+    Expression* e = parseExp(is, isData, possibleString);
+    if (ident[0] != '_' && (!isData || it != knownIds.end())) {
+      if (e == nullptr) {
+        // This is a nested object
+        auto* subModel = new Model;
+        parseModel(subModel, is, isData);
+        auto* ii = new IncludeI(Location().introduce(), ident);
+        ii->m(subModel, true);
+        m->addItem(ii);
+      } else {
+        auto* al = e->dynamicCast<ArrayLit>();
+        if (it != knownIds.end() && al != nullptr) {
+          if (it->second->isarray()) {
+            // Add correct index sets if they are non-standard
+            e = coerceArray(it->second, al);
+          } else if (it->second->type().isSet()) {
+            // Convert array to a set
+            e = new Call(Location().introduce(), "array2set", {al});
+          }
+        }
+        auto* ai = new AssignI(e->loc().introduce(), ident, e);
+        m->addItem(ai);
       }
-      auto* ai = new AssignI(e->loc().introduce(), ident, e);
-      m->addItem(ai);
     }
     Token next = readToken(is);
     if (next.t == T_OBJ_CLOSE) {
@@ -631,20 +664,26 @@ void JSONParser::parse(Model* m, std::istream& is, bool ignoreUnknown) {
   }
 }
 
-void JSONParser::parse(Model* m, const std::string& filename0, bool ignoreUnknown) {
+void JSONParser::parse(Model* m, const std::string& filename0, bool isData) {
   _filename = filename0;
   ifstream is(FILE_PATH(_filename), ios::in);
   if (!is.good()) {
     throw JSONError(_env, Location().introduce(), "cannot open file " + _filename);
   }
-  parse(m, is, ignoreUnknown);
+  _line = 0;
+  _column = 0;
+  expectToken(is, T_OBJ_OPEN);
+  parseModel(m, is, isData);
+  expectEof(is);
 }
 
-void JSONParser::parseFromString(Model* m, const std::string& data, bool ignoreUnknown) {
+void JSONParser::parseFromString(Model* m, const std::string& data, bool isData) {
   istringstream iss(data);
   _line = 0;
   _column = 0;
-  parse(m, iss, ignoreUnknown);
+  expectToken(iss, T_OBJ_OPEN);
+  parseModel(m, iss, isData);
+  expectEof(iss);
 }
 
 namespace {

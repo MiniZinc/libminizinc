@@ -15,6 +15,55 @@
 
 namespace MiniZinc {
 
+namespace {
+
+// Test if all parameters and the return type are par
+bool is_completely_par(EnvI& env, FunctionI* fi, const std::vector<Type>& tv) {
+  if (fi->e() != nullptr) {
+    // This is not a builtin, so check parameters
+    for (auto* p : fi->params()) {
+      if (p->type().isvar()) {
+        return false;
+      }
+    }
+  }
+  return fi->rtype(env, tv, false).isPar();
+}
+
+}  // namespace
+
+void check_output_par_fn(EnvI& env, Call* rhs) {
+  std::vector<Type> tv(rhs->argCount());
+  for (unsigned int i = rhs->argCount(); (i--) != 0U;) {
+    tv[i] = rhs->arg(i)->type();
+    tv[i].ti(Type::TI_PAR);
+  }
+  FunctionI* decl = env.output->matchFn(env, rhs->id(), tv, false);
+  if (decl == nullptr) {
+    FunctionI* origdecl = env.model->matchFn(env, rhs->id(), tv, false);
+    if (origdecl == nullptr || !is_completely_par(env, origdecl, tv)) {
+      std::ostringstream ss;
+      ss << "function " << rhs->id() << " is used in output, par version needed";
+      throw FlatteningError(env, rhs->loc(), ss.str());
+    }
+    if (!origdecl->fromStdLib()) {
+      decl = copy(env, env.cmap, origdecl)->cast<FunctionI>();
+      CollectOccurrencesE ce(env.outputVarOccurrences, decl);
+      top_down(ce, decl->e());
+      top_down(ce, decl->ti());
+      for (unsigned int i = decl->params().size(); (i--) != 0U;) {
+        top_down(ce, decl->params()[i]);
+      }
+      (void)env.output->registerFn(env, decl, true);
+      env.output->addItem(decl);
+    } else {
+      decl = origdecl;
+    }
+  }
+  rhs->type(decl->rtype(env, tv, false));
+  rhs->decl(decl);
+}
+
 bool cannot_use_rhs_for_output(EnvI& env, Expression* e,
                                std::unordered_set<FunctionI*>& seen_functions) {
   if (e == nullptr) {
@@ -75,7 +124,7 @@ bool cannot_use_rhs_for_output(EnvI& env, Expression* e,
               for (unsigned int i = decl->params().size(); (i--) != 0U;) {
                 top_down(ce, decl->params()[i]);
               }
-              env.output->registerFn(env, decl);
+              (void)env.output->registerFn(env, decl, true);
               env.output->addItem(decl);
               output_vardecls(env, origdecl, decl->e());
               output_vardecls(env, origdecl, decl->ti());
@@ -184,6 +233,7 @@ void make_par(EnvI& env, Expression* e) {
     static bool enter(Expression* e) {
       Type t = e->type();
       t.ti(Type::TI_PAR);
+      t.cv(false);
       e->type(t);
       return true;
     }
@@ -201,24 +251,90 @@ void make_par(EnvI& env, Expression* e) {
           enumId = enumIds[enumIds.size() - 1];
         }
         if (enumId > 0) {
-          Id* ti_id = env.getEnum(enumId)->e()->id();
           GCLock lock;
-          std::vector<Expression*> args(3);
-          args[0] = c.arg(c.argCount() - 1);
-          if (args[0]->type().dim() > 1) {
-            std::vector<Expression*> a1dargs(1);
-            a1dargs[0] = args[0];
-            Call* array1d = new Call(Location().introduce(), ASTString("array1d"), a1dargs);
-            Type array1dt = args[0]->type();
-            array1dt.dim(1);
-            array1d->type(array1dt);
-            args[0] = array1d;
-          }
-          args[1] = constants().boollit(c.id() == "showDzn");
-          args[2] = constants().boollit(c.id() == "showJSON");
+          Expression* obj = c.arg(c.argCount() - 1);
+          Id* ti_id = env.getEnum(enumId)->e()->id();
           std::string enumName = create_enum_to_string_name(ti_id, "_toString_");
-          c.id(ASTString(enumName));
-          c.args(args);
+          bool is_json = c.id() == "showJSON";
+          const int dimensions = obj->type().dim();
+          if (is_json && dimensions > 1) {
+            // Create generators for dimensions selection
+            std::vector<Expression*> slice_dimensions(dimensions);
+            std::vector<Generator> generators;
+            generators.reserve(dimensions - 1);
+            auto* idx_ti = new TypeInst(Location().introduce(), Type::parint());
+            for (int i = 0; i < dimensions - 1; ++i) {
+              auto* idx_i = new VarDecl(Location().introduce(), idx_ti, env.genId());
+              idx_i->toplevel(false);
+              Call* index_set_xx = new Call(
+                  Location().introduce(),
+                  "index_set_" + std::to_string(i + 1) + "of" + std::to_string(dimensions), {obj});
+              index_set_xx->type(Type::parsetint());
+              generators.push_back(Generator({idx_i}, index_set_xx, nullptr));
+              slice_dimensions[i] =
+                  new BinOp(Location().introduce(), idx_i->id(), BOT_DOTDOT, idx_i->id());
+              slice_dimensions[i]->type(Type::parsetint());
+            }
+
+            // Construct innermost slicing operation
+            Call* index_set_n = new Call(
+                Location().introduce(),
+                "index_set_" + std::to_string(dimensions) + "of" + std::to_string(dimensions),
+                {obj});
+            index_set_n->type(Type::parsetint());
+            slice_dimensions[dimensions - 1] = index_set_n;
+            auto* al_slice_dim = new ArrayLit(Location().introduce(), slice_dimensions);
+            al_slice_dim->type(Type::parsetint(1));
+
+            auto* slice_call =
+                new Call(Location().introduce(), "slice_1d", {obj, al_slice_dim, index_set_n});
+            Type tt = obj->type();
+            tt.dim(1);
+            slice_call->type(tt);
+            Call* _toString_ENUM =
+                new Call(Location().introduce(), enumName,
+                         {slice_call, constants().boollit(false), constants().boollit(true)});
+            _toString_ENUM->type(Type::parstring());
+
+            // Build multi-level JSON Array string
+            auto* comma = new StringLit(Location().introduce(), ", ");
+            comma->type(Type::parstring());
+            auto join = [&](Expression* expr, Generator gen) -> Expression* {
+              Generators generators;
+              generators.g.push_back(gen);
+              auto* comp = new Comprehension(Location().introduce(), expr, generators, false);
+              comp->type(Type::parstring(1));
+              Call* cc = new Call(Location().introduce(), "join", {comma, comp});
+              cc->type(Type::parstring());
+              return cc;
+            };
+            auto* sl_open = new StringLit(Location().introduce(), "[");
+            sl_open->type(Type::parstring());
+            auto* sl_close = new StringLit(Location().introduce(), "]");
+            sl_close->type(Type::parstring());
+
+            auto* al_concat = new ArrayLit(
+                Location().introduce(),
+                std::vector<Expression*>(
+                    {sl_open, join(_toString_ENUM, generators[dimensions - 2]), sl_close}));
+            al_concat->type(Type::parstring(1));
+            for (int i = dimensions - 3; i >= 0; --i) {
+              Call* concat = new Call(Location().introduce(), "concat", {al_concat});
+              concat->type(Type::parstring());
+              al_concat = new ArrayLit(
+                  Location().introduce(),
+                  std::vector<Expression*>({sl_open, join(concat, generators[i]), sl_close}));
+              al_concat->type(Type::parstring(1));
+            }
+            std::vector<Expression*> args = {al_concat};
+            c.args(args);
+            c.id(ASTString("concat"));
+          } else {
+            std::vector<Expression*> args = {obj, constants().boollit(c.id() == "showDzn"),
+                                             constants().boollit(is_json)};
+            c.args(args);
+            c.id(ASTString(enumName));
+          }
         }
         if (c.id() == "showDzn" || (c.id() == "showJSON" && enumId > 0)) {
           c.id(constants().ids.show);
@@ -382,37 +498,7 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e) {
         IdMap<KeepAlive>::iterator it;
         if ((it = env.reverseMappers.find(nvi->e()->id())) != env.reverseMappers.end()) {
           Call* rhs = copy(env, env.cmap, it->second())->cast<Call>();
-          {
-            std::vector<Type> tv(rhs->argCount());
-            for (unsigned int i = rhs->argCount(); (i--) != 0U;) {
-              tv[i] = rhs->arg(i)->type();
-              tv[i].ti(Type::TI_PAR);
-            }
-            FunctionI* decl = env.output->matchFn(env, rhs->id(), tv, false);
-            if (decl == nullptr) {
-              FunctionI* origdecl = env.model->matchFn(env, rhs->id(), tv, false);
-              if (origdecl == nullptr) {
-                std::ostringstream ss;
-                ss << "function " << rhs->id() << " is used in output, par version needed";
-                throw FlatteningError(env, rhs->loc(), ss.str());
-              }
-              if (!origdecl->fromStdLib()) {
-                decl = copy(env, env.cmap, origdecl)->cast<FunctionI>();
-                CollectOccurrencesE ce(env.outputVarOccurrences, decl);
-                top_down(ce, decl->e());
-                top_down(ce, decl->ti());
-                for (unsigned int i = decl->params().size(); (i--) != 0U;) {
-                  top_down(ce, decl->params()[i]);
-                }
-                env.output->registerFn(env, decl);
-                env.output->addItem(decl);
-              } else {
-                decl = origdecl;
-              }
-            }
-            rhs->type(decl->rtype(env, tv, false));
-            rhs->decl(decl);
-          }
+          check_output_par_fn(env, rhs);
           output_vardecls(env, nvi, it->second());
           nvi->e()->e(rhs);
         } else if ((reallyFlat != nullptr) && cannot_use_rhs_for_output(env, reallyFlat->e())) {
@@ -853,7 +939,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
       }
       Type t;
       if (!canReuseDecl) {
-        if (origdecl == nullptr || !origdecl->rtype(env, tv, false).isPar()) {
+        if (origdecl == nullptr || !is_completely_par(env, origdecl, tv)) {
           std::ostringstream ss;
           ss << "function " << c.id() << " is used in output, par version needed";
           throw FlatteningError(env, c.loc(), ss.str());
@@ -862,7 +948,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
           auto* decl_copy = copy(env, env.cmap, origdecl)->cast<FunctionI>();
           if (decl_copy != decl) {
             decl = decl_copy;
-            env.output->registerFn(env, decl);
+            (void)env.output->registerFn(env, decl, true);
             env.output->addItem(decl);
             if (decl->e() != nullptr) {
               make_par(env, decl->e());
@@ -964,37 +1050,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
               // Found a reverse mapper, so we need to add the mapping function to the
               // output model to map the FlatZinc value back to the model variable.
               Call* rhs = copy(env, env.cmap, it->second())->cast<Call>();
-              {
-                std::vector<Type> tv(rhs->argCount());
-                for (unsigned int i = rhs->argCount(); (i--) != 0U;) {
-                  tv[i] = rhs->arg(i)->type();
-                  tv[i].ti(Type::TI_PAR);
-                }
-                FunctionI* decl = env.output->matchFn(env, rhs->id(), tv, false);
-                if (decl == nullptr) {
-                  FunctionI* origdecl = env.model->matchFn(env, rhs->id(), tv, false);
-                  if (origdecl == nullptr) {
-                    std::ostringstream ss;
-                    ss << "function " << rhs->id() << " is used in output, par version needed";
-                    throw FlatteningError(env, rhs->loc(), ss.str());
-                  }
-                  if (!origdecl->fromStdLib()) {
-                    decl = copy(env, env.cmap, origdecl)->cast<FunctionI>();
-                    CollectOccurrencesE ce(env.outputVarOccurrences, decl);
-                    top_down(ce, decl->e());
-                    top_down(ce, decl->ti());
-                    for (unsigned int i = decl->params().size(); (i--) != 0U;) {
-                      top_down(ce, decl->params()[i]);
-                    }
-                    env.output->registerFn(env, decl);
-                    env.output->addItem(decl);
-                  } else {
-                    decl = origdecl;
-                  }
-                }
-                rhs->type(decl->rtype(env, tv, false));
-                rhs->decl(decl);
-              }
+              check_output_par_fn(env, rhs);
               output_vardecls(env, vdi_copy, rhs);
               vd->e(rhs);
             } else if (cannot_use_rhs_for_output(env, vd->e())) {
@@ -1132,34 +1188,7 @@ void finalise_output(EnvI& e) {
               vd->e(flate);
             } else if ((it = e.reverseMappers.find(vd->id())) != e.reverseMappers.end()) {
               Call* rhs = copy(e, e.cmap, it->second())->cast<Call>();
-              std::vector<Type> tv(rhs->argCount());
-              for (unsigned int i = rhs->argCount(); (i--) != 0U;) {
-                tv[i] = rhs->arg(i)->type();
-                tv[i].ti(Type::TI_PAR);
-              }
-              FunctionI* decl = e.output->matchFn(e, rhs->id(), tv, false);
-              if (decl == nullptr) {
-                FunctionI* origdecl = e.model->matchFn(e, rhs->id(), tv, false);
-                if (origdecl == nullptr) {
-                  std::ostringstream ss;
-                  ss << "function " << rhs->id() << " is used in output, par version needed";
-                  throw FlatteningError(e, rhs->loc(), ss.str());
-                }
-                if (!origdecl->fromStdLib()) {
-                  decl = copy(e, e.cmap, origdecl)->cast<FunctionI>();
-                  CollectOccurrencesE ce(e.outputVarOccurrences, decl);
-                  top_down(ce, decl->e());
-                  top_down(ce, decl->ti());
-                  for (unsigned int i = decl->params().size(); (i--) != 0U;) {
-                    top_down(ce, decl->params()[i]);
-                  }
-                  e.output->registerFn(e, decl);
-                  e.output->addItem(decl);
-                } else {
-                  decl = origdecl;
-                }
-              }
-              rhs->decl(decl);
+              check_output_par_fn(e, rhs);
               remove_is_output(reallyFlat);
 
               output_vardecls(e, item, it->second()->cast<Call>());
@@ -1199,8 +1228,8 @@ void finalise_output(EnvI& e) {
               } else if ((reallyFlat->e() != nullptr) && reallyFlat->e()->isa<ArrayLit>()) {
                 auto* al = reallyFlat->e()->cast<ArrayLit>();
                 for (unsigned int i = 0; i < al->size(); i++) {
-                  if (Id* id = (*al)[i]->dynamicCast<Id>()) {
-                    if (e.reverseMappers.find(id) != e.reverseMappers.end()) {
+                  if (Id* ident = follow_id_to_value((*al)[i])->dynamicCast<Id>()) {
+                    if (e.reverseMappers.find(ident) != e.reverseMappers.end()) {
                       needOutputAnn = false;
                       break;
                     }

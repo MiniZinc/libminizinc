@@ -547,9 +547,9 @@ inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, const std::string& id
 inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, Id* id, Expression* e)
     : Expression(loc, E_VARDECL, ti->type()), _id(nullptr), _flat(nullptr) {
   if (id->idn() == -1) {
-    _id = new Id(loc, id->v(), this);
+    _id = new Id(id->loc(), id->v(), this);
   } else {
-    _id = new Id(loc, id->idn(), this);
+    _id = new Id(id->loc(), id->idn(), this);
   }
   _flag1 = true;
   _flag2 = false;

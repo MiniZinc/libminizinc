@@ -53,9 +53,10 @@ string NLSolverFactory::getId() { return "org.minizinc.mzn-nl"; }
 void NLSolverFactory::printHelp(ostream& os) {
   os << "MZN-NL plugin options" << std::endl
      << "  --nl-cmd , --nonlinear-cmd <exe>\n     The backend solver filename.\n"
-     << "  --nl-flags <options>\n     Specify option to be passed to the NL solver.\n"
-     << "  --nl-flag <option>\n     As above, but for a single option string that need to be "
-        "quoted in a shell.\n"
+     << "  --nl-flags <options>, --backend-flags <options>\n"
+        "     Specify option to be passed to the NL solver.\n"
+     << "  --nl-flag <option>, --backend-flag <option>\n"
+        "     As above, but for a single option string that needs to be quoted in a shell.\n"
      << "  --hexafloat\n     Use hexadecimal format when communicating floating points with the "
         "solver.\n"
      << "  --keepfile\n     Write the nl and sol files next to the input file and don't remove "
@@ -78,7 +79,7 @@ SolverInstanceBase* NLSolverFactory::doCreateSI(Env& env, std::ostream& log,
 }
 
 bool NLSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
-                                    std::vector<std::string>& argv) {
+                                    std::vector<std::string>& argv, const std::string& workingDir) {
   auto& _opt = static_cast<NLSolverOptions&>(*opt);
   CLOParser cop(i, argv);
   string buffer;
@@ -88,6 +89,13 @@ bool NLSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
     _opt.nlSolver = buffer;
   } else if (cop.getOption("--hexafloat")) {
     _opt.doHexafloat = true;
+  } else if (cop.getOption("--nl-flags --backend-flags", &buffer)) {
+    auto args = FileUtils::parse_cmd_line(buffer);
+    for (const auto& arg : args) {
+      _opt.nlFlags.push_back(arg);
+    }
+  } else if (cop.getOption("--nl-flag --backend-flag", &buffer)) {
+    _opt.nlFlags.push_back(buffer);
   } else if (cop.getOption("--keepfile")) {
     _opt.doKeepfile = true;
   } else if (cop.getOption("-s --solver-statistics")) {
@@ -202,6 +210,11 @@ SolverInstance::Status NLSolverInstance::solve() {
     cmd_line.push_back(opt.nlSolver);
     cmd_line.push_back(file_nl);
     cmd_line.emplace_back("-AMPL");
+
+    for (const auto& arg : opt.nlFlags) {
+      cmd_line.push_back(arg);
+    }
+
     Process<NLSolns2Out> proc(cmd_line, &s2o, 0, true);
     exitStatus = proc.run();
 

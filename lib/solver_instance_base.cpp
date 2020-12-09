@@ -53,7 +53,7 @@ void SolverInstanceBase::printSolution() {
     printStatistics();  // Insert stats before sol separator
   }
   if (nullptr == _pS2Out) {
-    getEnv()->evalOutput(std::cout);  // deprecated
+    getEnv()->evalOutput(std::cout, std::cerr);  // deprecated
     std::cout << oss.str();
     if ((!oss.str().empty()) && '\n' != oss.str().back()) {
       std::cout << '\n';

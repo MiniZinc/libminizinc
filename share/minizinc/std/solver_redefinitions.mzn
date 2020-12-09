@@ -11,3 +11,28 @@ include "redefinitions-2.1.mzn";
 include "redefinitions-2.1.1.mzn";
 include "redefinitions-2.2.1.mzn";
 include "redefinitions-2.3.3.mzn";
+include "redefinitions-2.5.2.mzn";
+
+% Inclusion of count constraints for internal redefinitions of hidden counting constraints
+include "count_eq.mzn";
+include "count_geq.mzn";
+include "count_leq.mzn";
+include "count_neq.mzn";
+include "count_gt.mzn";
+include "count_lt.mzn";
+include "count_fn.mzn";
+include "fzn_if_then_else_int.mzn";
+include "fzn_if_then_else_opt_int.mzn";
+include "fzn_if_then_else_var_int.mzn";
+include "fzn_if_then_else_var_opt_int.mzn";
+include "fzn_if_then_else_bool.mzn";
+include "fzn_if_then_else_opt_bool.mzn";
+include "fzn_if_then_else_var_bool.mzn";
+include "fzn_if_then_else_var_opt_bool.mzn";
+include "fzn_if_then_else_float.mzn";
+include "fzn_if_then_else_opt_float.mzn";
+include "fzn_if_then_else_var_float.mzn";
+include "fzn_if_then_else_var_opt_float.mzn";
+include "fzn_if_then_else_set.mzn";
+include "fzn_if_then_else_var_set.mzn";
+include "fzn_if_then_else_partiality.mzn";

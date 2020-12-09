@@ -53,20 +53,21 @@ protected:
   Token readToken(std::istream& is);
   void expectToken(std::istream& is, TokenT t);
   std::string expectString(std::istream& is);
+  void expectEof(std::istream& is);
   Token parseEnumString(std::istream& is);
-  Expression* parseExp(std::istream& is);
-  ArrayLit* parseArray(std::istream& is);
-  Expression* parseObject(std::istream& is);
+  Expression* parseExp(std::istream& is, bool parseObjects = true, bool possibleString = true);
+  ArrayLit* parseArray(std::istream& is, bool possibleString = true);
+  Expression* parseObject(std::istream& is, bool possibleString = true);
 
-  void parse(Model* m, std::istream& is, bool ignoreUnknown);
-  static Expression* coerceArray(TypeInst* intendedTI, Expression* array);
+  void parseModel(Model* m, std::istream& is, bool isData);
+  static Expression* coerceArray(TypeInst* intendedTI, ArrayLit* al);
 
 public:
   JSONParser(EnvI& env) : _env(env) {}
   /// Parses \a filename as MiniZinc data and creates assign items in \a m
-  void parse(Model* m, const std::string& filename, bool ignoreUnknown = false);
+  void parse(Model* m, const std::string& filename, bool isData = true);
   /// Parses \a data as JSON-encoded MiniZinc data and creates assign items in \a m
-  void parseFromString(Model* m, const std::string& data, bool ignoreUnknown = false);
+  void parseFromString(Model* m, const std::string& data, bool isData = true);
   /// Check if file \a filename may contain JSON-encoded MiniZinc data
   static bool fileIsJSON(const std::string& filename);
   /// Check if string \a data may contain JSON-encoded MiniZinc data

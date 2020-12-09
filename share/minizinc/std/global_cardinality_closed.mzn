@@ -6,11 +6,11 @@ include "fzn_global_cardinality_closed_reif.mzn";
 
   The elements of \a x must take their values from \a cover.
 */
-predicate global_cardinality_closed(array[int] of var int: x,
-                                    array[int] of int: cover,
-                                    array[int] of var int: counts) =
-    assert(index_set(cover) = index_set(counts),
+predicate global_cardinality_closed(array[$X] of var int: x,
+                                    array[$Y] of int: cover,
+                                    array[$Y] of var int: counts) =
+    assert(index_sets_agree(cover, counts),
         "global_cardinality_closed: " ++
         "cover and counts must have identical index sets",
-        fzn_global_cardinality_closed(x, cover, counts)
+        fzn_global_cardinality_closed(array1d(x), array1d(cover), array1d(counts))
     );

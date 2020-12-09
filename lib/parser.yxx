@@ -38,11 +38,21 @@ using namespace std;
 using namespace MiniZinc;
 
 #define YYLLOC_DEFAULT(Current, Rhs, N) \
-  (Current).filename(Rhs[1].filename()); \
-  (Current).firstLine(Rhs[1].firstLine()); \
-  (Current).firstColumn(Rhs[1].firstColumn()); \
-  (Current).lastLine(Rhs[N].lastLine()); \
-  (Current).lastColumn(Rhs[N].lastColumn());
+  do { \
+    if (N > 0) { \
+      (Current).filename(YYRHSLOC(Rhs, 1).filename()); \
+      (Current).firstLine(YYRHSLOC(Rhs, 1).firstLine()); \
+      (Current).firstColumn(YYRHSLOC(Rhs, 1).firstColumn()); \
+      (Current).lastLine(YYRHSLOC(Rhs, N).lastLine()); \
+      (Current).lastColumn(YYRHSLOC(Rhs, N).lastColumn()); \
+    } else { \
+      (Current).filename(YYRHSLOC(Rhs, 0).filename()); \
+      (Current).firstLine(YYRHSLOC(Rhs, 0).lastLine()); \
+      (Current).firstColumn(YYRHSLOC(Rhs, 0).lastColumn()); \
+      (Current).lastLine(YYRHSLOC(Rhs, 0).lastLine()); \
+      (Current).lastColumn(YYRHSLOC(Rhs, 0).lastColumn()); \
+    } \
+  } while (false)
 
 int mzn_yyparse(void*);
 int mzn_yylex(YYSTYPE*, YYLTYPE*, void* scanner);
@@ -667,7 +677,10 @@ ti_expr_and_id_or_anon :
     
 ti_expr_and_id :
       ti_expr ':' MZN_IDENTIFIER
-      { if ($1 && $3) $$ = new VarDecl(@$, $1, $3);
+      { if ($1 && $3) {
+          Id* ident = new Id(@3, $3, nullptr);
+          $$ = new VarDecl(@$, $1, ident);
+        }
         free($3);
       }
 
@@ -725,12 +738,20 @@ base_ti_expr :
           $$->type(tt);
         }
       }
-    | opt_opt MZN_SET MZN_OF base_ti_expr_tail
+    | MZN_SET MZN_OF base_ti_expr_tail
+      { $$ = $3;
+        if ($$) {
+          Type tt = $$->type();
+          tt.st(Type::ST_SET);
+          $$->type(tt);
+        }
+      }
+    | MZN_OPT MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $4;
         if ($$) {
           Type tt = $$->type();
           tt.st(Type::ST_SET);
-          if ($1) tt.ot(Type::OT_OPTIONAL);
+          tt.ot(Type::OT_OPTIONAL);
           $$->type(tt);
         }
       }

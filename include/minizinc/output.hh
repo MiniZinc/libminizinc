@@ -27,6 +27,9 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e);
 /// Create initial output model
 void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outputObjective,
                    bool includeOutputItem, bool hasChecker);
+
+void check_output_par_fn(EnvI& e, Call* rhs);
+
 /// Finalise output model after flattening is complete
 void finalise_output(EnvI& e);
 

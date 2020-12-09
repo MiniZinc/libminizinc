@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include <minizinc/solver_config.hh>
 #include <minizinc/solver_instance_base.hh>
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
 
@@ -32,6 +33,14 @@ class MIPGurobiWrapper : public MIPWrapper {
   std::vector<double> _x;
 
 public:
+  class FactoryOptions {
+  public:
+    bool processOption(int& i, std::vector<std::string>& argv,
+                       const std::string& workingDir = std::string());
+
+    std::string gurobiDll;
+  };
+
   class Options : public MiniZinc::SolverInstanceBase::Options {
   public:
     int nMIPFocus = 0;
@@ -55,12 +64,15 @@ public:
     double intTol = 1e-8;
     double objDiff = 1.0;
     int nonConvex = 2;
-    std::string sGurobiDLL;
-    bool processOption(int& i, std::vector<std::string>& argv);
+
+    std::unordered_map<std::string, std::string> extraParams;
+
+    bool processOption(int& i, std::vector<std::string>& argv, const std::string& workingDir);
     static void printHelp(std::ostream& os);
   };
 
 private:
+  FactoryOptions& _factoryOptions;
   Options* _options = nullptr;
 
 public:
@@ -187,20 +199,51 @@ public:
   // NOLINTNEXTLINE(readability-identifier-naming)
   int(__stdcall* dll_GRBgetintparam)(GRBenv* env, const char* paramname, int* valueP);
 
-  MIPGurobiWrapper(Options* opt) : _options(opt) {
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBemptyenv)(GRBenv** envP);
+
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBgetnumparams)(GRBenv* env);
+
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBgetparamname)(GRBenv* env, int i, char** paramnameP);
+
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBgetparamtype)(GRBenv* env, const char* paramname);
+
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBgetintparaminfo)(GRBenv* env, const char* paramname, int* valueP, int* minP,
+                                         int* maxP, int* defP);
+
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBgetdblparaminfo)(GRBenv* env, const char* paramname, double* valueP,
+                                         double* minP, double* maxP, double* defP);
+
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBgetstrparaminfo)(GRBenv* env, const char* paramname, char* valueP,
+                                         char* defP);
+
+  MIPGurobiWrapper(FactoryOptions& factoryOpt, Options* opt)
+      : _factoryOptions(factoryOpt), _options(opt) {
     if (opt != nullptr) {
       openGUROBI();
     }
   }
   ~MIPGurobiWrapper() override { closeGUROBI(); }
 
-  static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
-  static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
+  static std::string getDescription(FactoryOptions& factoryOpt,
+                                    MiniZinc::SolverInstanceBase::Options* opt = nullptr);
+  static std::string getVersion(FactoryOptions& factoryOpt,
+                                MiniZinc::SolverInstanceBase::Options* opt = nullptr);
   static std::string getId();
   static std::string getName();
   static std::vector<std::string> getTags();
   static std::vector<std::string> getStdFlags();
-  static std::vector<std::string> getRequiredFlags();
+  static std::vector<std::string> getRequiredFlags(FactoryOptions& factoryOpt);
+  static std::vector<std::string> getFactoryFlags();
+
+  static std::vector<MiniZinc::SolverConfig::ExtraFlag> getExtraFlags(FactoryOptions& factoryOpt);
+
   //       Statistics& getStatistics() { return _statistics; }
 
   //      IloConstraintArray *userCuts, *lazyConstraints;

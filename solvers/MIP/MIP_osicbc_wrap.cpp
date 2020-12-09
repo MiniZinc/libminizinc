@@ -38,7 +38,8 @@ using namespace std;
 
 #define WANT_SOLUTION
 
-string MIPosicbcWrapper::getDescription(MiniZinc::SolverInstanceBase::Options* /*opt*/) {
+string MIPosicbcWrapper::getDescription(FactoryOptions& factoryOpt,
+                                        MiniZinc::SolverInstanceBase::Options* /*opt*/) {
   string v = "MIP wrapper for COIN-BC ";
   v += CBC_VERSION;  // E.g., 2.9 stable or 2.9.7 latest release
   v += ",  using CLP ";
@@ -47,7 +48,8 @@ string MIPosicbcWrapper::getDescription(MiniZinc::SolverInstanceBase::Options* /
   return v;
 }
 
-string MIPosicbcWrapper::getVersion(MiniZinc::SolverInstanceBase::Options* /*opt*/) {
+string MIPosicbcWrapper::getVersion(FactoryOptions& factoryOpt,
+                                    MiniZinc::SolverInstanceBase::Options* /*opt*/) {
   return string(CBC_VERSION) + "/" + string(CLP_VERSION);
 }
 
@@ -68,8 +70,11 @@ void MIPosicbcWrapper::Options::printHelp(ostream& os) {
      //            << "  --readParam <file>  read OSICBC parameters from file
      //               << "--writeParam <file> write OSICBC parameters to file
      //               << "--tuneParam         instruct OSICBC to tune parameters instead of solving
-     << "  --cbcArgs, --cbcFlags, --cbc-flags \"args\"\n"
+     << "  --cbcArgs, --cbcFlags, --cbc-flags, --backend-flags \"args\"\n"
         "    command-line args passed to callCbc, e.g., \"-cuts off -preprocess off -passc 1\"."
+     << std::endl
+     << "  --cbcArg, --cbcFlag, --cbc-flag, --backend-flag \"args\"\n"
+        "    same as above but with a single flag."
      << std::endl
      //  \"-preprocess off\" recommended in 2.9.6
      << "  --writeModel <file>" << endl
@@ -99,14 +104,16 @@ void MIPosicbcWrapper::Options::printHelp(ostream& os) {
      << std::endl;
 }
 
-bool MIPosicbcWrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
+bool MIPosicbcWrapper::Options::processOption(int& i, std::vector<std::string>& argv,
+                                              const std::string& workingDir) {
   MiniZinc::CLOParser cop(i, argv);
+  std::string buffer;
   if (cop.get("-i")) {
     flagIntermediate = true;
   } else if (string(argv[i]) == "-f") {  // NOLINT: Allow repeated empty if
     //     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
-  } else if (cop.get("--writeModel", &sExportModel)) {  // NOLINT: Allow repeated empty if
-    // Parsed by referenced
+  } else if (cop.get("--writeModel", &buffer)) {
+    sExportModel = MiniZinc::FileUtils::file_path(buffer, workingDir);
   } else if (cop.get("-p --parallel", &nThreads)) {
     // Parsed by referenced
   } else if (cop.get("--solver-time-limit", &nTimeout)) {  // NOLINT: Allow repeated empty if
@@ -117,9 +124,13 @@ bool MIPosicbcWrapper::Options::processOption(int& i, std::vector<std::string>& 
     // Parsed by referenced
   } else if (cop.get("--writeParam", &sWriteParams)) {  // NOLINT: Allow repeated empty if
     // Parsed by referenced
-  } else if (cop.get("--cbcArgs --cbcFlags --cbc-flags --solver-flags",
-                     &cbcCmdOptions)) {  // NOLINT: Allow repeated empty if
-    // Parsed by referenced
+  } else if (cop.get("--cbcArgs --cbcFlags --cbc-flags --solver-flags --backend-flags", &buffer)) {
+    auto cmdLine = MiniZinc::FileUtils::parse_cmd_line(buffer);
+    for (auto& s : cmdLine) {
+      cbcCmdOptions.push_back(s);
+    }
+  } else if (cop.get("--cbcArg --cbcFlag --cbc-flag --solver-flag --backend-flag", &buffer)) {
+    cbcCmdOptions.push_back(buffer);
   } else if (cop.get("--absGap", &absGap)) {  // NOLINT: Allow repeated empty if
     // Parsed by referenced
   } else if (cop.get("--relGap", &relGap)) {  // NOLINT: Allow repeated empty if
@@ -131,6 +142,78 @@ bool MIPosicbcWrapper::Options::processOption(int& i, std::vector<std::string>& 
     return false;
   }
   return true;
+}
+
+namespace {
+void remove_chars(std::string& s, const std::string& cs) {
+  for (char c : cs) {
+    auto i = s.find(c);
+    while (i != std::string::npos) {
+      s.erase(i, 1);
+      i = s.find(c);
+    }
+  }
+}
+}  // namespace
+
+std::vector<MiniZinc::SolverConfig::ExtraFlag> MIPosicbcWrapper::getExtraFlags(
+    FactoryOptions& factoryOpt) {
+  OsiClpSolverInterface osi;
+  CbcModel model(osi);
+  CbcSolverUsefulData info;
+  CbcMain0(model, info);
+
+  std::vector<MiniZinc::SolverConfig::ExtraFlag> res;
+  res.reserve(info.parameters_.size());
+
+  for (auto param : info.parameters_) {
+    auto name = param.name();
+    if (name == "?" || name == "???" || name == "allCommands" || name == "moreSpecialOptions" ||
+        name == "moreTune" || name == "mipOptions" || name == "moreMipOptions" ||
+        name == "more2MipOptions") {
+      continue;
+    }
+
+    // strip braces from name
+    remove_chars(name, "()");
+    auto desc = param.shortHelp();
+    auto t = param.type();
+    MiniZinc::SolverConfig::ExtraFlag::FlagType param_type;
+    std::vector<std::string> param_range;
+    std::string param_default;
+    if (t <= 100) {
+      param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_FLOAT;
+      param_range.push_back(std::to_string(param.lowerDoubleValue()));
+      param_range.push_back(std::to_string(param.upperDoubleValue()));
+      param_default = std::to_string(param.doubleParameter(model));
+    } else if (t <= 200) {
+      param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_INT;
+      param_range.push_back(std::to_string(param.lowerIntValue()));
+      param_range.push_back(std::to_string(param.upperIntValue()));
+      param_default = std::to_string(param.intParameter(model));
+    } else if (t <= 400) {
+      auto allowed = param.definedKeywords();
+      if (allowed.size() == 2 && (allowed[0] == "on" && allowed[1] == "off" ||
+                                  allowed[0] == "off" && allowed[1] == "on")) {
+        param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_BOOL;
+      } else {
+        param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_STRING;
+      }
+      for (auto v : allowed) {
+        remove_chars(v, "!?");
+        param_range.push_back(v);
+      }
+      param_default = param.currentOption();
+      remove_chars(param_default, "!?");
+    } else {
+      // action, not parameter, so skip
+      continue;
+    }
+
+    res.emplace_back("--cbc-" + name, desc, param_type, param_range, param_default);
+  }
+
+  return res;
 }
 
 void MIPosicbcWrapper::wrapAssert(bool cond, const string& msg, bool fTerm) {
@@ -820,14 +903,28 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
       model.addCutGenerator(&ccb, 10, "MZN_cuts", true, true);  // also at solution
     }
 
+    // Process extra flags options
+    for (const auto& it : _options->extraParams) {
+      _options->cbcCmdOptions.push_back(it.first.substr(5));
+      _options->cbcCmdOptions.push_back(it.second);
+    }
+
     if (1 < _options->nThreads) {
-      _options->cbcCmdOptions += " -threads ";
+      _options->cbcCmdOptions.emplace_back("-threads");
       ostringstream oss;
       oss << _options->nThreads;
-      _options->cbcCmdOptions += oss.str();
+      _options->cbcCmdOptions.push_back(oss.str());
     }
-    _options->cbcCmdOptions += " -solve";
-    _options->cbcCmdOptions += " -quit";
+    _options->cbcCmdOptions.emplace_back("-solve");
+    _options->cbcCmdOptions.emplace_back("-quit");
+
+    auto cbc_argc = _options->cbcCmdOptions.size() + 1;
+    std::vector<const char*> cbc_argv;
+    cbc_argv.reserve(cbc_argc);
+    cbc_argv.push_back("cbc");
+    for (const auto& arg : _options->cbcCmdOptions) {
+      cbc_argv.push_back(arg.c_str());
+    }
 
     cbui.pOutput->dWallTime0 = output.dWallTime0 = std::chrono::steady_clock::now();
     output.dCPUTime = clock();
@@ -850,9 +947,14 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
 #define __USE_callCbc1__
 #ifdef __USE_callCbc1__
     if (fVerbose) {
-      cerr << "  Calling callCbc with options '" << _options->cbcCmdOptions << "'..." << endl;
+      cerr << "  Calling CbcMain with command 'cbc";
+      for (const auto& arg : _options->cbcCmdOptions) {
+        cerr << " " << arg;
+      }
+      cerr << "'..." << endl;
     }
-    callCbc(_options->cbcCmdOptions, model);
+    CbcMain(cbc_argc, &cbc_argv[0], model);
+    // callCbc(_options->cbcCmdOptions, model);
 //     callCbc1(cbcCmdOptions, model, callBack);
 // What is callBack() for?    TODO
 #else

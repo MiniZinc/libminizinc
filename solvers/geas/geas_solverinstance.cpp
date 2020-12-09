@@ -699,11 +699,11 @@ GeasSolverFactory::GeasSolverFactory() {
   sc.extraFlags({
       SolverConfig::ExtraFlag("--conflicts",
                               "Limit the maximum number of conflicts to be used during solving.",
-                              "int", "0"),
+                              SolverConfig::ExtraFlag::FlagType::T_INT, {}, "0"),
       SolverConfig::ExtraFlag(
           "--obj-probe",
           "Number of conflicts to use to probe for better solutions after a new solution is found.",
-          "int", "0"),
+          SolverConfig::ExtraFlag::FlagType::T_INT, {}, "0"),
   });
   SolverConfigs::registerBuiltinSolver(sc);
 };
@@ -716,7 +716,8 @@ SolverInstanceBase* GeasSolverFactory::doCreateSI(Env& env, std::ostream& log,
 }
 
 bool GeasSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
-                                      std::vector<std::string>& argv) {
+                                      std::vector<std::string>& argv,
+                                      const std::string& workingDir) {
   auto* _opt = static_cast<GeasOptions*>(opt);
   if (argv[i] == "-a" || argv[i] == "--all-solutions") {
     _opt->allSolutions = true;
