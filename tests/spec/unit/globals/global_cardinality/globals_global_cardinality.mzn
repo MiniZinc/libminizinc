@@ -5,6 +5,7 @@ expected:
   solution: !Solution
     gcc_c: [5, 1, 2, 1]
     gcc_x: [6, 7, 6, 8, 6, 9, 6, 8, 6]
+    gcc_c_zero: [0, 0, 0, 0]
 ***/
 
 include "global_cardinality.mzn";
@@ -18,9 +19,9 @@ array[1..4] of var -100..100: gcc_c ::add_to_output = [5, 1, 2, _];
 
 constraint global_cardinality(gcc_x, [6, 7, 8, 9], gcc_c);
 
-solve satisfy;
+% GCC on an empty array
+%
+array[1..4] of var -100..100: gcc_c_zero ::add_to_output;
+constraint global_cardinality([], [6, 7, 8, 9], gcc_c_zero);
 
-output [
-   "gcc_c = array1d(1..4, ", show(gcc_c), ");\n",
-   "gcc_x = array1d(1..9, ", show(gcc_x), ");\n"
-];
+solve satisfy;
