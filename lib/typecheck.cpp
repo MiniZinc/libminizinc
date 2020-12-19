@@ -761,7 +761,14 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
   }
 
   // Create set literal for overall enum
-  auto* rhs = new BinOp(vd->loc(), IntLit::a(1), BOT_DOTDOT, partCardinality.back());
+  Expression* upperBound;
+  if (!partCardinality.empty()) {
+    upperBound = partCardinality.back();
+  } else {
+    // For empty enums, just create 1..0.
+    upperBound = IntLit::a(0);
+  }
+  auto* rhs = new BinOp(vd->loc(), IntLit::a(1), BOT_DOTDOT, upperBound);
   vd->e(rhs);
 
   if (parts.size() > 1) {
