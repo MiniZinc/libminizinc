@@ -1,8 +1,9 @@
 /*
  * Function fzn_piecewise_linear_base creates
- * interval representation of x,
- * which is reusable if we have several pwls
- * on the same set of breakpoints
+ * auxiliary variables for the interval representation of xi
+ * and constrains them to correspond to the value of x.
+ * The auxiliaries are reusable if we have several pwls
+ * on the same set of breakpoints and x.
  */
 function array[int, int] of var 0.0..1.0: fzn_piecewise_linear_base(
   var float: x, array[int] of float: xi)  ::promise_total =
