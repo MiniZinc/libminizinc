@@ -1,0 +1,3 @@
+output ['foo!'(10),'bar!'];
+function string : 'foo!'(int: x) = show(x);
+string: 'bar!' = "bar";
