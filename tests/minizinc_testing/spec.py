@@ -49,10 +49,10 @@ class Test:
 
         try:
             model = mzn.Model([file] + extra_files)
+            model.output_type = Solution
             solver = mzn.Solver.lookup(solver)
             instance = mzn.Instance(solver, model)
             if self.type == "solve":
-                instance.output_type = Solution
                 result = instance.solve(**options)
                 obtained = Result.from_mzn(result)
             elif self.type == "compile":
@@ -165,34 +165,23 @@ class Solution:
     """
 
     def __init__(self, **kwargs):
-        for key, value in kwargs.items():
-            setattr(self, key, value)
+        self.inner = {k: v for k, v in kwargs.items()}
 
     def items(self):
-        return vars(self).items()
+        return self.inner.items()
 
     def is_satisfied(self, other):
         """
         Returns whether or not this solution is satisfied by an actual solution
         """
 
-        def convertEnums(data):
-            # Convert enums to strings so that normal equality can be used
-            if isinstance(data, Enum):
-                return data.name
-            if isinstance(data, list):
-                return [convertEnums(d) for d in data]
-            if isinstance(data, set):
-                return set(convertEnums(d) for d in data)
-            return data
-
         def in_other(k, v):
             try:
-                return v == convertEnums(getattr(other, k))
-            except AttributeError:
+                return v == other.inner[k]
+            except KeyError:
                 return False
 
-        return all(in_other(k, v) for k, v in self.__dict__.items())
+        return all(in_other(k, v) for k, v in self.inner.items())
 
 
 @yaml.mapping(u"!Error")
