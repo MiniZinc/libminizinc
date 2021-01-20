@@ -461,7 +461,10 @@ std::vector<MiniZinc::SolverConfig::ExtraFlag> MIPGurobiWrapper::getExtraFlags(
           param_name == GRB_DBL_PAR_NODEFILESTART || param_name == GRB_STR_PAR_NODEFILEDIR ||
           param_name == GRB_DBL_PAR_MIPGAPABS || param_name == GRB_INT_PAR_MIPFOCUS ||
           param_name == GRB_DBL_PAR_MIPGAP || param_name == GRB_DBL_PAR_INTFEASTOL ||
-          param_name == GRB_DBL_PAR_FEASIBILITYTOL || param_name == GRB_INT_PAR_NONCONVEX ||
+          param_name == GRB_DBL_PAR_FEASIBILITYTOL ||
+#ifdef GRB_INT_PAR_NONCONVEX
+          param_name == GRB_INT_PAR_NONCONVEX ||
+#endif
           param_name == GRB_INT_PAR_PRECRUSH || param_name == GRB_INT_PAR_LAZYCONSTRAINTS ||
           param_name == GRB_STR_PAR_DUMMY) {
         // These parameters are handled by us or are not useful
