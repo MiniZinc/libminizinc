@@ -849,6 +849,11 @@ void EnvI::annotateFromCallStack(Expression* e) {
   bool allCalls = true;
   for (int i = static_cast<int>(callStack.size()) - 1; i >= prev; i--) {
     Expression* ee = callStack[i]->untag();
+    if (ee->type().isAnn()) {
+      // If we are inside an annotation call, don't annotate it again with
+      // anything from outside the call
+      break;
+    }
     allCalls = allCalls && (i == callStack.size() - 1 || ee->isa<Call>() || ee->isa<BinOp>());
     for (ExpressionSetIter it = ee->ann().begin(); it != ee->ann().end(); ++it) {
       EE ee_ann = flat_exp(*this, Ctx(), *it, nullptr, constants().varTrue);
