@@ -54,7 +54,7 @@ public:
   /// Lazy cut. Can cut off otherwise feasible integer solutions.
   /// Callback should be able to produce previously generated cuts again if needed [Gurobi]
   static const int MaskConsType_Lazy = 4;
-  enum Status { OPT, SAT, UNSAT, UNBND, UNSATorUNBND, UNKNOWN, __ERROR };
+  enum Status { OPT, SAT, UNSAT, UNBND, UNSATorUNBND, UNKNOWN, ERROR_STATUS };
 
   /// Search strategy for the solver
   enum SearchType { FIXED_SEARCH = 0, FREE_SEARCH = 1, UNIFORM_SEARCH = 2 };
@@ -102,7 +102,7 @@ public:
     LinConType sense = LQ;
     double rhs = 0.0;
     int mask = 0;  // need to know what type of cuts are registered before solve()  TODO
-    std::string rowName = "";
+    std::string rowName;
     void addVar(int i, double c) {
       rmatind.push_back(i);
       rmatval.push_back(c);

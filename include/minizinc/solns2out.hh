@@ -76,7 +76,7 @@ public:
     const char* const searchCompleteMsgDef = "==========";
     /// Output values
     std::string solutionSeparator = solutionSeparatorDef;
-    std::string solutionComma = "";
+    std::string solutionComma;
     std::string unsatisfiableMsg = unsatisfiableMsgDef;
     std::string unboundedMsg = unboundedMsgDef;
     std::string unsatorunbndMsg = unsatorunbndMsgDef;

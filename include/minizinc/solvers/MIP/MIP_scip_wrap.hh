@@ -21,6 +21,7 @@
 #include <scip/scipdefplugins.h>
 
 #ifndef _WIN32
+// NOLINTNEXTLINE(bugprone-reserved-identifier)
 #define __stdcall
 #endif
 

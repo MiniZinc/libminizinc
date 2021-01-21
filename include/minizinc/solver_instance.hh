@@ -33,6 +33,6 @@ public:
   enum StatusReason { SR_OK = -5, SR_TIME, SR_MEMORY, SR_LIMIT, SR_ERROR };
 };
 
-const SolverInstance::Status SolverInstance__ERROR = SolverInstance::ERROR;  // just in case...
+const SolverInstance::Status SolverInstanceError = SolverInstance::ERROR;  // just in case...
 
 }  // namespace MiniZinc

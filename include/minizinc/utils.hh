@@ -41,27 +41,27 @@ inline long long int round_to_longlong(double v) {
 
 namespace MiniZinc {
 
-// #define __MZN_PRINTATONCE__
-#ifdef __MZN_PRINTATONCE__
-#define __MZN_PRINT_SRCLOC(e1, e2)                                                          \
+// #define MZN_PRINTATONCE_
+#ifdef MZN_PRINTATONCE_
+#define MZN_PRINT_SRCLOC(e1, e2)                                                            \
   std::cerr << '\n'                                                                         \
             << __FILE__ << ": " << __LINE__ << " (" << __func__ << "): not " << e1 << ":  " \
             << std::flush;                                                                  \
   std::cerr << e2 << std::endl
 #else
-#define __MZN_PRINT_SRCLOC(e1, e2)
+#define MZN_PRINT_SRCLOC(e1, e2)
 #endif
-#define MZN_ASSERT_HARD(c)        \
-  do {                            \
-    if (!(c)) {                   \
-      __MZN_PRINT_SRCLOC(#c, ""); \
-      throw InternalError(#c);    \
-    }                             \
+#define MZN_ASSERT_HARD(c)      \
+  do {                          \
+    if (!(c)) {                 \
+      MZN_PRINT_SRCLOC(#c, ""); \
+      throw InternalError(#c);  \
+    }                           \
   } while (0)
 #define MZN_ASSERT_HARD_MSG(c, e)                                                 \
   do {                                                                            \
     if (!(c)) {                                                                   \
-      __MZN_PRINT_SRCLOC(#c, e);                                                  \
+      MZN_PRINT_SRCLOC(#c, e);                                                    \
       std::ostringstream oss;                                                     \
       oss << "not " << #c << ":  " << e; /* NOLINT(bugprone-macro-parentheses) */ \
       throw MiniZinc::InternalError(oss.str());                                   \

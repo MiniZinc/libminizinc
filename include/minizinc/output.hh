@@ -36,7 +36,7 @@ void finalise_output(EnvI& e);
 /// Remove all links to variables in flat model from output model in \a env
 void cleanup_output(EnvI& env);
 
-ArrayLit* create__json_output(EnvI& env, bool outputObjective, bool includeOutputItem,
-                              bool hasChecker);
+ArrayLit* create_json_output(EnvI& env, bool outputObjective, bool includeOutputItem,
+                             bool hasChecker);
 
 }  // namespace MiniZinc

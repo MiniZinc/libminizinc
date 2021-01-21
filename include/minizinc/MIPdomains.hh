@@ -22,23 +22,23 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#define MZN_MIPD__assert_soft(c, e)                                                        \
+#define MZN_MIPD_assert_soft(c, e)                                                         \
   do {                                                                                     \
     static int nn = 0;                                                                     \
     if (!(c))                                                                              \
       if (++nn <= 1) std::cerr << e << std::endl; /* NOLINT(bugprone-macro-parentheses) */ \
   } while (0)
-#define MZN_MIPD__assert_hard(c) MZN_ASSERT_HARD(c)
-#define MZN_MIPD__assert_hard_msg(c, e) MZN_ASSERT_HARD_MSG(c, e)
-#define MZN_MIPD__FLATTENING_ERROR__IF_NOT(cond, envi, loc, msg) \
-  do {                                                           \
-    if (!(cond)) {                                               \
-      std::ostringstream oss;                                    \
-      oss << msg; /* NOLINT(bugprone-macro-parentheses) */       \
-      throw FlatteningError(envi, loc, oss.str());               \
-    }                                                            \
+#define MZN_MIPD_assert_hard(c) MZN_ASSERT_HARD(c)
+#define MZN_MIPD_assert_hard_msg(c, e) MZN_ASSERT_HARD_MSG(c, e)
+#define MZN_MIPD_FLATTENING_ERROR_IF_NOT(cond, envi, loc, msg) \
+  do {                                                         \
+    if (!(cond)) {                                             \
+      std::ostringstream oss;                                  \
+      oss << msg; /* NOLINT(bugprone-macro-parentheses) */     \
+      throw FlatteningError(envi, loc, oss.str());             \
+    }                                                          \
   } while (0)
-#define MZN_MIPD__ASSERT_FOR_SAT(cond, envi, loc, msg)                            \
+#define MZN_MIPD_ASSERT_FOR_SAT(cond, envi, loc, msg)                             \
   do {                                                                            \
     if (!(cond)) {                                                                \
       std::ostringstream oss;                                                     \

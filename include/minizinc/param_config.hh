@@ -9,8 +9,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __MINIZINC_PARAM_CONFIG_HH__
-#define __MINIZINC_PARAM_CONFIG_HH__
+#pragma once
 
 #include <minizinc/ast.hh>
 #include <minizinc/solver_config.hh>
@@ -57,5 +56,3 @@ public:
   const char* what() const throw() override { return "MiniZinc: solver parameter error"; }
 };
 }  // namespace MiniZinc
-
-#endif

@@ -42,20 +42,20 @@
 ///  TODO use integer division instead of INT_EPS
 #define INT_EPS 1e-5  // the absolute epsilon for integrality of integer vars.
 
-#define __MZN__MIPDOMAINS__PRINTMORESTATS
+#define MZN_MIPDOMAINS_PRINTMORESTATS
 #define MZN_DBG_CHECK_ITER_CUTOUT
 
-//   #define __MZN__DBGOUT__MIPDOMAINS__
-#ifdef __MZN__DBGOUT__MIPDOMAINS__
+//   #define MZN_DBGOUT_MIPDOMAINS
+#ifdef MZN_DBGOUT_MIPDOMAINS
 #define DBGOUT_MIPD(s) std::cerr << s << std::endl
-#define DBGOUT_MIPD__(s) std::cerr << s << std::flush
+#define DBGOUT_MIPD_FLUSH(s) std::cerr << s << std::flush
 #define DBGOUT_MIPD_SELF(op) op
 #else
 #define DBGOUT_MIPD(s) \
   do {                 \
   } while (false)
-#define DBGOUT_MIPD__(s) \
-  do {                   \
+#define DBGOUT_MIPD_FLUSH(s) \
+  do {                       \
   } while (false)
 #define DBGOUT_MIPD_SELF(op) \
   do {                       \
@@ -64,45 +64,45 @@
 
 namespace MiniZinc {
 
-enum EnumStatIdx__MIPD {
-  N_POSTs__all,  // N all POSTs in the model
-  N_POSTs__intCmpReif,
-  N_POSTs__floatCmpReif,  // in detail
-  N_POSTs__intNE,
-  N_POSTs__floatNE,
-  N_POSTs__setIn,
-  N_POSTs__domain,
-  N_POSTs__setInReif,
-  N_POSTs__eq_encode,
-  N_POSTs__intAux,
-  N_POSTs__floatAux,
+enum EnumStatIdx_MIPD {
+  N_POSTs_all,  // N all POSTs in the model
+  N_POSTs_intCmpReif,
+  N_POSTs_floatCmpReif,  // in detail
+  N_POSTs_intNE,
+  N_POSTs_floatNE,
+  N_POSTs_setIn,
+  N_POSTs_domain,
+  N_POSTs_setInReif,
+  N_POSTs_eq_encode,
+  N_POSTs_intAux,
+  N_POSTs_floatAux,
   // Kind of equality connections between involved variables
-  N_POSTs__eq2intlineq,
-  N_POSTs__eq2floatlineq,
-  N_POSTs__int2float,
-  N_POSTs__internalvarredef,
-  N_POSTs__initexpr1id,
-  N_POSTs__initexpr1linexp,
-  N_POSTs__initexprN,
-  N_POSTs__eqNlineq,
-  N_POSTs__eqNmapsize,
+  N_POSTs_eq2intlineq,
+  N_POSTs_eq2floatlineq,
+  N_POSTs_int2float,
+  N_POSTs_internalvarredef,
+  N_POSTs_initexpr1id,
+  N_POSTs_initexpr1linexp,
+  N_POSTs_initexprN,
+  N_POSTs_eqNlineq,
+  N_POSTs_eqNmapsize,
   // other
-  N_POSTs__varsDirect,
-  N_POSTs__varsInvolved,
-  N_POSTs__NSubintvMin,
-  N_POSTs__NSubintvSum,
-  N_POSTs__NSubintvMax,  // as N subintervals
-  N_POSTs__SubSizeMin,
-  N_POSTs__SubSizeSum,
-  N_POSTs__SubSizeMax,  // subintv. size
-  N_POSTs__linCoefMin,
-  N_POSTs__linCoefMax,
-  N_POSTs__cliquesWithEqEncode,
-  N_POSTs__clEEEnforced,
-  N_POSTs__clEEFound,
-  N_POSTs__size
+  N_POSTs_varsDirect,
+  N_POSTs_varsInvolved,
+  N_POSTs_NSubintvMin,
+  N_POSTs_NSubintvSum,
+  N_POSTs_NSubintvMax,  // as N subintervals
+  N_POSTs_SubSizeMin,
+  N_POSTs_SubSizeSum,
+  N_POSTs_SubSizeMax,  // subintv. size
+  N_POSTs_linCoefMin,
+  N_POSTs_linCoefMax,
+  N_POSTs_cliquesWithEqEncode,
+  N_POSTs_clEEEnforced,
+  N_POSTs_clEEFound,
+  N_POSTs_size
 };
-extern std::vector<double> MIPD__stats;
+extern std::vector<double> MIPD_stats;
 
 enum EnumReifType { RIT_None, RIT_Static, RIT_Reif, RIT_Halfreif };
 enum EnumConstrType { CT_None, CT_Comparison, CT_SetIn, CT_Encode };
@@ -134,14 +134,14 @@ struct DCT {
   FunctionI*& pfi;
   //     double dEps = -1.0;
   DCT(const char* fn, const std::vector<Type>& prm, EnumReifType er, EnumConstrType ec,
-      EnumCmpType ecmp, EnumVarType ev, FunctionI*& pfi__)
+      EnumCmpType ecmp, EnumVarType ev, FunctionI*& pfi_)
       : sFuncName(fn),
         aParams(prm),
         nReifType(er),
         nConstrType(ec),
         nCmpType(ecmp),
         nVarType(ev),
-        pfi(pfi__) {}
+        pfi(pfi_) {}
 };
 
 template <class N>
@@ -266,7 +266,7 @@ typedef LinEqHelper<std::vector<double>, std::vector<VarDecl*> > LinEq;
 //       double rhs;
 //     };
 
-std::vector<double> MIPD__stats(N_POSTs__size);
+std::vector<double> MIPD_stats(N_POSTs_size);
 
 template <class T>
 static std::vector<T> make_vec(T t1, T t2) {
@@ -299,8 +299,8 @@ public:
   const double dMaxNValueDensity = 3.0;  // Maximal ratio cardInt() / size() of a domain
                                          // to enforce ee
   bool doMIPdomains() {
-    MIPD__stats[N_POSTs__NSubintvMin] = 1e100;
-    MIPD__stats[N_POSTs__SubSizeMin] = 1e100;
+    MIPD_stats[N_POSTs_NSubintvMin] = 1e100;
+    MIPD_stats[N_POSTs_SubSizeMin] = 1e100;
 
     if (!registerLinearConstraintDecls()) {
       return true;
@@ -325,7 +325,7 @@ public:
 private:
   Env* _env = nullptr;
   Env* getEnv() {
-    MZN_MIPD__assert_hard(_env);
+    MZN_MIPD_assert_hard(_env);
     return _env;
   }
 
@@ -354,7 +354,7 @@ private:
   // NOLINTNEXTLINE(readability-identifier-naming)
   std::vector<Type> t_VIVF = make_vec(Type::varint(), Type::varfloat());
 
-  //     double float_lt_EPS_coef__ = 1e-5;
+  //     double float_lt_EPS_coef_ = 1e-5;
 
   bool registerLinearConstraintDecls() {
     EnvI& env = getEnv()->envi();
@@ -362,7 +362,7 @@ private:
 
     int_lin_eq = env.model->matchFn(env, constants().ids.int_.lin_eq, int_lin_eq_t, false);
     DBGOUT_MIPD("  int_lin_eq = " << int_lin_eq);
-    //       MZN_MIPD__assert_hard(fi);
+    //       MZN_MIPD_assert_hard(fi);
     //       int_lin_eq = (fi && fi->e()) ? fi : NULL;
     int_lin_le = env.model->matchFn(env, constants().ids.int_.lin_le, int_lin_eq_t, false);
     float_lin_eq = env.model->matchFn(env, constants().ids.float_.lin_eq, float_lin_eq_t, false);
@@ -385,7 +385,7 @@ private:
     //           new Call(Location(),"mzn_float_lt_EPS_coef__", std::vector<Expression*>());
     //         call_EPS_for_LT->type(Type::parfloat());
     //         call_EPS_for_LT->decl(env.model->matchFn(getEnv()->envi(), call_EPS_for_LT));
-    //         float_lt_EPS_coef__ = eval_float(getEnv()->envi(), call_EPS_for_LT);
+    //         float_lt_EPS_coef_ = eval_float(getEnv()->envi(), call_EPS_for_LT);
     //       }
   }
   //   bool matchAndMarkFunction();
@@ -431,9 +431,9 @@ private:
   //     std::vector<Type> t_intarray(1);
   //     t_intarray[0] = Type::parint(-1);
 
-  typedef std::unordered_map<FunctionI*, DCT*> M__POSTCallTypes;
-  M__POSTCallTypes _mCallTypes;  // actually declared in the input
-  std::vector<DCT> _aCT;         // all possible
+  typedef std::unordered_map<FunctionI*, DCT*> M_POSTCallTypes;
+  M_POSTCallTypes _mCallTypes;  // actually declared in the input
+  std::vector<DCT> _aCT;        // all possible
 
   // Fails:
   //   DomainCallType a = { NULL, t_VII, RIT_Halfreif, CT_Comparison, CMPT_EQ, VT_Float };
@@ -458,37 +458,37 @@ private:
   std::vector<VarDescr> _vVarDescr;
 
   // NOLINTNEXTLINE(readability-identifier-naming)
-  FunctionI* int_le_reif__POST = nullptr;
+  FunctionI* int_le_reif_POST = nullptr;
   // NOLINTNEXTLINE(readability-identifier-naming)
-  FunctionI* int_ge_reif__POST = nullptr;
+  FunctionI* int_ge_reif_POST = nullptr;
   // NOLINTNEXTLINE(readability-identifier-naming)
-  FunctionI* int_eq_reif__POST = nullptr;
+  FunctionI* int_eq_reif_POST = nullptr;
   // NOLINTNEXTLINE(readability-identifier-naming)
-  FunctionI* int_ne__POST = nullptr;
+  FunctionI* int_ne_POST = nullptr;
   // NOLINTNEXTLINE(readability-identifier-naming)
-  FunctionI* float_le_reif__POST = nullptr;
+  FunctionI* float_le_reif_POST = nullptr;
   // NOLINTNEXTLINE(readability-identifier-naming)
-  FunctionI* float_ge_reif__POST = nullptr;
+  FunctionI* float_ge_reif_POST = nullptr;
   // NOLINTNEXTLINE(readability-identifier-naming)
-  FunctionI* aux_float_lt_zero_iff_1__POST = nullptr;
+  FunctionI* aux_float_lt_zero_iff_1_POST = nullptr;
   // NOLINTNEXTLINE(readability-identifier-naming)
-  FunctionI* float_eq_reif__POST = nullptr;
+  FunctionI* float_eq_reif_POST = nullptr;
   // NOLINTNEXTLINE(readability-identifier-naming)
-  FunctionI* float_ne__POST = nullptr;
+  FunctionI* float_ne_POST = nullptr;
   // NOLINTNEXTLINE(readability-identifier-naming)
-  FunctionI* aux_float_eq_zero_if_1__POST = nullptr;
+  FunctionI* aux_float_eq_zero_if_1_POST = nullptr;
   // NOLINTNEXTLINE(readability-identifier-naming)
-  FunctionI* aux_int_le_zero_if_1__POST = nullptr;
+  FunctionI* aux_int_le_zero_if_1_POST = nullptr;
   // NOLINTNEXTLINE(readability-identifier-naming)
-  FunctionI* aux_float_le_zero_if_1__POST = nullptr;
+  FunctionI* aux_float_le_zero_if_1_POST = nullptr;
   // NOLINTNEXTLINE(readability-identifier-naming)
-  FunctionI* aux_float_lt_zero_if_1__POST = nullptr;
+  FunctionI* aux_float_lt_zero_if_1_POST = nullptr;
   // NOLINTNEXTLINE(readability-identifier-naming)
-  FunctionI* equality_encoding__POST = nullptr;
+  FunctionI* equality_encoding_POST = nullptr;
   // NOLINTNEXTLINE(readability-identifier-naming)
-  FunctionI* set_in__POST = nullptr;
+  FunctionI* set_in_POST = nullptr;
   // NOLINTNEXTLINE(readability-identifier-naming)
-  FunctionI* set_in_reif__POST = nullptr;
+  FunctionI* set_in_reif_POST = nullptr;
 
   bool registerPOSTConstraintDecls() {
     EnvI& env = getEnv()->envi();
@@ -496,41 +496,40 @@ private:
 
     _aCT.clear();
     _aCT.emplace_back("int_le_reif__POST", t_VIIVI, RIT_Reif, CT_Comparison, CMPT_LE, VT_Int,
-                      int_le_reif__POST);
+                      int_le_reif_POST);
     _aCT.emplace_back("int_ge_reif__POST", t_VIIVI, RIT_Reif, CT_Comparison, CMPT_GE, VT_Int,
-                      int_ge_reif__POST);
+                      int_ge_reif_POST);
     _aCT.emplace_back("int_eq_reif__POST", t_VIIVI, RIT_Reif, CT_Comparison, CMPT_EQ, VT_Int,
-                      int_eq_reif__POST);
+                      int_eq_reif_POST);
     _aCT.emplace_back("int_ne__POST", t_VII, RIT_Static, CT_Comparison, CMPT_NE, VT_Int,
-                      int_ne__POST);
+                      int_ne_POST);
 
     _aCT.emplace_back("float_le_reif__POST", t_VFFVIF, RIT_Reif, CT_Comparison, CMPT_LE, VT_Float,
-                      float_le_reif__POST);
+                      float_le_reif_POST);
     _aCT.emplace_back("float_ge_reif__POST", t_VFFVIF, RIT_Reif, CT_Comparison, CMPT_GE, VT_Float,
-                      float_ge_reif__POST);
+                      float_ge_reif_POST);
     _aCT.emplace_back("aux_float_lt_zero_iff_1__POST", t_VFVIF, RIT_Reif, CT_Comparison, CMPT_LT,
-                      VT_Float, aux_float_lt_zero_iff_1__POST);
+                      VT_Float, aux_float_lt_zero_iff_1_POST);
     _aCT.emplace_back("float_eq_reif__POST", t_VFFVIF, RIT_Reif, CT_Comparison, CMPT_EQ, VT_Float,
-                      float_eq_reif__POST);
+                      float_eq_reif_POST);
     _aCT.emplace_back("float_ne__POST", t_VFFF, RIT_Static, CT_Comparison, CMPT_NE, VT_Float,
-                      float_ne__POST);
+                      float_ne_POST);
 
     _aCT.emplace_back("aux_float_eq_zero_if_1__POST", t_VFVIVF, RIT_Halfreif, CT_Comparison,
-                      CMPT_EQ_0, VT_Float, aux_float_eq_zero_if_1__POST);
+                      CMPT_EQ_0, VT_Float, aux_float_eq_zero_if_1_POST);
     _aCT.emplace_back("aux_int_le_zero_if_1__POST", t_VIVI, RIT_Halfreif, CT_Comparison, CMPT_LE_0,
-                      VT_Int, aux_int_le_zero_if_1__POST);
+                      VT_Int, aux_int_le_zero_if_1_POST);
     _aCT.emplace_back("aux_float_le_zero_if_1__POST", t_VFVIVF, RIT_Halfreif, CT_Comparison,
-                      CMPT_LE_0, VT_Float, aux_float_le_zero_if_1__POST);
+                      CMPT_LE_0, VT_Float, aux_float_le_zero_if_1_POST);
     _aCT.emplace_back("aux_float_lt_zero_if_1__POST", t_VFVIVFF, RIT_Halfreif, CT_Comparison,
-                      CMPT_LT_0, VT_Float, aux_float_lt_zero_if_1__POST);
+                      CMPT_LT_0, VT_Float, aux_float_lt_zero_if_1_POST);
 
     _aCT.emplace_back("equality_encoding__POST", t_VIAVI, RIT_Static, CT_Encode, CMPT_None, VT_Int,
-                      equality_encoding__POST);
-    _aCT.emplace_back("set_in__POST", t_VISI, RIT_Static, CT_SetIn, CMPT_None, VT_Int,
-                      set_in__POST);
+                      equality_encoding_POST);
+    _aCT.emplace_back("set_in__POST", t_VISI, RIT_Static, CT_SetIn, CMPT_None, VT_Int, set_in_POST);
     _aCT.emplace_back("set_in_reif__POST", t_VISIVI, RIT_Reif, CT_SetIn, CMPT_None, VT_Int,
-                      set_in_reif__POST);
-    /// Registering all declared & compatible __POST constraints
+                      set_in_reif_POST);
+    /// Registering all declared & compatible _POST constraints
     /// (First, cleanup FunctionIs' payload:  -- ! doing now)
     for (int i = 0; i < _aCT.size(); ++i) {
       FunctionI* fi = env.model->matchFn(env, ASTString(_aCT[i].sFuncName), _aCT[i].aParams, false);
@@ -548,7 +547,7 @@ private:
     return true;
   }
 
-  /// Registering all __POST calls' domain-constrained variables
+  /// Registering all _POST calls' domain-constrained variables
   void registerPOSTVariables() {
     EnvI& env = getEnv()->envi();
     GCLock lock;
@@ -577,13 +576,13 @@ private:
             checkInitExpr(vd0);
           }
         } else {
-          DBGOUT_MIPD__(" (already touched)");
+          DBGOUT_MIPD_FLUSH(" (already touched)");
         }
-        ++MIPD__stats[N_POSTs__domain];
-        ++MIPD__stats[N_POSTs__all];
+        ++MIPD_stats[N_POSTs_domain];
+        ++MIPD_stats[N_POSTs_all];
       }
     }
-    // Iterate thru original __POST constraints to mark constrained vars:
+    // Iterate thru original _POST constraints to mark constrained vars:
     for (ConstraintIterator ic = mFlat.constraints().begin(); ic != mFlat.constraints().end();
          ++ic) {
       if (ic->removed()) {
@@ -594,19 +593,20 @@ private:
         if (ipct != _mCallTypes.end()) {
           // No ! here because might be deleted immediately in later versions.
           //             ic->remove();                              // mark removed at once
-          MZN_MIPD__assert_hard(c->argCount() > 1);
-          ++MIPD__stats[N_POSTs__all];
+          MZN_MIPD_assert_hard(c->argCount() > 1);
+          ++MIPD_stats[N_POSTs_all];
           VarDecl* vd0 = expr2VarDecl(c->arg(0));
           if (nullptr == vd0) {
-            DBGOUT_MIPD__("  Call " << *c << ": 1st arg not a VarDecl, removing if eq_encoding...");
+            DBGOUT_MIPD_FLUSH("  Call " << *c
+                                        << ": 1st arg not a VarDecl, removing if eq_encoding...");
             /// Only allow literals as main argument for equality_encoding
-            if (equality_encoding__POST ==
-                ipct->first) {  //  was MZN_MIPD__assert_hard before MZN 2017
+            if (equality_encoding_POST ==
+                ipct->first) {  //  was MZN_MIPD_assert_hard before MZN 2017
               ic->remove();
             }
             continue;  // ignore this call
           }
-          DBGOUT_MIPD__("  Call " << c->id().str() << " uses variable " << vd0->id()->str());
+          DBGOUT_MIPD_FLUSH("  Call " << c->id().str() << " uses variable " << vd0->id()->str());
           if (vd0->payload() == -1) {  // ! yet visited
             vd0->payload(static_cast<int>(_vVarDescr.size()));
             _vVarDescr.emplace_back(vd0, vd0->type().isint());  // can use /prmTypes/ as well
@@ -615,11 +615,11 @@ private:
               checkInitExpr(vd0);
             }
           } else {
-            DBGOUT_MIPD__(" (already touched)");
+            DBGOUT_MIPD_FLUSH(" (already touched)");
           }
           DBGOUT_MIPD("");
-          if (equality_encoding__POST == c->decl()) {
-            MZN_MIPD__assert_hard(!_vVarDescr[vd0->payload()].pEqEncoding);
+          if (equality_encoding_POST == c->decl()) {
+            MZN_MIPD_assert_hard(!_vVarDescr[vd0->payload()].pEqEncoding);
             _vVarDescr[vd0->payload()].pEqEncoding = &*ic;
             DBGOUT_MIPD(" Variable " << vd0->id()->str() << " has eq_encode.");
           }  // + if has aux_ constraints?
@@ -629,7 +629,7 @@ private:
         }
       }
     }
-    MIPD__stats[N_POSTs__varsDirect] = static_cast<double>(_vVarDescr.size());
+    MIPD_stats[N_POSTs_varsDirect] = static_cast<double>(_vVarDescr.size());
   }
 
   // Should only be called on a newly added variable
@@ -639,18 +639,18 @@ private:
   /// The bool param requires RHS to be POST-touched
   // Guido: can! be recursive in FZN
   bool checkInitExpr(VarDecl* vd, bool fCheckArg = false) {
-    MZN_MIPD__assert_hard(vd->e());
+    MZN_MIPD_assert_hard(vd->e());
     if (!vd->type().isint() && !vd->type().isfloat()) {
       return false;
     }
     if (!fCheckArg) {
-      MZN_MIPD__assert_hard(vd->payload() >= 0);
+      MZN_MIPD_assert_hard(vd->payload() >= 0);
     }
     if (Id* id = vd->e()->dynamicCast<Id>()) {
       //         const int f1 = ( vd->payload()>=0 );
       //         const int f2 = ( id->decl()->payload()>=0 );
       if (!fCheckArg || (id->decl()->payload() >= 0)) {
-        DBGOUT_MIPD__("  Checking init expr  ");
+        DBGOUT_MIPD_FLUSH("  Checking init expr  ");
         DBGOUT_MIPD_SELF(debugprint(vd));
         LinEq2Vars led;
         // FAILS:
@@ -659,7 +659,7 @@ private:
         led.coefs = {{1.0, -1.0}};
         led.rhs = 0.0;
         put2VarsConnection(led, false);
-        ++MIPD__stats[N_POSTs__initexpr1id];
+        ++MIPD_stats[N_POSTs_initexpr1id];
         if (id->decl()->e() != nullptr) {  // no initexpr for initexpr  FAILS on cc-base.mzn
           checkInitExpr(id->decl());
         }
@@ -669,11 +669,11 @@ private:
       if (lin_exp_int == c->decl() || lin_exp_float == c->decl()) {
         //             std::cerr << "  !E call " << std::flush;
         //             debugprint(c);
-        MZN_MIPD__assert_hard(c->argCount() == 3);
+        MZN_MIPD_assert_hard(c->argCount() == 3);
         //           ArrayLit* al = c->args()[1]->dynamicCast<ArrayLit>();
         auto* al = follow_id(c->arg(1))->cast<ArrayLit>();
-        MZN_MIPD__assert_hard(al);
-        MZN_MIPD__assert_hard(al->size() >= 1);
+        MZN_MIPD_assert_hard(al);
+        MZN_MIPD_assert_hard(al->size() >= 1);
         if (al->size() == 1) {  // 1-term scalar product in the rhs
           LinEq2Vars led;
           led.vd = {{vd, expr2VarDecl((*al)[0])}};
@@ -684,14 +684,14 @@ private:
             //               if ( _sCallLinEq2.end() != _sCallLinEq2.find(c) )
             //                 continue;
             //               _sCallLinEq2.insert(c);     // memorize this call
-            DBGOUT_MIPD__("  REG 1-LINEXP ");
+            DBGOUT_MIPD_FLUSH("  REG 1-LINEXP ");
             DBGOUT_MIPD_SELF(debugprint(vd));
             std::array<double, 1> coef0;
             expr2Array(c->arg(0), coef0);
             led.coefs = {{-1.0, coef0[0]}};
             led.rhs = -expr2Const(c->arg(2));  // MINUS
             put2VarsConnection(led, false);
-            ++MIPD__stats[N_POSTs__initexpr1linexp];
+            ++MIPD_stats[N_POSTs_initexpr1linexp];
             if (led.vd[1]->e() != nullptr) {  // no initexpr for initexpr   FAILS  TODO
               checkInitExpr(led.vd[1]);
             }
@@ -726,7 +726,7 @@ private:
       propagateImplViews(fChanges);
     } while (fChanges);
 
-    MIPD__stats[N_POSTs__varsInvolved] = static_cast<double>(_vVarDescr.size());
+    MIPD_stats[N_POSTs_varsInvolved] = static_cast<double>(_vVarDescr.size());
   }
 
   void propagateViews(bool& fChanges) {
@@ -764,9 +764,9 @@ private:
         if (fIntLinEq || fFloatLinEq) {
           //             std::cerr << "  !E call " << std::flush;
           //             debugprint(c);
-          MZN_MIPD__assert_hard(c->argCount() == 3);
+          MZN_MIPD_assert_hard(c->argCount() == 3);
           auto* al = follow_id(c->arg(1))->cast<ArrayLit>();
-          MZN_MIPD__assert_hard(al);
+          MZN_MIPD_assert_hard(al);
           if (al->size() == 2) {  // 2-term eqn
             LinEq2Vars led;
             expr2DeclArray(c->arg(1), led.vd);
@@ -781,10 +781,10 @@ private:
                 DBGOUT_MIPD_SELF(debugprint(c));
                 led.rhs = expr2Const(c->arg(2));
                 expr2Array(c->arg(0), led.coefs);
-                MZN_MIPD__assert_hard(2 == led.coefs.size());
+                MZN_MIPD_assert_hard(2 == led.coefs.size());
                 fChanges = true;
                 put2VarsConnection(led);
-                ++MIPD__stats[fIntLinEq ? N_POSTs__eq2intlineq : N_POSTs__eq2floatlineq];
+                ++MIPD_stats[fIntLinEq ? N_POSTs_eq2intlineq : N_POSTs_eq2floatlineq];
               }
             }
           } else if (al->size() == 1) {
@@ -804,8 +804,8 @@ private:
               DBGOUT_MIPD("       REG N-call ");
               DBGOUT_MIPD_SELF(debugprint(c));
               Call* pC = eVD->dynamicCast<Call>();
-              MZN_MIPD__assert_hard(pC);
-              MZN_MIPD__assert_hard(pC->argCount());
+              MZN_MIPD_assert_hard(pC);
+              MZN_MIPD_assert_hard(pC->argCount());
               // Checking all but adding only touched defined vars? Seems too long.
               VarDecl* vd = expr2VarDecl(pC->arg(0));
               if ((vd != nullptr) && vd->payload() >= 0) {  // only if touched
@@ -822,7 +822,7 @@ private:
             if (int2float == c->decl() || constants().varRedef == c->decl()) {
           //             std::cerr << "  !E call " << std::flush;
           //             debugprint(c);
-          MZN_MIPD__assert_hard(c->argCount() == 2);
+          MZN_MIPD_assert_hard(c->argCount() == 2);
           LinEq2Vars led;
           //             led.vd.resize(2);
           led.vd[0] = expr2VarDecl(c->arg(0));
@@ -839,7 +839,7 @@ private:
             led.coefs = {{1.0, -1.0}};
             fChanges = true;
             put2VarsConnection(led);
-            ++MIPD__stats[int2float == c->decl() ? N_POSTs__int2float : N_POSTs__internalvarredef];
+            ++MIPD_stats[int2float == c->decl() ? N_POSTs_int2float : N_POSTs_internalvarredef];
           }
         }
       }
@@ -865,10 +865,10 @@ private:
   // _lin_eq: a^T x == b
   bool findOrAddDefining(Expression* exp, Call* pC) {
     Id* pId = exp->dynamicCast<Id>();
-    MZN_MIPD__assert_hard(pId);
+    MZN_MIPD_assert_hard(pId);
     VarDecl* vd = pId->decl();
-    MZN_MIPD__assert_hard(vd);
-    MZN_MIPD__assert_hard(pC->argCount() == 3);
+    MZN_MIPD_assert_hard(vd);
+    MZN_MIPD_assert_hard(pC->argCount() == 3);
 
     TLinExpLin rhsLin;
     NViewData nVRest;
@@ -879,11 +879,11 @@ private:
     expr2DeclArray(pC->arg(1), vars);
     std::vector<double> coefs;
     expr2Array(pC->arg(0), coefs);
-    MZN_MIPD__assert_hard(vars.size() == coefs.size());
+    MZN_MIPD_assert_hard(vars.size() == coefs.size());
 
     int nVD = 0;
     for (int i = 0; i < vars.size(); ++i) {
-      //         MZN_MIPD__assert_hard( 0.0!=std::fabs
+      //         MZN_MIPD_assert_hard( 0.0!=std::fabs
       if (vd ==
           vars[i]) {  // when int/float_lin_eq :: defines_var(vd) "Recursive definition of " << *vd
         nVRest.coef0 = -coefs[i];
@@ -893,12 +893,12 @@ private:
         rhsLin.push_back(std::make_pair(vars[i], coefs[i]));
       }
     }
-    MZN_MIPD__assert_hard(1 >= nVD);
+    MZN_MIPD_assert_hard(1 >= nVD);
     std::sort(rhsLin.begin(), rhsLin.end());
 
     // Divide the equation by the 1st coef
     const double coef1 = rhsLin.begin()->second;
-    MZN_MIPD__assert_hard(0.0 != std::fabs(coef1));
+    MZN_MIPD_assert_hard(0.0 != std::fabs(coef1));
     nVRest.coef0 /= coef1;
     nVRest.rhs /= coef1;
     for (auto& rhsL : rhsLin) {
@@ -913,7 +913,7 @@ private:
       leq.coefs = {{nVRest.coef0, -it->second.coef0}};  // +, -
       leq.rhs = nVRest.rhs - it->second.rhs;
       put2VarsConnection(leq, false);
-      ++MIPD__stats[nVD != 0 ? N_POSTs__eqNlineq : N_POSTs__initexprN];
+      ++MIPD_stats[nVD != 0 ? N_POSTs_eqNlineq : N_POSTs_initexprN];
       return true;
     }
     if (vd->payload() >= 0) {  // only touched
@@ -948,16 +948,16 @@ private:
   /// register a 2-variable lin eq
   /// add it to the var clique, joining the participants' cliques if needed
   void put2VarsConnection(LinEq2Vars& led, bool fCheckinitExpr = true) {
-    MZN_MIPD__assert_hard(led.coefs.size() == led.vd.size());
-    MZN_MIPD__assert_hard(led.vd.size() == 2);
-    DBGOUT_MIPD__("  Register 2-var connection: " << led);
+    MZN_MIPD_assert_hard(led.coefs.size() == led.vd.size());
+    MZN_MIPD_assert_hard(led.vd.size() == 2);
+    DBGOUT_MIPD_FLUSH("  Register 2-var connection: " << led);
     /// Check it's not same 2 vars
     if (led.vd[0] == led.vd[1]) {
-      MZN_MIPD__assert_soft(
+      MZN_MIPD_assert_soft(
           0, "MIPD: STRANGE: registering var connection to itself: " << led << ", skipping");
-      MZN_MIPD__ASSERT_FOR_SAT(fabs(led.coefs[0] + led.coefs[1]) < 1e-6,  // TODO param
-                               getEnv()->envi(), led.vd[0]->loc(),
-                               "Var connection to itself seems to indicate UNSAT: " << led);
+      MZN_MIPD_ASSERT_FOR_SAT(fabs(led.coefs[0] + led.coefs[1]) < 1e-6,  // TODO param
+                              getEnv()->envi(), led.vd[0]->loc(),
+                              "Var connection to itself seems to indicate UNSAT: " << led);
       return;
     }
     // register if new variables
@@ -975,7 +975,7 @@ private:
         if (nMaybeClq >= 0) {
           nCliqueAvailable = nMaybeClq;
         }
-        //           MZN_MIPD__assert_hard( nCliqueAvailable>=0 );
+        //           MZN_MIPD_assert_hard( nCliqueAvailable>=0 );
         //           fHaveClq[i] = true;
       }
     }
@@ -991,7 +991,7 @@ private:
       int& nMaybeClq = _vVarDescr[vd->payload()].nClique;
       if (nMaybeClq >= 0 && nMaybeClq != nCliqueAvailable) {
         TClique& clqOld = _aCliques[nMaybeClq];
-        MZN_MIPD__assert_hard(clqOld.size());
+        MZN_MIPD_assert_hard(clqOld.size());
         for (auto& eq2 : clqOld) {
           for (auto* vd : eq2.vd) {  // point all the variables to the new clique
             _vVarDescr[vd->payload()].nClique = nCliqueAvailable;
@@ -1028,21 +1028,20 @@ private:
         if (this->end() != it1) {
           auto it2 = it1->second.find(*(begV + 1));
           if (it1->second.end() != it2) {
-            MZN_MIPD__assert_hard(std::fabs(it2->second.first - A) <
-                                  1e-6 * std::max(std::fabs(it2->second.first), std::fabs(A)));
-            MZN_MIPD__assert_hard(std::fabs(it2->second.second - B) <
-                                  1e-6 * std::max(std::fabs(it2->second.second), std::fabs(B)) +
-                                      1e-6);
-            MZN_MIPD__assert_hard(std::fabs(A) != 0.0);
-            MZN_MIPD__assert_soft(!fVerbose || std::fabs(A) > 1e-12,
-                                  " Very small coef: " << (*begV)->id()->str() << " = " << A
-                                                       << " * " << (*(begV + 1))->id()->str()
-                                                       << " + " << B);
+            MZN_MIPD_assert_hard(std::fabs(it2->second.first - A) <
+                                 1e-6 * std::max(std::fabs(it2->second.first), std::fabs(A)));
+            MZN_MIPD_assert_hard(std::fabs(it2->second.second - B) <
+                                 1e-6 * std::max(std::fabs(it2->second.second), std::fabs(B)) +
+                                     1e-6);
+            MZN_MIPD_assert_hard(std::fabs(A) != 0.0);
+            MZN_MIPD_assert_soft(!fVerbose || std::fabs(A) > 1e-12,
+                                 " Very small coef: " << (*begV)->id()->str() << " = " << A << " * "
+                                                      << (*(begV + 1))->id()->str() << " + " << B);
             if (fReportRepeat) {
-              MZN_MIPD__assert_soft(!fVerbose, "LinEqGraph: eqn between "
-                                                   << (*begV)->id()->str() << " && "
-                                                   << (*(begV + 1))->id()->str()
-                                                   << " is repeated. ");
+              MZN_MIPD_assert_soft(!fVerbose, "LinEqGraph: eqn between "
+                                                  << (*begV)->id()->str() << " && "
+                                                  << (*(begV + 1))->id()->str()
+                                                  << " is repeated. ");
             }
             return true;
           }
@@ -1064,9 +1063,9 @@ private:
 
       template <class ICoef, class IVarDecl>
       void addArc(ICoef begC, IVarDecl begV, double rhs) {
-        MZN_MIPD__assert_soft(!fVerbose || std::fabs(*begC) >= 1e-10,
-                              "  Vars " << (*begV)->id()->str() << "  to "
-                                        << (*(begV + 1))->id()->str() << ": coef=" << (*begC));
+        MZN_MIPD_assert_soft(!fVerbose || std::fabs(*begC) >= 1e-10,
+                             "  Vars " << (*begV)->id()->str() << "  to "
+                                       << (*(begV + 1))->id()->str() << ": coef=" << (*begC));
         // Transform Ax+By=C into x = -B/Ay+C/A
         const double negBA = -(*(begC + 1)) / (*begC);
         const double CA = rhs / (*begC);
@@ -1086,14 +1085,14 @@ private:
       }
       /// Propagate linear relations from the given variable
       void propagate(iterator itStart, TMapVars& mWhereStore) {
-        MZN_MIPD__assert_hard(this->end() != itStart);
+        MZN_MIPD_assert_hard(this->end() != itStart);
         TMatrixVars mTemp;
         mTemp[itStart->first] = itStart->second;  // init with existing
         DBGOUT_MIPD("Propagation started from " << itStart->first->id()->str() << "  having "
                                                 << itStart->second.size() << " connections");
         propagate2(itStart, itStart, std::make_pair(1.0, 0.0), mTemp);
         mWhereStore = mTemp.begin()->second;
-        MZN_MIPD__assert_hard_msg(
+        MZN_MIPD_assert_hard_msg(
             mWhereStore.size() == this->size() - 1,
             "Variable " << (*(mTemp.begin()->first))
                         << " should be connected to all others in the clique, but "
@@ -1122,7 +1121,7 @@ private:
           }
           if (fDive) {
             auto itDST = this->find(itDst->first);
-            MZN_MIPD__assert_hard(this->end() != itDST);
+            MZN_MIPD_assert_hard(this->end() != itDST);
             propagate2(itSrc, itDST, std::make_pair(A1A2, A1B2plusB1), mWhereStore);
           }
         }
@@ -1132,7 +1131,7 @@ private:
 
     TCliqueSorter(MIPD* pm, int iv) : _mipd(*pm), _iVarStart(iv) {}
     void doRelate() {
-      MZN_MIPD__assert_hard(_mipd._vVarDescr[_iVarStart].nClique >= 0);
+      MZN_MIPD_assert_hard(_mipd._vVarDescr[_iVarStart].nClique >= 0);
       const TClique& clq = _mipd._aCliques[_mipd._vVarDescr[_iVarStart].nClique];
       for (const auto& eq2 : clq) {
         leg.addEdge(eq2);
@@ -1190,7 +1189,7 @@ private:
       cls.mRef1[cls.varRef1] = std::make_pair(1.0, 0.0);
 
       int iVarRef1 = cls.varRef1->payload();
-      MZN_MIPD__assert_hard(nClique == mipd._vVarDescr[iVarRef1].nClique);
+      MZN_MIPD_assert_hard(nClique == mipd._vVarDescr[iVarRef1].nClique);
       cls.fRef1HasEqEncode = (mipd._vVarDescr[iVarRef1].pEqEncoding != nullptr);
 
       // First, construct the domain decomposition in any case
@@ -1203,18 +1202,18 @@ private:
       DBGOUT_MIPD("Clique " << nClique << ": main ref var " << cls.varRef1->id()->str()
                             << ", domain dec: " << sDomain);
 
-      MZN_MIPD__ASSERT_FOR_SAT(!sDomain.empty(), mipd.getEnv()->envi(), cls.varRef1->loc(),
-                               "clique " << nClique << ": main ref var " << *cls.varRef1->id()
-                                         << ", domain decomposition seems empty: " << sDomain);
+      MZN_MIPD_ASSERT_FOR_SAT(!sDomain.empty(), mipd.getEnv()->envi(), cls.varRef1->loc(),
+                              "clique " << nClique << ": main ref var " << *cls.varRef1->id()
+                                        << ", domain decomposition seems empty: " << sDomain);
 
-      MZN_MIPD__FLATTENING_ERROR__IF_NOT(sDomain.checkFiniteBounds(), mipd.getEnv()->envi(),
-                                         cls.varRef1->loc(),
-                                         "variable " << *cls.varRef1->id()
-                                                     << " needs finite bounds for linearisation."
-                                                        " Or, use indicator constraints. "
-                                                     << "Current domain is " << sDomain);
+      MZN_MIPD_FLATTENING_ERROR_IF_NOT(sDomain.checkFiniteBounds(), mipd.getEnv()->envi(),
+                                       cls.varRef1->loc(),
+                                       "variable " << *cls.varRef1->id()
+                                                   << " needs finite bounds for linearisation."
+                                                      " Or, use indicator constraints. "
+                                                   << "Current domain is " << sDomain);
 
-      MZN_MIPD__assert_hard(sDomain.checkDisjunctStrict());
+      MZN_MIPD_assert_hard(sDomain.checkDisjunctStrict());
 
       makeRangeDomains();
 
@@ -1231,25 +1230,25 @@ private:
       implementPOSTs();
 
       // Statistics
-      if (sDomain.size() < MIPD__stats[N_POSTs__NSubintvMin]) {
-        MIPD__stats[N_POSTs__NSubintvMin] = static_cast<double>(sDomain.size());
+      if (sDomain.size() < MIPD_stats[N_POSTs_NSubintvMin]) {
+        MIPD_stats[N_POSTs_NSubintvMin] = static_cast<double>(sDomain.size());
       }
-      MIPD__stats[N_POSTs__NSubintvSum] += sDomain.size();
-      if (sDomain.size() > MIPD__stats[N_POSTs__NSubintvMax]) {
-        MIPD__stats[N_POSTs__NSubintvMax] = static_cast<double>(sDomain.size());
+      MIPD_stats[N_POSTs_NSubintvSum] += sDomain.size();
+      if (sDomain.size() > MIPD_stats[N_POSTs_NSubintvMax]) {
+        MIPD_stats[N_POSTs_NSubintvMax] = static_cast<double>(sDomain.size());
       }
       for (const auto& intv : sDomain) {
         const auto nSubSize = intv.right - intv.left;
-        if (nSubSize < MIPD__stats[N_POSTs__SubSizeMin]) {
-          MIPD__stats[N_POSTs__SubSizeMin] = nSubSize;
+        if (nSubSize < MIPD_stats[N_POSTs_SubSizeMin]) {
+          MIPD_stats[N_POSTs_SubSizeMin] = nSubSize;
         }
-        MIPD__stats[N_POSTs__SubSizeSum] += nSubSize;
-        if (nSubSize > MIPD__stats[N_POSTs__SubSizeMax]) {
-          MIPD__stats[N_POSTs__SubSizeMax] = nSubSize;
+        MIPD_stats[N_POSTs_SubSizeSum] += nSubSize;
+        if (nSubSize > MIPD_stats[N_POSTs_SubSizeMax]) {
+          MIPD_stats[N_POSTs_SubSizeMax] = nSubSize;
         }
       }
       if (cls.fRef1HasEqEncode) {
-        ++MIPD__stats[N_POSTs__cliquesWithEqEncode];
+        ++MIPD_stats[N_POSTs_cliquesWithEqEncode];
       }
     }
 
@@ -1257,7 +1256,7 @@ private:
     /// Deltas should be scaled but to a minimum of the target's discr
     /// COmparison sense changes on negated vars
     void projectVariableConstr(VarDecl* vd, std::pair<double, double> eq1) {
-      DBGOUT_MIPD__("  MIPD: projecting variable  ");
+      DBGOUT_MIPD_FLUSH("  MIPD: projecting variable  ");
       DBGOUT_MIPD_SELF(debugprint(vd));
       // Always check if domain becomes empty?         TODO
       const double A = eq1.first;  // vd = A*arg + B.  conversion
@@ -1277,10 +1276,10 @@ private:
           lb = bnds.left;
           ub = bnds.right;
         } else {
-          MZN_MIPD__FLATTENING_ERROR__IF_NOT(0, mipd.getEnv()->envi(), cls.varRef1->loc(),
-                                             "Variable " << vd->id()->str() << " of type "
-                                                         << vd->type().toString(mipd._env->envi())
-                                                         << " has a domain.");
+          MZN_MIPD_FLATTENING_ERROR_IF_NOT(0, mipd.getEnv()->envi(), cls.varRef1->loc(),
+                                           "Variable " << vd->id()->str() << " of type "
+                                                       << vd->type().toString(mipd._env->envi())
+                                                       << " has a domain.");
         }
         //           /// Deleting var domain:
         //           vd->ti()->domain( NULL );
@@ -1295,14 +1294,14 @@ private:
       auto& aCalls = mipd._vVarDescr[vd->payload()].aCalls;
       for (Item* pItem : aCalls) {
         auto* pCI = pItem->dynamicCast<ConstraintI>();
-        MZN_MIPD__assert_hard(pCI != nullptr);
+        MZN_MIPD_assert_hard(pCI != nullptr);
         Call* pCall = pCI->e()->dynamicCast<Call>();
-        MZN_MIPD__assert_hard(pCall != nullptr);
-        DBGOUT_MIPD__("PROPAG CALL  ");
+        MZN_MIPD_assert_hard(pCall != nullptr);
+        DBGOUT_MIPD_FLUSH("PROPAG CALL  ");
         DBGOUT_MIPD_SELF(debugprint(pCall));
         // check the bounds for bool in reifs?                     TODO
         auto ipct = mipd._mCallTypes.find(pCall->decl());
-        MZN_MIPD__assert_hard(mipd._mCallTypes.end() != ipct);
+        MZN_MIPD_assert_hard(mipd._mCallTypes.end() != ipct);
         const DCT& dct = *ipct->second;
         int nCmpType_ADAPTED = dct.nCmpType;
         if (A < 0.0) {                            // negative factor
@@ -1316,15 +1315,15 @@ private:
             convertIntSet(pCall->arg(1), SS, cls.varRef1, A, B);
             if (RIT_Static == dct.nReifType) {
               sDomain.intersect(SS);
-              ++MIPD__stats[N_POSTs__setIn];
+              ++MIPD_stats[N_POSTs_setIn];
             } else {
               sDomain.cutDeltas(SS, std::max(1.0, std::fabs(A)));  // deltas to scale
-              ++MIPD__stats[N_POSTs__setInReif];
+              ++MIPD_stats[N_POSTs_setInReif];
             }
           } break;
           case CT_Comparison:
             if (RIT_Reif == dct.nReifType) {
-              const double rhs = (mipd.aux_float_lt_zero_iff_1__POST == pCall->decl())
+              const double rhs = (mipd.aux_float_lt_zero_iff_1_POST == pCall->decl())
                                      ? B /* + A*0.0, relating to 0 */
                                      // The 2nd argument is constant:
                                      : A * MIPD::expr2Const(pCall->arg(1)) + B;
@@ -1353,13 +1352,12 @@ private:
                   }
                   break;
                 default:
-                  MZN_MIPD__assert_hard_msg(0, " No other reified cmp type ");
+                  MZN_MIPD_assert_hard_msg(0, " No other reified cmp type ");
               }
-              ++MIPD__stats[(vd->ti()->type().isint()) ? N_POSTs__intCmpReif
-                                                       : N_POSTs__floatCmpReif];
+              ++MIPD_stats[(vd->ti()->type().isint()) ? N_POSTs_intCmpReif : N_POSTs_floatCmpReif];
             } else if (RIT_Static == dct.nReifType) {
               // _ne, later maybe static ineq                                 TODO
-              MZN_MIPD__assert_hard(CMPT_NE == dct.nCmpType);
+              MZN_MIPD_assert_hard(CMPT_NE == dct.nCmpType);
               const double rhs = A * MIPD::expr2Const(pCall->arg(1)) + B;
               const double rhsRnd = rndIfInt(cls.varRef1, rhs);
               bool fSkipNE = (cls.varRef1->type().isint() && std::fabs(rhs - rhsRnd) > INT_EPS);
@@ -1367,11 +1365,11 @@ private:
                 const double delta = computeDelta(cls.varRef1, vd, bnds, A, pCall, 2);
                 sDomain.cutOut({rhsRnd - delta, rhsRnd + delta});
               }
-              ++MIPD__stats[(vd->ti()->type().isint()) ? N_POSTs__intNE : N_POSTs__floatNE];
+              ++MIPD_stats[(vd->ti()->type().isint()) ? N_POSTs_intNE : N_POSTs_floatNE];
             } else {  // aux_ relate to 0.0
                       // But we don't modify domain splitting for them currently
-              ++MIPD__stats[(vd->ti()->type().isint()) ? N_POSTs__intAux : N_POSTs__floatAux];
-              MZN_MIPD__assert_hard(RIT_Halfreif == dct.nReifType);
+              ++MIPD_stats[(vd->ti()->type().isint()) ? N_POSTs_intAux : N_POSTs_floatAux];
+              MZN_MIPD_assert_hard(RIT_Halfreif == dct.nReifType);
               //                 const double rhs = B;               // + A*0
               //                 const double delta = vd->type().isint() ? 1.0 : 1e-5;           //
               //                 TODO : eps
@@ -1379,10 +1377,10 @@ private:
             break;
           case CT_Encode:
             // See if any further constraints here?                             TODO
-            ++MIPD__stats[N_POSTs__eq_encode];
+            ++MIPD_stats[N_POSTs_eq_encode];
             break;
           default:
-            MZN_MIPD__assert_hard_msg(0, "Unknown constraint type");
+            MZN_MIPD_assert_hard_msg(0, "Unknown constraint type");
         }
       }
       DBGOUT_MIPD(" Clique domain after proj of " << A << " * " << vd->id()->str() << " + " << B
@@ -1414,7 +1412,7 @@ private:
         double lb0 = (bnds.left - iRef1.second.second) / iRef1.second.first;
         double ub0 = (bnds.right - iRef1.second.second) / iRef1.second.first;
         if (lb0 > ub0) {
-          MZN_MIPD__assert_hard(iRef1.second.first < 0.0);
+          MZN_MIPD_assert_hard(iRef1.second.first < 0.0);
           std::swap(lb0, ub0);
         }
         if (vd->type().isint()) {
@@ -1435,10 +1433,10 @@ private:
       const long long iMin = mipd.expr2ExprArray(
           mipd._vVarDescr[cls.varRef1->payload()].pEqEncoding->e()->dynamicCast<Call>()->arg(1),
           pp);
-      MZN_MIPD__assert_hard(pp.size() >= bnds.right - bnds.left + 1);
-      MZN_MIPD__assert_hard(iMin <= bnds.left);
+      MZN_MIPD_assert_hard(pp.size() >= bnds.right - bnds.left + 1);
+      MZN_MIPD_assert_hard(iMin <= bnds.left);
       long long vEE = iMin;
-      DBGOUT_MIPD__(
+      DBGOUT_MIPD_FLUSH(
           "   SYNC EQ_ENCODE( "
           << (*cls.varRef1) << ",   bitflags: "
           << *(mipd._vVarDescr[cls.varRef1->payload()].pEqEncoding->e()->dynamicCast<Call>()->arg(
@@ -1451,7 +1449,7 @@ private:
           }
           if (pp[vEE - iMin]->isa<Id>()) {
             if (pp[vEE - iMin]->dynamicCast<Id>()->decl()->type().isvar()) {
-              DBGOUT_MIPD__(vEE << ", ");
+              DBGOUT_MIPD_FLUSH(vEE << ", ");
               setVarDomain(pp[vEE - iMin]->dynamicCast<Id>()->decl(), 0.0, 0.0);
             }
           }
@@ -1461,7 +1459,7 @@ private:
       for (; vEE < static_cast<long long>(iMin + pp.size()); ++vEE) {
         if (pp[vEE - iMin]->isa<Id>()) {
           if (pp[vEE - iMin]->dynamicCast<Id>()->decl()->type().isvar()) {
-            DBGOUT_MIPD__(vEE << ", ");
+            DBGOUT_MIPD_FLUSH(vEE << ", ");
             setVarDomain(pp[vEE - iMin]->dynamicCast<Id>()->decl(), 0.0, 0.0);
           }
         }
@@ -1482,7 +1480,7 @@ private:
         if (sDomain.maxInterval() <= mipd.nMaxIntv2Bits ||
             sDomain.cardInt() <= mipd.dMaxNValueDensity * sDomain.size()) {
           sDomain.split2Bits();
-          ++MIPD__stats[N_POSTs__clEEEnforced];
+          ++MIPD_stats[N_POSTs_clEEEnforced];
         }
       }
     }
@@ -1492,14 +1490,14 @@ private:
     void createDomainFlags() {
       std::vector<Expression*> vVars(sDomain.size());  // flags for each subinterval
       std::vector<double> vIntvLB(sDomain.size() + 1);
-      std::vector<double> vIntvUB__(sDomain.size() + 1);
+      std::vector<double> vIntvUB_(sDomain.size() + 1);
       int i = 0;
       double dMaxIntv = -1.0;
       for (const auto& intv : sDomain) {
         intv.varFlag = addIntVar(0.0, 1.0);
         vVars[i] = intv.varFlag->id();
         vIntvLB[i] = intv.left;
-        vIntvUB__[i] = -intv.right;
+        vIntvUB_[i] = -intv.right;
         dMaxIntv = std::max(dMaxIntv, intv.right - intv.left);
         ++i;
       }
@@ -1511,11 +1509,11 @@ private:
       vIntvLB[i] = -1.0;  // var1 >= sum(LBi*flagi)
       /// STRICT equality encoding if small intervals
       if (dMaxIntv > 1e-6) {  // EPS = param?   TODO
-        vIntvUB__[i] = 1.0;   // var1 <= sum(UBi*flagi)
+        vIntvUB_[i] = 1.0;    // var1 <= sum(UBi*flagi)
         addLinConstr(vIntvLB, vVars, CMPT_LE, 0.0);
-        addLinConstr(vIntvUB__, vVars, CMPT_LE, 0.0);
+        addLinConstr(vIntvUB_, vVars, CMPT_LE, 0.0);
       } else {
-        ++MIPD__stats[N_POSTs__clEEFound];
+        ++MIPD_stats[N_POSTs_clEEFound];
         addLinConstr(vIntvLB, vVars, CMPT_EQ, 0.0);
       }
     }
@@ -1524,7 +1522,7 @@ private:
     void implementPOSTs() {
       auto bnds = sDomain.getBounds();
       for (auto& iRef1 : cls.mRef1) {
-        //           DBGOUT_MIPD__( "  MIPD: implementing constraints of variable  " );
+        //           DBGOUT_MIPD_FLUSH( "  MIPD: implementing constraints of variable  " );
         //           DBGOUT_MIPD_SELF( debugprint(vd) );
         VarDecl* vd = iRef1.first;
         auto eq1 = iRef1.second;
@@ -1534,14 +1532,14 @@ private:
         auto& aCalls = mipd._vVarDescr[vd->payload()].aCalls;
         for (Item* pItem : aCalls) {
           auto* pCI = pItem->dynamicCast<ConstraintI>();
-          MZN_MIPD__assert_hard(pCI);
+          MZN_MIPD_assert_hard(pCI);
           Call* pCall = pCI->e()->dynamicCast<Call>();
-          MZN_MIPD__assert_hard(pCall);
-          DBGOUT_MIPD__("IMPL CALL  ");
+          MZN_MIPD_assert_hard(pCall);
+          DBGOUT_MIPD_FLUSH("IMPL CALL  ");
           DBGOUT_MIPD_SELF(debugprint(pCall));
           // check the bounds for bool in reifs?                     TODO
           auto ipct = mipd._mCallTypes.find(pCall->decl());
-          MZN_MIPD__assert_hard(mipd._mCallTypes.end() != ipct);
+          MZN_MIPD_assert_hard(mipd._mCallTypes.end() != ipct);
           const DCT& dct = *ipct->second;
           int nCmpType_ADAPTED = dct.nCmpType;
           if (A < 0.0) {                            // negative factor
@@ -1559,7 +1557,7 @@ private:
               break;
             case CT_Comparison:
               if (RIT_Reif == dct.nReifType) {
-                const double rhs = (mipd.aux_float_lt_zero_iff_1__POST == pCall->decl())
+                const double rhs = (mipd.aux_float_lt_zero_iff_1_POST == pCall->decl())
                                        ? B /* + A*0.0, relating to 0 */
                                        // The 2nd argument is constant:
                                        : A * MIPD::expr2Const(pCall->arg(1)) + B;
@@ -1590,16 +1588,16 @@ private:
                 }
               } else if (RIT_Static == dct.nReifType) {
                 // !hing here for NE
-                MZN_MIPD__assert_hard(CMPT_NE == nCmpType_ADAPTED);
+                MZN_MIPD_assert_hard(CMPT_NE == nCmpType_ADAPTED);
               } else {  // aux_ relate to 0.0
                         // But we don't modify domain splitting for them currently
-                MZN_MIPD__assert_hard(RIT_Halfreif == dct.nReifType);
+                MZN_MIPD_assert_hard(RIT_Halfreif == dct.nReifType);
                 double rhs = B;  // + A*0
                 const double rhsUp = rndUpIfInt(cls.varRef1, rhs);
                 const double rhsDown = rndDownIfInt(cls.varRef1, rhs);
                 const double rhsRnd = rndIfInt(cls.varRef1, rhs);
                 double delta = 0.0;
-                if (mipd.aux_float_lt_zero_if_1__POST == pCall->decl()) {  // only float && lt
+                if (mipd.aux_float_lt_zero_if_1_POST == pCall->decl()) {  // only float && lt
                   delta = computeDelta(cls.varRef1, vd, bnds, A, pCall, 3);
                 }
                 if (nCmpType_ADAPTED < 0) {
@@ -1647,7 +1645,7 @@ private:
                       fUseDD = !fInner;
                     } break;
                     default:
-                      MZN_MIPD__assert_hard_msg(0, "Unknown halfreif cmp type");
+                      MZN_MIPD_assert_hard_msg(0, "Unknown halfreif cmp type");
                   }
                 }
                 if (fUseDD) {  // use sDomain
@@ -1668,7 +1666,7 @@ private:
                       cls.varRef1->ti()->type().isint()
                           ? 1
                           : 2;  // need the type of the variable to be constr
-                  MZN_MIPD__assert_hard(static_cast<unsigned int>(nIdxInd) < pCall->argCount());
+                  MZN_MIPD_assert_hard(static_cast<unsigned int>(nIdxInd) < pCall->argCount());
                   Expression* pInd = pCall->arg(nIdxInd);
                   if (fLE && rhs < bnds.right) {
                     if (rhs >= bnds.left) {
@@ -1696,7 +1694,7 @@ private:
               // See if any further constraints here?                             TODO
               break;
             default:
-              MZN_MIPD__assert_hard_msg(0, "Unknown constraint type");
+              MZN_MIPD_assert_hard_msg(0, "Unknown constraint type");
           }
           pItem->remove();  // removing the call
         }
@@ -1709,19 +1707,19 @@ private:
 
     /// sets varFlag = || <= sum( intv.varFlag : SS )
     void relateReifFlag(Expression* expFlag, const SetOfIntvReal& SS, EnumReifType nRT = RIT_Reif) {
-      MZN_MIPD__assert_hard(RIT_Reif == nRT || RIT_Halfreif == nRT);
-      //         MZN_MIPD__assert_hard( sDomain.size()>=2 );
+      MZN_MIPD_assert_hard(RIT_Reif == nRT || RIT_Halfreif == nRT);
+      //         MZN_MIPD_assert_hard( sDomain.size()>=2 );
       VarDecl* varFlag = MIPD::expr2VarDecl(expFlag);
       std::vector<Expression*> vIntvFlags;
       if (cls.fRef1HasEqEncode) {  // use eq_encoding
-        MZN_MIPD__assert_hard(varFlag->type().isint());
+        MZN_MIPD_assert_hard(varFlag->type().isint());
         std::vector<Expression*> pp;
         auto bnds = sDomain.getBounds();
         const long long iMin = mipd.expr2ExprArray(
             mipd._vVarDescr[cls.varRef1->payload()].pEqEncoding->e()->dynamicCast<Call>()->arg(1),
             pp);
-        MZN_MIPD__assert_hard(pp.size() >= bnds.right - bnds.left + 1);
-        MZN_MIPD__assert_hard(iMin <= bnds.left);
+        MZN_MIPD_assert_hard(pp.size() >= bnds.right - bnds.left + 1);
+        MZN_MIPD_assert_hard(iMin <= bnds.left);
         for (const auto& intv : SS) {
           for (long long vv = (long long)std::max(double(iMin), ceil(intv.left));
                vv <= (long long)std::min(double(iMin) + pp.size() - 1, floor(intv.right)); ++vv) {
@@ -1729,7 +1727,7 @@ private:
           }
         }
       } else {
-        MZN_MIPD__assert_hard(varFlag->type().isint());
+        MZN_MIPD_assert_hard(varFlag->type().isint());
         for (const auto& intv : SS) {
           auto it1 = sDomain.lower_bound(intv.left);
           auto it2 = sDomain.upper_bound(intv.right);
@@ -1737,19 +1735,19 @@ private:
           // Check that we are looking ! into a subinterval:
           if (sDomain.begin() != it11) {
             --it11;
-            MZN_MIPD__assert_hard(it11->right < intv.left);
+            MZN_MIPD_assert_hard(it11->right < intv.left);
           }
           auto it12 = it2;
           if (sDomain.begin() != it12) {
             --it12;
-            MZN_MIPD__assert_hard_msg(it12->right <= intv.right,
-                                      "  relateReifFlag for " << intv << " in " << sDomain);
+            MZN_MIPD_assert_hard_msg(it12->right <= intv.right,
+                                     "  relateReifFlag for " << intv << " in " << sDomain);
           }
           for (it12 = it1; it12 != it2; ++it12) {
             if (it12->varFlag != nullptr) {
               vIntvFlags.push_back(it12->varFlag->id());
             } else {
-              MZN_MIPD__assert_hard(1 == sDomain.size());
+              MZN_MIPD_assert_hard(1 == sDomain.size());
               vIntvFlags.push_back(IntLit::a(1));  // just a constant then
             }
           }
@@ -1784,7 +1782,7 @@ private:
         //           nti->domain(newDom);
         vd->ti()->domain(newDom);
       } else {
-        MZN_MIPD__assert_hard_msg(0, "Unknown var type ");
+        MZN_MIPD_assert_hard_msg(0, "Unknown var type ");
       }
     }
 
@@ -1804,29 +1802,29 @@ private:
     void addLinConstr(std::vector<double>& coefs, std::vector<Expression*>& vars,
                       EnumCmpType nCmpType, double rhs) {
       std::vector<Expression*> args(3);
-      MZN_MIPD__assert_hard(vars.size() >= 2);
+      MZN_MIPD_assert_hard(vars.size() >= 2);
       for (auto* v : vars) {
-        MZN_MIPD__assert_hard(&v);
+        MZN_MIPD_assert_hard(&v);
         //             throw std::string("addLinConstr: &var=NULL");
-        MZN_MIPD__assert_hard_msg(v->isa<Id>() || v->isa<IntLit>() || v->isa<FloatLit>(),
-                                  "  expression at " << (&v) << " eid = " << v->eid()
-                                                     << " while E_INTLIT=" << Expression::E_INTLIT);
+        MZN_MIPD_assert_hard_msg(v->isa<Id>() || v->isa<IntLit>() || v->isa<FloatLit>(),
+                                 "  expression at " << (&v) << " eid = " << v->eid()
+                                                    << " while E_INTLIT=" << Expression::E_INTLIT);
         //             throw std::string("addLinConstr: only id's as variables allowed");
       }
-      MZN_MIPD__assert_hard(coefs.size() == vars.size());
-      MZN_MIPD__assert_hard(CMPT_EQ == nCmpType || CMPT_LE == nCmpType);
+      MZN_MIPD_assert_hard(coefs.size() == vars.size());
+      MZN_MIPD_assert_hard(CMPT_EQ == nCmpType || CMPT_LE == nCmpType);
       DBGOUT_MIPD_SELF(  // LinEq leq; leq.coefs=coefs; leq.vd=vars; leq.rhs=rhs;
-          DBGOUT_MIPD__(" ADDING " << (CMPT_EQ == nCmpType ? "LIN_EQ" : "LIN_LE") << ": [ ");
+          DBGOUT_MIPD_FLUSH(" ADDING " << (CMPT_EQ == nCmpType ? "LIN_EQ" : "LIN_LE") << ": [ ");
           for (auto c
-               : coefs) DBGOUT_MIPD__(c << ',');
-          DBGOUT_MIPD__(" ] * [ "); for (auto v
-                                         : vars) {
-            MZN_MIPD__assert_hard(!v->isa<VarDecl>());
-            if (v->isa<Id>()) DBGOUT_MIPD__(v->dynamicCast<Id>()->str() << ',');
+               : coefs) DBGOUT_MIPD_FLUSH(c << ',');
+          DBGOUT_MIPD_FLUSH(" ] * [ "); for (auto v
+                                             : vars) {
+            MZN_MIPD_assert_hard(!v->isa<VarDecl>());
+            if (v->isa<Id>()) DBGOUT_MIPD_FLUSH(v->dynamicCast<Id>()->str() << ',');
             //             else if ( v->isa<VarDecl>() )
-            //               MZN_MIPD__assert_hard ("addLinConstr: only id's as variables allowed");
+            //               MZN_MIPD_assert_hard ("addLinConstr: only id's as variables allowed");
             else
-              DBGOUT_MIPD__(mipd.expr2Const(v) << ',');
+              DBGOUT_MIPD_FLUSH(mipd.expr2Const(v) << ',');
           } DBGOUT_MIPD(" ] " << (CMPT_EQ == nCmpType ? "== " : "<= ") << rhs););
       std::vector<Expression*> nc_c;
       std::vector<Expression*> nx;
@@ -1839,7 +1837,7 @@ private:
       }
       auto sName = constants().ids.float_.lin_eq;  // "int_lin_eq";
       FunctionI* fDecl = mipd.float_lin_eq;
-      if (fFloat) {  // MZN_MIPD__assert_hard all vars of same type     TODO
+      if (fFloat) {  // MZN_MIPD_assert_hard all vars of same type     TODO
         for (int i = 0; i < vars.size(); ++i) {
           if (fabs(coefs[i]) > 1e-8)  /// Only add terms with non-0 coefs. TODO Eps=param
           {
@@ -1890,7 +1888,7 @@ private:
         }
       }
       if (mipd.getEnv()->envi().cseMapEnd() != mipd.getEnv()->envi().cseMapFind(args[0])) {
-        DBGOUT_MIPD__(" Found expr ");
+        DBGOUT_MIPD_FLUSH(" Found expr ");
         DBGOUT_MIPD_SELF(debugprint(args[0]));
       }
       auto* nc = new Call(Location().introduce(), ASTString(sName), args);
@@ -1901,7 +1899,7 @@ private:
 
     /// domain / reif set of one variable into that for a!her
     void convertIntSet(Expression* e, SetOfIntvReal& s, VarDecl* varTarget, double A, double B) {
-      MZN_MIPD__assert_hard(A != 0.0);
+      MZN_MIPD_assert_hard(A != 0.0);
       if (e->type().isIntSet()) {
         IntSetVal* S = eval_intset(mipd.getEnv()->envi(), e);
         IntSetRanges domr(S);
@@ -1951,11 +1949,11 @@ private:
   };  // class DomainDecomp
 
   /// Vars without explicit clique still need a decomposition.
-  /// Have !iced all __POSTs, set_in's && eq_encode's to it BEFORE
+  /// Have !iced all _POSTs, set_in's && eq_encode's to it BEFORE
   /// In each clique, relate all vars to one chosen
   /// Find all "smallest rel. factor" variables, integer && with eq_encode if avail
   /// Re-relate all vars to it
-  /// Refer all __POSTs && dom() to it
+  /// Refer all _POSTs && dom() to it
   /// build domain decomposition
   /// Implement all domain constraints, incl. possible corresp, of eq_encode's
   ///
@@ -1977,7 +1975,7 @@ private:
         _vVarDescr[iVar].fDomainConstrProcessed = 1U;
       }
     }
-    // Clean up __POSTs:
+    // Clean up _POSTs:
     for (auto& vVar : _vVarDescr) {
       for (auto* pCallI : vVar.aCalls) {
         pCallI->remove();
@@ -1993,17 +1991,17 @@ private:
     // The requirement to have actual variable objects
     // might be a limitation if more optimizations are done before...
     // Might need to flexibilize this                       TODO
-    //       MZN_MIPD__assert_hard_msg( ! arg->dynamicCast<IntLit>(),
+    //       MZN_MIPD_assert_hard_msg( ! arg->dynamicCast<IntLit>(),
     //                                  "Expression " << *arg << " is an IntLit!" );
-    //       MZN_MIPD__assert_hard( ! arg->dynamicCast<FloatLit>() );
-    //       MZN_MIPD__assert_hard( ! arg->dynamicCast<BoolLit>() );
+    //       MZN_MIPD_assert_hard( ! arg->dynamicCast<FloatLit>() );
+    //       MZN_MIPD_assert_hard( ! arg->dynamicCast<BoolLit>() );
     Id* id = arg->dynamicCast<Id>();
-    //       MZN_MIPD__assert_hard(id);
+    //       MZN_MIPD_assert_hard(id);
     if (nullptr == id) {
       return nullptr;  // the call using this should be ignored?
     }
     VarDecl* vd = id->decl();
-    MZN_MIPD__assert_hard(vd);
+    MZN_MIPD_assert_hard(vd);
     return vd;
   }
 
@@ -2039,8 +2037,8 @@ private:
     if (auto* bl = arg->dynamicCast<BoolLit>()) {
       return static_cast<double>(bl->v());
     }
-    MZN_MIPD__assert_hard_msg(0, "unexpected expression instead of an int/float/bool literal: eid="
-                                     << arg->eid() << " while E_INTLIT=" << Expression::E_INTLIT);
+    MZN_MIPD_assert_hard_msg(0, "unexpected expression instead of an int/float/bool literal: eid="
+                                    << arg->eid() << " while E_INTLIT=" << Expression::E_INTLIT);
 
     return 0.0;
   }
@@ -2052,7 +2050,7 @@ private:
 
   template <class Elem, size_t N>
   void checkOrResize(std::array<Elem, N>& cnt, size_t sz) {
-    MZN_MIPD__assert_hard(cnt.size() == sz);
+    MZN_MIPD_assert_hard(cnt.size() == sz);
   }
 
   template <class Array>
@@ -2060,7 +2058,7 @@ private:
     ArrayLit* al = eval_array_lit(getEnv()->envi(), arg);
     //       if ( typeid(typename Array::pointer) == typeid(typename Array::iterator) )  // fixed
     //       array
-    //         MZN_MIPD__assert_hard( vals.size() == al->v().size() );
+    //         MZN_MIPD_assert_hard( vals.size() == al->v().size() );
     //       else
     //         vals.resize( al->v().size() );
     checkOrResize(vals, al->size());
@@ -2088,32 +2086,32 @@ private:
     }
     //       os << "N cliques " << _aCliques.size() << "  total, "
     //          << nc << " final" << std::endl;
-    MZN_MIPD__assert_hard(nc);
-    MIPD__stats[N_POSTs__eqNmapsize] = static_cast<double>(_mNViews.size());
-    double nSubintvAve = MIPD__stats[N_POSTs__NSubintvSum] / nc;
-    MZN_MIPD__assert_hard(MIPD__stats[N_POSTs__NSubintvSum]);
-    double dSubSizeAve = MIPD__stats[N_POSTs__SubSizeSum] / MIPD__stats[N_POSTs__NSubintvSum];
-    os << MIPD__stats[N_POSTs__all]
+    MZN_MIPD_assert_hard(nc);
+    MIPD_stats[N_POSTs_eqNmapsize] = static_cast<double>(_mNViews.size());
+    double nSubintvAve = MIPD_stats[N_POSTs_NSubintvSum] / nc;
+    MZN_MIPD_assert_hard(MIPD_stats[N_POSTs_NSubintvSum]);
+    double dSubSizeAve = MIPD_stats[N_POSTs_SubSizeSum] / MIPD_stats[N_POSTs_NSubintvSum];
+    os << MIPD_stats[N_POSTs_all]
        << " POSTs"
-#ifdef __MZN__MIPDOMAINS__PRINTMORESTATS
+#ifdef MZN_MIPDOMAINS_PRINTMORESTATS
           " [ ";
-    for (int i = N_POSTs__intCmpReif; i <= N_POSTs__floatAux; ++i) {
-      os << MIPD__stats[i] << ',';
+    MZN_MIPDOMAINS_PRINTMORESTATS
+    for (int i = N_POSTs_intCmpReif; i <= N_POSTs_floatAux; ++i) {
+      os << MIPD_stats[i] << ',';
     }
     os << " ], LINEQ [ ";
-    for (int i = N_POSTs__eq2intlineq; i <= N_POSTs__eqNmapsize; ++i) {
-      os << MIPD__stats[i] << ',';
+    for (int i = N_POSTs_eq2intlineq; i <= N_POSTs_eqNmapsize; ++i) {
+      os << MIPD_stats[i] << ',';
     }
     os << " ]"
 #endif
           ", "
-       << MIPD__stats[N_POSTs__varsDirect] << " / " << MIPD__stats[N_POSTs__varsInvolved]
-       << " vars, " << nc << " cliques, " << MIPD__stats[N_POSTs__NSubintvMin] << " / "
-       << nSubintvAve << " / " << MIPD__stats[N_POSTs__NSubintvMax] << " NSubIntv m/a/m, "
-       << MIPD__stats[N_POSTs__SubSizeMin] << " / " << dSubSizeAve << " / "
-       << MIPD__stats[N_POSTs__SubSizeMax] << " SubIntvSize m/a/m, "
-       << MIPD__stats[N_POSTs__cliquesWithEqEncode] << "+" << MIPD__stats[N_POSTs__clEEEnforced]
-       << "(" << MIPD__stats[N_POSTs__clEEFound] << ")"
+       << MIPD_stats[N_POSTs_varsDirect] << " / " << MIPD_stats[N_POSTs_varsInvolved] << " vars, "
+       << nc << " cliques, " << MIPD_stats[N_POSTs_NSubintvMin] << " / " << nSubintvAve << " / "
+       << MIPD_stats[N_POSTs_NSubintvMax] << " NSubIntv m/a/m, " << MIPD_stats[N_POSTs_SubSizeMin]
+       << " / " << dSubSizeAve << " / " << MIPD_stats[N_POSTs_SubSizeMax] << " SubIntvSize m/a/m, "
+       << MIPD_stats[N_POSTs_cliquesWithEqEncode] << "+" << MIPD_stats[N_POSTs_clEEEnforced] << "("
+       << MIPD_stats[N_POSTs_clEEFound] << ")"
        << " clq eq_encoded ";
     //       << std::flush
     if (TCliqueSorter::LinEqGraph::dCoefMax > 1.0) {
@@ -2158,7 +2156,7 @@ void SetOfIntervals<N>::cutDeltas(const SetOfIntervals<N1>& s2, N1 delta) {
 }
 template <class N>
 void SetOfIntervals<N>::cutOut(const Interval<N>& intv) {
-  DBGOUT_MIPD__("Cutting " << intv << " from " << (*this));
+  DBGOUT_MIPD_FLUSH("Cutting " << intv << " from " << (*this));
   if (this->empty()) {
     return;
   }
@@ -2169,23 +2167,23 @@ void SetOfIntervals<N>::cutOut(const Interval<N>& intv) {
   if (this->begin() != it1) {
     --it1;
     const N it1l = it1->left;
-    MZN_MIPD__assert_hard(it1l <= intv.left);
+    MZN_MIPD_assert_hard(it1l <= intv.left);
     if (it1->right > intv.left) {  // split it
       it2Del1 = split(it1, intv.left).second;
       //         it1->right = intv.left;  READ-ONLY
       //         this->erase(it1);
       //         it1 = this->end();
       //         auto iR = this->insert( Interval<N>( it1l, intv.left ) );
-      //         MZN_MIPD__assert_hard( iR.second );
+      //         MZN_MIPD_assert_hard( iR.second );
     }
   }
-  DBGOUT_MIPD__("; after split 1: " << (*this));
+  DBGOUT_MIPD_FLUSH("; after split 1: " << (*this));
   // Processing the right end:
   auto it2 = this->lower_bound(Interval<N>(intv.right, intv.right + 1));
   auto it2Del2 = it2;
   if (this->begin() != it2) {
     --it2;
-    MZN_MIPD__assert_hard(it2->left < intv.right);
+    MZN_MIPD_assert_hard(it2->left < intv.right);
     const N it2r = it2->right;
     if ((Interval<N>::infPlus() == intv.right) ? (it2r > intv.right)
                                                : (it2r >= intv.right)) {  // >=: split it
@@ -2199,19 +2197,19 @@ void SetOfIntervals<N>::cutOut(const Interval<N>& intv) {
       }
     }
   }
-  DBGOUT_MIPD__("; after split 2: " << (*this));
-  DBGOUT_MIPD__("; cutting out: " << SetOfIntervals(it2Del1, it2Del2));
+  DBGOUT_MIPD_FLUSH("; after split 2: " << (*this));
+  DBGOUT_MIPD_FLUSH("; cutting out: " << SetOfIntervals(it2Del1, it2Del2));
 #ifdef MZN_DBG_CHECK_ITER_CUTOUT
   {
     auto it = this->begin();
     int nO = 0;
     do {
       if (it == it2Del1) {
-        MZN_MIPD__assert_hard(!nO);
+        MZN_MIPD_assert_hard(!nO);
         ++nO;
       }
       if (it == it2Del2) {
-        MZN_MIPD__assert_hard(1 == nO);
+        MZN_MIPD_assert_hard(1 == nO);
         ++nO;
       }
       if (this->end() == it) {
@@ -2219,7 +2217,7 @@ void SetOfIntervals<N>::cutOut(const Interval<N>& intv) {
       }
       ++it;
     } while (true);
-    MZN_MIPD__assert_hard(2 == nO);
+    MZN_MIPD_assert_hard(2 == nO);
   }
 #endif
   this->erase(it2Del1, it2Del2);
@@ -2227,8 +2225,8 @@ void SetOfIntervals<N>::cutOut(const Interval<N>& intv) {
 }
 template <class N>
 typename SetOfIntervals<N>::SplitResult SetOfIntervals<N>::split(iterator& it, N pos) {
-  MZN_MIPD__assert_hard(pos >= it->left);
-  MZN_MIPD__assert_hard(pos <= it->right);
+  MZN_MIPD_assert_hard(pos >= it->left);
+  MZN_MIPD_assert_hard(pos <= it->right);
   Interval<N> intvOld = *it;
   this->erase(it);
   auto it_01 = this->insert(Interval<N>(intvOld.left, pos));

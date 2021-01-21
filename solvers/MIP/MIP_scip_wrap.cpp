@@ -583,8 +583,13 @@ void MIPScipWrapper::addTimes(int x, int y, int z, const string& rowName) {
 #define EVENTHDLR_NAME "bestsol"
 #define EVENTHDLR_DESC "event handler for best solutions found"
 
+namespace {
 // Dirty way of accessing SCIP functions inside C callbacks
-static ScipPlugin* _cb_plugin;
+ScipPlugin* _cb_plugin;
+
+MIPWrapper::CBUserInfo* cbuiPtr = nullptr;
+SCIP_VAR** _scipVarsPtr = nullptr;
+}  // namespace
 
 /** initialization method of event handler (called after problem was transformed) */
 static SCIP_DECL_EVENTINIT(eventInitBestsol) { /*lint --e{715}*/
@@ -611,9 +616,6 @@ static SCIP_DECL_EVENTEXIT(eventExitBestsol) { /*lint --e{715}*/
 
   return SCIP_OKAY;
 }
-
-static MIPWrapper::CBUserInfo* cbuiPtr = nullptr;
-static SCIP_VAR** _scipVarsPtr = nullptr;
 
 /** execution method of event handler */
 static SCIP_DECL_EVENTEXEC(eventExecBestsol) { /*lint --e{715}*/

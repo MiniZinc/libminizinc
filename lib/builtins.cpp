@@ -1785,7 +1785,7 @@ std::string b_show_json(EnvI& env, Call* call) {
 }
 
 Expression* b_output_json(EnvI& env, Call* call) {
-  return create__json_output(env, false, false, false);
+  return create_json_output(env, false, false, false);
 }
 Expression* b_output_json_parameters(EnvI& env, Call* call) {
   std::vector<Expression*> outputVars;

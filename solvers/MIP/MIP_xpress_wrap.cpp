@@ -449,7 +449,7 @@ static MIPWrapper::Status convert_status(int xpressStatus) {
     case XPRB_MIP_NO_SOL_FOUND:
       return MIPWrapper::Status::UNKNOWN;
     case XPRB_MIP_NOT_LOADED:
-      return MIPWrapper::Status::__ERROR;
+      return MIPWrapper::Status::ERROR_STATUS;
     default:
       return MIPWrapper::Status::UNKNOWN;
   }

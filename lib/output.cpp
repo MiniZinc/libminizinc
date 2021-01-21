@@ -217,7 +217,7 @@ void make_par(EnvI& env, Expression* e) {
         bool outputObjective = (c.argCount() == 1 && eval_bool(env, c.arg(0)));
         c.id(ASTString("array1d"));
         Expression* json =
-            copy(env, env.cmap, create__json_output(env, outputObjective, false, false));
+            copy(env, env.cmap, create_json_output(env, outputObjective, false, false));
         std::vector<Expression*> new_args({json});
         new_args[0]->type(Type::parstring(1));
         c.args(new_args);
@@ -738,8 +738,8 @@ void create_dzn_output_item(EnvI& e, bool outputObjective, bool includeOutputIte
   e.model->addItem(newOutputItem);
 }
 
-ArrayLit* create__json_output(EnvI& e, bool outputObjective, bool includeOutputItem,
-                              bool hasChecker) {
+ArrayLit* create_json_output(EnvI& e, bool outputObjective, bool includeOutputItem,
+                             bool hasChecker) {
   std::vector<Expression*> outputVars;
   outputVars.push_back(new StringLit(Location().introduce(), "{\n"));
 
@@ -867,7 +867,7 @@ void create_json_output_item(EnvI& e, bool outputObjective, bool includeOutputIt
                              bool hasChecker) {
   auto* newOutputItem =
       new OutputI(Location().introduce(),
-                  create__json_output(e, outputObjective, includeOutputItem, hasChecker));
+                  create_json_output(e, outputObjective, includeOutputItem, hasChecker));
   e.model->addItem(newOutputItem);
 }
 

@@ -38,15 +38,15 @@ public:
   // NOLINTNEXTLINE(readability-identifier-naming)
   int(XPRS_CC* XPRSsetlogfile)(XPRSprob prob, const char* logname);
   // NOLINTNEXTLINE(readability-identifier-naming)
-  int(XPRS_CC* XPRSsetintcontrol)(XPRSprob prob, int _index, int _ivalue);
+  int(XPRS_CC* XPRSsetintcontrol)(XPRSprob prob, int index, int ivalue);
   // NOLINTNEXTLINE(readability-identifier-naming)
-  int(XPRS_CC* XPRSsetdblcontrol)(XPRSprob prob, int _index, double _dvalue);
+  int(XPRS_CC* XPRSsetdblcontrol)(XPRSprob prob, int index, double dvalue);
   // NOLINTNEXTLINE(readability-identifier-naming)
   double(XB_CC* XPRBgetsol)(struct Xbvar* var);
   // NOLINTNEXTLINE(readability-identifier-naming)
-  int(XPRS_CC* XPRSgetintattrib)(XPRSprob prob, int _index, int* _ivalue);
+  int(XPRS_CC* XPRSgetintattrib)(XPRSprob prob, int index, int* ivalue);
   // NOLINTNEXTLINE(readability-identifier-naming)
-  int(XPRS_CC* XPRSgetdblattrib)(XPRSprob prob, int _index, double* _dvalue);
+  int(XPRS_CC* XPRSgetdblattrib)(XPRSprob prob, int index, double* dvalue);
   // NOLINTNEXTLINE(readability-identifier-naming)
   int(XB_CC* XPRBbegincb)(struct Xbprob* prob, struct xo_prob_struct* optprob);
   // NOLINTNEXTLINE(readability-identifier-naming)
@@ -95,20 +95,20 @@ public:
   int(XPRS_CC* XPRSgetcontrolinfo)(XPRSprob prob, const char* sCaName, int* iHeaderId,
                                    int* iTypeinfo);
   // NOLINTNEXTLINE(readability-identifier-naming)
-  int(XPRS_CC* XPRSgetintcontrol)(XPRSprob prob, int _index, int* _ivalue);
+  int(XPRS_CC* XPRSgetintcontrol)(XPRSprob prob, int index, int* ivalue);
   // NOLINTNEXTLINE(readability-identifier-naming)
-  int(XPRS_CC* XPRSgetintcontrol64)(XPRSprob prob, int _index, XPRSint64* _ivalue);
+  int(XPRS_CC* XPRSgetintcontrol64)(XPRSprob prob, int index, XPRSint64* ivalue);
   // NOLINTNEXTLINE(readability-identifier-naming)
-  int(XPRS_CC* XPRSgetdblcontrol)(XPRSprob prob, int _index, double* _dvalue);
+  int(XPRS_CC* XPRSgetdblcontrol)(XPRSprob prob, int index, double* dvalue);
   // NOLINTNEXTLINE(readability-identifier-naming)
-  int(XPRS_CC* XPRSgetstrcontrol)(XPRSprob prob, int _index, char* _svalue);
+  int(XPRS_CC* XPRSgetstrcontrol)(XPRSprob prob, int index, char* svalue);
   // NOLINTNEXTLINE(readability-identifier-naming)
-  int(XPRS_CC* XPRSsetintcontrol64)(XPRSprob prob, int _index, XPRSint64 _ivalue);
+  int(XPRS_CC* XPRSsetintcontrol64)(XPRSprob prob, int index, XPRSint64 ivalue);
   // NOLINTNEXTLINE(readability-identifier-naming)
-  int(XPRS_CC* XPRSgetstringcontrol)(XPRSprob prob, int _index, char* _svalue, int _svaluesize,
-                                     int* _controlsize);
+  int(XPRS_CC* XPRSgetstringcontrol)(XPRSprob prob, int index, char* svalue, int svaluesize,
+                                     int* controlsize);
   // NOLINTNEXTLINE(readability-identifier-naming)
-  int(XPRS_CC* XPRSsetstrcontrol)(XPRSprob prob, int _index, const char* _svalue);
+  int(XPRS_CC* XPRSsetstrcontrol)(XPRSprob prob, int index, const char* svalue);
 
 private:
   void loadDll();
@@ -130,8 +130,8 @@ public:
     int msgLevel = 0;
     int timeout = 0;
     int numSolutions = 0;
-    std::string logFile = "";
-    std::string writeModelFile = "";
+    std::string logFile;
+    std::string writeModelFile;
     std::string writeModelFormat = "lp";
     double absGap = 0;
     double relGap = 0.0001;
