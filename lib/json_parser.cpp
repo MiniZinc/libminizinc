@@ -252,6 +252,14 @@ string JSONParser::expectString(istream& is) {
   return rt.s;
 }
 
+int JSONParser::expectInt(istream& is) {
+  Token rt = readToken(is);
+  if (rt.t != T_INT) {
+    throw JSONError(_env, errLocation(), "unexpected token, expected int");
+  }
+  return rt.i;
+}
+
 void JSONParser::expectEof(istream& is) {
   Token rt = readToken(is);
   if (rt.t != T_EOF) {
@@ -277,17 +285,20 @@ Expression* JSONParser::parseEnum(std::istream& is) {
 }
 
 Expression* JSONParser::parseEnumObject(std::istream& is, const std::string& seen) {
-  // precondition: already parsed '{ "e" :' or '{ "c" :'
-  //               seen = "e" or "c"
+  // precondition: already parsed '{ "e" :' or '{ "c" :' or '{ "i":'
+  //               seen = "e" or "c" or "i"
   auto key = seen;
   Expression* e;
   std::string c;
+  int i = -1;
 
   for (;;) {
     if (key == "e") {
       e = parseEnum(is);
-    } else if (key == "c") {
+    } else if (key == "c" && i == -1) {
       c = expectString(is);
+    } else if (key == "i" && c.empty()) {
+      i = expectInt(is);
     } else {
       throw JSONError(_env, errLocation(), "invalid enum object");
     }
@@ -299,11 +310,14 @@ Expression* JSONParser::parseEnumObject(std::istream& is, const std::string& see
         expectToken(is, T_COLON);
         break;
       case T_OBJ_CLOSE:
-        if (e == nullptr) {
+        if (e == nullptr || (i != -1 && !e->isa<Id>())) {
           throw JSONError(_env, errLocation(), "invalid enum object");
         }
         if (!c.empty()) {
           return new Call(Location().introduce(), c, {e});
+        }
+        if (i != -1) {
+          return new Call(Location().introduce(), "to_enum", {e, IntLit::a(i)});
         }
         return e;
       default:
@@ -438,7 +452,7 @@ Expression* JSONParser::parseObject(istream& is, bool possibleString) {
 
     return new SetLit(Location().introduce(), exprs);
   }
-  if (objid.s == "e" || objid.s == "c") {
+  if (objid.s == "e" || objid.s == "c" || objid.s == "i") {
     return parseEnumObject(is, objid.s);
   }
   throw JSONError(_env, errLocation(), "invalid object");

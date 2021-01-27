@@ -53,6 +53,7 @@ protected:
   Token readToken(std::istream& is);
   void expectToken(std::istream& is, TokenT t);
   std::string expectString(std::istream& is);
+  int expectInt(std::istream& is);
   void expectEof(std::istream& is);
   Expression* parseEnum(std::istream& is);
   Expression* parseEnumObject(std::istream& is, const std::string& seen);
