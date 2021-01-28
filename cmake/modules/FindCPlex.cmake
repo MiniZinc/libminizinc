@@ -61,7 +61,7 @@ find_package_handle_standard_args(CPlex
   FOUND_VAR CPLEX_FOUND
   REQUIRED_VARS CPLEX_INCLUDE CPLEX_LIBRARY
   VERSION_VAR CPLEX_VERSION
-  FAIL_MESSAGE "Could NOT find CPlex, use CPLEX_ROOT to hint its location"
+  FAIL_MESSAGE "Could NOT find CPlex, use CPlex_ROOT to hint its location"
 )
 
 if(CPLEX_PLUGIN AND HAS_WINDOWS_H AND NOT HAS_DLFCN_H)

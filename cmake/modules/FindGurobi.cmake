@@ -69,7 +69,7 @@ find_package_handle_standard_args(Gurobi
   FOUND_VAR GUROBI_FOUND
   REQUIRED_VARS GUROBI_INCLUDE GUROBI_LIBRARY
   VERSION_VAR GUROBI_VERSION
-  FAIL_MESSAGE "Could NOT find Gurobi, use GUROBI_ROOT to hint its location"
+  FAIL_MESSAGE "Could NOT find Gurobi, use Gurobi_ROOT to hint its location"
 )
 
 if(GUROBI_PLUGIN AND HAS_WINDOWS_H AND NOT HAS_DLFCN_H)
