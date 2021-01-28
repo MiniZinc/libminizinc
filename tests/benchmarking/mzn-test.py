@@ -5,7 +5,6 @@
 ##  checks solutions and compares to given solution logs.
 
 ##  TODO type errors etc. when checking?
-##  TODO -a for optimization only
 ##  TODO continuous output dumping as option
 ##  TODO CPU/user time limit, proper memory limit (setrlimit not working)
 
@@ -218,7 +217,7 @@ class MZT_Param:
               s_CommentKey: [ "THE INITIALIZING BACKEND." ],
               "EXE": {
                 s_CommentKey: [ "Solver call parameters" ],
-                "s_SolverCall" : ["minizinc -v -s -a " + sDZNOutputAgrs + " %s",
+                "s_SolverCall" : ["minizinc -v -s -i " + sDZNOutputAgrs + " %s",
                   "/// The 1st element defines the call line. %s is replaced by the instance filename(s)."],
                 "s_ExtraCmdline" : ["", "/// Only for __BE_SOLVER/__BE_CHECKER... subprofiles."
                                         " The 1st element gives extra cmdline arguments to the call"],
@@ -281,7 +280,7 @@ class MZT_Param:
             "__BE_SOLVER": {
               s_CommentKey: ["Specializations for a general solver" ],
               "EXE": {
-                "s_ExtraCmdline" : ["-a"],
+                "s_ExtraCmdline" : ["-i"],
                 "b_ThruShell"  : [True],
                 "n_TimeoutRealHard": [150],
                 #  "n_VMEMLIMIT_SoftHard": [8000100000, 8100000000]
