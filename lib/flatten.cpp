@@ -3130,8 +3130,14 @@ void flatten(Env& e, FlatteningOptions opt) {
             GCLock lock;
             IntSetVal* dom = eval_intset(env, vdi->e()->ti()->domain());
 
+            if (0 == dom->size()) {
+              std::ostringstream oss;
+              oss << "Variable has empty domain: " << (*vdi->e());
+              env.fail(oss.str());
+            }
+
             bool needRangeDomain = onlyRangeDomains;
-            if (!needRangeDomain && dom->size() > 0) {
+            if (!needRangeDomain) {
               if (dom->min(0).isMinusInfinity() || dom->max(dom->size() - 1).isPlusInfinity()) {
                 needRangeDomain = true;
               }
@@ -3191,6 +3197,11 @@ void flatten(Env& e, FlatteningOptions opt) {
               vdi->e()->ti()->domain() != nullptr) {
             GCLock lock;
             FloatSetVal* vdi_dom = eval_floatset(env, vdi->e()->ti()->domain());
+            if (0 == vdi_dom->size()) {
+              std::ostringstream oss;
+              oss << "Variable has empty domain: " << (*vdi->e());
+              env.fail(oss.str());
+            }
             FloatVal vmin = vdi_dom->min();
             FloatVal vmax = vdi_dom->max();
             if (vmin == -FloatVal::infinity() && vmax == FloatVal::infinity()) {
