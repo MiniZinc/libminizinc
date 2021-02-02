@@ -3503,7 +3503,7 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
   os << ",\n  \"method\": \"";
   os << _ifc.method;
   os << "\"";
-  os << ",\n  \"has_outputItem\": " << (_ifc.outputItem ? "true" : "false");
+  os << ",\n  \"has_output_item\": " << (_ifc.outputItem ? "true" : "false");
   os << ",\n  \"included_files\": [\n" << _ifc.ossIncludedFiles.str() << "\n  ]";
   os << "\n}\n";
 }
