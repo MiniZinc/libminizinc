@@ -638,14 +638,6 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
 
   vd->flat(vd);
 
-  // Copy annotations from origVd
-  if (origVd != nullptr) {
-    for (ExpressionSetIter it = origVd->ann().begin(); it != origVd->ann().end(); ++it) {
-      EE ee_ann = flat_exp(env, Ctx(), *it, nullptr, constants().varTrue);
-      vd->addAnnotation(ee_ann.r());
-    }
-  }
-
   if (!hasBeenAdded) {
     if (FunctionI* fi = env.model->matchRevMap(env, vd->type())) {
       // We need to introduce a reverse mapper
@@ -659,6 +651,44 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
     env.flatAddItem(ni);
     EE ee(vd, nullptr);
     env.cseMapInsert(vd->id(), ee);
+  }
+
+  // Copy annotations from origVd
+  if (origVd != nullptr) {
+    for (ExpressionSetIter it = origVd->ann().begin(); it != origVd->ann().end(); ++it) {
+      // Check if we need to add the annotated expression as an argument
+      Call* addAnnotatedExpression;
+      if ((*it)->isa<Id>()) {
+        addAnnotatedExpression = (*it)->cast<Id>()->decl()->ann().getCall(constants().ann.mzn_add_annotated_expression);
+      } else {
+        addAnnotatedExpression = (*it)->cast<Call>()->decl()->ann().getCall(constants().ann.mzn_add_annotated_expression);
+      }
+      Expression* ann;
+      if (addAnnotatedExpression != nullptr) {
+        Call* c;
+        if ((*it)->isa<Id>()) {
+          c = new Call(Location().introduce(), (*it)->cast<Id>()->v(), {vd->id()});
+        } else {
+          int annotatedExpressionIdx = eval_int(env, addAnnotatedExpression->arg(0)).toInt();
+          Call* orig_call = (*it)->cast<Call>();
+          std::vector<Expression*> args(orig_call->argCount()+1);
+          for (int i=0, j=0; i < orig_call->argCount(); i++) {
+            if (j == annotatedExpressionIdx) {
+              args[j++] = vd->id();
+            }
+            args[j++] = orig_call->arg(i);
+          }
+          c = new Call(Location().introduce(), (*it)->cast<Call>()->id(), args);
+        }
+        c->decl(env.model->matchFn(env,c,false));
+        c->type(Type::ann());
+        ann = c;
+      } else {
+        ann = *it;
+      }
+      EE ee_ann = flat_exp(env, Ctx(), ann, nullptr, constants().varTrue);
+      vd->addAnnotation(ee_ann.r());
+    }
   }
 
   return vd;

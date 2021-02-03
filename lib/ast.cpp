@@ -1650,6 +1650,9 @@ Constants::Constants() {
   ann.mzn_was_undefined->type(Type::ann());
   ann.array_check_form = new Id(Location(), ASTString("array_check_form"), nullptr);
   ann.array_check_form->type(Type::ann());
+  ann.annotated_expression = new Id(Location(), ASTString("annotated_expression"), nullptr);
+  ann.annotated_expression->type(Type::ann());
+  ann.mzn_add_annotated_expression = ASTString("mzn_add_annotated_expression");
 
   cli.cmdlineData_short_str = ASTString("-D");
   cli.cmdlineData_str = ASTString("--cmdline-data");
@@ -1872,7 +1875,8 @@ void Constants::mark(MINIZINC_GC_STAT_ARGS) {
   Expression::mark(ann.domain_change_constraint);
   ann.mzn_deprecated.mark();
   Expression::mark(ann.mzn_was_undefined);
-  Expression::mark(ann.array_check_form);
+  Expression::mark(ann.annotated_expression);
+  ann.mzn_add_annotated_expression.mark();
 
   cli.cmdlineData_short_str.mark();
   cli.cmdlineData_str.mark();

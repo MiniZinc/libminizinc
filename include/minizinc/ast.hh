@@ -1882,6 +1882,8 @@ public:
     ASTString mzn_deprecated;      // NOLINT(readability-identifier-naming)
     Id* mzn_was_undefined;         // NOLINT(readability-identifier-naming)
     Id* array_check_form;          // NOLINT(readability-identifier-naming)
+    Id* annotated_expression;      // NOLINT(readability-identifier-naming)
+    ASTString mzn_add_annotated_expression; // NOLINT(readability-identifier-naming)
   } ann;
 
   /// Command line options

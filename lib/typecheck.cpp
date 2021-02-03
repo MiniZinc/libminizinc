@@ -2673,13 +2673,51 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     EnvI& env;
     Model* model;
     std::vector<FunctionI*>& fis;
-    TSVFuns(EnvI& env0, Model* model0, std::vector<FunctionI*>& fis0)
-        : env(env0), model(model0), fis(fis0) {}
+    std::vector<TypeError>& typeErrors;
+    TSVFuns(EnvI& env0, Model* model0, std::vector<FunctionI*>& fis0, std::vector<TypeError>& typeErrors0)
+        : env(env0), model(model0), fis(fis0), typeErrors(typeErrors0) {}
     void vFunctionI(FunctionI* i) {
       (void)model->registerFn(env, i);
       fis.push_back(i);
+      // check if one of the arguments is annotated with ::annotated_expression
+      int reifiedAnnotationIdx = -1;
+      for (int j=0; j<i->params().size(); j++) {
+        Expression* param = i->params()[j];
+        for (auto ii : param->ann()) {
+          if (ii->isa<Id>() && ii->cast<Id>()->v()==constants().ann.annotated_expression->v()) {
+            if (reifiedAnnotationIdx >= 0) {
+              typeErrors.emplace_back(env, param->loc(), "only one argument can be annotated with annotated_expression");
+            }
+            reifiedAnnotationIdx = j;
+          }
+        }
+      }
+      if (reifiedAnnotationIdx >= 0) {
+        GCLock lock;
+        if (i->params().size()==1) {
+          // turn into atomic annotation
+          TypeInst* ti = new TypeInst(Location().introduce(), Type::ann());
+          VarDecl* vd = new VarDecl(Location().introduce(), ti, i->id());
+          vd->ann().add(new Call(Location().introduce(), constants().ann.mzn_add_annotated_expression, {IntLit::a(0)}));
+          model->addItem(new VarDeclI(Location().introduce(), vd));
+        } else {
+          // turn into annotation function with one argument less
+          std::vector<VarDecl*> newParams(i->params().size()-1);
+          int j=0;
+          for (int k=0; k<i->params().size(); k++) {
+            if (k != reifiedAnnotationIdx) {
+              newParams[j++] = copy(env, i->params()[k])->cast<VarDecl>();
+            }
+          }
+          FunctionI* fi = new FunctionI(Location().introduce(), i->id().c_str(), i->ti(), newParams);
+          fi->ann().add(new Call(Location().introduce(), constants().ann.mzn_add_annotated_expression, {IntLit::a(reifiedAnnotationIdx)}));
+          model->addItem(fi);
+          (void)model->registerFn(env, fi);
+          fis.push_back(fi);
+        }
+      }
     }
-  } _tsvf(env.envi(), m, functionItems);
+  } _tsvf(env.envi(), m, functionItems, typeErrors);
   iter_items(_tsvf, m);
 
   class TSV0 : public ItemVisitor {

@@ -96,6 +96,12 @@ annotation mzn_rhs_from_assignment;
   called with -g flag */
 annotation domain_change_constraint;
 
+
+/** @group stdlib.annotations.general Mark annotation argument as annotated expression */
+annotation annotated_expression;
+/** @group stdlib.annotations.general Used internally by the compiler */
+annotation mzn_add_annotated_expression(int: idx);
+
 /***
  @groupdef stdlib.annotations.prop Propagation strength annotations
 */
