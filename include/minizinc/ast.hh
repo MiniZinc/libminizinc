@@ -1859,6 +1859,7 @@ public:
   } ctx;
   /// Common annotations
   struct {
+    Id* empty_annotation;          // NOLINT(readability-identifier-naming)
     Id* output_var;                // NOLINT(readability-identifier-naming)
     ASTString output_array;        // NOLINT(readability-identifier-naming)
     Id* add_to_output;             // NOLINT(readability-identifier-naming)

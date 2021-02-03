@@ -9,6 +9,9 @@
  @groupdef stdlib.annotations.general General annotations
 */
 
+/** @group stdlib.annotations.general Empty annotation, will be removed during compilation */
+annotation empty_annotation;
+
 /** @group stdlib.annotations.general Declare function as total, i.e. it does not put
   any constraints on its arguments. */
 annotation promise_total;

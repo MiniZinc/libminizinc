@@ -99,7 +99,7 @@ Location Location::introduce() const {
 }
 
 void Expression::addAnnotation(Expression* ann) {
-  if (!isUnboxedVal()) {
+  if (!isUnboxedVal() && !Expression::equal(ann, constants().ann.empty_annotation)) {
     _ann.add(ann);
   }
 }
@@ -1609,6 +1609,8 @@ Constants::Constants() {
   ctx.mix = new Id(Location(), ASTString("ctx_mix"), nullptr);
   ctx.mix->type(Type::ann());
 
+  ann.empty_annotation = new Id(Location(), ASTString("empty_annotation"), nullptr);
+  ann.empty_annotation->type(Type::ann());
   ann.output_var = new Id(Location(), ASTString("output_var"), nullptr);
   ann.output_var->type(Type::ann());
   ann.output_only = new Id(Location(), ASTString("output_only"), nullptr);
@@ -1846,6 +1848,7 @@ void Constants::mark(MINIZINC_GC_STAT_ARGS) {
   Expression::mark(ctx.pos);
   Expression::mark(ctx.neg);
   Expression::mark(ctx.mix);
+  Expression::mark(ann.empty_annotation);
   Expression::mark(ann.output_var);
   Expression::mark(ann.output_only);
   Expression::mark(ann.add_to_output);
@@ -1975,7 +1978,7 @@ void Annotation::add(Expression* e) {
   if (_s == nullptr) {
     _s = new ExpressionSet;
   }
-  if (e != nullptr) {
+  if (e != nullptr && !Expression::equal(e, constants().ann.empty_annotation)) {
     _s->insert(e);
   }
 }
@@ -1985,7 +1988,7 @@ void Annotation::add(std::vector<Expression*> e) {
     _s = new ExpressionSet;
   }
   for (auto i = static_cast<unsigned int>(e.size()); (i--) != 0U;) {
-    if (e[i] != nullptr) {
+    if (e[i] != nullptr && !Expression::equal(e[i], constants().ann.empty_annotation)) {
       _s->insert(e[i]);
     }
   }
