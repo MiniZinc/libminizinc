@@ -163,3 +163,5 @@ function string: format_justify_string(int: w, string: x);
 /** @group stdlib.string Return path of file where this function is called */
 function string: file_path();
 
+/** @group stdlib.string Add \a o to the output section \a s */
+test output_to_section(string: s, string: o);

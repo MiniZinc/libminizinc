@@ -1617,6 +1617,27 @@ Expression* b_trace_logstream(EnvI& env, Call* call) {
 }
 std::string b_logstream(EnvI& env, Call* call) { return env.logstream.str(); }
 
+bool b_output_to_section(EnvI& env, Call* call) {
+  GCLock lock;
+  StringLit* section;
+  if (call->arg(0)->type().cv()) {
+    section = flat_cv_exp(env, Ctx(), call->arg(0))()->cast<StringLit>();
+  } else {
+    section = eval_par(env, call->arg(0))->cast<StringLit>();
+  }
+  std::string section_s = eval_string(env, section);
+  std::vector<Expression*> al_v({call->arg(1)});
+  ArrayLit* al = new ArrayLit(Location().introduce(), al_v);
+  al->type(Type::parstring(1));
+  OutputI* oi = new OutputI(Location().introduce(), al);
+  if (section_s != "default") {
+    Call* osec = new Call(Location().introduce(), "mzn_output_section", {section});
+    oi->ann().add(osec);
+  }
+  env.model->addItem(oi);
+  return true;
+}
+
 bool b_in_redundant_constraint(EnvI& env, Call* /*call*/) { return env.inRedundantConstraint > 0; }
 
 bool b_in_symmetry_breaking_constraint(EnvI& env, Call* /*call*/) {
@@ -3176,6 +3197,9 @@ void register_builtins(Env& e) {
     rb(env, m, constants().ids.trace, t, b_trace);
     rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
     rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
+  }
+  {
+    rb(env, m, ASTString("output_to_section"), {Type::parstring(), Type::parstring()}, b_output_to_section);
   }
   {
     rb(env, m, ASTString("mzn_in_redundant_constraint"), std::vector<Type>(),
