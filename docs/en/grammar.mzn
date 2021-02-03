@@ -35,7 +35,7 @@
 <assign-item> ::= <ident> "=" <expr>
 
 % Constraint items
-<constraint-item> ::= "constraint" <string-annotation> <expr>
+<constraint-item> ::= "constraint" [ <string-annotation> ] <expr>
 
 % Solve item
 <solve-item> ::= "solve" <annotations> "satisfy"
@@ -80,7 +80,7 @@
                       | <base-type>
                       | <ti-variable-expr-tail>
                       | "ann"
-                      | { <expr> "," ... }
+                      | "{" <expr> "," ... "}"
                       | <num-expr> ".." <num-expr>
 
 % Type-inst variables
