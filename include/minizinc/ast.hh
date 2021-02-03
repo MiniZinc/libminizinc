@@ -1564,6 +1564,8 @@ class OutputI : public Item {
 protected:
   /// Expression to output
   Expression* _e;
+  /// Annotation
+  Annotation _ann;
 
 public:
   /// The identifier of this item type
@@ -1574,6 +1576,10 @@ public:
   Expression* e() const { return _e; }
   /// Update expression
   void e(Expression* e) { _e = e; }
+  /// Access annotation
+  const Annotation& ann() const { return _ann; }
+  /// Access annotation
+  Annotation& ann() { return _ann; }
 };
 
 class EnvI;

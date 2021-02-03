@@ -688,10 +688,19 @@ public:
             break;
         }
       } break;
-      case Item::II_OUT:
+      case Item::II_OUT: {
+        const OutputI* oi = i->cast<OutputI>();
         _os << "output ";
-        p(i->cast<OutputI>()->e());
-        break;
+        for (ExpressionSetIter i = oi->ann().begin(); i != oi->ann().end(); ++i) {
+          Call* c = (*i)->dynamicCast<Call>();
+          if (c != nullptr && c->id() == "mzn_output_section") {
+            _os << ":: ";
+            p(c->arg(0));
+            _os << " ";
+          }
+        }
+        p(oi->e());
+      } break;
       case Item::II_FUN: {
         const FunctionI& fi = *i->cast<FunctionI>();
         if (fi.ti()->type().isAnn() && fi.e() == nullptr) {
@@ -1689,7 +1698,18 @@ public:
     return dl;
   }
   static ret mapOutputI(const OutputI& oi) {
-    auto* dl = new DocumentList("output ", " ", ";");
+    auto* dl = new DocumentList("", " ", ";");
+    dl->addStringToList("output ");
+    for (ExpressionSetIter i = oi.ann().begin(); i != oi.ann().end(); ++i) {
+      Call* c = (*i)->dynamicCast<Call>();
+      if (c != nullptr && c->id() == "mzn_output_section") {
+        dl->addStringToList(":: ");
+        dl->addDocumentToList(expression_to_document(c->arg(0)));
+      }
+    }
+    if (!oi.ann().isEmpty()) {
+      dl->addStringToList(" ");
+    }
     dl->addDocumentToList(expression_to_document(oi.e()));
     return dl;
   }

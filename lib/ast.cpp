@@ -1187,12 +1187,15 @@ void Item::mark(Item* item) {
       for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it) {
         Expression::mark(*it);
       }
-    }
       Expression::mark(item->cast<SolveI>()->e());
-      break;
-    case Item::II_OUT:
-      Expression::mark(item->cast<OutputI>()->e());
-      break;
+    } break;
+    case Item::II_OUT: {
+      auto* oi = item->cast<OutputI>();
+      Expression::mark(oi->e());
+      for (ExpressionSetIter it = oi->ann().begin(); it != oi->ann().end(); ++it) {
+        Expression::mark(*it);
+      }
+    } break;
     case Item::II_FUN: {
       auto* fi = item->cast<FunctionI>();
       fi->id().mark();

@@ -38,6 +38,9 @@ annotation mzn_expression_name(string);
 /** @group stdlib.annotations.general Declare a name for the annotated constraint. */
 annotation mzn_constraint_name(string);
 
+/** @group stdlib.annotations.general Declare the output section for an output item */
+annotation mzn_output_section(string);
+
 /** @group stdlib.annotations.general State that a function is deprecated. */
 annotation mzn_deprecated(string: version, string: explanation);
 

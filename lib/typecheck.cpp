@@ -2986,6 +2986,13 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         }
       }
       void vOutputI(OutputI* i) {
+        for (ExpressionSetIter it = i->ann().begin(); it != i->ann().end(); ++it) {
+          _bottomUpTyper.run(*it);
+          if (!(*it)->type().isAnn()) {
+            throw TypeError(_env, (*it)->loc(),
+                            "expected annotation, got `" + (*it)->type().toString(_env) + "'");
+          }
+        }
         _bottomUpTyper.run(i->e());
         if (i->e()->type() != Type::parstring(1) && i->e()->type() != Type::bot(1)) {
           throw TypeError(_env, i->e()->loc(),

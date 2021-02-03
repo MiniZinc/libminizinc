@@ -527,6 +527,9 @@ void GC::Heap::sweep() {
           case Item::II_SOL:
             static_cast<SolveI*>(n)->ann().~Annotation();
             break;
+          case Item::II_OUT:
+            static_cast<OutputI*>(n)->ann().~Annotation();
+            break;
           case ASTNode::NID_STR:
             static_cast<ASTStringData*>(n)->destroy();
             break;

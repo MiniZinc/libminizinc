@@ -468,6 +468,7 @@ Item* copy(EnvI& env, CopyMap& m, Item* i, bool followIds, bool copyFundecls, bo
       auto* o = i->cast<OutputI>();
       auto* c = new OutputI(copy_location(m, i),
                             copy(env, m, o->e(), followIds, copyFundecls, isFlatModel));
+      copy_ann(env, m, o->ann(), c->ann(), followIds, copyFundecls, isFlatModel);
       m.insert(i, c);
       return c;
     }

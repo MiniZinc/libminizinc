@@ -554,8 +554,15 @@ solve_item :
       }
 
 output_item :
-      MZN_OUTPUT expr
-      { $$ = new OutputI(@$,$2);}
+        MZN_OUTPUT expr
+      { $$ = new OutputI(@$,$2); }
+      | MZN_OUTPUT MZN_COLONCOLON string_expr expr
+      { $$ = new OutputI(@$,$4);
+        if ($$ && $3) {
+          $$->cast<OutputI>()->ann().add(new Call(@$, ASTString("mzn_output_section"), {$3}));
+        }
+      }
+
 
 predicate_item :
         MZN_PREDICATE MZN_IDENTIFIER params annotations operation_item_tail
