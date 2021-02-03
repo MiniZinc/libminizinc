@@ -638,7 +638,10 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
 
   vd->flat(vd);
 
-  if (!hasBeenAdded) {
+  VarDeclI* vdi;
+  if (hasBeenAdded) {
+    vdi = (*env.flat())[env.varOccurrences.find(vd)]->cast<VarDeclI>();
+  } else {
     if (FunctionI* fi = env.model->matchRevMap(env, vd->type())) {
       // We need to introduce a reverse mapper
       Call* revmap = new Call(Location().introduce(), fi->id(), {vd->id()});
@@ -647,8 +650,8 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
       env.flatAddItem(new ConstraintI(Location().introduce(), revmap));
     }
 
-    auto* ni = new VarDeclI(Location().introduce(), vd);
-    env.flatAddItem(ni);
+    vdi = new VarDeclI(Location().introduce(), vd);
+    env.flatAddItem(vdi);
     EE ee(vd, nullptr);
     env.cseMapInsert(vd->id(), ee);
   }
@@ -688,6 +691,8 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
       }
       EE ee_ann = flat_exp(env, Ctx(), ann, nullptr, constants().varTrue);
       vd->addAnnotation(ee_ann.r());
+      CollectOccurrencesE ce(env.varOccurrences, vdi);
+      top_down(ce, ee_ann.r());
     }
   }
 
