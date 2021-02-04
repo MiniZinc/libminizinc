@@ -324,8 +324,9 @@ public:
   }
 
   ExpressionId eid() const {
-    return isUnboxedInt() ? E_INTLIT
-                          : isUnboxedFloatVal() ? E_FLOATLIT : static_cast<ExpressionId>(_id);
+    return isUnboxedInt()        ? E_INTLIT
+           : isUnboxedFloatVal() ? E_FLOATLIT
+                                 : static_cast<ExpressionId>(_id);
   }
 
   const Location& loc() const { return isUnboxedVal() ? Location::nonalloc : _loc; }
@@ -339,8 +340,9 @@ public:
   }
   void type(const Type& t);
   size_t hash() const {
-    return isUnboxedInt() ? unboxedIntToIntVal().hash()
-                          : isUnboxedFloatVal() ? unboxedFloatToFloatVal().hash() : _hash;
+    return isUnboxedInt()        ? unboxedIntToIntVal().hash()
+           : isUnboxedFloatVal() ? unboxedFloatToFloatVal().hash()
+                                 : _hash;
   }
 
 protected:
@@ -497,8 +499,9 @@ public:
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
-    return isUnboxedInt() ? T::eid == E_INTLIT
-                          : isUnboxedFloatVal() ? T::eid == E_FLOATLIT : _id == T::eid;
+    return isUnboxedInt()        ? T::eid == E_INTLIT
+           : isUnboxedFloatVal() ? T::eid == E_FLOATLIT
+                                 : _id == T::eid;
   }
   /// Cast expression to type \a T*
   template <class T>
@@ -1717,6 +1720,17 @@ public:
 
 /// Statically allocated constants
 class Constants : public GCMarker {
+protected:
+  /// All the IDs (used for garbage collection)
+  std::vector<Id*> _ids;
+  /// All the strings (used for garbage collection)
+  std::vector<ASTString> _strings;
+
+  /// Register a new string
+  ASTString addString(const std::string& s);
+  /// Register a new identifier
+  Id* addId(const std::string& s);
+
 public:
   /// Literal true
   BoolLit* literalTrue;
@@ -1859,31 +1873,29 @@ public:
   } ctx;
   /// Common annotations
   struct {
-    Id* empty_annotation;          // NOLINT(readability-identifier-naming)
-    Id* output_var;                // NOLINT(readability-identifier-naming)
-    ASTString output_array;        // NOLINT(readability-identifier-naming)
-    Id* add_to_output;             // NOLINT(readability-identifier-naming)
-    Id* output_only;               // NOLINT(readability-identifier-naming)
-    Id* mzn_check_var;             // NOLINT(readability-identifier-naming)
-    ASTString mzn_check_enum_var;  // NOLINT(readability-identifier-naming)
-    Id* is_defined_var;            // NOLINT(readability-identifier-naming)
-    ASTString defines_var;         // NOLINT(readability-identifier-naming)
-    Id* is_reverse_map;            // NOLINT(readability-identifier-naming)
-    Id* promise_total;             // NOLINT(readability-identifier-naming)
-    Id* maybe_partial;             // NOLINT(readability-identifier-naming)
-    ASTString doc_comment;         // NOLINT(readability-identifier-naming)
-    ASTString mzn_path;            // NOLINT(readability-identifier-naming)
-    ASTString is_introduced;       // NOLINT(readability-identifier-naming)
-    Id* user_cut;                  // NOLINT(readability-identifier-naming) // MIP
-    Id* lazy_constraint;           // NOLINT(readability-identifier-naming) // MIP
-    Id* mzn_break_here;            // NOLINT(readability-identifier-naming)
-    Id* rhs_from_assignment;       // NOLINT(readability-identifier-naming)
-    Id* domain_change_constraint;  // NOLINT(readability-identifier-naming)
-    ASTString mzn_deprecated;      // NOLINT(readability-identifier-naming)
-    Id* mzn_was_undefined;         // NOLINT(readability-identifier-naming)
-    Id* array_check_form;          // NOLINT(readability-identifier-naming)
-    Id* annotated_expression;      // NOLINT(readability-identifier-naming)
-    ASTString mzn_add_annotated_expression; // NOLINT(readability-identifier-naming)
+    Id* empty_annotation;                    // NOLINT(readability-identifier-naming)
+    Id* output_var;                          // NOLINT(readability-identifier-naming)
+    ASTString output_array;                  // NOLINT(readability-identifier-naming)
+    Id* add_to_output;                       // NOLINT(readability-identifier-naming)
+    Id* output_only;                         // NOLINT(readability-identifier-naming)
+    Id* mzn_check_var;                       // NOLINT(readability-identifier-naming)
+    ASTString mzn_check_enum_var;            // NOLINT(readability-identifier-naming)
+    Id* is_defined_var;                      // NOLINT(readability-identifier-naming)
+    ASTString defines_var;                   // NOLINT(readability-identifier-naming)
+    Id* is_reverse_map;                      // NOLINT(readability-identifier-naming)
+    Id* promise_total;                       // NOLINT(readability-identifier-naming)
+    Id* maybe_partial;                       // NOLINT(readability-identifier-naming)
+    ASTString doc_comment;                   // NOLINT(readability-identifier-naming)
+    ASTString mzn_path;                      // NOLINT(readability-identifier-naming)
+    ASTString is_introduced;                 // NOLINT(readability-identifier-naming)
+    Id* mzn_break_here;                      // NOLINT(readability-identifier-naming)
+    Id* rhs_from_assignment;                 // NOLINT(readability-identifier-naming)
+    Id* domain_change_constraint;            // NOLINT(readability-identifier-naming)
+    ASTString mzn_deprecated;                // NOLINT(readability-identifier-naming)
+    Id* mzn_was_undefined;                   // NOLINT(readability-identifier-naming)
+    Id* array_check_form;                    // NOLINT(readability-identifier-naming)
+    Id* annotated_expression;                // NOLINT(readability-identifier-naming)
+    ASTString mzn_add_annotated_expression;  // NOLINT(readability-identifier-naming)
   } ann;
 
   /// Command line options

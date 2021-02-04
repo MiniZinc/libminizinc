@@ -662,9 +662,11 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
       // Check if we need to add the annotated expression as an argument
       Call* addAnnotatedExpression;
       if ((*it)->isa<Id>()) {
-        addAnnotatedExpression = (*it)->cast<Id>()->decl()->ann().getCall(constants().ann.mzn_add_annotated_expression);
+        addAnnotatedExpression =
+            (*it)->cast<Id>()->decl()->ann().getCall(constants().ann.mzn_add_annotated_expression);
       } else {
-        addAnnotatedExpression = (*it)->cast<Call>()->decl()->ann().getCall(constants().ann.mzn_add_annotated_expression);
+        addAnnotatedExpression = (*it)->cast<Call>()->decl()->ann().getCall(
+            constants().ann.mzn_add_annotated_expression);
       }
       Expression* ann;
       if (addAnnotatedExpression != nullptr) {
@@ -674,8 +676,8 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
         } else {
           int annotatedExpressionIdx = eval_int(env, addAnnotatedExpression->arg(0)).toInt();
           Call* orig_call = (*it)->cast<Call>();
-          std::vector<Expression*> args(orig_call->argCount()+1);
-          for (int i=0, j=0; i < orig_call->argCount(); i++) {
+          std::vector<Expression*> args(orig_call->argCount() + 1);
+          for (int i = 0, j = 0; i < orig_call->argCount(); i++) {
             if (j == annotatedExpressionIdx) {
               args[j++] = vd->id();
             }
@@ -683,7 +685,7 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
           }
           c = new Call(Location().introduce(), (*it)->cast<Call>()->id(), args);
         }
-        c->decl(env.model->matchFn(env,c,false));
+        c->decl(env.model->matchFn(env, c, false));
         c->type(Type::ann());
         ann = c;
       } else {

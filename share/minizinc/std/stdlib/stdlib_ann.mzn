@@ -358,6 +358,23 @@ annotation warm_start( array[int] of var float: x, array[int] of float: v );
 /** @group stdlib.annotations.warmstart Specify warm start values \a v for an array of sets \a x */
 annotation warm_start( array[int] of var set of int: x, array[int] of set of int: v );
 
+/***
+ @groupdef stdlib.annotations.context Context annotations
+
+ These are used internally by the compiler, and should not be used in models.
+*/
+
+/** @group stdlib.annotations.context Root context */
+annotation ctx_root;
+
+/** @group stdlib.annotations.context Positive context */
+annotation ctx_pos;
+
+/** @group stdlib.annotations.context Negative context */
+annotation ctx_neg;
+
+/** @group stdlib.annotations.context Mixed context */
+annotation ctx_mix;
 
 
 /***

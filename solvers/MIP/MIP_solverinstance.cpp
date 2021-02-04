@@ -37,16 +37,16 @@ namespace MiniZinc {
 namespace SCIPConstraints {
 
 bool check_ann_user_cut(const Call* call) {
-  if (!call->ann().isEmpty()) {
-    if (call->ann().contains(constants().ann.user_cut)) {
+  for (auto* e : call->ann()) {
+    if (e->isa<Id>() && e->cast<Id>()->idn() == -1 && e->cast<Id>()->v() == "user_cut") {
       return true;
     }
   }
   return false;
 }
 bool check_ann_lazy_constraint(const Call* call) {
-  if (!call->ann().isEmpty()) {
-    if (call->ann().contains(constants().ann.lazy_constraint)) {
+  for (auto* e : call->ann()) {
+    if (e->isa<Id>() && e->cast<Id>()->idn() == -1 && e->cast<Id>()->v() == "lazy_constraint") {
       return true;
     }
   }

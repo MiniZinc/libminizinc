@@ -3199,7 +3199,8 @@ void register_builtins(Env& e) {
     rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
   }
   {
-    rb(env, m, ASTString("output_to_section"), {Type::parstring(), Type::parstring()}, b_output_to_section);
+    rb(env, m, ASTString("output_to_section"), {Type::parstring(), Type::parstring()},
+       b_output_to_section);
   }
   {
     rb(env, m, ASTString("mzn_in_redundant_constraint"), std::vector<Type>(),
