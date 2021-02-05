@@ -143,7 +143,8 @@ The following parameters can be given on the command line or modified in ``share
   -DfIndConstr=true -DfMIPdomains=false        %% Use solver's indicator constraints, see below
   -DMinMaxGeneral=true                         %% Send min/max constraints to the solver (Gurobi only)
   -DQuadrFloat=false -DQuadrInt=false          %% Not forward float/integer multiplications for MIQCP backends, see below
-  -DCumulative=false                           %% Not forward cumulative with fixed durations/resources (SCIP only)
+  -DUseCumulative=false                        %% Not forward cumulative with fixed durations/resources (SCIP only)
+  -DUseOrbisack=false                          %% Not forward lex_lesseq for binary/bool vectors (SCIP only)
   --no-half-reifications                       %% Turn off halfreification (full reification was until v2.2.3)
 
 Some Solver Options and Changed Default Values

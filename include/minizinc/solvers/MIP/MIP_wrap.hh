@@ -282,6 +282,13 @@ public:
                              const std::string& rowName = "") {
     throw std::runtime_error("Cumulative constraints not supported. ");
   }
+
+  /// Lex-lesseq binary, currently SCIP only
+  virtual void addLexLesseq(int nnz, int* rmatind1, int* rmatind2, bool isModelCons,
+                             const std::string& rowName = "") {
+    throw std::runtime_error("MIP: lex_less built-in not supported. ");
+  }
+
   /// 0: model-defined level, 1: free, 2: uniform search
   virtual int getFreeSearch() { return SearchType::FREE_SEARCH; }
   /// Return 0 if ignoring searches

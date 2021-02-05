@@ -88,6 +88,7 @@ void ScipPlugin::load() {
   load_symbol(SCIPcreateConsBasicIndicator);
   load_symbol(SCIPcreateConsBasicBounddisjunction);
   load_symbol(SCIPcreateConsBasicCumulative);
+  load_symbol(SCIPcreateConsBasicOrbisack);
   load_symbol(SCIPgetNSolsFound);
   load_symbol(SCIPgetNSols);
   load_symbol(SCIPsetIntParam);
@@ -563,6 +564,28 @@ void MIPScipWrapper::addCumulative(int nnz, int* rmatind, double* d, double* r, 
   SCIP_PLUGIN_CALL(_plugin->SCIPaddCons(_scip, cons));
   SCIP_PLUGIN_CALL(_plugin->SCIPreleaseCons(_scip, &cons));
 }
+
+/// Lex-lesseq binary, currently SCIP only
+/// TODO check all variables are binary, SCIP 7.0.2 does not
+void MIPScipWrapper::addLexLesseq(int nnz, int* rmatind1, int* rmatind2, bool isModelCons,
+                               const std::string& rowName) {
+  SCIP_CONS* cons;
+  vector<SCIP_VAR*> vars1(nnz);
+  vector<SCIP_VAR*> vars2(nnz);
+  
+  for (int j = 0; j < nnz; ++j) {
+    vars1[j] = _scipVars[rmatind1[j]];
+    vars2[j] = _scipVars[rmatind2[j]];
+  }
+
+  SCIP_PLUGIN_CALL(_plugin->SCIPcreateConsBasicOrbisack(
+      _scip, &cons, rowName.c_str(),
+      vars2.data(), vars1.data(),        // it's actually lex_greatereq
+      nnz, FALSE, FALSE, isModelCons));
+  SCIP_PLUGIN_CALL(_plugin->SCIPaddCons(_scip, cons));
+  SCIP_PLUGIN_CALL(_plugin->SCIPreleaseCons(_scip, &cons));
+}
+
 
 void MIPScipWrapper::addTimes(int x, int y, int z, const string& rowName) {
   /// As x*y - z == 0

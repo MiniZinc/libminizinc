@@ -979,8 +979,6 @@ template <class MIPWrapper>
 void p_cumulative(SolverInstanceBase& si, const Call* call) {
   auto& gi = dynamic_cast<MIPSolverinstance<MIPWrapper>&>(si);
 
-  std::unique_ptr<SECCutGen> pCG(new SECCutGen(gi.getMIPWrapper()));
-
   assert(call->argCount() == 4);
 
   std::vector<MIPSolver::Variable> startTimes;
@@ -994,6 +992,23 @@ void p_cumulative(SolverInstanceBase& si, const Call* call) {
   gi.getMIPWrapper()->addCumulative(
       startTimes.size(), startTimes.data(), durations.data(), demands.data(), b,
       make_constraint_name("p_cumulative_", (gi.getMIPWrapper()->nAddedRows++), call));
+}
+
+template <class MIPWrapper>
+void p_lex_less_binary_antisymm(SolverInstanceBase& si, const Call* call) {
+  auto& gi = dynamic_cast<MIPSolverinstance<MIPWrapper>&>(si);
+
+  assert(call->argCount() == 3);
+
+  std::vector<MIPSolver::Variable> vec1, vec2;
+  gi.exprToVarArray(call->arg(0), vec1);
+  gi.exprToVarArray(call->arg(1), vec2);
+  auto isModelCons = gi.exprToConst(call->arg(2));
+  MZN_ASSERT_HARD(vec1.size() == vec2.size());
+
+  gi.getMIPWrapper()->addLexLesseq(
+		  vec1.size(), vec1.data(), vec2.data(), (bool)isModelCons,
+      make_constraint_name("p_lex_lesseq__orbisack_", (gi.getMIPWrapper()->nAddedRows++), call));
 }
 
 /// The XBZ cut generator
@@ -1118,6 +1133,8 @@ void MIPSolverinstance<MIPWrapper>::registerConstraints() {
                           SCIPConstraints::p_indicator_eq_if1<MIPWrapper>);
 
   _constraintRegistry.add("fzn_cumulative_fixed_d_r", SCIPConstraints::p_cumulative<MIPWrapper>);
+
+  _constraintRegistry.add("fzn_lex_lesseq__orbisack", SCIPConstraints::p_lex_less_binary_antisymm<MIPWrapper>);
 
   _constraintRegistry.add("bounds_disj", SCIPConstraints::p_bounds_disj<MIPWrapper>);
 
