@@ -660,10 +660,12 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
   if (origVd != nullptr) {
     for (ExpressionSetIter it = origVd->ann().begin(); it != origVd->ann().end(); ++it) {
       // Check if we need to add the annotated expression as an argument
-      Call* addAnnotatedExpression;
+      Call* addAnnotatedExpression = nullptr;
       if ((*it)->isa<Id>()) {
-        addAnnotatedExpression =
-            (*it)->cast<Id>()->decl()->ann().getCall(constants().ann.mzn_add_annotated_expression);
+        if ((*it)->cast<Id>()->decl() != nullptr) {
+          addAnnotatedExpression = (*it)->cast<Id>()->decl()->ann().getCall(
+              constants().ann.mzn_add_annotated_expression);
+        }
       } else {
         addAnnotatedExpression = (*it)->cast<Call>()->decl()->ann().getCall(
             constants().ann.mzn_add_annotated_expression);
