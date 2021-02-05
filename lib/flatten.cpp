@@ -676,7 +676,8 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
         if ((*it)->isa<Id>()) {
           c = new Call(Location().introduce(), (*it)->cast<Id>()->v(), {vd->id()});
         } else {
-          int annotatedExpressionIdx = eval_int(env, addAnnotatedExpression->arg(0)).toInt();
+          int annotatedExpressionIdx =
+              static_cast<int>(eval_int(env, addAnnotatedExpression->arg(0)).toInt());
           Call* orig_call = (*it)->cast<Call>();
           std::vector<Expression*> args(orig_call->argCount() + 1);
           for (int i = 0, j = 0; i < orig_call->argCount(); i++) {

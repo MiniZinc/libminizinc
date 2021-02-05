@@ -1627,9 +1627,9 @@ bool b_output_to_section(EnvI& env, Call* call) {
   }
   std::string section_s = eval_string(env, section);
   std::vector<Expression*> al_v({call->arg(1)});
-  ArrayLit* al = new ArrayLit(Location().introduce(), al_v);
+  auto* al = new ArrayLit(Location().introduce(), al_v);
   al->type(Type::parstring(1));
-  OutputI* oi = new OutputI(Location().introduce(), al);
+  auto* oi = new OutputI(Location().introduce(), al);
   if (section_s != "default") {
     Call* osec = new Call(Location().introduce(), "mzn_output_section", {section});
     oi->ann().add(osec);
