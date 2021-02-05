@@ -285,7 +285,7 @@ public:
 
   /// Lex-lesseq binary, currently SCIP only
   virtual void addLexLesseq(int nnz, int* rmatind1, int* rmatind2, bool isModelCons,
-                             const std::string& rowName = "") {
+                            const std::string& rowName = "") {
     throw std::runtime_error("MIP: lex_less built-in not supported. ");
   }
 

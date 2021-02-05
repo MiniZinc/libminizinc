@@ -568,7 +568,7 @@ void MIPScipWrapper::addCumulative(int nnz, int* rmatind, double* d, double* r, 
 /// Lex-lesseq binary, currently SCIP only
 /// TODO check all variables are binary, SCIP 7.0.2 does not
 void MIPScipWrapper::addLexLesseq(int nnz, int* rmatind1, int* rmatind2, bool isModelCons,
-                               const std::string& rowName) {
+                                  const std::string& rowName) {
   SCIP_CONS* cons;
   vector<SCIP_VAR*> vars1(nnz);
   vector<SCIP_VAR*> vars2(nnz);
@@ -579,8 +579,7 @@ void MIPScipWrapper::addLexLesseq(int nnz, int* rmatind1, int* rmatind2, bool is
   }
 
   SCIP_PLUGIN_CALL(_plugin->SCIPcreateConsBasicOrbisack(
-      _scip, &cons, rowName.c_str(),
-      vars2.data(), vars1.data(),        // it's actually lex_greatereq
+      _scip, &cons, rowName.c_str(), vars2.data(), vars1.data(),  // it's actually lex_greatereq
       nnz, FALSE, FALSE, isModelCons));
   SCIP_PLUGIN_CALL(_plugin->SCIPaddCons(_scip, cons));
   SCIP_PLUGIN_CALL(_plugin->SCIPreleaseCons(_scip, &cons));

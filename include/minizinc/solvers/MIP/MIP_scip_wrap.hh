@@ -108,16 +108,9 @@ public:
    int* demands, int capacity);
 
   // NOLINTNEXTLINE(readability-identifier-naming)
-  SCIP_RETCODE(__stdcall* SCIPcreateConsBasicOrbisack)  (SCIP * 	scip,
-		  SCIP_CONS ** 	cons,
-		  const char * 	name,
-		  SCIP_VAR ** 	vars1,
-		  SCIP_VAR ** 	vars2,
-		  int 	nrows,
-		  SCIP_Bool 	ispporbisack,
-		  SCIP_Bool 	isparttype,
-		  SCIP_Bool 	ismodelcons 
-		  );
+  SCIP_RETCODE(__stdcall* SCIPcreateConsBasicOrbisack)
+  (SCIP* scip, SCIP_CONS** cons, const char* name, SCIP_VAR** vars1, SCIP_VAR** vars2, int nrows,
+   SCIP_Bool ispporbisack, SCIP_Bool isparttype, SCIP_Bool ismodelcons);
 
   // NOLINTNEXTLINE(readability-identifier-naming)
   SCIP_Longint(__stdcall* SCIPgetNSolsFound)(SCIP* scip);
@@ -374,8 +367,8 @@ public:
                      const std::string& rowName = "") override;
 
   /// Lex-lesseq binary, currently SCIP only
-  virtual void addLexLesseq(int nnz, int* rmatind1, int* rmatind2, bool isModelCons,
-                             const std::string& rowName = "");
+  void addLexLesseq(int nnz, int* rmatind1, int* rmatind2, bool isModelCons,
+                    const std::string& rowName = "") override;
 
   /// Times constraint: var[x]*var[y] == var[z]
   void addTimes(int x, int y, int z, const std::string& rowName = "") override;
