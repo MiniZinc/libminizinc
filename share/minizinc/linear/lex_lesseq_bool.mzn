@@ -13,7 +13,7 @@ predicate fzn_lex_lesseq__orbisack(
 predicate lex_lesseq_bool(array[int] of var bool: x,
                           array[int] of var bool: y) =
     if MZN__Orbisack then
-        fzn_lex_lesseq__orbisack(x, y, not mzn_in_symmetry_breaking_constraint())
+        fzn_lex_lesseq__orbisack(x, y, true)  %% SCIP 7.0.2 crashes: not mzn_in_symmetry_breaking_constraint())
     else
         fzn_lex_lesseq_bool(x, y)
     endif;
