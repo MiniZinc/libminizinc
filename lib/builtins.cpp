@@ -1617,9 +1617,7 @@ Expression* b_trace_logstream(EnvI& env, Call* call) {
 }
 std::string b_logstream(EnvI& env, Call* call) { return env.logstream.str(); }
 
-bool b_in_redundant_constraint(EnvI& env, Call* /*call*/) {
-  return env.inRedundantConstraint > 0;
-}
+bool b_in_redundant_constraint(EnvI& env, Call* /*call*/) { return env.inRedundantConstraint > 0; }
 
 bool b_in_symmetry_breaking_constraint(EnvI& env, Call* /*call*/) {
   return env.inSymmetryBreakingConstraint > 0;
