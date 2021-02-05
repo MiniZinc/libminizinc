@@ -147,7 +147,7 @@ class MZT_Param:
                         #"MZN-CPLEX",
                         "/// At the moment only the 1st element is used for solving" ],
             "SOLUTION_CHECKING": {
-              "Checkers": ["GECODE-CHK", "GUROBI-CHK", "CPLEX-CHK" ],
+              "Checkers": ["GECODE-CHK", "GUROBI-CHK", "CPLEX-CHK", "ORTOOLS-CHK" ],
               "n_CheckedMax": [ -10, "/// Negative value means it's that many last solutions" ],
               "n_FailedSaveMax": [ 3, "/// After that many failed solutions, stop checking the instance" ],
               "s_FailedSaveFile": [ sFlnSolFailBase, "/// Filename to save failed solutions" ],
@@ -199,6 +199,7 @@ class MZT_Param:
             ],
             "MINIZINC-CHK": [ "__BE_COMMON", "__BE_CHECKER_OLDMINIZINC", "BE_MINIZINC" ],
             "GECODE-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_GECODE" ],
+            "ORTOOLS-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_ORTOOLS" ],
             "GUROBI-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_GUROBI" ],
             "CPLEX-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_CPLEX" ],
             "CHUFFED-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_CHUFFED" ],
