@@ -585,7 +585,6 @@ void MIPScipWrapper::addLexLesseq(int nnz, int* rmatind1, int* rmatind2, bool is
   SCIP_PLUGIN_CALL(_plugin->SCIPreleaseCons(_scip, &cons));
 }
 
-
 void MIPScipWrapper::addTimes(int x, int y, int z, const string& rowName) {
   /// As x*y - z == 0
   double zCoef = -1.0;
