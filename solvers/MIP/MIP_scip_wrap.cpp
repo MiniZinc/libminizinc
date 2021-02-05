@@ -572,7 +572,7 @@ void MIPScipWrapper::addLexLesseq(int nnz, int* rmatind1, int* rmatind2, bool is
   SCIP_CONS* cons;
   vector<SCIP_VAR*> vars1(nnz);
   vector<SCIP_VAR*> vars2(nnz);
-  
+
   for (int j = 0; j < nnz; ++j) {
     vars1[j] = _scipVars[rmatind1[j]];
     vars2[j] = _scipVars[rmatind2[j]];
@@ -580,7 +580,7 @@ void MIPScipWrapper::addLexLesseq(int nnz, int* rmatind1, int* rmatind2, bool is
 
   SCIP_PLUGIN_CALL(_plugin->SCIPcreateConsBasicOrbisack(
       _scip, &cons, rowName.c_str(), vars2.data(), vars1.data(),  // it's actually lex_greatereq
-      nnz, FALSE, FALSE, isModelCons));
+      nnz, FALSE, FALSE, (SCIP_Bool)isModelCons));
   SCIP_PLUGIN_CALL(_plugin->SCIPaddCons(_scip, cons));
   SCIP_PLUGIN_CALL(_plugin->SCIPreleaseCons(_scip, &cons));
 }
