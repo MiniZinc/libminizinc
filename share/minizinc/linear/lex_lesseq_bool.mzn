@@ -10,11 +10,10 @@ include "fzn_lex_lesseq_bool_reif.mzn";
 predicate fzn_lex_lesseq__orbisack(
     array[int] of var int: vec1, array[int] of var int: vec2, bool: isModelCons);
 
-
 predicate lex_lesseq_bool(array[int] of var bool: x,
                           array[int] of var bool: y) =
     if MZN__Orbisack then
-        fzn_lex_lesseq__orbisack(x, y, true)        %% TODO recognize being in anti-symmetry
+        fzn_lex_lesseq__orbisack(x, y, not mzn_in_symmetry_breaking_constraint())
     else
         fzn_lex_lesseq_bool(x, y)
     endif;

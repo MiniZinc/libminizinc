@@ -109,6 +109,7 @@ public:
   std::vector<int> modifiedVarDecls;
   std::unordered_set<std::string> deprecationWarnings;
   int inRedundantConstraint;
+  int inSymmetryBreakingConstraint;
   int inMaybePartial;
   struct {
     int reifConstraints;

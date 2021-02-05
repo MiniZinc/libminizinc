@@ -159,6 +159,8 @@ test mzn_in_root_context(var $T);
 
 test mzn_in_redundant_constraint();
 
+test mzn_in_symmetry_breaking_constraint();
+
 /* Internal function used to optimize over option type objective */
 function var float: objective_deopt_(var opt float: x, bool: direction) =
   let {

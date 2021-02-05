@@ -681,6 +681,7 @@ EnvI::EnvI(Model* model0, std::ostream& outstream0, std::ostream& errstream0)
       ignoreUnknownIds(false),
       maxCallStack(0),
       inRedundantConstraint(0),
+      inSymmetryBreakingConstraint(0),
       inMaybePartial(0),
       inReverseMapVar(false),
       counters({0, 0, 0, 0}),
@@ -1105,6 +1106,9 @@ CallStackItem::CallStackItem(EnvI& env0, Expression* e) : env(env0) {
   if (e->isa<Call>() && e->cast<Call>()->id() == "redundant_constraint") {
     env.inRedundantConstraint++;
   }
+  if (e->isa<Call>() && e->cast<Call>()->id() == "symmetry_breaking_constraint") {
+    env.inSymmetryBreakingConstraint++;
+  }
   if (e->ann().contains(constants().ann.maybe_partial)) {
     env.inMaybePartial++;
   }
@@ -1124,6 +1128,9 @@ CallStackItem::~CallStackItem() {
     }
     if (e->isa<Call>() && e->cast<Call>()->id() == "redundant_constraint") {
       env.inRedundantConstraint--;
+    }
+    if (e->isa<Call>() && e->cast<Call>()->id() == "symmetry_breaking_constraint") {
+      env.inSymmetryBreakingConstraint--;
     }
     if (e->ann().contains(constants().ann.maybe_partial)) {
       env.inMaybePartial--;
