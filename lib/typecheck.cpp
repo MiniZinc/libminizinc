@@ -154,10 +154,45 @@ public:
   }
 };
 
+// Create all required mapping functions for a new enum
+// (mapping enum identifiers to strings, and mapping between different enums)
 void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Model* enumItems) {
   GCLock lock;
 
   Id* ident = vd->id();
+
+  if (vd->e() == nullptr) {
+    // Enum without right hand side (may be supplied later in an assignment
+    // item, or we may be runnint in --model-interface-only mode).
+    // Need to create stub function declarations, so that the type checker
+    // is happy.
+    Type tx = Type::parint();
+    tx.ot(Type::OT_OPTIONAL);
+    auto* ti_aa = new TypeInst(Location().introduce(), tx);
+    auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, "x");
+    vd_aa->toplevel(false);
+
+    auto* ti_ab = new TypeInst(Location().introduce(), Type::parbool());
+    auto* vd_ab = new VarDecl(Location().introduce(), ti_ab, "b");
+    vd_ab->toplevel(false);
+
+    auto* ti_aj = new TypeInst(Location().introduce(), Type::parbool());
+    auto* vd_aj = new VarDecl(Location().introduce(), ti_aj, "json");
+    vd_aj->toplevel(false);
+
+    auto* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
+    std::vector<VarDecl*> fi_params(3);
+    fi_params[0] = vd_aa;
+    fi_params[1] = vd_ab;
+    fi_params[2] = vd_aj;
+    auto* fi =
+        new FunctionI(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
+                      ti_fi, fi_params, nullptr);
+    enumItems->addItem(fi);
+
+    return;
+  }
+
   Call* c = vd->e()->dynamicCast<Call>();
   auto* al = vd->e()->dynamicCast<ArrayLit>();
 
@@ -1127,9 +1162,7 @@ void TopoSorter::add(EnvI& env, VarDeclI* vdi, bool handleEnums, Model* enumItem
     vd->ti()->type(vdt);
     vd->type(vdt);
 
-    if (vd->e() != nullptr) {
-      create_enum_mapper(env, model, enumId, vd, enumItems);
-    }
+    create_enum_mapper(env, model, enumId, vd, enumItems);
   }
   scopes.add(env, vd);
 }
