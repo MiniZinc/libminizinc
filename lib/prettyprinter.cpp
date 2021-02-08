@@ -689,9 +689,9 @@ public:
         }
       } break;
       case Item::II_OUT: {
-        const OutputI* oi = i->cast<OutputI>();
+        const OutputI& oi = *i->cast<OutputI>();
         _os << "output ";
-        for (ExpressionSetIter i = oi->ann().begin(); i != oi->ann().end(); ++i) {
+        for (ExpressionSetIter i = oi.ann().begin(); i != oi.ann().end(); ++i) {
           Call* c = (*i)->dynamicCast<Call>();
           if (c != nullptr && c->id() == "mzn_output_section") {
             _os << ":: ";
@@ -699,7 +699,7 @@ public:
             _os << " ";
           }
         }
-        p(oi->e());
+        p(oi.e());
       } break;
       case Item::II_FUN: {
         const FunctionI& fi = *i->cast<FunctionI>();

@@ -324,9 +324,8 @@ public:
   }
 
   ExpressionId eid() const {
-    return isUnboxedInt()        ? E_INTLIT
-           : isUnboxedFloatVal() ? E_FLOATLIT
-                                 : static_cast<ExpressionId>(_id);
+    return isUnboxedInt() ? E_INTLIT
+                          : isUnboxedFloatVal() ? E_FLOATLIT : static_cast<ExpressionId>(_id);
   }
 
   const Location& loc() const { return isUnboxedVal() ? Location::nonalloc : _loc; }
@@ -340,9 +339,8 @@ public:
   }
   void type(const Type& t);
   size_t hash() const {
-    return isUnboxedInt()        ? unboxedIntToIntVal().hash()
-           : isUnboxedFloatVal() ? unboxedFloatToFloatVal().hash()
-                                 : _hash;
+    return isUnboxedInt() ? unboxedIntToIntVal().hash()
+                          : isUnboxedFloatVal() ? unboxedFloatToFloatVal().hash() : _hash;
   }
 
 protected:
@@ -499,9 +497,8 @@ public:
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
-    return isUnboxedInt()        ? T::eid == E_INTLIT
-           : isUnboxedFloatVal() ? T::eid == E_FLOATLIT
-                                 : _id == T::eid;
+    return isUnboxedInt() ? T::eid == E_INTLIT
+                          : isUnboxedFloatVal() ? T::eid == E_FLOATLIT : _id == T::eid;
   }
   /// Cast expression to type \a T*
   template <class T>
@@ -1870,8 +1867,8 @@ public:
     Id* pos;
     Id* neg;
     Id* mix;
-    Id* promise_pos;
-    Id* promise_neg;
+    Id* promise_pos;  // NOLINT(readability-identifier-naming)
+    Id* promise_neg;  // NOLINT(readability-identifier-naming)
   } ctx;
   /// Common annotations
   struct {

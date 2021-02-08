@@ -1617,7 +1617,7 @@ Constants::Constants() {
   ctx.promise_pos->type(Type::ann());
   ctx.promise_neg = addId("promise_ctx_neg");
   ctx.promise_neg->type(Type::ann());
-  
+
   ann.output_var->type(Type::ann());
   ann.output_only = addId("output_only");
   ann.output_only->type(Type::ann());
