@@ -1870,6 +1870,8 @@ public:
     Id* pos;
     Id* neg;
     Id* mix;
+    Id* promise_pos;
+    Id* promise_neg;
   } ctx;
   /// Common annotations
   struct {

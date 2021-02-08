@@ -630,9 +630,25 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
             if (cid == constants().ids.clause) {
               argctx.b = (i == 0 ? +nctx.b : -nctx.b);
             } else if (c->arg(i)->type().bt() == Type::BT_BOOL) {
-              argctx.b = C_MIX;
+              if (c->decl() != nullptr &&
+                  c->decl()->params()[i]->ann().contains(constants().ctx.promise_pos)) {
+                argctx.b = +nctx.b;
+              } else if (c->decl() != nullptr &&
+                         c->decl()->params()[i]->ann().contains(constants().ctx.promise_neg)) {
+                argctx.b = -nctx.b;
+              } else {
+                argctx.b = C_MIX;
+              }
             } else if (c->arg(i)->type().bt() == Type::BT_INT) {
-              argctx.i = C_MIX;
+              if (c->decl() != nullptr &&
+                  c->decl()->params()[i]->ann().contains(constants().ctx.promise_pos)) {
+                argctx.i = +nctx.i;
+              } else if (c->decl() != nullptr &&
+                         c->decl()->params()[i]->ann().contains(constants().ctx.promise_neg)) {
+                argctx.i = -nctx.i;
+              } else {
+                argctx.i = C_MIX;
+              }
             }
           } else if (cid == constants().ids.sum && c->arg(i)->type().bt() == Type::BT_BOOL) {
             argctx.b = argctx.i;

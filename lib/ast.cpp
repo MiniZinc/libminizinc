@@ -1612,6 +1612,12 @@ Constants::Constants() {
   ann.empty_annotation = addId("empty_annotation");
   ann.empty_annotation->type(Type::ann());
   ann.output_var = addId("output_var");
+
+  ctx.promise_pos = addId("promise_ctx_pos");
+  ctx.promise_pos->type(Type::ann());
+  ctx.promise_neg = addId("promise_ctx_neg");
+  ctx.promise_neg->type(Type::ann());
+  
   ann.output_var->type(Type::ann());
   ann.output_only = addId("output_only");
   ann.output_only->type(Type::ann());

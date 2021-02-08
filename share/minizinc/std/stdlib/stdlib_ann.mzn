@@ -398,3 +398,5 @@ predicate redundant_constraint(var bool: b);
 /** @group stdlib.special Mark \a b as an implied constraint (synonym for redundant_constraint) */
 predicate implied_constraint(var bool: b) = redundant_constraint(b);
 
+annotation promise_ctx_pos;
+annotation promise_ctx_neg;
