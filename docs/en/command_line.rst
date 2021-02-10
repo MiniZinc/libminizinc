@@ -511,8 +511,8 @@ Here is a sample configuration file:
 
   {
     "mzn_solver_path": ["/usr/share/choco"],
-    "tagDefaults": [["cp","org.choco-solver.choco"],["mip","org.minizinc.cplex"],["","org.gecode.gecode"]],
-    "solverDefaults": [["org.minizinc.cplex","--cplex-dll","/opt/CPLEX_Studio128/cplex/bin/x86-64_sles10_4.1/libcplex128.so"]] 
+    "tagDefaults": [["cp","org.choco-solver.choco"],["mip","org.minizinc.mip.cplex"],["","org.gecode.gecode"]],
+    "solverDefaults": [["org.minizinc.mip.cplex","--cplex-dll","/opt/CPLEX_Studio128/cplex/bin/x86-64_sles10_4.1/libcplex128.so"]] 
   }
 
 Configuration values in the user-specific configuration file override the global values, except for solver default arguments, which are only overridden if the name of the option is the same, and otherwise get added to the command line.
