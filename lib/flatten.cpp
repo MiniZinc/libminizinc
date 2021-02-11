@@ -737,6 +737,9 @@ EnvI::~EnvI() {
 }
 long long int EnvI::genId() { return _ids++; }
 void EnvI::cseMapInsert(Expression* e, const EE& ee) {
+  if (e->type().isPar()) {
+    return;
+  }
   KeepAlive ka(e);
   _cseMap.insert(ka, WW(ee.r(), ee.b()));
   Call* c = e->dynamicCast<Call>();
