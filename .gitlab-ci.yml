@@ -29,6 +29,9 @@ variables:
   # CCache settings
   CCACHE_DIR: "$CI_PROJECT_DIR/.ccache"
   CCACHE_MAXSIZE: "100M"
+  # MacOS deployment settings
+  MACOSX_DEPLOYMENT_TARGET: "10.9"
+  CMAKE_OSX_ARCHITECTURES: "x86_64;arm64"
 
 default:
   interruptible: true
