@@ -1488,7 +1488,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
     FunctionI* fi = m->matchFn(env, c, false);
     assert(fi);
     Type ct = fi->rtype(env, args, false);
-    ct.cv(e->type().cv());
+    ct.cv(e->type().cv() || ct.cv());
     c->type(ct);
     c->decl(fi);
     KeepAlive ka(c);
@@ -2143,7 +2143,7 @@ public:
       args[0] = bop.lhs();
       args[1] = bop.rhs();
       Type ty = fi->rtype(_env, args, true);
-      ty.cv(bop.lhs()->type().cv() || bop.rhs()->type().cv());
+      ty.cv(bop.lhs()->type().cv() || bop.rhs()->type().cv() || ty.cv());
       bop.type(ty);
 
       if (fi->e() != nullptr) {
@@ -2292,7 +2292,7 @@ public:
       uop.e(add_coercion(_env, _model, uop.e(), fi->argtype(_env, args, 0))());
       args[0] = uop.e();
       Type ty = fi->rtype(_env, args, true);
-      ty.cv(uop.e()->type().cv());
+      ty.cv(uop.e()->type().cv() || ty.cv());
       uop.type(ty);
       if (fi->e() != nullptr) {
         uop.decl(fi);
@@ -2420,7 +2420,7 @@ public:
 
     // Set type and decl
     Type ty = fi->rtype(_env, args, true);
-    ty.cv(cv);
+    ty.cv(cv || ty.cv());
     call.type(ty);
 
     if (Call* deprecated = fi->ann().getCall(constants().ann.mzn_deprecated)) {
@@ -2476,7 +2476,7 @@ public:
       isVar |= li->type().isvar();
     }
     Type ty = let.in()->type();
-    ty.cv(cv);
+    ty.cv(cv || ty.cv());
     if (isVar && ty.bt() == Type::BT_BOOL && ty.dim() == 0) {
       ty.ti(Type::TI_VAR);
     }
