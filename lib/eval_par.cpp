@@ -1244,7 +1244,7 @@ bool eval_bool(EnvI& env, Expression* e) {
             return false;
           }
         } else if (bo->op() == BOT_EQ && lhs->type().isAnn()) {
-          // follow ann id to value, since there might be indirection (e.g. func argument, see test_bug73.mzn)
+          // follow ann id to value, since there might be indirection (e.g. func argument, see test_equality_of_indirect_annotations.mzn)
           return Expression::equal(follow_id_to_value(lhs), follow_id_to_value(rhs));
         } else if (bo->op() == BOT_EQ && lhs->type().dim() > 0 && rhs->type().dim() > 0) {
           try {
