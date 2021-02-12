@@ -1244,7 +1244,8 @@ bool eval_bool(EnvI& env, Expression* e) {
             return false;
           }
         } else if (bo->op() == BOT_EQ && lhs->type().isAnn()) {
-          return Expression::equal(lhs, rhs);
+          // follow ann id to value, since there might be indirection (e.g. func argument, see test_bug73.mzn)
+          return Expression::equal(follow_id_to_value(lhs), follow_id_to_value(rhs));
         } else if (bo->op() == BOT_EQ && lhs->type().dim() > 0 && rhs->type().dim() > 0) {
           try {
             ArrayLit* al0 = eval_array_lit(env, lhs);
