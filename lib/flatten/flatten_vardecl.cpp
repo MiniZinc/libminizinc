@@ -41,6 +41,7 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
     VarDecl* vd = new_vardecl(env, ctx, ti, reuseVarId ? v->id() : nullptr, v, nullptr);
     v->flat(vd);
     Ctx nctx;
+    nctx.i = ctx.i;
     if ((v->e() != nullptr) && v->e()->type().bt() == Type::BT_BOOL) {
       nctx.b = C_MIX;
     }

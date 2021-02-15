@@ -2779,6 +2779,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         auto* ti = new TypeInst(Location().introduce(), Type());
         auto* obj = new VarDecl(Location().introduce(), ti, "_objective", si->e());
         si->e(obj->id());
+        obj->addAnnotation(si->st() == SolveI::ST_MAX ? constants().ctx.pos : constants().ctx.neg);
         objective = new VarDeclI(Location().introduce(), obj);
       }
     }

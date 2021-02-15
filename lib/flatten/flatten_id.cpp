@@ -81,7 +81,9 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
           id->decl()->e()->type().isvar() || id->decl()->e()->type().cv() ||
           id->decl()->e()->type().dim() > 0) {
         // New top-level id, need to copy into env.m
-        vd = flat_exp(env, Ctx(), id->decl(), nullptr, constants().varTrue).r()->cast<Id>()->decl();
+        Ctx nctx;
+        nctx.i = ctx.i;
+        vd = flat_exp(env, ctx, id->decl(), nullptr, constants().varTrue).r()->cast<Id>()->decl();
       } else {
         vd = id->decl();
       }

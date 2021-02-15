@@ -2962,7 +2962,23 @@ void flatten(Env& e, FlatteningOptions opt) {
             }
           }
         } else if (v->e()->type().isvar() || v->e()->type().isAnn()) {
-          (void)flatten_id(env, Ctx(), v->e()->id(), nullptr, constants().varTrue, true);
+          Ctx ctx;
+          if (v->e()->ann().contains(constants().ctx.pos) ||
+              v->e()->ann().contains(constants().ctx.promise_pos)) {
+            if (v->e()->type().isint()) {
+              ctx.i = C_POS;
+            } else if (v->e()->type().isbool()) {
+              ctx.b = C_POS;
+            }
+          } else if (v->e()->ann().contains(constants().ctx.neg) ||
+                     v->e()->ann().contains(constants().ctx.promise_neg)) {
+            if (v->e()->type().isint()) {
+              ctx.i = C_NEG;
+            } else if (v->e()->type().isbool()) {
+              ctx.b = C_NEG;
+            }
+          }
+          (void)flatten_id(env, ctx, v->e()->id(), nullptr, constants().varTrue, true);
         } else {
           if (v->e()->e() == nullptr) {
             if (!v->e()->type().isAnn()) {
@@ -3008,7 +3024,7 @@ void flatten(Env& e, FlatteningOptions opt) {
             Ctx ctx;
             ctx.i = C_POS;
             nsi = SolveI::max(Location().introduce(),
-                              flat_exp(env, Ctx(), si->e(), nullptr, constants().varTrue).r());
+                              flat_exp(env, ctx, si->e(), nullptr, constants().varTrue).r());
           } break;
         }
         for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it) {
