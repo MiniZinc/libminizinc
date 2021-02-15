@@ -2952,6 +2952,13 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         _bottomUpTyper.run(i->e());
         if (i->e() != nullptr) {
           Type et = i->e()->type();
+          if (et.isbool()) {
+            Type target_t = Type::varint();
+            if (et.isOpt()) {
+              target_t.ot(Type::OT_OPTIONAL);
+            }
+            i->e(add_coercion(_env, _env.model, i->e(), target_t)());
+          }
 
           bool needOptCoercion = et.isOpt() && et.isint();
           if (needOptCoercion) {
