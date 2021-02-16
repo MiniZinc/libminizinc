@@ -503,7 +503,9 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
       bool mixContext =
           (cid != constants().ids.forall && cid != constants().ids.exists &&
            (cid != constants().ids.bool2int || c->type().dim() > 0) && cid != constants().ids.sum &&
-           cid != "assert" && cid != constants().varRedef->id() && cid != "mzn_reverse_map_var");
+           cid != "assert" && cid != constants().varRedef->id() && cid != "mzn_reverse_map_var" &&
+           cid != "arrayXd" && cid != "array2d" && cid != "array3d" && cid != "array4d" &&
+           cid != "array5d" && cid != "array6d");
       if (cid == "mzn_reverse_map_var") {
         env.inReverseMapVar = true;
       }
@@ -1206,7 +1208,9 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
           ret.r = conj(env, r, ctx, args_ee);
         } else {
           if (is_total(decl)) {
-            EE ee = flat_exp(env, Ctx(), decl->e(), r, constants().varTrue);
+            Ctx nctx;
+            nctx.i = ctx.i;
+            EE ee = flat_exp(env, nctx, decl->e(), r, constants().varTrue);
             ret.r = bind(env, ctx, r, ee.r());
           } else {
             ret = flat_exp(env, ctx, decl->e(), r, nullptr);

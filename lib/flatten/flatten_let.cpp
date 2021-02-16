@@ -33,7 +33,7 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
           } else {
             nctx.i = +ctx.i;
           }
-        } else if (vd->ann().contains(constants().ctx.promise_pos)) {
+        } else if (vd->ann().contains(constants().ctx.promise_neg)) {
           if (vd->e()->type().bt() == Type::BT_BOOL) {
             nctx.b = -ctx.b;
           } else {
