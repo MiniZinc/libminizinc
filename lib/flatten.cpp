@@ -3146,8 +3146,8 @@ void flatten(Env& e, FlatteningOptions opt) {
               env.fail(oss.str());
             }
 
-            bool needRangeDomain = onlyRangeDomains;
-            if (!needRangeDomain) {
+            bool needRangeDomain = onlyRangeDomains && !vdi->e()->type().isOpt();
+            if (!needRangeDomain && !vdi->e()->type().isOpt()) {
               if (dom->min(0).isMinusInfinity() || dom->max(dom->size() - 1).isPlusInfinity()) {
                 needRangeDomain = true;
               }

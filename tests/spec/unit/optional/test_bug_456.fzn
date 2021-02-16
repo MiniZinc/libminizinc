@@ -1,0 +1,4 @@
+var bool: X_INTRODUCED_0_ ::var_is_introduced :: output_var;
+var int: X_INTRODUCED_1_ ::var_is_introduced :: output_var;
+constraint int_le(0,X_INTRODUCED_1_);
+solve  satisfy;
