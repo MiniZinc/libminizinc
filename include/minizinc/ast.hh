@@ -1867,8 +1867,8 @@ public:
     Id* pos;
     Id* neg;
     Id* mix;
-    Id* promise_pos;  // NOLINT(readability-identifier-naming)
-    Id* promise_neg;  // NOLINT(readability-identifier-naming)
+    Id* promise_monotone;  // NOLINT(readability-identifier-naming)
+    Id* promise_antitone;  // NOLINT(readability-identifier-naming)
   } ctx;
   /// Common annotations
   struct {

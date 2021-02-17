@@ -626,6 +626,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
         }
         args_ee[0] = EE(al_new, constants().literalTrue);
       } else {
+        BCtx transfer_ctx = c->type().bt() == Type::BT_INT ? nctx.i : nctx.b;
         for (unsigned int i = c->argCount(); (i--) != 0U;) {
           Ctx argctx = nctx;
           if (mixContext) {
@@ -633,21 +634,21 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
               argctx.b = (i == 0 ? +nctx.b : -nctx.b);
             } else if (c->arg(i)->type().bt() == Type::BT_BOOL) {
               if (c->decl() != nullptr &&
-                  c->decl()->params()[i]->ann().contains(constants().ctx.promise_pos)) {
-                argctx.b = +nctx.b;
+                  c->decl()->params()[i]->ann().contains(constants().ctx.promise_monotone)) {
+                argctx.b = +transfer_ctx;
               } else if (c->decl() != nullptr &&
-                         c->decl()->params()[i]->ann().contains(constants().ctx.promise_neg)) {
-                argctx.b = -nctx.b;
+                         c->decl()->params()[i]->ann().contains(constants().ctx.promise_antitone)) {
+                argctx.b = -transfer_ctx;
               } else {
                 argctx.b = C_MIX;
               }
             } else if (c->arg(i)->type().bt() == Type::BT_INT) {
               if (c->decl() != nullptr &&
-                  c->decl()->params()[i]->ann().contains(constants().ctx.promise_pos)) {
-                argctx.i = +nctx.i;
+                  c->decl()->params()[i]->ann().contains(constants().ctx.promise_monotone)) {
+                argctx.i = +transfer_ctx;
               } else if (c->decl() != nullptr &&
-                         c->decl()->params()[i]->ann().contains(constants().ctx.promise_neg)) {
-                argctx.i = -nctx.i;
+                         c->decl()->params()[i]->ann().contains(constants().ctx.promise_antitone)) {
+                argctx.i = -transfer_ctx;
               } else {
                 argctx.i = C_MIX;
               }

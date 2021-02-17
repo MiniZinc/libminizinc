@@ -26,18 +26,19 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
       Expression* let_e = nullptr;
       if (vd->e() != nullptr) {
         Ctx nctx = ctx;
+        BCtx transfer_ctx = let->type().bt() == Type::BT_INT ? nctx.i : nctx.b;
         nctx.neg = false;
-        if (vd->ann().contains(constants().ctx.promise_pos)) {
+        if (vd->ann().contains(constants().ctx.promise_monotone)) {
           if (vd->e()->type().bt() == Type::BT_BOOL) {
-            nctx.b = +ctx.b;
+            nctx.b = +transfer_ctx;
           } else {
-            nctx.i = +ctx.i;
+            nctx.i = +transfer_ctx;
           }
-        } else if (vd->ann().contains(constants().ctx.promise_neg)) {
+        } else if (vd->ann().contains(constants().ctx.promise_antitone)) {
           if (vd->e()->type().bt() == Type::BT_BOOL) {
-            nctx.b = -ctx.b;
+            nctx.b = -transfer_ctx;
           } else {
-            nctx.i = -ctx.i;
+            nctx.i = -transfer_ctx;
           }
         } else if (vd->e()->type().bt() == Type::BT_BOOL) {
           nctx.b = C_MIX;

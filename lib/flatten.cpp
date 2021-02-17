@@ -2964,14 +2964,14 @@ void flatten(Env& e, FlatteningOptions opt) {
         } else if (v->e()->type().isvar() || v->e()->type().isAnn()) {
           Ctx ctx;
           if (v->e()->ann().contains(constants().ctx.pos) ||
-              v->e()->ann().contains(constants().ctx.promise_pos)) {
+              v->e()->ann().contains(constants().ctx.promise_monotone)) {
             if (v->e()->type().isint()) {
               ctx.i = C_POS;
             } else if (v->e()->type().isbool()) {
               ctx.b = C_POS;
             }
           } else if (v->e()->ann().contains(constants().ctx.neg) ||
-                     v->e()->ann().contains(constants().ctx.promise_neg)) {
+                     v->e()->ann().contains(constants().ctx.promise_antitone)) {
             if (v->e()->type().isint()) {
               ctx.i = C_NEG;
             } else if (v->e()->type().isbool()) {

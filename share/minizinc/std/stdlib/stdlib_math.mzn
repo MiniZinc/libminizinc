@@ -166,7 +166,9 @@ function float: '/'(float: x, opt float: y) =
 /** @group stdlib.arithmetic Return number of true elments in array \a x */
 function int:  count(array[$T] of bool: x) = sum([bool2int(y) | y in array1d(x)]);
 /** @group stdlib.arithmetic Return number of true elments in array \a x */
-function var int:  count(array[$T] of var bool: x) = sum([bool2int(y) | y in array1d(x)]);
+function var int:  count(array[$T] of var bool: x :: promise_ctx_monotone) = let {
+  array[int] of var bool: xx :: promise_ctx_monotone = array1d(x);
+} in sum([bool2int(y) | y in xx]);
 
 /** @group stdlib.arithmetic Return sum of elements in array \a x */
 function     int:   sum(array[$T] of     int: x);
