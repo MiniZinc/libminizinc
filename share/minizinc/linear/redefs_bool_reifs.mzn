@@ -174,7 +174,7 @@ predicate array_bool_xor(array[int] of var bool: a) =
      in
        ss == 1 + 2 * m;
 
-predicate bool_clause(array[int] of var bool: p ::promoise_ctx_pos, array[int] of var bool: n ::promoise_ctx_neg) =
+predicate bool_clause(array[int] of var bool: p ::promise_ctx_monotone, array[int] of var bool: n ::promise_ctx_antitone) =
       sum(i in index_set(p))( bool2int(p[i]) )
     - sum(i in index_set(n))( bool2int(n[i]) )
     + length(n)

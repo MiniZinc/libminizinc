@@ -4,7 +4,7 @@
 %-----------------------------------------------------------------------------%
 
 predicate fzn_lex_less_bool(array[int] of var bool: x ::promise_ctx_antitone,
-                            array[int] of var bool: y ::promise_ctx_monotone); =
+                            array[int] of var bool: y ::promise_ctx_monotone) =
     let { int: lx = min(index_set(x)),
           int: ux = max(index_set(x)),
           int: ly = min(index_set(y)),
