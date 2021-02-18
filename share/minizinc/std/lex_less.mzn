@@ -7,8 +7,8 @@ include "lex_less_set.mzn";
   Requires that the array \a x is strictly lexicographically less than
   array \a y. Compares them from first to last element, regardless of indices.
 */
-predicate lex_less(array[int] of var bool: x,
-                   array[int] of var bool: y) =
+predicate lex_less(array[int] of var bool: x ::promise_ctx_antitone,
+                   array[int] of var bool: y ::promise_ctx_monotone) =
     if length(x)=1 /\ length(y)=1 then x[min(index_set(x))] < y[min(index_set(y))]
     elseif length(x)=0 then length(y)>0
     elseif length(y)=0 then false
@@ -18,8 +18,8 @@ predicate lex_less(array[int] of var bool: x,
   Requires that the array \a x is strictly lexicographically less than
   array \a y. Compares them from first to last element, regardless of indices.
 */
-predicate lex_less(array[int] of var int: x,
-                   array[int] of var int: y) =
+predicate lex_less(array[int] of var int: x ::promise_ctx_antitone,
+                   array[int] of var int: y ::promise_ctx_monotone) =
     if length(x)=1 /\ length(y)=1 then x[min(index_set(x))] < y[min(index_set(y))]
     elseif length(x)=0 then length(y)>0
     elseif length(y)=0 then false
@@ -29,8 +29,8 @@ predicate lex_less(array[int] of var int: x,
   Requires that the array \a x is strictly lexicographically less than
   array \a y. Compares them from first to last element, regardless of indices.
 */
-predicate lex_less(array[int] of var float: x,
-                   array[int] of var float: y) =
+predicate lex_less(array[int] of var float: x ::promise_ctx_antitone,
+                   array[int] of var float: y ::promise_ctx_monotone) =
     if length(x)=1 /\ length(y)=1 then x[min(index_set(x))] < y[min(index_set(y))]
     elseif length(x)=0 then length(y)>0
     elseif length(y)=0 then false
@@ -49,13 +49,16 @@ predicate lex_less(array[int] of var set of int: x,
 
 % Alternative names for the above.
 %
-predicate lex_lt(array[int] of var bool: x, array[int] of var bool: y) =
+predicate lex_lt(array[int] of var bool: x ::promise_ctx_antitone,
+                 array[int] of var bool: y ::promise_ctx_monotone) =
 	lex_less(x, y);
 
-predicate lex_lt(array[int] of var int: x, array[int] of var int: y) =
+predicate lex_lt(array[int] of var int: x ::promise_ctx_antitone,
+                 array[int] of var int: y ::promise_ctx_monotone) =
 	lex_less(x, y);
 
-predicate lex_lt(array[int] of var float: x, array[int] of var float: y) =
+predicate lex_lt(array[int] of var float: x ::promise_ctx_antitone,
+                 array[int] of var float: y ::promise_ctx_monotone) =
 	lex_less(x, y);
 
 predicate lex_lt(array[int] of var set of int: x,

@@ -96,9 +96,9 @@ predicate bool_ne_reif(var bool: p, var bool: q, var bool: r) =
     bool_xor(p, q, r);
 
 
-predicate bool_le(var bool: p, var bool: q) =
-    let { var int: x = bool2int(p),
-          var int: y = bool2int(q) }
+predicate bool_le(var bool: p ::promise_ctx_antitone, var bool: q ::promise_ctx_monotone) =
+    let { var int: x ::promise_ctx_antitone = bool2int(p),
+          var int: y ::promise_ctx_monotone = bool2int(q) }
     in
     x <= y;
 
@@ -118,7 +118,7 @@ predicate bool_le_reif(var bool: p, var bool: q, var bool: r) =
   endif;
 
 
-predicate bool_lt(var bool: p, var bool: q) =
+predicate bool_lt(var bool: p ::promise_ctx_antitone, var bool: q ::promise_ctx_monotone) =
     not p /\ q;
 
 
@@ -174,7 +174,7 @@ predicate array_bool_xor(array[int] of var bool: a) =
      in
        ss == 1 + 2 * m;
 
-predicate bool_clause(array[int] of var bool: p, array[int] of var bool: n) =
+predicate bool_clause(array[int] of var bool: p ::promoise_ctx_pos, array[int] of var bool: n ::promoise_ctx_neg) =
       sum(i in index_set(p))( bool2int(p[i]) )
     - sum(i in index_set(n))( bool2int(n[i]) )
     + length(n)

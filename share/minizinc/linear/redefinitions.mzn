@@ -48,7 +48,7 @@ include "nosets.mzn";                %% For set_le, set_lt ... Usind std/nosets
 % do not support strict inequality.  Note that it does not preserve equivalence
 % (some solutions of the original problem may become invalid).
 
-predicate float_lt(var float: x, var float: y) =
+predicate float_lt(var float: x ::promise_ctx_antitone, var float: y ::promise_ctx_monotone) =
 %     (x - y) <= (-float_lt_EPS_coef__)*max(abs(ub(x - y)), abs(ub(y-x)));
       x <= y - float_lt_EPS;
 

@@ -7,8 +7,8 @@ include "lex_lesseq_set.mzn";
   Requires that the array \a x is lexicographically less than or equal to
   array \a y. Compares them from first to last element, regardless of indices.
 */
-predicate lex_lesseq(array[int] of var bool: x,
-                     array[int] of var bool: y) = 
+predicate lex_lesseq(array[int] of var bool: x ::promise_ctx_antitone,
+                     array[int] of var bool: y ::promise_ctx_monotone) =
     if length(x)=1 /\ length(y)=1 then x[min(index_set(x))] <= y[min(index_set(y))]
     elseif length(x)=0 then true
     elseif length(y)=0 then false
@@ -18,8 +18,8 @@ predicate lex_lesseq(array[int] of var bool: x,
   Requires that the array \a x is lexicographically less than or equal to
   array \a y. Compares them from first to last element, regardless of indices.
 */
-predicate lex_lesseq(array[int] of var float: x,
-                     array[int] of var float: y) =
+predicate lex_lesseq(array[int] of var float: x ::promise_ctx_antitone,
+                     array[int] of var float: y ::promise_ctx_monotone) =
     if length(x)=1 /\ length(y)=1 then x[min(index_set(x))] <= y[min(index_set(y))]
     elseif length(x)=0 then true
     elseif length(y)=0 then false
@@ -29,8 +29,8 @@ predicate lex_lesseq(array[int] of var float: x,
   Requires that the array \a x is lexicographically less than or equal to
   array \a y. Compares them from first to last element, regardless of indices.
 */
-predicate lex_lesseq(array[int] of var int: x,
-                     array[int] of var int: y) =
+predicate lex_lesseq(array[int] of var int: x ::promise_ctx_antitone,
+                     array[int] of var int: y ::promise_ctx_monotone) =
     if length(x)=1 /\ length(y)=1 then x[min(index_set(x))] <= y[min(index_set(y))]
     elseif length(x)=0 then true
     elseif length(y)=0 then false
@@ -41,7 +41,7 @@ predicate lex_lesseq(array[int] of var int: x,
   array \a y. Compares them from first to last element, regardless of indices.
 */
 predicate lex_lesseq(array[int] of var set of int: x,
-                     array[int] of var set of int: y) =
+                     array[int] of var set of int: y ::promise_ctx_monotone) =
     if length(x)=1 /\ length(y)=1 then x[min(index_set(x))] <= y[min(index_set(y))]
     elseif length(x)=0 then true
     elseif length(y)=0 then false
@@ -49,13 +49,13 @@ predicate lex_lesseq(array[int] of var set of int: x,
 
 % Alternative names for the above.
 %
-predicate lex_leq(array[int] of var bool: x, array[int] of var bool: y) =
+predicate lex_leq(array[int] of var bool: x ::promise_ctx_antitone, array[int] of var bool: y ::promise_ctx_monotone) =
 	lex_lesseq(x, y);
 
-predicate lex_leq(array[int] of var int: x, array[int] of var int: y) =
+predicate lex_leq(array[int] of var int: x ::promise_ctx_antitone, array[int] of var int: y ::promise_ctx_monotone) =
 	lex_lesseq(x, y);
 
-predicate lex_leq(array[int] of var float: x, array[int] of var float: y) =
+predicate lex_leq(array[int] of var float: x ::promise_ctx_antitone, array[int] of var float: y ::promise_ctx_monotone) =
 	lex_lesseq(x, y);
 
 predicate lex_leq(array[int] of var set of int: x,

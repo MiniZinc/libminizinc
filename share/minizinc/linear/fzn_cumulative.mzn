@@ -12,7 +12,7 @@
 
 predicate fzn_cumulative(array[int] of var int: s,
                      array[int] of var int: d,
-                     array[int] of var int: r, var int: b) =
+                     array[int] of var int: r, var int: b ::promise_ctx_monotone) =
         if mzn_in_redundant_constraint() /\ fMZN__IgnoreRedundantCumulative then
             true
         else
@@ -57,7 +57,7 @@ predicate cumulative_set_times(array[int] of var int: s,
 predicate cumulative_time_decomp(array[int] of var int: s, 
                                  array[int] of var int: d, 
                                  array[int] of var int: r, 
-                                 var int: b, 
+                                 var int: b ::promise_ctx_monotone,
                                  set of int: TIMES01) = 
 let {  
   set of int: tasks =  
@@ -81,7 +81,7 @@ in
 predicate cumulative_task_decomp(array[int] of var int: s, 
                                  array[int] of var int: d, 
                                  array[int] of var int: r, 
-                                 var int: b) = 
+                                 var int: b ::promise_ctx_monotone) =
 let {  
   set of int: tasks =  
   {i | i in index_set(s) where ub(r[i]) > 0 /\ ub(d[i]) > 0 } 

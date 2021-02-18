@@ -3,8 +3,8 @@
 % array 'y'.  Compares them from first to last element, regardless of indices
 %-----------------------------------------------------------------------------%
 
-predicate fzn_lex_lesseq_int(array[int] of var int: x,
-                         array[int] of var int: y) =
+predicate fzn_lex_lesseq_int(array[int] of var int: x ::promise_ctx_antitone,
+                             array[int] of var int: y ::promise_ctx_monotone) =
     let { int: lx = min(index_set(x)),
           int: ux = max(index_set(x)),
           int: ly = min(index_set(y)),
