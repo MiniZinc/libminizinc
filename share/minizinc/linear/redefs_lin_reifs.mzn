@@ -126,8 +126,10 @@ predicate int_ne__SIMPLE(var int: x, int: y) =
     in
     aux_int_lt_if_1(x, y, p) /\
     aux_int_gt_if_0(x, y, p)
-  else %TODO: Why is this not half-reified?
-    1 == (x<y) + (x>y)
+  else
+     % TODO: This is automatically half-reified, but would still use more
+     % variables
+     (x<y) + (x>y) > 0
   endif;
 
 %% var, var
