@@ -978,7 +978,41 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
         break;
       }
     case BOT_MULT:
+      ctx0.i = C_MIX;
+      ctx1.i = C_MIX;
+      if (isBuiltin && boe0->type().isint()) {
+        IntBounds bounds0 = compute_int_bounds(env, boe0);
+        if (bounds0.valid && bounds0.u < 0) {
+          ctx1.i = -ctx.i;
+        } else if (bounds0.valid && bounds0.u >= 1) {
+          ctx1.i = +ctx.i;
+        }
+        IntBounds bounds1 = compute_int_bounds(env, boe1);
+        if (bounds1.valid && bounds1.u < 0) {
+          ctx0.i = -ctx.i;
+        } else if (bounds1.valid && bounds1.u >= 1) {
+          ctx0.i = +ctx.i;
+        }
+      }
+      goto flatten_nonbool_op;
     case BOT_IDIV:
+      ctx0.i = C_MIX;
+      ctx1.i = C_MIX;
+      if (isBuiltin && boe0->type().isint()) {
+        IntBounds bounds0 = compute_int_bounds(env, boe0);
+        if (bounds0.valid && bounds0.u < 0) {
+          ctx1.i = +ctx.i;
+        } else if (bounds0.valid && bounds0.u > 1) {
+          ctx1.i = -ctx.i;
+        }
+        IntBounds bounds1 = compute_int_bounds(env, boe1);
+        if (bounds1.valid && bounds1.u < 0) {
+          ctx0.i = -ctx.i;
+        } else if (bounds1.valid && bounds1.u > 1) {
+          ctx0.i = +ctx.i;
+        }
+      }
+      goto flatten_nonbool_op;
     case BOT_MOD:
     case BOT_POW:
     case BOT_DIV:
@@ -986,7 +1020,10 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
     case BOT_DIFF:
     case BOT_SYMDIFF:
     case BOT_INTERSECT:
-    case BOT_DOTDOT: {
+    case BOT_DOTDOT:
+      ctx0.i = C_MIX;
+      ctx1.i = C_MIX;
+    flatten_nonbool_op : {
       assert(!ctx0.neg);
       assert(!ctx1.neg);
       EE e0 = flat_exp(env, ctx0, boe0, nullptr, b);
