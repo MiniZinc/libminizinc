@@ -634,14 +634,16 @@ inline void SolveI::st(SolveI::SolveType s) { _secondaryId = s; }
 
 inline OutputI::OutputI(const Location& loc, Expression* e) : Item(loc, II_OUT), _e(e) {}
 
-inline FunctionI::FunctionI(const Location& loc, const std::string& id, TypeInst* ti,
-                            const std::vector<VarDecl*>& params, Expression* e, bool from_stdlib)
+inline FunctionI::FunctionI(const Location& loc, const ASTString& id, TypeInst* ti,
+                            const std::vector<VarDecl*>& params, Expression* e, bool from_stdlib,
+                            bool capture_annotations)
     : Item(loc, II_FUN),
-      _id(ASTString(id)),
+      _id(id),
       _ti(ti),
       _params(ASTExprVec<VarDecl>(params)),
       _e(e),
-      _fromStdLib(from_stdlib) {
+      _fromStdLib(from_stdlib),
+      _captureAnnotations(capture_annotations) {
   builtins.e = nullptr;
   builtins.b = nullptr;
   builtins.f = nullptr;
@@ -650,15 +652,11 @@ inline FunctionI::FunctionI(const Location& loc, const std::string& id, TypeInst
   builtins.str = nullptr;
 }
 
-inline FunctionI::FunctionI(const Location& loc, const ASTString& id, TypeInst* ti,
-                            const ASTExprVec<VarDecl>& params, Expression* e, bool from_stdlib)
-    : Item(loc, II_FUN), _id(id), _ti(ti), _params(params), _e(e), _fromStdLib(from_stdlib) {
-  builtins.e = nullptr;
-  builtins.b = nullptr;
-  builtins.f = nullptr;
-  builtins.i = nullptr;
-  builtins.s = nullptr;
-  builtins.str = nullptr;
+inline void FunctionI::markParams() {
+  _params.mark();
+  for (auto* p : _params) {
+    Expression::mark(p);
+  }
 }
 
 }  // namespace MiniZinc

@@ -706,11 +706,10 @@ public:
       }
 
       GCLock lock;
-      for (unsigned int i = 0; i < fi->params().size(); i++) {
-        std::string param(fi->params()[i]->id()->str().c_str(),
-                          fi->params()[i]->id()->str().size());
+      for (unsigned int i = 0; i < fi->paramCount(); i++) {
+        std::string param(fi->param(i)->id()->str().c_str(), fi->param(i)->id()->str().size());
         if (allArgs.find(param) == allArgs.end()) {
-          std::cerr << "Warning: parameter " << *fi->params()[i]->id()
+          std::cerr << "Warning: parameter " << *fi->param(i)->id()
                     << " not documented for function " << fi->id() << " at location " << fi->loc()
                     << "\n";
         }
@@ -719,7 +718,11 @@ public:
       std::string sig;
       {
         GCLock lock;
-        auto* fi_c = new FunctionI(Location(), fi->id(), fi->ti(), fi->params());
+        std::vector<VarDecl*> params(fi->paramCount());
+        for (int i = 0; i < fi->paramCount(); i++) {
+          params[i] = fi->param(i);
+        }
+        auto* fi_c = new FunctionI(Location(), fi->id(), fi->ti(), params);
         std::ostringstream oss_sig;
         oss_sig << *fi_c;
         sig = oss_sig.str();
@@ -750,17 +753,17 @@ public:
       fs << fi->id() << "(";
       os << "<span class='mzn-fn-id'>" << fi->id() << "</span>(";
       size_t align = fs.str().size();
-      for (unsigned int i = 0; i < fi->params().size(); i++) {
-        fs << *fi->params()[i]->ti() << ": " << *fi->params()[i]->id();
-        if (i < fi->params().size() - 1) {
+      for (unsigned int i = 0; i < fi->paramCount(); i++) {
+        fs << *fi->param(i)->ti() << ": " << *fi->param(i)->id();
+        if (i < fi->paramCount() - 1) {
           fs << ", ";
         }
       }
       bool splitArgs = (fs.str().size() > 70);
-      for (unsigned int i = 0; i < fi->params().size(); i++) {
-        os << "<span class='mzn-ti'>" << *fi->params()[i]->ti() << "</span>: "
-           << "<span class='mzn-id'>" << *fi->params()[i]->id() << "</span>";
-        if (i < fi->params().size() - 1) {
+      for (unsigned int i = 0; i < fi->paramCount(); i++) {
+        os << "<span class='mzn-ti'>" << *fi->param(i)->ti() << "</span>: "
+           << "<span class='mzn-id'>" << *fi->param(i)->id() << "</span>";
+        if (i < fi->paramCount() - 1) {
           os << ",";
           if (splitArgs) {
             os << "\n";
@@ -780,12 +783,12 @@ public:
         do {
           alias = false;
           Call* c = Expression::dynamicCast<Call>(f_body->e());
-          if ((c != nullptr) && c->argCount() == f_body->params().size()) {
+          if ((c != nullptr) && c->argCount() == f_body->paramCount()) {
             bool sameParams = true;
-            for (unsigned int i = 0; i < f_body->params().size(); i++) {
+            for (unsigned int i = 0; i < f_body->paramCount(); i++) {
               Id* ident = c->arg(i)->dynamicCast<Id>();
-              if (ident == nullptr || ident->decl() != f_body->params()[i] ||
-                  ident->str() != c->decl()->params()[i]->id()->str()) {
+              if (ident == nullptr || ident->decl() != f_body->param(i) ||
+                  ident->str() != c->decl()->param(i)->id()->str()) {
                 sameParams = false;
                 break;
               }
@@ -824,11 +827,11 @@ public:
         std::string op = fi->id().substr(1, fi->id().size() - 2);
         ;
         const char* space = (op[0] >= 'a' ? " " : "");
-        if (fi->params().size() == 2) {
-          os << "<p>Usage: <span class=\"mzn-arg\">" << *fi->params()[0]->id() << space << op
-             << space << *fi->params()[1]->id() << "</span></p>";
-        } else if (fi->params().size() == 1) {
-          os << "<p>Usage: <span class=\"mzn-arg\">" << op << space << *fi->params()[0]->id()
+        if (fi->paramCount() == 2) {
+          os << "<p>Usage: <span class=\"mzn-arg\">" << *fi->param(0)->id() << space << op << space
+             << *fi->param(1)->id() << "</span></p>";
+        } else if (fi->paramCount() == 1) {
+          os << "<p>Usage: <span class=\"mzn-arg\">" << op << space << *fi->param(0)->id()
              << "</span></p>";
         }
       }
@@ -1240,10 +1243,10 @@ public:
       }
 
       GCLock lock;
-      for (unsigned int i = 0; i < fi->params().size(); i++) {
-        if (allArgs.find(std::string(fi->params()[i]->id()->str().c_str(),
-                                     fi->params()[i]->id()->str().size())) == allArgs.end()) {
-          std::cerr << "Warning: parameter " << *fi->params()[i]->id()
+      for (unsigned int i = 0; i < fi->paramCount(); i++) {
+        if (allArgs.find(std::string(fi->param(i)->id()->str().c_str(),
+                                     fi->param(i)->id()->str().size())) == allArgs.end()) {
+          std::cerr << "Warning: parameter " << *fi->param(i)->id()
                     << " not documented for function " << fi->id() << " at location " << fi->loc()
                     << "\n";
         }
@@ -1252,7 +1255,11 @@ public:
       std::string sig;
       {
         GCLock lock;
-        auto* fi_c = new FunctionI(Location(), fi->id(), fi->ti(), fi->params());
+        std::vector<VarDecl*> params(fi->paramCount());
+        for (int i = 0; i < fi->paramCount(); i++) {
+          params[i] = fi->param(i);
+        }
+        auto* fi_c = new FunctionI(Location(), fi->id(), fi->ti(), params);
         std::ostringstream oss_sig;
         oss_sig << *fi_c;
         sig = oss_sig.str();
@@ -1284,26 +1291,26 @@ public:
       fs << fi->id() << "(";
       os << "  " << fs.str();
       size_t align = fs.str().size();
-      for (unsigned int i = 0; i < fi->params().size(); i++) {
-        fs << *fi->params()[i]->ti();
+      for (unsigned int i = 0; i < fi->paramCount(); i++) {
+        fs << *fi->param(i)->ti();
         std::ostringstream fid;
-        fid << *fi->params()[i]->id();
+        fid << *fi->param(i)->id();
         if (!fid.str().empty()) {
-          fs << ": " << *fi->params()[i]->id();
+          fs << ": " << *fi->param(i)->id();
         }
-        if (i < fi->params().size() - 1) {
+        if (i < fi->paramCount() - 1) {
           fs << ", ";
         }
       }
       bool splitArgs = (fs.str().size() > 70);
-      for (unsigned int i = 0; i < fi->params().size(); i++) {
-        os << *fi->params()[i]->ti();
+      for (unsigned int i = 0; i < fi->paramCount(); i++) {
+        os << *fi->param(i)->ti();
         std::ostringstream fid;
-        fid << *fi->params()[i]->id();
+        fid << *fi->param(i)->id();
         if (!fid.str().empty()) {
-          os << ": " << *fi->params()[i]->id();
+          os << ": " << *fi->param(i)->id();
         }
-        if (i < fi->params().size() - 1) {
+        if (i < fi->paramCount() - 1) {
           os << ",";
           if (splitArgs) {
             os << "\n  ";
@@ -1321,11 +1328,11 @@ public:
 
       if (fi->id().c_str()[0] == '\'') {
         std::string op = fi->id().substr(1, fi->id().size() - 2);
-        if (fi->params().size() == 2) {
-          os << "Usage: ``" << *fi->params()[0]->id() << " " << op << " " << *fi->params()[1]->id()
+        if (fi->paramCount() == 2) {
+          os << "Usage: ``" << *fi->param(0)->id() << " " << op << " " << *fi->param(1)->id()
              << "``\n\n";
-        } else if (fi->params().size() == 1) {
-          os << "Usage: ``" << op << " " << *fi->params()[0]->id() << "``\n\n";
+        } else if (fi->paramCount() == 1) {
+          os << "Usage: ``" << op << " " << *fi->param(0)->id() << "``\n\n";
         }
       }
 
@@ -1337,12 +1344,12 @@ public:
         do {
           alias = false;
           Call* c = Expression::dynamicCast<Call>(f_body->e());
-          if ((c != nullptr) && c->argCount() == f_body->params().size()) {
+          if ((c != nullptr) && c->argCount() == f_body->paramCount()) {
             bool sameParams = true;
-            for (unsigned int i = 0; i < f_body->params().size(); i++) {
+            for (unsigned int i = 0; i < f_body->paramCount(); i++) {
               Id* ident = c->arg(i)->dynamicCast<Id>();
-              if (ident == nullptr || ident->decl() != f_body->params()[i] ||
-                  ident->str() != c->decl()->params()[i]->id()->str()) {
+              if (ident == nullptr || ident->decl() != f_body->param(i) ||
+                  ident->str() != c->decl()->param(i)->id()->str()) {
                 sameParams = false;
                 break;
               }

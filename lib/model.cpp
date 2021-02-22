@@ -18,9 +18,9 @@
 
 namespace MiniZinc {
 
-Model::FnEntry::FnEntry(FunctionI* fi0) : t(fi0->params().size()), fi(fi0), isPolymorphic(false) {
-  for (unsigned int i = 0; i < fi->params().size(); i++) {
-    t[i] = fi->params()[i]->type();
+Model::FnEntry::FnEntry(FunctionI* fi0) : t(fi0->paramCount()), fi(fi0), isPolymorphic(false) {
+  for (unsigned int i = 0; i < fi->paramCount(); i++) {
+    t[i] = fi->param(i)->type();
     isPolymorphic |= (t[i].bt() == Type::BT_TOP);
   }
 }
@@ -144,12 +144,11 @@ void Model::addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& en
       if (cur.t[i].bt() == Type::BT_TOP) {
         std::vector<Type*> t;
         for (unsigned int j = i; j < cur.t.size(); j++) {
-          assert(cur.fi->params()[i]->ti()->domain() &&
-                 cur.fi->params()[i]->ti()->domain()->isa<TIId>());
-          if ((cur.fi->params()[j]->ti()->domain() != nullptr) &&
-              cur.fi->params()[j]->ti()->domain()->isa<TIId>()) {
-            TIId* id0 = cur.fi->params()[i]->ti()->domain()->cast<TIId>();
-            TIId* id1 = cur.fi->params()[j]->ti()->domain()->cast<TIId>();
+          assert(cur.fi->param(i)->ti()->domain() && cur.fi->param(i)->ti()->domain()->isa<TIId>());
+          if ((cur.fi->param(j)->ti()->domain() != nullptr) &&
+              cur.fi->param(j)->ti()->domain()->isa<TIId>()) {
+            TIId* id0 = cur.fi->param(i)->ti()->domain()->cast<TIId>();
+            TIId* id1 = cur.fi->param(j)->ti()->domain()->cast<TIId>();
             if (id0->v() == id1->v()) {
               // Found parameter with same type variable
               // Initialise to lowest concrete base type (bool)
@@ -232,11 +231,11 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
       if (i.fi == fi) {
         return true;
       }
-      if (i.fi->params().size() == fi->params().size()) {
+      if (i.fi->paramCount() == fi->paramCount()) {
         bool alleq = true;
-        for (unsigned int j = 0; j < fi->params().size(); j++) {
-          Type t1 = i.fi->params()[j]->type();
-          Type t2 = fi->params()[j]->type();
+        for (unsigned int j = 0; j < fi->paramCount(); j++) {
+          Type t1 = i.fi->param(j)->type();
+          Type t2 = fi->param(j)->type();
           t1.enumId(0);
           t2.enumId(0);
           if (t1 != t2) {
@@ -272,12 +271,12 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
     }
   }
   if (fi->id() == "mzn_reverse_map_var") {
-    if (fi->params().size() != 1 || fi->ti()->type() != Type::varbool()) {
+    if (fi->paramCount() != 1 || fi->ti()->type() != Type::varbool()) {
       throw TypeError(env, fi->loc(),
                       "functions called `mzn_reverse_map_var` must have a single argument and "
                       "return type var bool");
     }
-    Type t = fi->params()[0]->type();
+    Type t = fi->param(0)->type();
     _revmapmap.insert(std::pair<int, FunctionI*>(t.toInt(), fi));
   }
   return true;
@@ -352,7 +351,7 @@ void Model::fixFnMap() {
     for (auto& i : it.second) {
       for (unsigned int j = 0; j < i.t.size(); j++) {
         if (i.t[j].isunknown()) {
-          i.t[j] = i.fi->params()[j]->type();
+          i.t[j] = i.fi->param(j)->type();
         }
       }
     }
@@ -370,13 +369,13 @@ void Model::checkFnOverloading(EnvI& env) {
       FunctionI* cur = fs[i].fi;
       for (unsigned int j = i + 1; j < fs.size(); j++) {
         FunctionI* cmp = fs[j].fi;
-        if (cur == cmp || cur->params().size() != cmp->params().size()) {
+        if (cur == cmp || cur->paramCount() != cmp->paramCount()) {
           break;
         }
         bool allEqual = true;
-        for (unsigned int i = 0; i < cur->params().size(); i++) {
-          Type t1 = cur->params()[i]->type();
-          Type t2 = cmp->params()[i]->type();
+        for (unsigned int i = 0; i < cur->paramCount(); i++) {
+          Type t1 = cur->param(i)->type();
+          Type t2 = cmp->param(i)->type();
           t1.enumId(0);
           t2.enumId(0);
           if (t1 != t2) {
@@ -563,9 +562,8 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
             }
           }
         } else {
-          oss << "    (requires " << i.fi->params().size() << " argument"
-              << (i.fi->params().size() == 1 ? "" : "s") << ", but " << c->argCount()
-              << " given)\n";
+          oss << "    (requires " << i.fi->paramCount() << " argument"
+              << (i.fi->paramCount() == 1 ? "" : "s") << ", but " << c->argCount() << " given)\n";
         }
       }
       throw TypeError(env, c->loc(), oss.str());

@@ -324,8 +324,9 @@ public:
   }
 
   ExpressionId eid() const {
-    return isUnboxedInt() ? E_INTLIT
-                          : isUnboxedFloatVal() ? E_FLOATLIT : static_cast<ExpressionId>(_id);
+    return isUnboxedInt()        ? E_INTLIT
+           : isUnboxedFloatVal() ? E_FLOATLIT
+                                 : static_cast<ExpressionId>(_id);
   }
 
   const Location& loc() const { return isUnboxedVal() ? Location::nonalloc : _loc; }
@@ -339,8 +340,9 @@ public:
   }
   void type(const Type& t);
   size_t hash() const {
-    return isUnboxedInt() ? unboxedIntToIntVal().hash()
-                          : isUnboxedFloatVal() ? unboxedFloatToFloatVal().hash() : _hash;
+    return isUnboxedInt()        ? unboxedIntToIntVal().hash()
+           : isUnboxedFloatVal() ? unboxedFloatToFloatVal().hash()
+                                 : _hash;
   }
 
 protected:
@@ -497,8 +499,9 @@ public:
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
-    return isUnboxedInt() ? T::eid == E_INTLIT
-                          : isUnboxedFloatVal() ? T::eid == E_FLOATLIT : _id == T::eid;
+    return isUnboxedInt()        ? T::eid == E_INTLIT
+           : isUnboxedFloatVal() ? T::eid == E_FLOATLIT
+                                 : _id == T::eid;
   }
   /// Cast expression to type \a T*
   template <class T>
@@ -1599,6 +1602,8 @@ protected:
   Expression* _e;
   /// Whether function is defined in the standard library
   bool _fromStdLib;
+  /// Whether function captures annotations
+  bool _captureAnnotations;
 
 public:
   /// The identifier of this item type
@@ -1628,18 +1633,24 @@ public:
   } builtins;
 
   /// Constructor
-  FunctionI(const Location& loc, const std::string& id, TypeInst* ti,
-            const std::vector<VarDecl*>& params, Expression* e = nullptr, bool from_stdlib = false);
-  /// Constructor
   FunctionI(const Location& loc, const ASTString& id, TypeInst* ti,
-            const ASTExprVec<VarDecl>& params, Expression* e = nullptr, bool from_stdlib = false);
+            const std::vector<VarDecl*>& params, Expression* e = nullptr, bool from_stdlib = false,
+            bool capture_annotations = false);
 
   /// Access identifier
   ASTString id() const { return _id; }
   /// Access TypeInst
   TypeInst* ti() const { return _ti; }
-  /// Access parameters
-  ASTExprVec<VarDecl> params() const { return _params; }
+
+  /// Get number of parameters
+  unsigned int paramCount() const {
+    return _params.size() - static_cast<unsigned int>(_captureAnnotations);
+  }
+  /// Get parameter \a i
+  VarDecl* param(unsigned int i) const { return _params[i]; }
+  /// Mark param array for garbage collection
+  void markParams();
+
   /// Access annotation
   const Annotation& ann() const { return _ann; }
   /// Access annotation
@@ -1661,6 +1672,11 @@ public:
 
   /// Return whether function is defined in the standard library
   bool fromStdLib() const { return _fromStdLib; };
+
+  /// Return variable that captures annotations (or null)
+  VarDecl* capturedAnnotationsVar() const {
+    return _captureAnnotations ? _params[_params.size() - 1] : nullptr;
+  }
 };
 
 /**

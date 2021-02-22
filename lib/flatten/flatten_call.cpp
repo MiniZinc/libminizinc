@@ -426,9 +426,9 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
     }
     ret.r = bind(env, ctx, r, constants().literalTrue);
   } else {
-    if ((decl->e() != nullptr) && decl->params().size() == 1 && decl->e()->isa<Id>() &&
-        decl->params()[0]->ti()->domain() == nullptr &&
-        decl->e()->cast<Id>()->decl() == decl->params()[0]) {
+    if ((decl->e() != nullptr) && decl->paramCount() == 1 && decl->e()->isa<Id>() &&
+        decl->param(0)->ti()->domain() == nullptr &&
+        decl->e()->cast<Id>()->decl() == decl->param(0)) {
       Expression* arg = c->arg(0);
       for (ExpressionSetIter esi = decl->e()->ann().begin(); esi != decl->e()->ann().end(); ++esi) {
         arg->addAnnotation(*esi);
@@ -634,20 +634,20 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
               argctx.b = (i == 0 ? +nctx.b : -nctx.b);
             } else if (c->arg(i)->type().bt() == Type::BT_BOOL) {
               if (c->decl() != nullptr &&
-                  c->decl()->params()[i]->ann().contains(constants().ctx.promise_monotone)) {
+                  c->decl()->param(i)->ann().contains(constants().ctx.promise_monotone)) {
                 argctx.b = +transfer_ctx;
               } else if (c->decl() != nullptr &&
-                         c->decl()->params()[i]->ann().contains(constants().ctx.promise_antitone)) {
+                         c->decl()->param(i)->ann().contains(constants().ctx.promise_antitone)) {
                 argctx.b = -transfer_ctx;
               } else {
                 argctx.b = C_MIX;
               }
             } else if (c->arg(i)->type().bt() == Type::BT_INT) {
               if (c->decl() != nullptr &&
-                  c->decl()->params()[i]->ann().contains(constants().ctx.promise_monotone)) {
+                  c->decl()->param(i)->ann().contains(constants().ctx.promise_monotone)) {
                 argctx.i = +transfer_ctx;
               } else if (c->decl() != nullptr &&
-                         c->decl()->params()[i]->ann().contains(constants().ctx.promise_antitone)) {
+                         c->decl()->param(i)->ann().contains(constants().ctx.promise_antitone)) {
                 argctx.i = -transfer_ctx;
               } else {
                 argctx.i = C_MIX;
@@ -962,11 +962,11 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
       }
       ret.r = bind(env, ctx, r, cit->second.r());
     } else {
-      for (unsigned int i = 0; i < decl->params().size(); i++) {
-        if (decl->params()[i]->type().dim() > 0) {
+      for (unsigned int i = 0; i < decl->paramCount(); i++) {
+        if (decl->param(i)->type().dim() > 0) {
           // Check array index sets
           auto* al = follow_id(args[i]())->cast<ArrayLit>();
-          VarDecl* pi = decl->params()[i];
+          VarDecl* pi = decl->param(i);
           for (unsigned int j = 0; j < pi->ti()->ranges().size(); j++) {
             TypeInst* range_ti = pi->ti()->ranges()[j];
             if ((range_ti->domain() != nullptr) && !range_ti->domain()->isa<TIId>()) {
@@ -981,7 +981,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
             }
           }
         }
-        if (Expression* dom = decl->params()[i]->ti()->domain()) {
+        if (Expression* dom = decl->param(i)->ti()->domain()) {
           if (!dom->isa<TIId>()) {
             // May have to constrain actual argument
             if (args[i]()->type().bt() == Type::BT_INT) {
@@ -1072,7 +1072,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
             } else if (args[i]()->type().bt() == Type::BT_BOT) {
               // Nothing to be done for empty arrays/sets
             } else {
-              throw EvalError(env, decl->params()[i]->loc(),
+              throw EvalError(env, decl->param(i)->loc(),
                               "domain restrictions other than int and float not supported yet");
             }
           }
@@ -1184,9 +1184,16 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
           }
         }
       } else {
-        std::vector<KeepAlive> previousParameters(decl->params().size());
-        for (unsigned int i = decl->params().size(); (i--) != 0U;) {
-          VarDecl* vd = decl->params()[i];
+        std::vector<KeepAlive> previousParameters(decl->paramCount());
+        KeepAlive previousCapture;
+        if (decl->capturedAnnotationsVar() != nullptr) {
+          previousCapture = decl->capturedAnnotationsVar()->e();
+          GCLock lock;
+          decl->capturedAnnotationsVar()->flat(decl->capturedAnnotationsVar());
+          decl->capturedAnnotationsVar()->e(env.createAnnotationArray());
+        }
+        for (unsigned int i = decl->paramCount(); (i--) != 0U;) {
+          VarDecl* vd = decl->param(i);
           previousParameters[i] = vd->e();
           vd->flat(vd);
           vd->e(args[i]());
@@ -1276,10 +1283,16 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
         }
 
         // Restore previous mapping
-        for (unsigned int i = decl->params().size(); (i--) != 0U;) {
-          VarDecl* vd = decl->params()[i];
+        for (unsigned int i = decl->paramCount(); (i--) != 0U;) {
+          VarDecl* vd = decl->param(i);
           vd->e(previousParameters[i]());
           vd->flat(vd->e() != nullptr ? vd : nullptr);
+        }
+        if (decl->capturedAnnotationsVar() != nullptr) {
+          decl->capturedAnnotationsVar()->e(previousCapture());
+          decl->capturedAnnotationsVar()->flat(decl->capturedAnnotationsVar()->e() != nullptr
+                                                   ? decl->capturedAnnotationsVar()
+                                                   : nullptr);
         }
       }
     }

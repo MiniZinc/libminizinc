@@ -176,6 +176,7 @@ public:
 
   void voAddExp(VarDecl* vd);
   void annotateFromCallStack(Expression* e);
+  ArrayLit* createAnnotationArray();
   void fail(const std::string& msg = std::string());
   bool failed() const;
   Model* flat();

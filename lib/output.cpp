@@ -21,8 +21,8 @@ namespace {
 bool is_completely_par(EnvI& env, FunctionI* fi, const std::vector<Type>& tv) {
   if (fi->e() != nullptr) {
     // This is not a builtin, so check parameters
-    for (auto* p : fi->params()) {
-      if (p->type().isvar()) {
+    for (int i = 0; i < fi->paramCount(); i++) {
+      if (fi->param(i)->type().isvar()) {
         return false;
       }
     }
@@ -51,8 +51,8 @@ void check_output_par_fn(EnvI& env, Call* rhs) {
       CollectOccurrencesE ce(env.outputVarOccurrences, decl);
       top_down(ce, decl->e());
       top_down(ce, decl->ti());
-      for (unsigned int i = decl->params().size(); (i--) != 0U;) {
-        top_down(ce, decl->params()[i]);
+      for (unsigned int i = decl->paramCount(); (i--) != 0U;) {
+        top_down(ce, decl->param(i));
       }
       (void)env.output->registerFn(env, decl, true);
       env.output->addItem(decl);
@@ -121,8 +121,8 @@ bool cannot_use_rhs_for_output(EnvI& env, Expression* e,
               CollectOccurrencesE ce(env.outputVarOccurrences, decl);
               top_down(ce, decl->e());
               top_down(ce, decl->ti());
-              for (unsigned int i = decl->params().size(); (i--) != 0U;) {
-                top_down(ce, decl->params()[i]);
+              for (unsigned int i = decl->paramCount(); (i--) != 0U;) {
+                top_down(ce, decl->param(i));
               }
               (void)env.output->registerFn(env, decl, true);
               env.output->addItem(decl);
@@ -955,8 +955,8 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
       bool canReuseDecl = (decl != nullptr);
       if (canReuseDecl && (origdecl != nullptr)) {
         // Check if this is the exact same overloaded declaration as in the model
-        for (unsigned int i = 0; i < decl->params().size(); i++) {
-          if (decl->params()[i]->type() != origdecl->params()[i]->type()) {
+        for (unsigned int i = 0; i < decl->paramCount(); i++) {
+          if (decl->param(i)->type() != origdecl->param(i)->type()) {
             // no, the types don't match, so we have to copy the original decl
             canReuseDecl = false;
             break;
@@ -983,8 +983,8 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
             CollectOccurrencesE ce(env.outputVarOccurrences, decl);
             top_down(ce, decl->e());
             top_down(ce, decl->ti());
-            for (unsigned int i = decl->params().size(); (i--) != 0U;) {
-              top_down(ce, decl->params()[i]);
+            for (unsigned int i = decl->paramCount(); (i--) != 0U;) {
+              top_down(ce, decl->param(i));
             }
           }
         } else {
@@ -1323,8 +1323,8 @@ void finalise_output(EnvI& e) {
           CollectOccurrencesE ce(e.outputVarOccurrences, item);
           top_down(ce, item->cast<FunctionI>()->e());
           top_down(ce, item->cast<FunctionI>()->ti());
-          for (unsigned int i = item->cast<FunctionI>()->params().size(); (i--) != 0U;) {
-            top_down(ce, item->cast<FunctionI>()->params()[i]);
+          for (unsigned int i = item->cast<FunctionI>()->paramCount(); (i--) != 0U;) {
+            top_down(ce, item->cast<FunctionI>()->param(i));
           }
         } break;
         default:

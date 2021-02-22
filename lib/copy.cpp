@@ -474,10 +474,10 @@ Item* copy(EnvI& env, CopyMap& m, Item* i, bool followIds, bool copyFundecls, bo
     }
     case Item::II_FUN: {
       auto* f = i->cast<FunctionI>();
-      std::vector<VarDecl*> params(f->params().size());
-      for (unsigned int j = f->params().size(); (j--) != 0U;) {
-        params[j] = static_cast<VarDecl*>(
-            copy(env, m, f->params()[j], followIds, copyFundecls, isFlatModel));
+      std::vector<VarDecl*> params(f->paramCount());
+      for (unsigned int j = f->paramCount(); (j--) != 0U;) {
+        params[j] =
+            static_cast<VarDecl*>(copy(env, m, f->param(j), followIds, copyFundecls, isFlatModel));
       }
       auto* c = new FunctionI(
           copy_location(m, i), f->id(),

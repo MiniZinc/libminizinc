@@ -898,6 +898,11 @@ void EnvI::annotateFromCallStack(Expression* e) {
       // anything from outside the call
       break;
     }
+    if (ee->isa<Call>() && ee->cast<Call>()->decl() != nullptr &&
+        ee->cast<Call>()->decl()->capturedAnnotationsVar() != nullptr) {
+      // capturing annotations means they are not propagated
+      break;
+    }
     allCalls = allCalls && (i == callStack.size() - 1 || ee->isa<Call>() || ee->isa<BinOp>());
     for (ExpressionSetIter it = ee->ann().begin(); it != ee->ann().end(); ++it) {
       EE ee_ann = flat_exp(*this, Ctx(), *it, nullptr, constants().varTrue);
@@ -906,6 +911,36 @@ void EnvI::annotateFromCallStack(Expression* e) {
       }
     }
   }
+}
+
+ArrayLit* EnvI::createAnnotationArray() {
+  std::vector<Expression*> annotations;
+  int prev = !idStack.empty() ? idStack.back() : 0;
+  bool allCalls = true;
+  for (int i = static_cast<int>(callStack.size()) - 1; i >= prev; i--) {
+    Expression* ee = callStack[i]->untag();
+    if (ee->type().isAnn()) {
+      // If we are inside an annotation call, don't annotate it again with
+      // anything from outside the call
+      break;
+    }
+    if (i != static_cast<int>(callStack.size()) - 1 && ee->isa<Call>() &&
+        ee->cast<Call>()->decl() != nullptr &&
+        ee->cast<Call>()->decl()->capturedAnnotationsVar() != nullptr) {
+      // capturing annotations means they are not propagated
+      break;
+    }
+    allCalls = allCalls && (i == callStack.size() - 1 || ee->isa<Call>() || ee->isa<BinOp>());
+    for (ExpressionSetIter it = ee->ann().begin(); it != ee->ann().end(); ++it) {
+      EE ee_ann = flat_exp(*this, Ctx(), *it, nullptr, constants().varTrue);
+      if (allCalls || !is_defines_var_ann(ee_ann.r())) {
+        annotations.push_back(ee_ann.r());
+      }
+    }
+  }
+  auto* al = new ArrayLit(Location(), annotations);
+  al->type(Type::ann(1));
+  return al;
 }
 
 void EnvI::copyPathMapsAndState(EnvI& env) {
@@ -4095,9 +4130,9 @@ Expression* cleanup_constraint(EnvI& env, std::unordered_set<Item*>& globals, Ex
     // FlatZinc, add it
     if ((vc->decl() != nullptr) && vc->decl() != constants().varRedef &&
         !vc->decl()->fromStdLib() && globals.find(vc->decl()) == globals.end()) {
-      std::vector<VarDecl*> params(vc->decl()->params().size());
+      std::vector<VarDecl*> params(vc->decl()->paramCount());
       for (unsigned int i = 0; i < params.size(); i++) {
-        params[i] = vc->decl()->params()[i];
+        params[i] = vc->decl()->param(i);
       }
       GCLock lock;
       auto* vc_decl_copy = new FunctionI(vc->decl()->loc(), vc->decl()->id(), vc->decl()->ti(),

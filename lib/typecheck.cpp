@@ -2313,13 +2313,13 @@ public:
     }
     FunctionI* fi = _model->matchFn(_env, &call, true, true);
 
-    if (fi != nullptr && fi->id() == "symmetry_breaking_constraint" && fi->params().size() == 1 &&
-        fi->params()[0]->type().isbool()) {
+    if (fi != nullptr && fi->id() == "symmetry_breaking_constraint" && fi->paramCount() == 1 &&
+        fi->param(0)->type().isbool()) {
       GCLock lock;
       call.id(ASTString("mzn_symmetry_breaking_constraint"));
       fi = _model->matchFn(_env, &call, true, true);
-    } else if (fi != nullptr && fi->id() == "redundant_constraint" && fi->params().size() == 1 &&
-               fi->params()[0]->type().isbool()) {
+    } else if (fi != nullptr && fi->id() == "redundant_constraint" && fi->paramCount() == 1 &&
+               fi->param(0)->type().isbool()) {
       GCLock lock;
       call.id(ASTString("mzn_redundant_constraint"));
       fi = _model->matchFn(_env, &call, true, true);
@@ -2327,11 +2327,11 @@ public:
 
     if ((fi->e() != nullptr) && fi->e()->isa<Call>()) {
       Call* next_call = fi->e()->cast<Call>();
-      if ((next_call->decl() != nullptr) && next_call->argCount() == fi->params().size() &&
+      if ((next_call->decl() != nullptr) && next_call->argCount() == fi->paramCount() &&
           _model->sameOverloading(_env, args, fi, next_call->decl())) {
         bool macro = true;
-        for (unsigned int i = 0; i < fi->params().size(); i++) {
-          if (!Expression::equal(next_call->arg(i), fi->params()[i]->id())) {
+        for (unsigned int i = 0; i < fi->paramCount(); i++) {
+          if (!Expression::equal(next_call->arg(i), fi->param(i)->id())) {
             macro = false;
             break;
           }
@@ -2340,11 +2340,11 @@ public:
           // Call is not a macro if it has a reification implementation
           GCLock lock;
           ASTString reif_id = _env.reifyId(fi->id());
-          std::vector<Type> tt(fi->params().size() + 1);
-          for (unsigned int i = 0; i < fi->params().size(); i++) {
-            tt[i] = fi->params()[i]->type();
+          std::vector<Type> tt(fi->paramCount() + 1);
+          for (unsigned int i = 0; i < fi->paramCount(); i++) {
+            tt[i] = fi->param(i)->type();
           }
-          tt[fi->params().size()] = Type::varbool();
+          tt[fi->paramCount()] = Type::varbool();
 
           macro = _model->matchFn(_env, reif_id, tt, true) == nullptr;
         }
@@ -2682,8 +2682,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       fis.push_back(i);
       // check if one of the arguments is annotated with ::annotated_expression
       int reifiedAnnotationIdx = -1;
-      for (int j = 0; j < i->params().size(); j++) {
-        Expression* param = i->params()[j];
+      for (int j = 0; j < i->paramCount(); j++) {
+        Expression* param = i->param(j);
         for (auto* ii : param->ann()) {
           if (ii->isa<Id>() && ii->cast<Id>()->v() == constants().ann.annotated_expression->v()) {
             if (reifiedAnnotationIdx >= 0) {
@@ -2697,7 +2697,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       }
       if (reifiedAnnotationIdx >= 0) {
         GCLock lock;
-        if (i->params().size() == 1) {
+        if (i->paramCount() == 1) {
           // turn into atomic annotation
           auto* ti = new TypeInst(Location().introduce(), Type::ann());
           auto* vd = new VarDecl(Location().introduce(), ti, i->id());
@@ -2706,14 +2706,14 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           model->addItem(new VarDeclI(Location().introduce(), vd));
         } else {
           // turn into annotation function with one argument less
-          std::vector<VarDecl*> newParams(i->params().size() - 1);
+          std::vector<VarDecl*> newParams(i->paramCount() - 1);
           int j = 0;
-          for (int k = 0; k < i->params().size(); k++) {
+          for (int k = 0; k < i->paramCount(); k++) {
             if (k != reifiedAnnotationIdx) {
-              newParams[j++] = copy(env, i->params()[k])->cast<VarDecl>();
+              newParams[j++] = copy(env, i->param(k))->cast<VarDecl>();
             }
           }
-          auto* fi = new FunctionI(Location().introduce(), i->id().c_str(), i->ti(), newParams);
+          auto* fi = new FunctionI(Location().introduce(), i->id(), i->ti(), newParams);
           fi->ann().add(new Call(Location().introduce(),
                                  constants().ann.mzn_add_annotated_expression,
                                  {IntLit::a(reifiedAnnotationIdx)}));
@@ -2869,15 +2869,19 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     void vOutputI(OutputI* i) { ts.run(env, i->e()); }
     void vFunctionI(FunctionI* fi) {
       ts.run(env, fi->ti());
-      for (unsigned int i = 0; i < fi->params().size(); i++) {
-        ts.run(env, fi->params()[i]);
+      for (unsigned int i = 0; i < fi->paramCount(); i++) {
+        ts.run(env, fi->param(i));
       }
+      ts.run(env, fi->capturedAnnotationsVar());
       for (ExpressionSetIter it = fi->ann().begin(); it != fi->ann().end(); ++it) {
         ts.run(env, *it);
       }
       ts.scopes.pushFun();
-      for (unsigned int i = 0; i < fi->params().size(); i++) {
-        ts.scopes.add(env, fi->params()[i]);
+      for (unsigned int i = 0; i < fi->paramCount(); i++) {
+        ts.scopes.add(env, fi->param(i));
+      }
+      if (fi->capturedAnnotationsVar() != nullptr) {
+        ts.scopes.add(env, fi->capturedAnnotationsVar());
       }
       ts.run(env, fi->e());
       ts.scopes.pop();
@@ -2916,8 +2920,11 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     }
     for (auto& functionItem : functionItems) {
       bottomUpTyper.run(functionItem->ti());
-      for (unsigned int j = 0; j < functionItem->params().size(); j++) {
-        bottomUpTyper.run(functionItem->params()[j]);
+      for (unsigned int j = 0; j < functionItem->paramCount(); j++) {
+        bottomUpTyper.run(functionItem->param(j));
+      }
+      if (functionItem->capturedAnnotationsVar() != nullptr) {
+        bottomUpTyper.run(functionItem->capturedAnnotationsVar());
       }
     }
   }
@@ -3109,8 +3116,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     }
     if (f.e() != nullptr && f.ti()->type().bt() != Type::BT_ANN) {
       bool foundVar = false;
-      for (auto* p : f.params()) {
-        if (p->type().isvar()) {
+      for (int i = 0; i < f.paramCount(); i++) {
+        if (f.param(i)->type().isvar()) {
           foundVar = true;
           break;
         }
@@ -3118,8 +3125,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       if (foundVar) {
         // create par version of parameter types
         std::vector<Type> tv;
-        for (auto* p : f.params()) {
-          Type t = p->type();
+        for (int i = 0; i < f.paramCount(); i++) {
+          Type t = f.param(i)->type();
           t.cv(false);
           t.ti(Type::TI_PAR);
           tv.push_back(t);
@@ -3129,8 +3136,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         bool parIsUsable = false;
         if (fi_par != nullptr) {
           bool foundVar = false;
-          for (auto* p : fi_par->params()) {
-            if (p->type().isvar()) {
+          for (int i = 0; i < fi_par->paramCount(); i++) {
+            if (fi_par->param(i)->type().isvar()) {
               foundVar = true;
               break;
             }
@@ -3173,8 +3180,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
                 FunctionI* decl = c.decl();
                 // create par version of parameter types
                 std::vector<Type> tv;
-                for (auto* p : decl->params()) {
-                  Type t = p->type();
+                for (int i = 0; i < decl->paramCount(); i++) {
+                  Type t = decl->param(i)->type();
                   t.cv(false);
                   t.ti(Type::TI_PAR);
                   tv.push_back(t);
@@ -3186,8 +3193,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
                   parIsUsable = true;
                 } else if (parIsUsable) {
                   bool foundVar = false;
-                  for (auto* p : decl_par->params()) {
-                    if (p->type().isvar()) {
+                  for (int i = 0; i < decl_par->paramCount(); i++) {
+                    if (decl_par->param(i)->type().isvar()) {
                       foundVar = true;
                       break;
                     }
@@ -3249,8 +3256,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     } _egd(parCopyMap);
     for (auto& p : fnsToMakePar) {
       if (!p.second.first) {
-        for (auto* param : p.first->params()) {
-          top_down(_egd, param);
+        for (unsigned int i = 0; i < p.first->paramCount(); i++) {
+          top_down(_egd, p.first->param(i));
         }
         for (ExpressionSetIter i = p.first->ann().begin(); i != p.first->ann().end(); ++i) {
           top_down(_egd, *i);
@@ -3264,7 +3271,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       if (!p.second.first) {
         GCLock lock;
         auto* cp = copy(env.envi(), parCopyMap, p.first)->cast<FunctionI>();
-        for (auto* v : cp->params()) {
+        for (int i = 0; i < cp->paramCount(); i++) {
+          VarDecl* v = cp->param(i);
           Type vt = v->ti()->type();
           vt.ti(Type::TI_PAR);
           v->ti()->type(vt);

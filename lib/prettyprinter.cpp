@@ -715,15 +715,20 @@ public:
           _os << " : ";
         }
         _os << fi.id();
-        if (fi.params().size() > 0) {
+        if (fi.paramCount() > 0) {
           _os << "(";
-          for (unsigned int j = 0; j < fi.params().size(); j++) {
-            p(fi.params()[j]);
-            if (j < fi.params().size() - 1) {
+          for (unsigned int j = 0; j < fi.paramCount(); j++) {
+            p(fi.param(j));
+            if (j < fi.paramCount() - 1) {
               _os << ",";
             }
           }
           _os << ")";
+        }
+        if (fi.capturedAnnotationsVar() != nullptr) {
+          _os << " ann : ";
+          p(fi.capturedAnnotationsVar()->id());
+          _os << " ";
         }
         p(fi.ann());
         if (fi.e() != nullptr) {
@@ -1727,15 +1732,20 @@ public:
       dl->addStringToList(": ");
     }
     dl->addStringToList(std::string(fi.id().c_str(), fi.id().size()));
-    if (fi.params().size() > 0) {
+    if (fi.paramCount() > 0) {
       auto* params = new DocumentList("(", ", ", ")");
-      for (unsigned int i = 0; i < fi.params().size(); i++) {
+      for (unsigned int i = 0; i < fi.paramCount(); i++) {
         auto* par = new DocumentList("", "", "");
         par->setUnbreakable(true);
-        par->addDocumentToList(expression_to_document(fi.params()[i]));
+        par->addDocumentToList(expression_to_document(fi.param(i)));
         params->addDocumentToList(par);
       }
       dl->addDocumentToList(params);
+    }
+    if (fi.capturedAnnotationsVar() != nullptr) {
+      dl->addStringToList(" ann : ");
+      dl->addDocumentToList(expression_to_document(fi.capturedAnnotationsVar()->id()));
+      dl->addStringToList(" ");
     }
     if (!fi.ann().isEmpty()) {
       dl->addDocumentToList(annotation_to_document(fi.ann()));

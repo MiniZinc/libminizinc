@@ -249,7 +249,7 @@ Expression* createArrayAccess(const ParserLocation& loc, Expression* e, std::vec
 
 %type <item> item item_tail include_item vardecl_item assign_item constraint_item solve_item output_item predicate_item annotation_item function_item
 
-%type <vardeclexpr> ti_expr_and_id ti_expr_and_id_or_anon let_vardecl_item
+%type <vardeclexpr> ti_expr_and_id ti_expr_and_id_or_anon let_vardecl_item ann_param
 %type <vardeclexprs> params params_list params_list_head
 %type <tiexpr> ti_expr base_ti_expr base_ti_expr_tail
 %type <tiexprs> ti_expr_list ti_expr_list_head
@@ -561,61 +561,71 @@ output_item :
 
 
 predicate_item :
-        MZN_PREDICATE MZN_IDENTIFIER params annotations operation_item_tail
+        MZN_PREDICATE MZN_IDENTIFIER params ann_param annotations operation_item_tail
       {
         ParserState* pp = static_cast<ParserState*>(parm);
-        if ($3) $$ = new FunctionI(@$,$2,new TypeInst(@$,
-                                   Type::varbool()),*$3,$5,pp->isSTDLib);
-        if ($$ && $4) $$->cast<FunctionI>()->ann().add(*$4);
+        if ($3 && $4) $3->push_back($4);
+        if ($3) $$ = new FunctionI(@$,ASTString($2),new TypeInst(@$,
+                                   Type::varbool()),*$3,$6,pp->isSTDLib,$4 != nullptr);
+        if ($$ && $5) $$->cast<FunctionI>()->ann().add(*$5);
         free($2);
         delete $3;
-        delete $4;
+        delete $5;
       }
-      | MZN_TEST MZN_IDENTIFIER params annotations operation_item_tail
+      | MZN_TEST MZN_IDENTIFIER params ann_param annotations operation_item_tail
       {
         ParserState* pp = static_cast<ParserState*>(parm);
-        if ($3) $$ = new FunctionI(@$,$2,new TypeInst(@$,
-                                   Type::parbool()),*$3,$5,pp->isSTDLib);
-        if ($$ && $4) $$->cast<FunctionI>()->ann().add(*$4);
+        if ($3 && $4) $3->push_back($4);
+        if ($3) $$ = new FunctionI(@$,ASTString($2),new TypeInst(@$,
+                                   Type::parbool()),*$3,$6,pp->isSTDLib,$4 != nullptr);
+        if ($$ && $5) $$->cast<FunctionI>()->ann().add(*$5);
         free($2);
         delete $3;
-        delete $4;
-      }
-      | MZN_PREDICATE MZN_IDENTIFIER MZN_POW_MINUS1 params annotations operation_item_tail
-      { if ($4) $$ = new FunctionI(@$,std::string($2)+"⁻¹",new TypeInst(@$,
-                                   Type::varbool()),*$4,$6);
-        if ($$ && $5) $$->cast<FunctionI>()->ann().add(*$5);
-        free($2);
-        delete $4;
         delete $5;
       }
-      | MZN_TEST MZN_IDENTIFIER MZN_POW_MINUS1 params annotations operation_item_tail
-      { if ($4) $$ = new FunctionI(@$,std::string($2)+"⁻¹",new TypeInst(@$,
-                                   Type::parbool()),*$4,$6);
-        if ($$ && $5) $$->cast<FunctionI>()->ann().add(*$5);
+      | MZN_PREDICATE MZN_IDENTIFIER MZN_POW_MINUS1 params ann_param annotations operation_item_tail
+      {
+        ParserState* pp = static_cast<ParserState*>(parm);
+        if ($4 && $5) $4->push_back($5);
+        if ($4) $$ = new FunctionI(@$,ASTString(std::string($2)+"⁻¹"),new TypeInst(@$,
+                                   Type::varbool()),*$4,$7,pp->isSTDLib,$5 != nullptr);
+        if ($$ && $6) $$->cast<FunctionI>()->ann().add(*$6);
         free($2);
         delete $4;
-        delete $5;
+        delete $6;
+      }
+      | MZN_TEST MZN_IDENTIFIER MZN_POW_MINUS1 params ann_param annotations operation_item_tail
+      {
+        ParserState* pp = static_cast<ParserState*>(parm);
+        if ($4 && $5) $4->push_back($5);
+        if ($4) $$ = new FunctionI(@$,ASTString(std::string($2)+"⁻¹"),new TypeInst(@$,
+                                   Type::parbool()),*$4,$7,pp->isSTDLib,$5 != nullptr);
+        if ($$ && $6) $$->cast<FunctionI>()->ann().add(*$6);
+        free($2);
+        delete $4;
+        delete $6;
       }
 
 function_item :
-        MZN_FUNCTION ti_expr ':' id_or_quoted_op params annotations operation_item_tail
+        MZN_FUNCTION ti_expr ':' id_or_quoted_op params ann_param annotations operation_item_tail
       {
         ParserState* pp = static_cast<ParserState*>(parm);
-        if ($5) $$ = new FunctionI(@$,$4,$2,*$5,$7,pp->isSTDLib);
-        if ($$ && $6) $$->cast<FunctionI>()->ann().add(*$6);
+        if ($5 && $6) $5->push_back($6);
+        if ($5) $$ = new FunctionI(@$,ASTString($4),$2,*$5,$8,pp->isSTDLib,$6 != nullptr);
+        if ($$ && $7) $$->cast<FunctionI>()->ann().add(*$7);
         free($4);
         delete $5;
-        delete $6;
+        delete $7;
       }
-      | ti_expr ':' MZN_IDENTIFIER '(' params_list ')' annotations operation_item_tail
+      | ti_expr ':' MZN_IDENTIFIER '(' params_list ')' ann_param annotations operation_item_tail
       {
         ParserState* pp = static_cast<ParserState*>(parm);
-        if ($5) $$ = new FunctionI(@$,$3,$1,*$5,$8,pp->isSTDLib);
-        if ($$ && $7) $$->cast<FunctionI>()->ann().add(*$7);
+        if ($5 && $7) $5->push_back($7);
+        if ($5) $$ = new FunctionI(@$,ASTString($3),$1,*$5,$9,pp->isSTDLib,$7 != nullptr);
+        if ($$ && $8) $$->cast<FunctionI>()->ann().add(*$8);
         free($3);
         delete $5;
-        delete $7;
+        delete $8;
       }
 
 annotation_item :
@@ -627,7 +637,7 @@ annotation_item :
           VarDecl* vd = new VarDecl(@$,ti,$2);
           $$ = new VarDeclI(@$,vd);
         } else {
-          $$ = new FunctionI(@$,$2,ti,*$3,nullptr,pp->isSTDLib);
+          $$ = new FunctionI(@$,ASTString($2),ti,*$3,nullptr,pp->isSTDLib);
         }
         free($2);
         delete $3;
@@ -636,9 +646,20 @@ annotation_item :
       {
         ParserState* pp = static_cast<ParserState*>(parm);
         TypeInst* ti=new TypeInst(@1,Type::ann());
-        if ($3) $$ = new FunctionI(@$,$2,ti,*$3,$5,pp->isSTDLib);
+        if ($3) $$ = new FunctionI(@$,ASTString($2),ti,*$3,$5,pp->isSTDLib);
         delete $3;
       }
+
+ann_param :
+      /*empty*/
+      { $$=nullptr; }
+    | MZN_ANN ':' MZN_IDENTIFIER
+      { if ($3) {
+          auto* ident = new Id(@3, $3, nullptr);
+          auto* ti = new TypeInst(@$,Type::ann(1));
+          $$ = new VarDecl(@$, ti, ident);
+          $$->toplevel(false);
+        } }
 
 operation_item_tail :
       /*empty*/

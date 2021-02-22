@@ -962,7 +962,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
 
   ASTStringMap<Type> tmap;
   for (unsigned int i = 0; i < ta.size(); i++) {
-    TypeInst* tii = fi->params()[i]->ti();
+    TypeInst* tii = fi->param(i)->ti();
     if (tii->domain() && tii->domain()->isa<TIId>()) {
       ASTString tiid = tii->domain()->cast<TIId>()->v();
       Type tiit = get_type(ta[i]);
@@ -1204,10 +1204,7 @@ void Item::mark(Item* item) {
         Expression::mark(*it);
       }
       Expression::mark(fi->e());
-      fi->params().mark();
-      for (unsigned int k = 0; k < fi->params().size(); k++) {
-        Expression::mark(fi->params()[k]);
-      }
+      fi->markParams();
     } break;
   }
 }
@@ -1221,15 +1218,15 @@ Type FunctionI::rtype(EnvI& env, const std::vector<Type>& ta, bool strictEnums) 
 }
 
 Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned int n) const {
-  TypeInst* tii = params()[n]->ti();
+  TypeInst* tii = param(n)->ti();
   if ((tii->domain() != nullptr) && tii->domain()->isa<TIId>()) {
     Type ty = ta[n]->type();
     ty.st(tii->type().st());
     ty.dim(tii->type().dim());
     ASTString tv = tii->domain()->cast<TIId>()->v();
-    for (unsigned int i = 0; i < params().size(); i++) {
-      if ((params()[i]->ti()->domain() != nullptr) && params()[i]->ti()->domain()->isa<TIId>() &&
-          params()[i]->ti()->domain()->cast<TIId>()->v() == tv) {
+    for (unsigned int i = 0; i < paramCount(); i++) {
+      if ((param(i)->ti()->domain() != nullptr) && param(i)->ti()->domain()->isa<TIId>() &&
+          param(i)->ti()->domain()->cast<TIId>()->v() == tv) {
         Type toCheck = ta[i]->type();
         toCheck.st(tii->type().st());
         toCheck.dim(tii->type().dim());
@@ -1484,7 +1481,7 @@ Constants::Constants() {
   varFalse = new VarDecl(Location(), ti, "_bool_false", literalFalse);
   varIgnore = new VarDecl(Location(), ti, "_bool_ignore");
   absent = new Id(Location(), "_absent", nullptr);
-  varRedef = new FunctionI(Location(), "__internal_varRedef",
+  varRedef = new FunctionI(Location(), ASTString("__internal_varRedef"),
                            new TypeInst(Location(), Type::varbool()), std::vector<VarDecl*>());
   Type absent_t;
   absent_t.bt(Type::BT_BOT);

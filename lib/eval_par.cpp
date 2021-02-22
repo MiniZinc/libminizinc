@@ -392,13 +392,13 @@ void check_dom(EnvI& env, Id* arg, FloatVal dom_min, FloatVal dom_max, Expressio
 
 template <class Eval, class CallClass = Call>
 typename Eval::Val eval_call(EnvI& env, CallClass* ce) {
-  std::vector<Expression*> previousParameters(ce->decl()->params().size());
-  std::vector<Expression*> params(ce->decl()->params().size());
-  for (unsigned int i = 0; i < ce->decl()->params().size(); i++) {
+  std::vector<Expression*> previousParameters(ce->decl()->paramCount());
+  std::vector<Expression*> params(ce->decl()->paramCount());
+  for (unsigned int i = 0; i < ce->decl()->paramCount(); i++) {
     params[i] = eval_par(env, ce->arg(i));
   }
-  for (unsigned int i = ce->decl()->params().size(); i--;) {
-    VarDecl* vd = ce->decl()->params()[i];
+  for (unsigned int i = ce->decl()->paramCount(); i--;) {
+    VarDecl* vd = ce->decl()->param(i);
     if (vd->type().dim() > 0) {
       // Check array index sets
       auto* al = params[i]->cast<ArrayLit>();
@@ -444,8 +444,8 @@ typename Eval::Val eval_call(EnvI& env, CallClass* ce) {
   }
   typename Eval::Val ret = Eval::e(env, ce->decl()->e());
   Eval::checkRetVal(env, ret, ce->decl());
-  for (unsigned int i = ce->decl()->params().size(); i--;) {
-    VarDecl* vd = ce->decl()->params()[i];
+  for (unsigned int i = ce->decl()->paramCount(); i--;) {
+    VarDecl* vd = ce->decl()->param(i);
     vd->e(previousParameters[i]);
     vd->flat(vd->e() ? vd : nullptr);
   }
