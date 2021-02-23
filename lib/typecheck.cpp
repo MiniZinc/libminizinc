@@ -3259,6 +3259,9 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         for (unsigned int i = 0; i < p.first->paramCount(); i++) {
           top_down(_egd, p.first->param(i));
         }
+        if (p.first->capturedAnnotationsVar() != nullptr) {
+          top_down(_egd, p.first->capturedAnnotationsVar());
+        }
         for (ExpressionSetIter i = p.first->ann().begin(); i != p.first->ann().end(); ++i) {
           top_down(_egd, *i);
         }
