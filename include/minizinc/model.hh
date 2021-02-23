@@ -367,10 +367,13 @@ public:
 };
 
 class CallStackItem {
+private:
+  EnvI& _env;
+
 public:
-  EnvI& env;
   CallStackItem(EnvI& env0, Expression* e);
   CallStackItem(EnvI& env0, Id* ident, IntVal i);
+  void replace();
   ~CallStackItem();
 };
 

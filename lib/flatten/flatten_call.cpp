@@ -926,6 +926,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
       assert(decl);
       cr_c->decl(decl);
       cr = cr_c;
+      _csi.replace();
     }
     if (hadImplementation && decl->e() == nullptr &&
         (cid == constants().ids.lin_exp || cid == constants().ids.sum)) {

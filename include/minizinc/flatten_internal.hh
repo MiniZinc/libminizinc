@@ -101,7 +101,14 @@ public:
   typedef KeepAliveMap<WW> CSEMap;
   bool ignorePartial;
   bool ignoreUnknownIds;
-  std::vector<Expression*> callStack;
+  struct CallStackEntry {
+    Expression* e;
+    bool tag;
+    bool replaced;
+    CallStackEntry(Expression* e0 = nullptr, bool tag0 = false)
+        : e(e0), tag(tag0), replaced(false) {}
+  };
+  std::vector<CallStackEntry> callStack;
   std::vector<std::pair<KeepAlive, bool> > errorStack;
   std::vector<int> idStack;
   unsigned int maxCallStack;

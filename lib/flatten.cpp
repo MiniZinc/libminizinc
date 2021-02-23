@@ -892,7 +892,7 @@ void EnvI::annotateFromCallStack(Expression* e) {
   int prev = !idStack.empty() ? idStack.back() : 0;
   bool allCalls = true;
   for (int i = static_cast<int>(callStack.size()) - 1; i >= prev; i--) {
-    Expression* ee = callStack[i]->untag();
+    Expression* ee = callStack[i].e;
     if (ee->type().isAnn()) {
       // If we are inside an annotation call, don't annotate it again with
       // anything from outside the call
@@ -918,7 +918,7 @@ ArrayLit* EnvI::createAnnotationArray() {
   int prev = !idStack.empty() ? idStack.back() : 0;
   bool allCalls = true;
   for (int i = static_cast<int>(callStack.size()) - 1; i >= prev; i--) {
-    Expression* ee = callStack[i]->untag();
+    Expression* ee = callStack[i].e;
     if (ee->type().isAnn()) {
       // If we are inside an annotation call, don't annotate it again with
       // anything from outside the call
@@ -926,7 +926,7 @@ ArrayLit* EnvI::createAnnotationArray() {
     }
     if (i != static_cast<int>(callStack.size()) - 1 && ee->isa<Call>() &&
         ee->cast<Call>()->decl() != nullptr &&
-        ee->cast<Call>()->decl()->capturedAnnotationsVar() != nullptr) {
+        ee->cast<Call>()->decl()->capturedAnnotationsVar() != nullptr && !callStack[i].replaced) {
       // capturing annotations means they are not propagated
       break;
     }
@@ -1084,7 +1084,7 @@ void EnvI::voAddExp(VarDecl* vd) {
   if ((vd->e() != nullptr) && vd->e()->isa<Call>() && !vd->e()->type().isAnn()) {
     int prev = !idStack.empty() ? idStack.back() : 0;
     for (int i = static_cast<int>(callStack.size()) - 1; i >= prev; i--) {
-      Expression* ee = callStack[i]->untag();
+      Expression* ee = callStack[i].e;
       for (ExpressionSetIter it = ee->ann().begin(); it != ee->ann().end(); ++it) {
         Expression* ann = *it;
         if (ann != constants().ann.add_to_output && ann != constants().ann.rhs_from_assignment) {
@@ -1153,8 +1153,8 @@ void EnvI::addWarning(const std::string& msg) {
 void EnvI::createErrorStack() {
   errorStack.clear();
   for (auto i = static_cast<unsigned int>(callStack.size()); (i--) != 0U;) {
-    Expression* e = callStack[i]->untag();
-    bool isCompIter = callStack[i]->isTagged();
+    Expression* e = callStack[i].e;
+    bool isCompIter = callStack[i].tag;
     KeepAlive ka(e);
     errorStack.emplace_back(ka, isCompIter);
   }
@@ -1162,7 +1162,7 @@ void EnvI::createErrorStack() {
 
 Call* EnvI::surroundingCall() const {
   if (callStack.size() >= 2) {
-    return callStack[callStack.size() - 2]->untag()->dynamicCast<Call>();
+    return callStack[callStack.size() - 2].e->dynamicCast<Call>();
   }
   return nullptr;
 }
@@ -1177,43 +1177,43 @@ void EnvI::cleanupExceptOutput() {
   model = nullptr;
 }
 
-CallStackItem::CallStackItem(EnvI& env0, Expression* e) : env(env0) {
+CallStackItem::CallStackItem(EnvI& env0, Expression* e) : _env(env0) {
   if (e->isa<VarDecl>()) {
-    env.idStack.push_back(static_cast<int>(env.callStack.size()));
+    _env.idStack.push_back(static_cast<int>(_env.callStack.size()));
   }
   if (e->isa<Call>() && e->cast<Call>()->id() == "redundant_constraint") {
-    env.inRedundantConstraint++;
+    _env.inRedundantConstraint++;
   }
   if (e->isa<Call>() && e->cast<Call>()->id() == "symmetry_breaking_constraint") {
-    env.inSymmetryBreakingConstraint++;
+    _env.inSymmetryBreakingConstraint++;
   }
   if (e->ann().contains(constants().ann.maybe_partial)) {
-    env.inMaybePartial++;
+    _env.inMaybePartial++;
   }
-  env.callStack.push_back(e);
-  env.maxCallStack = std::max(env.maxCallStack, static_cast<unsigned int>(env.callStack.size()));
+  _env.callStack.push_back(EnvI::CallStackEntry(e, false));
+  _env.maxCallStack = std::max(_env.maxCallStack, static_cast<unsigned int>(_env.callStack.size()));
 }
-CallStackItem::CallStackItem(EnvI& env0, Id* ident, IntVal i) : env(env0) {
-  Expression* ee = ident->tag();
-  env.callStack.push_back(ee);
-  env.maxCallStack = std::max(env.maxCallStack, static_cast<unsigned int>(env.callStack.size()));
+CallStackItem::CallStackItem(EnvI& env0, Id* ident, IntVal i) : _env(env0) {
+  _env.callStack.push_back(EnvI::CallStackEntry(ident, true));
+  _env.maxCallStack = std::max(_env.maxCallStack, static_cast<unsigned int>(_env.callStack.size()));
 }
+void CallStackItem::replace() { _env.callStack.back().replaced = true; }
 CallStackItem::~CallStackItem() {
   try {
-    Expression* e = env.callStack.back()->untag();
+    Expression* e = _env.callStack.back().e;
     if (e->isa<VarDecl>()) {
-      env.idStack.pop_back();
+      _env.idStack.pop_back();
     }
     if (e->isa<Call>() && e->cast<Call>()->id() == "redundant_constraint") {
-      env.inRedundantConstraint--;
+      _env.inRedundantConstraint--;
     }
     if (e->isa<Call>() && e->cast<Call>()->id() == "symmetry_breaking_constraint") {
-      env.inSymmetryBreakingConstraint--;
+      _env.inSymmetryBreakingConstraint--;
     }
     if (e->ann().contains(constants().ann.maybe_partial)) {
-      env.inMaybePartial--;
+      _env.inMaybePartial--;
     }
-    env.callStack.pop_back();
+    _env.callStack.pop_back();
   } catch (std::exception&) {
     assert(false);  // Invariant: These Env vector operations will never throw an exception
   }
@@ -1253,8 +1253,8 @@ bool EnvI::dumpPath(std::ostream& os, bool force) {
   std::string major_sep = ";";
   std::string minor_sep = "|";
   for (unsigned int i = 0; i < lastError; i++) {
-    Expression* e = callStack[i]->untag();
-    bool isCompIter = callStack[i]->isTagged();
+    Expression* e = callStack[i].e;
+    bool isCompIter = callStack[i].tag;
     Location loc = e->loc();
     auto findFilename = _filenameSet.find(loc.filename());
     if (findFilename == _filenameSet.end()) {
@@ -1356,23 +1356,20 @@ bool EnvI::dumpPath(std::ostream& os, bool force) {
 std::ostream& EnvI::dumpStack(std::ostream& os, bool errStack) {
   int lastError = 0;
 
-  std::vector<Expression*> errStackCopy;
+  std::vector<CallStackEntry> errStackCopy;
   if (errStack) {
     errStackCopy.resize(errorStack.size());
     for (unsigned int i = 0; i < errorStack.size(); i++) {
       Expression* e = errorStack[i].first();
-      if (errorStack[i].second) {
-        e = e->tag();
-      }
-      errStackCopy[i] = e;
+      errStackCopy[i] = CallStackEntry(errorStack[i].first(), errorStack[i].second);
     }
   }
 
-  std::vector<Expression*>& stack = errStack ? errStackCopy : callStack;
+  std::vector<CallStackEntry>& stack = errStack ? errStackCopy : callStack;
 
   for (; lastError < stack.size(); lastError++) {
-    Expression* e = stack[lastError]->untag();
-    bool isCompIter = stack[lastError]->isTagged();
+    Expression* e = stack[lastError].e;
+    bool isCompIter = stack[lastError].tag;
     if (e->loc().isIntroduced()) {
       continue;
     }
@@ -1381,8 +1378,8 @@ std::ostream& EnvI::dumpStack(std::ostream& os, bool errStack) {
     }
   }
 
-  if (lastError == 0 && !stack.empty() && stack[0]->untag()->isa<Id>()) {
-    Expression* e = stack[0]->untag();
+  if (lastError == 0 && !stack.empty() && stack[0].e->isa<Id>()) {
+    Expression* e = stack[0].e;
     ASTString newloc_f = e->loc().filename();
     if (!e->loc().isIntroduced()) {
       unsigned int newloc_l = e->loc().firstLine();
@@ -1394,8 +1391,8 @@ std::ostream& EnvI::dumpStack(std::ostream& os, bool errStack) {
     long long int curloc_l = -1;
 
     for (int i = lastError - 1; i >= 0; i--) {
-      Expression* e = stack[i]->untag();
-      bool isCompIter = stack[i]->isTagged();
+      Expression* e = stack[i].e;
+      bool isCompIter = stack[i].tag;
       ASTString newloc_f = e->loc().filename();
       if (e->loc().isIntroduced()) {
         continue;
