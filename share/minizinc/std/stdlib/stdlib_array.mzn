@@ -454,7 +454,15 @@ function set of float: array2set(array[int] of float: x) =
   { x[i] | i in index_set(x) };
 
 /** @group stdlib.array Return if \a y contains \a x */
+function bool: 'in'($X: x, array[$T] of $X: y) =
+  exists (z in array1d(y)) (z=x);
+
+/** @group stdlib.array Return if \a y contains \a x */
 function bool: 'in'(opt $X: x, array[$T] of opt $X: y) =
+  exists (z in array1d(y)) (z=x);
+
+/** @group stdlib.array Return if \a y contains \a x */
+function var bool: 'in'(var $X: x, array[$T] of var $X: y) =
   exists (z in array1d(y)) (z=x);
 
 /** @group stdlib.array Return if \a y contains \a x */
