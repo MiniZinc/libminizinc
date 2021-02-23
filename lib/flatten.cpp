@@ -1190,11 +1190,11 @@ CallStackItem::CallStackItem(EnvI& env0, Expression* e) : _env(env0) {
   if (e->ann().contains(constants().ann.maybe_partial)) {
     _env.inMaybePartial++;
   }
-  _env.callStack.push_back(EnvI::CallStackEntry(e, false));
+  _env.callStack.emplace_back(e, false);
   _env.maxCallStack = std::max(_env.maxCallStack, static_cast<unsigned int>(_env.callStack.size()));
 }
 CallStackItem::CallStackItem(EnvI& env0, Id* ident, IntVal i) : _env(env0) {
-  _env.callStack.push_back(EnvI::CallStackEntry(ident, true));
+  _env.callStack.emplace_back(ident, true);
   _env.maxCallStack = std::max(_env.maxCallStack, static_cast<unsigned int>(_env.callStack.size()));
 }
 void CallStackItem::replace() { _env.callStack.back().replaced = true; }
