@@ -3514,41 +3514,35 @@ void flatten(Env& e, FlatteningOptions opt) {
                   }
                   args.push_back(vd->id());
                   ASTString cid = c->id();
-                  if (cid == constants().ids.clause && (array_bool_clause_reif != nullptr)) {
-                    nc = new Call(c->loc().introduce(), array_bool_clause_reif->id(), args);
-                    nc->type(Type::varbool());
-                    nc->decl(array_bool_clause_reif);
-                  } else {
-                    FunctionI* decl = nullptr;
-                    if (c->type().isbool() && vd->type().isbool()) {
-                      if (env.fopts.enableHalfReification &&
-                          vd->ann().contains(constants().ctx.pos)) {
-                        cid = env.halfReifyId(c->id());
-                        decl = env.model->matchFn(env, cid, args, false);
-                        if (decl == nullptr) {
-                          cid = env.reifyId(c->id());
-                          decl = env.model->matchFn(env, cid, args, false);
-                        }
-                      } else {
+                  FunctionI* decl = nullptr;
+                  if (c->type().isbool() && vd->type().isbool()) {
+                    if (env.fopts.enableHalfReification &&
+                        vd->ann().contains(constants().ctx.pos)) {
+                      cid = env.halfReifyId(c->id());
+                      decl = env.model->matchFn(env, cid, args, false);
+                      if (decl == nullptr) {
                         cid = env.reifyId(c->id());
                         decl = env.model->matchFn(env, cid, args, false);
                       }
-                      if (decl == nullptr) {
-                        std::ostringstream ss;
-                        ss << "'" << c->id()
-                           << "' is used in a reified context but no reified version is "
-                              "available";
-                        throw FlatteningError(env, c->loc(), ss.str());
-                      }
                     } else {
+                      cid = env.reifyId(c->id());
                       decl = env.model->matchFn(env, cid, args, false);
                     }
-                    if ((decl != nullptr) && (decl->e() != nullptr)) {
-                      add_path_annotation(env, decl->e());
-                      nc = new Call(c->loc().introduce(), cid, args);
-                      nc->type(Type::varbool());
-                      nc->decl(decl);
+                    if (decl == nullptr) {
+                      std::ostringstream ss;
+                      ss << "'" << c->id()
+                         << "' is used in a reified context but no reified version is "
+                            "available";
+                      throw FlatteningError(env, c->loc(), ss.str());
                     }
+                  } else {
+                    decl = env.model->matchFn(env, cid, args, false);
+                  }
+                  if ((decl != nullptr) && (decl->e() != nullptr)) {
+                    add_path_annotation(env, decl->e());
+                    nc = new Call(c->loc().introduce(), cid, args);
+                    nc->type(Type::varbool());
+                    nc->decl(decl);
                   }
                 }
               }
