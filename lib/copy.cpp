@@ -479,10 +479,15 @@ Item* copy(EnvI& env, CopyMap& m, Item* i, bool followIds, bool copyFundecls, bo
         params[j] =
             static_cast<VarDecl*>(copy(env, m, f->param(j), followIds, copyFundecls, isFlatModel));
       }
+      if (f->capturedAnnotationsVar() != nullptr) {
+        params.push_back(static_cast<VarDecl*>(
+            copy(env, m, f->capturedAnnotationsVar(), followIds, copyFundecls, isFlatModel)));
+      }
       auto* c = new FunctionI(
           copy_location(m, i), f->id(),
           static_cast<TypeInst*>(copy(env, m, f->ti(), followIds, copyFundecls, isFlatModel)),
-          params, copy(env, m, f->e(), followIds, copyFundecls, isFlatModel));
+          params, copy(env, m, f->e(), followIds, copyFundecls, isFlatModel), f->fromStdLib(),
+          f->capturedAnnotationsVar() != nullptr);
       c->builtins.e = f->builtins.e;
       c->builtins.i = f->builtins.i;
       c->builtins.f = f->builtins.f;
