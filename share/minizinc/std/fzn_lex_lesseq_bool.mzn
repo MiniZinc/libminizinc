@@ -15,11 +15,11 @@ predicate fzn_lex_lesseq_bool(array[int] of var bool: x ::promise_ctx_antitone,
     b[0]
     /\
     forall(i in 0..size) (
-        b[i] = ( x[lx + i] <= y[ly + i]
+        b[i] -> ( (x[lx + i] <= y[ly + i])
                  /\
-                (x[lx + i] <  y[ly + i] \/ b[i+1]) )
+                ( (x[lx + i] <  y[ly + i]) \/ b[i+1]) )
     )
     /\
-    b[size + 1] = (ux - lx <= uy - ly);
+    (b[size + 1] -> (ux - lx <= uy - ly));
 
 %-----------------------------------------------------------------------------%
