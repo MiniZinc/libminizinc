@@ -3180,10 +3180,34 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
   } while (didRemove);
 
   // Create par versions of remaining functions
-  {
+  if (!fnsToMakePar.empty()) {
     // First step: copy and register functions
     std::vector<FunctionI*> parFunctions;
     CopyMap parCopyMap;
+    // Step 1a: enter all global declarations into copy map
+    class EnterGlobalDecls : public EVisitor {
+    public:
+      CopyMap& cm;
+      EnterGlobalDecls(CopyMap& cm0) : cm(cm0) {}
+      void vId(Id& ident) {
+        if (ident.decl() != nullptr && ident.decl()->toplevel()) {
+          cm.insert(ident.decl(), ident.decl());
+        }
+      }
+    } _egd(parCopyMap);
+    for (auto& p : fnsToMakePar) {
+      if (!p.second.first) {
+        for (auto* param : p.first->params()) {
+          top_down(_egd, param);
+        }
+        for (ExpressionSetIter i = p.first->ann().begin(); i != p.first->ann().end(); ++i) {
+          top_down(_egd, *i);
+        }
+        top_down(_egd, p.first->e());
+      }
+    }
+
+    // Step 1b: copy functions
     for (auto& p : fnsToMakePar) {
       if (!p.second.first) {
         GCLock lock;
