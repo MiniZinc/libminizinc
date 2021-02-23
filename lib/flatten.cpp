@@ -3107,6 +3107,7 @@ void flatten(Env& e, FlatteningOptions opt) {
     FunctionI* array_bool_and;
     FunctionI* array_bool_or;
     FunctionI* array_bool_clause;
+    FunctionI* array_bool_clause_imp;
     FunctionI* array_bool_clause_reif;
     FunctionI* bool_xor;
     {
@@ -3127,6 +3128,8 @@ void flatten(Env& e, FlatteningOptions opt) {
       array_bool_andor_t.push_back(Type::varbool());
       fi = env.model->matchFn(env, ASTString("bool_clause_reif"), array_bool_andor_t, false);
       array_bool_clause_reif = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
+      fi = env.model->matchFn(env, ASTString("bool_clause_imp"), array_bool_andor_t, false);
+      array_bool_clause_imp = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
 
       std::vector<Type> bool_xor_t(3);
       bool_xor_t[0] = Type::varbool();
@@ -3432,6 +3435,16 @@ void flatten(Env& e, FlatteningOptions opt) {
                 nc = new Call(c->loc().introduce(), array_bool_clause->id(), args);
                 nc->type(Type::varbool());
                 nc->decl(array_bool_clause);
+              } else if (c->id() == constants().ids.clause && env.fopts.enableHalfReification &&
+                         vd->ann().contains(constants().ctx.pos) &&
+                         (array_bool_clause_imp != nullptr)) {
+                std::vector<Expression*> args(3);
+                args[0] = c->arg(0);
+                args[1] = c->arg(1);
+                args[2] = vd->id();
+                nc = new Call(c->loc().introduce(), array_bool_clause_imp->id(), args);
+                nc->type(Type::varbool());
+                nc->decl(array_bool_clause_imp);
               } else if (c->id() == constants().ids.clause && (array_bool_clause_reif != nullptr)) {
                 std::vector<Expression*> args(3);
                 args[0] = c->arg(0);
@@ -3440,7 +3453,6 @@ void flatten(Env& e, FlatteningOptions opt) {
                 nc = new Call(c->loc().introduce(), array_bool_clause_reif->id(), args);
                 nc->type(Type::varbool());
                 nc->decl(array_bool_clause_reif);
-
               } else if (c->id() == constants().ids.bool_not && c->argCount() == 1 &&
                          c->decl()->e() == nullptr) {
                 bool isFalseVar = Expression::equal(vd->ti()->domain(), constants().literalFalse);
