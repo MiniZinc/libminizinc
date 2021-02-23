@@ -5,6 +5,16 @@ predicate bool_clause_reif(array[int] of var bool: p, array[int] of var bool: n,
             >= 1
         );
 
+predicate bool_clause_imp(
+    array [int] of var bool: p ::promise_ctx_monotone,
+    array [int] of var bool: n ::promise_ctx_antitone,
+    var bool: c ::promise_ctx_antitone,
+) =
+    (
+        sum(i in index_set(p))(bool2int(p[i]))
+        - sum(i in index_set(n))(bool2int(n[i]))
+        + length(n)
+    ) >= bool2int(c);
     
 predicate array_int_minimum(var int: m, array[int] of var int: x) =
     array_int_minimum_I( m, [ x[i] | i in index_set(x)]);
