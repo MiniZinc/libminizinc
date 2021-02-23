@@ -78,14 +78,14 @@ predicate bool2int(var bool: a, var int: b);
 /** @group flatzinc.bool Constrains \( \a r \leftrightarrow \a a \land \a b \) */
 predicate bool_and(var bool: a, var bool: b, var bool: r);
 /** @group flatzinc.bool Constrains \( \bigvee_i \a as[i] \lor \bigvee_j \lnot \a bs[j] \) */
-predicate bool_clause(array[int] of var bool: as, array[int] of var bool: bs);
+predicate bool_clause(array[int] of var bool: as ::promise_ctx_monotone, array[int] of var bool: bs ::promise_ctx_antitone);
 
 /** @group flatzinc.bool Constrains \a a = \a b */
 predicate bool_eq(var bool: a, var bool: b);
 /** @group flatzinc.bool Constrains \a r \( \leftrightarrow \) (\a a = \a b) */
 predicate bool_eq_reif(var bool: a, var bool: b, var bool: r);
 /** @group flatzinc.bool Constrains \a a ≤ \a b */
-predicate bool_le(var bool: a, var bool: b);
+predicate bool_le(var bool: a ::promise_ctx_antitone, var bool: b ::promise_ctx_monotone);
 /** @group flatzinc.bool Constrains \a r \( \leftrightarrow \) (\a a ≤ \a b) */
 predicate bool_le_reif(var bool: a, var bool: b, var bool: r);
 /** @group flatzinc.bool Constrains \( \a c = \sum_i \a as[i]*\a bs[i] \) */
@@ -93,7 +93,7 @@ predicate bool_lin_eq(array[int] of int: as, array[int] of var bool: bs, var int
 /** @group flatzinc.bool Constrains \( \sum_i \a as[i]*\a bs[i] \leq \a c \) */
 predicate bool_lin_le(array[int] of int: as, array[int] of var bool: bs, int: c);
 /** @group flatzinc.bool Constrains \a a < \a b */
-predicate bool_lt(var bool: a, var bool: b);
+predicate bool_lt(var bool: a ::promise_ctx_antitone, var bool: b ::promise_ctx_monotone);
 /** @group flatzinc.bool Constrains \a r \( \leftrightarrow \) (\a a < \a b) */
 predicate bool_lt_reif(var bool: a, var bool: b, var bool: r);
 /** @group flatzinc.bool Constrains \a a ≠ \a b */
