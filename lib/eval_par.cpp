@@ -442,12 +442,25 @@ typename Eval::Val eval_call(EnvI& env, CallClass* ce) {
       }
     }
   }
+  KeepAlive previousCapture;
+  if (ce->decl()->capturedAnnotationsVar() != nullptr) {
+    previousCapture = ce->decl()->capturedAnnotationsVar()->e();
+    GCLock lock;
+    ce->decl()->capturedAnnotationsVar()->flat(ce->decl()->capturedAnnotationsVar());
+    ce->decl()->capturedAnnotationsVar()->e(env.createAnnotationArray());
+  }
   typename Eval::Val ret = Eval::e(env, ce->decl()->e());
   Eval::checkRetVal(env, ret, ce->decl());
   for (unsigned int i = ce->decl()->paramCount(); i--;) {
     VarDecl* vd = ce->decl()->param(i);
     vd->e(previousParameters[i]);
     vd->flat(vd->e() ? vd : nullptr);
+  }
+  if (ce->decl()->capturedAnnotationsVar() != nullptr) {
+    ce->decl()->capturedAnnotationsVar()->e(previousCapture());
+    ce->decl()->capturedAnnotationsVar()->flat(ce->decl()->capturedAnnotationsVar()->e() != nullptr
+                                                   ? ce->decl()->capturedAnnotationsVar()
+                                                   : nullptr);
   }
   return ret;
 }
