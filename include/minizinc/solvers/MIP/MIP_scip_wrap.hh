@@ -384,7 +384,7 @@ public:
                     const std::string& rowName = "") override;
 
   void addLexChainLesseq(int m, int n, int* rmatind, int nOrbitopeType, bool resolveprop,
-                         bool isModelCons, const std::string& rowName = "");
+                         bool isModelCons, const std::string& rowName = "") override;
 
   /// Times constraint: var[x]*var[y] == var[z]
   void addTimes(int x, int y, int z, const std::string& rowName = "") override;
