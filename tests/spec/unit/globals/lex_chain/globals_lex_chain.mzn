@@ -47,6 +47,6 @@ constraint lex_chain_greater(arr4);
 solve satisfy;
 
 output [
-   "lex_members_int  = array1d(1..3, [\(arr1[1, 3]), \(arr3[1, 3]), \(arr4[1, 3])] );\n",
-   "lex_members_bool = array1d(1..1, [", show(arr2[2, 1]), "]);\n"
+   "lex_members_int  = [\(arr1[1, 3]), \(arr3[1, 3]), \(arr4[1, 3])];\n",
+   "lex_members_bool = [", show(arr2[2, 1]), "];\n"
 ];
