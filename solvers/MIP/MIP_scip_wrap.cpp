@@ -89,6 +89,7 @@ void ScipPlugin::load() {
   load_symbol(SCIPcreateConsBasicBounddisjunction);
   load_symbol(SCIPcreateConsBasicCumulative);
   load_symbol(SCIPcreateConsBasicOrbisack);
+  load_symbol(SCIPcreateConsBasicOrbitope);
   load_symbol(SCIPgetNSolsFound);
   load_symbol(SCIPgetNSols);
   load_symbol(SCIPsetIntParam);
@@ -581,6 +582,28 @@ void MIPScipWrapper::addLexLesseq(int nnz, int* rmatind1, int* rmatind2, bool is
   SCIP_PLUGIN_CALL(_plugin->SCIPcreateConsBasicOrbisack(
       _scip, &cons, rowName.c_str(), vars2.data(), vars1.data(),  // it's actually lex_greatereq
       nnz, FALSE, FALSE, (SCIP_Bool)isModelCons));
+  SCIP_PLUGIN_CALL(_plugin->SCIPaddCons(_scip, cons));
+  SCIP_PLUGIN_CALL(_plugin->SCIPreleaseCons(_scip, &cons));
+}
+
+/// Lex-chain-lesseq binary, currently SCIP only
+void MIPScipWrapper::addLexChainLesseq(int m, int n, int* rmatind, int nOrbitopeType,
+                                       bool resolveprop, bool isModelCons,
+                                       const std::string& rowName) {
+  SCIP_CONS* cons;
+  vector<vector<SCIP_VAR*> > vars(m, vector<SCIP_VAR*>(size_t(n)));
+  vector<SCIP_VAR**> vars_data(m);
+
+  for (int i = 0; i < m; ++i) {
+    for (int j = 0; j < n; ++j) {
+      vars[i][j] = _scipVars[rmatind[i * n + (n - j - 1)]];  // it's actually lex_chain_greatereq
+    }
+    vars_data[i] = vars[i].data();
+  }
+
+  SCIP_PLUGIN_CALL(_plugin->SCIPcreateConsBasicOrbitope(
+      _scip, &cons, rowName.c_str(), vars_data.data(), (SCIP_ORBITOPETYPE)nOrbitopeType, m, n,
+      (SCIP_Bool)resolveprop, (SCIP_Bool)isModelCons));
   SCIP_PLUGIN_CALL(_plugin->SCIPaddCons(_scip, cons));
   SCIP_PLUGIN_CALL(_plugin->SCIPreleaseCons(_scip, &cons));
 }

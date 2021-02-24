@@ -9,5 +9,6 @@
     ["org.minizinc.mip.scip", "-DQuadrFloatSolverConfig=true", ""],
     ["org.minizinc.mip.scip", "-DCumulativeSolverConfig=true", ""],
     ["org.minizinc.mip.scip", "-DOrbisackSolverConfig=true", ""],
+    ["org.minizinc.mip.scip", "-DOrbitopeSolverConfig=true", ""]
   ]
 }

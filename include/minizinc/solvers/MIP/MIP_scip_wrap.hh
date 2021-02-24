@@ -113,6 +113,19 @@ public:
    SCIP_Bool ispporbisack, SCIP_Bool isparttype, SCIP_Bool ismodelcons);
 
   // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_RETCODE(__stdcall* SCIPcreateConsBasicOrbitope)
+  (SCIP* scip,                     /**< SCIP data structure */
+   SCIP_CONS** cons,               /**< pointer to hold the created constraint */
+   const char* name,               /**< name of constraint */
+   SCIP_VAR*** vars,               /**< matrix of variables on which the symmetry acts */
+   SCIP_ORBITOPETYPE orbitopetype, /**< type of orbitope constraint */
+   int nspcons,                    /**< number of set partitioning/packing constraints  <=> p */
+   int nblocks,                    /**< number of symmetric variable blocks             <=> q */
+   SCIP_Bool resolveprop,          /**< should propagation be resolved? */
+   SCIP_Bool ismodelcons           /**< whether the orbitope is a model constraint */
+  );
+
+  // NOLINTNEXTLINE(readability-identifier-naming)
   SCIP_Longint(__stdcall* SCIPgetNSolsFound)(SCIP* scip);
   // NOLINTNEXTLINE(readability-identifier-naming)
   int(__stdcall* SCIPgetNSols)(SCIP* scip);
@@ -369,6 +382,9 @@ public:
   /// Lex-lesseq binary, currently SCIP only
   void addLexLesseq(int nnz, int* rmatind1, int* rmatind2, bool isModelCons,
                     const std::string& rowName = "") override;
+
+  void addLexChainLesseq(int m, int n, int* rmatind, int nOrbitopeType, bool resolveprop,
+                         bool isModelCons, const std::string& rowName = "");
 
   /// Times constraint: var[x]*var[y] == var[z]
   void addTimes(int x, int y, int z, const std::string& rowName = "") override;

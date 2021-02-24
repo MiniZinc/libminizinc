@@ -52,6 +52,13 @@ bool: MZN__Orbisack = if occurs(UseOrbisack) then deopt(UseOrbisack)
                       elseif occurs(OrbisackSolverConfig) then deopt(OrbisackSolverConfig)
                       else false endif;
 
+%% ORBITOPE
+opt bool: OrbitopeSolverConfig;               %% As set in share/minizinc/Preferences.json
+opt bool: UseOrbitope;          %% User option, e.g., with -D
+bool: MZN__Orbitope = if occurs(UseOrbitope) then deopt(UseOrbitope)
+                      elseif occurs(OrbitopeSolverConfig) then deopt(OrbitopeSolverConfig)
+                      else false endif;
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Quadratic expressions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % --------------------------------------------------------------------------------------- %

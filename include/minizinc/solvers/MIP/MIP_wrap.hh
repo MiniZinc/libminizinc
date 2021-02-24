@@ -286,7 +286,13 @@ public:
   /// Lex-lesseq binary, currently SCIP only
   virtual void addLexLesseq(int nnz, int* rmatind1, int* rmatind2, bool isModelCons,
                             const std::string& rowName = "") {
-    throw std::runtime_error("MIP: lex_less built-in not supported. ");
+    throw std::runtime_error("MIP: lex_lesseq built-in not supported. ");
+  }
+
+  /// Lex-chain-lesseq binary, currently SCIP only
+  virtual void addLexChainLesseq(int m, int n, int* rmatind, int nOrbitopeType, bool resolveprop,
+                                 bool isModelCons, const std::string& rowName = "") {
+    throw std::runtime_error("MIP: lex_chain_lesseq built-in not supported. ");
   }
 
   /// 0: model-defined level, 1: free, 2: uniform search

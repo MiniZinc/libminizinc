@@ -147,6 +147,7 @@ The following parameters can be given on the command line or modified in ``share
   -DUseOrbisack=false                          %% Not forward lex_lesseq for binary/bool vectors (SCIP only)
   -DOrbisackAlwaysModelConstraint=true         %% lex_lesseq ignores being in symmetry_breaking_constraint() (SCIP only)
                                                %% Required for SCIP 7.0.2, or use patch: http://listserv.zib.de/pipermail/scip/2021-February/004213.html
+  -DUseOrbitope=false                          %% Not forward lex_chain_lesseq for binary/bool matrices (SCIP only)
   --no-half-reifications                       %% Turn off halfreification (full reification was until v2.2.3)
 
 Some Solver Options and Changed Default Values
