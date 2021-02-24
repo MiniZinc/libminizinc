@@ -41,7 +41,8 @@ constraint lex_chain_greatereq_orbitope(arr3, 1);
 
 solve satisfy;
 
-output [
-   "lex_members_int  = [\(arr1[1, 3]), \(arr3[1, 3]), \(arr3[3, 2])];\n",
-   "lex_members_bool = [\(arr2[2, 1]), \(arr2[3, 3])];\n"
-];
+array [int] of int: lex_members_int :: output_only :: add_to_output =
+  [fix(arr1[1, 3]), fix(arr3[1, 3]), fix(arr3[3, 2])];
+
+array [int] of bool: lex_members_bool :: output_only :: add_to_output = 
+  [fix(arr2[2, 1]), fix(arr2[3, 3])];
