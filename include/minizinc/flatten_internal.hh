@@ -183,7 +183,7 @@ public:
 
   void voAddExp(VarDecl* vd);
   void annotateFromCallStack(Expression* e);
-  ArrayLit* createAnnotationArray();
+  ArrayLit* createAnnotationArray(const BCtx& ctx);
   void fail(const std::string& msg = std::string());
   bool failed() const;
   Model* flat();

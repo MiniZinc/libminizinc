@@ -913,7 +913,7 @@ void EnvI::annotateFromCallStack(Expression* e) {
   }
 }
 
-ArrayLit* EnvI::createAnnotationArray() {
+ArrayLit* EnvI::createAnnotationArray(const BCtx& ctx) {
   std::vector<Expression*> annotations;
   int prev = !idStack.empty() ? idStack.back() : 0;
   bool allCalls = true;
@@ -937,6 +937,17 @@ ArrayLit* EnvI::createAnnotationArray() {
         annotations.push_back(ee_ann.r());
       }
     }
+  }
+  if (ctx != C_MIX) {
+    Expression* ctx_ann;
+    if (ctx == C_ROOT) {
+      ctx_ann = constants().ctx.root;
+    } else if (ctx == C_POS) {
+      ctx_ann = constants().ctx.pos;
+    } else {
+      ctx_ann = constants().ctx.neg;
+    }
+    annotations.push_back(ctx_ann);
   }
   auto* al = new ArrayLit(Location(), annotations);
   al->type(Type::ann(1));

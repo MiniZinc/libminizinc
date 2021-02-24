@@ -447,7 +447,7 @@ typename Eval::Val eval_call(EnvI& env, CallClass* ce) {
     previousCapture = ce->decl()->capturedAnnotationsVar()->e();
     GCLock lock;
     ce->decl()->capturedAnnotationsVar()->flat(ce->decl()->capturedAnnotationsVar());
-    ce->decl()->capturedAnnotationsVar()->e(env.createAnnotationArray());
+    ce->decl()->capturedAnnotationsVar()->e(env.createAnnotationArray(C_MIX));
   }
   typename Eval::Val ret = Eval::e(env, ce->decl()->e());
   Eval::checkRetVal(env, ret, ce->decl());

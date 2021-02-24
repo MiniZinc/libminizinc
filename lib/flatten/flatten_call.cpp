@@ -1191,7 +1191,8 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
           previousCapture = decl->capturedAnnotationsVar()->e();
           GCLock lock;
           decl->capturedAnnotationsVar()->flat(decl->capturedAnnotationsVar());
-          decl->capturedAnnotationsVar()->e(env.createAnnotationArray());
+          ArrayLit* al = env.createAnnotationArray(c->type().isbool() ? ctx.b : ctx.i);
+          decl->capturedAnnotationsVar()->e(al);
         }
         for (unsigned int i = decl->paramCount(); (i--) != 0U;) {
           VarDecl* vd = decl->param(i);
