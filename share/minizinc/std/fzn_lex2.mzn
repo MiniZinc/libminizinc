@@ -1,4 +1,4 @@
-include "lex_lesseq.mzn";
+include "lex_chain_lesseq.mzn";
 
 predicate fzn_lex2(array[int, int] of var int: x) =
     let {
@@ -7,15 +7,11 @@ predicate fzn_lex2(array[int, int] of var int: x) =
         int: lbx2 = min(index_set_2of2(x)),
         int: ubx2 = max(index_set_2of2(x))
     } in (
-        forall(i in lbx1 + 1 .. ubx1) (
-            lex_lesseq([x[i - 1, j] | j in index_set_2of2(x)],
-                       [x[i,     j] | j in index_set_2of2(x)]
-            )
-        )
+        lex_chain_lesseq(x)
         /\
-        forall(j in lbx2 + 1 .. ubx2) (
-            lex_lesseq([x[i, j - 1] | i in index_set_1of2(x)],
-                       [x[i, j    ] | i in index_set_1of2(x)]
+        lex_chain_lesseq(                   %% transpose
+            array2d(index_set_2of2(x), index_set_1of2(x),
+                [x[j, i] | i in index_set_1of2(x), j in index_set_2of2(x)]
             )
         )
     );
