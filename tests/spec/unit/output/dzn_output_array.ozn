@@ -1,0 +1,11 @@
+output ["a = array1d(Foo, ",show(a),");\n","b = array1d(1..3, ",show(b),");\n","c = array1d(1..1, ",show(c),");\n","d = array1d(Foo, ",show(d),");\n","e = array1d(",show(index_set(e)),", ",show(e),");\n","f = array1d(2..3, ",show(f),");\n","g = array1d(",show(index_set(g)),", ",show(g),");\n","h = array2d(1..2, ",show(index_set_2of2(h)),", ",show(h),");\n"];
+set of int: Foo = 1..3;
+bool: x;
+array [Foo] of bool: a = array1d(Foo,[x,x,x]);
+array [1..3] of bool: b = [x,x,x];
+array [int] of bool: c = [x];
+array [Foo] of bool: d = array1d(Foo,[fix(x),fix(x),fix(x)]);
+array [int] of bool: e = [fix(x)];
+array [2..3] of bool: f = array1d(2..3,[fix(x),fix(x)]);
+array [int] of bool: g = [fix(x) | i in 1..3, ];
+array [1..2,int] of bool: h = array2d(1..2,2..3,[fix(x) | i in 1..4, ]);
