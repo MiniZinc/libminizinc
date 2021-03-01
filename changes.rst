@@ -4,6 +4,75 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
+.. _v2.5.4:
+
+`Version 2.5.4 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.5.4>`__
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(released 8 March 2021)
+
+Changes:
+^^^^^^^^
+
+-  Allow empty arrays in global cardinality constraints (:bugref:`440`).
+-  Add piecewise_linear for non-continuous intervals.
+-  Fail on empty variable domains in agenda.
+-  Allow coercion of JSON lists to enum definitions (:bugref:`441`).
+-  Update strictly_decreasing with documentation and opt version (:bugref:`454`).
+-  Remove MIP-specific ``fzn_less(eq)_bool(_reif).mzn``.
+-  Add ``mzn_in_symmetry_breaking_constraint()`` for internal use.
+-  Add MIP decompositions for ``lex_less[eq]_*``.
+-  Add ``lex_chain_*`` globals, and use them in ``lex2[_strict]``.
+-  Improve detection of variable declarations which are actually par to allow
+   more use of overloaded par versions of predicates.
+
+Bug fixes:
+^^^^^^^^^^
+
+-  Fix handling of bad Xpress licenses when collecting extra flags.
+-  Don't propagate annotations into annotation calls to infinite recursion.
+-  Add missing par opt versions of coercion functions.
+-  Revert incorrect renaming of ``has_output_item`` to ``has_outputItem`` in
+   model interface output.
+-  Fix incorrect grammar specification in documentation (:bugref:`453`).
+-  Fix crash when defining enums with no members (:bugref:`443`, :bugref:`444`).
+-  Support undefined enums in the type checker.
+-  Fix CPLEX solver ID in documentation.
+-  Never insert par expressions in the common subexpression elimination map.
+-  Fix cv flag propagation when the body of a let or function is cv.
+-  Fix equality test for annotations involving indirection.
+-  Don't modify the infinite domain of optional variables (:bugref:`456`).
+-  Don't immediately evaluate output_only arrays when generating dzn output.
+-  Coerce boolean objectives to integers.
+-  Don't create copies of global declarations when creating par versions of
+   functions.
+-  Compile infinite domains with holes into constraints (:bugref:`457`).
+-  Use generic flattening inside generators, disallowing free boolean variables
+   inside ``in`` expressions (:bugref:`451`).
+-  Strip library paths from includes in multi-pass compilation (:bugref:`455`).
+-  Canonicalise file names of includes to ensure the same file is not included
+   multiple times.
+-  Escape paths in printed ``include`` items, fixing backslash problems on
+   Windows.
+-  Follow ids to declarations when flattening par arrays (:bugref:`448`).
+
+Changes in the IDE:
+^^^^^^^^^^^^^^^^^^^
+
+-  Fix possible crash due to incorrect use of WriteFile on Windows.
+-  Ensure Gecode Gist dependencies are present in the Linux bundle and AppImage
+   (:idebugref:`132`).
+-  Fix crash when stopping solver during exit.
+-  Don't show irrelevant context menu entries in the project explorer.
+-  Add support for HTTP/S links in the output pane.
+-  Fix crash when saving CP Profiler executions where there is no info
+   associated with a node.
+-  Show a warning when there are open files which are not part of a MOOC
+   submission.
+-  Fix double spinbox precision issues (:idebugref:`134`).
+-  Include Gecode Gist and CP Profiler dependencies in Snap package.
+-  Allow opening of multiple files through the open file menu option.
+
 .. _v2.5.3:
 
 `Version 2.5.3 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.5.3>`__
