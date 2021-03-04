@@ -1227,3 +1227,23 @@ function var float: min_t(array[int] of var float: x) :: promise_total =
 
 predicate mzn_symmetry_breaking_constraint(var bool: b);
 predicate mzn_redundant_constraint(var bool: b);
+
+/* Annotations used for bookkeeping by the compiler */
+
+annotation mzn_was_undefined;
+
+/* Predicate used in the compiler for translating infinite domains into constraints */
+
+predicate mzn_set_in_internal(var int: x, set of int: s) =
+  if min(s) != -infinity /\ max(s) != infinity then set_in(x,s)
+  else let {
+    array[int] of int: ranges_ = set_to_ranges(s);
+    array[int,1..2] of int: ranges = array2d(1..length(ranges_) div 2,1..2,ranges_);
+    int: max_range = card(index_set_1of2(ranges));
+  } in if max_range=2 /\ ranges[1,2]=ranges[2,1]-2 then
+        x != ranges[1,2]+1
+      else
+        x <= ranges[1,2] \/ x >= ranges[max_range,1] \/
+        exists (i in 2..max_range-1) (x in ranges[i,1]..ranges[i,2])
+      endif
+  endif;

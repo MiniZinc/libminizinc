@@ -3186,7 +3186,7 @@ void flatten(Env& e, FlatteningOptions opt) {
                   std::vector<Expression*> args(2);
                   args[0] = vdi->e()->id();
                   args[1] = new SetLit(vdi->e()->loc(), dom);
-                  Call* call = new Call(vdi->e()->loc(), constants().ids.set_in, args);
+                  Call* call = new Call(vdi->e()->loc(), constants().ids.mzn_set_in_internal, args);
                   call->type(Type::varbool());
                   call->decl(env.model->matchFn(env, call, false));
                   // Give distinct call stack
