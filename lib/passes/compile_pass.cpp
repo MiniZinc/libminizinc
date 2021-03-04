@@ -67,7 +67,11 @@ Env* change_library(Env& e, vector<string>& includePaths, const string& globals_
   vector<ASTString> include_names;
   for (Item* item : *m) {
     if (auto* inc = item->dynamicCast<IncludeI>()) {
-      include_names.push_back(strip_stdlib_path(new_includePaths, inc->m()->filepath()));
+      if (FileUtils::is_absolute(inc->f().c_str())) {
+        include_names.push_back(inc->f());
+      } else {
+        include_names.push_back(strip_stdlib_path(new_includePaths, inc->m()->filepath()));
+      }
     } else {
       new_mod->addItem(copy(e.envi(), cm, item));
     }
