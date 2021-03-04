@@ -33,6 +33,20 @@ namespace MiniZinc {
 using std::string;
 using std::vector;
 
+ASTString strip_stdlib_path(const vector<string>& includePaths, const ASTString& fs) {
+  std::string f(fs.c_str());
+  for (const auto& p : includePaths) {
+    if (f.size() > p.size() && f.substr(0, p.size()) == p) {
+      f = f.substr(p.size());
+      while (!f.empty() && f[0] == '/') {
+        f = f.substr(1);
+      }
+      return ASTString(f);
+    }
+  }
+  return fs;
+}
+
 Env* change_library(Env& e, vector<string>& includePaths, const string& globals_dir,
                     CompilePassFlags& compflags, bool verbose = false) {
   GCLock lock;
@@ -53,7 +67,7 @@ Env* change_library(Env& e, vector<string>& includePaths, const string& globals_
   vector<ASTString> include_names;
   for (Item* item : *m) {
     if (auto* inc = item->dynamicCast<IncludeI>()) {
-      include_names.push_back(inc->m()->filepath());
+      include_names.push_back(strip_stdlib_path(new_includePaths, inc->m()->filepath()));
     } else {
       new_mod->addItem(copy(e.envi(), cm, item));
     }
