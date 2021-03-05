@@ -87,6 +87,8 @@ class EvalBase {
 public:
   /// Evaluate bool expression that may contain variables
   static bool evalBoolCV(EnvI& env, Expression* e);
+  /// Flatten expression that may contain variables
+  static KeepAlive flattenCV(EnvI& env, Expression* e);
 };
 
 template <class Eval>
@@ -122,7 +124,7 @@ void eval_comp_set(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, Int
           KeepAlive nextin;
           Expression* gen_in = e->in(gen + 1);
           if (gen_in->type().isvar() || gen_in->type().cv()) {
-            gen_in = eval.flatten(env, e->in(gen + 1));
+            gen_in = eval.flattenCV(env, e->in(gen + 1))();
           }
           if (gen_in->type().dim() == 0) {
             GCLock lock;
@@ -154,8 +156,12 @@ void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, I
   CallStackItem csi(env, e->decl(gen, id)->id(), i);
   if (in() == nullptr) {
     // this is an assignment generator
-    Expression* asn = e->where(gen)->type().isPar() ? eval_par(env, e->where(gen))
-                                                    : eval.flatten(env, e->where(gen));
+    Expression* asn;
+    if (e->where(gen)->type().isvar() || e->where(gen)->type().cv()) {
+      asn = eval.flattenCV(env, e->where(gen))();
+    } else {
+      asn = eval_par(env, e->where(gen));
+    }
     e->decl(gen, id)->e(asn);
     e->rehash();
   } else {
@@ -178,7 +184,7 @@ void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, I
           KeepAlive nextin;
           Expression* gen_in = e->in(gen + 1);
           if (gen_in->type().isvar() || gen_in->type().cv()) {
-            gen_in = eval.flatten(env, e->in(gen + 1));
+            gen_in = eval.flattenCV(env, e->in(gen + 1))();
           }
           if (gen_in->type().dim() == 0) {
             GCLock lock;
@@ -263,8 +269,8 @@ std::vector<typename Eval::ArrayVal> eval_comp(EnvI& env, Eval& eval, Comprehens
           in = new SetLit(Location(), eval_intset(env, e->in(0)));
         }
       } else {
-        if (e->in(0)->type().isvar()) {
-          in = eval_array_lit(env, eval.flatten(env, e->in(0)));
+        if (e->in(0)->type().isvar() || e->in(0)->type().cv()) {
+          in = eval_array_lit(env, eval.flattenCV(env, e->in(0))());
         } else {
           in = eval_array_lit(env, e->in(0));
         }

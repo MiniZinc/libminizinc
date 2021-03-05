@@ -2685,10 +2685,6 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
         typedef Expression* ArrayVal;
         Expression* e(EnvI& env, Expression* e) const { return flat_cv_exp(env, ctx, e)(); }
         static Expression* exp(Expression* e) { return e; }
-        static Expression* flatten(EnvI& env, Expression* e0) {
-          return flat_exp(env, Ctx(), e0, nullptr, constants().varTrue).r();
-        }
-
       } eval(ctx);
       std::vector<Expression*> a = eval_comp<EvalFlatCvExp>(env, eval, c);
 

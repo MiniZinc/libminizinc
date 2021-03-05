@@ -193,9 +193,6 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
                        : nullptr;
       return flat_exp(env, ctx, e0, r, b);
     }
-    static Expression* flatten(EnvI& env, Expression* e0) {
-      return flat_exp(env, Ctx(), e0, nullptr, constants().varTrue).r();
-    }
   } _evalf(ctx);
   std::vector<EE> elems_ee;
   bool wasUndefined = false;
