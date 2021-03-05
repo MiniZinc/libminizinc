@@ -75,9 +75,9 @@ struct ParseWorkItem {
 class ParserState {
 public:
   ParserState(const std::string& f, const std::string& b, std::ostream& err0,
-              std::vector<ParseWorkItem>& files0, std::map<std::string, Model*>& seenModels0,
-              MiniZinc::Model* model0, bool isDatafile0, bool isFlatZinc0, bool isSTDLib0,
-              bool parseDocComments0)
+              const std::vector<std::string>& includePaths0, std::vector<ParseWorkItem>& files0,
+              std::map<std::string, Model*>& seenModels0, MiniZinc::Model* model0, bool isDatafile0,
+              bool isFlatZinc0, bool isSTDLib0, bool parseDocComments0)
       : filename(f.c_str()),
         buf(b.c_str()),
         pos(0),
@@ -85,6 +85,7 @@ public:
         lineStartPos(0),
         nTokenNextStart(1),
         hadNewline(false),
+        includePaths(includePaths0),
         files(files0),
         seenModels(seenModels0),
         model(model0),
@@ -105,6 +106,7 @@ public:
   int nTokenNextStart;
   bool hadNewline;
 
+  const std::vector<std::string>& includePaths;
   std::vector<ParseWorkItem>& files;
   std::map<std::string, Model*>& seenModels;
   MiniZinc::Model* model;
@@ -148,6 +150,8 @@ public:
     pos += num;
     return num;
   }
+
+  std::string canonicalFilename(const std::string& f) const;
 };
 
 Model* parse(Env& env, const std::vector<std::string>& filename,

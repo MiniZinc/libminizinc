@@ -53,6 +53,27 @@ std::string get_file_contents(std::ifstream& in) {
 
 namespace MiniZinc {
 
+std::string ParserState::canonicalFilename(const std::string& f) const {
+  if (FileUtils::is_absolute(f) || std::string(filename).empty()) {
+    return f;
+  }
+  for (const auto& ip : includePaths) {
+    std::string fullname = FileUtils::file_path(ip + "/" + f);
+    if (FileUtils::file_exists(fullname)) {
+      return fullname;
+    }
+  }
+  std::string parentPath = FileUtils::dir_name(filename);
+  if (parentPath.empty()) {
+    parentPath = ".";
+  }
+  std::string fullname = FileUtils::file_path(parentPath + "/" + f);
+  if (FileUtils::file_exists(fullname)) {
+    return fullname;
+  }
+  return f;
+}
+
 void parse(Env& env, Model*& model, const vector<string>& filenames,
            const vector<string>& datafiles, const std::string& modelString,
            const std::string& modelStringName, const vector<string>& ip, bool isFlatZinc,
@@ -82,7 +103,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
       string fullName = filenames[i];
       string baseName = FileUtils::base_name(filenames[i]);
       if (!FileUtils::is_absolute(fullName)) {
-        fullName = workingDir + "/" + fullName;
+        fullName = FileUtils::file_path(workingDir + "/" + fullName);
       }
       bool isFzn = (baseName.compare(baseName.length() - 4, 4, ".fzn") == 0);
       if (isFzn) {
@@ -91,7 +112,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
         auto* includedModel = new Model;
         includedModel->setFilename(baseName);
         files.emplace_back(includedModel, nullptr, "", fullName);
-        seenModels.insert(pair<string, Model*>(baseName, includedModel));
+        seenModels.insert(pair<string, Model*>(fullName, includedModel));
         Location loc(ASTString(filenames[i]), 0, 0, 0, 0);
         auto* inc = new IncludeI(loc, includedModel->filename());
         inc->m(includedModel, true);
@@ -117,11 +138,19 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
   auto include_file = [&](const std::string& libname, bool builtin) {
     GCLock lock;
     auto* lib = new Model;
-    lib->setFilename(libname);
-    files.emplace_back(lib, nullptr, "./", libname, builtin);
-    seenModels.insert(pair<string, Model*>(libname, lib));
+    std::string fullname;
+    for (const auto& ip : includePaths) {
+      std::string n = FileUtils::file_path(ip + "/" + libname);
+      if (FileUtils::file_exists(n)) {
+        fullname = n;
+        break;
+      }
+    }
+    lib->setFilename(fullname);
+    files.emplace_back(lib, nullptr, "./", fullname, builtin);
+    seenModels.insert(pair<string, Model*>(fullname, lib));
     Location libloc(ASTString(model->filename()), 0, 0, 0, 0);
-    auto* libinc = new IncludeI(libloc, lib->filename());
+    auto* libinc = new IncludeI(libloc, libname);
     libinc->m(lib, true);
     model->addItem(libinc);
   };
@@ -149,6 +178,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
 
     std::string s;
     std::string fullname;
+    std::string basename;
     bool isFzn;
     if (!isModelString) {
       for (Model* p = m->parent(); p != nullptr; p = p->parent()) {
@@ -161,46 +191,36 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
         }
       }
       ifstream file;
-      if (FileUtils::is_absolute(f) || parentPath.empty()) {
+      if (FileUtils::is_absolute(f)) {
         fullname = f;
+        basename = FileUtils::base_name(fullname);
         if (FileUtils::file_exists(fullname)) {
           file.open(FILE_PATH(fullname), std::ios::binary);
         }
-      } else {
-        includePaths.push_back(parentPath);
-        unsigned int i = 0;
-        for (; i < includePaths.size(); i++) {
-          fullname = includePaths[i] + "/" + f;
-          if (FileUtils::file_exists(fullname)) {
-            file.open(FILE_PATH(fullname), std::ios::binary);
-            if (file.is_open()) {
-              break;
-            }
-          }
+      }
+      if (file.is_open() &&
+          FileUtils::file_path(FileUtils::dir_name(fullname)) != FileUtils::file_path(workingDir) &&
+          FileUtils::file_exists(workingDir + "/" + basename)) {
+        err << "Warning: file " << basename
+            << " included from library, but also exists in current working directory" << endl;
+      }
+      for (const auto& includePath : includePaths) {
+        std::string deprecatedName = includePath + "/" + basename + ".deprecated.mzn";
+        if (FileUtils::file_exists(deprecatedName)) {
+          string deprecatedFullPath = FileUtils::file_path(deprecatedName);
+          string deprecatedBaseName = FileUtils::base_name(deprecatedFullPath);
+          string deprecatedDirName = FileUtils::dir_name(deprecatedFullPath);
+          auto* includedModel = new Model;
+          includedModel->setFilename(deprecatedName);
+          files.emplace_back(includedModel, nullptr, "", deprecatedName, isSTDLib, false);
+          seenModels.insert(pair<string, Model*>(deprecatedName, includedModel));
+          Location loc(ASTString(deprecatedName), 0, 0, 0, 0);
+          auto* inc = new IncludeI(loc, includedModel->filename());
+          inc->m(includedModel, true);
+          m->addItem(inc);
+          files.emplace_back(includedModel, inc, deprecatedDirName, deprecatedFullPath, isSTDLib,
+                             false);
         }
-        if (file.is_open() && i < includePaths.size() - 1 && parentPath == workingDir &&
-            FileUtils::file_path(includePaths[i], workingDir) != FileUtils::file_path(workingDir) &&
-            FileUtils::file_exists(workingDir + "/" + f)) {
-          err << "Warning: file " << f
-              << " included from library, but also exists in current working directory" << endl;
-        }
-        for (; i < includePaths.size(); i++) {
-          std::string deprecatedName = includePaths[i] + "/" + f + ".deprecated.mzn";
-          if (FileUtils::file_exists(deprecatedName)) {
-            string deprecatedBaseName = FileUtils::base_name(deprecatedName);
-            auto* includedModel = new Model;
-            includedModel->setFilename(deprecatedBaseName);
-            files.emplace_back(includedModel, nullptr, "", deprecatedName, isSTDLib, false);
-            seenModels.insert(pair<string, Model*>(deprecatedBaseName, includedModel));
-            Location loc(ASTString(deprecatedName), 0, 0, 0, 0);
-            auto* inc = new IncludeI(loc, includedModel->filename());
-            inc->m(includedModel, true);
-            m->addItem(inc);
-            files.emplace_back(includedModel, inc, deprecatedName, deprecatedBaseName, isSTDLib,
-                               false);
-          }
-        }
-        includePaths.pop_back();
       }
       if (!file.is_open()) {
         if (np_ii != nullptr) {
@@ -228,7 +248,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
       fullname = f;
       s = parentPath;
     }
-    ParserState pp(fullname, s, err, files, seenModels, m, false, isFzn, isSTDLib,
+    ParserState pp(fullname, s, err, includePaths, files, seenModels, m, false, isFzn, isSTDLib,
                    parseDocComments);
     mzn_yylex_init(&pp.yyscanner);
     mzn_yyset_extra(&pp, pp.yyscanner);
@@ -265,7 +285,8 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
         s = get_file_contents(file);
       }
 
-      ParserState pp(f, s, err, files, seenModels, model, true, false, false, parseDocComments);
+      ParserState pp(f, s, err, includePaths, files, seenModels, model, true, false, false,
+                     parseDocComments);
       mzn_yylex_init(&pp.yyscanner);
       mzn_yyset_extra(&pp, pp.yyscanner);
       mzn_yyparse(&pp);

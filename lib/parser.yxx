@@ -395,20 +395,20 @@ error_item_start : MZN_INCLUDE | MZN_ENUM | MZN_OUTPUT
 include_item :
       MZN_INCLUDE MZN_STRING_LITERAL
       { ParserState* pp = static_cast<ParserState*>(parm);
-        map<string,Model*>::iterator ret = pp->seenModels.find($2);
+        string canonicalName=pp->canonicalFilename($2);
+        map<string,Model*>::iterator ret = pp->seenModels.find(canonicalName);
         IncludeI* ii = new IncludeI(@$,ASTString($2));
         $$ = ii;
         if (ret == pp->seenModels.end()) {
           Model* im = new Model;
           im->setParent(pp->model);
-          im->setFilename($2);
+          im->setFilename(canonicalName);
           string fpath = FileUtils::dir_name(pp->filename);
-          string fbase = FileUtils::base_name(pp->filename);
           if (fpath=="")
             fpath="./";
-          pp->files.emplace_back(im, ii, fpath, $2, pp->isSTDLib);
+          pp->files.emplace_back(im, ii, fpath, canonicalName, pp->isSTDLib);
           ii->m(im);
-          pp->seenModels.insert(pair<string,Model*>($2,im));
+          pp->seenModels.insert(pair<string,Model*>(canonicalName,im));
         } else {
           ii->m(ret->second, false);
         }
