@@ -63,6 +63,13 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
           }
         }
       }
+      if (vd->e() != nullptr && vd->e()->type().isPar() && !vd->ti()->type().isPar()) {
+        // Flattening the RHS resulted in a par expression. Make the variable par.
+        Type t(vd->ti()->type());
+        t.ti(Type::TI_PAR);
+        vd->ti()->type(t);
+        vd->type(t);
+      }
     }
 
     ret.r = bind(env, Ctx(), r, vd->id());
