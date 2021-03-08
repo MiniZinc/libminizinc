@@ -5,7 +5,7 @@ set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "Minimum OS X deployment ver
 #  -- Project information and versioning.
 
 project(libminizinc
-        VERSION 2.5.4
+        VERSION 2.5.5
         LANGUAGES CXX C)
 
 if(NOT BUILD_REF)
