@@ -657,7 +657,7 @@ public:
     }
     switch (i->iid()) {
       case Item::II_INC:
-        _os << "include \"" << i->cast<IncludeI>()->f() << "\"";
+        _os << "include \"" << Printer::escapeStringLit(i->cast<IncludeI>()->f()) << "\"";
         break;
       case Item::II_VD:
         p(i->cast<VarDeclI>()->e());
@@ -1648,7 +1648,7 @@ public:
   typedef Document* ret;
   static ret mapIncludeI(const IncludeI& ii) {
     std::ostringstream oss;
-    oss << "include \"" << ii.f() << "\";";
+    oss << "include \"" << Printer::escapeStringLit(ii.f()) << "\";";
     return new StringDocument(oss.str());
   }
   static ret mapVarDeclI(const VarDeclI& vi) {
