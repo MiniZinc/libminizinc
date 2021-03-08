@@ -36,26 +36,35 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
   }
   if (e->type().dim() > 0) {
     EnvI::CSEMap::iterator it;
-    Id* id = e->dynamicCast<Id>();
-    if ((id != nullptr) && (id->decl()->flat() == nullptr || id->decl()->toplevel())) {
-      VarDecl* vd = id->decl()->flat();
-      if (vd == nullptr) {
-        vd = flat_exp(env, Ctx(), id->decl(), nullptr, constants().varTrue).r()->cast<Id>()->decl();
-        id->decl()->flat(vd);
-        auto* al = follow_id(vd->id())->cast<ArrayLit>();
-        if (al->size() == 0) {
-          if (r == nullptr) {
-            ret.r = al;
-          } else {
-            ret.r = bind(env, ctx, r, al);
-          }
-          ret.b = bind(env, Ctx(), b, constants().literalTrue);
-          return ret;
-        }
+    auto* ident = e->dynamicCast<Id>();
+    if (ident != nullptr) {
+      Expression* e_val = follow_id_to_decl(ident);
+      if (e_val->isa<Id>()) {
+        ident = e_val->cast<Id>();
+      } else if (e_val->isa<VarDecl>()) {
+        ident = e_val->cast<VarDecl>()->id();
       }
-      ret.r = bind(env, ctx, r, e->cast<Id>()->decl()->flat()->id());
-      ret.b = bind(env, Ctx(), b, constants().literalTrue);
-      return ret;
+      if (ident->decl()->flat() == nullptr || ident->decl()->toplevel()) {
+        VarDecl* vd = ident->decl()->flat();
+        if (vd == nullptr) {
+          EE flat_ident = flat_exp(env, Ctx(), ident->decl(), nullptr, constants().varTrue);
+          vd = flat_ident.r()->cast<Id>()->decl();
+          ident->decl()->flat(vd);
+          auto* al = follow_id(vd->id())->cast<ArrayLit>();
+          if (al->size() == 0) {
+            if (r == nullptr) {
+              ret.r = al;
+            } else {
+              ret.r = bind(env, ctx, r, al);
+            }
+            ret.b = bind(env, Ctx(), b, constants().literalTrue);
+            return ret;
+          }
+        }
+        ret.r = bind(env, ctx, r, e->cast<Id>()->decl()->flat()->id());
+        ret.b = bind(env, Ctx(), b, constants().literalTrue);
+        return ret;
+      }
     }
     if ((it = env.cseMapFind(e)) != env.cseMapEnd()) {
       ret.r = bind(env, ctx, r, it->second.r()->cast<VarDecl>()->id());
