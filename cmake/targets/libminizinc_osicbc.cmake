@@ -13,7 +13,9 @@ if(OSICBC_FOUND)
   )
   target_include_directories(minizinc_osicbc PRIVATE ${OSICBC_INCLUDE_DIRS})
   add_dependencies(minizinc_osicbc minizinc_mip)
-  target_compile_definitions(minizinc_osicbc PRIVATE HAVE_CONFIG_H)
+  if (UNIX AND NOT WIN32)
+    target_compile_definitions(minizinc_osicbc PRIVATE HAVE_CONFIG_H)
+  endif()
 
   ### Setup correct compilation into the MiniZinc library
   target_compile_definitions(mzn PRIVATE HAS_OSICBC)
