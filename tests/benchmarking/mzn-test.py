@@ -241,11 +241,11 @@ class MZT_Param:
                 ### The %%%mzn-stat values appear in stdout (as of May 2019) but leave them here just in case
                 "Time_Flt": [ "%%%mzn-stat: flatTime", "[:=]", 3, "/// E.g., 'Flattening done, 3s' produces 3."
                                 " !!! This is interpreted as successful flattening by the checker" ],
-                "ObjVal_Solver":   [ "%%%mzn-stat objective=", "[,:/=]", 3,        ## Need = to avoid mixup witht the bound
+                "ObjVal_Solver":   [ "%%%mzn-stat: objective=", "[,:/=]", 3,        ## Need = to avoid mixup with the bound
                                         "/// The objval as reported by solver."],
-                "DualBnd_Solver":   [ "%%%mzn-stat objectiveBound", "[,:/=]", 3 ],
-                "CPUTime_Solver":   [ "%%%mzn-stat solveTime", "[,:/=]", 3 ],
-                "NNodes_Solver":   [ "%%%mzn-stat nodes", "[,:/=]", 3 ],
+                "DualBnd_Solver":   [ "%%%mzn-stat: objectiveBound", "[,:/=]", 3 ],
+                "CPUTime_Solver":   [ "%%%mzn-stat: solveTime", "[,:/=]", 3 ],
+                "NNodes_Solver":   [ "%%%mzn-stat: nodes", "[,:/=]", 3 ],
               },
               "Stdout_Keylines": {
                 s_CommentKey: [ "Similar to Stderr_Keylines"],
@@ -268,11 +268,11 @@ class MZT_Param:
                 s_CommentKey: ["Similar to Stderr_Keyvalues." ],
                 "Time_Flt": [ "%%%mzn-stat: flatTime", "[:=]", 3, "/// E.g., 'Flattening done, 3s' produces 3."
                                 " !!! This is interpreted as successful flattening by the checker" ],
-                "ObjVal_Solver":   [ "%%%mzn-stat objective=", "[,:/=]", 3,        ## Need = to avoid mixup witht the bound
+                "ObjVal_Solver":   [ "%%%mzn-stat: objective=", "[,:/=]", 3,        ## Need = to avoid mixup with the bound
                                         "/// The objval as reported by solver."],
-                "DualBnd_Solver":   [ "%%%mzn-stat objectiveBound", "[,:/=]", 3 ],
-                "CPUTime_Solver":   [ "%%%mzn-stat solveTime", "[,:/=]", 3 ],
-                "NNodes_Solver":   [ "%%%mzn-stat nodes", "[,:/=]", 3 ],
+                "DualBnd_Solver":   [ "%%%mzn-stat: objectiveBound", "[,:/=]", 3 ],
+                "CPUTime_Solver":   [ "%%%mzn-stat: solveTime", "[,:/=]", 3 ],
+                "NNodes_Solver":   [ "%%%mzn-stat: nodes", "[,:/=]", 3 ],
                 "ObjVal_MZN":   [ "_objective", "[():=;%]", 2,
                                     "/// The objective value as evaluated by MZN." ],
                 "RealTime_Solns2Out": [ "% time elapsed:", " ", 4 ],
@@ -890,7 +890,7 @@ class MznTest:
             resSlv["NOFZN"] = ["      !!!!! No flattening finish time registered or successfully parsed"]
         dTmLast = utils.try_float( resSlv.get( "RealTime_Solns2Out" ) )
         if None!=dTmLast:
-            resSlv["TimeReal_LastStatus"] = dTmLast / 1000.0
+            resSlv["TimeReal_LastStatus"] = dTmLast
             resSlv.pop( "RealTime_Solns2Out" )
         ## if "SolutionLast" in resSlv:
         ##     print( "   SOLUTION_LAST:\n", resSlv["SolutionLast"], sep='' )

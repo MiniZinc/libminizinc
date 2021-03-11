@@ -60,7 +60,7 @@ class CompareLogs:
             ] )
 
     ## which of those to print for each method 
-    hdrTable2P = "stt objMZN objSLV bnd tFlt tBest"
+    hdrTable2P = "stt chk objMZN objSLV bnd tFlt tBest"
     hdrTable2P_spl = hdrTable2P.split( " " )
 
     mapStatShort = {              ## Short status names
@@ -268,10 +268,10 @@ class CompareLogs:
                   0<mRes["SOLUTION_CHECKS_FAILED"]:
                     aResultThisInst[ "n_CheckFailed" ] = 1
                     aDetThis[ "chk" ] = "BAD"
-                    utils.addMapValues( self.mCmpVecVals[lNames], aResultThisInst )
                     print( "WARNING: SOLUTION CHECK(S) FAILED for the instance ", sInst,
                            ",  method '", lNames, "'.", sep='', file = self.ioBadChecks )
-                    continue                                        ## TODO. Param?
+                    ## utils.addMapValues( self.mCmpVecVals[lNames], aResultThisInst )
+                    ## continue                                        ## TODO. Param?
                 aResultThisInst[ "n_ErrorsBackend" ] = 0
                 aResultThisInst[ "n_ErrorsLogical" ] = 0
                 aDetThis [ "errH" ] = 0
