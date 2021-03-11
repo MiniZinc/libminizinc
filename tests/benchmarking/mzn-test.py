@@ -34,7 +34,7 @@ sFlnStatLog = sDirResults + "/STATS/stat_log__{}.txt"              ### The insta
 
 sDZNOutputAgrs = "--output-mode dzn --output-objective"    ## The flattener arguments to produce DZN-compatible output facilitating solution checking
                              ## Remove --output-objective in MZN Release <=2.1.7
-sFlatOptChecker = "--allow-multiple-assignments"
+sFlatOptChecker = "--allow-multiple-assignments -Dmzn_ignore_symmetry_breaking_constraints=true"
 
 s_UsageExamples = ( 
     "\nUSAGE EXAMPLES:"
