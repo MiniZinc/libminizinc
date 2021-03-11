@@ -86,14 +86,16 @@ OR Tools
 
 You can install the OR-Tools FlatZinc module as binary or obtain the source code from GitHub (https://github.com/google/or-tools).
 You can find detailed compilation instructions for OR-Tools on https://developers.google.com/optimization/.
-To compile the FlatZinc module from source, run the following in a terminal (from within the OR-Tools source code directory):
+Since version 8, `cmake` is supported, see the instructions. Previously, to compile the FlatZinc module from source,
+run the following in a terminal (from within the OR-Tools source code directory):
 
 .. code-block:: bash
 
   make fz -j8
   make test_fz
 
-In order to use OR-Tools with MiniZinc, you have to create an appropriate solver configuration file.
+Since version 8, `cmake --build . --target install` puts a solver configuration file in `/usr/share/minizinc`, so the MiniZinc finds
+OR-Tools automatically. With earlier versions, in order to use OR-Tools with MiniZinc, you have to create an appropriate solver configuration file.
 Add a file ``ortools.msc`` in an appropriate location (see :ref:`sec-cmdline-conffiles`) containing the following,
 where you replace ``<INSTALLATION_PREFIX>`` with the actual installation path and update the version number if necessary:
 
