@@ -9,7 +9,7 @@ https://github.com/MiniZinc/libminizinc/issues.
 `Version 2.5.4 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.5.4>`__
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-(released 8 March 2021)
+(released 12 March 2021)
 
 Changes:
 ^^^^^^^^
@@ -25,6 +25,8 @@ Changes:
 -  Add ``lex_chain_*`` globals, and use them in ``lex2[_strict]``.
 -  Improve detection of variable declarations which are actually par to allow
    more use of overloaded par versions of predicates.
+-  Update documentation on installation of OR-Tools.
+-  Report CPU time in ``solveTime`` statistic for MIP solvers.
 
 Bug fixes:
 ^^^^^^^^^^
@@ -72,6 +74,9 @@ Changes in the IDE:
 -  Fix double spinbox precision issues (:idebugref:`134`).
 -  Include Gecode Gist and CP Profiler dependencies in Snap package.
 -  Allow opening of multiple files through the open file menu option.
+-  Ensure file dialogs save last path when opening files.
+-  Make the escape key close the find/replace dialog when focussed on any child
+   widget.
 
 .. _v2.5.3:
 
