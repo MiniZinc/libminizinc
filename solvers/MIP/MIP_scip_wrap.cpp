@@ -700,7 +700,11 @@ static SCIP_DECL_EVENTEXEC(eventExecBestsol) { /*lint --e{715}*/
     cbuiPtr->pOutput->nOpenNodes = _cb_plugin->SCIPgetNNodesLeft(scip);
     cbuiPtr->pOutput->bestBound = _cb_plugin->SCIPgetDualbound(scip);
 
-    cbuiPtr->pOutput->dCPUTime = -1;
+    cbuiPtr->pOutput->dWallTime = std::chrono::duration<double>(std::chrono::steady_clock::now() -
+                                                                cbuiPtr->pOutput->dWallTime0)
+                                      .count();
+    cbuiPtr->pOutput->dCPUTime =
+        double(std::clock() - cbuiPtr->pOutput->cCPUTime0) / CLOCKS_PER_SEC;
 
     /// Call the user function:
     if (cbuiPtr->solcbfn != nullptr) {

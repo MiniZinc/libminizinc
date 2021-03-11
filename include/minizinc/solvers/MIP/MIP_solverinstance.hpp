@@ -544,7 +544,7 @@ void MIPSolverinstance<MIPWrapper>::printStatistics() {
     };
     env.outstream.setf(std::ios::fixed);
     env.outstream.precision(4);
-    env.outstream << "%%%mzn-stat: solveTime=" << _mipWrapper->getWallTimeElapsed() << std::endl;
+    env.outstream << "%%%mzn-stat: solveTime=" << _mipWrapper->getCPUTime() << std::endl;
     ;
     env.outstream.copyfmt(oldState);
 
