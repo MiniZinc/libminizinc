@@ -474,9 +474,10 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
   }
 
   if (!_globalsDir.empty()) {
-    _includePaths.insert(_includePaths.begin(), _stdLibDir + "/" + _globalsDir + "/");
+    _includePaths.insert(_includePaths.begin(),
+                         FileUtils::file_path(_stdLibDir + "/" + _globalsDir + "/"));
   }
-  _includePaths.push_back(_stdLibDir + "/std/");
+  _includePaths.push_back(FileUtils::file_path(_stdLibDir + "/std/"));
 
   for (auto& includePath : _includePaths) {
     if (!FileUtils::directory_exists(includePath)) {
