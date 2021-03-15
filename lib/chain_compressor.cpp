@@ -64,8 +64,10 @@ bool ImpCompressor::trackItem(Item* i) {
         auto* positive = c->arg(0)->cast<ArrayLit>();
         auto* negative = c->arg(1)->cast<ArrayLit>();
         if (positive->length() == 1 && negative->length() == 1) {
-          auto* var = (*negative)[0]->cast<Id>();
-          storeItem(var->decl(), i);
+          auto* var = (*negative)[0]->dynamicCast<Id>();
+          if (var != nullptr) {
+            storeItem(var->decl(), i);
+          }
           return true;
         }
       } else if (c->id() == "mzn_reverse_map_var") {
@@ -75,9 +77,11 @@ bool ImpCompressor::trackItem(Item* i) {
         return true;
         // pred_imp(..., b); i.e. b -> pred(...)
       } else if (c->id().endsWith("_imp")) {
-        auto* control = c->arg(c->argCount() - 1)->cast<Id>();
-        assert(control->type().isvarbool());
-        storeItem(control->decl(), i);
+        auto* control = c->arg(c->argCount() - 1)->dynamicCast<Id>();
+        if (control != nullptr) {
+          assert(control->type().isvarbool());
+          storeItem(control->decl(), i);
+        }
         return true;
       }
     }
@@ -121,40 +125,42 @@ void ImpCompressor::compress() {
       auto* c = ci->e()->cast<Call>();
       if (c->id() == constants().ids.clause) {
         auto* positive = c->arg(0)->cast<ArrayLit>();
-        auto* var = (*positive)[0]->cast<Id>();
-        bool output_var = var->decl()->ann().contains(constants().ann.output_var);
-        auto usages = _env.varOccurrences.usages(var->decl());
-        output_var = output_var || usages.second;
-        int occurrences = usages.first;
-        unsigned long lhs_occurences = count(var->decl());
+        auto* var = (*positive)[0]->dynamicCast<Id>();
+        if (var != nullptr) {
+          bool output_var = var->decl()->ann().contains(constants().ann.output_var);
+          auto usages = _env.varOccurrences.usages(var->decl());
+          output_var = output_var || usages.second;
+          int occurrences = usages.first;
+          unsigned long lhs_occurences = count(var->decl());
 
-        // Compress if:
-        // - There is one occurrence on the RHS of a clause and the others are on the LHS of a
-        // clause
-        // - There is one occurrence on the RHS of a clause, that Id is a reified forall that has no
-        // other occurrences
-        // - There is one occurrence on the RHS of a clause, that Id is a reification in a positive
-        // context, and all other occurrences are on the LHS of a clause
-        bool compress = !output_var && lhs_occurences > 0;
-        if ((var->decl()->e() != nullptr) && (var->decl()->e()->dynamicCast<Call>() != nullptr)) {
-          auto* call = var->decl()->e()->cast<Call>();
-          if (call->id() == constants().ids.forall) {
-            compress = compress && (occurrences == 1 && lhs_occurences == 1);
+          // Compress if:
+          // - There is one occurrence on the RHS of a clause and the others are on the LHS of a
+          // clause
+          // - There is one occurrence on the RHS of a clause, that Id is a reified forall that has
+          // no other occurrences
+          // - There is one occurrence on the RHS of a clause, that Id is a reification in a
+          // positive context, and all other occurrences are on the LHS of a clause
+          bool compress = !output_var && lhs_occurences > 0;
+          if ((var->decl()->e() != nullptr) && (var->decl()->e()->dynamicCast<Call>() != nullptr)) {
+            auto* call = var->decl()->e()->cast<Call>();
+            if (call->id() == constants().ids.forall) {
+              compress = compress && (occurrences == 1 && lhs_occurences == 1);
+            } else {
+              compress = compress && (occurrences == lhs_occurences);
+            }
           } else {
-            compress = compress && (occurrences == lhs_occurences);
+            compress = compress && (occurrences == lhs_occurences + 1);
           }
-        } else {
-          compress = compress && (occurrences == lhs_occurences + 1);
-        }
-        if (compress) {
-          rhs = var->decl();
-          auto* negative = c->arg(1)->cast<ArrayLit>();
-          lhs = (*negative)[0]->cast<Id>()->decl();
-          if (lhs == rhs) {
-            continue;
+          if (compress) {
+            rhs = var->decl();
+            auto* negative = c->arg(1)->cast<ArrayLit>();
+            lhs = (*negative)[0]->isa<Id>() ? (*negative)[0]->cast<Id>()->decl() : nullptr;
+            if (lhs == rhs) {
+              continue;
+            }
           }
+          // TODO: Detect equivalences for output variables.
         }
-        // TODO: Detect equivalences for output variables.
       }
     }
 
@@ -189,8 +195,9 @@ bool ImpCompressor::compressItem(Item* i, VarDecl* newLHS) {
     // Given (x -> y) /\ (y -> z), produce x -> z
     if (c->id() == constants().ids.clause) {
       auto* positive = c->arg(0)->cast<ArrayLit>();
-      auto* rhs = (*positive)[0]->cast<Id>();
-      if (rhs->decl() != newLHS) {
+      VarDecl* positiveDecl =
+          (*positive)[0]->isa<Id>() ? (*positive)[0]->cast<Id>()->decl() : nullptr;
+      if (positiveDecl != newLHS) {
         ConstraintI* nci = constructClause(positive, newLHS->id());
         _boolConstraints.push_back(addItem(nci));
       }
@@ -212,9 +219,9 @@ bool ImpCompressor::compressItem(Item* i, VarDecl* newLHS) {
     if (c->id() == constants().ids.forall) {
       auto* exprs = c->arg(0)->cast<ArrayLit>();
       for (int j = 0; j < exprs->size(); ++j) {
-        auto* rhs = (*exprs)[j]->cast<Id>();
-        if (rhs->decl() != newLHS) {
-          ConstraintI* nci = constructClause(rhs, newLHS->id());
+        VarDecl* rhsDecl = (*exprs)[j]->isa<Id>() ? (*exprs)[j]->cast<Id>()->decl() : nullptr;
+        if (rhsDecl != newLHS) {
+          ConstraintI* nci = constructClause((*exprs)[j], newLHS->id());
           _boolConstraints.push_back(addItem(nci));
         }
       }
@@ -253,8 +260,10 @@ ConstraintI* ImpCompressor::constructClause(Expression* pos, Expression* neg) {
     args[1]->type(Type::varbool(1));
   }
   // NEVER CREATE (a -> a)
-  assert((*args[0]->dynamicCast<ArrayLit>())[0]->dynamicCast<Id>()->decl() !=
-         (*args[1]->dynamicCast<ArrayLit>())[0]->dynamicCast<Id>()->decl());
+  assert(!(*args[0]->cast<ArrayLit>())[0]->isa<Id>() ||
+         !(*args[1]->cast<ArrayLit>())[0]->isa<Id>() ||
+         (*args[0]->cast<ArrayLit>())[0]->cast<Id>()->decl() !=
+             (*args[1]->cast<ArrayLit>())[0]->cast<Id>()->decl());
   auto* nc = new Call(MiniZinc::Location().introduce(), constants().ids.clause, args);
   nc->type(Type::varbool());
   nc->decl(_env.model->matchFn(_env, nc, false));
