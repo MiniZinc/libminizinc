@@ -9,7 +9,7 @@ https://github.com/MiniZinc/libminizinc/issues.
 `Version 2.5.4 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.5.4>`__
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-(released 12 March 2021)
+(released 16 March 2021)
 
 Changes:
 ^^^^^^^^
@@ -57,6 +57,8 @@ Bug fixes:
 -  Escape paths in printed ``include`` items, fixing backslash problems on
    Windows.
 -  Follow ids to declarations when flattening par arrays (:bugref:`448`).
+-  Ignore par constants during chain compression.
+-  Fix flattening of all-par set literals.
 
 Changes in the IDE:
 ^^^^^^^^^^^^^^^^^^^
@@ -77,6 +79,7 @@ Changes in the IDE:
 -  Ensure file dialogs save last path when opening files.
 -  Make the escape key close the find/replace dialog when focussed on any child
    widget.
+-  Allow setting MOOC submission items as mandatory.
 
 .. _v2.5.3:
 
