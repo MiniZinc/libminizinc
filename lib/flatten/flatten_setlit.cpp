@@ -34,7 +34,11 @@ EE flatten_setlit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl*
   ret.b = conj(env, b, Ctx(), elems_ee);
   if (allPar) {
     GCLock lock;
-    Expression* ee = eval_set_lit(env, e);
+    auto* nsl = new SetLit(Location().introduce(), elems);
+    Type nsl_t(e->type());
+    nsl_t.ti(Type::TI_PAR);
+    nsl->type(nsl_t);
+    Expression* ee = eval_set_lit(env, nsl);
     ret.r = bind(env, Ctx(), r, ee);
   } else {
     GCLock lock;
