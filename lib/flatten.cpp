@@ -737,7 +737,7 @@ EnvI::~EnvI() {
 }
 long long int EnvI::genId() { return _ids++; }
 void EnvI::cseMapInsert(Expression* e, const EE& ee) {
-  if (e->type().isPar()) {
+  if (e->type().isPar() && !e->isa<ArrayLit>()) {
     return;
   }
   KeepAlive ka(e);
