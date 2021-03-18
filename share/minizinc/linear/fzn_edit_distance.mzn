@@ -67,9 +67,9 @@ predicate fzn_edit_distance_kept(int: max_char,
     kept_sum = sum(i in 1..len)(kept[i])
     /\
     forall(k in 2..len)(
-      kept_r1_from_position[k] + (1-kept[k])*len > kept_r1_from_position[k-1]
+      kept_r1_from_position[k] + (1-kept[k])*(len+1) > kept_r1_from_position[k-1]
       /\
-      kept_r2_from_position[k] + (1-kept[k])*len > kept_r2_from_position[k-1]
+      kept_r2_from_position[k] + (1-kept[k])*(len+1) > kept_r2_from_position[k-1]
     )
     /\
     forall(i in 1..len-1)(
@@ -108,7 +108,19 @@ predicate fzn_edit_distance_kept(int: max_char,
     /\
     forall(i in 1..len)(
       z[i] <= 1 + (1-kept_r2_from_position_i[i,0])*max_char
-    );
+    )
+    /\
+    forall(i in 1..len, j in 1..len)(
+      z[i] - (1-kept[i])*max_char <= S1[j] + (1-kept_r2_from_position_i[i,j])*max_char
+      /\
+      z[i] + (1-kept[i])*max_char >= S1[j] - (1-kept_r2_from_position_i[i,j])*max_char
+    )
+    /\
+    forall(i in 1..len, j in 1..len)(
+      z[i] - (1-kept[i])*max_char <= S2[j] + (1-kept_r1_from_position_i[i,j])*max_char
+      /\
+      z[i] + (1-kept[i])*max_char >= S2[j] - (1-kept_r1_from_position_i[i,j])*max_char
+    );    
   
 % Linearized decomposition based on the paper "Constraint-Based Scheduling for Paint Shops in the Automotive Supply Industry", Winter and Musliu, ACM Transactions on Intelligent Systems and Technology, 2020.
 predicate fzn_edit_distance_kept_general(int: max_char,
@@ -156,9 +168,9 @@ predicate fzn_edit_distance_kept_general(int: max_char,
     kept_sum = sum(i in 1..len)(kept[i])
     /\
     forall(k in 2..len)(
-      kept_r1_from_position[k] + (1-kept[k])*len > kept_r1_from_position[k-1]
+      kept_r1_from_position[k] + (1-kept[k])*(len+1) > kept_r1_from_position[k-1]
       /\
-      kept_r2_from_position[k] + (1-kept[k])*len > kept_r2_from_position[k-1]
+      kept_r2_from_position[k] + (1-kept[k])*(len+1) > kept_r2_from_position[k-1]
     )
     /\
     forall(i in 1..len-1)(
