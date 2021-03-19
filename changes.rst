@@ -4,6 +4,33 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
+.. _v2.5.5:
+
+`Version 2.5.5 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.5.5>`__
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(released 19 March 2021)
+
+Changes:
+^^^^^^^^
+
+-  Make min/max on an array of optional variables return a non-optional var,
+   behaving as if absent values are not in the array.
+
+Bug fixes:
+^^^^^^^^^^
+
+-  Insert par array literals in the common subexpression elimination map, fixing
+   a FlatZinc code bloat issue (:bugref:`458`).
+
+Changes in the IDE:
+^^^^^^^^^^^^^^^^^^^
+
+-  Fix editing of custom string parameters so they don't get converted to
+   floats.
+-  Fix crash on Windows caused when the ``PATH`` environment contains unicode
+   characters.
+
 .. _v2.5.4:
 
 `Version 2.5.4 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.5.4>`__
