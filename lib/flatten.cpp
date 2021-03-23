@@ -802,10 +802,12 @@ EnvI::CSEMap::iterator EnvI::cseMapFind(Expression* e) {
       if (it_vd != nullptr) {
         int idx = varOccurrences.find(it_vd);
         if (idx == -1 || (*_flat)[idx]->removed()) {
+          _cseMap.remove(ka);
           return _cseMap.end();
         }
       }
     } else {
+      _cseMap.remove(ka);
       return _cseMap.end();
     }
   }
