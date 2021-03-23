@@ -463,7 +463,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
       ArrayLit* vars = eval_array_lit(env, c->arg(1));
       if (vars->flat()) {
         args_ee[1].r = vars;
-        args_ee[1].b = constants().varTrue;
+        args_ee[1].b = constants().literalTrue;
       } else {
         CallArgItem cai(env);
         CallStackItem _csi(env, c->arg(1));
