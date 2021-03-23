@@ -425,6 +425,19 @@ ArrayLit::ArrayLit(const Location& loc, ArrayLit* v, const std::vector<std::pair
 }
 
 void ArrayLit::compress(const std::vector<Expression*>& v, const std::vector<int>& dims) {
+  bool allFlat = true;
+  for (auto* e : v) {
+    if (!e->isa<IntLit>() && !e->isa<FloatLit>() && !e->isa<BoolLit>() &&
+        !(e->isa<SetLit>() && e->cast<SetLit>()->evaluated()) &&
+        !(e->isa<Id>() && e->cast<Id>()->decl() != nullptr &&
+          e->cast<Id>()->decl()->flat() == e->cast<Id>()->decl())) {
+      allFlat = false;
+      break;
+    }
+  }
+  if (allFlat) {
+    flat(true);
+  }
   if (v.size() >= 4 && Expression::equal(v[0], v[1]) && Expression::equal(v[1], v[2]) &&
       Expression::equal(v[2], v[3])) {
     std::vector<Expression*> compress(v.size());
