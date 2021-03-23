@@ -639,6 +639,8 @@ public:
   void isv(IntSetVal* val) { _u.isv = val; }
   /// Access float set value if present
   FloatSetVal* fsv() const { return type().bt() == Type::BT_FLOAT ? _u.fsv : nullptr; }
+  /// Check if int set value or float set value is present
+  bool evaluated() const { return _u.isv != nullptr; }
   /// Set integer set value
   void fsv(FloatSetVal* val) { _u.fsv = val; }
   /// Recompute hash value

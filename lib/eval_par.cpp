@@ -1873,8 +1873,19 @@ Expression* eval_par(EnvI& env, Expression* e) {
     case Expression::E_ARRAYLIT: {
       ArrayLit* al = eval_array_lit(env, e);
       std::vector<Expression*> args(al->size());
-      for (unsigned int i = al->size(); (i--) != 0U;) {
-        args[i] = eval_par(env, (*al)[i]);
+      bool allFlat = true;
+      for (unsigned int i = 0; i < al->size(); i++) {
+        Expression* ali = (*al)[i];
+        if (!ali->isa<IntLit>() && !ali->isa<FloatLit>() && !ali->isa<BoolLit>() &&
+            !(ali->isa<SetLit>() && ali->cast<SetLit>()->evaluated())) {
+          allFlat = false;
+          args[i] = eval_par(env, ali);
+        } else {
+          args[i] = ali;
+        }
+      }
+      if (allFlat) {
+        return al;
       }
       std::vector<std::pair<int, int>> dims(al->dims());
       for (unsigned int i = al->dims(); (i--) != 0U;) {
