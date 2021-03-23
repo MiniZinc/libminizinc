@@ -10,7 +10,7 @@ add_library(mzn
   lib/MIPdomains.cpp
   lib/ast.cpp
   lib/astexception.cpp
-  lib/astmap.cpp
+  
   lib/aststring.cpp
   lib/astvec.cpp
   lib/builtins.cpp

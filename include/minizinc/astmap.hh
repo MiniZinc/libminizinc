@@ -15,6 +15,7 @@
 #include <minizinc/ast.hh>
 #include <minizinc/aststring.hh>
 
+#include <map>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -45,8 +46,25 @@ protected:
 };
 
 template <>
-void ManagedASTStringMap<Expression*>::mark();
+inline void ManagedASTStringMap<Expression*>::mark() {
+  for (auto& it : *this) {
+    it.first.mark();
+    Expression::mark(it.second);
+#if defined(MINIZINC_GC_STATS)
+    GC::stats()[it->second->_id].keepalive++;
+#endif
+  }
+}
+
 template <>
-void ManagedASTStringMap<VarDeclI*>::mark();
+inline void ManagedASTStringMap<VarDeclI*>::mark() {
+  for (auto& it : *this) {
+    it.first.mark();
+#if defined(MINIZINC_GC_STATS)
+    GC::stats()[it.second->e()->Expression::eid()].keepalive++;
+#endif
+    Item::mark(it.second);
+  }
+}
 
 }  // namespace MiniZinc
