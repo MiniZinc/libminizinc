@@ -158,7 +158,7 @@ test:analyse:
   artifacts:
     when: always
     paths:
-      - tests/output
+      - tests/output/
     reports:
       junit: tests/output/junit*.xml
   cache:
@@ -217,12 +217,16 @@ test:analyse:
 
 test:linux:fast:
   extends: [.tests_linux, .tests_fast]
+  artifacts:
+    expose_as: test-linux
 
 test:linux:full:
   extends: [.tests_linux, .tests_full]
 
 test:osx:fast:
   extends: [.tests_osx, .tests_fast]
+  artifacts:
+    expose_as: test-osx
 
 test:osx:full:
   extends: [.tests_osx, .tests_full]
@@ -231,6 +235,8 @@ test:win64:fast:
   extends: [.tests_win64, .tests_fast]
   cache:
     key: test_win64_fast
+  artifacts:
+    expose_as: test-win64
 
 test:win64:full:
   extends: [.tests_win64, .tests_full]
@@ -264,7 +270,8 @@ documentation:
     - cp $CI_PROJECT_DIR/docs/chi/_build/latex/MiniZinc.pdf $CI_PROJECT_DIR/docs-deploy/chi/MiniZinc\ Handbook.pdf
   artifacts:
     paths:
-      - docs-deploy
+      - docs-deploy/
+    expose_as: documentation
   tags:
     - linux
     - docker
