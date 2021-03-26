@@ -1,0 +1,12 @@
+include "fzn_circuit_opt.mzn";
+include "fzn_circuit_opt_reif.mzn";
+
+/** @group globals
+  Constrains the elements of \a x to define a circuit where \a x[\p i] = \p j means
+  that \p j is the successor of \p i. Absent elements do not take part in the circuit.
+*/
+predicate circuit(array[int] of var opt int: x) = 
+    fzn_circuit_opt(x);
+
+predicate circuit(array[int] of var opt int: x, var bool: b) = 
+    fzn_circuit_opt_reif(x,b);
