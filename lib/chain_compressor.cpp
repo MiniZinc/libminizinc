@@ -217,7 +217,7 @@ bool ImpCompressor::compressItem(Item* i, VarDecl* newLHS) {
     auto* c = vdi->e()->e()->dynamicCast<Call>();
     // Given: (x -> y) /\  (y -> (a /\ b /\ ...)), produce (x -> a) /\ (x -> b) /\ ...
     if (c->id() == constants().ids.forall) {
-      auto* exprs = c->arg(0)->cast<ArrayLit>();
+      auto* exprs = follow_id(c->arg(0))->cast<ArrayLit>();
       for (int j = 0; j < exprs->size(); ++j) {
         VarDecl* rhsDecl = (*exprs)[j]->isa<Id>() ? (*exprs)[j]->cast<Id>()->decl() : nullptr;
         if (rhsDecl != newLHS) {
