@@ -12,6 +12,7 @@
 #include <minizinc/config.hh>
 #include <minizinc/copy.hh>
 #include <minizinc/eval_par.hh>
+#include <minizinc/file_utils.hh>
 #include <minizinc/htmlprinter.hh>
 #include <minizinc/model.hh>
 #include <minizinc/prettyprinter.hh>
@@ -459,7 +460,9 @@ protected:
 public:
   CollectFunctionsVisitor(EnvI& env, HtmlDocOutput::FunMap& funmap, bool includeStdLib)
       : _env(env), _funmap(funmap), _includeStdLib(includeStdLib) {}
-  bool enterModel(Model* m) const { return _includeStdLib || m->filename() != "stdlib.mzn"; }
+  bool enterModel(Model* m) const {
+    return _includeStdLib || FileUtils::base_name(m->filename().c_str()) != "stdlib.mzn";
+  }
   void vFunctionI(FunctionI* fi) {
     if (Call* docstring =
             Expression::dynamicCast<Call>(get_annotation(fi->ann(), constants().ann.doc_comment))) {
@@ -611,7 +614,7 @@ public:
                    bool includeStdLib)
       : _env(env), _maingroup(mg), _funmap(fm), _includeStdLib(includeStdLib) {}
   bool enterModel(Model* m) {
-    if (!_includeStdLib && m->filename() == "stdlib.mzn") {
+    if (!_includeStdLib && FileUtils::base_name(m->filename().c_str()) == "stdlib.mzn") {
       return false;
     }
     const std::string& dc = m->docComment();
@@ -1141,7 +1144,7 @@ public:
                   bool includeStdLib)
       : _env(env), _maingroup(mg), _funmap(fm), _includeStdLib(includeStdLib) {}
   bool enterModel(Model* m) {
-    if (!_includeStdLib && m->filename() == "stdlib.mzn") {
+    if (!_includeStdLib && FileUtils::base_name(m->filename().c_str()) == "stdlib.mzn") {
       return false;
     }
     const std::string& dc = m->docComment();

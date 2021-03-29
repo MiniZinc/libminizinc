@@ -91,26 +91,19 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
 
   if (!filenames.empty()) {
     GCLock lock;
-    model->setFilename(FileUtils::base_name(filenames[0]));
-    if (FileUtils::is_absolute(filenames[0])) {
-      files.emplace_back(model, nullptr, "", filenames[0]);
-    } else {
-      files.emplace_back(model, nullptr, "", workingDir + "/" + filenames[0]);
-    }
+    auto rootFileName = FileUtils::file_path(filenames[0], workingDir);
+    model->setFilename(rootFileName);
+    files.emplace_back(model, nullptr, "", rootFileName);
 
     for (unsigned int i = 1; i < filenames.size(); i++) {
       GCLock lock;
-      string fullName = filenames[i];
-      string baseName = FileUtils::base_name(filenames[i]);
-      if (!FileUtils::is_absolute(fullName)) {
-        fullName = FileUtils::file_path(workingDir + "/" + fullName);
-      }
-      bool isFzn = (baseName.compare(baseName.length() - 4, 4, ".fzn") == 0);
+      auto fullName = FileUtils::file_path(filenames[i], workingDir);
+      bool isFzn = (fullName.compare(fullName.length() - 4, 4, ".fzn") == 0);
       if (isFzn) {
         files.emplace_back(model, nullptr, "", fullName);
       } else {
         auto* includedModel = new Model;
-        includedModel->setFilename(baseName);
+        includedModel->setFilename(fullName);
         files.emplace_back(includedModel, nullptr, "", fullName);
         seenModels.insert(pair<string, Model*>(fullName, includedModel));
         Location loc(ASTString(filenames[i]), 0, 0, 0, 0);
