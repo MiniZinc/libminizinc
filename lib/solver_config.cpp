@@ -211,28 +211,6 @@ std::vector<SolverConfig::ExtraFlag> get_extra_flag_list(AssignI* ai) {
       "invalid configuration item (right hand side must be a 2d array of strings)");
 }
 
-std::string get_env(const char* v) {
-  std::string ret;
-#ifdef _MSC_VER
-  size_t len;
-  getenv_s(&len, nullptr, 0, v);
-  if (len > 0) {
-    char* p = static_cast<char*>(malloc(len * sizeof(char)));
-    getenv_s(&len, p, len, v);
-    if (len > 0) {
-      ret = p;
-    }
-    free(p);
-  }
-#else
-  char* p = getenv(v);
-  if (p != nullptr) {
-    ret = p;
-  }
-#endif
-  return ret;
-}
-
 char char_to_lower(char c) {
   return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
 }
@@ -301,9 +279,9 @@ SolverConfig SolverConfig::load(const string& filename) {
           } else if (ai->id() == "executable") {
             std::string exePath = get_string(ai);
             sc._executable = exePath;
-            std::string exe = FileUtils::find_executable(FileUtils::file_path(exePath, basePath));
+            std::string exe = FileUtils::find_executable(exePath, basePath);
             int nr_found = (int)(!exe.empty());
-            std::string tmp = FileUtils::file_path(FileUtils::find_executable(exePath));
+            std::string tmp = FileUtils::find_executable(exePath);
             nr_found += (int)((!tmp.empty()) && tmp != exe);
             exe = exe.empty() ? tmp : exe;
             if (nr_found > 0) {
@@ -547,22 +525,8 @@ void SolverConfigs::addConfig(const MiniZinc::SolverConfig& sc) {
 std::vector<std::string> SolverConfigs::solverConfigsPath() const { return _solverPath; }
 
 SolverConfigs::SolverConfigs(std::ostream& log) {
-#ifdef _MSC_VER
-  const char* PATHSEP = ";";
-#else
-  const char* PATHSEP = ":";
-#endif
-  std::string mzn_solver_path = get_env("MZN_SOLVER_PATH");
-  while (!mzn_solver_path.empty()) {
-    size_t next_sep = mzn_solver_path.find(PATHSEP);
-    string cur_path = mzn_solver_path.substr(0, next_sep);
-    _solverPath.push_back(cur_path);
-    if (next_sep != string::npos) {
-      mzn_solver_path = mzn_solver_path.substr(next_sep + 1, string::npos);
-    } else {
-      mzn_solver_path = "";
-    }
-  }
+  auto paths = FileUtils::get_env_list("MZN_SOLVER_PATH");
+  _solverPath.insert(_solverPath.end(), paths.begin(), paths.end());
   std::string userConfigDir = FileUtils::user_config_dir();
   if (FileUtils::directory_exists(userConfigDir + "/solvers")) {
     _solverPath.push_back(userConfigDir + "/solvers");

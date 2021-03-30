@@ -20,6 +20,7 @@
 #include <minizinc/exception.hh>
 #include <minizinc/file_utils.hh>
 
+#include <algorithm>
 #include <cstring>
 #include <sstream>
 #include <string>
@@ -198,50 +199,73 @@ bool is_absolute(const std::string& path) {
 #endif
 }
 
-std::string find_executable(const std::string& filename) {
-  if (is_absolute(filename)) {
-    if (file_exists(filename)) {
-      return filename;
-    }
-#ifdef _MSC_VER
-    if (FileUtils::file_exists(filename + ".exe")) {
-      return filename + ".exe";
-    }
-    if (FileUtils::file_exists(filename + ".bat")) {
-      return filename + ".bat";
-    }
-#endif
-    return "";
-  }
-  char* path_c = getenv("PATH");
-#ifdef _MSC_VER
-  char pathsep = ';';
-#else
-  char pathsep = ':';
-#endif
+std::vector<std::string> get_env_list(const std::string& env) {
   std::string path;
+#ifdef _MSC_VER
+  wchar_t* path_c = _wgetenv(utf8_to_wide(env).c_str());
+  char pathsep = ';';
+  if (path_c != nullptr) {
+    path = wide_to_utf8(path_c);
+  }
+#else
+  char* path_c = getenv(env.c_str());
+  char pathsep = ':';
   if (path_c != nullptr) {
     path = path_c;
-    if (!path.empty()) {
-      path += pathsep;
-    }
   }
-  path += progpath();
+#endif
+  std::vector<std::string> ret;
   std::string pathItem;
   std::stringstream pathStream(path);
   while (std::getline(pathStream, pathItem, pathsep)) {
-    std::string fileWithPath = pathItem.append("/").append(filename);
-    if (file_exists(fileWithPath)) {
-      return fileWithPath;
+    if (!pathItem.empty()) {
+      ret.push_back(pathItem);
     }
+  }
+  return ret;
+}
+
+std::string find_executable(const std::string& filename, const std::string& basePath) {
 #ifdef _MSC_VER
-    if (FileUtils::file_exists(fileWithPath + ".exe")) {
-      return fileWithPath + ".exe";
-    }
-    if (FileUtils::file_exists(fileWithPath + ".bat")) {
-      return fileWithPath + ".bat";
-    }
+  // On Windows, executables must end with one of these extensions
+  std::vector<std::string> exeSuffixes = get_env_list("PATHEXT");
+  if (std::find_if(exeSuffixes.begin(), exeSuffixes.end(), [&](const auto& suffix) {
+        if (filename.size() < suffix.size()) {
+          return false;
+        }
+        auto fileSuffix = filename.substr(filename.size() - suffix.size(), suffix.size());
+        return _stricmp(suffix.c_str(), fileSuffix.c_str()) == 0;
+      }) != exeSuffixes.end()) {
+    // There's already an executable extension so try it first
+    exeSuffixes.insert(exeSuffixes.begin(), "");
+  }
+#else
+  std::vector<std::string> exeSuffixes = {""};
 #endif
+  if (is_absolute(filename)) {
+    for (const auto& suffix : exeSuffixes) {
+      if (file_exists(filename + suffix)) {
+        return file_path(filename + suffix);
+      }
+    }
+    return "";
+  }
+
+  std::vector<std::string> searchDirs = {basePath};
+  if (base_name(filename) == filename) {
+    // Filename only, so search PATH as well
+    auto path_dirs = get_env_list("PATH");
+    searchDirs.insert(searchDirs.end(), path_dirs.begin(), path_dirs.end());
+  }
+  searchDirs.push_back(progpath());
+
+  for (const auto& path : searchDirs) {
+    auto fileWithPath = file_path(path + "/" + filename);
+    for (const auto& suffix : exeSuffixes) {
+      if (file_exists(fileWithPath + suffix)) {
+        return file_path(fileWithPath + suffix);
+      }
+    }
   }
   return "";
 }
