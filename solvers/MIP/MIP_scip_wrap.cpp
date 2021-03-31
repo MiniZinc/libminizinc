@@ -251,14 +251,14 @@ bool MIPScipWrapper::Options::processOption(int& i, vector<string>& argv,
   } else if (string(argv[i]) == "-f") {  // NOLINT: Allow repeated empty if
     //     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
   } else if (cop.get("--writeModel", &buffer)) {
-    sExportModel = MiniZinc::FileUtils::file_path(buffer);
+    sExportModel = MiniZinc::FileUtils::file_path(buffer, workingDir);
   } else if (cop.get("-p --parallel", &nThreads)) {        // NOLINT: Allow repeated empty if
   } else if (cop.get("--solver-time-limit", &nTimeout)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--workmem", &nWorkMemLimit)) {       // NOLINT: Allow repeated empty if
   } else if (cop.get("--readParam", &buffer)) {
-    sReadParams = MiniZinc::FileUtils::file_path(buffer);
+    sReadParams = MiniZinc::FileUtils::file_path(buffer, workingDir);
   } else if (cop.get("--writeParam", &buffer)) {
-    sWriteParams = MiniZinc::FileUtils::file_path(buffer);
+    sWriteParams = MiniZinc::FileUtils::file_path(buffer, workingDir);
   } else if (cop.get("--absGap", &absGap)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--relGap", &relGap)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--intTol", &intTol)) {  // NOLINT: Allow repeated empty if

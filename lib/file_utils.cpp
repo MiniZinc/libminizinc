@@ -126,34 +126,32 @@ bool directory_exists(const std::string& dirname) {
 }
 
 std::string file_path(const std::string& filename, const std::string& basePath) {
+  // Add base path to relative paths if there is one
+  auto f = !basePath.empty() && !is_absolute(filename) ? basePath + "/" + filename : filename;
+
+  // Get real path of absolute path or resolve relative to current directory
 #ifdef _MSC_VER
   LPWSTR lpFilePart;
-  DWORD nBufferLength = GetFullPathNameW(utf8_to_wide(filename).c_str(), 0, nullptr, &lpFilePart);
-  auto lpBuffer = static_cast<LPWSTR>(LocalAlloc(LMEM_FIXED, sizeof(WCHAR) * nBufferLength));
+  DWORD nBufferLength = GetFullPathNameW(utf8_to_wide(f).c_str(), 0, nullptr, &lpFilePart);
+  auto* lpBuffer = static_cast<LPWSTR>(LocalAlloc(LMEM_FIXED, sizeof(WCHAR) * nBufferLength));
   if (lpBuffer == nullptr) {
     return "";
   }
 
   std::string ret;
-  DWORD error =
-      GetFullPathNameW(utf8_to_wide(filename).c_str(), nBufferLength, lpBuffer, &lpFilePart);
-  DWORD fileAttr = GetFileAttributesW(lpBuffer);
-  DWORD lastError = GetLastError();
+  DWORD error = GetFullPathNameW(utf8_to_wide(f).c_str(), nBufferLength, lpBuffer, &lpFilePart);
 
-  if (error == 0 || (fileAttr == INVALID_FILE_ATTRIBUTES && lastError != NO_ERROR)) {
-    ret = basePath.empty() ? filename : file_path(basePath + "/" + filename);
+  if (error == 0) {
+    ret = f;
   } else {
     ret = wide_to_utf8(lpBuffer);
   }
   LocalFree(lpBuffer);
   return ret;
 #else
-  char* rp = realpath(filename.c_str(), nullptr);
+  char* rp = realpath(f.c_str(), nullptr);
   if (rp == nullptr) {
-    if (basePath.empty()) {
-      return filename;
-    }
-    return file_path(basePath + "/" + filename);
+    return f;
   }
   std::string rp_s(rp);
   free(rp);

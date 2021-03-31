@@ -36,7 +36,7 @@ std::vector<std::string> get_env_list(const std::string& env);
 /// or if filename is a basename only, find anywhere on the PATH.
 /// On Windows, also check extensions .exe, .bat and .cmd
 std::string find_executable(const std::string& filename, const std::string& basePath = "");
-/// Return full path to file. If \a basePath is not empty, also try resolving
+/// Return full path to file. If \a basePath is not empty, resolve
 /// relative paths with respect to \a basePath.
 std::string file_path(const std::string& filename, const std::string& basePath = std::string());
 /// Return directory name containing \a filename
