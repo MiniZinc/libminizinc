@@ -3007,14 +3007,14 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         auto* ti = new TypeInst(Location().introduce(), Type());
         VarDecl* obj;
         if (!isChecker) {
-          obj = new VarDecl(Location().introduce(), ti, "_objective", si->e());
+          obj = new VarDecl(si->e()->loc().introduce(), ti, "_objective", si->e());
         } else {
-          obj = new VarDecl(Location().introduce(), ti, "_checker_objective", si->e());
+          obj = new VarDecl(si->e()->loc().introduce(), ti, "_checker_objective", si->e());
         }
         si->e(obj->id());
         obj->addAnnotation(si->st() == SolveI::ST_MAX ? env.constants.ctx.pos
                                                       : env.constants.ctx.neg);
-        objective = new VarDeclI(Location().introduce(), obj);
+        objective = new VarDeclI(si->loc().introduce(), obj);
       }
     }
   } _tsv0(env.envi(), ts, m, assignItems, enumItems, isFlatZinc, isChecker);
