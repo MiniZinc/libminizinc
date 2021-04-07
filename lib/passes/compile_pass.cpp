@@ -82,22 +82,14 @@ Env* change_library(Env& e, vector<string>& includePaths, const string& globals_
     ss << "include \"" << Printer::escapeStringLit(name) << "\";";
   }
 
-  vector<SyntaxError> syntax_errors;
   Env* fenv = new Env(new_mod);
   // Model* inc_mod = parse(*fenv, include_names, {}, new_includePaths, true, true, verbose,
   // std::cerr);
   std::ostringstream dummy_file;
   dummy_file << m->filepath() << "_Dummy.mzn";
   Model* inc_mod = parse_from_string(*fenv, ss.str(), dummy_file.str(), new_includePaths, false,
-                                     false, true, verbose, std::cerr, syntax_errors);
-  if (inc_mod == nullptr) {
-    for (const SyntaxError& se : syntax_errors) {
-      std::cerr << std::endl;
-      std::cerr << se.what() << ": " << se.msg() << std::endl;
-      std::cerr << se.loc() << std::endl;
-    }
-    return nullptr;
-  }
+                                     false, true, verbose, std::cerr);
+
   auto* new_inc = new IncludeI(Location().introduce(), string("MultiPassDummy.mzn"));
   new_inc->m(inc_mod);
   inc_mod->setParent(new_mod);
@@ -140,12 +132,7 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
                       _compflags.modelCheckOnly || _compflags.modelInterfaceOnly,
                       _compflags.allowMultiAssign);
   if (!typeErrors.empty()) {
-    std::ostringstream errstream;
-    for (auto& typeError : typeErrors) {
-      errstream << typeError.what() << ": " << typeError.msg() << std::endl;
-      errstream << typeError.loc() << std::endl;
-    }
-    throw Error(errstream.str());
+    throw MultipleErrors<TypeError>(typeErrors);
   }
 
   register_builtins(*new_env);
@@ -156,11 +143,8 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
     if (_compflags.verbose) {
       log << std::endl;
     }
-    std::ostringstream errstream;
-    errstream << e.what() << ": " << std::endl;
-    new_env->dumpErrorStack(errstream);
-    errstream << "  " << e.msg() << std::endl;
-    throw Error(errstream.str());
+    e.dumpStack(true);
+    throw;
   }
 
   if (!_compflags.noMIPdomains) {
@@ -182,7 +166,7 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
       log << " done (" << lasttime.stoptime() << ")" << std::endl;
     }
   }
-
+ 
   for (const auto& i : new_env->warnings()) {
     log << (_compflags.werror ? "\n  ERROR: " : "\n  WARNING: ") << i;
   }

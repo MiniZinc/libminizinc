@@ -2968,8 +2968,9 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     Model* enumis;
     bool isFlatZinc;
     bool isChecker;
+    std::vector<TypeError>& typeErrors;
     TSV0(EnvI& env0, TopoSorter& ts0, Model* model0, std::vector<AssignI*>& ais0, Model* enumis0,
-         bool isFlatZinc0, bool isChecker0)
+         bool isFlatZinc0, bool isChecker0, std::vector<TypeError>& typeErrors0)
         : env(env0),
           ts(ts0),
           model(model0),
@@ -2978,7 +2979,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           objective(nullptr),
           enumis(enumis0),
           isFlatZinc(isFlatZinc0),
-          isChecker(isChecker0) {}
+          isChecker(isChecker0),
+          typeErrors(typeErrors0) {}
     void vAssignI(AssignI* i) { ais.push_back(i); }
     void vVarDeclI(VarDeclI* i) {
       ts.add(env, i, true, enumis);
@@ -3004,7 +3006,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     }
     void vSolveI(SolveI* si) {
       if (hadSolveItem) {
-        throw TypeError(env, si->loc(), "Only one solve item allowed");
+        typeErrors.emplace_back(env, si->loc(), "Only one solve item allowed");
+        return;
       }
       hadSolveItem = true;
       if (!isFlatZinc && (si->e() != nullptr)) {
@@ -3022,7 +3025,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         objective = new VarDeclI(si->loc().introduce(), obj);
       }
     }
-  } _tsv0(env.envi(), ts, m, assignItems, enumItems, isFlatZinc, isChecker);
+  } _tsv0(env.envi(), ts, m, assignItems, enumItems, isFlatZinc, isChecker, typeErrors);
   iter_items(_tsv0, m);
   if (_tsv0.objective != nullptr) {
     m->addItem(_tsv0.objective);
@@ -3064,7 +3067,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
               ai->loc(),
               new BinOp(ai->loc(), new Id(Location().introduce(), ai->id(), vd), BOT_EQ, ai->e())));
         } else {
-          throw TypeError(env.envi(), ai->loc(), "multiple assignment to the same variable");
+          typeErrors.emplace_back(env.envi(), ai->loc(),
+                                  "multiple assignment to the same variable");
         }
       } else {
         vd->e(ai->e());
@@ -3283,18 +3287,19 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       void vConstraintI(ConstraintI* i) {
         _bottomUpTyper.run(i->e());
         if (!_env.isSubtype(i->e()->type(), Type::varbool(), true)) {
-          throw TypeError(_env, i->loc(),
-                          "invalid type of constraint, expected `" +
-                              Type::varbool().toString(_env) + "', actual `" +
-                              i->e()->type().toString(_env) + "'");
+          _typeErrors.emplace_back(_env, i->loc(),
+                                   "invalid type of constraint, expected `" +
+                                       Type::varbool().toString(_env) + "', actual `" +
+                                       i->e()->type().toString(_env) + "'");
         }
       }
       void vSolveI(SolveI* i) {
         for (ExpressionSetIter it = i->ann().begin(); it != i->ann().end(); ++it) {
           _bottomUpTyper.run(*it);
           if (!(*it)->type().isAnn()) {
-            throw TypeError(_env, (*it)->loc(),
-                            "expected annotation, got `" + (*it)->type().toString(_env) + "'");
+            _typeErrors.emplace_back(
+                _env, (*it)->loc(),
+                "expected annotation, got `" + (*it)->type().toString(_env) + "'");
           }
         }
         _bottomUpTyper.run(i->e());
@@ -3315,9 +3320,9 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
           if (!(_env.isSubtype(et, Type::varint(), true) ||
                 _env.isSubtype(et, Type::varfloat(), true))) {
-            throw TypeError(_env, i->e()->loc(),
-                            "objective has invalid type, expected int or float, actual `" +
-                                et.toString(_env) + "'");
+            _typeErrors.emplace_back(_env, i->e()->loc(),
+                                     "objective has invalid type, expected int or float, actual `" +
+                                         et.toString(_env) + "'");
           }
 
           if (needOptCoercion) {
@@ -3337,24 +3342,26 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         for (ExpressionSetIter it = i->ann().begin(); it != i->ann().end(); ++it) {
           _bottomUpTyper.run(*it);
           if (!(*it)->type().isAnn()) {
-            throw TypeError(_env, (*it)->loc(),
-                            "expected annotation, got `" + (*it)->type().toString(_env) + "'");
+            _typeErrors.emplace_back(
+                _env, (*it)->loc(),
+                "expected annotation, got `" + (*it)->type().toString(_env) + "'");
           }
         }
         _bottomUpTyper.run(i->e());
         if (i->e()->type() != Type::parstring(1) && i->e()->type() != Type::bot(1)) {
-          throw TypeError(_env, i->e()->loc(),
-                          "invalid type in output item, expected `" +
-                              Type::parstring(1).toString(_env) + "', actual `" +
-                              i->e()->type().toString(_env) + "'");
+          _typeErrors.emplace_back(_env, i->e()->loc(),
+                                   "invalid type in output item, expected `" +
+                                       Type::parstring(1).toString(_env) + "', actual `" +
+                                       i->e()->type().toString(_env) + "'");
         }
       }
       void vFunctionI(FunctionI* fi) {
         for (ExpressionSetIter it = fi->ann().begin(); it != fi->ann().end(); ++it) {
           _bottomUpTyper.run(*it);
           if (!(*it)->type().isAnn()) {
-            throw TypeError(_env, (*it)->loc(),
-                            "expected annotation, got `" + (*it)->type().toString(_env) + "'");
+            _typeErrors.emplace_back(
+                _env, (*it)->loc(),
+                "expected annotation, got `" + (*it)->type().toString(_env) + "'");
           }
         }
         _bottomUpTyper.run(fi->ti());
@@ -3368,7 +3375,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
               std::ostringstream ss;
               ss << "type-inst variable $" << tiid->v()
                  << " used in both array and non-array position";
-              throw TypeError(_env, tiid->loc(), ss.str());
+              _typeErrors.emplace_back(_env, tiid->loc(), ss.str());
             }
           } else {
             ti_map.insert({tiid->v(), t});
@@ -3391,13 +3398,13 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
             std::ostringstream ss;
             ss << "type-inst variable $" << tiid->v()
                << " used in return type but not defined in argument list";
-            throw TypeError(_env, tiid->loc(), ss.str());
+            _typeErrors.emplace_back(_env, tiid->loc(), ss.str());
           }
           if (!tiid->isEnum() && it->second == TIVAR_INDEX) {
             std::ostringstream ss;
             ss << "type-inst variable $" << tiid->v()
                << " used in both array and non-array position";
-            throw TypeError(_env, tiid->loc(), ss.str());
+            _typeErrors.emplace_back(_env, tiid->loc(), ss.str());
           }
         }
         for (unsigned int i = 0; i < fi->ti()->ranges().size(); i++) {
@@ -3407,23 +3414,24 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
               std::ostringstream ss;
               ss << "type-inst variable $" << tiid->v()
                  << " used in return type but not defined in argument list";
-              throw TypeError(_env, tiid->loc(), ss.str());
+              _typeErrors.emplace_back(_env, tiid->loc(), ss.str());
             }
             if (!tiid->isEnum() && it->second == TIVAR_DOMAIN) {
               std::ostringstream ss;
               ss << "type-inst variable $" << tiid->v()
                  << " used in both array and non-array position";
-              throw TypeError(_env, tiid->loc(), ss.str());
+              _typeErrors.emplace_back(_env, tiid->loc(), ss.str());
             }
           }
         }
 
         _bottomUpTyper.run(fi->e());
         if ((fi->e() != nullptr) && !_env.isSubtype(fi->e()->type(), fi->ti()->type(), true)) {
-          throw TypeError(_env, fi->e()->loc(),
-                          "return type of function does not match body, declared type is `" +
-                              fi->ti()->type().toString(_env) + "', body type is `" +
-                              fi->e()->type().toString(_env) + "'");
+          _typeErrors.emplace_back(
+              _env, fi->e()->loc(),
+              "return type of function does not match body, declared type is `" +
+                  fi->ti()->type().toString(_env) + "', body type is `" +
+                  fi->e()->type().toString(_env) + "'");
         }
         if (fi->e() != nullptr && fi->e()->type().isPar() && fi->ti()->type().isvar()) {
           // this is a par function declared as var, so change declared return type
@@ -3793,7 +3801,7 @@ void typecheck(Env& env, Model* m, AssignI* ai) {
   BottomUpIterator<Typer<true>> bottomUpTyper(ty);
   bottomUpTyper.run(ai->e());
   if (!typeErrors.empty()) {
-    throw typeErrors[0];
+    throw MultipleErrors<TypeError>(typeErrors);
   }
   if (!env.envi().isSubtype(ai->e()->type(), ai->decl()->ti()->type(), true)) {
     std::ostringstream ss;

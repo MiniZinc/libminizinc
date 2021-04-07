@@ -18,6 +18,7 @@ add_library(mzn
   lib/cencode.c
   lib/chain_compressor.cpp
   lib/copy.cpp
+  lib/exception.cpp
   lib/eval_par.cpp
   lib/file_utils.cpp
   lib/flatten.cpp

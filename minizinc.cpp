@@ -39,12 +39,6 @@ int run(const std::string& exe, const std::vector<std::string>& args) {
     MznSolver slv(std::cout, std::cerr, startTime);
     try {
       fSuccess = (slv.run(args, "", exe) != SolverInstance::ERROR);
-    } catch (const LocationException& e) {
-      if (slv.getFlagVerbose()) {
-        std::cerr << std::endl;
-      }
-      std::cerr << e.loc() << ":" << std::endl;
-      std::cerr << e.what() << ": " << e.msg() << std::endl;
     } catch (const InternalError& e) {
       if (slv.getFlagVerbose()) {
         std::cerr << std::endl;
@@ -54,11 +48,14 @@ int run(const std::string& exe, const std::vector<std::string>& args) {
       std::cerr << "The internal error message was: " << std::endl;
       std::cerr << "\"" << e.msg() << "\"" << std::endl;
     } catch (const Exception& e) {
-      if (slv.getFlagVerbose()) {
-        std::cerr << std::endl;
+      if (slv.flagEncapsulateJSON) {
+        e.json(std::cout);
+      } else {
+        if (slv.getFlagVerbose()) {
+          std::cerr << std::endl;
+        }
+        e.print(std::cerr);
       }
-      std::string what = e.what();
-      std::cerr << what << (what.empty() ? "" : ": ") << e.msg() << std::endl;
     } catch (const std::exception& e) {
       if (slv.getFlagVerbose()) {
         std::cerr << std::endl;

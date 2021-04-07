@@ -68,15 +68,14 @@ namespace MiniZinc {
 void yyerror(YYLTYPE* location, void* parm, const string& str) {
   ParserState* pp = static_cast<ParserState*>(parm);
   Model* m = pp->model;
+  std::vector<ASTString> includeStack;
   while (m->parent() != nullptr) {
     m = m->parent();
-    pp->err << "(included from file '" << m->filename() << "')" << endl;
+    includeStack.push_back(m->filename());
   }
-  pp->err << location->toString() << ":" << endl;
-  pp->printCurrentLine(location->firstColumn(),location->lastColumn());
-  pp->err << "Error: " << str << std::endl;
+  auto currentLine = pp->getCurrentLine(location->firstColumn(), location->lastColumn());
   pp->hadError = true;
-  pp->syntaxErrors.push_back(SyntaxError(Location(*location), str));
+  pp->syntaxErrors.emplace_back(Location(*location), currentLine, includeStack, str);
 }
 
 bool notInDatafile(YYLTYPE* location, void* parm, const string& item) {

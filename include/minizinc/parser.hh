@@ -122,24 +122,28 @@ public:
 
   std::string stringBuffer;
 
-  void printCurrentLine(int firstCol, int lastCol) {
+  std::string getCurrentLine(int firstCol, int lastCol) const {
+    std::stringstream ss;
     const char* eol_c = strchr(buf + lineStartPos, '\n');
     if (eol_c != nullptr) {
       if (eol_c == buf + lineStartPos) {
-        return;
+        return "";
       }
-      err << std::string(buf + lineStartPos, eol_c - (buf + lineStartPos));
+      ss << std::string(buf + lineStartPos, eol_c - (buf + lineStartPos));
     } else {
-      err << buf + lineStartPos;
+      ss << buf + lineStartPos;
     }
-    err << std::endl;
+    ss << std::endl;
     for (int i = 0; i < firstCol - 1; i++) {
-      err << " ";
+      ss << " ";
     }
     for (int i = firstCol; i <= lastCol; i++) {
-      err << "^";
+      ss << "^";
     }
-    err << std::endl;
+    return ss.str();
+  }
+  void printCurrentLine(int firstCol, int lastCol) {
+    err << getCurrentLine(firstCol, lastCol) << std::endl;
   }
 
   unsigned int fillBuffer(char* lexBuf, unsigned int lexBufSize) {
@@ -168,8 +172,7 @@ Model* parse(Env& env, const std::vector<std::string>& filenames,
 
 Model* parse_from_string(Env& env, const std::string& text, const std::string& filename,
                          const std::vector<std::string>& includePaths, bool isFlatZinc,
-                         bool ignoreStdlib, bool parseDocComments, bool verbose, std::ostream& err,
-                         std::vector<SyntaxError>& syntaxErrors);
+                         bool ignoreStdlib, bool parseDocComments, bool verbose, std::ostream& err);
 
 Model* parse_data(Env& env, Model* m, const std::vector<std::string>& datafiles,
                   const std::vector<std::string>& includePaths, bool isFlatZinc, bool ignoreStdlib,

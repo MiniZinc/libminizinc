@@ -103,8 +103,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
            const vector<string>& datafiles, const std::string& modelString,
            const std::string& modelStringName, const vector<string>& ip,
            std::unordered_set<std::string> globalInc, bool isFlatZinc, bool ignoreStdlib,
-           bool parseDocComments, bool verbose, ostream& err,
-           std::vector<SyntaxError>& syntaxErrors) {
+           bool parseDocComments, bool verbose, ostream& err) {
   vector<string> includePaths;
   for (const auto& i : ip) {
     includePaths.push_back(i);
@@ -202,11 +201,11 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
     if (!isModelString) {
       for (Model* p = m->parent(); p != nullptr; p = p->parent()) {
         if (p->filename() == f) {
-          err << "Error: cyclic includes: " << std::endl;
+          std::vector<ASTString> cycle;
           for (Model* pe = m; pe != nullptr; pe = pe->parent()) {
-            err << "  " << pe->filename() << std::endl;
+            cycle.push_back(pe->filename());
           }
-          goto error;
+          throw CyclicIncludeError(cycle);
         }
       }
       ifstream file;
@@ -250,12 +249,9 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
       }
       if (!file.is_open()) {
         if (np_ii != nullptr) {
-          err << np_ii->loc().toString() << ":\n";
-          err << "MiniZinc: error in include item, cannot open file '" << f << "'." << endl;
-        } else {
-          err << "Error: cannot open file '" << f << "'." << endl;
+          throw IncludeError(env.envi(), np_ii->loc(), "Cannot open file '" + f + "'.");
         }
-        goto error;
+        throw Error("Cannot open file '" + f + "'.");
       }
       if (verbose) {
         std::cerr << "processing file '" << fullname << "'" << endl;
@@ -280,10 +276,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
       mzn_yylex_destroy(pp.yyscanner);
     }
     if (pp.hadError) {
-      for (const auto& syntaxError : pp.syntaxErrors) {
-        syntaxErrors.push_back(syntaxError);
-      }
-      goto error;
+      throw MultipleErrors<SyntaxError>(pp.syntaxErrors);
     }
   }
 
@@ -299,8 +292,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
       } else {
         std::ifstream file(FILE_PATH(f), std::ios::binary);
         if (!FileUtils::file_exists(f) || !file.is_open()) {
-          err << "Error: cannot open data file '" << f << "'." << endl;
-          goto error;
+          throw Error("Cannot open data file '" + f + "'.");
         }
         if (verbose) {
           std::cerr << "processing data file '" << f << "'" << endl;
@@ -317,18 +309,10 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
         mzn_yylex_destroy(pp.yyscanner);
       }
       if (pp.hadError) {
-        for (const auto& syntaxError : pp.syntaxErrors) {
-          syntaxErrors.push_back(syntaxError);
-        }
-        goto error;
+        throw MultipleErrors<SyntaxError>(pp.syntaxErrors);
       }
     }
   }
-
-  return;
-error:
-  delete model;
-  model = nullptr;
 }
 
 Model* parse(Env& env, const vector<string>& filenames, const vector<string>& datafiles,
@@ -337,8 +321,7 @@ Model* parse(Env& env, const vector<string>& filenames, const vector<string>& da
              bool isFlatZinc, bool ignoreStdlib, bool parseDocComments, bool verbose,
              ostream& err) {
   if (filenames.empty() && textModel.empty()) {
-    err << "Error: no model given" << std::endl;
-    return nullptr;
+    throw Error("No model given.");
   }
 
   Model* model;
@@ -346,9 +329,13 @@ Model* parse(Env& env, const vector<string>& filenames, const vector<string>& da
     GCLock lock;
     model = new Model();
   }
-  std::vector<SyntaxError> se;
-  parse(env, model, filenames, datafiles, textModel, textModelName, includePaths,
-        std::move(globalInc), isFlatZinc, ignoreStdlib, parseDocComments, verbose, err, se);
+  try {
+    parse(env, model, filenames, datafiles, textModel, textModelName, includePaths,
+          std::move(globalInc), isFlatZinc, ignoreStdlib, parseDocComments, verbose, err);
+  } catch (Exception& e) {
+    delete model;
+    throw;
+  }
   return model;
 }
 
@@ -356,16 +343,14 @@ Model* parse_data(Env& env, Model* model, const vector<string>& datafiles,
                   const vector<string>& includePaths, bool isFlatZinc, bool ignoreStdlib,
                   bool parseDocComments, bool verbose, ostream& err) {
   vector<string> filenames;
-  std::vector<SyntaxError> se;
   parse(env, model, filenames, datafiles, "", "", includePaths, {}, isFlatZinc, ignoreStdlib,
-        parseDocComments, verbose, err, se);
+        parseDocComments, verbose, err);
   return model;
 }
 
 Model* parse_from_string(Env& env, const string& text, const string& filename,
                          const vector<string>& includePaths, bool isFlatZinc, bool ignoreStdlib,
-                         bool parseDocComments, bool verbose, ostream& err,
-                         std::vector<SyntaxError>& syntaxErrors) {
+                         bool parseDocComments, bool verbose, ostream& err) {
   vector<string> filenames;
   vector<string> datafiles;
   Model* model;
@@ -373,8 +358,13 @@ Model* parse_from_string(Env& env, const string& text, const string& filename,
     GCLock lock;
     model = new Model();
   }
-  parse(env, model, filenames, datafiles, text, filename, includePaths, {}, isFlatZinc,
-        ignoreStdlib, parseDocComments, verbose, err, syntaxErrors);
+  try {
+    parse(env, model, filenames, datafiles, text, filename, includePaths, {}, isFlatZinc,
+          ignoreStdlib, parseDocComments, verbose, err);
+  } catch (Exception& e) {
+    delete model;
+    throw;
+  }
   return model;
 }
 

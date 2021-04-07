@@ -552,13 +552,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           MiniZinc::typecheck(smm_env, smm, typeErrors, true, false, true);
           if (!typeErrors.empty()) {
             if (!isCompressedChecker) {
-              for (auto& typeError : typeErrors) {
-                if (_flags.verbose) {
-                  _log << std::endl;
-                }
-                _log << typeError.loc() << ":" << std::endl;
-                _log << typeError.what() << ": " << typeError.msg() << std::endl;
-              }
+              throw MultipleErrors<TypeError>(typeErrors);
             }
             throw Error("multiple type errors");
           }
@@ -685,14 +679,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             _flags.modelTypesOnly || _flags.modelInterfaceOnly || _flags.modelCheckOnly,
             _flags.allowMultiAssign);
         if (!typeErrors.empty()) {
-          for (auto& typeError : typeErrors) {
-            if (_flags.verbose) {
-              _log << std::endl;
-            }
-            _log << typeError.loc() << ":" << std::endl;
-            _log << typeError.what() << ": " << typeError.msg() << std::endl;
-          }
-          throw Error("multiple type errors");
+          throw MultipleErrors<TypeError>(typeErrors);
         }
         if (_flags.modelInterfaceOnly) {
           MiniZinc::output_model_interface(*env, m, _os, _includePaths);
@@ -720,14 +707,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
                               _flags.modelCheckOnly || _flags.modelInterfaceOnly,
                               _flags.allowMultiAssign, true);
           if (!typeErrors.empty()) {
-            for (auto& typeError : typeErrors) {
-              if (_flags.verbose) {
-                _log << std::endl;
-              }
-              _log << typeError.loc() << ":" << std::endl;
-              _log << typeError.what() << ": " << typeError.msg() << std::endl;
-            }
-            throw Error("multiple type errors");
+            throw MultipleErrors<TypeError>(typeErrors);
           }
           MiniZinc::register_builtins(*env);
           env->swap();

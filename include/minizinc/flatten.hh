@@ -21,7 +21,7 @@ class FlatteningError : public LocationException {
 public:
   FlatteningError(EnvI& env, const Location& loc, const std::string& msg);
   ~FlatteningError() throw() override {}
-  const char* what() const throw() override { return "MiniZinc: flattening error"; }
+  const char* what() const throw() override { return "flattening error"; }
 };
 
 /// Options for the flattener
