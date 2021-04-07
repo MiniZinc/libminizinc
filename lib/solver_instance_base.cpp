@@ -193,9 +193,9 @@ void SolverInstanceBase::flattenMultipleObjectives(const Annotation& ann,
                                                    MultipleObjectives& mo) const {
   int nGoalH = 0;
   for (ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
-    MZN_ASSERT_HARD_MSG(0 == nGoalH++, "Several goal hierarchies provided");
     Expression* e = *i;
     if (e->isa<Call>() && (e->cast<Call>()->id() == "goal_hierarchy")) {
+      MZN_ASSERT_HARD_MSG(0 == nGoalH++, "Several goal hierarchies provided");
       MZN_ASSERT_HARD_MSG(getEnv()->flat()->solveItem()->st() == SolveI::SolveType::ST_SAT,
                           "goal_hierarchy provided but solve item is not SAT");
       Call* c = e->cast<Call>();
