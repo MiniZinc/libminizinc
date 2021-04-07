@@ -3,16 +3,20 @@
 Interfacing Solvers to Flatzinc
 ===============================
 
-This document describes the interface between the MiniZinc system and FlatZinc solvers.
+This document describes the interface between the MiniZinc system and FlatZinc solvers. Interfacing a solver with MiniZinc usually requires three components:
+
+#. The solver binary (or a script that runs the solver). It should support the command line options specified in :numref:`fzn-cmdline-options`, understand the FlatZinc input language as defined in :numref:`ch-fzn-spec`, and produce output as defined in :numref:`ch-fzn-output`.
+
+#. The solver's MiniZinc library. This library defines the global constraints that the solver supports, and redefines FlatZinc built-in constraints that the solver does not support (see :numref:`ch-solver-specific-libraries`).
+
+#. The solver's configuration file. This file makes the solver known to the ``minizinc`` driver program and the MiniZinc IDE. Configuration files are discussed in :numref:`sec-cmdline-conffiles`.
+
+We recommend to install solvers following something similar to the Linux Filesystem Hierarchy Standard: When installing a solver called ``$SOLVERNAME`` in a directory ``$PREFIX``, its binary should be put in ``$PREFIX/bin``, its MiniZinc library files should be in ``$PREFIX/share/minizinc/$SOLVERNAME/``, and its solver configuration file should be ``$PREFIX/share/minizinc/solvers/$SOLVERNAME.mzc``. The prefix can either be a global installation path (such as ``/usr/local``) or any other path.
 
 .. _ch-fzn-spec:
 
 Specification of FlatZinc
 -------------------------
-
-This document is the specification of the FlatZinc modelling language.
-It also includes a definition of the standard command line options a FlatZinc solver should support
-in order to work with the ``minizinc`` driver program (and the MiniZinc IDE).
 
 FlatZinc is the target constraint modelling language into which MiniZinc
 models are translated.
@@ -760,6 +764,8 @@ should produce this output:
 indicating that a complete search was performed and no solutions were
 found (i.e., the problem is unsatisfiable).
 
+.. _ch-fzn-statistics:
+
 Statistics output
 ~~~~~~~~~~~~~~~~~
 
@@ -1000,7 +1006,7 @@ where ``<executable-name>`` is the name of the executable. Solvers may support t
 
   Print statistics during and/or after the search for solutions. Statistics
   should be printed as FlatZinc comments to the standard output stream.
-  See below for a standard format for statistics.
+  See :numref:`ch-fzn-statistics` for the standard format for statistics.
 
 .. option:: -v
 
@@ -1027,7 +1033,7 @@ Solver Configuration Files
 --------------------------
 
 In order for a solver to be available to MiniZinc, it has to be described in a *solver configuration file*. This is a simple file, in JSON or ``.dzn`` format, that contains some basic information such as the solver's name, version, where its library of global constraints can be found, and a path to its executable.
-Examples are given in section Solver Backends in User Manual.
+Examples are given in :numref:`ch-solvers`.
 
 A solver configuration file must have file extension ``.msc`` (for MiniZinc Solver Configuration), and can be placed in any of the following locations:
 
@@ -1036,6 +1042,8 @@ A solver configuration file must have file extension ``.msc`` (for MiniZinc Solv
 - In any directory listed on the ``MZN_SOLVER_PATH`` environment variable (directories are separated by ``:`` on Linux and macOS, and by ``;`` on Windows systems).
 - In any directory listed in the ``mzn_solver_path`` option of the global or user-specific configuration file (see :numref:`ch-user-config`)
 - Alternatively, you can use the MiniZinc IDE to create solver configuration files, see :numref:`sec-ide-add-solvers` for details.
+
+You can also query the ``minizinc`` driver about these directories using the ``--config-dirs`` command line option.
 
 Solver configuration files must be valid JSON or ``.dzn`` files. As a JSON file, it must be an object with certain fields. As a ``.dzn`` file, it must consist of assignment items.
 
