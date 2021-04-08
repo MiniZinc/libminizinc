@@ -39,7 +39,7 @@ predicate bounded_dpath(array[int] of $$N: from, array[int] of $$N: to, array[in
    assert(index_set(from) = index_set(es),"bounded_dpath: index set of from and es must be identical") /\
    assert(index_set(w) = index_set(es),"bounded_dpath: index set of w and es must be identical") /\
    assert(dom_array(from) subset index_set(ns),"bounded_dpath: nodes in from must be in index set of ns") /\
-   assert(dom_array(from) subset index_set(ns),"bounded_dpath: nodes in to must be in index set of ns") /\
+   assert(dom_array(to) subset index_set(ns),"bounded_dpath: nodes in to must be in index set of ns") /\
    fzn_bounded_dpath(from,to,w,s,t,ns,es,K);
    
 
@@ -85,7 +85,7 @@ predicate bounded_path(array[int] of $$N: from, array[int] of $$N: to, array[int
    assert(index_set(from) = index_set(es),"bounded_path: index set of from and es must be identical") /\
    assert(index_set(w) = index_set(es),"bounded_path: index set of w and es must be identical") /\
    assert(dom_array(from) subset index_set(ns),"bounded_path: nodes in from must be in index set of ns") /\
-   assert(dom_array(from) subset index_set(ns),"bounded_path: nodes in to must be in index set of ns") /\
+   assert(dom_array(to) subset index_set(ns),"bounded_path: nodes in to must be in index set of ns") /\
    fzn_bounded_path(from,to,w,s,t,ns,es,K);
 
 include "fzn_bounded_path_int.mzn";

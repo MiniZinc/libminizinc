@@ -42,7 +42,7 @@ predicate dpath(array[int] of $$N: from, array[int] of $$N: to,
    assert(index_set(from) = index_set(to),"dpath: index set of from and to must be identical") /\
    assert(index_set(from) = index_set(es),"dpath: index set of from and es must be identical") /\
    assert(dom_array(from) subset index_set(ns),"dpath: nodes in from must be in index set of ns") /\
-   assert(dom_array(from) subset index_set(ns),"dpath: nodes in to must be in index set of ns") /\
+   assert(dom_array(to) subset index_set(ns),"dpath: nodes in to must be in index set of ns") /\
    fzn_dpath(from,to,s,t,ns,es);
 
 %-----------------------------------------------------------------------------%
@@ -82,5 +82,5 @@ predicate path(array[int] of $$N: from, array[int] of $$N: to,
    assert(index_set(from) = index_set(to),"path: index set of from and to must be identical") /\
    assert(index_set(from) = index_set(es),"path: index set of from and es must be identical") /\
    assert(dom_array(from) subset index_set(ns),"path: nodes in from must be in index set of ns") /\
-   assert(dom_array(from) subset index_set(ns),"path: nodes in to must be in index set of ns") /\
+   assert(dom_array(to) subset index_set(ns),"path: nodes in to must be in index set of ns") /\
    fzn_path(from,to,s,t,ns,es);
