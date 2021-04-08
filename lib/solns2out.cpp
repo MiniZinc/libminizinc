@@ -399,7 +399,7 @@ void Solns2Out::checkSolution(std::ostream& oss) {
     }
   }
 
-  MznSolver slv(oss, oss, _starttime);
+  MznSolver slv(oss, _log, _starttime);
   slv.s2out.opt.solutionSeparator = "";
   try {
     std::vector<std::string> args({"--solver", "org.minizinc.gecode_presolver"});
