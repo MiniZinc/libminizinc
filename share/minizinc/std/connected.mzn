@@ -16,7 +16,7 @@ predicate dconnected(array[int] of $$N: from, array[int] of $$N: to,
    assert(index_set(from) = index_set(to),"dconnected: index set of from and to must be identical") /\
    assert(index_set(from) = index_set(es),"dconnected: index set of from and es must be identical") /\
    assert(dom_array(from) subset index_set(ns),"dconnected: nodes in from must be in index set of ns") /\
-   assert(dom_array(from) subset index_set(ns),"dconnected: nodes in to must be in index set of ns") /\
+   assert(dom_array(to) subset index_set(ns),"dconnected: nodes in to must be in index set of ns") /\
    fzn_dconnected(from,to,ns,es);
    
 %-----------------------------------------------------------------------------%
@@ -34,6 +34,5 @@ predicate connected(array[int] of $$N: from, array[int] of $$N: to,
    assert(index_set(from) = index_set(to),"connected: index set of from and to must be identical") /\
    assert(index_set(from) = index_set(es),"connected: index set of from and es must be identical") /\
    assert(dom_array(from) subset index_set(ns),"connected: nodes in from must be in index set of ns") /\
-   assert(dom_array(from) subset index_set(ns),"connected: nodes in to must be in index set of ns") /\
+   assert(dom_array(to) subset index_set(ns),"connected: nodes in to must be in index set of ns") /\
    fzn_connected(from,to,ns,es);
-      

@@ -40,7 +40,7 @@ predicate dreachable(array[int] of $$N: from, array[int] of $$N: to,
     assert(index_set(from) = index_set(to),"dreachable: index set of from and to must be identical") /\
     assert(index_set(from) = index_set(es),"dreachable: index set of from and es must be identical") /\
     assert(dom_array(from) subset index_set(ns),"dreachable: nodes in from must be in index set of ns") /\
-    assert(dom_array(from) subset index_set(ns),"dreachable: nodes in to must be in index set of ns") /\
+    assert(dom_array(to) subset index_set(ns),"dreachable: nodes in to must be in index set of ns") /\
     fzn_dreachable(from,to,r,ns,es);
    
 %-----------------------------------------------------------------------------%
@@ -78,5 +78,5 @@ predicate reachable(array[int] of $$N: from, array[int] of $$N: to,
     assert(index_set(from) = index_set(to),"reachable: index set of from and to must be identical") /\
     assert(index_set(from) = index_set(es),"reachable: index set of from and es must be identical") /\
     assert(dom_array(from) subset index_set(ns),"reachable: nodes in from must be in index set of ns") /\
-    assert(dom_array(from) subset index_set(ns),"reachable: nodes in to must be in index set of ns") /\
+    assert(dom_array(to) subset index_set(ns),"reachable: nodes in to must be in index set of ns") /\
     fzn_reachable(from,to,r,ns,es);
