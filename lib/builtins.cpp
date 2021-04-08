@@ -1600,7 +1600,7 @@ Expression* b_trace_stdout(EnvI& env, Call* call) {
   } else {
     msg_e = call->arg(0);
   }
-  env.errstream << eval_string(env, msg_e);
+  env.outstream << eval_string(env, msg_e);
   return call->argCount() == 1 ? constants().literalTrue : call->arg(1);
 }
 
