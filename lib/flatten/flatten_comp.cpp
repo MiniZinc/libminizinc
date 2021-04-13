@@ -157,14 +157,29 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
         new_e->type(Type::varbool());
         ntype.ot(Type::OT_PRESENT);
       } else if ((surround != nullptr) && surround->id() == constants().ids.sum) {
-        ITE* if_b_else_zero = new ITE(c->loc().introduce(), {cond, c->e()}, IntLit::a(0));
+        // If the body of the comprehension is par, turn the whole expression into a linear sum.
+        // Otherwise, generate if-then-else expressions.
         Type tt;
         tt = c->e()->type();
         tt.ti(Type::TI_VAR);
         tt.ot(Type::OT_PRESENT);
-        if_b_else_zero->type(tt);
-        new_e = if_b_else_zero;
-        ntype.ot(Type::OT_PRESENT);
+        if (c->e()->type().isPar()) {
+          ASTString cid = c->e()->type().bt() == Type::BT_INT ? constants().ids.bool2int
+                                                              : constants().ids.bool2float;
+          Type b2i_t = c->e()->type().bt() == Type::BT_INT ? Type::varint() : Type::varfloat();
+          auto* b2i = new Call(c->loc().introduce(), cid, {cond});
+          b2i->type(b2i_t);
+          b2i->decl(env.model->matchFn(env, b2i, false));
+          auto* product = new BinOp(c->loc().introduce(), b2i, BOT_MULT, c->e());
+          product->type(tt);
+          new_e = product;
+          ntype.ot(Type::OT_PRESENT);
+        } else {
+          auto* if_b_else_zero = new ITE(c->loc().introduce(), {cond, c->e()}, IntLit::a(0));
+          if_b_else_zero->type(tt);
+          new_e = if_b_else_zero;
+          ntype.ot(Type::OT_PRESENT);
+        }
       } else {
         ITE* if_b_else_absent = new ITE(c->loc().introduce(), {cond, c->e()}, constants().absent);
         Type tt;
