@@ -17,11 +17,19 @@ namespace MiniZinc {
 void CopyMap::insert(Expression* e0, Expression* e1) {
   if (!e0->isUnboxedVal() && !e1->isUnboxedVal()) {
     _nodeMap.insert(e0, e1);
+    _revNodeMap.insert(e1, e0);
   }
 }
 Expression* CopyMap::find(Expression* e) { return static_cast<Expression*>(_nodeMap.find(e)); }
-void CopyMap::insert(Item* e0, Item* e1) { _nodeMap.insert(e0, e1); }
+Expression* CopyMap::findOrig(Expression* e) {
+  return static_cast<Expression*>(_revNodeMap.find(e));
+}
+void CopyMap::insert(Item* e0, Item* e1) {
+  _nodeMap.insert(e0, e1);
+  _revNodeMap.insert(e1, e0);
+}
 Item* CopyMap::find(Item* e) { return static_cast<Item*>(_nodeMap.find(e)); }
+Item* CopyMap::findOrig(Item* e) { return static_cast<Item*>(_revNodeMap.find(e)); }
 void CopyMap::insert(Model* e0, Model* e1) { _modelMap.insert(std::make_pair(e0, e1)); }
 Model* CopyMap::find(Model* e) {
   auto it = _modelMap.find(e);
@@ -30,10 +38,20 @@ Model* CopyMap::find(Model* e) {
   }
   return it->second;
 }
-void CopyMap::insert(IntSetVal* e0, IntSetVal* e1) { _nodeMap.insert(e0, e1); }
+void CopyMap::insert(IntSetVal* e0, IntSetVal* e1) {
+  _nodeMap.insert(e0, e1);
+  _revNodeMap.insert(e1, e0);
+}
 IntSetVal* CopyMap::find(IntSetVal* e) { return static_cast<IntSetVal*>(_nodeMap.find(e)); }
-void CopyMap::insert(FloatSetVal* e0, FloatSetVal* e1) { _nodeMap.insert(e0, e1); }
+IntSetVal* CopyMap::findOrig(IntSetVal* e) { return static_cast<IntSetVal*>(_revNodeMap.find(e)); }
+void CopyMap::insert(FloatSetVal* e0, FloatSetVal* e1) {
+  _nodeMap.insert(e0, e1);
+  _revNodeMap.insert(e1, e0);
+}
 FloatSetVal* CopyMap::find(FloatSetVal* e) { return static_cast<FloatSetVal*>(_nodeMap.find(e)); }
+FloatSetVal* CopyMap::findOrig(FloatSetVal* e) {
+  return static_cast<FloatSetVal*>(_revNodeMap.find(e));
+}
 
 Location copy_location(CopyMap& m, const Location& _loc) { return _loc; }
 Location copy_location(CopyMap& m, Expression* e) { return copy_location(m, e->loc()); }

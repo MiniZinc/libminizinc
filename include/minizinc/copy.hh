@@ -21,30 +21,42 @@ protected:
   ModelMap _modelMap;
 
   ASTNodeWeakMap _nodeMap;
+  ASTNodeWeakMap _revNodeMap;
 
 public:
   void insert(Expression* e0, Expression* e1);
   Expression* find(Expression* e);
+  Expression* findOrig(Expression* e);
   void insert(Item* e0, Item* e1);
   Item* find(Item* e);
+  Item* findOrig(Item* e);
   void insert(Model* e0, Model* e1);
   Model* find(Model* e);
   void insert(IntSetVal* e0, IntSetVal* e1);
   IntSetVal* find(IntSetVal* e);
+  IntSetVal* findOrig(IntSetVal* e);
   void insert(FloatSetVal* e0, FloatSetVal* e1);
   FloatSetVal* find(FloatSetVal* e);
+  FloatSetVal* findOrig(FloatSetVal* e);
   template <class T>
   void insert(ASTExprVec<T> e0, ASTExprVec<T> e1) {
     _nodeMap.insert(e0.vec(), e1.vec());
+    _revNodeMap.insert(e1.vec(), e0.vec());
   }
   template <class T>
   ASTExprVecO<T*>* find(ASTExprVec<T> e) {
     ASTNode* n = _nodeMap.find(e.vec());
     return static_cast<ASTExprVecO<T*>*>(n);
   }
+  template <class T>
+  ASTExprVecO<T*>* findOrig(ASTExprVec<T> e) {
+    ASTNode* n = _revNodeMap.find(e.vec());
+    return static_cast<ASTExprVecO<T*>*>(n);
+  }
   void clear() {
     _modelMap.clear();
     _nodeMap.clear();
+    _revNodeMap.clear();
   }
 };
 
