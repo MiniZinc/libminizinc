@@ -1149,17 +1149,16 @@ ASTString EnvI::halfReifyId(const ASTString& id) {
   return {ss.str()};
 }
 
-void EnvI::addWarning(const std::string& msg) {
+void EnvI::addWarning(const std::string& msg) { addWarning(Location(), msg); }
+
+void EnvI::addWarning(const Location& loc, const std::string& msg) {
   if (warnings.size() > 20) {
     return;
   }
   if (warnings.size() == 20) {
-    warnings.emplace_back("Further warnings have been suppressed.\n");
+    warnings.emplace_back("Further warnings have been suppressed.");
   } else {
-    std::ostringstream oss;
-    createErrorStack();
-    dumpStack(oss, true);
-    warnings.push_back(msg + "\n" + oss.str());
+    warnings.emplace_back(*this, loc, msg);
   }
 }
 
@@ -1609,12 +1608,12 @@ std::ostream& EnvI::evalOutput(std::ostream& os, std::ostream& log) {
     os << '\n';
   }
   for (auto w : warnings) {
-    log << "  WARNING: " << w << "\n";
+    w.print(log, false);
   }
   return os;
 }
 
-const std::vector<std::string>& Env::warnings() { return envi().warnings; }
+const std::vector<Warning>& Env::warnings() { return envi().warnings; }
 
 void Env::clearWarnings() { envi().warnings.clear(); }
 

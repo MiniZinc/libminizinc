@@ -15,6 +15,7 @@
 #include <minizinc/eval_par.hh>
 #include <minizinc/flatten.hh>
 #include <minizinc/optimize.hh>
+#include <minizinc/warning.hh>
 
 #include <atomic>
 #include <cmath>
@@ -143,7 +144,7 @@ public:
   std::vector<std::pair<KeepAlive, bool> > errorStack;
   std::vector<int> idStack;
   unsigned int maxCallStack;
-  std::vector<std::string> warnings;
+  std::vector<Warning> warnings;
   std::vector<int> modifiedVarDecls;
   std::unordered_set<std::string> deprecationWarnings;
   int inRedundantConstraint;
@@ -224,6 +225,7 @@ public:
   std::ostream& dumpStack(std::ostream& os, bool errStack);
   bool dumpPath(std::ostream& os, bool force = false);
   void addWarning(const std::string& msg);
+  void addWarning(const Location& loc, const std::string& msg);
   void collectVarDecls(bool b);
 
   void copyPathMapsAndState(EnvI& env);

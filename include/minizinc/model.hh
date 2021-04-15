@@ -14,6 +14,7 @@
 #include <minizinc/ast.hh>
 #include <minizinc/astmap.hh>
 #include <minizinc/gc.hh>
+#include <minizinc/warning.hh>
 
 #include <iterator>
 #include <unordered_map>
@@ -366,7 +367,7 @@ public:
   EnvI& envi();
   const EnvI& envi() const;
   std::ostream& dumpErrorStack(std::ostream& os);
-  const std::vector<std::string>& warnings();
+  const std::vector<Warning>& warnings();
   void clearWarnings();
   unsigned int maxCallStack() const;
   std::ostream& evalOutput(std::ostream& os, std::ostream& log);

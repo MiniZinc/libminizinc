@@ -61,6 +61,7 @@ add_library(mzn
   lib/typecheck.cpp
   lib/type_specialise.cpp
   lib/values.cpp
+  lib/warning.cpp
   lib/support/regex/parser.yxx
   lib/support/regex/lexer.lxx
   lib/utils.cpp
@@ -116,6 +117,7 @@ add_library(mzn
   include/minizinc/typecheck.hh
   include/minizinc/utils.hh
   include/minizinc/values.hh
+  include/minizinc/warning.hh
 
   $<TARGET_OBJECTS:minizinc_parser>
   $<TARGET_OBJECTS:minizinc_fzn>

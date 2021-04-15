@@ -42,15 +42,11 @@ void Scopes::add(EnvI& env, VarDecl* vd) {
       auto previous = _s[i].m.find(vd->id());
       if (previous != _s[i].m.end()) {
         std::ostringstream oss;
-        ASTString warnloc_f = vd->loc().filename();
-        unsigned int warnloc_l = vd->id()->loc().firstLine();
-        unsigned int warnloc_c = vd->id()->loc().firstColumn();
         unsigned int earlier_l = previous->second->id()->loc().firstLine();
         unsigned int earlier_c = previous->second->id()->loc().firstColumn();
-        oss << "\n  " << warnloc_f << ":" << warnloc_l << "." << warnloc_c << ":\n";
-        oss << "  Variable `" << *vd->id() << "' shadows variable with the same name in line "
+        oss << "variable `" << *vd->id() << "` shadows variable with the same name in line "
             << earlier_l << "." << earlier_c;
-        env.addWarning(oss.str());
+        env.addWarning(vd->loc(), oss.str());
         break;
       }
       if (_s[i].st != ST_INNER) {
