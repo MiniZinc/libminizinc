@@ -1094,48 +1094,64 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
 
   // Copying the output item and the functions it depends on has created copies
   // of all dependent VarDecls. However the output model does not contain VarDeclIs for
-  // these VarDecls yet. This iterator processes all variable declarations of the
-  // original model, and if they were copied (i.e., if the output model depends on them),
-  // the corresponding VarDeclI is created in the output model.
-  class OV2 : public ItemVisitor {
+  // these VarDecls yet. This iterator processes all copied variable declarations and
+  // creates the corresponding VarDeclI in the output model.
+  class CollectVarDecls : public EVisitor {
   public:
     EnvI& env;
-    OV2(EnvI& env0) : env(env0) {}
-    void vVarDeclI(VarDeclI* vdi) {
-      auto idx = env.outputVarOccurrences.idx.find(vdi->e()->id());
-      if (idx != env.outputVarOccurrences.idx.end()) {
+    CollectVarDecls(EnvI& env0) : env(env0) {}
+
+    void vCall(Call* c) {
+      if (!c->decl()->fromStdLib()) {
+        top_down(*this, c->decl()->e());
+      }
+    }
+
+    void vId(Id* i) {
+      auto* vd = i->decl();
+      if (vd == nullptr || !vd->toplevel()) {
         return;
       }
-      if (Expression* vd_e = env.cmap.find(vdi->e())) {
-        // We found a copied VarDecl, now need to create a VarDeclI
-        auto* vd = vd_e->cast<VarDecl>();
-        auto* vdi_copy = copy(env, env.cmap, vdi)->cast<VarDeclI>();
-
-        Type t = vdi_copy->e()->ti()->type();
+      if (vd->e() != nullptr) {
+        top_down(*this, vd->e());
+      }
+      auto idx = env.outputVarOccurrences.find(vd);
+      if (idx == -1) {
+        auto* orig = env.cmap.findOrig(vd);
+        if (orig == nullptr) {
+          // Did not copy this in (came from rename var)
+          // TODO: any other reason?
+          return;
+        }
+        auto* vd_orig = orig->cast<VarDecl>();
+        Location loc = vd->loc();  // Close enough
+        auto* vdi_copy = new VarDeclI(loc, vd);
+        Type t = vd->ti()->type();
         t.ti(Type::TI_PAR);
-        vdi_copy->e()->ti()->domain(nullptr);
-        vdi_copy->e()->flat(vdi->e()->flat());
-        bool isCheckVar = vdi_copy->e()->ann().contains(env.constants.ann.mzn_check_var);
-        Call* checkVarEnum = vdi_copy->e()->ann().getCall(env.constants.ann.mzn_check_enum_var);
-        vdi_copy->e()->ann().clear();
+        vd->ti()->domain(nullptr);
+        vd->flat(vd_orig->flat());
+        bool isCheckVar = vd->ann().contains(env.constants.ann.mzn_check_var);
+        Call* checkVarEnum = vd->ann().getCall(env.constants.ann.mzn_check_enum_var);
+        vd->ann().clear();
         if (isCheckVar) {
-          vdi_copy->e()->addAnnotation(env.constants.ann.mzn_check_var);
+          vd->addAnnotation(env.constants.ann.mzn_check_var);
         }
         if (checkVarEnum != nullptr) {
           vdi_copy->e()->addAnnotation(checkVarEnum);
         }
         vdi_copy->e()->introduced(false);
+
         IdMap<KeepAlive>::iterator it;
-        if (!vdi->e()->type().isPar()) {
-          if (vd->flat() == nullptr && vdi->e()->e() != nullptr && vdi->e()->e()->type().isPar()) {
+        if (!vd_orig->type().isPar()) {
+          if (vd->flat() == nullptr && vd_orig->e() != nullptr && vd_orig->e()->type().isPar()) {
             // Don't have a flat version of this variable, but the original has a right hand
             // side that is par, so we can use that.
-            Expression* flate = eval_par(env, vdi->e()->e());
+            Expression* flate = eval_par(env, vd_orig->e());
             output_vardecls(env, vdi_copy, flate);
             vd->e(flate);
           } else {
-            vd = follow_id_to_decl(vd->id())->cast<VarDecl>();
-            VarDecl* reallyFlat = vd->flat();
+            auto* vd_followed = follow_id_to_decl(vd->id())->cast<VarDecl>();
+            VarDecl* reallyFlat = vd_followed->flat();
             while ((reallyFlat != nullptr) && reallyFlat != reallyFlat->flat()) {
               reallyFlat = reallyFlat->flat();
             }
@@ -1143,30 +1159,32 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
               // The variable doesn't have a flat version. This can only happen if
               // the original variable had type-inst var, but a right-hand-side that
               // was par, so follow_id_to_decl lead to a par variable.
-              assert(vd->e() && vd->e()->type().isPar());
-              Expression* flate = eval_par(env, vd->e());
+              assert(vd_followed->e() && vd_followed->e()->type().isPar());
+              Expression* flate = eval_par(env, vd_followed->e());
               output_vardecls(env, vdi_copy, flate);
-              vd->e(flate);
-            } else if ((vd->flat()->e() != nullptr) && vd->flat()->e()->type().isPar()) {
+              vd_followed->e(flate);
+            } else if ((vd_followed->flat()->e() != nullptr) &&
+                       vd_followed->flat()->e()->type().isPar()) {
               // We can use the right hand side of the flat version of this variable
               Expression* flate = copy(env, env.cmap, follow_id(reallyFlat->id()));
               output_vardecls(env, vdi_copy, flate);
-              vd->e(flate);
-            } else if ((it = env.reverseMappers.find(vd->id())) != env.reverseMappers.end()) {
+              vd_followed->e(flate);
+            } else if ((it = env.reverseMappers.find(vd_followed->id())) !=
+                       env.reverseMappers.end()) {
               // Found a reverse mapper, so we need to add the mapping function to the
               // output model to map the FlatZinc value back to the model variable.
               Call* rhs = copy(env, env.cmap, it->second())->cast<Call>();
               check_output_par_fn(env, rhs);
               output_vardecls(env, vdi_copy, rhs);
-              vd->e(rhs);
-            } else if (cannot_use_rhs_for_output(env, vd->e())) {
+              vd_followed->e(rhs);
+            } else if (reallyFlat == vd_orig || cannot_use_rhs_for_output(env, vd_followed->e())) {
               // If the VarDecl does not have a usable right hand side, it needs to be
               // marked as output in the FlatZinc
-              vd->e(nullptr);
-              assert(vd->flat());
-              if (vd->type().dim() == 0) {
-                vd->flat()->addAnnotation(env.constants.ann.output_var);
-                check_rename_var(env, vd);
+              vd_followed->e(nullptr);
+              assert(vd_followed->flat());
+              if (vd_followed->type().dim() == 0) {
+                vd_followed->flat()->addAnnotation(env.constants.ann.output_var);
+                check_rename_var(env, vd_followed);
               } else {
                 bool needOutputAnn = true;
                 if ((reallyFlat->e() != nullptr) && reallyFlat->e()->isa<ArrayLit>()) {
@@ -1181,27 +1199,28 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
                   }
                   if (!needOutputAnn) {
                     output_vardecls(env, vdi_copy, al);
-                    vd->e(copy(env, env.cmap, al));
+                    vd_followed->e(copy(env, env.cmap, al));
                   }
                 }
                 if (needOutputAnn) {
-                  std::vector<Expression*> args(vdi->e()->type().dim());
+                  std::vector<Expression*> args(vd_orig->type().dim());
                   for (unsigned int i = 0; i < args.size(); i++) {
-                    if (vdi->e()->ti()->ranges()[i]->domain() == nullptr) {
+                    if (vd_orig->ti()->ranges()[i]->domain() == nullptr) {
+                      args[i] = new SetLit(
+                          Location().introduce(),
+                          eval_intset(env, vd_followed->flat()->ti()->ranges()[i]->domain()));
+                    } else {
                       args[i] =
                           new SetLit(Location().introduce(),
-                                     eval_intset(env, vd->flat()->ti()->ranges()[i]->domain()));
-                    } else {
-                      args[i] = new SetLit(Location().introduce(),
-                                           eval_intset(env, vd->ti()->ranges()[i]->domain()));
+                                     eval_intset(env, vd_followed->ti()->ranges()[i]->domain()));
                     }
                   }
                   auto* al = new ArrayLit(Location().introduce(), args);
                   args.resize(1);
                   args[0] = al;
-                  vd->flat()->addAnnotation(
+                  vd_followed->flat()->addAnnotation(
                       new Call(Location().introduce(), env.constants.ann.output_array, args));
-                  check_rename_var(env, vd);
+                  check_rename_var(env, vd_followed);
                 }
               }
             }
@@ -1211,11 +1230,11 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
             }
           }
         } else {
-          if (vd->flat() == nullptr && vdi->e()->e() != nullptr) {
+          if (vd->flat() == nullptr && vd_orig->e() != nullptr) {
             // Need to process right hand side of variable, since it may contain
             // identifiers that are only in the FlatZinc and that we would
             // therefore fail to copy into the output model
-            output_vardecls(env, vdi_copy, vdi->e()->e());
+            output_vardecls(env, vdi_copy, vd_orig->e());
           }
         }
         make_par(env, vdi_copy->e());
@@ -1223,10 +1242,16 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
         CollectOccurrencesE ce(env, env.outputVarOccurrences, vdi_copy);
         top_down(ce, vdi_copy->e());
         env.output->addItem(vdi_copy);
+      } else {
+        // Either this ID's decl is already the one in the output model,
+        // or this ID is from the flat model and can be made to point to the
+        // existing one in the output model.
+        auto* output_vdi = (*env.output)[idx]->cast<VarDeclI>();
+        i->decl(output_vdi->e());
       }
     }
-  } _ov2(e);
-  iter_items(_ov2, e.model);
+  } _cvd(e);
+  top_down(_cvd, outputItem->e());
 
   CollectOccurrencesE ce(e, e.outputVarOccurrences, outputItem);
   top_down(ce, outputItem->e());

@@ -1748,7 +1748,49 @@ bool b_output_to_section(EnvI& env, Call* call) {
     section = eval_par(env, call->arg(0))->cast<StringLit>();
   }
   std::string section_s = eval_string(env, section);
-  std::vector<Expression*> al_v({call->arg(1)});
+
+  // Collect the values of function arguments so that they are available
+  // during output evaluation.
+  CopyMap cm;
+  Expression* e = copy(env, cm, call->arg(1), false, false, true);
+  std::unordered_set<Expression*> scope;
+
+  class CollectScope : public EVisitor {
+  private:
+    EnvI& _env;
+    CopyMap& _cm;
+    std::unordered_set<Expression*>& _scope;
+
+  public:
+    CollectScope(EnvI& env, CopyMap& cm, std::unordered_set<Expression*>& scope)
+        : _env(env), _cm(cm), _scope(scope) {}
+    void vId(Id* i) {
+      auto* decl = follow_id_to_decl(i);
+      if (decl == nullptr || !decl->isa<VarDecl>()) {
+        return;
+      }
+      auto* vd = decl->cast<VarDecl>();
+      if (vd->toplevel()) {
+        // Restore binding to original (and top-level) VarDecl
+        auto* vd_orig = _cm.findOrig(vd);
+        i->redirect(vd_orig->cast<VarDecl>()->id());
+      } else {
+        // Must be par since otherwise would have been flattened to top-level
+        assert(vd->e() != nullptr);
+        assert(vd->e()->type().isPar());
+        vd->ann().clear();
+        _scope.emplace(vd);
+      }
+    }
+  } _cs(env, cm, scope);
+  top_down(_cs, e);
+
+  auto* expr = e;
+  if (!scope.empty()) {
+    std::vector<Expression*> scope_vars(scope.begin(), scope.end());
+    expr = new Let(Location().introduce(), scope_vars, e);
+  }
+  std::vector<Expression*> al_v({expr});
   auto* al = new ArrayLit(Location().introduce(), al_v);
   al->type(Type::parstring(1));
   env.addOutputToSection(section_s, al);
