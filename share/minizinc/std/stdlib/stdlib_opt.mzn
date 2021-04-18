@@ -100,7 +100,7 @@ function bool : occurs_int(var int : x) ::promise_total = true;
 function var bool : occurs_int(var opt int : x) ::promise_total =
   let {
     var bool : b = occurs_internal_int(x);
-    var int  : dx = deopt_internal_int(x);
+    var int  : dx = deopt_internal_int(x, b);
     constraint (x = reverse_map_var_opt_int(b,dx)) :: is_reverse_map;
   } in b;
 function var bool : occurs_int(var opt bool : x) ::promise_total = occurs(x);
@@ -115,7 +115,7 @@ function var int : deopt_int(var int : x) ::promise_total = x;
 function var int : deopt_int(var opt int : x) ::promise_total =
   let {
     var bool : b = occurs_internal_int(x);
-    var int  : dx = deopt_internal_int(x);
+    var int  : dx = deopt_internal_int(x, b);
     constraint (x = reverse_map_var_opt_int(b,dx)) :: is_reverse_map;
   } in dx;
 function var bool : deopt_int(var opt bool : x) ::promise_total = deopt(x);
@@ -126,10 +126,31 @@ function bool : deopt_int(opt bool : x) ::promise_total = deopt(x);
 /** @group stdlib.optiontypes.int True iff \a x is absent */
 function var bool: absent(var opt int: x) ::promise_total = not occurs(x);
 
+/** @group stdlib.optiontypes.int True if \a x had zero in its original domain.
+
+    Returns true if absent zero representation is disabled or if it is possible
+    that \( occurs(x) /\ deopt(x) = 0 ) */
+function bool: had_zero(var opt int: x) :: cache_result = not mzn_check_absent_zero() \/ (0 in dom(x));
+/** @group stdlib.optiontypes.int True if \a x had zero in its original domain.
+
+    Returns true if absent zero representation is disabled or if it is possible
+    that \( occurs(x) /\ deopt(x) = 0 ) */
+function bool: had_zero(opt int: x) = not mzn_check_absent_zero() \/ (x = 0);
+/** @group stdlib.optiontypes.int True if \a x had zero in its original domain.
+
+    Returns true if absent zero representation is disabled or if it is possible
+    that \( occurs(x) /\ deopt(x) = 0 ) */
+function bool: had_zero(array [int] of var opt int: x) = exists (xi in x) (had_zero(xi));
+
 function var bool: occurs_internal_int(var opt int: x) ::promise_total =
   let { var bool : b; } in b;
-function var int : deopt_internal_int(var opt int : x) ::promise_total =
-  let { var dom(x): y } in y;
+function var int : deopt_internal_int(var opt int : x, var bool: b) ::promise_total =
+  let {
+    var dom(x) union if mzn_check_absent_zero() then {0} else {} endif: y;
+    constraint if mzn_check_absent_zero() then
+      if had_zero(x) then b \/ y = 0 else b <-> y != 0 endif
+    endif;
+  } in y;
 
 function var opt int: reverse_map_var_opt_int(var bool: occ, var int: d);
 function opt int: reverse_map_var_opt_int(bool: occ, int: d) ::promise_total =
@@ -138,7 +159,7 @@ function opt int: reverse_map_var_opt_int(bool: occ, int: d) ::promise_total =
 predicate mzn_reverse_map_var(var opt int: x) =
   let {
     var bool : b = occurs_internal_int(x);
-    var int : dx = deopt_internal_int(x);
+    var int : dx = deopt_internal_int(x, b);
     constraint (x = reverse_map_var_opt_int(b,dx)) :: is_reverse_map;
   } in true;
 

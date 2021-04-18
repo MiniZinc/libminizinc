@@ -66,3 +66,20 @@ opt bool: mzn_ignore_redundant_constraints;
 test mzn_check_ignore_redundant_constraints() =
   if absent(mzn_ignore_redundant_constraints) then false
   else deopt(mzn_ignore_redundant_constraints) endif;
+
+
+/** @group stdlib.options Whether to use zero as the underlying representation
+    for absent optional variables.
+  
+    If not specified or set to true, zero is used as the underlying
+    representation for absent optional variables, breaking symmetry. If set to
+    false, the underlying representation of absent optional variables is left
+    unconstrained.
+ */
+opt bool: mzn_absent_zero;
+
+/** @group stdlib.options Check whether to use zero as the underlying
+    representation of absent optional variables */
+test mzn_check_absent_zero() =
+  if absent(mzn_absent_zero) then true
+  else deopt(mzn_absent_zero) endif;
