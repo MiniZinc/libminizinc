@@ -1777,6 +1777,8 @@ Constants::Constants() {
   ann.annotated_expression->type(Type::ann());
   ann.mzn_add_annotated_expression = addString("mzn_add_annotated_expression");
   ann.expression_name_dbg = addString("expression_name_dbg");
+  ann.cache_result = addId("cache_result");
+  ann.cache_result->type(Type::ann());
 
   cli.cmdlineData_short_str = addString("-D");
   cli.cmdlineData_str = addString("--cmdline-data");

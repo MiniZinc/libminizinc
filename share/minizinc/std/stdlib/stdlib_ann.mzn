@@ -112,6 +112,12 @@ annotation annotated_expression;
 /** @group stdlib.annotations.general Used internally by the compiler */
 annotation mzn_add_annotated_expression(int: idx);
 
+/** @group stdlib.annotations.general Enables caching of the result of the annotated function
+  declaration such that further calls with the same arguments yield the cached initial result.
+  
+  Currently only supported for par functions with at least one parameter. */
+annotation cache_result;
+
 /***
  @groupdef stdlib.annotations.prop Propagation strength annotations
 */

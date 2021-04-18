@@ -2855,7 +2855,19 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
         nct.cv(false);
         nct.ti(Type::TI_VAR);
         nc->type(nct);
-        EE ee = flat_exp(env, ctx, nc, nullptr, ctx.partialityVar(env));
+        EE ee;
+        if (c->decl()->ann().contains(env.constants.ann.cache_result)) {
+          auto it = env.cseMapFind(nc);
+          if (it == env.cseMapEnd()) {
+            ee = flat_exp(env, ctx, nc, nullptr, ctx.partialityVar(env));
+            env.cseMapInsert(nc, ee);
+          } else {
+            ee.r = it->second.r();
+            ee.b = it->second.b();
+          }
+        } else {
+          ee = flat_exp(env, ctx, nc, nullptr, ctx.partialityVar(env));
+        }
         if (isfalse(env, ee.b())) {
           std::ostringstream ss;
           ss << "evaluation of `" << demonomorphise_identifier(nc->id()) << "was undefined";
