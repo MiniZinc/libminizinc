@@ -332,18 +332,16 @@ function var float: min(array[$U] of var float: x) =
 
 /** @group stdlib.builtins.arithmetic Return minimum of elements in \a x that are not absent. */
 function var int: min(array[int] of var opt int: x) =
-    let {
-			  int: xmax = ub_array(x);
-        % Array cannot be empty, otherwise min is undefined
-        constraint exists(xi in x)(occurs(xi));
-    } in min([if occurs(xi) then deopt(xi) else xmax endif | xi in x]);
+  let {
+    int: xub = max(0, ub_array(x));
+    constraint exists (xi in x) (occurs(xi));
+  } in min (xi in x) (xi default xub);
 /** @group stdlib.builtins.arithmetic Return minimum of elements in \a x that are not absent. */
 function var float: min(array[int] of var opt float: x) =
-    let {
-			  float: xmax = ub_array(x);
-        % Array cannot be empty, otherwise min is undefined
-        constraint exists(xi in x)(occurs(xi));
-    } in min([if occurs(xi) then deopt(xi) else xmax endif | xi in x]);
+  let {
+    float: xub = max(0.0, ub_array(x));
+    constraint exists (xi in x) (occurs(xi));
+  } in min (xi in x) (xi default xub);
 
 /** @group stdlib.builtins.arithmetic Return minimum of elements in set \a x */
 function $$E: min(set of $$E: x);
@@ -388,17 +386,17 @@ function var float: max(array[$U] of var float: x) =
 
 /** @group stdlib.builtins.arithmetic Return maximum of elements in \a x that are not absent. */
 function var int: max(array[int] of var opt int: x) =
-    let {
-        int: xmin = lb_array(x);
-        constraint exists (xi in x) (occurs(xi));
-    } in max([if occurs(xi) then deopt(xi) else xmin endif | xi in x]);
+  let {
+    int: xlb = min(0, lb_array(x));
+    constraint exists (xi in x) (occurs(xi));
+  } in max (xi in x) (xi default xlb);
 
 /** @group stdlib.builtins.arithmetic Return maximum of elements in \a x that are not absent. */
 function var float: max(array[int] of var opt float: x) =
-    let {
-        float: xmin = lb_array(x);
-        constraint exists (xi in x) (occurs(xi));
-    } in max([if occurs(xi) then deopt(xi) else xmin endif | xi in x]);
+  let {
+    float: xlb = min(0.0, lb_array(x));
+    constraint exists (xi in x) (occurs(xi));
+  } in max (xi in x) (xi default xlb);
 
 /** @group stdlib.builtins.arithmetic Return maximum of elements in set \a x */
 function $$E: max(set of $$E: x);
