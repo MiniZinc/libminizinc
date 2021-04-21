@@ -3086,6 +3086,10 @@ void flatten(Env& e, FlatteningOptions opt) {
     }
 
     // Create output model
+    if (e.flat()->solveItem()->st() == SolveI::SolveType::ST_SAT) {
+      // Never output _objective for SAT problems
+      opt.outputObjective = false;
+    }
     if (opt.keepOutputInFzn) {
       copy_output(env);
     } else {
