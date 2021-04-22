@@ -401,22 +401,28 @@ function var opt int: element(var opt int: idx1, var opt int: idx2, array[int,in
 /* Return \a x[\a idx] */
 function var opt int: element(var int: idx, array[int] of var opt int: x) =
   let {
-    var bool: occ = element(idx,array1d(index_set(x),[occurs(x[i]) | i in index_set(x)]));
-    var int: d = element(idx, array1d(index_set(x), [if is_fixed(absent(x[i])) /\ fix(absent(x[i])) then 0 else deopt(x[i]) endif | i in index_set(x)]));
+    var bool: occ = element(idx,array1d(index_set(x), [occurs(x[i]) | i in index_set(x)]));
+    var int: d = element(idx, array1d(index_set(x), [x[i] default 0 | i in index_set(x)]));
   } in if occ then d else <> endif;
 
 /* Return \a x[\a idx1, \a idx2] */
 function var opt int: element(var int: idx1, var int: idx2, array[int,int] of var opt int: x) =
   let {
     var bool: occ = element(idx1,idx2,
-      array2d(index_set_1of2(x),index_set_2of2(x),[occurs(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
+      array2d(index_set_1of2(x),index_set_2of2(x), [occurs(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
     var int: d = element(idx1,idx2,
-      array2d(index_set_1of2(x),index_set_2of2(x),[if is_fixed(absent(x[i,j])) /\ fix(absent(x[i,j])) then 0 else deopt(x[i,j]) endif | i in index_set_1of2(x), j in index_set_2of2(x)]));
+      array2d(index_set_1of2(x),index_set_2of2(x), [x[i, j] default 0 | i in index_set_1of2(x), j in index_set_2of2(x)]));
   } in if occ then d else <> endif;
 
 /* Return absent if \a idx is absent, otherwise return \a x[\a idx] */
 function var opt int: element(var opt int: idx, array[int] of var opt int: x) =
-  if absent(idx) then <> else element(deopt(idx),x) endif;
+  if not had_zero(idx) /\ min(index_set(x)) = 1 then
+    let {
+      opt int: absent_value = <>; % Workaround since [<>] array literal not allowed
+    } in element(deopt(idx), array1d(0..max(index_set(x)), [absent_value] ++ x))
+  else
+    if absent(idx) then <> else element(deopt(idx), x) endif
+  endif;
 
 /* Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
 function var opt int: element(var opt int: idx1, var opt int: idx2, array[int,int] of var opt int: x) =
