@@ -1442,7 +1442,7 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
                 IntSetRanges ibr(newdom);
                 Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> i(dr, ibr);
                 IntSetVal* newibv = IntSetVal::ai(i);
-                if (domain->card() != newibv->card()) {
+                if (!domain->equal(newibv)) {
                   newdom = newibv;
                   changeDom = true;
                 }

@@ -195,9 +195,9 @@ void unify(EnvI& env, std::vector<VarDecl*>& deletedVarDecls, Id* id0, Id* id1) 
           IntSetVal* nd = IntSetVal::ai(inter);
           if (nd->size() == 0) {
             env.fail();
-          } else if (nd->card() != isv1->card()) {
+          } else if (!nd->equal(isv1)) {
             id1->decl()->ti()->domain(new SetLit(Location(), nd));
-            if (nd->card() == isv0->card()) {
+            if (nd->equal(isv0)) {
               id1->decl()->ti()->setComputedDomain(id0->decl()->ti()->computedDomain());
             } else {
               id1->decl()->ti()->setComputedDomain(false);

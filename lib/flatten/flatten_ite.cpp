@@ -389,7 +389,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
         IntSetRanges isv_r(isv);
         Ranges::Inter<IntVal, Ranges::Const<IntVal>, IntSetRanges> inter(ite_r, isv_r);
         IntSetVal* isv_new = IntSetVal::ai(inter);
-        if (isv_new->card() != isv->card()) {
+        if (!isv_new->equal(isv)) {
           auto* r_dom = new SetLit(Location().introduce(), isv_new);
           nr->ti()->domain(r_dom);
         }
@@ -412,7 +412,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
         IntSetRanges isv_branches_r(isv_branches);
         Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> inter(isv_branches_r, isv_r);
         IntSetVal* isv_new = IntSetVal::ai(inter);
-        if (isv_new->card() != isv->card()) {
+        if (!isv_new->equal(isv)) {
           auto* r_dom = new SetLit(Location().introduce(), isv_new);
           nr->ti()->domain(r_dom);
         }

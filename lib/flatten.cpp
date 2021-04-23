@@ -2012,7 +2012,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
                 IntSetRanges ibr(ibv);
                 Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> i(dr, ibr);
                 IntSetVal* newibv = IntSetVal::ai(i);
-                if (ibv->card() == newibv->card()) {
+                if (ibv->equal(newibv)) {
                   is_computed = true;
                 } else {
                   ibv = newibv;
@@ -2292,7 +2292,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
               IntSetVal* newibv = IntSetVal::ai(i);
               if (newibv->card() == 0) {
                 env.fail();
-              } else if (ibv->card() == newibv->card()) {
+              } else if (ibv->equal(newibv)) {
                 vd->ti()->setComputedDomain(true);
               } else {
                 ibv = newibv;
@@ -2308,7 +2308,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
                 IntSetRanges ibr(ibv);
                 Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> i(dr, ibr);
                 IntSetVal* rhs_newibv = IntSetVal::ai(i);
-                if (rhs_domain->card() != rhs_newibv->card()) {
+                if (!rhs_domain->equal(rhs_newibv)) {
                   ibv_l = new SetLit(Location().introduce(), rhs_newibv);
                   set_computed_domain(env, rhs_ident->decl(), ibv_l, false);
                   if (rhs_ident->decl()->type().isOpt()) {
@@ -2320,7 +2320,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
                     c->decl(env.model->matchFn(env, c, false));
                     (void)flat_exp(env, Ctx(), c, constants().varTrue, constants().varTrue);
                   }
-                } else if (ibv->card() != rhs_newibv->card()) {
+                } else if (!ibv->equal(rhs_newibv)) {
                   ibv_l = new SetLit(Location().introduce(), rhs_newibv);
                 }
               }
@@ -2376,7 +2376,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
                 FloatSetRanges ibr(fbv);
                 Ranges::Inter<FloatVal, FloatSetRanges, FloatSetRanges> i(dr, ibr);
                 FloatSetVal* rhs_newfbv = FloatSetVal::ai(i);
-                if (rhs_domain->card() != rhs_newfbv->card()) {
+                if (!rhs_domain->equal(rhs_newfbv)) {
                   fbv_l = new SetLit(Location().introduce(), rhs_newfbv);
                   set_computed_domain(env, rhs_ident->decl(), fbv_l, false);
                   if (rhs_ident->decl()->type().isOpt()) {
@@ -2388,7 +2388,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
                     c->decl(env.model->matchFn(env, c, false));
                     (void)flat_exp(env, Ctx(), c, constants().varTrue, constants().varTrue);
                   }
-                } else if (fbv->card() != rhs_newfbv->card()) {
+                } else if (!fbv->equal(rhs_newfbv)) {
                   fbv_l = new SetLit(Location().introduce(), rhs_newfbv);
                 }
               }
