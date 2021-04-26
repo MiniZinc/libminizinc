@@ -1,0 +1,2 @@
+var 1..2: y:: output_var;
+solve  satisfy;
