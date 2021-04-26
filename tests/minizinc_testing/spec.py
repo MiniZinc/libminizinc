@@ -291,7 +291,9 @@ class FlatZinc:
             needle = "X_INTRODUCED_{}_".format(old)
             replacement = "X_INTRODUCED_{}_".format(new)
             fzn = fzn.replace(needle, replacement)
-        return "\n".join(sorted(fzn.split("\n")))  # Sort the FlatZinc lines
+        # Remove empty lines, truncate multiple spaces
+        lines = [re.sub(r"  +", " ", line) for line in fzn.split("\n") if len(line.strip()) > 0]
+        return "\n".join(sorted(lines))  # Sort the FlatZinc lines
 
     def get_value(self):
         if self.fzn is None:
