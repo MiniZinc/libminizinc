@@ -20,7 +20,7 @@ EE flatten_setlit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl*
   assert(sl->isv() == nullptr && sl->fsv() == nullptr);
   std::vector<EE> elems_ee(sl->v().size());
   for (unsigned int i = sl->v().size(); (i--) != 0U;) {
-    elems_ee[i] = flat_exp(env, ctx, sl->v()[i], nullptr, nullptr);
+    elems_ee[i] = flat_exp(env, ctx, sl->v()[i], nullptr, ctx.partialityVar());
   }
   std::vector<Expression*> elems(elems_ee.size());
   bool allPar = true;

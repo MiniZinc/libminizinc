@@ -74,6 +74,8 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
 EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
 
 EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
+  assert(ctx.b != C_ROOT || b == constants().varTrue);
+
   if (e == nullptr) {
     return EE();
   }

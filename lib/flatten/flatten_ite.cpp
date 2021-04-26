@@ -250,7 +250,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
         // add another condition and definedness variable
         conditions.emplace_back(constants().literalTrue);
         for (unsigned int j = 0; j < results.size(); j++) {
-          EE ethen = flat_exp(env, cmix, e_then[j][i](), nullptr, nullptr);
+          EE ethen = flat_exp(env, cmix, e_then[j][i](), nullptr, cmix.partialityVar());
           assert(ethen.b());
           defined[j].push_back(ethen.b);
           allDefined = allDefined && (ethen.b() == constants().literalTrue);
@@ -275,7 +275,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
 
       for (unsigned int j = 0; j < results.size(); j++) {
         // flatten the then branch
-        EE ethen = flat_exp(env, cmix, e_then[j][i](), nullptr, nullptr);
+        EE ethen = flat_exp(env, cmix, e_then[j][i](), nullptr, cmix.partialityVar());
 
         assert(ethen.b());
         defined[j].push_back(ethen.b);
@@ -337,7 +337,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
 
     for (unsigned int j = 0; j < results.size(); j++) {
       // flatten else branch
-      EE eelse = flat_exp(env, cmix, e_else[j](), nullptr, nullptr);
+      EE eelse = flat_exp(env, cmix, e_else[j](), nullptr, cmix.partialityVar());
       assert(eelse.b());
       defined[j].push_back(eelse.b);
       allDefined = allDefined && (eelse.b() == constants().literalTrue);

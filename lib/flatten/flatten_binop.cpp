@@ -1116,7 +1116,7 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
           cc->type(cc->decl()->rtype(env, args, false));
           KeepAlive ka(cc);
           GC::unlock();
-          EE ee = flat_exp(env, ctx, cc, r, nullptr);
+          EE ee = flat_exp(env, ctx, cc, r, ctx.partialityVar());
           GC::lock();
           ret.r = ee.r;
           std::vector<EE> ees(3);
@@ -1252,7 +1252,7 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
           return flat_exp(env, ctx1, boe1, r, b);
         }
         ctx0.b = C_MIX;
-        EE e0 = flat_exp(env, ctx0, boe0, nullptr, nullptr);
+        EE e0 = flat_exp(env, ctx0, boe0, nullptr, ctx0.partialityVar());
         if (istrue(env, e0.r())) {
           return flat_exp(env, ctx1, boe1, r, b);
         }
@@ -1611,9 +1611,9 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
               ctx.b = -ctx.b;
               ctx.neg = !ctx.neg;
             }
-            ret.r = flat_exp(env, ctx, cc, r, nullptr).r;
+            ret.r = flat_exp(env, ctx, cc, r, ctx.partialityVar()).r;
           } else {
-            ees[2].b = flat_exp(env, Ctx(), cc, nullptr, nullptr).r;
+            ees[2].b = flat_exp(env, Ctx(), cc, nullptr, constants().varTrue).r;
             if (doubleNeg) {
               GCLock lock;
               Type t = ees[2].b()->type();
@@ -1633,7 +1633,7 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
 
     case BOT_PLUSPLUS: {
       std::vector<EE> ee(2);
-      EE eev = flat_exp(env, ctx, boe0, nullptr, nullptr);
+      EE eev = flat_exp(env, ctx, boe0, nullptr, ctx.partialityVar());
       ee[0] = eev;
       ArrayLit* al;
       if (eev.r()->isa<ArrayLit>()) {
@@ -1649,7 +1649,7 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
         al = follow_id(id)->cast<ArrayLit>();
       }
       ArrayLit* al0 = al;
-      eev = flat_exp(env, ctx, boe1, nullptr, nullptr);
+      eev = flat_exp(env, ctx, boe1, nullptr, ctx.partialityVar());
       ee[1] = eev;
       if (eev.r()->isa<ArrayLit>()) {
         al = eev.r()->cast<ArrayLit>();

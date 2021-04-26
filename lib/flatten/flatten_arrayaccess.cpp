@@ -22,7 +22,7 @@ EE flatten_arrayaccess(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, Var
   Ctx nctx = ctx;
   nctx.b = +nctx.b;
   nctx.neg = false;
-  EE eev = flat_exp(env, nctx, aa->v(), nullptr, nullptr);
+  EE eev = flat_exp(env, nctx, aa->v(), nullptr, nctx.partialityVar());
   std::vector<EE> ees;
 
 start_flatten_arrayaccess:
@@ -206,7 +206,7 @@ flatten_arrayaccess:
     if (auto* vd = tmp->dynamicCast<VarDecl>()) {
       tmp = vd->id();
     }
-    ees.push_back(flat_exp(env, dimctx, tmp, nullptr, nullptr));
+    ees.push_back(flat_exp(env, dimctx, tmp, nullptr, dimctx.partialityVar()));
   }
   ees.emplace_back(nullptr, eev.b());
 
@@ -276,7 +276,7 @@ flatten_arrayaccess:
     }
     Ctx elemctx = ctx;
     elemctx.neg = false;
-    EE ee = flat_exp(env, elemctx, ka(), nullptr, nullptr);
+    EE ee = flat_exp(env, elemctx, ka(), nullptr, elemctx.partialityVar());
     ees.push_back(ee);
     if (aa->type().isbool() && !aa->type().isOpt()) {
       ee.b = ee.r;

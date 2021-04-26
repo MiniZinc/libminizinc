@@ -129,7 +129,7 @@ void flatten_linexp_call(EnvI& env, Ctx ctx, const Ctx& nctx, ASTString& cid, Ca
                          std::vector<KeepAlive>& args) {
   typedef typename LinearTraits<Lit>::Val Val;
   Expression* al_arg = (cid == constants().ids.sum ? args_ee[0].r() : args_ee[1].r());
-  EE flat_al = flat_exp(env, nctx, al_arg, nullptr, nullptr);
+  EE flat_al = flat_exp(env, nctx, al_arg, nullptr, nctx.partialityVar());
   auto* al = follow_id(flat_al.r())->template cast<ArrayLit>();
   KeepAlive al_ka = al;
   if (al->dims() > 1) {
@@ -148,7 +148,7 @@ void flatten_linexp_call(EnvI& env, Ctx ctx, const Ctx& nctx, ASTString& cid, Ca
       c_coeff[i] = 1;
     }
   } else {
-    EE flat_coeff = flat_exp(env, nctx, args_ee[0].r(), nullptr, nullptr);
+    EE flat_coeff = flat_exp(env, nctx, args_ee[0].r(), nullptr, nctx.partialityVar());
     auto* coeff = follow_id(flat_coeff.r())->template cast<ArrayLit>();
     for (unsigned int i = coeff->size(); i--;) {
       c_coeff[i] = LinearTraits<Lit>::eval(env, (*coeff)[i]);
@@ -455,7 +455,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
       }
       {
         CallArgItem cai(env);
-        args_ee[0] = flat_exp(env, nctx, tmp, nullptr, nullptr);
+        args_ee[0] = flat_exp(env, nctx, tmp, nullptr, nctx.partialityVar());
         isPartial |= isfalse(env, args_ee[0].b());
         coeffs = eval_array_lit(env, args_ee[0].r());
       }
@@ -471,7 +471,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
         for (unsigned int i = vars->size(); (i--) != 0U;) {
           Ctx argctx = nctx;
           argctx.i = eval_int(env, (*coeffs)[i]) < 0 ? -nctx.i : +nctx.i;
-          elems_ee[i] = flat_exp(env, argctx, (*vars)[i], nullptr, nullptr);
+          elems_ee[i] = flat_exp(env, argctx, (*vars)[i], nullptr, argctx.partialityVar());
         }
         std::vector<Expression*> elems(elems_ee.size());
         for (auto i = static_cast<unsigned int>(elems.size()); (i--) != 0U;) {
@@ -495,7 +495,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
           constant = vd->id();
         }
         CallArgItem cai(env);
-        args_ee[2] = flat_exp(env, nctx, constant, nullptr, nullptr);
+        args_ee[2] = flat_exp(env, nctx, constant, nullptr, nctx.partialityVar());
         isPartial |= isfalse(env, args_ee[2].b());
       }
 
@@ -661,7 +661,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
             tmp = vd->id();
           }
           CallArgItem cai(env);
-          args_ee[i] = flat_exp(env, argctx, tmp, nullptr, nullptr);
+          args_ee[i] = flat_exp(env, argctx, tmp, nullptr, argctx.partialityVar());
           isPartial |= isfalse(env, args_ee[i].b());
         }
       }
@@ -1223,7 +1223,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
             EE ee = flat_exp(env, nctx, decl->e(), r, constants().varTrue);
             ret.r = bind(env, ctx, r, ee.r());
           } else {
-            ret = flat_exp(env, ctx, decl->e(), r, nullptr);
+            ret = flat_exp(env, ctx, decl->e(), r, ctx.partialityVar());
             args_ee.push_back(ret);
             if (decl->e()->type().dim() > 0) {
               auto* al = follow_id(ret.r())->cast<ArrayLit>();

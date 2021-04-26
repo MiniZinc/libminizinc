@@ -2692,7 +2692,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
     return eval_par(env, e);
   }
   if (e->type().isvar()) {
-    EE ee = flat_exp(env, ctx, e, nullptr, nullptr);
+    EE ee = flat_exp(env, ctx, e, nullptr, ctx.partialityVar());
     if (isfalse(env, ee.b())) {
       throw ResultUndefinedError(env, e->loc(), "");
     }
@@ -2881,7 +2881,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
         nct.cv(false);
         nct.ti(Type::TI_VAR);
         nc->type(nct);
-        EE ee = flat_exp(env, ctx, nc, nullptr, nullptr);
+        EE ee = flat_exp(env, ctx, nc, nullptr, ctx.partialityVar());
         if (isfalse(env, ee.b())) {
           std::ostringstream ss;
           ss << "evaluation of `" << nc->id() << "was undefined";
@@ -2894,7 +2894,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
     }
     case Expression::E_LET: {
       Let* l = e->cast<Let>();
-      EE ee = flat_exp(env, ctx, l, nullptr, nullptr);
+      EE ee = flat_exp(env, ctx, l, nullptr, ctx.partialityVar());
       if (isfalse(env, ee.b())) {
         throw ResultUndefinedError(env, e->loc(), "evaluation of let expression was undefined");
       }

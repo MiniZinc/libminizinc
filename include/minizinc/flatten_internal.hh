@@ -58,6 +58,8 @@ struct Ctx {
     }
     return *this;
   }
+  /// Return true variable if in root context, nullptr otherwise
+  VarDecl* partialityVar() const { return b == C_ROOT ? constants().varTrue : nullptr; }
 };
 
 /// Turn \a c into positive context

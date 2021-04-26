@@ -44,7 +44,7 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
           nctx.b = C_MIX;
         }
 
-        EE ee = flat_exp(env, nctx, vd->e(), nullptr, nullptr);
+        EE ee = flat_exp(env, nctx, vd->e(), nullptr, nctx.partialityVar());
         let_e = ee.r();
         cs.push_back(ee);
         if (vd->ti()->domain() != nullptr) {
