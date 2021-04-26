@@ -233,6 +233,7 @@ Expression* createArrayAccess(const ParserLocation& loc, Expression* e, std::vec
 %left MZN_POW MZN_POW_MINUS1
 %nonassoc MZN_NOT
 %left MZN_PLUSPLUS
+%left MZN_DEFAULT
 %left MZN_QUOTED_IDENTIFIER
 %left MZN_COLONCOLON
 
@@ -944,6 +945,12 @@ set_expr :
         args.push_back($1); args.push_back($3);
         $$=new Call(@$, ASTString("~="), args);
       }
+    | set_expr MZN_DEFAULT set_expr
+      {
+        vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("default"), args);
+      }
     | set_expr MZN_QUOTED_IDENTIFIER set_expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
@@ -1059,6 +1066,11 @@ expr :
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
         $$=new Call(@$, ASTString("~="), args);
+      }
+    | expr MZN_DEFAULT expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("default"), args);
       }
     | expr MZN_QUOTED_IDENTIFIER expr
       { vector<Expression*> args;

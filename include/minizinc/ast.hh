@@ -1776,6 +1776,7 @@ public:
     ASTString mzn_deprecate;                     // NOLINT(readability-identifier-naming)
     ASTString mzn_symmetry_breaking_constraint;  // NOLINT(readability-identifier-naming)
     ASTString mzn_redundant_constraint;          // NOLINT(readability-identifier-naming)
+    ASTString mzn_default;                       // NOLINT(readability-identifier-naming)
     ASTString trace;
 
     ASTString sum;

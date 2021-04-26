@@ -152,3 +152,20 @@ function array[$T] of var opt float: int2float(array[$T] of var opt int: x) ::pr
 /** @group stdlib.coercion Return a set of integers \a x coerced to an array of integers  */
 function array[int] of $$E: set2array(set of $$E: x);
 
+/** @group stdlib.debug If \a x is defined and not absent, return \a x, otherwise return \a y. */
+function $T: 'default'(opt $T:x, $T: y);
+/** @group stdlib.debug If \a x is defined and not absent, return \a x, otherwise return \a y. */
+function opt $T: 'default'(opt $T:x, opt $T: y);
+/** @group stdlib.debug If \a x is defined and not absent, return \a x, otherwise return \a y. */
+function var $T: 'default'(var opt $T:x, var $T: y);
+/** @group stdlib.debug If \a x is defined and not absent, return \a x, otherwise return \a y. */
+function var opt $T: 'default'(var opt $T:x, var opt $T: y);
+
+/** @group stdlib.debug If \a x is defined, return \a x, otherwise return \a y. */
+function array[$U] of $T: 'default'(array[$U] of $T:x, array[$U] of $T: y);
+/** @group stdlib.debug If \a x is defined, return \a x, otherwise return \a y. */
+function array[$U] of opt $T: 'default'(array[$U] of opt $T:x, array[$U] of opt $T: y);
+/** @group stdlib.debug If \a x is defined, return \a x, otherwise return \a y. */
+function array[$U] of var $T: 'default'(array[$U] of var $T:x, array[$U] of var $T: y);
+/** @group stdlib.debug If \a x is defined, return \a x, otherwise return \a y. */
+function array[$U] of var opt $T: 'default'(array[$U] of var opt $T:x, array[$U] of var opt $T: y);

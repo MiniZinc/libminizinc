@@ -1580,6 +1580,65 @@ Expression* b_mzn_redundant_constraint(EnvI& env, Call* call) {
   return nc;
 }
 
+Expression* b_default(EnvI& env, Call* call) {
+  GCLock lock;
+  Ctx ctx;
+  ctx.i = C_MIX;
+  ctx.b = C_MIX;
+  env.inMaybePartial++;
+  EE arg0 = flat_exp(env, ctx, call->arg(0), nullptr, nullptr);
+  env.inMaybePartial--;
+  if (arg0.b()->type().isPar()) {
+    bool isDefined = eval_bool(env, arg0.b());
+    if (!isDefined) {
+      return call->arg(1);
+    }
+    if (call->arg(0)->type().isOpt() && call->arg(0)->type().dim() == 0) {
+      if (arg0.r()->type().isPar()) {
+        if (arg0.r()->type().isOpt() && arg0.r() == constants().absent) {
+          return call->arg(1);
+        }
+        return arg0.r();
+      }
+      // if occurs(x) then deopt(x) else y endif
+      auto* occurs = new Call(Location().introduce(), "occurs", {arg0.r()});
+      occurs->decl(env.model->matchFn(env, occurs, false));
+      occurs->type(arg0.r()->type().isOpt() && arg0.r()->type().isvar() ? Type::varbool()
+                                                                        : Type::parbool());
+      auto* deopt = new Call(Location().introduce(), "deopt", {arg0.r()});
+      deopt->decl(env.model->matchFn(env, deopt, false));
+      Type deopt_t = arg0.r()->type();
+      deopt_t.ot(Type::OT_PRESENT);
+      deopt->type(deopt_t);
+      auto* deoptIte = new ITE(Location().introduce(), {occurs, deopt}, call->arg(1));
+      deoptIte->type(call->type());
+      return deoptIte;
+    }
+    return arg0.r();
+  }
+  if (call->arg(0)->type().isOpt() && call->arg(0)->type().dim() == 0) {
+    // if defined(x) /\ occurs(x) then deopt(x) else y endif
+    auto* occurs = new Call(Location().introduce(), "occurs", {arg0.r()});
+    occurs->decl(env.model->matchFn(env, occurs, false));
+    occurs->type(arg0.r()->type().isOpt() && arg0.r()->type().isvar() ? Type::varbool()
+                                                                      : Type::parbool());
+    auto* deopt = new Call(Location().introduce(), "deopt", {arg0.r()});
+    deopt->decl(env.model->matchFn(env, deopt, false));
+    Type deopt_t = arg0.r()->type();
+    deopt_t.ot(Type::OT_PRESENT);
+    deopt->type(deopt_t);
+    auto* defAndOcc = new BinOp(Location().introduce(), arg0.b(), BOT_AND, occurs);
+    defAndOcc->type(Type::varbool());
+    auto* deoptIte = new ITE(Location().introduce(), {defAndOcc, deopt}, call->arg(1));
+    deoptIte->type(call->type());
+    return deoptIte;
+  }
+  // if defined(x) then x else y endif
+  auto* ite = new ITE(Location().introduce(), {arg0.b(), arg0.r()}, call->arg(1));
+  ite->type(call->type());
+  return ite;
+}
+
 Expression* b_trace(EnvI& env, Call* call) {
   GCLock lock;
   Expression* msg_e;
@@ -3191,6 +3250,31 @@ void register_builtins(Env& e) {
     rb(env, m, constants().ids.trace, t, b_trace);
     rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
     rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
+  }
+  {
+    std::vector<Type> t(2);
+    t[0] = Type::optpartop();
+    t[1] = Type::top();
+    rb(env, m, constants().ids.mzn_default, t, b_default);
+    t[1] = Type::optpartop();
+    rb(env, m, constants().ids.mzn_default, t, b_default);
+    t[0] = Type::optvartop();
+    t[1] = Type::vartop();
+    rb(env, m, constants().ids.mzn_default, t, b_default);
+    t[1] = Type::optvartop();
+    rb(env, m, constants().ids.mzn_default, t, b_default);
+    t[0] = Type::top(-1);
+    t[1] = Type::top(-1);
+    rb(env, m, constants().ids.mzn_default, t, b_default);
+    t[0] = Type::optpartop(-1);
+    t[1] = Type::optpartop(-1);
+    rb(env, m, constants().ids.mzn_default, t, b_default);
+    t[0] = Type::vartop(-1);
+    t[1] = Type::vartop(-1);
+    rb(env, m, constants().ids.mzn_default, t, b_default);
+    t[0] = Type::optvartop(-1);
+    t[1] = Type::optvartop(-1);
+    rb(env, m, constants().ids.mzn_default, t, b_default);
   }
   {
     rb(env, m, ASTString("output_to_section"), {Type::parstring(), Type::parstring()},

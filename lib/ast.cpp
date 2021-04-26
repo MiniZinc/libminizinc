@@ -1517,6 +1517,7 @@ Constants::Constants() {
   ids.mzn_deprecate = addString("mzn_deprecate");
   ids.mzn_symmetry_breaking_constraint = addString("mzn_symmetry_breaking_constraint");
   ids.mzn_redundant_constraint = addString("mzn_redundant_constraint");
+  ids.mzn_default = addString("default");
   ids.trace = addString("trace");
 
   ids.sum = addString("sum");
