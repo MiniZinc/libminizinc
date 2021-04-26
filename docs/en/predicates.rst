@@ -720,8 +720,8 @@ is in a positive context, and :mzn:`x > i` is in a mixed context.
 
 
 
-Local Constraints
------------------
+Local Constraints and Partiality
+--------------------------------
 
 .. index::
   single: constraint; local

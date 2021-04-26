@@ -1350,6 +1350,8 @@ Note that the last entry in the table, :mzn:`^-1`, is a combination of the binar
                              
   :mzn:`++`                        right  100   
 
+  :mzn:`default`                   left    70
+
   `````  :mzndef:`<ident>` `````   left    50   
   ===============================  ====== ======
 
@@ -3218,6 +3220,21 @@ Explicit casts from one type-inst to another.
       float:        int2float(    int)
   var float:        int2float(var int)
   array[int] of $T: set2array(set of $T)
+
+
+Capturing of undefinedness and optionality. These binary infix operators return :mzn:`x` if it is
+both defined and not absent, and :mzn:`y` otherwise.
+
+.. code-block:: minizinc
+
+                       $T: 'default'(opt $T:x, $T: y);
+                   opt $T: 'default'(opt $T:x, opt $T: y);
+                   var $T: 'default'(var opt $T:x, var $T: y);
+               var opt $T: 'default'(var opt $T:x, var opt $T: y);
+  array[$U] of         $T: 'default'(array[$U] of $T:x, array[$U] of $T: y);
+  array[$U] of opt     $T: 'default'(array[$U] of opt $T:x, array[$U] of opt $T: y);
+  array[$U] of var     $T: 'default'(array[$U] of var $T:x, array[$U] of var $T: y);
+  array[$U] of var opt $T: 'default'(array[$U] of var opt $T:x, array[$U] of var opt $T: y);
 
 
 String Operations

@@ -655,7 +655,7 @@ it sets it to zero.
 
     if <bool-exp> then <exp-1> else <exp-2> endif
 
-  It is a true expression rather than a control flow statement and so can be used in other expressions.
+  It is an actual expression rather than a control flow statement and so can be used in other expressions.
   It evaluates to :mzndef:`<exp-1>` if the Boolean expression :mzndef:`<bool-exp>` is true and 
   :mzndef:`<exp-2>` otherwise. The type of the conditional expression is that of 
   :mzndef:`<exp-1>` and :mzndef:`<exp-2>` which must have the same
@@ -1006,17 +1006,10 @@ and then executing
 
   $ minizinc --solver gecode --all-solutions jobshop.mzn jobshop.dzn
 
-For this problem there are 3,444,375 optimal solutions. In the MiniZinc IDE, you would have to select "User-defined behavior" in the configuration pane and set the number of solutions to zero in order to display all solutions of this satisfaction problem.
+For this problem there are 3,444,375 optimal solutions. In the MiniZinc IDE, you can select "User-defined behavior" in the configuration editor and uncheck the option "Stop after this many solutions" in order to display all solutions of this satisfaction problem.
 
-.. literalinclude:: examples/stable-marriage.mzn
-  :language: minizinc
-  :name: ex-stable-marriage
-  :caption: Model for the stable marriage problem (:download:`stable-marriage.mzn <examples/stable-marriage.mzn>`).
-
-.. literalinclude:: examples/stable-marriage.dzn
-  :language: minizinc
-  :name: ex-sm-data
-  :caption: Example data for the stable marriage problem (:download:`stable-marriage.dzn <examples/stable-marriage.dzn>`).
+Array Access Constraints
+------------------------
 
 Another powerful modelling feature in MiniZinc is 
 that decision variables
@@ -1033,6 +1026,16 @@ the sense that:
 This can be elegantly modelled in 
 MiniZinc. 
 The model and sample data is shown in :numref:`ex-stable-marriage` and :numref:`ex-sm-data`. 
+
+.. literalinclude:: examples/stable-marriage.mzn
+  :language: minizinc
+  :name: ex-stable-marriage
+  :caption: Model for the stable marriage problem (:download:`stable-marriage.mzn <examples/stable-marriage.mzn>`).
+
+.. literalinclude:: examples/stable-marriage.dzn
+  :language: minizinc
+  :name: ex-sm-data
+  :caption: Example data for the stable marriage problem (:download:`stable-marriage.dzn <examples/stable-marriage.dzn>`).
 
 The first three items in the model declare the number of men/women and the
 set of men and women. Here we introduce the use of *anonymous enumerated types*.
@@ -1189,6 +1192,30 @@ missing :mzn:`bool2int`.
   appropriately.
   Note that it will also coerce Booleans to floats using two steps.
 
+Partiality and Relational Semantics
+-----------------------------------
+
+.. index::
+  single: partiality
+  single: default
+
+Since MiniZinc supports complex constraints, it is important to understand how :index:`partial functions <function; partial>` are handled. For example, we would expect the following model to have the solution :mzn:`b=true; x=1`, but also :mzn:`b=false; x=0` and :mzn:`b=false; x=1`:
+
+.. code-block:: minizinc
+
+  var bool: b;
+  var 0..10: x;
+  constraint b -> 10 div x = 10;
+
+However, division is a partial function, and :mzn:`10 div 0` is undefined. So how exactly does MiniZinc handle partiality?
+
+MiniZinc implements the *relational semantics*, which means that any undefinedness "bubbles up" to the closest Boolean context and becomes :mzn:`false` there. In the case above, the closest Boolean context of the division is the :mzn:`=` operator, so the right hand side of the implication becomes false. This forces the left hand side to be false as well.
+
+MiniZinc has a number of built-in partial functions. The most common one is probably array access, since an expression :mzn:`x[i]` is undefined if :mzn:`i` is not in the index set of :mzn:`x`.
+
+In order to "guard" against partiality, we can use conditional statements like :mzn:`if y=0 then 0 else x div y endif`, or :mzn:`if i in index_set(x) then x[i] else 0 endif`, which define a default value for the cases where the expression is undefined.
+
+A shorthand notation for this is the :mzn:`default` operator, which allows you to write :mzn:`(x div y) default 0` or :mzn:`x[i] default 0` instead.
 
 Set Constraints
 ---------------

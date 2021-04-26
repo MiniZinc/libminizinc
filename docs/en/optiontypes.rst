@@ -29,23 +29,60 @@ Declaring and Using Option Types
 
   where :mzndef:`<type>` is one of :mzn:`int`, :mzn:`float` or :mzn:`bool` or
   a fixed range expression.
-  Option type variables can be parameters but this is rarely useful.
+  Option type variables can be parameters.
 
   An option type variable can take the additional value
   :mzn:`<>`
   indicating *absent*.
 
-  Three builtin functions are provided for option type variables:
+An option type variable behaves like a normal, non-optional variable, as long as it is not absent, i.e., as long as it is not equal to :mzn:`<>`.
+An absent option type variable should behave as if the object it represents does not exist. This means different things for different functions and relations.
+
+For example, when adding :mzn:`<>` to another variable :mzn:`x`, the result is just :mzn:`x`. Similarly, :mzn:`all_different([x,y,z])` should behave exactly like
+:mzn:`all_different([x,y])` in case :mzn:`z=<>`, i.e., :mzn:`z` is absent.
+
+Option type variables can be used like their non-optional versions with most operators on Booleans, integers and floats. Many functions and predicates in the MiniZinc library are also defined for option type variables. Here are a few examples of how different functions and operators treat option types:
+
+.. code-block:: minizinc
+
+  % Expression:               Equivalent to:          Simplified:
+  <> + a                  =   0 + a                =  a            
+  a * <>                  =   a * 1                =  a
+  sum([x1,<>,x2])         =   sum([x1,x2])      
+  sum([<>,<>])            =   sum([])              = 0
+  product([x1,x2,<>])     =   product([x1,x2])
+  product([<>,<>,<>])     =   product([])          = 1
+  exists([b1,<>])         =   exists([b1])         = b1
+  exists([<>,<>])         =   exists([])           = false
+  forall([<>,b1,b2])      =   forall([b1,b2])
+  forall([<>,<>])         =   forall([])           = true
+  all_different([x,<>,y]) =   all_different([x,y])
+
+Comparison operators return :mzn:`true` if any of their arguments is absent. For instance, :mzn:`3 <= <>` is :mzn:`true`, as is :mzn:`<> <= 3`.
+However, note that equality between option type expressions is only :mzn:`true` if both expressions have the same optionality: :mzn:`<> = <>` is :mzn:`true`,
+but :mzn:`3 = <>` is :mzn:`false`. If you need the "weaker" version of equality, MiniZinc provides the :mzn:`~=` operator: :mzn:`3 ~= <>` is :mzn:`true`.
+
+Similarly, it can sometimes be useful to have "weak" versions of the arithmetic operators that return :mzn:`<>` if any of their arguments is absent. MiniZinc provides the :mzn:`~+`, :mzn:`~-~ and :mzn:`~*` operators for this purpose (e.g., :mzn:`3 + <> =3`, but :mzn:`3 ~+ <> = <>`).
+
+.. defblock:: Operations on option type variables
+
+  Two builtin functions and a binary operator are provided for option type variables:
   :mzn:`absent(v)` returns :mzn:`true` iff option type variable :mzn:`v` takes the value
   :mzn:`<>`,
   :mzn:`occurs(v)` returns :mzn:`true` iff option type variable :mzn:`v` does *not* take the value
   :mzn:`<>`,
   and
+  :mzn:`x default y` returns :mzn:`x` if :mzn:`x` occurs, and :mzn:`y` otherwise.
+
+  In addition, the function
   :mzn:`deopt(v)` returns the normal value of :mzn:`v` or fails if it takes the
-  value :mzn:`<>`.
+  value :mzn:`<>`. This function should not be used in normal models, but is required
+  to implement predicates over option type variables.
 
+Option Types in Scheduling Problems
+-----------------------------------
 
-The most common use of option types is for optional tasks in scheduling.
+A common use of option types is for optional tasks in scheduling.
 In the flexible job shop scheduling problem we have :mzn:`n` tasks to perform
 on :mzn:`k` machines, and the time to complete each task on each machine
 may be different. The aim is to minimize the completion time of all tasks.
@@ -66,6 +103,7 @@ constraint that holds on the actual (not optional) tasks.
   :caption: Model for flexible job shop scheduling using option types (:download:`flexible-js.mzn <examples/flexible-js.mzn>`).
   
 .. \pjs{Finish the damn section!}
+
 
 Hidden Option Types
 -------------------
@@ -147,3 +185,25 @@ and
   constraint forall(i in 1..n)(x[i] >= 0 -> x[i] <= limit);
 
 
+Option Type Parameters
+----------------------
+
+Option type variables of fixed parameter type can be used to define optional
+model parameters. For example, a variable defined like this:
+
+.. code-block:: minizinc
+
+  opt bool: enable_feature;
+
+could be used to enable or disable a certain optional feature of a model.
+In contrast to other parameter variables, these optional parameters do not
+have to be assigned a value (e.g., the data file may omit an assignment to
+:mzn:`enable_feature`). In that case, the variable is automatically assigned
+the value :mzn:`<>`. In the model, such an optional parameter could be used
+like this:
+
+.. code-block:: minizinc
+
+  bool: enable_feature_enabled = enable_feature default false;
+
+  constraint if enable_feature_enabled then ... endif;

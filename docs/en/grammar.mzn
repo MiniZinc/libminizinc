@@ -143,7 +143,7 @@
 
 <builtin-bin-op> ::= "<->" | "->" | "<-" | "\/" | "xor" | "/\" | "<" | ">" | "<=" | ">=" | "==" | "=" | "!="
                    | "in" | "subset" | "superset" | "union" | "diff" | "symdiff"
-                   | ".." | "intersect" | "++" | <builtin-num-bin-op>
+                   | ".." | "intersect" | "++" | "default" | <builtin-num-bin-op>
 
 <builtin-un-op> ::= "not" | <builtin-num-un-op>
 
