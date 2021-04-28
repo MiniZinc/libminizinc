@@ -216,6 +216,7 @@ public:
     CloseHandle(g_hChildStd_IN_Rd);
     bool doneStdout = false;
     bool doneStderr = false;
+    bool timedOut = false;
 
     // Threaded solution seems simpler than asyncronous pipe reading
     std::mutex pipeMutex;
@@ -234,6 +235,7 @@ public:
       if (_timelimit != 0) {
         if (!_interruptCondition.wait_for(lck, std::chrono::milliseconds(_timelimit), shouldStop)) {
           // If we timed out, generate an interrupt but ignore it ourselves
+          timedOut = true;
           bool oldHadInterrupt = hadInterrupt;
           GenerateConsoleCtrlEvent(CTRL_C_EVENT, 0);
           _interruptCondition.wait(lck, [&] { return hadInterrupt; });
@@ -298,7 +300,7 @@ public:
       // Re-trigger signal if it was not caused by our own timeout
       GenerateConsoleCtrlEvent(CTRL_C_EVENT, 0);
     }
-    return exitCode;
+    return timedOut ? 0 : exitCode;
   }
 #else
     int pipes[3][2];
