@@ -58,6 +58,61 @@ function opt float: '-'(opt float: x, opt float: y) ::promise_total =
 function float: '-'(float: x, opt float: y) ::promise_total =
   if absent(y) then x else x-deopt(y) endif;
 
+/** @group stdlib.arithmetic Weak addition. Return sum of \a x and \a y if both
+are present, otherwise return absent. */
+function var opt int: '~+'(var opt int: x, var opt int: y) ::promise_total =
+    let { 
+    int: l = if lb(x)=-infinity \/ lb(y)=-infinity then -infinity else lb(x)+lb(y) endif;
+    int: u = if ub(x)=infinity \/ ub(y)=infinity then infinity else ub(x)+ub(y) endif;
+    var opt l..u: result; 
+    constraint absent(x) \/ absent(y) -> result = <>;
+    constraint absent(x) \/ absent(y) \/ result = deopt(x)+deopt(y);
+    } in result;
+
+/** @group stdlib.arithmetic Weak subtraction. Return difference of \a x and \a y if both
+are present, otherwise return absent. */
+function var opt int: '~-'(var opt int: x, var opt int: y) ::promise_total =
+    let { 
+    int: l = if lb(x)=-infinity \/ ub(y)=infinity then -infinity else lb(x)-ub(y) endif;
+    int: u = if ub(x)=infinity \/ lb(y)=-infinity then infinity else ub(x)-lb(y) endif;
+    var opt l..u: result; 
+    constraint absent(x) \/ absent(y) -> result = <>;
+    constraint absent(x) \/ absent(y) \/ result = deopt(x)-deopt(y);
+    } in result;
+
+/** @group stdlib.arithmetic Weak multiplication. Return product of \a x and \a y if both
+are present, otherwise return absent. */
+function var opt int: '~*'(var opt int: x, var opt int: y) ::promise_total =
+    if absent(x) \/ absent(y) then <>
+    else deopt(x)*deopt(y) endif;
+
+/** @group stdlib.arithmetic Weak addition. Return sum of \a x and \a y if both
+are present, otherwise return absent. */
+function var opt float: '~+'(var opt float: x, var opt float: y) ::promise_total =
+    let { 
+    float: l = if lb(x)=-infinity \/ lb(y)=-infinity then -infinity else lb(x)+lb(y) endif;
+    float: u = if ub(x)=infinity \/ ub(y)=infinity then infinity else ub(x)+ub(y) endif;
+    var opt l..u: result; 
+    constraint absent(x) \/ absent(y) -> result = <>;
+    constraint absent(x) \/ absent(y) \/ result = deopt(x)+deopt(y);
+    } in result;
+
+/** @group stdlib.arithmetic Weak subtraction. Return difference of \a x and \a y if both
+are present, otherwise return absent. */
+function var opt float: '~-'(var opt float: x, var opt float: y) ::promise_total =
+    let { 
+    float: l = if lb(x)=-infinity \/ ub(y)=infinity then -infinity else lb(x)-ub(y) endif;
+    float: u = if ub(x)=infinity \/ lb(y)=-infinity then infinity else ub(x)-lb(y) endif;
+    var opt l..u: result; 
+    constraint absent(x) \/ absent(y) -> result = <>;
+    constraint absent(x) \/ absent(y) \/ result = deopt(x)-deopt(y);
+    } in result;
+
+/** @group stdlib.arithmetic Weak multiplication. Return product of \a x and \a y if both
+are present, otherwise return absent. */
+function var opt float: '~*'(var opt float: x, var opt float: y) ::promise_total =
+    if absent(x) \/ absent(y) then <>
+    else deopt(x)*deopt(y) endif;
 
 /** @group stdlib.arithmetic Return \a x * \a y */
 function     int:   '*'(    int: x,     int: y);
@@ -122,6 +177,17 @@ function opt int: 'div'(opt int: x, opt int: y) =
 
 function int: 'div'(int: x, opt int: y) =
   if absent(y) then x else x div deopt(y) endif;
+
+/** @group stdlib.arithmetic Weak optional division. Return absent if \a x or \a y is absent,
+  \a x divided by \a y if both are present. */
+function var opt int: '~div'(var opt int: x, var opt int: y) =
+  if absent(x) \/ absent(y) then <> else deopt(x) div deopt(y) endif;
+
+/** @group stdlib.arithmetic Weak optional division. Return absent if \a x or \a y is absent,
+  \a x divided by \a y if both are present. */
+function opt int: '~div'(opt int: x, opt int: y) =
+  if absent(x) \/ absent(y) then <> else deopt(x) div deopt(y) endif;
+
 /** @group stdlib.arithmetic Return remainder of integer division \a x % \a y */
 function     int: 'mod'(int: x,int: y);
 
@@ -162,6 +228,15 @@ function opt float: '/'(opt float: x, opt float: y) =
 function float: '/'(float: x, opt float: y) =
   if absent(y) then x else x / deopt(y) endif;
 
+/** @group stdlib.arithmetic Weal optional division. Return absent if \a x or \a y is absent,
+  \a x divided by \a y if both are present. */
+function var opt float: '~/'(var opt float: x, var opt float: y) =
+  if absent(x) \/ absent(y) then <> else deopt(x) / deopt(y) endif;
+
+/** @group stdlib.arithmetic Weal optional division. Return absent if \a x or \a y is absent,
+  \a x divided by \a y if both are present. */
+function opt float: '~/'(opt float: x, opt float: y) =
+  if absent(x) \/ absent(y) then <> else deopt(x) / deopt(y) endif;
 
 /** @group stdlib.arithmetic Return number of true elments in array \a x */
 function int:  count(array[$T] of bool: x) = sum([bool2int(y) | y in array1d(x)]);

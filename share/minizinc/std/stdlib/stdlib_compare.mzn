@@ -82,6 +82,37 @@ function var bool: '='(var $T: x,var $T: y);
 /** @group stdlib.compare Return if \a x is equal to \a y */
 function var bool: '='(var opt $T: x,var opt $T: y);
 
+/** @group stdlib.compare Weak equality. True if either \a x or \a y are absent, or
+present and equal.*/
+function var bool: '~='(var opt bool: x, var opt bool: y) ::promise_total =
+    absent(x) \/ absent(y) \/ deopt(x)=deopt(y);
+
+/** @group stdlib.compare Weak disequality. True if either \a x or \a y are absent, or
+present and not equal.*/
+function var bool: '~!='(var opt bool: x, var opt bool: y) ::promise_total =
+    absent(x) \/ absent(y) \/ deopt(x)!=deopt(y);
+
+/** @group stdlib.comapre Weak equality. True if either \a x or \a y are absent, or
+present and equal.*/
+function var bool: '~='(var opt int: x, var opt int: y) ::promise_total =
+    absent(x) \/ absent(y) \/ deopt(x)=deopt(y);
+
+/** @group stdlib.compare Weak disequality. True if either \a x or \a y are absent, or
+present and not equal.*/
+function var bool: '~!='(var opt int: x, var opt int: y) ::promise_total =
+    absent(x) \/ absent(y) \/ deopt(x)!=deopt(y);
+
+/** @group stdlib.compare Weak equality. True if either \a x or \a y are absent, or
+present and equal.*/
+function var bool: '~='(var opt float: x, var opt float: y) ::promise_total =
+    absent(x) \/ absent(y) \/ deopt(x)=deopt(y);
+
+/** @group stdlib.compare Weak disequality. True if either \a x or \a y are absent, or
+present and not equal.*/
+function var bool: '~!='(var opt float: x, var opt float: y) ::promise_total =
+    absent(x) \/ absent(y) \/ deopt(x)!=deopt(y);
+
+
 /** @group stdlib.compare Return if \a x is not equal to \a y */
 function     bool: '!='(    $T: x,     $T: y);
 /** @group stdlib.compare Return if \a x is not equal to \a y */

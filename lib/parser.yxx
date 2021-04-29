@@ -207,12 +207,13 @@ Expression* createArrayAccess(const ParserLocation& loc, Expression* e, std::vec
 %token MZN_IMPL "->" MZN_RIMPL "<-"
 %token MZN_OR "\\/" MZN_XOR "xor"
 %token MZN_AND "/\\"
-%token MZN_LE "<" MZN_GR ">" MZN_LQ "<=" MZN_GQ ">=" MZN_EQ "=" MZN_NQ "!=" MZN_WEAK_EQ "~="
+%token MZN_LE "<" MZN_GR ">" MZN_LQ "<=" MZN_GQ ">=" MZN_EQ "=" MZN_NQ "!=" MZN_WEAK_EQ "~=" MZN_WEAK_NQ "~!="
 %token MZN_IN "in" MZN_SUBSET "subset" MZN_SUPERSET "superset"
 %token MZN_UNION "union" MZN_DIFF "diff" MZN_SYMDIFF "symdiff"
 %token MZN_DOTDOT ".."
 %token MZN_PLUS "+" MZN_MINUS "-" MZN_WEAK_PLUS "~+" MZN_WEAK_MINUS "~-"
-%token MZN_MULT "*" MZN_DIV "/" MZN_IDIV "div" MZN_MOD "mod" MZN_INTERSECT "intersect" MZN_WEAK_MULT "~*"
+%token MZN_MULT "*" MZN_DIV "/" MZN_IDIV "div" MZN_MOD "mod" MZN_WEAK_DIV "~/" MZN_WEAK_IDIV "~div"
+%token MZN_INTERSECT "intersect" MZN_WEAK_MULT "~*"
 %token MZN_POW "^"
 %token MZN_POW_MINUS1 "^-1"
 %token MZN_NOT "not"
@@ -224,12 +225,12 @@ Expression* createArrayAccess(const ParserLocation& loc, Expression* e, std::vec
 %left MZN_IMPL MZN_RIMPL
 %left MZN_OR MZN_XOR
 %left MZN_AND
-%nonassoc MZN_LE MZN_GR MZN_LQ MZN_GQ MZN_EQ MZN_NQ MZN_WEAK_EQ
+%nonassoc MZN_LE MZN_GR MZN_LQ MZN_GQ MZN_EQ MZN_NQ MZN_WEAK_EQ MZN_WEAK_NQ
 %nonassoc MZN_IN MZN_SUBSET MZN_SUPERSET
 %left MZN_UNION MZN_DIFF MZN_SYMDIFF MZN_INTERSECT 
 %nonassoc MZN_DOTDOT
 %left MZN_PLUS MZN_MINUS MZN_WEAK_PLUS MZN_WEAK_MINUS
-%left MZN_MULT MZN_DIV MZN_IDIV MZN_MOD MZN_WEAK_MULT
+%left MZN_MULT MZN_DIV MZN_IDIV MZN_MOD MZN_WEAK_MULT MZN_WEAK_DIV MZN_WEAK_IDIV
 %left MZN_POW MZN_POW_MINUS1
 %nonassoc MZN_NOT
 %left MZN_PLUSPLUS
@@ -940,10 +941,25 @@ set_expr :
         args.push_back($1); args.push_back($3);
         $$=new Call(@$, ASTString("~*"), args);
       }
+    | set_expr MZN_WEAK_DIV set_expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~/"), args);
+      }
+    | set_expr MZN_WEAK_IDIV set_expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~div"), args);
+      }
     | set_expr MZN_WEAK_EQ set_expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
         $$=new Call(@$, ASTString("~="), args);
+      }
+    | set_expr MZN_WEAK_NQ set_expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~!="), args);
       }
     | set_expr MZN_DEFAULT set_expr
       {
@@ -1062,10 +1078,25 @@ expr :
         args.push_back($1); args.push_back($3);
         $$=new Call(@$, ASTString("~*"), args);
       }
+    | expr MZN_WEAK_DIV expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~/"), args);
+      }
+    | expr MZN_WEAK_IDIV expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~div"), args);
+      }
     | expr MZN_WEAK_EQ expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
         $$=new Call(@$, ASTString("~="), args);
+      }
+    | expr MZN_WEAK_NQ expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~!="), args);
       }
     | expr MZN_DEFAULT expr
       { vector<Expression*> args;

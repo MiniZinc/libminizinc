@@ -60,9 +60,9 @@ Option type variables can be used like their non-optional versions with most ope
 
 Comparison operators return :mzn:`true` if any of their arguments is absent. For instance, :mzn:`3 <= <>` is :mzn:`true`, as is :mzn:`<> <= 3`.
 However, note that equality between option type expressions is only :mzn:`true` if both expressions have the same optionality: :mzn:`<> = <>` is :mzn:`true`,
-but :mzn:`3 = <>` is :mzn:`false`. If you need the "weaker" version of equality, MiniZinc provides the :mzn:`~=` operator: :mzn:`3 ~= <>` is :mzn:`true`.
+but :mzn:`3 = <>` is :mzn:`false`. If you need the "weaker" version of equality, MiniZinc provides the :mzn:`~=` operator: :mzn:`3 ~= <>` is :mzn:`true`. The :mzn:`~!=` operator is the weak version of disequality, it is true is either side is absent or they are not equal. Note that :mzn:`a ~!= b` is different from :mzn:`not (a ~= b)`, because :mzn:`<> ~!= <>` is true, while :mzn:`not (<> ~= <>)` is false.
 
-Similarly, it can sometimes be useful to have "weak" versions of the arithmetic operators that return :mzn:`<>` if any of their arguments is absent. MiniZinc provides the :mzn:`~+`, :mzn:`~-~ and :mzn:`~*` operators for this purpose (e.g., :mzn:`3 + <> =3`, but :mzn:`3 ~+ <> = <>`).
+Similarly, it can sometimes be useful to have "weak" versions of the arithmetic operators that return :mzn:`<>` if any of their arguments is absent. MiniZinc provides the :mzn:`~+`, :mzn:`~-`, :mzn:`~*`, :mzn:`~/` and :mzn:`~div` operators for this purpose (e.g., :mzn:`3 + <> =3`, but :mzn:`3 ~+ <> = <>`).
 
 .. defblock:: Operations on option type variables
 

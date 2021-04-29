@@ -333,9 +333,12 @@ _                 { return MZN_UNDERSCORE; }
 "~+"              { return MZN_WEAK_PLUS; }
 "~*"              { return MZN_WEAK_MULT; }
 "~="              { return MZN_WEAK_EQ; }
+"~!="             { return MZN_WEAK_NQ; }
 "~-"              { return MZN_WEAK_MINUS; }
+"~/"              { return MZN_WEAK_DIV; }
+"~div"            { return MZN_WEAK_IDIV; }
 
-"'~"[+*=-]"'"            {
+"'~"[+*=/-]"'"    {
                     yylval->sValue = strdup(yytext+1);
                     yylval->sValue[strlen(yytext)-2] = 0;
                     return MZN_IDENTIFIER; }

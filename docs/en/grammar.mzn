@@ -141,7 +141,9 @@
 
 <bin-op> ::= <builtin-bin-op> | ‘<ident>‘
 
-<builtin-bin-op> ::= "<->" | "->" | "<-" | "\/" | "xor" | "/\" | "<" | ">" | "<=" | ">=" | "==" | "=" | "!="
+<builtin-bin-op> ::= "<->" | "->" | "<-" | "\/" | "xor" | "/\"
+                   | "<" | ">" | "<=" | ">=" | "==" | "=" | "!="
+                   | "~=" | "~!="
                    | "in" | "subset" | "superset" | "union" | "diff" | "symdiff"
                    | ".." | "intersect" | "++" | "default" | <builtin-num-bin-op>
 
@@ -151,6 +153,7 @@
 <num-bin-op> ::= <builtin-num-bin-op> | ‘<ident>‘
 
 <builtin-num-bin-op> ::= "+" | "-" | "*" | "/" | "div" | "mod" | "^"
+                       | "~+" | "~-" | "~*" | "~/" | "~div"
 
 <builtin-num-un-op> ::= "+" | "-"
 

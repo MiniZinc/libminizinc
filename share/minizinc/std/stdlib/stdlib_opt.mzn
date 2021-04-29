@@ -72,11 +72,6 @@ predicate mzn_reverse_map_var(var opt bool: x) =
     constraint (x = reverse_map_var_opt_bool(b,dx)) :: is_reverse_map;
   } in true;
 
-/** @group stdlib.optiontypes.bool Weak equality. True if either \a x or \a y are absent, or
-present and equal.*/
-function var bool: '~='(var opt bool: x, var opt bool: y) ::promise_total =
-    absent(x) \/ absent(y) \/ deopt(x)=deopt(y);
-
 /***
   @groupdef stdlib.optiontypes.int Option type support for integers
 */
@@ -130,40 +125,6 @@ predicate mzn_reverse_map_var(var opt int: x) =
     var int : dx = deopt_internal_int(x);
     constraint (x = reverse_map_var_opt_int(b,dx)) :: is_reverse_map;
   } in true;
-
-
-/** @group stdlib.optiontypes.int Weak addition. Return sum of \a x and \a y if both
-are present, otherwise return absent. */
-function var opt int: '~+'(var opt int: x, var opt int: y) ::promise_total =
-    let { 
-    int: l = if lb(x)=-infinity \/ lb(y)=-infinity then -infinity else lb(x)+lb(y) endif;
-    int: u = if ub(x)=infinity \/ ub(y)=infinity then infinity else ub(x)+ub(y) endif;
-    var opt l..u: result; 
-    constraint absent(x) \/ absent(y) -> result = <>;
-    constraint absent(x) \/ absent(y) \/ result = deopt(x)+deopt(y);
-    } in result;
-
-/** @group stdlib.optiontypes.int Weak subtraction. Return difference of \a x and \a y if both
-are present, otherwise return absent. */
-function var opt int: '~-'(var opt int: x, var opt int: y) ::promise_total =
-    let { 
-    int: l = if lb(x)=-infinity \/ ub(y)=infinity then -infinity else lb(x)-ub(y) endif;
-    int: u = if ub(x)=infinity \/ lb(y)=-infinity then infinity else ub(x)-lb(y) endif;
-    var opt l..u: result; 
-    constraint absent(x) \/ absent(y) -> result = <>;
-    constraint absent(x) \/ absent(y) \/ result = deopt(x)-deopt(y);
-    } in result;
-
-/** @group stdlib.optiontypes.int Weak multiplication. Return product of \a x and \a y if both
-are present, otherwise return absent. */
-function var opt int: '~*'(var opt int: x, var opt int: y) ::promise_total =
-    if absent(x) \/ absent(y) then <>
-    else deopt(x)*deopt(y) endif;
-
-/** @group stdlib.optiontypes.int Weak equality. True if either \a x or \a y are absent, or
-present and equal.*/
-function var bool: '~='(var opt int: x, var opt int: y) ::promise_total =
-    absent(x) \/ absent(y) \/ deopt(x)=deopt(y);
 
 /* Internal function used to optimize over option type objective */
 
@@ -231,37 +192,4 @@ predicate mzn_reverse_map_var(var opt float: x) =
     var float : dx = deopt_internal_float(x);
     constraint (x = reverse_map_var_opt_float(b,dx)) :: is_reverse_map;
   } in true;
-
-/** @group stdlib.optiontypes.float Weak addition. Return sum of \a x and \a y if both
-are present, otherwise return absent. */
-function var opt float: '~+'(var opt float: x, var opt float: y) ::promise_total =
-    let { 
-    float: l = if lb(x)=-infinity \/ lb(y)=-infinity then -infinity else lb(x)+lb(y) endif;
-    float: u = if ub(x)=infinity \/ ub(y)=infinity then infinity else ub(x)+ub(y) endif;
-    var opt l..u: result; 
-    constraint absent(x) \/ absent(y) -> result = <>;
-    constraint absent(x) \/ absent(y) \/ result = deopt(x)+deopt(y);
-    } in result;
-
-/** @group stdlib.optiontypes.float Weak subtraction. Return difference of \a x and \a y if both
-are present, otherwise return absent. */
-function var opt float: '~-'(var opt float: x, var opt float: y) ::promise_total =
-    let { 
-    float: l = if lb(x)=-infinity \/ ub(y)=infinity then -infinity else lb(x)-ub(y) endif;
-    float: u = if ub(x)=infinity \/ lb(y)=-infinity then infinity else ub(x)-lb(y) endif;
-    var opt l..u: result; 
-    constraint absent(x) \/ absent(y) -> result = <>;
-    constraint absent(x) \/ absent(y) \/ result = deopt(x)-deopt(y);
-    } in result;
-
-/** @group stdlib.optiontypes.float Weak multiplication. Return product of \a x and \a y if both
-are present, otherwise return absent. */
-function var opt float: '~*'(var opt float: x, var opt float: y) ::promise_total =
-    if absent(x) \/ absent(y) then <>
-    else deopt(x)*deopt(y) endif;
-
-/** @group stdlib.optiontypes.float Weak equality. True if either \a x or \a y are absent, or
-present and equal.*/
-function var bool: '~='(var opt float: x, var opt float: y) ::promise_total =
-    absent(x) \/ absent(y) \/ deopt(x)=deopt(y);
 
