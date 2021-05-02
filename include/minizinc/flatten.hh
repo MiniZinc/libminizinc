@@ -40,8 +40,6 @@ struct FlatteningOptions {
   bool onlyRangeDomains;
   /// Allow the use of Half Reifications
   bool enableHalfReification;
-  /// Timeout for flattening in milliseconds (0 means no timeout)
-  unsigned long long int timeout;
   /// Create standard, DZN or JSON output
   enum OutputMode { OUTPUT_ITEM, OUTPUT_DZN, OUTPUT_JSON, OUTPUT_CHECKER } outputMode;
   /// Output objective value (only for DZN and JSON mode)
@@ -63,7 +61,6 @@ struct FlatteningOptions {
         recordDomainChanges(false),
         onlyRangeDomains(false),
         enableHalfReification(true),
-        timeout(0),
         outputMode(OUTPUT_ITEM),
         outputObjective(false),
         outputOutputItem(false),

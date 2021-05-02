@@ -1191,6 +1191,8 @@ void EnvI::cleanupExceptOutput() {
 }
 
 CallStackItem::CallStackItem(EnvI& env0, Expression* e) : _env(env0), _csiType(CSI_NONE) {
+  env0.checkCancel();
+
   if (e->isa<VarDecl>()) {
     _env.idStack.push_back(static_cast<int>(_env.callStack.size()));
     _csiType = CSI_VD;
@@ -2971,7 +2973,10 @@ void flatten(Env& e, FlatteningOptions opt) {
       ItemTimer::TimingMap* timingMap;
       FV(EnvI& env0, bool& hadSolveItem0, ItemTimer::TimingMap* timingMap0)
           : env(env0), hadSolveItem(hadSolveItem0), timingMap(timingMap0) {}
-      bool enter(Item* i) const { return !(i->isa<ConstraintI>() && env.failed()); }
+      bool enter(Item* i) const {
+        env.checkCancel();
+        return !(i->isa<ConstraintI>() && env.failed());
+      }
       void vVarDeclI(VarDeclI* v) {
         ItemTimer item_timer(v->loc(), timingMap);
         v->e()->ann().remove(constants().ann.output_var);
@@ -3190,6 +3195,8 @@ void flatten(Env& e, FlatteningOptions opt) {
       }
 
       for (int i : agenda) {
+        env.checkCancel();
+
         if (auto* vdi = m[i]->dynamicCast<VarDeclI>()) {
           if (vdi->removed()) {
             continue;

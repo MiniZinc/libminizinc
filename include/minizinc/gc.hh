@@ -152,12 +152,6 @@ private:
   Heap* _heap;
   /// Count how many locks are currently active
   unsigned int _lockCount;
-  /// Timeout in milliseconds
-  unsigned long long int _timeout;
-  /// Counter for timeout
-  int _timeoutCount;
-  /// Timer for timeout
-  Timer _timeoutTimer;
   /// Return thread-local GC object
   static GC*& gc();
   /// Constructor

@@ -367,7 +367,7 @@ void Solns2Out::checkSolution(std::ostream& oss) {
     }
   }
 
-  MznSolver slv(oss, oss);
+  MznSolver slv(oss, oss, _starttime);
   slv.s2out.opt.solutionSeparator = "";
   try {
     std::vector<std::string> args({"--solver", "org.minizinc.gecode_presolver"});
@@ -398,9 +398,9 @@ void Solns2Out::checkStatistics(std::ostream& oss) {
   checker << "mzn_stats_failures = " << stats.nFails << ";\n";
   checker << "mzn_stats_solutions = " << stats.nSolns << ";\n";
   checker << "mzn_stats_nodes = " << stats.nNodes << ";\n";
-  checker << "mzn_stats_time = " << _starttime.ms() << ";\n";
+  checker << "mzn_stats_time = " << _starttime.ms().count() << ";\n";
 
-  MznSolver slv(oss, oss);
+  MznSolver slv(oss, oss, _starttime);
   slv.s2out.opt.solutionSeparator = "";
   try {
     std::vector<std::string> args({"--solver", "org.minizinc.gecode_presolver"});

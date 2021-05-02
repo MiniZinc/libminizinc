@@ -30,6 +30,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <fstream>
+#include <future>
 #include <iomanip>
 #include <iostream>
 #include <ratio>
@@ -162,8 +163,18 @@ void SolverFactory::destroySI(SolverInstanceBase* pSI) {
   _sistorage.erase(it);
 }
 
-MznSolver::MznSolver(std::ostream& os0, std::ostream& log0)
-    : _solverConfigs(log0),
+MznSolver::MznSolver()
+    : _startTime(),
+      _solverConfigs(std::cerr),
+      _flt(std::cout, std::cerr, _solverConfigs.mznlibDir()),
+      _executableName("<executable>"),
+      _os(std::cout),
+      _log(std::cerr),
+      s2out(std::cout, std::cerr, _solverConfigs.mznlibDir()) {}
+
+MznSolver::MznSolver(std::ostream& os0, std::ostream& log0, const Timer& startTime)
+    : _startTime(startTime),
+      _solverConfigs(log0),
       _flt(os0, log0, _solverConfigs.mznlibDir()),
       _executableName("<executable>"),
       _os(os0),
@@ -527,7 +538,15 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
         _log << "Argument required for --time-limit" << endl;
         return OPTION_ERROR;
       }
-      flagOverallTimeLimit = atoi(argv[i].c_str());
+      flagOverallTimeLimit = std::chrono::milliseconds(atoi(argv[i].c_str()));
+    } else if (argv[i] == "-t" || argv[i] == "--solver-time-limit" ||
+               argv[i] == "--fzn-time-limit") {
+      ++i;
+      if (i == argc) {
+        _log << "Argument required for --solver-time-limit" << endl;
+        return OPTION_ERROR;
+      }
+      flagSolverTimeLimit = std::chrono::milliseconds(atoi(argv[i].c_str()));
     } else if (argv[i] == "--solver") {
       ++i;
       if (i == argc) {
@@ -848,11 +867,20 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
 void MznSolver::flatten(const std::string& modelString, const std::string& modelName) {
   _flt.setFlagVerbose(flagCompilerVerbose);
   _flt.setFlagStatistics(flagCompilerStatistics);
-  _flt.setFlagTimelimit(flagOverallTimeLimit);
   if (flagRandomSeed) {
     _flt.setRandomSeed(randomSeed);
   }
-  _flt.flatten(modelString, modelName);
+  std::packaged_task<void()> task([&] { _flt.flatten(modelString, modelName); });
+  auto future = task.get_future();
+  std::thread thr(std::move(task));
+  if (flagOverallTimeLimit != std::chrono::milliseconds(0)) {
+    if (future.wait_for(flagOverallTimeLimit - _startTime.ms()) == std::future_status::timeout) {
+      _flt.cancel();
+    }
+  }
+  future.wait();
+  thr.join();
+  future.get();
 }
 
 SolverInstance::Status MznSolver::solve() {
@@ -877,8 +905,6 @@ SolverInstance::Status MznSolver::solve() {
 SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0,
                                       const std::string& model, const std::string& exeName,
                                       const std::string& modelName) {
-  using namespace std::chrono;
-  steady_clock::time_point startTime = steady_clock::now();
   std::vector<std::string> args = {exeName};
   for (const auto& a : args0) {
     args.push_back(a);
@@ -927,16 +953,17 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0,
   }
 
   if (!ifMzn2Fzn()) {
-    if (flagOverallTimeLimit != 0) {
-      steady_clock::time_point afterFlattening = steady_clock::now();
-      milliseconds passed = duration_cast<milliseconds>(afterFlattening - startTime);
-      milliseconds time_limit(flagOverallTimeLimit);
-      if (passed > time_limit) {
-        s2out.evalStatus(getFltStatus());
-        return SolverInstance::UNKNOWN;
+    if (flagOverallTimeLimit + flagSolverTimeLimit > std::chrono::milliseconds(0)) {
+      std::chrono::milliseconds time_left(0);
+      if (flagOverallTimeLimit == std::chrono::milliseconds(0)) {
+        time_left = flagSolverTimeLimit;
+      } else if (flagSolverTimeLimit == std::chrono::milliseconds(0)) {
+        time_left = flagOverallTimeLimit - _startTime.ms();
+      } else {
+        time_left = std::min(flagSolverTimeLimit, flagOverallTimeLimit - _startTime.ms());
       }
-      int time_left = (time_limit - passed).count();
-      std::vector<std::string> timeoutArgs({"--solver-time-limit", std::to_string(time_left)});
+      std::vector<std::string> timeoutArgs(
+          {"--solver-time-limit", std::to_string(time_left.count())});
       int i = 0;
       _sf->processOption(_siOpt, i, timeoutArgs);
     }

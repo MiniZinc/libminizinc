@@ -18,6 +18,7 @@
 
 #include <cmath>
 #include <random>
+#include <atomic>
 
 // TODO: Should this be a command line option? It doesn't seem too expensive
 // #define OUTPUT_CALLTREE
@@ -159,6 +160,7 @@ protected:
   std::vector<std::vector<unsigned int> > _arrayEnumDecls;
   bool _collectVardecls;
   std::default_random_engine _g;
+  std::atomic<bool> _cancel = {false};
 
 public:
   EnvI(Model* model0, std::ostream& outstream0 = std::cout, std::ostream& errstream0 = std::cerr);
@@ -212,6 +214,12 @@ public:
   void cleanupExceptOutput();
   std::default_random_engine& rndGenerator() { return _g; }
   void setRandomSeed(long unsigned int r) { _g.seed(r); }
+  void cancel() { _cancel = true; }
+  void checkCancel() {
+    if (_cancel) {  // TODO: Should this be annotated "unlikely"?
+      throw Timeout();
+    }
+  }
 };
 
 void set_computed_domain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_computed);

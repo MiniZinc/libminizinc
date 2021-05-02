@@ -29,10 +29,9 @@ public:
   /// Reset timer
   void reset() { _last = std::chrono::steady_clock::now(); }
   /// Return milliseconds since timer was last reset
-  long long int ms() const {
+  std::chrono::milliseconds ms() const {
     return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() -
-                                                                 _last)
-        .count();
+                                                                 _last);
   }
   /// Return seconds since timer was last reset
   double s() const {

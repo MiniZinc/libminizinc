@@ -337,28 +337,9 @@ const char* GC::Heap::_nodeid[] = {
 };
 #endif
 
-void GC::setTimeout(unsigned long long int t) {
-  if (gc() == nullptr) {
-    gc() = new GC();
-  }
-  gc()->_timeout = t;
-  gc()->_timeoutTimer.reset();
-}
-
 void GC::lock() {
   if (gc() == nullptr) {
     gc() = new GC();
-  }
-  // If a timeout has been specified, first check counter
-  // before checking timer (counter is much cheaper, introduces
-  // less overhead)
-  if (gc()->_timeout > 0 && gc()->_timeoutCount++ > 500) {
-    gc()->_timeoutCount = 0;
-    if (gc()->_timeoutTimer.ms() > gc()->_timeout) {
-      gc()->_timeout = 0;
-      gc()->_timeoutCount = 0;
-      throw Timeout();
-    }
   }
   if (gc()->_lockCount == 0) {
     gc()->_heap->rungc();
@@ -384,17 +365,19 @@ const size_t GC::Heap::_fl_size[GC::Heap::_max_fl + 1] = {
     sizeof(Item) + 5 * sizeof(void*), sizeof(Item) + 6 * sizeof(void*),
 };
 
-GC::GC() : _heap(new Heap()), _lockCount(0), _timeout(0), _timeoutCount(0) {}
+GC::GC() : _heap(new Heap()), _lockCount(0) {}
 
 void GC::add(GCMarker* m) {
-  GC* gc = GC::gc();
-  if (gc->_heap->_rootset != nullptr) {
-    m->_rootsNext = gc->_heap->_rootset;
+  if (gc() == nullptr) {
+    gc() = new GC();
+  }
+  if (gc()->_heap->_rootset != nullptr) {
+    m->_rootsNext = gc()->_heap->_rootset;
     m->_rootsPrev = m->_rootsNext->_rootsPrev;
     m->_rootsPrev->_rootsNext = m;
     m->_rootsNext->_rootsPrev = m;
   } else {
-    gc->_heap->_rootset = m->_rootsNext = m->_rootsPrev = m;
+    gc()->_heap->_rootset = m->_rootsNext = m->_rootsPrev = m;
   }
 }
 

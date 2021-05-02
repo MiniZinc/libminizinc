@@ -115,7 +115,7 @@ bool FZNSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
     for (auto& s : cmdLine) {
       _opt.fznFlags.push_back(s);
     }
-  } else if (cop.getOption("-t --solver-time-limit --fzn-time-limit", &nn)) {
+  } else if (cop.getOption("-t --solver-time-limit", &nn)) {
     _opt.fznTimeLimitMilliseconds = nn;
     if (_opt.supportsT) {
       _opt.solverTimeLimitMilliseconds = nn;

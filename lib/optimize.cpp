@@ -300,6 +300,8 @@ void push_dependent_constraints(EnvI& env, Id* id, std::deque<Item*>& q) {
 }
 
 void optimize(Env& env, bool chain_compression) {
+  env.envi().checkCancel();
+
   if (env.envi().failed()) {
     return;
   }
@@ -332,6 +334,8 @@ void optimize(Env& env, bool chain_compression) {
       }
     }
 
+    env.envi().checkCancel();
+
     // Phase 1: initialise queues
     //  - remove equality constraints between identifiers
     //  - remove toplevel forall constraints
@@ -341,9 +345,11 @@ void optimize(Env& env, bool chain_compression) {
     //  - push bool vars that are fixed and have a RHS (to propagate the RHS constraint)
     //  - push int vars that are fixed (either have a RHS or a singleton domain)
     for (unsigned int i = 0; i < m.size(); i++) {
+      env.envi().checkCancel();
       if (m[i]->removed()) {
         continue;
       }
+
       if (auto* ci = m[i]->dynamicCast<ConstraintI>()) {
         ci->flag(false);
         if (!ci->removed()) {
@@ -491,6 +497,8 @@ void optimize(Env& env, bool chain_compression) {
     //  true in a disjunction)
     //  - check if any boolean constraint has a single non-fixed literal left, then fix that literal
     for (auto i = static_cast<unsigned int>(boolConstraints.size()); (i--) != 0U;) {
+      env.envi().checkCancel();
+
       Item* bi = m[boolConstraints[i]];
       if (bi->removed()) {
         continue;
@@ -639,6 +647,8 @@ void optimize(Env& env, bool chain_compression) {
     std::unordered_map<Expression*, int> nonFixedLiteralCount;
     while (!vardeclQueue.empty() || !constraintQueue.empty()) {
       while (!vardeclQueue.empty()) {
+        env.envi().checkCancel();
+
         int var_idx = vardeclQueue.front();
         vardeclQueue.pop_front();
         m[var_idx]->cast<VarDeclI>()->flag(false);
@@ -762,6 +772,8 @@ void optimize(Env& env, bool chain_compression) {
       // Now handle all non-boolean constraints (i.e. anything except forall, clause, exists)
       bool handledConstraint = false;
       while (!handledConstraint && !constraintQueue.empty()) {
+        env.envi().checkCancel();
+
         Item* item = constraintQueue.front();
         constraintQueue.pop_front();
         Call* c;
@@ -808,6 +820,7 @@ void optimize(Env& env, bool chain_compression) {
     }
 
     // Phase 4: Chain Breaking
+    env.envi().checkCancel();
     if (chain_compression) {
       ImpCompressor imp(envi, m, deletedVarDecls, boolConstraints);
       LECompressor le(envi, m, deletedVarDecls);
@@ -815,7 +828,10 @@ void optimize(Env& env, bool chain_compression) {
         imp.trackItem(item);
         le.trackItem(item);
       }
+      env.envi().checkCancel();
       imp.compress();
+
+      env.envi().checkCancel();
       le.compress();
     }
 
@@ -824,6 +840,7 @@ void optimize(Env& env, bool chain_compression) {
     //
     // Difference to phase 2: constraint argument arrays are actually shortened here if possible
     for (auto i = static_cast<unsigned int>(boolConstraints.size()); (i--) != 0U;) {
+      env.envi().checkCancel();
       Item* bi = m[boolConstraints[i]];
       if (bi->removed()) {
         continue;
@@ -919,6 +936,7 @@ void optimize(Env& env, bool chain_compression) {
     // TODO: The delayed deletion could be done eagerly by the creation of
     // env.optRemoveItem() which contains the logic in this while loop.
     while (!deletedVarDecls.empty()) {
+      env.envi().checkCancel();
       VarDecl* cur = deletedVarDecls.back();
       deletedVarDecls.pop_back();
       if (envi.varOccurrences.occurrences(cur) == 0) {

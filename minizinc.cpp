@@ -38,11 +38,11 @@ int wmain(int argc, wchar_t* argv[], wchar_t* envp[]) {
 #else
 int main(int argc, const char** argv) {
 #endif
-  Timer starttime;
+  Timer startTime;
   bool fSuccess = false;
 
   try {
-    MznSolver slv(std::cout, std::cerr);
+    MznSolver slv(std::cout, std::cerr, startTime);
     try {
       std::vector<std::string> args(argc - 1);
 #ifdef _WIN32
@@ -90,7 +90,7 @@ int main(int argc, const char** argv) {
 
     if (slv.getFlagVerbose()) {
       std::cerr << "   Done (";
-      std::cerr << "overall time " << starttime.stoptime() << ")." << std::endl;
+      std::cerr << "overall time " << startTime.stoptime() << ")." << std::endl;
     }
     return static_cast<int>(!fSuccess);
   } catch (const Exception& e) {

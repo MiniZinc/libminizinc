@@ -132,6 +132,7 @@ public:
 // Class MznSolver coordinates flattening and solving.
 class MznSolver {
 private:
+  const Timer _startTime;
   SolverInitialiser _solverInit;
   enum OptionStatus { OPTION_OK, OPTION_ERROR, OPTION_FINISH };
   /// Solver configurations
@@ -162,11 +163,13 @@ public:
   bool flagCompilerVerbose = false;
   bool flagCompilerStatistics = false;
   bool flagIsSolns2out = false;
-  int flagOverallTimeLimit = 0;
+  std::chrono::milliseconds flagOverallTimeLimit = std::chrono::milliseconds(0);
+  std::chrono::milliseconds flagSolverTimeLimit = std::chrono::milliseconds(0);
   bool flagRandomSeed = false;
   long unsigned int randomSeed = 0;
 
-  MznSolver(std::ostream& os = std::cout, std::ostream& log = std::cerr);
+  MznSolver();
+  MznSolver(std::ostream& os, std::ostream& log, const Timer& startTime);
   ~MznSolver();
 
   SolverInstance::Status run(const std::vector<std::string>& args,
