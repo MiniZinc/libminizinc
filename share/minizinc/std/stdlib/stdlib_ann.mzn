@@ -391,12 +391,15 @@ annotation ctx_mix;
 
 /** @group stdlib.special Mark \a b as a symmetry breaking constraint */
 predicate symmetry_breaking_constraint(var bool: b);
+% Rewritten to mzn_symmetry_breaking_constraint by typechecker
 
 /** @group stdlib.special Mark \a b as a redundant constraint */
 predicate redundant_constraint(var bool: b);
+% Rewritten to mzn_redundant_constraint by typechecker
 
 /** @group stdlib.special Mark \a b as an implied constraint (synonym for redundant_constraint) */
-predicate implied_constraint(var bool: b) = redundant_constraint(b);
+predicate implied_constraint(var bool: b);
+% Rewritten to mzn_redundant_constraint by typechecker
 
 annotation promise_ctx_monotone;
 annotation promise_ctx_antitone;

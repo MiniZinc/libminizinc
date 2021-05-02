@@ -2317,8 +2317,9 @@ public:
       GCLock lock;
       call.id(ASTString("mzn_symmetry_breaking_constraint"));
       fi = _model->matchFn(_env, &call, true, true);
-    } else if (fi != nullptr && fi->id() == "redundant_constraint" && fi->paramCount() == 1 &&
-               fi->param(0)->type().isbool()) {
+    } else if (fi != nullptr &&
+               (fi->id() == "redundant_constraint" || fi->id() == "implied_constraint") &&
+               fi->paramCount() == 1 && fi->param(0)->type().isbool()) {
       GCLock lock;
       call.id(ASTString("mzn_redundant_constraint"));
       fi = _model->matchFn(_env, &call, true, true);
