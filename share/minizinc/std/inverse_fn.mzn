@@ -12,4 +12,13 @@ function array[$$E] of var $$F: inverse(array[$$F] of var $$E: f) =
 /** @group globals.channeling
   Given a function \a f represented as an array, return the inverse function.
 */
+function array[$$E] of var opt $$F: inverse(array[$$F] of var opt $$E: f) =
+    let {
+      array[lb_array(f)..ub_array(f)] of var opt index_set(f): invf;
+      constraint inverse(f, invf);
+    } in invf;
+
+/** @group globals.channeling
+  Given a function \a f represented as an array, return the inverse function.
+*/
 function array[$$E] of $$F: inverse(array[$$F] of $$E: f);
