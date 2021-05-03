@@ -17,6 +17,7 @@
 #include <minizinc/optimize.hh>
 
 #include <cmath>
+#include <random>
 
 // TODO: Should this be a command line option? It doesn't seem too expensive
 // #define OUTPUT_CALLTREE
@@ -157,6 +158,7 @@ protected:
   ArrayEnumMap _arrayEnumMap;
   std::vector<std::vector<unsigned int> > _arrayEnumDecls;
   bool _collectVardecls;
+  std::default_random_engine _g;
 
 public:
   EnvI(Model* model0, std::ostream& outstream0 = std::cout, std::ostream& errstream0 = std::cerr);
@@ -208,6 +210,8 @@ public:
   Call* surroundingCall() const;
 
   void cleanupExceptOutput();
+  std::default_random_engine& rndGenerator() { return _g; }
+  void setRandomSeed(long unsigned int r) { _g.seed(r); }
 };
 
 void set_computed_domain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_computed);

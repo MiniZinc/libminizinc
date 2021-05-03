@@ -549,6 +549,14 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
     } else if (argv[i] == "-s" || argv[i] == "--statistics") {
       flagStatistics = true;
       flagCompilerStatistics = true;
+    } else if (argv[i] == "-r" || argv[i] == "--seed" || argv[i] == "--random-seed") {
+      ++i;
+      if (i == argc) {
+        _log << "Argument required for --random-seed" << endl;
+        return OPTION_ERROR;
+      }
+      flagRandomSeed = true;
+      randomSeed = atoi(argv[i].c_str());
     } else if (argv[i] == "--compiler-statistics") {
       flagCompilerStatistics = true;
     } else {
@@ -841,6 +849,9 @@ void MznSolver::flatten(const std::string& modelString, const std::string& model
   _flt.setFlagVerbose(flagCompilerVerbose);
   _flt.setFlagStatistics(flagCompilerStatistics);
   _flt.setFlagTimelimit(flagOverallTimeLimit);
+  if (flagRandomSeed) {
+    _flt.setRandomSeed(randomSeed);
+  }
   _flt.flatten(modelString, modelName);
 }
 
@@ -915,22 +926,25 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0,
     return SolverInstance::UNKNOWN;
   }
 
-  if (!ifMzn2Fzn() && flagOverallTimeLimit != 0) {
-    steady_clock::time_point afterFlattening = steady_clock::now();
-    milliseconds passed = duration_cast<milliseconds>(afterFlattening - startTime);
-    milliseconds time_limit(flagOverallTimeLimit);
-    if (passed > time_limit) {
-      s2out.evalStatus(getFltStatus());
-      return SolverInstance::UNKNOWN;
+  if (!ifMzn2Fzn()) {
+    if (flagOverallTimeLimit != 0) {
+      steady_clock::time_point afterFlattening = steady_clock::now();
+      milliseconds passed = duration_cast<milliseconds>(afterFlattening - startTime);
+      milliseconds time_limit(flagOverallTimeLimit);
+      if (passed > time_limit) {
+        s2out.evalStatus(getFltStatus());
+        return SolverInstance::UNKNOWN;
+      }
+      int time_left = (time_limit - passed).count();
+      std::vector<std::string> timeoutArgs({"--solver-time-limit", std::to_string(time_left)});
+      int i = 0;
+      _sf->processOption(_siOpt, i, timeoutArgs);
     }
-    int time_left = (time_limit - passed).count();
-    std::vector<std::string> timeoutArgs(2);
-    timeoutArgs[0] = "--solver-time-limit";
-    std::ostringstream oss;
-    oss << time_left;
-    timeoutArgs[1] = oss.str();
-    int i = 0;
-    _sf->processOption(_siOpt, i, timeoutArgs);
+    if (flagRandomSeed) {
+      std::vector<std::string> randomArgs({"--random-seed", std::to_string(randomSeed)});
+      int i = 0;
+      _sf->processOption(_siOpt, i, randomArgs);
+    }
   }
 
   if (SolverInstance::UNKNOWN == getFltStatus()) {

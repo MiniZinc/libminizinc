@@ -52,6 +52,8 @@ struct FlatteningOptions {
   bool hasChecker;
   /// Output detailed timing information for flattening
   bool detailedTiming;
+  /// Random seed for the random builtin functions
+  long unsigned int randomSeed;
   /// Default constructor
   FlatteningOptions()
       : keepOutputInFzn(false),
@@ -65,7 +67,8 @@ struct FlatteningOptions {
         outputMode(OUTPUT_ITEM),
         outputObjective(false),
         outputOutputItem(false),
-        detailedTiming(false) {}
+        detailedTiming(false),
+        randomSeed(time(nullptr)) {}
 };
 
 class Pass {

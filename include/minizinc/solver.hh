@@ -163,6 +163,8 @@ public:
   bool flagCompilerStatistics = false;
   bool flagIsSolns2out = false;
   int flagOverallTimeLimit = 0;
+  bool flagRandomSeed = false;
+  long unsigned int randomSeed = 0;
 
   MznSolver(std::ostream& os = std::cout, std::ostream& log = std::cerr);
   ~MznSolver();

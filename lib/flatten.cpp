@@ -2936,6 +2936,7 @@ private:
 };
 
 void flatten(Env& e, FlatteningOptions opt) {
+  e.envi().setRandomSeed(opt.randomSeed);
   ItemTimer::TimingMap timingMap_o;
   ItemTimer::TimingMap* timingMap = opt.detailedTiming ? &timingMap_o : nullptr;
   try {

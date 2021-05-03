@@ -2327,19 +2327,13 @@ Expression* b_set_to_ranges_float(EnvI& env, Call* call) {
   return al;
 }
 
-std::default_random_engine& rnd_generator() {
-  // TODO: initiate with seed if given as annotation/in command line
-  static std::default_random_engine g;
-  return g;
-}
-
 FloatVal b_normal_float_float(EnvI& env, Call* call) {
   assert(call->argCount() == 2);
   const double mean = eval_float(env, call->arg(0)).toDouble();
   const double stdv = eval_float(env, call->arg(1)).toDouble();
   std::normal_distribution<double> distribution(mean, stdv);
   // return a sample from the distribution
-  return distribution(rnd_generator());
+  return distribution(env.rndGenerator());
 }
 
 FloatVal b_normal_int_float(EnvI& env, Call* call) {
@@ -2348,7 +2342,7 @@ FloatVal b_normal_int_float(EnvI& env, Call* call) {
   const double stdv = eval_float(env, call->arg(1)).toDouble();
   std::normal_distribution<double> distribution(mean, stdv);
   // return a sample from the distribution
-  return distribution(rnd_generator());
+  return distribution(env.rndGenerator());
 }
 
 FloatVal b_uniform_float(EnvI& env, Call* call) {
@@ -2363,7 +2357,7 @@ FloatVal b_uniform_float(EnvI& env, Call* call) {
   }
   std::uniform_real_distribution<double> distribution(lb, ub);
   // return a sample from the distribution
-  return distribution(rnd_generator());
+  return distribution(env.rndGenerator());
 }
 
 IntVal b_uniform_int(EnvI& env, Call* call) {
@@ -2378,7 +2372,7 @@ IntVal b_uniform_int(EnvI& env, Call* call) {
   }
   std::uniform_int_distribution<long long int> distribution(lb, ub);
   // return a sample from the distribution
-  return IntVal(distribution(rnd_generator()));
+  return IntVal(distribution(env.rndGenerator()));
 }
 
 IntVal b_poisson_int(EnvI& env, Call* call) {
@@ -2386,7 +2380,7 @@ IntVal b_poisson_int(EnvI& env, Call* call) {
   long long int mean = eval_int(env, call->arg(0)).toInt();
   std::poisson_distribution<long long int> distribution(static_cast<double>(mean));
   // return a sample from the distribution
-  return IntVal(distribution(rnd_generator()));
+  return IntVal(distribution(env.rndGenerator()));
 }
 
 IntVal b_poisson_float(EnvI& env, Call* call) {
@@ -2394,7 +2388,7 @@ IntVal b_poisson_float(EnvI& env, Call* call) {
   double mean = eval_float(env, call->arg(0)).toDouble();
   std::poisson_distribution<long long int> distribution(mean);
   // return a sample from the distribution
-  return IntVal(distribution(rnd_generator()));
+  return IntVal(distribution(env.rndGenerator()));
 }
 
 FloatVal b_gamma_float_float(EnvI& env, Call* call) {
@@ -2403,7 +2397,7 @@ FloatVal b_gamma_float_float(EnvI& env, Call* call) {
   const double beta = eval_float(env, call->arg(1)).toDouble();
   std::gamma_distribution<double> distribution(alpha, beta);
   // return a sample from the distribution
-  return distribution(rnd_generator());
+  return distribution(env.rndGenerator());
 }
 
 FloatVal b_gamma_int_float(EnvI& env, Call* call) {
@@ -2412,7 +2406,7 @@ FloatVal b_gamma_int_float(EnvI& env, Call* call) {
   const double beta = eval_float(env, call->arg(1)).toDouble();
   std::gamma_distribution<double> distribution(alpha, beta);
   // return a sample from the distribution
-  return distribution(rnd_generator());
+  return distribution(env.rndGenerator());
 }
 
 FloatVal b_weibull_int_float(EnvI& env, Call* call) {
@@ -2433,7 +2427,7 @@ FloatVal b_weibull_int_float(EnvI& env, Call* call) {
   }
   std::weibull_distribution<double> distribution(shape, scale);
   // return a sample from the distribution
-  return distribution(rnd_generator());
+  return distribution(env.rndGenerator());
 }
 
 FloatVal b_weibull_float_float(EnvI& env, Call* call) {
@@ -2454,7 +2448,7 @@ FloatVal b_weibull_float_float(EnvI& env, Call* call) {
   }
   std::weibull_distribution<double> distribution(shape, scale);
   // return a sample from the distribution
-  return distribution(rnd_generator());
+  return distribution(env.rndGenerator());
 }
 
 FloatVal b_exponential_float(EnvI& env, Call* call) {
@@ -2468,7 +2462,7 @@ FloatVal b_exponential_float(EnvI& env, Call* call) {
   }
   std::exponential_distribution<double> distribution(lambda);
   // return a sample from the distribution
-  return distribution(rnd_generator());
+  return distribution(env.rndGenerator());
 }
 
 FloatVal b_exponential_int(EnvI& env, Call* call) {
@@ -2482,7 +2476,7 @@ FloatVal b_exponential_int(EnvI& env, Call* call) {
   }
   std::exponential_distribution<double> distribution(lambda);
   // return a sample from the distribution
-  return distribution(rnd_generator());
+  return distribution(env.rndGenerator());
 }
 
 FloatVal b_lognormal_float_float(EnvI& env, Call* call) {
@@ -2491,7 +2485,7 @@ FloatVal b_lognormal_float_float(EnvI& env, Call* call) {
   const double stdv = eval_float(env, call->arg(1)).toDouble();
   std::lognormal_distribution<double> distribution(mean, stdv);
   // return a sample from the distribution
-  return distribution(rnd_generator());
+  return distribution(env.rndGenerator());
 }
 
 FloatVal b_lognormal_int_float(EnvI& env, Call* call) {
@@ -2500,7 +2494,7 @@ FloatVal b_lognormal_int_float(EnvI& env, Call* call) {
   const double stdv = eval_float(env, call->arg(1)).toDouble();
   std::lognormal_distribution<double> distribution(mean, stdv);
   // return a sample from the distribution
-  return distribution(rnd_generator());
+  return distribution(env.rndGenerator());
 }
 
 FloatVal b_chisquared_float(EnvI& env, Call* call) {
@@ -2508,7 +2502,7 @@ FloatVal b_chisquared_float(EnvI& env, Call* call) {
   const double lambda = eval_float(env, call->arg(0)).toDouble();
   std::exponential_distribution<double> distribution(lambda);
   // return a sample from the distribution
-  return distribution(rnd_generator());
+  return distribution(env.rndGenerator());
 }
 
 FloatVal b_chisquared_int(EnvI& env, Call* call) {
@@ -2516,7 +2510,7 @@ FloatVal b_chisquared_int(EnvI& env, Call* call) {
   const double lambda = double(eval_int(env, call->arg(0)).toInt());
   std::exponential_distribution<double> distribution(lambda);
   // return a sample from the distribution
-  return distribution(rnd_generator());
+  return distribution(env.rndGenerator());
 }
 
 FloatVal b_cauchy_float_float(EnvI& env, Call* call) {
@@ -2525,7 +2519,7 @@ FloatVal b_cauchy_float_float(EnvI& env, Call* call) {
   const double scale = eval_float(env, call->arg(1)).toDouble();
   std::cauchy_distribution<double> distribution(mean, scale);
   // return a sample from the distribution
-  return distribution(rnd_generator());
+  return distribution(env.rndGenerator());
 }
 
 FloatVal b_cauchy_int_float(EnvI& env, Call* call) {
@@ -2534,7 +2528,7 @@ FloatVal b_cauchy_int_float(EnvI& env, Call* call) {
   const double scale = eval_float(env, call->arg(1)).toDouble();
   std::cauchy_distribution<double> distribution(mean, scale);
   // return a sample from the distribution
-  return distribution(rnd_generator());
+  return distribution(env.rndGenerator());
 }
 
 FloatVal b_fdistribution_float_float(EnvI& env, Call* call) {
@@ -2543,7 +2537,7 @@ FloatVal b_fdistribution_float_float(EnvI& env, Call* call) {
   const double d2 = eval_float(env, call->arg(1)).toDouble();
   std::fisher_f_distribution<double> distribution(d1, d2);
   // return a sample from the distribution
-  return distribution(rnd_generator());
+  return distribution(env.rndGenerator());
 }
 
 FloatVal b_fdistribution_int_int(EnvI& env, Call* call) {
@@ -2552,7 +2546,7 @@ FloatVal b_fdistribution_int_int(EnvI& env, Call* call) {
   const double d2 = double(eval_int(env, call->arg(1)).toInt());
   std::fisher_f_distribution<double> distribution(d1, d2);
   // return a sample from the distribution
-  return distribution(rnd_generator());
+  return distribution(env.rndGenerator());
 }
 
 FloatVal b_tdistribution_float(EnvI& env, Call* call) {
@@ -2560,7 +2554,7 @@ FloatVal b_tdistribution_float(EnvI& env, Call* call) {
   const double sampleSize = eval_float(env, call->arg(0)).toDouble();
   std::student_t_distribution<double> distribution(sampleSize);
   // return a sample from the distribution
-  return distribution(rnd_generator());
+  return distribution(env.rndGenerator());
 }
 
 FloatVal b_tdistribution_int(EnvI& env, Call* call) {
@@ -2568,7 +2562,7 @@ FloatVal b_tdistribution_int(EnvI& env, Call* call) {
   const double sampleSize = double(eval_int(env, call->arg(0)).toInt());
   std::student_t_distribution<double> distribution(sampleSize);
   // return a sample from the distribution
-  return distribution(rnd_generator());
+  return distribution(env.rndGenerator());
 }
 
 IntVal b_discrete_distribution(EnvI& env, Call* call) {
@@ -2593,7 +2587,7 @@ IntVal b_discrete_distribution(EnvI& env, Call* call) {
   std::discrete_distribution<long long int> distribution(weights.begin(), weights.end());
 #endif
   // return a sample from the distribution
-  IntVal iv = IntVal(distribution(rnd_generator()));
+  IntVal iv = IntVal(distribution(env.rndGenerator()));
   return iv;
 }
 
@@ -2602,7 +2596,7 @@ bool b_bernoulli(EnvI& env, Call* call) {
   const double p = eval_float(env, call->arg(0)).toDouble();
   std::bernoulli_distribution distribution(p);
   // return a sample from the distribution
-  return distribution(rnd_generator());
+  return distribution(env.rndGenerator());
 }
 
 IntVal b_binomial(EnvI& env, Call* call) {
@@ -2611,7 +2605,7 @@ IntVal b_binomial(EnvI& env, Call* call) {
   double p = eval_float(env, call->arg(1)).toDouble();
   std::binomial_distribution<long long int> distribution(t, p);
   // return a sample from the distribution
-  return IntVal(distribution(rnd_generator()));
+  return IntVal(distribution(env.rndGenerator()));
 }
 
 FloatVal b_atan(EnvI& env, Call* call) {
