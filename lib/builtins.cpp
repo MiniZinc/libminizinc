@@ -1658,6 +1658,7 @@ Expression* b_default(EnvI& env, Call* call) {
   env.inMaybePartial++;
   EE arg0 = flat_exp(env, ctx, call->arg(0), nullptr, nullptr);
   env.inMaybePartial--;
+  auto def_t = call->arg(1)->type();
   if (arg0.b()->type().isPar()) {
     bool isDefined = eval_bool(env, arg0.b());
     if (!isDefined) {
@@ -1670,6 +1671,24 @@ Expression* b_default(EnvI& env, Call* call) {
         }
         return arg0.r();
       }
+
+      if (def_t.isPar() && ((def_t.isint() && eval_int(env, call->arg(1)) == 0))) {
+        // Default value is 0, may be able to use deopt directly
+        auto* hzc = new Call(Location().introduce(), "had_zero", {arg0.r()});
+        hzc->decl(env.model->matchFn(env, hzc, false));
+        auto t = Type::parbool();
+        t.cv(true);
+        hzc->type(t);
+        auto* had_zero = flat_cv_exp(env, Ctx(), hzc)()->cast<BoolLit>();
+        if (had_zero == env.constants.boollit(false)) {
+          // Can use deopt value directly as deopt(<>) will already be zero
+          auto* deopt = new Call(Location().introduce(), "deopt", {arg0.r()});
+          deopt->decl(env.model->matchFn(env, deopt, false));
+          deopt->type(call->type());
+          return deopt;
+        }
+      }
+
       // if occurs(x) then deopt(x) else y endif
       auto* occurs = new Call(Location().introduce(), "occurs", {arg0.r()});
       occurs->decl(env.model->matchFn(env, occurs, false));
@@ -1687,6 +1706,28 @@ Expression* b_default(EnvI& env, Call* call) {
     return arg0.r();
   }
   if (call->arg(0)->type().isOpt() && call->arg(0)->type().dim() == 0) {
+    if (arg0.r()->type().isvar() && def_t.isPar() &&
+        ((def_t.isint() && eval_int(env, call->arg(1)) == 0))) {
+      // Default value is 0, may be able to use deopt directly
+      auto* hzc = new Call(Location().introduce(), "had_zero", {arg0.r()});
+      hzc->decl(env.model->matchFn(env, hzc, false));
+      auto t = Type::parbool();
+      t.cv(true);
+      hzc->type(t);
+      auto* had_zero = flat_cv_exp(env, Ctx(), hzc)()->cast<BoolLit>();
+      if (had_zero == env.constants.boollit(false)) {
+        // if defined(x) then deopt(x) else y endif
+        auto* deopt = new Call(Location().introduce(), "deopt", {arg0.r()});
+        deopt->decl(env.model->matchFn(env, deopt, false));
+        Type deopt_t = arg0.r()->type();
+        deopt_t.ot(Type::OT_PRESENT);
+        deopt->type(deopt_t);
+        auto* deoptIte = new ITE(Location().introduce(), {arg0.b(), deopt}, call->arg(1));
+        deoptIte->type(call->type());
+        return deoptIte;
+      }
+    }
+
     // if defined(x) /\ occurs(x) then deopt(x) else y endif
     auto* occurs = new Call(Location().introduce(), "occurs", {arg0.r()});
     occurs->decl(env.model->matchFn(env, occurs, false));
