@@ -8,11 +8,6 @@ predicate bool_clause_reif(array[int] of var bool: as,
   forall (i in index_set(as)) (as[i] -> b) /\
   forall (i in index_set(bs)) (bs[i] \/ b);
 
-predicate bool_clause_imp(array[int] of var bool: as,
-                          array[int] of var bool: bs,
-                          var bool: b) =
-  clause(as,bs++[b]);
-
 predicate array_int_maximum(var int: m, array[int] of var int: x) =
     let { int: l = min(index_set(x)),
           int: u = max(index_set(x)),
