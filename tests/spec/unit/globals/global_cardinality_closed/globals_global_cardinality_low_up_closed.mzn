@@ -24,12 +24,12 @@ expected:
     x: [5, 6, 3, 3]
 ***/
 
-include "global_cardinality_low_up_closed.mzn";
+include "global_cardinality_closed.mzn";
 
 array[1..4] of var 0..8: x;
 
 constraint
-     global_cardinality_low_up_closed(
+     global_cardinality_closed(
          %[3, 3, 5, 6],
          x,
          [3, 5, 6],
