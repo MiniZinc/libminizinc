@@ -2,8 +2,10 @@ set(CMAKE_CXX_STANDARD 11)
 
 option(USE_ADDRESS_SANITIZER "Use GCC Address Sanitizer" OFF)
 if(USE_ADDRESS_SANITIZER)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+  set(CMAKE_CXX_FLAGS
+    "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer")
+  set(CMAKE_EXE_LINKER_FLAGS
+    "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer")
 endif()
 
 set(CMAKE_REQUIRED_QUIET $<NOT:${VERBOSE}>)
