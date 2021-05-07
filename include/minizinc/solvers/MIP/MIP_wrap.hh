@@ -77,8 +77,12 @@ public:
   struct Output {
     Status status;
     std::string statusName = "Untouched";
-    double objVal = 1e308;
-    double bestBound = 1e308;
+    double objVal = std::numeric_limits<double>::has_quiet_NaN
+                        ? std::numeric_limits<double>::quiet_NaN()
+                        : std::numeric_limits<double>::max();
+    double bestBound = std::numeric_limits<double>::has_quiet_NaN
+                           ? std::numeric_limits<double>::quiet_NaN()
+                           : std::numeric_limits<double>::max();
     int nCols = 0;
     int nObjVarIndex = -1;
     const double* x = nullptr;

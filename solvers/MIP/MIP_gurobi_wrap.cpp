@@ -1079,9 +1079,8 @@ void MIPGurobiWrapper::solve() {        // Move into ancestor?
                          : std::numeric_limits<double>::max();
   int nObj = 0;
   dll_GRBgetintattr(_model, GRB_INT_ATTR_NUMOBJ, &nObj);
-  if (1 >= nObj) {
-    _error = dll_GRBgetdblattr(_model, GRB_DBL_ATTR_OBJBOUNDC, &output.bestBound);
-    wrapAssert(_error == 0, "Failed to get the best bound.", false);
+  if (1 >= nObj) {  // This can fail, e.g., for LP or QP
+    dll_GRBgetdblattr(_model, GRB_DBL_ATTR_OBJBOUNDC, &output.bestBound);
   }
   double nNodes = -1;
   _error = dll_GRBgetdblattr(_model, GRB_DBL_ATTR_NODECOUNT, &nNodes);
