@@ -328,7 +328,7 @@ predicate float_times(var float: x, var float: y, var float: z) =
 "Unable to create linear formulation for the `float_times(\(x), \(y), \(z))`\n" ++
 "\tconstraint. To flatten this instance a quadratic constraint is required, but the\n" ++
 "\tusage of these constraints is currently disabled for the selected solver. Define\n" ++
-"\t`QuadrFloat=true` if your linear solver supports quadratic constraints, or use\n" ++
+"\t`QuadrFloat=true` if your solver supports quadratic constraints, or use\n" ++
 "\tinteger variables."
     )
   endif;
