@@ -77,9 +77,7 @@ public:
   struct Output {
     Status status;
     std::string statusName = "Untouched";
-    double objVal = std::numeric_limits<double>::has_quiet_NaN
-                        ? std::numeric_limits<double>::quiet_NaN()
-                        : std::numeric_limits<double>::max();
+    double objVal = 1e100;  // need a numerical value here
     double bestBound = std::numeric_limits<double>::has_quiet_NaN
                            ? std::numeric_limits<double>::quiet_NaN()
                            : std::numeric_limits<double>::max();
