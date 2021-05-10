@@ -168,10 +168,13 @@ class MznItem(pytest.Item):
             self.add_marker(marker)
 
         if self.config.getoption("--solvers") is not None:
-            self.allowed = [
-                x.strip() for x in self.config.getoption("--solvers").split(",")
-            ]
-            self.allowed = [x for x in self.allowed if x in suite.solvers]
+            solvers_option = self.config.getoption("--solvers").split(",")
+            if suite.solvers is None:
+                self.allowed = solvers_option
+            else:
+                self.allowed = list(
+                    set(suite.solvers).intersection(set(solvers_option))
+                )
         else:
             self.allowed = suite.solvers
 
