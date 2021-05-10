@@ -131,7 +131,9 @@ class MznFile(pytest.File):
                 tests = [doc for doc in yaml.load_all(yaml_comment.group(1))]
 
                 for suite_name, suite in suites.items():
-                    if any(self.fspath.fnmatch(glob) for glob in suite.includes):
+                    if any(
+                        self.fspath.fnmatch(glob) for glob in suite.includes
+                    ) and not any(self.fspath.fnmatch(glob) for glob in suite.excludes):
                         for i, spec in enumerate(tests):
                             for solver in spec.solvers:
                                 base = (

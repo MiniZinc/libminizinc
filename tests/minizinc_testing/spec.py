@@ -369,6 +369,8 @@ class Suite:
         self.options = {}
         self.strict = True
         self.regex = r"."
+        self.includes = ["*"]
+        self.excludes = []
 
         for key, value in kwargs.items():
             setattr(self, key, value)
