@@ -7,7 +7,7 @@ predicate fzn_bin_packing_capa(array[int] of int: c,
     /\
       forall( b in index_set(c) ) (
             c[b] >= sum ( i in index_set(bin) ) (
-                w[i] * bool2int( bin[i] = b )
+                w[i] * ( bin[i] = b )
             )
       );
 

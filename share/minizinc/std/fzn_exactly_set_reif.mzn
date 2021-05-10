@@ -3,4 +3,4 @@
 %-----------------------------------------------------------------------------%
 
 predicate fzn_exactly_set_reif(int: n, array[int] of var set of int: x, set of int: v, var bool: b) =
-    b <-> n == sum(i in index_set(x)) ( bool2int(x[i] == v) );
+    b <-> n == sum(i in index_set(x)) ( x[i] == v );

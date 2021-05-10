@@ -4,6 +4,6 @@ predicate fzn_distribute_reif(array[int] of var int: card,
                               var bool: b) =
         b <-> forall (i in index_set(card)) (
             card[i] == sum(j in index_set(base)) (
-                            bool2int(value[i] = base[j])
+                            value[i] = base[j]
                        )
         );

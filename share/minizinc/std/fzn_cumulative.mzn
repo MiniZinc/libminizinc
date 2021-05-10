@@ -32,7 +32,7 @@ predicate fzn_cumulative_time(array[int] of var int: s,
     } in (
         forall( t in early..late ) (
             b >= sum( i in Tasks ) (
-                bool2int(s[i] <= t /\ t < s[i] + d[i]) * r[i]
+                (s[i] <= t /\ t < s[i] + d[i]) * r[i]
             )
         )
     );
@@ -46,7 +46,7 @@ predicate fzn_cumulative_task(array[int] of var int: s,
     } in (
         forall( j in Tasks ) ( 
             b >= r[j] + sum( i in Tasks where i != j ) ( 
-                bool2int(s[i] <= s[j] /\ s[j] < s[i] + d[i] ) * r[i]
+                (s[i] <= s[j] /\ s[j] < s[i] + d[i] ) * r[i]
             )
         )
     );

@@ -9,7 +9,7 @@ predicate fzn_bin_packing_capa_reif(array[int] of int: c,
     /\
       forall( assigned_bin in index_set(c) ) (
             c[assigned_bin] >= sum ( i in index_set(bin) ) (
-                w[i] * bool2int( bin[i] = assigned_bin )
+                w[i] * ( bin[i] = assigned_bin )
             )
       ));
 

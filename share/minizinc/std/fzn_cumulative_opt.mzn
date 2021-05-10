@@ -32,7 +32,7 @@ predicate fzn_cumulative_opt_time(array[int] of var opt int: s,
     } in (
         forall( t in early..late ) (
             b >= sum( i in Tasks ) (
-                bool2int(occurs(s[i]) /\ deopt(s[i]) <= t /\ t < deopt(s[i]) + d[i]) * r[i]
+                (occurs(s[i]) /\ deopt(s[i]) <= t /\ t < deopt(s[i]) + d[i]) * r[i]
             )
         )
     );
@@ -46,7 +46,7 @@ predicate fzn_cumulative_opt_task(array[int] of var opt int: s,
     } in (
         forall( j in Tasks ) ( occurs(s[j]) -> 
             b >= r[j] + sum( i in Tasks where i != j ) ( 
-                bool2int(occurs(s[i]) /\ deopt(s[i]) <= deopt(s[j]) /\ deopt(s[j]) < deopt(s[i]) + d[i] ) * r[i]
+                (occurs(s[i]) /\ deopt(s[i]) <= deopt(s[j]) /\ deopt(s[j]) < deopt(s[i]) + d[i] ) * r[i]
             )
         )
     );

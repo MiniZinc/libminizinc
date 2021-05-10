@@ -9,7 +9,7 @@ predicate fzn_bin_packing_load_reif(array[int] of var int: load,
         )
     /\  forall( assigned_bin in index_set(load) ) (
             load[assigned_bin] = sum ( i in index_set(bin) ) (
-                w[i] * bool2int( bin[i] = assigned_bin )
+                w[i] * ( bin[i] = assigned_bin )
             )
         ) );
 

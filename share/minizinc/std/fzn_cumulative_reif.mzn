@@ -32,7 +32,7 @@ predicate fzn_cumulative_time_reif(array[int] of var int: s,
     } in (
         bb <-> forall( t in early..late ) (
             b >= sum( i in Tasks ) (
-                bool2int(s[i] <= t /\ t < s[i] + d[i]) * r[i]
+                (s[i] <= t /\ t < s[i] + d[i]) * r[i]
             )
         )
     );
@@ -46,7 +46,7 @@ predicate fzn_cumulative_task_reif(array[int] of var int: s,
     } in (
         bb <-> forall( j in Tasks ) ( 
             b >= r[j] + sum( i in Tasks where i != j ) ( 
-                bool2int(s[i] <= s[j] /\ s[j] < s[i] + d[i] ) * r[i]
+                (s[i] <= s[j] /\ s[j] < s[i] + d[i] ) * r[i]
             )
         )
     );
