@@ -17,13 +17,6 @@ endif()
 option(CPlex_PLUGIN "Build CPLEX binding as a plugin" ON)
 option(Gurobi_PLUGIN "Build Gurobi binding as a plugin" ON)
 
-# Enforce non proprietary build
-option(USE_PROPRIETARY "Enable static linking of proprietary solvers" OFF)
-if(NOT USE_PROPRIETARY)
-  set(CPLEX_PLUGIN ON)
-  set(GUROBI_PLUGIN ON)
-endif()
-
 # CMake options default value
 option(CMAKE_POSITION_INDEPENDENT_CODE "Default value for POSITION_INDEPENDENT_CODE of targets" TRUE)
 

@@ -22,23 +22,23 @@
   </p>
 </p>
 
-
 <!-- TABLE OF CONTENTS -->
+
 ## Table of Contents
 
-* [About the Project](#about-the-project)
-* [Getting Started](#getting-started)
-  * [Installation](#installation)
-  * [Usage](#usage)
-* [Building](#building)
-  * [Prerequisites](#prerequisites)
-  * [Compilation](#compilation)
-* [Testing](#testing)
-* [License](#license)
-* [Contact](#contact)
-
+- [About the Project](#about-the-project)
+- [Getting Started](#getting-started)
+  - [Installation](#installation)
+  - [Usage](#usage)
+- [Building](#building)
+  - [Prerequisites](#prerequisites)
+  - [Compilation](#compilation)
+- [Testing](#testing)
+- [License](#license)
+- [Contact](#contact)
 
 <!-- ABOUT THE PROJECT -->
+
 ## About The Project
 
 MiniZinc is a free and open-source constraint modeling language.
@@ -52,6 +52,7 @@ MiniZinc is developed at Monash University in collaboration with Data61
 Decision Sciences.
 
 <!-- GETTING STARTED -->
+
 ## Getting Started
 
 To get a MiniZinc up and running follow these simple steps.
@@ -68,7 +69,7 @@ website](http://www.minizinc.org/software.html).
 ### Usage
 
 Once the MiniZinc bundle is installed on your machine, you can start expressing
-and solving discrete optimisation problems.  The following code segment shows a
+and solving discrete optimisation problems. The following code segment shows a
 MiniZinc model for the well known n-queens problem.
 
 ```minizinc
@@ -84,23 +85,25 @@ constraint alldifferent(i in 1..n)(q[i] - i);
 ```
 
 You have two easy options to solve this model:
- - In the MiniZincIDE: Select your preferred solver and press the "Run" button.
- - With the `minizinc` executable available on your path: run `minizinc --solver gecode nqueens.mzn`.
+
+- In the MiniZincIDE: Select your preferred solver and press the "Run" button.
+- With the `minizinc` executable available on your path: run `minizinc --solver gecode nqueens.mzn`.
 
 _For more example MiniZinc models and more information about working with
 MiniZinc, please refer to our
 [Documentation](https://www.minizinc.org/doc-latest/)_
 
 <!-- BUILDING INSTRUCTIONS -->
+
 ## Building
 
 The following instructions will help you compile the MiniZinc compiler. Note
 that this repository does not include the IDE, findMUS, or any solvers that are
 part of the MiniZinc project. These can be found in the following repositories:
 
- - [MiniZincIDE](https://github.com/MiniZinc/MiniZincIDE)
- - [Gecode](https://github.com/Gecode/gecode)
- - [Chuffed](https://github.com/chuffed/chuffed)
+- [MiniZincIDE](https://github.com/MiniZinc/MiniZincIDE)
+- [Gecode](https://github.com/Gecode/gecode)
+- [Chuffed](https://github.com/chuffed/chuffed)
 
 ### Prerequisites
 
@@ -129,19 +132,19 @@ following CMake variables can be used in the MiniZinc project to instruct the
 compilation behaviour:
 
 | Variable                                     | Default | Description                                                 |
-|----------------------------------------------|---------|-------------------------------------------------------------|
+| -------------------------------------------- | ------- | ----------------------------------------------------------- |
 | CMAKE_BUILD_TYPE                             | Release | Build type of single-configuration generators.              |
 | CMAKE_INSTALL_PREFIX                         |         | Install directory used by `--target install`.               |
 | CMAKE_POSITION_INDEPENDENT_CODE              | TRUE    | Whether to create a position-independent targets            |
-| **<solver_name>**_ROOT                       |         | Additional directory to look for **<solver_name>**          |
-| CMAKE_DISABLE_FIND_PACKAGE_**<solver_name>** | FALSE   | Disable compilation of **<solver_name>**'s solver interface |
-| USE_PROPRIETARY                              | FALSE   | Allow static linking of proprietary solvers                 |
-| **<Gurobi/CPlex>**_PLUGIN                    | TRUE    | Load solver at runtime (instead of static compilation)      |
+| **<solver_name>**\_ROOT                      |         | Additional directory to look for **<solver_name>**          |
+| CMAKE*DISABLE_FIND_PACKAGE***<solver_name>** | FALSE   | Disable compilation of **<solver_name>**'s solver interface |
+| **<Gurobi/CPlex>**\_PLUGIN                   | TRUE    | Load solver at runtime (instead of static compilation)      |
 
 Possible values for **<solver_name>** are `CPlex`, `Geas`, `Gecode`, `Gurobi`,
 `OsiCBC`, `SCIP`, and `Xpress`.
 
 <!-- TESTING INSTRUCTIONS -->
+
 ## Testing
 
 The correctness of the MiniZinc compiler is tested using a
@@ -149,20 +152,22 @@ The correctness of the MiniZinc compiler is tested using a
 run the test suite and how to add new tests can be found
 [here](https://github.com/MiniZinc/libminizinc/tree/master/tests)
 
-
 <!-- LICENSE -->
+
 ## License
 
 Distributed under the Mozilla Public License Version 2.0. See `LICENSE` for more information.
 
-
 <!-- CONTACT -->
+
 ## Contact
 
 🏛 **MiniZinc Community**
-  - Website: [https://www.minizinc.org/](https://www.minizinc.org/)
-  - StackOverflow: [https://stackoverflow.com/questions/tagged/minizinc](https://stackoverflow.com/questions/tagged/minizinc)
-  - Google Groups: [https://groups.google.com/g/minizinc](https://groups.google.com/g/minizinc)
+
+- Website: [https://www.minizinc.org/](https://www.minizinc.org/)
+- StackOverflow: [https://stackoverflow.com/questions/tagged/minizinc](https://stackoverflow.com/questions/tagged/minizinc)
+- Google Groups: [https://groups.google.com/g/minizinc](https://groups.google.com/g/minizinc)
 
 🏛 **Monash Optimisation Group**
-  - Website: [https://www.monash.edu/it/dsai/optimisation](https://www.monash.edu/it/dsai/optimisation)
+
+- Website: [https://www.monash.edu/it/dsai/optimisation](https://www.monash.edu/it/dsai/optimisation)
