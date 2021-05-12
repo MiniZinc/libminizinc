@@ -11,6 +11,12 @@ function $T: deopt(opt $T: x);
 /** @group stdlib.optiontypes Return value of \a x if \a x is not absent. Aborts 
   when evaluated on absent value. */
 function $$T: deopt(opt $$T: x);
+/** @group stdlib.optiontypes Return array of the value of \a x[i] where \a x[i] is not absent.
+  Aborts when evaluated with an absent element. */
+function array [$$U] of $T: deopt(array [$$U] of opt $T: x) = array1d(index_set(x), [deopt(x[i]) | i in index_set(x)]);
+/** @group stdlib.optiontypes Return array of the value of \a x[i] where \a x[i] is not absent.
+  Aborts when evaluated with an absent element. */
+function array [$$U] of $$T: deopt(array [$$U] of opt $$T: x) = array1d(index_set(x), [deopt(x[i]) | i in index_set(x)]);
 
 /** @group stdlib.optiontypes Return value \a x unchanged (since \a x is guaranteed
   to be non-optional). */
@@ -18,6 +24,19 @@ function var $T: deopt(var $T: x) = x;
 /** @group stdlib.optiontypes Return value \a x unchanged (since \a x is guaranteed
   to be non-optional). */
 function $T: deopt($T: x) = x;
+
+/** @group stdlib.optiontypes Return value \a x unchanged (since \a x is guaranteed
+  to be non-optional). */
+function array [$U] of var $T: deopt(array [$U] of var $T: x) = x;
+/** @group stdlib.optiontypes Return array of the value of \a x[i] (assumes that \a x[i] is not absent). */
+function array [$$U] of var bool : deopt(array [$$U] of var opt bool : x) :: promise_total =
+  array1d(index_set(x), [deopt(x[i]) | i in index_set(x)]);
+/** @group stdlib.optiontypes Return array of the value of \a x[i] (assumes that \a x[i] is not absent). */
+function array [$$U] of var $$E : deopt(array [$$U] of var opt $$E : x) :: promise_total =
+  array1d(index_set(x), [deopt(x[i]) | i in index_set(x)]);
+/** @group stdlib.optiontypes Return array of the value of \a x[i] (assumes that \a x[i] is not absent). */
+function array [$$U] of var float : deopt(array [$$U] of var opt float : x) :: promise_total =
+  array1d(index_set(x), [deopt(x[i]) | i in index_set(x)]);
 
 /** @group stdlib.optiontypes Test if \a x is not absent (always returns true) */
 test occurs($T: x) = true;
