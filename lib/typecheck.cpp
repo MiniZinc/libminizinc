@@ -2475,6 +2475,7 @@ public:
       }
       isVar |= li->type().isvar();
     }
+    let.in(add_coercion(_env, _model, let.in(), let.in()->type())());
     Type ty = let.in()->type();
     ty.cv(cv || ty.cv());
     if (isVar && ty.bt() == Type::BT_BOOL && ty.dim() == 0) {

@@ -1287,6 +1287,8 @@ public:
   ASTExprVec<Expression> letOrig() const { return _letOrig; }
   /// Access body
   Expression* in() const { return _in; }
+  /// Set body
+  void in(Expression* e) { _in = e; }
 
   /// Remember current let bindings
   void pushbindings();
