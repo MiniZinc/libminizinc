@@ -199,16 +199,13 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
   class EvalF : public EvalBase {
   public:
     Ctx ctx;
-    EvalF(const Ctx& ctx0) : ctx(ctx0) {}
+    VarDecl* rr;
+    EvalF(const Ctx& ctx0, VarDecl* rr0) : ctx(ctx0), rr(rr0) {}
     typedef EE ArrayVal;
     EE e(EnvI& env, Expression* e0) const {
-      VarDecl* b = ctx.b == C_ROOT ? constants().varTrue : nullptr;
-      VarDecl* r = (ctx.b == C_ROOT && e0->type().isbool() && !e0->type().isOpt())
-                       ? constants().varTrue
-                       : nullptr;
-      return flat_exp(env, ctx, e0, r, b);
+      return flat_exp(env, ctx, e0, rr, ctx.partialityVar());
     }
-  } _evalf(ctx);
+  } _evalf(ctx, r == constants().varIgnore ? constants().varTrue : nullptr);
   std::vector<EE> elems_ee;
   bool wasUndefined = false;
   try {
