@@ -42,7 +42,7 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
     v->flat(vd);
     Ctx nctx;
     nctx.i = ctx.i;
-    if ((v->e() != nullptr) && v->e()->type().bt() == Type::BT_BOOL) {
+    if ((v->e() != nullptr) && v->e()->type().bt() == Type::BT_BOOL && v->e()->type().dim() == 0) {
       nctx.b = C_MIX;
     }
     if (v->e() != nullptr) {
