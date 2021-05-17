@@ -51,17 +51,30 @@ public:
   /// Underlying string implementation
   ASTStringData* aststr() const { return _s; }
 
-  /// Return if string is equal to \a s
-  bool operator==(const ASTString& s) const;
-  /// Return if string is not equal to \a s
-  bool operator!=(const ASTString& s) const;
+  /// Return if string \a s0 is equal to \a s1
+  friend bool operator==(const ASTString& s0, const ASTString& s1);
+  /// Return if string \a s0 is equal to \a s1
+  friend bool operator==(const ASTString& s0, const char* s1);
+  /// Return if string \a s0 is equal to \a s1
+  friend bool operator==(const char* s0, const ASTString& s1);
+  /// Return if string \a s0 is equal to \a s1
+  friend bool operator==(const ASTString& s0, const std::string& s1);
+  /// Return if string \a s0 is equal to \a s1
+  friend bool operator==(const std::string& s0, const ASTString& s1);
+
+  /// Return if string \a s0 is not equal to \a s1
+  friend bool operator!=(const ASTString& s0, const ASTString& s1);
+  /// Return if string \a s0 is not equal to \a s1
+  friend bool operator!=(const ASTString& s0, const char* s1);
+  /// Return if string \a s0 is not equal to \a s1
+  friend bool operator!=(const char* s0, const ASTString& s1);
+  /// Return if string \a s0 is not equal to \a s1
+  friend bool operator!=(const ASTString& s0, const std::string& s1);
+  /// Return if string \a s0 is not equal to \a s1
+  friend bool operator!=(const std::string& s0, const ASTString& s1);
+
   /// Return if string is less than \a s
   bool operator<(const ASTString& s) const;
-
-  /// Return if string is equal to \a s
-  bool operator==(const std::string& s) const;
-  /// Return if string is not equal to \a s
-  bool operator!=(const std::string& s) const;
 
   /// Return if string ends with \a s
   bool endsWith(const std::string& s) const;
@@ -191,8 +204,49 @@ inline void ASTString::mark() const {
   }
 }
 
-inline bool ASTString::operator==(const ASTString& s) const { return _s == s._s; }
-inline bool ASTString::operator!=(const ASTString& s) const { return _s != s._s; }
+inline bool operator==(const ASTString& s0, const ASTString& s1) { return s0._s == s1._s; }
+inline bool operator!=(const ASTString& s0, const ASTString& s1) { return s0._s != s1._s; }
+
+inline bool operator==(const ASTString& s0, const char* s1) {
+  size_t s1_size = strlen(s1);
+  return s0.size() == s1_size && (s1_size == 0 || strncmp(s0._s->c_str(), s1, s1_size) == 0);
+}
+
+inline bool operator==(const char* s0, const ASTString& s1) {
+  size_t s0_size = strlen(s0);
+  return s1.size() == s0_size && (s0_size == 0 || strncmp(s1._s->c_str(), s0, s0_size) == 0);
+}
+
+inline bool operator==(const ASTString& s0, const std::string& s1) {
+  return s0.size() == s1.size() &&
+         (s0.size() == 0 || strncmp(s0._s->c_str(), s1.c_str(), s0.size()) == 0);
+}
+
+inline bool operator==(const std::string& s0, const ASTString& s1) {
+  return s0.size() == s1.size() &&
+         (s1.size() == 0 || strncmp(s1._s->c_str(), s0.c_str(), s1.size()) == 0);
+}
+
+inline bool operator!=(const ASTString& s0, const char* s1) {
+  size_t s1_size = strlen(s1);
+  return s0.size() != s1_size || (s1_size != 0 && strncmp(s0._s->c_str(), s1, s1_size) != 0);
+}
+
+inline bool operator!=(const char* s0, const ASTString& s1) {
+  size_t s0_size = strlen(s0);
+  return s1.size() != s0_size || (s0_size != 0 && strncmp(s1._s->c_str(), s0, s0_size) != 0);
+}
+
+inline bool operator!=(const ASTString& s0, const std::string& s1) {
+  return s0.size() != s1.size() ||
+         (s0.size() != 0 && strncmp(s0._s->c_str(), s1.c_str(), s0.size()) != 0);
+}
+
+inline bool operator!=(const std::string& s0, const ASTString& s1) {
+  return s0.size() != s1.size() ||
+         (s1.size() != 0 && strncmp(s1._s->c_str(), s0.c_str(), s1.size()) != 0);
+}
+
 inline bool ASTString::operator<(const ASTString& s) const {
   if (size() == 0) {
     return 0 < s.size();
@@ -204,10 +258,6 @@ inline bool ASTString::operator<(const ASTString& s) const {
   }
   return cmp < 0;
 }
-inline bool ASTString::operator==(const std::string& s) const {
-  return size() == s.size() && (size() == 0 || strncmp(_s->c_str(), s.c_str(), size()) == 0);
-}
-inline bool ASTString::operator!=(const std::string& s) const { return !(*this == s); }
 inline bool ASTString::endsWith(const std::string& s) const {
   return size() >= s.size() &&
          (size() == 0 || strncmp(_s->c_str() + size() - s.size(), s.c_str(), s.size()) == 0);
