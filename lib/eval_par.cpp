@@ -1482,7 +1482,7 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
   }
 }
 
-IntVal eval_int(EnvI& env, Expression* e) {
+IntVal eval_int_internal(EnvI& env, Expression* e) {
   if (e->type().isbool()) {
     return static_cast<long long>(eval_bool(env, e));
   }

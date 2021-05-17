@@ -19,7 +19,14 @@
 namespace MiniZinc {
 
 /// Evaluate par int expression \a e
-IntVal eval_int(EnvI& env, Expression* e);
+IntVal eval_int_internal(EnvI& env, Expression* e);
+/// Evaluate par int expression \a e
+inline IntVal eval_int(EnvI& env, Expression* e) {
+  if (e->isUnboxedInt()) {
+    return e->unboxedIntToIntVal();
+  }
+  return eval_int_internal(env, e);
+}
 /// Evaluate par bool expression \a e
 bool eval_bool(EnvI& env, Expression* e);
 /// Evaluate par float expression \a e

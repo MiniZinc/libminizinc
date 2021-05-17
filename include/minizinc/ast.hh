@@ -303,47 +303,21 @@ public:
     EID_END = E_TIID
   };
 
-  bool isUnboxedVal() const {
-    if (sizeof(double) <= sizeof(void*)) {
-      // bit 1 or bit 0 is set
-      return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) != 0;
-    }  // bit 0 is set
-    return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) != 0;
-  }
-  bool isUnboxedInt() const {
-    if (sizeof(double) <= sizeof(void*)) {
-      // bit 1 is set, bit 0 is not set
-      return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) == 2;
-    }  // bit 0 is set
-    return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) == 1;
-  }
-  bool isUnboxedFloatVal() const {
-    // bit 0 is set (and doubles fit inside pointers)
-    return (sizeof(double) <= sizeof(void*)) &&
-           (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) == 1;
-  }
+  bool isUnboxedVal() const;
+  bool isUnboxedInt() const;
+  bool isUnboxedFloatVal() const;
 
-  ExpressionId eid() const {
-    return isUnboxedInt()        ? E_INTLIT
-           : isUnboxedFloatVal() ? E_FLOATLIT
-                                 : static_cast<ExpressionId>(_id);
-  }
+  ExpressionId eid() const;
 
-  const Location& loc() const { return isUnboxedVal() ? Location::nonalloc : _loc; }
+  const Location& loc() const;
   void loc(const Location& l) {
     if (!isUnboxedVal()) {
       _loc = l;
     }
   }
-  const Type& type() const {
-    return isUnboxedInt() ? Type::unboxedint : isUnboxedFloatVal() ? Type::unboxedfloat : _type;
-  }
+  const Type& type() const;
   void type(const Type& t);
-  size_t hash() const {
-    return isUnboxedInt()        ? unboxedIntToIntVal().hash()
-           : isUnboxedFloatVal() ? unboxedFloatToFloatVal().hash()
-                                 : _hash;
-  }
+  size_t hash() const;
 
 protected:
   /// Combination function for hash values
@@ -488,64 +462,32 @@ public:
 
   /// Test if expression is of type \a T
   template <class T>
-  bool isa() const {
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wtautological-undefined-compare"
-#endif
-    if (nullptr == this) {
-      throw InternalError("isa: nullptr");
-    }
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
-    return isUnboxedInt()        ? T::eid == E_INTLIT
-           : isUnboxedFloatVal() ? T::eid == E_FLOATLIT
-                                 : _id == T::eid;
-  }
+  bool isa() const;
   /// Cast expression to type \a T*
   template <class T>
-  T* cast() {
-    assert(isa<T>());
-    return static_cast<T*>(this);
-  }
+  T* cast();
   /// Cast expression to type \a const T*
   template <class T>
-  const T* cast() const {
-    assert(isa<T>());
-    return static_cast<const T*>(this);
-  }
+  const T* cast() const;
   /// Cast expression to type \a T* or NULL if types do not match
   template <class T>
-  T* dynamicCast() {
-    return isa<T>() ? static_cast<T*>(this) : nullptr;
-  }
+  T* dynamicCast();
   /// Cast expression to type \a const T* or NULL if types do not match
   template <class T>
-  const T* dynamicCast() const {
-    return isa<T>() ? static_cast<const T*>(this) : nullptr;
-  }
+  const T* dynamicCast() const;
 
   /// Cast expression to type \a T*
   template <class T>
-  static T* cast(Expression* e) {
-    return e == nullptr ? nullptr : e->cast<T>();
-  }
+  static T* cast(Expression* e);
   /// Cast expression to type \a const T*
   template <class T>
-  static const T* cast(const Expression* e) {
-    return e == nullptr ? NULL : e->cast<T>();
-  }
+  static const T* cast(const Expression* e);
   /// Cast expression to type \a T* or NULL if types do not match
   template <class T>
-  static T* dynamicCast(Expression* e) {
-    return e == nullptr ? nullptr : e->dynamicCast<T>();
-  }
+  static T* dynamicCast(Expression* e);
   /// Cast expression to type \a const T* or NULL if types do not match
   template <class T>
-  static const T* dynamicCast(const Expression* e) {
-    return e == nullptr ? NULL : e->dynamicCast<T>();
-  }
+  static const T* dynamicCast(const Expression* e);
 
   /// Add annotation \a ann to the expression
   void addAnnotation(Expression* ann);
@@ -565,6 +507,94 @@ public:
   /// Mark \a e as alive for garbage collection
   static void mark(Expression* e);
 };
+
+inline bool Expression::isUnboxedVal() const {
+  if (sizeof(double) <= sizeof(void*)) {
+    // bit 1 or bit 0 is set
+    return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) != 0;
+  }  // bit 0 is set
+  return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) != 0;
+}
+inline bool Expression::isUnboxedInt() const {
+  if (sizeof(double) <= sizeof(void*)) {
+    // bit 1 is set, bit 0 is not set
+    return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) == 2;
+  }  // bit 0 is set
+  return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) == 1;
+}
+inline bool Expression::isUnboxedFloatVal() const {
+  // bit 0 is set (and doubles fit inside pointers)
+  return (sizeof(double) <= sizeof(void*)) &&
+         (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) == 1;
+}
+inline Expression::ExpressionId Expression::eid() const {
+  return isUnboxedInt()        ? E_INTLIT
+         : isUnboxedFloatVal() ? E_FLOATLIT
+                               : static_cast<ExpressionId>(_id);
+}
+inline const Location& Expression::loc() const {
+  return isUnboxedVal() ? Location::nonalloc : _loc;
+}
+inline const Type& Expression::type() const {
+  return isUnboxedInt() ? Type::unboxedint : isUnboxedFloatVal() ? Type::unboxedfloat : _type;
+}
+inline size_t Expression::hash() const {
+  return isUnboxedInt()        ? unboxedIntToIntVal().hash()
+         : isUnboxedFloatVal() ? unboxedFloatToFloatVal().hash()
+                               : _hash;
+}
+
+template <class T>
+inline bool Expression::isa() const {
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wtautological-undefined-compare"
+#endif
+  if (nullptr == this) {
+    throw InternalError("isa: nullptr");
+  }
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+  return isUnboxedInt()        ? T::eid == E_INTLIT
+         : isUnboxedFloatVal() ? T::eid == E_FLOATLIT
+                               : _id == T::eid;
+}
+template <class T>
+inline T* Expression::cast() {
+  assert(isa<T>());
+  return static_cast<T*>(this);
+}
+template <class T>
+inline const T* Expression::cast() const {
+  assert(isa<T>());
+  return static_cast<const T*>(this);
+}
+template <class T>
+inline T* Expression::dynamicCast() {
+  return isa<T>() ? static_cast<T*>(this) : nullptr;
+}
+template <class T>
+inline const T* Expression::dynamicCast() const {
+  return isa<T>() ? static_cast<const T*>(this) : nullptr;
+}
+
+template <class T>
+inline T* Expression::cast(Expression* e) {
+  return e == nullptr ? nullptr : e->cast<T>();
+}
+template <class T>
+inline const T* Expression::cast(const Expression* e) {
+  return e == nullptr ? NULL : e->cast<T>();
+}
+template <class T>
+inline T* Expression::dynamicCast(Expression* e) {
+  return e == nullptr ? nullptr : e->dynamicCast<T>();
+}
+template <class T>
+inline const T* Expression::dynamicCast(const Expression* e) {
+  return e == nullptr ? NULL : e->dynamicCast<T>();
+}
 
 /// \brief Integer literal expression
 class IntLit : public Expression {
@@ -855,9 +885,7 @@ public:
   /// Return size of underlying array
   unsigned int size() const { return (_flag2 || _u.v->flag()) ? length() : _u.v->size(); }
   /// Access element \a i
-  Expression* operator[](unsigned int i) const {
-    return (_flag2 || _u.v->flag()) ? getSlice(i) : (*_u.v)[i];
-  }
+  Expression* operator[](unsigned int i) const;
   /// Set element \a i
   void set(unsigned int i, Expression* e) {
     if (_flag2 || _u.v->flag()) {
@@ -867,6 +895,11 @@ public:
     }
   }
 };
+/// Access element \a i
+inline Expression* ArrayLit::operator[](unsigned int i) const {
+  return (_flag2 || _u.v->flag()) ? getSlice(i) : (*_u.v)[i];
+}
+
 /// \brief Array access expression
 class ArrayAccess : public Expression {
 protected:
