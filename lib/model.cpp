@@ -233,6 +233,7 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
       }
       if (i.fi->paramCount() == fi->paramCount()) {
         bool alleq = true;
+        bool eqExceptInst = true;
         for (unsigned int j = 0; j < fi->paramCount(); j++) {
           Type t1 = i.fi->param(j)->type();
           Type t2 = fi->param(j)->type();
@@ -240,7 +241,11 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
           t2.enumId(0);
           if (t1 != t2) {
             alleq = false;
-            break;
+          }
+          t1.ti(Type::TI_PAR);
+          t2.ti(Type::TI_PAR);
+          if (t1 != t2) {
+            eqExceptInst = false;
           }
         }
         if (alleq) {
@@ -261,6 +266,20 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
             i.fi->ann().add(deprecated);
           }
           return true;
+        }
+        if (eqExceptInst) {
+          Type t1 = i.fi->ti()->type();
+          Type t2 = fi->ti()->type();
+          t1.enumId(0);
+          t2.enumId(0);
+          t1.ti(Type::TI_PAR);
+          t2.ti(Type::TI_PAR);
+          if (t1 != t2) {
+            throw TypeError(env, fi->loc(),
+                            "function with same type up to par/var but different return type "
+                            "already defined in " +
+                                i.fi->loc().toString());
+          }
         }
       }
     }
