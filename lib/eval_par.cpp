@@ -596,53 +596,16 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
   return nullptr;
 }
 
-Expression* eval_arrayaccess(EnvI& env, ArrayLit* al, const std::vector<IntVal>& idx,
-                             bool& success) {
-  success = true;
-  assert(al->dims() == idx.size());
-  IntVal realidx = 0;
-  int realdim = 1;
-  for (int i = 0; i < al->dims(); i++) {
-    realdim *= al->max(i) - al->min(i) + 1;
-  }
-  for (int i = 0; i < al->dims(); i++) {
-    IntVal ix = idx[i];
-    if (ix < al->min(i) || ix > al->max(i)) {
-      success = false;
-      Type t = al->type();
-      t.dim(0);
-      if (t.isint()) {
-        return IntLit::a(0);
-      }
-      if (t.isbool()) {
-        return constants().literalFalse;
-      }
-      if (t.isfloat()) {
-        return FloatLit::a(0.0);
-      }
-      if (t.st() == Type::ST_SET || t.isbot()) {
-        auto* ret = new SetLit(Location(), std::vector<Expression*>());
-        ret->type(t);
-        return ret;
-      }
-      if (t.isstring()) {
-        return new StringLit(Location(), "");
-      }
-      throw EvalError(env, al->loc(), "Internal error: unexpected type in array access expression");
-    }
-    realdim /= al->max(i) - al->min(i) + 1;
-    realidx += (ix - al->min(i)) * realdim;
-  }
-  assert(realidx >= 0 && realidx <= al->size());
-  return (*al)[static_cast<unsigned int>(realidx.toInt())];
-}
 Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e, bool& success) {
   ArrayLit* al = eval_array_lit(env, e->v());
-  std::vector<IntVal> dims(e->idx().size());
-  for (unsigned int i = e->idx().size(); (i--) != 0U;) {
-    dims[i] = eval_int(env, e->idx()[i]);
-  }
-  return eval_arrayaccess(env, al, dims, success);
+  struct EvalIdx {
+    EnvI& env;
+    ArrayAccess* aa;
+    EvalIdx(EnvI& env0, ArrayAccess* aa0) : env(env0), aa(aa0) {}
+    IntVal operator[](unsigned int i) const { return eval_int(env, aa->idx()[i]); }
+    unsigned int size() const { return aa->idx().size(); }
+  } evalIdx(env, e);
+  return eval_arrayaccess(env, al, evalIdx, success);
 }
 Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e) {
   bool success;

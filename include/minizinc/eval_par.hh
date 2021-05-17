@@ -33,9 +33,49 @@ bool eval_bool(EnvI& env, Expression* e);
 FloatVal eval_float(EnvI& env, Expression* e);
 /// Evaluate an array expression \a e into an array literal
 ArrayLit* eval_array_lit(EnvI& env, Expression* e);
-/// Evaluate an access to array \a with indices \a idx and return whether
+/// Evaluate an access to array \a al with indices \a idx and return whether
 /// access succeeded in \a success
-Expression* eval_arrayaccess(EnvI& env, ArrayLit* a, const std::vector<IntVal>& idx, bool& success);
+template <class IdxV>
+Expression* eval_arrayaccess(EnvI& env, ArrayLit* al, const IdxV& idx, bool& success) {
+  success = true;
+  assert(al->dims() == idx.size());
+  IntVal realidx = 0;
+  int realdim = 1;
+  for (int i = 0; i < al->dims(); i++) {
+    realdim *= al->max(i) - al->min(i) + 1;
+  }
+  for (int i = 0; i < al->dims(); i++) {
+    IntVal ix = idx[i];
+    if (ix < al->min(i) || ix > al->max(i)) {
+      success = false;
+      Type t = al->type();
+      t.dim(0);
+      if (t.isint()) {
+        return IntLit::a(0);
+      }
+      if (t.isbool()) {
+        return constants().literalFalse;
+      }
+      if (t.isfloat()) {
+        return FloatLit::a(0.0);
+      }
+      if (t.st() == Type::ST_SET || t.isbot()) {
+        auto* ret = new SetLit(Location(), std::vector<Expression*>());
+        ret->type(t);
+        return ret;
+      }
+      if (t.isstring()) {
+        return new StringLit(Location(), "");
+      }
+      throw EvalError(env, al->loc(), "Internal error: unexpected type in array access expression");
+    }
+    realdim /= al->max(i) - al->min(i) + 1;
+    realidx += (ix - al->min(i)) * realdim;
+  }
+  assert(realidx >= 0 && realidx <= al->size());
+  return (*al)[static_cast<unsigned int>(realidx.toInt())];
+}
+
 /// Evaluate an array access \a e and return whether access succeeded in \a success
 Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e, bool& success);
 /// Evaluate a set expression \a e into a set literal
