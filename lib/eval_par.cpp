@@ -87,7 +87,7 @@ typename E::Val eval_id(EnvI& env, Expression* e) {
     throw EvalError(env, vd->loc(), "cannot evaluate expression", id->str());
   }
   typename E::Val r = E::e(env, vd->e());
-  if (!vd->evaluated() && (vd->toplevel() || vd->type().dim() > 0)) {
+  if (!vd->evaluated() && (vd->toplevel() || (!vd->e()->isa<Id>() && vd->type().dim() > 0))) {
     Expression* ne = E::exp(r);
     vd->e(ne);
     vd->evaluated(true);
