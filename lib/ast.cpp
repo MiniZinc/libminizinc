@@ -1514,6 +1514,8 @@ Constants::Constants() {
   ids.int2float = addString("int2float");
   ids.bool2float = addString("bool2float");
   ids.assert = addString("assert");
+  ids.symmetry_breaking_constraint = addString("symmetry_breaking_constraint");
+  ids.redundant_constraint = addString("redundant_constraint");
   ids.mzn_deprecate = addString("mzn_deprecate");
   ids.mzn_symmetry_breaking_constraint = addString("mzn_symmetry_breaking_constraint");
   ids.mzn_redundant_constraint = addString("mzn_redundant_constraint");

@@ -1190,46 +1190,53 @@ void EnvI::cleanupExceptOutput() {
   model = nullptr;
 }
 
-CallStackItem::CallStackItem(EnvI& env0, Expression* e) : _env(env0) {
+CallStackItem::CallStackItem(EnvI& env0, Expression* e) : _env(env0), _csiType(CSI_NONE) {
   if (e->isa<VarDecl>()) {
     _env.idStack.push_back(static_cast<int>(_env.callStack.size()));
-  }
-  if (e->isa<Call>() && e->cast<Call>()->id() == "redundant_constraint") {
-    _env.inRedundantConstraint++;
-  }
-  if (e->isa<Call>() && e->cast<Call>()->id() == "symmetry_breaking_constraint") {
-    _env.inSymmetryBreakingConstraint++;
+    _csiType = CSI_VD;
+  } else if (e->isa<Call>()) {
+    if (e->cast<Call>()->id() == constants().ids.redundant_constraint) {
+      _env.inRedundantConstraint++;
+      _csiType = CSI_REDUNDANT;
+    } else if (e->cast<Call>()->id() == constants().ids.symmetry_breaking_constraint) {
+      _env.inSymmetryBreakingConstraint++;
+      _csiType = CSI_SYMMETRY;
+    }
   }
   if (e->ann().contains(constants().ann.maybe_partial)) {
     _env.inMaybePartial++;
+    _maybePartial = true;
+  } else {
+    _maybePartial = false;
   }
   _env.callStack.emplace_back(e, false);
   _env.maxCallStack = std::max(_env.maxCallStack, static_cast<unsigned int>(_env.callStack.size()));
 }
-CallStackItem::CallStackItem(EnvI& env0, Id* ident, IntVal i) : _env(env0) {
+CallStackItem::CallStackItem(EnvI& env0, Id* ident, IntVal i)
+    : _env(env0), _csiType(CSI_NONE), _maybePartial(false) {
   _env.callStack.emplace_back(ident, true);
   _env.maxCallStack = std::max(_env.maxCallStack, static_cast<unsigned int>(_env.callStack.size()));
 }
 void CallStackItem::replace() { _env.callStack.back().replaced = true; }
 CallStackItem::~CallStackItem() {
-  try {
-    Expression* e = _env.callStack.back().e;
-    if (e->isa<VarDecl>()) {
+  switch (_csiType) {
+    case CSI_NONE:
+      break;
+    case CSI_VD:
       _env.idStack.pop_back();
-    }
-    if (e->isa<Call>() && e->cast<Call>()->id() == "redundant_constraint") {
+      break;
+    case CSI_REDUNDANT:
       _env.inRedundantConstraint--;
-    }
-    if (e->isa<Call>() && e->cast<Call>()->id() == "symmetry_breaking_constraint") {
+      break;
+    case CSI_SYMMETRY:
       _env.inSymmetryBreakingConstraint--;
-    }
-    if (e->ann().contains(constants().ann.maybe_partial)) {
-      _env.inMaybePartial--;
-    }
-    _env.callStack.pop_back();
-  } catch (std::exception&) {
-    assert(false);  // Invariant: These Env vector operations will never throw an exception
+      break;
   }
+  if (_maybePartial) {
+    _env.inMaybePartial--;
+  }
+  assert(!_env.callStack.empty());
+  _env.callStack.pop_back();
 }
 
 FlatteningError::FlatteningError(EnvI& env, const Location& loc, const std::string& msg)

@@ -369,6 +369,8 @@ public:
 class CallStackItem {
 private:
   EnvI& _env;
+  enum CSIType { CSI_NONE, CSI_VD, CSI_REDUNDANT, CSI_SYMMETRY } _csiType;
+  bool _maybePartial;
 
 public:
   CallStackItem(EnvI& env0, Expression* e);
