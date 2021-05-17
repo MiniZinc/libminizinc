@@ -1269,7 +1269,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
           push_dependent_constraints(env, ident, constraintQueue);
           if (vdi != nullptr) {
             if (env.varOccurrences.occurrences(vd) == 0) {
-              vdi->remove();
+              deletedVarDecls.push_back(vdi->e());
             }
           } else {
             ii->remove();
