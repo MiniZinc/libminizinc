@@ -112,20 +112,22 @@ bool Solns2Out::processOption(int& i, std::vector<std::string>& argv,
   } else if (cop.getOption("--output-raw",
                            &opt.flagOutputRaw)) {  // NOLINT: Allow repeated empty if
     // Parsed by reference
-  } else if (cop.getOption("--only-sections", &buffer)) {
-    std::stringstream ss(buffer);
+  } else if (cop.getOption("--only-sections", &opt.onlySectionsString)) {
+    std::stringstream ss(opt.onlySectionsString);
     while (ss.good()) {
       std::string section;
       getline(ss, section, ',');
       opt.onlySections.insert(section);
     }
-  } else if (cop.getOption("--not-sections", &buffer)) {
-    std::stringstream ss(buffer);
+  } else if (cop.getOption("--not-sections", &opt.notSectionsString)) {
+    std::stringstream ss(opt.notSectionsString);
     while (ss.good()) {
       std::string section;
       getline(ss, section, ',');
       opt.notSections.insert(section);
     }
+  } else if (cop.getOption("--is-checker")) {
+    opt.flagIsChecker = true;
   } else if (opt.flagStandaloneSolns2Out) {
     std::string oznfile(argv[i]);
     if (oznfile.length() <= 4) {
@@ -247,7 +249,8 @@ void Solns2Out::declNewOutput() {
 
 void Solns2Out::printSolution(std::istream& sol, std::ostream& os, bool outputTime) {
   if (opt.flagEncapsulateJSON) {
-    os << "{\"type\": \"solution\", \"output\": ";
+    std::string t = opt.flagIsChecker ? "checker" : "solution";
+    os << "{\"type\": \"" << t << "\", \"output\": ";
     std::string line;
     while (std::getline(sol, line)) {
       // Remove line breaks from JSON object
@@ -315,6 +318,7 @@ bool Solns2Out::evalOutput() {
       std::string line;
       if (std::getline(checkerStream, line)) {
         if (opt.flagEncapsulateJSON) {
+          _os << line << "\n";
         } else {
           _os << "% Solution checker report:\n";
           _os << "% " << line << "\n";
@@ -402,8 +406,7 @@ void Solns2Out::checkSolution(std::ostream& oss) {
   MznSolver slv(oss, _log, _starttime);
   slv.s2out.opt.solutionSeparator = "";
   try {
-    std::vector<std::string> args({"--solver", "org.minizinc.gecode_presolver"});
-    slv.run(args, checker.str(), "minizinc", "checker.mzc");
+    slv.run(checkerArgs(), checker.str(), "minizinc", "checker.mzc");
   } catch (const LocationException& e) {
     oss << e.loc() << ":" << std::endl;
     oss << e.what() << ": " << e.msg() << std::endl;
@@ -421,6 +424,22 @@ void Solns2Out::checkSolution(std::ostream& oss) {
 #endif
 }
 
+std::vector<std::string> Solns2Out::checkerArgs() const {
+  std::vector<std::string> args({"--solver", "org.minizinc.gecode_presolver", "--is-checker"});
+  if (opt.flagEncapsulateJSON) {
+    args.emplace_back("--encapsulate-json");
+  }
+  if (!opt.onlySections.empty()) {
+    args.emplace_back("--only-sections");
+    args.push_back(opt.onlySectionsString);
+  }
+  if (!opt.notSections.empty()) {
+    args.emplace_back("--not-sections");
+    args.push_back(opt.notSectionsString);
+  }
+  return args;
+}
+
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static): Appears static without Gecode
 void Solns2Out::checkStatistics(std::ostream& oss) {
 #ifdef HAS_GECODE
@@ -435,8 +454,7 @@ void Solns2Out::checkStatistics(std::ostream& oss) {
   MznSolver slv(oss, oss, _starttime);
   slv.s2out.opt.solutionSeparator = "";
   try {
-    std::vector<std::string> args({"--solver", "org.minizinc.gecode_presolver"});
-    slv.run(args, checker.str(), "minizinc", "checker.mzc");
+    slv.run(checkerArgs(), checker.str(), "minizinc", "checker.mzc");
   } catch (const LocationException& e) {
     oss << e.loc() << ":" << std::endl;
     oss << e.what() << ": " << e.msg() << std::endl;

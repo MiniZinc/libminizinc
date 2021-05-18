@@ -49,6 +49,7 @@ protected:
   std::string _statisticsCheckerModel;
   bool _fNewSol2Print = false;  // should be set for evalOutput to work
   std::string _stats;
+
 public:
   std::string solution;
   std::string comments;
@@ -67,6 +68,7 @@ public:
     std::string flagOutputNoncanonical;
     std::string flagOutputRaw;
     int flagNumberOutput = -1;
+    bool flagIsChecker = false;
     /// Default values, also used for input
     const char* const solutionSeparatorDef = "----------";
     const char* const unsatisfiableMsgDef = "=====UNSATISFIABLE=====";
@@ -85,7 +87,9 @@ public:
     std::string errorMsg = errorMsgDef;
     std::string searchCompleteMsg = searchCompleteMsgDef;
 
+    std::string onlySectionsString;
     std::unordered_set<std::string> onlySections;
+    std::string notSectionsString;
     std::unordered_set<std::string> notSections;
   } opt;
 
@@ -173,6 +177,7 @@ protected:
   /// Parsing fznsolver's complete raw text output
   void parseAssignments(std::string& solution);
   /// Checking solution against checker model
+  std::vector<std::string> checkerArgs() const;
   void checkSolution(std::ostream& os);
   void checkStatistics(std::ostream& os);
   bool evalOutputInternal(std::ostream& fout);

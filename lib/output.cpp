@@ -1021,15 +1021,17 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
     e.model->setOutputItem(oi);
   }
 
+  // Only create _checker output if not JSON encapsulated
+  bool includeChecker = hasChecker && !encapsulateJSON;
   switch (outputMode) {
     case FlatteningOptions::OUTPUT_DZN:
-      create_dzn_output_item(e, outputObjective, includeOutputItem, hasChecker, false);
+      create_dzn_output_item(e, outputObjective, includeOutputItem, includeChecker, false);
       break;
     case FlatteningOptions::OUTPUT_JSON:
-      create_json_output_item(e, outputObjective, includeOutputItem, hasChecker);
+      create_json_output_item(e, outputObjective, includeOutputItem, includeChecker);
       break;
     case FlatteningOptions::OUTPUT_CHECKER:
-      create_dzn_output_item(e, outputObjective, includeOutputItem, hasChecker, true);
+      create_dzn_output_item(e, outputObjective, includeOutputItem, includeChecker, true);
       break;
     default:
       if (e.model->outputItem() == nullptr) {
@@ -1039,6 +1041,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
   }
 
   if (encapsulateJSON) {
+    // Encapsulate the created output item in JSON
     create_encapsulated_output_item(e);
   }
 
