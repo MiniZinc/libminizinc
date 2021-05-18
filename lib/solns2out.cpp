@@ -427,7 +427,7 @@ void Solns2Out::checkSolution(std::ostream& oss) {
 std::vector<std::string> Solns2Out::checkerArgs() const {
   std::vector<std::string> args({"--solver", "org.minizinc.gecode_presolver", "--is-checker"});
   if (opt.flagEncapsulateJSON) {
-    args.emplace_back("--encapsulate-json");
+    args.emplace_back("--json-stream");
   }
   if (!opt.onlySections.empty()) {
     args.emplace_back("--only-sections");

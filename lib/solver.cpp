@@ -570,7 +570,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       randomSeed = atoi(argv[i].c_str());
     } else if (argv[i] == "--compiler-statistics") {
       flagCompilerStatistics = true;
-    } else if (argv[i] == "--encapsulate-json") {
+    } else if (argv[i] == "--json-stream") {
       flagEncapsulateJSON = true;
     } else {
       if ((argv[i] == "--fzn-cmd" || argv[i] == "--flatzinc-cmd") && solver.empty()) {
