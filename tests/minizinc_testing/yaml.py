@@ -35,11 +35,8 @@ def mapping(tag):
                 return obj_class()
 
         def represent(dumper, data):
-            attrs = {
-                key: value
-                for key, value in data.__dict__.items()
-                if value is not Undefined
-            }
+            items = data.items() if hasattr(data, "items") else data.__dict__.items()
+            attrs = {key: value for key, value in items if value is not Undefined}
             return dumper.represent_mapping(tag, attrs)
 
         yaml.add_constructor(tag, construct, Loader=Loader)
