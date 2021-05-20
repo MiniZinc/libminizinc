@@ -84,5 +84,5 @@ include "value_precede.mzn";
 
 array[1..3] of var opt 1..3: x;
 
-constraint fzn_value_precede_int_opt(1,2,x);
+constraint value_precede(1, 2, x);
 solve satisfy;
