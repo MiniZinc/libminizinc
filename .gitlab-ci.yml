@@ -2,6 +2,7 @@ stages:
   - build
   - test
   - trigger
+  - bench
 
 .download_bundle: &download_bundle
   - curl --location --header "PRIVATE-TOKEN:$ACCESS_TOKEN" --silent https://gitlab.com/api/v4/snippets/1796163/raw | tr -d '\r' > download.sh
@@ -242,6 +243,71 @@ test:win64:full:
   extends: [.tests_win64, .tests_full]
   cache:
     key: test_win64_full
+
+# ------------ Benchmarking -----------
+
+.flatten_benchmark:
+  stage: bench
+  variables:
+    MZNARCH: linux
+    # Run on SLURM using srun
+    FLATTEN_PREFIX: srun -w critical001 --nice --mem=8192 -t 10
+    PARALLEL_JOBS: '-1' # All in parallel, SLURM manages queue
+  tags: [slurm]
+  dependencies: ["build:linux"]
+  needs: ["build:linux"]
+  before_script:
+    - cd tests/flattening
+    - mkdir -p results
+    # Download instances to benchmark
+    - curl --location --silent https://gitlab.com/-/snippets/2095682/raw/master/instances.csv | tr -d '\r' > instances.csv
+    - git clone https://github.com/minizinc/minizinc-benchmarks.git
+  script:
+    # Run benchmarks
+    - python3 flatten.py --minizinc="$CI_PROJECT_DIR/minizinc/bin/minizinc" --prefix-args="$FLATTEN_PREFIX" --args="-G $MZNLIB" --parallel="$PARALLEL_JOBS" instances.csv results/stats.csv
+  artifacts:
+    paths:
+      - tests/flattening/results/
+    expose_as: $CI_JOB_NAME
+  cache:
+    key: "$CI_JOB_STAGE:$CI_JOB_NAME"
+    paths: [.cache/pip]
+
+bench:std:
+  extends: .flatten_benchmark
+  variables:
+    MZNLIB: std
+  artifacts:
+    expose_as: bench-std
+  only: [tags, master, develop]
+  allow_failure: true
+
+bench:linear:
+  extends: .flatten_benchmark
+  variables:
+    MZNLIB: linear
+  artifacts:
+    expose_as: bench-linear
+  only: [tags, master, develop]
+  allow_failure: true
+
+bench:std:manual:
+  extends: .flatten_benchmark
+  variables:
+    MZNLIB: std
+  artifacts:
+    expose_as: bench-std-manual
+  only: [merge_requests, pipelines]
+  when: manual
+
+bench:linear:manual:
+  extends: .flatten_benchmark
+  variables:
+    MZNLIB: linear
+  artifacts:
+    expose_as: bench-linear-manual
+  only: [merge_requests, pipelines]
+  when: manual
 
 # ----------- Documentation -----------
 
