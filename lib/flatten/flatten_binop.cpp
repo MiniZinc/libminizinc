@@ -981,6 +981,7 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
       ctx0.i = C_MIX;
       ctx1.i = C_MIX;
       if (isBuiltin && boe0->type().isint()) {
+        GCLock lock;
         IntBounds bounds0 = compute_int_bounds(env, boe0);
         if (bounds0.valid && bounds0.u < 0) {
           ctx1.i = -ctx.i;
@@ -999,6 +1000,7 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
       ctx0.i = C_MIX;
       ctx1.i = C_MIX;
       if (isBuiltin && boe0->type().isint()) {
+        GCLock lock;
         IntBounds bounds0 = compute_int_bounds(env, boe0);
         if (bounds0.valid && bounds0.u < 0) {
           ctx1.i = +ctx.i;
