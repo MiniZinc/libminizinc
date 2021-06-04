@@ -49,23 +49,23 @@ public:
 
   /** Create a string representing the name (and unique identifier) of a variable from a variable
    * declaration. */
-  static std::string getVarName(const VarDecl& vd);
+  static std::string getVarName(const VarDecl* vd);
 
   /** Create a string representing the name (and unique identifier) of a constraint from a specific
    * call expression. */
-  static std::string getConstraintName(const Call& c);
+  static std::string getConstraintName(const Call* c);
 
   /** Extract an array literal from an expression. */
-  static const ArrayLit& getArrayLit(const Expression* e);
+  static const ArrayLit* getArrayLit(const Expression* e);
 
   /** Create a vector of double from a vector containing Expression being integer literal IntLit. */
-  static std::vector<double> fromVecInt(const ArrayLit& v_int);
+  static std::vector<double> fromVecInt(const ArrayLit* v_int);
 
   /** Create a vector of double from a vector containing Expression being float literal FloatLit. */
-  static std::vector<double> fromVecFloat(const ArrayLit& v_fp);
+  static std::vector<double> fromVecFloat(const ArrayLit* v_fp);
 
   /** Create a vector of variable names from a vector containing Expression being identifier Id. */
-  static std::vector<std::string> fromVecId(const ArrayLit& v_id);
+  static std::vector<std::string> fromVecId(const ArrayLit* v_id);
 
   /* *** *** *** Phase 1: collecting data from MZN *** *** *** */
 
@@ -106,7 +106,7 @@ public:
    *  If a variable is bounded only on one side, then the domain is NULL and the bound is expressed
    * through a constraint.
    */
-  void addVarDecl(const VarDecl& vd, const TypeInst& ti, const Expression& rhs);
+  void addVarDecl(const VarDecl* vd, const TypeInst* ti, const Expression* rhs);
 
   /** Add an integer variable declaration to the NL File. */
   void addVarDeclInteger(const std::string& name, const IntSetVal* isv, bool toReport);
@@ -118,7 +118,7 @@ public:
 
   /** Add a constraint to the NL File.
    * This method is a dispatcher for all the other constraints methods below. */
-  void analyseConstraint(const Call& c);
+  void analyseConstraint(const Call* c);
 
   // --- --- --- Helpers
 
@@ -154,11 +154,11 @@ public:
   // (we only have floating point in NL)
 
   /** Create a linear constraint [coeffs] *+ [vars] = value. */
-  void linconsEq(const Call& c, const std::vector<double>& coeffs,
+  void linconsEq(const Call* c, const std::vector<double>& coeffs,
                  const std::vector<std::string>& vars, const NLToken& value);
 
   /** Create a linear constraint [coeffs] *+ [vars] <= value. */
-  void linconsLe(const Call& c, const std::vector<double>& coeffs,
+  void linconsLe(const Call* c, const std::vector<double>& coeffs,
                  const std::vector<std::string>& vars, const NLToken& value);
 
   /** Create a linear logical constraint [coeffs] *+ [vars] PREDICATE value.
@@ -166,7 +166,7 @@ public:
    *  Warnings:   - Creates a logical constraint
    *              - Only use for conmparisons that cannot be expressed with '=' xor '<='.
    */
-  void linconsPredicate(const Call& c, NLToken::OpCode oc, const std::vector<double>& coeffs,
+  void linconsPredicate(const Call* c, NLToken::OpCode oc, const std::vector<double>& coeffs,
                         const std::vector<std::string>& vars, const NLToken& value);
 
   // --- --- --- Non Linear Builders
@@ -183,249 +183,249 @@ public:
    *  Use the jacobian and the bound on constraint to translate into x - y = 0
    *  Simply update the bound if one is a constant.
    */
-  void nlconsEq(const Call& c, const NLToken& x, const NLToken& y);
+  void nlconsEq(const Call* c, const NLToken& x, const NLToken& y);
 
   /** Create a non linear constraint x <= y
    *  Use the jacobian and the bound on constraint to translate into x - y <= 0
    *  Simply update the bound if one is a constant.
    */
-  void nlconsLe(const Call& c, const NLToken& x, const NLToken& y);
+  void nlconsLe(const Call* c, const NLToken& x, const NLToken& y);
 
   /** Create a non linear constraint with a predicate: x PREDICATE y
    *  Use a generic comparison operator.
    *  Warnings:   - Creates a logical constraint
    *              - Only use for conmparisons that cannot be expressed with '=' xor '<='.
    */
-  void nlconsPredicate(const Call& c, NLToken::OpCode oc, const NLToken& x, const NLToken& y);
+  void nlconsPredicate(const Call* c, NLToken::OpCode oc, const NLToken& x, const NLToken& y);
 
   /** Create a non linear constraint with a binary operator: x OPERATOR y = z */
-  void nlconsOperatorBinary(const Call& c, NLToken::OpCode oc, const NLToken& x, const NLToken& y,
+  void nlconsOperatorBinary(const Call* c, NLToken::OpCode oc, const NLToken& x, const NLToken& y,
                             const NLToken& z);
 
   /** Create a non linear constraint with a binary operator: x OPERATOR y = z.
    *  OPERATOR is now a Multiop, with a count of 2 (so the choice of the method to use depends on
    * the LN implementation) */
-  void nlconsOperatorBinary(const Call& c, NLToken::MOpCode moc, const NLToken& x, const NLToken& y,
+  void nlconsOperatorBinary(const Call* c, NLToken::MOpCode moc, const NLToken& x, const NLToken& y,
                             const NLToken& z);
 
   /** Create a non linear constraint with an unary operator: OPERATOR x = y */
-  void nlconsOperatorUnary(const Call& c, NLToken::OpCode oc, const NLToken& x, const NLToken& y);
+  void nlconsOperatorUnary(const Call* c, NLToken::OpCode oc, const NLToken& x, const NLToken& y);
 
   /** Create a non linear constraint, specialized for log2 unary operator: Log2(x) = y */
-  void nlconsOperatorUnaryLog2(const Call& c, const NLToken& x, const NLToken& y);
+  void nlconsOperatorUnaryLog2(const Call* c, const NLToken& x, const NLToken& y);
 
   // --- --- --- Integer Linear Constraints
 
   /** Linar constraint: [coeffs] *+ [vars] = value */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void consint_lin_eq(const Call& c);
+  void consint_lin_eq(const Call* c);
 
   /** Linar constraint: [coeffs] *+ [vars] =< value */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void consint_lin_le(const Call& c);
+  void consint_lin_le(const Call* c);
 
   /** Linar constraint: [coeffs] *+ [vars] != value */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void consint_lin_ne(const Call& c);
+  void consint_lin_ne(const Call* c);
 
   // --- --- --- Integer Non Linear Predicate Constraints
 
   /** Non linear constraint x = y */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void consint_eq(const Call& c);
+  void consint_eq(const Call* c);
 
   /** Non linear constraint x <= y */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void consint_le(const Call& c);
+  void consint_le(const Call* c);
 
   /** Non linear constraint x != y */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void consint_ne(const Call& c);
+  void consint_ne(const Call* c);
 
   // --- --- --- Integer Non Linear Binary Operator Constraints
 
   /** Non linear constraint x + y = z */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void consint_plus(const Call& c);
+  void consint_plus(const Call* c);
 
   /** Non linear constraint x * y = z */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void consint_times(const Call& c);
+  void consint_times(const Call* c);
 
   /** Non linear constraint x / y = z */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void consint_div(const Call& c);
+  void consint_div(const Call* c);
 
   /** Non linear constraint x mod y = z */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void consint_mod(const Call& c);
+  void consint_mod(const Call* c);
 
   /** Non linear constraint x pow y = z */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void int_pow(const Call& c);
+  void int_pow(const Call* c);
 
   /** Non linear constraint max(x, y) = z */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void int_max(const Call& c);
+  void int_max(const Call* c);
 
   /** Non linear constraint min(x, y) = z */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void int_min(const Call& c);
+  void int_min(const Call* c);
 
   // --- --- --- Integer Non Linear Unary Operator Constraints
 
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void int_abs(const Call& c);
+  void int_abs(const Call* c);
 
   // --- --- --- Floating Point Linear Constraints
 
   /** Linar constraint: [coeffs] *+ [vars] = value */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void consfp_lin_eq(const Call& c);
+  void consfp_lin_eq(const Call* c);
 
   /** Linar constraint: [coeffs] *+ [vars] = value */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void consfp_lin_le(const Call& c);
+  void consfp_lin_le(const Call* c);
 
   /** Linar constraint: [coeffs] *+ [vars] != value */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void consfp_lin_ne(const Call& c);
+  void consfp_lin_ne(const Call* c);
 
   /** Linar constraint: [coeffs] *+ [vars] < value */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void consfp_lin_lt(const Call& c);
+  void consfp_lin_lt(const Call* c);
 
   // --- --- --- Floating Point Non Linear Predicate Constraints
 
   /** Non linear constraint x = y */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void consfp_eq(const Call& c);
+  void consfp_eq(const Call* c);
 
   /** Non linear constraint x <= y */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void consfp_le(const Call& c);
+  void consfp_le(const Call* c);
 
   /** Non linear constraint x != y */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void consfp_ne(const Call& c);
+  void consfp_ne(const Call* c);
 
   /** Non linear constraint x < y */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void consfp_lt(const Call& c);
+  void consfp_lt(const Call* c);
 
   // --- --- --- Floating Point Non Linear Binary Operator Constraints
 
   /** Non linear constraint x + y = z */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void consfp_plus(const Call& c);
+  void consfp_plus(const Call* c);
 
   /** Non linear constraint x - y = z */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void consfp_minus(const Call& c);
+  void consfp_minus(const Call* c);
 
   /** Non linear constraint x * y = z */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void consfp_times(const Call& c);
+  void consfp_times(const Call* c);
 
   /** Non linear constraint x / y = z */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void consfp_div(const Call& c);
+  void consfp_div(const Call* c);
 
   /** Non linear constraint x mod y = z */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void consfp_mod(const Call& c);
+  void consfp_mod(const Call* c);
 
   /** Non linear constraint x pow y = z */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void float_pow(const Call& c);
+  void float_pow(const Call* c);
 
   /** Non linear constraint max(x, y) = z */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void float_max(const Call& c);
+  void float_max(const Call* c);
 
   /** Non linear constraint min(x, y) = z */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void float_min(const Call& c);
+  void float_min(const Call* c);
 
   // --- --- --- Floating Point Non Linear Unary Operator Constraints
 
   /** Non linear constraint abs x = y */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void float_abs(const Call& c);
+  void float_abs(const Call* c);
 
   /** Non linear constraint acos x = y */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void float_acos(const Call& c);
+  void float_acos(const Call* c);
 
   /** Non linear constraint acosh x = y */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void float_acosh(const Call& c);
+  void float_acosh(const Call* c);
 
   /** Non linear constraint asin x = y */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void float_asin(const Call& c);
+  void float_asin(const Call* c);
 
   /** Non linear constraint asinh x = y */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void float_asinh(const Call& c);
+  void float_asinh(const Call* c);
 
   /** Non linear constraint atan x = y */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void float_atan(const Call& c);
+  void float_atan(const Call* c);
 
   /** Non linear constraint atanh x = y */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void float_atanh(const Call& c);
+  void float_atanh(const Call* c);
 
   /** Non linear constraint cos x = y */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void float_cos(const Call& c);
+  void float_cos(const Call* c);
 
   /** Non linear constraint cosh x = y */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void float_cosh(const Call& c);
+  void float_cosh(const Call* c);
 
   /** Non linear constraint exp x = y */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void float_exp(const Call& c);
+  void float_exp(const Call* c);
 
   /** Non linear constraint ln x = y */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void float_ln(const Call& c);
+  void float_ln(const Call* c);
 
   /** Non linear constraint log10 x = y */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void float_log10(const Call& c);
+  void float_log10(const Call* c);
 
   /** Non linear constraint log2 x = y */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void float_log2(const Call& c);
+  void float_log2(const Call* c);
 
   /** Non linear constraint sqrt x = y */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void float_sqrt(const Call& c);
+  void float_sqrt(const Call* c);
 
   /** Non linear constraint sin x = y */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void float_sin(const Call& c);
+  void float_sin(const Call* c);
 
   /** Non linear constraint sinh x = y */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void float_sinh(const Call& c);
+  void float_sinh(const Call* c);
 
   /** Non linear constraint tan x = y */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void float_tan(const Call& c);
+  void float_tan(const Call* c);
 
   /** Non linear constraint tanh x = y */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void float_tanh(const Call& c);
+  void float_tanh(const Call* c);
 
   // --- --- --- Other
 
   /** Integer x to floating point y. Constraint x = y translated into x - y = 0. */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  void int2float(const Call& c);
+  void int2float(const Call* c);
 
   /* *** *** *** Phase 2: processing *** *** *** */
 

@@ -136,7 +136,7 @@ void flatten_linexp_call(EnvI& env, Ctx ctx, const Ctx& nctx, ASTString& cid, Ca
     Type alt = al->type();
     alt.dim(1);
     GCLock lock;
-    al = new ArrayLit(al->loc(), *al);
+    al = new ArrayLit(al->loc(), al);
     al->type(alt);
     al_ka = al;
   }
@@ -229,7 +229,7 @@ void flatten_linexp_call(EnvI& env, Ctx ctx, const Ctx& nctx, ASTString& cid, Ca
       std::vector<std::pair<int, int> > dims(1);
       dims[0].first = 1;
       dims[0].second = al->size();
-      rd = new ArrayLit(al->loc(), *al, dims);
+      rd = new ArrayLit(al->loc(), al, dims);
       Type t = al->type();
       t.dim(1);
       rd->type(t);

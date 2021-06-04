@@ -36,19 +36,19 @@ string NLFile::getVarName(const Id* id) {
 
 /** Create a string representing the name (and unique identifier) of a variable from a variable
  * declaration. */
-string NLFile::getVarName(const VarDecl& vd) { return getVarName(vd.id()); }
+string NLFile::getVarName(const VarDecl* vd) { return getVarName(vd->id()); }
 
 /** Create a string representing the name (and unique identifier) of a constraint from a specific
  * call expression. */
-string NLFile::getConstraintName(const Call& c) {
+string NLFile::getConstraintName(const Call* c) {
   stringstream os;
-  os << c.id() << "_" << static_cast<const void*>(&c);  // use the memory address as unique ID.
+  os << c->id() << "_" << static_cast<const void*>(c);  // use the memory address as unique ID.
   string name = os.str();
   return name;
 }
 
 /** Obtain the vector of an array, either from an identifier or an array litteral */
-const ArrayLit& NLFile::getArrayLit(const Expression* e) {
+const ArrayLit* NLFile::getArrayLit(const Expression* e) {
   switch (e->eid()) {
     case Expression::E_ID: {
       return getArrayLit(
@@ -56,8 +56,7 @@ const ArrayLit& NLFile::getArrayLit(const Expression* e) {
     }
 
     case Expression::E_ARRAYLIT: {
-      const ArrayLit& al = *e->cast<ArrayLit>();
-      return al;
+      return e->cast<ArrayLit>();
     }
 
     default:
@@ -66,30 +65,30 @@ const ArrayLit& NLFile::getArrayLit(const Expression* e) {
 }
 
 /** Create a vector of double from a vector containing Expression being IntLit. */
-vector<double> NLFile::fromVecInt(const ArrayLit& v_int) {
+vector<double> NLFile::fromVecInt(const ArrayLit* v_int) {
   vector<double> v = {};
-  for (unsigned int i = 0; i < v_int.size(); ++i) {
-    double d = static_cast<double>(v_int[i]->cast<IntLit>()->v().toInt());
+  for (unsigned int i = 0; i < v_int->size(); ++i) {
+    double d = static_cast<double>((*v_int)[i]->cast<IntLit>()->v().toInt());
     v.push_back(d);
   }
   return v;
 }
 
 /** Create a vector of double from a vector containing Expression being FloatLit. */
-vector<double> NLFile::fromVecFloat(const ArrayLit& v_fp) {
+vector<double> NLFile::fromVecFloat(const ArrayLit* v_fp) {
   vector<double> v = {};
-  for (unsigned int i = 0; i < v_fp.size(); ++i) {
-    double d = v_fp[i]->cast<FloatLit>()->v().toDouble();
+  for (unsigned int i = 0; i < v_fp->size(); ++i) {
+    double d = (*v_fp)[i]->cast<FloatLit>()->v().toDouble();
     v.push_back(d);
   }
   return v;
 }
 
 /** Create a vector of variable names from a vector containing Expression being identifier Id. */
-vector<string> NLFile::fromVecId(const ArrayLit& v_id) {
+vector<string> NLFile::fromVecId(const ArrayLit* v_id) {
   vector<string> v = {};
-  for (unsigned int i = 0; i < v_id.size(); ++i) {
-    string s = getVarName(*(v_id[i]->cast<Id>()->decl()));
+  for (unsigned int i = 0; i < v_id->size(); ++i) {
+    string s = getVarName((*v_id)[i]->cast<Id>()->decl());
     v.push_back(s);
   }
   return v;
@@ -103,45 +102,45 @@ vector<string> NLFile::fromVecId(const ArrayLit& v_id) {
  * definition (following the pointer starting at the ID) Hence, we do not reproduce arrays in the NL
  * file.
  */
-void NLFile::addVarDecl(const VarDecl& vd, const TypeInst& ti, const Expression& rhs) {
+void NLFile::addVarDecl(const VarDecl* vd, const TypeInst* ti, const Expression* rhs) {
   // Get the name
   string name = getVarName(vd);
   // Discriminate according to the type:
-  if (ti.isEnum()) {
+  if (ti->isEnum()) {
     should_not_happen("Enum type in the flatzinc");
-  } else if (ti.isarray()) {
+  } else if (ti->isarray()) {
     DEBUG_MSG("     Definition of array " << name << " is not reproduced in nl.");
 
     // Look for the annotation "output_array"
-    for (ExpressionSetIter it = vd.ann().begin(); it != vd.ann().end(); ++it) {
+    for (ExpressionSetIter it = vd->ann().begin(); it != vd->ann().end(); ++it) {
       Call* c = (*it)->dynamicCast<Call>();
       if (c != nullptr && c->id() == (constants().ann.output_array)) {
         NLArray array;
         array.name = name;
-        array.isInteger = ti.type().bt() == Type::BT_INT;
+        array.isInteger = ti->type().bt() == Type::BT_INT;
 
         // Search the 'annotation' array
-        const ArrayLit& aa = getArrayLit(c->arg(0));
-        for (int i = 0; i < aa.size(); ++i) {
-          IntSetVal* r = aa[i]->cast<SetLit>()->isv();
+        const ArrayLit* aa = getArrayLit(c->arg(0));
+        for (int i = 0; i < aa->size(); ++i) {
+          IntSetVal* r = (*aa)[i]->cast<SetLit>()->isv();
           stringstream ss;
           ss << r->min().toInt() << ".." << r->max().toInt();
           array.dimensions.push_back(ss.str());
         }
 
         // Search the 'real' array. Items can be an identifier or a litteral.
-        const ArrayLit& ra = getArrayLit(&rhs);
-        for (int i = 0; i < ra.size(); ++i) {
+        const ArrayLit* ra = getArrayLit(rhs);
+        for (int i = 0; i < ra->size(); ++i) {
           NLArray::Item item;
 
-          if (ra[i]->isa<Id>()) {
-            item.variable = getVarName(ra[i]->cast<Id>());
-          } else if (ra[i]->isa<IntLit>()) {
+          if ((*ra)[i]->isa<Id>()) {
+            item.variable = getVarName((*ra)[i]->cast<Id>());
+          } else if ((*ra)[i]->isa<IntLit>()) {
             assert(array.isInteger);
-            item.value = static_cast<double>(ra[i]->cast<IntLit>()->v().toInt());
+            item.value = static_cast<double>((*ra)[i]->cast<IntLit>()->v().toInt());
           } else {
             assert(!array.isInteger);  // Floating point
-            item.value = ra[i]->cast<FloatLit>()->v().toDouble();
+            item.value = (*ra)[i]->cast<FloatLit>()->v().toDouble();
           }
 
           array.items.push_back(item);
@@ -154,12 +153,12 @@ void NLFile::addVarDecl(const VarDecl& vd, const TypeInst& ti, const Expression&
     }
   } else {
     // Check if the variable needs to be reported
-    bool toReport = vd.ann().contains(constants().ann.output_var);
+    bool toReport = vd->ann().contains(constants().ann.output_var);
     DEBUG_MSG("     '" << name << "' to be reported? " << toReport);
 
     // variable declaration
-    const Type& type = ti.type();
-    const Expression* domain = ti.domain();
+    const Type& type = ti->type();
+    const Expression* domain = ti->domain();
 
     // Check the type: integer or floatin point
     assert(type.isvarint() || type.isvarfloat());
@@ -230,9 +229,9 @@ void NLFile::addVarDeclFloat(const string& name, const FloatSetVal* fsv, bool to
 // --- --- --- Constraints analysis
 
 /** Dispatcher for constraint analysis. */
-void NLFile::analyseConstraint(const Call& c) {
+void NLFile::analyseConstraint(const Call* c) {
   // ID of the call
-  auto id = c.id();
+  auto id = c->id();
   // Constants for integer builtins
   auto consint = constants().ids.int_;
   // Constants for floating point builtins
@@ -385,7 +384,7 @@ void NLFile::analyseConstraint(const Call& c) {
 
   // Not implemented
   else {
-    should_not_happen("Builtins " << c.id() << " not implemented or not recognized.");
+    should_not_happen("Builtins " << c->id() << " not implemented or not recognized.");
   }
 }
 
@@ -398,7 +397,7 @@ NLToken NLFile::getTokenFromVarOrInt(const Expression* e) {
     double value = static_cast<double>(e->cast<IntLit>()->v().toInt());
     return NLToken::n(value);
   }  // Variable
-  VarDecl& vd = *(e->cast<Id>()->decl());
+  VarDecl* vd = e->cast<Id>()->decl();
   string n = getVarName(vd);
   return NLToken::v(n);
 }
@@ -411,7 +410,7 @@ NLToken NLFile::getTokenFromVarOrFloat(const Expression* e) {
     double value = e->cast<FloatLit>()->v().toDouble();
     return NLToken::n(value);
   }  // Variable
-  VarDecl& vd = *(e->cast<Id>()->decl());
+  VarDecl* vd = e->cast<Id>()->decl();
   string n = getVarName(vd);
   return NLToken::v(n);
 }
@@ -420,7 +419,7 @@ NLToken NLFile::getTokenFromVarOrFloat(const Expression* e) {
 NLToken NLFile::getTokenFromVar(const Expression* e) {
   assert(!e->type().isPar());
   // Variable
-  VarDecl& vd = *(e->cast<Id>()->decl());
+  VarDecl* vd = e->cast<Id>()->decl();
   string n = getVarName(vd);
   return NLToken::v(n);
 }
@@ -456,7 +455,7 @@ void NLFile::makeSigmaMult(vector<NLToken>& expressionGraph, const vector<double
 // --- --- --- Linear Builders
 
 /** Create a linear constraint [coeffs] *+ [vars] = value. */
-void NLFile::linconsEq(const Call& c, const vector<double>& coeffs, const vector<string>& vars,
+void NLFile::linconsEq(const Call* c, const vector<double>& coeffs, const vector<string>& vars,
                        const NLToken& value) {
   // Create the Algebraic Constraint and set the data
   NLAlgCons cons;
@@ -491,7 +490,7 @@ void NLFile::linconsEq(const Call& c, const vector<double>& coeffs, const vector
 }
 
 /** Create a linear constraint [coeffs] *+ [vars] <= value. */
-void NLFile::linconsLe(const Call& c, const vector<double>& coeffs, const vector<string>& vars,
+void NLFile::linconsLe(const Call* c, const vector<double>& coeffs, const vector<string>& vars,
                        const NLToken& value) {
   // Create the Algebraic Constraint and set the data
   NLAlgCons cons;
@@ -530,7 +529,7 @@ void NLFile::linconsLe(const Call& c, const vector<double>& coeffs, const vector
  *  Warnings:   - Creates a logical constraint
  *              - Only use for conmparisons that cannot be expressed with '=' xor '<='.
  */
-void NLFile::linconsPredicate(const Call& c, NLToken::OpCode oc, const vector<double>& coeffs,
+void NLFile::linconsPredicate(const Call* c, NLToken::OpCode oc, const vector<double>& coeffs,
                               const vector<string>& vars, const NLToken& value) {
   // Create the Logical Constraint and set the data
   NLLogicalCons cons(logicalConstraints.size());
@@ -554,17 +553,17 @@ void NLFile::linconsPredicate(const Call& c, NLToken::OpCode oc, const vector<do
 }
 
 // --- --- --- Non Linear Builders
-// For predicates, uses 2 variables or literals: x := c.arg(0), y := c.arg(1)
+// For predicates, uses 2 variables or literals: x := c->arg(0), y := c->arg(1)
 // x PREDICATE y
 
-// For operations, uses 3 variables or literals: x := c.arg(0), y := c.arg(1), and z := c.arg(2).
+// For operations, uses 3 variables or literals: x := c->arg(0), y := c->arg(1), and z := c->arg(2).
 // x OPERATOR y = z
 
 /** Create a non linear constraint x = y
  *  Use the jacobian and the bound on constraint to translate into x - y = 0
  *  Simply update the bound if one is a constant.
  */
-void NLFile::nlconsEq(const Call& c, const NLToken& x, const NLToken& y) {
+void NLFile::nlconsEq(const Call* c, const NLToken& x, const NLToken& y) {
   if (x.kind != y.kind) {
     if (x.isConstant()) {
       // Update bound on y
@@ -604,7 +603,7 @@ void NLFile::nlconsEq(const Call& c, const NLToken& x, const NLToken& y) {
  *  Use the jacobian and the bound on constraint to translate into x - y <= 0
  *  Simply update the bound if one is a constant.
  */
-void NLFile::nlconsLe(const Call& c, const NLToken& x, const NLToken& y) {
+void NLFile::nlconsLe(const Call* c, const NLToken& x, const NLToken& y) {
   if (x.kind != y.kind) {
     if (x.isConstant()) {
       // Update lower bound on y
@@ -646,7 +645,7 @@ void NLFile::nlconsLe(const Call& c, const NLToken& x, const NLToken& y) {
  *  Warnings:   - Creates a logical constraint
  *              - Only use for conmparisons that cannot be expressed with '=' xor '<='.
  */
-void NLFile::nlconsPredicate(const Call& c, NLToken::OpCode oc, const NLToken& x,
+void NLFile::nlconsPredicate(const Call* c, NLToken::OpCode oc, const NLToken& x,
                              const NLToken& y) {
   // Create the Logical Constraint and set the data
   NLLogicalCons cons(logicalConstraints.size());
@@ -665,7 +664,7 @@ void NLFile::nlconsPredicate(const Call& c, NLToken::OpCode oc, const NLToken& x
 }
 
 /** Create a non linear constraint with a binary operator: x OPERATOR y = z */
-void NLFile::nlconsOperatorBinary(const Call& c, NLToken::OpCode oc, const NLToken& x,
+void NLFile::nlconsOperatorBinary(const Call* c, NLToken::OpCode oc, const NLToken& x,
                                   const NLToken& y, const NLToken& z) {
   // Create the Algebraic Constraint and set the data
   NLAlgCons cons;
@@ -721,7 +720,7 @@ void NLFile::nlconsOperatorBinary(const Call& c, NLToken::OpCode oc, const NLTok
 /** Create a non linear constraint with a binary operator: x OPERATOR y = z.
  *  OPERATOR is now a Multiop, with a count of 2 (so the choice of the method to use depends on the
  * LN implementation) */
-void NLFile::nlconsOperatorBinary(const Call& c, NLToken::MOpCode moc, const NLToken& x,
+void NLFile::nlconsOperatorBinary(const Call* c, NLToken::MOpCode moc, const NLToken& x,
                                   const NLToken& y, const NLToken& z) {
   // Create the Algebraic Constraint and set the data
   NLAlgCons cons;
@@ -775,7 +774,7 @@ void NLFile::nlconsOperatorBinary(const Call& c, NLToken::MOpCode moc, const NLT
 }
 
 /** Create a non linear constraint with an unary operator: OPERATOR x = y */
-void NLFile::nlconsOperatorUnary(const Call& c, NLToken::OpCode oc, const NLToken& x,
+void NLFile::nlconsOperatorUnary(const Call* c, NLToken::OpCode oc, const NLToken& x,
                                  const NLToken& y) {
   // Create the Algebraic Constraint and set the data
   NLAlgCons cons;
@@ -822,7 +821,7 @@ void NLFile::nlconsOperatorUnary(const Call& c, NLToken::OpCode oc, const NLToke
 }
 
 /** Create a non linear constraint, specialized for log2 unary operator: Log2(x) = y */
-void NLFile::nlconsOperatorUnaryLog2(const Call& c, const NLToken& x, const NLToken& y) {
+void NLFile::nlconsOperatorUnaryLog2(const Call* c, const NLToken& x, const NLToken& y) {
   // Create the Algebraic Constraint and set the data
   NLAlgCons cons;
 
@@ -873,33 +872,33 @@ void NLFile::nlconsOperatorUnaryLog2(const Call& c, const NLToken& x, const NLTo
 
 /** Linar constraint: [coeffs] *+ [vars] = value */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::consint_lin_eq(const Call& c) {
+void NLFile::consint_lin_eq(const Call* c) {
   // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
-  vector<double> coeffs = fromVecInt(getArrayLit(c.arg(0)));
-  vector<string> vars = fromVecId(getArrayLit(c.arg(1)));
-  NLToken value = getTokenFromVarOrInt(c.arg(2));
+  vector<double> coeffs = fromVecInt(getArrayLit(c->arg(0)));
+  vector<string> vars = fromVecId(getArrayLit(c->arg(1)));
+  NLToken value = getTokenFromVarOrInt(c->arg(2));
   // Create the constraint
   linconsEq(c, coeffs, vars, value);
 }
 
 /** Linar constraint: [coeffs] *+ [vars] =< value */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::consint_lin_le(const Call& c) {
+void NLFile::consint_lin_le(const Call* c) {
   // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
-  vector<double> coeffs = fromVecInt(getArrayLit(c.arg(0)));
-  vector<string> vars = fromVecId(getArrayLit(c.arg(1)));
-  NLToken value = getTokenFromVarOrInt(c.arg(2));
+  vector<double> coeffs = fromVecInt(getArrayLit(c->arg(0)));
+  vector<string> vars = fromVecId(getArrayLit(c->arg(1)));
+  NLToken value = getTokenFromVarOrInt(c->arg(2));
   // Create the constraint
   linconsLe(c, coeffs, vars, value);
 }
 
 /** Linar constraint: [coeffs] *+ [vars] != value */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::consint_lin_ne(const Call& c) {
+void NLFile::consint_lin_ne(const Call* c) {
   // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
-  vector<double> coeffs = fromVecInt(getArrayLit(c.arg(0)));
-  vector<string> vars = fromVecId(getArrayLit(c.arg(1)));
-  NLToken value = getTokenFromVarOrInt(c.arg(2));
+  vector<double> coeffs = fromVecInt(getArrayLit(c->arg(0)));
+  vector<string> vars = fromVecId(getArrayLit(c->arg(1)));
+  NLToken value = getTokenFromVarOrInt(c->arg(2));
   // Create the constraint
   linconsPredicate(c, NLToken::OpCode::NE, coeffs, vars, value);
 }
@@ -908,125 +907,125 @@ void NLFile::consint_lin_ne(const Call& c) {
 
 /** Non linear constraint x = y */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::consint_eq(const Call& c) {
-  nlconsEq(c, getTokenFromVarOrInt(c.arg(0)), getTokenFromVarOrInt(c.arg(1)));
+void NLFile::consint_eq(const Call* c) {
+  nlconsEq(c, getTokenFromVarOrInt(c->arg(0)), getTokenFromVarOrInt(c->arg(1)));
 }
 
 /** Non linear constraint x <= y */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::consint_le(const Call& c) {
-  nlconsLe(c, getTokenFromVarOrInt(c.arg(0)), getTokenFromVarOrInt(c.arg(1)));
+void NLFile::consint_le(const Call* c) {
+  nlconsLe(c, getTokenFromVarOrInt(c->arg(0)), getTokenFromVarOrInt(c->arg(1)));
 }
 
 /** Non linear constraint x != y */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::consint_ne(const Call& c) {
-  nlconsPredicate(c, NLToken::OpCode::NE, getTokenFromVarOrInt(c.arg(0)),
-                  getTokenFromVarOrInt(c.arg(1)));
+void NLFile::consint_ne(const Call* c) {
+  nlconsPredicate(c, NLToken::OpCode::NE, getTokenFromVarOrInt(c->arg(0)),
+                  getTokenFromVarOrInt(c->arg(1)));
 }
 
 // --- --- --- Integer Non Linear Binary Operator Constraints
 
 /** Non linear constraint x + y = z */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::consint_plus(const Call& c) {
-  nlconsOperatorBinary(c, NLToken::OpCode::OPPLUS, getTokenFromVarOrInt(c.arg(0)),
-                       getTokenFromVarOrInt(c.arg(1)), getTokenFromVarOrInt(c.arg(2)));
+void NLFile::consint_plus(const Call* c) {
+  nlconsOperatorBinary(c, NLToken::OpCode::OPPLUS, getTokenFromVarOrInt(c->arg(0)),
+                       getTokenFromVarOrInt(c->arg(1)), getTokenFromVarOrInt(c->arg(2)));
 }
 
 /** Non linear constraint x * y = z */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::consint_times(const Call& c) {
-  nlconsOperatorBinary(c, NLToken::OpCode::OPMULT, getTokenFromVarOrInt(c.arg(0)),
-                       getTokenFromVarOrInt(c.arg(1)), getTokenFromVarOrInt(c.arg(2)));
+void NLFile::consint_times(const Call* c) {
+  nlconsOperatorBinary(c, NLToken::OpCode::OPMULT, getTokenFromVarOrInt(c->arg(0)),
+                       getTokenFromVarOrInt(c->arg(1)), getTokenFromVarOrInt(c->arg(2)));
 }
 
 /** Non linear constraint x / y = z */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::consint_div(const Call& c) {
-  nlconsOperatorBinary(c, NLToken::OpCode::OPDIV, getTokenFromVarOrInt(c.arg(0)),
-                       getTokenFromVarOrInt(c.arg(1)), getTokenFromVarOrInt(c.arg(2)));
+void NLFile::consint_div(const Call* c) {
+  nlconsOperatorBinary(c, NLToken::OpCode::OPDIV, getTokenFromVarOrInt(c->arg(0)),
+                       getTokenFromVarOrInt(c->arg(1)), getTokenFromVarOrInt(c->arg(2)));
 }
 
 /** Non linear constraint x mod y = z */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::consint_mod(const Call& c) {
-  nlconsOperatorBinary(c, NLToken::OpCode::OPREM, getTokenFromVarOrInt(c.arg(0)),
-                       getTokenFromVarOrInt(c.arg(1)), getTokenFromVarOrInt(c.arg(2)));
+void NLFile::consint_mod(const Call* c) {
+  nlconsOperatorBinary(c, NLToken::OpCode::OPREM, getTokenFromVarOrInt(c->arg(0)),
+                       getTokenFromVarOrInt(c->arg(1)), getTokenFromVarOrInt(c->arg(2)));
 }
 
 /** Non linear constraint x pow y = z */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::int_pow(const Call& c) {
-  nlconsOperatorBinary(c, NLToken::OpCode::OPPOW, getTokenFromVarOrInt(c.arg(0)),
-                       getTokenFromVarOrInt(c.arg(1)), getTokenFromVarOrInt(c.arg(2)));
+void NLFile::int_pow(const Call* c) {
+  nlconsOperatorBinary(c, NLToken::OpCode::OPPOW, getTokenFromVarOrInt(c->arg(0)),
+                       getTokenFromVarOrInt(c->arg(1)), getTokenFromVarOrInt(c->arg(2)));
 }
 
 /** Non linear constraint max(x, y) = z */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::int_max(const Call& c) {
-  nlconsOperatorBinary(c, NLToken::MOpCode::MAXLIST, getTokenFromVarOrInt(c.arg(0)),
-                       getTokenFromVarOrInt(c.arg(1)), getTokenFromVarOrInt(c.arg(2)));
+void NLFile::int_max(const Call* c) {
+  nlconsOperatorBinary(c, NLToken::MOpCode::MAXLIST, getTokenFromVarOrInt(c->arg(0)),
+                       getTokenFromVarOrInt(c->arg(1)), getTokenFromVarOrInt(c->arg(2)));
 }
 
 /** Non linear constraint min(x, y) = z */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::int_min(const Call& c) {
-  nlconsOperatorBinary(c, NLToken::MOpCode::MINLIST, getTokenFromVarOrInt(c.arg(0)),
-                       getTokenFromVarOrInt(c.arg(1)), getTokenFromVarOrInt(c.arg(2)));
+void NLFile::int_min(const Call* c) {
+  nlconsOperatorBinary(c, NLToken::MOpCode::MINLIST, getTokenFromVarOrInt(c->arg(0)),
+                       getTokenFromVarOrInt(c->arg(1)), getTokenFromVarOrInt(c->arg(2)));
 }
 
 // --- --- --- Integer Non Linear Unary Operator Constraints
 
 /** Non linear constraint abs x = y */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::int_abs(const Call& c) {
-  nlconsOperatorUnary(c, NLToken::OpCode::ABS, getTokenFromVarOrInt(c.arg(0)),
-                      getTokenFromVarOrInt(c.arg(1)));
+void NLFile::int_abs(const Call* c) {
+  nlconsOperatorUnary(c, NLToken::OpCode::ABS, getTokenFromVarOrInt(c->arg(0)),
+                      getTokenFromVarOrInt(c->arg(1)));
 }
 
 // --- --- --- Floating Point Linear Constraints
 
 /** Linar constraint: [coeffs] *+ [vars] = value */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::consfp_lin_eq(const Call& c) {
+void NLFile::consfp_lin_eq(const Call* c) {
   // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
-  vector<double> coeffs = fromVecFloat(getArrayLit(c.arg(0)));
-  vector<string> vars = fromVecId(getArrayLit(c.arg(1)));
-  NLToken value = getTokenFromVarOrFloat(c.arg(2));
+  vector<double> coeffs = fromVecFloat(getArrayLit(c->arg(0)));
+  vector<string> vars = fromVecId(getArrayLit(c->arg(1)));
+  NLToken value = getTokenFromVarOrFloat(c->arg(2));
   // Create the constraint
   linconsEq(c, coeffs, vars, value);
 }
 
 /** Linar constraint: [coeffs] *+ [vars] = value */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::consfp_lin_le(const Call& c) {
+void NLFile::consfp_lin_le(const Call* c) {
   // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
-  vector<double> coeffs = fromVecFloat(getArrayLit(c.arg(0)));
-  vector<string> vars = fromVecId(getArrayLit(c.arg(1)));
-  NLToken value = getTokenFromVarOrFloat(c.arg(2));
+  vector<double> coeffs = fromVecFloat(getArrayLit(c->arg(0)));
+  vector<string> vars = fromVecId(getArrayLit(c->arg(1)));
+  NLToken value = getTokenFromVarOrFloat(c->arg(2));
   // Create the constraint
   linconsLe(c, coeffs, vars, value);
 }
 
 /** Linar constraint: [coeffs] *+ [vars] != value */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::consfp_lin_ne(const Call& c) {
+void NLFile::consfp_lin_ne(const Call* c) {
   // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
-  vector<double> coeffs = fromVecFloat(getArrayLit(c.arg(0)));
-  vector<string> vars = fromVecId(getArrayLit(c.arg(1)));
-  NLToken value = getTokenFromVarOrFloat(c.arg(2));
+  vector<double> coeffs = fromVecFloat(getArrayLit(c->arg(0)));
+  vector<string> vars = fromVecId(getArrayLit(c->arg(1)));
+  NLToken value = getTokenFromVarOrFloat(c->arg(2));
   // Create the constraint
   linconsPredicate(c, NLToken::OpCode::NE, coeffs, vars, value);
 }
 
 /** Linar constraint: [coeffs] *+ [vars] < value */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::consfp_lin_lt(const Call& c) {
+void NLFile::consfp_lin_lt(const Call* c) {
   // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
-  vector<double> coeffs = fromVecFloat(getArrayLit(c.arg(0)));
-  vector<string> vars = fromVecId(getArrayLit(c.arg(1)));
-  NLToken value = getTokenFromVarOrFloat(c.arg(2));
+  vector<double> coeffs = fromVecFloat(getArrayLit(c->arg(0)));
+  vector<string> vars = fromVecId(getArrayLit(c->arg(1)));
+  NLToken value = getTokenFromVarOrFloat(c->arg(2));
   // Create the constraint
   linconsPredicate(c, NLToken::OpCode::LT, coeffs, vars, value);
 }
@@ -1035,213 +1034,213 @@ void NLFile::consfp_lin_lt(const Call& c) {
 
 /** Non linear constraint x = y */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::consfp_eq(const Call& c) {
-  nlconsEq(c, getTokenFromVarOrFloat(c.arg(0)), getTokenFromVarOrFloat(c.arg(1)));
+void NLFile::consfp_eq(const Call* c) {
+  nlconsEq(c, getTokenFromVarOrFloat(c->arg(0)), getTokenFromVarOrFloat(c->arg(1)));
 }
 
 /** Non linear constraint x <= y */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::consfp_le(const Call& c) {
-  nlconsLe(c, getTokenFromVarOrFloat(c.arg(0)), getTokenFromVarOrFloat(c.arg(1)));
+void NLFile::consfp_le(const Call* c) {
+  nlconsLe(c, getTokenFromVarOrFloat(c->arg(0)), getTokenFromVarOrFloat(c->arg(1)));
 }
 
 /** Non linear constraint x != y */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::consfp_ne(const Call& c) {
-  nlconsPredicate(c, NLToken::OpCode::NE, getTokenFromVarOrFloat(c.arg(0)),
-                  getTokenFromVarOrFloat(c.arg(1)));
+void NLFile::consfp_ne(const Call* c) {
+  nlconsPredicate(c, NLToken::OpCode::NE, getTokenFromVarOrFloat(c->arg(0)),
+                  getTokenFromVarOrFloat(c->arg(1)));
 }
 
 /** Non linear constraint x < y */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::consfp_lt(const Call& c) {
-  nlconsPredicate(c, NLToken::OpCode::LT, getTokenFromVarOrFloat(c.arg(0)),
-                  getTokenFromVarOrFloat(c.arg(1)));
+void NLFile::consfp_lt(const Call* c) {
+  nlconsPredicate(c, NLToken::OpCode::LT, getTokenFromVarOrFloat(c->arg(0)),
+                  getTokenFromVarOrFloat(c->arg(1)));
 }
 
 // --- --- --- Floating Point Non Linear Binary Operator Constraints
 
 /** Non linear constraint x + y = z */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::consfp_plus(const Call& c) {
-  nlconsOperatorBinary(c, NLToken::OpCode::OPPLUS, getTokenFromVarOrFloat(c.arg(0)),
-                       getTokenFromVarOrFloat(c.arg(1)), getTokenFromVarOrFloat(c.arg(2)));
+void NLFile::consfp_plus(const Call* c) {
+  nlconsOperatorBinary(c, NLToken::OpCode::OPPLUS, getTokenFromVarOrFloat(c->arg(0)),
+                       getTokenFromVarOrFloat(c->arg(1)), getTokenFromVarOrFloat(c->arg(2)));
 }
 
 /** Non linear constraint x - y = z */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::consfp_minus(const Call& c) {
-  nlconsOperatorBinary(c, NLToken::OpCode::OPMINUS, getTokenFromVarOrFloat(c.arg(0)),
-                       getTokenFromVarOrFloat(c.arg(1)), getTokenFromVarOrFloat(c.arg(2)));
+void NLFile::consfp_minus(const Call* c) {
+  nlconsOperatorBinary(c, NLToken::OpCode::OPMINUS, getTokenFromVarOrFloat(c->arg(0)),
+                       getTokenFromVarOrFloat(c->arg(1)), getTokenFromVarOrFloat(c->arg(2)));
 }
 
 /** Non linear constraint x * y = z */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::consfp_times(const Call& c) {
-  nlconsOperatorBinary(c, NLToken::OpCode::OPMULT, getTokenFromVarOrFloat(c.arg(0)),
-                       getTokenFromVarOrFloat(c.arg(1)), getTokenFromVarOrFloat(c.arg(2)));
+void NLFile::consfp_times(const Call* c) {
+  nlconsOperatorBinary(c, NLToken::OpCode::OPMULT, getTokenFromVarOrFloat(c->arg(0)),
+                       getTokenFromVarOrFloat(c->arg(1)), getTokenFromVarOrFloat(c->arg(2)));
 }
 
 /** Non linear constraint x / y = z */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::consfp_div(const Call& c) {
-  nlconsOperatorBinary(c, NLToken::OpCode::OPDIV, getTokenFromVarOrFloat(c.arg(0)),
-                       getTokenFromVarOrFloat(c.arg(1)), getTokenFromVarOrFloat(c.arg(2)));
+void NLFile::consfp_div(const Call* c) {
+  nlconsOperatorBinary(c, NLToken::OpCode::OPDIV, getTokenFromVarOrFloat(c->arg(0)),
+                       getTokenFromVarOrFloat(c->arg(1)), getTokenFromVarOrFloat(c->arg(2)));
 }
 
 /** Non linear constraint x mod y = z */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::consfp_mod(const Call& c) {
-  nlconsOperatorBinary(c, NLToken::OpCode::OPREM, getTokenFromVarOrFloat(c.arg(0)),
-                       getTokenFromVarOrFloat(c.arg(1)), getTokenFromVarOrFloat(c.arg(2)));
+void NLFile::consfp_mod(const Call* c) {
+  nlconsOperatorBinary(c, NLToken::OpCode::OPREM, getTokenFromVarOrFloat(c->arg(0)),
+                       getTokenFromVarOrFloat(c->arg(1)), getTokenFromVarOrFloat(c->arg(2)));
 }
 
 /** Non linear constraint x pow y = z */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::float_pow(const Call& c) {
-  nlconsOperatorBinary(c, NLToken::OpCode::OPPOW, getTokenFromVarOrFloat(c.arg(0)),
-                       getTokenFromVarOrFloat(c.arg(1)), getTokenFromVarOrFloat(c.arg(2)));
+void NLFile::float_pow(const Call* c) {
+  nlconsOperatorBinary(c, NLToken::OpCode::OPPOW, getTokenFromVarOrFloat(c->arg(0)),
+                       getTokenFromVarOrFloat(c->arg(1)), getTokenFromVarOrFloat(c->arg(2)));
 }
 
 /** Non linear constraint max(x, y) = z */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::float_max(const Call& c) {
-  nlconsOperatorBinary(c, NLToken::MOpCode::MAXLIST, getTokenFromVarOrFloat(c.arg(0)),
-                       getTokenFromVarOrFloat(c.arg(1)), getTokenFromVarOrFloat(c.arg(2)));
+void NLFile::float_max(const Call* c) {
+  nlconsOperatorBinary(c, NLToken::MOpCode::MAXLIST, getTokenFromVarOrFloat(c->arg(0)),
+                       getTokenFromVarOrFloat(c->arg(1)), getTokenFromVarOrFloat(c->arg(2)));
 }
 
 /** Non linear constraint min(x, y) = z */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::float_min(const Call& c) {
-  nlconsOperatorBinary(c, NLToken::MOpCode::MINLIST, getTokenFromVarOrFloat(c.arg(0)),
-                       getTokenFromVarOrFloat(c.arg(1)), getTokenFromVarOrFloat(c.arg(2)));
+void NLFile::float_min(const Call* c) {
+  nlconsOperatorBinary(c, NLToken::MOpCode::MINLIST, getTokenFromVarOrFloat(c->arg(0)),
+                       getTokenFromVarOrFloat(c->arg(1)), getTokenFromVarOrFloat(c->arg(2)));
 }
 
 // --- --- --- Floating Point Non Linear Unary operator Constraints
 
 /** Non linear constraint abs x = y */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::float_abs(const Call& c) {
-  nlconsOperatorUnary(c, NLToken::OpCode::ABS, getTokenFromVarOrFloat(c.arg(0)),
-                      getTokenFromVarOrFloat(c.arg(1)));
+void NLFile::float_abs(const Call* c) {
+  nlconsOperatorUnary(c, NLToken::OpCode::ABS, getTokenFromVarOrFloat(c->arg(0)),
+                      getTokenFromVarOrFloat(c->arg(1)));
 }
 
 /** Non linear constraint acos x = y */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::float_acos(const Call& c) {
-  nlconsOperatorUnary(c, NLToken::OpCode::OP_acos, getTokenFromVarOrFloat(c.arg(0)),
-                      getTokenFromVarOrFloat(c.arg(1)));
+void NLFile::float_acos(const Call* c) {
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_acos, getTokenFromVarOrFloat(c->arg(0)),
+                      getTokenFromVarOrFloat(c->arg(1)));
 }
 
 /** Non linear constraint acosh x = y */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::float_acosh(const Call& c) {
-  nlconsOperatorUnary(c, NLToken::OpCode::OP_acosh, getTokenFromVarOrFloat(c.arg(0)),
-                      getTokenFromVarOrFloat(c.arg(1)));
+void NLFile::float_acosh(const Call* c) {
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_acosh, getTokenFromVarOrFloat(c->arg(0)),
+                      getTokenFromVarOrFloat(c->arg(1)));
 }
 
 /** Non linear constraint asin x = y */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::float_asin(const Call& c) {
-  nlconsOperatorUnary(c, NLToken::OpCode::OP_asin, getTokenFromVarOrFloat(c.arg(0)),
-                      getTokenFromVarOrFloat(c.arg(1)));
+void NLFile::float_asin(const Call* c) {
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_asin, getTokenFromVarOrFloat(c->arg(0)),
+                      getTokenFromVarOrFloat(c->arg(1)));
 }
 
 /** Non linear constraint asinh x = y */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::float_asinh(const Call& c) {
-  nlconsOperatorUnary(c, NLToken::OpCode::OP_asinh, getTokenFromVarOrFloat(c.arg(0)),
-                      getTokenFromVarOrFloat(c.arg(1)));
+void NLFile::float_asinh(const Call* c) {
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_asinh, getTokenFromVarOrFloat(c->arg(0)),
+                      getTokenFromVarOrFloat(c->arg(1)));
 }
 
 /** Non linear constraint atan x = y */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::float_atan(const Call& c) {
-  nlconsOperatorUnary(c, NLToken::OpCode::OP_atan, getTokenFromVarOrFloat(c.arg(0)),
-                      getTokenFromVarOrFloat(c.arg(1)));
+void NLFile::float_atan(const Call* c) {
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_atan, getTokenFromVarOrFloat(c->arg(0)),
+                      getTokenFromVarOrFloat(c->arg(1)));
 }
 
 /** Non linear constraint atanh x = y */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::float_atanh(const Call& c) {
-  nlconsOperatorUnary(c, NLToken::OpCode::OP_atanh, getTokenFromVarOrFloat(c.arg(0)),
-                      getTokenFromVarOrFloat(c.arg(1)));
+void NLFile::float_atanh(const Call* c) {
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_atanh, getTokenFromVarOrFloat(c->arg(0)),
+                      getTokenFromVarOrFloat(c->arg(1)));
 }
 
 /** Non linear constraint cos x = y */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::float_cos(const Call& c) {
-  nlconsOperatorUnary(c, NLToken::OpCode::OP_cos, getTokenFromVarOrFloat(c.arg(0)),
-                      getTokenFromVarOrFloat(c.arg(1)));
+void NLFile::float_cos(const Call* c) {
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_cos, getTokenFromVarOrFloat(c->arg(0)),
+                      getTokenFromVarOrFloat(c->arg(1)));
 }
 
 /** Non linear constraint cosh x = y */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::float_cosh(const Call& c) {
-  nlconsOperatorUnary(c, NLToken::OpCode::OP_cosh, getTokenFromVarOrFloat(c.arg(0)),
-                      getTokenFromVarOrFloat(c.arg(1)));
+void NLFile::float_cosh(const Call* c) {
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_cosh, getTokenFromVarOrFloat(c->arg(0)),
+                      getTokenFromVarOrFloat(c->arg(1)));
 }
 
 /** Non linear constraint exp x = y */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::float_exp(const Call& c) {
-  nlconsOperatorUnary(c, NLToken::OpCode::OP_exp, getTokenFromVarOrFloat(c.arg(0)),
-                      getTokenFromVarOrFloat(c.arg(1)));
+void NLFile::float_exp(const Call* c) {
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_exp, getTokenFromVarOrFloat(c->arg(0)),
+                      getTokenFromVarOrFloat(c->arg(1)));
 }
 
 /** Non linear constraint ln x = y */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::float_ln(const Call& c) {
-  nlconsOperatorUnary(c, NLToken::OpCode::OP_log, getTokenFromVarOrFloat(c.arg(0)),
-                      getTokenFromVarOrFloat(c.arg(1)));
+void NLFile::float_ln(const Call* c) {
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_log, getTokenFromVarOrFloat(c->arg(0)),
+                      getTokenFromVarOrFloat(c->arg(1)));
 }
 
 /** Non linear constraint log10 x = y */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::float_log10(const Call& c) {
-  nlconsOperatorUnary(c, NLToken::OpCode::OP_log10, getTokenFromVarOrFloat(c.arg(0)),
-                      getTokenFromVarOrFloat(c.arg(1)));
+void NLFile::float_log10(const Call* c) {
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_log10, getTokenFromVarOrFloat(c->arg(0)),
+                      getTokenFromVarOrFloat(c->arg(1)));
 }
 
 /** Non linear constraint log2 x = y */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::float_log2(const Call& c) {
-  nlconsOperatorUnaryLog2(c, getTokenFromVarOrFloat(c.arg(0)), getTokenFromVarOrFloat(c.arg(1)));
+void NLFile::float_log2(const Call* c) {
+  nlconsOperatorUnaryLog2(c, getTokenFromVarOrFloat(c->arg(0)), getTokenFromVarOrFloat(c->arg(1)));
 }
 
 /** Non linear constraint sqrt x = y */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::float_sqrt(const Call& c) {
-  nlconsOperatorUnary(c, NLToken::OpCode::OP_sqrt, getTokenFromVarOrFloat(c.arg(0)),
-                      getTokenFromVarOrFloat(c.arg(1)));
+void NLFile::float_sqrt(const Call* c) {
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_sqrt, getTokenFromVarOrFloat(c->arg(0)),
+                      getTokenFromVarOrFloat(c->arg(1)));
 }
 
 /** Non linear constraint sin x = y */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::float_sin(const Call& c) {
-  nlconsOperatorUnary(c, NLToken::OpCode::OP_sin, getTokenFromVarOrFloat(c.arg(0)),
-                      getTokenFromVarOrFloat(c.arg(1)));
+void NLFile::float_sin(const Call* c) {
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_sin, getTokenFromVarOrFloat(c->arg(0)),
+                      getTokenFromVarOrFloat(c->arg(1)));
 }
 
 /** Non linear constraint sinh x = y */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::float_sinh(const Call& c) {
-  nlconsOperatorUnary(c, NLToken::OpCode::OP_sinh, getTokenFromVarOrFloat(c.arg(0)),
-                      getTokenFromVarOrFloat(c.arg(1)));
+void NLFile::float_sinh(const Call* c) {
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_sinh, getTokenFromVarOrFloat(c->arg(0)),
+                      getTokenFromVarOrFloat(c->arg(1)));
 }
 
 /** Non linear constraint tan x = y */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::float_tan(const Call& c) {
-  nlconsOperatorUnary(c, NLToken::OpCode::OP_tan, getTokenFromVarOrFloat(c.arg(0)),
-                      getTokenFromVarOrFloat(c.arg(1)));
+void NLFile::float_tan(const Call* c) {
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_tan, getTokenFromVarOrFloat(c->arg(0)),
+                      getTokenFromVarOrFloat(c->arg(1)));
 }
 
 /** Non linear constraint tanh x = y */
 // NOLINTNEXTLINE(readability-identifier-naming)
-void NLFile::float_tanh(const Call& c) {
-  nlconsOperatorUnary(c, NLToken::OpCode::OP_tanh, getTokenFromVarOrFloat(c.arg(0)),
-                      getTokenFromVarOrFloat(c.arg(1)));
+void NLFile::float_tanh(const Call* c) {
+  nlconsOperatorUnary(c, NLToken::OpCode::OP_tanh, getTokenFromVarOrFloat(c->arg(0)),
+                      getTokenFromVarOrFloat(c->arg(1)));
 }
 
 // --- --- --- Other
@@ -1249,11 +1248,11 @@ void NLFile::float_tanh(const Call& c) {
 /** Integer x to floating point y. Constraint x = y translated into x - y = 0.
  *  Simulate a linear constraint [1, -1]+*[x, y] = 0
  */
-void NLFile::int2float(const Call& c) {
+void NLFile::int2float(const Call* c) {
   vector<double> coeffs = {1, -1};
   vector<string> vars = {};
-  vars.push_back(getTokenFromVar(c.arg(0)).str);
-  vars.push_back(getTokenFromVar(c.arg(1)).str);
+  vars.push_back(getTokenFromVar(c->arg(0)).str);
+  vars.push_back(getTokenFromVar(c->arg(1)).str);
   // Create the constraint
   linconsEq(c, coeffs, vars, NLToken::n(0));
 }

@@ -577,21 +577,20 @@ Expression* JSONParser::parseExp(std::istream& is, bool parseObjects, bool possi
   }
 }
 
-Expression* JSONParser::coerceArray(TypeInst* intendedTI, ArrayLit* al) {
+Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
   assert(al != nullptr);
-  TypeInst& ti = *intendedTI;
   const Location& loc = al->loc();
 
   if (al->size() == 0) {
     return al;  // Nothing to coerce
   }
-  if (al->dims() != 1 && al->dims() != ti.ranges().size()) {
+  if (al->dims() != 1 && al->dims() != ti->ranges().size()) {
     return al;  // Incompatible: TypeError will be thrown on original array
   }
 
   int missing_index = -1;
-  for (int i = 0; i < ti.ranges().size(); ++i) {
-    TypeInst* nti = ti.ranges()[i];
+  for (int i = 0; i < ti->ranges().size(); ++i) {
+    TypeInst* nti = ti->ranges()[i];
     if (nti->domain() == nullptr) {
       if (missing_index != -1) {
         return al;  // More than one index set is missing. Cannot compute correct index sets.
@@ -600,12 +599,12 @@ Expression* JSONParser::coerceArray(TypeInst* intendedTI, ArrayLit* al) {
     }
   }
 
-  std::vector<Expression*> args(ti.ranges().size() + 1);
+  std::vector<Expression*> args(ti->ranges().size() + 1);
   Expression* missing_max = missing_index >= 0 ? IntLit::a(al->size()) : nullptr;
-  for (int i = 0; i < ti.ranges().size(); ++i) {
+  for (int i = 0; i < ti->ranges().size(); ++i) {
     if (i != missing_index) {
-      assert(ti.ranges()[i]->domain() != nullptr);
-      args[i] = ti.ranges()[i]->domain();
+      assert(ti->ranges()[i]->domain() != nullptr);
+      args[i] = ti->ranges()[i]->domain();
       if (missing_index >= 0) {
         missing_max = new BinOp(loc.introduce(), missing_max, BOT_IDIV,
                                 new Call(Location().introduce(), "card", {args[i]}));
@@ -617,7 +616,7 @@ Expression* JSONParser::coerceArray(TypeInst* intendedTI, ArrayLit* al) {
   }
   args[args.size() - 1] = al;
 
-  std::string name = "array" + std::to_string(ti.ranges().size()) + "d";
+  std::string name = "array" + std::to_string(ti->ranges().size()) + "d";
   Call* c = new Call(al->loc().introduce(), name, args);
   if (al->dims() != 1) {
     c->addAnnotation(constants().ann.array_check_form);

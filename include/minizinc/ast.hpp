@@ -286,22 +286,22 @@ inline TIId::TIId(const Location& loc, const ASTString& v)
 
 inline AnonVar::AnonVar(const Location& loc) : Expression(loc, E_ANON, Type()) { rehash(); }
 
-inline ArrayLit::ArrayLit(const Location& loc, ArrayLit& v,
+inline ArrayLit::ArrayLit(const Location& loc, ArrayLit* v,
                           const std::vector<std::pair<int, int> >& dims)
     : Expression(loc, E_ARRAYLIT, Type()) {
   _flag1 = false;
-  _flag2 = v._flag2;
+  _flag2 = v->_flag2;
   if (_flag2) {
-    _u.al = v._u.al;
-    std::vector<int> d(dims.size() * 2 + v._dims.size() - v.dims() * 2);
+    _u.al = v->_u.al;
+    std::vector<int> d(dims.size() * 2 + v->_dims.size() - v->dims() * 2);
     for (auto i = static_cast<unsigned int>(dims.size()); (i--) != 0U;) {
       d[i * 2] = dims[i].first;
       d[i * 2 + 1] = dims[i].second;
     }
     int sliceOffset = static_cast<int>(dims.size()) * 2;
-    unsigned int origSliceOffset = v.dims() * 2;
+    unsigned int origSliceOffset = v->dims() * 2;
     for (int i = 0; i < _u.al->dims() * 2; i++) {
-      d[sliceOffset + i] = v._dims[origSliceOffset + i];
+      d[sliceOffset + i] = v->_dims[origSliceOffset + i];
     }
     _dims = ASTIntVec(d);
   } else {
@@ -310,35 +310,35 @@ inline ArrayLit::ArrayLit(const Location& loc, ArrayLit& v,
       d[i * 2] = dims[i].first;
       d[i * 2 + 1] = dims[i].second;
     }
-    if (v._u.v->flag() || d.size() != 2 || d[0] != 1) {
+    if (v->_u.v->flag() || d.size() != 2 || d[0] != 1) {
       // only allocate dims vector if it is not a 1d array indexed from 1
       _dims = ASTIntVec(d);
     }
-    _u.v = v._u.v;
+    _u.v = v->_u.v;
   }
   rehash();
 }
 
-inline ArrayLit::ArrayLit(const Location& loc, ArrayLit& v) : Expression(loc, E_ARRAYLIT, Type()) {
+inline ArrayLit::ArrayLit(const Location& loc, ArrayLit* v) : Expression(loc, E_ARRAYLIT, Type()) {
   _flag1 = false;
-  _flag2 = v._flag2;
+  _flag2 = v->_flag2;
   if (_flag2) {
-    _u.al = v._u.al;
-    std::vector<int> d(2 + v._dims.size() - v.dims() * 2);
+    _u.al = v->_u.al;
+    std::vector<int> d(2 + v->_dims.size() - v->dims() * 2);
     d[0] = 1;
-    d[1] = v.size();
+    d[1] = v->size();
     int sliceOffset = 2;
-    unsigned int origSliceOffset = v.dims() * 2;
+    unsigned int origSliceOffset = v->dims() * 2;
     for (int i = 0; i < _u.al->dims() * 2; i++) {
-      d[sliceOffset + i] = v._dims[origSliceOffset + i];
+      d[sliceOffset + i] = v->_dims[origSliceOffset + i];
     }
     _dims = ASTIntVec(d);
   } else {
-    _u.v = v._u.v;
+    _u.v = v->_u.v;
     if (_u.v->flag()) {
       std::vector<int> d(2);
       d[0] = 1;
-      d[1] = v.length();
+      d[1] = v->length();
       _dims = ASTIntVec(d);
     } else {
       // don't allocate dims vector since this is a 1d array indexed from 1

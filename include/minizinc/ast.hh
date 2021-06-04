@@ -836,9 +836,9 @@ public:
   ArrayLit(const Location& loc, const std::vector<Expression*>& v,
            const std::vector<std::pair<int, int> >& dims);
   /// Constructor (existing content)
-  ArrayLit(const Location& loc, ArrayLit& v, const std::vector<std::pair<int, int> >& dims);
+  ArrayLit(const Location& loc, ArrayLit* v, const std::vector<std::pair<int, int> >& dims);
   /// Constructor (one-dimensional, existing content)
-  ArrayLit(const Location& loc, ArrayLit& v);
+  ArrayLit(const Location& loc, ArrayLit* v);
   /// Constructor (one-dimensional)
   ArrayLit(const Location& loc, const std::vector<Expression*>& v);
   /// Constructor (two-dimensional)
@@ -1725,43 +1725,43 @@ public:
 class EVisitor {
 public:
   /// Visit integer literal
-  void vIntLit(const IntLit& /*il*/) {}
+  void vIntLit(const IntLit* /*il*/) {}
   /// Visit floating point literal
-  void vFloatLit(const FloatLit& /*fl*/) {}
+  void vFloatLit(const FloatLit* /*fl*/) {}
   /// Visit Boolean literal
-  void vBoolLit(const BoolLit& /*bl*/) {}
+  void vBoolLit(const BoolLit* /*bl*/) {}
   /// Visit set literal
-  void vSetLit(const SetLit& /*sl*/) {}
+  void vSetLit(const SetLit* /*sl*/) {}
   /// Visit string literal
-  void vStringLit(const StringLit& /*sl*/) {}
+  void vStringLit(const StringLit* /*sl*/) {}
   /// Visit identifier
-  void vId(const Id& /*ident*/) {}
+  void vId(const Id* /*ident*/) {}
   /// Visit anonymous variable
-  void vAnonVar(const AnonVar& /*x*/) {}
+  void vAnonVar(const AnonVar* /*x*/) {}
   /// Visit array literal
-  void vArrayLit(const ArrayLit& /*al*/) {}
+  void vArrayLit(const ArrayLit* /*al*/) {}
   /// Visit array access
-  void vArrayAccess(const ArrayAccess& /*aa*/) {}
+  void vArrayAccess(const ArrayAccess* /*aa*/) {}
   /// Visit array comprehension
-  void vComprehension(const Comprehension& /*c*/) {}
+  void vComprehension(const Comprehension* /*c*/) {}
   /// Visit array comprehension (only generator \a gen_i)
-  void vComprehensionGenerator(const Comprehension& /*c*/, int /*gen_i*/) {}
+  void vComprehensionGenerator(const Comprehension* /*c*/, int /*gen_i*/) {}
   /// Visit if-then-else
-  void vITE(const ITE& /*ite*/) {}
+  void vITE(const ITE* /*ite*/) {}
   /// Visit binary operator
-  void vBinOp(const BinOp& /*bo*/) {}
+  void vBinOp(const BinOp* /*bo*/) {}
   /// Visit unary operator
-  void vUnOp(const UnOp& /*uo*/) {}
+  void vUnOp(const UnOp* /*uo*/) {}
   /// Visit call
-  void vCall(const Call& /*c*/) {}
+  void vCall(const Call* /*c*/) {}
   /// Visit let
-  void vLet(const Let& /*let*/) {}
+  void vLet(const Let* /*let*/) {}
   /// Visit variable declaration
-  void vVarDecl(const VarDecl& /*vd*/) {}
+  void vVarDecl(const VarDecl* /*vd*/) {}
   /// Visit type inst
-  void vTypeInst(const TypeInst& /*ti*/) {}
+  void vTypeInst(const TypeInst* /*ti*/) {}
   /// Visit TIId
-  void vTIId(const TIId& /*tiid*/) {}
+  void vTIId(const TIId* /*tiid*/) {}
   /// Determine whether to enter node
   static bool enter(Expression* /*e*/) { return true; }
   /// Exit node after processing has finished

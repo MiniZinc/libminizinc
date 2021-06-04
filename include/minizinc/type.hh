@@ -23,7 +23,7 @@ class EnvI;
 class Type {
 public:
   /// Type-inst
-  enum TypeInst { TI_PAR, TI_VAR };
+  enum Inst { TI_PAR, TI_VAR };
   /// Basic type
   enum BaseType { BT_BOOL, BT_INT, BT_FLOAT, BT_STRING, BT_ANN, BT_TOP, BT_BOT, BT_UNKNOWN };
   /// Whether the expression is plain or set
@@ -61,9 +61,9 @@ public:
         _dim(0) {}
 
   /// Access type-inst
-  TypeInst ti() const { return static_cast<TypeInst>(_ti); }
+  Inst ti() const { return static_cast<Inst>(_ti); }
   /// Set type-inst
-  void ti(const TypeInst& t) {
+  void ti(const Inst& t) {
     _ti = t;
     if (t == TI_VAR) {
       _cv = CV_YES;
@@ -105,7 +105,7 @@ public:
 
 protected:
   /// Constructor
-  Type(const TypeInst& ti, const BaseType& bt, const SetType& st, unsigned int enumId, int dim)
+  Type(const Inst& ti, const BaseType& bt, const SetType& st, unsigned int enumId, int dim)
       : _ti(ti),
         _bt(bt),
         _st(st),
@@ -205,7 +205,7 @@ public:
     Type t;
     t._st = 1 - static_cast<SetType>((i >> 28) & 0x1);
     t._bt = static_cast<BaseType>((i >> 24) & 0xF);
-    t._ti = static_cast<TypeInst>((i >> 21) & 0x7);
+    t._ti = static_cast<Inst>((i >> 21) & 0x7);
     t._ot = static_cast<OptType>((i >> 20) & 0x1);
     t._enumId = static_cast<unsigned int>((i >> 8) & 0xFFF);
     int dim = (i & 0x7F);

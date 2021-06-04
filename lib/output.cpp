@@ -78,34 +78,34 @@ bool cannot_use_rhs_for_output(EnvI& env, Expression* e,
     V(EnvI& env0, std::unordered_set<FunctionI*>& seenFunctions0)
         : env(env0), seenFunctions(seenFunctions0), success(true) {}
     /// Visit anonymous variable
-    void vAnonVar(const AnonVar& /*v*/) { success = false; }
+    void vAnonVar(const AnonVar* /*v*/) { success = false; }
     /// Visit array literal
-    void vArrayLit(const ArrayLit& /*al*/) {}
+    void vArrayLit(const ArrayLit* /*al*/) {}
     /// Visit array access
-    void vArrayAccess(const ArrayAccess& /*aa*/) {}
+    void vArrayAccess(const ArrayAccess* /*aa*/) {}
     /// Visit array comprehension
-    void vComprehension(const Comprehension& /*c*/) {}
+    void vComprehension(const Comprehension* /*c*/) {}
     /// Visit if-then-else
-    void vITE(const ITE& /*ite*/) {}
+    void vITE(const ITE* /*ite*/) {}
     /// Visit binary operator
-    void vBinOp(const BinOp& /*bo*/) {}
+    void vBinOp(const BinOp* /*bo*/) {}
     /// Visit unary operator
-    void vUnOp(const UnOp& /*uo*/) {}
+    void vUnOp(const UnOp* /*uo*/) {}
     /// Visit call
-    void vCall(Call& c) {
-      std::vector<Type> tv(c.argCount());
-      for (unsigned int i = c.argCount(); (i--) != 0U;) {
-        tv[i] = c.arg(i)->type();
+    void vCall(Call* c) {
+      std::vector<Type> tv(c->argCount());
+      for (unsigned int i = c->argCount(); (i--) != 0U;) {
+        tv[i] = c->arg(i)->type();
         tv[i].ti(Type::TI_PAR);
       }
-      FunctionI* decl = env.output->matchFn(env, c.id(), tv, false);
+      FunctionI* decl = env.output->matchFn(env, c->id(), tv, false);
       Type t;
       if (decl == nullptr) {
-        FunctionI* origdecl = env.model->matchFn(env, c.id(), tv, false);
+        FunctionI* origdecl = env.model->matchFn(env, c->id(), tv, false);
         if (origdecl == nullptr) {
           std::ostringstream ss;
-          ss << "function " << c.id() << " is used in output, par version needed";
-          throw FlatteningError(env, c.loc(), ss.str());
+          ss << "function " << c->id() << " is used in output, par version needed";
+          throw FlatteningError(env, c->loc(), ss.str());
         }
         bool seen = (seenFunctions.find(origdecl) != seenFunctions.end());
         if (seen) {
@@ -131,7 +131,7 @@ bool cannot_use_rhs_for_output(EnvI& env, Expression* e,
             } else {
               decl = origdecl;
             }
-            c.decl(decl);
+            c->decl(decl);
           }
         }
       }
@@ -142,15 +142,15 @@ bool cannot_use_rhs_for_output(EnvI& env, Expression* e,
         }
       }
     }
-    void vId(const Id& /*id*/) {}
+    void vId(const Id* /*id*/) {}
     /// Visit let
-    void vLet(const Let& /*let*/) { success = false; }
+    void vLet(const Let* /*let*/) { success = false; }
     /// Visit variable declaration
-    void vVarDecl(const VarDecl& /*vd*/) {}
+    void vVarDecl(const VarDecl* /*vd*/) {}
     /// Visit type inst
-    void vTypeInst(const TypeInst& /*ti*/) {}
+    void vTypeInst(const TypeInst* /*ti*/) {}
     /// Visit TIId
-    void vTIId(const TIId& /*tiid*/) {}
+    void vTIId(const TIId* /*tiid*/) {}
     /// Determine whether to enter node
     bool enter(Expression* /*e*/) const { return success; }
   } _v(env, seen_functions);
@@ -176,14 +176,14 @@ void copy_output(EnvI& e) {
   struct CopyOutput : public EVisitor {
     EnvI& env;
     CopyOutput(EnvI& env0) : env(env0) {}
-    static void vId(Id& _id) { _id.decl(_id.decl()->flat()); }
-    void vCall(Call& c) {
-      std::vector<Type> tv(c.argCount());
-      for (unsigned int i = c.argCount(); (i--) != 0U;) {
-        tv[i] = c.arg(i)->type();
+    static void vId(Id* _id) { _id->decl(_id->decl()->flat()); }
+    void vCall(Call* c) {
+      std::vector<Type> tv(c->argCount());
+      for (unsigned int i = c->argCount(); (i--) != 0U;) {
+        tv[i] = c->arg(i)->type();
         tv[i].ti(Type::TI_PAR);
       }
-      FunctionI* decl = c.decl();
+      FunctionI* decl = c->decl();
       if (!decl->fromStdLib()) {
         env.flatAddItem(decl);
       }
@@ -212,15 +212,15 @@ void make_par(EnvI& env, Expression* e) {
   public:
     EnvI& env;
     OutputJSON(EnvI& env0) : env(env0) {}
-    void vCall(Call& c) {
-      if (c.id() == "outputJSON") {
-        bool outputObjective = (c.argCount() == 1 && eval_bool(env, c.arg(0)));
-        c.id(ASTString("array1d"));
+    void vCall(Call* c) {
+      if (c->id() == "outputJSON") {
+        bool outputObjective = (c->argCount() == 1 && eval_bool(env, c->arg(0)));
+        c->id(ASTString("array1d"));
         Expression* json =
             copy(env, env.cmap, create_json_output(env, outputObjective, false, false));
         std::vector<Expression*> new_args({json});
         new_args[0]->type(Type::parstring(1));
-        c.args(new_args);
+        c->args(new_args);
       }
     }
   } _outputJSON(env);
@@ -228,7 +228,7 @@ void make_par(EnvI& env, Expression* e) {
   class Par : public EVisitor {
   public:
     /// Visit variable declaration
-    static void vVarDecl(VarDecl& vd) { vd.ti()->type(vd.type()); }
+    static void vVarDecl(VarDecl* vd) { vd->ti()->type(vd->type()); }
     /// Determine whether to enter node
     static bool enter(Expression* e) {
       Type t = e->type();
@@ -243,19 +243,20 @@ void make_par(EnvI& env, Expression* e) {
   public:
     EnvI& env;
     Decls(EnvI& env0) : env(env0) {}
-    void vCall(Call& c) {
-      if (c.id() == "format" || c.id() == "show" || c.id() == "showDzn" || c.id() == "showJSON") {
-        unsigned int enumId = c.arg(c.argCount() - 1)->type().enumId();
-        if (enumId != 0U && c.arg(c.argCount() - 1)->type().dim() != 0) {
+    void vCall(Call* c) {
+      if (c->id() == "format" || c->id() == "show" || c->id() == "showDzn" ||
+          c->id() == "showJSON") {
+        unsigned int enumId = c->arg(c->argCount() - 1)->type().enumId();
+        if (enumId != 0U && c->arg(c->argCount() - 1)->type().dim() != 0) {
           const std::vector<unsigned int>& enumIds = env.getArrayEnum(enumId);
           enumId = enumIds[enumIds.size() - 1];
         }
         if (enumId > 0) {
           GCLock lock;
-          Expression* obj = c.arg(c.argCount() - 1);
+          Expression* obj = c->arg(c->argCount() - 1);
           Id* ti_id = env.getEnum(enumId)->e()->id();
           std::string enumName = create_enum_to_string_name(ti_id, "_toString_");
-          bool is_json = c.id() == "showJSON";
+          bool is_json = c->id() == "showJSON";
           const int dimensions = obj->type().dim();
           if (is_json && dimensions > 1) {
             // Create generators for dimensions selection
@@ -327,28 +328,28 @@ void make_par(EnvI& env, Expression* e) {
               al_concat->type(Type::parstring(1));
             }
             std::vector<Expression*> args = {al_concat};
-            c.args(args);
-            c.id(ASTString("concat"));
+            c->args(args);
+            c->id(ASTString("concat"));
           } else {
-            std::vector<Expression*> args = {obj, constants().boollit(c.id() == "showDzn"),
+            std::vector<Expression*> args = {obj, constants().boollit(c->id() == "showDzn"),
                                              constants().boollit(is_json)};
-            c.args(args);
-            c.id(ASTString(enumName));
+            c->args(args);
+            c->id(ASTString(enumName));
           }
         }
-        if (c.id() == "showDzn" || (c.id() == "showJSON" && enumId > 0)) {
-          c.id(constants().ids.show);
+        if (c->id() == "showDzn" || (c->id() == "showJSON" && enumId > 0)) {
+          c->id(constants().ids.show);
         }
       }
-      c.decl(env.model->matchFn(env, &c, false));
+      c->decl(env.model->matchFn(env, c, false));
     }
-    void vBinOp(BinOp& bo) {
-      std::vector<Expression*> args = {bo.lhs(), bo.rhs()};
-      bo.decl(env.model->matchFn(env, bo.opToString(), args, false));
+    void vBinOp(BinOp* bo) {
+      std::vector<Expression*> args = {bo->lhs(), bo->rhs()};
+      bo->decl(env.model->matchFn(env, bo->opToString(), args, false));
     }
-    void vUnop(UnOp& uo) {
-      std::vector<Expression*> args = {uo.e()};
-      uo.decl(env.model->matchFn(env, uo.opToString(), args, false));
+    void vUnop(UnOp* uo) {
+      std::vector<Expression*> args = {uo->e()};
+      uo->decl(env.model->matchFn(env, uo->opToString(), args, false));
     }
   } _decls(env);
   top_down(_decls, e);
@@ -461,14 +462,14 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e) {
     EnvI& env;
     Item* ci;
     O(EnvI& env0, Item* ci0) : env(env0), ci(ci0) {}
-    void vId(Id& id) {
-      if (&id == constants().absent) {
+    void vId(Id* id) {
+      if (id == constants().absent) {
         return;
       }
-      if (!id.decl()->toplevel()) {
+      if (!id->decl()->toplevel()) {
         return;
       }
-      VarDecl* vd = id.decl();
+      VarDecl* vd = id->decl();
       VarDecl* reallyFlat = vd->flat();
       while (reallyFlat != nullptr && reallyFlat != reallyFlat->flat()) {
         reallyFlat = reallyFlat->flat();
@@ -938,20 +939,20 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
       }
       return true;
     }
-    void vId(Id& i) {
+    void vId(Id* i) {
       // Also collect functions from output_only variables we depend on
-      if ((i.decl() != nullptr) && i.decl()->ann().contains(constants().ann.output_only)) {
-        top_down(*this, i.decl()->e());
+      if ((i->decl() != nullptr) && i->decl()->ann().contains(constants().ann.output_only)) {
+        top_down(*this, i->decl()->e());
       }
     }
-    void vCall(Call& c) {
-      std::vector<Type> tv(c.argCount());
-      for (unsigned int i = c.argCount(); (i--) != 0U;) {
-        tv[i] = c.arg(i)->type();
+    void vCall(Call* c) {
+      std::vector<Type> tv(c->argCount());
+      for (unsigned int i = c->argCount(); (i--) != 0U;) {
+        tv[i] = c->arg(i)->type();
         tv[i].ti(Type::TI_PAR);
       }
-      FunctionI* decl = env.output->matchFn(env, c.id(), tv, false);
-      FunctionI* origdecl = env.model->matchFn(env, c.id(), tv, false);
+      FunctionI* decl = env.output->matchFn(env, c->id(), tv, false);
+      FunctionI* origdecl = env.model->matchFn(env, c->id(), tv, false);
       bool canReuseDecl = (decl != nullptr);
       if (canReuseDecl && (origdecl != nullptr)) {
         // Check if this is the exact same overloaded declaration as in the model
@@ -967,8 +968,8 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
       if (!canReuseDecl) {
         if (origdecl == nullptr || !is_completely_par(env, origdecl, tv)) {
           std::ostringstream ss;
-          ss << "function " << c.id() << " is used in output, par version needed";
-          throw FlatteningError(env, c.loc(), ss.str());
+          ss << "function " << c->id() << " is used in output, par version needed";
+          throw FlatteningError(env, c->loc(), ss.str());
         }
         if (!origdecl->fromStdLib()) {
           auto* decl_copy = copy(env, env.cmap, origdecl)->cast<FunctionI>();
@@ -991,7 +992,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
           decl = origdecl;
         }
       }
-      c.decl(decl);
+      c->decl(decl);
     }
   } _cf(e);
   top_down(_cf, outputItem->e());

@@ -2122,30 +2122,30 @@ public:
     return false;
   }
   /// Visit integer literal
-  void vIntLit(const IntLit& i) { bounds.emplace_back(i.v(), i.v()); }
+  void vIntLit(const IntLit* i) { bounds.emplace_back(i->v(), i->v()); }
   /// Visit floating point literal
-  void vFloatLit(const FloatLit& /*f*/) {
+  void vFloatLit(const FloatLit* /*f*/) {
     valid = false;
     bounds.emplace_back(0, 0);
   }
   /// Visit Boolean literal
-  void vBoolLit(const BoolLit& /*b*/) {
+  void vBoolLit(const BoolLit* /*b*/) {
     valid = false;
     bounds.emplace_back(0, 0);
   }
   /// Visit set literal
-  void vSetLit(const SetLit& /*sl*/) {
+  void vSetLit(const SetLit* /*sl*/) {
     valid = false;
     bounds.emplace_back(0, 0);
   }
   /// Visit string literal
-  void vStringLit(const StringLit& /*sl*/) {
+  void vStringLit(const StringLit* /*sl*/) {
     valid = false;
     bounds.emplace_back(0, 0);
   }
   /// Visit identifier
-  void vId(const Id& id) {
-    VarDecl* vd = id.decl();
+  void vId(const Id* id) {
+    VarDecl* vd = id->decl();
     while ((vd->flat() != nullptr) && vd->flat() != vd) {
       vd = vd->flat();
     }
@@ -2168,28 +2168,28 @@ public:
     }
   }
   /// Visit anonymous variable
-  void vAnonVar(const AnonVar& /*v*/) {
+  void vAnonVar(const AnonVar* /*v*/) {
     valid = false;
     bounds.emplace_back(0, 0);
   }
   /// Visit array literal
-  void vArrayLit(const ArrayLit& /*al*/) {}
+  void vArrayLit(const ArrayLit* /*al*/) {}
   /// Visit array access
-  void vArrayAccess(ArrayAccess& aa) {
+  void vArrayAccess(ArrayAccess* aa) {
     bool parAccess = true;
-    for (unsigned int i = aa.idx().size(); (i--) != 0U;) {
+    for (unsigned int i = aa->idx().size(); (i--) != 0U;) {
       bounds.pop_back();
-      if (!aa.idx()[i]->type().isPar()) {
+      if (!aa->idx()[i]->type().isPar()) {
         parAccess = false;
       }
     }
-    if (Id* id = aa.v()->dynamicCast<Id>()) {
+    if (Id* id = aa->v()->dynamicCast<Id>()) {
       while ((id->decl()->e() != nullptr) && id->decl()->e()->isa<Id>()) {
         id = id->decl()->e()->cast<Id>();
       }
       if (parAccess && (id->decl()->e() != nullptr)) {
         bool success;
-        Expression* e = eval_arrayaccess(env, &aa, success);
+        Expression* e = eval_arrayaccess(env, aa, success);
         if (success) {
           BottomUpIterator<ComputeIntBounds> cbi(*this);
           cbi.run(e);
@@ -2209,17 +2209,17 @@ public:
     bounds.emplace_back(0, 0);
   }
   /// Visit array comprehension
-  void vComprehension(const Comprehension& c) {
+  void vComprehension(const Comprehension* /*c*/) {
     valid = false;
     bounds.emplace_back(0, 0);
   }
   /// Visit if-then-else
-  void vITE(const ITE& /*ite*/) {
+  void vITE(const ITE* /*ite*/) {
     valid = false;
     bounds.emplace_back(0, 0);
   }
   /// Visit binary operator
-  void vBinOp(const BinOp& bo) {
+  void vBinOp(const BinOp* bo) {
     Bounds b1 = bounds.back();
     bounds.pop_back();
     Bounds b0 = bounds.back();
@@ -2229,7 +2229,7 @@ public:
       valid = false;
       bounds.emplace_back(0, 0);
     } else {
-      switch (bo.op()) {
+      switch (bo->op()) {
         case BOT_PLUS:
           bounds.emplace_back(b0.first + b1.first, b0.second + b1.second);
           break;
@@ -2311,8 +2311,8 @@ public:
     }
   }
   /// Visit unary operator
-  void vUnOp(const UnOp& uo) {
-    switch (uo.op()) {
+  void vUnOp(const UnOp* uo) {
+    switch (uo->op()) {
       case UOT_PLUS:
         break;
       case UOT_MINUS:
@@ -2325,21 +2325,21 @@ public:
     }
   }
   /// Visit call
-  void vCall(Call& c) {
-    if (c.id() == constants().ids.lin_exp || c.id() == constants().ids.sum) {
-      bool le = c.id() == constants().ids.lin_exp;
-      ArrayLit* coeff = le ? eval_array_lit(env, c.arg(0)) : nullptr;
-      if (c.arg(le ? 1 : 0)->type().isOpt()) {
+  void vCall(Call* c) {
+    if (c->id() == constants().ids.lin_exp || c->id() == constants().ids.sum) {
+      bool le = c->id() == constants().ids.lin_exp;
+      ArrayLit* coeff = le ? eval_array_lit(env, c->arg(0)) : nullptr;
+      if (c->arg(le ? 1 : 0)->type().isOpt()) {
         valid = false;
         bounds.emplace_back(0, 0);
         return;
       }
-      ArrayLit* al = eval_array_lit(env, c.arg(le ? 1 : 0));
+      ArrayLit* al = eval_array_lit(env, c->arg(le ? 1 : 0));
       if (le) {
         bounds.pop_back();  // remove constant (third arg) from stack
       }
 
-      IntVal d = le ? c.arg(2)->cast<IntLit>()->v() : 0;
+      IntVal d = le ? c->arg(2)->cast<IntLit>()->v() : 0;
       int stacktop = static_cast<int>(bounds.size());
       for (unsigned int i = al->size(); (i--) != 0U;) {
         BottomUpIterator<ComputeIntBounds> cbi(*this);
@@ -2391,15 +2391,15 @@ public:
         }
       }
       bounds.emplace_back(lb, ub);
-    } else if (c.id() == "card") {
-      if (IntSetVal* isv = compute_intset_bounds(env, c.arg(0))) {
+    } else if (c->id() == "card") {
+      if (IntSetVal* isv = compute_intset_bounds(env, c->arg(0))) {
         IntSetRanges isr(isv);
         bounds.emplace_back(0, Ranges::cardinality(isr));
       } else {
         valid = false;
         bounds.emplace_back(0, 0);
       }
-    } else if (c.id() == "int_times") {
+    } else if (c->id() == "int_times") {
       Bounds b1 = bounds.back();
       bounds.pop_back();
       Bounds b0 = bounds.back();
@@ -2417,9 +2417,9 @@ public:
         IntVal n = std::max(x0, std::max(x1, std::max(x2, x3)));
         bounds.emplace_back(m, n);
       }
-    } else if (c.id() == constants().ids.bool2int) {
+    } else if (c->id() == constants().ids.bool2int) {
       bounds.emplace_back(0, 1);
-    } else if (c.id() == "abs") {
+    } else if (c->id() == "abs") {
       Bounds b0 = bounds.back();
       if (b0.first < 0) {
         bounds.pop_back();
@@ -2429,15 +2429,15 @@ public:
           bounds.emplace_back(0, std::max(-b0.first, b0.second));
         }
       }
-    } else if ((c.decl() != nullptr) && (c.decl()->ti()->domain() != nullptr) &&
-               !c.decl()->ti()->domain()->isa<TIId>()) {
-      for (int i = 0; i < c.argCount(); i++) {
-        if (c.arg(i)->type().isint()) {
+    } else if ((c->decl() != nullptr) && (c->decl()->ti()->domain() != nullptr) &&
+               !c->decl()->ti()->domain()->isa<TIId>()) {
+      for (int i = 0; i < c->argCount(); i++) {
+        if (c->arg(i)->type().isint()) {
           assert(!bounds.empty());
           bounds.pop_back();
         }
       }
-      IntSetVal* isv = eval_intset(env, c.decl()->ti()->domain());
+      IntSetVal* isv = eval_intset(env, c->decl()->ti()->domain());
       bounds.emplace_back(isv->min(), isv->max());
     } else {
       valid = false;
@@ -2445,27 +2445,27 @@ public:
     }
   }
   /// Visit let
-  void vLet(const Let& l) {
+  void vLet(const Let* /*l*/) {
     valid = false;
     bounds.emplace_back(0, 0);
   }
   /// Visit variable declaration
-  void vVarDecl(const VarDecl& vd) {
+  void vVarDecl(const VarDecl* /*vd*/) {
     valid = false;
     bounds.emplace_back(0, 0);
   }
   /// Visit annotation
-  void vAnnotation(const Annotation& e) {
+  void vAnnotation(const Annotation* /*e*/) {
     valid = false;
     bounds.emplace_back(0, 0);
   }
   /// Visit type inst
-  void vTypeInst(const TypeInst& e) {
+  void vTypeInst(const TypeInst* /*e*/) {
     valid = false;
     bounds.emplace_back(0, 0);
   }
   /// Visit TIId
-  void vTIId(const TIId& e) {
+  void vTIId(const TIId* /*e*/) {
     valid = false;
     bounds.emplace_back(0, 0);
   }
@@ -2553,30 +2553,30 @@ public:
     return false;
   }
   /// Visit integer literal
-  void vIntLit(const IntLit& i) {
+  void vIntLit(const IntLit* /*i*/) {
     valid = false;
     bounds.emplace_back(0.0, 0.0);
   }
   /// Visit floating point literal
-  void vFloatLit(const FloatLit& f) { bounds.emplace_back(f.v(), f.v()); }
+  void vFloatLit(const FloatLit* f) { bounds.emplace_back(f->v(), f->v()); }
   /// Visit Boolean literal
-  void vBoolLit(const BoolLit& /*b*/) {
+  void vBoolLit(const BoolLit* /*b*/) {
     valid = false;
     bounds.emplace_back(0.0, 0.0);
   }
   /// Visit set literal
-  void vSetLit(const SetLit& /*sl*/) {
+  void vSetLit(const SetLit* /*sl*/) {
     valid = false;
     bounds.emplace_back(0.0, 0.0);
   }
   /// Visit string literal
-  void vStringLit(const StringLit& /*sl*/) {
+  void vStringLit(const StringLit* /*sl*/) {
     valid = false;
     bounds.emplace_back(0.0, 0.0);
   }
   /// Visit identifier
-  void vId(const Id& id) {
-    VarDecl* vd = id.decl();
+  void vId(const Id* id) {
+    VarDecl* vd = id->decl();
     while ((vd->flat() != nullptr) && vd->flat() != vd) {
       vd = vd->flat();
     }
@@ -2599,27 +2599,27 @@ public:
     }
   }
   /// Visit anonymous variable
-  void vAnonVar(const AnonVar& v) {
+  void vAnonVar(const AnonVar* /*v*/) {
     valid = false;
     bounds.emplace_back(0.0, 0.0);
   }
   /// Visit array literal
-  void vArrayLit(const ArrayLit& al) {}
+  void vArrayLit(const ArrayLit* /*al*/) {}
   /// Visit array access
-  void vArrayAccess(ArrayAccess& aa) {
+  void vArrayAccess(ArrayAccess* aa) {
     bool parAccess = true;
-    for (unsigned int i = aa.idx().size(); (i--) != 0U;) {
-      if (!aa.idx()[i]->type().isPar()) {
+    for (unsigned int i = aa->idx().size(); (i--) != 0U;) {
+      if (!aa->idx()[i]->type().isPar()) {
         parAccess = false;
       }
     }
-    if (Id* id = aa.v()->dynamicCast<Id>()) {
+    if (Id* id = aa->v()->dynamicCast<Id>()) {
       while ((id->decl()->e() != nullptr) && id->decl()->e()->isa<Id>()) {
         id = id->decl()->e()->cast<Id>();
       }
       if (parAccess && (id->decl()->e() != nullptr)) {
         bool success;
-        Expression* e = eval_arrayaccess(env, &aa, success);
+        Expression* e = eval_arrayaccess(env, aa, success);
         if (success) {
           BottomUpIterator<ComputeFloatBounds> cbi(*this);
           cbi.run(e);
@@ -2637,17 +2637,17 @@ public:
     bounds.emplace_back(0.0, 0.0);
   }
   /// Visit array comprehension
-  void vComprehension(const Comprehension& c) {
+  void vComprehension(const Comprehension* /*c*/) {
     valid = false;
     bounds.emplace_back(0.0, 0.0);
   }
   /// Visit if-then-else
-  void vITE(const ITE& ite) {
+  void vITE(const ITE* /*ite*/) {
     valid = false;
     bounds.emplace_back(0.0, 0.0);
   }
   /// Visit binary operator
-  void vBinOp(const BinOp& bo) {
+  void vBinOp(const BinOp* bo) {
     FBounds b1 = bounds.back();
     bounds.pop_back();
     FBounds b0 = bounds.back();
@@ -2657,7 +2657,7 @@ public:
       valid = false;
       bounds.emplace_back(0.0, 0.0);
     } else {
-      switch (bo.op()) {
+      switch (bo->op()) {
         case BOT_PLUS:
           bounds.emplace_back(b0.first + b1.first, b0.second + b1.second);
           break;
@@ -2712,8 +2712,8 @@ public:
     }
   }
   /// Visit unary operator
-  void vUnOp(const UnOp& uo) {
-    switch (uo.op()) {
+  void vUnOp(const UnOp* uo) {
+    switch (uo->op()) {
       case UOT_PLUS:
         break;
       case UOT_MINUS:
@@ -2726,20 +2726,20 @@ public:
     }
   }
   /// Visit call
-  void vCall(Call& c) {
-    if (c.id() == constants().ids.lin_exp || c.id() == constants().ids.sum) {
-      bool le = c.id() == constants().ids.lin_exp;
-      ArrayLit* coeff = le ? eval_array_lit(env, c.arg(0)) : nullptr;
+  void vCall(Call* c) {
+    if (c->id() == constants().ids.lin_exp || c->id() == constants().ids.sum) {
+      bool le = c->id() == constants().ids.lin_exp;
+      ArrayLit* coeff = le ? eval_array_lit(env, c->arg(0)) : nullptr;
       if (le) {
         bounds.pop_back();  // remove constant (third arg) from stack
       }
-      if (c.arg(le ? 1 : 0)->type().isOpt()) {
+      if (c->arg(le ? 1 : 0)->type().isOpt()) {
         valid = false;
         bounds.emplace_back(0.0, 0.0);
         return;
       }
-      ArrayLit* al = eval_array_lit(env, c.arg(le ? 1 : 0));
-      FloatVal d = le ? c.arg(2)->cast<FloatLit>()->v() : 0.0;
+      ArrayLit* al = eval_array_lit(env, c->arg(le ? 1 : 0));
+      FloatVal d = le ? c->arg(2)->cast<FloatLit>()->v() : 0.0;
       int stacktop = static_cast<int>(bounds.size());
       for (unsigned int i = al->size(); (i--) != 0U;) {
         BottomUpIterator<ComputeFloatBounds> cbi(*this);
@@ -2789,10 +2789,10 @@ public:
         }
       }
       bounds.emplace_back(lb, ub);
-    } else if (c.id() == "float_times") {
+    } else if (c->id() == "float_times") {
       BottomUpIterator<ComputeFloatBounds> cbi(*this);
-      cbi.run(c.arg(0));
-      cbi.run(c.arg(1));
+      cbi.run(c->arg(0));
+      cbi.run(c->arg(1));
       FBounds b1 = bounds.back();
       bounds.pop_back();
       FBounds b0 = bounds.back();
@@ -2810,10 +2810,10 @@ public:
         FloatVal n = std::max(x0, std::max(x1, std::max(x2, x3)));
         bounds.emplace_back(m, n);
       }
-    } else if (c.id() == "int2float") {
+    } else if (c->id() == "int2float") {
       ComputeIntBounds ib(env);
       BottomUpIterator<ComputeIntBounds> cbi(ib);
-      cbi.run(c.arg(0));
+      cbi.run(c->arg(0));
       if (!ib.valid) {
         valid = false;
       }
@@ -2825,9 +2825,9 @@ public:
         bounds.emplace_back(static_cast<double>(result.first.toInt()),
                             static_cast<double>(result.second.toInt()));
       }
-    } else if (c.id() == "abs") {
+    } else if (c->id() == "abs") {
       BottomUpIterator<ComputeFloatBounds> cbi(*this);
-      cbi.run(c.arg(0));
+      cbi.run(c->arg(0));
       FBounds b0 = bounds.back();
       if (b0.first < 0) {
         bounds.pop_back();
@@ -2837,15 +2837,15 @@ public:
           bounds.emplace_back(0.0, std::max(-b0.first, b0.second));
         }
       }
-    } else if ((c.decl() != nullptr) && (c.decl()->ti()->domain() != nullptr) &&
-               !c.decl()->ti()->domain()->isa<TIId>()) {
-      for (int i = 0; i < c.argCount(); i++) {
-        if (c.arg(i)->type().isfloat()) {
+    } else if ((c->decl() != nullptr) && (c->decl()->ti()->domain() != nullptr) &&
+               !c->decl()->ti()->domain()->isa<TIId>()) {
+      for (int i = 0; i < c->argCount(); i++) {
+        if (c->arg(i)->type().isfloat()) {
           assert(!bounds.empty());
           bounds.pop_back();
         }
       }
-      FloatSetVal* fsv = eval_floatset(env, c.decl()->ti()->domain());
+      FloatSetVal* fsv = eval_floatset(env, c->decl()->ti()->domain());
       bounds.emplace_back(fsv->min(), fsv->max());
     } else {
       valid = false;
@@ -2853,27 +2853,27 @@ public:
     }
   }
   /// Visit let
-  void vLet(const Let& l) {
+  void vLet(const Let* /*l*/) {
     valid = false;
     bounds.emplace_back(0.0, 0.0);
   }
   /// Visit variable declaration
-  void vVarDecl(const VarDecl& vd) {
+  void vVarDecl(const VarDecl* /*vd*/) {
     valid = false;
     bounds.emplace_back(0.0, 0.0);
   }
   /// Visit annotation
-  void vAnnotation(const Annotation& e) {
+  void vAnnotation(const Annotation* /*e*/) {
     valid = false;
     bounds.emplace_back(0.0, 0.0);
   }
   /// Visit type inst
-  void vTypeInst(const TypeInst& e) {
+  void vTypeInst(const TypeInst* /*e*/) {
     valid = false;
     bounds.emplace_back(0.0, 0.0);
   }
   /// Visit TIId
-  void vTIId(const TIId& e) {
+  void vTIId(const TIId* /*e*/) {
     valid = false;
     bounds.emplace_back(0.0, 0.0);
   }
@@ -2921,14 +2921,14 @@ public:
     return true;
   }
   /// Visit set literal
-  void vSetLit(const SetLit& sl) {
-    assert(sl.type().isvar());
-    assert(sl.isv() == nullptr);
+  void vSetLit(const SetLit* sl) {
+    assert(sl->type().isvar());
+    assert(sl->isv() == nullptr);
 
     IntSetVal* isv = IntSetVal::a();
-    for (unsigned int i = 0; i < sl.v().size(); i++) {
+    for (unsigned int i = 0; i < sl->v().size(); i++) {
       IntSetRanges i0(isv);
-      IntBounds ib = compute_int_bounds(env, sl.v()[i]);
+      IntBounds ib = compute_int_bounds(env, sl->v()[i]);
       if (!ib.valid || !ib.l.isFinite() || !ib.u.isFinite()) {
         valid = false;
         bounds.push_back(nullptr);
@@ -2941,13 +2941,13 @@ public:
     bounds.push_back(isv);
   }
   /// Visit identifier
-  void vId(const Id& id) {
-    if ((id.decl()->ti()->domain() != nullptr) && !id.decl()->ti()->domain()->isa<TIId>()) {
-      bounds.push_back(eval_intset(env, id.decl()->ti()->domain()));
+  void vId(const Id* id) {
+    if ((id->decl()->ti()->domain() != nullptr) && !id->decl()->ti()->domain()->isa<TIId>()) {
+      bounds.push_back(eval_intset(env, id->decl()->ti()->domain()));
     } else {
-      if (id.decl()->e() != nullptr) {
+      if (id->decl()->e() != nullptr) {
         BottomUpIterator<ComputeIntSetBounds> cbi(*this);
-        cbi.run(id.decl()->e());
+        cbi.run(id->decl()->e());
       } else {
         valid = false;
         bounds.push_back(nullptr);
@@ -2955,26 +2955,26 @@ public:
     }
   }
   /// Visit anonymous variable
-  void vAnonVar(const AnonVar& v) {
+  void vAnonVar(const AnonVar* /*v*/) {
     valid = false;
     bounds.push_back(nullptr);
   }
   /// Visit array access
-  void vArrayAccess(ArrayAccess& aa) {
+  void vArrayAccess(ArrayAccess* aa) {
     bool parAccess = true;
-    for (unsigned int i = aa.idx().size(); (i--) != 0U;) {
-      if (!aa.idx()[i]->type().isPar()) {
+    for (unsigned int i = aa->idx().size(); (i--) != 0U;) {
+      if (!aa->idx()[i]->type().isPar()) {
         parAccess = false;
         break;
       }
     }
-    if (Id* id = aa.v()->dynamicCast<Id>()) {
+    if (Id* id = aa->v()->dynamicCast<Id>()) {
       while ((id->decl()->e() != nullptr) && id->decl()->e()->isa<Id>()) {
         id = id->decl()->e()->cast<Id>();
       }
       if (parAccess && (id->decl()->e() != nullptr)) {
         bool success;
-        Expression* e = eval_arrayaccess(env, &aa, success);
+        Expression* e = eval_arrayaccess(env, aa, success);
         if (success) {
           BottomUpIterator<ComputeIntSetBounds> cbi(*this);
           cbi.run(e);
@@ -2990,20 +2990,20 @@ public:
     bounds.push_back(nullptr);
   }
   /// Visit array comprehension
-  void vComprehension(const Comprehension& c) {
+  void vComprehension(const Comprehension* /*c*/) {
     valid = false;
     bounds.push_back(nullptr);
   }
   /// Visit if-then-else
-  void vITE(const ITE& ite) {
+  void vITE(const ITE* /*ite*/) {
     valid = false;
     bounds.push_back(nullptr);
   }
   /// Visit binary operator
-  void vBinOp(const BinOp& bo) {
-    if (bo.op() == BOT_DOTDOT) {
-      IntBounds lb = compute_int_bounds(env, bo.lhs());
-      IntBounds ub = compute_int_bounds(env, bo.rhs());
+  void vBinOp(const BinOp* bo) {
+    if (bo->op() == BOT_DOTDOT) {
+      IntBounds lb = compute_int_bounds(env, bo->lhs());
+      IntBounds ub = compute_int_bounds(env, bo->rhs());
       valid = valid && lb.valid && ub.valid;
       bounds.push_back(IntSetVal::a(lb.l, ub.u));
     } else {
@@ -3011,7 +3011,7 @@ public:
       bounds.pop_back();
       IntSetVal* b0 = bounds.back();
       bounds.pop_back();
-      switch (bo.op()) {
+      switch (bo->op()) {
         case BOT_INTERSECT:
         case BOT_UNION: {
           IntSetRanges b0r(b0);
@@ -3056,13 +3056,13 @@ public:
     }
   }
   /// Visit unary operator
-  void vUnOp(const UnOp& uo) {
+  void vUnOp(const UnOp* /*uo*/) {
     valid = false;
     bounds.push_back(nullptr);
   }
   /// Visit call
-  void vCall(Call& c) {
-    if (valid && (c.id() == "set_intersect" || c.id() == "set_union")) {
+  void vCall(Call* c) {
+    if (valid && (c->id() == "set_intersect" || c->id() == "set_union")) {
       IntSetVal* b0 = bounds.back();
       bounds.pop_back();
       IntSetVal* b1 = bounds.back();
@@ -3071,20 +3071,20 @@ public:
       IntSetRanges b1r(b1);
       Ranges::Union<IntVal, IntSetRanges, IntSetRanges> u(b0r, b1r);
       bounds.push_back(IntSetVal::ai(u));
-    } else if (valid && c.id() == "set_diff") {
+    } else if (valid && c->id() == "set_diff") {
       IntSetVal* b0 = bounds.back();
       bounds.pop_back();
       bounds.pop_back();  // don't need bounds of right hand side
       bounds.push_back(b0);
-    } else if ((c.decl() != nullptr) && (c.decl()->ti()->domain() != nullptr) &&
-               !c.decl()->ti()->domain()->isa<TIId>()) {
-      for (int i = 0; i < c.argCount(); i++) {
-        if (c.arg(i)->type().isIntSet()) {
+    } else if ((c->decl() != nullptr) && (c->decl()->ti()->domain() != nullptr) &&
+               !c->decl()->ti()->domain()->isa<TIId>()) {
+      for (int i = 0; i < c->argCount(); i++) {
+        if (c->arg(i)->type().isIntSet()) {
           assert(!bounds.empty());
           bounds.pop_back();
         }
       }
-      IntSetVal* fsv = eval_intset(env, c.decl()->ti()->domain());
+      IntSetVal* fsv = eval_intset(env, c->decl()->ti()->domain());
       bounds.push_back(fsv);
     } else {
       valid = false;
@@ -3092,27 +3092,27 @@ public:
     }
   }
   /// Visit let
-  void vLet(const Let& l) {
+  void vLet(const Let* /*l*/) {
     valid = false;
     bounds.push_back(nullptr);
   }
   /// Visit variable declaration
-  void vVarDecl(const VarDecl& vd) {
+  void vVarDecl(const VarDecl* /*vd*/) {
     valid = false;
     bounds.push_back(nullptr);
   }
   /// Visit annotation
-  void vAnnotation(const Annotation& e) {
+  void vAnnotation(const Annotation* /*e*/) {
     valid = false;
     bounds.push_back(nullptr);
   }
   /// Visit type inst
-  void vTypeInst(const TypeInst& e) {
+  void vTypeInst(const TypeInst* /*e*/) {
     valid = false;
     bounds.push_back(nullptr);
   }
   /// Visit TIId
-  void vTIId(const TIId& e) {
+  void vTIId(const TIId* /*e*/) {
     valid = false;
     bounds.push_back(nullptr);
   }

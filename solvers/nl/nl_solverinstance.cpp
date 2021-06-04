@@ -266,9 +266,9 @@ void NLSolverInstance::analyse(const Item* i) {
     case Item::II_VD: {
       DEBUG_MSG("II_VD: Variable Declaration.");
 
-      const VarDecl& vd = *i->cast<VarDeclI>()->e();
-      const TypeInst& ti = *vd.ti()->cast<TypeInst>();
-      const Expression& rhs = *vd.e();
+      const VarDecl* vd = i->cast<VarDeclI>()->e();
+      const auto* ti = vd->ti()->cast<TypeInst>();
+      const Expression* rhs = vd->e();
       _nlFile.addVarDecl(vd, ti, rhs);
     } break;
 
@@ -283,8 +283,8 @@ void NLSolverInstance::analyse(const Item* i) {
       DEBUG_MSG("II_CON: Constraint.");
       Expression* e = i->cast<ConstraintI>()->e();
       if (e->eid() == Expression::E_CALL) {
-        const Call& c = *e->cast<Call>();
-        DEBUG_MSG("     " << c.id() << " ");
+        const auto* c = e->cast<Call>();
+        DEBUG_MSG("     " << c->id() << " ");
         _nlFile.analyseConstraint(c);
       } else {
         DEBUG_MSG("     Contraint is not a builtin call.");
@@ -294,8 +294,8 @@ void NLSolverInstance::analyse(const Item* i) {
 
     // Case of the 'solve' directive
     case Item::II_SOL: {
-      const SolveI& si = *i->cast<SolveI>();
-      _nlFile.addSolve(si.st(), si.e());
+      const auto* si = i->cast<SolveI>();
+      _nlFile.addSolve(si->st(), si->e());
     } break;
 
     case Item::II_OUT: {

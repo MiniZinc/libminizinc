@@ -106,7 +106,7 @@ std::string Type::nonEnumToString() const {
   if (_dim < 0) {
     oss << "array[$_] of ";
   }
-  switch (static_cast<TypeInst>(_ti)) {
+  switch (static_cast<Inst>(_ti)) {
     case TI_PAR:
       break;
     case TI_VAR:

@@ -990,15 +990,15 @@ protected:
 
 public:
   /// Visit array literal
-  void vArrayLit(ArrayLit& al) {
-    for (unsigned int i = 0; i < al.size(); i++) {
-      al.set(i, subst(al[i]));
+  void vArrayLit(ArrayLit* al) {
+    for (unsigned int i = 0; i < al->size(); i++) {
+      al->set(i, subst((*al)[i]));
     }
   }
   /// Visit call
-  void vCall(Call& c) {
-    for (unsigned int i = 0; i < c.argCount(); i++) {
-      c.arg(i, subst(c.arg(i)));
+  void vCall(Call* c) {
+    for (unsigned int i = 0; i < c->argCount(); i++) {
+      c->arg(i, subst(c->arg(i)));
     }
   }
   /// Determine whether to enter node

@@ -1118,7 +1118,7 @@ ArrayLit* b_arrayXd(EnvI& env, Call* call, int d) {
   if (dim1d != al->size()) {
     throw EvalError(env, al->loc(), "mismatch in array dimensions");
   }
-  auto* ret = new ArrayLit(al->loc(), *al, dims);
+  auto* ret = new ArrayLit(al->loc(), al, dims);
   Type t = al->type();
   t.dim(d);
   ret->type(t);
@@ -1131,7 +1131,7 @@ Expression* b_array1d_list(EnvI& env, Call* call) {
   if (al->dims() == 1 && al->min(0) == 1) {
     return call->arg(0)->isa<Id>() ? call->arg(0) : al;
   }
-  auto* ret = new ArrayLit(al->loc(), *al);
+  auto* ret = new ArrayLit(al->loc(), al);
   Type t = al->type();
   t.dim(1);
   ret->type(t);
@@ -1166,7 +1166,7 @@ Expression* b_arrayXd(EnvI& env, Call* call) {
   for (unsigned int i = al0->dims(); (i--) != 0U;) {
     dims[i] = std::make_pair(al0->min(i), al0->max(i));
   }
-  auto* ret = new ArrayLit(al1->loc(), *al1, dims);
+  auto* ret = new ArrayLit(al1->loc(), al1, dims);
   Type t = al1->type();
   t.dim(static_cast<int>(dims.size()));
   ret->type(t);

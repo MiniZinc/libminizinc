@@ -214,15 +214,15 @@ public:
         pp_floatval(_os, e->cast<FloatLit>()->v());
       } break;
       case Expression::E_SETLIT: {
-        const SetLit& sl = *e->cast<SetLit>();
-        if (sl.isv() != nullptr) {
-          if (sl.type().bt() == Type::BT_BOOL) {
-            if (sl.isv()->size() == 0) {
+        const auto* sl = e->cast<SetLit>();
+        if (sl->isv() != nullptr) {
+          if (sl->type().bt() == Type::BT_BOOL) {
+            if (sl->isv()->size() == 0) {
               _os << (_flatZinc ? "true..false" : "{}");
             } else {
               _os << "{";
-              if (sl.isv()->min() == 0) {
-                if (sl.isv()->max() == 0) {
+              if (sl->isv()->min() == 0) {
+                if (sl->isv()->max() == 0) {
                   _os << "false";
                 } else {
                   _os << "false,true";
@@ -233,17 +233,17 @@ public:
               _os << "}";
             }
           } else {
-            if (sl.isv()->size() == 0) {
+            if (sl->isv()->size() == 0) {
               _os << (_flatZinc ? "1..0" : "{}");
-            } else if (sl.isv()->size() == 1) {
-              _os << sl.isv()->min(0) << ".." << sl.isv()->max(0);
+            } else if (sl->isv()->size() == 1) {
+              _os << sl->isv()->min(0) << ".." << sl->isv()->max(0);
             } else {
-              if (!sl.isv()->min(0).isFinite()) {
-                _os << sl.isv()->min(0) << ".." << sl.isv()->max(0) << " union ";
+              if (!sl->isv()->min(0).isFinite()) {
+                _os << sl->isv()->min(0) << ".." << sl->isv()->max(0) << " union ";
               }
               _os << "{";
               bool first = true;
-              for (IntSetRanges isr(sl.isv()); isr(); ++isr) {
+              for (IntSetRanges isr(sl->isv()); isr(); ++isr) {
                 if (isr.min().isFinite() && isr.max().isFinite()) {
                   for (IntVal i = isr.min(); i <= isr.max(); i++) {
                     if (!first) {
@@ -255,22 +255,22 @@ public:
                 }
               }
               _os << "}";
-              if (!sl.isv()->max(sl.isv()->size() - 1).isFinite()) {
-                _os << " union " << sl.isv()->min(sl.isv()->size() - 1) << ".."
-                    << sl.isv()->max(sl.isv()->size() - 1);
+              if (!sl->isv()->max(sl->isv()->size() - 1).isFinite()) {
+                _os << " union " << sl->isv()->min(sl->isv()->size() - 1) << ".."
+                    << sl->isv()->max(sl->isv()->size() - 1);
               }
             }
           }
-        } else if (sl.fsv() != nullptr) {
-          if (sl.fsv()->size() == 0) {
+        } else if (sl->fsv() != nullptr) {
+          if (sl->fsv()->size() == 0) {
             _os << (_flatZinc ? "1.0..0.0" : "{}");
-          } else if (sl.fsv()->size() == 1) {
-            pp_floatval(_os, sl.fsv()->min(0));
+          } else if (sl->fsv()->size() == 1) {
+            pp_floatval(_os, sl->fsv()->min(0));
             _os << "..";
-            pp_floatval(_os, sl.fsv()->max(0));
+            pp_floatval(_os, sl->fsv()->max(0));
           } else {
             bool allSingleton = true;
-            for (FloatSetRanges isr(sl.fsv()); isr(); ++isr) {
+            for (FloatSetRanges isr(sl->fsv()); isr(); ++isr) {
               if (isr.min() != isr.max()) {
                 allSingleton = false;
                 break;
@@ -279,7 +279,7 @@ public:
             if (allSingleton) {
               _os << "{";
               bool first = true;
-              for (FloatSetRanges isr(sl.fsv()); isr(); ++isr) {
+              for (FloatSetRanges isr(sl->fsv()); isr(); ++isr) {
                 if (!first) {
                   _os << ",";
                 }
@@ -289,7 +289,7 @@ public:
               _os << "}";
             } else {
               bool first = true;
-              for (FloatSetRanges isr(sl.fsv()); isr(); ++isr) {
+              for (FloatSetRanges isr(sl->fsv()); isr(); ++isr) {
                 if (!first) {
                   _os << " union ";
                 }
@@ -302,9 +302,9 @@ public:
           }
         } else {
           _os << "{";
-          for (unsigned int i = 0; i < sl.v().size(); i++) {
-            p(sl.v()[i]);
-            if (i < sl.v().size() - 1) {
+          for (unsigned int i = 0; i < sl->v().size(); i++) {
+            p(sl->v()[i]);
+            if (i < sl->v().size() - 1) {
               _os << ",";
             }
           }
@@ -339,41 +339,41 @@ public:
         _os << "_";
         break;
       case Expression::E_ARRAYLIT: {
-        const ArrayLit& al = *e->cast<ArrayLit>();
-        unsigned int n = al.dims();
-        if (n == 1 && al.min(0) == 1) {
+        const auto* al = e->cast<ArrayLit>();
+        unsigned int n = al->dims();
+        if (n == 1 && al->min(0) == 1) {
           _os << "[";
-          for (unsigned int i = 0; i < al.size(); i++) {
-            p(al[i]);
-            if (i < al.size() - 1) {
+          for (unsigned int i = 0; i < al->size(); i++) {
+            p((*al)[i]);
+            if (i < al->size() - 1) {
               _os << ",";
             }
           }
           _os << "]";
-        } else if (n == 2 && al.min(0) == 1 && al.min(1) == 1 && al.max(1) != 0) {
+        } else if (n == 2 && al->min(0) == 1 && al->min(1) == 1 && al->max(1) != 0) {
           _os << "[|";
-          for (int i = 0; i < al.max(0); i++) {
-            for (int j = 0; j < al.max(1); j++) {
-              p(al[i * al.max(1) + j]);
-              if (j < al.max(1) - 1) {
+          for (int i = 0; i < al->max(0); i++) {
+            for (int j = 0; j < al->max(1); j++) {
+              p((*al)[i * al->max(1) + j]);
+              if (j < al->max(1) - 1) {
                 _os << ",";
               }
             }
-            if (i < al.max(0) - 1) {
+            if (i < al->max(0) - 1) {
               _os << "|";
             }
           }
           _os << "|]";
         } else {
           _os << "array" << n << "d(";
-          for (int i = 0; i < al.dims(); i++) {
-            _os << al.min(i) << ".." << al.max(i);
+          for (int i = 0; i < al->dims(); i++) {
+            _os << al->min(i) << ".." << al->max(i);
             _os << ",";
           }
           _os << "[";
-          for (unsigned int i = 0; i < al.size(); i++) {
-            p(al[i]);
-            if (i < al.size() - 1) {
+          for (unsigned int i = 0; i < al->size(); i++) {
+            p((*al)[i]);
+            if (i < al->size() - 1) {
               _os << ",";
             }
           }
@@ -381,76 +381,76 @@ public:
         }
       } break;
       case Expression::E_ARRAYACCESS: {
-        const ArrayAccess& aa = *e->cast<ArrayAccess>();
-        p(aa.v());
+        const auto* aa = e->cast<ArrayAccess>();
+        p(aa->v());
         _os << "[";
-        for (unsigned int i = 0; i < aa.idx().size(); i++) {
-          p(aa.idx()[i]);
-          if (i < aa.idx().size() - 1) {
+        for (unsigned int i = 0; i < aa->idx().size(); i++) {
+          p(aa->idx()[i]);
+          if (i < aa->idx().size() - 1) {
             _os << ",";
           }
         }
         _os << "]";
       } break;
       case Expression::E_COMP: {
-        const Comprehension& c = *e->cast<Comprehension>();
-        _os << (c.set() ? "{" : "[");
-        p(c.e());
+        const auto* c = e->cast<Comprehension>();
+        _os << (c->set() ? "{" : "[");
+        p(c->e());
         _os << " | ";
-        for (int i = 0; i < c.numberOfGenerators(); i++) {
-          for (int j = 0; j < c.numberOfDecls(i); j++) {
-            auto* ident = c.decl(i, j)->id();
+        for (int i = 0; i < c->numberOfGenerators(); i++) {
+          for (int j = 0; j < c->numberOfDecls(i); j++) {
+            auto* ident = c->decl(i, j)->id();
             if (ident->idn() == -1) {
               _os << ident->v();
             } else {
               _os << "X_INTRODUCED_" << ident->idn() << "_";
             }
-            if (j < c.numberOfDecls(i) - 1) {
+            if (j < c->numberOfDecls(i) - 1) {
               _os << ",";
             }
           }
-          if (c.in(i) == nullptr) {
+          if (c->in(i) == nullptr) {
             _os << " = ";
-            p(c.where(i));
+            p(c->where(i));
           } else {
             _os << " in ";
-            p(c.in(i));
-            if (c.where(i) != nullptr) {
+            p(c->in(i));
+            if (c->where(i) != nullptr) {
               _os << " where ";
-              p(c.where(i));
+              p(c->where(i));
             }
           }
-          if (i < c.numberOfGenerators()) {
+          if (i < c->numberOfGenerators()) {
             _os << ", ";
           }
         }
-        _os << (c.set() ? "}" : "]");
+        _os << (c->set() ? "}" : "]");
       } break;
       case Expression::E_ITE: {
-        const ITE& ite = *e->cast<ITE>();
-        for (int i = 0; i < ite.size(); i++) {
+        const auto* ite = e->cast<ITE>();
+        for (int i = 0; i < ite->size(); i++) {
           _os << (i == 0 ? "if " : " elseif ");
-          p(ite.ifExpr(i));
+          p(ite->ifExpr(i));
           _os << " then ";
-          p(ite.thenExpr(i));
+          p(ite->thenExpr(i));
         }
-        if (ite.elseExpr() != nullptr) {
+        if (ite->elseExpr() != nullptr) {
           _os << " else ";
-          p(ite.elseExpr());
+          p(ite->elseExpr());
         }
         _os << " endif";
       } break;
       case Expression::E_BINOP: {
-        const BinOp& bo = *e->cast<BinOp>();
-        Parentheses ps = need_parentheses(&bo, bo.lhs(), bo.rhs());
+        const auto* bo = e->cast<BinOp>();
+        Parentheses ps = need_parentheses(bo, bo->lhs(), bo->rhs());
         if ((ps & PN_LEFT) != 0) {
           _os << "(";
         }
-        p(bo.lhs());
+        p(bo->lhs());
         if ((ps & PN_LEFT) != 0) {
           _os << ")";
         }
-        switch (bo.op()) {
+        switch (bo->op()) {
           case BOT_PLUS:
             _os << "+";
             break;
@@ -543,14 +543,14 @@ public:
         if ((ps & PN_RIGHT) != 0) {
           _os << "(";
         }
-        p(bo.rhs());
+        p(bo->rhs());
         if ((ps & PN_RIGHT) != 0) {
           _os << ")";
         }
       } break;
       case Expression::E_UNOP: {
-        const UnOp& uo = *e->cast<UnOp>();
-        switch (uo.op()) {
+        const auto* uo = e->cast<UnOp>();
+        switch (uo->op()) {
           case UOT_NOT:
             _os << "not ";
             break;
@@ -564,82 +564,82 @@ public:
             assert(false);
             break;
         }
-        bool needParen = (uo.e()->isa<BinOp>() || uo.e()->isa<UnOp>() || !uo.ann().isEmpty());
+        bool needParen = (uo->e()->isa<BinOp>() || uo->e()->isa<UnOp>() || !uo->ann().isEmpty());
         if (needParen) {
           _os << "(";
         }
-        p(uo.e());
+        p(uo->e());
         if (needParen) {
           _os << ")";
         }
       } break;
       case Expression::E_CALL: {
-        const Call& c = *e->cast<Call>();
-        _os << Printer::quoteId(c.id()) << "(";
-        for (unsigned int i = 0; i < c.argCount(); i++) {
-          p(c.arg(i));
-          if (i < c.argCount() - 1) {
+        const auto* c = e->cast<Call>();
+        _os << Printer::quoteId(c->id()) << "(";
+        for (unsigned int i = 0; i < c->argCount(); i++) {
+          p(c->arg(i));
+          if (i < c->argCount() - 1) {
             _os << ",";
           }
         }
         _os << ")";
       } break;
       case Expression::E_VARDECL: {
-        const VarDecl& vd = *e->cast<VarDecl>();
-        p(vd.ti());
-        if (!vd.ti()->isEnum() && (vd.id()->idn() != -1 || vd.id()->v().size() > 0)) {
+        const auto* vd = e->cast<VarDecl>();
+        p(vd->ti());
+        if (!vd->ti()->isEnum() && (vd->id()->idn() != -1 || vd->id()->v().size() > 0)) {
           _os << ":";
         }
-        if (vd.id()->idn() != -1) {
-          _os << " X_INTRODUCED_" << vd.id()->idn() << "_";
-        } else if (vd.id()->v().size() != 0) {
-          _os << " " << Printer::quoteId(vd.id()->v());
+        if (vd->id()->idn() != -1) {
+          _os << " X_INTRODUCED_" << vd->id()->idn() << "_";
+        } else if (vd->id()->v().size() != 0) {
+          _os << " " << Printer::quoteId(vd->id()->v());
         }
-        if (vd.introduced()) {
+        if (vd->introduced()) {
           _os << " ::var_is_introduced ";
         }
-        p(vd.ann());
-        if (vd.e() != nullptr) {
+        p(vd->ann());
+        if (vd->e() != nullptr) {
           _os << " = ";
-          p(vd.e());
+          p(vd->e());
         }
       } break;
       case Expression::E_LET: {
-        const Let& l = *e->cast<Let>();
+        const auto* l = e->cast<Let>();
         _os << "let {";
 
-        for (unsigned int i = 0; i < l.let().size(); i++) {
-          const Expression* li = l.let()[i];
+        for (unsigned int i = 0; i < l->let().size(); i++) {
+          const Expression* li = l->let()[i];
           if (!li->isa<VarDecl>()) {
             _os << "constraint ";
           }
           p(li);
-          if (i < l.let().size() - 1) {
+          if (i < l->let().size() - 1) {
             _os << ", ";
           }
         }
         _os << "} in (";
-        p(l.in());
+        p(l->in());
         _os << ")";
       } break;
       case Expression::E_TI: {
-        const TypeInst& ti = *e->cast<TypeInst>();
-        if (ti.isEnum()) {
+        const auto* ti = e->cast<TypeInst>();
+        if (ti->isEnum()) {
           _os << "enum";
         } else if (_env != nullptr) {
-          _os << ti.type().toString(*_env);
+          _os << ti->type().toString(*_env);
         } else {
-          if (ti.isarray()) {
+          if (ti->isarray()) {
             _os << "array [";
-            for (unsigned int i = 0; i < ti.ranges().size(); i++) {
-              p(Type::parint(), ti.ranges()[i]);
-              if (i < ti.ranges().size() - 1) {
+            for (unsigned int i = 0; i < ti->ranges().size(); i++) {
+              p(Type::parint(), ti->ranges()[i]);
+              if (i < ti->ranges().size() - 1) {
                 _os << ",";
               }
             }
             _os << "] of ";
           }
-          p(ti.type(), ti.domain());
+          p(ti->type(), ti->domain());
         }
       }
     }
@@ -751,41 +751,41 @@ public:
   typename T::ret map(const Expression* e) {
     switch (e->eid()) {
       case Expression::E_INTLIT:
-        return _t.mapIntLit(*e->cast<IntLit>());
+        return _t.mapIntLit(e->cast<IntLit>());
       case Expression::E_FLOATLIT:
-        return _t.mapFloatLit(*e->cast<FloatLit>());
+        return _t.mapFloatLit(e->cast<FloatLit>());
       case Expression::E_SETLIT:
-        return _t.mapSetLit(*e->cast<SetLit>());
+        return _t.mapSetLit(e->cast<SetLit>());
       case Expression::E_BOOLLIT:
-        return _t.mapBoolLit(*e->cast<BoolLit>());
+        return _t.mapBoolLit(e->cast<BoolLit>());
       case Expression::E_STRINGLIT:
-        return _t.mapStringLit(*e->cast<StringLit>());
+        return _t.mapStringLit(e->cast<StringLit>());
       case Expression::E_ID:
-        return _t.mapId(*e->cast<Id>());
+        return _t.mapId(e->cast<Id>());
       case Expression::E_ANON:
-        return _t.mapAnonVar(*e->cast<AnonVar>());
+        return _t.mapAnonVar(e->cast<AnonVar>());
       case Expression::E_ARRAYLIT:
-        return _t.mapArrayLit(*e->cast<ArrayLit>());
+        return _t.mapArrayLit(e->cast<ArrayLit>());
       case Expression::E_ARRAYACCESS:
-        return _t.mapArrayAccess(*e->cast<ArrayAccess>());
+        return _t.mapArrayAccess(e->cast<ArrayAccess>());
       case Expression::E_COMP:
-        return _t.mapComprehension(*e->cast<Comprehension>());
+        return _t.mapComprehension(e->cast<Comprehension>());
       case Expression::E_ITE:
-        return _t.mapITE(*e->cast<ITE>());
+        return _t.mapITE(e->cast<ITE>());
       case Expression::E_BINOP:
-        return _t.mapBinOp(*e->cast<BinOp>());
+        return _t.mapBinOp(e->cast<BinOp>());
       case Expression::E_UNOP:
-        return _t.mapUnOp(*e->cast<UnOp>());
+        return _t.mapUnOp(e->cast<UnOp>());
       case Expression::E_CALL:
-        return _t.mapCall(*e->cast<Call>());
+        return _t.mapCall(e->cast<Call>());
       case Expression::E_VARDECL:
-        return _t.mapVarDecl(*e->cast<VarDecl>());
+        return _t.mapVarDecl(e->cast<VarDecl>());
       case Expression::E_LET:
-        return _t.mapLet(*e->cast<Let>());
+        return _t.mapLet(e->cast<Let>());
       case Expression::E_TI:
-        return _t.mapTypeInst(*e->cast<TypeInst>());
+        return _t.mapTypeInst(e->cast<TypeInst>());
       case Expression::E_TIID:
-        return _t.mapTIId(*e->cast<TIId>());
+        return _t.mapTIId(e->cast<TIId>());
       default:
         assert(false);
         return typename T::ret();
@@ -1104,25 +1104,25 @@ Document* tiexpression_to_document(const Type& type, const Expression* e) {
 class ExpressionDocumentMapper {
 public:
   typedef Document* ret;
-  static ret mapIntLit(const IntLit& il) {
+  static ret mapIntLit(const IntLit* il) {
     std::ostringstream oss;
-    oss << il.v();
+    oss << il->v();
     return new StringDocument(oss.str());
   }
-  static ret mapFloatLit(const FloatLit& fl) {
+  static ret mapFloatLit(const FloatLit* fl) {
     std::ostringstream oss;
-    pp_floatval(oss, fl.v());
+    pp_floatval(oss, fl->v());
     return new StringDocument(oss.str());
   }
-  static ret mapSetLit(const SetLit& sl) {
+  static ret mapSetLit(const SetLit* sl) {
     DocumentList* dl;
-    if (sl.isv() != nullptr) {
-      if (sl.type().bt() == Type::BT_BOOL) {
-        if (sl.isv()->size() == 0) {
+    if (sl->isv() != nullptr) {
+      if (sl->type().bt() == Type::BT_BOOL) {
+        if (sl->isv()->size() == 0) {
           dl = new DocumentList("true..false", "", "");
         } else {
-          if (sl.isv()->min() == 0) {
-            if (sl.isv()->max() == 0) {
+          if (sl->isv()->min() == 0) {
+            if (sl->isv()->max() == 0) {
               dl = new DocumentList("{false}", "", "");
             } else {
               dl = new DocumentList("{false,true}", "", "");
@@ -1132,23 +1132,23 @@ public:
           }
         }
       } else {
-        if (sl.isv()->size() == 0) {
+        if (sl->isv()->size() == 0) {
           dl = new DocumentList("1..0", "", "");
-        } else if (sl.isv()->size() == 1) {
+        } else if (sl->isv()->size() == 1) {
           dl = new DocumentList("", "..", "");
           {
             std::ostringstream oss;
-            oss << sl.isv()->min(0);
+            oss << sl->isv()->min(0);
             dl->addDocumentToList(new StringDocument(oss.str()));
           }
           {
             std::ostringstream oss;
-            oss << sl.isv()->max(0);
+            oss << sl->isv()->max(0);
             dl->addDocumentToList(new StringDocument(oss.str()));
           }
         } else {
           dl = new DocumentList("{", ", ", "}", true);
-          IntSetRanges isr(sl.isv());
+          IntSetRanges isr(sl->isv());
           for (Ranges::ToValues<IntSetRanges> isv(isr); isv(); ++isv) {
             std::ostringstream oss;
             oss << isv.val();
@@ -1156,24 +1156,24 @@ public:
           }
         }
       }
-    } else if (sl.fsv() != nullptr) {
-      if (sl.fsv()->size() == 0) {
+    } else if (sl->fsv() != nullptr) {
+      if (sl->fsv()->size() == 0) {
         dl = new DocumentList("1.0..0.0", "", "");
-      } else if (sl.fsv()->size() == 1) {
+      } else if (sl->fsv()->size() == 1) {
         dl = new DocumentList("", "..", "");
         {
           std::ostringstream oss;
-          pp_floatval(oss, sl.fsv()->min(0));
+          pp_floatval(oss, sl->fsv()->min(0));
           dl->addDocumentToList(new StringDocument(oss.str()));
         }
         {
           std::ostringstream oss;
-          pp_floatval(oss, sl.fsv()->max(0));
+          pp_floatval(oss, sl->fsv()->max(0));
           dl->addDocumentToList(new StringDocument(oss.str()));
         }
       } else {
         dl = new DocumentList("", " union ", "", true);
-        FloatSetRanges fsr(sl.fsv());
+        FloatSetRanges fsr(sl->fsv());
         for (; fsr(); ++fsr) {
           std::ostringstream oss;
           pp_floatval(oss, fsr.min());
@@ -1185,55 +1185,55 @@ public:
 
     } else {
       dl = new DocumentList("{", ", ", "}", true);
-      for (unsigned int i = 0; i < sl.v().size(); i++) {
-        dl->addDocumentToList(expression_to_document((sl.v()[i])));
+      for (unsigned int i = 0; i < sl->v().size(); i++) {
+        dl->addDocumentToList(expression_to_document((sl->v()[i])));
       }
     }
     return dl;
   }
-  static ret mapBoolLit(const BoolLit& bl) {
-    return new StringDocument(std::string(bl.v() ? "true" : "false"));
+  static ret mapBoolLit(const BoolLit* bl) {
+    return new StringDocument(std::string(bl->v() ? "true" : "false"));
   }
-  static ret mapStringLit(const StringLit& sl) {
+  static ret mapStringLit(const StringLit* sl) {
     std::ostringstream oss;
-    oss << "\"" << Printer::escapeStringLit(sl.v()) << "\"";
+    oss << "\"" << Printer::escapeStringLit(sl->v()) << "\"";
     return new StringDocument(oss.str());
   }
-  static ret mapId(const Id& id) {
-    if (&id == constants().absent) {
+  static ret mapId(const Id* id) {
+    if (id == constants().absent) {
       return new StringDocument("<>");
     }
-    if (id.idn() == -1) {
-      return new StringDocument(std::string(id.v().c_str(), id.v().size()));
+    if (id->idn() == -1) {
+      return new StringDocument(std::string(id->v().c_str(), id->v().size()));
     }
     std::ostringstream oss;
-    oss << "X_INTRODUCED_" << id.idn() << "_";
+    oss << "X_INTRODUCED_" << id->idn() << "_";
     return new StringDocument(oss.str());
   }
-  static ret mapTIId(const TIId& id) {
+  static ret mapTIId(const TIId* id) {
     std::ostringstream ss;
-    ss << "$" << id.v();
+    ss << "$" << id->v();
     return new StringDocument(ss.str());
   }
-  static ret mapAnonVar(const AnonVar& /*v*/) { return new StringDocument("_"); }
-  static ret mapArrayLit(const ArrayLit& al) {
+  static ret mapAnonVar(const AnonVar* /*v*/) { return new StringDocument("_"); }
+  static ret mapArrayLit(const ArrayLit* al) {
     /// TODO: test multi-dimensional arrays handling
     DocumentList* dl;
-    unsigned int n = al.dims();
-    if (n == 1 && al.min(0) == 1) {
+    unsigned int n = al->dims();
+    if (n == 1 && al->min(0) == 1) {
       dl = new DocumentList("[", ", ", "]");
-      for (unsigned int i = 0; i < al.size(); i++) {
-        dl->addDocumentToList(expression_to_document(al[i]));
+      for (unsigned int i = 0; i < al->size(); i++) {
+        dl->addDocumentToList(expression_to_document((*al)[i]));
       }
-    } else if (n == 2 && al.min(0) == 1 && al.min(1) == 1) {
+    } else if (n == 2 && al->min(0) == 1 && al->min(1) == 1) {
       dl = new DocumentList("[| ", " | ", " |]");
-      for (int i = 0; i < al.max(0); i++) {
+      for (int i = 0; i < al->max(0); i++) {
         auto* row = new DocumentList("", ", ", "");
-        for (int j = 0; j < al.max(1); j++) {
-          row->addDocumentToList(expression_to_document(al[i * al.max(1) + j]));
+        for (int j = 0; j < al->max(1); j++) {
+          row->addDocumentToList(expression_to_document((*al)[i * al->max(1) + j]));
         }
         dl->addDocumentToList(row);
-        if (i != al.max(0) - 1) {
+        if (i != al->max(0) - 1) {
           dl->addBreakPoint(true);  // dont simplify
         }
       }
@@ -1244,48 +1244,48 @@ public:
       dl->addStringToList(oss.str());
       auto* args = new DocumentList("(", ", ", ")");
 
-      for (int i = 0; i < al.dims(); i++) {
+      for (int i = 0; i < al->dims(); i++) {
         oss.str("");
-        oss << al.min(i) << ".." << al.max(i);
+        oss << al->min(i) << ".." << al->max(i);
         args->addStringToList(oss.str());
       }
       auto* array = new DocumentList("[", ", ", "]");
-      for (unsigned int i = 0; i < al.size(); i++) {
-        array->addDocumentToList(expression_to_document(al[i]));
+      for (unsigned int i = 0; i < al->size(); i++) {
+        array->addDocumentToList(expression_to_document((*al)[i]));
       }
       args->addDocumentToList(array);
       dl->addDocumentToList(args);
     }
     return dl;
   }
-  static ret mapArrayAccess(const ArrayAccess& aa) {
+  static ret mapArrayAccess(const ArrayAccess* aa) {
     auto* dl = new DocumentList("", "", "");
 
-    dl->addDocumentToList(expression_to_document(aa.v()));
+    dl->addDocumentToList(expression_to_document(aa->v()));
     auto* args = new DocumentList("[", ", ", "]");
-    for (unsigned int i = 0; i < aa.idx().size(); i++) {
-      args->addDocumentToList(expression_to_document(aa.idx()[i]));
+    for (unsigned int i = 0; i < aa->idx().size(); i++) {
+      args->addDocumentToList(expression_to_document(aa->idx()[i]));
     }
     dl->addDocumentToList(args);
     return dl;
   }
-  static ret mapComprehension(const Comprehension& c) {
+  static ret mapComprehension(const Comprehension* c) {
     std::ostringstream oss;
     DocumentList* dl;
-    if (c.set()) {
+    if (c->set()) {
       dl = new DocumentList("{ ", " | ", " }");
     } else {
       dl = new DocumentList("[ ", " | ", " ]");
     }
-    dl->addDocumentToList(expression_to_document(c.e()));
+    dl->addDocumentToList(expression_to_document(c->e()));
     auto* head = new DocumentList("", " ", "");
     auto* generators = new DocumentList("", ", ", "");
-    for (int i = 0; i < c.numberOfGenerators(); i++) {
+    for (int i = 0; i < c->numberOfGenerators(); i++) {
       auto* gen = new DocumentList("", "", "");
       auto* idents = new DocumentList("", ", ", "");
-      for (int j = 0; j < c.numberOfDecls(i); j++) {
+      for (int j = 0; j < c->numberOfDecls(i); j++) {
         std::ostringstream ss;
-        Id* ident = c.decl(i, j)->id();
+        Id* ident = c->decl(i, j)->id();
         if (ident->idn() == -1) {
           ss << ident->v();
         } else {
@@ -1294,15 +1294,15 @@ public:
         idents->addStringToList(ss.str());
       }
       gen->addDocumentToList(idents);
-      if (c.in(i) == nullptr) {
+      if (c->in(i) == nullptr) {
         gen->addStringToList(" = ");
-        gen->addDocumentToList(expression_to_document(c.where(i)));
+        gen->addDocumentToList(expression_to_document(c->where(i)));
       } else {
         gen->addStringToList(" in ");
-        gen->addDocumentToList(expression_to_document(c.in(i)));
-        if (c.where(i) != nullptr) {
+        gen->addDocumentToList(expression_to_document(c->in(i)));
+        if (c->where(i) != nullptr) {
           gen->addStringToList(" where ");
-          gen->addDocumentToList(expression_to_document(c.where(i)));
+          gen->addDocumentToList(expression_to_document(c->where(i)));
         }
       }
       generators->addDocumentToList(gen);
@@ -1312,17 +1312,17 @@ public:
 
     return dl;
   }
-  static ret mapITE(const ITE& ite) {
+  static ret mapITE(const ITE* ite) {
     auto* dl = new DocumentList("", "", "");
-    for (int i = 0; i < ite.size(); i++) {
+    for (int i = 0; i < ite->size(); i++) {
       std::string beg = (i == 0 ? "if " : " elseif ");
       dl->addStringToList(beg);
-      dl->addDocumentToList(expression_to_document(ite.ifExpr(i)));
+      dl->addDocumentToList(expression_to_document(ite->ifExpr(i)));
       dl->addStringToList(" then ");
 
       auto* ifdoc = new DocumentList("", "", "", false);
       ifdoc->addBreakPoint();
-      ifdoc->addDocumentToList(expression_to_document(ite.thenExpr(i)));
+      ifdoc->addDocumentToList(expression_to_document(ite->thenExpr(i)));
       dl->addDocumentToList(ifdoc);
       dl->addStringToList(" ");
     }
@@ -1331,7 +1331,7 @@ public:
 
     auto* elsedoc = new DocumentList("", "", "", false);
     elsedoc->addBreakPoint();
-    elsedoc->addDocumentToList(expression_to_document(ite.elseExpr()));
+    elsedoc->addDocumentToList(expression_to_document(ite->elseExpr()));
     dl->addDocumentToList(elsedoc);
     dl->addStringToList(" ");
     dl->addBreakPoint();
@@ -1339,8 +1339,8 @@ public:
 
     return dl;
   }
-  static ret mapBinOp(const BinOp& bo) {
-    Parentheses ps = need_parentheses(&bo, bo.lhs(), bo.rhs());
+  static ret mapBinOp(const BinOp* bo) {
+    Parentheses ps = need_parentheses(bo, bo->lhs(), bo->rhs());
     DocumentList* opLeft;
     DocumentList* dl;
     DocumentList* opRight;
@@ -1350,9 +1350,9 @@ public:
     } else {
       opLeft = new DocumentList("", " ", "");
     }
-    opLeft->addDocumentToList(expression_to_document(bo.lhs()));
+    opLeft->addDocumentToList(expression_to_document(bo->lhs()));
     std::string op;
-    switch (bo.op()) {
+    switch (bo->op()) {
       case BOT_PLUS:
         op = "+";
         break;
@@ -1451,7 +1451,7 @@ public:
     } else {
       opRight = new DocumentList("", "", "");
     }
-    opRight->addDocumentToList(expression_to_document(bo.rhs()));
+    opRight->addDocumentToList(expression_to_document(bo->rhs()));
     dl->addDocumentToList(opLeft);
     if (linebreak) {
       dl->addBreakPoint();
@@ -1460,10 +1460,10 @@ public:
 
     return dl;
   }
-  static ret mapUnOp(const UnOp& uo) {
+  static ret mapUnOp(const UnOp* uo) {
     auto* dl = new DocumentList("", "", "");
     std::string op;
-    switch (uo.op()) {
+    switch (uo->op()) {
       case UOT_NOT:
         op = "not ";
         break;
@@ -1479,19 +1479,19 @@ public:
     }
     dl->addStringToList(op);
     DocumentList* unop;
-    bool needParen = (uo.e()->isa<BinOp>() || uo.e()->isa<UnOp>());
+    bool needParen = (uo->e()->isa<BinOp>() || uo->e()->isa<UnOp>());
     if (needParen) {
       unop = new DocumentList("(", " ", ")");
     } else {
       unop = new DocumentList("", " ", "");
     }
 
-    unop->addDocumentToList(expression_to_document(uo.e()));
+    unop->addDocumentToList(expression_to_document(uo->e()));
     dl->addDocumentToList(unop);
     return dl;
   }
-  static ret mapCall(const Call& c) {
-    if (c.argCount() == 1) {
+  static ret mapCall(const Call* c) {
+    if (c->argCount() == 1) {
       /*
        * if we have only one argument, and this is an array comprehension,
        * we convert it into the following syntax
@@ -1500,12 +1500,12 @@ public:
        * forall (i in 1..10) (f(i,j))
        */
 
-      const Expression* e = c.arg(0);
+      const Expression* e = c->arg(0);
       if (e->isa<Comprehension>()) {
         const auto* com = e->cast<Comprehension>();
         if (!com->set()) {
           auto* dl = new DocumentList("", " ", "");
-          dl->addStringToList(std::string(c.id().c_str(), c.id().size()));
+          dl->addStringToList(std::string(c->id().c_str(), c->id().size()));
           auto* args = new DocumentList("", " ", "", false);
           auto* generators = new DocumentList("", ", ", "");
 
@@ -1548,50 +1548,50 @@ public:
       }
     }
     std::ostringstream beg;
-    beg << c.id() << "(";
+    beg << c->id() << "(";
     auto* dl = new DocumentList(beg.str(), ", ", ")");
-    for (unsigned int i = 0; i < c.argCount(); i++) {
-      dl->addDocumentToList(expression_to_document(c.arg(i)));
+    for (unsigned int i = 0; i < c->argCount(); i++) {
+      dl->addDocumentToList(expression_to_document(c->arg(i)));
     }
     return dl;
   }
-  static ret mapVarDecl(const VarDecl& vd) {
+  static ret mapVarDecl(const VarDecl* vd) {
     std::ostringstream oss;
     auto* dl = new DocumentList("", "", "");
-    dl->addDocumentToList(expression_to_document(vd.ti()));
-    if (vd.id()->idn() == -1) {
-      if (vd.id()->v().size() != 0) {
-        oss << ": " << vd.id()->v().c_str();
+    dl->addDocumentToList(expression_to_document(vd->ti()));
+    if (vd->id()->idn() == -1) {
+      if (vd->id()->v().size() != 0) {
+        oss << ": " << vd->id()->v().c_str();
       }
     } else {
-      oss << ": X_INTRODUCED_" << vd.id()->idn() << "_";
+      oss << ": X_INTRODUCED_" << vd->id()->idn() << "_";
     }
     dl->addStringToList(oss.str());
 
-    if (vd.introduced()) {
+    if (vd->introduced()) {
       dl->addStringToList(" ::var_is_introduced ");
     }
-    if (!vd.ann().isEmpty()) {
-      dl->addDocumentToList(annotation_to_document(vd.ann()));
+    if (!vd->ann().isEmpty()) {
+      dl->addDocumentToList(annotation_to_document(vd->ann()));
     }
-    if (vd.e() != nullptr) {
+    if (vd->e() != nullptr) {
       dl->addStringToList(" = ");
-      dl->addDocumentToList(expression_to_document(vd.e()));
+      dl->addDocumentToList(expression_to_document(vd->e()));
     }
     return dl;
   }
-  static ret mapLet(const Let& l) {
+  static ret mapLet(const Let* l) {
     auto* letin = new DocumentList("", "", "", false);
     auto* lets = new DocumentList("", " ", "", true);
     auto* inexpr = new DocumentList("", "", "");
-    bool ds = l.let().size() > 1;
+    bool ds = l->let().size() > 1;
 
-    for (unsigned int i = 0; i < l.let().size(); i++) {
+    for (unsigned int i = 0; i < l->let().size(); i++) {
       if (i != 0) {
         lets->addBreakPoint(ds);
       }
       auto* exp = new DocumentList("", " ", ",");
-      const Expression* li = l.let()[i];
+      const Expression* li = l->let()[i];
       if (!li->isa<VarDecl>()) {
         exp->addStringToList("constraint");
       }
@@ -1599,7 +1599,7 @@ public:
       lets->addDocumentToList(exp);
     }
 
-    inexpr->addDocumentToList(expression_to_document(l.in()));
+    inexpr->addDocumentToList(expression_to_document(l->in()));
     letin->addBreakPoint(ds);
     letin->addDocumentToList(lets);
 
@@ -1618,18 +1618,18 @@ public:
     dl->addStringToList(")");
     return dl;
   }
-  static ret mapTypeInst(const TypeInst& ti) {
+  static ret mapTypeInst(const TypeInst* ti) {
     auto* dl = new DocumentList("", "", "");
-    if (ti.isarray()) {
+    if (ti->isarray()) {
       dl->addStringToList("array [");
       auto* ran = new DocumentList("", ", ", "");
-      for (unsigned int i = 0; i < ti.ranges().size(); i++) {
-        ran->addDocumentToList(tiexpression_to_document(Type::parint(), ti.ranges()[i]));
+      for (unsigned int i = 0; i < ti->ranges().size(); i++) {
+        ran->addDocumentToList(tiexpression_to_document(Type::parint(), ti->ranges()[i]));
       }
       dl->addDocumentToList(ran);
       dl->addStringToList("] of ");
     }
-    dl->addDocumentToList(tiexpression_to_document(ti.type(), ti.domain()));
+    dl->addDocumentToList(tiexpression_to_document(ti->type(), ti->domain()));
     return dl;
   }
 };
