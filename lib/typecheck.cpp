@@ -1996,6 +1996,13 @@ public:
         tt.enumId(_env.registerArrayEnum(enumIds));
       }
     }
+    if (tt.isvar()) {
+      if (tt.bt() == Type::BT_ANN || tt.bt() == Type::BT_STRING ||
+          (tt.st() == Type::ST_SET && tt.bt() != Type::BT_INT)) {
+        throw TypeError(_env, c->loc(),
+                        "invalid type for comprehension: `" + tt.toString(_env) + "'");
+      }
+    }
     c->type(tt);
   }
   /// Visit array comprehension generator
@@ -2121,9 +2128,21 @@ public:
       ite->thenExpr(i, add_coercion(_env, _model, ite->thenExpr(i), tret)());
     }
     ite->elseExpr(add_coercion(_env, _model, ite->elseExpr(), tret)());
-    /// TODO: perhaps extend flattener to array types, but for now throw an error
-    if (varcond && tret.dim() > 0) {
-      throw TypeError(_env, ite->loc(), "conditional with var condition cannot have array type");
+    if (varcond) {
+      if (tret.dim() > 0) {
+        throw TypeError(_env, ite->loc(), "conditional with var condition cannot have array type");
+      }
+      if (tret.bt() == Type::BT_STRING) {
+        throw TypeError(_env, ite->loc(), "conditional with var condition cannot have string type");
+      }
+      if (tret.bt() == Type::BT_ANN) {
+        throw TypeError(_env, ite->loc(),
+                        "conditional with var condition cannot have annotation type");
+      }
+      if (tret.st() == Type::ST_SET && tret.bt() != Type::BT_INT) {
+        throw TypeError(_env, ite->loc(),
+                        "conditional with var condition cannot have type " + tret.toString(_env));
+      }
     }
     if (varcond || !allpar) {
       tret.ti(Type::TI_VAR);
@@ -2540,7 +2559,6 @@ public:
       }
     } else {
       vd->type(vd->ti()->type());
-      vd->id()->type(vd->type());
     }
   }
   /// Visit type inst
@@ -2635,6 +2653,11 @@ public:
         tt.bt() != Type::BT_TOP) {
       throw TypeError(_env, ti->loc(), "var set element types other than `int' not allowed");
     }
+    if (tt.isvar() && (tt.bt() == Type::BT_ANN || tt.bt() == Type::BT_STRING)) {
+      throw TypeError(_env, ti->loc(),
+                      "invalid type of variable declaration: `" + tt.toString(_env) + "'");
+    }
+
     ti->type(tt);
   }
   void vTIId(TIId* id) {}
