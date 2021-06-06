@@ -458,6 +458,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
                               {al_cond, al_branches, results[j]->id()});
     ite_pred->decl(env.model->matchFn(env, ite_pred, false));
     ite_pred->type(Type::varbool());
+    make_defined_var(results[j], ite_pred);
     (void)flat_exp(env, Ctx(), ite_pred, constants().varTrue, constants().varTrue);
   }
   EE ret;
