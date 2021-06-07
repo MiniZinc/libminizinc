@@ -1419,7 +1419,7 @@ bool b_annotate(EnvI& env, Call* call) {
   auto* var_decl = follow_id_to_decl(expr)->cast<VarDecl>();
   // Add annotation
   Expression* ann = call->arg(1);
-  var_decl->ann().add(ann);
+  var_decl->addAnnotation(ann);
   // Increase usage count of the annotation
   if (auto* ann_decl = follow_id_to_decl(ann)->dynamicCast<VarDecl>()) {
     auto var_it = env.varOccurrences.idx.find(var_decl->id());

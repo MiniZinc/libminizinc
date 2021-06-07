@@ -99,15 +99,16 @@ Location Location::introduce() const {
 }
 
 void Expression::addAnnotation(Expression* ann) {
-  if (!isUnboxedVal() && !Expression::equal(ann, constants().ann.empty_annotation)) {
+  if (!isUnboxedVal() && this != constants().literalTrue && this != constants().literalFalse &&
+      !Expression::equal(ann, constants().ann.empty_annotation)) {
     _ann.add(ann);
   }
 }
 void Expression::addAnnotations(const std::vector<Expression*>& ann) {
-  if (!isUnboxedVal()) {
-    for (const auto& i : ann) {
-      if (i != nullptr) {
-        _ann.add(i);
+  if (!isUnboxedVal() && this != constants().literalTrue && this != constants().literalFalse) {
+    for (auto* a : ann) {
+      if (a != nullptr && !Expression::equal(a, constants().ann.empty_annotation)) {
+        _ann.add(a);
       }
     }
   }

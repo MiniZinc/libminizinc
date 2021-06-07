@@ -15,4 +15,4 @@ type: compile
 ***/
 
 var bool: b;
-constraint true :: if b then domain else bounds endif;
+constraint b :: if b then domain else bounds endif;

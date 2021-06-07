@@ -1040,10 +1040,10 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
         Call* checkVarEnum = vdi_copy->e()->ann().getCall(constants().ann.mzn_check_enum_var);
         vdi_copy->e()->ann().clear();
         if (isCheckVar) {
-          vdi_copy->e()->ann().add(constants().ann.mzn_check_var);
+          vdi_copy->e()->addAnnotation(constants().ann.mzn_check_var);
         }
         if (checkVarEnum != nullptr) {
-          vdi_copy->e()->ann().add(checkVarEnum);
+          vdi_copy->e()->addAnnotation(checkVarEnum);
         }
         vdi_copy->e()->introduced(false);
         IdMap<KeepAlive>::iterator it;

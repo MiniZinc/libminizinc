@@ -450,9 +450,9 @@ void optimize(Env& env, bool chain_compression) {
 
           // Transfer is_defined_var annotation
           if (id1->decl()->ann().contains(constants().ann.is_defined_var)) {
-            vdi->e()->ann().add(constants().ann.is_defined_var);
+            vdi->e()->addAnnotation(constants().ann.is_defined_var);
           } else if (vdi->e()->ann().contains(constants().ann.is_defined_var)) {
-            id1->decl()->ann().add(constants().ann.is_defined_var);
+            id1->decl()->addAnnotation(constants().ann.is_defined_var);
           }
 
           unify(envi, deletedVarDecls, vdi->e()->id(), id1);
@@ -1379,9 +1379,9 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
               vdi->e()->e(nullptr);
               // Transfer is_defined_var annotation
               if (id1->decl()->ann().contains(constants().ann.is_defined_var)) {
-                vdi->e()->ann().add(constants().ann.is_defined_var);
+                vdi->e()->addAnnotation(constants().ann.is_defined_var);
               } else if (vdi->e()->ann().contains(constants().ann.is_defined_var)) {
-                id1->decl()->ann().add(constants().ann.is_defined_var);
+                id1->decl()->addAnnotation(constants().ann.is_defined_var);
               }
               unify(env, deletedVarDecls, vdi->e()->id(), id1);
               push_dependent_constraints(env, id1, constraintQueue);
@@ -1676,9 +1676,9 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
               vdi->e()->e(nullptr);
               // Transfer is_defined_var annotation
               if (ident->decl()->ann().contains(constants().ann.is_defined_var)) {
-                vdi->e()->ann().add(constants().ann.is_defined_var);
+                vdi->e()->addAnnotation(constants().ann.is_defined_var);
               } else if (vdi->e()->ann().contains(constants().ann.is_defined_var)) {
-                ident->decl()->ann().add(constants().ann.is_defined_var);
+                ident->decl()->addAnnotation(constants().ann.is_defined_var);
               }
               unify(env, deletedVarDecls, vdi->e()->id(), ident);
               push_dependent_constraints(env, ident, constraintQueue);

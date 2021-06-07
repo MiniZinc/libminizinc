@@ -2855,7 +2855,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         }
       } else {
         vd->e(ai->e());
-        vd->ann().add(constants().ann.rhs_from_assignment);
+        vd->addAnnotation(constants().ann.rhs_from_assignment);
         if (vd->ti()->isEnum()) {
           create_enum_mapper(env.envi(), m, vd->ti()->type().enumId(), vd, enumItems2);
         }
@@ -3400,7 +3400,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         }
         throw;
       }
-      vd->ann().add(constants().ann.mzn_check_var);
+      vd->addAnnotation(constants().ann.mzn_check_var);
       if (vd->type().enumId() != 0) {
         GCLock lock;
         std::vector<unsigned int> enumIds({vd->type().enumId()});
@@ -3422,7 +3422,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
             new Call(Location().introduce(), constants().ann.mzn_check_enum_var, args);
         checkEnum->type(Type::ann());
         checkEnum->decl(env.envi().model->matchFn(env.envi(), checkEnum, false));
-        vd->ann().add(checkEnum);
+        vd->addAnnotation(checkEnum);
       }
       Type vdktype = vd_k()->type();
       vdktype.ti(Type::TI_VAR);
