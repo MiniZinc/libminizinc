@@ -17,13 +17,13 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
   CallStackItem _csi(env, e);
   EE ret;
   GCLock lock;
-  if (ctx.b != C_ROOT) {
-    throw FlatteningError(env, e->loc(), "not in root context");
-  }
   auto* v = e->cast<VarDecl>();
+  if (ctx.b != C_ROOT && !v->toplevel()) {
+    throw InternalError("attempting to flatten non-toplevel VarDecl in context other than root");
+  }
   VarDecl* it = v->flat();
   if (it == nullptr) {
-    TypeInst* ti = eval_typeinst(env, ctx, v);
+    TypeInst* ti = eval_typeinst(env, Ctx(), v);
     if ((ti->domain() != nullptr) && ti->domain()->isa<SetLit>()) {
       if (ti->type().bt() == Type::BT_INT && ti->type().st() == Type::ST_PLAIN) {
         if (eval_intset(env, ti->domain())->size() == 0) {
@@ -38,14 +38,13 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
     bool reuseVarId = v->type().isAnn() || (v->toplevel() && v->id()->idn() == -1 &&
                                             Printer::quoteId(v->id()->v()).c_str()[0] != '\'' &&
                                             v->id()->v().c_str()[0] != '_');
-    VarDecl* vd = new_vardecl(env, ctx, ti, reuseVarId ? v->id() : nullptr, v, nullptr);
+    VarDecl* vd = new_vardecl(env, Ctx(), ti, reuseVarId ? v->id() : nullptr, v, nullptr);
     v->flat(vd);
-    Ctx nctx;
-    nctx.i = ctx.i;
-    if ((v->e() != nullptr) && v->e()->type().bt() == Type::BT_BOOL && v->e()->type().dim() == 0) {
-      nctx.b = C_MIX;
-    }
     if (v->e() != nullptr) {
+      Ctx nctx;
+      if (v->e()->type().bt() == Type::BT_BOOL && v->e()->type().dim() == 0) {
+        nctx.b = C_MIX;
+      }
       (void)flat_exp(env, nctx, v->e(), vd, constants().varTrue);
       if (v->e()->type().dim() > 0) {
         Expression* ee = follow_id_to_decl(vd->e());
