@@ -38,6 +38,7 @@ int wmain(int argc, wchar_t* argv[], wchar_t* envp[]) {
 #else
 int main(int argc, const char** argv) {
 #endif
+  OverflowHandler::install(argv);
   Timer startTime;
   bool fSuccess = false;
 

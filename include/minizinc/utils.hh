@@ -212,4 +212,18 @@ inline void vec_string2vec_pchar(const std::vector<std::string>& vS,
   }
 }
 
+class OverflowHandler {
+private:
+  OverflowHandler();
+  struct OverflowInfo;
+  static std::unique_ptr<OverflowInfo> _ofi;
+
+public:
+#ifdef _WIN32
+  static void install(wchar_t** argv);
+#else
+  static void install(const char** argv);
+#endif
+};
+
 }  // namespace MiniZinc

@@ -61,6 +61,7 @@ add_library(mzn
   lib/values.cpp
   lib/support/regex/parser.yxx
   lib/support/regex/lexer.lxx
+  lib/utils.cpp
 
   include/minizinc/ast.hh
   include/minizinc/ast.hpp
