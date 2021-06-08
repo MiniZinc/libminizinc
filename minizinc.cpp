@@ -62,6 +62,14 @@ int main(int argc, const char** argv) {
       }
       std::cerr << e.loc() << ":" << std::endl;
       std::cerr << e.what() << ": " << e.msg() << std::endl;
+    } catch (const InternalError& e) {
+      if (slv.getFlagVerbose()) {
+        std::cerr << std::endl;
+      }
+      std::cerr << "MiniZinc has encountered an internal error. This is a bug." << std::endl;
+      std::cerr << "Please file a bug report using the MiniZinc bug tracker." << std::endl;
+      std::cerr << "The internal error message was: " << std::endl;
+      std::cerr << "\"" << e.msg() << "\"" << std::endl;
     } catch (const Exception& e) {
       if (slv.getFlagVerbose()) {
         std::cerr << std::endl;
