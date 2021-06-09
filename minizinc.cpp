@@ -30,33 +30,15 @@
 
 using namespace MiniZinc;
 
-#ifdef _WIN32
-#include <minizinc/interrupt.hh>
+namespace {
 
-int wmain(int argc, wchar_t* argv[], wchar_t* envp[]) {
-  InterruptListener::run();
-#else
-int main(int argc, const char** argv) {
-#endif
-  OverflowHandler::install(argv);
-  Timer startTime;
-  bool fSuccess = false;
-
+int run(const std::string& exe, const std::vector<std::string>& args) {
   try {
+    Timer startTime;
+    bool fSuccess = false;
     MznSolver slv(std::cout, std::cerr, startTime);
     try {
-      std::vector<std::string> args(argc - 1);
-#ifdef _WIN32
-      for (int i = 1; i < argc; i++) {
-        args[i - 1] = FileUtils::wide_to_utf8(argv[i]);
-      }
-      fSuccess = (slv.run(args, "", FileUtils::wide_to_utf8(argv[0])) != SolverInstance::ERROR);
-#else
-      for (int i = 1; i < argc; i++) {
-        args[i - 1] = argv[i];
-      }
-      fSuccess = (slv.run(args, "", argv[0]) != SolverInstance::ERROR);
-#endif
+      fSuccess = (slv.run(args, "", exe) != SolverInstance::ERROR);
     } catch (const LocationException& e) {
       if (slv.getFlagVerbose()) {
         std::cerr << std::endl;
@@ -99,4 +81,38 @@ int main(int argc, const char** argv) {
     std::cerr << what << (what.empty() ? "" : ": ") << e.msg() << std::endl;
     std::exit(EXIT_FAILURE);
   }
-}  // int main()
+}
+
+}  // namespace
+
+#ifdef _WIN32
+#include <minizinc/interrupt.hh>
+
+int wmain(int argc, wchar_t* argv[], wchar_t* envp[]) {
+  InterruptListener::run();
+  OverflowHandler::install();
+  std::vector<std::string> args(argc - 1);
+  for (int i = 1; i < argc; i++) {
+    args[i - 1] = FileUtils::wide_to_utf8(argv[i]);
+  }
+  auto exe = FileUtils::wide_to_utf8(argv[0]);
+
+  // Lambda to prevent object unwinding not allowed with __try..__except
+  return ([&]() {
+    __try {
+      return run(exe, args);
+    } __except (OverflowHandler::filter(GetExceptionCode())) {
+      OverflowHandler::handle(GetExceptionCode());
+    }
+  })();
+}
+#else
+int main(int argc, const char** argv) {
+  OverflowHandler::install(argv);
+  std::vector<std::string> args(argc - 1);
+  for (int i = 1; i < argc; i++) {
+    args[i - 1] = argv[i];
+  }
+  return run(argv[0], args);
+}
+#endif

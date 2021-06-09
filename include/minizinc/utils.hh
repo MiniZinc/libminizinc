@@ -222,7 +222,9 @@ private:
 
 public:
 #ifdef _WIN32
-  static void install(wchar_t** argv);
+  static void install();
+  static int filter(unsigned int code);
+  static void handle(unsigned int code);
 #else
   static void install(const char** argv);
 #endif
