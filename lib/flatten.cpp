@@ -19,6 +19,7 @@
 #include <minizinc/hash.hh>
 #include <minizinc/optimize.hh>
 #include <minizinc/output.hh>
+#include <minizinc/utils.hh>
 
 #include <map>
 #include <unordered_map>
@@ -2945,6 +2946,12 @@ private:
 };
 
 void flatten(Env& e, FlatteningOptions opt) {
+  class OverflowWatch {
+  public:
+    OverflowWatch(Env& e) { OverflowHandler::setEnv(e); }
+    ~OverflowWatch() { OverflowHandler::removeEnv(); }
+  };
+  OverflowWatch ow(e);
   e.envi().setRandomSeed(opt.randomSeed);
   ItemTimer::TimingMap timingMap_o;
   ItemTimer::TimingMap* timingMap = opt.detailedTiming ? &timingMap_o : nullptr;

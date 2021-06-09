@@ -212,6 +212,8 @@ inline void vec_string2vec_pchar(const std::vector<std::string>& vS,
   }
 }
 
+class Env;
+
 class OverflowHandler {
 private:
   OverflowHandler();
@@ -224,6 +226,8 @@ public:
 #else
   static void install(const char** argv);
 #endif
+  static void setEnv(Env& env);
+  static void removeEnv();
 };
 
 }  // namespace MiniZinc
