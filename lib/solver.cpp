@@ -857,7 +857,6 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
 
 void MznSolver::flatten(const std::string& modelString, const std::string& modelName) {
   std::exception_ptr exc;
-  bool success = true;
   _flt.setFlagVerbose(flagCompilerVerbose);
   _flt.setFlagStatistics(flagCompilerStatistics);
   if (flagRandomSeed) {
