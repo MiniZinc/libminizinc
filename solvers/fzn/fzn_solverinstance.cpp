@@ -225,7 +225,7 @@ FZNSolverInstance::~FZNSolverInstance() {}
 SolverInstance::Status FZNSolverInstance::solve() {
   auto& opt = static_cast<FZNSolverOptions&>(*_options);
   if (opt.fznSolver.empty()) {
-    throw InternalError("No FlatZinc solver specified");
+    throw Error("No FlatZinc solver specified");
   }
   /// Passing options to solver
   vector<string> cmd_line;

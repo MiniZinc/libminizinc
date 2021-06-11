@@ -303,7 +303,6 @@ void MIPSolverinstance<MIPWrapper>::processFlatZinc() {
     if (Id* id = solveItem->e()->dynamicCast<Id>()) {
       objVd = id->decl();
     } else {
-      std::cerr << "Objective must be Id: " << solveItem->e() << std::endl;
       throw InternalError("Objective must be Id");
     }
   }
@@ -337,7 +336,7 @@ void MIPSolverinstance<MIPWrapper>::processFlatZinc() {
         ssm << "  VarDecl flags (ti, bt, st, ot): " << ti->type().ti() << ti->type().bt()
             << ti->type().st() << ti->type().ot() << ", dim == " << ti->type().dim()
             << "\nRemove the variable or add a constraint so it is redefined." << std::endl;
-        throw InternalError(ssm.str());
+        throw FlatteningError(getEnv()->envi(), ti->loc(), ssm.str());
       }
       double lb = 0.0;
       double ub = 1.0;  // for bool

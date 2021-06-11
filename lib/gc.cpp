@@ -132,7 +132,7 @@ protected:
     }
     auto* newPage = static_cast<HeapPage*>(::malloc(sizeof(HeapPage) + s - 1));
     if (newPage == nullptr) {
-      throw InternalError("out of memory");
+      throw Error("out of memory");
     }
 #ifndef NDEBUG
     memset(newPage, 255, sizeof(HeapPage) + s - 1);

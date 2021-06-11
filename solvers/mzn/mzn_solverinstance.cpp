@@ -150,7 +150,7 @@ MZNSolverInstance::~MZNSolverInstance() {}
 SolverInstance::Status MZNSolverInstance::solve() {
   auto& opt = static_cast<MZNSolverOptions&>(*_options);
   if (opt.mznSolver.empty()) {
-    throw InternalError("No MiniZinc solver specified");
+    throw Error("No MiniZinc solver specified");
   }
   /// Passing options to solver
   vector<string> cmd_line;

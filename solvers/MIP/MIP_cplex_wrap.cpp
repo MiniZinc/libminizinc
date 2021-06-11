@@ -66,7 +66,7 @@ void* dll_sym(void* dll, const char* sym) {
   void* ret = GetProcAddress((HMODULE)dll, sym);
 #endif
   if (ret == nullptr) {
-    throw MiniZinc::InternalError("cannot load symbol " + string(sym) + " from CPLEX dll");
+    throw MiniZinc::Error("cannot load symbol " + string(sym) + " from CPLEX dll");
   }
   return ret;
 }
@@ -102,9 +102,9 @@ void MIPCplexWrapper::checkDLL() {
 
   if (_cplexDll == nullptr) {
     if (_factoryOptions.cplexDll.empty()) {
-      throw MiniZinc::InternalError("cannot load cplex dll, specify --cplex-dll");
+      throw MiniZinc::Error("cannot load cplex dll, specify --cplex-dll");
     }
-    throw MiniZinc::InternalError("cannot load cplex dll `" + _factoryOptions.cplexDll + "'");
+    throw MiniZinc::Error("cannot load cplex dll `" + _factoryOptions.cplexDll + "'");
   }
 
   *(void**)(&dll_CPXaddfuncdest) = dll_sym(_cplexDll, "CPXaddfuncdest");
@@ -238,7 +238,7 @@ string MIPCplexWrapper::getDescription(FactoryOptions& factoryOpt,
     } else {
       v += "[?? ...cannot open CPLEX env to query version]";
     }
-  } catch (MiniZinc::InternalError&) {
+  } catch (MiniZinc::Error&) {
     v += "[?? ...cannot open CPLEX env to query version]";
   }
   v += "  Compiled  " __DATE__ "  " __TIME__;
@@ -260,7 +260,7 @@ string MIPCplexWrapper::getVersion(FactoryOptions& factoryOpt,
     } else {
       v += "<unknown version>";
     }
-  } catch (MiniZinc::InternalError&) {
+  } catch (MiniZinc::Error&) {
     v += "<unknown version>";
   }
   return v;
@@ -276,7 +276,7 @@ vector<string> MIPCplexWrapper::getRequiredFlags(FactoryOptions& f) {
     if (env != nullptr) {
       return {};
     }
-  } catch (MiniZinc::InternalError&) {
+  } catch (MiniZinc::Error&) {
   }
   return {"--cplex-dll"};
 }
@@ -506,7 +506,7 @@ vector<MiniZinc::SolverConfig::ExtraFlag> MIPCplexWrapper::getExtraFlags(
       res.emplace_back("--cplex-" + param, param, param_type, param_range, param_default);
     }
     return res;
-  } catch (MiniZinc::InternalError&) {
+  } catch (MiniZinc::Error&) {
     return {};
   }
   return {};

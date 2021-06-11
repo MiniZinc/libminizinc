@@ -198,12 +198,12 @@ public:
       std::stringstream ssm;
       ssm << "Error occurred when executing FZN solver with command \""
           << FileUtils::wide_to_utf8(cmdstr) << "\".";
-      throw InternalError(ssm.str());
+      throw Error(ssm.str());
     }
 
     BOOL assignedToJob = AssignProcessToJobObject(hJobObject, piProcInfo.hProcess);
     if (!assignedToJob) {
-      throw InternalError("Failed to assign process to job.");
+      throw Error("Failed to assign process to job.");
     }
 
     CloseHandle(piProcInfo.hThread);
@@ -349,8 +349,7 @@ public:
         if (sel == -1) {
           if (errno != EINTR) {
             // some error has happened
-            throw InternalError(std::string("Error in communication with solver: ") +
-                                strerror(errno));
+            throw Error(std::string("Error in communication with solver: ") + strerror(errno));
           }
         }
         bool timeoutImmediately = false;
@@ -475,7 +474,7 @@ public:
       return exitStatus;
     }
     if (setpgid(0, 0) == -1) {
-      throw InternalError("Failed to set pgid of subprocess");
+      throw Error("Failed to set pgid of subprocess");
     }
     close(STDOUT_FILENO);
     close(STDERR_FILENO);
@@ -509,7 +508,7 @@ public:
       ssm << s << ' ';
     }
     ssm << "\".";
-    throw InternalError(ssm.str());
+    throw Error(ssm.str());
   }
 #endif
 };

@@ -46,7 +46,7 @@ class Error : public Exception {
 public:
   Error(const std::string& msg) : Exception(msg) {}
   ~Error() throw() override {}
-  const char* what() const throw() override { return ""; }
+  const char* what() const throw() override { return "MiniZinc: error"; }
 };
 
 class Timeout : public Exception {

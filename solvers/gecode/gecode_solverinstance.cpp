@@ -541,7 +541,7 @@ void GecodeSolverInstance::processFlatZinc() {
               ssm << "GecodeSolverInstance::processFlatZinc: Error: Unbounded variable: "
                   << *vd->id() << ", rerun with --allow-unbounded-vars to add arbitrary bounds."
                   << std::endl;
-              throw InternalError(ssm.str());
+              throw Error(ssm.str());
             }
           }
         } else {  // there is an initialisation expression
@@ -563,7 +563,7 @@ void GecodeSolverInstance::processFlatZinc() {
               std::stringstream ssm;
               ssm << "GecodeSolverInstance::processFlatZinc: Error: Unsafe value for Gecode: " << il
                   << std::endl;
-              throw InternalError(ssm.str());
+              throw Error(ssm.str());
             }
           }
         }
@@ -638,7 +638,7 @@ void GecodeSolverInstance::processFlatZinc() {
               ssm << "GecodeSolverInstance::processFlatZinc: Error: Unbounded variable: "
                   << *vd->id() << ", rerun with --allow-unbounded-vars to add arbitrary bounds."
                   << std::endl;
-              throw InternalError(ssm.str());
+              throw Error(ssm.str());
             }
           }
           FloatVar floatVar(*this->currentSpace, lb, ub);

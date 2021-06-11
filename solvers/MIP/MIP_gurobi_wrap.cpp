@@ -63,7 +63,7 @@ string MIPGurobiWrapper::getVersion(FactoryOptions& factoryOpt,
     mgw.dll_GRBversion(&major, &minor, &technical);
     oss << major << '.' << minor << '.' << technical;
     return oss.str();
-  } catch (MiniZinc::InternalError&) {
+  } catch (MiniZinc::Error&) {
     return "<unknown version>";
   }
 }
@@ -74,7 +74,7 @@ vector<string> MIPGurobiWrapper::getRequiredFlags(FactoryOptions& f) {
   try {
     mgw.checkDLL();
     return {};
-  } catch (MiniZinc::InternalError&) {
+  } catch (MiniZinc::Error&) {
     return {"--gurobi-dll"};
   }
 }
@@ -274,7 +274,7 @@ void* dll_sym(void* dll, const char* sym) {
   void* ret = GetProcAddress((HMODULE)dll, sym);
 #endif
   if (ret == nullptr) {
-    throw MiniZinc::InternalError("cannot load symbol " + string(sym) + " from gurobi dll");
+    throw MiniZinc::Error("cannot load symbol " + string(sym) + " from gurobi dll");
   }
   return ret;
 }
@@ -305,9 +305,9 @@ void MIPGurobiWrapper::checkDLL() {
 
   if (_gurobiDll == nullptr) {
     if (_factoryOptions.gurobiDll.empty()) {
-      throw MiniZinc::InternalError("cannot load gurobi dll, specify --gurobi-dll");
+      throw MiniZinc::Error("cannot load gurobi dll, specify --gurobi-dll");
     }
-    throw MiniZinc::InternalError("cannot load gurobi dll `" + _factoryOptions.gurobiDll + "'");
+    throw MiniZinc::Error("cannot load gurobi dll `" + _factoryOptions.gurobiDll + "'");
   }
 
   *(void**)(&dll_GRBversion) = dll_sym(_gurobiDll, "GRBversion");
@@ -510,7 +510,7 @@ std::vector<MiniZinc::SolverConfig::ExtraFlag> MIPGurobiWrapper::getExtraFlags(
                          param_default);
     }
     return flags;
-  } catch (MiniZinc::InternalError&) {
+  } catch (MiniZinc::Error&) {
     return {};
   }
   return {};

@@ -204,7 +204,7 @@ SolverInstance::Status NLSolverInstance::solve() {
       delete tmpdir;
       tmpdir = nullptr;
       outfile.close();
-      throw InternalError("No NL solver specified");
+      throw Error("No NL solver specified");
     }
 
     cmd_line.push_back(opt.nlSolver);

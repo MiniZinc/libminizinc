@@ -408,7 +408,7 @@ TmpFile::TmpFile(const std::string& ext) {
   _tmpfileDesc = mkstemps(tmpfile, ext.size());
   if (_tmpfileDesc == -1) {
     ::free(tmpfile);
-    throw InternalError("Error occurred when creating temporary file");
+    throw Error("Error occurred when creating temporary file");
   }
   _name = std::string(tmpfile);
   ::free(tmpfile);
@@ -446,7 +446,7 @@ TmpDir::TmpDir() {
 
   if (mkdtemp(tmpfile) == nullptr) {
     ::free(tmpfile);
-    throw InternalError("Error occurred when creating temporary directory");
+    throw Error("Error occurred when creating temporary directory");
   }
   _name = std::string(tmpfile);
   ::free(tmpfile);
