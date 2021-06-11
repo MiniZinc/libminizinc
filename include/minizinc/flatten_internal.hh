@@ -16,9 +16,9 @@
 #include <minizinc/flatten.hh>
 #include <minizinc/optimize.hh>
 
+#include <atomic>
 #include <cmath>
 #include <random>
-#include <atomic>
 
 // TODO: Should this be a command line option? It doesn't seem too expensive
 // #define OUTPUT_CALLTREE

@@ -163,15 +163,6 @@ void SolverFactory::destroySI(SolverInstanceBase* pSI) {
   _sistorage.erase(it);
 }
 
-MznSolver::MznSolver()
-    : _startTime(),
-      _solverConfigs(std::cerr),
-      _flt(std::cout, std::cerr, _solverConfigs.mznlibDir()),
-      _executableName("<executable>"),
-      _os(std::cout),
-      _log(std::cerr),
-      s2out(std::cout, std::cerr, _solverConfigs.mznlibDir()) {}
-
 MznSolver::MznSolver(std::ostream& os0, std::ostream& log0, const Timer& startTime)
     : _startTime(startTime),
       _solverConfigs(log0),
@@ -865,22 +856,48 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
 }
 
 void MznSolver::flatten(const std::string& modelString, const std::string& modelName) {
+  std::exception_ptr exc;
+  bool success = true;
   _flt.setFlagVerbose(flagCompilerVerbose);
   _flt.setFlagStatistics(flagCompilerStatistics);
   if (flagRandomSeed) {
     _flt.setRandomSeed(randomSeed);
   }
-  std::packaged_task<void()> task([&] { _flt.flatten(modelString, modelName); });
-  auto future = task.get_future();
-  std::thread thr(std::move(task));
-  if (flagOverallTimeLimit != std::chrono::milliseconds(0)) {
-    if (future.wait_for(flagOverallTimeLimit - _startTime.ms()) == std::future_status::timeout) {
-      _flt.cancel();
+
+  // Create timing thread
+  std::promise<void> done;
+  auto done_future = done.get_future();
+  std::packaged_task<int()> timer([&] {
+    auto time_left = std::max(std::chrono::milliseconds(1), flagOverallTimeLimit - _startTime.ms());
+    if (flagOverallTimeLimit != std::chrono::milliseconds(0)) {
+      auto time_left =
+          std::max(std::chrono::milliseconds(1), flagOverallTimeLimit - _startTime.ms());
+      if (done_future.wait_for(time_left) == std::future_status::timeout) {
+        // Trigger time out!
+        _flt.cancel();
+      }
     }
+    return time_left.count();
+  });
+  auto timer_future = timer.get_future();
+  std::thread thr(std::move(timer));
+
+  // Flattening process in main thread
+  try {
+    _flt.flatten(modelString, modelName);
+  } catch (...) {
+    // Capture exception to gracefully handle threads
+    exc = std::current_exception();
   }
-  future.wait();
+
+  // Join timing thread
+  done.set_value();
   thr.join();
-  future.get();
+
+  // Rethrow exception if necessary
+  if (exc) {
+    std::rethrow_exception(exc);
+  }
 }
 
 SolverInstance::Status MznSolver::solve() {

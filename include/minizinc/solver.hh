@@ -168,7 +168,6 @@ public:
   bool flagRandomSeed = false;
   long unsigned int randomSeed = 0;
 
-  MznSolver();
   MznSolver(std::ostream& os, std::ostream& log, const Timer& startTime);
   ~MznSolver();
 
