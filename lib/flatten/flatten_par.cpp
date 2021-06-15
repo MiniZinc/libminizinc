@@ -14,6 +14,7 @@
 namespace MiniZinc {
 
 EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
+  CallStackItem _csi(env, e);
   EE ret;
   if (e->type().cv()) {
     Ctx nctx;
