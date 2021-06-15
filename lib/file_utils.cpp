@@ -403,7 +403,11 @@ TmpFile::TmpFile(const std::string& ext) {
   _name += ext;
 #else
   _tmpfileDesc = -1;
-  _name = "/tmp/mznfileXXXXXX" + ext;
+  char* temp_dir = getenv("TMPDIR");
+  if (temp_dir == nullptr || *temp_dir == '\0') {
+    temp_dir = "/tmp";
+  }
+  _name = std::string(temp_dir) + "/mznfileXXXXXX" + ext;
   char* tmpfile = strndup(_name.c_str(), _name.size());
   _tmpfileDesc = mkstemps(tmpfile, ext.size());
   if (_tmpfileDesc == -1) {
@@ -441,7 +445,11 @@ TmpDir::TmpDir() {
   DeleteFileW(szTempFileName);
   CreateDirectoryW(szTempFileName, nullptr);
 #else
-  _name = "/tmp/mzndirXXXXXX";
+  char* temp_dir = getenv("TMPDIR");
+  if (temp_dir == nullptr || *temp_dir == '\0') {
+    temp_dir = "/tmp";
+  }
+  _name = std::string(temp_dir) + "/mzndirXXXXXX";
   char* tmpfile = strndup(_name.c_str(), _name.size());
 
   if (mkdtemp(tmpfile) == nullptr) {
