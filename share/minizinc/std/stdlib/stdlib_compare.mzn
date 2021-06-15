@@ -163,22 +163,120 @@ function bool: '!='(int: x, float: y) =
 function bool: '!='(float: x, int: y) =
   if ceil(x)=floor(x) then y != ceil(x) else true endif;
 
+include "lex_less.mzn";
+include "lex_lesseq.mzn";
+
+test lex_less(array[int] of $T: x,array[int] of $T: y) =
+  if length(x)=1 /\ length(y)=1 then x[min(index_set(x))] < y[min(index_set(y))]
+  elseif length(x)=0 then length(y)>0
+  elseif length(y)=0 then false
+  else let { int: lx = min(index_set(x)),
+             int: ux = max(index_set(x)),
+             int: ly = min(index_set(y)),
+             int: uy = max(index_set(y)),
+             int: size = min(ux - lx, uy - ly),
+             int: first_not_equal = arg_max(i in 0..size)(x[lx+i] != y[ly+i]);
+  } in if x[lx+first_not_equal-1]=y[ly+first_not_equal-1] then
+    length(x) < length(y)
+    else x[lx+first_not_equal-1]<y[ly+first_not_equal-1] endif
+  endif;
+
+test lex_lesseq(array[int] of $T: x,array[int] of $T: y) =
+  if length(x)=1 /\ length(y)=1 then x[min(index_set(x))] <= y[min(index_set(y))]
+  elseif length(x)=0 then true
+  elseif length(y)=0 then false
+  else let { int: lx = min(index_set(x)),
+             int: ux = max(index_set(x)),
+             int: ly = min(index_set(y)),
+             int: uy = max(index_set(y)),
+             int: size = min(ux - lx, uy - ly),
+             int: first_not_equal = arg_max(i in 0..size)(x[lx+i] != y[ly+i]);
+  } in if x[lx+first_not_equal-1]=y[ly+first_not_equal-1] then
+    length(x) <= length(y)
+    else x[lx+first_not_equal-1]<y[ly+first_not_equal-1] endif
+  endif;
+
 
 /** @group stdlib.compare Return if array \a x is lexicographically smaller than array \a y */
-function     bool: '<'(array[$U] of     $T: x,array[$U] of     $T: y);
+function     bool: '<'(array[$U] of     $T: x,array[$U] of     $T: y) =
+  assert(index_sets_agree(x,y), "array index sets do not match",
+         lex_less(array1d(x),array1d(y)));
 /** @group stdlib.compare Return if array \a x is lexicographically smaller than array \a y */
-function var bool: '<'(array[$U] of var $T: x,array[$U] of var $T: y);
+function var bool: '<'(array[$U] of var int: x,array[$U] of var int: y) = 
+  assert(index_sets_agree(x,y), "array index sets do not match",
+         lex_less(array1d(x),array1d(y)));
+/** @group stdlib.compare Return if array \a x is lexicographically smaller than array \a y */
+function var bool: '<'(array[$U] of var bool: x,array[$U] of var bool: y) = 
+  assert(index_sets_agree(x,y), "array index sets do not match",
+         lex_less(array1d(x),array1d(y)));
+/** @group stdlib.compare Return if array \a x is lexicographically smaller than array \a y */
+function var bool: '<'(array[$U] of var float: x,array[$U] of var float: y) = 
+  assert(index_sets_agree(x,y), "array index sets do not match",
+         lex_less(array1d(x),array1d(y)));
+/** @group stdlib.compare Return if array \a x is lexicographically smaller than array \a y */
+function var bool: '<'(array[$U] of var set of int: x,array[$U] of var set of int: y) = 
+  assert(index_sets_agree(x,y), "array index sets do not match",
+         lex_less(array1d(x),array1d(y)));
 /** @group stdlib.compare Return if array \a x is lexicographically greater than array \a y */
-function     bool: '>'(array[$U] of     $T: x,array[$U] of     $T: y);
+function     bool: '>'(array[$U] of     $T: x,array[$U] of     $T: y) =
+  assert(index_sets_agree(x,y), "array index sets do not match",
+         lex_less(array1d(y),array1d(x)));
 /** @group stdlib.compare Return if array \a x is lexicographically greater than array \a y */
-function var bool: '>'(array[$U] of var $T: x,array[$U] of var $T: y);
+function var bool: '>'(array[$U] of var int: x,array[$U] of var int: y) =
+  assert(index_sets_agree(x,y), "array index sets do not match",
+         lex_less(array1d(y),array1d(x)));
+/** @group stdlib.compare Return if array \a x is lexicographically greater than array \a y */
+function var bool: '>'(array[$U] of var bool: x,array[$U] of var bool: y) =
+  assert(index_sets_agree(x,y), "array index sets do not match",
+         lex_less(array1d(y),array1d(x)));
+/** @group stdlib.compare Return if array \a x is lexicographically greater than array \a y */
+function var bool: '>'(array[$U] of var float: x,array[$U] of var float: y) =
+  assert(index_sets_agree(x,y), "array index sets do not match",
+         lex_less(array1d(y),array1d(x)));
+/** @group stdlib.compare Return if array \a x is lexicographically greater than array \a y */
+function var bool: '>'(array[$U] of var set of int: x,array[$U] of var set of int: y) =
+  assert(index_sets_agree(x,y), "array index sets do not match",
+         lex_less(array1d(y),array1d(x)));
 /** @group stdlib.compare Return if array \a x is lexicographically smaller than or equal to array \a y */
-function     bool: '<='(array[$U] of     $T: x,array[$U] of     $T: y);
+function     bool: '<='(array[$U] of     $T: x,array[$U] of     $T: y) =
+  assert(index_sets_agree(x,y), "array index sets do not match",
+         lex_lesseq(array1d(x),array1d(y)));
 /** @group stdlib.compare Return if array \a x is lexicographically smaller than or equal to array \a y */
-function var bool: '<='(array[$U] of var $T: x,array[$U] of var $T: y);
+function var bool: '<='(array[$U] of var int: x,array[$U] of var int: y) =
+  assert(index_sets_agree(x,y), "array index sets do not match",
+         lex_lesseq(array1d(x),array1d(y)));
+/** @group stdlib.compare Return if array \a x is lexicographically smaller than or equal to array \a y */
+function var bool: '<='(array[$U] of var bool: x,array[$U] of var bool: y) =
+  assert(index_sets_agree(x,y), "array index sets do not match",
+         lex_lesseq(array1d(x),array1d(y)));
+/** @group stdlib.compare Return if array \a x is lexicographically smaller than or equal to array \a y */
+function var bool: '<='(array[$U] of var float: x,array[$U] of var float: y) =
+  assert(index_sets_agree(x,y), "array index sets do not match",
+         lex_lesseq(array1d(x),array1d(y)));
+/** @group stdlib.compare Return if array \a x is lexicographically smaller than or equal to array \a y */
+function var bool: '<='(array[$U] of var set of int: x,array[$U] of var set of int: y) =
+  assert(index_sets_agree(x,y), "array index sets do not match",
+         lex_lesseq(array1d(x),array1d(y)));
 /** @group stdlib.compare Return if array \a x is lexicographically greater than or equal to array \a y */
-function     bool: '>='(array[$U] of     $T: x,array[$U] of     $T: y);
-function var bool: '>='(array[$U] of var $T: x,array[$U] of var $T: y);
+function     bool: '>='(array[$U] of     $T: x,array[$U] of     $T: y) =
+  assert(index_sets_agree(x,y), "array index sets do not match",
+         lex_lesseq(array1d(y),array1d(x)));
+/** @group stdlib.compare Return if array \a x is lexicographically greater than or equal to array \a y */
+function var bool: '>='(array[$U] of var int: x,array[$U] of var int: y) =
+  assert(index_sets_agree(x,y), "array index sets do not match",
+         lex_lesseq(array1d(y),array1d(x)));
+/** @group stdlib.compare Return if array \a x is lexicographically greater than or equal to array \a y */
+function var bool: '>='(array[$U] of var bool: x,array[$U] of var bool: y) =
+  assert(index_sets_agree(x,y), "array index sets do not match",
+         lex_lesseq(array1d(y),array1d(x)));
+/** @group stdlib.compare Return if array \a x is lexicographically greater than or equal to array \a y */
+function var bool: '>='(array[$U] of var float: x,array[$U] of var float: y) =
+  assert(index_sets_agree(x,y), "array index sets do not match",
+         lex_lesseq(array1d(y),array1d(x)));
+/** @group stdlib.compare Return if array \a x is lexicographically greater than or equal to array \a y */
+function var bool: '>='(array[$U] of var set of int: x,array[$U] of var set of int: y) =
+  assert(index_sets_agree(x,y), "array index sets do not match",
+         lex_lesseq(array1d(y),array1d(x)));
 
 /** @group stdlib.compare Return if array \a x is equal to array \a y */
 function     bool: '='(array[$T] of     int: x,array[$T] of     int: y) =
