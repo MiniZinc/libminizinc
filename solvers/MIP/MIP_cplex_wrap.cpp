@@ -604,11 +604,10 @@ void MIPCplexWrapper::wrapAssert(bool cond, const string& msg, bool fTerm) {
     strcpy(_cplexBuffer, "[NO ERROR STRING GIVEN]");
     dll_CPXgeterrorstring(_env, _status, _cplexBuffer);
     string msgAll = ("  MIPCplexWrapper runtime error:  " + msg + "  " + _cplexBuffer);
-    cerr << msgAll << endl;
     if (fTerm) {
-      cerr << "TERMINATING." << endl;
-      throw runtime_error(msgAll);
+      throw MiniZinc::Error(msgAll);
     }
+    cerr << msgAll << endl;
   }
 }
 
@@ -675,7 +674,7 @@ void MIPCplexWrapper::doAddVars(size_t n, double* obj, double* lb, double* ub,
         ctype[i] = CPX_BINARY;
         break;
       default:
-        throw runtime_error("  MIPWrapper: unknown variable type");
+        throw MiniZinc::InternalError("  MIPWrapper: unknown variable type");
     }
   }
   _status = dll_CPXnewcols(_env, _lp, n, obj, lb, ub, &ctype[0], &pcNames[0]);
@@ -691,7 +690,7 @@ static char get_cplex_constr_cense(MIPWrapper::LinConType sense) {
     case MIPWrapper::GQ:
       return 'G';
     default:
-      throw runtime_error("  MIPCplexWrapper: unknown constraint type");
+      throw MiniZinc::InternalError("  MIPCplexWrapper: unknown constraint type");
   }
 }
 
@@ -1008,7 +1007,7 @@ static int CPXPUBLIC myusercutcallback(CPXCENVptr env, void* cbdata, int wherefr
     //  cerr << "\n   N CUTS:  " << nCuts << endl;
     for (auto& cd : cutInput) {
       if ((cd.mask & (MIPWrapper::MaskConsType_Usercut | MIPWrapper::MaskConsType_Lazy)) == 0) {
-        throw runtime_error("Cut callback: should be user/lazy");
+        throw MiniZinc::InternalError("Cut callback: should be user/lazy");
       }
       /* Use a cut violation tolerance of 0.01 */
       if (true) {  // NOLINT: cutvio > 0.01 ) {

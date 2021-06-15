@@ -166,7 +166,7 @@ public:
 protected:
   //     OsiSolverInterface& getOsiSolver() { return osi; }
 
-  void wrapAssert(bool cond, const std::string& msg, bool fTerm = true);
+  void wrapAssert(bool cond, const std::string& msg);
 
   /// Need to consider the 100 status codes in OSICBC and change with every version? TODO
   Status convertStatus(CbcModel* pModel);

@@ -216,16 +216,10 @@ std::vector<MiniZinc::SolverConfig::ExtraFlag> MIPosicbcWrapper::getExtraFlags(
   return res;
 }
 
-void MIPosicbcWrapper::wrapAssert(bool cond, const string& msg, bool fTerm) {
+void MIPosicbcWrapper::wrapAssert(bool cond, const string& msg) {
   if (!cond) {
-    //       strcpy(_osicbcBuffer, "[NO ERROR STRING GIVEN]");
-    //       CBCgeterrorstring (env, status, _osicbcBuffer);
     string msgAll = ("  MIPosicbcWrapper runtime error:  " + msg + "  " + _osicbcBuffer);
-    cerr << msgAll << endl;
-    if (fTerm) {
-      cerr << "TERMINATING." << endl;
-      throw runtime_error(msgAll);
-    }
+    throw MiniZinc::Error(msgAll);
   }
 }
 
@@ -256,7 +250,7 @@ void MIPosicbcWrapper::addRow(int nnz, int* rmatind, double* rmatval, MIPWrapper
       rub = _osi.getInfinity();
       break;
     default:
-      throw runtime_error("  MIPWrapper: unknown constraint type");
+      throw MiniZinc::InternalError("  MIPWrapper: unknown constraint type");
   }
   // ignoring mask for now.  TODO
   // 1-by-1 too slow:
@@ -643,7 +637,6 @@ MIPosicbcWrapper::Status MIPosicbcWrapper::convertStatus(CbcModel* pModel) {
   if (pModel->isProvenOptimal()) {
     s = Status::OPT;
     output.statusName = "Optimal";
-    //        wrapAssert(_osi., "Optimality reported but pool empty?", false);
   } else if (pModel->isProvenInfeasible()) {
     s = Status::UNSAT;
     output.statusName = "Infeasible";
@@ -671,7 +664,6 @@ MIPosicbcWrapper::Status MIPosicbcWrapper::convertStatus() {
   if (_osi.isProvenOptimal()) {
     s = Status::OPT;
     output.statusName = "Optimal";
-    //        wrapAssert(_osi., "Optimality reported but pool empty?", false);
   } else if (_osi.isProvenPrimalInfeasible()) {
     s = Status::UNSAT;
     output.statusName = "Infeasible";

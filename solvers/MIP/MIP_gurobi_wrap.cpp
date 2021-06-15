@@ -242,11 +242,10 @@ void MIPGurobiWrapper::wrapAssert(bool cond, const string& msg, bool fTerm) {
     }
     string msgAll =
         ("  MIPGurobiWrapper runtime error:  " + _gurobiBuffer + "\nMessage from caller: " + msg);
-    cerr << msgAll << "\nGurobi error code: " << _error << endl;
     if (fTerm) {
-      cerr << "TERMINATING." << endl;
-      throw runtime_error(msgAll);
+      throw MiniZinc::Error(msgAll);
     }
+    cerr << msgAll << "\nGurobi error code: " << _error << endl;
   }
 }
 
@@ -534,7 +533,7 @@ void MIPGurobiWrapper::doAddVars(size_t n, double* obj, double* lb, double* ub,
         ctype[i] = GRB_BINARY;
         break;
       default:
-        throw runtime_error("  MIPWrapper: unknown variable type");
+        throw MiniZinc::InternalError("  MIPWrapper: unknown variable type");
     }
   }
   _error = dll_GRBaddvars(_model, static_cast<int>(n), 0, nullptr, nullptr, nullptr, obj, lb, ub,
@@ -553,7 +552,7 @@ static char get_grb_sense(MIPWrapper::LinConType s) {
     case MIPWrapper::GQ:
       return GRB_GREATER_EQUAL;
     default:
-      throw runtime_error("  MIPGurobiWrapper: unknown constraint sense");
+      throw MiniZinc::InternalError("  MIPGurobiWrapper: unknown constraint sense");
   }
 }
 
@@ -788,7 +787,7 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
       //         cerr << "\n   N CUTS:  " << nCuts << endl;
       for (auto& cd : cutInput) {
         if ((cd.mask & (MIPWrapper::MaskConsType_Usercut | MIPWrapper::MaskConsType_Lazy)) == 0) {
-          throw runtime_error("Cut callback: should be user/lazy");
+          throw MiniZinc::InternalError("Cut callback: should be user/lazy");
         }
         if ((cd.mask & MIPWrapper::MaskConsType_Usercut) != 0) {
           int _error =
