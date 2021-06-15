@@ -163,9 +163,6 @@ struct OverflowHandler::OverflowInfo {
   static void overflow(int sig, siginfo_t* info, void* context);
 };
 
-void OverflowHandler::setEnv(Env& env) { _ofi->env = &env.envi(); }
-void OverflowHandler::removeEnv() { _ofi->env = nullptr; }
-
 #if defined(__APPLE__)
 
 #define MZN_CAN_HANDLE_OVERFLOW
@@ -185,6 +182,20 @@ void OverflowHandler::removeEnv() { _ofi->env = nullptr; }
 #define MZN_CAN_HANDLE_OVERFLOW
 #define SEGV_ADDR reinterpret_cast<const char*>(((ucontext_t*)context)->uc_mcontext.gregs[REG_CR2])
 #define SP_ADDR (const char*)((ucontext_t*)context)->uc_mcontext.gregs[REG_RSP]
+#define SIGFLAGS SA_SIGINFO
+
+#elif defined(__aarch64__) && defined(__linux__)
+
+#define MZN_CAN_HANDLE_OVERFLOW
+#define SEGV_ADDR reinterpret_cast<const char*>(((ucontext_t*)context)->uc_mcontext.fault_address)
+#define SP_ADDR (const char*)((ucontext_t*)context)->uc_mcontext.sp
+#define SIGFLAGS SA_SIGINFO
+
+#elif defined(__arm__) && defined(__linux__)
+
+#define MZN_CAN_HANDLE_OVERFLOW
+#define SEGV_ADDR reinterpret_cast<const char*>(((ucontext_t*)context)->uc_mcontext.fault_address)
+#define SP_ADDR (const char*)((ucontext_t*)context)->uc_mcontext.arm_sp
 #define SIGFLAGS SA_SIGINFO
 
 #else
@@ -239,10 +250,15 @@ void OverflowHandler::install(const char** argv) {
   std::exit(1);
 }
 
+void OverflowHandler::setEnv(Env& env) { _ofi->env = &env.envi(); }
+void OverflowHandler::removeEnv() { _ofi->env = nullptr; }
+
 #else
 
 void OverflowHandler::OverflowInfo::overflow(int sig, siginfo_t* info, void* context) {}
 void OverflowHandler::install(const char** argv) {}
+void OverflowHandler::setEnv(Env& env) {}
+void OverflowHandler::removeEnv() {}
 
 #endif
 #endif
