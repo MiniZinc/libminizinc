@@ -403,11 +403,14 @@ TmpFile::TmpFile(const std::string& ext) {
   _name += ext;
 #else
   _tmpfileDesc = -1;
-  char* temp_dir = getenv("TMPDIR");
-  if (temp_dir == nullptr || *temp_dir == '\0') {
+  char* temp_dir_p = getenv("TMPDIR");
+  std::string temp_dir;
+  if (temp_dir_p == nullptr || *temp_dir_p == '\0') {
     temp_dir = "/tmp";
+  } else {
+    temp_dir = temp_dir_p;
   }
-  _name = std::string(temp_dir) + "/mznfileXXXXXX" + ext;
+  _name = temp_dir + "/mznfileXXXXXX" + ext;
   char* tmpfile = strndup(_name.c_str(), _name.size());
   _tmpfileDesc = mkstemps(tmpfile, ext.size());
   if (_tmpfileDesc == -1) {
@@ -445,11 +448,14 @@ TmpDir::TmpDir() {
   DeleteFileW(szTempFileName);
   CreateDirectoryW(szTempFileName, nullptr);
 #else
-  char* temp_dir = getenv("TMPDIR");
-  if (temp_dir == nullptr || *temp_dir == '\0') {
+  char* temp_dir_p = getenv("TMPDIR");
+  std::string temp_dir;
+  if (temp_dir_p == nullptr || *temp_dir_p == '\0') {
     temp_dir = "/tmp";
+  } else {
+    temp_dir = temp_dir_p;
   }
-  _name = std::string(temp_dir) + "/mzndirXXXXXX";
+  _name = temp_dir + "/mzndirXXXXXX";
   char* tmpfile = strndup(_name.c_str(), _name.size());
 
   if (mkdtemp(tmpfile) == nullptr) {
