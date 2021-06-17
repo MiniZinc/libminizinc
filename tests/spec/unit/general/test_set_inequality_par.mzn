@@ -10,7 +10,7 @@ int: n = length(x);
 
 % Test every pair to ensure correct relationship
 constraint forall (i, j in 1..n) (
-  (i > j -> (x[i] > x[j]) /\ x[i] >= x[j]) /\
-  (i < j -> (x[i] < x[j]) /\ x[i] <= x[j]) /\
-  (i = j -> (x[i] <= x[j] /\ x[i] >= x[j]))
+     (i > j -> x[i] >  x[j] /\ x[i] >= x[j] /\ x[i] != x[j] /\ not (x[i] < x[j]))
+  /\ (i < j -> x[i] <  x[j] /\ x[i] <= x[j] /\ x[i] != x[j] /\ not (x[i] > x[j]))
+  /\ (i = j -> x[i] <= x[j] /\ x[i] >= x[j] /\ x[i]  = x[j] /\ not (x[i] < x[j]) /\ not (x[i] > x[j]))
 );

@@ -782,7 +782,8 @@ inline bool less(I& i, J& j) {
       return false;
     }
     if (i.max() < j.max()) {
-      return true;
+      ++i;
+      return !i();
     }
     if (i.max() > j.max()) {
       ++j;
@@ -791,7 +792,7 @@ inline bool less(I& i, J& j) {
     ++i;
     ++j;
   }
-  return static_cast<bool>(j());
+  return j();
 }
 
 template <class I, class J>
@@ -807,7 +808,8 @@ inline bool less_eq(I& i, J& j) {
       return false;
     }
     if (i.max() < j.max()) {
-      return true;
+      ++i;
+      return !i();
     }
     if (i.max() > j.max()) {
       ++j;
