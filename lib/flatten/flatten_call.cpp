@@ -387,8 +387,9 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
               cid == env.constants.ids.mzn_symmetry_breaking_constraint ||
               cid == env.constants.ids.mzn_redundant_constraint ||
               cid == env.constants.ids.mzn_default || cid == env.constants.ids.mzn_deprecate ||
-              cid == "output_to_section")) {
-    if ((cid == env.constants.ids.assert || cid == "output_to_section") && c->argCount() == 2) {
+              cid == env.constants.ids.output_to_section)) {
+    if ((cid == env.constants.ids.assert || cid == env.constants.ids.output_to_section) &&
+        c->argCount() == 2) {
       (void)decl->builtins.b(env, c);
       ret = flat_exp(env, ctx, env.constants.literalTrue, r, b);
     } else {
@@ -503,13 +504,15 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
       }
 
     } else {
-      bool mixContext =
-          (cid != env.constants.ids.forall && cid != env.constants.ids.exists &&
-           (cid != env.constants.ids.bool2int || c->type().dim() > 0) &&
-           cid != env.constants.ids.sum && cid != "assert" && cid != env.constants.varRedef->id() &&
-           cid != "mzn_reverse_map_var" && cid != "arrayXd" && cid != "array2d" &&
-           cid != "array3d" && cid != "array4d" && cid != "array5d" && cid != "array6d");
-      if (cid == "mzn_reverse_map_var") {
+      bool mixContext = (cid != env.constants.ids.forall && cid != env.constants.ids.exists &&
+                         (cid != env.constants.ids.bool2int || c->type().dim() > 0) &&
+                         cid != env.constants.ids.sum &&
+                         cid != env.constants.ids.assert&& cid != env.constants.varRedef->id() &&
+                         cid != env.constants.ids.mzn_reverse_map_var &&
+                         cid != env.constants.ids.arrayXd && cid != env.constants.ids.array2d &&
+                         cid != env.constants.ids.array3d && cid != env.constants.ids.array4d &&
+                         cid != env.constants.ids.array5d && cid != env.constants.ids.array6d);
+      if (cid == env.constants.ids.mzn_reverse_map_var) {
         env.inReverseMapVar = true;
       }
       if (cid == env.constants.ids.clause && c->arg(0)->isa<ArrayLit>() &&
@@ -1303,7 +1306,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
       }
     }
   }
-  if (cid == "mzn_reverse_map_var") {
+  if (cid == env.constants.ids.mzn_reverse_map_var) {
     env.inReverseMapVar = false;
   }
   return ret;

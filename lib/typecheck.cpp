@@ -29,7 +29,7 @@ void Scopes::add(EnvI& env, VarDecl* vd) {
   if (!_s.back().toplevel() && vd->ti()->isEnum() && (vd->e() != nullptr)) {
     throw TypeError(env, vd->loc(), "enums are only allowed at top level");
   }
-  if (vd->id()->idn() == -1 && vd->id()->v() == "") {
+  if (vd->id()->idn() == -1 && vd->id()->v().empty()) {
     return;
   }
   // If the current scope is ST_INNER, check if vd shadows another
@@ -199,8 +199,8 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
   std::vector<Expression*> parts;
   if (vd->e()->isa<SetLit>()) {
     parts.push_back(vd->e());
-  } else if ((al != nullptr) || ((c != nullptr) && c->id() == "anon_enum" && c->argCount() == 1 &&
-                                 c->arg(0)->isa<ArrayLit>())) {
+  } else if ((al != nullptr) || ((c != nullptr) && c->id() == env.constants.ids.anon_enum &&
+                                 c->argCount() == 1 && c->arg(0)->isa<ArrayLit>())) {
     if (c != nullptr) {
       al = c->arg(0)->cast<ArrayLit>();
     }
@@ -216,7 +216,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     }
     parts.push_back(new SetLit(vd->e()->loc(), enumIds));
   } else if (c != nullptr) {
-    if (c->id() == "enumFromConstructors") {
+    if (c->id() == env.constants.ids.enumFromConstructors) {
       if (c->argCount() != 1 || !c->arg(0)->isa<ArrayLit>()) {
         throw TypeError(env, c->loc(),
                         "enumFromConstructors used with incorrect argument type (only supports "
@@ -338,7 +338,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
                                ti_fi, fi_params, ite);
       enumItems->addItem(fi);
     } else if (Call* c = parts[p]->dynamicCast<Call>()) {
-      if (c->id() == "anon_enum") {
+      if (c->id() == env.constants.ids.anon_enum) {
         Type tx = Type::parint();
         tx.ot(Type::OT_OPTIONAL);
         auto* ti_aa = new TypeInst(Location().introduce(), tx);
@@ -355,8 +355,8 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
 
         std::vector<Expression*> deopt_args(1);
         deopt_args[0] = vd_aa->id();
-        Call* deopt = new Call(Location().introduce(), "deopt", deopt_args);
-        Call* if_absent = new Call(Location().introduce(), "absent", deopt_args);
+        Call* deopt = new Call(Location().introduce(), env.constants.ids.deopt, deopt_args);
+        Call* if_absent = new Call(Location().introduce(), env.constants.ids.absent, deopt_args);
         auto* sl_absent_dzn = new StringLit(Location().introduce(), "<>");
         ITE* sl_absent = new ITE(
             Location().introduce(),
@@ -2198,7 +2198,8 @@ public:
               break;
           }
         }
-        if ((call != nullptr) && (call->id() == "count" || call->id() == "sum") &&
+        if ((call != nullptr) &&
+            (call->id() == _env.constants.ids.count || call->id() == _env.constants.ids.sum) &&
             call->type().isvar()) {
           if (call->argCount() == 1 && call->arg(0)->isa<Comprehension>()) {
             auto* comp = call->arg(0)->cast<Comprehension>();
@@ -2333,16 +2334,17 @@ public:
     }
     FunctionI* fi = _model->matchFn(_env, call, true, true);
 
-    if (fi != nullptr && fi->id() == "symmetry_breaking_constraint" && fi->paramCount() == 1 &&
-        fi->param(0)->type().isbool()) {
+    if (fi != nullptr && fi->id() == _env.constants.ids.symmetry_breaking_constraint &&
+        fi->paramCount() == 1 && fi->param(0)->type().isbool()) {
       GCLock lock;
-      call->id(ASTString("mzn_symmetry_breaking_constraint"));
+      call->id(_env.constants.ids.mzn_symmetry_breaking_constraint);
       fi = _model->matchFn(_env, call, true, true);
     } else if (fi != nullptr &&
-               (fi->id() == "redundant_constraint" || fi->id() == "implied_constraint") &&
+               (fi->id() == _env.constants.ids.redundant_constraint ||
+                fi->id() == _env.constants.ids.implied_constraint) &&
                fi->paramCount() == 1 && fi->param(0)->type().isbool()) {
       GCLock lock;
-      call->id(ASTString("mzn_redundant_constraint"));
+      call->id(_env.constants.ids.mzn_redundant_constraint);
       fi = _model->matchFn(_env, call, true, true);
     }
 
@@ -2401,8 +2403,8 @@ public:
       cv = cv || args[i]->type().cv();
     }
     // Replace par enums with their string versions
-    if (call->id() == "format" || call->id() == "show" || call->id() == "showDzn" ||
-        call->id() == "showJSON") {
+    if (call->id() == _env.constants.ids.format || call->id() == _env.constants.ids.show ||
+        call->id() == _env.constants.ids.showDzn || call->id() == _env.constants.ids.showJSON) {
       if (call->arg(call->argCount() - 1)->type().isPar()) {
         unsigned int enumId = call->arg(call->argCount() - 1)->type().enumId();
         if (enumId != 0U && call->arg(call->argCount() - 1)->type().dim() != 0) {
@@ -2425,12 +2427,12 @@ public:
               array1d->type(array1dt);
               args[0] = array1d;
             }
-            args[1] = _env.constants.boollit(call->id() == "showDzn");
-            args[2] = _env.constants.boollit(call->id() == "showJSON");
+            args[1] = _env.constants.boollit(call->id() == _env.constants.ids.showDzn);
+            args[2] = _env.constants.boollit(call->id() == _env.constants.ids.showJSON);
             ASTString enumName(create_enum_to_string_name(ti_id, "_toString_"));
             call->id(enumName);
             call->args(args);
-            if (call->id() == "showDzn") {
+            if (call->id() == _env.constants.ids.showDzn) {
               call->id(_env.constants.ids.show);
             }
             fi = _model->matchFn(_env, call, false, true);
@@ -2527,7 +2529,7 @@ public:
             vdt.enumId(_env.registerArrayEnum(nEnumIds));
           }
         } else if (vd->ti()->isEnum() && vd->e()->isa<Call>()) {
-          if (vd->e()->cast<Call>()->id() == "anon_enum") {
+          if (vd->e()->cast<Call>()->id() == _env.constants.ids.anon_enum) {
             vet.enumId(vdt.enumId());
           }
         }
@@ -3139,7 +3141,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
   // that has a body that can be made par
   std::unordered_map<FunctionI*, std::pair<bool, std::vector<FunctionI*>>> fnsToMakePar;
   for (auto& f : m->functions()) {
-    if (f.id() == "mzn_reverse_map_var") {
+    if (f.id() == env.envi().constants.ids.mzn_reverse_map_var) {
       continue;
     }
     if (f.e() != nullptr && f.ti()->type().bt() != Type::BT_ANN) {

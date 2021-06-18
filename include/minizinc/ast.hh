@@ -213,7 +213,7 @@ std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& o
   std::basic_ostringstream<Char, Traits> s;
   s.copyfmt(os);
   s.width(0);
-  if (loc.filename() == "") {
+  if (loc.filename().empty()) {
     s << "unknown file";
   } else {
     s << loc.filename();
@@ -1808,21 +1808,46 @@ public:
     ASTString int2float;
     ASTString bool2float;
     ASTString assert;
+    ASTString deopt;
+    ASTString absent;
+    ASTString occurs;
+    ASTString card;
+    ASTString abs;
+
     ASTString symmetry_breaking_constraint;      // NOLINT(readability-identifier-naming)
     ASTString redundant_constraint;              // NOLINT(readability-identifier-naming)
+    ASTString implied_constraint;                // NOLINT(readability-identifier-naming)
     ASTString mzn_deprecate;                     // NOLINT(readability-identifier-naming)
     ASTString mzn_symmetry_breaking_constraint;  // NOLINT(readability-identifier-naming)
     ASTString mzn_redundant_constraint;          // NOLINT(readability-identifier-naming)
+    ASTString mzn_reverse_map_var;               // NOLINT(readability-identifier-naming)
     ASTString mzn_default;                       // NOLINT(readability-identifier-naming)
+    ASTString mzn_in_root_context;               // NOLINT(readability-identifier-naming)
+    ASTString mzn_output_section;                // NOLINT(readability-identifier-naming)
+    ASTString output_to_section;                 // NOLINT(readability-identifier-naming)
     ASTString trace;
+
+    ASTString array2d;
+    ASTString array3d;
+    ASTString array4d;
+    ASTString array5d;
+    ASTString array6d;
+    ASTString arrayXd;
 
     ASTString sum;
     ASTString lin_exp;  // NOLINT(readability-identifier-naming)
+    ASTString count;
     ASTString element;
+    ASTString anon_enum;  // NOLINT(readability-identifier-naming)
+    ASTString enumFromConstructors;
 
     ASTString show;
+    ASTString format;
+    ASTString showDzn;
+    ASTString showJSON;
     ASTString fix;
     ASTString output;
+    ASTString outputJSON;
 
     struct {
       ASTString lin_eq;  // NOLINT(readability-identifier-naming)
@@ -1909,6 +1934,9 @@ public:
     ASTString set_in;            // NOLINT(readability-identifier-naming)
     ASTString set_subset;        // NOLINT(readability-identifier-naming)
     ASTString set_card;          // NOLINT(readability-identifier-naming)
+    ASTString set_intersect;     // NOLINT(readability-identifier-naming)
+    ASTString set_union;         // NOLINT(readability-identifier-naming)
+    ASTString set_diff;          // NOLINT(readability-identifier-naming)
     ASTString pow;
 
     ASTString mzn_set_in_internal;  // NOLINT(readability-identifier-naming)

@@ -2228,7 +2228,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
             } else if (e->type().isfloat()) {
               cid = env.constants.ids.float_.eq;
             }
-            if (cid != "" && env.hasReverseMapper(vd->id())) {
+            if (!cid.empty() && env.hasReverseMapper(vd->id())) {
               GCLock lock;
               std::vector<Expression*> args(2);
               args[0] = vd->id();
@@ -2862,7 +2862,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
     }
     case Expression::E_CALL: {
       Call* c = e->cast<Call>();
-      if (c->id() == "mzn_in_root_context") {
+      if (c->id() == env.constants.ids.mzn_in_root_context) {
         return env.constants.boollit(ctx.b == C_ROOT);
       }
       if (ctx.b == C_ROOT && (c->decl()->e() != nullptr) && c->decl()->e()->isa<BoolLit>()) {
@@ -3220,7 +3220,7 @@ void flatten(Env& e, FlatteningOptions opt) {
                 for (const auto& c : it->second) {
                   if (auto* constrI = c->dynamicCast<ConstraintI>()) {
                     if (auto* call = constrI->e()->dynamicCast<Call>()) {
-                      if (call->id() == "mzn_reverse_map_var") {
+                      if (call->id() == env.constants.ids.mzn_reverse_map_var) {
                         continue;  // all good
                       }
                     }
@@ -4033,7 +4033,7 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd,
             args[2] = FloatLit::a(-d);
           }
         } else {
-          if (cc->id() == "card") {
+          if (cc->id() == env.constants.ids.card) {
             // card is 'set_card' in old FlatZinc
             cid = env.constants.ids.set_card;
           } else {

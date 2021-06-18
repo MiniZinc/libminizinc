@@ -213,7 +213,7 @@ void make_par(EnvI& env, Expression* e) {
     EnvI& env;
     OutputJSON(EnvI& env0) : env(env0) {}
     void vCall(Call* c) {
-      if (c->id() == "outputJSON") {
+      if (c->id() == env.constants.ids.outputJSON) {
         bool outputObjective = (c->argCount() == 1 && eval_bool(env, c->arg(0)));
         c->id(ASTString("array1d"));
         Expression* json =
@@ -244,8 +244,8 @@ void make_par(EnvI& env, Expression* e) {
     EnvI& env;
     Decls(EnvI& env0) : env(env0) {}
     void vCall(Call* c) {
-      if (c->id() == "format" || c->id() == "show" || c->id() == "showDzn" ||
-          c->id() == "showJSON") {
+      if (c->id() == env.constants.ids.format || c->id() == env.constants.ids.show ||
+          c->id() == env.constants.ids.showDzn || c->id() == env.constants.ids.showJSON) {
         unsigned int enumId = c->arg(c->argCount() - 1)->type().enumId();
         if (enumId != 0U && c->arg(c->argCount() - 1)->type().dim() != 0) {
           const std::vector<unsigned int>& enumIds = env.getArrayEnum(enumId);
@@ -256,7 +256,7 @@ void make_par(EnvI& env, Expression* e) {
           Expression* obj = c->arg(c->argCount() - 1);
           Id* ti_id = env.getEnum(enumId)->e()->id();
           std::string enumName = create_enum_to_string_name(ti_id, "_toString_");
-          bool is_json = c->id() == "showJSON";
+          bool is_json = c->id() == env.constants.ids.showJSON;
           const int dimensions = obj->type().dim();
           if (is_json && dimensions > 1) {
             // Create generators for dimensions selection
@@ -331,13 +331,15 @@ void make_par(EnvI& env, Expression* e) {
             c->args(args);
             c->id(ASTString("concat"));
           } else {
-            std::vector<Expression*> args = {obj, env.constants.boollit(c->id() == "showDzn"),
-                                             env.constants.boollit(is_json)};
+            std::vector<Expression*> args = {
+                obj, env.constants.boollit(c->id() == env.constants.ids.showDzn),
+                env.constants.boollit(is_json)};
             c->args(args);
             c->id(ASTString(enumName));
           }
         }
-        if (c->id() == "showDzn" || (c->id() == "showJSON" && enumId > 0)) {
+        if (c->id() == env.constants.ids.showDzn ||
+            (c->id() == env.constants.ids.showJSON && enumId > 0)) {
           c->id(env.constants.ids.show);
         }
       }

@@ -289,7 +289,7 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
       std::sort(i_id->second.begin(), i_id->second.end());
     }
   }
-  if (fi->id() == "mzn_reverse_map_var") {
+  if (fi->id() == env.constants.ids.mzn_reverse_map_var) {
     if (fi->paramCount() != 1 || fi->ti()->type() != Type::varbool()) {
       throw TypeError(env, fi->loc(),
                       "functions called `mzn_reverse_map_var` must have a single argument and "

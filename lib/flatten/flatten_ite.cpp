@@ -226,7 +226,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     bool cond = true;
     EE e_if;
     if (ite->ifExpr(i)->isa<Call>() &&
-        ite->ifExpr(i)->cast<Call>()->id() == "mzn_in_root_context") {
+        ite->ifExpr(i)->cast<Call>()->id() == env.constants.ids.mzn_in_root_context) {
       e_if = EE(env.constants.boollit(ctx.b == C_ROOT), env.constants.literalTrue);
     } else {
       Ctx cmix_not_negated;

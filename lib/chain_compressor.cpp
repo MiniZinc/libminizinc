@@ -70,7 +70,7 @@ bool ImpCompressor::trackItem(Item* i) {
           }
           return true;
         }
-      } else if (c->id() == "mzn_reverse_map_var") {
+      } else if (c->id() == _env.constants.ids.mzn_reverse_map_var) {
         auto* control = follow_id_to_decl(c->arg(0))->dynamicCast<VarDecl>();
         if (control != nullptr) {
           assert(control->type().isvarbool());
@@ -206,7 +206,7 @@ bool ImpCompressor::compressItem(Item* i, VarDecl* newLHS) {
       return true;
       // Given (x -> y) /\ (y -> pred(...)), produce x -> pred(...)
     }
-    if (c->id() == "mzn_reverse_map_var") {
+    if (c->id() == _env.constants.ids.mzn_reverse_map_var) {
       return true;
     }
     if (c->id().endsWith("_imp")) {

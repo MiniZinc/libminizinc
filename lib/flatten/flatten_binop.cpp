@@ -1075,7 +1075,7 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
     GC::lock();
 
     bool idIsOp = false;
-    if (callid == "") {
+    if (callid.empty()) {
       assert(args.size() == 2);
       if (!isBuiltin) {
         callid = op_to_id(bot);

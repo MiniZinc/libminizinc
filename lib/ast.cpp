@@ -1517,20 +1517,46 @@ Constants::Constants() {
   ids.int2float = addString("int2float");
   ids.bool2float = addString("bool2float");
   ids.assert = addString("assert");
+
+  ids.deopt = addString("deopt");
+  ids.absent = addString("absent");
+  ids.occurs = addString("occurs");
+  ids.card = addString("card");
+  ids.abs = addString("abs");
+
   ids.symmetry_breaking_constraint = addString("symmetry_breaking_constraint");
   ids.redundant_constraint = addString("redundant_constraint");
+  ids.implied_constraint = addString("implied_constraint");
   ids.mzn_deprecate = addString("mzn_deprecate");
   ids.mzn_symmetry_breaking_constraint = addString("mzn_symmetry_breaking_constraint");
   ids.mzn_redundant_constraint = addString("mzn_redundant_constraint");
+  ids.mzn_reverse_map_var = addString("mzn_reverse_map_var");
+  ids.mzn_in_root_context = addString("mzn_in_root_context");
+  ids.mzn_output_section = addString("mzn_output_section");
+  ids.output_to_section = addString("output_to_section");
   ids.mzn_default = addString("default");
   ids.trace = addString("trace");
 
+  ids.array2d = addString("array2d");
+  ids.array3d = addString("array3d");
+  ids.array4d = addString("array4d");
+  ids.array5d = addString("array5d");
+  ids.array6d = addString("array6d");
+  ids.arrayXd = addString("arrayXd");
+
   ids.sum = addString("sum");
   ids.lin_exp = addString("lin_exp");
+  ids.count = addString("count");
   ids.element = addString("element");
+  ids.anon_enum = addString("anon_enum");
+  ids.enumFromConstructors = addString("enumFromConstructors");
 
   ids.show = addString("show");
+  ids.format = addString("format");
+  ids.showDzn = addString("showDzn");
+  ids.showJSON = addString("showJSON");
   ids.output = addString("output");
+  ids.outputJSON = addString("outputJSON");
   ids.fix = addString("fix");
 
   ids.int_.lin_eq = addString("int_lin_eq");
@@ -1610,6 +1636,9 @@ Constants::Constants() {
   ids.set_in = addString("set_in");
   ids.set_subset = addString("set_subset");
   ids.set_card = addString("set_card");
+  ids.set_intersect = addString("set_intersect");
+  ids.set_union = addString("set_union");
+  ids.set_diff = addString("set_diff");
   ids.pow = addString("pow");
   ids.mzn_set_in_internal = addString("mzn_set_in_internal");
 

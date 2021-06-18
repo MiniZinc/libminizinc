@@ -1978,7 +1978,8 @@ Expression* eval_par(EnvI& env, Expression* e) {
               return eval_par(env, c->decl()->builtins.e(env, c));
             }
             if (c->decl()->e() == nullptr) {
-              if (c->id() == "deopt" && Expression::equal(c->arg(0), env.constants.absent)) {
+              if (c->id() == env.constants.ids.deopt &&
+                  Expression::equal(c->arg(0), env.constants.absent)) {
                 throw ResultUndefinedError(env, e->loc(), "deopt(<>) is undefined");
               }
               return c;
@@ -2391,7 +2392,7 @@ public:
         }
       }
       bounds.emplace_back(lb, ub);
-    } else if (c->id() == "card") {
+    } else if (c->id() == env.constants.ids.card) {
       if (IntSetVal* isv = compute_intset_bounds(env, c->arg(0))) {
         IntSetRanges isr(isv);
         bounds.emplace_back(0, Ranges::cardinality(isr));
@@ -2399,7 +2400,7 @@ public:
         valid = false;
         bounds.emplace_back(0, 0);
       }
-    } else if (c->id() == "int_times") {
+    } else if (c->id() == env.constants.ids.int_.times) {
       Bounds b1 = bounds.back();
       bounds.pop_back();
       Bounds b0 = bounds.back();
@@ -2419,7 +2420,7 @@ public:
       }
     } else if (c->id() == env.constants.ids.bool2int) {
       bounds.emplace_back(0, 1);
-    } else if (c->id() == "abs") {
+    } else if (c->id() == env.constants.ids.abs) {
       Bounds b0 = bounds.back();
       if (b0.first < 0) {
         bounds.pop_back();
@@ -2789,7 +2790,7 @@ public:
         }
       }
       bounds.emplace_back(lb, ub);
-    } else if (c->id() == "float_times") {
+    } else if (c->id() == env.constants.ids.float_.times) {
       BottomUpIterator<ComputeFloatBounds> cbi(*this);
       cbi.run(c->arg(0));
       cbi.run(c->arg(1));
@@ -2810,7 +2811,7 @@ public:
         FloatVal n = std::max(x0, std::max(x1, std::max(x2, x3)));
         bounds.emplace_back(m, n);
       }
-    } else if (c->id() == "int2float") {
+    } else if (c->id() == env.constants.ids.int2float) {
       ComputeIntBounds ib(env);
       BottomUpIterator<ComputeIntBounds> cbi(ib);
       cbi.run(c->arg(0));
@@ -2825,7 +2826,7 @@ public:
         bounds.emplace_back(static_cast<double>(result.first.toInt()),
                             static_cast<double>(result.second.toInt()));
       }
-    } else if (c->id() == "abs") {
+    } else if (c->id() == env.constants.ids.abs) {
       BottomUpIterator<ComputeFloatBounds> cbi(*this);
       cbi.run(c->arg(0));
       FBounds b0 = bounds.back();
@@ -3062,7 +3063,8 @@ public:
   }
   /// Visit call
   void vCall(Call* c) {
-    if (valid && (c->id() == "set_intersect" || c->id() == "set_union")) {
+    if (valid &&
+        (c->id() == env.constants.ids.set_intersect || c->id() == env.constants.ids.set_union)) {
       IntSetVal* b0 = bounds.back();
       bounds.pop_back();
       IntSetVal* b1 = bounds.back();
@@ -3071,7 +3073,7 @@ public:
       IntSetRanges b1r(b1);
       Ranges::Union<IntVal, IntSetRanges, IntSetRanges> u(b0r, b1r);
       bounds.push_back(IntSetVal::ai(u));
-    } else if (valid && c->id() == "set_diff") {
+    } else if (valid && c->id() == env.constants.ids.set_diff) {
       IntSetVal* b0 = bounds.back();
       bounds.pop_back();
       bounds.pop_back();  // don't need bounds of right hand side
