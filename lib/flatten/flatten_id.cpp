@@ -129,7 +129,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
       } else if (vd->e()->isa<Id>()) {
         rete = vd->e();
       }
-    } else if (vd->ti()->ranges().size() == 0 && (vd->ti()->domain() != nullptr) &&
+    } else if (vd->ti()->ranges().empty() && (vd->ti()->domain() != nullptr) &&
                vd->type().st() == Type::ST_PLAIN && vd->type().ot() == Type::OT_PRESENT) {
       if (vd->type().bt() == Type::BT_BOOL) {
         rete = vd->ti()->domain();
@@ -138,7 +138,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
                  vd->ti()->domain()->cast<SetLit>()->isv()->card() == 1) {
         rete = IntLit::a(vd->ti()->domain()->cast<SetLit>()->isv()->min());
       }
-    } else if (vd->ti()->ranges().size() > 0) {
+    } else if (!vd->ti()->ranges().empty()) {
       // create fresh variables and array literal
       std::vector<std::pair<int, int> > dims;
       IntVal asize = 1;
@@ -148,7 +148,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
           throw FlatteningError(env, ti->loc(), "array dimensions unknown");
         }
         IntSetVal* isv = eval_intset(env, ti->domain());
-        if (isv->size() == 0) {
+        if (isv->empty()) {
           dims.emplace_back(1, 0);
           asize = 0;
         } else {
@@ -196,7 +196,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
         if (it == env.cseMapEnd()) {
           Expression* vde = follow_id(vd->e());
           ArrayLit* vdea = vde != nullptr ? vde->dynamicCast<ArrayLit>() : nullptr;
-          if ((vdea != nullptr) && vdea->size() == 0) {
+          if ((vdea != nullptr) && vdea->empty()) {
             // Do not create names for empty arrays but return array literal directly
             rete = vdea;
           } else {
@@ -224,7 +224,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
           rete = vd->e();
         } else {
           auto* vda = vd->dynamicCast<ArrayLit>();
-          if ((vda != nullptr) && vda->size() == 0) {
+          if ((vda != nullptr) && vda->empty()) {
             // Do not create names for empty arrays but return array literal directly
             rete = vda;
           } else {

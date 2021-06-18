@@ -884,6 +884,8 @@ public:
   void flat(bool b) { _flag1 = b; }
   /// Return size of underlying array
   unsigned int size() const { return (_flag2 || _u.v->flag()) ? length() : _u.v->size(); }
+  /// Return whether array is empty
+  bool empty() const { return size() == 0; }
   /// Access element \a i
   Expression* operator[](unsigned int i) const;
   /// Set element \a i
@@ -1355,7 +1357,7 @@ public:
 
   /// Set ranges to \a ranges
   void setRanges(const std::vector<TypeInst*>& ranges);
-  bool isarray() const { return _ranges.size() > 0; }
+  bool isarray() const { return !_ranges.empty(); }
   bool hasTiVariable() const;
   /// Recompute hash value
   void rehash();

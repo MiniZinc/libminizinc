@@ -193,7 +193,7 @@ void unify(EnvI& env, std::vector<VarDecl*>& deletedVarDecls, Id* id0, Id* id1) 
           IntSetRanges isv1r(isv1);
           Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> inter(isv0r, isv1r);
           IntSetVal* nd = IntSetVal::ai(inter);
-          if (nd->size() == 0) {
+          if (nd->empty()) {
             env.fail();
           } else if (!nd->equal(isv1)) {
             id1->decl()->ti()->domain(new SetLit(Location(), nd));
@@ -220,7 +220,7 @@ void unify(EnvI& env, std::vector<VarDecl*>& deletedVarDecls, Id* id0, Id* id1) 
           FloatSetRanges nd_r(nd);
           FloatSetRanges isv1r_2(isv1);
 
-          if (nd->size() == 0) {
+          if (nd->empty()) {
             env.fail();
           } else if (!Ranges::equal(nd_r, isv1r_2)) {
             id1->decl()->ti()->domain(new SetLit(Location(), nd));

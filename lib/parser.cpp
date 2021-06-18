@@ -229,7 +229,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
       }
       s = get_file_contents(file);
 
-      if (m->filepath().size() == 0) {
+      if (m->filepath().empty()) {
         m->setFilepath(fullname);
       }
       isFzn = (fullname.compare(fullname.length() - 4, 4, ".fzn") == 0);

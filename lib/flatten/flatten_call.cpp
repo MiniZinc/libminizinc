@@ -1006,7 +1006,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
                   needToConstrain = true;
                 } else {
                   IntBounds ib = compute_int_bounds(env, args[i]());
-                  needToConstrain = !ib.valid || isv->size() == 0 || ib.l < isv->min(0) ||
+                  needToConstrain = !ib.valid || isv->empty() || ib.l < isv->min(0) ||
                                     ib.u > isv->max(isv->size() - 1);
                 }
               }
@@ -1046,7 +1046,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
                 needToConstrain = true;
               } else {
                 FloatBounds fb = compute_float_bounds(env, args[i]());
-                needToConstrain = !fb.valid || fsv->size() == 0 || fb.l < fsv->min(0) ||
+                needToConstrain = !fb.valid || fsv->empty() || fb.l < fsv->min(0) ||
                                   fb.u > fsv->max(fsv->size() - 1);
               }
 

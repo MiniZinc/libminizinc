@@ -145,18 +145,18 @@ public:
   ASTString filepath() const { return _filepath; }
   /// Set file name
   void setFilename(const std::string& f) {
-    assert(_filename.size() == 0);
+    assert(_filename.empty());
     _filename = ASTString(f);
   }
   /// Set file name
   void setFilename(const ASTString& f) { _filename = f; }
   /// Set file path
   void setFilepath(const std::string& f) {
-    assert(_filepath.size() == 0);
+    assert(_filepath.empty());
     _filepath = ASTString(f);
   }
   void setFilepath(const ASTString& f) {
-    assert(_filepath.size() == 0);
+    assert(_filepath.empty());
     _filepath = f;
   }
 
@@ -189,6 +189,8 @@ public:
   const Item* operator[](unsigned int i) const;
   /// Return number of items
   unsigned int size() const;
+  /// Return whether model is empty
+  bool empty() const;
 
   typedef std::vector<Item*>::iterator iterator;
   typedef std::vector<Item*>::const_iterator const_iterator;

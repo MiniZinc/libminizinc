@@ -673,7 +673,7 @@ private:
         //           ArrayLit* al = c->args()[1]->dynamicCast<ArrayLit>();
         auto* al = follow_id(c->arg(1))->cast<ArrayLit>();
         MZN_MIPD_assert_hard(al);
-        MZN_MIPD_assert_hard(al->size() >= 1);
+        MZN_MIPD_assert_hard(!al->empty());
         if (al->size() == 1) {  // 1-term scalar product in the rhs
           LinEq2Vars led;
           led.vd = {{vd, expr2VarDecl((*al)[0])}};

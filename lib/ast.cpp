@@ -317,18 +317,17 @@ void TIId::rehash() {
 void AnonVar::rehash() { initHash(); }
 
 unsigned int ArrayLit::dims() const {
-  return _flag2 ? ((_dims.size() - 2 * _u.al->dims()) / 2)
-                : (_dims.size() == 0 ? 1 : _dims.size() / 2);
+  return _flag2 ? ((_dims.size() - 2 * _u.al->dims()) / 2) : (_dims.empty() ? 1 : _dims.size() / 2);
 }
 int ArrayLit::min(unsigned int i) const {
-  if (_dims.size() == 0) {
+  if (_dims.empty()) {
     assert(i == 0);
     return 1;
   }
   return _dims[2 * i];
 }
 int ArrayLit::max(unsigned int i) const {
-  if (_dims.size() == 0) {
+  if (_dims.empty()) {
     assert(i == 0);
     return static_cast<int>(_u.v->size());
   }
@@ -345,7 +344,7 @@ unsigned int ArrayLit::length() const {
   return l;
 }
 void ArrayLit::make1d() {
-  if (_dims.size() != 0) {
+  if (!_dims.empty()) {
     GCLock lock;
     if (_flag2) {
       std::vector<int> d(2 + _u.al->dims() * 2);
@@ -852,7 +851,7 @@ void Call::rehash() {
 
 void VarDecl::trail() {
   GC::trail(&_e, e());
-  if (_ti->ranges().size() > 0) {
+  if (!_ti->ranges().empty()) {
     GC::trail(reinterpret_cast<Expression**>(&_ti), _ti);
   }
 }
@@ -1062,7 +1061,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
           throw TypeError(env, get_loc(ta[i], fi), ss.str());
         }
       }
-    } else if (tii->ranges().size() > 0) {
+    } else if (!tii->ranges().empty()) {
       for (unsigned int j = 0; j < tii->ranges().size(); j++) {
         if (isa_enum_tiid(tii->ranges()[j]->domain())) {
           ASTString enumTIId = tii->ranges()[j]->domain()->cast<TIId>()->v();
@@ -1088,7 +1087,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
       }
     }
   }
-  if (dh.size() != 0) {
+  if (!dh.empty()) {
     auto it = tmap.find(dh);
     if (it == tmap.end()) {
       std::ostringstream ss;
@@ -1104,7 +1103,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
         ret.st(it->second.st());
       }
     }
-    if (fi->ti()->ranges().size() > 0 && it->second.enumId() != 0) {
+    if (!fi->ti()->ranges().empty() && it->second.enumId() != 0) {
       std::vector<unsigned int> enumIds(fi->ti()->ranges().size() + 1);
       for (unsigned int i = 0; i < fi->ti()->ranges().size(); i++) {
         enumIds[i] = 0;
@@ -1115,7 +1114,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
       ret.enumId(it->second.enumId());
     }
   }
-  if (rh.size() != 0) {
+  if (!rh.empty()) {
     auto it = tmap.find(rh);
     if (it == tmap.end()) {
       std::ostringstream ss;
@@ -1134,7 +1133,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
       ret.enumId(env.registerArrayEnum(enumIds));
     }
 
-  } else if (fi->ti()->ranges().size() > 0) {
+  } else if (!fi->ti()->ranges().empty()) {
     std::vector<unsigned int> enumIds(fi->ti()->ranges().size() + 1);
     bool hadRealEnum = false;
     if (ret.enumId() == 0) {

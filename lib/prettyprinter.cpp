@@ -217,7 +217,7 @@ public:
         const auto* sl = e->cast<SetLit>();
         if (sl->isv() != nullptr) {
           if (sl->type().bt() == Type::BT_BOOL) {
-            if (sl->isv()->size() == 0) {
+            if (sl->isv()->empty()) {
               _os << (_flatZinc ? "true..false" : "{}");
             } else {
               _os << "{";
@@ -233,7 +233,7 @@ public:
               _os << "}";
             }
           } else {
-            if (sl->isv()->size() == 0) {
+            if (sl->isv()->empty()) {
               _os << (_flatZinc ? "1..0" : "{}");
             } else if (sl->isv()->size() == 1) {
               _os << sl->isv()->min(0) << ".." << sl->isv()->max(0);
@@ -262,7 +262,7 @@ public:
             }
           }
         } else if (sl->fsv() != nullptr) {
-          if (sl->fsv()->size() == 0) {
+          if (sl->fsv()->empty()) {
             _os << (_flatZinc ? "1.0..0.0" : "{}");
           } else if (sl->fsv()->size() == 1) {
             pp_floatval(_os, sl->fsv()->min(0));
@@ -587,12 +587,12 @@ public:
       case Expression::E_VARDECL: {
         const auto* vd = e->cast<VarDecl>();
         p(vd->ti());
-        if (!vd->ti()->isEnum() && (vd->id()->idn() != -1 || vd->id()->v().size() > 0)) {
+        if (!vd->ti()->isEnum() && (vd->id()->idn() != -1 || !vd->id()->v().empty())) {
           _os << ":";
         }
         if (vd->id()->idn() != -1) {
           _os << " X_INTRODUCED_" << vd->id()->idn() << "_";
-        } else if (vd->id()->v().size() != 0) {
+        } else if (!vd->id()->v().empty()) {
           _os << " " << Printer::quoteId(vd->id()->v());
         }
         if (vd->introduced()) {
@@ -1118,7 +1118,7 @@ public:
     DocumentList* dl;
     if (sl->isv() != nullptr) {
       if (sl->type().bt() == Type::BT_BOOL) {
-        if (sl->isv()->size() == 0) {
+        if (sl->isv()->empty()) {
           dl = new DocumentList("true..false", "", "");
         } else {
           if (sl->isv()->min() == 0) {
@@ -1132,7 +1132,7 @@ public:
           }
         }
       } else {
-        if (sl->isv()->size() == 0) {
+        if (sl->isv()->empty()) {
           dl = new DocumentList("1..0", "", "");
         } else if (sl->isv()->size() == 1) {
           dl = new DocumentList("", "..", "");
@@ -1157,7 +1157,7 @@ public:
         }
       }
     } else if (sl->fsv() != nullptr) {
-      if (sl->fsv()->size() == 0) {
+      if (sl->fsv()->empty()) {
         dl = new DocumentList("1.0..0.0", "", "");
       } else if (sl->fsv()->size() == 1) {
         dl = new DocumentList("", "..", "");
@@ -1560,7 +1560,7 @@ public:
     auto* dl = new DocumentList("", "", "");
     dl->addDocumentToList(expression_to_document(vd->ti()));
     if (vd->id()->idn() == -1) {
-      if (vd->id()->v().size() != 0) {
+      if (!vd->id()->v().empty()) {
         oss << ": " << vd->id()->v().c_str();
       }
     } else {

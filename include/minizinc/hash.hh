@@ -97,6 +97,8 @@ public:
   void remove(Id* e) { _m.erase(e); }
   /// Return number of elements in the map
   int size() const { return _m.size(); }
+  /// Return whether map is empty
+  bool empty() const { return _m.empty(); }
   /// Remove all elements from the map
   void clear() { _m.clear(); }
   T& get(Id* ident) {

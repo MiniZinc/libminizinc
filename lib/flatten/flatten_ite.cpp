@@ -157,7 +157,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
       results.push_back(r);
       e_then.emplace_back();
       for (int i = 0; i < ite->size(); i++) {
-        if (eq_branches[i].size() == 0) {
+        if (eq_branches[i].empty()) {
           e_then.back().push_back(ite->thenExpr(i));
         } else if (other_branches[i].empty()) {
           e_then.back().push_back(env.constants.literalTrue);
@@ -174,7 +174,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
         }
       }
       {
-        if (eq_branches[ite->size()].size() == 0) {
+        if (eq_branches[ite->size()].empty()) {
           e_else.emplace_back(ite->elseExpr());
         } else if (other_branches[ite->size()].empty()) {
           e_else.emplace_back(env.constants.literalTrue);

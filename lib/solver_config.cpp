@@ -109,7 +109,7 @@ std::vector<std::pair<std::string, std::string> > get_string_pair_list(AssignI* 
 std::vector<std::vector<std::string> > get_default_option_list(AssignI* ai) {
   if (auto* al = ai->e()->dynamicCast<ArrayLit>()) {
     std::vector<std::vector<std::string> > ret;
-    if (al->size() == 0) {
+    if (al->empty()) {
       return ret;
     }
     if (al->dims() != 2) {
@@ -143,7 +143,7 @@ std::vector<std::vector<std::string> > get_default_option_list(AssignI* ai) {
 std::vector<SolverConfig::ExtraFlag> get_extra_flag_list(AssignI* ai) {
   if (auto* al = ai->e()->dynamicCast<ArrayLit>()) {
     std::vector<SolverConfig::ExtraFlag> ret;
-    if (al->size() == 0) {
+    if (al->empty()) {
       return ret;
     }
     if (al->dims() != 2) {

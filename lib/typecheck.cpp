@@ -1543,7 +1543,7 @@ public:
       sl->type(ty);
       return;
     }
-    unsigned int enumId = sl->v().size() > 0 ? sl->v()[0]->type().enumId() : 0;
+    unsigned int enumId = sl->v().empty() ? 0 : sl->v()[0]->type().enumId();
     for (unsigned int i = 0; i < sl->v().size(); i++) {
       Type vi_t = sl->v()[i]->type();
       vi_t.ot(Type::OT_PRESENT);
@@ -2539,7 +2539,7 @@ public:
           vd->type(vet);
         } else if (!_env.isSubtype(vet, vdt, true)) {
           if (vet == Type::bot(1) && vd->e()->isa<ArrayLit>() &&
-              vd->e()->cast<ArrayLit>()->size() == 0 &&
+              vd->e()->cast<ArrayLit>()->empty() &&
               vdt.dim() != 0) {  // NOLINT(bugprone-branch-clone): see TODO in other branch
             // this is okay: assigning an empty array (one-dimensional) to an array variable
           } else if (vd->ti()->isEnum() && vet == Type::parsetint()) {
@@ -2567,8 +2567,8 @@ public:
   void vTypeInst(TypeInst* ti) {
     Type tt = ti->type();
     bool foundEnum =
-        ti->ranges().size() > 0 && (ti->domain() != nullptr) && ti->domain()->type().enumId() != 0;
-    if (ti->ranges().size() > 0) {
+        !ti->ranges().empty() && (ti->domain() != nullptr) && ti->domain()->type().enumId() != 0;
+    if (!ti->ranges().empty()) {
       bool foundTIId = false;
       for (unsigned int i = 0; i < ti->ranges().size(); i++) {
         TypeInst* ri = ti->ranges()[i];

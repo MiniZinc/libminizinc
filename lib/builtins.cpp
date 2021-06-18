@@ -106,7 +106,7 @@ IntVal b_int_min(EnvI& env, Call* call) {
       } else {
         GCLock lock;
         ArrayLit* al = eval_array_lit(env, call->arg(0));
-        if (al->size() == 0) {
+        if (al->empty()) {
           throw ResultUndefinedError(env, al->loc(), "minimum of empty array is undefined");
         }
         IntVal m = eval_int(env, (*al)[0]);
@@ -131,7 +131,7 @@ IntVal b_int_max(EnvI& env, Call* call) {
       } else {
         GCLock lock;
         ArrayLit* al = eval_array_lit(env, call->arg(0));
-        if (al->size() == 0) {
+        if (al->empty()) {
           throw ResultUndefinedError(env, al->loc(), "maximum of empty array is undefined");
         }
         IntVal m = eval_int(env, (*al)[0]);
@@ -151,7 +151,7 @@ IntVal b_int_max(EnvI& env, Call* call) {
 IntVal b_arg_min_bool(EnvI& env, Call* call) {
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  if (al->size() == 0) {
+  if (al->empty()) {
     throw ResultUndefinedError(env, al->loc(), "arg_min of empty array is undefined");
   }
   assert(al->dims() == 1);
@@ -166,7 +166,7 @@ IntVal b_arg_min_bool(EnvI& env, Call* call) {
 IntVal b_arg_max_bool(EnvI& env, Call* call) {
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  if (al->size() == 0) {
+  if (al->empty()) {
     throw ResultUndefinedError(env, al->loc(), "arg_max of empty array is undefined");
   }
   assert(al->dims() == 1);
@@ -181,7 +181,7 @@ IntVal b_arg_max_bool(EnvI& env, Call* call) {
 IntVal b_arg_min_int(EnvI& env, Call* call) {
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  if (al->size() == 0) {
+  if (al->empty()) {
     throw ResultUndefinedError(env, al->loc(), "argmin of empty array is undefined");
   }
   assert(al->dims() == 1);
@@ -199,7 +199,7 @@ IntVal b_arg_min_int(EnvI& env, Call* call) {
 IntVal b_arg_max_int(EnvI& env, Call* call) {
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  if (al->size() == 0) {
+  if (al->empty()) {
     throw ResultUndefinedError(env, al->loc(), "argmax of empty array is undefined");
   }
   assert(al->dims() == 1);
@@ -217,7 +217,7 @@ IntVal b_arg_max_int(EnvI& env, Call* call) {
 IntVal b_arg_min_float(EnvI& env, Call* call) {
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  if (al->size() == 0) {
+  if (al->empty()) {
     throw ResultUndefinedError(env, al->loc(), "argmin of empty array is undefined");
   }
   assert(al->dims() == 1);
@@ -235,7 +235,7 @@ IntVal b_arg_min_float(EnvI& env, Call* call) {
 IntVal b_arg_max_float(EnvI& env, Call* call) {
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  if (al->size() == 0) {
+  if (al->empty()) {
     throw ResultUndefinedError(env, al->loc(), "argmax of empty array is undefined");
   }
   assert(al->dims() == 1);
@@ -360,7 +360,7 @@ IntVal b_array_lb_int(EnvI& env, Call* call) {
     if (vd->ti()->domain() != nullptr) {
       GCLock lock;
       IntSetVal* isv = eval_intset(env, vd->ti()->domain());
-      if (isv->size() != 0) {
+      if (!isv->empty()) {
         array_lb = isv->min();
         foundMin = true;
       }
@@ -371,7 +371,7 @@ IntVal b_array_lb_int(EnvI& env, Call* call) {
   if (e != nullptr) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env, e);
-    if (al->size() == 0) {
+    if (al->empty()) {
       throw EvalError(env, Location(), "lower bound of empty array undefined");
     }
     IntVal min = IntVal::infinity();
@@ -422,7 +422,7 @@ IntVal b_array_ub_int(EnvI& env, Call* call) {
     if (vd->ti()->domain() != nullptr) {
       GCLock lock;
       IntSetVal* isv = eval_intset(env, vd->ti()->domain());
-      if (isv->size() != 0) {
+      if (!isv->empty()) {
         array_ub = isv->max();
         foundMax = true;
       }
@@ -433,7 +433,7 @@ IntVal b_array_ub_int(EnvI& env, Call* call) {
   if (e != nullptr) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env, e);
-    if (al->size() == 0) {
+    if (al->empty()) {
       throw EvalError(env, Location(), "upper bound of empty array undefined");
     }
     IntVal max = -IntVal::infinity();
@@ -497,7 +497,7 @@ IntVal b_sum_int(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  if (al->size() == 0) {
+  if (al->empty()) {
     return 0;
   }
   IntVal m = 0;
@@ -511,7 +511,7 @@ IntVal b_product_int(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  if (al->size() == 0) {
+  if (al->empty()) {
     return 1;
   }
   IntVal m = 1;
@@ -525,7 +525,7 @@ FloatVal b_product_float(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  if (al->size() == 0) {
+  if (al->empty()) {
     return 1;
   }
   FloatVal m = 1.0;
@@ -582,7 +582,7 @@ FloatVal b_array_lb_float(EnvI& env, Call* call) {
   if (e != nullptr) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env, e);
-    if (al->size() == 0) {
+    if (al->empty()) {
       throw EvalError(env, Location(), "lower bound of empty array undefined");
     }
     bool min_valid = false;
@@ -634,7 +634,7 @@ FloatVal b_array_ub_float(EnvI& env, Call* call) {
   if (e != nullptr) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env, e);
-    if (al->size() == 0) {
+    if (al->empty()) {
       throw EvalError(env, Location(), "upper bound of empty array undefined");
     }
     bool max_valid = false;
@@ -671,7 +671,7 @@ FloatVal b_sum_float(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  if (al->size() == 0) {
+  if (al->empty()) {
     return 0;
   }
   FloatVal m = 0;
@@ -689,7 +689,7 @@ FloatVal b_float_min(EnvI& env, Call* call) {
       } else {
         GCLock lock;
         ArrayLit* al = eval_array_lit(env, call->arg(0));
-        if (al->size() == 0) {
+        if (al->empty()) {
           throw EvalError(env, al->loc(), "min on empty array undefined");
         }
         FloatVal m = eval_float(env, (*al)[0]);
@@ -714,7 +714,7 @@ FloatVal b_float_max(EnvI& env, Call* call) {
       } else {
         GCLock lock;
         ArrayLit* al = eval_array_lit(env, call->arg(0));
-        if (al->size() == 0) {
+        if (al->empty()) {
           throw EvalError(env, al->loc(), "max on empty array undefined");
         }
         FloatVal m = eval_float(env, (*al)[0]);
@@ -873,7 +873,7 @@ IntSetVal* b_array_ub_set(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  if (al->size() == 0) {
+  if (al->empty()) {
     throw EvalError(env, Location(), "upper bound of empty array undefined");
   }
   IntSetVal* ub = b_ub_set(env, (*al)[0]);
@@ -946,7 +946,7 @@ IntSetVal* b_dom_bounds_array(EnvI& env, Call* call) {
     if (vd->ti()->domain() != nullptr) {
       GCLock lock;
       IntSetVal* isv = eval_intset(env, vd->ti()->domain());
-      if (isv->size() != 0) {
+      if (!isv->empty()) {
         array_lb = isv->min();
         array_ub = isv->max();
         foundBounds = true;
@@ -965,7 +965,7 @@ IntSetVal* b_dom_bounds_array(EnvI& env, Call* call) {
   if (e != nullptr) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env, e);
-    if (al->size() == 0) {
+    if (al->empty()) {
       throw EvalError(env, Location(), "lower bound of empty array undefined");
     }
     IntVal min = IntVal::infinity();
@@ -1021,7 +1021,7 @@ IntSetVal* b_dom_array(EnvI& env, Call* call) {
         throw EvalError(env, ae->loc(), "invalid argument to dom");
     }
   }
-  if (al->size() == 0) {
+  if (al->empty()) {
     return IntSetVal::a();
   }
   IntSetVal* isv = b_dom_varint(env, (*al)[0]);
@@ -1097,7 +1097,7 @@ ArrayLit* b_arrayXd(EnvI& env, Call* call, int d) {
 
   for (int i = 0; i < d; i++) {
     IntSetVal* di = eval_intset(env, call->arg(i));
-    if (di->size() == 0) {
+    if (di->empty()) {
       dims[i] = std::pair<int, int>(1, 0);
       dim1d = 0;
     } else if (di->size() != 1) {
@@ -1315,7 +1315,7 @@ bool b_is_fixed_array(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  if (al->size() == 0) {
+  if (al->empty()) {
     return true;
   }
   for (unsigned int i = 0; i < al->size(); i++) {
@@ -2123,7 +2123,7 @@ std::string b_join(EnvI& env, Call* call) {
 IntSetVal* b_array_union(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  if (al->size() == 0) {
+  if (al->empty()) {
     return IntSetVal::a();
   }
   IntSetVal* isv = eval_intset(env, (*al)[0]);
@@ -2140,9 +2140,9 @@ IntSetVal* b_array_intersect(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   std::vector<IntSetVal::Range> ranges;
-  if (al->size() > 0) {
+  if (!al->empty()) {
     IntSetVal* i0 = eval_intset(env, (*al)[0]);
-    if (i0->size() > 0) {
+    if (!i0->empty()) {
       IntSetRanges i0r(i0);
       IntVal min = i0r.min();
       while (i0r()) {
@@ -2268,7 +2268,7 @@ Expression* b_sort(EnvI& env, Call* call) {
 Expression* b_inverse(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  if (al->size() == 0) {
+  if (al->empty()) {
     return al;
   }
   int min_idx = al->min(0);
@@ -2693,7 +2693,7 @@ Expression* b_slice(EnvI& env, Call* call) {
   std::vector<std::pair<int, int>> newSlice(slice->size());
   for (unsigned int i = 0; i < slice->size(); i++) {
     IntSetVal* isv = eval_intset(env, (*slice)[i]);
-    if (isv->size() == 0) {
+    if (isv->empty()) {
       newSlice[i] = std::pair<int, int>(1, 0);
     } else {
       if (isv->size() > 1) {
@@ -2711,7 +2711,7 @@ Expression* b_slice(EnvI& env, Call* call) {
   std::vector<std::pair<int, int>> newDims(call->argCount() - 2);
   for (unsigned int i = 0; i < newDims.size(); i++) {
     IntSetVal* isv = eval_intset(env, call->arg(2 + i));
-    if (isv->size() == 0) {
+    if (isv->empty()) {
       newDims[i] = std::pair<int, int>(1, 0);
     } else {
       newDims[i] = std::pair<int, int>(static_cast<int>(isv->min().toInt()),
@@ -2730,7 +2730,7 @@ Expression* b_regular_from_string(EnvI& env, Call* call) {
   std::string expr = eval_string(env, call->arg(1));
 
   IntSetVal* dom;
-  if (vars->size() == 0) {
+  if (vars->empty()) {
     dom = IntSetVal::a();
   } else {
     dom = b_dom_varint(env, (*vars)[0]);

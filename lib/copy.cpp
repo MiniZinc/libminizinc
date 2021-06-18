@@ -363,7 +363,7 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
     case Expression::E_TI: {
       auto* t = e->cast<TypeInst>();
       ASTExprVecO<TypeInst*>* r;
-      if (t->ranges().size() == 0) {
+      if (t->ranges().empty()) {
         r = nullptr;
       } else if (ASTExprVecO<TypeInst*>* cr = m.find(t->ranges())) {
         r = cr;

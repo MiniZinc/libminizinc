@@ -510,7 +510,7 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
           }
         }
       }
-      if (mostSimilar.size() > 0) {
+      if (!mostSimilar.empty()) {
         oss << ", did you mean `" << mostSimilar << "'?";
       }
       throw TypeError(env, c->loc(), oss.str());
@@ -688,6 +688,7 @@ const Item* Model::operator[](unsigned int i) const {
   return _items[i];
 }
 unsigned int Model::size() const { return static_cast<unsigned int>(_items.size()); }
+bool Model::empty() const { return _items.empty(); }
 
 std::vector<Item*>::iterator Model::begin() { return _items.begin(); }
 

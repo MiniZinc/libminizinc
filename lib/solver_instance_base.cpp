@@ -149,7 +149,7 @@ void SolverInstanceBase2::assignSolutionToOutput() {
         std::vector<std::pair<int, int> > dims_v;
         for (int i = 0; i < dims->length(); i++) {
           IntSetVal* isv = eval_intset(getEnv()->envi(), (*dims)[i]);
-          if (isv->size() == 0) {
+          if (isv->empty()) {
             dims_v.emplace_back(1, 0);
           } else {
             dims_v.emplace_back(static_cast<int>(isv->min().toInt()),

@@ -1668,11 +1668,11 @@ void check_index_sets(EnvI& env, VarDecl* vd, Expression* e) {
               Location().introduce(), Type(),
               new SetLit(Location().introduce(), IntSetVal::a(al->min(i), al->max(i))));
           needNewTypeInst = true;
-        } else if (i == 0 || al->size() != 0) {
+        } else if (i == 0 || !al->empty()) {
           IntSetVal* isv = eval_intset(env, tis[i]->domain());
           assert(isv->size() <= 1);
-          if ((isv->size() == 0 && al->min(i) <= al->max(i)) ||
-              (isv->size() != 0 && (isv->min(0) != al->min(i) || isv->max(0) != al->max(i)))) {
+          if ((isv->empty() && al->min(i) <= al->max(i)) ||
+              (!isv->empty() && (isv->min(0) != al->min(i) || isv->max(0) != al->max(i)))) {
             std::ostringstream oss;
             oss << "Index set mismatch. Declared index " << (tis.size() == 1 ? "set" : "sets");
             oss << " of `" << *vd->id() << "' " << (tis.size() == 1 ? "is [" : "are [");
@@ -1967,7 +1967,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
         ASTExprVec<TypeInst> ranges_v(ranges);
         assert(!al->type().isbot());
         Expression* domain = nullptr;
-        if (al->size() > 0 && (*al)[0]->type().isint()) {
+        if (!al->empty() && (*al)[0]->type().isint()) {
           IntVal min = IntVal::infinity();
           IntVal max = -IntVal::infinity();
           for (unsigned int i = 0; i < al->size(); i++) {
@@ -2031,7 +2031,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
               } else {
                 is_computed = true;
               }
-              if (id->type().st() == Type::ST_PLAIN && ibv->size() == 0) {
+              if (id->type().st() == Type::ST_PLAIN && ibv->empty()) {
                 env.fail();
               } else {
                 set_computed_domain(env, id->decl(), new SetLit(Location().introduce(), ibv),
@@ -2134,7 +2134,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
                     IntSetRanges vdi_domr(vdi_dom);
                     Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> inter(isvr, vdi_domr);
                     IntSetVal* newdom = IntSetVal::ai(inter);
-                    if (newdom->size() == 0) {
+                    if (newdom->empty()) {
                       env.fail();
                     } else {
                       IntSetRanges vdi_domr2(vdi_dom);
@@ -2181,7 +2181,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
                     FloatSetRanges vdi_domr(vdi_dom);
                     Ranges::Inter<FloatVal, FloatSetRanges, FloatSetRanges> inter(fsvr, vdi_domr);
                     FloatSetVal* newdom = FloatSetVal::ai(inter);
-                    if (newdom->size() == 0) {
+                    if (newdom->empty()) {
                       env.fail();
                     } else {
                       FloatSetRanges vdi_domr2(vdi_dom);
@@ -2366,7 +2366,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
               FloatSetRanges fbr(fbv);
               Ranges::Inter<FloatVal, FloatSetRanges, FloatSetRanges> i(dr, fbr);
               FloatSetVal* newfbv = FloatSetVal::ai(i);
-              if (newfbv->size() == 0) {
+              if (newfbv->empty()) {
                 env.fail();
               }
               FloatSetRanges dr_eq(domain);
@@ -3002,7 +3002,7 @@ void flatten(Env& e, FlatteningOptions opt) {
           ArrayLit* al = eval_array_lit(env, v->e()->e());
           v->e()->e(al);
           check_index_sets(env, v->e(), v->e()->e());
-          if (al->size() > 0) {
+          if (!al->empty()) {
             if (v->e()->type().bt() == Type::BT_INT && v->e()->type().st() == Type::ST_PLAIN) {
               IntVal lb = IntVal::infinity();
               IntVal ub = -IntVal::infinity();
@@ -3269,7 +3269,7 @@ void flatten(Env& e, FlatteningOptions opt) {
             GCLock lock;
             IntSetVal* dom = eval_intset(env, vdi->e()->ti()->domain());
 
-            if (0 == dom->size()) {
+            if (dom->empty()) {
               std::ostringstream oss;
               oss << "Variable has empty domain: " << (*vdi->e());
               env.fail(oss.str());
@@ -3337,7 +3337,7 @@ void flatten(Env& e, FlatteningOptions opt) {
               vdi->e()->ti()->domain() != nullptr) {
             GCLock lock;
             FloatSetVal* vdi_dom = eval_floatset(env, vdi->e()->ti()->domain());
-            if (0 == vdi_dom->size()) {
+            if (vdi_dom->empty()) {
               std::ostringstream oss;
               oss << "Variable has empty domain: " << (*vdi->e());
               env.fail(oss.str());
@@ -4072,7 +4072,7 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd,
     if (vd->ti()->ranges().size() == 1 && vd->ti()->ranges()[0]->domain() != nullptr &&
         vd->ti()->ranges()[0]->domain()->isa<SetLit>()) {
       IntSetVal* isv = vd->ti()->ranges()[0]->domain()->cast<SetLit>()->isv();
-      if ((isv != nullptr) && (isv->size() == 0 || isv->min(0) == 1)) {
+      if ((isv != nullptr) && (isv->empty() || isv->min(0) == 1)) {
         return added_constraints;
       }
     }

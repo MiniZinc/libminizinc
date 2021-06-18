@@ -319,9 +319,9 @@ public:
     return !b.valid || dom->min() > b.l || dom->max() < b.u;
   }
   static bool domainIntersects(Domain dom, Val v0, Val v1) {
-    return (v0 > v1) || (dom->size() > 0 && dom->min(0) <= v1 && v0 <= dom->max(dom->size() - 1));
+    return (v0 > v1) || (!dom->empty() && dom->min(0) <= v1 && v0 <= dom->max(dom->size() - 1));
   }
-  static bool domainEmpty(Domain dom) { return dom->size() == 0; }
+  static bool domainEmpty(Domain dom) { return dom->empty(); }
   static Domain limitDomain(BinOpType bot, Domain dom, Val v) {
     IntSetRanges dr(dom);
     IntSetVal* ndomain;
@@ -433,9 +433,9 @@ public:
     return !b.valid || dom->min() > b.l || dom->max() < b.u;
   }
   static bool domainIntersects(Domain dom, Val v0, Val v1) {
-    return (v0 > v1) || (dom->size() > 0 && dom->min(0) <= v1 && v0 <= dom->max(dom->size() - 1));
+    return (v0 > v1) || (!dom->empty() && dom->min(0) <= v1 && v0 <= dom->max(dom->size() - 1));
   }
-  static bool domainEmpty(Domain dom) { return dom->size() == 0; }
+  static bool domainEmpty(Domain dom) { return dom->empty(); }
 
   static bool domainEquals(Domain dom1, Domain dom2) {
     FloatSetRanges d1(dom1);

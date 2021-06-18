@@ -985,7 +985,7 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
           } else {
             changeDom = true;
           }
-          if (ident->type().st() == Type::ST_PLAIN && newdom->size() == 0) {
+          if (ident->type().st() == Type::ST_PLAIN && newdom->empty()) {
             env.fail();
           } else if (changeDom) {
             set_computed_domain(env, ident->decl(), new SetLit(Location().introduce(), newdom),

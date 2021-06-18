@@ -582,7 +582,7 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
   assert(al != nullptr);
   const Location& loc = al->loc();
 
-  if (al->size() == 0) {
+  if (al->empty()) {
     return al;  // Nothing to coerce
   }
   if (al->dims() != 1 && al->dims() != ti->ranges().size()) {

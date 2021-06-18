@@ -26,11 +26,11 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
     TypeInst* ti = eval_typeinst(env, Ctx(), v);
     if ((ti->domain() != nullptr) && ti->domain()->isa<SetLit>()) {
       if (ti->type().bt() == Type::BT_INT && ti->type().st() == Type::ST_PLAIN) {
-        if (eval_intset(env, ti->domain())->size() == 0) {
+        if (eval_intset(env, ti->domain())->empty()) {
           env.fail("domain is empty");
         }
       } else if (ti->type().bt() == Type::BT_FLOAT) {
-        if (eval_floatset(env, ti->domain())->size() == 0) {
+        if (eval_floatset(env, ti->domain())->empty()) {
           env.fail("domain is empty");
         }
       }

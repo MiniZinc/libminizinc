@@ -27,7 +27,7 @@ string NLFile::getVarName(const Id* id) {
   stringstream os;
   if (id->idn() != -1) {
     os << "X_INTRODUCED_" << id->idn() << "_";
-  } else if (id->v().size() != 0) {
+  } else if (!id->v().empty()) {
     os << id->v();
   }
   string name = os.str();

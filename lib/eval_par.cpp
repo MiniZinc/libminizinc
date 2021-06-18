@@ -1857,7 +1857,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
       }
       auto* ret = new ArrayLit(al->loc(), args, dims);
       Type t = al->type();
-      if (t.isbot() && ret->size() > 0) {
+      if (t.isbot() && !ret->empty()) {
         t.bt((*ret)[0]->type().bt());
       }
       ret->type(t);
@@ -1870,7 +1870,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
     case Expression::E_TI: {
       auto* t = e->cast<TypeInst>();
       ASTExprVec<TypeInst> r;
-      if (t->ranges().size() > 0) {
+      if (!t->ranges().empty()) {
         std::vector<TypeInst*> rv(t->ranges().size());
         for (unsigned int i = t->ranges().size(); (i--) != 0U;) {
           rv[i] = static_cast<TypeInst*>(eval_par(env, t->ranges()[i]));
@@ -1927,7 +1927,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
         }
         auto* ret = new ArrayLit(al->loc(), args, dims);
         Type t = al->type();
-        if ((t.bt() == Type::BT_BOT || t.bt() == Type::BT_TOP) && ret->size() > 0) {
+        if ((t.bt() == Type::BT_BOT || t.bt() == Type::BT_TOP) && !ret->empty()) {
           t.bt((*ret)[0]->type().bt());
         }
         ret->type(t);
@@ -2153,7 +2153,7 @@ public:
     if (vd->ti()->domain() != nullptr) {
       GCLock lock;
       IntSetVal* isv = eval_intset(env, vd->ti()->domain());
-      if (isv->size() == 0) {
+      if (isv->empty()) {
         valid = false;
         bounds.emplace_back(0, 0);
       } else {
@@ -2200,7 +2200,7 @@ public:
       if (id->decl()->ti()->domain() != nullptr) {
         GCLock lock;
         IntSetVal* isv = eval_intset(env, id->decl()->ti()->domain());
-        if (isv->size() > 0) {
+        if (!isv->empty()) {
           bounds.emplace_back(isv->min(0), isv->max(isv->size() - 1));
           return;
         }
@@ -2584,7 +2584,7 @@ public:
     if (vd->ti()->domain() != nullptr) {
       GCLock lock;
       FloatSetVal* fsv = eval_floatset(env, vd->ti()->domain());
-      if (fsv->size() == 0) {
+      if (fsv->empty()) {
         valid = false;
         bounds.emplace_back(0, 0);
       } else {

@@ -825,7 +825,7 @@ Gecode::IntSet GecodeSolverInstance::arg2intset(EnvI& envi, Expression* arg) {
 }
 IntSetArgs GecodeSolverInstance::arg2intsetargs(EnvI& envi, Expression* arg, int offset) {
   ArrayLit* a = arg2arraylit(arg);
-  if (a->size() == 0) {
+  if (a->empty()) {
     IntSetArgs emptyIa(0);
     return emptyIa;
   }
@@ -841,7 +841,7 @@ IntSetArgs GecodeSolverInstance::arg2intsetargs(EnvI& envi, Expression* arg, int
 
 Gecode::IntVarArgs GecodeSolverInstance::arg2intvarargs(Expression* arg, int offset) {
   ArrayLit* a = arg2arraylit(arg);
-  if (a->size() == 0) {
+  if (a->empty()) {
     IntVarArgs emptyIa(0);
     return emptyIa;
   }
@@ -1077,7 +1077,7 @@ Gecode::FloatVar GecodeSolverInstance::arg2floatvar(Expression* e) {
 
 Gecode::FloatVarArgs GecodeSolverInstance::arg2floatvarargs(Expression* arg, int offset) {
   ArrayLit* a = arg2arraylit(arg);
-  if (a->size() == 0) {
+  if (a->empty()) {
     FloatVarArgs emptyFa(0);
     return emptyFa;
   }
@@ -1664,7 +1664,7 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
     if (i->isa<Call>() && i->cast<Call>()->id() == "int_search") {
       Call* call = i->cast<Call>();
       ArrayLit* vars = arg2arraylit(call->arg(0));
-      if (vars->size() == 0) {  // empty array
+      if (vars->empty()) {  // empty array
         std::cerr << "WARNING: trying to branch on empty array in search annotation: " << *call
                   << std::endl;
         continue;

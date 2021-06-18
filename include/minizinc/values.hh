@@ -603,10 +603,12 @@ private:
 public:
   /// Return number of ranges
   unsigned int size() const { return static_cast<int>(_size / sizeof(Range)); }
+  /// Return whether set is empty
+  bool empty() const { return _size == 0; }
   /// Return minimum, or infinity if set is empty
-  IntVal min() const { return size() == 0 ? IntVal::infinity() : get(0).min; }
+  IntVal min() const { return empty() ? IntVal::infinity() : get(0).min; }
   /// Return maximum, or minus infinity if set is empty
-  IntVal max() const { return size() == 0 ? -IntVal::infinity() : get(size() - 1).max; }
+  IntVal max() const { return empty() ? -IntVal::infinity() : get(size() - 1).max; }
   /// Return minimum of range \a i
   IntVal min(unsigned int i) const {
     assert(i < size());
@@ -753,7 +755,7 @@ public:
 template <class Char, class Traits>
 std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& os,
                                              const IntSetVal& s) {
-  if (s.size() == 0) {
+  if (s.empty()) {
     os << "1..0";
   } else if (s.size() == 1) {
     // Print the range
@@ -816,10 +818,12 @@ private:
 public:
   /// Return number of ranges
   unsigned int size() const { return static_cast<int>(_size / sizeof(Range)); }
+  /// Return whether set is empty
+  bool empty() const { return _size == 0; }
   /// Return minimum, or infinity if set is empty
-  FloatVal min() const { return size() == 0 ? FloatVal::infinity() : get(0).min; }
+  FloatVal min() const { return empty() ? FloatVal::infinity() : get(0).min; }
   /// Return maximum, or minus infinity if set is empty
-  FloatVal max() const { return size() == 0 ? -FloatVal::infinity() : get(size() - 1).max; }
+  FloatVal max() const { return empty() ? -FloatVal::infinity() : get(size() - 1).max; }
   /// Return minimum of range \a i
   FloatVal min(unsigned int i) const {
     assert(i < size());

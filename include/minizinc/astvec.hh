@@ -31,8 +31,6 @@ public:
   /// Default constructor
   ASTIntVec() : _v(nullptr) {}
   /// Constructor
-  ASTIntVec(ASTIntVecO* v) : _v(v) {}
-  /// Constructor
   ASTIntVec(const std::vector<int>& v);
   /// Copy constructor
   ASTIntVec(const ASTIntVec& v);
@@ -41,6 +39,8 @@ public:
 
   /// Size of vector
   unsigned int size() const;
+  /// Whether vector is empty
+  bool empty() const;
   /// Element access
   int& operator[](unsigned int i);
   /// Element access
@@ -80,6 +80,8 @@ public:
 
   /// Size of vector
   unsigned int size() const;
+  /// Whether vector is empty
+  bool empty() const;
   /// Element access
   T*& operator[](unsigned int i);
   /// Element access
@@ -106,6 +108,8 @@ public:
   static ASTIntVecO* a(const std::vector<int>& v);
   /// Return size
   unsigned int size() const { return static_cast<unsigned int>(_size / sizeof(int)); }
+  /// Return whether vector is empty
+  bool empty() const { return _size == 0; }
   /// Return element at position \a i
   int& operator[](unsigned int i) {
     assert(i < size());
@@ -179,6 +183,7 @@ inline ASTIntVec& ASTIntVec::operator=(const ASTIntVec& v) {
 }
 
 inline unsigned int ASTIntVec::size() const { return _v != nullptr ? _v->size() : 0; }
+inline bool ASTIntVec::empty() const { return _v == nullptr || _v->empty(); }
 inline int& ASTIntVec::operator[](unsigned int i) { return (*_v)[i]; }
 inline int ASTIntVec::operator[](unsigned int i) const { return (*_v)[i]; }
 inline int* ASTIntVec::begin() { return _v != nullptr ? _v->begin() : nullptr; }
@@ -201,7 +206,11 @@ inline ASTExprVec<T>& ASTExprVec<T>::operator=(const ASTExprVec<T>& v) {
 }
 template <class T>
 inline unsigned int ASTExprVec<T>::size() const {
-  return _v ? _v->size() : 0;
+  return _v != nullptr ? _v->size() : 0;
+}
+template <class T>
+inline bool ASTExprVec<T>::empty() const {
+  return _v == nullptr || _v->empty();
 }
 template <class T>
 inline T*& ASTExprVec<T>::operator[](unsigned int i) {

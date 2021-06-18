@@ -107,7 +107,7 @@ public:
 template <class Char, class Traits>
 std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& os,
                                              const ASTString& s) {
-  return s.size() == 0 ? os : (os << s.c_str());
+  return s.empty() ? os : (os << s.c_str());
 }
 
 }  // namespace MiniZinc
@@ -222,12 +222,12 @@ inline bool operator==(const char* s0, const ASTString& s1) {
 
 inline bool operator==(const ASTString& s0, const std::string& s1) {
   return s0.size() == s1.size() &&
-         (s0.size() == 0 || strncmp(s0._s->c_str(), s1.c_str(), s0.size()) == 0);
+         (s0.empty() || strncmp(s0._s->c_str(), s1.c_str(), s0.size()) == 0);
 }
 
 inline bool operator==(const std::string& s0, const ASTString& s1) {
   return s0.size() == s1.size() &&
-         (s1.size() == 0 || strncmp(s1._s->c_str(), s0.c_str(), s1.size()) == 0);
+         (s1.empty() || strncmp(s1._s->c_str(), s0.c_str(), s1.size()) == 0);
 }
 
 inline bool operator!=(const ASTString& s0, const char* s1) {
@@ -242,12 +242,12 @@ inline bool operator!=(const char* s0, const ASTString& s1) {
 
 inline bool operator!=(const ASTString& s0, const std::string& s1) {
   return s0.size() != s1.size() ||
-         (s0.size() != 0 && strncmp(s0._s->c_str(), s1.c_str(), s0.size()) != 0);
+         (!s0.empty() && strncmp(s0._s->c_str(), s1.c_str(), s0.size()) != 0);
 }
 
 inline bool operator!=(const std::string& s0, const ASTString& s1) {
   return s0.size() != s1.size() ||
-         (s1.size() != 0 && strncmp(s1._s->c_str(), s0.c_str(), s1.size()) != 0);
+         (!s1.empty() && strncmp(s1._s->c_str(), s0.c_str(), s1.size()) != 0);
 }
 
 inline bool ASTString::operator<(const ASTString& s) const {
