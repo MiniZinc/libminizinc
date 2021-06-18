@@ -46,6 +46,8 @@ public:
 
   /// Size of the string
   size_t size() const;
+  /// Whether string is empty
+  bool empty() const;
   /// Underlying C string object
   const char* c_str() const;  // NOLINT(readability-identifier-naming)
   /// Underlying string implementation
@@ -196,6 +198,7 @@ protected:
 inline ASTString::ASTString(const std::string& s) : _s(ASTStringData::a(s)) {}
 
 inline size_t ASTString::size() const { return _s != nullptr ? _s->size() : 0; }
+inline bool ASTString::empty() const { return _s == nullptr; }
 // NOLINTNEXTLINE(readability-identifier-naming)
 inline const char* ASTString::c_str() const { return _s != nullptr ? _s->c_str() : nullptr; }
 inline void ASTString::mark() const {
