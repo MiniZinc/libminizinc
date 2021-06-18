@@ -99,15 +99,17 @@ Location Location::introduce() const {
 }
 
 void Expression::addAnnotation(Expression* ann) {
-  if (!isUnboxedVal() && this != constants().literalTrue && this != constants().literalFalse &&
-      !Expression::equal(ann, constants().ann.empty_annotation)) {
+  if (!isUnboxedVal() && this != Constants::constants().literalTrue &&
+      this != Constants::constants().literalFalse &&
+      !Expression::equal(ann, Constants::constants().ann.empty_annotation)) {
     _ann.add(ann);
   }
 }
 void Expression::addAnnotations(const std::vector<Expression*>& ann) {
-  if (!isUnboxedVal() && this != constants().literalTrue && this != constants().literalFalse) {
+  if (!isUnboxedVal() && this != Constants::constants().literalTrue &&
+      this != Constants::constants().literalFalse) {
     for (auto* a : ann) {
-      if (a != nullptr && !Expression::equal(a, constants().ann.empty_annotation)) {
+      if (a != nullptr && !Expression::equal(a, Constants::constants().ann.empty_annotation)) {
         _ann.add(a);
       }
     }
@@ -961,7 +963,7 @@ bool isa_enum_tiid(Expression* e) {
 
 template <class T>
 Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strictEnum) {
-  if (fi->id() == constants().varRedef->id()) {
+  if (fi->id() == env.constants.varRedef->id()) {
     return Type::varbool();
   }
   Type ret = fi->ti()->type();
@@ -1785,7 +1787,7 @@ Id* Constants::addId(const std::string& s) {
 
 const int Constants::max_array_size;
 
-Constants& constants() {
+Constants& Constants::constants() {
   static Constants _c;
   return _c;
 }
@@ -1808,7 +1810,7 @@ void Annotation::add(Expression* e) {
   if (_s == nullptr) {
     _s = new ExpressionSet;
   }
-  if (e != nullptr && !Expression::equal(e, constants().ann.empty_annotation)) {
+  if (e != nullptr && !Expression::equal(e, Constants::constants().ann.empty_annotation)) {
     _s->insert(e);
   }
 }
@@ -1818,7 +1820,7 @@ void Annotation::add(std::vector<Expression*> e) {
     _s = new ExpressionSet;
   }
   for (auto i = static_cast<unsigned int>(e.size()); (i--) != 0U;) {
-    if (e[i] != nullptr && !Expression::equal(e[i], constants().ann.empty_annotation)) {
+    if (e[i] != nullptr && !Expression::equal(e[i], Constants::constants().ann.empty_annotation)) {
       _s->insert(e[i]);
     }
   }

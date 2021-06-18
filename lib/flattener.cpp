@@ -560,7 +560,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             if (auto* vdi = i->dynamicCast<VarDeclI>()) {
               if (vdi->e()->e() == nullptr) {
                 env->envi().checkVars.emplace_back(vdi->e());
-              } else if (vdi->e()->ann().contains(constants().ann.rhs_from_assignment)) {
+              } else if (vdi->e()->ann().contains(Constants::constants().ann.rhs_from_assignment)) {
                 smm_stats_oss << *vdi;
               }
             }
@@ -877,7 +877,9 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
         if ((_fopts.collectMznPaths || _flags.twoPass) && !_flags.keepMznPaths) {
           class RemovePathAnnotations : public ItemVisitor {
           public:
-            static void removePath(Annotation& a) { a.removeCall(constants().ann.mzn_path); }
+            static void removePath(Annotation& a) {
+              a.removeCall(Constants::constants().ann.mzn_path);
+            }
             static void vVarDeclI(VarDeclI* vdi) { removePath(vdi->e()->ann()); }
             static void vConstraintI(ConstraintI* ci) { removePath(ci->e()->ann()); }
             static void vSolveI(SolveI* si) {

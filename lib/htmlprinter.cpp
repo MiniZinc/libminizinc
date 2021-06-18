@@ -13,6 +13,7 @@
 #include <minizinc/copy.hh>
 #include <minizinc/eval_par.hh>
 #include <minizinc/file_utils.hh>
+#include <minizinc/flatten_internal.hh>
 #include <minizinc/htmlprinter.hh>
 #include <minizinc/model.hh>
 #include <minizinc/prettyprinter.hh>
@@ -464,8 +465,8 @@ public:
     return _includeStdLib || FileUtils::base_name(m->filename().c_str()) != "stdlib.mzn";
   }
   void vFunctionI(FunctionI* fi) {
-    if (Call* docstring =
-            Expression::dynamicCast<Call>(get_annotation(fi->ann(), constants().ann.doc_comment))) {
+    if (Call* docstring = Expression::dynamicCast<Call>(
+            get_annotation(fi->ann(), _env.constants.ann.doc_comment))) {
       std::string ds = eval_string(_env, docstring->arg(0));
       std::string group("main");
       size_t group_idx = ds.find("@group");
@@ -651,7 +652,7 @@ public:
   /// Visit variable declaration
   void vVarDeclI(VarDeclI* vdi) {
     if (Call* docstring = Expression::dynamicCast<Call>(
-            get_annotation(vdi->e()->ann(), constants().ann.doc_comment))) {
+            get_annotation(vdi->e()->ann(), _env.constants.ann.doc_comment))) {
       std::string ds = eval_string(_env, docstring->arg(0));
       std::string group("main");
       size_t group_idx = ds.find("@group");
@@ -682,8 +683,8 @@ public:
   }
   /// Visit function item
   void vFunctionI(FunctionI* fi) {
-    if (Call* docstring =
-            Expression::dynamicCast<Call>(get_annotation(fi->ann(), constants().ann.doc_comment))) {
+    if (Call* docstring = Expression::dynamicCast<Call>(
+            get_annotation(fi->ann(), _env.constants.ann.doc_comment))) {
       std::string ds = eval_string(_env, docstring->arg(0));
       std::string group("main");
       size_t group_idx = ds.find("@group");
@@ -1181,7 +1182,7 @@ public:
   /// Visit variable declaration
   void vVarDeclI(VarDeclI* vdi) {
     if (Call* docstring = Expression::dynamicCast<Call>(
-            get_annotation(vdi->e()->ann(), constants().ann.doc_comment))) {
+            get_annotation(vdi->e()->ann(), _env.constants.ann.doc_comment))) {
       std::string ds = eval_string(_env, docstring->arg(0));
       std::string group("main");
       size_t group_idx = ds.find("@group");
@@ -1220,8 +1221,8 @@ public:
   }
   /// Visit function item
   void vFunctionI(FunctionI* fi) {
-    if (Call* docstring =
-            Expression::dynamicCast<Call>(get_annotation(fi->ann(), constants().ann.doc_comment))) {
+    if (Call* docstring = Expression::dynamicCast<Call>(
+            get_annotation(fi->ann(), _env.constants.ann.doc_comment))) {
       std::string ds = eval_string(_env, docstring->arg(0));
       std::string group("main");
       size_t group_idx = ds.find("@group");

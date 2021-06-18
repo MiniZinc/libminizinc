@@ -168,8 +168,8 @@ void remove_is_output(VarDecl* vd) {
   if (vd == nullptr) {
     return;
   }
-  vd->ann().remove(constants().ann.output_var);
-  vd->ann().removeCall(constants().ann.output_array);
+  vd->ann().remove(Constants::constants().ann.output_var);
+  vd->ann().removeCall(Constants::constants().ann.output_array);
 }
 
 void copy_output(EnvI& e) {
@@ -294,7 +294,7 @@ void make_par(EnvI& env, Expression* e) {
             slice_call->type(tt);
             Call* _toString_ENUM =
                 new Call(Location().introduce(), enumName,
-                         {slice_call, constants().boollit(false), constants().boollit(true)});
+                         {slice_call, env.constants.literalFalse, env.constants.literalTrue});
             _toString_ENUM->type(Type::parstring());
 
             // Build multi-level JSON Array string
@@ -331,14 +331,14 @@ void make_par(EnvI& env, Expression* e) {
             c->args(args);
             c->id(ASTString("concat"));
           } else {
-            std::vector<Expression*> args = {obj, constants().boollit(c->id() == "showDzn"),
-                                             constants().boollit(is_json)};
+            std::vector<Expression*> args = {obj, env.constants.boollit(c->id() == "showDzn"),
+                                             env.constants.boollit(is_json)};
             c->args(args);
             c->id(ASTString(enumName));
           }
         }
         if (c->id() == "showDzn" || (c->id() == "showJSON" && enumId > 0)) {
-          c->id(constants().ids.show);
+          c->id(env.constants.ids.show);
         }
       }
       c->decl(env.model->matchFn(env, c, false));
@@ -463,7 +463,7 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e) {
     Item* ci;
     O(EnvI& env0, Item* ci0) : env(env0), ci(ci0) {}
     void vId(Id* id) {
-      if (id == constants().absent) {
+      if (id == env.constants.absent) {
         return;
       }
       if (!id->decl()->toplevel()) {
@@ -506,7 +506,7 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e) {
           assert(nvi->e()->flat());
           nvi->e()->e(nullptr);
           if (nvi->e()->type().dim() == 0) {
-            reallyFlat->addAnnotation(constants().ann.output_var);
+            reallyFlat->addAnnotation(env.constants.ann.output_var);
           } else {
             std::vector<Expression*> args(reallyFlat->e()->type().dim());
             for (unsigned int i = 0; i < args.size(); i++) {
@@ -522,7 +522,7 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e) {
             args.resize(1);
             args[0] = al;
             reallyFlat->addAnnotation(
-                new Call(Location().introduce(), constants().ann.output_array, args));
+                new Call(Location().introduce(), env.constants.ann.output_array, args));
           }
           check_rename_var(env, nvi->e());
         } else {
@@ -542,7 +542,7 @@ void process_deletions(EnvI& e) {
   for (unsigned int i = 0; i < e.output->size(); i++) {
     if (auto* vdi = (*e.output)[i]->dynamicCast<VarDeclI>()) {
       if (!vdi->removed() && e.outputVarOccurrences.occurrences(vdi->e()) == 0 &&
-          !vdi->e()->ann().contains(constants().ann.mzn_check_var) &&
+          !vdi->e()->ann().contains(e.constants.ann.mzn_check_var) &&
           !(vdi->e()->id()->idn() == -1 && (vdi->e()->id()->v() == "_mzn_solution_checker" ||
                                             vdi->e()->id()->v() == "_mzn_stats_checker"))) {
         CollectDecls cd(e.outputVarOccurrences, deletedVarDecls, vdi);
@@ -614,14 +614,14 @@ void create_dzn_output_item(EnvI& e, bool outputObjective, bool includeOutputIte
       VarDecl* vd = vdi->e();
       bool process_var = false;
       if (_outputForChecker) {
-        if (vd->ann().contains(constants().ann.mzn_check_var)) {
+        if (vd->ann().contains(_e.constants.ann.mzn_check_var)) {
           process_var = true;
         }
       } else {
         if (_outputObjective && vd->id()->idn() == -1 && vd->id()->v() == "_objective") {
           process_var = true;
         } else {
-          if (vd->ann().contains(constants().ann.add_to_output)) {
+          if (vd->ann().contains(_e.constants.ann.add_to_output)) {
             if (!_hadAddToOutput) {
               _outputVars.clear();
             }
@@ -639,7 +639,7 @@ void create_dzn_output_item(EnvI& e, bool outputObjective, bool includeOutputIte
                         break;
                       }
                     }
-                  } else if (vd->ann().contains(constants().ann.rhs_from_assignment)) {
+                  } else if (vd->ann().contains(_e.constants.ann.rhs_from_assignment)) {
                     process_var = true;
                   }
                 } else {
@@ -656,7 +656,7 @@ void create_dzn_output_item(EnvI& e, bool outputObjective, bool includeOutputIte
         bool needArrayXd = false;
         if (vd->type().dim() > 0) {
           ArrayLit* al = nullptr;
-          if (!vd->ann().contains(constants().ann.output_only)) {
+          if (!vd->ann().contains(_e.constants.ann.output_only)) {
             if ((vd->flat() != nullptr) && (vd->flat()->e() != nullptr)) {
               al = eval_array_lit(_e, vd->flat()->e());
             } else if (vd->e() != nullptr) {
@@ -692,7 +692,8 @@ void create_dzn_output_item(EnvI& e, bool outputObjective, bool includeOutputIte
                 assert(i_fi);
                 index_set_xx->decl(i_fi);
 
-                auto* show = new Call(Location().introduce(), constants().ids.show, {index_set_xx});
+                auto* show =
+                    new Call(Location().introduce(), _e.constants.ids.show, {index_set_xx});
                 show->type(Type::parstring());
                 FunctionI* s_fi = _e.model->matchFn(_e, show, false);
                 assert(s_fi);
@@ -794,7 +795,7 @@ ArrayLit* create_json_output(EnvI& e, bool outputObjective, bool includeOutputIt
       if (_outputObjective && vd->id()->idn() == -1 && vd->id()->v() == "_objective") {
         process_var = true;
       } else {
-        if (vd->ann().contains(constants().ann.add_to_output)) {
+        if (vd->ann().contains(_e.constants.ann.add_to_output)) {
           if (!_hadAddToOutput) {
             _outputVars.clear();
             _outputVars.push_back(new StringLit(Location().introduce(), "{\n"));
@@ -806,7 +807,7 @@ ArrayLit* create_json_output(EnvI& e, bool outputObjective, bool includeOutputIt
           if (!_hadAddToOutput) {
             process_var =
                 vd->type().isvar() &&
-                (vd->e() == nullptr || vd->ann().contains(constants().ann.rhs_from_assignment));
+                (vd->e() == nullptr || vd->ann().contains(_e.constants.ann.rhs_from_assignment));
           }
         }
       }
@@ -941,7 +942,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
     }
     void vId(Id* i) {
       // Also collect functions from output_only variables we depend on
-      if ((i->decl() != nullptr) && i->decl()->ann().contains(constants().ann.output_only)) {
+      if ((i->decl() != nullptr) && i->decl()->ann().contains(env.constants.ann.output_only)) {
         top_down(*this, i->decl()->e());
       }
     }
@@ -1005,7 +1006,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
     CollectFunctions& cf;
     OV1(EnvI& env0, CollectFunctions& cf0) : env(env0), cf(cf0) {}
     void vVarDeclI(VarDeclI* vdi) {
-      if (vdi->e()->ann().contains(constants().ann.mzn_check_var)) {
+      if (vdi->e()->ann().contains(env.constants.ann.mzn_check_var)) {
         auto* output_vd = copy(env, env.cmap, vdi->e())->cast<VarDecl>();
         top_down(cf, output_vd);
       }
@@ -1036,11 +1037,11 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
         t.ti(Type::TI_PAR);
         vdi_copy->e()->ti()->domain(nullptr);
         vdi_copy->e()->flat(vdi->e()->flat());
-        bool isCheckVar = vdi_copy->e()->ann().contains(constants().ann.mzn_check_var);
-        Call* checkVarEnum = vdi_copy->e()->ann().getCall(constants().ann.mzn_check_enum_var);
+        bool isCheckVar = vdi_copy->e()->ann().contains(env.constants.ann.mzn_check_var);
+        Call* checkVarEnum = vdi_copy->e()->ann().getCall(env.constants.ann.mzn_check_enum_var);
         vdi_copy->e()->ann().clear();
         if (isCheckVar) {
-          vdi_copy->e()->addAnnotation(constants().ann.mzn_check_var);
+          vdi_copy->e()->addAnnotation(env.constants.ann.mzn_check_var);
         }
         if (checkVarEnum != nullptr) {
           vdi_copy->e()->addAnnotation(checkVarEnum);
@@ -1086,7 +1087,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
               vd->e(nullptr);
               assert(vd->flat());
               if (vd->type().dim() == 0) {
-                vd->flat()->addAnnotation(constants().ann.output_var);
+                vd->flat()->addAnnotation(env.constants.ann.output_var);
                 check_rename_var(env, vd);
               } else {
                 bool needOutputAnn = true;
@@ -1121,7 +1122,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
                   args.resize(1);
                   args[0] = al;
                   vd->flat()->addAnnotation(
-                      new Call(Location().introduce(), constants().ann.output_array, args));
+                      new Call(Location().introduce(), env.constants.ann.output_array, args));
                   check_rename_var(env, vd);
                 }
               }
@@ -1162,7 +1163,7 @@ Expression* is_fixed_domain(EnvI& env, VarDecl* vd) {
     return nullptr;
   }
   Expression* e = vd->ti()->domain();
-  if (e == constants().literalTrue || e == constants().literalFalse) {
+  if (e == env.constants.literalTrue || e == env.constants.literalFalse) {
     return e;
   }
   if (auto* sl = Expression::dynamicCast<SetLit>(e)) {
@@ -1282,7 +1283,7 @@ void finalise_output(EnvI& e) {
                 if (!is_output(vd->flat())) {
                   GCLock lock;
                   if (vd->type().dim() == 0) {
-                    vd->flat()->addAnnotation(constants().ann.output_var);
+                    vd->flat()->addAnnotation(e.constants.ann.output_var);
                   } else {
                     std::vector<Expression*> args(vd->type().dim());
                     for (unsigned int i = 0; i < args.size(); i++) {
@@ -1299,7 +1300,7 @@ void finalise_output(EnvI& e) {
                     args.resize(1);
                     args[0] = al;
                     vd->flat()->addAnnotation(
-                        new Call(Location().introduce(), constants().ann.output_array, args));
+                        new Call(Location().introduce(), e.constants.ann.output_array, args));
                   }
                   check_rename_var(e, vd);
                 }

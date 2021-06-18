@@ -114,7 +114,7 @@ void NLFile::addVarDecl(const VarDecl* vd, const TypeInst* ti, const Expression*
     // Look for the annotation "output_array"
     for (ExpressionSetIter it = vd->ann().begin(); it != vd->ann().end(); ++it) {
       Call* c = (*it)->dynamicCast<Call>();
-      if (c != nullptr && c->id() == (constants().ann.output_array)) {
+      if (c != nullptr && c->id() == (Constants::constants().ann.output_array)) {
         NLArray array;
         array.name = name;
         array.isInteger = ti->type().bt() == Type::BT_INT;
@@ -153,7 +153,7 @@ void NLFile::addVarDecl(const VarDecl* vd, const TypeInst* ti, const Expression*
     }
   } else {
     // Check if the variable needs to be reported
-    bool toReport = vd->ann().contains(constants().ann.output_var);
+    bool toReport = vd->ann().contains(Constants::constants().ann.output_var);
     DEBUG_MSG("     '" << name << "' to be reported? " << toReport);
 
     // variable declaration
@@ -233,9 +233,9 @@ void NLFile::analyseConstraint(const Call* c) {
   // ID of the call
   auto id = c->id();
   // Constants for integer builtins
-  auto consint = constants().ids.int_;
+  auto consint = Constants::constants().ids.int_;
   // Constants for floating point builtins
-  auto consfp = constants().ids.float_;
+  auto consfp = Constants::constants().ids.float_;
 
   // Integer linear predicates
   if (id == consint.lin_eq) {

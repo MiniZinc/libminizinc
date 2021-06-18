@@ -482,7 +482,7 @@ void GecodeSolverInstance::processFlatZinc() {
       // check if it has an output-annotation
       VarDecl* vd = it->e();
       if (!vd->ann().isEmpty()) {
-        if (vd->ann().containsCall(constants().ann.output_array.aststr())) {
+        if (vd->ann().containsCall(Constants::constants().ann.output_array.aststr())) {
           auto* al = vd->e()->dynamicCast<ArrayLit>();
           if (al == nullptr) {
             std::stringstream ssm;
@@ -505,7 +505,7 @@ void GecodeSolverInstance::processFlatZinc() {
             }
           }
           _varsWithOutput.push_back(vd);
-        } else if (vd->ann().contains(constants().ann.output_var)) {
+        } else if (vd->ann().contains(Constants::constants().ann.output_var)) {
           _varsWithOutput.push_back(vd);
         }
       }
@@ -567,12 +567,13 @@ void GecodeSolverInstance::processFlatZinc() {
             }
           }
         }
-        isIntroduced =
-            it->e()->introduced() ||
-            (MiniZinc::get_annotation(it->e()->ann(), constants().ann.is_introduced) != nullptr);
+        isIntroduced = it->e()->introduced() ||
+                       (MiniZinc::get_annotation(
+                            it->e()->ann(), Constants::constants().ann.is_introduced) != nullptr);
         currentSpace->ivIntroduced.push_back(isIntroduced);
-        isDefined = MiniZinc::get_annotation(it->e()->ann(),
-                                             constants().ann.is_defined_var->str()) != nullptr;
+        isDefined =
+            MiniZinc::get_annotation(it->e()->ann(),
+                                     Constants::constants().ann.is_defined_var->str()) != nullptr;
         currentSpace->ivDefined.push_back(isDefined);
 
       } else if (vd->type().isbool()) {
@@ -609,12 +610,13 @@ void GecodeSolverInstance::processFlatZinc() {
                       GecodeVariable(GecodeVariable::BOOL_TYPE, currentSpace->bv.size() - 1));
           }
         }
-        isIntroduced =
-            it->e()->introduced() ||
-            (MiniZinc::get_annotation(it->e()->ann(), constants().ann.is_introduced) != nullptr);
+        isIntroduced = it->e()->introduced() ||
+                       (MiniZinc::get_annotation(
+                            it->e()->ann(), Constants::constants().ann.is_introduced) != nullptr);
         currentSpace->bvIntroduced.push_back(isIntroduced);
-        isDefined = MiniZinc::get_annotation(it->e()->ann(),
-                                             constants().ann.is_defined_var->str()) != nullptr;
+        isDefined =
+            MiniZinc::get_annotation(it->e()->ann(),
+                                     Constants::constants().ann.is_defined_var->str()) != nullptr;
         currentSpace->bvDefined.push_back(isDefined);
 #ifdef GECODE_HAS_FLOAT_VARS
       } else if (vd->type().isfloat()) {
@@ -661,12 +663,13 @@ void GecodeSolverInstance::processFlatZinc() {
                       GecodeVariable(GecodeVariable::FLOAT_TYPE, currentSpace->fv.size() - 1));
           }
         }
-        isIntroduced =
-            it->e()->introduced() ||
-            (MiniZinc::get_annotation(it->e()->ann(), constants().ann.is_introduced) != nullptr);
+        isIntroduced = it->e()->introduced() ||
+                       (MiniZinc::get_annotation(
+                            it->e()->ann(), Constants::constants().ann.is_introduced) != nullptr);
         currentSpace->fvIntroduced.push_back(isIntroduced);
-        isDefined = MiniZinc::get_annotation(it->e()->ann(),
-                                             constants().ann.is_defined_var->str()) != nullptr;
+        isDefined =
+            MiniZinc::get_annotation(it->e()->ann(),
+                                     Constants::constants().ann.is_defined_var->str()) != nullptr;
         currentSpace->fvDefined.push_back(isDefined);
 #endif
 #ifdef GECODE_HAS_SET_VARS
@@ -675,12 +678,13 @@ void GecodeSolverInstance::processFlatZinc() {
         auto d = arg2intset(_env.envi(), domain);
         SetVar setVar(*this->currentSpace, Gecode::IntSet::empty, d);
         currentSpace->sv.push_back(setVar);
-        isIntroduced =
-            it->e()->introduced() ||
-            (MiniZinc::get_annotation(it->e()->ann(), constants().ann.is_introduced) != nullptr);
+        isIntroduced = it->e()->introduced() ||
+                       (MiniZinc::get_annotation(
+                            it->e()->ann(), Constants::constants().ann.is_introduced) != nullptr);
         currentSpace->svIntroduced.push_back(isIntroduced);
-        isDefined = MiniZinc::get_annotation(it->e()->ann(),
-                                             constants().ann.is_defined_var->str()) != nullptr;
+        isDefined =
+            MiniZinc::get_annotation(it->e()->ann(),
+                                     Constants::constants().ann.is_defined_var->str()) != nullptr;
         currentSpace->svDefined.push_back(isDefined);
         insertVar(it->e()->id(),
                   GecodeVariable(GecodeVariable::SET_TYPE, currentSpace->sv.size() - 1));
@@ -1223,7 +1227,7 @@ Expression* GecodeSolverInstance::getSolutionValue(Id* id) {
         return IntLit::a(var.intVar(solution).val());
       case Type::BT_BOOL:
         assert(var.boolVar(solution).assigned());
-        return constants().boollit(var.boolVar(solution).val() != 0);
+        return Constants::constants().boollit(var.boolVar(solution).val() != 0);
 #ifdef GECODE_HAS_FLOAT_VARS
       case Type::BT_FLOAT:
         assert(var.floatVar(solution).assigned());
@@ -1605,7 +1609,7 @@ bool GecodeSolverInstance::presolve(Model* originalModel) {
           int u = boolvar.max();
           if (l == u) {
             if (nvd->e() != nullptr) {
-              nvd->ti()->domain(constants().boollit(l != 0));
+              nvd->ti()->domain(Constants::constants().boollit(l != 0));
             } else {
               nvd->type(Type::parbool());
               nvd->ti(new TypeInst(nvd->loc(), Type::parbool()));

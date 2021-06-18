@@ -54,7 +54,7 @@ Expression* eval_arrayaccess(EnvI& env, ArrayLit* al, const IdxV& idx, bool& suc
         return IntLit::a(0);
       }
       if (t.isbool()) {
-        return constants().literalFalse;
+        return Constants::constants().literalFalse;
       }
       if (t.isfloat()) {
         return FloatLit::a(0.0);

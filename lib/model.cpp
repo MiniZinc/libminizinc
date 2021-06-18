@@ -258,11 +258,11 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
             return false;
           }
           if ((fi->e() != nullptr) || i.isPolymorphic) {
-            if (Call* deprecated = i.fi->ann().getCall(constants().ann.mzn_deprecated)) {
+            if (Call* deprecated = i.fi->ann().getCall(env.constants.ann.mzn_deprecated)) {
               fi->ann().add(deprecated);
             }
             i = fi;
-          } else if (Call* deprecated = fi->ann().getCall(constants().ann.mzn_deprecated)) {
+          } else if (Call* deprecated = fi->ann().getCall(env.constants.ann.mzn_deprecated)) {
             i.fi->ann().add(deprecated);
           }
           return true;
@@ -303,8 +303,8 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
 
 FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Type>& t,
                           bool strictEnums) {
-  if (id == constants().varRedef->id()) {
-    return constants().varRedef;
+  if (id == env.constants.varRedef->id()) {
+    return env.constants.varRedef;
   }
   Model* m = this;
   while (m->_parent != nullptr) {
@@ -452,8 +452,8 @@ int match_idx(std::vector<FunctionI*>& matched, Expression*& botarg, EnvI& env,
 
 FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Expression*>& args,
                           bool strictEnums) const {
-  if (id == constants().varRedef->id()) {
-    return constants().varRedef;
+  if (id == env.constants.varRedef->id()) {
+    return env.constants.varRedef;
   }
   const Model* m = this;
   while (m->_parent != nullptr) {
@@ -484,8 +484,8 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Expr
 }
 
 FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotFound) const {
-  if (c->id() == constants().varRedef->id()) {
-    return constants().varRedef;
+  if (c->id() == env.constants.varRedef->id()) {
+    return env.constants.varRedef;
   }
   const Model* m = this;
   while (m->_parent != nullptr) {

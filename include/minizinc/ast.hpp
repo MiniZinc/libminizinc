@@ -67,11 +67,11 @@ inline IntLit* IntLit::a(MiniZinc::IntVal v) {
     }
   }
 
-  auto it = constants().integerMap.find(v);
-  if (it == constants().integerMap.end() || it->second() == nullptr) {
+  auto it = Constants::constants().integerMap.find(v);
+  if (it == Constants::constants().integerMap.end() || it->second() == nullptr) {
     auto* il = new IntLit(Location().introduce(), v);
-    if (it == constants().integerMap.end()) {
-      constants().integerMap.insert(std::make_pair(v, il));
+    if (it == Constants::constants().integerMap.end()) {
+      Constants::constants().integerMap.insert(std::make_pair(v, il));
     } else {
       it->second = il;
     }
@@ -175,11 +175,11 @@ inline FloatLit* FloatLit::a(MiniZinc::FloatVal v) {
     }
   }
 
-  auto it = constants().floatMap.find(v);
-  if (it == constants().floatMap.end() || it->second() == nullptr) {
+  auto it = Constants::constants().floatMap.find(v);
+  if (it == Constants::constants().floatMap.end() || it->second() == nullptr) {
     auto* fl = new FloatLit(Location().introduce(), v);
-    if (it == constants().floatMap.end()) {
-      constants().floatMap.insert(std::make_pair(v, fl));
+    if (it == Constants::constants().floatMap.end()) {
+      Constants::constants().floatMap.insert(std::make_pair(v, fl));
     } else {
       it->second = fl;
     }

@@ -95,7 +95,7 @@ void PathFilePrinter::print(Model* m) {
     for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it) {
       if (Call* ca = (*it)->dynamicCast<Call>()) {
         ASTString cid = ca->id();
-        if (cid == constants().ann.output_array) {
+        if (cid == Constants::constants().ann.output_array) {
           if (auto* rhs = e->e()->dynamicCast<ArrayLit>()) {
             for (unsigned int ind = 0; ind < rhs->size(); ind++) {
               if (Id* id = (*rhs)[ind]->dynamicCast<Id>()) {
@@ -129,7 +129,7 @@ void PathFilePrinter::print(Model* m) {
               }
             }
           }
-        } else if (ca->id() == constants().ann.mzn_path) {
+        } else if (ca->id() == Constants::constants().ann.mzn_path) {
           auto* sl = ca->arg(0)->cast<StringLit>();
           addBetterName(e->id(), path2name(string(sl->v().c_str(), sl->v().size())),
                         string(sl->v().c_str()));
@@ -173,7 +173,7 @@ void PathFilePrinter::print(Item* item) {
     for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it) {
       if (Call* ca = (*it)->dynamicCast<Call>()) {
         ASTString cid = ca->id();
-        if (cid == constants().ann.mzn_path) {
+        if (cid == Constants::constants().ann.mzn_path) {
           sl = ca->arg(0)->cast<StringLit>();
         }
       }

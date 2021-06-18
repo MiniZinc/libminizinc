@@ -314,8 +314,8 @@ void MIPSolverinstance<MIPWrapper>::processFlatZinc() {
     }
     VarDecl* vd = it->e();
     if (!vd->ann().isEmpty()) {
-      if (vd->ann().containsCall(constants().ann.output_array) ||
-          vd->ann().contains(constants().ann.output_var)) {
+      if (vd->ann().containsCall(Constants::constants().ann.output_array) ||
+          vd->ann().contains(Constants::constants().ann.output_var)) {
         _varsWithOutput.push_back(vd);
         //         std::cerr << (*vd);
         //         if ( vd->e() )
@@ -696,7 +696,8 @@ inline std::string make_constraint_name(const char* pfx, int cnt,
                                         const Expression* cOrig = nullptr) {
   Call* mznp;
   std::ostringstream ss;
-  if (nullptr != cOrig && ((mznp = cOrig->ann().getCall(constants().ann.mzn_path)) != nullptr)) {
+  if (nullptr != cOrig &&
+      ((mznp = cOrig->ann().getCall(Constants::constants().ann.mzn_path)) != nullptr)) {
     assert(1 == mznp->argCount());
     auto* strp = mznp->arg(0)->dynamicCast<StringLit>();
     assert(strp);

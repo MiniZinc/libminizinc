@@ -22,7 +22,7 @@ EE flatten_arrayaccess(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, Var
   Ctx nctx = ctx;
   nctx.b = +nctx.b;
   nctx.neg = false;
-  EE eev = flat_exp(env, nctx, aa->v(), nullptr, nctx.partialityVar());
+  EE eev = flat_exp(env, nctx, aa->v(), nullptr, nctx.partialityVar(env));
   std::vector<EE> ees;
 
 start_flatten_arrayaccess:
@@ -83,10 +83,10 @@ start_flatten_arrayaccess:
             ResultUndefinedError warning(env, al->loc(), "array access out of bounds");
           }
         }
-        ees.emplace_back(nullptr, constants().boollit(success));
+        ees.emplace_back(nullptr, env.constants.boollit(success));
         ees.emplace_back(nullptr, eev.b());
         if (aa->type().isbool() && !aa->type().isOpt()) {
-          ret.b = bind(env, Ctx(), b, constants().literalTrue);
+          ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
           ees.emplace_back(nullptr, ka());
           ret.r = conj(env, r, ctx, ees);
         } else {
@@ -108,10 +108,10 @@ start_flatten_arrayaccess:
               if (env.inMaybePartial == 0) {
                 ResultUndefinedError warning(env, al->loc(), "array access out of bounds");
               }
-              ees.emplace_back(nullptr, constants().literalFalse);
+              ees.emplace_back(nullptr, env.constants.literalFalse);
               ees.emplace_back(nullptr, eev.b());
               if (aa->type().isbool() && !aa->type().isOpt()) {
-                ret.b = bind(env, Ctx(), b, constants().literalTrue);
+                ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
                 ret.r = conj(env, r, ctx, ees);
               } else {
                 ret.b = conj(env, b, ctx, ees);
@@ -206,7 +206,7 @@ flatten_arrayaccess:
     if (auto* vd = tmp->dynamicCast<VarDecl>()) {
       tmp = vd->id();
     }
-    ees.push_back(flat_exp(env, dimctx, tmp, nullptr, dimctx.partialityVar()));
+    ees.push_back(flat_exp(env, dimctx, tmp, nullptr, dimctx.partialityVar(env)));
   }
   ees.emplace_back(nullptr, eev.b());
 
@@ -245,9 +245,9 @@ flatten_arrayaccess:
     if (!success && env.inMaybePartial == 0) {
       ResultUndefinedError warning(env, al->loc(), "array access out of bounds");
     }
-    ees.emplace_back(nullptr, constants().boollit(success));
+    ees.emplace_back(nullptr, env.constants.boollit(success));
     if (aa->type().isbool() && !aa->type().isOpt()) {
-      ret.b = bind(env, Ctx(), b, constants().literalTrue);
+      ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
       ees.emplace_back(nullptr, ka());
       ret.r = conj(env, r, ctx, ees);
     } else {
@@ -263,7 +263,7 @@ flatten_arrayaccess:
     KeepAlive ka;
     {
       GCLock lock;
-      Call* cc = new Call(e->loc().introduce(), constants().ids.element, args);
+      Call* cc = new Call(e->loc().introduce(), env.constants.ids.element, args);
       cc->type(aa->type());
       FunctionI* fi = env.model->matchFn(env, cc->id(), args, false);
       if (fi == nullptr) {
@@ -276,13 +276,13 @@ flatten_arrayaccess:
     }
     Ctx elemctx = ctx;
     elemctx.neg = false;
-    EE ee = flat_exp(env, elemctx, ka(), nullptr, elemctx.partialityVar());
+    EE ee = flat_exp(env, elemctx, ka(), nullptr, elemctx.partialityVar(env));
     ees.push_back(ee);
     if (aa->type().isbool() && !aa->type().isOpt()) {
       ee.b = ee.r;
       ees.push_back(ee);
       ret.r = conj(env, r, ctx, ees);
-      ret.b = bind(env, ctx, b, constants().boollit(!ctx.neg));
+      ret.b = bind(env, ctx, b, env.constants.boollit(!ctx.neg));
     } else {
       ret.r = bind(env, ctx, r, ee.r());
       ret.b = conj(env, b, ctx, ees);

@@ -317,7 +317,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
       auto* json_e_quote = new StringLit(Location().introduce(), ASTString("{\"e\":"));
       auto* json_e_quote_end = new StringLit(Location().introduce(), ASTString("}"));
       auto* quote_aa = new BinOp(Location().introduce(), json_e_quote, BOT_PLUSPLUS,
-                                 new Call(Location().introduce(), constants().ids.show, {aa}));
+                                 new Call(Location().introduce(), env.constants.ids.show, {aa}));
       auto* quote_aa2 = new BinOp(Location().introduce(), quote_aa, BOT_PLUSPLUS, json_e_quote_end);
 
       Call* quote_dzn = new Call(Location().introduce(), ASTString("showDznId"), {aa});
@@ -376,7 +376,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
               new BinOp(Location().introduce(), partCardinality.back(), BOT_PLUS, c->arg(0)));
         }
 
-        Call* showInt = new Call(Location().introduce(), constants().ids.show, showIntArgs);
+        Call* showInt = new Call(Location().introduce(), env.constants.ids.show, showIntArgs);
         auto* construct_string_dzn =
             new BinOp(Location().introduce(), sl_dzn, BOT_PLUSPLUS, showInt);
         auto* closing_bracket = new StringLit(Location().introduce(), ASTString(")"));
@@ -498,7 +498,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           auto* deopt = new Call(Location().introduce(), "deopt", {vd_x->id()});
           auto* inv = new Call(Location().introduce(), Cfn_id, {deopt});
           auto* toEnumAbsent =
-              new Call(Location().introduce(), "to_enum", {vd->id(), constants().absent});
+              new Call(Location().introduce(), "to_enum", {vd->id(), env.constants.absent});
           auto* ite = new ITE(Location().introduce(), {occurs, inv}, toEnumAbsent);
           auto* Cfn = new FunctionI(Location().introduce(), Cfn_id, Cfn_ti, {vd_x}, ite);
           enumItems->addItem(Cfn);
@@ -518,7 +518,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           auto* occurs = new Call(Location().introduce(), "occurs", {vd_x->id()});
           auto* deopt = new Call(Location().introduce(), "deopt", {vd_x->id()});
           auto* toEnumAbsent =
-              new Call(Location().introduce(), "to_enum", {vd->id(), constants().absent});
+              new Call(Location().introduce(), "to_enum", {vd->id(), env.constants.absent});
           auto* inv = new Call(Location().introduce(), Cfn_id, {deopt});
           auto* ite = new ITE(Location().introduce(), {occurs, inv}, toEnumAbsent);
           auto* Cfn = new FunctionI(Location().introduce(), Cfn_id, Cfn_ti, {vd_x}, ite);
@@ -637,7 +637,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           auto* deopt = new Call(Location().introduce(), "deopt", {vd_x->id()});
           auto* inv = new Call(Location().introduce(), Cinv_id, {deopt});
           auto* toEnumAbsent =
-              new Call(Location().introduce(), "to_enum", {otherEnumId, constants().absent});
+              new Call(Location().introduce(), "to_enum", {otherEnumId, env.constants.absent});
           auto* ite = new ITE(Location().introduce(), {occurs, inv}, toEnumAbsent);
           auto* Cfn = new FunctionI(Location().introduce(), Cinv_id, Cfn_ti, {vd_x}, ite);
           enumItems->addItem(Cfn);
@@ -658,7 +658,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           auto* deopt = new Call(Location().introduce(), "deopt", {vd_x->id()});
           auto* inv = new Call(Location().introduce(), Cinv_id, {deopt});
           auto* toEnumAbsent =
-              new Call(Location().introduce(), "to_enum", {otherEnumId, constants().absent});
+              new Call(Location().introduce(), "to_enum", {otherEnumId, env.constants.absent});
           auto* ite = new ITE(Location().introduce(), {occurs, inv}, toEnumAbsent);
           auto* Cfn = new FunctionI(Location().introduce(), Cinv_id, Cfn_ti, {vd_x}, ite);
           enumItems->addItem(Cfn);
@@ -1236,7 +1236,7 @@ void TopoSorter::run(EnvI& env, Expression* e) {
       }
     } break;
     case Expression::E_ID: {
-      if (e != constants().absent) {
+      if (e != env.constants.absent) {
         VarDecl* vd = checkId(env, e->cast<Id>(), e->loc());
         e->cast<Id>()->decl(vd);
       }
@@ -1474,13 +1474,13 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
   args[0] = e;
   if (e->type().bt() == Type::BT_BOOL) {
     if (funarg_t.bt() == Type::BT_INT) {
-      c = new Call(e->loc(), constants().ids.bool2int, args);
+      c = new Call(e->loc(), env.constants.ids.bool2int, args);
     } else if (funarg_t.bt() == Type::BT_FLOAT) {
-      c = new Call(e->loc(), constants().ids.bool2float, args);
+      c = new Call(e->loc(), env.constants.ids.bool2float, args);
     }
   } else if (e->type().bt() == Type::BT_INT) {
     if (funarg_t.bt() == Type::BT_FLOAT) {
-      c = new Call(e->loc(), constants().ids.int2float, args);
+      c = new Call(e->loc(), env.constants.ids.int2float, args);
     }
   }
   if (c != nullptr) {
@@ -1547,7 +1547,7 @@ public:
     for (unsigned int i = 0; i < sl->v().size(); i++) {
       Type vi_t = sl->v()[i]->type();
       vi_t.ot(Type::OT_PRESENT);
-      if (sl->v()[i] == constants().absent) {
+      if (sl->v()[i] == _env.constants.absent) {
         continue;
       }
       if (vi_t.dim() > 0) {
@@ -1594,7 +1594,7 @@ public:
   void vStringLit(const StringLit* /*sl*/) {}
   /// Visit identifier
   void vId(Id* id) {
-    if (id != constants().absent) {
+    if (id != _env.constants.absent) {
       assert(!id->decl()->type().isunknown());
       id->type(id->decl()->type());
     }
@@ -1613,7 +1613,7 @@ public:
       if (vi->type().dim() > 0) {
         throw TypeError(_env, vi->loc(), "arrays cannot be elements of arrays");
       }
-      if (vi == constants().absent) {
+      if (vi == _env.constants.absent) {
         haveAbsents = true;
       }
       auto* av = vi->dynamicCast<AnonVar>();
@@ -2046,7 +2046,7 @@ public:
     bool mustBeBool = false;
     if (ite->elseExpr() == nullptr) {
       // this is an "if <cond> then <expr> endif" so the <expr> must be bool
-      ite->elseExpr(constants().boollit(true));
+      ite->elseExpr(_env.constants.literalTrue);
       mustBeBool = true;
     }
     Type tret = ite->elseExpr()->type();
@@ -2425,13 +2425,13 @@ public:
               array1d->type(array1dt);
               args[0] = array1d;
             }
-            args[1] = constants().boollit(call->id() == "showDzn");
-            args[2] = constants().boollit(call->id() == "showJSON");
+            args[1] = _env.constants.boollit(call->id() == "showDzn");
+            args[2] = _env.constants.boollit(call->id() == "showJSON");
             ASTString enumName(create_enum_to_string_name(ti_id, "_toString_"));
             call->id(enumName);
             call->args(args);
             if (call->id() == "showDzn") {
-              call->id(constants().ids.show);
+              call->id(_env.constants.ids.show);
             }
             fi = _model->matchFn(_env, call, false, true);
           }
@@ -2444,7 +2444,7 @@ public:
     ty.cv(cv || ty.cv());
     call->type(ty);
 
-    if (Call* deprecated = fi->ann().getCall(constants().ann.mzn_deprecated)) {
+    if (Call* deprecated = fi->ann().getCall(_env.constants.ann.mzn_deprecated)) {
       // rewrite this call into a call to mzn_deprecate(..., e)
       GCLock lock;
       std::vector<Expression*> params(call->argCount());
@@ -2454,7 +2454,7 @@ public:
       Call* origCall = new Call(call->loc(), call->id(), params);
       origCall->type(ty);
       origCall->decl(fi);
-      call->id(constants().ids.mzn_deprecate);
+      call->id(_env.constants.ids.mzn_deprecate);
       std::vector<Expression*> args(
           {new StringLit(Location(), fi->id()), deprecated->arg(0), deprecated->arg(1), origCall});
       call->args(args);
@@ -2712,7 +2712,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       for (int j = 0; j < i->paramCount(); j++) {
         Expression* param = i->param(j);
         for (auto* ii : param->ann()) {
-          if (ii->isa<Id>() && ii->cast<Id>()->v() == constants().ann.annotated_expression->v()) {
+          if (ii->isa<Id>() && ii->cast<Id>()->v() == env.constants.ann.annotated_expression->v()) {
             if (reifiedAnnotationIdx >= 0) {
               typeErrors.emplace_back(
                   env, param->loc(),
@@ -2729,7 +2729,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           auto* ti = new TypeInst(Location().introduce(), Type::ann());
           auto* vd = new VarDecl(Location().introduce(), ti, i->id());
           vd->ann().add(new Call(Location().introduce(),
-                                 constants().ann.mzn_add_annotated_expression, {IntLit::a(0)}));
+                                 env.constants.ann.mzn_add_annotated_expression, {IntLit::a(0)}));
           model->addItem(new VarDeclI(Location().introduce(), vd));
         } else {
           // turn into annotation function with one argument less
@@ -2742,7 +2742,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           }
           auto* fi = new FunctionI(Location().introduce(), i->id(), i->ti(), newParams);
           fi->ann().add(new Call(Location().introduce(),
-                                 constants().ann.mzn_add_annotated_expression,
+                                 env.constants.ann.mzn_add_annotated_expression,
                                  {IntLit::a(reifiedAnnotationIdx)}));
           model->addItem(fi);
           (void)model->registerFn(env, fi);
@@ -2806,7 +2806,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         auto* ti = new TypeInst(Location().introduce(), Type());
         auto* obj = new VarDecl(Location().introduce(), ti, "_objective", si->e());
         si->e(obj->id());
-        obj->addAnnotation(si->st() == SolveI::ST_MAX ? constants().ctx.pos : constants().ctx.neg);
+        obj->addAnnotation(si->st() == SolveI::ST_MAX ? env.constants.ctx.pos
+                                                      : env.constants.ctx.neg);
         objective = new VarDeclI(Location().introduce(), obj);
       }
     }
@@ -2855,7 +2856,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         }
       } else {
         vd->e(ai->e());
-        vd->addAnnotation(constants().ann.rhs_from_assignment);
+        vd->addAnnotation(Constants::constants().ann.rhs_from_assignment);
         if (vd->ti()->isEnum()) {
           create_enum_mapper(env.envi(), m, vd->ti()->type().enumId(), vd, enumItems2);
         }
@@ -2987,7 +2988,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           ss << "set element type for `" << vdi->id()->str() << "' is not finite";
           _typeErrors.emplace_back(_env, vdi->loc(), ss.str());
         }
-        if (i->e()->ann().contains(constants().ann.output_only)) {
+        if (i->e()->ann().contains(Constants::constants().ann.output_only)) {
           if (vdi->e() == nullptr) {
             _typeErrors.emplace_back(
                 _env, vdi->loc(),
@@ -3008,7 +3009,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           _typeErrors.emplace_back(_env, i->loc(), ss.str());
           // Assign to "true" constant to avoid generating further errors that the parameter
           // is undefined
-          i->decl()->e(constants().literalTrue);
+          i->decl()->e(Constants::constants().literalTrue);
         }
       }
       void vConstraintI(ConstraintI* i) {
@@ -3055,7 +3056,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
             GCLock lock;
             std::vector<Expression*> args(2);
             args[0] = i->e();
-            args[1] = constants().boollit(i->st() == SolveI::ST_MAX);
+            args[1] = _env.constants.boollit(i->st() == SolveI::ST_MAX);
             Call* c = new Call(Location().introduce(), ASTString("objective_deopt_"), args);
             c->decl(_env.model->matchFn(_env, c, false));
             assert(c->decl());
@@ -3371,8 +3372,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
   for (auto& decl : ts.decls) {
     if (decl->toplevel() && decl->type().isPar() && !decl->type().isAnn() && decl->e() == nullptr) {
       if (decl->type().isOpt() && decl->type().dim() == 0) {
-        decl->e(constants().absent);
-        decl->addAnnotation(constants().ann.mzn_was_undefined);
+        decl->e(Constants::constants().absent);
+        decl->addAnnotation(Constants::constants().ann.mzn_was_undefined);
       } else if (!ignoreUndefinedParameters) {
         std::ostringstream ss;
         ss << "  symbol error: variable `" << decl->id()->str()
@@ -3400,7 +3401,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         }
         throw;
       }
-      vd->addAnnotation(constants().ann.mzn_check_var);
+      vd->addAnnotation(Constants::constants().ann.mzn_check_var);
       if (vd->type().enumId() != 0) {
         GCLock lock;
         std::vector<unsigned int> enumIds({vd->type().enumId()});
@@ -3419,7 +3420,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         enumIds_al->type(Type::parsetint(1));
         std::vector<Expression*> args({enumIds_al});
         Call* checkEnum =
-            new Call(Location().introduce(), constants().ann.mzn_check_enum_var, args);
+            new Call(Location().introduce(), Constants::constants().ann.mzn_check_enum_var, args);
         checkEnum->type(Type::ann());
         checkEnum->decl(env.envi().model->matchFn(env.envi(), checkEnum, false));
         vd->addAnnotation(checkEnum);
@@ -3612,8 +3613,9 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
     void vVarDeclI(VarDeclI* vdi) {
       VarDecl* vd = vdi->e();
       if (vd->type().isPar() && !vd->type().isAnn() &&
-          (vd->e() == nullptr || (vd->e() == constants().absent &&
-                                  vd->ann().contains(constants().ann.mzn_was_undefined)))) {
+          (vd->e() == nullptr ||
+           (vd->e() == Constants::constants().absent &&
+            vd->ann().contains(Constants::constants().ann.mzn_was_undefined)))) {
         if (hadInput) {
           ossInput << ",\n";
         }
@@ -3621,7 +3623,7 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
         hadInput = true;
       } else {
         bool process_var = false;
-        if (vd->ann().contains(constants().ann.add_to_output)) {
+        if (vd->ann().contains(Constants::constants().ann.add_to_output)) {
           if (!hadAddToOutput) {
             ossOutput.str("");
             hadOutput = false;
@@ -3629,9 +3631,9 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
           hadAddToOutput = true;
           process_var = true;
         } else if (!hadAddToOutput) {
-          process_var =
-              vd->type().isvar() &&
-              (vd->e() == nullptr || vd->ann().contains(constants().ann.rhs_from_assignment));
+          process_var = vd->type().isvar() &&
+                        (vd->e() == nullptr ||
+                         vd->ann().contains(Constants::constants().ann.rhs_from_assignment));
         }
         if (process_var) {
           if (hadOutput) {

@@ -360,17 +360,17 @@ private:
     EnvI& env = getEnv()->envi();
     GCLock lock;
 
-    int_lin_eq = env.model->matchFn(env, constants().ids.int_.lin_eq, int_lin_eq_t, false);
+    int_lin_eq = env.model->matchFn(env, env.constants.ids.int_.lin_eq, int_lin_eq_t, false);
     DBGOUT_MIPD("  int_lin_eq = " << int_lin_eq);
     //       MZN_MIPD_assert_hard(fi);
     //       int_lin_eq = (fi && fi->e()) ? fi : NULL;
-    int_lin_le = env.model->matchFn(env, constants().ids.int_.lin_le, int_lin_eq_t, false);
-    float_lin_eq = env.model->matchFn(env, constants().ids.float_.lin_eq, float_lin_eq_t, false);
-    float_lin_le = env.model->matchFn(env, constants().ids.float_.lin_le, float_lin_eq_t, false);
-    int2float = env.model->matchFn(env, constants().ids.int2float, t_VIVF, false);
+    int_lin_le = env.model->matchFn(env, env.constants.ids.int_.lin_le, int_lin_eq_t, false);
+    float_lin_eq = env.model->matchFn(env, env.constants.ids.float_.lin_eq, float_lin_eq_t, false);
+    float_lin_le = env.model->matchFn(env, env.constants.ids.float_.lin_le, float_lin_eq_t, false);
+    int2float = env.model->matchFn(env, env.constants.ids.int2float, t_VIVF, false);
 
-    lin_exp_int = env.model->matchFn(env, constants().ids.lin_exp, int_lin_eq_t, false);
-    lin_exp_float = env.model->matchFn(env, constants().ids.lin_exp, float_lin_eq_t, false);
+    lin_exp_int = env.model->matchFn(env, env.constants.ids.lin_exp, int_lin_eq_t, false);
+    lin_exp_float = env.model->matchFn(env, env.constants.ids.lin_exp, float_lin_eq_t, false);
 
     return (int_lin_eq != nullptr) && (int_lin_le != nullptr) && (float_lin_eq != nullptr) &&
            (float_lin_le != nullptr);
@@ -795,7 +795,7 @@ private:
             }
           } else {  // larger eqns
             // TODO should be here?
-            auto* eVD = get_annotation(c->ann(), constants().ann.defines_var);
+            auto* eVD = get_annotation(c->ann(), Constants::constants().ann.defines_var);
             if (eVD != nullptr) {
               if (_sCallLinEqN.end() != _sCallLinEqN.find(c)) {
                 continue;
@@ -819,7 +819,7 @@ private:
             //             const bool fI2F = (int2float==c->decl());
             //             const bool fIVR = (constants().varRedef==c->decl());
             //             if ( fI2F || fIVR ) {
-            if (int2float == c->decl() || constants().varRedef == c->decl()) {
+            if (int2float == c->decl() || Constants::constants().varRedef == c->decl()) {
           //             std::cerr << "  !E call " << std::flush;
           //             debugprint(c);
           MZN_MIPD_assert_hard(c->argCount() == 2);
@@ -1835,7 +1835,7 @@ private:
           break;
         }
       }
-      auto sName = constants().ids.float_.lin_eq;  // "int_lin_eq";
+      auto sName = Constants::constants().ids.float_.lin_eq;  // "int_lin_eq";
       FunctionI* fDecl = mipd.float_lin_eq;
       if (fFloat) {  // MZN_MIPD_assert_hard all vars of same type     TODO
         for (int i = 0; i < vars.size(); ++i) {
@@ -1845,10 +1845,12 @@ private:
             if (vars[i]->type().isint()) {
               std::vector<Expression*> i2f_args(1);
               i2f_args[0] = vars[i];
-              Call* i2f = new Call(Location().introduce(), constants().ids.int2float, i2f_args);
+              Call* i2f =
+                  new Call(Location().introduce(), Constants::constants().ids.int2float, i2f_args);
               i2f->type(Type::varfloat());
               i2f->decl(mipd.getEnv()->model()->matchFn(mipd.getEnv()->envi(), i2f, false));
-              EE ret = flat_exp(mipd.getEnv()->envi(), Ctx(), i2f, nullptr, constants().varTrue);
+              EE ret = flat_exp(mipd.getEnv()->envi(), Ctx(), i2f, nullptr,
+                                Constants::constants().varTrue);
               nx.push_back(ret.r());
             } else {
               nx.push_back(vars[i]);  // ->id();   once passing a general expression
@@ -1862,7 +1864,7 @@ private:
         args[1] = new ArrayLit(Location().introduce(), nx);
         args[1]->type(Type::varfloat(1));
         if (CMPT_LE == nCmpType) {
-          sName = constants().ids.float_.lin_le;  // "float_lin_le";
+          sName = Constants::constants().ids.float_.lin_le;  // "float_lin_le";
           fDecl = mipd.float_lin_le;
         }
       } else {
@@ -1880,10 +1882,10 @@ private:
         args[1] = new ArrayLit(Location().introduce(), nx);
         args[1]->type(Type::varint(1));
         if (CMPT_LE == nCmpType) {
-          sName = constants().ids.int_.lin_le;  // "int_lin_le";
+          sName = Constants::constants().ids.int_.lin_le;  // "int_lin_le";
           fDecl = mipd.int_lin_le;
         } else {
-          sName = constants().ids.int_.lin_eq;  // "int_lin_eq";
+          sName = Constants::constants().ids.int_.lin_eq;  // "int_lin_eq";
           fDecl = mipd.int_lin_eq;
         }
       }

@@ -147,7 +147,7 @@ bool notInDatafile(YYLTYPE* location, void* parm, const string& item) {
 Expression* createDocComment(const ParserLocation& loc, const std::string& s) {
   std::vector<Expression*> args(1);
   args[0] = new StringLit(loc, s);
-  Call* c = new Call(Location(loc), constants().ann.doc_comment, args);
+  Call* c = new Call(Location(loc), Constants::constants().ann.doc_comment, args);
   c->type(Type::ann());
   return c;
 }
@@ -3549,7 +3549,7 @@ yyreduce:
         ti->setIsEnum(true);
         vector<Expression*> args;
         args.push_back(new ArrayLit((yyloc),*(yyvsp[-1].expressions1d)));
-        Call* sl = new Call((yyloc), constants().ids.anonEnumFromStrings, args);
+        Call* sl = new Call((yyloc), Constants::constants().ids.anonEnumFromStrings, args);
         VarDecl* vd = new VarDecl((yyloc),ti,(yyvsp[-5].sValue),sl);
         if ((yyvsp[-5].sValue) && (yyvsp[-4].expressions1d))
           vd->addAnnotations(*(yyvsp[-4].expressions1d));
@@ -4480,11 +4480,11 @@ yyreduce:
     break;
 
   case 201: /* expr_atom_head_nonstring: "bool literal"  */
-      { (yyval.expression)=constants().boollit(((yyvsp[0].iValue)!=0)); }
+      { (yyval.expression)=Constants::constants().boollit(((yyvsp[0].iValue)!=0)); }
     break;
 
   case 202: /* expr_atom_head_nonstring: "bool literal" "^-1"  */
-      { (yyval.expression)=new BinOp((yyloc),constants().boollit(((yyvsp[-1].iValue)!=0)), BOT_POW, IntLit::a(-1)); }
+      { (yyval.expression)=new BinOp((yyloc),Constants::constants().boollit(((yyvsp[-1].iValue)!=0)), BOT_POW, IntLit::a(-1)); }
     break;
 
   case 203: /* expr_atom_head_nonstring: "integer literal"  */
@@ -4512,11 +4512,11 @@ yyreduce:
     break;
 
   case 209: /* expr_atom_head_nonstring: "<>"  */
-      { (yyval.expression)=constants().absent; }
+      { (yyval.expression)=Constants::constants().absent; }
     break;
 
   case 210: /* expr_atom_head_nonstring: "<>" "^-1"  */
-      { (yyval.expression)=constants().absent; }
+      { (yyval.expression)=Constants::constants().absent; }
     break;
 
   case 212: /* expr_atom_head_nonstring: set_literal array_access_tail  */

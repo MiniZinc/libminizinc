@@ -112,7 +112,7 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
       ret = c;
     } break;
     case Expression::E_ID: {
-      if (e == constants().absent) {
+      if (e == Constants::constants().absent) {
         return e;
       }
       Id* id = e->cast<Id>();

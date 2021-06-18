@@ -20,7 +20,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
   Id* id = e->cast<Id>();
   if (id->decl() == nullptr) {
     if (id->type().isAnn()) {
-      ret.b = bind(env, Ctx(), b, constants().literalTrue);
+      ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
       ret.r = bind(env, ctx, r, e);
       return ret;
     }
@@ -28,8 +28,8 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
   }
   if (!doNotFollowChains) {
     Expression* id_f = follow_id_to_decl(id);
-    if (id_f == constants().absent) {
-      ret.b = bind(env, Ctx(), b, constants().literalTrue);
+    if (id_f == env.constants.absent) {
+      ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
       ret.r = bind(env, ctx, r, id_f);
     } else {
       id = id_f->cast<VarDecl>()->id();
@@ -83,12 +83,12 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
         // New top-level id, need to copy into env.m
         Ctx nctx;
         nctx.i = ctx.i;
-        vd = flat_exp(env, ctx, id->decl(), nullptr, constants().varTrue).r()->cast<Id>()->decl();
+        vd = flat_exp(env, ctx, id->decl(), nullptr, env.constants.varTrue).r()->cast<Id>()->decl();
       } else {
         vd = id->decl();
       }
     }
-    ret.b = bind(env, Ctx(), b, constants().literalTrue);
+    ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
     if (vd->e() != nullptr) {
       if (vd->e()->type().isPar() && vd->e()->type().dim() == 0) {
         rete = eval_par(env, vd->e());
@@ -203,7 +203,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
             VarDecl* nvd = new_vardecl(env, ctx, eval_typeinst(env, ctx, vd), nullptr, vd, nullptr);
 
             if (vd->e() != nullptr) {
-              (void)flat_exp(env, Ctx(), vd->e(), nvd, constants().varTrue);
+              (void)flat_exp(env, Ctx(), vd->e(), nvd, env.constants.varTrue);
             }
             vd = nvd;
             EE ee(vd, nullptr);

@@ -2053,14 +2053,14 @@ public:
   /// Constructor
   Constants();
   /// Return shared BoolLit
-  BoolLit* boollit(bool b) { return b ? literalTrue : literalFalse; }
+  BoolLit* boollit(bool b) const { return b ? literalTrue : literalFalse; }
   static const int max_array_size = std::numeric_limits<int>::max() / 2;
 
   void mark(MINIZINC_GC_STAT_ARGS) override;
-};
 
-/// Return static instance
-Constants& constants();
+  /// Return static instance
+  static Constants& constants();
+};
 
 }  // namespace MiniZinc
 

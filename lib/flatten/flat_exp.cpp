@@ -37,13 +37,13 @@ Expression* create_dummy_value(EnvI& env, const Type& t) {
     case Type::BT_INT:
       return IntLit::a(0);
     case Type::BT_BOOL:
-      return constants().boollit(false);
+      return env.constants.literalFalse;
     case Type::BT_FLOAT:
       return FloatLit::a(0);
     case Type::BT_STRING:
       return new StringLit(Location().introduce(), "");
     case Type::BT_ANN:
-      return constants().ann.promise_total;
+      return env.constants.ann.promise_total;
     default:
       return nullptr;
   }
@@ -74,7 +74,7 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
 EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
 
 EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
-  assert(ctx.b != C_ROOT || b == constants().varTrue);
+  assert(ctx.b != C_ROOT || b == env.constants.varTrue);
 
   if (e == nullptr) {
     return EE();
@@ -82,7 +82,7 @@ EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
 
 #ifndef NDEBUG
   Annotation& e_ann = e->ann();
-  if (e_ann.contains(constants().ann.mzn_break_here)) {
+  if (e_ann.contains(env.constants.ann.mzn_break_here)) {
     mzn_break_here(e);
   }
 #endif

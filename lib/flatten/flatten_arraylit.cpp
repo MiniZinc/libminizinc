@@ -18,13 +18,13 @@ EE flatten_arraylit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDec
   EE ret;
   auto* al = e->cast<ArrayLit>();
   if (al->flat()) {
-    ret.b = bind(env, Ctx(), b, constants().literalTrue);
+    ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
     ret.r = bind(env, Ctx(), r, al);
   } else {
-    VarDecl* rr = r == constants().varIgnore ? constants().varTrue : nullptr;
+    VarDecl* rr = r == env.constants.varIgnore ? env.constants.varTrue : nullptr;
     std::vector<EE> elems_ee(al->size());
     for (unsigned int i = al->size(); (i--) != 0U;) {
-      elems_ee[i] = flat_exp(env, ctx, (*al)[i], rr, ctx.partialityVar());
+      elems_ee[i] = flat_exp(env, ctx, (*al)[i], rr, ctx.partialityVar(env));
     }
     std::vector<Expression*> elems(elems_ee.size());
     for (auto i = static_cast<unsigned int>(elems.size()); (i--) != 0U;) {

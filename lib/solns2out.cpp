@@ -328,12 +328,12 @@ void Solns2Out::checkSolution(std::ostream& oss) {
     GCLock lock;
     for (auto& i : *getModel()) {
       if (auto* vdi = i->dynamicCast<VarDeclI>()) {
-        if (vdi->e()->ann().contains(constants().ann.mzn_check_var)) {
+        if (vdi->e()->ann().contains(Constants::constants().ann.mzn_check_var)) {
           checker << vdi->e()->id()->str() << " = ";
           Expression* e = eval_par(getEnv()->envi(), vdi->e()->e());
           auto* al = e->dynamicCast<ArrayLit>();
           std::vector<Id*> enumids;
-          if (Call* cev = vdi->e()->ann().getCall(constants().ann.mzn_check_enum_var)) {
+          if (Call* cev = vdi->e()->ann().getCall(Constants::constants().ann.mzn_check_enum_var)) {
             auto* enumIdsAl = cev->arg(0)->cast<ArrayLit>();
             for (int j = 0; j < enumIdsAl->size(); j++) {
               enumids.push_back((*enumIdsAl)[j]->dynamicCast<Id>());

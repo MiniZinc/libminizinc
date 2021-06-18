@@ -99,7 +99,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
   std::vector<KeepAlive> e_else;
 
   bool noOtherBranches = true;
-  if (ite->type() == Type::varbool() && ctx.b == C_ROOT && r == constants().varTrue) {
+  if (ite->type() == Type::varbool() && ctx.b == C_ROOT && r == env.constants.varTrue) {
     // Check if all branches are of the form x1=e1 /\ ... /\ xn=en
     IdMap<int> eq_occurrences;
     std::vector<IdMap<std::pair<Expression*, Expression*>>> eq_branches(ite->size() + 1);
@@ -160,14 +160,14 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
         if (eq_branches[i].size() == 0) {
           e_then.back().push_back(ite->thenExpr(i));
         } else if (other_branches[i].empty()) {
-          e_then.back().push_back(constants().literalTrue);
+          e_then.back().push_back(env.constants.literalTrue);
         } else if (other_branches[i].size() == 1) {
           e_then.back().push_back(other_branches[i][0]);
         } else {
           GCLock lock;
           auto* al = new ArrayLit(Location().introduce(), other_branches[i]);
           al->type(Type::varbool(1));
-          Call* forall = new Call(Location().introduce(), constants().ids.forall, {al});
+          Call* forall = new Call(Location().introduce(), env.constants.ids.forall, {al});
           forall->decl(env.model->matchFn(env, forall, false));
           forall->type(forall->decl()->rtype(env, {al}, false));
           e_then.back().push_back(forall);
@@ -177,14 +177,14 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
         if (eq_branches[ite->size()].size() == 0) {
           e_else.emplace_back(ite->elseExpr());
         } else if (other_branches[ite->size()].empty()) {
-          e_else.emplace_back(constants().literalTrue);
+          e_else.emplace_back(env.constants.literalTrue);
         } else if (other_branches[ite->size()].size() == 1) {
           e_else.emplace_back(other_branches[ite->size()][0]);
         } else {
           GCLock lock;
           auto* al = new ArrayLit(Location().introduce(), other_branches[ite->size()]);
           al->type(Type::varbool(1));
-          Call* forall = new Call(Location().introduce(), constants().ids.forall, {al});
+          Call* forall = new Call(Location().introduce(), env.constants.ids.forall, {al});
           forall->decl(env.model->matchFn(env, forall, false));
           forall->type(forall->decl()->rtype(env, {al}, false));
           e_else.emplace_back(forall);
@@ -227,12 +227,12 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     EE e_if;
     if (ite->ifExpr(i)->isa<Call>() &&
         ite->ifExpr(i)->cast<Call>()->id() == "mzn_in_root_context") {
-      e_if = EE(constants().boollit(ctx.b == C_ROOT), constants().literalTrue);
+      e_if = EE(env.constants.boollit(ctx.b == C_ROOT), env.constants.literalTrue);
     } else {
       Ctx cmix_not_negated;
       cmix_not_negated.b = C_MIX;
       cmix_not_negated.i = C_MIX;
-      e_if = flat_exp(env, cmix_not_negated, ite->ifExpr(i), nullptr, constants().varTrue);
+      e_if = flat_exp(env, cmix_not_negated, ite->ifExpr(i), nullptr, env.constants.varTrue);
     }
     if (e_if.r()->type() == Type::parbool()) {
       {
@@ -248,12 +248,12 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
         // had var conditions, so we have to take them into account
         // and emit new conditional clause
         // add another condition and definedness variable
-        conditions.emplace_back(constants().literalTrue);
+        conditions.emplace_back(env.constants.literalTrue);
         for (unsigned int j = 0; j < results.size(); j++) {
-          EE ethen = flat_exp(env, cmix, e_then[j][i](), nullptr, cmix.partialityVar());
+          EE ethen = flat_exp(env, cmix, e_then[j][i](), nullptr, cmix.partialityVar(env));
           assert(ethen.b());
           defined[j].push_back(ethen.b);
-          allDefined = allDefined && (ethen.b() == constants().literalTrue);
+          allDefined = allDefined && (ethen.b() == env.constants.literalTrue);
           branches[j].push_back(ethen.r);
           if (ethen.r()->type().isvar()) {
             allBranchesPar[j] = false;
@@ -262,9 +262,9 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
         foundTrueBranch = true;
       } else {
         GCLock lock;
-        conditions.emplace_back(constants().literalFalse);
+        conditions.emplace_back(env.constants.literalFalse);
         for (unsigned int j = 0; j < results.size(); j++) {
-          defined[j].push_back(constants().literalTrue);
+          defined[j].push_back(env.constants.literalTrue);
           branches[j].push_back(create_dummy_value(env, e_then[j][i]()->type()));
         }
       }
@@ -275,11 +275,11 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
 
       for (unsigned int j = 0; j < results.size(); j++) {
         // flatten the then branch
-        EE ethen = flat_exp(env, cmix, e_then[j][i](), nullptr, cmix.partialityVar());
+        EE ethen = flat_exp(env, cmix, e_then[j][i](), nullptr, cmix.partialityVar(env));
 
         assert(ethen.b());
         defined[j].push_back(ethen.b);
-        allDefined = allDefined && (ethen.b() == constants().literalTrue);
+        allDefined = allDefined && (ethen.b() == env.constants.literalTrue);
         branches[j].push_back(ethen.r);
         if (ethen.r()->type().isvar()) {
           allBranchesPar[j] = false;
@@ -331,16 +331,16 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     }
   }
 
-  if (conditions.back()() != constants().literalTrue) {
+  if (conditions.back()() != env.constants.literalTrue) {
     // The last condition wasn't fixed to true, we need to look at the else branch
-    conditions.emplace_back(constants().literalTrue);
+    conditions.emplace_back(env.constants.literalTrue);
 
     for (unsigned int j = 0; j < results.size(); j++) {
       // flatten else branch
-      EE eelse = flat_exp(env, cmix, e_else[j](), nullptr, cmix.partialityVar());
+      EE eelse = flat_exp(env, cmix, e_else[j](), nullptr, cmix.partialityVar(env));
       assert(eelse.b());
       defined[j].push_back(eelse.b);
-      allDefined = allDefined && (eelse.b() == constants().literalTrue);
+      allDefined = allDefined && (eelse.b() == env.constants.literalTrue);
       branches[j].push_back(eelse.r);
       if (eelse.r()->type().isvar()) {
         allBranchesPar[j] = false;
@@ -458,18 +458,18 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
                               {al_cond, al_branches, results[j]->id()});
     ite_pred->decl(env.model->matchFn(env, ite_pred, false));
     ite_pred->type(Type::varbool());
-    make_defined_var(results[j], ite_pred);
-    (void)flat_exp(env, Ctx(), ite_pred, constants().varTrue, constants().varTrue);
+    make_defined_var(env, results[j], ite_pred);
+    (void)flat_exp(env, Ctx(), ite_pred, env.constants.varTrue, env.constants.varTrue);
   }
   EE ret;
   if (noOtherBranches) {
-    ret.r = constants().varTrue->id();
+    ret.r = env.constants.varTrue->id();
   } else {
     ret.r = results.back()->id();
   }
   if (allDefined) {
-    bind(env, Ctx(), b, constants().literalTrue);
-    ret.b = constants().literalTrue;
+    bind(env, Ctx(), b, env.constants.literalTrue);
+    ret.b = env.constants.literalTrue;
   } else {
     // Otherwise, constraint linking conditions, b and the definedness variables
     if (b == nullptr) {
@@ -484,18 +484,18 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
       std::vector<Expression*> def_i;
       for (auto& j : defined) {
         assert(j.size() > i);
-        if (j[i]() != constants().literalTrue) {
+        if (j[i]() != env.constants.literalTrue) {
           def_i.push_back(j[i]());
         }
       }
       if (def_i.empty()) {
-        defined_conjunctions[i] = constants().literalTrue;
+        defined_conjunctions[i] = env.constants.literalTrue;
       } else if (def_i.size() == 1) {
         defined_conjunctions[i] = def_i[0];
       } else {
         auto* al = new ArrayLit(Location().introduce(), def_i);
         al->type(Type::varbool(1));
-        Call* forall = new Call(Location().introduce(), constants().ids.forall, {al});
+        Call* forall = new Call(Location().introduce(), env.constants.ids.forall, {al});
         forall->decl(env.model->matchFn(env, forall, false));
         forall->type(forall->decl()->rtype(env, {al}, false));
         defined_conjunctions[i] = forall;
@@ -507,7 +507,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
                                       {al_cond, al_defined, b->id()});
     ite_defined_pred->decl(env.model->matchFn(env, ite_defined_pred, false));
     ite_defined_pred->type(Type::varbool());
-    (void)flat_exp(env, Ctx(), ite_defined_pred, constants().varTrue, constants().varTrue);
+    (void)flat_exp(env, Ctx(), ite_defined_pred, env.constants.varTrue, env.constants.varTrue);
   }
 
   return ret;

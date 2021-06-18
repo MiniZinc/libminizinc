@@ -61,7 +61,7 @@ struct Ctx {
     return *this;
   }
   /// Return true variable if in root context, nullptr otherwise
-  VarDecl* partialityVar() const { return b == C_ROOT ? constants().varTrue : nullptr; }
+  VarDecl* partialityVar(EnvI& env) const;
 };
 
 /// Turn \a c into positive context
@@ -76,6 +76,8 @@ public:
   Model* output;
   VarOccurrences varOccurrences;
   VarOccurrences outputVarOccurrences;
+
+  const Constants& constants;
 
   std::ostream& outstream;
   std::ostream& errstream;
@@ -222,6 +224,10 @@ public:
   }
 };
 
+inline VarDecl* Ctx::partialityVar(EnvI& env) const {
+  return b == C_ROOT ? env.constants.varTrue : nullptr;
+}
+
 void set_computed_domain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_computed);
 EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
 EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
@@ -250,33 +256,34 @@ class LinearTraits<IntLit> {
 public:
   typedef IntVal Val;
   static Val eval(EnvI& env, Expression* e) { return eval_int(env, e); }
-  static void constructLinBuiltin(BinOpType bot, ASTString& callid, int& coeff_sign, Val& d) {
+  static void constructLinBuiltin(EnvI& env, BinOpType bot, ASTString& callid, int& coeff_sign,
+                                  Val& d) {
     switch (bot) {
       case BOT_LE:
-        callid = constants().ids.int_.lin_le;
+        callid = env.constants.ids.int_.lin_le;
         coeff_sign = 1;
         d += 1;
         break;
       case BOT_LQ:
-        callid = constants().ids.int_.lin_le;
+        callid = env.constants.ids.int_.lin_le;
         coeff_sign = 1;
         break;
       case BOT_GR:
-        callid = constants().ids.int_.lin_le;
+        callid = env.constants.ids.int_.lin_le;
         coeff_sign = -1;
         d = -d + 1;
         break;
       case BOT_GQ:
-        callid = constants().ids.int_.lin_le;
+        callid = env.constants.ids.int_.lin_le;
         coeff_sign = -1;
         d = -d;
         break;
       case BOT_EQ:
-        callid = constants().ids.int_.lin_eq;
+        callid = env.constants.ids.int_.lin_eq;
         coeff_sign = 1;
         break;
       case BOT_NQ:
-        callid = constants().ids.int_.lin_ne;
+        callid = env.constants.ids.int_.lin_ne;
         coeff_sign = 1;
         break;
       default:
@@ -285,7 +292,7 @@ public:
     }
   }
   // NOLINTNEXTLINE(readability-identifier-naming)
-  static ASTString id_eq() { return constants().ids.int_.eq; }
+  static ASTString id_eq() { return Constants::constants().ids.int_.eq; }
   typedef IntBounds Bounds;
   static bool finite(const IntBounds& ib) { return ib.l.isFinite() && ib.u.isFinite(); }
   static bool finite(const IntVal& v) { return v.isFinite(); }
@@ -367,32 +374,33 @@ class LinearTraits<FloatLit> {
 public:
   typedef FloatVal Val;
   static Val eval(EnvI& env, Expression* e) { return eval_float(env, e); }
-  static void constructLinBuiltin(BinOpType bot, ASTString& callid, int& coeff_sign, Val& d) {
+  static void constructLinBuiltin(EnvI& env, BinOpType bot, ASTString& callid, int& coeff_sign,
+                                  Val& d) {
     switch (bot) {
       case BOT_LE:
-        callid = constants().ids.float_.lin_lt;
+        callid = env.constants.ids.float_.lin_lt;
         coeff_sign = 1;
         break;
       case BOT_LQ:
-        callid = constants().ids.float_.lin_le;
+        callid = env.constants.ids.float_.lin_le;
         coeff_sign = 1;
         break;
       case BOT_GR:
-        callid = constants().ids.float_.lin_lt;
+        callid = env.constants.ids.float_.lin_lt;
         coeff_sign = -1;
         d = -d;
         break;
       case BOT_GQ:
-        callid = constants().ids.float_.lin_le;
+        callid = env.constants.ids.float_.lin_le;
         coeff_sign = -1;
         d = -d;
         break;
       case BOT_EQ:
-        callid = constants().ids.float_.lin_eq;
+        callid = env.constants.ids.float_.lin_eq;
         coeff_sign = 1;
         break;
       case BOT_NQ:
-        callid = constants().ids.float_.lin_ne;
+        callid = env.constants.ids.float_.lin_ne;
         coeff_sign = 1;
         break;
       default:
@@ -401,7 +409,7 @@ public:
     }
   }
   // NOLINTNEXTLINE(readability-identifier-naming)
-  static ASTString id_eq() { return constants().ids.float_.eq; }
+  static ASTString id_eq() { return Constants::constants().ids.float_.eq; }
   typedef FloatBounds Bounds;
   static bool finite(const FloatBounds& ib) { return ib.l.isFinite() && ib.u.isFinite(); }
   static bool finite(const FloatVal& v) { return v.isFinite(); }

@@ -292,13 +292,13 @@ IntVal b_lb_varoptint(EnvI& env, Call* call) {
 
 bool b_occurs(EnvI& env, Call* call) {
   GCLock lock;
-  return eval_par(env, call->arg(0)) != constants().absent;
+  return eval_par(env, call->arg(0)) != env.constants.absent;
 }
 
 IntVal b_deopt_int(EnvI& env, Call* call) {
   GCLock lock;
   Expression* e = eval_par(env, call->arg(0));
-  if (e == constants().absent) {
+  if (e == env.constants.absent) {
     throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
   }
   return eval_int(env, e);
@@ -307,7 +307,7 @@ IntVal b_deopt_int(EnvI& env, Call* call) {
 bool b_deopt_bool(EnvI& env, Call* call) {
   GCLock lock;
   Expression* e = eval_par(env, call->arg(0));
-  if (e == constants().absent) {
+  if (e == env.constants.absent) {
     throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
   }
   return eval_bool(env, e);
@@ -316,7 +316,7 @@ bool b_deopt_bool(EnvI& env, Call* call) {
 FloatVal b_deopt_float(EnvI& env, Call* call) {
   GCLock lock;
   Expression* e = eval_par(env, call->arg(0));
-  if (e == constants().absent) {
+  if (e == env.constants.absent) {
     throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
   }
   return eval_float(env, e);
@@ -325,7 +325,7 @@ FloatVal b_deopt_float(EnvI& env, Call* call) {
 IntSetVal* b_deopt_intset(EnvI& env, Call* call) {
   GCLock lock;
   Expression* e = eval_par(env, call->arg(0));
-  if (e == constants().absent) {
+  if (e == env.constants.absent) {
     throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
   }
   return eval_intset(env, e);
@@ -334,7 +334,7 @@ IntSetVal* b_deopt_intset(EnvI& env, Call* call) {
 std::string b_deopt_string(EnvI& env, Call* call) {
   GCLock lock;
   Expression* e = eval_par(env, call->arg(0));
-  if (e == constants().absent) {
+  if (e == env.constants.absent) {
     throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
   }
   return eval_string(env, e);
@@ -343,7 +343,7 @@ std::string b_deopt_string(EnvI& env, Call* call) {
 Expression* b_deopt_expr(EnvI& env, Call* call) {
   GCLock lock;
   Expression* e = eval_par(env, call->arg(0));
-  if (e == constants().absent) {
+  if (e == env.constants.absent) {
     throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
   }
   return e;
@@ -907,7 +907,7 @@ IntSetVal* b_dom_varint(EnvI& env, Expression* e) {
       }
       case Expression::E_ID: {
         lastid = cur->cast<Id>();
-        if (lastid == constants().absent) {
+        if (lastid == env.constants.absent) {
           return IntSetVal::a(-IntVal::infinity(), IntVal::infinity());
         }
         if (lastid->decl() == nullptr) {
@@ -1041,14 +1041,14 @@ IntSetVal* b_compute_div_bounds(EnvI& env, Call* call) {
   }
   /// TODO: better bounds if only some input bounds are infinite
   if (!bx.l.isFinite() || !bx.u.isFinite()) {
-    return constants().infinity->isv();
+    return env.constants.infinity->isv();
   }
   IntBounds by = compute_int_bounds(env, call->arg(1));
   if (!by.valid) {
     throw EvalError(env, call->arg(1)->loc(), "cannot determine bounds");
   }
   if (!by.l.isFinite() || !by.u.isFinite()) {
-    return constants().infinity->isv();
+    return env.constants.infinity->isv();
   }
   Ranges::Const<IntVal> byr(by.l, by.u);
   Ranges::Const<IntVal> by0(0, 0);
@@ -1083,7 +1083,7 @@ IntSetVal* b_compute_div_bounds(EnvI& env, Call* call) {
 // NOLINTNEXTLINE(readability-identifier-naming)
 ArrayLit* b_arrayXd(EnvI& env, Call* call, int d) {
   GCLock lock;
-  bool check_form = call->ann().contains(constants().ann.array_check_form);
+  bool check_form = call->ann().contains(env.constants.ann.array_check_form);
   ArrayLit* al = eval_array_lit(env, call->arg(d));
   std::vector<std::pair<int, int>> dims(d);
   unsigned int dim1d = 1;
@@ -1561,7 +1561,7 @@ Expression* b_mzn_symmetry_breaking_constraint(EnvI& env, Call* call) {
   check->type(Type::parbool());
   check->decl(env.model->matchFn(env, check, false, true));
   if (eval_bool(env, check)) {
-    return constants().literalTrue;
+    return env.constants.literalTrue;
   }
   Call* nc = new Call(call->loc(), ASTString("symmetry_breaking_constraint"), {call->arg(0)});
   nc->type(Type::varbool());
@@ -1576,7 +1576,7 @@ Expression* b_mzn_redundant_constraint(EnvI& env, Call* call) {
   check->type(Type::parbool());
   check->decl(env.model->matchFn(env, check, false, true));
   if (eval_bool(env, check)) {
-    return constants().literalTrue;
+    return env.constants.literalTrue;
   }
   Call* nc = new Call(call->loc(), ASTString("redundant_constraint"), {call->arg(0)});
   nc->type(Type::varbool());
@@ -1599,7 +1599,7 @@ Expression* b_default(EnvI& env, Call* call) {
     }
     if (call->arg(0)->type().isOpt() && call->arg(0)->type().dim() == 0) {
       if (arg0.r()->type().isPar()) {
-        if (arg0.r()->type().isOpt() && arg0.r() == constants().absent) {
+        if (arg0.r()->type().isOpt() && arg0.r() == env.constants.absent) {
           return call->arg(1);
         }
         return arg0.r();
@@ -1652,7 +1652,7 @@ Expression* b_trace(EnvI& env, Call* call) {
     msg_e = call->arg(0);
   }
   env.errstream << eval_string(env, msg_e);
-  return call->argCount() == 1 ? constants().literalTrue : call->arg(1);
+  return call->argCount() == 1 ? env.constants.literalTrue : call->arg(1);
 }
 
 Expression* b_trace_stdout(EnvI& env, Call* call) {
@@ -1664,7 +1664,7 @@ Expression* b_trace_stdout(EnvI& env, Call* call) {
     msg_e = call->arg(0);
   }
   env.outstream << eval_string(env, msg_e);
-  return call->argCount() == 1 ? constants().literalTrue : call->arg(1);
+  return call->argCount() == 1 ? env.constants.literalTrue : call->arg(1);
 }
 
 Expression* b_trace_logstream(EnvI& env, Call* call) {
@@ -1676,7 +1676,7 @@ Expression* b_trace_logstream(EnvI& env, Call* call) {
     msg = eval_par(env, call->arg(0))->cast<StringLit>();
   }
   env.logstream << msg->v();
-  return call->argCount() == 1 ? constants().literalTrue : call->arg(1);
+  return call->argCount() == 1 ? env.constants.literalTrue : call->arg(1);
 }
 std::string b_logstream(EnvI& env, Call* call) { return env.logstream.str(); }
 
@@ -1812,7 +1812,7 @@ std::string b_show_json_basic(EnvI& env, Expression* e) {
       }
     }
     oss << "]}";
-  } else if (e == constants().absent) {
+  } else if (e == env.constants.absent) {
     oss << "null";
   } else {
     p.print(e);
@@ -1884,7 +1884,7 @@ Expression* b_output_json_parameters(EnvI& env, Call* call) {
         : _e(e), _outputVars(outputVars), _firstVar(true) {}
     void vVarDeclI(VarDeclI* vdi) {
       VarDecl* vd = vdi->e();
-      if (vd->ann().contains(constants().ann.rhs_from_assignment)) {
+      if (vd->ann().contains(Constants::constants().ann.rhs_from_assignment)) {
         std::ostringstream s;
         if (_firstVar) {
           _firstVar = false;
@@ -2915,7 +2915,7 @@ void register_builtins(Env& e) {
   rb(env, m, ASTString("min"), t_intarray, b_int_min);
   rb(env, m, ASTString("max"), t_intint, b_int_max);
   rb(env, m, ASTString("max"), t_intarray, b_int_max);
-  rb(env, m, constants().ids.sum, t_intarray, b_sum_int);
+  rb(env, m, env.constants.ids.sum, t_intarray, b_sum_int);
   rb(env, m, ASTString("product"), t_intarray, b_product_int);
   rb(env, m, ASTString("pow"), t_intint, b_pow_int);
 
@@ -3154,28 +3154,28 @@ void register_builtins(Env& e) {
     std::vector<Type> t(2);
     t[0] = Type::parbool();
     t[1] = Type::parstring();
-    rb(env, m, constants().ids.assert, t, b_assert_bool);
+    rb(env, m, env.constants.ids.assert, t, b_assert_bool);
   }
   {
     std::vector<Type> t(3);
     t[0] = Type::parbool();
     t[1] = Type::parstring();
     t[2] = Type::top();
-    rb(env, m, constants().ids.assert, t, b_assert);
+    rb(env, m, env.constants.ids.assert, t, b_assert);
     t[2] = Type::optpartop();
-    rb(env, m, constants().ids.assert, t, b_assert);
+    rb(env, m, env.constants.ids.assert, t, b_assert);
     t[2] = Type::vartop();
-    rb(env, m, constants().ids.assert, t, b_assert);
+    rb(env, m, env.constants.ids.assert, t, b_assert);
     t[2] = Type::optvartop();
-    rb(env, m, constants().ids.assert, t, b_assert);
+    rb(env, m, env.constants.ids.assert, t, b_assert);
     t[2] = Type::top(-1);
-    rb(env, m, constants().ids.assert, t, b_assert);
+    rb(env, m, env.constants.ids.assert, t, b_assert);
     t[2] = Type::optpartop(-1);
-    rb(env, m, constants().ids.assert, t, b_assert);
+    rb(env, m, env.constants.ids.assert, t, b_assert);
     t[2] = Type::vartop(-1);
-    rb(env, m, constants().ids.assert, t, b_assert);
+    rb(env, m, env.constants.ids.assert, t, b_assert);
     t[2] = Type::optvartop(-1);
-    rb(env, m, constants().ids.assert, t, b_assert);
+    rb(env, m, env.constants.ids.assert, t, b_assert);
   }
   {
     std::vector<Type> t(4);
@@ -3183,29 +3183,29 @@ void register_builtins(Env& e) {
     t[1] = Type::parstring();
     t[2] = Type::parstring();
     t[3] = Type::top();
-    rb(env, m, constants().ids.mzn_deprecate, t, b_mzn_deprecate);
+    rb(env, m, env.constants.ids.mzn_deprecate, t, b_mzn_deprecate);
     t[3] = Type::vartop();
-    rb(env, m, constants().ids.mzn_deprecate, t, b_mzn_deprecate);
+    rb(env, m, env.constants.ids.mzn_deprecate, t, b_mzn_deprecate);
     t[3] = Type::optvartop();
-    rb(env, m, constants().ids.mzn_deprecate, t, b_mzn_deprecate);
+    rb(env, m, env.constants.ids.mzn_deprecate, t, b_mzn_deprecate);
     t[3] = Type::top(-1);
-    rb(env, m, constants().ids.mzn_deprecate, t, b_mzn_deprecate);
+    rb(env, m, env.constants.ids.mzn_deprecate, t, b_mzn_deprecate);
     t[3] = Type::vartop(-1);
-    rb(env, m, constants().ids.mzn_deprecate, t, b_mzn_deprecate);
+    rb(env, m, env.constants.ids.mzn_deprecate, t, b_mzn_deprecate);
     t[3] = Type::optvartop(-1);
-    rb(env, m, constants().ids.mzn_deprecate, t, b_mzn_deprecate);
+    rb(env, m, env.constants.ids.mzn_deprecate, t, b_mzn_deprecate);
   }
   {
-    rb(env, m, constants().ids.mzn_symmetry_breaking_constraint, {Type::varbool()},
+    rb(env, m, env.constants.ids.mzn_symmetry_breaking_constraint, {Type::varbool()},
        b_mzn_symmetry_breaking_constraint);
-    rb(env, m, constants().ids.mzn_redundant_constraint, {Type::varbool()},
+    rb(env, m, env.constants.ids.mzn_redundant_constraint, {Type::varbool()},
        b_mzn_redundant_constraint);
   }
   {
     std::vector<Type> t(1);
     t[0] = Type::parstring();
     rb(env, m, ASTString("abort"), t, b_abort);
-    rb(env, m, constants().ids.trace, t, b_trace);
+    rb(env, m, env.constants.ids.trace, t, b_trace);
     rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
     rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
   }
@@ -3217,35 +3217,35 @@ void register_builtins(Env& e) {
     std::vector<Type> t(2);
     t[0] = Type::parstring();
     t[1] = Type::top();
-    rb(env, m, constants().ids.trace, t, b_trace);
+    rb(env, m, env.constants.ids.trace, t, b_trace);
     rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
     rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
     t[1] = Type::optpartop();
-    rb(env, m, constants().ids.trace, t, b_trace);
+    rb(env, m, env.constants.ids.trace, t, b_trace);
     rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
     rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
     t[1] = Type::vartop();
-    rb(env, m, constants().ids.trace, t, b_trace);
+    rb(env, m, env.constants.ids.trace, t, b_trace);
     rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
     rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
     t[1] = Type::optvartop();
-    rb(env, m, constants().ids.trace, t, b_trace);
+    rb(env, m, env.constants.ids.trace, t, b_trace);
     rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
     rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
     t[1] = Type::top(-1);
-    rb(env, m, constants().ids.trace, t, b_trace);
+    rb(env, m, env.constants.ids.trace, t, b_trace);
     rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
     rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
     t[1] = Type::optpartop(-1);
-    rb(env, m, constants().ids.trace, t, b_trace);
+    rb(env, m, env.constants.ids.trace, t, b_trace);
     rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
     rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
     t[1] = Type::vartop(-1);
-    rb(env, m, constants().ids.trace, t, b_trace);
+    rb(env, m, env.constants.ids.trace, t, b_trace);
     rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
     rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
     t[1] = Type::optvartop(-1);
-    rb(env, m, constants().ids.trace, t, b_trace);
+    rb(env, m, env.constants.ids.trace, t, b_trace);
     rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
     rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
   }
@@ -3253,26 +3253,26 @@ void register_builtins(Env& e) {
     std::vector<Type> t(2);
     t[0] = Type::optpartop();
     t[1] = Type::top();
-    rb(env, m, constants().ids.mzn_default, t, b_default);
+    rb(env, m, env.constants.ids.mzn_default, t, b_default);
     t[1] = Type::optpartop();
-    rb(env, m, constants().ids.mzn_default, t, b_default);
+    rb(env, m, env.constants.ids.mzn_default, t, b_default);
     t[0] = Type::optvartop();
     t[1] = Type::vartop();
-    rb(env, m, constants().ids.mzn_default, t, b_default);
+    rb(env, m, env.constants.ids.mzn_default, t, b_default);
     t[1] = Type::optvartop();
-    rb(env, m, constants().ids.mzn_default, t, b_default);
+    rb(env, m, env.constants.ids.mzn_default, t, b_default);
     t[0] = Type::top(-1);
     t[1] = Type::top(-1);
-    rb(env, m, constants().ids.mzn_default, t, b_default);
+    rb(env, m, env.constants.ids.mzn_default, t, b_default);
     t[0] = Type::optpartop(-1);
     t[1] = Type::optpartop(-1);
-    rb(env, m, constants().ids.mzn_default, t, b_default);
+    rb(env, m, env.constants.ids.mzn_default, t, b_default);
     t[0] = Type::vartop(-1);
     t[1] = Type::vartop(-1);
-    rb(env, m, constants().ids.mzn_default, t, b_default);
+    rb(env, m, env.constants.ids.mzn_default, t, b_default);
     t[0] = Type::optvartop(-1);
     t[1] = Type::optvartop(-1);
-    rb(env, m, constants().ids.mzn_default, t, b_default);
+    rb(env, m, env.constants.ids.mzn_default, t, b_default);
   }
   {
     rb(env, m, ASTString("output_to_section"), {Type::parstring(), Type::parstring()},
@@ -3294,22 +3294,22 @@ void register_builtins(Env& e) {
   {
     std::vector<Type> t(1);
     t[0] = Type::parbool();
-    rb(env, m, constants().ids.bool2int, t, b_bool2int);
+    rb(env, m, env.constants.ids.bool2int, t, b_bool2int);
   }
   {
     std::vector<Type> t(1);
     t[0] = Type::parbool(-1);
-    rb(env, m, constants().ids.forall, t, b_forall_par);
-    rb(env, m, constants().ids.exists, t, b_exists_par);
+    rb(env, m, env.constants.ids.forall, t, b_forall_par);
+    rb(env, m, env.constants.ids.exists, t, b_exists_par);
     rb(env, m, ASTString("xorall"), t, b_xorall_par);
     rb(env, m, ASTString("iffall"), t, b_iffall_par);
   }
-  { rb(env, m, constants().ids.bool_not, {Type::parbool()}, b_not_par); }
+  { rb(env, m, env.constants.ids.bool_not, {Type::parbool()}, b_not_par); }
   {
     std::vector<Type> t(2);
     t[0] = Type::parbool(-1);
     t[1] = Type::parbool(-1);
-    rb(env, m, constants().ids.clause, t, b_clause_par);
+    rb(env, m, env.constants.ids.clause, t, b_clause_par);
   }
   {
     std::vector<Type> t(1);
@@ -3540,7 +3540,7 @@ void register_builtins(Env& e) {
   {
     std::vector<Type> t(1);
     t[0] = Type::parfloat(1);
-    rb(env, m, constants().ids.sum, t, b_sum_float);
+    rb(env, m, env.constants.ids.sum, t, b_sum_float);
     rb(env, m, ASTString("product"), t, b_product_float);
   }
   {

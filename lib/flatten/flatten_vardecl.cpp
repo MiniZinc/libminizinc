@@ -45,7 +45,7 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
       if (v->e()->type().bt() == Type::BT_BOOL && v->e()->type().dim() == 0) {
         nctx.b = C_MIX;
       }
-      (void)flat_exp(env, nctx, v->e(), vd, constants().varTrue);
+      (void)flat_exp(env, nctx, v->e(), vd, env.constants.varTrue);
       if (v->e()->type().dim() > 0) {
         Expression* ee = follow_id_to_decl(vd->e());
         if (ee->isa<VarDecl>()) {
@@ -56,7 +56,7 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
         if (vd->ti()->domain() != nullptr) {
           for (unsigned int i = 0; i < al->size(); i++) {
             if (Id* ali_id = (*al)[i]->dynamicCast<Id>()) {
-              if (ali_id != constants().absent && ali_id->decl()->ti()->domain() == nullptr) {
+              if (ali_id != env.constants.absent && ali_id->decl()->ti()->domain() == nullptr) {
                 ali_id->decl()->ti()->domain(vd->ti()->domain());
               }
             }
@@ -76,7 +76,7 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
   } else {
     ret.r = bind(env, Ctx(), r, it);
   }
-  ret.b = bind(env, Ctx(), b, constants().literalTrue);
+  ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
   return ret;
 }
 }  // namespace MiniZinc

@@ -108,7 +108,7 @@ KeepAlive EvalBase::flattenCV(EnvI& env, Expression* e) {
   Ctx ctx;
   ctx.i = C_MIX;
   ctx.b = (e->type().bt() == Type::BT_BOOL) ? C_MIX : C_ROOT;
-  EE ee = flat_exp(env, ctx, e, nullptr, constants().varTrue);
+  EE ee = flat_exp(env, ctx, e, nullptr, env.constants.varTrue);
   return ee.r;
 }
 
@@ -179,14 +179,14 @@ class EvalBoolLit : public EvalBase {
 public:
   typedef BoolLit* Val;
   typedef Expression* ArrayVal;
-  static BoolLit* e(EnvI& env, Expression* e) { return constants().boollit(eval_bool(env, e)); }
+  static BoolLit* e(EnvI& env, Expression* e) { return env.constants.boollit(eval_bool(env, e)); }
   static Expression* exp(Expression* e) { return e; }
 };
 class EvalBoolVal : public EvalBase {
 public:
   typedef bool Val;
   static bool e(EnvI& env, Expression* e) { return eval_bool(env, e); }
-  static Expression* exp(bool e) { return constants().boollit(e); }
+  static Expression* exp(bool e) { return Constants::constants().boollit(e); }
   static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {}
 };
 class EvalArrayLit : public EvalBase {
@@ -646,7 +646,7 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
       std::vector<IntVal> vals;
       for (unsigned int i = 0; i < sl->v().size(); i++) {
         Expression* vi = eval_par(env, sl->v()[i]);
-        if (vi != constants().absent) {
+        if (vi != env.constants.absent) {
           vals.push_back(eval_int(env, vi));
         }
       }
@@ -810,7 +810,7 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
       std::vector<FloatVal> vals;
       for (unsigned int i = 0; i < sl->v().size(); i++) {
         Expression* vi = eval_par(env, sl->v()[i]);
-        if (vi != constants().absent) {
+        if (vi != env.constants.absent) {
           vals.push_back(eval_float(env, vi));
         }
       }
@@ -1246,7 +1246,7 @@ bool eval_bool(EnvI& env, Expression* e) {
           // Evaluate all variable declarations
           if (auto* vdi = l->let()[i]->dynamicCast<VarDecl>()) {
             vdi->e(eval_par(env, vdi->e()));
-            bool maybe_partial = vdi->ann().contains(constants().ann.maybe_partial);
+            bool maybe_partial = vdi->ann().contains(env.constants.ann.maybe_partial);
             if (maybe_partial) {
               env.inMaybePartial++;
             }
@@ -1263,7 +1263,7 @@ bool eval_bool(EnvI& env, Expression* e) {
             // it can only be a par bool expression. If it evaluates
             // to false, it means that the value of this let is false.
             if (!eval_bool(env, l->let()[i])) {
-              if (l->let()[i]->ann().contains(constants().ann.maybe_partial)) {
+              if (l->let()[i]->ann().contains(env.constants.ann.maybe_partial)) {
                 ret = false;
               } else {
                 throw ResultUndefinedError(env, l->let()[i]->loc(),
@@ -1297,7 +1297,7 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
       std::vector<IntVal> vals;
       for (unsigned int i = 0; i < sl->v().size(); i++) {
         Expression* vi = eval_par(env, sl->v()[i]);
-        if (vi != constants().absent) {
+        if (vi != env.constants.absent) {
           vals.push_back(eval_int(env, vi));
         }
       }
@@ -1880,7 +1880,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
       return new TypeInst(Location(), t->type(), r, eval_par(env, t->domain()));
     }
     case Expression::E_ID: {
-      if (e == constants().absent) {
+      if (e == env.constants.absent) {
         return e;
       }
       Id* id = e->cast<Id>();
@@ -1978,7 +1978,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
               return eval_par(env, c->decl()->builtins.e(env, c));
             }
             if (c->decl()->e() == nullptr) {
-              if (c->id() == "deopt" && Expression::equal(c->arg(0), constants().absent)) {
+              if (c->id() == "deopt" && Expression::equal(c->arg(0), env.constants.absent)) {
                 throw ResultUndefinedError(env, e->loc(), "deopt(<>) is undefined");
               }
               return c;
@@ -2076,7 +2076,7 @@ public:
     if (e->type().isPar()) {
       if (e->type().isint()) {
         Expression* exp = eval_par(env, e);
-        if (exp == constants().absent) {
+        if (exp == env.constants.absent) {
           valid = false;
         } else {
           IntVal v = exp->cast<IntLit>()->v();
@@ -2326,8 +2326,8 @@ public:
   }
   /// Visit call
   void vCall(Call* c) {
-    if (c->id() == constants().ids.lin_exp || c->id() == constants().ids.sum) {
-      bool le = c->id() == constants().ids.lin_exp;
+    if (c->id() == env.constants.ids.lin_exp || c->id() == env.constants.ids.sum) {
+      bool le = c->id() == env.constants.ids.lin_exp;
       ArrayLit* coeff = le ? eval_array_lit(env, c->arg(0)) : nullptr;
       if (c->arg(le ? 1 : 0)->type().isOpt()) {
         valid = false;
@@ -2417,7 +2417,7 @@ public:
         IntVal n = std::max(x0, std::max(x1, std::max(x2, x3)));
         bounds.emplace_back(m, n);
       }
-    } else if (c->id() == constants().ids.bool2int) {
+    } else if (c->id() == env.constants.ids.bool2int) {
       bounds.emplace_back(0, 1);
     } else if (c->id() == "abs") {
       Bounds b0 = bounds.back();
@@ -2509,7 +2509,7 @@ public:
     if (e->type().isPar()) {
       if (e->type().isfloat()) {
         Expression* exp = eval_par(env, e);
-        if (exp == constants().absent) {
+        if (exp == env.constants.absent) {
           valid = false;
         } else {
           FloatVal v = exp->cast<FloatLit>()->v();
@@ -2727,8 +2727,8 @@ public:
   }
   /// Visit call
   void vCall(Call* c) {
-    if (c->id() == constants().ids.lin_exp || c->id() == constants().ids.sum) {
-      bool le = c->id() == constants().ids.lin_exp;
+    if (c->id() == env.constants.ids.lin_exp || c->id() == env.constants.ids.sum) {
+      bool le = c->id() == env.constants.ids.lin_exp;
       ArrayLit* coeff = le ? eval_array_lit(env, c->arg(0)) : nullptr;
       if (le) {
         bounds.pop_back();  // remove constant (third arg) from stack
@@ -3138,7 +3138,7 @@ Expression* follow_id(Expression* e) {
     if (e == nullptr) {
       return nullptr;
     }
-    if (e->eid() == Expression::E_ID && e != constants().absent) {
+    if (e->eid() == Expression::E_ID && e != Constants::constants().absent) {
       e = e->cast<Id>()->decl()->e();
     } else {
       return e;
@@ -3151,7 +3151,7 @@ Expression* follow_id_to_decl(Expression* e) {
     if (e == nullptr) {
       return nullptr;
     }
-    if (e == constants().absent) {
+    if (e == Constants::constants().absent) {
       return e;
     }
     switch (e->eid()) {
@@ -3160,7 +3160,7 @@ Expression* follow_id_to_decl(Expression* e) {
         break;
       case Expression::E_VARDECL: {
         Expression* vd_e = e->cast<VarDecl>()->e();
-        if ((vd_e != nullptr) && vd_e->isa<Id>() && vd_e != constants().absent) {
+        if ((vd_e != nullptr) && vd_e->isa<Id>() && vd_e != Constants::constants().absent) {
           e = vd_e;
         } else {
           return e;

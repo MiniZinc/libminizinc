@@ -100,8 +100,8 @@ int VarOccurrences::occurrences(VarDecl* v) {
 }
 
 std::pair<int, bool> VarOccurrences::usages(VarDecl* v) {
-  bool is_output = v->ann().contains(constants().ann.output_var) ||
-                   v->ann().containsCall(constants().ann.output_array);
+  bool is_output = v->ann().contains(Constants::constants().ann.output_var) ||
+                   v->ann().containsCall(Constants::constants().ann.output_array);
   auto vi = itemMap.find(v->id()->decl()->id());
   if (vi == itemMap.end()) {
     return std::make_pair(0, is_output);
@@ -143,11 +143,11 @@ void CollectOccurrencesI::vSolveI(SolveI* si) {
 bool is_output(VarDecl* vd) {
   for (ExpressionSetIter it = vd->ann().begin(); it != vd->ann().end(); ++it) {
     if (*it != nullptr) {
-      if (*it == constants().ann.output_var) {
+      if (*it == Constants::constants().ann.output_var) {
         return true;
       }
       if (Call* c = (*it)->dynamicCast<Call>()) {
-        if (c->id() == constants().ann.output_array) {
+        if (c->id() == Constants::constants().ann.output_array) {
           return true;
         }
       }
@@ -334,7 +334,7 @@ void optimize(Env& env, bool chain_compression) {
       }
     }
 
-    env.envi().checkCancel();
+    envi.checkCancel();
 
     // Phase 1: initialise queues
     //  - remove equality constraints between identifiers
@@ -354,19 +354,19 @@ void optimize(Env& env, bool chain_compression) {
         ci->flag(false);
         if (!ci->removed()) {
           if (Call* c = ci->e()->dynamicCast<Call>()) {
-            if ((c->id() == constants().ids.int_.eq || c->id() == constants().ids.bool_eq ||
-                 c->id() == constants().ids.float_.eq || c->id() == constants().ids.set_eq) &&
+            if ((c->id() == envi.constants.ids.int_.eq || c->id() == envi.constants.ids.bool_eq ||
+                 c->id() == envi.constants.ids.float_.eq || c->id() == envi.constants.ids.set_eq) &&
                 c->arg(0)->isa<Id>() && c->arg(1)->isa<Id>() &&
                 (c->arg(0)->cast<Id>()->decl()->e() == nullptr ||
                  c->arg(1)->cast<Id>()->decl()->e() == nullptr)) {
               // Equality constraint between two identifiers: unify
 
-              if (Call* defVar = c->ann().getCall(constants().ann.defines_var)) {
+              if (Call* defVar = c->ann().getCall(envi.constants.ann.defines_var)) {
                 // First, remove defines_var/is_defined_var annotations if present
                 if (Expression::equal(defVar->arg(0), c->arg(0))) {
-                  c->arg(0)->cast<Id>()->decl()->ann().remove(constants().ann.is_defined_var);
+                  c->arg(0)->cast<Id>()->decl()->ann().remove(envi.constants.ann.is_defined_var);
                 } else {
-                  c->arg(1)->cast<Id>()->decl()->ann().remove(constants().ann.is_defined_var);
+                  c->arg(1)->cast<Id>()->decl()->ann().remove(envi.constants.ann.is_defined_var);
                 }
               }
               unify(envi, deletedVarDecls, c->arg(0)->cast<Id>(), c->arg(1)->cast<Id>());
@@ -379,9 +379,9 @@ void optimize(Env& env, bool chain_compression) {
               push_dependent_constraints(envi, c->arg(0)->cast<Id>(), constraintQueue);
               CollectDecls cd(envi.varOccurrences, deletedVarDecls, ci);
               top_down(cd, c);
-              ci->e(constants().literalTrue);
+              ci->e(envi.constants.literalTrue);
               ci->remove();
-            } else if (c->id() == constants().ids.int_.lin_eq &&
+            } else if (c->id() == envi.constants.ids.int_.lin_eq &&
                        Expression::equal(c->arg(2), IntLit::a(0))) {
               auto* al_c = follow_id(c->arg(0))->cast<ArrayLit>();
               if (al_c->size() == 2 &&
@@ -392,12 +392,14 @@ void optimize(Env& env, bool chain_compression) {
                      (*al_x)[1]->cast<Id>()->decl()->e() == nullptr)) {
                   // Equality constraint between two identifiers: unify
 
-                  if (Call* defVar = c->ann().getCall(constants().ann.defines_var)) {
+                  if (Call* defVar = c->ann().getCall(envi.constants.ann.defines_var)) {
                     // First, remove defines_var/is_defined_var annotations if present
                     if (Expression::equal(defVar->arg(0), (*al_x)[0])) {
-                      (*al_x)[0]->cast<Id>()->decl()->ann().remove(constants().ann.is_defined_var);
+                      (*al_x)[0]->cast<Id>()->decl()->ann().remove(
+                          envi.constants.ann.is_defined_var);
                     } else {
-                      (*al_x)[1]->cast<Id>()->decl()->ann().remove(constants().ann.is_defined_var);
+                      (*al_x)[1]->cast<Id>()->decl()->ann().remove(
+                          envi.constants.ann.is_defined_var);
                     }
                   }
                   unify(envi, deletedVarDecls, (*al_x)[0]->cast<Id>(), (*al_x)[1]->cast<Id>());
@@ -410,11 +412,11 @@ void optimize(Env& env, bool chain_compression) {
                   push_dependent_constraints(envi, (*al_x)[0]->cast<Id>(), constraintQueue);
                   CollectDecls cd(envi.varOccurrences, deletedVarDecls, ci);
                   top_down(cd, c);
-                  ci->e(constants().literalTrue);
+                  ci->e(envi.constants.literalTrue);
                   ci->remove();
                 }
               }
-            } else if (c->id() == constants().ids.forall) {
+            } else if (c->id() == envi.constants.ids.forall) {
               // Remove forall constraints, assign variables inside the forall to true
 
               auto* al = follow_id(c->arg(0))->cast<ArrayLit>();
@@ -423,22 +425,23 @@ void optimize(Env& env, bool chain_compression) {
                   if (id->decl()->ti()->domain() == nullptr) {
                     toAssignBoolVars.push_back(
                         envi.varOccurrences.idx.find(id->decl()->id())->second);
-                  } else if (id->decl()->ti()->domain() == constants().literalFalse) {
+                  } else if (id->decl()->ti()->domain() == envi.constants.literalFalse) {
                     env.envi().fail();
-                    id->decl()->e(constants().literalTrue);
+                    id->decl()->e(envi.constants.literalTrue);
                   }
                 }  // todo: check else case (fixed bool inside a forall at this stage)
               }
               toRemoveConstraints.push_back(i);
-            } else if (c->id() == constants().ids.exists || c->id() == constants().ids.clause) {
+            } else if (c->id() == envi.constants.ids.exists ||
+                       c->id() == envi.constants.ids.clause) {
               // Add disjunctive constraints to the boolConstraints list
 
               boolConstraints.push_back(i);
             }
           } else if (Id* id = ci->e()->dynamicCast<Id>()) {
-            if (id->decl()->ti()->domain() == constants().literalFalse) {
+            if (id->decl()->ti()->domain() == envi.constants.literalFalse) {
               env.envi().fail();
-              ci->e(constants().literalFalse);
+              ci->e(envi.constants.literalFalse);
             } else {
               if (id->decl()->ti()->domain() == nullptr) {
                 toAssignBoolVars.push_back(envi.varOccurrences.idx.find(id->decl()->id())->second);
@@ -455,25 +458,25 @@ void optimize(Env& env, bool chain_compression) {
           vdi->e()->e(nullptr);
 
           // Transfer is_defined_var annotation
-          if (id1->decl()->ann().contains(constants().ann.is_defined_var)) {
-            vdi->e()->addAnnotation(constants().ann.is_defined_var);
-          } else if (vdi->e()->ann().contains(constants().ann.is_defined_var)) {
-            id1->decl()->addAnnotation(constants().ann.is_defined_var);
+          if (id1->decl()->ann().contains(envi.constants.ann.is_defined_var)) {
+            vdi->e()->addAnnotation(envi.constants.ann.is_defined_var);
+          } else if (vdi->e()->ann().contains(envi.constants.ann.is_defined_var)) {
+            id1->decl()->addAnnotation(envi.constants.ann.is_defined_var);
           }
 
           unify(envi, deletedVarDecls, vdi->e()->id(), id1);
           push_dependent_constraints(envi, id1, constraintQueue);
         }
         if (vdi->e()->type().isbool() && vdi->e()->type().dim() == 0 &&
-            (vdi->e()->ti()->domain() == constants().literalTrue ||
-             vdi->e()->ti()->domain() == constants().literalFalse)) {
+            (vdi->e()->ti()->domain() == envi.constants.literalTrue ||
+             vdi->e()->ti()->domain() == envi.constants.literalFalse)) {
           // push RHS onto constraint queue since this bool var is fixed
           push_vardecl(envi, vdi, i, vardeclQueue);
           push_dependent_constraints(envi, vdi->e()->id(), constraintQueue);
         }
         if (Call* c = Expression::dynamicCast<Call>(vdi->e()->e())) {
-          if (c->id() == constants().ids.forall || c->id() == constants().ids.exists ||
-              c->id() == constants().ids.clause) {
+          if (c->id() == envi.constants.ids.forall || c->id() == envi.constants.ids.exists ||
+              c->id() == envi.constants.ids.clause) {
             // push reified foralls, exists, clauses
             boolConstraints.push_back(i);
           }
@@ -513,7 +516,7 @@ void optimize(Env& env, bool chain_compression) {
       if (c == nullptr) {
         continue;
       }
-      bool isConjunction = (c->id() == constants().ids.forall);
+      bool isConjunction = (c->id() == envi.constants.ids.forall);
       bool subsumed = false;
       Id* finalId = nullptr;
       bool finalIdNeg = false;
@@ -586,9 +589,9 @@ void optimize(Env& env, bool chain_compression) {
             } else {
               CollectDecls cd(envi.varOccurrences, deletedVarDecls, bi);
               top_down(cd, bi->cast<VarDeclI>()->e()->e());
-              bi->cast<VarDeclI>()->e()->ti()->domain(constants().literalFalse);
+              bi->cast<VarDeclI>()->e()->ti()->domain(envi.constants.literalFalse);
               bi->cast<VarDeclI>()->e()->ti()->setComputedDomain(true);
-              bi->cast<VarDeclI>()->e()->e(constants().literalFalse);
+              bi->cast<VarDeclI>()->e()->e(envi.constants.literalFalse);
               push_vardecl(envi, bi->cast<VarDeclI>(), boolConstraints[i], vardeclQueue);
               push_dependent_constraints(envi, bi->cast<VarDeclI>()->e()->id(), constraintQueue);
             }
@@ -606,9 +609,9 @@ void optimize(Env& env, bool chain_compression) {
             } else {
               CollectDecls cd(envi.varOccurrences, deletedVarDecls, bi);
               top_down(cd, bi->cast<VarDeclI>()->e()->e());
-              bi->cast<VarDeclI>()->e()->ti()->domain(constants().literalTrue);
+              bi->cast<VarDeclI>()->e()->ti()->domain(envi.constants.literalTrue);
               bi->cast<VarDeclI>()->e()->ti()->setComputedDomain(true);
-              bi->cast<VarDeclI>()->e()->e(constants().literalTrue);
+              bi->cast<VarDeclI>()->e()->e(envi.constants.literalTrue);
               push_vardecl(envi, bi->cast<VarDeclI>(), boolConstraints[i], vardeclQueue);
               push_dependent_constraints(envi, bi->cast<VarDeclI>()->e()->id(), constraintQueue);
             }
@@ -616,9 +619,9 @@ void optimize(Env& env, bool chain_compression) {
         }
       } else if (idCount == 1 && bi->isa<ConstraintI>()) {
         assert(finalId->decl()->ti()->domain() == nullptr);
-        finalId->decl()->ti()->domain(constants().boollit(!finalIdNeg));
+        finalId->decl()->ti()->domain(envi.constants.boollit(!finalIdNeg));
         if (finalId->decl()->e() == nullptr) {
-          finalId->decl()->e(constants().boollit(!finalIdNeg));
+          finalId->decl()->e(envi.constants.boollit(!finalIdNeg));
         }
         CollectDecls cd(envi.varOccurrences, deletedVarDecls, bi);
         top_down(cd, bi->cast<ConstraintI>()->e());
@@ -636,7 +639,7 @@ void optimize(Env& env, bool chain_compression) {
       }
       auto* vdi = m[toAssignBoolVars[i]]->cast<VarDeclI>();
       if (vdi->e()->ti()->domain() == nullptr) {
-        vdi->e()->ti()->domain(constants().literalTrue);
+        vdi->e()->ti()->domain(envi.constants.literalTrue);
         push_vardecl(envi, vdi, toAssignBoolVars[i], vardeclQueue);
         push_dependent_constraints(envi, vdi->e()->id(), constraintQueue);
       }
@@ -655,7 +658,7 @@ void optimize(Env& env, bool chain_compression) {
         VarDecl* vd = m[var_idx]->cast<VarDeclI>()->e();
 
         if (vd->type().isbool() && (vd->ti()->domain() != nullptr)) {
-          bool isTrue = vd->ti()->domain() == constants().literalTrue;
+          bool isTrue = vd->ti()->domain() == envi.constants.literalTrue;
           bool remove = false;
           if (vd->e() != nullptr) {
             if (Id* id = vd->e()->dynamicCast<Id>()) {
@@ -669,24 +672,24 @@ void optimize(Env& env, bool chain_compression) {
               }
               remove = true;
             } else if (Call* c = vd->e()->dynamicCast<Call>()) {
-              if (isTrue && c->id() == constants().ids.forall) {
+              if (isTrue && c->id() == envi.constants.ids.forall) {
                 // Reified forall is now fixed to true, so make all elements of the conjunction true
                 remove = true;
                 auto* al = follow_id(c->arg(0))->cast<ArrayLit>();
                 for (unsigned int i = 0; i < al->size(); i++) {
                   if (Id* id = (*al)[i]->dynamicCast<Id>()) {
                     if (id->decl()->ti()->domain() == nullptr) {
-                      id->decl()->ti()->domain(constants().literalTrue);
+                      id->decl()->ti()->domain(envi.constants.literalTrue);
                       push_vardecl(envi, envi.varOccurrences.idx.find(id->decl()->id())->second,
                                    vardeclQueue);
-                    } else if (id->decl()->ti()->domain() == constants().literalFalse) {
+                    } else if (id->decl()->ti()->domain() == envi.constants.literalFalse) {
                       env.envi().fail();
                       remove = true;
                     }
                   }
                 }
-              } else if (!isTrue &&
-                         (c->id() == constants().ids.exists || c->id() == constants().ids.clause)) {
+              } else if (!isTrue && (c->id() == envi.constants.ids.exists ||
+                                     c->id() == envi.constants.ids.clause)) {
                 // Reified disjunction is now fixed to false, so make all elements of the
                 // disjunction false
                 remove = true;
@@ -696,10 +699,10 @@ void optimize(Env& env, bool chain_compression) {
                   for (unsigned int j = 0; j < al->size(); j++) {
                     if (Id* id = (*al)[j]->dynamicCast<Id>()) {
                       if (id->decl()->ti()->domain() == nullptr) {
-                        id->decl()->ti()->domain(constants().boollit(!ispos));
+                        id->decl()->ti()->domain(envi.constants.boollit(!ispos));
                         push_vardecl(envi, envi.varOccurrences.idx.find(id->decl()->id())->second,
                                      vardeclQueue);
-                      } else if (id->decl()->ti()->domain() == constants().boollit(ispos)) {
+                      } else if (id->decl()->ti()->domain() == envi.constants.boollit(ispos)) {
                         env.envi().fail();
                         remove = true;
                       }
@@ -772,7 +775,7 @@ void optimize(Env& env, bool chain_compression) {
       // Now handle all non-boolean constraints (i.e. anything except forall, clause, exists)
       bool handledConstraint = false;
       while (!handledConstraint && !constraintQueue.empty()) {
-        env.envi().checkCancel();
+        envi.checkCancel();
 
         Item* item = constraintQueue.front();
         constraintQueue.pop_front();
@@ -798,9 +801,9 @@ void optimize(Env& env, bool chain_compression) {
             // push all constraints that depend on the array
             substitute_fixed_vars(envi, item, deletedVarDecls);
             push_dependent_constraints(envi, item->cast<VarDeclI>()->e()->id(), constraintQueue);
-          } else if ((c == nullptr) ||
-                     !(c->id() == constants().ids.forall || c->id() == constants().ids.exists ||
-                       c->id() == constants().ids.clause)) {
+          } else if ((c == nullptr) || !(c->id() == envi.constants.ids.forall ||
+                                         c->id() == envi.constants.ids.exists ||
+                                         c->id() == envi.constants.ids.clause)) {
             // For any constraint that is not forall, exists or clause,
             // substitute fixed arguments, then simplify it
             substitute_fixed_vars(envi, item, deletedVarDecls);
@@ -828,10 +831,10 @@ void optimize(Env& env, bool chain_compression) {
         imp.trackItem(item);
         le.trackItem(item);
       }
-      env.envi().checkCancel();
+      envi.checkCancel();
       imp.compress();
 
-      env.envi().checkCancel();
+      envi.checkCancel();
       le.compress();
     }
 
@@ -854,11 +857,11 @@ void optimize(Env& env, bool chain_compression) {
         c = Expression::dynamicCast<Call>(bi->cast<VarDeclI>()->e()->e());
       }
       if (c == nullptr ||
-          !(c->id() == constants().ids.forall || c->id() == constants().ids.exists ||
-            c->id() == constants().ids.clause)) {
+          !(c->id() == envi.constants.ids.forall || c->id() == envi.constants.ids.exists ||
+            c->id() == envi.constants.ids.clause)) {
         continue;
       }
-      bool isConjunction = (c->id() == constants().ids.forall);
+      bool isConjunction = (c->id() == envi.constants.ids.forall);
       bool subsumed = false;
       for (unsigned int j = 0; j < c->argCount(); j++) {
         bool unit = (j == 0 ? isConjunction : !isConjunction);
@@ -867,7 +870,7 @@ void optimize(Env& env, bool chain_compression) {
         for (unsigned int k = 0; k < al->size(); k++) {
           if (Id* ident = (*al)[k]->dynamicCast<Id>()) {
             if (ident->decl()->ti()->domain() != nullptr) {
-              if (!(ident->decl()->ti()->domain() == constants().boollit(unit))) {
+              if (!(ident->decl()->ti()->domain() == envi.constants.boollit(unit))) {
                 subsumed = true;
               }
               removedVarDecls.push_back(ident->decl());
@@ -894,9 +897,9 @@ void optimize(Env& env, bool chain_compression) {
             for (unsigned int j = 0; j < al->size(); j++) {
               removedVarDecls.push_back((*al)[j]->cast<Id>()->decl());
             }
-            bi->cast<VarDeclI>()->e()->ti()->domain(constants().literalFalse);
+            bi->cast<VarDeclI>()->e()->ti()->domain(envi.constants.literalFalse);
             bi->cast<VarDeclI>()->e()->ti()->setComputedDomain(true);
-            bi->cast<VarDeclI>()->e()->e(constants().literalFalse);
+            bi->cast<VarDeclI>()->e()->e(envi.constants.literalFalse);
           }
         } else {
           if (bi->isa<ConstraintI>()) {
@@ -906,9 +909,9 @@ void optimize(Env& env, bool chain_compression) {
           } else {
             CollectDecls cd(envi.varOccurrences, deletedVarDecls, bi);
             top_down(cd, bi->cast<VarDeclI>()->e()->e());
-            bi->cast<VarDeclI>()->e()->ti()->domain(constants().literalTrue);
+            bi->cast<VarDeclI>()->e()->ti()->domain(envi.constants.literalTrue);
             bi->cast<VarDeclI>()->e()->ti()->setComputedDomain(true);
-            bi->cast<VarDeclI>()->e()->e(constants().literalTrue);
+            bi->cast<VarDeclI>()->e()->e(envi.constants.literalTrue);
           }
         }
       }
@@ -1023,7 +1026,7 @@ public:
   static bool enter(Expression* e) { return !e->isa<Id>(); }
   void remove(EnvI& env, Item* item, std::vector<VarDecl*>& deletedVarDecls) {
     for (auto& i : _removed) {
-      i->ann().remove(constants().ann.is_defined_var);
+      i->ann().remove(env.constants.ann.is_defined_var);
       if (env.varOccurrences.remove(i, item) == 0) {
         if ((i->e() == nullptr || i->ti()->domain() == nullptr || i->ti()->computedDomain()) &&
             !is_output(i)) {
@@ -1069,23 +1072,24 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
   } else {
     auto* vdi = ii->cast<VarDeclI>();
     con_e = vdi->e()->e();
-    is_true = (vdi->e()->type().isbool() && vdi->e()->ti()->domain() == constants().literalTrue);
-    is_false = (vdi->e()->type().isbool() && vdi->e()->ti()->domain() == constants().literalFalse);
+    is_true = (vdi->e()->type().isbool() && vdi->e()->ti()->domain() == env.constants.literalTrue);
+    is_false =
+        (vdi->e()->type().isbool() && vdi->e()->ti()->domain() == env.constants.literalFalse);
     assert(is_true || is_false || !vdi->e()->type().isbool() ||
            vdi->e()->ti()->domain() == nullptr);
   }
   if (Call* c = Expression::dynamicCast<Call>(con_e)) {
-    if (c->id() == constants().ids.int_.eq || c->id() == constants().ids.bool_eq ||
-        c->id() == constants().ids.float_.eq) {
+    if (c->id() == env.constants.ids.int_.eq || c->id() == env.constants.ids.bool_eq ||
+        c->id() == env.constants.ids.float_.eq) {
       if (is_true && c->arg(0)->isa<Id>() && c->arg(1)->isa<Id>() &&
           (c->arg(0)->cast<Id>()->decl()->e() == nullptr ||
            c->arg(1)->cast<Id>()->decl()->e() == nullptr)) {
-        if (Call* defVar = c->ann().getCall(constants().ann.defines_var)) {
+        if (Call* defVar = c->ann().getCall(env.constants.ann.defines_var)) {
           // First, remove defines_var/is_defined_var annotations if present
           if (Expression::equal(defVar->arg(0), c->arg(0))) {
-            c->arg(0)->cast<Id>()->decl()->ann().remove(constants().ann.is_defined_var);
+            c->arg(0)->cast<Id>()->decl()->ann().remove(env.constants.ann.is_defined_var);
           } else {
-            c->arg(1)->cast<Id>()->decl()->ann().remove(constants().ann.is_defined_var);
+            c->arg(1)->cast<Id>()->decl()->ann().remove(env.constants.ann.is_defined_var);
           }
         }
         unify(env, deletedVarDecls, c->arg(0)->cast<Id>(), c->arg(1)->cast<Id>());
@@ -1105,8 +1109,8 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
           auto* vdi = ii->cast<VarDeclI>();
           CollectDecls cd(env.varOccurrences, deletedVarDecls, ii);
           top_down(cd, c);
-          vdi->e()->e(constants().boollit(is_equal));
-          vdi->e()->ti()->domain(constants().boollit(is_equal));
+          vdi->e()->e(env.constants.boollit(is_equal));
+          vdi->e()->ti()->domain(env.constants.boollit(is_equal));
           vdi->e()->ti()->setComputedDomain(true);
           push_vardecl(env, vdi, env.varOccurrences.find(vdi->e()), vardeclQueue);
           push_dependent_constraints(env, vdi->e()->id(), constraintQueue);
@@ -1125,7 +1129,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
         switch (ident->type().bt()) {
           case Type::BT_BOOL:
             if (ti->domain() == nullptr) {
-              ti->domain(constants().boollit(eval_bool(env, arg)));
+              ti->domain(env.constants.boollit(eval_bool(env, arg)));
               ti->setComputedDomain(false);
               canRemove = true;
             } else {
@@ -1191,7 +1195,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
           ii->remove();
         }
       }
-    } else if ((is_true || is_false) && c->id() == constants().ids.int_.le &&
+    } else if ((is_true || is_false) && c->id() == env.constants.ids.int_.le &&
                ((c->arg(0)->isa<Id>() && c->arg(1)->type().isPar()) ||
                 (c->arg(1)->isa<Id>() && c->arg(0)->type().isPar()))) {
       Id* ident = c->arg(0)->isa<Id>() ? c->arg(0)->cast<Id>() : c->arg(1)->cast<Id>();
@@ -1216,14 +1220,14 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
           top_down(cd, c);
 
           if (auto* vdi = ii->dynamicCast<VarDeclI>()) {
-            vdi->e()->e(constants().boollit(is_true));
+            vdi->e()->e(env.constants.boollit(is_true));
             push_dependent_constraints(env, vdi->e()->id(), constraintQueue);
             if (env.varOccurrences.occurrences(vdi->e()) == 0) {
               if (is_output(vdi->e())) {
                 VarDecl* vd_out = (*env.output)[env.outputFlatVarOccurrences.find(vdi->e())]
                                       ->cast<VarDeclI>()
                                       ->e();
-                vd_out->e(constants().boollit(is_true));
+                vd_out->e(env.constants.boollit(is_true));
               }
               vdi->remove();
             }
@@ -1232,7 +1236,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
           }
         }
       }
-    } else if (c->id() == constants().ids.bool2int) {
+    } else if (c->id() == env.constants.ids.bool2int) {
       auto* vdi = ii->dynamicCast<VarDeclI>();
       VarDecl* vd;
       bool fixed = false;
@@ -1273,7 +1277,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
           Id* ident = c->arg(0)->cast<Id>();
           TypeInst* ti = ident->decl()->ti();
           if (ti->domain() == nullptr) {
-            ti->domain(constants().boollit(b_val));
+            ti->domain(env.constants.boollit(b_val));
             ti->setComputedDomain(false);
           } else if (eval_bool(env, ti->domain()) != b_val) {
             env.fail();
@@ -1341,10 +1345,10 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
             return true;
           } else {
             auto* vdi = ii->cast<VarDeclI>();
-            vdi->e()->ti()->domain(constants().literalFalse);
+            vdi->e()->ti()->domain(env.constants.literalFalse);
             CollectDecls cd(env.varOccurrences, deletedVarDecls, ii);
             top_down(cd, c);
-            vdi->e()->e(constants().literalFalse);
+            vdi->e()->e(env.constants.literalFalse);
             push_vardecl(env, vdi, env.varOccurrences.find(vdi->e()), vardeclQueue);
             return true;
           }
@@ -1363,10 +1367,10 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
             return true;
           } else {
             auto* vdi = ii->cast<VarDeclI>();
-            vdi->e()->ti()->domain(constants().literalTrue);
+            vdi->e()->ti()->domain(env.constants.literalTrue);
             CollectDecls cd(env.varOccurrences, deletedVarDecls, ii);
             top_down(cd, c);
-            vdi->e()->e(constants().literalTrue);
+            vdi->e()->e(env.constants.literalTrue);
             push_vardecl(env, vdi, env.varOccurrences.find(vdi->e()), vardeclQueue);
             return true;
           }
@@ -1396,10 +1400,10 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
               Id* id1 = vdi->e()->e()->cast<Id>();
               vdi->e()->e(nullptr);
               // Transfer is_defined_var annotation
-              if (id1->decl()->ann().contains(constants().ann.is_defined_var)) {
-                vdi->e()->addAnnotation(constants().ann.is_defined_var);
-              } else if (vdi->e()->ann().contains(constants().ann.is_defined_var)) {
-                id1->decl()->addAnnotation(constants().ann.is_defined_var);
+              if (id1->decl()->ann().contains(env.constants.ann.is_defined_var)) {
+                vdi->e()->addAnnotation(env.constants.ann.is_defined_var);
+              } else if (vdi->e()->ann().contains(env.constants.ann.is_defined_var)) {
+                id1->decl()->addAnnotation(env.constants.ann.is_defined_var);
               }
               unify(env, deletedVarDecls, vdi->e()->id(), id1);
               push_dependent_constraints(env, id1, constraintQueue);
@@ -1452,7 +1456,7 @@ int bool_state(EnvI& env, Expression* e) {
   if (id->decl()->ti()->domain() == nullptr) {
     return 2;
   }
-  return static_cast<int>(id->decl()->ti()->domain() == constants().literalTrue);
+  return static_cast<int>(id->decl()->ti()->domain() == env.constants.literalTrue);
 }
 
 int decrement_non_fixed_vars(std::unordered_map<Expression*, int>& nonFixedLiteralCount, Call* c) {
@@ -1484,7 +1488,7 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
     remove = false;
     return;
   }
-  bool isTrue = vd->ti()->domain() == constants().literalTrue;
+  bool isTrue = vd->ti()->domain() == env.constants.literalTrue;
   Expression* e = nullptr;
   auto* ci = ii->dynamicCast<ConstraintI>();
   auto* vdi = ii->dynamicCast<VarDeclI>();
@@ -1492,10 +1496,10 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
     e = ci->e();
 
     if (vd->ti()->domain() != nullptr) {
-      if (Call* definedVarCall = e->ann().getCall(constants().ann.defines_var)) {
+      if (Call* definedVarCall = e->ann().getCall(env.constants.ann.defines_var)) {
         if (Expression::equal(definedVarCall->arg(0), vd->id())) {
-          e->ann().removeCall(constants().ann.defines_var);
-          vd->ann().remove(constants().ann.is_defined_var);
+          e->ann().removeCall(env.constants.ann.defines_var);
+          vd->ann().remove(env.constants.ann.is_defined_var);
         }
       }
     }
@@ -1508,9 +1512,9 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
     if (Id* id = e->dynamicCast<Id>()) {
       assert(id->decl() == vd);
       if (vdi->e()->ti()->domain() == nullptr) {
-        vdi->e()->ti()->domain(constants().boollit(isTrue));
+        vdi->e()->ti()->domain(env.constants.boollit(isTrue));
         vardeclQueue.push_back(env.varOccurrences.idx.find(vdi->e()->id())->second);
-      } else if (id->decl()->ti()->domain() == constants().boollit(!isTrue)) {
+      } else if (id->decl()->ti()->domain() == env.constants.boollit(!isTrue)) {
         env.fail();
         remove = false;
       }
@@ -1522,13 +1526,13 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
     return;
   }
   if (e->isa<BoolLit>()) {
-    if (e == constants().literalTrue && (ci != nullptr)) {
+    if (e == env.constants.literalTrue && (ci != nullptr)) {
       toRemove.push_back(ci);
     }
     return;
   }
   Call* c = e->cast<Call>();
-  if (c->id() == constants().ids.bool_eq) {
+  if (c->id() == env.constants.ids.bool_eq) {
     Expression* b0 = c->arg(0);
     Expression* b1 = c->arg(1);
     int b0s = bool_state(env, b0);
@@ -1538,10 +1542,10 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
       std::swap(b0s, b1s);
     }
     assert(b0s != 2);
-    if ((ci != nullptr) || vdi->e()->ti()->domain() == constants().literalTrue) {
+    if ((ci != nullptr) || vdi->e()->ti()->domain() == env.constants.literalTrue) {
       if (b0s != b1s) {
         if (b1s == 2) {
-          b1->cast<Id>()->decl()->ti()->domain(constants().boollit(isTrue));
+          b1->cast<Id>()->decl()->ti()->domain(env.constants.boollit(isTrue));
           vardeclQueue.push_back(env.varOccurrences.idx.find(b1->cast<Id>()->decl()->id())->second);
           if (ci != nullptr) {
             toRemove.push_back(ci);
@@ -1555,10 +1559,10 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
           toRemove.push_back(ci);
         }
       }
-    } else if ((vdi != nullptr) && vdi->e()->ti()->domain() == constants().literalFalse) {
+    } else if ((vdi != nullptr) && vdi->e()->ti()->domain() == env.constants.literalFalse) {
       if (b0s != b1s) {
         if (b1s == 2) {
-          b1->cast<Id>()->decl()->ti()->domain(constants().boollit(isTrue));
+          b1->cast<Id>()->decl()->ti()->domain(env.constants.boollit(isTrue));
           vardeclQueue.push_back(env.varOccurrences.idx.find(b1->cast<Id>()->decl()->id())->second);
         }
       } else {
@@ -1568,36 +1572,36 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
     } else {
       remove = false;
     }
-  } else if (c->id() == constants().ids.forall || c->id() == constants().ids.exists ||
-             c->id() == constants().ids.clause) {
-    if (isTrue && c->id() == constants().ids.exists) {
+  } else if (c->id() == env.constants.ids.forall || c->id() == env.constants.ids.exists ||
+             c->id() == env.constants.ids.clause) {
+    if (isTrue && c->id() == env.constants.ids.exists) {
       if (ci != nullptr) {
         toRemove.push_back(ci);
       } else {
         if (vdi->e()->ti()->domain() == nullptr) {
-          vdi->e()->ti()->domain(constants().literalTrue);
+          vdi->e()->ti()->domain(env.constants.literalTrue);
           vardeclQueue.push_back(env.varOccurrences.idx.find(vdi->e()->id())->second);
-        } else if (vdi->e()->ti()->domain() != constants().literalTrue) {
+        } else if (vdi->e()->ti()->domain() != env.constants.literalTrue) {
           env.fail();
-          vdi->e()->e(constants().literalTrue);
+          vdi->e()->e(env.constants.literalTrue);
         }
       }
-    } else if (!isTrue && c->id() == constants().ids.forall) {
+    } else if (!isTrue && c->id() == env.constants.ids.forall) {
       if (ci != nullptr) {
         env.fail();
         toRemove.push_back(ci);
       } else {
         if (vdi->e()->ti()->domain() == nullptr) {
-          vdi->e()->ti()->domain(constants().literalFalse);
+          vdi->e()->ti()->domain(env.constants.literalFalse);
           vardeclQueue.push_back(env.varOccurrences.idx.find(vdi->e()->id())->second);
-        } else if (vdi->e()->ti()->domain() != constants().literalFalse) {
+        } else if (vdi->e()->ti()->domain() != env.constants.literalFalse) {
           env.fail();
-          vdi->e()->e(constants().literalFalse);
+          vdi->e()->e(env.constants.literalFalse);
         }
       }
     } else {
       int nonfixed = decrement_non_fixed_vars(nonFixedLiteralCount, c);
-      bool isConjunction = (c->id() == constants().ids.forall);
+      bool isConjunction = (c->id() == env.constants.ids.forall);
       assert(nonfixed >= 0);
       if (nonfixed <= 1) {
         bool subsumed = false;
@@ -1620,7 +1624,7 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
             }
             if (Id* id = (*al)[j]->dynamicCast<Id>()) {
               if (id->decl()->ti()->domain() != nullptr) {
-                bool idv = (id->decl()->ti()->domain() == constants().literalTrue);
+                bool idv = (id->decl()->ti()->domain() == env.constants.literalTrue);
                 if (unit != idv) {
                   subsumed = true;
                   i = 2;  // break out of outer loop
@@ -1638,17 +1642,17 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
           if (ci != nullptr) {
             if (isConjunction) {
               env.fail();
-              ci->e(constants().literalFalse);
+              ci->e(env.constants.literalFalse);
             } else {
               toRemove.push_back(ci);
             }
           } else {
             if (vdi->e()->ti()->domain() == nullptr) {
-              vdi->e()->ti()->domain(constants().boollit(!isConjunction));
+              vdi->e()->ti()->domain(env.constants.boollit(!isConjunction));
               vardeclQueue.push_back(env.varOccurrences.idx.find(vdi->e()->id())->second);
-            } else if (vdi->e()->ti()->domain() != constants().boollit(!isConjunction)) {
+            } else if (vdi->e()->ti()->domain() != env.constants.boollit(!isConjunction)) {
               env.fail();
-              vdi->e()->e(constants().boollit(!isConjunction));
+              vdi->e()->e(env.constants.boollit(!isConjunction));
             }
           }
         } else if (realNonFixed == 0) {
@@ -1657,15 +1661,15 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
               toRemove.push_back(ci);
             } else {
               env.fail();
-              ci->e(constants().literalFalse);
+              ci->e(env.constants.literalFalse);
             }
           } else {
             if (vdi->e()->ti()->domain() == nullptr) {
-              vdi->e()->ti()->domain(constants().boollit(isConjunction));
+              vdi->e()->ti()->domain(env.constants.boollit(isConjunction));
               vardeclQueue.push_back(env.varOccurrences.idx.find(vdi->e()->id())->second);
-            } else if (vdi->e()->ti()->domain() != constants().boollit(isConjunction)) {
+            } else if (vdi->e()->ti()->domain() != env.constants.boollit(isConjunction)) {
               env.fail();
-              vdi->e()->e(constants().boollit(isConjunction));
+              vdi->e()->e(env.constants.boollit(isConjunction));
             }
             toRemove.push_back(vdi);
           }
@@ -1676,16 +1680,16 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
           Id* ident = (*al)[nonfixed_j]->cast<Id>();
           if ((ci != nullptr) || (vdi->e()->ti()->domain() != nullptr)) {
             bool result = nonfixed_i == 0;
-            if ((vdi != nullptr) && vdi->e()->ti()->domain() == constants().literalFalse) {
+            if ((vdi != nullptr) && vdi->e()->ti()->domain() == env.constants.literalFalse) {
               result = !result;
             }
             VarDecl* decl = ident->decl();
             if (decl->ti()->domain() == nullptr) {
-              decl->ti()->domain(constants().boollit(result));
+              decl->ti()->domain(env.constants.boollit(result));
               vardeclQueue.push_back(env.varOccurrences.idx.find(decl->id())->second);
-            } else if (vd->ti()->domain() != constants().boollit(result)) {
+            } else if (vd->ti()->domain() != env.constants.boollit(result)) {
               env.fail();
-              decl->e(constants().literalTrue);
+              decl->e(env.constants.literalTrue);
             }
           } else {
             if (nonfixed_i == 0) {
@@ -1693,10 +1697,10 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
               // assigned to a non-fixed variable => turn into simple equality
               vdi->e()->e(nullptr);
               // Transfer is_defined_var annotation
-              if (ident->decl()->ann().contains(constants().ann.is_defined_var)) {
-                vdi->e()->addAnnotation(constants().ann.is_defined_var);
-              } else if (vdi->e()->ann().contains(constants().ann.is_defined_var)) {
-                ident->decl()->addAnnotation(constants().ann.is_defined_var);
+              if (ident->decl()->ann().contains(env.constants.ann.is_defined_var)) {
+                vdi->e()->addAnnotation(env.constants.ann.is_defined_var);
+              } else if (vdi->e()->ann().contains(env.constants.ann.is_defined_var)) {
+                ident->decl()->addAnnotation(env.constants.ann.is_defined_var);
               }
               unify(env, deletedVarDecls, vdi->e()->id(), ident);
               push_dependent_constraints(env, ident, constraintQueue);
@@ -1708,7 +1712,7 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
           remove = false;
         }
 
-      } else if (c->id() == constants().ids.clause) {
+      } else if (c->id() == env.constants.ids.clause) {
         int posOrNeg = isTrue ? 0 : 1;
         auto* al = follow_id(c->arg(posOrNeg))->cast<ArrayLit>();
         auto* al_other = follow_id(c->arg(1 - posOrNeg))->cast<ArrayLit>();
@@ -1727,10 +1731,10 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
             } else {
               Id* id = (*al)[0]->cast<Id>();
               if (id->decl()->ti()->domain() == nullptr) {
-                id->decl()->ti()->domain(constants().boollit(isTrue));
+                id->decl()->ti()->domain(env.constants.boollit(isTrue));
                 vardeclQueue.push_back(env.varOccurrences.idx.find(id->decl()->id())->second);
               } else {
-                if (id->decl()->ti()->domain() == constants().boollit(isTrue)) {
+                if (id->decl()->ti()->domain() == env.constants.boollit(isTrue)) {
                   toRemove.push_back(ci);
                 } else {
                   env.fail();
@@ -1747,11 +1751,11 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
                 toRemove.push_back(ci);
               } else {
                 if (vdi->e()->ti()->domain() == nullptr) {
-                  vdi->e()->ti()->domain(constants().literalTrue);
+                  vdi->e()->ti()->domain(env.constants.literalTrue);
                   vardeclQueue.push_back(env.varOccurrences.idx.find(vdi->e()->id())->second);
-                } else if (vdi->e()->ti()->domain() != constants().literalTrue) {
+                } else if (vdi->e()->ti()->domain() != env.constants.literalTrue) {
                   env.fail();
-                  vdi->e()->e(constants().literalTrue);
+                  vdi->e()->e(env.constants.literalTrue);
                 }
               }
               break;

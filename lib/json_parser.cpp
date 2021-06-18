@@ -10,6 +10,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/file_utils.hh>
+#include <minizinc/flatten_internal.hh>
 #include <minizinc/iter.hh>
 #include <minizinc/json_parser.hh>
 
@@ -376,7 +377,7 @@ Expression* JSONParser::parseObject(istream& is, bool possibleString) {
           if (listT == T_COLON) {
             listT = T_BOOL;
           }
-          exprs.push_back(constants().boollit(next.b));
+          exprs.push_back(_env.constants.boollit(next.b));
           break;
         case T_OBJ_OPEN: {
           if (listT != T_COLON && listT != T_OBJ_OPEN) {
@@ -524,7 +525,7 @@ ArrayLit* JSONParser::parseArray(std::istream& is, bool possibleString) {
         if (!hadDim[curDim]) {
           dims[curDim].second++;
         }
-        exps.push_back(constants().absent);
+        exps.push_back(_env.constants.absent);
         break;
       case T_OBJ_OPEN:
         if (!hadDim[curDim]) {
@@ -566,7 +567,7 @@ Expression* JSONParser::parseExp(std::istream& is, bool parseObjects, bool possi
     case T_BOOL:
       return new BoolLit(Location().introduce(), next.b);
     case T_NULL:
-      return constants().absent;
+      return _env.constants.absent;
     case T_OBJ_OPEN:
       return parseObjects ? parseObject(is, possibleString) : nullptr;
     case T_LIST_OPEN:
@@ -619,7 +620,7 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
   std::string name = "array" + std::to_string(ti->ranges().size()) + "d";
   Call* c = new Call(al->loc().introduce(), name, args);
   if (al->dims() != 1) {
-    c->addAnnotation(constants().ann.array_check_form);
+    c->addAnnotation(Constants::constants().ann.array_check_form);
   }
   return c;
 }

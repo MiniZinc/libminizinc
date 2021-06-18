@@ -91,7 +91,7 @@ bool notInDatafile(YYLTYPE* location, void* parm, const string& item) {
 Expression* createDocComment(const ParserLocation& loc, const std::string& s) {
   std::vector<Expression*> args(1);
   args[0] = new StringLit(loc, s);
-  Call* c = new Call(Location(loc), constants().ann.doc_comment, args);
+  Call* c = new Call(Location(loc), Constants::constants().ann.doc_comment, args);
   c->type(Type::ann());
   return c;
 }
@@ -465,7 +465,7 @@ vardecl_item :
         ti->setIsEnum(true);
         vector<Expression*> args;
         args.push_back(new ArrayLit(@$,*$6));
-        Call* sl = new Call(@$, constants().ids.anonEnumFromStrings, args);
+        Call* sl = new Call(@$, Constants::constants().ids.anonEnumFromStrings, args);
         VarDecl* vd = new VarDecl(@$,ti,$2,sl);
         if ($2 && $3)
           vd->addAnnotations(*$3);
@@ -1165,9 +1165,9 @@ expr_atom_head_nonstring :
       { if ($2) $$=new BinOp(@$,createArrayAccess(@$, new AnonVar(@$), *$2), BOT_POW, IntLit::a(-1));
         delete $2; }
     | MZN_BOOL_LITERAL
-      { $$=constants().boollit(($1!=0)); }
+      { $$=Constants::constants().boollit(($1!=0)); }
     | MZN_BOOL_LITERAL MZN_POW_MINUS1
-      { $$=new BinOp(@$,constants().boollit(($1!=0)), BOT_POW, IntLit::a(-1)); }
+      { $$=new BinOp(@$,Constants::constants().boollit(($1!=0)), BOT_POW, IntLit::a(-1)); }
     | MZN_INTEGER_LITERAL
       { $$=IntLit::a($1); }
     | MZN_INTEGER_LITERAL MZN_POW_MINUS1
@@ -1181,9 +1181,9 @@ expr_atom_head_nonstring :
     | MZN_FLOAT_LITERAL MZN_POW_MINUS1
       { $$=new BinOp(@$,FloatLit::a($1), BOT_POW, IntLit::a(-1)); }
     | MZN_ABSENT
-      { $$=constants().absent; }
+      { $$=Constants::constants().absent; }
     | MZN_ABSENT MZN_POW_MINUS1
-      { $$=constants().absent; }
+      { $$=Constants::constants().absent; }
     | set_literal
     | set_literal array_access_tail
       { if ($2) $$=createArrayAccess(@$, $1, *$2);

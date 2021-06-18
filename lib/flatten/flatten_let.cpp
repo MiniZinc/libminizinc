@@ -28,13 +28,13 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
         Ctx nctx = ctx;
         BCtx transfer_ctx = let->type().bt() == Type::BT_INT ? nctx.i : nctx.b;
         nctx.neg = false;
-        if (vd->ann().contains(constants().ctx.promise_monotone)) {
+        if (vd->ann().contains(env.constants.ctx.promise_monotone)) {
           if (vd->e()->type().bt() == Type::BT_BOOL) {
             nctx.b = +transfer_ctx;
           } else {
             nctx.i = +transfer_ctx;
           }
-        } else if (vd->ann().contains(constants().ctx.promise_antitone)) {
+        } else if (vd->ann().contains(env.constants.ctx.promise_antitone)) {
           if (vd->e()->type().bt() == Type::BT_BOOL) {
             nctx.b = -transfer_ctx;
           } else {
@@ -44,7 +44,7 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
           nctx.b = C_MIX;
         }
 
-        EE ee = flat_exp(env, nctx, vd->e(), nullptr, nctx.partialityVar());
+        EE ee = flat_exp(env, nctx, vd->e(), nullptr, nctx.partialityVar(env));
         let_e = ee.r();
         cs.push_back(ee);
         if (vd->ti()->domain() != nullptr) {
@@ -68,8 +68,8 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
           if (c->decl() == nullptr) {
             throw InternalError("no matching declaration found for var_dom");
           }
-          VarDecl* b_b = (nctx.b == C_ROOT && b == constants().varTrue) ? b : nullptr;
-          VarDecl* r_r = (nctx.b == C_ROOT && b == constants().varTrue) ? b : nullptr;
+          VarDecl* b_b = (nctx.b == C_ROOT && b == env.constants.varTrue) ? b : nullptr;
+          VarDecl* r_r = (nctx.b == C_ROOT && b == env.constants.varTrue) ? b : nullptr;
           ee = flat_exp(env, nctx, c, r_r, b_b);
           cs.push_back(ee);
           ee.b = ee.r;
@@ -80,7 +80,7 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
         }
       } else {
         if ((ctx.b == C_NEG || ctx.b == C_MIX) &&
-            !vd->ann().contains(constants().ann.promise_total)) {
+            !vd->ann().contains(env.constants.ann.promise_total)) {
           CallStackItem csi_vd(env, vd);
           throw FlatteningError(env, vd->loc(), "free variable in non-positive context");
         }
@@ -98,17 +98,17 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
         vd->flat(vd);
       }
     } else {
-      if (ctx.b == C_ROOT || le->ann().contains(constants().ann.promise_total)) {
-        (void)flat_exp(env, Ctx(), le, constants().varTrue, constants().varTrue);
+      if (ctx.b == C_ROOT || le->ann().contains(env.constants.ann.promise_total)) {
+        (void)flat_exp(env, Ctx(), le, env.constants.varTrue, env.constants.varTrue);
       } else {
-        EE ee = flat_exp(env, ctx, le, nullptr, constants().varTrue);
+        EE ee = flat_exp(env, ctx, le, nullptr, env.constants.varTrue);
         ee.b = ee.r;
         cs.push_back(ee);
       }
     }
   }
-  if (r == constants().varTrue && ctx.b == C_ROOT && !ctx.neg) {
-    ret.b = bind(env, Ctx(), b, constants().literalTrue);
+  if (r == env.constants.varTrue && ctx.b == C_ROOT && !ctx.neg) {
+    ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
     (void)flat_exp(env, ctx, let->in(), r, b);
     ret.r = conj(env, r, Ctx(), cs);
   } else {
@@ -116,7 +116,7 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     nctx.neg = false;
     VarDecl* bb = b;
     for (EE& ee : cs) {
-      if (ee.b() != constants().literalTrue) {
+      if (ee.b() != env.constants.literalTrue) {
         bb = nullptr;
         break;
       }
@@ -126,7 +126,7 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
       ee.b = ee.r;
       cs.push_back(ee);
       ret.r = conj(env, r, ctx, cs);
-      ret.b = bind(env, Ctx(), b, constants().literalTrue);
+      ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
     } else {
       cs.push_back(ee);
       ret.r = bind(env, Ctx(), r, ee.r());

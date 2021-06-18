@@ -15,7 +15,7 @@
 
 namespace MiniZinc {
 void add_path_annotation(EnvI& env, Expression* e);
-void add_ctx_ann(VarDecl* vd, BCtx& c);
+void add_ctx_ann(EnvI& env, VarDecl* vd, BCtx& c);
 bool istrue(EnvI& env, Expression* e);
 bool isfalse(EnvI& env, Expression* e);
 Expression* create_dummy_value(EnvI& env, const Type& t);
@@ -29,7 +29,7 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
 
 KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e);
 
-void make_defined_var(VarDecl* vd, Call* c);
+void make_defined_var(EnvI& env, VarDecl* vd, Call* c);
 void check_index_sets(EnvI& env, VarDecl* vd, Expression* e);
 
 class CallArgItem {

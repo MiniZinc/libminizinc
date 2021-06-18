@@ -20,7 +20,7 @@ EE flatten_setlit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl*
   assert(sl->isv() == nullptr && sl->fsv() == nullptr);
   std::vector<EE> elems_ee(sl->v().size());
   for (unsigned int i = sl->v().size(); (i--) != 0U;) {
-    elems_ee[i] = flat_exp(env, ctx, sl->v()[i], nullptr, ctx.partialityVar());
+    elems_ee[i] = flat_exp(env, ctx, sl->v()[i], nullptr, ctx.partialityVar(env));
   }
   std::vector<Expression*> elems(elems_ee.size());
   bool allPar = true;
@@ -59,7 +59,7 @@ EE flatten_setlit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl*
     assert(fi);
     assert(env.isSubtype(fi->rtype(env, args, false), cc->type(), false));
     cc->decl(fi);
-    EE ee = flat_exp(env, Ctx(), cc, nullptr, constants().varTrue);
+    EE ee = flat_exp(env, Ctx(), cc, nullptr, env.constants.varTrue);
     ret.r = bind(env, Ctx(), r, ee.r());
   }
   return ret;

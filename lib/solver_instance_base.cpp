@@ -93,8 +93,8 @@ void SolverInstanceBase2::assignSolutionToOutput() {
       if (!it->removed()) {
         VarDecl* vd = it->e();
         if (!vd->ann().isEmpty()) {
-          if (vd->ann().containsCall(constants().ann.output_array.aststr()) ||
-              vd->ann().contains(constants().ann.output_var)) {
+          if (vd->ann().containsCall(Constants::constants().ann.output_array.aststr()) ||
+              vd->ann().contains(Constants::constants().ann.output_var)) {
             _varsWithOutput.push_back(vd);
           }
         }
@@ -109,7 +109,7 @@ void SolverInstanceBase2::assignSolutionToOutput() {
   for (auto* vd : _varsWithOutput) {
     // std::cout << "DEBUG: Looking at var-decl with output-annotation: " << *vd << std::endl;
     if (Call* output_array_ann = Expression::dynamicCast<Call>(
-            get_annotation(vd->ann(), constants().ann.output_array.aststr()))) {
+            get_annotation(vd->ann(), Constants::constants().ann.output_array.aststr()))) {
       assert(vd->e());
 
       if (auto* al = vd->e()->dynamicCast<ArrayLit>()) {
@@ -161,7 +161,7 @@ void SolverInstanceBase2::assignSolutionToOutput() {
         auto& de = getSolns2Out()->findOutputVar(vd->id()->str());
         de.first->e(array_solution);
       }
-    } else if (vd->ann().contains(constants().ann.output_var)) {
+    } else if (vd->ann().contains(Constants::constants().ann.output_var)) {
       Expression* sol = getSolutionValue(vd->id());
       vd->e(sol);
       auto& de = getSolns2Out()->findOutputVar(vd->id()->str());

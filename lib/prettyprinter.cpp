@@ -318,7 +318,7 @@ public:
         _os << "\"" << Printer::escapeStringLit(e->cast<StringLit>()->v()) << "\"";
         break;
       case Expression::E_ID: {
-        if (e == constants().absent) {
+        if (e == Constants::constants().absent) {
           _os << "<>";
         } else {
           const Id* id = e->cast<Id>();
@@ -1200,7 +1200,7 @@ public:
     return new StringDocument(oss.str());
   }
   static ret mapId(const Id* id) {
-    if (id == constants().absent) {
+    if (id == Constants::constants().absent) {
       return new StringDocument("<>");
     }
     if (id->idn() == -1) {

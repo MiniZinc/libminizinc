@@ -51,9 +51,9 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expres
   simplify_lin<IntLit>(coeffs, x, d);
   if (coeffs.empty()) {
     bool failed;
-    if (c->id() == constants().ids.int_.lin_le) {
+    if (c->id() == env.constants.ids.int_.lin_le) {
       failed = (d > eval_int(env, c->arg(2)));
-    } else if (c->id() == constants().ids.int_.lin_eq) {
+    } else if (c->id() == env.constants.ids.int_.lin_eq) {
       failed = (d != eval_int(env, c->arg(2)));
     } else {
       failed = (d == eval_int(env, c->arg(2)));
@@ -64,11 +64,11 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expres
     return OptimizeRegistry::CS_ENTAILED;
   }
   if (coeffs.size() == 1 && (ii->isa<ConstraintI>() || ii->cast<VarDeclI>()->e()->ti()->domain() ==
-                                                           constants().literalTrue)) {
+                                                           env.constants.literalTrue)) {
     VarDecl* vd = x[0]()->cast<Id>()->decl();
     IntSetVal* domain =
         vd->ti()->domain() != nullptr ? eval_intset(env, vd->ti()->domain()) : nullptr;
-    if (c->id() == constants().ids.int_.lin_eq) {
+    if (c->id() == env.constants.ids.int_.lin_eq) {
       IntVal rd = eval_int(env, c->arg(2)) - d;
       if (rd % coeffs[0] == 0) {
         IntVal nd = rd / coeffs[0];
@@ -78,14 +78,14 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expres
         std::vector<Expression*> args(2);
         args[0] = x[0]();
         args[1] = IntLit::a(nd);
-        Call* nc = new Call(Location(), constants().ids.int_.eq, args);
+        Call* nc = new Call(Location(), env.constants.ids.int_.eq, args);
         nc->type(Type::varbool());
         rewrite = nc;
         return OptimizeRegistry::CS_REWRITE;
       }
       return OptimizeRegistry::CS_FAILED;
     }
-    if (c->id() == constants().ids.int_.lin_le) {
+    if (c->id() == env.constants.ids.int_.lin_le) {
       IntVal ac = std::abs(coeffs[0]);
       IntVal rd = eval_int(env, c->arg(2)) - d;
       IntVal ad = std::abs(rd);
@@ -127,19 +127,19 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expres
         if (swapSign) {
           std::swap(args[0], args[1]);
         }
-        Call* nc = new Call(Location(), constants().ids.int_.le, args);
+        Call* nc = new Call(Location(), env.constants.ids.int_.le, args);
         nc->type(Type::varbool());
         rewrite = nc;
         return OptimizeRegistry::CS_REWRITE;
       }
     }
-  } else if (c->id() == constants().ids.int_.lin_eq && coeffs.size() == 2 &&
+  } else if (c->id() == env.constants.ids.int_.lin_eq && coeffs.size() == 2 &&
              ((coeffs[0] == 1 && coeffs[1] == -1) || (coeffs[1] == 1 && coeffs[0] == -1)) &&
              eval_int(env, c->arg(2)) - d == 0) {
     std::vector<Expression*> args(2);
     args[0] = x[0]();
     args[1] = x[1]();
-    Call* nc = new Call(Location(), constants().ids.int_.eq, args);
+    Call* nc = new Call(Location(), env.constants.ids.int_.eq, args);
     rewrite = nc;
     return OptimizeRegistry::CS_REWRITE;
   }
@@ -233,7 +233,7 @@ OptimizeRegistry::ConstraintStatus o_element(EnvI& env, Item* i, Call* c, Expres
     std::vector<Expression*> args(2);
     args[0] = result;
     args[1] = c->arg(2);
-    Call* eq = new Call(Location(), constants().ids.int_.eq, args);
+    Call* eq = new Call(Location(), env.constants.ids.int_.eq, args);
     rewrite = eq;
     return OptimizeRegistry::CS_REWRITE;
   }
@@ -298,8 +298,8 @@ OptimizeRegistry::ConstraintStatus o_not(EnvI& env, Item* i, Call* c, Expression
       std::swap(e0, e1);
     }
     if (e0->type().isPar()) {
-      Call* eq = new Call(Location(), constants().ids.bool_eq,
-                          {e1, constants().boollit(!eval_bool(env, e0))});
+      Call* eq = new Call(Location(), env.constants.ids.bool_eq,
+                          {e1, env.constants.boollit(!eval_bool(env, e0))});
       rewrite = eq;
       return OptimizeRegistry::CS_REWRITE;
     }
@@ -351,7 +351,7 @@ OptimizeRegistry::ConstraintStatus o_times(EnvI& env, Item* i, Call* c, Expressi
       return OptimizeRegistry::CS_REWRITE;
     }  // this is the relational version of times
     assert(c->argCount() == 3);
-    rewrite = new Call(Location().introduce(), constants().ids.int_.eq, {c->arg(2), result});
+    rewrite = new Call(Location().introduce(), env.constants.ids.int_.eq, {c->arg(2), result});
     return OptimizeRegistry::CS_REWRITE;
   }
   return OptimizeRegistry::CS_OK;
@@ -387,7 +387,7 @@ OptimizeRegistry::ConstraintStatus o_set_in(EnvI& env, Item* i, Call* c, Express
         std::vector<Expression*> args(2);
         args[0] = vd->id();
         args[1] = IntLit::a(isv->min());
-        Call* eq = new Call(Location(), constants().ids.int_.eq, args);
+        Call* eq = new Call(Location(), env.constants.ids.int_.eq, args);
         rewrite = eq;
         return OptimizeRegistry::CS_REWRITE;
       }
@@ -477,20 +477,20 @@ public:
     e.push_back(new StringLit(Location(), id_element));
     e.push_back(new StringLit(Location(), id_var_element));
     _keepAliveModel->addItem(new ConstraintI(Location(), new ArrayLit(Location(), e)));
-    OptimizeRegistry::registry().reg(constants().ids.int_.lin_eq, o_linear);
-    OptimizeRegistry::registry().reg(constants().ids.int_.lin_le, o_linear);
-    OptimizeRegistry::registry().reg(constants().ids.int_.lin_ne, o_linear);
-    OptimizeRegistry::registry().reg(constants().ids.int_.div, o_div);
-    OptimizeRegistry::registry().reg(constants().ids.int_.times, o_times);
+    OptimizeRegistry::registry().reg(Constants::constants().ids.int_.lin_eq, o_linear);
+    OptimizeRegistry::registry().reg(Constants::constants().ids.int_.lin_le, o_linear);
+    OptimizeRegistry::registry().reg(Constants::constants().ids.int_.lin_ne, o_linear);
+    OptimizeRegistry::registry().reg(Constants::constants().ids.int_.div, o_div);
+    OptimizeRegistry::registry().reg(Constants::constants().ids.int_.times, o_times);
     OptimizeRegistry::registry().reg(id_element, o_element);
-    OptimizeRegistry::registry().reg(constants().ids.lin_exp, o_lin_exp);
+    OptimizeRegistry::registry().reg(Constants::constants().ids.lin_exp, o_lin_exp);
     OptimizeRegistry::registry().reg(id_var_element, o_element);
-    OptimizeRegistry::registry().reg(constants().ids.clause, o_clause);
-    OptimizeRegistry::registry().reg(constants().ids.bool_clause, o_clause);
-    OptimizeRegistry::registry().reg(constants().ids.bool_not, o_not);
-    OptimizeRegistry::registry().reg(constants().ids.set_in, o_set_in);
-    OptimizeRegistry::registry().reg(constants().ids.int_.ne, o_int_ne);
-    OptimizeRegistry::registry().reg(constants().ids.int_.le, o_int_le);
+    OptimizeRegistry::registry().reg(Constants::constants().ids.clause, o_clause);
+    OptimizeRegistry::registry().reg(Constants::constants().ids.bool_clause, o_clause);
+    OptimizeRegistry::registry().reg(Constants::constants().ids.bool_not, o_not);
+    OptimizeRegistry::registry().reg(Constants::constants().ids.set_in, o_set_in);
+    OptimizeRegistry::registry().reg(Constants::constants().ids.int_.ne, o_int_ne);
+    OptimizeRegistry::registry().reg(Constants::constants().ids.int_.le, o_int_le);
   }
   ~Register() { delete _keepAliveModel; }
 } _r;

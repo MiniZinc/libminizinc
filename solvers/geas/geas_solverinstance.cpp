@@ -402,8 +402,8 @@ bool GeasSolverInstance::addSolutionNoGood() {
   geas::model solution = _solver.get_model();
   vec<geas::clause_elt> clause;
   for (auto& var : _varsWithOutput) {
-    if (Expression::dynamicCast<Call>(
-            get_annotation(var->ann(), constants().ann.output_array.aststr())) != nullptr) {
+    if (Expression::dynamicCast<Call>(get_annotation(
+            var->ann(), Constants::constants().ann.output_array.aststr())) != nullptr) {
       if (auto* al = var->e()->dynamicCast<ArrayLit>()) {
         for (int j = 0; j < al->size(); j++) {
           if (Id* id = (*al)[j]->dynamicCast<Id>()) {
@@ -565,7 +565,7 @@ Expression* GeasSolverInstance::getSolutionValue(Id* id) {
     switch (id->type().bt()) {
       case Type::BT_BOOL:
         assert(var.isBool());
-        return constants().boollit(solution.value(var.boolVar()));
+        return Constants::constants().boollit(solution.value(var.boolVar()));
       case Type::BT_FLOAT:
         assert(var.isFloat());
         return FloatLit::a(solution[var.floatVar()]);

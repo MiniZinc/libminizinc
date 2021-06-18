@@ -104,7 +104,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
               default: {
                 auto* parWhereAl = new ArrayLit(c->where(i)->loc(), parWhere);
                 parWhereAl->type(Type::parbool(1));
-                Call* forall = new Call(c->where(i)->loc(), constants().ids.forall, {parWhereAl});
+                Call* forall = new Call(c->where(i)->loc(), env.constants.ids.forall, {parWhereAl});
                 forall->type(Type::parbool());
                 forall->decl(env.model->matchFn(env, forall, false));
                 orig_where[i] = forall;
@@ -135,7 +135,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
         al->type(Type::varbool(1));
         std::vector<Expression*> args(1);
         args[0] = al;
-        Call* forall = new Call(Location().introduce(), constants().ids.forall, args);
+        Call* forall = new Call(Location().introduce(), env.constants.ids.forall, args);
         forall->type(Type::varbool());
         forall->decl(env.model->matchFn(env, forall, false));
         cond = forall;
@@ -148,15 +148,15 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
       Call* surround = env.surroundingCall();
 
       Type ntype = c->type();
-      if ((surround != nullptr) && surround->id() == constants().ids.forall) {
+      if ((surround != nullptr) && surround->id() == env.constants.ids.forall) {
         new_e = new BinOp(Location().introduce(), cond, BOT_IMPL, c->e());
         new_e->type(Type::varbool());
         ntype.ot(Type::OT_PRESENT);
-      } else if ((surround != nullptr) && surround->id() == constants().ids.exists) {
+      } else if ((surround != nullptr) && surround->id() == env.constants.ids.exists) {
         new_e = new BinOp(Location().introduce(), cond, BOT_AND, c->e());
         new_e->type(Type::varbool());
         ntype.ot(Type::OT_PRESENT);
-      } else if ((surround != nullptr) && surround->id() == constants().ids.sum) {
+      } else if ((surround != nullptr) && surround->id() == env.constants.ids.sum) {
         // If the body of the comprehension is par, turn the whole expression into a linear sum.
         // Otherwise, generate if-then-else expressions.
         Type tt;
@@ -164,8 +164,8 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
         tt.ti(Type::TI_VAR);
         tt.ot(Type::OT_PRESENT);
         if (c->e()->type().isPar()) {
-          ASTString cid = c->e()->type().bt() == Type::BT_INT ? constants().ids.bool2int
-                                                              : constants().ids.bool2float;
+          ASTString cid = c->e()->type().bt() == Type::BT_INT ? env.constants.ids.bool2int
+                                                              : env.constants.ids.bool2float;
           Type b2i_t = c->e()->type().bt() == Type::BT_INT ? Type::varint() : Type::varfloat();
           auto* b2i = new Call(c->loc().introduce(), cid, {cond});
           b2i->type(b2i_t);
@@ -181,7 +181,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
           ntype.ot(Type::OT_PRESENT);
         }
       } else {
-        ITE* if_b_else_absent = new ITE(c->loc().introduce(), {cond, c->e()}, constants().absent);
+        ITE* if_b_else_absent = new ITE(c->loc().introduce(), {cond, c->e()}, env.constants.absent);
         Type tt;
         tt = c->e()->type();
         tt.ti(Type::TI_VAR);
@@ -203,9 +203,9 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
     EvalF(const Ctx& ctx0, VarDecl* rr0) : ctx(ctx0), rr(rr0) {}
     typedef EE ArrayVal;
     EE e(EnvI& env, Expression* e0) const {
-      return flat_exp(env, ctx, e0, rr, ctx.partialityVar());
+      return flat_exp(env, ctx, e0, rr, ctx.partialityVar(env));
     }
-  } _evalf(ctx, r == constants().varIgnore ? constants().varTrue : nullptr);
+  } _evalf(ctx, r == env.constants.varIgnore ? env.constants.varTrue : nullptr);
   std::vector<EE> elems_ee;
   bool wasUndefined = false;
   try {
@@ -263,7 +263,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
         Call* a2s = new Call(Location().introduce(), "array2set", {alr});
         a2s->decl(env.model->matchFn(env, a2s, false));
         a2s->type(a2s->decl()->rtype(env, {alr}, false));
-        EE ee = flat_exp(env, Ctx(), a2s, nullptr, constants().varTrue);
+        EE ee = flat_exp(env, Ctx(), a2s, nullptr, env.constants.varTrue);
         ka = ee.r();
       }
     } else {
@@ -275,7 +275,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
   }
   assert(!ka()->type().isbot());
   if (wasUndefined) {
-    ret.b = bind(env, Ctx(), b, constants().literalFalse);
+    ret.b = bind(env, Ctx(), b, env.constants.literalFalse);
   } else {
     ret.b = conj(env, b, Ctx(), elems_ee);
   }
