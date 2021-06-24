@@ -25,19 +25,43 @@ function var bool: '\/'(var opt bool: x, var opt bool: y) = (occurs(x) /\ deopt(
 /** @group stdlib.logic Return truth value of \a x implies \a y */
 function     bool: '->'(    bool: x,     bool: y);
 /** @group stdlib.logic Return truth value of \a x implies \a y */
+function     bool: '->'(opt bool: x, opt bool: y) =
+  absent(x) \/ absent(y) \/ (deopt(x) -> deopt(y));
+/** @group stdlib.logic Return truth value of \a x implies \a y */
 function var bool: '->'(var bool: x, var bool: y);
+/** @group stdlib.logic Return truth value of \a x implies \a y */
+function var bool: '->'(var opt bool: x, var opt bool: y) =
+  absent(x) \/ absent(y) \/ (deopt(x) -> deopt(y));
 /** @group stdlib.logic Return truth value of \a y implies \a x */
 function     bool: '<-'(    bool: x,     bool: y);
 /** @group stdlib.logic Return truth value of \a y implies \a x */
+function     bool: '<-'(opt bool: x, opt bool: y) =
+  absent(x) \/ absent(y) \/ (deopt(x) <- deopt(y));
+/** @group stdlib.logic Return truth value of \a y implies \a x */
 function var bool: '<-'(var bool: x, var bool: y);
+/** @group stdlib.logic Return truth value of \a y implies \a x */
+function var bool: '<-'(var opt bool: x, var opt bool: y) =
+  absent(x) \/ absent(y) \/ (deopt(x) <- deopt(y));
 /** @group stdlib.logic Return truth value of \a x if-and-only-if \a y */
 function     bool: '<->'(    bool: x,     bool: y);
 /** @group stdlib.logic Return truth value of \a x if-and-only-if \a y */
+function     bool: '<->'(opt bool: x, opt bool: y) =
+  absent(x) \/ absent(y) \/ (deopt(x) <-> deopt(y));
+/** @group stdlib.logic Return truth value of \a x if-and-only-if \a y */
 function var bool: '<->'(var bool: x, var bool: y);
+/** @group stdlib.logic Return truth value of \a x if-and-only-if \a y */
+function var bool: '<->'(var opt bool: x, var opt bool: y) =
+  absent(x) \/ absent(y) \/ (deopt(x) <-> deopt(y));
 /** @group stdlib.logic Return truth value of \a x xor \a y */
 function     bool: 'xor'(    bool: x,     bool: y);
 /** @group stdlib.logic Return truth value of \a x xor \a y */
+function     bool: 'xor'(opt bool: x, opt bool: y) =
+  absent(x) \/ absent(y) \/ (deopt(x) xor deopt(y));
+/** @group stdlib.logic Return truth value of \a x xor \a y */
 function var bool: 'xor'(var bool: x, var bool: y);
+/** @group stdlib.logic Return truth value of \a x xor \a y */
+function var bool: 'xor'(var opt bool: x, var opt bool: y) =
+  absent(x) \/ absent(y) \/ (deopt(x) xor deopt(y));
 /** @group stdlib.logic Return truth value of the negation of \a x */
 function     bool: 'not'(    bool: x);
 /** @group stdlib.logic Negation of \a x if it occurs, otherwise absent */
@@ -66,17 +90,37 @@ predicate exists (array[int] of var opt bool: x) =
 /** @group stdlib.logic Return truth value of \(\oplus_i \a x[i]\) */
 function     bool: xorall(array[$T] of     bool: x);
 /** @group stdlib.logic Return truth value of \(\oplus_i \a x[i]\) */
+function     bool: xorall(array[$T] of opt bool: x) =
+  exists(y in array1d(x))(absent(y)) \/ xorall(y in array1d(x))(deopt(y));
+/** @group stdlib.logic Return truth value of \(\oplus_i \a x[i]\) */
 function var bool: xorall(array[$T] of var bool: x) =
   array_bool_xor(array1d(x));
+/** @group stdlib.logic Return truth value of \(\oplus_i \a x[i]\) */
+function var bool: xorall(array[$T] of var opt bool: x) =
+  exists(y in array1d(x))(absent(y)) \/ xorall(y in array1d(x))(deopt(y));
 /** @group stdlib.logic Return truth value of \(\text{true}\oplus (\oplus_i \a x[i])\) */
 function     bool: iffall(array[$T] of     bool: x);
 /** @group stdlib.logic Return truth value of \(\text{true}\oplus (\oplus_i \a x[i])\) */
+function     bool: iffall(array[$T] of opt bool: x) =
+  exists(y in array1d(x))(absent(y)) \/ iffall(y in array1d(x))(deopt(y));
+/** @group stdlib.logic Return truth value of \(\text{true}\oplus (\oplus_i \a x[i])\) */
 function var bool: iffall(array[$T] of var bool: x) =
   array_bool_xor(array1d(x)++[true]);
+/** @group stdlib.logic Return truth value of \(\text{true}\oplus (\oplus_i \a x[i])\) */
+function var bool: iffall(array[$T] of var opt bool: x) =
+  exists(y in array1d(x))(absent(y)) \/ iffall(y in array1d(x))(deopt(y));
+/** @group stdlib.logic Return truth value of \((\bigvee_i \a x[i]) \lor (\bigvee_j \lnot \a y[j])\) */
+function     bool: clause(array[$T] of     bool: x, array[$T] of     bool: y);
+/** @group stdlib.logic Return truth value of \((\bigvee_i \a x[i]) \lor (\bigvee_j \lnot \a y[j])\) */
+function     bool: clause(array[$T] of opt bool: x, array[$T] of opt bool: y) =
+  exists(z in array1d(x))(absent(z)) \/ exists(z in array1d(y))(absent(z)) \/
+  clause([deopt(z) | z in array1d(x)], [deopt(z) | z in array1d(y)]);
 /** @group stdlib.logic Return truth value of \((\bigvee_i \a x[i]) \lor (\bigvee_j \lnot \a y[j])\) */
 function var bool: clause(array[$T] of var bool: x, array[$T] of var bool: y);
 /** @group stdlib.logic Return truth value of \((\bigvee_i \a x[i]) \lor (\bigvee_j \lnot \a y[j])\) */
-function var bool: clause(array[$T] of     bool: x, array[$T] of     bool: y);
+function var bool: clause(array[$T] of var opt bool: x, array[$T] of var opt bool: y) =
+  exists(z in array1d(x))(absent(z)) \/ exists(z in array1d(y))(absent(z)) \/
+  clause([deopt(z) | z in array1d(x)], [deopt(z) | z in array1d(y)]);
 
 /** @group stdlib.logic Return negation of \a b */
 function var bool: bool_not(var bool: b);
