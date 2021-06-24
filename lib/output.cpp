@@ -809,8 +809,9 @@ void create_dzn_output_item(EnvI& e, bool outputObjective, bool includeOutputIte
     outputVars.push_back(new StringLit(Location().introduce(), ";\n"));
   }
 
-  auto* newOutputItem =
-      new OutputI(Location().introduce(), new ArrayLit(Location().introduce(), outputVars));
+  auto* al = new ArrayLit(Location().introduce(), outputVars);
+  e.addOutputToSection(ASTString("dzn"), al);  // Add output to dzn section for encapsulation
+  auto* newOutputItem = new OutputI(Location().introduce(), al);
   e.model->addItem(newOutputItem);
 }
 
@@ -946,14 +947,52 @@ ArrayLit* create_json_output(EnvI& e, bool outputObjective, bool includeOutputIt
 }
 void create_json_output_item(EnvI& e, bool outputObjective, bool includeOutputItem,
                              bool hasChecker) {
+  auto* al = create_json_output(e, outputObjective, includeOutputItem, hasChecker);
+  e.addOutputToSection(ASTString("json"), al);  // Add output to json section for encapsulation
+  auto* newOutputItem = new OutputI(Location().introduce(), al);
+  e.model->addItem(newOutputItem);
+}
+
+void create_encapsulated_output_item(EnvI& e) {
+  // Inner portion of encapsulated output
+  auto* al = e.model->outputItem()->e();
+  al->type(Type::parstring(1));
+  std::vector<Expression*> es;
+
+  // Output each section as key-value pairs in an object
+  es.push_back(new StringLit(Location().introduce(), "{"));
+  bool first = true;
+  for (const auto& it : e.outputSections()) {
+    if (first) {
+      es.push_back(new StringLit(Location().introduce(),
+                                 "\"" + Printer::escapeStringLit(it.first) + "\": "));
+      first = false;
+    } else {
+      es.push_back(new StringLit(Location().introduce(),
+                                 ", \"" + Printer::escapeStringLit(it.first) + "\": "));
+    }
+    bool isJSON = it.first == "json" || it.first.endsWith("_json");
+    auto* concat = new Call(Location().introduce(), "concat", {it.second});
+    concat->type(Type::parstring());
+    concat->decl(e.model->matchFn(e, concat, false));
+    if (isJSON) {
+      es.push_back(concat);
+    } else {
+      auto* showJSON = new Call(Location().introduce(), "showJSON", {concat});
+      showJSON->type(Type::parstring());
+      showJSON->decl(e.model->matchFn(e, showJSON, false));
+      es.push_back(showJSON);
+    }
+  }
+  es.push_back(new StringLit(Location().introduce(), "}"));
+
   auto* newOutputItem =
-      new OutputI(Location().introduce(),
-                  create_json_output(e, outputObjective, includeOutputItem, hasChecker));
+      new OutputI(Location().introduce(), new ArrayLit(Location().introduce(), es));
   e.model->addItem(newOutputItem);
 }
 
 void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outputObjective,
-                   bool includeOutputItem, bool hasChecker) {
+                   bool includeOutputItem, bool hasChecker, bool encapsulateJSON) {
   // Create new output model
   OutputI* outputItem = nullptr;
   GCLock lock;
@@ -997,6 +1036,10 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
         create_dzn_output_item(e, outputObjective, false, false, false);
       }
       break;
+  }
+
+  if (encapsulateJSON) {
+    create_encapsulated_output_item(e);
   }
 
   // Copy output item from model into output model

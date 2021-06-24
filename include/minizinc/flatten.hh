@@ -54,6 +54,8 @@ struct FlatteningOptions {
   bool debug;
   /// Random seed for the random builtin functions
   long unsigned int randomSeed;
+  /// Encapsulate output in a JSON object
+  bool encapsulateJSON;
   /// Default constructor
   FlatteningOptions()
       : keepOutputInFzn(false),

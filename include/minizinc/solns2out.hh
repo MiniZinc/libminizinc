@@ -63,6 +63,7 @@ public:
     bool flagUnique = true;
     bool flagCanonicalize = false;
     bool flagStandaloneSolns2Out = false;
+    bool flagEncapsulateJSON = false;
     std::string flagOutputNoncanonical;
     std::string flagOutputRaw;
     int flagNumberOutput = -1;
@@ -166,7 +167,7 @@ protected:
 
   // Basically open output
   void init();
-  std::map<std::string, SolverInstance::Status> _mapInputStatus;
+  std::unordered_map<std::string, SolverInstance::Status> _mapInputStatus;
   void createInputMap();
   void restoreDefaults();
   /// Parsing fznsolver's complete raw text output
@@ -177,6 +178,8 @@ protected:
   bool evalOutputInternal(std::ostream& fout);
   bool evalOutputFinalInternal(bool flag_flush);
   bool evalStatusMsg(SolverInstance::Status status);
+
+  void printSolution(std::istream& sol, std::ostream& os, bool outputTime);
 };
 
 // Passthrough Solns2Out class

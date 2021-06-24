@@ -162,6 +162,7 @@ public:
   bool flagStatistics = false;
   bool flagCompilerVerbose = false;
   bool flagCompilerStatistics = false;
+  bool flagEncapsulateJSON = false;
   bool flagIsSolns2out = false;
   std::chrono::milliseconds flagOverallTimeLimit = std::chrono::milliseconds(0);
   std::chrono::milliseconds flagSolverTimeLimit = std::chrono::milliseconds(0);

@@ -3141,7 +3141,8 @@ void flatten(Env& e, FlatteningOptions opt) {
     if (opt.keepOutputInFzn) {
       copy_output(env);
     } else {
-      create_output(env, opt.outputMode, opt.outputObjective, opt.outputOutputItem, opt.hasChecker);
+      create_output(env, opt.outputMode, opt.outputObjective, opt.outputOutputItem, opt.hasChecker,
+                    opt.encapsulateJSON);
     }
 
     // Flatten remaining redefinitions

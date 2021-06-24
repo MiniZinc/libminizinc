@@ -246,11 +246,39 @@ void Solns2Out::declNewOutput() {
   status = SolverInstance::SAT;
 }
 
+void Solns2Out::printSolution(std::istream& sol, std::ostream& os, bool outputTime) {
+  if (opt.flagEncapsulateJSON) {
+    os << "{\"type\": \"solution\", \"output\": ";
+    std::string line;
+    while (std::getline(sol, line)) {
+      // Remove line breaks from JSON object
+      os << line;
+    }
+    if (outputTime) {
+      os << ", \"time\": " << _starttime.ms().count();
+    }
+    os << "}\n";
+  } else {
+    os << sol.rdbuf();
+    os.clear();  // Writing sol.rdbuf() sets the fail bit if the solution was empty, so clear it
+    if (outputTime) {
+      os << "% time elapsed: " << _starttime.stoptime() << "\n";
+    }
+    if (!opt.solutionSeparator.empty()) {
+      os << opt.solutionSeparator << '\n';
+    }
+  }
+  if (opt.flagOutputFlush) {
+    os.flush();
+  }
+}
+
 bool Solns2Out::evalOutput(const string& s_ExtraInfo) {
   if (!_fNewSol2Print) {
     return true;
   }
-  ostringstream oss;
+
+  stringstream oss;
   if (!_checkerModel.empty()) {
     auto& checkerStream = _env->envi().checkerOutput;
     checkerStream.clear();
@@ -273,59 +301,36 @@ bool Solns2Out::evalOutput(const string& s_ExtraInfo) {
       checkerStream.flush();
       std::string line;
       if (std::getline(checkerStream, line)) {
-        _os << "% Solution checker report:\n";
-        _os << "% " << line << "\n";
-        while (std::getline(checkerStream, line)) {
+        if (opt.flagEncapsulateJSON) {
+        } else {
+          _os << "% Solution checker report:\n";
           _os << "% " << line << "\n";
+          while (std::getline(checkerStream, line)) {
+            _os << "% " << line << "\n";
+          }
         }
       }
     }
     ++stats.nSolns;
     if (opt.flagCanonicalize) {
-      if (_outStreamNonCanon != nullptr) {
-        if (_outStreamNonCanon->good()) {
-          (*_outStreamNonCanon) << oss.str();
-          (*_outStreamNonCanon) << comments;
-          if (!s_ExtraInfo.empty()) {
-            (*_outStreamNonCanon) << s_ExtraInfo;
-            if ('\n' != s_ExtraInfo.back()) {  /// TODO is this enough to check EOL?
-              (*_outStreamNonCanon) << '\n';
-            }
-          }
-          if (opt.flagOutputTime) {
-            (*_outStreamNonCanon) << "% time elapsed: " << _starttime.stoptime() << "\n";
-          }
-          if (!opt.solutionSeparator.empty()) {
-            (*_outStreamNonCanon) << opt.solutionSeparator << '\n';
-          }
-          if (opt.flagOutputFlush) {
-            _outStreamNonCanon->flush();
-          }
+      if (_outStreamNonCanon != nullptr && _outStreamNonCanon->good()) {
+        printSolution(oss, *_outStreamNonCanon, opt.flagOutputTime);
+      }
+      if (opt.flagOutputTime) {
+        // Print time as we get solutions
+        if (opt.flagEncapsulateJSON) {
+          getOutput() << "{\"type\": \"time\", \"time\": " << _starttime.ms().count() << "}\n";
+        } else {
+          getOutput() << "% time elapsed: " << _starttime.stoptime() << "\n";
         }
       }
     } else {
       if ((!opt.solutionComma.empty()) && stats.nSolns > 1) {
         getOutput() << opt.solutionComma << '\n';
       }
-      getOutput() << oss.str();
+
+      printSolution(oss, getOutput(), opt.flagOutputTime);
     }
-  }
-  getOutput() << comments;  // print them now ????
-  comments = "";
-  if (!s_ExtraInfo.empty()) {
-    getOutput() << s_ExtraInfo;
-    if ('\n' != s_ExtraInfo.back()) {  /// TODO is this enough to check EOL?
-      getOutput() << '\n';
-    }
-  }
-  if (fNew && opt.flagOutputTime) {
-    getOutput() << "% time elapsed: " << _starttime.stoptime() << "\n";
-  }
-  if (fNew && !opt.flagCanonicalize && !opt.solutionSeparator.empty()) {
-    getOutput() << opt.solutionSeparator << '\n';
-  }
-  if (opt.flagOutputFlush) {
-    getOutput().flush();
   }
   restoreDefaults();  // cleans data. evalOutput() should not be called again w/o assigning new
                       // data.
@@ -458,46 +463,71 @@ bool Solns2Out::evalOutputFinalInternal(bool /*b*/) {
     if ((!opt.solutionComma.empty()) && &sol != &*_sSolsCanon.begin()) {
       getOutput() << opt.solutionComma << '\n';
     }
-    getOutput() << sol;
-    if (!opt.solutionSeparator.empty()) {
-      getOutput() << opt.solutionSeparator << '\n';
-    }
+    std::stringstream oss;
+    oss << sol;
+    printSolution(oss, getOutput(), false);
   }
   return true;
 }
 
 bool Solns2Out::evalStatusMsg(SolverInstance::Status status) {
-  std::map<SolverInstance::Status, string> stat2msg;
-  stat2msg[SolverInstance::OPT] = opt.searchCompleteMsg;
-  stat2msg[SolverInstance::UNSAT] = opt.unsatisfiableMsg;
-  stat2msg[SolverInstance::UNBND] = opt.unboundedMsg;
-  stat2msg[SolverInstance::UNSATorUNBND] = opt.unsatorunbndMsg;
-  stat2msg[SolverInstance::UNKNOWN] = opt.unknownMsg;
-  stat2msg[SolverInstance::ERROR] = opt.errorMsg;
-  stat2msg[SolverInstance::NONE] = "";
-  auto it = stat2msg.find(status);
-  if (stat2msg.end() != it) {
-    getOutput() << comments;
-    if (!it->second.empty()) {
-      getOutput() << it->second << '\n';
+  getOutput() << comments;
+  comments = "";
+
+  Solns2Out::status = status;
+  std::string label;
+  switch (status) {
+    case SolverInstance::SAT:
+      if (opt.flagOutputFlush) {
+        getOutput().flush();
+      }
+      return true;
+    case SolverInstance::OPT:
+      label = opt.flagEncapsulateJSON ? "OPTIMAL_SOLUTION" : opt.searchCompleteMsg;
+      break;
+    case SolverInstance::UNSAT:
+      label = opt.flagEncapsulateJSON ? "UNSATISFIABLE" : opt.unsatisfiableMsg;
+      break;
+    case SolverInstance::UNBND:
+      label = opt.flagEncapsulateJSON ? "UNBOUNDED" : opt.unboundedMsg;
+      break;
+    case SolverInstance::UNSATorUNBND:
+      label = opt.flagEncapsulateJSON ? "UNSAT_OR_UNBOUNDED" : opt.unsatorunbndMsg;
+      break;
+    case SolverInstance::UNKNOWN:
+      label = opt.flagEncapsulateJSON ? "UNKNOWN" : opt.unknownMsg;
+      break;
+    case SolverInstance::ERROR:
+      label = opt.flagEncapsulateJSON ? "ERROR" : opt.errorMsg;
+      break;
+    case SolverInstance::NONE:
+      label = "";
+      break;
+    default:
+      assert(false);
+  }
+  if (opt.flagEncapsulateJSON) {
+    if (label.empty()) {
+      getOutput() << "{\"type\": \"time\", \"time\": " << _starttime.ms().count() << "}\n";
+    } else {
+      getOutput() << "{\"type\": \"status\", \"status\": \"" << label << "\"";
+      if (opt.flagOutputTime) {
+        getOutput() << ", \"time\": " << _starttime.ms().count();
+      }
+      getOutput() << "}\n";
+    }
+  } else {
+    if (!label.empty()) {
+      getOutput() << label << '\n';
     }
     if (opt.flagOutputTime) {
       getOutput() << "% time elapsed: " << _starttime.stoptime() << "\n";
     }
-    if (opt.flagOutputFlush) {
-      getOutput().flush();
-    }
-    Solns2Out::status = status;
-  } else {
-    getOutput() << comments;
-    if (opt.flagOutputFlush) {
-      getOutput().flush();
-    }
-    MZN_ASSERT_HARD_MSG(SolverInstance::SAT == status,  // which is ignored
-                        "solns2out_base: undefined solution status code " << status);
-    Solns2Out::status = SolverInstance::SAT;
   }
-  comments = "";
+
+  if (opt.flagOutputFlush) {
+    getOutput().flush();
+  }
   return true;
 }
 
@@ -523,7 +553,6 @@ void Solns2Out::init() {
           FileUtils::inflate_string(_statisticsCheckerModel);
         }
       } else {
-        GCLock lock;
         _declmap.insert(make_pair(vdi->e()->id()->str(), DE(vdi->e(), vdi->e()->e())));
       }
     }

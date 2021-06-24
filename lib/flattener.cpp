@@ -520,7 +520,9 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
     Model* m;
     _pEnv.reset(new Env(nullptr, _os, _log));
     Env* env = getEnv();
-
+    if (_isFlatzinc && env->envi().fopts.encapsulateJSON) {
+      throw Error("JSON stream output is not allowed for FlatZinc files.");
+    }
     if (!_flags.compileSolutionCheckModel && !_flagSolutionCheckModel.empty()) {
       // Extract variables to check from solution check model
       if (_flags.verbose) {
@@ -740,6 +742,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           _fopts.outputObjective = _flags.outputObjective;
           _fopts.outputOutputItem = _flags.outputOutputItem;
           _fopts.hasChecker = !_flagSolutionCheckModel.empty();
+          _fopts.encapsulateJSON = _flags.encapsulateJSON;
 #ifdef HAS_GECODE
           GecodeOptions gopts;
           gopts.onlyRangeDomains = _flags.onlyRangeDomains;

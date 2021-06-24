@@ -65,6 +65,8 @@ public:
   bool getFlagVerbose() const { return _flags.verbose; }
   void setFlagStatistics(bool f) { _flags.statistics = f; }
   bool getFlagStatistics() const { return _flags.statistics; }
+  void setFlagEncapsulateJSON(bool f) { _flags.encapsulateJSON = f; }
+  bool getFlagEncapsulateJSON() const { return _flags.encapsulateJSON; }
   void setRandomSeed(long unsigned int r) { _fopts.randomSeed = r; }
   void setFlagOutputByDefault(bool f) { _fOutputByDefault = f; }
   Env* getEnv() const {
@@ -115,6 +117,7 @@ private:
     bool outputObjective = false;
     bool outputOutputItem = false;
     bool compileSolutionCheckModel = false;
+    bool encapsulateJSON = false;
   } _flags;
 
   int _optMIPDmaxIntvEE = 0;

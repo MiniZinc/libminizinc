@@ -570,6 +570,8 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       randomSeed = atoi(argv[i].c_str());
     } else if (argv[i] == "--compiler-statistics") {
       flagCompilerStatistics = true;
+    } else if (argv[i] == "--encapsulate-json") {
+      flagEncapsulateJSON = true;
     } else {
       if ((argv[i] == "--fzn-cmd" || argv[i] == "--flatzinc-cmd") && solver.empty()) {
         solver = "org.minizinc.mzn-fzn";
@@ -602,6 +604,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
   _flt.setFlagOutputByDefault(ifMzn2Fzn());
 
   bool isMznMzn = false;
+  s2out.opt.flagEncapsulateJSON = flagEncapsulateJSON;
 
   if (!flagIsSolns2out) {
     try {
@@ -860,6 +863,7 @@ void MznSolver::flatten(const std::string& modelString, const std::string& model
   std::exception_ptr exc;
   _flt.setFlagVerbose(flagCompilerVerbose);
   _flt.setFlagStatistics(flagCompilerStatistics);
+  _flt.setFlagEncapsulateJSON(flagEncapsulateJSON);
   if (flagRandomSeed) {
     _flt.setRandomSeed(randomSeed);
   }
