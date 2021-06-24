@@ -94,6 +94,7 @@ int wmain(int argc, wchar_t* argv[], wchar_t* envp[]) {
   }
   auto exe = FileUtils::wide_to_utf8(argv[0]);
 
+#ifdef NDEBUG
   // Lambda to prevent object unwinding not allowed with __try..__except
   return ([&]() {
     __try {
@@ -102,6 +103,10 @@ int wmain(int argc, wchar_t* argv[], wchar_t* envp[]) {
       OverflowHandler::handle(GetExceptionCode());
     }
   })();
+#else
+  // Let debugger catch SEH exceptions
+  return run(exe, args);
+#endif
 }
 #else
 int main(int argc, const char** argv) {
