@@ -2,7 +2,7 @@
 !Test
 solvers: [gecode]
 expected: !Error
-  regex: .*cyclic includes.*
+  regex: .*cyclic include.*
 ***/
 
 % Regression test for cyclic include detection

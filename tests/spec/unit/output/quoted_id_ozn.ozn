@@ -1,2 +1,2 @@
-output [show(10),'bar!'];
+output if mzn_section_enabled("default") then [show(10),'bar!'] else [] endif;
 string: 'bar!' = "bar";
