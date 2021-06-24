@@ -671,14 +671,14 @@ vec<geas::intvar> GeasSolverInstance::asIntVar(ArrayLit* al) {
 
 void GeasSolverInstance::printStatistics() {
   auto& st = _solver.data->stats;
-  auto& out = getSolns2Out()->getOutput();
-
-  out << "%%%mzn-stat: failures=" << st.conflicts << std::endl;  // TODO: Statistic name
-  out << "%%%mzn-stat: solveTime=" << st.time << std::endl;
-  out << "%%%mzn-stat: solutions=" << st.solutions << std::endl;
-  out << "%%%mzn-stat: restarts=" << st.restarts << std::endl;
-  out << "%%%mzn-stat: nogoods=" << st.num_learnts << std::endl;             // TODO: Statistic name
-  out << "%%%mzn-stat: learntLiterals=" << st.num_learnt_lits << std::endl;  // TODO: Statistic name
+  auto* solns2out = getSolns2Out();
+  StatisticsStream ss(solns2out->getOutput(), solns2out->opt.flagEncapsulateJSON);
+  ss.add("failures", st.conflicts);  // TODO: Statistic name
+  ss.add("solveTime", st.time);
+  ss.add("solutions", st.solutions);
+  ss.add("restarts", st.restarts);
+  ss.add("nogoods", st.num_learnts);             // TODO: Statistic name
+  ss.add("learntLiterals", st.num_learnt_lits);  // TODO: Statistic name
 }
 
 GeasSolverFactory::GeasSolverFactory() {

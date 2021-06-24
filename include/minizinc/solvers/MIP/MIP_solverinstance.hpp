@@ -527,27 +527,17 @@ void MIPSolverinstance<MIPWrapper>::printStatistics() {
   //   auto nn = std::chrono::system_clock::now();
   //   auto n_c = std::chrono::system_clock::to_time_t( nn );
   {
-    EnvI& env = getEnv()->envi();
-
-    std::ios oldState(nullptr);
-    oldState.copyfmt(env.outstream);
-    env.outstream.precision(12);
-    env.outstream << "%%%mzn-stat: objective=" << _mipWrapper->getObjValue() << std::endl;
-    ;
-    env.outstream << "%%%mzn-stat: objectiveBound=" << _mipWrapper->getBestBound() << std::endl;
-    ;
-    env.outstream << "%%%mzn-stat: nodes=" << _mipWrapper->getNNodes() << std::endl;
-    ;
+    auto* solns2out = getSolns2Out();
+    StatisticsStream ss(solns2out->getOutput(), solns2out->opt.flagEncapsulateJSON);
+    ss.precision(12, false);
+    ss.add("objective", _mipWrapper->getObjValue());
+    ss.add("objectiveBound", _mipWrapper->getBestBound());
+    ss.add("nodes", _mipWrapper->getNNodes());
     if (_mipWrapper->getNOpen() != 0) {
-      env.outstream << "%%%mzn-stat: openNodes=" << _mipWrapper->getNOpen() << std::endl;
+      ss.add("openNodes", _mipWrapper->getNOpen());
     };
-    env.outstream.setf(std::ios::fixed);
-    env.outstream.precision(4);
-    env.outstream << "%%%mzn-stat: solveTime=" << _mipWrapper->getCPUTime() << std::endl;
-    ;
-    env.outstream.copyfmt(oldState);
-
-    env.outstream << "%%%mzn-stat-end" << std::endl;
+    ss.precision(4, true);
+    ss.add("solveTime", _mipWrapper->getCPUTime());
   }
 }
 

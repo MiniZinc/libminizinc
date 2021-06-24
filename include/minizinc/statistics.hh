@@ -15,6 +15,38 @@
 
 namespace MiniZinc {
 
+/// Stream for writing statistics to.
+class StatisticsStream {
+private:
+  std::ostream& _os;
+  bool _json;
+  std::ios _ios;
+
+  template <class T>
+  void addInternal(const std::string& stat, const T& value) {
+    if (_json) {
+      _os << ", \"" << Printer::escapeStringLit(stat) << "\": " << value;
+    } else {
+      _os << "%%%mzn-stat: " << stat << "=" << value << "\n";
+    }
+  }
+
+public:
+  StatisticsStream(std::ostream& os, bool json = false);
+  ~StatisticsStream();
+
+  void precision(std::streamsize prec, bool fixed = false);
+  void add(const std::string& stat, const Expression& value);
+  void add(const std::string& stat, int value);
+  void add(const std::string& stat, unsigned int value);
+  void add(const std::string& stat, long value);
+  void add(const std::string& stat, unsigned long value);
+  void add(const std::string& stat, long long value);
+  void add(const std::string& stat, unsigned long long value);
+  void add(const std::string& stat, double value);
+  void add(const std::string& stat, const std::string& value);
+};
+
 class Statistics {
 protected:
   // time in milliseconds

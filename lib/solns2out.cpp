@@ -209,9 +209,8 @@ void Solns2Out::restoreDefaults() {
 }
 
 void Solns2Out::parseAssignments(string& solution) {
-  std::vector<SyntaxError> se;
   unique_ptr<Model> sm(parse_from_string(*_env, solution, "solution received from solver",
-                                         _includePaths, false, true, false, false, _log, se));
+                                         _includePaths, false, true, false, false, _log));
   if (sm == nullptr) {
     throw Error("solns2out_base: could not parse solution");
   }
@@ -273,7 +272,21 @@ void Solns2Out::printSolution(std::istream& sol, std::ostream& os, bool outputTi
   }
 }
 
-bool Solns2Out::evalOutput(const string& s_ExtraInfo) {
+void Solns2Out::parseStatistics(const std::string& stats, std::ostream& os) {
+  unique_ptr<Model> sm(parse_from_string(*_env, stats, "statistics received from solver",
+                                         _includePaths, false, true, false, false, _log));
+  if (sm == nullptr) {
+    throw Error("solns2out_base: could not parse statistics");
+  }
+  StatisticsStream ss(os, opt.flagEncapsulateJSON);
+  for (unsigned int i = 0; i < sm->size(); i++) {
+    if (auto* ai = (*sm)[i]->dynamicCast<AssignI>()) {
+      ss.add(ai->id().c_str(), *(ai->e()));
+    }
+  }
+}
+
+bool Solns2Out::evalOutput() {
   if (!_fNewSol2Print) {
     return true;
   }
@@ -629,6 +642,11 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
     }
     auto it = _mapInputStatus.find(line);
     if (_mapInputStatus.end() != it) {
+      if (!_stats.empty()) {
+        // Didn't have %%%mzn-stat-end, but should print stats anyway at this point
+        parseStatistics(_stats, getOutput());
+        _stats.clear();
+      }
       if (SolverInstance::SAT == it->second) {
         parseAssignments(solution);
         evalOutput();
@@ -642,17 +660,33 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
         char c = '_';
         iss >> skipws >> c;
         if (iss.good() && '%' == c) {
-          // Feed comments directly
-          getOutput() << line << '\n';
+          bool is_statistic = line.substr(0, 13) == "%%%mzn-stat: ";
+          std::ostringstream message;
+          if (opt.flagEncapsulateJSON) {
+            if (is_statistic) {
+              _stats += line.substr(13) + ";";
+            } else if (line == "%%%mzn-stat-end") {
+              parseStatistics(_stats, message);
+              _stats.clear();
+            } else {
+              message << "{\"type\": \"comment\", \"comment\": \"" << Printer::escapeStringLit(line)
+                      << "\"}\n";
+            }
+          } else {
+            message << line << '\n';
+          }
+          getOutput() << message.str();
           if (opt.flagOutputFlush) {
             getOutput().flush();
           }
-          if (_outStreamNonCanon != nullptr) {
-            if (_outStreamNonCanon->good()) {
-              (*_outStreamNonCanon) << line << '\n';
+          if (_outStreamNonCanon != nullptr && _outStreamNonCanon->good()) {
+            (*_outStreamNonCanon) << message.str();
+            if (opt.flagOutputFlush) {
+              _outStreamNonCanon->flush();
             }
           }
-          if (line.substr(0, 13) == "%%%mzn-stat: " && line.size() > 13) {
+
+          if (is_statistic && line.size() > 13) {
             if (line.substr(13, 6) == "nodes=") {
               std::istringstream iss(line.substr(19));
               int n_nodes;
@@ -689,11 +723,16 @@ void Solns2Out::createInputMap() {
 }
 
 void Solns2Out::printStatistics(ostream& os) {
-  os << "%%%mzn-stat: nSolutions=" << stats.nSolns << "\n";
+  if (!_stats.empty()) {
+    // Didn't have %%%mzn-stat-end, but should print stats anyway at this point
+    parseStatistics(_stats, getOutput());
+    _stats.clear();
+  }
+  StatisticsStream ss(os, opt.flagEncapsulateJSON);
+  ss.add("nSolutions", stats.nSolns);
   if (!_statisticsCheckerModel.empty()) {
     std::ostringstream oss;
     checkStatistics(oss);
-    os << "%%%mzn-stat: statisticsCheck=\"" << Printer::escapeStringLit(oss.str()) << "\"\n";
+    ss.add("statisticsCheck", oss.str());
   }
-  os << "%%%mzn-stat-end\n";
 }

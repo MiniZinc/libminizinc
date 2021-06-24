@@ -18,6 +18,7 @@
 
 #include <minizinc/flattener.hh>
 #include <minizinc/pathfileprinter.hh>
+#include <minizinc/statistics.hh>
 
 #include <fstream>
 
@@ -799,64 +800,67 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
 
         if (_flags.statistics) {
           FlatModelStatistics stats = statistics(*env);
-          _os << "% Generated FlatZinc statistics:\n";
+          StatisticsStream ss(_os, _flags.encapsulateJSON);
 
-          _os << "%%%mzn-stat: paths=" << env->envi().varPathStore.getPathMap().size() << endl;
+          if (!_flags.encapsulateJSON) {
+            _os << "% Generated FlatZinc statistics:\n";
+          }
+
+          ss.add("paths", env->envi().varPathStore.getPathMap().size());
 
           if (stats.n_bool_vars != 0) {
-            _os << "%%%mzn-stat: flatBoolVars=" << stats.n_bool_vars << endl;
+            ss.add("flatBoolVars", stats.n_bool_vars);
           }
           if (stats.n_int_vars != 0) {
-            _os << "%%%mzn-stat: flatIntVars=" << stats.n_int_vars << endl;
+            ss.add("flatIntVars", stats.n_int_vars);
           }
           if (stats.n_float_vars != 0) {
-            _os << "%%%mzn-stat: flatFloatVars=" << stats.n_float_vars << endl;
+            ss.add("flatFloatVars", stats.n_float_vars);
           }
           if (stats.n_set_vars != 0) {
-            _os << "%%%mzn-stat: flatSetVars=" << stats.n_set_vars << endl;
+            ss.add("flatSetVars", stats.n_set_vars);
           }
 
           if (stats.n_bool_ct != 0) {
-            _os << "%%%mzn-stat: flatBoolConstraints=" << stats.n_bool_ct << endl;
+            ss.add("flatBoolConstraints", stats.n_bool_ct);
           }
           if (stats.n_int_ct != 0) {
-            _os << "%%%mzn-stat: flatIntConstraints=" << stats.n_int_ct << endl;
+            ss.add("flatIntConstraints", stats.n_int_ct);
           }
           if (stats.n_float_ct != 0) {
-            _os << "%%%mzn-stat: flatFloatConstraints=" << stats.n_float_ct << endl;
+            ss.add("flatFloatConstraints", stats.n_float_ct);
           }
           if (stats.n_set_ct != 0) {
-            _os << "%%%mzn-stat: flatSetConstraints=" << stats.n_set_ct << endl;
+            ss.add("flatSetConstraints", stats.n_set_ct);
           }
 
           if (stats.n_reif_ct != 0) {
-            _os << "%%%mzn-stat: evaluatedReifiedConstraints=" << stats.n_reif_ct << endl;
+            ss.add("evaluatedReifiedConstraints", stats.n_reif_ct);
           }
           if (stats.n_imp_ct != 0) {
-            _os << "%%%mzn-stat: evaluatedHalfReifiedConstraints=" << stats.n_imp_ct << endl;
+            ss.add("evaluatedHalfReifiedConstraints", stats.n_imp_ct);
           }
 
           if (stats.n_imp_del != 0) {
-            _os << "%%%mzn-stat: eliminatedImplications=" << stats.n_imp_del << endl;
+            ss.add("eliminatedImplications", stats.n_imp_del);
           }
           if (stats.n_lin_del != 0) {
-            _os << "%%%mzn-stat: eliminatedLinearConstraints=" << stats.n_lin_del << endl;
+            ss.add("eliminatedLinearConstraints", stats.n_lin_del);
           }
 
           /// Objective / SAT. These messages are used by mzn-test.py.
           SolveI* solveItem = env->flat()->solveItem();
           if (solveItem->st() != SolveI::SolveType::ST_SAT) {
             if (solveItem->st() == SolveI::SolveType::ST_MAX) {
-              _os << "%%%mzn-stat: method=\"maximize\"" << endl;
+              ss.add("method", "maximize");
             } else {
-              _os << "%%%mzn-stat: method=\"minimize\"" << endl;
+              ss.add("method", "minimize");
             }
           } else {
-            _os << "%%%mzn-stat: method=\"satisfy\"" << endl;
+            ss.add("method", "satisfy");
           }
 
-          _os << "%%%mzn-stat: flatTime=" << flatten_time.s() << endl;
-          _os << "%%%mzn-stat-end" << endl << endl;
+          ss.add("flatTime", flatten_time.s());
         }
 
         if (_flags.outputPathsStdout) {

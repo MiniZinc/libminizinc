@@ -19,6 +19,7 @@
 #include <minizinc/hash.hh>
 #include <minizinc/optimize.hh>
 #include <minizinc/output.hh>
+#include <minizinc/statistics.hh>
 #include <minizinc/typecheck.hh>
 #include <minizinc/utils.hh>
 
@@ -3819,22 +3820,26 @@ void flatten(Env& e, FlatteningOptions opt) {
   }
 
   if (opt.detailedTiming) {
-    e.envi().outstream << "% Compilation profile (file,line,milliseconds)\n";
-    if (opt.collectMznPaths) {
-      e.envi().outstream << "% (time is allocated to toplevel item)\n";
-    } else {
-      e.envi().outstream << "% (locations are approximate, use --keep-paths to allocate times to "
-                            "toplevel items)\n";
+    StatisticsStream ss(e.envi().outstream, opt.encapsulateJSON);
+    if (!opt.encapsulateJSON) {
+      e.envi().outstream << "% Compilation profile (file,line,milliseconds)\n";
+      if (opt.collectMznPaths) {
+        e.envi().outstream << "% (time is allocated to toplevel item)\n";
+      } else {
+        e.envi().outstream << "% (locations are approximate, use --keep-paths to allocate times to "
+                              "toplevel items)\n";
+      }
     }
     for (auto& entry : *timingMap) {
       std::chrono::milliseconds time_taken =
           std::chrono::duration_cast<std::chrono::milliseconds>(entry.second);
       if (time_taken > std::chrono::milliseconds(0)) {
-        e.envi().outstream << "%%%mzn-stat: profiling=[\"" << entry.first.first << "\","
-                           << entry.first.second << "," << time_taken.count() << "]\n";
+        std::ostringstream oss;
+        oss << "[\"" << entry.first.first << "\"," << entry.first.second << ","
+            << time_taken.count() << "]";
+        ss.add("profiling", oss.str());
       }
     }
-    e.envi().outstream << "%%%mzn-stat-end\n";
   }
 }
 

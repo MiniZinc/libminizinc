@@ -15,6 +15,7 @@
 #include <minizinc/solvers/gecode/fzn_space.hh>
 #include <minizinc/solvers/gecode/gecode_constraints.hh>
 #include <minizinc/solvers/gecode_solverinstance.hh>
+#include <minizinc/statistics.hh>
 
 #include "aux_brancher.hh"
 
@@ -1311,19 +1312,16 @@ void GecodeSolverInstance::prepareEngine() {
 }
 
 void GecodeSolverInstance::printStatistics() {
-  EnvI& env = _env.envi();
   Gecode::Search::Statistics stat = engine->statistics();
-  env.outstream << "%%%mzn-stat: variables="
-                << (currentSpace->iv.size() + currentSpace->bv.size() + currentSpace->sv.size())
-                << std::endl
-                << "%%%mzn-stat: propagators=" << Gecode::PropagatorGroup::all.size(*currentSpace)
-                << endl
-                << "%%%mzn-stat: propagations=" << stat.propagate << std::endl
-                << "%%%mzn-stat: nodes=" << stat.node << std::endl
-                << "%%%mzn-stat: failures=" << stat.fail << std::endl
-                << "%%%mzn-stat: restarts=" << stat.restart << std::endl
-                << "%%%mzn-stat: peak_depth=" << stat.depth << std::endl
-                << "%%%mzn-stat-end" << std::endl;
+  auto* solns2out = getSolns2Out();
+  StatisticsStream ss(solns2out->getOutput(), solns2out->opt.flagEncapsulateJSON);
+  ss.add("variables", currentSpace->iv.size() + currentSpace->bv.size() + currentSpace->sv.size());
+  ss.add("propagators", Gecode::PropagatorGroup::all.size(*currentSpace));
+  ss.add("propagations", stat.propagate);
+  ss.add("nodes", stat.node);
+  ss.add("failures", stat.fail);
+  ss.add("restarts", stat.restart);
+  ss.add("peak_depth", stat.depth);
 }
 
 void GecodeSolverInstance::processSolution(bool last_sol) {

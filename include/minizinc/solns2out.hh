@@ -48,7 +48,7 @@ protected:
   std::string _checkerModel;
   std::string _statisticsCheckerModel;
   bool _fNewSol2Print = false;  // should be set for evalOutput to work
-
+  std::string _stats;
 public:
   std::string solution;
   std::string comments;
@@ -130,7 +130,7 @@ public:
   /// until ... exit, eof,  ??   TODO
   /// These functions should only be called explicitly
   /// from SolverInstance
-  bool evalOutput(const std::string& s_ExtraInfo = "");
+  bool evalOutput();
   /// This means the solver exits
   bool evalStatus(SolverInstance::Status status);
 
@@ -180,6 +180,7 @@ protected:
   bool evalStatusMsg(SolverInstance::Status status);
 
   void printSolution(std::istream& sol, std::ostream& os, bool outputTime);
+  void parseStatistics(const std::string& stats, std::ostream& os);
 };
 
 // Passthrough Solns2Out class

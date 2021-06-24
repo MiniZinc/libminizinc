@@ -47,20 +47,14 @@ void Registry::post(Call* c) {
 }
 
 void SolverInstanceBase::printSolution() {
-  std::ostringstream oss;
-
   if (_options->printStatistics) {
     printStatistics();  // Insert stats before sol separator
   }
   if (nullptr == _pS2Out) {
     getEnv()->evalOutput(std::cout, std::cerr);  // deprecated
-    std::cout << oss.str();
-    if ((!oss.str().empty()) && '\n' != oss.str().back()) {
-      std::cout << '\n';
-    }
     std::cout << "----------" << std::endl;
   } else {
-    getSolns2Out()->evalOutput(oss.str());
+    getSolns2Out()->evalOutput();
   }
 }
 
