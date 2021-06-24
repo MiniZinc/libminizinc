@@ -660,7 +660,7 @@ void create_dzn_output_item(EnvI& e, bool outputObjective, bool includeOutputIte
       }
       if (process_var) {
         std::ostringstream s;
-        s << vd->id()->str() << " = ";
+        s << Printer::quoteId(vd->id()->str()) << " = ";
         bool needArrayXd = false;
         if (vd->type().dim() > 0) {
           ArrayLit* al = nullptr;
