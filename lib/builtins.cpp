@@ -1356,7 +1356,11 @@ Expression* b_fix_array(EnvI& env, Call* call) {
       throw EvalError(env, (*al)[i]->loc(), "expression is not fixed");
     }
   }
-  auto* ret = new ArrayLit(Location(), fixed);
+  std::vector<std::pair<int, int>> dims(al->dims());
+  for (unsigned int i = 0; i < al->dims(); i++) {
+    dims[i] = std::make_pair(al->min(i), al->max(i));
+  }
+  auto* ret = new ArrayLit(Location(), fixed, dims);
   Type tt = al->type();
   tt.ti(Type::TI_PAR);
   ret->type(tt);
