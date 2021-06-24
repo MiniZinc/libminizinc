@@ -159,6 +159,9 @@ public:
   FlatteningOptions fopts;
   ASTStringMap<Item*> reverseEnum;
   std::vector<KeepAlive> checkVars;
+  // Which output sections to enable/disable
+  std::unordered_set<std::string>* onlySections = nullptr;
+  std::unordered_set<std::string>* notSections = nullptr;
 
   // General multipass information
   MultiPassInfo multiPassInfo;
@@ -181,6 +184,7 @@ protected:
   bool _collectVardecls;
   std::default_random_engine _g;
   std::atomic<bool> _cancel = {false};
+  ManagedASTStringOrderedMap<Expression*> _output;
 
 public:
   EnvI(Model* model0, std::ostream& outstream0 = std::cout, std::ostream& errstream0 = std::cerr);
@@ -237,6 +241,9 @@ public:
       throw Timeout();
     }
   }
+
+  void addOutputToSection(ASTString section, Expression* e);
+  const ManagedASTStringOrderedMap<Expression*>& outputSections() { return _output; };
 };
 
 inline VarDecl* Ctx::partialityVar(EnvI& env) const {

@@ -83,6 +83,9 @@ public:
     std::string unknownMsg = unknownMsgDef;
     std::string errorMsg = errorMsgDef;
     std::string searchCompleteMsg = searchCompleteMsgDef;
+
+    std::unordered_set<std::string> onlySections;
+    std::unordered_set<std::string> notSections;
   } opt;
 
   struct Statistics {

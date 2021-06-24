@@ -1249,3 +1249,7 @@ predicate mzn_set_in_internal(var int: x, set of int: s) =
         exists (i in 2..max_range-1) (x in ranges[i,1]..ranges[i,2])
       endif
   endif;
+
+/* Used during output evaluation to determine if an output section should be shown */
+
+test mzn_section_enabled(string: section);

@@ -1189,6 +1189,17 @@ void EnvI::cleanupExceptOutput() {
   model = nullptr;
 }
 
+void EnvI::addOutputToSection(ASTString section, Expression* e) {
+  auto ret = _output.emplace(section, e);
+  if (!ret.second) {
+    GCLock lock;
+    auto* orig = (*ret.first).second;
+    auto* bo = new BinOp(Location().introduce(), orig, BOT_PLUSPLUS, e);
+    bo->type(Type::parstring(1));
+    (*ret.first).second = bo;
+  }
+}
+
 CallStackItem::CallStackItem(EnvI& env0, Expression* e) : _env(env0), _csiType(CSI_NONE) {
   env0.checkCancel();
 

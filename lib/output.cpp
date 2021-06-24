@@ -958,6 +958,30 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
   OutputI* outputItem = nullptr;
   GCLock lock;
 
+  if (!e.outputSections().empty()) {
+    // Create initial combined output item from model output sections
+    Expression* o = nullptr;
+    auto* empty_array = new ArrayLit(Location().introduce(), std::vector<Expression*>());
+    for (const auto& it : e.outputSections()) {
+      auto* section_enabled = new Call(Location().introduce(), e.constants.ids.mzn_section_enabled,
+                                       {new StringLit(Location().introduce(), it.first)});
+      section_enabled->type(Type::parbool());
+      section_enabled->decl(e.model->matchFn(e, section_enabled, false));
+      auto* part = new ITE(Location().introduce(), {section_enabled, it.second}, empty_array);
+      part->type(Type::parstring(1));
+      if (o == nullptr) {
+        o = part;
+      } else {
+        o = new BinOp(Location().introduce(), o, BOT_PLUSPLUS, part);
+        o->type(Type::parstring(1));
+      }
+    }
+    e.addOutputToSection(ASTString("raw"), o);  // Add to raw section for encapsulation
+    auto* oi = new OutputI(Location().introduce(), o);
+    e.model->addItem(oi);
+    e.model->setOutputItem(oi);
+  }
+
   switch (outputMode) {
     case FlatteningOptions::OUTPUT_DZN:
       create_dzn_output_item(e, outputObjective, includeOutputItem, hasChecker, false);

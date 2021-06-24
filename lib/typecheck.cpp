@@ -2888,6 +2888,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
   std::vector<FunctionI*> functionItems;
   std::vector<AssignI*> assignItems;
+  std::vector<Item*> toAdd;
   auto* enumItems = new Model;
 
   class TSVFuns : public ItemVisitor {
@@ -2895,11 +2896,12 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     EnvI& env;
     Model* model;
     std::vector<FunctionI*>& fis;
+    std::vector<Item*>& toAdd;
     std::vector<TypeError>& typeErrors;
     ASTStringSet reifiedAnnotationIds;
-    TSVFuns(EnvI& env0, Model* model0, std::vector<FunctionI*>& fis0,
+    TSVFuns(EnvI& env0, Model* model0, std::vector<FunctionI*>& fis0, std::vector<Item*>& toAdd0,
             std::vector<TypeError>& typeErrors0)
-        : env(env0), model(model0), fis(fis0), typeErrors(typeErrors0) {}
+        : env(env0), model(model0), fis(fis0), toAdd(toAdd0), typeErrors(typeErrors0) {}
     void vFunctionI(FunctionI* i) {
       (void)model->registerFn(env, i);
       fis.push_back(i);
@@ -2927,7 +2929,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
             auto* vd = new VarDecl(Location().introduce(), ti, i->id());
             vd->ann().add(new Call(Location().introduce(),
                                    env.constants.ann.mzn_add_annotated_expression, {IntLit::a(0)}));
-            model->addItem(new VarDeclI(Location().introduce(), vd));
+            toAdd.push_back(new VarDeclI(Location().introduce(), vd));
             reifiedAnnotationIds.insert(i->id());
           }
         } else {
@@ -2943,14 +2945,17 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           fi->ann().add(new Call(Location().introduce(),
                                  env.constants.ann.mzn_add_annotated_expression,
                                  {IntLit::a(reifiedAnnotationIdx)}));
-          model->addItem(fi);
+          toAdd.push_back(fi);
           (void)model->registerFn(env, fi);
           fis.push_back(fi);
         }
       }
     }
-  } _tsvf(env.envi(), m, functionItems, typeErrors);
+  } _tsvf(env.envi(), m, functionItems, toAdd, typeErrors);
   iter_items(_tsvf, m);
+  for (auto* item : toAdd) {
+    m->addItem(item);  // Add the new items now that we've finished iterating
+  }
 
   class TSV0 : public ItemVisitor {
   public:
@@ -3442,16 +3447,14 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     TSV3(EnvI& env0, Model* m0) : env(env0), m(m0), outputItem(nullptr) {}
     void vAssignI(AssignI* i) { i->decl()->e(add_coercion(env, m, i->e(), i->decl()->type())()); }
     void vOutputI(OutputI* oi) {
-      if (outputItem == nullptr) {
-        outputItem = oi;
+      GCLock lock;
+      auto* call = oi->ann().getCall(ASTString("mzn_output_section"));
+      if (call == nullptr) {
+        env.addOutputToSection(ASTString("default"), oi->e());
       } else {
-        GCLock lock;
-        auto* bo = new BinOp(Location().introduce(), outputItem->e(), BOT_PLUSPLUS, oi->e());
-        bo->type(Type::parstring(1));
-        outputItem->e(bo);
-        oi->remove();
-        m->setOutputItem(outputItem);
+        env.addOutputToSection(ASTString(eval_string(env, call->arg(0))), oi->e());
       }
+      oi->remove();
     }
   } _tsv3(env.envi(), m);
   if (typeErrors.empty()) {

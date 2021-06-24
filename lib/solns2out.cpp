@@ -112,6 +112,20 @@ bool Solns2Out::processOption(int& i, std::vector<std::string>& argv,
   } else if (cop.getOption("--output-raw",
                            &opt.flagOutputRaw)) {  // NOLINT: Allow repeated empty if
     // Parsed by reference
+  } else if (cop.getOption("--only-sections", &buffer)) {
+    std::stringstream ss(buffer);
+    while (ss.good()) {
+      std::string section;
+      getline(ss, section, ',');
+      opt.onlySections.insert(section);
+    }
+  } else if (cop.getOption("--not-sections", &buffer)) {
+    std::stringstream ss(buffer);
+    while (ss.good()) {
+      std::string section;
+      getline(ss, section, ',');
+      opt.notSections.insert(section);
+    }
   } else if (opt.flagStandaloneSolns2Out) {
     std::string oznfile(argv[i]);
     if (oznfile.length() <= 4) {
@@ -488,6 +502,9 @@ bool Solns2Out::evalStatusMsg(SolverInstance::Status status) {
 }
 
 void Solns2Out::init() {
+  getEnv()->envi().onlySections = &opt.onlySections;
+  getEnv()->envi().notSections = &opt.notSections;
+
   _declmap.clear();
   for (auto& i : *getModel()) {
     if (auto* oi = i->dynamicCast<OutputI>()) {
