@@ -2991,8 +2991,9 @@ void flatten(Env& e, FlatteningOptions opt) {
         if (v->e()->ann().contains(constants().ann.output_only)) {
           return;
         }
-        if (v->e()->type().isPar() && !v->e()->type().isOpt() && !v->e()->type().cv() &&
-            v->e()->type().dim() > 0 && v->e()->ti()->domain() == nullptr &&
+        if (v->e()->type().isPar() && !v->e()->type().isOpt() && v->e()->e() != nullptr &&
+            !v->e()->e()->type().cv() && v->e()->type().dim() > 0 &&
+            v->e()->ti()->domain() == nullptr &&
             (v->e()->type().bt() == Type::BT_INT || v->e()->type().bt() == Type::BT_FLOAT)) {
           // Compute bounds for array literals
           CallStackItem csi(env, v->e());
