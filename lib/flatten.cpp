@@ -2654,7 +2654,8 @@ KeepAlive conj(EnvI& env, VarDecl* b, const Ctx& ctx, const std::vector<EE>& e) 
 }
 
 TypeInst* eval_typeinst(EnvI& env, const Ctx& ctx, VarDecl* vd) {
-  bool hasTiVars = (vd->ti()->domain() != nullptr) && vd->ti()->domain()->isa<TIId>();
+  bool domIsTiVar = (vd->ti()->domain() != nullptr) && vd->ti()->domain()->isa<TIId>();
+  bool hasTiVars = domIsTiVar;
   for (unsigned int i = 0; i < vd->ti()->ranges().size(); i++) {
     hasTiVars = hasTiVars || ((vd->ti()->ranges()[i]->domain() != nullptr) &&
                               vd->ti()->ranges()[i]->domain()->isa<TIId>());
@@ -2672,7 +2673,7 @@ TypeInst* eval_typeinst(EnvI& env, const Ctx& ctx, VarDecl* vd) {
                        new SetLit(Location().introduce(), IntSetVal::a(al->min(i), al->max(i))));
     }
     return new TypeInst(Location().introduce(), vd->e()->type(), dims,
-                        flat_cv_exp(env, ctx, vd->ti()->domain())());
+                        domIsTiVar ? nullptr : flat_cv_exp(env, ctx, vd->ti()->domain())());
   }
   std::vector<TypeInst*> dims(vd->ti()->ranges().size());
   for (unsigned int i = 0; i < vd->ti()->ranges().size(); i++) {
