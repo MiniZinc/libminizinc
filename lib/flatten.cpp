@@ -2301,7 +2301,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
               IntSetRanges ibr(ibv);
               Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> i(dr, ibr);
               IntSetVal* newibv = IntSetVal::ai(i);
-              if (newibv->card() == 0) {
+              if (newibv->card() == 0 && !vd->e()->type().isSet()) {
                 env.fail();
               } else if (ibv->equal(newibv)) {
                 vd->ti()->setComputedDomain(true);
