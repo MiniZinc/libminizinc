@@ -513,9 +513,15 @@ bool Solns2Out::evalStatusMsg(SolverInstance::Status status) {
         getOutput().flush();
       }
       return true;
-    case SolverInstance::OPT:
-      label = opt.flagEncapsulateJSON ? "OPTIMAL_SOLUTION" : opt.searchCompleteMsg;
+    case SolverInstance::OPT: {
+      if (opt.flagEncapsulateJSON) {
+        bool sat = getEnv()->flat()->solveItem()->st() == SolveI::ST_SAT;
+        label = sat ? "ALL_SOLUTIONS" : "OPTIMAL_SOLUTION";
+      } else {
+        label = opt.searchCompleteMsg;
+      }
       break;
+    }
     case SolverInstance::UNSAT:
       label = opt.flagEncapsulateJSON ? "UNSATISFIABLE" : opt.unsatisfiableMsg;
       break;
@@ -737,7 +743,7 @@ void Solns2Out::createInputMap() {
   _mapInputStatus[opt.unboundedMsgDef] = SolverInstance::UNBND;
   _mapInputStatus[opt.unsatorunbndMsgDef] = SolverInstance::UNSATorUNBND;
   _mapInputStatus[opt.unknownMsgDef] = SolverInstance::UNKNOWN;
-  _mapInputStatus[opt.errorMsg] = SolverInstance::ERROR;
+  _mapInputStatus[opt.errorMsgDef] = SolverInstance::ERROR;
 }
 
 void Solns2Out::printStatistics(ostream& os) {
