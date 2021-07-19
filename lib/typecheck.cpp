@@ -11,11 +11,13 @@
 
 #include <minizinc/astexception.hh>
 #include <minizinc/astiterator.hh>
+#include <minizinc/file_utils.hh>
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/hash.hh>
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/typecheck.hh>
 
+#include <set>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -3572,6 +3574,73 @@ void output_model_variable_types(Env& env, Model* m, std::ostream& os,
   os << "}}\n";
 }
 
+std::set<std::string> model_globals(Model* m, const std::vector<std::string>& skipDirs) {
+  class IterGlobals : public EVisitor {
+  public:
+    const std::vector<std::string>& skipDirs;
+    std::set<std::string> globals;
+    IterGlobals(const std::vector<std::string>& skipDirs0) : skipDirs(skipDirs0) {}
+
+    void vCall(const Call* c) {
+      if (c->decl() != nullptr && !c->decl()->fromStdLib()) {
+        // Globals are not from the standard library (i.e., stdlib.mzn), but included from
+        // the standard library path
+        ASTString filename = c->decl()->loc().filename();
+        if (!filename.empty()) {
+          const auto filedir = FileUtils::file_path(FileUtils::dir_name(filename.c_str()));
+          for (const auto& skip_dir : skipDirs) {
+            const auto& comp_dir = FileUtils::dir_name(skip_dir);
+            if (filedir.substr(0, comp_dir.size()) == comp_dir) {
+              globals.insert(c->id().c_str());
+              break;
+            }
+          }
+        }
+      }
+    }
+
+  } ig(skipDirs);
+
+  class GlobalsVisitor : public ItemVisitor {
+  public:
+    const std::vector<std::string>& skipDirs;
+    IterGlobals& ig;
+
+    GlobalsVisitor(IterGlobals& ig0, const std::vector<std::string>& skipDirs0)
+        : ig(ig0), skipDirs(skipDirs0) {}
+
+    bool enter(Item* i) {
+      if (auto* ii = i->dynamicCast<IncludeI>()) {
+        std::string prefix =
+            ii->m()->filepath().substr(0, ii->m()->filepath().size() - ii->f().size());
+        for (const auto& skip_dir : skipDirs) {
+          if (prefix.substr(0, skip_dir.size()) == skip_dir) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+    void vVarDeclI(VarDeclI* vdi) { top_down(ig, vdi->e()); }
+    void vAssignI(AssignI* ai) { top_down(ig, ai->e()); }
+    void vConstraintI(ConstraintI* ci) { top_down(ig, ci->e()); }
+    void vSolveI(SolveI* si) {
+      if (si->e() != nullptr) {
+        top_down(ig, si->e());
+      }
+    }
+    void vOutputI(OutputI* oi) { top_down(ig, oi->e()); }
+    void vFunctionI(FunctionI* fi) {
+      if (fi->e() != nullptr) {
+        top_down(ig, fi->e());
+      }
+    }
+
+  } gv(ig, skipDirs);
+  iter_items(gv, m);
+  return ig.globals;
+}
+
 void output_model_interface(Env& env, Model* m, std::ostream& os,
                             const std::vector<std::string>& skipDirs) {
   class IfcVisitor : public ItemVisitor {
@@ -3670,6 +3739,14 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
   os << "\"";
   os << ",\n  \"has_output_item\": " << (_ifc.outputItem ? "true" : "false");
   os << ",\n  \"included_files\": [\n" << _ifc.ossIncludedFiles.str() << "\n  ]";
+  os << ",\n  \"globals\": [\n";
+  bool first = true;
+  for (const auto& g : model_globals(m, skipDirs)) {
+    os << (first ? "    " : ", ") << "\"" << g << "\"";
+    first = false;
+  }
+  os << "\n  ]";
+
   os << "\n}\n";
 }
 
