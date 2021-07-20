@@ -21,13 +21,13 @@ StatisticsStream::StatisticsStream(std::ostream& os, bool json)
     : _os(os), _json(json), _ios(nullptr) {
   _ios.copyfmt(os);
   if (_json) {
-    _os << "{\"type\": \"statistics\"";
+    _os << "{\"type\": \"statistics\", \"statistics\": {";
   }
 }
 
 StatisticsStream::~StatisticsStream() {
   if (_json) {
-    _os << "}\n";
+    _os << "}}\n";
   } else {
     _os << "%%%mzn-stat-end\n";
   }

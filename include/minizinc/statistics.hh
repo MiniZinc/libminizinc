@@ -20,12 +20,18 @@ class StatisticsStream {
 private:
   std::ostream& _os;
   bool _json;
+  bool _first = true;
   std::ios _ios;
 
   template <class T>
   void addInternal(const std::string& stat, const T& value) {
     if (_json) {
-      _os << ", \"" << Printer::escapeStringLit(stat) << "\": " << value;
+      if (_first) {
+        _first = false;
+      } else {
+        _os << ", ";
+      }
+      _os << "\"" << Printer::escapeStringLit(stat) << "\": " << value;
     } else {
       _os << "%%%mzn-stat: " << stat << "=" << value << "\n";
     }
