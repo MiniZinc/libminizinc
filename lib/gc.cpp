@@ -632,6 +632,13 @@ size_t GC::maxMem() {
   return gc->_heap->_maxAllocedMem;
 }
 
+#if defined(MINIZINC_GC_STATS)
+std::map<int, GCStat>& GC::stats() {
+  GC* gc = GC::gc();
+  return gc->_heap->gc_stats;
+}
+#endif
+
 void* ASTNode::operator new(size_t size) { return GC::gc()->alloc(size); }
 
 void GC::addKeepAlive(KeepAlive* e) {

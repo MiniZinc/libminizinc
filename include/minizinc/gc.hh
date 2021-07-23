@@ -33,11 +33,6 @@ struct GCStat {
   GCStat() : first(0), second(0), keepalive(0), inmodel(0), total(0) {}
 };
 
-#define MINIZINC_GC_STAT_ARGS std::map<int, GCStat>& gc_stats
-#else
-
-#define MINIZINC_GC_STAT_ARGS
-
 #endif
 
 namespace MiniZinc {
@@ -193,6 +188,11 @@ public:
 
   /// Return maximum allocated memory (high water mark)
   static size_t maxMem();
+
+#if defined(MINIZINC_GC_STATS)
+  /// Return statistics object
+  static std::map<int, GCStat>& stats();
+#endif
 };
 
 /// Automatic garbage collection lock
@@ -279,7 +279,7 @@ private:
 
 protected:
   /// Mark garbage collected objects that
-  virtual void mark(MINIZINC_GC_STAT_ARGS) = 0;
+  virtual void mark() = 0;
 
 public:
   GCMarker() { GC::add(this); }

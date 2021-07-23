@@ -717,7 +717,7 @@ public:
     return _o;
   }
 
-  void mark(MINIZINC_GC_STAT_ARGS) override {
+  void mark() override {
     Expression::mark(sBOT_PLUS);
     Expression::mark(sBOT_MINUS);
     Expression::mark(sBOT_MULT);
@@ -1166,11 +1166,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
 }
 }  // namespace
 
-#if defined(MINIZINC_GC_STATS)
-void Item::mark(Item* item, MINIZINC_GC_STAT_ARGS) {
-#else
 void Item::mark(Item* item) {
-#endif
   if (item->hasMark()) {
     return;
   }
@@ -1183,7 +1179,7 @@ void Item::mark(Item* item) {
     case Item::II_VD:
       Expression::mark(item->cast<VarDeclI>()->e());
 #if defined(MINIZINC_GC_STATS)
-      gc_stats[item->cast<VarDeclI>()->e()->Expression::eid()].inmodel++;
+      GC::stats()[item->cast<VarDeclI>()->e()->Expression::eid()].inmodel++;
 #endif
       break;
     case Item::II_ASN:
@@ -1194,7 +1190,7 @@ void Item::mark(Item* item) {
     case Item::II_CON:
       Expression::mark(item->cast<ConstraintI>()->e());
 #if defined(MINIZINC_GC_STATS)
-      gc_stats[item->cast<ConstraintI>()->e()->Expression::eid()].inmodel++;
+      GC::stats()[item->cast<ConstraintI>()->e()->Expression::eid()].inmodel++;
 #endif
       break;
     case Item::II_SOL: {
@@ -1779,17 +1775,13 @@ Constants::Constants() {
   cli_cat.translation = addString("Translation Options");
 };
 
-void Constants::mark(MINIZINC_GC_STAT_ARGS) {
+void Constants::mark() {
   Expression::mark(literalTrue);
   Expression::mark(varTrue);
   Expression::mark(literalFalse);
   Expression::mark(varFalse);
   Expression::mark(varIgnore);
-#if defined(MINIZINC_GC_STATS)
-  Item::mark(varRedef, gc_stats);
-#else
   Item::mark(varRedef);
-#endif
   Expression::mark(absent);
   Expression::mark(infinity);
 

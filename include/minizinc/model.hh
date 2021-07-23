@@ -79,15 +79,11 @@ protected:
   /// Add all instances of polymorphic entry \a fe to \a entries
   static void addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& entries);
 
-  void mark(MINIZINC_GC_STAT_ARGS) override {
+  void mark() override {
     _filepath.mark();
     _filename.mark();
     for (auto& _item : _items) {
-#if defined(MINIZINC_GC_STATS)
-      Item::mark(_items[j], gc_stats);
-#else
       Item::mark(_item);
-#endif
     }
   };
 

@@ -37,7 +37,7 @@ using ASTStringSet = std::unordered_set<ASTString>;
 template <typename T>
 class ManagedASTStringMap : public GCMarker, public std::unordered_map<ASTString, T> {
 protected:
-  void mark(MINIZINC_GC_STAT_ARGS) override {
+  void mark() override {
     for (auto& it : *this) {
       it.first.mark();
     }
@@ -45,8 +45,8 @@ protected:
 };
 
 template <>
-void ManagedASTStringMap<Expression*>::mark(MINIZINC_GC_STAT_ARGS);
+void ManagedASTStringMap<Expression*>::mark();
 template <>
-void ManagedASTStringMap<VarDeclI*>::mark(MINIZINC_GC_STAT_ARGS);
+void ManagedASTStringMap<VarDeclI*>::mark();
 
 }  // namespace MiniZinc

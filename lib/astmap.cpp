@@ -15,26 +15,24 @@
 namespace MiniZinc {
 
 template <>
-void ManagedASTStringMap<Expression*>::mark(MINIZINC_GC_STAT_ARGS) {
+void ManagedASTStringMap<Expression*>::mark() {
   for (auto& it : *this) {
     it.first.mark();
     Expression::mark(it.second);
 #if defined(MINIZINC_GC_STATS)
-    gc_stats[it->second->_id].keepalive++;
+    GC::stats()[it.second->eid()].keepalive++;
 #endif
   }
 };
 
 template <>
-void ManagedASTStringMap<VarDeclI*>::mark(MINIZINC_GC_STAT_ARGS) {
+void ManagedASTStringMap<VarDeclI*>::mark() {
   for (auto& it : *this) {
     it.first.mark();
 #if defined(MINIZINC_GC_STATS)
-    gc_stats[it.second->e()->Expression::eid()].keepalive++;
-    Item::mark(it.second, gc_stats);
-#else
-    Item::mark(it.second);
+    GC::stats()[it.second->e()->Expression::eid()].keepalive++;
 #endif
+    Item::mark(it.second);
   }
 };
 
