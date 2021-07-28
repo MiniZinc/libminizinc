@@ -38,7 +38,7 @@ void classify_conjunct(Expression* e, IdMap<int>& eq_occurrences,
                        IdMap<std::pair<Expression*, Expression*>>& eq_branches,
                        std::vector<Expression*>& other_branches) {
   if (auto* bo = e->dynamicCast<BinOp>()) {
-    if (bo->op() == BOT_EQ) {
+    if (bo->op() == BOT_EQ && bo->lhs()->type().dim() == 0) {
       if (Id* ident = bo->lhs()->dynamicCast<Id>()) {
         if (eq_branches.find(ident) == eq_branches.end()) {
           auto it = eq_occurrences.find(ident);
