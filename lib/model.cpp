@@ -301,6 +301,15 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
   return true;
 }
 
+bool Model::fnExists(EnvI& env, const ASTString& id) const {
+  const Model* m = this;
+  while (m->_parent != nullptr) {
+    m = m->_parent;
+  }
+  auto i_id = m->_fnmap.find(id);
+  return i_id != m->_fnmap.end();
+}
+
 FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Type>& t,
                           bool strictEnums) {
   if (id == env.constants.varRedef->id()) {
