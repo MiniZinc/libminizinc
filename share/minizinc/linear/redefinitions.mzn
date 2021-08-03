@@ -233,6 +233,13 @@ function array[int] of var int: aux_int_division_modulo_fn(var int: x, var int: 
 
 %% Can also have int_times(var float, var int) ......... TODO
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+predicate float_div(var float: x, var float: y, var float: q) =
+    x == y * q;
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 predicate int_times(var int: x, var int: y, var int: z) =
   if is_fixed(x) then
     z==fix(x)*y             %%%%% Need to use fix() otherwise added to CSE & nothing happens
