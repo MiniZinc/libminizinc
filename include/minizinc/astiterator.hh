@@ -238,7 +238,9 @@ void BottomUpIterator<T>::run(Expression* root) {
             break;
           case Expression::E_LET:
             stack.push_back(C(ce->template cast<Let>()->in()));
-            pushVec(stack, ce->template cast<Let>()->let());
+            for (unsigned int i = ce->template cast<Let>()->let().size(); (i--) != 0U;) {
+              stack.push_back(ce->template cast<Let>()->let()[i]);
+            }
             break;
           case Expression::E_TI:
             stack.push_back(C(ce->template cast<TypeInst>()->domain()));

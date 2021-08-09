@@ -1597,10 +1597,13 @@ public:
   /// Visit string literal
   void vStringLit(const StringLit* /*sl*/) {}
   /// Visit identifier
-  void vId(Id* id) {
-    if (id != _env.constants.absent) {
-      assert(!id->decl()->type().isunknown());
-      id->type(id->decl()->type());
+  void vId(Id* ident) {
+    if (ident != _env.constants.absent) {
+      if (ident->decl()->type().isunknown()) {
+        ident->decl()->type(ident->decl()->ti()->type());
+      }
+      assert(!ident->decl()->type().isunknown());
+      ident->type(ident->decl()->type());
     }
   }
   /// Visit anonymous variable
@@ -2512,6 +2515,7 @@ public:
   }
   /// Visit variable declaration
   void vVarDecl(VarDecl* vd) {
+    vd->type(vd->ti()->type());
     if (ignoreVarDecl) {
       if (vd->e() != nullptr) {
         Type vdt = vd->ti()->type();
@@ -2563,8 +2567,6 @@ public:
       } else {
         assert(!vd->type().isunknown());
       }
-    } else {
-      vd->type(vd->ti()->type());
     }
   }
   /// Visit type inst
@@ -2987,8 +2989,10 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     BottomUpIterator<Typer<false>> bottomUpTyper(ty);
     for (auto& decl : ts.decls) {
       decl->payload(0);
-      bottomUpTyper.run(decl->ti());
-      ty.vVarDecl(decl);
+      if (decl->toplevel()) {
+        bottomUpTyper.run(decl->ti());
+        ty.vVarDecl(decl);
+      }
     }
     for (auto& functionItem : functionItems) {
       bottomUpTyper.run(functionItem->ti());
