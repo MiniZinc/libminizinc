@@ -35,7 +35,7 @@ predicate cumulative(
        is_fixed(r[i]) /\ (fix(r[i]) + mr > ub(b) \/ i = mri)
      )
     then
-      forall(i in index_set(r))(if d[i] != 0 then r[i] <= b endif) \/
+      forall(i in index_set(r))(d[i] = 0 \/ fix(r[i]) <= b) /\
       if length(s) = 1 then
         true
       elseif forall(i in index_set(d))(is_fixed(d[i]) /\ fix(d[i]) == 1) then
