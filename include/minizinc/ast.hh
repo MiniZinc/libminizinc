@@ -1679,8 +1679,12 @@ public:
 
   /// Access identifier
   ASTString id() const { return _id; }
+  /// Set identifier
+  void id(const ASTString& newId) { _id = newId; }
   /// Access TypeInst
   TypeInst* ti() const { return _ti; }
+  /// Set TypeInst
+  void ti(TypeInst* newTi) { _ti = newTi; }
 
   /// Get number of parameters
   unsigned int paramCount() const {

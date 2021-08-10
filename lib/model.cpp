@@ -14,6 +14,8 @@
 #include <minizinc/model.hh>
 #include <minizinc/prettyprinter.hh>
 
+#include <unordered_set>
+
 #undef MZN_DEBUG_FUNCTION_REGISTRY
 
 namespace MiniZinc {
@@ -113,57 +115,218 @@ void Model::setOutputItem(OutputI* oi) {
 }
 
 namespace {
-/// Return lowest possible base type given other type-inst restrictions
-Type::BaseType lowest_bt(const Type& t) {
-  if (t.st() == Type::ST_SET && t.ti() == Type::TI_VAR) {
-    return Type::BT_INT;
+
+enum PossibleBaseTypes { PBT_ANY, PBT_ALL, PBT_BIFS, PBT_BIF, PBT_I };
+PossibleBaseTypes pbt_join(PossibleBaseTypes pbt0, PossibleBaseTypes pbt1) {
+  if (pbt0 == PBT_ANY) {
+    return pbt1;
   }
-  return Type::BT_BOOL;
+  if (pbt1 == PBT_ANY) {
+    return pbt0;
+  }
+  if (pbt0 == PBT_ALL) {
+    return pbt1;
+  }
+  if (pbt1 == PBT_ALL) {
+    return pbt0;
+  }
+  if (pbt0 == PBT_BIFS) {
+    return pbt1;
+  }
+  if (pbt1 == PBT_BIFS) {
+    return pbt0;
+  }
+  if (pbt0 == PBT_I || pbt1 == PBT_I) {
+    return PBT_I;
+  }
+  assert(pbt0 == PBT_BIF && pbt1 == PBT_BIF);
+  return PBT_BIF;
 }
-/// Return highest possible base type given other type-inst restrictions
-Type::BaseType highest_bt(const Type& t) {
-  if (t.st() == Type::ST_SET && t.ti() == Type::TI_VAR) {
-    return Type::BT_INT;
+void set_to_lowest(Type& t, PossibleBaseTypes pbt) {
+  t.any(false);
+  if (pbt == PBT_ALL || pbt == PBT_ANY || pbt == PBT_BIFS) {
+    t.st(Type::ST_PLAIN);
   }
-  if (t.ti() == Type::TI_VAR || t.st() == Type::ST_SET) {
-    return Type::BT_FLOAT;
+  if (pbt == PBT_ANY) {
+    t.ot(Type::OT_OPTIONAL);
+    t.ti(Type::TI_PAR);
   }
-  return Type::BT_ANN;
+  t.bt(pbt == PBT_I ? Type::BT_INT : Type::BT_BOOL);
 }
+bool can_increment_type(const Type& t, PossibleBaseTypes pbt) {
+  switch (pbt) {
+    case PBT_ANY:
+      return t.ot() == Type::OT_OPTIONAL || t.ti() == Type::TI_PAR || t.st() == Type::ST_PLAIN;
+    case PBT_ALL:
+      return t.st() == Type::ST_PLAIN || t.bt() != Type::BT_FLOAT;
+    case PBT_BIFS:
+      return t.st() == Type::ST_PLAIN || t.bt() != Type::BT_INT;
+    case PBT_BIF:
+      return t.bt() != Type::BT_FLOAT;
+    case PBT_I:
+      return false;
+  }
+}
+void increment_type(Type& t, PossibleBaseTypes pbt) {
+  assert(pbt != PBT_I);
+  if (pbt == PBT_ANY) {
+    if (t.ti() == Type::TI_PAR) {
+      if (t.ot() == Type::OT_OPTIONAL) {
+        if (t.st() == Type::ST_PLAIN) {
+          if (t.bt() != Type::BT_ANN) {
+            t.bt(static_cast<Type::BaseType>(t.bt() + 1));
+          } else {
+            t.bt(Type::BT_BOOL);
+            t.st(Type::ST_SET);
+          }
+        } else {
+          if (t.bt() != Type::BT_ANN) {
+            t.bt(static_cast<Type::BaseType>(t.bt() + 1));
+          } else {
+            t.bt(Type::BT_BOOL);
+            t.st(Type::ST_PLAIN);
+            t.ot(Type::OT_PRESENT);
+          }
+        }
+      } else {
+        if (t.st() == Type::ST_PLAIN) {
+          if (t.bt() != Type::BT_ANN) {
+            t.bt(static_cast<Type::BaseType>(t.bt() + 1));
+          } else {
+            t.bt(Type::BT_BOOL);
+            t.st(Type::ST_SET);
+          }
+        } else {
+          if (t.bt() != Type::BT_ANN) {
+            t.bt(static_cast<Type::BaseType>(t.bt() + 1));
+          } else {
+            t.bt(Type::BT_BOOL);
+            t.st(Type::ST_PLAIN);
+            t.ot(Type::OT_OPTIONAL);
+            t.ti(Type::TI_VAR);
+          }
+        }
+      }
+    } else {
+      if (t.ot() == Type::OT_OPTIONAL) {
+        if (t.bt() != Type::BT_FLOAT) {
+          t.bt(static_cast<Type::BaseType>(t.bt() + 1));
+        } else {
+          t.bt(Type::BT_BOOL);
+          t.ot(Type::OT_PRESENT);
+        }
+      } else {
+        assert(t.st() != Type::ST_SET);
+        if (t.bt() != Type::BT_FLOAT) {
+          t.bt(static_cast<Type::BaseType>(t.bt() + 1));
+        } else {
+          t.bt(Type::BT_INT);
+          t.st(Type::ST_SET);
+        }
+      }
+    }
+  } else if (pbt == PBT_ALL) {
+    if (t.bt() != Type::BT_ANN) {
+      t.bt(static_cast<Type::BaseType>(t.bt() + 1));
+    } else {
+      t.bt(Type::BT_BOOL);
+      t.st(Type::ST_SET);
+    }
+  } else {
+    if (t.bt() != Type::BT_FLOAT) {
+      t.bt(static_cast<Type::BaseType>(t.bt() + 1));
+    } else {
+      assert(pbt == PBT_BIFS);
+      t.bt(Type::BT_INT);
+      t.st(Type::ST_SET);
+    }
+  }
+}
+
 }  // namespace
 
 void Model::addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& entries) {
   entries.push_back(fe);
   if (fe.isPolymorphic) {
     FnEntry cur = fe;
-    std::vector<std::vector<Type*> > type_ids;
+
+    /*
+
+     Polymorphic functions use type variables $T that stand for concrete types.
+
+     Depending on the inst and opt used with $T, it can stand for different types:
+
+     $T           : any type (including set types)
+     opt $T       : any type (including set types)
+     var $T       : bool, int, float, set of int
+     var opt $T   : bool, int, float
+     set of $T    : bool, int, float
+     var set of $T: int
+     any $T       : any type, both par and var
+
+     The types it can stand for are the intersection of these sets over all uses
+     of $T.
+
+     */
+
+    // For each TIId, store pointers to the type objects that refer to this TIId
+    struct TIIDInfo {
+      std::vector<Type*> t;
+      PossibleBaseTypes pbt;
+      TIIDInfo(std::vector<Type*> t0, PossibleBaseTypes pbt0) : t(std::move(t0)), pbt(pbt0) {}
+    };
+    std::vector<TIIDInfo> type_ids;
+    std::unordered_set<ASTString> seen_tiids;
 
     // First step: initialise all type variables to bool
-    // and collect them in the stack vector
+    // and collect them in the type_ids vector
     for (unsigned int i = 0; i < cur.t.size(); i++) {
       if (cur.t[i].bt() == Type::BT_TOP) {
-        std::vector<Type*> t;
-        for (unsigned int j = i; j < cur.t.size(); j++) {
-          assert(cur.fi->param(i)->ti()->domain() && cur.fi->param(i)->ti()->domain()->isa<TIId>());
-          if ((cur.fi->param(j)->ti()->domain() != nullptr) &&
-              cur.fi->param(j)->ti()->domain()->isa<TIId>()) {
-            TIId* id0 = cur.fi->param(i)->ti()->domain()->cast<TIId>();
-            TIId* id1 = cur.fi->param(j)->ti()->domain()->cast<TIId>();
-            if (id0->v() == id1->v()) {
-              // Found parameter with same type variable
-              // Initialise to lowest concrete base type (bool)
-              cur.t[j].bt(lowest_bt(cur.t[j]));
-              t.push_back(&cur.t[j]);
+        assert(cur.fi->param(i)->ti()->domain() && cur.fi->param(i)->ti()->domain()->isa<TIId>());
+        TIId* id0 = cur.fi->param(i)->ti()->domain()->cast<TIId>();
+        if (seen_tiids.find(id0->v()) == seen_tiids.end()) {
+          seen_tiids.insert(id0->v());
+          // New tiid, collect all occurrences
+          std::vector<Type*> t;
+          PossibleBaseTypes pbt = cur.fi->param(i)->ti()->type().any() ? PBT_ANY : PBT_ALL;
+          for (unsigned int j = i; j < cur.t.size(); j++) {
+            if ((cur.fi->param(j)->ti()->domain() != nullptr) &&
+                cur.fi->param(j)->ti()->domain()->isa<TIId>()) {
+              TIId* id1 = cur.fi->param(j)->ti()->domain()->cast<TIId>();
+              if (id0->v() == id1->v()) {
+                // Found parameter with same type variable
+                if (cur.fi->param(j)->ti()->type().any()) {
+                  pbt = pbt_join(pbt, PBT_ANY);
+                } else if (cur.fi->param(j)->type().isvar()) {
+                  if (cur.fi->param(j)->type().isOpt()) {
+                    pbt = pbt_join(pbt, PBT_BIF);
+                  } else if (cur.fi->param(j)->type().isSet()) {
+                    pbt = pbt_join(pbt, PBT_I);
+                  } else {
+                    pbt = pbt_join(pbt, PBT_BIFS);
+                  }
+                } else {
+                  if (cur.fi->param(j)->type().isSet()) {
+                    pbt = pbt_join(pbt, PBT_BIF);
+                  } else {
+                    pbt = pbt_join(pbt, PBT_ALL);
+                  }
+                }
+                t.push_back(&cur.t[j]);
+              }
             }
           }
+          type_ids.emplace_back(t, pbt);
         }
-        type_ids.push_back(t);
       }
     }
 
     std::vector<size_t> stack;
     for (size_t i = 0; i < type_ids.size(); i++) {
       stack.push_back(i);
+      for (auto* j : type_ids[i].t) {
+        set_to_lowest(*j, type_ids[i].pbt);
+      }
     }
     size_t final_id = type_ids.size() - 1;
 
@@ -182,31 +345,21 @@ void Model::addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& en
         }
       }
 
-      Type& back_t = *type_ids[stack.back()][0];
-      if (back_t.bt() == highest_bt(back_t) && back_t.st() == Type::ST_SET) {
-        // last type, remove this item
-        stack.pop_back();
-      } else {
-        if (back_t.bt() == highest_bt(back_t)) {
-          // Create set type for current item
-          for (auto& i : type_ids[stack.back()]) {
-            i->st(Type::ST_SET);
-            i->bt(lowest_bt(*i));
-          }
-        } else {
-          // Increment type of current item
-          auto nextType = static_cast<Type::BaseType>(back_t.bt() + 1);
-          for (auto& i : type_ids[stack.back()]) {
-            i->bt(nextType);
-          }
+      const Type& back_t = *type_ids[stack.back()].t[0];
+      if (can_increment_type(back_t, type_ids[stack.back()].pbt)) {
+        for (auto* i : type_ids[stack.back()].t) {
+          increment_type(*i, type_ids[stack.back()].pbt);
         }
         // Reset types of all further items and push them
         for (size_t i = stack.back() + 1; i < type_ids.size(); i++) {
-          for (auto& j : type_ids[i]) {
-            j->bt(lowest_bt(*j));
+          for (auto* j : type_ids[i].t) {
+            set_to_lowest(*j, type_ids[i].pbt);
           }
           stack.push_back(i);
         }
+      } else {
+        // last type, remove this item
+        stack.pop_back();
       }
     }
   }
@@ -310,12 +463,79 @@ bool Model::fnExists(EnvI& env, const ASTString& id) const {
   return i_id != m->_fnmap.end();
 }
 
+std::vector<FunctionI*> Model::possibleMatches(EnvI& env, const ASTString& ident,
+                                               const std::vector<Type>& ta) const {
+  // Find all functions that could match the call c:
+  // - based on the types of the arguments in c
+  // - and based on all combinations of more restricted versions of the arguments
+  //   (par vs var, non-opt vs opt)
+
+  std::unordered_set<FunctionI*> matched;
+
+  // Go through the types in this order: var opt, var, par opt, par
+  std::vector<Type> vp(ta.size());
+  for (unsigned int i = 0; i < ta.size(); i++) {
+    vp[i] = ta[i];
+    vp[i].ti(Type::TI_VAR);
+    if (vp[i].st() == Type::ST_PLAIN) {
+      vp[i].ot(Type::OT_OPTIONAL);
+    }
+  }
+  int finalType = static_cast<int>(ta.size()) - 1;
+  std::vector<int> stack;
+
+  for (;;) {
+    auto* fi = matchFn(env, ident, vp, false);
+    if (fi != nullptr) {
+      matched.insert(fi);
+    }
+    int i = finalType;
+    for (; i >= 0; i--) {
+      Type& t = vp[i];
+      if (t.ti() != Type::TI_PAR || t.ot() != Type::OT_PRESENT) {
+        if (t.ti() == Type::TI_VAR) {
+          if (t.ot() == Type::OT_OPTIONAL) {
+            // var opt, turn into var
+            t.ot(Type::OT_PRESENT);
+          } else {
+            // var, turn into par opt
+            if (t.st() == Type::ST_PLAIN) {
+              t.ot(Type::OT_OPTIONAL);
+            }
+            t.ti(Type::TI_PAR);
+          }
+        } else {
+          // this is par opt, turn into par
+          t.ot(Type::OT_PRESENT);
+        }
+        for (unsigned int j = i + 1; j < ta.size(); j++) {
+          vp[j] = ta[j];
+          vp[j].ti(Type::TI_VAR);
+          if (vp[j].st() == Type::ST_PLAIN) {
+            vp[j].ot(Type::OT_OPTIONAL);
+          }
+        }
+        break;
+      }
+    }
+    if (i < 0) {
+      break;
+    }
+  }
+
+  std::vector<FunctionI*> ret;
+  for (auto* fi : matched) {
+    ret.push_back(fi);
+  }
+  return ret;
+}
+
 FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Type>& t,
-                          bool strictEnums) {
+                          bool strictEnums) const {
   if (id == env.constants.varRedef->id()) {
     return env.constants.varRedef;
   }
-  Model* m = this;
+  const Model* m = this;
   while (m->_parent != nullptr) {
     m = m->_parent;
   }
@@ -323,9 +543,9 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Type
   if (i_id == m->_fnmap.end()) {
     return nullptr;
   }
-  std::vector<FnEntry>& v = i_id->second;
-  for (auto& i : v) {
-    std::vector<Type>& fi_t = i.t;
+  const std::vector<FnEntry>& v = i_id->second;
+  for (const auto& i : v) {
+    const std::vector<Type>& fi_t = i.t;
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
     std::cerr << "try " << *i.fi;
 #endif

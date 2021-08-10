@@ -15,13 +15,29 @@ function $$T: deopt(opt $$T: x);
 /** @group stdlib.optiontypes Return value \a x unchanged (since \a x is guaranteed
   to be non-optional). */
 function var $T: deopt(var $T: x) = x;
+/** @group stdlib.optiontypes Return value \a x unchanged (since \a x is guaranteed
+  to be non-optional). */
+function $T: deopt($T: x) = x;
 
 /** @group optiontypes Test if \a x is not absent (always returns true) */
+test occurs($T: x) = true;
+/** @group optiontypes Test if \a x is not absent (always returns true) */
 test occurs(var $T: x) = true;
+/** @group optiontypes Test if \a x is not absent (always returns true) */
+test occurs(set of $$T: x) = true;
+/** @group optiontypes Test if \a x is not absent (always returns true) */
+test occurs(var set of $$T: x) = true;
+
 /** @group optiontypes Test if \a x is not absent */
 test occurs(opt $T: x);
 /** @group optiontypes Test if \a x is absent (always returns false) */
+test absent($T: x) = false;
+/** @group optiontypes Test if \a x is absent (always returns false) */
 test absent(var $T: x) = false;
+/** @group optiontypes Test if \a x is absent (always returns false) */
+test absent(set of $$T: x) = false;
+/** @group optiontypes Test if \a x is absent (always returns false) */
+test absent(var set of $$T: x) = false;
 /** @group optiontypes Test if \a x is absent */
 test absent(opt $T: x) = not occurs(x);
 

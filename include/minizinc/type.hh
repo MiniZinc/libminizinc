@@ -32,6 +32,8 @@ public:
   enum OptType { OT_PRESENT, OT_OPTIONAL };
   /// Whether the par expression contains a var argument
   enum ContainsVarType { CV_NO, CV_YES };
+  /// Whether the type represents an "any" type-inst variable
+  enum AnyType { AT_NO, AT_YES };
 
 private:
   unsigned int _ti : 1;
@@ -39,6 +41,7 @@ private:
   unsigned int _st : 1;
   unsigned int _ot : 1;
   unsigned int _cv : 1;
+  unsigned int _at : 1;
   /** \brief Enumerated type identifier
    * This is an index into a table in the Env. It is currently limited to
    * 4095 different enumerated type identifiers.
@@ -57,6 +60,7 @@ public:
         _st(ST_PLAIN),
         _ot(OT_PRESENT),
         _cv(CV_NO),
+        _at(AT_NO),
         _enumId(0),
         _dim(0) {}
 
@@ -88,7 +92,12 @@ public:
   /// Access var-in-par type
   bool cv() const { return static_cast<ContainsVarType>(_cv) == CV_YES; }
   /// Set var-in-par type
-  void cv(bool b) { _cv = b ? CV_YES : CV_NO; }
+  void cv(bool b) { _cv = b; }
+
+  /// Access any type
+  bool any() const { return static_cast<AnyType>(_at) == AT_YES; }
+  /// Set any type
+  void any(bool b) { _at = b; }
 
   /// Access enum identifier
   unsigned int enumId() const { return _enumId; }
@@ -111,6 +120,7 @@ protected:
         _st(st),
         _ot(OT_PRESENT),
         _cv(ti == TI_VAR ? CV_YES : CV_NO),
+        _at(AT_NO),
         _enumId(enumId),
         _dim(dim) {}
 
@@ -150,6 +160,12 @@ public:
   static Type optpartop(int dim = 0) {
     Type t(TI_PAR, BT_TOP, ST_PLAIN, 0, dim);
     t._ot = OT_OPTIONAL;
+    return t;
+  }
+  static Type mkAny(int dim = 0) {
+    Type t(TI_VAR, BT_TOP, ST_PLAIN, 0, dim);
+    t._ot = OT_OPTIONAL;
+    t._at = AT_YES;
     return t;
   }
 
@@ -241,6 +257,12 @@ public:
     // either same dimension or t has variable dimension
     if (_dim != t._dim && (_dim == 0 || t._dim != -1)) {
       return false;
+    }
+    if (any()) {
+      return t.any();
+    }
+    if (t.any()) {
+      return true;
     }
     // same type, this is present or both optional
     if (ti() == t.ti() && btSubtype(*this, t, strictEnums) && st() == t.st()) {

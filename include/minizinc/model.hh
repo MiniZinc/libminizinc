@@ -168,13 +168,18 @@ public:
   FunctionI* matchFn(EnvI& env, const ASTString& id, const std::vector<Expression*>& args,
                      bool strictEnums) const;
   /// Return function declaration for \a id matching types \a t
-  FunctionI* matchFn(EnvI& env, const ASTString& id, const std::vector<Type>& t, bool strictEnums);
+  FunctionI* matchFn(EnvI& env, const ASTString& id, const std::vector<Type>& t,
+                     bool strictEnums) const;
   /// Return function declaration matching call \a c
   FunctionI* matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotFound = false) const;
   /// Return function declaration for reverse mapper for type \a t
   FunctionI* matchRevMap(EnvI& env, const Type& t) const;
   /// Check if function with this name exists
   bool fnExists(EnvI& env, const ASTString& id) const;
+  /// Return all functions that could match \a c, if some of c's arguments had stronger insts (e.g.
+  /// par vs var)
+  std::vector<FunctionI*> possibleMatches(EnvI& env, const ASTString& ident,
+                                          const std::vector<Type>& ta) const;
   /// Check whether functions \a f and \a g have the same overloaded variants
   bool sameOverloading(EnvI& env, const std::vector<Expression*>& args, FunctionI* f,
                        FunctionI* g) const;

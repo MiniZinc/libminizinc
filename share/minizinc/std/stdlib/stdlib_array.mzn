@@ -21,7 +21,7 @@ function array[int] of var opt $T: '++'(array[int] of var opt $T: x, array[int] 
   Note that the length is defined as the number of elements in the
   array, regardless of its dimensionality.
 */
-function int: length(array[$T] of var opt $U: x);
+function int: length(array[$T] of any $U: x);
 
 /** @group stdlib.array Return the array \a x in reverse order
 
@@ -64,50 +64,50 @@ function array[$$E] of var opt $T: reverse(array[$$E] of var opt $T: x) =
   endif;
 
 /** @group stdlib.array Test if \a x and \a y have the same index sets */
-test index_sets_agree(array[$T] of var opt $U: x, array[$T] of var opt $W: y);
+test index_sets_agree(array[$T] of any $U: x, array[$T] of any $W: y);
 
 /** @group stdlib.array Return index set of one-dimensional array \a x */
-function set of $$E: index_set(array[$$E] of var opt $U: x);
+function set of $$E: index_set(array[$$E] of any $U: x);
 /** @group stdlib.array Return index set of first dimension of two-dimensional array \a x */
-function set of $$E: index_set_1of2(array[$$E,int] of var opt $U: x);
+function set of $$E: index_set_1of2(array[$$E,int] of any $U: x);
 /** @group stdlib.array Return index set of second dimension of two-dimensional array \a x */
-function set of $$E: index_set_2of2(array[int,$$E] of var opt $U: x);
+function set of $$E: index_set_2of2(array[int,$$E] of any $U: x);
 /** @group stdlib.array Return index set of first dimension of 3-dimensional array \a x */
-function set of $$E: index_set_1of3(array[$$E,int,int] of var opt $U: x);
+function set of $$E: index_set_1of3(array[$$E,int,int] of any $U: x);
 /** @group stdlib.array Return index set of second dimension of 3-dimensional array \a x */
-function set of $$E: index_set_2of3(array[int,$$E,int] of var opt $U: x);
+function set of $$E: index_set_2of3(array[int,$$E,int] of any $U: x);
 /** @group stdlib.array Return index set of third dimension of 3-dimensional array \a x */
-function set of $$E: index_set_3of3(array[int,int,$$E] of var opt $U: x);
+function set of $$E: index_set_3of3(array[int,int,$$E] of any $U: x);
 /** @group stdlib.array Return index set of first dimension of 4-dimensional array \a x */
-function set of $$E: index_set_1of4(array[$$E,int,int,int] of var opt $U: x);
+function set of $$E: index_set_1of4(array[$$E,int,int,int] of any $U: x);
 /** @group stdlib.array Return index set of second dimension of 4-dimensional array \a x */
-function set of $$E: index_set_2of4(array[int,$$E,int,int] of var opt $U: x);
+function set of $$E: index_set_2of4(array[int,$$E,int,int] of any $U: x);
 /** @group stdlib.array Return index set of third dimension of 4-dimensional array \a x */
-function set of $$E: index_set_3of4(array[int,int,$$E,int] of var opt $U: x);
+function set of $$E: index_set_3of4(array[int,int,$$E,int] of any $U: x);
 /** @group stdlib.array Return index set of fourth dimension of 4-dimensional array \a x */
-function set of $$E: index_set_4of4(array[int,int,int,$$E] of var opt $U: x);
+function set of $$E: index_set_4of4(array[int,int,int,$$E] of any $U: x);
 /** @group stdlib.array Return index set of first dimension of 5-dimensional array \a x */
-function set of $$E: index_set_1of5(array[$$E,int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_1of5(array[$$E,int,int,int,int] of any $U: x);
 /** @group stdlib.array Return index set of second dimension of 5-dimensional array \a x */
-function set of $$E: index_set_2of5(array[int,$$E,int,int,int] of var opt $U: x);
+function set of $$E: index_set_2of5(array[int,$$E,int,int,int] of any $U: x);
 /** @group stdlib.array Return index set of third dimension of 5-dimensional array \a x */
-function set of $$E: index_set_3of5(array[int,int,$$E,int,int] of var opt $U: x);
+function set of $$E: index_set_3of5(array[int,int,$$E,int,int] of any $U: x);
 /** @group stdlib.array Return index set of fourth dimension of 5-dimensional array \a x */
-function set of $$E: index_set_4of5(array[int,int,int,$$E,int] of var opt $U: x);
+function set of $$E: index_set_4of5(array[int,int,int,$$E,int] of any $U: x);
 /** @group stdlib.array Return index set of fifth dimension of 5-dimensional array \a x */
-function set of $$E: index_set_5of5(array[int,int,int,int,$$E] of var opt $U: x);
+function set of $$E: index_set_5of5(array[int,int,int,int,$$E] of any $U: x);
 /** @group stdlib.array Return index set of first dimension of 6-dimensional array \a x */
-function set of $$E: index_set_1of6(array[$$E,int,int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_1of6(array[$$E,int,int,int,int,int] of any $U: x);
 /** @group stdlib.array Return index set of second dimension of 6-dimensional array \a x */
-function set of $$E: index_set_2of6(array[int,$$E,int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_2of6(array[int,$$E,int,int,int,int] of any $U: x);
 /** @group stdlib.array Return index set of third dimension of 6-dimensional array \a x */
-function set of $$E: index_set_3of6(array[int,int,$$E,int,int,int] of var opt $U: x);
+function set of $$E: index_set_3of6(array[int,int,$$E,int,int,int] of any $U: x);
 /** @group stdlib.array Return index set of fourth dimension of 6-dimensional array \a x */
-function set of $$E: index_set_4of6(array[int,int,int,$$E,int,int] of var opt $U: x);
+function set of $$E: index_set_4of6(array[int,int,int,$$E,int,int] of any $U: x);
 /** @group stdlib.array Return index set of fifth dimension of 6-dimensional array \a x */
-function set of $$E: index_set_5of6(array[int,int,int,int,$$E,int] of var opt $U: x);
+function set of $$E: index_set_5of6(array[int,int,int,int,$$E,int] of any $U: x);
 /** @group stdlib.array Return index set of sixth dimension of 6-dimensional array \a x */
-function set of $$E: index_set_6of6(array[int,int,int,int,int,$$E] of var opt $U: x);
+function set of $$E: index_set_6of6(array[int,int,int,int,int,$$E] of any $U: x);
 
 /** @group stdlib.array Return array \a x coerced to index set 1..length(\a x).
   Coercions are performed by considering the array \a x in row-major order. */
@@ -320,22 +320,22 @@ annotation array_check_form;
   dimensions and same index sets as array \a x.
   Coercions are performed by considering the array \a y in row-major order. 
 */
-function array[$T] of $V: arrayXd(array[$T] of var opt $X: x, array[$U] of $V: y);
+function array[$T] of $V: arrayXd(array[$T] of any $X: x, array[$U] of $V: y);
 /** @group stdlib.array Return array \a y coerced to array with same number of
   dimensions and same index sets as array \a x.
   Coercions are performed by considering the array \a y in row-major order. 
 */
-function array[$T] of opt $V: arrayXd(array[$T] of var opt $X: x, array[$U] of opt $V: y);
+function array[$T] of opt $V: arrayXd(array[$T] of any $X: x, array[$U] of opt $V: y);
 /** @group stdlib.array Return array \a y coerced to array with same number of
   dimensions and same index sets as array \a x.
   Coercions are performed by considering the array \a y in row-major order. 
 */
-function array[$T] of var $V: arrayXd(array[$T] of var opt $X: x, array[$U] of var $V: y);
+function array[$T] of var $V: arrayXd(array[$T] of any $X: x, array[$U] of var $V: y);
 /** @group stdlib.array Return array \a y coerced to array with same number of
   dimensions and same index sets as array \a x.
   Coercions are performed by considering the array \a y in row-major order. 
 */
-function array[$T] of var opt $V: arrayXd(array[$T] of var opt $X: x, array[$U] of var opt $V: y);
+function array[$T] of var opt $V: arrayXd(array[$T] of any $X: x, array[$U] of var opt $V: y);
 
 /** @group stdlib.array Return row \a r of array \a x */
 function array[$$E] of $T: row(array[int, $$E] of $T: x, int: r) = x[r,..];
@@ -409,7 +409,7 @@ function array[int,int,int] of var opt $T: slice_6d(array[$E] of var opt $T: x, 
 
 
 /** @group stdlib.array Test if \a i is in the index set of \a x */
-test has_index(int: i, array[int] of var opt $T: x) = i in index_set(x);
+test has_index(int: i, array[int] of any $T: x) = i in index_set(x);
 /** @group stdlib.array Test if \a e is an element of array \a x */
 test has_element($T: e, array[int] of $T: x) = exists (i in index_set(x)) (x[i]=e);
 /** @group stdlib.array Test if \a e is an element of array \a x */

@@ -3638,10 +3638,14 @@ void register_builtins(Env& e) {
     rb(env, m, ASTString("showJSON"), t, b_show_json);
     t[0] = Type::vartop();
     t[0].st(Type::ST_SET);
-    t[0].ot(Type::OT_OPTIONAL);
+    t[0].ot(Type::OT_PRESENT);
     rb(env, m, ASTString("show"), t, b_show);
     rb(env, m, ASTString("showJSON"), t, b_show_json);
     t[0] = Type::vartop(-1);
+    rb(env, m, ASTString("show"), t, b_show);
+    rb(env, m, ASTString("showJSON"), t, b_show_json);
+    t[0].st(Type::ST_SET);
+    t[0].ot(Type::OT_PRESENT);
     rb(env, m, ASTString("show"), t, b_show);
     rb(env, m, ASTString("showJSON"), t, b_show_json);
   }
@@ -3657,7 +3661,7 @@ void register_builtins(Env& e) {
     rb(env, m, ASTString("format"), t, b_format);
     t[2] = Type::vartop();
     t[2].st(Type::ST_SET);
-    t[2].ot(Type::OT_OPTIONAL);
+    t[2].ot(Type::OT_PRESENT);
     rb(env, m, ASTString("format"), t, b_format);
     t[2] = Type::vartop(-1);
     rb(env, m, ASTString("format"), t, b_format);
@@ -3669,7 +3673,7 @@ void register_builtins(Env& e) {
     rb(env, m, ASTString("format"), t, b_format);
     t[1] = Type::vartop();
     t[1].st(Type::ST_SET);
-    t[1].ot(Type::OT_OPTIONAL);
+    t[1].ot(Type::OT_PRESENT);
     rb(env, m, ASTString("format"), t, b_format);
     t[1] = Type::vartop(-1);
     rb(env, m, ASTString("format"), t, b_format);
@@ -3739,9 +3743,6 @@ void register_builtins(Env& e) {
     rb(env, m, ASTString("deopt"), t, b_deopt_float);
     t[0].bt(Type::BT_STRING);
     rb(env, m, ASTString("deopt"), t, b_deopt_string);
-    t[0].bt(Type::BT_INT);
-    t[0].st(Type::ST_SET);
-    rb(env, m, ASTString("deopt"), t, b_deopt_intset);
   }
   {
     std::vector<Type> t(2);

@@ -58,6 +58,7 @@ add_library(mzn
   lib/statistics.cpp
   lib/type.cpp
   lib/typecheck.cpp
+  lib/type_specialise.cpp
   lib/values.cpp
   lib/support/regex/parser.yxx
   lib/support/regex/lexer.lxx

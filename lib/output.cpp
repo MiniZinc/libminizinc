@@ -22,7 +22,7 @@ bool is_completely_par(EnvI& env, FunctionI* fi, const std::vector<Type>& tv) {
   if (fi->e() != nullptr) {
     // This is not a builtin, so check parameters
     for (int i = 0; i < fi->paramCount(); i++) {
-      if (fi->param(i)->type().isvar()) {
+      if (fi->param(i)->type().isvar() && !fi->param(i)->type().any()) {
         return false;
       }
     }

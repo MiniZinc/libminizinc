@@ -5,15 +5,12 @@
 */
 
 /** @group stdlib.string Convert \a x into a string */
-function string: show(var opt set of $T: x);
+function string: show(any $T: x);
 /** @group stdlib.string Convert \a x into a string */
-function string: show(var opt $T: x);
-/** @group stdlib.string Convert \a x into a string */
-function string: show(array[$U] of var opt $T: x);
+function string: show(array[$U] of any $T: x);
 
-function string: showDzn(var opt set of $T: x);
-function string: showDzn(var opt $T: x);
-function string: showDzn(array[$U] of var opt $T: x);
+function string: showDzn(any $T: x);
+function string: showDzn(array[$U] of any $T: x);
 function string: showDznId(string: x);
 
 function string: showCheckerOutput();
@@ -35,7 +32,7 @@ point is given by \a p. It is a run-time error for \a p to be negative.
 function string: show_float(int: w, int: p, var float: x);
 
 /** @group stdlib.string Convert two-dimensional array \a x into a string */
-function string: show2d(array[int,int] of var opt $T: x) =
+function string: show2d(array[int,int] of any $T: x) =
 	let {
 		int: rows=card(index_set_1of2(x));
 		int: cols=card(index_set_2of2(x));
@@ -55,7 +52,7 @@ function string: show2d(array[int,int] of var opt $T: x) =
 	if rows = 0 then "|]" else "" endif;
 
 /** @group stdlib.string Convert three-dimensional array \a x into a string */
-function string: show3d(array[int,int,int] of var opt $T: x) =
+function string: show3d(array[int,int,int] of any $T: x) =
 	let {
 		int: len1=card(index_set_1of3(x));
 		int: len2=card(index_set_2of3(x));
@@ -78,10 +75,9 @@ function string: show3d(array[int,int,int] of var opt $T: x) =
 		]) ++ if len1 = 0 then "| |]" else "" endif;
 
 /** @group stdlib.string Convert \a x into JSON string */
-function string: showJSON(var opt $T: x);
-
+function string: showJSON(any $T: x);
 /** @group stdlib.string Convert \a x into JSON string */
-function string: showJSON(array[$U] of var opt $T: x);
+function string: showJSON(array[$U] of any $T: x);
 
 /** @group stdlib.string Return length of \a s */
 function int: string_length(string: s);
@@ -94,11 +90,9 @@ function string: concat(array[$T] of string: s);
 function string: join(string: d, array[$T] of string: s);
 
 /** @group stdlib.string Convert \a x into a string */
-function string: format(var opt $T: x) = show(x);
+function string: format(any $T: x) = show(x);
 /** @group stdlib.string Convert \a x into a string */
-function string: format(var opt set of $T: x) = show(x);
-/** @group stdlib.string Convert \a x into a string */
-function string: format(array[$U] of var opt $T: x) = show(x);
+function string: format(array[$U] of any $T: x) = show(x);
 
 /** @group stdlib.string Return array for output of all variables in JSON format */
 function array[int] of string: outputJSON();
@@ -119,7 +113,7 @@ The maximum length of the string representation of \a x is given by
 \a p, or the maximum number of digits after the decimal point for floating
 point numbers. It is a run-time error for \a p to be negative.
 */
-function string: format(int: w, int: p, var opt $T: x);
+function string: format(int: w, int: p, any $T: x);
 /** @group stdlib.string Formatted to-string conversion
 
 Converts the value \a x into a string right
@@ -129,17 +123,7 @@ justified if \a w is negative.
 The maximum length of the string representation of \a x is given by
 \a p. It is a run-time error for \a p to be negative.
 */
-function string: format(int: w, int: p, var opt set of $T: x);
-/** @group stdlib.string Formatted to-string conversion
-
-Converts the value \a x into a string right
-justified by the number of characters given by \a w, or left
-justified if \a w is negative.
-
-The maximum length of the string representation of \a x is given by
-\a p. It is a run-time error for \a p to be negative.
-*/
-function string: format(int: w, int: p, array[$U] of var opt $T: x);
+function string: format(int: w, int: p, array[$U] of any $T: x);
 
 /** @group stdlib.string Formatted to-string conversion
 
@@ -147,21 +131,14 @@ Converts the value \a x into a string right
 justified by the number of characters given by \a w, or left
 justified if \a w is negative.
 */
-function string: format(int: w, var opt $T: x);
+function string: format(int: w, any $T: x);
 /** @group stdlib.string Formatted to-string conversion
 
 Converts the value \a x into a string right
 justified by the number of characters given by \a w, or left
 justified if \a w is negative.
 */
-function string: format(int: w, var opt set of $T: x);
-/** @group stdlib.string Formatted to-string conversion
-
-Converts the value \a x into a string right
-justified by the number of characters given by \a w, or left
-justified if \a w is negative.
-*/
-function string: format(int: w, array[$U] of var opt $T: x);
+function string: format(int: w, array[$U] of any $T: x);
 /** @group stdlib.string String justification
 
 Returns the string \a x right

@@ -1,3 +1,2 @@
-output ['foo!'(10),'bar!'];
-function string : 'foo!'(int: x) = show(x);
+output [show(10),'bar!'];
 string: 'bar!' = "bar";

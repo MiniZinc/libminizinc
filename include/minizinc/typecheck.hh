@@ -89,6 +89,11 @@ public:
   void run(EnvI& env, Expression* e);
 };
 
+class TyperFn {
+public:
+  virtual void operator()(EnvI& env, FunctionI* fi) = 0;
+};
+
 /// Type check the model \a m
 void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
                bool ignoreUndefinedParameters, bool allowMultiAssignment, bool isFlatZinc = false);

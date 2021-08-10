@@ -87,28 +87,16 @@ function $T: fix(var opt $T: x);
 at this point in evaluation. If all are fixed, return an array of their values, otherwise abort. */
 function array[$U] of $T: fix(array[$U] of var opt $T: x);
 /** @group stdlib.reflect Test if \a x is fixed */
-function bool: is_fixed(var opt $T: x);
-/** @group stdlib.reflect Test if \a x is fixed */
-function bool: is_fixed(set of $T: x);
-/** @group stdlib.reflect Test if \a x is fixed */
-function bool: is_fixed(var set of int: x);
+function bool: is_fixed(any $T: x);
 /** @group stdlib.reflect Test if every element of array \a x is fixed */
-function bool: is_fixed(array[$U] of var opt $T: x);
+function bool: is_fixed(array[$U] of any $T: x);
 
 /** @group stdlib.reflect Test if \a x is annotated \a a */
-function bool: has_ann(var opt $T: x, ann: a);
-/** @group stdlib.reflect Test if \a x is annotated \a a */
-function bool: has_ann(var set of $T: x, ann: a);
-/** @group stdlib.reflect Test if \a x is annotated \a a */
-function bool: has_ann(var set of int: x, ann: a);
+function bool: has_ann(any $T: x, ann: a);
 
 /** @group stdlib.reflect Annotate declaration of \a x with annotation \a a */
-function bool: annotate(var opt $T: x, ann: a);
-/** @group stdlib.reflect Annotate declaration of \a x with annotation \a a */
-function bool: annotate(set of $T: x, ann: a);
-/** @group stdlib.reflect Annotate declaration of \a x with annotation \a a */
-function bool: annotate(var set of int: x, ann: a);
+function bool: annotate(any $T: x, ann: a);
 
 /** @group stdlib.reflect Test if \a x and \a y are the same variable */
-function bool: is_same(var opt $T: x, var opt $U: y);
+function bool: is_same(any $T: x, any $U: y);
 

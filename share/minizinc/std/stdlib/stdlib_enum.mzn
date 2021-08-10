@@ -7,6 +7,25 @@ function set of int: anon_enum(int: n) = 1..n;
 
 function set of int: anon_enum(array[int] of string: x);
 
+/** @group stdlib.enum Return enum set of \a x */
+function set of $$E: enum_of(var opt $$E: x);
+/** @group stdlib.enum Return enum set of \a x */
+function set of $$E: enum_of(var set of $$E: x);
+/** @group stdlib.enum Return enum set of \a x */
+function set of $$E: enum_of(array[$T] of var opt $$E: x);
+/** @group stdlib.enum Return enum set of \a x */
+function set of $$E: enum_of(array[$T] of var set of $$E: x);
+
+function set of $$E: enum_of_internal(set of $$E: e) = e;
+
+/** @group stdlib.enum Return next greater enum value of \a x */
+function $$E: enum_next($$E: x) = enum_next(enum_of(x), x);
+/** @group stdlib.enum Return next greater enum value of \a x */
+function opt $$E: enum_next(opt $$E: x) = enum_next(enum_of(x), x);
+/** @group stdlib.enum Return next greater enum value of \a x */
+function var $$E: enum_next(var $$E: x) = enum_next(enum_of(x), x);
+/** @group stdlib.enum Return next greater enum value of \a x */
+function var opt $$E: enum_next(var opt $$E: x) = enum_next(enum_of(x), x);
 
 /** @group stdlib.enum Return next greater enum value of \a x in enum \a e */
 function $$E: enum_next(set of $$E: e, $$E: x);
@@ -19,6 +38,15 @@ function var $$E: enum_next(set of $$E: e, var $$E: x) =
 /** @group stdlib.enum Return next greater enum value of \a x in enum \a e */
 function var opt $$E: enum_next(set of $$E: e, var opt $$E: x) =
   if occurs(x) then enum_next(e,deopt(x)) else <> endif;
+
+/** @group stdlib.enum Return next smaller enum value of \a x */
+function $$E: enum_prev($$E: x) = enum_prev(enum_of(x), x);
+/** @group stdlib.enum Return next smaller enum value of \a x */
+function opt $$E: enum_prev(opt $$E: x) = enum_prev(enum_of(x), x);
+/** @group stdlib.enum Return next smaller enum value of \a x */
+function var $$E: enum_prev(var $$E: x) = enum_prev(enum_of(x), x);
+/** @group stdlib.enum Return next smaller enum value of \a x */
+function var opt $$E: enum_prev(var opt $$E: x) = enum_prev(enum_of(x), x);
 
 /** @group stdlib.enum Return next smaller enum value of \a x in enum \a e */
 function $$E: enum_prev(set of $$E: e, $$E: x);

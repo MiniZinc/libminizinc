@@ -934,7 +934,7 @@ bool TypeInst::hasTiVariable() const {
     return true;
   }
   for (unsigned int i = _ranges.size(); (i--) != 0U;) {
-    if (_ranges[i]->isa<TIId>()) {
+    if (_ranges[i]->domain() != nullptr && _ranges[i]->domain()->isa<TIId>()) {
       return true;
     }
   }
@@ -981,6 +981,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
     if (tii->domain() && tii->domain()->isa<TIId>()) {
       ASTString tiid = tii->domain()->cast<TIId>()->v();
       Type tiit = get_type(ta[i]);
+      tiit.ot(Type::OT_PRESENT);
       if (tiit.enumId() != 0 && tiit.dim() > 0) {
         const std::vector<unsigned int>& enumIds = env.getArrayEnum(tiit.enumId());
         tiit.enumId(enumIds[enumIds.size() - 1]);
@@ -1229,8 +1230,15 @@ Type FunctionI::rtype(EnvI& env, const std::vector<Type>& ta, bool strictEnums) 
 }
 
 Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned int n) const {
+  // Given the concrete types for all function arguments ta, compute the
+  // least common supertype that fits function parameter n.
   TypeInst* tii = param(n)->ti();
   if ((tii->domain() != nullptr) && tii->domain()->isa<TIId>()) {
+    // We need to determine both the base type and whether this tiid
+    // can stand for a set. It can only stand for a set if none
+    // of the uses of tiid is opt. The base type has to be int
+    // if any of the uses are var set.
+
     Type ty = ta[n]->type();
     ty.st(tii->type().st());
     ty.dim(tii->type().dim());
@@ -1239,6 +1247,7 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
       if ((param(i)->ti()->domain() != nullptr) && param(i)->ti()->domain()->isa<TIId>() &&
           param(i)->ti()->domain()->cast<TIId>()->v() == tv) {
         Type toCheck = ta[i]->type();
+        toCheck.ot(tii->type().ot());
         toCheck.st(tii->type().st());
         toCheck.dim(tii->type().dim());
         if (toCheck != ty) {

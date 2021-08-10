@@ -803,6 +803,10 @@ base_ti_expr :
           $$->type(tt);
         }
       }
+    | MZN_ANY MZN_TI_IDENTIFIER
+      { $$ = new TypeInst(@$,Type::mkAny(),new TIId(@$, $2));
+        free($2);
+      }
 
 opt_opt:
       /* nothing */
