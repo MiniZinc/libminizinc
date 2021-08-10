@@ -51,6 +51,13 @@ function set of float: '..'(float: a,float: b);
 function set of bool: '..'(bool: a,bool: b) =
   if a then if b then {true} else {} endif elseif b then {false,true} else {false} endif;
 
+/** @group stdlib.set Return the set \(\{\a a,\ldots,\a b-1\}\) */
+function set of $$E: '..<'($$E: a,$$E: b) = if a >= b then {} else a..enum_prev(b) endif;
+/** @group stdlib.set Return the set \(\{\a a+1,\ldots,\a b\}\) */
+function set of $$E: '<..'($$E: a,$$E: b) = if a >= b then {} else enum_next(a)..b endif;
+/** @group stdlib.set Return the set \(\{\a a+1,\ldots,\a b-1\}\) */
+function set of $$E: '<..<'($$E: a,$$E: b) = if b-a <= 1 then {} else enum_next(a)..enum_prev(b) endif;
+
 function var set of int: '..'(var int: a, var int: b) ::promise_total =
   let {
     var set of min(lb(a),lb(b))..max(ub(a),ub(b)): s;

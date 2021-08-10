@@ -228,6 +228,12 @@ namespace MiniZinc {
                     return *yytext; }
 \.\.              { return MZN_DOTDOT; }
 "'\.\.'"          { return MZN_DOTDOT_QUOTED; }
+"\.\.<"           { return MZN_DOTDOT_LE; }
+"'\.\.<'"         { return MZN_DOTDOT_LE_QUOTED; }
+"<\.\."           { return MZN_LE_DOTDOT; }
+"'<\.\.'"         { return MZN_LE_DOTDOT_QUOTED; }
+"<\.\.<"          { return MZN_LE_DOTDOT_LE; }
+"'<\.\.<'"        { return MZN_LE_DOTDOT_LE_QUOTED; }
 ::                { return MZN_COLONCOLON; }
 _                 { return MZN_UNDERSCORE; }
 "ann"             { return MZN_ANN; }

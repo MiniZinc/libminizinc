@@ -208,6 +208,9 @@ Expression* createArrayAccess(const ParserLocation& loc, Expression* e, std::vec
 %token MZN_IN "in" MZN_SUBSET "subset" MZN_SUPERSET "superset"
 %token MZN_UNION "union" MZN_DIFF "diff" MZN_SYMDIFF "symdiff"
 %token MZN_DOTDOT ".."
+%token MZN_DOTDOT_LE "..<"
+%token MZN_LE_DOTDOT "<.."
+%token MZN_LE_DOTDOT_LE "<..<"
 %token MZN_PLUS "+" MZN_MINUS "-" MZN_WEAK_PLUS "~+" MZN_WEAK_MINUS "~-"
 %token MZN_MULT "*" MZN_DIV "/" MZN_IDIV "div" MZN_MOD "mod" MZN_WEAK_DIV "~/" MZN_WEAK_IDIV "~div"
 %token MZN_INTERSECT "intersect" MZN_WEAK_MULT "~*"
@@ -225,7 +228,7 @@ Expression* createArrayAccess(const ParserLocation& loc, Expression* e, std::vec
 %nonassoc MZN_LE MZN_GR MZN_LQ MZN_GQ MZN_EQ MZN_NQ MZN_WEAK_EQ MZN_WEAK_NQ
 %nonassoc MZN_IN MZN_SUBSET MZN_SUPERSET
 %left MZN_UNION MZN_DIFF MZN_SYMDIFF MZN_INTERSECT 
-%nonassoc MZN_DOTDOT
+%nonassoc MZN_DOTDOT MZN_DOTDOT_LE MZN_LE_DOTDOT MZN_LE_DOTDOT_LE
 %left MZN_PLUS MZN_MINUS MZN_WEAK_PLUS MZN_WEAK_MINUS
 %left MZN_MULT MZN_DIV MZN_IDIV MZN_MOD MZN_WEAK_MULT MZN_WEAK_DIV MZN_WEAK_IDIV
 %left MZN_POW MZN_POW_MINUS1
@@ -243,6 +246,9 @@ Expression* createArrayAccess(const ParserLocation& loc, Expression* e, std::vec
 %token MZN_IN_QUOTED "'in'" MZN_SUBSET_QUOTED "'subset'" MZN_SUPERSET_QUOTED "'superset'"
 %token MZN_UNION_QUOTED "'union'" MZN_DIFF_QUOTED "'diff'" MZN_SYMDIFF_QUOTED "'symdiff'"
 %token MZN_DOTDOT_QUOTED "'..'"
+%token MZN_LE_DOTDOT_QUOTED "'<..'"
+%token MZN_DOTDOT_LE_QUOTED "'..<'"
+%token MZN_LE_DOTDOT_LE_QUOTED "'<..<'"
 %token MZN_PLUS_QUOTED "'+'" MZN_MINUS_QUOTED "'-'"
 %token MZN_MULT_QUOTED "'*'" MZN_DIV_QUOTED "'/'" MZN_IDIV_QUOTED "'div'" MZN_MOD_QUOTED "'mod'" MZN_INTERSECT_QUOTED "'intersect'"
 %token MZN_POW_QUOTED "'^'"
@@ -900,6 +906,18 @@ set_expr :
           $$=new BinOp(@$, $1, BOT_DOTDOT, $3);
         }
       }
+    | set_expr MZN_DOTDOT_LE set_expr
+      { $$=new Call(@$, ASTString("'..<'"), {$1, $3}); }
+    | set_expr MZN_LE_DOTDOT set_expr
+      { $$=new Call(@$, ASTString("'<..'"), {$1, $3}); }
+    | set_expr MZN_LE_DOTDOT_LE set_expr
+      { $$=new Call(@$, ASTString("'<..<'"), {$1, $3}); }
+    | MZN_DOTDOT_LE_QUOTED '(' set_expr ',' set_expr ')'
+      { $$=new Call(@$, ASTString("'..<'"), {$3, $5}); }
+    | MZN_LE_DOTDOT_QUOTED '(' set_expr ',' set_expr ')'
+      { $$=new Call(@$, ASTString("'<..'"), {$3, $5}); }
+    | MZN_LE_DOTDOT_LE_QUOTED '(' set_expr ',' set_expr ')'
+      { $$=new Call(@$, ASTString("'<..<'"), {$3, $5}); }
     | MZN_DOTDOT_QUOTED '(' expr ',' expr ')'
       { if ($3==nullptr || $5==nullptr) {
           $$ = nullptr;
@@ -1037,6 +1055,18 @@ expr :
           $$=new BinOp(@$, $1, BOT_DOTDOT, $3);
         }
       }
+    | expr MZN_DOTDOT_LE expr
+      { $$=new Call(@$, ASTString("'..<'"), {$1, $3}); }
+    | expr MZN_LE_DOTDOT expr
+      { $$=new Call(@$, ASTString("'<..'"), {$1, $3}); }
+    | expr MZN_LE_DOTDOT_LE expr
+      { $$=new Call(@$, ASTString("'<..<'"), {$1, $3}); }
+    | MZN_DOTDOT_LE_QUOTED '(' expr ',' expr ')'
+      { $$=new Call(@$, ASTString("'..<'"), {$3, $5}); }
+    | MZN_LE_DOTDOT_QUOTED '(' expr ',' expr ')'
+      { $$=new Call(@$, ASTString("'<..'"), {$3, $5}); }
+    | MZN_LE_DOTDOT_LE_QUOTED '(' expr ',' expr ')'
+      { $$=new Call(@$, ASTString("'<..<'"), {$3, $5}); }
     | MZN_DOTDOT_QUOTED '(' expr ',' expr ')'
       { if ($3==nullptr || $5==nullptr) {
           $$ = nullptr;
@@ -1859,6 +1889,12 @@ id_or_quoted_op :
       { $$=strdup("'symdiff'"); }
     | MZN_DOTDOT_QUOTED
       { $$=strdup("'..'"); }
+    | MZN_LE_DOTDOT_QUOTED
+      { $$=strdup("'<..'"); }
+    | MZN_DOTDOT_LE_QUOTED
+      { $$=strdup("'..<'"); }
+    | MZN_LE_DOTDOT_LE_QUOTED
+      { $$=strdup("'<..<'"); }
     | MZN_PLUS_QUOTED
       { $$=strdup("'+'"); }
     | MZN_MINUS_QUOTED
