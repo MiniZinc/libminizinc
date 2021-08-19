@@ -1,8 +1,8 @@
 /***
 !Test
+solvers: [gecode, gurobi, scip]
 expected:
 - !Result
-  solvers: [gecode, gurobi, scip]
   solution: !Solution
     x: 20
     y: -3
