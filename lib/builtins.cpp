@@ -1114,8 +1114,9 @@ FloatSetVal* b_compute_float_div_bounds(EnvI& env, Call* call) {
   if (!bx.l.isFinite() || !bx.u.isFinite()) {
     return env.constants.infinity->fsv();
   }
-  if (0.0 == std::fabs(bx.l.toDouble()) && 0.0 == std::fabs(bx.u.toDouble()))
+  if (0.0 == std::fabs(bx.l.toDouble()) && 0.0 == std::fabs(bx.u.toDouble())) {
     return FloatSetVal::a(0.0, 0.0);
+  }
   FloatBounds by = compute_float_bounds(env, call->arg(1));
   if (!by.valid) {
     throw EvalError(env, call->arg(1)->loc(), "cannot determine bounds");
