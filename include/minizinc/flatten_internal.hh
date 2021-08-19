@@ -69,6 +69,38 @@ BCtx operator+(const BCtx& c);
 /// Negate context \a c
 BCtx operator-(const BCtx& c);
 
+struct MultiPassInfo {
+  // The current pass number (used for unifying and disabling path construction in final pass)
+  unsigned int currentPassNumber;
+  // Used for disabling path construction in final pass
+  unsigned int finalPassNumber;
+
+  MultiPassInfo();
+};
+
+struct VarPathStore {
+  // Used for disabling path construction past the maxPathDepth of previous passes
+  unsigned int maxPathDepth;
+
+  struct PathVar {
+    KeepAlive decl;
+    unsigned int passNumber;
+  };
+  // Store mapping from path string to (VarDecl, pass_no) tuples
+  typedef std::unordered_map<std::string, PathVar> PathMap;
+  // Mapping from arbitrary Expressions to paths
+  typedef KeepAliveMap<std::string> ReversePathMap;
+
+  PathMap pathMap;
+  ReversePathMap reversePathMap;
+  ASTStringSet filenameSet;
+
+  VarPathStore();
+  PathMap& getPathMap() { return pathMap; }
+  ReversePathMap& getReversePathMap() { return reversePathMap; }
+  ASTStringSet& getFilenameSet() { return filenameSet; }
+};
+
 class EnvI {
 public:
   Model* model;
@@ -83,13 +115,6 @@ public:
   std::ostream& errstream;
   std::stringstream logstream;
   std::stringstream checkerOutput;
-
-  // The current pass number (used for unifying and disabling path construction in final pass)
-  unsigned int currentPassNumber;
-  // Used for disabling path construction in final pass
-  unsigned int finalPassNumber;
-  // Used for disabling path construction past the maxPathDepth of previous passes
-  unsigned int maxPathDepth;
 
 #ifdef OUTPUT_CALLTREE
   // Call stack depth
@@ -132,18 +157,14 @@ public:
   } counters;
   bool inReverseMapVar;
   FlatteningOptions fopts;
-  unsigned int pathUse;
   ASTStringMap<Item*> reverseEnum;
-
-  struct PathVar {
-    KeepAlive decl;
-    unsigned int passNumber;
-  };
-  // Store mapping from path string to (VarDecl, pass_no) tuples
-  typedef std::unordered_map<std::string, PathVar> PathMap;
-  // Mapping from arbitrary Expressions to paths
-  typedef KeepAliveMap<std::string> ReversePathMap;
   std::vector<KeepAlive> checkVars;
+
+  // General multipass information
+  MultiPassInfo multiPassInfo;
+
+  // Storage for mznpaths
+  VarPathStore varPathStore;
 
 protected:
   CSEMap _cseMap;
@@ -151,9 +172,6 @@ protected:
   bool _failed;
   unsigned int _ids;
   ASTStringMap<ASTString> _reifyMap;
-  PathMap _pathMap;
-  ReversePathMap _reversePathMap;
-  ASTStringSet _filenameSet;
   typedef std::unordered_map<VarDeclI*, unsigned int> EnumMap;
   EnumMap _enumMap;
   std::vector<VarDeclI*> _enumVarDecls;
@@ -203,9 +221,6 @@ public:
   bool dumpPath(std::ostream& os, bool force = false);
   void addWarning(const std::string& msg);
   void collectVarDecls(bool b);
-  PathMap& getPathMap() { return _pathMap; }
-  ReversePathMap& getReversePathMap() { return _reversePathMap; }
-  ASTStringSet& getFilenameSet() { return _filenameSet; }
 
   void copyPathMapsAndState(EnvI& env);
   /// deprecated, use Solns2Out

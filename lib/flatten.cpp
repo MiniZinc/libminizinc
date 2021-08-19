@@ -499,7 +499,7 @@ StringLit* get_longest_mzn_path_annotation(EnvI& env, const Expression* e) {
   StringLit* sl = nullptr;
 
   if (const auto* vd = e->dynamicCast<const VarDecl>()) {
-    EnvI::ReversePathMap& reversePathMap = env.getReversePathMap();
+    VarPathStore::ReversePathMap& reversePathMap = env.varPathStore.getReversePathMap();
     KeepAlive vd_decl_ka(vd->id()->decl());
     auto it = reversePathMap.find(vd_decl_ka);
     if (it != reversePathMap.end()) {
@@ -532,7 +532,7 @@ void add_path_annotation(EnvI& env, Expression* e) {
       return;
     }
 
-    EnvI::ReversePathMap& reversePathMap = env.getReversePathMap();
+    VarPathStore::ReversePathMap& reversePathMap = env.varPathStore.getReversePathMap();
 
     std::vector<Expression*> path_args(1);
     std::string p;
@@ -564,8 +564,8 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
   if (ti->type().dim() == 0 && !ti->type().isAnn()) {
     std::string path = get_path(env);
     if (!path.empty()) {
-      EnvI::ReversePathMap& reversePathMap = env.getReversePathMap();
-      EnvI::PathMap& pathMap = env.getPathMap();
+      VarPathStore::ReversePathMap& reversePathMap = env.varPathStore.getReversePathMap();
+      VarPathStore::PathMap& pathMap = env.varPathStore.getPathMap();
       auto it = pathMap.find(path);
 
       if (it != pathMap.end()) {
@@ -574,7 +574,7 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
 
         if (ovd != nullptr) {
           // If ovd was introduced during the same pass, we can unify
-          if (env.currentPassNumber == ovd_pass) {
+          if (env.multiPassInfo.currentPassNumber == ovd_pass) {
             vd = ovd;
             if (origId != nullptr) {
               origId->decl(vd);
@@ -593,7 +593,7 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
             auto path2It = reversePathMap.find(ovd_decl_ka);
             if (path2It != reversePathMap.end()) {
               std::string path2 = path2It->second;
-              EnvI::PathVar vd_tup{vd, env.currentPassNumber};
+              VarPathStore::PathVar vd_tup{vd, env.multiPassInfo.currentPassNumber};
 
               pathMap[path] = vd_tup;
               pathMap[path2] = vd_tup;
@@ -606,7 +606,7 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
         // Create new VarDecl and add it to the maps
         vd = new VarDecl(get_loc(env, origVd, rhs), ti, get_id(env, origId));
         hasBeenAdded = false;
-        EnvI::PathVar vd_tup{vd, env.currentPassNumber};
+        VarPathStore::PathVar vd_tup{vd, env.multiPassInfo.currentPassNumber};
         pathMap[path] = vd_tup;
         KeepAlive vd_ka(vd);
         reversePathMap.insert(vd_ka, path);
@@ -710,6 +710,10 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
 #define MZN_FILL_REIFY_MAP(T, ID) \
   _reifyMap.insert(std::pair<ASTString, ASTString>(constants.ids.T.ID, constants.ids.T##reif.ID));
 
+MultiPassInfo::MultiPassInfo() : currentPassNumber(0), finalPassNumber(1) {}
+
+VarPathStore::VarPathStore() : maxPathDepth(0) {}
+
 EnvI::EnvI(Model* model0, std::ostream& outstream0, std::ostream& errstream0)
     : model(model0),
       originalModel(nullptr),
@@ -717,9 +721,6 @@ EnvI::EnvI(Model* model0, std::ostream& outstream0, std::ostream& errstream0)
       constants(Constants::constants()),
       outstream(outstream0),
       errstream(errstream0),
-      currentPassNumber(0),
-      finalPassNumber(1),
-      maxPathDepth(0),
       ignorePartial(false),
       ignoreUnknownIds(false),
       maxCallStack(0),
@@ -728,7 +729,6 @@ EnvI::EnvI(Model* model0, std::ostream& outstream0, std::ostream& errstream0)
       inMaybePartial(0),
       inReverseMapVar(false),
       counters({0, 0, 0, 0}),
-      pathUse(0),
       _flat(new Model),
       _failed(false),
       _ids(0),
@@ -959,13 +959,14 @@ ArrayLit* EnvI::createAnnotationArray(const BCtx& ctx) {
 }
 
 void EnvI::copyPathMapsAndState(EnvI& env) {
-  finalPassNumber = env.finalPassNumber;
-  maxPathDepth = env.maxPathDepth;
-  currentPassNumber = env.currentPassNumber;
-  _filenameSet = env._filenameSet;
-  maxPathDepth = env.maxPathDepth;
-  _pathMap = env.getPathMap();
-  _reversePathMap = env.getReversePathMap();
+  multiPassInfo.finalPassNumber = env.multiPassInfo.finalPassNumber;
+  multiPassInfo.currentPassNumber = env.multiPassInfo.currentPassNumber;
+
+  varPathStore.pathMap = env.varPathStore.getPathMap();
+  varPathStore.reversePathMap = env.varPathStore.getReversePathMap();
+
+  varPathStore.filenameSet = env.varPathStore.filenameSet;
+  varPathStore.maxPathDepth = env.varPathStore.maxPathDepth;
 }
 
 void EnvI::flatRemoveExpr(Expression* e, Item* i) {
@@ -1265,11 +1266,11 @@ std::ostream& Env::dumpErrorStack(std::ostream& os) { return _e->dumpStack(os, t
 
 bool EnvI::dumpPath(std::ostream& os, bool force) {
   force = force ? force : fopts.collectMznPaths;
-  if (callStack.size() > maxPathDepth) {
-    if (!force && currentPassNumber >= finalPassNumber - 1) {
+  if (callStack.size() > varPathStore.maxPathDepth) {
+    if (!force && multiPassInfo.currentPassNumber >= multiPassInfo.finalPassNumber - 1) {
       return false;
     }
-    maxPathDepth = static_cast<int>(callStack.size());
+    varPathStore.maxPathDepth = static_cast<int>(callStack.size());
   }
 
   auto lastError = static_cast<unsigned int>(callStack.size());
@@ -1280,12 +1281,12 @@ bool EnvI::dumpPath(std::ostream& os, bool force) {
     Expression* e = callStack[i].e;
     bool isCompIter = callStack[i].tag;
     Location loc = e->loc();
-    auto findFilename = _filenameSet.find(loc.filename());
-    if (findFilename == _filenameSet.end()) {
-      if (!force && currentPassNumber >= finalPassNumber - 1) {
+    auto findFilename = varPathStore.filenameSet.find(loc.filename());
+    if (findFilename == varPathStore.filenameSet.end()) {
+      if (!force && multiPassInfo.currentPassNumber >= multiPassInfo.finalPassNumber - 1) {
         return false;
       }
-      _filenameSet.insert(loc.filename());
+      varPathStore.filenameSet.insert(loc.filename());
     }
 
     // If this call is not a dummy StringLit with empty Location (so that deferred compilation

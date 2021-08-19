@@ -415,11 +415,11 @@ Env* Flattener::multiPassFlatten(const vector<unique_ptr<Pass> >& passes) {
 
   Env* pre_env = &e;
   size_t npasses = passes.size();
-  pre_env->envi().finalPassNumber = static_cast<unsigned int>(npasses);
+  pre_env->envi().multiPassInfo.finalPassNumber = static_cast<unsigned int>(npasses);
   Timer starttime;
   bool verbose = false;
   for (unsigned int i = 0; i < passes.size(); i++) {
-    pre_env->envi().currentPassNumber = i;
+    pre_env->envi().multiPassInfo.currentPassNumber = i;
     if (verbose) {
       _log << "Start pass " << i << ":\n";
     }
@@ -792,7 +792,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           FlatModelStatistics stats = statistics(*env);
           _os << "% Generated FlatZinc statistics:\n";
 
-          _os << "%%%mzn-stat: paths=" << env->envi().getPathMap().size() << endl;
+          _os << "%%%mzn-stat: paths=" << env->envi().varPathStore.getPathMap().size() << endl;
 
           if (stats.n_bool_vars != 0) {
             _os << "%%%mzn-stat: flatBoolVars=" << stats.n_bool_vars << endl;
