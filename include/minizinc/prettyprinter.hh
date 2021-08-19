@@ -91,11 +91,12 @@ public:
         "xor"};
     bool is_reserved =
         std::find(reserved.begin(), reserved.end(), std::string(str)) != reserved.end();
-    if (is_reserved || strchr(idBegin, str[0]) == nullptr) {
+    int offset = str[0] == '_' ? 1 : 0;
+    if (is_reserved || strchr(idBegin, str[offset]) == nullptr) {
       return "'" + std::string(str) + "'";
     }
     auto n = s.size();
-    for (auto i = 1; i < n; i++) {
+    for (auto i = 1 + offset; i < n; i++) {
       if (strchr(idChars, str[i]) == nullptr) {
         return "'" + std::string(str) + "'";
       }

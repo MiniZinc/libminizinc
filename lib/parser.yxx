@@ -187,10 +187,6 @@ Expression* createArrayAccess(const ParserLocation& loc, Expression* e, std::vec
 %token MZN_RIGHT_BRACKET "]"
 %token MZN_RIGHT_2D_BRACKET "|]"
 
-// Used to signal an error when parsing a MiniZinc file
-// that contains identifiers starting with _
-%token FLATZINC_IDENTIFIER
-
 // Used to signal an error when parsing a FlatZinc file
 // that contains quoted identifiers
 %token QUOTED_IDENTIFIER

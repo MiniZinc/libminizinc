@@ -224,7 +224,7 @@
 % Miscellaneous
 
 % Identifiers
-<ident> ::= [A-Za-z][A-Za-z0-9_]* | ’[^’\xa\xd\x0]*’
+<ident> ::= _?[A-Za-z][A-Za-z0-9_]* | ’[^’\xa\xd\x0]+’
 
 % Identifiers and quoted operators
 <ident-or-quoted-op> ::= <ident>

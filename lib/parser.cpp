@@ -233,9 +233,6 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
         m->setFilepath(fullname);
       }
       isFzn = (fullname.compare(fullname.length() - 4, 4, ".fzn") == 0);
-      isFzn |= (fullname.compare(fullname.length() - 4, 4, ".ozn") == 0);
-      isFzn |= (fullname.compare(fullname.length() - 4, 4, ".szn") == 0);
-      isFzn |= (fullname.compare(fullname.length() - 4, 4, ".mzc") == 0);
     } else {
       isFzn = false;
       fullname = f;
