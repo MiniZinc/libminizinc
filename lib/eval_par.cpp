@@ -789,8 +789,8 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
     } break;
     default:
       assert(false);
-      return nullptr;
   }
+  return nullptr;
 }
 
 FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
@@ -918,6 +918,10 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
         return eval_floatset(env, ce->decl()->builtins.e(env, ce));
       }
 
+      if (ce->decl()->builtins.fs != nullptr) {
+        return ce->decl()->builtins.fs(env, ce);
+      }
+
       if (ce->decl()->e() == nullptr) {
         std::ostringstream ss;
         ss << "internal error: missing builtin '" << ce->id() << "'";
@@ -949,8 +953,8 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
     } break;
     default:
       assert(false);
-      return nullptr;
   }
+  return nullptr;
 }
 
 bool eval_bool(EnvI& env, Expression* e) {
@@ -1282,8 +1286,8 @@ bool eval_bool(EnvI& env, Expression* e) {
     }
   } catch (ResultUndefinedError&) {
     // undefined means false
-    return false;
   }
+  return false;
 }
 
 IntSetVal* eval_boolset(EnvI& env, Expression* e) {
@@ -1441,8 +1445,8 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
     } break;
     default:
       assert(false);
-      return nullptr;
   }
+  return nullptr;
 }
 
 IntVal eval_int_internal(EnvI& env, Expression* e) {
@@ -1578,6 +1582,7 @@ IntVal eval_int_internal(EnvI& env, Expression* e) {
   } catch (ArithmeticError& err) {
     throw EvalError(env, e->loc(), err.msg());
   }
+  return 0;
 }
 
 FloatVal eval_float(EnvI& env, Expression* e) {
@@ -1711,6 +1716,7 @@ FloatVal eval_float(EnvI& env, Expression* e) {
   } catch (ArithmeticError& err) {
     throw EvalError(env, e->loc(), err.msg());
   }
+  return 0.0;
 }
 
 std::string eval_string(EnvI& env, Expression* e) {
@@ -1815,8 +1821,8 @@ std::string eval_string(EnvI& env, Expression* e) {
     } break;
     default:
       assert(false);
-      return "";
   }
+  return "";
 }
 
 Expression* eval_par(EnvI& env, Expression* e) {
@@ -2683,7 +2689,28 @@ public:
           FloatVal n = std::max(x0, std::max(x1, std::max(x2, x3)));
           bounds.emplace_back(m, n);
         } break;
-        case BOT_DIV:
+        case BOT_DIV: {
+          if (0.0 == std::fabs(b0.first.toDouble()) && 0.0 == std::fabs(b0.second.toDouble())) {
+            bounds.emplace_back(0.0, 0.0);
+            break;
+          }
+          if (0.0 >= b1.first.toDouble() * b1.second.toDouble()) {
+            valid = false;
+            bounds.emplace_back(0.0, 0.0);
+            break;
+          }
+          FloatVal b0f = b0.first;
+          FloatVal b0s = b0.second;
+          FloatVal b1f = b1.first;
+          FloatVal b1s = b1.second;
+          FloatVal x0 = b0f / b1f;
+          FloatVal x1 = b0f / b1s;
+          FloatVal x2 = b0s / b1f;
+          FloatVal x3 = b0s / b1s;
+          FloatVal m = std::min(x0, std::min(x1, std::min(x2, x3)));
+          FloatVal n = std::max(x0, std::max(x1, std::max(x2, x3)));
+          bounds.emplace_back(m, n);
+        } break;
         case BOT_IDIV:
         case BOT_MOD:
         case BOT_LE:

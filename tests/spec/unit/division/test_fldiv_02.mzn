@@ -14,5 +14,5 @@ var 1.5..2.0: y;
 var 1.5..2.0: z; 
 
 
-solve maximize x / y / z;
+solve maximize abs( x / y / z );
 

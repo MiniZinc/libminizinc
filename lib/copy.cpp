@@ -493,6 +493,7 @@ Item* copy(EnvI& env, CopyMap& m, Item* i, bool followIds, bool copyFundecls, bo
       c->builtins.f = f->builtins.f;
       c->builtins.b = f->builtins.b;
       c->builtins.s = f->builtins.s;
+      c->builtins.fs = f->builtins.fs;
       c->builtins.str = f->builtins.str;
 
       copy_ann(env, m, f->ann(), c->ann(), followIds, copyFundecls, isFlatModel);

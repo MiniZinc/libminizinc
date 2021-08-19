@@ -29,6 +29,8 @@ FloatSetVal::FloatSetVal(FloatVal m, FloatVal n) : ASTChunk(sizeof(Range)) {
   get(0).max = n;
 }
 
+FloatVal FloatVal::minfloat() { return FloatVal(-std::numeric_limits<double>::max()); }
+FloatVal FloatVal::maxfloat() { return FloatVal(std::numeric_limits<double>::max()); }
 FloatVal FloatVal::infinity() { return FloatVal(1.0, true); }
 
 }  // namespace MiniZinc

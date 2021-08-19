@@ -436,6 +436,8 @@ public:
     return ret;
   }
 
+  static FloatVal minfloat();
+  static FloatVal maxfloat();
   static FloatVal infinity();
 
   /// Infinity-safe addition

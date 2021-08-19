@@ -87,6 +87,17 @@ void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
   }
 }
 void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
+        FunctionI::builtin_fs b, bool fromGlobals = false) {
+  FunctionI* fi = m->matchFn(env, id, t, false);
+  if (fi != nullptr) {
+    fi->builtins.fs = b;
+  } else if (!fromGlobals) {
+    std::ostringstream ss;
+    ss << "no definition found for builtin " << id;
+    throw InternalError(ss.str());
+  }
+}
+void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
         FunctionI::builtin_str b, bool fromGlobals = false) {
   FunctionI* fi = m->matchFn(env, id, t, false);
   if (fi != nullptr) {
@@ -1078,6 +1089,53 @@ IntSetVal* b_compute_div_bounds(EnvI& env, Call* call) {
     }
   }
   return IntSetVal::a(min, max);
+}
+
+IntSetVal* b_compute_mod_bounds(EnvI& env, Call* call) {
+  assert(call->argCount() == 2);
+  IntBounds by = compute_int_bounds(env, call->arg(1));
+  if (!by.valid) {
+    throw EvalError(env, call->arg(1)->loc(), "cannot determine bounds");
+  }
+  if (!by.l.isFinite() || !by.u.isFinite()) {
+    return env.constants.infinity->isv();
+  }
+  IntVal am = std::max(-by.l, by.u) - 1;
+  return IntSetVal::a(-am, am);
+}
+
+FloatSetVal* b_compute_float_div_bounds(EnvI& env, Call* call) {
+  assert(call->argCount() == 2);
+  FloatBounds bx = compute_float_bounds(env, call->arg(0));
+  if (!bx.valid) {
+    throw EvalError(env, call->arg(0)->loc(), "cannot determine bounds");
+  }
+  /// TODO: better bounds if only some input bounds are infinite
+  if (!bx.l.isFinite() || !bx.u.isFinite()) {
+    return env.constants.infinity->fsv();
+  }
+  if (0.0 == std::fabs(bx.l.toDouble()) && 0.0 == std::fabs(bx.u.toDouble()))
+    return FloatSetVal::a(0.0, 0.0);
+  FloatBounds by = compute_float_bounds(env, call->arg(1));
+  if (!by.valid) {
+    throw EvalError(env, call->arg(1)->loc(), "cannot determine bounds");
+  }
+  if (!by.l.isFinite() || !by.u.isFinite() || by.l.toDouble() * by.u.toDouble() <= 0.0) {
+    return FloatSetVal::a(-FloatVal::infinity(), FloatVal::infinity());
+  }
+  FloatVal min = FloatVal::maxfloat();
+  FloatVal max = FloatVal::minfloat();
+  {
+    min = std::min(min, bx.l / by.l);
+    min = std::min(min, bx.l / by.u);
+    min = std::min(min, bx.u / by.l);
+    min = std::min(min, bx.u / by.u);
+    max = std::max(max, bx.l / by.l);
+    max = std::max(max, bx.l / by.u);
+    max = std::max(max, bx.u / by.l);
+    max = std::max(max, bx.u / by.u);
+  }
+  return FloatSetVal::a(min, max);
 }
 
 // NOLINTNEXTLINE(readability-identifier-naming)
@@ -3644,6 +3702,13 @@ void register_builtins(Env& e) {
     t[0] = Type::varint();
     t[1] = Type::varint();
     rb(env, m, ASTString("compute_div_bounds"), t, b_compute_div_bounds);
+    rb(env, m, ASTString("compute_mod_bounds"), t, b_compute_mod_bounds);
+  }
+  {
+    std::vector<Type> t(2);
+    t[0] = Type::varfloat();
+    t[1] = Type::varfloat();
+    rb(env, m, ASTString("compute_float_div_bounds"), t, b_compute_float_div_bounds);
   }
   {
     std::vector<Type> t(1);

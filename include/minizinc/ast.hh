@@ -1653,8 +1653,10 @@ public:
   typedef bool (*builtin_b)(EnvI&, Call*);
   /// Type of builtin float-valued functions
   typedef FloatVal (*builtin_f)(EnvI&, Call*);
-  /// Type of builtin set-valued functions
+  /// Type of builtin int set-valued functions
   typedef IntSetVal* (*builtin_s)(EnvI&, Call*);
+  /// Type of builtin float set-valued functions
+  typedef FloatSetVal* (*builtin_fs)(EnvI&, Call*);
   /// Type of builtin string-valued functions
   typedef std::string (*builtin_str)(EnvI&, Call*);
 
@@ -1665,6 +1667,7 @@ public:
     builtin_f f;
     builtin_b b;
     builtin_s s;
+    builtin_fs fs;
     builtin_str str;
   } builtins;
 

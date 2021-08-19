@@ -1122,7 +1122,9 @@ function var opt bool: element(var opt int: idx1, var opt int: idx2, array[int,i
 %
 % Internal functions for implementing div, mod etc
 
-function set of int:compute_div_bounds(var int: x, var int: y);
+function set of int: compute_div_bounds(var int: x, var int: y);
+function set of int: compute_mod_bounds(var int: x, var int: y);
+function set of float: compute_float_div_bounds(var float: x, var float: y);
 
 function var int: div_t(var int: x, var int: y) :: promise_total =
   let {
@@ -1139,7 +1141,7 @@ function var float: fldiv_t(var float: x, float: y) :: promise_total = x*(1.0/y)
 
 function var float: fldiv_t(var float: x, var float: y) :: promise_total =
   let {
-    var float: z ::is_defined_var; % TODO: Compute division boundaries
+    var (compute_float_div_bounds(x,y)): z ::is_defined_var;
     constraint if lb(y) <= 0 /\ ub(y) >= 0 then y != 0.0 endif;
     constraint float_div(x, y, z) ::defines_var(z); } in z;
 
@@ -1149,7 +1151,7 @@ function var float: fldiv_mt(var float: x, var float: y) :: promise_total =
   } in fldiv_t(x, yy);
 
 function var int: mod_t(var int: x, var int: y) :: promise_total =
-  let { var -(max(ub(y),-lb(y)))..max(ub(y),-lb(y)): z;
+  let { var (compute_mod_bounds(x,y)): z;
         constraint y != 0;
         constraint int_mod(x,y,z); } in z;
 
