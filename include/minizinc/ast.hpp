@@ -649,6 +649,7 @@ inline FunctionI::FunctionI(const Location& loc, const ASTString& id, TypeInst* 
   builtins.f = nullptr;
   builtins.i = nullptr;
   builtins.s = nullptr;
+  builtins.fs = nullptr;
   builtins.str = nullptr;
 }
 
