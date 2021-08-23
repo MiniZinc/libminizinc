@@ -240,9 +240,24 @@ std::tuple<BCtx, bool> ann_to_ctx(EnvI& env, VarDecl* vd) {
   return std::make_tuple(C_MIX, false);
 }
 
+Id* ctx_to_ann(EnvI& env, BCtx c) {
+  switch (c) {
+    case C_ROOT:
+      return env.constants.ctx.root;
+    case C_POS:
+      return env.constants.ctx.pos;
+    case C_NEG:
+      return env.constants.ctx.neg;
+    case C_MIX:
+      return env.constants.ctx.mix;
+    default:
+      assert(false);
+      return nullptr;
+  }
+}
+
 void add_ctx_ann(EnvI& env, VarDecl* vd, BCtx& c) {
   if (vd != nullptr) {
-    Id* ctx_id = nullptr;
     BCtx nc;
     bool annotated;
     std::tie(nc, annotated) = ann_to_ctx(env, vd);
@@ -253,23 +268,8 @@ void add_ctx_ann(EnvI& env, VarDecl* vd, BCtx& c) {
         return;
       }
       // Remove old annotation
-      switch (nc) {
-        case C_ROOT:
-          vd->ann().remove(env.constants.ctx.root);
-          break;
-        case C_MIX:
-          vd->ann().remove(env.constants.ctx.mix);
-          break;
-        case C_POS:
-          vd->ann().remove(env.constants.ctx.pos);
-          break;
-        case C_NEG:
-          vd->ann().remove(env.constants.ctx.neg);
-          break;
-        default:
-          assert(false);
-          break;
-      }
+      Id* old_ann = ctx_to_ann(env, nc);
+      vd->ann().remove(old_ann);
       // Determine new context
       if (c == C_ROOT) {
         nc = C_ROOT;
@@ -279,23 +279,8 @@ void add_ctx_ann(EnvI& env, VarDecl* vd, BCtx& c) {
     } else {
       nc = c;
     }
-    switch (nc) {
-      case C_ROOT:
-        ctx_id = env.constants.ctx.root;
-        break;
-      case C_POS:
-        ctx_id = env.constants.ctx.pos;
-        break;
-      case C_NEG:
-        ctx_id = env.constants.ctx.neg;
-        break;
-      case C_MIX:
-        ctx_id = env.constants.ctx.mix;
-        break;
-      default:
-        assert(false);
-        break;
-    }
+
+    Id* ctx_id = ctx_to_ann(env, nc);
     vd->addAnnotation(ctx_id);
   }
 }
