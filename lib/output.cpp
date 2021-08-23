@@ -48,7 +48,7 @@ void check_output_par_fn(EnvI& env, Call* rhs) {
     }
     if (!origdecl->fromStdLib()) {
       decl = copy(env, env.cmap, origdecl)->cast<FunctionI>();
-      CollectOccurrencesE ce(env.outputVarOccurrences, decl);
+      CollectOccurrencesE ce(env, env.outputVarOccurrences, decl);
       top_down(ce, decl->e());
       top_down(ce, decl->ti());
       for (unsigned int i = decl->paramCount(); (i--) != 0U;) {
@@ -118,7 +118,7 @@ bool cannot_use_rhs_for_output(EnvI& env, Expression* e,
           } else {
             if (!origdecl->fromStdLib()) {
               decl = copy(env, env.cmap, origdecl)->cast<FunctionI>();
-              CollectOccurrencesE ce(env.outputVarOccurrences, decl);
+              CollectOccurrencesE ce(env, env.outputVarOccurrences, decl);
               top_down(ce, decl->e());
               top_down(ce, decl->ti());
               for (unsigned int i = decl->paramCount(); (i--) != 0U;) {
@@ -531,7 +531,7 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e) {
           output_vardecls(env, nvi, nvi->e()->ti());
           output_vardecls(env, nvi, nvi->e()->e());
         }
-        CollectOccurrencesE ce(env.outputVarOccurrences, nvi);
+        CollectOccurrencesE ce(env, env.outputVarOccurrences, nvi);
         top_down(ce, nvi->e());
       }
     }
@@ -547,7 +547,7 @@ void process_deletions(EnvI& e) {
           !vdi->e()->ann().contains(e.constants.ann.mzn_check_var) &&
           !(vdi->e()->id()->idn() == -1 && (vdi->e()->id()->v() == "_mzn_solution_checker" ||
                                             vdi->e()->id()->v() == "_mzn_stats_checker"))) {
-        CollectDecls cd(e.outputVarOccurrences, deletedVarDecls, vdi);
+        CollectDecls cd(e, e.outputVarOccurrences, deletedVarDecls, vdi);
         top_down(cd, vdi->e()->e());
         remove_is_output(vdi->e()->flat());
         if (e.outputVarOccurrences.find(vdi->e()) != -1) {
@@ -565,7 +565,7 @@ void process_deletions(EnvI& e) {
       if (cur_idx != e.outputVarOccurrences.idx.end()) {
         auto* vdi = (*e.output)[cur_idx->second]->cast<VarDeclI>();
         if (!vdi->removed()) {
-          CollectDecls cd(e.outputVarOccurrences, deletedVarDecls, vdi);
+          CollectDecls cd(e, e.outputVarOccurrences, deletedVarDecls, vdi);
           top_down(cd, cur->e());
           remove_is_output(vdi->e()->flat());
           if (e.outputVarOccurrences.find(vdi->e()) != -1) {
@@ -984,7 +984,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
               make_par(env, decl->e());
               top_down(*this, decl->e());
             }
-            CollectOccurrencesE ce(env.outputVarOccurrences, decl);
+            CollectOccurrencesE ce(env, env.outputVarOccurrences, decl);
             top_down(ce, decl->e());
             top_down(ce, decl->ti());
             for (unsigned int i = decl->paramCount(); (i--) != 0U;) {
@@ -1144,7 +1144,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
         }
         make_par(env, vdi_copy->e());
         env.outputVarOccurrences.addIndex(vdi_copy, static_cast<int>(env.output->size()));
-        CollectOccurrencesE ce(env.outputVarOccurrences, vdi_copy);
+        CollectOccurrencesE ce(env, env.outputVarOccurrences, vdi_copy);
         top_down(ce, vdi_copy->e());
         env.output->addItem(vdi_copy);
       }
@@ -1152,7 +1152,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
   } _ov2(e);
   iter_items(_ov2, e.model);
 
-  CollectOccurrencesE ce(e.outputVarOccurrences, outputItem);
+  CollectOccurrencesE ce(e, e.outputVarOccurrences, outputItem);
   top_down(ce, outputItem->e());
 
   e.model->mergeStdLib(e, e.output);
@@ -1316,15 +1316,15 @@ void finalise_output(EnvI& e) {
             vd->ti()->type(vdt);
           }
           e.outputVarOccurrences.addIndex(item->cast<VarDeclI>(), static_cast<int>(i));
-          CollectOccurrencesE ce(e.outputVarOccurrences, item);
+          CollectOccurrencesE ce(e, e.outputVarOccurrences, item);
           top_down(ce, vd);
         } break;
         case Item::II_OUT: {
-          CollectOccurrencesE ce(e.outputVarOccurrences, item);
+          CollectOccurrencesE ce(e, e.outputVarOccurrences, item);
           top_down(ce, item->cast<OutputI>()->e());
         } break;
         case Item::II_FUN: {
-          CollectOccurrencesE ce(e.outputVarOccurrences, item);
+          CollectOccurrencesE ce(e, e.outputVarOccurrences, item);
           top_down(ce, item->cast<FunctionI>()->e());
           top_down(ce, item->cast<FunctionI>()->ti());
           for (unsigned int i = item->cast<FunctionI>()->paramCount(); (i--) != 0U;) {

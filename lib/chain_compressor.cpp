@@ -17,7 +17,7 @@
 namespace MiniZinc {
 
 void ChainCompressor::removeItem(Item* i) {
-  CollectDecls cd(_env.varOccurrences, _deletedVarDecls, i);
+  CollectDecls cd(_env, _env.varOccurrences, _deletedVarDecls, i);
   if (auto* ci = i->dynamicCast<ConstraintI>()) {
     top_down(cd, ci->e());
   } else if (auto* vdi = i->dynamicCast<VarDeclI>()) {
@@ -46,10 +46,10 @@ void ChainCompressor::updateCount() {
 }
 
 void ChainCompressor::replaceCallArgument(Item* i, Call* c, unsigned int n, Expression* e) {
-  CollectDecls cd(_env.varOccurrences, _deletedVarDecls, i);
+  CollectDecls cd(_env, _env.varOccurrences, _deletedVarDecls, i);
   top_down(cd, c->arg(n));
   c->arg(n, e);
-  CollectOccurrencesE ce(_env.varOccurrences, i);
+  CollectOccurrencesE ce(_env, _env.varOccurrences, i);
   top_down(ce, e);
 }
 
@@ -482,7 +482,7 @@ void LECompressor::leReplaceVar(Item* i, VarDecl* oldVar, VarDecl* newVar) {
          call->id() == _env.constants.ids.float_.lin_le);
 
   // Remove old occurrences
-  CollectDecls cd(_env.varOccurrences, _deletedVarDecls, i);
+  CollectDecls cd(_env, _env.varOccurrences, _deletedVarDecls, i);
   top_down(cd, ci->e());
 
   ArrayLit* al_c = eval_array_lit(_env, call->arg(0));
@@ -530,7 +530,7 @@ void LECompressor::leReplaceVar(Item* i, VarDecl* oldVar, VarDecl* newVar) {
   call->arg(2, Lit::a(d));
 
   // Add new occurences
-  CollectOccurrencesE ce(_env.varOccurrences, i);
+  CollectOccurrencesE ce(_env, _env.varOccurrences, i);
   top_down(ce, ci->e());
 }
 

@@ -121,22 +121,53 @@ std::pair<int, bool> VarOccurrences::usages(VarDecl* v) {
   return std::make_pair(count, is_output);
 }
 
+void CollectOccurrencesE::vId(const Id* id) {
+  if (id->decl() == nullptr) {
+    return;
+  }
+  // TODO: Consider a better fix to not count internal annotations!
+  for (const auto* ann : env.constants.internalAnn()) {
+    if (id->decl() == ann->decl()) {
+      return;
+    }
+  }
+  // ENDTODO
+  vo.add(id->decl(), ci);
+}
+
 void CollectOccurrencesI::vVarDeclI(VarDeclI* v) {
-  CollectOccurrencesE ce(vo, v);
+  CollectOccurrencesE ce(env, vo, v);
   top_down(ce, v->e());
 }
 void CollectOccurrencesI::vConstraintI(ConstraintI* ci) {
-  CollectOccurrencesE ce(vo, ci);
+  CollectOccurrencesE ce(env, vo, ci);
   top_down(ce, ci->e());
   for (ExpressionSetIter it = ci->e()->ann().begin(); it != ci->e()->ann().end(); ++it) {
     top_down(ce, *it);
   }
 }
 void CollectOccurrencesI::vSolveI(SolveI* si) {
-  CollectOccurrencesE ce(vo, si);
+  CollectOccurrencesE ce(env, vo, si);
   top_down(ce, si->e());
   for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++si) {
     top_down(ce, *it);
+  }
+}
+
+void CollectDecls::vId(Id* id) {
+  if (id->decl() == nullptr) {
+    return;
+  }
+  // TODO: Consider a better fix to not count internal annotations!
+  for (const auto* ann : env.constants.internalAnn()) {
+    if (id->decl() == ann->decl()) {
+      return;
+    }
+  }
+  // ENDTODO
+  int count = vo.remove(id->decl(), item);
+  if (count == 0 && varIsFree(id->decl())) {
+    vd.push_back(id->decl());
   }
 }
 
@@ -166,19 +197,19 @@ void unify(EnvI& env, std::vector<VarDecl*>& deletedVarDecls, Id* id0, Id* id1) 
       Expression* rhs = id0->decl()->e();
 
       auto* vdi1 = (*env.flat())[env.varOccurrences.find(id1->decl())]->cast<VarDeclI>();
-      CollectOccurrencesE ce(env.varOccurrences, vdi1);
+      CollectOccurrencesE ce(env, env.varOccurrences, vdi1);
       top_down(ce, rhs);
 
       id1->decl()->e(rhs);
       id0->decl()->e(nullptr);
 
       auto* vdi0 = (*env.flat())[env.varOccurrences.find(id0->decl())]->cast<VarDeclI>();
-      CollectDecls cd(env.varOccurrences, deletedVarDecls, vdi0);
+      CollectDecls cd(env, env.varOccurrences, deletedVarDecls, vdi0);
       top_down(cd, rhs);
     }
     if (Expression::equal(id1->decl()->e(), id0->decl()->id())) {
       auto* vdi1 = (*env.flat())[env.varOccurrences.find(id1->decl())]->cast<VarDeclI>();
-      CollectDecls cd(env.varOccurrences, deletedVarDecls, vdi1);
+      CollectDecls cd(env, env.varOccurrences, deletedVarDecls, vdi1);
       Expression* rhs = id1->decl()->e();
       top_down(cd, rhs);
       id1->decl()->e(nullptr);
@@ -377,7 +408,7 @@ void optimize(Env& env, bool chain_compression) {
               }
 
               push_dependent_constraints(envi, c->arg(0)->cast<Id>(), constraintQueue);
-              CollectDecls cd(envi.varOccurrences, deletedVarDecls, ci);
+              CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls, ci);
               top_down(cd, c);
               ci->e(envi.constants.literalTrue);
               ci->remove();
@@ -410,7 +441,7 @@ void optimize(Env& env, bool chain_compression) {
                   }
 
                   push_dependent_constraints(envi, (*al_x)[0]->cast<Id>(), constraintQueue);
-                  CollectDecls cd(envi.varOccurrences, deletedVarDecls, ci);
+                  CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls, ci);
                   top_down(cd, c);
                   ci->e(envi.constants.literalTrue);
                   ci->remove();
@@ -587,7 +618,7 @@ void optimize(Env& env, bool chain_compression) {
                 envi.fail();
               }
             } else {
-              CollectDecls cd(envi.varOccurrences, deletedVarDecls, bi);
+              CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls, bi);
               top_down(cd, bi->cast<VarDeclI>()->e()->e());
               bi->cast<VarDeclI>()->e()->ti()->domain(envi.constants.literalFalse);
               bi->cast<VarDeclI>()->e()->ti()->setComputedDomain(true);
@@ -598,7 +629,7 @@ void optimize(Env& env, bool chain_compression) {
           }
         } else {
           if (bi->isa<ConstraintI>()) {
-            CollectDecls cd(envi.varOccurrences, deletedVarDecls, bi);
+            CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls, bi);
             top_down(cd, bi->cast<ConstraintI>()->e());
             bi->remove();
           } else {
@@ -607,7 +638,7 @@ void optimize(Env& env, bool chain_compression) {
                 envi.fail();
               }
             } else {
-              CollectDecls cd(envi.varOccurrences, deletedVarDecls, bi);
+              CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls, bi);
               top_down(cd, bi->cast<VarDeclI>()->e()->e());
               bi->cast<VarDeclI>()->e()->ti()->domain(envi.constants.literalTrue);
               bi->cast<VarDeclI>()->e()->ti()->setComputedDomain(true);
@@ -623,7 +654,7 @@ void optimize(Env& env, bool chain_compression) {
         if (finalId->decl()->e() == nullptr) {
           finalId->decl()->e(envi.constants.boollit(!finalIdNeg));
         }
-        CollectDecls cd(envi.varOccurrences, deletedVarDecls, bi);
+        CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls, bi);
         top_down(cd, bi->cast<ConstraintI>()->e());
         bi->remove();
         push_vardecl(envi, envi.varOccurrences.idx.find(finalId->decl()->id())->second,
@@ -749,12 +780,12 @@ void optimize(Env& env, bool chain_compression) {
           // Actually remove all items that have become unnecessary in the step above
           for (auto i = static_cast<unsigned int>(toRemove.size()); (i--) != 0U;) {
             if (auto* ci = toRemove[i]->dynamicCast<ConstraintI>()) {
-              CollectDecls cd(envi.varOccurrences, deletedVarDecls, ci);
+              CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls, ci);
               top_down(cd, ci->e());
               ci->remove();
             } else {
               auto* vdi = toRemove[i]->cast<VarDeclI>();
-              CollectDecls cd(envi.varOccurrences, deletedVarDecls, vdi);
+              CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls, vdi);
               top_down(cd, vdi->e()->e());
               vdi->e()->e(nullptr);
             }
@@ -817,7 +848,7 @@ void optimize(Env& env, bool chain_compression) {
     // Clean up constraints that have been removed in the previous phase
     for (auto i = static_cast<unsigned int>(toRemoveConstraints.size()); (i--) != 0U;) {
       auto* ci = m[toRemoveConstraints[i]]->cast<ConstraintI>();
-      CollectDecls cd(envi.varOccurrences, deletedVarDecls, ci);
+      CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls, ci);
       top_down(cd, ci->e());
       ci->remove();
     }
@@ -903,11 +934,11 @@ void optimize(Env& env, bool chain_compression) {
           }
         } else {
           if (bi->isa<ConstraintI>()) {
-            CollectDecls cd(envi.varOccurrences, deletedVarDecls, bi);
+            CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls, bi);
             top_down(cd, bi->cast<ConstraintI>()->e());
             bi->remove();
           } else {
-            CollectDecls cd(envi.varOccurrences, deletedVarDecls, bi);
+            CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls, bi);
             top_down(cd, bi->cast<VarDeclI>()->e()->e());
             bi->cast<VarDeclI>()->e()->ti()->domain(envi.constants.literalTrue);
             bi->cast<VarDeclI>()->e()->ti()->setComputedDomain(true);
@@ -965,13 +996,13 @@ void optimize(Env& env, bool chain_compression) {
               VarDecl* vd_out =
                   (*envi.output)[envi.outputFlatVarOccurrences.find(cur)]->cast<VarDeclI>()->e();
               vd_out->e(val);
-              CollectDecls cd(envi.varOccurrences, deletedVarDecls,
+              CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls,
                               m[cur_idx->second]->cast<VarDeclI>());
               top_down(cd, cur->e());
               (*envi.flat())[cur_idx->second]->remove();
             }
           } else {
-            CollectDecls cd(envi.varOccurrences, deletedVarDecls,
+            CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls,
                             m[cur_idx->second]->cast<VarDeclI>());
             top_down(cd, cur->e());
             (*envi.flat())[cur_idx->second]->remove();
@@ -1094,7 +1125,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
         }
         unify(env, deletedVarDecls, c->arg(0)->cast<Id>(), c->arg(1)->cast<Id>());
         push_dependent_constraints(env, c->arg(0)->cast<Id>(), constraintQueue);
-        CollectDecls cd(env.varOccurrences, deletedVarDecls, ii);
+        CollectDecls cd(env, env.varOccurrences, deletedVarDecls, ii);
         top_down(cd, c);
         ii->remove();
       } else if (c->arg(0)->type().isPar() && c->arg(1)->type().isPar()) {
@@ -1107,7 +1138,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
           env.fail();
         } else {
           auto* vdi = ii->cast<VarDeclI>();
-          CollectDecls cd(env.varOccurrences, deletedVarDecls, ii);
+          CollectDecls cd(env, env.varOccurrences, deletedVarDecls, ii);
           top_down(cd, c);
           vdi->e()->e(env.constants.boollit(is_equal));
           vdi->e()->ti()->domain(env.constants.boollit(is_equal));
@@ -1116,7 +1147,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
           push_dependent_constraints(env, vdi->e()->id(), constraintQueue);
         }
         if (ii->isa<ConstraintI>()) {
-          CollectDecls cd(env.varOccurrences, deletedVarDecls, ii);
+          CollectDecls cd(env, env.varOccurrences, deletedVarDecls, ii);
           top_down(cd, c);
           ii->remove();
         }
@@ -1190,7 +1221,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
         }
         push_dependent_constraints(env, ident, constraintQueue);
         if (canRemove) {
-          CollectDecls cd(env.varOccurrences, deletedVarDecls, ii);
+          CollectDecls cd(env, env.varOccurrences, deletedVarDecls, ii);
           top_down(cd, c);
           ii->remove();
         }
@@ -1216,7 +1247,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
           if (newDomain->min() == newDomain->max()) {
             push_dependent_constraints(env, ident, constraintQueue);
           }
-          CollectDecls cd(env.varOccurrences, deletedVarDecls, ii);
+          CollectDecls cd(env, env.varOccurrences, deletedVarDecls, ii);
           top_down(cd, c);
 
           if (auto* vdi = ii->dynamicCast<VarDeclI>()) {
@@ -1269,7 +1300,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
           if (b2i_val != b_val) {
             env.fail();
           } else {
-            CollectDecls cd(env.varOccurrences, deletedVarDecls, ii);
+            CollectDecls cd(env, env.varOccurrences, deletedVarDecls, ii);
             top_down(cd, c);
             ii->remove();
           }
@@ -1282,7 +1313,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
           } else if (eval_bool(env, ti->domain()) != b_val) {
             env.fail();
           }
-          CollectDecls cd(env.varOccurrences, deletedVarDecls, ii);
+          CollectDecls cd(env, env.varOccurrences, deletedVarDecls, ii);
           top_down(cd, c);
           if (vd != nullptr) {
             vd->e(IntLit::a(static_cast<long long>(b_val)));
@@ -1310,7 +1341,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
           if ((vd_dom != nullptr) && !vd_dom->contains(v)) {
             env.fail();
           } else {
-            CollectDecls cd(env.varOccurrences, deletedVarDecls, ii);
+            CollectDecls cd(env, env.varOccurrences, deletedVarDecls, ii);
             top_down(cd, c);
             vd->e(IntLit::a(v));
             vd->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(v, v)));
@@ -1336,7 +1367,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
             return true;
           } else if (is_false) {
             if (ii->isa<ConstraintI>()) {
-              CollectDecls cd(env.varOccurrences, deletedVarDecls, ii);
+              CollectDecls cd(env, env.varOccurrences, deletedVarDecls, ii);
               top_down(cd, c);
               ii->remove();
             } else {
@@ -1346,7 +1377,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
           } else {
             auto* vdi = ii->cast<VarDeclI>();
             vdi->e()->ti()->domain(env.constants.literalFalse);
-            CollectDecls cd(env.varOccurrences, deletedVarDecls, ii);
+            CollectDecls cd(env, env.varOccurrences, deletedVarDecls, ii);
             top_down(cd, c);
             vdi->e()->e(env.constants.literalFalse);
             push_vardecl(env, vdi, env.varOccurrences.find(vdi->e()), vardeclQueue);
@@ -1355,7 +1386,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
         case OptimizeRegistry::CS_ENTAILED:
           if (is_true) {
             if (ii->isa<ConstraintI>()) {
-              CollectDecls cd(env.varOccurrences, deletedVarDecls, ii);
+              CollectDecls cd(env, env.varOccurrences, deletedVarDecls, ii);
               top_down(cd, c);
               ii->remove();
             } else {
@@ -1368,7 +1399,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
           } else {
             auto* vdi = ii->cast<VarDeclI>();
             vdi->e()->ti()->domain(env.constants.literalTrue);
-            CollectDecls cd(env.varOccurrences, deletedVarDecls, ii);
+            CollectDecls cd(env, env.varOccurrences, deletedVarDecls, ii);
             top_down(cd, c);
             vdi->e()->e(env.constants.literalTrue);
             push_vardecl(env, vdi, env.varOccurrences.find(vdi->e()), vardeclQueue);
@@ -1376,10 +1407,10 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
           }
         case OptimizeRegistry::CS_REWRITE: {
           std::vector<VarDecl*> tdv;
-          CollectDecls cd(env.varOccurrences, tdv, ii);
+          CollectDecls cd(env, env.varOccurrences, tdv, ii);
           top_down(cd, c);
 
-          CollectOccurrencesE ce(env.varOccurrences, ii);
+          CollectOccurrencesE ce(env, env.varOccurrences, ii);
           top_down(ce, rewrite);
 
           for (auto& i : tdv) {

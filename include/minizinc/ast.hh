@@ -17,6 +17,7 @@
 #include <minizinc/type.hh>
 #include <minizinc/values.hh>
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
@@ -2085,6 +2086,21 @@ public:
   /// Return shared BoolLit
   BoolLit* boollit(bool b) const { return b ? literalTrue : literalFalse; }
   static const int max_array_size = std::numeric_limits<int>::max() / 2;
+
+  /// Internal annotations
+  std::array<Id*, 9> internalAnn() const {
+    return {
+        ctx.mix,
+        ctx.pos,
+        ctx.neg,
+        ctx.root,
+        ann.promise_total,
+        ann.add_to_output,
+        ann.mzn_check_var,
+        ann.rhs_from_assignment,
+        ann.mzn_was_undefined,
+    };
+  };
 
   void mark() override;
 

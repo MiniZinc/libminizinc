@@ -684,7 +684,7 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
       }
       EE ee_ann = flat_exp(env, Ctx(), ann, nullptr, env.constants.varTrue);
       vd->addAnnotation(ee_ann.r());
-      CollectOccurrencesE ce(env.varOccurrences, vdi);
+      CollectOccurrencesE ce(env, env.varOccurrences, vdi);
       top_down(ce, ee_ann.r());
     }
   }
@@ -853,7 +853,7 @@ void EnvI::flatAddItem(Item* i) {
     }
     case Item::II_SOL: {
       auto* si = i->cast<SolveI>();
-      CollectOccurrencesE ce(varOccurrences, si);
+      CollectOccurrencesE ce(*this, varOccurrences, si);
       top_down(ce, si->e());
       for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it) {
         top_down(ce, *it);
@@ -872,7 +872,7 @@ void EnvI::flatAddItem(Item* i) {
     annotateFromCallStack(toAnnotate);
   }
   if (toAdd != nullptr) {
-    CollectOccurrencesE ce(varOccurrences, i);
+    CollectOccurrencesE ce(*this, varOccurrences, i);
     top_down(ce, toAdd);
   }
 }
@@ -956,7 +956,7 @@ void EnvI::copyPathMapsAndState(EnvI& env) {
 
 void EnvI::flatRemoveExpr(Expression* e, Item* i) {
   std::vector<VarDecl*> toRemove;
-  CollectDecls cd(varOccurrences, toRemove, i);
+  CollectDecls cd(*this, varOccurrences, toRemove, i);
   top_down(cd, e);
 
   Model& flat = (*_flat);
@@ -970,7 +970,7 @@ void EnvI::flatRemoveExpr(Expression* e, Item* i) {
       auto* vdi = flat[cur_idx->second]->cast<VarDeclI>();
 
       if (!is_output(vdi->e()) && !vdi->removed()) {
-        CollectDecls cd(varOccurrences, toRemove, vdi);
+        CollectDecls cd(*this, varOccurrences, toRemove, vdi);
         top_down(cd, vdi->e()->e());
         vdi->remove();
       }
@@ -1109,7 +1109,7 @@ void EnvI::voAddExp(VarDecl* vd) {
     }
   }
   int idx = varOccurrences.find(vd);
-  CollectOccurrencesE ce(varOccurrences, (*_flat)[idx]);
+  CollectOccurrencesE ce(*this, varOccurrences, (*_flat)[idx]);
   top_down(ce, vd->e());
   if (_collectVardecls) {
     modifiedVarDecls.push_back(idx);
@@ -3581,7 +3581,7 @@ void flatten(Env& e, FlatteningOptions opt) {
                 // Note: Removal of VarDecl's referenced by c must be delayed
                 // until nc is flattened
                 std::vector<VarDecl*> toRemove;
-                CollectDecls cd(env.varOccurrences, toRemove, vdi);
+                CollectDecls cd(env, env.varOccurrences, toRemove, vdi);
                 top_down(cd, c);
                 vd->e(nullptr);
                 // Need to remove right hand side from CSE map, otherwise
@@ -3636,7 +3636,7 @@ void flatten(Env& e, FlatteningOptions opt) {
                     if (cur_idx != env.varOccurrences.idx.end()) {
                       auto* vdi = m[cur_idx->second]->cast<VarDeclI>();
                       if (!is_output(cur) && !m[cur_idx->second]->removed()) {
-                        CollectDecls cd(env.varOccurrences, toRemove, vdi);
+                        CollectDecls cd(env, env.varOccurrences, toRemove, vdi);
                         top_down(cd, vdi->e()->e());
                         vdi->remove();
                       }
@@ -4095,15 +4095,9 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd,
   }
 
   // Remove boolean context annotations used only on compilation
-  vd->ann().remove(env.constants.ctx.mix);
-  vd->ann().remove(env.constants.ctx.pos);
-  vd->ann().remove(env.constants.ctx.neg);
-  vd->ann().remove(env.constants.ctx.root);
-  vd->ann().remove(env.constants.ann.promise_total);
-  vd->ann().remove(env.constants.ann.add_to_output);
-  vd->ann().remove(env.constants.ann.mzn_check_var);
-  vd->ann().remove(env.constants.ann.rhs_from_assignment);
-  vd->ann().remove(env.constants.ann.mzn_was_undefined);
+  for (auto* ann : env.constants.internalAnn()) {
+    vd->ann().remove(ann);
+  }
   vd->ann().removeCall(env.constants.ann.mzn_check_enum_var);
 
   return added_constraints;

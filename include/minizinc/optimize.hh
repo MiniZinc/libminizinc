@@ -55,20 +55,18 @@ public:
 
 class CollectOccurrencesE : public EVisitor {
 public:
+  EnvI& env;
   VarOccurrences& vo;
   Item* ci;
-  CollectOccurrencesE(VarOccurrences& vo0, Item* ci0) : vo(vo0), ci(ci0) {}
-  void vId(const Id* id) {
-    if (id->decl() != nullptr) {
-      vo.add(id->decl(), ci);
-    }
-  }
+  CollectOccurrencesE(EnvI& env0, VarOccurrences& vo0, Item* ci0) : env(env0), vo(vo0), ci(ci0) {}
+  void vId(const Id* id);
 };
 
 class CollectOccurrencesI : public ItemVisitor {
 public:
+  EnvI& env;
   VarOccurrences& vo;
-  CollectOccurrencesI(VarOccurrences& vo0) : vo(vo0) {}
+  CollectOccurrencesI(EnvI& env0, VarOccurrences& vo0) : env(env0), vo(vo0) {}
   void vVarDeclI(VarDeclI* v);
   void vConstraintI(ConstraintI* ci);
   void vSolveI(SolveI* si);
@@ -76,11 +74,12 @@ public:
 
 class CollectDecls : public EVisitor {
 public:
+  EnvI& env;
   VarOccurrences& vo;
   std::vector<VarDecl*>& vd;
   Item* item;
-  CollectDecls(VarOccurrences& vo0, std::vector<VarDecl*>& vd0, Item* item0)
-      : vo(vo0), vd(vd0), item(item0) {}
+  CollectDecls(EnvI& env0, VarOccurrences& vo0, std::vector<VarDecl*>& vd0, Item* item0)
+      : env(env0), vo(vo0), vd(vd0), item(item0) {}
 
   static bool varIsFree(VarDecl* vd) {
     if (vd->e() == nullptr || vd->ti()->domain() == nullptr || vd->ti()->computedDomain()) {
@@ -98,13 +97,7 @@ public:
     return false;
   }
 
-  void vId(Id* id) {
-    if ((id->decl() != nullptr) && vo.remove(id->decl(), item) == 0) {
-      if (varIsFree(id->decl())) {
-        vd.push_back(id->decl());
-      }
-    }
-  }
+  void vId(Id* id);
 };
 
 bool is_output(VarDecl* vd);
