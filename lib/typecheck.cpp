@@ -2673,6 +2673,9 @@ public:
 
 void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
                bool ignoreUndefinedParameters, bool allowMultiAssignment, bool isFlatZinc) {
+  auto isChecker =
+      origModel->filename().endsWith(".mzc") || origModel->filename().endsWith(".mzc.mzn");
+
   Model* m;
   if (!isFlatZinc && origModel == env.model()) {
     // Combine all items into single model
@@ -2772,8 +2775,9 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     VarDeclI* objective;
     Model* enumis;
     bool isFlatZinc;
+    bool isChecker;
     TSV0(EnvI& env0, TopoSorter& ts0, Model* model0, std::vector<AssignI*>& ais0, Model* enumis0,
-         bool isFlatZinc0)
+         bool isFlatZinc0, bool isChecker0)
         : env(env0),
           ts(ts0),
           model(model0),
@@ -2781,7 +2785,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           ais(ais0),
           objective(nullptr),
           enumis(enumis0),
-          isFlatZinc(isFlatZinc0) {}
+          isFlatZinc(isFlatZinc0),
+          isChecker(isChecker0) {}
     void vAssignI(AssignI* i) { ais.push_back(i); }
     void vVarDeclI(VarDeclI* i) {
       ts.add(env, i, true, enumis);
@@ -2813,14 +2818,19 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       if (!isFlatZinc && (si->e() != nullptr)) {
         GCLock lock;
         auto* ti = new TypeInst(Location().introduce(), Type());
-        auto* obj = new VarDecl(Location().introduce(), ti, "_objective", si->e());
+        VarDecl* obj;
+        if (!isChecker) {
+          obj = new VarDecl(Location().introduce(), ti, "_objective", si->e());
+        } else {
+          obj = new VarDecl(Location().introduce(), ti, "_checker_objective", si->e());
+        }
         si->e(obj->id());
         obj->addAnnotation(si->st() == SolveI::ST_MAX ? env.constants.ctx.pos
                                                       : env.constants.ctx.neg);
         objective = new VarDeclI(Location().introduce(), obj);
       }
     }
-  } _tsv0(env.envi(), ts, m, assignItems, enumItems, isFlatZinc);
+  } _tsv0(env.envi(), ts, m, assignItems, enumItems, isFlatZinc, isChecker);
   iter_items(_tsv0, m);
   if (_tsv0.objective != nullptr) {
     m->addItem(_tsv0.objective);

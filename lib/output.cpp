@@ -602,16 +602,18 @@ void create_dzn_output_item(EnvI& e, bool outputObjective, bool includeOutputIte
     bool _outputForChecker;
     std::vector<Expression*>& _outputVars;
     bool _hadAddToOutput;
+    bool _isChecker;
 
   public:
     DZNOVisitor(EnvI& e, bool outputObjective, bool includeOutputItem, bool outputForChecker,
-                std::vector<Expression*>& outputVars)
+                std::vector<Expression*>& outputVars, bool isChecker)
         : _e(e),
           _outputObjective(outputObjective),
           _includeOutputItem(includeOutputItem),
           _outputForChecker(outputForChecker),
           _outputVars(outputVars),
-          _hadAddToOutput(false) {}
+          _hadAddToOutput(false),
+          _isChecker(isChecker) {}
     void vVarDeclI(VarDeclI* vdi) {
       VarDecl* vd = vdi->e();
       bool process_var = false;
@@ -620,7 +622,9 @@ void create_dzn_output_item(EnvI& e, bool outputObjective, bool includeOutputIte
           process_var = true;
         }
       } else {
-        if (_outputObjective && vd->id()->idn() == -1 && vd->id()->v() == "_objective") {
+        if (_outputObjective && vd->id()->idn() == -1 &&
+            ((!_isChecker && vd->id()->v() == "_objective") ||
+             (_isChecker && vd->id()->v() == "_checker_objective"))) {
           process_var = true;
         } else {
           if (vd->ann().contains(_e.constants.ann.add_to_output)) {
@@ -743,7 +747,8 @@ void create_dzn_output_item(EnvI& e, bool outputObjective, bool includeOutputIte
 
       oi->remove();
     }
-  } dznov(e, outputObjective, includeOutputItem, outputForChecker, outputVars);
+  } dznov(e, outputObjective, includeOutputItem, outputForChecker, outputVars,
+          e.model->filename().endsWith(".mzc") || e.model->filename().endsWith(".mzc.mzn"));
 
   iter_items(dznov, e.model);
 
@@ -780,21 +785,25 @@ ArrayLit* create_json_output(EnvI& e, bool outputObjective, bool includeOutputIt
     bool _includeOutputItem;
     std::vector<Expression*>& _outputVars;
     bool _hadAddToOutput;
+    bool _isChecker;
 
   public:
     bool firstVar;
     JSONOVisitor(EnvI& e, bool outputObjective, bool includeOutputItem,
-                 std::vector<Expression*>& outputVars)
+                 std::vector<Expression*>& outputVars, bool isChecker)
         : _e(e),
           _outputObjective(outputObjective),
           _outputVars(outputVars),
           _includeOutputItem(includeOutputItem),
           _hadAddToOutput(false),
-          firstVar(true) {}
+          firstVar(true),
+          _isChecker(isChecker) {}
     void vVarDeclI(VarDeclI* vdi) {
       VarDecl* vd = vdi->e();
       bool process_var = false;
-      if (_outputObjective && vd->id()->idn() == -1 && vd->id()->v() == "_objective") {
+      if (_outputObjective && vd->id()->idn() == -1 &&
+          ((!_isChecker && vd->id()->v() == "_objective") ||
+           (_isChecker && vd->id()->v() == "_checker_objective"))) {
         process_var = true;
       } else {
         if (vd->ann().contains(_e.constants.ann.add_to_output)) {
@@ -862,7 +871,8 @@ ArrayLit* create_json_output(EnvI& e, bool outputObjective, bool includeOutputIt
 
       oi->remove();
     }
-  } jsonov(e, outputObjective, includeOutputItem, outputVars);
+  } jsonov(e, outputObjective, includeOutputItem, outputVars,
+           e.model->filename().endsWith(".mzc") || e.model->filename().endsWith(".mzc.mzn"));
 
   iter_items(jsonov, e.model);
 
