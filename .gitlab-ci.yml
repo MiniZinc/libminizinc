@@ -54,7 +54,7 @@ default:
 
 build:linux:
   extends: .build
-  image: minizinc/build-environment:cpp
+  image: ghcr.io/minizinc/docker-build-environment:cpp
   variables:
     MZNARCH: "linux"
     CMAKE_ARCH: "Ninja"
@@ -62,7 +62,7 @@ build:linux:
 
 build:musl:
   extends: .build
-  image: minizinc/build-environment:alpine
+  image: ghcr.io/minizinc/docker-build-environment:alpine
   variables:
     MZNARCH: "musl"
     CMAKE_ARCH: "Ninja"
@@ -121,7 +121,7 @@ build:wasm_minimal:
 
 test:format:
   stage: test
-  image: minizinc/build-environment:clang-format
+  image: ghcr.io/minizinc/docker-build-environment:clang-format
   script:
     - cmake -S . -B build -GNinja -DCLANG_FORMAT_EXECUTABLE="run-clang-format" -DCLANG_FORMAT_FLAGS="--color always"
     - cmake --build build --target format
@@ -137,7 +137,7 @@ test:format:
 test:analyse:
   extends: .build
   stage: test
-  image: minizinc/build-environment:clang-tidy
+  image: ghcr.io/minizinc/docker-build-environment:clang-tidy
   variables:
     MZNARCH: "linux"
     CMAKE_ARCH: "Ninja"
