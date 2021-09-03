@@ -245,9 +245,10 @@ void OverflowHandler::install(const char** argv) {
       sigaction(SIGSEGV, &act, nullptr);
       return;
     }
+    ::free(stk.ss_sp);
   }
-  std::cerr << "Cannot initialise stack overflow handler.\n";
-  std::exit(1);
+  _ofi.reset();
+  std::cerr << "WARNING: Cannot initialise stack overflow handler." << std::endl;
 }
 
 void OverflowHandler::setEnv(Env& env) { _ofi->env = &env.envi(); }
