@@ -167,7 +167,7 @@ struct OverflowHandler::OverflowInfo {
 
 #define MZN_CAN_HANDLE_OVERFLOW
 #define SEGV_ADDR reinterpret_cast<const char*>(info->si_addr)
-#define SIGFLAGS SA_SIGINFO | SA_64REGSET
+#define SIGFLAGS (SA_SIGINFO | SA_64REGSET)
 
 #if defined(__x86_64__)
 #define SP_ADDR (const char*)((ucontext_t*)context)->uc_mcontext->__ss.__rsp

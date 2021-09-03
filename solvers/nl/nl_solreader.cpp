@@ -180,7 +180,7 @@ void NLSolns2Out::parseSolution(const string& filename) {
         if (v.toReport) {
           sb << v.name << " = ";
           if (v.isInteger) {
-            long value = sol.values[i];
+            auto value = static_cast<long long int>(sol.values[i]);
             sb << value;
           } else {
             double value = sol.values[i];
@@ -210,7 +210,7 @@ void NLSolns2Out::parseSolution(const string& filename) {
           } else {
             int index = _nlFile.variableIndexes.at(item.variable);
             if (a.isInteger) {
-              long value = sol.values[index];
+              auto value = static_cast<long long int>(sol.values[index]);
               sb << value;
             } else {
               double value = sol.values[index];

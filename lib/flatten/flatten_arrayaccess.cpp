@@ -57,7 +57,7 @@ start_flatten_arrayaccess:
       std::vector<Expression*> newaccess;
       std::vector<int> nonpar;
       std::vector<int> stack;
-      for (unsigned int j = 0; j < aa->idx().size(); j++) {
+      for (int j = 0; j < aa->idx().size(); j++) {
         Expression* tmp = follow_id_to_decl(aa->idx()[j]);
         if (auto* vd = tmp->dynamicCast<VarDecl>()) {
           tmp = vd->id();
@@ -127,7 +127,7 @@ start_flatten_arrayaccess:
             stack.pop_back();
           } else {
             idx[nonpar[cur]]++;
-            for (unsigned int j = cur + 1; j < nonpar.size(); j++) {
+            for (int j = cur + 1; j < nonpar.size(); j++) {
               stack.push_back(j);
             }
           }

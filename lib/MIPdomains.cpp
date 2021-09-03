@@ -902,7 +902,7 @@ private:
     nVRest.coef0 /= coef1;
     nVRest.rhs /= coef1;
     for (auto& rhsL : rhsLin) {
-      rhsL.second /= coef1;
+      rhsL.second /= static_cast<float>(coef1);
     }
 
     auto it = _mNViews.find(rhsLin);
@@ -1230,11 +1230,11 @@ private:
       implementPOSTs();
 
       // Statistics
-      if (sDomain.size() < MIPD_stats[N_POSTs_NSubintvMin]) {
+      if (static_cast<double>(sDomain.size()) < MIPD_stats[N_POSTs_NSubintvMin]) {
         MIPD_stats[N_POSTs_NSubintvMin] = static_cast<double>(sDomain.size());
       }
-      MIPD_stats[N_POSTs_NSubintvSum] += sDomain.size();
-      if (sDomain.size() > MIPD_stats[N_POSTs_NSubintvMax]) {
+      MIPD_stats[N_POSTs_NSubintvSum] += static_cast<double>(sDomain.size());
+      if (static_cast<double>(sDomain.size()) > MIPD_stats[N_POSTs_NSubintvMax]) {
         MIPD_stats[N_POSTs_NSubintvMax] = static_cast<double>(sDomain.size());
       }
       for (const auto& intv : sDomain) {
@@ -1478,7 +1478,7 @@ private:
     void considerDenseEncoding() {
       if (cls.varRef1->id()->type().isint()) {
         if (sDomain.maxInterval() <= mipd.nMaxIntv2Bits ||
-            sDomain.cardInt() <= mipd.dMaxNValueDensity * sDomain.size()) {
+            sDomain.cardInt() <= mipd.dMaxNValueDensity * static_cast<double>(sDomain.size())) {
           sDomain.split2Bits();
           ++MIPD_stats[N_POSTs_clEEEnforced];
         }
@@ -1721,8 +1721,10 @@ private:
         MZN_MIPD_assert_hard(pp.size() >= bnds.right - bnds.left + 1);
         MZN_MIPD_assert_hard(iMin <= bnds.left);
         for (const auto& intv : SS) {
-          for (long long vv = (long long)std::max(double(iMin), ceil(intv.left));
-               vv <= (long long)std::min(double(iMin) + pp.size() - 1, floor(intv.right)); ++vv) {
+          for (long long vv = static_cast<long long>(std::max(double(iMin), ceil(intv.left)));
+               vv <= static_cast<long long>(
+                         std::min(static_cast<double>(iMin + pp.size() - 1), floor(intv.right)));
+               ++vv) {
             vIntvFlags.push_back(pp[vv - iMin]);
           }
         }

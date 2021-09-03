@@ -1783,7 +1783,7 @@ Expression* b_set2array(EnvI& env, Call* call) {
 IntVal b_string_length(EnvI& env, Call* call) {
   GCLock lock;
   std::string s = eval_string(env, call->arg(0));
-  return s.size();
+  return static_cast<long long int>(s.size());
 }
 
 std::string show(EnvI& env, Expression* exp) {
@@ -2250,15 +2250,15 @@ Expression* b_sort_by_int(EnvI& env, Call* call) {
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   ArrayLit* order_e = eval_array_lit(env, call->arg(1));
   std::vector<IntVal> order(order_e->size());
-  std::vector<int> a(order_e->size());
-  for (unsigned int i = 0; i < order.size(); i++) {
+  std::vector<size_t> a(order_e->size());
+  for (size_t i = 0; i < order.size(); i++) {
     a[i] = i;
     order[i] = eval_int(env, (*order_e)[i]);
   }
   struct Ord {
     std::vector<IntVal>& order;
     Ord(std::vector<IntVal>& order0) : order(order0) {}
-    bool operator()(int i, int j) { return order[i] < order[j]; }
+    bool operator()(size_t i, size_t j) { return order[i] < order[j]; }
   } _ord(order);
   std::stable_sort(a.begin(), a.end(), _ord);
   std::vector<Expression*> sorted(a.size());
@@ -2275,15 +2275,15 @@ Expression* b_sort_by_float(EnvI& env, Call* call) {
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   ArrayLit* order_e = eval_array_lit(env, call->arg(1));
   std::vector<FloatVal> order(order_e->size());
-  std::vector<int> a(order_e->size());
-  for (unsigned int i = 0; i < order.size(); i++) {
+  std::vector<size_t> a(order_e->size());
+  for (size_t i = 0; i < order.size(); i++) {
     a[i] = i;
     order[i] = eval_float(env, (*order_e)[i]);
   }
   struct Ord {
     std::vector<FloatVal>& order;
     Ord(std::vector<FloatVal>& order0) : order(order0) {}
-    bool operator()(int i, int j) { return order[i] < order[j]; }
+    bool operator()(size_t i, size_t j) { return order[i] < order[j]; }
   } _ord(order);
   std::stable_sort(a.begin(), a.end(), _ord);
   std::vector<Expression*> sorted(a.size());
@@ -2664,7 +2664,7 @@ bool b_bernoulli(EnvI& env, Call* call) {
 
 IntVal b_binomial(EnvI& env, Call* call) {
   assert(call->argCount() == 2);
-  double t = double(eval_int(env, call->arg(0)).toInt());
+  long long int t = eval_int(env, call->arg(0)).toInt();
   double p = eval_float(env, call->arg(1)).toDouble();
   std::binomial_distribution<long long int> distribution(t, p);
   // return a sample from the distribution

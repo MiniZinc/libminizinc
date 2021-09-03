@@ -584,7 +584,8 @@ void MIPxpressWrapper::solve() {
   _plugin->XPRBsetobj(_problem, _xpressObj);
 
   cbui.pOutput->dWallTime0 = output.dWallTime0 = std::chrono::steady_clock::now();
-  cbui.pOutput->cCPUTime0 = output.dCPUTime = std::clock();
+  cbui.pOutput->cCPUTime0 =
+      static_cast<clock_t>(output.dCPUTime = static_cast<double>(std::clock()));
 
   if (_plugin->XPRBmipoptimize(_problem, "c") == 1) {
     throw XpressException("error while solving");

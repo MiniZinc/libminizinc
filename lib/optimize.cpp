@@ -375,7 +375,7 @@ void optimize(Env& env, bool chain_compression) {
     //  - unify variables that are assigned to an identifier
     //  - push bool vars that are fixed and have a RHS (to propagate the RHS constraint)
     //  - push int vars that are fixed (either have a RHS or a singleton domain)
-    for (unsigned int i = 0; i < m.size(); i++) {
+    for (int i = 0; i < m.size(); i++) {
       env.envi().checkCancel();
       if (m[i]->removed()) {
         continue;
@@ -683,7 +683,7 @@ void optimize(Env& env, bool chain_compression) {
       while (!vardeclQueue.empty()) {
         env.envi().checkCancel();
 
-        int var_idx = vardeclQueue.front();
+        unsigned int var_idx = vardeclQueue.front();
         vardeclQueue.pop_front();
         m[var_idx]->cast<VarDeclI>()->flag(false);
         VarDecl* vd = m[var_idx]->cast<VarDeclI>()->e();

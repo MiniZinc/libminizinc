@@ -192,7 +192,7 @@ void MIPSolverinstance<MIPWrapper>::processSearchAnnotations(const Annotation& a
     /// Take the variables and append them with set prioirty.
     std::vector<MIPSolverinstance::VarId> annVars;
     exprToVarArray(annotation->arg(0), annVars);
-    aPri.insert(aPri.end(), annVars.size(), --priority);
+    aPri.insert(aPri.end(), annVars.size(), static_cast<int>(--priority));
     std::move(annVars.begin(), annVars.end(), std::back_inserter(vars));
   }
 
@@ -1058,7 +1058,7 @@ void p_sec_cutgen(SolverInstanceBase& si, const Call* call) {
 
   assert(call->argCount() == 1);
   gi.exprToVarArray(call->arg(0), pCG->varXij);  // WHAT ABOUT CONSTANTS?
-  const double dN = sqrt(pCG->varXij.size());
+  const double dN = sqrt(static_cast<double>(pCG->varXij.size()));
   MZN_ASSERT_HARD(fabs(dN - round(dN)) < 1e-6);  // should be a square matrix
   pCG->nN = static_cast<int>(round(dN));
   const auto sVld = pCG->validate();

@@ -1041,7 +1041,7 @@ void MIPGurobiWrapper::solve() {        // Move into ancestor?
   }
 
   cbui.pOutput->dWallTime0 = output.dWallTime0 = std::chrono::steady_clock::now();
-  output.dCPUTime = cbui.pOutput->cCPUTime0 = std::clock();
+  output.dCPUTime = static_cast<double>(cbui.pOutput->cCPUTime0 = std::clock());
 
   /* Optimize the problem and obtain solution. */
   _error = dll_GRBoptimize(_model);
@@ -1049,7 +1049,7 @@ void MIPGurobiWrapper::solve() {        // Move into ancestor?
 
   output.dWallTime =
       std::chrono::duration<double>(std::chrono::steady_clock::now() - output.dWallTime0).count();
-  output.dCPUTime = (std::clock() - output.dCPUTime) / CLOCKS_PER_SEC;
+  output.dCPUTime = (static_cast<double>(std::clock()) - output.dCPUTime) / CLOCKS_PER_SEC;
 
   int solstat;
   _error = dll_GRBgetintattr(_model, GRB_INT_ATTR_STATUS, &solstat);

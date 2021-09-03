@@ -3573,7 +3573,7 @@ namespace MiniZinc {
   int yy_input_proc(char* buf, int size, yyscan_t yyscanner) {
     MiniZinc::ParserState* parm =
       static_cast<MiniZinc::ParserState*>(yyget_extra(yyscanner));
-    return parm->fillBuffer(buf, size);
+    return static_cast<int>(parm->fillBuffer(buf, size));
     // work around warning that yyunput is unused
     yyunput (0,buf,yyscanner);
   }

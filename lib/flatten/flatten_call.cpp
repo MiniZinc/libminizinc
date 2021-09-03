@@ -230,7 +230,7 @@ void flatten_linexp_call(EnvI& env, Ctx ctx, const Ctx& nctx, ASTString& cid, Ca
       ArrayLit* al = eval_array_lit(env, rd);
       std::vector<std::pair<int, int> > dims(1);
       dims[0].first = 1;
-      dims[0].second = al->size();
+      dims[0].second = static_cast<int>(al->size());
       rd = new ArrayLit(al->loc(), al, dims);
       Type t = al->type();
       t.dim(1);

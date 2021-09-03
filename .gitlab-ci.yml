@@ -121,7 +121,7 @@ build:wasm_minimal:
 
 test:format:
   stage: test
-  image: ghcr.io/minizinc/docker-build-environment:clang-format
+  image: ghcr.io/minizinc/docker-build-environment:clang-tools
   script:
     - cmake -S . -B build -GNinja -DCLANG_FORMAT_EXECUTABLE="run-clang-format" -DCLANG_FORMAT_FLAGS="--color always"
     - cmake --build build --target format
@@ -137,9 +137,9 @@ test:format:
 test:analyse:
   extends: .build
   stage: test
-  image: ghcr.io/minizinc/docker-build-environment:clang-tidy
+  image: ghcr.io/minizinc/docker-build-environment:clang-tools
   variables:
-    MZNARCH: "linux"
+    MZNARCH: "musl"
     CMAKE_ARCH: "Ninja"
   script:
     - cmake -S . -B build -G"$CMAKE_ARCH" -DCMAKE_CXX_CLANG_TIDY="clang-tidy" -DCMAKE_BUILD_TYPE="Debug" -DGecode_ROOT="$CI_PROJECT_DIR/vendor/gecode" -DGurobi_ROOT="$CI_PROJECT_DIR/vendor/gurobi" -DCPlex_ROOT="$CI_PROJECT_DIR/vendor/CPLEX_Studio/cplex" -DOsiCBC_ROOT="$CI_PROJECT_DIR/vendor/cbc" -DSCIP_ROOT="$CI_PROJECT_DIR/vendor/scip" -DXpress_ROOT="$CI_PROJECT_DIR/vendor/xpressmp"

@@ -541,7 +541,7 @@ void MIPScipWrapper::addBoundsDisj(int n, double* fUB, double* bnd, int* vars, i
   }
 
   SCIP_PLUGIN_CALL(_plugin->SCIPcreateConsBasicBounddisjunction(
-      _scip, &cons, rowName.c_str(), v.size(), v.data(), bt.data(), bs.data()));
+      _scip, &cons, rowName.c_str(), static_cast<int>(v.size()), v.data(), bt.data(), bs.data()));
   SCIP_PLUGIN_CALL(_plugin->SCIPaddCons(_scip, cons));
   SCIP_PLUGIN_CALL(_plugin->SCIPreleaseCons(_scip, &cons));
 }
@@ -830,12 +830,13 @@ SCIP_RETCODE MIPScipWrapper::solveSCIP() {  // Move into ancestor?
   }
 
   //     assert(_scipVars.size() == colObj.size());
-  int cur_numcols = _scipVars.size();  // No, we create negated indicators: getNCols();
+  int cur_numcols =
+      static_cast<int>(_scipVars.size());  // No, we create negated indicators: getNCols();
   assert(cur_numcols == colObj.size());
   assert(cur_numcols == _scipVars.size());
 
   /// Solution callback
-  output.nCols = colObj.size();
+  output.nCols = static_cast<int>(colObj.size());
   _x.resize(output.nCols);
   output.x = &_x[0];
   if (_options->flagIntermediate && cbui.solcbfn != nullptr && cbuiPtr == nullptr) {
@@ -893,7 +894,7 @@ SCIP_RETCODE MIPScipWrapper::solveSCIP() {  // Move into ancestor?
   }
 
   cbui.pOutput->dWallTime0 = output.dWallTime0 = std::chrono::steady_clock::now();
-  output.dCPUTime = clock();
+  output.dCPUTime = static_cast<double>(clock());
 
   /* Optimize the problem and obtain solution. */
   SCIP_PLUGIN_CALL_R(_plugin, _plugin->SCIPsolve(_scip));
@@ -901,7 +902,7 @@ SCIP_RETCODE MIPScipWrapper::solveSCIP() {  // Move into ancestor?
 
   output.dWallTime =
       std::chrono::duration<double>(std::chrono::steady_clock::now() - output.dWallTime0).count();
-  output.dCPUTime = (clock() - output.dCPUTime) / CLOCKS_PER_SEC;
+  output.dCPUTime = (static_cast<double>(clock()) - output.dCPUTime) / CLOCKS_PER_SEC;
 
   cbuiPtr = nullptr;  /// cleanup
   _scipVarsPtr = nullptr;

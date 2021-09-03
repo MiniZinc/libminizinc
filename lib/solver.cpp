@@ -388,12 +388,13 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
                                      FileUtils::file_path(FileUtils::dir_name(paramFilePath))}) +
               2;
         }
-        position = argv.insert(position, toInsert.begin(), toInsert.end()) + toInsert.size();
+        position = argv.insert(position, toInsert.begin(), toInsert.end()) +
+                   static_cast<int>(toInsert.size());
         if (pushWorkingDir) {
           position = argv.insert(position, "--pop-working-directory") + 1;
         }
         paramFiles.push_back(paramFilePath);
-        argc = argv.size();
+        argc = static_cast<int>(argv.size());
 
         // Have to process the newly added options
         if (usedFlag) {
@@ -452,7 +453,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       }
     }
     argv = remaining;
-    argc = remaining.size();
+    argc = static_cast<int>(remaining.size());
   }
   for (auto* sf : get_global_solver_registry()->getSolverFactories()) {
     // Notify solver factories that factory flags are done
@@ -782,7 +783,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               addedArgs.push_back(argv[i]);
             }
             argv = addedArgs;
-            argc = addedArgs.size();
+            argc = static_cast<int>(addedArgs.size());
           }
           break;
         }

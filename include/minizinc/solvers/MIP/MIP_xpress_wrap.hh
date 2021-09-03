@@ -167,8 +167,8 @@ public:
                               const std::string& rowName = "") override;
   bool addWarmStart(const std::vector<VarId>& vars, const std::vector<double>& vals) override;
 
-  int getNCols() override { return _variables.size(); }
-  int getNRows() override { return _nRows; }
+  int getNCols() override { return static_cast<int>(_variables.size()); }
+  int getNRows() override { return static_cast<int>(_nRows); }
   double getInfBound() override { return XPRB_INFINITY; }
   const double* getValues() override { return output.x; }
   double getObjValue() override { return output.objVal; }

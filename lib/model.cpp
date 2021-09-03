@@ -161,11 +161,11 @@ void Model::addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& en
       }
     }
 
-    std::vector<int> stack;
-    for (unsigned int i = 0; i < type_ids.size(); i++) {
+    std::vector<size_t> stack;
+    for (size_t i = 0; i < type_ids.size(); i++) {
       stack.push_back(i);
     }
-    int final_id = static_cast<int>(type_ids.size()) - 1;
+    size_t final_id = type_ids.size() - 1;
 
     while (!stack.empty()) {
       if (stack.back() == final_id) {
@@ -201,7 +201,7 @@ void Model::addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& en
           }
         }
         // Reset types of all further items and push them
-        for (unsigned int i = stack.back() + 1; i < type_ids.size(); i++) {
+        for (size_t i = stack.back() + 1; i < type_ids.size(); i++) {
           for (auto& j : type_ids[i]) {
             j->bt(lowest_bt(*j));
           }

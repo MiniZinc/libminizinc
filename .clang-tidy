@@ -11,8 +11,11 @@ Checks: '-*,
   modernize-use-override,
   performace-*,
   readability-*,
-  -readability-magic-numbers, # Allow the usage of direct number literals in expressions
+  -readability-magic-numbers,
+  -readability-function-cognitive-complexity,
 '
+# magic-numbers: Allow the usage of direct number literals in expressions
+# congitive-complexity: Do not check function complexity (TODO?)
 WarningsAsErrors:  '*'
 HeaderFilterRegex: 'include/minizinc/[A-Za-z].*'
 FormatStyle: file

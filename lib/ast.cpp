@@ -350,7 +350,7 @@ void ArrayLit::make1d() {
       std::vector<int> d(2 + _u.al->dims() * 2);
       unsigned int dimOffset = dims() * 2;
       d[0] = 1;
-      d[1] = length();
+      d[1] = static_cast<int>(length());
       for (unsigned int i = 2; i < d.size(); i++) {
         d[i] = _dims[dimOffset + i];
       }
@@ -358,7 +358,7 @@ void ArrayLit::make1d() {
     } else {
       std::vector<int> d(2);
       d[0] = 1;
-      d[1] = length();
+      d[1] = static_cast<int>(length());
       _dims = ASTIntVec(d);
     }
   }

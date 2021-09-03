@@ -437,7 +437,8 @@ void NLFile::makeSigmaMult(vector<NLToken>& expressionGraph, const vector<double
   if (coeffs.size() == 2) {
     expressionGraph.push_back(NLToken::o(NLToken::OpCode::OPPLUS));
   } else {
-    expressionGraph.push_back(NLToken::mo(NLToken::MOpCode::OPSUMLIST, coeffs.size()));
+    expressionGraph.push_back(
+        NLToken::mo(NLToken::MOpCode::OPSUMLIST, static_cast<int>(coeffs.size())));
   }
 
   // Component of the sum. Simplify multiplication by one.
@@ -532,7 +533,7 @@ void NLFile::linconsLe(const Call* c, const vector<double>& coeffs, const vector
 void NLFile::linconsPredicate(const Call* c, NLToken::OpCode oc, const vector<double>& coeffs,
                               const vector<string>& vars, const NLToken& value) {
   // Create the Logical Constraint and set the data
-  NLLogicalCons cons(logicalConstraints.size());
+  NLLogicalCons cons(static_cast<int>(logicalConstraints.size()));
 
   // Get the name of the constraint
   string cname = getConstraintName(c);
@@ -648,7 +649,7 @@ void NLFile::nlconsLe(const Call* c, const NLToken& x, const NLToken& y) {
 void NLFile::nlconsPredicate(const Call* c, NLToken::OpCode oc, const NLToken& x,
                              const NLToken& y) {
   // Create the Logical Constraint and set the data
-  NLLogicalCons cons(logicalConstraints.size());
+  NLLogicalCons cons(static_cast<int>(logicalConstraints.size()));
 
   // Get the name of the constraint
   string cname = getConstraintName(c);

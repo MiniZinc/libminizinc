@@ -141,11 +141,11 @@ public:
     err << std::endl;
   }
 
-  int fillBuffer(char* lexBuf, unsigned int lexBufSize) {
+  unsigned int fillBuffer(char* lexBuf, unsigned int lexBufSize) {
     if (pos >= length) {
       return 0;
     }
-    int num = std::min(length - pos, lexBufSize);
+    unsigned int num = std::min(length - pos, lexBufSize);
     memcpy(lexBuf, buf + pos, num);
     pos += num;
     return num;

@@ -412,7 +412,7 @@ TmpFile::TmpFile(const std::string& ext) {
   }
   _name = temp_dir + "/mznfileXXXXXX" + ext;
   char* tmpfile = strndup(_name.c_str(), _name.size());
-  _tmpfileDesc = mkstemps(tmpfile, ext.size());
+  _tmpfileDesc = mkstemps(tmpfile, static_cast<int>(ext.size()));
   if (_tmpfileDesc == -1) {
     ::free(tmpfile);
     throw Error("Error occurred when creating temporary file");

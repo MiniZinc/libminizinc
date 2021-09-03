@@ -603,8 +603,8 @@ void GecodeSolverInstance::processFlatZinc() {
             currentSpace->bv.push_back(var.boolVar(currentSpace));
             insertVar(it->e()->id(), var);
           } else {
-            auto b = (double)init->cast<BoolLit>()->v();
-            BoolVar boolVar(*this->currentSpace, b, b);
+            auto b = init->cast<BoolLit>()->v();
+            BoolVar boolVar(*this->currentSpace, static_cast<int>(b), static_cast<int>(b));
             currentSpace->bv.push_back(boolVar);
             insertVar(it->e()->id(),
                       GecodeVariable(GecodeVariable::BOOL_TYPE, currentSpace->bv.size() - 1));
@@ -763,7 +763,7 @@ Gecode::IntArgs GecodeSolverInstance::arg2intargs(Expression* arg, int offset) {
     ia[i] = 0;
   }
   for (int i = static_cast<int>(a->size()); (i--) != 0;) {
-    ia[i + offset] = (*a)[i]->cast<IntLit>()->v().toInt();
+    ia[i + offset] = static_cast<int>((*a)[i]->cast<IntLit>()->v().toInt());
   }
   return ia;
 }
@@ -1457,9 +1457,9 @@ bool GecodeSolverInstance::sac(bool toFixedPoint = false, bool shaving = false) 
     return false;
   }
   bool modified;
-  std::vector<int> sorted_iv;
+  std::vector<size_t> sorted_iv;
 
-  for (unsigned int i = 0; i < currentSpace->iv.size(); i++) {
+  for (size_t i = 0; i < currentSpace->iv.size(); i++) {
     if (!currentSpace->iv[i].assigned()) {
       sorted_iv.push_back(i);
     }
@@ -1932,7 +1932,7 @@ void GecodeSolverInstance::createBranchers(Annotation& ann, Expression* addition
   int introduced = 0;
   int funcdep = 0;
   int searched = 0;
-  for (int i = currentSpace->iv.size(); (i--) != 0;) {
+  for (size_t i = currentSpace->iv.size(); (i--) != 0;) {
     if (iv_searched[i]) {
       searched++;
     } else if (currentSpace->ivIntroduced[i]) {
@@ -1945,25 +1945,25 @@ void GecodeSolverInstance::createBranchers(Annotation& ann, Expression* addition
   }
   IntVarArgs iv_sol(static_cast<int>(currentSpace->iv.size()) - (introduced + funcdep + searched));
   IntVarArgs iv_tmp(introduced);
-  for (int i = currentSpace->iv.size(), j = 0, k = 0; (i--) != 0U;) {
+  for (size_t i = currentSpace->iv.size(), j = 0, k = 0; (i--) != 0U;) {
     if (iv_searched[i]) {
       continue;
     }
     if (currentSpace->ivIntroduced[i]) {
       if (currentSpace->ivIntroduced.size() >= i) {
         if (!currentSpace->ivDefined[i]) {
-          iv_tmp[j++] = currentSpace->iv[i];
+          iv_tmp[static_cast<int>(j++)] = currentSpace->iv[i];
         }
       }
     } else {
-      iv_sol[k++] = currentSpace->iv[i];
+      iv_sol[static_cast<int>(k++)] = currentSpace->iv[i];
     }
   }
   // Collecting Boolean variables
   introduced = 0;
   funcdep = 0;
   searched = 0;
-  for (int i = currentSpace->bv.size(); (i--) != 0;) {
+  for (size_t i = currentSpace->bv.size(); (i--) != 0;) {
     if (bv_searched[i]) {
       searched++;
     } else if (currentSpace->bvIntroduced[i]) {
@@ -1976,16 +1976,16 @@ void GecodeSolverInstance::createBranchers(Annotation& ann, Expression* addition
   }
   BoolVarArgs bv_sol(static_cast<int>(currentSpace->bv.size()) - (introduced + funcdep + searched));
   BoolVarArgs bv_tmp(introduced);
-  for (int i = currentSpace->bv.size(), j = 0, k = 0; (i--) != 0;) {
+  for (size_t i = currentSpace->bv.size(), j = 0, k = 0; (i--) != 0;) {
     if (bv_searched[i]) {
       continue;
     }
     if (currentSpace->bvIntroduced[i]) {
       if (!currentSpace->bvDefined[i]) {
-        bv_tmp[j++] = currentSpace->bv[i];
+        bv_tmp[static_cast<int>(j++)] = currentSpace->bv[i];
       }
     } else {
-      bv_sol[k++] = currentSpace->bv[i];
+      bv_sol[static_cast<int>(k++)] = currentSpace->bv[i];
     }
   }
 
@@ -2002,7 +2002,7 @@ void GecodeSolverInstance::createBranchers(Annotation& ann, Expression* addition
   introduced = 0;
   funcdep = 0;
   searched = 0;
-  for (int i = currentSpace->fv.size(); (i--) != 0;) {
+  for (size_t i = currentSpace->fv.size(); (i--) != 0;) {
     if (fv_searched[i]) {
       searched++;
     } else if (currentSpace->fvIntroduced[i]) {
@@ -2016,16 +2016,16 @@ void GecodeSolverInstance::createBranchers(Annotation& ann, Expression* addition
   FloatVarArgs fv_sol(static_cast<int>(currentSpace->fv.size()) -
                       (introduced + funcdep + searched));
   FloatVarArgs fv_tmp(introduced);
-  for (int i = currentSpace->fv.size(), j = 0, k = 0; (i--) != 0;) {
+  for (size_t i = currentSpace->fv.size(), j = 0, k = 0; (i--) != 0;) {
     if (fv_searched[i]) {
       continue;
     }
     if (currentSpace->fvIntroduced[i]) {
       if (!currentSpace->fvDefined[i]) {
-        fv_tmp[j++] = currentSpace->fv[i];
+        fv_tmp[static_cast<int>(j++)] = currentSpace->fv[i];
       }
     } else {
-      fv_sol[k++] = currentSpace->fv[i];
+      fv_sol[static_cast<int>(k++)] = currentSpace->fv[i];
     }
   }
 
@@ -2037,7 +2037,7 @@ void GecodeSolverInstance::createBranchers(Annotation& ann, Expression* addition
   introduced = 0;
   funcdep = 0;
   searched = 0;
-  for (int i = currentSpace->sv.size(); (i--) != 0;) {
+  for (size_t i = currentSpace->sv.size(); (i--) != 0;) {
     if (sv_searched[i]) {
       searched++;
     } else if (currentSpace->svIntroduced[i]) {
@@ -2050,16 +2050,16 @@ void GecodeSolverInstance::createBranchers(Annotation& ann, Expression* addition
   }
   SetVarArgs sv_sol(static_cast<int>(currentSpace->sv.size()) - (introduced + funcdep + searched));
   SetVarArgs sv_tmp(introduced);
-  for (int i = currentSpace->sv.size(), j = 0, k = 0; (i--) != 0;) {
+  for (size_t i = currentSpace->sv.size(), j = 0, k = 0; (i--) != 0;) {
     if (sv_searched[i]) {
       continue;
     }
     if (currentSpace->svIntroduced[i]) {
       if (!currentSpace->svDefined[i]) {
-        sv_tmp[j++] = currentSpace->sv[i];
+        sv_tmp[static_cast<int>(j++)] = currentSpace->sv[i];
       }
     } else {
-      sv_sol[k++] = currentSpace->sv[i];
+      sv_sol[static_cast<int>(k++)] = currentSpace->sv[i];
     }
   }
 

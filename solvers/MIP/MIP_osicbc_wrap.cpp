@@ -230,7 +230,7 @@ void MIPosicbcWrapper::doAddVars(size_t n, double* obj, double* lb, double* ub,
   //   vector<char*> pcNames(n);
   CoinPackedVector cpv;
   vector<CoinPackedVectorBase*> pCpv(n, &cpv);
-  _osi.addCols(n, pCpv.data(), lb, ub, obj);  // setting integer & names later
+  _osi.addCols(static_cast<int>(n), pCpv.data(), lb, ub, obj);  // setting integer & names later
   //   status = CBCnewcols (env, lp, n, obj, lb, ub, &ctype[0], &pcNames[0]);
   //   wrapAssert( !status,  "Failed to declare variables." );
 }
@@ -701,7 +701,7 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
     for (int i = 0; i < _rowlb.size(); ++i) {
       pRows[i] = &_rows[i];
     }
-    _osi.addRows(_rowlb.size(), pRows.data(), _rowlb.data(), _rowub.data());
+    _osi.addRows(static_cast<int>(_rowlb.size()), pRows.data(), _rowlb.data(), _rowub.data());
     //     rowStarts.clear();
     //     columns.clear();
     //     element.clear();
@@ -720,10 +720,10 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
         if (REAL != colTypes[i]
             //           && is_used[i]
         ) {
-          integer_vars.push_back(i);
+          integer_vars.push_back(static_cast<int>(i));
         }
       }
-      _osi.setInteger(integer_vars.data(), integer_vars.size());
+      _osi.setInteger(integer_vars.data(), static_cast<int>(integer_vars.size()));
     }
     if (!_options->sExportModel.empty()) {
       // Not implemented for OsiClp:
@@ -833,7 +833,7 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
     // Turn off OSICBC logging
 
     /// Solution callback
-    output.nCols = colObj.size();
+    output.nCols = static_cast<int>(colObj.size());
     //    x.resize(output.nCols);
     //    output.x = &x[0];
 
@@ -886,7 +886,7 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
                 rc.setLb(cut.rhs);
                 rc.setUb(cut.rhs);
             }
-            rc.setRow(cut.rmatind.size(), cut.rmatind.data(), cut.rmatval.data());
+            rc.setRow(static_cast<int>(cut.rmatind.size()), cut.rmatind.data(), cut.rmatval.data());
             cs.insertIfNotDuplicate(rc);
           }
         }
@@ -919,7 +919,7 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
     }
 
     cbui.pOutput->dWallTime0 = output.dWallTime0 = std::chrono::steady_clock::now();
-    output.dCPUTime = clock();
+    output.dCPUTime = static_cast<double>(clock());
 
     /* OLD: Optimize the problem and obtain solution. */
     //       model.branchAndBound();
@@ -945,7 +945,7 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
       }
       cerr << "'..." << endl;
     }
-    CbcMain(cbc_argc, &cbc_argv[0], model);
+    CbcMain(static_cast<int>(cbc_argc), &cbc_argv[0], model);
     // callCbc(_options->cbcCmdOptions, model);
 //     callCbc1(cbcCmdOptions, model, callBack);
 // What is callBack() for?    TODO
@@ -971,7 +971,7 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
 
     output.dWallTime =
         std::chrono::duration<double>(std::chrono::steady_clock::now() - output.dWallTime0).count();
-    output.dCPUTime = (clock() - output.dCPUTime) / CLOCKS_PER_SEC;
+    output.dCPUTime = (static_cast<double>(clock()) - output.dCPUTime) / CLOCKS_PER_SEC;
 
     output.status = convertStatus(&model);
     //    output.status = convertStatus();

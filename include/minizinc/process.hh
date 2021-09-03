@@ -422,7 +422,7 @@ public:
         for (int i = 1; i <= 2; ++i) {
           if (FD_ISSET(pipes[i][0], &fdset)) {
             char buffer[1000];
-            int count = read(pipes[i][0], buffer, sizeof(buffer) - 1);
+            size_t count = read(pipes[i][0], buffer, sizeof(buffer) - 1);
             if (count > 0) {
               buffer[count] = 0;
               if (1 == i) {

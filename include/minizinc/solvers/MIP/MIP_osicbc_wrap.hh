@@ -138,7 +138,7 @@ public:
   int getNColsModel() override { return _osi.getNumCols(); }
   int getNRows() override {
     if (!_rowlb.empty()) {
-      return _rowlb.size();
+      return static_cast<int>(_rowlb.size());
     }
     return _osi.getNumRows();
   }

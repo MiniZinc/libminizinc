@@ -506,7 +506,7 @@ template <class Lit>
 void simplify_lin(std::vector<typename LinearTraits<Lit>::Val>& c, std::vector<KeepAlive>& x,
                   typename LinearTraits<Lit>::Val& d) {
   std::vector<int> idx(c.size());
-  for (auto i = static_cast<unsigned int>(idx.size()); i--;) {
+  for (auto i = static_cast<int>(idx.size()); i--;) {
     idx[i] = i;
     Expression* e = follow_id_to_decl(x[i]());
     if (auto* vd = e->dynamicCast<VarDecl>()) {

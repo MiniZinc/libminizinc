@@ -225,8 +225,9 @@ protected:
     // otherwise (i.e., we have been able to increase the free list, and it is now more
     // than 50% of overall allocated memory), keep threshold at allocated memory
     if ((old_free != 0 && static_cast<double>(old_free) / static_cast<double>(_freeMem) > 0.9) ||
-        static_cast<double>(_freeMem) / _allocedMem < 0.5) {
-      _gcThreshold = std::max(_min_gcThreshold, static_cast<size_t>(_allocedMem * 1.5));
+        static_cast<double>(_freeMem) / static_cast<double>(_allocedMem) < 0.5) {
+      _gcThreshold =
+          std::max(_min_gcThreshold, static_cast<size_t>(static_cast<double>(_allocedMem) * 1.5));
     } else {
       _gcThreshold = std::max(_min_gcThreshold, _allocedMem);
     }

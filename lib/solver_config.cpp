@@ -690,15 +690,15 @@ std::string SolverConfigs::solverConfigsJSON() const {
   std::ostringstream oss;
 
   SortByName sortByName(_solvers);
-  std::vector<int> solversIdx(_solvers.size());
-  for (unsigned int i = 0; i < solversIdx.size(); i++) {
+  std::vector<size_t> solversIdx(_solvers.size());
+  for (size_t i = 0; i < solversIdx.size(); i++) {
     solversIdx[i] = i;
   }
   std::sort(solversIdx.begin(), solversIdx.end(), sortByName);
 
   bool hadSolver = false;
   oss << "[";
-  for (unsigned int i = 0; i < _solvers.size(); i++) {
+  for (size_t i = 0; i < _solvers.size(); i++) {
     const SolverConfig& sc = _solvers[solversIdx[i]];
     if (std::find(sc.tags().begin(), sc.tags().end(), "__internal__") != sc.tags().end()) {
       continue;

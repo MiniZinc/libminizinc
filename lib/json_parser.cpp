@@ -708,7 +708,8 @@ void JSONParser::parseFromString(Model* m, const std::string& data, bool isData)
 namespace {
 bool is_json(std::istream& is) {
   while (is.good()) {
-    char c = is.get();
+    char c;
+    is.get(c);
     if (c == '{') {
       return true;
     }

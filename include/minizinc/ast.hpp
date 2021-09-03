@@ -326,7 +326,7 @@ inline ArrayLit::ArrayLit(const Location& loc, ArrayLit* v) : Expression(loc, E_
     _u.al = v->_u.al;
     std::vector<int> d(2 + v->_dims.size() - v->dims() * 2);
     d[0] = 1;
-    d[1] = v->size();
+    d[1] = static_cast<int>(v->size());
     int sliceOffset = 2;
     unsigned int origSliceOffset = v->dims() * 2;
     for (int i = 0; i < _u.al->dims() * 2; i++) {
@@ -338,7 +338,7 @@ inline ArrayLit::ArrayLit(const Location& loc, ArrayLit* v) : Expression(loc, E_
     if (_u.v->flag()) {
       std::vector<int> d(2);
       d[0] = 1;
-      d[1] = v->length();
+      d[1] = static_cast<int>(v->length());
       _dims = ASTIntVec(d);
     } else {
       // don't allocate dims vector since this is a 1d array indexed from 1

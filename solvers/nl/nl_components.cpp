@@ -577,7 +577,7 @@ ostream& NLHeader::printToStream(ostream& os, const NLFile& nl_file) {
 /* *** *** *** NLObjective *** *** *** */
 
 /** Gradient count. */
-int NLObjective::gradientCount() const { return gradient.size(); }
+int NLObjective::gradientCount() const { return static_cast<int>(gradient.size()); }
 
 /** Set the gradient. */
 void NLObjective::setGradient(const vector<string>& vnames, const vector<double>& coeffs) {

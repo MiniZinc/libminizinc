@@ -25,8 +25,8 @@ void memcpy_s(char* dest, size_t /*size*/, const char* src, size_t count) {
 namespace MiniZinc {
 
 int ASTString::levenshteinDistance(const ASTString& other) const {
-  int m = size();
-  int n = other.size();
+  size_t m = size();
+  size_t n = other.size();
   const char* s = c_str();
   const char* t = other.c_str();
   assert(m > 0);

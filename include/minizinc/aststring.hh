@@ -280,7 +280,7 @@ inline std::string ASTString::substr(size_t pos, size_t count) const {
 }
 inline size_t ASTString::findLastOf(char ch, size_t pos) const noexcept {
   const char* str = c_str();
-  for (int i = std::min(size() - 1, pos); i >= 0; --i) {
+  for (size_t i = std::min(size() - 1, pos); i >= 0; --i) {
     if (str[i] == ch) {
       return i;
     }
@@ -293,7 +293,7 @@ inline size_t ASTString::find(char ch, size_t pos) const noexcept {
     return std::string::npos;
   }
   const char* str = c_str();
-  for (int i = pos; i < size(); ++i) {
+  for (size_t i = pos; i < size(); ++i) {
     if (str[i] == ch) {
       return i;
     }
