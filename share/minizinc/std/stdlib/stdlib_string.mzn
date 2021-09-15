@@ -51,27 +51,31 @@ function string: show2d(array[int,int] of var opt $T: x) =
 			" |\n   " else " |]\n"
 		endif
 		| i in 1..rows, j in 1..cols
-  ]) ++
+	]) ++
 	if rows = 0 then "|]" else "" endif;
 
 /** @group stdlib.string Convert three-dimensional array \a x into a string */
 function string: show3d(array[int,int,int] of var opt $T: x) =
-  let { int: len1=card(index_set_1of3(x));
-        int: len2=card(index_set_2of3(x));
-        int: len3=card(index_set_3of3(x));
-        array[int] of string: s = [show(x[i,j,k]) | i in index_set_1of3(x),
-                                                    j in index_set_2of3(x),
-                                                    k in index_set_3of3(x)];
-        int: max_length = max([string_length(s[i]) | i in index_set(s)])
-  } in
-  "[| | "++
-  concat([format_justify_string(max_length,s[(i-1)*len2*len3+(j-1)*len3+k])++
-   if k<len3 then ", "
-   elseif j<len2 then " |\n     "
-   elseif i<len1 then " |,\n\n   | "
-   else " | |]\n"
-   endif | i in 1..len1, j in 1..len2, k in 1..len3
-  ])++if len1=0 then "| |]" else "" endif;
+	let {
+		int: len1=card(index_set_1of3(x));
+		int: len2=card(index_set_2of3(x));
+		int: len3=card(index_set_3of3(x));
+		array[int] of string: s = [show(x[i,j,k]) | i in index_set_1of3(x), j in index_set_2of3(x), k in index_set_3of3(x)];
+		int: max_length = if length(s) > 0 then max([string_length(s[i]) | i in index_set(s)]) else 0 endif;
+	} in
+		"[| | "++
+		concat([
+			format_justify_string(max_length,s[(i - 1) * len2 * len3 + (j - 1) * len3 + k]) ++
+			if k < len3 then
+				", "
+			elseif j < len2 then
+				" |\n     "
+			elseif i < len1 then
+				" |,\n\n   | "
+			else
+				" | |]\n"
+			endif | i in 1..len1, j in 1..len2, k in 1..len3
+		]) ++ if len1 = 0 then "| |]" else "" endif;
 
 /** @group stdlib.string Convert \a x into JSON string */
 function string: showJSON(var opt $T: x);
