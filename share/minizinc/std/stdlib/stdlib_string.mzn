@@ -36,17 +36,23 @@ function string: show_float(int: w, int: p, var float: x);
 
 /** @group stdlib.string Convert two-dimensional array \a x into a string */
 function string: show2d(array[int,int] of var opt $T: x) =
-  let { int: rows=card(index_set_1of2(x));
-        int: cols=card(index_set_2of2(x));
-        array[int] of string: s = [show(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)];
-        int: max_length = max([string_length(s[i]) | i in index_set(s)])
-  } in
-  "[| "++
-  concat([format_justify_string(max_length,s[(i-1)*cols+j])++
-   if j<cols then ", "
-   elseif i<rows then " |\n   " else " |]\n"
-   endif | i in 1..rows, j in 1..cols
-  ])++if rows=0 then "|]" else "" endif;
+	let {
+		int: rows=card(index_set_1of2(x));
+		int: cols=card(index_set_2of2(x));
+		array[int] of string: s = [show(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)];
+		int: max_length = if length(s) > 0 then max([string_length(s[i]) | i in index_set(s)]) else 0 endif;
+	} in
+	"[| "++
+	concat([
+		format_justify_string(max_length,s[(i-1)*cols+j]) ++
+		if j < cols then
+			", "
+		elseif i < rows then
+			" |\n   " else " |]\n"
+		endif
+		| i in 1..rows, j in 1..cols
+  ]) ++
+	if rows = 0 then "|]" else "" endif;
 
 /** @group stdlib.string Convert three-dimensional array \a x into a string */
 function string: show3d(array[int,int,int] of var opt $T: x) =
