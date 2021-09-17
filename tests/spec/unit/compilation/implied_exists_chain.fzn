@@ -1,0 +1,7 @@
+var bool: a:: output_var;
+var bool: b:: output_var;
+var bool: c:: output_var;
+var bool: r:: output_var;
+constraint bool_clause([a,c],[r]);
+constraint bool_clause([b,c],[r]);
+solve  satisfy;

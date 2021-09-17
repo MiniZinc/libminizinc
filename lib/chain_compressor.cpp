@@ -17,11 +17,10 @@
 namespace MiniZinc {
 
 void ChainCompressor::removeItem(Item* i) {
-  CollectDecls cd(_env, _env.varOccurrences, _deletedVarDecls, i);
   if (auto* ci = i->dynamicCast<ConstraintI>()) {
-    top_down(cd, ci->e());
+    _env.flatRemoveItem(ci);
   } else if (auto* vdi = i->dynamicCast<VarDeclI>()) {
-    top_down(cd, vdi->e());
+    _env.flatRemoveItem(vdi);
   } else {
     assert(false);  // CURRENTLY NOT SUPPORTED
   }
@@ -97,19 +96,23 @@ bool ImpCompressor::trackItem(Item* i) {
           // x ::ctx_pos = pred(...); potentially: pred_imp(..., x); i.e. x -> pred(...)
         }
         if (_env.fopts.enableHalfReification && vdi->e()->ann().contains(_env.constants.ctx.pos)) {
-          GCLock lock;
-          auto cid = EnvI::halfReifyId(c->id());
-          std::vector<Type> args;
-          args.reserve(c->argCount() + 1);
-          for (int j = 0; j < c->argCount(); ++j) {
-            args.push_back(c->arg(j)->type());
-          }
-          args.push_back(Type::varbool());
-          FunctionI* decl = _env.model->matchFn(_env, cid, args, false);
-
-          if (decl != nullptr) {
+          if (c->id() == _env.constants.ids.exists) {
             storeItem(vdi->e(), i);
-            return true;
+          } else {
+            GCLock lock;
+            auto cid = EnvI::halfReifyId(c->id());
+            std::vector<Type> args;
+            args.reserve(c->argCount() + 1);
+            for (int j = 0; j < c->argCount(); ++j) {
+              args.push_back(c->arg(j)->type());
+            }
+            args.push_back(Type::varbool());
+            FunctionI* decl = _env.model->matchFn(_env, cid, args, false);
+
+            if (decl != nullptr) {
+              storeItem(vdi->e(), i);
+              return true;
+            }
           }
         }
       }
@@ -215,7 +218,7 @@ bool ImpCompressor::compressItem(Item* i, VarDecl* newLHS) {
       return true;
     }
   } else if (auto* vdi = i->dynamicCast<VarDeclI>()) {
-    auto* c = vdi->e()->e()->dynamicCast<Call>();
+    auto* c = vdi->e()->e()->cast<Call>();
     // Given: (x -> y) /\  (y -> (a /\ b /\ ...)), produce (x -> a) /\ (x -> b) /\ ...
     if (c->id() == _env.constants.ids.forall) {
       auto* exprs = eval_array_lit(_env, c->arg(0));
@@ -230,6 +233,16 @@ bool ImpCompressor::compressItem(Item* i, VarDecl* newLHS) {
       // x ::ctx_pos = pred(...); potentially: pred_imp(..., x); i.e. x -> pred(...)
     }
     if (vdi->e()->ann().contains(_env.constants.ctx.pos)) {
+      if (c->id() == _env.constants.ids.exists) {
+        auto* positive = eval_array_lit(_env, c->arg(0));
+        auto* positiveDecl = follow_id_to_decl((*positive)[0])->dynamicCast<VarDecl>();
+        if (positiveDecl != newLHS) {
+          ConstraintI* nci = constructClause(positive, newLHS->id());
+          _boolConstraints.push_back(addItem(nci));
+        }
+        removeItem(i);
+        return true;
+      }
       ConstraintI* nci = constructHalfReif(c, newLHS->id());
       assert(nci);
       addItem(nci);
