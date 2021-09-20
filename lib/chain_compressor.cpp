@@ -58,18 +58,18 @@ bool ImpCompressor::trackItem(Item* i) {
   }
   if (auto* ci = i->dynamicCast<ConstraintI>()) {
     if (auto* c = ci->e()->dynamicCast<Call>()) {
-      // clause([y], [x]); i.e. x -> y
+      // clause([...], [...]); e.g. x -> y
       if (c->id() == _env.constants.ids.clause) {
-        ArrayLit* positive = eval_array_lit(_env, c->arg(0));
         ArrayLit* negative = eval_array_lit(_env, c->arg(1));
-        if (positive->length() == 1 && negative->length() == 1) {
-          auto* var = (*negative)[0]->dynamicCast<Id>();
+        for (int j = 0; j < negative->size(); ++j) {
+          auto* var = (*negative)[j]->dynamicCast<Id>();
           if (var != nullptr) {
             storeItem(var->decl(), i);
           }
-          return true;
         }
-      } else if (c->id() == _env.constants.ids.mzn_reverse_map_var) {
+        return true;
+      }
+      if (c->id() == _env.constants.ids.mzn_reverse_map_var) {
         auto* control = follow_id_to_decl(c->arg(0))->dynamicCast<VarDecl>();
         if (control != nullptr) {
           assert(control->type().isvarbool());
@@ -77,7 +77,8 @@ bool ImpCompressor::trackItem(Item* i) {
         }
         return true;
         // pred_imp(..., b); i.e. b -> pred(...)
-      } else if (c->id().endsWith("_imp")) {
+      }
+      if (c->id().endsWith("_imp")) {
         auto* control = follow_id_to_decl(c->arg(c->argCount() - 1))->dynamicCast<VarDecl>();
         if (control != nullptr) {
           assert(control->type().isvarbool());
@@ -130,41 +131,43 @@ void ImpCompressor::compress() {
       auto* c = ci->e()->cast<Call>();
       if (c->id() == _env.constants.ids.clause) {
         auto* positive = eval_array_lit(_env, c->arg(0));
-        auto* var = follow_id_to_decl((*positive)[0])->dynamicCast<VarDecl>();
-        if (var != nullptr) {
-          bool output_var = var->ann().contains(_env.constants.ann.output_var);
-          auto usages = _env.varOccurrences.usages(var);
-          output_var = output_var || usages.second;
-          int occurrences = usages.first;
-          unsigned long lhs_occurences = count(var);
+        auto* negative = eval_array_lit(_env, c->arg(1));
+        if (positive->size() == 1 && negative->size() == 1) {
+          auto* var = follow_id_to_decl((*positive)[0])->dynamicCast<VarDecl>();
+          if (var != nullptr) {
+            bool output_var = var->ann().contains(_env.constants.ann.output_var);
+            auto usages = _env.varOccurrences.usages(var);
+            output_var = output_var || usages.second;
+            int occurrences = usages.first;
+            unsigned long lhs_occurences = count(var);
 
-          // Compress if:
-          // - There is one occurrence on the RHS of a clause and the others are on the LHS of a
-          // clause
-          // - There is one occurrence on the RHS of a clause, that Id is a reified forall that has
-          // no other occurrences
-          // - There is one occurrence on the RHS of a clause, that Id is a reification in a
-          // positive context, and all other occurrences are on the LHS of a clause
-          bool compress = !output_var && lhs_occurences > 0;
-          if ((var->e() != nullptr) && (var->e()->dynamicCast<Call>() != nullptr)) {
-            auto* call = var->e()->cast<Call>();
-            if (call->id() == _env.constants.ids.forall) {
-              compress = compress && (occurrences == 1 && lhs_occurences == 1);
+            // Compress if:
+            // - There is one occurrence on the RHS of a clause and the others are on the LHS of a
+            // clause
+            // - There is one occurrence on the RHS of a clause, that Id is a reified forall that
+            // has no other occurrences
+            // - There is one occurrence on the RHS of a clause, that Id is a reification in a
+            // positive context, and all other occurrences are on the LHS of a clause
+            bool compress = !output_var && lhs_occurences > 0;
+            if ((var->e() != nullptr) && (var->e()->dynamicCast<Call>() != nullptr)) {
+              auto* call = var->e()->cast<Call>();
+              if (call->id() == _env.constants.ids.forall) {
+                compress = compress && (occurrences == 1 && lhs_occurences == 1);
+              } else {
+                compress = compress && (occurrences == lhs_occurences);
+              }
             } else {
-              compress = compress && (occurrences == lhs_occurences);
+              compress = compress && (occurrences == lhs_occurences + 1);
             }
-          } else {
-            compress = compress && (occurrences == lhs_occurences + 1);
-          }
-          if (compress) {
-            rhs = var;
-            auto* negative = eval_array_lit(_env, c->arg(1));
-            lhs = follow_id_to_decl((*negative)[0])->dynamicCast<VarDecl>();
-            if (lhs == rhs) {
-              continue;
+            if (compress) {
+              rhs = var;
+              lhs = follow_id_to_decl((*negative)[0])->dynamicCast<VarDecl>();
+              if (lhs == rhs) {
+                continue;
+              }
             }
+            // TODO: Detect equivalences for output variables.
           }
-          // TODO: Detect equivalences for output variables.
         }
       }
     }
@@ -179,7 +182,7 @@ void ImpCompressor::compress() {
       }
       _items.erase(range.first, range.second);
       for (auto* item : to_process) {
-        bool success = compressItem(item, lhs);
+        bool success = compressItem(item, rhs, lhs);
         assert(success);
         _env.counters.impDel++;
       }
@@ -193,25 +196,56 @@ void ImpCompressor::compress() {
   }
 }
 
-bool ImpCompressor::compressItem(Item* i, VarDecl* newLHS) {
+bool ImpCompressor::compressItem(Item* i, VarDecl* oldLHS, VarDecl* newLHS) {
   GCLock lock;
   if (auto* ci = i->dynamicCast<ConstraintI>()) {
     auto* c = ci->e()->cast<Call>();
     // Given (x -> y) /\ (y -> z), produce x -> z
     if (c->id() == _env.constants.ids.clause) {
+      // Get clause array literals to be changed
       auto* positive = eval_array_lit(_env, c->arg(0));
-      auto* positiveDecl = follow_id_to_decl((*positive)[0])->dynamicCast<VarDecl>();
-      if (positiveDecl != newLHS) {
-        ConstraintI* nci = constructClause(positive, newLHS->id());
-        _boolConstraints.push_back(addItem(nci));
+      auto* negative = eval_array_lit(_env, c->arg(1));
+      // Avoid creating a -> a (constraint can just be removed)
+      if (positive->size() == 1 && negative->size() == 1) {
+        auto* positiveDecl = follow_id_to_decl((*positive)[0])->dynamicCast<VarDecl>();
+        if (positiveDecl == newLHS) {
+          removeItem(i);
+          return true;
+        }
       }
+
+      // Create new negative array
+      std::vector<Expression*> contents = std::vector<Expression*>(negative->size());
+      for (int i = 0; i < negative->size(); ++i) {
+        auto* vd = follow_id_to_decl((*negative)[i])->cast<VarDecl>();
+        if (vd == oldLHS) {
+          contents[i] = newLHS->id();
+        } else {
+          contents[i] = vd->id();
+          // Remove ci from multimap for other negative variables
+          auto range = find(vd);
+          for (auto it = range.first; it != range.second; ++it) {
+            if (it->second == ci) {
+              _items.erase(it);
+              break;
+            }
+          }
+        }
+      }
+      negative = new ArrayLit(negative->loc().introduce(), contents);
+      negative->type(Type::varbool(1));
+
+      negative = arrayLitCopyReplace(negative, oldLHS, newLHS);
+      auto* nci = constructClause(positive, negative);
+
+      _boolConstraints.push_back(addItem(nci));
       removeItem(i);
       return true;
-      // Given (x -> y) /\ (y -> pred(...)), produce x -> pred(...)
     }
     if (c->id() == _env.constants.ids.mzn_reverse_map_var) {
       return true;
     }
+    // Given (x -> y) /\ (y -> pred(...)), produce x -> pred(...)
     if (c->id().endsWith("_imp")) {
       replaceCallArgument(i, c, c->argCount() - 1, newLHS->id());
       trackItem(i);
@@ -252,6 +286,22 @@ bool ImpCompressor::compressItem(Item* i, VarDecl* newLHS) {
   return false;
 }
 
+ArrayLit* ImpCompressor::arrayLitCopyReplace(ArrayLit* arr, VarDecl* oldVar, VarDecl* newVar) {
+  assert(GC::locked());
+
+  std::vector<Expression*> contents = std::vector<Expression*>(arr->size());
+  for (int i = 0; i < arr->size(); ++i) {
+    auto* vd = follow_id_to_decl((*arr)[i])->cast<VarDecl>();
+    if (vd == oldVar) {
+      contents[i] = newVar->id();
+    } else {
+      contents[i] = vd->id();
+    }
+  }
+  auto* ret = new ArrayLit(arr->loc().introduce(), contents);
+  ret->type(arr->type());
+  return ret;
+}
 ConstraintI* ImpCompressor::constructClause(Expression* pos, Expression* neg) {
   assert(GC::locked());
   std::vector<Expression*> args(2);
@@ -274,7 +324,8 @@ ConstraintI* ImpCompressor::constructClause(Expression* pos, Expression* neg) {
     args[1]->type(Type::varbool(1));
   }
   // NEVER CREATE (a -> a)
-  assert(!(*args[0]->cast<ArrayLit>())[0]->isa<Id>() ||
+  assert(args[0]->cast<ArrayLit>()->size() != 1 || args[1]->cast<ArrayLit>()->size() != 1 ||
+         !(*args[0]->cast<ArrayLit>())[0]->isa<Id>() ||
          !(*args[1]->cast<ArrayLit>())[0]->isa<Id>() ||
          (*args[0]->cast<ArrayLit>())[0]->cast<Id>()->decl() !=
              (*args[1]->cast<ArrayLit>())[0]->cast<Id>()->decl());

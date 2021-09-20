@@ -66,11 +66,14 @@ protected:
   // In this case i: (y -> z), newLHS: x
   // Function returns true if compression was successful (and the implication that contains newLHS
   // can be removed) Side effect: Item i might be removed.
-  bool compressItem(Item* i, VarDecl* newLHS);
+  bool compressItem(Item* i, VarDecl* oldLHS, VarDecl* newLHS);
 
   // Constructs a clause constraint item with pos and neg as parameters.
   // if pos/neg are not ArrayLit then they will inserted into an ArrayLit.
   ConstraintI* constructClause(Expression* pos, Expression* neg);
+
+  // Copy an ArrayLit replacing one variable.
+  static ArrayLit* arrayLitCopyReplace(ArrayLit* ar, VarDecl* oldVar, VarDecl* newVar);
 
   ConstraintI* constructHalfReif(Call* call, Id* control);
 };
