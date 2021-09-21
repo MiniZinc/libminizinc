@@ -18,6 +18,7 @@ foreach(VERSION ${GUROBI_VERSIONS})
   list(APPEND GUROBI_DEFAULT_LOC "C:\\gurobi${VERSION}\\win64")
   list(APPEND GUROBI_DEFAULT_LOC "C:\\gurobi${VERSION}\\win32")
   list(APPEND GUROBI_DEFAULT_LOC "/Library/gurobi${VERSION}/mac64")
+  list(APPEND GUROBI_DEFAULT_LOC "/Library/gurobi${VERSION}/macos_universal2")
 
   string(SUBSTRING ${VERSION} 0 2 VERSION)
   list(APPEND GUROBI_LIB_NAMES gurobi${VERSION})
