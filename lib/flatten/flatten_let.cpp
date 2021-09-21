@@ -78,6 +78,7 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
         if (vd->type().dim() > 0) {
           check_index_sets(env, vd, let_e);
         }
+        flatten_vardecl_annotations(env, vd, nullptr, vd);
       } else {
         if ((ctx.b == C_NEG || ctx.b == C_MIX) &&
             !vd->ann().contains(env.constants.ann.promise_total)) {

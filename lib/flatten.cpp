@@ -538,6 +538,56 @@ void add_path_annotation(EnvI& env, Expression* e) {
   }
 }
 
+void flatten_vardecl_annotations(EnvI& env, VarDecl* origVd, VarDeclI* vdi, VarDecl* toAnnotate) {
+  for (ExpressionSetIter it = origVd->ann().begin(); it != origVd->ann().end(); ++it) {
+    // Check if we need to add the annotated expression as an argument
+    Call* addAnnotatedExpression = nullptr;
+    if ((*it)->isa<Id>()) {
+      if ((*it)->cast<Id>()->decl() != nullptr) {
+        addAnnotatedExpression = (*it)->cast<Id>()->decl()->ann().getCall(
+            env.constants.ann.mzn_add_annotated_expression);
+      }
+    } else {
+      addAnnotatedExpression = (*it)->cast<Call>()->decl()->ann().getCall(
+          env.constants.ann.mzn_add_annotated_expression);
+    }
+    KeepAlive ann;
+    if (addAnnotatedExpression != nullptr) {
+      GCLock lock;
+      Call* c;
+      if ((*it)->isa<Id>()) {
+        c = new Call(Location().introduce(), (*it)->cast<Id>()->v(), {toAnnotate->id()});
+      } else {
+        int annotatedExpressionIdx =
+            static_cast<int>(eval_int(env, addAnnotatedExpression->arg(0)).toInt());
+        Call* orig_call = (*it)->cast<Call>();
+        std::vector<Expression*> args(orig_call->argCount() + 1);
+        for (int i = 0, j = 0; i < orig_call->argCount(); i++) {
+          if (j == annotatedExpressionIdx) {
+            args[j++] = toAnnotate->id();
+          }
+          args[j++] = orig_call->arg(i);
+        }
+        if (annotatedExpressionIdx == orig_call->argCount()) {
+          args[orig_call->argCount()] = toAnnotate->id();
+        }
+        c = new Call(Location().introduce(), (*it)->cast<Call>()->id(), args);
+      }
+      c->decl(env.model->matchFn(env, c, false));
+      c->type(Type::ann());
+      ann = c;
+    } else {
+      ann = *it;
+    }
+    EE ee_ann = flat_exp(env, Ctx(), ann(), nullptr, env.constants.varTrue);
+    if (vdi != nullptr) {
+      toAnnotate->addAnnotation(ee_ann.r());
+      CollectOccurrencesE ce(env, env.varOccurrences, vdi);
+      top_down(ce, ee_ann.r());
+    }
+  }
+}
+
 VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDecl* origVd,
                      Expression* rhs) {
   VarDecl* vd = nullptr;
@@ -646,47 +696,7 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
 
   // Copy annotations from origVd
   if (origVd != nullptr) {
-    for (ExpressionSetIter it = origVd->ann().begin(); it != origVd->ann().end(); ++it) {
-      // Check if we need to add the annotated expression as an argument
-      Call* addAnnotatedExpression = nullptr;
-      if ((*it)->isa<Id>()) {
-        if ((*it)->cast<Id>()->decl() != nullptr) {
-          addAnnotatedExpression = (*it)->cast<Id>()->decl()->ann().getCall(
-              env.constants.ann.mzn_add_annotated_expression);
-        }
-      } else {
-        addAnnotatedExpression = (*it)->cast<Call>()->decl()->ann().getCall(
-            env.constants.ann.mzn_add_annotated_expression);
-      }
-      Expression* ann;
-      if (addAnnotatedExpression != nullptr) {
-        Call* c;
-        if ((*it)->isa<Id>()) {
-          c = new Call(Location().introduce(), (*it)->cast<Id>()->v(), {vd->id()});
-        } else {
-          int annotatedExpressionIdx =
-              static_cast<int>(eval_int(env, addAnnotatedExpression->arg(0)).toInt());
-          Call* orig_call = (*it)->cast<Call>();
-          std::vector<Expression*> args(orig_call->argCount() + 1);
-          for (int i = 0, j = 0; i < orig_call->argCount(); i++) {
-            if (j == annotatedExpressionIdx) {
-              args[j++] = vd->id();
-            }
-            args[j++] = orig_call->arg(i);
-          }
-          c = new Call(Location().introduce(), (*it)->cast<Call>()->id(), args);
-        }
-        c->decl(env.model->matchFn(env, c, false));
-        c->type(Type::ann());
-        ann = c;
-      } else {
-        ann = *it;
-      }
-      EE ee_ann = flat_exp(env, Ctx(), ann, nullptr, env.constants.varTrue);
-      vd->addAnnotation(ee_ann.r());
-      CollectOccurrencesE ce(env, env.varOccurrences, vdi);
-      top_down(ce, ee_ann.r());
-    }
+    flatten_vardecl_annotations(env, origVd, vdi, vd);
   }
 
   return vd;
@@ -3048,6 +3058,7 @@ void flatten(Env& e, FlatteningOptions opt) {
               EE ee = flat_exp(env, Ctx(), v->e()->e(), nullptr, env.constants.varTrue);
               v->e()->e(ee.r());
             }
+            flatten_vardecl_annotations(env, v->e(), v, v->e());
             check_par_declaration(env, v->e());
           }
         }

@@ -2567,6 +2567,40 @@ public:
       } else {
         assert(!vd->type().isunknown());
       }
+      // Check that annotations are type correct if they have an annotated_expression argument
+      for (auto* e : vd->ann()) {
+        std::vector<Expression*> addAnnArgs;
+        ASTString addAnnId;
+        if (auto* ident = e->dynamicCast<Id>()) {
+          if (ident->decl()->ann().containsCall(_env.constants.ann.mzn_add_annotated_expression)) {
+            addAnnArgs = {vd->id()};
+            addAnnId = ident->str();
+          }
+        } else if (auto* c = e->dynamicCast<Call>()) {
+          if (c->decl()->ann().containsCall(_env.constants.ann.mzn_add_annotated_expression)) {
+            Call* addAnnExp =
+                c->decl()->ann().getCall(_env.constants.ann.mzn_add_annotated_expression);
+            int annotatedExpressionIdx =
+                static_cast<int>(eval_int(_env, addAnnExp->arg(0)).toInt());
+            addAnnArgs.resize(c->argCount() + 1);
+            for (int i = 0, j = 0; i < c->argCount(); i++) {
+              if (j == annotatedExpressionIdx) {
+                addAnnArgs[j++] = vd->id();
+              }
+              addAnnArgs[j++] = c->arg(i);
+            }
+            if (annotatedExpressionIdx == c->argCount()) {
+              addAnnArgs[c->argCount()] = vd->id();
+            }
+            addAnnId = c->id();
+          }
+        }
+        if (!addAnnArgs.empty()) {
+          GCLock lock;
+          Call* nc = new Call(e->loc(), addAnnId, addAnnArgs);
+          FunctionI* fi = _model->matchFn(_env, nc, true, true);
+        }
+      }
     }
   }
   /// Visit type inst
@@ -2713,6 +2747,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     Model* model;
     std::vector<FunctionI*>& fis;
     std::vector<TypeError>& typeErrors;
+    ASTStringSet reifiedAnnotationIds;
     TSVFuns(EnvI& env0, Model* model0, std::vector<FunctionI*>& fis0,
             std::vector<TypeError>& typeErrors0)
         : env(env0), model(model0), fis(fis0), typeErrors(typeErrors0) {}
@@ -2725,10 +2760,10 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         Expression* param = i->param(j);
         for (auto* ii : param->ann()) {
           if (ii->isa<Id>() && ii->cast<Id>()->v() == env.constants.ann.annotated_expression->v()) {
-            if (reifiedAnnotationIdx >= 0) {
+            if (j != 0) {
               typeErrors.emplace_back(
                   env, param->loc(),
-                  "only one argument can be annotated with annotated_expression");
+                  "only the first argument can be annotated with annotated_expression");
             }
             reifiedAnnotationIdx = j;
           }
@@ -2738,11 +2773,14 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         GCLock lock;
         if (i->paramCount() == 1) {
           // turn into atomic annotation
-          auto* ti = new TypeInst(Location().introduce(), Type::ann());
-          auto* vd = new VarDecl(Location().introduce(), ti, i->id());
-          vd->ann().add(new Call(Location().introduce(),
-                                 env.constants.ann.mzn_add_annotated_expression, {IntLit::a(0)}));
-          model->addItem(new VarDeclI(Location().introduce(), vd));
+          if (reifiedAnnotationIds.find(i->id()) == reifiedAnnotationIds.end()) {
+            auto* ti = new TypeInst(Location().introduce(), Type::ann());
+            auto* vd = new VarDecl(Location().introduce(), ti, i->id());
+            vd->ann().add(new Call(Location().introduce(),
+                                   env.constants.ann.mzn_add_annotated_expression, {IntLit::a(0)}));
+            model->addItem(new VarDeclI(Location().introduce(), vd));
+            reifiedAnnotationIds.insert(i->id());
+          }
         } else {
           // turn into annotation function with one argument less
           std::vector<VarDecl*> newParams(i->paramCount() - 1);

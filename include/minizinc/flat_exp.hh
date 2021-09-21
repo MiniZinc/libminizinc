@@ -24,6 +24,8 @@ TypeInst* eval_typeinst(EnvI& env, const Ctx& ctx, VarDecl* vd);
 KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e);
 KeepAlive conj(EnvI& env, VarDecl* b, const Ctx& ctx, const std::vector<EE>& e);
 
+void flatten_vardecl_annotations(EnvI& env, VarDecl* origVd, VarDeclI* vdi, VarDecl* toAnnotate);
+
 VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDecl* origVd,
                      Expression* rhs);
 
