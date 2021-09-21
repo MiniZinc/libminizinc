@@ -199,7 +199,12 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
         m.insert(e, c);
         ret = c;
       } else {
-        auto* c = new ArrayLit(copy_location(m, e), std::vector<Expression*>(), dims);
+        ArrayLit* c;
+        if (al->isTuple()) {
+          c = ArrayLit::constructTuple(copy_location(m, e), {});
+        } else {
+          c = new ArrayLit(copy_location(m, e), std::vector<Expression*>(), dims);
+        }
         m.insert(e, c);
 
         ASTExprVecO<Expression*>* v;
@@ -495,6 +500,7 @@ Item* copy(EnvI& env, CopyMap& m, Item* i, bool followIds, bool copyFundecls, bo
       c->builtins.s = f->builtins.s;
       c->builtins.fs = f->builtins.fs;
       c->builtins.str = f->builtins.str;
+      c->isMonomorphised(f->isMonomorphised());
 
       copy_ann(env, m, f->ann(), c->ann(), followIds, copyFundecls, isFlatModel);
       m.insert(i, c);

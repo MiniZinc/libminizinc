@@ -468,23 +468,23 @@ typename Eval::Val eval_call(EnvI& env, CallClass* ce) {
 ArrayLit* eval_array_comp(EnvI& env, Comprehension* e) {
   ArrayLit* ret;
   if (e->type() == Type::parint(1)) {
-    std::vector<Expression*> a = eval_comp<EvalIntLit>(env, e);
-    ret = new ArrayLit(e->loc(), a);
+    auto a = eval_comp<EvalIntLit>(env, e);
+    ret = new ArrayLit(e->loc(), a.a, a.dims);
   } else if (e->type() == Type::parbool(1)) {
-    std::vector<Expression*> a = eval_comp<EvalBoolLit>(env, e);
-    ret = new ArrayLit(e->loc(), a);
+    auto a = eval_comp<EvalBoolLit>(env, e);
+    ret = new ArrayLit(e->loc(), a.a, a.dims);
   } else if (e->type() == Type::parfloat(1)) {
-    std::vector<Expression*> a = eval_comp<EvalFloatLit>(env, e);
-    ret = new ArrayLit(e->loc(), a);
+    auto a = eval_comp<EvalFloatLit>(env, e);
+    ret = new ArrayLit(e->loc(), a.a, a.dims);
   } else if (e->type().st() == Type::ST_SET) {
-    std::vector<Expression*> a = eval_comp<EvalSetLit>(env, e);
-    ret = new ArrayLit(e->loc(), a);
+    auto a = eval_comp<EvalSetLit>(env, e);
+    ret = new ArrayLit(e->loc(), a.a, a.dims);
   } else if (e->type() == Type::parstring(1)) {
-    std::vector<Expression*> a = eval_comp<EvalStringLit>(env, e);
-    ret = new ArrayLit(e->loc(), a);
+    auto a = eval_comp<EvalStringLit>(env, e);
+    ret = new ArrayLit(e->loc(), a.a, a.dims);
   } else {
-    std::vector<Expression*> a = eval_comp<EvalCopy>(env, e);
-    ret = new ArrayLit(e->loc(), a);
+    auto a = eval_comp<EvalCopy>(env, e);
+    ret = new ArrayLit(e->loc(), a.a, a.dims);
   }
   ret->type(e->type());
   return ret;
@@ -672,8 +672,8 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
     } break;
     case Expression::E_COMP: {
       auto* c = e->cast<Comprehension>();
-      std::vector<IntVal> a = eval_comp<EvalIntVal>(env, c);
-      return IntSetVal::a(a);
+      auto a = eval_comp<EvalIntVal>(env, c);
+      return IntSetVal::a(a.a);
     }
     case Expression::E_ID: {
       GCLock lock;
@@ -836,8 +836,8 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
     } break;
     case Expression::E_COMP: {
       auto* c = e->cast<Comprehension>();
-      std::vector<FloatVal> a = eval_comp<EvalFloatVal>(env, c);
-      return FloatSetVal::a(a);
+      auto a = eval_comp<EvalFloatVal>(env, c);
+      return FloatSetVal::a(a.a);
     }
     case Expression::E_ID: {
       GCLock lock;
@@ -1331,8 +1331,8 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
     } break;
     case Expression::E_COMP: {
       auto* c = e->cast<Comprehension>();
-      std::vector<IntVal> a = eval_comp<EvalIntVal>(env, c);
-      return IntSetVal::a(a);
+      auto a = eval_comp<EvalIntVal>(env, c);
+      return IntSetVal::a(a.a);
     }
     case Expression::E_ID: {
       GCLock lock;

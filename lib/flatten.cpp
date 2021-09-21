@@ -2779,11 +2779,11 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
         Expression* e(EnvI& env, Expression* e) const { return flat_cv_exp(env, ctx, e)(); }
         static Expression* exp(Expression* e) { return e; }
       } eval(ctx);
-      std::vector<Expression*> a = eval_comp<EvalFlatCvExp>(env, eval, c);
+      EvaluatedComp<Expression*> a = eval_comp<EvalFlatCvExp>(env, eval, c);
 
       Type t = Type::bot();
       bool allPar = true;
-      for (auto& i : a) {
+      for (auto& i : a.a) {
         if (t == Type::bot()) {
           t = i->type();
         }
@@ -2802,7 +2802,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
       t.cv(false);
       if (c->set()) {
         if (c->type().isPar() && allPar) {
-          auto* sl = new SetLit(c->loc().introduce(), a);
+          auto* sl = new SetLit(c->loc().introduce(), a.a);
           sl->type(t);
           Expression* slr = eval_par(env, sl);
           slr->type(t);
@@ -2810,7 +2810,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
         }
         throw InternalError("var set comprehensions not supported yet");
       }
-      auto* alr = new ArrayLit(Location().introduce(), a);
+      auto* alr = new ArrayLit(Location().introduce(), a.a, a.dims);
       alr->type(t);
       alr->flat(true);
       return alr;

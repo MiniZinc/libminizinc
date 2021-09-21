@@ -276,6 +276,7 @@ public:
       for (auto* fi : matches) {
         // Copy function (without following Ids or copying other function decls)
         auto* fi_copy = copy(_env, fi, false, false, false)->cast<FunctionI>();
+        fi_copy->isMonomorphised(true);
         // Rename copy
         fi_copy->id(mangledName);
         // Replace type-inst vars by concrete types
@@ -482,6 +483,57 @@ void type_specialise(Env& env, Model* model, TyperFn& typer) {
     agenda.pop_back();
     instantiate(call);
   }
+}
+
+namespace {
+
+std::string demonomorphise(const ASTString& as) {
+  assert(!as.empty() && as.c_str()[0] == '_');
+  std::string s(as.c_str() + 1);
+  auto s_end = s.find_last_of('@');
+  assert(s_end != std::string::npos);
+  return s.substr(0, s_end);
+}
+
+class Demonomorphiser : public EVisitor {
+public:
+  void vCall(Call* c) {
+    if (c->decl() != nullptr && c->decl()->isMonomorphised() && c->decl()->fromStdLib()) {
+      c->id(ASTString(demonomorphise(c->id())));
+    }
+  }
+};
+
+class ItemDemonomorphiser : public ItemVisitor {
+public:
+  Demonomorphiser dm;
+  void vVarDeclI(VarDeclI* vdi) { top_down(dm, vdi->e()); }
+  void vAssignI(AssignI* ai) { top_down(dm, ai->e()); }
+  void vConstraintI(ConstraintI* ci) { top_down(dm, ci->e()); }
+  void vSolveI(SolveI* si) {
+    if (si->e() != nullptr) {
+      top_down(dm, si->e());
+    }
+  }
+  void vOutputI(OutputI* oi) { top_down(dm, oi->e()); }
+  void vFunctionI(FunctionI* fi) {
+    top_down(dm, fi->ti());
+    for (unsigned int i = 0; i < fi->paramCount(); i++) {
+      top_down(dm, fi->param(i));
+    }
+    if (fi->e() != nullptr) {
+      top_down(dm, fi->e());
+    }
+  }
+
+};
+
+
+}
+
+void type_demonomorphise_library(Env& e, Model* model) {
+  ItemDemonomorphiser idm;
+  iter_items(idm, model);
 }
 
 }  // namespace MiniZinc

@@ -291,6 +291,7 @@ inline ArrayLit::ArrayLit(const Location& loc, ArrayLit* v,
     : Expression(loc, E_ARRAYLIT, Type()) {
   _flag1 = false;
   _flag2 = v->_flag2;
+  _secondaryId = AL_ARRAY;
   if (_flag2) {
     _u.al = v->_u.al;
     std::vector<int> d(dims.size() * 2 + v->_dims.size() - v->dims() * 2);
@@ -322,6 +323,7 @@ inline ArrayLit::ArrayLit(const Location& loc, ArrayLit* v,
 inline ArrayLit::ArrayLit(const Location& loc, ArrayLit* v) : Expression(loc, E_ARRAYLIT, Type()) {
   _flag1 = false;
   _flag2 = v->_flag2;
+  _secondaryId = AL_ARRAY;
   if (_flag2) {
     _u.al = v->_u.al;
     std::vector<int> d(2 + v->_dims.size() - v->dims() * 2);
@@ -351,6 +353,7 @@ inline ArrayLit::ArrayLit(const Location& loc, const std::vector<Expression*>& v
     : Expression(loc, E_ARRAYLIT, Type()) {
   _flag1 = false;
   _flag2 = false;
+  _secondaryId = AL_ARRAY;
   std::vector<int> d(2);
   d[0] = 1;
   d[1] = static_cast<int>(v.size());
@@ -362,6 +365,7 @@ inline ArrayLit::ArrayLit(const Location& loc, const std::vector<KeepAlive>& v)
     : Expression(loc, E_ARRAYLIT, Type()) {
   _flag1 = false;
   _flag2 = false;
+  _secondaryId = AL_ARRAY;
   std::vector<int> d(2);
   d[0] = 1;
   d[1] = static_cast<int>(v.size());
@@ -377,6 +381,7 @@ inline ArrayLit::ArrayLit(const Location& loc, const std::vector<std::vector<Exp
     : Expression(loc, E_ARRAYLIT, Type()) {
   _flag1 = false;
   _flag2 = false;
+  _secondaryId = AL_ARRAY;
   std::vector<int> dims(4);
   dims[0] = 1;
   dims[1] = static_cast<int>(v.size());
@@ -390,6 +395,12 @@ inline ArrayLit::ArrayLit(const Location& loc, const std::vector<std::vector<Exp
   }
   compress(vv, dims);
   rehash();
+}
+
+inline ArrayLit* ArrayLit::constructTuple(const Location& loc, const std::vector<Expression*>& v) {
+  ArrayLit* t = new ArrayLit(loc, v);
+  t->_secondaryId = AL_TUPLE;
+  return t;
 }
 
 inline ArrayAccess::ArrayAccess(const Location& loc, Expression* v,
@@ -651,6 +662,7 @@ inline FunctionI::FunctionI(const Location& loc, const ASTString& id, TypeInst* 
   builtins.s = nullptr;
   builtins.fs = nullptr;
   builtins.str = nullptr;
+  _flag2 = false;
 }
 
 inline void FunctionI::markParams() {

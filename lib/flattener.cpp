@@ -670,6 +670,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
         std::ostringstream compiledSolutionCheckModel;
         if (_flags.compileSolutionCheckModel) {
           Printer p(compiledSolutionCheckModel, 0);
+          type_demonomorphise_library(*env, m);
           p.print(m);
         }
         GCLock lock;
@@ -924,6 +925,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
               _log << "Printing .ozn to stdout ..." << std::endl;
             }
             Printer p(_os, 0);
+            type_demonomorphise_library(*env, env->output());
             p.print(env->output());
             if (_flags.verbose) {
               _log << " done (" << _starttime.stoptime() << ")" << std::endl;
@@ -935,6 +937,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             std::ofstream ofs(FILE_PATH(_flagOutputOzn), std::ios::out);
             check_io_status(ofs.good(), " I/O error: cannot open ozn output file. ");
             Printer p(ofs, 0);
+            type_demonomorphise_library(*env, env->output());
             p.print(env->output());
             check_io_status(ofs.good(), " I/O error: cannot write ozn output file. ");
             ofs.close();

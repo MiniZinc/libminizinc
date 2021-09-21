@@ -101,6 +101,11 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 /// Type check new assign item \a ai in model \a m
 void typecheck(Env& env, Model* m, AssignI* ai);
 
+/// Create monomorphised versions of polymorphic functions
+void type_specialise(Env& env, Model* origModel, TyperFn& typer);
+/// Turn monomorphised calls to standard library functions back into calls to generic functions
+void type_demonomorphise_library(Env& e, Model* model);
+
 /// Output description of parameters and output variables to \a os
 void output_model_interface(Env& env, Model* m, std::ostream& os,
                             const std::vector<std::string>& skipDirs);

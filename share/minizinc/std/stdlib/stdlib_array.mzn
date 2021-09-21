@@ -156,6 +156,22 @@ function array[$$E,$$F] of var $V: array2d(set of $$E: S1, set of $$F: S2,
 function array[$$E,$$F] of var opt $V: array2d(set of $$E: S1, set of $$F: S2, 
                                                array[$U] of var opt $V: x);
 
+function array[$$E,$$F] of $V: array2d(array[int] of $$E: S1, array[int] of $$F: S2, 
+                                       array[int] of $V: x) = 
+                                       let { int: d = length(S2) } in
+                                       [ (S1[(i - 1) div d + 1],S2[(i - 1) mod d + 1]) : x[i] | i in index_set(x)];
+function array[$$E,$$F] of opt $V: array2d(array[int] of $$E: S1, array[int] of $$F: S2, 
+                                       array[int] of opt $V: x) = [ (S1[i],S2[i]) : x[i] | i in index_set(x)];
+function array[$$E,$$F] of var $V: array2d(array[int] of $$E: S1, array[int] of $$F: S2, 
+                                       array[int] of var $V: x) = [ (S1[i],S2[i]) : x[i] | i in index_set(x)];
+function array[$$E,$$F] of var opt $V: array2d(array[int] of $$E: S1, array[int] of $$F: S2, 
+                                       array[int] of var opt $V: x) = [ (S1[i],S2[i]) : x[i] | i in index_set(x)];
+
+function array[$$E] of $V: array1d(array[int] of $$E: S1, array[int] of $V: x) = [ S1[i] : x[i] | i in index_set(x)];
+function array[$$E] of opt $V: array1d(array[int] of $$E: S1, array[int] of opt $V: x) = [ S1[i] : x[i] | i in index_set(x)];
+function array[$$E] of var $V: array1d(array[int] of $$E: S1, array[int] of var $V: x) = [ S1[i] : x[i] | i in index_set(x)];
+function array[$$E] of var opt $V: array1d(array[int] of $$E: S1, array[int] of var opt $V: x) = [ S1[i] : x[i] | i in index_set(x)];
+
 /** @group stdlib.array Return array \a x coerced to three-dimensional array with
   index sets \a S1, \a S2 and \a S3.
   Coercions are performed by considering the array \a x in row-major order. 

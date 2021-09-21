@@ -1610,6 +1610,10 @@ public:
   void vArrayLit(ArrayLit* al) {
     Type ty;
     ty.dim(static_cast<int>(al->dims()));
+    if (al->isTuple()) {
+      al->type(ty);
+      return;
+    }
     std::vector<AnonVar*> anons;
     bool haveAbsents = false;
     bool haveInferredType = false;
@@ -1845,7 +1849,16 @@ public:
   }
   /// Visit array comprehension
   void vComprehension(Comprehension* c) {
-    Type tt = c->e()->type();
+    Expression* c_e = c->e();
+    ArrayLit* indexTuple = Expression::dynamicCast<ArrayLit>(c->e());
+    if (indexTuple != nullptr && !indexTuple->isTuple()) {
+      indexTuple = nullptr;
+    }
+    if (c_e->isa<ArrayLit>() && c_e->cast<ArrayLit>()->isTuple()) {
+      auto* al = c_e->cast<ArrayLit>();
+      c_e = (*al)[al->size()-1];
+    }
+    Type tt = c_e->type();
     typedef std::unordered_map<VarDecl*, std::pair<int, int>> genMap_t;
     typedef std::unordered_map<VarDecl*, std::vector<Expression*>> whereMap_t;
     genMap_t generatorMap;
@@ -1873,7 +1886,7 @@ public:
         if (c->where(i) != nullptr) {
           if (c->where(i)->type() == Type::varbool()) {
             if (!c->set()) {
-              if (c->e()->type().isSet()) {
+              if (c_e->type().isSet()) {
                 throw TypeError(_env, c->where(i)->loc(),
                                 "variable where clause not allowed in set-valued comprehension");
               }
@@ -1983,10 +1996,10 @@ public:
     }
 
     if (c->set()) {
-      if (c->e()->type().dim() != 0 || c->e()->type().st() == Type::ST_SET) {
-        throw TypeError(_env, c->e()->loc(),
+      if (c_e->type().dim() != 0 || c_e->type().st() == Type::ST_SET) {
+        throw TypeError(_env, c_e->loc(),
                         "set comprehension expression must be scalar, but is `" +
-                            c->e()->type().toString(_env) + "'");
+                            c_e->type().toString(_env) + "'");
       }
       tt.st(Type::ST_SET);
       if (tt.isvar()) {
@@ -1994,14 +2007,32 @@ public:
         tt.bt(Type::BT_INT);
       }
     } else {
-      if (c->e()->type().dim() != 0) {
-        throw TypeError(_env, c->e()->loc(), "array comprehension expression cannot be an array");
+      if (c_e->type().dim() != 0) {
+        throw TypeError(_env, c_e->loc(), "array comprehension expression cannot be an array");
       }
-      tt.dim(1);
-      if (tt.enumId() != 0) {
-        std::vector<unsigned int> enumIds(2);
-        enumIds[0] = 0;
-        enumIds[1] = tt.enumId();
+      std::vector<unsigned int> enumIds;
+      bool hadEnums = false;
+      if (indexTuple != nullptr) {
+        tt.dim(indexTuple->size() - 1);
+        for (unsigned int i = 0; i < indexTuple->size() - 1; i++) {
+          if (!(*indexTuple)[i]->type().isPar()) {
+            throw TypeError(_env, (*indexTuple)[i]->loc(), "index is not par");
+          }
+          if (!(*indexTuple)[i]->type().isint()) {
+            throw TypeError(_env, (*indexTuple)[i]->loc(), "index is not int or enumerated type");
+          }
+          unsigned int e = (*indexTuple)[i]->type().enumId();
+          enumIds.push_back(e);
+          if (e != 0) {
+            hadEnums = true;
+          }
+        }
+      } else {
+        tt.dim(1);
+        enumIds.push_back(0);
+      }
+      if (hadEnums || tt.enumId() != 0) {
+        enumIds.push_back(tt.enumId());
         tt.enumId(_env.registerArrayEnum(enumIds));
       }
     }
@@ -2572,7 +2603,6 @@ public:
             vet.enumId(vdt.enumId());
           }
         }
-
         if (vd->type().isunknown()) {
           vd->ti()->type(vet);
           vd->type(vet);
@@ -2594,6 +2624,42 @@ public:
           }
         } else {
           vd->e(add_coercion(_env, _model, vd->e(), vd->ti()->type())());
+        }
+        if (vd->type().dim() > 0) {
+          if (vet.enumId() != 0) {
+            // check if the VarDecl has _ as index sets and copy correct enum information
+            const std::vector<unsigned int>& enumIds = _env.getArrayEnum(vet.enumId());
+            std::vector<unsigned int> vdEnumIds(vd->type().dim() + 1, 0);
+            if (vd->type().enumId() != 0) {
+              vdEnumIds = _env.getArrayEnum(vd->type().enumId());
+            }
+            bool hadAnonVar = false;
+            for (unsigned int i = 0; i < vd->ti()->ranges().size(); i++) {
+              auto* av = Expression::dynamicCast<AnonVar>(vd->ti()->ranges()[i]->domain());
+              if (av != nullptr) {
+                if (enumIds[i] != vdEnumIds[i]) {
+                  vdEnumIds[i] = enumIds[i];
+                  hadAnonVar = true;
+                }
+                vd->ti()->ranges()[i]->domain(nullptr);
+              }
+            }
+            if (hadAnonVar) {
+              int arrayEnumId = _env.registerArrayEnum(vdEnumIds);
+              Type t = vd->type();
+              t.enumId(arrayEnumId);
+              vd->ti()->type(t);
+              vd->type(t);
+            }
+          } else {
+            // remove all _ in array index sets
+            for (unsigned int i = 0; i < vd->ti()->ranges().size(); i++) {
+              auto* av = Expression::dynamicCast<AnonVar>(vd->ti()->ranges()[i]->domain());
+              if (av != nullptr) {
+                vd->ti()->ranges()[i]->domain(nullptr);
+              }
+            }
+          }
         }
       } else {
         assert(!vd->type().isunknown());
@@ -2681,6 +2747,8 @@ public:
         if (tiid->isEnum()) {
           tt.bt(Type::BT_INT);
         }
+      } else if (ti->domain()->isa<AnonVar>()) {
+        tt.bt(Type::BT_INT);
       } else {
         if (ti->domain()->type().ti() != Type::TI_PAR ||
             ti->domain()->type().st() != Type::ST_SET) {
@@ -2735,8 +2803,6 @@ public:
   }
   void vTIId(TIId* id) {}
 };
-
-void type_specialise(Env& env, Model* origModel, TyperFn& typer);
 
 void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
                bool ignoreUndefinedParameters, bool allowMultiAssignment, bool isFlatZinc) {

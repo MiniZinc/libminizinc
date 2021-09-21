@@ -208,8 +208,10 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
   } _evalf(ctx, r == env.constants.varIgnore ? env.constants.varTrue : nullptr);
   std::vector<EE> elems_ee;
   bool wasUndefined = false;
+  EvaluatedComp<EE> evalResult;
   try {
-    elems_ee = eval_comp<EvalF>(env, _evalf, c);
+    evalResult = eval_comp<EvalF>(env, _evalf, c);
+    elems_ee = evalResult.a;
   } catch (ResultUndefinedError&) {
     wasUndefined = true;
   }
@@ -267,7 +269,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
         ka = ee.r();
       }
     } else {
-      auto* alr = new ArrayLit(Location().introduce(), elems);
+      auto* alr = new ArrayLit(Location().introduce(), elems, evalResult.dims);
       alr->type(elemType);
       alr->flat(true);
       ka = alr;

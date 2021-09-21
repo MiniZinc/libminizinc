@@ -138,83 +138,62 @@ public:
   static KeepAlive flattenCV(EnvI& env, Expression* e);
 };
 
-template <class Eval>
+template <class T>
+class EvaluatedComp {
+public:
+  std::vector<T> a;
+  std::vector<std::pair<int,int>> dims;
+};
+
+template <class T>
+class EvaluatedCompTmp {
+public:
+  std::vector<T> a;
+  std::vector<int> indexes;
+  std::vector<IntVal> idx_min;
+  std::vector<IntVal> idx_max;
+  EvaluatedCompTmp(unsigned int dim) : idx_min(dim), idx_max(dim) {
+    for (unsigned int i = 0; i < dim; i++) {
+      idx_min[i] = IntVal::infinity();
+      idx_max[i] = -IntVal::infinity();
+    }
+  }
+};
+
+template <class Eval, bool isIndexed>
 void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, KeepAlive in,
-                     std::vector<typename Eval::ArrayVal>& a);
+                     EvaluatedCompTmp<typename Eval::ArrayVal>& a);
 
-template <class Eval>
+template <class Eval, bool isIndexed>
 void eval_comp_set(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, KeepAlive in,
-                   std::vector<typename Eval::ArrayVal>& a);
+                   EvaluatedCompTmp<typename Eval::ArrayVal>& a);
 
-template <class Eval>
-void eval_comp_set(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, IntVal i, KeepAlive in,
-                   std::vector<typename Eval::ArrayVal>& a) {
-  {
-    GCLock lock;
-    GC::mark();
-    e->decl(gen, id)->trail();
-    e->decl(gen, id)->e(IntLit::a(i));
-  }
-  CallStackItem csi(env, e->decl(gen, id)->id(), i);
-  if (id == e->numberOfDecls(gen) - 1) {
-    bool where = true;
-    if (e->where(gen) != nullptr && !e->where(gen)->type().isvar()) {
-      where = eval.evalBoolCV(env, e->where(gen));
-    }
-    if (where) {
-      if (gen == e->numberOfGenerators() - 1) {
-        a.push_back(eval.e(env, e->e()));
-      } else {
-        if (e->in(gen + 1) == nullptr) {
-          eval_comp_array<Eval>(env, eval, e, gen + 1, 0, 0, e->in(gen + 1), a);
-        } else {
-          KeepAlive nextin;
-          Expression* gen_in = e->in(gen + 1);
-          if (gen_in->type().isvar() || gen_in->type().cv()) {
-            gen_in = eval.flattenCV(env, e->in(gen + 1))();
-          }
-          if (gen_in->type().dim() == 0) {
-            GCLock lock;
-            nextin = new SetLit(Location(), eval_intset(env, gen_in));
-          } else {
-            GCLock lock;
-            nextin = eval_array_lit(env, gen_in);
-          }
-          if (e->in(gen + 1)->type().dim() == 0) {
-            eval_comp_set<Eval>(env, eval, e, gen + 1, 0, nextin, a);
-          } else {
-            eval_comp_array<Eval>(env, eval, e, gen + 1, 0, nextin, a);
-          }
-        }
-      }
-    }
-  } else {
-    eval_comp_set<Eval>(env, eval, e, gen, id + 1, in, a);
-  }
-  GC::untrail();
-  e->decl(gen, id)->flat(nullptr);
-}
-
-template <class Eval>
+template <class Eval, bool isSet, bool isIndexed>
 void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, IntVal i,
-                     KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
+                     KeepAlive in, EvaluatedCompTmp<typename Eval::ArrayVal>& a) {
   GC::mark();
   e->decl(gen, id)->trail();
   CallStackItem csi(env, e->decl(gen, id)->id(), i);
-  if (in() == nullptr) {
-    // this is an assignment generator
-    Expression* asn;
-    if (e->where(gen)->type().isvar() || e->where(gen)->type().cv()) {
-      asn = eval.flattenCV(env, e->where(gen))();
-    } else {
-      asn = eval_par(env, e->where(gen));
-    }
-    e->decl(gen, id)->e(asn);
-    e->rehash();
+  if (isSet) {
+    GCLock lock;
+    e->decl(gen, id)->e(IntLit::a(i));
   } else {
-    auto* al = in()->cast<ArrayLit>();
-    e->decl(gen, id)->e((*al)[static_cast<int>(i.toInt())]);
-    e->rehash();
+    if (in() == nullptr) {
+      // this is an assignment generator
+      KeepAlive asn;
+      if (e->where(gen)->type().isvar() || e->where(gen)->type().cv()) {
+        asn = eval.flattenCV(env, e->where(gen));
+      } else {
+        GCLock lock;
+        asn = eval_par(env, e->where(gen));
+      }
+      e->decl(gen, id)->e(asn());
+      e->rehash();
+    } else {
+      auto* al = in()->cast<ArrayLit>();
+      e->decl(gen, id)->e((*al)[static_cast<int>(i.toInt())]);
+      e->rehash();
+    }
   }
   if (id == e->numberOfDecls(gen) - 1) {
     bool where = true;
@@ -223,33 +202,48 @@ void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, I
     }
     if (where) {
       if (gen == e->numberOfGenerators() - 1) {
-        a.push_back(eval.e(env, e->e()));
+        if (isIndexed) {
+          ArrayLit* t = e->e()->cast<ArrayLit>();
+          for (unsigned int i = 0; i < t->size() - 1; i++) {
+            IntVal curIdx = eval_int(env, (*t)[i]);
+            a.indexes.push_back(curIdx.toInt());
+            a.idx_min[i] = std::min(a.idx_min[i], curIdx);
+            a.idx_max[i] = std::max(a.idx_max[i], curIdx);
+          }
+          a.a.push_back(eval.e(env, (*t)[t->size()-1]));
+        } else {
+          a.a.push_back(eval.e(env, e->e()));
+        }
       } else {
         if (e->in(gen + 1) == nullptr) {
-          eval_comp_array<Eval>(env, eval, e, gen + 1, 0, 0, e->in(gen + 1), a);
+          eval_comp_array<Eval,false,isIndexed>(env, eval, e, gen + 1, 0, 0, e->in(gen + 1), a);
         } else {
           KeepAlive nextin;
-          Expression* gen_in = e->in(gen + 1);
-          if (gen_in->type().isvar() || gen_in->type().cv()) {
-            gen_in = eval.flattenCV(env, e->in(gen + 1))();
+          KeepAlive gen_in = e->in(gen + 1);
+          if (gen_in()->type().isvar() || gen_in()->type().cv()) {
+            gen_in = eval.flattenCV(env, e->in(gen + 1));
           }
-          if (gen_in->type().dim() == 0) {
+          if (gen_in()->type().dim() == 0) {
             GCLock lock;
-            nextin = new SetLit(Location(), eval_intset(env, gen_in));
+            nextin = new SetLit(Location(), eval_intset(env, gen_in()));
           } else {
             GCLock lock;
-            nextin = eval_array_lit(env, gen_in);
+            nextin = eval_array_lit(env, gen_in());
           }
-          if (gen_in->type().dim() == 0) {
-            eval_comp_set<Eval>(env, eval, e, gen + 1, 0, nextin, a);
+          if (gen_in()->type().dim() == 0) {
+            eval_comp_set<Eval,isIndexed>(env, eval, e, gen + 1, 0, nextin, a);
           } else {
-            eval_comp_array<Eval>(env, eval, e, gen + 1, 0, nextin, a);
+            eval_comp_array<Eval,isIndexed>(env, eval, e, gen + 1, 0, nextin, a);
           }
         }
       }
     }
   } else {
-    eval_comp_array<Eval>(env, eval, e, gen, id + 1, in, a);
+    if (isSet) {
+      eval_comp_set<Eval,isIndexed>(env, eval, e, gen, id + 1, in, a);
+    } else {
+      eval_comp_array<Eval,isIndexed>(env, eval, e, gen, id + 1, in, a);
+    }
   }
   GC::untrail();
   e->decl(gen, id)->flat(nullptr);
@@ -263,9 +257,9 @@ void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, I
  * in that generator, \a in is the expression of that generator, and
  * \a a is the array in which to place the result.
  */
-template <class Eval>
+template <class Eval, bool isIndexed>
 void eval_comp_set(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, KeepAlive in,
-                   std::vector<typename Eval::ArrayVal>& a) {
+                   EvaluatedCompTmp<typename Eval::ArrayVal>& a) {
   IntSetVal* isv = eval_intset(env, in());
   if (isv->card().isPlusInfinity()) {
     throw EvalError(env, in()->loc(), "comprehension iterates over an infinite set");
@@ -273,7 +267,7 @@ void eval_comp_set(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, Kee
   IntSetRanges rsi(isv);
   Ranges::ToValues<IntSetRanges> rsv(rsi);
   for (; rsv(); ++rsv) {
-    eval_comp_set<Eval>(env, eval, e, gen, id, rsv.val(), in, a);
+    eval_comp_array<Eval,true,isIndexed>(env, eval, e, gen, id, rsv.val(), in, a);
   }
 }
 
@@ -285,12 +279,12 @@ void eval_comp_set(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, Kee
  * in that generator, \a in is the expression of that generator, and
  * \a a is the array in which to place the result.
  */
-template <class Eval>
+template <class Eval, bool isIndexed>
 void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, KeepAlive in,
-                     std::vector<typename Eval::ArrayVal>& a) {
+                     EvaluatedCompTmp<typename Eval::ArrayVal>& a) {
   auto* al = in()->cast<ArrayLit>();
   for (unsigned int i = 0; i < al->size(); i++) {
-    eval_comp_array<Eval>(env, eval, e, gen, id, i, in, a);
+    eval_comp_array<Eval,false,isIndexed>(env, eval, e, gen, id, i, in, a);
   }
 }
 
@@ -301,10 +295,20 @@ void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, K
  * returns a vector with all the evaluated results.
  */
 template <class Eval>
-std::vector<typename Eval::ArrayVal> eval_comp(EnvI& env, Eval& eval, Comprehension* e) {
-  std::vector<typename Eval::ArrayVal> a;
+EvaluatedComp<typename Eval::ArrayVal> eval_comp(EnvI& env, Eval& eval, Comprehension* e) {
+  EvaluatedComp<typename Eval::ArrayVal> a;
+  bool isIndexed = e->e()->isa<ArrayLit>() && e->e()->cast<ArrayLit>()->isTuple();
+  int dim = 0;
+  if (isIndexed) {
+    dim = e->e()->cast<ArrayLit>()->size() - 1;
+  }
+  EvaluatedCompTmp<typename Eval::ArrayVal> a_tmp(dim);
   if (e->in(0) == nullptr) {
-    eval_comp_array<Eval>(env, eval, e, 0, 0, 0, e->in(0), a);
+    if (isIndexed) {
+      eval_comp_array<Eval,false,true>(env, eval, e, 0, 0, 0, e->in(0), a_tmp);
+    } else {
+      eval_comp_array<Eval,false,false>(env, eval, e, 0, 0, 0, e->in(0), a_tmp);
+    }
   } else {
     KeepAlive in;
     {
@@ -324,10 +328,58 @@ std::vector<typename Eval::ArrayVal> eval_comp(EnvI& env, Eval& eval, Comprehens
       }
     }
     if (e->in(0)->type().dim() == 0) {
-      eval_comp_set<Eval>(env, eval, e, 0, 0, in, a);
+      if (isIndexed) {
+        eval_comp_set<Eval,true>(env, eval, e, 0, 0, in, a_tmp);
+      } else {
+        eval_comp_set<Eval,false>(env, eval, e, 0, 0, in, a_tmp);
+      }
     } else {
-      eval_comp_array<Eval>(env, eval, e, 0, 0, in, a);
+      if (isIndexed) {
+        eval_comp_array<Eval,true>(env, eval, e, 0, 0, in, a_tmp);
+      } else {
+        eval_comp_array<Eval,false>(env, eval, e, 0, 0, in, a_tmp);
+      }
     }
+  }
+  
+  if (isIndexed) {
+    IntVal size = 1;
+    std::vector<int> dimSize(a_tmp.idx_min.size());
+    for (unsigned int i = a_tmp.idx_min.size(); (i--) != 0U; ) {
+      if (!a_tmp.idx_min[i].isFinite() || !a_tmp.idx_max[i].isFinite()) {
+        throw EvalError(env, e->loc(), "indexes don't match size of generated array");
+      }
+      if (a_tmp.idx_min[i] > a_tmp.idx_max[i]) {
+        size = 0;
+        break;
+      }
+      IntVal s = (a_tmp.idx_max[i] - a_tmp.idx_min[i] + 1);
+      dimSize[i] = size.toInt(); // before multiplication!
+      size *= s;
+      a.dims.emplace_back(a_tmp.idx_min[i].toInt(), a_tmp.idx_max[i].toInt());
+    }
+    if (size != a_tmp.a.size()) {
+      throw EvalError(env, e->loc(), "indexes don't match size of generated array");
+    }
+    a.a.resize(a_tmp.a.size());
+    std::vector<bool> seen(a_tmp.a.size(), false);
+    unsigned int j = 0;
+    for (unsigned int i = 0; i < a_tmp.a.size(); i++) {
+      int idx = 0;
+      for (unsigned int k = 0; k < a_tmp.idx_min.size(); k++) {
+        IntVal curIdx = a_tmp.indexes[j++]-a_tmp.idx_min[k];
+        curIdx *= dimSize[k];
+        idx += curIdx.toInt();
+      }
+      if (seen[idx]) {
+        throw EvalError(env, e->loc(), "comprehension generates multiple entries for same index");
+      }
+      seen[idx] = true;
+      a.a[idx] = a_tmp.a[i];
+    }
+  } else {
+    a.a = a_tmp.a;
+    a.dims.emplace_back(1, a.a.size());
   }
   return a;
 }
@@ -339,9 +391,9 @@ std::vector<typename Eval::ArrayVal> eval_comp(EnvI& env, Eval& eval, Comprehens
  * returns a vector with all the evaluated results.
  */
 template <class Eval>
-std::vector<typename Eval::ArrayVal> eval_comp(EnvI& env, Comprehension* e) {
+EvaluatedComp<typename Eval::ArrayVal> eval_comp(EnvI& env, Comprehension* e) {
   Eval eval;
-  return eval_comp(env, eval, e);
+  return eval_comp<Eval>(env, eval, e);
 }
 
 Expression* follow_id(Expression* e);

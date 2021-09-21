@@ -822,7 +822,8 @@ protected:
   ASTIntVec _dims;
   /// Set compressed vector (initial repetitions are removed)
   void compress(const std::vector<Expression*>& v, const std::vector<int>& dims);
-
+  /// Whether this is an array or a tuple
+  enum ArrayLitType { AL_ARRAY, AL_TUPLE };
 public:
   /// Index conversion from slice to original
   unsigned int origIdx(unsigned int i) const;
@@ -849,6 +850,8 @@ public:
            const std::vector<std::pair<int, int> >& slice);
   /// Constructor (one-dimensional)
   ArrayLit(const Location& loc, const std::vector<KeepAlive>& v);
+  /// Construct tuple
+  static ArrayLit* constructTuple(const Location& loc, const std::vector<Expression*>& v);
   /// Recompute hash value
   void rehash();
 
@@ -896,6 +899,9 @@ public:
     } else {
       (*_u.v)[i] = e;
     }
+  }
+  bool isTuple() const {
+    return _secondaryId == AL_TUPLE;
   }
 };
 /// Access element \a i
@@ -1716,6 +1722,12 @@ public:
 
   /// Return whether function is defined in the standard library
   bool fromStdLib() const { return _fromStdLib; };
+
+  /// Return whether function is a monomorphised version of another function
+  bool isMonomorphised() const { return _flag2; }
+
+  /// Set whether function is a monomorphised version of another function
+  void isMonomorphised(bool b) { _flag2 = b; }
 
   /// Return variable that captures annotations (or null)
   VarDecl* capturedAnnotationsVar() const {

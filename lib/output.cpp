@@ -675,13 +675,47 @@ void create_dzn_output_item(EnvI& e, bool outputObjective, bool includeOutputIte
             for (int i = 0; i < vd->type().dim(); i++) {
               unsigned int enumId =
                   (vd->type().enumId() != 0 ? _e.getArrayEnum(vd->type().enumId())[i] : 0);
-              if (enumId != 0) {
-                s << _e.getEnum(enumId)->e()->id()->str() << ", ";
-              } else if (al != nullptr) {
-                s << al->min(i) << ".." << al->max(i) << ", ";
-              } else if (vd->ti()->ranges()[i]->domain() != nullptr) {
-                IntSetVal* idxset = eval_intset(_e, vd->ti()->ranges()[i]->domain());
-                s << *idxset << ", ";
+              if (al != nullptr || vd->ti()->ranges()[i]->domain() != nullptr) {
+                if (enumId != 0) {
+                  IntVal idxMin;
+                  IntVal idxMax;
+                
+                  if (al != nullptr) {
+                    idxMin = al->min(i);
+                    idxMax = al->max(i);
+                  } else {
+                    IntSetVal* idxset = eval_intset(_e, vd->ti()->ranges()[i]->domain());
+                    idxMin = idxset->min();
+                    idxMax = idxset->max();
+                  }
+                  
+                  auto* sl = new StringLit(Location().introduce(), s.str());
+                  _outputVars.push_back(sl);
+                  ASTString toString = std::string("_toString_")+_e.getEnum(enumId)->e()->id()->str().c_str();
+
+                  auto* toStringMin = new Call(Location().introduce(), toString,
+                                               {IntLit::a(idxMin), _e.constants.literalFalse, _e.constants.literalFalse});
+                  toStringMin->type(Type::parstring());
+                  FunctionI* toStringMin_fi = _e.model->matchFn(_e, toStringMin, false);
+                  toStringMin->decl(toStringMin_fi);
+                  _outputVars.push_back(toStringMin);
+                  
+                  sl = new StringLit(Location().introduce(), "..");
+                  _outputVars.push_back(sl);
+
+                  auto* toStringMax = new Call(Location().introduce(), toString,
+                                               {IntLit::a(idxMax), _e.constants.literalFalse, _e.constants.literalFalse});
+                  toStringMax->type(Type::parstring());
+                  FunctionI* toStringMax_fi = _e.model->matchFn(_e, toStringMax, false);
+                  toStringMax->decl(toStringMax_fi);
+                  _outputVars.push_back(toStringMax);
+                  s.str(", ");
+                } else if (al != nullptr) {
+                  s << al->min(i) << ".." << al->max(i) << ", ";
+                } else {
+                  IntSetVal* idxset = eval_intset(_e, vd->ti()->ranges()[i]->domain());
+                  s << *idxset << ", ";
+                }
               } else {
                 // Don't know index set range - have to compute in solns2out
                 auto* sl = new StringLit(Location().introduce(), s.str());

@@ -104,6 +104,14 @@ Expression* createArrayAccess(const ParserLocation& loc, Expression* e, std::vec
   return ret;
 }
 
+bool noTuple(ParserLocation& location, void* parm, Expression* e) {
+  if (e != nullptr && e->isa<ArrayLit>() && e->cast<ArrayLit>()->isTuple()) {
+    yyerror(&location, parm, "tuple not allowed here");
+    return false;
+  }
+  return e != nullptr;
+}
+
 }
 
 %}
@@ -117,6 +125,8 @@ Expression* createArrayAccess(const ParserLocation& loc, Expression* e, std::vec
          MiniZinc::Expression* expression;
          std::vector<MiniZinc::Expression*>* expressions1d;
          std::vector<std::vector<MiniZinc::Expression*> >* expressions2d;
+         std::vector<std::pair<std::vector<MiniZinc::Expression*>,std::vector<MiniZinc::Expression*>>>* indexedexpressions2d;
+         std::pair<std::vector<MiniZinc::Expression*>,std::vector<MiniZinc::Expression*>>* indexedexpression2d;
          std::vector<std::vector<std::vector<MiniZinc::Expression*> > >* expressions3d;
          MiniZinc::Generator* generator;
          std::vector<MiniZinc::Generator>* generators;
@@ -264,11 +274,15 @@ Expression* createArrayAccess(const ParserLocation& loc, Expression* e, std::vec
 %type <tiexprs> ti_expr_list ti_expr_list_head
 
 %type <expression> expr expr_atom_head expr_atom_head_nonstring array_access_expr
+%type <expression> comp_expr comp_expr_atom_head comp_expr_atom_head_nonstring
 %type <expression> set_expr string_expr string_quote_rest annotation_expr enum_construct
 %type <expression> simple_array_literal simple_array_literal_2d simple_array_comp if_then_else_expr call_expr quoted_op_call let_expr operation_item_tail set_literal set_comp
 
 %type <expressions1d> expr_list expr_list_head array_access_expr_list array_access_expr_list_head elseif_list let_vardecl_item_list enum_init enum_id_list string_lit_list
+%type <indexedexpression2d> comp_expr_list comp_expr_list_head
 %type <expressions2d> simple_array_literal_2d_list array_access_tail
+%type <indexedexpressions2d> simple_array_literal_2d_indexed_list
+%type <indexedexpression2d> simple_array_literal_2d_indexed_list_row
 %type <expressions3d> simple_array_literal_3d_list
 
 %type <generatorsPointer> comp_tail
@@ -1377,29 +1391,76 @@ id_list_head :
 simple_array_literal : 
       MZN_LEFT_BRACKET MZN_RIGHT_BRACKET
       { $$=new ArrayLit(@$, std::vector<MiniZinc::Expression*>()); }
-    | MZN_LEFT_BRACKET expr_list MZN_RIGHT_BRACKET
-      { if ($2) $$=new ArrayLit(@$, *$2); delete $2; }
+    | MZN_LEFT_BRACKET comp_expr_list MZN_RIGHT_BRACKET
+      { if ($2) {
+          if ($2->first.empty()) {
+            $$=new ArrayLit(@$, $2->second);
+          } else {
+            $$=new Call(@$, "array1d", {new ArrayLit(@$, $2->first), new ArrayLit(@$, $2->second)});
+          }
+          delete $2;
+        }
+      }
 
 simple_array_literal_2d :
       MZN_LEFT_2D_BRACKET MZN_RIGHT_2D_BRACKET
       { $$=new ArrayLit(@$, std::vector<std::vector<Expression*> >()); }
-    | MZN_LEFT_2D_BRACKET simple_array_literal_2d_list MZN_RIGHT_2D_BRACKET
+    | MZN_LEFT_2D_BRACKET simple_array_literal_2d_indexed_list MZN_RIGHT_2D_BRACKET
       { if ($2) {
-          $$=new ArrayLit(@$, *$2);
-          for (unsigned int i=1; i<$2->size(); i++)
-            if ((*$2)[i].size() != (*$2)[i-1].size())
-              yyerror(&@2, parm, "syntax error, all sub-arrays of 2d array literal must have the same length");
-          delete $2;
-        } else {
-          $$ = nullptr;
-        }
-      }
-    | MZN_LEFT_2D_BRACKET simple_array_literal_2d_list '|' MZN_RIGHT_2D_BRACKET
-      { if ($2) {
-          $$=new ArrayLit(@$, *$2);
-          for (unsigned int i=1; i<$2->size(); i++)
-            if ((*$2)[i].size() != (*$2)[i-1].size())
-              yyerror(&@2, parm, "syntax error, all sub-arrays of 2d array literal must have the same length");
+          std::vector<std::vector<Expression*>> v($2->size());
+          std::vector<Expression*> columnHeader;
+          std::vector<Expression*> rowHeader;
+          bool hadHeaderRow = false;
+          for (unsigned int i = 0; i < $2->size(); i++) {
+            if (i == 0 && (*$2)[i].second.empty() && !(*$2)[i].first.empty()) {
+              hadHeaderRow = true;
+              columnHeader = (*$2)[i].first;
+              v.resize(v.size()-1);
+              continue;
+            }
+            if (i > 0 && (*$2)[i].second.size() != (*$2)[i-1].second.size()) {
+              if (i == 1 && hadHeaderRow) {
+                if ((*$2)[i].second.size() != (*$2)[i-1].first.size()) {
+                  yyerror(&@2, parm, "syntax error, sub-array of 2d array literal has different length from index row");
+                }
+              } else {
+                yyerror(&@2, parm, "syntax error, all sub-arrays of 2d array literal must have the same length");
+              }
+            }
+            if (i > hadHeaderRow && (*$2)[i].first.size() != (*$2)[i-1].first.size()) {
+              yyerror(&@2, parm, "syntax error, mixing indexed and non-indexed sub-arrays in 2d array literal");
+            }
+            if (i >= hadHeaderRow && !(*$2)[i].first.empty()) {
+              rowHeader.push_back((*$2)[i].first[0]);
+            }
+            for (unsigned int j = 0; j < (*$2)[i].second.size(); j++) {
+              v[i - hadHeaderRow].push_back((*$2)[i].second[j]);
+            }
+          }
+          if (columnHeader.empty() && rowHeader.empty()) {
+            $$=new ArrayLit(@$, v);
+          } else {
+            std::vector<Expression*> vv;
+            for (auto& row : v) {
+              for (auto* e : row) {
+                vv.push_back(e);
+              }
+            }
+            if (rowHeader.empty()) {
+              auto nRows = vv.size() / columnHeader.size();
+              rowHeader.resize(nRows);
+              for (unsigned int i = 0; i < nRows; i++) {
+                rowHeader[i] = IntLit::a(i+1);
+              }
+            } else if (columnHeader.empty()) {
+              auto nCols = vv.size() / rowHeader.size();
+              columnHeader.resize(nCols);
+              for (unsigned int i = 0; i < nCols; i++) {
+                columnHeader[i] = IntLit::a(i+1);
+              }
+            }
+            $$=new Call(@$, "array2d", {new ArrayLit(@$, rowHeader), new ArrayLit(@$, columnHeader), new ArrayLit(@$, vv)});
+          }
           delete $2;
         } else {
           $$ = nullptr;
@@ -1468,11 +1529,444 @@ simple_array_literal_2d_list :
     | simple_array_literal_2d_list '|' expr_list
       { $$=$1; if ($$ && $3) $$->push_back(*$3); delete $3; }
 
+simple_array_literal_2d_indexed_list :
+      simple_array_literal_2d_indexed_list_row
+      { $$=new std::vector<std::pair<std::vector<MiniZinc::Expression*>,std::vector<MiniZinc::Expression*>>>();
+        if ($1) {
+          if ($1->first.size() > 1 || ($1->first.size() == 1 && $1->second.empty())) {
+            yyerror(&@$,parm,"invalid array literal, mixing indexes and values");
+          }
+          $$->push_back(*$1);
+          delete $1;
+        }
+      }
+    | simple_array_literal_2d_indexed_list_row ':'
+      { $$=new std::vector<std::pair<std::vector<MiniZinc::Expression*>,std::vector<MiniZinc::Expression*>>>();
+        if ($1) {
+          if ($1->second.size() != 1) {
+            yyerror(&@$,parm,"invalid array literal, mixing indexes and values");
+          }
+          $1->first.push_back($1->second.back());
+          $1->second.pop_back();
+          $$->push_back(*$1);
+          delete $1;
+        }
+      }
+    | simple_array_literal_2d_indexed_list '|' simple_array_literal_2d_indexed_list_row
+      { $$=$1;
+        if ($$ && $3) {
+          if ($3->first.size() > 1 || ($3->first.size() == 1 && $3->second.empty())) {
+            yyerror(&@3,parm,"invalid array literal, mixing indexes and values");
+          }
+          $$->push_back(*$3);
+          delete $3;
+        }
+      }
+
+simple_array_literal_2d_indexed_list_row :
+      expr
+      { $$=new std::pair<std::vector<MiniZinc::Expression*>,std::vector<MiniZinc::Expression*>>();
+        $$->second.push_back($1);
+      }
+    | simple_array_literal_2d_indexed_list_row ':' expr
+      { $$=$1;
+        if ($$) {
+          if ($$->second.size() != 1) {
+            yyerror(&@$,parm,"invalid array literal, mixing indexes and values");
+          }
+          $$->first.push_back($$->second.back());
+          $$->second.pop_back();
+          $$->second.push_back($3);
+        }
+      }
+    | simple_array_literal_2d_indexed_list_row ',' expr
+      { $$=$1;
+        if ($$) {
+          if ($$->second.empty()) {
+            yyerror(&@$,parm,"invalid array literal, mixing indexes and values");
+          }
+          $$->second.push_back($3);
+        }
+      }
+    
+    
 simple_array_comp :
-      MZN_LEFT_BRACKET expr '|' comp_tail MZN_RIGHT_BRACKET
-      { if ($4) $$=new Comprehension(@$, $2, *$4, false);
+      MZN_LEFT_BRACKET comp_expr ':' expr '|' comp_tail MZN_RIGHT_BRACKET
+      { if ($2 && $6) {
+          std::vector<Expression*> tv;
+          if (auto* al = Expression::dynamicCast<ArrayLit>($2)) {
+            for (unsigned int i=0; i<al->size(); i++) {
+              tv.push_back((*al)[i]);
+            }
+          } else {
+            tv.push_back($2);
+          }          
+          tv.push_back($4);
+          auto* t = ArrayLit::constructTuple(@$,tv);
+          $$=new Comprehension(@$, t, *$6, false);
+          delete $6;
+        }
+      }
+    | MZN_LEFT_BRACKET comp_expr '|' comp_tail MZN_RIGHT_BRACKET
+      { if ($4 && noTuple(@2,parm,$2)) $$=new Comprehension(@$, $2, *$4, false);
         delete $4;
       }
+
+/***********************************************/
+
+comp_expr :
+      comp_expr_atom_head
+    | comp_expr MZN_COLONCOLON annotation_expr
+      { if (noTuple(@1,parm,$1) && $3) $1->addAnnotation($3); $$=$1; }
+    | comp_expr MZN_EQUIV expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_EQUIV, $3); } }
+    | comp_expr MZN_IMPL expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_IMPL, $3); } }
+    | comp_expr MZN_RIMPL expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_RIMPL, $3); } }
+    | comp_expr MZN_OR expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_OR, $3); } }
+    | comp_expr MZN_XOR expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_XOR, $3); } }
+    | comp_expr MZN_AND expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_AND, $3); } }
+    | comp_expr MZN_LE expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_LE, $3); } }
+    | comp_expr MZN_GR expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_GR, $3); } }
+    | comp_expr MZN_LQ expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_LQ, $3); } }
+    | comp_expr MZN_GQ expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_GQ, $3); } }
+    | comp_expr MZN_EQ expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_EQ, $3); } }
+    | comp_expr MZN_NQ expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_NQ, $3); } }
+    | comp_expr MZN_IN expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_IN, $3); } }
+    | comp_expr MZN_SUBSET expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_SUBSET, $3); } }
+    | comp_expr MZN_SUPERSET expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_SUPERSET, $3); } }
+    | comp_expr MZN_UNION expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_UNION, $3); } }
+    | comp_expr MZN_DIFF expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_DIFF, $3); } }
+    | comp_expr MZN_SYMDIFF expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_SYMDIFF, $3); } }
+    | comp_expr MZN_DOTDOT expr
+      { if (!noTuple(@1,parm,$1) || $1==nullptr || $3==nullptr) {
+          $$ = nullptr;
+        } else if ($1->isa<IntLit>() && $3->isa<IntLit>()) {
+          $$=new SetLit(@$, IntSetVal::a($1->cast<IntLit>()->v(),$3->cast<IntLit>()->v()));
+        } else {
+          $$=new BinOp(@$, $1, BOT_DOTDOT, $3);
+        }
+      }
+    | comp_expr MZN_DOTDOT_LE expr
+      { if (noTuple(@1,parm,$1)) { $$=new Call(@$, ASTString("'..<'"), {$1, $3}); } }
+    | comp_expr MZN_LE_DOTDOT expr
+      { if (noTuple(@1,parm,$1)) { $$=new Call(@$, ASTString("'<..'"), {$1, $3}); } }
+    | comp_expr MZN_LE_DOTDOT_LE expr
+      { if (noTuple(@1,parm,$1)) { $$=new Call(@$, ASTString("'<..<'"), {$1, $3}); } }
+    | MZN_DOTDOT_LE_QUOTED '(' expr ',' expr ')'
+      { $$=new Call(@$, ASTString("'..<'"), {$3, $5}); }
+    | MZN_LE_DOTDOT_QUOTED '(' expr ',' expr ')'
+      { $$=new Call(@$, ASTString("'<..'"), {$3, $5}); }
+    | MZN_LE_DOTDOT_LE_QUOTED '(' expr ',' expr ')'
+      { $$=new Call(@$, ASTString("'<..<'"), {$3, $5}); }
+    | MZN_DOTDOT_QUOTED '(' expr ',' expr ')'
+      { if ($3==nullptr || $5==nullptr) {
+          $$ = nullptr;
+        } else if ($3->isa<IntLit>() && $5->isa<IntLit>()) {
+          $$=new SetLit(@$, IntSetVal::a($3->cast<IntLit>()->v(),$5->cast<IntLit>()->v()));
+        } else {
+          $$=new BinOp(@$, $3, BOT_DOTDOT, $5);
+        }
+      }
+    | comp_expr MZN_INTERSECT expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_INTERSECT, $3); } }
+    | comp_expr MZN_PLUSPLUS expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_PLUSPLUS, $3); } }
+    | comp_expr MZN_PLUS expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_PLUS, $3); } }
+    | comp_expr MZN_MINUS expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_MINUS, $3); } }
+    | comp_expr MZN_MULT expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_MULT, $3); } }
+    | comp_expr MZN_DIV expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_DIV, $3); } }
+    | comp_expr MZN_IDIV expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_IDIV, $3); } }
+    | comp_expr MZN_MOD expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_MOD, $3); } }
+    | comp_expr MZN_POW expr
+      { if (noTuple(@1,parm,$1)) { $$=new BinOp(@$, $1, BOT_POW, $3); } }
+    | comp_expr MZN_WEAK_PLUS expr
+      { if (noTuple(@1,parm,$1)) {
+          vector<Expression*> args;
+          args.push_back($1); args.push_back($3);
+          $$=new Call(@$, ASTString("~+"), args);
+        }
+      }
+    | comp_expr MZN_WEAK_MINUS expr
+      { if (noTuple(@1,parm,$1)) {
+          vector<Expression*> args;
+          args.push_back($1); args.push_back($3);
+          $$=new Call(@$, ASTString("~-"), args);
+        }
+      }
+    | comp_expr MZN_WEAK_MULT expr
+      { if (noTuple(@1,parm,$1)) {
+          vector<Expression*> args;
+          args.push_back($1); args.push_back($3);
+          $$=new Call(@$, ASTString("~*"), args);
+        }
+      }
+    | comp_expr MZN_WEAK_DIV expr
+      { if (noTuple(@1,parm,$1)) {
+          vector<Expression*> args;
+          args.push_back($1); args.push_back($3);
+          $$=new Call(@$, ASTString("~/"), args);
+        }
+      }
+    | comp_expr MZN_WEAK_IDIV expr
+      { if (noTuple(@1,parm,$1)) {
+          vector<Expression*> args;
+          args.push_back($1); args.push_back($3);
+          $$=new Call(@$, ASTString("~div"), args);
+        }
+      }
+    | comp_expr MZN_WEAK_EQ expr
+      { if (noTuple(@1,parm,$1)) {
+          vector<Expression*> args;
+          args.push_back($1); args.push_back($3);
+          $$=new Call(@$, ASTString("~="), args);
+        }
+      }
+    | comp_expr MZN_WEAK_NQ expr
+      { if (noTuple(@1,parm,$1)) {
+          vector<Expression*> args;
+          args.push_back($1); args.push_back($3);
+          $$=new Call(@$, ASTString("~!="), args);
+        }
+      }
+    | comp_expr MZN_DEFAULT expr
+      { if (noTuple(@1,parm,$1)) {
+          vector<Expression*> args;
+          args.push_back($1); args.push_back($3);
+          $$=new Call(@$, ASTString("default"), args);
+        }
+      }
+    | comp_expr MZN_QUOTED_IDENTIFIER expr
+      { if (noTuple(@1,parm,$1)) {
+          vector<Expression*> args;
+          args.push_back($1); args.push_back($3);
+          $$=new Call(@$, $2, args);
+          free($2);
+        }
+      }
+    | MZN_NOT expr %prec MZN_NOT
+      { $$=new UnOp(@$, UOT_NOT, $2); }
+    | MZN_PLUS expr %prec MZN_NOT
+      { if (($2 && $2->isa<IntLit>()) || ($2 && $2->isa<FloatLit>())) {
+          $$ = $2;
+        } else {
+          $$=new UnOp(@$, UOT_PLUS, $2);
+        }
+      }
+    | MZN_MINUS expr %prec MZN_NOT
+      { if ($2 && $2->isa<IntLit>()) {
+          $$ = IntLit::a(-$2->cast<IntLit>()->v());
+        } else if ($2 && $2->isa<FloatLit>()) {
+          $$ = FloatLit::a(-$2->cast<FloatLit>()->v());
+        } else {
+          $$=new UnOp(@$, UOT_MINUS, $2);
+        }
+      }
+
+
+comp_expr_atom_head :
+      comp_expr_atom_head_nonstring
+      { $$=$1; }
+    | string_expr
+      { $$=$1; }
+
+comp_expr_atom_head_nonstring :
+      '(' expr_list ')'
+      { if ($2) {
+          if ($2->size()==1) {
+            $$ = (*$2)[0];
+          } else {
+            $$ = ArrayLit::constructTuple(@$, *$2);
+          }
+        }
+        delete $2;
+      }
+    | '(' expr_list ')' array_access_tail
+      { if ($2 && $2->size() != 1) {
+          delete $2;
+          yyerror(&@2, parm, "tuple not supported");
+        } else {
+          if ($2 && $4) $$=createArrayAccess(@$, (*$2)[0], *$4); delete $4; delete $2;
+        }
+      }
+    | '(' expr_list ')' MZN_POW_MINUS1
+      { if ($2 && $2->size() != 1) {
+          delete $2;
+          yyerror(&@2, parm, "tuple not supported");
+        } else {
+          $$=new BinOp(@$, (*$2)[0], BOT_POW, IntLit::a(-1));
+          delete $2;
+        }
+      }
+    | '(' expr_list ')' array_access_tail MZN_POW_MINUS1
+      { if ($2 && $2->size() != 1) {
+          delete $2;
+          yyerror(&@2, parm, "tuple not supported");
+        } else {
+          if ($2 && $4) $$=new BinOp(@$,createArrayAccess(@$, (*$2)[0], *$4), BOT_POW, IntLit::a(-1));
+          delete $4;
+          delete $2;
+        }
+      }
+    | MZN_IDENTIFIER
+      { $$=new Id(@$, $1, nullptr); free($1); }
+    | MZN_IDENTIFIER array_access_tail
+      { if ($2) $$=createArrayAccess(@$, new Id(@1,$1,nullptr), *$2);
+        free($1); delete $2; }
+    | MZN_IDENTIFIER MZN_POW_MINUS1
+      { $$=new BinOp(@$,new Id(@$, $1, nullptr), BOT_POW, IntLit::a(-1)); free($1); }
+    | MZN_IDENTIFIER array_access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, new Id(@1,$1,nullptr), *$2), BOT_POW, IntLit::a(-1));
+        free($1); delete $2; }
+    | MZN_UNDERSCORE
+      { $$=new AnonVar(@$); }
+    | MZN_UNDERSCORE array_access_tail
+      { if ($2) $$=createArrayAccess(@$, new AnonVar(@$), *$2);
+        delete $2; }
+    | MZN_UNDERSCORE MZN_POW_MINUS1
+      { $$=new BinOp(@$,new AnonVar(@$), BOT_POW, IntLit::a(-1)); }
+    | MZN_UNDERSCORE array_access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, new AnonVar(@$), *$2), BOT_POW, IntLit::a(-1));
+        delete $2; }
+    | MZN_BOOL_LITERAL
+      { $$=Constants::constants().boollit(($1!=0)); }
+    | MZN_BOOL_LITERAL MZN_POW_MINUS1
+      { $$=new BinOp(@$,Constants::constants().boollit(($1!=0)), BOT_POW, IntLit::a(-1)); }
+    | MZN_INTEGER_LITERAL
+      { $$=IntLit::a($1); }
+    | MZN_INTEGER_LITERAL MZN_POW_MINUS1
+      { $$=new BinOp(@$,IntLit::a($1), BOT_POW, IntLit::a(-1)); }
+    | MZN_INFINITY
+      { $$=IntLit::a(IntVal::infinity()); }
+    | MZN_INFINITY MZN_POW_MINUS1
+      { $$=new BinOp(@$,IntLit::a(IntVal::infinity()), BOT_POW, IntLit::a(-1)); }
+    | MZN_FLOAT_LITERAL
+      { $$=FloatLit::a($1); }
+    | MZN_FLOAT_LITERAL MZN_POW_MINUS1
+      { $$=new BinOp(@$,FloatLit::a($1), BOT_POW, IntLit::a(-1)); }
+    | MZN_ABSENT
+      { $$=Constants::constants().absent; }
+    | MZN_ABSENT MZN_POW_MINUS1
+      { $$=Constants::constants().absent; }
+    | set_literal
+    | set_literal array_access_tail
+      { if ($2) $$=createArrayAccess(@$, $1, *$2);
+        delete $2; }
+    | set_literal MZN_POW_MINUS1
+      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+    | set_literal array_access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+        delete $2; }
+    | set_comp
+    | set_comp array_access_tail
+      { if ($2) $$=createArrayAccess(@$, $1, *$2);
+        delete $2; }
+    | set_comp MZN_POW_MINUS1
+      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+    | set_comp array_access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+        delete $2; }
+    | simple_array_literal
+    | simple_array_literal array_access_tail
+      { if ($2) $$=createArrayAccess(@$, $1, *$2);
+        delete $2; }
+    | simple_array_literal MZN_POW_MINUS1
+      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+    | simple_array_literal array_access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+        delete $2; }
+    | simple_array_literal_2d
+    | simple_array_literal_2d array_access_tail
+      { if ($2) $$=createArrayAccess(@$, $1, *$2);
+        delete $2; }
+    | simple_array_literal_2d MZN_POW_MINUS1
+      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+    | simple_array_literal_2d array_access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+        delete $2; }
+    | simple_array_comp
+    | simple_array_comp array_access_tail
+      { if ($2) $$=createArrayAccess(@$, $1, *$2);
+        delete $2; }
+    | simple_array_comp MZN_POW_MINUS1
+      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+    | simple_array_comp array_access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+        delete $2; }
+    | if_then_else_expr
+    | if_then_else_expr array_access_tail
+      { if ($2) $$=createArrayAccess(@$, $1, *$2);
+        delete $2; }
+    | if_then_else_expr MZN_POW_MINUS1
+      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+    | if_then_else_expr array_access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+        delete $2; }
+    | let_expr
+    | call_expr
+    | call_expr array_access_tail
+      { if ($2) $$=createArrayAccess(@$, $1, *$2);
+        delete $2; }
+    | call_expr MZN_POW_MINUS1
+    | call_expr array_access_tail MZN_POW_MINUS1
+      { if ($2) $$=createArrayAccess(@$, $1, *$2);
+        delete $2; }
+
+comp_expr_list : comp_expr_list_head comma_or_none
+
+/// TODO: push index into first vector, make sure either all elements have indices or none
+comp_expr_list_head :
+      comp_expr
+      { $$=new std::pair<std::vector<MiniZinc::Expression*>,std::vector<MiniZinc::Expression*>>;
+        $$->second.push_back($1); }
+    | comp_expr ':' expr
+      { $$=new std::pair<std::vector<MiniZinc::Expression*>,std::vector<MiniZinc::Expression*>>;
+        $$->first.push_back($1);
+        $$->second.push_back($3); }
+    | comp_expr_list_head ',' expr
+      { $$=$1;
+        if ($$ && $3) {
+          if (!$$->first.empty()) {
+            yyerror(&@$,parm,"invalid array literal, mixing indexed and non-indexed values");
+          }
+          $$->second.push_back($3);
+        }
+      }
+    | comp_expr_list_head ',' expr ':' expr
+      { $$=$1;
+        if ($$ && $3) {
+          if ($$->first.empty()) {
+            yyerror(&@$,parm,"invalid array literal, mixing indexed and non-indexed values");
+          }
+          $$->first.push_back($3);
+          $$->second.push_back($5);
+        }
+      }
+
+
+/***********************************************/
 
 if_then_else_expr :
       MZN_IF expr MZN_THEN expr MZN_ENDIF
