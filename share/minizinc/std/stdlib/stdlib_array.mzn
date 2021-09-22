@@ -4,6 +4,9 @@
   These functions implement the basic operations on arrays.
 */
 
+include "fzn_array_int_union.mzn";
+include "fzn_array_opt_int_union.mzn";
+
 /** @group stdlib.array Return the concatenation of arrays \a x and \a y */
 function array[int] of $T: '++'(array[int] of $T: x, array[int] of $T: y);
 /** @group stdlib.array Return the concatenation of arrays \a x and \a y */
@@ -416,24 +419,24 @@ predicate has_element($T: e, array[$$E] of var opt $T: x) = exists (i in index_s
 
 /** @group stdlib.array Return the set containing the elements of \a x */
 function var set of $$T: array2set(array[int] of var $$T: x) ::promise_total =
-    let {
+  if length(x) = 0 then {}
+  else let {
       set of int: D = dom_array(x);
       constraint assert(min(D) > -infinity /\ max(D) < infinity, "array2set needs finite bounds on argument array");
-      var set of D: y = array_union([
-        let { var set of dom(x[i]): s;
-        constraint x[i] in s /\ card(s)=1;
-        } in s | i in index_set(x)]);
-    } in y;
+      var set of D: y;
+      constraint fzn_array_int_union(x, y);
+  } in y
+  endif;
 
 function var set of $$T: array2set(array[int] of var opt $$T: x) ::promise_total =
-    let {
+  if length(x) = 0 then {}
+  else let {
       set of int: D = dom_array(x);
       constraint assert(min(D) > -infinity /\ max(D) < infinity, "array2set needs finite bounds on argument array");
-      var set of D: y = array_union([
-        let { var set of dom(x[i]): s;
-        constraint if occurs(x[i]) then deopt(x[i]) in s /\ card(s)=1 else card(s)=0 endif;
-        } in s | i in index_set(x)]);
-    } in y;
+      var set of D: y;
+      constraint fzn_array_opt_int_union(x, y);
+  } in y
+  endif;
 
 /** @group stdlib.array Return the set containing the elements of \a x */
 function set of $$T: array2set(array[int] of $$T: x) =

@@ -4,6 +4,9 @@
   These functions implement the basic operations on sets.
 */
 
+include "fzn_array_set_union.mzn";
+include "fzn_array_set_intersect.mzn";
+
 /** @group stdlib.set Test if \a x is an element of the set \a y */
 function     bool: 'in'(    int: x,     set of int: y);
 /** @group stdlib.set \a x is an element of the set \a y */
@@ -70,30 +73,26 @@ function var set of int: array_union(array[int] of var set of int: x) ::promise_
     elseif length(x)=1 then x[min(index_set(x))]
     else
       let {
-        int: l=min(index_set(x));
-        int: u=max(index_set(x));
-        array[l..u-1] of var set of ub_array(x): y;
-        constraint y[l]=x[l] union x[l+1];
-        constraint forall (i in l+2..u) (y[i-1]=y[i-2] union x[i]);
-      } in y[u-1]
+        var set of ub_array(x): y;
+        constraint fzn_array_set_union(x,y);
+      } in y
     endif;
-
 
 /** @group stdlib.set Return the intersection of the sets in array \a x */
 function     set of $U:  array_intersect(array[$T] of     set of $U: x);
 
-/** @group stdlib.set Return the intersection of the sets in array \a x */
-function var set of int: array_intersect(array[int] of var set of int: x) ::promise_total =
-    if length(x)=0 then assert(false,"can't be!",-infinity..infinity)
+/** @group stdlib.set Return the intersection of the sets in array \a x. Undefined for empty \a x. */
+function var set of int: array_intersect(array[int] of var set of int: x) =
+    let {
+      constraint length(x) > 0
+    } in 
+    if length(x)=0 then {}
     elseif length(x)=1 then x[min(index_set(x))]
     else
       let {
-        int: l=min(index_set(x));
-        int: u=max(index_set(x));
-        array[l..u-1] of var set of ub_array(x): y;
-        constraint y[l]=x[l] intersect x[l+1];
-        constraint forall (i in l+2..u) (y[i-1]=y[i-2] intersect x[i]);
-      } in y[u-1]
+        var set of ub_array(x): y;
+        constraint fzn_array_set_intersect(x,y);
+      } in y
     endif;
 
 /** @group stdlib.set Return the minimum of the set \a s */

@@ -2241,7 +2241,7 @@ IntSetVal* b_array_intersect(EnvI& env, Call* call) {
       return IntSetVal::a();
     }
   } else {
-    return IntSetVal::a();
+    throw ResultUndefinedError(env, call->loc(), "intersection of empty array is undefined");
   }
 }
 
