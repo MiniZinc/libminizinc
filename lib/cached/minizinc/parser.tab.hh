@@ -211,6 +211,8 @@ union YYSTYPE
          MiniZinc::Expression* expression;
          std::vector<MiniZinc::Expression*>* expressions1d;
          std::vector<std::vector<MiniZinc::Expression*> >* expressions2d;
+         std::vector<std::pair<std::vector<MiniZinc::Expression*>,std::vector<MiniZinc::Expression*>>>* indexedexpressions2d;
+         std::pair<std::vector<MiniZinc::Expression*>,std::vector<MiniZinc::Expression*>>* indexedexpression2d;
          std::vector<std::vector<std::vector<MiniZinc::Expression*> > >* expressions3d;
          MiniZinc::Generator* generator;
          std::vector<MiniZinc::Generator>* generators;
