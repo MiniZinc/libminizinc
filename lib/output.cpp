@@ -679,7 +679,7 @@ void create_dzn_output_item(EnvI& e, bool outputObjective, bool includeOutputIte
                 if (enumId != 0) {
                   IntVal idxMin;
                   IntVal idxMax;
-                
+
                   if (al != nullptr) {
                     idxMin = al->min(i);
                     idxMax = al->max(i);
@@ -688,23 +688,26 @@ void create_dzn_output_item(EnvI& e, bool outputObjective, bool includeOutputIte
                     idxMin = idxset->min();
                     idxMax = idxset->max();
                   }
-                  
+
                   auto* sl = new StringLit(Location().introduce(), s.str());
                   _outputVars.push_back(sl);
-                  ASTString toString = std::string("_toString_")+_e.getEnum(enumId)->e()->id()->str().c_str();
+                  ASTString toString =
+                      std::string("_toString_") + _e.getEnum(enumId)->e()->id()->str().c_str();
 
-                  auto* toStringMin = new Call(Location().introduce(), toString,
-                                               {IntLit::a(idxMin), _e.constants.literalFalse, _e.constants.literalFalse});
+                  auto* toStringMin = new Call(
+                      Location().introduce(), toString,
+                      {IntLit::a(idxMin), _e.constants.literalFalse, _e.constants.literalFalse});
                   toStringMin->type(Type::parstring());
                   FunctionI* toStringMin_fi = _e.model->matchFn(_e, toStringMin, false);
                   toStringMin->decl(toStringMin_fi);
                   _outputVars.push_back(toStringMin);
-                  
+
                   sl = new StringLit(Location().introduce(), "..");
                   _outputVars.push_back(sl);
 
-                  auto* toStringMax = new Call(Location().introduce(), toString,
-                                               {IntLit::a(idxMax), _e.constants.literalFalse, _e.constants.literalFalse});
+                  auto* toStringMax = new Call(
+                      Location().introduce(), toString,
+                      {IntLit::a(idxMax), _e.constants.literalFalse, _e.constants.literalFalse});
                   toStringMax->type(Type::parstring());
                   FunctionI* toStringMax_fi = _e.model->matchFn(_e, toStringMax, false);
                   toStringMax->decl(toStringMax_fi);

@@ -497,6 +497,7 @@ std::string demonomorphise(const ASTString& as) {
 
 class Demonomorphiser : public EVisitor {
 public:
+  // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
   void vCall(Call* c) {
     if (c->decl() != nullptr && c->decl()->isMonomorphised() && c->decl()->fromStdLib()) {
       c->id(ASTString(demonomorphise(c->id())));
@@ -525,11 +526,9 @@ public:
       top_down(dm, fi->e());
     }
   }
-
 };
 
-
-}
+}  // namespace
 
 void type_demonomorphise_library(Env& e, Model* model) {
   ItemDemonomorphiser idm;

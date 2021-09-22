@@ -1850,13 +1850,13 @@ public:
   /// Visit array comprehension
   void vComprehension(Comprehension* c) {
     Expression* c_e = c->e();
-    ArrayLit* indexTuple = Expression::dynamicCast<ArrayLit>(c->e());
+    auto* indexTuple = Expression::dynamicCast<ArrayLit>(c->e());
     if (indexTuple != nullptr && !indexTuple->isTuple()) {
       indexTuple = nullptr;
     }
     if (c_e->isa<ArrayLit>() && c_e->cast<ArrayLit>()->isTuple()) {
       auto* al = c_e->cast<ArrayLit>();
-      c_e = (*al)[al->size()-1];
+      c_e = (*al)[al->size() - 1];
     }
     Type tt = c_e->type();
     typedef std::unordered_map<VarDecl*, std::pair<int, int>> genMap_t;
@@ -2013,7 +2013,7 @@ public:
       std::vector<unsigned int> enumIds;
       bool hadEnums = false;
       if (indexTuple != nullptr) {
-        tt.dim(indexTuple->size() - 1);
+        tt.dim(static_cast<int>(indexTuple->size()) - 1);
         for (unsigned int i = 0; i < indexTuple->size() - 1; i++) {
           if (!(*indexTuple)[i]->type().isPar()) {
             throw TypeError(_env, (*indexTuple)[i]->loc(), "index is not par");

@@ -824,6 +824,7 @@ protected:
   void compress(const std::vector<Expression*>& v, const std::vector<int>& dims);
   /// Whether this is an array or a tuple
   enum ArrayLitType { AL_ARRAY, AL_TUPLE };
+
 public:
   /// Index conversion from slice to original
   unsigned int origIdx(unsigned int i) const;
@@ -900,9 +901,7 @@ public:
       (*_u.v)[i] = e;
     }
   }
-  bool isTuple() const {
-    return _secondaryId == AL_TUPLE;
-  }
+  bool isTuple() const { return static_cast<ArrayLitType>(_secondaryId) == AL_TUPLE; }
 };
 /// Access element \a i
 inline Expression* ArrayLit::operator[](unsigned int i) const {

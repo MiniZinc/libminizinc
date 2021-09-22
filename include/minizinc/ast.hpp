@@ -398,7 +398,7 @@ inline ArrayLit::ArrayLit(const Location& loc, const std::vector<std::vector<Exp
 }
 
 inline ArrayLit* ArrayLit::constructTuple(const Location& loc, const std::vector<Expression*>& v) {
-  ArrayLit* t = new ArrayLit(loc, v);
+  auto* t = new ArrayLit(loc, v);
   t->_secondaryId = AL_TUPLE;
   return t;
 }

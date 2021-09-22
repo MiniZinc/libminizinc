@@ -142,7 +142,7 @@ template <class T>
 class EvaluatedComp {
 public:
   std::vector<T> a;
-  std::vector<std::pair<int,int>> dims;
+  std::vector<std::pair<int, int>> dims;
 };
 
 template <class T>
@@ -150,12 +150,12 @@ class EvaluatedCompTmp {
 public:
   std::vector<T> a;
   std::vector<int> indexes;
-  std::vector<IntVal> idx_min;
-  std::vector<IntVal> idx_max;
-  EvaluatedCompTmp(unsigned int dim) : idx_min(dim), idx_max(dim) {
+  std::vector<IntVal> idxMin;
+  std::vector<IntVal> idxMax;
+  EvaluatedCompTmp(unsigned int dim) : idxMin(dim), idxMax(dim) {
     for (unsigned int i = 0; i < dim; i++) {
-      idx_min[i] = IntVal::infinity();
-      idx_max[i] = -IntVal::infinity();
+      idxMin[i] = IntVal::infinity();
+      idxMax[i] = -IntVal::infinity();
     }
   }
 };
@@ -203,20 +203,20 @@ void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, I
     if (where) {
       if (gen == e->numberOfGenerators() - 1) {
         if (isIndexed) {
-          ArrayLit* t = e->e()->cast<ArrayLit>();
+          auto* t = e->e()->cast<ArrayLit>();
           for (unsigned int i = 0; i < t->size() - 1; i++) {
             IntVal curIdx = eval_int(env, (*t)[i]);
             a.indexes.push_back(curIdx.toInt());
-            a.idx_min[i] = std::min(a.idx_min[i], curIdx);
-            a.idx_max[i] = std::max(a.idx_max[i], curIdx);
+            a.idxMin[i] = std::min(a.idxMin[i], curIdx);
+            a.idxMax[i] = std::max(a.idxMax[i], curIdx);
           }
-          a.a.push_back(eval.e(env, (*t)[t->size()-1]));
+          a.a.push_back(eval.e(env, (*t)[t->size() - 1]));
         } else {
           a.a.push_back(eval.e(env, e->e()));
         }
       } else {
         if (e->in(gen + 1) == nullptr) {
-          eval_comp_array<Eval,false,isIndexed>(env, eval, e, gen + 1, 0, 0, e->in(gen + 1), a);
+          eval_comp_array<Eval, false, isIndexed>(env, eval, e, gen + 1, 0, 0, e->in(gen + 1), a);
         } else {
           KeepAlive nextin;
           KeepAlive gen_in = e->in(gen + 1);
@@ -231,18 +231,18 @@ void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, I
             nextin = eval_array_lit(env, gen_in());
           }
           if (gen_in()->type().dim() == 0) {
-            eval_comp_set<Eval,isIndexed>(env, eval, e, gen + 1, 0, nextin, a);
+            eval_comp_set<Eval, isIndexed>(env, eval, e, gen + 1, 0, nextin, a);
           } else {
-            eval_comp_array<Eval,isIndexed>(env, eval, e, gen + 1, 0, nextin, a);
+            eval_comp_array<Eval, isIndexed>(env, eval, e, gen + 1, 0, nextin, a);
           }
         }
       }
     }
   } else {
     if (isSet) {
-      eval_comp_set<Eval,isIndexed>(env, eval, e, gen, id + 1, in, a);
+      eval_comp_set<Eval, isIndexed>(env, eval, e, gen, id + 1, in, a);
     } else {
-      eval_comp_array<Eval,isIndexed>(env, eval, e, gen, id + 1, in, a);
+      eval_comp_array<Eval, isIndexed>(env, eval, e, gen, id + 1, in, a);
     }
   }
   GC::untrail();
@@ -267,7 +267,7 @@ void eval_comp_set(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, Kee
   IntSetRanges rsi(isv);
   Ranges::ToValues<IntSetRanges> rsv(rsi);
   for (; rsv(); ++rsv) {
-    eval_comp_array<Eval,true,isIndexed>(env, eval, e, gen, id, rsv.val(), in, a);
+    eval_comp_array<Eval, true, isIndexed>(env, eval, e, gen, id, rsv.val(), in, a);
   }
 }
 
@@ -284,7 +284,7 @@ void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, K
                      EvaluatedCompTmp<typename Eval::ArrayVal>& a) {
   auto* al = in()->cast<ArrayLit>();
   for (unsigned int i = 0; i < al->size(); i++) {
-    eval_comp_array<Eval,false,isIndexed>(env, eval, e, gen, id, i, in, a);
+    eval_comp_array<Eval, false, isIndexed>(env, eval, e, gen, id, i, in, a);
   }
 }
 
@@ -298,16 +298,16 @@ template <class Eval>
 EvaluatedComp<typename Eval::ArrayVal> eval_comp(EnvI& env, Eval& eval, Comprehension* e) {
   EvaluatedComp<typename Eval::ArrayVal> a;
   bool isIndexed = e->e()->isa<ArrayLit>() && e->e()->cast<ArrayLit>()->isTuple();
-  int dim = 0;
+  unsigned int dim = 0;
   if (isIndexed) {
     dim = e->e()->cast<ArrayLit>()->size() - 1;
   }
   EvaluatedCompTmp<typename Eval::ArrayVal> a_tmp(dim);
   if (e->in(0) == nullptr) {
     if (isIndexed) {
-      eval_comp_array<Eval,false,true>(env, eval, e, 0, 0, 0, e->in(0), a_tmp);
+      eval_comp_array<Eval, false, true>(env, eval, e, 0, 0, 0, e->in(0), a_tmp);
     } else {
-      eval_comp_array<Eval,false,false>(env, eval, e, 0, 0, 0, e->in(0), a_tmp);
+      eval_comp_array<Eval, false, false>(env, eval, e, 0, 0, 0, e->in(0), a_tmp);
     }
   } else {
     KeepAlive in;
@@ -329,34 +329,34 @@ EvaluatedComp<typename Eval::ArrayVal> eval_comp(EnvI& env, Eval& eval, Comprehe
     }
     if (e->in(0)->type().dim() == 0) {
       if (isIndexed) {
-        eval_comp_set<Eval,true>(env, eval, e, 0, 0, in, a_tmp);
+        eval_comp_set<Eval, true>(env, eval, e, 0, 0, in, a_tmp);
       } else {
-        eval_comp_set<Eval,false>(env, eval, e, 0, 0, in, a_tmp);
+        eval_comp_set<Eval, false>(env, eval, e, 0, 0, in, a_tmp);
       }
     } else {
       if (isIndexed) {
-        eval_comp_array<Eval,true>(env, eval, e, 0, 0, in, a_tmp);
+        eval_comp_array<Eval, true>(env, eval, e, 0, 0, in, a_tmp);
       } else {
-        eval_comp_array<Eval,false>(env, eval, e, 0, 0, in, a_tmp);
+        eval_comp_array<Eval, false>(env, eval, e, 0, 0, in, a_tmp);
       }
     }
   }
-  
+
   if (isIndexed) {
     IntVal size = 1;
-    std::vector<int> dimSize(a_tmp.idx_min.size());
-    for (unsigned int i = a_tmp.idx_min.size(); (i--) != 0U; ) {
-      if (!a_tmp.idx_min[i].isFinite() || !a_tmp.idx_max[i].isFinite()) {
+    std::vector<int> dimSize(a_tmp.idxMin.size());
+    for (unsigned int i = a_tmp.idxMin.size(); (i--) != 0U;) {
+      if (!a_tmp.idxMin[i].isFinite() || !a_tmp.idxMax[i].isFinite()) {
         throw EvalError(env, e->loc(), "indexes don't match size of generated array");
       }
-      if (a_tmp.idx_min[i] > a_tmp.idx_max[i]) {
+      if (a_tmp.idxMin[i] > a_tmp.idxMax[i]) {
         size = 0;
         break;
       }
-      IntVal s = (a_tmp.idx_max[i] - a_tmp.idx_min[i] + 1);
-      dimSize[i] = size.toInt(); // before multiplication!
+      IntVal s = (a_tmp.idxMax[i] - a_tmp.idxMin[i] + 1);
+      dimSize[i] = size.toInt();  // before multiplication!
       size *= s;
-      a.dims.emplace_back(a_tmp.idx_min[i].toInt(), a_tmp.idx_max[i].toInt());
+      a.dims.emplace_back(a_tmp.idxMin[i].toInt(), a_tmp.idxMax[i].toInt());
     }
     if (size != a_tmp.a.size()) {
       throw EvalError(env, e->loc(), "indexes don't match size of generated array");
@@ -366,10 +366,10 @@ EvaluatedComp<typename Eval::ArrayVal> eval_comp(EnvI& env, Eval& eval, Comprehe
     unsigned int j = 0;
     for (unsigned int i = 0; i < a_tmp.a.size(); i++) {
       int idx = 0;
-      for (unsigned int k = 0; k < a_tmp.idx_min.size(); k++) {
-        IntVal curIdx = a_tmp.indexes[j++]-a_tmp.idx_min[k];
+      for (unsigned int k = 0; k < a_tmp.idxMin.size(); k++) {
+        IntVal curIdx = a_tmp.indexes[j++] - a_tmp.idxMin[k];
         curIdx *= dimSize[k];
-        idx += curIdx.toInt();
+        idx += static_cast<int>(curIdx.toInt());
       }
       if (seen[idx]) {
         throw EvalError(env, e->loc(), "comprehension generates multiple entries for same index");
