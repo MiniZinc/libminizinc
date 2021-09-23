@@ -2957,6 +2957,11 @@ Expression* b_show_checker_output(EnvI& env, Call* call) {
   return new StringLit(call->loc().introduce(), output);
 }
 
+Expression* b_check_debug_mode(EnvI& env, Call* call) {
+  GCLock lock;
+  return env.fopts.debug ? env.constants.literalTrue : env.constants.literalFalse;
+}
+
 void register_builtins(Env& e) {
   EnvI& env = e.envi();
   Model* m = env.model;
@@ -3926,6 +3931,7 @@ void register_builtins(Env& e) {
     rb(env, m, ASTString("fzn_regular"), t, b_regular_from_string, true);
   }
   { rb(env, m, ASTString("showCheckerOutput"), {}, b_show_checker_output); }
+  { rb(env, m, ASTString("mzn_internal_check_debug_mode"), {}, b_check_debug_mode); }
 }
 
 }  // namespace MiniZinc

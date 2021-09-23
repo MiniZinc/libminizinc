@@ -101,3 +101,8 @@ annotation expression_name_dbg(string: s) = expression_name(s);
 /** @group stdlib.debug Abort evaluation and print message \a msg. */
 function bool: abort(string: msg);
 
+/** @group stdlib.debug Set to true iff ``--debug`` flag is set. */
+bool: debug_mode = mzn_internal_check_debug_mode();
+
+/** @group stdlib.debug Returns true iff ``--debug`` flag is set. */
+test mzn_internal_check_debug_mode();
