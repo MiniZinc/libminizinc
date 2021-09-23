@@ -2050,16 +2050,11 @@ public:
   }
   /// Visit if-then-else
   void vITE(ITE* ite) {
-    bool mustBeBool = false;
-    if (ite->elseExpr() == nullptr) {
-      // this is an "if <cond> then <expr> endif" so the <expr> must be bool
-      ite->elseExpr(_env.constants.literalTrue);
-      mustBeBool = true;
-    }
-    Type tret = ite->elseExpr()->type();
+    // Set return type to else type or, in case of no else, unknown
+    Type tret = ite->elseExpr() != nullptr ? ite->elseExpr()->type() : Type();
     std::vector<AnonVar*> anons;
     bool allpar = !(tret.isvar());
-    if (tret.isunknown()) {
+    if (ite->elseExpr() != nullptr && tret.isunknown()) {
       if (auto* av = ite->elseExpr()->dynamicCast<AnonVar>()) {
         allpar = false;
         anons.push_back(av);
@@ -2091,15 +2086,11 @@ public:
                           "cannot infer type of expression in `then' branch of conditional");
         }
       } else {
-        if (tret.isbot() || tret.isunknown()) {
+        if (tret.isbot()) {
           tret.bt(ethen->type().bt());
-        }
-        if (mustBeBool &&
-            (ethen->type().bt() != Type::BT_BOOL || ethen->type().dim() > 0 ||
-             ethen->type().st() != Type::ST_PLAIN || ethen->type().ot() != Type::OT_PRESENT)) {
-          throw TypeError(_env, ite->loc(),
-                          std::string("conditional without `else' branch must have bool type, ") +
-                              "but `then' branch has type `" + ethen->type().toString(_env) + "'");
+        } else if (tret.isunknown()) {
+          tret.bt(ethen->type().bt());
+          tret.dim(ethen->type().dim());
         }
         if ((!ethen->type().isbot() && !Type::btSubtype(ethen->type(), tret, true) &&
              !Type::btSubtype(tret, ethen->type(), true)) ||
@@ -2124,6 +2115,28 @@ public:
         if (ethen->type().cv()) {
           tret.cv(true);
         }
+      }
+    }
+    if (ite->elseExpr() == nullptr) {
+      // this is an "if <cond> then <expr> endif" so the <expr> must be bool
+      if (tret.isbool()) {
+        ite->elseExpr(_env.constants.literalTrue);
+      } else if (tret.isstring()) {
+        GCLock lock;
+        ite->elseExpr(new StringLit(ite->loc().introduce(), ""));
+      } else if (tret.isAnn()) {
+        ite->elseExpr(_env.constants.ann.empty_annotation);
+      } else if (tret.dim() > 0) {
+        GCLock lock;
+        ite->elseExpr(
+            new ArrayLit(ite->loc().introduce(), std::vector<std::vector<Expression*>>()));
+        ite->elseExpr()->type(tret);
+      } else {
+        throw TypeError(
+            _env, ite->loc(),
+            std::string(
+                "conditional without `else' branch must have bool, string, ann, or array type, ") +
+                "but `then' branch has type `" + tret.toString(_env) + "'");
       }
     }
     Type tret_var(tret);
