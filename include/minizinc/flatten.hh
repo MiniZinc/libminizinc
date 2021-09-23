@@ -50,6 +50,8 @@ struct FlatteningOptions {
   bool hasChecker;
   /// Output detailed timing information for flattening
   bool detailedTiming;
+  /// Evaluate _dbg debugging intrinsics
+  bool debug;
   /// Random seed for the random builtin functions
   long unsigned int randomSeed;
   /// Default constructor
@@ -65,6 +67,7 @@ struct FlatteningOptions {
         outputObjective(false),
         outputOutputItem(false),
         detailedTiming(false),
+        debug(false),
         randomSeed(time(nullptr)) {}
 };
 

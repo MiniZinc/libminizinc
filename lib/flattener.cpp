@@ -54,6 +54,7 @@ void Flattener::printHelp(ostream& os) const {
      << std::endl
      << "  --model-interface-only\n    Only extract parameters and output variables." << std::endl
      << "  --model-types-only\n    Only output variable (enum) type information." << std::endl
+     << "  --debug\n    Evaluate debugging intrinsics ending with _dbg." << std::endl
      << "  --no-optimize\n    Do not optimize the FlatZinc" << std::endl
      << "  --no-chain-compression\n    Do not simplify chains of implication constraints."
      << std::endl
@@ -174,6 +175,8 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv,
     _flags.verbose = true;
   } else if (cop.getOption("--newfzn")) {
     _flags.newfzn = true;
+  } else if (cop.getOption("--debug")) {
+    _fopts.debug = true;
   } else if (cop.getOption("--no-optimize --no-optimise")) {
     _flags.optimize = false;
   } else if (cop.getOption("--no-chain-compression")) {

@@ -1811,6 +1811,7 @@ public:
     ASTString int2float;
     ASTString bool2float;
     ASTString assert;
+    ASTString assert_dbg;  // NOLINT(readability-identifier-naming)
     ASTString deopt;
     ASTString absent;
     ASTString occurs;
@@ -1829,6 +1830,7 @@ public:
     ASTString mzn_output_section;                // NOLINT(readability-identifier-naming)
     ASTString output_to_section;                 // NOLINT(readability-identifier-naming)
     ASTString trace;
+    ASTString trace_dbg;  // NOLINT(readability-identifier-naming)
 
     ASTString array2d;
     ASTString array3d;
@@ -1982,6 +1984,7 @@ public:
     Id* array_check_form;                    // NOLINT(readability-identifier-naming)
     Id* annotated_expression;                // NOLINT(readability-identifier-naming)
     ASTString mzn_add_annotated_expression;  // NOLINT(readability-identifier-naming)
+    ASTString expression_name_dbg;           // NOLINT(readability-identifier-naming)
   } ann;
 
   /// Command line options

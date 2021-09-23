@@ -1512,6 +1512,7 @@ Constants::Constants() {
   ids.int2float = addString("int2float");
   ids.bool2float = addString("bool2float");
   ids.assert = addString("assert");
+  ids.assert_dbg = addString("assert_dbg");
 
   ids.deopt = addString("deopt");
   ids.absent = addString("absent");
@@ -1531,6 +1532,7 @@ Constants::Constants() {
   ids.output_to_section = addString("output_to_section");
   ids.mzn_default = addString("default");
   ids.trace = addString("trace");
+  ids.trace_dbg = addString("trace_dbg");
 
   ids.array2d = addString("array2d");
   ids.array3d = addString("array3d");
@@ -1695,6 +1697,7 @@ Constants::Constants() {
   ann.annotated_expression = addId("annotated_expression");
   ann.annotated_expression->type(Type::ann());
   ann.mzn_add_annotated_expression = addString("mzn_add_annotated_expression");
+  ann.expression_name_dbg = addString("expression_name_dbg");
 
   cli.cmdlineData_short_str = addString("-D");
   cli.cmdlineData_str = addString("--cmdline-data");

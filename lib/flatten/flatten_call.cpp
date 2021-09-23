@@ -382,13 +382,23 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
       nctx.neg = true;
       cid = env.constants.ids.forall;
     }
+  } else if (!env.fopts.debug &&
+             (cid == env.constants.ids.assert_dbg || cid == env.constants.ids.trace_dbg ||
+              cid == env.constants.ann.expression_name_dbg)) {
+    if (c->type().isAnn()) {
+      return flat_exp(env, ctx, env.constants.ann.empty_annotation, r, b);
+    }
+    assert(c->type().isbool());
+    return flat_exp(env, ctx, env.constants.literalTrue, r, b);
   } else if (decl->e() == nullptr &&
-             (cid == env.constants.ids.assert || cid == env.constants.ids.trace ||
+             (cid == env.constants.ids.assert || cid == env.constants.ids.assert_dbg ||
+              cid == env.constants.ids.trace || cid == env.constants.ids.trace_dbg ||
               cid == env.constants.ids.mzn_symmetry_breaking_constraint ||
               cid == env.constants.ids.mzn_redundant_constraint ||
               cid == env.constants.ids.mzn_default || cid == env.constants.ids.mzn_deprecate ||
               cid == env.constants.ids.output_to_section)) {
-    if ((cid == env.constants.ids.assert || cid == env.constants.ids.output_to_section) &&
+    if ((cid == env.constants.ids.assert || cid == env.constants.ids.assert_dbg ||
+         cid == env.constants.ids.output_to_section) &&
         c->argCount() == 2) {
       (void)decl->builtins.b(env, c);
       ret = flat_exp(env, ctx, env.constants.literalTrue, r, b);

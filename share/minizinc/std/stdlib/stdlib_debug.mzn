@@ -25,6 +25,9 @@ function array[$U] of var opt $T: assert(bool: b, string: msg, array[$U] of var 
 
 /** @group stdlib.debug If \a b is true, return true, otherwise abort with message \a msg. */
 function bool: assert(bool: b, string: msg);
+/** @group stdlib.debug Return true, when the ``--debug`` flag is set, check if \a b is true, otherwise abort with message \a msg. */
+function bool: assert_dbg(bool: b, string: msg);
+
 /** @group stdlib.debug Return \a x, and print message \a msg. */
 function $T: trace(string: msg, $T: x);
 /** @group stdlib.debug Return \a x, and print message \a msg. */
@@ -41,8 +44,11 @@ function array [$U] of opt $T: trace(string: msg, array [$U] of opt $T: x);
 function array [$U] of var $T: trace(string: msg, array [$U] of var $T: x);
 /** @group stdlib.debug Return \a x, and print message \a msg. */
 function array [$U] of var opt $T: trace(string: msg, array [$U] of var opt $T: x);
+
 /** @group stdlib.debug Return true, and print message \a msg. */
 function bool: trace(string: msg);
+/** @group stdlib.debug Return true, and when ``--debug`` flag is set print message \a msg. */
+function bool: trace_dbg(string: msg);
 
 /** @group stdlib.debug Return \a x, and print message \a msg. */
 function $T: trace_stdout(string: msg, $T: x);
@@ -88,6 +94,9 @@ function string: logstream_to_string();
    MiniZinc::mzn_break_here when flattening this expression to make
    debugging easier. This annotation is ignored by the release build. */
 annotation mzn_break_here;
+
+/** @group stdlib.debug Used to attach a ``expression_name`` annotation to an expression when --debug is enabled. */
+annotation expression_name_dbg(string: s) = expression_name(s);
 
 /** @group stdlib.debug Abort evaluation and print message \a msg. */
 function bool: abort(string: msg);

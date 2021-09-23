@@ -1224,6 +1224,10 @@ bool eval_bool(EnvI& env, Expression* e) {
           }
 
           if (ce->decl()->builtins.b != nullptr) {
+            if (!env.fopts.debug && (ce->id() == env.constants.ids.assert_dbg ||
+                                     ce->id() == env.constants.ids.trace_dbg)) {
+              return true;
+            }
             return ce->decl()->builtins.b(env, ce);
           }
 

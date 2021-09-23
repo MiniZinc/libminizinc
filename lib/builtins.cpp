@@ -3214,6 +3214,7 @@ void register_builtins(Env& e) {
     t[0] = Type::parbool();
     t[1] = Type::parstring();
     rb(env, m, env.constants.ids.assert, t, b_assert_bool);
+    rb(env, m, env.constants.ids.assert_dbg, t, b_assert_bool);
   }
   {
     std::vector<Type> t(3);
@@ -3265,6 +3266,7 @@ void register_builtins(Env& e) {
     t[0] = Type::parstring();
     rb(env, m, ASTString("abort"), t, b_abort);
     rb(env, m, env.constants.ids.trace, t, b_trace);
+    rb(env, m, env.constants.ids.trace_dbg, t, b_trace);
     rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
     rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
   }
