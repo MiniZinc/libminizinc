@@ -54,7 +54,7 @@ Returns the permutation \a p which causes \a x to be in sorted order hence
 The permutation is the stable sort hence \a x[\a p[\p i]] = \a x[\a p[\p i+1]] \(\rightarrow\) \a p[\p i] < \a p[\p i+1].
 */
 function array[int] of $$E: arg_sort(array[$$E] of int:x) =
-  sort_by([i | i in index_set(x)], x);
+  sort_by(array1d(index_set(x), [i | i in index_set(x)]), x);
 
 /** @group stdlib.sort
 Returns the permutation \a p which causes \a x to be in sorted order hence
@@ -63,5 +63,5 @@ Returns the permutation \a p which causes \a x to be in sorted order hence
 The permutation is the stable sort hence \a x[\a p[\p i]] = \a x[\a p[\p i+1]] \(\rightarrow\) \a p[\p i] < \a p[\p i+1].
 */
 function array[int] of $$E: arg_sort(array[$$E] of float:x) =
-  sort_by([i | i in index_set(x)], x);
+  sort_by(array1d(index_set(x), [i | i in index_set(x)]), x);
 
