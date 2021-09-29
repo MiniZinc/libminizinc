@@ -281,8 +281,8 @@ bool noTuple(ParserLocation& location, void* parm, Expression* e) {
 %type <expressions1d> expr_list expr_list_head array_access_expr_list array_access_expr_list_head elseif_list let_vardecl_item_list enum_init enum_id_list string_lit_list
 %type <indexedexpression2d> comp_expr_list comp_expr_list_head
 %type <expressions2d> simple_array_literal_2d_list array_access_tail
-%type <indexedexpressions2d> simple_array_literal_2d_indexed_list
-%type <indexedexpression2d> simple_array_literal_2d_indexed_list_row
+%type <indexedexpressions2d> simple_array_literal_2d_indexed_list simple_array_literal_2d_indexed_list_head
+%type <indexedexpression2d> simple_array_literal_2d_indexed_list_row simple_array_literal_2d_indexed_list_row_head
 %type <expressions3d> simple_array_literal_3d_list
 
 %type <generatorsPointer> comp_tail
@@ -715,6 +715,7 @@ params_list_head :
         if ($1 && $3) $1->push_back($3); }
 
 comma_or_none : | ','
+pipe_or_none : | '|'
 
 ti_expr_and_id_or_anon :
       ti_expr_and_id
@@ -1529,7 +1530,9 @@ simple_array_literal_2d_list :
     | simple_array_literal_2d_list '|' expr_list
       { $$=$1; if ($$ && $3) $$->push_back(*$3); delete $3; }
 
-simple_array_literal_2d_indexed_list :
+simple_array_literal_2d_indexed_list: simple_array_literal_2d_indexed_list_head pipe_or_none
+
+simple_array_literal_2d_indexed_list_head :
       simple_array_literal_2d_indexed_list_row
       { $$=new std::vector<std::pair<std::vector<MiniZinc::Expression*>,std::vector<MiniZinc::Expression*>>>();
         if ($1) {
@@ -1540,7 +1543,7 @@ simple_array_literal_2d_indexed_list :
           delete $1;
         }
       }
-    | simple_array_literal_2d_indexed_list_row ':'
+    | simple_array_literal_2d_indexed_list_row_head ':'
       { $$=new std::vector<std::pair<std::vector<MiniZinc::Expression*>,std::vector<MiniZinc::Expression*>>>();
         if ($1) {
           if ($1->second.size() != 1) {
@@ -1552,7 +1555,7 @@ simple_array_literal_2d_indexed_list :
           delete $1;
         }
       }
-    | simple_array_literal_2d_indexed_list '|' simple_array_literal_2d_indexed_list_row
+    | simple_array_literal_2d_indexed_list_head '|' simple_array_literal_2d_indexed_list_row
       { $$=$1;
         if ($$ && $3) {
           if ($3->first.size() > 1 || ($3->first.size() == 1 && $3->second.empty())) {
@@ -1563,12 +1566,14 @@ simple_array_literal_2d_indexed_list :
         }
       }
 
-simple_array_literal_2d_indexed_list_row :
+simple_array_literal_2d_indexed_list_row: simple_array_literal_2d_indexed_list_row_head comma_or_none
+
+simple_array_literal_2d_indexed_list_row_head :
       expr
       { $$=new std::pair<std::vector<MiniZinc::Expression*>,std::vector<MiniZinc::Expression*>>();
         $$->second.push_back($1);
       }
-    | simple_array_literal_2d_indexed_list_row ':' expr
+    | simple_array_literal_2d_indexed_list_row_head ':' expr
       { $$=$1;
         if ($$) {
           if ($$->second.size() != 1) {
@@ -1579,7 +1584,7 @@ simple_array_literal_2d_indexed_list_row :
           $$->second.push_back($3);
         }
       }
-    | simple_array_literal_2d_indexed_list_row ',' expr
+    | simple_array_literal_2d_indexed_list_row_head ',' expr
       { $$=$1;
         if ($$) {
           if ($$->second.empty()) {
