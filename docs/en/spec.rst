@@ -1477,13 +1477,23 @@ String literals are written as in C:
   :start-after: % String literals
   :end-before: %
 
-This includes C-style escape sequences, such as :mzn:`\"` for
-double quotes, :mzn:`\\` for backslash, and
-:mzn:`\n` for newline.
+This includes the following C-style escape sequences:
+
+- :mzn:`\"` for double quotes
+- :mzn:`\\` for backslash
+- :mzn:`\n` for newline
+- :mzn:`\t` for tab
+- :mzn:`\x[0-9a-fA-F][0-9a-fA-F]?` for an arbitrary 8-bit character specified by the given hexadecimal number
+- :mzn:`\x[0-7][0-7]?[0-7]?` for an arbitrary 8-bit character specified by the given octal number
 
 For example: :mzn:`"Hello, world!\n"`.
 
 String literals must fit on a single line.  
+
+All string literals are represented and interpreted as UTF-8 strings.
+This means that you can either include UTF-8 characters directly in the strings,
+or you can use the hexadecimal or octal notation to insert the UTF-8 byte sequences,
+for example: :mzn:`"\xe4\xbd\xa0\xe5\xa5\xbd means hello"` is a valid string.
 
 Long string literals can be split across multiple lines using string
 concatenation.  For example:

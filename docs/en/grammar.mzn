@@ -173,7 +173,7 @@
                   | (0[xX][0-9a-fA-F]+[pP][+-]?[0-9]+)
 
 % String literals
-<string-contents> ::= ([^"\n\] | \[^\n(])*
+<string-contents> ::= ([^"\n\] |  \[0-7][0-7?][0-7]? | \x[0-9a-fA-F][0-9a-fA-F]? | \n | \t | \" | \\)*
 
 <string-literal> ::= """ <string-contents> """
                    | """ <string-contents> "\(" <string-interpolate-tail>

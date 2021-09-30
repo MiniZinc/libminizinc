@@ -393,8 +393,24 @@ $[A-Za-z][A-Za-z0-9_]* {
 <string,string_quote>[^\\"\xa\xd\x0]* { ::MiniZinc::appendBufferString(yyget_extra(yyscanner), yytext); }
 <string,string_quote>\\n         { ::MiniZinc::appendBufferChar(yyget_extra(yyscanner), '\n'); }
 <string,string_quote>\\t         { ::MiniZinc::appendBufferChar(yyget_extra(yyscanner), '\t'); }
-<string,string_quote>\\[\\']     { ::MiniZinc::appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
-<string,string_quote>\\[\\"]     { ::MiniZinc::appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
+<string,string_quote>\\x[0-9a-fA-F][0-9a-fA-F]? {
+  long long int hexVal;
+  if (::MiniZinc::hexstrtointval(yytext+2, hexVal)) {
+    ::MiniZinc::appendBufferChar(yyget_extra(yyscanner), static_cast<char>(hexVal));
+  } else {
+    return MZN_INVALID_STRING_LITERAL;
+  }
+}
+<string,string_quote>\\[0-7][0-7]?[0-7]? {
+  long long int octVal;
+  if (::MiniZinc::octstrtointval(yytext+1, octVal)) {
+    ::MiniZinc::appendBufferChar(yyget_extra(yyscanner), static_cast<char>(octVal));
+  } else {
+    return MZN_INVALID_STRING_LITERAL;
+  }
+}
+
+<string,string_quote>\\[\\"']     { ::MiniZinc::appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
 <string>\\"("       { yylval->sValue = ::MiniZinc::bufferData(yyget_extra(yyscanner));
                       yy_push_state(quoted_exp,yyscanner); return MZN_STRING_QUOTE_START; }
 <string_quote>\\"(" { yylval->sValue = ::MiniZinc::bufferData(yyget_extra(yyscanner));

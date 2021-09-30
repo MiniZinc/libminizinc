@@ -1,4 +1,4 @@
-/* A Bison parser, made by GNU Bison 3.7.2.  */
+/* A Bison parser, made by GNU Bison 3.7.4.  */
 
 /* Bison implementation for Yacc-like parsers in C
 
@@ -45,11 +45,11 @@
    define necessary library symbols; they are noted "INFRINGES ON
    USER NAME SPACE" below.  */
 
-/* Identify Bison output.  */
-#define YYBISON 1
+/* Identify Bison output, and Bison version.  */
+#define YYBISON 30704
 
-/* Bison version.  */
-#define YYBISON_VERSION "3.7.2"
+/* Bison version string.  */
+#define YYBISON_VERSION "3.7.4"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -80,8 +80,6 @@
 #include <iostream>
 
 #include <minizinc/support/regex.hh>
-
-#undef ERROR
 
 using namespace Gecode;
 using namespace MiniZinc;
@@ -522,9 +520,9 @@ static const yytype_int8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    73,    73,    80,    81,    89,    90,    98,    99,   104,
-     109,   114,   119,   124,   131,   133,   138,   148,   163,   167,
-     168,   178,   182
+       0,    71,    71,    78,    79,    87,    88,    96,    97,   102,
+     107,   112,   117,   122,   129,   131,   136,   146,   161,   165,
+     166,   176,   180
 };
 #endif
 

@@ -196,6 +196,7 @@ Expression* createArrayAccess(const ParserLocation& loc, Expression* e, std::vec
 %token MZN_UNTERMINATED_STRING "unterminated string"
 %token MZN_END_OF_LINE_IN_STRING "end of line inside string literal"
 %token MZN_INVALID_NULL "null character"
+%token MZN_INVALID_STRING_LITERAL "invalid string literal"
 
 %token END 0 "end of file"
 
