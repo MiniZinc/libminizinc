@@ -150,6 +150,11 @@ public:
       : _env(env), _os(os), _flatZinc(flatZinc) {}
 
   void p(const Type& type, const Expression* e) {
+    if (type.any() && e != nullptr) {
+      _os << "any ";
+      p(e);
+      return;
+    }
     switch (type.ti()) {
       case Type::TI_PAR:
         break;
@@ -626,8 +631,6 @@ public:
         const auto* ti = e->cast<TypeInst>();
         if (ti->isEnum()) {
           _os << "enum";
-        } else if (_env != nullptr) {
-          _os << ti->type().toString(*_env);
         } else {
           if (ti->isarray()) {
             _os << "array [";
@@ -1055,18 +1058,22 @@ Document* expression_to_document(const Expression* e);
 Document* annotation_to_document(const Annotation& ann);
 Document* tiexpression_to_document(const Type& type, const Expression* e) {
   auto* dl = new DocumentList("", "", "", false);
-  switch (type.ti()) {
-    case Type::TI_PAR:
-      break;
-    case Type::TI_VAR:
-      dl->addStringToList("var ");
-      break;
-  }
-  if (type.ot() == Type::OT_OPTIONAL) {
-    dl->addStringToList("opt ");
-  }
-  if (type.st() == Type::ST_SET) {
-    dl->addStringToList("set of ");
+  if (type.any()) {
+    dl->addStringToList("any ");
+  } else {
+    switch (type.ti()) {
+      case Type::TI_PAR:
+        break;
+      case Type::TI_VAR:
+        dl->addStringToList("var ");
+        break;
+    }
+    if (type.ot() == Type::OT_OPTIONAL) {
+      dl->addStringToList("opt ");
+    }
+    if (type.st() == Type::ST_SET) {
+      dl->addStringToList("set of ");
+    }
   }
   if (e == nullptr) {
     switch (type.bt()) {
