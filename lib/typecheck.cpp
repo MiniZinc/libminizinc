@@ -3863,7 +3863,7 @@ std::set<std::string> model_globals(Model* m, const std::vector<std::string>& sk
           for (const auto& skip_dir : skipDirs) {
             const auto& comp_dir = FileUtils::dir_name(skip_dir);
             if (filedir.substr(0, comp_dir.size()) == comp_dir) {
-              globals.insert(c->id().c_str());
+              globals.insert(demonomorphise_identifier(c->id()));
               break;
             }
           }

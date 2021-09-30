@@ -43,7 +43,8 @@ void check_output_par_fn(EnvI& env, Call* rhs) {
     FunctionI* origdecl = env.model->matchFn(env, rhs->id(), tv, false);
     if (origdecl == nullptr || !is_completely_par(env, origdecl, tv)) {
       std::ostringstream ss;
-      ss << "function " << rhs->id() << " is used in output, par version needed";
+      ss << "function " << demonomorphise_identifier(rhs->id())
+         << " is used in output, par version needed";
       throw FlatteningError(env, rhs->loc(), ss.str());
     }
     if (!origdecl->fromStdLib()) {
@@ -104,7 +105,8 @@ bool cannot_use_rhs_for_output(EnvI& env, Expression* e,
         FunctionI* origdecl = env.model->matchFn(env, c->id(), tv, false);
         if (origdecl == nullptr) {
           std::ostringstream ss;
-          ss << "function " << c->id() << " is used in output, par version needed";
+          ss << "function " << demonomorphise_identifier(c->id())
+             << " is used in output, par version needed";
           throw FlatteningError(env, c->loc(), ss.str());
         }
         bool seen = (seenFunctions.find(origdecl) != seenFunctions.end());
@@ -1018,7 +1020,8 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
       if (!canReuseDecl) {
         if (origdecl == nullptr || !is_completely_par(env, origdecl, tv)) {
           std::ostringstream ss;
-          ss << "function " << c->id() << " is used in output, par version needed";
+          ss << "function " << demonomorphise_identifier(c->id())
+             << " is used in output, par version needed";
           throw FlatteningError(env, c->loc(), ss.str());
         }
         if (!origdecl->fromStdLib()) {

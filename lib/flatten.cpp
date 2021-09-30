@@ -19,6 +19,7 @@
 #include <minizinc/hash.hh>
 #include <minizinc/optimize.hh>
 #include <minizinc/output.hh>
+#include <minizinc/typecheck.hh>
 #include <minizinc/utils.hh>
 
 #include <map>
@@ -1483,21 +1484,9 @@ std::ostream& EnvI::dumpStack(std::ostream& os, bool errStack) {
         case Expression::E_UNOP:
           os << "unary " << e->cast<UnOp>()->opToString() << " operator expression" << std::endl;
           break;
-        case Expression::E_CALL: {
-          os << "call '";
-          if (e->cast<Call>()->decl() != nullptr && e->cast<Call>()->decl()->isMonomorphised()) {
-            std::string callId = e->cast<Call>()->id().c_str();
-            size_t at = callId.find_last_of('@');
-            if (at == std::string::npos) {
-              os << e->cast<Call>()->id();
-            } else {
-              os << callId.substr(1, at - 1);
-            }
-          } else {
-            os << e->cast<Call>()->id();
-          }
-          os << "'" << std::endl;
-        } break;
+        case Expression::E_CALL:
+          os << "call '" << demonomorphise_identifier(e->cast<Call>()->id()) << "'" << std::endl;
+          break;
         case Expression::E_VARDECL: {
           GCLock lock;
           os << "variable declaration for '" << e->cast<VarDecl>()->id()->str() << "'" << std::endl;
@@ -2904,7 +2893,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
         EE ee = flat_exp(env, ctx, nc, nullptr, ctx.partialityVar(env));
         if (isfalse(env, ee.b())) {
           std::ostringstream ss;
-          ss << "evaluation of `" << nc->id() << "was undefined";
+          ss << "evaluation of `" << demonomorphise_identifier(nc->id()) << "was undefined";
           throw ResultUndefinedError(env, e->loc(), ss.str());
         }
         return ee.r();
@@ -3584,7 +3573,7 @@ void flatten(Env& e, FlatteningOptions opt) {
                     }
                     if (decl == nullptr) {
                       std::ostringstream ss;
-                      ss << "'" << c->id()
+                      ss << "'" << demonomorphise_identifier(c->id())
                          << "' is used in a reified context but no reified version is "
                             "available";
                       throw FlatteningError(env, c->loc(), ss.str());
@@ -3964,7 +3953,7 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd,
           FunctionI* decl = env.model->matchFn(env, nc, false);
           if (decl == nullptr) {
             std::ostringstream ss;
-            ss << "'" << c->id()
+            ss << "'" << demonomorphise_identifier(c->id())
                << "' is used in a reified context but no reified version is available";
             throw FlatteningError(env, c->loc(), ss.str());
           }

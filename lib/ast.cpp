@@ -406,8 +406,8 @@ void ArrayLit::setSlice(unsigned int i, Expression* e) {
   }
 }
 
-ArrayLit::ArrayLit(const Location& loc, ArrayLit* v, const std::vector<std::pair<int, int> >& dims,
-                   const std::vector<std::pair<int, int> >& slice)
+ArrayLit::ArrayLit(const Location& loc, ArrayLit* v, const std::vector<std::pair<int, int>>& dims,
+                   const std::vector<std::pair<int, int>>& slice)
     : Expression(loc, E_ARRAYLIT, Type()) {
   _flag1 = false;
   _flag2 = true;
@@ -466,7 +466,7 @@ void ArrayLit::compress(const std::vector<Expression*>& v, const std::vector<int
 }
 
 ArrayLit::ArrayLit(const Location& loc, const std::vector<Expression*>& v,
-                   const std::vector<std::pair<int, int> >& dims)
+                   const std::vector<std::pair<int, int>>& dims)
     : Expression(loc, E_ARRAYLIT, Type()) {
   _flag1 = false;
   _flag2 = false;
@@ -960,6 +960,7 @@ bool isa_enum_tiid(Expression* e) {
   return false;
 }
 
+// Compute return type of function \a fi given argument types \ta
 template <class T>
 Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strictEnum) {
   if (fi->id() == env.constants.varRedef->id()) {
@@ -975,39 +976,45 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
     rh = fi->ti()->ranges()[0]->domain()->cast<TIId>()->v();
   }
 
-  ASTStringMap<Type> tmap;
+  ASTStringMap<std::pair<Type, bool>> tmap;
   for (unsigned int i = 0; i < ta.size(); i++) {
     TypeInst* tii = fi->param(i)->ti();
     if (tii->domain() && tii->domain()->isa<TIId>()) {
       ASTString tiid = tii->domain()->cast<TIId>()->v();
       Type tiit = get_type(ta[i]);
-      tiit.ot(Type::OT_PRESENT);
+      bool isEnumTIID = isa_enum_tiid(tii->domain());
+      if (tii->type().any()) {
+        tiit.any(true);
+      }
       if (tiit.enumId() != 0 && tiit.dim() > 0) {
         const std::vector<unsigned int>& enumIds = env.getArrayEnum(tiit.enumId());
         tiit.enumId(enumIds[enumIds.size() - 1]);
       }
       tiit.dim(0);
-      if (tii->type().st() == Type::ST_SET) {
-        tiit.st(Type::ST_PLAIN);
-      }
-      if (isa_enum_tiid(tii->domain())) {
-        tiit.st(Type::ST_SET);
-      }
       auto it = tmap.find(tiid);
       if (it == tmap.end()) {
-        tmap.insert(std::pair<ASTString, Type>(tiid, tiit));
+        tmap.insert(std::pair<ASTString, std::pair<Type, bool>>(tiid, {tiit, isEnumTIID}));
       } else {
-        if (it->second.dim() > 0) {
+        // We've seen this identifier before, unify the types
+        if (it->second.first.dim() > 0) {
           std::ostringstream ss;
           ss << "type-inst variable $" << tiid << " used in both array and non-array position";
           throw TypeError(env, get_loc(ta[i], fi), ss.str());
         }
         Type tiit_par = tiit;
+        tiit_par.any(false);
         tiit_par.ti(Type::TI_PAR);
         tiit_par.ot(Type::OT_PRESENT);
-        Type its_par = it->second;
+        if (isEnumTIID) {
+          tiit_par.st(Type::ST_SET);
+        }
+        Type its_par = it->second.first;
+        its_par.any(false);
         its_par.ti(Type::TI_PAR);
         its_par.ot(Type::OT_PRESENT);
+        if (it->second.second) {
+          its_par.st(Type::ST_SET);
+        }
         if (tiit_par.bt() == Type::BT_TOP || tiit_par.bt() == Type::BT_BOT) {
           tiit_par.bt(its_par.bt());
         }
@@ -1015,16 +1022,23 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
           its_par.bt(tiit_par.bt());
         }
         if (env.isSubtype(tiit_par, its_par, strictEnum)) {
-          if (it->second.bt() == Type::BT_TOP) {
-            it->second.bt(tiit.bt());
+          if (it->second.first.bt() == Type::BT_TOP) {
+            it->second.first.bt(tiit.bt());
           }
         } else if (env.isSubtype(its_par, tiit_par, strictEnum)) {
-          it->second = tiit_par;
+          it->second.first.bt(tiit_par.bt());
+          it->second.first.enumId(tiit_par.enumId());
         } else {
           std::ostringstream ss;
           ss << "type-inst variable $" << tiid << " instantiated with different types ("
-             << tiit.toString(env) << " vs " << it->second.toString(env) << ")";
+             << tiit.toString(env) << " vs " << it->second.first.toString(env) << ")";
           throw TypeError(env, get_loc(ta[i], fi), ss.str());
+        }
+        if (tiit.isPar()) {
+          it->second.first.ti(Type::TI_PAR);
+        }
+        if (tiit.isPresent()) {
+          it->second.first.ot(Type::OT_PRESENT);
         }
       }
     }
@@ -1048,17 +1062,17 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
       }
       auto it = tmap.find(tiid);
       if (it == tmap.end()) {
-        tmap.insert(std::pair<ASTString, Type>(tiid, tiit));
+        tmap.insert(std::pair<ASTString, std::pair<Type, bool>>(tiid, {tiit, false}));
       } else {
-        if (it->second.dim() == 0) {
+        if (it->second.first.dim() == 0) {
           std::ostringstream ss;
           ss << "type-inst variable $" << tiid << " used in both array and non-array position";
           throw TypeError(env, get_loc(ta[i], fi), ss.str());
         }
-        if (it->second != tiit) {
+        if (it->second.first != tiit) {
           std::ostringstream ss;
           ss << "type-inst variable $" << tiid << " instantiated with different types ("
-             << tiit.toString(env) + " vs " << it->second.toString(env) << ")";
+             << tiit.toString(env) + " vs " << it->second.first.toString(env) << ")";
           throw TypeError(env, get_loc(ta[i], fi), ss.str());
         }
       }
@@ -1078,8 +1092,8 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
           // TODO: this may clash if the same enum TIId is used for different types
           // but the same enum
           if (it == tmap.end()) {
-            tmap.insert(std::pair<ASTString, Type>(enumTIId, enumIdT));
-          } else if (strictEnum && it->second.enumId() != enumIdT.enumId()) {
+            tmap.insert(std::pair<ASTString, std::pair<Type, bool>>(enumTIId, {enumIdT, true}));
+          } else if (strictEnum && it->second.first.enumId() != enumIdT.enumId()) {
             std::ostringstream ss;
             ss << "type-inst variable $" << enumTIId << " used for different enum types";
             throw TypeError(env, get_loc(ta[i], fi), ss.str());
@@ -1099,20 +1113,25 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
       // this is an enum
       ret.bt(Type::BT_INT);
     } else {
-      ret.bt(it->second.bt());
+      ret.bt(it->second.first.bt());
       if (ret.st() == Type::ST_PLAIN) {
-        ret.st(it->second.st());
+        ret.st(it->second.first.st());
+      }
+      if (ret.any()) {
+        ret.ot(it->second.first.ot());
+        ret.ti(it->second.first.ti());
+        ret.any(false);
       }
     }
-    if (!fi->ti()->ranges().empty() && it->second.enumId() != 0) {
+    if (!fi->ti()->ranges().empty() && it->second.first.enumId() != 0) {
       std::vector<unsigned int> enumIds(fi->ti()->ranges().size() + 1);
       for (unsigned int i = 0; i < fi->ti()->ranges().size(); i++) {
         enumIds[i] = 0;
       }
-      enumIds[enumIds.size() - 1] = it->second.enumId();
+      enumIds[enumIds.size() - 1] = it->second.first.enumId();
       ret.enumId(env.registerArrayEnum(enumIds));
     } else {
-      ret.enumId(it->second.enumId());
+      ret.enumId(it->second.first.enumId());
     }
   }
   if (!rh.empty()) {
@@ -1122,10 +1141,10 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
       ss << "type-inst variable $" << rh << " used but not defined";
       throw TypeError(env, fi->loc(), ss.str());
     }
-    ret.dim(it->second.dim());
-    if (it->second.enumId() != 0) {
-      std::vector<unsigned int> enumIds(it->second.dim() + 1);
-      const std::vector<unsigned int>& orig_enumIds = env.getArrayEnum(it->second.enumId());
+    ret.dim(it->second.first.dim());
+    if (it->second.first.enumId() != 0) {
+      std::vector<unsigned int> enumIds(it->second.first.dim() + 1);
+      const std::vector<unsigned int>& orig_enumIds = env.getArrayEnum(it->second.first.enumId());
       for (unsigned int i = 0; i < enumIds.size() - 1; i++) {
         enumIds[i] = orig_enumIds[i];
       }
@@ -1153,7 +1172,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
           ss << "type-inst variable $" << enumTIId << " used but not defined";
           throw TypeError(env, fi->loc(), ss.str());
         }
-        enumIds[i] = it->second.enumId();
+        enumIds[i] = it->second.first.enumId();
         hadRealEnum |= (enumIds[i] != 0);
       } else {
         enumIds[i] = 0;

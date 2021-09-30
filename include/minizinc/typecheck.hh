@@ -105,6 +105,8 @@ void typecheck(Env& env, Model* m, AssignI* ai);
 void type_specialise(Env& env, Model* origModel, TyperFn& typer);
 /// Turn monomorphised calls to standard library functions back into calls to generic functions
 void type_demonomorphise_library(Env& e, Model* model);
+/// Return de-monomorphised version of call identifier \a ident
+std::string demonomorphise_identifier(const ASTString& ident);
 
 /// Output description of parameters and output variables to \a os
 void output_model_interface(Env& env, Model* m, std::ostream& os,

@@ -810,9 +810,6 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
               oss << "    (argument " << (j + 1) << " expects type " << fi_t[j].toString(env);
               oss << ", but type " << c->arg(j)->type().toString(env) << " given)\n";
             }
-            if (c->arg(j)->type().isbot() && fi_t[j].bt() != Type::BT_TOP) {
-              botarg = c->arg(j);
-            }
           }
         } else {
           oss << "    (requires " << i.fi->paramCount() << " argument"

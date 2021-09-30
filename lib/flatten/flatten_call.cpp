@@ -10,6 +10,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/flat_exp.hh>
+#include <minizinc/typecheck.hh>
 
 namespace MiniZinc {
 
@@ -350,7 +351,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
   FunctionI* decl = env.model->matchFn(env, c, false);
   if (decl == nullptr) {
     std::ostringstream ss;
-    ss << "undeclared function or predicate " << c->id();
+    ss << "undeclared function or predicate " << demonomorphise_identifier(c->id());
     throw InternalError(ss.str());
   }
 

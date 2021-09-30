@@ -268,7 +268,7 @@ public:
       instanceId = _instanceCount++;
 
       std::ostringstream oss;
-      oss << "\\" << call->decl()->id() << "@" << instanceId;
+      oss << "\\" << instanceId << "@" << call->decl()->id();
       mangledName = ASTString(oss.str());
 
       _instanceMap.insert(_env, call->id(), lookup.second, instanceId);
@@ -430,7 +430,7 @@ public:
       }
     } else {
       std::ostringstream oss;
-      oss << "\\" << call->decl()->id() << "@" << instanceId;
+      oss << "\\" << instanceId << "@" << call->decl()->id();
       mangledName = ASTString(oss.str());
     }
     // match call to previously copied function
@@ -457,8 +457,7 @@ public:
  - put these on the todo list, and for each item of the todo list:
      - make copies of the parametric functions for the concrete types
      - we cannot overload on enum type, so we need to mangle the names
-     - mangling scheme: prefix name with \ and add @X to the original identifier, where X is an
- integer.
+     - mangling scheme: prefix identifier with \XXX@, where X is an integer.
      - change all occurrences of type-inst variables to the concrete type
      - type-check the body of the function again (or at least propagate the concrete type)
      - if the body contains calls to parametric functions, put these calls
@@ -484,22 +483,26 @@ void type_specialise(Env& env, Model* model, TyperFn& typer) {
   }
 }
 
-namespace {
-
-std::string demonomorphise(const ASTString& as) {
-  assert(!as.empty() && as.c_str()[0] == '\\');
-  std::string s(as.c_str() + 1);
-  auto s_end = s.find_last_of('@');
-  assert(s_end != std::string::npos);
-  return s.substr(0, s_end);
+std::string demonomorphise_identifier(const ASTString& ident) {
+  if (ident.empty() || ident.c_str()[0] != '\\') {
+    return std::string(ident.c_str());
+  }
+  std::string s(ident.c_str() + 1);
+  auto s_end = s.find_first_of('@');
+  if (s_end != std::string::npos) {
+    return s.substr(s_end + 1);
+  }
+  return std::string(ident.c_str());
 }
+
+namespace {
 
 class Demonomorphiser : public EVisitor {
 public:
   // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
   void vCall(Call* c) {
     if (c->decl() != nullptr && c->decl()->isMonomorphised() && c->decl()->fromStdLib()) {
-      c->id(ASTString(demonomorphise(c->id())));
+      c->id(ASTString(demonomorphise_identifier(c->id())));
     }
   }
 };
