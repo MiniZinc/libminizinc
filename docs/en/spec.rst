@@ -2132,6 +2132,16 @@ called the *enum case name*.
 Because enum case names all reside in the top-level namespace
 (:ref:`spec-Namespaces`), case names in different enums must be distinct.
 
+Instead of defining explicit, named enum cases, it is also possible to define an *anonymous enum*. 
+The special :mzn:`anon_enum` enum constructor takes a single integer argument that determines
+the number of enum cases. For example,
+
+.. code-block:: minizinc
+
+    enum Slot = anon_enum(n);
+
+defines an enumerated type :mzn:`Slot` with :mzn:`n` cases.
+
 Enumerated type items can also be defined in terms of other enumerated types by using an *enumerated type constructor* and the :mzn:`++` operator, as in the following example:
 
 .. code-block:: minizinc
