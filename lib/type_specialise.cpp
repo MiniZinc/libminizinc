@@ -268,7 +268,7 @@ public:
       instanceId = _instanceCount++;
 
       std::ostringstream oss;
-      oss << "_" << call->decl()->id() << "@" << instanceId;
+      oss << "\\" << call->decl()->id() << "@" << instanceId;
       mangledName = ASTString(oss.str());
 
       _instanceMap.insert(_env, call->id(), lookup.second, instanceId);
@@ -430,7 +430,7 @@ public:
       }
     } else {
       std::ostringstream oss;
-      oss << "_" << call->decl()->id() << "@" << instanceId;
+      oss << "\\" << call->decl()->id() << "@" << instanceId;
       mangledName = ASTString(oss.str());
     }
     // match call to previously copied function
@@ -457,9 +457,8 @@ public:
  - put these on the todo list, and for each item of the todo list:
      - make copies of the parametric functions for the concrete types
      - we cannot overload on enum type, so we need to mangle the names
-     - mangling scheme: add @X to the original identifier, where X is an integer.
-         to make this safe, determine lowest X for which @X doesn't clash with any other names.
-         (this can be done later)
+     - mangling scheme: prefix name with \ and add @X to the original identifier, where X is an
+ integer.
      - change all occurrences of type-inst variables to the concrete type
      - type-check the body of the function again (or at least propagate the concrete type)
      - if the body contains calls to parametric functions, put these calls
@@ -488,7 +487,7 @@ void type_specialise(Env& env, Model* model, TyperFn& typer) {
 namespace {
 
 std::string demonomorphise(const ASTString& as) {
-  assert(!as.empty() && as.c_str()[0] == '_');
+  assert(!as.empty() && as.c_str()[0] == '\\');
   std::string s(as.c_str() + 1);
   auto s_end = s.find_last_of('@');
   assert(s_end != std::string::npos);
