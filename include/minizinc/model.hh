@@ -70,6 +70,7 @@ public:
     std::vector<Type> t;
     FunctionI* fi;
     bool isPolymorphic;
+    bool isPolymorphicVariant;
     FnEntry(FunctionI* fi0);
     bool operator<(const FnEntry& f) const;
     static bool compare(const FnEntry& e1, const FnEntry& e2);

@@ -20,7 +20,8 @@
 
 namespace MiniZinc {
 
-Model::FnEntry::FnEntry(FunctionI* fi0) : t(fi0->paramCount()), fi(fi0), isPolymorphic(false) {
+Model::FnEntry::FnEntry(FunctionI* fi0)
+    : t(fi0->paramCount()), fi(fi0), isPolymorphic(false), isPolymorphicVariant(false) {
   for (unsigned int i = 0; i < fi->paramCount(); i++) {
     t[i] = fi->param(i)->type();
     isPolymorphic |= (t[i].bt() == Type::BT_TOP);
@@ -249,6 +250,7 @@ void Model::addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& en
   entries.push_back(fe);
   if (fe.isPolymorphic) {
     FnEntry cur = fe;
+    cur.isPolymorphicVariant = true;
 
     /*
 
@@ -794,6 +796,9 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
       oss << "Cannot use the following functions or predicates with the same identifier:\n";
       Printer pp(oss, 0, false, &env);
       for (const auto& i : v) {
+        if (i.fi->isMonomorphised() || i.isPolymorphicVariant) {
+          continue;
+        }
         const std::vector<Type>& fi_t = i.t;
         Expression* body = i.fi->e();
         i.fi->e(nullptr);
