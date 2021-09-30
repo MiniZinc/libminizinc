@@ -1483,9 +1483,21 @@ std::ostream& EnvI::dumpStack(std::ostream& os, bool errStack) {
         case Expression::E_UNOP:
           os << "unary " << e->cast<UnOp>()->opToString() << " operator expression" << std::endl;
           break;
-        case Expression::E_CALL:
-          os << "call '" << e->cast<Call>()->id() << "'" << std::endl;
-          break;
+        case Expression::E_CALL: {
+          os << "call '";
+          if (e->cast<Call>()->decl() != nullptr && e->cast<Call>()->decl()->isMonomorphised()) {
+            std::string callId = e->cast<Call>()->id().c_str();
+            size_t at = callId.find_last_of('@');
+            if (at == std::string::npos) {
+              os << e->cast<Call>()->id();
+            } else {
+              os << callId.substr(1, at - 1);
+            }
+          } else {
+            os << e->cast<Call>()->id();
+          }
+          os << "'" << std::endl;
+        } break;
         case Expression::E_VARDECL: {
           GCLock lock;
           os << "variable declaration for '" << e->cast<VarDecl>()->id()->str() << "'" << std::endl;
