@@ -44,6 +44,15 @@ include "stdlib/stdlib_debug.mzn";
 include "stdlib/stdlib_enum.mzn";
 include "stdlib/stdlib_random.mzn";
 
+/***
+  @groupdef stdlib.output Stuctured Output
+
+  These functions provide structured output for common structures modelled in the MiniZinc language.
+*/
+
+include "output/gantt.mzn";
+include "output/array2d_bool.mzn";
+
 % Undocumented internal implementation used during compilation
 include "stdlib/stdlib_internal.mzn";
 
