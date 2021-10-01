@@ -270,6 +270,24 @@ public:
       std::ostringstream oss;
       oss << "\\" << instanceId << "@" << call->decl()->id();
       mangledName = ASTString(oss.str());
+      ASTString mangledBaseName;
+      ASTString mangledReifName;
+      ASTString mangledImpName;
+      if (mangledName.endsWith("_reif")) {
+        std::string ident_s(mangledName.c_str());
+        mangledBaseName = ident_s.substr(0, ident_s.length() - 5);
+        mangledReifName = mangledName;
+        mangledImpName = EnvI::halfReifyId(mangledBaseName);
+      } else if (mangledName.endsWith("_imp")) {
+        std::string ident_s(mangledName.c_str());
+        mangledBaseName = ident_s.substr(0, ident_s.length() - 4);
+        mangledReifName = _env.reifyId(mangledBaseName);
+        mangledImpName = mangledName;
+      } else {
+        mangledBaseName = mangledName;
+        mangledReifName = _env.reifyId(mangledBaseName);
+        mangledImpName = EnvI::halfReifyId(mangledBaseName);
+      }
 
       _instanceMap.insert(_env, call->id(), lookup.second, instanceId);
 
@@ -278,10 +296,18 @@ public:
         auto* fi_copy = copy(_env, fi, false, false, false)->cast<FunctionI>();
         fi_copy->isMonomorphised(true);
         // Rename copy
-        fi_copy->id(mangledName);
+        if (fi->id().endsWith("_reif")) {
+          fi_copy->id(mangledReifName);
+        } else if (fi->id().endsWith("_imp")) {
+          fi_copy->id(mangledImpName);
+        } else {
+          fi_copy->id(mangledBaseName);
+        }
         // Replace type-inst vars by concrete types
 
-        auto& concrete_types = lookup.second;
+        std::vector<Type> concrete_types = lookup.second;
+        // Push additional var bool for reified versions
+        concrete_types.push_back(Type::varbool());
 
         std::unordered_map<ASTString, Type> ti_map;
         for (unsigned int i = 0; i < fi_copy->paramCount(); i++) {
