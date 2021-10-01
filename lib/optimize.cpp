@@ -1223,7 +1223,19 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
         if (canRemove) {
           CollectDecls cd(env, env.varOccurrences, deletedVarDecls, ii);
           top_down(cd, c);
-          ii->remove();
+          if (auto* vdi = ii->dynamicCast<VarDeclI>()) {
+            if (env.varOccurrences.occurrences(vdi->e()) == 0) {
+              if (is_output(vdi->e())) {
+                VarDecl* vd_out = (*env.output)[env.outputFlatVarOccurrences.find(vdi->e())]
+                                      ->cast<VarDeclI>()
+                                      ->e();
+                vd_out->e(env.constants.boollit(is_true));
+              }
+              vdi->remove();
+            }
+          } else {
+            ii->remove();
+          }
         }
       }
     } else if ((is_true || is_false) && c->id() == env.constants.ids.int_.le &&
