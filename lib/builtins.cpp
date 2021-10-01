@@ -3041,38 +3041,17 @@ void register_builtins(Env& e) {
     rb(env, m, ASTString("index_set_5of6"), t_anyarray6, b_index_set5);
     rb(env, m, ASTString("index_set_6of6"), t_anyarray6, b_index_set6);
   }
-  {
-    std::vector<Type> t_arrayXd(1);
-    t_arrayXd[0] = Type::top(-1);
-    rb(env, m, ASTString("array1d"), t_arrayXd, b_array1d_list);
-    t_arrayXd[0].ot(Type::OT_OPTIONAL);
-    rb(env, m, ASTString("array1d"), t_arrayXd, b_array1d_list);
-    t_arrayXd[0] = Type::vartop(-1);
-    rb(env, m, ASTString("array1d"), t_arrayXd, b_array1d_list);
-    t_arrayXd[0] = Type::optvartop(-1);
-    rb(env, m, ASTString("array1d"), t_arrayXd, b_array1d_list);
-  }
+  { rb(env, m, ASTString("array1d"), {Type::optvartop(-1)}, b_array1d_list); }
   {
     std::vector<Type> t_arrayXd(2);
     t_arrayXd[0] = Type::parsetint();
     t_arrayXd[1] = Type::top(-1);
-    rb(env, m, ASTString("array1d"), t_arrayXd, b_array1d);
-    t_arrayXd[1].ot(Type::OT_OPTIONAL);
-    rb(env, m, ASTString("array1d"), t_arrayXd, b_array1d);
-    t_arrayXd[1] = Type::vartop(-1);
-    rb(env, m, ASTString("array1d"), t_arrayXd, b_array1d);
     t_arrayXd[1] = Type::optvartop(-1);
     rb(env, m, ASTString("array1d"), t_arrayXd, b_array1d);
   }
   {
     std::vector<Type> t_arrayXd(2);
     t_arrayXd[0] = Type::optvartop(-1);
-    t_arrayXd[1] = Type::top(-1);
-    rb(env, m, ASTString("arrayXd"), t_arrayXd, b_arrayXd);
-    t_arrayXd[1].ot(Type::OT_OPTIONAL);
-    rb(env, m, ASTString("arrayXd"), t_arrayXd, b_arrayXd);
-    t_arrayXd[1] = Type::vartop(-1);
-    rb(env, m, ASTString("arrayXd"), t_arrayXd, b_arrayXd);
     t_arrayXd[1] = Type::optvartop(-1);
     rb(env, m, ASTString("arrayXd"), t_arrayXd, b_arrayXd);
   }
@@ -3080,12 +3059,6 @@ void register_builtins(Env& e) {
     std::vector<Type> t_arrayXd(3);
     t_arrayXd[0] = Type::parsetint();
     t_arrayXd[1] = Type::parsetint();
-    t_arrayXd[2] = Type::top(-1);
-    rb(env, m, ASTString("array2d"), t_arrayXd, b_array2d);
-    t_arrayXd[2].ot(Type::OT_OPTIONAL);
-    rb(env, m, ASTString("array2d"), t_arrayXd, b_array2d);
-    t_arrayXd[2] = Type::vartop(-1);
-    rb(env, m, ASTString("array2d"), t_arrayXd, b_array2d);
     t_arrayXd[2] = Type::optvartop(-1);
     rb(env, m, ASTString("array2d"), t_arrayXd, b_array2d);
   }
@@ -3094,12 +3067,6 @@ void register_builtins(Env& e) {
     t_arrayXd[0] = Type::parsetint();
     t_arrayXd[1] = Type::parsetint();
     t_arrayXd[2] = Type::parsetint();
-    t_arrayXd[3] = Type::top(-1);
-    rb(env, m, ASTString("array3d"), t_arrayXd, b_array3d);
-    t_arrayXd[3].ot(Type::OT_OPTIONAL);
-    rb(env, m, ASTString("array3d"), t_arrayXd, b_array3d);
-    t_arrayXd[3] = Type::vartop(-1);
-    rb(env, m, ASTString("array3d"), t_arrayXd, b_array3d);
     t_arrayXd[3] = Type::optvartop(-1);
     rb(env, m, ASTString("array3d"), t_arrayXd, b_array3d);
   }
@@ -3109,12 +3076,6 @@ void register_builtins(Env& e) {
     t_arrayXd[1] = Type::parsetint();
     t_arrayXd[2] = Type::parsetint();
     t_arrayXd[3] = Type::parsetint();
-    t_arrayXd[4] = Type::top(-1);
-    rb(env, m, ASTString("array4d"), t_arrayXd, b_array4d);
-    t_arrayXd[4].ot(Type::OT_OPTIONAL);
-    rb(env, m, ASTString("array4d"), t_arrayXd, b_array4d);
-    t_arrayXd[4] = Type::vartop(-1);
-    rb(env, m, ASTString("array4d"), t_arrayXd, b_array4d);
     t_arrayXd[4] = Type::optvartop(-1);
     rb(env, m, ASTString("array4d"), t_arrayXd, b_array4d);
   }
@@ -3125,12 +3086,6 @@ void register_builtins(Env& e) {
     t_arrayXd[2] = Type::parsetint();
     t_arrayXd[3] = Type::parsetint();
     t_arrayXd[4] = Type::parsetint();
-    t_arrayXd[5] = Type::top(-1);
-    rb(env, m, ASTString("array5d"), t_arrayXd, b_array5d);
-    t_arrayXd[5].ot(Type::OT_OPTIONAL);
-    rb(env, m, ASTString("array5d"), t_arrayXd, b_array5d);
-    t_arrayXd[5] = Type::vartop(-1);
-    rb(env, m, ASTString("array5d"), t_arrayXd, b_array5d);
     t_arrayXd[5] = Type::optvartop(-1);
     rb(env, m, ASTString("array5d"), t_arrayXd, b_array5d);
   }
@@ -3142,76 +3097,29 @@ void register_builtins(Env& e) {
     t_arrayXd[3] = Type::parsetint();
     t_arrayXd[4] = Type::parsetint();
     t_arrayXd[5] = Type::parsetint();
-    t_arrayXd[6] = Type::top(-1);
-    rb(env, m, ASTString("array6d"), t_arrayXd, b_array6d);
-    t_arrayXd[6].ot(Type::OT_OPTIONAL);
-    rb(env, m, ASTString("array6d"), t_arrayXd, b_array6d);
-    t_arrayXd[6] = Type::vartop(-1);
-    rb(env, m, ASTString("array6d"), t_arrayXd, b_array6d);
     t_arrayXd[6] = Type::optvartop(-1);
     rb(env, m, ASTString("array6d"), t_arrayXd, b_array6d);
   }
   {
     std::vector<Type> stv(3);
-    stv[0] = Type::partop(-1);
+    stv[0] = Type::optvartop(-1);
     stv[1] = Type::parsetint(1);
     stv[2] = Type::parsetint();
     rb(env, m, ASTString("slice_1d"), stv, b_slice);
-    stv[0] = Type::vartop(-1);
-    rb(env, m, ASTString("slice_1d"), stv, b_slice);
-    stv[0] = Type::optvartop(-1);
-    rb(env, m, ASTString("slice_1d"), stv, b_slice);
-    stv[0] = Type::optpartop(-1);
-    rb(env, m, ASTString("slice_1d"), stv, b_slice);
 
     stv.push_back(Type::parsetint());
-    stv[0] = Type::partop(-1);
-    rb(env, m, ASTString("slice_2d"), stv, b_slice);
-    stv[0] = Type::vartop(-1);
-    rb(env, m, ASTString("slice_2d"), stv, b_slice);
-    stv[0] = Type::optvartop(-1);
-    rb(env, m, ASTString("slice_2d"), stv, b_slice);
-    stv[0] = Type::optpartop(-1);
     rb(env, m, ASTString("slice_2d"), stv, b_slice);
 
     stv.push_back(Type::parsetint());
-    stv[0] = Type::partop(-1);
-    rb(env, m, ASTString("slice_3d"), stv, b_slice);
-    stv[0] = Type::vartop(-1);
-    rb(env, m, ASTString("slice_3d"), stv, b_slice);
-    stv[0] = Type::optvartop(-1);
-    rb(env, m, ASTString("slice_3d"), stv, b_slice);
-    stv[0] = Type::optpartop(-1);
     rb(env, m, ASTString("slice_3d"), stv, b_slice);
 
     stv.push_back(Type::parsetint());
-    stv[0] = Type::partop(-1);
-    rb(env, m, ASTString("slice_4d"), stv, b_slice);
-    stv[0] = Type::vartop(-1);
-    rb(env, m, ASTString("slice_4d"), stv, b_slice);
-    stv[0] = Type::optvartop(-1);
-    rb(env, m, ASTString("slice_4d"), stv, b_slice);
-    stv[0] = Type::optpartop(-1);
     rb(env, m, ASTString("slice_4d"), stv, b_slice);
 
     stv.push_back(Type::parsetint());
-    stv[0] = Type::partop(-1);
-    rb(env, m, ASTString("slice_5d"), stv, b_slice);
-    stv[0] = Type::vartop(-1);
-    rb(env, m, ASTString("slice_5d"), stv, b_slice);
-    stv[0] = Type::optvartop(-1);
-    rb(env, m, ASTString("slice_5d"), stv, b_slice);
-    stv[0] = Type::optpartop(-1);
     rb(env, m, ASTString("slice_5d"), stv, b_slice);
 
     stv.push_back(Type::parsetint());
-    stv[0] = Type::partop(-1);
-    rb(env, m, ASTString("slice_6d"), stv, b_slice);
-    stv[0] = Type::vartop(-1);
-    rb(env, m, ASTString("slice_6d"), stv, b_slice);
-    stv[0] = Type::optvartop(-1);
-    rb(env, m, ASTString("slice_6d"), stv, b_slice);
-    stv[0] = Type::optpartop(-1);
     rb(env, m, ASTString("slice_6d"), stv, b_slice);
   }
   {
@@ -3225,19 +3133,7 @@ void register_builtins(Env& e) {
     std::vector<Type> t(3);
     t[0] = Type::parbool();
     t[1] = Type::parstring();
-    t[2] = Type::top();
-    rb(env, m, env.constants.ids.assert, t, b_assert);
-    t[2] = Type::optpartop();
-    rb(env, m, env.constants.ids.assert, t, b_assert);
-    t[2] = Type::vartop();
-    rb(env, m, env.constants.ids.assert, t, b_assert);
     t[2] = Type::optvartop();
-    rb(env, m, env.constants.ids.assert, t, b_assert);
-    t[2] = Type::top(-1);
-    rb(env, m, env.constants.ids.assert, t, b_assert);
-    t[2] = Type::optpartop(-1);
-    rb(env, m, env.constants.ids.assert, t, b_assert);
-    t[2] = Type::vartop(-1);
     rb(env, m, env.constants.ids.assert, t, b_assert);
     t[2] = Type::optvartop(-1);
     rb(env, m, env.constants.ids.assert, t, b_assert);
@@ -3282,31 +3178,7 @@ void register_builtins(Env& e) {
   {
     std::vector<Type> t(2);
     t[0] = Type::parstring();
-    t[1] = Type::top();
-    rb(env, m, env.constants.ids.trace, t, b_trace);
-    rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
-    rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
-    t[1] = Type::optpartop();
-    rb(env, m, env.constants.ids.trace, t, b_trace);
-    rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
-    rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
-    t[1] = Type::vartop();
-    rb(env, m, env.constants.ids.trace, t, b_trace);
-    rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
-    rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
     t[1] = Type::optvartop();
-    rb(env, m, env.constants.ids.trace, t, b_trace);
-    rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
-    rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
-    t[1] = Type::top(-1);
-    rb(env, m, env.constants.ids.trace, t, b_trace);
-    rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
-    rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
-    t[1] = Type::optpartop(-1);
-    rb(env, m, env.constants.ids.trace, t, b_trace);
-    rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
-    rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
-    t[1] = Type::vartop(-1);
     rb(env, m, env.constants.ids.trace, t, b_trace);
     rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
     rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
@@ -3550,7 +3422,7 @@ void register_builtins(Env& e) {
   }
   {
     std::vector<Type> t(1);
-    t[0] = Type::optvartop(1);
+    t[0] = Type::optvartop(-1);
     rb(env, m, ASTString("fix"), t, b_fix_array);
   }
   {

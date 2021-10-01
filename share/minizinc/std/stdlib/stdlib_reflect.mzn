@@ -82,10 +82,10 @@ function par bool: has_ub_set(var set of int: x);
 
 /** @group stdlib.reflect Check if the value of \a x is fixed at this point
   in evaluation. If it is fixed, return its value, otherwise abort. */
-function $T: fix(var opt $T: x);
+function $T: fix(any $T: x);
 /** @group stdlib.reflect Check if the value of every element of the array \a x is fixed
 at this point in evaluation. If all are fixed, return an array of their values, otherwise abort. */
-function array[$U] of $T: fix(array[$U] of var opt $T: x);
+function array[$U] of $T: fix(array[$U] of any $T: x);
 /** @group stdlib.reflect Test if \a x is fixed */
 function bool: is_fixed(any $T: x);
 /** @group stdlib.reflect Test if every element of array \a x is fixed */
