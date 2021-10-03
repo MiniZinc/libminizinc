@@ -407,6 +407,8 @@ public:
             auto* ident = c->decl(i, j)->id();
             if (ident->idn() == -1) {
               _os << ident->v();
+            } else if (ident->idn() < -1) {
+              _os << "_";
             } else {
               _os << "X_INTRODUCED_" << ident->idn() << "_";
             }
@@ -1295,6 +1297,8 @@ public:
         Id* ident = c->decl(i, j)->id();
         if (ident->idn() == -1) {
           ss << ident->v();
+        } else if (ident->idn() < -1) {
+          ss << "_";
         } else {
           ss << "X_INTRODUCED_" << ident->idn() << "_";
         }
@@ -1520,8 +1524,12 @@ public:
             auto* gen = new DocumentList("", "", "");
             auto* idents = new DocumentList("", ", ", "");
             for (int j = 0; j < com->numberOfDecls(i); j++) {
-              idents->addStringToList(std::string(com->decl(i, j)->id()->v().c_str(),
-                                                  com->decl(i, j)->id()->v().size()));
+              if (com->decl(i, j)->id()->idn() < -1) {
+                idents->addStringToList("_");
+              } else {
+                idents->addStringToList(std::string(com->decl(i, j)->id()->v().c_str(),
+                                                    com->decl(i, j)->id()->v().size()));
+              }
             }
             gen->addDocumentToList(idents);
             if (com->in(i) == nullptr) {

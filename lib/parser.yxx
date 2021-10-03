@@ -1386,8 +1386,12 @@ id_list : id_list_head comma_or_none
 id_list_head :
       MZN_IDENTIFIER
       { $$=new std::vector<std::string>; $$->push_back($1); free($1); }
+    | MZN_UNDERSCORE
+      { $$=new std::vector<std::string>; $$->push_back(""); }
     | id_list_head ',' MZN_IDENTIFIER
       { $$=$1; if ($$ && $3) $$->push_back($3); free($3); }
+    | id_list_head ',' MZN_UNDERSCORE
+      { $$=$1; if ($$) $$->push_back(""); }
 
 simple_array_literal : 
       MZN_LEFT_BRACKET MZN_RIGHT_BRACKET

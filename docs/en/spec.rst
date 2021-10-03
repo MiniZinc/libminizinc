@@ -1682,6 +1682,13 @@ For example (with the literal equivalents on the right):
 
     [2*i | i in 1..5]       % [2, 4, 6, 8, 10]
 
+A generator variable in an array comprehension can also be the anonymous variable :mzn:`_`.
+For instance, the following generates an array of :mzn:`n*n` ones:
+
+.. code-block:: minizinc
+
+    [ 1 | _, _ in 1..n ]
+
 Array comprehensions have more flexible type and inst requirements than set
 comprehensions (see :ref:`spec-Set-Comprehensions`).
 

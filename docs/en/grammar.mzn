@@ -190,7 +190,7 @@
 
 <comp-tail> ::= <generator> [ "where" <expr> ] "," ...
 
-<generator> ::= <ident> "," ... "in" <expr>
+<generator> ::= ( <ident> | "_" ) "," ... "in" <expr>
 
 % Array literals
 <array-literal> ::= "[" [ <expr> "," ... ] "]"

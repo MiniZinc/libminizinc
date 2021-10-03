@@ -62,7 +62,8 @@ void Scopes::add(EnvI& env, VarDecl* vd) {
   auto vdi = _s.back().m.find(vd->id());
   if (vdi == _s.back().m.end()) {
     _s.back().m.insert(vd->id(), vd);
-  } else {
+  } else if (vd->id()->idn() >= 0) {
+    GCLock lock;
     std::ostringstream ss;
     ss << "identifier `" << vd->id()->str() << "' already defined";
     throw TypeError(env, vd->loc(), ss.str());

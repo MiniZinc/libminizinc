@@ -304,6 +304,9 @@ ASTString Id::str() const {
   if (idn() == -1) {
     return v();
   }
+  if (idn() < -1) {
+    return ASTString("_");
+  }
   std::ostringstream oss;
   oss << "X_INTRODUCED_" << idn() << "_";
   return oss.str();
@@ -531,8 +534,14 @@ Generator::Generator(const std::vector<Id*>& v, Expression* in, Expression* wher
 Generator::Generator(const std::vector<std::string>& v, Expression* in, Expression* where) {
   std::vector<VarDecl*> vd;
   Location loc = in == nullptr ? where->loc() : in->loc();
+  int anon_count = -2;
   for (const auto& i : v) {
-    auto* nvd = new VarDecl(loc, new TypeInst(loc, Type::parint()), ASTString(i));
+    VarDecl* nvd;
+    if (i.empty()) {
+      nvd = new VarDecl(loc, new TypeInst(loc, Type::parint()), anon_count--);
+    } else {
+      nvd = new VarDecl(loc, new TypeInst(loc, Type::parint()), ASTString(i));
+    }
     nvd->toplevel(false);
     vd.push_back(nvd);
   }
