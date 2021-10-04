@@ -8,7 +8,7 @@ include "fzn_lex_chain_lesseq_int_reif.mzn";
   non-decreasing.
 */
 predicate lex_chain_lesseq(array[int, int] of var bool: a) = 
-	if card(index_set_2of2(a)) then 
+	if card(index_set_2of2(a)) > 1 then 
 		fzn_lex_chain_lesseq_bool(a)
 	endif;
 

@@ -13,7 +13,7 @@ function array[int] of var $$E: arg_sort(array[$$E] of var int:x) :: promise_tot
 		[] 
 	else
 		let {
-			array[1..length(x)] of var l..u: p;
+			array[1..length(x)] of var index_set(x): p;
 			constraint analyse_all_different(p);
 			constraint fzn_arg_sort_int(x, p);
 		} in p
@@ -31,7 +31,7 @@ function array[int] of var $$E: arg_sort(array[$$E] of var float: x) :: promise_
 		[] 
 	else
 		let {
-			array[1..length(x)] of var l..u: p;
+			array[1..length(x)] of var index_set(x): p;
 			constraint analyse_all_different(p);
 			constraint fzn_arg_sort_float(x, p);
 		} in p

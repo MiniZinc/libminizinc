@@ -1,5 +1,5 @@
 include "fzn_value_precede_int.mzn";
-include "fzn_value_precede_int_int_reif.mzn";
+include "fzn_value_precede_int_reif.mzn";
 include "fzn_value_precede_int_opt.mzn";
 include "fzn_value_precede_set.mzn";
 include "fzn_value_precede_set_reif.mzn";

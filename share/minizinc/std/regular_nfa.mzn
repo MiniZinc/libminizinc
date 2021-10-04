@@ -33,7 +33,7 @@ predicate regular_nfa(
 		(q0 in 1..Q),
 		"regular_nfa: start state 'q0' not in 1..Q",
 	)
-	assert(
+	/\ assert(
 		F subset 1..Q,
 		"regular_nfa: final states in 'F' contain states outside 1..Q",
 	)
@@ -70,7 +70,7 @@ predicate regular_nfa(
 		(q0 in 1..Q),
 		"regular_nfa: start state 'q0' not in 1..Q",
 	)
-	assert(
+	/\ assert(
 		F subset 1..Q,
 		"regular_nfa: final states in 'F' contain states outside 1..Q",
 	)
