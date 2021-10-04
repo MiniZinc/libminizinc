@@ -44,6 +44,7 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
           nctx.b = C_MIX;
         }
 
+        CallStackItem csi_vd(env, vd);
         EE ee = flat_exp(env, nctx, vd->e(), nullptr, nctx.partialityVar(env));
         let_e = ee.r();
         cs.push_back(ee);
