@@ -1749,6 +1749,10 @@ bool b_output_to_section(EnvI& env, Call* call) {
   }
   std::string section_s = eval_string(env, section);
 
+  if (section_s == "dzn" || section_s == "json") {
+    throw EvalError(env, call->loc(), "The output section '" + section_s + "' is reserved.");
+  }
+
   // Collect the values of function arguments so that they are available
   // during output evaluation.
   CopyMap cm;
