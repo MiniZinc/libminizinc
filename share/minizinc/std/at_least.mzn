@@ -8,26 +8,19 @@ include "fzn_at_least_set_reif.mzn";
 
   This constraint is deprecated. Use count(i in x)(i=v) >= n instead.
 */
-predicate at_least(int: n, array[int] of var int: x, int: v) =
-    fzn_at_least_int(n, x, v);
-
-predicate at_least_reif(int: n, array[int] of var int: x, int: v, var bool: b) =
-    fzn_at_least_int_reif(n, x, v, b);
-
+predicate at_least(int: n, array[$X] of var $$E: x, $$E: v) =
+	fzn_at_least_int(n, array1d(x), v);
 
 /**  @group globals.counting
   Requires at least \a n variables in \a x to take the value \a v.
 */
-predicate at_least(int: n, array[$X] of var set of int: x, set of int: v) =
-    fzn_at_least_set(n, array1d(x), v);
-
-predicate at_least_reif(int: n, array[$X] of var set of int: x, set of int: v, var bool: b) =
-    fzn_at_least_set_reif(n, array1d(x), v, b);
+predicate at_least(int: n, array[$X] of var set of $$E: x, set of $$E: v) =
+	fzn_at_least_set(n, array1d(x), v);
 
 % Synonyms for the above.
 
-predicate atleast(int: n, array[int] of var int: x, int: v) =
-    at_least(n, x, v);
+predicate atleast(int: n, array[$X] of var $$E: x, $$E: v) =
+  at_least(n, x, v);
 
-predicate atleast(int: n, array[$X] of var set of int: x, set of int: v) =
-    at_least(n, x, v);
+predicate atleast(int: n, array[$X] of var set of $$E: x, set of $$E: v) =
+  at_least(n, x, v);

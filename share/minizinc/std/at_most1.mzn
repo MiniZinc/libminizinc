@@ -7,8 +7,5 @@ include "fzn_at_most1_reif.mzn";
 predicate at_most1(array[$X] of var set of int: s) =
     fzn_at_most1(array1d(s));
 
-predicate at_most1_reif(array[$X] of var set of int: s, var bool: b) =
-    fzn_at_most1_reif(array1d(s), b);
-
 % Synonym for the above.
 predicate atmost1(array[$X] of var set of int: s) = at_most1(s);

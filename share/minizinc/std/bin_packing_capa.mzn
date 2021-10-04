@@ -23,17 +23,4 @@ predicate bin_packing_capa(array[int] of int: c,
         fzn_bin_packing_capa(c, bin, w)    
     )));
 
-predicate bin_packing_capa_reif(array[int] of int: c,
-                           array[int] of var int: bin,
-                           array[int] of int: w,
-                           var bool: b) =
-    assert(index_set(bin) = index_set(w),
-        "bin_packing_capa: the bin and weight arrays must have identical index sets",
-    assert(lb_array(w) >= 0,
-        "bin_packing_capa: the weights must be non-negative",
-    assert(lb_array(c) >= 0,
-        "bin_packing_capa: the capacities must be non-negative",
-        fzn_bin_packing_capa_reif(c, bin, w, b)
-    )));
-
 %-----------------------------------------------------------------------------%

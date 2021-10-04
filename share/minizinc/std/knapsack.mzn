@@ -15,8 +15,13 @@ include "fzn_knapsack_reif.mzn";
 @param W: sum of sizes of all items in the knapsack
 @param P: sum of profits of all items in the knapsack
 */
-predicate knapsack(array[int] of int: w, array[int] of int:p, 
-                   array[int] of var int:x, var int: W, var int: P) = 
+predicate knapsack(
+	array[$$I] of int: w,
+	array[$$I] of int:p, 
+	array[$$I] of var int: x,
+	var int: W,
+	var int: P
+) = 
 	assert(index_set(w) = index_set(p) /\ index_set(w) = index_set(x),
 		"index set of weights must be equal to index set of profits and index set of items",
 	assert(lb_array(w) >= 0,

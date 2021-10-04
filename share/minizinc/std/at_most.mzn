@@ -8,24 +8,19 @@ include "fzn_at_most_set_reif.mzn";
 
   This constraint is deprecated. Use count(i in x)(i=v) <= n instead.
 */
-predicate at_most(int: n, array[int] of var int: x, int: v) =
-    fzn_at_most_int(n, x, v);
-
-predicate at_most_reif(int: n, array[int] of var int: x, int: v, var bool: b) =
-    fzn_at_most_int_reif(n, x, v, b);
+predicate at_most(int: n, array[$X] of var $$E: x, $$E: v) =
+	fzn_at_most_int(n, array1d(x), v);
 
 /**  @group globals.counting
   Requires at most \a n variables in \a x to take the value \a v.
 */
-predicate at_most(int: n, array[$X] of var set of int: x, set of int: v) =
-    fzn_at_most_set(n, array1d(x), v);
-predicate at_most_reif(int: n, array[$X] of var set of int: x, set of int: v, var bool: b) =
-    fzn_at_most_set_reif(n, array1d(x), v,b);
+predicate at_most(int: n, array[$X] of var set of $$E: x, set of $$E: v) =
+	fzn_at_most_set(n, array1d(x), v);
 
 % Synonyms for the above.
 
-predicate atmost(int: n, array[int] of var int: x, int: v) =
+predicate atmost(int: n, array[$X] of var $$E: x, $$E: v) =
     at_most(n, x, v);
 
-predicate atmost(int: n, array[$X] of var set of int: x, set of int: v) =
+predicate atmost(int: n, array[$X] of var set of $$E: x, set of $$E: v) =
     at_most(n, x, v);

@@ -29,8 +29,8 @@ predicate subgraph(int: N, int: E, array[int] of int: from, array[int] of int: t
     @param ns: a Boolean for each node whether it is in the subgraph
     @param es: a Boolean for each edge whether it is in the subgraph
 */
-predicate subgraph(array[int] of $$N: from, array[int] of $$N: to,
-                   array[$$N] of var bool: ns, array[int] of var bool: es) =
+predicate subgraph(array[$$E] of $$N: from, array[$$E] of $$N: to,
+                   array[$$N] of var bool: ns, array[$$E] of var bool: es) =
     assert(index_set(from) = index_set(to),"subgraph: index set of from and to must be identical") /\
     assert(index_set(from) = index_set(es),"subgraph: index set of from and es must be identical") /\
     assert(dom_array(from) subset index_set(ns),"subgraph: elements in from must be in index set of ns") /\

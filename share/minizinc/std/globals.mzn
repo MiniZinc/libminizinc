@@ -122,7 +122,6 @@ include "range_fn.mzn";
 include "reachable.mzn";   
 include "regular.mzn";
 include "regular_nfa.mzn";
-include "regular_set.mzn";
 include "regular_regexp.mzn";
 include "roots.mzn";
 include "roots_fn.mzn";

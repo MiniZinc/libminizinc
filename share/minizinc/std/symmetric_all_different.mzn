@@ -9,6 +9,3 @@ include "fzn_symmetric_all_different_reif.mzn";
 predicate symmetric_all_different(array[int] of var int:x) =
     analyse_all_different(x) /\
     fzn_symmetric_all_different(x);
-
-predicate symmetric_all_different_reif(array[int] of var int:x, var bool: b) =
-    fzn_symmetric_all_different_reif(x,b);

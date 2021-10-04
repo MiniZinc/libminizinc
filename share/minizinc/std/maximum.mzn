@@ -2,7 +2,7 @@
 
   Assumptions: |\a x| > 0.
 */
-predicate maximum(var int: m, array[int] of var int: x) =
+predicate maximum(var $$E: m, array[int] of var $$E: x) =
     array_int_maximum(m, x);
 
 /** @group globals Constrains \a m to be the maximum of the values in \a x.

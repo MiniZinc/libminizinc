@@ -9,8 +9,8 @@ include "fzn_write_reif.mzn";
     \a i is an index for \a I
     \a v is an integer value 
 */
-predicate write(array[int] of var int: I, var int: i, var int: v,
-                array[int] of var int: O) =
+predicate write(array[$$E] of var int: I, var int: i, var int: v,
+                array[$$E] of var int: O) =
     assert(index_set(O) = index_set(I),"writet: index set of I must be same as O") /\
     fzn_write(I, i, v, O);
 

@@ -7,13 +7,9 @@ include "analyse_all_different.mzn";
   inverse functions.  All the values in each array must be within the index
   set of the other array.
 */
-predicate inverse(array[int] of var int: f,
-                  array[int] of var int: invf) =
-    analyse_all_different(f) /\
-    analyse_all_different(invf) /\
-    fzn_inverse(f, invf);
-
-predicate inverse_reif(array[int] of var int: f,
-                       array[int] of var int: invf,
-                       var bool: b) =
-    fzn_inverse_reif(f, invf, b);
+predicate inverse(
+	array[$$X] of var $$Y: f,
+	array[$$Y] of var $$X: invf
+) = analyse_all_different(f)
+	/\ analyse_all_different(invf)
+	/\ fzn_inverse(f, invf);

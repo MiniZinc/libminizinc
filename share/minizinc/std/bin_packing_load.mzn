@@ -22,14 +22,3 @@ predicate bin_packing_load(array[int] of var int: load,
         "bin_packing_load: the weights must be non-negative",
         fzn_bin_packing_load(load, bin, w)
     ));
-
-predicate bin_packing_load_reif(array[int] of var int: load,
-                           array[int] of var int: bin,
-                           array[int] of int: w,
-                           var bool: b) =
-    assert(index_set(bin) == index_set(w),
-        "bin_packing_load: the bin and weight arrays must have identical index sets",
-    assert(lb_array(w) >= 0,
-        "bin_packing_load: the weights must be non-negative",
-        fzn_bin_packing_load_reif(load, bin, w, b)
-    ));

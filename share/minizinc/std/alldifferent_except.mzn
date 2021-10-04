@@ -7,7 +7,3 @@ include "fzn_alldifferent_except_reif.mzn";
 */
 predicate alldifferent_except(array[$X] of var int: vs, set of int: S) = 
    fzn_alldifferent_except(array1d(vs),S);
-
-predicate alldifferent_except_reif(array[$X] of var int: vs, set of int: S, var bool: b) = 
-   fzn_alldifferent_except_reif(array1d(vs),S,b);
-
