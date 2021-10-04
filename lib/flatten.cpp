@@ -2997,6 +2997,16 @@ void flatten(Env& e, FlatteningOptions opt) {
           GCLock lock;
           ArrayLit* al = eval_array_lit(env, v->e()->e());
           v->e()->e(al);
+
+          for (unsigned int i = 0; i < v->e()->ti()->ranges().size(); i++) {
+            if (v->e()->ti()->ranges()[i]->domain() != nullptr) {
+              IntSetVal* isv = eval_intset(env, v->e()->ti()->ranges()[i]->domain());
+              if (isv->size() > 1) {
+                throw EvalError(env, v->e()->ti()->ranges()[i]->domain()->loc(),
+                                "array index set must be contiguous range");
+              }
+            }
+          }
           check_index_sets(env, v->e(), v->e()->e());
           if (!al->empty()) {
             if (v->e()->type().bt() == Type::BT_INT && v->e()->type().st() == Type::ST_PLAIN) {
