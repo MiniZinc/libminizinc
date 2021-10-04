@@ -559,6 +559,28 @@ public:
 }  // namespace
 
 void type_demonomorphise_library(Env& e, Model* model) {
+  std::vector<FunctionI*> toRename;
+  ASTStringSet functionIds;
+  for (auto& fi : model->functions()) {
+    if (!fi.fromStdLib()) {
+      if (fi.id().beginsWith("\\")) {
+        toRename.push_back(&fi);
+      }
+      if (fi.id().find('@') != std::string::npos) {
+        functionIds.insert(fi.id());
+      }
+    }
+  }
+  for (auto* fi : toRename) {
+    GCLock lock;
+    std::string ident(fi->id().c_str());
+    ident[0] = '_';
+    while (functionIds.find(ASTString(ident)) != functionIds.end()) {
+      ident = "_" + ident;
+    }
+    fi->id(ASTString(ident));
+    functionIds.insert(ident);
+  }
   ItemDemonomorphiser idm;
   iter_items(idm, model);
 }
