@@ -1583,6 +1583,7 @@ Constants::Constants() {
   ids.count = addString("count");
   ids.element = addString("element");
   ids.anon_enum = addString("anon_enum");
+  ids.anon_enum_set = addString("anon_enum_set");
   ids.enumFromConstructors = addString("enumFromConstructors");
 
   ids.show = addString("show");

@@ -5,6 +5,8 @@
 %TODO: Document these
 function set of int: anon_enum(int: n) = 1..n;
 
+function set of int: anon_enum_set(set of int: S) = 1..card(S);
+
 function set of int: anon_enum(array[int] of string: x);
 
 /** @group stdlib.enum Return enum set of \a x */

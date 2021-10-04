@@ -2140,16 +2140,16 @@ Because enum case names all reside in the top-level namespace
 (:ref:`spec-Namespaces`), case names in different enums must be distinct.
 
 Instead of defining explicit, named enum cases, it is also possible to define an *anonymous enum*. 
-The special :mzn:`anon_enum` enum constructor takes a single integer argument that determines
-the number of enum cases. For example,
+The special enum constructor :mzn:`_` takes an integer set argument. For example,
 
 .. code-block:: minizinc
 
-    enum Slot = anon_enum(n);
+    enum Slot = _(1..n);
 
-defines an enumerated type :mzn:`Slot` with :mzn:`n` cases.
+defines an enumerated type :mzn:`Slot` with :mzn:`n` cases. An alternative syntax for
+anonymous enums is :mzn:`enum Slot = anon_enum(n);`, which defines the same enum as the code above.
 
-Enumerated type items can also be defined in terms of other enumerated types by using an *enumerated type constructor* and the :mzn:`++` operator, as in the following example:
+Enumerated type items can also be defined in terms of other sets and enumerated types by using an *enumerated type constructor* and the :mzn:`++` operator, as in the following example:
 
 .. code-block:: minizinc
 
@@ -2163,6 +2163,14 @@ The :mzn:`country_or_none` type now contains all of the cases of the :mzn:`count
     country: c = C⁻¹(c_o_n);
 
 The inverse operator can be written using unicode characters (as in the example) or using ASCII syntax, e.g. :mzn:`C^-1(c_o_n)`.
+
+The same enum constructor syntax also works with integer sets, for example
+
+.. code-block:: minizinc
+
+    enum Node = Left(1..n) ++ Right(1..n);
+
+declares an enum for nodes in a bipartite graph with :mzn:`n` left nodes and :mzn:`n` right nodes.
 
 An enum can be declared but not defined, in which case it must be defined
 elsewhere within the model, or in a data file.
@@ -2215,12 +2223,18 @@ For each enumerated type :mzn:`T`, the following functions exist:
 .. code-block:: minizinc
 
   % Return next greater enum value of x in enum type X
-  function T: enum_next(set of T: X, T: x);
-  function var T: enum_next(set of T: X, var T: x);
+  function T: enum_next(T: x);
+  function var T: enum_next(var T: x);
   
   % Return next smaller enum value of x in enum type X
-  function T: enum_prev(set of T: X, T: x);
-  function var T: enum_prev(set of T: X, var T: x);
+  function T: enum_prev(T: x);
+  function var T: enum_prev(var T: x);
+
+  % Return enum base set for value x in enum type x
+  function set of T: enum_of(T: x);
+  function set of T: enum_of(var T: x);
+  function set of T: enum_of(set of T: x);
+  function set of T: enum_of(var set of T: x);
 
   % Convert x to enum type X
   function T: to_enum(set of T: X, int: x);

@@ -795,7 +795,7 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
           std::cerr << c->arg(j)->type().toString(env) << " does not match "
                     << fi_t[j].toString(env) << "\n";
-          std::cerr << "Wrong argument is " << *c->arg(j);
+          std::cerr << "Wrong argument is " << *c->arg(j) << "\n";
 #endif
           match = false;
           break;

@@ -74,9 +74,14 @@ public:
   Model* model;
   /// A set of identifiers that require a toString function (for enums)
   IdMap<bool>& needToString;
+  /// A list of enum constructors that require type checking
+  std::vector<Call*>& enumConstructorSetTypes;
 
-  TopoSorter(Model* model0, IdMap<bool>& needToString0)
-      : model(model0), needToString(needToString0) {}
+  TopoSorter(Model* model0, IdMap<bool>& needToString0,
+             std::vector<Call*>& enumConstructorSetTypes0)
+      : model(model0),
+        needToString(needToString0),
+        enumConstructorSetTypes(enumConstructorSetTypes0) {}
 
   /// Add a variable declaration item
   void add(EnvI& env, VarDeclI* vd, bool handleEnums, Model* enumItems);

@@ -160,7 +160,7 @@ public:
 // Create all required mapping functions for a new enum
 // (mapping enum identifiers to strings, and mapping between different enums)
 void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Model* enumItems,
-                        IdMap<bool>& needToString) {
+                        IdMap<bool>& needToString, std::vector<Call*>& enumConstructorSetTypes) {
   GCLock lock;
 
   Id* ident = vd->id();
@@ -342,7 +342,8 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
                                ti_fi, fi_params, ite);
       enumItems->addItem(fi);
     } else if (Call* c = parts[p]->dynamicCast<Call>()) {
-      if (c->id() == env.constants.ids.anon_enum) {
+      enumConstructorSetTypes.push_back(c);
+      if (c->id() == env.constants.ids.anon_enum || c->id() == env.constants.ids.anon_enum_set) {
         Type tx = Type::parint();
         tx.ot(Type::OT_OPTIONAL);
         auto* ti_aa = new TypeInst(Location().introduce(), tx);
@@ -370,14 +371,20 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
                                                                        ident->str().c_str() + ","));
 
         std::vector<Expression*> showIntArgs(1);
+        Expression* enumCard;
+        if (c->id() == env.constants.ids.anon_enum) {
+          enumCard = c->arg(0);
+        } else {
+          enumCard = new Call(Location().introduce(), env.constants.ids.card, {c->arg(0)});
+        }
         if (partCardinality.empty()) {
           showIntArgs[0] = deopt;
-          partCardinality.push_back(c->arg(0));
+          partCardinality.push_back(enumCard);
         } else {
           showIntArgs[0] =
               new BinOp(Location().introduce(), partCardinality.back(), BOT_PLUS, deopt);
           partCardinality.push_back(
-              new BinOp(Location().introduce(), partCardinality.back(), BOT_PLUS, c->arg(0)));
+              new BinOp(Location().introduce(), partCardinality.back(), BOT_PLUS, enumCard));
         }
 
         Call* showInt = new Call(Location().introduce(), env.constants.ids.show, showIntArgs);
@@ -430,11 +437,56 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
       } else {
         // This is an enum constructor C(E)
 
-        if (c->argCount() != 1 || !c->arg(0)->isa<Id>()) {
-          throw TypeError(env, c->loc(),
-                          "enum constructors must have a single identifier as argument");
+        if (c->argCount() != 1) {
+          throw TypeError(env, c->loc(), "enum constructors must have a single argument");
         }
-        Id* otherEnumId = c->arg(0)->cast<Id>();
+
+        auto* constructorArgId = Expression::dynamicCast<Id>(c->arg(0));
+        if (constructorArgId == nullptr) {
+          // expression is not an identifer, create new VarDecl for the argument
+          std::ostringstream constructorArgIdent;
+          constructorArgIdent << "_constrId_" << p << "_" << *ident;
+          auto* constructorArgVd =
+              new VarDecl(Location().introduce(),
+                          new TypeInst(Location().introduce(), Type::parsetint(), nullptr),
+                          constructorArgIdent.str(), c->arg(0));
+          enumItems->addItem(new VarDeclI(Location().introduce(), constructorArgVd));
+          constructorArgId = constructorArgVd->id();
+        }
+
+        {
+          // Add assertion that constructor argument is contiguous set
+          // constraint assert(max(constructorArgId)-min(constructorArgId)+1 =
+          // card(constructorArgId))
+          auto* min = new Call(Location().introduce(), ASTString("min"), {constructorArgId});
+          auto* max = new Call(Location().introduce(), ASTString("max"), {constructorArgId});
+          auto* card = new Call(Location().introduce(), ASTString("card"), {constructorArgId});
+          auto* bo0 = new BinOp(Location().introduce(), max, BOT_MINUS, min);
+          auto* bo1 = new BinOp(Location().introduce(), bo0, BOT_PLUS, IntLit::a(1));
+          auto* bo2 = new BinOp(Location().introduce(), bo1, BOT_EQ, card);
+          std::ostringstream oss;
+          oss << "argument for enum constructor `" << c->id() << "' is not a contiguous set";
+          auto* e = new StringLit(Location().introduce(), oss.str());
+          Call* a = new Call(c->loc(), env.constants.ids.assert, {bo2, e});
+          enumItems->addItem(new ConstraintI(Location().introduce(), a));
+        }
+
+        // Compute minimum-1 of constructor argument
+        Id* constructorArgMin;
+        {
+          auto* min = new Call(Location().introduce(), ASTString("min"), {constructorArgId});
+          Expression* prevCard = partCardinality.empty() ? IntLit::a(0) : partCardinality.back();
+          auto* minMinusOne =
+              new BinOp(Location().introduce(), prevCard, BOT_MINUS,
+                        new BinOp(Location().introduce(), min, BOT_MINUS, IntLit::a(1)));
+          std::ostringstream constructorArgMinIdent;
+          constructorArgMinIdent << "_constrMin_" << p << "_" << *ident;
+          auto* constructorArgMinVd = new VarDecl(
+              Location().introduce(), new TypeInst(Location().introduce(), Type::parint(), nullptr),
+              constructorArgMinIdent.str(), minMinusOne);
+          enumItems->addItem(new VarDeclI(Location().introduce(), constructorArgMinVd));
+          constructorArgMin = constructorArgMinVd->id();
+        }
 
         // Generate:
         /*
@@ -450,15 +502,11 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           Type Xt = Type::parint();
           Xt.enumId(enumId);
           auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
-          auto* Cfn_x_ti = new TypeInst(Location().introduce(), Type(), otherEnumId);
+          auto* Cfn_x_ti = new TypeInst(Location().introduce(), Type(), constructorArgId);
           auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
           vd_x->toplevel(false);
-          Expression* realX;
-          if (partCardinality.empty()) {
-            realX = vd_x->id();
-          } else {
-            realX = new BinOp(Location().introduce(), partCardinality.back(), BOT_PLUS, vd_x->id());
-          }
+          Expression* realX =
+              new BinOp(Location().introduce(), constructorArgMin, BOT_PLUS, vd_x->id());
           auto* Cfn_body = new Call(Location().introduce(), "to_enum", {vd->id(), realX});
 
           std::string Cfn_id(c->id().c_str());
@@ -472,15 +520,11 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
           Type argT;
           argT.ti(Type::TI_VAR);
-          auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, otherEnumId);
+          auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, constructorArgId);
           auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
           vd_x->toplevel(false);
-          Expression* realX;
-          if (partCardinality.empty()) {
-            realX = vd_x->id();
-          } else {
-            realX = new BinOp(Location().introduce(), partCardinality.back(), BOT_PLUS, vd_x->id());
-          }
+          Expression* realX =
+              new BinOp(Location().introduce(), constructorArgMin, BOT_PLUS, vd_x->id());
           auto* Cfn_body = new Call(Location().introduce(), "to_enum", {vd->id(), realX});
 
           std::string Cfn_id(c->id().c_str());
@@ -494,7 +538,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
           Type argT;
           argT.ot(Type::OT_OPTIONAL);
-          auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, otherEnumId);
+          auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, constructorArgId);
           auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
           std::string Cfn_id(c->id().c_str());
           vd_x->toplevel(false);
@@ -515,7 +559,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           Type argT;
           argT.ti(Type::TI_VAR);
           argT.ot(Type::OT_OPTIONAL);
-          auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, otherEnumId);
+          auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, constructorArgId);
           auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
           std::string Cfn_id(c->id().c_str());
           vd_x->toplevel(false);
@@ -535,7 +579,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
           Type argT;
           argT.st(Type::ST_SET);
-          auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, otherEnumId);
+          auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, constructorArgId);
           auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
           std::string Cfn_id(c->id().c_str());
           vd_x->toplevel(false);
@@ -558,7 +602,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           Type argT;
           argT.ti(Type::TI_VAR);
           argT.st(Type::ST_SET);
-          auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, otherEnumId);
+          auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, constructorArgId);
           auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
           std::string Cfn_id(c->id().c_str());
           vd_x->toplevel(false);
@@ -583,20 +627,15 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
          function var set of E: C⁻¹(var set of X: x) = { C⁻¹(i) | i in x }
          */
         {
-          auto* toEfn_ti = new TypeInst(Location().introduce(), Type(), otherEnumId);
+          auto* toEfn_ti = new TypeInst(Location().introduce(), Type(), constructorArgId);
           Type Xt = Type::parint();
           Xt.enumId(enumId);
           auto* toEfn_x_ti = new TypeInst(Location().introduce(), Xt, vd->id());
           auto* vd_x = new VarDecl(Location().introduce(), toEfn_x_ti, "x");
           vd_x->toplevel(false);
-          Expression* realX;
-          if (partCardinality.empty()) {
-            realX = vd_x->id();
-          } else {
-            realX =
-                new BinOp(Location().introduce(), vd_x->id(), BOT_MINUS, partCardinality.back());
-          }
-          auto* toEfn_body = new Call(Location().introduce(), "to_enum", {otherEnumId, realX});
+          Expression* realX =
+              new BinOp(Location().introduce(), vd_x->id(), BOT_MINUS, constructorArgMin);
+          auto* toEfn_body = new Call(Location().introduce(), "to_enum", {constructorArgId, realX});
 
           std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
           auto* toEfn =
@@ -606,20 +645,15 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
         {
           Type rT;
           rT.ti(Type::TI_VAR);
-          auto* toEfn_ti = new TypeInst(Location().introduce(), rT, otherEnumId);
+          auto* toEfn_ti = new TypeInst(Location().introduce(), rT, constructorArgId);
           Type Xt = Type::varint();
           Xt.enumId(enumId);
           auto* toEfn_x_ti = new TypeInst(Location().introduce(), Xt, vd->id());
           auto* vd_x = new VarDecl(Location().introduce(), toEfn_x_ti, "x");
           vd_x->toplevel(false);
-          Expression* realX;
-          if (partCardinality.empty()) {
-            realX = vd_x->id();
-          } else {
-            realX =
-                new BinOp(Location().introduce(), vd_x->id(), BOT_MINUS, partCardinality.back());
-          }
-          auto* toEfn_body = new Call(Location().introduce(), "to_enum", {otherEnumId, realX});
+          Expression* realX =
+              new BinOp(Location().introduce(), vd_x->id(), BOT_MINUS, constructorArgMin);
+          auto* toEfn_body = new Call(Location().introduce(), "to_enum", {constructorArgId, realX});
 
           std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
           auto* toEfn =
@@ -629,8 +663,8 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
         {
           Type rt;
           rt.ot(Type::OT_OPTIONAL);
-          auto* Cfn_ti = new TypeInst(Location().introduce(), rt, otherEnumId);
-          Type argT;
+          auto* Cfn_ti = new TypeInst(Location().introduce(), rt, constructorArgId);
+          Type argT = Type::parint();
           argT.ot(Type::OT_OPTIONAL);
           argT.enumId(enumId);
           auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, vd->id());
@@ -641,7 +675,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           auto* deopt = new Call(Location().introduce(), "deopt", {vd_x->id()});
           auto* inv = new Call(Location().introduce(), Cinv_id, {deopt});
           auto* toEnumAbsent =
-              new Call(Location().introduce(), "to_enum", {otherEnumId, env.constants.absent});
+              new Call(Location().introduce(), "to_enum", {constructorArgId, env.constants.absent});
           auto* ite = new ITE(Location().introduce(), {occurs, inv}, toEnumAbsent);
           auto* Cfn = new FunctionI(Location().introduce(), Cinv_id, Cfn_ti, {vd_x}, ite);
           enumItems->addItem(Cfn);
@@ -650,7 +684,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           Type rt;
           rt.ti(Type::TI_VAR);
           rt.ot(Type::OT_OPTIONAL);
-          auto* Cfn_ti = new TypeInst(Location().introduce(), rt, otherEnumId);
+          auto* Cfn_ti = new TypeInst(Location().introduce(), rt, constructorArgId);
           Type argT = Type::varint();
           argT.ot(Type::OT_OPTIONAL);
           argT.enumId(enumId);
@@ -662,7 +696,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           auto* deopt = new Call(Location().introduce(), "deopt", {vd_x->id()});
           auto* inv = new Call(Location().introduce(), Cinv_id, {deopt});
           auto* toEnumAbsent =
-              new Call(Location().introduce(), "to_enum", {otherEnumId, env.constants.absent});
+              new Call(Location().introduce(), "to_enum", {constructorArgId, env.constants.absent});
           auto* ite = new ITE(Location().introduce(), {occurs, inv}, toEnumAbsent);
           auto* Cfn = new FunctionI(Location().introduce(), Cinv_id, Cfn_ti, {vd_x}, ite);
           enumItems->addItem(Cfn);
@@ -670,7 +704,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
         {
           Type Xt;
           Xt.st(Type::ST_SET);
-          auto* Cfn_ti = new TypeInst(Location().introduce(), Xt, otherEnumId);
+          auto* Cfn_ti = new TypeInst(Location().introduce(), Xt, constructorArgId);
           Type argT = Type::parint();
           argT.st(Type::ST_SET);
           argT.enumId(enumId);
@@ -693,7 +727,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           Type Xt;
           Xt.ti(Type::TI_VAR);
           Xt.st(Type::ST_SET);
-          auto* Cfn_ti = new TypeInst(Location().introduce(), Xt, otherEnumId);
+          auto* Cfn_ti = new TypeInst(Location().introduce(), Xt, constructorArgId);
           Type argT = Type::varint();
           argT.st(Type::ST_SET);
           argT.enumId(enumId);
@@ -724,8 +758,9 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
 
         {
           Type tx = Type::parint();
+          tx.enumId(enumId);
           tx.ot(Type::OT_OPTIONAL);
-          auto* ti_aa = new TypeInst(Location().introduce(), tx);
+          auto* ti_aa = new TypeInst(Location().introduce(), tx, vd->id());
           auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, "x");
           vd_aa->toplevel(false);
 
@@ -737,21 +772,20 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           auto* vd_aj = new VarDecl(Location().introduce(), ti_aj, "json");
           vd_aj->toplevel(false);
 
-          std::vector<Expression*> deopt_args(1);
-          deopt_args[0] = vd_aa->id();
-          Call* deopt = new Call(Location().introduce(), "deopt", deopt_args);
-          Call* if_absent = new Call(Location().introduce(), "absent", deopt_args);
+          std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
+          Call* invCall = new Call(Location().introduce(), Cinv_id, {vd_aa->id()});
+
+          Call* if_absent = new Call(Location().introduce(), "absent", {vd_aa->id()});
           auto* sl_absent_dzn = new StringLit(Location().introduce(), "<>");
           ITE* sl_absent =
               new ITE(Location().introduce(),
                       {vd_aj->id(), new StringLit(Location().introduce(), ASTString("null"))},
                       sl_absent_dzn);
 
-          Call* toEnumE = new Call(Location().introduce(), "to_enum", {otherEnumId, deopt});
-          needToString.insert(otherEnumId, true);
+          needToString.insert(constructorArgId, true);
           Call* toString = new Call(Location().introduce(),
-                                    create_enum_to_string_name(otherEnumId, "_toString_"),
-                                    {toEnumE, vd_ab->id(), vd_aj->id()});
+                                    create_enum_to_string_name(constructorArgId, "_toString_"),
+                                    {invCall, vd_ab->id(), vd_aj->id()});
           auto* c_quoted = new Call(Location().introduce(), "showDznId",
                                     {new StringLit(Location().introduce(), c->id())});
           auto* c_ident = new ITE(Location().introduce(), {vd_ab->id(), c_quoted},
@@ -786,7 +820,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           enumItems->addItem(fi);
         }
 
-        Call* cardE = new Call(Location().introduce(), "card", {otherEnumId});
+        Call* cardE = new Call(Location().introduce(), "card", {constructorArgId});
         if (partCardinality.empty()) {
           partCardinality.push_back(cardE);
         } else {
@@ -813,7 +847,8 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
   if (parts.size() > 1) {
     Type tx = Type::parint();
     tx.ot(Type::OT_OPTIONAL);
-    auto* ti_aa = new TypeInst(Location().introduce(), tx);
+    tx.enumId(enumId);
+    auto* ti_aa = new TypeInst(Location().introduce(), tx, vd->id());
     auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, "x");
     vd_aa->toplevel(false);
 
@@ -838,16 +873,8 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     Expression* ite_cases_else;
     for (unsigned int i = 0; i < parts.size(); i++) {
       std::string toString = "_toString_" + std::to_string(i) + "_";
-      Expression* aa;
-      if (i == 0) {
-        aa = vd_aa->id();
-      } else {
-        auto* bo = new BinOp(Location().introduce(), deopt, BOT_MINUS, partCardinality[i - 1]);
-        Call* c = new Call(Location().introduce(), "to_enum", {vd->id(), bo});
-        aa = c;
-      }
       Call* c = new Call(Location().introduce(), create_enum_to_string_name(ident, toString),
-                         {aa, vd_ab->id(), vd_aj->id()});
+                         {vd_aa->id(), vd_ab->id(), vd_aj->id()});
       if (i < parts.size() - 1) {
         auto* bo = new BinOp(Location().introduce(), deopt, BOT_LQ, partCardinality[i]);
         ite_cases_a.push_back(bo);
@@ -1164,7 +1191,7 @@ void TopoSorter::add(EnvI& env, VarDeclI* vdi, bool handleEnums, Model* enumItem
     vd->ti()->type(vdt);
     vd->type(vdt);
 
-    create_enum_mapper(env, model, enumId, vd, enumItems, needToString);
+    create_enum_mapper(env, model, enumId, vd, enumItems, needToString, enumConstructorSetTypes);
   }
   scopes.add(env, vd);
 }
@@ -2835,7 +2862,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
   // Topological sorting
   IdMap<bool> needToString;
-  TopoSorter ts(m, needToString);
+  std::vector<Call*> enumConstructorSetTypes;
+  TopoSorter ts(m, needToString, enumConstructorSetTypes);
 
   std::vector<FunctionI*> functionItems;
   std::vector<AssignI*> assignItems;
@@ -2981,11 +3009,12 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     } else if (auto* vdi = (*enumItems)[i]->dynamicCast<VarDeclI>()) {
       m->addItem(vdi);
       ts.add(env.envi(), vdi, false, enumItems);
-    } else {
-      auto* fi = (*enumItems)[i]->dynamicCast<FunctionI>();
+    } else if (auto* fi = (*enumItems)[i]->dynamicCast<FunctionI>()) {
       m->addItem(fi);
       (void)m->registerFn(env.envi(), fi);
       functionItems.push_back(fi);
+    } else if (auto* ci = (*enumItems)[i]->dynamicCast<ConstraintI>()) {
+      m->addItem(ci);
     }
   }
 
@@ -3015,8 +3044,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         vd->e(ai->e());
         vd->addAnnotation(Constants::constants().ann.rhs_from_assignment);
         if (vd->ti()->isEnum()) {
-          create_enum_mapper(env.envi(), m, vd->ti()->type().enumId(), vd, enumItems2,
-                             needToString);
+          create_enum_mapper(env.envi(), m, vd->ti()->type().enumId(), vd, enumItems2, needToString,
+                             enumConstructorSetTypes);
         }
       }
     }
@@ -3045,7 +3074,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       // function string: _to_String_<nts_id>(opt int: x, bool: b, bool: json) = show(i);
       Type tx = Type::parint();
       tx.ot(Type::OT_OPTIONAL);
-      auto* ti_aa = new TypeInst(Location().introduce(), tx);
+      auto* ti_aa = new TypeInst(Location().introduce(), tx, new TIId(Location(), "$E"));
       auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, "x");
       vd_aa->toplevel(false);
 
@@ -3158,6 +3187,23 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
   {
     Typer<true> ty(env.envi(), m, typeErrors, ignoreUndefinedParameters);
     BottomUpIterator<Typer<true>> bottomUpTyper(ty);
+
+    for (auto* c : enumConstructorSetTypes) {
+      bottomUpTyper.run(c->arg(0));
+      if (c->id() == env.envi().constants.ids.anon_enum) {
+        if (c->arg(0)->type() != Type::parint()) {
+          throw TypeError(env.envi(), c->arg(0)->loc(),
+                          "anonymous enum initializer must be of type `int', but is `" +
+                              c->arg(0)->type().toString(env.envi()) + "'");
+        }
+      } else if (c->id() == env.envi().constants.ids.anon_enum_set) {
+        if (!c->arg(0)->type().isSubtypeOf(Type::parsetint(), false)) {
+          throw TypeError(env.envi(), c->arg(0)->loc(),
+                          "anonymous enum initializer must be of type `set of int', but is `" +
+                              c->arg(0)->type().toString(env.envi()) + "'");
+        }
+      }
+    }
 
     class TSV2 : public ItemVisitor {
     private:

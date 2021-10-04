@@ -29,8 +29,9 @@
                     | <enum-cases-list> "++" <enum-cases>
 
 <enum-cases> ::= "{" <ident> "," ... "}"
-               | "anon_enum" "(" <expr> ")"
+               | "_" "(" <expr> ")"
                | <ident> "(" <ident> ")"
+               | "anon_enum" "(" <expr> ")"
 
 % Assign items
 <assign-item> ::= <ident> "=" <expr>

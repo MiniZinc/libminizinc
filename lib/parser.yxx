@@ -516,6 +516,10 @@ enum_construct :
         $$ = new Call(@$, ASTString($1), args);
         free($1);
       }
+    | MZN_UNDERSCORE '(' expr ')'
+      {
+        $$ = new Call(@$, Constants::constants().ids.anon_enum_set, {$3});
+      }
 
 string_lit_list :
       // empty
