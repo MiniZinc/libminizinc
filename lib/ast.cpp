@@ -79,9 +79,19 @@ Type Type::unboxedfloat = Type::parfloat();
 Annotation Annotation::empty;
 
 std::string Location::toString() const {
-  std::ostringstream oss;
-  oss << filename() << ":" << firstLine() << "." << firstColumn();
-  return oss.str();
+  std::ostringstream os;
+  if (filename().empty()) {
+    os << "unknown file";
+  } else {
+    os << filename();
+  }
+  os << ":" << firstLine() << "." << firstColumn();
+  if (firstLine() != lastLine()) {
+    os << "-" << lastLine() << "." << lastColumn();
+  } else if (firstColumn() != lastColumn()) {
+    os << "-" << lastColumn();
+  }
+  return os.str();
 }
 
 void Location::mark() const {
