@@ -1,6 +1,6 @@
-include "arg_min_int.mzn";
-include "arg_min_bool.mzn";
-include "arg_min_float.mzn";
+include "fzn_arg_min_int.mzn";
+include "fzn_arg_min_bool.mzn";
+include "fzn_arg_min_float.mzn";
 
 /** @group globals
 	Returns the index of the minimum value in the array \a x.
@@ -29,7 +29,7 @@ function var $$E: arg_min_total(array[$$E] of var int: x) :: promise_total =
 	else
 		let {
 			var min(index_set(x)) .. max(index_set(x)): i;
-			constraint minimum_arg_int(x, i);
+			constraint fzn_minimum_arg_int(x, i);
 		} in i
 	endif;
 
@@ -39,7 +39,7 @@ function var $$E: arg_min_total(array[$$E] of var bool: x) :: promise_total =
 	else
 		let {
 			var min(index_set(x)) .. max(index_set(x)): i;
-			constraint minimum_arg_bool(x, i);
+			constraint fzn_minimum_arg_bool(x, i);
 		} in i
 	endif;
 
@@ -49,7 +49,7 @@ function var $$E: arg_min_total(array[$$E] of var float: x) :: promise_total =
 	else
 		let {
 			var min(index_set(x)) .. max(index_set(x)): i;
-			constraint minimum_arg_float(x, i);
+			constraint fzn_minimum_arg_float(x, i);
 		} in i
 	endif;
 
@@ -60,7 +60,7 @@ function var $$E: arg_min_total(array[$$E] of var float: x) :: promise_total =
 	Assumption: |\a x| > 0
 */
 predicate minimum_arg(array[int] of var int: x, var int: i) =
-	minimum_arg_int(x, i);
+	fzn_minimum_arg_int(x, i);
 
 /** @group globals
 	Constrain \a i to be the index of the minimum value in the array \a x.
@@ -69,7 +69,7 @@ predicate minimum_arg(array[int] of var int: x, var int: i) =
 	Assumption: |\a x| > 0
 */
 predicate minimum_arg(array[int] of var bool: x, var int: i) =
-	minimum_arg_bool(x, i);
+	fzn_minimum_arg_bool(x, i);
 
 /** @group globals
 	Constrain \a i to be the index of the minimum value in the array \a x.
@@ -78,5 +78,5 @@ predicate minimum_arg(array[int] of var bool: x, var int: i) =
 	Assumption: |\a x| > 0
 */
 predicate minimum_arg(array[int] of var float: x, var int: i) =
-	minimum_arg_float(x, i);
+	fzn_minimum_arg_float(x, i);
 
