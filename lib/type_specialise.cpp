@@ -318,6 +318,11 @@ public:
           if (curType.dim() == -1) {
             curType.dim(concrete_types[i].dim());
           }
+          if (curType.any()) {
+            curType.any(false);
+            curType.ot(concrete_types[i].ot());
+            curType.ti(concrete_types[i].ti());
+          }
           fi_copy->param(i)->ti()->type(curType);
           fi_copy->param(i)->type(curType);
           if (TIId* tiid = Expression::dynamicCast<TIId>(fi_copy->param(i)->ti()->domain())) {
