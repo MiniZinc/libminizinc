@@ -241,6 +241,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
   std::vector<Expression*> partCardinality;
   for (unsigned int p = 0; p < parts.size(); p++) {
     if (auto* sl = parts[p]->dynamicCast<SetLit>()) {
+      Expression* prevCardinality = partCardinality.empty() ? nullptr : partCardinality.back();
       for (unsigned int i = 0; i < sl->v().size(); i++) {
         if (!sl->v()[i]->isa<Id>()) {
           throw TypeError(
@@ -251,11 +252,11 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
 
         std::vector<Expression*> toEnumArgs(2);
         toEnumArgs[0] = vd->id();
-        if (partCardinality.empty()) {
+        if (prevCardinality == nullptr) {
           toEnumArgs[1] = IntLit::a(i + 1);
         } else {
           toEnumArgs[1] =
-              new BinOp(Location().introduce(), partCardinality.back(), BOT_PLUS, IntLit::a(i + 1));
+              new BinOp(Location().introduce(), prevCardinality, BOT_PLUS, IntLit::a(i + 1));
         }
         Call* toEnum = new Call(sl->v()[i]->loc(), ASTString("to_enum"), toEnumArgs);
         auto* vd_id = new VarDecl(ti_id->loc(), ti_id, sl->v()[i]->cast<Id>()->str(), toEnum);
@@ -309,7 +310,11 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
       Call* deopt = new Call(Location().introduce(), "deopt", deopt_args);
       Call* occurs = new Call(Location().introduce(), "occurs", deopt_args);
       std::vector<Expression*> aa_args(1);
-      aa_args[0] = deopt;
+      if (prevCardinality == nullptr) {
+        aa_args[0] = deopt;
+      } else {
+        aa_args[0] = new BinOp(Location().introduce(), deopt, BOT_MINUS, prevCardinality);
+      }
       auto* aa = new ArrayAccess(Location().introduce(), vd_enumToString->id(), aa_args);
 
       auto* sl_absent = new StringLit(Location().introduce(), "<>");

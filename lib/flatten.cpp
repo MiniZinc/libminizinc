@@ -2942,6 +2942,147 @@ private:
   std::chrono::high_resolution_clock::time_point _start;
 };
 
+namespace {
+
+class FlattenModelVisitor : public ItemVisitor {
+public:
+  EnvI& env;
+  bool& hadSolveItem;
+  ItemTimer::TimingMap* timingMap;
+  FlattenModelVisitor(EnvI& env0, bool& hadSolveItem0, ItemTimer::TimingMap* timingMap0)
+      : env(env0), hadSolveItem(hadSolveItem0), timingMap(timingMap0) {}
+  bool enter(Item* i) const {
+    env.checkCancel();
+    return !(i->isa<ConstraintI>() && env.failed());
+  }
+  void vVarDeclI(VarDeclI* v) {
+    ItemTimer item_timer(v->loc(), timingMap);
+    v->e()->ann().remove(env.constants.ann.output_var);
+    v->e()->ann().removeCall(env.constants.ann.output_array);
+    if (v->e()->ann().contains(env.constants.ann.output_only)) {
+      return;
+    }
+    if (v->e()->type().isPar() && !v->e()->type().isOpt() && v->e()->e() != nullptr &&
+        !v->e()->e()->type().cv() && v->e()->type().dim() > 0 &&
+        v->e()->ti()->domain() == nullptr &&
+        (v->e()->type().bt() == Type::BT_INT || v->e()->type().bt() == Type::BT_FLOAT)) {
+      // Compute bounds for array literals
+      CallStackItem csi(env, v->e());
+      GCLock lock;
+      ArrayLit* al = eval_array_lit(env, v->e()->e());
+      v->e()->e(al);
+
+      for (unsigned int i = 0; i < v->e()->ti()->ranges().size(); i++) {
+        if (v->e()->ti()->ranges()[i]->domain() != nullptr) {
+          IntSetVal* isv = eval_intset(env, v->e()->ti()->ranges()[i]->domain());
+          if (isv->size() > 1) {
+            throw EvalError(env, v->e()->ti()->ranges()[i]->domain()->loc(),
+                            "array index set must be contiguous range");
+          }
+        }
+      }
+      check_index_sets(env, v->e(), v->e()->e());
+      if (!al->empty()) {
+        if (v->e()->type().bt() == Type::BT_INT && v->e()->type().st() == Type::ST_PLAIN) {
+          IntVal lb = IntVal::infinity();
+          IntVal ub = -IntVal::infinity();
+          for (unsigned int i = 0; i < al->size(); i++) {
+            IntVal vi = eval_int(env, (*al)[i]);
+            lb = std::min(lb, vi);
+            ub = std::max(ub, vi);
+          }
+          GCLock lock;
+          set_computed_domain(env, v->e(), new SetLit(Location().introduce(), IntSetVal::a(lb, ub)),
+                              true);
+        } else if (v->e()->type().bt() == Type::BT_FLOAT && v->e()->type().st() == Type::ST_PLAIN) {
+          FloatVal lb = FloatVal::infinity();
+          FloatVal ub = -FloatVal::infinity();
+          for (unsigned int i = 0; i < al->size(); i++) {
+            FloatVal vi = eval_float(env, (*al)[i]);
+            lb = std::min(lb, vi);
+            ub = std::max(ub, vi);
+          }
+          GCLock lock;
+          set_computed_domain(env, v->e(),
+                              new SetLit(Location().introduce(), FloatSetVal::a(lb, ub)), true);
+        }
+      }
+    } else if (v->e()->type().isvar() || v->e()->type().isAnn()) {
+      Ctx ctx;
+      if (v->e()->ann().contains(env.constants.ctx.pos) ||
+          v->e()->ann().contains(env.constants.ctx.promise_monotone)) {
+        if (v->e()->type().isint()) {
+          ctx.i = C_POS;
+        } else if (v->e()->type().isbool()) {
+          ctx.b = C_POS;
+        }
+      } else if (v->e()->ann().contains(env.constants.ctx.neg) ||
+                 v->e()->ann().contains(env.constants.ctx.promise_antitone)) {
+        if (v->e()->type().isint()) {
+          ctx.i = C_NEG;
+        } else if (v->e()->type().isbool()) {
+          ctx.b = C_NEG;
+        }
+      }
+      (void)flatten_id(env, ctx, v->e()->id(), nullptr, env.constants.varTrue, true);
+    } else {
+      if (v->e()->e() == nullptr) {
+        if (!v->e()->type().isAnn()) {
+          throw EvalError(env, v->e()->loc(), "Undefined parameter", v->e()->id()->v());
+        }
+      } else {
+        CallStackItem csi(env, v->e());
+        GCLock lock;
+        Location v_loc = v->e()->e()->loc();
+        if (!v->e()->e()->type().cv()) {
+          v->e()->e(eval_par(env, v->e()->e()));
+        } else {
+          EE ee = flat_exp(env, Ctx(), v->e()->e(), nullptr, env.constants.varTrue);
+          v->e()->e(ee.r());
+        }
+        flatten_vardecl_annotations(env, v->e(), v, v->e());
+        check_par_declaration(env, v->e());
+      }
+    }
+  }
+  void vConstraintI(ConstraintI* ci) {
+    ItemTimer item_timer(ci->loc(), timingMap);
+    (void)flat_exp(env, Ctx(), ci->e(), env.constants.varTrue, env.constants.varTrue);
+  }
+  void vSolveI(SolveI* si) {
+    if (hadSolveItem) {
+      throw FlatteningError(env, si->loc(), "Only one solve item allowed");
+    }
+    ItemTimer item_timer(si->loc(), timingMap);
+    hadSolveItem = true;
+    GCLock lock;
+    SolveI* nsi = nullptr;
+    switch (si->st()) {
+      case SolveI::ST_SAT:
+        nsi = SolveI::sat(Location());
+        break;
+      case SolveI::ST_MIN: {
+        Ctx ctx;
+        ctx.i = C_NEG;
+        nsi = SolveI::min(Location().introduce(),
+                          flat_exp(env, ctx, si->e(), nullptr, env.constants.varTrue).r());
+      } break;
+      case SolveI::ST_MAX: {
+        Ctx ctx;
+        ctx.i = C_POS;
+        nsi = SolveI::max(Location().introduce(),
+                          flat_exp(env, ctx, si->e(), nullptr, env.constants.varTrue).r());
+      } break;
+    }
+    for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it) {
+      nsi->ann().add(flat_exp(env, Ctx(), *it, nullptr, env.constants.varTrue).r());
+    }
+    env.flatAddItem(nsi);
+  }
+};
+
+}  // namespace
+
 void flatten(Env& e, FlatteningOptions opt) {
   class OverflowWatch {
   public:
@@ -2968,146 +3109,10 @@ void flatten(Env& e, FlatteningOptions opt) {
       onlyRangeDomains = eval_bool(e.envi(), check_only_range);
     }
 
-    bool hadSolveItem = false;
     // Flatten main model
-    class FV : public ItemVisitor {
-    public:
-      EnvI& env;
-      bool& hadSolveItem;
-      ItemTimer::TimingMap* timingMap;
-      FV(EnvI& env0, bool& hadSolveItem0, ItemTimer::TimingMap* timingMap0)
-          : env(env0), hadSolveItem(hadSolveItem0), timingMap(timingMap0) {}
-      bool enter(Item* i) const {
-        env.checkCancel();
-        return !(i->isa<ConstraintI>() && env.failed());
-      }
-      void vVarDeclI(VarDeclI* v) {
-        ItemTimer item_timer(v->loc(), timingMap);
-        v->e()->ann().remove(env.constants.ann.output_var);
-        v->e()->ann().removeCall(env.constants.ann.output_array);
-        if (v->e()->ann().contains(env.constants.ann.output_only)) {
-          return;
-        }
-        if (v->e()->type().isPar() && !v->e()->type().isOpt() && v->e()->e() != nullptr &&
-            !v->e()->e()->type().cv() && v->e()->type().dim() > 0 &&
-            v->e()->ti()->domain() == nullptr &&
-            (v->e()->type().bt() == Type::BT_INT || v->e()->type().bt() == Type::BT_FLOAT)) {
-          // Compute bounds for array literals
-          CallStackItem csi(env, v->e());
-          GCLock lock;
-          ArrayLit* al = eval_array_lit(env, v->e()->e());
-          v->e()->e(al);
-
-          for (unsigned int i = 0; i < v->e()->ti()->ranges().size(); i++) {
-            if (v->e()->ti()->ranges()[i]->domain() != nullptr) {
-              IntSetVal* isv = eval_intset(env, v->e()->ti()->ranges()[i]->domain());
-              if (isv->size() > 1) {
-                throw EvalError(env, v->e()->ti()->ranges()[i]->domain()->loc(),
-                                "array index set must be contiguous range");
-              }
-            }
-          }
-          check_index_sets(env, v->e(), v->e()->e());
-          if (!al->empty()) {
-            if (v->e()->type().bt() == Type::BT_INT && v->e()->type().st() == Type::ST_PLAIN) {
-              IntVal lb = IntVal::infinity();
-              IntVal ub = -IntVal::infinity();
-              for (unsigned int i = 0; i < al->size(); i++) {
-                IntVal vi = eval_int(env, (*al)[i]);
-                lb = std::min(lb, vi);
-                ub = std::max(ub, vi);
-              }
-              GCLock lock;
-              set_computed_domain(env, v->e(),
-                                  new SetLit(Location().introduce(), IntSetVal::a(lb, ub)), true);
-            } else if (v->e()->type().bt() == Type::BT_FLOAT &&
-                       v->e()->type().st() == Type::ST_PLAIN) {
-              FloatVal lb = FloatVal::infinity();
-              FloatVal ub = -FloatVal::infinity();
-              for (unsigned int i = 0; i < al->size(); i++) {
-                FloatVal vi = eval_float(env, (*al)[i]);
-                lb = std::min(lb, vi);
-                ub = std::max(ub, vi);
-              }
-              GCLock lock;
-              set_computed_domain(env, v->e(),
-                                  new SetLit(Location().introduce(), FloatSetVal::a(lb, ub)), true);
-            }
-          }
-        } else if (v->e()->type().isvar() || v->e()->type().isAnn()) {
-          Ctx ctx;
-          if (v->e()->ann().contains(env.constants.ctx.pos) ||
-              v->e()->ann().contains(env.constants.ctx.promise_monotone)) {
-            if (v->e()->type().isint()) {
-              ctx.i = C_POS;
-            } else if (v->e()->type().isbool()) {
-              ctx.b = C_POS;
-            }
-          } else if (v->e()->ann().contains(env.constants.ctx.neg) ||
-                     v->e()->ann().contains(env.constants.ctx.promise_antitone)) {
-            if (v->e()->type().isint()) {
-              ctx.i = C_NEG;
-            } else if (v->e()->type().isbool()) {
-              ctx.b = C_NEG;
-            }
-          }
-          (void)flatten_id(env, ctx, v->e()->id(), nullptr, env.constants.varTrue, true);
-        } else {
-          if (v->e()->e() == nullptr) {
-            if (!v->e()->type().isAnn()) {
-              throw EvalError(env, v->e()->loc(), "Undefined parameter", v->e()->id()->v());
-            }
-          } else {
-            CallStackItem csi(env, v->e());
-            GCLock lock;
-            Location v_loc = v->e()->e()->loc();
-            if (!v->e()->e()->type().cv()) {
-              v->e()->e(eval_par(env, v->e()->e()));
-            } else {
-              EE ee = flat_exp(env, Ctx(), v->e()->e(), nullptr, env.constants.varTrue);
-              v->e()->e(ee.r());
-            }
-            flatten_vardecl_annotations(env, v->e(), v, v->e());
-            check_par_declaration(env, v->e());
-          }
-        }
-      }
-      void vConstraintI(ConstraintI* ci) {
-        ItemTimer item_timer(ci->loc(), timingMap);
-        (void)flat_exp(env, Ctx(), ci->e(), env.constants.varTrue, env.constants.varTrue);
-      }
-      void vSolveI(SolveI* si) {
-        if (hadSolveItem) {
-          throw FlatteningError(env, si->loc(), "Only one solve item allowed");
-        }
-        ItemTimer item_timer(si->loc(), timingMap);
-        hadSolveItem = true;
-        GCLock lock;
-        SolveI* nsi = nullptr;
-        switch (si->st()) {
-          case SolveI::ST_SAT:
-            nsi = SolveI::sat(Location());
-            break;
-          case SolveI::ST_MIN: {
-            Ctx ctx;
-            ctx.i = C_NEG;
-            nsi = SolveI::min(Location().introduce(),
-                              flat_exp(env, ctx, si->e(), nullptr, env.constants.varTrue).r());
-          } break;
-          case SolveI::ST_MAX: {
-            Ctx ctx;
-            ctx.i = C_POS;
-            nsi = SolveI::max(Location().introduce(),
-                              flat_exp(env, ctx, si->e(), nullptr, env.constants.varTrue).r());
-          } break;
-        }
-        for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it) {
-          nsi->ann().add(flat_exp(env, Ctx(), *it, nullptr, env.constants.varTrue).r());
-        }
-        env.flatAddItem(nsi);
-      }
-    } _fv(env, hadSolveItem, timingMap);
-    iter_items<FV>(_fv, e.model());
+    bool hadSolveItem = false;
+    FlattenModelVisitor _fv(env, hadSolveItem, timingMap);
+    iter_items<FlattenModelVisitor>(_fv, e.model());
 
     if (!hadSolveItem) {
       GCLock lock;
