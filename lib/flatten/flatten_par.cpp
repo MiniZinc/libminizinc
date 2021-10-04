@@ -14,9 +14,9 @@
 namespace MiniZinc {
 
 EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
-  CallStackItem _csi(env, e);
   EE ret;
   if (e->type().cv()) {
+    CallStackItem _csi(env, e);
     Ctx nctx;
     nctx.b = ctx.b == C_ROOT ? C_ROOT : C_MIX;
 
@@ -46,6 +46,7 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
         ident = e_val->cast<VarDecl>()->id();
       }
       if (ident->decl()->flat() == nullptr || ident->decl()->toplevel()) {
+        CallStackItem _csi(env, e);
         VarDecl* vd = ident->decl()->flat();
         if (vd == nullptr) {
           EE flat_ident = flat_exp(env, Ctx(), ident->decl(), nullptr, env.constants.varTrue);
@@ -74,6 +75,7 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     }
     GCLock lock;
     auto* al = follow_id(eval_par(env, e))->cast<ArrayLit>();
+    CallStackItem _csi(env, e);
     if (al->empty() || ((r != nullptr) && r->e() == nullptr)) {
       if (r == nullptr) {
         ret.r = al;
