@@ -1,9 +1,5 @@
-include "fzn_alldifferent_except.mzn";
-include "fzn_alldifferent_except_reif.mzn";
-
-/**  @group globals.alldifferent
-  Constrain the array of integers \a vs to be all different except those
-  elements that appear in the set \a S.
-*/
-predicate alldifferent_except(array[$X] of var int: vs, set of int: S) = 
-   fzn_alldifferent_except(array1d(vs),S);
+% The actual definitions are in all_different.mzn.
+% This file is used to handle the case where users include
+% "alldifferent_except.mzn";
+%
+include "all_different_except.mzn";

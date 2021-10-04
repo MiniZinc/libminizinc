@@ -39,7 +39,8 @@
 */
 
 include "all_different.mzn";
-include "alldifferent_except_0.mzn";
+include "all_different_except.mzn";
+include "all_different_except_0.mzn";
 include "all_disjoint.mzn";
 include "all_equal.mzn";
 include "alternative.mzn";

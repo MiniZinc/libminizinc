@@ -1,9 +1,5 @@
-include "fzn_alldifferent_except_0.mzn";
-include "fzn_alldifferent_except_0_reif.mzn";
-
-/**  @group globals.alldifferent
-  Constrain the array of integers \a vs to be all different except those
-  elements that are assigned the value 0.
-*/
-predicate alldifferent_except_0(array[$X] of var int: vs) = 
-   fzn_alldifferent_except_0(array1d(vs));
+% The actual definitions are in all_different.mzn.
+% This file is used to handle the case where users include
+% "alldifferent_except_0.mzn";
+%
+include "all_different_except_0.mzn";
