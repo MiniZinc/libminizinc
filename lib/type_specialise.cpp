@@ -44,6 +44,9 @@ Type type_meet(const Type& t0, const Type& t1) {
   return m;
 }
 
+/// Return base type of TIId occurrence \a occ
+/// If \a occ refers to the domain, return the base type of the variable
+/// If \a occ refers to an index, return the enum type or int for that index
 Type base_type(EnvI& env, std::vector<Type>& types, const TIOcc& occ) {
   Type cur_t;
   if (occ.idxSet == -1) {
@@ -51,6 +54,7 @@ Type base_type(EnvI& env, std::vector<Type>& types, const TIOcc& occ) {
     if (cur_t.dim() > 0 && cur_t.enumId() != 0) {
       const auto& aes = env.getArrayEnum(cur_t.enumId());
       cur_t.enumId(aes[aes.size() - 1]);
+      cur_t.dim(0);
     }
   } else {
     if (types[occ.idx].enumId() != 0) {
@@ -68,7 +72,14 @@ void adapt_to_base_type(EnvI& env, std::vector<Type>& types, const TIOcc& occ, T
   if (occ.idxSet == -1) {
     Type& t = types[occ.idx];
     t.bt(bt.bt());
-    t.enumId(bt.enumId());
+    if (t.enumId() != 0 && bt.enumId() == 0) {
+      const auto& aes = env.getArrayEnum(types[occ.idx].enumId());
+      if (aes[aes.size() - 1] != 0) {
+        std::vector<unsigned int> et = aes;
+        et[aes.size() - 1] = 0;
+        t.enumId(env.registerArrayEnum(et));
+      }
+    }
   } else {
     Type& t = types[occ.idx];
     if (t.enumId() != 0 && bt.enumId() == 0) {
