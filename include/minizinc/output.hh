@@ -25,7 +25,7 @@ void copy_output(EnvI& e);
 void output_vardecls(EnvI& env, Item* ci, Expression* e);
 
 /// Populate ::output annotations for model
-void annotate_toplevel_output_vars(EnvI& e);
+void process_toplevel_output_vars(EnvI& e);
 
 /// Create initial output model
 void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outputObjective,

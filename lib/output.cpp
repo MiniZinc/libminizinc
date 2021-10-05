@@ -894,7 +894,7 @@ void create_encapsulated_output_item(EnvI& e) {
   e.model->addItem(newOutputItem);
 }
 
-void annotate_toplevel_output_vars(EnvI& e) {
+void process_toplevel_output_vars(EnvI& e) {
   GCLock lock;
 
   class OutputVarVisitor : public ItemVisitor {
@@ -911,47 +911,54 @@ void annotate_toplevel_output_vars(EnvI& e) {
                      e.model->filename().endsWith(".mzc.mzn")) {}
 
     bool hasAddToOutput = false;
-    std::vector<VarDecl*> todo;
+    std::vector<std::pair<int, VarDecl*>> todo;
 
     void vVarDeclI(VarDeclI* vdi) {
       auto* vd = vdi->e();
       if (_outputForChecker) {
         if (vd->ann().contains(_e.constants.ann.mzn_check_var)) {
-          vd->addAnnotation(_e.constants.ann.output);
+          _e.outputVars.emplace_back(vd->id()->str(), vd);
         }
       } else {
         if (vd->ann().contains(_e.constants.ann.add_to_output)) {
           hasAddToOutput = true;
           todo.clear();  // Skip 2nd pass
-          vd->addAnnotation(_e.constants.ann.output);
-        } else if ((!_isChecker && vd->id()->idn() == -1 && vd->id()->v() == "_objective") ||
+          _e.outputVars.emplace_back(vd->id()->str(), vd);
+        } else if (vd->ann().contains(_e.constants.ann.output) ||
+                   (!_isChecker && vd->id()->idn() == -1 && vd->id()->v() == "_objective") ||
                    ((_isChecker && vd->id()->idn() == -1 &&
                      vd->id()->v() == "_checker_objective"))) {
-          // Always add ::output to _objective/_checker_objective
           // Whether or not to actually include will be determined later
-          vd->addAnnotation(_e.constants.ann.output);
+          _e.outputVars.emplace_back(vd->id()->str(), vd);
         } else if (!hasAddToOutput) {
-          todo.push_back(vd);  // Needs to be processed in 2nd pass
+          todo.emplace_back(_e.outputVars.size(), vd);  // Needs to be processed in 2nd pass
         }
       }
+      vd->ann().remove(_e.constants.ann.output);
     }
   } ovv(e);
   iter_items(ovv, e.model);
 
-  for (auto* vd : ovv.todo) {
+  // Insert implicit output variables
+  int inserted = 0;
+  for (auto& it : ovv.todo) {
+    auto idx = it.first;
+    auto* vd = it.second;
     if (vd->ann().contains(e.constants.ann.no_output) || vd->type().isPar()) {
       continue;
     }
     if (vd->e() == nullptr || vd->ann().contains(e.constants.ann.rhs_from_assignment)) {
       // Output anything without a RHS
-      vd->addAnnotation(e.constants.ann.output);
+      e.outputVars.emplace(e.outputVars.begin() + inserted + idx, vd->id()->str(), vd);
+      inserted++;
       continue;
     }
     if (auto* al = vd->e()->dynamicCast<ArrayLit>()) {
       // Output array literals containing _
       for (unsigned int i = 0; i < al->size(); i++) {
         if ((*al)[i]->isa<AnonVar>()) {
-          vd->addAnnotation(e.constants.ann.output);
+          e.outputVars.emplace(e.outputVars.begin() + inserted + idx, vd->id()->str(), vd);
+          inserted++;
           break;
         }
       }

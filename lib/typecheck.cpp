@@ -14,7 +14,6 @@
 #include <minizinc/file_utils.hh>
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/hash.hh>
-#include <minizinc/output.hh>
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/typecheck.hh>
 
@@ -3790,12 +3789,6 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
                               e.msg() + " (required by solution checker model)");
     }
   }
-
-  if (env.envi().constants.ann.output->decl() == nullptr) {
-    env.envi().constants.ann.output->decl(
-        ts.checkId(env.envi(), env.envi().constants.ann.output, Location().introduce()));
-  }
-  annotate_toplevel_output_vars(env.envi());
 }
 
 void typecheck(Env& env, Model* m, AssignI* ai) {
@@ -4002,11 +3995,9 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
     Env& env;
     const std::vector<std::string>& skipDirs;
     bool hadInput;
-    bool hadOutput;
     bool hadIncludedFiles;
     bool hadAddToOutput = false;
     std::ostringstream ossInput;
-    std::ostringstream ossOutput;
     std::ostringstream ossIncludedFiles;
     std::string method;
     bool outputItem;
@@ -4014,7 +4005,6 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
         : env(env0),
           skipDirs(skipDirs0),
           hadInput(false),
-          hadOutput(false),
           hadIncludedFiles(false),
           method("sat"),
           outputItem(false) {}
@@ -4046,27 +4036,6 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
         }
         output_var_desc_json(env, vd, ossInput);
         hadInput = true;
-      } else {
-        bool process_var = false;
-        if (vd->ann().contains(Constants::constants().ann.add_to_output)) {
-          if (!hadAddToOutput) {
-            ossOutput.str("");
-            hadOutput = false;
-          }
-          hadAddToOutput = true;
-          process_var = true;
-        } else if (!hadAddToOutput) {
-          process_var = vd->type().isvar() &&
-                        (vd->e() == nullptr ||
-                         vd->ann().contains(Constants::constants().ann.rhs_from_assignment));
-        }
-        if (process_var) {
-          if (hadOutput) {
-            ossOutput << ",\n";
-          }
-          output_var_desc_json(env, vd, ossOutput);
-          hadOutput = true;
-        }
       }
     }
     void vSolveI(SolveI* si) {
@@ -4085,9 +4054,20 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
     void vOutputI(OutputI* oi) { outputItem = true; }
   } _ifc(env, skipDirs);
   iter_items(_ifc, m);
+
+  bool hadOutput = false;
+  std::ostringstream ossOutput;
+  for (auto it : env.envi().outputVars) {
+    if (hadOutput) {
+      ossOutput << ",\n";
+    }
+    output_var_desc_json(env, it.second()->cast<VarDecl>(), ossOutput);
+    hadOutput = true;
+  }
+
   os << "{\n  \"input\" : {\n"
      << _ifc.ossInput.str() << "\n  },\n  \"output\" : {\n"
-     << _ifc.ossOutput.str() << "\n  }";
+     << ossOutput.str() << "\n  }";
   os << ",\n  \"method\": \"";
   os << _ifc.method;
   os << "\"";
