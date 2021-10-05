@@ -530,7 +530,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           _flagSolutionCheckModel.size() >= 4 &&
           _flagSolutionCheckModel.substr(_flagSolutionCheckModel.size() - 4) == ".mzc";
       std::vector<std::string> smm_model({_flagSolutionCheckModel});
-      Model* smm = parse(*env, smm_model, _datafiles, "", "", _includePaths, _isFlatzinc, false,
+      Model* smm = parse(*env, smm_model, _datafiles, "", "", _includePaths, {}, _isFlatzinc, false,
                          false, _flags.verbose, errstream);
       if (_flags.verbose) {
         _log << " done parsing (" << _starttime.stoptime() << ")" << std::endl;
@@ -650,8 +650,10 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
       _log << " ..." << std::endl;
     }
     errstream.str("");
+    std::unordered_set<std::string> globalInc(global_includes(_stdLibDir));
     m = parse(*env, _filenames, _datafiles, modelText, modelName.empty() ? "stdin" : modelName,
-              _includePaths, _isFlatzinc, false, false, _flags.verbose, errstream);
+              _includePaths, std::move(globalInc), _isFlatzinc, false, false, _flags.verbose,
+              errstream);
     if (!_globalsDir.empty()) {
       _includePaths.erase(_includePaths.begin());
     }

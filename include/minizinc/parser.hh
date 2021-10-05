@@ -39,6 +39,7 @@ class ParserLocation;
 #define YYLTYPE_IS_TRIVIAL 0
 
 #include <minizinc/astexception.hh>
+#include <minizinc/astmap.hh>
 #include <minizinc/file_utils.hh>
 #include <minizinc/model.hh>
 #include <minizinc/parser.tab.hh>
@@ -154,11 +155,16 @@ public:
   std::string canonicalFilename(const std::string& f) const;
 };
 
-Model* parse(Env& env, const std::vector<std::string>& filename,
+/// Returns the filenames of direct global constraints in globals.mzn.
+/// These files should not be directly overriden by the solver. They should
+/// override fzn_<name> instead.
+std::unordered_set<std::string> global_includes(const std::string& stdlib);
+
+Model* parse(Env& env, const std::vector<std::string>& filenames,
              const std::vector<std::string>& datafiles, const std::string& textModel,
              const std::string& textModelName, const std::vector<std::string>& includePaths,
-             bool isFlatZinc, bool ignoreStdlib, bool parseDocComments, bool verbose,
-             std::ostream& err);
+             std::unordered_set<std::string> globalInc, bool isFlatZinc, bool ignoreStdlib,
+             bool parseDocComments, bool verbose, std::ostream& err);
 
 Model* parse_from_string(Env& env, const std::string& text, const std::string& filename,
                          const std::vector<std::string>& includePaths, bool isFlatZinc,

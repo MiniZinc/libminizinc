@@ -260,8 +260,7 @@ SolverConfig SolverConfig::load(const string& filename) {
     } else {
       vector<string> filenames;
       filenames.push_back(filename);
-      m = parse(confenv, filenames, vector<string>(), "", "", vector<string>(), false, true, false,
-                false, errstream);
+      m = parse(confenv, filenames, {}, "", "", {}, {}, false, true, false, false, errstream);
     }
     if (m != nullptr) {
       bool hadId = false;

@@ -23,6 +23,7 @@
 #include <minizinc/prettyprinter.hh>
 
 #include <fstream>
+#include <regex>
 
 using namespace std;
 
@@ -74,10 +75,35 @@ std::string ParserState::canonicalFilename(const std::string& f) const {
   return f;
 }
 
+std::unordered_set<std::string> global_includes(const std::string& stdlib) {
+  GCLock lock;
+  // Check if globals.mzn file can be found
+  if (!FileUtils::file_exists(stdlib + "/std/globals.mzn")) {
+    // Otherwise act as if there are no bad files
+    return {};
+  }
+
+  // Read globals file
+  std::ifstream ifs(FileUtils::file_path(stdlib + "/std/globals.mzn"));
+  std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+
+  // Regular expression to find include items (assumes no include statements in comments)
+  std::regex include_item("include[[:space:]]+\"([^\"]+)\"", std::regex_constants::egrep);
+
+  // Collect all files directly included in globals.mzn
+  std::unordered_set<std::string> files;
+  for (auto inc = std::sregex_token_iterator(content.begin(), content.end(), include_item, 1);
+       inc != std::sregex_token_iterator(); ++inc) {
+    files.emplace(inc->str());
+  }
+  return files;
+}
+
 void parse(Env& env, Model*& model, const vector<string>& filenames,
            const vector<string>& datafiles, const std::string& modelString,
-           const std::string& modelStringName, const vector<string>& ip, bool isFlatZinc,
-           bool ignoreStdlib, bool parseDocComments, bool verbose, ostream& err,
+           const std::string& modelStringName, const vector<string>& ip,
+           std::unordered_set<std::string> globalInc, bool isFlatZinc, bool ignoreStdlib,
+           bool parseDocComments, bool verbose, ostream& err,
            std::vector<SyntaxError>& syntaxErrors) {
   vector<string> includePaths;
   for (const auto& i : ip) {
@@ -194,8 +220,15 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
       if (file.is_open() &&
           FileUtils::file_path(FileUtils::dir_name(fullname)) != FileUtils::file_path(workingDir) &&
           FileUtils::file_exists(workingDir + "/" + basename)) {
-        err << "Warning: file " << basename
-            << " included from library, but also exists in current working directory" << endl;
+        err << "Warning: file \"" << basename
+            << "\" included from library, but also exists in current working directory" << endl;
+      } else if (file.is_open() && globalInc.find(basename) != globalInc.end() &&
+                 fullname.find(includePaths.back()) == std::string::npos) {
+        err << "Warning: included file \"" << basename
+            << "\" overrides a global constraint file from the standard library. This is "
+               "deprecated. For a solver-specific redefinition of a global constraint, override  "
+               "\"fzn_<global>.mzn\" instead."
+            << std::endl;
       }
       for (const auto& includePath : includePaths) {
         std::string deprecatedName = includePath + "/" + basename + ".deprecated.mzn";
@@ -300,8 +333,9 @@ error:
 
 Model* parse(Env& env, const vector<string>& filenames, const vector<string>& datafiles,
              const string& textModel, const string& textModelName,
-             const vector<string>& includePaths, bool isFlatZinc, bool ignoreStdlib,
-             bool parseDocComments, bool verbose, ostream& err) {
+             const vector<string>& includePaths, std::unordered_set<std::string> globalInc,
+             bool isFlatZinc, bool ignoreStdlib, bool parseDocComments, bool verbose,
+             ostream& err) {
   if (filenames.empty() && textModel.empty()) {
     err << "Error: no model given" << std::endl;
     return nullptr;
@@ -313,8 +347,8 @@ Model* parse(Env& env, const vector<string>& filenames, const vector<string>& da
     model = new Model();
   }
   std::vector<SyntaxError> se;
-  parse(env, model, filenames, datafiles, textModel, textModelName, includePaths, isFlatZinc,
-        ignoreStdlib, parseDocComments, verbose, err, se);
+  parse(env, model, filenames, datafiles, textModel, textModelName, includePaths,
+        std::move(globalInc), isFlatZinc, ignoreStdlib, parseDocComments, verbose, err, se);
   return model;
 }
 
@@ -323,7 +357,7 @@ Model* parse_data(Env& env, Model* model, const vector<string>& datafiles,
                   bool parseDocComments, bool verbose, ostream& err) {
   vector<string> filenames;
   std::vector<SyntaxError> se;
-  parse(env, model, filenames, datafiles, "", "", includePaths, isFlatZinc, ignoreStdlib,
+  parse(env, model, filenames, datafiles, "", "", includePaths, {}, isFlatZinc, ignoreStdlib,
         parseDocComments, verbose, err, se);
   return model;
 }
@@ -339,8 +373,8 @@ Model* parse_from_string(Env& env, const string& text, const string& filename,
     GCLock lock;
     model = new Model();
   }
-  parse(env, model, filenames, datafiles, text, filename, includePaths, isFlatZinc, ignoreStdlib,
-        parseDocComments, verbose, err, syntaxErrors);
+  parse(env, model, filenames, datafiles, text, filename, includePaths, {}, isFlatZinc,
+        ignoreStdlib, parseDocComments, verbose, err, syntaxErrors);
   return model;
 }
 

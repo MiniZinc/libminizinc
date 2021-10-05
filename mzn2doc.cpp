@@ -223,8 +223,8 @@ int main(int argc, char** argv) {
       std::vector<std::string> filenames;
       filenames.push_back(filename);
       Env env;
-      if (Model* m = parse(env, filenames, vector<string>(), "", "", includePaths, false, false,
-                           true, flag_verbose, errstream)) {
+      if (Model* m = parse(env, filenames, {}, "", "", includePaths, {}, false, false, true,
+                           flag_verbose, errstream)) {
         try {
           env.model(m);
           if (flag_verbose) {
