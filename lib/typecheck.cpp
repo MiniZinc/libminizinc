@@ -2472,12 +2472,28 @@ public:
     bool cv = false;
     for (unsigned int i = 0; i < args.size(); i++) {
       if (auto* c = call->arg(i)->dynamicCast<Comprehension>()) {
-        Type t_before = c->e()->type();
+        GCLock lock;
+        Expression* c_e = c->e();
+        ArrayLit* indexTuple = nullptr;
+        if (c_e->isa<ArrayLit>() && c_e->cast<ArrayLit>()->isTuple()) {
+          indexTuple = c_e->cast<ArrayLit>();
+          c_e = (*indexTuple)[indexTuple->size() - 1];
+        }
+        Type t_before = c_e->type();
         Type t = fi->argtype(_env, args, i);
         t.dim(0);
-        c->e(add_coercion(_env, _model, c->e(), t)());
-        Type t_after = c->e()->type();
+        c_e = add_coercion(_env, _model, c_e, t)();
+        Type t_after = c_e->type();
         if (t_before != t_after) {
+          if (indexTuple != nullptr) {
+            std::vector<Expression*> indexes(indexTuple->size());
+            for (unsigned int i = 0; i < indexTuple->size() - 1; i++) {
+              indexes[i] = (*indexTuple)[i];
+            }
+            indexes[indexTuple->size() - 1] = c_e;
+            c_e = ArrayLit::constructTuple(indexTuple->loc(), indexes);
+          }
+          c->e(c_e);
           Type ct = c->type();
           ct.bt(t_after.bt());
           c->type(ct);
