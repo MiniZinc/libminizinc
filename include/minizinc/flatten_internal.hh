@@ -141,7 +141,7 @@ public:
         : e(e0), tag(tag0), replaced(false) {}
   };
   std::vector<CallStackEntry> callStack;
-  std::vector<std::pair<KeepAlive, bool> > errorStack;
+  std::vector<std::pair<KeepAlive, bool>> errorStack;
   std::vector<int> idStack;
   unsigned int maxCallStack;
   std::vector<Warning> warnings;
@@ -186,7 +186,7 @@ protected:
   std::vector<VarDeclI*> _enumVarDecls;
   typedef std::unordered_map<std::string, unsigned int> ArrayEnumMap;
   ArrayEnumMap _arrayEnumMap;
-  std::vector<std::vector<unsigned int> > _arrayEnumDecls;
+  std::vector<std::vector<unsigned int>> _arrayEnumDecls;
   bool _collectVardecls;
   std::default_random_engine _g;
   std::atomic<bool> _cancel = {false};
@@ -373,7 +373,7 @@ public:
       } break;
       case BOT_NQ: {
         Ranges::Const<IntVal> c(v, v);
-        Ranges::Diff<IntVal, IntSetRanges, Ranges::Const<IntVal> > d(dr, c);
+        Ranges::Diff<IntVal, IntSetRanges, Ranges::Const<IntVal>> d(dr, c);
         ndomain = IntSetVal::ai(d);
       } break;
       default:
@@ -385,7 +385,7 @@ public:
   static Domain intersectDomain(Domain dom, Val v0, Val v1) {
     IntSetRanges dr(dom);
     Ranges::Const<IntVal> c(v0, v1);
-    Ranges::Inter<IntVal, IntSetRanges, Ranges::Const<IntVal> > inter(dr, c);
+    Ranges::Inter<IntVal, IntSetRanges, Ranges::Const<IntVal>> inter(dr, c);
     return IntSetVal::ai(inter);
   }
   static Val floorDiv(Val v0, Val v1) {
@@ -476,7 +476,7 @@ public:
     if (dom != nullptr) {
       FloatSetRanges dr(dom);
       Ranges::Const<FloatVal> c(v0, v1);
-      Ranges::Inter<FloatVal, FloatSetRanges, Ranges::Const<FloatVal> > inter(dr, c);
+      Ranges::Inter<FloatVal, FloatSetRanges, Ranges::Const<FloatVal>> inter(dr, c);
       return FloatSetVal::ai(inter);
     }
     Domain d = FloatSetVal::a(v0, v1);
@@ -502,7 +502,7 @@ public:
       } break;
       case BOT_NQ: {
         Ranges::Const<FloatVal> c(v, v);
-        Ranges::Diff<FloatVal, FloatSetRanges, Ranges::Const<FloatVal> > d(dr, c);
+        Ranges::Diff<FloatVal, FloatSetRanges, Ranges::Const<FloatVal>> d(dr, c);
         ndomain = FloatSetVal::ai(d);
       } break;
       default:
