@@ -1606,10 +1606,10 @@ It can be var, in which case the type of the comprehension is lifted to an optio
 
 .. _spec-array-literals:
 
-Array Literals
-++++++++++++++
+Simnple Array Literals
+++++++++++++++++++++++
 
-Array literals have this syntax:
+Simple array literals have this syntax:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
@@ -1629,8 +1629,52 @@ In an array literal all elements must have the same type-inst, or
 be coercible to the same type-inst (as in the last example above, where the
 fixed integer :mzn:`1` will be coerced to a :mzn:`var int`).
 
-The indices of a array literal are implicitly :mzn:`1..n`, where :mzn:`n` is
+The indices of an array literal are implicitly :mzn:`1..n`, where :mzn:`n` is
 the length of the literal.
+
+.. _spec-indexed-array-literals:
+
+Indexed Array Literals
+++++++++++++++++++++++
+
+Indexed array literals have this syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Indexed array literals
+  :end-before: %
+
+For example:
+
+.. code-block:: minizinc
+
+    [ 1: 1, 2: 2, 3: 3, 4: 4, 5: 5]
+    [ A: 0, B: 3, C: 5]
+    [ (1,2): 1, (1,3): 2, (2,2): 3, (2,3): 4]
+    [ 1: 1, 4: 2, 5: 3, 3: 4, 2: 5]
+
+The expressions before the colons are the indexes (or keys), those after are the values.
+
+The indexes must be of integer or enumerated type.
+The index set of the resulting array is, for each dimension, the union of the indexes of that dimension.
+For example, the index set of the first and fourth arrays above is :mzn:`1..5`,
+the index set of the second array is :mzn:`{A,B,C}`, and the index sets of the third array are :mzn:`1..2` and :mzn:`2..3`.
+
+The index sets of indexed array literals must be contiguous and, for multi-dimensional arrays, "rectangular".
+For example, the following literals are not allowed:
+
+.. code-block:: minizinc
+
+    % not contiguous, index 2 missing:
+    [ 1: 1, 3:2, 4:, 3]               
+
+    % not contiguous, index 2 missing in dimension 2:
+    [ (1,1): 0, (1,3): 1, (2,1): 0, (2,3): 2]
+
+    % not rectangular, second row has fewer entries than first row:
+    [ (1,1): 0, (1,2): 0, (1,3): 0, (2,1): 1, (2,2): 2]
+
+The indexes need not be specified in order (e.g. the last example above denotes the same array as the first one).
 
 .. _spec-2d-array-literals:
 
@@ -1663,13 +1707,49 @@ fixed integer :mzn:`1` will be coerced to a :mzn:`var int`).
 The indices of a 2d array literal are implicitly :mzn:`(1,1)..(m,n)`,
 where :mzn:`m` and :mzn:`n` are determined by the shape of the literal.
 
+.. _spec-indexed-2d-array-literals:
+
+Indexed 2d Array Literals
++++++++++++++++++++++++++
+
+Indexed 2d array literals have this syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Indexed 2D Array literals
+  :end-before: %
+
+For example:
+
+.. code-block:: minizinc
+
+    % only column index:
+    [| A: B: C: 
+     | 0, 0, 0
+     | 1, 1, 1
+     | 2, 2, 2 |];
+
+    % only row index:
+    [| A: 0, 0, 0
+     | B: 1, 1, 1
+     | C: 2, 2, 2 |];
+
+    % row and column index:
+    [|    A: B: C: 
+     | A: 0, 0, 0
+     | B: 1, 1, 1
+     | C: 2, 2, 2 |];
+
+The index sets are either :mzn:`1..n` for :mzn:`n` rows/columns if no index is given, or the union
+of the given indexes. As for general indexed array literals, the union of the given indexes must be
+a contiguous set.
 
 .. _spec-array-comprehensions:
 
-Array Comprehensions
-++++++++++++++++++++
+Simple Array Comprehensions
++++++++++++++++++++++++++++
 
-Array comprehensions have this syntax:
+Simple array comprehensions have this syntax:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
@@ -1720,6 +1800,34 @@ The indices of an evaluated simple array comprehension are implicitly
 :mzn:`1..n`, where :mzn:`n` is the length of the evaluated comprehension.
 
 .. _spec-array-access-expressions:
+
+Indexed Array Comprehensions
+++++++++++++++++++++++++++++
+
+Indexed array comprehensions have this syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Indexed array comprehensions
+  :end-before: %
+
+For example:
+
+.. code-block:: minizinc
+
+    % This equals [ 3:9, 4:12, 5:15 ]:
+    [ i: 3*i | i in 3..5 ]
+    
+    % This generates a 2d array
+    % [|    1:  2:  3:
+    %  | 2:  7,  8,  9
+    %  | 3: 10, 11, 12
+    %  | 4: 13, 14, 15
+    %  |]:
+    [ (i,j): i*3+j | i in 2..4, j in 1..3]
+
+The keys for indexed array comprehensions have the same requirements as
+for indexed array literals (see :ref:`spec-indexed-array-literals`).
 
 Array Access Expressions
 ++++++++++++++++++++++++

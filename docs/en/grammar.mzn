@@ -111,7 +111,10 @@
                    | <set-comp>
                    | <array-literal>
                    | <array-literal-2d>
+                   | <indexed-array-literal>
+                   | <indexed-array-literal-2d>
                    | <array-comp>
+                   | <indexed-array-comp>
                    | <ann-literal>
                    | <if-then-else-expr>
                    | <let-expr>
@@ -197,10 +200,22 @@
 <array-literal> ::= "[" [ <expr> "," ... ] "]"
 
 % 2D Array literals
-<array-literal-2d> ::= "[|" [ (<expr> "," ...) "|" ... ] "|]"
+<array-literal-2d> ::= "[|" [ [ <expr> "," ... ] "|" ... ] "|]"
+
+% Indexed 2D Array literals
+<indexed-array-literal-2d> ::= "[|" [ <expr> ":" ... ] [ [ <expr> ":" ] <expr> "," ... ] "|]"
+
+% Indexed array literals
+<indexed-array-literal> ::= "[" [ ( <index-tuple> ":" <expr> ) "," ... ] "]"
+
+<index-tuple> ::= <expr>
+                | "(" [ <expr> "," ... ] ")"
 
 % Array comprehensions
 <array-comp> ::= "[" <expr> "|" <comp-tail> "]"
+
+% Indexed array comprehensions
+<indexed-array-comp> ::= "[" <index-tuple> ":" <expr> "|" <comp-tail> "]"
 
 % Array access
 <array-access-tail> ::= "[" <expr> "," ... "]"
