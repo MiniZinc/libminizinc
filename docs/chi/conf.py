@@ -29,6 +29,7 @@ sys.path.insert(0, os.path.abspath('../utils'))
 
 import defblock
 import inlinesyntaxhighlight
+from sphinx import version_info
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -36,7 +37,7 @@ import inlinesyntaxhighlight
 extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
-    'defblock',
+    'defblock','bugref',
     'inlinesyntaxhighlight',
     'sphinxtogithub'
 ]
@@ -473,7 +474,14 @@ sphinx_to_github_verbose = True
 sphinx_to_github_encoding = "utf-8"
 
 def setup(sphinx):
+    import six
+    print('Six version: %s' % six.__version__)
     from minizinc_lexer import MznLexer, MznDefLexer
-    sphinx.add_lexer("minizinc", MznLexer())
-    sphinx.add_lexer("minizincdef", MznDefLexer())
-    sphinx.add_stylesheet("style.css")
+    if version_info[0] > 1:
+        sphinx.add_lexer("minizinc", MznLexer)
+        sphinx.add_lexer("minizincdef", MznDefLexer)
+        sphinx.add_css_file("style.css")
+    else:
+        sphinx.add_lexer("minizinc", MznLexer())
+        sphinx.add_lexer("minizincdef", MznDefLexer())
+        sphinx.add_stylesheet("style.css")
