@@ -3816,7 +3816,7 @@ void typecheck(Env& env, Model* m, AssignI* ai) {
 }
 
 void output_var_desc_json(Env& env, VarDecl* vd, std::ostream& os, bool extra = false) {
-  os << "    \"" << *vd->id() << "\" : {";
+  os << "    \"" << Printer::escapeStringLit(vd->id()->str()) << "\" : {";
   os << "\"type\" : ";
   switch (vd->type().bt()) {
     case Type::BT_INT:
