@@ -1715,6 +1715,10 @@ Constants::Constants() {
   ann.output_array = addString("output_array");
   ann.add_to_output = addId("add_to_output");
   ann.add_to_output->type(Type::ann());
+  ann.output = addId("output");
+  ann.output->type(Type::ann());
+  ann.no_output = addId("no_output");
+  ann.no_output->type(Type::ann());
   ann.mzn_check_var = addId("mzn_check_var");
   ann.mzn_check_var->type(Type::ann());
   ann.mzn_check_enum_var = addString("mzn_check_enum_var");

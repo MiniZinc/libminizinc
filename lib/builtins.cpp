@@ -1797,6 +1797,75 @@ bool b_output_to_section(EnvI& env, Call* call) {
   return true;
 }
 
+Expression* b_output(EnvI& env, Call* call) {
+  // Find the original VarDecl we are annotating so we can get its ID
+  auto* arg = call->arg(0);
+  auto cs_size = env.callStack.size();
+  if (cs_size < 2 || !env.callStack[cs_size - 2].e->isa<VarDecl>() ||
+      !env.callStack[cs_size - 2].e->cast<VarDecl>()->ann().contains(env.constants.ann.output)) {
+    env.addWarning(call->loc(),
+                   "Failed to determine variable to output. The ::output annotation must be used "
+                   "directly on a variable declaration.");
+    return env.constants.ann.empty_annotation;
+  }
+
+  auto* vd = env.callStack[cs_size - 2].e->cast<VarDecl>();
+  auto name = vd->id()->str();
+  if (!vd->toplevel()) {
+    GCLock lock;
+    std::ostringstream oss;
+    oss << name << "@" << vd->loc().firstLine() << "." << vd->loc().firstColumn();
+    if (vd->loc().firstLine() != vd->loc().lastLine()) {
+      oss << "-" << vd->loc().lastLine() << "." << vd->loc().lastColumn();
+    } else if (vd->loc().firstColumn() != vd->loc().lastColumn()) {
+      oss << "-" << vd->loc().lastColumn();
+    }
+    const auto* sep = "|";
+    for (auto it = env.callStack.rbegin() + 2; it != env.callStack.rend(); it++) {
+      auto* e = it->e;
+      bool isCompIter = it->tag;
+      switch (e->eid()) {
+        case Expression::E_ID:
+          oss << sep;
+          if (isCompIter) {
+            oss << *e << "=" << *e->cast<Id>()->decl()->e();
+          } else {
+            oss << *e;
+          }
+          break;
+        case Expression::E_BINOP: {
+          std::string quotedOp(e->cast<BinOp>()->opToString().c_str());
+          oss << sep << quotedOp.substr(1, quotedOp.size() - 2);
+          break;
+        }
+        case Expression::E_UNOP: {
+          std::string quotedOp(e->cast<UnOp>()->opToString().c_str());
+          oss << sep << quotedOp.substr(1, quotedOp.size() - 2);
+          break;
+        }
+        case Expression::E_CALL: {
+          oss << sep << demonomorphise_identifier(e->cast<Call>()->id());
+          break;
+        }
+        default:
+          continue;
+      }
+
+      auto loc = e->loc();
+      oss << "@" << loc.firstLine() << "." << loc.firstColumn();
+      if (loc.firstLine() != loc.lastLine()) {
+        oss << "-" << loc.lastLine() << "." << loc.lastColumn();
+      } else if (loc.firstColumn() != loc.lastColumn()) {
+        oss << "-" << loc.lastColumn();
+      }
+    }
+    name = ASTString(oss.str());
+  }
+
+  env.outputVars.emplace_back(name, call->arg(0)->cast<Id>()->decl());
+  return env.constants.ann.empty_annotation;
+}
+
 bool b_in_redundant_constraint(EnvI& env, Call* /*call*/) { return env.inRedundantConstraint > 0; }
 
 bool b_in_symmetry_breaking_constraint(EnvI& env, Call* /*call*/) {
@@ -1967,8 +2036,9 @@ std::string b_show_json(EnvI& env, Call* call) {
 }
 
 Expression* b_output_json(EnvI& env, Call* call) {
-  return create_json_output(env, false, false, false);
+  throw EvalError(env, call->loc(), "JSON output can only be evaluated during output");
 }
+
 Expression* b_output_json_parameters(EnvI& env, Call* call) {
   std::vector<Expression*> outputVars;
   outputVars.push_back(new StringLit(Location().introduce(), "{\n"));
@@ -3268,6 +3338,13 @@ void register_builtins(Env& e) {
   {
     rb(env, m, env.constants.ids.output_to_section, {Type::parstring(), Type::parstring()},
        b_output_to_section);
+  }
+  {
+    std::vector<Type> t(1);
+    t[0] = Type::optvartop();
+    rb(env, m, env.constants.ids.output, t, b_output);
+    t[0] = Type::optvartop(-1);
+    rb(env, m, env.constants.ids.output, t, b_output);
   }
   {
     rb(env, m, ASTString("mzn_in_redundant_constraint"), std::vector<Type>(),

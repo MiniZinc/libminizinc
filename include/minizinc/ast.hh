@@ -1982,6 +1982,8 @@ public:
     Id* output_var;                          // NOLINT(readability-identifier-naming)
     ASTString output_array;                  // NOLINT(readability-identifier-naming)
     Id* add_to_output;                       // NOLINT(readability-identifier-naming)
+    Id* output;                              // NOLINT(readability-identifier-naming)
+    Id* no_output;                           // NOLINT(readability-identifier-naming)
     Id* output_only;                         // NOLINT(readability-identifier-naming)
     Id* mzn_check_var;                       // NOLINT(readability-identifier-naming)
     ASTString mzn_check_enum_var;            // NOLINT(readability-identifier-naming)
@@ -2108,7 +2110,7 @@ public:
   static const int max_array_size = std::numeric_limits<int>::max() / 2;
 
   /// Internal annotations
-  std::array<Id*, 9> internalAnn() const {
+  std::array<Id*, 11> internalAnn() const {
     return {
         ctx.mix,
         ctx.pos,
@@ -2116,6 +2118,8 @@ public:
         ctx.root,
         ann.promise_total,
         ann.add_to_output,
+        ann.output,
+        ann.no_output,
         ann.mzn_check_var,
         ann.rhs_from_assignment,
         ann.mzn_was_undefined,

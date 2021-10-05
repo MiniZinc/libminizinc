@@ -1100,7 +1100,8 @@ void EnvI::voAddExp(VarDecl* vd) {
       Expression* ee = callStack[i].e;
       for (ExpressionSetIter it = ee->ann().begin(); it != ee->ann().end(); ++it) {
         Expression* ann = *it;
-        if (ann != constants.ann.add_to_output && ann != constants.ann.rhs_from_assignment) {
+        if (ann != constants.ann.add_to_output && ann != constants.ann.output &&
+            ann != constants.ann.rhs_from_assignment) {
           bool needAnnotation = true;
           if (Call* ann_c = ann->dynamicCast<Call>()) {
             if (ann_c->id() == constants.ann.defines_var) {
@@ -3846,6 +3847,7 @@ void clear_internal_annotations(EnvI& env, Expression* e, bool keepDefinesVar) {
   e->ann().remove(env.constants.ann.promise_total);
   e->ann().remove(env.constants.ann.maybe_partial);
   e->ann().remove(env.constants.ann.add_to_output);
+  e->ann().remove(env.constants.ann.output);
   e->ann().remove(env.constants.ann.rhs_from_assignment);
   e->ann().remove(env.constants.ann.mzn_was_undefined);
   // Remove defines_var(x) annotation where x is par

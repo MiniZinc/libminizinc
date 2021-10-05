@@ -14,6 +14,7 @@
 #include <minizinc/file_utils.hh>
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/hash.hh>
+#include <minizinc/output.hh>
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/typecheck.hh>
 
@@ -3789,6 +3790,12 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
                               e.msg() + " (required by solution checker model)");
     }
   }
+
+  if (env.envi().constants.ann.output->decl() == nullptr) {
+    env.envi().constants.ann.output->decl(
+        ts.checkId(env.envi(), env.envi().constants.ann.output, Location().introduce()));
+  }
+  annotate_toplevel_output_vars(env.envi());
 }
 
 void typecheck(Env& env, Model* m, AssignI* ai) {

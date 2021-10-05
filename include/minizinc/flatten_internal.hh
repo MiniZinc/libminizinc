@@ -163,6 +163,11 @@ public:
   // Which output sections to enable/disable
   std::unordered_set<std::string>* onlySections = nullptr;
   std::unordered_set<std::string>* notSections = nullptr;
+  // Mapping from output section name to output string array lit
+  typedef ManagedASTStringOrderedMap<Expression*> OutputSectionMap;
+  // Variables which will be used in auto-generated DZN/JSON output
+  typedef ManagedASTStringOrderedMap<VarDecl*> OutputVariables;
+  std::vector<std::pair<ASTString, KeepAlive>> outputVars;
 
   // General multipass information
   MultiPassInfo multiPassInfo;
@@ -185,7 +190,7 @@ protected:
   bool _collectVardecls;
   std::default_random_engine _g;
   std::atomic<bool> _cancel = {false};
-  ManagedASTStringOrderedMap<Expression*> _output;
+  OutputSectionMap _output;
 
 public:
   EnvI(Model* model0, std::ostream& outstream0 = std::cout, std::ostream& errstream0 = std::cerr);
@@ -245,7 +250,7 @@ public:
   }
 
   void addOutputToSection(ASTString section, Expression* e);
-  const ManagedASTStringOrderedMap<Expression*>& outputSections() { return _output; };
+  const OutputSectionMap& outputSections() { return _output; };
 };
 
 inline VarDecl* Ctx::partialityVar(EnvI& env) const {

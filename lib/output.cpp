@@ -592,208 +592,149 @@ void process_deletions(EnvI& e) {
   }
 }
 
-void create_dzn_output_item(EnvI& e, bool outputObjective, bool includeOutputItem, bool hasChecker,
-                            bool outputForChecker) {
+void create_dzn_output_item(EnvI& e, bool includeObjective, bool includeOutputItem,
+                            bool includeChecker) {
   std::vector<Expression*> outputVars;
 
-  class DZNOVisitor : public ItemVisitor {
-  protected:
-    EnvI& _e;
-    bool _outputObjective;
-    bool _includeOutputItem;
-    bool _outputForChecker;
-    std::vector<Expression*>& _outputVars;
-    bool _hadAddToOutput;
-    bool _isChecker;
+  for (auto& it : e.outputVars) {
+    auto name = it.first;
+    auto* vd = it.second()->cast<VarDecl>();
 
-  public:
-    DZNOVisitor(EnvI& e, bool outputObjective, bool includeOutputItem, bool outputForChecker,
-                std::vector<Expression*>& outputVars, bool isChecker)
-        : _e(e),
-          _outputObjective(outputObjective),
-          _includeOutputItem(includeOutputItem),
-          _outputForChecker(outputForChecker),
-          _outputVars(outputVars),
-          _hadAddToOutput(false),
-          _isChecker(isChecker) {}
-    void vVarDeclI(VarDeclI* vdi) {
-      VarDecl* vd = vdi->e();
-      bool process_var = false;
-      if (_outputForChecker) {
-        if (vd->ann().contains(_e.constants.ann.mzn_check_var)) {
-          process_var = true;
-        }
-      } else {
-        if (_outputObjective && vd->id()->idn() == -1 &&
-            ((!_isChecker && vd->id()->v() == "_objective") ||
-             (_isChecker && vd->id()->v() == "_checker_objective"))) {
-          process_var = true;
-        } else {
-          if (vd->ann().contains(_e.constants.ann.add_to_output)) {
-            if (!_hadAddToOutput) {
-              _outputVars.clear();
-            }
-            _hadAddToOutput = true;
-            process_var = true;
-          } else {
-            if (!_hadAddToOutput) {
-              process_var = false;
-              if (vd->type().isvar()) {
-                if (vd->e() != nullptr) {
-                  if (auto* al = vd->e()->dynamicCast<ArrayLit>()) {
-                    for (unsigned int i = 0; i < al->size(); i++) {
-                      if ((*al)[i]->isa<AnonVar>()) {
-                        process_var = true;
-                        break;
-                      }
-                    }
-                  } else if (vd->ann().contains(_e.constants.ann.rhs_from_assignment)) {
-                    process_var = true;
-                  }
-                } else {
-                  process_var = true;
-                }
-              }
-            }
-          }
+    if (!includeObjective && (name == "_objective" || name == "_checker_objective")) {
+      // Skip _objective if disabled
+      continue;
+    }
+
+    std::ostringstream s;
+    s << Printer::quoteId(name) << " = ";
+    bool needArrayXd = false;
+    if (vd->type().dim() > 0) {
+      ArrayLit* al = nullptr;
+      if (!vd->ann().contains(e.constants.ann.output_only)) {
+        if ((vd->flat() != nullptr) && (vd->flat()->e() != nullptr)) {
+          al = eval_array_lit(e, vd->flat()->e());
+        } else if (vd->e() != nullptr) {
+          al = eval_array_lit(e, vd->e());
         }
       }
-      if (process_var) {
-        std::ostringstream s;
-        s << Printer::quoteId(vd->id()->str()) << " = ";
-        bool needArrayXd = false;
-        if (vd->type().dim() > 0) {
-          ArrayLit* al = nullptr;
-          if (!vd->ann().contains(_e.constants.ann.output_only)) {
-            if ((vd->flat() != nullptr) && (vd->flat()->e() != nullptr)) {
-              al = eval_array_lit(_e, vd->flat()->e());
-            } else if (vd->e() != nullptr) {
-              al = eval_array_lit(_e, vd->e());
-            }
-          }
-          if (al == nullptr || !al->empty()) {
-            needArrayXd = true;
-            s << "array" << vd->type().dim() << "d(";
-            for (int i = 0; i < vd->type().dim(); i++) {
-              unsigned int enumId =
-                  (vd->type().enumId() != 0 ? _e.getArrayEnum(vd->type().enumId())[i] : 0);
-              if (al != nullptr || vd->ti()->ranges()[i]->domain() != nullptr) {
-                if (enumId != 0) {
-                  IntVal idxMin;
-                  IntVal idxMax;
+      if (al == nullptr || !al->empty()) {
+        needArrayXd = true;
+        s << "array" << vd->type().dim() << "d(";
+        for (int i = 0; i < vd->type().dim(); i++) {
+          unsigned int enumId =
+              (vd->type().enumId() != 0 ? e.getArrayEnum(vd->type().enumId())[i] : 0);
+          if (al != nullptr || vd->ti()->ranges()[i]->domain() != nullptr) {
+            if (enumId != 0) {
+              IntVal idxMin;
+              IntVal idxMax;
 
-                  if (al != nullptr) {
-                    idxMin = al->min(i);
-                    idxMax = al->max(i);
-                  } else {
-                    IntSetVal* idxset = eval_intset(_e, vd->ti()->ranges()[i]->domain());
-                    idxMin = idxset->min();
-                    idxMax = idxset->max();
-                  }
-
-                  auto* sl = new StringLit(Location().introduce(), s.str());
-                  _outputVars.push_back(sl);
-                  ASTString toString =
-                      std::string("_toString_") + _e.getEnum(enumId)->e()->id()->str().c_str();
-
-                  auto* toStringMin = new Call(
-                      Location().introduce(), toString,
-                      {IntLit::a(idxMin), _e.constants.literalFalse, _e.constants.literalFalse});
-                  toStringMin->type(Type::parstring());
-                  FunctionI* toStringMin_fi = _e.model->matchFn(_e, toStringMin, false);
-                  toStringMin->decl(toStringMin_fi);
-                  _outputVars.push_back(toStringMin);
-
-                  sl = new StringLit(Location().introduce(), "..");
-                  _outputVars.push_back(sl);
-
-                  auto* toStringMax = new Call(
-                      Location().introduce(), toString,
-                      {IntLit::a(idxMax), _e.constants.literalFalse, _e.constants.literalFalse});
-                  toStringMax->type(Type::parstring());
-                  FunctionI* toStringMax_fi = _e.model->matchFn(_e, toStringMax, false);
-                  toStringMax->decl(toStringMax_fi);
-                  _outputVars.push_back(toStringMax);
-                  s.str("");
-                  s << ", ";
-                } else if (al != nullptr) {
-                  s << al->min(i) << ".." << al->max(i) << ", ";
-                } else {
-                  IntSetVal* idxset = eval_intset(_e, vd->ti()->ranges()[i]->domain());
-                  s << *idxset << ", ";
-                }
+              if (al != nullptr) {
+                idxMin = al->min(i);
+                idxMax = al->max(i);
               } else {
-                // Don't know index set range - have to compute in solns2out
-                auto* sl = new StringLit(Location().introduce(), s.str());
-                _outputVars.push_back(sl);
-
-                std::string index_set_fn = "index_set";
-                if (vd->type().dim() > 1) {
-                  index_set_fn +=
-                      "_" + std::to_string(i + 1) + "of" + std::to_string(vd->type().dim());
-                }
-                auto* index_set_xx = new Call(Location().introduce(), index_set_fn, {vd->id()});
-                index_set_xx->type(Type::parsetint());
-                auto* i_fi = _e.model->matchFn(_e, index_set_xx, false);
-                assert(i_fi);
-                index_set_xx->decl(i_fi);
-
-                auto* show =
-                    new Call(Location().introduce(), _e.constants.ids.show, {index_set_xx});
-                show->type(Type::parstring());
-                FunctionI* s_fi = _e.model->matchFn(_e, show, false);
-                assert(s_fi);
-                show->decl(s_fi);
-
-                _outputVars.push_back(show);
-                s.str("");
-                s << ", ";
+                IntSetVal* idxset = eval_intset(e, vd->ti()->ranges()[i]->domain());
+                idxMin = idxset->min();
+                idxMax = idxset->max();
               }
+
+              auto* sl = new StringLit(Location().introduce(), s.str());
+              outputVars.push_back(sl);
+              ASTString toString =
+                  std::string("_toString_") + e.getEnum(enumId)->e()->id()->str().c_str();
+
+              auto* toStringMin =
+                  new Call(Location().introduce(), toString,
+                           {IntLit::a(idxMin), e.constants.literalFalse, e.constants.literalFalse});
+              toStringMin->type(Type::parstring());
+              FunctionI* toStringMin_fi = e.model->matchFn(e, toStringMin, false);
+              toStringMin->decl(toStringMin_fi);
+              outputVars.push_back(toStringMin);
+
+              sl = new StringLit(Location().introduce(), "..");
+              outputVars.push_back(sl);
+
+              auto* toStringMax =
+                  new Call(Location().introduce(), toString,
+                           {IntLit::a(idxMax), e.constants.literalFalse, e.constants.literalFalse});
+              toStringMax->type(Type::parstring());
+              FunctionI* toStringMax_fi = e.model->matchFn(e, toStringMax, false);
+              toStringMax->decl(toStringMax_fi);
+              outputVars.push_back(toStringMax);
+              s.str("");
+              s << ", ";
+            } else if (al != nullptr) {
+              s << al->min(i) << ".." << al->max(i) << ", ";
+            } else {
+              IntSetVal* idxset = eval_intset(e, vd->ti()->ranges()[i]->domain());
+              s << *idxset << ", ";
             }
+          } else {
+            // Don't know index set range - have to compute in solns2out
+            auto* sl = new StringLit(Location().introduce(), s.str());
+            outputVars.push_back(sl);
+
+            std::string index_set_fn = "index_set";
+            if (vd->type().dim() > 1) {
+              index_set_fn += "_" + std::to_string(i + 1) + "of" + std::to_string(vd->type().dim());
+            }
+            auto* index_set_xx = new Call(Location().introduce(), index_set_fn, {vd->id()});
+            index_set_xx->type(Type::parsetint());
+            auto* i_fi = e.model->matchFn(e, index_set_xx, false);
+            assert(i_fi);
+            index_set_xx->decl(i_fi);
+
+            auto* show = new Call(Location().introduce(), e.constants.ids.show, {index_set_xx});
+            show->type(Type::parstring());
+            FunctionI* s_fi = e.model->matchFn(e, show, false);
+            assert(s_fi);
+            show->decl(s_fi);
+
+            outputVars.push_back(show);
+            s.str("");
+            s << ", ";
           }
         }
-        auto* sl = new StringLit(Location().introduce(), s.str());
-        _outputVars.push_back(sl);
-
-        std::vector<Expression*> showArgs(1);
-        showArgs[0] = vd->id();
-        Call* show = new Call(Location().introduce(), ASTString("showDzn"), showArgs);
-        show->type(Type::parstring());
-        FunctionI* fi = _e.model->matchFn(_e, show, false);
-        assert(fi);
-        show->decl(fi);
-        _outputVars.push_back(show);
-        std::string ends = needArrayXd ? ")" : "";
-        ends += ";\n";
-        auto* eol = new StringLit(Location().introduce(), ends);
-        _outputVars.push_back(eol);
       }
     }
-    void vOutputI(OutputI* oi) {
-      if (_includeOutputItem) {
-        _outputVars.push_back(new StringLit(Location().introduce(), "_output = "));
-        Call* concat = new Call(Location().introduce(), ASTString("concat"), {oi->e()});
-        concat->type(Type::parstring());
-        FunctionI* fi = _e.model->matchFn(_e, concat, false);
-        assert(fi);
-        concat->decl(fi);
-        Call* show = new Call(Location().introduce(), ASTString("showDzn"), {concat});
-        show->type(Type::parstring());
-        fi = _e.model->matchFn(_e, show, false);
-        assert(fi);
-        show->decl(fi);
-        _outputVars.push_back(show);
-        _outputVars.push_back(new StringLit(Location().introduce(), ";\n"));
-      }
+    auto* sl = new StringLit(Location().introduce(), s.str());
+    outputVars.push_back(sl);
 
-      oi->remove();
+    std::vector<Expression*> showArgs(1);
+    showArgs[0] = vd->id();
+    Call* show = new Call(Location().introduce(), ASTString("showDzn"), showArgs);
+    show->type(Type::parstring());
+    FunctionI* fi = e.model->matchFn(e, show, false);
+    assert(fi);
+    show->decl(fi);
+    outputVars.push_back(show);
+    std::string ends = needArrayXd ? ")" : "";
+    ends += ";\n";
+    auto* eol = new StringLit(Location().introduce(), ends);
+    outputVars.push_back(eol);
+  }
+
+  auto* oi = e.model->outputItem();
+  if (oi != nullptr) {
+    if (includeOutputItem) {
+      outputVars.push_back(new StringLit(Location().introduce(), "_output = "));
+      Call* concat = new Call(Location().introduce(), ASTString("concat"), {oi->e()});
+      concat->type(Type::parstring());
+      FunctionI* fi = e.model->matchFn(e, concat, false);
+      assert(fi);
+      concat->decl(fi);
+      Call* show = new Call(Location().introduce(), ASTString("showDzn"), {concat});
+      show->type(Type::parstring());
+      fi = e.model->matchFn(e, show, false);
+      assert(fi);
+      show->decl(fi);
+      outputVars.push_back(show);
+      outputVars.push_back(new StringLit(Location().introduce(), ";\n"));
     }
-  } dznov(e, outputObjective, includeOutputItem, outputForChecker, outputVars,
-          e.model->filename().endsWith(".mzc") || e.model->filename().endsWith(".mzc.mzn"));
 
-  iter_items(dznov, e.model);
+    oi->remove();
+  }
 
-  if (hasChecker && !outputForChecker) {
+  if (includeChecker) {
     outputVars.push_back(new StringLit(Location().introduce(), "_checker = "));
     auto* checker_output = new Call(Location().introduce(), ASTString("showCheckerOutput"), {});
     checker_output->type(Type::parstring());
@@ -815,113 +756,75 @@ void create_dzn_output_item(EnvI& e, bool outputObjective, bool includeOutputIte
   e.model->addItem(newOutputItem);
 }
 
-ArrayLit* create_json_output(EnvI& e, bool outputObjective, bool includeOutputItem,
-                             bool hasChecker) {
+ArrayLit* create_json_output(EnvI& e, bool includeObjective, bool includeOutputItem,
+                             bool includeChecker) {
   std::vector<Expression*> outputVars;
   outputVars.push_back(new StringLit(Location().introduce(), "{\n"));
 
-  class JSONOVisitor : public ItemVisitor {
-  protected:
-    EnvI& _e;
-    bool _outputObjective;
-    bool _includeOutputItem;
-    std::vector<Expression*>& _outputVars;
-    bool _hadAddToOutput;
-    bool _isChecker;
+  bool firstVar = true;
+  for (auto it : e.outputVars) {
+    auto name = it.first;
+    auto* vd = it.second()->cast<VarDecl>();
 
-  public:
-    bool firstVar;
-    JSONOVisitor(EnvI& e, bool outputObjective, bool includeOutputItem,
-                 std::vector<Expression*>& outputVars, bool isChecker)
-        : _e(e),
-          _outputObjective(outputObjective),
-          _outputVars(outputVars),
-          _includeOutputItem(includeOutputItem),
-          _hadAddToOutput(false),
-          firstVar(true),
-          _isChecker(isChecker) {}
-    void vVarDeclI(VarDeclI* vdi) {
-      VarDecl* vd = vdi->e();
-      bool process_var = false;
-      if (_outputObjective && vd->id()->idn() == -1 &&
-          ((!_isChecker && vd->id()->v() == "_objective") ||
-           (_isChecker && vd->id()->v() == "_checker_objective"))) {
-        process_var = true;
-      } else {
-        if (vd->ann().contains(_e.constants.ann.add_to_output)) {
-          if (!_hadAddToOutput) {
-            _outputVars.clear();
-            _outputVars.push_back(new StringLit(Location().introduce(), "{\n"));
-            firstVar = true;
-          }
-          _hadAddToOutput = true;
-          process_var = true;
-        } else {
-          if (!_hadAddToOutput) {
-            process_var =
-                vd->type().isvar() &&
-                (vd->e() == nullptr || vd->ann().contains(_e.constants.ann.rhs_from_assignment));
-          }
-        }
-      }
-      if (process_var) {
-        std::ostringstream s;
-        if (firstVar) {
-          firstVar = false;
-        } else {
-          s << ",\n";
-        }
-        s << "  \"" << vd->id()->str() << "\""
-          << " : ";
-        auto* sl = new StringLit(Location().introduce(), s.str());
-        _outputVars.push_back(sl);
-
-        std::vector<Expression*> showArgs(1);
-        showArgs[0] = vd->id();
-        Call* show = new Call(Location().introduce(), "showJSON", showArgs);
-        show->type(Type::parstring());
-        FunctionI* fi = _e.model->matchFn(_e, show, false);
-        assert(fi);
-        show->decl(fi);
-        _outputVars.push_back(show);
-      }
+    if (!includeObjective && (name == "_objective" || name == "_checker_objective")) {
+      // Skip _objective if disabled
+      continue;
     }
-    void vOutputI(OutputI* oi) {
-      if (_includeOutputItem) {
-        std::ostringstream s;
-        if (firstVar) {
-          firstVar = false;
-        } else {
-          s << ",\n";
-        }
-        s << "  \"_output\""
-          << " : ";
-        auto* sl = new StringLit(Location().introduce(), s.str());
-        _outputVars.push_back(sl);
-        Call* concat = new Call(Location().introduce(), ASTString("concat"), {oi->e()});
-        concat->type(Type::parstring());
-        FunctionI* fi = _e.model->matchFn(_e, concat, false);
-        assert(fi);
-        concat->decl(fi);
-        Call* show = new Call(Location().introduce(), ASTString("showJSON"), {concat});
-        show->type(Type::parstring());
-        fi = _e.model->matchFn(_e, show, false);
-        assert(fi);
-        show->decl(fi);
-        _outputVars.push_back(show);
-      }
 
-      oi->remove();
-    }
-  } jsonov(e, outputObjective, includeOutputItem, outputVars,
-           e.model->filename().endsWith(".mzc") || e.model->filename().endsWith(".mzc.mzn"));
-
-  iter_items(jsonov, e.model);
-
-  if (hasChecker) {
     std::ostringstream s;
-    if (jsonov.firstVar) {
-      jsonov.firstVar = false;
+    if (firstVar) {
+      firstVar = false;
+    } else {
+      s << ",\n";
+    }
+    s << "  \"" << Printer::escapeStringLit(name) << "\""
+      << " : ";
+    auto* sl = new StringLit(Location().introduce(), s.str());
+    outputVars.push_back(sl);
+
+    std::vector<Expression*> showArgs(1);
+    showArgs[0] = vd->id();
+    Call* show = new Call(Location().introduce(), "showJSON", showArgs);
+    show->type(Type::parstring());
+    FunctionI* fi = e.model->matchFn(e, show, false);
+    assert(fi);
+    show->decl(fi);
+    outputVars.push_back(show);
+  }
+
+  auto* oi = e.model->outputItem();
+  if (oi != nullptr) {
+    if (includeOutputItem) {
+      std::ostringstream s;
+      if (firstVar) {
+        firstVar = false;
+      } else {
+        s << ",\n";
+      }
+      s << "  \"_output\""
+        << " : ";
+      auto* sl = new StringLit(Location().introduce(), s.str());
+      outputVars.push_back(sl);
+      Call* concat = new Call(Location().introduce(), ASTString("concat"), {oi->e()});
+      concat->type(Type::parstring());
+      FunctionI* fi = e.model->matchFn(e, concat, false);
+      assert(fi);
+      concat->decl(fi);
+      Call* show = new Call(Location().introduce(), ASTString("showJSON"), {concat});
+      show->type(Type::parstring());
+      fi = e.model->matchFn(e, show, false);
+      assert(fi);
+      show->decl(fi);
+      outputVars.push_back(show);
+    }
+
+    oi->remove();
+  }
+
+  if (includeChecker) {
+    std::ostringstream s;
+    if (firstVar) {
+      firstVar = false;
     } else {
       s << ",\n";
     }
@@ -945,9 +848,9 @@ ArrayLit* create_json_output(EnvI& e, bool outputObjective, bool includeOutputIt
   outputVars.push_back(new StringLit(Location().introduce(), "\n}\n"));
   return new ArrayLit(Location().introduce(), outputVars);
 }
-void create_json_output_item(EnvI& e, bool outputObjective, bool includeOutputItem,
-                             bool hasChecker) {
-  auto* al = create_json_output(e, outputObjective, includeOutputItem, hasChecker);
+void create_json_output_item(EnvI& e, bool ioncludeObjective, bool includeOutputItem,
+                             bool includeChecker) {
+  auto* al = create_json_output(e, ioncludeObjective, includeOutputItem, includeChecker);
   e.addOutputToSection(ASTString("json"), al);  // Add output to json section for encapsulation
   auto* newOutputItem = new OutputI(Location().introduce(), al);
   e.model->addItem(newOutputItem);
@@ -991,15 +894,80 @@ void create_encapsulated_output_item(EnvI& e) {
   e.model->addItem(newOutputItem);
 }
 
+void annotate_toplevel_output_vars(EnvI& e) {
+  GCLock lock;
+
+  class OutputVarVisitor : public ItemVisitor {
+  private:
+    EnvI& _e;
+    bool _outputForChecker;
+    bool _isChecker;
+
+  public:
+    OutputVarVisitor(EnvI& e)
+        : _e(e),
+          _outputForChecker(e.fopts.outputMode == FlatteningOptions::OutputMode::OUTPUT_CHECKER),
+          _isChecker(e.model->filename().endsWith(".mzc") ||
+                     e.model->filename().endsWith(".mzc.mzn")) {}
+
+    bool hasAddToOutput = false;
+    std::vector<VarDecl*> todo;
+
+    void vVarDeclI(VarDeclI* vdi) {
+      auto* vd = vdi->e();
+      if (_outputForChecker) {
+        if (vd->ann().contains(_e.constants.ann.mzn_check_var)) {
+          vd->addAnnotation(_e.constants.ann.output);
+        }
+      } else {
+        if (vd->ann().contains(_e.constants.ann.add_to_output)) {
+          hasAddToOutput = true;
+          todo.clear();  // Skip 2nd pass
+          vd->addAnnotation(_e.constants.ann.output);
+        } else if ((!_isChecker && vd->id()->idn() == -1 && vd->id()->v() == "_objective") ||
+                   ((_isChecker && vd->id()->idn() == -1 &&
+                     vd->id()->v() == "_checker_objective"))) {
+          // Always add ::output to _objective/_checker_objective
+          // Whether or not to actually include will be determined later
+          vd->addAnnotation(_e.constants.ann.output);
+        } else if (!hasAddToOutput) {
+          todo.push_back(vd);  // Needs to be processed in 2nd pass
+        }
+      }
+    }
+  } ovv(e);
+  iter_items(ovv, e.model);
+
+  for (auto* vd : ovv.todo) {
+    if (vd->ann().contains(e.constants.ann.no_output) || vd->type().isPar()) {
+      continue;
+    }
+    if (vd->e() == nullptr || vd->ann().contains(e.constants.ann.rhs_from_assignment)) {
+      // Output anything without a RHS
+      vd->addAnnotation(e.constants.ann.output);
+      continue;
+    }
+    if (auto* al = vd->e()->dynamicCast<ArrayLit>()) {
+      // Output array literals containing _
+      for (unsigned int i = 0; i < al->size(); i++) {
+        if ((*al)[i]->isa<AnonVar>()) {
+          vd->addAnnotation(e.constants.ann.output);
+          break;
+        }
+      }
+    }
+  }
+}
+
 void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outputObjective,
                    bool includeOutputItem, bool hasChecker, bool encapsulateJSON) {
   // Create new output model
   OutputI* outputItem = nullptr;
   GCLock lock;
 
+  // Combine output sections into one string
   if (!e.outputSections().empty()) {
-    // Create initial combined output item from model output sections
-    Expression* o = nullptr;
+    Expression* combinedOutput = nullptr;
     auto* empty_array = new ArrayLit(Location().introduce(), std::vector<Expression*>());
     for (const auto& it : e.outputSections()) {
       auto* section_enabled = new Call(Location().introduce(), e.constants.ids.mzn_section_enabled,
@@ -1008,34 +976,32 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
       section_enabled->decl(e.model->matchFn(e, section_enabled, false));
       auto* part = new ITE(Location().introduce(), {section_enabled, it.second}, empty_array);
       part->type(Type::parstring(1));
-      if (o == nullptr) {
-        o = part;
+      if (combinedOutput == nullptr) {
+        combinedOutput = part;
       } else {
-        o = new BinOp(Location().introduce(), o, BOT_PLUSPLUS, part);
-        o->type(Type::parstring(1));
+        combinedOutput = new BinOp(Location().introduce(), combinedOutput, BOT_PLUSPLUS, part);
+        combinedOutput->type(Type::parstring(1));
       }
     }
-    e.addOutputToSection(ASTString("raw"), o);  // Add to raw section for encapsulation
-    auto* oi = new OutputI(Location().introduce(), o);
-    e.model->addItem(oi);
-    e.model->setOutputItem(oi);
+    e.addOutputToSection(ASTString("raw"), combinedOutput);  // Add to raw section for encapsulation
+    e.model->addItem(new OutputI(Location().introduce(), combinedOutput));
   }
 
-  // Only create _checker output if not JSON encapsulated
+  // Only include _checker output if not JSON encapsulated
   bool includeChecker = hasChecker && !encapsulateJSON;
   switch (outputMode) {
     case FlatteningOptions::OUTPUT_DZN:
-      create_dzn_output_item(e, outputObjective, includeOutputItem, includeChecker, false);
+      create_dzn_output_item(e, outputObjective, includeOutputItem, includeChecker);
       break;
     case FlatteningOptions::OUTPUT_JSON:
       create_json_output_item(e, outputObjective, includeOutputItem, includeChecker);
       break;
     case FlatteningOptions::OUTPUT_CHECKER:
-      create_dzn_output_item(e, outputObjective, includeOutputItem, includeChecker, true);
+      create_dzn_output_item(e, true, false, false);
       break;
     default:
       if (e.model->outputItem() == nullptr) {
-        create_dzn_output_item(e, outputObjective, false, false, false);
+        create_dzn_output_item(e, outputObjective, false, false);
       }
       break;
   }

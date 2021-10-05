@@ -24,6 +24,9 @@ void copy_output(EnvI& e);
 /// Copy all dependent variable declarations
 void output_vardecls(EnvI& env, Item* ci, Expression* e);
 
+/// Populate ::output annotations for model
+void annotate_toplevel_output_vars(EnvI& e);
+
 /// Create initial output model
 void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outputObjective,
                    bool includeOutputItem, bool hasChecker, bool encapsulateJSON);
@@ -36,7 +39,7 @@ void finalise_output(EnvI& e);
 /// Remove all links to variables in flat model from output model in \a env
 void cleanup_output(EnvI& env);
 
-ArrayLit* create_json_output(EnvI& env, bool outputObjective, bool includeOutputItem,
-                             bool hasChecker);
+ArrayLit* create_json_output(EnvI& env, bool includeObjective, bool includeOutputItem,
+                             bool includeChecker);
 
 }  // namespace MiniZinc

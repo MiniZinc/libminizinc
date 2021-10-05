@@ -2341,6 +2341,8 @@ annotations :
 annotation_expr :
       expr_atom_head_nonstring
       { $$ = $1; }
+    | MZN_OUTPUT
+      { $$ = new Id(@1, Constants::constants().ids.output, nullptr); }
     | string_expr
       { $$ = new Call(@1, ASTString("mzn_expression_name"), {$1}); }
 
