@@ -78,9 +78,7 @@ function     bool: '='(    $T: x,    $T: y);
 function     bool: '='(opt $T: x, opt $T: y) =
   absent(x) /\ absent(y) \/ occurs(x) /\ occurs(y) /\ deopt(x) = deopt(y);
 /** @group stdlib.compare Return if \a x is equal to \a y */
-function var bool: '='(var $T: x,var $T: y);
-/** @group stdlib.compare Return if \a x is equal to \a y */
-function var bool: '='(var opt $T: x,var opt $T: y);
+function var bool: '='(any $T: x,any $T: y);
 
 /** @group stdlib.compare Weak equality. True if either \a x or \a y are absent, or
 present and equal.*/
@@ -118,9 +116,7 @@ function     bool: '!='(    $T: x,     $T: y);
 /** @group stdlib.compare Return if \a x is not equal to \a y */
 function     bool: '!='(opt $T: x, opt $T: y) = not (x = y);
 /** @group stdlib.compare Return if \a x is not equal to \a y */
-function var bool: '!='(var $T: x, var $T: y);
-/** @group stdlib.compare Return if \a x is not equal to \a y */
-function var bool: '!='(var opt $T: x, var opt $T: y);
+function var bool: '!='(any $T: x, any $T: y);
 
 % Special case comparison operators for integer variable and float constant
 function var bool: '<='(var int: x, float: y) = (x <= floor(y));

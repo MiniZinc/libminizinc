@@ -8,13 +8,7 @@ include "fzn_array_int_union.mzn";
 include "fzn_array_opt_int_union.mzn";
 
 /** @group stdlib.array Return the concatenation of arrays \a x and \a y */
-function array[int] of $T: '++'(array[int] of $T: x, array[int] of $T: y);
-/** @group stdlib.array Return the concatenation of arrays \a x and \a y */
-function array[int] of opt $T: '++'(array[int] of opt $T: x, array[int] of opt $T: y);
-/** @group stdlib.array Return the concatenation of arrays \a x and \a y */
-function array[int] of var $T: '++'(array[int] of var $T: x, array[int] of var $T: y);
-/** @group stdlib.array Return the concatenation of arrays \a x and \a y */
-function array[int] of var opt $T: '++'(array[int] of var opt $T: x, array[int] of var opt $T: y);
+function array[int] of any $T: '++'(array[int] of any $T: x, array[int] of any $T: y);
 
 /** @group stdlib.array Return the length of array \a x
 
@@ -47,17 +41,7 @@ function array[$$E] of opt $T: reverse(array[$$E] of opt $T: x) =
 
   The resulting array has the same index set as \a x.
 */
-function array[$$E] of var $T: reverse(array[$$E] of var $T: x) =
-  if length(x)=0 then [] else
-  let { int: l = max(index_set(x))+min(index_set(x)) } in
-  array1d(index_set(x),[x[l-i] | i in index_set(x)])
-  endif;
-
-/** @group stdlib.array Return the array \a x in reverse order
-
-  The resulting array has the same index set as \a x.
-*/
-function array[$$E] of var opt $T: reverse(array[$$E] of var opt $T: x) =
+function array[$$E] of any $T: reverse(array[$$E] of any $T: x) =
   if length(x)=0 then [] else
   let { int: l = max(index_set(x))+min(index_set(x)) } in
   array1d(index_set(x),[x[l-i] | i in index_set(x)])
@@ -122,16 +106,10 @@ function array[$$E] of any $V: array1d(set of $$E: S, array[$U] of any $V: x);
 function array[$$E,$$F] of any $V: array2d(set of $$E: S1, set of $$F: S2, 
                                            array[$U] of any $V: x);
 
-function array[$$E,$$F] of $V: array2d(array[int] of $$E: S1, array[int] of $$F: S2, 
-                                       array[int] of $V: x) = 
-                                       let { int: d = length(S2) } in
-                                       [ (S1[(i - 1) div d + 1],S2[(i - 1) mod d + 1]) : x[i] | i in index_set(x)];
-function array[$$E,$$F] of opt $V: array2d(array[int] of $$E: S1, array[int] of $$F: S2, 
-                                       array[int] of opt $V: x) = [ (S1[i],S2[i]) : x[i] | i in index_set(x)];
-function array[$$E,$$F] of var $V: array2d(array[int] of $$E: S1, array[int] of $$F: S2, 
-                                       array[int] of var $V: x) = [ (S1[i],S2[i]) : x[i] | i in index_set(x)];
-function array[$$E,$$F] of var opt $V: array2d(array[int] of $$E: S1, array[int] of $$F: S2, 
-                                       array[int] of var opt $V: x) = [ (S1[i],S2[i]) : x[i] | i in index_set(x)];
+function array[$$E,$$F] of any $V: array2d(array[int] of $$E: S1, array[int] of $$F: S2, 
+                                           array[int] of any $V: x) = 
+                                           let { int: d = length(S2) } in
+                                           [ (S1[(i - 1) div d + 1],S2[(i - 1) mod d + 1]) : x[i] | i in index_set(x)];
 
 function array[$$E] of any $V: array1d(array[int] of $$E: S1, array[int] of any $V: x) = [ S1[i] : x[i] | i in index_set(x)];
 
@@ -213,7 +191,7 @@ test has_element($T: e, array[int] of $T: x) = exists (i in index_set(x)) (x[i]=
 /** @group stdlib.array Test if \a e is an element of array \a x */
 test has_element($T: e, array[int] of opt $T: x) = exists (i in index_set(x)) (x[i]=e);
 /** @group stdlib.array Test if \a e is an element of array \a x */
-predicate has_element($T: e, array[$$E] of var opt $T: x) = exists (i in index_set(x)) (x[i]=e);
+predicate has_element($T: e, array[$$E] of any $T: x) = exists (i in index_set(x)) (x[i]=e);
 
 /** @group stdlib.array Return the set containing the elements of \a x */
 function var set of $$T: array2set(array[int] of var $$T: x) ::promise_total =
