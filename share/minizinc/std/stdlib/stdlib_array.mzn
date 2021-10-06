@@ -207,7 +207,7 @@ function var set of $$T: array2set(array[int] of var $$T: x) ::promise_total =
 function var set of $$T: array2set(array[int] of var opt $$T: x) ::promise_total =
   if length(x) = 0 then {}
   else let {
-      set of int: D = dom_array(x);
+      set of int: D = dom_array_occurring(x);
       constraint assert(min(D) > -infinity /\ max(D) < infinity, "array2set needs finite bounds on argument array");
       var set of D: y;
       constraint fzn_array_opt_int_union(x, y);

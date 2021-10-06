@@ -3419,10 +3419,17 @@ void register_builtins(Env& e) {
     rb(env, m, ASTString("fix"), t, b_fix_int);
     rb(env, m, ASTString("fix"), t, b_fix_set);
     rb(env, m, ASTString("fix"), t, b_fix_float);
+    t[0] = Type::vartop();
+    rb(env, m, ASTString("fix"), t, b_fix_bool);
+    rb(env, m, ASTString("fix"), t, b_fix_int);
+    rb(env, m, ASTString("fix"), t, b_fix_set);
+    rb(env, m, ASTString("fix"), t, b_fix_float);
   }
   {
     std::vector<Type> t(1);
     t[0] = Type::optvartop(-1);
+    rb(env, m, ASTString("fix"), t, b_fix_array);
+    t[0] = Type::vartop(-1);
     rb(env, m, ASTString("fix"), t, b_fix_array);
   }
   {

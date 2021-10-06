@@ -66,6 +66,9 @@ function set of int: dom(var bool: b) =
 function set of int: dom_array(array[$T] of var int: x);
 /** @group stdlib.reflect Return union of all domains of the elements in array \a x */
 function set of int: dom_array(array[$T] of var opt int: x);
+/** @group stdlib.reflect Return union of all domains of the elements in array \a x, ignoring absent elements */
+function set of int: dom_array_occurring(array[$T] of var opt int: x) =
+  array_union([if is_fixed(xi) /\ absent(fix(xi)) then {} else dom(xi) endif | xi in array1d(x)]);
 /** @group stdlib.reflect Return approximation of union of all domains of the elements in array \a x */
 function set of int: dom_bounds_array(array[$T] of var int: x);
 /** @group stdlib.reflect Return approximation of union of all domains of the elements in array \a x */
@@ -82,10 +85,18 @@ function par bool: has_ub_set(var set of int: x);
 
 /** @group stdlib.reflect Check if the value of \a x is fixed at this point
   in evaluation. If it is fixed, return its value, otherwise abort. */
-function $T: fix(any $T: x);
+function $T: fix(var $T: x);
+/** @group stdlib.reflect Check if the value of \a x is fixed at this point
+  in evaluation. If it is fixed, return its value, otherwise abort. */
+function opt $T: fix(var opt $T: x);
+function $T: fix($T: x) = x;
+function opt $T: fix(opt $T: x) = x;
 /** @group stdlib.reflect Check if the value of every element of the array \a x is fixed
 at this point in evaluation. If all are fixed, return an array of their values, otherwise abort. */
-function array[$U] of $T: fix(array[$U] of any $T: x);
+function array[$U] of $T: fix(array[$U] of var $T: x);
+/** @group stdlib.reflect Check if the value of every element of the array \a x is fixed
+at this point in evaluation. If all are fixed, return an array of their values, otherwise abort. */
+function array[$U] of opt $T: fix(array[$U] of var opt $T: x);
 /** @group stdlib.reflect Test if \a x is fixed */
 function bool: is_fixed(any $T: x);
 /** @group stdlib.reflect Test if every element of array \a x is fixed */
