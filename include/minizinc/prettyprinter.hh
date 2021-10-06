@@ -132,7 +132,7 @@ void pp_floatval(std::ostream& os, const FloatVal& fv, bool hexFloat = false);
 
 }  // namespace MiniZinc
 
-void debugprint(MiniZinc::Expression* e);
-void debugprint(MiniZinc::Item* i);
-void debugprint(MiniZinc::Model* m);
+void debugprint(const MiniZinc::Expression* e);
+void debugprint(const MiniZinc::Item* i);
+void debugprint(const MiniZinc::Model* m);
 void debugprint(const MiniZinc::Location& l);

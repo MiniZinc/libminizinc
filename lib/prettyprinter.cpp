@@ -2081,9 +2081,9 @@ void Printer::print(const Model* m) {
 
 }  // namespace MiniZinc
 
-void debugprint(MiniZinc::Expression* e) { std::cerr << *e << "\n"; }
-void debugprint(MiniZinc::Item* i) { std::cerr << *i; }
-void debugprint(MiniZinc::Model* m) {
+void debugprint(const MiniZinc::Expression* e) { std::cerr << *e << "\n"; }
+void debugprint(const MiniZinc::Item* i) { std::cerr << *i; }
+void debugprint(const MiniZinc::Model* m) {
   MiniZinc::Printer p(std::cerr, 0);
   p.print(m);
 }
