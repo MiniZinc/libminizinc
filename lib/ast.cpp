@@ -1053,11 +1053,11 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
              << tiit.toString(env) << " vs " << it->second.first.toString(env) << ")";
           throw TypeError(env, get_loc(ta[i], fi), ss.str());
         }
-        if (tiit.isPar()) {
-          it->second.first.ti(Type::TI_PAR);
+        if (tiit.isvar()) {
+          it->second.first.ti(Type::TI_VAR);
         }
-        if (tiit.isPresent()) {
-          it->second.first.ot(Type::OT_PRESENT);
+        if (tiit.isOpt()) {
+          it->second.first.ot(Type::OT_OPTIONAL);
         }
       }
     }
