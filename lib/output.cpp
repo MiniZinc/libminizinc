@@ -714,7 +714,8 @@ void create_dzn_output_item(EnvI& e, bool outputObjective, bool includeOutputIte
                   FunctionI* toStringMax_fi = _e.model->matchFn(_e, toStringMax, false);
                   toStringMax->decl(toStringMax_fi);
                   _outputVars.push_back(toStringMax);
-                  s.str(", ");
+                  s.str("");
+                  s << ", ";
                 } else if (al != nullptr) {
                   s << al->min(i) << ".." << al->max(i) << ", ";
                 } else {
@@ -745,7 +746,8 @@ void create_dzn_output_item(EnvI& e, bool outputObjective, bool includeOutputIte
                 show->decl(s_fi);
 
                 _outputVars.push_back(show);
-                s.str(", ");
+                s.str("");
+                s << ", ";
               }
             }
           }
