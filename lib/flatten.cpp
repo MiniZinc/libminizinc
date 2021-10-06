@@ -1818,12 +1818,14 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
   }
   if (Id* ident = e->dynamicCast<Id>()) {
     if (ident->decl() != nullptr) {
-      auto* e_vd = follow_id_to_decl(ident)->cast<VarDecl>();
-      e = e_vd->id();
-      if (!env.inReverseMapVar && ctx.b != C_ROOT && e->type() == Type::varbool()) {
-        add_ctx_ann(env, e_vd, ctx.b);
-        if (e_vd != ident->decl()) {
-          add_ctx_ann(env, ident->decl(), ctx.b);
+      e = follow_id_to_decl(ident);
+      if (auto* e_vd = e->dynamicCast<VarDecl>()) {
+        e = e_vd->id();
+        if (!env.inReverseMapVar && ctx.b != C_ROOT && e->type() == Type::varbool()) {
+          add_ctx_ann(env, e_vd, ctx.b);
+          if (e_vd != ident->decl()) {
+            add_ctx_ann(env, ident->decl(), ctx.b);
+          }
         }
       }
     }
@@ -2252,9 +2254,10 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
           ret = vd->id();
         }
         Id* vde_id = Expression::dynamicCast<Id>(vd->e());
-        if (vde_id == env.constants.absent) {
+        if (vde_id != nullptr && (vde_id == env.constants.absent ||
+                                  (vde_id->type().isAnn() && vde_id->decl() == nullptr))) {
           // no need to do anything
-        } else if ((vde_id != nullptr) && vde_id->decl()->ti()->domain() == nullptr) {
+        } else if (vde_id != nullptr && vde_id->decl()->ti()->domain() == nullptr) {
           if (vd->ti()->domain() != nullptr) {
             GCLock lock;
             Expression* vd_dom = eval_par(env, vd->ti()->domain());

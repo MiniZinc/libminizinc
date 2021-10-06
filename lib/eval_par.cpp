@@ -1895,6 +1895,9 @@ Expression* eval_par(EnvI& env, Expression* e) {
       }
       Id* id = e->cast<Id>();
       if (id->decl() == nullptr) {
+        if (id->type().isAnn()) {
+          return id;
+        }
         throw EvalError(env, e->loc(), "undefined identifier", id->v());
       }
       if (id->decl()->ti()->domain() != nullptr) {
@@ -3171,8 +3174,13 @@ Expression* follow_id(Expression* e) {
     if (e == nullptr) {
       return nullptr;
     }
-    if (e->eid() == Expression::E_ID && e != Constants::constants().absent) {
-      e = e->cast<Id>()->decl()->e();
+    if (e->eid() == Expression::E_ID) {
+      Id* ident = e->cast<Id>();
+      if (ident == Constants::constants().absent ||
+          (ident->type().isAnn() && ident->decl() == nullptr)) {
+        return ident;
+      }
+      e = ident->decl()->e();
     } else {
       return e;
     }
@@ -3188,12 +3196,18 @@ Expression* follow_id_to_decl(Expression* e) {
       return e;
     }
     switch (e->eid()) {
-      case Expression::E_ID:
-        e = e->cast<Id>()->decl();
+      case Expression::E_ID: {
+        Id* ident = e->cast<Id>();
+        if (ident->type().isAnn() && ident->decl() == nullptr) {
+          return ident;
+        }
+        e = ident->decl();
         break;
+      }
       case Expression::E_VARDECL: {
         Expression* vd_e = e->cast<VarDecl>()->e();
-        if ((vd_e != nullptr) && vd_e->isa<Id>() && vd_e != Constants::constants().absent) {
+        if (vd_e != nullptr && vd_e->isa<Id>() && vd_e != Constants::constants().absent &&
+            !(vd_e->type().isAnn() && vd_e->cast<Id>()->decl() == nullptr)) {
           e = vd_e;
         } else {
           return e;

@@ -63,7 +63,7 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
             return ret;
           }
         }
-        ret.r = bind(env, ctx, r, e->cast<Id>()->decl()->flat()->id());
+        ret.r = bind(env, ctx, r, ident->decl()->flat()->id());
         ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
         return ret;
       }

@@ -83,7 +83,14 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
         // New top-level id, need to copy into env.m
         Ctx nctx;
         nctx.i = ctx.i;
-        vd = flat_exp(env, ctx, id->decl(), nullptr, env.constants.varTrue).r()->cast<Id>()->decl();
+        auto* flat_ident =
+            flat_exp(env, ctx, id->decl(), nullptr, env.constants.varTrue).r()->cast<Id>();
+        if (flat_ident->decl() == nullptr && id->type().isAnn()) {
+          ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
+          ret.r = bind(env, ctx, r, flat_ident);
+          return ret;
+        }
+        vd = flat_ident->decl();
       } else {
         vd = id->decl();
       }
