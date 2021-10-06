@@ -429,6 +429,8 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
           t2.enumId(0);
           t1.ti(Type::TI_PAR);
           t2.ti(Type::TI_PAR);
+          t1.ot(Type::OT_PRESENT);
+          t2.ot(Type::OT_PRESENT);
           if (t1 != t2) {
             throw TypeError(env, fi->loc(),
                             "function with same type up to par/var but different return type "

@@ -278,6 +278,79 @@ public:
 
       instanceId = _instanceCount++;
 
+      // If matches contains TIIds with "any" type, we have to generate the
+      // corresponding par, par opt, var and var opt versions, but only if those
+      // are not present in matches yet
+      enum ToGenerate { TG_PAR, TG_PAROPT, TG_VAR, TG_VAROPT };
+      std::vector<std::vector<std::vector<ToGenerate>>> toGenerate(matches.size());
+      // First, fill in the versions that are already in matches
+      for (unsigned int i = 0; i < matches.size(); i++) {
+        bool hadAny = false;
+        std::vector<ToGenerate> matchTypes(matches[i]->paramCount());
+        for (unsigned int j = 0; j < matches[i]->paramCount(); j++) {
+          Type parType = matches[i]->param(j)->ti()->type();
+          if (parType.any()) {
+            hadAny = true;
+            break;
+          }
+          if (parType.isPar()) {
+            matchTypes[j] = parType.isOpt() ? TG_PAROPT : TG_PAR;
+          } else {
+            matchTypes[j] = parType.isOpt() ? TG_VAROPT : TG_VAR;
+          }
+        }
+        if (!hadAny) {
+          toGenerate[i].emplace_back(matchTypes);
+        }
+      }
+      // Next, generate all versions for each any type that are not yet in toGenerate
+      for (unsigned int i = 0; i < matches.size(); i++) {
+        // start from existing matchTypes and set all remaning any types to TG_PAR
+        std::vector<ToGenerate> matchTypes(matches[i]->paramCount());
+        for (unsigned int j = 0; j < matches[i]->paramCount(); j++) {
+          Type parType = matches[i]->param(j)->ti()->type();
+          if (parType.any()) {
+            matchTypes[j] = TG_PAR;
+          } else if (parType.isPar()) {
+            matchTypes[j] = parType.isOpt() ? TG_PAROPT : TG_PAR;
+          } else {
+            matchTypes[j] = parType.isOpt() ? TG_VAROPT : TG_VAR;
+          }
+        }
+        for (;;) {
+          // check if current matchTypes already exists, if not, add it
+          bool matchFound = false;
+          for (const auto& tg : toGenerate) {
+            for (const auto& m : tg) {
+              if (m == matchTypes) {
+                matchFound = true;
+                break;
+              }
+            }
+          }
+          if (!matchFound) {
+            toGenerate[i].push_back(matchTypes);
+          }
+
+          int j = static_cast<int>(matchTypes.size() - 1);
+          for (; j >= 0; j--) {
+            if (matchTypes[j] < TG_VAROPT && matches[i]->param(j)->ti()->type().any()) {
+              // found a match type we can increment
+              matchTypes[j] = static_cast<ToGenerate>(matchTypes[j] + 1);
+              for (int k = j + 1; k < matchTypes.size(); k++) {
+                if (matches[i]->param(k)->ti()->type().any()) {
+                  matchTypes[k] = TG_PAR;
+                }
+              }
+              break;
+            }
+          }
+          if (j < 0) {
+            break;
+          }
+        }
+      }
+
       std::ostringstream oss;
       oss << "\\" << instanceId << "@" << call->decl()->id();
       mangledName = ASTString(oss.str());
@@ -302,172 +375,199 @@ public:
 
       _instanceMap.insert(_env, call->id(), lookup.second, instanceId);
 
-      for (auto* fi : matches) {
-        // Copy function (without following Ids or copying other function decls)
-        auto* fi_copy = copy(_env, fi, false, false, false)->cast<FunctionI>();
-        fi_copy->isMonomorphised(true);
-        // Rename copy
-        if (fi->id().endsWith("_reif")) {
-          fi_copy->id(mangledReifName);
-        } else if (fi->id().endsWith("_imp")) {
-          fi_copy->id(mangledImpName);
-        } else {
-          fi_copy->id(mangledBaseName);
-        }
-        // Replace type-inst vars by concrete types
-
-        std::vector<Type> concrete_types = lookup.second;
-        // Push additional var bool for reified versions
-        concrete_types.push_back(Type::varbool());
-
-        std::unordered_map<ASTString, Type> ti_map;
-        for (unsigned int i = 0; i < fi_copy->paramCount(); i++) {
-          Type curType = fi_copy->param(i)->ti()->type();
-          curType.bt(concrete_types[i].bt());
-          curType.enumId(concrete_types[i].enumId());
-          curType.st(concrete_types[i].st());
-          if (curType.dim() == -1) {
-            curType.dim(concrete_types[i].dim());
+      for (unsigned int matchIdx = 0; matchIdx < matches.size(); matchIdx++) {
+        auto* fi = matches[matchIdx];
+        for (auto& tg : toGenerate[matchIdx]) {
+          // Copy function (without following Ids or copying other function decls)
+          auto* fi_copy = copy(_env, fi, false, false, false)->cast<FunctionI>();
+          fi_copy->isMonomorphised(true);
+          // Rename copy
+          if (fi->id().endsWith("_reif")) {
+            fi_copy->id(mangledReifName);
+          } else if (fi->id().endsWith("_imp")) {
+            fi_copy->id(mangledImpName);
+          } else {
+            fi_copy->id(mangledBaseName);
           }
-          if (curType.any()) {
-            curType.any(false);
-            curType.ot(concrete_types[i].ot());
-            curType.ti(concrete_types[i].ti());
-          }
-          fi_copy->param(i)->ti()->type(curType);
-          fi_copy->param(i)->type(curType);
-          if (TIId* tiid = Expression::dynamicCast<TIId>(fi_copy->param(i)->ti()->domain())) {
-            ti_map.emplace(tiid->v(), concrete_types[i]);
-            if (concrete_types[i].enumId() == 0) {
-              // replace tiid with empty domain
-              fi_copy->param(i)->ti()->domain(nullptr);
-            } else {
-              auto enumId = concrete_types[i].enumId();
-              if (concrete_types[i].dim() != 0) {
-                const auto& aet = _env.getArrayEnum(concrete_types[i].enumId());
-                enumId = aet[aet.size() - 1];
-              }
-              if (enumId != 0) {
-                VarDeclI* enumVdi = _env.getEnum(enumId);
-                fi_copy->param(i)->ti()->domain(enumVdi->e()->id());
+          // Replace type-inst vars by concrete types
+
+          std::vector<Type> concrete_types = lookup.second;
+          // Push additional var bool for reified versions
+          concrete_types.push_back(Type::varbool());
+
+          std::unordered_map<ASTString, Type> ti_map;
+          for (unsigned int i = 0; i < fi_copy->paramCount(); i++) {
+            Type curType = fi_copy->param(i)->ti()->type();
+            curType.bt(concrete_types[i].bt());
+            curType.enumId(concrete_types[i].enumId());
+            curType.st(concrete_types[i].st());
+            if (curType.dim() == -1) {
+              curType.dim(concrete_types[i].dim());
+            }
+            /// TODO: this is wrong, generate all possible versions instead
+            if (curType.any()) {
+              curType.any(false);
+              switch (tg[i]) {
+                case TG_PAR:
+                  curType.ot(Type::OT_PRESENT);
+                  curType.ti(Type::TI_PAR);
+                  break;
+                case TG_PAROPT:
+                  curType.ot(Type::OT_OPTIONAL);
+                  curType.ti(Type::TI_PAR);
+                  break;
+                case TG_VAR:
+                  curType.ot(Type::OT_PRESENT);
+                  curType.ti(Type::TI_VAR);
+                  break;
+                case TG_VAROPT:
+                  curType.ot(Type::OT_OPTIONAL);
+                  curType.ti(Type::TI_VAR);
+                  break;
+                default:
+                  assert(false);
               }
             }
-          }
-          for (unsigned int j = 0; j < fi_copy->param(i)->ti()->ranges().size(); j++) {
-            if (TIId* tiid =
-                    Expression::dynamicCast<TIId>(fi_copy->param(i)->ti()->ranges()[j]->domain())) {
-              if (tiid->isEnum()) {
-                // find concrete enum type
-                if (concrete_types[i].enumId() == 0) {
-                  // lct is not an enum type -> turn this one into a simple int
-                  fi_copy->param(i)->ti()->ranges()[j]->domain(nullptr);
-                  ti_map.emplace(tiid->v(), Type::parint());
-                } else {
+            fi_copy->param(i)->ti()->type(curType);
+            fi_copy->param(i)->type(curType);
+            if (TIId* tiid = Expression::dynamicCast<TIId>(fi_copy->param(i)->ti()->domain())) {
+              ti_map.emplace(tiid->v(), concrete_types[i]);
+              if (concrete_types[i].enumId() == 0) {
+                // replace tiid with empty domain
+                fi_copy->param(i)->ti()->domain(nullptr);
+              } else {
+                auto enumId = concrete_types[i].enumId();
+                if (concrete_types[i].dim() != 0) {
                   const auto& aet = _env.getArrayEnum(concrete_types[i].enumId());
-                  if (aet[j] == 0) {
+                  enumId = aet[aet.size() - 1];
+                }
+                if (enumId != 0) {
+                  VarDeclI* enumVdi = _env.getEnum(enumId);
+                  fi_copy->param(i)->ti()->domain(enumVdi->e()->id());
+                }
+              }
+            }
+            for (unsigned int j = 0; j < fi_copy->param(i)->ti()->ranges().size(); j++) {
+              if (TIId* tiid = Expression::dynamicCast<TIId>(
+                      fi_copy->param(i)->ti()->ranges()[j]->domain())) {
+                if (tiid->isEnum()) {
+                  // find concrete enum type
+                  if (concrete_types[i].enumId() == 0) {
                     // lct is not an enum type -> turn this one into a simple int
                     fi_copy->param(i)->ti()->ranges()[j]->domain(nullptr);
                     ti_map.emplace(tiid->v(), Type::parint());
                   } else {
-                    VarDeclI* enumVdi = _env.getEnum(aet[j]);
-                    fi_copy->param(i)->ti()->ranges()[j]->domain(enumVdi->e()->id());
-                    ti_map.emplace(tiid->v(), Type::parenum(aet[j]));
+                    const auto& aet = _env.getArrayEnum(concrete_types[i].enumId());
+                    if (aet[j] == 0) {
+                      // lct is not an enum type -> turn this one into a simple int
+                      fi_copy->param(i)->ti()->ranges()[j]->domain(nullptr);
+                      ti_map.emplace(tiid->v(), Type::parint());
+                    } else {
+                      VarDeclI* enumVdi = _env.getEnum(aet[j]);
+                      fi_copy->param(i)->ti()->ranges()[j]->domain(enumVdi->e()->id());
+                      ti_map.emplace(tiid->v(), Type::parenum(aet[j]));
+                    }
+                  }
+                } else {
+                  ti_map.emplace(tiid->v(), Type::parint(concrete_types[i].dim()));
+                  // add concrete number of ranges
+                  std::vector<TypeInst*> newRanges(concrete_types[i].dim());
+                  for (unsigned int k = 0; k < concrete_types[i].dim(); k++) {
+                    newRanges[k] = new TypeInst(Location().introduce(), Type::parint());
+                  }
+                  fi_copy->param(i)->ti()->setRanges(newRanges);
+
+                  break;  // only one general tiid allowed in index set
+                }
+              }
+            }
+          }
+
+          // update return type
+          if (TIId* tiid = Expression::dynamicCast<TIId>(fi_copy->ti()->domain())) {
+            // return type
+            Type ret_type = ti_map.find(tiid->v())->second;
+            Type t = fi_copy->ti()->type();
+            t.bt(ret_type.bt());
+            if (!tiid->isEnum()) {
+              t.st(ret_type.st());
+            }
+            if (t.any()) {
+              t.any(false);
+              t.ot(ret_type.ot());
+              t.ti(ret_type.ti());
+            }
+            fi_copy->ti()->type(t);
+            auto enumId = ret_type.enumId();
+            if (ret_type.dim() == 0 && enumId != 0) {
+              const auto& aet = _env.getArrayEnum(enumId);
+              enumId = aet[aet.size() - 1];
+            }
+            if (enumId == 0) {
+              fi_copy->ti()->domain(nullptr);
+            } else {
+              VarDeclI* enumVdi = _env.getEnum(enumId);
+              fi_copy->ti()->domain(enumVdi->e()->id());
+            }
+          }
+          // update index sets in return type
+          for (unsigned int i = 0; i < fi_copy->ti()->ranges().size(); i++) {
+            if (TIId* tiid = Expression::dynamicCast<TIId>(fi_copy->ti()->ranges()[i]->domain())) {
+              Type ret_type = ti_map.find(tiid->v())->second;
+              if (tiid->isEnum()) {
+                // find concrete enum type
+                if (ret_type.enumId() == 0) {
+                  // not an enum type -> turn this one into a simple int
+                  fi_copy->ti()->ranges()[i]->domain(nullptr);
+                } else {
+                  const auto& aet = _env.getArrayEnum(ret_type.enumId());
+                  if (aet[i] == 0) {
+                    // not an enum type -> turn this one into a simple int
+                    fi_copy->ti()->ranges()[i]->domain(nullptr);
+                  } else {
+                    VarDeclI* enumVdi = _env.getEnum(aet[i]);
+                    fi_copy->ti()->ranges()[i]->domain(enumVdi->e()->id());
                   }
                 }
               } else {
-                ti_map.emplace(tiid->v(), Type::parint(concrete_types[i].dim()));
                 // add concrete number of ranges
-                std::vector<TypeInst*> newRanges(concrete_types[i].dim());
-                for (unsigned int k = 0; k < concrete_types[i].dim(); k++) {
+                std::vector<TypeInst*> newRanges(ret_type.dim());
+                for (unsigned int k = 0; k < ret_type.dim(); k++) {
                   newRanges[k] = new TypeInst(Location().introduce(), Type::parint());
                 }
-                fi_copy->param(i)->ti()->setRanges(newRanges);
-
+                fi_copy->ti()->setRanges(newRanges);
+                Type t = fi_copy->ti()->type();
+                t.dim(ret_type.dim());
+                fi_copy->ti()->type(t);
                 break;  // only one general tiid allowed in index set
               }
             }
           }
-        }
 
-        // update return type
-        if (TIId* tiid = Expression::dynamicCast<TIId>(fi_copy->ti()->domain())) {
-          // return type
-          Type ret_type = ti_map.find(tiid->v())->second;
-          Type t = fi_copy->ti()->type();
-          t.bt(ret_type.bt());
-          if (!tiid->isEnum()) {
-            t.st(ret_type.st());
-          }
-          fi_copy->ti()->type(t);
-          auto enumId = ret_type.enumId();
-          if (ret_type.dim() == 0 && enumId != 0) {
-            const auto& aet = _env.getArrayEnum(enumId);
-            enumId = aet[aet.size() - 1];
-          }
-          if (enumId == 0) {
-            fi_copy->ti()->domain(nullptr);
-          } else {
-            VarDeclI* enumVdi = _env.getEnum(enumId);
-            fi_copy->ti()->domain(enumVdi->e()->id());
-          }
-        }
-        // update index sets in return type
-        for (unsigned int i = 0; i < fi_copy->ti()->ranges().size(); i++) {
-          if (TIId* tiid = Expression::dynamicCast<TIId>(fi_copy->ti()->ranges()[i]->domain())) {
-            Type ret_type = ti_map.find(tiid->v())->second;
-            if (tiid->isEnum()) {
-              // find concrete enum type
-              if (ret_type.enumId() == 0) {
-                // not an enum type -> turn this one into a simple int
-                fi_copy->ti()->ranges()[i]->domain(nullptr);
-              } else {
-                const auto& aet = _env.getArrayEnum(ret_type.enumId());
-                if (aet[i] == 0) {
-                  // not an enum type -> turn this one into a simple int
-                  fi_copy->ti()->ranges()[i]->domain(nullptr);
-                } else {
-                  VarDeclI* enumVdi = _env.getEnum(aet[i]);
-                  fi_copy->ti()->ranges()[i]->domain(enumVdi->e()->id());
-                }
-              }
-            } else {
-              // add concrete number of ranges
-              std::vector<TypeInst*> newRanges(ret_type.dim());
-              for (unsigned int k = 0; k < ret_type.dim(); k++) {
-                newRanges[k] = new TypeInst(Location().introduce(), Type::parint());
-              }
-              fi_copy->ti()->setRanges(newRanges);
-              Type t = fi_copy->ti()->type();
-              t.dim(ret_type.dim());
-              fi_copy->ti()->type(t);
-              break;  // only one general tiid allowed in index set
+          if (fi_copy->e() == nullptr) {
+            // built-in function, have to redirect to original polymorphic built-in
+            std::vector<Expression*> args(fi_copy->paramCount());
+            for (unsigned int i = 0; i < fi_copy->paramCount(); i++) {
+              args[i] = fi_copy->param(i)->id();
             }
+            Call* body = new Call(Location().introduce(), fi->id(), args);
+            body->decl(fi);
+            body->type(fi_copy->ti()->type());
+            fi_copy->e(body);
+          } else {
+            // update all types in the body
+            _typer(_env, fi_copy);
+            // put calls in the body on the agenda
+            CollectConcreteCalls ccc(_agenda);
+            top_down(ccc, fi_copy->e());
           }
-        }
+          _env.model->registerFn(_env, fi_copy, true);
+          _env.model->addItem(fi_copy);
 
-        if (fi_copy->e() == nullptr) {
-          // built-in function, have to redirect to original polymorphic built-in
-          std::vector<Expression*> args(fi_copy->paramCount());
-          for (unsigned int i = 0; i < fi_copy->paramCount(); i++) {
-            args[i] = fi_copy->param(i)->id();
+          if (call->decl() == fi) {
+            call->decl(fi_copy);
+            call->rehash();
           }
-          Call* body = new Call(Location().introduce(), fi->id(), args);
-          body->decl(fi);
-          body->type(fi_copy->ti()->type());
-          fi_copy->e(body);
-        } else {
-          // update all types in the body
-          _typer(_env, fi_copy);
-          // put calls in the body on the agenda
-          CollectConcreteCalls ccc(_agenda);
-          top_down(ccc, fi_copy->e());
-        }
-        _env.model->registerFn(_env, fi_copy, true);
-        _env.model->addItem(fi_copy);
-
-        if (call->decl() == fi) {
-          call->decl(fi_copy);
-          call->rehash();
         }
       }
     } else {
