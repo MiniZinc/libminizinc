@@ -249,7 +249,9 @@ void MznSolver::printHelp(const std::string& selectedSolver) {
       << "  --compiler-statistics\n    Print statistics for compilation." << std::endl
       << "  -c, --compile\n    Compile only (do not run solver)." << std::endl
       << "  --config-dirs\n    Output configuration directories." << std::endl
-      << "  --param-file <file>\n    Load parameters from the given JSON file." << std::endl;
+      << "  --param-file <file>\n    Load parameters from the given JSON file." << std::endl
+      << "  --json-stream\n    Print output as newline-delimited JSON message objects."
+      << std::endl;
 
   if (selectedSolver.empty()) {
     _flt.printHelp(_os);

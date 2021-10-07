@@ -58,6 +58,10 @@ void Solns2Out::printHelp(ostream& os) {
      << std::endl
      << "  --output-time\n    Print timing information in the FlatZinc solution stream."
      << std::endl
+     << "  --only-sections <section_1,...section_n>" << std::endl
+     << "    Enable only the given comma-separated output sections." << std::endl
+     << "  --not-sections <section_1,...section_n>" << std::endl
+     << "    Disable the given comma-separated output sections." << std::endl
      << "  --no-flush-output\n    Don't flush output stream after every line." << std::endl;
 }
 
