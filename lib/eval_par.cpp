@@ -17,6 +17,7 @@
 #include <minizinc/flatten.hh>
 #include <minizinc/hash.hh>
 #include <minizinc/iter.hh>
+#include <minizinc/typecheck.hh>
 
 #include <cmath>
 
@@ -129,8 +130,10 @@ public:
     if ((fi->ti()->domain() != nullptr) && !fi->ti()->domain()->isa<TIId>()) {
       IntSetVal* isv = eval_intset(env, fi->ti()->domain());
       if (!isv->contains(v)) {
-        throw ResultUndefinedError(env, Location().introduce(),
-                                   "function result violates function type-inst");
+        std::ostringstream oss;
+        oss << "result of function `" << demonomorphise_identifier(fi->id()) << "' is " << v
+            << ", which violates function type-inst " << *isv;
+        throw ResultUndefinedError(env, Location().introduce(), oss.str());
       }
     }
   }
@@ -145,8 +148,10 @@ public:
     if ((fi->ti()->domain() != nullptr) && !fi->ti()->domain()->isa<TIId>()) {
       FloatSetVal* fsv = eval_floatset(env, fi->ti()->domain());
       if (!fsv->contains(v)) {
-        throw ResultUndefinedError(env, Location().introduce(),
-                                   "function result violates function type-inst");
+        std::ostringstream oss;
+        oss << "result of function `" << demonomorphise_identifier(fi->id()) << "' is " << v
+            << ", which violates function type-inst " << *fsv;
+        throw ResultUndefinedError(env, Location().introduce(), oss.str());
       }
     }
   }
@@ -285,8 +290,10 @@ public:
       IntSetRanges isv_r(isv);
       IntSetRanges v_r(v);
       if (!Ranges::subset(v_r, isv_r)) {
-        throw ResultUndefinedError(env, Location().introduce(),
-                                   "function result violates function type-inst");
+        std::ostringstream oss;
+        oss << "result of function `" << demonomorphise_identifier(fi->id()) << "' is " << *v
+            << ", which violates function type-inst " << *isv;
+        throw ResultUndefinedError(env, Location().introduce(), oss.str());
       }
     }
   }
@@ -302,8 +309,10 @@ public:
       FloatSetRanges fsv_r(fsv);
       FloatSetRanges v_r(v);
       if (!Ranges::subset(v_r, fsv_r)) {
-        throw ResultUndefinedError(env, Location().introduce(),
-                                   "function result violates function type-inst");
+        std::ostringstream oss;
+        oss << "result of function `" << demonomorphise_identifier(fi->id()) << "' is " << *v
+            << ", which violates function type-inst " << *fsv;
+        throw ResultUndefinedError(env, Location().introduce(), oss.str());
       }
     }
   }
