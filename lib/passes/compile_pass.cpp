@@ -166,14 +166,6 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
       log << " done (" << lasttime.stoptime() << ")" << std::endl;
     }
   }
-
-  for (const auto& warning : new_env->warnings()) {
-    if (_fopts.encapsulateJSON) {
-      warning.json(std::cout, _compflags.werror);
-    } else {
-      warning.print(log, _compflags.werror);
-    }
-  }
   if (!new_env->warnings().empty() && _compflags.werror) {
     throw Error("warnings treated as errors.");
   }

@@ -1616,6 +1616,17 @@ std::ostream& EnvI::evalOutput(std::ostream& os, std::ostream& log) {
 
 const std::vector<Warning>& Env::warnings() { return envi().warnings; }
 
+std::ostream& Env::dumpWarnings(std::ostream& os, bool werror, bool json) {
+  for (const auto& warning : warnings()) {
+    if (json) {
+      warning.json(os, werror);
+    } else {
+      warning.print(os, werror);
+    }
+  }
+  return os;
+}
+
 void Env::clearWarnings() { envi().warnings.clear(); }
 
 unsigned int Env::maxCallStack() const { return envi().maxCallStack; }

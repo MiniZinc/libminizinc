@@ -515,7 +515,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
     }
   }
 
-  {
+  try {
     std::stringstream errstream;
 
     Model* m;
@@ -940,6 +940,14 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
       Printer p(_os);
       p.print(m);
     }
+  } catch (...) {
+    // Ensure warnings are printed
+    if (getEnv() != nullptr) {
+      getEnv()->dumpWarnings(_fopts.encapsulateJSON ? _os : _log, _flags.werror,
+                             _fopts.encapsulateJSON);
+      getEnv()->clearWarnings();
+    }
+    throw;
   }
 
   if (getEnv()->envi().failed()) {

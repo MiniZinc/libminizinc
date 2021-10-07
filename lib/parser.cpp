@@ -18,6 +18,7 @@
  */
 
 #include <minizinc/file_utils.hh>
+#include <minizinc/flatten_internal.hh>
 #include <minizinc/json_parser.hh>
 #include <minizinc/parser.hh>
 #include <minizinc/prettyprinter.hh>
@@ -219,15 +220,18 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
       if (file.is_open() &&
           FileUtils::file_path(FileUtils::dir_name(fullname)) != FileUtils::file_path(workingDir) &&
           FileUtils::file_exists(workingDir + "/" + basename)) {
-        err << "Warning: file \"" << basename
-            << "\" included from library, but also exists in current working directory" << endl;
+        std::ostringstream w;
+        w << "file \"" << basename
+          << "\" included from library, but also exists in current working directory.";
+        env.envi().addWarning(w.str());
       } else if (file.is_open() && globalInc.find(basename) != globalInc.end() &&
                  fullname.find(includePaths.back()) == std::string::npos) {
-        err << "Warning: included file \"" << basename
-            << "\" overrides a global constraint file from the standard library. This is "
-               "deprecated. For a solver-specific redefinition of a global constraint, override  "
-               "\"fzn_<global>.mzn\" instead."
-            << std::endl;
+        std::ostringstream w;
+        w << "included file \"" << basename
+          << "\" overrides a global constraint file from the standard library. This is "
+             "deprecated. For a solver-specific redefinition of a global constraint, override "
+             "\"fzn_<global>.mzn\" instead.";
+        env.envi().addWarning(w.str());
       }
       for (const auto& includePath : includePaths) {
         std::string deprecatedName = includePath + "/" + basename + ".deprecated.mzn";
