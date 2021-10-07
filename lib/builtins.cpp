@@ -1876,6 +1876,10 @@ std::string b_show_json_basic(EnvI& env, Expression* e) {
   } else {
     p.print(e);
   }
+  // Annotations still need to be escaped
+  if (e->type().isAnn()) {
+    return std::string("\"") + Printer::escapeStringLit(oss.str()) + "\"";
+  }
   return oss.str();
 }
 
