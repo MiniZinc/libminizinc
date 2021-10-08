@@ -497,9 +497,8 @@ public:
               t.ot(ret_type.ot());
               t.ti(ret_type.ti());
             }
-            fi_copy->ti()->type(t);
             auto enumId = ret_type.enumId();
-            if (ret_type.dim() == 0 && enumId != 0) {
+            if (ret_type.dim() != 0 && enumId != 0) {
               const auto& aet = _env.getArrayEnum(enumId);
               enumId = aet[aet.size() - 1];
             }
@@ -509,6 +508,7 @@ public:
               VarDeclI* enumVdi = _env.getEnum(enumId);
               fi_copy->ti()->domain(enumVdi->e()->id());
             }
+            fi_copy->ti()->type(t);
           }
           // update index sets in return type
           for (unsigned int i = 0; i < fi_copy->ti()->ranges().size(); i++) {
