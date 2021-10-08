@@ -1007,7 +1007,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     /*
 
      function _toString_ENUM(set of ENUM: x, bool: b, bool: json) =
-       if absent(x) then "<>" else "{" ++ join(", ", [ _toString_ENUM(i,b,json) | i in x ]) ++ "}"
+       "{" ++ join(", ", [ _toString_ENUM(i,b,json) | i in x ]) ++ "}"
      endif;
 
      */
@@ -1037,18 +1037,9 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
         new Call(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
                  _toString_ENUMArgs);
 
-    std::vector<Expression*> deopt_args(1);
-    deopt_args[0] = vd_x->id();
-    Call* deopt = new Call(Location().introduce(), "deopt", deopt_args);
-    Call* if_absent = new Call(Location().introduce(), "absent", deopt_args);
-    auto* sl_absent_dzn = new StringLit(Location().introduce(), "<>");
-    ITE* sl_absent = new ITE(Location().introduce(),
-                             {vd_j->id(), new StringLit(Location().introduce(), ASTString("null"))},
-                             sl_absent_dzn);
-
     std::vector<VarDecl*> gen_exps(1);
     gen_exps[0] = idx_i;
-    Generator gen(gen_exps, deopt, nullptr);
+    Generator gen(gen_exps, vd_x->id(), nullptr);
 
     Generators generators;
     generators.g.push_back(gen);
@@ -1074,11 +1065,6 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     auto* sl_close = new StringLit(Location().introduce(), "}");
     auto* bopp3 = new BinOp(Location().introduce(), bopp2, BOT_PLUSPLUS, sl_close);
 
-    std::vector<Expression*> if_then(2);
-    if_then[0] = if_absent;
-    if_then[1] = sl_absent;
-    ITE* ite = new ITE(Location().introduce(), if_then, bopp3);
-
     auto* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
     std::vector<VarDecl*> fi_params(3);
     fi_params[0] = vd_x;
@@ -1086,7 +1072,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     fi_params[2] = vd_j;
     auto* fi =
         new FunctionI(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
-                      ti_fi, fi_params, ite);
+                      ti_fi, fi_params, bopp3);
     enumItems->addItem(fi);
   }
 
