@@ -167,8 +167,12 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
     }
   }
   if (!new_env->warnings().empty() && _compflags.werror) {
+    // Flattener will print warnings
     throw Error("warnings treated as errors.");
   }
+
+  new_env->dumpWarnings(_fopts.encapsulateJSON ? std::cout : log, _compflags.werror,
+                        _fopts.encapsulateJSON);
   new_env->clearWarnings();
 
   if (!_compflags.newfzn) {
