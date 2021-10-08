@@ -2584,7 +2584,8 @@ public:
   void vLet(Let* let) {
     bool cv = false;
     bool isVar = false;
-    for (unsigned int i = 0, j = 0; i < let->let().size(); i++) {
+    std::vector<Expression*> letOrig;
+    for (unsigned int i = 0; i < let->let().size(); i++) {
       Expression* li = let->let()[i];
       cv = cv || li->type().cv();
       if (auto* vdi = li->dynamicCast<VarDecl>()) {
@@ -2605,12 +2606,16 @@ public:
              << vdi->id()->str() << "'";
           _typeErrors.emplace_back(_env, vdi->loc(), ss.str());
         }
-        let->letOrig()[j++] = vdi->e();
+        letOrig.push_back(vdi->e());
         for (unsigned int k = 0; k < vdi->ti()->ranges().size(); k++) {
-          let->letOrig()[j++] = vdi->ti()->ranges()[k]->domain();
+          letOrig.push_back(vdi->ti()->ranges()[k]->domain());
         }
       }
       isVar |= li->type().isvar();
+    }
+    {
+      GCLock lock;
+      let->setLetOrig(ASTExprVec<Expression>(letOrig));
     }
     let->in(add_coercion(_env, _model, let->in(), let->in()->type())());
     Type ty = let->in()->type();
@@ -2627,7 +2632,7 @@ public:
       if (vd->e() != nullptr) {
         Type vdt = vd->ti()->type();
         Type vet = vd->e()->type();
-        if (vdt.enumId() != 0 && vdt.dim() > 0 &&
+        if (!vdt.any() && vdt.enumId() != 0 && vdt.dim() > 0 &&
             (vd->e()->isa<ArrayLit>() || vd->e()->isa<Comprehension>() ||
              (vd->e()->isa<BinOp>() && vd->e()->cast<BinOp>()->op() == BOT_PLUSPLUS))) {
           // Special case: index sets of array literals and comprehensions automatically
@@ -2648,9 +2653,17 @@ public:
             vet.enumId(vdt.enumId());
           }
         }
-        if (vd->type().isunknown()) {
+        if (vd->type().any() || vd->type().isunknown()) {
           vd->ti()->type(vet);
           vd->type(vet);
+          if (vdt.any() && vet.dim() > 0) {
+            GCLock lock;
+            std::vector<TypeInst*> ranges(vet.dim());
+            for (unsigned int i = 0; i < vet.dim(); i++) {
+              ranges[i] = new TypeInst(Location().introduce(), Type::parint());
+            }
+            vd->ti()->setRanges(ranges);
+          }
         } else if (!_env.isSubtype(vet, vdt, true)) {
           if (vet == Type::bot(1) && vd->e()->isa<ArrayLit>() &&
               vd->e()->cast<ArrayLit>()->empty() &&

@@ -21,6 +21,7 @@
 
 % Variable declaration items
 <var-decl-item> ::= <ti-expr-and-id> <annotations> [ "=" <expr> ]
+                  | "any" ":" <ident> <annotations> [ "=" <expr> ]
 
 % Enum items
 <enum-item>  ::= "enum" <ident> <annotations> [ "=" <enum-cases-list> ]
@@ -66,6 +67,7 @@
             | <array-ti-expr>
 
 <base-ti-expr> ::= <var-par> <opt-ti> <set-ti> <base-ti-expr-tail>
+                 | "any" <ti-variable-expr-tail>
 
 <var-par> ::= "var" | "par" | ε
 
@@ -86,7 +88,7 @@
                       | <num-expr> ".." <num-expr>
 
 % Type-inst variables
-<ti-variable-expr-tail> ::= $[A-Za-z][A-Za-z0-9_]*
+<ti-variable-expr-tail> ::= $[A-Za-z$][A-Za-z0-9_]*
 
 % Array type-inst expressions
 <array-ti-expr> ::= "array" [ <ti-expr> "," ... ] "of" <base-ti-expr>

@@ -1326,6 +1326,8 @@ public:
   ASTExprVec<Expression> let() const { return _let; }
   /// Access local declarations
   ASTExprVec<Expression> letOrig() const { return _letOrig; }
+  /// Set local declarations
+  void setLetOrig(const ASTExprVec<Expression>& letOrig) { _letOrig = letOrig; }
   /// Access body
   Expression* in() const { return _in; }
   /// Set body

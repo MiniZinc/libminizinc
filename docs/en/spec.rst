@@ -2033,6 +2033,13 @@ is a decision variable.  For example:
     let { var int: x; } in ...;    % ok
     let {     int: x; } in ...;    % illegal
 
+For let local variables with initialisers, the type-inst can be ommitted by using
+the :mzn:`any` keyword, in which case the type-inst is inferred from the initialiser:
+
+.. code-block:: minizinc
+
+    let { any: x = [5,6,7]; } in ...;    % x has type array[1..3] of int
+
 The type-inst of the entire let expression is the type-inst of the expression
 after the :mzn:`in` keyword.
 
@@ -2217,6 +2224,17 @@ example, the above item can be separated into the following two items:
 
 All variables that contain a parameter component must be defined at
 instance-time.
+
+Variable declarations with a definition can omit the type-inst by using the :mzn:`any` keyword:
+
+.. code-block:: minizinc
+
+    any: x = [1, 2, 3];
+    any: y = x[2];
+
+The type-inst of these variables is inferred by MiniZinc to be that of the definition.
+In the example above, :mzn:`x` would have type `array[1..3] of int`, and :mzn:`y` would have type `int`.
+Note that variables with type-inst :mzn:`any` can only be defined in-place, not using separate assignment items.
 
 Variables can have one or more annotations.
 :ref:`spec-Annotations` has more on annotations.

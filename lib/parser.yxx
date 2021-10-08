@@ -439,8 +439,13 @@ include_item :
 
 vardecl_item :
       ti_expr_and_id
-      { if ($1)
+      { if ($1) {
+          if ($1->ti()->type().any() && $1->ti()->domain() == nullptr) {
+            // This is an any type, not allowed without a right hand side
+            yyerror(&@1, parm, "declarations with `any' type-inst require definition");
+          }
           $$ = new VarDeclI(@$,$1);
+        }
       }
     | ti_expr_and_id MZN_EQ expr
       { if ($1) $1->e($3);
@@ -637,6 +642,10 @@ function_item :
       {
         ParserState* pp = static_cast<ParserState*>(parm);
         if ($5 && $6) $5->push_back($6);
+        if ($2 && $2->type().any() && $2->domain() == nullptr) {
+          // This is an any type, not allowed without a right hand side
+          yyerror(&@2, parm, "return type cannot have `any' type-inst without type-inst variable");
+        }
         if ($5) $$ = new FunctionI(@$,ASTString($4),$2,*$5,$8,pp->isSTDLib,$6 != nullptr);
         if ($$ && $7) $$->cast<FunctionI>()->ann().add(*$7);
         free($4);
@@ -646,6 +655,10 @@ function_item :
       | ti_expr ':' MZN_IDENTIFIER '(' params_list ')' ann_param annotations operation_item_tail
       {
         ParserState* pp = static_cast<ParserState*>(parm);
+        if ($1 && $1->type().any() && $1->domain() == nullptr) {
+          // This is an any type, not allowed without a right hand side
+          yyerror(&@1, parm, "return type cannot have `any' type-inst without type-inst variable");
+        }
         if ($5 && $7) $5->push_back($7);
         if ($5) $$ = new FunctionI(@$,ASTString($3),$1,*$5,$9,pp->isSTDLib,$7 != nullptr);
         if ($$ && $8) $$->cast<FunctionI>()->ann().add(*$8);
@@ -710,12 +723,26 @@ params_list :
 params_list_head :
       ti_expr_and_id_or_anon
       { $$=new vector<VarDecl*>();
-        if ($1) $1->toplevel(false);
-        if ($1) $$->push_back($1); }
+        if ($1) {
+          if ($1->ti()->type().any() && $1->ti()->domain() == nullptr) {
+            // This is an any type, not allowed in parameter list
+            yyerror(&@1, parm, "parameter declaration cannot have `any' type-inst without type-inst variable");
+          }
+          $1->toplevel(false);
+          $$->push_back($1);
+        }
+      }
     | params_list_head ',' ti_expr_and_id_or_anon
       { $$=$1;
         if ($3) $3->toplevel(false);
-        if ($1 && $3) $1->push_back($3); }
+        if ($1 && $3) {
+          $1->push_back($3);
+          if ($3->ti()->type().any() && $3->ti()->domain() == nullptr) {
+            // This is an any type, not allowed in parameter list
+            yyerror(&@3, parm, "parameter declaration cannot have `any' type-inst without type-inst variable");
+          }
+        }
+      }
 
 comma_or_none : | ','
 pipe_or_none : | '|'
@@ -831,6 +858,8 @@ base_ti_expr :
       { $$ = new TypeInst(@$,Type::mkAny(),new TIId(@$, $2));
         free($2);
       }
+    | MZN_ANY
+      { $$ = new TypeInst(@$,Type::mkAny()); }
 
 opt_opt:
       /* nothing */
@@ -2324,10 +2353,16 @@ comma_or_semi : ',' | ';'
 let_vardecl_item :
       ti_expr_and_id
       { $$ = $1;
+        if ($1 && $1->ti()->type().any() && $1->ti()->domain() == nullptr) {
+          // This is an any type, not allowed without a right hand side
+          yyerror(&@1, parm, "declarations with `any' type-inst require definition");
+        }
         if ($$) $$->toplevel(false);
       }
     | ti_expr_and_id MZN_EQ expr
-      { if ($1) $1->e($3);
+      { if ($1) {
+          $1->e($3);
+        }
         $$ = $1;
         if ($$) $$->loc(@$);
         if ($$) $$->toplevel(false);
