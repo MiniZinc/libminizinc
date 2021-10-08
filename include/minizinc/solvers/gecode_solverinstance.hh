@@ -192,6 +192,7 @@ public:
   int nodes = 0;
   int fails = 0;
   int time = 0;
+  int restarts = 0;
   int seed = 1;
   double decay = 0.5;
 };

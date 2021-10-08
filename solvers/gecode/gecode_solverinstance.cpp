@@ -109,6 +109,14 @@ bool GecodeSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i
     if (a_d >= 0) {
       _opt.a_d = static_cast<unsigned int>(a_d);
     }
+  } else if (string(argv[i]) == "--restart-limit") {
+    if (++i == argv.size()) {
+      return false;
+    }
+    int restarts = atoi(argv[i].c_str());
+    if (restarts >= 0) {
+      _opt.fails = restarts;
+    }
   } else if (string(argv[i]) == "--fail") {
     if (++i == argv.size()) {
       return false;
@@ -156,6 +164,8 @@ void GecodeSolverFactory::printHelp(ostream& os) {
      << "    node cutoff (0 = none, solution mode)" << std::endl
      << "  --fail <f>" << std::endl
      << "    failure cutoff (0 = none, solution mode)" << std::endl
+     << "  --restart-limit <n>" << std::endl
+     << "    restart cutoff (0 = none, solution mode)" << std::endl
      << "  --time <ms>" << std::endl
      << "    time (in ms) cutoff (0 = none, solution mode)" << std::endl
      << "  -a, --all-solutions" << std::endl
@@ -1299,8 +1309,10 @@ void GecodeSolverInstance::prepareEngine() {
     int nodeStop = _opt.nodes;
     int failStop = _opt.fails;
     int timeStop = _opt.time;
+    int restartStop = _opt.restarts;
 
-    engineOptions.stop = Driver::CombinedStop::create(nodeStop, failStop, timeStop, false);
+    engineOptions.stop =
+        Driver::CombinedStop::create(nodeStop, failStop, timeStop, restartStop, false);
 
     // TODO: add presolving part
     if (currentSpace->solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
