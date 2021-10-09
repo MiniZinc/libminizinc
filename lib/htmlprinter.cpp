@@ -94,8 +94,6 @@ public:
   std::string doc;
 };
 
-typedef std::unordered_map<FunctionI*, std::string> FunMap;
-
 class Group;
 
 class GroupMap {
@@ -452,37 +450,10 @@ std::string make_html_id(const std::string& ident) {
 
 }  // namespace HtmlDocOutput
 
-class CollectFunctionsVisitor : public ItemVisitor {
-protected:
-  EnvI& _env;
-  HtmlDocOutput::FunMap& _funmap;
-  bool _includeStdLib;
-
-public:
-  CollectFunctionsVisitor(EnvI& env, HtmlDocOutput::FunMap& funmap, bool includeStdLib)
-      : _env(env), _funmap(funmap), _includeStdLib(includeStdLib) {}
-  bool enterModel(Model* m) const {
-    return _includeStdLib || FileUtils::base_name(m->filename().c_str()) != "stdlib.mzn";
-  }
-  void vFunctionI(FunctionI* fi) {
-    if (Call* docstring = Expression::dynamicCast<Call>(
-            get_annotation(fi->ann(), _env.constants.ann.doc_comment))) {
-      std::string ds = eval_string(_env, docstring->arg(0));
-      std::string group("main");
-      size_t group_idx = ds.find("@group");
-      if (group_idx != std::string::npos) {
-        group = HtmlDocOutput::extract_arg_word(ds, group_idx);
-      }
-      _funmap.insert(std::make_pair(fi, group));
-    }
-  }
-};
-
 class PrintHtmlVisitor : public ItemVisitor {
 protected:
   EnvI& _env;
   HtmlDocOutput::Group& _maingroup;
-  HtmlDocOutput::FunMap& _funmap;
   bool _includeStdLib;
 
   static std::vector<std::string> replaceArgs(std::string& s) {
@@ -611,9 +582,8 @@ protected:
   }
 
 public:
-  PrintHtmlVisitor(EnvI& env, HtmlDocOutput::Group& mg, HtmlDocOutput::FunMap& fm,
-                   bool includeStdLib)
-      : _env(env), _maingroup(mg), _funmap(fm), _includeStdLib(includeStdLib) {}
+  PrintHtmlVisitor(EnvI& env, HtmlDocOutput::Group& mg, bool includeStdLib)
+      : _env(env), _maingroup(mg), _includeStdLib(includeStdLib) {}
   bool enterModel(Model* m) {
     if (!_includeStdLib && FileUtils::base_name(m->filename().c_str()) == "stdlib.mzn") {
       return false;
@@ -693,7 +663,7 @@ public:
       }
 
       size_t param_idx = ds.find("@param");
-      std::vector<std::pair<std::string, std::string> > params;
+      std::vector<std::pair<std::string, std::string>> params;
       while (param_idx != std::string::npos) {
         params.push_back(extractArgLine(ds, param_idx));
         param_idx = ds.find("@param");
@@ -867,10 +837,7 @@ std::vector<HtmlDocument> HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m,
                                                  bool includeStdLib, bool generateIndex) {
   using namespace HtmlDocOutput;
   Group g(basename, basename);
-  FunMap funMap;
-  CollectFunctionsVisitor fv(env, funMap, includeStdLib);
-  iter_items(fv, m);
-  PrintHtmlVisitor phv(env, g, funMap, includeStdLib);
+  PrintHtmlVisitor phv(env, g, includeStdLib);
   iter_items(phv, m);
 
   std::vector<HtmlDocument> ret;
@@ -1013,112 +980,18 @@ std::vector<HtmlDocument> HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m,
   return ret;
 }
 
-class PrintRSTVisitor : public ItemVisitor {
-protected:
-  EnvI& _env;
-  HtmlDocOutput::Group& _maingroup;
-  HtmlDocOutput::FunMap& _funmap;
-  bool _includeStdLib;
+namespace {
 
-  static std::vector<std::string> replaceArgsRST(std::string& s) {
-    std::vector<std::string> replacements;
-    std::ostringstream oss;
-    size_t lastpos = 0;
-    size_t pos = std::min(s.find("\\a"), s.find("\\p"));
-    size_t mathjax_open = s.find("\\(");
-    size_t mathjax_close = s.rfind("\\)");
-    while (pos != std::string::npos) {
-      oss << s.substr(lastpos, pos - lastpos);
-      size_t start = pos;
-      while (start < s.size() && s[start] != ' ' && s[start] != '\t') {
-        start++;
-      }
-      while (start < s.size() && (s[start] == ' ' || s[start] == '\t')) {
-        start++;
-      }
-      size_t end = start + 1;
-      while (end < s.size() && ((isalnum(s[end]) != 0) || s[end] == '_')) {
-        end++;
-      }
-      bool needSpace = pos != 0 && s[pos - 1] != ' ' && s[pos - 1] != '\n';
-      if (s[pos + 1] == 'a') {
-        replacements.push_back(s.substr(start, end - start));
-        if (pos >= mathjax_open && pos <= mathjax_close) {
-          oss << "{\\bf " << replacements.back() << "}";
-        } else {
-          oss << (needSpace ? " " : "") << "``" << replacements.back() << "`` ";
-        }
-      } else {
-        if (pos >= mathjax_open && pos <= mathjax_close) {
-          oss << "{\\bf " << s.substr(start, end - start) << "}";
-        } else {
-          oss << (needSpace ? " " : "") << "``" << s.substr(start, end - start) << "`` ";
-        }
-      }
-      lastpos = end;
-      pos = std::min(s.find("\\a", lastpos), s.find("\\p", lastpos));
-    }
-    oss << s.substr(lastpos, std::string::npos);
-    s = oss.str();
-
-    std::ostringstream oss2;
-    pos = std::min(s.find("\\("), s.find("\\)"));
-    lastpos = 0;
-    while (pos != std::string::npos) {
-      if (s[pos + 1] == ')') {
-        // remove trailing whitespace
-        std::string t = s.substr(lastpos, pos - lastpos);
-        size_t t_end = t.find_last_not_of(' ');
-        if (t_end != std::string::npos) {
-          t_end++;
-        }
-        oss2 << t.substr(0, t_end);
-      } else {
-        oss2 << s.substr(lastpos, pos - lastpos);
-      }
-      lastpos = pos + 2;
-      if (s[pos + 1] == '(') {
-        oss2 << ":math:`";
-        lastpos = s.find_first_not_of(' ', lastpos);
-      } else {
-        oss2 << "`";
-      }
-      pos = std::min(s.find("\\(", lastpos), s.find("\\)", lastpos));
-    }
-    oss2 << s.substr(lastpos, std::string::npos);
-    s = oss2.str();
-
-    std::ostringstream oss3;
-    pos = std::min(s.find("\\["), s.find("\\]"));
-    lastpos = 0;
-    while (pos != std::string::npos) {
-      if (s[pos + 1] == ']') {
-        // remove trailing whitespace
-        std::string t = s.substr(lastpos, pos - lastpos);
-        size_t t_end = t.find_last_not_of(' ');
-        if (t_end != std::string::npos) {
-          t_end++;
-        }
-        oss3 << t.substr(0, t_end);
-      } else {
-        oss3 << s.substr(lastpos, pos - lastpos);
-      }
-      lastpos = pos + 2;
-      if (s[pos + 1] == '[') {
-        oss3 << "``";
-        lastpos = s.find_first_not_of(' ', lastpos);
-      } else {
-        oss3 << "``";
-      }
-      pos = std::min(s.find("\\[", lastpos), s.find("\\]", lastpos));
-    }
-    oss3 << s.substr(lastpos, std::string::npos);
-    s = oss3.str();
-    return replacements;
-  }
-
-  static std::pair<std::string, std::string> extractArgLine(std::string& s, size_t n) {
-    size_t start = n;
+std::vector<std::string> replace_args_rst(std::string& s) {
+  std::vector<std::string> replacements;
+  std::ostringstream oss;
+  size_t lastpos = 0;
+  size_t pos = std::min(s.find("\\a"), s.find("\\p"));
+  size_t mathjax_open = s.find("\\(");
+  size_t mathjax_close = s.rfind("\\)");
+  while (pos != std::string::npos) {
+    oss << s.substr(lastpos, pos - lastpos);
+    size_t start = pos;
     while (start < s.size() && s[start] != ' ' && s[start] != '\t') {
       start++;
     }
@@ -1126,24 +999,168 @@ protected:
       start++;
     }
     size_t end = start + 1;
-    while (end < s.size() && s[end] != ':') {
+    while (end < s.size() && ((isalnum(s[end]) != 0) || s[end] == '_')) {
       end++;
     }
-    std::string arg = s.substr(start, end - start);
-    size_t doc_start = end + 1;
-    while (end < s.size() && s[end] != '\n') {
-      end++;
+    bool needSpace = pos != 0 && s[pos - 1] != ' ' && s[pos - 1] != '\n';
+    if (s[pos + 1] == 'a') {
+      replacements.push_back(s.substr(start, end - start));
+      if (pos >= mathjax_open && pos <= mathjax_close) {
+        oss << "{\\bf " << replacements.back() << "}";
+      } else {
+        oss << (needSpace ? " " : "") << "``" << replacements.back() << "`` ";
+      }
+    } else {
+      if (pos >= mathjax_open && pos <= mathjax_close) {
+        oss << "{\\bf " << s.substr(start, end - start) << "}";
+      } else {
+        oss << (needSpace ? " " : "") << "``" << s.substr(start, end - start) << "`` ";
+      }
     }
-    std::string ret = s.substr(doc_start, end - doc_start);
-    replaceArgsRST(ret);
-    s = s.substr(0, n) + s.substr(end, std::string::npos);
-    return make_pair(arg, ret);
+    lastpos = end;
+    pos = std::min(s.find("\\a", lastpos), s.find("\\p", lastpos));
   }
+  oss << s.substr(lastpos, std::string::npos);
+  s = oss.str();
+
+  std::ostringstream oss2;
+  pos = std::min(s.find("\\("), s.find("\\)"));
+  lastpos = 0;
+  while (pos != std::string::npos) {
+    if (s[pos + 1] == ')') {
+      // remove trailing whitespace
+      std::string t = s.substr(lastpos, pos - lastpos);
+      size_t t_end = t.find_last_not_of(' ');
+      if (t_end != std::string::npos) {
+        t_end++;
+      }
+      oss2 << t.substr(0, t_end);
+    } else {
+      oss2 << s.substr(lastpos, pos - lastpos);
+    }
+    lastpos = pos + 2;
+    if (s[pos + 1] == '(') {
+      oss2 << ":math:`";
+      lastpos = s.find_first_not_of(' ', lastpos);
+    } else {
+      oss2 << "`";
+    }
+    pos = std::min(s.find("\\(", lastpos), s.find("\\)", lastpos));
+  }
+  oss2 << s.substr(lastpos, std::string::npos);
+  s = oss2.str();
+
+  std::ostringstream oss3;
+  pos = std::min(s.find("\\["), s.find("\\]"));
+  lastpos = 0;
+  while (pos != std::string::npos) {
+    if (s[pos + 1] == ']') {
+      // remove trailing whitespace
+      std::string t = s.substr(lastpos, pos - lastpos);
+      size_t t_end = t.find_last_not_of(' ');
+      if (t_end != std::string::npos) {
+        t_end++;
+      }
+      oss3 << t.substr(0, t_end);
+    } else {
+      oss3 << s.substr(lastpos, pos - lastpos);
+    }
+    lastpos = pos + 2;
+    if (s[pos + 1] == '[') {
+      oss3 << "``";
+      lastpos = s.find_first_not_of(' ', lastpos);
+    } else {
+      oss3 << "``";
+    }
+    pos = std::min(s.find("\\[", lastpos), s.find("\\]", lastpos));
+  }
+  oss3 << s.substr(lastpos, std::string::npos);
+  s = oss3.str();
+  return replacements;
+}
+
+std::pair<std::string, std::string> extract_arg_line_rst(std::string& s, size_t n) {
+  size_t start = n;
+  while (start < s.size() && s[start] != ' ' && s[start] != '\t') {
+    start++;
+  }
+  while (start < s.size() && (s[start] == ' ' || s[start] == '\t')) {
+    start++;
+  }
+  size_t end = start + 1;
+  while (end < s.size() && s[end] != ':') {
+    end++;
+  }
+  std::string arg = s.substr(start, end - start);
+  size_t doc_start = end + 1;
+  while (end < s.size() && s[end] != '\n') {
+    end++;
+  }
+  std::string ret = s.substr(doc_start, end - doc_start);
+  replace_args_rst(ret);
+  s = s.substr(0, n) + s.substr(end, std::string::npos);
+  return make_pair(arg, ret);
+}
+
+std::string common_string_prefix(const std::string& s, const std::string& t) {
+  std::string prefix;
+  unsigned int lastSpace = 0;
+  for (unsigned int i = 0; i < std::min(s.size(), t.size()); i++) {
+    if (s[i] != t[i]) {
+      break;
+    }
+    if (s[i] == ' ') {
+      lastSpace = i;
+    } else if (i == std::min(s.size(), t.size()) - 1) {
+      lastSpace = i + 1;
+    }
+    prefix += s[i];
+  }
+  return prefix.substr(0, lastSpace);
+}
+
+unsigned int max_line_width(const std::string& s) {
+  unsigned int mlw = 0;
+  unsigned int curlw = 0;
+  for (auto c : s) {
+    if (c == '\n') {
+      mlw = std::max(mlw, curlw);
+      curlw = 0;
+    } else if ((c & 0xc0) != 0x80) {
+      curlw++;
+    }
+  }
+  mlw = std::max(mlw, curlw);
+  return mlw;
+}
+
+std::string escape_bs(const std::string& s) {
+  std::ostringstream oss;
+  for (auto c : s) {
+    oss << c;
+    if (c == '\\') {
+      oss << '\\';
+    }
+  }
+  return oss.str();
+}
+
+}  // namespace
+
+typedef std::map<std::string, std::vector<FunctionI*>> RSTFunMap;
+typedef std::map<std::string, RSTFunMap> RSTGroupFunMap;
+
+class RSTGroupVisitor : public ItemVisitor {
+protected:
+  EnvI& _env;
+  HtmlDocOutput::Group& _maingroup;
+  RSTGroupFunMap& _groupFunMap;
+  bool _includeStdLib;
 
 public:
-  PrintRSTVisitor(EnvI& env, HtmlDocOutput::Group& mg, HtmlDocOutput::FunMap& fm,
+  RSTGroupVisitor(EnvI& env, HtmlDocOutput::Group& mg, RSTGroupFunMap& groupFunMap,
                   bool includeStdLib)
-      : _env(env), _maingroup(mg), _funmap(fm), _includeStdLib(includeStdLib) {}
+      : _env(env), _maingroup(mg), _groupFunMap(groupFunMap), _includeStdLib(includeStdLib) {}
   bool enterModel(Model* m) {
     if (!_includeStdLib && FileUtils::base_name(m->filename().c_str()) == "stdlib.mzn") {
       return false;
@@ -1172,13 +1189,14 @@ public:
 
         size_t next = dc.find("@groupdef", gpos + 1);
         std::string groupDesc = dc.substr(end, next == std::string::npos ? next : next - end);
-        replaceArgsRST(groupDesc);
+        replace_args_rst(groupDesc);
         HtmlDocOutput::set_group_desc(_maingroup, groupName, groupHTMLName, groupDesc);
         gpos = next;
       }
     }
     return true;
   }
+
   /// Visit variable declaration
   void vVarDeclI(VarDeclI* vdi) {
     if (Call* docstring = Expression::dynamicCast<Call>(
@@ -1219,179 +1237,308 @@ public:
       HtmlDocOutput::add_to_group(_maingroup, group, di);
     }
   }
-  /// Visit function item
+
   void vFunctionI(FunctionI* fi) {
-    if (Call* docstring = Expression::dynamicCast<Call>(
-            get_annotation(fi->ann(), _env.constants.ann.doc_comment))) {
+    Expression* ann = get_annotation(fi->ann(), _env.constants.ann.doc_comment);
+    if (Call* docstring = Expression::dynamicCast<Call>(ann)) {
       std::string ds = eval_string(_env, docstring->arg(0));
       std::string group("main");
       size_t group_idx = ds.find("@group");
       if (group_idx != std::string::npos) {
         group = HtmlDocOutput::extract_arg_word(ds, group_idx);
       }
+      auto& groupMap = _groupFunMap.emplace(group, RSTFunMap()).first->second;
+      auto& funs = groupMap.emplace(fi->id().c_str(), std::vector<FunctionI*>()).first->second;
+      funs.push_back(fi);
+    }
+  }
 
-      size_t param_idx = ds.find("@param");
-      std::vector<std::pair<std::string, std::string> > params;
-      while (param_idx != std::string::npos) {
-        params.push_back(extractArgLine(ds, param_idx));
-        param_idx = ds.find("@param");
-      }
-
-      std::vector<std::string> args = replaceArgsRST(ds);
-
-      std::unordered_set<std::string> allArgs;
-      for (auto& arg : args) {
-        allArgs.insert(arg);
-      }
-      for (auto& param : params) {
-        allArgs.insert(param.first);
-      }
-
-      GCLock lock;
-      for (unsigned int i = 0; i < fi->paramCount(); i++) {
-        if (allArgs.find(std::string(fi->param(i)->id()->str().c_str(),
-                                     fi->param(i)->id()->str().size())) == allArgs.end()) {
-          std::cerr << "Warning: parameter " << *fi->param(i)->id()
-                    << " not documented for function " << fi->id() << " at location " << fi->loc()
-                    << "\n";
-        }
-      }
-
+  void outputFunctions() {
+    struct FunDoc {
+      std::string ident;
       std::string sig;
-      {
-        GCLock lock;
-        std::vector<VarDecl*> params(fi->paramCount());
-        for (int i = 0; i < fi->paramCount(); i++) {
-          params[i] = fi->param(i);
-        }
-        auto* fi_c = new FunctionI(Location(), fi->id(), fi->ti(), params);
-        std::ostringstream oss_sig;
-        oss_sig << *fi_c;
-        sig = oss_sig.str();
-        sig.resize(sig.size() - 2);
-      }
+      std::string sigPretty;
+      std::string doc;
+      FunDoc(std::string ident0, std::string sig0, std::string sigPretty0, std::string doc0)
+          : ident(std::move(ident0)),
+            sig(std::move(sig0)),
+            sigPretty(std::move(sigPretty0)),
+            doc(std::move(doc0)) {}
+    };
 
-      std::ostringstream os;
-      std::ostringstream fs;
-      std::string myMainGroup = group.substr(0, group.find_first_of('.'));
-      auto it = _maingroup.subgroups.find(myMainGroup);
-      os << ".. index::\n";
-      if (it != _maingroup.subgroups.m.end()) {
-        os << "   pair: " << (*it)->htmlName << "; " << Printer::quoteId(fi->id()) << "\n\n";
-      } else {
-        std::cerr << "did not find " << myMainGroup << "\n";
-        os << "   single: " << Printer::quoteId(fi->id()) << "\n\n";
-      }
-      os << ".. code-block:: minizinc\n\n";
-
-      if (fi->ti()->type() == Type::ann()) {
-        fs << "annotation ";
-      } else if (fi->ti()->type() == Type::parbool()) {
-        fs << "test ";
-      } else if (fi->ti()->type() == Type::varbool()) {
-        fs << "predicate ";
-      } else {
-        fs << "function " << *fi->ti() << ": ";
-      }
-      fs << Printer::quoteId(fi->id()) << "(";
-      os << "  " << fs.str();
-      size_t align = fs.str().size();
-      for (unsigned int i = 0; i < fi->paramCount(); i++) {
-        fs << *fi->param(i)->ti();
-        std::ostringstream fid;
-        fid << *fi->param(i)->id();
-        if (!fid.str().empty()) {
-          fs << ": " << Printer::quoteId(fi->param(i)->id()->str());
-        }
-        if (i < fi->paramCount() - 1) {
-          fs << ", ";
-        }
-      }
-      bool splitArgs = (fs.str().size() > 70);
-      for (unsigned int i = 0; i < fi->paramCount(); i++) {
-        os << *fi->param(i)->ti();
-        std::ostringstream fid;
-        fid << *fi->param(i)->id();
-        if (!fid.str().empty()) {
-          os << ": " << Printer::quoteId(fi->param(i)->id()->str());
-        }
-        if (i < fi->paramCount() - 1) {
-          os << ",";
-          if (splitArgs) {
-            os << "\n  ";
-            for (auto j = static_cast<unsigned int>(align); (j--) != 0U;) {
-              os << " ";
+    for (const auto& g : _groupFunMap) {
+      for (const auto& f : g.second) {
+        std::vector<FunDoc> funDocs;
+        for (auto* fi : f.second) {
+          Expression* ann = get_annotation(fi->ann(), _env.constants.ann.doc_comment);
+          if (Call* docstring = Expression::dynamicCast<Call>(ann)) {
+            std::string ds = eval_string(_env, docstring->arg(0));
+            std::string group("main");
+            size_t group_idx = ds.find("@group");
+            if (group_idx != std::string::npos) {
+              group = HtmlDocOutput::extract_arg_word(ds, group_idx);
             }
-          } else {
-            os << " ";
-          }
-        }
-      }
-      os << ")";
 
-      os << "\n\n";
+            size_t param_idx = ds.find("@param");
+            std::vector<std::pair<std::string, std::string>> params;
+            while (param_idx != std::string::npos) {
+              params.push_back(extract_arg_line_rst(ds, param_idx));
+              param_idx = ds.find("@param");
+            }
 
-      if (fi->id().c_str()[0] == '\'') {
-        std::string op = fi->id().substr(1, fi->id().size() - 2);
-        if (fi->paramCount() == 2) {
-          os << "Usage: ``" << *fi->param(0)->id() << " " << op << " " << *fi->param(1)->id()
-             << "``\n\n";
-        } else if (fi->paramCount() == 1) {
-          os << "Usage: ``" << op << " " << *fi->param(0)->id() << "``\n\n";
-        }
-      }
+            std::vector<std::string> args = replace_args_rst(ds);
 
-      os << HtmlDocOutput::trim(ds) << "\n\n";
+            std::unordered_set<std::string> allArgs;
+            for (auto& arg : args) {
+              allArgs.insert(arg);
+            }
+            for (auto& param : params) {
+              allArgs.insert(param.first);
+            }
 
-      if (fi->e() != nullptr) {
-        FunctionI* f_body = fi;
-        bool alias;
-        do {
-          alias = false;
-          Call* c = Expression::dynamicCast<Call>(f_body->e());
-          if ((c != nullptr) && c->argCount() == f_body->paramCount()) {
-            bool sameParams = true;
-            for (unsigned int i = 0; i < f_body->paramCount(); i++) {
-              Id* ident = c->arg(i)->dynamicCast<Id>();
-              if (ident == nullptr || ident->decl() != f_body->param(i) ||
-                  ident->str() != c->decl()->param(i)->id()->str()) {
-                sameParams = false;
-                break;
+            GCLock lock;
+            for (unsigned int i = 0; i < fi->paramCount(); i++) {
+              if (allArgs.find(std::string(fi->param(i)->id()->str().c_str(),
+                                           fi->param(i)->id()->str().size())) == allArgs.end()) {
+                std::cerr << "Warning: parameter " << *fi->param(i)->id()
+                          << " not documented for function " << fi->id() << " at location "
+                          << fi->loc() << "\n";
               }
             }
-            if (sameParams) {
-              alias = true;
-              f_body = c->decl();
+
+            std::string sig;
+            {
+              GCLock lock;
+              std::vector<VarDecl*> params(fi->paramCount());
+              for (int i = 0; i < fi->paramCount(); i++) {
+                params[i] = fi->param(i);
+              }
+              auto* fi_c = new FunctionI(Location(), fi->id(), fi->ti(), params);
+              std::ostringstream oss_sig;
+              oss_sig << *fi_c;
+              sig = oss_sig.str();
+              sig.resize(sig.size() - 2);
+            }
+
+            std::ostringstream os_sig;
+            std::ostringstream os_doc;
+            std::ostringstream fs;
+
+            if (fi->ti()->type() == Type::ann()) {
+              fs << "annotation ";
+            } else if (fi->ti()->type() == Type::parbool()) {
+              fs << "test ";
+            } else if (fi->ti()->type() == Type::varbool()) {
+              fs << "predicate ";
+            } else {
+              fs << "function " << *fi->ti() << ": ";
+            }
+            fs << Printer::quoteId(fi->id()) << "(";
+            os_sig << "  " << fs.str();
+            size_t align = fs.str().size();
+            for (unsigned int i = 0; i < fi->paramCount(); i++) {
+              fs << *fi->param(i)->ti();
+              std::ostringstream fid;
+              fid << *fi->param(i)->id();
+              if (!fid.str().empty()) {
+                fs << ": " << Printer::quoteId(fi->param(i)->id()->str());
+              }
+              if (i < fi->paramCount() - 1) {
+                fs << ", ";
+              }
+            }
+            bool splitArgs = (fs.str().size() > 70);
+            for (unsigned int i = 0; i < fi->paramCount(); i++) {
+              os_sig << *fi->param(i)->ti();
+              std::ostringstream fid;
+              fid << *fi->param(i)->id();
+              if (!fid.str().empty()) {
+                os_sig << ": " << Printer::quoteId(fi->param(i)->id()->str());
+              }
+              if (i < fi->paramCount() - 1) {
+                os_sig << ",";
+                if (splitArgs) {
+                  os_sig << "\n  ";
+                  for (auto j = static_cast<unsigned int>(align); (j--) != 0U;) {
+                    os_sig << " ";
+                  }
+                } else {
+                  os_sig << " ";
+                }
+              }
+            }
+            os_sig << ")";
+
+            os_doc << HtmlDocOutput::trim(ds) << "\n\n";
+            if (fi->id().c_str()[0] == '\'') {
+              std::string op = fi->id().substr(1, fi->id().size() - 2);
+              if (fi->paramCount() == 2) {
+                os_doc << "Usage: ``" << *fi->param(0)->id() << " " << op << " "
+                       << *fi->param(1)->id() << "``\n\n";
+              } else if (fi->paramCount() == 1) {
+                os_doc << "Usage: ``" << op << " " << *fi->param(0)->id() << "``\n\n";
+              }
+            }
+
+            if (!params.empty()) {
+              os_doc << "Parameters:\n\n";
+              for (auto& param : params) {
+                os_doc << "- ``" << param.first << "``: " << param.second << "\n";
+              }
+              os_doc << "\n";
+            }
+            os_doc << "\n";
+
+            auto os_doc_s = os_doc.str();
+            auto first_non_ws = os_doc_s.find_first_not_of(" \n");
+            if (first_non_ws == std::string::npos) {
+              first_non_ws = 0;
+            }
+            auto last_non_ws = os_doc_s.find_last_not_of(" \n");
+            if (last_non_ws == std::string::npos) {
+              last_non_ws = os_doc_s.size() - 1;
+            }
+            os_doc_s = os_doc_s.substr(first_non_ws, last_non_ws - first_non_ws + 1);
+
+            funDocs.emplace_back(Printer::quoteId(fi->id()), sig, os_sig.str(), os_doc_s);
+          }
+        }
+
+        // Now check whether all functions share the same documentation
+        bool allCommon = true;
+        for (unsigned int i = 1; i < funDocs.size(); i++) {
+          if (funDocs[i].doc != funDocs[i - 1].doc) {
+            allCommon = false;
+            break;
+          }
+        }
+
+        std::ostringstream os;
+        std::string myMainGroup = g.first.substr(0, g.first.find_first_of('.'));
+        auto it = _maingroup.subgroups.find(myMainGroup);
+        os << ".. index::\n";
+        if (it != _maingroup.subgroups.m.end()) {
+          os << "   pair: " << (*it)->htmlName << "; " << f.first << "\n\n";
+        } else {
+          std::cerr << "did not find " << myMainGroup << "\n";
+          os << "   single: " << f.first << "\n\n";
+        }
+
+        std::ostringstream os_code;
+
+        os_code << ".. _mzn_" << g.first << "_" << escape_bs(f.first) << ":\n\n";
+
+        os_code << ".. code-block:: minizinc\n\n";
+
+        if (allCommon) {
+          for (auto& fd : funDocs) {
+            os_code << fd.sigPretty << "\n";
+          }
+        } else {
+          int funCount = 1;
+          for (auto& fd : funDocs) {
+            std::ostringstream number;
+            number << "  " << std::setw(2) << funCount++ << ".";
+            std::string number_s = number.str();
+            os_code << number_s;
+            auto indent = number_s.size();
+            std::string sigString = fd.sigPretty;
+            for (auto c : sigString) {
+              os_code << c;
+              if (c == '\n') {
+                os_code << std::string(indent, ' ');
+              }
+            }
+            os_code << "\n\n";
+          }
+        }
+        os_code << "\n\n";
+
+        std::ostringstream os_doc;
+
+        if (allCommon) {
+          os_doc << funDocs[0].doc;
+        } else {
+          int funCount = 1;
+          for (auto& fd : funDocs) {
+            std::ostringstream number;
+            number << funCount++ << ". .. ";
+            std::string number_s = number.str();
+            os_doc << number_s << "container:: mzncodedoc\n\n";
+            auto indent = number_s.size();
+            std::string docString = fd.doc;
+            os_doc << std::string(indent, ' ');
+            for (auto c : docString) {
+              os_doc << c;
+              if (c == '\n') {
+                os_doc << std::string(indent, ' ');
+              }
+            }
+            os_doc << "\n\n";
+          }
+        }
+
+        auto code = os_code.str();
+        auto doc = os_doc.str();
+
+        auto maxLineWidth = max_line_width(code);
+        maxLineWidth = std::max(maxLineWidth, max_line_width(doc));
+
+        os << ".. container:: mznDocTable\n\n";
+
+        os << "  +-" << std::string(maxLineWidth, '-') << "-+"
+           << "\n";
+        unsigned int curLineWidth = 0;
+        for (auto c : code) {
+          if (curLineWidth == 0) {
+            os << "  | ";
+          }
+          if (c == '\n') {
+            // fill with space
+            os << std::string(maxLineWidth - curLineWidth, ' ');
+            os << " |\n";
+            curLineWidth = 0;
+          } else {
+            os << c;
+            if ((c & 0xc0) != 0x80) {
+              curLineWidth++;
             }
           }
-        } while (alias);
-        if (f_body->e() != nullptr) {
-          std::string filename =
-              std::string(f_body->loc().filename().c_str(), f_body->loc().filename().size());
-          size_t filePos = filename.find("std/");
-          if (filePos != std::string::npos) {
-            filePos += 4;
-            os << ".. only:: builder_html\n\n";
-            os << "    `More... <https://github.com/MiniZinc/libminizinc/blob/" << MZN_VERSION_MAJOR
-               << "." << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH << "/share/minizinc/std/"
-               << filename.substr(filePos, std::string::npos) << "#L" << f_body->loc().firstLine()
-               << "-L" << f_body->loc().lastLine() << ">`__\n\n";
+        }
+        if (curLineWidth != 0) {
+          os << std::string(maxLineWidth - curLineWidth, ' ');
+          os << " |\n";
+        }
+        os << "  +-" << std::string(maxLineWidth, '-') << "-+"
+           << "\n";
+        curLineWidth = 0;
+        for (auto c : doc) {
+          if (curLineWidth == 0) {
+            os << "  | ";
+          }
+          if (c == '\n') {
+            // fill with space
+            os << std::string(maxLineWidth - curLineWidth, ' ');
+            os << " |\n";
+            curLineWidth = 0;
+          } else {
+            os << c;
+            if ((c & 0xc0) != 0x80) {
+              curLineWidth++;
+            }
           }
         }
-      }
-
-      if (!params.empty()) {
-        os << "Parameters:\n\n";
-        for (auto& param : params) {
-          os << "- ``" << param.first << "``: " << param.second << "\n";
+        if (curLineWidth != 0) {
+          os << std::string(maxLineWidth - curLineWidth, ' ');
+          os << " |\n";
         }
-        os << "\n";
-      }
-      os << "\n";
+        os << "  +-" << std::string(maxLineWidth, '-') << "-+"
+           << "\n\n";
 
-      HtmlDocOutput::DocItem di(HtmlDocOutput::DocItem::T_FUN, Printer::quoteId(fi->id()), sig,
-                                os.str());
-      HtmlDocOutput::add_to_group(_maingroup, group, di);
+        HtmlDocOutput::DocItem di(HtmlDocOutput::DocItem::T_FUN, f.first, funDocs.front().sig,
+                                  os.str());
+        HtmlDocOutput::add_to_group(_maingroup, g.first, di);
+      }
     }
   }
 };
@@ -1401,11 +1548,10 @@ std::vector<HtmlDocument> RSTPrinter::printRST(EnvI& env, MiniZinc::Model* m,
                                                bool includeStdLib, bool generateIndex) {
   using namespace HtmlDocOutput;
   Group g(basename, basename);
-  FunMap funMap;
-  CollectFunctionsVisitor fv(env, funMap, includeStdLib);
-  iter_items(fv, m);
-  PrintRSTVisitor prv(env, g, funMap, includeStdLib);
-  iter_items(prv, m);
+  RSTGroupFunMap groupFunMap;
+  RSTGroupVisitor rgv(env, g, groupFunMap, includeStdLib);
+  iter_items(rgv, m);
+  rgv.outputFunctions();
 
   std::vector<HtmlDocument> ret;
 

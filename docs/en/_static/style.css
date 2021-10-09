@@ -28,3 +28,26 @@ p.doc-link-caption {
 .doc-link-caption .headerlink {
   float: right;
 }
+.mzndoctable table.docutils.align-default {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.rst-content .mzndoctable table.docutils td {
+  white-space: normal;
+}
+
+.mzndoctable div.highlight-minizinc.notranslate {
+  border: none;
+}
+.rst-content .mzndoctable div[class^=highlight] pre {
+  padding: 0;
+}
+
+html.writer-html5 .rst-content table.docutils td p, html.writer-html5 .rst-content table.docutils th p {
+  font-size: .9rem;
+}
+
+.mzncodedoc p {
+  margin: 0;
+}
