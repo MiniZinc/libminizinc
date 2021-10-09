@@ -1,4 +1,4 @@
-/** @group stdlib.output Create string Gantt chart from task start times, duration, and their names. */
+/** @group stdlib.output Create string Gantt chart from task \a start times, duration \a dur, and their names \a name. */
 function string: show_gantt(array[$$T] of var int: start, array[$$T] of var int: dur, array[$$T] of string: name);
 
 function string: show_gantt(array[$$T] of int: start, array[$$T] of int: dur, array[$$T] of string: name) =
@@ -33,7 +33,7 @@ function string: show_gantt(array[$$T] of int: start, array[$$T] of int: dur, ar
 		dot_line ++ "\n" ++
 		legend;
 
-/** @group stdlib.output Create string Gantt chart from task start times and duration, using the index set as name for the tasks. */
+/** @group stdlib.output Create string Gantt chart from task \a start times and duration \a dur, using the index set as name for the tasks. */
 function string: show_gantt(array[$$T] of var int: start, array[$$T] of var int: dur);
 function string: show_gantt(array[$$T] of int: start, array[$$T] of int: dur) =
 	show_gantt(start, dur, array1d(index_set(start), [show(i) | i in index_set(start)]));

@@ -23,10 +23,10 @@ annotation maybe_partial;
 of the model. This annotation only has an effect when the model does not have an output item. */
 annotation add_to_output;
 
-/** @group stdlib.annotations.general Declare that the annotated variable should be added to the output
+/** @group stdlib.annotations.general Declare that the annotated variable \a x should be added to the output
 of the model. This annotation only has an effect when the model does not have an output item. */
 annotation 'output'(any $T: x :: annotated_expression);
-/** @group stdlib.annotations.general Declare that the annotated variable should be added to the output
+/** @group stdlib.annotations.general Declare that the annotated variable \a x should be added to the output
 of the model. This annotation only has an effect when the model does not have an output item. */
 annotation 'output'(array[$U] of any $T: x :: annotated_expression);
 
@@ -43,19 +43,19 @@ annotation output_only;
 /** @group stdlib.annotations.general Declare that the annotated variable is required for checking solutions. */
 annotation mzn_check_var;
 
-/** @group stdlib.annotations.general Declare that the annotated variable is required for checking solutions and has an enum type. */
-annotation mzn_check_enum_var(array[int] of set of int);
+/** @group stdlib.annotations.general Declare that the annotated variable is required for checking solutions and has an enum type \a x. */
+annotation mzn_check_enum_var(array[int] of set of int: x);
 
-/** @group stdlib.annotations.general Declare a name for the annotated expression. */
-annotation mzn_expression_name(string);
+/** @group stdlib.annotations.general Declare a name \a n for the annotated expression. */
+annotation mzn_expression_name(string: n);
 
-/** @group stdlib.annotations.general Declare a name for the annotated constraint. */
-annotation mzn_constraint_name(string);
+/** @group stdlib.annotations.general Declare a name \a n for the annotated constraint. */
+annotation mzn_constraint_name(string: n);
 
-/** @group stdlib.annotations.general Declare the output section for an output item */
-annotation mzn_output_section(string);
+/** @group stdlib.annotations.general Declare the output section \a s for an output item */
+annotation mzn_output_section(string: s);
 
-/** @group stdlib.annotations.general State that a function is deprecated. */
+/** @group stdlib.annotations.general State that a function is deprecated since MiniZinc version \a version with humand readable \a explanation. */
 annotation mzn_deprecated(string: version, string: explanation);
 
 function any $T: mzn_deprecate(string: name, string: version, string: msg, any $T: x);
@@ -153,13 +153,23 @@ annotation int_search(
     ann: choice
 ) = int_search(x,select,choice,complete);
 
-/** @group stdlib.annotations.search Search annotation for optional integer variables */
-annotation int_search(array[int] of var opt int: x, ann: a1, ann: a2, ann: a3) =
-  int_search([if occurs(x[i]) then deopt(x[i]) else 0 endif | i in index_set(x)],a1,a2,a3);
+/** @group stdlib.annotations.search Search annotation for optional integer variables.
+  Specify search on variables \a x, with variable selection
+  strategy \a select, value choice strategy \a choice, and exploration strategy
+  \a explore. If \a x is a multi-dimensional array, it is coerced to one-dimensional
+  in row-major order (as with the array1d function).
+*/
+annotation int_search(array[int] of var opt int: x, ann: select, ann: choice, ann: explore) =
+  int_search([if occurs(x[i]) then deopt(x[i]) else 0 endif | i in index_set(x)],select,choice,explore);
 
-/** @group stdlib.annotations.search Search annotation for optional integer variables */
-annotation int_search(array[int] of var opt int: x, ann: a1, ann: a2) =
-  int_search([if occurs(x[i]) then deopt(x[i]) else 0 endif | i in index_set(x)],a1,a2);
+/** @group stdlib.annotations.search Search annotation for optional integer variables.
+  Specify search on variables \a x, with variable selection
+  strategy \a select, and value choice strategy \a choice.
+  If \a x is a multi-dimensional array, it is coerced to one-dimensional
+  in row-major order (as with the array1d function).
+*/
+annotation int_search(array[int] of var opt int: x, ann: select, ann: choice) =
+  int_search([if occurs(x[i]) then deopt(x[i]) else 0 endif | i in index_set(x)],select,choice);
 
 /** @group stdlib.annotations.search Specify search on variables \a x, with variable selection
   strategy \a select, value choice strategy \a choice, and exploration strategy
@@ -185,13 +195,24 @@ annotation bool_search(
     ann: choice
 ) = bool_search(x,select,choice,complete);
 
-/** @group stdlib.annotations.search Search annotation for optional Boolean variables */
-annotation bool_search(array[int] of var opt bool: x, ann: a1, ann: a2, ann: a3) =
-  bool_search([if occurs(x[i]) then deopt(x[i]) else false endif | i in index_set(x)],a1,a2,a3);
+/** @group stdlib.annotations.search Search annotation for optional Boolean variables.
+  Specify search on variables \a x, with variable selection
+  strategy \a select, value choice strategy \a choice, and exploration strategy
+  \a explore.
+  If \a x is a multi-dimensional array, it is coerced to one-dimensional
+  in row-major order (as with the array1d function).
+ */
+annotation bool_search(array[int] of var opt bool: x, ann: select, ann: choice, ann: explore) =
+  bool_search([if occurs(x[i]) then deopt(x[i]) else false endif | i in index_set(x)],select,choice,explore);
 
-/** @group stdlib.annotations.search Search annotation for optional Boolean variables */
-annotation bool_search(array[int] of var opt bool: x, ann: a1, ann: a2) =
-  bool_search([if occurs(x[i]) then deopt(x[i]) else false endif | i in index_set(x)],a1,a2);
+/** @group stdlib.annotations.search Search annotation for optional Boolean variables.
+  Specify search on variables \a x, with variable selection
+  strategy \a select, and value choice strategy \a choice.
+  If \a x is a multi-dimensional array, it is coerced to one-dimensional
+  in row-major order (as with the array1d function).
+ */
+annotation bool_search(array[int] of var opt bool: x, ann: select, ann: choice) =
+  bool_search([if occurs(x[i]) then deopt(x[i]) else false endif | i in index_set(x)],select,choice);
 
 /** @group stdlib.annotations.search Specify search on variables \a x, 
   with precision \a prec, variable selection
@@ -221,13 +242,26 @@ annotation float_search(
     ann: choice
 ) = float_search(x,prec,select,choice,complete);
 
-/** @group stdlib.annotations.search Search annotation for optional float variables */
-annotation float_search(array[int] of var opt float: x, ann: a1, ann: a2, ann: a3) =
-  float_search([if occurs(x[i]) then deopt(x[i]) else 0 endif | i in index_set(x)],a1,a2,a3);
+/** @group stdlib.annotations.search Search annotation for optional float variables.
+  Specify search on variables \a x, 
+  with precision \a prec, variable selection
+  strategy \a select, value choice strategy \a choice, and exploration strategy
+  \a explore.
+  If \a x is a multi-dimensional array, it is coerced to one-dimensional
+  in row-major order (as with the array1d function).
+*/
+annotation float_search(array[int] of var opt float: x, float: prec, ann: select, ann: choice, ann: explore) =
+  float_search([if occurs(x[i]) then deopt(x[i]) else 0 endif | i in index_set(x)],prec,select,choice,explore);
 
-/** @group stdlib.annotations.search Search annotation for optional float variables */
-annotation float_search(array[int] of var opt float: x, ann: a1, ann: a2) =
-  float_search([if occurs(x[i]) then deopt(x[i]) else 0 endif | i in index_set(x)],a1,a2);
+/** @group stdlib.annotations.search Search annotation for optional float variables.
+  Specify search on variables \a x, 
+  with precision \a prec, variable selection
+  strategy \a select, and value choice strategy \a choice.
+  If \a x is a multi-dimensional array, it is coerced to one-dimensional
+  in row-major order (as with the array1d function).
+*/
+annotation float_search(array[int] of var opt float: x, float: prec, ann: select, ann: choice) =
+  float_search([if occurs(x[i]) then deopt(x[i]) else 0 endif | i in index_set(x)],prec,select,choice);
 
 /** @group stdlib.annotations.search Specify search on variables \a x, with variable selection
   strategy \a select, value choice strategy \a choice, and exploration strategy

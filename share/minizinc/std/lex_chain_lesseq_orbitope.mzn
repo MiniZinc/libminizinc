@@ -4,7 +4,7 @@ include "fzn_lex_chain_lesseq_orbitope_reif.mzn";
 /** @group globals.lexicographic
   Requires that the columns of binary matrix \a a are
   lexicographically sorted, non-decreasing.
-  Moreover, the second parameter has the following meaning:
+  Moreover, the second parameter \a kind has the following meaning:
   0: no further constraints, 1: set-partitioning orbitope,
   2: set-packing orbitope
 */

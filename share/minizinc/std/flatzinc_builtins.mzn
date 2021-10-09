@@ -413,25 +413,25 @@ predicate float_set_in(var float: x, set of float: S);
 
 */
 
-/** @group flatzinc.twofivetwo Element constraint on 2d array with MiniZinc index set, constrains \a x[\a idx1,idx2] = \a c
+/** @group flatzinc.twofivetwo Element constraint on 2d array with MiniZinc index set, constrains \a x[\a idx1,\a idx2] = \a c
   This can be overridden in a solver that can perform the index calculation more efficiently than using
   a MiniZinc decomposition.
 */
 predicate array_var_int_element2d_nonshifted(var int: idx1, var int: idx2, array[int,int] of var int: x, var int: c);
 
-/** @group flatzinc.twofivetwo Element constraint on 2d array with MiniZinc index set, constrains \a x[\a idx1,idx2] = \a c
+/** @group flatzinc.twofivetwo Element constraint on 2d array with MiniZinc index set, constrains \a x[\a idx1,\a idx2] = \a c
   This can be overridden in a solver that can perform the index calculation more efficiently than using
   a MiniZinc decomposition.
 */
 predicate array_var_bool_element2d_nonshifted(var int: idx1, var int: idx2, array[int,int] of var bool: x, var bool: c);
 
-/** @group flatzinc.twofivetwo Element constraint on 2d array with MiniZinc index set, constrains \a x[\a idx1,idx2] = \a c
+/** @group flatzinc.twofivetwo Element constraint on 2d array with MiniZinc index set, constrains \a x[\a idx1,\a idx2] = \a c
   This can be overridden in a solver that can perform the index calculation more efficiently than using
   a MiniZinc decomposition.
 */
 predicate array_var_float_element2d_nonshifted(var int: idx1, var int: idx2, array[int,int] of var float: x, var float: c);
 
-/** @group flatzinc.twofivetwo Element constraint on 2d array with MiniZinc index set, constrains \a x[\a idx1,idx2] = \a c
+/** @group flatzinc.twofivetwo Element constraint on 2d array with MiniZinc index set, constrains \a x[\a idx1,\a idx2] = \a c
   This can be overridden in a solver that can perform the index calculation more efficiently than using
   a MiniZinc decomposition.
 */

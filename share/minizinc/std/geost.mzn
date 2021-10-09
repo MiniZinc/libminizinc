@@ -170,7 +170,7 @@ predicate geost_smallest_bb(
  and zero-length objects do not appear in the middle of other objects.
     
 @param x1: first coordinate of each object
-@param w2: width in first dimension for each object
+@param w1: width in first dimension for each object
 @param x2: second coordinate of each object
 @param w2: width in second dimension for each object
 */
