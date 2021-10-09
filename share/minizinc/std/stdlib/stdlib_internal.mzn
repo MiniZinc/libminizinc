@@ -83,15 +83,15 @@ predicate array_var_set_element(var int: x, array[int] of set of int: y, var set
 
 predicate bool_opt_eq(var opt bool: x, var opt bool: y) =
   deopt(x)=deopt(y) /\ occurs(x)=occurs(y);
-/** True iff both \a b0 and \a b1 are absent or
+/* True iff both \a b0 and \a b1 are absent or
   both are present and have the same value. */
 predicate bool_eq(var opt bool: b0, var opt bool: b1) =
      (absent(b0) /\ absent(b1))
   \/ (occurs(b0) /\ occurs(b1) /\ deopt(b0)=deopt(b1));
-/** True iff \a b0 occurs and is equal to \a b1 */
+/* True iff \a b0 occurs and is equal to \a b1 */
 predicate bool_eq(var opt bool: b0, var bool: b1) =
   occurs(b0) /\ deopt(b0)=b1;
-/** True iff \a b1 occurs and is equal to \a b0 */
+/* True iff \a b1 occurs and is equal to \a b0 */
 predicate bool_eq(var bool: b0, var opt bool: b1) =
   occurs(b1) /\ deopt(b1)=b0;
 
@@ -100,19 +100,19 @@ predicate bool_xor_reif(var bool: a, var bool: b, var bool: c) =
 
 predicate int_opt_eq(var opt int: x, var opt int: y) =
   deopt(x) = deopt(y) /\ occurs(x) = occurs(y);
-/** True iff both \a x and \a y are absent or
+/* True iff both \a x and \a y are absent or
   both are present and have the same value. */
 predicate int_eq(var opt int: x, var opt int: y) =
      (absent(x) /\ absent(y))
   \/ (occurs(x) /\ occurs(y) /\ (deopt(x)=deopt(y))::maybe_partial);
-/** True iff only one of \a x and \a y is absent or
+/* True iff only one of \a x and \a y is absent or
   both are present and have different values. */
 predicate int_ne(var opt int : x, var opt int : y) =
      (absent(x) != absent(y))
   \/ (occurs(x) /\ occurs(y) /\ (deopt(x)!=deopt(y))::maybe_partial);
-/** Constrains \a x \( \in \) \a S */
+/* Constrains \a x \( \in \) \a S */
 predicate set_in(var opt int: x, set of int: S) = if occurs(x) then deopt(x) in S endif;
-/** Constrains \a x \( \in \) \a S */
+/* Constrains \a x \( \in \) \a S */
 predicate set_in(var opt int: x, var set of int: S) = if occurs(x) then deopt(x) in S endif;
 
 % :NOTE: does it apply to float?
@@ -137,13 +137,13 @@ predicate float_dom(var opt float: x, array[int] of float: as) =
 
 predicate float_opt_eq(var opt float: x, var opt float: y) =
   deopt(x) = deopt(y) /\ occurs(x) = occurs(y);
-/** True iff both \a x and \a y are absent or
+/* True iff both \a x and \a y are absent or
   both are present and have the same value. */
 predicate float_eq(var opt float: x, var opt float: y) =
      (absent(x) /\ absent(y))
   \/ (occurs(x) /\ occurs(y) /\ (deopt(x)=deopt(y))::maybe_partial);
 
-/** True iff only one of \a x and \a y is absent or
+/* True iff only one of \a x and \a y is absent or
   both are present and have different values. */
 predicate float_ne(var opt float : x, var opt float : y) =
      (absent(x) != absent(y))
@@ -388,15 +388,15 @@ function var int: element(var int: idx1, var int: idx2, var int: idx3, var int: 
        } in element_mt( (idx1*(dim2*dim3*dim4*dim5*dim6)+idx2*(dim3*dim4*dim5*dim6)+idx3*(dim4*dim5*dim6)+idx4*(dim5*dim6)+idx5*dim6+idx6-min)::domain, array1d(x))
        endif;
 
-/** Return absent if \a idx is absent, otherwise return \a x[\a idx] */
+/* Return absent if \a idx is absent, otherwise return \a x[\a idx] */
 function var opt int: element(var opt int: idx, array[int] of var int: x) =
   if absent(idx) then <> else element(deopt(idx),x) endif;
 
-/** Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
+/* Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
 function var opt int: element(var opt int: idx1, var opt int: idx2, array[int,int] of var int: x) =
   if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
 
-/** Return \a x[\a idx] */
+/* Return \a x[\a idx] */
 function var opt int: element(var int: idx, array[int] of var opt int: x) =
   let {
     var opt int: r;
@@ -404,7 +404,7 @@ function var opt int: element(var int: idx, array[int] of var opt int: x) =
     constraint deopt(r) = element(idx, array1d(index_set(x), [if is_fixed(absent(x[i])) /\ fix(absent(x[i])) then deopt(r) else deopt(x[i]) endif | i in index_set(x)]));
   } in r;
 
-/** Return \a x[\a idx1, \a idx2] */
+/* Return \a x[\a idx1, \a idx2] */
 function var opt int: element(var int: idx1, var int: idx2, array[int,int] of var opt int: x) =
   let {
     var opt int: r;
@@ -414,11 +414,11 @@ function var opt int: element(var int: idx1, var int: idx2, array[int,int] of va
       array2d(index_set_1of2(x),index_set_2of2(x),[if is_fixed(absent(x[i,j])) /\ fix(absent(x[i,j])) then deopt(r) else deopt(x[i,j]) endif | i in index_set_1of2(x), j in index_set_2of2(x)]));
   } in r;
 
-/** Return absent if \a idx is absent, otherwise return \a x[\a idx] */
+/* Return absent if \a idx is absent, otherwise return \a x[\a idx] */
 function var opt int: element(var opt int: idx, array[int] of var opt int: x) =
   if absent(idx) then <> else element(deopt(idx),x) endif;
 
-/** Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
+/* Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
 function var opt int: element(var opt int: idx1, var opt int: idx2, array[int,int] of var opt int: x) =
   if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
 
@@ -631,15 +631,15 @@ function var float: element(var int: idx1, var int: idx2, var int: idx3, var int
        } in element_mt( (idx1*(dim2*dim3*dim4*dim5*dim6)+idx2*(dim3*dim4*dim5*dim6)+idx3*(dim4*dim5*dim6)+idx4*(dim5*dim6)+idx5*dim6+idx6-min)::domain, array1d(x))
        endif;
 
-/** Return absent if \a idx is absent, otherwise return \a x[\a idx] */
+/* Return absent if \a idx is absent, otherwise return \a x[\a idx] */
 function var opt float: element(var opt int: idx, array[int] of var float: x) =
   if absent(idx) then <> else element(deopt(idx),x) endif;
 
-/** Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
+/* Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
 function var opt float: element(var opt int: idx1, var opt int: idx2, array[int,int] of var float: x) =
   if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
 
-/** Return \a x[\a idx] */
+/* Return \a x[\a idx] */
 function var opt float: element(var int: idx, array[int] of var opt float: x) =
   let {
     var opt float: r;
@@ -647,7 +647,7 @@ function var opt float: element(var int: idx, array[int] of var opt float: x) =
     constraint deopt(r) = element(idx,array1d(index_set(x),[deopt(x[i]) | i in index_set(x)]));
   } in r;
 
-/** Return \a x[\a idx1, \a idx2] */
+/* Return \a x[\a idx1, \a idx2] */
 function var opt float: element(var int: idx1, var int: idx2, array[int,int] of var opt float: x) =
   let {
     var opt float: r;
@@ -657,11 +657,11 @@ function var opt float: element(var int: idx1, var int: idx2, array[int,int] of 
       array2d(index_set_1of2(x),index_set_2of2(x),[deopt(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
   } in r;
 
-/** Return absent if \a idx is absent, otherwise return \a x[\a idx] */
+/* Return absent if \a idx is absent, otherwise return \a x[\a idx] */
 function var opt float: element(var opt int: idx, array[int] of var opt float: x) =
   if absent(idx) then <> else element(deopt(idx),x) endif;
 
-/** Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
+/* Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
 function var opt float: element(var opt int: idx1, var opt int: idx2, array[int,int] of var opt float: x) =
   if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
 
@@ -1084,15 +1084,15 @@ function var bool: element(var int: idx1, var int: idx2, var int: idx3, var int:
        } in element_mt( (idx1*(dim2*dim3*dim4*dim5*dim6)+idx2*(dim3*dim4*dim5*dim6)+idx3*(dim4*dim5*dim6)+idx4*(dim5*dim6)+idx5*dim6+idx6-min)::domain, array1d(x))
        endif;
 
-/** Return absent if \a idx is absent, otherwise return \a x[\a idx] */
+/* Return absent if \a idx is absent, otherwise return \a x[\a idx] */
 function var opt bool: element(var opt int: idx, array[int] of var bool: x) =
   if absent(idx) then <> else element(deopt(idx),x) endif;
 
-/** Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
+/* Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
 function var opt bool: element(var opt int: idx1, var opt int: idx2, array[int,int] of var bool: x) =
   if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
 
-/** Return \a x[\a idx] */
+/* Return \a x[\a idx] */
 function var opt bool: element(var int: idx, array[int] of var opt bool: x) =
   let {
     var opt bool: r;
@@ -1100,7 +1100,7 @@ function var opt bool: element(var int: idx, array[int] of var opt bool: x) =
     constraint deopt(r) = element(idx,array1d(index_set(x),[deopt(x[i]) | i in index_set(x)]));
   } in r;
 
-/** Return \a x[\a idx1, \a idx2] */
+/* Return \a x[\a idx1, \a idx2] */
 function var opt bool: element(var int: idx1, var int: idx2, array[int,int] of var opt bool: x) =
   let {
     var opt bool: r;
@@ -1110,11 +1110,11 @@ function var opt bool: element(var int: idx1, var int: idx2, array[int,int] of v
       array2d(index_set_1of2(x),index_set_2of2(x),[deopt(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
   } in r;
 
-/** Return absent if \a idx is absent, otherwise return \a x[\a idx] */
+/* Return absent if \a idx is absent, otherwise return \a x[\a idx] */
 function var opt bool: element(var opt int: idx, array[int] of var opt bool: x) =
   if absent(idx) then <> else element(deopt(idx),x) endif;
 
-/** Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
+/* Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
 function var opt bool: element(var opt int: idx1, var opt int: idx2, array[int,int] of var opt bool: x) =
   if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
 

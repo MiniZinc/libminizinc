@@ -1,7 +1,7 @@
 /***
   @groupdef stdlib.random Random Number Generator builtins
 
-  These functions implement random number generators from different 
+ These functions implement random number generators from different 
  probability distributions.
 */
 
