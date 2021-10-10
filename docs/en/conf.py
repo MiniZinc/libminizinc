@@ -266,29 +266,54 @@ htmlhelp_basename = 'MiniZincdoc'
 
 latex_engine = 'xelatex'
 
-latex_elements = {
-     # The paper size ('letterpaper' or 'a4paper').
-     #
-     'papersize': 'a4paper',
-'fontpkg': r'''
-\usepackage{fontspec}
-\setmainfont{Charter}
-\setsansfont{Lato}
-\setmonofont{Inconsolata}
-''',
-     # The font size ('10pt', '11pt' or '12pt').
-     #
-     'pointsize': '11pt',
+if version_info[0] > 1:
+  latex_elements = {
+      # The paper size ('letterpaper' or 'a4paper').
+      #
+      'papersize': 'a4paper',
+      'fontpkg': r'''
+  \usepackage{fontspec}
+  \setmainfont{Charter}
+  \setsansfont{Lato}
+  \setmonofont{Inconsolata}
+  ''',
+      # The font size ('10pt', '11pt' or '12pt').
+      #
+      'pointsize': '11pt',
 
-     # Additional stuff for the LaTeX preamble.
-     #
-     # 'preamble': '',
-     'preamble': r'\usepackage{../../../utils/mznstyle}',
-     # Latex figure (float) alignment
-     #
-     # 'figure_align': 'htbp',
-     'fncychap': r'\usepackage[Sonny]{fncychap}',
-}
+      # Additional stuff for the LaTeX preamble.
+      #
+      # 'preamble': '',
+      'preamble': r'\usepackage{../../../utils/mznstyle}',
+      # Latex figure (float) alignment
+      #
+      # 'figure_align': 'htbp',
+      'fncychap': r'\usepackage[Sonny]{fncychap}',
+  }
+else:
+  latex_elements = {
+      # The paper size ('letterpaper' or 'a4paper').
+      #
+      'papersize': 'a4paper',
+      'fontpkg': r'''
+  \usepackage{fontspec}
+  \setmainfont{Charter}
+  \setsansfont{Lato}
+  \setmonofont{Inconsolata}
+  ''',
+      # The font size ('10pt', '11pt' or '12pt').
+      #
+      'pointsize': '11pt',
+
+      # Additional stuff for the LaTeX preamble.
+      #
+      # 'preamble': '',
+      'preamble': r'\usepackage{../../../utils/mznstyle_old}',
+      # Latex figure (float) alignment
+      #
+      # 'figure_align': 'htbp',
+      'fncychap': r'\usepackage[Sonny]{fncychap}',
+  }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,

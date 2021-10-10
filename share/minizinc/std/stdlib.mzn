@@ -44,14 +44,14 @@ include "stdlib/stdlib_debug.mzn";
 include "stdlib/stdlib_enum.mzn";
 include "stdlib/stdlib_random.mzn";
 
+include "output.mzn";
+
 /***
-  @groupdef stdlib.output Stuctured Output
-
-  These functions provide structured output for common structures modelled in the MiniZinc language.
+  @groupdef globals Global constraints
+  
+  These constraints represent high-level modelling abstractions, for which
+  many solvers implement special, efficient inference algorithms.
 */
-
-include "output/gantt.mzn";
-include "output/array2d_bool.mzn";
 
 % Undocumented internal implementation used during compilation
 include "stdlib/stdlib_internal.mzn";

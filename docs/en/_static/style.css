@@ -40,6 +40,9 @@ p.doc-link-caption {
 .mzndoctable div.highlight-minizinc.notranslate {
   border: none;
 }
+.rst-content .mzndoctable div[class^=highlight] {
+  margin: 0;
+}
 .rst-content .mzndoctable div[class^=highlight] pre {
   padding: 0;
 }
@@ -51,3 +54,4 @@ html.writer-html5 .rst-content table.docutils td p, html.writer-html5 .rst-conte
 .mzncodedoc p {
   margin: 0;
 }
+

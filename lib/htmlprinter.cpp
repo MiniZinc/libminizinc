@@ -1145,6 +1145,18 @@ std::string escape_bs(const std::string& s) {
   return oss.str();
 }
 
+struct FunDoc {
+  std::string ident;
+  std::string sig;
+  std::string sigPretty;
+  std::string doc;
+  FunDoc(std::string ident0, std::string sig0, std::string sigPretty0, std::string doc0)
+      : ident(std::move(ident0)),
+        sig(std::move(sig0)),
+        sigPretty(std::move(sigPretty0)),
+        doc(std::move(doc0)) {}
+};
+
 }  // namespace
 
 typedef std::map<std::string, std::vector<FunctionI*>> RSTFunMap;
@@ -1197,6 +1209,190 @@ public:
     return true;
   }
 
+  std::string outputFuncDocs(const std::vector<FunDoc>& funDocs, const std::string& group,
+                             const std::string& ident) {
+    // Check whether all functions share the same documentation
+    bool allCommon = true;
+    for (unsigned int i = 1; i < funDocs.size(); i++) {
+      if (funDocs[i].doc != funDocs[i - 1].doc) {
+        allCommon = false;
+        break;
+      }
+    }
+
+    std::ostringstream os;
+    std::string myMainGroup = group.substr(0, group.find_first_of('.'));
+    auto it = _maingroup.subgroups.find(myMainGroup);
+    os << ".. index::\n";
+    if (it != _maingroup.subgroups.m.end()) {
+      os << "   pair: " << (*it)->htmlName << "; " << ident << "\n\n";
+    } else {
+      std::cerr << "did not find " << myMainGroup << "\n";
+      os << "   single: " << ident << "\n\n";
+    }
+
+    std::ostringstream os_code;
+
+    os_code << ".. code-block:: minizinc\n\n";
+
+    if (allCommon) {
+      for (const auto& fd : funDocs) {
+        os_code << fd.sigPretty << "\n";
+      }
+    } else {
+      int funCount = 1;
+      for (const auto& fd : funDocs) {
+        std::ostringstream number;
+        number << "  " << std::setw(2) << funCount++ << ".";
+        std::string number_s = number.str();
+        os_code << number_s;
+        auto indent = number_s.size();
+        std::string sigString = fd.sigPretty;
+        for (auto c : sigString) {
+          os_code << c;
+          if (c == '\n') {
+            os_code << std::string(indent, ' ');
+          }
+        }
+        os_code << "\n\n";
+      }
+    }
+    os_code << "\n\n";
+
+    std::ostringstream os_doc;
+
+    if (allCommon) {
+      os_doc << funDocs[0].doc;
+    } else {
+      int funCount = 1;
+      for (const auto& fd : funDocs) {
+        std::ostringstream number;
+        number << funCount++ << ". .. ";
+        std::string number_s = number.str();
+        os_doc << number_s << "container:: mzncodedoc\n\n";
+        auto indent = number_s.size();
+        std::string docString = fd.doc;
+        os_doc << std::string(indent, ' ');
+        for (auto c : docString) {
+          os_doc << c;
+          if (c == '\n') {
+            os_doc << std::string(indent, ' ');
+          }
+        }
+        os_doc << "\n\n";
+      }
+    }
+
+    auto code = os_code.str();
+    auto doc = os_doc.str();
+
+    auto codeRef = ".. _mzn_ref_" + group + "_" + escape_bs(ident) + ":";
+
+    auto maxLineWidth = max_line_width(code);
+    maxLineWidth = std::max(maxLineWidth, static_cast<unsigned int>(codeRef.size()));
+    maxLineWidth = std::max(maxLineWidth, max_line_width(doc));
+
+    os << ".. _mzn_" << group << "_" << escape_bs(ident) << ":\n\n";
+
+    os << ".. only:: builder_html\n\n";
+    {
+      // Output as table
+      os << "  .. container:: mznDocTable\n\n";
+
+      os << "    +-" << std::string(maxLineWidth, '-') << "-+"
+         << "\n";
+      os << "    | " << codeRef << std::string(maxLineWidth - codeRef.size(), ' ') << " |\n";
+      os << "    | " << std::string(maxLineWidth, ' ') << " |\n";
+      unsigned int curLineWidth = 0;
+      for (auto c : code) {
+        if (curLineWidth == 0) {
+          os << "    | ";
+        }
+        if (c == '\n') {
+          // fill with space
+          os << std::string(maxLineWidth - curLineWidth, ' ');
+          os << " |\n";
+          curLineWidth = 0;
+        } else {
+          os << c;
+          if ((c & 0xc0) != 0x80) {
+            curLineWidth++;
+          }
+        }
+      }
+      if (curLineWidth != 0) {
+        os << std::string(maxLineWidth - curLineWidth, ' ');
+        os << " |\n";
+      }
+      os << "    +-" << std::string(maxLineWidth, '-') << "-+"
+         << "\n";
+      curLineWidth = 0;
+      for (auto c : doc) {
+        if (curLineWidth == 0) {
+          os << "    | ";
+        }
+        if (c == '\n') {
+          // fill with space
+          os << std::string(maxLineWidth - curLineWidth, ' ');
+          os << " |\n";
+          curLineWidth = 0;
+        } else {
+          os << c;
+          if ((c & 0xc0) != 0x80) {
+            curLineWidth++;
+          }
+        }
+      }
+      if (curLineWidth != 0) {
+        os << std::string(maxLineWidth - curLineWidth, ' ');
+        os << " |\n";
+      }
+      os << "    +-" << std::string(maxLineWidth, '-') << "-+"
+         << "\n\n";
+    }
+
+    os << ".. only:: builder_latex\n\n";
+    {
+      // Output without table
+      unsigned int curLineWidth = 0;
+      for (auto c : code) {
+        if (curLineWidth == 0) {
+          os << "  ";
+        }
+        os << c;
+        if (c == '\n') {
+          curLineWidth = 0;
+        } else if ((c & 0xc0) != 0x80) {
+          curLineWidth++;
+        }
+      }
+      if (curLineWidth != 0) {
+        os << "\n";
+      }
+      os << "\n";
+      curLineWidth = 0;
+      for (auto c : doc) {
+        if (curLineWidth == 0) {
+          os << "  ";
+        }
+        os << c;
+        if (c == '\n') {
+          curLineWidth = 0;
+        } else if ((c & 0xc0) != 0x80) {
+          curLineWidth++;
+        }
+      }
+      if (curLineWidth != 0) {
+        os << "\n";
+      }
+      os << "\n\n";
+      os << "  .. raw:: latex"
+         << "\n\n";
+      os << "     \\noindent\\makebox[\\linewidth]{\\rule{\\textwidth}{0.4pt}}\n\n";
+    }
+    return os.str();
+  }
+
   /// Visit variable declaration
   void vVarDeclI(VarDeclI* vdi) {
     if (Call* docstring = Expression::dynamicCast<Call>(
@@ -1207,33 +1403,24 @@ public:
       if (group_idx != std::string::npos) {
         group = HtmlDocOutput::extract_arg_word(ds, group_idx);
       }
-      std::ostringstream os;
+
       std::string sig =
           vdi->e()->type().toString(_env) + " " + Printer::quoteId(vdi->e()->id()->str());
 
-      std::string myMainGroup = group.substr(0, group.find_first_of('.'));
-      auto it = _maingroup.subgroups.find(myMainGroup);
-      os << ".. index::\n";
-      if (it != _maingroup.subgroups.m.end()) {
-        os << "   pair: " << (*it)->htmlName << "; " << Printer::quoteId(vdi->e()->id()->str())
-           << "\n\n";
+      std::ostringstream os_sig;
+      if (vdi->e()->ti()->type() == Type::ann()) {
+        os_sig << "  annotation " << Printer::quoteId(vdi->e()->id()->str());
       } else {
-        std::cerr << "did not find " << myMainGroup << "\n";
-        os << "   single: " << Printer::quoteId(vdi->e()->id()->str()) << "\n\n";
+        os_sig << "  " << *vdi->e()->ti() << ": " << Printer::quoteId(vdi->e()->id()->str());
       }
 
-      os << ".. code-block:: minizinc\n\n";
-      if (vdi->e()->ti()->type() == Type::ann()) {
-        os << "  annotation " << Printer::quoteId(vdi->e()->id()->str());
-      } else {
-        os << "  " << *vdi->e()->ti() << ": " << Printer::quoteId(vdi->e()->id()->str());
-      }
-      os << "\n\n";
-      os << HtmlDocOutput::trim(ds) << "\n\n";
+      FunDoc funDoc = FunDoc(Printer::quoteId(vdi->e()->id()->str()), sig, os_sig.str(),
+                             HtmlDocOutput::trim(ds));
+
       GCLock lock;
       HtmlDocOutput::DocItem di(
           vdi->e()->type().isPar() ? HtmlDocOutput::DocItem::T_PAR : HtmlDocOutput::DocItem::T_VAR,
-          sig, sig, os.str());
+          sig, sig, outputFuncDocs({funDoc}, group, Printer::quoteId(vdi->e()->id()->str())));
       HtmlDocOutput::add_to_group(_maingroup, group, di);
     }
   }
@@ -1254,18 +1441,6 @@ public:
   }
 
   void outputFunctions() {
-    struct FunDoc {
-      std::string ident;
-      std::string sig;
-      std::string sigPretty;
-      std::string doc;
-      FunDoc(std::string ident0, std::string sig0, std::string sigPretty0, std::string doc0)
-          : ident(std::move(ident0)),
-            sig(std::move(sig0)),
-            sigPretty(std::move(sigPretty0)),
-            doc(std::move(doc0)) {}
-    };
-
     for (const auto& g : _groupFunMap) {
       for (const auto& f : g.second) {
         std::vector<FunDoc> funDocs;
@@ -1424,119 +1599,10 @@ public:
           os << "   single: " << f.first << "\n\n";
         }
 
-        std::ostringstream os_code;
-
-        os_code << ".. _mzn_" << g.first << "_" << escape_bs(f.first) << ":\n\n";
-
-        os_code << ".. code-block:: minizinc\n\n";
-
-        if (allCommon) {
-          for (auto& fd : funDocs) {
-            os_code << fd.sigPretty << "\n";
-          }
-        } else {
-          int funCount = 1;
-          for (auto& fd : funDocs) {
-            std::ostringstream number;
-            number << "  " << std::setw(2) << funCount++ << ".";
-            std::string number_s = number.str();
-            os_code << number_s;
-            auto indent = number_s.size();
-            std::string sigString = fd.sigPretty;
-            for (auto c : sigString) {
-              os_code << c;
-              if (c == '\n') {
-                os_code << std::string(indent, ' ');
-              }
-            }
-            os_code << "\n\n";
-          }
-        }
-        os_code << "\n\n";
-
-        std::ostringstream os_doc;
-
-        if (allCommon) {
-          os_doc << funDocs[0].doc;
-        } else {
-          int funCount = 1;
-          for (auto& fd : funDocs) {
-            std::ostringstream number;
-            number << funCount++ << ". .. ";
-            std::string number_s = number.str();
-            os_doc << number_s << "container:: mzncodedoc\n\n";
-            auto indent = number_s.size();
-            std::string docString = fd.doc;
-            os_doc << std::string(indent, ' ');
-            for (auto c : docString) {
-              os_doc << c;
-              if (c == '\n') {
-                os_doc << std::string(indent, ' ');
-              }
-            }
-            os_doc << "\n\n";
-          }
-        }
-
-        auto code = os_code.str();
-        auto doc = os_doc.str();
-
-        auto maxLineWidth = max_line_width(code);
-        maxLineWidth = std::max(maxLineWidth, max_line_width(doc));
-
-        os << ".. container:: mznDocTable\n\n";
-
-        os << "  +-" << std::string(maxLineWidth, '-') << "-+"
-           << "\n";
-        unsigned int curLineWidth = 0;
-        for (auto c : code) {
-          if (curLineWidth == 0) {
-            os << "  | ";
-          }
-          if (c == '\n') {
-            // fill with space
-            os << std::string(maxLineWidth - curLineWidth, ' ');
-            os << " |\n";
-            curLineWidth = 0;
-          } else {
-            os << c;
-            if ((c & 0xc0) != 0x80) {
-              curLineWidth++;
-            }
-          }
-        }
-        if (curLineWidth != 0) {
-          os << std::string(maxLineWidth - curLineWidth, ' ');
-          os << " |\n";
-        }
-        os << "  +-" << std::string(maxLineWidth, '-') << "-+"
-           << "\n";
-        curLineWidth = 0;
-        for (auto c : doc) {
-          if (curLineWidth == 0) {
-            os << "  | ";
-          }
-          if (c == '\n') {
-            // fill with space
-            os << std::string(maxLineWidth - curLineWidth, ' ');
-            os << " |\n";
-            curLineWidth = 0;
-          } else {
-            os << c;
-            if ((c & 0xc0) != 0x80) {
-              curLineWidth++;
-            }
-          }
-        }
-        if (curLineWidth != 0) {
-          os << std::string(maxLineWidth - curLineWidth, ' ');
-          os << " |\n";
-        }
-        os << "  +-" << std::string(maxLineWidth, '-') << "-+"
-           << "\n\n";
+        std::string codeblock = outputFuncDocs(funDocs, g.first, f.first);
 
         HtmlDocOutput::DocItem di(HtmlDocOutput::DocItem::T_FUN, f.first, funDocs.front().sig,
-                                  os.str());
+                                  codeblock);
         HtmlDocOutput::add_to_group(_maingroup, g.first, di);
       }
     }

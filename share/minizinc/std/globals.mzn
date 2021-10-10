@@ -1,11 +1,4 @@
 /***
-  @groupdef globals Global constraints
-  
-  These constraints represent high-level modelling abstractions, for which
-  many solvers implement special, efficient inference algorithms.
-*/
-
-/***
   @groupdef globals.alldifferent All-Different and related constraints
 
   @groupdef globals.lexicographic Lexicographic constraints
