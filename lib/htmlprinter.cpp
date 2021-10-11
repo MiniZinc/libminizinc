@@ -104,6 +104,50 @@ public:
   Map::iterator find(const std::string& n);
 };
 
+std::string escape_bs(const std::string& s) {
+  std::ostringstream oss;
+  for (auto c : s) {
+    if (c == '<') {
+      oss << "\\<";
+    } else {
+      oss << c;
+    }
+    if (c == '\\') {
+      oss << '\\';
+    }
+  }
+  return oss.str();
+}
+
+std::string ident_to_label(const std::string& s) {
+  std::ostringstream oss;
+  for (auto c : s) {
+    switch (c) {
+      case '\\':
+        oss << "B";
+        break;
+      case '/':
+        oss << "S";
+        break;
+      case '<':
+        oss << "lt";
+        break;
+      case '>':
+        oss << "gt";
+        break;
+      case '.':
+        oss << "D";
+        break;
+      case '\'':
+        break;
+      default:
+        oss << c;
+        break;
+    }
+  }
+  return oss.str();
+}
+
 class Group {
 public:
   Group(std::string name0, std::string fullPath0)
@@ -247,6 +291,46 @@ public:
         }
       } _cmp;
       std::stable_sort(items.begin(), items.end(), _cmp);
+
+      // Find the group identifier of this section
+      std::string groupId;
+      for (const auto& item : items) {
+        auto pos = item.doc.find("\n.. _mzn_");
+        if (pos != std::string::npos) {
+          auto endPos = item.doc.find_first_of(':', pos);
+          if (endPos != std::string::npos) {
+            std::string refString = item.doc.substr(pos + 5, endPos - pos - 4);
+            auto lastDot = refString.find_last_of('.');
+            if (lastDot != std::string::npos) {
+              groupId = refString.substr(0, lastDot);
+              break;
+            }
+          }
+        }
+      }
+
+      if (!groupId.empty()) {
+        oss << "In this section: ";
+        std::string prevId = "";
+        for (const auto& item : items) {
+          if (item.id != prevId) {
+            if (!prevId.empty()) {
+              oss << ", ";
+            }
+            auto lastSpace = item.id.find_last_of(' ');
+            std::string ident;
+            if (lastSpace != std::string::npos) {
+              ident = item.id.substr(lastSpace + 1);
+            } else {
+              ident = item.id;
+            }
+            auto codeRef = "<" + groupId + "." + ident_to_label(ident) + ">";
+            oss << ":ref:`" << escape_bs(ident) << " " << codeRef << "`";
+            prevId = item.id;
+          }
+        }
+        oss << ".\n\n";
+      }
 
       int cur_t = -1;
       int nHeadings = 0;
@@ -1134,17 +1218,6 @@ unsigned int max_line_width(const std::string& s) {
   return mlw;
 }
 
-std::string escape_bs(const std::string& s) {
-  std::ostringstream oss;
-  for (auto c : s) {
-    oss << c;
-    if (c == '\\') {
-      oss << '\\';
-    }
-  }
-  return oss.str();
-}
-
 struct FunDoc {
   std::string ident;
   std::string sig;
@@ -1264,35 +1337,51 @@ public:
     if (allCommon) {
       os_doc << funDocs[0].doc;
     } else {
+      std::vector<FunDoc> funDocsPlusEmpty = funDocs;
+      funDocsPlusEmpty.emplace_back("", "", "", "");
       int funCount = 1;
-      for (const auto& fd : funDocs) {
-        std::ostringstream number;
-        number << funCount++ << ". .. ";
-        std::string number_s = number.str();
-        os_doc << number_s << "container:: mzncodedoc\n\n";
-        auto indent = number_s.size();
-        std::string docString = fd.doc;
-        os_doc << std::string(indent, ' ');
-        for (auto c : docString) {
-          os_doc << c;
-          if (c == '\n') {
-            os_doc << std::string(indent, ' ');
+      int startDoc = 1;
+      std::string curDoc = funDocs[0].doc;
+      for (const auto& fd : funDocsPlusEmpty) {
+        if (fd.doc != curDoc) {
+          // This is a new documentation, output previous
+          std::ostringstream number;
+          if (funCount - 1 == startDoc) {
+            number << (funCount - 1) << ".\n";
+          } else if (funCount - 2 == startDoc) {
+            number << (funCount - 2) << ", " << (funCount - 1) << ".\n";
+          } else {
+            number << startDoc << "-" << (funCount - 1) << ".\n";
           }
+          std::string number_s = number.str();
+          os_doc << number_s << "  .. container:: mzncodedoc\n\n";
+          auto indent = 4;  // number_s.size();
+          std::string docString = curDoc;
+          os_doc << std::string(indent, ' ');
+          for (auto c : docString) {
+            os_doc << c;
+            if (c == '\n') {
+              os_doc << std::string(indent, ' ');
+            }
+          }
+          os_doc << "\n\n";
+          startDoc = funCount;
+          curDoc = fd.doc;
         }
-        os_doc << "\n\n";
+        funCount++;
       }
     }
 
     auto code = os_code.str();
     auto doc = os_doc.str();
 
-    auto codeRef = ".. _mzn_ref_" + group + "_" + escape_bs(ident) + ":";
+    auto codeRef = ".. _mzn_ref_" + group + "." + HtmlDocOutput::ident_to_label(ident) + ":";
 
     auto maxLineWidth = max_line_width(code);
     maxLineWidth = std::max(maxLineWidth, static_cast<unsigned int>(codeRef.size()));
     maxLineWidth = std::max(maxLineWidth, max_line_width(doc));
 
-    os << ".. _mzn_" << group << "_" << escape_bs(ident) << ":\n\n";
+    os << ".. _mzn_" << group << "." << HtmlDocOutput::ident_to_label(ident) << ":\n\n";
 
     os << ".. only:: builder_html\n\n";
     {
