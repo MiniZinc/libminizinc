@@ -272,29 +272,64 @@ function     int:   product(array[$T] of     int: x);
 /** @group stdlib.arithmetic Return product of elements in array \a x */
 function var int:   product(array[$T] of var int: x) =
   product_rec(array1d(x));
-/** @group stdlib.arithmetic Return product of non-absent elements of \a x. */
-function var int: product(array[int] of var opt int: x) =
-  product (i in index_set(x)) (let { var int: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 1 endif);
-/** @group stdlib.arithmetic Return product of non-absent elements of \a x. */
-function int: product(array[int] of opt int: x) =
-  product (i in index_set(x)) (if occurs(x[i]) then deopt(x[i]) else 1 endif);
 /** @group stdlib.arithmetic Return product of elements in array \a x */
 function     float: product(array[$T] of     float: x);
 /** @group stdlib.arithmetic Return product of elements in array \a x */
 function var float: product(array[$T] of var float: x) =
   product_rec(array1d(x));
 /** @group stdlib.arithmetic Return product of non-absent elements of \a x. */
-function var float: product(array[int] of var opt float: x) =
-  product (i in index_set(x)) (let { var float: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 1 endif);
+function int: product(array[int] of opt int: x) =
+  product (i in index_set(x)) (if occurs(x[i]) then deopt(x[i]) else 1 endif);
+/** @group stdlib.arithmetic Return product of non-absent elements of \a x. */
+function var int: product(array[int] of var opt int: x) =
+  product (i in index_set(x)) (let { var int: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 1 endif);
 /** @group stdlib.arithmetic Return product of non-absent elements of \a x. */
 function float: product(array[int] of opt float: x) =
   product (i in index_set(x)) (if occurs(x[i]) then deopt(x[i]) else 1 endif);
+/** @group stdlib.arithmetic Return product of non-absent elements of \a x. */
+function var float: product(array[int] of var opt float: x) =
+  product (i in index_set(x)) (let { var float: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 1 endif);
 
 
 /** @group stdlib.arithmetic Return minimum of \a x and \a y */
 function     $T: min(    $T: x,     $T: y);
+
+/** @group stdlib.arithmetic Return minimum of \a x and \a y */
+function var int: min(var int: x, var int: y) :: promise_total =
+  let { var min(lb(x),lb(y))..min(ub(x),ub(y)): m ::is_defined_var;
+        constraint int_min(x,y,m) ::defines_var(m);
+  } in m;
+
+/** @group stdlib.arithmetic Return minimum of \a x and \a y */
+function var float: min(var float: x, var float: y) :: promise_total =
+  if has_bounds(x) /\ has_bounds(y) then
+  let { var min(lb(x),lb(y))..min(ub(x),ub(y)): m ::is_defined_var;
+        constraint float_min(x,y,m) ::defines_var(m);
+  } in m
+  else
+  let { var float: m ::is_defined_var;
+        constraint float_min(x,y,m) ::defines_var(m);
+  } in m
+  endif;
+
 /** @group stdlib.arithmetic Return minimum of elements in array \a x */
 function     $T: min(array[$U] of     par $T: x);
+
+/** @group stdlib.arithmetic Return minimum of elements in array \a x */
+function var int: min(array[$U] of var int: x) =
+  let {
+    array[int] of var int: xx = array1d(x);
+    constraint length(x) >= 1;
+  } in min_t(xx);
+
+/** @group stdlib.arithmetic Return minimum of elements in array \a x */
+function var float: min(array[$U] of var float: x) =
+  let {
+    array[int] of var float: xx = array1d(x);
+    constraint length(x) >= 1;
+  } in min_t(xx);
+
+
 /** @group stdlib.arithmetic Return minimum of elements in \a x that are not absent. */
 function var int: min(array[int] of var opt int: x) =
     let {
@@ -310,56 +345,17 @@ function var float: min(array[int] of var opt float: x) =
         constraint exists(xi in x)(occurs(xi));
     } in min([if occurs(xi) then deopt(xi) else xmax endif | xi in x]);
 
-/** @group stdlib.arithmetic Return maximum of \a x and \a y */
-function     $T: max(    $T: x,     $T: y);
-/** @group stdlib.arithmetic Return maximum of elements in array \a x */
-function     $T: max(array[$U] of     $T: x);
-/** @group stdlib.arithmetic Return maximum of elements in \a x that are not absent, or
-absent if all elements in \a x are absent. */
-function var int: max(array[int] of var opt int: x) =
-    let {
-        var lb_array(x)..ub_array(x): xmin = min(xi in x)(deopt(xi));
-        constraint exists (xi in x) (occurs(xi));
-    } in max([if occurs(xi) then deopt(xi) else xmin endif | xi in x]);
 /** @group stdlib.arithmetic Return minimum of elements in set \a x */
 function $$E: min(set of $$E: x);
-/** @group stdlib.arithmetic Return maximum of elements in set \a x */
-function $$E: max(set of $$E: x);
+
+/** @group stdlib.arithmetic Return maximum of \a x and \a y */
+function     $T: max(    $T: x,     $T: y);
 
 /** @group stdlib.arithmetic Return maximum of \a x and \a y */
 function var int: max(var int: x, var int: y) :: promise_total =
   let { var max(lb(x),lb(y))..max(ub(x),ub(y)): m ::is_defined_var;
         constraint int_max(x,y,m) ::defines_var(m);
   } in m;
-
-/** @group stdlib.arithmetic Return maximum of elements in array \a x */
-function var int: max(array[$U] of var int: x) =
-  let {
-    array[int] of var int: xx = array1d(x);
-    constraint length(x) >= 1;
-  } in max_t(xx);
-/** @group stdlib.arithmetic Return maximum of elements in \a x that are not absent. */
-function var float: max(array[int] of var opt float: x) =
-    let {
-        var lb_array(x)..ub_array(x): xmin = min(xi in x)(deopt(xi));
-        constraint exists (xi in x) (occurs(xi));
-    } in max([if occurs(xi) then deopt(xi) else xmin endif | xi in x]);
-
-/** @group stdlib.arithmetic Return minimum of \a x and \a y */
-function var int: min(var int: x, var int: y) :: promise_total =
-  let { var min(lb(x),lb(y))..min(ub(x),ub(y)): m ::is_defined_var;
-        constraint int_min(x,y,m) ::defines_var(m);
-  } in m;
-
-/** @group stdlib.arithmetic Return minimum of elements in array \a x */
-function var int: min(array[$U] of var int: x) =
-  let {
-    array[int] of var int: xx = array1d(x);
-    constraint length(x) >= 1;
-  } in min_t(xx);
-
-% Floating point min and max
-% TODO: add bounds reasoning
 
 /** @group stdlib.arithmetic Return maximum of \a x and \a y */
 function var float: max(var float: x, var float: y) :: promise_total =
@@ -374,31 +370,41 @@ function var float: max(var float: x, var float: y) :: promise_total =
   endif;
 
 /** @group stdlib.arithmetic Return maximum of elements in array \a x */
+function     $T: max(array[$U] of     $T: x);
+
+/** @group stdlib.arithmetic Return maximum of elements in array \a x */
+function var int: max(array[$U] of var int: x) =
+  let {
+    array[int] of var int: xx = array1d(x);
+    constraint length(x) >= 1;
+  } in max_t(xx);
+
+/** @group stdlib.arithmetic Return maximum of elements in array \a x */
 function var float: max(array[$U] of var float: x) =
   let {
     array[int] of var float: xx = array1d(x);
     constraint length(x) >= 1;
   } in max_t(xx);
 
-/** @group stdlib.arithmetic Return minimum of \a x and \a y */
-function var float: min(var float: x, var float: y) :: promise_total =
-  if has_bounds(x) /\ has_bounds(y) then
-  let { var min(lb(x),lb(y))..min(ub(x),ub(y)): m ::is_defined_var;
-        constraint float_min(x,y,m) ::defines_var(m);
-  } in m
-  else
-  let { var float: m ::is_defined_var;
-        constraint float_min(x,y,m) ::defines_var(m);
-  } in m
-  endif;
+/** @group stdlib.arithmetic Return maximum of elements in \a x that are not absent. */
+function var int: max(array[int] of var opt int: x) =
+    let {
+        var lb_array(x)..ub_array(x): xmin = min(xi in x)(deopt(xi));
+        constraint exists (xi in x) (occurs(xi));
+    } in max([if occurs(xi) then deopt(xi) else xmin endif | xi in x]);
 
-/** @group stdlib.arithmetic Return minimum of elements in array \a x */
-function var float: min(array[$U] of var float: x) =
-  let {
-    array[int] of var float: xx = array1d(x);
-    constraint length(x) >= 1;
-  } in min_t(xx);
+/** @group stdlib.arithmetic Return maximum of elements in \a x that are not absent. */
+function var float: max(array[int] of var opt float: x) =
+    let {
+        var lb_array(x)..ub_array(x): xmin = min(xi in x)(deopt(xi));
+        constraint exists (xi in x) (occurs(xi));
+    } in max([if occurs(xi) then deopt(xi) else xmin endif | xi in x]);
 
+/** @group stdlib.arithmetic Return maximum of elements in set \a x */
+function $$E: max(set of $$E: x);
+
+% Floating point min and max
+% TODO: add bounds reasoning
 
 /** @group stdlib.arithmetic
     Returns the index of the minimum value in the array \a x.
