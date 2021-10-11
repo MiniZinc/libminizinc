@@ -28,7 +28,7 @@ p.doc-link-caption {
 .doc-link-caption .headerlink {
   float: right;
 }
-.mzndoctable table.docutils.align-default {
+.mzndoctable table.docutils.align-default, .mzndoctable table.docutils {
   width: 100%;
   table-layout: fixed;
 }
@@ -41,13 +41,17 @@ p.doc-link-caption {
   border: none;
 }
 .rst-content .mzndoctable div[class^=highlight] {
+  border: none;
   margin: 0;
 }
 .rst-content .mzndoctable div[class^=highlight] pre {
   padding: 0;
 }
 
-html.writer-html5 .rst-content table.docutils td p, html.writer-html5 .rst-content table.docutils th p {
+html.writer-html5 .rst-content table.docutils td p,
+.rst-content table.docutils td p,
+html.writer-html5 .rst-content table.docutils th p,
+.rst-content table.docutils th p {
   font-size: .9rem;
 }
 
