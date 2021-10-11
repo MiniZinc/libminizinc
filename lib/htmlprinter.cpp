@@ -311,7 +311,7 @@ public:
 
       if (!groupId.empty()) {
         oss << "In this section: ";
-        std::string prevId = "";
+        std::string prevId;
         for (const auto& item : items) {
           if (item.id != prevId) {
             if (!prevId.empty()) {
