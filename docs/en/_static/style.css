@@ -59,3 +59,6 @@ html.writer-html5 .rst-content table.docutils th p,
   margin: 0;
 }
 
+table.indextable ul ul {
+  padding-left: 15px;
+}
