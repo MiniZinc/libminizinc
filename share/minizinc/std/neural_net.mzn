@@ -5,17 +5,17 @@ include "fzn_neural_net_reif.mzn";
 enum NEURON_TYPE = { NT_RELU, NT_STEP, NT_LINEAR, NT_SOFTPLUS };
 
 /** @group globals.learning
-  constrain the output layer of a neural net to take the value defined by the input layer.
-  the arguments are
-  \a inputs: an array of float variables
-  \a input_ids: array[int] of node
-  \a outputs: an array of float variables
-  \a output_ids: array[int] of node
-  \a bias: array[node] of float
-  \a edge_weight: array[edge] of float (dummy one at end!)
-  \a edge_parent: array[edge] of neuron (start neuron for edge)
-  \a first_edge: array[node] of 1..m+1
-  \a neuron_type: { NT_RELU, NT_STEP, NT_LINEAR, NT_SOFTPLUS }
+  Constrain the output layer of a neural net to take the value defined by the input layer.
+
+  @param inputs: an array of float variables
+  @param input_ids: array[int] of node
+  @param outputs: an array of float variables
+  @param output_ids: array[int] of node
+  @param bias: array[node] of float
+  @param edge_weight: array[edge] of float (dummy one at end!)
+  @param edge_parent: array[edge] of neuron (start neuron for edge)
+  @param first_edge: array[node] of 1..m+1
+  @param neuron_type: { NT_RELU, NT_STEP, NT_LINEAR, NT_SOFTPLUS }
 */
 predicate neural_net(array[int] of var float: inputs,
                      array[int] of int: input_ids,

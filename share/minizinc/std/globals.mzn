@@ -23,6 +23,11 @@
   
   @groupdef globals.graph Graph constraints
   
+  These constraints operate on graphs that are represented as lists of edges.
+  The constraints take a given (fixed) graph as arguments, which is represented
+  using two arrays, \[from\] and \[to\], representing the graph with edges
+  \[(from[i],to[i])\], where \[from[i]\] and \[to[i]\] are nodes of the graph.
+
   @groupdef globals.extensional Extensional constraints (table, regular etc.)
 
   @groupdef globals.learning Machine learning constraints

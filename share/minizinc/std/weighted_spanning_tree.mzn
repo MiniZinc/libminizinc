@@ -33,7 +33,7 @@ predicate d_weighted_spanning_tree(int: N, int: E, array[int] of int: from, arra
     @param w: the weight of each edge
     @param es: a Boolean for each edge whether it is in the subgraph
     @param K: the weight of the tree
-**/   
+*/
 predicate weighted_spanning_tree(int: N, int: E, array[int] of int: from, array[int] of int: to, array[int] of int: w,
               array[int] of var bool: es, var int: K) =
     assert(index_set(from) = 1..E,"wst: index set of from must be 1..\(E)") /\

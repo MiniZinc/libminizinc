@@ -3,7 +3,7 @@ include "regular.mzn";
 
 /** @group globals.extensional
   The sequence of values in array \a x  is accepted by the regular
-  expression \a r. This constraint generates it's DFA equivalent.
+  expression \a r. This constraint generates its DFA equivalent.
 
   Regular expressions can use the following syntax:
 

@@ -2,7 +2,8 @@ include "fzn_mdd.mzn";
 include "fzn_mdd_reif.mzn";
 
 /** @group globals.extensional
-  Requires that \a x defines a path from root to true node T through the (deterministic) MDD defined by
+  Requires that \a x defines a path from root to true node T through the (deterministic)
+  Multivalued Decision Diagram (MDD) defined by the parameters.
 
    @param N: the number of nodes, the root node is node 1
    @param level: the level of each node, the root is level 1, T is level \a length(x)+1

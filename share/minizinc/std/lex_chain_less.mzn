@@ -14,7 +14,7 @@ predicate lex_chain_less(array[int, int] of var bool: a) =
 
 /** @group globals.lexicographic
   Requires that the columns of matrix \a a are lexicographically sorted,
-  non-decreasing.
+  strictly increasing.
 */
 predicate lex_chain_less(array[int, int] of var int: a) = 
 	if card(index_set_2of2(a)) > 1 then
