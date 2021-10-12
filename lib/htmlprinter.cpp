@@ -232,7 +232,7 @@ public:
 
     int cur_t = -1;
     const char* dt[] = {"par", "var", "fun"};
-    const char* dt_desc[] = {"Parameters", "Variables", "Functions and Predicates"};
+    const char* dt_desc[] = {"Constants", "Variables", "Functions and Predicates"};
     for (const auto& item : items) {
       if (item.t != cur_t) {
         if (cur_t != -1) {
@@ -258,10 +258,12 @@ public:
     return oss.str();
   }
 
-  static std::string rstHeading(const std::string& s, int level) {
-    std::vector<char> levelChar({'#', '=', '-', '^', '+', '"'});
+  static std::string rstHeading(const std::string& s, int level, bool printHeading = true) {
+    std::vector<char> levelChar({'#', '=', '-', '^', '+', '"', '~'});
     std::ostringstream oss;
-    oss << s << "\n";
+    if (printHeading) {
+      oss << s << "\n";
+    }
     for (int i = 0; i < s.size(); i++) {
       oss << levelChar[level];
     }
@@ -310,7 +312,8 @@ public:
       }
 
       if (!groupId.empty()) {
-        oss << "In this section: ";
+        oss << ".. only:: builder_html\n\n";
+        oss << "  In this section: ";
         std::string prevId;
         for (const auto& item : items) {
           if (item.id != prevId) {
@@ -341,7 +344,7 @@ public:
         }
       }
       cur_t = -1;
-      const char* dt_desc[] = {"Parameters", "Variables", "Functions and Predicates"};
+      const char* dt_desc[] = {"Constants", "Variables", "Functions and Predicates"};
       for (const auto& item : items) {
         if (item.t != cur_t) {
           cur_t = item.t;
@@ -349,7 +352,27 @@ public:
             oss << rstHeading(dt_desc[cur_t], subgroups.m.empty() ? level + 1 : level + 2);
           }
         }
-        oss << item.doc;
+        // replace headings marked by !!!!! with appropriate heading level
+        std::istringstream doc(item.doc);
+        std::string prevLine;
+        for (std::string line; std::getline(doc, line);) {
+          bool isHeading = !line.empty();
+          for (auto c : line) {
+            if (c != '!') {
+              isHeading = false;
+              break;
+            }
+          }
+          if (isHeading) {
+            oss << rstHeading(
+                prevLine,
+                level + 1 + static_cast<int>(nHeadings > 1) + static_cast<int>(subgroups.m.empty()),
+                false);
+          } else {
+            oss << line << "\n";
+          }
+          prevLine = line;
+        }
       }
     }
     return oss.str();
@@ -898,7 +921,7 @@ public:
 
       os << dshtml;
       if (!params.empty()) {
-        os << "<div class='mzn-fundecl-params-heading'>Parameters</div>\n";
+        os << "<div class='mzn-fundecl-params-heading'>Constants</div>\n";
         os << "<ul class='mzn-fundecl-params'>\n";
         for (auto& param : params) {
           os << "<li><span class='mzn-arg'>" << param.first << "</span>: " << param.second
@@ -1087,18 +1110,25 @@ std::vector<std::string> replace_args_rst(std::string& s) {
       end++;
     }
     bool needSpace = pos != 0 && s[pos - 1] != ' ' && s[pos - 1] != '\n';
+    bool needEndSpace = end != s.size() && s[end] != '\n' && s[end] != ',' && s[end] != '.';
     if (s[pos + 1] == 'a') {
       replacements.push_back(s.substr(start, end - start));
       if (pos >= mathjax_open && pos <= mathjax_close) {
         oss << "{\\bf " << replacements.back() << "}";
       } else {
-        oss << (needSpace ? " " : "") << "``" << replacements.back() << "`` ";
+        oss << (needSpace ? "\\ " : "") << "``" << replacements.back() << "``";
+        if (needEndSpace) {
+          oss << "\\ ";
+        }
       }
     } else {
       if (pos >= mathjax_open && pos <= mathjax_close) {
         oss << "{\\bf " << s.substr(start, end - start) << "}";
       } else {
-        oss << (needSpace ? " " : "") << "``" << s.substr(start, end - start) << "`` ";
+        oss << (needSpace ? "\\ " : "") << "``" << s.substr(start, end - start) << "``";
+        if (needEndSpace) {
+          oss << "\\ ";
+        }
       }
     }
     lastpos = end;
@@ -1160,6 +1190,18 @@ std::vector<std::string> replace_args_rst(std::string& s) {
   }
   oss3 << s.substr(lastpos, std::string::npos);
   s = oss3.str();
+
+  std::ostringstream oss4;
+  pos = s.find('|');
+  lastpos = 0;
+  while (pos != std::string::npos) {
+    oss4 << s.substr(lastpos, pos - lastpos) << "\\|";
+    lastpos = pos + 1;
+    pos = s.find('|', lastpos);
+  }
+  oss4 << s.substr(lastpos, std::string::npos);
+  s = oss4.str();
+
   return replacements;
 }
 
@@ -1382,6 +1424,9 @@ public:
     maxLineWidth = std::max(maxLineWidth, max_line_width(doc));
 
     os << ".. _mzn_" << group << "." << HtmlDocOutput::ident_to_label(ident) << ":\n\n";
+
+    //    os << ident << "\n";
+    //    os << std::string(ident.size(), '!') << "\n\n";
 
     os << ".. only:: builder_html\n\n";
     {
