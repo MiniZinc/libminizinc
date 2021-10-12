@@ -1181,10 +1181,10 @@ std::vector<std::string> replace_args_rst(std::string& s) {
     }
     lastpos = pos + 2;
     if (s[pos + 1] == '[') {
-      oss3 << "``";
+      oss3 << ":mzn:`";
       lastpos = s.find_first_not_of(' ', lastpos);
     } else {
-      oss3 << "``";
+      oss3 << "`";
     }
     pos = std::min(s.find("\\[", lastpos), s.find("\\]", lastpos));
   }
@@ -1755,18 +1755,35 @@ std::vector<HtmlDocument> RSTPrinter::printRST(EnvI& env, MiniZinc::Model* m,
 
   std::vector<HtmlDocument> ret;
 
-  std::ostringstream oss;
-  oss << Group::rstHeading(g.htmlName, 0);
-  oss << trim(g.desc) << "\n";
-  oss << ".. toctree::\n\n";
-  for (auto* sg : g.subgroups.m) {
-    oss << "  " << sg->fullPath << "\n";
+  {
+    std::ostringstream oss;
+    oss << Group::rstHeading(g.htmlName, 0);
+    oss << trim(g.desc) << "\n";
+    oss << ".. toctree::\n\n";
+    for (auto* sg : g.subgroups.m) {
+      oss << "  " << sg->fullPath << "\n";
+    }
+    ret.emplace_back(g.fullPath, g.htmlName, oss.str());
   }
 
-  ret.emplace_back(g.fullPath, g.htmlName, oss.str());
+  for (auto* sg : g.subgroups.m) {
+    if (sg->name == "globals") {
+      // Split globals group into sub-pages
+      std::ostringstream oss;
+      oss << Group::rstHeading(sg->htmlName, 0);
+      oss << trim(sg->desc) << "\n";
+      oss << ".. toctree::\n\n";
+      for (const auto* ssg : sg->subgroups.m) {
+        oss << "  " << ssg->fullPath << "\n";
+      }
+      ret.emplace_back(sg->fullPath, sg->htmlName, oss.str());
 
-  for (auto& sg : g.subgroups.m) {
-    ret.emplace_back(sg->fullPath, sg->htmlName, sg->toRST(0));
+      for (auto* ssg : sg->subgroups.m) {
+        ret.emplace_back(ssg->fullPath, ssg->htmlName, ssg->toRST(0));
+      }
+    } else {
+      ret.emplace_back(sg->fullPath, sg->htmlName, sg->toRST(0));
+    }
   }
   return ret;
 }
