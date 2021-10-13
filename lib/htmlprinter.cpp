@@ -1772,9 +1772,20 @@ std::vector<HtmlDocument> RSTPrinter::printRST(EnvI& env, MiniZinc::Model* m,
       std::ostringstream oss;
       oss << Group::rstHeading(sg->htmlName, 0);
       oss << trim(sg->desc) << "\n";
-      oss << ".. toctree::\n\n";
-      for (const auto* ssg : sg->subgroups.m) {
+      oss << ".. toctree::\n";
+      oss << "  :hidden:\n\n";
+      for (auto* ssg : sg->subgroups.m) {
         oss << "  " << ssg->fullPath << "\n";
+      }
+      oss << "\n";
+      for (const auto* ssg : sg->subgroups.m) {
+        oss << ":ref:`ch-lib-" << ssg->name << "`\n";
+        for (const auto& item : ssg->items) {
+          oss << "  - :ref:`" << escape_bs(item.id) << " ";
+          oss << "<mzn_globals." << ssg->name << "." << HtmlDocOutput::ident_to_label(item.id)
+              << ">`\n";
+        }
+        oss << "\n";
       }
       ret.emplace_back(sg->fullPath, sg->htmlName, oss.str());
 

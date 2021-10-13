@@ -49,8 +49,11 @@ include "output.mzn";
 /***
   @groupdef globals Global constraints
   
-  These constraints represent high-level modelling abstractions, for which
-  many solvers implement special, efficient inference algorithms.
+  These constraints represent high-level modelling abstractions.
+  Many solvers implement dedicated, efficient inference algorithms for
+  these constraints, or provide a MiniZinc library decomposition
+  that is better suited to the particular solving technology than
+  the standard library decomposition.
 */
 
 % Undocumented internal implementation used during compilation
