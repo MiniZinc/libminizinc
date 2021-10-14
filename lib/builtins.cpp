@@ -1175,7 +1175,11 @@ ArrayLit* b_arrayXd(EnvI& env, Call* call, int d) {
     }
   }
   if (dim1d != al->size()) {
-    throw EvalError(env, al->loc(), "mismatch in array dimensions");
+    std::stringstream ss;
+    ss << "mismatch in array dimensions: the array contains " << al->size() << " elements, but "
+       << dim1d << " elements were expected according to the given index set"
+       << (d > 1 ? "s." : ".");
+    throw EvalError(env, al->loc(), ss.str());
   }
   auto* ret = new ArrayLit(al->loc(), al, dims);
   Type t = al->type();

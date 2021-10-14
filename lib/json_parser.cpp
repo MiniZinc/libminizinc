@@ -545,7 +545,10 @@ list_done:
     expectedSize *= d.second;
   }
   if (exps.size() != expectedSize) {
-    throw JSONError(_env, errLocation(), "mismatch in array dimensions");
+    std::stringstream ss;
+    ss << "mismatch in array dimensions: the array contains " << exps.size() << " elements, but "
+       << expectedSize << " elements were expected according to the declared index set(s).";
+    throw JSONError(_env, errLocation(), ss.str());
     /// TODO: check each individual sub-array
   }
   return new ArrayLit(Location().introduce(), exps, dims);
