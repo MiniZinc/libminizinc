@@ -85,7 +85,7 @@ std::string trim(const std::string& s0) {
 
 class DocItem {
 public:
-  enum DocType { T_PAR = 0, T_VAR = 1, T_FUN = 2 };
+  enum DocType { T_PAR = 0, T_VAR = 1, T_FUN = 2, T_ANN = 3 };
   DocItem(const DocType& t0, std::string id0, std::string sig0, std::string doc0)
       : t(t0), id(std::move(id0)), sig(std::move(sig0)), doc(std::move(doc0)) {}
   DocType t;
@@ -232,7 +232,7 @@ public:
 
     int cur_t = -1;
     const char* dt[] = {"par", "var", "fun"};
-    const char* dt_desc[] = {"Constants", "Variables", "Functions and Predicates"};
+    const char* dt_desc[] = {"Constants", "Variables", "Functions and Predicates", "Annotations"};
     for (const auto& item : items) {
       if (item.t != cur_t) {
         if (cur_t != -1) {
@@ -275,7 +275,7 @@ public:
     std::ostringstream oss;
     if (!htmlName.empty()) {
       if (level == 0) {
-        oss << ".. _ch-lib-" << name << ":\n\n";
+        oss << ".. _ch-" << fullPath << ":\n\n";
       }
       oss << rstHeading(htmlName, level);
       oss << HtmlDocOutput::trim(desc) << "\n\n";
@@ -344,7 +344,7 @@ public:
         }
       }
       cur_t = -1;
-      const char* dt_desc[] = {"Constants", "Variables", "Functions and Predicates"};
+      const char* dt_desc[] = {"Constants", "Variables", "Functions and Predicates", "Annotations"};
       for (const auto& item : items) {
         if (item.t != cur_t) {
           cur_t = item.t;
@@ -364,10 +364,10 @@ public:
             }
           }
           if (isHeading) {
-            oss << rstHeading(
-                prevLine,
-                level + 1 + static_cast<int>(nHeadings > 1) + static_cast<int>(subgroups.m.empty()),
-                false);
+            oss << rstHeading(prevLine,
+                              level + 1 + static_cast<int>(nHeadings > 1) +
+                                  static_cast<int>(!subgroups.m.empty()),
+                              false);
           } else {
             oss << line << "\n";
           }
@@ -752,9 +752,11 @@ public:
       os << addHTML(ds);
       os << "</div></div>";
       GCLock lock;
-      HtmlDocOutput::DocItem di(
-          vdi->e()->type().isPar() ? HtmlDocOutput::DocItem::T_PAR : HtmlDocOutput::DocItem::T_VAR,
-          sig, sig, os.str());
+      HtmlDocOutput::DocItem::DocType dt =
+          vdi->e()->type().isPar() ? (vdi->e()->type().isAnn() ? HtmlDocOutput::DocItem::T_ANN
+                                                               : HtmlDocOutput::DocItem::T_PAR)
+                                   : HtmlDocOutput::DocItem::T_VAR;
+      HtmlDocOutput::DocItem di(dt, sig, sig, os.str());
       HtmlDocOutput::add_to_group(_maingroup, group, di);
     }
   }
@@ -931,9 +933,10 @@ public:
       }
       os << "</div>";
       os << "</div>";
-
-      HtmlDocOutput::DocItem di(HtmlDocOutput::DocItem::T_FUN, Printer::quoteId(fi->id()), sig,
-                                os.str());
+      HtmlDocOutput::DocItem::DocType dt = (fi->ti()->type() == Type::ann() && fi->e() == nullptr)
+                                               ? HtmlDocOutput::DocItem::T_ANN
+                                               : HtmlDocOutput::DocItem::T_FUN;
+      HtmlDocOutput::DocItem di(dt, Printer::quoteId(fi->id()), sig, os.str());
       HtmlDocOutput::add_to_group(_maingroup, group, di);
     }
   }
@@ -1313,6 +1316,7 @@ public:
           end++;
         }
         std::string groupHTMLName = dc.substr(doc_start, end - doc_start);
+        end++;
 
         size_t next = dc.find("@groupdef", gpos + 1);
         std::string groupDesc = dc.substr(end, next == std::string::npos ? next : next - end);
@@ -1424,12 +1428,13 @@ public:
     maxLineWidth = std::max(maxLineWidth, max_line_width(doc));
 
     os << ".. _mzn_" << group << "." << HtmlDocOutput::ident_to_label(ident) << ":\n\n";
-
-    //    os << ident << "\n";
-    //    os << std::string(ident.size(), '!') << "\n\n";
+    os << ".. rst-class:: mzn-docitem\n\n";
 
     os << ".. only:: builder_html\n\n";
     {
+      os << "  " << ident << "\n";
+      os << "  " << std::string(ident.size(), '!') << "\n\n";
+
       // Output as table
       os << "  .. container:: mznDocTable\n\n";
 
@@ -1552,9 +1557,13 @@ public:
                              HtmlDocOutput::trim(ds));
 
       GCLock lock;
+      HtmlDocOutput::DocItem::DocType dt =
+          vdi->e()->type().isPar() ? (vdi->e()->type().isAnn() ? HtmlDocOutput::DocItem::T_ANN
+                                                               : HtmlDocOutput::DocItem::T_PAR)
+                                   : HtmlDocOutput::DocItem::T_VAR;
       HtmlDocOutput::DocItem di(
-          vdi->e()->type().isPar() ? HtmlDocOutput::DocItem::T_PAR : HtmlDocOutput::DocItem::T_VAR,
-          sig, sig, outputFuncDocs({funDoc}, group, Printer::quoteId(vdi->e()->id()->str())));
+          dt, Printer::quoteId(vdi->e()->id()->str()), sig,
+          outputFuncDocs({funDoc}, group, Printer::quoteId(vdi->e()->id()->str())));
       HtmlDocOutput::add_to_group(_maingroup, group, di);
     }
   }
@@ -1578,7 +1587,9 @@ public:
     for (const auto& g : _groupFunMap) {
       for (const auto& f : g.second) {
         std::vector<FunDoc> funDocs;
+        bool isAnn = true;
         for (auto* fi : f.second) {
+          isAnn = isAnn && fi->ti()->type() == Type::ann() && fi->e() == nullptr;
           Expression* ann = get_annotation(fi->ann(), _env.constants.ann.doc_comment);
           if (Call* docstring = Expression::dynamicCast<Call>(ann)) {
             std::string ds = eval_string(_env, docstring->arg(0));
@@ -1734,9 +1745,10 @@ public:
         }
 
         std::string codeblock = outputFuncDocs(funDocs, g.first, f.first);
+        HtmlDocOutput::DocItem::DocType dt =
+            isAnn ? HtmlDocOutput::DocItem::T_ANN : HtmlDocOutput::DocItem::T_FUN;
 
-        HtmlDocOutput::DocItem di(HtmlDocOutput::DocItem::T_FUN, f.first, funDocs.front().sig,
-                                  codeblock);
+        HtmlDocOutput::DocItem di(dt, f.first, funDocs.front().sig, codeblock);
         HtmlDocOutput::add_to_group(_maingroup, g.first, di);
       }
     }
@@ -1759,7 +1771,8 @@ std::vector<HtmlDocument> RSTPrinter::printRST(EnvI& env, MiniZinc::Model* m,
     std::ostringstream oss;
     oss << Group::rstHeading(g.htmlName, 0);
     oss << trim(g.desc) << "\n";
-    oss << ".. toctree::\n\n";
+    oss << ".. toctree::\n";
+    oss << "  :maxdepth: 2\n\n";
     for (auto* sg : g.subgroups.m) {
       oss << "  " << sg->fullPath << "\n";
     }
@@ -1767,33 +1780,20 @@ std::vector<HtmlDocument> RSTPrinter::printRST(EnvI& env, MiniZinc::Model* m,
   }
 
   for (auto* sg : g.subgroups.m) {
-    if (sg->name == "globals") {
-      // Split globals group into sub-pages
-      std::ostringstream oss;
-      oss << Group::rstHeading(sg->htmlName, 0);
-      oss << trim(sg->desc) << "\n";
-      oss << ".. toctree::\n";
-      oss << "  :hidden:\n\n";
-      for (auto* ssg : sg->subgroups.m) {
-        oss << "  " << ssg->fullPath << "\n";
-      }
-      oss << "\n";
-      for (const auto* ssg : sg->subgroups.m) {
-        oss << ":ref:`ch-lib-" << ssg->name << "`\n";
-        for (const auto& item : ssg->items) {
-          oss << "  - :ref:`" << escape_bs(item.id) << " ";
-          oss << "<mzn_globals." << ssg->name << "." << HtmlDocOutput::ident_to_label(item.id)
-              << ">`\n";
-        }
-        oss << "\n";
-      }
-      ret.emplace_back(sg->fullPath, sg->htmlName, oss.str());
+    // Split sub-group into sub-pages
+    std::ostringstream oss;
+    oss << Group::rstHeading(sg->htmlName, 0);
+    oss << trim(sg->desc) << "\n";
+    oss << ".. toctree::\n";
+    //    oss << "  :hidden:\n\n";
+    for (auto* ssg : sg->subgroups.m) {
+      oss << "  " << ssg->fullPath << "\n";
+    }
+    oss << "\n";
+    ret.emplace_back(sg->fullPath, sg->htmlName, oss.str());
 
-      for (auto* ssg : sg->subgroups.m) {
-        ret.emplace_back(ssg->fullPath, ssg->htmlName, ssg->toRST(0));
-      }
-    } else {
-      ret.emplace_back(sg->fullPath, sg->htmlName, sg->toRST(0));
+    for (auto* ssg : sg->subgroups.m) {
+      ret.emplace_back(ssg->fullPath, ssg->htmlName, ssg->toRST(0));
     }
   }
   return ret;

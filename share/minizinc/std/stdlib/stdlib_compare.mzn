@@ -90,7 +90,7 @@ present and not equal.*/
 function var bool: '~!='(var opt bool: x, var opt bool: y) ::promise_total =
     absent(x) \/ absent(y) \/ deopt(x)!=deopt(y);
 
-/** @group stdlib.comapre Weak equality. True if either \a x or \a y are absent, or
+/** @group stdlib.compare Weak equality. True if either \a x or \a y are absent, or
 present and equal.*/
 function var bool: '~='(var opt int: x, var opt int: y) ::promise_total =
     absent(x) \/ absent(y) \/ deopt(x)=deopt(y);

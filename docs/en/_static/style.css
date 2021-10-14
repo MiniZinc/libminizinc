@@ -62,3 +62,7 @@ html.writer-html5 .rst-content table.docutils th p,
 table.indextable ul ul {
   padding-left: 15px;
 }
+
+.mzn-docitem h1, .mzn-docitem h2, .mzn-docitem h3, .mzn-docitem h4, .mzn-docitem h5 {
+  display: none;
+}

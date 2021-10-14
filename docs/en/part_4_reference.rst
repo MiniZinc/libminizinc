@@ -4,6 +4,7 @@ Reference Manual
 ++++++++++++++++
 
 .. toctree::
+   :maxdepth: 2
 
    spec
    lib
