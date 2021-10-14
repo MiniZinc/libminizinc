@@ -345,6 +345,7 @@ EvaluatedComp<typename Eval::ArrayVal> eval_comp(EnvI& env, Eval& eval, Comprehe
   if (isIndexed) {
     IntVal size = 1;
     std::vector<int> dimSize(a_tmp.idxMin.size());
+    a.dims.resize(a_tmp.idxMin.size());
     for (unsigned int i = a_tmp.idxMin.size(); (i--) != 0U;) {
       if (!a_tmp.idxMin[i].isFinite() || !a_tmp.idxMax[i].isFinite()) {
         throw EvalError(env, e->loc(), "indexes don't match size of generated array");
@@ -356,7 +357,7 @@ EvaluatedComp<typename Eval::ArrayVal> eval_comp(EnvI& env, Eval& eval, Comprehe
       IntVal s = (a_tmp.idxMax[i] - a_tmp.idxMin[i] + 1);
       dimSize[i] = size.toInt();  // before multiplication!
       size *= s;
-      a.dims.emplace_back(a_tmp.idxMin[i].toInt(), a_tmp.idxMax[i].toInt());
+      a.dims[i] = std::make_pair(a_tmp.idxMin[i].toInt(), a_tmp.idxMax[i].toInt());
     }
     if (size != a_tmp.a.size()) {
       throw EvalError(env, e->loc(), "indexes don't match size of generated array");
