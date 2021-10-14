@@ -27,21 +27,29 @@ include "flatzinc_builtins.mzn";
 
 */
 
-include "stdlib/stdlib_language.mzn";
-include "stdlib/stdlib_ann.mzn";
-include "stdlib/stdlib_opt.mzn";
+/***
+  @groupdef stdlib.builtins Built-in functions and operators
+
+  These functions and operators provide the core of the MiniZinc expression language.
+*/
+
 include "stdlib/stdlib_compare.mzn";
 include "stdlib/stdlib_math.mzn";
+include "stdlib/stdlib_coercion.mzn";
+include "stdlib/stdlib_array.mzn";
 include "stdlib/stdlib_logic.mzn";
 include "stdlib/stdlib_set.mzn";
-include "stdlib/stdlib_ite.mzn";
-include "stdlib/stdlib_array.mzn";
-include "stdlib/stdlib_sort.mzn";
-include "stdlib/stdlib_coercion.mzn";
 include "stdlib/stdlib_string.mzn";
+include "stdlib/stdlib_enum.mzn";
+
+include "stdlib/stdlib_ann.mzn";
+include "stdlib/stdlib_opt.mzn";
+include "stdlib/stdlib_sort.mzn";
+
+include "stdlib/stdlib_language.mzn";
+include "stdlib/stdlib_ite.mzn";
 include "stdlib/stdlib_reflect.mzn";
 include "stdlib/stdlib_debug.mzn";
-include "stdlib/stdlib_enum.mzn";
 include "stdlib/stdlib_random.mzn";
 
 include "output.mzn";

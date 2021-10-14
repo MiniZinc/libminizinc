@@ -422,7 +422,7 @@ annotation ctx_mix;
 
 
 /***
-  @groupdef stdlib.special Special constraints
+  @groupdef stdlib.annotations.symm_red Redundant and symmetry breaking constraints
 
   These predicates allow users to mark constraints as e.g. symmetry breaking
   or redundant, so that solvers can choose to implement them differently.
@@ -433,15 +433,15 @@ annotation ctx_mix;
   common subexpression elimination (CSE).
 */
 
-/** @group stdlib.special Mark \a b as a symmetry breaking constraint */
+/** @group stdlib.annotations.symm_red Mark \a b as a symmetry breaking constraint */
 predicate symmetry_breaking_constraint(var bool: b);
 % Rewritten to mzn_symmetry_breaking_constraint by typechecker
 
-/** @group stdlib.special Mark \a b as a redundant constraint */
+/** @group stdlib.annotations.symm_red Mark \a b as a redundant constraint */
 predicate redundant_constraint(var bool: b);
 % Rewritten to mzn_redundant_constraint by typechecker
 
-/** @group stdlib.special Mark \a b as an implied constraint (synonym for redundant_constraint) */
+/** @group stdlib.annotations.symm_red Mark \a b as an implied constraint (synonym for redundant_constraint) */
 predicate implied_constraint(var bool: b);
 % Rewritten to mzn_redundant_constraint by typechecker
 

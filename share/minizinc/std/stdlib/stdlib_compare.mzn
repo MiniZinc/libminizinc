@@ -1,121 +1,121 @@
 /***
-  @groupdef stdlib.compare Comparison Builtins
+  @groupdef stdlib.builtins.compare Comparison Builtins
 
   These builtins implement comparison operations.
 */
 
-/** @group stdlib.compare Return if \a x is less than \a y */
+/** @group stdlib.builtins.compare Return if \a x is less than \a y */
 function     bool: '<'(    $T: x,    $T: y);
-/** @group stdlib.compare Return if \a x is less than \a y */
+/** @group stdlib.builtins.compare Return if \a x is less than \a y */
 function var bool: '<'(var $T: x,var $T: y);
-/** @group stdlib.compare Weak comparison: true iff either \a x or \a y is absent, or both
+/** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is less than the value of \a y. */
 function var bool: '<'(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) < deopt(y);
-/** @group stdlib.compare Weak comparison: true iff either \a x or \a y is absent, or both
+/** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is less than the value of \a y. */
 function bool: '<'(opt int: x, opt int: y) = absent(x) \/ absent(y) \/ deopt(x) < deopt(y);
-/** @group stdlib.arithmetic Weak comparison: true iff either \a x or \a y is absent, or both
+/** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is less than the value of \a y. */
 function var bool: '<'(var opt float: x, var opt float: y) = absent(x) \/ absent(y) \/ deopt(x) < deopt(y);
-/** @group stdlib.arithmetic Weak comparison: true iff either \a x or \a y is absent, or both
+/** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is less than the value of \a y. */
 function bool: '<'(opt float: x, opt float: y) = absent(x) \/ absent(y) \/ deopt(x) < deopt(y);
 
-/** @group stdlib.compare Return if \a x is greater than \a y */
+/** @group stdlib.builtins.compare Return if \a x is greater than \a y */
 function     bool: '>'(    $T: x,    $T: y);
-/** @group stdlib.compare Return if \a x is greater than \a y */
+/** @group stdlib.builtins.compare Return if \a x is greater than \a y */
 function var bool: '>'(var $T: x,var $T: y);
-/** @group stdlib.compare Weak comparison: true iff either \a x or \a y is absent, or both
+/** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is greater than the value of \a y. */
 function var bool: '>'(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) > deopt(y);
-/** @group stdlib.compare Weak comparison: true iff either \a x or \a y is absent, or both
+/** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is greater than the value of \a y. */
 function bool: '>'(opt int: x, opt int: y) = absent(x) \/ absent(y) \/ deopt(x) > deopt(y);
-/** @group stdlib.arithmetic Weak comparison: true iff either \a x or \a y is absent, or both
+/** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is greater than the value of \a y. */
 function var bool: '>'(var opt float: x, var opt float: y) = absent(x) \/ absent(y) \/ deopt(x) > deopt(y);
-/** @group stdlib.arithmetic Weak comparison: true iff either \a x or \a y is absent, or both
+/** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is greater than the value of \a y. */
 function bool: '>'(opt float: x, opt float: y) = absent(x) \/ absent(y) \/ deopt(x) > deopt(y);
 
-/** @group stdlib.compare Return if \a x is less than or equal to \a y */
+/** @group stdlib.builtins.compare Return if \a x is less than or equal to \a y */
 function     bool: '<='(    $T: x,    $T: y);
-/** @group stdlib.compare Return if \a x is less than or equal to \a y */
+/** @group stdlib.builtins.compare Return if \a x is less than or equal to \a y */
 function var bool: '<='(var $T: x, var $T: y);
-/** @group stdlib.compare Weak comparison: true iff either \a x or \a y is absent, or both
+/** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is less than or equal to the value of \a y. */
 function var bool: '<='(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) <= deopt(y);
-/** @group stdlib.compare Weak comparison: true iff either \a x or \a y is absent, or both
+/** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is less than or equal to the value of \a y. */
 function bool: '<='(opt int: x, opt int: y) = absent(x) \/ absent(y) \/ deopt(x) <= deopt(y);
-/** @group stdlib.arithmetic Weak comparison: true iff either \a x or \a y is absent, or both
+/** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is less than or equal to the value of \a y. */
 function var bool: '<='(var opt float: x, var opt float: y) = absent(x) \/ absent(y) \/ deopt(x) <= deopt(y);
-/** @group stdlib.arithmetic Weak comparison: true iff either \a x or \a y is absent, or both
+/** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is less than or equal to the value of \a y. */
 function bool: '<='(opt float: x, opt float: y) = absent(x) \/ absent(y) \/ deopt(x) <= deopt(y);
 
-/** @group stdlib.compare Return if \a x is greater than or equal to \a y */
+/** @group stdlib.builtins.compare Return if \a x is greater than or equal to \a y */
 function     bool: '>='(    $T: x,    $T: y);
-/** @group stdlib.compare Return if \a x is greater than or equal to \a y */
+/** @group stdlib.builtins.compare Return if \a x is greater than or equal to \a y */
 function var bool: '>='(var $T: x,var $T: y);
-/** @group stdlib.compare Weak comparison: true iff either \a x or \a y is absent, or both
+/** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is greater than or equal to the value of \a y. */
 function var bool: '>='(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) >= deopt(y);
-/** @group stdlib.compare Weak comparison: true iff either \a x or \a y is absent, or both
+/** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is greater than or equal to the value of \a y. */
 function bool: '>='(opt int: x, opt int: y) = absent(x) \/ absent(y) \/ deopt(x) >= deopt(y);
-/** @group stdlib.arithmetic Weak comparison: true iff either \a x or \a y is absent, or both
+/** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is greater than or equal to the value of \a y. */
 function var bool: '>='(var opt float: x, var opt float: y) = absent(x) \/ absent(y) \/ deopt(x) >= deopt(y);
-/** @group stdlib.arithmetic Weak comparison: true iff either \a x or \a y is absent, or both
+/** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is greater than or equal to the value of \a y. */
 function bool: '>='(opt float: x, opt float: y) = absent(x) \/ absent(y) \/ deopt(x) >= deopt(y);
 
-/** @group stdlib.compare Return if \a x is equal to \a y */
+/** @group stdlib.builtins.compare Return if \a x is equal to \a y */
 function     bool: '='(    $T: x,    $T: y);
-/** @group stdlib.compare Return if \a x is equal to \a y */
+/** @group stdlib.builtins.compare Return if \a x is equal to \a y */
 function     bool: '='(opt $T: x, opt $T: y) =
   absent(x) /\ absent(y) \/ occurs(x) /\ occurs(y) /\ deopt(x) = deopt(y);
-/** @group stdlib.compare Return if \a x is equal to \a y */
+/** @group stdlib.builtins.compare Return if \a x is equal to \a y */
 function var bool: '='(any $T: x,any $T: y);
 
-/** @group stdlib.compare Weak equality. True if either \a x or \a y are absent, or
+/** @group stdlib.builtins.compare Weak equality. True if either \a x or \a y are absent, or
 present and equal.*/
 function var bool: '~='(var opt bool: x, var opt bool: y) ::promise_total =
     absent(x) \/ absent(y) \/ deopt(x)=deopt(y);
 
-/** @group stdlib.compare Weak disequality. True if either \a x or \a y are absent, or
+/** @group stdlib.builtins.compare Weak disequality. True if either \a x or \a y are absent, or
 present and not equal.*/
 function var bool: '~!='(var opt bool: x, var opt bool: y) ::promise_total =
     absent(x) \/ absent(y) \/ deopt(x)!=deopt(y);
 
-/** @group stdlib.compare Weak equality. True if either \a x or \a y are absent, or
+/** @group stdlib.builtins.compare Weak equality. True if either \a x or \a y are absent, or
 present and equal.*/
 function var bool: '~='(var opt int: x, var opt int: y) ::promise_total =
     absent(x) \/ absent(y) \/ deopt(x)=deopt(y);
 
-/** @group stdlib.compare Weak disequality. True if either \a x or \a y are absent, or
+/** @group stdlib.builtins.compare Weak disequality. True if either \a x or \a y are absent, or
 present and not equal.*/
 function var bool: '~!='(var opt int: x, var opt int: y) ::promise_total =
     absent(x) \/ absent(y) \/ deopt(x)!=deopt(y);
 
-/** @group stdlib.compare Weak equality. True if either \a x or \a y are absent, or
+/** @group stdlib.builtins.compare Weak equality. True if either \a x or \a y are absent, or
 present and equal.*/
 function var bool: '~='(var opt float: x, var opt float: y) ::promise_total =
     absent(x) \/ absent(y) \/ deopt(x)=deopt(y);
 
-/** @group stdlib.compare Weak disequality. True if either \a x or \a y are absent, or
+/** @group stdlib.builtins.compare Weak disequality. True if either \a x or \a y are absent, or
 present and not equal.*/
 function var bool: '~!='(var opt float: x, var opt float: y) ::promise_total =
     absent(x) \/ absent(y) \/ deopt(x)!=deopt(y);
 
 
-/** @group stdlib.compare Return if \a x is not equal to \a y */
+/** @group stdlib.builtins.compare Return if \a x is not equal to \a y */
 function     bool: '!='(    $T: x,     $T: y);
-/** @group stdlib.compare Return if \a x is not equal to \a y */
+/** @group stdlib.builtins.compare Return if \a x is not equal to \a y */
 function     bool: '!='(opt $T: x, opt $T: y) = not (x = y);
-/** @group stdlib.compare Return if \a x is not equal to \a y */
+/** @group stdlib.builtins.compare Return if \a x is not equal to \a y */
 function var bool: '!='(any $T: x, any $T: y);
 
 % Special case comparison operators for integer variable and float constant
@@ -193,88 +193,88 @@ test lex_lesseq(array[int] of $T: x,array[int] of $T: y) =
   endif;
 
 
-/** @group stdlib.compare Return if array \a x is lexicographically smaller than array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is lexicographically smaller than array \a y */
 function     bool: '<'(array[$U] of     $T: x,array[$U] of     $T: y) =
   assert(index_sets_agree(x,y), "array index sets do not match",
          lex_less(array1d(x),array1d(y)));
-/** @group stdlib.compare Return if array \a x is lexicographically smaller than array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is lexicographically smaller than array \a y */
 function var bool: '<'(array[$U] of var int: x,array[$U] of var int: y) = 
   assert(index_sets_agree(x,y), "array index sets do not match",
          lex_less(array1d(x),array1d(y)));
-/** @group stdlib.compare Return if array \a x is lexicographically smaller than array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is lexicographically smaller than array \a y */
 function var bool: '<'(array[$U] of var bool: x,array[$U] of var bool: y) = 
   assert(index_sets_agree(x,y), "array index sets do not match",
          lex_less(array1d(x),array1d(y)));
-/** @group stdlib.compare Return if array \a x is lexicographically smaller than array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is lexicographically smaller than array \a y */
 function var bool: '<'(array[$U] of var float: x,array[$U] of var float: y) = 
   assert(index_sets_agree(x,y), "array index sets do not match",
          lex_less(array1d(x),array1d(y)));
-/** @group stdlib.compare Return if array \a x is lexicographically smaller than array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is lexicographically smaller than array \a y */
 function var bool: '<'(array[$U] of var set of int: x,array[$U] of var set of int: y) = 
   assert(index_sets_agree(x,y), "array index sets do not match",
          lex_less(array1d(x),array1d(y)));
-/** @group stdlib.compare Return if array \a x is lexicographically greater than array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is lexicographically greater than array \a y */
 function     bool: '>'(array[$U] of     $T: x,array[$U] of     $T: y) =
   assert(index_sets_agree(x,y), "array index sets do not match",
          lex_less(array1d(y),array1d(x)));
-/** @group stdlib.compare Return if array \a x is lexicographically greater than array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is lexicographically greater than array \a y */
 function var bool: '>'(array[$U] of var int: x,array[$U] of var int: y) =
   assert(index_sets_agree(x,y), "array index sets do not match",
          lex_less(array1d(y),array1d(x)));
-/** @group stdlib.compare Return if array \a x is lexicographically greater than array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is lexicographically greater than array \a y */
 function var bool: '>'(array[$U] of var bool: x,array[$U] of var bool: y) =
   assert(index_sets_agree(x,y), "array index sets do not match",
          lex_less(array1d(y),array1d(x)));
-/** @group stdlib.compare Return if array \a x is lexicographically greater than array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is lexicographically greater than array \a y */
 function var bool: '>'(array[$U] of var float: x,array[$U] of var float: y) =
   assert(index_sets_agree(x,y), "array index sets do not match",
          lex_less(array1d(y),array1d(x)));
-/** @group stdlib.compare Return if array \a x is lexicographically greater than array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is lexicographically greater than array \a y */
 function var bool: '>'(array[$U] of var set of int: x,array[$U] of var set of int: y) =
   assert(index_sets_agree(x,y), "array index sets do not match",
          lex_less(array1d(y),array1d(x)));
-/** @group stdlib.compare Return if array \a x is lexicographically smaller than or equal to array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is lexicographically smaller than or equal to array \a y */
 function     bool: '<='(array[$U] of     $T: x,array[$U] of     $T: y) =
   assert(index_sets_agree(x,y), "array index sets do not match",
          lex_lesseq(array1d(x),array1d(y)));
-/** @group stdlib.compare Return if array \a x is lexicographically smaller than or equal to array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is lexicographically smaller than or equal to array \a y */
 function var bool: '<='(array[$U] of var int: x,array[$U] of var int: y) =
   assert(index_sets_agree(x,y), "array index sets do not match",
          lex_lesseq(array1d(x),array1d(y)));
-/** @group stdlib.compare Return if array \a x is lexicographically smaller than or equal to array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is lexicographically smaller than or equal to array \a y */
 function var bool: '<='(array[$U] of var bool: x,array[$U] of var bool: y) =
   assert(index_sets_agree(x,y), "array index sets do not match",
          lex_lesseq(array1d(x),array1d(y)));
-/** @group stdlib.compare Return if array \a x is lexicographically smaller than or equal to array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is lexicographically smaller than or equal to array \a y */
 function var bool: '<='(array[$U] of var float: x,array[$U] of var float: y) =
   assert(index_sets_agree(x,y), "array index sets do not match",
          lex_lesseq(array1d(x),array1d(y)));
-/** @group stdlib.compare Return if array \a x is lexicographically smaller than or equal to array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is lexicographically smaller than or equal to array \a y */
 function var bool: '<='(array[$U] of var set of int: x,array[$U] of var set of int: y) =
   assert(index_sets_agree(x,y), "array index sets do not match",
          lex_lesseq(array1d(x),array1d(y)));
-/** @group stdlib.compare Return if array \a x is lexicographically greater than or equal to array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is lexicographically greater than or equal to array \a y */
 function     bool: '>='(array[$U] of     $T: x,array[$U] of     $T: y) =
   assert(index_sets_agree(x,y), "array index sets do not match",
          lex_lesseq(array1d(y),array1d(x)));
-/** @group stdlib.compare Return if array \a x is lexicographically greater than or equal to array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is lexicographically greater than or equal to array \a y */
 function var bool: '>='(array[$U] of var int: x,array[$U] of var int: y) =
   assert(index_sets_agree(x,y), "array index sets do not match",
          lex_lesseq(array1d(y),array1d(x)));
-/** @group stdlib.compare Return if array \a x is lexicographically greater than or equal to array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is lexicographically greater than or equal to array \a y */
 function var bool: '>='(array[$U] of var bool: x,array[$U] of var bool: y) =
   assert(index_sets_agree(x,y), "array index sets do not match",
          lex_lesseq(array1d(y),array1d(x)));
-/** @group stdlib.compare Return if array \a x is lexicographically greater than or equal to array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is lexicographically greater than or equal to array \a y */
 function var bool: '>='(array[$U] of var float: x,array[$U] of var float: y) =
   assert(index_sets_agree(x,y), "array index sets do not match",
          lex_lesseq(array1d(y),array1d(x)));
-/** @group stdlib.compare Return if array \a x is lexicographically greater than or equal to array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is lexicographically greater than or equal to array \a y */
 function var bool: '>='(array[$U] of var set of int: x,array[$U] of var set of int: y) =
   assert(index_sets_agree(x,y), "array index sets do not match",
          lex_lesseq(array1d(y),array1d(x)));
 
-/** @group stdlib.compare Return if array \a x is equal to array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is equal to array \a y */
 function     bool: '='(array[$T] of     int: x,array[$T] of     int: y) =
     let {
         array[int] of int: xx = array1d(x);
@@ -284,7 +284,7 @@ function     bool: '='(array[$T] of     int: x,array[$T] of     int: y) =
       forall (i in index_set(xx)) (xx[i]=yy[i])
     );
 
-/** @group stdlib.compare Return if array \a x is equal to array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is equal to array \a y */
 function var bool: '='(array[$T] of var int: x,array[$T] of var int: y) =
     let {
         array[int] of var int: xx = array1d(x);
@@ -294,7 +294,7 @@ function var bool: '='(array[$T] of var int: x,array[$T] of var int: y) =
       forall (i in index_set(xx)) (xx[i]=yy[i])
     );
 
-/** @group stdlib.compare Return if array \a x is equal to array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is equal to array \a y */
 function     bool: '='(array[$T] of     bool: x,array[$T] of     bool: y) =
     let {
         array[int] of bool: xx = array1d(x);
@@ -304,7 +304,7 @@ function     bool: '='(array[$T] of     bool: x,array[$T] of     bool: y) =
       forall (i in index_set(xx)) (xx[i]=yy[i])
     );
 
-/** @group stdlib.compare Return if array \a x is equal to array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is equal to array \a y */
 function var bool: '='(array[$T] of var bool: x,array[$T] of var bool: y) =
     let {
         array[int] of var bool: xx = array1d(x);
@@ -314,7 +314,7 @@ function var bool: '='(array[$T] of var bool: x,array[$T] of var bool: y) =
       forall (i in index_set(xx)) (xx[i]=yy[i])
     );
 
-/** @group stdlib.compare Return if array \a x is equal to array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is equal to array \a y */
 function     bool: '='(array[$T] of     set of int: x,array[$T] of     set of int: y) =
     let {
         array[int] of set of int: xx = array1d(x);
@@ -324,7 +324,7 @@ function     bool: '='(array[$T] of     set of int: x,array[$T] of     set of in
       forall (i in index_set(xx)) (xx[i]=yy[i])
     );
 
-/** @group stdlib.compare Return if array \a x is equal to array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is equal to array \a y */
 function var bool: '='(array[$T] of var set of int: x,array[$T] of var set of int: y) =
     let {
         array[int] of var set of int: xx = array1d(x);
@@ -334,7 +334,7 @@ function var bool: '='(array[$T] of var set of int: x,array[$T] of var set of in
       forall (i in index_set(xx)) (xx[i]=yy[i])
     );
 
-/** @group stdlib.compare Return if array \a x is equal to array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is equal to array \a y */
 function     bool: '='(array[$T] of     float: x,array[$T] of     float: y) =
     let {
         array[int] of float: xx = array1d(x);
@@ -344,7 +344,7 @@ function     bool: '='(array[$T] of     float: x,array[$T] of     float: y) =
       forall (i in index_set(xx)) (xx[i]=yy[i])
     );
 
-/** @group stdlib.compare Return if array \a x is equal to array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is equal to array \a y */
 function var bool: '='(array[$T] of var float: x,array[$T] of var float: y) =
     let {
         array[int] of var float: xx = array1d(x);
@@ -354,7 +354,7 @@ function var bool: '='(array[$T] of var float: x,array[$T] of var float: y) =
       forall (i in index_set(xx)) (xx[i]=yy[i])
     );
 
-/** @group stdlib.compare Return if array \a x is not equal to array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is not equal to array \a y */
 function     bool: '!='(array[$T] of     int: x,array[$T] of     int: y) =
     let {
         array[int] of int: xx = array1d(x);
@@ -364,7 +364,7 @@ function     bool: '!='(array[$T] of     int: x,array[$T] of     int: y) =
       exists (i in index_set(xx)) (xx[i]!=yy[i])
     );
 
-/** @group stdlib.compare Return if array \a x is not equal to array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is not equal to array \a y */
 function var bool: '!='(array[$T] of var int: x,array[$T] of var int: y) =
     let {
         array[int] of var int: xx = array1d(x);
@@ -374,7 +374,7 @@ function var bool: '!='(array[$T] of var int: x,array[$T] of var int: y) =
       exists (i in index_set(xx)) (xx[i]!=yy[i])
     );
 
-/** @group stdlib.compare Return if array \a x is not equal to array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is not equal to array \a y */
 function     bool: '!='(array[$T] of     bool: x,array[$T] of     bool: y) =
     let {
         array[int] of bool: xx = array1d(x);
@@ -384,7 +384,7 @@ function     bool: '!='(array[$T] of     bool: x,array[$T] of     bool: y) =
       exists (i in index_set(xx)) (xx[i]!=yy[i])
     );
 
-/** @group stdlib.compare Return if array \a x is not equal to array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is not equal to array \a y */
 function var bool: '!='(array[$T] of var bool: x,array[$T] of var bool: y) =
     let {
         array[int] of var bool: xx = array1d(x);
@@ -394,7 +394,7 @@ function var bool: '!='(array[$T] of var bool: x,array[$T] of var bool: y) =
       exists (i in index_set(xx)) (xx[i]!=yy[i])
     );
 
-/** @group stdlib.compare Return if array \a x is not equal to array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is not equal to array \a y */
 function     bool: '!='(array[$T] of     set of int: x,array[$T] of     set of int: y) =
     let {
         array[int] of set of int: xx = array1d(x);
@@ -404,7 +404,7 @@ function     bool: '!='(array[$T] of     set of int: x,array[$T] of     set of i
       exists (i in index_set(xx)) (xx[i]!=yy[i])
     );
 
-/** @group stdlib.compare Return if array \a x is not equal to array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is not equal to array \a y */
 function var bool: '!='(array[$T] of var set of int: x,array[$T] of var set of int: y) =
     let {
         array[int] of var set of int: xx = array1d(x);
@@ -414,7 +414,7 @@ function var bool: '!='(array[$T] of var set of int: x,array[$T] of var set of i
       exists (i in index_set(xx)) (xx[i]!=yy[i])
     );
 
-/** @group stdlib.compare Return if array \a x is not equal to array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is not equal to array \a y */
 function     bool: '!='(array[$T] of     float: x,array[$T] of     float: y) =
     let {
         array[int] of float: xx = array1d(x);
@@ -424,7 +424,7 @@ function     bool: '!='(array[$T] of     float: x,array[$T] of     float: y) =
       exists (i in index_set(xx)) (xx[i]!=yy[i])
     );
 
-/** @group stdlib.compare Return if array \a x is not equal to array \a y */
+/** @group stdlib.builtins.compare Return if array \a x is not equal to array \a y */
 function var bool: '!='(array[$T] of var float: x,array[$T] of var float: y) =
     let {
         array[int] of var float: xx = array1d(x);
