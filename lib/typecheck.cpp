@@ -3078,12 +3078,10 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
   }
 
   for (auto& i : *enumItems2) {
+    m->addItem(i);
     if (auto* vdi = i->dynamicCast<VarDeclI>()) {
-      m->addItem(vdi);
       ts.add(env.envi(), vdi, false, enumItems);
-    } else {
-      auto* fi = i->cast<FunctionI>();
-      m->addItem(fi);
+    } else if (auto* fi = i->dynamicCast<FunctionI>()) {
       (void)m->registerFn(env.envi(), fi);
       functionItems.push_back(fi);
     }
