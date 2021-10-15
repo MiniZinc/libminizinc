@@ -1864,6 +1864,8 @@ public:
     ASTString anon_enum;      // NOLINT(readability-identifier-naming)
     ASTString anon_enum_set;  // NOLINT(readability-identifier-naming)
     ASTString enumFromConstructors;
+    ASTString enumOf;
+    ASTString enumOfInternal;
 
     ASTString show;
     ASTString format;

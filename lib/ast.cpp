@@ -1596,6 +1596,8 @@ Constants::Constants() {
   ids.anon_enum = addString("anon_enum");
   ids.anon_enum_set = addString("anon_enum_set");
   ids.enumFromConstructors = addString("enumFromConstructors");
+  ids.enumOf = addString("enum_of");
+  ids.enumOfInternal = addString("enum_of_internal");
 
   ids.show = addString("show");
   ids.format = addString("format");

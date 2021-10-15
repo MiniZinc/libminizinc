@@ -219,11 +219,13 @@ public:
   ConcreteCallAgenda& agenda;
   CollectConcreteCalls(ConcreteCallAgenda& agenda0) : agenda(agenda0) {}
   void vCall(Call* c) {
-    if (c->decl() != nullptr && c->decl()->e() != nullptr) {
-      if (is_polymorphic(c->decl())) {
-        assert(c->argCount() != 1 || c->arg(0)->type().st() == Type::ST_PLAIN ||
-               c->arg(0)->type().ot() == Type::OT_PRESENT);
-        agenda.push_back(c);
+    if (c->decl() != nullptr) {
+      if (c->decl()->e() != nullptr || (c->argCount() == 1 && c->id() == "enum_of")) {
+        if (is_polymorphic(c->decl())) {
+          assert(c->argCount() != 1 || c->arg(0)->type().st() == Type::ST_PLAIN ||
+                 c->arg(0)->type().ot() == Type::OT_PRESENT);
+          agenda.push_back(c);
+        }
       }
     }
   }
@@ -267,6 +269,25 @@ public:
       : _env(env), _agenda(agenda), _instanceMap(instanceMap), _typer(typer) {}
 
   void operator()(Call* call) {
+    if (call->id() == _env.constants.ids.enumOf && call->argCount() == 1) {
+      // Rewrite to enum_of_internal with enum argument
+      auto enumId = call->arg(0)->type().enumId();
+      if (enumId != 0 && call->arg(0)->type().dim() != 0) {
+        const auto& enumIds = _env.getArrayEnum(enumId);
+        enumId = enumIds[enumIds.size() - 1];
+      }
+      call->id(ASTString(_env.constants.ids.enumOfInternal));
+      if (enumId != 0) {
+        VarDecl* enumDecl = _env.getEnum(enumId)->e();
+        call->arg(0, enumDecl->id());
+      } else {
+        GCLock lock;
+        IntSetVal* inf = IntSetVal::a(-IntVal::infinity(), IntVal::infinity());
+        call->arg(0, new SetLit(Location().introduce(), inf));
+      }
+      FunctionI* newDecl = _env.model->matchFn(_env, call, false);
+      call->decl(newDecl);
+    }
     // Check if instance for this call already exists
     auto lookup = _instanceMap.lookup(_env, call);
     auto instanceId = lookup.first;

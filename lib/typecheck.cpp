@@ -2523,22 +2523,18 @@ public:
           }
         }
       }
-    } else if (call->id() == "enum_of") {
+    } else if (call->id() == _env.constants.ids.enumOf) {
       auto enumId = call->arg(0)->type().enumId();
       if (enumId != 0 && call->arg(0)->type().dim() != 0) {
         const auto& enumIds = _env.getArrayEnum(enumId);
         enumId = enumIds[enumIds.size() - 1];
       }
-      call->id(ASTString("enum_of_internal"));
       if (enumId != 0) {
+        call->id(_env.constants.ids.enumOfInternal);
         VarDecl* enumDecl = _env.getEnum(enumId)->e();
         call->arg(0, enumDecl->id());
-      } else {
-        GCLock lock;
-        IntSetVal* inf = IntSetVal::a(-IntVal::infinity(), IntVal::infinity());
-        call->arg(0, new SetLit(Location().introduce(), inf));
+        fi = _model->matchFn(_env, call, false, true);
       }
-      fi = _model->matchFn(_env, call, false, true);
     }
 
     // Set type and decl
