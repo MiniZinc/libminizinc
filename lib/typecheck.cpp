@@ -3447,16 +3447,6 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     OutputI* outputItem;
     TSV3(EnvI& env0, Model* m0) : env(env0), m(m0), outputItem(nullptr) {}
     void vAssignI(AssignI* i) { i->decl()->e(add_coercion(env, m, i->e(), i->decl()->type())()); }
-    void vOutputI(OutputI* oi) {
-      GCLock lock;
-      auto* call = oi->ann().getCall(ASTString("mzn_output_section"));
-      if (call == nullptr) {
-        env.addOutputToSection(ASTString("default"), oi->e());
-      } else {
-        env.addOutputToSection(ASTString(eval_string(env, call->arg(0))), oi->e());
-      }
-      oi->remove();
-    }
   } _tsv3(env.envi(), m);
   if (typeErrors.empty()) {
     iter_items(_tsv3, m);
@@ -3476,6 +3466,27 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       void operator()(EnvI& env, FunctionI* fi) override { _bottomUpTyper.run(fi->e()); }
     } concreteTyper(bottomUpTyper);
     type_specialise(env, m, concreteTyper);
+
+    class TSV4 : public ItemVisitor {
+    public:
+      EnvI& env;
+      Model* m;
+      OutputI* outputItem;
+      TSV4(EnvI& env0, Model* m0) : env(env0), m(m0), outputItem(nullptr) {}
+      void vOutputI(OutputI* oi) {
+        GCLock lock;
+        auto* call = oi->ann().getCall(ASTString("mzn_output_section"));
+        if (call == nullptr) {
+          env.addOutputToSection(ASTString("default"), oi->e());
+        } else {
+          env.addOutputToSection(ASTString(eval_string(env, call->arg(0))), oi->e());
+        }
+        oi->remove();
+      }
+    } _tsv4(env.envi(), m);
+    if (typeErrors.empty()) {
+      iter_items(_tsv4, m);
+    }
 
     // Create a par version of each function that returns par and
     // that has a body that can be made par
