@@ -247,8 +247,8 @@ class ASTNodeWeakMap {
   friend class GC;
 
 private:
-  ASTNodeWeakMap(const WeakRef& e);
-  ASTNodeWeakMap& operator=(const ASTNodeWeakMap& e);
+  ASTNodeWeakMap(const ASTNodeWeakMap& e) = delete;
+  ASTNodeWeakMap& operator=(const ASTNodeWeakMap& e) = delete;
 
 protected:
   typedef std::unordered_map<ASTNode*, ASTNode*> NodeMap;

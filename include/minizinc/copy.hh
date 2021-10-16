@@ -40,16 +40,25 @@ public:
   FloatSetVal* findOrig(FloatSetVal* e);
   template <class T>
   void insert(ASTExprVec<T> e0, ASTExprVec<T> e1) {
-    _nodeMap.insert(e0.vec(), e1.vec());
-    _revNodeMap.insert(e1.vec(), e0.vec());
+    assert(e0.empty() == e1.empty());
+    if (!e0.empty()) {
+      _nodeMap.insert(e0.vec(), e1.vec());
+      _revNodeMap.insert(e1.vec(), e0.vec());
+    }
   }
   template <class T>
   ASTExprVecO<T*>* find(ASTExprVec<T> e) {
+    if (e.empty()) {
+      return nullptr;
+    }
     ASTNode* n = _nodeMap.find(e.vec());
     return static_cast<ASTExprVecO<T*>*>(n);
   }
   template <class T>
   ASTExprVecO<T*>* findOrig(ASTExprVec<T> e) {
+    if (e.empty()) {
+      return nullptr;
+    }
     ASTNode* n = _revNodeMap.find(e.vec());
     return static_cast<ASTExprVecO<T*>*>(n);
   }
