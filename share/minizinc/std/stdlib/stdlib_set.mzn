@@ -11,11 +11,21 @@ include "fzn_array_set_intersect.mzn";
 function     bool: 'in'(    int: x,     set of int: y);
 /** @group stdlib.builtins.set \a x is an element of the set \a y */
 function var bool: 'in'(var int: x, var set of int: y);
+/** @group stdlib.builtins.set \a x is an element of the set \a y. False if \a x is absent. */
+function var bool: 'in'(var opt int: x, set of int: y) = occurs(x) /\ deopt(x) in y;
+/** @group stdlib.builtins.set Test if \a x is an element of the set \a y. False if \a x is absent. */
+function     bool: 'in'(opt int: x, set of int: y) = occurs(x) /\ deopt(x) in y;
+/** @group stdlib.builtins.set \a x is an element of the set \a y. False if \a x is absent. */
+function var bool: 'in'(var opt int: x, var set of int: y) = occurs(x) /\ deopt(x) in y;
 
 /** @group stdlib.builtins.set Test if \a x is an element of the set \a y */
 function     bool: 'in'(    float: x,     set of float: y);
 /** @group stdlib.builtins.set Test if \a x is an element of the set \a y */
 function var bool: 'in'(var float: x,     set of float: y);
+/** @group stdlib.builtins.set Test if \a x is an element of the set \a y. False if \a x is absent. */
+function     bool: 'in'(opt float: x, set of float: y) = occurs(x) /\ deopt(x) in y;
+/** @group stdlib.builtins.set \a x is an element of the set \a y. False if \a x is absent. */
+function var bool: 'in'(var opt float: x, set of float: y) = occurs(x) /\ deopt(x) in y;
 
 /** @group stdlib.builtins.set Test if \a x is a subset of \a y */
 function     bool: 'subset'(    set of $T: x,      set of $T: y);
