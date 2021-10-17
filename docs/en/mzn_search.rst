@@ -436,7 +436,7 @@ solve item of the model.
     (useful for setting a :mzn:`ann` parameter that controls restart).
 
 
-  Solvers behaviour where two or more restart annotations are used is
+  If two or more restart annotations are used, the solver's behaviour is
   undefined.
 
 Restart search is much more robust in finding solutions, since it can avoid
@@ -451,7 +451,7 @@ For example the search annotation
         :: restart_linear(1000)
         satisfy
 
-does not very much sense since the underlying search is deterministic and
+does not make very much sense since the underlying search is deterministic and
 each restart will just redo the same search as the previous search.
 Some solvers record the parts of the search tree that have already been 
 searched and avoid them. This will mean deterministic restarts will simply
@@ -464,51 +464,6 @@ is to use some randomization, either in variable choice or value choice.
 Alternatively some variable selection strategies make use of information
 gathered from earlier search and hence will give different behaviour, for
 example :mzn:`dom_w_deg`. 
-
-To see the effectiveness of restart lets examine the n-queens problem again
-with the underlying search strategy
-
-.. code-block:: minizinc
-
-  int_search(q, first_fail, indomain_random);
-
-with one of four restart strategies
-
-.. code-block:: minizinc
-
-  r1 = restart_constant(100);
-  r2 = restart_linear(100);
-  r3 = restart_geometric(1.5,100);
-  r4 = restart_luby(100);
-  r5 = restart_none;
-
-.. cssclass:: table-nonfluid table-bordered
-
-+-----+-----------+--------------+-----------+-----------+------+
-|  n  | constant  | linear       | geometric | luby      | none |
-+=====+===========+==============+===========+===========+======+
-| 10  | 35        |  35          |  35       | 35        | 14   |
-+-----+-----------+--------------+-----------+-----------+------+
-| 15  | 36        |  36          |  36       | 36        | 22   |
-+-----+-----------+--------------+-----------+-----------+------+
-| 20  | 15        |  15          |  15       | 16        |      |
-+-----+-----------+--------------+-----------+-----------+------+
-| 25  | 2212      |  345         |  51       | 25        |      |
-+-----+-----------+--------------+-----------+-----------+------+
-| 30  | ---       |  137         |  22       | 66        |      |
-+-----+-----------+--------------+-----------+-----------+------+
-| 35  | ---       |  1722        |  52       | 12        |      |
-+-----+-----------+--------------+-----------+-----------+------+
-| 40  | 148       |  148         |  194      | 148       | 15   |
-+-----+-----------+--------------+-----------+-----------+------+
-| 100 | 183       |  183         |  183      | 183       | 103  |
-+-----+-----------+--------------+-----------+-----------+------+
-| 500 | 1480      |  1480        |  1480     | 1480      | 1434 |
-+-----+-----------+--------------+-----------+-----------+------+
-| 1000| 994       |  994         |  994      | 994       | 994  |
-+-----+-----------+--------------+-----------+-----------+------+
-
-THE CURRENT EXPERIMENT IS USELESS!
 
 .. _sec_warm_starts:
 
