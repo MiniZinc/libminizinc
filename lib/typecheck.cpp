@@ -4059,6 +4059,10 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
   bool hadOutput = false;
   std::ostringstream ossOutput;
   for (auto it : env.envi().outputVars) {
+    if (it.first == "_objective" || it.first == "_checker_objective") {
+      // Never include
+      continue;
+    }
     if (hadOutput) {
       ossOutput << ",\n";
     }
