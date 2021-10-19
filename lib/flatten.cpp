@@ -3135,9 +3135,6 @@ void flatten(Env& e, FlatteningOptions opt) {
       onlyRangeDomains = eval_bool(e.envi(), check_only_range);
     }
 
-    // Determine variables to include in output
-    process_toplevel_output_vars(env);
-
     // Flatten main model
     bool hadSolveItem = false;
     FlattenModelVisitor _fv(env, hadSolveItem, timingMap);

@@ -14,6 +14,7 @@
 #include <minizinc/file_utils.hh>
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/hash.hh>
+#include <minizinc/output.hh>
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/typecheck.hh>
 
@@ -3793,6 +3794,9 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
                               e.msg() + " (required by solution checker model)");
     }
   }
+
+  // Determine variables to include in output
+  process_toplevel_output_vars(env.envi());
 }
 
 void typecheck(Env& env, Model* m, AssignI* ai) {
@@ -4004,14 +4008,8 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
     std::ostringstream ossInput;
     std::ostringstream ossIncludedFiles;
     std::string method;
-    bool outputItem;
     IfcVisitor(Env& env0, const std::vector<std::string>& skipDirs0)
-        : env(env0),
-          skipDirs(skipDirs0),
-          hadInput(false),
-          hadIncludedFiles(false),
-          method("sat"),
-          outputItem(false) {}
+        : env(env0), skipDirs(skipDirs0), hadInput(false), hadIncludedFiles(false), method("sat") {}
     bool enter(Item* i) {
       if (auto* ii = i->dynamicCast<IncludeI>()) {
         std::string prefix =
@@ -4055,7 +4053,6 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
           break;
       }
     }
-    void vOutputI(OutputI* oi) { outputItem = true; }
   } _ifc(env, skipDirs);
   iter_items(_ifc, m);
 
@@ -4075,7 +4072,7 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
   os << ",\n  \"method\": \"";
   os << _ifc.method;
   os << "\"";
-  os << ",\n  \"has_output_item\": " << (_ifc.outputItem ? "true" : "false");
+  os << ",\n  \"has_output_item\": " << (env.envi().outputSections().empty() ? "false" : "true");
   os << ",\n  \"included_files\": [\n" << _ifc.ossIncludedFiles.str() << "\n  ]";
   os << ",\n  \"globals\": [\n";
   bool first = true;
