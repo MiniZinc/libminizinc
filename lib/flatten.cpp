@@ -544,14 +544,14 @@ void flatten_vardecl_annotations(EnvI& env, VarDecl* origVd, VarDeclI* vdi, VarD
   for (ExpressionSetIter it = origVd->ann().begin(); it != origVd->ann().end(); ++it) {
     // Check if we need to add the annotated expression as an argument
     Call* addAnnotatedExpression = nullptr;
-    if ((*it)->isa<Id>()) {
-      if ((*it)->cast<Id>()->decl() != nullptr) {
-        addAnnotatedExpression = (*it)->cast<Id>()->decl()->ann().getCall(
-            env.constants.ann.mzn_add_annotated_expression);
+    if (Id* ident = (*it)->dynamicCast<Id>()) {
+      if (ident->decl() != nullptr) {
+        addAnnotatedExpression =
+            ident->decl()->ann().getCall(env.constants.ann.mzn_add_annotated_expression);
       }
-    } else {
-      addAnnotatedExpression = (*it)->cast<Call>()->decl()->ann().getCall(
-          env.constants.ann.mzn_add_annotated_expression);
+    } else if (Call* call = (*it)->dynamicCast<Call>()) {
+      addAnnotatedExpression =
+          call->decl()->ann().getCall(env.constants.ann.mzn_add_annotated_expression);
     }
     KeepAlive ann;
     if (addAnnotatedExpression != nullptr) {
