@@ -546,7 +546,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
         GCLock lock;
         vector<TypeError> typeErrors;
         try {
-          MiniZinc::typecheck(smm_env, smm, typeErrors, true, false, true);
+          MiniZinc::typecheck(smm_env, smm, typeErrors, true, false);
           if (!typeErrors.empty()) {
             if (!isCompressedChecker) {
               throw MultipleErrors<TypeError>(typeErrors);
