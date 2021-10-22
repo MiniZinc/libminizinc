@@ -2880,7 +2880,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
   std::vector<FunctionI*> functionItems;
   std::vector<AssignI*> assignItems;
-  std::vector<Item*> toAdd;
+  std::vector<Item*> annotatedExpressionItems;
   auto* enumItems = new Model;
 
   class TSVFuns : public ItemVisitor {
@@ -2943,9 +2943,9 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         }
       }
     }
-  } _tsvf(env.envi(), m, functionItems, toAdd, typeErrors);
+  } _tsvf(env.envi(), m, functionItems, annotatedExpressionItems, typeErrors);
   iter_items(_tsvf, m);
-  for (auto* item : toAdd) {
+  for (auto* item : annotatedExpressionItems) {
     m->addItem(item);  // Add the new items now that we've finished iterating
   }
 
@@ -3795,8 +3795,15 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     }
   }
 
-  // Determine variables to include in output
-  process_toplevel_output_vars(env.envi());
+  if (!isFlatZinc) {
+    // Determine variables to include in output
+    process_toplevel_output_vars(env.envi());
+  } else {
+    for (auto* it : annotatedExpressionItems) {
+      // We needed these to do typechecking but we can't keep them because this is a FlatZinc file
+      it->remove();
+    }
+  }
 }
 
 void typecheck(Env& env, Model* m, AssignI* ai) {
