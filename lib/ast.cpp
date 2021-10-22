@@ -1167,11 +1167,14 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
       for (unsigned int i = 0; i < enumIds.size() - 1; i++) {
         enumIds[i] = orig_enumIds[i];
       }
-      enumIds[enumIds.size() - 1] =
-          ret.enumId() == 0 ? 0 : env.getArrayEnum(ret.enumId())[enumIds.size() - 1];
+      unsigned int curEnumId = ret.enumId();
+      if (curEnumId != 0 && ret.dim() > 0) {
+        const auto& curIds = env.getArrayEnum(curEnumId);
+        curEnumId = curIds[curIds.size() - 1];
+      }
+      enumIds[enumIds.size() - 1] = curEnumId;
       ret.enumId(env.registerArrayEnum(enumIds));
     }
-
   } else if (!fi->ti()->ranges().empty()) {
     std::vector<unsigned int> enumIds(fi->ti()->ranges().size() + 1);
     bool hadRealEnum = false;
