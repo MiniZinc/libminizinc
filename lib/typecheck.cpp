@@ -3450,7 +3450,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
   }
 
   // Specialisation of parametric functions
-  {
+  if (!isFlatZinc) {
     Typer<false> ty(env.envi(), m, typeErrors, ignoreUndefinedParameters);
     BottomUpIterator<Typer<false>> bottomUpTyper(ty);
 
