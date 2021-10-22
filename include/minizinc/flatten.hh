@@ -70,7 +70,8 @@ struct FlatteningOptions {
         outputOutputItem(false),
         detailedTiming(false),
         debug(false),
-        randomSeed(time(nullptr)) {}
+        randomSeed(time(nullptr)),
+        encapsulateJSON(false) {}
 };
 
 class Pass {
