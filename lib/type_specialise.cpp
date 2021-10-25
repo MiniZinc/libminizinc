@@ -199,7 +199,21 @@ public:
   }
 };
 
-typedef std::vector<Call*> ConcreteCallAgenda;
+class ConcreteCallAgenda {
+private:
+  std::vector<Call*> _agenda;
+  std::unordered_set<Call*> _seen;
+
+public:
+  void push(Call* c) {
+    if (_seen.emplace(c).second) {
+      _agenda.push_back(c);
+    }
+  }
+  Call* back() const { return _agenda.back(); }
+  void pop() { _agenda.pop_back(); }
+  bool empty() const { return _agenda.empty(); }
+};
 
 bool is_polymorphic(FunctionI* fi) {
   bool isPoly = fi->ti()->hasTiVariable();
@@ -224,7 +238,7 @@ public:
         if (is_polymorphic(c->decl())) {
           assert(c->argCount() != 1 || c->arg(0)->type().st() == Type::ST_PLAIN ||
                  c->arg(0)->type().ot() == Type::OT_PRESENT);
-          agenda.push_back(c);
+          agenda.push(c);
         }
       }
     }
@@ -641,7 +655,7 @@ void type_specialise(Env& env, Model* model, TyperFn& typer) {
   while (!agenda.empty()) {
     GCLock lock;
     Call* call = agenda.back();
-    agenda.pop_back();
+    agenda.pop();
     instantiate(call);
   }
 }
