@@ -904,25 +904,12 @@ array_access_expr :
       { $$ = $1; }
     | MZN_DOTDOT
       { $$=new SetLit(@$, IntSetVal::a(-IntVal::infinity(),IntVal::infinity())); }
-    | MZN_DOTDOT expr
-      { if ($2==nullptr) {
-          $$ = nullptr;
-        } else if ($2->isa<IntLit>()) {
-          $$=new SetLit(@$, IntSetVal::a(-IntVal::infinity(),$2->cast<IntLit>()->v()));
-        } else {
-          $$=new BinOp(@$, IntLit::a(-IntVal::infinity()), BOT_DOTDOT, $2);
-        }
-      }
-    | expr MZN_DOTDOT
-      { if ($1==nullptr) {
-          $$ = nullptr;
-        } else if ($1->isa<IntLit>()) {
-          $$=new SetLit(@$, IntSetVal::a($1->cast<IntLit>()->v(),IntVal::infinity()));
-        } else {
-          $$=new BinOp(@$, $1, BOT_DOTDOT, IntLit::a(IntVal::infinity()));
-        }
-      }
-
+    | MZN_DOTDOT_LE
+      { $$=new Call(@$, ASTString("'..<'"), {}); }
+    | MZN_LE_DOTDOT
+      { $$=new Call(@$, ASTString("'<..'"), {}); }
+    | MZN_LE_DOTDOT_LE
+      { $$=new Call(@$, ASTString("'<..<'"), {}); }
 
 expr_list : expr_list_head comma_or_none
 
@@ -959,6 +946,22 @@ set_expr :
       { $$=new Call(@$, ASTString("'<..'"), {$1, $3}); }
     | set_expr MZN_LE_DOTDOT_LE set_expr
       { $$=new Call(@$, ASTString("'<..<'"), {$1, $3}); }
+    | set_expr MZN_DOTDOT
+      { $$=new Call(@$, ASTString("..o"), {$1}); }
+    | set_expr MZN_DOTDOT_LE
+      { $$=new Call(@$, ASTString("..<o"), {$1}); }
+    | set_expr MZN_LE_DOTDOT
+      { $$=new Call(@$, ASTString("<..o"), {$1}); }
+    | set_expr MZN_LE_DOTDOT_LE
+      { $$=new Call(@$, ASTString("<..<o"), {$1}); }
+    | MZN_DOTDOT set_expr
+      { $$=new Call(@$, ASTString("o.."), {$2}); }
+    | MZN_DOTDOT_LE set_expr
+      { $$=new Call(@$, ASTString("o..<"), {$2}); }
+    | MZN_LE_DOTDOT set_expr
+      { $$=new Call(@$, ASTString("o<.."), {$2}); }
+    | MZN_LE_DOTDOT_LE set_expr
+      { $$=new Call(@$, ASTString("o<..<"), {$2}); }
     | MZN_DOTDOT_LE_QUOTED '(' set_expr ',' set_expr ')'
       { $$=new Call(@$, ASTString("'..<'"), {$3, $5}); }
     | MZN_LE_DOTDOT_QUOTED '(' set_expr ',' set_expr ')'
@@ -1108,6 +1111,22 @@ expr :
       { $$=new Call(@$, ASTString("'<..'"), {$1, $3}); }
     | expr MZN_LE_DOTDOT_LE expr
       { $$=new Call(@$, ASTString("'<..<'"), {$1, $3}); }
+    | expr MZN_DOTDOT
+      { $$=new Call(@$, ASTString("..o"), {$1}); }
+    | expr MZN_DOTDOT_LE
+      { $$=new Call(@$, ASTString("..<o"), {$1}); }
+    | expr MZN_LE_DOTDOT
+      { $$=new Call(@$, ASTString("<..o"), {$1}); }
+    | expr MZN_LE_DOTDOT_LE
+      { $$=new Call(@$, ASTString("<..<o"), {$1}); }
+    | MZN_DOTDOT expr
+      { $$=new Call(@$, ASTString("o.."), {$2}); }
+    | MZN_DOTDOT_LE expr
+      { $$=new Call(@$, ASTString("o..<"), {$2}); }
+    | MZN_LE_DOTDOT expr
+      { $$=new Call(@$, ASTString("o<.."), {$2}); }
+    | MZN_LE_DOTDOT_LE expr
+      { $$=new Call(@$, ASTString("o<..<"), {$2}); }
     | MZN_DOTDOT_LE_QUOTED '(' expr ',' expr ')'
       { $$=new Call(@$, ASTString("'..<'"), {$3, $5}); }
     | MZN_LE_DOTDOT_QUOTED '(' expr ',' expr ')'
@@ -1710,6 +1729,18 @@ comp_expr :
       { if (noTuple(@1,parm,$1)) { $$=new Call(@$, ASTString("'<..'"), {$1, $3}); } }
     | comp_expr MZN_LE_DOTDOT_LE expr
       { if (noTuple(@1,parm,$1)) { $$=new Call(@$, ASTString("'<..<'"), {$1, $3}); } }
+    | comp_expr MZN_DOTDOT_LE
+      { if (noTuple(@1,parm,$1)) { $$=new Call(@$, ASTString("..<o"), {$1}); } }
+    | comp_expr MZN_LE_DOTDOT
+      { if (noTuple(@1,parm,$1)) { $$=new Call(@$, ASTString("<..o"), {$1}); } }
+    | comp_expr MZN_LE_DOTDOT_LE
+      { if (noTuple(@1,parm,$1)) { $$=new Call(@$, ASTString("<..<o"), {$1}); } }
+    | MZN_DOTDOT_LE expr
+      { $$=new Call(@$, ASTString("o..<"), {$2}); }
+    | MZN_LE_DOTDOT expr
+      { $$=new Call(@$, ASTString("o<.."), {$2}); }
+    | MZN_LE_DOTDOT_LE expr
+      { $$=new Call(@$, ASTString("o<..<"), {$2}); }
     | MZN_DOTDOT_LE_QUOTED '(' expr ',' expr ')'
       { $$=new Call(@$, ASTString("'..<'"), {$3, $5}); }
     | MZN_LE_DOTDOT_QUOTED '(' expr ',' expr ')'

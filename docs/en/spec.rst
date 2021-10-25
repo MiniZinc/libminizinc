@@ -1336,6 +1336,9 @@ Note that the last entry in the table, :mzn:`^-1`, is a combination of the binar
   :mzn:`symdiff`                   left   600   
                              
   :mzn:`..`                        none   500   
+  :mzn:`<..`                       none   500   
+  :mzn:`..<`                       none   500   
+  :mzn:`<..<`                      none   500   
                              
   :mzn:`+`                         left   400   
   :mzn:`-`                         left   400   
@@ -1915,6 +1918,17 @@ The dots notation also allows for partial bounds, for example:
     array[int] of int: row_2_of_x = x[2,..6];
 
 The resulting array will have length 3 and index set ``4..6``. Of course ``6..`` would also be allowed and result in an array with index set ``6..8``.
+
+In addition to the :mzn:`..` operator, you can also use the :mzn:`<..`, :mzn:`..<` and :mzn:`<..<` operators (:numref:`ch-mzn-spec-set-ops`) to exclude the first, last or both elements from the slice. This also works if you leave one or both of the bounds:
+
+.. code-block:: minizinc
+
+   enum X = {A, B, C, D};
+   array[X, 1..3] of var int: x;
+   % x1 = x[A..C, 2..3]
+   array[_, _] of var int: x1 = x[A..<, <..];
+   % x2 = x[B..C, 3..3]
+   array[_, _] of var int: x2 = x[<..<, 2<..];
 
 Annotation Literals
 +++++++++++++++++++
@@ -3236,6 +3250,7 @@ of :mzn:`false`.
 
 
 
+.. _ch-mzn-spec-set-ops:
 
 
 Set Operations
@@ -3247,7 +3262,7 @@ Set membership.
 .. code-block:: minizinc
 
       bool: 'in'(     $T,       set of $T )
-  var bool: 'in'(var int,   var set of int)
+  var bool: 'in'(var $$E,   var set of $$E)
 
 
 
@@ -3258,7 +3273,7 @@ Non-strict subset.  Non-strict superset (:mzn:`superset`) is similar.
 .. code-block:: minizinc
 
       bool: 'subset'(    set of $T ,     set of $T )
-  var bool: 'subset'(var set of int, var set of int)
+  var bool: 'subset'(var set of $$E, var set of $$E)
 
 
 
@@ -3272,29 +3287,48 @@ symmetric difference (:mzn:`symdiff`).
 .. code-block:: minizinc
 
       set of  $T: 'union'(    set of  $T,     set of  $T )
-  var set of int: 'union'(var set of int, var set of int )
+  var set of $$E: 'union'(var set of $$E, var set of $$E )
 
 
 
 
 
-Set range.  If the first argument is larger than the second
+Set ranges. Constructs a set given a lower and an upper bound.
+Whether the operator constructs a set that includes or excludes the bounds depends
+on the placement of the `<` symbol in the operator.
+If the first argument is larger than the second
 (e.g. :mzn:`1..0`), it returns the empty set.
+The arguments to the operators can be either integers or values of
+enumerated types (:mzn:`l+1` and :mzn:`u-1` in the comments mean :mzn:`enum_next(l)`
+and :mzn:`enum_prev(l)` in that case).
 
 .. code-block:: minizinc
 
-  set of int: '..'(int, int)
+  % Return set {l, ..., u}
+  set of $$E: '..'($$E: l, $$E: u)
+  % Return set {l+1, ..., u}
+  set of $$E: '<..'($$E: l, $$E: u)
+  % Return set {l, ..., u-1}
+  set of $$E: '..<'($$E: l, $$E: u)
+  % Return set {l+1, ..., u-1}
+  set of $$E: '<..<'($$E: l, $$E: u)
 
+Note that set range operators can be used with only one of the bounds given.
+The minimum or maximum of the type of the bound is then used for the other bound:
 
+.. code-block:: minizinc
 
-
+  % x = {l, ..., max(enum_of(l))}
+  set of X: x = l..;
+  % x = {min(enum_of(u)), ..., u}
+  set of X: x = ..u;
 
 Cardinality of a set.
 
 .. code-block:: minizinc
 
       int: card(    set of  $T)
-  var int: card(var set of int)
+  var int: card(var set of $$E)
 
 
 
@@ -3306,7 +3340,7 @@ Intersection of multiple sets (:mzn:`array_intersect`) is similar.
 .. code-block:: minizinc
 
       set of  $U:    array_union(array[$T]  of     set of  $U)
-  var set of int:    array_union(array[$T]  of var set of int)
+  var set of $$E:    array_union(array[$T]  of var set of $$E)
 
 
 .. _sec-array-ops:

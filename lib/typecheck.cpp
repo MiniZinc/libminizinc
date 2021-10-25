@@ -1404,7 +1404,16 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
       if (aa->idx()[i]->type().isSet()) {
         bool needIdxSet = true;
         bool needInter = true;
-        if (auto* sl = aa->idx()[i]->dynamicCast<SetLit>()) {
+        Call* openIntervalCall = aa->idx()[i]->dynamicCast<Call>();
+        if (openIntervalCall != nullptr) {
+          if (openIntervalCall->argCount() == 0 &&
+              (openIntervalCall->id() == "'..<'" || openIntervalCall->id() == "'<..'" ||
+               openIntervalCall->id() == "'<..<'")) {
+            needInter = false;
+          } else {
+            openIntervalCall = nullptr;
+          }
+        } else if (auto* sl = aa->idx()[i]->dynamicCast<SetLit>()) {
           if ((sl->isv() != nullptr) && sl->isv()->size() == 1) {
             if (sl->isv()->min().isFinite() && sl->isv()->max().isFinite()) {
               args.push_back(sl);
@@ -1434,11 +1443,25 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
             auto* inter = new BinOp(aa->idx()[i]->loc(), aa->idx()[i], BOT_INTERSECT, origIdxset);
             inter->type(Type::parsetint());
             args.push_back(inter);
+          } else if (openIntervalCall != nullptr) {
+            auto* newOpenIntervalCall =
+                new Call(openIntervalCall->loc(), openIntervalCall->id(), {origIdxset});
+            FunctionI* nfi = m->matchFn(env, newOpenIntervalCall, false);
+            if (nfi == nullptr) {
+              throw TypeError(env, e->loc(),
+                              "missing builtin " + std::string(openIntervalCall->id().c_str()));
+            }
+            newOpenIntervalCall->type(nfi->rtype(env, {origIdxset}, false));
+            newOpenIntervalCall->decl(nfi);
+            slice.push_back(newOpenIntervalCall);
+            args.push_back(newOpenIntervalCall);
           } else {
             args.push_back(origIdxset);
           }
         }
-        slice.push_back(aa->idx()[i]);
+        if (openIntervalCall == nullptr) {
+          slice.push_back(aa->idx()[i]);
+        }
       } else {
         auto* bo = new BinOp(aa->idx()[i]->loc(), aa->idx()[i], BOT_DOTDOT, aa->idx()[i]);
         bo->type(Type::parsetint());
@@ -1787,6 +1810,13 @@ public:
               }
             }
             aai_bo->type(aai_bo_t);
+          }
+        } else if (auto* aai_c = aai->dynamicCast<Call>()) {
+          if (aai_c->argCount() == 0 &&
+              (aai_c->id() == "'..<'" || aai_c->id() == "'<..'" || aai_c->id() == "'<..<'")) {
+            Type aai_c_t = aai_c->type();
+            aai_c_t.enumId(arrayEnumIds[i]);
+            aai_c->type(aai_c_t);
           }
         }
         if (aai->type().isSet()) {
