@@ -2987,6 +2987,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     bool hadSolveItem;
     std::vector<AssignI*>& ais;
     VarDeclI* objective;
+    Model* objectiveModel;
     Model* enumis;
     bool isFlatZinc;
     bool isChecker;
@@ -2999,10 +3000,12 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           hadSolveItem(false),
           ais(ais0),
           objective(nullptr),
+          objectiveModel(new Model),
           enumis(enumis0),
           isFlatZinc(isFlatZinc0),
           isChecker(isChecker0),
           typeErrors(typeErrors0) {}
+    ~TSV0() { delete objectiveModel; }
     void vAssignI(AssignI* i) { ais.push_back(i); }
     void vVarDeclI(VarDeclI* i) {
       ts.add(env, i, true, enumis);
@@ -3045,6 +3048,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         obj->addAnnotation(si->st() == SolveI::ST_MAX ? env.constants.ctx.pos
                                                       : env.constants.ctx.neg);
         objective = new VarDeclI(si->loc().introduce(), obj);
+        objectiveModel->addItem(objective);
       }
     }
   } _tsv0(env.envi(), ts, m, assignItems, enumItems, isFlatZinc, isChecker, typeErrors);
