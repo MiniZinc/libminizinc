@@ -2390,9 +2390,9 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
               if (newfbv->empty()) {
                 env.fail();
               }
-              FloatSetRanges dr_eq(domain);
+              FloatSetRanges fbv_eq(fbv);
               FloatSetRanges newfbv_eq(newfbv);
-              if (Ranges::equal(dr_eq, newfbv_eq)) {
+              if (Ranges::equal(fbv_eq, newfbv_eq)) {
                 vd->ti()->setComputedDomain(true);
               } else {
                 fbv = newfbv;
