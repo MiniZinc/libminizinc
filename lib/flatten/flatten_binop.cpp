@@ -478,6 +478,60 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
     } else if (le1->isa<Id>()) {
       assignTo = le1->cast<Id>();
     }
+  } else {
+    if (le0->type().isPar()) {
+      Val v0 = LinearTraits<Lit>::eval(env, le0);
+      if (!v0.isFinite()) {
+        bool result;
+        switch (bot) {
+          case BOT_NQ:
+            result = true;
+            break;
+          case BOT_LE:
+          case BOT_LQ:
+            result = v0.isMinusInfinity();
+            break;
+          case BOT_GR:
+          case BOT_GQ:
+            result = v0.isPlusInfinity();
+            break;
+          default:
+            assert(false);
+        }
+        if (doubleNeg) {
+          result = !result;
+        }
+        ees[2].b = env.constants.boollit(result);
+        ret.r = conj(env, r, ctx, ees);
+        return;
+      }
+    } else if (le1->type().isPar()) {
+      Val v1 = LinearTraits<Lit>::eval(env, le1);
+      if (!v1.isFinite()) {
+        bool result;
+        switch (bot) {
+          case BOT_NQ:
+            result = true;
+            break;
+          case BOT_LE:
+          case BOT_LQ:
+            result = v1.isPlusInfinity();
+            break;
+          case BOT_GR:
+          case BOT_GQ:
+            result = v1.isMinusInfinity();
+            break;
+          default:
+            assert(false);
+        }
+        if (doubleNeg) {
+          result = !result;
+        }
+        ees[2].b = env.constants.boollit(result);
+        ret.r = conj(env, r, ctx, ees);
+        return;
+      }
+    }
   }
 
   for (unsigned int i = 0; i < 2; i++) {
