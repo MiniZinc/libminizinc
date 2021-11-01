@@ -509,7 +509,7 @@ enum_init :
       }
 
 enum_construct :
-      '{' enum_id_list '}'
+      '{' enum_id_list comma_or_none '}'
       {
         $$ = new SetLit(@$, *$2);
         delete $2;
@@ -2342,7 +2342,9 @@ comp_or_expr_head :
       { $$=$1; if ($$ && $3 && $5) $$->push_back(pair<Expression*,Expression*>($3,$5)); }
 
 let_expr :
-      MZN_LET '{' let_vardecl_item_list '}' MZN_IN expr %prec PREC_ANNO
+      MZN_LET '{' '}' MZN_IN expr %prec PREC_ANNO
+      { $$=$5; }
+    | MZN_LET '{' let_vardecl_item_list '}' MZN_IN expr %prec PREC_ANNO
       { if ($3 && $6) {
           $$=new Let(@$, *$3, $6); delete $3;
         } else {

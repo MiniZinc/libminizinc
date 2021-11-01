@@ -2,7 +2,7 @@
 # Run after modifying lexer.lxx and/or parser.yxx
 #
 # 1. generate lexer and parser by building libminizinc
-# 2. run cmake -DPROJECT_SOURCE_DIR=. -DPROJECT_BINARY_DIR=build -P cmake/scripts/md5_gen.cmake
+# 2. run cmake -DPROJECT_SOURCE_DIR=../.. -DPROJECT_BINARY_DIR=../../build -P md5_gen.cmake
 # replacing . and build with the source and binary directory
 # add -DFORCE=ON to force the renewing of generated files when md5's still match.
 
