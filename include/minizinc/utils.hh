@@ -232,4 +232,61 @@ public:
   static void removeEnv();
 };
 
+class SemanticVersion {
+public:
+  unsigned int major = 0;
+  unsigned int minor = 0;
+  unsigned int patch = 0;
+  SemanticVersion(unsigned int major, unsigned int minor, unsigned int patch)
+      : major{major}, minor{minor}, patch{patch} {};
+  SemanticVersion(std::string version) {
+    // Deal with versions starting/ending with .
+    if (version.compare(0, 1, ".") == 0) {
+      version = "0" + version;
+    }
+    if (version.compare(version.size() - 1, 1, ".") == 0) {
+      version.append("0");
+    }
+    // Parse version number
+    sscanf(version.c_str(), "%d.%d.%d", &major, &minor, &patch);
+  }
+  bool operator<(const SemanticVersion& other) const {
+    if (major < other.major) {
+      return true;
+    }
+    if (minor < other.minor) {
+      return true;
+    }
+    if (patch < other.patch) {
+      return true;
+    }
+
+    return false;
+  }
+  bool operator<=(const SemanticVersion& other) const {
+    if (major > other.major) {
+      return false;
+    }
+    if (minor > other.minor) {
+      return false;
+    }
+    if (patch > other.patch) {
+      return false;
+    }
+
+    return true;
+  }
+  bool operator==(const SemanticVersion& other) const {
+    return major == other.major && minor == other.minor && patch == other.patch;
+  }
+  friend std::ostream& operator<<(std::ostream& stream, const SemanticVersion& ver) {
+    stream << ver.major;
+    stream << '.';
+    stream << ver.minor;
+    stream << '.';
+    stream << ver.patch;
+    return stream;
+  };
+};
+
 }  // namespace MiniZinc

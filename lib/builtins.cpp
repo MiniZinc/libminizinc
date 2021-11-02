@@ -22,12 +22,15 @@
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/support/regex.hh>
 #include <minizinc/typecheck.hh>
+#include <minizinc/utils.hh>
 
 #include <climits>
 #include <cmath>
 #include <iomanip>
 #include <random>
 #include <regex>
+
+#define LAST_SUPPORTED_VERSION SemanticVersion(2, 4, 3)
 
 namespace MiniZinc {
 
@@ -1594,12 +1597,17 @@ Expression* b_mzn_deprecate(EnvI& env, Call* call) {
   GCLock lock;
   std::string fnName = eval_string(env, call->arg(0));
   if (env.deprecationWarnings.find(fnName) == env.deprecationWarnings.end()) {
+    std::ostringstream w;
     env.deprecationWarnings.insert(fnName);
     env.dumpStack(env.errstream, false);
-    env.errstream << "  The function/predicate `" << fnName;
-    env.errstream << "' was deprecated in MiniZinc version " << eval_string(env, call->arg(1));
-    env.errstream << ".\n  More information can be found at " << eval_string(env, call->arg(2))
-                  << ".\n";
+    std::string version = eval_string(env, call->arg(1));
+    w << "The function/predicate `" << fnName << "' was deprecated in MiniZinc version " << version
+      << ".\nMore information can be found at " << eval_string(env, call->arg(2)) << ".\n";
+    if (SemanticVersion(version) <= LAST_SUPPORTED_VERSION) {
+      w << "IMPORTANT: This function/predicate will be removed in the next minor version release "
+           "of MiniZinc.\n";
+    }
+    env.addWarning(w.str());
   }
   return call->arg(3);
 }
