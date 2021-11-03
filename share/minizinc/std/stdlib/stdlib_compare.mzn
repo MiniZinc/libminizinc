@@ -272,160 +272,80 @@ function var bool: '>='(array[$U] of var set of int: x,array[$U] of var set of i
          lex_lesseq(array1d(y),array1d(x)));
 
 /** @group stdlib.builtins.compare Return if array \a x is equal to array \a y */
-function     bool: '='(array[$T] of     int: x,array[$T] of     int: y) =
+function bool: '='(array[$U] of $T: x, array[$U] of $T: y) =
     let {
-        array[int] of int: xx = array1d(x);
-        array[int] of int: yy = array1d(y);
+        any: xx = array1d(x);
+        any: yy = array1d(y);
     } in
     assert(index_sets_agree(x,y), "array index sets do not match",
       forall (i in index_set(xx)) (xx[i]=yy[i])
     );
 
 /** @group stdlib.builtins.compare Return if array \a x is equal to array \a y */
-function var bool: '='(array[$T] of var int: x,array[$T] of var int: y) =
+function bool: '='(array[$U] of opt $T: x, array[$U] of opt $T: y) =
     let {
-        array[int] of var int: xx = array1d(x);
-        array[int] of var int: yy = array1d(y);
+        any: xx = array1d(x);
+        any: yy = array1d(y);
     } in
     assert(index_sets_agree(x,y), "array index sets do not match",
       forall (i in index_set(xx)) (xx[i]=yy[i])
     );
 
 /** @group stdlib.builtins.compare Return if array \a x is equal to array \a y */
-function     bool: '='(array[$T] of     bool: x,array[$T] of     bool: y) =
+function var bool: '='(array[$U] of var $T: x, array[$U] of var $T: y) =
     let {
-        array[int] of bool: xx = array1d(x);
-        array[int] of bool: yy = array1d(y);
+        any: xx = array1d(x);
+        any: yy = array1d(y);
     } in
     assert(index_sets_agree(x,y), "array index sets do not match",
       forall (i in index_set(xx)) (xx[i]=yy[i])
     );
 
 /** @group stdlib.builtins.compare Return if array \a x is equal to array \a y */
-function var bool: '='(array[$T] of var bool: x,array[$T] of var bool: y) =
+function var bool: '='(array[$U] of  var opt $T: x,array[$U] of var opt $T: y) =
     let {
-        array[int] of var bool: xx = array1d(x);
-        array[int] of var bool: yy = array1d(y);
-    } in
-    assert(index_sets_agree(x,y), "array index sets do not match",
-      forall (i in index_set(xx)) (xx[i]=yy[i])
-    );
-
-/** @group stdlib.builtins.compare Return if array \a x is equal to array \a y */
-function     bool: '='(array[$T] of     set of int: x,array[$T] of     set of int: y) =
-    let {
-        array[int] of set of int: xx = array1d(x);
-        array[int] of set of int: yy = array1d(y);
-    } in
-    assert(index_sets_agree(x,y), "array index sets do not match",
-      forall (i in index_set(xx)) (xx[i]=yy[i])
-    );
-
-/** @group stdlib.builtins.compare Return if array \a x is equal to array \a y */
-function var bool: '='(array[$T] of var set of int: x,array[$T] of var set of int: y) =
-    let {
-        array[int] of var set of int: xx = array1d(x);
-        array[int] of var set of int: yy = array1d(y);
-    } in
-    assert(index_sets_agree(x,y), "array index sets do not match",
-      forall (i in index_set(xx)) (xx[i]=yy[i])
-    );
-
-/** @group stdlib.builtins.compare Return if array \a x is equal to array \a y */
-function     bool: '='(array[$T] of     float: x,array[$T] of     float: y) =
-    let {
-        array[int] of float: xx = array1d(x);
-        array[int] of float: yy = array1d(y);
-    } in
-    assert(index_sets_agree(x,y), "array index sets do not match",
-      forall (i in index_set(xx)) (xx[i]=yy[i])
-    );
-
-/** @group stdlib.builtins.compare Return if array \a x is equal to array \a y */
-function var bool: '='(array[$T] of var float: x,array[$T] of var float: y) =
-    let {
-        array[int] of var float: xx = array1d(x);
-        array[int] of var float: yy = array1d(y);
+        any: xx = array1d(x);
+        any: yy = array1d(y);
     } in
     assert(index_sets_agree(x,y), "array index sets do not match",
       forall (i in index_set(xx)) (xx[i]=yy[i])
     );
 
 /** @group stdlib.builtins.compare Return if array \a x is not equal to array \a y */
-function     bool: '!='(array[$T] of     int: x,array[$T] of     int: y) =
+function bool: '!='(array[$U] of $T: x, array[$U] of $T: y) =
     let {
-        array[int] of int: xx = array1d(x);
-        array[int] of int: yy = array1d(y);
+        any: xx = array1d(x);
+        any: yy = array1d(y);
     } in
     assert(index_sets_agree(x,y), "array index sets do not match",
       exists (i in index_set(xx)) (xx[i]!=yy[i])
     );
 
 /** @group stdlib.builtins.compare Return if array \a x is not equal to array \a y */
-function var bool: '!='(array[$T] of var int: x,array[$T] of var int: y) =
+function bool: '!='(array[$U] of opt $T: x, array[$U] of opt $T: y) =
     let {
-        array[int] of var int: xx = array1d(x);
-        array[int] of var int: yy = array1d(y);
+        any: xx = array1d(x);
+        any: yy = array1d(y);
     } in
     assert(index_sets_agree(x,y), "array index sets do not match",
       exists (i in index_set(xx)) (xx[i]!=yy[i])
     );
 
 /** @group stdlib.builtins.compare Return if array \a x is not equal to array \a y */
-function     bool: '!='(array[$T] of     bool: x,array[$T] of     bool: y) =
+function var bool: '!='(array[$U] of var $T: x, array[$U] of var $T: y) =
     let {
-        array[int] of bool: xx = array1d(x);
-        array[int] of bool: yy = array1d(y);
+        any: xx = array1d(x);
+        any: yy = array1d(y);
     } in
     assert(index_sets_agree(x,y), "array index sets do not match",
       exists (i in index_set(xx)) (xx[i]!=yy[i])
     );
 
 /** @group stdlib.builtins.compare Return if array \a x is not equal to array \a y */
-function var bool: '!='(array[$T] of var bool: x,array[$T] of var bool: y) =
+function var bool: '!='(array[$U] of var opt $T: x, array[$U] of var opt $T: y) =
     let {
-        array[int] of var bool: xx = array1d(x);
-        array[int] of var bool: yy = array1d(y);
-    } in
-    assert(index_sets_agree(x,y), "array index sets do not match",
-      exists (i in index_set(xx)) (xx[i]!=yy[i])
-    );
-
-/** @group stdlib.builtins.compare Return if array \a x is not equal to array \a y */
-function     bool: '!='(array[$T] of     set of int: x,array[$T] of     set of int: y) =
-    let {
-        array[int] of set of int: xx = array1d(x);
-        array[int] of set of int: yy = array1d(y);
-    } in
-    assert(index_sets_agree(x,y), "array index sets do not match",
-      exists (i in index_set(xx)) (xx[i]!=yy[i])
-    );
-
-/** @group stdlib.builtins.compare Return if array \a x is not equal to array \a y */
-function var bool: '!='(array[$T] of var set of int: x,array[$T] of var set of int: y) =
-    let {
-        array[int] of var set of int: xx = array1d(x);
-        array[int] of var set of int: yy = array1d(y);
-    } in
-    assert(index_sets_agree(x,y), "array index sets do not match",
-      exists (i in index_set(xx)) (xx[i]!=yy[i])
-    );
-
-/** @group stdlib.builtins.compare Return if array \a x is not equal to array \a y */
-function     bool: '!='(array[$T] of     float: x,array[$T] of     float: y) =
-    let {
-        array[int] of float: xx = array1d(x);
-        array[int] of float: yy = array1d(y);
-    } in
-    assert(index_sets_agree(x,y), "array index sets do not match",
-      exists (i in index_set(xx)) (xx[i]!=yy[i])
-    );
-
-/** @group stdlib.builtins.compare Return if array \a x is not equal to array \a y */
-function var bool: '!='(array[$T] of var float: x,array[$T] of var float: y) =
-    let {
-        array[int] of var float: xx = array1d(x);
-        array[int] of var float: yy = array1d(y);
+        any: xx = array1d(x);
+        any: yy = array1d(y);
     } in
     assert(index_sets_agree(x,y), "array index sets do not match",
       exists (i in index_set(xx)) (xx[i]!=yy[i])
