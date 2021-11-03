@@ -4,9 +4,6 @@
   These functions implement the basic operations on sets.
 */
 
-include "fzn_array_set_union.mzn";
-include "fzn_array_set_intersect.mzn";
-
 /** @group stdlib.builtins.set Test if \a x is an element of the set \a y */
 function     bool: 'in'(    int: x,     set of int: y);
 /** @group stdlib.builtins.set \a x is an element of the set \a y */

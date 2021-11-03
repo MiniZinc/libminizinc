@@ -4,9 +4,6 @@
   These functions implement the basic operations on arrays.
 */
 
-include "fzn_array_int_union.mzn";
-include "fzn_array_opt_int_union.mzn";
-
 /** @group stdlib.builtins.array Return the concatenation of arrays \a x and \a y */
 function array[int] of any $T: '++'(array[int] of any $T: x, array[int] of any $T: y);
 

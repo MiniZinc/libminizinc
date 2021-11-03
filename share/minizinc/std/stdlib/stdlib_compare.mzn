@@ -159,9 +159,6 @@ function bool: '!='(int: x, float: y) =
 function bool: '!='(float: x, int: y) =
   if ceil(x)=floor(x) then y != ceil(x) else true endif;
 
-include "lex_less.mzn";
-include "lex_lesseq.mzn";
-
 test lex_less(array[int] of $T: x,array[int] of $T: y) =
   if length(x)=1 /\ length(y)=1 then x[min(index_set(x))] < y[min(index_set(y))]
   elseif length(x)=0 then length(y)>0
