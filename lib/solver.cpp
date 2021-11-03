@@ -35,12 +35,6 @@
 #include <iostream>
 #include <ratio>
 
-#ifdef HAS_GUROBI
-#include <minizinc/solvers/MIP/MIP_gurobi_solverfactory.hh>
-#endif
-#ifdef HAS_CPLEX
-#include <minizinc/solvers/MIP/MIP_cplex_solverfactory.hh>
-#endif
 #ifdef HAS_OSICBC
 #include <minizinc/solvers/MIP/MIP_osicbc_solverfactory.hh>
 #endif
@@ -56,6 +50,8 @@
 #ifdef HAS_SCIP
 #include <minizinc/solvers/MIP/MIP_scip_solverfactory.hh>
 #endif
+#include <minizinc/solvers/MIP/MIP_cplex_solverfactory.hh>
+#include <minizinc/solvers/MIP/MIP_gurobi_solverfactory.hh>
 #include <minizinc/solvers/fzn_solverfactory.hh>
 #include <minizinc/solvers/fzn_solverinstance.hh>
 #include <minizinc/solvers/mzn_solverfactory.hh>
@@ -67,12 +63,6 @@ using namespace std;
 using namespace MiniZinc;
 
 SolverInitialiser::SolverInitialiser() {
-#ifdef HAS_GUROBI
-  GurobiSolverFactoryInitialiser _gurobi_init;
-#endif
-#ifdef HAS_CPLEX
-  static CplexSolverFactoryInitialiser _cplex_init;
-#endif
 #ifdef HAS_OSICBC
   static OSICBCSolverFactoryInitialiser _osicbc_init;
 #endif
@@ -88,7 +78,9 @@ SolverInitialiser::SolverInitialiser() {
 #ifdef HAS_SCIP
   static SCIPSolverFactoryInitialiser _scip_init;
 #endif
+  static CplexSolverFactoryInitialiser _cplex_init;
   static FZNSolverFactoryInitialiser _fzn_init;
+  static GurobiSolverFactoryInitialiser _gurobi_init;
   static MZNSolverFactoryInitialiser _mzn_init;
   static NLSolverFactoryInitialiser _nl_init;
 }

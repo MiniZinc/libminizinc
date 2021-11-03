@@ -13,9 +13,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#include <minizinc/_thirdparty/b64/decode.h>
-#include <minizinc/_thirdparty/b64/encode.h>
-#include <minizinc/_thirdparty/miniz.h>
 #include <minizinc/config.hh>
 #include <minizinc/exception.hh>
 #include <minizinc/file_utils.hh>
@@ -24,6 +21,10 @@
 #include <cstring>
 #include <sstream>
 #include <string>
+
+#include <minizinc/_thirdparty/b64/decode.h>
+#include <minizinc/_thirdparty/b64/encode.h>
+#include <minizinc/_thirdparty/miniz.h>
 
 #ifdef HAS_PIDPATH
 #include <cstdio>

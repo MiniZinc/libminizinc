@@ -14,8 +14,7 @@
 #include <minizinc/solver_instance_base.hh>
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
 
-#include <xprb.h>
-#include <xprs.h>
+#include <minizinc/_thirdparty/xpress_interface.h>
 
 using namespace std;
 

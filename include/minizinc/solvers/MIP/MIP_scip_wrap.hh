@@ -17,19 +17,11 @@
 #include <minizinc/solver_instance_base.hh>
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
 
-#include <scip/scip.h>
-#include <scip/scipdefplugins.h>
+#include <minizinc/_thirdparty/scip_interface.h>
 
 #ifndef _WIN32
 // NOLINTNEXTLINE(bugprone-reserved-identifier)
 #define __stdcall
-#endif
-
-// Workaround for SCIP replacing function calls with macros in release mode
-#ifdef NDEBUG
-#define SCIPinfinityPlugin(plugin, scip) SCIPinfinity(scip)
-#else
-#define SCIPinfinityPlugin(plugin, scip) plugin->SCIPinfinity(scip)
 #endif
 
 class ScipPlugin : public MiniZinc::Plugin {
@@ -394,7 +386,7 @@ public:
   }
   virtual SCIP_RETCODE setObjSenseSCIP(int s);
 
-  double getInfBound() override { return SCIPinfinityPlugin(_plugin, _scip); }
+  double getInfBound() override { return _plugin->SCIPinfinity(_scip); }
 
   int getNCols() override { return _plugin->SCIPgetNVars(_scip); }
   int getNRows() override { return _plugin->SCIPgetNConss(_scip); }

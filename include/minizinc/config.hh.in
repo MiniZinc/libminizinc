@@ -22,10 +22,6 @@
 
 #cmakedefine COMPILE_BOOST_MINCUT
 
-#cmakedefine HAS_DLFCN_H
-
-#cmakedefine HAS_WINDOWS_H
-
 #cmakedefine GUROBI_PLUGIN
 
 #cmakedefine CPLEX_PLUGIN

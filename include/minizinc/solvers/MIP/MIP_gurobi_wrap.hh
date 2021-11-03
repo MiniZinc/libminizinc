@@ -17,7 +17,11 @@
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
 
 extern "C" {
+#ifdef GUROBI_PLUGIN
+#include <minizinc/_thirdparty/gurobi_interface.h>
+#else
 #include <gurobi_c.h>  // need GUROBI_HOME defined
+#endif
 }
 
 class MIPGurobiWrapper : public MIPWrapper {

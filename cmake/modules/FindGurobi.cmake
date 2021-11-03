@@ -14,7 +14,6 @@ set(GUROBI_VERSIONS 913 912 911 910 903 902 901 900 811 810 801 752 702)
 
 foreach(VERSION ${GUROBI_VERSIONS})
   list(APPEND GUROBI_DEFAULT_LOC "/opt/gurobi${VERSION}/linux64")
-  list(APPEND GUROBI_DEFAULT_LOC "/opt/gurobi${VERSION}/linux64")
   list(APPEND GUROBI_DEFAULT_LOC "C:\\gurobi${VERSION}\\win64")
   list(APPEND GUROBI_DEFAULT_LOC "C:\\gurobi${VERSION}\\win32")
   list(APPEND GUROBI_DEFAULT_LOC "/Library/gurobi${VERSION}/mac64")
@@ -41,27 +40,15 @@ if(NOT "${GUROBI_INCLUDE}" STREQUAL "GUROBI_INCLUDE-NOTFOUND")
   unset(GUROBI_CONFIG)
 endif()
 
-if(GUROBI_PLUGIN)
-  include(CheckIncludeFiles)
-  # TODO: Cleanup this mess
-  check_include_files(dlfcn.h HAS_DLFCN_H)
-  check_include_files(Windows.h HAS_WINDOWS_H)
-  if(HAS_DLFCN_H)
-    find_library(GUROBI_LIBRARY dl)
-  elseif(HAS_WINDOWS_H)
-    set(GUROBI_LIBRARY ${GUROBI_INCLUDE})
-  endif()
-else()
-  foreach(GUROBI_LIB ${GUROBI_LIB_NAMES})
-    find_library(GUROBI_LIBRARY NAMES ${GUROBI_LIB}
-                 HINTS $ENV{GUROBI_HOME}
-                 PATHS ${GUROBI_DEFAULT_LOC}
-                 PATH_SUFFIXES lib)
-    if(NOT "${GUROBI_LIBRARY}" STREQUAL "GUROBI_LIBRARY-NOTFOUND")
-      break()
-    endif()
-  endforeach(GUROBI_LIB)
-endif()
+foreach(GUROBI_LIB ${GUROBI_LIB_NAMES})
+	find_library(GUROBI_LIBRARY NAMES ${GUROBI_LIB}
+							 HINTS $ENV{GUROBI_HOME}
+							 PATHS ${GUROBI_DEFAULT_LOC}
+							 PATH_SUFFIXES lib)
+	if(NOT "${GUROBI_LIBRARY}" STREQUAL "GUROBI_LIBRARY-NOTFOUND")
+		break()
+	endif()
+endforeach(GUROBI_LIB)
 
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set GUROBI_FOUND to TRUE
@@ -72,10 +59,6 @@ find_package_handle_standard_args(Gurobi
   VERSION_VAR GUROBI_VERSION
   FAIL_MESSAGE "Could NOT find Gurobi, use Gurobi_ROOT to hint its location"
 )
-
-if(GUROBI_PLUGIN AND HAS_WINDOWS_H AND NOT HAS_DLFCN_H)
-  unset(GUROBI_LIBRARY)
-endif()
 
 mark_as_advanced(GUROBI_INCLUDE GUROBI_LIBRARY)
 

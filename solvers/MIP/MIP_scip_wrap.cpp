@@ -429,8 +429,8 @@ SCIP_RETCODE MIPScipWrapper::addRowSCIP(int nnz, int* rmatind, double* rmatval,
                                         MIPWrapper::LinConType sense, double rhs, int mask,
                                         const string& rowName) {
   /// Convert var types:
-  double lh = -SCIPinfinityPlugin(_plugin, _scip);
-  double rh = SCIPinfinityPlugin(_plugin, _scip);
+  double lh = -getInfBound();
+  double rh = getInfBound();
   switch (sense) {
     case LQ:
       rh = rhs;

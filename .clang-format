@@ -7,6 +7,9 @@ AccessModifierOffset: -2
 
 IncludeBlocks: Regroup
 IncludeCategories:
+  - Regex:           '^(<minizinc/_thirdparty/)'
+    Priority:        3
+    SortPriority:    3
   - Regex:           '^(<minizinc/)'
     Priority:        0
     SortPriority:    0

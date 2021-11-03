@@ -29,12 +29,12 @@
 #include <string>
 
 #ifdef GUROBI_PLUGIN
-#ifdef HAS_DLFCN_H
-#include <dlfcn.h>
-#elif defined HAS_WINDOWS_H
+#ifdef _WIN32
 #define NOMINMAX  // Ensure the words min/max remain available
 #include <Windows.h>
 #undef ERROR
+#else
+#include <dlfcn.h>
 #endif
 #endif
 
@@ -253,24 +253,23 @@ void MIPGurobiWrapper::wrapAssert(bool cond, const string& msg, bool fTerm) {
 
 namespace {
 void* dll_open(const char* file) {
-#ifdef HAS_DLFCN_H
-  if (MiniZinc::FileUtils::is_absolute(file)) {
-    return dlopen(file, RTLD_NOW);
-  }
-  return dlopen((std::string("lib") + file + ".so").c_str(), RTLD_NOW);
-
-#else
+#ifdef _WIN32
   if (MiniZinc::FileUtils::is_absolute(file)) {
     return LoadLibrary(file);
   }
   return LoadLibrary((std::string(file) + ".dll").c_str());
+#else
+  if (MiniZinc::FileUtils::is_absolute(file)) {
+    return dlopen(file, RTLD_NOW);
+  }
+  return dlopen((std::string("lib") + file + ".so").c_str(), RTLD_NOW);
 #endif
 }
 void* dll_sym(void* dll, const char* sym) {
-#ifdef HAS_DLFCN_H
-  void* ret = dlsym(dll, sym);
-#else
+#ifdef _WIN32
   void* ret = GetProcAddress((HMODULE)dll, sym);
+#else
+  void* ret = dlsym(dll, sym);
 #endif
   if (ret == nullptr) {
     throw MiniZinc::Error("cannot load symbol " + string(sym) + " from gurobi dll");
@@ -278,10 +277,10 @@ void* dll_sym(void* dll, const char* sym) {
   return ret;
 }
 void dll_close(void* dll) {
-#ifdef HAS_DLFCN_H
-  dlclose(dll);
-#else
+#ifdef _WIN32
   FreeLibrary((HMODULE)dll);
+#else
+  dlclose(dll);
 #endif
 }
 }  // namespace

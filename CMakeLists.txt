@@ -14,8 +14,8 @@ endif()
 #  -- Project build options
 
 # Static vs. Dynamic linking
-option(CPlex_PLUGIN "Build CPLEX binding as a plugin" ON)
-option(Gurobi_PLUGIN "Build Gurobi binding as a plugin" ON)
+option(CPLEX_PLUGIN "Build CPLEX binding as a plugin" ON)
+option(GUROBI_PLUGIN "Build Gurobi binding as a plugin" ON)
 
 # CMake options default value
 option(CMAKE_POSITION_INDEPENDENT_CODE "Default value for POSITION_INDEPENDENT_CODE of targets" TRUE)
@@ -33,13 +33,15 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 if(POLICY CMP0074)
   cmake_policy(SET CMP0074 NEW)
 endif(POLICY CMP0074)
-find_package(CPlex)
 find_package(Geas)
 find_package(Gecode 6.0 COMPONENTS Driver Float Int Kernel Minimodel Search Set Support)
-find_package(Gurobi)
 find_package(OsiCBC)
-find_package(SCIP)
-find_package(Xpress)
+if(NOT CPLEX_PLUGIN)
+	find_package(CPlex REQUIRED)
+endif()
+if(NOT GUROBI_PLUGIN)
+	find_package(Gurobi REQUIRED)
+endif()
 
 # Set build type when none is selected
 set(DEFAULT_BUILD_TYPE "Release")

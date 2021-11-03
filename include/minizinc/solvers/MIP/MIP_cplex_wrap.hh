@@ -17,7 +17,11 @@
 #include <minizinc/solver_instance_base.hh>
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
 
-#include <ilcplex/cplex.h>  // add -DCPLEX_STUDIO_DIR=/opt/ibm/ILOG/CPLEX_Studio1261 to the 1st call of cmake
+#ifdef CPLEX_PLUGIN
+#include <minizinc/_thirdparty/cplex_interface.h>
+#else
+#include <ilcplex/cplex.h>
+#endif
 
 class MIPCplexWrapper : public MIPWrapper {
   CPXENVptr _env = nullptr;
