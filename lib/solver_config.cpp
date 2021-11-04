@@ -628,6 +628,14 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
   if (_mznlibDir != "/usr/share/minizinc" && FileUtils::directory_exists("/usr/share")) {
     _solverPath.emplace_back("/usr/share/minizinc/solvers");
   }
+  if (_mznlibDir != "/home/linuxbrew/.linuxbrew/share/minizinc" &&
+      FileUtils::directory_exists("/home/linuxbrew/.linuxbrew/share")) {
+    _solverPath.emplace_back("/home/linuxbrew/.linuxbrew/share/minizinc/solvers");
+  }
+  if (_mznlibDir != "/opt/homebrew/share/minizinc" &&
+      FileUtils::directory_exists("/opt/homebrew/share")) {
+    _solverPath.emplace_back("/opt/homebrew/share/minizinc/solvers");
+  }
 #endif
 }
 
