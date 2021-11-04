@@ -712,7 +712,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           }
           MiniZinc::register_builtins(*env);
           env->swap();
-          populate_output(*env);
+          populate_output(*env, _flags.encapsulateJSON);
         } else {
           if (_flags.verbose) {
             _log << "Flattening ...";

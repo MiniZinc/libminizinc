@@ -1520,7 +1520,7 @@ std::ostream& EnvI::dumpStack(std::ostream& os, bool errStack) {
   return os;
 }
 
-void populate_output(Env& env) {
+void populate_output(Env& env, bool encapsulateJSON) {
   EnvI& envi = env.envi();
   Model* _flat = envi.flat();
   Model* _output = envi.output;
@@ -1587,8 +1587,20 @@ void populate_output(Env& env) {
       }
     }
   }
-  auto* newOutputItem =
-      new OutputI(Location().introduce(), new ArrayLit(Location().introduce(), outputVars));
+  auto* al = new ArrayLit(Location().introduce(), outputVars);
+  al->type(Type::parstring(1));
+  if (encapsulateJSON) {
+    auto* concat = new Call(Location().introduce(), "concat", {al});
+    concat->type(Type::parstring());
+    concat->decl(_flat->matchFn(envi, concat, false));
+    auto* showJSON = new Call(Location().introduce(), envi.constants.ids.showJSON, {concat});
+    showJSON->type(Type::parstring());
+    showJSON->decl(_flat->matchFn(envi, showJSON, false));
+    std::vector<Expression*> al_v({new StringLit(Location().introduce(), "{\"dzn\": "), showJSON,
+                                   new StringLit(Location().introduce(), "}")});
+    al = new ArrayLit(Location().introduce(), al_v);
+  }
+  auto* newOutputItem = new OutputI(Location().introduce(), al);
   _output->addItem(newOutputItem);
   envi.flat()->mergeStdLib(envi, _output);
 }

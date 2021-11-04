@@ -88,7 +88,7 @@ void flatten(Env& e, FlatteningOptions opt = FlatteningOptions());
 void oldflatzinc(Env& e);
 
 /// Populate FlatZinc output model
-void populate_output(Env& e);
+void populate_output(Env& e, bool encapsulateJSON);
 
 /// Statistics on flat models
 struct FlatModelStatistics {
