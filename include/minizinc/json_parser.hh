@@ -24,7 +24,7 @@ class JSONError : public LocationException {
 public:
   JSONError(EnvI& env, const Location& loc, const std::string& msg)
       : LocationException(env, loc, msg) {}
-  const char* what() const throw() override { return "MiniZinc: JSON parsing error"; }
+  const char* what() const throw() override { return "JSON parsing error"; }
 };
 
 class JSONParser {

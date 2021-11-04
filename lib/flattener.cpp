@@ -696,6 +696,10 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           mzc_f.close();
         }
         status = SolverInstance::NONE;
+        // Not flattening so have to print warnings ourselves
+        env->dumpWarnings(_flags.encapsulateJSON ? _os : _log, _flags.werror,
+                          _flags.encapsulateJSON);
+        env->clearWarnings();
       } else {
         if (_isFlatzinc) {
           GCLock lock;

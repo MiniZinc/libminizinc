@@ -41,7 +41,7 @@ public:
     /// Destructor
     ~PluginError() throw() override {}
     /// Return description
-    const char* what() const throw() override { return "MiniZinc: plugin loading error"; }
+    const char* what() const throw() override { return "plugin loading error"; }
   };
 
   /// Load a plugin with given DLL path

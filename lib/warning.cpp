@@ -36,9 +36,10 @@ void Warning::json(std::ostream& os, bool werror) const {
   }
   os << "warning\", ";
   if (!_loc.filename().empty()) {
-    os << "\"location\": {\"firstLine\": " << _loc.firstLine()
-       << ", \"firstColumn\": " << _loc.firstColumn() << ", \"lastLine\": " << _loc.lastLine()
-       << ", \"lastColumn\": " << _loc.lastColumn() << "}, ";
+    os << "\"location\": {\"filename\": \"" << Printer::escapeStringLit(_loc.filename())
+       << "\", \"firstLine\": " << _loc.firstLine() << ", \"firstColumn\": " << _loc.firstColumn()
+       << ", \"lastLine\": " << _loc.lastLine() << ", \"lastColumn\": " << _loc.lastColumn()
+       << "}, ";
   }
   os << "\"message\": \"" << Printer::escapeStringLit(_msg) << "\"}" << std::endl;
 }

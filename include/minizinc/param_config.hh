@@ -53,6 +53,6 @@ public:
   /// Destructor
   ~ParamException() throw() override {}
   /// Return description
-  const char* what() const throw() override { return "MiniZinc: solver parameter error"; }
+  const char* what() const throw() override { return "solver parameter error"; }
 };
 }  // namespace MiniZinc

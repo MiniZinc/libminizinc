@@ -304,6 +304,6 @@ public:
   /// Destructor
   ~ConfigException() throw() override {}
   /// Return description
-  const char* what() const throw() override { return "MiniZinc: configuration error"; }
+  const char* what() const throw() override { return "configuration error"; }
 };
 }  // namespace MiniZinc
