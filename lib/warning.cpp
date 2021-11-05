@@ -14,19 +14,13 @@
 
 namespace MiniZinc {
 
-void Warning::createStack(EnvI& env) {
-  std::stringstream s;
-  env.createErrorStack();
-  env.dumpStack(s, true);
-  _stack = s.str();
-}
-
 void Warning::print(std::ostream& os, bool werror) const {
   os << (werror ? "ERROR" : "WARNING") << ": " << _msg << "\n";
-  if (!_loc.filename().empty()) {
+  if (_stack != nullptr) {
+    _stack->print(os);
+  } else if (!_loc.filename().empty()) {
     os << "  " << _loc << ":\n  ";
   }
-  os << _stack << std::endl;
 }
 
 void Warning::json(std::ostream& os, bool werror) const {
@@ -36,10 +30,12 @@ void Warning::json(std::ostream& os, bool werror) const {
   }
   os << "warning\", ";
   if (!_loc.filename().empty()) {
-    os << "\"location\": {\"filename\": \"" << Printer::escapeStringLit(_loc.filename())
-       << "\", \"firstLine\": " << _loc.firstLine() << ", \"firstColumn\": " << _loc.firstColumn()
-       << ", \"lastLine\": " << _loc.lastLine() << ", \"lastColumn\": " << _loc.lastColumn()
-       << "}, ";
+    os << "\"location\": " << _loc.toJSON() << ", ";
+  }
+  if (_stack != nullptr) {
+    os << "\"stack\": ";
+    _stack->json(os);
+    os << ", ";
   }
   os << "\"message\": \"" << Printer::escapeStringLit(_msg) << "\"}" << std::endl;
 }

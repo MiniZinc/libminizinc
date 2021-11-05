@@ -14,6 +14,7 @@
 #include <minizinc/ast.hh>
 #include <minizinc/exception.hh>
 #include <minizinc/model.hh>
+#include <minizinc/stackdump.hh>
 
 #include <string>
 
@@ -57,7 +58,7 @@ public:
 
 class LocationException : public Exception {
 protected:
-  EnvI& _env;
+  StackDump _stack;
   Location _loc;
   bool _dumpStack = false;
 

@@ -27,10 +27,7 @@ void SyntaxError::print(std::ostream& os) const {
 
 void SyntaxError::json(std::ostream& os) const {
   os << "{\"type\": \"error\", \"what\": \"" << Printer::escapeStringLit(std::string(what()))
-     << "\", \"location\": {\"filename\": \"" << Printer::escapeStringLit(loc().filename())
-     << "\", \"firstLine\": " << loc().firstLine() << ", \"firstColumn\": " << loc().firstColumn()
-     << ", \"lastLine\": " << loc().lastLine() << ", \"lastColumn\": " << loc().lastColumn()
-     << "}, ";
+     << "\", \"location\": " << loc().toJSON() << ", ";
   if (!_includeStack.empty()) {
     os << "\"includedFrom\": [";
     bool first = true;
@@ -70,26 +67,23 @@ void CyclicIncludeError::json(std::ostream& os) const {
 }
 
 LocationException::LocationException(EnvI& env, const Location& loc, const std::string& msg)
-    : Exception(msg), _env(env), _loc(loc) {
-  env.createErrorStack();
-}
+    : Exception(msg), _stack(env), _loc(loc) {}
 
 void LocationException::print(std::ostream& os) const {
   Exception::print(os);
   if (_dumpStack) {
-    _env.dumpStack(os, true);
+    _stack.print(os);
   } else {
     os << "  " << loc() << "\n";
   }
 }
 
 void LocationException::json(std::ostream& os) const {
-  // TODO: Allow dumping of stack?
   os << "{\"type\": \"error\", \"what\": \"" << Printer::escapeStringLit(std::string(what()))
-     << "\", \"location\": {\"filename\": \"" << Printer::escapeStringLit(loc().filename())
-     << "\", \"firstLine\": " << loc().firstLine() << ", \"firstColumn\": " << loc().firstColumn()
-     << ", \"lastLine\": " << loc().lastLine() << ", \"lastColumn\": " << loc().lastColumn()
-     << "}, \"message\": \"" << Printer::escapeStringLit(msg()) << "\"}" << std::endl;
+     << "\", \"location\": " << loc().toJSON() << ", \"message\": \""
+     << Printer::escapeStringLit(msg()) << "\", \"stack\": ";
+  _stack.json(os);
+  os << "}" << std::endl;
 }
 
 ResultUndefinedError::ResultUndefinedError(EnvI& env, const Location& loc, const std::string& msg)
@@ -99,7 +93,7 @@ ResultUndefinedError::ResultUndefinedError(EnvI& env, const Location& loc, const
     if (!msg.empty()) {
       warning += "\n  (" + msg + ")";
     }
-    env.addWarning(warning);
+    env.addWarning(loc, warning);
   }
 }
 

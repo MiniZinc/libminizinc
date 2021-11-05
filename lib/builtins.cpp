@@ -1483,7 +1483,7 @@ bool b_annotate(EnvI& env, Call* call) {
     // Argument is a literal, unable to annotate
     std::ostringstream ss;
     ss << "Unable to annotate literal expression `" << *expr << "'.";
-    env.addWarning(ss.str());
+    env.addWarning(call->loc(), ss.str());
     return true;
   }
   auto* var_decl = follow_id_to_decl(expr)->cast<VarDecl>();
@@ -1599,15 +1599,14 @@ Expression* b_mzn_deprecate(EnvI& env, Call* call) {
   if (env.deprecationWarnings.find(fnName) == env.deprecationWarnings.end()) {
     std::ostringstream w;
     env.deprecationWarnings.insert(fnName);
-    env.dumpStack(env.errstream, false);
     std::string version = eval_string(env, call->arg(1));
     w << "The function/predicate `" << fnName << "' was deprecated in MiniZinc version " << version
-      << ".\nMore information can be found at " << eval_string(env, call->arg(2)) << ".\n";
+      << ".\nMore information can be found at " << eval_string(env, call->arg(2)) << ".";
     if (SemanticVersion(version) <= LAST_SUPPORTED_VERSION) {
-      w << "IMPORTANT: This function/predicate will be removed in the next minor version release "
-           "of MiniZinc.\n";
+      w << "\nIMPORTANT: This function/predicate will be removed in the next minor version release "
+           "of MiniZinc.";
     }
-    env.addWarning(w.str());
+    env.addWarning(call->loc(), w.str());
   }
   return call->arg(3);
 }

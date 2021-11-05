@@ -172,6 +172,9 @@ public:
   /// Return string representation
   std::string toString() const;
 
+  /// Return JSON representation
+  std::string toJSON() const;
+
   /// Return filename
   ASTString filename() const { return lv() != nullptr ? lv()->filename() : ASTString(); }
 

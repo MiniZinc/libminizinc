@@ -12,27 +12,26 @@
 #pragma once
 
 #include <minizinc/ast.hh>
+#include <minizinc/stackdump.hh>
 
 #include <exception>
+#include <memory>
 
 namespace MiniZinc {
 class Warning {
 protected:
   Location _loc;
   std::string _msg;
-  std::string _stack;
-
-  void createStack(EnvI& env);
+  std::unique_ptr<StackDump> _stack;
 
 public:
   /// Create a warning that does not have a stack dump
   Warning(std::string msg) : _msg(std::move(msg)) {}
-  /// Create a warning with a stack dump
-  Warning(EnvI& env, std::string msg) : _msg(std::move(msg)) { createStack(env); }
+  /// Create a warning with a location
+  Warning(const Location& loc, std::string msg) : _loc(loc), _msg(std::move(msg)) {}
   /// Create a warning with a stack dump and location
-  Warning(EnvI& env, const Location& loc, std::string msg) : _loc(loc), _msg(std::move(msg)) {
-    createStack(env);
-  }
+  Warning(EnvI& env, const Location& loc, std::string msg)
+      : _loc(loc), _msg(std::move(msg)), _stack(new StackDump(env)) {}
 
   /// Print human-readable warning/error message
   void print(std::ostream& os, bool werror) const;

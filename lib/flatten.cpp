@@ -1002,8 +1002,8 @@ void EnvI::flatRemoveItem(VarDeclI* vdi) {
 
 void EnvI::fail(const std::string& msg) {
   if (!_failed) {
-    addWarning(std::string("model inconsistency detected") +
-               (msg.empty() ? std::string() : (": " + msg)));
+    addWarning(Location(), std::string("model inconsistency detected") +
+                               (msg.empty() ? std::string() : (": " + msg)));
     _failed = true;
     for (auto& i : *_flat) {
       i->remove();
@@ -1150,26 +1150,18 @@ ASTString EnvI::halfReifyId(const ASTString& id) {
   return {ss.str()};
 }
 
-void EnvI::addWarning(const std::string& msg) { addWarning(Location(), msg); }
+void EnvI::addWarning(const std::string& msg) { addWarning(Location(), msg, false); }
 
-void EnvI::addWarning(const Location& loc, const std::string& msg) {
+void EnvI::addWarning(const Location& loc, const std::string& msg, bool dumpStack) {
   if (warnings.size() > 20) {
     return;
   }
   if (warnings.size() == 20) {
     warnings.emplace_back("Further warnings have been suppressed.");
-  } else {
+  } else if (dumpStack) {
     warnings.emplace_back(*this, loc, msg);
-  }
-}
-
-void EnvI::createErrorStack() {
-  errorStack.clear();
-  for (auto i = static_cast<unsigned int>(callStack.size()); (i--) != 0U;) {
-    Expression* e = callStack[i].e;
-    bool isCompIter = callStack[i].tag;
-    KeepAlive ka(e);
-    errorStack.emplace_back(ka, isCompIter);
+  } else {
+    warnings.emplace_back(loc, msg);
   }
 }
 
@@ -1270,7 +1262,6 @@ std::ostream& Env::evalOutput(std::ostream& os, std::ostream& log) {
 }
 EnvI& Env::envi() { return *_e; }
 const EnvI& Env::envi() const { return *_e; }
-std::ostream& Env::dumpErrorStack(std::ostream& os) { return _e->dumpStack(os, true); }
 
 bool EnvI::dumpPath(std::ostream& os, bool force) {
   force = force ? force : fopts.collectMznPaths;
@@ -1386,140 +1377,6 @@ bool EnvI::dumpPath(std::ostream& os, bool force) {
   return true;
 }
 
-std::ostream& EnvI::dumpStack(std::ostream& os, bool errStack) {
-  int lastError = 0;
-
-  std::vector<CallStackEntry> errStackCopy;
-  if (errStack) {
-    errStackCopy.resize(errorStack.size());
-    for (unsigned int i = 0; i < errorStack.size(); i++) {
-      Expression* e = errorStack[i].first();
-      errStackCopy[i] = CallStackEntry(errorStack[i].first(), errorStack[i].second);
-    }
-  }
-
-  std::vector<CallStackEntry>& stack = errStack ? errStackCopy : callStack;
-
-  for (; lastError < stack.size(); lastError++) {
-    Expression* e = stack[lastError].e;
-    bool isCompIter = stack[lastError].tag;
-    if (e->loc().isIntroduced()) {
-      continue;
-    }
-    if (!isCompIter && e->isa<Id>()) {
-      break;
-    }
-  }
-
-  if (lastError == 0 && !stack.empty() && stack[0].e->isa<Id>()) {
-    Expression* e = stack[0].e;
-    if (!e->loc().isIntroduced()) {
-      os << e->loc().toString() << std::endl;
-      os << "  in variable declaration " << *e << std::endl;
-    }
-  } else {
-    ASTString curloc_f;
-    long long int curloc_l = -1;
-
-    for (int i = lastError - 1; i >= 0; i--) {
-      Expression* e = stack[i].e;
-      bool isCompIter = stack[i].tag;
-      ASTString newloc_f = e->loc().filename();
-      if (e->loc().isIntroduced()) {
-        continue;
-      }
-      auto newloc_l = static_cast<long long int>(e->loc().firstLine());
-      if (newloc_f != curloc_f || newloc_l != curloc_l) {
-        os << e->loc().toString() << std::endl;
-        curloc_f = newloc_f;
-        curloc_l = newloc_l;
-      }
-      if (isCompIter) {
-        os << "    with ";
-      } else {
-        os << "  in ";
-      }
-      switch (e->eid()) {
-        case Expression::E_INTLIT:
-          os << "integer literal" << std::endl;
-          break;
-        case Expression::E_FLOATLIT:
-          os << "float literal" << std::endl;
-          break;
-        case Expression::E_SETLIT:
-          os << "set literal" << std::endl;
-          break;
-        case Expression::E_BOOLLIT:
-          os << "bool literal" << std::endl;
-          break;
-        case Expression::E_STRINGLIT:
-          os << "string literal" << std::endl;
-          break;
-        case Expression::E_ID:
-          if (isCompIter) {
-            if ((e->cast<Id>()->decl()->e() != nullptr) &&
-                e->cast<Id>()->decl()->e()->type().isPar()) {
-              os << *e << " = " << *e->cast<Id>()->decl()->e() << std::endl;
-            } else {
-              os << *e << " = <expression>" << std::endl;
-            }
-          } else {
-            os << "identifier" << *e << std::endl;
-          }
-          break;
-        case Expression::E_ANON:
-          os << "anonymous variable" << std::endl;
-          break;
-        case Expression::E_ARRAYLIT:
-          os << "array literal" << std::endl;
-          break;
-        case Expression::E_ARRAYACCESS:
-          os << "array access" << std::endl;
-          break;
-        case Expression::E_COMP: {
-          const Comprehension* cmp = e->cast<Comprehension>();
-          if (cmp->set()) {
-            os << "set ";
-          } else {
-            os << "array ";
-          }
-          os << "comprehension expression" << std::endl;
-        } break;
-        case Expression::E_ITE:
-          os << "if-then-else expression" << std::endl;
-          break;
-        case Expression::E_BINOP:
-          os << "binary " << e->cast<BinOp>()->opToString() << " operator expression" << std::endl;
-          break;
-        case Expression::E_UNOP:
-          os << "unary " << e->cast<UnOp>()->opToString() << " operator expression" << std::endl;
-          break;
-        case Expression::E_CALL:
-          os << "call '" << demonomorphise_identifier(e->cast<Call>()->id()) << "'" << std::endl;
-          break;
-        case Expression::E_VARDECL: {
-          GCLock lock;
-          os << "variable declaration for '" << e->cast<VarDecl>()->id()->str() << "'" << std::endl;
-        } break;
-        case Expression::E_LET:
-          os << "let expression" << std::endl;
-          break;
-        case Expression::E_TI:
-          os << "type-inst expression" << std::endl;
-          break;
-        case Expression::E_TIID:
-          os << "type identifier" << std::endl;
-          break;
-        default:
-          assert(false);
-          os << "unknown expression (internal error)" << std::endl;
-          break;
-      }
-    }
-  }
-  return os;
-}
-
 void populate_output(Env& env, bool encapsulateJSON) {
   EnvI& envi = env.envi();
   Model* _flat = envi.flat();
@@ -1620,7 +1477,7 @@ std::ostream& EnvI::evalOutput(std::ostream& os, std::ostream& log) {
   if (!fLastEOL) {
     os << '\n';
   }
-  for (auto w : warnings) {
+  for (auto& w : warnings) {
     w.print(log, false);
   }
   return os;
@@ -2144,7 +2001,6 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
       } else {
         if (e->type().dim() > 0) {
           // Check that index sets match
-          env.errorStack.clear();
           check_index_sets(env, vd, e);
           auto* al =
               Expression::dynamicCast<ArrayLit>(e->isa<Id>() ? e->cast<Id>()->decl()->e() : e);

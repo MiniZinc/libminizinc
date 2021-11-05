@@ -56,6 +56,7 @@ add_library(mzn
   lib/solver.cpp
   lib/solver_config.cpp
   lib/solver_instance_base.cpp
+  lib/stackdump.cpp
   lib/statistics.cpp
   lib/type.cpp
   lib/typecheck.cpp
@@ -105,6 +106,7 @@ add_library(mzn
   include/minizinc/solver_config.hh
   include/minizinc/solver_instance.hh
   include/minizinc/solver_instance_base.hh
+  include/minizinc/stackdump.hh
   include/minizinc/statistics.hh
   include/minizinc/support/regex.hh
   include/minizinc/_thirdparty/b64/cdecode.h

@@ -47,7 +47,7 @@ void Scopes::add(EnvI& env, VarDecl* vd) {
         unsigned int earlier_c = previous->second->id()->loc().firstColumn();
         oss << "variable `" << *vd->id() << "` shadows variable with the same name in line "
             << earlier_l << "." << earlier_c;
-        env.addWarning(vd->loc(), oss.str());
+        env.addWarning(vd->loc(), oss.str(), false);
         break;
       }
       if (_s[i].st != ST_INNER) {

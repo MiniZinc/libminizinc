@@ -141,7 +141,6 @@ public:
         : e(e0), tag(tag0), replaced(false) {}
   };
   std::vector<CallStackEntry> callStack;
-  std::vector<std::pair<KeepAlive, bool>> errorStack;
   std::vector<int> idStack;
   unsigned int maxCallStack;
   std::vector<Warning> warnings;
@@ -227,16 +226,14 @@ public:
   void swapOutput() { std::swap(model, output); }
   ASTString reifyId(const ASTString& id);
   static ASTString halfReifyId(const ASTString& id);
-  std::ostream& dumpStack(std::ostream& os, bool errStack);
   bool dumpPath(std::ostream& os, bool force = false);
   void addWarning(const std::string& msg);
-  void addWarning(const Location& loc, const std::string& msg);
+  void addWarning(const Location& loc, const std::string& msg, bool dumpStack = true);
   void collectVarDecls(bool b);
 
   void copyPathMapsAndState(EnvI& env);
   /// deprecated, use Solns2Out
   std::ostream& evalOutput(std::ostream& os, std::ostream& log);
-  void createErrorStack();
   Call* surroundingCall() const;
 
   void cleanupExceptOutput();

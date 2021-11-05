@@ -366,7 +366,6 @@ public:
   Model* output();
   EnvI& envi();
   const EnvI& envi() const;
-  std::ostream& dumpErrorStack(std::ostream& os);
   const std::vector<Warning>& warnings();
   std::ostream& dumpWarnings(std::ostream& os, bool werror, bool json);
   void clearWarnings();

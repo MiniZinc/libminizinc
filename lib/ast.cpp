@@ -94,6 +94,19 @@ std::string Location::toString() const {
   return os.str();
 }
 
+std::string Location::toJSON() const {
+  std::ostringstream os;
+  os << "{\"filename\": ";
+  if (filename().empty()) {
+    os << "null";
+  } else {
+    os << "\"" << Printer::escapeStringLit(filename()) << "\"";
+  }
+  os << ", \"firstLine\": " << firstLine() << ", \"firstColumn\": " << firstColumn()
+     << ", \"lastLine\": " << lastLine() << ", \"lastColumn\": " << lastColumn() << "}";
+  return os.str();
+}
+
 void Location::mark() const {
   if (lv() != nullptr) {
     lv()->mark();
