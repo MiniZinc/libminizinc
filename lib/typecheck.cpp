@@ -1463,9 +1463,19 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
           slice.push_back(aa->idx()[i]);
         }
       } else {
-        auto* bo = new BinOp(aa->idx()[i]->loc(), aa->idx()[i], BOT_DOTDOT, aa->idx()[i]);
-        bo->type(Type::parsetint());
-        slice.push_back(bo);
+        Expression* slice_set;
+        Expression* idx = aa->idx()[i];
+        if (!idx->isa<Id>() && !idx->isa<IntLit>()) {
+          auto* ti = new TypeInst(Location().introduce(), idx->type(), nullptr);
+          auto* vd = new VarDecl(Location().introduce(), ti, env.genId(), idx);
+          auto* bo = new BinOp(aa->idx()[i]->loc(), vd->id(), BOT_DOTDOT, vd->id());
+          bo->type(Type::parsetint());
+          slice_set = new Let(Location().introduce(), {vd}, bo);
+        } else {
+          slice_set = new BinOp(aa->idx()[i]->loc(), idx, BOT_DOTDOT, idx);
+        }
+        slice_set->type(Type::parsetint());
+        slice.push_back(slice_set);
       }
     }
     auto* a_slice = new ArrayLit(e->loc(), slice);
