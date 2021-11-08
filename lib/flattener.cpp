@@ -849,7 +849,13 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             _log << "Printing Paths to stdout ..." << std::endl;
           }
           PathFilePrinter pfp(_os, env->envi());
-          pfp.print(env->flat());
+          if (_flags.encapsulateJSON) {
+            _os << "{\"type\": \"paths\", \"paths\": ";
+            pfp.json(env->flat());
+            _os << "}" << std::endl;
+          } else {
+            pfp.print(env->flat());
+          }
           if (_flags.verbose) {
             _log << " done (" << _starttime.stoptime() << ")" << std::endl;
           }

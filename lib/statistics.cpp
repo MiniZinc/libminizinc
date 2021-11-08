@@ -62,6 +62,9 @@ void StatisticsStream::add(const std::string& stat, double value) { addInternal(
 void StatisticsStream::add(const std::string& stat, const std::string& value) {
   addInternal(stat, "\"" + Printer::escapeStringLit(value) + "\"");
 }
+void StatisticsStream::addRaw(const std::string& stat, const std::string& value) {
+  addInternal(stat, value);
+}
 
 /// TODO all key words should be standard and defined in 1 place
 void Statistics::print(std::ostream& os) {

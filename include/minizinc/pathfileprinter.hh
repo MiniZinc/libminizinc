@@ -29,11 +29,13 @@ private:
   int _constraintIndex;
 
   void addBetterName(Id* id, const std::string& name, const std::string& path, bool overwrite);
+  void buildMap(Model* m);
 
 public:
   PathFilePrinter(std::ostream& o, EnvI& envi);
   void print(Model* m);
   void print(Item* i);
+  void json(Model* m);
 };
 
 }  // namespace MiniZinc

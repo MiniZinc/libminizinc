@@ -51,6 +51,7 @@ public:
   void add(const std::string& stat, unsigned long long value);
   void add(const std::string& stat, double value);
   void add(const std::string& stat, const std::string& value);
+  void addRaw(const std::string& stat, const std::string& value);
 };
 
 class Statistics {

@@ -88,7 +88,7 @@ string path2name(const string& path) {
   return name.str();
 }
 
-void PathFilePrinter::print(Model* m) {
+void PathFilePrinter::buildMap(Model* m) {
   // Build map
   for (VarDeclIterator vdit = m->vardecls().begin(); vdit != m->vardecls().end(); ++vdit) {
     VarDecl* e = vdit->e();
@@ -137,7 +137,10 @@ void PathFilePrinter::print(Model* m) {
       }
     }
   }
+}
 
+void PathFilePrinter::print(Model* m) {
+  buildMap(m);
   // Print values
   for (Item* item : *m) {
     print(item);
@@ -190,4 +193,76 @@ void PathFilePrinter::print(Item* item) {
     _constraintIndex++;
   }
 }
+
+void PathFilePrinter::json(Model* m) {
+  buildMap(m);
+  // Print values
+  _os << "[";
+  bool first = true;
+  for (Item* item : *m) {
+    GCLock lock;
+    if (auto* vdi = item->dynamicCast<VarDeclI>()) {
+      Id* id = vdi->e()->id();
+      NamePair np = _betternames[id];
+      if (!np.first.empty() || !np.second.empty()) {
+        if (first) {
+          first = false;
+        } else {
+          _os << ", ";
+        }
+        _os << "{";
+        // FlatZinc name
+        _os << "\"flatZincName\": \"" << Printer::escapeStringLit(id->str()) << "\", ";
+
+        // Nice name
+        _os << "\"niceName\": \"";
+        if (np.first.empty()) {
+          _os << Printer::escapeStringLit(id->str());
+        } else {
+          string name = np.first;
+          _os << Printer::escapeStringLit(name);
+          if (name.find('?') != string::npos) {
+            _os << "(" << Printer::escapeStringLit(id->str()) << ")";
+          }
+        }
+        _os << "\", ";
+
+        // Path
+        _os << "\"path\": \"" << Printer::escapeStringLit(np.second) << "\"";
+        _os << "}";
+      }
+    } else if (auto* ci = item->dynamicCast<ConstraintI>()) {
+      StringLit* sl = nullptr;
+      Expression* e = ci->e();
+      for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it) {
+        if (Call* ca = (*it)->dynamicCast<Call>()) {
+          ASTString cid = ca->id();
+          if (cid == Constants::constants().ann.mzn_path) {
+            sl = ca->arg(0)->cast<StringLit>();
+          }
+        }
+      }
+      if (first) {
+        first = false;
+      } else {
+        _os << ", ";
+      }
+      _os << "{";
+      _os << "\"constraintIndex\": " << _constraintIndex << ", ";
+      _os << "\"path\": ";
+      if (sl != nullptr) {
+        _os << "\"" << Printer::escapeStringLit(sl->v()) << "\"";
+      } else {
+        _os << "null";
+      }
+      _constraintIndex++;
+      _os << "}";
+    }
+    _os.flush();
+    assert(_os.good());
+  }
+  _os << "]";
+  assert(_os.good());
+}
+
 }  // namespace MiniZinc

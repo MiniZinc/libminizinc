@@ -3705,8 +3705,27 @@ void flatten(Env& e, FlatteningOptions opt) {
   }
 
   if (opt.detailedTiming) {
-    StatisticsStream ss(e.envi().outstream, opt.encapsulateJSON);
-    if (!opt.encapsulateJSON) {
+    if (opt.encapsulateJSON) {
+      auto& os = e.envi().outstream;
+      os << "{\"type\": \"profiling\", \"entries\": [";
+      bool first = true;
+      for (auto& entry : *timingMap) {
+        std::chrono::milliseconds time_taken =
+            std::chrono::duration_cast<std::chrono::milliseconds>(entry.second);
+        if (time_taken > std::chrono::milliseconds(0)) {
+          if (first) {
+            first = false;
+          } else {
+            os << ", ";
+          }
+          os << "{\"filename\": \"" << Printer::escapeStringLit(entry.first.first)
+             << "\", \"line\": " << entry.first.second << ", \"time\": " << time_taken.count()
+             << "}";
+        }
+      }
+      os << "]}" << std::endl;
+    } else {
+      StatisticsStream ss(e.envi().outstream, opt.encapsulateJSON);
       e.envi().outstream << "% Compilation profile (file,line,milliseconds)\n";
       if (opt.collectMznPaths) {
         e.envi().outstream << "% (time is allocated to toplevel item)\n";
@@ -3714,15 +3733,15 @@ void flatten(Env& e, FlatteningOptions opt) {
         e.envi().outstream << "% (locations are approximate, use --keep-paths to allocate times to "
                               "toplevel items)\n";
       }
-    }
-    for (auto& entry : *timingMap) {
-      std::chrono::milliseconds time_taken =
-          std::chrono::duration_cast<std::chrono::milliseconds>(entry.second);
-      if (time_taken > std::chrono::milliseconds(0)) {
-        std::ostringstream oss;
-        oss << "[\"" << entry.first.first << "\"," << entry.first.second << ","
-            << time_taken.count() << "]";
-        ss.add("profiling", oss.str());
+      for (auto& entry : *timingMap) {
+        std::chrono::milliseconds time_taken =
+            std::chrono::duration_cast<std::chrono::milliseconds>(entry.second);
+        if (time_taken > std::chrono::milliseconds(0)) {
+          std::ostringstream oss;
+          oss << "[\"" << entry.first.first << "\"," << entry.first.second << ","
+              << time_taken.count() << "]";
+          ss.addRaw("profiling", oss.str());
+        }
       }
     }
   }
