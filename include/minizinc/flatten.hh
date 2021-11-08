@@ -14,6 +14,9 @@
 #include <minizinc/astexception.hh>
 #include <minizinc/model.hh>
 
+#include <chrono>
+#include <random>
+
 namespace MiniZinc {
 
 /// Exception thrown for errors during flattening
@@ -70,8 +73,29 @@ struct FlatteningOptions {
         outputOutputItem(false),
         detailedTiming(false),
         debug(false),
-        randomSeed(time(nullptr)),
-        encapsulateJSON(false) {}
+        encapsulateJSON(false) {
+    // Initialise random number generator seed.
+    // Try random_device, if that doesn't work, use time.
+    std::vector<long unsigned int> seeds;
+    try {
+      std::random_device rdev("/dev/random");
+      seeds.push_back(rdev());
+    } catch (std::exception) {
+      try {
+        std::random_device rdev;
+        seeds.push_back(rdev());
+      } catch (std::exception) {
+      }
+    }
+    auto highrestime = static_cast<long unsigned int>(
+        std::chrono::high_resolution_clock::now().time_since_epoch().count());
+    seeds.push_back(highrestime);
+    auto time_seed = static_cast<long unsigned int>(time(nullptr));
+    seeds.push_back(time_seed);
+    std::seed_seq seq(seeds.begin(), seeds.end());
+    std::mt19937 eng(seq);
+    randomSeed = eng();
+  }
 };
 
 class Pass {
