@@ -1748,7 +1748,12 @@ Expression* b_trace_stdout(EnvI& env, Call* call) {
   } else {
     msg_e = call->arg(0);
   }
-  env.outstream << eval_string(env, msg_e);
+  if (env.fopts.encapsulateJSON) {
+    env.outstream << "{\"type\": \"trace\", \"section\": \"default\", \"message\": \""
+                  << Printer::escapeStringLit(eval_string(env, msg_e)) << "\"}" << std::endl;
+  } else {
+    env.outstream << eval_string(env, msg_e);
+  }
   return call->argCount() == 1 ? env.constants.literalTrue : call->arg(1);
 }
 
