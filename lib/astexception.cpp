@@ -37,7 +37,7 @@ void SyntaxError::json(std::ostream& os) const {
       } else {
         os << ", ";
       }
-      os << "\"" << filename << "\"";
+      os << "\"" << Printer::escapeStringLit(filename) << "\"";
     }
     os << "], ";
   }
