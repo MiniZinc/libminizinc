@@ -289,6 +289,9 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
     if (f.size() >= 6 && f.substr(f.size() - 5, string::npos) == ".json") {
       JSONParser jp(env.envi());
       jp.parse(model, f, true);
+    } else if (f.size() >= 6 && f.substr(0, 6) == "json:/") {
+      JSONParser jp(env.envi());
+      jp.parseFromString(model, f.substr(6), true);
     } else {
       string s;
       if (f.size() > 5 && f.substr(0, 5) == "cmd:/") {

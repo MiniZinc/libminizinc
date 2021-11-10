@@ -261,6 +261,10 @@ These options control aspects of the MiniZinc compiler.
 
     Include the given data assignment in the model.
 
+.. option::  --cmdline-json-data <data>
+
+    Use the given JSON data in the model.
+
 .. option::  --stdlib-dir <dir>
 
     Path to MiniZinc standard library directory

@@ -64,6 +64,7 @@ void Flattener::printHelp(ostream& os) const {
      << std::endl
      << "  -D <data>, --cmdline-data <data>\n    Include the given data assignment in the model."
      << std::endl
+     << "  --cmdline-json-data <data>\n    Include the given JSON data in the model." << std::endl
      << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
      << "  -G <dir>, --globals-dir <dir>, --mzn-globals-dir <dir>\n    Search for included "
         "globals "
@@ -239,6 +240,8 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv,
     // Parsed by reference
   } else if (cop.getOption("-D --cmdline-data", &buffer)) {
     _datafiles.push_back("cmd:/" + buffer);
+  } else if (cop.getOption("--cmdline-json-data", &buffer)) {
+    _datafiles.push_back("json:/" + buffer);
   } else if (cop.getOption("--allow-unbounded-vars")) {
     _flags.allowUnboundedVars = true;
   } else if (cop.getOption("--only-range-domains")) {
