@@ -2689,9 +2689,13 @@ public:
           }
         } else if (!_env.isSubtype(vet, vdt, true)) {
           if (vet == Type::bot(1) && vd->e()->isa<ArrayLit>() &&
-              vd->e()->cast<ArrayLit>()->empty() &&
-              vdt.dim() != 0) {  // NOLINT(bugprone-branch-clone): see TODO in other branch
-            // this is okay: assigning an empty array (one-dimensional) to an array variable
+              vd->e()->cast<ArrayLit>()->empty() && vdt.dim() != 0) {
+            // Replace [] with empty array literal of the correct dimensions
+            GCLock lock;
+            std::vector<std::pair<int, int>> dims(vdt.dim(), {1, 0});
+            ArrayLit* emptyAl = new ArrayLit(vd->e()->loc(), std::vector<Expression*>(), dims);
+            emptyAl->type(vd->type());
+            vd->e(emptyAl);
           } else if (vd->ti()->isEnum() && vet == Type::parsetint()) {
             // let's ignore this for now (TODO: add an annotation to make sure only
             // compiler-generated ones are accepted)
