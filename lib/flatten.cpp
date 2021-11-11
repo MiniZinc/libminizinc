@@ -2769,6 +2769,9 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
       }
       std::vector<Expression*> args(c->argCount());
       GCLock lock;
+      if (c->id() == env.constants.ids.mzn_default) {
+        return eval_par(env, c);
+      }
       for (unsigned int i = 0; i < c->argCount(); i++) {
         Ctx c_mix;
         c_mix.b = C_MIX;
