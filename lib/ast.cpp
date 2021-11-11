@@ -1287,6 +1287,14 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
   // Given the concrete types for all function arguments ta, compute the
   // least common supertype that fits function parameter n.
   TypeInst* tii = param(n)->ti();
+  Type curTiiT = tii->type();
+  if (curTiiT.dim() == -1) {
+    if (ta[n]->type().dim() == 0) {
+      curTiiT.dim(1);
+    } else {
+      curTiiT.dim(ta[n]->type().dim());
+    }
+  }
   if ((tii->domain() != nullptr) && tii->domain()->isa<TIId>()) {
     // We need to determine both the base type and whether this tiid
     // can stand for a set. It can only stand for a set if none
@@ -1294,16 +1302,16 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
     // if any of the uses are var set.
 
     Type ty = ta[n]->type();
-    ty.st(tii->type().st());
-    ty.dim(tii->type().dim());
+    ty.st(curTiiT.st());
+    ty.dim(curTiiT.dim());
     ASTString tv = tii->domain()->cast<TIId>()->v();
     for (unsigned int i = 0; i < paramCount(); i++) {
       if ((param(i)->ti()->domain() != nullptr) && param(i)->ti()->domain()->isa<TIId>() &&
           param(i)->ti()->domain()->cast<TIId>()->v() == tv) {
         Type toCheck = ta[i]->type();
-        toCheck.ot(tii->type().ot());
-        toCheck.st(tii->type().st());
-        toCheck.dim(tii->type().dim());
+        toCheck.ot(curTiiT.ot());
+        toCheck.st(curTiiT.st());
+        toCheck.dim(curTiiT.dim());
         if (toCheck != ty) {
           if (env.isSubtype(ty, toCheck, true)) {
             ty = toCheck;
@@ -1321,7 +1329,7 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
     }
     return ty;
   }
-  return tii->type();
+  return curTiiT;
 }
 
 bool Expression::equalInternal(const Expression* e0, const Expression* e1) {

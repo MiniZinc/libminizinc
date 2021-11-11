@@ -2693,7 +2693,7 @@ public:
             // Replace [] with empty array literal of the correct dimensions
             GCLock lock;
             std::vector<std::pair<int, int>> dims(vdt.dim(), {1, 0});
-            ArrayLit* emptyAl = new ArrayLit(vd->e()->loc(), std::vector<Expression*>(), dims);
+            auto* emptyAl = new ArrayLit(vd->e()->loc(), std::vector<Expression*>(), dims);
             emptyAl->type(vd->type());
             vd->e(emptyAl);
           } else if (vd->ti()->isEnum() && vet == Type::parsetint()) {
