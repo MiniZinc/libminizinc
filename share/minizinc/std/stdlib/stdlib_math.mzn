@@ -255,13 +255,13 @@ function     float: sum(array[$T] of     float: x);
 function var float: sum(array[$T] of var float: x);
 /** @group stdlib.builtins.arithmetic Return sum of non-absent elements of \a x. */
 function var int: sum(array[int] of var opt int: x) =
-  sum (i in index_set(x)) (let { var int: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 0 endif);
+  sum (i in index_set(x)) (if occurs(x[i]) then deopt(x[i]) else 0 endif);
 /** @group stdlib.builtins.arithmetic Return sum of non-absent elements of \a x. */
 function int: sum(array[int] of opt int: x) =
   sum (i in index_set(x)) (if occurs(x[i]) then deopt(x[i]) else 0 endif);
 /** @group stdlib.builtins.arithmetic Return sum of non-absent elements of \a x. */
 function var float: sum(array[int] of var opt float: x) =
-  sum (i in index_set(x)) (let { var float: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 0 endif);
+  sum (i in index_set(x)) (if occurs(x[i]) then deopt(x[i]) else 0 endif);
 /** @group stdlib.builtins.arithmetic Return sum of non-absent elements of \a x. */
 function float: sum(array[int] of opt float: x) =
   sum (i in index_set(x)) (if occurs(x[i]) then deopt(x[i]) else 0 endif);
