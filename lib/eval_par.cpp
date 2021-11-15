@@ -2097,14 +2097,10 @@ public:
       return false;
     }
     if (e->type().isPar()) {
-      if (e->type().isint()) {
-        Expression* exp = eval_par(env, e);
-        if (exp == env.constants.absent) {
-          valid = false;
-        } else {
-          IntVal v = exp->cast<IntLit>()->v();
-          bounds.emplace_back(v, v);
-        }
+      Expression* exp = eval_par(env, e);
+      if (e->type().isint() && exp != env.constants.absent) {
+        IntVal v = exp->cast<IntLit>()->v();
+        bounds.emplace_back(v, v);
       } else {
         valid = false;
       }
@@ -2530,14 +2526,12 @@ public:
       return false;
     }
     if (e->type().isPar()) {
-      if (e->type().isfloat()) {
-        Expression* exp = eval_par(env, e);
-        if (exp == env.constants.absent) {
-          valid = false;
-        } else {
-          FloatVal v = exp->cast<FloatLit>()->v();
-          bounds.emplace_back(v, v);
-        }
+      Expression* exp = eval_par(env, e);
+      if (exp == env.constants.absent) {
+        valid = false;
+      } else if (e->type().isfloat()) {
+        FloatVal v = exp->cast<FloatLit>()->v();
+        bounds.emplace_back(v, v);
       }
       return false;
     }
