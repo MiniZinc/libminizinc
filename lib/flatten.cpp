@@ -2060,6 +2060,9 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
               FloatSetVal* fsv = eval_floatset(env, vd->ti()->domain());
               for (unsigned int i = 0; i < al->size(); i++) {
                 if (Id* id = (*al)[i]->dynamicCast<Id>()) {
+                  if (id == env.constants.absent) {
+                    continue;
+                  }
                   VarDecl* vdi = id->decl();
                   if (vdi->ti()->domain() == nullptr) {
                     set_computed_domain(env, vdi, vd->ti()->domain(), vdi->ti()->computedDomain());
