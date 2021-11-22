@@ -73,21 +73,29 @@ void adapt_to_base_type(EnvI& env, std::vector<Type>& types, const TIOcc& occ, T
     Type& t = types[occ.idx];
     t.bt(bt.bt());
     if (t.enumId() != 0 && bt.enumId() == 0) {
-      const auto& aes = env.getArrayEnum(types[occ.idx].enumId());
-      if (aes[aes.size() - 1] != 0) {
-        std::vector<unsigned int> et = aes;
-        et[aes.size() - 1] = 0;
-        t.enumId(env.registerArrayEnum(et));
+      if (t.dim() > 0) {
+        const auto& aes = env.getArrayEnum(types[occ.idx].enumId());
+        if (aes[aes.size() - 1] != 0) {
+          std::vector<unsigned int> et = aes;
+          et[aes.size() - 1] = 0;
+          t.enumId(env.registerArrayEnum(et));
+        }
+      } else {
+        t.enumId(0);
       }
     }
   } else {
     Type& t = types[occ.idx];
     if (t.enumId() != 0 && bt.enumId() == 0) {
-      const auto& aes = env.getArrayEnum(types[occ.idx].enumId());
-      if (aes[occ.idxSet] != 0) {
-        std::vector<unsigned int> et = aes;
-        et[occ.idxSet] = 0;
-        t.enumId(env.registerArrayEnum(et));
+      if (t.dim() > 0) {
+        const auto& aes = env.getArrayEnum(types[occ.idx].enumId());
+        if (aes[occ.idxSet] != 0) {
+          std::vector<unsigned int> et = aes;
+          et[occ.idxSet] = 0;
+          t.enumId(env.registerArrayEnum(et));
+        }
+      } else {
+        t.enumId(0);
       }
     }
   }
