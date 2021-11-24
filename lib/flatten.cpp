@@ -712,6 +712,33 @@ MultiPassInfo::MultiPassInfo() : currentPassNumber(0), finalPassNumber(1) {}
 VarPathStore::VarPathStore() : maxPathDepth(0) {}
 
 void OutputSectionStore::add(ASTString section, Expression* e) {
+  if (section.endsWith("_json")) {
+    // *_json output sections get output as arrays
+    auto it = _idx.find(section);
+    if (it == _idx.end()) {
+      std::vector<Expression*> open({new StringLit(Location().introduce(), "[")});
+      std::vector<Expression*> close({new StringLit(Location().introduce(), "]\n")});
+      auto* bo1 = new BinOp(Location().introduce(), new ArrayLit(Location().introduce(), open),
+                            BOT_PLUSPLUS, e);
+      bo1->type(Type::parstring(1));
+      auto* bo2 = new BinOp(Location().introduce(), bo1, BOT_PLUSPLUS,
+                            new ArrayLit(Location().introduce(), close));
+      bo2->type(Type::parstring(1));
+      _idx.emplace(section, _sections.size());
+      _sections.emplace_back(section, bo2);
+    } else {
+      auto* orig = _sections[it->second].second->cast<BinOp>();
+      std::vector<Expression*> sep({new StringLit(Location().introduce(), ", ")});
+      auto* bo1 = new BinOp(Location().introduce(), orig->lhs(), BOT_PLUSPLUS,
+                            new ArrayLit(Location().introduce(), sep));
+      bo1->type(Type::parstring(1));
+      auto* bo2 = new BinOp(Location().introduce(), bo1, BOT_PLUSPLUS, e);
+      bo2->type(Type::parstring(1));
+      orig->lhs(bo2);
+    }
+    return;
+  }
+
   auto ret = _idx.emplace(section, _sections.size());
   if (ret.second) {
     _sections.emplace_back(section, e);
