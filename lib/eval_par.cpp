@@ -476,19 +476,21 @@ typename Eval::Val eval_call(EnvI& env, CallClass* ce) {
 
 ArrayLit* eval_array_comp(EnvI& env, Comprehension* e) {
   ArrayLit* ret;
-  if (e->type() == Type::parint(1)) {
+  bool plainParNonAbsent = e->type().ti() == Type::TI_PAR && e->type().st() == Type::ST_PLAIN &&
+                           e->type().ot() == Type::OT_PRESENT;
+  if (plainParNonAbsent && e->type().bt() == Type::BT_INT) {
     auto a = eval_comp<EvalIntLit>(env, e);
     ret = new ArrayLit(e->loc(), a.a, a.dims);
-  } else if (e->type() == Type::parbool(1)) {
+  } else if (plainParNonAbsent && e->type().bt() == Type::BT_BOOL) {
     auto a = eval_comp<EvalBoolLit>(env, e);
     ret = new ArrayLit(e->loc(), a.a, a.dims);
-  } else if (e->type() == Type::parfloat(1)) {
+  } else if (plainParNonAbsent && e->type().bt() == Type::BT_FLOAT) {
     auto a = eval_comp<EvalFloatLit>(env, e);
     ret = new ArrayLit(e->loc(), a.a, a.dims);
   } else if (e->type().st() == Type::ST_SET) {
     auto a = eval_comp<EvalSetLit>(env, e);
     ret = new ArrayLit(e->loc(), a.a, a.dims);
-  } else if (e->type() == Type::parstring(1)) {
+  } else if (e->type().bt() == Type::BT_STRING) {
     auto a = eval_comp<EvalStringLit>(env, e);
     ret = new ArrayLit(e->loc(), a.a, a.dims);
   } else {
