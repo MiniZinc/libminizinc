@@ -2707,9 +2707,8 @@ public:
                << "', actual `" << vd->e()->type().toString(_env) << "'";
             _typeErrors.emplace_back(_env, loc, ss.str());
           }
-        } else {
-          vd->e(add_coercion(_env, _model, vd->e(), vd->ti()->type())());
         }
+        vd->e(add_coercion(_env, _model, vd->e(), vd->ti()->type())());
         if (vd->type().dim() > 0) {
           if (vet.enumId() != 0) {
             // check if the VarDecl has _ as index sets and copy correct enum information
