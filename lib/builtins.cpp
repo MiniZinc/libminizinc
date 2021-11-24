@@ -1757,6 +1757,38 @@ Expression* b_trace_stdout(EnvI& env, Call* call) {
   return call->argCount() == 1 ? env.constants.literalTrue : call->arg(1);
 }
 
+Expression* b_trace_to_section(EnvI& env, Call* call) {
+  GCLock lock;
+  StringLit* section;
+  if (call->arg(0)->type().cv()) {
+    section = flat_cv_exp(env, Ctx(), call->arg(0))()->cast<StringLit>();
+  } else {
+    section = eval_par(env, call->arg(0))->cast<StringLit>();
+  }
+  if (env.fopts.encapsulateJSON) {
+    auto msg = eval_string(
+        env, call->arg(1)->type().cv() ? flat_cv_exp(env, Ctx(), call->arg(1))() : call->arg(1));
+    env.outstream << "{\"type\": \"trace\", \"section\": \""
+                  << Printer::escapeStringLit(section->v()) << "\", \"message\": ";
+    if (section->v().endsWith("_json")) {
+      std::stringstream ss(msg);
+      std::string line;
+      while (std::getline(ss, line)) {
+        // Remove line breaks from JSON object
+        env.outstream << line;
+      }
+    } else {
+      env.outstream << "\"" << Printer::escapeStringLit(msg) << "\"";
+    }
+    env.outstream << "}" << std::endl;
+  } else if (env.outputSectionEnabled(section->v())) {
+    auto msg = eval_string(
+        env, call->arg(1)->type().cv() ? flat_cv_exp(env, Ctx(), call->arg(1))() : call->arg(1));
+    env.outstream << msg;
+  }
+  return call->argCount() == 2 ? env.constants.literalTrue : call->arg(2);
+}
+
 Expression* b_trace_logstream(EnvI& env, Call* call) {
   GCLock lock;
   StringLit* msg;
@@ -3336,6 +3368,21 @@ void register_builtins(Env& e) {
     rb(env, m, env.constants.ids.trace, t, b_trace);
     rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
     rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
+  }
+  {
+    std::vector<Type> t(2);
+    t[0] = Type::parstring();
+    t[1] = Type::parstring();
+    rb(env, m, env.constants.ids.trace_to_section, t, b_trace_to_section);
+  }
+  {
+    std::vector<Type> t(3);
+    t[0] = Type::parstring();
+    t[1] = Type::parstring();
+    t[2] = Type::optvartop();
+    rb(env, m, env.constants.ids.trace_to_section, t, b_trace_to_section);
+    t[2] = Type::optvartop(-1);
+    rb(env, m, env.constants.ids.trace_to_section, t, b_trace_to_section);
   }
   {
     std::vector<Type> t(2);

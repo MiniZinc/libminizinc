@@ -30,6 +30,14 @@ function bool: trace(string: msg);
 /** @group stdlib.debug Return true, and when ``--debug`` flag is set print message \a msg. */
 function bool: trace_dbg(string: msg);
 
+/** @group stdlib.debug Return \a x, and print message \a msg to section \a section. */
+function any $T: trace_to_section(string: section, string: msg, any $T: x);
+/** @group stdlib.debug Return \a x, and print message \a msg to section \a section. */
+function array [$U] of any $T: trace_to_section(string: section, string: msg, array [$U] of any $T: x);
+
+/** @group stdlib.debug Return true, and print message \a msg to section \a section. */
+function bool: trace_to_section(string: section, string: msg);
+
 /** @group stdlib.debug Return \a x, and print message \a msg. */
 function any $T: trace_stdout(string: msg, any $T: x);
 /** @group stdlib.debug Return \a x, and print message \a msg. */
