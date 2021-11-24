@@ -67,36 +67,4 @@ inline void ManagedASTStringMap<VarDeclI*>::mark() {
   }
 }
 
-template <typename T>
-class ManagedASTStringOrderedMap : public GCMarker, public std::map<ASTString, T> {
-protected:
-  void mark() override {
-    for (auto& it : *this) {
-      it.first.mark();
-    }
-  }
-};
-
-template <>
-inline void ManagedASTStringOrderedMap<Expression*>::mark() {
-  for (auto& it : *this) {
-    it.first.mark();
-    Expression::mark(it.second);
-#if defined(MINIZINC_GC_STATS)
-    GC::stats()[it->second->_id].keepalive++;
-#endif
-  }
-}
-
-template <>
-inline void ManagedASTStringOrderedMap<VarDeclI*>::mark() {
-  for (auto& it : *this) {
-    it.first.mark();
-#if defined(MINIZINC_GC_STATS)
-    GC::stats()[it.second->e()->Expression::eid()].keepalive++;
-#endif
-    Item::mark(it.second);
-  }
-}
-
 }  // namespace MiniZinc

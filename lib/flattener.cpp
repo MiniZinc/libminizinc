@@ -152,6 +152,10 @@ void Flattener::printHelp(ostream& os) const {
      << std::endl
      << "  --output-output-item\n    Print the output item as a string in the dzn or json output"
      << std::endl
+     << "  --only-sections <section_1,...section_n>" << std::endl
+     << "    Enable only the given comma-separated output sections." << std::endl
+     << "  --not-sections <section_1,...section_n>" << std::endl
+     << "    Disable the given comma-separated output sections." << std::endl
      << "  -Werror\n    Turn warnings into errors" << std::endl;
 }
 
@@ -221,6 +225,20 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv,
     _flags.outputObjective = true;
   } else if (cop.getOption("--output-output-item")) {
     _flags.outputOutputItem = true;
+  } else if (cop.getOption("--only-sections", &buffer)) {
+    std::stringstream ss(buffer);
+    while (ss.good()) {
+      std::string section;
+      getline(ss, section, ',');
+      _fopts.onlySections.insert(section);
+    }
+  } else if (cop.getOption("--not-sections", &buffer)) {
+    std::stringstream ss(buffer);
+    while (ss.good()) {
+      std::string section;
+      getline(ss, section, ',');
+      _fopts.notSections.insert(section);
+    }
   } else if (cop.getOption("- --input-from-stdin")) {
     _flags.stdinInput = true;
   } else if (cop.getOption("-d --data", &buffer)) {

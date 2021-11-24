@@ -1601,10 +1601,10 @@ Constants::Constants() {
   ids.mzn_in_root_context = addString("mzn_in_root_context");
   ids.mzn_output_section = addString("mzn_output_section");
   ids.output_to_section = addString("output_to_section");
-  ids.mzn_section_enabled = addString("mzn_section_enabled");
   ids.mzn_default = addString("default");
   ids.trace = addString("trace");
   ids.trace_dbg = addString("trace_dbg");
+  ids.trace_to_section = addString("trace_to_section");
 
   ids.array2d = addString("array2d");
   ids.array3d = addString("array3d");

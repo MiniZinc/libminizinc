@@ -711,6 +711,20 @@ MultiPassInfo::MultiPassInfo() : currentPassNumber(0), finalPassNumber(1) {}
 
 VarPathStore::VarPathStore() : maxPathDepth(0) {}
 
+void OutputSectionStore::add(ASTString section, Expression* e) {
+  auto ret = _idx.emplace(section, _sections.size());
+  if (ret.second) {
+    _sections.emplace_back(section, e);
+  } else {
+    GCLock lock;
+    auto idx = ret.first->second;
+    auto* orig = _sections[idx].second;
+    auto* bo = new BinOp(Location().introduce(), orig, BOT_PLUSPLUS, e);
+    bo->type(Type::parstring(1));
+    _sections[idx].second = bo;
+  }
+}
+
 EnvI::EnvI(Model* model0, std::ostream& outstream0, std::ostream& errstream0)
     : model(model0),
       originalModel(nullptr),
@@ -1182,15 +1196,9 @@ void EnvI::cleanupExceptOutput() {
   model = nullptr;
 }
 
-void EnvI::addOutputToSection(ASTString section, Expression* e) {
-  auto ret = _output.emplace(section, e);
-  if (!ret.second) {
-    GCLock lock;
-    auto* orig = (*ret.first).second;
-    auto* bo = new BinOp(Location().introduce(), orig, BOT_PLUSPLUS, e);
-    bo->type(Type::parstring(1));
-    (*ret.first).second = bo;
-  }
+bool EnvI::outputSectionEnabled(ASTString section) const {
+  return fopts.notSections.count(section.c_str()) == 0 &&
+         (fopts.onlySections.empty() || fopts.onlySections.count(section.c_str()) > 0);
 }
 
 CallStackItem::CallStackItem(EnvI& env0, Expression* e) : _env(env0), _csiType(CSI_NONE) {

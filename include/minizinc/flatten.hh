@@ -59,6 +59,10 @@ struct FlatteningOptions {
   long unsigned int randomSeed;
   /// Encapsulate output in a JSON object
   bool encapsulateJSON;
+  /// Which output sections to include
+  std::unordered_set<std::string> onlySections;
+  /// Which output sections to exclude
+  std::unordered_set<std::string> notSections;
   /// Default constructor
   FlatteningOptions()
       : keepOutputInFzn(false),

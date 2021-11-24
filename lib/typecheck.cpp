@@ -3535,9 +3535,9 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         GCLock lock;
         auto* call = oi->ann().getCall(ASTString("mzn_output_section"));
         if (call == nullptr) {
-          env.addOutputToSection(ASTString("default"), oi->e());
+          env.outputSections.add(ASTString("default"), oi->e());
         } else {
-          env.addOutputToSection(ASTString(eval_string(env, call->arg(0))), oi->e());
+          env.outputSections.add(ASTString(eval_string(env, call->arg(0))), oi->e());
         }
         oi->remove();
       }
@@ -4144,7 +4144,7 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
   os << ",\n  \"method\": \"";
   os << _ifc.method;
   os << "\"";
-  os << ",\n  \"has_output_item\": " << (env.envi().outputSections().empty() ? "false" : "true");
+  os << ",\n  \"has_output_item\": " << (env.envi().outputSections.empty() ? "false" : "true");
   os << ",\n  \"included_files\": [\n" << _ifc.ossIncludedFiles.str() << "\n  ]";
   os << ",\n  \"globals\": [\n";
   bool first = true;

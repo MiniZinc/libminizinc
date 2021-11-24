@@ -1823,7 +1823,7 @@ bool b_output_to_section(EnvI& env, Call* call) {
   std::vector<Expression*> al_v({expr});
   auto* al = new ArrayLit(Location().introduce(), al_v);
   al->type(Type::parstring(1));
-  env.addOutputToSection(section_s, al);
+  env.outputSections.add(section_s, al);
   return true;
 }
 
@@ -3103,18 +3103,6 @@ Expression* b_check_debug_mode(EnvI& env, Call* call) {
   return env.fopts.debug ? env.constants.literalTrue : env.constants.literalFalse;
 }
 
-bool b_mzn_section_enabled(EnvI& env, Call* call) {
-  if (env.onlySections == nullptr || env.notSections == nullptr) {
-    throw EvalError(env, call->loc(), "Sections can only be enabled/disabled during output.");
-  }
-  GCLock lock;
-  auto* section = eval_par(env, call->arg(0))->cast<StringLit>();
-  if (env.onlySections->empty()) {
-    return env.notSections->count(section->v().c_str()) == 0;
-  }
-  return env.onlySections->count(section->v().c_str()) > 0;
-}
-
 void register_builtins(Env& e) {
   EnvI& env = e.envi();
   Model* m = env.model;
@@ -3976,11 +3964,6 @@ void register_builtins(Env& e) {
   }
   { rb(env, m, ASTString("showCheckerOutput"), {}, b_show_checker_output); }
   { rb(env, m, ASTString("mzn_internal_check_debug_mode"), {}, b_check_debug_mode); }
-  {
-    std::vector<Type> t(1);
-    t[0] = Type::parstring();
-    rb(env, m, env.constants.ids.mzn_section_enabled, t, b_mzn_section_enabled);
-  }
 }
 
 }  // namespace MiniZinc

@@ -87,10 +87,8 @@ public:
     std::string errorMsg = errorMsgDef;
     std::string searchCompleteMsg = searchCompleteMsgDef;
 
-    std::string onlySectionsString;
-    std::unordered_set<std::string> onlySections;
-    std::string notSectionsString;
-    std::unordered_set<std::string> notSections;
+    std::vector<std::string> checkerArgs = {"--solver", "org.minizinc.gecode_presolver",
+                                            "--is-checker"};
   } opt;
 
   struct Statistics {
@@ -177,7 +175,6 @@ protected:
   /// Parsing fznsolver's complete raw text output
   void parseAssignments(std::string& solution);
   /// Checking solution against checker model
-  std::vector<std::string> checkerArgs() const;
   void checkSolution(std::ostream& os);
   void checkStatistics(std::ostream& os);
   bool evalOutputInternal(std::ostream& fout);

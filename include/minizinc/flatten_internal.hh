@@ -125,6 +125,28 @@ public:
   std::string prevTraceLoc() const { return _prevTraceLoc; }
 };
 
+class OutputSectionStore {
+private:
+  typedef std::vector<std::pair<ASTString, Expression*>> OutputSections;
+
+public:
+  typedef OutputSections::iterator iterator;
+  typedef OutputSections::const_iterator const_iterator;
+
+  void add(ASTString section, Expression* e);
+  bool empty() const { return _sections.empty(); };
+  bool contains(ASTString section) const { return _idx.count(section) > 0; }
+
+  iterator begin() { return _sections.begin(); }
+  const_iterator begin() const { return _sections.begin(); }
+  iterator end() { return _sections.end(); }
+  const_iterator end() const { return _sections.end(); }
+
+private:
+  OutputSections _sections;
+  std::unordered_map<ASTString, OutputSections::size_type> _idx;
+};
+
 class EnvI {
 public:
   Model* model;
@@ -182,14 +204,8 @@ public:
   FlatteningOptions fopts;
   ASTStringMap<Item*> reverseEnum;
   std::vector<KeepAlive> checkVars;
-  // Which output sections to enable/disable
-  std::unordered_set<std::string>* onlySections = nullptr;
-  std::unordered_set<std::string>* notSections = nullptr;
-  // Mapping from output section name to output string array lit
-  typedef ManagedASTStringOrderedMap<Expression*> OutputSectionMap;
-  // Variables which will be used in auto-generated DZN/JSON output
-  typedef ManagedASTStringOrderedMap<VarDecl*> OutputVariables;
   std::vector<std::pair<ASTString, KeepAlive>> outputVars;
+  OutputSectionStore outputSections;
 
   // General multipass information
   MultiPassInfo multiPassInfo;
@@ -212,7 +228,6 @@ protected:
   bool _collectVardecls;
   std::default_random_engine _g;
   std::atomic<bool> _cancel = {false};
-  OutputSectionMap _output;
 
 public:
   EnvI(Model* model0, std::ostream& outstream0 = std::cout, std::ostream& errstream0 = std::cerr);
@@ -269,8 +284,7 @@ public:
     }
   }
 
-  void addOutputToSection(ASTString section, Expression* e);
-  const OutputSectionMap& outputSections() { return _output; };
+  bool outputSectionEnabled(ASTString section) const;
 };
 
 inline VarDecl* Ctx::partialityVar(EnvI& env) const {

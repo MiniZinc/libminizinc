@@ -58,10 +58,6 @@ void Solns2Out::printHelp(ostream& os) {
      << std::endl
      << "  --output-time\n    Print timing information in the FlatZinc solution stream."
      << std::endl
-     << "  --only-sections <section_1,...section_n>" << std::endl
-     << "    Enable only the given comma-separated output sections." << std::endl
-     << "  --not-sections <section_1,...section_n>" << std::endl
-     << "    Disable the given comma-separated output sections." << std::endl
      << "  --no-flush-output\n    Don't flush output stream after every line." << std::endl;
 }
 
@@ -116,20 +112,6 @@ bool Solns2Out::processOption(int& i, std::vector<std::string>& argv,
   } else if (cop.getOption("--output-raw",
                            &opt.flagOutputRaw)) {  // NOLINT: Allow repeated empty if
     // Parsed by reference
-  } else if (cop.getOption("--only-sections", &opt.onlySectionsString)) {
-    std::stringstream ss(opt.onlySectionsString);
-    while (ss.good()) {
-      std::string section;
-      getline(ss, section, ',');
-      opt.onlySections.insert(section);
-    }
-  } else if (cop.getOption("--not-sections", &opt.notSectionsString)) {
-    std::stringstream ss(opt.notSectionsString);
-    while (ss.good()) {
-      std::string section;
-      getline(ss, section, ',');
-      opt.notSections.insert(section);
-    }
   } else if (cop.getOption("--is-checker")) {
     opt.flagIsChecker = true;
   } else if (opt.flagStandaloneSolns2Out) {
@@ -410,7 +392,7 @@ void Solns2Out::checkSolution(std::ostream& oss) {
   MznSolver slv(oss, _log, _starttime);
   slv.s2out.opt.solutionSeparator = "";
   try {
-    slv.run(checkerArgs(), checker.str(), "minizinc", "checker.mzc");
+    slv.run(opt.checkerArgs, checker.str(), "minizinc", "checker.mzc");
   } catch (const LocationException& e) {
     oss << e.loc() << ":" << std::endl;
     oss << e.what() << ": " << e.msg() << std::endl;
@@ -428,22 +410,6 @@ void Solns2Out::checkSolution(std::ostream& oss) {
 #endif
 }
 
-std::vector<std::string> Solns2Out::checkerArgs() const {
-  std::vector<std::string> args({"--solver", "org.minizinc.gecode_presolver", "--is-checker"});
-  if (opt.flagEncapsulateJSON) {
-    args.emplace_back("--json-stream");
-  }
-  if (!opt.onlySections.empty()) {
-    args.emplace_back("--only-sections");
-    args.push_back(opt.onlySectionsString);
-  }
-  if (!opt.notSections.empty()) {
-    args.emplace_back("--not-sections");
-    args.push_back(opt.notSectionsString);
-  }
-  return args;
-}
-
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static): Appears static without Gecode
 void Solns2Out::checkStatistics(std::ostream& oss) {
 #ifdef HAS_GECODE
@@ -458,7 +424,7 @@ void Solns2Out::checkStatistics(std::ostream& oss) {
   MznSolver slv(oss, oss, _starttime);
   slv.s2out.opt.solutionSeparator = "";
   try {
-    slv.run(checkerArgs(), checker.str(), "minizinc", "checker.mzc");
+    slv.run(opt.checkerArgs, checker.str(), "minizinc", "checker.mzc");
   } catch (const LocationException& e) {
     oss << e.loc() << ":" << std::endl;
     oss << e.what() << ": " << e.msg() << std::endl;
@@ -573,9 +539,6 @@ bool Solns2Out::evalStatusMsg(SolverInstance::Status status) {
 }
 
 void Solns2Out::init() {
-  getEnv()->envi().onlySections = &opt.onlySections;
-  getEnv()->envi().notSections = &opt.notSections;
-
   _declmap.clear();
   for (auto& i : *getModel()) {
     if (auto* oi = i->dynamicCast<OutputI>()) {

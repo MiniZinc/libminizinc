@@ -1849,9 +1849,9 @@ public:
     ASTString mzn_in_root_context;               // NOLINT(readability-identifier-naming)
     ASTString mzn_output_section;                // NOLINT(readability-identifier-naming)
     ASTString output_to_section;                 // NOLINT(readability-identifier-naming)
-    ASTString mzn_section_enabled;               // NOLINT(readability-identifier-naming)
     ASTString trace;
-    ASTString trace_dbg;  // NOLINT(readability-identifier-naming)
+    ASTString trace_dbg;         // NOLINT(readability-identifier-naming)
+    ASTString trace_to_section;  // NOLINT(readability-identifier-naming)
 
     ASTString array2d;
     ASTString array3d;

@@ -592,8 +592,8 @@ void process_deletions(EnvI& e) {
   }
 }
 
-void create_dzn_output_item(EnvI& e, bool includeObjective, bool includeOutputItem,
-                            bool includeChecker) {
+Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutputItem,
+                              bool includeChecker) {
   std::vector<Expression*> outputVars;
 
   for (auto& it : e.outputVars) {
@@ -964,9 +964,8 @@ void create_dzn_output_item(EnvI& e, bool includeObjective, bool includeOutputIt
   }
 
   auto* al = new ArrayLit(Location().introduce(), outputVars);
-  e.addOutputToSection(ASTString("dzn"), al);  // Add output to dzn section for encapsulation
-  auto* newOutputItem = new OutputI(Location().introduce(), al);
-  e.model->addItem(newOutputItem);
+  al->type(Type::parstring(1));
+  return al;
 }
 
 ArrayLit* create_json_output(EnvI& e, bool includeObjective, bool includeOutputItem,
@@ -1059,26 +1058,17 @@ ArrayLit* create_json_output(EnvI& e, bool includeObjective, bool includeOutputI
   }
 
   outputVars.push_back(new StringLit(Location().introduce(), "\n}\n"));
-  return new ArrayLit(Location().introduce(), outputVars);
-}
-void create_json_output_item(EnvI& e, bool ioncludeObjective, bool includeOutputItem,
-                             bool includeChecker) {
-  auto* al = create_json_output(e, ioncludeObjective, includeOutputItem, includeChecker);
-  e.addOutputToSection(ASTString("json"), al);  // Add output to json section for encapsulation
-  auto* newOutputItem = new OutputI(Location().introduce(), al);
-  e.model->addItem(newOutputItem);
-}
-
-void create_encapsulated_output_item(EnvI& e) {
-  // Inner portion of encapsulated output
-  auto* al = e.model->outputItem()->e();
+  auto* al = new ArrayLit(Location().introduce(), outputVars);
   al->type(Type::parstring(1));
-  std::vector<Expression*> es;
+  return al;
+}
 
+Expression* create_encapsulated_output(EnvI& e) {
+  std::vector<Expression*> es;
   // Output each section as key-value pairs in an object
   es.push_back(new StringLit(Location().introduce(), "{"));
   bool first = true;
-  for (const auto& it : e.outputSections()) {
+  for (const auto& it : e.outputSections) {
     if (first) {
       es.push_back(new StringLit(Location().introduce(),
                                  "\"" + Printer::escapeStringLit(it.first) + "\": "));
@@ -1101,10 +1091,7 @@ void create_encapsulated_output_item(EnvI& e) {
     }
   }
   es.push_back(new StringLit(Location().introduce(), "}"));
-
-  auto* newOutputItem =
-      new OutputI(Location().introduce(), new ArrayLit(Location().introduce(), es));
-  e.model->addItem(newOutputItem);
+  return new ArrayLit(Location().introduce(), es);
 }
 
 void process_toplevel_output_vars(EnvI& e) {
@@ -1186,50 +1173,65 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
   GCLock lock;
 
   // Combine output sections into one string
-  if (!e.outputSections().empty()) {
-    Expression* combinedOutput = nullptr;
-    auto* empty_array = new ArrayLit(Location().introduce(), std::vector<Expression*>());
-    for (const auto& it : e.outputSections()) {
-      auto* section_enabled = new Call(Location().introduce(), e.constants.ids.mzn_section_enabled,
-                                       {new StringLit(Location().introduce(), it.first)});
-      section_enabled->type(Type::parbool());
-      section_enabled->decl(e.model->matchFn(e, section_enabled, false));
-      auto* part = new ITE(Location().introduce(), {section_enabled, it.second}, empty_array);
-      part->type(Type::parstring(1));
-      if (combinedOutput == nullptr) {
-        combinedOutput = part;
-      } else {
-        combinedOutput = new BinOp(Location().introduce(), combinedOutput, BOT_PLUSPLUS, part);
-        combinedOutput->type(Type::parstring(1));
-      }
+  Expression* o = nullptr;
+  for (const auto& it : e.outputSections) {
+    if (!e.outputSectionEnabled(it.first)) {
+      continue;
     }
-    e.addOutputToSection(ASTString("raw"), combinedOutput);  // Add to raw section for encapsulation
-    e.model->addItem(new OutputI(Location().introduce(), combinedOutput));
+    if (o == nullptr) {
+      o = it.second;
+    } else {
+      o = new BinOp(Location().introduce(), o, BOT_PLUSPLUS, it.second);
+      o->type(Type::parstring(1));
+    }
+  }
+  if (o != nullptr) {
+    e.outputSections.add(ASTString("raw"), o);  // Add to raw section for encapsulation
+    e.model->addItem(new OutputI(Location().introduce(), o));
   }
 
   // Only include _checker output if not JSON encapsulated
   bool includeChecker = hasChecker && !encapsulateJSON;
   switch (outputMode) {
     case FlatteningOptions::OUTPUT_DZN:
-      create_dzn_output_item(e, outputObjective, includeOutputItem, includeChecker);
+      o = create_dzn_output(e, outputObjective, includeOutputItem, includeChecker);
+      e.outputSections.add(ASTString("dzn"), o);  // Add to dzn section for encapsulation
       break;
     case FlatteningOptions::OUTPUT_JSON:
-      create_json_output_item(e, outputObjective, includeOutputItem, includeChecker);
+      o = create_json_output(e, outputObjective, includeOutputItem, includeChecker);
+      e.outputSections.add(ASTString("json"), o);  // Add to json section for encapsulation
       break;
     case FlatteningOptions::OUTPUT_CHECKER:
-      create_dzn_output_item(e, true, false, false);
+      o = create_dzn_output(e, true, false, false);
+      e.outputSections.add(ASTString("dzn"), o);  // Add to dzn section for encapsulation
       break;
     default:
-      if (e.model->outputItem() == nullptr) {
-        create_dzn_output_item(e, outputObjective, false, false);
+      if (!e.outputSections.contains(ASTString("default"))) {
+        // If no output in default section, use dzn output
+        auto* dzno = create_dzn_output(e, outputObjective, false, false);
+        e.outputSections.add(ASTString("dzn"), dzno);  // Add to dzn section for encapsulation
+        // Combine with other output so we don't lose other sections
+        if (o == nullptr) {
+          o = dzno;
+        } else {
+          o = new BinOp(Location().introduce(), dzno, BOT_PLUSPLUS, o);
+          o->type(Type::parstring(1));
+        }
       }
       break;
   }
 
   if (encapsulateJSON) {
-    // Encapsulate the created output item in JSON
-    create_encapsulated_output_item(e);
+    // Replace output with json stream output
+    o = create_encapsulated_output(e);
   }
+  if (o == nullptr) {
+    // All sections disabled
+    o = new ArrayLit(Location().introduce(), std::vector<Expression*>());
+    o->type(Type::parstring(1));
+  }
+  auto* newOutputItem = new OutputI(Location().introduce(), o);
+  e.model->addItem(newOutputItem);
 
   // Copy output item from model into output model
   outputItem = copy(e, e.cmap, e.model->outputItem())->cast<OutputI>();

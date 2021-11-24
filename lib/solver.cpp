@@ -566,6 +566,11 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       flagCompilerStatistics = true;
     } else if (argv[i] == "--json-stream") {
       flagEncapsulateJSON = true;
+    } else if (argv[i] == "--only-sections" || argv[i] == "--not-sections") {
+      argv[j++] = argv[i];
+      s2out.opt.checkerArgs.push_back(argv[i++]);
+      argv[j++] = argv[i];
+      s2out.opt.checkerArgs.push_back(argv[i]);
     } else {
       if ((argv[i] == "--fzn-cmd" || argv[i] == "--flatzinc-cmd") && solver.empty()) {
         solver = "org.minizinc.mzn-fzn";
