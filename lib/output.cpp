@@ -1254,7 +1254,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
             // Need to process right hand side of variable, since it may contain
             // identifiers that are only in the FlatZinc and that we would
             // therefore fail to copy into the output model
-            output_vardecls(env, vdi_copy, vd_orig->e());
+            output_vardecls(env, vdi_copy, vd_orig);
           }
         }
         make_par(env, vdi_copy->e());
