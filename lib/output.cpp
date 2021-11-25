@@ -1149,6 +1149,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
         t.ti(Type::TI_PAR);
         vd->ti()->domain(nullptr);
         vd->flat(vd_orig->flat());
+        vd->ti()->setIsEnum(false);
         bool isCheckVar = vd->ann().contains(env.constants.ann.mzn_check_var);
         Call* checkVarEnum = vd->ann().getCall(env.constants.ann.mzn_check_enum_var);
         vd->ann().clear();
