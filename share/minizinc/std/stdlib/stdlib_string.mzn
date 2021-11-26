@@ -9,6 +9,21 @@ function string: show(any $T: x);
 /** @group stdlib.builtins.string Convert \a x into a string */
 function string: show(array[$U] of any $T: x);
 
+function string: show_indexed(array[int] of string: idx, array[int] of string: x) =
+	"[" ++ join(", ", [idx[i]++": "++x[i] | i in index_set(x)]) ++ "]";
+
+/** @group stdlib.builtins.string Convert \a x into a string */
+function string: show(array[$$U] of any $T: x) = let {
+    bool: idx_is_enum = min(enum_of(min(index_set(x)))) != -infinity;
+	bool: idx_is_needed = idx_is_enum \/ min(index_set(x)) != 1;
+} in if idx_is_needed then
+    show_indexed([ show(i) | i in index_set(x)], [ show(x[i]) | i in index_set(x)])
+  else "[" ++ join(", ", [show(x[i]) | i in index_set(x)]) ++ "]" endif;
+
+/** @group stdlib.builtins.string Convert \a x into a string */
+% function string: show(array[$$U,$$V] of any $T: x) = show2d(x);
+
+
 function string: showDzn(any $T: x);
 function string: showDzn(array[$U] of any $T: x);
 function string: showDznId(string: x);
@@ -31,25 +46,38 @@ point is given by \a p. It is a run-time error for \a p to be negative.
 */
 function string: show_float(int: w, int: p, var float: x);
 
+/** @group stdlib.builtins.string Convert two-dimensional array \a x into a string
+    with row and column headers \a row_hdr and \a col_hdr */
+function string: show2d_indexed(array[int] of string: row_hdr,
+                                array[int] of string: col_hdr,
+                                array[int,int] of string: vs) =
+  let {
+      int: row_hdr_max = max([0]++[string_length(r)+1 | r in row_hdr]);
+      string: row_hdr_offset = if row_hdr_max = 0 then " " else concat([" " | _ in 1..row_hdr_max+2]) endif;
+      array[int] of int: col_hdr_max =
+        [ j : max([if length(col_hdr)=0 then 0 else string_length(col_hdr[j]) endif]++
+              [string_length(vs[i,j]) | i in index_set_1of2(vs)]) | j in index_set_2of2(vs)];
+  } in if length(vs) = 0 then "[||]" else
+  if length(col_hdr)=0 then "["
+  else 
+  "[|"++row_hdr_offset++concat(i in index_set(col_hdr))(format_justify_string(col_hdr_max[i],col_hdr[i])++": ")++"\n "
+  endif
+  ++concat([
+      "| "++
+      if length(row_hdr) > 0 then format_justify_string(row_hdr_max-1, row_hdr[i])++": " endif++
+      join(", ", [format_justify_string(col_hdr_max[j], vs[i,j]) | j in index_set_2of2(vs)])++"\n "
+  | i in index_set_1of2(vs)
+  ])++"|]" endif;
+
 /** @group stdlib.builtins.string Convert two-dimensional array \a x into a string */
-function string: show2d(array[int,int] of any $T: x) =
-	let {
-		int: rows=card(index_set_1of2(x));
-		int: cols=card(index_set_2of2(x));
-		array[int] of string: s = [show(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)];
-		int: max_length = if length(s) > 0 then max([string_length(s[i]) | i in index_set(s)]) else 0 endif;
-	} in
-	"[| "++
-	concat([
-		format_justify_string(max_length,s[(i-1)*cols+j]) ++
-		if j < cols then
-			", "
-		elseif i < rows then
-			" |\n   " else " |]\n"
-		endif
-		| i in 1..rows, j in 1..cols
-	]) ++
-	if rows = 0 then "|]" else "" endif;
+function string: show2d(array[$$E,$$F] of any $T: x) = let {
+    bool: idx1_is_enum = min(enum_of(min(index_set_1of2(x)))) != -infinity;
+	bool: idx1_is_needed = idx1_is_enum \/ min(index_set_1of2(x)) != 1;
+    bool: idx2_is_enum = min(enum_of(min(index_set_2of2(x)))) != -infinity;
+	bool: idx2_is_needed = idx2_is_enum \/ min(index_set_2of2(x)) != 1;
+    array[int] of string: col_hdr = if idx2_is_needed then [i : show(i) | i in index_set_2of2(x)] else [] endif;
+    array[int] of string: row_hdr = if idx1_is_needed then [i : show(i) | i in index_set_1of2(x)] else [] endif;
+} in show2d_indexed(row_hdr, col_hdr, [ (i,j) : show(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x) ]);
 
 /** @group stdlib.builtins.string Convert three-dimensional array \a x into a string */
 function string: show3d(array[int,int,int] of any $T: x) =

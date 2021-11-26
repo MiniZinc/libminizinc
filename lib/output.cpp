@@ -618,80 +618,295 @@ void create_dzn_output_item(EnvI& e, bool includeObjective, bool includeOutputIt
         }
       }
       if (al == nullptr || !al->empty()) {
-        needArrayXd = true;
-        s << "array" << vd->type().dim() << "d(";
-        for (int i = 0; i < vd->type().dim(); i++) {
-          unsigned int enumId =
-              (vd->type().enumId() != 0 ? e.getArrayEnum(vd->type().enumId())[i] : 0);
-          if (al != nullptr || vd->ti()->ranges()[i]->domain() != nullptr) {
-            if (enumId != 0) {
-              IntVal idxMin;
-              IntVal idxMax;
+        // First check if we can use an array literal representation
+        // or whether we have to introduce an arrayXd call
+        if (vd->type().dim() <= 2 && al != nullptr) {
+          if (vd->type().dim() == 2) {
+            s << "\n";
+          }
+          auto* sl = new StringLit(Location().introduce(), s.str());
+          outputVars.push_back(sl);
 
-              if (al != nullptr) {
-                idxMin = al->min(i);
-                idxMax = al->max(i);
+          unsigned int idx1EnumId =
+              (vd->type().enumId() != 0 ? e.getArrayEnum(vd->type().enumId())[0] : 0);
+          unsigned int xEnumId =
+              (vd->type().enumId() != 0 ? e.getArrayEnum(vd->type().enumId())[al->dims()] : 0);
+
+          if (al->dims() == 1) {
+            // 1d array
+            if (idx1EnumId == 0 && al->min(0) == 1) {
+              // We can use a simple 1d array literal
+              auto* show = new Call(Location().introduce(), ASTString("showDzn"), {vd->id()});
+              show->type(Type::parstring());
+              FunctionI* fi = e.model->matchFn(e, show, false);
+              assert(fi);
+              show->decl(fi);
+              outputVars.push_back(show);
+              std::string ends = needArrayXd ? ")" : "";
+              ends += ";\n";
+              auto* eol = new StringLit(Location().introduce(), ends);
+              outputVars.push_back(eol);
+              continue;
+            }
+
+            /*
+
+             let {
+               array[int] of string: idx = [ showDzn(to_enum(..., i)) | i in al->min(0)..al->max(0)
+             ] array[int] of string: x = [ showDzn(al[i]) | i in al->min(0)..al->max(0) ] } in
+             show_indexed(idx, x)
+
+             */
+
+            Comprehension* indexes;
+            Comprehension* values;
+
+            {
+              auto* i_ti = new TypeInst(Location().introduce(), Type::parenum(idx1EnumId));
+              auto* i_vd = new VarDecl(Location().introduce(), i_ti, "i");
+              i_vd->toplevel(false);
+              auto* sl = new SetLit(Location().introduce(), IntSetVal::a(al->min(0), al->max(0)));
+
+              Generators g;
+              g.g.emplace_back(std::vector<VarDecl*>({i_vd}), sl, nullptr);
+              auto* show_i = new Call(Location().introduce(), ASTString("showDzn"), {i_vd->id()});
+              show_i->type(Type::parstring());
+              FunctionI* fi = e.model->matchFn(e, show_i, false);
+              assert(fi);
+              show_i->decl(fi);
+
+              indexes = new Comprehension(Location().introduce(), show_i, g, false);
+            }
+            {
+              auto* i_ti = new TypeInst(Location().introduce(), Type::parenum(idx1EnumId));
+              auto* i_vd = new VarDecl(Location().introduce(), i_ti, "i");
+              i_vd->toplevel(false);
+              auto* sl = new SetLit(Location().introduce(), IntSetVal::a(al->min(0), al->max(0)));
+
+              Generators g;
+              g.g.emplace_back(std::vector<VarDecl*>({i_vd}), sl, nullptr);
+
+              auto* aa = new ArrayAccess(Location().introduce(), vd->id(), {i_vd->id()});
+              Type vd_t = vd->type();
+              vd_t.dim(0);
+              vd_t.enumId(xEnumId);
+              aa->type(vd_t);
+
+              auto* show_i = new Call(Location().introduce(), ASTString("showDzn"), {aa});
+              show_i->type(Type::parstring());
+              FunctionI* fi = e.model->matchFn(e, show_i, false);
+              assert(fi);
+              show_i->decl(fi);
+
+              values = new Comprehension(Location().introduce(), show_i, g, false);
+            }
+
+            auto* idx_ti_ti = new TypeInst(Location().introduce(), Type::parint());
+            auto* idx_ti = new TypeInst(Location().introduce(), Type::parstring(1));
+            idx_ti->setRanges({idx_ti_ti});
+            auto* idx_vd = new VarDecl(Location().introduce(), idx_ti, "idx", indexes);
+            idx_vd->toplevel(false);
+
+            auto* x_ti_ti = new TypeInst(Location().introduce(), Type::parint());
+            auto* x_ti = new TypeInst(Location().introduce(), Type::parstring(1));
+            x_ti->setRanges({x_ti_ti});
+            auto* x_vd = new VarDecl(Location().introduce(), x_ti, "x", values);
+            x_vd->toplevel(false);
+
+            auto* show_indexed = new Call(Location().introduce(), ASTString("show_indexed"),
+                                          {idx_vd->id(), x_vd->id()});
+            FunctionI* fi = e.model->matchFn(e, show_indexed, false);
+            assert(fi);
+            show_indexed->decl(fi);
+            auto* let = new Let(Location().introduce(), {idx_vd, x_vd}, show_indexed);
+            let->type(Type::parstring());
+            outputVars.push_back(let);
+
+            auto* eol = new StringLit(Location().introduce(), ";\n");
+            outputVars.push_back(eol);
+          } else {
+            // 2d array
+
+            unsigned int idx2EnumId =
+                (vd->type().enumId() != 0 ? e.getArrayEnum(vd->type().enumId())[1] : 0);
+
+            /*
+
+             let {
+               array[int] of string: idx1 = [ showDzn(to_enum(..., i)) | i in al->min(0)..al->max(0)
+             ] array[int] of string: idx2 = [ showDzn(to_enum(..., i)) | i in al->min(1)..al->max(1)
+             ] array[int,int] of string: x = [ (i,j) : showDzn(al[i]) | i in al->min(0)..al->max(0),
+             j in al->min(1)..al->max(1) ] } in show2d_headers(idx1, idx2, x)
+
+             */
+            std::vector<Expression*> indexes(2);
+            Comprehension* values;
+
+            for (int i = 0; i < 2; i++) {
+              if ((i == 0 && idx1EnumId == 0 && al->min(0) == 1) ||
+                  (i == 1 && idx2EnumId == 0 && al->min(1) == 1)) {
+                auto* empty = new ArrayLit(Location().introduce(), std::vector<Expression*>());
+                empty->type(Type::parstring(1));
+                indexes[i] = empty;
+              } else {
+                auto* i_ti = new TypeInst(Location().introduce(),
+                                          Type::parenum(i == 0 ? idx1EnumId : idx2EnumId));
+                auto* i_vd = new VarDecl(Location().introduce(), i_ti, "i");
+                i_vd->toplevel(false);
+                auto* sl = new SetLit(Location().introduce(), IntSetVal::a(al->min(i), al->max(i)));
+
+                Generators g;
+                g.g.emplace_back(std::vector<VarDecl*>({i_vd}), sl, nullptr);
+                auto* show_i = new Call(Location().introduce(), ASTString("showDzn"), {i_vd->id()});
+                show_i->type(Type::parstring());
+                FunctionI* fi = e.model->matchFn(e, show_i, false);
+                assert(fi);
+                show_i->decl(fi);
+
+                indexes[i] = new Comprehension(Location().introduce(), show_i, g, false);
+              }
+            }
+            {
+              auto* i_ti = new TypeInst(Location().introduce(), Type::parenum(idx1EnumId));
+              auto* i_vd = new VarDecl(Location().introduce(), i_ti, "i");
+              i_vd->toplevel(false);
+              auto* sl_i = new SetLit(Location().introduce(), IntSetVal::a(al->min(0), al->max(0)));
+              auto* j_ti = new TypeInst(Location().introduce(), Type::parenum(idx2EnumId));
+              auto* j_vd = new VarDecl(Location().introduce(), j_ti, "j");
+              j_vd->toplevel(false);
+              auto* sl_j = new SetLit(Location().introduce(), IntSetVal::a(al->min(1), al->max(1)));
+
+              Generators g;
+              g.g.emplace_back(std::vector<VarDecl*>({i_vd}), sl_i, nullptr);
+              g.g.emplace_back(std::vector<VarDecl*>({j_vd}), sl_j, nullptr);
+
+              auto* aa =
+                  new ArrayAccess(Location().introduce(), vd->id(), {i_vd->id(), j_vd->id()});
+              Type vd_t = vd->type();
+              vd_t.dim(0);
+              vd_t.enumId(xEnumId);
+              aa->type(vd_t);
+
+              auto* show_i = new Call(Location().introduce(), ASTString("showDzn"), {aa});
+              show_i->type(Type::parstring());
+              FunctionI* fi = e.model->matchFn(e, show_i, false);
+              assert(fi);
+              show_i->decl(fi);
+
+              ArrayLit* idxlit = ArrayLit::constructTuple(Location().introduce(),
+                                                          {i_vd->id(), j_vd->id(), show_i});
+
+              values = new Comprehension(Location().introduce(), idxlit, g, false);
+            }
+
+            auto* idx1_ti_ti = new TypeInst(Location().introduce(), Type::parint());
+            auto* idx1_ti = new TypeInst(Location().introduce(), Type::parstring(1));
+            idx1_ti->setRanges({idx1_ti_ti});
+            auto* idx1_vd = new VarDecl(Location().introduce(), idx1_ti, "idx1", indexes[0]);
+            idx1_vd->toplevel(false);
+
+            auto* idx2_ti_ti = new TypeInst(Location().introduce(), Type::parint());
+            auto* idx2_ti = new TypeInst(Location().introduce(), Type::parstring(1));
+            idx2_ti->setRanges({idx2_ti_ti});
+            auto* idx2_vd = new VarDecl(Location().introduce(), idx2_ti, "idx2", indexes[1]);
+            idx2_vd->toplevel(false);
+
+            auto* x_ti_ti = new TypeInst(Location().introduce(), Type::parint());
+            auto* x_ti = new TypeInst(Location().introduce(), Type::parstring(2));
+            x_ti->setRanges({x_ti_ti, x_ti_ti});
+            auto* x_vd = new VarDecl(Location().introduce(), x_ti, "x", values);
+            x_vd->toplevel(false);
+
+            auto* show_indexed = new Call(Location().introduce(), ASTString("show2d_indexed"),
+                                          {idx1_vd->id(), idx2_vd->id(), x_vd->id()});
+            FunctionI* fi = e.model->matchFn(e, show_indexed, false);
+            assert(fi);
+            show_indexed->decl(fi);
+            auto* let = new Let(Location().introduce(), {idx1_vd, idx2_vd, x_vd}, show_indexed);
+            let->type(Type::parstring());
+            outputVars.push_back(let);
+
+            auto* eol = new StringLit(Location().introduce(), ";\n");
+            outputVars.push_back(eol);
+          }
+          continue;
+        } else {
+          needArrayXd = true;
+          s << "array" << vd->type().dim() << "d(";
+          for (int i = 0; i < vd->type().dim(); i++) {
+            unsigned int enumId =
+                (vd->type().enumId() != 0 ? e.getArrayEnum(vd->type().enumId())[i] : 0);
+            if (al != nullptr || vd->ti()->ranges()[i]->domain() != nullptr) {
+              if (enumId != 0) {
+                IntVal idxMin;
+                IntVal idxMax;
+
+                if (al != nullptr) {
+                  idxMin = al->min(i);
+                  idxMax = al->max(i);
+                } else {
+                  IntSetVal* idxset = eval_intset(e, vd->ti()->ranges()[i]->domain());
+                  idxMin = idxset->min();
+                  idxMax = idxset->max();
+                }
+
+                auto* sl = new StringLit(Location().introduce(), s.str());
+                outputVars.push_back(sl);
+                ASTString toString =
+                    std::string("_toString_") + e.getEnum(enumId)->e()->id()->str().c_str();
+
+                auto* toStringMin = new Call(
+                    Location().introduce(), toString,
+                    {IntLit::a(idxMin), e.constants.literalFalse, e.constants.literalFalse});
+                toStringMin->type(Type::parstring());
+                FunctionI* toStringMin_fi = e.model->matchFn(e, toStringMin, false);
+                toStringMin->decl(toStringMin_fi);
+                outputVars.push_back(toStringMin);
+
+                sl = new StringLit(Location().introduce(), "..");
+                outputVars.push_back(sl);
+
+                auto* toStringMax = new Call(
+                    Location().introduce(), toString,
+                    {IntLit::a(idxMax), e.constants.literalFalse, e.constants.literalFalse});
+                toStringMax->type(Type::parstring());
+                FunctionI* toStringMax_fi = e.model->matchFn(e, toStringMax, false);
+                toStringMax->decl(toStringMax_fi);
+                outputVars.push_back(toStringMax);
+                s.str("");
+                s << ", ";
+              } else if (al != nullptr) {
+                s << al->min(i) << ".." << al->max(i) << ", ";
               } else {
                 IntSetVal* idxset = eval_intset(e, vd->ti()->ranges()[i]->domain());
-                idxMin = idxset->min();
-                idxMax = idxset->max();
+                s << *idxset << ", ";
               }
-
+            } else {
+              // Don't know index set range - have to compute in solns2out
               auto* sl = new StringLit(Location().introduce(), s.str());
               outputVars.push_back(sl);
-              ASTString toString =
-                  std::string("_toString_") + e.getEnum(enumId)->e()->id()->str().c_str();
 
-              auto* toStringMin =
-                  new Call(Location().introduce(), toString,
-                           {IntLit::a(idxMin), e.constants.literalFalse, e.constants.literalFalse});
-              toStringMin->type(Type::parstring());
-              FunctionI* toStringMin_fi = e.model->matchFn(e, toStringMin, false);
-              toStringMin->decl(toStringMin_fi);
-              outputVars.push_back(toStringMin);
+              std::string index_set_fn = "index_set";
+              if (vd->type().dim() > 1) {
+                index_set_fn +=
+                    "_" + std::to_string(i + 1) + "of" + std::to_string(vd->type().dim());
+              }
+              auto* index_set_xx = new Call(Location().introduce(), index_set_fn, {vd->id()});
+              index_set_xx->type(Type::parsetint());
+              auto* i_fi = e.model->matchFn(e, index_set_xx, false);
+              assert(i_fi);
+              index_set_xx->decl(i_fi);
 
-              sl = new StringLit(Location().introduce(), "..");
-              outputVars.push_back(sl);
+              auto* show = new Call(Location().introduce(), e.constants.ids.show, {index_set_xx});
+              show->type(Type::parstring());
+              FunctionI* s_fi = e.model->matchFn(e, show, false);
+              assert(s_fi);
+              show->decl(s_fi);
 
-              auto* toStringMax =
-                  new Call(Location().introduce(), toString,
-                           {IntLit::a(idxMax), e.constants.literalFalse, e.constants.literalFalse});
-              toStringMax->type(Type::parstring());
-              FunctionI* toStringMax_fi = e.model->matchFn(e, toStringMax, false);
-              toStringMax->decl(toStringMax_fi);
-              outputVars.push_back(toStringMax);
+              outputVars.push_back(show);
               s.str("");
               s << ", ";
-            } else if (al != nullptr) {
-              s << al->min(i) << ".." << al->max(i) << ", ";
-            } else {
-              IntSetVal* idxset = eval_intset(e, vd->ti()->ranges()[i]->domain());
-              s << *idxset << ", ";
             }
-          } else {
-            // Don't know index set range - have to compute in solns2out
-            auto* sl = new StringLit(Location().introduce(), s.str());
-            outputVars.push_back(sl);
-
-            std::string index_set_fn = "index_set";
-            if (vd->type().dim() > 1) {
-              index_set_fn += "_" + std::to_string(i + 1) + "of" + std::to_string(vd->type().dim());
-            }
-            auto* index_set_xx = new Call(Location().introduce(), index_set_fn, {vd->id()});
-            index_set_xx->type(Type::parsetint());
-            auto* i_fi = e.model->matchFn(e, index_set_xx, false);
-            assert(i_fi);
-            index_set_xx->decl(i_fi);
-
-            auto* show = new Call(Location().introduce(), e.constants.ids.show, {index_set_xx});
-            show->type(Type::parstring());
-            FunctionI* s_fi = e.model->matchFn(e, show, false);
-            assert(s_fi);
-            show->decl(s_fi);
-
-            outputVars.push_back(show);
-            s.str("");
-            s << ", ";
           }
         }
       }
