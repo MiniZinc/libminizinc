@@ -397,8 +397,10 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             new BinOp(Location().introduce(), construct_string_dzn, BOT_PLUSPLUS, closing_bracket);
 
         auto* sl = new StringLit(Location().introduce(),
-                                 ASTString(std::string(ident->str().c_str()) + "_"));
-        auto* construct_string = new BinOp(Location().introduce(), sl, BOT_PLUSPLUS, showInt);
+                                 ASTString("to_enum(" + std::string(ident->str().c_str()) + ","));
+        auto* construct_string0 = new BinOp(Location().introduce(), sl, BOT_PLUSPLUS, showInt);
+        auto* construct_string = new BinOp(Location().introduce(), construct_string0, BOT_PLUSPLUS,
+                                           new StringLit(Location().introduce(), ")"));
 
         auto* json_e_quote = new StringLit(Location().introduce(), ASTString("{\"e\":\""));
         auto* json_e_quote_mid = new StringLit(Location().introduce(), ASTString("\", \"i\":"));
