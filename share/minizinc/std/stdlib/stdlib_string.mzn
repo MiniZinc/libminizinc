@@ -57,7 +57,7 @@ function string: show2d_indexed(array[int] of string: row_hdr,
       array[int] of int: col_hdr_max =
         [ j : max([if length(col_hdr)=0 then 0 else string_length(col_hdr[j]) endif]++
               [string_length(vs[i,j]) | i in index_set_1of2(vs)]) | j in index_set_2of2(vs)];
-  } in if length(vs) = 0 then "[||]" else
+  } in if length(vs) = 0 then "[| |]" else
   if length(col_hdr)=0 then "["
   else 
   "[|"++row_hdr_offset++concat(i in index_set(col_hdr))(format_justify_string(col_hdr_max[i],col_hdr[i])++": ")++"\n "

@@ -347,6 +347,10 @@ EvaluatedComp<typename Eval::ArrayVal> eval_comp(EnvI& env, Eval& eval, Comprehe
     std::vector<int> dimSize(a_tmp.idxMin.size());
     a.dims.resize(a_tmp.idxMin.size());
     for (unsigned int i = a_tmp.idxMin.size(); (i--) != 0U;) {
+      if (a_tmp.idxMin[i] == IntVal::infinity() && a_tmp.idxMax[i] == -IntVal::infinity()) {
+        size = 0;
+        break;
+      }
       if (!a_tmp.idxMin[i].isFinite() || !a_tmp.idxMax[i].isFinite()) {
         throw EvalError(env, e->loc(), "indexes don't match size of generated array");
       }
@@ -361,6 +365,11 @@ EvaluatedComp<typename Eval::ArrayVal> eval_comp(EnvI& env, Eval& eval, Comprehe
     }
     if (size != a_tmp.a.size()) {
       throw EvalError(env, e->loc(), "indexes don't match size of generated array");
+    }
+    if (size == 0) {
+      for (unsigned int i = 0; i < a.dims.size(); i++) {
+        a.dims[i] = std::make_pair(1, 0);
+      }
     }
     a.a.resize(a_tmp.a.size());
     std::vector<bool> seen(a_tmp.a.size(), false);
