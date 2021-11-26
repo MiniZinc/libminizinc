@@ -33,6 +33,9 @@ Expression* create_dummy_value(EnvI& env, const Type& t) {
     ret->type(ret_t);
     return ret;
   }
+  if (t.ot() == Type::OT_OPTIONAL) {
+    return env.constants.absent;
+  }
   switch (t.bt()) {
     case Type::BT_INT:
       return IntLit::a(0);
