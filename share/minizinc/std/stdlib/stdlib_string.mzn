@@ -12,18 +12,6 @@ function string: show(array[$U] of any $T: x);
 function string: show_indexed(array[int] of string: idx, array[int] of string: x) =
 	"[" ++ join(", ", [idx[i]++": "++x[i] | i in index_set(x)]) ++ "]";
 
-/** @group stdlib.builtins.string Convert \a x into a string */
-function string: show(array[$$U] of any $T: x) = let {
-    bool: idx_is_enum = min(enum_of(min(index_set(x)))) != -infinity;
-	bool: idx_is_needed = idx_is_enum \/ min(index_set(x)) != 1;
-} in if idx_is_needed then
-    show_indexed([ show(i) | i in index_set(x)], [ show(x[i]) | i in index_set(x)])
-  else "[" ++ join(", ", [show(x[i]) | i in index_set(x)]) ++ "]" endif;
-
-/** @group stdlib.builtins.string Convert \a x into a string */
-% function string: show(array[$$U,$$V] of any $T: x) = show2d(x);
-
-
 function string: showDzn(any $T: x);
 function string: showDzn(array[$U] of any $T: x);
 function string: showDznId(string: x);
