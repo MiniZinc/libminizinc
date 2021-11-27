@@ -1713,6 +1713,21 @@ Expression* b_default(EnvI& env, Call* call) {
   return ite;
 }
 
+Expression* b_trace_exp(EnvI& env, Call* call) {
+  GCLock lock;
+  static std::string prevLoc;
+  std::string loc = call->loc().toString();
+  if (env.errstream.traceModified() || loc != env.errstream.prevTraceLoc()) {
+    env.errstream << loc << ":\n";
+  }
+  env.errstream << "  ";
+  Printer p(env.errstream.stream(), 0, false, &env);
+  p.trace(call->arg(0));
+  env.errstream << "\n";
+  env.errstream.resetTraceModified(loc);
+  return call->arg(0);
+}
+
 Expression* b_trace(EnvI& env, Call* call) {
   GCLock lock;
   Expression* msg_e;
@@ -3308,6 +3323,10 @@ void register_builtins(Env& e) {
     rb(env, m, env.constants.ids.trace_dbg, t, b_trace);
     rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
     rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
+  }
+  {
+    rb(env, m, ASTString("trace_exp"), {Type::mkAny()}, b_trace_exp);
+    rb(env, m, ASTString("trace_exp"), {Type::mkAny(-1)}, b_trace_exp);
   }
   {
     std::vector<Type> t;

@@ -39,6 +39,7 @@ public:
   Printer(std::ostream& os, int width = 80, bool flatZinc = true, EnvI* env = nullptr);
   ~Printer();
 
+  void trace(const Expression* e);
   void print(const Expression* e);
   void print(const Item* i);
   void print(const Model* m);

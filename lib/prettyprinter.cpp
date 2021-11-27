@@ -11,6 +11,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/astexception.hh>
+#include <minizinc/eval_par.hh>
 #include <minizinc/hash.hh>
 #include <minizinc/iter.hh>
 #include <minizinc/model.hh>
@@ -139,6 +140,7 @@ void pp_floatval(std::ostream& os, const FloatVal& fv, bool hexFloat) {
   }
 }
 
+template <bool trace>
 class PlainPrinter {
 private:
   bool _flatZinc;
@@ -326,14 +328,33 @@ public:
         if (e == Constants::constants().absent) {
           _os << "<>";
         } else {
-          const Id* id = e->cast<Id>();
-          if (id->decl() != nullptr) {
-            id = id->decl()->id();
+          const Id* ident = e->cast<Id>();
+          if (ident->decl() != nullptr) {
+            ident = ident->decl()->id();
           }
-          if (id->idn() == -1) {
-            _os << Printer::quoteId(id->v());
+          if (ident->idn() == -1) {
+            _os << Printer::quoteId(ident->v());
           } else {
-            _os << "X_INTRODUCED_" << id->idn() << "_";
+            _os << "X_INTRODUCED_" << ident->idn() << "_";
+          }
+          if (trace && ident->type().isPar() && ident->type().dim() == 0 &&
+              ident->decl()->e() != nullptr) {
+            if (e->type() == Type::parint()) {
+              auto parExp = eval_int(*_env, const_cast<Expression*>(e));
+              _os << "(≡" << parExp << ")";
+            } else if (e->type() == Type::parbool()) {
+              auto parExp = eval_bool(*_env, const_cast<Expression*>(e));
+              _os << "(≡" << (parExp ? "true" : "false") << ")";
+            } else if (e->type() == Type::parfloat()) {
+              auto parExp = eval_float(*_env, const_cast<Expression*>(e));
+              _os << "(≡" << parExp << ")";
+            } else if (e->type() == Type::parsetint()) {
+              auto* parExp = eval_intset(*_env, const_cast<Expression*>(e));
+              GCLock lock;
+              _os << "(≡";
+              p(new SetLit(Location().introduce(), parExp));
+              _os << ")";
+            }
           }
         }
       } break;
@@ -396,6 +417,32 @@ public:
           }
         }
         _os << "]";
+        if (trace) {
+          bool parIdx = true;
+          for (auto* i : aa->idx()) {
+            if (i->type().isvar()) {
+              parIdx = false;
+              break;
+            }
+          }
+          if (parIdx) {
+            bool success;
+            try {
+              auto* result = eval_arrayaccess(*_env, const_cast<ArrayAccess*>(aa), success);
+              if (success) {
+                if (e->type().isPar()) {
+                  _os << "(≡";
+                  p(result);
+                  _os << ")";
+                }
+              } else {
+                _os << "(≡⊥)";
+              }
+            } catch (EvalError) {
+              // nothing to print
+            }
+          }
+        }
       } break;
       case Expression::E_COMP: {
         const auto* c = e->cast<Comprehension>();
@@ -432,6 +479,17 @@ public:
           }
         }
         _os << (c->set() ? "}" : "]");
+        if (trace && e->type().isPar()) {
+          Expression* result = nullptr;
+          try {
+            result = eval_par(*_env, const_cast<Expression*>(e));
+            _os << "(≡";
+            p(result);
+            _os << ")";
+          } catch (ResultUndefinedError) {
+            _os << "(≡⊥)";
+          }
+        }
       } break;
       case Expression::E_ITE: {
         const auto* ite = e->cast<ITE>();
@@ -590,6 +648,17 @@ public:
           }
         }
         _os << ")";
+        if (trace && e->type().isPar()) {
+          Expression* result = nullptr;
+          try {
+            result = eval_par(*_env, const_cast<Expression*>(e));
+            _os << "(≡";
+            p(result);
+            _os << ")";
+          } catch (ResultUndefinedError) {
+            _os << "(≡⊥)";
+          }
+        }
       } break;
       case Expression::E_VARDECL: {
         const auto* vd = e->cast<VarDecl>();
@@ -2045,9 +2114,14 @@ void Printer::p(const Item* i) {
   delete d;
 }
 
+void Printer::trace(const Expression* e) {
+  PlainPrinter<true> p(_os, _flatZinc, _env);
+  p.p(e);
+}
+
 void Printer::print(const Expression* e) {
   if (_width == 0) {
-    PlainPrinter p(_os, _flatZinc, _env);
+    PlainPrinter<false> p(_os, _flatZinc, _env);
     p.p(e);
   } else {
     init();
@@ -2058,7 +2132,7 @@ void Printer::print(const Expression* e) {
 }
 void Printer::print(const Item* i) {
   if (_width == 0) {
-    PlainPrinter p(_os, _flatZinc, _env);
+    PlainPrinter<false> p(_os, _flatZinc, _env);
     p.p(i);
   } else {
     init();
@@ -2067,7 +2141,7 @@ void Printer::print(const Item* i) {
 }
 void Printer::print(const Model* m) {
   if (_width == 0) {
-    PlainPrinter p(_os, _flatZinc, _env);
+    PlainPrinter<false> p(_os, _flatZinc, _env);
     for (auto* i : *m) {
       p.p(i);
     }

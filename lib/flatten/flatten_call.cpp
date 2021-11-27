@@ -394,7 +394,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
   } else if (decl->e() == nullptr &&
              (cid == env.constants.ids.assert || cid == env.constants.ids.assert_dbg ||
               cid == env.constants.ids.trace || cid == env.constants.ids.trace_dbg ||
-              cid == env.constants.ids.mzn_symmetry_breaking_constraint ||
+              cid == "trace_exp" || cid == env.constants.ids.mzn_symmetry_breaking_constraint ||
               cid == env.constants.ids.mzn_redundant_constraint ||
               cid == env.constants.ids.mzn_default || cid == env.constants.ids.mzn_deprecate ||
               cid == env.constants.ids.output_to_section || cid == env.constants.ids.output)) {

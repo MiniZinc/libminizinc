@@ -102,6 +102,29 @@ struct VarPathStore {
   ASTStringSet& getFilenameSet() { return filenameSet; }
 };
 
+class ErrStreamWrapper {
+private:
+  std::ostream& _stream;
+  bool _traceModified;
+  std::string _prevTraceLoc;
+
+public:
+  explicit ErrStreamWrapper(std::ostream& stream) : _stream(stream), _traceModified(true) {}
+  template <typename T>
+  ErrStreamWrapper& operator<<(const T& t) {
+    _traceModified = true;
+    _stream << t;
+    return *this;
+  }
+  std::ostream& stream() { return _stream; }
+  void resetTraceModified(const std::string& loc) {
+    _traceModified = false;
+    _prevTraceLoc = loc;
+  }
+  bool traceModified() const { return _traceModified; }
+  std::string prevTraceLoc() const { return _prevTraceLoc; }
+};
+
 class EnvI {
 public:
   Model* model;
@@ -113,7 +136,7 @@ public:
   const Constants& constants;
 
   std::ostream& outstream;
-  std::ostream& errstream;
+  ErrStreamWrapper errstream;
   std::stringstream logstream;
   std::stringstream checkerOutput;
 

@@ -20,6 +20,10 @@ function bool: assert_dbg(bool: b, string: msg);
 function any $T: trace(string: msg, any $T: x);
 /** @group stdlib.debug Return \a x, and print message \a msg. */
 function array [$U] of any $T: trace(string: msg, array [$U] of any $T: x);
+/** @group stdlib.debug Return \a x, and print a string representation of it. */
+function any $T: trace_exp(any $T: x);
+/** @group stdlib.debug Return \a x, and print a string representation of it. */
+function array[$U] of any $T: trace_exp(array[$U] of any $T: x);
 
 /** @group stdlib.debug Return true, and print message \a msg. */
 function bool: trace(string: msg);
