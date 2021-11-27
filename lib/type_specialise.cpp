@@ -447,7 +447,6 @@ public:
             if (curType.dim() == -1) {
               curType.dim(concrete_types[i].dim());
             }
-            /// TODO: this is wrong, generate all possible versions instead
             if (curType.any()) {
               curType.any(false);
               switch (tg[i]) {
@@ -456,14 +455,26 @@ public:
                   curType.ti(Type::TI_PAR);
                   break;
                 case TG_PAROPT:
+                  if (curType.st() == Type::ST_SET) {
+                    goto next_tg;
+                  }
                   curType.ot(Type::OT_OPTIONAL);
                   curType.ti(Type::TI_PAR);
                   break;
                 case TG_VAR:
+                  if (curType.bt() != Type::BT_BOOL && curType.bt() != Type::BT_INT &&
+                      curType.bt() != Type::BT_FLOAT) {
+                    goto next_tg;
+                  }
                   curType.ot(Type::OT_PRESENT);
                   curType.ti(Type::TI_VAR);
                   break;
                 case TG_VAROPT:
+                  if ((curType.bt() != Type::BT_BOOL && curType.bt() != Type::BT_INT &&
+                       curType.bt() != Type::BT_FLOAT) ||
+                      curType.st() == Type::ST_SET) {
+                    goto next_tg;
+                  }
                   curType.ot(Type::OT_OPTIONAL);
                   curType.ti(Type::TI_VAR);
                   break;
@@ -611,6 +622,8 @@ public:
             call->decl(fi_copy);
             call->rehash();
           }
+        next_tg:
+          continue;
         }
       }
     } else {
