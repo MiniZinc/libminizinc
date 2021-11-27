@@ -117,8 +117,23 @@ annotation mzn_add_annotated_expression(int: idx);
 */
 
 /** @group stdlib.annotations.prop Annotate a constraint to use domain propagation */
-annotation domain;
+ann: domain_propagation = domain;
+
 /** @group stdlib.annotations.prop Annotate a constraint to use bounds propagation */
+ann: bounds_propagation = bounds;
+
+/** @group stdlib.annotations.prop Annotate a constraint to use value propagation */
+annotation value_propagation;
+
+/** @group stdlib.annotations.prop Annotate a constraint to use domain propagation
+
+  Note: This annotation will be deprecated. Use domain_propagation instead.
+*/
+annotation domain;
+/** @group stdlib.annotations.prop Annotate a constraint to use bounds propagation
+
+  Note: This annotation will be deprecated. Use bounds_propagation instead.
+*/
 annotation bounds;
 
 

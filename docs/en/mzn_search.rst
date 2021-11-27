@@ -300,7 +300,7 @@ the solver that variables domains should be represented via bit arrays
 of size :mzn:`nwords`.
 The annotation is attached to the declarations of the variables :mzn:`q`.
 Each of the :mzn:`alldifferent` constraints is annotated with
-the built in annotation :mzn:`domain`
+the built in annotation :mzn:`domain_propagation`
 which instructs the solver to use
 the domain propagating version of :mzn:`alldifferent` if it has one.
 An annotation variable :mzn:`search_ann` is declared and used

@@ -376,9 +376,9 @@ Examples:
   constraint int_le(0, x);    % 0 <= x
   constraint int_lt(x, y);    % x <  y
   constraint int_le(y, 10);   % y <= 10
-      % 'domain': use domain consistency for this constraint:
+      % 'domain_propagation': use domain consistency for this constraint:
       % 2x + 3y = 10
-  constraint int_lin_eq([2, 3], [x, y], 10) :: domain;
+  constraint int_lin_eq([2, 3], [x, y], 10) :: domain_propagation;
 
 Solve item
 ~~~~~~~~~~
@@ -582,13 +582,18 @@ Here are some constraint annotations supported by some solvers:
 
 
 +---------------------------+----------------------------------------------------------------------------+
-| ``bounds`` or ``boundsZ`` | Use integer bounds propagation.                                            |
+| ``bounds``                | Use bounds propagation. The concrete propagation strength is not further   |
+|                           |  specified.                                                                |
++---------------------------+----------------------------------------------------------------------------+
+| ``boundsZ``               | Use integer bounds propagation.                                            |
 +---------------------------+----------------------------------------------------------------------------+
 | ``boundsR``               | Use real bounds propagation.                                               |
 +---------------------------+----------------------------------------------------------------------------+
 | ``boundsD``               | A tighter version of ``boundsZ`` where support for the bounds must exist.  |
 +---------------------------+----------------------------------------------------------------------------+
 | ``domain``                | Use domain propagation.                                                    |
++---------------------------+----------------------------------------------------------------------------+
+| ``value_propagation``     | Use value propagation.                                                     |
 +---------------------------+----------------------------------------------------------------------------+
 |``priority(k)``            | where ``k`` is an integer constant indicating propagator priority.         |
 +---------------------------+----------------------------------------------------------------------------+

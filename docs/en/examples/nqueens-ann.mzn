@@ -5,9 +5,9 @@ include "alldifferent.mzn";
 int: n;
 array [1..n] of var 1..n: q :: bitdomain(n div 32 + 1);
 
-constraint alldifferent(q) :: domain;                      
-constraint alldifferent([ q[i] + i | i in 1..n]) :: domain;
-constraint alldifferent([ q[i] - i | i in 1..n]) :: domain;
+constraint alldifferent(q) :: domain_propagation;                      
+constraint alldifferent([ q[i] + i | i in 1..n]) :: domain_propagation;
+constraint alldifferent([ q[i] - i | i in 1..n]) :: domain_propagation;
 
 ann: search_ann;
 
