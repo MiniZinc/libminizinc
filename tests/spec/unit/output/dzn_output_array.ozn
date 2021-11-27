@@ -1,8 +1,8 @@
-output ["a = ",let {array [int] of string: idx = [_toString_Foo(i,true,false) | i in 1..3, ], array [int] of string: x = [show(a[i]) | i in 1..3, ]} in (show_indexed(idx,x)),";\n","b = ",show(b),";\n","c = ",show(c),";\n","d = array1d(",_toString_Foo(1,false,false),"..",_toString_Foo(3,false,false),", ",show(d),");\n","e = array1d(",show(index_set(e)),", ",show(e),");\n","f = array1d(2..3, ",show(f),");\n","g = array1d(",show(index_set(g)),", ",show(g),");\n","h = array2d(1..2, ",show(index_set_2of2(h)),", ",show(h),");\n"];
+output ["a = ",let {array [int] of string: idx = [_toString_Foo(i,true,false) | i in 1..3], array [int] of string: x = [show(a[i]) | i in 1..3]} in (show_indexed(idx,x)),";\n","b = ",show(b),";\n","c = ",show(c),";\n","d = array1d(",_toString_Foo(1,false,false),"..",_toString_Foo(3,false,false),", ",show(d),");\n","e = array1d(",show(index_set(e)),", ",show(e),");\n","f = array1d(2..3, ",show(f),");\n","g = array1d(",show(index_set(g)),", ",show(g),");\n","h = array2d(1..2, ",show(index_set_2of2(h)),", ",show(h),");\n"];
 function string : _toString_Foo(opt int: x,bool: b,bool: json) = if occurs(x) then if b then showDznId(_enum_to_string_0_Foo[deopt(x)]) elseif json then ("{\"e\":"++show(_enum_to_string_0_Foo[deopt(x)]))++"}" else _enum_to_string_0_Foo[deopt(x)] endif else if json then "null" else "<>" endif endif;
 bool: x;
-array [1..2,int] of bool: h = array2d(1..2,2..3,[fix(x) | i in 1..4, ]);
-array [int] of bool: g = [fix(x) | i in 1..3, ];
+array [1..2,int] of bool: h = array2d(1..2,2..3,[fix(x) | i in 1..4]);
+array [int] of bool: g = [fix(x) | i in 1..3];
 array [2..3] of bool: f = array1d(2..3,[fix(x),fix(x)]);
 array [int] of bool: e = [fix(x)];
 set of int: Foo = 1..3;

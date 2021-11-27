@@ -447,7 +447,30 @@ public:
       case Expression::E_COMP: {
         const auto* c = e->cast<Comprehension>();
         _os << (c->set() ? "{" : "[");
-        p(c->e());
+        if (auto* tuple = c->e()->dynamicCast<ArrayLit>()) {
+          if (tuple->isTuple()) {
+            if (tuple->size() == 2) {
+              p((*tuple)[0]);
+              _os << " : ";
+              p((*tuple)[1]);
+            } else {
+              _os << "(";
+              for (unsigned int i = 0; i < tuple->size() - 1; i++) {
+                p((*tuple)[i]);
+                if (i < tuple->size() - 2) {
+                  _os << ", ";
+                }
+              }
+              _os << ") : ";
+              p((*tuple)[tuple->size() - 1]);
+            }
+          } else {
+            p(c->e());
+          }
+        } else {
+          p(c->e());
+        }
+
         _os << " | ";
         for (int i = 0; i < c->numberOfGenerators(); i++) {
           for (int j = 0; j < c->numberOfDecls(i); j++) {
@@ -474,7 +497,7 @@ public:
               p(c->where(i));
             }
           }
-          if (i < c->numberOfGenerators()) {
+          if (i < c->numberOfGenerators() - 1) {
             _os << ", ";
           }
         }
