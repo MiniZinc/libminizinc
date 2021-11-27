@@ -2635,6 +2635,17 @@ public:
         for (unsigned int k = 0; k < vdi->ti()->ranges().size(); k++) {
           letOrig.push_back(vdi->ti()->ranges()[k]->domain());
         }
+      } else {
+        if (!_env.isSubtype(let->let()[i]->type(), Type::varbool(), true)) {
+          const Location* errLoc = &let->let()[i]->loc();
+          if (errLoc->isNonAlloc()) {
+            errLoc = &let->loc();
+          }
+          _typeErrors.emplace_back(_env, *errLoc,
+                                   "invalid type of constraint, expected `" +
+                                       Type::varbool().toString(_env) + "', actual `" +
+                                       let->let()[i]->type().toString(_env) + "'");
+        }
       }
       isVar |= li->type().isvar();
     }
@@ -3325,6 +3336,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       }
       void vConstraintI(ConstraintI* i) {
         _bottomUpTyper.run(i->e());
+        i->e(add_coercion(_env, _env.model, i->e(), Type::varbool())());
         if (!_env.isSubtype(i->e()->type(), Type::varbool(), true)) {
           _typeErrors.emplace_back(_env, i->loc(),
                                    "invalid type of constraint, expected `" +
