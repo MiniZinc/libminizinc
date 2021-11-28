@@ -316,6 +316,8 @@ EvaluatedComp<typename Eval::ArrayVal> eval_comp(EnvI& env, Eval& eval, Comprehe
       if (e->in(0)->type().dim() == 0) {
         if (e->in(0)->type().isvar()) {
           in = new SetLit(Location(), compute_intset_bounds(env, e->in(0)));
+        } else if (e->in(0)->type().cv()) {
+          in = new SetLit(Location(), eval_intset(env, eval.flattenCV(env, e->in(0))()));
         } else {
           in = new SetLit(Location(), eval_intset(env, e->in(0)));
         }
