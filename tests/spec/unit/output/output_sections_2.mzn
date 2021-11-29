@@ -3,14 +3,14 @@
 solvers: [gecode]
 expected: !Result
   solution: !Solution
-    _output_item: 'caebd'
+    _output_item: 'aebdc'
 --- !Test
 solvers: [gecode]
 options:
   only-sections: foo,bar
 expected: !Result
   solution: !Solution
-    _output_item: 'cbd'
+    _output_item: 'bdc'
 --- !Test
 solvers: [gecode]
 options:
