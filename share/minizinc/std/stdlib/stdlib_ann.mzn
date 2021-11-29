@@ -418,6 +418,27 @@ annotation warm_start( array[int] of var float: x, array[int] of float: v );
 annotation warm_start( array[int] of var set of int: x, array[int] of set of int: v );
 
 /***
+ @groupdef stdlib.annotations.lns Large Neighbourhood Search annotations
+
+ These annotations can be used on the solve item (similar to search annotations)
+ to specify Large Neighbourhood Search meta-heuristics.
+
+ These annotations specify how the search is restricted to a neighbourhood
+ when a solver restarts. The annotations define which variables will be
+ fixed to their values from a previous solution in that case. All
+ other variables will be reset to their initial domains by the restart.
+
+ The annotations can be used together with search annotations and restart annotations.
+*/
+
+/** @group stdlib.annotations.lns Random neighbourhood over variables \a x with probability \a p percent
+
+  Upon restart, each variable in \a x is fixed to the value of the incumbent solution with a
+  probability of \a p percent.
+ */
+annotation relax_and_reconstruct(array[int] of var int: x, int: p);
+
+/***
  @groupdef stdlib.annotations.context Context annotations
 
  These are used internally by the compiler, and should not be used in models.
