@@ -11,10 +11,12 @@ predicate var_dom(var int:x, set of int: s) =
   else x in s
   endif;
 predicate var_dom(var opt int:x, set of int: s) =
+  if is_fixed(x) /\ absent(fix(x)) then true else
   let {
     var int: dx = deopt(x);
     set of int: new_dom = dom(dx) intersect s;
-  } in if new_dom = {} then absent(x) else dx in new_dom endif;
+  } in if new_dom = {} then absent(x) else dx in new_dom endif
+  endif;
 predicate var_dom(array[$T] of var opt int: x, set of int: d) =
     let { array[int] of var opt int: xx = array1d(x) }
     in forall (i in index_set(xx)) (var_dom(xx[i],d));
