@@ -566,6 +566,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       flagCompilerStatistics = true;
     } else if (argv[i] == "--json-stream") {
       flagEncapsulateJSON = true;
+      s2out.opt.checkerArgs.emplace_back("--json-stream");
     } else if (argv[i] == "--only-sections" || argv[i] == "--not-sections") {
       argv[j++] = argv[i];
       s2out.opt.checkerArgs.push_back(argv[i++]);
