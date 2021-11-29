@@ -22,9 +22,14 @@ EE flatten_arraylit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDec
     ret.r = bind(env, Ctx(), r, al);
   } else {
     VarDecl* rr = r == env.constants.varIgnore ? env.constants.varTrue : nullptr;
+    Ctx eval_ctx = ctx;
+    if (ctx.b == C_ROOT && r != env.constants.varIgnore && e->type().bt() == Type::BT_BOOL &&
+        e->type().st() == Type::ST_PLAIN) {
+      eval_ctx.b = C_MIX;
+    }
     std::vector<EE> elems_ee(al->size());
     for (unsigned int i = al->size(); (i--) != 0U;) {
-      elems_ee[i] = flat_exp(env, ctx, (*al)[i], rr, ctx.partialityVar(env));
+      elems_ee[i] = flat_exp(env, eval_ctx, (*al)[i], rr, ctx.partialityVar(env));
     }
     std::vector<Expression*> elems(elems_ee.size());
     for (auto i = static_cast<unsigned int>(elems.size()); (i--) != 0U;) {

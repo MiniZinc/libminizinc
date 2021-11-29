@@ -196,6 +196,12 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
     }
   }
 
+  Ctx eval_ctx = ctx;
+  if (ctx.b == C_ROOT && r != env.constants.varIgnore && c->type().bt() == Type::BT_BOOL &&
+      c->type().st() == Type::ST_PLAIN) {
+    eval_ctx.b = C_MIX;
+  }
+
   class EvalF : public EvalBase {
   public:
     Ctx ctx;
@@ -205,7 +211,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
     EE e(EnvI& env, Expression* e0) const {
       return flat_exp(env, ctx, e0, rr, ctx.partialityVar(env));
     }
-  } _evalf(ctx, r == env.constants.varIgnore ? env.constants.varTrue : nullptr);
+  } _evalf(eval_ctx, r == env.constants.varIgnore ? env.constants.varTrue : nullptr);
   std::vector<EE> elems_ee;
   bool wasUndefined = false;
   EvaluatedComp<EE> evalResult;
