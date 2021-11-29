@@ -141,7 +141,7 @@ compilation behaviour:
 | **<Gurobi/CPlex>**\_PLUGIN                   | TRUE    | Load solver at runtime (instead of static compilation)      |
 
 Possible values for **<solver_name>** are `CPlex`, `Geas`, `Gecode`, `Gurobi`,
-`OsiCBC`, `SCIP`, and `Xpress`.
+and `OsiCBC`.
 
 <!-- TESTING INSTRUCTIONS -->
 

@@ -232,7 +232,7 @@ The first flag is necessary, the second one is optional in order to install SCIP
 
 .. code-block:: bash
 
-    cmake .. -DUSE_PROPRIETARY=on [-DCMAKE_PREFIX_PATH=/home/user/local/scip/installation] 
+    cmake .. [-DCMAKE_PREFIX_PATH=/home/user/local/scip/installation] 
 
 The optional prefix path variable is only necessary if you installed SCIP in a non-systemwide directory.
 

@@ -43,7 +43,7 @@ default:
   before_script:
     - *download_vendor
   script:
-    - cmake -S . -B build -G"$CMAKE_ARCH" -DCMAKE_BUILD_TYPE=Release -DBUILD_REF=$CI_PIPELINE_ID -DUSE_PROPRIETARY=OFF -DGecode_ROOT="$CI_PROJECT_DIR/vendor/gecode" -DGurobi_ROOT="$CI_PROJECT_DIR/vendor/gurobi" -DCPlex_ROOT="$CI_PROJECT_DIR/vendor/CPLEX_Studio/cplex" -DOsiCBC_ROOT="$CI_PROJECT_DIR/vendor/cbc" -DSCIP_ROOT="$CI_PROJECT_DIR/vendor/scip" -DXpress_ROOT="$CI_PROJECT_DIR/vendor/xpressmp" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
+    - cmake -S . -B build -G"$CMAKE_ARCH" -DCMAKE_BUILD_TYPE=Release -DBUILD_REF=$CI_PIPELINE_ID -DGecode_ROOT="$CI_PROJECT_DIR/vendor/gecode" -DOsiCBC_ROOT="$CI_PROJECT_DIR/vendor/cbc" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
     - cmake --build build --config Release --target install
   artifacts:
     paths: [minizinc/]
@@ -85,7 +85,7 @@ build:win64:
   before_script:
     - *download_vendor_win
   script:
-    - cmake -S . -B build -G"%CMAKE_ARCH%" -DCMAKE_BUILD_TYPE=Release -DBUILD_REF=%CI_PIPELINE_ID% -DCCACHE_PROGRAM:STRING=buildcache -DUSE_PROPRIETARY=OFF -DGecode_ROOT="%CI_PROJECT_DIR%/vendor/gecode" -DGurobi_ROOT="%CI_PROJECT_DIR%/vendor/gurobi" -DCPlex_ROOT="%CI_PROJECT_DIR%/vendor/CPLEX_Studio/cplex" -DOsiCBC_ROOT="%CI_PROJECT_DIR%/vendor/cbc" -DSCIP_ROOT="%CI_PROJECT_DIR%/vendor/scip" -DXpress_ROOT="%CI_PROJECT_DIR%/vendor/xpressmp" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
+    - cmake -S . -B build -G"%CMAKE_ARCH%" -DCMAKE_BUILD_TYPE=Release -DBUILD_REF=%CI_PIPELINE_ID% -DCCACHE_PROGRAM:STRING=buildcache -DGecode_ROOT="%CI_PROJECT_DIR%/vendor/gecode" -DOsiCBC_ROOT="%CI_PROJECT_DIR%/vendor/cbc" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
     - cmake --build build --config Release --target install
   cache:
     key: "build_win64"
@@ -99,7 +99,7 @@ build:wasm_complete:
     CMAKE_ARCH: "Unix Makefiles"
   script:
     - apt-get update && apt-get install -qq python3
-    - emcmake cmake -v -S . -B build -G"$CMAKE_ARCH" -DCMAKE_FIND_ROOT_PATH="/" -DCMAKE_BUILD_TYPE=MinSizeRel -DBUILD_REF=$CI_PIPELINE_ID -DUSE_PROPRIETARY=OFF -DGecode_ROOT="$CI_PROJECT_DIR/vendor/gecode" -DGurobi_ROOT="$CI_PROJECT_DIR/vendor/gurobi" -DCPlex_ROOT="$CI_PROJECT_DIR/vendor/CPLEX_Studio/cplex" -DOsiCBC_ROOT="$CI_PROJECT_DIR/vendor/cbc" -DSCIP_ROOT="$CI_PROJECT_DIR/vendor/scip" -DXpress_ROOT="$CI_PROJECT_DIR/vendor/xpressmp" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
+    - emcmake cmake -v -S . -B build -G"$CMAKE_ARCH" -DCMAKE_FIND_ROOT_PATH="/" -DCMAKE_BUILD_TYPE=MinSizeRel -DBUILD_REF=$CI_PIPELINE_ID -DGecode_ROOT="$CI_PROJECT_DIR/vendor/gecode" -DOsiCBC_ROOT="$CI_PROJECT_DIR/vendor/cbc" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
     - cmake --build build --config MinSizeRel --target install
   tags: [docker, high-mem]
   when: manual
@@ -112,7 +112,7 @@ build:wasm_minimal:
     CMAKE_ARCH: "Unix Makefiles"
   script:
     - apt-get update && apt-get install -qq python3
-    - emcmake cmake -v -S . -B build -G"$CMAKE_ARCH" -DCMAKE_BUILD_TYPE=MinSizeRel -DBUILD_REF=$CI_PIPELINE_ID -DUSE_PROPRIETARY=OFF -DGecode_ROOT="$CI_PROJECT_DIR/vendor/gecode" -DGurobi_ROOT="$CI_PROJECT_DIR/vendor/gurobi" -DCPlex_ROOT="$CI_PROJECT_DIR/vendor/CPLEX_Studio/cplex" -DOsiCBC_ROOT="$CI_PROJECT_DIR/vendor/cbc" -DSCIP_ROOT="$CI_PROJECT_DIR/vendor/scip" -DXpress_ROOT="$CI_PROJECT_DIR/vendor/xpressmp" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
+    - emcmake cmake -v -S . -B build -G"$CMAKE_ARCH" -DCMAKE_BUILD_TYPE=MinSizeRel -DBUILD_REF=$CI_PIPELINE_ID -DGecode_ROOT="$CI_PROJECT_DIR/vendor/gecode" -DOsiCBC_ROOT="$CI_PROJECT_DIR/vendor/cbc" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
     - cmake --build build --config MinSizeRel --target install
   tags: [docker]
   when: manual
@@ -142,7 +142,7 @@ test:analyse:
     MZNARCH: "musl"
     CMAKE_ARCH: "Ninja"
   script:
-    - cmake -S . -B build -G"$CMAKE_ARCH" -DCMAKE_CXX_CLANG_TIDY="clang-tidy" -DCMAKE_BUILD_TYPE="Debug" -DGecode_ROOT="$CI_PROJECT_DIR/vendor/gecode" -DGurobi_ROOT="$CI_PROJECT_DIR/vendor/gurobi" -DCPlex_ROOT="$CI_PROJECT_DIR/vendor/CPLEX_Studio/cplex" -DOsiCBC_ROOT="$CI_PROJECT_DIR/vendor/cbc" -DSCIP_ROOT="$CI_PROJECT_DIR/vendor/scip" -DXpress_ROOT="$CI_PROJECT_DIR/vendor/xpressmp"
+    - cmake -S . -B build -G"$CMAKE_ARCH" -DCMAKE_CXX_CLANG_TIDY="clang-tidy" -DCMAKE_BUILD_TYPE="Debug" -DGecode_ROOT="$CI_PROJECT_DIR/vendor/gecode" -DOsiCBC_ROOT="$CI_PROJECT_DIR/vendor/cbc"
     - cmake --build build --config Debug
   tags: [linux, docker]
   only:
