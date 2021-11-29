@@ -232,12 +232,12 @@ SolverInstance::Status FZNSolverInstance::solve() {
   cmd_line.push_back(opt.fznSolver);
   string sBE = opt.backend;
   bool is_sat = _fzn->solveItem()->st() == SolveI::SolveType::ST_SAT;
+  for (auto& f : opt.fznFlags) {
+    cmd_line.push_back(f);
+  }
   if (!sBE.empty()) {
     cmd_line.emplace_back("-b");
     cmd_line.push_back(sBE);
-  }
-  for (auto& f : opt.fznFlags) {
-    cmd_line.push_back(f);
   }
   if (opt.allOptimal && !is_sat) {
     cmd_line.emplace_back("-a-o");

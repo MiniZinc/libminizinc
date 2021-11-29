@@ -276,7 +276,19 @@ SolverConfig SolverConfig::load(const string& filename) {
             sc._name = get_string(ai);
             hadName = true;
           } else if (ai->id() == "executable") {
-            std::string exePath = get_string(ai);
+            std::string exePath;
+            if (ai->e()->isa<ArrayLit>()) {
+              std::vector<std::string> exeArgs(get_string_list(ai));
+              if (!exeArgs.empty()) {
+                exePath = exeArgs[0];
+                sc._passFlags.reserve(exeArgs.size() - 1);
+                for (size_t i = 1; i < exeArgs.size(); ++i) {
+                  sc._passFlags.push_back(exeArgs[i]);
+                }
+              }
+            } else {
+              exePath = get_string(ai);
+            }
             sc._executable = exePath;
             std::string exe = FileUtils::find_executable(exePath, basePath);
             int nr_found = (int)(!exe.empty());

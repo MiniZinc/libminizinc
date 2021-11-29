@@ -13,6 +13,7 @@
 
 #include <minizinc/exception.hh>
 
+#include <cassert>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -87,15 +88,17 @@ protected:
   /// Whether solver needs path to symbol table (paths file) (passed as --paths)
   bool _needsPathsFile = false;
   /// Supported standard command line flags
-  std::vector<std::string> _stdFlags;
-  /// Supported extra command line flags (flag and description)
-  std::vector<ExtraFlag> _extraFlags;
+  std::vector<std::string> _stdFlags = {};
+  /// The flags (or arguments) always passed to the solver
+  std::vector<std::string> _passFlags = {};
   /// Required command line flags
-  std::vector<std::string> _requiredFlags;
+  std::vector<std::string> _requiredFlags = {};
+  /// Supported extra command line flags (flag and description)
+  std::vector<ExtraFlag> _extraFlags = {};
   /// Default command line flags (imported from global or user configuration)
-  std::vector<std::string> _defaultFlags;
+  std::vector<std::string> _defaultFlags = {};
   /// Tags
-  std::vector<std::string> _tags;
+  std::vector<std::string> _tags = {};
 
 public:
   /// Load solver configuration from \a filename
@@ -124,6 +127,18 @@ public:
   std::string executable() const { return _executable; }
   /// Set executable path
   void executable(const std::string& s) { _executable = s; }
+  /// Set executable path and any flags that must be passed to the executable
+  void executable(const std::vector<std::string>& s) {
+    assert(!s.empty());
+    _executable = s[0];
+    _passFlags.clear();
+    _passFlags.reserve(s.size() - 1);
+    for (size_t i = 1; i < s.size(); ++i) {
+      _passFlags.push_back(s[i]);
+    }
+  }
+  /// Return flags that must be passed to the solver
+  const std::vector<std::string>& passFlags() const { return _passFlags; }
 
   /// Return resolved executable path
   std::string executableResolved() const { return _executableResolved; }

@@ -663,6 +663,9 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               } else {
                 additionalArgs_s.push_back(sc.executable());
               }
+              if (!sc.passFlags().empty()) {
+                add_flags("--mzn-flag", sc.passFlags(), additionalArgs_s);
+              }
 
               if (!fzn_mzn_flags.empty()) {
                 add_flags("--mzn-flag", fzn_mzn_flags, additionalArgs_s);
@@ -711,6 +714,13 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
                 additionalArgs.push_back(sc.executableResolved());
               } else {
                 additionalArgs.push_back(sc.executable());
+              }
+              if (!sc.passFlags().empty()) {
+                if (sc.supportsFzn()) {
+                  add_flags("--fzn-flag", sc.passFlags(), additionalArgs);
+                } else {
+                  add_flags("--nl-flag", sc.passFlags(), additionalArgs);
+                }
               }
               if (!fzn_mzn_flags.empty()) {
                 if (sc.supportsFzn()) {
