@@ -677,7 +677,7 @@ void MIPCplexWrapper::doAddVars(size_t n, double* obj, double* lb, double* ub,
         throw MiniZinc::InternalError("  MIPWrapper: unknown variable type");
     }
   }
-  _status = dll_CPXnewcols(_env, _lp, n, obj, lb, ub, &ctype[0], &pcNames[0]);
+  _status = dll_CPXnewcols(_env, _lp, static_cast<int>(n), obj, lb, ub, &ctype[0], &pcNames[0]);
   wrapAssert(_status == 0, "Failed to declare variables.");
 }
 
@@ -740,14 +740,14 @@ bool MIPCplexWrapper::addWarmStart(const std::vector<VarId>& vars,
   if (_status != 0) {  // not existent
     // status = dll_CPXaddmipstarts (env, lp, mcnt, nzcnt, beg, varindices,
     //                            values, effortlevel, mipstartname);
-    _status = dll_CPXaddmipstarts(_env, _lp, 1, vars.size(), &beg, vars.data(), vals.data(),
-                                  nullptr, (char**)&sMSName);
+    _status = dll_CPXaddmipstarts(_env, _lp, 1, static_cast<int>(vars.size()), &beg, vars.data(),
+                                  vals.data(), nullptr, (char**)&sMSName);
     wrapAssert(_status == 0, "Failed to add warm start.");
   } else {
     // status = dll_CPXchgmipstarts (env, lp, mcnt, mipstartindices, nzcnt, beg, varindices, values,
     // effortlevel);
-    _status = dll_CPXchgmipstarts(_env, _lp, 1, &msindex, vars.size(), &beg, vars.data(),
-                                  vals.data(), nullptr);
+    _status = dll_CPXchgmipstarts(_env, _lp, 1, &msindex, static_cast<int>(vars.size()), &beg,
+                                  vars.data(), vals.data(), nullptr);
     wrapAssert(_status == 0, "Failed to extend warm start.");
   }
   return true;
@@ -1001,8 +1001,8 @@ static int CPXPUBLIC myusercutcallback(CPXCENVptr env, void* cbdata, int wherefr
     }
     MIPWrapper::CutInput cutInput;
     info->cutcbfn(outpRlx, cutInput, info->psi, fMIPSol);
-    static int nCuts = 0;
-    nCuts += cutInput.size();
+    // static int nCuts = 0;
+    // nCuts += cutInput.size();
     // if ( cutInput.size() )
     //  cerr << "\n   N CUTS:  " << nCuts << endl;
     for (auto& cd : cutInput) {
@@ -1011,10 +1011,10 @@ static int CPXPUBLIC myusercutcallback(CPXCENVptr env, void* cbdata, int wherefr
       }
       /* Use a cut violation tolerance of 0.01 */
       if (true) {  // NOLINT: cutvio > 0.01 ) {
-        status = cw->dll_CPXcutcallbackadd(env, cbdata, wherefrom, cd.rmatind.size(), cd.rhs,
-                                           get_cplex_constr_cense(cd.sense), cd.rmatind.data(),
-                                           cd.rmatval.data(),
-                                           CPX_USECUT_FORCE);  // PURGE?
+        status = cw->dll_CPXcutcallbackadd(
+            env, cbdata, wherefrom, static_cast<int>(cd.rmatind.size()), cd.rhs,
+            get_cplex_constr_cense(cd.sense), cd.rmatind.data(), cd.rmatval.data(),
+            CPX_USECUT_FORCE);  // PURGE?
         if (status != 0) {
           fprintf(stderr, "CPLEX callback: failed to add cut.\n");
           goto TERMINATE;
@@ -1136,7 +1136,8 @@ void MIPCplexWrapper::solve() {  // Move into ancestor?
     wrapAssert(_status == 0, "Failed to set CPXPARAM_TimeLimit.", false);
   }
   if (_options->nSolLimit > 0) {
-    _status = dll_CPXsetintparam(_env, CPXPARAM_MIP_Limits_Solutions, _options->nSolLimit);
+    _status = dll_CPXsetintparam(_env, CPXPARAM_MIP_Limits_Solutions,
+                                 static_cast<CPXINT>(_options->nSolLimit));
     wrapAssert(_status == 0, "Failed to set CPXPARAM_MIP_Limits_Solutions.", false);
   }
   if (_options->nSeed >= 0) {
@@ -1178,7 +1179,7 @@ void MIPCplexWrapper::solve() {  // Move into ancestor?
   //    wrapAssert(!status, "Failed to set CPXPARAM_MIP_Tolerances_ObjDifference.", false);
 
   /// Solution callback
-  output.nCols = colObj.size();
+  output.nCols = static_cast<int>(colObj.size());
   _x.resize(output.nCols);
   output.x = &_x[0];
   if (_options->flagIntermediate && (cbui.solcbfn != nullptr)) {
@@ -1291,10 +1292,11 @@ void MIPCplexWrapper::solve() {  // Move into ancestor?
 
   output.dWallTime =
       std::chrono::duration<double>(std::chrono::steady_clock::now() - output.dWallTime0).count();
-  double tmNow = std::clock();
+  auto tmNow = std::clock();
   // _status = dll_CPXgettime (_env, &tmNow);   Buggy in 12.7.1.0
   wrapAssert(_status == 0, "Failed to get time stamp.", false);
-  output.dCPUTime = (tmNow - cbui.pOutput->cCPUTime0) / CLOCKS_PER_SEC;
+  output.dCPUTime =
+      static_cast<double>(tmNow - cbui.pOutput->cCPUTime0) / static_cast<double>(CLOCKS_PER_SEC);
 
   int solstat = dll_CPXgetstat(_env, _lp);
   output.status = convertStatus(solstat);

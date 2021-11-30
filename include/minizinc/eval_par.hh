@@ -346,7 +346,7 @@ EvaluatedComp<typename Eval::ArrayVal> eval_comp(EnvI& env, Eval& eval, Comprehe
 
   if (isIndexed) {
     IntVal size = 1;
-    std::vector<int> dimSize(a_tmp.idxMin.size());
+    std::vector<long long int> dimSize(a_tmp.idxMin.size());
     a.dims.resize(a_tmp.idxMin.size());
     for (unsigned int i = a_tmp.idxMin.size(); (i--) != 0U;) {
       if (a_tmp.idxMin[i] == IntVal::infinity() && a_tmp.idxMax[i] == -IntVal::infinity()) {
