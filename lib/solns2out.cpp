@@ -393,12 +393,12 @@ void Solns2Out::checkSolution(std::ostream& oss) {
   slv.s2out.opt.solutionSeparator = "";
   try {
     slv.run(opt.checkerArgs, checker.str(), "minizinc", "checker.mzc");
-  } catch (const LocationException& e) {
-    oss << e.loc() << ":" << std::endl;
-    oss << e.what() << ": " << e.msg() << std::endl;
   } catch (const Exception& e) {
-    std::string what = e.what();
-    oss << what << (what.empty() ? "" : ": ") << e.msg() << std::endl;
+    if (opt.flagEncapsulateJSON) {
+      e.json(std::cout);
+    } else {
+      e.print(oss);
+    }
   } catch (const exception& e) {
     oss << e.what() << std::endl;
   } catch (...) {
