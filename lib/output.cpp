@@ -470,7 +470,7 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e) {
       if (id == env.constants.absent) {
         return;
       }
-      if (!id->decl()->toplevel()) {
+      if (id->decl() == nullptr || !id->decl()->toplevel()) {
         return;
       }
       VarDecl* vd = id->decl();
