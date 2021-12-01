@@ -236,7 +236,7 @@ void Solns2Out::declNewOutput() {
 void Solns2Out::printSolution(std::istream& sol, std::ostream& os, bool outputTime) {
   if (opt.flagEncapsulateJSON) {
     std::string t = opt.flagIsChecker ? "checker" : "solution";
-    os << "{\"type\": \"" << t << "\", \"output\": ";
+    os << "{\"type\": \"" << t << "\", ";
     std::string line;
     while (std::getline(sol, line)) {
       // Remove line breaks from JSON object

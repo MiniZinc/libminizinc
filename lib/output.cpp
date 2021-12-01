@@ -1065,8 +1065,10 @@ ArrayLit* create_json_output(EnvI& e, bool includeObjective, bool includeOutputI
 
 Expression* create_encapsulated_output(EnvI& e) {
   std::vector<Expression*> es;
-  // Output each section as key-value pairs in an object
-  es.push_back(new StringLit(Location().introduce(), "{"));
+  // Output each section as key-value pairs (solns2out will wrap in {})
+  es.push_back(new StringLit(Location().introduce(), "\"output\": {"));
+  std::stringstream suffix;
+  suffix << "}, \"sections\": [";
   bool first = true;
   for (const auto& it : e.outputSections) {
     if (first) {
@@ -1076,6 +1078,7 @@ Expression* create_encapsulated_output(EnvI& e) {
     } else {
       es.push_back(new StringLit(Location().introduce(),
                                  ", \"" + Printer::escapeStringLit(it.first) + "\": "));
+      suffix << ", ";
     }
     bool isJSON = it.first == "json" || it.first.endsWith("_json");
     auto* concat = new Call(Location().introduce(), "concat", {it.second});
@@ -1089,8 +1092,10 @@ Expression* create_encapsulated_output(EnvI& e) {
       showJSON->decl(e.model->matchFn(e, showJSON, false));
       es.push_back(showJSON);
     }
+    suffix << "\"" << Printer::escapeStringLit(it.first) << "\"";
   }
-  es.push_back(new StringLit(Location().introduce(), "}"));
+  suffix << "]";
+  es.push_back(new StringLit(Location().introduce(), suffix.str()));
   return new ArrayLit(Location().introduce(), es);
 }
 
