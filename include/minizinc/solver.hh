@@ -153,6 +153,7 @@ private:
   bool _supportsI = false;
   bool _flagAllSatisfaction = false;
   bool _flagIntermediate = false;
+  bool _supportsJSONStream = false;
 
 public:
   Solns2Out s2out;

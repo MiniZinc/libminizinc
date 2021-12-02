@@ -629,6 +629,8 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
           _supportsA = true;
         } else if (flag == "-i") {
           _supportsI = true;
+        } else if (flag == "--json-stream") {
+          _supportsJSONStream = true;
         }
       }
 
@@ -964,6 +966,12 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0,
   }
 
   if (!ifMzn2Fzn() && _sf->getId() == "org.minizinc.mzn-mzn") {
+    if (_supportsJSONStream && flagEncapsulateJSON) {
+      std::vector<std::string> json_stream_flag(1);
+      json_stream_flag[0] = "--json-stream";
+      int i = 0;
+      _sf->processOption(_siOpt, i, json_stream_flag);
+    }
     Env env;
     _si = _sf->createSI(env, _log, _siOpt);
     _si->setSolns2Out(&s2out);
