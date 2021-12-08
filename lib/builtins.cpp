@@ -1715,16 +1715,32 @@ Expression* b_default(EnvI& env, Call* call) {
 
 Expression* b_trace_exp(EnvI& env, Call* call) {
   GCLock lock;
-  static std::string prevLoc;
-  std::string loc = call->loc().toString();
-  if (env.errstream.traceModified() || loc != env.errstream.prevTraceLoc()) {
-    env.errstream << loc << ":\n";
+  if (env.fopts.encapsulateJSON) {
+    std::ostringstream oss;
+    Printer p(oss, 0, false, &env);
+    p.trace(call->arg(0));
+    env.outstream
+        << "{\"type\": \"trace\", \"section\": \"trace_exp\", \"message\": { \"message\": \"";
+    env.outstream << Printer::escapeStringLit(oss.str()) << "\", \"location\": {";
+    env.outstream << "\"filename\": \"" << Printer::escapeStringLit(call->loc().filename())
+                  << "\", ";
+    env.outstream << "\"firstLine\": " << call->loc().firstLine() << ", ";
+    env.outstream << "\"firstColumn\": " << call->loc().firstColumn() << ", ";
+    env.outstream << "\"lastLine\": " << call->loc().lastLine() << ", ";
+    env.outstream << "\"lastColumn\": " << call->loc().lastColumn();
+    env.outstream << "}}}" << std::endl;
+  } else {
+    static std::string prevLoc;
+    std::string loc = call->loc().toString();
+    if (env.errstream.traceModified() || loc != env.errstream.prevTraceLoc()) {
+      env.errstream << loc << ":\n";
+    }
+    env.errstream << "  ";
+    Printer p(env.errstream.stream(), 0, false, &env);
+    p.trace(call->arg(0));
+    env.errstream << "\n";
+    env.errstream.resetTraceModified(loc);
   }
-  env.errstream << "  ";
-  Printer p(env.errstream.stream(), 0, false, &env);
-  p.trace(call->arg(0));
-  env.errstream << "\n";
-  env.errstream.resetTraceModified(loc);
   return call->arg(0);
 }
 
@@ -1765,11 +1781,15 @@ Expression* b_trace_to_section(EnvI& env, Call* call) {
   } else {
     section = eval_par(env, call->arg(0))->cast<StringLit>();
   }
+  auto section_s = std::string(section->v().c_str());
+  if (section_s == "dzn" || section_s == "json" || section_s == "trace_exp") {
+    throw EvalError(env, call->loc(), "The output section '" + section_s + "' is reserved.");
+  }
   if (env.fopts.encapsulateJSON) {
     auto msg = eval_string(
         env, call->arg(1)->type().cv() ? flat_cv_exp(env, Ctx(), call->arg(1))() : call->arg(1));
-    env.outstream << "{\"type\": \"trace\", \"section\": \""
-                  << Printer::escapeStringLit(section->v()) << "\", \"message\": ";
+    env.outstream << "{\"type\": \"trace\", \"section\": \"" << Printer::escapeStringLit(section_s)
+                  << "\", \"message\": ";
     if (section->v().endsWith("_json")) {
       std::stringstream ss(msg);
       std::string line;
@@ -1812,7 +1832,7 @@ bool b_output_to_section(EnvI& env, Call* call) {
   }
   std::string section_s = eval_string(env, section);
 
-  if (section_s == "dzn" || section_s == "json") {
+  if (section_s == "dzn" || section_s == "json" || section_s == "trace_exp") {
     throw EvalError(env, call->loc(), "The output section '" + section_s + "' is reserved.");
   }
 
