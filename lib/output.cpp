@@ -166,6 +166,66 @@ bool cannot_use_rhs_for_output(EnvI& env, Expression* e) {
   return cannot_use_rhs_for_output(env, e, seen_functions);
 }
 
+bool rhs_contains_var_comp(EnvI& env, Expression* e) {
+  if (e == nullptr) {
+    return true;
+  }
+
+  class V : public EVisitor {
+  public:
+    EnvI& env;
+    bool success;
+    V(EnvI& env0) : env(env0), success(true) {}
+    /// Visit anonymous variable
+    void vAnonVar(const AnonVar* /*v*/) {}
+    /// Visit array literal
+    void vArrayLit(const ArrayLit* /*al*/) {}
+    /// Visit array access
+    void vArrayAccess(const ArrayAccess* /*aa*/) {}
+    /// Visit array comprehension
+    void vComprehension(const Comprehension* c) {
+      for (int i = 0; i < c->numberOfGenerators(); i++) {
+        const auto* g_in = c->in(i);
+        if (g_in != nullptr) {
+          const Type& ty_in = g_in->type();
+          if (ty_in == Type::varsetint()) {
+            success = false;
+            break;
+          }
+          if (c->where(i) != nullptr) {
+            if (c->where(i)->type() == Type::varbool()) {
+              success = false;
+              break;
+            }
+          }
+        }
+      }
+    }
+    /// Visit if-then-else
+    void vITE(const ITE* /*ite*/) {}
+    /// Visit binary operator
+    void vBinOp(const BinOp* /*bo*/) {}
+    /// Visit unary operator
+    void vUnOp(const UnOp* /*uo*/) {}
+    /// Visit call
+    void vCall(Call* /*c*/) {}
+    void vId(const Id* /*id*/) {}
+    /// Visit let
+    void vLet(const Let* /*let*/) {}
+    /// Visit variable declaration
+    void vVarDecl(const VarDecl* /*vd*/) {}
+    /// Visit type inst
+    void vTypeInst(const TypeInst* /*ti*/) {}
+    /// Visit TIId
+    void vTIId(const TIId* /*tiid*/) {}
+    /// Determine whether to enter node
+    bool enter(Expression* /*e*/) const { return success; }
+  } _v(env);
+  top_down(_v, e);
+
+  return !_v.success;
+}
+
 void remove_is_output(VarDecl* vd) {
   if (vd == nullptr) {
     return;
@@ -1365,8 +1425,6 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
         auto* vd_orig = orig->cast<VarDecl>();
         Location loc = vd->loc();  // Close enough
         auto* vdi_copy = new VarDeclI(loc, vd);
-        Type t = vd->ti()->type();
-        t.ti(Type::TI_PAR);
         vd->ti()->domain(nullptr);
         vd->flat(vd_orig->flat());
         vd->ti()->setIsEnum(false);
@@ -1417,7 +1475,8 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
               check_output_par_fn(env, rhs);
               output_vardecls(env, vdi_copy, rhs);
               vd_followed->e(rhs);
-            } else if (reallyFlat == vd_orig || cannot_use_rhs_for_output(env, vd_followed->e())) {
+            } else if (reallyFlat == vd_orig || cannot_use_rhs_for_output(env, vd_followed->e()) ||
+                       rhs_contains_var_comp(env, vd_orig->e())) {
               // If the VarDecl does not have a usable right hand side, it needs to be
               // marked as output in the FlatZinc
               vd_followed->e(nullptr);
