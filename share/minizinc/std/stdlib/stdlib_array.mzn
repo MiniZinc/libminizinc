@@ -171,17 +171,21 @@ function array[$$E] of any $T: row(array[int, $$E] of any $T: x, int: r) = x[r,.
 function array[$$E] of any $T: col(array[$$E,int] of any $T: x, int: c) = x[..,c];
 
 /** @group stdlib.builtins.array Return slice of array \a x specified by sets \a s, coerced to new 1d array with index set \a dims1 */
-function array[int] of any $T: slice_1d(array[$E] of any $T: x, array[int] of set of int: s, set of int: dims1);
+function array[$$F] of any $T: slice_1d(array[$E] of any $T: x, array[int] of set of int: s, set of $$F: dims1);
 /** @group stdlib.builtins.array Return slice of array \a x specified by sets \a s, coerced to new 2d array with index sets \a dims1 and \a dims2 */
-function array[int,int] of any $T: slice_2d(array[$E] of any $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2);
+function array[$$F,$$G] of any $T: slice_2d(array[$E] of any $T: x, array[int] of set of int: s, set of $$F: dims1, set of $$G: dims2);
 /** @group stdlib.builtins.array Return slice of array \a x specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2 and \a dims3 */
-function array[int,int,int] of any $T: slice_3d(array[$E] of any $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3);
+function array[$$F,$$G,$$H] of any $T: slice_3d(array[$E] of any $T: x, array[int] of set of int: s,
+                                                set of $$F: dims1, set of $$G: dims2, set of $$H: dims3);
 /** @group stdlib.builtins.array Return slice of array \a x specified by sets \a s, coerced to new 4d array with index sets \a dims1, \a dims2, \a dims3, \a dims4 */
-function array[int,int,int,int] of any $T: slice_4d(array[$E] of any $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4);
+function array[$$F,$$G,$$H,$$I] of any $T: slice_4d(array[$E] of any $T: x, array[int] of set of int: s,
+  set of $$F: dims1, set of $$G: dims2, set of $$H: dims3, set of $$I: dims4);
 /** @group stdlib.builtins.array Return slice of array \a x specified by sets \a s, coerced to new 5d array with index sets \a dims1, \a dims2, \a dims3, \a dims4, \a dims5 */
-function array[int,int,int,int,int] of any $T: slice_5d(array[$E] of any $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4, set of int: dims5);
+function array[$$F,$$G,$$H,$$I,$$J] of any $T: slice_5d(array[$E] of any $T: x, array[int] of set of int: s,
+  set of $$F: dims1, set of $$G: dims2, set of $$H: dims3, set of $$I: dims4, set of $$J: dims5);
 /** @group stdlib.builtins.array Return slice of array \a x specified by sets \a s, coerced to new 6d array with index sets \a dims1, \a dims2, \a dims3, \a dims4, \a dims5, \a dims6 */
-function array[int,int,int,int,int,int] of any $T: slice_6d(array[$E] of any $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4, set of int: dims5, set of int: dims6);
+function array[$$F,$$G,$$H,$$I,$$J,$$K] of any $T: slice_6d(array[$E] of any $T: x, array[int] of set of int: s,
+  set of $$F: dims1, set of $$G: dims2, set of $$H: dims3, set of $$I: dims4, set of $$J: dims5, set of $$K: dims6);
 
 /** @group stdlib.builtins.array Test if \a i is in the index set of \a x */
 test has_index(int: i, array[int] of any $T: x) = i in index_set(x);
