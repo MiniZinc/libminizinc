@@ -437,6 +437,7 @@ ArrayLit::ArrayLit(const Location& loc, ArrayLit* v, const std::vector<std::pair
     : Expression(loc, E_ARRAYLIT, Type()) {
   _flag1 = false;
   _flag2 = true;
+  _secondaryId = v->_secondaryId;
   _u.al = v;
   assert(slice.size() == v->dims());
   std::vector<int> d(dims.size() * 2 + 2 * slice.size());
@@ -496,6 +497,7 @@ ArrayLit::ArrayLit(const Location& loc, const std::vector<Expression*>& v,
     : Expression(loc, E_ARRAYLIT, Type()) {
   _flag1 = false;
   _flag2 = false;
+  _secondaryId = AL_ARRAY;
   std::vector<int> d(dims.size() * 2);
   for (auto i = static_cast<unsigned int>(dims.size()); (i--) != 0U;) {
     d[i * 2] = dims[i].first;
