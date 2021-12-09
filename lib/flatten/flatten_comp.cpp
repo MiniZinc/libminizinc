@@ -148,46 +148,65 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
       Call* surround = env.surroundingCall();
 
       Type ntype = c->type();
+
+      auto* indexes = c->e()->dynamicCast<ArrayLit>();
+      Expression* generatedExp = c->e();
+      if (indexes != nullptr && indexes->isTuple()) {
+        generatedExp = (*indexes)[indexes->size() - 1];
+      } else {
+        indexes = nullptr;
+      }
+
       if ((surround != nullptr) && surround->id() == env.constants.ids.forall) {
-        new_e = new BinOp(Location().introduce(), cond, BOT_IMPL, c->e());
+        new_e = new BinOp(Location().introduce(), cond, BOT_IMPL, generatedExp);
         new_e->type(Type::varbool());
         ntype.ot(Type::OT_PRESENT);
       } else if ((surround != nullptr) && surround->id() == env.constants.ids.exists) {
-        new_e = new BinOp(Location().introduce(), cond, BOT_AND, c->e());
+        new_e = new BinOp(Location().introduce(), cond, BOT_AND, generatedExp);
         new_e->type(Type::varbool());
         ntype.ot(Type::OT_PRESENT);
       } else if ((surround != nullptr) && surround->id() == env.constants.ids.sum) {
         // If the body of the comprehension is par, turn the whole expression into a linear sum.
         // Otherwise, generate if-then-else expressions.
         Type tt;
-        tt = c->e()->type();
+        tt = generatedExp->type();
         tt.ti(Type::TI_VAR);
         tt.ot(Type::OT_PRESENT);
-        if (c->e()->type().isPar()) {
-          ASTString cid = c->e()->type().bt() == Type::BT_INT ? env.constants.ids.bool2int
-                                                              : env.constants.ids.bool2float;
-          Type b2i_t = c->e()->type().bt() == Type::BT_INT ? Type::varint() : Type::varfloat();
+        if (generatedExp->type().isPar()) {
+          ASTString cid = generatedExp->type().bt() == Type::BT_INT ? env.constants.ids.bool2int
+                                                                    : env.constants.ids.bool2float;
+          Type b2i_t =
+              generatedExp->type().bt() == Type::BT_INT ? Type::varint() : Type::varfloat();
           auto* b2i = new Call(c->loc().introduce(), cid, {cond});
           b2i->type(b2i_t);
           b2i->decl(env.model->matchFn(env, b2i, false));
-          auto* product = new BinOp(c->loc().introduce(), b2i, BOT_MULT, c->e());
+          auto* product = new BinOp(c->loc().introduce(), b2i, BOT_MULT, generatedExp);
           product->type(tt);
           new_e = product;
           ntype.ot(Type::OT_PRESENT);
         } else {
-          auto* if_b_else_zero = new ITE(c->loc().introduce(), {cond, c->e()}, IntLit::a(0));
+          auto* if_b_else_zero = new ITE(c->loc().introduce(), {cond, generatedExp}, IntLit::a(0));
           if_b_else_zero->type(tt);
           new_e = if_b_else_zero;
           ntype.ot(Type::OT_PRESENT);
         }
       } else {
-        ITE* if_b_else_absent = new ITE(c->loc().introduce(), {cond, c->e()}, env.constants.absent);
+        ITE* if_b_else_absent =
+            new ITE(c->loc().introduce(), {cond, generatedExp}, env.constants.absent);
         Type tt;
-        tt = c->e()->type();
+        tt = generatedExp->type();
         tt.ti(Type::TI_VAR);
         tt.ot(Type::OT_OPTIONAL);
         if_b_else_absent->type(tt);
         new_e = if_b_else_absent;
+      }
+      if (indexes != nullptr) {
+        std::vector<Expression*> new_indexes_v(indexes->size());
+        for (unsigned int i = 0; i < indexes->size() - 1; i++) {
+          new_indexes_v[i] = (*indexes)[i];
+        }
+        new_indexes_v.back() = new_e;
+        new_e = ArrayLit::constructTuple(indexes->loc(), new_indexes_v);
       }
       auto* nc = new Comprehension(c->loc(), new_e, gs, c->set());
       nc->type(ntype);
