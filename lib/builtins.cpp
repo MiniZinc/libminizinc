@@ -2916,7 +2916,14 @@ IntVal b_to_enum(EnvI& env, Call* call) {
   IntSetVal* isv = eval_intset(env, call->arg(0));
   IntVal v = eval_int(env, call->arg(1));
   if (!isv->contains(v)) {
-    throw ResultUndefinedError(env, call->loc(), "value outside of enum range");
+    std::ostringstream oss;
+    if (call->arg(0)->type().enumId() != 0) {
+      const auto* e = env.getEnum(call->arg(0)->type().enumId());
+      oss << "value " << v << " outside of range of enum " << *e->e()->id();
+    } else {
+      oss << "value " << v << " outside of range of enum " << *call->arg(0);
+    }
+    throw ResultUndefinedError(env, call->loc(), oss.str());
   }
   return v;
 }
@@ -2925,7 +2932,20 @@ IntVal b_enum_next(EnvI& env, Call* call) {
   IntSetVal* isv = eval_intset(env, call->arg(0));
   IntVal v = eval_int(env, call->arg(1));
   if (!isv->contains(v + 1)) {
-    throw ResultUndefinedError(env, call->loc(), "value outside of enum range");
+    std::ostringstream oss;
+    if (call->arg(0)->type().enumId() != 0) {
+      const auto* e = env.getEnum(call->arg(0)->type().enumId());
+      if (!isv->contains(v)) {
+        oss << "value " << v << " outside of range of enum " << *e->e()->id();
+      } else {
+        oss << "value ";
+        oss << env.enumToString(call->arg(0)->type().enumId(), static_cast<int>(v.toInt()));
+        oss << " is max of enum " << *e->e()->id() << ", cannot get next value";
+      }
+    } else {
+      oss << "enum_next of value " << v << " is undefined";
+    }
+    throw ResultUndefinedError(env, call->loc(), oss.str());
   }
   return v + 1;
 }
@@ -2934,7 +2954,20 @@ IntVal b_enum_prev(EnvI& env, Call* call) {
   IntSetVal* isv = eval_intset(env, call->arg(0));
   IntVal v = eval_int(env, call->arg(1));
   if (!isv->contains(v - 1)) {
-    throw ResultUndefinedError(env, call->loc(), "value outside of enum range");
+    std::ostringstream oss;
+    if (call->arg(0)->type().enumId() != 0) {
+      const auto* e = env.getEnum(call->arg(0)->type().enumId());
+      if (!isv->contains(v)) {
+        oss << "value " << v << " outside of range of enum " << *e->e()->id();
+      } else {
+        oss << "value ";
+        oss << env.enumToString(call->arg(0)->type().enumId(), static_cast<int>(v.toInt()));
+        oss << " is min of enum " << *e->e()->id() << ", cannot get previous value";
+      }
+    } else {
+      oss << "enum_prev of value " << v << " is undefined";
+    }
+    throw ResultUndefinedError(env, call->loc(), oss.str());
   }
   return v - 1;
 }

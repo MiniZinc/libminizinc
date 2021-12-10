@@ -1100,6 +1100,17 @@ const std::vector<unsigned int>& EnvI::getArrayEnum(unsigned int i) const {
   assert(i > 0 && i <= _arrayEnumDecls.size());
   return _arrayEnumDecls[i - 1];
 }
+std::string EnvI::enumToString(unsigned int enumId, int i) {
+  Id* ti_id = getEnum(enumId)->e()->id();
+  ASTString enumName(create_enum_to_string_name(ti_id, "_toString_"));
+  auto* call = new Call(Location().introduce(), enumName,
+                        {IntLit::a(i), constants.boollit(true), constants.boollit(false)});
+  auto* fi = model->matchFn(*this, call, false, true);
+  assert(fi);
+  call->decl(fi);
+  call->type(Type::parstring());
+  return eval_string(*this, call);
+}
 bool EnvI::isSubtype(const Type& t1, const Type& t2, bool strictEnums) const {
   if (!t1.isSubtypeOf(t2, strictEnums)) {
     return false;

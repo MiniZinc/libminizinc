@@ -61,14 +61,85 @@ void check_par_declaration(EnvI& env, VarDecl* vd) {
       ArrayLit* al = eval_array_lit(env, vd->e());
       for (unsigned int i = 0; i < al->size(); i++) {
         if (!check_par_domain(env, (*al)[i], vd->ti()->domain())) {
-          throw ResultUndefinedError(env, vd->e()->loc(), "parameter value out of range");
+          std::ostringstream oss;
+          oss << "parameter value out of range, ";
+          oss << "declared range of array `" << *vd->id() << "' is " << *vd->ti()->domain() << ", ";
+
+          std::vector<int> indexes(al->dims());
+          int remDim = static_cast<int>(i);
+          for (unsigned int j = al->dims(); (j--) != 0U;) {
+            indexes[j] = (remDim % (al->max(j) - al->min(j) + 1)) + al->min(j);
+            remDim = remDim / (al->max(j) - al->min(j) + 1);
+          }
+
+          oss << "but element at index ";
+
+          std::vector<std::string> indexes_s(indexes.size());
+          unsigned int enumId = vd->type().enumId();
+          if (enumId != 0) {
+            const auto& enumIds = env.getArrayEnum(enumId);
+            enumId = enumIds[enumIds.size() - 1];
+            for (unsigned int j = 0; j < indexes.size(); j++) {
+              std::ostringstream index_oss;
+              if (enumIds[j] != 0) {
+                index_oss << env.enumToString(enumIds[j], indexes[j]);
+              } else {
+                index_oss << indexes[j];
+              }
+              indexes_s[j] = index_oss.str();
+            }
+          } else {
+            for (unsigned int j = 0; j < indexes.size(); j++) {
+              std::ostringstream index_oss;
+              index_oss << indexes[j];
+              indexes_s[j] = index_oss.str();
+            }
+          }
+
+          bool first = true;
+          if (indexes_s.size() > 1) {
+            oss << "(";
+          }
+          for (const auto& idx : indexes_s) {
+            if (first) {
+              first = false;
+            } else {
+              oss << ", ";
+            }
+            oss << idx;
+          }
+          if (indexes_s.size() > 1) {
+            oss << ")";
+          }
+
+          oss << " is ";
+          if (enumId != 0) {
+            oss << env.enumToString(enumId, static_cast<int>(eval_int(env, (*al)[i]).toInt()));
+          } else {
+            oss << *(*al)[i];
+          }
+
+          throw ResultUndefinedError(env, vd->e()->loc(), oss.str());
         }
       }
     }
   } else {
     if (vd->ti()->domain() != nullptr) {
       if (!check_par_domain(env, vd->e(), vd->ti()->domain())) {
-        throw ResultUndefinedError(env, vd->e()->loc(), "parameter value out of range");
+        std::ostringstream oss;
+        oss << "parameter value out of range, ";
+        oss << "declared range of `" << *vd->id() << "' is " << *vd->ti()->domain() << ", ";
+
+        oss << "but assigned value is ";
+        unsigned int enumId = vd->type().enumId();
+        if (enumId != 0) {
+          auto v = eval_int(env, vd->e()).toInt();
+          oss << env.enumToString(enumId, static_cast<int>(v));
+        } else {
+          oss << *vd->e();
+        }
+
+        throw ResultUndefinedError(env, vd->e()->loc(), oss.str());
       }
     }
   }
@@ -630,8 +701,15 @@ Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e) {
 SetLit* eval_set_lit(EnvI& env, Expression* e) {
   switch (e->type().bt()) {
     case Type::BT_INT:
-    case Type::BT_BOT:
-      return new SetLit(e->loc(), eval_intset(env, e));
+    case Type::BT_BOT: {
+      auto* sl = new SetLit(e->loc(), eval_intset(env, e));
+      if (e->type().enumId() != 0) {
+        Type t = sl->type();
+        t.enumId(e->type().enumId());
+        sl->type(t);
+      }
+      return sl;
+    }
     case Type::BT_BOOL: {
       auto* sl = new SetLit(e->loc(), eval_boolset(env, e));
       sl->type(Type::parsetbool());

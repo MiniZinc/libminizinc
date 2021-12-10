@@ -253,6 +253,7 @@ public:
   VarDeclI* getEnum(unsigned int i) const;
   unsigned int registerArrayEnum(const std::vector<unsigned int>& arrayEnum);
   const std::vector<unsigned int>& getArrayEnum(unsigned int i) const;
+  std::string enumToString(unsigned int enumId, int i);
   /// Check if \a t1 is a subtype of \a t2 (including enumerated types if \a strictEnum is true)
   bool isSubtype(const Type& t1, const Type& t2, bool strictEnum) const;
   bool hasReverseMapper(Id* ident) { return reverseMappers.find(ident) != reverseMappers.end(); }
