@@ -1452,7 +1452,42 @@ simple_array_literal :
           if ($2->first.empty()) {
             $$=new ArrayLit(@$, $2->second);
           } else {
-            $$=new Call(@$, "array1d", {new ArrayLit(@$, $2->first), new ArrayLit(@$, $2->second)});
+            const auto* tuple = $2->first[0]->dynamicCast<ArrayLit>();
+            if (tuple) {
+              std::vector<std::vector<Expression*>> dims(tuple->size());
+              for (const auto* t : $2->first) {
+                if ( (tuple = t->dynamicCast<ArrayLit>()) != nullptr ) {
+                  if (tuple->size() == dims.size()) {
+                    for (unsigned int i = 0; i < dims.size(); i++) {
+                      dims[i].push_back((*tuple)[i]);
+                    }
+                  } else {
+                    yyerror(&@2, parm, "syntax error, non-uniform indexed array literal");
+                  }
+                } else {
+                  yyerror(&@2, parm, "syntax error, non-uniform indexed array literal");
+                }
+              }
+              std::vector<Expression*> arrayXdArgs(dims.size());
+              for (unsigned int i = 0; i < dims.size(); i++) {
+                arrayXdArgs[i] = new ArrayLit(@$, dims[i]);
+              }
+              arrayXdArgs.push_back(new ArrayLit(@$, $2->second));
+              
+              if ($2->first.size() != $2->second.size()) {
+                yyerror(&@2, parm, "syntax error, non-uniform indexed array literal");
+                $$=nullptr;
+              } else {
+                $$=new Call(@$, "arrayXd", arrayXdArgs);
+              }
+            } else {
+              for (const auto* t : $2->first) {
+                if (t->isa<ArrayLit>()) {
+                  yyerror(&@2, parm, "syntax error, non-uniform indexed array literal");
+                }
+              }
+              $$=new Call(@$, "arrayXd", {new ArrayLit(@$, $2->first), new ArrayLit(@$, $2->second)});
+            }
           }
           delete $2;
         }
@@ -2020,20 +2055,38 @@ comp_expr_list_head :
     | comp_expr_list_head ',' expr
       { $$=$1;
         if ($$ && $3) {
-          if (!$$->first.empty()) {
+          if ($$->first.size() > 1) {
             yyerror(&@$,parm,"invalid array literal, mixing indexed and non-indexed values");
+            $$ = nullptr;
+          } else {
+            $$->second.push_back($3);
           }
-          $$->second.push_back($3);
         }
       }
     | comp_expr_list_head ',' expr ':' expr
       { $$=$1;
         if ($$ && $3) {
-          if ($$->first.empty()) {
+          if ($$->first.size() != $$->second.size()) {
             yyerror(&@$,parm,"invalid array literal, mixing indexed and non-indexed values");
+            $$ = nullptr;
+          } else {
+            $$->first.push_back($3);
+            $$->second.push_back($5);
           }
-          $$->first.push_back($3);
-          $$->second.push_back($5);
+        }
+      }
+    | comp_expr_list_head ',' '(' expr ',' expr_list ')' ':' expr
+      { $$=$1;
+        if ($$ && $4 && $6) {
+          if ($$->first.size() != $$->second.size()) {
+            yyerror(&@$,parm,"invalid array literal, mixing indexed and non-indexed values");
+            $$ = nullptr;
+          } else {
+            $6->insert($6->begin(), $4);
+            auto* index = ArrayLit::constructTuple(@$, *$6);
+            $$->first.push_back(index);
+            $$->second.push_back($9);
+          }
         }
       }
 

@@ -1655,6 +1655,7 @@ For example:
     [ A: 0, B: 3, C: 5]
     [ (1,2): 1, (1,3): 2, (2,2): 3, (2,3): 4]
     [ 1: 1, 4: 2, 5: 3, 3: 4, 2: 5]
+    [ 0: A, B, C ]
 
 The expressions before the colons are the indexes (or keys), those after are the values.
 
@@ -1662,6 +1663,9 @@ The indexes must be of integer or enumerated type.
 The index set of the resulting array is, for each dimension, the union of the indexes of that dimension.
 For example, the index set of the first and fourth arrays above is :mzn:`1..5`,
 the index set of the second array is :mzn:`{A,B,C}`, and the index sets of the third array are :mzn:`1..2` and :mzn:`2..3`.
+
+For one-dimensional arrays, it is possible to give only the starting index of the first element, as in the last example above.
+All following elements are indexed consecutively.
 
 The index sets of indexed array literals must be contiguous and, for multi-dimensional arrays, "rectangular".
 For example, the following literals are not allowed:

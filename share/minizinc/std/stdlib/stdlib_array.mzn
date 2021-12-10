@@ -110,7 +110,26 @@ function array[$$E,$$F] of any $V: array2d(array[int] of $$E: S1, array[int] of 
                                             } in
                                            [ (S1[(i - 1) div d + 1],S2[(i - 1) mod d + 1]) : x[i] | i in index_set(x)];
 
-function array[$$E] of any $V: array1d(array[int] of $$E: S1, array[int] of any $V: x) = [ S1[i] : x[i] | i in index_set(x)];
+function array[$$E] of any $V: arrayXd(array[int] of $$E: S1, array[int] of any $V: x) = 
+  if length(S1)=1 /\ length(x)>1 then
+    array1d(S1[1]..to_enum(enum_of(S1[1]),S1[1]+length(x)-1), x)
+  else
+    [ S1[i] : x[i] | i in index_set(x)]
+  endif;
+function array[$$E,$$F] of any $V: arrayXd(array[int] of $$E: S1, array[int] of $$F: S2, array[int] of any $V: x) =
+  [ (S1[i], S2[i]) : x[i] | i in index_set(x)];
+function array[$$E,$$F,$$G] of any $V: arrayXd(array[int] of $$E: S1, array[int] of $$F: S2, array[int] of $$G: S3, array[int] of any $V: x) =
+  [ (S1[i], S2[i], S3[i]) : x[i] | i in index_set(x)];
+function array[$$E,$$F,$$G,$$H] of any $V: arrayXd(array[int] of $$E: S1, array[int] of $$F: S2,
+  array[int] of $$G: S3, array[int] of $$H: S4, array[int] of any $V: x) =
+  [ (S1[i], S2[i], S3[i], S4[i]) : x[i] | i in index_set(x)];
+function array[$$E,$$F,$$G,$$H,$$I] of any $V: arrayXd(array[int] of $$E: S1, array[int] of $$F: S2,
+  array[int] of $$G: S3, array[int] of $$H: S4, array[int] of $$I: S5, array[int] of any $V: x) =
+  [ (S1[i], S2[i], S3[i], S4[i], S5[i]) : x[i] | i in index_set(x)];
+function array[$$E,$$F,$$G,$$H,$$I,$$J] of any $V: arrayXd(array[int] of $$E: S1, array[int] of $$F: S2,
+  array[int] of $$G: S3, array[int] of $$H: S4, array[int] of $$I: S5, array[int] of $$J: S6, array[int] of any $V: x) =
+  [ (S1[i], S2[i], S3[i], S4[i], S5[i], S6[i]) : x[i] | i in index_set(x)];
+
 
 /** @group stdlib.builtins.array Return array \a x coerced to three-dimensional array with
   index sets \a S1, \a S2 and \a S3.

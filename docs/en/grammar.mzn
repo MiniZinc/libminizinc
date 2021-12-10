@@ -209,6 +209,7 @@
 
 % Indexed array literals
 <indexed-array-literal> ::= "[" [ ( <index-tuple> ":" <expr> ) "," ... ] "]"
+                          | "[" [ <index-tuple> ":" <expr> "," <expr> "," ... ] "]"
 
 <index-tuple> ::= <expr>
                 | "(" [ <expr> "," ... ] ")"
