@@ -125,7 +125,7 @@ public:
   std::string prevTraceLoc() const { return _prevTraceLoc; }
 };
 
-class OutputSectionStore {
+class OutputSectionStore : public GCMarker {
 private:
   typedef std::vector<std::pair<ASTString, Expression*>> OutputSections;
 
@@ -145,6 +145,14 @@ public:
 private:
   OutputSections _sections;
   std::unordered_map<ASTString, OutputSections::size_type> _idx;
+
+protected:
+  void mark() override {
+    for (auto& it : *this) {
+      it.first.mark();
+      Expression::mark(it.second);
+    }
+  }
 };
 
 class EnvI {
