@@ -470,13 +470,50 @@ void check_dom(EnvI& env, Id* arg, FloatVal dom_min, FloatVal dom_max, Expressio
   }
 }
 
+template <class CallClass>
+class EvalCallCleanup {
+private:
+  CallClass* _call;
+  std::vector<Expression*> _previousParameters;
+  KeepAlive _previousCapture;
+
+public:
+  EvalCallCleanup(EnvI& env, CallClass* call)
+      : _call(call), _previousParameters(call->decl()->paramCount()) {
+    for (unsigned int i = 0; i < call->decl()->paramCount(); i++) {
+      _previousParameters[i] = call->decl()->param(i)->e();
+    }
+    if (call->decl()->capturedAnnotationsVar() != nullptr) {
+      _previousCapture = call->decl()->capturedAnnotationsVar()->e();
+      GCLock lock;
+      call->decl()->capturedAnnotationsVar()->flat(call->decl()->capturedAnnotationsVar());
+      call->decl()->capturedAnnotationsVar()->e(env.createAnnotationArray(C_MIX));
+    }
+  }
+  // NOLINTNEXTLINE(bugprone-exception-escape)
+  ~EvalCallCleanup() {
+    for (unsigned int i = 0; i < _call->decl()->paramCount(); i++) {
+      VarDecl* vd = _call->decl()->param(i);
+      vd->e(_previousParameters[i]);
+      vd->flat(vd->e() == nullptr ? nullptr : vd);
+    }
+    if (_call->decl()->capturedAnnotationsVar() != nullptr) {
+      _call->decl()->capturedAnnotationsVar()->e(_previousCapture());
+      _call->decl()->capturedAnnotationsVar()->flat(_call->decl()->capturedAnnotationsVar()->e() !=
+                                                            nullptr
+                                                        ? _call->decl()->capturedAnnotationsVar()
+                                                        : nullptr);
+    }
+  }
+};
+
 template <class Eval, class CallClass = Call>
 typename Eval::Val eval_call(EnvI& env, CallClass* ce) {
-  std::vector<Expression*> previousParameters(ce->decl()->paramCount());
   std::vector<Expression*> params(ce->decl()->paramCount());
   for (unsigned int i = 0; i < ce->decl()->paramCount(); i++) {
     params[i] = eval_par(env, ce->arg(i));
   }
+  EvalCallCleanup<CallClass> ecc(env, ce);
   for (unsigned int i = ce->decl()->paramCount(); i--;) {
     VarDecl* vd = ce->decl()->param(i);
     if (vd->type().dim() > 0) {
@@ -495,7 +532,6 @@ typename Eval::Val eval_call(EnvI& env, CallClass* ce) {
         }
       }
     }
-    previousParameters[i] = vd->e();
     vd->flat(vd);
     vd->e(params[i]);
     if (vd->e()->type().isPar()) {
@@ -522,26 +558,8 @@ typename Eval::Val eval_call(EnvI& env, CallClass* ce) {
       }
     }
   }
-  KeepAlive previousCapture;
-  if (ce->decl()->capturedAnnotationsVar() != nullptr) {
-    previousCapture = ce->decl()->capturedAnnotationsVar()->e();
-    GCLock lock;
-    ce->decl()->capturedAnnotationsVar()->flat(ce->decl()->capturedAnnotationsVar());
-    ce->decl()->capturedAnnotationsVar()->e(env.createAnnotationArray(C_MIX));
-  }
   typename Eval::Val ret = Eval::e(env, ce->decl()->e());
   Eval::checkRetVal(env, ret, ce->decl());
-  for (unsigned int i = ce->decl()->paramCount(); i--;) {
-    VarDecl* vd = ce->decl()->param(i);
-    vd->e(previousParameters[i]);
-    vd->flat(vd->e() ? vd : nullptr);
-  }
-  if (ce->decl()->capturedAnnotationsVar() != nullptr) {
-    ce->decl()->capturedAnnotationsVar()->e(previousCapture());
-    ce->decl()->capturedAnnotationsVar()->flat(ce->decl()->capturedAnnotationsVar()->e() != nullptr
-                                                   ? ce->decl()->capturedAnnotationsVar()
-                                                   : nullptr);
-  }
   return ret;
 }
 
@@ -652,7 +670,7 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
     }
     case Expression::E_LET: {
       Let* l = e->cast<Let>();
-      l->pushbindings();
+      LetPushBindings lpb(l);
       for (unsigned int i = 0; i < l->let().size(); i++) {
         // Evaluate all variable declarations
         if (auto* vdi = l->let()[i]->dynamicCast<VarDecl>()) {
@@ -670,7 +688,6 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
       ArrayLit* l_in = eval_array_lit(env, l->in());
       auto* ret = copy(env, l_in, true)->cast<ArrayLit>();
       ret->flat(l_in->flat());
-      l->popbindings();
       return ret;
     }
   }
@@ -857,7 +874,7 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
     } break;
     case Expression::E_LET: {
       Let* l = e->cast<Let>();
-      l->pushbindings();
+      LetPushBindings lpb(l);
       for (unsigned int i = 0; i < l->let().size(); i++) {
         // Evaluate all variable declarations
         if (auto* vdi = l->let()[i]->dynamicCast<VarDecl>()) {
@@ -873,7 +890,6 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
         }
       }
       IntSetVal* ret = eval_intset(env, l->in());
-      l->popbindings();
       return ret;
     } break;
     default:
@@ -1021,7 +1037,7 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
     } break;
     case Expression::E_LET: {
       Let* l = e->cast<Let>();
-      l->pushbindings();
+      LetPushBindings lpb(l);
       for (unsigned int i = 0; i < l->let().size(); i++) {
         // Evaluate all variable declarations
         if (auto* vdi = l->let()[i]->dynamicCast<VarDecl>()) {
@@ -1037,7 +1053,6 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
         }
       }
       FloatSetVal* ret = eval_floatset(env, l->in());
-      l->popbindings();
       return ret;
     } break;
     default:
@@ -1337,7 +1352,7 @@ bool eval_bool(EnvI& env, Expression* e) {
       } break;
       case Expression::E_LET: {
         Let* l = e->cast<Let>();
-        l->pushbindings();
+        LetPushBindings lpb(l);
         bool ret = true;
         for (unsigned int i = 0; i < l->let().size(); i++) {
           // Evaluate all variable declarations
@@ -1370,7 +1385,6 @@ bool eval_bool(EnvI& env, Expression* e) {
           }
         }
         ret = ret && eval_bool(env, l->in());
-        l->popbindings();
         return ret;
       } break;
       default:
@@ -1517,7 +1531,7 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
     } break;
     case Expression::E_LET: {
       Let* l = e->cast<Let>();
-      l->pushbindings();
+      LetPushBindings lpb(l);
       for (unsigned int i = 0; i < l->let().size(); i++) {
         // Evaluate all variable declarations
         if (auto* vdi = l->let()[i]->dynamicCast<VarDecl>()) {
@@ -1533,7 +1547,6 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
         }
       }
       IntSetVal* ret = eval_boolset(env, l->in());
-      l->popbindings();
       return ret;
     } break;
     default:
@@ -1649,7 +1662,7 @@ IntVal eval_int_internal(EnvI& env, Expression* e) {
       } break;
       case Expression::E_LET: {
         Let* l = e->cast<Let>();
-        l->pushbindings();
+        LetPushBindings lpb(l);
         for (unsigned int i = 0; i < l->let().size(); i++) {
           // Evaluate all variable declarations
           if (auto* vdi = l->let()[i]->dynamicCast<VarDecl>()) {
@@ -1665,7 +1678,6 @@ IntVal eval_int_internal(EnvI& env, Expression* e) {
           }
         }
         IntVal ret = eval_int(env, l->in());
-        l->popbindings();
         return ret;
       } break;
       default:
@@ -1783,7 +1795,7 @@ FloatVal eval_float(EnvI& env, Expression* e) {
       } break;
       case Expression::E_LET: {
         Let* l = e->cast<Let>();
-        l->pushbindings();
+        LetPushBindings lpb(l);
         for (unsigned int i = 0; i < l->let().size(); i++) {
           // Evaluate all variable declarations
           if (auto* vdi = l->let()[i]->dynamicCast<VarDecl>()) {
@@ -1799,7 +1811,6 @@ FloatVal eval_float(EnvI& env, Expression* e) {
           }
         }
         FloatVal ret = eval_float(env, l->in());
-        l->popbindings();
         return ret;
       } break;
       default:
@@ -1893,7 +1904,7 @@ std::string eval_string(EnvI& env, Expression* e) {
     } break;
     case Expression::E_LET: {
       Let* l = e->cast<Let>();
-      l->pushbindings();
+      LetPushBindings lpb(l);
       for (unsigned int i = 0; i < l->let().size(); i++) {
         // Evaluate all variable declarations
         if (auto* vdi = l->let()[i]->dynamicCast<VarDecl>()) {
@@ -1909,7 +1920,6 @@ std::string eval_string(EnvI& env, Expression* e) {
         }
       }
       std::string ret = eval_string(env, l->in());
-      l->popbindings();
       return ret;
     } break;
     default:
@@ -2133,7 +2143,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
         case Expression::E_LET: {
           Let* l = e->cast<Let>();
           assert(l->type().isPar());
-          l->pushbindings();
+          LetPushBindings lpb(l);
           for (unsigned int i = 0; i < l->let().size(); i++) {
             // Evaluate all variable declarations
             if (auto* vdi = l->let()[i]->dynamicCast<VarDecl>()) {
@@ -2149,7 +2159,6 @@ Expression* eval_par(EnvI& env, Expression* e) {
             }
           }
           Expression* ret = eval_par(env, l->in());
-          l->popbindings();
           return ret;
         }
         default:

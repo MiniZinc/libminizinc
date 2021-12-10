@@ -1342,6 +1342,16 @@ public:
   void popbindings();
 };
 
+/// Convenience class for pushing/popping let bindings
+class LetPushBindings {
+private:
+  Let* _let;
+
+public:
+  LetPushBindings(Let* l) : _let(l) { l->pushbindings(); }
+  ~LetPushBindings() { _let->popbindings(); }
+};
+
 /// \brief Type-inst expression
 class TypeInst : public Expression {
 protected:
