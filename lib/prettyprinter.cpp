@@ -339,21 +339,25 @@ public:
           }
           if (trace && ident->type().isPar() && ident->type().dim() == 0 &&
               ident->decl()->e() != nullptr) {
-            if (e->type() == Type::parint()) {
-              auto parExp = eval_int(*_env, const_cast<Expression*>(e));
-              _os << "(≡" << parExp << ")";
-            } else if (e->type() == Type::parbool()) {
-              auto parExp = eval_bool(*_env, const_cast<Expression*>(e));
-              _os << "(≡" << (parExp ? "true" : "false") << ")";
-            } else if (e->type() == Type::parfloat()) {
-              auto parExp = eval_float(*_env, const_cast<Expression*>(e));
-              _os << "(≡" << parExp << ")";
-            } else if (e->type() == Type::parsetint()) {
-              auto* parExp = eval_intset(*_env, const_cast<Expression*>(e));
-              GCLock lock;
-              _os << "(≡";
-              p(new SetLit(Location().introduce(), parExp));
-              _os << ")";
+            try {
+              if (e->type() == Type::parint()) {
+                auto parExp = eval_int(*_env, const_cast<Expression*>(e));
+                _os << "(≡" << parExp << ")";
+              } else if (e->type() == Type::parbool()) {
+                auto parExp = eval_bool(*_env, const_cast<Expression*>(e));
+                _os << "(≡" << (parExp ? "true" : "false") << ")";
+              } else if (e->type() == Type::parfloat()) {
+                auto parExp = eval_float(*_env, const_cast<Expression*>(e));
+                _os << "(≡" << parExp << ")";
+              } else if (e->type() == Type::parsetint()) {
+                auto* parExp = eval_intset(*_env, const_cast<Expression*>(e));
+                GCLock lock;
+                _os << "(≡";
+                p(new SetLit(Location().introduce(), parExp));
+                _os << ")";
+              }
+            } catch (ResultUndefinedError&) {
+              _os << "(≡⊥)";
             }
           }
         }
@@ -705,6 +709,7 @@ public:
       } break;
       case Expression::E_LET: {
         const auto* l = e->cast<Let>();
+        LetPushBindings lpb(const_cast<Let*>(l));
         _os << "let {";
 
         for (unsigned int i = 0; i < l->let().size(); i++) {

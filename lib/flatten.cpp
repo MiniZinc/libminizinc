@@ -765,6 +765,7 @@ EnvI::EnvI(Model* model0, std::ostream& outstream0, std::ostream& errstream0)
       inRedundantConstraint(0),
       inSymmetryBreakingConstraint(0),
       inMaybePartial(0),
+      inTraceExp(false),
       inReverseMapVar(false),
       counters({0, 0, 0, 0}),
       _flat(new Model),

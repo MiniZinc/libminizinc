@@ -202,6 +202,7 @@ public:
   int inRedundantConstraint;
   int inSymmetryBreakingConstraint;
   int inMaybePartial;
+  bool inTraceExp;
   struct {
     int reifConstraints;
     int impConstraints;

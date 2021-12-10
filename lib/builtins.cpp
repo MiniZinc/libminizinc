@@ -1715,6 +1715,11 @@ Expression* b_default(EnvI& env, Call* call) {
 
 Expression* b_trace_exp(EnvI& env, Call* call) {
   GCLock lock;
+  if (env.inTraceExp) {
+    return call->arg(0);
+  }
+  env.inTraceExp = true;
+  env.inMaybePartial++;
   if (env.fopts.encapsulateJSON) {
     std::ostringstream oss;
     Printer p(oss, 0, false, &env);
@@ -1741,6 +1746,8 @@ Expression* b_trace_exp(EnvI& env, Call* call) {
     env.errstream << "\n";
     env.errstream.resetTraceModified(loc);
   }
+  env.inTraceExp = false;
+  env.inMaybePartial--;
   return call->arg(0);
 }
 
