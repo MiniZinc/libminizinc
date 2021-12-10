@@ -2818,7 +2818,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
       }
       std::vector<Expression*> args(c->argCount());
       GCLock lock;
-      if (c->id() == env.constants.ids.mzn_default || c->id() == "trace_exp") {
+      if (env.constants.isCallByReferenceId(c->id())) {
         return eval_par(env, c);
       }
       for (unsigned int i = 0; i < c->argCount(); i++) {

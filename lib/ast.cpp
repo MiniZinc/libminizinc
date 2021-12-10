@@ -1859,6 +1859,13 @@ Constants::Constants() {
   cli_cat.translation = addString("Translation Options");
 };
 
+bool Constants::isCallByReferenceId(const ASTString& cid) const {
+  return (cid == ids.assert || cid == ids.assert_dbg || cid == ids.trace || cid == ids.trace_dbg ||
+          cid == "trace_exp" || cid == ids.mzn_symmetry_breaking_constraint ||
+          cid == ids.mzn_redundant_constraint || cid == ids.mzn_default ||
+          cid == ids.mzn_deprecate || cid == ids.output_to_section || cid == ids.output);
+}
+
 void Constants::mark() {
   Expression::mark(literalTrue);
   Expression::mark(varTrue);

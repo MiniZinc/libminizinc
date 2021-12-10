@@ -1974,6 +1974,8 @@ public:
     ASTString anonEnumFromStrings;
   } ids;
 
+  bool isCallByReferenceId(const ASTString& cid) const;
+
   /// Identifiers for Boolean contexts
   struct {
     Id* root;
