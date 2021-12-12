@@ -33,11 +33,27 @@ bool eval_bool(EnvI& env, Expression* e);
 FloatVal eval_float(EnvI& env, Expression* e);
 /// Evaluate an array expression \a e into an array literal
 ArrayLit* eval_array_lit(EnvI& env, Expression* e);
+struct ArrayAccessSucess {
+  bool success;
+  int dim;
+  IntVal dimMin;
+  IntVal dimMax;
+  IntVal idx;
+  ArrayAccessSucess() : success(true) {}
+  void fail(int dim0, IntVal dimMin0, IntVal dimMax0, IntVal idx0) {
+    success = false;
+    dim = dim0;
+    dimMin = dimMin0;
+    dimMax = dimMax0;
+    idx = idx0;
+  }
+  bool operator()() const { return success; }
+  std::string errorMessage(EnvI& env, Expression* e) const;
+};
 /// Evaluate an access to array \a al with indices \a idx and return whether
 /// access succeeded in \a success
 template <class IdxV>
-Expression* eval_arrayaccess(EnvI& env, ArrayLit* al, const IdxV& idx, bool& success) {
-  success = true;
+Expression* eval_arrayaccess(EnvI& env, ArrayLit* al, const IdxV& idx, ArrayAccessSucess& success) {
   assert(al->dims() == idx.size());
   IntVal realidx = 0;
   int realdim = 1;
@@ -47,7 +63,7 @@ Expression* eval_arrayaccess(EnvI& env, ArrayLit* al, const IdxV& idx, bool& suc
   for (int i = 0; i < al->dims(); i++) {
     IntVal ix = idx[i];
     if (ix < al->min(i) || ix > al->max(i)) {
-      success = false;
+      success.fail(i, al->min(i), al->max(i), ix);
       Type t = al->type();
       t.dim(0);
       if (t.isint()) {
@@ -77,7 +93,7 @@ Expression* eval_arrayaccess(EnvI& env, ArrayLit* al, const IdxV& idx, bool& suc
 }
 
 /// Evaluate an array access \a e and return whether access succeeded in \a success
-Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e, bool& success);
+Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e, ArrayAccessSucess& success);
 /// Evaluate a set expression \a e into a set literal
 SetLit* eval_set_lit(EnvI& env, Expression* e);
 /// Evaluate a par integer set \a e

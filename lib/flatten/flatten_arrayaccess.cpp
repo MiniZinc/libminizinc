@@ -74,16 +74,16 @@ start_flatten_arrayaccess:
         }
       }
       if (stack.empty()) {
-        bool success;
+        ArrayAccessSucess success;
         KeepAlive ka;
         {
           GCLock lock;
           ka = eval_arrayaccess(env, al, idx, success);
-          if (!success && env.inMaybePartial == 0) {
-            ResultUndefinedError warning(env, al->loc(), "array access out of bounds");
+          if (!success() && env.inMaybePartial == 0) {
+            ResultUndefinedError warning(env, al->loc(), success.errorMessage(env, al));
           }
         }
-        ees.emplace_back(nullptr, env.constants.boollit(success));
+        ees.emplace_back(nullptr, env.constants.boollit(success()));
         ees.emplace_back(nullptr, eev.b());
         if (aa->type().isbool() && !aa->type().isOpt()) {
           ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
@@ -101,12 +101,12 @@ start_flatten_arrayaccess:
           stack.pop_back();
           for (int i = al->min(nonpar[cur]); i <= al->max(nonpar[cur]); i++) {
             idx[nonpar[cur]] = i;
-            bool success;
+            ArrayAccessSucess success;
             GCLock lock;
             Expression* al_idx = eval_arrayaccess(env, al, idx, success);
-            if (!success) {
+            if (!success()) {
               if (env.inMaybePartial == 0) {
-                ResultUndefinedError warning(env, al->loc(), "array access out of bounds");
+                ResultUndefinedError warning(env, al->loc(), success.errorMessage(env, al));
               }
               ees.emplace_back(nullptr, env.constants.literalFalse);
               ees.emplace_back(nullptr, eev.b());
@@ -233,7 +233,7 @@ flatten_arrayaccess:
       al = follow_id(id)->cast<ArrayLit>();
     }
     KeepAlive ka;
-    bool success;
+    ArrayAccessSucess success;
     {
       GCLock lock;
       std::vector<IntVal> dims(aa->idx().size());
@@ -242,10 +242,10 @@ flatten_arrayaccess:
       }
       ka = eval_arrayaccess(env, al, dims, success);
     }
-    if (!success && env.inMaybePartial == 0) {
+    if (!success() && env.inMaybePartial == 0) {
       ResultUndefinedError warning(env, al->loc(), "array access out of bounds");
     }
-    ees.emplace_back(nullptr, env.constants.boollit(success));
+    ees.emplace_back(nullptr, env.constants.boollit(success()));
     if (aa->type().isbool() && !aa->type().isOpt()) {
       ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
       ees.emplace_back(nullptr, ka());

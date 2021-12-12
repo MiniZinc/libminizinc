@@ -695,7 +695,37 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
   return nullptr;
 }
 
-Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e, bool& success) {
+std::string ArrayAccessSucess::errorMessage(EnvI& env, Expression* e) const {
+  std::ostringstream oss;
+  oss << "array access out of bounds, ";
+  if (e->type().dim() > 1) {
+    oss << "dimension " << (dim + 1) << " of ";
+  }
+  oss << "array";
+  if (e->isa<Id>()) {
+    oss << " `" << *e << "'";
+  }
+
+  unsigned int enumId = e->type().enumId();
+  if (enumId != 0) {
+    const auto& enumIds = env.getArrayEnum(enumId);
+    enumId = enumIds[dim];
+  }
+  if (enumId != 0) {
+    oss << " has index set ";
+    oss << env.enumToString(enumId, static_cast<int>(dimMin.toInt()));
+    oss << "..";
+    oss << env.enumToString(enumId, static_cast<int>(dimMax.toInt()));
+    oss << ", but given index is ";
+    oss << env.enumToString(enumId, static_cast<int>(idx.toInt()));
+  } else {
+    oss << " has index set " << dimMin << ".." << dimMax;
+    oss << ", but given index is " << idx;
+  }
+  return oss.str();
+}
+
+Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e, ArrayAccessSucess& success) {
   ArrayLit* al = eval_array_lit(env, e->v());
   struct EvalIdx {
     EnvI& env;
@@ -707,12 +737,12 @@ Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e, bool& success) {
   return eval_arrayaccess(env, al, evalIdx, success);
 }
 Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e) {
-  bool success;
+  ArrayAccessSucess success;
   Expression* ret = eval_arrayaccess(env, e, success);
-  if (success) {
+  if (success()) {
     return ret;
   }
-  throw ResultUndefinedError(env, e->loc(), "array access out of bounds");
+  throw ResultUndefinedError(env, e->loc(), success.errorMessage(env, e->v()));
 }
 
 SetLit* eval_set_lit(EnvI& env, Expression* e) {
@@ -2296,9 +2326,9 @@ public:
         id = id->decl()->e()->cast<Id>();
       }
       if (parAccess && (id->decl()->e() != nullptr)) {
-        bool success;
+        ArrayAccessSucess success;
         Expression* e = eval_arrayaccess(env, aa, success);
-        if (success) {
+        if (success()) {
           BottomUpIterator<ComputeIntBounds> cbi(*this);
           cbi.run(e);
           return;
@@ -2724,9 +2754,9 @@ public:
         id = id->decl()->e()->cast<Id>();
       }
       if (parAccess && (id->decl()->e() != nullptr)) {
-        bool success;
+        ArrayAccessSucess success;
         Expression* e = eval_arrayaccess(env, aa, success);
-        if (success) {
+        if (success()) {
           BottomUpIterator<ComputeFloatBounds> cbi(*this);
           cbi.run(e);
           return;
@@ -3100,9 +3130,9 @@ public:
         id = id->decl()->e()->cast<Id>();
       }
       if (parAccess && (id->decl()->e() != nullptr)) {
-        bool success;
+        ArrayAccessSucess success;
         Expression* e = eval_arrayaccess(env, aa, success);
-        if (success) {
+        if (success()) {
           BottomUpIterator<ComputeIntSetBounds> cbi(*this);
           cbi.run(e);
           return;

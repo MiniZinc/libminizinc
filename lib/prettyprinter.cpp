@@ -430,10 +430,10 @@ public:
             }
           }
           if (parIdx) {
-            bool success;
+            ArrayAccessSucess success;
             try {
               auto* result = eval_arrayaccess(*_env, const_cast<ArrayAccess*>(aa), success);
-              if (success) {
+              if (success()) {
                 if (e->type().isPar()) {
                   _os << "(≡";
                   p(result);

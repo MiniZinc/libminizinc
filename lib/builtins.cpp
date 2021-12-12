@@ -930,9 +930,9 @@ IntSetVal* b_dom_varint(EnvI& env, Expression* e) {
         cur = lastid->decl()->e();
       } break;
       case Expression::E_ARRAYACCESS: {
-        bool success;
+        ArrayAccessSucess success;
         cur = eval_arrayaccess(env, cur->cast<ArrayAccess>(), success);
-        if (!success) {
+        if (!success()) {
           cur = nullptr;
         }
       } break;
