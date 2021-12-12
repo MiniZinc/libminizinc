@@ -517,8 +517,8 @@ public:
                       fi_copy->param(i)->ti()->ranges()[j]->domain(nullptr);
                       ti_map.emplace(tiid->v(), Type::parint());
                     } else {
-                      VarDeclI* enumVdi = _env.getEnum(aet[j]);
-                      fi_copy->param(i)->ti()->ranges()[j]->domain(enumVdi->e()->id());
+                      fi_copy->param(i)->ti()->ranges()[j]->domain(nullptr);
+                      fi_copy->param(i)->ti()->ranges()[j]->type(Type::parenum(aet[j]));
                       ti_map.emplace(tiid->v(), Type::parenum(aet[j]));
                     }
                   }
@@ -579,8 +579,8 @@ public:
                     // not an enum type -> turn this one into a simple int
                     fi_copy->ti()->ranges()[i]->domain(nullptr);
                   } else {
-                    VarDeclI* enumVdi = _env.getEnum(aet[i]);
-                    fi_copy->ti()->ranges()[i]->domain(enumVdi->e()->id());
+                    fi_copy->ti()->ranges()[i]->domain(nullptr);
+                    fi_copy->ti()->ranges()[i]->type(Type::parenum(aet[i]));
                   }
                 }
               } else {
