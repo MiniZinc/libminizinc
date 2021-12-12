@@ -367,7 +367,7 @@ public:
   EnvI& envi();
   const EnvI& envi() const;
   const std::vector<Warning>& warnings();
-  std::ostream& dumpWarnings(std::ostream& os, bool werror, bool json);
+  std::ostream& dumpWarnings(std::ostream& os, bool werror, bool json, int exceptWarning = -1);
   void clearWarnings();
   unsigned int maxCallStack() const;
   std::ostream& evalOutput(std::ostream& os, std::ostream& log);

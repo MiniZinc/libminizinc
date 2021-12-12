@@ -978,6 +978,14 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
       Printer p(_os);
       p.print(m);
     }
+  } catch (ResultUndefinedError& e) {
+    // Ensure warnings are printed, but remove warning corresponding to this error
+    if (getEnv() != nullptr) {
+      getEnv()->dumpWarnings(_fopts.encapsulateJSON ? _os : _log, _flags.werror,
+                             _fopts.encapsulateJSON, e.warningIdx());
+      getEnv()->clearWarnings();
+    }
+    throw;
   } catch (...) {
     // Ensure warnings are printed
     if (getEnv() != nullptr) {

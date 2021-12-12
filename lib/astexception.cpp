@@ -96,7 +96,7 @@ ResultUndefinedError::ResultUndefinedError(EnvI& env, const Location& loc, const
     if (!msg.empty()) {
       warning += "\n  (" + msg + ")";
     }
-    env.addWarning(loc, warning);
+    _warningIdx = env.addWarning(loc, warning);
   }
 }
 

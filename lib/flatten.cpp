@@ -1203,19 +1203,21 @@ ASTString EnvI::halfReifyId(const ASTString& id) {
   return {ss.str()};
 }
 
-void EnvI::addWarning(const std::string& msg) { addWarning(Location(), msg, false); }
+int EnvI::addWarning(const std::string& msg) { return addWarning(Location(), msg, false); }
 
-void EnvI::addWarning(const Location& loc, const std::string& msg, bool dumpStack) {
-  if (warnings.size() > 20) {
-    return;
+int EnvI::addWarning(const Location& loc, const std::string& msg, bool dumpStack) {
+  if (warnings.size() >= 20) {
+    if (warnings.size() == 20) {
+      warnings.emplace_back("Further warnings have been suppressed.");
+    }
+    return -1;
   }
-  if (warnings.size() == 20) {
-    warnings.emplace_back("Further warnings have been suppressed.");
-  } else if (dumpStack) {
+  if (dumpStack) {
     warnings.emplace_back(*this, loc, msg);
   } else {
     warnings.emplace_back(loc, msg);
   }
+  return static_cast<int>(warnings.size()) - 1;
 }
 
 Call* EnvI::surroundingCall() const {
@@ -1532,13 +1534,26 @@ std::ostream& EnvI::evalOutput(std::ostream& os, std::ostream& log) {
 
 const std::vector<Warning>& Env::warnings() { return envi().warnings; }
 
-std::ostream& Env::dumpWarnings(std::ostream& os, bool werror, bool json) {
+std::ostream& Env::dumpWarnings(std::ostream& os, bool werror, bool json, int exceptWarning) {
+  int curIdx = 0;
+  bool didPrint = false;
   for (const auto& warning : warnings()) {
+    if (curIdx == exceptWarning) {
+      continue;
+    }
+    if (curIdx > 1 || (curIdx == 1 && exceptWarning != 0)) {
+      os << "\n";
+    }
+    curIdx++;
     if (json) {
       warning.json(os, werror);
     } else {
+      didPrint = true;
       warning.print(os, werror);
     }
+  }
+  if (didPrint) {
+    os << "\n";
   }
   return os;
 }

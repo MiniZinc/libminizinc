@@ -275,8 +275,8 @@ public:
   ASTString reifyId(const ASTString& id);
   static ASTString halfReifyId(const ASTString& id);
   bool dumpPath(std::ostream& os, bool force = false);
-  void addWarning(const std::string& msg);
-  void addWarning(const Location& loc, const std::string& msg, bool dumpStack = true);
+  int addWarning(const std::string& msg);
+  int addWarning(const Location& loc, const std::string& msg, bool dumpStack = true);
   void collectVarDecls(bool b);
 
   void copyPathMapsAndState(EnvI& env);

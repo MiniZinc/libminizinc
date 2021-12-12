@@ -114,10 +114,14 @@ public:
 };
 
 class ResultUndefinedError : public LocationException {
+private:
+  int _warningIdx;
+
 public:
   ResultUndefinedError(EnvI& env, const Location& loc, const std::string& msg);
   ~ResultUndefinedError() throw() override {}
   const char* what() const throw() override { return "result of evaluation is undefined"; }
+  int warningIdx() const { return _warningIdx; }
 };
 
 }  // namespace MiniZinc

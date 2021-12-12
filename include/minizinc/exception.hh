@@ -86,7 +86,13 @@ public:
     if (_errors.size() > 1) {
       os << "MiniZinc: multiple " << _errors[0].what() << "s:\n";
     }
+    bool first = true;
     for (const auto& error : _errors) {
+      if (first) {
+        first = false;
+      } else {
+        os << "\n";
+      }
       error.print(os);
     }
   }
