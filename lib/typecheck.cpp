@@ -2115,10 +2115,9 @@ public:
       c->decl(gen_i, 0)->ti()->type(ty_where);
     } else {
       const Type& ty_in = g_in->type();
-      if (ty_in != Type::varsetint() && ty_in != Type::parsetint() && ty_in.dim() != 1) {
+      if (ty_in != Type::varsetint() && ty_in != Type::parsetint() && ty_in.dim() == 0) {
         throw TypeError(_env, g_in->loc(),
-                        "generator expression must be (par or var) set of int or one-dimensional "
-                        "array, but is `" +
+                        "generator expression must be (par or var) set of int or array, but is `" +
                             ty_in.toString(_env) + "'");
       }
       Type ty_id;

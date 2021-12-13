@@ -1763,11 +1763,17 @@ Simple array comprehensions have this syntax:
   :start-after: % Array comprehensions
   :end-before: %
 
+A generator expression (the part following the :mzn:`in`) can be either a
+set or an array (multi-dimensional arrays are iterated over in row-major
+order).
+
 For example (with the literal equivalents on the right):
 
 .. code-block:: minizinc
 
-    [2*i | i in 1..5]       % [2, 4, 6, 8, 10]
+    [2*i | i in 1..5]         % [2, 4, 6, 8, 10]
+    [2*i | i in [3,5,7] ]     % [6, 10, 14]
+    [i   | i in [|1,2|3,4|] ] % [1, 2, 3, 4]
 
 A generator variable in an array comprehension can also be the anonymous variable :mzn:`_`.
 For instance, the following generates an array of :mzn:`n*n` ones:
