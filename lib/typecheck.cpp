@@ -2315,7 +2315,8 @@ public:
             auto* comp = call->arg(0)->cast<Comprehension>();
             auto* inner_bo = comp->e()->dynamicCast<BinOp>();
             if (inner_bo != nullptr) {
-              if (inner_bo->op() == BOT_EQ && inner_bo->lhs()->type().isint()) {
+              if (inner_bo->op() == BOT_EQ && inner_bo->lhs()->type().isint() &&
+                  !inner_bo->lhs()->type().isOpt() && !inner_bo->rhs()->type().isOpt()) {
                 Expression* generated = inner_bo->lhs();
                 Expression* comparedTo = inner_bo->rhs();
                 if (comp->containsBoundVariable(comparedTo)) {
