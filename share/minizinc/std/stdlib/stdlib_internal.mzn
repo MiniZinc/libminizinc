@@ -15,7 +15,9 @@ predicate var_dom(var opt int:x, set of int: s) =
   let {
     var int: dx = deopt(x);
     set of int: new_dom = dom(dx) intersect s;
-  } in if new_dom = {} then absent(x) else dx in new_dom endif
+  } in if new_dom = {} then absent(x)
+    else dx in new_dom union if mzn_check_absent_zero() then {0} else {} endif
+    endif
   endif;
 predicate var_dom(array[$T] of var opt int: x, set of int: d) =
     let { array[int] of var opt int: xx = array1d(x) }
