@@ -297,6 +297,7 @@ void MIPSolverinstance<MIPWrapper>::processFlatZinc() {
   _mipWrapper->fVerbose = _options->verbose;
 
   SolveI* solveItem = getEnv()->flat()->solveItem();
+  _solveType = solveItem->st();
   VarDecl* objVd = nullptr;
 
   if (solveItem->st() != SolveI::SolveType::ST_SAT) {
@@ -530,8 +531,10 @@ void MIPSolverinstance<MIPWrapper>::printStatistics() {
     auto* solns2out = getSolns2Out();
     StatisticsStream ss(solns2out->getOutput(), solns2out->opt.flagEncapsulateJSON);
     ss.precision(12, false);
-    ss.add("objective", _mipWrapper->getObjValue());
-    ss.add("objectiveBound", _mipWrapper->getBestBound());
+    if (_solveType != SolveI::SolveType::ST_SAT) {
+      ss.add("objective", _mipWrapper->getObjValue());
+      ss.add("objectiveBound", _mipWrapper->getBestBound());
+    }
     ss.add("nodes", _mipWrapper->getNNodes());
     if (_mipWrapper->getNOpen() != 0) {
       ss.add("openNodes", _mipWrapper->getNOpen());

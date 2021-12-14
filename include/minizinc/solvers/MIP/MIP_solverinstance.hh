@@ -81,6 +81,7 @@ class MIPSolverinstance : public SolverInstanceImpl<MIPSolver> {
 protected:
   const std::unique_ptr<MIPWrapper> _mipWrapper;
   std::vector<std::unique_ptr<CutGen> > _cutGenerators;
+  SolveI::SolveType _solveType = SolveI::SolveType::ST_SAT;
 
 public:
   void registerCutGenerator(std::unique_ptr<CutGen>&& pCG) {
