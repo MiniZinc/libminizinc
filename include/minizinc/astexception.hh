@@ -104,6 +104,14 @@ public:
   const char* what() const throw() override { return "evaluation error"; }
 };
 
+class AssertionError : public EvalError {
+public:
+  AssertionError(EnvI& env, const Location& loc, const std::string& msg)
+      : EvalError(env, loc, msg) {}
+  ~AssertionError() throw() override {}
+  const char* what() const throw() override { return "assertion failed"; }
+};
+
 class ModelInconsistent : public LocationException {
 public:
   ModelInconsistent(EnvI& env, const Location& loc, const std::string& msg = "")

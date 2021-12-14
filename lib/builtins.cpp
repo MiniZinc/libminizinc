@@ -1562,9 +1562,7 @@ bool b_assert_bool(EnvI& env, Call* call) {
   } else {
     msg_e = call->arg(1);
   }
-  std::ostringstream ss;
-  ss << "Assertion failed: " << eval_string(env, msg_e);
-  throw EvalError(env, call->arg(0)->loc(), ss.str());
+  throw AssertionError(env, call->arg(0)->loc(), eval_string(env, msg_e));
 }
 
 Expression* b_assert(EnvI& env, Call* call) {
@@ -1587,9 +1585,7 @@ Expression* b_assert(EnvI& env, Call* call) {
   } else {
     msg_e = call->arg(1);
   }
-  std::ostringstream ss;
-  ss << "Assertion failed: " << eval_string(env, msg_e);
-  throw EvalError(env, call->arg(0)->loc(), ss.str());
+  throw AssertionError(env, call->arg(0)->loc(), eval_string(env, msg_e));
 }
 
 Expression* b_mzn_deprecate(EnvI& env, Call* call) {
