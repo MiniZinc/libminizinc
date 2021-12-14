@@ -2178,6 +2178,7 @@ public:
       } else {
         if (tret.isbot()) {
           tret.bt(ethen->type().bt());
+          tret.enumId(ethen->type().enumId());
         } else if (tret.isunknown()) {
           tret.bt(ethen->type().bt());
           tret.dim(ethen->type().dim());
@@ -2193,7 +2194,8 @@ public:
         if (Type::btSubtype(tret, ethen->type(), true)) {
           tret.bt(ethen->type().bt());
         }
-        if (tret.enumId() != 0 && ethen->type().enumId() == 0) {
+        if (tret.enumId() != 0 && ethen->type().enumId() == 0 &&
+            ethen->type().bt() != Type::BT_BOT) {
           tret.enumId(0);
         }
         if (ethen->type().isvar()) {
