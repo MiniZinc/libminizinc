@@ -1196,7 +1196,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
     if (ret.enumId() == 0) {
       enumIds[enumIds.size() - 1] = 0;
     } else {
-      enumIds[enumIds.size() - 1] = env.getArrayEnum(ret.enumId())[enumIds.size() - 1];
+      enumIds = env.getArrayEnum(ret.enumId());
       hadRealEnum = true;
     }
 
@@ -1211,8 +1211,6 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
         }
         enumIds[i] = it->second.first.enumId();
         hadRealEnum |= (enumIds[i] != 0);
-      } else {
-        enumIds[i] = 0;
       }
     }
     if (hadRealEnum) {
