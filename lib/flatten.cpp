@@ -34,7 +34,9 @@ bool create_explicit_domain_constraints(EnvI& envi, VarDecl* vd, Expression* dom
   std::vector<Call*> calls;
   Location iloc = Location().introduce();
 
-  if (vd->type().isIntSet()) {
+  if (vd->type().isOpt()) {
+    calls.push_back(new Call(iloc, "var_dom", {vd->id(), domain}));
+  } else if (vd->type().isIntSet()) {
     assert(domain->type().isint() || domain->type().isIntSet());
     IntSetVal* isv = eval_intset(envi, domain);
     calls.push_back(
