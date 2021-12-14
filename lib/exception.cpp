@@ -16,7 +16,7 @@
 
 namespace MiniZinc {
 void Exception::print(std::ostream& os) const {
-  os << "MiniZinc: ";
+  os << "Error: ";
   if (!std::string(what()).empty()) {
     os << what() << ": ";
   }

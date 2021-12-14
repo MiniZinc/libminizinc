@@ -84,7 +84,7 @@ public:
 
   void print(std::ostream& os) const override {
     if (_errors.size() > 1) {
-      os << "MiniZinc: multiple " << _errors[0].what() << "s:\n";
+      os << "Multiple " << _errors[0].what() << "s:\n";
     }
     bool first = true;
     for (const auto& error : _errors) {
