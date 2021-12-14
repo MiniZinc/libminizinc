@@ -4,4 +4,4 @@ py==1.9.*
 pytest-html==2.*
 pytest-xdist==2.*
 pytest-instafail==0.4.*
-minizinc==0.4.*
+git+git://github.com/MiniZinc/minizinc-python@develop#egg=minizinc
