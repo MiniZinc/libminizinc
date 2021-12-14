@@ -357,7 +357,6 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
     }
 
     if (!paramFile.empty()) {
-      try {
         auto paramFilePath = FileUtils::file_path(paramFile, workingDirs.back());
         if (std::find(paramFiles.begin(), paramFiles.end(), paramFilePath) != paramFiles.end()) {
           throw ParamException("Cyclic parameter configuration file");
@@ -396,10 +395,6 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
         } else {
           i--;
         }
-      } catch (ParamException& e) {
-        _log << "Solver parameter exception: " << e.msg() << endl;
-        return OPTION_ERROR;
-      }
     }
   }
 

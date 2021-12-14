@@ -32,7 +32,7 @@ using namespace MiniZinc;
 
 namespace {
 
-int run(const std::string& exe, const std::vector<std::string>& args) {
+int run(const std::string& exe, const std::vector<std::string>& args, bool jsonStream) {
   try {
     Timer startTime;
     bool fSuccess = false;
@@ -48,7 +48,7 @@ int run(const std::string& exe, const std::vector<std::string>& args) {
       std::cerr << "The internal error message was: " << std::endl;
       std::cerr << "\"" << e.msg() << "\"" << std::endl;
     } catch (const Exception& e) {
-      if (slv.flagEncapsulateJSON) {
+      if (jsonStream || slv.flagEncapsulateJSON) {
         e.json(std::cout);
       } else {
         if (slv.getFlagVerbose()) {
@@ -89,8 +89,12 @@ int wmain(int argc, wchar_t* argv[], wchar_t* envp[]) {
   InterruptListener::run();
   OverflowHandler::install();
   std::vector<std::string> args(argc - 1);
+  bool jsonStream = false;
   for (int i = 1; i < argc; i++) {
     args[i - 1] = FileUtils::wide_to_utf8(argv[i]);
+    if (args[i - 1] == "--json-stream") {
+      jsonStream = true;
+    }
   }
   auto exe = FileUtils::wide_to_utf8(argv[0]);
 
@@ -98,23 +102,27 @@ int wmain(int argc, wchar_t* argv[], wchar_t* envp[]) {
   // Lambda to prevent object unwinding not allowed with __try..__except
   return ([&]() {
     __try {
-      return run(exe, args);
+      return run(exe, args, jsonStream);
     } __except (OverflowHandler::filter(GetExceptionCode())) {
       OverflowHandler::handle(GetExceptionCode());
     }
   })();
 #else
   // Let debugger catch SEH exceptions
-  return run(exe, args);
+  return run(exe, args, jsonStream);
 #endif
 }
 #else
 int main(int argc, const char** argv) {
   OverflowHandler::install(argv);
   std::vector<std::string> args(argc - 1);
+  bool jsonStream = false;
   for (int i = 1; i < argc; i++) {
     args[i - 1] = argv[i];
+    if (args[i - 1] == "--json-stream") {
+      jsonStream = true;
+    }
   }
-  return run(argv[0], args);
+  return run(argv[0], args, jsonStream);
 }
 #endif
