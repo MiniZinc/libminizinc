@@ -1082,9 +1082,14 @@ VarDeclI* EnvI::getEnum(unsigned int i) const {
 }
 unsigned int EnvI::registerArrayEnum(const std::vector<unsigned int>& arrayEnum) {
   std::ostringstream oss;
+  bool allZero = true;
   for (unsigned int i : arrayEnum) {
     assert(i <= _enumVarDecls.size());
     oss << i << ".";
+    allZero = allZero && (i == 0);
+  }
+  if (allZero) {
+    return 0;
   }
   auto it = _arrayEnumMap.find(oss.str());
   unsigned int ret;
