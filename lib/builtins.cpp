@@ -385,16 +385,21 @@ IntVal b_array_lb_int(EnvI& env, Call* call) {
   if (e != nullptr) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env, e);
-    if (al->empty()) {
-      throw EvalError(env, Location(), "lower bound of empty array undefined");
-    }
     IntVal min = IntVal::infinity();
+    bool empty = true;
     for (unsigned int i = 0; i < al->size(); i++) {
+      if ((*al)[i] == env.constants.absent) {
+        continue;
+      }
+      empty = false;
       IntBounds ib = compute_int_bounds(env, (*al)[i]);
       if (!ib.valid) {
         goto b_array_lb_int_done;
       }
       min = std::min(min, ib.l);
+    }
+    if (empty) {
+      throw EvalError(env, Location(), "lower bound of empty array undefined");
     }
     if (foundMin) {
       array_lb = std::max(array_lb, min);
@@ -447,16 +452,21 @@ IntVal b_array_ub_int(EnvI& env, Call* call) {
   if (e != nullptr) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env, e);
-    if (al->empty()) {
-      throw EvalError(env, Location(), "upper bound of empty array undefined");
-    }
     IntVal max = -IntVal::infinity();
+    bool empty = true;
     for (unsigned int i = 0; i < al->size(); i++) {
+      if ((*al)[i] == env.constants.absent) {
+        continue;
+      }
+      empty = false;
       IntBounds ib = compute_int_bounds(env, (*al)[i]);
       if (!ib.valid) {
         goto b_array_ub_int_done;
       }
       max = std::max(max, ib.u);
+    }
+    if (empty) {
+      throw EvalError(env, Location(), "upper bound of empty array undefined");
     }
     if (foundMax) {
       array_ub = std::min(array_ub, max);
@@ -602,6 +612,9 @@ FloatVal b_array_lb_float(EnvI& env, Call* call) {
     bool min_valid = false;
     FloatVal min = 0.0;
     for (unsigned int i = 0; i < al->size(); i++) {
+      if ((*al)[i] == env.constants.absent) {
+        continue;
+      }
       FloatBounds fb = compute_float_bounds(env, (*al)[i]);
       if (!fb.valid) {
         goto b_array_lb_float_done;
@@ -654,6 +667,9 @@ FloatVal b_array_ub_float(EnvI& env, Call* call) {
     bool max_valid = false;
     FloatVal max = 0.0;
     for (unsigned int i = 0; i < al->size(); i++) {
+      if ((*al)[i] == env.constants.absent) {
+        continue;
+      }
       FloatBounds fb = compute_float_bounds(env, (*al)[i]);
       if (!fb.valid) {
         goto b_array_ub_float_done;
@@ -1035,11 +1051,11 @@ IntSetVal* b_dom_array(EnvI& env, Call* call) {
         throw EvalError(env, ae->loc(), "invalid argument to dom");
     }
   }
-  if (al->empty()) {
-    return IntSetVal::a();
-  }
-  IntSetVal* isv = b_dom_varint(env, (*al)[0]);
-  for (unsigned int i = 1; i < al->size(); i++) {
+  IntSetVal* isv = IntSetVal::a();
+  for (unsigned int i = 0; i < al->size(); i++) {
+    if ((*al)[i] == env.constants.absent) {
+      continue;
+    }
     IntSetRanges isr(isv);
     IntSetRanges r(b_dom_varint(env, (*al)[i]));
     Ranges::Union<IntVal, IntSetRanges, IntSetRanges> u(isr, r);
