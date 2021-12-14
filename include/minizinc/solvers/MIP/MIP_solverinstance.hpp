@@ -533,7 +533,9 @@ void MIPSolverinstance<MIPWrapper>::printStatistics() {
     ss.precision(12, false);
     if (_solveType != SolveI::SolveType::ST_SAT) {
       ss.add("objective", _mipWrapper->getObjValue());
-      ss.add("objectiveBound", _mipWrapper->getBestBound());
+      if (!std::isnan(_mipWrapper->getBestBound())) {
+        ss.add("objectiveBound", _mipWrapper->getBestBound());
+      }
     }
     ss.add("nodes", _mipWrapper->getNNodes());
     if (_mipWrapper->getNOpen() != 0) {

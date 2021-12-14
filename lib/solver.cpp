@@ -357,44 +357,44 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
     }
 
     if (!paramFile.empty()) {
-        auto paramFilePath = FileUtils::file_path(paramFile, workingDirs.back());
-        if (std::find(paramFiles.begin(), paramFiles.end(), paramFilePath) != paramFiles.end()) {
-          throw ParamException("Cyclic parameter configuration file");
-        }
-        // add parameter file arguments
-        ParamConfig pc;
-        pc.blacklist(
-            {"--solvers", "--solvers-json", "--solver-json", "--help", "-h", "--config-dirs"});
-        pc.negatedFlag("-i", "-n-i");
-        pc.negatedFlag("--intermediate", "--no-intermediate");
-        pc.negatedFlag("--intermediate-solutions", "--no-intermediate-solutions");
-        pc.negatedFlag("--all-satisfaction", "--disable-all-satisfaction");
-        pc.load(paramFilePath);
+      auto paramFilePath = FileUtils::file_path(paramFile, workingDirs.back());
+      if (std::find(paramFiles.begin(), paramFiles.end(), paramFilePath) != paramFiles.end()) {
+        throw ParamException("Cyclic parameter configuration file");
+      }
+      // add parameter file arguments
+      ParamConfig pc;
+      pc.blacklist(
+          {"--solvers", "--solvers-json", "--solver-json", "--help", "-h", "--config-dirs"});
+      pc.negatedFlag("-i", "-n-i");
+      pc.negatedFlag("--intermediate", "--no-intermediate");
+      pc.negatedFlag("--intermediate-solutions", "--no-intermediate-solutions");
+      pc.negatedFlag("--all-satisfaction", "--disable-all-satisfaction");
+      pc.load(paramFilePath);
 
-        // Insert the new options
-        auto toInsert = pc.argv();
-        auto remove = argv.begin() + (usedFlag ? i - 1 : i);
-        auto position = argv.erase(remove, argv.begin() + i + 1);
-        if (pushWorkingDir) {
-          position =
-              argv.insert(position, {"--push-working-directory",
-                                     FileUtils::file_path(FileUtils::dir_name(paramFilePath))}) +
-              2;
-        }
-        position = argv.insert(position, toInsert.begin(), toInsert.end()) +
-                   static_cast<int>(toInsert.size());
-        if (pushWorkingDir) {
-          position = argv.insert(position, "--pop-working-directory") + 1;
-        }
-        paramFiles.push_back(paramFilePath);
-        argc = static_cast<int>(argv.size());
+      // Insert the new options
+      auto toInsert = pc.argv();
+      auto remove = argv.begin() + (usedFlag ? i - 1 : i);
+      auto position = argv.erase(remove, argv.begin() + i + 1);
+      if (pushWorkingDir) {
+        position =
+            argv.insert(position, {"--push-working-directory",
+                                   FileUtils::file_path(FileUtils::dir_name(paramFilePath))}) +
+            2;
+      }
+      position = argv.insert(position, toInsert.begin(), toInsert.end()) +
+                 static_cast<int>(toInsert.size());
+      if (pushWorkingDir) {
+        position = argv.insert(position, "--pop-working-directory") + 1;
+      }
+      paramFiles.push_back(paramFilePath);
+      argc = static_cast<int>(argv.size());
 
-        // Have to process the newly added options
-        if (usedFlag) {
-          i -= 2;
-        } else {
-          i--;
-        }
+      // Have to process the newly added options
+      if (usedFlag) {
+        i -= 2;
+      } else {
+        i--;
+      }
     }
   }
 

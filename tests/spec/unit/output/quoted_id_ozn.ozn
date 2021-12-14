@@ -1,2 +1,2 @@
-output [show(10),'bar!'];
+output ["\"output\": {","\"default\": ",showJSON(concat([show(10),'bar!'])),", \"raw\": ",showJSON(concat([show(10),'bar!'])),"}, \"sections\": [\"default\", \"raw\"]"];
 string: 'bar!' = "bar";
