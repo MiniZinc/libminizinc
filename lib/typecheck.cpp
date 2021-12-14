@@ -3887,7 +3887,7 @@ void typecheck(Env& env, Model* m, AssignI* ai) {
 }
 
 void output_var_desc_json(Env& env, VarDecl* vd, std::ostream& os, bool extra = false) {
-  os << "    \"" << Printer::escapeStringLit(vd->id()->str()) << "\" : {";
+  os << "\"" << Printer::escapeStringLit(vd->id()->str()) << "\": {";
   os << "\"type\" : ";
   switch (vd->type().bt()) {
     case Type::BT_INT:
@@ -4090,9 +4090,9 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
           }
         }
         if (hadIncludedFiles) {
-          ossIncludedFiles << ",\n";
+          ossIncludedFiles << ", ";
         }
-        ossIncludedFiles << "    \"" << Printer::escapeStringLit(ii->m()->filepath()) << "\"";
+        ossIncludedFiles << "\"" << Printer::escapeStringLit(ii->m()->filepath()) << "\"";
         hadIncludedFiles = true;
       }
       return true;
@@ -4104,7 +4104,7 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
            (vd->e() == Constants::constants().absent &&
             vd->ann().contains(Constants::constants().ann.mzn_was_undefined)))) {
         if (hadInput) {
-          ossInput << ",\n";
+          ossInput << ", ";
         }
         output_var_desc_json(env, vd, ossInput);
         hadInput = true;
@@ -4134,29 +4134,28 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
       continue;
     }
     if (hadOutput) {
-      ossOutput << ",\n";
+      ossOutput << ", ";
     }
     output_var_desc_json(env, it.second()->cast<VarDecl>(), ossOutput);
     hadOutput = true;
   }
 
-  os << "{\n  \"input\" : {\n"
-     << _ifc.ossInput.str() << "\n  },\n  \"output\" : {\n"
-     << ossOutput.str() << "\n  }";
-  os << ",\n  \"method\": \"";
+  os << "{\"type\": \"interface\", \"input\": {" << _ifc.ossInput.str() << "}, \"output\": {"
+     << ossOutput.str() << "}";
+  os << ", \"method\": \"";
   os << _ifc.method;
   os << "\"";
-  os << ",\n  \"has_output_item\": " << (env.envi().outputSections.empty() ? "false" : "true");
-  os << ",\n  \"included_files\": [\n" << _ifc.ossIncludedFiles.str() << "\n  ]";
-  os << ",\n  \"globals\": [\n";
+  os << ", \"has_output_item\": " << (env.envi().outputSections.empty() ? "false" : "true");
+  os << ", \"included_files\": [" << _ifc.ossIncludedFiles.str() << "]";
+  os << ", \"globals\": [";
   bool first = true;
   for (const auto& g : model_globals(m, skipDirs)) {
     os << (first ? "    " : ", ") << "\"" << g << "\"";
     first = false;
   }
-  os << "\n  ]";
+  os << "]";
 
-  os << "\n}\n";
+  os << "}\n";
 }
 
 std::string create_enum_to_string_name(Id* ident, const std::string& prefix) {
