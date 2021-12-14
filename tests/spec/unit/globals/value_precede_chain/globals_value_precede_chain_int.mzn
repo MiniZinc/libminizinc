@@ -45,5 +45,6 @@ array[1..3] of var 1..4: x ::add_to_output;
 
 constraint value_precede_chain([3, 2, 1], [3, 2, 1]);
 constraint value_precede_chain([4, 3, 2], x);
+constraint value_precede_chain(array1d(5..7, [4, 3, 2]), x);
 solve satisfy;
 output ["x = array1d(1..3, ", show(x), ");\n"];
