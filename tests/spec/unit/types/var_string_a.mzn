@@ -3,7 +3,7 @@
 check_against: []
 expected:
 - !Error
-  type: MiniZincTypeError
+  type: TypeError
 extra_files: []
 markers: []
 name: ''

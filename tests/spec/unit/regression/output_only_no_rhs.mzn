@@ -2,7 +2,7 @@
 !Test
 solvers: [gecode]
 expected: !Error
-  type: MiniZincTypeError
+  type: TypeError
 ***/
 
 var int: x :: output_only;

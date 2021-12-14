@@ -1,7 +1,7 @@
 /***
 !Test
 expected: !Error
-  type: MiniZincTypeError
+  type: TypeError
   regex: .*non-set-array-ti-location\.mzn.*
 ***/
 

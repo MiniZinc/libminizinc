@@ -1,7 +1,7 @@
 /***
 !Test
 expected: !Error
-  type: MiniZincAssertionError
+  type: AssertionError
 ***/
 
 array [1..10] of int: a =

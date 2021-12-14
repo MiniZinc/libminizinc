@@ -1,7 +1,7 @@
 /***
 !Test
 expected: !Error
-  type: MiniZincTypeError
+  type: TypeError
 ***/
 
 array [1..3] of var int: a = [1, 2, 3];

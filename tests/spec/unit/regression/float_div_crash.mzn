@@ -1,7 +1,7 @@
 /***
 !Test
 expected: !Error
-  type: MiniZincTypeError
+  type: TypeError
 ***/
 
 float: x :: add_to_output = 2.0 div 1.0;

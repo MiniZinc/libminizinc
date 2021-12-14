@@ -1,7 +1,7 @@
 /***
 !Test
 expected: !Error
-  type: MiniZincTypeError
+  type: TypeError
 ***/
 
 % Regression test for wrong definition of float mod in stdlib causing crash
