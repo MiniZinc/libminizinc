@@ -23,6 +23,7 @@ public:
   StackDump(EnvI& env);
   void print(std::ostream& os) const;
   void json(std::ostream& os) const;
+  bool empty() const { return _stack.empty(); }
 
 private:
   std::vector<std::pair<KeepAlive, bool>> _stack;

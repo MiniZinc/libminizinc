@@ -110,7 +110,13 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
   }
   GCLock lock;
   try {
-    ret.r = bind(env, ctx, r, eval_par(env, e));
+    auto* result = eval_par(env, e);
+    if (result->type() == Type::parbool()) {
+      if (ctx.b == C_ROOT && r == env.constants.varTrue && result == env.constants.boollit(false)) {
+        env.fail("expression evaluated to false", e->loc());
+      }
+    }
+    ret.r = bind(env, ctx, r, result);
     ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
   } catch (ResultUndefinedError&) {
     ret.r = create_dummy_value(env, e->type());

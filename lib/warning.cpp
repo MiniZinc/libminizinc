@@ -16,7 +16,7 @@ namespace MiniZinc {
 
 void Warning::print(std::ostream& os, bool werror) const {
   os << (werror ? "Error" : "Warning") << ": " << _msg << "\n";
-  if (_stack != nullptr) {
+  if (_stack != nullptr && !_stack->empty()) {
     _stack->print(os);
   } else if (!_loc.filename().empty()) {
     os << _loc << "\n";

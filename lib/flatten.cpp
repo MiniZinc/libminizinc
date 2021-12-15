@@ -1042,10 +1042,10 @@ void EnvI::flatRemoveItem(VarDeclI* vdi) {
   vdi->remove();
 }
 
-void EnvI::fail(const std::string& msg) {
+void EnvI::fail(const std::string& msg, const Location& loc) {
   if (!_failed) {
-    addWarning(Location(), std::string("model inconsistency detected") +
-                               (msg.empty() ? std::string() : (": " + msg)));
+    addWarning(loc, std::string("model inconsistency detected") +
+                        (msg.empty() ? std::string() : (": " + msg)));
     _failed = true;
     for (auto& i : *_flat) {
       i->remove();

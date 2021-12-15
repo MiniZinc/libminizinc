@@ -267,7 +267,7 @@ public:
   void voAddExp(VarDecl* vd);
   void annotateFromCallStack(Expression* e);
   ArrayLit* createAnnotationArray(const BCtx& ctx);
-  void fail(const std::string& msg = std::string());
+  void fail(const std::string& msg = std::string(), const Location& loc = Location());
   bool failed() const;
   Model* flat();
   void swap();
