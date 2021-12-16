@@ -406,7 +406,12 @@ void Solns2Out::checkSolution(std::ostream& oss) {
   }
 
 #else
-  oss << "% solution checking not supported (need built-in Gecode)" << std::endl;
+  Warning w("solution checking not supported (need built-in Gecode)");
+  if (opt.flagEncapsulateJSON) {
+    w.json(oss, false);
+  } else {
+    w.print(oss, false);
+  }
 #endif
 }
 
