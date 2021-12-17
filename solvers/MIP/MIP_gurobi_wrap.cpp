@@ -28,14 +28,12 @@
 #include <stdexcept>
 #include <string>
 
-#ifdef GUROBI_PLUGIN
 #ifdef _WIN32
 #define NOMINMAX  // Ensure the words min/max remain available
 #include <Windows.h>
 #undef ERROR
 #else
 #include <dlfcn.h>
-#endif
 #endif
 
 #include <minizinc/solvers/MIP/MIP_gurobi_wrap.hh>
@@ -249,8 +247,6 @@ void MIPGurobiWrapper::wrapAssert(bool cond, const string& msg, bool fTerm) {
   }
 }
 
-#ifdef GUROBI_PLUGIN
-
 namespace {
 void* dll_open(const char* file) {
 #ifdef _WIN32
@@ -285,10 +281,7 @@ void dll_close(void* dll) {
 }
 }  // namespace
 
-#endif
-
 void MIPGurobiWrapper::checkDLL() {
-#ifdef GUROBI_PLUGIN
   _gurobiDll = nullptr;
   if (!_factoryOptions.gurobiDll.empty()) {
     _gurobiDll = dll_open(_factoryOptions.gurobiDll.c_str());
@@ -349,48 +342,6 @@ void MIPGurobiWrapper::checkDLL() {
   *(void**)(&dll_GRBgetintparaminfo) = dll_sym(_gurobiDll, "GRBgetintparaminfo");
   *(void**)(&dll_GRBgetdblparaminfo) = dll_sym(_gurobiDll, "GRBgetdblparaminfo");
   *(void**)(&dll_GRBgetstrparaminfo) = dll_sym(_gurobiDll, "GRBgetstrparaminfo");
-
-#else
-
-  dll_GRBversion = GRBversion;
-  dll_GRBaddconstr = GRBaddconstr;
-  dll_GRBaddgenconstrIndicator = GRBaddgenconstrIndicator;
-  dll_GRBaddvars = GRBaddvars;
-  dll_GRBcbcut = GRBcbcut;
-  dll_GRBcbget = GRBcbget;
-  dll_GRBcblazy = GRBcblazy;
-  dll_GRBfreeenv = GRBfreeenv;
-  dll_GRBfreemodel = GRBfreemodel;
-  dll_GRBgetdblattr = GRBgetdblattr;
-  dll_GRBgetdblattrarray = GRBgetdblattrarray;
-  dll_GRBgetenv = GRBgetenv;
-  dll_GRBgeterrormsg = GRBgeterrormsg;
-  dll_GRBgetintattr = GRBgetintattr;
-  dll_GRBloadenv = GRBloadenv;
-  dll_GRBnewmodel = GRBnewmodel;
-  dll_GRBoptimize = GRBoptimize;
-  dll_GRBreadparams = GRBreadparams;
-  dll_GRBsetcallbackfunc = GRBsetcallbackfunc;
-  dll_GRBsetdblparam = GRBsetdblparam;
-  dll_GRBsetintattr = GRBsetintattr;
-  dll_GRBsetintattrlist = GRBsetintattrlist;
-  dll_GRBsetdblattrelement = GRBsetdblattrelement;
-  dll_GRBsetdblattrlist = GRBsetdblattrlist;
-  dll_GRBsetintparam = GRBsetintparam;
-  dll_GRBsetstrparam = GRBsetstrparam;
-  dll_GRBterminate = GRBterminate;
-  dll_GRBupdatemodel = GRBupdatemodel;
-  dll_GRBwrite = GRBwrite;
-  dll_GRBwriteparams = GRBwriteparams;
-  dll_GRBemptyenv = GRBemptyenv;
-  dll_GRBgetnumparams = GRBgetnumparams;
-  dll_GRBgetparamname = GRBgetparamname;
-  dll_GRBgetparamtype = GRBgetparamtype;
-  dll_GRBgetintparaminfo = dll_GRBgetintparaminfo;
-  dll_GRBgetdblparaminfo = dll_GRBgetdblparaminfo;
-  dll_GRBgetstrparaminfo = dll_GRBgetstrparaminfo;
-
-#endif
 }
 
 void MIPGurobiWrapper::openGUROBI() {
@@ -428,10 +379,8 @@ void MIPGurobiWrapper::closeGUROBI() {
     dll_GRBfreeenv(_env);
   }
   /// and at last:
-//   MIPWrapper::cleanup();
-#ifdef GUROBI_PLUGIN
+  //   MIPWrapper::cleanup();
   // dll_close(_gurobiDll);    // Is called too many times, disabling. 2019-05-06
-#endif
 }
 
 std::vector<MiniZinc::SolverConfig::ExtraFlag> MIPGurobiWrapper::getExtraFlags(

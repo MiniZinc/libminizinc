@@ -22,6 +22,4 @@
 
 #cmakedefine COMPILE_BOOST_MINCUT
 
-#cmakedefine GUROBI_PLUGIN
-
 #cmakedefine CPLEX_PLUGIN

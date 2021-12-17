@@ -17,19 +17,13 @@
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
 
 extern "C" {
-#ifdef GUROBI_PLUGIN
 #include <minizinc/_thirdparty/gurobi_interface.h>
-#else
-#include <gurobi_c.h>  // need GUROBI_HOME defined
-#endif
 }
 
 class MIPGurobiWrapper : public MIPWrapper {
   GRBenv* _env = nullptr;
   GRBmodel* _model = nullptr;
-#ifdef GUROBI_PLUGIN
   void* _gurobiDll;
-#endif
   int _error;
   std::string _gurobiBuffer;        // [GRB_MESSAGEBUFSIZE];
   std::string _gurobiStatusBuffer;  // [GRB_MESSAGEBUFSIZE];
