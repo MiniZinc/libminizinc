@@ -138,10 +138,9 @@ compilation behaviour:
 | CMAKE_POSITION_INDEPENDENT_CODE              | TRUE    | Whether to create a position-independent targets            |
 | **<solver_name>**\_ROOT                      |         | Additional directory to look for **<solver_name>**          |
 | CMAKE*DISABLE_FIND_PACKAGE***<solver_name>** | FALSE   | Disable compilation of **<solver_name>**'s solver interface |
-| **<Gurobi/CPlex>**\_PLUGIN                   | TRUE    | Load solver at runtime (instead of static compilation)      |
+| CPLEX_PLUGIN                                 | TRUE    | Load CPLEX at runtime (instead of static compilation)       |
 
-Possible values for **<solver_name>** are `CPlex`, `Geas`, `Gecode`, `Gurobi`,
-and `OsiCBC`.
+Possible values for **<solver_name>** are `CPlex`, `Geas`, `Gecode`, and `OsiCBC`.
 
 <!-- TESTING INSTRUCTIONS -->
 
