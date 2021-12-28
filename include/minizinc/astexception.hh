@@ -56,11 +56,16 @@ public:
   void json(std::ostream& os) const override;
 };
 
-class LocationException : public Exception {
+class LocationException : public Exception, public GCMarker {
 protected:
   StackDump _stack;
   Location _loc;
   bool _dumpStack = false;
+
+  void mark() override {
+    _loc.mark();
+    _stack.mark();
+  }
 
 public:
   LocationException(EnvI& env, const Location& loc, const std::string& msg);

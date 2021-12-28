@@ -37,8 +37,8 @@ void StackDump::print(std::ostream& os) const {
     return;
   }
 
-  if (_stack.size() == 1 && _stack[0].first()->isa<Id>()) {
-    Expression* e = _stack[0].first();
+  if (_stack.size() == 1 && _stack[0].first->isa<Id>()) {
+    Expression* e = _stack[0].first;
     if (!e->loc().isIntroduced()) {
       os << e->loc().toString() << std::endl;
       os << "  in variable declaration " << *e << std::endl;
@@ -50,7 +50,7 @@ void StackDump::print(std::ostream& os) const {
   long long int curloc_l = -1;
 
   for (auto it = _stack.rbegin(); it != _stack.rend(); it++) {
-    EnvI::CallStackEntry entry(it->first(), it->second);
+    EnvI::CallStackEntry entry(it->first, it->second);
 
     Expression* e = entry.e;
     bool isCompIter = entry.tag;
@@ -154,9 +154,9 @@ void StackDump::json(std::ostream& os) const {
     return;
   }
 
-  if (_stack.size() == 1 && _stack[0].first()->isa<Id>()) {
+  if (_stack.size() == 1 && _stack[0].first->isa<Id>()) {
     os << "[";
-    Expression* e = _stack[0].first();
+    Expression* e = _stack[0].first;
     if (!e->loc().isIntroduced()) {
       os << "{\"location\": " << e->loc().toJSON()
          << ", \"isCompIter\": false, \"description\": \"variable declaration\"}";
@@ -172,7 +172,7 @@ void StackDump::json(std::ostream& os) const {
   os << "[";
 
   for (auto it = _stack.rbegin(); it != _stack.rend(); it++) {
-    EnvI::CallStackEntry entry(it->first(), it->second);
+    EnvI::CallStackEntry entry(it->first, it->second);
 
     Expression* e = entry.e;
     bool isCompIter = entry.tag;

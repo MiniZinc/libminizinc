@@ -12,17 +12,25 @@
 #pragma once
 
 #include <minizinc/ast.hh>
+#include <minizinc/gc.hh>
 #include <minizinc/stackdump.hh>
 
 #include <exception>
 #include <memory>
 
 namespace MiniZinc {
-class Warning {
+class Warning : public GCMarker {
 protected:
   Location _loc;
   std::string _msg;
   std::unique_ptr<StackDump> _stack;
+
+  void mark() override {
+    _loc.mark();
+    if (_stack != nullptr) {
+      _stack->mark();
+    }
+  }
 
 public:
   /// Create a warning that does not have a stack dump

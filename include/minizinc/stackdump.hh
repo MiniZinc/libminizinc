@@ -11,13 +11,17 @@
 
 #pragma once
 
+#include <minizinc/ast.hh>
+
 #include <iostream>
 #include <vector>
 
 namespace MiniZinc {
 class EnvI;
-class KeepAlive;
+class Expression;
 
+// IMPORTANT: StackDump currently depends on the warning/error keeping the expression in _stack
+// alive from their marking member function.
 class StackDump {
 public:
   StackDump(EnvI& env);
@@ -25,8 +29,14 @@ public:
   void json(std::ostream& os) const;
   bool empty() const { return _stack.empty(); }
 
+  inline void mark() {
+    for (auto pair : _stack) {
+      Expression::mark(pair.first);
+    }
+  }
+
 private:
-  std::vector<std::pair<KeepAlive, bool>> _stack;
+  std::vector<std::pair<Expression*, bool>> _stack;
 };
 
 }  // namespace MiniZinc
