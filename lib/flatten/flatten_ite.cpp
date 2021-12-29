@@ -479,8 +479,8 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     }
     ret.b = b->id();
 
-    std::vector<Expression*> defined_conjunctions(ite->size() + 1);
-    for (unsigned int i = 0; i < ite->size() + 1; i++) {
+    std::vector<Expression*> defined_conjunctions(conditions.size());
+    for (unsigned int i = 0; i < conditions.size(); i++) {
       std::vector<Expression*> def_i;
       for (auto& j : defined) {
         assert(j.size() > i);
