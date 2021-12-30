@@ -17,6 +17,8 @@
 #include <minizinc/model.hh>
 #include <minizinc/prettyprinter.hh>
 
+#include "minizinc/ast.hh"
+
 #include <iomanip>
 #include <limits>
 #include <map>
@@ -186,6 +188,9 @@ public:
           break;
         case Type::BT_ANN:
           _os << "ann";
+          break;
+        case Type::BT_TUPLE:
+          _os << "tuple(...)";
           break;
         case Type::BT_BOT:
           _os << "bot";
@@ -372,15 +377,16 @@ public:
         const auto* al = e->cast<ArrayLit>();
         unsigned int n = al->dims();
         if (n == 1 && al->min(0) == 1) {
-          _os << "[";
+          _os << (al->isTuple() ? "(" : "[");
           for (unsigned int i = 0; i < al->size(); i++) {
             p((*al)[i]);
             if (i < al->size() - 1) {
               _os << ",";
             }
           }
-          _os << "]";
+          _os << (al->isTuple() ? ")" : "]");
         } else if (n == 2 && al->min(0) == 1 && al->min(1) == 1 && al->max(1) != 0) {
+          assert(!al->isTuple());
           _os << "[|";
           for (int i = 0; i < al->max(0); i++) {
             for (int j = 0; j < al->max(1); j++) {
@@ -395,6 +401,7 @@ public:
           }
           _os << "|]";
         } else {
+          assert(!al->isTuple());
           _os << "array" << n << "d(";
           for (int i = 0; i < al->dims(); i++) {
             _os << al->min(i) << ".." << al->max(i);
@@ -447,6 +454,12 @@ public:
             }
           }
         }
+      } break;
+      case Expression::E_FIELDACCESS: {
+        const auto* fa = e->cast<FieldAccess>();
+        p(fa->v());
+        _os << ".";
+        p(fa->field());
       } break;
       case Expression::E_COMP: {
         const auto* c = e->cast<Comprehension>();
@@ -1190,6 +1203,9 @@ Document* tiexpression_to_document(const Type& type, const Expression* e) {
         break;
       case Type::BT_ANN:
         dl->addStringToList("ann");
+        break;
+      case Type::BT_TUPLE:
+        dl->addStringToList("tuple(...)");
         break;
       case Type::BT_BOT:
         dl->addStringToList("bot");

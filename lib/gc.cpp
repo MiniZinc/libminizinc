@@ -260,6 +260,7 @@ protected:
         sizeof(AnonVar),        // E_ANON
         sizeof(ArrayLit),       // E_ARRAYLIT
         sizeof(ArrayAccess),    // E_ARRAYACCESS
+        sizeof(FieldAccess),    // E_ARRAYACCESS
         sizeof(Comprehension),  // E_COMP
         sizeof(ITE),            // E_ITE
         sizeof(BinOp),          // E_BINOP
@@ -337,6 +338,7 @@ const char* GC::Heap::_nodeid[] = {
     "AnonVar       ",  // E_ANON
     "ArrayLit      ",  // E_ARRAYLIT
     "ArrayAccess   ",  // E_ARRAYACCESS
+    "FieldAccess   ",  // E_FIELDACCESS
     "Comprehension ",  // E_COMP
     "ITE           ",  // E_ITE
     "BinOp         ",  // E_BINOP

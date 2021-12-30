@@ -747,6 +747,19 @@ void OutputSectionStore::add(ASTString section, Expression* e) {
   }
 }
 
+TupleType::TupleType(const std::vector<Type>& fields) {
+  _size = fields.size();
+  for (size_t i = 0; i < _size; ++i) {
+    _fields[i] = fields[i];
+  }
+}
+TupleType* TupleType::a(const std::vector<Type>& fields) {
+  TupleType* tt = static_cast<TupleType*>(::malloc(
+      sizeof(TupleType) + sizeof(Type) * (std::max(0, static_cast<int>(fields.size()) - 1))));
+  tt = new (tt) TupleType(fields);
+  return tt;
+}
+
 EnvI::EnvI(Model* model0, std::ostream& outstream0, std::ostream& errstream0)
     : model(model0),
       originalModel(nullptr),
@@ -806,6 +819,9 @@ EnvI::EnvI(Model* model0, std::ostream& outstream0, std::ostream& errstream0)
   _reifyMap.insert({constants.ids.bool_.not_, constants.ids.bool_.not_});
 }
 EnvI::~EnvI() {
+  for (auto* _tupleType : _tupleTypes) {
+    TupleType::free(_tupleType);
+  }
   delete _flat;
   delete output;
   delete model;
@@ -1099,6 +1115,28 @@ const std::vector<unsigned int>& EnvI::getArrayEnum(unsigned int i) const {
   assert(i > 0 && i <= _arrayEnumDecls.size());
   return _arrayEnumDecls[i - 1];
 }
+
+unsigned int EnvI::registerTupleType(const std::vector<Type>& fields) {
+  assert(!fields.empty());
+  auto* tt = TupleType::a(fields);
+
+  auto it = _tupleTypeMap.find(tt);
+  unsigned int ret;
+  if (it == _tupleTypeMap.end()) {
+    ret = static_cast<unsigned int>(_tupleTypes.size());
+    _tupleTypes.push_back(tt);
+    _tupleTypeMap.emplace(std::make_pair(tt, ret));
+  } else {
+    ret = it->second;
+  }
+  return ret + 1;
+}
+
+TupleType* EnvI::getTupleType(unsigned int i) const {
+  assert(i > 0 && i <= _tupleTypes.size());
+  return _tupleTypes[i - 1];
+}
+
 std::string EnvI::enumToString(unsigned int enumId, int i) {
   Id* ti_id = getEnum(enumId)->e()->id();
   ASTString enumName(create_enum_to_string_name(ti_id, "_toString_"));
@@ -1114,20 +1152,20 @@ bool EnvI::isSubtype(const Type& t1, const Type& t2, bool strictEnums) const {
   if (!t1.isSubtypeOf(t2, strictEnums)) {
     return false;
   }
-  if (strictEnums && t1.dim() == 0 && t2.dim() != 0 && t2.enumId() != 0) {
+  if (strictEnums && t1.dim() == 0 && t2.dim() != 0 && t2.typeId() != 0) {
     // set assigned to an array
-    const std::vector<unsigned int>& t2enumIds = getArrayEnum(t2.enumId());
-    if (t2enumIds[t2enumIds.size() - 1] != 0 && t1.enumId() != t2enumIds[t2enumIds.size() - 1]) {
+    const std::vector<unsigned int>& t2enumIds = getArrayEnum(t2.typeId());
+    if (t2enumIds[t2enumIds.size() - 1] != 0 && t1.typeId() != t2enumIds[t2enumIds.size() - 1]) {
       return false;
     }
   }
-  if (strictEnums && t1.dim() > 0 && t1.enumId() != t2.enumId()) {
-    if (t1.enumId() == 0) {
+  if (strictEnums && t1.dim() > 0 && t1.typeId() != t2.typeId()) {
+    if (t1.typeId() == 0) {
       return t1.isbot();
     }
-    if (t2.enumId() != 0) {
-      const std::vector<unsigned int>& t1enumIds = getArrayEnum(t1.enumId());
-      const std::vector<unsigned int>& t2enumIds = getArrayEnum(t2.enumId());
+    if (t2.typeId() != 0) {
+      const std::vector<unsigned int>& t1enumIds = getArrayEnum(t1.typeId());
+      const std::vector<unsigned int>& t2enumIds = getArrayEnum(t2.typeId());
       assert(t1enumIds.size() == t2enumIds.size());
       for (unsigned int i = 0; i < t1enumIds.size() - 1; i++) {
         if (t2enumIds[i] != 0 && t1enumIds[i] != t2enumIds[i]) {
@@ -2742,6 +2780,17 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
         t.cv(false);
         aa_ret->type(t);
         return eval_par(env, aa_ret);
+      }
+      case Expression::E_FIELDACCESS: {
+        auto* fa = e->cast<FieldAccess>();
+        assert(fa->v()->type().bt() == Type::BT_TUPLE);  // TODO: Support for Records
+
+        assert(fa->field()->isa<IntLit>());
+        IntVal i = fa->field()->cast<IntLit>()->v();
+
+        auto* al = eval_array_lit(env, fa->v())->cast<ArrayLit>();
+
+        return flat_cv_exp(env, ctx, (*al)[i.toInt() - 1]);
       }
       case Expression::E_COMP: {
         auto* c = e->cast<Comprehension>();

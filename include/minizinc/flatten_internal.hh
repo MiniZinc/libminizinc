@@ -155,6 +155,46 @@ protected:
   }
 };
 
+class TupleType {
+protected:
+  size_t _size;
+  Type _fields[1];  // Resized by TupleType::a
+  TupleType(const std::vector<Type>& fields);
+
+public:
+  static TupleType* a(const std::vector<Type>& fields);
+  static void free(TupleType* tt) { ::free(tt); }
+  ~TupleType() = delete;
+
+  size_t size() const { return _size; }
+  Type field(size_t i) { return _fields[i]; }
+  size_t hash() const {
+    std::size_t seed = _size;
+    for (size_t i = 0; i < _size; ++i) {
+      seed ^= _fields[i].toInt() + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    }
+    return seed;
+  }
+  bool operator==(const TupleType& rhs) const {
+    if (_size != rhs._size) {
+      return false;
+    }
+    for (int i = 0; i < _size; ++i) {
+      if (_fields[i] != rhs._fields[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  struct Hash {
+    size_t operator()(const TupleType* tt) const { return tt->hash(); }
+  };
+  struct Equals {
+    bool operator()(const TupleType* lhs, const TupleType* rhs) const { return *lhs == *rhs; }
+  };
+};
+
 class EnvI {
 public:
   Model* model;
@@ -247,6 +287,10 @@ protected:
   typedef std::unordered_map<std::string, unsigned int> ArrayEnumMap;
   ArrayEnumMap _arrayEnumMap;
   std::vector<std::vector<unsigned int>> _arrayEnumDecls;
+  typedef std::unordered_map<TupleType*, unsigned int, TupleType::Hash, TupleType::Equals>
+      TupleTypeMap;
+  TupleTypeMap _tupleTypeMap;
+  std::vector<TupleType*> _tupleTypes;
   bool _collectVardecls;
   std::default_random_engine _g;
   std::atomic<bool> _cancel = {false};
@@ -267,6 +311,8 @@ public:
   VarDeclI* getEnum(unsigned int i) const;
   unsigned int registerArrayEnum(const std::vector<unsigned int>& arrayEnum);
   const std::vector<unsigned int>& getArrayEnum(unsigned int i) const;
+  unsigned int registerTupleType(const std::vector<Type>& fields);
+  TupleType* getTupleType(unsigned int i) const;
   std::string enumToString(unsigned int enumId, int i);
   /// Check if \a t1 is a subtype of \a t2 (including enumerated types if \a strictEnum is true)
   bool isSubtype(const Type& t1, const Type& t2, bool strictEnum) const;

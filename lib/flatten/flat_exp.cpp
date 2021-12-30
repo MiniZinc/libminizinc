@@ -67,6 +67,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
 EE flatten_anon(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
 EE flatten_arraylit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
 EE flatten_arrayaccess(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
+EE flatten_fieldaccess(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
 EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
 EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
 EE flatten_binop(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
@@ -103,6 +104,7 @@ EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
       &flatten_anon,         //      E_ANON
       &flatten_arraylit,     //      E_ARRAYLIT
       &flatten_arrayaccess,  //      E_ARRAYACCESS
+      &flatten_fieldaccess,  //      E_ARRAYACCESS
       &flatten_comp,         //      E_COMP
       &flatten_ite,          //      E_ITE
       &flatten_binop,        //      E_BINOP

@@ -75,7 +75,7 @@ void check_par_declaration(EnvI& env, VarDecl* vd) {
           oss << "but element at index ";
 
           std::vector<std::string> indexes_s(indexes.size());
-          unsigned int enumId = vd->type().enumId();
+          unsigned int enumId = vd->type().typeId();
           if (enumId != 0) {
             const auto& enumIds = env.getArrayEnum(enumId);
             enumId = enumIds[enumIds.size() - 1];
@@ -131,7 +131,7 @@ void check_par_declaration(EnvI& env, VarDecl* vd) {
         oss << "declared range of `" << *vd->id() << "' is " << *vd->ti()->domain() << ", ";
 
         oss << "but assigned value is ";
-        unsigned int enumId = vd->type().enumId();
+        unsigned int enumId = vd->type().typeId();
         if (enumId != 0) {
           auto v = eval_int(env, vd->e()).toInt();
           oss << env.enumToString(enumId, static_cast<int>(v));
@@ -563,6 +563,20 @@ typename Eval::Val eval_call(EnvI& env, CallClass* ce) {
   return ret;
 }
 
+Expression* eval_fieldaccess(EnvI& env, FieldAccess* fa) {
+  assert(fa->v()->type().bt() == Type::BT_TUPLE);  // TODO: Support for Records
+  auto* al = eval_array_lit(env, fa->v())->dynamicCast<ArrayLit>();
+  if (al == nullptr) {
+    throw EvalError(env, fa->loc(), "Internal error: could not evaluate structural type");
+  }
+  IntVal i = eval_int(env, fa->field());
+  if (i < 1 || i > al->size()) {
+    // This should not happen, type checking should ensure all fields are valid.
+    throw EvalError(env, fa->loc(), "Internal error: acessing invalid field");
+  }
+  return (*al)[i.toInt() - 1];
+}
+
 ArrayLit* eval_array_comp(EnvI& env, Comprehension* e) {
   ArrayLit* ret;
   bool plainParNonAbsent = e->type().ti() == Type::TI_PAR && e->type().st() == Type::ST_PLAIN &&
@@ -609,6 +623,10 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
       return e->cast<ArrayLit>();
     case Expression::E_ARRAYACCESS:
       throw EvalError(env, e->loc(), "arrays of arrays not supported");
+    case Expression::E_FIELDACCESS: {
+      auto* fa = e->cast<FieldAccess>();
+      return eval_array_lit(env, eval_fieldaccess(env, fa));
+    }
     case Expression::E_COMP:
       return eval_array_comp(env, e->cast<Comprehension>());
     case Expression::E_ITE: {
@@ -706,7 +724,7 @@ std::string ArrayAccessSucess::errorMessage(EnvI& env, Expression* e) const {
     oss << " `" << *e << "'";
   }
 
-  unsigned int enumId = e->type().enumId();
+  unsigned int enumId = e->type().typeId();
   if (enumId != 0) {
     const auto& enumIds = env.getArrayEnum(enumId);
     enumId = enumIds[dim];
@@ -750,9 +768,9 @@ SetLit* eval_set_lit(EnvI& env, Expression* e) {
     case Type::BT_INT:
     case Type::BT_BOT: {
       auto* sl = new SetLit(e->loc(), eval_intset(env, e));
-      if (e->type().enumId() != 0) {
+      if (e->type().typeId() != 0) {
         Type t = sl->type();
-        t.enumId(e->type().enumId());
+        t.typeId(e->type().typeId());
         sl->type(t);
       }
       return sl;
@@ -818,6 +836,9 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
     case Expression::E_ARRAYACCESS: {
       GCLock lock;
       return eval_intset(env, eval_arrayaccess(env, e->cast<ArrayAccess>()));
+    } break;
+    case Expression::E_FIELDACCESS: {
+      return eval_intset(env, eval_fieldaccess(env, e->cast<FieldAccess>()));
     } break;
     case Expression::E_ITE: {
       ITE* ite = e->cast<ITE>();
@@ -982,6 +1003,9 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
       GCLock lock;
       return eval_floatset(env, eval_arrayaccess(env, e->cast<ArrayAccess>()));
     } break;
+    case Expression::E_FIELDACCESS: {
+      return eval_floatset(env, eval_fieldaccess(env, e->cast<FieldAccess>()));
+    } break;
     case Expression::E_ITE: {
       ITE* ite = e->cast<ITE>();
       for (int i = 0; i < ite->size(); i++) {
@@ -1118,6 +1142,9 @@ bool eval_bool(EnvI& env, Expression* e) {
       case Expression::E_ARRAYACCESS: {
         GCLock lock;
         return eval_bool(env, eval_arrayaccess(env, e->cast<ArrayAccess>()));
+      } break;
+      case Expression::E_FIELDACCESS: {
+        return eval_bool(env, eval_fieldaccess(env, e->cast<FieldAccess>()));
       } break;
       case Expression::E_ITE: {
         ITE* ite = e->cast<ITE>();
@@ -1475,6 +1502,9 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
       GCLock lock;
       return eval_boolset(env, eval_arrayaccess(env, e->cast<ArrayAccess>()));
     } break;
+    case Expression::E_FIELDACCESS: {
+      return eval_boolset(env, eval_fieldaccess(env, e->cast<FieldAccess>()));
+    } break;
     case Expression::E_ITE: {
       ITE* ite = e->cast<ITE>();
       for (int i = 0; i < ite->size(); i++) {
@@ -1615,6 +1645,9 @@ IntVal eval_int_internal(EnvI& env, Expression* e) {
         GCLock lock;
         return eval_int(env, eval_arrayaccess(env, e->cast<ArrayAccess>()));
       } break;
+      case Expression::E_FIELDACCESS: {
+        return eval_int(env, eval_fieldaccess(env, e->cast<FieldAccess>()));
+      } break;
       case Expression::E_ITE: {
         ITE* ite = e->cast<ITE>();
         for (int i = 0; i < ite->size(); i++) {
@@ -1753,6 +1786,9 @@ FloatVal eval_float(EnvI& env, Expression* e) {
         GCLock lock;
         return eval_float(env, eval_arrayaccess(env, e->cast<ArrayAccess>()));
       } break;
+      case Expression::E_FIELDACCESS: {
+        return eval_float(env, eval_fieldaccess(env, e->cast<FieldAccess>()));
+      } break;
       case Expression::E_ITE: {
         ITE* ite = e->cast<ITE>();
         for (int i = 0; i < ite->size(); i++) {
@@ -1880,6 +1916,9 @@ std::string eval_string(EnvI& env, Expression* e) {
     case Expression::E_ARRAYACCESS: {
       GCLock lock;
       return eval_string(env, eval_arrayaccess(env, e->cast<ArrayAccess>()));
+    } break;
+    case Expression::E_FIELDACCESS: {
+      return eval_string(env, eval_fieldaccess(env, e->cast<FieldAccess>()));
     } break;
     case Expression::E_ITE: {
       ITE* ite = e->cast<ITE>();
@@ -2170,6 +2209,9 @@ Expression* eval_par(EnvI& env, Expression* e) {
           }
           return eval_par(env, eval_arrayaccess(env, aa));
         }
+        case Expression::E_FIELDACCESS: {
+          return eval_par(env, eval_fieldaccess(env, e->cast<FieldAccess>()));
+        } break;
         case Expression::E_LET: {
           Let* l = e->cast<Let>();
           assert(l->type().isPar());

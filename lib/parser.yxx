@@ -216,6 +216,7 @@ bool noTuple(ParserLocation& location, void* parm, Expression* e) {
 %token MZN_LE "<" MZN_GR ">" MZN_LQ "<=" MZN_GQ ">=" MZN_EQ "=" MZN_NQ "!=" MZN_WEAK_EQ "~=" MZN_WEAK_NQ "~!="
 %token MZN_IN "in" MZN_SUBSET "subset" MZN_SUPERSET "superset"
 %token MZN_UNION "union" MZN_DIFF "diff" MZN_SYMDIFF "symdiff"
+%token MZN_DOT "."
 %token MZN_DOTDOT ".."
 %token MZN_DOTDOT_LE "..<"
 %token MZN_LE_DOTDOT "<.."
@@ -237,7 +238,7 @@ bool noTuple(ParserLocation& location, void* parm, Expression* e) {
 %nonassoc MZN_LE MZN_GR MZN_LQ MZN_GQ MZN_EQ MZN_NQ MZN_WEAK_EQ MZN_WEAK_NQ
 %nonassoc MZN_IN MZN_SUBSET MZN_SUPERSET
 %left MZN_UNION MZN_DIFF MZN_SYMDIFF MZN_INTERSECT 
-%nonassoc MZN_DOTDOT MZN_DOTDOT_LE MZN_LE_DOTDOT MZN_LE_DOTDOT_LE
+%nonassoc MZN_DOT MZN_DOTDOT MZN_DOTDOT_LE MZN_LE_DOTDOT MZN_LE_DOTDOT_LE
 %left MZN_PLUS MZN_MINUS MZN_WEAK_PLUS MZN_WEAK_MINUS
 %left MZN_MULT MZN_DIV MZN_IDIV MZN_MOD MZN_WEAK_MULT MZN_WEAK_DIV MZN_WEAK_IDIV
 %left MZN_POW MZN_POW_MINUS1
@@ -1058,6 +1059,8 @@ set_expr :
 
 expr :
       expr_atom_head
+    | expr MZN_DOT MZN_INTEGER_LITERAL
+      { $$=new FieldAccess(Location(@$), $1, IntLit::a($3));}
     | expr MZN_COLONCOLON annotation_expr
       { if ($1 && $3) $1->addAnnotation($3); $$=$1; }
     | expr MZN_EQUIV expr
@@ -1241,6 +1244,18 @@ expr_atom_head_nonstring :
       { $$=new BinOp(@$, $2, BOT_POW, IntLit::a(-1)); }
     | '(' expr ')' array_access_tail MZN_POW_MINUS1
       { if ($4) $$=new BinOp(@$,createArrayAccess(@$, $2, *$4), BOT_POW, IntLit::a(-1)); delete $4; }
+    | '(' expr ',' expr_list ')'
+      { 
+				auto* list = $4;
+				if (list == nullptr) {
+					list = new std::vector<Expression*>();
+				}
+				if ($2) {
+					list->insert(list->begin(), $2);
+				}
+				$$=ArrayLit::constructTuple(@$, *list);
+				delete list;
+			}
     | MZN_IDENTIFIER
       { $$=new Id(@$, $1, nullptr); free($1); }
     | MZN_IDENTIFIER array_access_tail

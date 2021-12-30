@@ -37,8 +37,8 @@ Type type_meet(const Type& t0, const Type& t1) {
     m.bt(Type::BT_FLOAT);
   } else if (t0.bt() == Type::BT_INT || t1.bt() == Type::BT_INT) {
     m.bt(Type::BT_INT);
-    if (t0.enumId() != t1.enumId()) {
-      m.enumId(0);
+    if (t0.typeId() != t1.typeId()) {
+      m.typeId(0);
     }
   }
   return m;
@@ -51,14 +51,14 @@ Type base_type(EnvI& env, std::vector<Type>& types, const TIOcc& occ) {
   Type cur_t;
   if (occ.idxSet == -1) {
     cur_t = types[occ.idx];
-    if (cur_t.dim() > 0 && cur_t.enumId() != 0) {
-      const auto& aes = env.getArrayEnum(cur_t.enumId());
-      cur_t.enumId(aes[aes.size() - 1]);
+    if (cur_t.dim() > 0 && cur_t.typeId() != 0) {
+      const auto& aes = env.getArrayEnum(cur_t.typeId());
+      cur_t.typeId(aes[aes.size() - 1]);
       cur_t.dim(0);
     }
   } else {
-    if (types[occ.idx].enumId() != 0) {
-      const auto& aes = env.getArrayEnum(types[occ.idx].enumId());
+    if (types[occ.idx].typeId() != 0) {
+      const auto& aes = env.getArrayEnum(types[occ.idx].typeId());
       cur_t = Type::parenum(aes[occ.idxSet]);
     } else {
       cur_t = Type::parint();
@@ -72,30 +72,30 @@ void adapt_to_base_type(EnvI& env, std::vector<Type>& types, const TIOcc& occ, T
   if (occ.idxSet == -1) {
     Type& t = types[occ.idx];
     t.bt(bt.bt());
-    if (t.enumId() != 0 && bt.enumId() == 0) {
+    if (t.typeId() != 0 && bt.typeId() == 0) {
       if (t.dim() > 0) {
-        const auto& aes = env.getArrayEnum(types[occ.idx].enumId());
+        const auto& aes = env.getArrayEnum(types[occ.idx].typeId());
         if (aes[aes.size() - 1] != 0) {
           std::vector<unsigned int> et = aes;
           et[aes.size() - 1] = 0;
-          t.enumId(env.registerArrayEnum(et));
+          t.typeId(env.registerArrayEnum(et));
         }
       } else {
-        t.enumId(0);
+        t.typeId(0);
       }
     }
   } else {
     Type& t = types[occ.idx];
-    if (t.enumId() != 0 && bt.enumId() == 0) {
+    if (t.typeId() != 0 && bt.typeId() == 0) {
       if (t.dim() > 0) {
-        const auto& aes = env.getArrayEnum(types[occ.idx].enumId());
+        const auto& aes = env.getArrayEnum(types[occ.idx].typeId());
         if (aes[occ.idxSet] != 0) {
           std::vector<unsigned int> et = aes;
           et[occ.idxSet] = 0;
-          t.enumId(env.registerArrayEnum(et));
+          t.typeId(env.registerArrayEnum(et));
         }
       } else {
-        t.enumId(0);
+        t.typeId(0);
       }
     }
   }
@@ -171,7 +171,7 @@ struct InstantiatedItem {
       if (argTypes[i] != ia.argTypes[i]) {
         return false;
       }
-      if (argTypes[i].enumId() != ia.argTypes[i].enumId()) {
+      if (argTypes[i].typeId() != ia.argTypes[i].typeId()) {
         return false;
       }
     }
@@ -293,7 +293,7 @@ public:
   void operator()(Call* call) {
     if (call->id() == _env.constants.ids.enumOf && call->argCount() == 1) {
       // Rewrite to enum_of_internal with enum argument
-      auto enumId = call->arg(0)->type().enumId();
+      auto enumId = call->arg(0)->type().typeId();
       if (enumId != 0 && call->arg(0)->type().dim() != 0) {
         const auto& enumIds = _env.getArrayEnum(enumId);
         enumId = enumIds[enumIds.size() - 1];
@@ -442,7 +442,7 @@ public:
           for (unsigned int i = 0; i < fi_copy->paramCount(); i++) {
             Type curType = fi_copy->param(i)->ti()->type();
             curType.bt(concrete_types[i].bt());
-            curType.enumId(concrete_types[i].enumId());
+            curType.typeId(concrete_types[i].typeId());
             curType.st(concrete_types[i].st());
             if (curType.dim() == -1) {
               curType.dim(concrete_types[i].dim());
@@ -486,13 +486,13 @@ public:
             fi_copy->param(i)->type(curType);
             if (TIId* tiid = Expression::dynamicCast<TIId>(fi_copy->param(i)->ti()->domain())) {
               ti_map.emplace(tiid->v(), concrete_types[i]);
-              if (concrete_types[i].enumId() == 0) {
+              if (concrete_types[i].typeId() == 0) {
                 // replace tiid with empty domain
                 fi_copy->param(i)->ti()->domain(nullptr);
               } else {
-                auto enumId = concrete_types[i].enumId();
+                auto enumId = concrete_types[i].typeId();
                 if (concrete_types[i].dim() != 0) {
-                  const auto& aet = _env.getArrayEnum(concrete_types[i].enumId());
+                  const auto& aet = _env.getArrayEnum(concrete_types[i].typeId());
                   enumId = aet[aet.size() - 1];
                 }
                 if (enumId != 0) {
@@ -506,12 +506,12 @@ public:
                       fi_copy->param(i)->ti()->ranges()[j]->domain())) {
                 if (tiid->isEnum()) {
                   // find concrete enum type
-                  if (concrete_types[i].enumId() == 0) {
+                  if (concrete_types[i].typeId() == 0) {
                     // lct is not an enum type -> turn this one into a simple int
                     fi_copy->param(i)->ti()->ranges()[j]->domain(nullptr);
                     ti_map.emplace(tiid->v(), Type::parint());
                   } else {
-                    const auto& aet = _env.getArrayEnum(concrete_types[i].enumId());
+                    const auto& aet = _env.getArrayEnum(concrete_types[i].typeId());
                     if (aet[j] == 0) {
                       // lct is not an enum type -> turn this one into a simple int
                       fi_copy->param(i)->ti()->ranges()[j]->domain(nullptr);
@@ -551,7 +551,7 @@ public:
               t.ot(ret_type.ot());
               t.ti(ret_type.ti());
             }
-            auto enumId = ret_type.enumId();
+            auto enumId = ret_type.typeId();
             if (ret_type.dim() != 0 && enumId != 0) {
               const auto& aet = _env.getArrayEnum(enumId);
               enumId = aet[aet.size() - 1];
@@ -570,11 +570,11 @@ public:
               Type ret_type = ti_map.find(tiid->v())->second;
               if (tiid->isEnum()) {
                 // find concrete enum type
-                if (ret_type.enumId() == 0) {
+                if (ret_type.typeId() == 0) {
                   // not an enum type -> turn this one into a simple int
                   fi_copy->ti()->ranges()[i]->domain(nullptr);
                 } else {
-                  const auto& aet = _env.getArrayEnum(ret_type.enumId());
+                  const auto& aet = _env.getArrayEnum(ret_type.typeId());
                   if (aet[i] == 0) {
                     // not an enum type -> turn this one into a simple int
                     fi_copy->ti()->ranges()[i]->domain(nullptr);

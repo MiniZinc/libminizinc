@@ -18,15 +18,15 @@ std::string Type::toString(EnvI& env) const {
   std::ostringstream oss;
   if (_dim > 0) {
     oss << "array[";
-    if (_enumId != 0U) {
-      const std::vector<unsigned int>& arrayEnumIds = env.getArrayEnum(_enumId);
+    if (_typeId != 0U) {
+      const std::vector<unsigned int>& arrayEnumIds = env.getArrayEnum(_typeId);
       for (unsigned int i = 0; i < arrayEnumIds.size() - 1; i++) {
         if (i != 0) {
           oss << ",";
         }
         unsigned int enumId = arrayEnumIds[i];
         if (enumId == 0) {
-          oss << "int";
+          oss << "_";
         } else {
           oss << *env.getEnum(enumId)->e()->id();
         }
@@ -57,11 +57,11 @@ std::string Type::toString(EnvI& env) const {
   switch (static_cast<BaseType>(_bt)) {
     case BT_INT: {
       unsigned int enumId;
-      if (_enumId != 0U && _dim > 0) {
-        const std::vector<unsigned int>& arrayEnumIds = env.getArrayEnum(_enumId);
+      if (_typeId != 0U && _dim > 0) {
+        const std::vector<unsigned int>& arrayEnumIds = env.getArrayEnum(_typeId);
         enumId = arrayEnumIds[arrayEnumIds.size() - 1];
       } else {
-        enumId = _enumId;
+        enumId = _typeId;
       }
       if (enumId == 0) {
         oss << "int";
@@ -81,6 +81,24 @@ std::string Type::toString(EnvI& env) const {
     case BT_ANN:
       oss << "ann";
       break;
+    case BT_TUPLE: {
+      unsigned int typeId;
+      oss << "tuple(";
+      if (_typeId != 0U && _dim > 0) {
+        const std::vector<unsigned int>& arrayEnumIds = env.getArrayEnum(_typeId);
+        typeId = arrayEnumIds[arrayEnumIds.size() - 1];
+      } else {
+        typeId = _typeId;
+      }
+      TupleType* tt = env.getTupleType(typeId);
+      for (size_t i = 0; i < tt->size(); ++i) {
+        oss << tt->field(i).toString(env);
+        if (i < tt->size() - 1) {
+          oss << ", ";
+        }
+      }
+      oss << ")";
+    } break;
     case BT_BOT:
       oss << "bot";
       break;
@@ -134,6 +152,9 @@ std::string Type::nonEnumToString() const {
       break;
     case BT_ANN:
       oss << "ann";
+      break;
+    case BT_TUPLE:
+      oss << "tuple(...)";
       break;
     case BT_BOT:
       oss << "bot";

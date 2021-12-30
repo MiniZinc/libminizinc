@@ -86,7 +86,7 @@ inline IntLit* IntLit::aEnum(IntVal v, unsigned int enumId) {
   }
   auto* il = new IntLit(Location().introduce(), v);
   Type tt(il->type());
-  tt.enumId(enumId);
+  tt.typeId(enumId);
   il->type(tt);
   return il;
 }
@@ -416,6 +416,13 @@ inline ArrayAccess::ArrayAccess(const Location& loc, Expression* v,
     : Expression(loc, E_ARRAYACCESS, Type()) {
   _v = v;
   _idx = idx;
+  rehash();
+}
+
+inline FieldAccess::FieldAccess(const Location& loc, Expression* v, Expression* field)
+    : Expression(loc, E_FIELDACCESS, Type()) {
+  _v = v;
+  _field = field;
   rehash();
 }
 

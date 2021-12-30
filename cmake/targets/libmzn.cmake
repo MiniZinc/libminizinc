@@ -27,6 +27,7 @@ add_library(mzn
   lib/flatten/flatten_binop.cpp
   lib/flatten/flatten_call.cpp
   lib/flatten/flatten_comp.cpp
+  lib/flatten/flatten_fieldaccess.cpp
   lib/flatten/flatten_id.cpp
   lib/flatten/flatten_ite.cpp
   lib/flatten/flatten_let.cpp

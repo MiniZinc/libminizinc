@@ -295,6 +295,7 @@ public:
     E_ANON,
     E_ARRAYLIT,
     E_ARRAYACCESS,
+    E_FIELDACCESS,
     E_COMP,
     E_ITE,
     E_BINOP,
@@ -938,6 +939,32 @@ public:
   /// Recompute hash value
   void rehash();
 };
+
+/// \brief Field access expression
+class FieldAccess : public Expression {
+protected:
+  /// The structured type to access
+  Expression* _v;
+  /// The field being acessed (must be IntLit for tuples)
+  Expression* _field;
+
+public:
+  /// The identifier of this expression type
+  static const ExpressionId eid = E_FIELDACCESS;
+  /// Constructor
+  FieldAccess(const Location& loc, Expression* v, Expression* field);
+  /// Access value
+  Expression* v() const { return _v; }
+  /// Set value
+  void v(Expression* val) { _v = val; }
+  /// Access index sets
+  Expression* field() const { return _field; }
+  /// Set index sets
+  void field(Expression* field) { _field = field; }
+  /// Recompute hash value
+  void rehash();
+};
+
 /**
  * \brief Generators for comprehensions
  *
@@ -1889,6 +1916,8 @@ public:
   void vArrayLit(const ArrayLit* /*al*/) {}
   /// Visit array access
   void vArrayAccess(const ArrayAccess* /*aa*/) {}
+  /// Visit field access
+  void vFieldAccess(const FieldAccess* /*fa*/) {}
   /// Visit array comprehension
   void vComprehension(const Comprehension* /*c*/) {}
   /// Visit array comprehension (only generator \a gen_i)

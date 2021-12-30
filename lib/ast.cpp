@@ -209,6 +209,10 @@ void Expression::mark(Expression* e) {
           pushstack(cur->cast<ArrayAccess>()->v());
           pushall(cur->cast<ArrayAccess>()->idx());
           break;
+        case Expression::E_FIELDACCESS:
+          pushstack(cur->cast<FieldAccess>()->v());
+          pushstack(cur->cast<FieldAccess>()->field());
+          break;
         case Expression::E_COMP:
           pushstack(cur->cast<Comprehension>()->_e);
           pushall(cur->cast<Comprehension>()->_g);
@@ -535,6 +539,12 @@ void ArrayAccess::rehash() {
   for (unsigned int i = _idx.size(); (i--) != 0U;) {
     combineHash(Expression::hash(_idx[i]));
   }
+}
+
+void FieldAccess::rehash() {
+  initHash();
+  combineHash(Expression::hash(_v));
+  combineHash(Expression::hash(_field));
 }
 
 Generator::Generator(const std::vector<ASTString>& v, Expression* in, Expression* where) {
@@ -1056,9 +1066,9 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
       if (tii->type().any()) {
         tiit.any(true);
       }
-      if (tiit.enumId() != 0 && tiit.dim() > 0) {
-        const std::vector<unsigned int>& enumIds = env.getArrayEnum(tiit.enumId());
-        tiit.enumId(enumIds[enumIds.size() - 1]);
+      if (tiit.typeId() != 0 && tiit.dim() > 0) {
+        const std::vector<unsigned int>& enumIds = env.getArrayEnum(tiit.typeId());
+        tiit.typeId(enumIds[enumIds.size() - 1]);
       }
       tiit.dim(0);
       auto it = tmap.find(tiid);
@@ -1097,7 +1107,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
           }
         } else if (env.isSubtype(its_par, tiit_par, strictEnum)) {
           it->second.first.bt(tiit_par.bt());
-          it->second.first.enumId(tiit_par.enumId());
+          it->second.first.typeId(tiit_par.typeId());
         } else {
           std::ostringstream ss;
           ss << "type-inst variable $" << tiid << " instantiated with different types ("
@@ -1121,14 +1131,14 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
         throw TypeError(env, get_loc(ta[i], call, fi), ss.str());
       }
       Type tiit = Type::top(orig_tiit.dim());
-      if (orig_tiit.enumId() != 0) {
+      if (orig_tiit.typeId() != 0) {
         std::vector<unsigned int> enumIds(tiit.dim() + 1);
-        const std::vector<unsigned int>& orig_enumIds = env.getArrayEnum(orig_tiit.enumId());
+        const std::vector<unsigned int>& orig_enumIds = env.getArrayEnum(orig_tiit.typeId());
         for (unsigned int i = 0; i < enumIds.size() - 1; i++) {
           enumIds[i] = orig_enumIds[i];
         }
         enumIds[enumIds.size() - 1] = 0;
-        tiit.enumId(env.registerArrayEnum(enumIds));
+        tiit.typeId(env.registerArrayEnum(enumIds));
       }
       auto it = tmap.find(tiid);
       if (it == tmap.end()) {
@@ -1152,8 +1162,8 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
           ASTString enumTIId = tii->ranges()[j]->domain()->cast<TIId>()->v();
           Type tiit = get_type(ta[i]);
           Type enumIdT;
-          if (tiit.enumId() != 0) {
-            unsigned int enumId = env.getArrayEnum(tiit.enumId())[j];
+          if (tiit.typeId() != 0) {
+            unsigned int enumId = env.getArrayEnum(tiit.typeId())[j];
             enumIdT = Type::parsetenum(enumId);
           } else {
             enumIdT = Type::parsetint();
@@ -1163,7 +1173,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
           // but the same enum
           if (it == tmap.end()) {
             tmap.insert(std::pair<ASTString, std::pair<Type, bool>>(enumTIId, {enumIdT, true}));
-          } else if (strictEnum && it->second.first.enumId() != enumIdT.enumId()) {
+          } else if (strictEnum && it->second.first.typeId() != enumIdT.typeId()) {
             std::ostringstream ss;
             ss << "type-inst variable $" << enumTIId << " used for different enum types";
             throw TypeError(env, get_loc(ta[i], call, fi), ss.str());
@@ -1193,15 +1203,15 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
         ret.any(false);
       }
     }
-    if (!fi->ti()->ranges().empty() && it->second.first.enumId() != 0) {
+    if (!fi->ti()->ranges().empty() && it->second.first.typeId() != 0) {
       std::vector<unsigned int> enumIds(fi->ti()->ranges().size() + 1);
       for (unsigned int i = 0; i < fi->ti()->ranges().size(); i++) {
         enumIds[i] = 0;
       }
-      enumIds[enumIds.size() - 1] = it->second.first.enumId();
-      ret.enumId(env.registerArrayEnum(enumIds));
+      enumIds[enumIds.size() - 1] = it->second.first.typeId();
+      ret.typeId(env.registerArrayEnum(enumIds));
     } else {
-      ret.enumId(it->second.first.enumId());
+      ret.typeId(it->second.first.typeId());
     }
   }
   if (!rh.empty()) {
@@ -1212,27 +1222,27 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
       throw TypeError(env, fi->loc(), ss.str());
     }
     ret.dim(it->second.first.dim());
-    if (it->second.first.enumId() != 0) {
+    if (it->second.first.typeId() != 0) {
       std::vector<unsigned int> enumIds(it->second.first.dim() + 1);
-      const std::vector<unsigned int>& orig_enumIds = env.getArrayEnum(it->second.first.enumId());
+      const std::vector<unsigned int>& orig_enumIds = env.getArrayEnum(it->second.first.typeId());
       for (unsigned int i = 0; i < enumIds.size() - 1; i++) {
         enumIds[i] = orig_enumIds[i];
       }
-      unsigned int curEnumId = ret.enumId();
+      unsigned int curEnumId = ret.typeId();
       if (curEnumId != 0 && ret.dim() > 0) {
         const auto& curIds = env.getArrayEnum(curEnumId);
         curEnumId = curIds[curIds.size() - 1];
       }
       enumIds[enumIds.size() - 1] = curEnumId;
-      ret.enumId(env.registerArrayEnum(enumIds));
+      ret.typeId(env.registerArrayEnum(enumIds));
     }
   } else if (!fi->ti()->ranges().empty()) {
     std::vector<unsigned int> enumIds(fi->ti()->ranges().size() + 1);
     bool hadRealEnum = false;
-    if (ret.enumId() == 0) {
+    if (ret.typeId() == 0) {
       enumIds[enumIds.size() - 1] = 0;
     } else {
-      enumIds = env.getArrayEnum(ret.enumId());
+      enumIds = env.getArrayEnum(ret.typeId());
       hadRealEnum = true;
     }
 
@@ -1245,12 +1255,12 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
           ss << "type-inst variable $" << enumTIId << " used but not defined";
           throw TypeError(env, fi->loc(), ss.str());
         }
-        enumIds[i] = it->second.first.enumId();
+        enumIds[i] = it->second.first.typeId();
         hadRealEnum |= (enumIds[i] != 0);
       }
     }
     if (hadRealEnum) {
-      ret.enumId(env.registerArrayEnum(enumIds));
+      ret.typeId(env.registerArrayEnum(enumIds));
     }
   }
   return ret;

@@ -224,8 +224,8 @@ namespace MiniZinc {
                     else
                       return MZN_INVALID_FLOAT_LITERAL;
                   }
-[:;|{},\[\]\.]    {
-                    return *yytext; }
+[:;|{},\[\]]      { return *yytext; }
+\.                { return MZN_DOT; }
 \.\.              { return MZN_DOTDOT; }
 "'\.\.'"          { return MZN_DOTDOT_QUOTED; }
 "\.\.<"           { return MZN_DOTDOT_LE; }

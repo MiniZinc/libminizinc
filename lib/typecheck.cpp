@@ -504,7 +504,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
          */
         {
           Type Xt = Type::parint();
-          Xt.enumId(enumId);
+          Xt.typeId(enumId);
           auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
           auto* Cfn_x_ti = new TypeInst(Location().introduce(), Type(), constructorArgId);
           auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
@@ -520,7 +520,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
         }
         {
           Type Xt = Type::varint();
-          Xt.enumId(enumId);
+          Xt.typeId(enumId);
           auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
           Type argT;
           argT.ti(Type::TI_VAR);
@@ -538,7 +538,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
         {
           Type Xt = Type::parint();
           Xt.ot(Type::OT_OPTIONAL);
-          Xt.enumId(enumId);
+          Xt.typeId(enumId);
           auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
           Type argT;
           argT.ot(Type::OT_OPTIONAL);
@@ -558,7 +558,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
         {
           Type Xt = Type::varint();
           Xt.ot(Type::OT_OPTIONAL);
-          Xt.enumId(enumId);
+          Xt.typeId(enumId);
           auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
           Type argT;
           argT.ti(Type::TI_VAR);
@@ -579,7 +579,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
         {
           Type Xt = Type::parint();
           Xt.st(Type::ST_SET);
-          Xt.enumId(enumId);
+          Xt.typeId(enumId);
           auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
           Type argT;
           argT.st(Type::ST_SET);
@@ -601,7 +601,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
         {
           Type Xt = Type::varint();
           Xt.st(Type::ST_SET);
-          Xt.enumId(enumId);
+          Xt.typeId(enumId);
           auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
           Type argT;
           argT.ti(Type::TI_VAR);
@@ -633,7 +633,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
         {
           auto* toEfn_ti = new TypeInst(Location().introduce(), Type(), constructorArgId);
           Type Xt = Type::parint();
-          Xt.enumId(enumId);
+          Xt.typeId(enumId);
           auto* toEfn_x_ti = new TypeInst(Location().introduce(), Xt, vd->id());
           auto* vd_x = new VarDecl(Location().introduce(), toEfn_x_ti, "x");
           vd_x->toplevel(false);
@@ -651,7 +651,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           rT.ti(Type::TI_VAR);
           auto* toEfn_ti = new TypeInst(Location().introduce(), rT, constructorArgId);
           Type Xt = Type::varint();
-          Xt.enumId(enumId);
+          Xt.typeId(enumId);
           auto* toEfn_x_ti = new TypeInst(Location().introduce(), Xt, vd->id());
           auto* vd_x = new VarDecl(Location().introduce(), toEfn_x_ti, "x");
           vd_x->toplevel(false);
@@ -670,7 +670,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           auto* Cfn_ti = new TypeInst(Location().introduce(), rt, constructorArgId);
           Type argT = Type::parint();
           argT.ot(Type::OT_OPTIONAL);
-          argT.enumId(enumId);
+          argT.typeId(enumId);
           auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, vd->id());
           auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
           std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
@@ -691,7 +691,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           auto* Cfn_ti = new TypeInst(Location().introduce(), rt, constructorArgId);
           Type argT = Type::varint();
           argT.ot(Type::OT_OPTIONAL);
-          argT.enumId(enumId);
+          argT.typeId(enumId);
           auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, vd->id());
           auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
           std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
@@ -711,7 +711,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           auto* Cfn_ti = new TypeInst(Location().introduce(), Xt, constructorArgId);
           Type argT = Type::parint();
           argT.st(Type::ST_SET);
-          argT.enumId(enumId);
+          argT.typeId(enumId);
           auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, vd->id());
           auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
           vd_x->toplevel(false);
@@ -734,7 +734,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           auto* Cfn_ti = new TypeInst(Location().introduce(), Xt, constructorArgId);
           Type argT = Type::varint();
           argT.st(Type::ST_SET);
-          argT.enumId(enumId);
+          argT.typeId(enumId);
           auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, vd->id());
           auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
           vd_x->toplevel(false);
@@ -762,7 +762,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
 
         {
           Type tx = Type::parint();
-          tx.enumId(enumId);
+          tx.typeId(enumId);
           tx.ot(Type::OT_OPTIONAL);
           auto* ti_aa = new TypeInst(Location().introduce(), tx, vd->id());
           auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, "x");
@@ -851,7 +851,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
   if (parts.size() > 1) {
     Type tx = Type::parint();
     tx.ot(Type::OT_OPTIONAL);
-    tx.enumId(enumId);
+    tx.typeId(enumId);
     auto* ti_aa = new TypeInst(Location().introduce(), tx, vd->id());
     auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, "x");
     vd_aa->toplevel(false);
@@ -1015,7 +1015,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
 
      */
 
-    Type argType = Type::parsetenum(ident->type().enumId());
+    Type argType = Type::parsetenum(ident->type().typeId());
     auto* x_ti = new TypeInst(Location().introduce(), argType, ident);
     auto* vd_x = new VarDecl(Location().introduce(), x_ti, "x");
     vd_x->toplevel(false);
@@ -1177,7 +1177,7 @@ void TopoSorter::add(EnvI& env, VarDeclI* vdi, bool handleEnums, Model* enumItem
   if (handleEnums && vd->ti()->isEnum()) {
     unsigned int enumId = env.registerEnum(vdi);
     Type vdt = vd->type();
-    vdt.enumId(enumId);
+    vdt.typeId(enumId);
     vd->ti()->type(vdt);
     vd->type(vdt);
 
@@ -1267,6 +1267,11 @@ void TopoSorter::run(EnvI& env, Expression* e) {
       for (unsigned int i = 0; i < ae->idx().size(); i++) {
         run(env, ae->idx()[i]);
       }
+    } break;
+    case Expression::E_FIELDACCESS: {
+      auto* fa = e->cast<FieldAccess>();
+      run(env, fa->v());
+      run(env, fa->field());
     } break;
     case Expression::E_COMP: {
       auto* ce = e->cast<Comprehension>();
@@ -1582,7 +1587,7 @@ public:
     ty.st(Type::ST_SET);
     if (sl->isv() != nullptr) {
       ty.bt(Type::BT_INT);
-      ty.enumId(sl->type().enumId());
+      ty.typeId(sl->type().typeId());
       sl->type(ty);
       return;
     }
@@ -1591,7 +1596,7 @@ public:
       sl->type(ty);
       return;
     }
-    unsigned int enumId = sl->v().empty() ? 0 : sl->v()[0]->type().enumId();
+    unsigned int enumId = sl->v().empty() ? 0 : sl->v()[0]->type().typeId();
     for (unsigned int i = 0; i < sl->v().size(); i++) {
       Type vi_t = sl->v()[i]->type();
       vi_t.ot(Type::OT_PRESENT);
@@ -1610,7 +1615,7 @@ public:
       if (vi_t.cv()) {
         ty.cv(true);
       }
-      if (enumId != vi_t.enumId()) {
+      if (enumId != vi_t.typeId()) {
         enumId = 0;
       }
       if (!Type::btSubtype(vi_t, ty, true)) {
@@ -1621,7 +1626,7 @@ public:
         }
       }
     }
-    ty.enumId(enumId);
+    ty.typeId(enumId);
     if (ty.bt() == Type::BT_UNKNOWN) {
       ty.bt(Type::BT_BOT);
     } else {
@@ -1655,11 +1660,18 @@ public:
   /// Visit array literal
   void vArrayLit(ArrayLit* al) {
     Type ty;
-    ty.dim(static_cast<int>(al->dims()));
     if (al->isTuple()) {
+      ty.bt(Type::BT_TUPLE);
+      std::vector<Type> fields(al->size());
+      for (unsigned int i = 0; i < al->size(); i++) {
+        fields[i] = (*al)[i]->type();
+      }
+      unsigned int typeId = _env.registerTupleType(fields);
+      ty.typeId(typeId);
       al->type(ty);
       return;
     }
+    ty.dim(static_cast<int>(al->dims()));
     std::vector<AnonVar*> anons;
     bool haveAbsents = false;
     bool haveInferredType = false;
@@ -1697,7 +1709,7 @@ public:
           }
           if (vi->type().bt() != Type::BT_BOT) {
             ty.bt(vi->type().bt());
-            ty.enumId(vi->type().enumId());
+            ty.typeId(vi->type().typeId());
           }
         }
       } else {
@@ -1706,17 +1718,17 @@ public:
             if (vi->type().st() != ty.st() && vi->type().ot() != Type::OT_OPTIONAL) {
               throw TypeError(_env, al->loc(), "non-uniform array literal");
             }
-            if (vi->type().enumId() != 0 && ty.enumId() != vi->type().enumId()) {
-              ty.enumId(0);
+            if (vi->type().typeId() != 0 && ty.typeId() != vi->type().typeId()) {
+              ty.typeId(0);
             }
           } else {
-            unsigned int tyEnumId = ty.enumId();
-            ty.enumId(vi->type().enumId());
+            unsigned int tyEnumId = ty.typeId();
+            ty.typeId(vi->type().typeId());
             if (Type::btSubtype(ty, vi->type(), true)) {
               ty.bt(vi->type().bt());
             }
-            if (tyEnumId != vi->type().enumId()) {
-              ty.enumId(0);
+            if (tyEnumId != vi->type().typeId()) {
+              ty.typeId(0);
             }
             if (!Type::btSubtype(vi->type(), ty, true) || ty.st() != vi->type().st()) {
               throw TypeError(_env, al->loc(), "non-uniform array literal");
@@ -1753,13 +1765,13 @@ public:
         al->set(i, add_coercion(_env, _model, (*al)[i], at)());
       }
     }
-    if (ty.enumId() != 0) {
+    if (ty.typeId() != 0) {
       std::vector<unsigned int> enumIds(ty.dim() + 1);
       for (int i = 0; i < ty.dim(); i++) {
         enumIds[i] = 0;
       }
-      enumIds[ty.dim()] = ty.enumId();
-      ty.enumId(_env.registerArrayEnum(enumIds));
+      enumIds[ty.dim()] = ty.typeId();
+      ty.typeId(_env.registerArrayEnum(enumIds));
     }
     al->type(ty);
   }
@@ -1787,8 +1799,8 @@ public:
       throw TypeError(_env, aa->v()->loc(), oss.str());
     }
     Type tt = aa->v()->type();
-    if (tt.enumId() != 0) {
-      const std::vector<unsigned int>& arrayEnumIds = _env.getArrayEnum(tt.enumId());
+    if (tt.typeId() != 0) {
+      const std::vector<unsigned int>& arrayEnumIds = _env.getArrayEnum(tt.typeId());
       std::vector<unsigned int> newArrayEnumids;
 
       for (unsigned int i = 0; i < arrayEnumIds.size() - 1; i++) {
@@ -1798,7 +1810,7 @@ public:
           if (IntSetVal* aai_isv = aai_sl->isv()) {
             if (aai_isv->min() == -IntVal::infinity() && aai_isv->max() == IntVal::infinity()) {
               Type aai_sl_t = aai_sl->type();
-              aai_sl_t.enumId(arrayEnumIds[i]);
+              aai_sl_t.typeId(arrayEnumIds[i]);
               aai_sl->type(aai_sl_t);
             }
           }
@@ -1808,12 +1820,12 @@ public:
             if (auto* il = aai_bo->lhs()->dynamicCast<IntLit>()) {
               if (il->v() == -IntVal::infinity()) {
                 // Expression is ..X, so result gets enum type of X
-                aai_bo_t.enumId(aai_bo->rhs()->type().enumId());
+                aai_bo_t.typeId(aai_bo->rhs()->type().typeId());
               }
             } else if (auto* il = aai_bo->rhs()->dynamicCast<IntLit>()) {
               if (il->v() == IntVal::infinity()) {
                 // Expression is X.., so result gets enum type of X
-                aai_bo_t.enumId(aai_bo->lhs()->type().enumId());
+                aai_bo_t.typeId(aai_bo->lhs()->type().typeId());
               }
             }
             aai_bo->type(aai_bo_t);
@@ -1822,7 +1834,7 @@ public:
           if (aai_c->argCount() == 0 &&
               (aai_c->id() == "'..<'" || aai_c->id() == "'<..'" || aai_c->id() == "'<..<'")) {
             Type aai_c_t = aai_c->type();
-            aai_c_t.enumId(arrayEnumIds[i]);
+            aai_c_t.typeId(arrayEnumIds[i]);
             aai_c->type(aai_c_t);
           }
         }
@@ -1831,7 +1843,7 @@ public:
         }
 
         if (arrayEnumIds[i] != 0) {
-          if (aa->idx()[i]->type().enumId() != arrayEnumIds[i]) {
+          if (aa->idx()[i]->type().typeId() != arrayEnumIds[i]) {
             std::ostringstream oss;
             oss << "array index ";
             if (aa->idx().size() > 1) {
@@ -1844,11 +1856,11 @@ public:
         }
       }
       if (newArrayEnumids.empty()) {
-        tt.enumId(arrayEnumIds[arrayEnumIds.size() - 1]);
+        tt.typeId(arrayEnumIds[arrayEnumIds.size() - 1]);
       } else {
         newArrayEnumids.push_back(arrayEnumIds[arrayEnumIds.size() - 1]);
         int newEnumId = _env.registerArrayEnum(newArrayEnumids);
-        tt.enumId(newEnumId);
+        tt.typeId(newEnumId);
       }
     }
     int n_dimensions = 0;
@@ -1899,6 +1911,30 @@ public:
       }
     }
     aa->type(tt);
+  }
+  /// Visit field access
+  void vFieldAccess(FieldAccess* fa) {
+    // TODO: Support for Records
+    if (!fa->v()->type().istuple()) {
+      std::ostringstream oss;
+      oss << "field access attempted on expression of type `" << fa->v()->type().toString(_env)
+          << "'";
+      throw TypeError(_env, fa->v()->loc(), oss.str());
+    }
+    if (!fa->field()->type().isint() || !fa->field()->isa<IntLit>()) {
+      throw TypeError(_env, fa->loc(), "field access of a tuple must use an integer literal");
+    }
+    assert(fa->v()->type().typeId() != 0);
+    TupleType* tt = _env.getTupleType(fa->v()->type().typeId());
+    IntVal i = fa->field()->cast<IntLit>()->v();
+    if (!i.isFinite() || i < 1 || i >= tt->size()) {
+      std::ostringstream oss;
+      oss << "unable to access field " << i << " of an expression of type `"
+          << fa->v()->type().toString(_env) << "'. Its fields are between 1 and " << tt->size()
+          << ".";
+      throw TypeError(_env, fa->loc(), oss.str());
+    }
+    fa->type(tt->field(i.toInt() - 1));
   }
   /// Visit array comprehension
   void vComprehension(Comprehension* c) {
@@ -2074,7 +2110,7 @@ public:
           if (!(*indexTuple)[i]->type().isint()) {
             throw TypeError(_env, (*indexTuple)[i]->loc(), "index is not int or enumerated type");
           }
-          unsigned int e = (*indexTuple)[i]->type().enumId();
+          unsigned int e = (*indexTuple)[i]->type().typeId();
           enumIds.push_back(e);
           if (e != 0) {
             hadEnums = true;
@@ -2084,9 +2120,9 @@ public:
         tt.dim(1);
         enumIds.push_back(0);
       }
-      if (hadEnums || tt.enumId() != 0) {
-        enumIds.push_back(tt.enumId());
-        tt.enumId(_env.registerArrayEnum(enumIds));
+      if (hadEnums || tt.typeId() != 0) {
+        enumIds.push_back(tt.typeId());
+        tt.typeId(_env.registerArrayEnum(enumIds));
       }
     }
     if (tt.isvar()) {
@@ -2121,12 +2157,12 @@ public:
       Type ty_id;
       if (ty_in.dim() == 0) {
         ty_id = Type::parint();
-        ty_id.enumId(ty_in.enumId());
+        ty_id.typeId(ty_in.typeId());
       } else {
         ty_id = ty_in;
-        if (ty_in.enumId() != 0) {
-          const std::vector<unsigned int>& enumIds = _env.getArrayEnum(ty_in.enumId());
-          ty_id.enumId(enumIds.back());
+        if (ty_in.typeId() != 0) {
+          const std::vector<unsigned int>& enumIds = _env.getArrayEnum(ty_in.typeId());
+          ty_id.typeId(enumIds.back());
         }
         ty_id.dim(0);
       }
@@ -2176,7 +2212,7 @@ public:
       } else {
         if (tret.isbot()) {
           tret.bt(ethen->type().bt());
-          tret.enumId(ethen->type().enumId());
+          tret.typeId(ethen->type().typeId());
         } else if (tret.isunknown()) {
           tret.bt(ethen->type().bt());
           tret.dim(ethen->type().dim());
@@ -2192,9 +2228,9 @@ public:
         if (Type::btSubtype(tret, ethen->type(), true)) {
           tret.bt(ethen->type().bt());
         }
-        if (tret.enumId() != 0 && ethen->type().enumId() == 0 &&
+        if (tret.typeId() != 0 && ethen->type().typeId() == 0 &&
             ethen->type().bt() != Type::BT_BOT) {
-          tret.enumId(0);
+          tret.typeId(0);
         }
         if (ethen->type().isvar()) {
           allpar = false;
@@ -2533,7 +2569,7 @@ public:
     if (call->id() == _env.constants.ids.format || call->id() == _env.constants.ids.show ||
         call->id() == _env.constants.ids.showDzn || call->id() == _env.constants.ids.showJSON) {
       if (call->arg(call->argCount() - 1)->type().isPar()) {
-        unsigned int enumId = call->arg(call->argCount() - 1)->type().enumId();
+        unsigned int enumId = call->arg(call->argCount() - 1)->type().typeId();
         if (enumId != 0U && call->arg(call->argCount() - 1)->type().dim() != 0) {
           const std::vector<unsigned int>& enumIds = _env.getArrayEnum(enumId);
           enumId = enumIds[enumIds.size() - 1];
@@ -2568,7 +2604,7 @@ public:
         }
       }
     } else if (call->id() == _env.constants.ids.enumOf) {
-      auto enumId = call->arg(0)->type().enumId();
+      auto enumId = call->arg(0)->type().typeId();
       if (enumId != 0 && call->arg(0)->type().dim() != 0) {
         const auto& enumIds = _env.getArrayEnum(enumId);
         enumId = enumIds[enumIds.size() - 1];
@@ -2669,25 +2705,25 @@ public:
       if (vd->e() != nullptr) {
         Type vdt = vd->ti()->type();
         Type vet = vd->e()->type();
-        if (!vdt.any() && vdt.enumId() != 0 && vdt.dim() > 0 &&
+        if (!vdt.any() && vdt.typeId() != 0 && vdt.dim() > 0 &&
             (vd->e()->isa<ArrayLit>() || vd->e()->isa<Comprehension>() ||
              (vd->e()->isa<BinOp>() && vd->e()->cast<BinOp>()->op() == BOT_PLUSPLUS))) {
           // Special case: index sets of array literals and comprehensions automatically
           // coerce to any enum index set
-          const std::vector<unsigned int>& enumIds = _env.getArrayEnum(vdt.enumId());
+          const std::vector<unsigned int>& enumIds = _env.getArrayEnum(vdt.typeId());
           if (enumIds[enumIds.size() - 1] == 0) {
-            vdt.enumId(0);
+            vdt.typeId(0);
           } else {
             std::vector<unsigned int> nEnumIds(enumIds.size());
             for (unsigned int i = 0; i < nEnumIds.size() - 1; i++) {
               nEnumIds[i] = 0;
             }
             nEnumIds[nEnumIds.size() - 1] = enumIds[enumIds.size() - 1];
-            vdt.enumId(_env.registerArrayEnum(nEnumIds));
+            vdt.typeId(_env.registerArrayEnum(nEnumIds));
           }
         } else if (vd->ti()->isEnum() && vd->e()->isa<Call>()) {
           if (vd->e()->cast<Call>()->id() == _env.constants.ids.anon_enum) {
-            vet.enumId(vdt.enumId());
+            vet.typeId(vdt.typeId());
           }
         }
         if (vd->type().any() || vd->type().isunknown()) {
@@ -2724,12 +2760,12 @@ public:
         }
         vd->e(add_coercion(_env, _model, vd->e(), vd->ti()->type())());
         if (vd->type().dim() > 0) {
-          if (vet.enumId() != 0) {
+          if (vet.typeId() != 0) {
             // check if the VarDecl has _ as index sets and copy correct enum information
-            const std::vector<unsigned int>& enumIds = _env.getArrayEnum(vet.enumId());
+            const std::vector<unsigned int>& enumIds = _env.getArrayEnum(vet.typeId());
             std::vector<unsigned int> vdEnumIds(vd->type().dim() + 1, 0);
-            if (vd->type().enumId() != 0) {
-              vdEnumIds = _env.getArrayEnum(vd->type().enumId());
+            if (vd->type().typeId() != 0) {
+              vdEnumIds = _env.getArrayEnum(vd->type().typeId());
             }
             bool hadAnonVar = false;
             for (unsigned int i = 0; i < vd->ti()->ranges().size(); i++) {
@@ -2745,7 +2781,7 @@ public:
             if (hadAnonVar) {
               int arrayEnumId = _env.registerArrayEnum(vdEnumIds);
               Type t = vd->type();
-              t.enumId(arrayEnumId);
+              t.typeId(arrayEnumId);
               vd->ti()->type(t);
               vd->type(t);
             }
@@ -2802,7 +2838,7 @@ public:
   void vTypeInst(TypeInst* ti) {
     Type tt = ti->type();
     bool foundEnum =
-        !ti->ranges().empty() && (ti->domain() != nullptr) && ti->domain()->type().enumId() != 0;
+        !ti->ranges().empty() && (ti->domain() != nullptr) && ti->domain()->type().typeId() != 0;
     if (!ti->ranges().empty()) {
       bool foundTIId = false;
       for (unsigned int i = 0; i < ti->ranges().size(); i++) {
@@ -2811,7 +2847,7 @@ public:
         if (ri->type().cv()) {
           tt.cv(true);
         }
-        if (ri->type().enumId() != 0) {
+        if (ri->type().typeId() != 0) {
           foundEnum = true;
         }
         if (ri->type() == Type::top()) {
@@ -2874,18 +2910,18 @@ public:
           throw TypeError(_env, ti->domain()->loc(), "type-inst must be int or float");
       }
       tt.bt(ti->domain()->type().bt());
-      tt.enumId(ti->domain()->type().enumId());
+      tt.typeId(ti->domain()->type().typeId());
     } else {
       //        assert(ti->domain()==NULL || ti->domain()->isa<TIId>());
     }
     if (foundEnum) {
       std::vector<unsigned int> enumIds(ti->ranges().size() + 1);
       for (unsigned int i = 0; i < ti->ranges().size(); i++) {
-        enumIds[i] = ti->ranges()[i]->type().enumId();
+        enumIds[i] = ti->ranges()[i]->type().typeId();
       }
-      enumIds[ti->ranges().size()] = ti->domain() != nullptr ? ti->domain()->type().enumId() : 0;
+      enumIds[ti->ranges().size()] = ti->domain() != nullptr ? ti->domain()->type().typeId() : 0;
       int arrayEnumId = _env.registerArrayEnum(enumIds);
-      tt.enumId(arrayEnumId);
+      tt.typeId(arrayEnumId);
     }
 
     if (tt.st() == Type::ST_SET && tt.ti() == Type::TI_VAR && tt.bt() != Type::BT_INT &&
@@ -3127,7 +3163,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         vd->e(ai->e());
         vd->addAnnotation(Constants::constants().ann.rhs_from_assignment);
         if (vd->ti()->isEnum()) {
-          create_enum_mapper(env.envi(), m, vd->ti()->type().enumId(), vd, enumItems2, needToString,
+          create_enum_mapper(env.envi(), m, vd->ti()->type().typeId(), vd, enumItems2, needToString,
                              enumConstructorSetTypes);
         }
       }
@@ -3805,7 +3841,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     if (decl->ti()->isEnum()) {
       decl->ti()->setIsEnum(false);
       Type vdt = decl->ti()->type();
-      vdt.enumId(0);
+      vdt.typeId(0);
       decl->ti()->type(vdt);
     }
   }
@@ -3823,11 +3859,11 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         throw;
       }
       vd->addAnnotation(Constants::constants().ann.mzn_check_var);
-      if (vd->type().enumId() != 0) {
+      if (vd->type().typeId() != 0) {
         GCLock lock;
-        std::vector<unsigned int> enumIds({vd->type().enumId()});
+        std::vector<unsigned int> enumIds({vd->type().typeId()});
         if (vd->type().dim() > 0) {
-          enumIds = env.envi().getArrayEnum(vd->type().enumId());
+          enumIds = env.envi().getArrayEnum(vd->type().typeId());
         }
         std::vector<Expression*> enumIds_a(enumIds.size());
         for (unsigned int i = 0; i < enumIds.size(); i++) {
@@ -3922,9 +3958,9 @@ void output_var_desc_json(Env& env, VarDecl* vd, std::ostream& os, bool extra = 
       bool had_dim = false;
       ASTExprVec<TypeInst> ranges = vd->ti()->ranges();
       for (auto& range : ranges) {
-        if (range->type().enumId() > 0) {
+        if (range->type().typeId() > 0) {
           os << (had_dim ? "," : "") << "\""
-             << *env.envi().getEnum(range->type().enumId())->e()->id() << "\"";
+             << *env.envi().getEnum(range->type().typeId())->e()->id() << "\"";
         } else {
           os << (had_dim ? "," : "") << "\"int\"";
         }
@@ -3932,8 +3968,8 @@ void output_var_desc_json(Env& env, VarDecl* vd, std::ostream& os, bool extra = 
       }
       os << "]";
 
-      if (vd->type().enumId() > 0) {
-        const std::vector<unsigned int>& enumIds = env.envi().getArrayEnum(vd->type().enumId());
+      if (vd->type().typeId() > 0) {
+        const std::vector<unsigned int>& enumIds = env.envi().getArrayEnum(vd->type().typeId());
         if (enumIds.back() > 0) {
           os << ", \"enum_type\" : \"" << *env.envi().getEnum(enumIds.back())->e()->id() << "\"";
         }
@@ -3942,8 +3978,8 @@ void output_var_desc_json(Env& env, VarDecl* vd, std::ostream& os, bool extra = 
 
   } else {
     if (extra) {
-      if (vd->type().enumId() > 0) {
-        os << ", \"enum_type\" : \"" << *env.envi().getEnum(vd->type().enumId())->e()->id() << "\"";
+      if (vd->type().typeId() > 0) {
+        os << ", \"enum_type\" : \"" << *env.envi().getEnum(vd->type().typeId())->e()->id() << "\"";
       }
     }
   }
@@ -3981,12 +4017,12 @@ void output_model_variable_types(Env& env, Model* m, std::ostream& os,
         }
         output_var_desc_json(env, vdi->e(), ossVars, true);
         hadVar = true;
-      } else if (vdi->e()->type().st() == Type::ST_SET && vdi->e()->type().enumId() != 0 &&
+      } else if (vdi->e()->type().st() == Type::ST_SET && vdi->e()->type().typeId() != 0 &&
                  !vdi->e()->type().isAnn()) {
         if (hadEnum) {
           ossEnums << ", ";
         }
-        ossEnums << "\"" << *env.envi().getEnum(vdi->e()->type().enumId())->e()->id() << "\"";
+        ossEnums << "\"" << *env.envi().getEnum(vdi->e()->type().typeId())->e()->id() << "\"";
         hadEnum = true;
       }
     }

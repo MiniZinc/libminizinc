@@ -131,6 +131,9 @@ void BottomUpIterator<T>::run(Expression* root) {
         case Expression::E_ARRAYACCESS:
           _t.vArrayAccess(c.e->template cast<ArrayAccess>());
           break;
+        case Expression::E_FIELDACCESS:
+          _t.vFieldAccess(c.e->template cast<FieldAccess>());
+          break;
         case Expression::E_COMP:
           if (c.genNumber >= 0) {
             _t.vComprehensionGenerator(c.e->template cast<Comprehension>(), c.genNumber);
@@ -194,6 +197,10 @@ void BottomUpIterator<T>::run(Expression* root) {
           case Expression::E_ARRAYACCESS:
             pushVec(stack, ce->template cast<ArrayAccess>()->idx());
             stack.push_back(C(ce->template cast<ArrayAccess>()->v()));
+            break;
+          case Expression::E_FIELDACCESS:
+            stack.push_back(C(ce->template cast<FieldAccess>()->field()));
+            stack.push_back(C(ce->template cast<FieldAccess>()->v()));
             break;
           case Expression::E_COMP: {
             auto* comp = ce->template cast<Comprehension>();
@@ -305,6 +312,11 @@ void TopDownIterator<T>::run(Expression* root) {
         _t.vArrayAccess(e->template cast<ArrayAccess>());
         pushVec(stack, e->template cast<ArrayAccess>()->idx());
         stack.push_back(e->template cast<ArrayAccess>()->v());
+        break;
+      case Expression::E_FIELDACCESS:
+        _t.vFieldAccess(e->template cast<FieldAccess>());
+        stack.push_back(e->template cast<FieldAccess>()->field());
+        stack.push_back(e->template cast<FieldAccess>()->v());
         break;
       case Expression::E_COMP:
         _t.vComprehension(e->template cast<Comprehension>());

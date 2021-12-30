@@ -394,8 +394,8 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
         for (unsigned int j = 0; j < fi->paramCount(); j++) {
           Type t1 = i.fi->param(j)->type();
           Type t2 = fi->param(j)->type();
-          t1.enumId(0);
-          t2.enumId(0);
+          t1.typeId(0);
+          t2.typeId(0);
           if (t1 != t2) {
             alleq = false;
           }
@@ -427,8 +427,8 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
         if (eqExceptInst) {
           Type t1 = i.fi->ti()->type();
           Type t2 = fi->ti()->type();
-          t1.enumId(0);
-          t2.enumId(0);
+          t1.typeId(0);
+          t2.typeId(0);
           t1.ti(Type::TI_PAR);
           t2.ti(Type::TI_PAR);
           t1.ot(Type::OT_PRESENT);
@@ -720,8 +720,8 @@ void Model::checkFnOverloading(EnvI& env) {
         for (unsigned int i = 0; i < cur->paramCount(); i++) {
           Type t1 = cur->param(i)->type();
           Type t2 = cmp->param(i)->type();
-          t1.enumId(0);
-          t2.enumId(0);
+          t1.typeId(0);
+          t2.typeId(0);
           if (t1 != t2) {
             allEqual = false;
             break;
@@ -996,7 +996,7 @@ FunctionI* Model::matchRevMap(EnvI& env, const Type& t0) const {
     m = m->_parent;
   }
   Type t = t0;
-  t.enumId(0);
+  t.typeId(0);
   auto it = _revmapmap.find(t.toInt());
   if (it != _revmapmap.end()) {
     return it->second;

@@ -313,7 +313,7 @@ void make_par(EnvI& env, Expression* e) {
     void vCall(Call* c) {
       if (c->id() == env.constants.ids.format || c->id() == env.constants.ids.show ||
           c->id() == env.constants.ids.showDzn || c->id() == env.constants.ids.showJSON) {
-        unsigned int enumId = c->arg(c->argCount() - 1)->type().enumId();
+        unsigned int enumId = c->arg(c->argCount() - 1)->type().typeId();
         if (enumId != 0U && c->arg(c->argCount() - 1)->type().dim() != 0) {
           const std::vector<unsigned int>& enumIds = env.getArrayEnum(enumId);
           enumId = enumIds[enumIds.size() - 1];
@@ -491,6 +491,10 @@ public:
         case Expression::E_ARRAYACCESS:
           pushVec(stack, e->template cast<ArrayAccess>()->idx());
           stack.push_back(e->template cast<ArrayAccess>()->v());
+          break;
+        case Expression::E_FIELDACCESS:
+          stack.push_back(e->template cast<FieldAccess>()->v());
+          stack.push_back(e->template cast<FieldAccess>()->field());
           break;
         case Expression::E_COMP: {
           auto* comp = e->template cast<Comprehension>();
@@ -705,9 +709,9 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
           outputVars.push_back(sl);
 
           unsigned int idx1EnumId =
-              (vd->type().enumId() != 0 ? e.getArrayEnum(vd->type().enumId())[0] : 0);
+              (vd->type().typeId() != 0 ? e.getArrayEnum(vd->type().typeId())[0] : 0);
           unsigned int xEnumId =
-              (vd->type().enumId() != 0 ? e.getArrayEnum(vd->type().enumId())[al->dims()] : 0);
+              (vd->type().typeId() != 0 ? e.getArrayEnum(vd->type().typeId())[al->dims()] : 0);
 
           if (al->dims() == 1) {
             // 1d array
@@ -766,7 +770,7 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
               auto* aa = new ArrayAccess(Location().introduce(), vd->id(), {i_vd->id()});
               Type vd_t = vd->type();
               vd_t.dim(0);
-              vd_t.enumId(xEnumId);
+              vd_t.typeId(xEnumId);
               aa->type(vd_t);
 
               auto* show_i = Call::a(Location().introduce(), ASTString("showDzn"), {aa});
@@ -805,7 +809,7 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
             // 2d array
 
             unsigned int idx2EnumId =
-                (vd->type().enumId() != 0 ? e.getArrayEnum(vd->type().enumId())[1] : 0);
+                (vd->type().typeId() != 0 ? e.getArrayEnum(vd->type().typeId())[1] : 0);
 
             /*
 
@@ -865,7 +869,7 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
                   new ArrayAccess(Location().introduce(), vd->id(), {i_vd->id(), j_vd->id()});
               Type vd_t = vd->type();
               vd_t.dim(0);
-              vd_t.enumId(xEnumId);
+              vd_t.typeId(xEnumId);
               aa->type(vd_t);
 
               auto* show_i = Call::a(Location().introduce(), ASTString("showDzn"), {aa});
@@ -916,7 +920,7 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
         s << "array" << vd->type().dim() << "d(";
         for (int i = 0; i < vd->type().dim(); i++) {
           unsigned int enumId =
-              (vd->type().enumId() != 0 ? e.getArrayEnum(vd->type().enumId())[i] : 0);
+              (vd->type().typeId() != 0 ? e.getArrayEnum(vd->type().typeId())[i] : 0);
           if (al != nullptr || vd->ti()->ranges()[i]->domain() != nullptr) {
             if (enumId != 0) {
               IntVal idxMin;
@@ -1741,7 +1745,7 @@ void finalise_output(EnvI& e) {
             vd->flat(nullptr);
             // Remove enum type
             Type vdt = vd->type();
-            vdt.enumId(0);
+            vdt.typeId(0);
             vd->type(vdt);
             vd->ti()->type(vdt);
           }

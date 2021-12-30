@@ -25,7 +25,17 @@ public:
   /// Type-inst
   enum Inst { TI_PAR, TI_VAR };
   /// Basic type
-  enum BaseType { BT_BOOL, BT_INT, BT_FLOAT, BT_STRING, BT_ANN, BT_TOP, BT_BOT, BT_UNKNOWN };
+  enum BaseType {
+    BT_BOOL,
+    BT_INT,
+    BT_FLOAT,
+    BT_STRING,
+    BT_ANN,
+    BT_TUPLE,
+    BT_TOP,
+    BT_BOT,
+    BT_UNKNOWN
+  };
   /// Whether the expression is plain or set
   enum SetType { ST_PLAIN, ST_SET };
   /// Whether the expression is normal or optional
@@ -42,13 +52,14 @@ private:
   unsigned int _ot : 1;
   unsigned int _cv : 1;
   unsigned int _at : 1;
-  /** \brief Enumerated type identifier
+  /** \brief Type identifier
    * This is an index into a table in the Env. It is currently limited to
-   * 4095 different enumerated type identifiers.
-   * For a non-array type, this maps directly to the identity of the enum.
-   * For an array type, it maps to a tuple of enum identities.
+   * 4095 different type identifiers.
+   * For a non-array integer type, this maps directly to the identity of the enum.
+   * For a non-array struct type, this maps directly to the definition of an struct.
+   * For an array type, it maps to a tuple of type identifiers.
    */
-  unsigned int _enumId : 12;
+  unsigned int _typeId : 12;
   /// Number of array dimensions
   signed int _dim : 7;
 
@@ -61,7 +72,7 @@ public:
         _ot(OT_PRESENT),
         _cv(CV_NO),
         _at(AT_NO),
-        _enumId(0),
+        _typeId(0),
         _dim(0) {}
 
   /// Access type-inst
@@ -100,9 +111,9 @@ public:
   void any(bool b) { _at = b; }
 
   /// Access enum identifier
-  unsigned int enumId() const { return _enumId; }
+  unsigned int typeId() const { return _typeId; }
   /// Set enum identifier
-  void enumId(unsigned int eid) { _enumId = eid; }
+  void typeId(unsigned int eid) { _typeId = eid; }
 
   /// Access dimensions
   int dim() const { return _dim; }
@@ -114,20 +125,23 @@ public:
 
 protected:
   /// Constructor
-  Type(const Inst& ti, const BaseType& bt, const SetType& st, unsigned int enumId, int dim)
+  Type(const Inst& ti, const BaseType& bt, const SetType& st, unsigned int typeId, int dim)
       : _ti(ti),
         _bt(bt),
         _st(st),
         _ot(OT_PRESENT),
         _cv(ti == TI_VAR ? CV_YES : CV_NO),
         _at(AT_NO),
-        _enumId(enumId),
+        _typeId(typeId),
         _dim(dim) {}
 
 public:
   static Type parint(int dim = 0) { return Type(TI_PAR, BT_INT, ST_PLAIN, 0, dim); }
   static Type parenum(unsigned int enumId, int dim = 0) {
     return Type(TI_PAR, BT_INT, ST_PLAIN, enumId, dim);
+  }
+  static Type partuple(unsigned int typeId, int dim = 0) {
+    return Type(TI_PAR, BT_TUPLE, ST_PLAIN, typeId, dim);
   }
   static Type parbool(int dim = 0) { return Type(TI_PAR, BT_BOOL, ST_PLAIN, 0, dim); }
   static Type parfloat(int dim = 0) { return Type(TI_PAR, BT_FLOAT, ST_PLAIN, 0, dim); }
@@ -179,6 +193,7 @@ public:
   bool isfloat() const { return _dim == 0 && st() == ST_PLAIN && bt() == BT_FLOAT; }
   bool isbool() const { return _dim == 0 && st() == ST_PLAIN && bt() == BT_BOOL; }
   bool isstring() const { return isplain() && bt() == BT_STRING; }
+  bool istuple() const { return isplain() && bt() == BT_TUPLE; }
   bool isvar() const { return ti() != TI_PAR; }
   bool isvarbool() const {
     return ti() == TI_VAR && _dim == 0 && st() == ST_PLAIN && bt() == BT_BOOL && ot() == OT_PRESENT;
@@ -215,7 +230,7 @@ public:
   int toInt() const {
     return +((1 - static_cast<int>(_st)) << 28) + (static_cast<int>(_bt) << 24) +
            (static_cast<int>(_ti) << 21) + (static_cast<int>(_ot) << 20) +
-           (static_cast<int>(_enumId) << 8) + (_dim == -1 ? 1 : (_dim == 0 ? 0 : _dim + 1));
+           (static_cast<int>(_typeId) << 8) + (_dim == -1 ? 1 : (_dim == 0 ? 0 : _dim + 1));
   }
   static Type fromInt(int i) {
     Type t;
@@ -223,7 +238,7 @@ public:
     t._bt = static_cast<BaseType>((i >> 24) & 0xF);
     t._ti = static_cast<Inst>((i >> 21) & 0x7);
     t._ot = static_cast<OptType>((i >> 20) & 0x1);
-    t._enumId = static_cast<unsigned int>((i >> 8) & 0xFFF);
+    t._typeId = static_cast<unsigned int>((i >> 8) & 0xFFF);
     int dim = (i & 0x7F);
     t._dim = (dim == 0 ? 0 : (dim == 1 ? -1 : dim - 1));
     return t;
@@ -234,7 +249,7 @@ public:
   /// Check if \a bt0 is a subtype of \a bt1
   static bool btSubtype(const Type& t0, const Type& t1, bool strictEnums) {
     if (t0.bt() == t1.bt() &&
-        (!strictEnums || t0.dim() != 0 || (t0.enumId() == t1.enumId() || t1.enumId() == 0))) {
+        (!strictEnums || t0.dim() != 0 || (t0.typeId() == t1.typeId() || t1.typeId() == 0))) {
       return true;
     }
     switch (t0.bt()) {
