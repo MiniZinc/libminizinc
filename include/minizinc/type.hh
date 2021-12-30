@@ -148,6 +148,7 @@ public:
   static Type parstring(int dim = 0) { return Type(TI_PAR, BT_STRING, ST_PLAIN, 0, dim); }
   static Type partop(int dim = 0) { return Type(TI_PAR, BT_TOP, ST_PLAIN, 0, dim); }
   static Type ann(int dim = 0) { return Type(TI_PAR, BT_ANN, ST_PLAIN, 0, dim); }
+  static Type tuple(int dim = 0) { return Type(TI_PAR, BT_TUPLE, ST_PLAIN, 0, dim); }
   static Type parsetint(int dim = 0) { return Type(TI_PAR, BT_INT, ST_SET, 0, dim); }
   static Type parsetenum(unsigned int enumId, int dim = 0) {
     return Type(TI_PAR, BT_INT, ST_SET, enumId, dim);

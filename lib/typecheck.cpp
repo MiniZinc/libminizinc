@@ -1927,7 +1927,7 @@ public:
     assert(fa->v()->type().typeId() != 0);
     TupleType* tt = _env.getTupleType(fa->v()->type().typeId());
     IntVal i = fa->field()->cast<IntLit>()->v();
-    if (!i.isFinite() || i < 1 || i >= tt->size()) {
+    if (!i.isFinite() || i < 1 || i > tt->size()) {
       std::ostringstream oss;
       oss << "unable to access field " << i << " of an expression of type `"
           << fa->v()->type().toString(_env) << "'. Its fields are between 1 and " << tt->size()
@@ -2837,8 +2837,8 @@ public:
   /// Visit type inst
   void vTypeInst(TypeInst* ti) {
     Type tt = ti->type();
-    bool foundEnum =
-        !ti->ranges().empty() && (ti->domain() != nullptr) && ti->domain()->type().typeId() != 0;
+    bool needsArrayType = false;
+    // !ti->ranges().empty() && (ti->domain() != nullptr) && ti->domain()->type().typeId() != 0;
     if (!ti->ranges().empty()) {
       bool foundTIId = false;
       for (unsigned int i = 0; i < ti->ranges().size(); i++) {
@@ -2848,7 +2848,7 @@ public:
           tt.cv(true);
         }
         if (ri->type().typeId() != 0) {
-          foundEnum = true;
+          needsArrayType = true;
         }
         if (ri->type() == Type::top()) {
           //            if (foundTIId) {
@@ -2877,7 +2877,23 @@ public:
       tt.cv(true);
     }
     if (ti->domain() != nullptr) {
-      if (TIId* tiid = ti->domain()->dynamicCast<TIId>()) {
+      if (ti->domain()->type().typeId() != 0) {
+        needsArrayType = needsArrayType || !ti->ranges().empty();
+      }
+      if (ti->type().bt() == Type::BT_TUPLE) {
+        needsArrayType = needsArrayType || !ti->ranges().empty();
+        assert(ti->domain()->isa<ArrayLit>());
+        auto* al = ti->domain()->cast<ArrayLit>();
+        std::vector<Type> fields(al->size());
+        for (unsigned int i = 0; i < al->size(); i++) {
+          assert((*al)[i]->isa<TypeInst>());
+          vTypeInst((*al)[i]->cast<TypeInst>());
+          fields[i] = (*al)[i]->type();
+        }
+        unsigned int typeId = _env.registerTupleType(fields);
+        tt.typeId(typeId);
+        // ti->domain(nullptr); // TODO: Should we remove the bad domain value?
+      } else if (TIId* tiid = ti->domain()->dynamicCast<TIId>()) {
         if (tiid->isEnum()) {
           tt.bt(Type::BT_INT);
         }
@@ -2914,14 +2930,14 @@ public:
     } else {
       //        assert(ti->domain()==NULL || ti->domain()->isa<TIId>());
     }
-    if (foundEnum) {
-      std::vector<unsigned int> enumIds(ti->ranges().size() + 1);
+    if (needsArrayType) {
+      std::vector<unsigned int> typeIds(ti->ranges().size() + 1);
       for (unsigned int i = 0; i < ti->ranges().size(); i++) {
-        enumIds[i] = ti->ranges()[i]->type().typeId();
+        typeIds[i] = ti->ranges()[i]->type().typeId();
       }
-      enumIds[ti->ranges().size()] = ti->domain() != nullptr ? ti->domain()->type().typeId() : 0;
-      int arrayEnumId = _env.registerArrayEnum(enumIds);
-      tt.typeId(arrayEnumId);
+      typeIds[ti->ranges().size()] = ti->domain() != nullptr ? ti->domain()->type().typeId() : 0;
+      int arrayTypeId = _env.registerArrayEnum(typeIds);
+      tt.typeId(arrayTypeId);
     }
 
     if (tt.st() == Type::ST_SET && tt.ti() == Type::TI_VAR && tt.bt() != Type::BT_INT &&

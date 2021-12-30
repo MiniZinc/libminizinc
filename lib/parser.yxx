@@ -879,6 +879,13 @@ base_ti_expr_tail :
       { $$ = new TypeInst(@$,Type::parstring()); }
     | MZN_ANN
       { $$ = new TypeInst(@$,Type::ann()); }
+    | MZN_TUPLE '(' ti_expr_list ')'
+      { 
+				std::vector<Expression*> tmp($3->begin(), $3->end());
+				ArrayLit* al = ArrayLit::constructTuple(@$, tmp);
+				$$ = new TypeInst(@$, Type::tuple(), al);
+				delete $3;
+			}
     | set_expr
         { if ($1) $$ = new TypeInst(@$,Type(),$1); }
     | MZN_TI_IDENTIFIER
