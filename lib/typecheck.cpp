@@ -2888,14 +2888,23 @@ public:
         needsArrayType = needsArrayType || !ti->ranges().empty();
         assert(ti->domain()->isa<ArrayLit>());
         auto* al = ti->domain()->cast<ArrayLit>();
+        if (al->size() < 2) {
+          throw TypeError(_env, ti->loc(), "tuple types must contain at least 2 fields");
+        }
+
         std::vector<Type> fields(al->size());
+        bool all_var = true;
         for (unsigned int i = 0; i < al->size(); i++) {
           assert((*al)[i]->isa<TypeInst>());
           vTypeInst((*al)[i]->cast<TypeInst>());
           fields[i] = (*al)[i]->type();
+          all_var = all_var && fields[i].isvar();
         }
         unsigned int typeId = _env.registerTupleType(fields);
         tt.typeId(typeId);
+        if (all_var) {
+          tt.ti(Type::TI_VAR);
+        }
       } else if (TIId* tiid = ti->domain()->dynamicCast<TIId>()) {
         if (tiid->isEnum()) {
           tt.bt(Type::BT_INT);
