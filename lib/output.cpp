@@ -999,7 +999,13 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
     outputVars.push_back(sl);
 
     if (vd->type().bt() == Type::BT_TUPLE) {
-      assert(al != nullptr);
+      if (al == nullptr) {
+        if ((vd->flat() != nullptr) && (vd->flat()->e() != nullptr)) {
+          al = eval_array_lit(e, vd->flat()->e());
+        } else if (vd->e() != nullptr) {
+          al = eval_array_lit(e, vd->e());
+        }
+      }
       // Do not use tuples in output to ensure FlatZinc compatibility= nvd->id();
 
       if (vd->type().dim() > 0) {
