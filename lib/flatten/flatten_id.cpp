@@ -144,6 +144,32 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
                  (vd->ti()->domain()->cast<SetLit>()->isv() != nullptr) &&
                  vd->ti()->domain()->cast<SetLit>()->isv()->card() == 1) {
         rete = IntLit::a(vd->ti()->domain()->cast<SetLit>()->isv()->min());
+      } else if (vd->ti()->type().bt() == Type::BT_TUPLE) {
+        auto* fieldsti = vd->ti()->domain()->cast<ArrayLit>();
+        std::vector<Expression*> elems(fieldsti->size());
+        for (size_t i = 0; i < fieldsti->size(); ++i) {
+          auto* nti = (*fieldsti)[i]->cast<TypeInst>();
+          Type nty(nti->type());
+          if (vd->ti()->type().isvar()) {
+            nty.ti(Type::TI_VAR);
+          }
+          auto* vti = new TypeInst(Location().introduce(), nty, nti->ranges(), nti->domain());
+          VarDecl* nvd = new_vardecl(env, Ctx(), vti, nullptr, vd, nullptr);
+          elems[i] =
+              flatten_id(env, ctx, nvd->id(), nullptr, env.constants.varTrue, doNotFollowChains)
+                  .r();
+        }
+        // After introducing variables for each tuple element, the original domain can be
+        // set to "computed" (since it is a consequence of the individual variable domains)
+        vd->ti()->setComputedDomain(true);
+
+        ArrayLit* al = ArrayLit::constructTuple(Location().introduce(), elems);
+        al->type(vd->type());
+        vd->e(al);
+        env.voAddExp(vd);
+        EE ee;
+        ee.r = vd;
+        env.cseMapInsert(vd->e(), ee);
       }
     } else if (!vd->ti()->ranges().empty()) {
       // create fresh variables and array literal
@@ -183,6 +209,11 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
         auto* vti = new TypeInst(Location().introduce(), tt, vd->ti()->domain());
         VarDecl* nvd = new_vardecl(env, Ctx(), vti, nullptr, vd, nullptr);
         elems[i] = nvd->id();
+        if (tt.bt() == Type::BT_TUPLE) {
+          elems[i] =
+              flatten_id(env, ctx, nvd->id(), nullptr, env.constants.varTrue, doNotFollowChains)
+                  .r();
+        }
       }
       // After introducing variables for each array element, the original domain can be
       // set to "computed" (since it is a consequence of the individual variable domains)

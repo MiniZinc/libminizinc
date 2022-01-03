@@ -313,15 +313,16 @@ void make_par(EnvI& env, Expression* e) {
     void vCall(Call* c) {
       if (c->id() == env.constants.ids.format || c->id() == env.constants.ids.show ||
           c->id() == env.constants.ids.showDzn || c->id() == env.constants.ids.showJSON) {
-        unsigned int enumId = c->arg(c->argCount() - 1)->type().typeId();
-        if (enumId != 0U && c->arg(c->argCount() - 1)->type().dim() != 0) {
-          const std::vector<unsigned int>& enumIds = env.getArrayEnum(enumId);
-          enumId = enumIds[enumIds.size() - 1];
+        Type argtype = c->arg(c->argCount() - 1)->type();
+        unsigned int typeId = argtype.typeId();
+        if (typeId != 0U && argtype.dim() != 0) {
+          const std::vector<unsigned int>& typeIds = env.getArrayEnum(typeId);
+          typeId = typeIds[typeIds.size() - 1];
         }
-        if (enumId > 0) {
+        if (typeId > 0 && argtype.bt() == Type::BT_INT) {
           GCLock lock;
           Expression* obj = c->arg(c->argCount() - 1);
-          Id* ti_id = env.getEnum(enumId)->e()->id();
+          Id* ti_id = env.getEnum(typeId)->e()->id();
           std::string enumName = create_enum_to_string_name(ti_id, "_toString_");
           bool is_json = c->id() == env.constants.ids.showJSON;
           const int dimensions = obj->type().dim();
@@ -406,7 +407,7 @@ void make_par(EnvI& env, Expression* e) {
           }
         }
         if (c->id() == env.constants.ids.showDzn ||
-            (c->id() == env.constants.ids.showJSON && enumId > 0)) {
+            (c->id() == env.constants.ids.showJSON && typeId > 0 && argtype.bt() == Type::BT_INT)) {
           c->id(env.constants.ids.show);
         }
       }
@@ -689,8 +690,8 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
     std::ostringstream s;
     s << Printer::quoteId(name) << " = ";
     bool needArrayXd = false;
+    ArrayLit* al = nullptr;
     if (vd->type().dim() > 0) {
-      ArrayLit* al = nullptr;
       if (!vd->ann().contains(e.constants.ann.output_only)) {
         if ((vd->flat() != nullptr) && (vd->flat()->e() != nullptr)) {
           al = eval_array_lit(e, vd->flat()->e());
@@ -701,7 +702,7 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
       if (al == nullptr || !al->empty()) {
         // First check if we can use an array literal representation
         // or whether we have to introduce an arrayXd call
-        if (vd->type().dim() <= 2 && al != nullptr) {
+        if (vd->type().dim() <= 2 && al != nullptr && vd->type().bt() != Type::BT_TUPLE) {
           if (vd->type().dim() == 2) {
             s << "\n";
           }
@@ -997,14 +998,62 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
     auto* sl = new StringLit(Location().introduce(), s.str());
     outputVars.push_back(sl);
 
-    std::vector<Expression*> showArgs(1);
-    showArgs[0] = vd->id();
-    Call* show = Call::a(Location().introduce(), ASTString("showDzn"), showArgs);
-    show->type(Type::parstring());
-    FunctionI* fi = e.model->matchFn(e, show, false);
-    assert(fi);
-    show->decl(fi);
-    outputVars.push_back(show);
+    if (vd->type().bt() == Type::BT_TUPLE) {
+      assert(al != nullptr);
+      // Do not use tuples in output to ensure FlatZinc compatibility= nvd->id();
+
+      if (vd->type().dim() > 0) {
+        outputVars.push_back(new StringLit(Location().introduce(), "["));
+        for (size_t i = 0; i < al->size(); ++i) {
+          auto* tup = follow_id((*al)[i])->cast<ArrayLit>();
+          outputVars.push_back(new StringLit(Location().introduce(), "("));
+          for (size_t i = 0; i < tup->size(); ++i) {
+            std::vector<Expression*> showArgs(1);
+            showArgs[0] = (*tup)[i];
+            Call* show = Call::a(Location().introduce(), ASTString("showDzn"), showArgs);
+            show->type(Type::parstring());
+            FunctionI* fi = e.model->matchFn(e, show, false);
+            assert(fi);
+            show->decl(fi);
+            outputVars.push_back(show);
+            if (i < tup->size() - 1) {
+              outputVars.push_back(new StringLit(Location().introduce(), ", "));
+            }
+          }
+          outputVars.push_back(new StringLit(Location().introduce(), ")"));
+          if (i < al->size() - 1) {
+            outputVars.push_back(new StringLit(Location().introduce(), ", "));
+          }
+        }
+        outputVars.push_back(new StringLit(Location().introduce(), "]"));
+      } else {
+        outputVars.push_back(new StringLit(Location().introduce(), "("));
+        for (size_t i = 0; i < al->size(); ++i) {
+          std::vector<Expression*> showArgs(1);
+          showArgs[0] = (*al)[i];
+          Call* show = Call::a(Location().introduce(), ASTString("showDzn"), showArgs);
+          show->type(Type::parstring());
+          FunctionI* fi = e.model->matchFn(e, show, false);
+          assert(fi);
+          show->decl(fi);
+          outputVars.push_back(show);
+          if (i < al->size() - 1) {
+            outputVars.push_back(new StringLit(Location().introduce(), ", "));
+          }
+        }
+        outputVars.push_back(new StringLit(Location().introduce(), ")"));
+      }
+
+    } else {
+      std::vector<Expression*> showArgs(1);
+      showArgs[0] = vd->id();
+      Call* show = Call::a(Location().introduce(), ASTString("showDzn"), showArgs);
+      show->type(Type::parstring());
+      FunctionI* fi = e.model->matchFn(e, show, false);
+      assert(fi);
+      show->decl(fi);
+      outputVars.push_back(show);
+    }
     std::string ends = needArrayXd ? ")" : "";
     ends += ";\n";
     auto* eol = new StringLit(Location().introduce(), ends);

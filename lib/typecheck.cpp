@@ -1934,7 +1934,11 @@ public:
           << ".";
       throw TypeError(_env, fa->loc(), oss.str());
     }
-    fa->type(tt->field(i.toInt() - 1));
+    Type ty(tt->field(i.toInt() - 1));
+    if (fa->v()->type().isvar()) {
+      ty.ti(Type::TI_VAR);
+    }
+    fa->type(ty);
   }
   /// Visit array comprehension
   void vComprehension(Comprehension* c) {
@@ -2892,7 +2896,6 @@ public:
         }
         unsigned int typeId = _env.registerTupleType(fields);
         tt.typeId(typeId);
-        // ti->domain(nullptr); // TODO: Should we remove the bad domain value?
       } else if (TIId* tiid = ti->domain()->dynamicCast<TIId>()) {
         if (tiid->isEnum()) {
           tt.bt(Type::BT_INT);

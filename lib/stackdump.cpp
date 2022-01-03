@@ -106,6 +106,9 @@ void StackDump::print(std::ostream& os) const {
       case Expression::E_ARRAYACCESS:
         os << "array access" << std::endl;
         break;
+      case Expression::E_FIELDACCESS:
+        os << "field access" << std::endl;
+        break;
       case Expression::E_COMP: {
         const Comprehension* cmp = e->cast<Comprehension>();
         if (cmp->set()) {

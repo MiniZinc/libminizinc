@@ -202,6 +202,17 @@ public:
           _os << "???";
           break;
       }
+    } else if (const auto* al = e->dynamicCast<ArrayLit>()) {
+      assert(type.bt() == Type::BT_TUPLE);
+      _os << "tuple(";
+      for (size_t i = 0; i < al->size(); ++i) {
+        auto* ti = (*al)[i]->cast<TypeInst>();
+        p(ti);
+        if (i < al->size() - 1) {
+          _os << ", ";
+        }
+      }
+      _os << ")";
     } else {
       p(e);
     }
@@ -1217,6 +1228,17 @@ Document* tiexpression_to_document(const Type& type, const Expression* e) {
         dl->addStringToList("???");
         break;
     }
+  } else if (const auto* al = e->dynamicCast<ArrayLit>()) {
+    assert(type.bt() == Type::BT_TUPLE);
+    dl->addStringToList("tuple(");
+    for (size_t i = 0; i < al->size(); ++i) {
+      auto* ti = (*al)[i]->cast<TypeInst>();
+      dl->addDocumentToList(expression_to_document(ti));
+      if (i < al->size() - 1) {
+        dl->addStringToList(", ");
+      }
+    }
+    dl->addStringToList(")");
   } else {
     dl->addDocumentToList(expression_to_document(e));
   }
@@ -1343,7 +1365,11 @@ public:
     DocumentList* dl;
     unsigned int n = al->dims();
     if (n == 1 && al->min(0) == 1) {
-      dl = new DocumentList("[", ", ", "]");
+      if (al->isTuple()) {
+        dl = new DocumentList("(", ", ", ")");
+      } else {
+        dl = new DocumentList("[", ", ", "]");
+      }
       for (unsigned int i = 0; i < al->size(); i++) {
         dl->addDocumentToList(expression_to_document((*al)[i]));
       }

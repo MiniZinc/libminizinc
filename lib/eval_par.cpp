@@ -149,6 +149,7 @@ template <class E>
 typename E::Val eval_id(EnvI& env, Expression* e) {
   Id* id = e->cast<Id>();
   if (!id->decl()) {
+    GCLock lock;
     throw EvalError(env, e->loc(), "undeclared identifier", id->str());
   }
   VarDecl* vd = id->decl();
@@ -156,6 +157,7 @@ typename E::Val eval_id(EnvI& env, Expression* e) {
     vd = vd->flat();
   }
   if (!vd->e()) {
+    GCLock lock;
     throw EvalError(env, vd->loc(), "cannot evaluate expression", id->str());
   }
   typename E::Val r = E::e(env, vd->e());
