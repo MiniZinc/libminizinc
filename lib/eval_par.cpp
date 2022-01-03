@@ -606,6 +606,8 @@ ArrayLit* eval_array_comp(EnvI& env, Comprehension* e) {
   return ret;
 }
 
+Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e);
+
 ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
   CallStackItem csi(env, e);
   switch (e->eid()) {
@@ -623,8 +625,13 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
       return eval_id<EvalArrayLit>(env, e);
     case Expression::E_ARRAYLIT:
       return e->cast<ArrayLit>();
-    case Expression::E_ARRAYACCESS:
-      throw EvalError(env, e->loc(), "arrays of arrays not supported");
+    case Expression::E_ARRAYACCESS: {
+      if (e->type().bt() != Type::BT_TUPLE) {
+        throw EvalError(env, e->loc(), "arrays of arrays not supported");
+      }
+      GCLock lock;
+      return eval_array_lit(env, eval_arrayaccess(env, e->cast<ArrayAccess>()));
+    }
     case Expression::E_FIELDACCESS: {
       auto* fa = e->cast<FieldAccess>();
       return eval_array_lit(env, eval_fieldaccess(env, fa));
