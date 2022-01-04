@@ -288,7 +288,7 @@ bool noTuple(ParserLocation& location, void* parm, Expression* e) {
 %type <expression> expr expr_atom_head expr_atom_head_nonstring array_access_expr
 %type <expression> comp_expr comp_expr_atom_head comp_expr_atom_head_nonstring
 %type <expression> set_expr string_expr string_quote_rest annotation_expr enum_construct
-%type <expression> simple_array_literal simple_array_literal_2d simple_array_comp if_then_else_expr call_expr quoted_op_call let_expr operation_item_tail set_literal set_comp
+%type <expression> simple_array_literal simple_array_literal_2d simple_array_comp if_then_else_expr call_expr quoted_op_call let_expr operation_item_tail set_literal set_comp tuple_literal
 
 %type <expressions1d> expr_list expr_list_head array_access_expr_list array_access_expr_list_head elseif_list let_vardecl_item_list enum_init enum_id_list string_lit_list access_tail
 %type <indexedexpression2d> comp_expr_list comp_expr_list_head
@@ -1261,18 +1261,6 @@ expr_atom_head_nonstring :
       { $$=new BinOp(@$, $2, BOT_POW, IntLit::a(-1)); }
     | '(' expr ')' access_tail MZN_POW_MINUS1
       { if ($4) $$=new BinOp(@$,createAccess(@$, $2, *$4), BOT_POW, IntLit::a(-1)); delete $4; }
-    | '(' expr ',' expr_list ')'
-      { 
-				auto* list = $4;
-				if (list == nullptr) {
-					list = new std::vector<Expression*>();
-				}
-				if ($2) {
-					list->insert(list->begin(), $2);
-				}
-				$$=ArrayLit::constructTuple(@$, *list);
-				delete list;
-			}
     | MZN_IDENTIFIER
       { $$=new Id(@$, $1, nullptr); free($1); }
     | MZN_IDENTIFIER access_tail
@@ -1376,6 +1364,15 @@ expr_atom_head_nonstring :
     | call_expr access_tail MZN_POW_MINUS1
       { if ($2) $$=createAccess(@$, $1, *$2);
         delete $2; }
+    | tuple_literal
+    | tuple_literal access_tail
+      { if ($2) $$=createAccess(@$, $1, *$2);
+        delete $2; }
+    | tuple_literal MZN_POW_MINUS1
+      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+    | tuple_literal access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+        delete $2; }
 
 string_expr:
       MZN_STRING_LITERAL
@@ -1435,6 +1432,25 @@ set_literal :
     | '{' expr_list '}'
       { if ($2) $$ = new SetLit(@$, *$2);
         delete $2; }
+
+tuple_literal :
+      '(' expr ',' ')'
+      {
+				std::vector<Expression*> list({ $2 });
+				$$=ArrayLit::constructTuple(@$, list);
+			}
+    | '(' expr ',' expr_list ')'
+      {
+				auto* list = $4;
+				if (list == nullptr) {
+					list = new std::vector<Expression*>();
+				}
+				if ($2) {
+					list->insert(list->begin(), $2);
+				}
+				$$=ArrayLit::constructTuple(@$, *list);
+				delete list;
+			}
 
 set_comp :
       '{' expr '|' comp_tail '}'
@@ -2116,6 +2132,10 @@ comp_expr_list_head :
           if ($$->first.size() != $$->second.size()) {
             yyerror(&@$,parm,"invalid array literal, mixing indexed and non-indexed values");
             $$ = nullptr;
+					} else if ($3->isa<ArrayLit>() && $3->cast<ArrayLit>()->isTuple() && $3->cast<ArrayLit>()->size() == 1) {
+            $$->first.push_back((*$3->cast<ArrayLit>())[0]);
+            $$->second.push_back($5);
+						delete $3;
           } else {
             $$->first.push_back($3);
             $$->second.push_back($5);

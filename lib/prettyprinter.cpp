@@ -395,6 +395,9 @@ public:
               _os << ",";
             }
           }
+          if (al->isTuple() && al->size() == 1) {
+            _os << ",";
+          }
           _os << (al->isTuple() ? ")" : "]");
         } else if (n == 2 && al->min(0) == 1 && al->min(1) == 1 && al->max(1) != 0) {
           assert(!al->isTuple());
@@ -1366,12 +1369,19 @@ public:
     unsigned int n = al->dims();
     if (n == 1 && al->min(0) == 1) {
       if (al->isTuple()) {
-        dl = new DocumentList("(", ", ", ")");
+        if (al->size() == 1) {
+          dl = new DocumentList("(", "", ")");
+        } else {
+          dl = new DocumentList("(", ", ", ")");
+        }
       } else {
         dl = new DocumentList("[", ", ", "]");
       }
       for (unsigned int i = 0; i < al->size(); i++) {
         dl->addDocumentToList(expression_to_document((*al)[i]));
+      }
+      if (al->isTuple() && al->size() == 1) {
+        dl->addStringToList(",");
       }
     } else if (n == 2 && al->min(0) == 1 && al->min(1) == 1) {
       dl = new DocumentList("[| ", " | ", " |]");

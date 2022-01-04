@@ -1026,6 +1026,9 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
               outputVars.push_back(new StringLit(Location().introduce(), ", "));
             }
           }
+          if (tup->size() == 1) {
+            outputVars.push_back(new StringLit(Location().introduce(), ","));
+          }
           outputVars.push_back(new StringLit(Location().introduce(), ")"));
           if (i < al->size() - 1) {
             outputVars.push_back(new StringLit(Location().introduce(), ", "));
@@ -1046,6 +1049,9 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
           if (i < al->size() - 1) {
             outputVars.push_back(new StringLit(Location().introduce(), ", "));
           }
+        }
+        if (al->size() == 1) {
+          outputVars.push_back(new StringLit(Location().introduce(), ","));
         }
         outputVars.push_back(new StringLit(Location().introduce(), ")"));
       }

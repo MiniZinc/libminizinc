@@ -2888,9 +2888,6 @@ public:
         needsArrayType = needsArrayType || !ti->ranges().empty();
         assert(ti->domain()->isa<ArrayLit>());
         auto* al = ti->domain()->cast<ArrayLit>();
-        if (al->size() < 2) {
-          throw TypeError(_env, ti->loc(), "tuple types must contain at least 2 fields");
-        }
 
         std::vector<Type> fields(al->size());
         bool all_var = true;
