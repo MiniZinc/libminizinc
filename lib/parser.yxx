@@ -2122,21 +2122,6 @@ comp_expr_list_head :
           }
         }
       }
-    | comp_expr_list_head ',' '(' expr ',' expr_list ')' ':' expr
-      { $$=$1;
-        if ($$ && $4 && $6) {
-          if ($$->first.size() != $$->second.size()) {
-            yyerror(&@$,parm,"invalid array literal, mixing indexed and non-indexed values");
-            $$ = nullptr;
-          } else {
-            $6->insert($6->begin(), $4);
-            auto* index = ArrayLit::constructTuple(@$, *$6);
-            $$->first.push_back(index);
-            $$->second.push_back($9);
-          }
-        }
-      }
-
 
 /***********************************************/
 
