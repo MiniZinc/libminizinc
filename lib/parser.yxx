@@ -95,10 +95,22 @@ Expression* createDocComment(const ParserLocation& loc, const std::string& s) {
   return c;
 }
 
-Expression* createArrayAccess(const ParserLocation& loc, Expression* e, std::vector<std::vector<Expression*> >& idx) {
+Expression* createAccess(const ParserLocation& loc, Expression* e, const std::vector<Expression*>& idx) {
   Expression* ret = e;
-  for (unsigned int i=0; i<idx.size(); i++) {
-    ret = new ArrayAccess(Location(loc), ret, idx[i]);
+  for (auto* expr : idx) {
+		// Set location of access expression (TODO: can this be more accurate?)
+		expr->loc(loc);
+
+		// Insert member being accessed
+		if (auto* fa = expr->dynamicCast<FieldAccess>()) {
+			fa->v(ret);
+		} else {
+			auto* aa = expr->cast<ArrayAccess>();
+			aa->v(ret);
+		}
+
+		// Set access expression as current incumbent
+		ret = expr;
   }
   return ret;
 }
@@ -238,7 +250,7 @@ bool noTuple(ParserLocation& location, void* parm, Expression* e) {
 %nonassoc MZN_LE MZN_GR MZN_LQ MZN_GQ MZN_EQ MZN_NQ MZN_WEAK_EQ MZN_WEAK_NQ
 %nonassoc MZN_IN MZN_SUBSET MZN_SUPERSET
 %left MZN_UNION MZN_DIFF MZN_SYMDIFF MZN_INTERSECT 
-%nonassoc MZN_DOT MZN_DOTDOT MZN_DOTDOT_LE MZN_LE_DOTDOT MZN_LE_DOTDOT_LE
+%nonassoc MZN_DOTDOT MZN_DOTDOT_LE MZN_LE_DOTDOT MZN_LE_DOTDOT_LE
 %left MZN_PLUS MZN_MINUS MZN_WEAK_PLUS MZN_WEAK_MINUS
 %left MZN_MULT MZN_DIV MZN_IDIV MZN_MOD MZN_WEAK_MULT MZN_WEAK_DIV MZN_WEAK_IDIV
 %left MZN_POW MZN_POW_MINUS1
@@ -278,9 +290,9 @@ bool noTuple(ParserLocation& location, void* parm, Expression* e) {
 %type <expression> set_expr string_expr string_quote_rest annotation_expr enum_construct
 %type <expression> simple_array_literal simple_array_literal_2d simple_array_comp if_then_else_expr call_expr quoted_op_call let_expr operation_item_tail set_literal set_comp
 
-%type <expressions1d> expr_list expr_list_head array_access_expr_list array_access_expr_list_head elseif_list let_vardecl_item_list enum_init enum_id_list string_lit_list
+%type <expressions1d> expr_list expr_list_head array_access_expr_list array_access_expr_list_head elseif_list let_vardecl_item_list enum_init enum_id_list string_lit_list access_tail
 %type <indexedexpression2d> comp_expr_list comp_expr_list_head
-%type <expressions2d> simple_array_literal_2d_list array_access_tail
+%type <expressions2d> simple_array_literal_2d_list
 %type <indexedexpressions2d> simple_array_literal_2d_indexed_list simple_array_literal_2d_indexed_list_head
 %type <indexedexpression2d> simple_array_literal_2d_indexed_list_row simple_array_literal_2d_indexed_list_row_head
 %type <expressions3d> simple_array_literal_3d_list
@@ -1066,8 +1078,6 @@ set_expr :
 
 expr :
       expr_atom_head
-    | expr MZN_DOT MZN_INTEGER_LITERAL
-      { $$=new FieldAccess(Location(@$), $1, IntLit::a($3));}
     | expr MZN_COLONCOLON annotation_expr
       { if ($1 && $3) $1->addAnnotation($3); $$=$1; }
     | expr MZN_EQUIV expr
@@ -1245,12 +1255,12 @@ expr_atom_head :
 expr_atom_head_nonstring :
       '(' expr ')'
       { $$=$2; }
-    | '(' expr ')' array_access_tail
-      { if ($4) $$=createArrayAccess(@$, $2, *$4); delete $4; }
+    | '(' expr ')' access_tail
+      { if ($4) $$=createAccess(@$, $2, *$4); delete $4; }
     | '(' expr ')' MZN_POW_MINUS1
       { $$=new BinOp(@$, $2, BOT_POW, IntLit::a(-1)); }
-    | '(' expr ')' array_access_tail MZN_POW_MINUS1
-      { if ($4) $$=new BinOp(@$,createArrayAccess(@$, $2, *$4), BOT_POW, IntLit::a(-1)); delete $4; }
+    | '(' expr ')' access_tail MZN_POW_MINUS1
+      { if ($4) $$=new BinOp(@$,createAccess(@$, $2, *$4), BOT_POW, IntLit::a(-1)); delete $4; }
     | '(' expr ',' expr_list ')'
       { 
 				auto* list = $4;
@@ -1265,23 +1275,23 @@ expr_atom_head_nonstring :
 			}
     | MZN_IDENTIFIER
       { $$=new Id(@$, $1, nullptr); free($1); }
-    | MZN_IDENTIFIER array_access_tail
-      { if ($2) $$=createArrayAccess(@$, new Id(@1,$1,nullptr), *$2);
+    | MZN_IDENTIFIER access_tail
+      { if ($2) $$=createAccess(@$, new Id(@1,$1,nullptr), *$2);
         free($1); delete $2; }
     | MZN_IDENTIFIER MZN_POW_MINUS1
       { $$=new BinOp(@$,new Id(@$, $1, nullptr), BOT_POW, IntLit::a(-1)); free($1); }
-    | MZN_IDENTIFIER array_access_tail MZN_POW_MINUS1
-      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, new Id(@1,$1,nullptr), *$2), BOT_POW, IntLit::a(-1));
+    | MZN_IDENTIFIER access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createAccess(@$, new Id(@1,$1,nullptr), *$2), BOT_POW, IntLit::a(-1));
         free($1); delete $2; }
     | MZN_UNDERSCORE
       { $$=new AnonVar(@$); }
-    | MZN_UNDERSCORE array_access_tail
-      { if ($2) $$=createArrayAccess(@$, new AnonVar(@$), *$2);
+    | MZN_UNDERSCORE access_tail
+      { if ($2) $$=createAccess(@$, new AnonVar(@$), *$2);
         delete $2; }
     | MZN_UNDERSCORE MZN_POW_MINUS1
       { $$=new BinOp(@$,new AnonVar(@$), BOT_POW, IntLit::a(-1)); }
-    | MZN_UNDERSCORE array_access_tail MZN_POW_MINUS1
-      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, new AnonVar(@$), *$2), BOT_POW, IntLit::a(-1));
+    | MZN_UNDERSCORE access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createAccess(@$, new AnonVar(@$), *$2), BOT_POW, IntLit::a(-1));
         delete $2; }
     | MZN_BOOL_LITERAL
       { $$=Constants::constants().boollit(($1!=0)); }
@@ -1304,67 +1314,67 @@ expr_atom_head_nonstring :
     | MZN_ABSENT MZN_POW_MINUS1
       { $$=Constants::constants().absent; }
     | set_literal
-    | set_literal array_access_tail
-      { if ($2) $$=createArrayAccess(@$, $1, *$2);
+    | set_literal access_tail
+      { if ($2) $$=createAccess(@$, $1, *$2);
         delete $2; }
     | set_literal MZN_POW_MINUS1
       { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
-    | set_literal array_access_tail MZN_POW_MINUS1
-      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+    | set_literal access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
         delete $2; }
     | set_comp
-    | set_comp array_access_tail
-      { if ($2) $$=createArrayAccess(@$, $1, *$2);
+    | set_comp access_tail
+      { if ($2) $$=createAccess(@$, $1, *$2);
         delete $2; }
     | set_comp MZN_POW_MINUS1
       { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
-    | set_comp array_access_tail MZN_POW_MINUS1
-      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+    | set_comp access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
         delete $2; }
     | simple_array_literal
-    | simple_array_literal array_access_tail
-      { if ($2) $$=createArrayAccess(@$, $1, *$2);
+    | simple_array_literal access_tail
+      { if ($2) $$=createAccess(@$, $1, *$2);
         delete $2; }
     | simple_array_literal MZN_POW_MINUS1
       { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
-    | simple_array_literal array_access_tail MZN_POW_MINUS1
-      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+    | simple_array_literal access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
         delete $2; }
     | simple_array_literal_2d
-    | simple_array_literal_2d array_access_tail
-      { if ($2) $$=createArrayAccess(@$, $1, *$2);
+    | simple_array_literal_2d access_tail
+      { if ($2) $$=createAccess(@$, $1, *$2);
         delete $2; }
     | simple_array_literal_2d MZN_POW_MINUS1
       { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
-    | simple_array_literal_2d array_access_tail MZN_POW_MINUS1
-      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+    | simple_array_literal_2d access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
         delete $2; }
     | simple_array_comp
-    | simple_array_comp array_access_tail
-      { if ($2) $$=createArrayAccess(@$, $1, *$2);
+    | simple_array_comp access_tail
+      { if ($2) $$=createAccess(@$, $1, *$2);
         delete $2; }
     | simple_array_comp MZN_POW_MINUS1
       { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
-    | simple_array_comp array_access_tail MZN_POW_MINUS1
-      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+    | simple_array_comp access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
         delete $2; }
     | if_then_else_expr
-    | if_then_else_expr array_access_tail
-      { if ($2) $$=createArrayAccess(@$, $1, *$2);
+    | if_then_else_expr access_tail
+      { if ($2) $$=createAccess(@$, $1, *$2);
         delete $2; }
     | if_then_else_expr MZN_POW_MINUS1
       { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
-    | if_then_else_expr array_access_tail MZN_POW_MINUS1
-      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+    | if_then_else_expr access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
         delete $2; }
     | let_expr
     | call_expr
-    | call_expr array_access_tail
-      { if ($2) $$=createArrayAccess(@$, $1, *$2);
+    | call_expr access_tail
+      { if ($2) $$=createAccess(@$, $1, *$2);
         delete $2; }
     | call_expr MZN_POW_MINUS1
-    | call_expr array_access_tail MZN_POW_MINUS1
-      { if ($2) $$=createArrayAccess(@$, $1, *$2);
+    | call_expr access_tail MZN_POW_MINUS1
+      { if ($2) $$=createAccess(@$, $1, *$2);
         delete $2; }
 
 string_expr:
@@ -1388,21 +1398,36 @@ string_quote_rest:
         delete $1;
       }
 
-array_access_tail :
+access_tail :
       MZN_LEFT_BRACKET array_access_expr_list MZN_RIGHT_BRACKET
-      { $$=new std::vector<std::vector<Expression*> >();
+      { 
+			  $$=new std::vector<Expression*>();
         if ($2) {
-          $$->push_back(*$2);
+          auto* al = new ArrayAccess(@$, nullptr, *$2);
+          $$->push_back(al);
           delete $2;
         }
       }
-    | array_access_tail MZN_LEFT_BRACKET array_access_expr_list MZN_RIGHT_BRACKET
-      { $$=$1;
+		| MZN_DOT MZN_INTEGER_LITERAL
+      {
+				$$=new std::vector<Expression*>();
+				$$->push_back({ new FieldAccess(@$, nullptr, IntLit::a($2)) });
+			}
+    | access_tail MZN_LEFT_BRACKET array_access_expr_list MZN_RIGHT_BRACKET
+      { 
+			  $$=$1;
         if ($$ && $3) {
-          $$->push_back(*$3);
+          auto* al = new ArrayAccess(@$, nullptr, *$3);
+          $$->push_back(al);
           delete $3;
         }
       }
+		| access_tail MZN_DOT MZN_INTEGER_LITERAL
+      {
+			  $$=$1;
+				$$->push_back({ new FieldAccess(@$, nullptr, IntLit::a($3)) });
+			}
+
 
 set_literal :
       '{' '}'
@@ -1932,12 +1957,12 @@ comp_expr_atom_head_nonstring :
         }
         delete $2;
       }
-    | '(' expr_list ')' array_access_tail
+    | '(' expr_list ')' access_tail
       { if ($2 && $2->size() != 1) {
           delete $2;
           yyerror(&@2, parm, "tuple not supported");
         } else {
-          if ($2 && $4) $$=createArrayAccess(@$, (*$2)[0], *$4); delete $4; delete $2;
+          if ($2 && $4) $$=createAccess(@$, (*$2)[0], *$4); delete $4; delete $2;
         }
       }
     | '(' expr_list ')' MZN_POW_MINUS1
@@ -1949,35 +1974,35 @@ comp_expr_atom_head_nonstring :
           delete $2;
         }
       }
-    | '(' expr_list ')' array_access_tail MZN_POW_MINUS1
+    | '(' expr_list ')' access_tail MZN_POW_MINUS1
       { if ($2 && $2->size() != 1) {
           delete $2;
           yyerror(&@2, parm, "tuple not supported");
         } else {
-          if ($2 && $4) $$=new BinOp(@$,createArrayAccess(@$, (*$2)[0], *$4), BOT_POW, IntLit::a(-1));
+          if ($2 && $4) $$=new BinOp(@$,createAccess(@$, (*$2)[0], *$4), BOT_POW, IntLit::a(-1));
           delete $4;
           delete $2;
         }
       }
     | MZN_IDENTIFIER
       { $$=new Id(@$, $1, nullptr); free($1); }
-    | MZN_IDENTIFIER array_access_tail
-      { if ($2) $$=createArrayAccess(@$, new Id(@1,$1,nullptr), *$2);
+    | MZN_IDENTIFIER access_tail
+      { if ($2) $$=createAccess(@$, new Id(@1,$1,nullptr), *$2);
         free($1); delete $2; }
     | MZN_IDENTIFIER MZN_POW_MINUS1
       { $$=new BinOp(@$,new Id(@$, $1, nullptr), BOT_POW, IntLit::a(-1)); free($1); }
-    | MZN_IDENTIFIER array_access_tail MZN_POW_MINUS1
-      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, new Id(@1,$1,nullptr), *$2), BOT_POW, IntLit::a(-1));
+    | MZN_IDENTIFIER access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createAccess(@$, new Id(@1,$1,nullptr), *$2), BOT_POW, IntLit::a(-1));
         free($1); delete $2; }
     | MZN_UNDERSCORE
       { $$=new AnonVar(@$); }
-    | MZN_UNDERSCORE array_access_tail
-      { if ($2) $$=createArrayAccess(@$, new AnonVar(@$), *$2);
+    | MZN_UNDERSCORE access_tail
+      { if ($2) $$=createAccess(@$, new AnonVar(@$), *$2);
         delete $2; }
     | MZN_UNDERSCORE MZN_POW_MINUS1
       { $$=new BinOp(@$,new AnonVar(@$), BOT_POW, IntLit::a(-1)); }
-    | MZN_UNDERSCORE array_access_tail MZN_POW_MINUS1
-      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, new AnonVar(@$), *$2), BOT_POW, IntLit::a(-1));
+    | MZN_UNDERSCORE access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createAccess(@$, new AnonVar(@$), *$2), BOT_POW, IntLit::a(-1));
         delete $2; }
     | MZN_BOOL_LITERAL
       { $$=Constants::constants().boollit(($1!=0)); }
@@ -2000,67 +2025,67 @@ comp_expr_atom_head_nonstring :
     | MZN_ABSENT MZN_POW_MINUS1
       { $$=Constants::constants().absent; }
     | set_literal
-    | set_literal array_access_tail
-      { if ($2) $$=createArrayAccess(@$, $1, *$2);
+    | set_literal access_tail
+      { if ($2) $$=createAccess(@$, $1, *$2);
         delete $2; }
     | set_literal MZN_POW_MINUS1
       { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
-    | set_literal array_access_tail MZN_POW_MINUS1
-      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+    | set_literal access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
         delete $2; }
     | set_comp
-    | set_comp array_access_tail
-      { if ($2) $$=createArrayAccess(@$, $1, *$2);
+    | set_comp access_tail
+      { if ($2) $$=createAccess(@$, $1, *$2);
         delete $2; }
     | set_comp MZN_POW_MINUS1
       { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
-    | set_comp array_access_tail MZN_POW_MINUS1
-      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+    | set_comp access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
         delete $2; }
     | simple_array_literal
-    | simple_array_literal array_access_tail
-      { if ($2) $$=createArrayAccess(@$, $1, *$2);
+    | simple_array_literal access_tail
+      { if ($2) $$=createAccess(@$, $1, *$2);
         delete $2; }
     | simple_array_literal MZN_POW_MINUS1
       { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
-    | simple_array_literal array_access_tail MZN_POW_MINUS1
-      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+    | simple_array_literal access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
         delete $2; }
     | simple_array_literal_2d
-    | simple_array_literal_2d array_access_tail
-      { if ($2) $$=createArrayAccess(@$, $1, *$2);
+    | simple_array_literal_2d access_tail
+      { if ($2) $$=createAccess(@$, $1, *$2);
         delete $2; }
     | simple_array_literal_2d MZN_POW_MINUS1
       { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
-    | simple_array_literal_2d array_access_tail MZN_POW_MINUS1
-      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+    | simple_array_literal_2d access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
         delete $2; }
     | simple_array_comp
-    | simple_array_comp array_access_tail
-      { if ($2) $$=createArrayAccess(@$, $1, *$2);
+    | simple_array_comp access_tail
+      { if ($2) $$=createAccess(@$, $1, *$2);
         delete $2; }
     | simple_array_comp MZN_POW_MINUS1
       { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
-    | simple_array_comp array_access_tail MZN_POW_MINUS1
-      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+    | simple_array_comp access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
         delete $2; }
     | if_then_else_expr
-    | if_then_else_expr array_access_tail
-      { if ($2) $$=createArrayAccess(@$, $1, *$2);
+    | if_then_else_expr access_tail
+      { if ($2) $$=createAccess(@$, $1, *$2);
         delete $2; }
     | if_then_else_expr MZN_POW_MINUS1
       { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
-    | if_then_else_expr array_access_tail MZN_POW_MINUS1
-      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+    | if_then_else_expr access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
         delete $2; }
     | let_expr
     | call_expr
-    | call_expr array_access_tail
-      { if ($2) $$=createArrayAccess(@$, $1, *$2);
+    | call_expr access_tail
+      { if ($2) $$=createAccess(@$, $1, *$2);
         delete $2; }
     | call_expr MZN_POW_MINUS1
-    | call_expr array_access_tail MZN_POW_MINUS1
-      { if ($2) $$=createArrayAccess(@$, $1, *$2);
+    | call_expr access_tail MZN_POW_MINUS1
+      { if ($2) $$=createAccess(@$, $1, *$2);
         delete $2; }
 
 comp_expr_list : comp_expr_list_head comma_or_none

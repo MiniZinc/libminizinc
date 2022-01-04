@@ -1919,7 +1919,7 @@ public:
       std::ostringstream oss;
       oss << "field access attempted on expression of type `" << fa->v()->type().toString(_env)
           << "'";
-      throw TypeError(_env, fa->v()->loc(), oss.str());
+      throw TypeError(_env, fa->loc(), oss.str());
     }
     if (!fa->field()->type().isint() || !fa->field()->isa<IntLit>()) {
       throw TypeError(_env, fa->loc(), "field access of a tuple must use an integer literal");
