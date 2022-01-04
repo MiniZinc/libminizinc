@@ -1927,7 +1927,7 @@ public:
     assert(fa->v()->type().typeId() != 0);
     TupleType* tt = _env.getTupleType(fa->v()->type().typeId());
     IntVal i = fa->field()->cast<IntLit>()->v();
-    if (!i.isFinite() || i < 1 || i > tt->size()) {
+    if (!i.isFinite() || i < 1 || i.toInt() > tt->size()) {
       std::ostringstream oss;
       oss << "unable to access field " << i << " of an expression of type `"
           << fa->v()->type().toString(_env) << "'. Its fields are between 1 and " << tt->size()
@@ -2885,6 +2885,10 @@ public:
         needsArrayType = needsArrayType || !ti->ranges().empty();
       }
       if (ti->type().bt() == Type::BT_TUPLE) {
+        if (tt.isOpt()) {
+          throw TypeError(_env, ti->loc(), "opt tuples are not allowed");
+        }
+
         needsArrayType = needsArrayType || !ti->ranges().empty();
         assert(ti->domain()->isa<ArrayLit>());
         auto* al = ti->domain()->cast<ArrayLit>();
@@ -2896,6 +2900,21 @@ public:
           vTypeInst((*al)[i]->cast<TypeInst>());
           fields[i] = (*al)[i]->type();
           all_var = all_var && fields[i].isvar();
+          if (tt.isvar()) {
+            if (fields[i].st() == Type::ST_SET && fields[i].bt() != Type::BT_INT &&
+                fields[i].bt() != Type::BT_TOP) {
+              throw TypeError(_env, ti->loc(),
+                              "var tuples with set element types other than `int' are not allowed");
+            }
+            if (tt.bt() == Type::BT_ANN || tt.bt() == Type::BT_STRING) {
+              throw TypeError(
+                  _env, ti->loc(),
+                  "var tuples with " + fields[i].toString(_env) + " types are not allowed");
+            }
+            if (fields[i].dim() != 0) {
+              throw TypeError(_env, ti->loc(), "var tuples with array types are not allowed");
+            }
+          }
         }
         unsigned int typeId = _env.registerTupleType(fields);
         tt.typeId(typeId);
