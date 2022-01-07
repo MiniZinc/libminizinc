@@ -466,52 +466,21 @@ Expression* JSONParser::parseObject(istream& is, bool possibleString) {
 ArrayLit* JSONParser::parseArray(std::istream& is, bool possibleString) {
   // precondition: opening parenthesis has been read
   vector<Expression*> exps;
-  vector<pair<int, int>> dims;
-  dims.emplace_back(1, 0);
-  vector<bool> hadDim;
-  hadDim.push_back(false);
-  Token next;
-  for (;;) {
-    next = readToken(is);
-    if (next.t != T_LIST_OPEN) {
-      break;
-    }
-    dims.emplace_back(1, 0);
-    hadDim.push_back(false);
-  }
-  int curDim = static_cast<int>(dims.size()) - 1;
-  for (;;) {
+  Token next = readToken(is);
+  while (next.t != T_LIST_CLOSE) {
     switch (next.t) {
-      case T_LIST_CLOSE:
-        hadDim[curDim] = true;
-        curDim--;
-        if (curDim < 0) {
-          goto list_done;
-        } else if (!hadDim[curDim]) {
-          dims[curDim].second++;
-        }
-        break;
       case T_LIST_OPEN:
-        curDim++;
+        exps.push_back(parseArray(is));
         break;
       case T_COMMA:
         break;
       case T_INT:
-        if (!hadDim[curDim]) {
-          dims[curDim].second++;
-        }
         exps.push_back(IntLit::a(next.i));
         break;
       case T_FLOAT:
-        if (!hadDim[curDim]) {
-          dims[curDim].second++;
-        }
         exps.push_back(FloatLit::a(next.d));
         break;
       case T_STRING: {
-        if (!hadDim[curDim]) {
-          dims[curDim].second++;
-        }
         if (possibleString) {
           exps.push_back(new StringLit(Location().introduce(), next.s));
         } else {
@@ -520,21 +489,12 @@ ArrayLit* JSONParser::parseArray(std::istream& is, bool possibleString) {
         break;
       }
       case T_BOOL:
-        if (!hadDim[curDim]) {
-          dims[curDim].second++;
-        }
         exps.push_back(new BoolLit(Location().introduce(), next.b));
         break;
       case T_NULL:
-        if (!hadDim[curDim]) {
-          dims[curDim].second++;
-        }
         exps.push_back(_env.constants.absent);
         break;
       case T_OBJ_OPEN:
-        if (!hadDim[curDim]) {
-          dims[curDim].second++;
-        }
         exps.push_back(parseObject(is));
         break;
       default:
@@ -543,19 +503,7 @@ ArrayLit* JSONParser::parseArray(std::istream& is, bool possibleString) {
     }
     next = readToken(is);
   }
-list_done:
-  unsigned int expectedSize = 1;
-  for (auto& d : dims) {
-    expectedSize *= d.second;
-  }
-  if (exps.size() != expectedSize) {
-    std::stringstream ss;
-    ss << "mismatch in array dimensions: the array contains " << exps.size() << " elements, but "
-       << expectedSize << " elements were expected according to the declared index set(s).";
-    throw JSONError(_env, errLocation(), ss.str());
-    /// TODO: check each individual sub-array
-  }
-  return new ArrayLit(Location().introduce(), exps, dims);
+  return new ArrayLit(Location().introduce(), exps);
 }
 
 Expression* JSONParser::parseExp(std::istream& is, bool parseObjects, bool possibleString) {
@@ -592,11 +540,78 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
   if (al->empty()) {
     return al;  // Nothing to coerce
   }
-  if (al->dims() != 1 && al->dims() != ti->ranges().size()) {
-    return al;  // Incompatible: TypeError will be thrown on original array
+
+  // Add dimensions for array parsed by JSON
+  if (ti->type().dim() > 1) {
+    std::vector<Expression*> elements;
+    std::vector<std::pair<size_t, ArrayLit*>> it({{0, al}});
+    vector<pair<int, int>> dims;
+    dims.emplace_back(1, al->size());
+    Token next;
+    while (!it.empty()) {
+      if (it.size() == ti->type().dim()) {
+        for (size_t i = 0; i < it.back().second->size(); ++i) {
+          elements.push_back((*it.back().second)[i]);
+        }
+        it.pop_back();
+      } else {
+        if (it.back().first < it.back().second->size()) {
+          Expression* expr = (*it.back().second)[it.back().first];
+          it.back().first++;
+          if (!expr->isa<ArrayLit>()) {
+            throw JSONError(_env, expr->loc(),
+                            "Expected JSON array with " + std::to_string(ti->type().dim()) +
+                                " dimensions, but an expression in dimension " +
+                                std::to_string(it.size()) + " is not an array literal.");
+          }
+          auto* nal = expr->cast<ArrayLit>();
+          it.emplace_back(0, nal);
+          if (dims.size() < it.size()) {
+            dims.emplace_back(1, nal->size());
+          } else {
+            if (nal->size() != dims[it.size() - 1].second) {
+              // TODO: Inconsistent array size.
+            }
+          }
+        } else {
+          it.pop_back();
+          if (!it.empty()) {
+            it.back().first++;
+          }
+        }
+      }
+    }
+    al = new ArrayLit(al->loc(), elements, dims);
   }
 
+  // Convert tuples
+  if (ti->type().bt() == Type::BT_TUPLE) {
+    auto* types = ti->domain()->cast<ArrayLit>();
+    for (size_t i = 0; i < al->size(); ++i) {
+      if ((*al)[i]->isa<ArrayLit>()) {
+        auto* tup = ArrayLit::constructTuple((*al)[i]->loc(), (*al)[i]->cast<ArrayLit>());
+        al->set(i, tup);
+
+        if (tup->size() != types->size()) {
+          continue;  // Error will be raised by typechecker
+        }
+        for (size_t j = 0; j < tup->size(); ++j) {
+          if ((*tup)[j]->isa<ArrayLit>()) {
+            tup->set(j, coerceArray((*types)[j]->cast<TypeInst>(), (*tup)[j]->cast<ArrayLit>()));
+          }
+        }
+      }
+    }
+  }
+
+  // Check if just a tuple or no explicit ranges are given for the indices
+  if (ti->type().dim() == 0 || ti->ranges().size() != ti->type().dim()) {
+    return al;
+  }
+
+  // Check if any indexes are missing
   int missing_index = -1;
+  bool needs_call = false;
   for (int i = 0; i < ti->ranges().size(); ++i) {
     TypeInst* nti = ti->ranges()[i];
     if (nti->domain() == nullptr) {
@@ -604,9 +619,13 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
         return al;  // More than one index set is missing. Cannot compute correct index sets.
       }
       missing_index = i;
+      needs_call = true;
+    } else {
+      needs_call = true;
     }
   }
 
+  // Construct index set arguments for an "arrayXd" call.
   std::vector<Expression*> args(ti->ranges().size() + 1);
   Expression* missing_max = missing_index >= 0 ? IntLit::a(al->size()) : nullptr;
   for (int i = 0; i < ti->ranges().size(); ++i) {

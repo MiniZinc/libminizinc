@@ -26,6 +26,21 @@ using namespace std;
 
 namespace MiniZinc {
 
+void json_coerce_assignments_2d(JSONParser& jp, Model* m, const std::vector<std::string>& names) {
+  for (auto& i : *m) {
+    if (auto* ai = i->dynamicCast<AssignI>()) {
+      std::string ident(ai->id().c_str(), ai->id().size());
+      if (std::find(names.begin(), names.end(), ident) != names.end()) {
+        if (auto* al = ai->e()->dynamicCast<ArrayLit>()) {
+          GCLock lock;
+          auto* ti = new TypeInst(Location().introduce(), Type::mkAny(2));
+          ai->e(jp.coerceArray(ti, al));
+        }
+      }
+    }
+  }
+}
+
 bool SolverConfig::ExtraFlag::validate(const std::string& v) const {
   try {
     switch (flagType) {
@@ -252,6 +267,7 @@ SolverConfig SolverConfig::load(const string& filename) {
         m = new Model;
         GCLock lock;
         jp.parse(m, filename, false);
+        json_coerce_assignments_2d(jp, m, {"extraFlags"});
       } catch (JSONError& e) {
         delete m;
         m = nullptr;
@@ -557,6 +573,7 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
             m = new Model;
             GCLock lock;
             jp.parse(m, cf, false);
+            json_coerce_assignments_2d(jp, m, {"tagDefaults", "solverDefaults"});
           } catch (JSONError&) {
             delete m;
             m = nullptr;

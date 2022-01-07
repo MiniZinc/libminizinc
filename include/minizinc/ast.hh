@@ -858,6 +858,8 @@ public:
   ArrayLit(const Location& loc, const std::vector<KeepAlive>& v);
   /// Construct tuple
   static ArrayLit* constructTuple(const Location& loc, const std::vector<Expression*>& v);
+  /// Construct tuple (existing content)
+  static ArrayLit* constructTuple(const Location& loc, ArrayLit* v);
   /// Recompute hash value
   void rehash();
 

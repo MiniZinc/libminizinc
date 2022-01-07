@@ -219,7 +219,7 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
       } else {
         ArrayLit* c;
         if (al->isTuple()) {
-          c = ArrayLit::constructTuple(copy_location(m, e), {});
+          c = ArrayLit::constructTuple(copy_location(m, e), std::vector<Expression*>());
         } else {
           c = new ArrayLit(copy_location(m, e), std::vector<Expression*>(), dims);
         }

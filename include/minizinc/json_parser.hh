@@ -62,7 +62,6 @@ protected:
   Expression* parseObject(std::istream& is, bool possibleString = true);
 
   void parseModel(Model* m, std::istream& is, bool isData);
-  static Expression* coerceArray(TypeInst* intendedTI, ArrayLit* al);
 
 public:
   JSONParser(EnvI& env) : _env(env) {}
@@ -74,6 +73,8 @@ public:
   static bool fileIsJSON(const std::string& filename);
   /// Check if string \a data may contain JSON-encoded MiniZinc data
   static bool stringIsJSON(const std::string& data);
+  /// Coerces a array literal to take shape and (tuple) type
+  Expression* coerceArray(TypeInst* intendedTI, ArrayLit* al);
 };
 
 }  // namespace MiniZinc

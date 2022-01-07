@@ -403,6 +403,12 @@ inline ArrayLit* ArrayLit::constructTuple(const Location& loc, const std::vector
   return t;
 }
 
+inline ArrayLit* ArrayLit::constructTuple(const Location& loc, ArrayLit* v) {
+  auto* t = new ArrayLit(loc, v);
+  t->_secondaryId = AL_TUPLE;
+  return t;
+}
+
 inline ArrayAccess::ArrayAccess(const Location& loc, Expression* v,
                                 const std::vector<Expression*>& idx)
     : Expression(loc, E_ARRAYACCESS, Type()) {
