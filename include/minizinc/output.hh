@@ -27,6 +27,9 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e);
 /// Populate ::output annotations for model
 void process_toplevel_output_vars(EnvI& e);
 
+/// Create output for tuples that removes their use to ensure FlatZinc compatibility
+void create_tuple_output(EnvI& e, VarDecl* vd, bool is_json, std::vector<Expression*>& outputVars);
+
 /// Create initial output model
 void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outputObjective,
                    bool includeOutputItem, bool hasChecker, bool encapsulateJSON);

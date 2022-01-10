@@ -999,67 +999,11 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
     outputVars.push_back(sl);
 
     if (vd->type().bt() == Type::BT_TUPLE) {
-      if (al == nullptr) {
-        if ((vd->flat() != nullptr) && (vd->flat()->e() != nullptr)) {
-          al = eval_array_lit(e, vd->flat()->e());
-        } else if (vd->e() != nullptr) {
-          al = eval_array_lit(e, vd->e());
-        }
-      }
-      // Do not use tuples in output to ensure FlatZinc compatibility= nvd->id();
-
-      if (vd->type().dim() > 0) {
-        outputVars.push_back(new StringLit(Location().introduce(), "["));
-        for (size_t i = 0; i < al->size(); ++i) {
-          auto* tup = follow_id((*al)[i])->cast<ArrayLit>();
-          outputVars.push_back(new StringLit(Location().introduce(), "("));
-          for (size_t i = 0; i < tup->size(); ++i) {
-            std::vector<Expression*> showArgs(1);
-            showArgs[0] = (*tup)[i];
-            Call* show = Call::a(Location().introduce(), ASTString("showDzn"), showArgs);
-            show->type(Type::parstring());
-            FunctionI* fi = e.model->matchFn(e, show, false);
-            assert(fi);
-            show->decl(fi);
-            outputVars.push_back(show);
-            if (i < tup->size() - 1) {
-              outputVars.push_back(new StringLit(Location().introduce(), ", "));
-            }
-          }
-          if (tup->size() == 1) {
-            outputVars.push_back(new StringLit(Location().introduce(), ","));
-          }
-          outputVars.push_back(new StringLit(Location().introduce(), ")"));
-          if (i < al->size() - 1) {
-            outputVars.push_back(new StringLit(Location().introduce(), ", "));
-          }
-        }
-        outputVars.push_back(new StringLit(Location().introduce(), "]"));
-      } else {
-        outputVars.push_back(new StringLit(Location().introduce(), "("));
-        for (size_t i = 0; i < al->size(); ++i) {
-          std::vector<Expression*> showArgs(1);
-          showArgs[0] = (*al)[i];
-          Call* show = Call::a(Location().introduce(), ASTString("showDzn"), showArgs);
-          show->type(Type::parstring());
-          FunctionI* fi = e.model->matchFn(e, show, false);
-          assert(fi);
-          show->decl(fi);
-          outputVars.push_back(show);
-          if (i < al->size() - 1) {
-            outputVars.push_back(new StringLit(Location().introduce(), ", "));
-          }
-        }
-        if (al->size() == 1) {
-          outputVars.push_back(new StringLit(Location().introduce(), ","));
-        }
-        outputVars.push_back(new StringLit(Location().introduce(), ")"));
-      }
-
+      create_tuple_output(e, vd, false, outputVars);
     } else {
       std::vector<Expression*> showArgs(1);
       showArgs[0] = vd->id();
-      Call* show = Call::a(Location().introduce(), ASTString("showDzn"), showArgs);
+      Call* show = Call::a(Location().introduce(), e.constants.ids.showDzn, showArgs);
       show->type(Type::parstring());
       FunctionI* fi = e.model->matchFn(e, show, false);
       assert(fi);
@@ -1140,14 +1084,18 @@ ArrayLit* create_json_output(EnvI& e, bool includeObjective, bool includeOutputI
     auto* sl = new StringLit(Location().introduce(), s.str());
     outputVars.push_back(sl);
 
-    std::vector<Expression*> showArgs(1);
-    showArgs[0] = vd->id();
-    Call* show = Call::a(Location().introduce(), "showJSON", showArgs);
-    show->type(Type::parstring());
-    FunctionI* fi = e.model->matchFn(e, show, false);
-    assert(fi);
-    show->decl(fi);
-    outputVars.push_back(show);
+    if (vd->type().bt() == Type::BT_TUPLE) {
+      create_tuple_output(e, vd, true, outputVars);
+    } else {
+      std::vector<Expression*> showArgs(1);
+      showArgs[0] = vd->id();
+      Call* show = Call::a(Location().introduce(), e.constants.ids.showJSON, showArgs);
+      show->type(Type::parstring());
+      FunctionI* fi = e.model->matchFn(e, show, false);
+      assert(fi);
+      show->decl(fi);
+      outputVars.push_back(show);
+    }
   }
 
   auto* oi = e.model->outputItem();
@@ -1243,6 +1191,67 @@ Expression* create_encapsulated_output(EnvI& e) {
   suffix << "]";
   es.push_back(new StringLit(Location().introduce(), suffix.str()));
   return new ArrayLit(Location().introduce(), es);
+}
+
+// Do not use tuples in output to ensure FlatZinc compatibility= nvd->id();
+void create_tuple_output(EnvI& e, VarDecl* vd, bool is_json, std::vector<Expression*>& outputVars) {
+  assert(vd->type().bt() == Type::BT_TUPLE);
+  ArrayLit* al;
+  if ((vd->flat() != nullptr) && (vd->flat()->e() != nullptr)) {
+    al = eval_array_lit(e, vd->flat()->e());
+  } else if (vd->e() != nullptr) {
+    al = eval_array_lit(e, vd->e());
+  }
+
+  if (vd->type().dim() > 0) {
+    outputVars.push_back(new StringLit(Location().introduce(), "["));
+    for (size_t i = 0; i < al->size(); ++i) {
+      auto* tup = follow_id((*al)[i])->cast<ArrayLit>();
+      outputVars.push_back(new StringLit(Location().introduce(), is_json ? "[" : "("));
+      for (size_t i = 0; i < tup->size(); ++i) {
+        std::vector<Expression*> showArgs(1);
+        showArgs[0] = (*tup)[i];
+        Call* show =
+            Call::a(Location().introduce(),
+                    is_json ? e.constants.ids.showJSON : e.constants.ids.showDzn, showArgs);
+        show->type(Type::parstring());
+        FunctionI* fi = e.model->matchFn(e, show, false);
+        assert(fi);
+        show->decl(fi);
+        outputVars.push_back(show);
+        if (i < tup->size() - 1) {
+          outputVars.push_back(new StringLit(Location().introduce(), ", "));
+        }
+      }
+      if (tup->size() == 1) {
+        outputVars.push_back(new StringLit(Location().introduce(), ","));
+      }
+      outputVars.push_back(new StringLit(Location().introduce(), is_json ? "]" : ")"));
+      if (i < al->size() - 1) {
+        outputVars.push_back(new StringLit(Location().introduce(), ", "));
+      }
+    }
+    outputVars.push_back(new StringLit(Location().introduce(), "]"));
+  } else {
+    outputVars.push_back(new StringLit(Location().introduce(), is_json ? "[" : "("));
+    for (size_t i = 0; i < al->size(); ++i) {
+      std::vector<Expression*> showArgs(1);
+      showArgs[0] = (*al)[i];
+      Call* show = Call::a(Location().introduce(), ASTString("showDzn"), showArgs);
+      show->type(Type::parstring());
+      FunctionI* fi = e.model->matchFn(e, show, false);
+      assert(fi);
+      show->decl(fi);
+      outputVars.push_back(show);
+      if (i < al->size() - 1) {
+        outputVars.push_back(new StringLit(Location().introduce(), ", "));
+      }
+    }
+    if (al->size() == 1) {
+      outputVars.push_back(new StringLit(Location().introduce(), ","));
+    }
+    outputVars.push_back(new StringLit(Location().introduce(), is_json ? "]" : ")"));
+  }
 }
 
 void process_toplevel_output_vars(EnvI& e) {
