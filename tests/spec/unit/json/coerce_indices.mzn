@@ -2,6 +2,7 @@
 !Test
 extra_files:
 - coerce_indices.json
+solvers: [gecode]
 expected: !Result
   solution: !Solution
   offset1d: [-10,-9,-8]

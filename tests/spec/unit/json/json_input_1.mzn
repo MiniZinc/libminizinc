@@ -2,6 +2,7 @@
 !Test
 extra_files:
 - json_input_1.json
+solvers: [gecode]
 expected: !Result
   solution: !Solution
     int_set: !!set {1, 2, 4, 5, 7, 9}

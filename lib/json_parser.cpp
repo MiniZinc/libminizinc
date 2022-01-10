@@ -542,12 +542,11 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
   }
 
   // Add dimensions for array parsed by JSON
-  if (ti->type().dim() > 1) {
+  if (ti->type().dim() > 1 && (*al)[0]->isa<ArrayLit>()) {
     std::vector<Expression*> elements;
     std::vector<std::pair<size_t, ArrayLit*>> it({{0, al}});
     vector<pair<int, int>> dims;
     dims.emplace_back(1, al->size());
-    Token next;
     while (!it.empty()) {
       if (it.size() == ti->type().dim()) {
         for (size_t i = 0; i < it.back().second->size(); ++i) {
@@ -575,9 +574,6 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
           }
         } else {
           it.pop_back();
-          if (!it.empty()) {
-            it.back().first++;
-          }
         }
       }
     }
