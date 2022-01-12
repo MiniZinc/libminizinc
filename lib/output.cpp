@@ -803,11 +803,10 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
             Comprehension* values;
 
             for (int i = 0; i < 2; i++) {
+              Expression* index;
               if ((i == 0 && idx1EnumId == 0 && al->min(0) == 1) ||
                   (i == 1 && idx2EnumId == 0 && al->min(1) == 1)) {
-                auto* empty = new ArrayLit(Location().introduce(), std::vector<Expression*>());
-                empty->type(Type::parstring(1));
-                indexes[i] = empty;
+                index = new ArrayLit(Location().introduce(), std::vector<Expression*>());
               } else {
                 auto* i_ti = new TypeInst(Location().introduce(),
                                           Type::parenum(i == 0 ? idx1EnumId : idx2EnumId));
@@ -823,8 +822,13 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
                 assert(fi);
                 show_i->decl(fi);
 
-                indexes[i] = new Comprehension(Location().introduce(), show_i, g, false);
+                ArrayLit* idxlit =
+                    ArrayLit::constructTuple(Location().introduce(), {i_vd->id(), show_i});
+
+                index = new Comprehension(Location().introduce(), idxlit, g, false);
               }
+              index->type(Type::parstring(1));
+              indexes[i] = index;
             }
             {
               auto* i_ti = new TypeInst(Location().introduce(), Type::parenum(idx1EnumId));
