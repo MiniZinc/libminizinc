@@ -1088,20 +1088,20 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
   Expression* le0 = nullptr;
   Expression* le1 = nullptr;
 
-  if (boe0->type().isint() && !boe0->type().isOpt() && bot != BOT_IN) {
+  if (e0.r()->type().isint() && !e0.r()->type().isOpt() && bot != BOT_IN) {
     le0 = get_linexp<IntLit>(env, e0.r());
-  } else if (boe0->type().isfloat() && !boe0->type().isOpt() && bot != BOT_IN) {
+  } else if (e0.r()->type().isfloat() && !e0.r()->type().isOpt() && bot != BOT_IN) {
     le0 = get_linexp<FloatLit>(env, e0.r());
   }
   if (le0 != nullptr) {
-    if (boe0->type().isint() && boe1->type().isint() && !boe1->type().isOpt()) {
+    if (e0.r()->type().isint() && e1.r()->type().isint() && !e1.r()->type().isOpt()) {
       le1 = get_linexp<IntLit>(env, e1.r());
-    } else if (boe0->type().isfloat() && boe1->type().isfloat() && !boe1->type().isOpt()) {
+    } else if (e0.r()->type().isfloat() && e1.r()->type().isfloat() && !e1.r()->type().isOpt()) {
       le1 = get_linexp<FloatLit>(env, e1.r());
     }
   }
   if (le1 != nullptr) {
-    if (boe0->type().isint()) {
+    if (e0.r()->type().isint()) {
       flatten_linexp_binop<IntLit>(env, ctx, r, b, ret, le0, le1, bot, doubleNeg, ees, args,
                                    callid);
     } else {
