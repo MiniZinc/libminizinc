@@ -5,11 +5,11 @@ expected:
 - !Result
   status: SATISFIED
   solution: !Solution
-    x: [1.0, null]
+    x: [!Approx 1.0, null]
 - !Result
   status: SATISFIED
   solution: !Solution
-    x: [null, 1.0]
+    x: [null, !Approx 1.0]
 ***/
 
 %-----------------------------------------------------------------------------%
