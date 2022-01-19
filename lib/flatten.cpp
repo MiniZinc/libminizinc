@@ -3515,11 +3515,14 @@ void flatten(Env& e, FlatteningOptions opt) {
                 } else if (c->arg(0)->isa<Id>() && (isTrueVar || isFalseVar)) {
                   VarDecl* arg_vd = c->arg(0)->cast<Id>()->decl();
                   if (arg_vd->ti()->domain() == nullptr) {
-                    arg_vd->e(env.constants.boollit(!isTrueVar));
+                    if (arg_vd->e() == nullptr) {
+                      arg_vd->e(env.constants.boollit(!isTrueVar));
+                    }
                     arg_vd->ti()->domain(env.constants.boollit(!isTrueVar));
                   } else if (arg_vd->ti()->domain() == env.constants.boollit(isTrueVar)) {
                     env.fail();
-                  } else {
+                  } else if (arg_vd->e() == nullptr) {
+                    assert(arg_vd->ti()->domain() == env.constants.boollit(!isTrueVar));
                     arg_vd->e(arg_vd->ti()->domain());
                   }
                   env.flatRemoveExpr(c, vdi);
