@@ -3,26 +3,15 @@ stages:
   - test
   - trigger
 
-.download_vendor: &download_vendor
-  - curl --location --header "PRIVATE-TOKEN:$ACCESS_TOKEN" --silent https://gitlab.com/api/v4/snippets/1796163/raw | tr -d '\r' > download.sh
-  - sh download.sh vendor master vendor:${MZNARCH} vendor.zip
-  - unzip -q vendor.zip
-
-.download_vendor_win: &download_vendor_win
-  - curl -o download.sh --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" --silent https://gitlab.com/api/v4/snippets/1796163/raw
-  - dos2unix download.sh
-  - sh download.sh vendor master vendor:%MZNARCH% vendor.zip
-  - unzip -q vendor.zip
-
 .download_bundle: &download_bundle
   - curl --location --header "PRIVATE-TOKEN:$ACCESS_TOKEN" --silent https://gitlab.com/api/v4/snippets/1796163/raw | tr -d '\r' > download.sh
-  - sh download.sh vendor master bundle:${MZNARCH} vendor.zip
+  - sh download.sh minizinc-vendor master bundle:${MZNARCH} vendor.zip
   - unzip -q vendor.zip
 
 .download_bundle_win: &download_bundle_win
   - curl -o download.sh --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" --silent https://gitlab.com/api/v4/snippets/1796163/raw
   - dos2unix download.sh
-  - sh download.sh vendor master bundle:%MZNARCH% vendor.zip
+  - sh download.sh minizinc-vendor master bundle:%MZNARCH% vendor.zip
   - unzip -q vendor.zip
 
 variables:
@@ -41,7 +30,7 @@ default:
 .build:
   stage: build
   before_script:
-    - *download_vendor
+    - bash download_vendor
   script:
     - cmake -S . -B build -G"$CMAKE_ARCH" -DCMAKE_BUILD_TYPE=Release -DBUILD_REF=$CI_PIPELINE_ID -DGecode_ROOT="$CI_PROJECT_DIR/vendor/gecode" -DOsiCBC_ROOT="$CI_PROJECT_DIR/vendor/cbc" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
     - cmake --build build --config Release --target install
@@ -49,7 +38,7 @@ default:
     paths: [minizinc/]
   cache:
     key: "$CI_JOB_STAGE:$CI_JOB_NAME"
-    paths: [.ccache, vendor.zip*]
+    paths: [.ccache, vendor/]
   only: [tags, merge_requests, pipelines, develop, master]
 
 build:linux:
@@ -82,8 +71,6 @@ build:win64:
     CMAKE_ARCH: "Ninja"
     BUILDCACHE_DIR: "$CI_PROJECT_DIR/.ccache"
     BUILDCACHE_MAX_CACHE_SIZE: "104857600"
-  before_script:
-    - *download_vendor_win
   script:
     - cmake -S . -B build -G"%CMAKE_ARCH%" -DCMAKE_BUILD_TYPE=Release -DBUILD_REF=%CI_PIPELINE_ID% -DCCACHE_PROGRAM:STRING=buildcache -DGecode_ROOT="%CI_PROJECT_DIR%/vendor/gecode" -DOsiCBC_ROOT="%CI_PROJECT_DIR%/vendor/cbc" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
     - cmake --build build --config Release --target install

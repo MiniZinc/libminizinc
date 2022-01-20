@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# Simple script to download the artifacts from the GitLab CI runner
+# - Prerequisites: `curl` `unzip`
+# - Optionally: set `MZNARCH` variable to select  
+# - Run as `./download_vendor` or `bash download_vendor`
+# - Rerun to update vendor packages (remove `./vendor` directory to force redownload)
+
+set -e # abort if any command fails
+
+BRANCH="master" # branch of the vendor repository
+
+if [ -z ${MZNARCH+x} ]; then
+	if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+		MZNARCH="linux"
+	elif [[ "$OSTYPE" == "darwin"* ]]; then
+		MZNARCH="osx"
+	elif [[ "$OSTYPE" == "cygwin" ]]; then
+		MZNARCH="win64"
+	elif [[ "$OSTYPE" == "msys" ]]; then
+		MZNARCH="win64"
+	elif [[ "$OSTYPE" == "win32" ]]; then
+		MZNARCH="win64"
+	else
+		echo "Unable to determine operating system"
+		exit 1
+	fi
+fi
+
+JOB="vendor:${MZNARCH}"
+
+# -- Download JSON file with newest dependencies version 
+curl --silent -o "_newversion.json" --location "https://gitlab.com/api/v4/projects/minizinc%2Fminizinc-vendor/pipelines?ref=${BRANCH}&per_page=1&page=1"
+echo $JOB >> _newversion.json
+# --- Compare with current downloaded version (if exists)
+if [ ! -f "vendor/version.json" ] || ! cmp --silent "vendor/version.json" "_newversion.json"; then
+	echo -n "Updating depencencies..."
+	# --- Remove old version of the dependencies
+	rm -rf vendor/
+	# --- Download new version of dependencies
+	curl --silent -o "artifact.zip" --location "https://gitlab.com/api/v4/projects/minizinc%2Fminizinc-vendor/jobs/artifacts/${BRANCH}/download?job=${JOB}"
+	# --- Extract new version of dependencies
+	unzip -q "artifact.zip"
+	# --- Update version of dependencies
+	mv "_newversion.json" "vendor/version.json"
+	rm "artifact.zip"
+	echo " COMPLETE"
+else
+	# --- Nothing to do
+	# --- Clear temporary file
+	rm "_newversion.json"
+	echo "Dependencies already up-to-date"
+fi

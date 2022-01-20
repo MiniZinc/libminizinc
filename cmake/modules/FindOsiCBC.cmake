@@ -11,6 +11,7 @@ set(OSICBC_FIND_FILES coin/CbcSolver.hpp coin/CglPreProcess.hpp coin/ClpConfig.h
 foreach(OSICBC_FILE ${OSICBC_FIND_FILES})
   set(OSICBC_FILE_LOC "OSICBC_LIB_LOC-NOTFOUND")
   find_path(OSICBC_FILE_LOC ${OSICBC_FILE}
+            HINTS ${PROJECT_SOURCE_DIR}/vendor/cbc
             PATH_SUFFIXES cbc cgl clp coinutils osi include)
   if("${OSICBC_FILE_LOC}" STREQUAL "OSICBC_FILE_LOC-NOTFOUND")
 #    message(STATUS "OsiCBC: Could not find file `${OSICBC_FILE}`")
@@ -27,8 +28,9 @@ unset(OSICBC_FIND_FILES)
 unset(OSICBC_FILE_LOC)
 
 find_file(CBC_CONFIG_LOC NAMES coin/config_cbc_default.h coin/CbcConfig.h
-  HINTS ${OSICBC_INCLUDE}
-  PATH_SUFFIXES cbc)
+  HINTS ${OSICBC_INCLUDE} ${PROJECT_SOURCE_DIR}/vendor/cbc
+  PATH_SUFFIXES cbc
+)
 
 if(NOT "${CBC_CONFIG_LOC}" STREQUAL "CBC_CONFIG_LOC-NOTFOUND")
   file(READ "${CBC_CONFIG_LOC}" CBC_CONFIG)
@@ -47,6 +49,7 @@ endif()
 foreach(OSICBC_LIB ${OSICBC_REQ_LIBS})
   set(OSICBC_LIB_LOC "OSICBC_LIB_LOC-NOTFOUND")
   find_library(OSICBC_LIB_LOC NAMES ${OSICBC_LIB} lib${OSICBC_LIB}
+               HINTS ${OSICBC_INCLUDE} ${PROJECT_SOURCE_DIR}/vendor/cbc
                PATH_SUFFIXES lib)
   if("${OSICBC_LIB_LOC}" STREQUAL "OSICBC_LIB_LOC-NOTFOUND")
 #    message(STATUS "OsiCBC: Could not find library `${OSICBC_LIB}`")
