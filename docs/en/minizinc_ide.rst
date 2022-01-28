@@ -96,7 +96,7 @@ MiniZinc can automatically run the output of a model through a *solution checker
 
 The default behaviour of the MiniZinc IDE is to run a solution checker if one is present. For a model ``abc.mzn``, a solution checker must be called ``abc.mzc`` or ``abc.mzc.mzn``. If a checker is present, the *Run* icon will turn into a *Run + check* icon instead. The output of the solution checker is displayed together with the normal solution output in the *Output* window.
 
-You can disable solution checkers by deselecting the *Check solutions* option in the solver configuration window.
+You can disable solution checkers by deselecting the *Check solutions* option in the output tab of the preferences window.
 
 You can find a detailed description of MiniZinc solution checkers in :ref:`ch-solution-checkers`.
 
@@ -178,22 +178,29 @@ You will have to enter the assignment-specific login details. By clicking the *R
 Configuration Options
 ---------------------
 
-The MiniZinc IDE can be configured through the *Preferences* dialog in the *MiniZinc* menu (on Windows and Linux) or the *MiniZincIDE* menu (on macOS), as shown in :numref:`fig-ide-gurobi`.
+The MiniZinc IDE can be configured through the *Preferences* dialog in the *MiniZinc* menu (on Windows and Linux) or the *MiniZincIDE* menu (on macOS), as shown in :numref:`fig-ide-preferences`.
 
-.. _fig-ide-gurobi:
+There are four tabs which allow configuration of different aspects of the IDE:
 
-.. figure:: figures/ide-gurobi.jpg
+- **MiniZinc**. Options for configuring compiler search paths. Shown in :numref:`fig-ide-preferences-minizinc`.
+- **Solvers**. Options for built-in and user solvers. Shown in :numref:`fig-ide-preferences-gurobi`.
+- **Editing**. Options for code editing and appearance. Shown in :numref:`fig-ide-preferences-editing`.
+- **Output**. Options for solution output. Shown in :numref:`fig-ide-preferences-output`.
+
+.. _fig-ide-preferences:
+
+.. figure:: figures/ide-preferences.jpg
     :width: 500px
     
-    Setting up MiniZinc to use the Gurobi MIP solver
+    The MiniZincIDE preferences window
 
 
 Locating the MiniZinc installation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The most important configuration option is the path to the ``minizinc`` executable. In the example in :numref:`fig-ide-gurobi`, this field has been left empty, in which case ``minizinc`` is assumed to be on the standard search path (usually the ``PATH`` environment variable). Typically, in a bundled binary installation of MiniZinc, this field can therefore be left empty.
+The most important configuration option is the path to the ``minizinc`` executable. In the example in :numref:`fig-ide-preferences`, this field has been left empty, in which case ``minizinc`` is assumed to be on the standard search path (usually the ``PATH`` environment variable). Typically, in a bundled binary installation of MiniZinc, this field can therefore be left empty.
 
-If you installed MiniZinc from sources, or want to switch between different versions of the compiler, you can add the path to the directory that contains the ``minizinc`` executable here. You can select a directory from a file dialog using the *Select* button, or enter it manually. Clicking the *Check* button will check that ``minizinc`` can in fact be run, and has the right version. The version of ``minizinc`` that was found is displayed below the path input field. :numref:`fig-ide-preferences` below shows an example where MiniZinc is located at ``/home/me/minizinc-2.2.0/bin``.
+If you installed MiniZinc from sources, or want to switch between different versions of the compiler, you can add the path to the directory that contains the ``minizinc`` executable here. You can select a directory from a file dialog using the *Select* button, or enter it manually. Clicking the *Check* button will check that ``minizinc`` can in fact be run, and has the right version. The version of ``minizinc`` that was found is displayed below the path input field. :numref:`fig-ide-preferences-minizinc` below shows an example where MiniZinc is located at ``/home/me/minizinc-2.6.0/bin``.
 
 You can have the MiniZinc IDE check once a day whether a new version of MiniZinc is available.
 
@@ -202,26 +209,46 @@ You can have the MiniZinc IDE check once a day whether a new version of MiniZinc
 Adding Third-Party Solvers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The *Solver* section of the configuration dialog can be used to inspect the solvers that are currently available to MiniZinc, and to add new solvers to the system.
+Solvers which distribute a **.msc** solver configuration file (see :numref:`sec-cmdline-conffiles`)
+can be added to the MiniZinc IDE by adding the directory containing the solver configuration file to
+the **Extra solver search paths** as shown in :numref:`fig-ide-preferences-minizinc`.
+
+.. _fig-ide-preferences-minizinc:
+
+.. figure:: figures/ide-preferences-minizinc.jpg
+    :width: 500px
+    
+    Configuring MiniZinc search paths
+
+The *Solvers* tab of the configuration dialog can be used to inspect the solvers that are
+currently available to MiniZinc, and to add new solvers which don't have an existing solver
+configuration file to the system.
 
 Configuring existing solvers
 ++++++++++++++++++++++++++++
 
 You can use the configuration dialog to set up defaults for the installed solvers. In the current version of the MiniZinc IDE, this is limited to configuring the CPLEX and Gurobi backends. The bundled binary version of MiniZinc comes with support for loading CPLEX and Gurobi as *plugins*, i.e., MiniZinc does not ship with the code for these solvers but can load them dynamically if they are installed.
 
-For example, :numref:`fig-ide-gurobi` shows a potential configuration for Gurobi. On Windows, the library is called ``gurobiXX.dll`` (in the same directory as the ``gurobi`` executable), and on Linux and macOS is it ``libgurobiXX.so`` (in the ``lib`` directory of your Gurobi installation), where ``XX`` stands for the version number of Gurobi.
+For example, :numref:`fig-ide-preferences-gurobi` shows a potential configuration for Gurobi. On Windows, the library is called ``gurobiXX.dll`` (in the same directory as the ``gurobi`` executable), and on Linux and macOS is it ``libgurobiXX.so`` (in the ``lib`` directory of your Gurobi installation), where ``XX`` stands for the version number of Gurobi.
 
 If you select the CPLEX solver, a similar option appears (``--cplex-dll``).
 On Windows, the CPLEX library is called ``cplexXXXX.dll`` and typically found in same directory as the ``cplex`` executable. On Linux it is ``libcplexXXX.so``, and on macOS ``libcplexXXXX.jnilib``, where ``XXX`` and ``XXXX`` stand for the version number of CPLEX.
 
+.. _fig-ide-preferences-gurobi:
+
+.. figure:: figures/ide-preferences-gurobi.jpg
+    :width: 500px
+    
+    Configuring the Gurobi DLL path
+
 Adding new solvers
 ++++++++++++++++++
 
-The example in :numref:`fig-ide-preferences` shows a potential configuration for the or-tools solver, which was installed in ``/Users/me/or-tools``.
+The example in :numref:`fig-ide-preferences-or-tools` shows a potential configuration for the or-tools solver, which was installed in ``/Users/me/or-tools``.
 
-.. _fig-ide-preferences:
+.. _fig-ide-preferences-or-tools:
 
-.. figure:: figures/ide-preferences.jpg
+.. figure:: figures/ide-preferences-or-tools.jpg
     :width: 500px
     
     Adding a new solver
@@ -243,39 +270,47 @@ Finally, you can select which command line flags are supported by the solver. Th
 
 Solver configurations that are edited or created through the IDE are saved in a configuration file in a standard location. These solvers are therefore available the next time the IDE is started, as well as through the ``minizinc`` command line tool.
 
+Editing options
+~~~~~~~~~~~~~~~
+
+.. _fig-ide-preferences-editing:
+
+.. figure:: figures/ide-preferences-editing.jpg
+    :width: 500px
+    
+The **Editing** tab contains options for the code editor, such as fonts, indentation, and theming.
+
 Output options
 ~~~~~~~~~~~~~~
 
-There are also a number of output-related options. The first tick box (*Check solutions*) enables checking as described in :numref:`ch-ide-solution-checking`. The second tick box enables you to clear the *Output* window automatically every time you run a model. The third *Compress solution output* option is useful for problems that produce a lot (read: thousands) of solutions, which can slow down and clutter the output window. The compression works by printing just the number of solutions rather than the solutions themselves. For example, the following model would produce 1000 solutions when run with *User-defined behavior* and solution limit set to 0:
+.. _fig-ide-preferences-output:
+
+.. figure:: figures/ide-preferences-output.jpg
+    :width: 500px
+
+There are also a number of output-related options. The first tick box (*Check solutions*) enables checking as described in :numref:`ch-ide-solution-checking`. The second tick box enables you to clear the *Output* window automatically every time you run a model. The third *Compress solution output* option is useful for problems that produce a lot (read: thousands) of solutions, which can slow down and clutter the output window. The compression works by printing just the number of solutions rather than the solutions themselves. For example, the following model would produce 1000 solutions when run with *User-defined behavior* and solution limit disabled:
 
 .. code-block:: minizinc
 
   var 1..1000: x;
   solve satisfy;
 
-When runnning with compression set to 100, MiniZinc will output the first 100 solutions, and then a sequence of output like this:
+When running with compression set to 100, MiniZinc will output the first 100 solutions, and then a sequence of output like this:
 
 .. code-block:: none
 
-  [ 99 more solutions ]
+  ▶ [ 99 more solutions ]
   x = 200;
   ----------
-  [ 199 more solutions ]
+  ▶ [ 199 more solutions ]
   x = 400;
   ----------
-  [ 399 more solutions ]
+  ▶ [ 399 more solutions ]
   x = 800;
   ----------
-  [ 199 more solutions ]
+  ▶ [ 199 more solutions ]
   x = 1000;
   ----------
   ==========
   
-The number of solutions captured by one of the ``... more solutions`` lines is doubled each time, in order to keep the overall output low. The last solution produced by the solver will always be printed (since, in the case of optimisation problems, the last solution is the best one found).
-
-.. .. _sec-ide-vis:
-..
-.. Solution Visualisations
-.. -----------------------
-..
-..
+The number of solutions captured by one of the ``... more solutions`` lines is doubled each time, in order to keep the overall output low. The last solution produced by the solver will always be printed (since, in the case of optimisation problems, the last solution is the best one found). The hidden solutions can be shown by clicking the ▶ symbol, but this may take some time where a large number of solutions have been truncated.
