@@ -46,7 +46,7 @@
                | "solve" <annotations> "maximize" <expr>
 
 % Output items
-<output-item> ::= "output" <expr>
+<output-item> ::= "output" [ <string-annotation> ] <expr>
 
 % Annotation items
 <annotation-item> ::= "annotation" <ident> <params>

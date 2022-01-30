@@ -163,6 +163,10 @@ These options control the general behaviour of the ``minizinc`` tool.
 
     Read command line options from the given JSON file. See :numref:`ch-param-files`.
 
+.. option:: --json-stream
+
+    Generate output as line-break delimited JSON objects.
+
 Solving options
 ~~~~~~~~~~~~~~~
 
@@ -395,6 +399,14 @@ These options control how the MiniZinc compiler produces the resulting FlatZinc 
 .. option::  --output-objective
 
     Print value of objective function in dzn or json output
+
+.. option:: --only-sections <section1[,section2,...]>
+
+    Include only the given sections in output
+
+.. option:: --not-sections <section1[,section2,...]>
+
+    Exclude the given sections from output
 
 .. option::  -Werror
 

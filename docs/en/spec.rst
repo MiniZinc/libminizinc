@@ -2500,6 +2500,11 @@ If no output item is present,
 the implementation should print all the global variables and their values
 in a readable format.
 
+Output items can optionally given a string annotation denoting a section name
+which the output is associated with. Sections can be turned on or off using the
+``--only-sections`` and ``--not-sections`` command line arguments
+(:ref:`ch-cmdline`).
+
 .. _spec-annotation-items:
 
 Annotation Items

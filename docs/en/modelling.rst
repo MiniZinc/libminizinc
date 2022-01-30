@@ -778,7 +778,8 @@ There are 8 kinds of :index:`items <item>`.
 
   If there is no output item, MiniZinc will by default print out the values of
   all the decision variables which are not optionally assigned a value in the
-  format of assignment items.
+  format of assignment items. The ``output`` and ``no_output`` annotations can
+  be used to control this on a per-variable basis.
 
 - :index:`Enumerated type declarations <item; enum>`.
   We discuss these in :ref:`sec-arrayset` and :ref:`sec-enum`.
