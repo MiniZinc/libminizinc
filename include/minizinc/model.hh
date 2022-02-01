@@ -366,7 +366,7 @@ public:
   Model* output();
   EnvI& envi();
   const EnvI& envi() const;
-  const std::vector<Warning>& warnings();
+  const std::vector<std::unique_ptr<Warning>>& warnings();
   std::ostream& dumpWarnings(std::ostream& os, bool werror, bool json, int exceptWarning = -1);
   void clearWarnings();
   unsigned int maxCallStack() const;

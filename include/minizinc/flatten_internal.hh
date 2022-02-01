@@ -196,7 +196,7 @@ public:
   std::vector<CallStackEntry> callStack;
   std::vector<int> idStack;
   unsigned int maxCallStack;
-  std::vector<Warning> warnings;
+  std::vector<std::unique_ptr<Warning>> warnings;
   std::vector<int> modifiedVarDecls;
   std::unordered_set<std::string> deprecationWarnings;
   int inRedundantConstraint;

@@ -1215,14 +1215,14 @@ int EnvI::addWarning(const std::string& msg) { return addWarning(Location(), msg
 int EnvI::addWarning(const Location& loc, const std::string& msg, bool dumpStack) {
   if (warnings.size() >= 20) {
     if (warnings.size() == 20) {
-      warnings.emplace_back("Further warnings have been suppressed.");
+      warnings.emplace_back(new Warning("Further warnings have been suppressed."));
     }
     return -1;
   }
   if (dumpStack) {
-    warnings.emplace_back(*this, loc, msg);
+    warnings.emplace_back(new Warning(*this, loc, msg));
   } else {
-    warnings.emplace_back(loc, msg);
+    warnings.emplace_back(new Warning(loc, msg));
   }
   return static_cast<int>(warnings.size()) - 1;
 }
@@ -1534,12 +1534,12 @@ std::ostream& EnvI::evalOutput(std::ostream& os, std::ostream& log) {
     os << '\n';
   }
   for (auto& w : warnings) {
-    w.print(log, false);
+    w->print(log, false);
   }
   return os;
 }
 
-const std::vector<Warning>& Env::warnings() { return envi().warnings; }
+const std::vector<std::unique_ptr<Warning>>& Env::warnings() { return envi().warnings; }
 
 std::ostream& Env::dumpWarnings(std::ostream& os, bool werror, bool json, int exceptWarning) {
   int curIdx = 0;
@@ -1553,10 +1553,10 @@ std::ostream& Env::dumpWarnings(std::ostream& os, bool werror, bool json, int ex
     }
     curIdx++;
     if (json) {
-      warning.json(os, werror);
+      warning->json(os, werror);
     } else {
       didPrint = true;
-      warning.print(os, werror);
+      warning->print(os, werror);
     }
   }
   if (didPrint) {

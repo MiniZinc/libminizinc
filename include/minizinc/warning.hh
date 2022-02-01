@@ -45,6 +45,8 @@ public:
   void print(std::ostream& os, bool werror) const;
   /// Print JSON stream formatted warning/error message
   void json(std::ostream& os, bool werror) const;
+
+  ~Warning() override {}
 };
 
 }  // namespace MiniZinc
