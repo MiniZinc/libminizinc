@@ -2472,7 +2472,13 @@ public:
         bounds.emplace_back(0, 0);
         return;
       }
-      ArrayLit* al = eval_array_lit(env, c->arg(le ? 1 : 0));
+      auto* al = follow_id(c->arg(le ? 1 : 0))->dynamicCast<ArrayLit>();
+      if (al == nullptr) {
+        // can't use the array directly
+        valid = false;
+        bounds.emplace_back(0, 0);
+        return;
+      }
       if (le) {
         bounds.pop_back();  // remove constant (third arg) from stack
       }
@@ -2895,7 +2901,13 @@ public:
         bounds.emplace_back(0.0, 0.0);
         return;
       }
-      ArrayLit* al = eval_array_lit(env, c->arg(le ? 1 : 0));
+      auto* al = follow_id(c->arg(le ? 1 : 0))->dynamicCast<ArrayLit>();
+      if (al == nullptr) {
+        // can't use the array directly
+        valid = false;
+        bounds.emplace_back(0, 0);
+        return;
+      }
       FloatVal d = le ? c->arg(2)->cast<FloatLit>()->v() : 0.0;
       int stacktop = static_cast<int>(bounds.size());
       for (unsigned int i = al->size(); (i--) != 0U;) {
