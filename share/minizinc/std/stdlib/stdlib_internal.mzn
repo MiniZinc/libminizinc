@@ -1164,6 +1164,25 @@ function var int: mod_mt(var int: x, var int: y) :: promise_total =
     var {1} union dom(y): yy = if y=0 then 1 else y endif;
   } in mod_t(x,yy);
 
+function var float: sqrt_t(var float: x) ::promise_total =
+  let {
+    float: sqrt_lb = if lb(x) < 0.0 then 0.0 else sqrt(lb(x))-1.0 endif;
+    float: sqrt_ub = if ub(x) < 0.0 then 1.0 elseif ub(x) = infinity then infinity else sqrt(ub(x))+1.0 endif;
+    var sqrt_lb..sqrt_ub: r;
+    constraint float_sqrt(x,r);
+  } in r;
+
+function var float: sqrt_mt(var float: x) ::promise_total =
+  let {
+    float: sqrt_lb = if lb(x) < 0.0 then 0.0 else sqrt(lb(x))-1.0 endif;
+    float: sqrt_ub = if ub(x) < 0.0 then 1.0 elseif ub(x) = infinity then infinity else sqrt(ub(x))+1.0 endif;
+    var sqrt_lb..sqrt_ub: r;
+    var float: xx;
+    constraint x < 0.0 -> xx = 1.0;
+    constraint x < 0.0 \/ xx = x;
+    constraint float_sqrt(xx,r);
+  } in r;
+
 function var int:   product_rec(array[int] of var int: x) =
   if length(x)=0 then 1
   elseif length(x)=1 then x[min(index_set(x))]

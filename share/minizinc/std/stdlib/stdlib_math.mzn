@@ -501,18 +501,10 @@ function var float: abs(var float: x) :: promise_total =
 function float: sqrt(float: x);
 /** @group stdlib.builtins.arithmetic Return \(\sqrt{\a x}\) */
 function var float: sqrt(var float: x) =
-  let {
-    constraint x >= 0.0;
-  } in sqrt_t(x);
-
-function var float: sqrt_t(var float: x) ::promise_total =
-  let {
-    var float: r;
-    var float: xx;
-    constraint x < 0.0 -> xx = 1.0;
-    constraint x < 0.0 \/ xx = x;
-    constraint float_sqrt(xx,r);
-  } in r;
+  if mzn_in_root_context(x) then sqrt_t(x)
+  elseif lb(x) >= 0.0 then sqrt_t(x)
+  else let { constraint x >= 0.0; } in sqrt_mt(x)
+  endif;
 
 /** @group stdlib.builtins.arithmetic Return \(\a x ^ {\a y}\) */
 function int: pow(int: x, int: y);
