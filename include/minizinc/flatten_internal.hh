@@ -388,6 +388,16 @@ public:
     IntSetRanges d2(dom2);
     return Ranges::equal(d1, d2);
   }
+  static bool domainSubset(Domain dom1, Domain dom2) {
+    IntSetRanges d1(dom1);
+    IntSetRanges d2(dom2);
+    return Ranges::subset(d1, d2);
+  }
+  static bool domainDisjoint(Domain dom1, Domain dom2) {
+    IntSetRanges d1(dom1);
+    IntSetRanges d2(dom2);
+    return Ranges::disjoint(d1, d2);
+  }
   static bool domainTighter(Domain dom, Bounds b) {
     return !b.valid || dom->min() > b.l || dom->max() < b.u;
   }
@@ -430,6 +440,12 @@ public:
     IntSetRanges dr(dom);
     Ranges::Const<IntVal> c(v0, v1);
     Ranges::Inter<IntVal, IntSetRanges, Ranges::Const<IntVal>> inter(dr, c);
+    return IntSetVal::ai(inter);
+  }
+  static Domain intersectDomain(Domain dom0, Domain dom1) {
+    IntSetRanges dr0(dom0);
+    IntSetRanges dr1(dom1);
+    Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> inter(dr0, dr1);
     return IntSetVal::ai(inter);
   }
   static Val floorDiv(Val v0, Val v1) {
@@ -515,7 +531,16 @@ public:
     FloatSetRanges d2(dom2);
     return Ranges::equal(d1, d2);
   }
-
+  static bool domainSubset(Domain dom1, Domain dom2) {
+    FloatSetRanges d1(dom1);
+    FloatSetRanges d2(dom2);
+    return Ranges::subset(d1, d2);
+  }
+  static bool domainDisjoint(Domain dom1, Domain dom2) {
+    FloatSetRanges d1(dom1);
+    FloatSetRanges d2(dom2);
+    return Ranges::disjoint(d1, d2);
+  }
   static Domain intersectDomain(Domain dom, Val v0, Val v1) {
     if (dom != nullptr) {
       FloatSetRanges dr(dom);
@@ -526,6 +551,19 @@ public:
     Domain d = FloatSetVal::a(v0, v1);
     return d;
   }
+  static Domain intersectDomain(Domain dom0, Domain dom1) {
+    if (dom0 == nullptr) {
+      return dom1;
+    }
+    if (dom1 == nullptr) {
+      return dom0;
+    }
+    FloatSetRanges dr0(dom0);
+    FloatSetRanges dr1(dom1);
+    Ranges::Inter<FloatVal, FloatSetRanges, FloatSetRanges> inter(dr0, dr1);
+    return FloatSetVal::ai(inter);
+  }
+
   static Domain limitDomain(BinOpType bot, Domain dom, Val v) {
     FloatSetRanges dr(dom);
     FloatSetVal* ndomain;

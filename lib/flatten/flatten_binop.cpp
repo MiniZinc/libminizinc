@@ -973,6 +973,66 @@ EE flatten_nonbool_op(EnvI& env, const Ctx& ctx, const Ctx& ctx0, const Ctx& ctx
   return ret;
 }
 
+template <class Lit>
+bool flatten_dom_constraint(EnvI& env, Ctx& ctx, VarDecl* vd, Expression* dom, VarDecl* r,
+                            EE& ret) {
+  Id* ident = vd->id();
+  if (ctx.b == C_ROOT && r == env.constants.varTrue) {
+    if (vd->ti()->domain() == nullptr) {
+      vd->ti()->domain(dom);
+    } else {
+      GCLock lock;
+      auto* newdom = LinearTraits<Lit>::evalDomain(env, dom);
+      while (ident != nullptr) {
+        bool changeDom = false;
+        if (ident->decl()->ti()->domain() != nullptr) {
+          auto* domain = LinearTraits<Lit>::evalDomain(env, ident->decl()->ti()->domain());
+          auto* interdom = LinearTraits<Lit>::intersectDomain(domain, newdom);
+          if (!LinearTraits<Lit>::domainEquals(domain, interdom)) {
+            newdom = interdom;
+            changeDom = true;
+          }
+        } else {
+          changeDom = true;
+        }
+        if (ident->type().st() == Type::ST_PLAIN && newdom->empty()) {
+          env.fail();
+        } else if (changeDom) {
+          set_computed_domain(env, ident->decl(), new SetLit(Location().introduce(), newdom),
+                              false);
+          if (ident->decl()->e() == nullptr && newdom->min() == newdom->max() &&
+              !vd->type().isSet()) {
+            ident->decl()->e(LinearTraits<Lit>::newLit(newdom->min()));
+          }
+        }
+        ident = ident->decl()->e() != nullptr ? ident->decl()->e()->dynamicCast<Id>() : nullptr;
+      }
+    }
+    ret.r = bind(env, ctx, r, env.constants.literalTrue);
+    return true;
+  }
+  if (vd->ti()->domain() != nullptr) {
+    // check if current domain is already subsumed or falsified by this constraint
+    GCLock lock;
+    auto* check_dom = LinearTraits<Lit>::evalDomain(env, dom);
+    auto* domain = LinearTraits<Lit>::evalDomain(env, ident->decl()->ti()->domain());
+
+    if (LinearTraits<Lit>::domainSubset(domain, check_dom)) {
+      // the constraint is subsumed
+      ret.r = bind(env, ctx, r, env.constants.literalTrue);
+      return true;
+    }
+    if (vd->type().st() == Type::ST_PLAIN && LinearTraits<Lit>::domainDisjoint(check_dom, domain)) {
+      // only for var int/var float (for var set of int, subset can never fail because of the
+      // domain)
+      // the constraint is false
+      ret.r = bind(env, ctx, r, env.constants.literalFalse);
+      return true;
+    }
+  }
+  return false;
+}
+
 EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expression* e, VarDecl* r,
                    VarDecl* b, bool isBuiltin, BinOp* bo, BinOpType bot, bool doubleNeg) {
   EE ret;
@@ -1014,71 +1074,14 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
     return ret;
   }
 
-  if (e0.r()->type().bt() == Type::BT_INT && e1.r()->type().isPar() && e0.r()->isa<Id>() &&
-      (bot == BOT_IN || bot == BOT_SUBSET)) {
-    VarDecl* vd = e0.r()->cast<Id>()->decl();
-    Id* ident = vd->id();
-    if (ctx.b == C_ROOT && r == env.constants.varTrue) {
-      if (vd->ti()->domain() == nullptr) {
-        vd->ti()->domain(e1.r());
-      } else {
-        GCLock lock;
-        IntSetVal* newdom = eval_intset(env, e1.r());
-        while (ident != nullptr) {
-          bool changeDom = false;
-          if (ident->decl()->ti()->domain() != nullptr) {
-            IntSetVal* domain = eval_intset(env, ident->decl()->ti()->domain());
-            IntSetRanges dr(domain);
-            IntSetRanges ibr(newdom);
-            Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> i(dr, ibr);
-            IntSetVal* newibv = IntSetVal::ai(i);
-            if (!domain->equal(newibv)) {
-              newdom = newibv;
-              changeDom = true;
-            }
-          } else {
-            changeDom = true;
-          }
-          if (ident->type().st() == Type::ST_PLAIN && newdom->empty()) {
-            env.fail();
-          } else if (changeDom) {
-            set_computed_domain(env, ident->decl(), new SetLit(Location().introduce(), newdom),
-                                false);
-            if (ident->decl()->e() == nullptr && newdom->min() == newdom->max() &&
-                !vd->type().isSet()) {
-              ident->decl()->e(IntLit::a(newdom->min()));
-            }
-          }
-          ident = ident->decl()->e() != nullptr ? ident->decl()->e()->dynamicCast<Id>() : nullptr;
-        }
-      }
-      ret.r = bind(env, ctx, r, env.constants.literalTrue);
+  if (e1.r()->type().isPar() && e0.r()->isa<Id>() && (bot == BOT_IN || bot == BOT_SUBSET)) {
+    if (e0.r()->type().bt() == Type::BT_INT &&
+        flatten_dom_constraint<IntLit>(env, ctx, e0.r()->cast<Id>()->decl(), e1.r(), r, ret)) {
       return ret;
     }
-    if (vd->ti()->domain() != nullptr) {
-      // check if current domain is already subsumed or falsified by this constraint
-      GCLock lock;
-      IntSetVal* check_dom = eval_intset(env, e1.r());
-      IntSetVal* domain = eval_intset(env, ident->decl()->ti()->domain());
-      {
-        IntSetRanges cdr(check_dom);
-        IntSetRanges dr(domain);
-        if (Ranges::subset(dr, cdr)) {
-          // the constraint is subsumed
-          ret.r = bind(env, ctx, r, env.constants.literalTrue);
-          return ret;
-        }
-      }
-      if (vd->type().st() == Type::ST_PLAIN) {
-        // only for var int (for var set of int, subset can never fail because of the domain)
-        IntSetRanges cdr(check_dom);
-        IntSetRanges dr(domain);
-        if (Ranges::disjoint(cdr, dr)) {
-          // the constraint is false
-          ret.r = bind(env, ctx, r, env.constants.literalFalse);
-          return ret;
-        }
-      }
+    if (e0.r()->type().bt() == Type::BT_FLOAT &&
+        flatten_dom_constraint<FloatLit>(env, ctx, e0.r()->cast<Id>()->decl(), e1.r(), r, ret)) {
+      return ret;
     }
   }
 
