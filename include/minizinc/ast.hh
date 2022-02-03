@@ -1825,8 +1825,10 @@ public:
   VarDecl* varFalse;
   /// Special variable to signal compiler to ignore result
   VarDecl* varIgnore;
-  /// Infinite set
-  SetLit* infinity;
+  /// Infinite (integer) set
+  SetLit* infinityInt;
+  /// Infinite (float) set
+  SetLit* infinityFloat;
   /// Function item used to keep track of redefined variables
   FunctionI* varRedef;
   /// Literal absent value

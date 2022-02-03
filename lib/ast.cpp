@@ -1573,7 +1573,9 @@ Constants::Constants() {
   absent->type(absent_t);
 
   IntSetVal* isv_infty = IntSetVal::a(-IntVal::infinity(), IntVal::infinity());
-  infinity = new SetLit(Location(), isv_infty);
+  infinityInt = new SetLit(Location(), isv_infty);
+  FloatSetVal* fsv_infty = FloatSetVal::a(-FloatVal::infinity(), FloatVal::infinity());
+  infinityFloat = new SetLit(Location(), fsv_infty);
 
   ids.forall = addString("forall");
   ids.forallReif = addString("forallReif");
@@ -1874,7 +1876,8 @@ void Constants::mark() {
   Expression::mark(varIgnore);
   Item::mark(varRedef);
   Expression::mark(absent);
-  Expression::mark(infinity);
+  Expression::mark(infinityInt);
+  Expression::mark(infinityFloat);
 
   for (auto* ident : _ids) {
     Expression::mark(ident);
