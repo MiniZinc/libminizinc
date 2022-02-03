@@ -1166,16 +1166,16 @@ function var int: mod_mt(var int: x, var int: y) :: promise_total =
 
 function var float: sqrt_t(var float: x) ::promise_total =
   let {
-    float: sqrt_lb = if lb(x) < 0.0 then 0.0 else sqrt(lb(x))-1.0 endif;
-    float: sqrt_ub = if ub(x) < 0.0 then 1.0 elseif ub(x) = infinity then infinity else sqrt(ub(x))+1.0 endif;
+    float: sqrt_lb = if lb(x) < 0.0 then 0.0 else sqrt(lb(x)) endif;
+    float: sqrt_ub = if ub(x) < 0.0 then 1.0 elseif ub(x) = infinity then infinity else sqrt(ub(x)) endif;
     var sqrt_lb..sqrt_ub: r;
     constraint float_sqrt(x,r);
   } in r;
 
 function var float: sqrt_mt(var float: x) ::promise_total =
   let {
-    float: sqrt_lb = if lb(x) < 0.0 then 0.0 else sqrt(lb(x))-1.0 endif;
-    float: sqrt_ub = if ub(x) < 0.0 then 1.0 elseif ub(x) = infinity then infinity else sqrt(ub(x))+1.0 endif;
+    float: sqrt_lb = if lb(x) < 0.0 then 0.0 else sqrt(lb(x)) endif;
+    float: sqrt_ub = if ub(x) < 0.0 then 1.0 elseif ub(x) = infinity then infinity else sqrt(ub(x)) endif;
     var sqrt_lb..sqrt_ub: r;
     var float: xx;
     constraint x < 0.0 -> xx = 1.0;
