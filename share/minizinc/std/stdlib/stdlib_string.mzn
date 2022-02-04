@@ -95,6 +95,27 @@ function string: showJSON(any $T: x);
 /** @group stdlib.builtins.string Convert \a x into JSON string */
 function string: showJSON(array[$U] of any $T: x);
 
+/** @group stdlib.builtins.string Create a JSON object from an array of key-value pairs \a obj.
+
+    \a obj[\p i, \p 1] is the key name for the \p i-th entry  
+    \a obj[\p i, \p 2] is the JSON value for the \o i-th entry (usually generated using showJSON)  
+ */
+function string: json_object(array [int, 1..2] of string: obj) =
+    concat([
+        "{",
+        join(",", [
+            join(":", [showJSON(obj[i, 1]), obj[i, 2]])
+            | i in index_set_1of2(obj)
+        ]),
+        "}"
+    ]);
+
+/** @group stdlib.builtins.string Create a JSON array from an array of JSON strings \a arr.
+    
+    The elements are assumed to be strings already in JSON format (usually generated using showJSON)
+ */
+function string: json_array(array [int] of string: arr) = concat(["[", join(",", arr), "]"]);
+
 /** @group stdlib.builtins.string Return length of \a s */
 function int: string_length(string: s);
 
