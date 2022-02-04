@@ -1921,10 +1921,10 @@ bool b_output_to_section(EnvI& env, Call* call) {
         // Restore binding to original (and top-level) VarDecl
         auto* vd_orig = _cm.findOrig(vd);
         i->redirect(vd_orig->cast<VarDecl>()->id());
-      } else {
-        // Must be par since otherwise would have been flattened to top-level
-        assert(vd->e() != nullptr);
-        assert(vd->e()->type().isPar());
+      } else if (vd->e() != nullptr) {
+        if (vd->e()->type().isvar()) {
+          top_down(*this, vd->e());
+        }
         vd->ann().clear();
         _scope.emplace(vd);
       }
