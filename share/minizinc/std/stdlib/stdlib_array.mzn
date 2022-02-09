@@ -106,7 +106,6 @@ function array[$$E,$$F] of any $V: array2d(set of $$E: S1, set of $$F: S2,
 function array[$$E,$$F] of any $V: array2d(array[int] of $$E: S1, array[int] of $$F: S2, 
                                            array[int] of any $V: x) = 
                                            let { int: d = length(S2);
-                                           constraint trace("\(S1), \(S2)\n")
                                             } in
                                            [ (S1[(i - 1) div d + 1],S2[(i - 1) mod d + 1]) : x[i] | i in index_set(x)];
 
