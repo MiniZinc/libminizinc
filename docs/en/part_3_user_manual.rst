@@ -7,6 +7,7 @@ User Manual
 
    command_line
    minizinc_ide
+   visualisation
    cpprofiler
    solvers
    checkers

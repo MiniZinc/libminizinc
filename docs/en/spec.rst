@@ -3757,9 +3757,17 @@ as JSON objects. A JSON input file needs to have the following structure:
 
   - An array of values. Arrays of arrays are supported only if all inner arrays are of the same length, so that they can be mapped to multi-dimensional MiniZinc arrays.
 
-  - A set of values encoded as an object with a single member with key ``"set"`` and a list of values (the elements of the set).
+  - A set of values encoded as an object with a single member with key ``"set"`` and a list of values (the elements of the set). The list may additionally contain an element which is a sublist comprising a pair of values representing a minimum and maximum of a range in the set.
   
   - A value of an enumerated type encoded as an object with a single member with key ``"e"`` and a string value (the identifier of the enumerated value).
+
+  - The value of an enumerated type constructor call encoded as an object with a member with key ``"c"`` and a string value (the identifier of the constructor call), and a member with key ``"e"`` and a enumerated type (or constructor) object value (the argument to the call).
+
+MiniZinc supports coercion of some JSON input types for more convenient input:
+
+  - A list of values can be coerced to a set
+
+  - A string value can be coerced to an enumerated type value (but not a constructor call)
 
 Assume a MiniZinc model declaring the following parameters:
 
