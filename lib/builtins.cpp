@@ -1907,11 +1907,16 @@ bool b_output_to_section(EnvI& env, Call* call) {
     EnvI& _env;
     CopyMap& _cm;
     std::unordered_set<Expression*>& _scope;
+    std::unordered_set<Id*> _visited;
 
   public:
     CollectScope(EnvI& env, CopyMap& cm, std::unordered_set<Expression*>& scope)
         : _env(env), _cm(cm), _scope(scope) {}
     void vId(Id* i) {
+      if (_visited.count(i) > 0) {
+        return;
+      }
+      _visited.insert(i);
       auto* decl = follow_id_to_decl(i);
       if (decl == nullptr || !decl->isa<VarDecl>()) {
         return;
