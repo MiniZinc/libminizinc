@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>MiniZinc Visualization</title>
+        <script src="/minizinc-ide.js"></script>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <style>
+            html, body {
+                margin: 0;
+                padding: 0;
+                font-family: sans-serif;
+                font-size: 14px;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            #toolbar {
+                position: sticky;
+                top: 0;
+                height: 32px;
+                display: flex;
+                align-items: center;
+                padding: 5px;
+                background: #FFF;
+            }
+            .spacer {
+                flex: 1 1 auto;
+            }
+            main {
+                min-height: calc(100vh - 32px);
+                display: flex;
+                align-items: center;
+            }
+            svg {
+                width: 100%;
+            }
+            .label {
+                dominant-baseline: middle;
+                text-anchor: end;
+            }
+            #axis {
+                position: sticky;
+                bottom: 0;
+                background: #FFF;
+            }
+            #tooltip {
+                position: absolute;
+                box-sizing: border-box;
+                padding: 5px;
+                font: 14px sans-serif;
+                background: #FFF;
+                border: solid 1px #000;
+                pointer-events: none;
+                opacity: 0;
+            }
+            rect.task:hover {
+                stroke: red;
+                stroke-width: 3;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="toolbar">
+            <input type="checkbox" id="sortByStart">
+            <label for="sortByStart">Sort by start time</label>
+            <div class="spacer"></div>
+            <button type="button" id="zoomButton">Zoom to fit</button>
+        </div>
+        <main>
+            <div>
+                <svg id="main"></svg>
+                <svg id="axis"></svg>
+            </div>
+        </main>
+        <span id="tooltip"></span>
+        <script>
+            const colors = ['#332288', '#66AADD', '#44AA99', '#117733', '#999933', '#DDCC77', '#CC6677', '#882255', '#AA4499'];
+            const blockSize = 32;
+            const gap = 4;
+            const padding = 10;
+
+            const svgMain = d3.select('#main');
+            const svgAxis = d3.select('#axis');
+            const gBackground = svgMain.append('g');
+            const gMain = svgMain.append('g');
+            const gLabels = gMain.append('g')
+                .attr('transform', `translate(${-padding} 0)`);
+            const zoomRegion = gMain.append('g');
+            const zoomRect = zoomRegion
+                .append('rect')
+                .attr('fill', 'transparent');
+            const gChartClip = zoomRegion.append('g');
+            const gChart = gChartClip.append('g');
+            const gAxis = svgAxis.append('g');
+            
+            const clipRect = svgMain
+                .append('def')
+                .append('clipPath')
+                .attr('id', 'viewport')
+                .append('rect');
+            const zoom = d3.zoom()
+                .on('zoom', e => {
+                    gChart.attr('transform', `translate(${e.transform.x} 0) scale(${e.transform.k} 1)`);
+                    updateAxis();
+                });
+
+            const xScale = d3.scaleLinear();
+            const xAxis = d3.axisBottom(xScale)
+                .tickSize(10);
+            const sortByStartCheckbox = document.getElementById('sortByStart');
+            const zoomToFitButton = document.getElementById('zoomButton');
+            const tooltip = d3.select("#tooltip");
+            
+            let baseData;
+            let sortByStart = false;
+            let labelWidth;
+            let currentSolution;
+
+            sortByStartCheckbox.addEventListener('change', () => {
+                sortByStart = sortByStartCheckbox.checked;
+                newSolution(currentSolution);
+            });
+            zoomToFitButton.addEventListener('click', () => {
+                if (!currentSolution || currentSolution.start.length === 0) {
+                    return;
+                }
+                const viewportWidth = zoomRect.node().getBoundingClientRect().width;
+                const minTime = Math.min.apply(null, [0, ...currentSolution.start]);
+                const maxTime = Math.max.apply(null, [1, ...currentSolution.dur.map((x, i) => currentSolution.start[i] + x)]);
+                const scale = viewportWidth / (maxTime - minTime) / blockSize;
+                zoomRegion
+                    .transition()
+                    .duration(200)
+                    .call(zoom.transform, d3.zoomIdentity.scale(scale));
+            });
+
+            function updateLabels(data) {
+                gLabels
+                    .selectAll('text.label')
+                    .data(data)
+                    .join('text')
+                    .attr('class', 'label')
+                    .attr('y', d => blockSize * d.index + blockSize / 2)
+                    .attr('fill', d => d.color)
+                    .text(d => d.label);
+            }
+
+            function updateAxis() {
+                const svgWidth = svgMain.node().getBoundingClientRect().width;
+                const range = [0, svgWidth - labelWidth];
+                const transform = d3.zoomTransform(zoomRegion.node());
+                gAxis.call(xAxis
+                    .ticks(svgWidth / 50)
+                    .scale(transform.rescaleX(xScale
+                        .domain(range)
+                        .range(range)
+                    ))
+                );
+            }
+            
+            function init(userData) {
+                palette = userData.colors || colors;
+                baseData = userData.labels.map((label, index) => ({
+                    label,
+                    index,
+                    color: palette[index % palette.length],
+                }));
+                const totalHeight = blockSize * baseData.length;
+                svgMain.attr('height', totalHeight);
+                svgAxis.attr('height', blockSize);
+                sortByStart = userData.sortByStart || false;
+                updateLabels(baseData);
+                labelWidth = gLabels.node().getBoundingClientRect().width + 2 * padding;
+                gMain.attr('transform', `translate(${labelWidth} 0)`);
+                const svgWidth = svgMain.node().getBoundingClientRect().width;
+                gBackground
+                    .attr('transform', `scale(${svgWidth} 1)`)
+                    .selectAll('rect')
+                    .data(baseData)
+                    .join('rect')
+                    .attr('fill', d => d.index % 2 === 0 ? '#FFF' : '#EEE')
+                    .attr('y', d => d.index * blockSize)
+                    .attr('width', 1)
+                    .attr('height', blockSize);
+                clipRect.attr('width', svgWidth - labelWidth)
+                    .attr('height', blockSize * baseData.length);
+                gChartClip.attr('clip-path', 'url(#viewport)');
+                zoomRect
+                    .attr('width', svgWidth - labelWidth)
+                    .attr('height', totalHeight);
+                zoomRegion
+                    .call(zoom);
+                gAxis.attr('transform', `translate(${labelWidth} 0)`);
+                updateAxis();
+            }
+
+            function newSolution(data) {
+                currentSolution = data;
+                const tasks = baseData.map(d => ({
+                    ...d,
+                    start: data.start[d.index],
+                    dur: data.dur[d.index],
+                    tooltip: `<strong>Task: </strong>${d.label}<br>
+                            <strong>Start: </strong>${data.start[d.index]}<br>
+                            <strong>Duration: </strong>${data.dur[d.index]}`
+                }));
+                if (sortByStart) {
+                    tasks.sort((a, b) => a.start - b.start);
+                    tasks.forEach((x, i) => {x.index = i});
+                }
+                updateLabels(tasks);
+                // Update tasks
+                gChart.selectAll('rect.task')
+                    .data(tasks)
+                    .join('rect')
+                    .attr('class', 'task')
+                    .attr('fill', d => d.color)
+                    .attr('x', d => blockSize * d.start)
+                    .attr('y', d => blockSize * d.index + gap / 2)
+                    .attr('width', d => blockSize * d.dur)
+                    .attr('height', d => blockSize - gap)
+                    .on('mouseover', (e, d) => {
+                        tooltip.html(d.tooltip)
+                            .style("left", `${e.clientX}px`)
+                            .style("top", () => `${e.clientY - tooltip.node().getBoundingClientRect().height}px`)
+                            .transition()
+                            .duration(100)
+                            .style("opacity", 1);
+                    })
+                    .on('mousemove', e => {
+                        const h = tooltip.node().getBoundingClientRect().height;
+                        tooltip
+                            .style("left", `${e.clientX}px`)
+                            .style("top", () => `${e.clientY - h}px`)
+                    })
+                    .on('mouseout', () => {
+                        tooltip.transition()
+                            .duration(200)
+                            .style("opacity", 0);
+                    });
+            }
+
+            (async function() {
+                const userData = await MiniZincIDE.getUserData();
+                init(userData);
+
+                // Plot last solution
+                const numSols = await MiniZincIDE.getNumSolutions();
+                if (numSols > 0) {
+                    const solution = await MiniZincIDE.getSolution(numSols - 1);
+                    newSolution(solution.data);
+                }
+
+                let followLatest = true;
+                MiniZincIDE.on('solution', (payload) => {
+                    if (followLatest) {
+                        newSolution(payload.data);
+                    }
+                });
+
+                MiniZincIDE.on('goToSolution', async (index) => {
+                    followLatest = index === -1;
+                    const solution = await MiniZincIDE.getSolution(index);
+                    newSolution(solution.data);
+                });
+
+                window.onresize = () => {
+                    const svgWidth = svgMain.node().getBoundingClientRect().width;
+                    gBackground
+                        .attr('transform', `scale(${svgWidth} 1)`);
+                    clipRect
+                        .attr('width', svgWidth - labelWidth);
+                    zoomRect
+                        .attr('width', svgWidth - labelWidth);
+                    updateAxis();
+                };
+            })();
+        </script>
+    </body>
+</html>

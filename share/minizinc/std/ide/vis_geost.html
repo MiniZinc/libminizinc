@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>MiniZinc Visualization</title>
+        <script src="/minizinc-ide.js"></script>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <style>
+            html, body {
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+            }
+            #container {
+                width: 100vw;
+                height: 100vh;
+            }
+            #tooltip {
+                position: absolute;
+                box-sizing: border-box;
+                padding: 5px;
+                font: 14px sans-serif;
+                background: #FFF;
+                border: solid 1px #000;
+                pointer-events: none;
+                opacity: 0;
+            }
+            .axis line, .axis path {
+                stroke: #AAA;
+            }
+            .axis text {
+                fill: #444;
+            }
+        </style>
+    </head>
+    <body>
+        <svg id="container" viewbox="-100 -700 800 800">
+            <filter id="outline">
+                <feMorphology in="SourceGraphic" result="dilated" operator="dilate" radius="1"/>
+                <feMorphology in="SourceGraphic" result="eroded" operator="erode" radius="1"/>
+                <feFlood flood-color="black" result="flood" />
+                <feComposite in="flood" in2="dilated" operator="in" />
+                <feComposite in="eroded" />
+            </filter>
+        </svg>
+        <span id="tooltip"></span>
+        <script>
+            const colors = ['#ff7575', '#75fdff', '#c875ff', '#ffb875', '#95ff75', '#759cff', '#faff75', '#ff75c5'];
+            const scaleFactor = 40;
+
+            const svg = d3.select('#container');
+            const zoomGroup = svg.append('g');
+            const tooltip = d3.select('#tooltip');
+            
+            const xAxisGroup = zoomGroup.append('g')
+                .attr('class', 'axis');
+            const yAxisGroup = zoomGroup.append('g')
+                .attr('class', 'axis');
+
+            const canvas = zoomGroup.append('g')
+                .attr('transform', 'scale(1, -1)');
+
+            svg.call(d3.zoom().on('zoom', function(e) {
+                zoomGroup.attr('transform', e.transform);
+            }));
+
+            let shapes;
+
+            function init(userData) {
+                const rects = userData.rectIndexSet
+                    .reduce((acc, r, i) => ({
+                        ...acc,
+                        [r]: {
+                            x: userData.rectX[i],
+                            y: userData.rectY[i],
+                            width: userData.rectDx[i],
+                            height: userData.rectDy[i]
+                        }
+                    }), {});
+                shapes = userData.shapeIndexSet
+                    .reduce((acc, k, i) => ({
+                        ...acc,
+                        [k]: {
+                            color: colors[i % colors.length],
+                            rects: userData.shape[i]
+                                .map(r => rects[r])
+                        }
+                    }), {});
+            }
+
+            function newSolution(data) {
+                const objs = data.kind
+                    .map((k, i) => ({
+                        ...shapes[k],
+                        x: data.x[i],
+                        y: data.y[i],
+                        tooltip: `<strong>Shape: </strong>${k}<br>
+                                <strong>Location: </strong>(${data.x[i]}, ${data.y[i]})`
+                    }));
+
+                // Update shape objects
+                canvas.selectAll('g.shape')
+                    .data(objs)
+                    .join('g')
+                    .attr('class', 'shape')
+                    .attr('filter', 'url(#outline)')
+                    .attr('fill', d => d.color)
+                    .attr('transform', d => `translate(${d.x * scaleFactor} ${d.y * scaleFactor})`)
+                    .on('mouseover', (e, d) => {
+                        const r = e.target.getBoundingClientRect();
+                        tooltip.html(d.tooltip)
+                            .style('left', `${r.right}px`)
+                            .style('top', d => `${r.top - tooltip.node().getBoundingClientRect().height}px`)
+                            .transition()
+                            .duration(100)
+                            .style('opacity', 1);
+                    })
+                    .on('mouseout', () => {
+                        tooltip.transition()
+                            .duration(200)
+                            .style('opacity', 0);
+                    })
+                    .selectAll('rect')
+                    .data(d => d.rects)
+                    .join('rect')
+                    .attr('x', d => d.x * scaleFactor)
+                    .attr('y', d => d.y * scaleFactor)
+                    .attr('width', d => d.width * scaleFactor)
+                    .attr('height', d => d.height * scaleFactor);
+
+                // Update axes
+                const bounds = objs.reduce((acc, obj) => ({
+                    xMin: Math.min.apply(null, [acc.xMin, ...obj.rects.map(r => obj.x + r.x)]),
+                    xMax: Math.max.apply(null, [acc.xMax, ...obj.rects.map(r => obj.x + r.x + r.width)]),
+                    yMin: Math.min.apply(null, [acc.yMin, ...obj.rects.map(r => obj.y + r.y)]),
+                    yMax: Math.max.apply(null, [acc.yMax, ...obj.rects.map(r => obj.y + r.y + r.height)]),
+                }), {xMin: 0, xMax: 0, yMin: 0, yMax: 0});
+                const xRange = [bounds.xMin - 1, bounds.xMax + 1];
+                const yRange = [bounds.yMin - 1, bounds.yMax + 1];
+
+                const xScale = d3.scaleLinear()
+                    .domain(xRange)
+                    .range(xRange.map(x => x * scaleFactor));
+                const yScale = d3.scaleLinear()
+                    .domain(yRange)
+                    .range(yRange.map(x => x * scaleFactor).reverse());
+
+                const xAxis = d3.axisBottom(xScale)
+                    .tickSize(10)
+                    .ticks(xRange[1] - xRange[0] + 1)
+
+                const yAxis = d3.axisLeft(yScale)
+                    .tickSize(10)
+                    .ticks(yRange[1] - yRange[0] + 1)
+
+                xAxisGroup.call(xAxis);
+                yAxisGroup.attr('transform', `translate(0 ${-(yRange[0] + yRange[1]) * scaleFactor})`)
+                    .call(yAxis);
+            }
+
+            (async function() {
+                const userData = await MiniZincIDE.getUserData();
+                init(userData);
+
+                // Plot last solution
+                const numSols = await MiniZincIDE.getNumSolutions();
+                if (numSols > 0) {
+                    const solution = await MiniZincIDE.getSolution(numSols - 1);
+                    newSolution(solution.data);
+                }
+
+                let followLatest = true;
+                MiniZincIDE.on('solution', (payload) => {
+                    if (followLatest) {
+                        newSolution(payload.data);
+                    }
+                });
+
+                MiniZincIDE.on('goToSolution', async (index) => {
+                    followLatest = index === -1;
+                    const solution = await MiniZincIDE.getSolution(index);
+                    newSolution(solution.data);
+                })
+            })();
+        </script>
+    </body>
+</html>

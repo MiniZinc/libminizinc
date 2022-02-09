@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>MiniZinc Visualization</title>
+        <script src="/minizinc-ide.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.0/standalone/umd/vis-network.min.js"></script>
+        <style>
+            html, body {
+                margin: 0;
+                padding: 0;
+            }
+            #container {
+                width: 100vw;
+                height: 100vh;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="container"></div>
+        <script>
+            let network;
+            let highlight;
+
+            const allNodes = [];
+            const allEdges = [];
+
+            function init(userData) {
+                highlight = userData.highlight;
+
+                for (let i = 0; i < userData.nodeLabels.length; i++) {
+                    allNodes.push({
+                        id: `node-${userData.nodes[i]}`,
+                        label: `${userData.nodeLabels[i]}`,
+                    })
+                }
+                for (let i = 0; i < userData.edgeLabels.length; i++) {
+                    allEdges.push({
+                        id: `edge-${i}`,
+                        from: `node-${userData.from[i]}`,
+                        to: `node-${userData.to[i]}`,
+                        label: `${userData.edgeLabels[i]}`,
+                    })
+                }
+
+                const container = document.getElementById("container");
+                const data = { nodes: [], edges: [] };
+                const options = {
+                    nodes: {
+                        shape: "dot",
+                        size: 16,
+                    },
+                    edges: {
+                        arrows: userData.type === 'digraph' ? 'to' : {}
+                    },
+                    physics: {
+                        forceAtlas2Based: {
+                            gravitationalConstant: -26,
+                            centralGravity: 0.005,
+                            springLength: 230,
+                            springConstant: 0.18,
+                        },
+                        maxVelocity: 146,
+                        solver: "forceAtlas2Based",
+                        timestep: 0.35,
+                        stabilization: { iterations: 150 },
+                    }
+                };
+                network = new vis.Network(container, data, options);
+            }
+
+            function newSolution(data) {
+                if (highlight) {
+                    const nodes = allNodes.map((d, i) => ({
+                        opacity: data.ns[i] ? 1 : 0.2,
+                        ...d
+                    }));
+                    const edges = allEdges.map((d, i) => ({
+                        color: {
+                            opacity: data.es[i] ? 1 : 0.2
+                        },
+                        ...d
+                    }));
+                    network.setData({ nodes, edges });
+                } else {
+                    const nodes = allNodes.filter((d, i) => data.ns[i]);
+                    const edges = allEdges.filter((d, i) => data.es[i]);
+                    network.setData({ nodes, edges });
+                }
+            }
+
+            (async function() {
+                const userData = await MiniZincIDE.getUserData();
+                init(userData);
+
+                // Plot last solution
+                const numSols = await MiniZincIDE.getNumSolutions();
+                if (numSols > 0) {
+                    const solution = await MiniZincIDE.getSolution(numSols - 1);
+                    newSolution(solution.data);
+                }
+
+                let followLatest = true;
+                MiniZincIDE.on('solution', (payload) => {
+                    if (followLatest) {
+                        newSolution(payload.data);
+                    }
+                });
+
+                MiniZincIDE.on('goToSolution', async (index) => {
+                    followLatest = index === -1;
+                    const solution = await MiniZincIDE.getSolution(index);
+                    newSolution(solution.data);
+                })
+            })();
+        </script>
+    </body>
+</html>

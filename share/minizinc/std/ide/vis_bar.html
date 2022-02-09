@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>MiniZinc Visualization</title>
+        <script src="/minizinc-ide.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@3.6.0/dist/chart.min.js"></script>
+        <style>
+            html, body {
+                margin: 0;
+                padding: 0;
+            }
+            #container {
+                width: 100vw;
+                height: 100vh;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="container">
+            <canvas id="vis"></canvas>
+        </div>
+        <script>
+            const colors = ['#332288', '#88CCEE', '#44AA99', '#117733', '#999933', '#DDCC77', '#CC6677', '#882255', '#AA4499'];
+
+            let chart;
+            let datasets;
+
+            function init(userData) {
+                const config = {
+                    type: 'bar',
+                    data: {
+                        labels: userData.dataLabels
+                    },
+                    options: {
+                        indexAxis: userData.type === 'bar' ? 'y' : 'x',
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                };
+
+                if (userData.seriesLabels) {
+                    // Multiple series
+                    const data = userData.seriesLabels.map(() => []);
+                    datasets = userData.seriesLabels.map((label, i) => ({
+                        label,
+                        data: data[i],
+                        borderColor: colors[i % colors.length],
+                        backgroundColor: `${colors[i % colors.length]}7F`,
+                    }));
+                    config.data.datasets = datasets;
+                    config.plugins = {
+                        legend: {
+                            position: 'right',
+                        }
+                    };
+                } else {
+                    // Single series
+                    datasets = [{
+                        label: 'Value',
+                        data: [],
+                        borderColor: colors[0],
+                        backgroundColor: `${colors[0]}7F`,
+                    }];
+                    config.data.datasets = datasets;
+                }
+
+                chart = new Chart(
+                    document.getElementById('vis'),
+                    config
+                );
+            }
+
+            function newSolution(solution) {
+                solution.forEach((s, i) => {
+                    datasets[i].data = s;
+                });
+                chart.update();
+            }
+
+            (async function() {
+                const userData = await MiniZincIDE.getUserData();
+                init(userData);
+
+                // Plot last solution
+                const numSols = await MiniZincIDE.getNumSolutions();
+                if (numSols > 0) {
+                    const solution = await MiniZincIDE.getSolution(numSols - 1);
+                    newSolution(solution.data);
+                }
+
+                let followLatest = true;
+                MiniZincIDE.on('solution', (payload) => {
+                    if (followLatest) {
+                        newSolution(payload.data);
+                    }
+                });
+
+                MiniZincIDE.on('goToSolution', async (index) => {
+                    followLatest = index === -1;
+                    const solution = await MiniZincIDE.getSolution(index);
+                    newSolution(solution.data);
+                });
+            })();
+        </script>
+    </body>
+</html>

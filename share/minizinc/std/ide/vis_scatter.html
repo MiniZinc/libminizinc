@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>MiniZinc Visualization</title>
+        <script src="/minizinc-ide.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@3.6.0/dist/chart.min.js"></script>
+        <style>
+            html, body {
+                margin: 0;
+                padding: 0;
+            }
+            #container {
+                width: 100vw;
+                height: 100vh;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="container">
+            <canvas id="vis"></canvas>
+        </div>
+        <script>
+            const colors = ['#332288', '#88CCEE', '#44AA99', '#117733', '#999933', '#DDCC77', '#CC6677', '#882255', '#AA4499'];
+
+            let chart;
+            let data;
+            let plotOverTime = true;
+            let currentIndex = -1;
+
+            const times = [];
+
+            function init(opts) {
+                const baseOpts = {};
+                const scales = {};
+                switch (opts.type) {
+                    case 'line-time':
+                        baseOpts.tension = 0;
+                        baseOpts.showLine = true;
+                        scales.x = {
+                            suggestedMin: 0,
+                            title: {
+                                display: true,
+                                text: 'Time (ms)'
+                            }
+                        };
+                        break;
+                    case 'scatter-cumulative':
+                        scales.x = {
+                            title: {
+                                display: true,
+                                text: opts.xLabel
+                            }
+                        };
+                        scales.y = {
+                            title: {
+                                display: true,
+                                text: opts.yLabel
+                            }
+                        };
+                        break;
+                    case 'scatter':
+                        plotOverTime = false;
+                        scales.x = {
+                            title: {
+                                display: true,
+                                text: opts.xLabel
+                            }
+                        };
+                        scales.y = {
+                            title: {
+                                display: true,
+                                text: opts.yLabel
+                            }
+                        };
+                        break;
+                    case 'line':
+                        plotOverTime = false;
+                        baseOpts.tension = 0;
+                        baseOpts.showLine = true;
+                        scales.x = {
+                            title: {
+                                display: true,
+                                text: opts.xLabel
+                            }
+                        };
+                        scales.y = {
+                            title: {
+                                display: true,
+                                text: opts.yLabel
+                            }
+                        };
+                        break;
+                }
+
+                data = opts.seriesLabels.map(x => []);
+                const config = {
+                    type: 'scatter',
+                    data: {
+                        datasets: opts.seriesLabels.map((label, i) => ({
+                            ...baseOpts,
+                            label,
+                            data: data[i],
+                            borderColor: ctx => ctx.dataIndex === currentIndex ? 'red' : colors[i % colors.length],
+                            backgroundColor: ctx => `${ctx.dataIndex === currentIndex ? '#FF0000' : colors[i % colors.length]}7F`,
+                            radius: ctx => ctx.dataIndex === currentIndex ? 6 : 3,
+                        }))
+                    },
+                    options: {
+                        scales,
+                        maintainAspectRatio: false,
+                        animation: {
+                            duration: 0
+                        },
+                        onClick: (e, i) => {
+                            if (plotOverTime && i.length > 0) {
+                                const idx = i[0].index;
+                                MiniZincIDE.goToSolution(idx);
+                            }
+                        }
+                    }
+                };
+                chart = new Chart(
+                    document.getElementById('vis'),
+                    config
+                );
+            }
+
+            function addSolution(time, values) {
+                for (let i = 0; i < values.length; i++) {
+                    if (typeof values[i] === 'number') {
+                        data[i].push({
+                            x: time,
+                            y: values[i]
+                        });
+                    } else if (typeof values[i].x === 'number') {
+                        data[i].push({
+                            x: values[i].x,
+                            y: values[i].y
+                        });
+                    } else {
+                        for (let j = 0; j < values[i].x.length; j++) {
+                            data[i].push({
+                                x: values[i].x[j],
+                                y: values[i].y[j]
+                            });
+                        }
+                    }
+                }
+                times.push(time);
+            }
+
+            function finish(time) {
+                chart.options.scales.x.suggestedMax = time;
+                chart.update();
+            }
+
+            (async function() {
+                const userData = await MiniZincIDE.getUserData();
+                init(userData);
+
+                if (plotOverTime) {
+                    // Plot existing solutions
+                    const solutions = await MiniZincIDE.getAllSolutions();
+                    for (const solution of solutions) {
+                        addSolution(solution.time, solution.data);
+                    }
+                    chart.update();
+                } else {
+                    // Plot last solution
+                    const numSols = await MiniZincIDE.getNumSolutions();
+                    if (numSols > 0) {
+                        const solution = await MiniZincIDE.getSolution(numSols - 1);
+                        addSolution(solution.time, solution.data);
+                        chart.update();
+                    }
+                }
+                
+                MiniZincIDE.on('solution', (payload) => {
+                    addSolution(payload.time, payload.data);
+                    chart.update();
+                });
+
+                MiniZincIDE.on('finish', (payload) => {
+                    finish(payload.time);
+                });
+
+                MiniZincIDE.on('goToSolution', (index) => {
+                    currentIndex = index;
+                    chart.update();
+                });
+            })();
+        </script>
+    </body>
+</html>
