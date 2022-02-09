@@ -2662,6 +2662,14 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
   }
   GCLock lock;
   if (e->type().isPar() && !e->type().cv()) {
+    if (e->type() == Type::parbool()) {
+      bool condition;
+      try {
+        return eval_par(env, e);
+      } catch (ResultUndefinedError&) {
+        return env.constants.boollit(false);
+      }
+    }
     return eval_par(env, e);
   }
   if (e->type().isvar()) {
@@ -2671,225 +2679,234 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
     }
     return ee.r();
   }
-  switch (e->eid()) {
-    case Expression::E_INTLIT:
-    case Expression::E_FLOATLIT:
-    case Expression::E_BOOLLIT:
-    case Expression::E_STRINGLIT:
-    case Expression::E_TIID:
-    case Expression::E_VARDECL:
-    case Expression::E_TI:
-    case Expression::E_ANON:
-      assert(false);
-      return nullptr;
-    case Expression::E_ID: {
-      Id* id = e->cast<Id>();
-      return flat_cv_exp(env, ctx, id->decl()->e());
-    }
-    case Expression::E_SETLIT: {
-      auto* sl = e->cast<SetLit>();
-      if ((sl->isv() != nullptr) || (sl->fsv() != nullptr)) {
-        return sl;
+  try {
+    switch (e->eid()) {
+      case Expression::E_INTLIT:
+      case Expression::E_FLOATLIT:
+      case Expression::E_BOOLLIT:
+      case Expression::E_STRINGLIT:
+      case Expression::E_TIID:
+      case Expression::E_VARDECL:
+      case Expression::E_TI:
+      case Expression::E_ANON:
+        assert(false);
+        return nullptr;
+      case Expression::E_ID: {
+        Id* id = e->cast<Id>();
+        return flat_cv_exp(env, ctx, id->decl()->e());
       }
-      std::vector<Expression*> es(sl->v().size());
-      GCLock lock;
-      for (unsigned int i = 0; i < sl->v().size(); i++) {
-        es[i] = flat_cv_exp(env, ctx, sl->v()[i])();
+      case Expression::E_SETLIT: {
+        auto* sl = e->cast<SetLit>();
+        if ((sl->isv() != nullptr) || (sl->fsv() != nullptr)) {
+          return sl;
+        }
+        std::vector<Expression*> es(sl->v().size());
+        GCLock lock;
+        for (unsigned int i = 0; i < sl->v().size(); i++) {
+          es[i] = flat_cv_exp(env, ctx, sl->v()[i])();
+        }
+        auto* sl_ret = new SetLit(Location().introduce(), es);
+        Type t = sl->type();
+        t.cv(false);
+        sl_ret->type(t);
+        return eval_par(env, sl_ret);
       }
-      auto* sl_ret = new SetLit(Location().introduce(), es);
-      Type t = sl->type();
-      t.cv(false);
-      sl_ret->type(t);
-      return eval_par(env, sl_ret);
-    }
-    case Expression::E_ARRAYLIT: {
-      auto* al = e->cast<ArrayLit>();
-      std::vector<Expression*> es(al->size());
-      GCLock lock;
-      for (unsigned int i = 0; i < al->size(); i++) {
-        es[i] = flat_cv_exp(env, ctx, (*al)[i])();
+      case Expression::E_ARRAYLIT: {
+        auto* al = e->cast<ArrayLit>();
+        std::vector<Expression*> es(al->size());
+        GCLock lock;
+        for (unsigned int i = 0; i < al->size(); i++) {
+          es[i] = flat_cv_exp(env, ctx, (*al)[i])();
+        }
+        std::vector<std::pair<int, int>> dims(al->dims());
+        for (int i = 0; i < al->dims(); i++) {
+          dims[i] = std::make_pair(al->min(i), al->max(i));
+        }
+        Expression* al_ret = eval_par(env, new ArrayLit(Location().introduce(), es, dims));
+        Type t = al->type();
+        t.cv(false);
+        al_ret->type(t);
+        return al_ret;
       }
-      std::vector<std::pair<int, int>> dims(al->dims());
-      for (int i = 0; i < al->dims(); i++) {
-        dims[i] = std::make_pair(al->min(i), al->max(i));
+      case Expression::E_ARRAYACCESS: {
+        auto* aa = e->cast<ArrayAccess>();
+        GCLock lock;
+        Expression* av = flat_cv_exp(env, ctx, aa->v())();
+        std::vector<Expression*> idx(aa->idx().size());
+        for (unsigned int i = 0; i < aa->idx().size(); i++) {
+          idx[i] = flat_cv_exp(env, ctx, aa->idx()[i])();
+        }
+        auto* aa_ret = new ArrayAccess(Location().introduce(), av, idx);
+        Type t = aa->type();
+        t.cv(false);
+        aa_ret->type(t);
+        return eval_par(env, aa_ret);
       }
-      Expression* al_ret = eval_par(env, new ArrayLit(Location().introduce(), es, dims));
-      Type t = al->type();
-      t.cv(false);
-      al_ret->type(t);
-      return al_ret;
-    }
-    case Expression::E_ARRAYACCESS: {
-      auto* aa = e->cast<ArrayAccess>();
-      GCLock lock;
-      Expression* av = flat_cv_exp(env, ctx, aa->v())();
-      std::vector<Expression*> idx(aa->idx().size());
-      for (unsigned int i = 0; i < aa->idx().size(); i++) {
-        idx[i] = flat_cv_exp(env, ctx, aa->idx()[i])();
-      }
-      auto* aa_ret = new ArrayAccess(Location().introduce(), av, idx);
-      Type t = aa->type();
-      t.cv(false);
-      aa_ret->type(t);
-      return eval_par(env, aa_ret);
-    }
-    case Expression::E_COMP: {
-      auto* c = e->cast<Comprehension>();
-      GCLock lock;
-      class EvalFlatCvExp : public EvalBase {
-      public:
-        Ctx ctx;
-        EvalFlatCvExp(Ctx& ctx0) : ctx(ctx0) {}
-        typedef Expression* ArrayVal;
-        Expression* e(EnvI& env, Expression* e) const { return flat_cv_exp(env, ctx, e)(); }
-        static Expression* exp(Expression* e) { return e; }
-      } eval(ctx);
-      EvaluatedComp<Expression*> a = eval_comp<EvalFlatCvExp>(env, eval, c);
+      case Expression::E_COMP: {
+        auto* c = e->cast<Comprehension>();
+        GCLock lock;
+        class EvalFlatCvExp : public EvalBase {
+        public:
+          Ctx ctx;
+          EvalFlatCvExp(Ctx& ctx0) : ctx(ctx0) {}
+          typedef Expression* ArrayVal;
+          Expression* e(EnvI& env, Expression* e) const { return flat_cv_exp(env, ctx, e)(); }
+          static Expression* exp(Expression* e) { return e; }
+        } eval(ctx);
+        EvaluatedComp<Expression*> a = eval_comp<EvalFlatCvExp>(env, eval, c);
 
-      Type t = Type::bot();
-      bool allPar = true;
-      for (auto& i : a.a) {
-        if (t == Type::bot()) {
-          t = i->type();
-        }
-        if (!i->type().isPar()) {
-          allPar = false;
-        }
-      }
-      if (!allPar) {
-        t.ti(Type::TI_VAR);
-      }
-      if (c->set()) {
-        t.st(Type::ST_SET);
-      } else {
-        t.dim(c->type().dim());
-      }
-      t.cv(false);
-      if (c->set()) {
-        if (c->type().isPar() && allPar) {
-          auto* sl = new SetLit(c->loc().introduce(), a.a);
-          sl->type(t);
-          Expression* slr = eval_par(env, sl);
-          slr->type(t);
-          return slr;
-        }
-        throw InternalError("var set comprehensions not supported yet");
-      }
-      auto* alr = new ArrayLit(Location().introduce(), a.a, a.dims);
-      alr->type(t);
-      alr->flat(true);
-      return alr;
-    }
-    case Expression::E_ITE: {
-      ITE* ite = e->cast<ITE>();
-      for (int i = 0; i < ite->size(); i++) {
-        KeepAlive ka = flat_cv_exp(env, ctx, ite->ifExpr(i));
-        if (eval_bool(env, ka())) {
-          return flat_cv_exp(env, ctx, ite->thenExpr(i));
-        }
-      }
-      return flat_cv_exp(env, ctx, ite->elseExpr());
-    }
-    case Expression::E_BINOP: {
-      auto* bo = e->cast<BinOp>();
-      if (bo->op() == BOT_AND) {
-        GCLock lock;
-        Expression* lhs = flat_cv_exp(env, ctx, bo->lhs())();
-        if (!eval_bool(env, lhs)) {
-          return env.constants.literalFalse;
-        }
-        return eval_par(env, flat_cv_exp(env, ctx, bo->rhs())());
-      }
-      if (bo->op() == BOT_OR) {
-        GCLock lock;
-        Expression* lhs = flat_cv_exp(env, ctx, bo->lhs())();
-        if (eval_bool(env, lhs)) {
-          return env.constants.literalTrue;
-        }
-        return eval_par(env, flat_cv_exp(env, ctx, bo->rhs())());
-      }
-      GCLock lock;
-      auto* nbo = new BinOp(bo->loc().introduce(), flat_cv_exp(env, ctx, bo->lhs())(), bo->op(),
-                            flat_cv_exp(env, ctx, bo->rhs())());
-      nbo->type(bo->type());
-      nbo->decl(bo->decl());
-      return eval_par(env, nbo);
-    }
-    case Expression::E_UNOP: {
-      UnOp* uo = e->cast<UnOp>();
-      GCLock lock;
-      UnOp* nuo = new UnOp(uo->loc(), uo->op(), flat_cv_exp(env, ctx, uo->e())());
-      nuo->type(uo->type());
-      return eval_par(env, nuo);
-    }
-    case Expression::E_CALL: {
-      Call* c = e->cast<Call>();
-      if (c->id() == env.constants.ids.mzn_in_root_context) {
-        return env.constants.boollit(ctx.b == C_ROOT);
-      }
-      if (ctx.b == C_ROOT && (c->decl()->e() != nullptr) && c->decl()->e()->isa<BoolLit>()) {
-        bool allBool = true;
-        for (unsigned int i = 0; i < c->argCount(); i++) {
-          if (c->arg(i)->type().bt() != Type::BT_BOOL) {
-            allBool = false;
-            break;
+        Type t = Type::bot();
+        bool allPar = true;
+        for (auto& i : a.a) {
+          if (t == Type::bot()) {
+            t = i->type();
+          }
+          if (!i->type().isPar()) {
+            allPar = false;
           }
         }
-        if (allBool) {
-          return c->decl()->e();
+        if (!allPar) {
+          t.ti(Type::TI_VAR);
         }
-      }
-      std::vector<Expression*> args(c->argCount());
-      GCLock lock;
-      if (env.constants.isCallByReferenceId(c->id())) {
-        return eval_par(env, c);
-      }
-      for (unsigned int i = 0; i < c->argCount(); i++) {
-        Ctx c_mix;
-        c_mix.b = C_MIX;
-        c_mix.i = C_MIX;
-        args[i] = flat_cv_exp(env, c_mix, c->arg(i))();
-      }
-      Call* nc = new Call(c->loc(), c->id(), args);
-      nc->decl(c->decl());
-      Type nct(c->type());
-      if ((nc->decl()->e() != nullptr) && nc->decl()->e()->type().cv()) {
-        nct.cv(false);
-        nct.ti(Type::TI_VAR);
-        nc->type(nct);
-        EE ee;
-        if (c->decl()->ann().contains(env.constants.ann.cache_result)) {
-          auto it = env.cseMapFind(nc);
-          if (it == env.cseMapEnd()) {
-            ee = flat_exp(env, ctx, nc, nullptr, ctx.partialityVar(env));
-            env.cseMapInsert(nc, ee);
-          } else {
-            ee.r = it->second.r();
-            ee.b = it->second.b();
-          }
+        if (c->set()) {
+          t.st(Type::ST_SET);
         } else {
-          ee = flat_exp(env, ctx, nc, nullptr, ctx.partialityVar(env));
+          t.dim(c->type().dim());
         }
+        t.cv(false);
+        if (c->set()) {
+          if (c->type().isPar() && allPar) {
+            auto* sl = new SetLit(c->loc().introduce(), a.a);
+            sl->type(t);
+            Expression* slr = eval_par(env, sl);
+            slr->type(t);
+            return slr;
+          }
+          throw InternalError("var set comprehensions not supported yet");
+        }
+        auto* alr = new ArrayLit(Location().introduce(), a.a, a.dims);
+        alr->type(t);
+        alr->flat(true);
+        return alr;
+      }
+      case Expression::E_ITE: {
+        ITE* ite = e->cast<ITE>();
+        for (int i = 0; i < ite->size(); i++) {
+          bool condition;
+          KeepAlive ka = flat_cv_exp(env, ctx, ite->ifExpr(i));
+          condition = eval_bool(env, ka());
+          if (condition) {
+            return flat_cv_exp(env, ctx, ite->thenExpr(i));
+          }
+        }
+        return flat_cv_exp(env, ctx, ite->elseExpr());
+      }
+      case Expression::E_BINOP: {
+        auto* bo = e->cast<BinOp>();
+        if (bo->op() == BOT_AND) {
+          GCLock lock;
+          Expression* lhs = flat_cv_exp(env, ctx, bo->lhs())();
+          if (!eval_bool(env, lhs)) {
+            return env.constants.literalFalse;
+          }
+          return eval_par(env, flat_cv_exp(env, ctx, bo->rhs())());
+        }
+        if (bo->op() == BOT_OR) {
+          GCLock lock;
+          Expression* lhs = flat_cv_exp(env, ctx, bo->lhs())();
+          if (eval_bool(env, lhs)) {
+            return env.constants.literalTrue;
+          }
+          return eval_par(env, flat_cv_exp(env, ctx, bo->rhs())());
+        }
+        GCLock lock;
+        auto* nbo = new BinOp(bo->loc().introduce(), flat_cv_exp(env, ctx, bo->lhs())(), bo->op(),
+                              flat_cv_exp(env, ctx, bo->rhs())());
+        nbo->type(bo->type());
+        nbo->decl(bo->decl());
+        return eval_par(env, nbo);
+      }
+      case Expression::E_UNOP: {
+        UnOp* uo = e->cast<UnOp>();
+        GCLock lock;
+        UnOp* nuo = new UnOp(uo->loc(), uo->op(), flat_cv_exp(env, ctx, uo->e())());
+        nuo->type(uo->type());
+        return eval_par(env, nuo);
+      }
+      case Expression::E_CALL: {
+        Call* c = e->cast<Call>();
+        if (c->id() == env.constants.ids.mzn_in_root_context) {
+          return env.constants.boollit(ctx.b == C_ROOT);
+        }
+        if (ctx.b == C_ROOT && (c->decl()->e() != nullptr) && c->decl()->e()->isa<BoolLit>()) {
+          bool allBool = true;
+          for (unsigned int i = 0; i < c->argCount(); i++) {
+            if (c->arg(i)->type().bt() != Type::BT_BOOL) {
+              allBool = false;
+              break;
+            }
+          }
+          if (allBool) {
+            return c->decl()->e();
+          }
+        }
+        std::vector<Expression*> args(c->argCount());
+        GCLock lock;
+        if (env.constants.isCallByReferenceId(c->id())) {
+          return eval_par(env, c);
+        }
+        for (unsigned int i = 0; i < c->argCount(); i++) {
+          Ctx c_mix;
+          c_mix.b = C_MIX;
+          c_mix.i = C_MIX;
+          args[i] = flat_cv_exp(env, c_mix, c->arg(i))();
+        }
+        Call* nc = new Call(c->loc(), c->id(), args);
+        nc->decl(c->decl());
+        Type nct(c->type());
+        if ((nc->decl()->e() != nullptr) && nc->decl()->e()->type().cv()) {
+          nct.cv(false);
+          nct.ti(Type::TI_VAR);
+          nc->type(nct);
+          EE ee;
+          if (c->decl()->ann().contains(env.constants.ann.cache_result)) {
+            auto it = env.cseMapFind(nc);
+            if (it == env.cseMapEnd()) {
+              ee = flat_exp(env, ctx, nc, nullptr, ctx.partialityVar(env));
+              env.cseMapInsert(nc, ee);
+            } else {
+              ee.r = it->second.r();
+              ee.b = it->second.b();
+            }
+          } else {
+            ee = flat_exp(env, ctx, nc, nullptr, ctx.partialityVar(env));
+          }
+          if (isfalse(env, ee.b())) {
+            std::ostringstream ss;
+            ss << "evaluation of `" << demonomorphise_identifier(nc->id()) << "was undefined";
+            throw ResultUndefinedError(env, e->loc(), ss.str());
+          }
+          return ee.r();
+        }
+        nc->type(nct);
+        return eval_par(env, nc);
+      }
+      case Expression::E_LET: {
+        Let* l = e->cast<Let>();
+        EE ee = flat_exp(env, ctx, l, nullptr, ctx.partialityVar(env));
         if (isfalse(env, ee.b())) {
-          std::ostringstream ss;
-          ss << "evaluation of `" << demonomorphise_identifier(nc->id()) << "was undefined";
-          throw ResultUndefinedError(env, e->loc(), ss.str());
+          throw ResultUndefinedError(env, e->loc(), "evaluation of let expression was undefined");
         }
         return ee.r();
       }
-      nc->type(nct);
-      return eval_par(env, nc);
     }
-    case Expression::E_LET: {
-      Let* l = e->cast<Let>();
-      EE ee = flat_exp(env, ctx, l, nullptr, ctx.partialityVar(env));
-      if (isfalse(env, ee.b())) {
-        throw ResultUndefinedError(env, e->loc(), "evaluation of let expression was undefined");
-      }
-      return ee.r();
+    throw InternalError("internal error");
+  } catch (ResultUndefinedError&) {
+    if (e->type() == Type::parbool()) {
+      return env.constants.boollit(false);
     }
+    throw;
   }
-  throw InternalError("internal error");
 }
 
 class ItemTimer {
