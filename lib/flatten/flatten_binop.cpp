@@ -1478,7 +1478,13 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
         bool bval;
         {
           GCLock lock;
-          bval = eval_bool(env, boe1);
+          if (boe1->type().cv()) {
+            Ctx ctx;
+            ctx.b = C_MIX;
+            bval = eval_bool(env, flat_cv_exp(env, ctx, boe1)());
+          } else {
+            bval = eval_bool(env, boe1);
+          }
         }
         if (bval) {
           Ctx nctx = ctx;
