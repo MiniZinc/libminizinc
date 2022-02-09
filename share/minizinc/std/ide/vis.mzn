@@ -1,7 +1,7 @@
 
 /***
     @groupdef ide MiniZincIDE tools
-    
+
     This library contains features designed for use from within the MiniZinc IDE.
     These are not guaranteed to work when run outside the IDE.
 */
@@ -452,10 +452,10 @@ test vis_graph_internal(bool: directed,
     ide_launch_server("std/ide/vis_network.html", json_object([|
         "type", showJSON(if directed then "digraph" else "graph" endif) |
         "highlight", showJSON(highlight) |
-        "nodes", showJSON(set2array(index_set(node_labels))) |
+        "nodes", showJSON([show(i) | i in index_set(ns)]) |
         "nodeLabels", showJSON(node_labels) |
-        "from", showJSON(from) |
-        "to", showJSON(to) |
+        "from", showJSON([show(n) | n in from]) |
+        "to", showJSON([show(n) | n in to]) |
         "edgeLabels", showJSON(edge_labels)
     |])) /\
     output_to_section("vis_json", json_object([|
@@ -464,7 +464,38 @@ test vis_graph_internal(bool: directed,
     |]));
 
 /** @group ide.visualisation
-    Create a visualisation of the subgraph \a n and \a es of a given undirected graph.
+    Create a visualisation of the subgraph \a ns and \a es of a given undirected graph.
+    The nodes are labelled using the index set of \a ns.
+
+    @param from: the leaving node for each edge
+    @param to: the entering node for each edge
+    @param edge_labels: labels to use for each edge
+    @param ns: a Boolean for each node whether it is in the subgraph
+    @param es: a Boolean for each edge whether it is in the subgraph
+ */
+test vis_graph(array [$$E] of $$N: from,
+               array [$$E] of $$N: to,
+               array [$$E] of string: edge_labels,
+               array [$$N] of var bool: ns,
+               array [$$E] of var bool: es) =
+    vis_graph([i: show(i) | i in index_set(ns)], from, to, edge_labels, ns, es);
+/** @group ide.visualisation
+    Create a visualisation of the subgraph \a ns and \a es of a given undirected graph.
+    The nodes are labelled using the index set of \a ns and the edges are labelled using the index
+    set of \a es.
+
+    @param from: the leaving node for each edge
+    @param to: the entering node for each edge
+    @param ns: a Boolean for each node whether it is in the subgraph
+    @param es: a Boolean for each edge whether it is in the subgraph
+ */
+test vis_graph(array [$$E] of $$N: from,
+               array [$$E] of $$N: to,
+               array [$$N] of var bool: ns,
+               array [$$E] of var bool: es) =
+    vis_graph([i: show(i) | i in index_set(ns)], from, to, [i: show(i) | i in index_set(es)], ns, es);
+/** @group ide.visualisation
+    Create a visualisation of the subgraph \a ns and \a es of a given undirected graph.
 
     @param node_labels: the label for each node
     @param from: the leaving node for each edge
@@ -482,7 +513,40 @@ test vis_graph(array [$$N] of string: node_labels,
     vis_graph_internal(false, false, node_labels, from, to, edge_labels, ns, es);
 
 /** @group ide.visualisation
-    Create a visualisation of the subgraph \a n and \a es of a given undirected graph.
+    Create a visualisation of the subgraph \a ns and \a es of a given undirected graph.
+    The nodes are labelled using the index set of \a ns.
+    The entire graph is drawn, with the given subgraph highlighted.
+
+    @param from: the leaving node for each edge
+    @param to: the entering node for each edge
+    @param edge_labels: labels to use for each edge
+    @param ns: a Boolean for each node whether it is in the subgraph
+    @param es: a Boolean for each edge whether it is in the subgraph
+ */
+test vis_graph_highlight(array [$$E] of $$N: from,
+                         array [$$E] of $$N: to,
+                         array [$$E] of string: edge_labels,
+                         array [$$N] of var bool: ns,
+                         array [$$E] of var bool: es) =
+    vis_graph_highlight([i: show(i) | i in index_set(ns)], from, to, edge_labels, ns, es);
+/** @group ide.visualisation
+    Create a visualisation of the subgraph \a ns and \a es of a given undirected graph.
+    The nodes are labelled using the index set of \a ns and the edges are labelled using the index
+    set of \a es.
+    The entire graph is drawn, with the given subgraph highlighted.
+
+    @param from: the leaving node for each edge
+    @param to: the entering node for each edge
+    @param ns: a Boolean for each node whether it is in the subgraph
+    @param es: a Boolean for each edge whether it is in the subgraph
+ */
+test vis_graph_highlight(array [$$E] of $$N: from,
+                         array [$$E] of $$N: to,
+                         array [$$N] of var bool: ns,
+                         array [$$E] of var bool: es) =
+    vis_graph_highlight([i: show(i) | i in index_set(ns)], from, to, [i: show(i) | i in index_set(es)], ns, es);
+/** @group ide.visualisation
+    Create a visualisation of the subgraph \a ns and \a es of a given undirected graph.
     The entire graph is drawn, with the given subgraph highlighted.
 
     @param node_labels: the label for each node
@@ -501,7 +565,38 @@ test vis_graph_highlight(array [$$N] of string: node_labels,
     vis_graph_internal(false, true, node_labels, from, to, edge_labels, ns, es);
 
 /** @group ide.visualisation
-    Create a visualisation of the subgraph \a n and \a es of a given directed graph.
+    Create a visualisation of the subgraph \a ns and \a es of a given directed graph.
+    The nodes are labelled using the index set of a ns.
+
+    @param from: the leaving node for each edge
+    @param to: the entering node for each edge
+    @param edge_labels: labels to use for each edge
+    @param ns: a Boolean for each node whether it is in the subgraph
+    @param es: a Boolean for each edge whether it is in the subgraph
+ */
+test vis_digraph(array [$$E] of $$N: from,
+                 array [$$E] of $$N: to,
+                 array [$$E] of string: edge_labels,
+                 array [$$N] of var bool: ns,
+                 array [$$E] of var bool: es) =
+    vis_digraph([i: show(i) | i in index_set(ns)], from, to, edge_labels, ns, es);
+/** @group ide.visualisation
+    Create a visualisation of the subgraph \a ns and \a es of a given directed graph.
+    The nodes are labelled using the index set of \a ns and the edges are labelled using the index
+    set of \a es.
+
+    @param from: the leaving node for each edge
+    @param to: the entering node for each edge
+    @param ns: a Boolean for each node whether it is in the subgraph
+    @param es: a Boolean for each edge whether it is in the subgraph
+ */
+test vis_digraph(array [$$E] of $$N: from,
+                 array [$$E] of $$N: to,
+                 array [$$N] of var bool: ns,
+                 array [$$E] of var bool: es) =
+    vis_digraph([i: show(i) | i in index_set(ns)], from, to, [i: show(i) | i in index_set(es)], ns, es);
+/** @group ide.visualisation
+    Create a visualisation of the subgraph \a ns and \a es of a given directed graph.
 
     @param node_labels: the label for each node
     @param from: the leaving node for each edge
@@ -519,7 +614,40 @@ test vis_digraph(array [$$N] of string: node_labels,
     vis_graph_internal(true, false, node_labels, from, to, edge_labels, ns, es);
 
 /** @group ide.visualisation
-    Create a visualisation of the subgraph \a n and \a es of a given directed graph.
+    Create a visualisation of the subgraph \a ns and \a es of a given directed graph.
+    The nodes are labelled using the index set of a ns.
+    The entire graph is drawn, with the given subgraph highlighted.
+
+    @param from: the leaving node for each edge
+    @param to: the entering node for each edge
+    @param edge_labels: labels to use for each edge
+    @param ns: a Boolean for each node whether it is in the subgraph
+    @param es: a Boolean for each edge whether it is in the subgraph
+ */
+test vis_digraph_highlight(array [$$E] of $$N: from,
+                 array [$$E] of $$N: to,
+                 array [$$E] of string: edge_labels,
+                 array [$$N] of var bool: ns,
+                 array [$$E] of var bool: es) =
+    vis_digraph_highlight([i: show(i) | i in index_set(ns)], from, to, edge_labels, ns, es);
+/** @group ide.visualisation
+    Create a visualisation of the subgraph \a ns and \a es of a given directed graph.
+    The nodes are labelled using the index set of \a ns and the edges are labelled using the index
+    set of \a es.
+    The entire graph is drawn, with the given subgraph highlighted.
+
+    @param from: the leaving node for each edge
+    @param to: the entering node for each edge
+    @param ns: a Boolean for each node whether it is in the subgraph
+    @param es: a Boolean for each edge whether it is in the subgraph
+ */
+test vis_digraph_highlight(array [$$E] of $$N: from,
+                           array [$$E] of $$N: to,
+                           array [$$N] of var bool: ns,
+                           array [$$E] of var bool: es) =
+    vis_digraph_highlight([i: show(i) | i in index_set(ns)], from, to, [i: show(i) | i in index_set(es)], ns, es);
+/** @group ide.visualisation
+    Create a visualisation of the subgraph \a ns and \a es of a given directed graph.
     The entire graph is drawn, with the given subgraph highlighted.
 
     @param node_labels: the label for each node
