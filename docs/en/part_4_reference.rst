@@ -9,4 +9,5 @@ Reference Manual
    spec
    lib
    fzn-spec
+   json-stream
 ..   api_interfacing
