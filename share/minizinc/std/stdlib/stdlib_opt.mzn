@@ -148,17 +148,17 @@ function var bool: absent(var opt int: x) ::promise_total = not occurs(x);
 /** @group stdlib.optiontypes.int True if \a x had zero in its original domain.
 
     Returns true if absent zero representation is disabled or if it is possible
-    that \( occurs(x) /\ deopt(x) = 0 ) */
+    that \( \text{occurs}(x) \wedge \text{deopt}(x) = 0 \) */
 function bool: had_zero(var opt int: x) :: cache_result = not mzn_check_absent_zero() \/ (0 in dom(x));
 /** @group stdlib.optiontypes.int True if \a x had zero in its original domain.
 
     Returns true if absent zero representation is disabled or if it is possible
-    that \( occurs(x) /\ deopt(x) = 0 ) */
+    that \( \text{occurs}(x) \wedge \text{deopt}(x) = 0 \) */
 function bool: had_zero(opt int: x) = not mzn_check_absent_zero() \/ (x = 0);
 /** @group stdlib.optiontypes.int True if \a x had zero in its original domain.
 
     Returns true if absent zero representation is disabled or if it is possible
-    that \( occurs(x) /\ deopt(x) = 0 ) */
+    that \( \text{occurs}(x) \wedge \text{deopt}(x) = 0 \) */
 function bool: had_zero(array [int] of var opt int: x) = exists (xi in x) (had_zero(xi));
 
 function var bool: occurs_internal_int(var opt int: x) ::promise_total =
