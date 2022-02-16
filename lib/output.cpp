@@ -1402,11 +1402,15 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
   class CollectVarDecls : public EVisitor {
   public:
     EnvI& env;
+    std::unordered_set<FunctionI*> visited;
     CollectVarDecls(EnvI& env0) : env(env0) {}
 
     void vCall(Call* c) {
       if (!c->decl()->fromStdLib()) {
-        top_down(*this, c->decl()->e());
+        auto it = visited.emplace(c->decl());
+        if (it.second) {
+          top_down(*this, c->decl()->e());
+        }
       }
     }
 
