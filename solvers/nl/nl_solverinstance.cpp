@@ -141,7 +141,7 @@ SolverInstance::Status NLSolverInstance::solve() {
   // --- --- --- Prepare the files
   string file_nl;   // Output for the NL, will be the input for the solver
   string file_sol;  // Ouput of the solver
-  FileUtils::TmpDir* tmpdir = nullptr;
+  std::unique_ptr<FileUtils::TmpDir> tmpdir;
 
   if (opt.doKeepfile) {
     // Keep file: output next to original file
@@ -153,7 +153,7 @@ SolverInstance::Status NLSolverInstance::solve() {
     file_sol = file_base + ".sol";
   } else {
     // Don't keep file: create a temp directory
-    tmpdir = new FileUtils::TmpDir();
+    tmpdir = std::unique_ptr<FileUtils::TmpDir>(new FileUtils::TmpDir());
     file_nl = tmpdir->name() + "/model.nl";
     file_sol = tmpdir->name() + "/model.sol";
   }
@@ -201,8 +201,6 @@ SolverInstance::Status NLSolverInstance::solve() {
     vector<string> cmd_line;
 
     if (opt.nlSolver.empty()) {
-      delete tmpdir;
-      tmpdir = nullptr;
       outfile.close();
       throw Error("No NL solver specified");
     }
@@ -229,8 +227,6 @@ SolverInstance::Status NLSolverInstance::solve() {
   }
 
   // --- --- --- Cleanup and exit
-  delete tmpdir;
-  tmpdir = nullptr;
   outfile.close();
   return exitStatus == 0 ? out->status : Status::ERROR;
 }

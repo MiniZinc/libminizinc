@@ -298,7 +298,7 @@ public:
     SetConsoleCtrlHandler(handleInterrupt, FALSE);
     if (hadInterrupt) {
       // Re-trigger signal if it was not caused by our own timeout
-      GenerateConsoleCtrlEvent(CTRL_C_EVENT, 0);
+      throw SignalRaised(CTRL_C_EVENT);
     }
     return timedOut ? 0 : exitCode;
   }
@@ -466,10 +466,10 @@ public:
       sigaction(SIGINT, &old_sa_int, nullptr);
       sigaction(SIGTERM, &old_sa_term, nullptr);
       if (hadInterrupt) {
-        kill(getpid(), SIGINT);
+        throw SignalRaised(SIGINT);
       }
       if (hadTerm) {
-        kill(getpid(), SIGTERM);
+        throw SignalRaised(SIGTERM);
       }
       return exitStatus;
     }

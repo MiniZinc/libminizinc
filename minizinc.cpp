@@ -39,6 +39,13 @@ int run(const std::string& exe, const std::vector<std::string>& args, bool jsonS
     MznSolver slv(std::cout, std::cerr, startTime);
     try {
       fSuccess = (slv.run(args, "", exe) != SolverInstance::ERROR);
+    } catch (const SignalRaised& e) {
+      // Interrupted, just terminate
+      if (slv.getFlagVerbose()) {
+        std::cerr << std::endl << "Interrupted." << std::endl;
+      }
+      // Re-raise signal
+      e.raise();
     } catch (const InternalError& e) {
       if (slv.getFlagVerbose()) {
         std::cerr << std::endl;

@@ -14,7 +14,22 @@
 
 #include <sstream>
 
+#ifdef _WIN32
+#include <Windows.h>
+#else
+#include <csignal>
+#include <unistd.h>
+#endif
+
 namespace MiniZinc {
+void SignalRaised::raise() const {
+#ifdef _WIN32
+  GenerateConsoleCtrlEvent(signal(), 0);
+#else
+  kill(getpid(), signal());
+#endif
+}
+
 void Exception::print(std::ostream& os) const {
   os << "Error: ";
   if (!std::string(what()).empty()) {

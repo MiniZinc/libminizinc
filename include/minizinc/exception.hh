@@ -19,6 +19,19 @@
 
 namespace MiniZinc {
 
+class SignalRaised : public std::exception {
+protected:
+  int _signal;
+
+public:
+  SignalRaised(int signal) : _signal(signal) {}
+  ~SignalRaised() throw() override {}
+  const char* what() const throw() override { return "signal raised"; }
+  int signal() const { return _signal; }
+  /// Re-raise this signal
+  void raise() const;
+};
+
 class Exception : public std::exception {
 protected:
   std::string _msg;

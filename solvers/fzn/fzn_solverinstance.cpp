@@ -306,9 +306,9 @@ SolverInstance::Status FZNSolverInstance::solve() {
   p.print(_fzn->solveItem());
   cmd_line.push_back(fznFile.name());
 
-  FileUtils::TmpFile* pathsFile = nullptr;
+  std::unique_ptr<FileUtils::TmpFile> pathsFile;
   if (opt.fznNeedsPaths) {
-    pathsFile = new FileUtils::TmpFile(".paths");
+    pathsFile = std::unique_ptr<FileUtils::TmpFile>(new FileUtils::TmpFile(".paths"));
     std::ofstream ofs(FILE_PATH(pathsFile->name()));
     PathFilePrinter pfp(ofs, _env.envi());
     pfp.print(_fzn);
@@ -320,13 +320,11 @@ SolverInstance::Status FZNSolverInstance::solve() {
   if (!opt.fznOutputPassthrough) {
     Process<Solns2Out> proc(cmd_line, getSolns2Out(), timelimit, sigint);
     int exitStatus = proc.run();
-    delete pathsFile;
     return exitStatus == 0 ? getSolns2Out()->status : SolverInstance::ERROR;
   }
   Solns2Log s2l(getSolns2Out()->getOutput(), _log);
   Process<Solns2Log> proc(cmd_line, &s2l, timelimit, sigint);
   int exitStatus = proc.run();
-  delete pathsFile;
   return exitStatus == 0 ? SolverInstance::NONE : SolverInstance::ERROR;
 }
 
