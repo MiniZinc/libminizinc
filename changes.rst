@@ -4,6 +4,291 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
+.. _v2.6.0:
+
+`Version 2.6.0 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.6.0>`__
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(released 18 February 2022)
+
+Language and library changes:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  Add support for annotating :mzn:`output` items to define output sections
+   which can be switched on/off using ``--only-sections`` and
+   ``--not-sections``.
+-  Add support for the :mzn:`empty_annotation`, which is removed during
+   flattening.
+-  Allow annotations on function parameter declarations.
+-  Add support for reified annotations. If one of the arguments of an annotation
+   declaration is itself annotated with :mzn:`::annotated_expression`, the
+   annotation function will be called with the annotated variable at that
+   argument position.
+-  Support annotations :mzn:`::promise_monotone` and
+   :mzn:`::promise_ctx_antitone` for function parameters and let bound
+   variables.
+-  Add support for capturing annotations in predicates/functions.
+-  Add non-optional variants of the :mzn:`in` operator on arrays.
+-  Update redefinitions of lex_less(eq) to promote half-reifications.
+-  Add definition for bool_clause_imp in standard library.
+-  Don't consider quotes as part of identifiers (so :mzn:`'foo'` and :mzn`foo`
+   are the same identifier).
+-  Add :mzn:`default` operator which takes the value of the right hand side
+   if the left hand side is undefined or absent.
+-  Remove :mzn:`bool2int` in sum constructs (:bugref:`472`).
+-  Rewrite :mzn:`bool_clause_imp` to clause instead of :mzn:`bool_clause`.
+-  Remove old, unused solver libraries.
+-  Add debugging builtins that are only evaluated with ``--debug``.
+-  Add :mzn:`enumOf` function and allow :mzn:`enum_next` and :mzn:`enum_prev`
+   with a single parameter.
+-  Add support for :mzn:`..<`, :mzn:`<..` and :mzn:`<..<` operators.
+-  Add support for open intervals (:mzn:`a..`, :mzn:`..b`, :mzn:`a<..`, etc).
+-  Add support for indexed array literals and comprehensions.
+-  Allow generators to range over multi-dimensional arrays.
+-  Add support for the :mzn:`any` type specifier.
+-  Add support for anonymous generators like :mzn:`[ 0 | _ in 1..n ]`.
+-  Add support for anonymous enum constructors using :mzn:`_(x)`.
+-  Add support for enum construction from a contiguous subset of an enum.
+-  Add :mzn:`::output` and :mzn:`::no_output` annotations for top-level and
+   local variable declarations.
+-  Add support for empty let expressions and trailing comma in enum
+   declarations.
+-  Add missing variants of :mzn:`=` and :mzn:`!=` operators on arrays by making
+   them polymorphic.
+-  Change propagation strength annotations from :mzn:`domain` and :mzn:`bounds`
+   to :mzn:`domain_propagation` and :mzn:`bounds_propagation` and add
+   :mzn:`value_propagation` as an option.
+-  Add :mzn:`trace_exp` builtin function for easy tracing of expressions when
+   debugging.
+-  Add :mzn:`trace_to_section` builtin function.
+-  Add :mzn:`relax_and_reconstruct` annotation to standard library.
+-  Add ``_decomp`` versions of disjunctive and cumulative optional constraints.
+-  Improve :mzn:`sqrt` function.
+-  Add IDE visualisation library ``ide/vis.mzn`` along with helpers
+   :mzn:`json_object` and :mzn:`json_array` for generating JSON output.
+-  Add support for comparing infinities with variables (:bugref:`515`).
+-  Weaken bounds to cover more cases in decomposition of
+   :mzn:`global_cardinality_low_up`.
+-  Allow identifiers starting with underscores in normal MiniZinc models.
+-  Make the naming for variants of all_different consistent (:bugref:`500`).
+-  Add if-then without else for :mzn:`string`, :mzn:`annotation`, and arrays.
+-  Add initial textual structured output functions.
+-  Add index poly types for several global constraints and remove top level
+   ``_reif`` versions.
+-  Add support for hex and octal characters in string literals.
+ 
+Compiler tool changes:
+^^^^^^^^^^^^^^^^^^^^^^
+
+-  Add support for JSON input of enum constructors and anonymous enums.
+-  Add ``--cmdline-json-data`` option for passing JSON data on the command line.
+-  Add support for JSON stream machine-readable output format enabled with
+   ``--json-stream``.
+-  Improve generation of default random seed.
+-  Use the random seed option for the random builtin functions.
+-  Add timeout tracking to the flattening compiler phase.
+-  Allow configuring solvers to always pass certain flags or arguments.
+-  Honour the ``TMPDIR`` environment variable for placing temporary files
+   (:bugref:`468`).
+-  Remove temporary files/directories when interrupted (:bugref:`468`).
+-  Add ``globals`` section to the output of ``--model-interface-only``.
+-  Enable monomorphisation of polymorphic functions.
+-  Output one and two-dimensional arrays using index literal syntax when
+   possible.
+-  Write solution checker warnings directly to the error stream instead of
+   showing them as part of the checker output.
+-  Make error and warning message output more uniform, improve error messages
+   for various errors.
+-  Improve reporting of internal errors, asking user to file a bug report.
+-  Recognise stack overflows on supported platforms.
+-  Add additional message for deprecated functions marked for removal.
+-  Don't repeat warnings that are also errors (in particular ResultUndefined
+   errors).
+-  Add the found and expected array sizes to the error when mismatch occurs
+   (:bugref:`510`).
+-  Add deprecation warning for type specific usage of overloaded globals.
+-  Add warning when included files directly override global constraints.
+-  Add delayed rewriting of half-reified bool_clause.
+-  Never output :mzn:`_objective` for satisfaction problems.
+-  Never include:mzn:`_objective` in model interface output variables.
+-  Allow optimisation checkers to take model objective as input.
+-  Rewrite :mzn:`array_intersect`, :mzn:`array_union` and :mzn:`array2set`
+   functions into predicate calls that can be overridden by solver libraries.
+-  Improve error location reporting for type errors involving the objective.
+-  Print location and better message when a constraint evaluates to false during
+   flattening.
+
+Changes dealing with option types:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  Enable automatic symmetry breaking for absent integer option types by setting
+   the internal integer representation to zero (can be disabled with
+   ``-Dmzn_absent_zero=false``).
+-  Make use of new symmetry breaking in optional :mzn:`min`, :mzn:`max`,
+   :mzn:`element` and :mzn:`value_precede`.
+-  Add optional versions of :mzn:`circuit`, :mzn:`all_different`,
+   :mzn:`inverse`, :mzn:`global_cardinality`, :mzn:`global_cardinality_closed`,
+   :mzn:`value_precede_chain`, :mzn:`arg_min`, and :mzn:`arg_max`.
+-  Add weak versions of :mzn:`!=`, :mzn:`/` and :mzn:`div` operators.
+-  Add weak versions of :mzn:`min` and :mzn:`max` and use these in the
+   decomposition of :mzn:`span`.
+-  Add :mzn:`::defines_var` for :mzn:`var opt` variables.
+-  Add missing :mzn:`opt bool` operators.
+-  Add missing :mzn:`in` operators for optional variables.
+
+Changes in MIP solver backends:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-  Add half-reified alternative for :mzn:`int_ne` in linear library.
+-  Add linear definition for :mzn:`bool_clause_imp`.
+-  Add support for :mzn:`float_div` in Gurobi and SCIP.
+-  Automatically detect Gurobi 9.5.0 and potential future versions.
+
+Changes in the IDE:
+^^^^^^^^^^^^^^^^^^^
+
+-  Add support for specifying submission terms for MOOC.
+-  Ensure newly loaded configs override synced options (:idebugref:`144`).
+-  Fix check for empty project to avoid incorrect warnings when closing.
+-  Maintain modified solver configurations when using preferences dialog.
+-  Support using arm64 version of MiniZinc with x86_64 IDE build on macOS.
+-  Fix crash when no solver configurations are available.
+-  Remove WebEngine-based visualisation feature and implement HTTP/WebSocket
+   server based visualisations.
+-  Add support for dark mode detection on Windows.
+-  Implement foldable output widget supporting output sections.
+-  Support both Qt 5 and Qt 6.
+-  Allow tab to shift multiple lines right.
+-  Re-implement support for detached solver processes.
+-  Allow the project/solver configuration panes to take the full height of the
+   main window.
+-  Implement new multi-tabbed preferences dialog.
+-  Ignore errors in non-current files during background code checking.
+-  Fix undefined behaviour in main window event filter (:idebugref:`154`).
+-  Fix crash when terminating solvers due to closing the main window.
+-  Confirm before removing files from project (:idebugref:`149`).
+
+Other changes:
+^^^^^^^^^^^^^^
+
+-  Improve table of contents for globals documentation.
+-  Restructure the standard library documentation.
+-  Add more details on solver installation paths to documentation.
+-  Remove useless restart example from documentation.
+
+Bug fixes:
+^^^^^^^^^^
+
+-  Fix reference counts for added annotations.
+-  Fix cyclic include detection involving multiple model files with the same
+   file name (in different directories).
+-  Ensure executables have correct extension on Windows (:bugref:`463`).
+-  Fix detection of multiple goal hierarchies (:bugref:`465`).
+-  Fix :mzn:`trace_stdout` to correctly output to standard output.
+-  Fix assertions in graph globals (:bugref:`467`).
+-  Fix the decomposition of cumulative (:bugref:`388`).
+-  Fix comparison of infinite domains.
+-  Pass on fixed partiality status when flattening in root context.
+-  Ignore solver exit code when terminating it due to timeout on Windows.
+-  Fix the context for constraints in implied_constraint calls (:bugref:`471`).
+-  Fix the placement of the bool_clause_imp standard redefinition.
+-  Add slicing coercion for let body (:bugref:`483`).
+-  Flatten calls on right hand side of variable declarations in root context
+   unless they return bool or var bool (:bugref:`485`).
+-  Support flattening of top-level variable declarations triggered from non-root
+   contexts (:bugref:`485`).
+-  Report type error when overloading on return type (:bugref:`484`).
+-  Delay deletion of variable, to avoid deleting variable that is required for
+   output (:bugref:`476`).
+-  Only mark non-toplevel Ids as evaluated if they are not pointing to another
+   Id (:bugref:`469`).
+-  Report type errors when trying to declare :mzn:`var ann`, :mzn:`var string`,
+   :mzn:`var set of bool` or :mzn:`var set of float` (:bugref:`487`).
+-  Add missing comparison operators on array (:bugref:`428`).
+-  Fix par comparison of sets.
+-  Make fix builtin on arrays return array with the same index sets as its
+   argument.
+-  Don't try to compute bounds for par array literals if they contain var types.
+-  Only fail on empty domain if the variable is not a set variable
+   (:bugref:`493`).
+-  Don't evaluate type-inst variable when creating new flat variable
+   (:bugref:`494`).
+-  Add missing conditional decomposition for var opt float type (:bugref:`495`).
+-  Only extract equalities from if-then-else expressions if they are not on
+   arrays.
+-  Fix bug that prevented type-checking of type-inst expressions in :mzn:`let`
+   variables.
+-  Fix cumulative decomposition for fixed resource requirements.
+-  Avoid problems with internal annotations in the ``VarOccurrence`` count.
+-  Do not pass value from model for :mzn:`var` variable in solution checkers.
+-  Correctly handle empty 2D array in :mzn:`show2d` function and empty 3D array
+   in :mzn:`show3d` (:bugref:`501`).
+-  Fix lost output for functional ``_eq`` constraints (:bugref:`503`).
+-  Never insert empty arrays into weak ref tables. (:bugref:`509`).
+-  Make sure the new objective variable declaration item is not garbage
+   collected before being added to the main model (:bugref:`513`).
+-  Fix unification of float variable bounds (:bugref:`514`).
+-  Fix :mzn:`deopt` scoping issue in optional :mzn:`min` and :mzn:`max`
+   (:bugref:`518`).
+-  Create dummy value for option types (:bugref:`521`).
+-  Don't rewrite count to :mzn:`count_...` if the counted variables are optional
+   (:bugref:`527`).
+-  Treat :mzn:`<>` in conditionals as arbitrary type, not int (:bugref:`529`).
+-  Fix :mzn:`value_precede_chain` for non 1-based array indexes (:bugref:`530`,
+   :bugref:`531`).
+-  Ensure the ``Location`` objects in ``Warning`` and ``LocationException`` are
+   marked alive (:bugref:`538`).
+-  Fix non-reified decomposition of seq_precede_chain for sets.
+-  Fixes optional commas and pipes in 2d literals.
+-  Ignore :mzn:`<>` in :mzn:`lb_array`, :mzn:`ub_array` and :mzn:`dom_array`.
+-  Fix incorrect generation of :mzn:`int_lt` when an optional operand is
+   flattened to become non optional.
+-  Ensure chain compression considers functional :mzn:`exists` calls in positive
+   context.
+-  Consider clauses that are not direct implications during chain compression 
+-  Fix definition of :mzn:`array_intersect`.
+-  Fix output of :mzn:`arrayXd` with enum index sets.
+-  Fix handling of internal annotations during flattening.
+-  Fix JSON output of annotations.
+-  Correctly quote DZN IDs in output and correctly escape output variable names
+   in model interface.
+-  Fix the generation of assertions for enumerated types.
+-  Fix computation of function return type with type-inst variable index set and
+   enum argument.
+-  Move includes from stdlib into solver_redefinitions to ensure any
+   corresponding solver-specific predicates get declared in the produced 
+   latZinc.
+-  Fix element functions for arrays of var opt type to work in negative
+   contexts.
+-  Avoid duplicating expressions in the desugaring of slicing operations.
+-  Fix coercion of [] to arbitrary dimensions when used as variable initialiser.
+-  Fix calculation of argument type to include actual array argument dimensions.
+-  Fix computation of float bounds involving absent value.
+-  Fix bind to allow the usage of absent literals in opt float arrays.
+-  Always add coercions to variable declarations to make sure array slicing is
+   resolved correctly.
+-  Make sure the TypeInst of a variable is also scanned for dependencies that
+   need to go into the output model.
+-  Produce type error for non-Boolean constraint items.
+-  Flatten par comprehension generators that contain variables.
+-  Flatten boolean array literals and comprehensions in mixed context.
+-  Fix :mzn:`var_dom` to correctly handle :mzn:`<>`.
+-  Fix segmentation fault in output generation.
+-  Ensure that the argument to ``--backend-flags`` does not get consumed early.
+-  Fix slice functions to return arrays with enum index set where appropriate.
+-  Correctly flatten indexed comprehension with variable :mzn:`where` clause or
+   generator.
+-  Don't copy comprehensions with variable where clause or generator into output
+   model.
+-  Restore bindings for lets and calls when an exception is thrown during
+   evaluation.
+-  Do not output invalid MIP objective statistics for satisfaction problems.
+-  Fix flattening of limited partial if-then-else expressions.
+-  Fix the rewriting of bool_not reifications when argument is defined.
+-  Don't assume all array literals can be evaluated during bounds calculation.
+-  Use correct infinite set for floats.
+-  Check for undefined results in flat_cv_exp.
+-  Don't fail on empty arrays with empty domain (:bugref:`534`).
+
 .. _v2.5.5:
 
 `Version 2.5.5 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.5.5>`__
