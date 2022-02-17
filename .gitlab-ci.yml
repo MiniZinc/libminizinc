@@ -273,23 +273,23 @@ test:win64:full:
     key: "$CI_JOB_STAGE:$CI_JOB_NAME"
     paths: [.cache/pip]
 
-bench:std:
-  extends: .flatten_benchmark
-  variables:
-    MZNLIB: std
-  artifacts:
-    expose_as: bench-std
-  only: [tags, master, develop]
-  allow_failure: true
+# bench:std:
+#   extends: .flatten_benchmark
+#   variables:
+#     MZNLIB: std
+#   artifacts:
+#     expose_as: bench-std
+#   only: [tags, master, develop]
+#   allow_failure: true
 
-bench:linear:
-  extends: .flatten_benchmark
-  variables:
-    MZNLIB: linear
-  artifacts:
-    expose_as: bench-linear
-  only: [tags, master, develop]
-  allow_failure: true
+# bench:linear:
+#   extends: .flatten_benchmark
+#   variables:
+#     MZNLIB: linear
+#   artifacts:
+#     expose_as: bench-linear
+#   only: [tags, master, develop]
+#   allow_failure: true
 
 bench:std:manual:
   extends: .flatten_benchmark
@@ -297,7 +297,8 @@ bench:std:manual:
     MZNLIB: std
   artifacts:
     expose_as: bench-std-manual
-  only: [merge_requests, pipelines]
+  # only: [merge_requests, pipelines]
+  only: [merge_requests, pipelines, tags, master, develop]
   when: manual
 
 bench:linear:manual:
@@ -306,7 +307,8 @@ bench:linear:manual:
     MZNLIB: linear
   artifacts:
     expose_as: bench-linear-manual
-  only: [merge_requests, pipelines]
+  # only: [merge_requests, pipelines]
+  only: [merge_requests, pipelines, tags, master, develop]
   when: manual
 
 # ----------- Documentation -----------
