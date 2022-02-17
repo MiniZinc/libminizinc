@@ -82,7 +82,7 @@ struct FlatteningOptions {
     // Try random_device, if that doesn't work, use time.
     std::vector<long unsigned int> seeds;
     try {
-      std::random_device rdev("/dev/random");
+      std::random_device rdev("/dev/urandom");
       seeds.push_back(rdev());
     } catch (std::exception) {
       try {
