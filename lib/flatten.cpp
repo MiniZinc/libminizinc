@@ -2243,9 +2243,11 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
                   IntBounds check_zeroone = compute_int_bounds(env, (*al)[0]);
                   if (check_zeroone.l == 0 && check_zeroone.u == 1) {
                     ArrayLit* coeffs = eval_array_lit(env, call->arg(0));
+                    auto c = eval_int(env, (*coeffs)[0]);
+                    auto d = eval_int(env, call->arg(2));
                     std::vector<IntVal> newdom(2);
-                    newdom[0] = 0;
-                    newdom[1] = eval_int(env, (*coeffs)[0]) + eval_int(env, call->arg(2));
+                    newdom[0] = std::min(c + d, d);
+                    newdom[1] = std::max(c + d, d);
                     ibv = IntSetVal::a(newdom);
                   }
                 }
