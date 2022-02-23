@@ -4,6 +4,16 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
+.. _unreleased:
+
+Unreleased
+~~~~~~~~~~~~
+
+Bugfixes
+^^^^^^^^
+
+-  Fix bounds calculation for singleton linear expression over 0/1 variable
+
 .. _v2.6.0:
 
 `Version 2.6.0 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.6.0>`__
