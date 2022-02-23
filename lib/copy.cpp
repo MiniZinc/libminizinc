@@ -238,6 +238,7 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
           v = ce.vec();
         }
         c->setVec(ASTExprVec<Expression>(v));
+        c->flat(al->flat());
         ret = c;
       }
     } break;
