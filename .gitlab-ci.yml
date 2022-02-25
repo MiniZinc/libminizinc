@@ -146,6 +146,7 @@ test:analyse:
   variables:
     PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
     MZN_SOLVER_PATH: "$CI_PROJECT_DIR/vendor/chuffed/share/minizinc/solvers/:$CI_PROJECT_DIR/vendor/gecode/share/minizinc/solvers/"
+    MZN_TEST_TAGS_PRESENT: gecode_presolver,cbc,cplex,scip,gurobi,xpress
   before_script:
     - *download_bundle
     - export PATH=$CI_PROJECT_DIR/minizinc/bin:$PATH

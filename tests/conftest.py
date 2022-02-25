@@ -62,8 +62,8 @@ def pytest_html_results_table_header(cells):
 def pytest_html_results_table_row(report, cells):
     if hasattr(report, "user_properties"):
         props = {k: v for k, v in report.user_properties}
-        cells.insert(2, html.td(props["solver"]))
-        cells.insert(3, html.td(props["checker"] if "checker" in props else "-"))
+        cells.insert(2, html.td(props.get("solver", "-")))
+        cells.insert(3, html.td(props.get("checker", "-")))
     cells.pop()
 
 
