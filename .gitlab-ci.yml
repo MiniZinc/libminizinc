@@ -86,7 +86,6 @@ build:wasm_complete:
     MZNARCH: "wasm"
     CMAKE_ARCH: "Unix Makefiles"
   script:
-    - apt-get update && apt-get install -qq python3
     - emcmake cmake -v -S . -B build -G"$CMAKE_ARCH" -DCMAKE_FIND_ROOT_PATH="/" -DCMAKE_BUILD_TYPE=MinSizeRel -DBUILD_REF=$CI_PIPELINE_ID -DGecode_ROOT="$CI_PROJECT_DIR/vendor/gecode" -DOsiCBC_ROOT="$CI_PROJECT_DIR/vendor/cbc" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
     - cmake --build build --config MinSizeRel --target install
   tags: [docker, high-mem]
@@ -99,7 +98,6 @@ build:wasm_minimal:
     MZNARCH: "wasm"
     CMAKE_ARCH: "Unix Makefiles"
   script:
-    - apt-get update && apt-get install -qq python3
     - emcmake cmake -v -S . -B build -G"$CMAKE_ARCH" -DCMAKE_BUILD_TYPE=MinSizeRel -DBUILD_REF=$CI_PIPELINE_ID -DGecode_ROOT="$CI_PROJECT_DIR/vendor/gecode" -DOsiCBC_ROOT="$CI_PROJECT_DIR/vendor/cbc" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
     - cmake --build build --config MinSizeRel --target install
   tags: [docker]
