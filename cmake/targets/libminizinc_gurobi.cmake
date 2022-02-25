@@ -12,5 +12,6 @@ if (NOT DEFINED EMSCRIPTEN)
 	add_dependencies(minizinc_gurobi minizinc_mip)
 
 	### Setup correct compilation into the MiniZinc library
+  	target_compile_definitions(mzn PRIVATE HAS_GUROBI)
 	target_sources(mzn PRIVATE $<TARGET_OBJECTS:minizinc_gurobi>)
 endif()

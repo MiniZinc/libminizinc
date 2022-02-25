@@ -14,6 +14,7 @@ Bug fixes:
 
 -  Fix bounds calculation for singleton linear expression over 0/1 variable
 -  Correctly set whether an array literal is flat during copying (:bugref:`536`, :bugref:`549`)
+-  Fix compilation of SCIP and Xpress solver plugins
 
 .. _v2.6.0:
 

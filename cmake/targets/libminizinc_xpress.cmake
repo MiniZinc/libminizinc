@@ -12,5 +12,6 @@ if (NOT DEFINED EMSCRIPTEN)
 	add_dependencies(minizinc_xpress minizinc_mip)
 
 	### Setup correct compilation into the MiniZinc library
+  	target_compile_definitions(mzn PRIVATE HAS_XPRESS)
 	target_sources(mzn PRIVATE $<TARGET_OBJECTS:minizinc_xpress>)
 endif()

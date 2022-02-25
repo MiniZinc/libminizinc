@@ -19,5 +19,6 @@ if (NOT DEFINED EMSCRIPTEN)
 
 	### Setup correct compilation into the MiniZinc library
 	add_dependencies(minizinc_cplex minizinc_mip)
+	target_compile_definitions(mzn PRIVATE HAS_CPLEX)
 	target_sources(mzn PRIVATE $<TARGET_OBJECTS:minizinc_cplex>)
 endif()
