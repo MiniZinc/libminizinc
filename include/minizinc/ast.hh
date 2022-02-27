@@ -338,6 +338,8 @@ protected:
   /// Check if \a e0 and \a e1 are equal
   static bool equalInternal(const Expression* e0, const Expression* e1);
 
+  static ptrdiff_t asPtrDiff(const Expression* e) { return reinterpret_cast<ptrdiff_t>(e); }
+
   /// Constructor
   Expression(const Location& loc, const ExpressionId& eid, const Type& t)
       : ASTNode(eid), _type(t), _loc(loc) {}
@@ -346,15 +348,15 @@ public:
   IntVal unboxedIntToIntVal() const {
     assert(isUnboxedInt());
     if (sizeof(double) <= sizeof(void*)) {
-      unsigned long long int i = reinterpret_cast<ptrdiff_t>(this) & ~static_cast<ptrdiff_t>(7);
-      bool pos = ((reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(4)) == 0);
+      unsigned long long int i = Expression::asPtrDiff(this) & ~static_cast<ptrdiff_t>(7);
+      bool pos = ((Expression::asPtrDiff(this) & static_cast<ptrdiff_t>(4)) == 0);
       if (pos) {
         return static_cast<long long int>(i >> 3);
       }
       return -(static_cast<long long int>(i >> 3));
     }
-    unsigned long long int i = reinterpret_cast<ptrdiff_t>(this) & ~static_cast<ptrdiff_t>(3);
-    bool pos = ((reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(2)) == 0);
+    unsigned long long int i = Expression::asPtrDiff(this) & ~static_cast<ptrdiff_t>(3);
+    bool pos = ((Expression::asPtrDiff(this) & static_cast<ptrdiff_t>(2)) == 0);
     if (pos) {
       return static_cast<long long int>(i >> 2);
     }
@@ -438,30 +440,27 @@ public:
       return false;
     }
     if (sizeof(double) <= sizeof(void*)) {
-      return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(7)) == 4;
+      return (Expression::asPtrDiff(this) & static_cast<ptrdiff_t>(7)) == 4;
     }
-    return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) == 2;
+    return (Expression::asPtrDiff(this) & static_cast<ptrdiff_t>(3)) == 2;
   }
 
   Expression* tag() const {
     assert(!isUnboxedVal());
     if (sizeof(double) <= sizeof(void*)) {
-      return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) |
-                                           static_cast<ptrdiff_t>(4));
+      return reinterpret_cast<Expression*>(Expression::asPtrDiff(this) | static_cast<ptrdiff_t>(4));
     }
-    return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) |
-                                         static_cast<ptrdiff_t>(2));
+    return reinterpret_cast<Expression*>(Expression::asPtrDiff(this) | static_cast<ptrdiff_t>(2));
   }
   Expression* untag() {
     if (isUnboxedVal()) {
       return this;
     }
     if (sizeof(double) <= sizeof(void*)) {
-      return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) &
+      return reinterpret_cast<Expression*>(Expression::asPtrDiff(this) &
                                            ~static_cast<ptrdiff_t>(4));
     }
-    return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) &
-                                         ~static_cast<ptrdiff_t>(2));
+    return reinterpret_cast<Expression*>(Expression::asPtrDiff(this) & ~static_cast<ptrdiff_t>(2));
   }
 
   /// Test if expression is of type \a T
@@ -515,21 +514,21 @@ public:
 inline bool Expression::isUnboxedVal() const {
   if (sizeof(double) <= sizeof(void*)) {
     // bit 1 or bit 0 is set
-    return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) != 0;
+    return (Expression::asPtrDiff(this) & static_cast<ptrdiff_t>(3)) != 0;
   }  // bit 0 is set
-  return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) != 0;
+  return (Expression::asPtrDiff(this) & static_cast<ptrdiff_t>(1)) != 0;
 }
 inline bool Expression::isUnboxedInt() const {
   if (sizeof(double) <= sizeof(void*)) {
     // bit 1 is set, bit 0 is not set
-    return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) == 2;
+    return (Expression::asPtrDiff(this) & static_cast<ptrdiff_t>(3)) == 2;
   }  // bit 0 is set
-  return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) == 1;
+  return (Expression::asPtrDiff(this) & static_cast<ptrdiff_t>(1)) == 1;
 }
 inline bool Expression::isUnboxedFloatVal() const {
   // bit 0 is set (and doubles fit inside pointers)
   return (sizeof(double) <= sizeof(void*)) &&
-         (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) == 1;
+         (Expression::asPtrDiff(this) & static_cast<ptrdiff_t>(1)) == 1;
 }
 inline Expression::ExpressionId Expression::eid() const {
   return isUnboxedInt()        ? E_INTLIT
