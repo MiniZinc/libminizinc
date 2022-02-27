@@ -9,12 +9,18 @@ https://github.com/MiniZinc/libminizinc/issues.
 Unreleased
 ~~~~~~~~~~~~
 
+Changes:
+^^^^^^^^
+
+-  Throw an error when the time limit is reached in ``mzn2fzn`` mode
+
 Bug fixes:
 ^^^^^^^^^^
 
 -  Fix bounds calculation for singleton linear expression over 0/1 variable
 -  Correctly set whether an array literal is flat during copying (:bugref:`536`, :bugref:`549`)
 -  Fix compilation of SCIP and Xpress solver plugins
+-  Don't print the ``=====UNKNOWN=====`` status on timeout in ``mzn2fzn`` mode
 
 .. _v2.6.0:
 

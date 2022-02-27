@@ -996,6 +996,9 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0,
   try {
     flatten(model, modelName);
   } catch (Timeout&) {
+    if (ifMzn2Fzn()) {
+      throw;
+    }
     s2out.evalStatus(SolverInstance::UNKNOWN);
     return SolverInstance::UNKNOWN;
   }
