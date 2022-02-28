@@ -889,6 +889,7 @@ void MznSolver::flatten(const std::string& modelString, const std::string& model
     _flt.setRandomSeed(randomSeed);
   }
 
+#ifndef __EMSCRIPTEN__
   // Create timing thread
   std::promise<void> done;
   auto done_future = done.get_future();
@@ -906,6 +907,7 @@ void MznSolver::flatten(const std::string& modelString, const std::string& model
   });
   auto timer_future = timer.get_future();
   std::thread thr(std::move(timer));
+#endif
 
   // Flattening process in main thread
   try {
@@ -915,9 +917,11 @@ void MznSolver::flatten(const std::string& modelString, const std::string& model
     exc = std::current_exception();
   }
 
+#ifndef __EMSCRIPTEN__
   // Join timing thread
   done.set_value();
   thr.join();
+#endif
 
   // Rethrow exception if necessary
   if (exc) {

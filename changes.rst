@@ -26,6 +26,7 @@ Bug fixes:
    :bugref:`553`)
 -  Output the correct variables when using ``--output-mode checker``
 -  Fix possible crash when handling errors due to incorrect garbage collection
+-  Fix WebAssembly build of MiniZinc
 
 .. _v2.6.0:
 
