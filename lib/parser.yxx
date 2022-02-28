@@ -1468,17 +1468,17 @@ simple_array_literal :
                   yyerror(&@2, parm, "syntax error, non-uniform indexed array literal");
                 }
               }
-              std::vector<Expression*> arrayXdArgs(dims.size());
+              std::vector<Expression*> arrayNdArgs(dims.size());
               for (unsigned int i = 0; i < dims.size(); i++) {
-                arrayXdArgs[i] = new ArrayLit(@$, dims[i]);
+                arrayNdArgs[i] = new ArrayLit(@$, dims[i]);
               }
-              arrayXdArgs.push_back(new ArrayLit(@$, $2->second));
+              arrayNdArgs.push_back(new ArrayLit(@$, $2->second));
               
               if ($2->first.size() != $2->second.size()) {
                 yyerror(&@2, parm, "syntax error, non-uniform indexed array literal");
                 $$=nullptr;
               } else {
-                $$=new Call(@$, "arrayXd", arrayXdArgs);
+                $$=new Call(@$, "arrayNd", arrayNdArgs);
               }
             } else {
               for (const auto* t : $2->first) {
@@ -1486,7 +1486,7 @@ simple_array_literal :
                   yyerror(&@2, parm, "syntax error, non-uniform indexed array literal");
                 }
               }
-              $$=new Call(@$, "arrayXd", {new ArrayLit(@$, $2->first), new ArrayLit(@$, $2->second)});
+              $$=new Call(@$, "arrayNd", {new ArrayLit(@$, $2->first), new ArrayLit(@$, $2->second)});
             }
           }
           delete $2;

@@ -5636,17 +5636,17 @@ yyreduce:
                   yyerror(&(yylsp[-1]), parm, "syntax error, non-uniform indexed array literal");
                 }
               }
-              std::vector<Expression*> arrayXdArgs(dims.size());
+              std::vector<Expression*> arrayNdArgs(dims.size());
               for (unsigned int i = 0; i < dims.size(); i++) {
-                arrayXdArgs[i] = new ArrayLit((yyloc), dims[i]);
+                arrayNdArgs[i] = new ArrayLit((yyloc), dims[i]);
               }
-              arrayXdArgs.push_back(new ArrayLit((yyloc), (yyvsp[-1].indexedexpression2d)->second));
+              arrayNdArgs.push_back(new ArrayLit((yyloc), (yyvsp[-1].indexedexpression2d)->second));
               
               if ((yyvsp[-1].indexedexpression2d)->first.size() != (yyvsp[-1].indexedexpression2d)->second.size()) {
                 yyerror(&(yylsp[-1]), parm, "syntax error, non-uniform indexed array literal");
                 (yyval.expression)=nullptr;
               } else {
-                (yyval.expression)=new Call((yyloc), "arrayXd", arrayXdArgs);
+                (yyval.expression)=new Call((yyloc), "arrayNd", arrayNdArgs);
               }
             } else {
               for (const auto* t : (yyvsp[-1].indexedexpression2d)->first) {
@@ -5654,7 +5654,7 @@ yyreduce:
                   yyerror(&(yylsp[-1]), parm, "syntax error, non-uniform indexed array literal");
                 }
               }
-              (yyval.expression)=new Call((yyloc), "arrayXd", {new ArrayLit((yyloc), (yyvsp[-1].indexedexpression2d)->first), new ArrayLit((yyloc), (yyvsp[-1].indexedexpression2d)->second)});
+              (yyval.expression)=new Call((yyloc), "arrayNd", {new ArrayLit((yyloc), (yyvsp[-1].indexedexpression2d)->first), new ArrayLit((yyloc), (yyvsp[-1].indexedexpression2d)->second)});
             }
           }
           delete (yyvsp[-1].indexedexpression2d);
