@@ -21,6 +21,7 @@ Bug fixes:
 -  Correctly set whether an array literal is flat during copying (:bugref:`536`, :bugref:`549`)
 -  Fix compilation of SCIP and Xpress solver plugins
 -  Don't print the ``=====UNKNOWN=====`` status on timeout in ``mzn2fzn`` mode
+-  Ensure variables are always copied to the output model when required by a solution checker
 
 .. _v2.6.0:
 

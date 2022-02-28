@@ -1379,22 +1379,6 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
   } _cf(e);
   top_down(_cf, outputItem->e());
 
-  // If we are checking solutions using a checker model, all parameters of the checker model
-  // have to be made available in the output model
-  class OV1 : public ItemVisitor {
-  public:
-    EnvI& env;
-    CollectFunctions& cf;
-    OV1(EnvI& env0, CollectFunctions& cf0) : env(env0), cf(cf0) {}
-    void vVarDeclI(VarDeclI* vdi) {
-      if (vdi->e()->ann().contains(env.constants.ann.mzn_check_var)) {
-        auto* output_vd = copy(env, env.cmap, vdi->e())->cast<VarDecl>();
-        top_down(cf, output_vd);
-      }
-    }
-  } _ov1(e, _cf);
-  iter_items(_ov1, e.model);
-
   // Copying the output item and the functions it depends on has created copies
   // of all dependent VarDecls. However the output model does not contain VarDeclIs for
   // these VarDecls yet. This iterator processes all copied variable declarations and
@@ -1560,6 +1544,24 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
     }
   } _cvd(e);
   top_down(_cvd, outputItem->e());
+
+  // If we are checking solutions using a checker model, all parameters of the checker model
+  // have to be made available in the output model
+  class OV1 : public ItemVisitor {
+  public:
+    EnvI& env;
+    CollectFunctions& cf;
+    CollectVarDecls& cvd;
+    OV1(EnvI& env0, CollectFunctions& cf0, CollectVarDecls& cvd0) : env(env0), cf(cf0), cvd(cvd0) {}
+    void vVarDeclI(VarDeclI* vdi) {
+      if (vdi->e()->ann().contains(env.constants.ann.mzn_check_var)) {
+        auto* output_vd = copy(env, env.cmap, vdi->e())->cast<VarDecl>();
+        top_down(cf, output_vd);
+        top_down(cvd, output_vd->id());
+      }
+    }
+  } _ov1(e, _cf, _cvd);
+  iter_items(_ov1, e.model);
 
   CollectOccurrencesE ce(e, e.outputVarOccurrences, outputItem);
   top_down(ce, outputItem->e());
