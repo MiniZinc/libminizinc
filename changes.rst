@@ -6,6 +6,11 @@ https://github.com/MiniZinc/libminizinc/issues.
 
 .. _unreleased:
 
+Changes:
+^^^^^^^^
+-  Introduces the ``arg_val`` and ``arg_val_weak`` globals that return the index
+   of the first occurrence of a value in a given array. (:bugref:`544`).
+
 Bug fixes:
 ^^^^^^^^^^
 

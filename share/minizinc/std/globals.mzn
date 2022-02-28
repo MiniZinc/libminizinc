@@ -53,6 +53,7 @@ include "among_fn.mzn";
 include "arg_sort.mzn";
 include "arg_min.mzn";
 include "arg_max.mzn";
+include "arg_val.mzn";
 include "at_least.mzn";
 include "at_most.mzn";
 include "at_most1.mzn";
