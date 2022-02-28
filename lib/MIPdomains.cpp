@@ -730,7 +730,6 @@ private:
   }
 
   void propagateViews(bool& fChanges) {
-    //      EnvI& env = getEnv()->envi();
     GCLock lock;
 
     // Iterate thru original 2-variable equalities to mark views:
@@ -752,9 +751,6 @@ private:
     DBGOUT_MIPD("  CHECK ALL CONSTRAINTS for 2-var equations:");
     for (ConstraintIterator ic = mFlat.constraints().begin(); ic != mFlat.constraints().end();
          ++ic) {
-      //         std::cerr << "  SEE constraint: " << "      ";
-      //         debugprint(&*ic);
-      //         debugprint(c->decl());
       if (ic->removed()) {
         continue;
       }
@@ -762,8 +758,6 @@ private:
         const bool fIntLinEq = int_lin_eq == c->decl();
         const bool fFloatLinEq = float_lin_eq == c->decl();
         if (fIntLinEq || fFloatLinEq) {
-          //             std::cerr << "  !E call " << std::flush;
-          //             debugprint(c);
           MZN_MIPD_assert_hard(c->argCount() == 3);
           auto* al = follow_id(c->arg(1))->cast<ArrayLit>();
           MZN_MIPD_assert_hard(al);
@@ -787,14 +781,8 @@ private:
                 ++MIPD_stats[fIntLinEq ? N_POSTs_eq2intlineq : N_POSTs_eq2floatlineq];
               }
             }
-          } else if (al->size() == 1) {
-            static int nn = 0;
-            if (++nn <= 7) {
-              std::cerr << "  MIPD: LIN_EQ with 1 variable::: " << std::flush;
-              std::cerr << (*c) << std::endl;
-            }
-          } else {  // larger eqns
-            // TODO should be here?
+          }       /// case with just 1 variable: else if (al->size() == 1) { }
+          else {  // larger eqns
             auto* eVD = get_annotation(c->ann(), Constants::constants().ann.defines_var);
             if (eVD != nullptr) {
               if (_sCallLinEqN.end() != _sCallLinEqN.find(c)) {
@@ -815,16 +803,9 @@ private:
               }
             }
           }
-        } else
-            //             const bool fI2F = (int2float==c->decl());
-            //             const bool fIVR = (constants().varRedef==c->decl());
-            //             if ( fI2F || fIVR ) {
-            if (int2float == c->decl() || Constants::constants().varRedef == c->decl()) {
-          //             std::cerr << "  !E call " << std::flush;
-          //             debugprint(c);
+        } else if (int2float == c->decl() || Constants::constants().varRedef == c->decl()) {
           MZN_MIPD_assert_hard(c->argCount() == 2);
           LinEq2Vars led;
-          //             led.vd.resize(2);
           led.vd[0] = expr2VarDecl(c->arg(0));
           led.vd[1] = expr2VarDecl(c->arg(1));
           // At least 1 touched var:
@@ -883,7 +864,6 @@ private:
 
     int nVD = 0;
     for (int i = 0; i < vars.size(); ++i) {
-      //         MZN_MIPD_assert_hard( 0.0!=std::fabs
       if (vd ==
           vars[i]) {  // when int/float_lin_eq :: defines_var(vd) "Recursive definition of " << *vd
         nVRest.coef0 = -coefs[i];
@@ -1028,11 +1008,14 @@ private:
         if (this->end() != it1) {
           auto it2 = it1->second.find(*(begV + 1));
           if (it1->second.end() != it2) {
+            /// We could catch infeasibility here in some cases but it's weird. #550
+            /*
             MZN_MIPD_assert_hard(std::fabs(it2->second.first - A) <
                                  1e-6 * std::max(std::fabs(it2->second.first), std::fabs(A)));
             MZN_MIPD_assert_hard(std::fabs(it2->second.second - B) <
                                  1e-6 * std::max(std::fabs(it2->second.second), std::fabs(B)) +
                                      1e-6);
+              */
             MZN_MIPD_assert_hard(std::fabs(A) != 0.0);
             MZN_MIPD_assert_soft(!fVerbose || std::fabs(A) > 1e-12,
                                  " Very small coef: " << (*begV)->id()->str() << " = " << A << " * "
@@ -1053,6 +1036,7 @@ private:
     class LinEqGraph : public TMatrixVars {
     public:
       static double dCoefMin, dCoefMax;
+
       /// Stores the arc (x1, x2) as x1 = a*x2 + b
       /// so that a constraint on x2, say x2<=c <-> f,
       /// is equivalent to one for x1:  x1 <=/>= a*c+b <-> f
@@ -1060,7 +1044,6 @@ private:
       ////   so that a constraint on x1, say x1<=c <-> f,
       ////   can easily be converted into one for x2 as a*x2 <= c-b <-> f
       ////   <=> x2 (care for sign) (c-b)/a <-> f )
-
       template <class ICoef, class IVarDecl>
       void addArc(ICoef begC, IVarDecl begV, double rhs) {
         MZN_MIPD_assert_soft(!fVerbose || std::fabs(*begC) >= 1e-10,
@@ -1069,7 +1052,7 @@ private:
         // Transform Ax+By=C into x = -B/Ay+C/A
         const double negBA = -(*(begC + 1)) / (*begC);
         const double CA = rhs / (*begC);
-        checkExistingArc(begV, negBA, CA);
+        checkExistingArc(begV, negBA, CA, false);
         (*this)[*begV][*(begV + 1)] = std::make_pair(negBA, CA);
         const double dCoefAbs = std::fabs(negBA);
         if (dCoefAbs < dCoefMin) {
