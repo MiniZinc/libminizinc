@@ -283,6 +283,7 @@ protected:
 
 public:
   GCMarker() { GC::add(this); }
+  GCMarker(const GCMarker& marker) { GC::add(this); }
   virtual ~GCMarker() { GC::remove(this); }
 };
 

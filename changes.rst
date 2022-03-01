@@ -25,6 +25,7 @@ Bug fixes:
 -  Rename clashing definition of internal version of ``arrayXd`` to ``arrayNd``(:bugref:`552`,
    :bugref:`553`)
 -  Output the correct variables when using ``--output-mode checker``
+-  Fix possible crash when handling errors due to incorrect garbage collection
 
 .. _v2.6.0:
 
