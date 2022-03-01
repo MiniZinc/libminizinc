@@ -3158,7 +3158,9 @@ void flatten(Env& e, FlatteningOptions opt) {
       float_lin_eq = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
     }
     FunctionI* array_bool_and;
+    FunctionI* array_bool_and_imp;
     FunctionI* array_bool_or;
+    FunctionI* array_bool_or_imp;
     FunctionI* array_bool_clause;
     FunctionI* array_bool_clause_imp;
     FunctionI* array_bool_clause_reif;
@@ -3171,8 +3173,12 @@ void flatten(Env& e, FlatteningOptions opt) {
       FunctionI* fi =
           env.model->matchFn(env, ASTString("array_bool_and"), array_bool_andor_t, false);
       array_bool_and = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
+      fi = env.model->matchFn(env, ASTString("array_bool_and_imp"), array_bool_andor_t, false);
+      array_bool_and_imp = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
       fi = env.model->matchFn(env, ASTString("array_bool_or"), array_bool_andor_t, false);
       array_bool_or = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
+      fi = env.model->matchFn(env, ASTString("array_bool_or_imp"), array_bool_andor_t, false);
+      array_bool_or_imp = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
 
       array_bool_andor_t[1] = Type::varbool(1);
       fi = env.model->matchFn(env, ASTString("bool_clause"), array_bool_andor_t, false);
@@ -3466,7 +3472,15 @@ void flatten(Env& e, FlatteningOptions opt) {
                   nc->decl(int_lin_eq);
                 }
               } else if (c->id() == env.constants.ids.exists) {
-                if (array_bool_or != nullptr) {
+                if (env.fopts.enableHalfReification && vd->ann().contains(env.constants.ctx.pos) &&
+                    array_bool_or_imp != nullptr) {
+                  std::vector<Expression*> args(2);
+                  args[0] = c->arg(0);
+                  args[1] = vd->id();
+                  nc = new Call(c->loc().introduce(), array_bool_or_imp->id(), args);
+                  nc->type(Type::varbool());
+                  nc->decl(array_bool_or_imp);
+                } else if (array_bool_or != nullptr) {
                   std::vector<Expression*> args(2);
                   args[0] = c->arg(0);
                   args[1] = vd->id();
@@ -3475,7 +3489,15 @@ void flatten(Env& e, FlatteningOptions opt) {
                   nc->decl(array_bool_or);
                 }
               } else if (!isTrueVar && c->id() == env.constants.ids.forall) {
-                if (array_bool_and != nullptr) {
+                if (env.fopts.enableHalfReification && vd->ann().contains(env.constants.ctx.pos) &&
+                    array_bool_and_imp != nullptr) {
+                  std::vector<Expression*> args(2);
+                  args[0] = c->arg(0);
+                  args[1] = vd->id();
+                  nc = new Call(c->loc().introduce(), array_bool_and_imp->id(), args);
+                  nc->type(Type::varbool());
+                  nc->decl(array_bool_and_imp);
+                } else if (array_bool_and != nullptr) {
                   std::vector<Expression*> args(2);
                   args[0] = c->arg(0);
                   args[1] = vd->id();
