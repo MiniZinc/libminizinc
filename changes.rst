@@ -24,6 +24,7 @@ Bug fixes:
 -  Ensure variables are always copied to the output model when required by a solution checker
 -  Rename clashing definition of internal version of ``arrayXd`` to ``arrayNd``(:bugref:`552`,
    :bugref:`553`)
+-  Output the correct variables when using ``--output-mode checker``
 
 .. _v2.6.0:
 

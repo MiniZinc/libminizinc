@@ -3858,10 +3858,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     }
   }
 
-  if (!isFlatZinc) {
-    // Determine variables to include in output
-    process_toplevel_output_vars(env.envi());
-  } else {
+  if (isFlatZinc) {
     for (auto* it : annotatedExpressionItems) {
       // We needed these to do typechecking but we can't keep them because this is a FlatZinc file
       it->remove();
@@ -4128,6 +4125,7 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
 
   bool hadOutput = false;
   std::ostringstream ossOutput;
+  process_toplevel_output_vars(env.envi());
   for (auto it : env.envi().outputVars) {
     if (it.first == "_objective" || it.first == "_checker_objective") {
       // Never include

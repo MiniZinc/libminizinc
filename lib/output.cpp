@@ -1166,6 +1166,8 @@ Expression* create_encapsulated_output(EnvI& e) {
 void process_toplevel_output_vars(EnvI& e) {
   GCLock lock;
 
+  bool outputForChecker = e.fopts.outputMode == FlatteningOptions::OutputMode::OUTPUT_CHECKER;
+
   class OutputVarVisitor : public ItemVisitor {
   private:
     EnvI& _e;
@@ -1173,9 +1175,9 @@ void process_toplevel_output_vars(EnvI& e) {
     bool _isChecker;
 
   public:
-    OutputVarVisitor(EnvI& e)
+    OutputVarVisitor(EnvI& e, bool outputForChecker)
         : _e(e),
-          _outputForChecker(e.fopts.outputMode == FlatteningOptions::OutputMode::OUTPUT_CHECKER),
+          _outputForChecker(outputForChecker),
           _isChecker(e.model->filename().endsWith(".mzc") ||
                      e.model->filename().endsWith(".mzc.mzn")) {}
 
@@ -1205,30 +1207,32 @@ void process_toplevel_output_vars(EnvI& e) {
       }
       vd->ann().remove(_e.constants.ann.output);
     }
-  } ovv(e);
+  } ovv(e, outputForChecker);
   iter_items(ovv, e.model);
 
-  // Insert implicit output variables
-  int inserted = 0;
-  for (auto& it : ovv.todo) {
-    auto idx = it.first;
-    auto* vd = it.second;
-    if (vd->ann().contains(e.constants.ann.no_output) || vd->type().isPar()) {
-      continue;
-    }
-    if (vd->e() == nullptr || vd->ann().contains(e.constants.ann.rhs_from_assignment)) {
-      // Output anything without a RHS
-      e.outputVars.emplace(e.outputVars.begin() + inserted + idx, vd->id()->str(), vd);
-      inserted++;
-      continue;
-    }
-    if (auto* al = vd->e()->dynamicCast<ArrayLit>()) {
-      // Output array literals containing _
-      for (unsigned int i = 0; i < al->size(); i++) {
-        if ((*al)[i]->isa<AnonVar>()) {
-          e.outputVars.emplace(e.outputVars.begin() + inserted + idx, vd->id()->str(), vd);
-          inserted++;
-          break;
+  if (!outputForChecker) {
+    // Insert implicit output variables
+    int inserted = 0;
+    for (auto& it : ovv.todo) {
+      auto idx = it.first;
+      auto* vd = it.second;
+      if (vd->ann().contains(e.constants.ann.no_output) || vd->type().isPar()) {
+        continue;
+      }
+      if (vd->e() == nullptr || vd->ann().contains(e.constants.ann.rhs_from_assignment)) {
+        // Output anything without a RHS
+        e.outputVars.emplace(e.outputVars.begin() + inserted + idx, vd->id()->str(), vd);
+        inserted++;
+        continue;
+      }
+      if (auto* al = vd->e()->dynamicCast<ArrayLit>()) {
+        // Output array literals containing _
+        for (unsigned int i = 0; i < al->size(); i++) {
+          if ((*al)[i]->isa<AnonVar>()) {
+            e.outputVars.emplace(e.outputVars.begin() + inserted + idx, vd->id()->str(), vd);
+            inserted++;
+            break;
+          }
         }
       }
     }

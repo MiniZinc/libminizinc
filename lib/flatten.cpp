@@ -3097,6 +3097,8 @@ void flatten(Env& e, FlatteningOptions opt) {
     EnvI& env = e.envi();
     env.fopts = opt;
 
+    process_toplevel_output_vars(e.envi());
+
     bool onlyRangeDomains = false;
     if (opt.onlyRangeDomains) {
       onlyRangeDomains = true;  // compulsory
