@@ -28,6 +28,7 @@ Bug fixes:
 -  Fix possible crash when handling errors due to incorrect garbage collection
 -  Fix WebAssembly build of MiniZinc
 -  Allow comprenhensions to iterate over the ``{}`` literal
+-  Fix printing of multidimensional arrays of enums in output
 
 .. _v2.6.0:
 

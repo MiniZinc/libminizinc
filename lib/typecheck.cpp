@@ -2557,6 +2557,7 @@ public:
               Type array1dt = args[0]->type();
               array1dt.dim(1);
               array1d->type(array1dt);
+              array1d->decl(_model->matchFn(_env, array1d, false, true));
               args[0] = array1d;
             }
             args[1] = _env.constants.boollit(call->id() == _env.constants.ids.showDzn);
