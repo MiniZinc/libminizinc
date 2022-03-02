@@ -27,6 +27,7 @@ Bug fixes:
 -  Output the correct variables when using ``--output-mode checker``
 -  Fix possible crash when handling errors due to incorrect garbage collection
 -  Fix WebAssembly build of MiniZinc
+-  Allow comprenhensions to iterate over the ``{}`` literal
 
 .. _v2.6.0:
 

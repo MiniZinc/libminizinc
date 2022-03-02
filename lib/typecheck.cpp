@@ -2116,9 +2116,12 @@ public:
     } else {
       const Type& ty_in = g_in->type();
       if (ty_in != Type::varsetint() && ty_in != Type::parsetint() && ty_in.dim() == 0) {
-        throw TypeError(_env, g_in->loc(),
-                        "generator expression must be (par or var) set of int or array, but is `" +
-                            ty_in.toString(_env) + "'");
+        if (!ty_in.isSet() || ty_in.bt() != Type::BT_BOT) {
+          throw TypeError(
+              _env, g_in->loc(),
+              "generator expression must be (par or var) set of int or array, but is `" +
+                  ty_in.toString(_env) + "'");
+        }
       }
       Type ty_id;
       if (ty_in.dim() == 0) {
