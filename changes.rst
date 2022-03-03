@@ -15,6 +15,8 @@ Changes:
 ^^^^^^^^
 
 -  Throw an error when the time limit is reached in ``mzn2fzn`` mode
+-  Relax a MIPD infeasibility check (:bugref:`550`)
+-  Add half-reification possibilities for boolean builtin redefinitions
 
 Bug fixes:
 ^^^^^^^^^^
