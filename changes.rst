@@ -14,25 +14,33 @@ https://github.com/MiniZinc/libminizinc/issues.
 Changes:
 ^^^^^^^^
 
--  Throw an error when the time limit is reached in ``mzn2fzn`` mode
--  Relax a MIPD infeasibility check (:bugref:`550`)
--  Add half-reification possibilities for boolean builtin redefinitions
+-  Throw an error when the time limit is reached in ``mzn2fzn`` mode.
+-  Relax a MIPD infeasibility check (:bugref:`550`).
+-  Add half-reification possibilities for boolean builtin redefinitions.
 
 Bug fixes:
 ^^^^^^^^^^
 
--  Fix bounds calculation for singleton linear expression over 0/1 variable
--  Correctly set whether an array literal is flat during copying (:bugref:`536`, :bugref:`549`)
--  Fix compilation of SCIP and Xpress solver plugins
--  Don't print the ``=====UNKNOWN=====`` status on timeout in ``mzn2fzn`` mode
--  Ensure variables are always copied to the output model when required by a solution checker
--  Rename clashing definition of internal version of ``arrayXd`` to ``arrayNd``(:bugref:`552`,
+-  Fix bounds calculation for singleton linear expression over 0/1 variable.
+-  Correctly set whether an array literal is flat during copying (:bugref:`536`, :bugref:`549`).
+-  Fix compilation of SCIP and Xpress solver plugins.
+-  Don't print the ``=====UNKNOWN=====`` status on timeout in ``mzn2fzn`` mode.
+-  Ensure variables are always copied to the output model when required by a solution checker.
+-  Rename clashing definition of internal version of ``arrayXd`` to ``arrayNd``(:bugref:`552`,.
    :bugref:`553`)
--  Output the correct variables when using ``--output-mode checker``
--  Fix possible crash when handling errors due to incorrect garbage collection
--  Fix WebAssembly build of MiniZinc
--  Allow comprenhensions to iterate over the ``{}`` literal
--  Fix printing of multidimensional arrays of enums in output
+-  Output the correct variables when using ``--output-mode checker``.
+-  Fix possible crash when handling errors due to incorrect garbage collection.
+-  Fix WebAssembly build of MiniZinc.
+-  Allow comprenhensions to iterate over the ``{}`` literal.
+-  Fix printing of multidimensional arrays of enums in output.
+-  Fix the output format when using ``--json-stream`` on FlatZinc files.
+
+Changes in the IDE:
+^^^^^^^^^^^^^^^^^^^
+
+  - Fix crash when the solver for an unsaved configuration is removed.
+  - Fix bug where the selected solver could incorrectly change when a
+    configuration option is altered.
 
 .. _v2.6.0:
 
