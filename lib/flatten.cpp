@@ -1509,8 +1509,9 @@ void populate_output(Env& env, bool encapsulateJSON) {
     auto* showJSON = new Call(Location().introduce(), envi.constants.ids.showJSON, {concat});
     showJSON->type(Type::parstring());
     showJSON->decl(_flat->matchFn(envi, showJSON, false));
-    std::vector<Expression*> al_v({new StringLit(Location().introduce(), "{\"dzn\": "), showJSON,
-                                   new StringLit(Location().introduce(), "}")});
+    std::vector<Expression*> al_v(
+        {new StringLit(Location().introduce(), "\"output\": {\"dzn\": "), showJSON,
+         new StringLit(Location().introduce(), "}, \"sections\": [\"dzn\"]")});
     al = new ArrayLit(Location().introduce(), al_v);
   }
   auto* newOutputItem = new OutputI(Location().introduce(), al);
