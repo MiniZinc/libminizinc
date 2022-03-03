@@ -36,5 +36,5 @@
 
 predicate gecode_member_int_reif(array[int] of var int: x, var int: y,
                                  var bool: b);
-predicate member_int_reif(array[int] of var int: x, var int: y,
-                          var bool: b) = gecode_member_int_reif(x,y,b);
+predicate fzn_member_int_reif(array[int] of var int: x, var int: y,
+                              var bool: b) = gecode_member_int_reif(x,y,b);

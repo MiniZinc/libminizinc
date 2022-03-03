@@ -34,6 +34,8 @@ Bug fixes:
 -  Allow comprenhensions to iterate over the ``{}`` literal.
 -  Fix printing of multidimensional arrays of enums in output.
 -  Fix the output format when using ``--json-stream`` on FlatZinc files.
+-  Rename ``member_int_reif`` to ``fzn_member_int_reif`` in the Gecode presolver library
+   (:bugref:`556`).
 
 Changes in the IDE:
 ^^^^^^^^^^^^^^^^^^^
