@@ -470,8 +470,8 @@ bool Model::fnExists(EnvI& env, const ASTString& id) const {
 namespace {
 
 void compute_possible_matches(EnvI& env, const Model* m, const ASTString& ident,
-                              const std::vector<Type>& ta,
-                              std::unordered_set<FunctionI*>& matched) {
+                              const std::vector<Type>& ta, std::unordered_set<FunctionI*>& matched,
+                              std::vector<FunctionI*>& ret) {
   // Go through the types in this order: var opt, var, par opt, par
   std::vector<Type> vp(ta.size());
   for (unsigned int i = 0; i < ta.size(); i++) {
@@ -487,7 +487,10 @@ void compute_possible_matches(EnvI& env, const Model* m, const ASTString& ident,
   for (;;) {
     auto* fi = m->matchFn(env, ident, vp, false);
     if (fi != nullptr) {
-      matched.insert(fi);
+      auto it = matched.insert(fi);
+      if (it.second) {
+        ret.push_back(fi);
+      }
     }
     int i = finalType;
     for (; i >= 0; i--) {
@@ -534,35 +537,32 @@ std::vector<FunctionI*> Model::possibleMatches(EnvI& env, const ASTString& ident
   //   (par vs var, non-opt vs opt)
 
   std::unordered_set<FunctionI*> matched;
+  std::vector<FunctionI*> ret;
 
-  compute_possible_matches(env, this, ident, ta, matched);
+  compute_possible_matches(env, this, ident, ta, matched, ret);
 
   // Try reified/non-reified versions
   if (ident.endsWith("_reif")) {
     std::string ident_s(ident.c_str());
     ASTString baseIdent = ident_s.substr(0, ident_s.length() - 5);
     std::vector<Type> ta_b = ta;
-    compute_possible_matches(env, this, EnvI::halfReifyId(baseIdent), ta_b, matched);
+    compute_possible_matches(env, this, EnvI::halfReifyId(baseIdent), ta_b, matched, ret);
     ta_b.pop_back();
-    compute_possible_matches(env, this, baseIdent, ta_b, matched);
+    compute_possible_matches(env, this, baseIdent, ta_b, matched, ret);
   } else if (ident.endsWith("_imp")) {
     std::string ident_s(ident.c_str());
     ASTString baseIdent = ident_s.substr(0, ident_s.length() - 4);
     std::vector<Type> ta_b = ta;
-    compute_possible_matches(env, this, env.reifyId(baseIdent), ta_b, matched);
+    compute_possible_matches(env, this, env.reifyId(baseIdent), ta_b, matched, ret);
     ta_b.pop_back();
-    compute_possible_matches(env, this, baseIdent, ta_b, matched);
+    compute_possible_matches(env, this, baseIdent, ta_b, matched, ret);
   } else {
     std::vector<Type> ta_b = ta;
     ta_b.push_back(Type::varbool());
-    compute_possible_matches(env, this, env.reifyId(ident), ta_b, matched);
-    compute_possible_matches(env, this, EnvI::halfReifyId(ident), ta_b, matched);
+    compute_possible_matches(env, this, env.reifyId(ident), ta_b, matched, ret);
+    compute_possible_matches(env, this, EnvI::halfReifyId(ident), ta_b, matched, ret);
   }
 
-  std::vector<FunctionI*> ret;
-  for (auto* fi : matched) {
-    ret.push_back(fi);
-  }
   return ret;
 }
 

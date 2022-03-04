@@ -9,6 +9,11 @@ https://github.com/MiniZinc/libminizinc/issues.
 Unreleased
 ~~~~~~~~~~
 
+Bug fixes:
+^^^^^^^^^^
+
+-  Prevent possible non-deterministic function dispatch.
+
 .. _v2.6.1:
 
 `Version 2.6.1 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.6.1>`__
