@@ -1557,6 +1557,8 @@ bool Expression::equalInternal(const Expression* e0, const Expression* e1) {
 Constants::Constants() {
   GCLock lock;
   auto* ti = new TypeInst(Location(), Type::parbool());
+  emptyArray = new ArrayLit(Location(), std::vector<Expression*> {});
+  emptyArray->type(Type::parbool(1));
   literalTrue = new BoolLit(Location(), true);
   varTrue = new VarDecl(Location(), ti, "_bool_true", literalTrue);
   literalFalse = new BoolLit(Location(), false);
@@ -1889,6 +1891,7 @@ bool Constants::isCallByReferenceId(const ASTString& cid) const {
 }
 
 void Constants::mark() {
+  Expression::mark(emptyArray);
   Expression::mark(literalTrue);
   Expression::mark(varTrue);
   Expression::mark(literalFalse);

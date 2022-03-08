@@ -1814,6 +1814,8 @@ protected:
   Id* addId(const std::string& s);
 
 public:
+  /// Empty array of literals
+  ArrayLit* emptyArray; // TODO rename emptyBoolArray
   /// Literal true
   BoolLit* literalTrue;
   /// Variable bound to true
