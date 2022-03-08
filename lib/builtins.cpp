@@ -2630,10 +2630,10 @@ Expression* b_inverse(EnvI& env, Call* call) {
 Expression* b_set_to_ranges_int(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
   IntSetVal* isv = eval_intset(env, call->arg(0));
-  std::vector<Expression*> v(isv->size() * 2);
+  std::vector<Expression*> v(static_cast<size_t>(isv->size()) * 2);
   for (unsigned int i = 0; i < isv->size(); i++) {
-    v[2 * i] = IntLit::a(isv->min(i));
-    v[2 * i + 1] = IntLit::a(isv->max(i));
+    v[2 * static_cast<size_t>(i)] = IntLit::a(isv->min(i));
+    v[2 * static_cast<size_t>(i) + 1] = IntLit::a(isv->max(i));
   }
   auto* al = new ArrayLit(call->loc().introduce(), v);
   al->type(Type::parint(1));
@@ -2643,10 +2643,10 @@ Expression* b_set_to_ranges_int(EnvI& env, Call* call) {
 Expression* b_set_to_ranges_float(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
   FloatSetVal* fsv = eval_floatset(env, call->arg(0));
-  std::vector<Expression*> v(fsv->size() * 2);
+  std::vector<Expression*> v(static_cast<size_t>(fsv->size()) * 2);
   for (unsigned int i = 0; i < fsv->size(); i++) {
-    v[2 * i] = FloatLit::a(fsv->min(i));
-    v[2 * i + 1] = FloatLit::a(fsv->max(i));
+    v[2 * static_cast<size_t>(i)] = FloatLit::a(fsv->min(i));
+    v[2 * static_cast<size_t>(i) + 1] = FloatLit::a(fsv->max(i));
   }
   auto* al = new ArrayLit(call->loc().introduce(), v);
   al->type(Type::parfloat(1));

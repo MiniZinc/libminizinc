@@ -322,7 +322,7 @@ public:
 
       struct timeval timeout_orig;
       timeout_orig.tv_sec = _timelimit / 1000;
-      timeout_orig.tv_usec = (_timelimit % 1000) * 1000;
+      timeout_orig.tv_usec = (static_cast<suseconds_t>(_timelimit) % 1000) * 1000;
       struct timeval timeout = timeout_orig;
 
       hadInterrupt = false;

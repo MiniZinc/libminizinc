@@ -971,7 +971,7 @@ private:
       int& nMaybeClq = _vVarDescr[vd->payload()].nClique;
       if (nMaybeClq >= 0 && nMaybeClq != nCliqueAvailable) {
         TClique& clqOld = _aCliques[nMaybeClq];
-        MZN_MIPD_assert_hard(clqOld.size());
+        MZN_MIPD_assert_hard(!clqOld.empty());
         for (auto& eq2 : clqOld) {
           for (auto* vd : eq2.vd) {  // point all the variables to the new clique
             _vVarDescr[vd->payload()].nClique = nCliqueAvailable;

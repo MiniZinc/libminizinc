@@ -2095,16 +2095,16 @@ Expression* eval_par(EnvI& env, Expression* e) {
       switch (e->eid()) {
         case Expression::E_ITE: {
           ITE* ite = e->cast<ITE>();
-          for (int i = 0; i < ite->size(); i++) {
+          for (unsigned int i = 0; i < ite->size(); i++) {
             if (ite->ifExpr(i)->type() == Type::parbool()) {
               if (eval_bool(env, ite->ifExpr(i))) {
                 return eval_par(env, ite->thenExpr(i));
               }
             } else {
-              std::vector<Expression*> e_ifthen(ite->size() * 2);
-              for (int i = 0; i < ite->size(); i++) {
-                e_ifthen[2 * i] = eval_par(env, ite->ifExpr(i));
-                e_ifthen[2 * i + 1] = eval_par(env, ite->thenExpr(i));
+              std::vector<Expression*> e_ifthen(static_cast<size_t>(ite->size()) * 2);
+              for (unsigned int i = 0; i < ite->size(); i++) {
+                e_ifthen[2 * static_cast<size_t>(i)] = eval_par(env, ite->ifExpr(i));
+                e_ifthen[2 * static_cast<size_t>(i) + 1] = eval_par(env, ite->thenExpr(i));
               }
               ITE* n_ite = new ITE(ite->loc(), e_ifthen, eval_par(env, ite->elseExpr()));
               n_ite->type(ite->type());

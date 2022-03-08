@@ -1002,12 +1002,14 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
 
   if (_flags.verbose) {
     size_t mem = GC::maxMem();
-    if (mem < 1024) {
+    size_t kb = 1024;
+    size_t mb = kb * kb;
+    if (mem < kb) {
       _log << "Maximum memory " << mem << " bytes";
-    } else if (mem < 1024 * 1024) {
-      _log << "Maximum memory " << mem / 1024 << " Kbytes";
+    } else if (mem < mb) {
+      _log << "Maximum memory " << mem / kb << " Kbytes";
     } else {
-      _log << "Maximum memory " << mem / (1024 * 1024) << " Mbytes";
+      _log << "Maximum memory " << mem / mb << " Mbytes";
     }
     _log << "." << std::endl;
   }

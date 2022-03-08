@@ -441,12 +441,12 @@ ArrayLit::ArrayLit(const Location& loc, ArrayLit* v, const std::vector<std::pair
   _u.al = v;
   assert(slice.size() == v->dims());
   std::vector<int> d(dims.size() * 2 + 2 * slice.size());
-  for (auto i = static_cast<unsigned int>(dims.size()); (i--) != 0U;) {
+  for (size_t i = dims.size(); (i--) != 0U;) {
     d[i * 2] = dims[i].first;
     d[i * 2 + 1] = dims[i].second;
   }
   int sliceOffset = static_cast<int>(2 * dims.size());
-  for (auto i = static_cast<unsigned int>(slice.size()); (i--) != 0U;) {
+  for (size_t i = slice.size(); (i--) != 0U;) {
     d[sliceOffset + i * 2] = slice[i].first;
     d[sliceOffset + i * 2 + 1] = slice[i].second;
   }
@@ -499,7 +499,7 @@ ArrayLit::ArrayLit(const Location& loc, const std::vector<Expression*>& v,
   _flag2 = false;
   _secondaryId = AL_ARRAY;
   std::vector<int> d(dims.size() * 2);
-  for (auto i = static_cast<unsigned int>(dims.size()); (i--) != 0U;) {
+  for (size_t i = dims.size(); (i--) != 0U;) {
     d[i * 2] = dims[i].first;
     d[i * 2 + 1] = dims[i].second;
   }

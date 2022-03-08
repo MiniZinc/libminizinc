@@ -288,10 +288,12 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
       ITE* ite = e->cast<ITE>();
       ITE* c = new ITE(copy_location(m, e), std::vector<Expression*>(), nullptr);
       m.insert(e, c);
-      std::vector<Expression*> ifthen(2 * ite->size());
+      std::vector<Expression*> ifthen(2 * static_cast<size_t>(ite->size()));
       for (unsigned int i = ite->size(); (i--) != 0U;) {
-        ifthen[2 * i] = copy(env, m, ite->ifExpr(i), followIds, copyFundecls, isFlatModel);
-        ifthen[2 * i + 1] = copy(env, m, ite->thenExpr(i), followIds, copyFundecls, isFlatModel);
+        ifthen[2 * static_cast<size_t>(i)] =
+            copy(env, m, ite->ifExpr(i), followIds, copyFundecls, isFlatModel);
+        ifthen[2 * static_cast<size_t>(i) + 1] =
+            copy(env, m, ite->thenExpr(i), followIds, copyFundecls, isFlatModel);
       }
       c->init(ifthen, copy(env, m, ite->elseExpr(), followIds, copyFundecls, isFlatModel));
       ret = c;
