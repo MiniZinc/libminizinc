@@ -50,9 +50,9 @@ Bug fixes:
 Changes in the IDE:
 ^^^^^^^^^^^^^^^^^^^
 
-  - Fix crash when the solver for an unsaved configuration is removed.
-  - Fix bug where the selected solver could incorrectly change when a
-    configuration option is altered.
+-  Fix crash when the solver for an unsaved configuration is removed.
+-  Fix bug where the selected solver could incorrectly change when a
+   configuration option is altered.
 
 .. _v2.6.0:
 
