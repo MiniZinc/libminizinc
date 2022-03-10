@@ -2472,7 +2472,7 @@ public:
         bounds.emplace_back(0, 0);
         return;
       }
-      auto* al = follow_id(c->arg(le ? 1 : 0))->dynamicCast<ArrayLit>();
+      auto* al = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(le ? 1 : 0)));
       if (al == nullptr) {
         // can't use the array directly
         valid = false;
@@ -2901,7 +2901,7 @@ public:
         bounds.emplace_back(0.0, 0.0);
         return;
       }
-      auto* al = follow_id(c->arg(le ? 1 : 0))->dynamicCast<ArrayLit>();
+      auto* al = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(le ? 1 : 0)));
       if (al == nullptr) {
         // can't use the array directly
         valid = false;

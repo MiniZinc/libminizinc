@@ -13,6 +13,7 @@ Bug fixes:
 ^^^^^^^^^^
 
 -  Prevent possible non-deterministic function dispatch.
+-  Fix a bug in bounds computation for sums over arrays that could result in a crash.
 
 .. _v2.6.1:
 
