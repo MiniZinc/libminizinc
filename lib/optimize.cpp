@@ -880,23 +880,7 @@ void optimize(Env& env, bool chain_compression) {
       ci->remove();
     }
 
-    // Phase 4: Chain Breaking
-    env.envi().checkCancel();
-    if (chain_compression) {
-      ImpCompressor imp(envi, m, deletedVarDecls, boolConstraints);
-      LECompressor le(envi, m, deletedVarDecls);
-      for (auto& item : m) {
-        imp.trackItem(item);
-        le.trackItem(item);
-      }
-      envi.checkCancel();
-      imp.compress();
-
-      envi.checkCancel();
-      le.compress();
-    }
-
-    // Phase 5: handle boolean constraints again (todo: check if we can
+    // Phase 4: handle boolean constraints again (todo: check if we can
     // refactor this into a separate function)
     //
     // Difference to phase 2: constraint argument arrays are actually shortened here if possible
@@ -1019,6 +1003,21 @@ void optimize(Env& env, bool chain_compression) {
           }
         }
       }
+    }
+    // Phase 5: Chain Breaking
+    env.envi().checkCancel();
+    if (chain_compression) {
+      ImpCompressor imp(envi, m, deletedVarDecls, boolConstraints);
+      LECompressor le(envi, m, deletedVarDecls);
+      for (auto& item : m) {
+        imp.trackItem(item);
+        le.trackItem(item);
+      }
+      envi.checkCancel();
+      imp.compress();
+
+      envi.checkCancel();
+      le.compress();
     }
 
     // Phase 6: remove deleted variables if possible
