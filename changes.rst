@@ -14,6 +14,7 @@ Bug fixes:
 
 -  Prevent possible non-deterministic function dispatch.
 -  Fix a bug in bounds computation for sums over arrays that could result in a crash.
+-  Fix a bug in the logical context of negated implication operators.
 
 .. _v2.6.1:
 

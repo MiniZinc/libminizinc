@@ -1511,6 +1511,8 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
         id = env.constants.ids.forall;
         args.push_back(new ArrayLit(bo->loc(), bo_args));
         args[0]->type(Type::varbool(1));
+        ctx.neg = false;
+        ctx.b = -ctx.b;
       } else {
         std::vector<Expression*> clause_pos(1);
         clause_pos[0] = boe1;
@@ -1526,7 +1528,6 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
         args[1]->type(t1);
         id = env.constants.ids.clause;
       }
-      ctx.neg = false;
       Call* c = new Call(bo->loc().introduce(), id, args);
       c->decl(env.model->matchFn(env, c, false));
       if (c->decl() == nullptr) {
