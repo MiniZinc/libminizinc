@@ -529,25 +529,47 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
         if (mixContext) {
           argctx.b = -nctx.b;
         }
+        auto* al_pos = c->arg(0)->cast<ArrayLit>();
+        auto* al_neg = c->arg(1)->cast<ArrayLit>();
+
+        std::vector<KeepAlive> positives;
+        std::vector<KeepAlive> negatives;
+        for (unsigned int i = 0; i < al_pos->size(); i++) {
+          if (auto* uo = (*al_pos)[i]->dynamicCast<UnOp>()) {
+            if (uo->op() == UOT_NOT) {
+              negatives.emplace_back(uo->e());
+              continue;
+            }
+          }
+          positives.emplace_back((*al_pos)[i]);
+        }
+        for (unsigned int i = 0; i < al_neg->size(); i++) {
+          if (auto* uo = (*al_neg)[i]->dynamicCast<UnOp>()) {
+            if (uo->op() == UOT_NOT) {
+              positives.emplace_back(uo->e());
+              continue;
+            }
+          }
+          negatives.emplace_back((*al_neg)[i]);
+        }
+
+        bool is_subsumed = false;
         std::vector<KeepAlive> neg_args;
         std::vector<KeepAlive> pos_args;
-        std::vector<KeepAlive> newPositives;
-        bool is_subsumed = false;
-        auto* al_neg = c->arg(1)->cast<ArrayLit>();
         {
           CallArgItem cai(env);
-          for (unsigned int i = 0; i < al_neg->size(); i++) {
-            auto* bo = (*al_neg)[i]->dynamicCast<BinOp>();
-            Call* co = (*al_neg)[i]->dynamicCast<Call>();
+          for (auto& negative : negatives) {
+            auto* bo = negative()->dynamicCast<BinOp>();
+            Call* co = negative()->dynamicCast<Call>();
             if ((bo != nullptr) || ((co != nullptr) && (co->id() == env.constants.ids.forall ||
                                                         co->id() == env.constants.ids.exists ||
                                                         co->id() == env.constants.ids.clause))) {
               GCLock lock;
-              UnOp* notBoe0 = new UnOp(Location().introduce(), UOT_NOT, (*al_neg)[i]);
+              UnOp* notBoe0 = new UnOp(Location().introduce(), UOT_NOT, negative());
               notBoe0->type(Type::varbool());
-              newPositives.emplace_back(notBoe0);
+              positives.emplace_back(notBoe0);
             } else {
-              EE res = flat_exp(env, argctx, (*al_neg)[i], nullptr, env.constants.varTrue);
+              EE res = flat_exp(env, argctx, negative(), nullptr, env.constants.varTrue);
               if (res.r()->type().isPar()) {
                 if (eval_bool(env, res.r())) {
                   // this element is irrelevant
@@ -569,14 +591,10 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
         if (mixContext) {
           argctx.b = +nctx.b;
         }
-        auto* al_pos = c->arg(0)->cast<ArrayLit>();
-        for (unsigned int i = 0; i < al_pos->size(); i++) {
-          newPositives.emplace_back((*al_pos)[i]);
-        }
         {
           CallArgItem cai(env);
-          for (auto& newPositive : newPositives) {
-            EE res = flat_exp(env, argctx, newPositive(), nullptr, env.constants.varTrue);
+          for (auto& positive : positives) {
+            EE res = flat_exp(env, argctx, positive(), nullptr, env.constants.varTrue);
             if (res.r()->type().isPar()) {
               if (!eval_bool(env, res.r())) {
                 // this element is irrelevant

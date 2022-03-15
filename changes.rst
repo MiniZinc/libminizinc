@@ -9,6 +9,10 @@ https://github.com/MiniZinc/libminizinc/issues.
 Unreleased
 ~~~~~~~~~~
 
+Changes:
+^^^^^^^^
+-  Better transformation of clauses to avoid negations when possible.
+
 Bug fixes:
 ^^^^^^^^^^
 
