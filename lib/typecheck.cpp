@@ -3438,7 +3438,9 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
             ti_map.insert({tiid->v(), t});
           }
         };
+        bool allParamsPar = true;
         for (unsigned int i = 0; i < fi->paramCount(); i++) {
+          allParamsPar = allParamsPar && fi->param(i)->type().isPar();
           if (TIId* tiid = Expression::dynamicCast<TIId>(fi->param(i)->ti()->domain())) {
             checkTIId(tiid, TIVAR_DOMAIN);
           }
@@ -3490,7 +3492,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
                   fi->ti()->type().toString(_env) + "', body type is `" +
                   fi->e()->type().toString(_env) + "'");
         }
-        if (fi->e() != nullptr && fi->e()->type().isPar() && fi->ti()->type().isvar()) {
+        if (fi->e() != nullptr && fi->e()->type().isPar() && allParamsPar &&
+            fi->ti()->type().isvar()) {
           // this is a par function declared as var, so change declared return type
           Type fi_t = fi->ti()->type();
           fi_t.ti(Type::TI_PAR);

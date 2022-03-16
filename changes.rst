@@ -20,6 +20,7 @@ Bug fixes:
 -  Fix a bug in bounds computation for sums over arrays that could result in a crash.
 -  Fix a bug in the logical context of negated implication operators.
 -  Fix definition of ``indomain_min`` and ``indomain_max` for ``set_search`` in ``nosets.mzn``.
+-  Fix type checker to consider all functions/predicates with var arguments as var type.
 
 .. _v2.6.1:
 
