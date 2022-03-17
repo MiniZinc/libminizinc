@@ -2498,26 +2498,30 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
           for (auto i = static_cast<unsigned int>(args.size()); (i--) != 0U;) {
             args[i] = c->arg(i);
           }
-          ASTString nid = c->id();
+          if (c->id() == env.constants.ids.exists) {
+            args.push_back(env.constants.emptyArray);
+          }
+          args.push_back(vd->id());
 
+          ASTString nid = c->id();
+          FunctionI* nc_decl(nullptr);
           if (c->id() == env.constants.ids.exists) {
             nid = env.constants.ids.bool_clause_reif;
-            args.push_back(env.constants.emptyArray);
           } else if (c->id() == env.constants.ids.forall) {
             nid = env.constants.ids.array_bool_and;
           } else if (vd->type().isbool()) {
             if (env.fopts.enableHalfReification && vd->ann().contains(env.constants.ctx.pos)) {
-              nid = env.halfReifyId(c->id());
-              if (env.model->matchFn(env, nid, args, false) == nullptr) {
-                nid = env.reifyId(c->id());
-              }
-            } else {
+              nid = EnvI::halfReifyId(c->id());
+              nc_decl = env.model->matchFn(env, nid, args, false);
+            }
+            if (nc_decl == nullptr) {
               nid = env.reifyId(c->id());
             }
           }
-          args.push_back(vd->id());
           nc = new Call(c->loc().introduce(), nid, args);
-          FunctionI* nc_decl = env.model->matchFn(env, nc, false);
+          if (nc_decl == nullptr) {
+            nc_decl = env.model->matchFn(env, nc, false);
+          }
           if (nc_decl == nullptr) {
             std::ostringstream ss;
             ss << "undeclared function or predicate " << nc->id();
@@ -3177,7 +3181,7 @@ void flatten(Env& e, FlatteningOptions opt) {
       array_bool_andor_t[0] = Type::varbool(1);
       array_bool_andor_t[1] = Type::varbool(0);
       GCLock lock;
-      FunctionI* fi = // TODO replace ASTString for constants
+      FunctionI* fi =  // TODO replace ASTString for constants
           env.model->matchFn(env, ASTString("array_bool_and"), array_bool_andor_t, false);
       array_bool_and = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
       fi = env.model->matchFn(env, ASTString("array_bool_and_imp"), array_bool_andor_t, false);
@@ -3480,8 +3484,9 @@ void flatten(Env& e, FlatteningOptions opt) {
                   nc = new Call(c->loc().introduce(), array_bool_clause->id(), args);
                   nc->type(Type::varbool());
                   nc->decl(array_bool_clause);
-                } else if (env.fopts.enableHalfReification && vd->ann().contains(env.constants.ctx.pos) &&
-                    array_bool_clause_imp != nullptr) {
+                } else if (env.fopts.enableHalfReification &&
+                           vd->ann().contains(env.constants.ctx.pos) &&
+                           array_bool_clause_imp != nullptr) {
                   std::vector<Expression*> args(3);
                   args[0] = c->arg(0);
                   args[1] = env.constants.emptyArray;
@@ -3614,17 +3619,14 @@ void flatten(Env& e, FlatteningOptions opt) {
                   }
                   args.push_back(vd->id());
                   ASTString cid = c->id();
-                  FunctionI* decl = nullptr;
+                  FunctionI* decl(nullptr);
                   if (c->type().isbool() && vd->type().isbool()) {
                     if (env.fopts.enableHalfReification &&
                         vd->ann().contains(env.constants.ctx.pos)) {
-                      cid = env.halfReifyId(c->id());
+                      cid = EnvI::halfReifyId(c->id());
                       decl = env.model->matchFn(env, cid, args, false);
-                      if (decl == nullptr) {
-                        cid = env.reifyId(c->id());
-                        decl = env.model->matchFn(env, cid, args, false);
-                      }
-                    } else {
+                    }
+                    if (decl == nullptr) {
                       cid = env.reifyId(c->id());
                       decl = env.model->matchFn(env, cid, args, false);
                     }
@@ -4004,35 +4006,41 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd,
           GCLock lock;
           vd->e(nullptr);
           ASTString cid;
+          FunctionI* decl(nullptr);
+
           std::vector<Expression*> args(c->argCount());
           for (unsigned int i = args.size(); (i--) != 0U;) {
             args[i] = c->arg(i);
           }
           if (c->id() == env.constants.ids.exists) {
-            cid = env.constants.ids.bool_clause_reif;
             args.push_back(env.constants.emptyArray);
-          } else if (c->id() == env.constants.ids.forall) {
-            cid = env.constants.ids.array_bool_and;
-          } else if (c->id() == env.constants.ids.clause) {
-            cid = env.constants.ids.bool_reif.clause;
-          } else {
-            if (env.fopts.enableHalfReification && vd->ann().contains(env.constants.ctx.pos)) {
-              cid = env.halfReifyId(c->id());
-              if (env.model->matchFn(env, cid, args, false) == nullptr) {
-                cid = env.reifyId(c->id());
-              }
-            } else {
-              cid = env.reifyId(c->id());
-            }
           }
           if (is_fixed) {
             args.push_back(env.constants.literalFalse);
           } else {
             args.push_back(vd->id());
           }
+
+          if (c->id() == env.constants.ids.exists || c->id() == env.constants.ids.clause) {
+            cid = env.constants.ids.bool_clause_reif;
+          } else if (c->id() == env.constants.ids.forall) {
+            cid = env.constants.ids.array_bool_and;
+          } else if (c->id() == env.constants.ids.clause) {
+            cid = env.constants.ids.bool_reif.clause;
+          } else {
+            if (env.fopts.enableHalfReification && vd->ann().contains(env.constants.ctx.pos)) {
+              cid = EnvI::halfReifyId(c->id());
+              decl = env.model->matchFn(env, cid, args, false);
+            }
+            if (decl == nullptr) {
+              cid = env.reifyId(c->id());
+            }
+          }
           Call* nc = new Call(c->loc().introduce(), cid, args);
           nc->type(c->type());
-          FunctionI* decl = env.model->matchFn(env, nc, false);
+          if (decl == nullptr) {
+            decl = env.model->matchFn(env, nc, false);
+          }
           if (decl == nullptr) {
             std::ostringstream ss;
             ss << "'" << demonomorphise_identifier(c->id())
@@ -4212,9 +4220,8 @@ Expression* cleanup_constraint(EnvI& env, std::unordered_set<Item*>& globals, Ex
     }
     // Convert functions to relations:
     //   exists([x]) => bool_clause([x],[])
-    //   forall([x]) => array_bool_and([x],true)  // TODO maybe assert false since this shouldn't really occur
-    //   clause([x]) => bool_clause([x])
-    //   bool_xor([x],[y]) => bool_xor([x],[y],true)
+    //   forall([x]) => array_bool_and([x],true)  // TODO maybe assert false since this shouldn't
+    //   really occur clause([x]) => bool_clause([x]) bool_xor([x],[y]) => bool_xor([x],[y],true)
     if (vc->id() == env.constants.ids.exists) {
       GCLock lock;
       vc->id(env.constants.ids.bool_clause);

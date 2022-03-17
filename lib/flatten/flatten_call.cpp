@@ -1119,8 +1119,16 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
         }
         argtypes.push_back(Type::varbool());
         GCLock lock;
-        ASTString r_cid = env.reifyId(cid);
-        FunctionI* reif_decl = env.model->matchFn(env, r_cid, argtypes, false);
+        ASTString r_cid;
+        FunctionI* reif_decl(nullptr);
+        if (env.fopts.enableHalfReification && ctx.b == C_POS) {
+          r_cid = EnvI::halfReifyId(cid);
+          reif_decl = env.model->matchFn(env, r_cid, argtypes, false);
+        }
+        if (reif_decl == nullptr) {
+          r_cid = env.reifyId(cid);
+          reif_decl = env.model->matchFn(env, r_cid, argtypes, false);
+        }
         if ((reif_decl != nullptr) && (reif_decl->e() != nullptr)) {
           add_path_annotation(env, reif_decl->e());
           VarDecl* reif_b;

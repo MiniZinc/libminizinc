@@ -1815,7 +1815,7 @@ protected:
 
 public:
   /// Empty array of literals
-  ArrayLit* emptyArray; // TODO rename emptyBoolArray
+  ArrayLit* emptyArray;  // TODO rename emptyBoolArray
   /// Literal true
   BoolLit* literalTrue;
   /// Variable bound to true
