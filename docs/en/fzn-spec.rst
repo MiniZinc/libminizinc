@@ -965,7 +965,7 @@ For example, :mzn:`constraint y=0 \/ all_different(x)` might be translated as fo
   var bool: X_INTRODUCED_2;
   constraint int_eq_imp(y,0,X_INTRODUCED_1);
   constraint all_different_imp(x, X_INTRODUCED_2);
-  constraint array_bool_or([X_INTRODUCED_1,X_INTRODUCED_2]);
+  constraint bool_clause([X_INTRODUCED_1,X_INTRODUCED_2]);
 
 MiniZinc will decide whether to use half-reification case by case based on the availability of the :mzn:`_imp` predicate. As for reified constraints, it may be benefitial to provide specialised half-reified versions if the solver supports them. 
 

@@ -505,9 +505,9 @@ Note how the two dimensional array :mzn:`s` is mapped to a one dimensional form.
   constraint int_lin_le_reif([-1, 1], [s[2], s[5]], -6, BOOL04);
   constraint int_lin_le_reif([1, -1], [s[3], s[6]], -4, BOOL05);
   constraint int_lin_le_reif([-1, 1], [s[3], s[6]], -3, BOOL06);
-  constraint array_bool_or([BOOL01, BOOL02], true);
-  constraint array_bool_or([BOOL03, BOOL04], true);
-  constraint array_bool_or([BOOL05, BOOL06], true);
+  constraint bool_clause([BOOL01, BOOL02], []);
+  constraint bool_clause([BOOL03, BOOL04], []);
+  constraint bool_clause([BOOL05, BOOL06], []);
 
 The :mzn:`int_lin_le_reif` is the reified form of the linear constraint
 :mzn:`int_lin_le`.
@@ -661,7 +661,7 @@ If the solver has a reified form of :mzn:`alldifferent` this will be flattened t
 
   constraint alldifferent_reif([A,B,C],BOOL01);
   constraint alldifferent_reif([B,C,D],BOOL02);
-  constraint array_bool_or([BOOL01,BOOL02],true);
+  constraint bool_clause([BOOL01,BOOL02],[]);
 
 Using the default decomposition, the predicate replacement will first create
 
@@ -683,7 +683,7 @@ which will eventually be flattened to the FlatZinc form
   constraint int_neq_reif(B,D,BOOL05);
   constraint int_neq_reif(C,D,BOOL06);
   constraint array_bool_and([BOOL03,BOOL05,BOOL06],BOOL07);
-  constraint array_bool_or([BOOL04,BOOL07],true);
+  constraint bool_clause([BOOL04,BOOL07],[]);
 
 Note how common subexpression elimination reuses the 
 reified inequality :mzn:`B != C` (although there is a better translation which

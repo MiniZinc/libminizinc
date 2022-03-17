@@ -254,8 +254,6 @@ predicate int2float(var int: x, var float: y);
 
 /** @group flatzinc.bool Constrains \( \a r \leftrightarrow \bigwedge_i \a as[i]\) */
 predicate array_bool_and(array[int] of var bool: as, var bool: r);
-/** @group flatzinc.bool Constrains \( \a r \leftrightarrow \bigvee_i \a as[i]\) */
-predicate array_bool_or(array[int] of var bool: as, var bool: r);
 /** @group flatzinc.bool Constrains \( \oplus_i\ \a as[i]\) */
 predicate array_bool_xor(array[int] of var bool: as);
 /** @group flatzinc.bool Constrains \a as[\a b] = \a c */
@@ -436,3 +434,15 @@ predicate array_var_float_element2d_nonshifted(var int: idx1, var int: idx2, arr
   a MiniZinc decomposition.
 */
 predicate array_var_set_element2d_nonshifted(var int: idx1, var int: idx2, array[int,int] of var set of int: x, var set of int: c);
+
+/***
+  @groupdef flatzinc.deprecated Deprecated FlatZinc builtins
+
+	These builtin constraints are no longer produced by the MiniZinc compiler,
+	and they will be removed in future versions of MiniZinc.
+
+*/
+
+/** @group flatzinc.deprecated Constrains \( \a r \leftrightarrow \bigvee_i \a as[i]\)
+*/
+predicate array_bool_or(array[int] of var bool: as, var bool: r)::mzn_deprecated("2.7.0","https://www.minizinc.org/doc-2.7.0/en/lib-flatzinc-deprecated.html");

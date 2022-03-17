@@ -4,6 +4,16 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
+.. _unreleased:
+
+Unreleased
+~~~~~~~~~~
+
+Changes:
+^^^^^^^^
+
+-  The compiler will no longer introduce `array_bool_or`, only `bool_clause`.
+
 .. _v2.6.4:
 
 `Version 2.6.4 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.6.4>`__
