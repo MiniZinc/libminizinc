@@ -710,6 +710,7 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
       /// Call the user function:
       if (info->solcbfn != nullptr) {
         (*info->solcbfn)(*info->pOutput, info->psi);
+        info->printed = true;
       }
 
       if (0 == info->nTimeoutFeas) {
@@ -1017,7 +1018,7 @@ void MIPGurobiWrapper::solve() {        // Move into ancestor?
     output.x = &_x[0];
     _error = dll_GRBgetdblattrarray(_model, GRB_DBL_ATTR_X, 0, cur_numcols, (double*)output.x);
     wrapAssert(_error == 0, "Failed to get variable values.");
-    if (!_options->flagIntermediate && (solcbfn != nullptr)) {
+    if ((!_options->flagIntermediate || !cbui.printed) && (solcbfn != nullptr)) {
       solcbfn(output, cbui.psi);
     }
   }

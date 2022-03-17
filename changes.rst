@@ -21,6 +21,7 @@ Bug fixes:
 -  Fix a bug in the logical context of negated implication operators.
 -  Fix definition of ``indomain_min`` and ``indomain_max` for ``set_search`` in ``nosets.mzn``.
 -  Fix type checker to consider all functions/predicates with var arguments as var type.
+-  Ensure that the last solution is always printed for Gurobi (:bugref:`561`).
 
 .. _v2.6.1:
 
