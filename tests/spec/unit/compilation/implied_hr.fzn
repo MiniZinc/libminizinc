@@ -3,7 +3,7 @@ var int: x:: output_var;
 var int: y:: output_var;
 var bool: X_INTRODUCED_0_ ::var_is_introduced :: is_defined_var;
 var bool: X_INTRODUCED_1_ ::var_is_introduced :: is_defined_var;
-constraint array_bool_or([X_INTRODUCED_0_,X_INTRODUCED_1_],true);
+constraint bool_clause([X_INTRODUCED_0_,X_INTRODUCED_1_],[]);
 constraint int_le_imp(5,x,X_INTRODUCED_0_):: defines_var(X_INTRODUCED_0_);
 constraint int_le_imp(5,y,X_INTRODUCED_1_):: defines_var(X_INTRODUCED_1_);
 solve  satisfy;

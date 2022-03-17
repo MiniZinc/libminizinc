@@ -2,7 +2,7 @@ predicate int_eq_imp(var int: a,var int: b,var bool: r);
 var bool: X_INTRODUCED_0_ ::var_is_introduced :: output_var;
 var int: X_INTRODUCED_1_ ::var_is_introduced :: output_var;
 var bool: X_INTRODUCED_2_ ::var_is_introduced :: is_defined_var;
-constraint array_bool_or([X_INTRODUCED_0_,X_INTRODUCED_2_],true);
+constraint bool_clause([X_INTRODUCED_0_,X_INTRODUCED_2_],[]);
 constraint int_le(0,X_INTRODUCED_1_);
 constraint int_eq_imp(X_INTRODUCED_1_,0,X_INTRODUCED_2_):: defines_var(X_INTRODUCED_2_);
 solve  satisfy;
