@@ -118,8 +118,13 @@ bool cannot_use_rhs_for_output(EnvI& env, Expression* e,
               cannot_use_rhs_for_output(env, origdecl->e(), seenFunctions)) {
             success = false;
           } else {
-            if (!origdecl->fromStdLib()) {
+            if (origdecl->e() != nullptr && !origdecl->fromStdLib()) {
               decl = copy(env, env.cmap, origdecl)->cast<FunctionI>();
+              // We can use RHS for output, so this has to be able to be par
+              auto rt = decl->ti()->type();
+              rt.ti(Type::TI_PAR);
+              decl->ti()->type(rt);
+
               CollectOccurrencesE ce(env, env.outputVarOccurrences, decl);
               top_down(ce, decl->e());
               top_down(ce, decl->ti());
@@ -405,15 +410,30 @@ void make_par(EnvI& env, Expression* e) {
           c->id(env.constants.ids.show);
         }
       }
-      c->decl(env.model->matchFn(env, c, false));
+      auto* fi = env.output->matchFn(env, c, false);
+      if (fi != nullptr) {
+        c->decl(fi);
+      } else {
+        c->decl(env.model->matchFn(env, c, false));
+      }
     }
     void vBinOp(BinOp* bo) {
       std::vector<Expression*> args = {bo->lhs(), bo->rhs()};
-      bo->decl(env.model->matchFn(env, bo->opToString(), args, false));
+      auto* fi = env.output->matchFn(env, bo->opToString(), args, false);
+      if (fi != nullptr) {
+        bo->decl(fi);
+      } else {
+        bo->decl(env.model->matchFn(env, bo->opToString(), args, false));
+      }
     }
     void vUnop(UnOp* uo) {
       std::vector<Expression*> args = {uo->e()};
-      uo->decl(env.model->matchFn(env, uo->opToString(), args, false));
+      auto* fi = env.output->matchFn(env, uo->opToString(), args, false);
+      if (fi != nullptr) {
+        uo->decl(fi);
+      } else {
+        uo->decl(env.model->matchFn(env, uo->opToString(), args, false));
+      }
     }
   } _decls(env);
   top_down(_decls, e);
@@ -566,7 +586,7 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e) {
           check_output_par_fn(env, rhs);
           output_vardecls(env, nvi, it->second());
           nvi->e()->e(rhs);
-        } else if ((reallyFlat != nullptr) && cannot_use_rhs_for_output(env, reallyFlat->e())) {
+        } else if ((reallyFlat != nullptr) && cannot_use_rhs_for_output(env, nvi->e()->e())) {
           assert(nvi->e()->flat());
           nvi->e()->e(nullptr);
           if (nvi->e()->type().dim() == 0) {

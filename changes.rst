@@ -23,6 +23,7 @@ Bug fixes:
 -  Fix type checker to consider all functions/predicates with var arguments as var type.
 -  Ensure that the last solution is always printed for Gurobi (:bugref:`561`).
 -  Fix the dispatch from non-overloaded operators to builtin calls for opt types.
+-  Fix creation of `par` versions of `var` functions used in output.
 
 .. _v2.6.1:
 
