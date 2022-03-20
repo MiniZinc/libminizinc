@@ -22,6 +22,7 @@ Bug fixes:
 -  Fix definition of ``indomain_min`` and ``indomain_max` for ``set_search`` in ``nosets.mzn``.
 -  Fix type checker to consider all functions/predicates with var arguments as var type.
 -  Ensure that the last solution is always printed for Gurobi (:bugref:`561`).
+-  Fix the dispatch from non-overloaded operators to builtin calls for opt types.
 
 .. _v2.6.1:
 

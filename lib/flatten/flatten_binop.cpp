@@ -17,7 +17,8 @@ namespace MiniZinc {
 
 ASTString op_to_builtin(EnvI& env, Expression* op_lhs, Expression* op_rhs, BinOpType bot) {
   std::string builtin;
-  if (op_rhs->type().isint()) {
+  Type tt(op_rhs->type().bt() != Type::BT_BOT ? op_rhs->type() : op_lhs->type());
+  if (tt.bt() == Type::BT_INT && tt.st() == Type::ST_PLAIN) {
     switch (bot) {
       case BOT_PLUS:
         return env.constants.ids.int_.plus;
@@ -46,14 +47,8 @@ ASTString op_to_builtin(EnvI& env, Expression* op_lhs, Expression* op_rhs, BinOp
       default:
         throw InternalError("not yet implemented");
     }
-  } else if (op_rhs->type().isbool()) {
-    if (bot == BOT_EQ || bot == BOT_EQUIV) {
-      return env.constants.ids.bool_eq;
-    }
-    builtin = "bool_";
-  } else if (op_rhs->type().isSet()) {
-    builtin = "set_";
-  } else if (op_rhs->type().isfloat()) {
+  }
+  if (tt.bt() == Type::BT_FLOAT && tt.st() == Type::ST_PLAIN) {
     switch (bot) {
       case BOT_PLUS:
         return env.constants.ids.float_.plus;
@@ -82,23 +77,14 @@ ASTString op_to_builtin(EnvI& env, Expression* op_lhs, Expression* op_rhs, BinOp
       default:
         throw InternalError("not yet implemented");
     }
-  } else if (op_rhs->type().isOpt() && (bot == BOT_EQUIV || bot == BOT_EQ)) {
-    /// TODO: extend to all option type operators
-    switch (op_lhs->type().bt()) {
-      case Type::BT_BOOL:
-        return env.constants.ids.bool_eq;
-      case Type::BT_FLOAT:
-        return env.constants.ids.float_.eq;
-      case Type::BT_INT:
-        if (op_lhs->type().st() == Type::ST_PLAIN) {
-          return env.constants.ids.int_.eq;
-        } else {
-          return env.constants.ids.set_eq;
-        }
-      default:
-        throw InternalError("not yet implemented");
+  }
+  if (tt.bt() == Type::BT_BOOL) {
+    if (bot == BOT_EQ || bot == BOT_EQUIV) {
+      return env.constants.ids.bool_eq;
     }
-
+    builtin = "bool_";
+  } else if (op_rhs->type().isSet()) {
+    builtin = "set_";
   } else {
     throw InternalError("Operator not yet implemented");
   }
@@ -140,9 +126,6 @@ ASTString op_to_builtin(EnvI& env, Expression* op_lhs, Expression* op_rhs, BinOp
       return builtin + "symdiff";
     case BOT_INTERSECT:
       return builtin + "intersect";
-    case BOT_PLUSPLUS:
-    case BOT_DOTDOT:
-      throw InternalError("not yet implemented");
     case BOT_EQUIV:
       return builtin + "eq";
     case BOT_IMPL:
@@ -155,9 +138,12 @@ ASTString op_to_builtin(EnvI& env, Expression* op_lhs, Expression* op_rhs, BinOp
       return builtin + "and";
     case BOT_XOR:
       return env.constants.ids.bool_xor;
+    case BOT_PLUSPLUS:
+      // fall through
+    case BOT_DOTDOT:
+      // fall through
     default:
-      assert(false);
-      return ASTString();
+      throw InternalError("Operator not yet implemented");
   }
 }
 
