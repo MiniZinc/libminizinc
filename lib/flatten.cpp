@@ -40,16 +40,16 @@ bool create_explicit_domain_constraints(EnvI& envi, VarDecl* vd, Expression* dom
     assert(domain->type().isint() || domain->type().isIntSet());
     IntSetVal* isv = eval_intset(envi, domain);
     calls.push_back(
-        new Call(iloc, envi.constants.ids.set_subset, {vd->id(), new SetLit(iloc, isv)}));
+        new Call(iloc, envi.constants.ids.set_.subset, {vd->id(), new SetLit(iloc, isv)}));
   } else if (domain->type().isbool()) {
-    calls.push_back(new Call(iloc, envi.constants.ids.bool_eq, {vd->id(), domain}));
+    calls.push_back(new Call(iloc, envi.constants.ids.bool_.eq, {vd->id(), domain}));
   } else if (domain->type().isBoolSet()) {
     IntSetVal* bsv = eval_boolset(envi, domain);
     assert(bsv->size() == 1);
     if (bsv->min() != bsv->max()) {
       return true;  // Both values are still possible, no change
     }
-    calls.push_back(new Call(iloc, envi.constants.ids.bool_eq,
+    calls.push_back(new Call(iloc, envi.constants.ids.bool_.eq,
                              {vd->id(), envi.constants.boollit(bsv->min() > 0)}));
   } else if (domain->type().isfloat() || domain->type().isFloatSet()) {
     FloatSetVal* fsv = eval_floatset(envi, domain);
@@ -74,7 +74,8 @@ bool create_explicit_domain_constraints(EnvI& envi, VarDecl* vd, Expression* dom
         }
       }
     } else {
-      calls.push_back(new Call(iloc, envi.constants.ids.set_in, {vd->id(), new SetLit(iloc, fsv)}));
+      calls.push_back(
+          new Call(iloc, envi.constants.ids.set_.in, {vd->id(), new SetLit(iloc, fsv)}));
     }
   } else if (domain->type().isint() || domain->type().isIntSet()) {
     IntSetVal* isv = eval_intset(envi, domain);
@@ -99,7 +100,8 @@ bool create_explicit_domain_constraints(EnvI& envi, VarDecl* vd, Expression* dom
         }
       }
     } else {
-      calls.push_back(new Call(iloc, envi.constants.ids.set_in, {vd->id(), new SetLit(iloc, isv)}));
+      calls.push_back(
+          new Call(iloc, envi.constants.ids.set_.in, {vd->id(), new SetLit(iloc, isv)}));
     }
   } else {
     return false;
@@ -805,12 +807,12 @@ EnvI::EnvI(Model* model0, std::ostream& outstream0, std::ostream& errstream0)
   MZN_FILL_REIFY_MAP(float_, ne);
   _reifyMap.insert(std::pair<ASTString, ASTString>(constants.ids.forall, constants.ids.forallReif));
   _reifyMap.insert(
-      std::pair<ASTString, ASTString>(constants.ids.bool_eq, constants.ids.bool_eq_reif));
+      std::pair<ASTString, ASTString>(constants.ids.bool_.eq, constants.ids.bool_reif.eq));
   _reifyMap.insert(
-      std::pair<ASTString, ASTString>(constants.ids.bool_clause, constants.ids.bool_clause_reif));
+      std::pair<ASTString, ASTString>(constants.ids.bool_.clause, constants.ids.bool_reif.clause));
   _reifyMap.insert(
-      std::pair<ASTString, ASTString>(constants.ids.clause, constants.ids.bool_clause_reif));
-  _reifyMap.insert({constants.ids.bool_not, constants.ids.bool_not});
+      std::pair<ASTString, ASTString>(constants.ids.clause, constants.ids.bool_reif.clause));
+  _reifyMap.insert({constants.ids.bool_.not_, constants.ids.bool_.not_});
 }
 EnvI::~EnvI() {
   delete _flat;
@@ -826,7 +828,7 @@ void EnvI::cseMapInsert(Expression* e, const EE& ee) {
   KeepAlive ka(e);
   _cseMap.insert(ka, WW(ee.r(), ee.b()));
   Call* c = e->dynamicCast<Call>();
-  if ((c != nullptr) && c->id() == constants.ids.bool_not && c->arg(0)->isa<Id>() &&
+  if ((c != nullptr) && c->id() == constants.ids.bool_.not_ && c->arg(0)->isa<Id>() &&
       ee.r()->isa<Id>() && ee.b() == constants.literalTrue) {
     Call* neg_c = new Call(Location().introduce(), c->id(), {ee.r()});
     neg_c->type(c->type());
@@ -1808,7 +1810,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
               std::vector<Expression*> args(2);
               args[0] = id;
               args[1] = env.constants.literalFalse;
-              Call* c = new Call(Location().introduce(), env.constants.ids.bool_eq, args);
+              Call* c = new Call(Location().introduce(), env.constants.ids.bool_.eq, args);
               c->decl(env.model->matchFn(env, c, false));
               c->type(c->decl()->rtype(env, args, false));
               if (c->decl()->e() != nullptr) {
@@ -1822,7 +1824,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
           return env.constants.literalTrue;
         }
         GC::lock();
-        Call* bn = new Call(e->loc(), env.constants.ids.bool_not, {e});
+        Call* bn = new Call(e->loc(), env.constants.ids.bool_.not_, {e});
         bn->type(e->type());
         bn->decl(env.model->matchFn(env, bn, false));
         KeepAlive ka(bn);
@@ -1833,7 +1835,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
       return env.constants.literalTrue;
     }
     GC::lock();
-    Call* bn = new Call(e->loc(), env.constants.ids.bool_not, {e});
+    Call* bn = new Call(e->loc(), env.constants.ids.bool_.not_, {e});
     bn->type(e->type());
     bn->decl(env.model->matchFn(env, bn, false));
     KeepAlive ka(bn);
@@ -1854,7 +1856,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
             std::vector<Expression*> args(2);
             args[0] = id;
             args[1] = env.constants.literalTrue;
-            Call* c = new Call(Location().introduce(), env.constants.ids.bool_eq, args);
+            Call* c = new Call(Location().introduce(), env.constants.ids.bool_.eq, args);
             c->decl(env.model->matchFn(env, c, false));
             c->type(c->decl()->rtype(env, args, false));
             if (c->decl()->e() != nullptr) {
@@ -2047,7 +2049,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
         std::vector<Expression*> args(2);
         args[0] = vd->id();
         args[1] = env.constants.boollit(isTrue);
-        Call* c = new Call(Location().introduce(), env.constants.ids.bool_eq, args);
+        Call* c = new Call(Location().introduce(), env.constants.ids.bool_.eq, args);
         c->decl(env.model->matchFn(env, c, false));
         c->type(c->decl()->rtype(env, args, false));
         bool didRewrite = false;
@@ -2182,10 +2184,10 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
               if (e->type().isOpt()) {
                 cid = ASTString("bool_opt_eq");
               } else {
-                cid = env.constants.ids.bool_eq;
+                cid = env.constants.ids.bool_.eq;
               }
             } else if (e->type().isSet()) {
-              cid = env.constants.ids.set_eq;
+              cid = env.constants.ids.set_.eq;
             } else if (e->type().isfloat()) {
               cid = env.constants.ids.float_.eq;
             }
@@ -2410,7 +2412,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
               std::vector<Expression*> args(2);
               args[0] = id;
               args[1] = e;
-              Call* c = new Call(Location().introduce(), env.constants.ids.bool_eq, args);
+              Call* c = new Call(Location().introduce(), env.constants.ids.bool_.eq, args);
               c->decl(env.model->matchFn(env, c, false));
               c->type(c->decl()->rtype(env, args, false));
               if (c->decl()->e() != nullptr) {
@@ -2435,9 +2437,9 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
           if (e->type().isint()) {
             cid = env.constants.ids.int_.eq;
           } else if (e->type().isbool()) {
-            cid = env.constants.ids.bool_eq;
+            cid = env.constants.ids.bool_.eq;
           } else if (e->type().isSet()) {
-            cid = env.constants.ids.set_eq;
+            cid = env.constants.ids.set_.eq;
           } else if (e->type().isfloat()) {
             cid = env.constants.ids.float_.eq;
           } else {
@@ -3197,7 +3199,7 @@ void flatten(Env& e, FlatteningOptions opt) {
       bool_xor_t[0] = Type::varbool();
       bool_xor_t[1] = Type::varbool();
       bool_xor_t[2] = Type::varbool();
-      fi = env.model->matchFn(env, env.constants.ids.bool_xor, bool_xor_t, false);
+      fi = env.model->matchFn(env, env.constants.ids.bool_.ne, bool_xor_t, false);
       bool_xor = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
     }
 
@@ -3535,7 +3537,7 @@ void flatten(Env& e, FlatteningOptions opt) {
                 nc = new Call(c->loc().introduce(), array_bool_clause_reif->id(), args);
                 nc->type(Type::varbool());
                 nc->decl(array_bool_clause_reif);
-              } else if (c->id() == env.constants.ids.bool_not && c->argCount() == 1 &&
+              } else if (c->id() == env.constants.ids.bool_.not_ && c->argCount() == 1 &&
                          c->decl()->e() == nullptr) {
                 bool isFalseVar = Expression::equal(vd->ti()->domain(), env.constants.literalFalse);
                 if (c->arg(0) == env.constants.literalTrue) {
@@ -3731,7 +3733,7 @@ void flatten(Env& e, FlatteningOptions opt) {
                 nc->type(Type::varbool());
                 nc->decl(array_bool_clause);
               }
-            } else if (c->id() == env.constants.ids.bool_xor) {
+            } else if (c->id() == env.constants.ids.bool_.ne) {
               if (bool_xor != nullptr) {
                 std::vector<Expression*> args(3);
                 args[0] = c->arg(0);
@@ -3741,7 +3743,7 @@ void flatten(Env& e, FlatteningOptions opt) {
                 nc->type(Type::varbool());
                 nc->decl(bool_xor);
               }
-            } else if (c->id() == env.constants.ids.bool_not && c->argCount() == 1 &&
+            } else if (c->id() == env.constants.ids.bool_.not_ && c->argCount() == 1 &&
                        c->decl()->e() == nullptr) {
               if (c->arg(0) == env.constants.literalTrue) {
                 env.fail();
@@ -3943,7 +3945,7 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd,
             args.push_back(vcc->arg(0));
             args.push_back(env.constants.literalTrue);
           } else if (vcc->id() == env.constants.ids.clause) {
-            cid = env.constants.ids.bool_clause;
+            cid = env.constants.ids.bool_.clause;
             args.push_back(vcc->arg(0));
             args.push_back(vcc->arg(1));
           }
@@ -3965,7 +3967,7 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd,
             args[0] = id;
             args[1] = env.constants.literalTrue;
             GCLock lock;
-            ve = new Call(Location().introduce(), env.constants.ids.bool_eq, args);
+            ve = new Call(Location().introduce(), env.constants.ids.bool_.eq, args);
           } else {
             // Don't post this
             ve = env.constants.literalTrue;
@@ -4003,7 +4005,7 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd,
           } else if (c->id() == env.constants.ids.forall) {
             cid = env.constants.ids.array_bool_and;
           } else if (c->id() == env.constants.ids.clause) {
-            cid = env.constants.ids.bool_clause_reif;
+            cid = env.constants.ids.bool_reif.clause;
           } else {
             if (env.fopts.enableHalfReification && vd->ann().contains(env.constants.ctx.pos)) {
               cid = env.halfReifyId(c->id());
@@ -4100,7 +4102,7 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd,
         } else {
           if (cc->id() == env.constants.ids.card) {
             // card is 'set_card' in old FlatZinc
-            cid = env.constants.ids.set_card;
+            cid = env.constants.ids.set_.card;
           } else {
             cid = cc->id();
           }
@@ -4219,9 +4221,9 @@ Expression* cleanup_constraint(EnvI& env, std::unordered_set<Item*>& globals, Ex
       vc->decl(env.model->matchFn(env, vc, false));
     } else if (vc->id() == env.constants.ids.clause) {
       GCLock lock;
-      vc->id(env.constants.ids.bool_clause);
+      vc->id(env.constants.ids.bool_.clause);
       vc->decl(env.model->matchFn(env, vc, false));
-    } else if (vc->id() == env.constants.ids.bool_xor && vc->argCount() == 2) {
+    } else if (vc->id() == env.constants.ids.bool_.ne && vc->argCount() == 2) {
       GCLock lock;
       std::vector<Expression*> args(3);
       args[0] = vc->arg(0);
@@ -4254,7 +4256,7 @@ Expression* cleanup_constraint(EnvI& env, std::unordered_set<Item*>& globals, Ex
     args[0] = id;
     args[1] = env.constants.literalTrue;
     GCLock lock;
-    return new Call(Location().introduce(), env.constants.ids.bool_eq, args);
+    return new Call(Location().introduce(), env.constants.ids.bool_.eq, args);
   }
   if (auto* bl = ce->dynamicCast<BoolLit>()) {
     // Ex: true => delete; false => bool_eq(false, true);
@@ -4263,7 +4265,7 @@ Expression* cleanup_constraint(EnvI& env, std::unordered_set<Item*>& globals, Ex
       std::vector<Expression*> args(2);
       args[0] = env.constants.literalFalse;
       args[1] = env.constants.literalTrue;
-      Call* neq = new Call(Location().introduce(), env.constants.ids.bool_eq, args);
+      Call* neq = new Call(Location().introduce(), env.constants.ids.bool_.eq, args);
       return neq;
     }
     return nullptr;

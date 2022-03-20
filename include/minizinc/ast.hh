@@ -1962,21 +1962,44 @@ public:
       ASTString in;
     } float_reif;  // NOLINT(readability-identifier-naming)
 
-    ASTString bool_eq;           // NOLINT(readability-identifier-naming)
-    ASTString bool_eq_reif;      // NOLINT(readability-identifier-naming)
-    ASTString bool_not;          // NOLINT(readability-identifier-naming)
-    ASTString array_bool_or;     // NOLINT(readability-identifier-naming)
-    ASTString array_bool_and;    // NOLINT(readability-identifier-naming)
-    ASTString bool_clause;       // NOLINT(readability-identifier-naming)
-    ASTString bool_clause_reif;  // NOLINT(readability-identifier-naming)
-    ASTString bool_xor;          // NOLINT(readability-identifier-naming)
-    ASTString set_eq;            // NOLINT(readability-identifier-naming)
-    ASTString set_in;            // NOLINT(readability-identifier-naming)
-    ASTString set_subset;        // NOLINT(readability-identifier-naming)
-    ASTString set_card;          // NOLINT(readability-identifier-naming)
-    ASTString set_intersect;     // NOLINT(readability-identifier-naming)
-    ASTString set_union;         // NOLINT(readability-identifier-naming)
-    ASTString set_diff;          // NOLINT(readability-identifier-naming)
+    struct {
+      ASTString and_;  // NOLINT(readability-identifier-naming)
+      ASTString clause;
+      ASTString eq;
+      ASTString ge;
+      ASTString gt;
+      ASTString le;
+      ASTString lt;
+      ASTString ne;
+      ASTString not_;  // NOLINT(readability-identifier-naming)
+      ASTString or_;   // NOLINT(readability-identifier-naming)
+    } bool_;           // NOLINT(readability-identifier-naming)
+
+    struct {
+      ASTString clause;  // NOLINT(readability-identifier-naming)
+      ASTString eq;
+    } bool_reif;  // NOLINT(readability-identifier-naming)
+
+    ASTString array_bool_or;   // NOLINT(readability-identifier-naming)
+    ASTString array_bool_and;  // NOLINT(readability-identifier-naming)
+
+    struct {
+      ASTString card;
+      ASTString diff;
+      ASTString eq;
+      ASTString ge;
+      ASTString gt;
+      ASTString in;
+      ASTString intersect;
+      ASTString le;
+      ASTString lt;
+      ASTString ne;
+      ASTString subset;
+      ASTString superset;
+      ASTString symdiff;
+      ASTString union_;  // NOLINT(readability-identifier-naming)
+    } set_;              // NOLINT(readability-identifier-naming)
+
     ASTString pow;
 
     ASTString mzn_set_in_internal;  // NOLINT(readability-identifier-naming)

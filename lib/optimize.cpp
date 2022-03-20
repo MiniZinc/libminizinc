@@ -385,8 +385,9 @@ void optimize(Env& env, bool chain_compression) {
         ci->flag(false);
         if (!ci->removed()) {
           if (Call* c = ci->e()->dynamicCast<Call>()) {
-            if ((c->id() == envi.constants.ids.int_.eq || c->id() == envi.constants.ids.bool_eq ||
-                 c->id() == envi.constants.ids.float_.eq || c->id() == envi.constants.ids.set_eq) &&
+            if ((c->id() == envi.constants.ids.int_.eq || c->id() == envi.constants.ids.bool_.eq ||
+                 c->id() == envi.constants.ids.float_.eq ||
+                 c->id() == envi.constants.ids.set_.eq) &&
                 c->arg(0)->isa<Id>() && c->arg(1)->isa<Id>() &&
                 (c->arg(0)->cast<Id>()->decl()->e() == nullptr ||
                  c->arg(1)->cast<Id>()->decl()->e() == nullptr)) {
@@ -1110,7 +1111,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
            vdi->e()->ti()->domain() == nullptr);
   }
   if (Call* c = Expression::dynamicCast<Call>(con_e)) {
-    if (c->id() == env.constants.ids.int_.eq || c->id() == env.constants.ids.bool_eq ||
+    if (c->id() == env.constants.ids.int_.eq || c->id() == env.constants.ids.bool_.eq ||
         c->id() == env.constants.ids.float_.eq) {
       if (is_true && c->arg(0)->isa<Id>() && c->arg(1)->isa<Id>() &&
           (c->arg(0)->cast<Id>()->decl()->e() == nullptr ||
@@ -1575,7 +1576,7 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
     return;
   }
   Call* c = e->cast<Call>();
-  if (c->id() == env.constants.ids.bool_eq) {
+  if (c->id() == env.constants.ids.bool_.eq) {
     Expression* b0 = c->arg(0);
     Expression* b1 = c->arg(1);
     int b0s = bool_state(env, b0);

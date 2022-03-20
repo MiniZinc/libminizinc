@@ -3564,7 +3564,7 @@ void register_builtins(Env& e) {
     rb(env, m, ASTString("xorall"), t, b_xorall_par);
     rb(env, m, ASTString("iffall"), t, b_iffall_par);
   }
-  { rb(env, m, env.constants.ids.bool_not, {Type::parbool()}, b_not_par); }
+  { rb(env, m, env.constants.ids.bool_.not_, {Type::parbool()}, b_not_par); }
   {
     std::vector<Type> t(2);
     t[0] = Type::parbool(-1);

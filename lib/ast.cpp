@@ -1698,24 +1698,40 @@ Constants::Constants() {
   ids.float_reif.ne = addString("float_ne_reif");
   ids.float_reif.in = addString("float_in_reif");
 
-  ids.bool_eq = addString("bool_eq");
-  ids.bool_eq_reif = addString("bool_eq_reif");
-  ids.bool_not = addString("bool_not");
-  ids.bool_clause = addString("bool_clause");
-  ids.bool_clause_reif = addString("bool_clause_reif");
-  ids.bool_xor = addString("bool_xor");
+  ids.bool_.and_ = addString("bool_and");
+  ids.bool_.clause = addString("bool_clause");
+  ids.bool_.eq = addString("bool_eq");
+  ids.bool_.ge = addString("bool_ge");
+  ids.bool_.gt = addString("bool_gt");
+  ids.bool_.le = addString("bool_le");
+  ids.bool_.lt = addString("bool_lt");
+  ids.bool_.ne = addString("bool_xor");
+  ids.bool_.not_ = addString("bool_not");
+  ids.bool_.or_ = addString("bool_or");
+
+  ids.bool_reif.clause = addString("bool_clause_reif");
+  ids.bool_reif.eq = addString("bool_eq_reif");
+
   ids.array_bool_or = addString("array_bool_or");
   ids.array_bool_and = addString("array_bool_and");
-  ids.set_eq = addString("set_eq");
-  ids.set_in = addString("set_in");
-  ids.set_subset = addString("set_subset");
-  ids.set_card = addString("set_card");
-  ids.set_intersect = addString("set_intersect");
-  ids.set_union = addString("set_union");
-  ids.set_diff = addString("set_diff");
+
+  ids.set_.card = addString("set_card");
+  ids.set_.diff = addString("set_diff");
+  ids.set_.eq = addString("set_eq");
+  ids.set_.ge = addString("set_ge");
+  ids.set_.gt = addString("set_gt");
+  ids.set_.le = addString("set_le");
+  ids.set_.lt = addString("set_lt");
+  ids.set_.in = addString("set_in");
+  ids.set_.intersect = addString("set_intersect");
+  ids.set_.ne = addString("set_ne");
+  ids.set_.subset = addString("set_subset");
+  ids.set_.superset = addString("set_superset");
+  ids.set_.symdiff = addString("set_symdiff");
+  ids.set_.union_ = addString("set_union");
+
   ids.pow = addString("pow");
   ids.mzn_set_in_internal = addString("mzn_set_in_internal");
-
   ids.introduced_var = addString("__INTRODUCED");
   ids.anonEnumFromStrings = addString("anon_enum");
 

@@ -17,8 +17,41 @@ namespace MiniZinc {
 
 ASTString op_to_builtin(EnvI& env, Expression* op_lhs, Expression* op_rhs, BinOpType bot) {
   std::string builtin;
+
+  if (op_rhs->type().st() == Type::ST_SET) {
+    switch (bot) {
+      case BOT_LE:
+        return env.constants.ids.set_.lt;
+      case BOT_LQ:
+        return env.constants.ids.set_.le;
+      case BOT_GR:
+        return env.constants.ids.set_.gt;
+      case BOT_GQ:
+        return env.constants.ids.set_.ge;
+      case BOT_EQ:
+        return env.constants.ids.set_.eq;
+      case BOT_NQ:
+        return env.constants.ids.set_.ne;
+      case BOT_IN:
+        return env.constants.ids.set_.in;
+      case BOT_SUBSET:
+        return env.constants.ids.set_.subset;
+      case BOT_SUPERSET:
+        return env.constants.ids.set_.superset;
+      case BOT_UNION:
+        return env.constants.ids.set_.union_;
+      case BOT_DIFF:
+        return env.constants.ids.set_.diff;
+      case BOT_SYMDIFF:
+        return env.constants.ids.set_.symdiff;
+      case BOT_INTERSECT:
+        return env.constants.ids.set_.intersect;
+      default:
+        throw InternalError("Operator not yet implemented");
+    }
+  }
   Type tt(op_rhs->type().bt() != Type::BT_BOT ? op_rhs->type() : op_lhs->type());
-  if (tt.bt() == Type::BT_INT && tt.st() == Type::ST_PLAIN) {
+  if (tt.bt() == Type::BT_INT) {
     switch (bot) {
       case BOT_PLUS:
         return env.constants.ids.int_.plus;
@@ -45,10 +78,10 @@ ASTString op_to_builtin(EnvI& env, Expression* op_lhs, Expression* op_rhs, BinOp
       case BOT_NQ:
         return env.constants.ids.int_.ne;
       default:
-        throw InternalError("not yet implemented");
+        throw InternalError("Operator not yet implemented");
     }
   }
-  if (tt.bt() == Type::BT_FLOAT && tt.st() == Type::ST_PLAIN) {
+  if (tt.bt() == Type::BT_FLOAT) {
     switch (bot) {
       case BOT_PLUS:
         return env.constants.ids.float_.plus;
@@ -75,76 +108,39 @@ ASTString op_to_builtin(EnvI& env, Expression* op_lhs, Expression* op_rhs, BinOp
       case BOT_NQ:
         return env.constants.ids.float_.ne;
       default:
-        throw InternalError("not yet implemented");
+        throw InternalError("Operator not yet implemented");
     }
   }
   if (tt.bt() == Type::BT_BOOL) {
-    if (bot == BOT_EQ || bot == BOT_EQUIV) {
-      return env.constants.ids.bool_eq;
+    switch (bot) {
+      case BOT_LE:
+        return env.constants.ids.bool_.lt;
+      case BOT_IMPL:
+      // fall through
+      case BOT_LQ:
+        return env.constants.ids.bool_.le;
+      case BOT_GR:
+        return env.constants.ids.bool_.gt;
+      case BOT_RIMPL:
+      // fall through
+      case BOT_GQ:
+        return env.constants.ids.bool_.ge;
+      case BOT_EQUIV:
+      case BOT_EQ:
+        return env.constants.ids.bool_.eq;
+      case BOT_XOR:
+      // fall through
+      case BOT_NQ:
+        return env.constants.ids.bool_.ne;
+      case BOT_OR:
+        return env.constants.ids.bool_.or_;
+      case BOT_AND:
+        return env.constants.ids.bool_.and_;
+      default:
+        throw InternalError("Operator not yet implemented");
     }
-    builtin = "bool_";
-  } else if (op_rhs->type().isSet()) {
-    builtin = "set_";
-  } else {
-    throw InternalError("Operator not yet implemented");
   }
-  switch (bot) {
-    case BOT_PLUS:
-      return builtin + "plus";
-    case BOT_MINUS:
-      return builtin + "minus";
-    case BOT_MULT:
-      return builtin + "times";
-    case BOT_DIV:
-    case BOT_IDIV:
-      return builtin + "div";
-    case BOT_MOD:
-      return builtin + "mod";
-    case BOT_LE:
-      return builtin + "lt";
-    case BOT_LQ:
-      return builtin + "le";
-    case BOT_GR:
-      return builtin + "gt";
-    case BOT_GQ:
-      return builtin + "ge";
-    case BOT_EQ:
-      return builtin + "eq";
-    case BOT_NQ:
-      return builtin + "ne";
-    case BOT_IN:
-      return env.constants.ids.set_in;
-    case BOT_SUBSET:
-      return builtin + "subset";
-    case BOT_SUPERSET:
-      return builtin + "superset";
-    case BOT_UNION:
-      return builtin + "union";
-    case BOT_DIFF:
-      return builtin + "diff";
-    case BOT_SYMDIFF:
-      return builtin + "symdiff";
-    case BOT_INTERSECT:
-      return builtin + "intersect";
-    case BOT_EQUIV:
-      return builtin + "eq";
-    case BOT_IMPL:
-      return builtin + "le";
-    case BOT_RIMPL:
-      return builtin + "ge";
-    case BOT_OR:
-      return builtin + "or";
-    case BOT_AND:
-      return builtin + "and";
-    case BOT_XOR:
-      return env.constants.ids.bool_xor;
-    case BOT_PLUSPLUS:
-      // fall through
-    case BOT_DOTDOT:
-      // fall through
-    default:
-      throw InternalError("Operator not yet implemented");
-  }
+  throw InternalError("Operator not yet implemented");
 }
 
 ASTString op_to_id(BinOpType bot) {

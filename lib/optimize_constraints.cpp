@@ -298,7 +298,7 @@ OptimizeRegistry::ConstraintStatus o_not(EnvI& env, Item* i, Call* c, Expression
       std::swap(e0, e1);
     }
     if (e0->type().isPar()) {
-      Call* eq = new Call(Location(), env.constants.ids.bool_eq,
+      Call* eq = new Call(Location(), env.constants.ids.bool_.eq,
                           {e1, env.constants.boollit(!eval_bool(env, e0))});
       rewrite = eq;
       return OptimizeRegistry::CS_REWRITE;
@@ -486,9 +486,9 @@ public:
     OptimizeRegistry::registry().reg(Constants::constants().ids.lin_exp, o_lin_exp);
     OptimizeRegistry::registry().reg(id_var_element, o_element);
     OptimizeRegistry::registry().reg(Constants::constants().ids.clause, o_clause);
-    OptimizeRegistry::registry().reg(Constants::constants().ids.bool_clause, o_clause);
-    OptimizeRegistry::registry().reg(Constants::constants().ids.bool_not, o_not);
-    OptimizeRegistry::registry().reg(Constants::constants().ids.set_in, o_set_in);
+    OptimizeRegistry::registry().reg(Constants::constants().ids.bool_.clause, o_clause);
+    OptimizeRegistry::registry().reg(Constants::constants().ids.bool_.not_, o_not);
+    OptimizeRegistry::registry().reg(Constants::constants().ids.set_.in, o_set_in);
     OptimizeRegistry::registry().reg(Constants::constants().ids.int_.ne, o_int_ne);
     OptimizeRegistry::registry().reg(Constants::constants().ids.int_.le, o_int_le);
   }

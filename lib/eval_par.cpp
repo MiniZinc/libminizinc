@@ -3232,7 +3232,7 @@ public:
   /// Visit call
   void vCall(Call* c) {
     if (valid &&
-        (c->id() == env.constants.ids.set_intersect || c->id() == env.constants.ids.set_union)) {
+        (c->id() == env.constants.ids.set_.intersect || c->id() == env.constants.ids.set_.union_)) {
       IntSetVal* b0 = bounds.back();
       bounds.pop_back();
       IntSetVal* b1 = bounds.back();
@@ -3241,7 +3241,7 @@ public:
       IntSetRanges b1r(b1);
       Ranges::Union<IntVal, IntSetRanges, IntSetRanges> u(b0r, b1r);
       bounds.push_back(IntSetVal::ai(u));
-    } else if (valid && c->id() == env.constants.ids.set_diff) {
+    } else if (valid && c->id() == env.constants.ids.set_.diff) {
       IntSetVal* b0 = bounds.back();
       bounds.pop_back();
       bounds.pop_back();  // don't need bounds of right hand side

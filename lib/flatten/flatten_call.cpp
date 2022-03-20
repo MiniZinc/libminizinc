@@ -754,9 +754,9 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
               }
             } else {
               Call* eq_call =
-                  Expression::dynamicCast<Call>(same_call(env, cur, env.constants.ids.bool_eq));
+                  Expression::dynamicCast<Call>(same_call(env, cur, env.constants.ids.bool_.eq));
               Call* not_call =
-                  Expression::dynamicCast<Call>(same_call(env, cur, env.constants.ids.bool_not));
+                  Expression::dynamicCast<Call>(same_call(env, cur, env.constants.ids.bool_.not_));
               if ((eq_call != nullptr) &&
                   Expression::equal(eq_call->arg(1), env.constants.literalFalse)) {
                 neg_stack.push_back(eq_call->arg(0));
@@ -799,9 +799,9 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
               }
             } else {
               Call* eq_call =
-                  Expression::dynamicCast<Call>(same_call(env, cur, env.constants.ids.bool_eq));
+                  Expression::dynamicCast<Call>(same_call(env, cur, env.constants.ids.bool_.eq));
               Call* not_call =
-                  Expression::dynamicCast<Call>(same_call(env, cur, env.constants.ids.bool_not));
+                  Expression::dynamicCast<Call>(same_call(env, cur, env.constants.ids.bool_.not_));
               if ((eq_call != nullptr) &&
                   Expression::equal(eq_call->arg(1), env.constants.literalFalse)) {
                 pos_stack.push_back(eq_call->arg(0));
