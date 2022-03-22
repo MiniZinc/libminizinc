@@ -4,10 +4,12 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
-.. _unreleased:
+.. _v2.6.2:
 
-Unreleased
-~~~~~~~~~~
+`Version 2.6.2 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.6.2>`__
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(released 22 March 2022)
 
 Changes:
 ^^^^^^^^
@@ -19,12 +21,18 @@ Bug fixes:
 -  Prevent possible non-deterministic function dispatch.
 -  Fix a bug in bounds computation for sums over arrays that could result in a crash.
 -  Fix a bug in the logical context of negated implication operators.
--  Fix definition of ``indomain_min`` and ``indomain_max` for ``set_search`` in ``nosets.mzn``.
+-  Fix definition of ``indomain_min`` and ``indomain_max`` for ``set_search`` in ``nosets.mzn``.
 -  Fix type checker to consider all functions/predicates with var arguments as var type.
 -  Ensure that the last solution is always printed for Gurobi (:bugref:`561`).
 -  Fix the dispatch from non-overloaded operators to builtin calls for opt types.
--  Fix creation of `par` versions of `var` functions used in output.
--  Fix bounds calculation for comprehension `in` expressions which are `var`. 
+-  Fix creation of ``par`` versions of ``var`` functions used in output.
+-  Fix bounds calculation for comprehension ``in`` expressions which are ``var``. 
+
+Changes in the IDE:
+^^^^^^^^^^^^^^^^^^^
+
+-  Don't print expected error messages for MOOC submissions.
+-  Fix custom parameter widget dark mode CSS.
 
 .. _v2.6.1:
 
