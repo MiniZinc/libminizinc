@@ -53,7 +53,9 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
           std::vector<Expression*> args(1);
           args[0] = c->in(i);
           Call* ub = new Call(Location().introduce(), "ub", args);
-          ub->type(Type::parsetint());
+          Type t = Type::parsetint();
+          t.cv(true);
+          ub->type(t);
           ub->decl(env.model->matchFn(env, ub, false));
           in[i] = ub;
           for (int j = 0; j < c->numberOfDecls(i); j++) {

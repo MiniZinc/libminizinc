@@ -24,6 +24,7 @@ Bug fixes:
 -  Ensure that the last solution is always printed for Gurobi (:bugref:`561`).
 -  Fix the dispatch from non-overloaded operators to builtin calls for opt types.
 -  Fix creation of `par` versions of `var` functions used in output.
+-  Fix bounds calculation for comprehension `in` expressions which are `var`. 
 
 .. _v2.6.1:
 
