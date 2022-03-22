@@ -19,3 +19,6 @@ def _parse_version():
 
 
 mzn_release, mzn_version = _parse_version()
+
+if __name__ == "__main__":
+    print(mzn_release)
