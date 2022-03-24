@@ -3167,7 +3167,6 @@ void flatten(Env& e, FlatteningOptions opt) {
     FunctionI* array_bool_or;
     FunctionI* array_bool_or_imp;
     FunctionI* array_bool_clause;
-    FunctionI* array_bool_clause_imp;
     FunctionI* array_bool_clause_reif;
     FunctionI* bool_xor;
     {
@@ -3192,8 +3191,6 @@ void flatten(Env& e, FlatteningOptions opt) {
       array_bool_andor_t.push_back(Type::varbool());
       fi = env.model->matchFn(env, ASTString("bool_clause_reif"), array_bool_andor_t, false);
       array_bool_clause_reif = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
-      fi = env.model->matchFn(env, ASTString("bool_clause_imp"), array_bool_andor_t, false);
-      array_bool_clause_imp = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
 
       std::vector<Type> bool_xor_t(3);
       bool_xor_t[0] = Type::varbool();
@@ -3519,15 +3516,23 @@ void flatten(Env& e, FlatteningOptions opt) {
                 nc->type(Type::varbool());
                 nc->decl(array_bool_clause);
               } else if (c->id() == env.constants.ids.clause && env.fopts.enableHalfReification &&
-                         vd->ann().contains(env.constants.ctx.pos) &&
-                         (array_bool_clause_imp != nullptr)) {
-                std::vector<Expression*> args(3);
+                         vd->ann().contains(env.constants.ctx.pos)) {
+                std::vector<Expression*> args(2);
                 args[0] = c->arg(0);
-                args[1] = c->arg(1);
-                args[2] = vd->id();
-                nc = new Call(c->loc().introduce(), array_bool_clause_imp->id(), args);
+                ArrayLit* old = eval_array_lit(env, c->arg(1));
+                std::vector<Expression*> neg(old->size() + 1);
+                for (size_t i = 0; i < old->size(); ++i) {
+                  neg[i] = (*old)[i];
+                }
+                neg[old->size()] = vd->id();
+                args[1] = new ArrayLit(old->loc().introduce(), neg);
+                args[1]->type(Type::varbool(1));
+                nc = new Call(c->loc().introduce(),
+                              (array_bool_clause != nullptr) ? array_bool_clause->id()
+                                                             : env.constants.ids.clause,
+                              args);
                 nc->type(Type::varbool());
-                nc->decl(array_bool_clause_imp);
+                nc->decl((array_bool_clause != nullptr) ? array_bool_clause : c->decl());
               } else if (c->id() == env.constants.ids.clause &&
                          (array_bool_clause_reif != nullptr)) {
                 std::vector<Expression*> args(3);
