@@ -1444,16 +1444,8 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
         vd->ti()->domain(nullptr);
         vd->flat(vd_orig->flat());
         vd->ti()->setIsEnum(false);
-        bool isCheckVar = vd->ann().contains(env.constants.ann.mzn_check_var);
-        Call* checkVarEnum = vd->ann().getCall(env.constants.ann.mzn_check_enum_var);
         vd->ann().clear();
-        if (isCheckVar) {
-          vd->addAnnotation(env.constants.ann.mzn_check_var);
-        }
-        if (checkVarEnum != nullptr) {
-          vdi_copy->e()->addAnnotation(checkVarEnum);
-        }
-        vdi_copy->e()->introduced(false);
+        vd->introduced(false);
 
         IdMap<KeepAlive>::iterator it;
         if (!vd_orig->type().isPar()) {
@@ -1582,6 +1574,11 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
         auto* output_vd = copy(env, env.cmap, vdi->e())->cast<VarDecl>();
         top_down(cf, output_vd);
         top_down(cvd, output_vd->id());
+        output_vd->addAnnotation(env.constants.ann.mzn_check_var);
+        Call* checkVarEnum = vdi->e()->ann().getCall(env.constants.ann.mzn_check_enum_var);
+        if (checkVarEnum != nullptr) {
+          output_vd->addAnnotation(checkVarEnum);
+        }
       }
     }
   } _ov1(e, _cf, _cvd);

@@ -9,6 +9,12 @@ https://github.com/MiniZinc/libminizinc/issues.
 Unreleased
 ~~~~~~~~~~
 
+Bug fixes:
+^^^^^^^^^^
+
+-  Fix a bug where variables required by a solution checker were not always correctly passed to the
+   checker, triggering a type error in the checker output.
+
 .. _v2.6.2:
 
 `Version 2.6.2 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.6.2>`__
@@ -18,6 +24,7 @@ Unreleased
 
 Changes:
 ^^^^^^^^
+
 -  Better transformation of clauses to avoid negations when possible.
 
 Bug fixes:
