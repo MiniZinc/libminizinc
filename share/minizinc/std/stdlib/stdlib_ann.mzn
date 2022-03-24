@@ -105,6 +105,10 @@ annotation mzn_rhs_from_assignment;
 /** @group stdlib.annotations.general Marks a constraint as a recorded domain changing constraint (when mzn2fzn
   called with -g flag */
 annotation domain_change_constraint;
+/** @group annotations.general This annotation will prevent calls to the function annotated to be added
+  the the Common Subexpression Elimination map. WARNING: using this annotation might result in duplicated
+	constraints when used incorrectly. */
+annotation no_cse;
 
 
 /** @group stdlib.annotations.general Mark annotation argument as annotated expression */

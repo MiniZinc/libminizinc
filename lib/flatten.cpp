@@ -825,9 +825,13 @@ void EnvI::cseMapInsert(Expression* e, const EE& ee) {
   if (e->type().isPar() && !e->isa<ArrayLit>()) {
     return;
   }
+  Call* c = e->dynamicCast<Call>();
+  if ((c != nullptr) && c->decl() != nullptr && c->decl()->ann().contains(constants.ann.no_cse)) {
+    return;
+  }
+
   KeepAlive ka(e);
   _cseMap.insert(ka, WW(ee.r(), ee.b()));
-  Call* c = e->dynamicCast<Call>();
   if ((c != nullptr) && c->id() == constants.ids.bool_.not_ && c->arg(0)->isa<Id>() &&
       ee.r()->isa<Id>() && ee.b() == constants.literalTrue) {
     Call* neg_c = new Call(Location().introduce(), c->id(), {ee.r()});

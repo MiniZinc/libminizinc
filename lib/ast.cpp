@@ -1797,6 +1797,8 @@ Constants::Constants() {
   ann.expression_name_dbg = addString("expression_name_dbg");
   ann.cache_result = addId("cache_result");
   ann.cache_result->type(Type::ann());
+  ann.no_cse = addId("no_cse");
+  ann.no_cse->type(Type::ann());
 
   cli.cmdlineData_short_str = addString("-D");
   cli.cmdlineData_str = addString("--cmdline-data");
