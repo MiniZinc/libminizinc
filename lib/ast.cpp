@@ -1557,8 +1557,8 @@ bool Expression::equalInternal(const Expression* e0, const Expression* e1) {
 Constants::Constants() {
   GCLock lock;
   auto* ti = new TypeInst(Location(), Type::parbool());
-  emptyArray = new ArrayLit(Location(), std::vector<Expression*>{});
-  emptyArray->type(Type::parbool(1));
+  emptyBoolArray = new ArrayLit(Location(), std::vector<Expression*>{});
+  emptyBoolArray->type(Type::parbool(1));
   literalTrue = new BoolLit(Location(), true);
   varTrue = new VarDecl(Location(), ti, "_bool_true", literalTrue);
   literalFalse = new BoolLit(Location(), false);
@@ -1713,9 +1713,9 @@ Constants::Constants() {
 
   ids.bool_reif.clause = addString("bool_clause_reif");
   ids.bool_reif.eq = addString("bool_eq_reif");
+  ids.bool_reif.array_and = addString("array_bool_and");
 
-  ids.array_bool_or = addString("array_bool_or");
-  ids.array_bool_and = addString("array_bool_and");
+  ids.array_bool_and_imp = addString("array_bool_and_imp");
 
   ids.set_.card = addString("set_card");
   ids.set_.diff = addString("set_diff");
@@ -1891,7 +1891,7 @@ bool Constants::isCallByReferenceId(const ASTString& cid) const {
 }
 
 void Constants::mark() {
-  Expression::mark(emptyArray);
+  Expression::mark(emptyBoolArray);
   Expression::mark(literalTrue);
   Expression::mark(varTrue);
   Expression::mark(literalFalse);

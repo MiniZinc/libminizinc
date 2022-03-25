@@ -2499,16 +2499,16 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
             args[i] = c->arg(i);
           }
           if (c->id() == env.constants.ids.exists) {
-            args.push_back(env.constants.emptyArray);
+            args.push_back(env.constants.emptyBoolArray);
           }
           args.push_back(vd->id());
 
           ASTString nid = c->id();
           FunctionI* nc_decl(nullptr);
           if (c->id() == env.constants.ids.exists) {
-            nid = env.constants.ids.bool_clause_reif;
+            nid = env.constants.ids.bool_reif.clause;
           } else if (c->id() == env.constants.ids.forall) {
-            nid = env.constants.ids.array_bool_and;
+            nid = env.constants.ids.bool_reif.array_and;
           } else if (vd->type().isbool()) {
             if (env.fopts.enableHalfReification && vd->ann().contains(env.constants.ctx.pos)) {
               nid = EnvI::halfReifyId(c->id());
@@ -3177,29 +3177,28 @@ void flatten(Env& e, FlatteningOptions opt) {
     FunctionI* array_bool_clause_reif;
     FunctionI* bool_xor;
     {
-      std::vector<Type> array_bool_andor_t(2);
-      array_bool_andor_t[0] = Type::varbool(1);
-      array_bool_andor_t[1] = Type::varbool(0);
+      std::vector<Type> argtypes(2);
+      argtypes[0] = Type::varbool(1);
+      argtypes[1] = Type::varbool(0);
       GCLock lock;
-      FunctionI* fi =  // TODO replace ASTString for constants
-          env.model->matchFn(env, ASTString("array_bool_and"), array_bool_andor_t, false);
+      FunctionI* fi =
+          env.model->matchFn(env, env.constants.ids.bool_reif.array_and, argtypes, false);
       array_bool_and = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
-      fi = env.model->matchFn(env, ASTString("array_bool_and_imp"), array_bool_andor_t, false);
+      fi = env.model->matchFn(env, env.constants.ids.array_bool_and_imp, argtypes, false);
       array_bool_and_imp = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
 
-      array_bool_andor_t[1] = Type::varbool(1);
-      fi = env.model->matchFn(env, ASTString("bool_clause"), array_bool_andor_t, false);
+      argtypes[1] = Type::varbool(1);
+      fi = env.model->matchFn(env, env.constants.ids.bool_.clause, argtypes, false);
       array_bool_clause = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
 
-      array_bool_andor_t.push_back(Type::varbool());
-      fi = env.model->matchFn(env, ASTString("bool_clause_reif"), array_bool_andor_t, false);
+      argtypes.push_back(Type::varbool());
+      fi = env.model->matchFn(env, env.constants.ids.bool_reif.clause, argtypes, false);
       array_bool_clause_reif = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
 
-      std::vector<Type> bool_xor_t(3);
-      bool_xor_t[0] = Type::varbool();
-      bool_xor_t[1] = Type::varbool();
-      bool_xor_t[2] = Type::varbool();
-      fi = env.model->matchFn(env, env.constants.ids.bool_.ne, bool_xor_t, false);
+      argtypes[0] = Type::varbool();
+      argtypes[1] = Type::varbool();
+      argtypes[2] = Type::varbool();
+      fi = env.model->matchFn(env, env.constants.ids.bool_.not_, argtypes, false);
       bool_xor = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
     }
 
@@ -3480,24 +3479,28 @@ void flatten(Env& e, FlatteningOptions opt) {
                 if (isTrueVar && array_bool_clause != nullptr) {
                   std::vector<Expression*> args(2);
                   args[0] = c->arg(0);
-                  args[1] = env.constants.emptyArray;
+                  args[1] = env.constants.emptyBoolArray;
                   nc = new Call(c->loc().introduce(), array_bool_clause->id(), args);
                   nc->type(Type::varbool());
                   nc->decl(array_bool_clause);
                 } else if (env.fopts.enableHalfReification &&
-                           vd->ann().contains(env.constants.ctx.pos) &&
-                           array_bool_clause_imp != nullptr) {
-                  std::vector<Expression*> args(3);
+                           vd->ann().contains(env.constants.ctx.pos)) {
+                  std::vector<Expression*> args(2);
                   args[0] = c->arg(0);
-                  args[1] = env.constants.emptyArray;
-                  args[2] = vd->id();
-                  nc = new Call(c->loc().introduce(), array_bool_clause_imp->id(), args);
+                  args[1] =
+                      new ArrayLit(vd->loc().introduce(), std::vector<Expression*>({vd->id()}));
+                  args[1]->type(Type::varbool(1));
+                  nc = new Call(c->loc().introduce(),
+                                (array_bool_clause != nullptr) ? array_bool_clause->id()
+                                                               : env.constants.ids.clause,
+                                args);
                   nc->type(Type::varbool());
-                  nc->decl(array_bool_clause_imp);
+                  nc->decl((array_bool_clause != nullptr) ? array_bool_clause
+                                                          : env.model->matchFn(env, nc, false));
                 } else if (array_bool_clause_reif != nullptr) {
                   std::vector<Expression*> args(3);
                   args[0] = c->arg(0);
-                  args[1] = env.constants.emptyArray;
+                  args[1] = env.constants.emptyBoolArray;
                   args[2] = vd->id();
                   nc = new Call(c->loc().introduce(), array_bool_clause_reif->id(), args);
                   nc->type(Type::varbool());
@@ -3725,7 +3728,7 @@ void flatten(Env& e, FlatteningOptions opt) {
               if (array_bool_clause != nullptr) {
                 std::vector<Expression*> args(2);
                 args[0] = c->arg(0);
-                args[1] = env.constants.emptyArray;
+                args[1] = env.constants.emptyBoolArray;
                 nc = new Call(c->loc().introduce(), array_bool_clause->id(), args);
                 nc->type(Type::varbool());
                 nc->decl(array_bool_clause);
@@ -3952,11 +3955,11 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd,
           ASTString cid;
           std::vector<Expression*> args;
           if (vcc->id() == env.constants.ids.exists) {
-            cid = env.constants.ids.bool_clause;
+            cid = env.constants.ids.bool_.clause;
             args.push_back(vcc->arg(0));
-            args.push_back(env.constants.emptyArray);
+            args.push_back(env.constants.emptyBoolArray);
           } else if (vcc->id() == env.constants.ids.forall) {
-            cid = env.constants.ids.array_bool_and;
+            cid = env.constants.ids.bool_reif.array_and;
             args.push_back(vcc->arg(0));
             args.push_back(env.constants.literalTrue);
           } else if (vcc->id() == env.constants.ids.clause) {
@@ -4013,7 +4016,7 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd,
             args[i] = c->arg(i);
           }
           if (c->id() == env.constants.ids.exists) {
-            args.push_back(env.constants.emptyArray);
+            args.push_back(env.constants.emptyBoolArray);
           }
           if (is_fixed) {
             args.push_back(env.constants.literalFalse);
@@ -4022,11 +4025,9 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd,
           }
 
           if (c->id() == env.constants.ids.exists || c->id() == env.constants.ids.clause) {
-            cid = env.constants.ids.bool_clause_reif;
-          } else if (c->id() == env.constants.ids.forall) {
-            cid = env.constants.ids.array_bool_and;
-          } else if (c->id() == env.constants.ids.clause) {
             cid = env.constants.ids.bool_reif.clause;
+          } else if (c->id() == env.constants.ids.forall) {
+            cid = env.constants.ids.bool_reif.array_and;
           } else {
             if (env.fopts.enableHalfReification && vd->ann().contains(env.constants.ctx.pos)) {
               cid = EnvI::halfReifyId(c->id());
@@ -4224,16 +4225,16 @@ Expression* cleanup_constraint(EnvI& env, std::unordered_set<Item*>& globals, Ex
     //   really occur clause([x]) => bool_clause([x]) bool_xor([x],[y]) => bool_xor([x],[y],true)
     if (vc->id() == env.constants.ids.exists) {
       GCLock lock;
-      vc->id(env.constants.ids.bool_clause);
+      vc->id(env.constants.ids.bool_.clause);
       std::vector<Expression*> args(2);
       args[0] = vc->arg(0);
-      args[1] = env.constants.emptyArray;
+      args[1] = env.constants.emptyBoolArray;
       ASTExprVec<Expression> argsv(args);
       vc->args(argsv);
       vc->decl(env.model->matchFn(env, vc, false));
     } else if (vc->id() == env.constants.ids.forall) {
       GCLock lock;
-      vc->id(env.constants.ids.array_bool_and);
+      vc->id(env.constants.ids.bool_reif.array_and);
       std::vector<Expression*> args(2);
       args[0] = vc->arg(0);
       args[1] = env.constants.literalTrue;

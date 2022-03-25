@@ -1814,8 +1814,6 @@ protected:
   Id* addId(const std::string& s);
 
 public:
-  /// Empty array of literals
-  ArrayLit* emptyArray;  // TODO rename emptyBoolArray
   /// Literal true
   BoolLit* literalTrue;
   /// Variable bound to true
@@ -1834,6 +1832,8 @@ public:
   FunctionI* varRedef;
   /// Literal absent value
   Expression* absent;
+  /// Empty array of literals
+  ArrayLit* emptyBoolArray;
   /// Identifiers for builtins
   struct {
     ASTString forall;
@@ -1978,12 +1978,12 @@ public:
     } bool_;           // NOLINT(readability-identifier-naming)
 
     struct {
-      ASTString clause;  // NOLINT(readability-identifier-naming)
+      ASTString clause;
       ASTString eq;
-    } bool_reif;  // NOLINT(readability-identifier-naming)
+      ASTString array_and;  // NOLINT(readability-identifier-naming)
+    } bool_reif;            // NOLINT(readability-identifier-naming)
 
-    ASTString array_bool_or;   // NOLINT(readability-identifier-naming)
-    ASTString array_bool_and;  // NOLINT(readability-identifier-naming)
+    ASTString array_bool_and_imp;  // NOLINT(readability-identifier-naming)
 
     struct {
       ASTString card;
