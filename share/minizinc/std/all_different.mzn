@@ -19,7 +19,8 @@ predicate all_different(array[$X] of var set of int: x) =
     fzn_all_different_set(array1d(x));
 
 /**  @group globals.alldifferent
-  Constrain the elements in the array \a x to be pairwise different or absent.
+  Constrain the non-absent elements in the array \a x to be pairwise different.
+  The absent value <> is allowed to occur multiple times.
 */
 predicate all_different(array[$X] of var opt int: x) =
     analyse_all_different(array1d(x)) /\
