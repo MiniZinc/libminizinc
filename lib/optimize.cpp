@@ -1586,10 +1586,16 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
       std::swap(b0s, b1s);
     }
     assert(b0s != 2);
+    if (b0s == 2) {
+      // Should never happen, but to be safe, just do nothing in release mode
+      remove = false;
+      return;
+    }
     if ((ci != nullptr) || vdi->e()->ti()->domain() == env.constants.literalTrue) {
       if (b0s != b1s) {
         if (b1s == 2) {
-          b1->cast<Id>()->decl()->ti()->domain(env.constants.boollit(isTrue));
+          /// b0 is fixed, b1 is not fixed, so make them equal so that the ci/vdi is true
+          b1->cast<Id>()->decl()->ti()->domain(env.constants.boollit(b0s == 1));
           vardeclQueue.push_back(env.varOccurrences.idx.find(b1->cast<Id>()->decl()->id())->second);
           if (ci != nullptr) {
             toRemove.push_back(ci);
@@ -1606,7 +1612,8 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
     } else if ((vdi != nullptr) && vdi->e()->ti()->domain() == env.constants.literalFalse) {
       if (b0s != b1s) {
         if (b1s == 2) {
-          b1->cast<Id>()->decl()->ti()->domain(env.constants.boollit(isTrue));
+          /// b0 is fixed, b1 is not fixed, so make them different so that vdi is false
+          b1->cast<Id>()->decl()->ti()->domain(env.constants.boollit(b0s == 0));
           vardeclQueue.push_back(env.varOccurrences.idx.find(b1->cast<Id>()->decl()->id())->second);
         }
       } else {

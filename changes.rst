@@ -22,6 +22,8 @@ Bug fixes:
 -  Fix a bug where variables required by a solution checker were not always correctly passed to the
    checker, triggering a type error in the checker output.
 -  Fix garbage collection bug during typechecking (:bugref:`564`).
+-  Fix optimisation of reified ``bool_eq`` constraint where the result must be ``false``
+   (:bugref:`565`).
 
 .. _v2.6.2:
 
