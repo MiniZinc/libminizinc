@@ -9,11 +9,19 @@ https://github.com/MiniZinc/libminizinc/issues.
 Unreleased
 ~~~~~~~~~~
 
+Changes:
+^^^^^^^^
+
+-  Avoid the creation of intermediate ``bool_clause_imp`` calls.
+-  Add the ``no_cse`` annotation to allow CSE storage optimization.
+-  Improve documentation for ``all_different`` with optional variables.
+
 Bug fixes:
 ^^^^^^^^^^
 
 -  Fix a bug where variables required by a solution checker were not always correctly passed to the
    checker, triggering a type error in the checker output.
+-  Fix garbage collection bug during typechecking (:bugref:`564`).
 
 .. _v2.6.2:
 

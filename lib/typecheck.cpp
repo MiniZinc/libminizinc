@@ -2942,18 +2942,18 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
   std::vector<FunctionI*> functionItems;
   std::vector<AssignI*> assignItems;
-  std::vector<Item*> annotatedExpressionItems;
+  std::unique_ptr<Model> annotatedExpressionItems(new Model);
   auto* enumItems = new Model;
 
   class TSVFuns : public ItemVisitor {
   public:
     EnvI& env;
     Model* model;
+    Model& toAdd;
     std::vector<FunctionI*>& fis;
-    std::vector<Item*>& toAdd;
     std::vector<TypeError>& typeErrors;
     ASTStringSet reifiedAnnotationIds;
-    TSVFuns(EnvI& env0, Model* model0, std::vector<FunctionI*>& fis0, std::vector<Item*>& toAdd0,
+    TSVFuns(EnvI& env0, Model* model0, std::vector<FunctionI*>& fis0, Model& toAdd0,
             std::vector<TypeError>& typeErrors0)
         : env(env0), model(model0), fis(fis0), toAdd(toAdd0), typeErrors(typeErrors0) {}
     void vFunctionI(FunctionI* i) {
@@ -2983,7 +2983,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
             auto* vd = new VarDecl(Location().introduce(), ti, i->id());
             vd->ann().add(new Call(Location().introduce(),
                                    env.constants.ann.mzn_add_annotated_expression, {IntLit::a(0)}));
-            toAdd.push_back(new VarDeclI(Location().introduce(), vd));
+            toAdd.addItem(new VarDeclI(Location().introduce(), vd));
             reifiedAnnotationIds.insert(i->id());
           }
         } else {
@@ -2999,16 +2999,16 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           fi->ann().add(new Call(Location().introduce(),
                                  env.constants.ann.mzn_add_annotated_expression,
                                  {IntLit::a(reifiedAnnotationIdx)}));
-          toAdd.push_back(fi);
+          toAdd.addItem(fi);
           (void)model->registerFn(env, fi);
           fis.push_back(fi);
         }
       }
     }
-  } _tsvf(env.envi(), m, functionItems, annotatedExpressionItems, typeErrors);
+  } _tsvf(env.envi(), m, functionItems, *annotatedExpressionItems, typeErrors);
   iter_items(_tsvf, m);
-  for (auto* item : annotatedExpressionItems) {
-    m->addItem(item);  // Add the new items now that we've finished iterating
+  for (auto* it : *annotatedExpressionItems) {
+    m->addItem(it);  // Add the new items now that we've finished iterating
   }
 
   class TSV0 : public ItemVisitor {
@@ -3866,7 +3866,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
   }
 
   if (isFlatZinc) {
-    for (auto* it : annotatedExpressionItems) {
+    for (auto* it : *annotatedExpressionItems) {
       // We needed these to do typechecking but we can't keep them because this is a FlatZinc file
       it->remove();
     }
