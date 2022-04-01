@@ -224,7 +224,8 @@ public:
   bool isIntSetArray() const { return _dim == 1 && st() == ST_SET && bt() == BT_INT; }
 
   bool operator==(const Type& t) const {
-    return ti() == t.ti() && bt() == t.bt() && st() == t.st() && ot() == t.ot() && _dim == t._dim;
+    return ti() == t.ti() && bt() == t.bt() && st() == t.st() && ot() == t.ot() && _dim == t._dim &&
+           (bt() != BT_TUPLE || typeId() == t.typeId());
   }
   bool operator!=(const Type& t) const { return !this->operator==(t); }
   // protected:

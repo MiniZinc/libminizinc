@@ -21,10 +21,14 @@
 
 namespace MiniZinc {
 
-Model::FnEntry::FnEntry(FunctionI* fi0)
+Model::FnEntry::FnEntry(EnvI& env, FunctionI* fi0)
     : t(fi0->paramCount()), fi(fi0), isPolymorphic(false), isPolymorphicVariant(false) {
   for (unsigned int i = 0; i < fi->paramCount(); i++) {
     t[i] = fi->param(i)->type();
+    if (t[i].bt() == Type::BT_TUPLE && t[i].typeId() == 0) {
+      t[i].typeId(env.registerTupleType(fi->param(i)->ti()));
+      fi->param(i)->type(t[i]);
+    }
     isPolymorphic |= (t[i].bt() == Type::BT_TOP);
   }
 }
@@ -373,7 +377,7 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
   if (i_id == m->_fnmap.end()) {
     // new element
     std::vector<FnEntry> v;
-    FnEntry fe(fi);
+    FnEntry fe(env, fi);
     addPolymorphicInstances(fe, v);
     m->_fnmap.insert(std::pair<ASTString, std::vector<FnEntry> >(fi->id(), v));
   } else {
@@ -389,8 +393,6 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
         for (unsigned int j = 0; j < fi->paramCount(); j++) {
           Type t1 = i.fi->param(j)->type();
           Type t2 = fi->param(j)->type();
-          t1.typeId(0);
-          t2.typeId(0);
           if (t1 != t2) {
             alleq = false;
           }
@@ -413,7 +415,7 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
             if (Call* deprecated = i.fi->ann().getCall(env.constants.ann.mzn_deprecated)) {
               fi->ann().add(deprecated);
             }
-            i = fi;
+            i = FnEntry(env, fi);
           } else if (Call* deprecated = fi->ann().getCall(env.constants.ann.mzn_deprecated)) {
             i.fi->ann().add(deprecated);
           }
@@ -437,7 +439,7 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
         }
       }
     }
-    FnEntry fe(fi);
+    FnEntry fe(env, fi);
     addPolymorphicInstances(fe, v);
     if (keepSorted) {
       std::sort(i_id->second.begin(), i_id->second.end(),
@@ -721,8 +723,6 @@ void Model::checkFnOverloading(EnvI& env) {
         for (unsigned int i = 0; i < cur->paramCount(); i++) {
           Type t1 = cur->param(i)->type();
           Type t2 = cmp->param(i)->type();
-          t1.typeId(0);
-          t2.typeId(0);
           if (t1 != t2) {
             allEqual = false;
             break;

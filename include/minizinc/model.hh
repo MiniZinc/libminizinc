@@ -73,7 +73,7 @@ public:
     FunctionI* fi;
     bool isPolymorphic;
     bool isPolymorphicVariant;
-    FnEntry(FunctionI* fi0);
+    FnEntry(EnvI& env, FunctionI* fi0);
     static bool compare(const EnvI& env, const FnEntry& e1, const FnEntry& e2);
   };
 

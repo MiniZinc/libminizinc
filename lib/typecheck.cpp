@@ -2893,30 +2893,29 @@ public:
         assert(ti->domain()->isa<ArrayLit>());
         auto* al = ti->domain()->cast<ArrayLit>();
 
-        std::vector<Type> fields(al->size());
         bool all_var = true;
         for (unsigned int i = 0; i < al->size(); i++) {
           assert((*al)[i]->isa<TypeInst>());
           vTypeInst((*al)[i]->cast<TypeInst>());
-          fields[i] = (*al)[i]->type();
-          all_var = all_var && fields[i].isvar();
+          Type field_ty = (*al)[i]->type();
+          all_var = all_var && field_ty.isvar();
           if (tt.isvar()) {
-            if (fields[i].st() == Type::ST_SET && fields[i].bt() != Type::BT_INT &&
-                fields[i].bt() != Type::BT_TOP) {
+            if (field_ty.st() == Type::ST_SET && field_ty.bt() != Type::BT_INT &&
+                field_ty.bt() != Type::BT_TOP) {
               throw TypeError(_env, ti->loc(),
                               "var tuples with set element types other than `int' are not allowed");
             }
             if (tt.bt() == Type::BT_ANN || tt.bt() == Type::BT_STRING) {
               throw TypeError(
                   _env, ti->loc(),
-                  "var tuples with " + fields[i].toString(_env) + " types are not allowed");
+                  "var tuples with " + field_ty.toString(_env) + " types are not allowed");
             }
-            if (fields[i].dim() != 0) {
+            if (field_ty.dim() != 0) {
               throw TypeError(_env, ti->loc(), "var tuples with array types are not allowed");
             }
           }
         }
-        unsigned int typeId = _env.registerTupleType(fields);
+        unsigned int typeId = _env.registerTupleType(ti);
         tt.typeId(typeId);
         if (all_var) {
           tt.ti(Type::TI_VAR);
