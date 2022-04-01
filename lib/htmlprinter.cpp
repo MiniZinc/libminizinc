@@ -1780,6 +1780,14 @@ std::vector<HtmlDocument> RSTPrinter::printRST(EnvI& env, MiniZinc::Model* m,
   }
 
   for (auto* sg : g.subgroups.m) {
+    if (!sg->items.empty()) {
+      // Need to create sub-group so these don't get lost
+      auto* others = new Group("otherdeclarations", sg->fullPath + "-otherdeclarations");
+      others->htmlName = "Other declarations";
+      others->items = sg->items;
+      sg->subgroups.m.push_back(others);
+    }
+
     // Split sub-group into sub-pages
     std::ostringstream oss;
     oss << Group::rstHeading(sg->htmlName, 0);

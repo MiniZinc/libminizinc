@@ -25,6 +25,7 @@ Bug fixes:
 -  Fix garbage collection bug during typechecking (:bugref:`564`).
 -  Fix optimisation of reified ``bool_eq`` constraint where the result must be ``false``
    (:bugref:`565`).
+-  Restore missing documentation for functions in the top-level ``globals`` group.
 
 .. _v2.6.2:
 
