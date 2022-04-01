@@ -1618,8 +1618,8 @@ public:
       if (enumId != vi_t.typeId()) {
         enumId = 0;
       }
-      if (!Type::btSubtype(vi_t, ty, true)) {
-        if (ty.bt() == Type::BT_UNKNOWN || Type::btSubtype(ty, vi_t, true)) {
+      if (!Type::btSubtype(_env, vi_t, ty, true)) {
+        if (ty.bt() == Type::BT_UNKNOWN || Type::btSubtype(_env, ty, vi_t, true)) {
           ty.bt(vi_t.bt());
         } else {
           throw TypeError(_env, sl->loc(), "non-uniform set literal");
@@ -1724,13 +1724,13 @@ public:
           } else {
             unsigned int tyEnumId = ty.typeId();
             ty.typeId(vi->type().typeId());
-            if (Type::btSubtype(ty, vi->type(), true)) {
+            if (Type::btSubtype(_env, ty, vi->type(), true)) {
               ty.bt(vi->type().bt());
             }
             if (tyEnumId != vi->type().typeId()) {
               ty.typeId(0);
             }
-            if (!Type::btSubtype(vi->type(), ty, true) || ty.st() != vi->type().st()) {
+            if (!Type::btSubtype(_env, vi->type(), ty, true) || ty.st() != vi->type().st()) {
               throw TypeError(_env, al->loc(), "non-uniform array literal");
             }
           }
@@ -2221,15 +2221,15 @@ public:
           tret.bt(ethen->type().bt());
           tret.dim(ethen->type().dim());
         }
-        if ((!ethen->type().isbot() && !Type::btSubtype(ethen->type(), tret, true) &&
-             !Type::btSubtype(tret, ethen->type(), true)) ||
+        if ((!ethen->type().isbot() && !Type::btSubtype(_env, ethen->type(), tret, true) &&
+             !Type::btSubtype(_env, tret, ethen->type(), true)) ||
             ethen->type().st() != tret.st() || ethen->type().dim() != tret.dim()) {
           throw TypeError(_env, ethen->loc(),
                           "type mismatch in branches of conditional. `then' branch has type `" +
                               ethen->type().toString(_env) + "', but `else' branch has type `" +
                               tret.toString(_env) + "'");
         }
-        if (Type::btSubtype(tret, ethen->type(), true)) {
+        if (Type::btSubtype(_env, tret, ethen->type(), true)) {
           tret.bt(ethen->type().bt());
         }
         if (tret.typeId() != 0 && ethen->type().typeId() == 0 &&
@@ -3301,7 +3301,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
   } _tsv1(env.envi(), ts);
   iter_items(_tsv1, m);
 
-  m->sortFn();
+  m->sortFn(env.envi());
 
   {
     struct SortByPayload {
@@ -3358,7 +3358,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
                               c->arg(0)->type().toString(env.envi()) + "'");
         }
       } else if (c->id() == env.envi().constants.ids.anon_enum_set) {
-        if (!c->arg(0)->type().isSubtypeOf(Type::parsetint(), false)) {
+        if (!c->arg(0)->type().isSubtypeOf(env.envi(), Type::parsetint(), false)) {
           throw TypeError(env.envi(), c->arg(0)->loc(),
                           "anonymous enum initializer must be of type `set of int', but is `" +
                               c->arg(0)->type().toString(env.envi()) + "'");
@@ -3928,7 +3928,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       }
       Type vdktype = vd_k()->type();
       vdktype.ti(Type::TI_VAR);
-      if (!vd_k()->type().isSubtypeOf(vd->type(), false)) {
+      if (!vd_k()->type().isSubtypeOf(env.envi(), vd->type(), false)) {
         std::ostringstream ss;
         ss << "Solution checker requires `" << vd->id()->str() << "' to be of type `"
            << vdktype.toString(env.envi()) << "'";

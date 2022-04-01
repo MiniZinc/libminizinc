@@ -167,7 +167,7 @@ public:
   ~TupleType() = delete;
 
   size_t size() const { return _size; }
-  Type field(size_t i) { return _fields[i]; }
+  Type field(size_t i) const { return _fields[i]; }
   size_t hash() const {
     std::size_t seed = _size;
     for (size_t i = 0; i < _size; ++i) {
@@ -181,6 +181,18 @@ public:
     }
     for (int i = 0; i < _size; ++i) {
       if (_fields[i] != rhs._fields[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool isSubtype(const EnvI& env, const TupleType& other, bool strictEnum) const {
+    if (other.size() < size()) {
+      return false;
+    }
+    for (size_t i = 0; i < size(); ++i) {
+      if (!field(i).isSubtypeOf(env, other.field(i), strictEnum)) {
         return false;
       }
     }

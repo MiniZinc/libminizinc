@@ -29,22 +29,17 @@ Model::FnEntry::FnEntry(FunctionI* fi0)
   }
 }
 
-bool Model::FnEntry::operator<(const Model::FnEntry& f) const {
-  assert(!compare(*this, f) || !compare(f, *this));
-  return compare(*this, f);
-}
-
-bool Model::FnEntry::compare(const Model::FnEntry& e1, const Model::FnEntry& e2) {
+bool Model::FnEntry::compare(const EnvI& env, const Model::FnEntry& e1, const Model::FnEntry& e2) {
   if (e1.t.size() < e2.t.size()) {
     return true;
   }
   if (e1.t.size() == e2.t.size()) {
     for (unsigned int i = 0; i < e1.t.size(); i++) {
       if (e1.t[i] != e2.t[i]) {
-        if (e1.t[i].isSubtypeOf(e2.t[i], true)) {
+        if (e1.t[i].isSubtypeOf(env, e2.t[i], true)) {
           return true;
         }
-        if (e2.t[i].isSubtypeOf(e1.t[i], true)) {
+        if (e2.t[i].isSubtypeOf(env, e1.t[i], true)) {
           return false;
         }
         switch (e1.t[i].cmp(e2.t[i])) {
@@ -445,7 +440,10 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
     FnEntry fe(fi);
     addPolymorphicInstances(fe, v);
     if (keepSorted) {
-      std::sort(i_id->second.begin(), i_id->second.end());
+      std::sort(i_id->second.begin(), i_id->second.end(),
+                [&env](const Model::FnEntry& e1, const Model::FnEntry& e2) {
+                  return Model::FnEntry::compare(env, e1, e2);
+                });
     }
   }
   if (fi->id() == env.constants.ids.mzn_reverse_map_var) {
@@ -614,17 +612,20 @@ void Model::mergeStdLib(EnvI& env, Model* m) const {
       }
     }
   }
-  m->sortFn();
+  m->sortFn(env);
 }
 
-void Model::sortFn() {
+void Model::sortFn(const EnvI& env) {
   Model* m = this;
   while (m->_parent != nullptr) {
     m = m->_parent;
   }
   for (auto& it : m->_fnmap) {
     // Sort all functions by type
-    std::sort(it.second.begin(), it.second.end());
+    std::sort(it.second.begin(), it.second.end(),
+              [&env](const Model::FnEntry& e1, const Model::FnEntry& e2) {
+                return Model::FnEntry::compare(env, e1, e2);
+              });
   }
 }
 

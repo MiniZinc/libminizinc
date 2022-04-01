@@ -18,6 +18,7 @@
 namespace MiniZinc {
 
 class EnvI;
+class TupleType;
 
 /// Type of a MiniZinc expression
 class Type {
@@ -244,29 +245,16 @@ public:
     t._dim = (dim == 0 ? 0 : (dim == 1 ? -1 : dim - 1));
     return t;
   }
-  std::string toString(EnvI& env) const;
+  std::string toString(const EnvI& env) const;
   std::string nonEnumToString() const;
 
   /// Check if \a bt0 is a subtype of \a bt1
-  static bool btSubtype(const Type& t0, const Type& t1, bool strictEnums) {
-    if (t0.bt() == t1.bt() &&
-        (!strictEnums || t0.dim() != 0 || (t0.typeId() == t1.typeId() || t1.typeId() == 0))) {
-      return true;
-    }
-    switch (t0.bt()) {
-      case BT_BOOL:
-        return (t1.bt() == BT_INT || t1.bt() == BT_FLOAT);
-      case BT_INT:
-        return t1.bt() == BT_FLOAT;
-      default:
-        return false;
-    }
-  }
+  static bool btSubtype(const EnvI& env, const Type& t0, const Type& t1, bool strictEnums);
 
   /// Check if this type is a subtype of \a t
-  bool isSubtypeOf(const Type& t, bool strictEnums) const {
+  bool isSubtypeOf(const EnvI& env, const Type& t, bool strictEnums) const {
     if (_dim == 0 && t._dim != 0 && st() == ST_SET && t.st() == ST_PLAIN && bt() != BT_FLOAT &&
-        (bt() == BT_BOT || btSubtype(*this, t, false) || t.bt() == BT_TOP) && ti() == TI_PAR &&
+        (bt() == BT_BOT || btSubtype(env, *this, t, false) || t.bt() == BT_TOP) && ti() == TI_PAR &&
         (ot() == OT_PRESENT || ot() == t.ot())) {
       return true;
     }
@@ -281,11 +269,11 @@ public:
       return true;
     }
     // same type, this is present or both optional
-    if (ti() == t.ti() && btSubtype(*this, t, strictEnums) && st() == t.st()) {
+    if (ti() == t.ti() && btSubtype(env, *this, t, strictEnums) && st() == t.st()) {
       return ot() == OT_PRESENT || ot() == t.ot();
     }
     // this is par other than that same type as t
-    if (ti() == TI_PAR && btSubtype(*this, t, strictEnums) && st() == t.st()) {
+    if (ti() == TI_PAR && btSubtype(env, *this, t, strictEnums) && st() == t.st()) {
       return ot() == OT_PRESENT || ot() == t.ot();
     }
     if (ti() == TI_PAR && t.bt() == BT_BOT) {

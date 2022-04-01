@@ -14,7 +14,26 @@
 
 namespace MiniZinc {
 
-std::string Type::toString(EnvI& env) const {
+bool Type::btSubtype(const EnvI& env, const Type& t0, const Type& t1, bool strictEnums) {
+  bool sameBT =
+      t0.bt() == t1.bt() &&
+      (t0.bt() != BT_TUPLE || t0.typeId() == t1.typeId() ||
+       env.getTupleType(t0.typeId())->isSubtype(env, *env.getTupleType(t1.typeId()), strictEnums));
+  if (sameBT &&
+      (!strictEnums || t0.dim() != 0 || (t0.typeId() == t1.typeId() || t1.typeId() == 0))) {
+    return true;
+  }
+  switch (t0.bt()) {
+    case BT_BOOL:
+      return (t1.bt() == Type::BT_INT || t1.bt() == BT_FLOAT);
+    case BT_INT:
+      return t1.bt() == BT_FLOAT;
+    default:
+      return false;
+  }
+}
+
+std::string Type::toString(const EnvI& env) const {
   std::ostringstream oss;
   if (_dim > 0) {
     oss << "array[";

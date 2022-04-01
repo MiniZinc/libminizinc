@@ -1149,7 +1149,7 @@ std::string EnvI::enumToString(unsigned int enumId, int i) {
   return eval_string(*this, call);
 }
 bool EnvI::isSubtype(const Type& t1, const Type& t2, bool strictEnums) const {
-  if (!t1.isSubtypeOf(t2, strictEnums)) {
+  if (!t1.isSubtypeOf(*this, t2, strictEnums)) {
     return false;
   }
   if (strictEnums && t1.dim() == 0 && t2.dim() != 0 && t2.typeId() != 0) {

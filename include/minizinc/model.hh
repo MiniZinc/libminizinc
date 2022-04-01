@@ -74,8 +74,7 @@ public:
     bool isPolymorphic;
     bool isPolymorphicVariant;
     FnEntry(FunctionI* fi0);
-    bool operator<(const FnEntry& f) const;
-    static bool compare(const FnEntry& e1, const FnEntry& e2);
+    static bool compare(const EnvI& env, const FnEntry& e1, const FnEntry& e2);
   };
 
 protected:
@@ -162,7 +161,7 @@ public:
   /// Register a builtin function item
   bool registerFn(EnvI& env, FunctionI* fi, bool keepSorted = false, bool throwIfDuplicate = true);
   /// Sort functions by type
-  void sortFn();
+  void sortFn(const EnvI& env);
   /// Check that registered functions do not clash wrt overloading
   void checkFnOverloading(EnvI& env);
   /// Fix function table after type checking
