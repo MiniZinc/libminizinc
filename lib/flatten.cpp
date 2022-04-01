@@ -4315,6 +4315,7 @@ void oldflatzinc(Env& e) {
   // Variables mapped to the index of the constraint that defines them
   enum DFS_STATUS { DFS_UNKNOWN, DFS_SEEN, DFS_DONE };
   std::unordered_map<VarDecl*, std::pair<int, DFS_STATUS>> definition_map;
+  std::vector<VarDecl*> definitions;  // Make iteration over definition_map deterministic
 
   // Record indices of VarDeclIs with Id RHS for sorting & unification
   std::vector<int> declsWithIds;
@@ -4352,6 +4353,7 @@ void oldflatzinc(Env& e) {
                 new_ce->ann().removeCall(env.constants.ann.defines_var);
               } else {
                 definition_map.insert({ident->decl(), {i, DFS_UNKNOWN}});
+                definitions.push_back(ident->decl());
               }
             }
           }
@@ -4415,10 +4417,10 @@ void oldflatzinc(Env& e) {
         }
       }
     };
-    for (auto& it : definition_map) {
-      if (it.second.second == 0) {
+    for (auto* it : definitions) {
+      if (definition_map[it].second == 0) {
         // not yet visited
-        definesStack.push_back(it.first);
+        definesStack.push_back(it);
         while (!definesStack.empty()) {
           VarDecl* cur = definesStack.back();
           if (definition_map[cur].second != DFS_UNKNOWN) {

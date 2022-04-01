@@ -1,0 +1,10 @@
+array [1..3] of int: X_INTRODUCED_2_ = [1,-1,-1];
+var int: w;
+var int: x:: is_defined_var;
+var int: y;
+var int: z;
+constraint int_lin_eq(X_INTRODUCED_2_,[w,x,y],0);
+constraint int_lin_eq(X_INTRODUCED_2_,[x,y,z],0):: defines_var(x);
+constraint int_lin_eq(X_INTRODUCED_2_,[y,z,w],0);
+constraint int_lin_eq(X_INTRODUCED_2_,[z,w,x],0);
+solve  satisfy;
