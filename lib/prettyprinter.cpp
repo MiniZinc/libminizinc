@@ -897,6 +897,8 @@ public:
         return _t.mapArrayLit(e->cast<ArrayLit>());
       case Expression::E_ARRAYACCESS:
         return _t.mapArrayAccess(e->cast<ArrayAccess>());
+      case Expression::E_FIELDACCESS:
+        return _t.mapFieldAccess(e->cast<FieldAccess>());
       case Expression::E_COMP:
         return _t.mapComprehension(e->cast<Comprehension>());
       case Expression::E_ITE:
@@ -1425,6 +1427,13 @@ public:
       args->addDocumentToList(expression_to_document(aa->idx()[i]));
     }
     dl->addDocumentToList(args);
+    return dl;
+  }
+  static ret mapFieldAccess(const FieldAccess* fa) {
+    auto* dl = new DocumentList("", ".", "");
+
+    dl->addDocumentToList(expression_to_document(fa->v()));
+    dl->addDocumentToList(expression_to_document(fa->field()));
     return dl;
   }
   static ret mapComprehension(const Comprehension* c) {
