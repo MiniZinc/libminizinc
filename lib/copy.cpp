@@ -263,6 +263,14 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
       c->idx(ASTExprVec<Expression>(idx));
       ret = c;
     } break;
+    case Expression::E_FIELDACCESS: {
+      auto* fa = e->cast<FieldAccess>();
+      auto* c = new FieldAccess(copy_location(m, e),
+                                copy(env, m, fa->v(), followIds, copyFundecls, isFlatModel),
+                                copy(env, m, fa->field(), followIds, copyFundecls, isFlatModel));
+      m.insert(e, c);
+      ret = c;
+    } break;
     case Expression::E_COMP: {
       auto* c = e->cast<Comprehension>();
       Generators g;
