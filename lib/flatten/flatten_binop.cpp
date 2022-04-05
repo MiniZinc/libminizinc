@@ -1082,7 +1082,8 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
     return ret;
   }
 
-  if (e1.r()->type().isPar() && e0.r()->isa<Id>() && (bot == BOT_IN || bot == BOT_SUBSET)) {
+  if (isBuiltin && e1.r()->type().isPar() && e0.r()->isa<Id>() &&
+      (bot == BOT_IN || bot == BOT_SUBSET)) {
     if (e0.r()->type().bt() == Type::BT_INT &&
         flatten_dom_constraint<IntLit>(env, ctx, e0.r()->cast<Id>()->decl(), e1.r(), r, ret)) {
       return ret;
