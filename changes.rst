@@ -26,6 +26,7 @@ Bug fixes:
 -  Fix optimisation of reified ``bool_eq`` constraint where the result must be ``false``
    (:bugref:`565`).
 -  Restore missing documentation for functions in the top-level ``globals`` group.
+-  Restore ``warm_start`` search annotations for optional values (:bugref:`567`).
 
 .. _v2.6.2:
 
