@@ -1442,6 +1442,7 @@ public:
 
 class EnvI;
 class CopyMap;
+class TIIDInfo;
 
 /// \brief %Let expression
 class Let : public Expression {
@@ -1530,6 +1531,10 @@ public:
   bool isEnum() const { return _flag2; }
   /// Set if this TypeInst represents an enum
   void setIsEnum(bool b) { _flag2 = b; }
+
+  // Collect type ids for monomorphasation (assumes tuple TypeInst)
+  void collectTypeIds(std::unordered_map<ASTString, size_t>& seen_tiids,
+                      std::vector<TIIDInfo>& type_ids) const;
 };
 
 /**

@@ -324,7 +324,7 @@ public:
   unsigned int registerArrayEnum(const std::vector<unsigned int>& arrayEnum);
   const std::vector<unsigned int>& getArrayEnum(unsigned int i) const;
   unsigned int registerTupleType(const std::vector<Type>& fields);
-  unsigned int registerTupleType(TypeInst* ti);
+  unsigned int registerTupleType(TypeInst* ti, bool write);
   TupleType* getTupleType(unsigned int i) const;
   std::string enumToString(unsigned int enumId, int i);
   /// Check if \a t1 is a subtype of \a t2 (including enumerated types if \a strictEnum is true)

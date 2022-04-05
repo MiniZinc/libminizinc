@@ -26,11 +26,26 @@ Model::FnEntry::FnEntry(EnvI& env, FunctionI* fi0)
   for (unsigned int i = 0; i < fi->paramCount(); i++) {
     t[i] = fi->param(i)->type();
     if (t[i].bt() == Type::BT_TUPLE && t[i].typeId() == 0) {
-      t[i].typeId(env.registerTupleType(fi->param(i)->ti()));
+      t[i].typeId(env.registerTupleType(fi->param(i)->ti(), true));
       fi->param(i)->type(t[i]);
     }
-    isPolymorphic |= (t[i].bt() == Type::BT_TOP);
+    isPolymorphic |= checkPoly(env, t[i]);
   }
+}
+
+bool Model::FnEntry::checkPoly(const EnvI& env, const Type& t) {
+  if (t.bt() == Type::BT_TOP) {
+    return true;
+  }
+  if (t.bt() == Type::BT_TUPLE) {
+    TupleType* tt = env.getTupleType(t.typeId());
+    for (size_t i = 0; i < tt->size(); ++i) {
+      if (checkPoly(env, tt->field(i))) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 bool Model::FnEntry::compare(const EnvI& env, const Model::FnEntry& e1, const Model::FnEntry& e2) {
@@ -118,6 +133,24 @@ void Model::setOutputItem(OutputI* oi) {
 namespace {
 
 enum PossibleBaseTypes { PBT_ANY, PBT_ALL, PBT_BIFS, PBT_BIF, PBT_I };
+PossibleBaseTypes pbt_from_type(const Type& t) {
+  if (t.any()) {
+    return PBT_ANY;
+  }
+  if (t.isvar()) {
+    if (t.isOpt()) {
+      return PBT_BIF;
+    }
+    if (t.isSet()) {
+      return PBT_I;
+    }
+    return PBT_BIFS;
+  }
+  if (t.isSet()) {
+    return PBT_BIF;
+  }
+  return PBT_ALL;
+}
 PossibleBaseTypes pbt_join(PossibleBaseTypes pbt0, PossibleBaseTypes pbt1) {
   if (pbt0 == PBT_ANY) {
     return pbt1;
@@ -247,9 +280,46 @@ void increment_type(Type& t, PossibleBaseTypes pbt) {
 
 }  // namespace
 
-void Model::addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& entries) {
+// For each TIId, store pointers to the type objects that refer to this TIId
+struct TIIDInfo {
+  std::vector<Type*> t;
+  PossibleBaseTypes pbt;
+  TIIDInfo(std::vector<Type*> t0, PossibleBaseTypes pbt0) : t(std::move(t0)), pbt(pbt0) {}
+};
+
+void TypeInst::collectTypeIds(std::unordered_map<ASTString, size_t>& seen_tiids,
+                              std::vector<TIIDInfo>& type_ids) const {
+  auto* al = domain()->cast<ArrayLit>();
+  for (size_t i = 0; i < al->size(); i++) {
+    auto* ti = (*al)[i]->cast<TypeInst>();
+    if (ti->type().bt() == Type::BT_TOP) {
+      assert(ti->domain() && ti->domain()->isa<TIId>());
+      TIId* id0 = ti->domain()->cast<TIId>();
+      auto it = seen_tiids.find(id0->v());
+      if (it == seen_tiids.end()) {
+        type_ids.emplace_back(
+            std::vector<Type*>({&ti->_type}),
+            pbt_join(ti->type().any() ? PBT_ANY : PBT_ALL, pbt_from_type(ti->type())));
+        seen_tiids.emplace(id0->v(), type_ids.size() - 1);
+      } else {
+        TIIDInfo& info = type_ids[it->second];
+        info.pbt = pbt_join(info.pbt, pbt_from_type(ti->type()));
+        info.t.push_back(&ti->_type);
+      }
+    } else if (ti->type().bt() == Type::BT_TUPLE) {
+      size_t size = seen_tiids.size();
+      ti->collectTypeIds(seen_tiids, type_ids);
+      if (size < seen_tiids.size()) {
+        ti->_type.typeId(0);
+      }
+    }
+  }
+}
+
+void Model::addPolymorphicInstances(EnvI& env, Model::FnEntry& fe, std::vector<FnEntry>& entries) {
   entries.push_back(fe);
   if (fe.isPolymorphic) {
+    GCLock lock;
     FnEntry cur = fe;
     cur.isPolymorphicVariant = true;
 
@@ -272,57 +342,18 @@ void Model::addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& en
 
      */
 
-    // For each TIId, store pointers to the type objects that refer to this TIId
-    struct TIIDInfo {
-      std::vector<Type*> t;
-      PossibleBaseTypes pbt;
-      TIIDInfo(std::vector<Type*> t0, PossibleBaseTypes pbt0) : t(std::move(t0)), pbt(pbt0) {}
-    };
+    std::unordered_map<ASTString, size_t> type_id_map;
     std::vector<TIIDInfo> type_ids;
-    std::unordered_set<ASTString> seen_tiids;
 
-    // First step: initialise all type variables to bool
-    // and collect them in the type_ids vector
-    for (unsigned int i = 0; i < cur.t.size(); i++) {
-      if (cur.t[i].bt() == Type::BT_TOP) {
-        assert(cur.fi->param(i)->ti()->domain() && cur.fi->param(i)->ti()->domain()->isa<TIId>());
-        TIId* id0 = cur.fi->param(i)->ti()->domain()->cast<TIId>();
-        if (seen_tiids.find(id0->v()) == seen_tiids.end()) {
-          seen_tiids.insert(id0->v());
-          // New tiid, collect all occurrences
-          std::vector<Type*> t;
-          PossibleBaseTypes pbt = cur.fi->param(i)->ti()->type().any() ? PBT_ANY : PBT_ALL;
-          for (unsigned int j = i; j < cur.t.size(); j++) {
-            if ((cur.fi->param(j)->ti()->domain() != nullptr) &&
-                cur.fi->param(j)->ti()->domain()->isa<TIId>()) {
-              TIId* id1 = cur.fi->param(j)->ti()->domain()->cast<TIId>();
-              if (id0->v() == id1->v()) {
-                // Found parameter with same type variable
-                if (cur.fi->param(j)->ti()->type().any()) {
-                  pbt = pbt_join(pbt, PBT_ANY);
-                } else if (cur.fi->param(j)->type().isvar()) {
-                  if (cur.fi->param(j)->type().isOpt()) {
-                    pbt = pbt_join(pbt, PBT_BIF);
-                  } else if (cur.fi->param(j)->type().isSet()) {
-                    pbt = pbt_join(pbt, PBT_I);
-                  } else {
-                    pbt = pbt_join(pbt, PBT_BIFS);
-                  }
-                } else {
-                  if (cur.fi->param(j)->type().isSet()) {
-                    pbt = pbt_join(pbt, PBT_BIF);
-                  } else {
-                    pbt = pbt_join(pbt, PBT_ALL);
-                  }
-                }
-                t.push_back(&cur.t[j]);
-              }
-            }
-          }
-          type_ids.emplace_back(t, pbt);
-        }
-      }
+    // Create a parameter TypeInst in the format of a tuple TypeInst
+    std::vector<Expression*> tis(cur.fi->paramCount());
+    for (size_t i = 0; i < cur.fi->paramCount(); ++i) {
+      tis[i] = copy(env, cur.fi->param(i)->ti());
     }
+    auto* paramtuple = new TypeInst(Location().introduce(), Type::tuple(),
+                                    ArrayLit::constructTuple(Location().introduce(), tis));
+
+    paramtuple->collectTypeIds(type_id_map, type_ids);
 
     std::vector<size_t> stack;
     for (size_t i = 0; i < type_ids.size(); i++) {
@@ -335,7 +366,15 @@ void Model::addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& en
 
     while (!stack.empty()) {
       if (stack.back() == final_id) {
-        // If this instance isn't in entries yet, add it
+        // New complete instance
+        // First, update cur types
+        for (size_t i = 0; i < tis.size(); ++i) {
+          cur.t[i] = tis[i]->type();
+          if (cur.t[i].bt() == Type::BT_TUPLE && cur.t[i].typeId() == 0) {
+            cur.t[i].typeId(env.registerTupleType(tis[i]->cast<TypeInst>(), false));
+          }
+        }
+        // Then, If this instance isn't in entries yet, add it
         bool alreadyDefined = false;
         for (auto& entry : entries) {
           if (entry.t == cur.t) {
@@ -378,7 +417,7 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
     // new element
     std::vector<FnEntry> v;
     FnEntry fe(env, fi);
-    addPolymorphicInstances(fe, v);
+    addPolymorphicInstances(env, fe, v);
     m->_fnmap.insert(std::pair<ASTString, std::vector<FnEntry> >(fi->id(), v));
   } else {
     // add to list of existing elements
@@ -440,7 +479,7 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
       }
     }
     FnEntry fe(env, fi);
-    addPolymorphicInstances(fe, v);
+    addPolymorphicInstances(env, fe, v);
     if (keepSorted) {
       std::sort(i_id->second.begin(), i_id->second.end(),
                 [&env](const Model::FnEntry& e1, const Model::FnEntry& e2) {

@@ -1132,7 +1132,7 @@ unsigned int EnvI::registerTupleType(const std::vector<Type>& fields) {
   return ret + 1;
 }
 
-unsigned int EnvI::registerTupleType(TypeInst* ti) {
+unsigned int EnvI::registerTupleType(TypeInst* ti, bool write) {
   auto* dom = ti->domain()->cast<ArrayLit>();
 
   std::vector<Type> fields(dom->size());
@@ -1140,11 +1140,16 @@ unsigned int EnvI::registerTupleType(TypeInst* ti) {
     auto* tii = (*dom)[i]->cast<TypeInst>();
     fields[i] = tii->type();
     if (fields[i].bt() == Type::BT_TUPLE && fields[i].typeId() == 0) {
-      fields[i].typeId(registerTupleType(tii));
-      tii->type(fields[i]);
+      fields[i].typeId(registerTupleType(tii, write));
     }
   }
-  return registerTupleType(fields);
+  unsigned int ret = registerTupleType(fields);
+  if (write) {
+    Type t = ti->type();
+    t.typeId(ret);
+    ti->type(t);
+  }
+  return ret;
 }
 
 TupleType* EnvI::getTupleType(unsigned int i) const {

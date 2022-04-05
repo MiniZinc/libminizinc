@@ -229,7 +229,7 @@ void flatten_linexp_call(EnvI& env, Ctx ctx, const Ctx& nctx, ASTString& cid, Ca
     }
     if (rd->type().dim() > 1) {
       ArrayLit* al = eval_array_lit(env, rd);
-      std::vector<std::pair<int, int> > dims(1);
+      std::vector<std::pair<int, int>> dims(1);
       dims[0].first = 1;
       dims[0].second = static_cast<int>(al->size());
       rd = new ArrayLit(al->loc(), al, dims);
@@ -1014,99 +1014,114 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
             }
           }
         }
-        if (Expression* dom = decl->param(i)->ti()->domain()) {
-          if (!dom->isa<TIId>()) {
-            // May have to constrain actual argument
-            if (args[i]()->type().bt() == Type::BT_INT) {
-              GCLock lock;
-              IntSetVal* isv = eval_intset(env, dom);
-              BinOpType bot;
-              bool needToConstrain;
-              if (args[i]()->type().st() == Type::ST_SET) {
-                bot = BOT_SUBSET;
-                needToConstrain = true;
-              } else {
-                bot = BOT_IN;
-                if (args[i]()->type().dim() > 0) {
+        std::vector<std::pair<Expression*, TypeInst*>> stack({{args[i](), decl->param(i)->ti()}});
+        while (!stack.empty()) {
+          Expression* curArg = stack.back().first;
+          TypeInst* curInst = stack.back().second;
+          stack.pop_back();
+          if (Expression* dom = curInst->domain()) {
+            if (!dom->isa<TIId>()) {
+              // May have to constrain actual argument
+              if (curArg->type().bt() == Type::BT_INT) {
+                GCLock lock;
+                IntSetVal* isv = eval_intset(env, dom);
+                BinOpType bot;
+                bool needToConstrain;
+                if (curArg->type().st() == Type::ST_SET) {
+                  bot = BOT_SUBSET;
                   needToConstrain = true;
                 } else {
-                  IntBounds ib = compute_int_bounds(env, args[i]());
-                  needToConstrain = !ib.valid || isv->empty() || ib.l < isv->min(0) ||
-                                    ib.u > isv->max(isv->size() - 1);
-                }
-              }
-              if (needToConstrain) {
-                GCLock lock;
-                Expression* domconstraint;
-                if (args[i]()->type().dim() > 0) {
-                  std::vector<Expression*> domargs(2);
-                  domargs[0] = args[i]();
-                  domargs[1] = dom;
-                  Call* c = Call::a(Location().introduce(), "var_dom", domargs);
-                  c->type(Type::varbool());
-                  c->decl(env.model->matchFn(env, c, false));
-                  if (c->decl() == nullptr) {
-                    throw InternalError("no matching declaration found for var_dom");
+                  bot = BOT_IN;
+                  if (curArg->type().dim() > 0) {
+                    needToConstrain = true;
+                  } else {
+                    IntBounds ib = compute_int_bounds(env, curArg);
+                    needToConstrain = !ib.valid || isv->empty() || ib.l < isv->min(0) ||
+                                      ib.u > isv->max(isv->size() - 1);
                   }
-                  domconstraint = c;
-                } else {
-                  domconstraint = new BinOp(Location().introduce(), args[i](), bot, dom);
                 }
-                domconstraint->type(args[i]()->type().isPar() ? Type::parbool() : Type::varbool());
-                if (ctx.b == C_ROOT) {
-                  (void)flat_exp(env, Ctx(), domconstraint, env.constants.varTrue,
-                                 env.constants.varTrue);
-                } else {
-                  EE ee = flat_exp(env, Ctx(), domconstraint, nullptr, env.constants.varTrue);
-                  ee.b = ee.r;
-                  args_ee.push_back(ee);
+                if (needToConstrain) {
+                  GCLock lock;
+                  Expression* domconstraint;
+                  if (curArg->type().dim() > 0) {
+                    std::vector<Expression*> domargs(2);
+                    domargs[0] = curArg;
+                    domargs[1] = dom;
+                    Call* c = Call::a(Location().introduce(), "var_dom", domargs);
+                    c->type(Type::varbool());
+                    c->decl(env.model->matchFn(env, c, false));
+                    if (c->decl() == nullptr) {
+                      throw InternalError("no matching declaration found for var_dom");
+                    }
+                    domconstraint = c;
+                  } else {
+                    domconstraint = new BinOp(Location().introduce(), curArg, bot, dom);
+                  }
+                  domconstraint->type(curArg->type().isPar() ? Type::parbool() : Type::varbool());
+                  if (ctx.b == C_ROOT) {
+                    (void)flat_exp(env, Ctx(), domconstraint, env.constants.varTrue,
+                                   env.constants.varTrue);
+                  } else {
+                    EE ee = flat_exp(env, Ctx(), domconstraint, nullptr, env.constants.varTrue);
+                    ee.b = ee.r;
+                    args_ee.push_back(ee);
+                  }
                 }
-              }
-            } else if (args[i]()->type().bt() == Type::BT_FLOAT) {
-              GCLock lock;
+              } else if (curArg->type().bt() == Type::BT_FLOAT) {
+                GCLock lock;
 
-              FloatSetVal* fsv = eval_floatset(env, dom);
-              bool needToConstrain;
-              if (args[i]()->type().dim() > 0) {
-                needToConstrain = true;
+                FloatSetVal* fsv = eval_floatset(env, dom);
+                bool needToConstrain;
+                if (curArg->type().dim() > 0) {
+                  needToConstrain = true;
+                } else {
+                  FloatBounds fb = compute_float_bounds(env, curArg);
+                  needToConstrain = !fb.valid || fsv->empty() || fb.l < fsv->min(0) ||
+                                    fb.u > fsv->max(fsv->size() - 1);
+                }
+
+                if (needToConstrain) {
+                  GCLock lock;
+                  Expression* domconstraint;
+                  if (curArg->type().dim() > 0) {
+                    std::vector<Expression*> domargs(2);
+                    domargs[0] = curArg;
+                    domargs[1] = dom;
+                    Call* c = Call::a(Location().introduce(), "var_dom", domargs);
+                    c->type(Type::varbool());
+                    c->decl(env.model->matchFn(env, c, false));
+                    if (c->decl() == nullptr) {
+                      throw InternalError("no matching declaration found for var_dom");
+                    }
+                    domconstraint = c;
+                  } else {
+                    domconstraint = new BinOp(Location().introduce(), curArg, BOT_IN, dom);
+                  }
+                  domconstraint->type(curArg->type().isPar() ? Type::parbool() : Type::varbool());
+                  if (ctx.b == C_ROOT) {
+                    (void)flat_exp(env, Ctx(), domconstraint, env.constants.varTrue,
+                                   env.constants.varTrue);
+                  } else {
+                    EE ee = flat_exp(env, Ctx(), domconstraint, nullptr, env.constants.varTrue);
+                    ee.b = ee.r;
+                    args_ee.push_back(ee);
+                  }
+                }
+              } else if (curArg->type().bt() == Type::BT_TUPLE) {
+                GCLock lock;
+                auto* al = curInst->domain()->cast<ArrayLit>();
+                for (long long i = 0; i < al->size(); ++i) {
+                  stack.emplace_back(
+                      new FieldAccess(curArg->loc().introduce(), curArg, IntLit::a(i)),
+                      (*al)[i]->cast<TypeInst>());
+                }
+
+              } else if (curArg->type().bt() == Type::BT_BOT) {
+                // Nothing to be done for empty arrays/sets
               } else {
-                FloatBounds fb = compute_float_bounds(env, args[i]());
-                needToConstrain = !fb.valid || fsv->empty() || fb.l < fsv->min(0) ||
-                                  fb.u > fsv->max(fsv->size() - 1);
+                throw EvalError(env, curInst->loc(),
+                                "domain restrictions other than int and float not supported yet");
               }
-
-              if (needToConstrain) {
-                GCLock lock;
-                Expression* domconstraint;
-                if (args[i]()->type().dim() > 0) {
-                  std::vector<Expression*> domargs(2);
-                  domargs[0] = args[i]();
-                  domargs[1] = dom;
-                  Call* c = Call::a(Location().introduce(), "var_dom", domargs);
-                  c->type(Type::varbool());
-                  c->decl(env.model->matchFn(env, c, false));
-                  if (c->decl() == nullptr) {
-                    throw InternalError("no matching declaration found for var_dom");
-                  }
-                  domconstraint = c;
-                } else {
-                  domconstraint = new BinOp(Location().introduce(), args[i](), BOT_IN, dom);
-                }
-                domconstraint->type(args[i]()->type().isPar() ? Type::parbool() : Type::varbool());
-                if (ctx.b == C_ROOT) {
-                  (void)flat_exp(env, Ctx(), domconstraint, env.constants.varTrue,
-                                 env.constants.varTrue);
-                } else {
-                  EE ee = flat_exp(env, Ctx(), domconstraint, nullptr, env.constants.varTrue);
-                  ee.b = ee.r;
-                  args_ee.push_back(ee);
-                }
-              }
-            } else if (args[i]()->type().bt() == Type::BT_BOT) {
-              // Nothing to be done for empty arrays/sets
-            } else {
-              throw EvalError(env, decl->param(i)->loc(),
-                              "domain restrictions other than int and float not supported yet");
             }
           }
         }

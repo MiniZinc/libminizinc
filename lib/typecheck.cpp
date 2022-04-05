@@ -2915,8 +2915,7 @@ public:
             }
           }
         }
-        unsigned int typeId = _env.registerTupleType(ti);
-        tt.typeId(typeId);
+        unsigned int typeId = _env.registerTupleType(ti, true);
         if (all_var) {
           tt.ti(Type::TI_VAR);
         }
@@ -3499,30 +3498,33 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         // Check that type-inst variables are used consistently
         enum TIVarType { TIVAR_INDEX, TIVAR_DOMAIN };
         ASTStringMap<TIVarType> ti_map;
-        auto checkTIId = [&ti_map, this](TIId* tiid, TIVarType t) {
-          if (!tiid->isEnum()) {
-            auto lookup = ti_map.insert({tiid->v(), t});
-            if (!lookup.second && lookup.first->second != t) {
-              std::ostringstream ss;
-              ss << "type-inst variable $" << tiid->v()
-                 << " used in both array and non-array position";
-              _typeErrors.emplace_back(_env, tiid->loc(), ss.str());
+        std::function<void(TypeInst * ti, TIVarType t)> checkTIId;
+        checkTIId = [&ti_map, this, &checkTIId](TypeInst* ti, TIVarType t) {
+          if (TIId* tiid = Expression::dynamicCast<TIId>(ti->domain())) {
+            if (!tiid->isEnum()) {
+              auto lookup = ti_map.insert({tiid->v(), t});
+              if (!lookup.second && lookup.first->second != t) {
+                std::ostringstream ss;
+                ss << "type-inst variable $" << tiid->v()
+                   << " used in both array and non-array position";
+                _typeErrors.emplace_back(_env, tiid->loc(), ss.str());
+              }
+            } else {
+              ti_map.insert({tiid->v(), t});
             }
-          } else {
-            ti_map.insert({tiid->v(), t});
+          } else if (ti->type().bt() == Type::BT_TUPLE) {
+            auto* al = ti->domain()->cast<ArrayLit>();
+            for (size_t i = 0; i < al->size(); ++i) {
+              checkTIId((*al)[i]->cast<TypeInst>(), t);
+            }
           }
         };
         bool allParamsPar = true;
         for (unsigned int i = 0; i < fi->paramCount(); i++) {
           allParamsPar = allParamsPar && fi->param(i)->type().isPar();
-          if (TIId* tiid = Expression::dynamicCast<TIId>(fi->param(i)->ti()->domain())) {
-            checkTIId(tiid, TIVAR_DOMAIN);
-          }
+          checkTIId(fi->param(i)->ti(), TIVAR_DOMAIN);
           for (unsigned int j = 0; j < fi->param(i)->ti()->ranges().size(); j++) {
-            if (TIId* tiid =
-                    Expression::dynamicCast<TIId>(fi->param(i)->ti()->ranges()[j]->domain())) {
-              checkTIId(tiid, TIVAR_INDEX);
-            }
+            checkTIId(fi->param(i)->ti()->ranges()[j], TIVAR_INDEX);
           }
         }
         if (TIId* tiid = Expression::dynamicCast<TIId>(fi->ti()->domain())) {

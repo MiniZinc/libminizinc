@@ -290,6 +290,38 @@ public:
   Instantiator(EnvI& env, ConcreteCallAgenda& agenda, InstanceMap& instanceMap, TyperFn& typer)
       : _env(env), _agenda(agenda), _instanceMap(instanceMap), _typer(typer) {}
 
+  static void tupleWalkTIMap(EnvI& env, std::unordered_map<ASTString, Type>& ti_map, TypeInst* ti,
+                             TupleType* tt) {
+    auto* al = ti->domain()->cast<ArrayLit>();
+    for (size_t i = 0; i < al->size(); ++i) {
+      auto* tii = (*al)[i]->cast<TypeInst>();
+      // TODO: this gives our field the required "concrete type", but how would this interact with
+      // what the "toGenerate" vector would normally do?
+      tii->type(tt->field(i));
+      if (TIId* tiid = Expression::dynamicCast<TIId>(tii->domain())) {
+        ti_map.emplace(tiid->v(), tt->field(i));
+        if (tt->field(i).typeId() == 0) {
+          // replace tiid with empty domain
+          tii->domain(nullptr);
+        } else {
+          auto enumId = tt->field(i).typeId();
+          if (tt->field(i).dim() != 0) {
+            const auto& aet = env.getArrayEnum(tt->field(i).typeId());
+            enumId = aet[aet.size() - 1];
+          }
+          if (enumId != 0) {
+            VarDeclI* enumVdi = env.getEnum(enumId);
+            tii->domain(enumVdi->e()->id());
+          }
+        }
+      } else if (tii->type().bt() == Type::BT_TUPLE) {
+        assert(tt->field(i).bt() == Type::BT_TUPLE);
+        assert(tt->field(i).typeId() != 0);
+        tupleWalkTIMap(env, ti_map, tii, env.getTupleType(tii->type().typeId()));
+      }
+    }
+  }
+
   void operator()(Call* call) {
     if (call->id() == _env.constants.ids.enumOf && call->argCount() == 1) {
       // Rewrite to enum_of_internal with enum argument
@@ -500,6 +532,11 @@ public:
                   fi_copy->param(i)->ti()->domain(enumVdi->e()->id());
                 }
               }
+            } else if (fi_copy->param(i)->ti()->type().bt() == Type::BT_TUPLE) {
+              assert(concrete_types[i].bt() == Type::BT_TUPLE);
+              assert(concrete_types[i].typeId() != 0);
+              tupleWalkTIMap(_env, ti_map, fi_copy->param(i)->ti(),
+                             _env.getTupleType(fi_copy->param(i)->ti()->type().typeId()));
             }
             for (unsigned int j = 0; j < fi_copy->param(i)->ti()->ranges().size(); j++) {
               if (TIId* tiid = Expression::dynamicCast<TIId>(

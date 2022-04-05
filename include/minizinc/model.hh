@@ -74,12 +74,13 @@ public:
     bool isPolymorphic;
     bool isPolymorphicVariant;
     FnEntry(EnvI& env, FunctionI* fi0);
+    static bool checkPoly(const EnvI& env, const Type& t);
     static bool compare(const EnvI& env, const FnEntry& e1, const FnEntry& e2);
   };
 
 protected:
   /// Add all instances of polymorphic entry \a fe to \a entries
-  static void addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& entries);
+  static void addPolymorphicInstances(EnvI& env, Model::FnEntry& fe, std::vector<FnEntry>& entries);
 
   void mark() override {
     _filepath.mark();

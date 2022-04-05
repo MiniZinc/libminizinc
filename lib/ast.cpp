@@ -1005,10 +1005,20 @@ void TypeInst::setRanges(const std::vector<TypeInst*>& ranges) {
 }
 
 bool TypeInst::hasTiVariable() const {
-  if ((domain() != nullptr) && domain()->isa<TIId>()) {
-    return true;
+  if (domain() != nullptr) {
+    if (domain()->isa<TIId>()) {
+      return true;
+    }
+    if (auto* al = domain()->dynamicCast<ArrayLit>()) {
+      for (size_t i = 0; i < al->size(); ++i) {
+        auto* ti = (*al)[i]->cast<TypeInst>();
+        if (ti->hasTiVariable()) {
+          return true;
+        }
+      }
+    }
   }
-  for (unsigned int i = _ranges.size(); (i--) != 0U;) {
+  for (size_t i = 0; i < _ranges.size(); ++i) {
     if (_ranges[i]->domain() != nullptr && _ranges[i]->domain()->isa<TIId>()) {
       return true;
     }
@@ -1056,79 +1066,93 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
     rh = fi->ti()->ranges()[0]->domain()->cast<TIId>()->v();
   }
 
-  ASTStringMap<std::pair<Type, bool>> tmap;
+  std::vector<std::pair<TypeInst*, Type>> stack(ta.size());
   for (unsigned int i = 0; i < ta.size(); i++) {
-    TypeInst* tii = fi->param(i)->ti();
-    if (tii->domain() && tii->domain()->isa<TIId>()) {
-      ASTString tiid = tii->domain()->cast<TIId>()->v();
-      Type tiit = get_type(ta[i]);
-      bool isEnumTIID = isa_enum_tiid(tii->domain());
-      if (tii->type().any()) {
-        tiit.any(true);
-      }
-      if (tiit.typeId() != 0 && tiit.dim() > 0) {
-        const std::vector<unsigned int>& enumIds = env.getArrayEnum(tiit.typeId());
-        tiit.typeId(enumIds[enumIds.size() - 1]);
-      }
-      tiit.dim(0);
-      auto it = tmap.find(tiid);
-      if (it == tmap.end()) {
-        tmap.insert(std::pair<ASTString, std::pair<Type, bool>>(tiid, {tiit, isEnumTIID}));
-      } else {
-        // We've seen this identifier before, unify the types
-        if (it->second.first.dim() > 0) {
-          std::ostringstream ss;
-          ss << "type-inst variable $" << tiid << " used in both array and non-array position";
-          throw TypeError(env, get_loc(ta[i], call, fi), ss.str());
+    stack[i] = std::make_pair(fi->param(i)->ti(), get_type(ta[i]));
+  }
+
+  ASTStringMap<std::pair<Type, bool>> tmap;
+  while (!stack.empty()) {
+    std::pair<TypeInst*, Type> cur(stack.back());
+    stack.pop_back();
+    TypeInst* tii = cur.first;
+    if (tii->domain()) {
+      if (tii->domain()->isa<TIId>()) {
+        ASTString tiid = tii->domain()->cast<TIId>()->v();
+        Type tiit = cur.second;
+        bool isEnumTIID = isa_enum_tiid(tii->domain());
+        if (tii->type().any()) {
+          tiit.any(true);
         }
-        Type tiit_par = tiit;
-        tiit_par.any(false);
-        tiit_par.ti(Type::TI_PAR);
-        tiit_par.ot(Type::OT_PRESENT);
-        if (isEnumTIID) {
-          tiit_par.st(Type::ST_SET);
+        if (tiit.typeId() != 0 && tiit.dim() > 0) {
+          const std::vector<unsigned int>& enumIds = env.getArrayEnum(tiit.typeId());
+          tiit.typeId(enumIds[enumIds.size() - 1]);
         }
-        Type its_par = it->second.first;
-        its_par.any(false);
-        its_par.ti(Type::TI_PAR);
-        its_par.ot(Type::OT_PRESENT);
-        if (it->second.second) {
-          its_par.st(Type::ST_SET);
-        }
-        if (tiit_par.bt() == Type::BT_TOP || tiit_par.bt() == Type::BT_BOT) {
-          tiit_par.bt(its_par.bt());
-        }
-        if (its_par.bt() == Type::BT_TOP || its_par.bt() == Type::BT_BOT) {
-          its_par.bt(tiit_par.bt());
-        }
-        if (env.isSubtype(tiit_par, its_par, strictEnum)) {
-          if (it->second.first.bt() == Type::BT_TOP) {
-            it->second.first.bt(tiit.bt());
-          }
-        } else if (env.isSubtype(its_par, tiit_par, strictEnum)) {
-          it->second.first.bt(tiit_par.bt());
-          it->second.first.typeId(tiit_par.typeId());
+        tiit.dim(0);
+        auto it = tmap.find(tiid);
+        if (it == tmap.end()) {
+          tmap.insert(std::pair<ASTString, std::pair<Type, bool>>(tiid, {tiit, isEnumTIID}));
         } else {
-          std::ostringstream ss;
-          ss << "type-inst variable $" << tiid << " instantiated with different types ("
-             << tiit.toString(env) << " vs " << it->second.first.toString(env) << ")";
-          throw TypeError(env, get_loc(ta[i], call, fi), ss.str());
+          // We've seen this identifier before, unify the types
+          if (it->second.first.dim() > 0) {
+            std::ostringstream ss;
+            ss << "type-inst variable $" << tiid << " used in both array and non-array position";
+            throw TypeError(env, get_loc(tiit, call, fi), ss.str());
+          }
+          Type tiit_par = tiit;
+          tiit_par.any(false);
+          tiit_par.ti(Type::TI_PAR);
+          tiit_par.ot(Type::OT_PRESENT);
+          if (isEnumTIID) {
+            tiit_par.st(Type::ST_SET);
+          }
+          Type its_par = it->second.first;
+          its_par.any(false);
+          its_par.ti(Type::TI_PAR);
+          its_par.ot(Type::OT_PRESENT);
+          if (it->second.second) {
+            its_par.st(Type::ST_SET);
+          }
+          if (tiit_par.bt() == Type::BT_TOP || tiit_par.bt() == Type::BT_BOT) {
+            tiit_par.bt(its_par.bt());
+          }
+          if (its_par.bt() == Type::BT_TOP || its_par.bt() == Type::BT_BOT) {
+            its_par.bt(tiit_par.bt());
+          }
+          if (env.isSubtype(tiit_par, its_par, strictEnum)) {
+            if (it->second.first.bt() == Type::BT_TOP) {
+              it->second.first.bt(tiit.bt());
+            }
+          } else if (env.isSubtype(its_par, tiit_par, strictEnum)) {
+            it->second.first.bt(tiit_par.bt());
+            it->second.first.typeId(tiit_par.typeId());
+          } else {
+            std::ostringstream ss;
+            ss << "type-inst variable $" << tiid << " instantiated with different types ("
+               << tiit.toString(env) << " vs " << it->second.first.toString(env) << ")";
+            throw TypeError(env, get_loc(tiit, call, fi), ss.str());
+          }
+          if (tiit.isvar()) {
+            it->second.first.ti(Type::TI_VAR);
+          }
+          if (tiit.isOpt()) {
+            it->second.first.ot(Type::OT_OPTIONAL);
+          }
         }
-        if (tiit.isvar()) {
-          it->second.first.ti(Type::TI_VAR);
-        }
-        if (tiit.isOpt()) {
-          it->second.first.ot(Type::OT_OPTIONAL);
+      } else if (cur.second.bt() == Type::BT_TUPLE) {
+        auto* al = tii->domain()->cast<ArrayLit>();
+        for (size_t i = 0; i < al->size(); ++i) {
+          stack.emplace_back((*al)[i]->cast<TypeInst>(), (*al)[i]->type());
         }
       }
     }
     if (tii->ranges().size() == 1 && isa_tiid(tii->ranges()[0]->domain())) {
       ASTString tiid = tii->ranges()[0]->domain()->cast<TIId>()->v();
-      Type orig_tiit = get_type(ta[i]);
+      Type orig_tiit = get_type(cur.second);
       if (orig_tiit.dim() == 0) {
         std::ostringstream ss;
         ss << "type-inst variable $" << tiid << " must be an array index";
-        throw TypeError(env, get_loc(ta[i], call, fi), ss.str());
+        throw TypeError(env, get_loc(cur.second, call, fi), ss.str());
       }
       Type tiit = Type::top(orig_tiit.dim());
       if (orig_tiit.typeId() != 0) {
@@ -1147,20 +1171,20 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
         if (it->second.first.dim() == 0) {
           std::ostringstream ss;
           ss << "type-inst variable $" << tiid << " used in both array and non-array position";
-          throw TypeError(env, get_loc(ta[i], call, fi), ss.str());
+          throw TypeError(env, get_loc(cur.second, call, fi), ss.str());
         }
         if (it->second.first != tiit) {
           std::ostringstream ss;
           ss << "type-inst variable $" << tiid << " instantiated with different types ("
              << tiit.toString(env) + " vs " << it->second.first.toString(env) << ")";
-          throw TypeError(env, get_loc(ta[i], call, fi), ss.str());
+          throw TypeError(env, get_loc(cur.second, call, fi), ss.str());
         }
       }
     } else if (!tii->ranges().empty()) {
       for (unsigned int j = 0; j < tii->ranges().size(); j++) {
         if (isa_enum_tiid(tii->ranges()[j]->domain())) {
           ASTString enumTIId = tii->ranges()[j]->domain()->cast<TIId>()->v();
-          Type tiit = get_type(ta[i]);
+          Type tiit = cur.second;
           Type enumIdT;
           if (tiit.typeId() != 0) {
             unsigned int enumId = env.getArrayEnum(tiit.typeId())[j];
@@ -1176,7 +1200,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
           } else if (strictEnum && it->second.first.typeId() != enumIdT.typeId()) {
             std::ostringstream ss;
             ss << "type-inst variable $" << enumTIId << " used for different enum types";
-            throw TypeError(env, get_loc(ta[i], call, fi), ss.str());
+            throw TypeError(env, get_loc(cur.second, call, fi), ss.str());
           }
         }
       }
