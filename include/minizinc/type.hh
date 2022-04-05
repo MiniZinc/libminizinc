@@ -293,6 +293,10 @@ public:
 
   /// Compare types
   int cmp(const Type& t) const { return toInt() < t.toInt() ? -1 : (toInt() > t.toInt() ? 1 : 0); }
+
+  /// Check if tuple can be evaluated (instead of flattened).
+  /// (i.e., true if the tuple contains to variable or annotation types)
+  static bool parTuple(const EnvI& env, const Type& t);
 };
 
 };  // namespace MiniZinc

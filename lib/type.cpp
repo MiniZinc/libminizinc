@@ -188,4 +188,16 @@ std::string Type::nonEnumToString() const {
   return oss.str();
 }
 
+bool Type::parTuple(const EnvI& env, const Type& t) {
+  assert(t.bt() == BT_TUPLE);
+  TupleType* tt = env.getTupleType(t.typeId());
+  for (size_t i = 0; i < tt->size(); ++i) {
+    if (!tt->field(i).isPar() || tt->field(i).cv() || tt->field(i).bt() != Type::BT_ANN ||
+        (tt->field(i).bt() == Type::BT_TUPLE && !parTuple(env, tt->field(i)))) {
+      return false;
+    }
+  }
+  return true;
+}
+
 }  // namespace MiniZinc

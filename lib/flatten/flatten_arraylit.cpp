@@ -42,7 +42,13 @@ EE flatten_arraylit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDec
     KeepAlive ka;
     {
       GCLock lock;
-      auto* alr = new ArrayLit(Location().introduce(), elems, dims);
+      ArrayLit* alr = nullptr;
+      if (al->type().bt() == Type::BT_TUPLE) {
+        assert(dims.size() == 1 && dims[0].first == 1 && dims[0].second == al->size());
+        alr = ArrayLit::constructTuple(al->loc().introduce(), elems);
+      } else {
+        alr = new ArrayLit(al->loc().introduce(), elems, dims);
+      }
       alr->type(al->type());
       alr->flat(true);
       ka = alr;
