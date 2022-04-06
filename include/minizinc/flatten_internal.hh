@@ -187,11 +187,11 @@ public:
     return true;
   }
 
-  bool isSubtype(const EnvI& env, const TupleType& other, bool strictEnum) const {
-    if (other.size() < size()) {
+  bool isSubtypeOf(const EnvI& env, const TupleType& other, bool strictEnum) const {
+    if (other.size() > size()) {
       return false;
     }
-    for (size_t i = 0; i < size(); ++i) {
+    for (size_t i = 0; i < other.size(); ++i) {
       if (!field(i).isSubtypeOf(env, other.field(i), strictEnum)) {
         return false;
       }
