@@ -16,6 +16,7 @@ Changes:
 -  Add the ``no_cse`` annotation to allow CSE storage optimization.
 -  Improve documentation for ``all_different`` with optional variables.
 -  Make breaking of ``defines_var`` cycles deterministic (:bugref:`563`).
+-  Improve documentation for warm start search annotations.
 
 Bug fixes:
 ^^^^^^^^^^

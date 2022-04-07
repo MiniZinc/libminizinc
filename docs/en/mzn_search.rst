@@ -485,10 +485,9 @@ search annotations.
   .. index::
         single: warm_start
 
-  The different restart annotations control how frequently a restart occurs.
-  Restarts occur when a limit in nodes is reached, where search returns to the
-  top of the search tree and begins again. The possibilities are
-
+  Warm start annotations are used to indicate a (potentially partial or even invalid)
+  starting point for solvers which support them.
+  
   - :mzndef:`warm_start(<vars>,<vals>)` where :mzndef:`<vars>` is a one 
     dimensional array of integer variables, and :mzndef:`<vals>` is a 
     one dimensional array of integer of the same length giving the warm start values
@@ -506,6 +505,8 @@ search annotations.
     one dimensional array of sets of integers of the same length giving the warm start values
     for each set variable in :mzn:`<vars>`.
 
+  The ``warm_start_array`` annotation takes a list of ``warm_start`` annotations and can be used to specify an
+  ordering of the warm starts which is maintained in the FlatZinc.
 
 The warm start annotation can be used by the solver as part of value selection. For example, if the selected
 variable :mzn:`v[i]` has in its current domain the warm start value :mzn:`w[i]` then this is
@@ -542,20 +543,21 @@ important (especially for CP), so they all might need to be put into a ``seq_sea
 
 If you'd like to provide a most complete warmstart information, please provide values for all
 variables which are output when there is no output item or when compiled with ``--output-mode dzn``.
-.. Still, this excludes auxiliary variables introduced by ``let`` expressions. To capture them, you can customize
-the output item, or try the FlatZinc level, see below.
 
 ..
+  Still, this excludes auxiliary variables introduced by ``let`` expressions. To capture them, you can customize
+  the output item, or try the FlatZinc level, see below.
+  
   Using Warm Starts At The FlatZinc Level
   +++++++++++++++++++++++++++++++++++++++
-
+  
   You can insert warm start information in the FlatZinc in the same way for all non-fixed variables.
   Just make sure the fzn interpreter outputs their values by annotating them as ``output_var(_array)``
   and capture the fzn output by, e.g., piping to ``solns2out --output-raw <file_raw.dzn>``.
   You can also insert high-level output into FZN warm start. When compiling the initial model, add
   empty warm start annotations for all important variables - they will be kept in FZN. In the next solve,
   fill the values. To fix the order of annotations, put them into a ``warm_start_array``.
-
+  
   AUTOMATE, e.g., adding a solution in dzn format as a warm start during parsing?
-
+  
   A MORE REALISTIC EXAMPLE OF THEIR USE (jobshop???)
