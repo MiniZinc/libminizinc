@@ -1430,6 +1430,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
       if (vd->e() != nullptr) {
         top_down(*this, vd->e());
       }
+      top_down(*this, vd->ti());
       auto idx = env.outputVarOccurrences.find(vd);
       if (idx == -1) {
         auto* orig = env.cmap.findOrig(vd);

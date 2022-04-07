@@ -30,6 +30,8 @@ Bug fixes:
 -  Restore ``warm_start`` search annotations for optional values (:bugref:`567`).
 -  Fix broken references to top-level library documentation pages.
 -  Fix highlighting of JSON-like code blocks in the documentation.
+-  Fix a bug where variables used in type-insts of output variables were not correctly copied to the
+   output model (:bugref:`570`).
 
 .. _v2.6.2:
 
