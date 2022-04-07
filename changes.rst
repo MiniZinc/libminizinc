@@ -29,6 +29,7 @@ Bug fixes:
 -  Restore missing documentation for functions in the top-level ``globals`` group.
 -  Restore ``warm_start`` search annotations for optional values (:bugref:`567`).
 -  Fix broken references to top-level library documentation pages.
+-  Fix highlighting of JSON-like code blocks in the documentation.
 
 .. _v2.6.2:
 

@@ -152,7 +152,7 @@ Note that ``trace()`` calls output to standard error as normal.
 Profiling messages
 ------------------
 
-.. code-block:: json
+.. code-block:: js
   
   {
     "type": "profiling",
@@ -176,7 +176,7 @@ Entries have the following format:
 Paths messages
 --------------
 
-.. code-block:: json
+.. code-block:: js
   
   {
     "type": "paths",
@@ -209,7 +209,7 @@ Constraint paths have the following format:
 Error messages
 --------------
 
-.. code-block:: json
+.. code-block:: js
   
   {
     "type": "error",
@@ -258,7 +258,7 @@ Stack traces
 
 Stack traces are represented as a list of objects with the following format:
 
-.. code-block:: json
+.. code-block:: js
 
   {
     "location": {...}
@@ -269,7 +269,7 @@ Stack traces are represented as a list of objects with the following format:
 Warning messages
 ----------------
 
-.. code-block:: json
+.. code-block:: js
   
   {
     "type": "warning",
