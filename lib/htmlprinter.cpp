@@ -1769,6 +1769,7 @@ std::vector<HtmlDocument> RSTPrinter::printRST(EnvI& env, MiniZinc::Model* m,
 
   {
     std::ostringstream oss;
+    oss << ".. _ch-" << g.fullPath << ":\n\n";
     oss << Group::rstHeading(g.htmlName, 0);
     oss << trim(g.desc) << "\n";
     oss << ".. toctree::\n";
@@ -1790,6 +1791,7 @@ std::vector<HtmlDocument> RSTPrinter::printRST(EnvI& env, MiniZinc::Model* m,
 
     // Split sub-group into sub-pages
     std::ostringstream oss;
+    oss << ".. _ch-" << sg->fullPath << ":\n\n";
     oss << Group::rstHeading(sg->htmlName, 0);
     oss << trim(sg->desc) << "\n";
     oss << ".. toctree::\n";

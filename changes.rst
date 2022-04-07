@@ -28,6 +28,7 @@ Bug fixes:
    (:bugref:`565`).
 -  Restore missing documentation for functions in the top-level ``globals`` group.
 -  Restore ``warm_start`` search annotations for optional values (:bugref:`567`).
+-  Fix broken references to top-level library documentation pages.
 
 .. _v2.6.2:
 
