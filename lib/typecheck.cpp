@@ -1934,7 +1934,7 @@ public:
           << ".";
       throw TypeError(_env, fa->loc(), oss.str());
     }
-    Type ty(tt->field(i.toInt() - 1));
+    Type ty((*tt)[i.toInt() - 1]);
     if (fa->v()->type().isvar()) {
       ty.ti(Type::TI_VAR);
     }

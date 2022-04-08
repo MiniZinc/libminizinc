@@ -286,40 +286,242 @@ private:
   InstanceMap& _instanceMap;
   TyperFn& _typer;
 
+  struct ToGenerate {
+    // If matches contains TIIds with "any" type, we have to generate the
+    // corresponding par, par opt, var and var opt versions, but only if those
+    // are not present in matches yet
+    enum GenVersion { TG_TUPLE, TG_PAR, TG_PAROPT, TG_VAR, TG_VAROPT };
+    GenVersion ver;
+    std::unique_ptr<std::vector<ToGenerate>> tup;
+
+    ToGenerate(const GenVersion& ver0) : ver(ver0), tup(nullptr) { assert(ver0 != TG_TUPLE); }
+    ToGenerate(std::vector<ToGenerate>&& tup0)
+        : ver(TG_TUPLE), tup(new std::vector<ToGenerate>(std::move(tup0))) {}
+    ToGenerate(const std::vector<ToGenerate>& tup0)
+        : ver(TG_TUPLE), tup(new std::vector<ToGenerate>(tup0)) {}
+    ToGenerate(const ToGenerate& gen)
+        : ver(gen.ver), tup(gen.tup == nullptr ? nullptr : new std::vector<ToGenerate>(*gen.tup)) {}
+    ToGenerate(ToGenerate&& gen) : ver(gen.ver), tup(std::move(gen.tup)) {}
+
+    bool operator==(const ToGenerate& other) const {
+      if (ver != other.ver) {
+        return false;
+      }
+      if (ver == TG_TUPLE) {
+        if (tup->size() != other.tup->size()) {
+          return false;
+        }
+        for (size_t i = 0; i < tup->size(); ++i) {
+          if (!((*tup)[i] == (*other.tup)[i])) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    void reset(ArrayLit* al) const {
+      assert(ver == TG_TUPLE);
+      assert(al->size() == tup->size());
+      for (size_t i = 0; i < tup->size(); ++i) {
+        auto* ti = (*al)[i]->cast<TypeInst>();
+        if ((*tup)[i].ver == TG_TUPLE) {
+          (*tup)[i].reset(ti->domain()->cast<ArrayLit>());
+        } else if (ti->type().any()) {
+          assert(ver != TG_TUPLE);
+          (*tup)[i].ver = TG_PAR;
+        }
+      }
+    }
+
+    bool increment(ArrayLit* al) const {
+      assert(ver == TG_TUPLE);
+      assert(al->size() == tup->size());
+      for (int i = static_cast<int>(tup->size() - 1); i >= 0; --i) {
+        auto* ti = (*al)[i]->cast<TypeInst>();
+        bool incremented = false;
+        if ((*tup)[i].ver == TG_TUPLE) {
+          incremented = (*tup)[i].increment(ti->domain()->cast<ArrayLit>());
+        } else if ((*tup)[i].ver < TG_VAROPT && ti->type().any()) {
+          // found a match type we can increment
+          (*tup)[i].ver = static_cast<GenVersion>((*tup)[i].ver + 1);
+          incremented = true;
+        }
+        if (incremented) {
+          for (size_t j = i + 1; j < tup->size(); ++j) {
+            auto* tij = (*al)[j]->cast<TypeInst>();
+            if ((*tup)[j].ver == TG_TUPLE) {
+              (*tup)[j].reset(tij->domain()->cast<ArrayLit>());
+            } else if (ti->type().any()) {
+              assert(ver != TG_TUPLE);
+              (*tup)[j].ver = TG_PAR;
+            }
+          }
+          return true;
+        }
+      }
+      return false;
+    }
+
+    static std::pair<bool, ToGenerate> fromTIs(ArrayLit* al) {
+      bool hadAny = false;
+      std::vector<ToGenerate> matchTypes;
+      matchTypes.reserve(al->size());
+      for (size_t i = 0; i < al->size(); ++i) {
+        auto* ti = (*al)[i]->cast<TypeInst>();
+        Type parType = ti->type();
+        if (parType.bt() == Type::BT_TUPLE) {
+          auto ret = fromTIs(ti->domain()->cast<ArrayLit>());
+          hadAny = hadAny || ret.first;
+          matchTypes.emplace_back(ret.second);
+        } else if (parType.any()) {
+          hadAny = true;
+          // set all remaning any types to TG_PAR
+          matchTypes.emplace_back(TG_PAR);
+        } else if (parType.isPar()) {
+          matchTypes.emplace_back(parType.isOpt() ? TG_PAROPT : TG_PAR);
+        } else {
+          matchTypes.emplace_back(parType.isOpt() ? TG_VAROPT : TG_VAR);
+        }
+      }
+      assert(al->size() == matchTypes.size());
+      return {hadAny, ToGenerate(std::move(matchTypes))};
+    }
+
+    static void fromMatch(FunctionI* fi, std::vector<ToGenerate>& toGenerate,
+                          const std::function<bool(const ToGenerate&)>& isDuplicate) {
+      GCLock lock;
+      auto* paramtup = fi->paramTypes()->domain()->cast<ArrayLit>();
+      auto pair = fromTIs(paramtup);
+      if (!pair.first /* hadAny */) {
+        // Fill in a versions that is already a match
+        toGenerate.emplace_back(std::move(pair.second));
+        return;
+      }
+      // Otherwise, generate all versions for each any type that are not yet in toGenerate
+      do {
+        // check if current matchTypes already exists, if not, add it
+        if (!isDuplicate(pair.second)) {
+          toGenerate.push_back(pair.second);
+        }
+      } while (pair.second.increment(paramtup));
+    }
+  };
+
 public:
   Instantiator(EnvI& env, ConcreteCallAgenda& agenda, InstanceMap& instanceMap, TyperFn& typer)
       : _env(env), _agenda(agenda), _instanceMap(instanceMap), _typer(typer) {}
 
-  static void tupleWalkTIMap(EnvI& env, std::unordered_map<ASTString, Type>& ti_map, TypeInst* ti,
-                             TupleType* tt) {
-    auto* al = ti->domain()->cast<ArrayLit>();
-    for (size_t i = 0; i < al->size(); ++i) {
-      auto* tii = (*al)[i]->cast<TypeInst>();
-      // TODO: this gives our field the required "concrete type", but how would this interact with
-      // what the "toGenerate" vector would normally do?
-      tii->type(tt->field(i));
-      if (TIId* tiid = Expression::dynamicCast<TIId>(tii->domain())) {
-        ti_map.emplace(tiid->v(), tt->field(i));
-        if (tt->field(i).typeId() == 0) {
+  static bool tupleWalkTIMap(EnvI& env, std::unordered_map<ASTString, Type>& ti_map,
+                             TypeInst* tuple_ti, TupleType* tt, const ToGenerate& tg) {
+    auto* al = tuple_ti->domain()->cast<ArrayLit>();
+    assert(al->size() == tt->size() ||
+           al->size() + 1 == tt->size());  // May have added concrete type for reification
+    assert(tg.ver == ToGenerate::TG_TUPLE);
+    assert(al->size() == tg.tup->size());
+    for (size_t i = 0; i < al->size(); i++) {
+      auto* ti = (*al)[i]->cast<TypeInst>();
+      Type curType = ti->type();
+      Type concrete_type = (*tt)[i];
+      curType.bt((*tt)[i].bt());
+      curType.typeId((*tt)[i].typeId());
+      curType.st((*tt)[i].st());
+      if (curType.dim() == -1) {
+        curType.dim((*tt)[i].dim());
+      }
+      if (curType.any()) {
+        curType.any(false);
+        switch ((*tg.tup)[i].ver) {
+          case ToGenerate::TG_PAR:
+            curType.ot(Type::OT_PRESENT);
+            curType.ti(Type::TI_PAR);
+            break;
+          case ToGenerate::TG_PAROPT:
+            if (curType.st() == Type::ST_SET) {
+              return false;
+            }
+            curType.ot(Type::OT_OPTIONAL);
+            curType.ti(Type::TI_PAR);
+            break;
+          case ToGenerate::TG_VAR:
+            if (curType.bt() != Type::BT_BOOL && curType.bt() != Type::BT_INT &&
+                curType.bt() != Type::BT_FLOAT) {
+              return false;
+            }
+            curType.ot(Type::OT_PRESENT);
+            curType.ti(Type::TI_VAR);
+            break;
+          case ToGenerate::TG_VAROPT:
+            if ((curType.bt() != Type::BT_BOOL && curType.bt() != Type::BT_INT &&
+                 curType.bt() != Type::BT_FLOAT) ||
+                curType.st() == Type::ST_SET) {
+              return false;
+            }
+            curType.ot(Type::OT_OPTIONAL);
+            curType.ti(Type::TI_VAR);
+            break;
+          default:
+            assert(false);
+        }
+      }
+      ti->type(curType);
+      if (TIId* tiid = Expression::dynamicCast<TIId>(ti->domain())) {
+        ti_map.emplace(tiid->v(), (*tt)[i]);
+        if (concrete_type.typeId() == 0) {
           // replace tiid with empty domain
-          tii->domain(nullptr);
+          ti->domain(nullptr);
         } else {
-          auto enumId = tt->field(i).typeId();
-          if (tt->field(i).dim() != 0) {
-            const auto& aet = env.getArrayEnum(tt->field(i).typeId());
+          auto enumId = concrete_type.typeId();
+          if (concrete_type.dim() != 0) {
+            const auto& aet = env.getArrayEnum(concrete_type.typeId());
             enumId = aet[aet.size() - 1];
           }
           if (enumId != 0) {
             VarDeclI* enumVdi = env.getEnum(enumId);
-            tii->domain(enumVdi->e()->id());
+            ti->domain(enumVdi->e()->id());
           }
         }
-      } else if (tii->type().bt() == Type::BT_TUPLE) {
-        assert(tt->field(i).bt() == Type::BT_TUPLE);
-        assert(tt->field(i).typeId() != 0);
-        tupleWalkTIMap(env, ti_map, tii, env.getTupleType(tii->type().typeId()));
+      } else if (curType.bt() == Type::BT_TUPLE) {
+        assert(concrete_type.bt() == Type::BT_TUPLE);
+        assert(concrete_type.typeId() != 0);
+        tupleWalkTIMap(env, ti_map, ti, env.getTupleType(ti->type().typeId()), (*tg.tup)[i]);
+        env.registerTupleType(ti, true);
+      }
+      for (unsigned int j = 0; j < ti->ranges().size(); j++) {
+        if (TIId* tiid = Expression::dynamicCast<TIId>(ti->ranges()[j]->domain())) {
+          if (tiid->isEnum()) {
+            // find concrete enum type
+            if (concrete_type.typeId() == 0) {
+              // lct is not an enum type -> turn this one into a simple int
+              ti->ranges()[j]->domain(nullptr);
+              ti_map.emplace(tiid->v(), Type::parint());
+            } else {
+              const auto& aet = env.getArrayEnum(concrete_type.typeId());
+              if (aet[j] == 0) {
+                // lct is not an enum type -> turn this one into a simple int
+                ti->ranges()[j]->domain(nullptr);
+                ti_map.emplace(tiid->v(), Type::parint());
+              } else {
+                ti->ranges()[j]->domain(nullptr);
+                ti->ranges()[j]->type(Type::parenum(aet[j]));
+                ti_map.emplace(tiid->v(), Type::parenum(aet[j]));
+              }
+            }
+          } else {
+            ti_map.emplace(tiid->v(), Type::parint(concrete_type.dim()));
+            // add concrete number of ranges
+            std::vector<TypeInst*> newRanges(concrete_type.dim());
+            for (unsigned int k = 0; k < concrete_type.dim(); k++) {
+              newRanges[k] = new TypeInst(Location().introduce(), Type::parint());
+            }
+            ti->setRanges(newRanges);
+
+            break;  // only one general tiid allowed in index set
+          }
+        }
       }
     }
+    return true;
   }
 
   void operator()(Call* call) {
@@ -353,77 +555,18 @@ public:
 
       instanceId = _instanceCount++;
 
-      // If matches contains TIIds with "any" type, we have to generate the
-      // corresponding par, par opt, var and var opt versions, but only if those
-      // are not present in matches yet
-      enum ToGenerate { TG_PAR, TG_PAROPT, TG_VAR, TG_VAROPT };
-      std::vector<std::vector<std::vector<ToGenerate>>> toGenerate(matches.size());
-      // First, fill in the versions that are already in matches
+      std::vector<std::vector<ToGenerate>> toGenerate(matches.size());
       for (unsigned int i = 0; i < matches.size(); i++) {
-        bool hadAny = false;
-        std::vector<ToGenerate> matchTypes(matches[i]->paramCount());
-        for (unsigned int j = 0; j < matches[i]->paramCount(); j++) {
-          Type parType = matches[i]->param(j)->ti()->type();
-          if (parType.any()) {
-            hadAny = true;
-            break;
-          }
-          if (parType.isPar()) {
-            matchTypes[j] = parType.isOpt() ? TG_PAROPT : TG_PAR;
-          } else {
-            matchTypes[j] = parType.isOpt() ? TG_VAROPT : TG_VAR;
-          }
-        }
-        if (!hadAny) {
-          toGenerate[i].emplace_back(matchTypes);
-        }
-      }
-      // Next, generate all versions for each any type that are not yet in toGenerate
-      for (unsigned int i = 0; i < matches.size(); i++) {
-        // start from existing matchTypes and set all remaning any types to TG_PAR
-        std::vector<ToGenerate> matchTypes(matches[i]->paramCount());
-        for (unsigned int j = 0; j < matches[i]->paramCount(); j++) {
-          Type parType = matches[i]->param(j)->ti()->type();
-          if (parType.any()) {
-            matchTypes[j] = TG_PAR;
-          } else if (parType.isPar()) {
-            matchTypes[j] = parType.isOpt() ? TG_PAROPT : TG_PAR;
-          } else {
-            matchTypes[j] = parType.isOpt() ? TG_VAROPT : TG_VAR;
-          }
-        }
-        for (;;) {
-          // check if current matchTypes already exists, if not, add it
-          bool matchFound = false;
+        ToGenerate::fromMatch(matches[i], toGenerate[i], [&](const ToGenerate& gen) {
           for (const auto& tg : toGenerate) {
             for (const auto& m : tg) {
-              if (m == matchTypes) {
-                matchFound = true;
-                break;
+              if (m == gen) {
+                return true;
               }
             }
           }
-          if (!matchFound) {
-            toGenerate[i].push_back(matchTypes);
-          }
-
-          int j = static_cast<int>(matchTypes.size() - 1);
-          for (; j >= 0; j--) {
-            if (matchTypes[j] < TG_VAROPT && matches[i]->param(j)->ti()->type().any()) {
-              // found a match type we can increment
-              matchTypes[j] = static_cast<ToGenerate>(matchTypes[j] + 1);
-              for (int k = j + 1; k < matchTypes.size(); k++) {
-                if (matches[i]->param(k)->ti()->type().any()) {
-                  matchTypes[k] = TG_PAR;
-                }
-              }
-              break;
-            }
-          }
-          if (j < 0) {
-            break;
-          }
-        }
+          return false;
+        });
       }
 
       std::ostringstream oss;
@@ -471,107 +614,17 @@ public:
           concrete_types.push_back(Type::varbool());
 
           std::unordered_map<ASTString, Type> ti_map;
-          for (unsigned int i = 0; i < fi_copy->paramCount(); i++) {
-            Type curType = fi_copy->param(i)->ti()->type();
-            curType.bt(concrete_types[i].bt());
-            curType.typeId(concrete_types[i].typeId());
-            curType.st(concrete_types[i].st());
-            if (curType.dim() == -1) {
-              curType.dim(concrete_types[i].dim());
-            }
-            if (curType.any()) {
-              curType.any(false);
-              switch (tg[i]) {
-                case TG_PAR:
-                  curType.ot(Type::OT_PRESENT);
-                  curType.ti(Type::TI_PAR);
-                  break;
-                case TG_PAROPT:
-                  if (curType.st() == Type::ST_SET) {
-                    goto next_tg;
-                  }
-                  curType.ot(Type::OT_OPTIONAL);
-                  curType.ti(Type::TI_PAR);
-                  break;
-                case TG_VAR:
-                  if (curType.bt() != Type::BT_BOOL && curType.bt() != Type::BT_INT &&
-                      curType.bt() != Type::BT_FLOAT) {
-                    goto next_tg;
-                  }
-                  curType.ot(Type::OT_PRESENT);
-                  curType.ti(Type::TI_VAR);
-                  break;
-                case TG_VAROPT:
-                  if ((curType.bt() != Type::BT_BOOL && curType.bt() != Type::BT_INT &&
-                       curType.bt() != Type::BT_FLOAT) ||
-                      curType.st() == Type::ST_SET) {
-                    goto next_tg;
-                  }
-                  curType.ot(Type::OT_OPTIONAL);
-                  curType.ti(Type::TI_VAR);
-                  break;
-                default:
-                  assert(false);
-              }
-            }
-            fi_copy->param(i)->ti()->type(curType);
-            fi_copy->param(i)->type(curType);
-            if (TIId* tiid = Expression::dynamicCast<TIId>(fi_copy->param(i)->ti()->domain())) {
-              ti_map.emplace(tiid->v(), concrete_types[i]);
-              if (concrete_types[i].typeId() == 0) {
-                // replace tiid with empty domain
-                fi_copy->param(i)->ti()->domain(nullptr);
-              } else {
-                auto enumId = concrete_types[i].typeId();
-                if (concrete_types[i].dim() != 0) {
-                  const auto& aet = _env.getArrayEnum(concrete_types[i].typeId());
-                  enumId = aet[aet.size() - 1];
-                }
-                if (enumId != 0) {
-                  VarDeclI* enumVdi = _env.getEnum(enumId);
-                  fi_copy->param(i)->ti()->domain(enumVdi->e()->id());
-                }
-              }
-            } else if (fi_copy->param(i)->ti()->type().bt() == Type::BT_TUPLE) {
-              assert(concrete_types[i].bt() == Type::BT_TUPLE);
-              assert(concrete_types[i].typeId() != 0);
-              tupleWalkTIMap(_env, ti_map, fi_copy->param(i)->ti(),
-                             _env.getTupleType(fi_copy->param(i)->ti()->type().typeId()));
-            }
-            for (unsigned int j = 0; j < fi_copy->param(i)->ti()->ranges().size(); j++) {
-              if (TIId* tiid = Expression::dynamicCast<TIId>(
-                      fi_copy->param(i)->ti()->ranges()[j]->domain())) {
-                if (tiid->isEnum()) {
-                  // find concrete enum type
-                  if (concrete_types[i].typeId() == 0) {
-                    // lct is not an enum type -> turn this one into a simple int
-                    fi_copy->param(i)->ti()->ranges()[j]->domain(nullptr);
-                    ti_map.emplace(tiid->v(), Type::parint());
-                  } else {
-                    const auto& aet = _env.getArrayEnum(concrete_types[i].typeId());
-                    if (aet[j] == 0) {
-                      // lct is not an enum type -> turn this one into a simple int
-                      fi_copy->param(i)->ti()->ranges()[j]->domain(nullptr);
-                      ti_map.emplace(tiid->v(), Type::parint());
-                    } else {
-                      fi_copy->param(i)->ti()->ranges()[j]->domain(nullptr);
-                      fi_copy->param(i)->ti()->ranges()[j]->type(Type::parenum(aet[j]));
-                      ti_map.emplace(tiid->v(), Type::parenum(aet[j]));
-                    }
-                  }
-                } else {
-                  ti_map.emplace(tiid->v(), Type::parint(concrete_types[i].dim()));
-                  // add concrete number of ranges
-                  std::vector<TypeInst*> newRanges(concrete_types[i].dim());
-                  for (unsigned int k = 0; k < concrete_types[i].dim(); k++) {
-                    newRanges[k] = new TypeInst(Location().introduce(), Type::parint());
-                  }
-                  fi_copy->param(i)->ti()->setRanges(newRanges);
 
-                  break;  // only one general tiid allowed in index set
-                }
-              }
-            }
+          // Update parameter types
+          TupleType* tt = TupleType::a(concrete_types);
+          if (!tupleWalkTIMap(_env, ti_map, fi_copy->paramTypes(), tt, tg)) {
+            continue;
+          }
+          TupleType::free(tt);
+          tt = nullptr;
+          // Update VarDecl types based on updated TypeInst objects
+          for (size_t i = 0; i < fi_copy->paramCount(); ++i) {
+            fi_copy->param(i)->type(fi_copy->param(i)->ti()->type());
           }
 
           // update return type
@@ -659,8 +712,6 @@ public:
             call->decl(fi_copy);
             call->rehash();
           }
-        next_tg:
-          continue;
         }
       }
     } else {

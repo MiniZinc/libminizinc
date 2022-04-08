@@ -114,7 +114,7 @@ std::string Type::toString(const EnvI& env) const {
       }
       TupleType* tt = env.getTupleType(typeId);
       for (size_t i = 0; i < tt->size(); ++i) {
-        oss << tt->field(i).toString(env);
+        oss << (*tt)[i].toString(env);
         if (i < tt->size() - 1) {
           oss << ", ";
         }
@@ -195,8 +195,8 @@ bool Type::parTuple(const EnvI& env, const Type& t) {
   assert(t.bt() == BT_TUPLE);
   TupleType* tt = env.getTupleType(t.typeId());
   for (size_t i = 0; i < tt->size(); ++i) {
-    if (!tt->field(i).isPar() || tt->field(i).cv() || tt->field(i).bt() != Type::BT_ANN ||
-        (tt->field(i).bt() == Type::BT_TUPLE && !parTuple(env, tt->field(i)))) {
+    if (!(*tt)[i].isPar() || (*tt)[i].cv() || (*tt)[i].bt() != Type::BT_ANN ||
+        ((*tt)[i].bt() == Type::BT_TUPLE && !parTuple(env, (*tt)[i]))) {
       return false;
     }
   }

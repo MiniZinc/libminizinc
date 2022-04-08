@@ -40,7 +40,7 @@ bool Model::FnEntry::checkPoly(const EnvI& env, const Type& t) {
   if (t.bt() == Type::BT_TUPLE) {
     TupleType* tt = env.getTupleType(t.typeId());
     for (size_t i = 0; i < tt->size(); ++i) {
-      if (checkPoly(env, tt->field(i))) {
+      if (checkPoly(env, (*tt)[i])) {
         return true;
       }
     }
@@ -346,13 +346,8 @@ void Model::addPolymorphicInstances(EnvI& env, Model::FnEntry& fe, std::vector<F
     std::vector<TIIDInfo> type_ids;
 
     // Create a parameter TypeInst in the format of a tuple TypeInst
-    std::vector<Expression*> tis(cur.fi->paramCount());
-    for (size_t i = 0; i < cur.fi->paramCount(); ++i) {
-      tis[i] = copy(env, cur.fi->param(i)->ti());
-    }
-    auto* paramtuple = new TypeInst(Location().introduce(), Type::tuple(),
-                                    ArrayLit::constructTuple(Location().introduce(), tis));
-
+    // Immediately copy so the internal TypeInst values can be changed
+    auto* paramtuple = copy(env, cur.fi->paramTypes())->cast<TypeInst>();
     paramtuple->collectTypeIds(type_id_map, type_ids);
 
     std::vector<size_t> stack;
@@ -368,10 +363,11 @@ void Model::addPolymorphicInstances(EnvI& env, Model::FnEntry& fe, std::vector<F
       if (stack.back() == final_id) {
         // New complete instance
         // First, update cur types
-        for (size_t i = 0; i < tis.size(); ++i) {
-          cur.t[i] = tis[i]->type();
+        auto* tis = paramtuple->domain()->cast<ArrayLit>();
+        for (size_t i = 0; i < tis->size(); ++i) {
+          cur.t[i] = (*tis)[i]->type();
           if (cur.t[i].bt() == Type::BT_TUPLE && cur.t[i].typeId() == 0) {
-            cur.t[i].typeId(env.registerTupleType(tis[i]->cast<TypeInst>(), false));
+            cur.t[i].typeId(env.registerTupleType((*tis)[i]->cast<TypeInst>(), false));
           }
         }
         // Then, If this instance isn't in entries yet, add it

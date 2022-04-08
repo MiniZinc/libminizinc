@@ -1143,7 +1143,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
         auto* al = tii->domain()->cast<ArrayLit>();
         TupleType* tiit_tt = env.getTupleType(cur.second.typeId());
         for (size_t i = 0; i < al->size(); ++i) {
-          stack.emplace_back((*al)[i]->cast<TypeInst>(), tiit_tt->field(i));
+          stack.emplace_back((*al)[i]->cast<TypeInst>(), (*tiit_tt)[i]);
         }
       }
     }

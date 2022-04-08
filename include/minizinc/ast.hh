@@ -1895,6 +1895,18 @@ public:
   VarDecl* capturedAnnotationsVar() const {
     return _captureAnnotations ? _params[_params.size() - 1] : nullptr;
   }
+
+  /// Creates a tuple TypeInst literal for the TIs of the parameters
+  TypeInst* paramTypes() const {
+    assert(GC::locked());
+    // Create a parameter TypeInst in the format of a tuple TypeInst
+    std::vector<Expression*> tis(paramCount());
+    for (size_t i = 0; i < paramCount(); ++i) {
+      tis[i] = param(i)->ti();
+    }
+    return new TypeInst(Location().introduce(), Type::tuple(),
+                        ArrayLit::constructTuple(Location().introduce(), tis));
+  }
 };
 
 /**
