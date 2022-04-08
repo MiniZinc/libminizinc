@@ -32,6 +32,7 @@ Bug fixes:
 -  Fix highlighting of JSON-like code blocks in the documentation.
 -  Fix a bug where variables used in type-insts of output variables were not correctly copied to the
    output model (:bugref:`570`).
+-  Fix a possible crash when flattening ``forall`` calls.
 
 .. _v2.6.2:
 

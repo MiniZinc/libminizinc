@@ -422,12 +422,14 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
   if (ctx.b == C_ROOT && decl->e() == nullptr && cid == env.constants.ids.forall &&
       r == env.constants.varTrue) {
     ret.b = bind(env, ctx, b, env.constants.literalTrue);
+    KeepAlive ka;
     ArrayLit* al;
     if (c->arg(0)->isa<ArrayLit>()) {
       al = c->arg(0)->cast<ArrayLit>();
     } else {
       EE flat_al = flat_exp(env, Ctx(), c->arg(0), env.constants.varIgnore, env.constants.varTrue);
       al = follow_id(flat_al.r())->cast<ArrayLit>();
+      ka = al;  // Ensure al is kept alive while we flatten its elements
     }
     nctx.b = C_ROOT;
     for (unsigned int i = 0; i < al->size(); i++) {
