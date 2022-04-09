@@ -303,6 +303,7 @@ private:
         : ver(gen.ver), tup(gen.tup == nullptr ? nullptr : new std::vector<ToGenerate>(*gen.tup)) {}
     ToGenerate(ToGenerate&& gen) : ver(gen.ver), tup(std::move(gen.tup)) {}
 
+    ToGenerate& operator=(ToGenerate&&) = default;
     bool operator==(const ToGenerate& other) const {
       if (ver != other.ver) {
         return false;
@@ -318,6 +319,33 @@ private:
         }
       }
       return true;
+    }
+
+    std::string toString() const {
+      switch (ver) {
+        case TG_TUPLE: {
+          std::ostringstream ss;
+          ss << "(";
+          for (size_t i = 0; i < tup->size(); i++) {
+            ss << (*tup)[i].toString();
+            if (i < tup->size() - 1) {
+              ss << ", ";
+            }
+          }
+          ss << ")";
+          return ss.str();
+        }
+        case TG_PAR:
+          return "PAR";
+        case TG_PAROPT:
+          return "PAROPT";
+        case TG_VAR:
+          return "VAR";
+        case TG_VAROPT:
+          return "VAROPT";
+      }
+      assert(false);
+      return "";
     }
 
     void reset(ArrayLit* al) const {
@@ -353,7 +381,6 @@ private:
             if ((*tup)[j].ver == TG_TUPLE) {
               (*tup)[j].reset(tij->domain()->cast<ArrayLit>());
             } else if (ti->type().any()) {
-              assert(ver != TG_TUPLE);
               (*tup)[j].ver = TG_PAR;
             }
           }
@@ -363,12 +390,14 @@ private:
       return false;
     }
 
-    static std::pair<bool, ToGenerate> fromTIs(ArrayLit* al) {
+    // returns generation template from function item. Template is added to toGenerate if
+    // isDuplicate return false. Returns whether the function parameters contained an "any".
+    static std::pair<bool, ToGenerate> fromTIs(ArrayLit* param_tuple) {
       bool hadAny = false;
       std::vector<ToGenerate> matchTypes;
-      matchTypes.reserve(al->size());
-      for (size_t i = 0; i < al->size(); ++i) {
-        auto* ti = (*al)[i]->cast<TypeInst>();
+      matchTypes.reserve(param_tuple->size());
+      for (size_t i = 0; i < param_tuple->size(); ++i) {
+        auto* ti = (*param_tuple)[i]->cast<TypeInst>();
         Type parType = ti->type();
         if (parType.bt() == Type::BT_TUPLE) {
           auto ret = fromTIs(ti->domain()->cast<ArrayLit>());
@@ -376,7 +405,7 @@ private:
           matchTypes.emplace_back(ret.second);
         } else if (parType.any()) {
           hadAny = true;
-          // set all remaning any types to TG_PAR
+          // start any types at TG_PAR (go through variants using increment)
           matchTypes.emplace_back(TG_PAR);
         } else if (parType.isPar()) {
           matchTypes.emplace_back(parType.isOpt() ? TG_PAROPT : TG_PAR);
@@ -384,27 +413,22 @@ private:
           matchTypes.emplace_back(parType.isOpt() ? TG_VAROPT : TG_VAR);
         }
       }
-      assert(al->size() == matchTypes.size());
+      assert(param_tuple->size() == matchTypes.size());
       return {hadAny, ToGenerate(std::move(matchTypes))};
     }
-
-    static void fromMatch(FunctionI* fi, std::vector<ToGenerate>& toGenerate,
-                          const std::function<bool(const ToGenerate&)>& isDuplicate) {
-      GCLock lock;
-      auto* paramtup = fi->paramTypes()->domain()->cast<ArrayLit>();
-      auto pair = fromTIs(paramtup);
-      if (!pair.first /* hadAny */) {
-        // Fill in a versions that is already a match
-        toGenerate.emplace_back(std::move(pair.second));
-        return;
-      }
-      // Otherwise, generate all versions for each any type that are not yet in toGenerate
+    // returns generation template from function item. Template is added to toGenerate if condition
+    // returns true
+    static bool anyVariants(ToGenerate& gen, ArrayLit* param_tuple,
+                            std::vector<ToGenerate>& toGenerate,
+                            const std::function<bool(const ToGenerate&)>& condition) {
+      // Generate all versions for each any type that match "condition" and add them to toGenerate
       do {
         // check if current matchTypes already exists, if not, add it
-        if (!isDuplicate(pair.second)) {
-          toGenerate.push_back(pair.second);
+        if (condition(gen)) {
+          toGenerate.push_back(gen);
         }
-      } while (pair.second.increment(paramtup));
+      } while (gen.increment(param_tuple));
+      return true;
     }
   };
 
@@ -423,11 +447,11 @@ public:
       auto* ti = (*al)[i]->cast<TypeInst>();
       Type curType = ti->type();
       Type concrete_type = (*tt)[i];
-      curType.bt((*tt)[i].bt());
-      curType.typeId((*tt)[i].typeId());
-      curType.st((*tt)[i].st());
+      curType.bt(concrete_type.bt());
+      curType.typeId(concrete_type.typeId());
+      curType.st(concrete_type.st());
       if (curType.dim() == -1) {
-        curType.dim((*tt)[i].dim());
+        curType.dim(concrete_type.dim());
       }
       if (curType.any()) {
         curType.any(false);
@@ -466,7 +490,7 @@ public:
       }
       ti->type(curType);
       if (TIId* tiid = Expression::dynamicCast<TIId>(ti->domain())) {
-        ti_map.emplace(tiid->v(), (*tt)[i]);
+        ti_map.emplace(tiid->v(), concrete_type);
         if (concrete_type.typeId() == 0) {
           // replace tiid with empty domain
           ti->domain(nullptr);
@@ -555,18 +579,36 @@ public:
 
       instanceId = _instanceCount++;
 
-      std::vector<std::vector<ToGenerate>> toGenerate(matches.size());
-      for (unsigned int i = 0; i < matches.size(); i++) {
-        ToGenerate::fromMatch(matches[i], toGenerate[i], [&](const ToGenerate& gen) {
-          for (const auto& tg : toGenerate) {
-            for (const auto& m : tg) {
-              if (m == gen) {
-                return true;
+      std::vector<std::vector<ToGenerate>> toGenerate(
+          matches.size(), std::vector<ToGenerate>(1, ToGenerate::TG_PAR));
+      std::vector<bool> generateVariants(matches.size(), false);
+      for (size_t i = 0; i < matches.size(); ++i) {
+        GCLock lock;
+        auto* paramtup = matches[i]->paramTypes()->domain()->cast<ArrayLit>();
+        auto pair = ToGenerate::fromTIs(paramtup);
+        generateVariants[i] = pair.first;
+        toGenerate[i][0] = std::move(pair.second);
+      }
+
+      // Reprocess functions that contain "any" parameters (non-"any" versions are preferred, and
+      // duplicates that would be generated by "any" versions are not not generated)
+      for (size_t i = 0; i < matches.size(); ++i) {
+        if (generateVariants[i]) {
+          GCLock lock;
+          auto* paramtup = matches[i]->paramTypes()->domain()->cast<ArrayLit>();
+          ToGenerate tg(std::move(toGenerate[i][0]));
+          toGenerate[i].pop_back();
+          ToGenerate::anyVariants(tg, paramtup, toGenerate[i], [&](const ToGenerate& gen) {
+            for (const auto& tg : toGenerate) {
+              for (const auto& m : tg) {
+                if (m == gen) {
+                  return false;
+                }
               }
             }
-          }
-          return false;
-        });
+            return true;
+          });
+        }
       }
 
       std::ostringstream oss;
