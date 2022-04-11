@@ -2896,7 +2896,6 @@ public:
         bool all_var = true;
         for (unsigned int i = 0; i < al->size(); i++) {
           assert((*al)[i]->isa<TypeInst>());
-          vTypeInst((*al)[i]->cast<TypeInst>());
           Type field_ty = (*al)[i]->type();
           all_var = all_var && field_ty.isvar();
           if (tt.isvar()) {
@@ -2915,7 +2914,7 @@ public:
             }
           }
         }
-        unsigned int typeId = _env.registerTupleType(ti, true);
+        tt.typeId(_env.registerTupleType(ti, true));
         if (all_var) {
           tt.ti(Type::TI_VAR);
         }
