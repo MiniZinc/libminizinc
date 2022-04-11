@@ -1223,7 +1223,7 @@ void create_tuple_output(EnvI& e, VarDecl* vd, bool is_json, std::vector<Express
           outputVars.push_back(new StringLit(Location().introduce(), ", "));
         }
       }
-      if (tup->size() == 1) {
+      if (!is_json && tup->size() == 1) {
         outputVars.push_back(new StringLit(Location().introduce(), ","));
       }
       outputVars.push_back(new StringLit(Location().introduce(), is_json ? "]" : ")"));
@@ -1247,7 +1247,7 @@ void create_tuple_output(EnvI& e, VarDecl* vd, bool is_json, std::vector<Express
         outputVars.push_back(new StringLit(Location().introduce(), ", "));
       }
     }
-    if (al->size() == 1) {
+    if (!is_json && al->size() == 1) {
       outputVars.push_back(new StringLit(Location().introduce(), ","));
     }
     outputVars.push_back(new StringLit(Location().introduce(), is_json ? "]" : ")"));
