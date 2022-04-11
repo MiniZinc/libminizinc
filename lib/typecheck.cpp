@@ -3964,10 +3964,10 @@ void typecheck(Env& env, Model* m, AssignI* ai) {
   }
 }
 
-void output_var_desc_json(Env& env, VarDecl* vd, std::ostream& os, bool extra = false) {
-  os << "\"" << Printer::escapeStringLit(vd->id()->str()) << "\": {";
+void output_var_desc_json(Env& env, TypeInst* ti, std::ostream& os, bool extra = false) {
+  os << "{";
   os << "\"type\" : ";
-  switch (vd->type().bt()) {
+  switch (ti->type().bt()) {
     case Type::BT_INT:
       os << "\"int\"";
       break;
@@ -3983,23 +3983,35 @@ void output_var_desc_json(Env& env, VarDecl* vd, std::ostream& os, bool extra = 
     case Type::BT_ANN:
       os << "\"ann\"";
       break;
+    case Type::BT_TUPLE: {
+      auto* dom = ti->domain()->cast<ArrayLit>();
+      os << "[";
+      for (size_t i = 0; i < dom->size(); ++i) {
+        output_var_desc_json(env, (*dom)[i]->cast<TypeInst>(), os, extra);
+        if (i < dom->size() - 1) {
+          os << ", ";
+        }
+      }
+      os << "]";
+      break;
+    }
     default:
       os << "\"?\"";
       break;
   }
-  if (vd->type().ot() == Type::OT_OPTIONAL) {
+  if (ti->type().ot() == Type::OT_OPTIONAL) {
     os << ", \"optional\" : true";
   }
-  if (vd->type().st() == Type::ST_SET) {
+  if (ti->type().st() == Type::ST_SET) {
     os << ", \"set\" : true";
   }
-  if (vd->type().dim() > 0) {
-    os << ", \"dim\" : " << vd->type().dim();
+  if (ti->type().dim() > 0) {
+    os << ", \"dim\" : " << ti->type().dim();
 
     if (extra) {
       os << ", \"dims\" : [";
       bool had_dim = false;
-      ASTExprVec<TypeInst> ranges = vd->ti()->ranges();
+      ASTExprVec<TypeInst> ranges = ti->ranges();
       for (auto& range : ranges) {
         if (range->type().typeId() > 0) {
           os << (had_dim ? "," : "") << "\""
@@ -4011,22 +4023,26 @@ void output_var_desc_json(Env& env, VarDecl* vd, std::ostream& os, bool extra = 
       }
       os << "]";
 
-      if (vd->type().typeId() > 0) {
-        const std::vector<unsigned int>& enumIds = env.envi().getArrayEnum(vd->type().typeId());
+      if (ti->type().typeId() > 0) {
+        const std::vector<unsigned int>& enumIds = env.envi().getArrayEnum(ti->type().typeId());
         if (enumIds.back() > 0) {
           os << ", \"enum_type\" : \"" << *env.envi().getEnum(enumIds.back())->e()->id() << "\"";
         }
       }
     }
-
   } else {
     if (extra) {
-      if (vd->type().typeId() > 0) {
-        os << ", \"enum_type\" : \"" << *env.envi().getEnum(vd->type().typeId())->e()->id() << "\"";
+      if (ti->type().typeId() > 0) {
+        os << ", \"enum_type\" : \"" << *env.envi().getEnum(ti->type().typeId())->e()->id() << "\"";
       }
     }
   }
   os << "}";
+}
+
+void output_var_desc_json(Env& env, VarDecl* vd, std::ostream& os, bool extra = false) {
+  os << "\"" << Printer::escapeStringLit(vd->id()->str()) << "\": ";
+  output_var_desc_json(env, vd->ti(), os, extra);
 }
 
 void output_model_variable_types(Env& env, Model* m, std::ostream& os,
