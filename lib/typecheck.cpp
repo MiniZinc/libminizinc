@@ -1493,9 +1493,12 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
     c->decl(fi);
     e = c;
   }
+  const bool sameBT =
+      (e->type().bt() == funarg_t.bt() &&
+       (e->type().bt() != Type::BT_TUPLE || e->type().typeId() == funarg_t.typeId()));
   if (e->type().dim() == funarg_t.dim() &&
       (funarg_t.bt() == Type::BT_BOT || funarg_t.bt() == Type::BT_TOP ||
-       e->type().bt() == funarg_t.bt() || e->type().bt() == Type::BT_BOT)) {
+       e->type().bt() == Type::BT_BOT || sameBT)) {
     return e;
   }
   GCLock lock;
@@ -1517,10 +1520,8 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
       e = set2a;
     }
   }
-  if (funarg_t.bt() == Type::BT_TOP || e->type().bt() == funarg_t.bt() ||
-      e->type().bt() == Type::BT_BOT) {
-    KeepAlive ka(e);
-    return ka;
+  if (funarg_t.bt() == Type::BT_TOP || sameBT || e->type().bt() == Type::BT_BOT) {
+    return e;
   }
   std::vector<Expression*> args(1);
   args[0] = e;
@@ -1533,6 +1534,39 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
   } else if (e->type().bt() == Type::BT_INT) {
     if (funarg_t.bt() == Type::BT_FLOAT) {
       c = Call::a(e->loc(), env.constants.ids.int2float, args);
+    }
+  } else if (e->type().bt() == Type::BT_TUPLE) {
+    if (funarg_t.bt() == Type::BT_TUPLE) {
+      TupleType* current = env.getTupleType(e->type().typeId());
+      TupleType* intended = env.getTupleType(funarg_t.typeId());
+      auto* al = e->dynamicCast<ArrayLit>();
+      VarDecl* vd = nullptr;
+      if (al == nullptr) {
+        Expression* ident = e;
+        if (!ident->isa<Id>()) {
+          auto* vd = new VarDecl(e->loc(), new TypeInst(e->loc().introduce(), e->type()), "tmp",
+                                 e);  // TODO: fix typeinst and identifier
+          vd->type(e->type());
+          ident = vd->id();
+        }
+        std::vector<Expression*> collect(intended->size());
+        for (long long int i = 0; i < collect.size(); i++) {
+          collect[i] = new FieldAccess(e->loc().introduce(), ident, IntLit::a(i));
+          collect[i]->type((*current)[i]);
+        }
+        al = ArrayLit::constructTuple(e->loc().introduce(), collect);
+      }
+      assert(intended->size() <= al->size());
+      for (size_t i = 0; i < intended->size(); i++) {
+        al->set(i, add_coercion(env, m, (*al)[i], (*intended)[i])());
+      }
+      al->type(funarg_t);
+      if (vd != nullptr) {
+        auto* let = new Let(e->loc().introduce(), {vd}, al);
+        let->type(al->type());
+        return let;
+      }
+      return al;
     }
   }
   if (c != nullptr) {
