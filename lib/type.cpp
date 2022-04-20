@@ -16,11 +16,21 @@ namespace MiniZinc {
 
 bool Type::btSubtype(const EnvI& env, const Type& t0, const Type& t1, bool strictEnums) {
   if (t0.bt() == t1.bt()) {
-    if (t0.bt() == BT_TUPLE &&
-        (t0.typeId() == t1.typeId() ||
-         env.getTupleType(t0.typeId())
-             ->isSubtypeOf(env, *env.getTupleType(t1.typeId()), strictEnums))) {
-      return true;
+    if (t0.bt() == BT_TUPLE) {
+      if (t0.typeId() == t1.typeId()) {
+        return true;
+      }
+      auto t0id = t0.typeId();
+      if (t0.dim() != 0) {
+        t0id = env.getArrayEnum(t0id)[t0.dim()];
+      }
+      auto t1id = t1.typeId();
+      if (t1.dim() != 0) {
+        t1id = env.getArrayEnum(t1id)[t1.dim()];
+      }
+      if (env.getTupleType(t0id)->isSubtypeOf(env, *env.getTupleType(t1id), strictEnums)) {
+        return true;
+      }
     }
     if ((!strictEnums || t0.dim() != 0 || (t0.typeId() == t1.typeId() || t1.typeId() == 0))) {
       return true;
@@ -34,6 +44,43 @@ bool Type::btSubtype(const EnvI& env, const Type& t0, const Type& t1, bool stric
     default:
       return false;
   }
+}
+
+unsigned int Type::commonTuple(EnvI& env, unsigned int tupleId1, unsigned int tupleId2) {
+  if (tupleId1 == tupleId2) {
+    return tupleId1;
+  }
+  if (tupleId1 == 0 || tupleId2 == 0) {
+    return 0;
+  }
+  TupleType* tt1 = env.getTupleType(tupleId1);
+  TupleType* tt2 = env.getTupleType(tupleId2);
+  unsigned int size = std::min(tt1->size(), tt2->size());
+
+  std::vector<Type> common(size);
+  for (unsigned int i = 0; i < size; i++) {
+    if ((*tt1)[i].bt() == BT_TUPLE) {
+      common[i] = (*tt1)[i];
+      if ((*tt1)[i].typeId() != (*tt2)[i].typeId()) {
+        common[i].typeId(commonTuple(env, (*tt1)[i].typeId(), (*tt2)[i].typeId()));
+      }
+      if (common[i].typeId() == 0) {
+        return 0;
+      }
+    } else {
+      if (btSubtype(env, (*tt2)[i], (*tt1)[i], false)) {
+        common[i] = (*tt1)[i];
+      } else if (btSubtype(env, (*tt1)[i], (*tt2)[i], false)) {
+        common[i] = (*tt2)[i];
+      } else {
+        return 0;
+      }
+      if ((*tt1)[i].typeId() != (*tt2)[i].typeId()) {
+        common[i].typeId(0);
+      }
+    }
+  }
+  return env.registerTupleType(common);
 }
 
 std::string Type::toString(const EnvI& env) const {

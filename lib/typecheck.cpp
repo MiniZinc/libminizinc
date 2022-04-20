@@ -1706,6 +1706,10 @@ public:
       return;
     }
     ty.dim(static_cast<int>(al->dims()));
+    // Initialise typeId
+    if (!al->empty()) {
+      ty.typeId((*al)[0]->type().typeId());
+    }
     std::vector<AnonVar*> anons;
     bool haveAbsents = false;
     bool haveInferredType = false;
@@ -1754,6 +1758,14 @@ public:
             }
             if (vi->type().typeId() != 0 && ty.typeId() != vi->type().typeId()) {
               ty.typeId(0);
+            }
+          } else if (vi->type().bt() == Type::BT_TUPLE) {
+            if (ty.bt() != Type::BT_TUPLE) {
+              throw TypeError(_env, al->loc(), "non-uniform array literal");
+            }
+            ty.typeId(Type::commonTuple(_env, ty.typeId(), vi->type().typeId()));
+            if (ty.typeId() == 0) {
+              throw TypeError(_env, al->loc(), "non-uniform array literal");
             }
           } else {
             unsigned int tyEnumId = ty.typeId();

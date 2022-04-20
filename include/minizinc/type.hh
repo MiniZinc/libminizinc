@@ -297,6 +297,9 @@ public:
   /// Check if tuple can be evaluated (instead of flattened).
   /// (i.e., true if the tuple contains to variable or annotation types)
   static bool parTuple(const EnvI& env, const Type& t);
+
+  /// Returns the typeId of a common tuple type or 0 if no such tuple type exists
+  static unsigned int commonTuple(EnvI& env, unsigned int tupleId1, unsigned int tupleId2);
 };
 
 };  // namespace MiniZinc
