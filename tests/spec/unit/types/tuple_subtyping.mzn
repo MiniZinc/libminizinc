@@ -8,7 +8,7 @@ expected: !Result
     double: [1.0, [1,2,3]]
     arr1: [[5, 1.0], [1, -1.0]]
     arr2: [[1, 0], [1, 0]]
-    arr3: [[2,2], [3,3,3]]
+    arr3: [[2,2], [3,3]]
 ***/
 
 tuple(int): single ::output = (true,);

@@ -1555,6 +1555,10 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
           collect[i]->type((*current)[i]);
         }
         al = ArrayLit::constructTuple(e->loc().introduce(), collect);
+      } else if (intended->size() < al->size()) {
+        // Create tuple slice
+        al = new ArrayLit(al->loc().introduce(), al, {{1, intended->size()}},
+                          {{1, intended->size()}});
       }
       assert(intended->size() <= al->size());
       for (size_t i = 0; i < intended->size(); i++) {
