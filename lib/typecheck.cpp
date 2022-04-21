@@ -1544,8 +1544,8 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
       if (al == nullptr) {
         Expression* ident = e;
         if (!ident->isa<Id>()) {
-          auto* vd = new VarDecl(e->loc(), new TypeInst(e->loc().introduce(), e->type()), "tmp",
-                                 e);  // TODO: fix typeinst and identifier
+          auto* vd =
+              new VarDecl(e->loc(), new TypeInst(e->loc().introduce(), e->type()), env.genId(), e);
           vd->type(e->type());
           ident = vd->id();
         }
