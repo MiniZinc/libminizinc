@@ -15,7 +15,7 @@ predicate fzn_neural_net(array[int] of var float: inputs,
         forall(i in index_set(outputs))(neuron[output_ids[i]] = outputs[i]) /\
         forall(i in NODE diff INPUTS) (
             let { int: first = first_edge[i];
-                  int: last = if i = max(NODE) then max(index_set(first_edge))
+                  int: last = if i = max(NODE) then max(index_set(EDGE))
                               else first_edge[i+1] - 1 endif;
                   array[int] of var float: ins = [neuron[edge_parent[j]] | j in first..last];
 		              array[int] of float: ws = [ edge_weight[j] | j in first..last ];
