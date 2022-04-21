@@ -1194,31 +1194,40 @@ Expression* create_encapsulated_output(EnvI& e) {
 }
 
 // Do not use tuples in output to ensure FlatZinc compatibility= nvd->id();
-void create_tuple_output(EnvI& e, VarDecl* vd, bool is_json, std::vector<Expression*>& outputVars) {
-  assert(vd->type().bt() == Type::BT_TUPLE);
+void create_tuple_output(EnvI& env, Expression* e, bool is_json,
+                         std::vector<Expression*>& outputVars) {
+  assert(e->type().bt() == Type::BT_TUPLE);
   ArrayLit* al;
-  if ((vd->flat() != nullptr) && (vd->flat()->e() != nullptr)) {
-    al = eval_array_lit(e, vd->flat()->e());
-  } else if (vd->e() != nullptr) {
-    al = eval_array_lit(e, vd->e());
+  if (auto* vd = e->dynamicCast<VarDecl>()) {
+    if ((vd->flat() != nullptr) && (vd->flat()->e() != nullptr)) {
+      al = eval_array_lit(env, vd->flat()->e());
+    } else if (vd->e() != nullptr) {
+      al = eval_array_lit(env, vd->e());
+    }
+  } else {
+    al = eval_array_lit(env, e);
   }
 
-  if (vd->type().dim() > 0) {
+  const ASTString showFn = is_json ? env.constants.ids.showJSON : env.constants.ids.showDzn;
+
+  if (e->type().dim() > 0) {
     outputVars.push_back(new StringLit(Location().introduce(), "["));
     for (size_t i = 0; i < al->size(); ++i) {
       auto* tup = follow_id((*al)[i])->cast<ArrayLit>();
       outputVars.push_back(new StringLit(Location().introduce(), is_json ? "[" : "("));
       for (size_t i = 0; i < tup->size(); ++i) {
-        std::vector<Expression*> showArgs(1);
-        showArgs[0] = (*tup)[i];
-        Call* show =
-            Call::a(Location().introduce(),
-                    is_json ? e.constants.ids.showJSON : e.constants.ids.showDzn, showArgs);
-        show->type(Type::parstring());
-        FunctionI* fi = e.model->matchFn(e, show, false);
-        assert(fi);
-        show->decl(fi);
-        outputVars.push_back(show);
+        if ((*tup)[i]->type().bt() == Type::BT_TUPLE) {
+          create_tuple_output(env, (*tup)[i], is_json, outputVars);
+        } else {
+          std::vector<Expression*> showArgs(1);
+          showArgs[0] = (*tup)[i];
+          Call* show = Call::a(Location().introduce(), showFn, showArgs);
+          show->type(Type::parstring());
+          FunctionI* fi = env.model->matchFn(env, show, false);
+          assert(fi);
+          show->decl(fi);
+          outputVars.push_back(show);
+        }
         if (i < tup->size() - 1) {
           outputVars.push_back(new StringLit(Location().introduce(), ", "));
         }
@@ -1236,13 +1245,17 @@ void create_tuple_output(EnvI& e, VarDecl* vd, bool is_json, std::vector<Express
     outputVars.push_back(new StringLit(Location().introduce(), is_json ? "[" : "("));
     for (size_t i = 0; i < al->size(); ++i) {
       std::vector<Expression*> showArgs(1);
-      showArgs[0] = (*al)[i];
-      Call* show = Call::a(Location().introduce(), ASTString("showDzn"), showArgs);
-      show->type(Type::parstring());
-      FunctionI* fi = e.model->matchFn(e, show, false);
-      assert(fi);
-      show->decl(fi);
-      outputVars.push_back(show);
+      if ((*al)[i]->type().bt() == Type::BT_TUPLE) {
+        create_tuple_output(env, (*al)[i], is_json, outputVars);
+      } else {
+        showArgs[0] = (*al)[i];
+        Call* show = Call::a(Location().introduce(), showFn, showArgs);
+        show->type(Type::parstring());
+        FunctionI* fi = env.model->matchFn(env, show, false);
+        assert(fi);
+        show->decl(fi);
+        outputVars.push_back(show);
+      }
       if (i < al->size() - 1) {
         outputVars.push_back(new StringLit(Location().introduce(), ", "));
       }
