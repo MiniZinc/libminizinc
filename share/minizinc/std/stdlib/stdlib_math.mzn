@@ -506,21 +506,35 @@ function var float: sqrt(var float: x) =
   else let { constraint x >= 0.0; } in sqrt_mt(x)
   endif;
 
-/** @group stdlib.builtins.arithmetic Return \(\a x ^ {\a y}\) */
+/** @group stdlib.builtins.arithmetic Return \(\a x ^ {\a y}\), when \(\a y < 0 \) it returns 0. */
 function int: pow(int: x, int: y);
 
-/** @group stdlib.builtins.arithmetic Return \(\a x ^ {\a y}\) */
-function var int: pow(var int: x, var int: y) =
-  let {
-    int: yy = if is_fixed(y) then fix(y) else -1 endif;
-  } in
-  if yy = 0 then 1
-  elseif yy = 1 then x
-  elseif 0..1==dom(x) then x
-  elseif -1..1==dom(x) /\ is_fixed(y) /\ 1 == fix(y) mod 2 then x else
-  let { var int: r ::is_defined_var;
-        constraint if is_fixed(y) then int_pow_fixed(x,fix(y),r) ::defines_var(r) else int_pow(x,y,r) ::defines_var(r) endif;
-  } in r
+/** @group stdlib.builtins.arithmetic Return \(\a x ^ {\a y}\), when \(\a y < 0 \) it returns 0 */
+function var int: pow(var int: x, var int: y) ::promise_total =
+  if is_fixed(y) then
+    if fix(y) = 0 then
+      1
+    elseif fix(y) < 0 then
+      0
+    elseif fix(y) = 1 then
+      x
+    elseif dom(x) = 1..0 then
+      x
+    elseif dom(x) = -1..1 /\ fix(y) mod 2 = 1 then
+      x
+    else
+      let {
+        var int: r ::is_defined_var;
+        constraint int_pow_fixed(x,fix(y),r) ::defines_var(r);
+      } in r
+    endif
+  elseif dom(x) = 1..0 then
+    x
+  else
+    let {
+      var int: r ::is_defined_var;
+      constraint int_pow(x,y,r) ::defines_var(r);
+    } in r
   endif;
 
 
@@ -528,7 +542,7 @@ function var int: pow(var int: x, var int: y) =
 function float: pow(float: x, float: y);
 
 /** @group stdlib.builtins.arithmetic Return \(\a x ^ {\a y}\) */
-function var float: pow(var float: x, var float: y) =
+function var float: pow(var float: x, var float: y) ::promise_total =
   let {
     float: yy = if is_fixed(y) then fix(y) else -1.0 endif
   } in

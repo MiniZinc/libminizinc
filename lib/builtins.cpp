@@ -1544,11 +1544,14 @@ FloatVal b_pow(EnvI& env, Call* call) {
 }
 IntVal b_pow_int(EnvI& env, Call* call) {
   IntVal p = eval_int(env, call->arg(0));
-  IntVal r = 1;
   long long int e = eval_int(env, call->arg(1)).toInt();
   if (e < 0) {
-    throw EvalError(env, call->arg(1)->loc(), "Cannot raise integer to a negative power");
+    return 0;
   }
+  if (p == 2) {
+    return 1 << e;
+  }
+  IntVal r = 1;
   for (long long int i = e; (i--) != 0;) {
     r = r * p;
   }
