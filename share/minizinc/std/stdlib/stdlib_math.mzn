@@ -511,14 +511,14 @@ function int: pow(int: x, int: y);
 
 /** @group stdlib.builtins.arithmetic Return \(\a x ^ {\a y}\), when \(\a y < 0 \) it returns 0 */
 function var int: pow(var int: x, var int: y) ::promise_total =
-  if is_fixed(y) then
+	if ub(y) < 0 then
+		0
+  elseif is_fixed(y) then
     if fix(y) = 0 then
       1
-    elseif fix(y) < 0 then
-      0
     elseif fix(y) = 1 then
       x
-    elseif dom(x) = 1..0 then
+    elseif dom(x) = 0..1 then
       x
     elseif dom(x) = -1..1 /\ fix(y) mod 2 = 1 then
       x
@@ -528,7 +528,7 @@ function var int: pow(var int: x, var int: y) ::promise_total =
         constraint int_pow_fixed(x,fix(y),r) ::defines_var(r);
       } in r
     endif
-  elseif dom(x) = 1..0 then
+  elseif dom(x) = 0..1 /\ lb(y) >= 0 then
     x
   else
     let {

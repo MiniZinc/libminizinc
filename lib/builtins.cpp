@@ -1548,9 +1548,6 @@ IntVal b_pow_int(EnvI& env, Call* call) {
   if (e < 0) {
     return 0;
   }
-  if (p == 2) {
-    return 1 << e;
-  }
   IntVal r = 1;
   for (long long int i = e; (i--) != 0;) {
     r = r * p;
