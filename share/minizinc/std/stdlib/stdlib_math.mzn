@@ -506,35 +506,51 @@ function var float: sqrt(var float: x) =
   else let { constraint x >= 0.0; } in sqrt_mt(x)
   endif;
 
-/** @group stdlib.builtins.arithmetic Return \(\a x ^ {\a y}\), when \(\a y < 0 \) it returns 0. */
+/** @group stdlib.builtins.arithmetic Return \(\a x ^ {\a y}\), when \(\a y < 0 \) it returns ``1 div pow(x, abs(y))``. */
 function int: pow(int: x, int: y);
 
-/** @group stdlib.builtins.arithmetic Return \(\a x ^ {\a y}\), when \(\a y < 0 \) it returns 0 */
-function var int: pow(var int: x, var int: y) ::promise_total =
-	if ub(y) < 0 then
-		0
-  elseif is_fixed(y) then
-    if fix(y) = 0 then
-      1
-    elseif fix(y) = 1 then
-      x
-    elseif dom(x) = 0..1 then
-      x
-    elseif dom(x) = -1..1 /\ fix(y) mod 2 = 1 then
+/** @group stdlib.builtins.arithmetic Return \(\a x ^ {\a y}\), when \(\a y < 0 \) it returns ``1 div pow(x, abs(y))`` */
+function var int: pow(var int: x, int: y) =
+  if y = 0 then
+    1
+  elseif y = 1 then
+    x
+  elseif dom(x) = 0..1 /\ y >= 0 then
+    x
+  elseif dom(x) = -1..1 /\ y mod 2 = 1 then
+    x
+  elseif not (0 in dom(x)) /\ y < 0 then
+    bool2int(x = 1)
+  elseif y >= 0 then
+    pow_fixed_t(x, y)
+  elseif mzn_in_root_context(x) then
+    pow_fixed_t(x, y)
+  else 
+    let {
+      constraint x != 0;
+    } in pow_fixed_mt(x, y)
+  endif;
+
+/** @group stdlib.builtins.arithmetic Return \(\a x ^ {\a y}\), when \(\a y < 0 \) it returns ``1 div pow(1, abs(y))`` */
+function var int: pow(var int: x, var int: y) =
+  if lb(y) >= 0 then
+    if dom(x) = 0..1 then
       x
     else
-      let {
-        var int: r ::is_defined_var;
-        constraint int_pow_fixed(x,fix(y),r) ::defines_var(r);
-      } in r
+      pow_t(x, y)
     endif
-  elseif dom(x) = 0..1 /\ lb(y) >= 0 then
-    x
+  elseif not (0 in dom(x)) then
+    if ub(y) < 0 then
+      bool2int(x = 1)
+    else
+      pow_t(x, y)
+    endif
+  elseif mzn_in_root_context(x) then
+    pow_t(x, y)
   else
     let {
-      var int: r ::is_defined_var;
-      constraint int_pow(x,y,r) ::defines_var(r);
-    } in r
+      constraint y < 0 -> x != 0; 
+    } in pow_mt(x, y)
   endif;
 
 

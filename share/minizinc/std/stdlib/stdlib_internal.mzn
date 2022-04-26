@@ -1245,6 +1245,32 @@ function var float: min_t(array[int] of var float: x) :: promise_total =
   } in m
   endif;
 
+function var int: pow_fixed_t(var int: x, int: y) ::promise_total =
+  let {
+    constraint y < 0 -> x != 0;
+    var int: r ::is_defined_var;
+    constraint int_pow_fixed(x, y, r) ::defines_var(r);
+  } in r;
+
+function var int: pow_fixed_mt(var int: x, int: y) ::promise_total =
+  let {
+    constraint assert(y < 0 /\ 0 in dom(x), "pow_fixed_mt called on variant guaranteed to be total");
+    var dom(x) diff {0}: nx = if x = 0 then 1 else x endif;
+  } in pow_fixed_t(nx, y);
+
+function var int: pow_t(var int: x, var int: y) ::promise_total =
+  let {
+    constraint y < 0 -> x != 0;
+    var int: r ::is_defined_var;
+    constraint int_pow(x, y, r) ::defines_var(r);
+  } in r;
+
+function var int: pow_mt(var int: x, var int: y) ::promise_total =
+  let {
+    constraint assert(lb(y) < 0 /\ 0 in dom(x), "pow_mt called on variant guaranteed to be total");
+    var dom(x): nx = if x = 0 /\ y < 0 then 1 else x endif;
+  } in pow_t(nx, y);
+
 /* These predicates are used to intercept symmetry_breaking_constraint and
  * redundant_constraint calls in user models, so that they can be ignored
  * if the corresponding options have been set.

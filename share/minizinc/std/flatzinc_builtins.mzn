@@ -63,7 +63,7 @@ predicate int_min(var int: a, var int: b, var int: c);
 predicate int_mod(var int: a, var int: b, var int: c);
 /** @group flatzinc.int Constrains \a a * \a b = \a c */
 predicate int_times(var int: a, var int: b, var int: c);
-/** @group flatzinc.int Constrains \a z = \(\a x ^ {\a y}\), \a z is constrained to 0 when \(\a y < 0\) */
+/** @group flatzinc.int Constrains \a z = \(\a x ^ {\a y}\), \a z is constrained to ``1 div pow(x, abs(y))`` when \(\a y < 0\) */
 predicate int_pow(var int: x, var int: y, var int: z);
 
 /** @group flatzinc.int Constrains \a x \( \in \) \a S */
@@ -387,7 +387,7 @@ function var $$E: max(var set of $$E: s);
 
 */
 
-/** @group flatzinc.twotwoone Constrains \a z = \(\a x ^ {\a y}\), \a z is constrained to 0 when \(\a y < 0\) **/
+/** @group flatzinc.twotwoone Constrains \a z = \(\a x ^ {\a y}\), \a z is constrained to ``1 div pow(x, abs(y))`` when \(\a y < 0\) **/
 predicate int_pow_fixed(var int: x, int: y, var int: z);
 
 /***

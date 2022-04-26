@@ -1546,6 +1546,12 @@ IntVal b_pow_int(EnvI& env, Call* call) {
   IntVal p = eval_int(env, call->arg(0));
   long long int e = eval_int(env, call->arg(1)).toInt();
   if (e < 0) {
+    if (p == 0) {
+      throw ArithmeticError("negative power of zero");
+    }
+    if (p == 1) {
+      return 1;
+    }
     return 0;
   }
   IntVal r = 1;
