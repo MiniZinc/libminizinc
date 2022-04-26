@@ -167,6 +167,7 @@ bool can_increment_type(const Type& t, PossibleBaseTypes pbt) {
     case PBT_I:
       return false;
   }
+  throw InternalError("Invalid BaseType");
 }
 void increment_type(Type& t, PossibleBaseTypes pbt) {
   assert(pbt != PBT_I);
