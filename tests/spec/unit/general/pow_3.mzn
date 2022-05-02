@@ -1,0 +1,263 @@
+/***
+--- !Test
+solvers: [gecode]
+options:
+  all_solutions: true
+  -D: x = 0..1; y = 0..1
+expected: !Result
+  solution: !SolutionSet
+  - !Solution
+    b: 0
+    e: 0
+    z: 1
+  - !Solution
+    b: 0
+    e: 1
+    z: 0
+  - !Solution
+    b: 1
+    e: 0
+    z: 1
+  - !Solution
+    b: 1
+    e: 1
+    z: 1
+--- !Test
+solvers: [gecode]
+options:
+  all_solutions: true
+  -D: x = 0..1; y = 1..2
+expected: !Result
+  solution: !SolutionSet
+  - !Solution
+    b: 0
+    e: 1
+    z: 0
+  - !Solution
+    b: 0
+    e: 2
+    z: 0
+  - !Solution
+    b: 1
+    e: 1
+    z: 1
+  - !Solution
+    b: 1
+    e: 2
+    z: 1
+--- !Test
+solvers: [gecode]
+options:
+  all_solutions: true
+  -D: x = -1..2; y = 0..2
+expected: !Result
+  solution: !SolutionSet
+  - !Solution
+    b: -1
+    e: 0
+    z: 1
+  - !Solution
+    b: -1
+    e: 1
+    z: -1
+  - !Solution
+    b: -1
+    e: 2
+    z: 1
+  - !Solution
+    b: 0
+    e: 0
+    z: 1
+  - !Solution
+    b: 0
+    e: 1
+    z: 0
+  - !Solution
+    b: 0
+    e: 2
+    z: 0
+  - !Solution
+    b: 1
+    e: 0
+    z: 1
+  - !Solution
+    b: 1
+    e: 1
+    z: 1
+  - !Solution
+    b: 1
+    e: 2
+    z: 1
+  - !Solution
+    b: 2
+    e: 0
+    z: 1
+  - !Solution
+    b: 2
+    e: 1
+    z: 2
+  - !Solution
+    b: 2
+    e: 2
+    z: 4
+--- !Test
+solvers: [gecode]
+options:
+  all_solutions: true
+  -D: x = -2..2 diff {0}; y = -2..-1
+expected: !Result
+  solution: !SolutionSet
+  - !Solution
+    b: -2
+    e: -2
+    z: 0
+  - !Solution
+    b: -2
+    e: -1
+    z: 0
+  - !Solution
+    b: -1
+    e: -2
+    z: 0
+  - !Solution
+    b: -1
+    e: -1
+    z: 0
+  - !Solution
+    b: 1
+    e: -2
+    z: 1
+  - !Solution
+    b: 1
+    e: -1
+    z: 1
+  - !Solution
+    b: 2
+    e: -2
+    z: 0
+  - !Solution
+    b: 2
+    e: -1
+    z: 0
+--- !Test
+solvers: [gecode]
+options:
+  all_solutions: true
+  -D: x = -2..2 diff {0}; y = -1..2
+expected: !Result
+  solution: !SolutionSet
+  - !Solution
+    b: -2
+    e: -1
+    z: 0
+  - !Solution
+    b: -2
+    e: 0
+    z: 1
+  - !Solution
+    b: -2
+    e: 1
+    z: -2
+  - !Solution
+    b: -2
+    e: 2
+    z: 4
+  - !Solution
+    b: -1
+    e: -1
+    z: -1
+  - !Solution
+    b: -1
+    e: 0
+    z: 1
+  - !Solution
+    b: -1
+    e: 1
+    z: -1
+  - !Solution
+    b: -1
+    e: 2
+    z: 1
+  - !Solution
+    b: 1
+    e: -1
+    z: 1
+  - !Solution
+    b: 1
+    e: 0
+    z: 1
+  - !Solution
+    b: 1
+    e: 1
+    z: 1
+  - !Solution
+    b: 1
+    e: 2
+    z: 1
+  - !Solution
+    b: 2
+    e: -1
+    z: 0
+  - !Solution
+    b: 2
+    e: 0
+    z: 1
+  - !Solution
+    b: 2
+    e: 1
+    z: 2
+  - !Solution
+    b: 2
+    e: 2
+    z: 4
+--- !Test
+solvers: [gecode]
+options:
+  all_solutions: true
+  -D: x = -1..1; y = -1..1
+expected: !Result
+  solution: !SolutionSet
+  - !Solution
+    b: -1
+    e: -1
+    z: -1
+  - !Solution
+    b: -1
+    e: 0
+    z: 1
+  - !Solution
+    b: -1
+    e: 1
+    z: -1
+  - !Solution
+    b: 0
+    e: 0
+    z: 1
+  - !Solution
+    b: 0
+    e: 1
+    z: 0
+  - !Solution
+    b: 1
+    e: -1
+    z: 1
+  - !Solution
+    b: 1
+    e: 0
+    z: 1
+  - !Solution
+    b: 1
+    e: 1
+    z: 1
+***/
+
+% Test for pow with var base, var exponent
+
+set of int: x;
+set of int: y;
+
+var x: b;
+var y: e;
+var int: z;
+
+constraint z = pow(b, e);
