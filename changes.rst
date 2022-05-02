@@ -17,6 +17,7 @@ Changes:
 -  Improve documentation for ``all_different`` with optional variables.
 -  Make breaking of ``defines_var`` cycles deterministic (:bugref:`563`).
 -  Improve documentation for warm start search annotations.
+-  Automatically detect up to SCIP version 8.0.0 for Windows.
 
 Bug fixes:
 ^^^^^^^^^^
@@ -33,6 +34,7 @@ Bug fixes:
 -  Fix a bug where variables used in type-insts of output variables were not correctly copied to the
    output model (:bugref:`570`).
 -  Fix a possible crash when flattening ``forall`` calls.
+-  Ensure ``pow`` functions are total (:bugref:`572`).
 -  Fix an internal error when using an ``if-then-else`` with a branch equating ``<>`` to an
    expression.
 
