@@ -533,12 +533,10 @@ function var int: pow(var int: x, int: y) =
 
 /** @group stdlib.builtins.arithmetic Return \(\a x ^ {\a y}\), when \(\a y < 0 \) it returns ``1 div pow(1, abs(y))`` */
 function var int: pow(var int: x, var int: y) =
-  if lb(y) >= 0 then
-    if dom(x) = 0..1 then
-      x
-    else
-      pow_t(x, y)
-    endif
+  if lb(y) > 0 /\ dom(x) = 0..1 then
+    x
+  elseif lb(y) >= 0 then
+    pow_t(x, y)
   elseif not (0 in dom(x)) then
     if ub(y) < 0 then
       bool2int(x = 1)
