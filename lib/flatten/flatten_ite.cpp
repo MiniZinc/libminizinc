@@ -34,33 +34,27 @@ std::vector<Expression*> get_conjuncts(Expression* start) {
   return conjuncts;
 }
 
-void classify_conjunct(Expression* e, IdMap<int>& eq_occurrences,
+void classify_conjunct(EnvI& env, Expression* e, IdMap<int>& eq_occurrences,
                        IdMap<std::pair<Expression*, Expression*>>& eq_branches,
                        std::vector<Expression*>& other_branches) {
   if (auto* bo = e->dynamicCast<BinOp>()) {
     if (bo->op() == BOT_EQ && bo->lhs()->type().dim() == 0) {
-      if (Id* ident = bo->lhs()->dynamicCast<Id>()) {
-        if (eq_branches.find(ident) == eq_branches.end()) {
-          auto it = eq_occurrences.find(ident);
-          if (it == eq_occurrences.end()) {
-            eq_occurrences.insert(ident, 1);
-          } else {
-            eq_occurrences.get(ident)++;
-          }
-          eq_branches.insert(ident, std::make_pair(bo->rhs(), bo));
-          return;
+      auto* ident = bo->lhs()->dynamicCast<Id>();
+      auto* other = bo->rhs();
+      if (ident == nullptr || ident == env.constants.absent) {
+        ident = bo->rhs()->dynamicCast<Id>();
+        other = bo->lhs();
+      }
+      if (ident != nullptr && ident != env.constants.absent &&
+          eq_branches.find(ident) == eq_branches.end()) {
+        auto it = eq_occurrences.find(ident);
+        if (it == eq_occurrences.end()) {
+          eq_occurrences.insert(ident, 1);
+        } else {
+          eq_occurrences.get(ident)++;
         }
-      } else if (Id* ident = bo->rhs()->dynamicCast<Id>()) {
-        if (eq_branches.find(ident) == eq_branches.end()) {
-          auto it = eq_occurrences.find(ident);
-          if (it == eq_occurrences.end()) {
-            eq_occurrences.insert(ident, 1);
-          } else {
-            eq_occurrences.get(ident)++;
-          }
-          eq_branches.insert(ident, std::make_pair(bo->lhs(), bo));
-          return;
-        }
+        eq_branches.insert(ident, std::make_pair(other, bo));
+        return;
       }
     }
   }
@@ -107,14 +101,15 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     for (int i = 0; i < ite->size(); i++) {
       auto conjuncts = get_conjuncts(ite->thenExpr(i));
       for (auto* c : conjuncts) {
-        classify_conjunct(c, eq_occurrences, eq_branches[i], other_branches[i]);
+        classify_conjunct(env, c, eq_occurrences, eq_branches[i], other_branches[i]);
       }
       noOtherBranches = noOtherBranches && other_branches[i].empty();
     }
     {
       auto conjuncts = get_conjuncts(ite->elseExpr());
       for (auto* c : conjuncts) {
-        classify_conjunct(c, eq_occurrences, eq_branches[ite->size()], other_branches[ite->size()]);
+        classify_conjunct(env, c, eq_occurrences, eq_branches[ite->size()],
+                          other_branches[ite->size()]);
       }
       noOtherBranches = noOtherBranches && other_branches[ite->size()].empty();
     }

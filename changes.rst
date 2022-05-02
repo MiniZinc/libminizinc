@@ -33,6 +33,8 @@ Bug fixes:
 -  Fix a bug where variables used in type-insts of output variables were not correctly copied to the
    output model (:bugref:`570`).
 -  Fix a possible crash when flattening ``forall`` calls.
+-  Fix an internal error when using an ``if-then-else`` with a branch equating ``<>`` to an
+   expression.
 
 .. _v2.6.2:
 
