@@ -1547,7 +1547,7 @@ IntVal b_pow_int(EnvI& env, Call* call) {
   long long int e = eval_int(env, call->arg(1)).toInt();
   if (e < 0) {
     if (p == 0) {
-      throw ArithmeticError("negative power of zero");
+      throw ResultUndefinedError(env, call->loc(), "negative power of zero is undefined");
     }
     if (p == 1) {
       return 1;
