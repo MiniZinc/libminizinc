@@ -18,6 +18,7 @@ Changes:
 -  Make breaking of ``defines_var`` cycles deterministic (:bugref:`563`).
 -  Improve documentation for warm start search annotations.
 -  Automatically detect up to SCIP version 8.0.0 for Windows.
+-  Add ``global_cardinality`` and ``global_cardinality_closed`` for arrays of sets.
 
 Bug fixes:
 ^^^^^^^^^^
