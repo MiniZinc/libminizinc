@@ -132,7 +132,7 @@ predicate among_seq(array[int] of var int: x, set of int: S,
     int: l, int: m, int: n) = gecode_among_seq_int(x,S,l,m,n);
 /** @group gecode.constraints
  Every subsequence of \a x of length \a l has at least \a m and at most \a n occurrences
- of the values in \a S
+ of the value \a b
 */
 predicate among_seq(array[int] of var bool: x, bool: b,
     int: l, int: m, int: n) = gecode_among_seq_bool(x,b,l,m,n);

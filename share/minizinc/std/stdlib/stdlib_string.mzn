@@ -34,7 +34,7 @@ point is given by \a p. It is a run-time error for \a p to be negative.
 */
 function string: show_float(int: w, int: p, var float: x);
 
-/** @group stdlib.builtins.string Convert two-dimensional array \a x into a string
+/** @group stdlib.builtins.string Convert two-dimensional array \a vs into a string
     with row and column headers \a row_hdr and \a col_hdr */
 function string: show2d_indexed(array[int] of string: row_hdr,
                                 array[int] of string: col_hdr,
