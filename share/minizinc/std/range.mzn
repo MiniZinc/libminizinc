@@ -1,7 +1,7 @@
 include "fzn_range.mzn";
 include "fzn_range_reif.mzn";
 
-/** @group globals
+/** @group globals.math
   Requires that the image of function \a x (represented as an array) on set
   of values \a s is \a t.  ub(\a s) must be a subset of index_set(\a x) otherwise an
   assertion failure will occur.

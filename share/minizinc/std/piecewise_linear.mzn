@@ -1,7 +1,7 @@
 include "fzn_piecewise_linear.mzn";
 include "fzn_piecewise_linear_reif.mzn";
 
-/** @group globals
+/** @group globals.math
   Return the piecewise-linear function of \a x
   on the given point-value sequence.
   The array \a xi defines the points, and \a vi the corresponding values.
@@ -13,7 +13,7 @@ function var float: piecewise_linear(var float: x, array[int] of float: xi, arra
   } in res;
 
 
-/** @group globals
+/** @group globals.math
   Constrains \a y(\a x) to be the piecewise-linear function
   on the provided point-value sequence.
   The array \a xi defines the points, and \a vi the corresponding values.

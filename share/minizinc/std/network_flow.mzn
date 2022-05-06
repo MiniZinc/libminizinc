@@ -3,7 +3,7 @@ include "fzn_network_flow_reif.mzn";
 include "fzn_network_flow_cost.mzn";
 include "fzn_network_flow_cost_reif.mzn";
 
-/** @group globals
+/** @group globals.graph
   Defines a network flow constraint.
   
 @param arc: a directed arc of the flow network. Arc \p i connects node \a arc[\p i,1] to node \a arc[\p i,2].
@@ -27,7 +27,7 @@ predicate network_flow(array[int,1..2] of int: arc,
           fzn_network_flow(arc, balance, flow)
 	);
 
-/** @group globals
+/** @group globals.graph
   Defines a network flow constraint with cost.
   
 @param arc: a directed arc of the flow network. Arc \p i connects node \a arc[\p i,1] to node \a arc[\p i,2].

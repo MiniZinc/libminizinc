@@ -1,7 +1,7 @@
 include "fzn_roots.mzn";
 include "fzn_roots_reif.mzn";
 
-/** @group globals
+/** @group globals.set
   Requires that \a x[\p i] in \a t for all \p i in \a s
 */
 predicate roots(

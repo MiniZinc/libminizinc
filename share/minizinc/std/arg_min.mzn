@@ -5,21 +5,21 @@ include "fzn_arg_min_bool_opt.mzn";
 include "fzn_arg_min_float.mzn";
 include "fzn_arg_min_float_opt.mzn";
 
-/** @group globals
+/** @group globals.math
 	Returns the index of the minimum value in the array \a x.
 	When breaking ties the least index is returned.
 */
 function var $$E: arg_min(array[$$E] of var int: x)  = 
 	let { constraint length(x) > 0; } in arg_min_total(x);
 
-/** @group globals
+/** @group globals.math
 	Returns the index of the minimum value in the array \a x.
 	When breaking ties the least index is returned.
 */
 function var $$E: arg_min(array[$$E] of var bool: x)  = 
 	let { constraint length(x) > 0; } in arg_min_total(x);
 
-/** @group globals
+/** @group globals.math
 	Returns the index of the minimum value in the array \a x.
 	When breaking ties the least index is returned.
 */
@@ -27,7 +27,7 @@ function var $$E: arg_min(array[$$E] of var float: x)  =
 	let { constraint length(x) > 0; } in arg_min_total(x);
 
 
-/** @group globals
+/** @group globals.math
 	Returns the index of the minimum non-absent value in the array \a x.
 	When breaking ties the least index is returned.
 */
@@ -36,7 +36,7 @@ function var $$E: arg_min(array[$$E] of var opt int: x) =
 		constraint length(x) > 0;
 	} in arg_min_total(x);
 
-/** @group globals
+/** @group globals.math
 	Returns the index of the minimum non-absent value in the array \a x.
 	When breaking ties the least index is returned.
 	Returns absent when all elements are absent.
@@ -59,7 +59,7 @@ function var opt $$E: arg_min_weak(array[$$E] of var opt int: x) :: promise_tota
 		} in ii
 	endif;
 
-/** @group globals
+/** @group globals.math
 	Returns the index of the minimum non-absent value in the array \a x.
 	When breaking ties the least index is returned.
 */
@@ -68,7 +68,7 @@ function var $$E: arg_min(array[$$E] of var opt bool: x) =
 		constraint length(x) > 0;
 	} in arg_max_total(x);
 
-/** @group globals
+/** @group globals.math
 	Returns the index of the minimum non-absent value in the array \a x.
 	When breaking ties the least index is returned.
 	Returns absent when all elements are absent.
@@ -91,7 +91,7 @@ function var opt $$E: arg_min_weak(array[$$E] of var opt bool: x) :: promise_tot
 		} in ii
 	endif;
 
-/** @group globals
+/** @group globals.math
 	Returns the index of the minimum non-absent value in the array \a x.
 	When breaking ties the least index is returned.
 */
@@ -100,7 +100,7 @@ function var $$E: arg_min(array[$$E] of var opt float: x) =
 		constraint length(x) > 0;
 	} in arg_min_total(x);
 
-/** @group globals
+/** @group globals.math
 	Returns the index of the minimum non-absent value in the array \a x.
 	When breaking ties the least index is returned.
 	Returns absent when all elements are absent.
@@ -208,7 +208,7 @@ function var $$E: arg_min_total(array[$$E] of var opt float: x) :: promise_total
 		} in ii
 	endif;
 
-/** @group globals
+/** @group globals.math
 	Constrain \a i to be the index of the minimum value in the array \a x.
 	When breaking ties the least index is returned.
 
@@ -217,7 +217,7 @@ function var $$E: arg_min_total(array[$$E] of var opt float: x) :: promise_total
 predicate minimum_arg(array[int] of var int: x, var int: i) =
 	fzn_minimum_arg_int(x, i);
 
-/** @group globals
+/** @group globals.math
 	Constrain \a i to be the index of the minimum value in the array \a x.
 	When breaking ties the least index is returned.
 
@@ -226,7 +226,7 @@ predicate minimum_arg(array[int] of var int: x, var int: i) =
 predicate minimum_arg(array[int] of var bool: x, var int: i) =
 	fzn_minimum_arg_bool(x, i);
 
-/** @group globals
+/** @group globals.math
 	Constrain \a i to be the index of the minimum value in the array \a x.
 	When breaking ties the least index is returned.
 	

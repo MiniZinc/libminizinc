@@ -1,9 +1,5 @@
 include "alldifferent.mzn";
 
-/** @group globals
-  Constrains the elements of \a x to define a circuit where \a x[\p i] = \p j means
-  that \p j is the successor of \p i.
-*/
 % Linear version.
 predicate fzn_circuit(array[int] of var int: x) = 
     let { set of int: S = index_set(x),

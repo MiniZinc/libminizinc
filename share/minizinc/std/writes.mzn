@@ -15,6 +15,13 @@ predicate writes(array[$$X] of var int: I, array[$$Y] of var int: P,
     assert(index_set(P) = index_set(V),"writes: index set of P must be same as V") /\
     fzn_writes(I, P, V, O);
 
+/** @group globals.array
+    Returns a new array from an input array \a I with a simultaneous change at positions \a P to values \a V
+
+    \a I is an array of integers
+    \a P is an array of index values in \a I
+    \a V is an array of integer values 
+*/
 function array[$$X] of var int: writes(array[$$X] of var int: I,
                                        array[$$Y] of var int: P,
                                        array[$$Y] of var int: V) = 

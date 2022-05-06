@@ -1,6 +1,6 @@
 include "roots.mzn";
 
-/** @group globals
+/** @group globals.set
   Returns \a s such that \a x[\p i] in \a t for all \p i in \a s
 */
 function var set of $$X: roots(

@@ -17,13 +17,19 @@
   contains multiple counting constraints over the same array, constraints
   like \[distribute\] or \[global_cardinality\] below may be useful.
   
+  @groupdef globals.array Array-related constraints
+
+  @groupdef globals.set Set-related constraints
+
+  @groupdef globals.math Mathematical constraints
+
   @groupdef globals.packing Packing constraints
   
   @groupdef globals.scheduling Scheduling constraints
   
   @groupdef globals.graph Graph constraints
   
-  These constraints operate on graphs that are represented as lists of edges.
+  Many of these constraints operate on graphs that are represented as lists of edges.
   The constraints take a given (fixed) graph as arguments, which is represented
   using two arrays, \[from\] and \[to\], representing the graph with edges
   \[(from[i],to[i])\], where \[from[i]\] and \[to[i]\] are nodes of the graph.
@@ -56,6 +62,7 @@ include "bin_packing_load.mzn";
 include "bin_packing_load_fn.mzn";
 include "bounded_path.mzn";   
 include "circuit.mzn";
+include "circuit_opt.mzn";
 include "connected.mzn";   
 include "cost_mdd.mzn";   
 include "cost_regular.mzn";
@@ -116,6 +123,7 @@ include "nvalue.mzn";
 include "nvalue_fn.mzn";
 include "partition_set.mzn";
 include "piecewise_linear.mzn";
+include "piecewise_linear_non_continuous.mzn";
 include "range.mzn";
 include "range_fn.mzn";
 include "reachable.mzn";   
@@ -143,3 +151,6 @@ include "tree.mzn";
 include "value_precede.mzn";
 include "value_precede_chain.mzn";
 include "weighted_spanning_tree.mzn";
+include "write.mzn";
+include "writes.mzn";
+include "writes_seq.mzn";

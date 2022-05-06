@@ -19,6 +19,7 @@ Changes:
 -  Improve documentation for warm start search annotations.
 -  Automatically detect up to SCIP version 8.0.0 for Windows.
 -  Add ``global_cardinality`` and ``global_cardinality_closed`` for arrays of sets.
+-  Categorise all global constraints into documentation groups.
 
 Bug fixes:
 ^^^^^^^^^^
