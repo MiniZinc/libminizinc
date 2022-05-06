@@ -25,9 +25,9 @@ predicate writes(array[$$X] of var int: I, array[$$Y] of var int: P,
 function array[$$X] of var int: writes(array[$$X] of var int: I,
                                        array[$$Y] of var int: P,
                                        array[$$Y] of var int: V) = 
-    assert(index_set(P) = index_set(V),"writes: index set of P must be same as V") /\
+    assert(index_set(P) = index_set(V),"writes: index set of P must be same as V", 
     let { array[index_set(I)] of var int: O;
           constraint fzn_writes(I,P,V,O); }
-    in O;
+    in O);
 
 %-----------------------------------------------------------------------------%
