@@ -430,14 +430,14 @@ annotation warm_start( array[int] of var float: x, array[int] of float: v );
 annotation warm_start( array[int] of var set of int: x, array[int] of set of int: v );
 
 /***
- @groupdef annotations.warmstart.optvals Warm start annotations with optional values
+ @groupdef stdlib.annotations.warmstart.optvals Warm start annotations with optional values
 
  The value arrays can contain <> elements (absent values).
  The following decompositions eliminate those elements
  because FlatZinc 1.6 does not support optionals.
 */
 
-/** @group annotations.warmstart.optvals Specify warm start values \a v for an array of booleans \a x */
+/** @group stdlib.annotations.warmstart.optvals Specify warm start values \a v for an array of booleans \a x */
 annotation warm_start( array[int] of var bool: x, array[int] of opt bool: v ) =
     if 0==length(x) \/ 0==length(v) then
         warm_start( x, [] )
@@ -447,7 +447,7 @@ annotation warm_start( array[int] of var bool: x, array[int] of opt bool: v ) =
             occurs( v[ i-min(index_set(x))+min(index_set(v)) ] ) ],
             [ deopt(v[i]) | i in index_set(v) where occurs(v[i]) ] )
     endif;
-/** @group annotations.warmstart.optvals Specify warm start values \a v for an array of integers \a x */
+/** @group stdlib.annotations.warmstart.optvals Specify warm start values \a v for an array of integers \a x */
 annotation warm_start( array[int] of var int: x, array[int] of opt int: v ) =
     if 0==length(x) \/ 0==length(v) then
         warm_start( x, [] )
@@ -457,7 +457,7 @@ annotation warm_start( array[int] of var int: x, array[int] of opt int: v ) =
             occurs( v[ i-min(index_set(x))+min(index_set(v)) ] ) ],
             [ deopt(v[i]) | i in index_set(v) where occurs(v[i]) ] )
     endif;
-/** @group annotations.warmstart.optvals Specify warm start values \a v for an array of floats \a x */
+/** @group stdlib.annotations.warmstart.optvals Specify warm start values \a v for an array of floats \a x */
 annotation warm_start( array[int] of var float: x, array[int] of opt float: v ) =
     if 0==length(x) \/ 0==length(v) then
         warm_start( x, [] )
@@ -467,7 +467,7 @@ annotation warm_start( array[int] of var float: x, array[int] of opt float: v ) 
             occurs( v[ i-min(index_set(x))+min(index_set(v)) ] ) ],
             [ deopt(v[i]) | i in index_set(v) where occurs(v[i]) ] )
     endif;
-/** @group annotations.warmstart.optvals Specify warm start values \a v for an array of sets \a x */
+/** @group stdlib.annotations.warmstart.optvals Specify warm start values \a v for an array of sets \a x */
 annotation warm_start( array[int] of var set of int: x, array[int] of opt set of int: v ) =
     if 0==length(x) \/ 0==length(v) then
         warm_start( x, [] )
