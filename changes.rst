@@ -93,8 +93,8 @@ Bug fixes:
 -  Fix compilation of SCIP and Xpress solver plugins.
 -  Don't print the ``=====UNKNOWN=====`` status on timeout in ``mzn2fzn`` mode.
 -  Ensure variables are always copied to the output model when required by a solution checker.
--  Rename clashing definition of internal version of ``arrayXd`` to ``arrayNd``(:bugref:`552`,.
-   :bugref:`553`)
+-  Rename clashing definition of internal version of ``arrayXd`` to ``arrayNd`` (:bugref:`552`,
+   :bugref:`553`).
 -  Output the correct variables when using ``--output-mode checker``.
 -  Fix possible crash when handling errors due to incorrect garbage collection.
 -  Fix WebAssembly build of MiniZinc.
@@ -1134,7 +1134,7 @@ Changes:
    atmost/atleast/exactly constraints on integer variables have been
    deprecated, and versions of count predicates with par variables have
    been added. FlatZinc solvers that supported atmost/atleast/exactly
-   should now support the corresponding fzn_count_?_par predicates.
+   should now support the corresponding fzn_count\_?_par predicates.
 -  The compiler now supports the command line option
    --output-detailed-timing, which provides timing information for each
    toplevel constraint item, or for each line of code when used in
@@ -1434,7 +1434,7 @@ Bug fixes:
 -  Fix the type of bool2int for arrays.
 -  Initialise counter for introduced variable ids based on names in
    original model. This avoids reusing variable names if the user model
-   contains names such as X_INTRODUCED_0_.
+   contains names such as X_INTRODUCED_0\_.
 -  Fix compilation of nested clause/exist constraints, and improve
    handling of negation. Tries to use primitive negation instead of
    creating negated constraints. Should help with half-reification by
