@@ -4,10 +4,12 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
-.. _unreleased:
+.. _v2.6.3:
 
-Unreleased
-~~~~~~~~~~
+`Version 2.6.3 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.6.3>`__
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(released 6 May 2022)
 
 Changes:
 ^^^^^^^^
@@ -39,6 +41,14 @@ Bug fixes:
 -  Ensure ``pow`` functions are total (:bugref:`572`).
 -  Fix an internal error when using an ``if-then-else`` with a branch equating ``<>`` to an
    expression.
+
+Changes in the IDE:
+^^^^^^^^^^^^^^^^^^^
+
+-  Improve UI and dark mode for CP Profiler.
+-  Fix CP Profiler tree-builder signal/slot connection (:idebugref:`160`).
+-  Fix deadlock in CP Profiler tree building (:idebugref:`162`).
+-  Make project loading more resilient to errors (:idebugref:`165`).
 
 .. _v2.6.2:
 
