@@ -604,7 +604,7 @@ public:
             for (unsigned int i = 0; i < fi_copy->paramCount(); i++) {
               args[i] = fi_copy->param(i)->id();
             }
-            Call* body = new Call(Location().introduce(), fi->id(), args);
+            Call* body = Call::a(Location().introduce(), fi->id(), args);
             body->decl(fi);
             body->type(fi_copy->ti()->type());
             fi_copy->e(body);

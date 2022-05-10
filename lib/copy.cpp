@@ -329,7 +329,8 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
     } break;
     case Expression::E_CALL: {
       Call* ca = e->cast<Call>();
-      Call* c = new Call(copy_location(m, e), ca->id(), std::vector<Expression*>());
+      std::vector<Expression*> emptyArgs(ca->argCount(), nullptr);
+      Call* c = Call::a(copy_location(m, e), ca->id(), emptyArgs);
 
       if (ca->decl() != nullptr) {
         if (copyFundecls) {
@@ -340,11 +341,9 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
       }
 
       m.insert(e, c);
-      std::vector<Expression*> args(ca->argCount());
-      for (auto i = static_cast<unsigned int>(args.size()); (i--) != 0U;) {
-        args[i] = copy(env, m, ca->arg(i), followIds, copyFundecls, isFlatModel);
+      for (auto i = c->argCount(); (i--) != 0U;) {
+        c->arg(i, copy(env, m, ca->arg(i), followIds, copyFundecls, isFlatModel));
       }
-      c->args(args);
       ret = c;
     } break;
     case Expression::E_VARDECL: {

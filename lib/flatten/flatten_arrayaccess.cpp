@@ -263,7 +263,7 @@ flatten_arrayaccess:
     KeepAlive ka;
     {
       GCLock lock;
-      Call* cc = new Call(e->loc().introduce(), env.constants.ids.element, args);
+      Call* cc = Call::a(e->loc().introduce(), env.constants.ids.element, args);
       cc->type(aa->type());
       FunctionI* fi = env.model->matchFn(env, cc->id(), args, false);
       if (fi == nullptr) {

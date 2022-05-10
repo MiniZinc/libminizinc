@@ -52,7 +52,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
         if (c->in(i)->type().isvar() && c->in(i)->type().dim() == 0) {
           std::vector<Expression*> args(1);
           args[0] = c->in(i);
-          Call* ub = new Call(Location().introduce(), "ub", args);
+          Call* ub = Call::a(Location().introduce(), "ub", args);
           Type t = Type::parsetint();
           t.cv(true);
           ub->type(t);
@@ -106,7 +106,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
               default: {
                 auto* parWhereAl = new ArrayLit(c->where(i)->loc(), parWhere);
                 parWhereAl->type(Type::parbool(1));
-                Call* forall = new Call(c->where(i)->loc(), env.constants.ids.forall, {parWhereAl});
+                Call* forall = Call::a(c->where(i)->loc(), env.constants.ids.forall, {parWhereAl});
                 forall->type(Type::parbool());
                 forall->decl(env.model->matchFn(env, forall, false));
                 orig_where[i] = forall;
@@ -137,7 +137,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
         al->type(Type::varbool(1));
         std::vector<Expression*> args(1);
         args[0] = al;
-        Call* forall = new Call(Location().introduce(), env.constants.ids.forall, args);
+        Call* forall = Call::a(Location().introduce(), env.constants.ids.forall, args);
         forall->type(Type::varbool());
         forall->decl(env.model->matchFn(env, forall, false));
         cond = forall;
@@ -179,7 +179,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
                                                                     : env.constants.ids.bool2float;
           Type b2i_t =
               generatedExp->type().bt() == Type::BT_INT ? Type::varint() : Type::varfloat();
-          auto* b2i = new Call(c->loc().introduce(), cid, {cond});
+          auto* b2i = Call::a(c->loc().introduce(), cid, {cond});
           b2i->type(b2i_t);
           b2i->decl(env.model->matchFn(env, b2i, false));
           auto* product = new BinOp(c->loc().introduce(), b2i, BOT_MULT, generatedExp);
@@ -289,7 +289,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
         elemType.dim(1);
         alr->type(elemType);
         alr->flat(true);
-        Call* a2s = new Call(Location().introduce(), "array2set", {alr});
+        Call* a2s = Call::a(Location().introduce(), "array2set", {alr});
         a2s->decl(env.model->matchFn(env, a2s, false));
         a2s->type(a2s->decl()->rtype(env, {alr}, nullptr, false));
         EE ee = flat_exp(env, Ctx(), a2s, nullptr, env.constants.varTrue);

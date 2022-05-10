@@ -1278,8 +1278,8 @@ void GecodeSolverInstance::prepareEngine() {
         solve_args.push_back(new Id(
             Location(), currentSpace->optVarIsInt ? "indomain_min" : "indomain_split", nullptr));
         solve_args.push_back(new Id(Location(), "complete", nullptr));
-        optSearch = new Call(Location(), currentSpace->optVarIsInt ? "int_search" : "float_search",
-                             solve_args);
+        optSearch = Call::a(Location(), currentSpace->optVarIsInt ? "int_search" : "float_search",
+                            solve_args);
         break;
       case MiniZinc::SolveI::SolveType::ST_MAX:
         branch_vars.push_back(solveExpr);
@@ -1292,8 +1292,8 @@ void GecodeSolverInstance::prepareEngine() {
             new Id(Location(),
                    currentSpace->optVarIsInt ? "indomain_max" : "indomain_split_reverse", nullptr));
         solve_args.push_back(new Id(Location(), "complete", nullptr));
-        optSearch = new Call(Location(), currentSpace->optVarIsInt ? "int_search" : "float_search",
-                             solve_args);
+        optSearch = Call::a(Location(), currentSpace->optVarIsInt ? "int_search" : "float_search",
+                            solve_args);
         break;
       case MiniZinc::SolveI::SolveType::ST_SAT:
         break;

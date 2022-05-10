@@ -64,7 +64,7 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
             } else {
               domargs[1] = vd->ti()->domain();
             }
-            Call* c = new Call(vd->ti()->loc().introduce(), "var_dom", domargs);
+            Call* c = Call::a(vd->ti()->loc().introduce(), "var_dom", domargs);
             c->type(Type::varbool());
             c->decl(env.model->matchFn(env, c, false));
             if (c->decl() == nullptr) {

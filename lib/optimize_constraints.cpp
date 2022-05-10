@@ -78,7 +78,7 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expres
         std::vector<Expression*> args(2);
         args[0] = x[0]();
         args[1] = IntLit::a(nd);
-        Call* nc = new Call(Location(), env.constants.ids.int_.eq, args);
+        Call* nc = Call::a(Location(), env.constants.ids.int_.eq, args);
         nc->type(Type::varbool());
         rewrite = nc;
         return OptimizeRegistry::CS_REWRITE;
@@ -127,7 +127,7 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expres
         if (swapSign) {
           std::swap(args[0], args[1]);
         }
-        Call* nc = new Call(Location(), env.constants.ids.int_.le, args);
+        Call* nc = Call::a(Location(), env.constants.ids.int_.le, args);
         nc->type(Type::varbool());
         rewrite = nc;
         return OptimizeRegistry::CS_REWRITE;
@@ -139,7 +139,7 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expres
     std::vector<Expression*> args(2);
     args[0] = x[0]();
     args[1] = x[1]();
-    Call* nc = new Call(Location(), env.constants.ids.int_.eq, args);
+    Call* nc = Call::a(Location(), env.constants.ids.int_.eq, args);
     rewrite = nc;
     return OptimizeRegistry::CS_REWRITE;
   }
@@ -159,7 +159,7 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expres
     args[0] = al_c_new;
     args[1] = al_x_new;
     args[2] = IntLit::a(eval_int(env, c->arg(2)) - d);
-    Call* nc = new Call(Location(), c->id(), args);
+    Call* nc = Call::a(Location(), c->id(), args);
     nc->type(Type::varbool());
     for (ExpressionSetIter it = c->ann().begin(); it != c->ann().end(); ++it) {
       nc->addAnnotation(*it);
@@ -210,7 +210,7 @@ OptimizeRegistry::ConstraintStatus o_lin_exp(EnvI& env, Item* i, Call* c, Expres
       args[0] = al_c_new;
       args[1] = al_x_new;
       args[2] = IntLit::a(d);
-      Call* nc = new Call(Location(), c->id(), args);
+      Call* nc = Call::a(Location(), c->id(), args);
       nc->type(c->type());
       for (ExpressionSetIter it = c->ann().begin(); it != c->ann().end(); ++it) {
         nc->addAnnotation(*it);
@@ -233,7 +233,7 @@ OptimizeRegistry::ConstraintStatus o_element(EnvI& env, Item* i, Call* c, Expres
     std::vector<Expression*> args(2);
     args[0] = result;
     args[1] = c->arg(2);
-    Call* eq = new Call(Location(), env.constants.ids.int_.eq, args);
+    Call* eq = Call::a(Location(), env.constants.ids.int_.eq, args);
     rewrite = eq;
     return OptimizeRegistry::CS_REWRITE;
   }
@@ -298,8 +298,8 @@ OptimizeRegistry::ConstraintStatus o_not(EnvI& env, Item* i, Call* c, Expression
       std::swap(e0, e1);
     }
     if (e0->type().isPar()) {
-      Call* eq = new Call(Location(), env.constants.ids.bool_.eq,
-                          {e1, env.constants.boollit(!eval_bool(env, e0))});
+      Call* eq = Call::a(Location(), env.constants.ids.bool_.eq,
+                         {e1, env.constants.boollit(!eval_bool(env, e0))});
       rewrite = eq;
       return OptimizeRegistry::CS_REWRITE;
     }
@@ -351,7 +351,7 @@ OptimizeRegistry::ConstraintStatus o_times(EnvI& env, Item* i, Call* c, Expressi
       return OptimizeRegistry::CS_REWRITE;
     }  // this is the relational version of times
     assert(c->argCount() == 3);
-    rewrite = new Call(Location().introduce(), env.constants.ids.int_.eq, {c->arg(2), result});
+    rewrite = Call::a(Location().introduce(), env.constants.ids.int_.eq, {c->arg(2), result});
     return OptimizeRegistry::CS_REWRITE;
   }
   return OptimizeRegistry::CS_OK;
@@ -387,7 +387,7 @@ OptimizeRegistry::ConstraintStatus o_set_in(EnvI& env, Item* i, Call* c, Express
         std::vector<Expression*> args(2);
         args[0] = vd->id();
         args[1] = IntLit::a(isv->min());
-        Call* eq = new Call(Location(), env.constants.ids.int_.eq, args);
+        Call* eq = Call::a(Location(), env.constants.ids.int_.eq, args);
         rewrite = eq;
         return OptimizeRegistry::CS_REWRITE;
       }

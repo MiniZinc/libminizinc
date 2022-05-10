@@ -255,7 +255,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           toEnumArgs[1] =
               new BinOp(Location().introduce(), prevCardinality, BOT_PLUS, IntLit::a(i + 1));
         }
-        Call* toEnum = new Call(sl->v()[i]->loc(), ASTString("to_enum"), toEnumArgs);
+        Call* toEnum = Call::a(sl->v()[i]->loc(), ASTString("to_enum"), toEnumArgs);
         auto* vd_id = new VarDecl(ti_id->loc(), ti_id, sl->v()[i]->cast<Id>()->str(), toEnum);
         auto* vdi_id = new VarDeclI(vd_id->loc(), vd_id);
         std::string str(sl->v()[i]->cast<Id>()->str().c_str());
@@ -304,8 +304,8 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
 
       std::vector<Expression*> deopt_args(1);
       deopt_args[0] = vd_aa->id();
-      Call* deopt = new Call(Location().introduce(), "deopt", deopt_args);
-      Call* occurs = new Call(Location().introduce(), "occurs", deopt_args);
+      Call* deopt = Call::a(Location().introduce(), "deopt", deopt_args);
+      Call* occurs = Call::a(Location().introduce(), "occurs", deopt_args);
       std::vector<Expression*> aa_args(1);
       if (prevCardinality == nullptr) {
         aa_args[0] = deopt;
@@ -323,10 +323,10 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
       auto* json_e_quote = new StringLit(Location().introduce(), ASTString("{\"e\":"));
       auto* json_e_quote_end = new StringLit(Location().introduce(), ASTString("}"));
       auto* quote_aa = new BinOp(Location().introduce(), json_e_quote, BOT_PLUSPLUS,
-                                 new Call(Location().introduce(), env.constants.ids.show, {aa}));
+                                 Call::a(Location().introduce(), env.constants.ids.show, {aa}));
       auto* quote_aa2 = new BinOp(Location().introduce(), quote_aa, BOT_PLUSPLUS, json_e_quote_end);
 
-      Call* quote_dzn = new Call(Location().introduce(), ASTString("showDznId"), {aa});
+      Call* quote_dzn = Call::a(Location().introduce(), ASTString("showDznId"), {aa});
 
       std::vector<Expression*> ite_ifelse(2);
       ite_ifelse[0] = occurs;
@@ -362,8 +362,8 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
 
         std::vector<Expression*> deopt_args(1);
         deopt_args[0] = vd_aa->id();
-        Call* deopt = new Call(Location().introduce(), env.constants.ids.deopt, deopt_args);
-        Call* if_absent = new Call(Location().introduce(), env.constants.ids.absent, deopt_args);
+        Call* deopt = Call::a(Location().introduce(), env.constants.ids.deopt, deopt_args);
+        Call* if_absent = Call::a(Location().introduce(), env.constants.ids.absent, deopt_args);
         auto* sl_absent_dzn = new StringLit(Location().introduce(), "<>");
         ITE* sl_absent = new ITE(
             Location().introduce(),
@@ -377,7 +377,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
         if (c->id() == env.constants.ids.anon_enum) {
           enumCard = c->arg(0);
         } else {
-          enumCard = new Call(Location().introduce(), env.constants.ids.card, {c->arg(0)});
+          enumCard = Call::a(Location().introduce(), env.constants.ids.card, {c->arg(0)});
         }
         if (partCardinality.empty()) {
           showIntArgs[0] = deopt;
@@ -389,7 +389,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
               new BinOp(Location().introduce(), partCardinality.back(), BOT_PLUS, enumCard));
         }
 
-        Call* showInt = new Call(Location().introduce(), env.constants.ids.show, showIntArgs);
+        Call* showInt = Call::a(Location().introduce(), env.constants.ids.show, showIntArgs);
         auto* construct_string_dzn =
             new BinOp(Location().introduce(), sl_dzn, BOT_PLUSPLUS, showInt);
         auto* closing_bracket = new StringLit(Location().introduce(), ASTString(")"));
@@ -462,23 +462,23 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           // Add assertion that constructor argument is contiguous set
           // constraint assert(max(constructorArgId)-min(constructorArgId)+1 =
           // card(constructorArgId))
-          auto* min = new Call(Location().introduce(), ASTString("min"), {constructorArgId});
-          auto* max = new Call(Location().introduce(), ASTString("max"), {constructorArgId});
-          auto* card = new Call(Location().introduce(), ASTString("card"), {constructorArgId});
+          auto* min = Call::a(Location().introduce(), ASTString("min"), {constructorArgId});
+          auto* max = Call::a(Location().introduce(), ASTString("max"), {constructorArgId});
+          auto* card = Call::a(Location().introduce(), ASTString("card"), {constructorArgId});
           auto* bo0 = new BinOp(Location().introduce(), max, BOT_MINUS, min);
           auto* bo1 = new BinOp(Location().introduce(), bo0, BOT_PLUS, IntLit::a(1));
           auto* bo2 = new BinOp(Location().introduce(), bo1, BOT_EQ, card);
           std::ostringstream oss;
           oss << "argument for enum constructor `" << c->id() << "' is not a contiguous set";
           auto* e = new StringLit(Location().introduce(), oss.str());
-          Call* a = new Call(c->loc(), env.constants.ids.assert, {bo2, e});
+          Call* a = Call::a(c->loc(), env.constants.ids.assert, {bo2, e});
           enumItems->addItem(new ConstraintI(Location().introduce(), a));
         }
 
         // Compute minimum-1 of constructor argument
         Id* constructorArgMin;
         {
-          auto* min = new Call(Location().introduce(), ASTString("min"), {constructorArgId});
+          auto* min = Call::a(Location().introduce(), ASTString("min"), {constructorArgId});
           Expression* prevCard = partCardinality.empty() ? IntLit::a(0) : partCardinality.back();
           auto* minMinusOne =
               new BinOp(Location().introduce(), prevCard, BOT_MINUS,
@@ -511,7 +511,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           vd_x->toplevel(false);
           Expression* realX =
               new BinOp(Location().introduce(), constructorArgMin, BOT_PLUS, vd_x->id());
-          auto* Cfn_body = new Call(Location().introduce(), "to_enum", {vd->id(), realX});
+          auto* Cfn_body = Call::a(Location().introduce(), "to_enum", {vd->id(), realX});
 
           std::string Cfn_id(c->id().c_str());
           auto* Cfn = new FunctionI(Location().introduce(), Cfn_id, Cfn_ti, {vd_x}, Cfn_body);
@@ -529,7 +529,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           vd_x->toplevel(false);
           Expression* realX =
               new BinOp(Location().introduce(), constructorArgMin, BOT_PLUS, vd_x->id());
-          auto* Cfn_body = new Call(Location().introduce(), "to_enum", {vd->id(), realX});
+          auto* Cfn_body = Call::a(Location().introduce(), "to_enum", {vd->id(), realX});
 
           std::string Cfn_id(c->id().c_str());
           auto* Cfn = new FunctionI(Location().introduce(), Cfn_id, Cfn_ti, {vd_x}, Cfn_body);
@@ -546,11 +546,11 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
           std::string Cfn_id(c->id().c_str());
           vd_x->toplevel(false);
-          auto* occurs = new Call(Location().introduce(), "occurs", {vd_x->id()});
-          auto* deopt = new Call(Location().introduce(), "deopt", {vd_x->id()});
-          auto* inv = new Call(Location().introduce(), Cfn_id, {deopt});
+          auto* occurs = Call::a(Location().introduce(), "occurs", {vd_x->id()});
+          auto* deopt = Call::a(Location().introduce(), "deopt", {vd_x->id()});
+          auto* inv = Call::a(Location().introduce(), Cfn_id, {deopt});
           auto* toEnumAbsent =
-              new Call(Location().introduce(), "to_enum", {vd->id(), env.constants.absent});
+              Call::a(Location().introduce(), "to_enum", {vd->id(), env.constants.absent});
           auto* ite = new ITE(Location().introduce(), {occurs, inv}, toEnumAbsent);
           auto* Cfn = new FunctionI(Location().introduce(), Cfn_id, Cfn_ti, {vd_x}, ite);
           enumItems->addItem(Cfn);
@@ -567,11 +567,11 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
           std::string Cfn_id(c->id().c_str());
           vd_x->toplevel(false);
-          auto* occurs = new Call(Location().introduce(), "occurs", {vd_x->id()});
-          auto* deopt = new Call(Location().introduce(), "deopt", {vd_x->id()});
+          auto* occurs = Call::a(Location().introduce(), "occurs", {vd_x->id()});
+          auto* deopt = Call::a(Location().introduce(), "deopt", {vd_x->id()});
           auto* toEnumAbsent =
-              new Call(Location().introduce(), "to_enum", {vd->id(), env.constants.absent});
-          auto* inv = new Call(Location().introduce(), Cfn_id, {deopt});
+              Call::a(Location().introduce(), "to_enum", {vd->id(), env.constants.absent});
+          auto* inv = Call::a(Location().introduce(), Cfn_id, {deopt});
           auto* ite = new ITE(Location().introduce(), {occurs, inv}, toEnumAbsent);
           auto* Cfn = new FunctionI(Location().introduce(), Cfn_id, Cfn_ti, {vd_x}, ite);
           enumItems->addItem(Cfn);
@@ -590,7 +590,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           auto* s_ti = new TypeInst(Location().introduce(), Type::parint());
           auto* s = new VarDecl(Location().introduce(), s_ti, "s", nullptr);
           s->toplevel(false);
-          auto* inv = new Call(Location().introduce(), Cfn_id, {s->id()});
+          auto* inv = Call::a(Location().introduce(), Cfn_id, {s->id()});
           Generator gen({s}, vd_x->id(), nullptr);
           Generators gens;
           gens.g = {gen};
@@ -613,7 +613,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           auto* s_ti = new TypeInst(Location().introduce(), Type::parint());
           auto* s = new VarDecl(Location().introduce(), s_ti, "s", nullptr);
           s->toplevel(false);
-          auto* inv = new Call(Location().introduce(), Cfn_id, {s->id()});
+          auto* inv = Call::a(Location().introduce(), Cfn_id, {s->id()});
           Generator gen({s}, vd_x->id(), nullptr);
           Generators gens;
           gens.g = {gen};
@@ -639,7 +639,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           vd_x->toplevel(false);
           Expression* realX =
               new BinOp(Location().introduce(), vd_x->id(), BOT_MINUS, constructorArgMin);
-          auto* toEfn_body = new Call(Location().introduce(), "to_enum", {constructorArgId, realX});
+          auto* toEfn_body = Call::a(Location().introduce(), "to_enum", {constructorArgId, realX});
 
           std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
           auto* toEfn =
@@ -657,7 +657,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           vd_x->toplevel(false);
           Expression* realX =
               new BinOp(Location().introduce(), vd_x->id(), BOT_MINUS, constructorArgMin);
-          auto* toEfn_body = new Call(Location().introduce(), "to_enum", {constructorArgId, realX});
+          auto* toEfn_body = Call::a(Location().introduce(), "to_enum", {constructorArgId, realX});
 
           std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
           auto* toEfn =
@@ -675,11 +675,11 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
           std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
           vd_x->toplevel(false);
-          auto* occurs = new Call(Location().introduce(), "occurs", {vd_x->id()});
-          auto* deopt = new Call(Location().introduce(), "deopt", {vd_x->id()});
-          auto* inv = new Call(Location().introduce(), Cinv_id, {deopt});
+          auto* occurs = Call::a(Location().introduce(), "occurs", {vd_x->id()});
+          auto* deopt = Call::a(Location().introduce(), "deopt", {vd_x->id()});
+          auto* inv = Call::a(Location().introduce(), Cinv_id, {deopt});
           auto* toEnumAbsent =
-              new Call(Location().introduce(), "to_enum", {constructorArgId, env.constants.absent});
+              Call::a(Location().introduce(), "to_enum", {constructorArgId, env.constants.absent});
           auto* ite = new ITE(Location().introduce(), {occurs, inv}, toEnumAbsent);
           auto* Cfn = new FunctionI(Location().introduce(), Cinv_id, Cfn_ti, {vd_x}, ite);
           enumItems->addItem(Cfn);
@@ -696,11 +696,11 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
           std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
           vd_x->toplevel(false);
-          auto* occurs = new Call(Location().introduce(), "occurs", {vd_x->id()});
-          auto* deopt = new Call(Location().introduce(), "deopt", {vd_x->id()});
-          auto* inv = new Call(Location().introduce(), Cinv_id, {deopt});
+          auto* occurs = Call::a(Location().introduce(), "occurs", {vd_x->id()});
+          auto* deopt = Call::a(Location().introduce(), "deopt", {vd_x->id()});
+          auto* inv = Call::a(Location().introduce(), Cinv_id, {deopt});
           auto* toEnumAbsent =
-              new Call(Location().introduce(), "to_enum", {constructorArgId, env.constants.absent});
+              Call::a(Location().introduce(), "to_enum", {constructorArgId, env.constants.absent});
           auto* ite = new ITE(Location().introduce(), {occurs, inv}, toEnumAbsent);
           auto* Cfn = new FunctionI(Location().introduce(), Cinv_id, Cfn_ti, {vd_x}, ite);
           enumItems->addItem(Cfn);
@@ -719,7 +719,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           auto* s_ti = new TypeInst(Location().introduce(), Type::parint());
           auto* s = new VarDecl(Location().introduce(), s_ti, "s", nullptr);
           s->toplevel(false);
-          auto* inv = new Call(Location().introduce(), Cinv_id, {s->id()});
+          auto* inv = Call::a(Location().introduce(), Cinv_id, {s->id()});
           Generator gen({s}, vd_x->id(), nullptr);
           Generators gens;
           gens.g = {gen};
@@ -742,7 +742,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           auto* s_ti = new TypeInst(Location().introduce(), Type::varint());
           auto* s = new VarDecl(Location().introduce(), s_ti, "s", nullptr);
           s->toplevel(false);
-          auto* inv = new Call(Location().introduce(), Cinv_id, {s->id()});
+          auto* inv = Call::a(Location().introduce(), Cinv_id, {s->id()});
           Generator gen({s}, vd_x->id(), nullptr);
           Generators gens;
           gens.g = {gen};
@@ -777,9 +777,9 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           vd_aj->toplevel(false);
 
           std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
-          Call* invCall = new Call(Location().introduce(), Cinv_id, {vd_aa->id()});
+          Call* invCall = Call::a(Location().introduce(), Cinv_id, {vd_aa->id()});
 
-          Call* if_absent = new Call(Location().introduce(), "absent", {vd_aa->id()});
+          Call* if_absent = Call::a(Location().introduce(), "absent", {vd_aa->id()});
           auto* sl_absent_dzn = new StringLit(Location().introduce(), "<>");
           ITE* sl_absent =
               new ITE(Location().introduce(),
@@ -787,11 +787,11 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
                       sl_absent_dzn);
 
           needToString.insert(constructorArgId, true);
-          Call* toString = new Call(Location().introduce(),
-                                    create_enum_to_string_name(constructorArgId, "_toString_"),
-                                    {invCall, vd_ab->id(), vd_aj->id()});
-          auto* c_quoted = new Call(Location().introduce(), "showDznId",
-                                    {new StringLit(Location().introduce(), c->id())});
+          Call* toString = Call::a(Location().introduce(),
+                                   create_enum_to_string_name(constructorArgId, "_toString_"),
+                                   {invCall, vd_ab->id(), vd_aj->id()});
+          auto* c_quoted = Call::a(Location().introduce(), "showDznId",
+                                   {new StringLit(Location().introduce(), c->id())});
           auto* c_ident = new ITE(Location().introduce(), {vd_ab->id(), c_quoted},
                                   new StringLit(Location().introduce(), c->id()));
           auto* openOther = new BinOp(Location().introduce(), c_ident, BOT_PLUSPLUS,
@@ -824,7 +824,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           enumItems->addItem(fi);
         }
 
-        Call* cardE = new Call(Location().introduce(), "card", {constructorArgId});
+        Call* cardE = Call::a(Location().introduce(), "card", {constructorArgId});
         if (partCardinality.empty()) {
           partCardinality.push_back(cardE);
         } else {
@@ -866,8 +866,8 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
 
     std::vector<Expression*> deopt_args(1);
     deopt_args[0] = vd_aa->id();
-    Call* deopt = new Call(Location().introduce(), "deopt", deopt_args);
-    Call* if_absent = new Call(Location().introduce(), "absent", deopt_args);
+    Call* deopt = Call::a(Location().introduce(), "deopt", deopt_args);
+    Call* if_absent = Call::a(Location().introduce(), "absent", deopt_args);
     auto* sl_absent_dzn = new StringLit(Location().introduce(), "<>");
     ITE* sl_absent = new ITE(
         Location().introduce(),
@@ -877,8 +877,8 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     Expression* ite_cases_else;
     for (unsigned int i = 0; i < parts.size(); i++) {
       std::string toString = "_toString_" + std::to_string(i) + "_";
-      Call* c = new Call(Location().introduce(), create_enum_to_string_name(ident, toString),
-                         {vd_aa->id(), vd_ab->id(), vd_aj->id()});
+      Call* c = Call::a(Location().introduce(), create_enum_to_string_name(ident, toString),
+                        {vd_aa->id(), vd_ab->id(), vd_aj->id()});
       if (i < parts.size() - 1) {
         auto* bo = new BinOp(Location().introduce(), deopt, BOT_LQ, partCardinality[i]);
         ite_cases_a.push_back(bo);
@@ -949,7 +949,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
 
     std::vector<Expression*> array1dArgs(1);
     array1dArgs[0] = vd_x->id();
-    Call* array1dCall = new Call(Location().introduce(), "array1d", array1dArgs);
+    Call* array1dCall = Call::a(Location().introduce(), "array1d", array1dArgs);
 
     auto* vd_xx = new VarDecl(Location().introduce(), xx_ti, "xx", array1dCall);
     vd_xx->toplevel(false);
@@ -967,12 +967,12 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     _toString_ENUMArgs[1] = vd_b->id();
     _toString_ENUMArgs[2] = vd_j->id();
     Call* _toString_ENUM =
-        new Call(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
-                 _toString_ENUMArgs);
+        Call::a(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
+                _toString_ENUMArgs);
 
     std::vector<Expression*> index_set_xx_args(1);
     index_set_xx_args[0] = vd_xx->id();
-    Call* index_set_xx = new Call(Location().introduce(), "index_set", index_set_xx_args);
+    Call* index_set_xx = Call::a(Location().introduce(), "index_set", index_set_xx_args);
     std::vector<VarDecl*> gen_exps(1);
     gen_exps[0] = idx_i;
     Generator gen(gen_exps, index_set_xx, nullptr);
@@ -984,7 +984,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     std::vector<Expression*> join_args(2);
     join_args[0] = new StringLit(Location().introduce(), ", ");
     join_args[1] = comp;
-    Call* join = new Call(Location().introduce(), "join", join_args);
+    Call* join = Call::a(Location().introduce(), "join", join_args);
 
     auto* sl_open = new StringLit(Location().introduce(), "[");
     auto* bopp0 = new BinOp(Location().introduce(), sl_open, BOT_PLUSPLUS, join);
@@ -1037,8 +1037,8 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     _toString_ENUMArgs[1] = vd_b->id();
     _toString_ENUMArgs[2] = vd_j->id();
     Call* _toString_ENUM =
-        new Call(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
-                 _toString_ENUMArgs);
+        Call::a(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
+                _toString_ENUMArgs);
 
     std::vector<VarDecl*> gen_exps(1);
     gen_exps[0] = idx_i;
@@ -1051,7 +1051,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     std::vector<Expression*> join_args(2);
     join_args[0] = new StringLit(Location().introduce(), ", ");
     join_args[1] = comp;
-    Call* join = new Call(Location().introduce(), "join", join_args);
+    Call* join = Call::a(Location().introduce(), "join", join_args);
 
     ITE* json_set =
         new ITE(Location().introduce(),
@@ -1114,7 +1114,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
 
     std::vector<Expression*> array1dArgs(1);
     array1dArgs[0] = vd_x->id();
-    Call* array1dCall = new Call(Location().introduce(), "array1d", array1dArgs);
+    Call* array1dCall = Call::a(Location().introduce(), "array1d", array1dArgs);
 
     auto* vd_xx = new VarDecl(Location().introduce(), xx_ti, "xx", array1dCall);
     vd_xx->toplevel(false);
@@ -1132,12 +1132,12 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     _toString_ENUMArgs[1] = vd_b->id();
     _toString_ENUMArgs[2] = vd_j->id();
     Call* _toString_ENUM =
-        new Call(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
-                 _toString_ENUMArgs);
+        Call::a(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
+                _toString_ENUMArgs);
 
     std::vector<Expression*> index_set_xx_args(1);
     index_set_xx_args[0] = vd_xx->id();
-    Call* index_set_xx = new Call(Location().introduce(), "index_set", index_set_xx_args);
+    Call* index_set_xx = Call::a(Location().introduce(), "index_set", index_set_xx_args);
     std::vector<VarDecl*> gen_exps(1);
     gen_exps[0] = idx_i;
     Generator gen(gen_exps, index_set_xx, nullptr);
@@ -1149,7 +1149,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     std::vector<Expression*> join_args(2);
     join_args[0] = new StringLit(Location().introduce(), ", ");
     join_args[1] = comp;
-    Call* join = new Call(Location().introduce(), "join", join_args);
+    Call* join = Call::a(Location().introduce(), "join", join_args);
 
     auto* sl_open = new StringLit(Location().introduce(), "[");
     auto* bopp0 = new BinOp(Location().introduce(), sl_open, BOT_PLUSPLUS, join);
@@ -1434,7 +1434,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
           }
           std::vector<Expression*> origIdxsetArgs(1);
           origIdxsetArgs[0] = aa->v();
-          Call* origIdxset = new Call(aa->v()->loc(), ASTString(oss.str()), origIdxsetArgs);
+          Call* origIdxset = Call::a(aa->v()->loc(), ASTString(oss.str()), origIdxsetArgs);
           FunctionI* fi = m->matchFn(env, origIdxset, false);
           if (fi == nullptr) {
             throw TypeError(env, e->loc(), "missing builtin " + oss.str());
@@ -1447,7 +1447,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
             args.push_back(inter);
           } else if (openIntervalCall != nullptr) {
             auto* newOpenIntervalCall =
-                new Call(openIntervalCall->loc(), openIntervalCall->id(), {origIdxset});
+                Call::a(openIntervalCall->loc(), openIntervalCall->id(), {origIdxset});
             FunctionI* nfi = m->matchFn(env, newOpenIntervalCall, false);
             if (nfi == nullptr) {
               throw TypeError(env, e->loc(),
@@ -1485,7 +1485,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
     args[1] = a_slice;
     std::ostringstream oss;
     oss << "slice_" << (args.size() - 2) << "d";
-    Call* c = new Call(e->loc(), ASTString(oss.str()), args);
+    Call* c = Call::a(e->loc(), ASTString(oss.str()), args);
     FunctionI* fi = m->matchFn(env, c, false);
     if (fi == nullptr) {
       throw TypeError(env, e->loc(), "missing builtin " + oss.str());
@@ -1510,7 +1510,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
     }
     std::vector<Expression*> set2a_args(1);
     set2a_args[0] = e;
-    Call* set2a = new Call(e->loc(), ASTString("set2array"), set2a_args);
+    Call* set2a = Call::a(e->loc(), ASTString("set2array"), set2a_args);
     FunctionI* fi = m->matchFn(env, set2a, false);
     if (fi != nullptr) {
       set2a->type(fi->rtype(env, set2a_args, nullptr, false));
@@ -1527,13 +1527,13 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
   args[0] = e;
   if (e->type().bt() == Type::BT_BOOL) {
     if (funarg_t.bt() == Type::BT_INT) {
-      c = new Call(e->loc(), env.constants.ids.bool2int, args);
+      c = Call::a(e->loc(), env.constants.ids.bool2int, args);
     } else if (funarg_t.bt() == Type::BT_FLOAT) {
-      c = new Call(e->loc(), env.constants.ids.bool2float, args);
+      c = Call::a(e->loc(), env.constants.ids.bool2float, args);
     }
   } else if (e->type().bt() == Type::BT_INT) {
     if (funarg_t.bt() == Type::BT_FLOAT) {
-      c = new Call(e->loc(), env.constants.ids.int2float, args);
+      c = Call::a(e->loc(), env.constants.ids.int2float, args);
     }
   }
   if (c != nullptr) {
@@ -2554,7 +2554,7 @@ public:
             if (args[0]->type().dim() > 1) {
               std::vector<Expression*> a1dargs(1);
               a1dargs[0] = args[0];
-              Call* array1d = new Call(Location().introduce(), ASTString("array1d"), a1dargs);
+              Call* array1d = Call::a(Location().introduce(), ASTString("array1d"), a1dargs);
               Type array1dt = args[0]->type();
               array1dt.dim(1);
               array1d->type(array1dt);
@@ -2599,7 +2599,7 @@ public:
       for (unsigned int i = 0; i < params.size(); i++) {
         params[i] = call->arg(i);
       }
-      Call* origCall = new Call(call->loc(), call->id(), params);
+      Call* origCall = Call::a(call->loc(), call->id(), params);
       origCall->type(ty);
       origCall->decl(fi);
       call->id(_env.constants.ids.mzn_deprecate);
@@ -2798,7 +2798,7 @@ public:
         }
         if (!addAnnArgs.empty()) {
           GCLock lock;
-          Call* nc = new Call(e->loc(), addAnnId, addAnnArgs);
+          Call* nc = Call::a(e->loc(), addAnnId, addAnnArgs);
           FunctionI* fi = _model->matchFn(_env, nc, true, true);
         }
       }
@@ -2982,8 +2982,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           if (reifiedAnnotationIds.find(i->id()) == reifiedAnnotationIds.end()) {
             auto* ti = new TypeInst(Location().introduce(), Type::ann());
             auto* vd = new VarDecl(Location().introduce(), ti, i->id());
-            vd->ann().add(new Call(Location().introduce(),
-                                   env.constants.ann.mzn_add_annotated_expression, {IntLit::a(0)}));
+            vd->ann().add(Call::a(Location().introduce(),
+                                  env.constants.ann.mzn_add_annotated_expression, {IntLit::a(0)}));
             toAdd.addItem(new VarDeclI(Location().introduce(), vd));
             reifiedAnnotationIds.insert(i->id());
           }
@@ -2997,9 +2997,9 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
             }
           }
           auto* fi = new FunctionI(Location().introduce(), i->id(), i->ti(), newParams);
-          fi->ann().add(new Call(Location().introduce(),
-                                 env.constants.ann.mzn_add_annotated_expression,
-                                 {IntLit::a(reifiedAnnotationIdx)}));
+          fi->ann().add(Call::a(Location().introduce(),
+                                env.constants.ann.mzn_add_annotated_expression,
+                                {IntLit::a(reifiedAnnotationIdx)}));
           toAdd.addItem(fi);
           (void)model->registerFn(env, fi);
           fis.push_back(fi);
@@ -3179,7 +3179,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       fi_params[1] = vd_ab;
       fi_params[2] = vd_aj;
 
-      Call* body = new Call(Location().introduce(), Constants::constants().ids.show, {vd_aa->id()});
+      Call* body = Call::a(Location().introduce(), Constants::constants().ids.show, {vd_aa->id()});
       auto* fi = new FunctionI(Location().introduce(), nts_id, ti_fi, fi_params, body);
       m->addItem(fi);
       (void)m->registerFn(env.envi(), fi);
@@ -3388,7 +3388,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
             std::vector<Expression*> args(2);
             args[0] = i->e();
             args[1] = _env.constants.boollit(i->st() == SolveI::ST_MAX);
-            Call* c = new Call(Location().introduce(), ASTString("objective_deopt_"), args);
+            Call* c = Call::a(Location().introduce(), ASTString("objective_deopt_"), args);
             c->decl(_env.model->matchFn(_env, c, false));
             assert(c->decl());
             c->type(et);
@@ -3847,7 +3847,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         enumIds_al->type(Type::parsetint(1));
         std::vector<Expression*> args({enumIds_al});
         Call* checkEnum =
-            new Call(Location().introduce(), Constants::constants().ann.mzn_check_enum_var, args);
+            Call::a(Location().introduce(), Constants::constants().ann.mzn_check_enum_var, args);
         checkEnum->type(Type::ann());
         checkEnum->decl(env.envi().model->matchFn(env.envi(), checkEnum, false));
         vd->addAnnotation(checkEnum);

@@ -315,10 +315,10 @@ Expression* JSONParser::parseEnumObject(std::istream& is, const std::string& see
           throw JSONError(_env, errLocation(), "invalid enum object");
         }
         if (!c.empty()) {
-          return new Call(Location().introduce(), c, {e});
+          return Call::a(Location().introduce(), c, {e});
         }
         if (i != -1) {
-          return new Call(Location().introduce(), "to_enum", {e, IntLit::a(i)});
+          return Call::a(Location().introduce(), "to_enum", {e, IntLit::a(i)});
         }
         return e;
       default:
@@ -611,7 +611,7 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
       args[i] = ti->ranges()[i]->domain();
       if (missing_index >= 0) {
         missing_max = new BinOp(loc.introduce(), missing_max, BOT_IDIV,
-                                new Call(Location().introduce(), "card", {args[i]}));
+                                Call::a(Location().introduce(), "card", {args[i]}));
       }
     }
   }
@@ -621,7 +621,7 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
   args[args.size() - 1] = al;
 
   std::string name = "array" + std::to_string(ti->ranges().size()) + "d";
-  Call* c = new Call(al->loc().introduce(), name, args);
+  Call* c = Call::a(al->loc().introduce(), name, args);
   if (al->dims() != 1) {
     c->addAnnotation(Constants::constants().ann.array_check_form);
   }

@@ -230,9 +230,8 @@ void Expression::mark(Expression* e) {
           for (unsigned int i = cur->cast<Call>()->argCount(); (i--) != 0U;) {
             pushstack(cur->cast<Call>()->arg(i));
           }
-          if (!cur->cast<Call>()->_u.oneArg->isUnboxedVal() &&
-              !cur->cast<Call>()->_u.oneArg->isTagged()) {
-            cur->cast<Call>()->_u.args->mark();
+          if (static_cast<Call::CallKind>(cur->_secondaryId) >= Call::CK_NARY) {
+            cur->cast<CallNary>()->_args->mark();
           }
           if (FunctionI* fi = cur->cast<Call>()->decl()) {
             Item::mark(fi);
@@ -670,7 +669,9 @@ void BinOp::rehash() {
 }
 
 Call* BinOp::morph(const ASTString& ident, const std::vector<Expression*>& args) {
+  assert(sizeof(BinOp) == sizeof(Call3));
   _id = Call::eid;
+  _secondaryId = Call::CK_TERNARY;
   _flag1 = true;
   Call* c = cast<Call>();
   c->id(ident);
@@ -880,6 +881,31 @@ void Call::rehash() {
   combineHash(hu(argCount()));
   for (unsigned int i = 0; i < argCount(); i++) {
     combineHash(Expression::hash(arg(i)));
+  }
+}
+
+void Call::args(const std::vector<Expression*>& args) {
+  if (argCount() == args.size()) {
+    for (unsigned int i = 0; i < argCount(); i++) {
+      arg(i, args[i]);
+    }
+  } else {
+    assert(static_cast<CallKind>(_secondaryId) != CK_NULLARY);
+    switch (static_cast<CallKind>(_secondaryId)) {
+      case CK_BINARY:
+        _secondaryId = CK_NARY_2;
+        break;
+      case CK_TERNARY:
+        _secondaryId = CK_NARY_3;
+        break;
+      case CK_QUATERNARY:
+        _secondaryId = CK_NARY_4;
+        break;
+      default:
+        _secondaryId = CK_NARY;
+        break;
+    }
+    static_cast<CallNary*>(this)->_args = ASTExprVec<Expression>(args).vec();
   }
 }
 

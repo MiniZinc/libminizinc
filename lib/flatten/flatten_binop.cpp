@@ -326,7 +326,7 @@ KeepAlive mklinexp(EnvI& env, typename LinearTraits<Lit>::Val c0,
     tt.dim(1);
     args[1]->type(tt);
     args[2] = LinearTraits<Lit>::newLit(constval);
-    Call* c = new Call(e0->loc().introduce(), env.constants.ids.lin_exp, args);
+    Call* c = Call::a(e0->loc().introduce(), env.constants.ids.lin_exp, args);
     add_path_annotation(env, c);
     tt = args[1]->type();
     tt.dim(0);
@@ -395,8 +395,8 @@ Call* aggregate_and_or_ops(EnvI& env, BinOp* bo, bool negateArgs, BinOpType bot)
     al->type(al_t);
     env.annotateFromCallStack(al);
     c_args[0] = al;
-    c = new Call(bo->loc().introduce(),
-                 bot == BOT_AND ? env.constants.ids.forall : env.constants.ids.exists, c_args);
+    c = Call::a(bo->loc().introduce(),
+                bot == BOT_AND ? env.constants.ids.forall : env.constants.ids.exists, c_args);
   } else {
     auto* al_pos = new ArrayLit(bo->loc().introduce(), output_pos);
     Type al_t = bo->type();
@@ -410,8 +410,8 @@ Call* aggregate_and_or_ops(EnvI& env, BinOp* bo, bool negateArgs, BinOpType bot)
       env.annotateFromCallStack(al_neg);
       c_args.push_back(al_neg);
     }
-    c = new Call(bo->loc().introduce(),
-                 output_neg.empty() ? env.constants.ids.exists : env.constants.ids.clause, c_args);
+    c = Call::a(bo->loc().introduce(),
+                output_neg.empty() ? env.constants.ids.exists : env.constants.ids.clause, c_args);
   }
   c->decl(env.model->matchFn(env, c, false));
   assert(c->decl());
@@ -726,7 +726,7 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
               std::vector<Expression*> boargs(2);
               boargs[0] = e0;
               boargs[1] = e1;
-              Call* c = new Call(Location(), op_to_builtin(env, e0, e1, bot), boargs);
+              Call* c = Call::a(Location(), op_to_builtin(env, e0, e1, bot), boargs);
               c->type(Type::varbool());
               c->decl(env.model->matchFn(env, c, false));
               auto it = env.cseMapFind(c);
@@ -941,9 +941,9 @@ EE flatten_nonbool_op(EnvI& env, const Ctx& ctx, const Ctx& ctx0, const Ctx& ctx
   args[1] = e1.r();
   Call* cc;
   if (!isBuiltin) {
-    cc = new Call(bo->loc().introduce(), bo->opToString(), args);
+    cc = Call::a(bo->loc().introduce(), bo->opToString(), args);
   } else {
-    cc = new Call(bo->loc().introduce(), op_to_builtin(env, args[0], args[1], bot), args);
+    cc = Call::a(bo->loc().introduce(), op_to_builtin(env, args[0], args[1], bot), args);
   }
   cc->type(bo->type());
   EnvI::CSEMap::iterator cit;
@@ -1154,7 +1154,7 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
     for (auto i = static_cast<unsigned int>(args.size()); (i--) != 0U;) {
       args_e[i] = args[i]();
     }
-    Call* cc = new Call(e->loc().introduce(), callid, args_e);
+    Call* cc = Call::a(e->loc().introduce(), callid, args_e);
     cc->decl(env.model->matchFn(env, cc->id(), args_e, false));
     if (cc->decl() == nullptr) {
       throw FlatteningError(env, cc->loc(), "cannot find matching declaration");
@@ -1162,7 +1162,7 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
     if (idIsOp && cc->decl()->e() == nullptr) {
       // This is in fact a built-in operator, but we only found out after
       // constructing the call
-      cc = new Call(e->loc().introduce(), op_to_builtin(env, args[0](), args[1](), bot), args_e);
+      cc = Call::a(e->loc().introduce(), op_to_builtin(env, args[0](), args[1](), bot), args_e);
       cc->decl(env.model->matchFn(env, cc->id(), args_e, false));
       if (cc->decl() == nullptr) {
         throw FlatteningError(env, cc->loc(), "cannot find matching declaration");
@@ -1265,10 +1265,10 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
     EE ee = flat_exp(env, Ctx(), id, nullptr, env.constants.varTrue);
 
     GCLock lock;
-    Call* revMap = new Call(Location().introduce(), c->id(), args);
+    Call* revMap = Call::a(Location().introduce(), c->id(), args);
 
     args.push_back(ee.r());
-    Call* keepAlive = new Call(Location().introduce(), env.constants.varRedef->id(), args);
+    Call* keepAlive = Call::a(Location().introduce(), env.constants.varRedef->id(), args);
     keepAlive->type(Type::varbool());
     keepAlive->decl(env.constants.varRedef);
     ret = flat_exp(env, Ctx(), keepAlive, env.constants.varTrue, env.constants.varTrue);
@@ -1284,7 +1284,7 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
     std::vector<Expression*> args(1);
     args[0] = bo->lhs() == env.constants.absent ? bo->rhs() : bo->lhs();
     if (args[0] != env.constants.absent) {
-      Call* cr = new Call(bo->loc().introduce(), "absent", args);
+      Call* cr = Call::a(bo->loc().introduce(), "absent", args);
       cr->decl(env.model->matchFn(env, cr, false));
       cr->type(cr->decl()->rtype(env, args, nullptr, false));
       ret = flat_exp(env, ctx, cr, r, b);
@@ -1536,7 +1536,7 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
         args[1]->type(t1);
         id = env.constants.ids.clause;
       }
-      Call* c = new Call(bo->loc().introduce(), id, args);
+      Call* c = Call::a(bo->loc().introduce(), id, args);
       c->decl(env.model->matchFn(env, c, false));
       if (c->decl() == nullptr) {
         throw FlatteningError(env, c->loc(), "cannot find matching declaration");

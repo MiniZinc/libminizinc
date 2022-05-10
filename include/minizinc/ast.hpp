@@ -487,32 +487,67 @@ inline void Call::decl(FunctionI* f) {
       reinterpret_cast<FunctionI*>(reinterpret_cast<ptrdiff_t>(f) | static_cast<ptrdiff_t>(1));
 }
 
-inline Call::Call(const Location& loc, const std::string& id0, const std::vector<Expression*>& args)
-    : Expression(loc, E_CALL, Type()) {
-  _flag1 = false;
-  id(ASTString(id0));
-  if (args.size() == 1) {
-    _u.oneArg = args[0]->isUnboxedVal() ? args[0] : args[0]->tag();
+inline unsigned int Call::argCount() const {
+  return static_cast<CallKind>(_secondaryId) >= CK_NARY
+             ? static_cast<const CallNary*>(this)->_args->size()
+             : static_cast<unsigned int>(_secondaryId);
+}
+inline Expression* Call::arg(unsigned int i) const {
+  assert(i < argCount());
+  return static_cast<CallKind>(_secondaryId) >= CK_NARY
+             ? (*static_cast<const CallNary*>(this)->_args)[i]
+             : static_cast<const Call4*>(this)->_data[i];
+}
+inline void Call::arg(unsigned int i, Expression* e) {
+  assert(i < argCount());
+  if (static_cast<CallKind>(_secondaryId) >= CK_NARY) {
+    (*static_cast<CallNary*>(this)->_args)[i] = e;
   } else {
-    _u.args = ASTExprVec<Expression>(args).vec();
+    static_cast<Call4*>(this)->_data[i] = e;
   }
-  rehash();
-  assert(hasId());
-  assert(decl() == nullptr);
 }
 
 inline Call::Call(const Location& loc, const ASTString& id0, const std::vector<Expression*>& args)
     : Expression(loc, E_CALL, Type()) {
   _flag1 = false;
   id(ASTString(id0));
-  if (args.size() == 1) {
-    _u.oneArg = args[0]->isUnboxedVal() ? args[0] : args[0]->tag();
+  if (args.size() >= CK_NARY) {
+    _secondaryId = CK_NARY;
+    static_cast<CallNary*>(this)->_args = ASTExprVec<Expression>(args).vec();
   } else {
-    _u.args = ASTExprVec<Expression>(args).vec();
+    _secondaryId = static_cast<CallKind>(args.size());
+    unsigned int i = 0;
+    for (auto* e : args) {
+      static_cast<Call4*>(this)->_data[i] = e;
+      i++;
+    }
   }
   rehash();
   assert(hasId());
   assert(decl() == nullptr);
+}
+
+inline Call* Call::a(const Location& loc, const ASTString& id0,
+                     const std::vector<Expression*>& args) {
+  switch (args.size()) {
+    case 0:
+      return new Call0(loc, id0);
+    case 1:
+      return new Call1(loc, id0, args);
+    case 2:
+      return new Call2(loc, id0, args);
+    case 3:
+      return new Call3(loc, id0, args);
+    case 4:
+      return new Call4(loc, id0, args);
+    default:
+      return new CallNary(loc, id0, args);
+  }
+}
+
+inline Call* Call::a(const Location& loc, const std::string& id0,
+                     const std::vector<Expression*>& args) {
+  return Call::a(loc, ASTString(id0), args);
 }
 
 inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, const ASTString& id, Expression* e)

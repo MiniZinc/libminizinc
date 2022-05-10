@@ -1668,14 +1668,14 @@ bool b_abort(EnvI& env, Call* call) {
 
 Expression* b_mzn_symmetry_breaking_constraint(EnvI& env, Call* call) {
   GCLock lock;
-  Call* check = new Call(Location().introduce(),
-                         ASTString("mzn_check_ignore_symmetry_breaking_constraints"), {});
+  Call* check = Call::a(Location().introduce(),
+                        ASTString("mzn_check_ignore_symmetry_breaking_constraints"), {});
   check->type(Type::parbool());
   check->decl(env.model->matchFn(env, check, false, true));
   if (eval_bool(env, check)) {
     return env.constants.literalTrue;
   }
-  Call* nc = new Call(call->loc(), ASTString("symmetry_breaking_constraint"), {call->arg(0)});
+  Call* nc = Call::a(call->loc(), ASTString("symmetry_breaking_constraint"), {call->arg(0)});
   nc->type(Type::varbool());
   nc->decl(env.model->matchFn(env, nc, false, true));
   return nc;
@@ -1684,13 +1684,13 @@ Expression* b_mzn_symmetry_breaking_constraint(EnvI& env, Call* call) {
 Expression* b_mzn_redundant_constraint(EnvI& env, Call* call) {
   GCLock lock;
   Call* check =
-      new Call(Location().introduce(), ASTString("mzn_check_ignore_redundant_constraints"), {});
+      Call::a(Location().introduce(), ASTString("mzn_check_ignore_redundant_constraints"), {});
   check->type(Type::parbool());
   check->decl(env.model->matchFn(env, check, false, true));
   if (eval_bool(env, check)) {
     return env.constants.literalTrue;
   }
-  Call* nc = new Call(call->loc(), ASTString("redundant_constraint"), {call->arg(0)});
+  Call* nc = Call::a(call->loc(), ASTString("redundant_constraint"), {call->arg(0)});
   nc->type(Type::varbool());
   nc->decl(env.model->matchFn(env, nc, false, true));
   return nc;
@@ -1720,7 +1720,7 @@ Expression* b_default(EnvI& env, Call* call) {
 
       if (def_t.isPar() && ((def_t.isint() && eval_int(env, call->arg(1)) == 0))) {
         // Default value is 0, may be able to use deopt directly
-        auto* hzc = new Call(Location().introduce(), "had_zero", {arg0.r()});
+        auto* hzc = Call::a(Location().introduce(), "had_zero", {arg0.r()});
         hzc->decl(env.model->matchFn(env, hzc, false));
         auto t = Type::parbool();
         t.cv(true);
@@ -1728,7 +1728,7 @@ Expression* b_default(EnvI& env, Call* call) {
         auto* had_zero = flat_cv_exp(env, Ctx(), hzc)()->cast<BoolLit>();
         if (had_zero == env.constants.boollit(false)) {
           // Can use deopt value directly as deopt(<>) will already be zero
-          auto* deopt = new Call(Location().introduce(), "deopt", {arg0.r()});
+          auto* deopt = Call::a(Location().introduce(), "deopt", {arg0.r()});
           deopt->decl(env.model->matchFn(env, deopt, false));
           deopt->type(call->type());
           return deopt;
@@ -1736,11 +1736,11 @@ Expression* b_default(EnvI& env, Call* call) {
       }
 
       // if occurs(x) then deopt(x) else y endif
-      auto* occurs = new Call(Location().introduce(), "occurs", {arg0.r()});
+      auto* occurs = Call::a(Location().introduce(), "occurs", {arg0.r()});
       occurs->decl(env.model->matchFn(env, occurs, false));
       occurs->type(arg0.r()->type().isOpt() && arg0.r()->type().isvar() ? Type::varbool()
                                                                         : Type::parbool());
-      auto* deopt = new Call(Location().introduce(), "deopt", {arg0.r()});
+      auto* deopt = Call::a(Location().introduce(), "deopt", {arg0.r()});
       deopt->decl(env.model->matchFn(env, deopt, false));
       Type deopt_t = arg0.r()->type();
       deopt_t.ot(Type::OT_PRESENT);
@@ -1755,7 +1755,7 @@ Expression* b_default(EnvI& env, Call* call) {
     if (arg0.r()->type().isvar() && def_t.isPar() &&
         ((def_t.isint() && eval_int(env, call->arg(1)) == 0))) {
       // Default value is 0, may be able to use deopt directly
-      auto* hzc = new Call(Location().introduce(), "had_zero", {arg0.r()});
+      auto* hzc = Call::a(Location().introduce(), "had_zero", {arg0.r()});
       hzc->decl(env.model->matchFn(env, hzc, false));
       auto t = Type::parbool();
       t.cv(true);
@@ -1763,7 +1763,7 @@ Expression* b_default(EnvI& env, Call* call) {
       auto* had_zero = flat_cv_exp(env, Ctx(), hzc)()->cast<BoolLit>();
       if (had_zero == env.constants.boollit(false)) {
         // if defined(x) then deopt(x) else y endif
-        auto* deopt = new Call(Location().introduce(), "deopt", {arg0.r()});
+        auto* deopt = Call::a(Location().introduce(), "deopt", {arg0.r()});
         deopt->decl(env.model->matchFn(env, deopt, false));
         Type deopt_t = arg0.r()->type();
         deopt_t.ot(Type::OT_PRESENT);
@@ -1775,11 +1775,11 @@ Expression* b_default(EnvI& env, Call* call) {
     }
 
     // if defined(x) /\ occurs(x) then deopt(x) else y endif
-    auto* occurs = new Call(Location().introduce(), "occurs", {arg0.r()});
+    auto* occurs = Call::a(Location().introduce(), "occurs", {arg0.r()});
     occurs->decl(env.model->matchFn(env, occurs, false));
     occurs->type(arg0.r()->type().isOpt() && arg0.r()->type().isvar() ? Type::varbool()
                                                                       : Type::parbool());
-    auto* deopt = new Call(Location().introduce(), "deopt", {arg0.r()});
+    auto* deopt = Call::a(Location().introduce(), "deopt", {arg0.r()});
     deopt->decl(env.model->matchFn(env, deopt, false));
     Type deopt_t = arg0.r()->type();
     deopt_t.ot(Type::OT_PRESENT);
@@ -2250,7 +2250,7 @@ Expression* b_output_json_parameters(EnvI& env, Call* call) {
 
         std::vector<Expression*> showArgs(1);
         showArgs[0] = vd->id();
-        Call* show = new Call(Location().introduce(), "showJSON", showArgs);
+        Call* show = Call::a(Location().introduce(), "showJSON", showArgs);
         show->type(Type::parstring());
         FunctionI* fi = _e.model->matchFn(_e, show, false);
         assert(fi);
@@ -3220,7 +3220,7 @@ Expression* b_regular_from_string(EnvI& env, Call* call) {
         oss << result1 << "(" << result2 << ")";
       } else {
         auto* fi = it->second->cast<FunctionI>();
-        Call* c = new Call(Location().introduce(), fi->id(), {arg});
+        Call* c = Call::a(Location().introduce(), fi->id(), {arg});
         c->type(fi->rtype(env, {arg->type()}, nullptr, true));
         c->decl(fi);
 
@@ -3304,7 +3304,7 @@ Expression* b_regular_from_string(EnvI& env, Call* call) {
                        IntSetVal::a(IntVal(dfa.final_fst() + 1), IntVal(dfa.final_lst())));  // F
   args[5]->type(Type::parsetint());
 
-  auto* nc = new Call(call->loc().introduce(), "regular", args);
+  auto* nc = Call::a(call->loc().introduce(), "regular", args);
   nc->type(Type::varbool());
 
   return nc;

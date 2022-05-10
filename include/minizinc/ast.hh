@@ -1095,6 +1095,10 @@ protected:
   /// The predicate or function declaration (or NULL)
   FunctionI* _decl;
 
+private:
+  /// Required to make BinOp same size as a ternary call
+  void* _placeholder;
+
 public:
   /// The identifier of this expression type
   static const ExpressionId eid = E_BINOP;
@@ -1169,6 +1173,20 @@ public:
 /// \brief A predicate or function call expression
 class Call : public Expression {
   friend class Expression;
+  friend class BinOp;
+
+public:
+  enum CallKind {
+    CK_NULLARY = 0,
+    CK_UNARY = 1,
+    CK_BINARY = 2,
+    CK_TERNARY = 3,
+    CK_QUATERNARY = 4,
+    CK_NARY = 5,
+    CK_NARY_2,  // BINARY morphed into NARY
+    CK_NARY_3,  // TERNARY morphed into NARY
+    CK_NARY_4   // QUATERNARY morphed into NARY
+  };
 
 protected:
   union {
@@ -1177,58 +1195,30 @@ protected:
     /// The predicate or function declaration (or NULL)
     FunctionI* decl;
   } _uId = {nullptr};
-  union {
-    /// Single-argument call (tagged pointer)
-    Expression* oneArg;
-    /// Arguments to the call
-    ASTExprVecO<Expression*>* args;
-  } _u;
   /// Check if _uId contains an id or a decl
   bool hasId() const;
+  /// Constructor
+  Call(const Location& loc, const ASTString& id, const std::vector<Expression*>& args);
 
 public:
   /// The identifier of this expression type
   static const ExpressionId eid = E_CALL;
   /// Constructor
-  Call(const Location& loc, const std::string& id, const std::vector<Expression*>& args);
+  static Call* a(const Location& loc, const std::string& id, const std::vector<Expression*>& args);
   /// Constructor
-  Call(const Location& loc, const ASTString& id, const std::vector<Expression*>& args);
+  static Call* a(const Location& loc, const ASTString& id, const std::vector<Expression*>& args);
   /// Access identifier
   ASTString id() const;
   /// Set identifier (overwrites decl)
   void id(const ASTString& i);
   /// Number of arguments
-  unsigned int argCount() const {
-    return _u.oneArg->isUnboxedVal() || _u.oneArg->isTagged() ? 1 : _u.args->size();
-  }
+  unsigned int argCount() const;
   /// Access argument \a i
-  Expression* arg(unsigned int i) const {
-    assert(i < argCount());
-    if (_u.oneArg->isUnboxedVal() || _u.oneArg->isTagged()) {
-      assert(i == 0U);
-      return _u.oneArg->isUnboxedVal() ? _u.oneArg : _u.oneArg->untag();
-    }
-    return (*_u.args)[i];
-  }
+  Expression* arg(unsigned int i) const;
   /// Set argument \a i
-  void arg(unsigned int i, Expression* e) {
-    assert(i < argCount());
-    if (_u.oneArg->isUnboxedVal() || _u.oneArg->isTagged()) {
-      assert(i == 0U);
-      _u.oneArg = e->isUnboxedVal() ? e : e->tag();
-    } else {
-      (*_u.args)[i] = e;
-    }
-  }
+  void arg(unsigned int i, Expression* e);
   /// Set arguments
-  void args(const ASTExprVec<Expression>& a) {
-    if (a.size() == 1) {
-      _u.oneArg = a[0]->isUnboxedVal() ? a[0] : a[0]->tag();
-    } else {
-      _u.args = a.vec();
-      assert(!_u.oneArg->isTagged());
-    }
-  }
+  void args(const std::vector<Expression*>& args);
   /// Access declaration
   FunctionI* decl() const;
   /// Set declaration (overwrites id)
@@ -1236,6 +1226,55 @@ public:
   /// Recompute hash value
   void rehash();
 };
+
+class Call0 : public Call {
+  friend class Call;
+
+protected:
+  Call0(const Location& loc, const ASTString& id) : Call(loc, id, {}) {}
+};
+class Call1 : public Call {
+  friend class Call;
+
+protected:
+  Expression* _data[1];
+  Call1(const Location& loc, const ASTString& id, const std::vector<Expression*>& args)
+      : Call(loc, id, args) {}
+};
+class Call2 : public Call {
+  friend class Call;
+
+protected:
+  Expression* _data[2];
+  Call2(const Location& loc, const ASTString& id, const std::vector<Expression*>& args)
+      : Call(loc, id, args) {}
+};
+class Call3 : public Call {
+  friend class Call;
+
+protected:
+  Expression* _data[3];
+  Call3(const Location& loc, const ASTString& id, const std::vector<Expression*>& args)
+      : Call(loc, id, args) {}
+};
+class Call4 : public Call {
+  friend class Call;
+
+protected:
+  Expression* _data[4];
+  Call4(const Location& loc, const ASTString& id, const std::vector<Expression*>& args)
+      : Call(loc, id, args) {}
+};
+class CallNary : public Call {
+  friend class Call;
+  friend class Expression;
+
+protected:
+  ASTExprVecO<Expression*>* _args;
+  CallNary(const Location& loc, const ASTString& id, const std::vector<Expression*>& args)
+      : Call(loc, id, args) {}
+};
+
 /// \brief A variable declaration expression
 class VarDecl : public Expression {
 protected:

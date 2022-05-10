@@ -329,7 +329,7 @@ ConstraintI* ImpCompressor::constructClause(Expression* pos, Expression* neg) {
          !(*args[1]->cast<ArrayLit>())[0]->isa<Id>() ||
          (*args[0]->cast<ArrayLit>())[0]->cast<Id>()->decl() !=
              (*args[1]->cast<ArrayLit>())[0]->cast<Id>()->decl());
-  auto* nc = new Call(MiniZinc::Location().introduce(), _env.constants.ids.clause, args);
+  auto* nc = Call::a(MiniZinc::Location().introduce(), _env.constants.ids.clause, args);
   nc->type(Type::varbool());
   nc->decl(_env.model->matchFn(_env, nc, false));
   assert(nc->decl());
@@ -348,7 +348,7 @@ ConstraintI* ImpCompressor::constructHalfReif(Call* call, Id* control) {
   args.push_back(control);
   FunctionI* decl = _env.model->matchFn(_env, cid, args, false);
   if (decl != nullptr) {
-    auto* nc = new Call(call->loc().introduce(), cid, args);
+    auto* nc = Call::a(call->loc().introduce(), cid, args);
     nc->decl(decl);
     nc->type(Type::varbool());
     return new ConstraintI(call->loc().introduce(), nc);
@@ -500,7 +500,7 @@ void LECompressor::compress() {
           i2f_lhs = search->second;
         } else {
           // Create new int2float
-          Call* i2f = new Call(lhs->loc().introduce(), _env.constants.ids.int2float, {lhs->id()});
+          Call* i2f = Call::a(lhs->loc().introduce(), _env.constants.ids.int2float, {lhs->id()});
           i2f->decl(_env.model->matchFn(_env, i2f, false));
           assert(i2f->decl());
           i2f->type(Type::varfloat());

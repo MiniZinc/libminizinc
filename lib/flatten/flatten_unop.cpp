@@ -56,7 +56,7 @@ EE flatten_unop(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
     }
   } else {
     GC::lock();
-    Call* c = new Call(uo->loc().introduce(), uo->opToString(), {uo->e()});
+    Call* c = Call::a(uo->loc().introduce(), uo->opToString(), {uo->e()});
     c->decl(env.model->matchFn(env, c, false));
     c->type(uo->type());
     KeepAlive ka(c);

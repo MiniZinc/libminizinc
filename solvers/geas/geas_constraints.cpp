@@ -119,7 +119,7 @@ void p_int_le_reif(SolverInstanceBase& s, const Call* call) {
     if (BOOL(2)) {
       p_int_le(s, call);
     } else {
-      auto* nc = new Call(Location().introduce(), call->id(), {call->arg(1), call->arg(0)});
+      auto* nc = Call::a(Location().introduce(), call->id(), {call->arg(1), call->arg(0)});
       p_int_lt(s, nc);
     }
   } else {
@@ -133,7 +133,7 @@ void p_int_lt_reif(SolverInstanceBase& s, const Call* call) {
     if (BOOL(2)) {
       p_int_lt(s, call);
     } else {
-      auto* nc = new Call(Location().introduce(), call->id(), {call->arg(1), call->arg(0)});
+      auto* nc = Call::a(Location().introduce(), call->id(), {call->arg(1), call->arg(0)});
       p_int_le(s, nc);
     }
   } else {
@@ -366,7 +366,7 @@ void p_bool_le_reif(SolverInstanceBase& s, const Call* call) {
     if (BOOL(2)) {
       p_bool_le(s, call);
     } else {
-      auto* nc = new Call(Location().introduce(), call->id(), {call->arg(1), call->arg(0)});
+      auto* nc = Call::a(Location().introduce(), call->id(), {call->arg(1), call->arg(0)});
       p_bool_lt(s, nc);
     }
   } else {
@@ -381,7 +381,7 @@ void p_bool_lt_reif(SolverInstanceBase& s, const Call* call) {
     if (BOOL(2)) {
       p_int_lt(s, call);
     } else {
-      auto* nc = new Call(Location().introduce(), call->id(), {call->arg(1), call->arg(0)});
+      auto* nc = Call::a(Location().introduce(), call->id(), {call->arg(1), call->arg(0)});
       p_int_le(s, nc);
     }
   } else {

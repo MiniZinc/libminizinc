@@ -50,7 +50,7 @@ EE flatten_setlit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl*
     al->type(al_t);
     std::vector<Expression*> args(1);
     args[0] = al;
-    Call* cc = new Call(sl->loc().introduce(), "array2set", args);
+    Call* cc = Call::a(sl->loc().introduce(), "array2set", args);
     cc->type(Type::varsetint());
     FunctionI* fi = env.model->matchFn(env, cc->id(), args, false);
     if (fi == nullptr) {

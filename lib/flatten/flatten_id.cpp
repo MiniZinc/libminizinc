@@ -49,7 +49,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
       /// TODO: support arbitrary dimensions
       std::vector<Expression*> idxsetargs(1);
       idxsetargs[0] = id;
-      Call* idxset = new Call(id->loc().introduce(), "index_set", idxsetargs);
+      Call* idxset = Call::a(id->loc().introduce(), "index_set", idxsetargs);
       idxset->decl(env.model->matchFn(env, idxset, false));
       idxset->type(idxset->decl()->rtype(env, idxsetargs, nullptr, false));
       Generator gen(gen_id, idxset, nullptr);

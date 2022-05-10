@@ -382,7 +382,7 @@ private:
     //       {
     //         GCLock lock;
     //         Call* call_EPS_for_LT =
-    //           new Call(Location(),"mzn_float_lt_EPS_coef__", std::vector<Expression*>());
+    //           Call::a(Location(),"mzn_float_lt_EPS_coef__", std::vector<Expression*>());
     //         call_EPS_for_LT->type(Type::parfloat());
     //         call_EPS_for_LT->decl(env.model->matchFn(getEnv()->envi(), call_EPS_for_LT));
     //         float_lt_EPS_coef_ = eval_float(getEnv()->envi(), call_EPS_for_LT);
@@ -1831,7 +1831,7 @@ private:
               std::vector<Expression*> i2f_args(1);
               i2f_args[0] = vars[i];
               Call* i2f =
-                  new Call(Location().introduce(), Constants::constants().ids.int2float, i2f_args);
+                  Call::a(Location().introduce(), Constants::constants().ids.int2float, i2f_args);
               i2f->type(Type::varfloat());
               i2f->decl(mipd.getEnv()->model()->matchFn(mipd.getEnv()->envi(), i2f, false));
               EE ret = flat_exp(mipd.getEnv()->envi(), Ctx(), i2f, nullptr,
@@ -1878,7 +1878,7 @@ private:
         DBGOUT_MIPD_FLUSH(" Found expr ");
         DBGOUT_MIPD_SELF(debugprint(args[0]));
       }
-      auto* nc = new Call(Location().introduce(), ASTString(sName), args);
+      auto* nc = Call::a(Location().introduce(), ASTString(sName), args);
       nc->type(Type::varbool());
       nc->decl(fDecl);
       mipd.getEnv()->envi().flatAddItem(new ConstraintI(Location().introduce(), nc));

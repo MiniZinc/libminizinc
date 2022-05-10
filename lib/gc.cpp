@@ -290,7 +290,26 @@ protected:
         ns = static_cast<ASTVec*>(n)->memsize();
         break;
       case Call::eid:
-        ns = n->_flag1 ? _nodesize[BinOp::eid] : _nodesize[Call::eid];
+        switch (static_cast<Call::CallKind>(n->_secondaryId)) {
+          case Call::CK_NULLARY:
+            ns = sizeof(Call0);
+            break;
+          case Call::CK_BINARY:
+          case Call::CK_NARY_2:
+            ns = sizeof(Call2);
+            break;
+          case Call::CK_TERNARY:
+          case Call::CK_NARY_3:
+            ns = sizeof(Call3);
+            break;
+          case Call::CK_QUATERNARY:
+          case Call::CK_NARY_4:
+            ns = sizeof(Call4);
+            break;
+          default:
+            ns = sizeof(CallNary);
+            break;
+        }
         break;
       default:
         assert(n->_id <= Item::II_END);

@@ -162,7 +162,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
           GCLock lock;
           auto* al = new ArrayLit(Location().introduce(), other_branches[i]);
           al->type(Type::varbool(1));
-          Call* forall = new Call(Location().introduce(), env.constants.ids.forall, {al});
+          Call* forall = Call::a(Location().introduce(), env.constants.ids.forall, {al});
           forall->decl(env.model->matchFn(env, forall, false));
           forall->type(forall->decl()->rtype(env, {al}, nullptr, false));
           e_then.back().push_back(forall);
@@ -179,7 +179,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
           GCLock lock;
           auto* al = new ArrayLit(Location().introduce(), other_branches[ite->size()]);
           al->type(Type::varbool(1));
-          Call* forall = new Call(Location().introduce(), env.constants.ids.forall, {al});
+          Call* forall = Call::a(Location().introduce(), env.constants.ids.forall, {al});
           forall->decl(env.model->matchFn(env, forall, false));
           forall->type(forall->decl()->rtype(env, {al}, nullptr, false));
           e_else.emplace_back(forall);
@@ -449,8 +449,8 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     branches_t.dim(1);
     branches_t.ti(allBranchesPar[j] ? Type::TI_PAR : Type::TI_VAR);
     al_branches->type(branches_t);
-    Call* ite_pred = new Call(ite->loc().introduce(), ASTString("if_then_else"),
-                              {al_cond, al_branches, results[j]->id()});
+    Call* ite_pred = Call::a(ite->loc().introduce(), ASTString("if_then_else"),
+                             {al_cond, al_branches, results[j]->id()});
     ite_pred->decl(env.model->matchFn(env, ite_pred, false));
     ite_pred->type(Type::varbool());
     make_defined_var(env, results[j], ite_pred);
@@ -490,7 +490,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
       } else {
         auto* al = new ArrayLit(Location().introduce(), def_i);
         al->type(Type::varbool(1));
-        Call* forall = new Call(Location().introduce(), env.constants.ids.forall, {al});
+        Call* forall = Call::a(Location().introduce(), env.constants.ids.forall, {al});
         forall->decl(env.model->matchFn(env, forall, false));
         forall->type(forall->decl()->rtype(env, {al}, nullptr, false));
         defined_conjunctions[i] = forall;
@@ -498,8 +498,8 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     }
     auto* al_defined = new ArrayLit(Location().introduce(), defined_conjunctions);
     al_defined->type(Type::varbool(1));
-    Call* ite_defined_pred = new Call(ite->loc().introduce(), ASTString("if_then_else_partiality"),
-                                      {al_cond, al_defined, b->id()});
+    Call* ite_defined_pred = Call::a(ite->loc().introduce(), ASTString("if_then_else_partiality"),
+                                     {al_cond, al_defined, b->id()});
     ite_defined_pred->decl(env.model->matchFn(env, ite_defined_pred, false));
     ite_defined_pred->type(Type::varbool());
     (void)flat_exp(env, Ctx(), ite_defined_pred, env.constants.varTrue, env.constants.varTrue);

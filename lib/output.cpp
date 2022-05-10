@@ -334,7 +334,7 @@ void make_par(EnvI& env, Expression* e) {
             for (int i = 0; i < dimensions - 1; ++i) {
               auto* idx_i = new VarDecl(Location().introduce(), idx_ti, env.genId());
               idx_i->toplevel(false);
-              Call* index_set_xx = new Call(
+              Call* index_set_xx = Call::a(
                   Location().introduce(),
                   "index_set_" + std::to_string(i + 1) + "of" + std::to_string(dimensions), {obj});
               index_set_xx->type(Type::parsetint());
@@ -345,7 +345,7 @@ void make_par(EnvI& env, Expression* e) {
             }
 
             // Construct innermost slicing operation
-            Call* index_set_n = new Call(
+            Call* index_set_n = Call::a(
                 Location().introduce(),
                 "index_set_" + std::to_string(dimensions) + "of" + std::to_string(dimensions),
                 {obj});
@@ -355,13 +355,13 @@ void make_par(EnvI& env, Expression* e) {
             al_slice_dim->type(Type::parsetint(1));
 
             auto* slice_call =
-                new Call(Location().introduce(), "slice_1d", {obj, al_slice_dim, index_set_n});
+                Call::a(Location().introduce(), "slice_1d", {obj, al_slice_dim, index_set_n});
             Type tt = obj->type();
             tt.dim(1);
             slice_call->type(tt);
             Call* _toString_ENUM =
-                new Call(Location().introduce(), enumName,
-                         {slice_call, env.constants.literalFalse, env.constants.literalTrue});
+                Call::a(Location().introduce(), enumName,
+                        {slice_call, env.constants.literalFalse, env.constants.literalTrue});
             _toString_ENUM->type(Type::parstring());
 
             // Build multi-level JSON Array string
@@ -372,7 +372,7 @@ void make_par(EnvI& env, Expression* e) {
               generators.g.push_back(gen);
               auto* comp = new Comprehension(Location().introduce(), expr, generators, false);
               comp->type(Type::parstring(1));
-              Call* cc = new Call(Location().introduce(), "join", {comma, comp});
+              Call* cc = Call::a(Location().introduce(), "join", {comma, comp});
               cc->type(Type::parstring());
               return cc;
             };
@@ -387,7 +387,7 @@ void make_par(EnvI& env, Expression* e) {
                     {sl_open, join(_toString_ENUM, generators[dimensions - 2]), sl_close}));
             al_concat->type(Type::parstring(1));
             for (int i = dimensions - 3; i >= 0; --i) {
-              Call* concat = new Call(Location().introduce(), "concat", {al_concat});
+              Call* concat = Call::a(Location().introduce(), "concat", {al_concat});
               concat->type(Type::parstring());
               al_concat = new ArrayLit(
                   Location().introduce(),
@@ -606,7 +606,7 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e) {
             args.resize(1);
             args[0] = al;
             reallyFlat->addAnnotation(
-                new Call(Location().introduce(), env.constants.ann.output_array, args));
+                Call::a(Location().introduce(), env.constants.ann.output_array, args));
           }
           check_rename_var(env, nvi->e());
         } else {
@@ -716,7 +716,7 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
             // 1d array
             if (idx1EnumId == 0 && al->min(0) == 1) {
               // We can use a simple 1d array literal
-              auto* show = new Call(Location().introduce(), ASTString("showDzn"), {vd->id()});
+              auto* show = Call::a(Location().introduce(), ASTString("showDzn"), {vd->id()});
               show->type(Type::parstring());
               FunctionI* fi = e.model->matchFn(e, show, false);
               assert(fi);
@@ -749,7 +749,7 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
 
               Generators g;
               g.g.emplace_back(std::vector<VarDecl*>({i_vd}), sl, nullptr);
-              auto* show_i = new Call(Location().introduce(), ASTString("showDzn"), {i_vd->id()});
+              auto* show_i = Call::a(Location().introduce(), ASTString("showDzn"), {i_vd->id()});
               show_i->type(Type::parstring());
               FunctionI* fi = e.model->matchFn(e, show_i, false);
               assert(fi);
@@ -772,7 +772,7 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
               vd_t.enumId(xEnumId);
               aa->type(vd_t);
 
-              auto* show_i = new Call(Location().introduce(), ASTString("showDzn"), {aa});
+              auto* show_i = Call::a(Location().introduce(), ASTString("showDzn"), {aa});
               show_i->type(Type::parstring());
               FunctionI* fi = e.model->matchFn(e, show_i, false);
               assert(fi);
@@ -793,8 +793,8 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
             auto* x_vd = new VarDecl(Location().introduce(), x_ti, "x", values);
             x_vd->toplevel(false);
 
-            auto* show_indexed = new Call(Location().introduce(), ASTString("show_indexed"),
-                                          {idx_vd->id(), x_vd->id()});
+            auto* show_indexed = Call::a(Location().introduce(), ASTString("show_indexed"),
+                                         {idx_vd->id(), x_vd->id()});
             FunctionI* fi = e.model->matchFn(e, show_indexed, false);
             assert(fi);
             show_indexed->decl(fi);
@@ -836,7 +836,7 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
 
                 Generators g;
                 g.g.emplace_back(std::vector<VarDecl*>({i_vd}), sl, nullptr);
-                auto* show_i = new Call(Location().introduce(), ASTString("showDzn"), {i_vd->id()});
+                auto* show_i = Call::a(Location().introduce(), ASTString("showDzn"), {i_vd->id()});
                 show_i->type(Type::parstring());
                 FunctionI* fi = e.model->matchFn(e, show_i, false);
                 assert(fi);
@@ -871,7 +871,7 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
               vd_t.enumId(xEnumId);
               aa->type(vd_t);
 
-              auto* show_i = new Call(Location().introduce(), ASTString("showDzn"), {aa});
+              auto* show_i = Call::a(Location().introduce(), ASTString("showDzn"), {aa});
               show_i->type(Type::parstring());
               FunctionI* fi = e.model->matchFn(e, show_i, false);
               assert(fi);
@@ -901,8 +901,8 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
             auto* x_vd = new VarDecl(Location().introduce(), x_ti, "x", values);
             x_vd->toplevel(false);
 
-            auto* show_indexed = new Call(Location().introduce(), ASTString("show2d_indexed"),
-                                          {idx1_vd->id(), idx2_vd->id(), x_vd->id()});
+            auto* show_indexed = Call::a(Location().introduce(), ASTString("show2d_indexed"),
+                                         {idx1_vd->id(), idx2_vd->id(), x_vd->id()});
             FunctionI* fi = e.model->matchFn(e, show_indexed, false);
             assert(fi);
             show_indexed->decl(fi);
@@ -940,8 +940,8 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
                   std::string("_toString_") + e.getEnum(enumId)->e()->id()->str().c_str();
 
               auto* toStringMin =
-                  new Call(Location().introduce(), toString,
-                           {IntLit::a(idxMin), e.constants.literalFalse, e.constants.literalFalse});
+                  Call::a(Location().introduce(), toString,
+                          {IntLit::a(idxMin), e.constants.literalFalse, e.constants.literalFalse});
               toStringMin->type(Type::parstring());
               FunctionI* toStringMin_fi = e.model->matchFn(e, toStringMin, false);
               toStringMin->decl(toStringMin_fi);
@@ -951,8 +951,8 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
               outputVars.push_back(sl);
 
               auto* toStringMax =
-                  new Call(Location().introduce(), toString,
-                           {IntLit::a(idxMax), e.constants.literalFalse, e.constants.literalFalse});
+                  Call::a(Location().introduce(), toString,
+                          {IntLit::a(idxMax), e.constants.literalFalse, e.constants.literalFalse});
               toStringMax->type(Type::parstring());
               FunctionI* toStringMax_fi = e.model->matchFn(e, toStringMax, false);
               toStringMax->decl(toStringMax_fi);
@@ -974,13 +974,13 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
             if (vd->type().dim() > 1) {
               index_set_fn += "_" + std::to_string(i + 1) + "of" + std::to_string(vd->type().dim());
             }
-            auto* index_set_xx = new Call(Location().introduce(), index_set_fn, {vd->id()});
+            auto* index_set_xx = Call::a(Location().introduce(), index_set_fn, {vd->id()});
             index_set_xx->type(Type::parsetint());
             auto* i_fi = e.model->matchFn(e, index_set_xx, false);
             assert(i_fi);
             index_set_xx->decl(i_fi);
 
-            auto* show = new Call(Location().introduce(), e.constants.ids.show, {index_set_xx});
+            auto* show = Call::a(Location().introduce(), e.constants.ids.show, {index_set_xx});
             show->type(Type::parstring());
             FunctionI* s_fi = e.model->matchFn(e, show, false);
             assert(s_fi);
@@ -998,7 +998,7 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
 
     std::vector<Expression*> showArgs(1);
     showArgs[0] = vd->id();
-    Call* show = new Call(Location().introduce(), ASTString("showDzn"), showArgs);
+    Call* show = Call::a(Location().introduce(), ASTString("showDzn"), showArgs);
     show->type(Type::parstring());
     FunctionI* fi = e.model->matchFn(e, show, false);
     assert(fi);
@@ -1014,12 +1014,12 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
   if (oi != nullptr) {
     if (includeOutputItem) {
       outputVars.push_back(new StringLit(Location().introduce(), "_output = "));
-      Call* concat = new Call(Location().introduce(), ASTString("concat"), {oi->e()});
+      Call* concat = Call::a(Location().introduce(), ASTString("concat"), {oi->e()});
       concat->type(Type::parstring());
       FunctionI* fi = e.model->matchFn(e, concat, false);
       assert(fi);
       concat->decl(fi);
-      Call* show = new Call(Location().introduce(), ASTString("showDzn"), {concat});
+      Call* show = Call::a(Location().introduce(), ASTString("showDzn"), {concat});
       show->type(Type::parstring());
       fi = e.model->matchFn(e, show, false);
       assert(fi);
@@ -1033,12 +1033,12 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
 
   if (includeChecker) {
     outputVars.push_back(new StringLit(Location().introduce(), "_checker = "));
-    auto* checker_output = new Call(Location().introduce(), ASTString("showCheckerOutput"), {});
+    auto* checker_output = Call::a(Location().introduce(), ASTString("showCheckerOutput"), {});
     checker_output->type(Type::parstring());
     FunctionI* fi = e.model->matchFn(e, checker_output, false);
     assert(fi);
     checker_output->decl(fi);
-    auto* show = new Call(Location().introduce(), ASTString("showDzn"), {checker_output});
+    auto* show = Call::a(Location().introduce(), ASTString("showDzn"), {checker_output});
     show->type(Type::parstring());
     fi = e.model->matchFn(e, show, false);
     assert(fi);
@@ -1080,7 +1080,7 @@ ArrayLit* create_json_output(EnvI& e, bool includeObjective, bool includeOutputI
 
     std::vector<Expression*> showArgs(1);
     showArgs[0] = vd->id();
-    Call* show = new Call(Location().introduce(), "showJSON", showArgs);
+    Call* show = Call::a(Location().introduce(), "showJSON", showArgs);
     show->type(Type::parstring());
     FunctionI* fi = e.model->matchFn(e, show, false);
     assert(fi);
@@ -1101,12 +1101,12 @@ ArrayLit* create_json_output(EnvI& e, bool includeObjective, bool includeOutputI
         << " : ";
       auto* sl = new StringLit(Location().introduce(), s.str());
       outputVars.push_back(sl);
-      Call* concat = new Call(Location().introduce(), ASTString("concat"), {oi->e()});
+      Call* concat = Call::a(Location().introduce(), ASTString("concat"), {oi->e()});
       concat->type(Type::parstring());
       FunctionI* fi = e.model->matchFn(e, concat, false);
       assert(fi);
       concat->decl(fi);
-      Call* show = new Call(Location().introduce(), ASTString("showJSON"), {concat});
+      Call* show = Call::a(Location().introduce(), ASTString("showJSON"), {concat});
       show->type(Type::parstring());
       fi = e.model->matchFn(e, show, false);
       assert(fi);
@@ -1128,12 +1128,12 @@ ArrayLit* create_json_output(EnvI& e, bool includeObjective, bool includeOutputI
       << " : ";
     auto* sl = new StringLit(Location().introduce(), s.str());
     outputVars.push_back(sl);
-    Call* checker_output = new Call(Location().introduce(), ASTString("showCheckerOutput"), {});
+    Call* checker_output = Call::a(Location().introduce(), ASTString("showCheckerOutput"), {});
     checker_output->type(Type::parstring());
     FunctionI* fi = e.model->matchFn(e, checker_output, false);
     assert(fi);
     checker_output->decl(fi);
-    Call* show = new Call(Location().introduce(), ASTString("showJSON"), {checker_output});
+    Call* show = Call::a(Location().introduce(), ASTString("showJSON"), {checker_output});
     show->type(Type::parstring());
     fi = e.model->matchFn(e, show, false);
     assert(fi);
@@ -1165,13 +1165,13 @@ Expression* create_encapsulated_output(EnvI& e) {
       suffix << ", ";
     }
     bool isJSON = it.first == "json" || it.first.endsWith("_json");
-    auto* concat = new Call(Location().introduce(), "concat", {it.second});
+    auto* concat = Call::a(Location().introduce(), "concat", {it.second});
     concat->type(Type::parstring());
     concat->decl(e.model->matchFn(e, concat, false));
     if (isJSON) {
       es.push_back(concat);
     } else {
-      auto* showJSON = new Call(Location().introduce(), "showJSON", {concat});
+      auto* showJSON = Call::a(Location().introduce(), "showJSON", {concat});
       showJSON->type(Type::parstring());
       showJSON->decl(e.model->matchFn(e, showJSON, false));
       es.push_back(showJSON);
@@ -1527,7 +1527,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
                   args.resize(1);
                   args[0] = al;
                   vd_followed->flat()->addAnnotation(
-                      new Call(Location().introduce(), env.constants.ann.output_array, args));
+                      Call::a(Location().introduce(), env.constants.ann.output_array, args));
                   check_rename_var(env, vd_followed);
                 }
               }
@@ -1735,7 +1735,7 @@ void finalise_output(EnvI& e) {
                     args.resize(1);
                     args[0] = al;
                     vd->flat()->addAnnotation(
-                        new Call(Location().introduce(), e.constants.ann.output_array, args));
+                        Call::a(Location().introduce(), e.constants.ann.output_array, args));
                   }
                   check_rename_var(e, vd);
                 }

@@ -49,7 +49,7 @@ Call* same_call(EnvI& env, Expression* e, const ASTString& id) {
         std::vector<Expression*> n_vars_v(vars->size());
         for (unsigned int i = 0; i < vars->size(); i++) {
           Call* f2i =
-              new Call((*vars)[i]->loc().introduce(), env.constants.ids.int2float, {(*vars)[i]});
+              Call::a((*vars)[i]->loc().introduce(), env.constants.ids.int2float, {(*vars)[i]});
           f2i->decl(env.model->matchFn(env, f2i, false));
           assert(f2i->decl());
           f2i->type(Type::varfloat());
@@ -59,8 +59,8 @@ Call* same_call(EnvI& env, Expression* e, const ASTString& id) {
         auto* nvars = new ArrayLit(vars->loc().introduce(), n_vars_v);
         nvars->type(Type::varfloat(1));
         FloatVal c = eval_int(env, i2fc->arg(2));
-        Call* nlinexp = new Call(i2fc->loc().introduce(), env.constants.ids.lin_exp,
-                                 {ncoeff, nvars, FloatLit::a(c)});
+        Call* nlinexp = Call::a(i2fc->loc().introduce(), env.constants.ids.lin_exp,
+                                {ncoeff, nvars, FloatLit::a(c)});
         nlinexp->decl(env.model->matchFn(env, nlinexp, false));
         assert(nlinexp->decl());
         nlinexp->type(Type::varfloat());
@@ -319,7 +319,7 @@ bool is_totaladd_bounds_disj(EnvI& env, Expression* arg, Call* c_orig) {
                                    new ArrayLit(loc, bndF),  new ArrayLit(loc, varF)};
 
   Call* c =
-      new Call(c_orig->loc().introduce(), env.model->getFnDecls().boundsDisj.second->id(), args);
+      Call::a(c_orig->loc().introduce(), env.model->getFnDecls().boundsDisj.second->id(), args);
   c->type(Type::varbool());
   c->decl(env.model->getFnDecls().boundsDisj.second);
   env.flatAddItem(new ConstraintI(c_orig->loc().introduce(), c));
@@ -949,7 +949,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
     {
       GCLock lock;
       std::vector<Expression*> e_args = to_exp_vec(args);
-      Call* cr_c = new Call(c->loc().introduce(), cid, e_args);
+      Call* cr_c = Call::a(c->loc().introduce(), cid, e_args);
       decl = env.model->matchFn(env, cr_c, false);
       if (decl == nullptr) {
         throw FlatteningError(env, cr_c->loc(), "cannot find matching declaration");
@@ -975,7 +975,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
       }
       GCLock lock;
       std::vector<Expression*> e_args = to_exp_vec(args);
-      Call* cr_c = new Call(c->loc().introduce(), cid, e_args);
+      Call* cr_c = Call::a(c->loc().introduce(), cid, e_args);
       decl = env.model->matchFn(env, cr_c, false);
       if (decl == nullptr) {
         throw FlatteningError(env, cr_c->loc(), "cannot find matching declaration");
@@ -1042,7 +1042,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
                   std::vector<Expression*> domargs(2);
                   domargs[0] = args[i]();
                   domargs[1] = dom;
-                  Call* c = new Call(Location().introduce(), "var_dom", domargs);
+                  Call* c = Call::a(Location().introduce(), "var_dom", domargs);
                   c->type(Type::varbool());
                   c->decl(env.model->matchFn(env, c, false));
                   if (c->decl() == nullptr) {
@@ -1082,7 +1082,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
                   std::vector<Expression*> domargs(2);
                   domargs[0] = args[i]();
                   domargs[1] = dom;
-                  Call* c = new Call(Location().introduce(), "var_dom", domargs);
+                  Call* c = Call::a(Location().introduce(), "var_dom", domargs);
                   c->type(Type::varbool());
                   c->decl(env.model->matchFn(env, c, false));
                   if (c->decl() == nullptr) {
@@ -1148,7 +1148,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
                   args_e[i] = args[i]();
                 }
                 args_e[args.size()] = env.constants.literalFalse;
-                Call* reif_call = new Call(Location().introduce(), r_cid, args_e);
+                Call* reif_call = Call::a(Location().introduce(), r_cid, args_e);
                 reif_call->type(Type::varbool());
                 reif_call->decl(reif_decl);
                 flat_exp(env, Ctx(), reif_call, env.constants.varTrue, env.constants.varTrue);
@@ -1295,7 +1295,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
                 std::vector<Expression*> domargs(2);
                 domargs[0] = ret.r();
                 domargs[1] = decl->ti()->domain();
-                Call* c = new Call(Location().introduce(), "var_dom", domargs);
+                Call* c = Call::a(Location().introduce(), "var_dom", domargs);
                 c->type(Type::varbool());
                 c->decl(env.model->matchFn(env, c, false));
                 if (c->decl() == nullptr) {
