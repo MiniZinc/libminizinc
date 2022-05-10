@@ -164,7 +164,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
           al->type(Type::varbool(1));
           Call* forall = new Call(Location().introduce(), env.constants.ids.forall, {al});
           forall->decl(env.model->matchFn(env, forall, false));
-          forall->type(forall->decl()->rtype(env, {al}, false));
+          forall->type(forall->decl()->rtype(env, {al}, nullptr, false));
           e_then.back().push_back(forall);
         }
       }
@@ -181,7 +181,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
           al->type(Type::varbool(1));
           Call* forall = new Call(Location().introduce(), env.constants.ids.forall, {al});
           forall->decl(env.model->matchFn(env, forall, false));
-          forall->type(forall->decl()->rtype(env, {al}, false));
+          forall->type(forall->decl()->rtype(env, {al}, nullptr, false));
           e_else.emplace_back(forall);
         }
       }
@@ -492,7 +492,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
         al->type(Type::varbool(1));
         Call* forall = new Call(Location().introduce(), env.constants.ids.forall, {al});
         forall->decl(env.model->matchFn(env, forall, false));
-        forall->type(forall->decl()->rtype(env, {al}, false));
+        forall->type(forall->decl()->rtype(env, {al}, nullptr, false));
         defined_conjunctions[i] = forall;
       }
     }

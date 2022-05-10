@@ -978,8 +978,12 @@ bool TypeInst::hasTiVariable() const {
 namespace {
 Type get_type(Expression* e) { return e->type(); }
 Type get_type(const Type& t) { return t; }
-const Location& get_loc(Expression* e, FunctionI* /*fi*/) { return e->loc(); }
-const Location& get_loc(const Type& /*t*/, FunctionI* fi) { return fi->loc(); }
+const Location& get_loc(Expression* e, Expression* call, FunctionI* /*fi*/) {
+  return e->loc().isNonAlloc() ? call->loc() : e->loc();
+}
+const Location& get_loc(const Type& /*t*/, Expression* /*call*/, FunctionI* fi) {
+  return fi->loc();
+}
 
 bool isa_tiid(Expression* e) {
   if (TIId* t = Expression::dynamicCast<TIId>(e)) {
@@ -996,7 +1000,8 @@ bool isa_enum_tiid(Expression* e) {
 
 // Compute return type of function \a fi given argument types \ta
 template <class T>
-Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strictEnum) {
+Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression* call,
+                 bool strictEnum) {
   if (fi->id() == env.constants.varRedef->id()) {
     return Type::varbool();
   }
@@ -1033,7 +1038,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
         if (it->second.first.dim() > 0) {
           std::ostringstream ss;
           ss << "type-inst variable $" << tiid << " used in both array and non-array position";
-          throw TypeError(env, get_loc(ta[i], fi), ss.str());
+          throw TypeError(env, get_loc(ta[i], call, fi), ss.str());
         }
         Type tiit_par = tiit;
         tiit_par.any(false);
@@ -1066,7 +1071,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
           std::ostringstream ss;
           ss << "type-inst variable $" << tiid << " instantiated with different types ("
              << tiit.toString(env) << " vs " << it->second.first.toString(env) << ")";
-          throw TypeError(env, get_loc(ta[i], fi), ss.str());
+          throw TypeError(env, get_loc(ta[i], call, fi), ss.str());
         }
         if (tiit.isvar()) {
           it->second.first.ti(Type::TI_VAR);
@@ -1082,7 +1087,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
       if (orig_tiit.dim() == 0) {
         std::ostringstream ss;
         ss << "type-inst variable $" << tiid << " must be an array index";
-        throw TypeError(env, get_loc(ta[i], fi), ss.str());
+        throw TypeError(env, get_loc(ta[i], call, fi), ss.str());
       }
       Type tiit = Type::top(orig_tiit.dim());
       if (orig_tiit.enumId() != 0) {
@@ -1101,13 +1106,13 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
         if (it->second.first.dim() == 0) {
           std::ostringstream ss;
           ss << "type-inst variable $" << tiid << " used in both array and non-array position";
-          throw TypeError(env, get_loc(ta[i], fi), ss.str());
+          throw TypeError(env, get_loc(ta[i], call, fi), ss.str());
         }
         if (it->second.first != tiit) {
           std::ostringstream ss;
           ss << "type-inst variable $" << tiid << " instantiated with different types ("
              << tiit.toString(env) + " vs " << it->second.first.toString(env) << ")";
-          throw TypeError(env, get_loc(ta[i], fi), ss.str());
+          throw TypeError(env, get_loc(ta[i], call, fi), ss.str());
         }
       }
     } else if (!tii->ranges().empty()) {
@@ -1130,7 +1135,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strict
           } else if (strictEnum && it->second.first.enumId() != enumIdT.enumId()) {
             std::ostringstream ss;
             ss << "type-inst variable $" << enumTIId << " used for different enum types";
-            throw TypeError(env, get_loc(ta[i], fi), ss.str());
+            throw TypeError(env, get_loc(ta[i], call, fi), ss.str());
           }
         }
       }
@@ -1275,12 +1280,13 @@ void Item::mark(Item* item) {
   }
 }
 
-Type FunctionI::rtype(EnvI& env, const std::vector<Expression*>& ta, bool strictEnums) {
-  return return_type(env, this, ta, strictEnums);
+Type FunctionI::rtype(EnvI& env, const std::vector<Expression*>& ta, Expression* call,
+                      bool strictEnums) {
+  return return_type(env, this, ta, call, strictEnums);
 }
 
-Type FunctionI::rtype(EnvI& env, const std::vector<Type>& ta, bool strictEnums) {
-  return return_type(env, this, ta, strictEnums);
+Type FunctionI::rtype(EnvI& env, const std::vector<Type>& ta, Expression* call, bool strictEnums) {
+  return return_type(env, this, ta, call, strictEnums);
 }
 
 Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned int n) const {

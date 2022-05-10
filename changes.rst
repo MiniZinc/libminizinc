@@ -5,7 +5,7 @@ For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
 .. _unreleased:
-
+ 
 Unreleased
 ~~~~~~~~~~
 
@@ -25,6 +25,8 @@ Changes:
 -  Improve translation of some simple constraints, which avoids introducing
    unneccessary int_eq (and similar) constraints.
 -  Remove more subsumed clauses and foralls in the optimisation phase of the compiler.
+-  Report approximate error locations for type errors in function arguments that
+   are literals without location information.
 
 .. _v2.6.4:
 

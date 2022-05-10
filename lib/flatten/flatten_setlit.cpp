@@ -57,7 +57,7 @@ EE flatten_setlit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl*
       throw FlatteningError(env, cc->loc(), "cannot find matching declaration");
     }
     assert(fi);
-    assert(env.isSubtype(fi->rtype(env, args, false), cc->type(), false));
+    assert(env.isSubtype(fi->rtype(env, args, nullptr, false), cc->type(), false));
     cc->decl(fi);
     EE ee = flat_exp(env, Ctx(), cc, nullptr, env.constants.varTrue);
     ret.r = bind(env, Ctx(), r, ee.r());

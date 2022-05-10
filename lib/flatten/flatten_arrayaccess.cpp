@@ -270,7 +270,7 @@ flatten_arrayaccess:
         throw FlatteningError(env, cc->loc(), "cannot find matching declaration");
       }
       assert(fi);
-      assert(env.isSubtype(fi->rtype(env, args, false), cc->type(), false));
+      assert(env.isSubtype(fi->rtype(env, args, nullptr, false), cc->type(), false));
       cc->decl(fi);
       ka = cc;
     }

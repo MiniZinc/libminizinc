@@ -51,7 +51,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
       idxsetargs[0] = id;
       Call* idxset = new Call(id->loc().introduce(), "index_set", idxsetargs);
       idxset->decl(env.model->matchFn(env, idxset, false));
-      idxset->type(idxset->decl()->rtype(env, idxsetargs, false));
+      idxset->type(idxset->decl()->rtype(env, idxsetargs, nullptr, false));
       Generator gen(gen_id, idxset, nullptr);
       std::vector<Expression*> idx(1);
       Generators gens;

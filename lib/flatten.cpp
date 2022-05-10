@@ -1816,7 +1816,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
               args[1] = env.constants.literalFalse;
               Call* c = new Call(Location().introduce(), env.constants.ids.bool_.eq, args);
               c->decl(env.model->matchFn(env, c, false));
-              c->type(c->decl()->rtype(env, args, false));
+              c->type(c->decl()->rtype(env, args, nullptr, false));
               if (c->decl()->e() != nullptr) {
                 flat_exp(env, Ctx(), c, env.constants.varTrue, env.constants.varTrue);
               }
@@ -1862,7 +1862,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
             args[1] = env.constants.literalTrue;
             Call* c = new Call(Location().introduce(), env.constants.ids.bool_.eq, args);
             c->decl(env.model->matchFn(env, c, false));
-            c->type(c->decl()->rtype(env, args, false));
+            c->type(c->decl()->rtype(env, args, nullptr, false));
             if (c->decl()->e() != nullptr) {
               flat_exp(env, Ctx(), c, env.constants.varTrue, env.constants.varTrue);
             }
@@ -2055,7 +2055,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
         args[1] = env.constants.boollit(isTrue);
         Call* c = new Call(Location().introduce(), env.constants.ids.bool_.eq, args);
         c->decl(env.model->matchFn(env, c, false));
-        c->type(c->decl()->rtype(env, args, false));
+        c->type(c->decl()->rtype(env, args, nullptr, false));
         bool didRewrite = false;
         if (c->decl()->e() != nullptr) {
           flat_exp(env, Ctx(), c, env.constants.varTrue, env.constants.varTrue);
@@ -2202,7 +2202,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
               args[1] = e_id;
               Call* c = new Call(Location().introduce(), cid, args);
               c->decl(env.model->matchFn(env, c, false));
-              c->type(c->decl()->rtype(env, args, false));
+              c->type(c->decl()->rtype(env, args, nullptr, false));
               if (c->type().isbool() && ctx.b != C_ROOT) {
                 add_ctx_ann(env, vd, ctx.b);
                 add_ctx_ann(env, e_id->decl(), ctx.b);
@@ -2418,7 +2418,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
               args[1] = e;
               Call* c = new Call(Location().introduce(), env.constants.ids.bool_.eq, args);
               c->decl(env.model->matchFn(env, c, false));
-              c->type(c->decl()->rtype(env, args, false));
+              c->type(c->decl()->rtype(env, args, nullptr, false));
               if (c->decl()->e() != nullptr) {
                 flat_exp(env, Ctx(), c, env.constants.varTrue, env.constants.varTrue);
               }
@@ -2454,7 +2454,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
           args[1] = e_vd->id();
           Call* c = new Call(vd->loc().introduce(), cid, args);
           c->decl(env.model->matchFn(env, c, false));
-          c->type(c->decl()->rtype(env, args, false));
+          c->type(c->decl()->rtype(env, args, nullptr, false));
           flat_exp(env, Ctx(), c, env.constants.varTrue, env.constants.varTrue);
           return vd->id();
         }
@@ -2488,7 +2488,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
               ss << "undeclared function or predicate " << nc->id();
               throw InternalError(ss.str());
             }
-            nc->type(nc->decl()->rtype(env, args, false));
+            nc->type(nc->decl()->rtype(env, args, nullptr, false));
             auto* bop = new BinOp(nc->loc(), nc, BOT_EQ, IntLit::a(0));
             bop->type(Type::varbool());
             flat_exp(env, Ctx(), bop, env.constants.varTrue, env.constants.varTrue);
@@ -2528,7 +2528,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
             throw InternalError(ss.str());
           }
           nc->decl(nc_decl);
-          nc->type(nc->decl()->rtype(env, args, false));
+          nc->type(nc->decl()->rtype(env, args, nullptr, false));
           make_defined_var(env, vd, nc);
           flat_exp(env, Ctx(), nc, env.constants.varTrue, env.constants.varTrue);
           return vd->id();
@@ -2573,7 +2573,7 @@ KeepAlive conj(EnvI& env, VarDecl* b, const Ctx& ctx, const std::vector<EE>& e) 
     args.push_back(al);
     Call* ret = new Call(nontrue[0]->loc().introduce(), env.constants.ids.forall, args);
     ret->decl(env.model->matchFn(env, ret, false));
-    ret->type(ret->decl()->rtype(env, args, false));
+    ret->type(ret->decl()->rtype(env, args, nullptr, false));
     KeepAlive ka(ret);
     GC::unlock();
     return flat_exp(env, ctx, ret, b, env.constants.varTrue).r;
@@ -2621,7 +2621,7 @@ KeepAlive conj(EnvI& env, VarDecl* b, const Ctx& ctx, const std::vector<EE>& e) 
   args.push_back(al);
   Call* ret = new Call(Location().introduce(), env.constants.ids.exists, args);
   ret->decl(env.model->matchFn(env, ret, false));
-  ret->type(ret->decl()->rtype(env, args, false));
+  ret->type(ret->decl()->rtype(env, args, nullptr, false));
   assert(ret->decl());
   KeepAlive ka(ret);
   GC::unlock();

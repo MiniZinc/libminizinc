@@ -3221,7 +3221,7 @@ Expression* b_regular_from_string(EnvI& env, Call* call) {
       } else {
         auto* fi = it->second->cast<FunctionI>();
         Call* c = new Call(Location().introduce(), fi->id(), {arg});
-        c->type(fi->rtype(env, {arg->type()}, true));
+        c->type(fi->rtype(env, {arg->type()}, nullptr, true));
         c->decl(fi);
 
         IntVal result = eval_int(env, c);

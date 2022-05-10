@@ -334,7 +334,7 @@ KeepAlive mklinexp(EnvI& env, typename LinearTraits<Lit>::Val c0,
     if (c->decl() == nullptr) {
       throw FlatteningError(env, c->loc(), "cannot find matching declaration");
     }
-    c->type(c->decl()->rtype(env, args, false));
+    c->type(c->decl()->rtype(env, args, nullptr, false));
     ka = c;
   }
   assert(ka());
@@ -415,7 +415,7 @@ Call* aggregate_and_or_ops(EnvI& env, BinOp* bo, bool negateArgs, BinOpType bot)
   }
   c->decl(env.model->matchFn(env, c, false));
   assert(c->decl());
-  Type t = c->decl()->rtype(env, c_args, false);
+  Type t = c->decl()->rtype(env, c_args, nullptr, false);
   t.cv(bo->type().cv());
   c->type(t);
   return c;
@@ -864,7 +864,7 @@ EE flatten_nonbool_op(EnvI& env, const Ctx& ctx, const Ctx& ctx0, const Ctx& ctx
     args[1] = e1.r();
     FunctionI* fi = env.model->matchFn(env, bo->opToString(), args, false);
     parbo->decl(fi);
-    Type tt = fi->rtype(env, {e0.r()->type(), e1.r()->type()}, false);
+    Type tt = fi->rtype(env, {e0.r()->type(), e1.r()->type()}, nullptr, false);
     assert(tt.isPar());
     parbo->type(tt);
     try {
@@ -893,7 +893,7 @@ EE flatten_nonbool_op(EnvI& env, const Ctx& ctx, const Ctx& ctx0, const Ctx& ctx
       std::vector<Expression*> args({e0.r(), e1.r()});
       FunctionI* fi = env.model->matchFn(env, bo->opToString(), args, true);
       assert(fi != nullptr);
-      Type ty = fi->rtype(env, args, true);
+      Type ty = fi->rtype(env, args, nullptr, true);
       newBo->type(ty);
       newBo->decl(fi);
       ka = newBo;
@@ -952,9 +952,9 @@ EE flatten_nonbool_op(EnvI& env, const Ctx& ctx, const Ctx& ctx0, const Ctx& ctx
     ret.r = bind(env, ctx, r, cit->second.r());
   } else {
     if (FunctionI* fi = env.model->matchFn(env, cc->id(), args, false)) {
-      assert(cc->type() == fi->rtype(env, args, false));
+      assert(cc->type() == fi->rtype(env, args, nullptr, false));
       cc->decl(fi);
-      cc->type(cc->decl()->rtype(env, args, false));
+      cc->type(cc->decl()->rtype(env, args, nullptr, false));
       KeepAlive ka(cc);
       GC::unlock();
       EE ee = flat_exp(env, ctx, cc, r, ctx.partialityVar(env));
@@ -1168,7 +1168,7 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
         throw FlatteningError(env, cc->loc(), "cannot find matching declaration");
       }
     }
-    cc->type(cc->decl()->rtype(env, args_e, false));
+    cc->type(cc->decl()->rtype(env, args_e, nullptr, false));
 
     // add defines_var annotation if applicable
     Id* assignTo = nullptr;
@@ -1286,7 +1286,7 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
     if (args[0] != env.constants.absent) {
       Call* cr = new Call(bo->loc().introduce(), "absent", args);
       cr->decl(env.model->matchFn(env, cr, false));
-      cr->type(cr->decl()->rtype(env, args, false));
+      cr->type(cr->decl()->rtype(env, args, nullptr, false));
       ret = flat_exp(env, ctx, cr, r, b);
     } else {
       ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
@@ -1541,7 +1541,7 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
       if (c->decl() == nullptr) {
         throw FlatteningError(env, c->loc(), "cannot find matching declaration");
       }
-      c->type(c->decl()->rtype(env, args, false));
+      c->type(c->decl()->rtype(env, args, nullptr, false));
       KeepAlive ka(c);
       GC::unlock();
       ret = flat_exp(env, ctx, c, r, b);

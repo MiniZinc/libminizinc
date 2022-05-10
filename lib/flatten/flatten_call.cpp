@@ -954,7 +954,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
       if (decl == nullptr) {
         throw FlatteningError(env, cr_c->loc(), "cannot find matching declaration");
       }
-      cr_c->type(decl->rtype(env, e_args, false));
+      cr_c->type(decl->rtype(env, e_args, nullptr, false));
       assert(decl);
       cr_c->decl(decl);
       cr = cr_c;
@@ -980,7 +980,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
       if (decl == nullptr) {
         throw FlatteningError(env, cr_c->loc(), "cannot find matching declaration");
       }
-      cr_c->type(decl->rtype(env, e_args, false));
+      cr_c->type(decl->rtype(env, e_args, nullptr, false));
       assert(decl);
       cr_c->decl(decl);
       cr = cr_c;
@@ -1188,7 +1188,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
         for (auto i = static_cast<unsigned int>(argt.size()); (i--) != 0U;) {
           argt[i] = cr_c->arg(i)->type();
         }
-        Type callt = decl->rtype(env, argt, false);
+        Type callt = decl->rtype(env, argt, nullptr, false);
         if (callt.isPar() && callt.bt() != Type::BT_ANN) {
           GCLock lock;
           try {

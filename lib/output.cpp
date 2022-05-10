@@ -27,7 +27,7 @@ bool is_completely_par(EnvI& env, FunctionI* fi, const std::vector<Type>& tv) {
       }
     }
   }
-  return fi->rtype(env, tv, false).isPar();
+  return fi->rtype(env, tv, nullptr, false).isPar();
 }
 
 }  // namespace
@@ -61,7 +61,7 @@ void check_output_par_fn(EnvI& env, Call* rhs) {
       decl = origdecl;
     }
   }
-  rhs->type(decl->rtype(env, tv, false));
+  rhs->type(decl->rtype(env, tv, nullptr, false));
   rhs->decl(decl);
 }
 
@@ -143,7 +143,7 @@ bool cannot_use_rhs_for_output(EnvI& env, Expression* e,
         }
       }
       if (success) {
-        t = decl->rtype(env, tv, false);
+        t = decl->rtype(env, tv, nullptr, false);
         if (!t.isPar()) {
           success = false;
         }

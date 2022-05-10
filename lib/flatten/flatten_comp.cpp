@@ -291,7 +291,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
         alr->flat(true);
         Call* a2s = new Call(Location().introduce(), "array2set", {alr});
         a2s->decl(env.model->matchFn(env, a2s, false));
-        a2s->type(a2s->decl()->rtype(env, {alr}, false));
+        a2s->type(a2s->decl()->rtype(env, {alr}, nullptr, false));
         EE ee = flat_exp(env, Ctx(), a2s, nullptr, env.constants.varTrue);
         ka = ee.r();
       }

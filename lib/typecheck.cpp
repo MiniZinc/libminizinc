@@ -1439,7 +1439,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
           if (fi == nullptr) {
             throw TypeError(env, e->loc(), "missing builtin " + oss.str());
           }
-          origIdxset->type(fi->rtype(env, origIdxsetArgs, false));
+          origIdxset->type(fi->rtype(env, origIdxsetArgs, nullptr, false));
           origIdxset->decl(fi);
           if (needInter) {
             auto* inter = new BinOp(aa->idx()[i]->loc(), aa->idx()[i], BOT_INTERSECT, origIdxset);
@@ -1453,7 +1453,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
               throw TypeError(env, e->loc(),
                               "missing builtin " + std::string(openIntervalCall->id().c_str()));
             }
-            newOpenIntervalCall->type(nfi->rtype(env, {origIdxset}, false));
+            newOpenIntervalCall->type(nfi->rtype(env, {origIdxset}, nullptr, false));
             newOpenIntervalCall->decl(nfi);
             slice.push_back(newOpenIntervalCall);
             args.push_back(newOpenIntervalCall);
@@ -1490,7 +1490,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
     if (fi == nullptr) {
       throw TypeError(env, e->loc(), "missing builtin " + oss.str());
     }
-    c->type(fi->rtype(env, args, false));
+    c->type(fi->rtype(env, args, nullptr, false));
     c->decl(fi);
     e = c;
   }
@@ -1513,7 +1513,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
     Call* set2a = new Call(e->loc(), ASTString("set2array"), set2a_args);
     FunctionI* fi = m->matchFn(env, set2a, false);
     if (fi != nullptr) {
-      set2a->type(fi->rtype(env, set2a_args, false));
+      set2a->type(fi->rtype(env, set2a_args, nullptr, false));
       set2a->decl(fi);
       e = set2a;
     }
@@ -1539,7 +1539,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
   if (c != nullptr) {
     FunctionI* fi = m->matchFn(env, c, false);
     if (fi != nullptr) {
-      Type ct = fi->rtype(env, args, false);
+      Type ct = fi->rtype(env, args, nullptr, false);
       ct.cv(e->type().cv() || ct.cv());
       c->type(ct);
       c->decl(fi);
@@ -2278,7 +2278,7 @@ public:
       bop->rhs(add_coercion(_env, _model, bop->rhs(), fi->argtype(_env, args, 1))());
       args[0] = bop->lhs();
       args[1] = bop->rhs();
-      Type ty = fi->rtype(_env, args, true);
+      Type ty = fi->rtype(_env, args, bop, true);
       ty.cv(bop->lhs()->type().cv() || bop->rhs()->type().cv() || ty.cv());
       bop->type(ty);
 
@@ -2429,7 +2429,7 @@ public:
     if (FunctionI* fi = _model->matchFn(_env, uop->opToString(), args, true)) {
       uop->e(add_coercion(_env, _model, uop->e(), fi->argtype(_env, args, 0))());
       args[0] = uop->e();
-      Type ty = fi->rtype(_env, args, true);
+      Type ty = fi->rtype(_env, args, uop, true);
       ty.cv(uop->e()->type().cv() || ty.cv());
       uop->type(ty);
       if (fi->e() != nullptr) {
@@ -2588,7 +2588,7 @@ public:
     }
 
     // Set type and decl
-    Type ty = fi->rtype(_env, args, true);
+    Type ty = fi->rtype(_env, args, call, true);
     ty.cv(cv || ty.cv());
     call->type(ty);
 
