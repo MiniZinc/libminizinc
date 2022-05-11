@@ -136,6 +136,9 @@ public:
   /// This means the solver exits
   bool evalStatus(SolverInstance::Status status);
 
+  /// Print any statistics which have not yet been printed
+  void flushStatistics(std::ostream& os);
+
   void printStatistics(std::ostream& os);
 
   Env* getEnv() const { return _env; }

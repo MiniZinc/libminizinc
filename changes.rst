@@ -17,6 +17,8 @@ Bug fixes:
 -  Fix a bug in the flattening of binary operators when types of flattened
    arguments match a different version function than matched by the type
    checker. (:bugref:`588`)
+-  Fix a bug where statistics without a ``%%%mzn-stat-end`` were not always
+   printed in ``--json-stream`` mode.
 
 .. _v2.6.3:
 

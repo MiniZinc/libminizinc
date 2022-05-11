@@ -945,6 +945,8 @@ SolverInstance::Status MznSolver::solve() {
   if (flagStatistics) {
     getSI()->getSolns2Out()->printStatistics(_os);
   }
+  // Print any statistics left in the buffer
+  getSI()->getSolns2Out()->flushStatistics(_os);
   return status;
 }
 

@@ -638,11 +638,7 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
     }
     auto it = _mapInputStatus.find(line);
     if (_mapInputStatus.end() != it) {
-      if (!_stats.empty()) {
-        // Didn't have %%%mzn-stat-end, but should print stats anyway at this point
-        parseStatistics(_stats, getOutput());
-        _stats.clear();
-      }
+      flushStatistics(getOutput());
       if (SolverInstance::SAT == it->second) {
         parseAssignments(solution);
         evalOutput();
@@ -718,12 +714,15 @@ void Solns2Out::createInputMap() {
   _mapInputStatus[opt.errorMsgDef] = SolverInstance::ERROR;
 }
 
-void Solns2Out::printStatistics(ostream& os) {
+void Solns2Out::flushStatistics(ostream& os) {
   if (!_stats.empty()) {
-    // Didn't have %%%mzn-stat-end, but should print stats anyway at this point
+    // Print any unprocessed statistics
     parseStatistics(_stats, getOutput());
     _stats.clear();
   }
+}
+
+void Solns2Out::printStatistics(ostream& os) {
   StatisticsStream ss(os, opt.flagEncapsulateJSON);
   ss.add("nSolutions", stats.nSolns);
   if (!_statisticsCheckerModel.empty()) {
