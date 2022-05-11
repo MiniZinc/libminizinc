@@ -1,13 +1,12 @@
 from pathlib import Path
-from minizinc import default_driver
-from minizinc.CLI import CLIDriver
+from minizinc import default_driver, Driver
 import subprocess
 import json
 
 
 def test_multiple_type_errors():
     here = Path(__file__).resolve().parent
-    assert isinstance(default_driver, CLIDriver)
+    assert isinstance(default_driver, Driver)
     model_file = here / "test_multiple_type_errors.mzn"
     p = subprocess.run(
         [default_driver._executable, model_file, "--json-stream"],

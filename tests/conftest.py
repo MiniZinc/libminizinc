@@ -17,7 +17,7 @@ def pytest_configure(config):
     pytest.solver_cache = {}
     search = config.getoption("--driver")
     if search is not None:
-        driver = mzn.find_driver([search])
+        driver = mzn.Driver.find([search])
         if driver is None:
             raise Exception("Failed to find MiniZinc driver in {}".format(search))
         driver.make_default()
