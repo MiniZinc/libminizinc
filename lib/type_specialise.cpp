@@ -348,39 +348,83 @@ private:
       return "";
     }
 
-    void reset(ArrayLit* al) const {
+    void reset(EnvI& env, TupleType* match_types, TupleType* concrete_types) const {
       assert(ver == TG_TUPLE);
-      assert(al->size() == tup->size());
+      assert(match_types->size() == tup->size());
+      assert(concrete_types->size() == tup->size());
       for (size_t i = 0; i < tup->size(); ++i) {
-        auto* ti = (*al)[i]->cast<TypeInst>();
+        Type ty = (*match_types)[i];
         if ((*tup)[i].ver == TG_TUPLE) {
-          (*tup)[i].reset(ti->domain()->cast<ArrayLit>());
-        } else if (ti->type().any()) {
+          TupleType* concrete_tt = env.getTupleType((*concrete_types)[i].typeId());
+          TupleType* match_tt = concrete_tt;
+          if (ty.bt() == Type::BT_TUPLE) {
+            TupleType* match_tt = env.getTupleType(ty.typeId());
+          } else if (ty.any()) {
+            std::vector<Type> inst_types(concrete_tt->size());
+            for (size_t j = 0; j < inst_types.size(); ++j) {
+              inst_types[j] = (*concrete_tt)[j];
+              inst_types[j].any(true);
+            }
+            match_tt = TupleType::a(inst_types);
+          }
+          (*tup)[i].reset(env, match_tt, concrete_tt);
+          if (ty.bt() != Type::BT_TUPLE && ty.any()) {
+            TupleType::free(match_tt);
+          }
+        } else if (ty.any()) {
           assert(ver != TG_TUPLE);
           (*tup)[i].ver = TG_PAR;
         }
       }
     }
 
-    bool increment(ArrayLit* al) const {
+    bool increment(EnvI& env, TupleType* match_types, TupleType* concrete_types) const {
       assert(ver == TG_TUPLE);
-      assert(al->size() == tup->size());
+      assert(match_types->size() == tup->size());
+      assert(concrete_types->size() == tup->size());
       for (int i = static_cast<int>(tup->size() - 1); i >= 0; --i) {
-        auto* ti = (*al)[i]->cast<TypeInst>();
+        Type ty = (*match_types)[i];
         bool incremented = false;
         if ((*tup)[i].ver == TG_TUPLE) {
-          incremented = (*tup)[i].increment(ti->domain()->cast<ArrayLit>());
-        } else if ((*tup)[i].ver < TG_VAROPT && ti->type().any()) {
+          TupleType* concrete_tt = env.getTupleType((*concrete_types)[i].typeId());
+          TupleType* match_tt = concrete_tt;
+          if (ty.bt() == Type::BT_TUPLE) {
+            TupleType* match_tt = env.getTupleType(ty.typeId());
+          } else if (ty.any()) {
+            std::vector<Type> inst_types(concrete_tt->size());
+            for (size_t j = 0; j < inst_types.size(); ++j) {
+              inst_types[j] = (*concrete_tt)[j];
+              inst_types[j].any(true);
+            }
+            match_tt = TupleType::a(inst_types);
+          }
+          incremented = (*tup)[i].increment(env, match_tt, concrete_tt);
+          if (ty.bt() != Type::BT_TUPLE && ty.any()) {
+            TupleType::free(match_tt);
+          }
+        } else if ((*tup)[i].ver < TG_VAROPT && ty.any()) {
           // found a match type we can increment
           (*tup)[i].ver = static_cast<GenVersion>((*tup)[i].ver + 1);
           incremented = true;
         }
         if (incremented) {
           for (size_t j = i + 1; j < tup->size(); ++j) {
-            auto* tij = (*al)[j]->cast<TypeInst>();
+            Type ty_back = (*match_types)[j];
             if ((*tup)[j].ver == TG_TUPLE) {
-              (*tup)[j].reset(tij->domain()->cast<ArrayLit>());
-            } else if (ti->type().any()) {
+              TupleType* concrete_tt = env.getTupleType((*concrete_types)[j].typeId());
+              TupleType* match_tt = concrete_tt;
+              if (ty_back.bt() == Type::BT_TUPLE) {
+                TupleType* match_tt = env.getTupleType(ty.typeId());
+              } else if (ty.any()) {
+                std::vector<Type> inst_types(concrete_tt->size());
+                for (size_t j = 0; j < inst_types.size(); ++j) {
+                  inst_types[j] = (*concrete_tt)[j];
+                  inst_types[j].any(true);
+                }
+                match_tt = TupleType::a(inst_types);
+              }
+              (*tup)[j].reset(env, match_tt, concrete_tt);
+            } else if (ty_back.any()) {
               (*tup)[j].ver = TG_PAR;
             }
           }
@@ -392,17 +436,38 @@ private:
 
     // returns generation template from function item. Template is added to toGenerate if
     // isDuplicate return false. Returns whether the function parameters contained an "any".
-    static std::pair<bool, ToGenerate> fromTIs(ArrayLit* param_tuple) {
+    static std::pair<bool, ToGenerate> fromTIs(const EnvI& env, TupleType* match_types,
+                                               TupleType* concrete_types) {
       bool hadAny = false;
       std::vector<ToGenerate> matchTypes;
-      matchTypes.reserve(param_tuple->size());
-      for (size_t i = 0; i < param_tuple->size(); ++i) {
-        auto* ti = (*param_tuple)[i]->cast<TypeInst>();
-        Type parType = ti->type();
+      matchTypes.reserve(match_types->size());
+      for (size_t i = 0; i < match_types->size(); ++i) {
+        Type parType = (*match_types)[i];
         if (parType.bt() == Type::BT_TUPLE) {
-          auto ret = fromTIs(ti->domain()->cast<ArrayLit>());
+          TupleType* match_tt = env.getTupleType(parType.typeId());
+          TupleType* concrete_tt = env.getTupleType((*concrete_types)[i].typeId());
+          auto ret = fromTIs(env, match_tt, concrete_tt);
           hadAny = hadAny || ret.first;
           matchTypes.emplace_back(ret.second);
+        } else if ((*concrete_types)[i].bt() == Type::BT_TUPLE) {
+          // Found a $-type that is being instantiated by a tuple
+          assert(parType.bt() == Type::BT_TOP);
+          TupleType* concrete_tt = env.getTupleType((*concrete_types)[i].typeId());
+          TupleType* match_tt = concrete_tt;
+          if (parType.any()) {
+            std::vector<Type> inst_types(concrete_tt->size());
+            for (size_t j = 0; j < inst_types.size(); ++j) {
+              inst_types[j] = (*concrete_tt)[j];
+              inst_types[j].any(true);
+            }
+            match_tt = TupleType::a(inst_types);
+          }
+          auto ret = fromTIs(env, match_tt, concrete_tt);
+          hadAny = hadAny || ret.first;
+          matchTypes.emplace_back(ret.second);
+          if (parType.any()) {
+            TupleType::free(match_tt);
+          }
         } else if (parType.any()) {
           hadAny = true;
           // start any types at TG_PAR (go through variants using increment)
@@ -413,13 +478,13 @@ private:
           matchTypes.emplace_back(parType.isOpt() ? TG_VAROPT : TG_VAR);
         }
       }
-      assert(param_tuple->size() == matchTypes.size());
+      assert(match_types->size() == matchTypes.size());
       return {hadAny, ToGenerate(std::move(matchTypes))};
     }
     // returns generation template from function item. Template is added to toGenerate if condition
     // returns true
-    static bool anyVariants(ToGenerate& gen, ArrayLit* param_tuple,
-                            std::vector<ToGenerate>& toGenerate,
+    static bool anyVariants(EnvI& env, ToGenerate& gen, TupleType* match_types,
+                            TupleType* concrete_types, std::vector<ToGenerate>& toGenerate,
                             const std::function<bool(const ToGenerate&)>& condition) {
       // Generate all versions for each any type that match "condition" and add them to toGenerate
       do {
@@ -427,7 +492,7 @@ private:
         if (condition(gen)) {
           toGenerate.push_back(gen);
         }
-      } while (gen.increment(param_tuple));
+      } while (gen.increment(env, match_types, concrete_types));
       return true;
     }
   };
@@ -484,6 +549,11 @@ public:
             curType.ot(Type::OT_OPTIONAL);
             curType.ti(Type::TI_VAR);
             break;
+          case ToGenerate::TG_TUPLE:
+            // Real "any" types are set in recursive call
+            curType.ot(Type::OT_PRESENT);
+            curType.ti(Type::TI_PAR);
+            break;
           default:
             assert(false);
         }
@@ -494,6 +564,19 @@ public:
         if (concrete_type.typeId() == 0) {
           // replace tiid with empty domain
           ti->domain(nullptr);
+        } else if (concrete_type.bt() == Type::BT_TUPLE) {
+          TupleType* ctt = env.getTupleType(concrete_type.typeId());
+          // Create new TypeInst objects for tuple elements
+          std::vector<Expression*> tuple_tis(ctt->size());
+          for (int j = 0; j < ctt->size(); ++j)
+          {
+            Type cttj = (*ctt)[j];
+            cttj.any(true);
+            tuple_tis[j] = new TypeInst(ti->loc().introduce(), cttj);
+          }
+          ti->domain(new ArrayLit(ti->loc().introduce(), tuple_tis));
+          tupleWalkTIMap(env, ti_map, ti, ctt, (*tg.tup)[i]);
+          env.registerTupleType(ti, true);
         } else {
           auto enumId = concrete_type.typeId();
           if (concrete_type.dim() != 0) {
@@ -579,13 +662,18 @@ public:
 
       instanceId = _instanceCount++;
 
+      TupleType* concrete_tt = TupleType::a(lookup.second);
+      std::vector<TupleType*> match_tts(matches.size(), nullptr);
       std::vector<std::vector<ToGenerate>> toGenerate(
           matches.size(), std::vector<ToGenerate>(1, ToGenerate::TG_PAR));
       std::vector<bool> generateVariants(matches.size(), false);
       for (size_t i = 0; i < matches.size(); ++i) {
-        GCLock lock;
-        auto* paramtup = matches[i]->paramTypes()->domain()->cast<ArrayLit>();
-        auto pair = ToGenerate::fromTIs(paramtup);
+        std::vector<Type> match_types(matches[i]->paramCount());
+        for (int j = 0; j < match_types.size(); ++j) {
+          match_types[j] = matches[i]->param(j)->ti()->type();
+        }
+        match_tts[i] = TupleType::a(match_types);
+        auto pair = ToGenerate::fromTIs(_env, match_tts[i], concrete_tt);
         generateVariants[i] = pair.first;
         toGenerate[i][0] = std::move(pair.second);
       }
@@ -594,21 +682,27 @@ public:
       // duplicates that would be generated by "any" versions are not not generated)
       for (size_t i = 0; i < matches.size(); ++i) {
         if (generateVariants[i]) {
-          GCLock lock;
-          auto* paramtup = matches[i]->paramTypes()->domain()->cast<ArrayLit>();
           ToGenerate tg(std::move(toGenerate[i][0]));
           toGenerate[i].pop_back();
-          ToGenerate::anyVariants(tg, paramtup, toGenerate[i], [&](const ToGenerate& gen) {
-            for (const auto& tg : toGenerate) {
-              for (const auto& m : tg) {
-                if (m == gen) {
-                  return false;
-                }
-              }
-            }
-            return true;
-          });
+          ToGenerate::anyVariants(_env, tg, match_tts[i], concrete_tt, toGenerate[i],
+                                  [&](const ToGenerate& gen) {
+                                    for (const auto& tg : toGenerate) {
+                                      for (const auto& m : tg) {
+                                        if (m == gen) {
+                                          return false;
+                                        }
+                                      }
+                                    }
+                                    return true;
+                                  });
         }
+      }
+
+      TupleType::free(concrete_tt);
+      concrete_tt = nullptr;
+      for (size_t i = 0; i < matches.size(); ++i) {
+        TupleType::free(match_tts[i]);
+        match_tts[i] = nullptr;
       }
 
       std::ostringstream oss;

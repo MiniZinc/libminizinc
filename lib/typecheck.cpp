@@ -2623,37 +2623,41 @@ public:
     if (call->id() == _env.constants.ids.format || call->id() == _env.constants.ids.show ||
         call->id() == _env.constants.ids.showDzn || call->id() == _env.constants.ids.showJSON) {
       if (call->arg(call->argCount() - 1)->type().isPar()) {
-        unsigned int enumId = call->arg(call->argCount() - 1)->type().typeId();
-        if (enumId != 0U && call->arg(call->argCount() - 1)->type().dim() != 0) {
-          const std::vector<unsigned int>& enumIds = _env.getArrayEnum(enumId);
-          enumId = enumIds[enumIds.size() - 1];
+        unsigned int typeId = call->arg(call->argCount() - 1)->type().typeId();
+        if (typeId != 0U && call->arg(call->argCount() - 1)->type().dim() != 0) {
+          const std::vector<unsigned int>& typeIds = _env.getArrayEnum(typeId);
+          typeId = typeIds[typeIds.size() - 1];
         }
-        if (enumId > 0) {
-          VarDecl* enumDecl = _env.getEnum(enumId)->e();
-          if (enumDecl->e() != nullptr) {
-            Id* ti_id = _env.getEnum(enumId)->e()->id();
-            GCLock lock;
-            std::vector<Expression*> args(3);
-            args[0] = call->arg(call->argCount() - 1);
-            if (args[0]->type().dim() > 1) {
-              std::vector<Expression*> a1dargs(1);
-              a1dargs[0] = args[0];
-              Call* array1d = Call::a(Location().introduce(), ASTString("array1d"), a1dargs);
-              Type array1dt = args[0]->type();
-              array1dt.dim(1);
-              array1d->type(array1dt);
-              array1d->decl(_model->matchFn(_env, array1d, false, true));
-              args[0] = array1d;
+        if (typeId > 0) {
+          if (call->arg(call->argCount() - 1)->type().bt() == Type::BT_TUPLE) {
+            // TODO: replace 'show' functions with a concat call
+          } else {
+            VarDecl* enumDecl = _env.getEnum(typeId)->e();
+            if (enumDecl->e() != nullptr) {
+              Id* ti_id = _env.getEnum(typeId)->e()->id();
+              GCLock lock;
+              std::vector<Expression*> args(3);
+              args[0] = call->arg(call->argCount() - 1);
+              if (args[0]->type().dim() > 1) {
+                std::vector<Expression*> a1dargs(1);
+                a1dargs[0] = args[0];
+                Call* array1d = Call::a(Location().introduce(), ASTString("array1d"), a1dargs);
+                Type array1dt = args[0]->type();
+                array1dt.dim(1);
+                array1d->type(array1dt);
+                array1d->decl(_model->matchFn(_env, array1d, false, true));
+                args[0] = array1d;
+              }
+              args[1] = _env.constants.boollit(call->id() == _env.constants.ids.showDzn);
+              args[2] = _env.constants.boollit(call->id() == _env.constants.ids.showJSON);
+              ASTString enumName(create_enum_to_string_name(ti_id, "_toString_"));
+              call->id(enumName);
+              call->args(args);
+              if (call->id() == _env.constants.ids.showDzn) {
+                call->id(_env.constants.ids.show);
+              }
+              fi = _model->matchFn(_env, call, false, true);
             }
-            args[1] = _env.constants.boollit(call->id() == _env.constants.ids.showDzn);
-            args[2] = _env.constants.boollit(call->id() == _env.constants.ids.showJSON);
-            ASTString enumName(create_enum_to_string_name(ti_id, "_toString_"));
-            call->id(enumName);
-            call->args(args);
-            if (call->id() == _env.constants.ids.showDzn) {
-              call->id(_env.constants.ids.show);
-            }
-            fi = _model->matchFn(_env, call, false, true);
           }
         }
       }
