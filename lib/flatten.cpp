@@ -1552,7 +1552,7 @@ void populate_output(Env& env, bool encapsulateJSON) {
   auto* al = new ArrayLit(Location().introduce(), outputVars);
   al->type(Type::parstring(1));
   if (encapsulateJSON) {
-    auto* concat = Call::a(Location().introduce(), "concat", {al});
+    auto* concat = Call::a(Location().introduce(), envi.constants.ids.concat, {al});
     concat->type(Type::parstring());
     concat->decl(_flat->matchFn(envi, concat, false));
     auto* showJSON = Call::a(Location().introduce(), envi.constants.ids.showJSON, {concat});

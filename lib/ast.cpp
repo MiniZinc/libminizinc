@@ -1700,6 +1700,8 @@ Constants::Constants() {
   ids.enumOf = addString("enum_of");
   ids.enumOfInternal = addString("enum_of_internal");
 
+  ids.concat = addString("concat");
+  ids.join = addString("join");
   ids.show = addString("show");
   ids.format = addString("format");
   ids.showDzn = addString("showDzn");

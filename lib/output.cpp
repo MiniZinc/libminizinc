@@ -1197,72 +1197,197 @@ Expression* create_encapsulated_output(EnvI& e) {
 void create_tuple_output(EnvI& env, Expression* e, bool is_json,
                          std::vector<Expression*>& outputVars) {
   assert(e->type().bt() == Type::BT_TUPLE);
-  ArrayLit* al;
   if (auto* vd = e->dynamicCast<VarDecl>()) {
     if ((vd->flat() != nullptr) && (vd->flat()->e() != nullptr)) {
-      al = eval_array_lit(env, vd->flat()->e());
+      e = vd->flat()->e();
     } else if (vd->e() != nullptr) {
-      al = eval_array_lit(env, vd->e());
+      e = vd->e();
     }
-  } else {
-    al = eval_array_lit(env, e);
   }
 
   const ASTString showFn = is_json ? env.constants.ids.showJSON : env.constants.ids.showDzn;
 
+  unsigned int typeId = e->type().typeId();
+  if (e->type().dim() > 0) {
+    // Create new decl / id for comprehension.
+    const std::vector<unsigned int>& typeIds = env.getArrayEnum(typeId);
+    typeId = typeIds[typeIds.size() - 1];
+  }
+  TupleType* tt = env.getTupleType(typeId);
+
   if (e->type().dim() > 0) {
     outputVars.push_back(new StringLit(Location().introduce(), "["));
-    for (size_t i = 0; i < al->size(); ++i) {
-      auto* tup = follow_id((*al)[i])->cast<ArrayLit>();
-      outputVars.push_back(new StringLit(Location().introduce(), is_json ? "[" : "("));
-      for (size_t i = 0; i < tup->size(); ++i) {
-        if ((*tup)[i]->type().bt() == Type::BT_TUPLE) {
-          create_tuple_output(env, (*tup)[i], is_json, outputVars);
-        } else {
-          std::vector<Expression*> showArgs(1);
-          showArgs[0] = (*tup)[i];
-          Call* show = Call::a(Location().introduce(), showFn, showArgs);
-          show->type(Type::parstring());
-          FunctionI* fi = env.model->matchFn(env, show, false);
-          assert(fi);
-          show->decl(fi);
-          outputVars.push_back(show);
-        }
-        if (i < tup->size() - 1) {
-          outputVars.push_back(new StringLit(Location().introduce(), ", "));
-        }
-      }
-      if (!is_json && tup->size() == 1) {
-        outputVars.push_back(new StringLit(Location().introduce(), ","));
-      }
-      outputVars.push_back(new StringLit(Location().introduce(), is_json ? "]" : ")"));
-      if (i < al->size() - 1) {
-        outputVars.push_back(new StringLit(Location().introduce(), ", "));
+
+    Type type1d = e->type();
+    e = Call::a(e->loc().introduce(), "array1d", {e});
+    FunctionI* fi = env.model->matchFn(env, e->cast<Call>(), false);
+    assert(fi);
+    e->cast<Call>()->decl(fi);
+    type1d.dim(1);
+    e->type(type1d);
+
+    // Create generator for each dimension
+    auto* idx_ti = new TypeInst(Location().introduce(), Type::parint());
+    auto* idx_i = new VarDecl(Location().introduce(), idx_ti, env.genId());
+    idx_i->toplevel(false);
+    Call* index_set = Call::a(Location().introduce(), "index_set", {e});
+    index_set->type(Type::parsetint());
+    fi = env.model->matchFn(env, index_set, false);
+    assert(fi);
+    index_set->decl(fi);
+    Generator gen({idx_i}, index_set, nullptr);
+    std::vector<TypeInst*> ranges = {new TypeInst(e->loc(), Type(), index_set)};
+    ASTExprVec<TypeInst> ranges_v(ranges);
+
+    std::vector<Expression*> decls;
+    std::vector<Expression*> joinArgs(tt->size());
+    for (int i = 0; i < tt->size(); ++i) {
+      Type field_ty = (*tt)[i];
+      // Create a comprehension for an array with only the specific field
+      auto* aa = new ArrayAccess(e->loc().introduce(), e, {idx_i->id()});
+      Type aa_ty = e->type();
+      aa_ty.dim(0);
+      aa->type(aa_ty);
+      auto* fa = new FieldAccess(e->loc().introduce(), aa, IntLit::a(i + 1));
+      fa->type(field_ty);
+
+      if (field_ty.bt() == Type::BT_TUPLE) {
+        std::vector<Expression*> concatArgs;
+        create_tuple_output(env, fa, is_json, concatArgs);
+        concatArgs = {new ArrayLit(e->loc().introduce(), concatArgs)};
+        concatArgs[0]->type(Type::parstring(1));
+        auto* concat = Call::a(Location().introduce(), env.constants.ids.concat, concatArgs);
+        concat->type(Type::parstring());
+        fi = env.model->matchFn(env, concat, false);
+        assert(fi);
+        concat->decl(fi);
+        joinArgs[i] = concat;
+      } else {
+        Generators gens;
+        gens.g.push_back(gen);
+        auto* compr = new Comprehension(e->loc().introduce(), fa, gens, false);
+        Type compr_ty = field_ty;
+        compr_ty.dim(1);
+        compr->type(compr_ty);
+        decls.push_back(new VarDecl(e->loc().introduce(),
+                                    new TypeInst(e->loc().introduce(), compr_ty, ranges_v),
+                                    env.genId(), compr));
+        env.model->addItem(VarDeclI::a(e->loc().introduce(), decls.back()->cast<VarDecl>()));
+
+        // Create expression for the join call
+        auto* compr_aa = new ArrayAccess(e->loc().introduce(), decls.back()->cast<VarDecl>()->id(),
+                                         {idx_i->id()});
+        compr_aa->type(field_ty);
+        std::vector<Expression*> showArgs({compr_aa});
+        auto* show = Call::a(Location().introduce(), showFn, showArgs);
+        show->type(Type::parstring());
+        fi = env.model->matchFn(env, show, false);
+        assert(fi);
+        show->decl(fi);
+        joinArgs[i] = show;
       }
     }
+
+    // Create join call for the tuple fields
+    joinArgs = {new StringLit(Location().introduce(), ", "),
+                new ArrayLit(e->loc().introduce(), joinArgs)};
+    joinArgs[1]->type(Type::parstring(1));
+    auto* join = Call::a(Location().introduce(), env.constants.ids.join, joinArgs);
+    join->type(Type::parstring());
+    fi = env.model->matchFn(env, join, false);
+    assert(fi);
+    join->decl(fi);
+
+    // Create concatenation call for the surrounding brackets
+    std::vector<Expression*> concatArgs = {
+        new StringLit(Location().introduce(), is_json ? "[" : "("),
+        join,
+        new StringLit(Location().introduce(), is_json ? "]" : ")"),
+    };
+    concatArgs = {new ArrayLit(e->loc().introduce(), concatArgs)};
+    concatArgs[0]->type(Type::parstring(1));
+    auto* concat = Call::a(Location().introduce(), env.constants.ids.concat, concatArgs);
+    concat->type(Type::parstring());
+    fi = env.model->matchFn(env, concat, false);
+    assert(fi);
+    concat->decl(fi);
+
+    // Join concatenations using comma for the outer array
+    Generators gens;
+    gens.g.push_back(gen);
+    auto* concat_compr = new Comprehension(e->loc().introduce(), concat, gens, false);
+    concat_compr->type(Type::parstring(1));
+    joinArgs = {
+        new StringLit(Location().introduce(), ", "),
+        concat_compr,
+    };
+    join = Call::a(Location().introduce(), env.constants.ids.join, joinArgs);
+    join->type(Type::parstring());
+    fi = env.model->matchFn(env, join, false);
+    assert(fi);
+    join->decl(fi);
+
+    auto* let = new Let(e->loc().introduce(), decls, join);
+    let->type(Type::parstring());
+    outputVars.push_back(let);
+
     outputVars.push_back(new StringLit(Location().introduce(), "]"));
   } else {
-    outputVars.push_back(new StringLit(Location().introduce(), is_json ? "[" : "("));
-    for (size_t i = 0; i < al->size(); ++i) {
-      std::vector<Expression*> showArgs(1);
-      if ((*al)[i]->type().bt() == Type::BT_TUPLE) {
-        create_tuple_output(env, (*al)[i], is_json, outputVars);
+    std::vector<Expression*> decls;
+    std::vector<Expression*> fields(tt->size());
+    for (int i = 0; i < tt->size(); ++i) {
+      Type field_ty = (*tt)[i];
+      auto* fa = new FieldAccess(e->loc().introduce(), e, IntLit::a(i + 1));
+      fa->type(field_ty);
+      if (field_ty.bt() == Type::BT_TUPLE) {
+        fields[i] = fa;
       } else {
-        showArgs[0] = (*al)[i];
-        Call* show = Call::a(Location().introduce(), showFn, showArgs);
+        decls.push_back(new VarDecl(e->loc().introduce(),
+                                    new TypeInst(e->loc().introduce(), (*tt)[i]), env.genId(), fa));
+        fields[i] = decls.back()->cast<VarDecl>()->id();
+      }
+    }
+
+    outputVars.push_back(new StringLit(Location().introduce(), is_json ? "[" : "("));
+
+    // Create a call to 'join' for tuple fields
+    std::vector<Expression*> joinArgs(tt->size());
+    for (int i = 0; i < tt->size(); ++i) {
+      Type field_ty = (*tt)[i];
+      if (field_ty.bt() == Type::BT_TUPLE) {
+        std::vector<Expression*> concatArgs;
+        create_tuple_output(env, fields[i], is_json, concatArgs);
+        concatArgs = {new ArrayLit(e->loc().introduce(), concatArgs)};
+        concatArgs[0]->type(Type::parstring(1));
+        auto* concat = Call::a(Location().introduce(), env.constants.ids.concat, concatArgs);
+        concat->type(Type::parstring());
+        FunctionI* fi = env.model->matchFn(env, concat, false);
+        assert(fi);
+        concat->decl(fi);
+        joinArgs[i] = concat;
+      } else {
+        std::vector<Expression*> showArgs({fields[i]});
+        auto* show = Call::a(Location().introduce(), showFn, showArgs);
         show->type(Type::parstring());
         FunctionI* fi = env.model->matchFn(env, show, false);
         assert(fi);
         show->decl(fi);
-        outputVars.push_back(show);
-      }
-      if (i < al->size() - 1) {
-        outputVars.push_back(new StringLit(Location().introduce(), ", "));
+        joinArgs[i] = show;
       }
     }
-    if (!is_json && al->size() == 1) {
-      outputVars.push_back(new StringLit(Location().introduce(), ","));
-    }
+    joinArgs = {new StringLit(Location().introduce(), ", "),
+                new ArrayLit(e->loc().introduce(), joinArgs)};
+    joinArgs[1]->type(Type::parstring(1));
+    auto* join = Call::a(Location().introduce(), env.constants.ids.join, joinArgs);
+    join->type(Type::parstring());
+    FunctionI* fi = env.model->matchFn(env, join, false);
+    assert(fi);
+    join->decl(fi);
+
+    auto* let = new Let(e->loc().introduce(), decls, join);
+    let->type(Type::parstring());
+    outputVars.push_back(let);
+
     outputVars.push_back(new StringLit(Location().introduce(), is_json ? "]" : ")"));
   }
 }

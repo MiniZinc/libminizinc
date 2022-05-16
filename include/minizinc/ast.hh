@@ -2046,6 +2046,8 @@ public:
     ASTString enumOf;
     ASTString enumOfInternal;
 
+    ASTString concat;
+    ASTString join;
     ASTString show;
     ASTString format;
     ASTString showDzn;
