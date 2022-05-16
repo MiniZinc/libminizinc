@@ -568,11 +568,17 @@ public:
           TupleType* ctt = env.getTupleType(concrete_type.typeId());
           // Create new TypeInst objects for tuple elements
           std::vector<Expression*> tuple_tis(ctt->size());
-          for (int j = 0; j < ctt->size(); ++j)
-          {
+          bool all_var = true;
+          for (int j = 0; j < ctt->size(); ++j) {
             Type cttj = (*ctt)[j];
+            all_var = all_var && ((*(*tg.tup)[i].tup)[j] == ToGenerate::TG_VAR ||
+                                  (*(*tg.tup)[i].tup)[j] == ToGenerate::TG_VAROPT);
             cttj.any(true);
             tuple_tis[j] = new TypeInst(ti->loc().introduce(), cttj);
+          }
+          if (all_var) {
+            curType.ti(Type::TI_VAR);
+            ti->type(curType);
           }
           ti->domain(new ArrayLit(ti->loc().introduce(), tuple_tis));
           tupleWalkTIMap(env, ti_map, ti, ctt, (*tg.tup)[i]);
