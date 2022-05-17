@@ -165,7 +165,14 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
 
         ArrayLit* al = ArrayLit::constructTuple(Location().introduce(), elems);
         al->type(vd->type());
+
+        // Set tuple instantiation as RHS
         vd->e(al);
+
+        // Add reverse mapper
+        env.reverseMappers.insert(vd->id(), al);
+
+        // count flattened version and add to CSE
         env.voAddExp(vd);
         EE ee;
         ee.r = vd;

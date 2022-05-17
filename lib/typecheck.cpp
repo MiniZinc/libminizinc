@@ -2622,24 +2622,13 @@ public:
     // Replace par enums with their string versions
     if (call->id() == _env.constants.ids.format || call->id() == _env.constants.ids.show ||
         call->id() == _env.constants.ids.showDzn || call->id() == _env.constants.ids.showJSON) {
-      unsigned int typeId = call->arg(call->argCount() - 1)->type().typeId();
-      if (typeId != 0U && call->arg(call->argCount() - 1)->type().dim() != 0) {
-        const std::vector<unsigned int>& typeIds = _env.getArrayEnum(typeId);
-        typeId = typeIds[typeIds.size() - 1];
-      }
-      if (typeId > 0) {
-        if (call->arg(call->argCount() - 1)->type().bt() == Type::BT_TUPLE) {
-          GCLock lock;
-          args.clear();
-          create_tuple_output(_env, call->arg(call->argCount() - 1),
-                              call->id() == _env.constants.ids.showJSON, args);
-          auto* al = new ArrayLit(call->loc().introduce(), args);
-          al->type(Type::parstring(1));
-          args = {al};
-          call->id(_env.constants.ids.concat);
-          call->args(args);
-          fi = _model->matchFn(_env, call, false, true);
-        } else if (call->arg(call->argCount() - 1)->type().isPar()) {
+      if (call->arg(call->argCount() - 1)->type().isPar()) {
+        unsigned int typeId = call->arg(call->argCount() - 1)->type().typeId();
+        if (typeId != 0U && call->arg(call->argCount() - 1)->type().dim() != 0) {
+          const std::vector<unsigned int>& typeIds = _env.getArrayEnum(typeId);
+          typeId = typeIds[typeIds.size() - 1];
+        }
+        if (typeId > 0 && call->arg(call->argCount() - 1)->type().bt() == Type::BT_INT) {
           VarDecl* enumDecl = _env.getEnum(typeId)->e();
           if (enumDecl->e() != nullptr) {
             Id* ti_id = _env.getEnum(typeId)->e()->id();

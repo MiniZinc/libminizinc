@@ -2037,12 +2037,17 @@ Expression* eval_par(EnvI& env, Expression* e) {
       if (allFlat) {
         return al;
       }
-      std::vector<std::pair<int, int>> dims(al->dims());
-      for (unsigned int i = al->dims(); (i--) != 0U;) {
-        dims[i].first = al->min(i);
-        dims[i].second = al->max(i);
+      ArrayLit* ret = nullptr;
+      if (al->isTuple()) {
+        ret = ArrayLit::constructTuple(al->loc(), args);
+      } else {
+        std::vector<std::pair<int, int>> dims(al->dims());
+        for (unsigned int i = al->dims(); (i--) != 0U;) {
+          dims[i].first = al->min(i);
+          dims[i].second = al->max(i);
+        }
+        ret = new ArrayLit(al->loc(), args, dims);
       }
-      auto* ret = new ArrayLit(al->loc(), args, dims);
       Type t = al->type();
       if (t.isbot() && !ret->empty()) {
         t.bt((*ret)[0]->type().bt());

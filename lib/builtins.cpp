@@ -2093,14 +2093,14 @@ std::string show(EnvI& env, Expression* exp) {
     e = eval_array_lit(env, e);
   }
   if (auto* al = e->dynamicCast<ArrayLit>()) {
-    oss << "[";
+    oss << (al->isTuple() ? "(" : "[");
     for (unsigned int i = 0; i < al->size(); i++) {
       p.print((*al)[i]);
       if (i < al->size() - 1) {
         oss << ", ";
       }
     }
-    oss << "]";
+    oss << (al->isTuple() ? ")" : "]");
   } else {
     p.print(e);
   }
