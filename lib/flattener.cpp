@@ -590,7 +590,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           auto* checkString =
               new VarDecl(Location().introduce(), ti, ASTString("_mzn_solution_checker"),
                           new StringLit(Location().introduce(), smm_compressed));
-          auto* checkStringI = new VarDeclI(Location().introduce(), checkString);
+          auto* checkStringI = VarDeclI::a(Location().introduce(), checkString);
           env->output()->addItem(checkStringI);
 
           for (FunctionIterator it = smm->functions().begin(); it != smm->functions().end(); ++it) {
@@ -609,7 +609,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
               auto* checkStatsString =
                   new VarDecl(Location().introduce(), ti, ASTString("_mzn_stats_checker"),
                               new StringLit(Location().introduce(), smm_stats_compressed));
-              auto* checkStatsStringI = new VarDeclI(Location().introduce(), checkStatsString);
+              auto* checkStatsStringI = VarDeclI::a(Location().introduce(), checkStatsString);
               env->output()->addItem(checkStatsStringI);
             }
           }

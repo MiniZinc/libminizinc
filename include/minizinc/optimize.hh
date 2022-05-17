@@ -18,9 +18,9 @@ namespace MiniZinc {
 
 class VarOccurrences {
 public:
-  typedef std::unordered_set<Item*> Items;
-  IdMap<Items> itemMap;
-  IdMap<int> idx;
+  typedef std::vector<Item*> Items;
+  DenseIdMap<Items> itemMap;
+  DenseIdMap<int> idx;
 
   /// Add \a to the index
   void addIndex(VarDeclI* i, int idx_i);

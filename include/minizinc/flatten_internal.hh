@@ -179,11 +179,24 @@ public:
   CopyMap cmap;
   IdMap<KeepAlive> reverseMappers;
   struct WW {
-    WeakRef r;
-    WeakRef b;
-    WW(const WeakRef& r0, const WeakRef& b0) : r(r0), b(b0) {}
+    Expression* r;
+    Expression* b;
+    WW(Expression* r0, Expression* b0) : r(r0), b(b0) {}
   };
-  typedef KeepAliveMap<WW> CSEMap;
+  class CSEMap : public KeepAliveMap<WW> {
+  public:
+    void fixWeakRefs() override {
+      std::vector<Expression*> toRemove;
+      for (auto& it : _m) {
+        if (!Expression::hasMark(it.second.r) || !Expression::hasMark(it.second.b)) {
+          toRemove.push_back(it.first);
+        }
+      }
+      for (auto* e : toRemove) {
+        _m.erase(e);
+      }
+    }
+  };
   bool ignorePartial;
   bool ignoreUnknownIds;
   struct CallStackEntry {

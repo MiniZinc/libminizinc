@@ -74,7 +74,7 @@ protected:
   KeepAlive* _roots;
   WeakRef* _weakRefs;
   ASTNodeWeakMap* _nodeWeakMaps;
-  static const int _max_fl = 5;
+  static const int _max_fl = 9;
   FreeListNode* _fl[_max_fl + 1];
   static const size_t _fl_size[_max_fl + 1];
   static int freelistSlot(size_t _size) {
@@ -124,7 +124,7 @@ protected:
   }
 
   /// Default size of pages to allocate
-  static const size_t pageSize = 1 << 20;
+  static const size_t pageSize = 1 << 22;
 
   HeapPage* allocPage(size_t s, bool exact = false) {
     if (!exact) {
@@ -166,7 +166,7 @@ protected:
   }
 
   void* alloc(size_t size, bool exact = false) {
-    assert(size <= 80 || exact);
+    assert(size <= _fl_size[_max_fl] || exact);
     /// Align to word boundary
     size += ((8 - (size & 7)) & 7);
     HeapPage* p = _page;
@@ -270,7 +270,6 @@ protected:
         sizeof(TypeInst),       // E_TI
         sizeof(TIId),           // E_TIID
         sizeof(IncludeI),       // II_INC
-        sizeof(VarDeclI),       // II_VD
         sizeof(AssignI),        // II_ASN
         sizeof(ConstraintI),    // II_CON
         sizeof(SolveI),         // II_SOL
@@ -348,7 +347,6 @@ const char* GC::Heap::_nodeid[] = {
     "TypeInst      ",  // E_TI
     "TIId          ",  // E_TIID
     "IncludeI      ",  // II_INC
-    "VarDeclI      ",  // II_VD
     "AssignI       ",  // II_ASN
     "ConstraintI   ",  // II_CON
     "SolveI        ",  // II_SOL
@@ -383,6 +381,8 @@ const size_t GC::Heap::_fl_size[GC::Heap::_max_fl + 1] = {
     sizeof(Item) + 1 * sizeof(void*), sizeof(Item) + 2 * sizeof(void*),
     sizeof(Item) + 3 * sizeof(void*), sizeof(Item) + 4 * sizeof(void*),
     sizeof(Item) + 5 * sizeof(void*), sizeof(Item) + 6 * sizeof(void*),
+    sizeof(Item) + 7 * sizeof(void*), sizeof(Item) + 8 * sizeof(void*),
+    sizeof(Item) + 9 * sizeof(void*), sizeof(Item) + 10 * sizeof(void*),
 };
 
 GC::GC() : _heap(new Heap()), _lockCount(0) {}
@@ -417,7 +417,8 @@ void GC::remove(GCMarker* m) {
 void* GC::alloc(size_t size) {
   assert(locked());
   void* ret;
-  if (size < GC::Heap::_fl_size[0] || size > GC::Heap::_fl_size[GC::Heap::_max_fl]) {
+  size_t maxSize = GC::Heap::_fl_size[GC::Heap::_max_fl];
+  if (size < GC::Heap::_fl_size[0] || size > maxSize) {
     ret = _heap->alloc(size, true);
   } else {
     ret = _heap->fl(size);
@@ -457,23 +458,26 @@ void GC::Heap::mark() {
     Expression::mark(_trail[i].v);
   }
 
-  bool fixPrev = false;
+  m = _rootset;
+  do {
+    m->fixWeakRefs();
+    m = m->_rootsNext;
+  } while (m != _rootset);
+
   WeakRef* prevWr = nullptr;
   for (WeakRef* wr = _weakRefs; wr != nullptr; wr = wr->next()) {
-    if (fixPrev) {
-      fixPrev = false;
+    if (prevWr != nullptr) {
       removeWeakRef(prevWr);
       prevWr->_n = nullptr;
       prevWr->_p = nullptr;
+      prevWr = nullptr;
     }
     if (((*wr)() != nullptr) && (*wr)()->_gcMark == 0U) {
       wr->_e = nullptr;
-      wr->_valid = false;
-      fixPrev = true;
       prevWr = wr;
     }
   }
-  if (fixPrev) {
+  if (prevWr != nullptr) {
     removeWeakRef(prevWr);
     prevWr->_n = nullptr;
     prevWr->_p = nullptr;
@@ -503,6 +507,8 @@ void GC::Heap::sweep() {
 #endif
   HeapPage* p = _page;
   HeapPage* prev = nullptr;
+  std::vector<VarDecl*> fixVDGCMarks;
+  fixVDGCMarks.reserve(1000);
   while (p != nullptr) {
     size_t off = 0;
     bool wholepage = true;
@@ -538,6 +544,7 @@ void GC::Heap::sweep() {
             break;
           case Expression::E_VARDECL:
             // Reset WeakRef inside VarDecl
+            n->_vdGcMark = 0U;
             static_cast<VarDecl*>(n)->flat(nullptr);
             // fall through
           default:
@@ -559,6 +566,14 @@ void GC::Heap::sweep() {
         wholepage = false;
         if (n->_id != static_cast<unsigned int>(ASTNode::NID_FL)) {
           n->_gcMark = 0;
+          if (n->_id == static_cast<unsigned int>(Expression::E_VARDECL)) {
+            auto* vd = static_cast<VarDecl*>(n);
+            if (vd->flat() != nullptr && vd->flat()->_vdGcMark == 0U) {
+              // the flat version has become garbage
+              vd->flat(nullptr);
+            }
+            fixVDGCMarks.push_back(vd);
+          }
         }
       }
       off += ns;
@@ -595,6 +610,9 @@ void GC::Heap::sweep() {
       prev = p;
       p = p->next;
     }
+  }
+  for (auto* vd : fixVDGCMarks) {
+    vd->_vdGcMark = 0U;
   }
 #if defined(MINIZINC_GC_STATS)
   for (auto stat : gc_stats) {
@@ -755,8 +773,8 @@ void GC::removeNodeWeakMap(ASTNodeWeakMap* m) {
   }
 }
 
-WeakRef::WeakRef(Expression* e) : _e(e), _p(nullptr), _n(nullptr), _valid(true) {
-  if ((_e != nullptr) && !_e->isUnboxedVal()) {
+WeakRef::WeakRef(Expression* e) : _e(e), _p(nullptr), _n(nullptr) {
+  if (_e != nullptr && !_e->isUnboxedVal()) {
     GC::gc()->addWeakRef(this);
   }
 }
@@ -765,8 +783,8 @@ WeakRef::~WeakRef() {
     GC::gc()->removeWeakRef(this);
   }
 }
-WeakRef::WeakRef(const WeakRef& e) : _e(e()), _p(nullptr), _n(nullptr), _valid(true) {
-  if ((_e != nullptr) && !_e->isUnboxedVal()) {
+WeakRef::WeakRef(const WeakRef& e) : _e(e()), _p(nullptr), _n(nullptr) {
+  if (_e != nullptr && !_e->isUnboxedVal()) {
     GC::gc()->addWeakRef(this);
   }
 }
@@ -783,7 +801,6 @@ WeakRef& WeakRef::operator=(const WeakRef& e) {
       }
     }
     _e = e();
-    _valid = true;
 
     // If this WeakRef was not active but now should be, add it
     if (!isActive && _e != nullptr && !_e->isUnboxedVal()) {
@@ -791,6 +808,11 @@ WeakRef& WeakRef::operator=(const WeakRef& e) {
     }
   }
   return *this;
+}
+
+Expression* WeakRef::operator()() { return _e->isUnboxedVal() ? _e : _p != nullptr ? _e : nullptr; }
+Expression* WeakRef::operator()() const {
+  return _e->isUnboxedVal() ? _e : _p != nullptr ? _e : nullptr;
 }
 
 ASTNodeWeakMap::ASTNodeWeakMap() : _p(nullptr), _n(nullptr) { GC::gc()->addNodeWeakMap(this); }

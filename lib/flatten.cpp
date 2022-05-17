@@ -489,8 +489,7 @@ StringLit* get_longest_mzn_path_annotation(EnvI& env, const Expression* e) {
 
   if (const auto* vd = e->dynamicCast<const VarDecl>()) {
     VarPathStore::ReversePathMap& reversePathMap = env.varPathStore.getReversePathMap();
-    KeepAlive vd_decl_ka(vd->id()->decl());
-    auto it = reversePathMap.find(vd_decl_ka);
+    auto it = reversePathMap.find(vd->id()->decl());
     if (it != reversePathMap.end()) {
       sl = new StringLit(Location(), it->second);
     }
@@ -525,8 +524,7 @@ void add_path_annotation(EnvI& env, Expression* e) {
 
     std::vector<Expression*> path_args(1);
     std::string p;
-    KeepAlive e_ka(e);
-    auto it = reversePathMap.find(e_ka);
+    auto it = reversePathMap.find(e);
     if (it == reversePathMap.end()) {
       p = get_path(env);
     } else {
@@ -628,16 +626,14 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
           // Check whether ovd was unified in a previous pass
           if (ovd->id() != ovd->id()->decl()->id()) {
             // We may not have seen the pointed to decl just yet
-            KeepAlive ovd_decl_ka(ovd->id()->decl());
-            auto path2It = reversePathMap.find(ovd_decl_ka);
+            auto path2It = reversePathMap.find(ovd->id()->decl());
             if (path2It != reversePathMap.end()) {
               std::string path2 = path2It->second;
               VarPathStore::PathVar vd_tup{vd, env.multiPassInfo.currentPassNumber};
 
               pathMap[path] = vd_tup;
               pathMap[path2] = vd_tup;
-              KeepAlive vd_ka(vd);
-              reversePathMap.insert(vd_ka, path);
+              reversePathMap.insert(vd, path);
             }
           }
         }
@@ -647,8 +643,7 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
         hasBeenAdded = false;
         VarPathStore::PathVar vd_tup{vd, env.multiPassInfo.currentPassNumber};
         pathMap[path] = vd_tup;
-        KeepAlive vd_ka(vd);
-        reversePathMap.insert(vd_ka, path);
+        reversePathMap.insert(vd, path);
       }
     }
   }
@@ -692,10 +687,8 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
       env.flatAddItem(new ConstraintI(Location().introduce(), revmap));
     }
 
-    vdi = new VarDeclI(Location().introduce(), vd);
+    vdi = VarDeclI::a(Location().introduce(), vd);
     env.flatAddItem(vdi);
-    EE ee(vd, nullptr);
-    env.cseMapInsert(vd->id(), ee);
   }
 
   // Copy annotations from origVd
@@ -828,42 +821,36 @@ void EnvI::cseMapInsert(Expression* e, const EE& ee) {
     return;
   }
 
-  KeepAlive ka(e);
-  _cseMap.insert(ka, WW(ee.r(), ee.b()));
+  _cseMap.insert(e, WW(ee.r(), ee.b()));
   if ((c != nullptr) && c->id() == constants.ids.bool_.not_ && c->arg(0)->isa<Id>() &&
       ee.r()->isa<Id>() && ee.b() == constants.literalTrue) {
     Call* neg_c = Call::a(Location().introduce(), c->id(), {ee.r()});
     neg_c->type(c->type());
     neg_c->decl(c->decl());
-    KeepAlive neg_ka(neg_c);
-    _cseMap.insert(neg_ka, WW(c->arg(0), ee.b()));
+    _cseMap.insert(neg_c, WW(c->arg(0), ee.b()));
   }
 }
 EnvI::CSEMap::iterator EnvI::cseMapFind(Expression* e) {
-  KeepAlive ka(e);
-  auto it = _cseMap.find(ka);
+  auto it = _cseMap.find(e);
   if (it != _cseMap.end()) {
-    if (it->second.r() != nullptr) {
-      VarDecl* it_vd = it->second.r()->isa<Id>() ? it->second.r()->cast<Id>()->decl()
-                                                 : it->second.r()->dynamicCast<VarDecl>();
+    if (it->second.r != nullptr) {
+      VarDecl* it_vd = it->second.r->isa<Id>() ? it->second.r->cast<Id>()->decl()
+                                               : it->second.r->dynamicCast<VarDecl>();
       if (it_vd != nullptr) {
         int idx = varOccurrences.find(it_vd);
         if (idx == -1 || (*_flat)[idx]->removed()) {
-          _cseMap.remove(ka);
+          _cseMap.remove(e);
           return _cseMap.end();
         }
       }
     } else {
-      _cseMap.remove(ka);
+      _cseMap.remove(e);
       return _cseMap.end();
     }
   }
   return it;
 }
-void EnvI::cseMapRemove(Expression* e) {
-  KeepAlive ka(e);
-  _cseMap.remove(ka);
-}
+void EnvI::cseMapRemove(Expression* e) { _cseMap.remove(e); }
 EnvI::CSEMap::iterator EnvI::cseMapEnd() { return _cseMap.end(); }
 void EnvI::dump() {
   struct EED {
@@ -874,7 +861,7 @@ void EnvI::dump() {
     }
     static std::string d(const WW& ee) {
       std::ostringstream oss;
-      oss << *ee.r() << " " << ee.b();
+      oss << *ee.r << " " << ee.b;
       return oss.str();
     }
   };
@@ -1026,8 +1013,8 @@ void EnvI::flatRemoveExpr(Expression* e, Item* i) {
     assert(varOccurrences.occurrences(cur) == 0 && CollectDecls::varIsFree(cur));
 
     auto cur_idx = varOccurrences.idx.find(cur->id());
-    if (cur_idx != varOccurrences.idx.end()) {
-      auto* vdi = flat[cur_idx->second]->cast<VarDeclI>();
+    if (cur_idx.first) {
+      auto* vdi = flat[*cur_idx.second]->cast<VarDeclI>();
 
       if (!is_output(vdi->e()) && !vdi->removed()) {
         CollectDecls cd(*this, varOccurrences, toRemove, vdi);
@@ -1484,7 +1471,7 @@ void populate_output(Env& env, bool encapsulateJSON) {
           vd_output->type(t);
           vd_output->ti(new TypeInst(Location().introduce(), vd_t, ranges));
         }
-        _output->addItem(new VarDeclI(Location().introduce(), vd_output));
+        _output->addItem(VarDeclI::a(Location().introduce(), vd_output));
 
         auto* sl = new StringLit(Location().introduce(), s.str());
         outputVars.push_back(sl);
@@ -1918,7 +1905,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
 
         auto it = env.cseMapFind(al);
         if (it != env.cseMapEnd()) {
-          return it->second.r()->cast<VarDecl>()->id();
+          return it->second.r->cast<VarDecl>()->id();
         }
 
         std::vector<TypeInst*> ranges(al->dims());
@@ -1955,7 +1942,9 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
         VarDecl* nvd = new_vardecl(env, ctx, ti, nullptr, nullptr, al);
         EE ee(nvd, nullptr);
         env.cseMapInsert(al, ee);
-        env.cseMapInsert(nvd->e(), ee);
+        if (al != nvd->e()) {
+          env.cseMapInsert(nvd->e(), ee);
+        }
         return nvd->id();
       }
       case Expression::E_CALL: {
@@ -2887,8 +2876,8 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
               ee = flat_exp(env, ctx, nc, nullptr, ctx.partialityVar(env));
               env.cseMapInsert(nc, ee);
             } else {
-              ee.r = it->second.r();
-              ee.b = it->second.b();
+              ee.r = it->second.r;
+              ee.b = it->second.b;
             }
           } else {
             ee = flat_exp(env, ctx, nc, nullptr, ctx.partialityVar(env));
@@ -3236,9 +3225,9 @@ void flatten(Env& e, FlatteningOptions opt) {
           if (!is_output(vdi->e())) {
             if (0 < env.varOccurrences.occurrences(vdi->e())) {
               const auto it = env.varOccurrences.itemMap.find(vdi->e()->id());
-              if (env.varOccurrences.itemMap.end() != it) {
+              if (it.first) {
                 bool hasRedundantOccurrenciesOnly = true;
-                for (const auto& c : it->second) {
+                for (const auto& c : *it.second) {
                   if (auto* constrI = c->dynamicCast<ConstraintI>()) {
                     if (auto* call = constrI->e()->dynamicCast<Call>()) {
                       if (call->id() == env.constants.ids.mzn_reverse_map_var) {
@@ -3252,7 +3241,7 @@ void flatten(Env& e, FlatteningOptions opt) {
                 if (hasRedundantOccurrenciesOnly) {
                   env.flatRemoveItem(vdi);
                   env.varOccurrences.removeAllOccurrences(vdi->e());
-                  for (const auto& c : it->second) {
+                  for (const auto& c : *it.second) {
                     c->remove();
                   }
                   continue;
@@ -3705,9 +3694,9 @@ void flatten(Env& e, FlatteningOptions opt) {
                   toRemove.pop_back();
                   if (env.varOccurrences.occurrences(cur) == 0 && CollectDecls::varIsFree(cur)) {
                     auto cur_idx = env.varOccurrences.idx.find(cur->id());
-                    if (cur_idx != env.varOccurrences.idx.end()) {
-                      auto* vdi = m[cur_idx->second]->cast<VarDeclI>();
-                      if (!is_output(cur) && !m[cur_idx->second]->removed()) {
+                    if (cur_idx.first) {
+                      auto* vdi = m[*cur_idx.second]->cast<VarDeclI>();
+                      if (!is_output(cur) && !m[*cur_idx.second]->removed()) {
                         CollectDecls cd(env, env.varOccurrences, toRemove, vdi);
                         top_down(cd, vdi->e()->e());
                         vdi->remove();
@@ -4397,7 +4386,7 @@ void oldflatzinc(Env& e) {
         auto* ti = new TypeInst(Location().introduce(), si->e()->type(), nullptr);
         auto* constantobj = new VarDecl(Location().introduce(), ti, e.envi().genId(), si->e());
         si->e(constantobj->id());
-        e.envi().flatAddItem(new VarDeclI(Location().introduce(), constantobj));
+        e.envi().flatAddItem(VarDeclI::a(Location().introduce(), constantobj));
       }
     }
   }
@@ -4502,15 +4491,13 @@ void oldflatzinc(Env& e) {
   e.envi().output->compact();
 
   for (auto& it : env.varOccurrences.itemMap) {
-    std::vector<Item*> toRemove;
-    for (auto* iit : it.second) {
-      if (iit->removed()) {
-        toRemove.push_back(iit);
+    std::vector<Item*> keptItems;
+    for (auto* iit : it) {
+      if (!iit->removed()) {
+        keptItems.push_back(iit);
       }
     }
-    for (auto& i : toRemove) {
-      it.second.erase(i);
-    }
+    it = keptItems;
   }
 
   class Cmp {

@@ -1780,7 +1780,7 @@ private:
       auto* ti = new TypeInst(Location().introduce(), Type::varint(), newDom);
       auto* newVar = new VarDecl(Location().introduce(), ti, mipd.getEnv()->envi().genId());
       newVar->flat(newVar);
-      mipd.getEnv()->envi().flatAddItem(new VarDeclI(Location().introduce(), newVar));
+      mipd.getEnv()->envi().flatAddItem(VarDeclI::a(Location().introduce(), newVar));
       return newVar;
     }
 

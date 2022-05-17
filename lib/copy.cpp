@@ -451,10 +451,8 @@ Item* copy(EnvI& env, CopyMap& m, Item* i, bool followIds, bool copyFundecls, bo
     }
     case Item::II_VD: {
       auto* v = i->cast<VarDeclI>();
-      auto* c = new VarDeclI(copy_location(m, i), nullptr);
-      m.insert(i, c);
-      c->e(static_cast<VarDecl*>(copy(env, m, v->e(), followIds, copyFundecls, isFlatModel)));
-      return c;
+      auto* vc = static_cast<VarDecl*>(copy(env, m, v->e(), followIds, copyFundecls, isFlatModel));
+      return VarDeclI::a(Location(), vc);
     }
     case Item::II_ASN: {
       auto* a = i->cast<AssignI>();

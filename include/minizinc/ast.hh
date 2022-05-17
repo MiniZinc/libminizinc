@@ -276,10 +276,10 @@ class Expression : public ASTNode {
 protected:
   /// The %MiniZinc type of the expression
   Type _type;
-  /// The annotations
-  Annotation _ann;
   /// The location of the expression
   Location _loc;
+  /// The annotations
+  Annotation _ann;
   /// The hash value of the expression
   size_t _hash;
 
@@ -509,6 +509,8 @@ public:
 
   /// Mark \a e as alive for garbage collection
   static void mark(Expression* e);
+  /// Check if \e is marked as alive for garbage collection
+  static bool hasMark(Expression* e);
 };
 
 inline bool Expression::isUnboxedVal() const {
@@ -1170,6 +1172,56 @@ public:
   UnOpType op() const;
 };
 
+class ExpressionContainerIterator
+    : public std::iterator<std::random_access_iterator_tag, Expression*> {
+private:
+  Expression* const* _e;
+
+public:
+  ExpressionContainerIterator(Expression* const* e) : _e(e) {}
+
+  typedef Expression* const* pointer;
+  typedef Expression* const& reference;
+
+  typedef typename std::iterator<std::random_access_iterator_tag, Expression*>::difference_type
+      difference_type;
+
+  reference operator*() const { return *_e; }
+  pointer operator->() const { return &*_e; }
+  ExpressionContainerIterator& operator++() {
+    ++_e;
+    return *this;
+  }
+  ExpressionContainerIterator& operator--() {
+    --_e;
+    return *this;
+  }
+  ExpressionContainerIterator operator++(int) { return ExpressionContainerIterator(_e++); }
+  ExpressionContainerIterator operator--(int) { return ExpressionContainerIterator(_e--); }
+  ExpressionContainerIterator operator+(const difference_type& n) const {
+    return ExpressionContainerIterator(_e + n);
+  }
+  ExpressionContainerIterator& operator+=(const difference_type& n) {
+    _e += n;
+    return *this;
+  }
+  ExpressionContainerIterator operator-(const difference_type& n) const {
+    return ExpressionContainerIterator(_e - n);
+  }
+  ExpressionContainerIterator& operator-=(const difference_type& n) {
+    _e -= n;
+    return *this;
+  }
+  reference operator[](const difference_type& n) const { return *(_e + n); }
+  bool operator==(const ExpressionContainerIterator& it) const { return _e == it._e; }
+  bool operator!=(const ExpressionContainerIterator& it) const { return !(*this == it); }
+  bool operator<(const ExpressionContainerIterator& it) const { return _e < it._e; }
+  bool operator>(const ExpressionContainerIterator& it) const { return _e > it._e; }
+  bool operator<=(const ExpressionContainerIterator& it) const { return _e <= it._e; }
+  bool operator>=(const ExpressionContainerIterator& it) const { return _e >= it._e; }
+  difference_type operator-(const ExpressionContainerIterator& it) const { return _e - it._e; }
+};
+
 /// \brief A predicate or function call expression
 class Call : public Expression {
   friend class Expression;
@@ -1186,6 +1238,25 @@ public:
     CK_NARY_2,  // BINARY morphed into NARY
     CK_NARY_3,  // TERNARY morphed into NARY
     CK_NARY_4   // QUATERNARY morphed into NARY
+  };
+
+  class CallArgs {
+  private:
+    Expression* const* _begin;
+    Expression* const* _end;
+
+  public:
+    typedef ExpressionContainerIterator iterator;
+    typedef ExpressionContainerIterator const_iterator;
+
+    CallArgs(const Call* c);
+
+    iterator begin() { return ExpressionContainerIterator(_begin); }
+    const_iterator begin() const { return ExpressionContainerIterator(_begin); }
+    const_iterator cbegin() const { return ExpressionContainerIterator(_begin); }
+    iterator end() { return ExpressionContainerIterator(_end); }
+    const_iterator end() const { return ExpressionContainerIterator(_end); }
+    const_iterator cend() const { return ExpressionContainerIterator(_end); }
   };
 
 protected:
@@ -1225,6 +1296,8 @@ public:
   void decl(FunctionI* f);
   /// Recompute hash value
   void rehash();
+
+  CallArgs args() const { return CallArgs(this); }
 };
 
 class Call0 : public Call {
@@ -1285,7 +1358,7 @@ protected:
   /// Initialisation expression (can be NULL)
   Expression* _e;
   /// Flattened version of the VarDecl
-  WeakRef _flat;
+  VarDecl* _flat;
   /// Integer payload
   int _payload;
 
@@ -1312,7 +1385,7 @@ public:
   /// Set initialisation expression
   void e(Expression* rhs);
   /// Access flattened version
-  VarDecl* flat() { return _flat() != nullptr ? _flat()->cast<VarDecl>() : nullptr; }
+  VarDecl* flat() { return _flat; }
   /// Set flattened version
   void flat(VarDecl* vd);
 
@@ -1434,6 +1507,8 @@ public:
  * \brief Base-class for items
  */
 class Item : public ASTNode {
+private:
+  Type _tUnused;  // required to enforce same layout as Expression
 protected:
   /// Location of the item
   Location _loc;
@@ -1441,8 +1516,8 @@ protected:
 public:
   /// Identifier of the concrete item type
   enum ItemId {
+    II_VD = Expression::E_VARDECL,
     II_INC = Expression::EID_END + 1,
-    II_VD,
     II_ASN,
     II_CON,
     II_SOL,
@@ -1554,18 +1629,19 @@ public:
 /// \brief Variable declaration item
 class VarDeclI : public Item {
 protected:
-  /// The declaration expression
-  VarDecl* _e;
+  VarDeclI() = delete;
+  VarDeclI(const VarDeclI&) = delete;
+  VarDeclI& operator=(const VarDeclI&) = delete;
 
 public:
   /// The identifier of this item type
   static const ItemId iid = II_VD;
   /// Constructor
-  VarDeclI(const Location& loc, VarDecl* e);
+  static VarDeclI* a(const Location& loc, VarDecl* e);
   /// Access expression
-  VarDecl* e() const { return _e; }
-  /// Set expression
-  void e(VarDecl* vd) { _e = vd; }
+  VarDecl* e() { return reinterpret_cast<VarDecl*>(this); }
+  /// Access expression
+  const VarDecl* e() const { return reinterpret_cast<const VarDecl*>(this); }
   /// Flag used during compilation
   bool flag() const { return _flag2; }
   /// Set flag used during compilation

@@ -238,6 +238,7 @@ void Expression::mark(Expression* e) {
           }
           break;
         case Expression::E_VARDECL:
+          cur->_vdGcMark = 1U;
           pushstack(cur->cast<VarDecl>()->ti());
           pushstack(cur->cast<VarDecl>()->e());
           pushstack(cur->cast<VarDecl>()->id());
@@ -260,6 +261,10 @@ void Expression::mark(Expression* e) {
 }
 #undef pushstack
 #undef pushall
+
+bool Expression::hasMark(Expression* e) {
+  return e != nullptr && !e->isUnboxedVal() && e->_gcMark != 0U;
+}
 
 void IntLit::rehash() {
   initHash();
@@ -1263,6 +1268,7 @@ void Item::mark(Item* item) {
       item->cast<IncludeI>()->f().mark();
       break;
     case Item::II_VD:
+      item->_gcMark = 0;  // need to reset so that Expression::mark works
       Expression::mark(item->cast<VarDeclI>()->e());
 #if defined(MINIZINC_GC_STATS)
       GC::stats()[item->cast<VarDeclI>()->e()->Expression::eid()].inmodel++;

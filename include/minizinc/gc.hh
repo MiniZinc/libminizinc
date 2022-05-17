@@ -46,6 +46,8 @@ class ASTNode {
 protected:
   /// Mark for garbage collection
   mutable unsigned int _gcMark : 1;
+  /// Mark for garbage collection of VarDecls
+  mutable unsigned int _vdGcMark : 1;
   /// Id of the node
   unsigned int _id : 7;
   /// Secondary id
@@ -58,7 +60,7 @@ protected:
   enum BaseNodes { NID_FL, NID_CHUNK, NID_VEC, NID_STR, NID_END = NID_STR };
 
   /// Constructor
-  ASTNode(unsigned int id) : _gcMark(0), _id(id) {}
+  ASTNode(unsigned int id) : _gcMark(0), _vdGcMark(0), _id(id) {}
 
 public:
   /// Allocate node
@@ -231,15 +233,14 @@ private:
   Expression* _e;
   WeakRef* _p;
   WeakRef* _n;
-  bool _valid;
 
 public:
   WeakRef(Expression* e = nullptr);
   ~WeakRef();
   WeakRef(const WeakRef& e);
   WeakRef& operator=(const WeakRef& e);
-  Expression* operator()() { return _valid ? _e : nullptr; }
-  Expression* operator()() const { return _valid ? _e : nullptr; }
+  Expression* operator()();
+  Expression* operator()() const;
   WeakRef* next() const { return _n; }
 };
 
@@ -281,9 +282,13 @@ protected:
   /// Mark garbage collected objects that
   virtual void mark() = 0;
 
+  virtual void fixWeakRefs() {}
+
 public:
   GCMarker() { GC::add(this); }
   GCMarker(const GCMarker& marker) { GC::add(this); }
+  // NOLINTNEXTLINE(bugprone-unhandled-self-assignment)
+  GCMarker& operator=(const GCMarker& marker) { return *this; }
   virtual ~GCMarker() { GC::remove(this); }
 };
 

@@ -257,7 +257,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
         }
         Call* toEnum = Call::a(sl->v()[i]->loc(), ASTString("to_enum"), toEnumArgs);
         auto* vd_id = new VarDecl(ti_id->loc(), ti_id, sl->v()[i]->cast<Id>()->str(), toEnum);
-        auto* vdi_id = new VarDeclI(vd_id->loc(), vd_id);
+        auto* vdi_id = VarDeclI::a(vd_id->loc(), vd_id);
         std::string str(sl->v()[i]->cast<Id>()->str().c_str());
         env.reverseEnum[str] = vdi_id;
         enumItems->addItem(vdi_id);
@@ -283,7 +283,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
       auto* ti = new TypeInst(Location().introduce(), Type::parstring(1));
       ti->setRanges(ranges);
       auto* vd_enumToString = new VarDecl(Location().introduce(), ti, name, al);
-      enumItems->addItem(new VarDeclI(Location().introduce(), vd_enumToString));
+      enumItems->addItem(VarDeclI::a(Location().introduce(), vd_enumToString));
 
       Type tx = Type::parint();
       tx.ot(Type::OT_OPTIONAL);
@@ -454,7 +454,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
               new VarDecl(Location().introduce(),
                           new TypeInst(Location().introduce(), Type::parsetint(), nullptr),
                           constructorArgIdent.str(), c->arg(0));
-          enumItems->addItem(new VarDeclI(Location().introduce(), constructorArgVd));
+          enumItems->addItem(VarDeclI::a(Location().introduce(), constructorArgVd));
           constructorArgId = constructorArgVd->id();
         }
 
@@ -488,7 +488,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           auto* constructorArgMinVd = new VarDecl(
               Location().introduce(), new TypeInst(Location().introduce(), Type::parint(), nullptr),
               constructorArgMinIdent.str(), minMinusOne);
-          enumItems->addItem(new VarDeclI(Location().introduce(), constructorArgMinVd));
+          enumItems->addItem(VarDeclI::a(Location().introduce(), constructorArgMinVd));
           constructorArgMin = constructorArgMinVd->id();
         }
 
@@ -1228,12 +1228,6 @@ VarDecl* TopoSorter::checkId(EnvI& env, Id* ident, const Location& loc) {
     }
   }
   return decl;
-}
-
-VarDecl* TopoSorter::checkId(EnvI& env, const ASTString& id_v, const Location& loc) {
-  GCLock lock;
-  Id* id = new Id(loc, id_v, nullptr);
-  return checkId(env, id, loc);
 }
 
 void TopoSorter::run(EnvI& env, Expression* e) {
@@ -2984,7 +2978,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
             auto* vd = new VarDecl(Location().introduce(), ti, i->id());
             vd->ann().add(Call::a(Location().introduce(),
                                   env.constants.ann.mzn_add_annotated_expression, {IntLit::a(0)}));
-            toAdd.addItem(new VarDeclI(Location().introduce(), vd));
+            toAdd.addItem(VarDeclI::a(Location().introduce(), vd));
             reifiedAnnotationIds.insert(i->id());
           }
         } else {
@@ -3080,7 +3074,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         si->e(obj->id());
         obj->addAnnotation(si->st() == SolveI::ST_MAX ? env.constants.ctx.pos
                                                       : env.constants.ctx.neg);
-        objective = new VarDeclI(si->loc().introduce(), obj);
+        objective = VarDeclI::a(si->loc().introduce(), obj);
         objectiveModel->addItem(objective);
       }
     }

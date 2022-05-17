@@ -69,7 +69,7 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
       }
     }
     if ((it = env.cseMapFind(e)) != env.cseMapEnd()) {
-      ret.r = bind(env, ctx, r, it->second.r()->cast<VarDecl>()->id());
+      ret.r = bind(env, ctx, r, it->second.r->cast<VarDecl>()->id());
       ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
       return ret;
     }
@@ -86,7 +86,7 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
       return ret;
     }
     if ((it = env.cseMapFind(al)) != env.cseMapEnd()) {
-      ret.r = bind(env, ctx, r, it->second.r()->cast<VarDecl>()->id());
+      ret.r = bind(env, ctx, r, it->second.r->cast<VarDecl>()->id());
       ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
       return ret;
     }

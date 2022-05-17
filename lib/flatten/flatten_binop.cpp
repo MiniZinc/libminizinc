@@ -731,11 +731,11 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
               c->decl(env.model->matchFn(env, c, false));
               auto it = env.cseMapFind(c);
               if (it != env.cseMapEnd()) {
-                if (Id* ident = it->second.r()->template dynamicCast<Id>()) {
+                if (Id* ident = it->second.r->template dynamicCast<Id>()) {
                   bind(env, Ctx(), ident->decl(), env.constants.literalTrue);
                   it->second.r = env.constants.literalTrue;
                 }
-                if (Id* ident = it->second.b()->template dynamicCast<Id>()) {
+                if (Id* ident = it->second.b->template dynamicCast<Id>()) {
                   bind(env, Ctx(), ident->decl(), env.constants.literalTrue);
                   it->second.b = env.constants.literalTrue;
                 }
@@ -948,8 +948,8 @@ EE flatten_nonbool_op(EnvI& env, const Ctx& ctx, const Ctx& ctx0, const Ctx& ctx
   cc->type(bo->type());
   EnvI::CSEMap::iterator cit;
   if ((cit = env.cseMapFind(cc)) != env.cseMapEnd()) {
-    ret.b = bind(env, Ctx(), b, env.ignorePartial ? env.constants.literalTrue : cit->second.b());
-    ret.r = bind(env, ctx, r, cit->second.r());
+    ret.b = bind(env, Ctx(), b, env.ignorePartial ? env.constants.literalTrue : cit->second.b);
+    ret.r = bind(env, ctx, r, cit->second.r);
   } else {
     if (FunctionI* fi = env.model->matchFn(env, cc->id(), args, false)) {
       assert(cc->type() == fi->rtype(env, args, nullptr, false));
@@ -1185,7 +1185,7 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
 
     auto cit = env.cseMapFind(cc);
     if (cit != env.cseMapEnd()) {
-      ees[2].b = cit->second.r();
+      ees[2].b = cit->second.r;
       if (doubleNeg) {
         Type t = ees[2].b()->type();
         ees[2].b = new UnOp(Location().introduce(), UOT_NOT, ees[2].b());

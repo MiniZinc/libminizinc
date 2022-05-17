@@ -115,46 +115,199 @@ public:
   }
 };
 
+template <class T>
+class DenseIdMap {
+protected:
+  typedef typename std::unordered_map<Id*, T, ExpressionHash, IdEq> string_map;
+  /// The underlying map implementation for string-based Ids
+  string_map _sm;
+  /// The underlying vector for integer-based Ids
+  std::vector<T> _im;
+  /// Whether an element is present in the vector-based representation
+  std::vector<bool> _ip;
+
+public:
+  class DenseIdMapIterator : public std::iterator<std::forward_iterator_tag, T> {
+  private:
+    typename string_map::iterator _smi;
+    typename string_map::iterator _smiEnd;
+    typename std::vector<T>::iterator _imi;
+    typename std::vector<T>::iterator _imiEnd;
+    typename std::vector<bool>::iterator _ipi;
+
+  public:
+    DenseIdMapIterator(typename string_map::iterator smi, typename string_map::iterator smiEnd,
+                       typename std::vector<T>::iterator imi,
+                       typename std::vector<T>::iterator imiEnd, std::vector<bool>::iterator ipi)
+        : _smi(smi), _smiEnd(smiEnd), _imi(imi), _imiEnd(imiEnd), _ipi(ipi) {
+      if (_smi == _smiEnd) {
+        while (_imi != _imiEnd && !*_ipi) {
+          ++_ipi;
+          ++_imi;
+        }
+      }
+    }
+
+    typedef T* pointer;
+    typedef T& reference;
+
+    reference operator*() {
+      if (_smi != _smiEnd) {
+        return _smi->second;
+      }
+      return *_imi;
+    }
+    pointer operator->() {
+      if (_smi != _smiEnd) {
+        return &_smi->second;
+      }
+      return &*_imi;
+    }
+    DenseIdMapIterator& operator++() {
+      if (_smi != _smiEnd) {
+        ++_smi;
+      } else {
+        while (_imi != _imiEnd && !*_ipi) {
+          ++_ipi;
+          ++_imi;
+        }
+        if (_imi != _imiEnd) {
+          ++_ipi;
+          ++_imi;
+        }
+      }
+      return *this;
+    }
+    DenseIdMapIterator operator++(int) {
+      if (_smi != _smiEnd) {
+        return DenseIdMapIterator(_smi++, _smiEnd, _imi, _imiEnd, _ipi);
+      }
+      auto ret = DenseIdMapIterator(_smi, _smiEnd, _imi, _imiEnd, _ipi);
+      while (_imi != _imiEnd && !*_ipi) {
+        ++_ipi;
+        ++_imi;
+      }
+      if (_imi != _imiEnd) {
+        ++_ipi;
+        ++_imi;
+      }
+      return ret;
+    }
+    bool operator==(const DenseIdMapIterator& it) { return _smi == it._smi && _imi == it._imi; }
+    bool operator!=(const DenseIdMapIterator& it) { return !(*this == it); }
+  };
+
+  void insert(Id* e, const T& t) {
+    assert(e != nullptr);
+    if (e->idn() == -1) {
+      _sm.insert(std::pair<Id*, T>(e, t));
+    } else {
+      if (_im.size() < e->idn() + 1) {
+        auto newSize = static_cast<unsigned int>(static_cast<double>(e->idn() + 1) * 1.5);
+        _im.resize(newSize);
+        _ip.resize(newSize, false);
+      }
+      _im[e->idn()] = t;
+      _ip[e->idn()] = true;
+    }
+  }
+  /// Remove binding of \a e from map
+  void remove(Id* e) {
+    if (e->idn() == -1) {
+      _sm.erase(e);
+    } else {
+      if (e->idn() < _ip.size()) {
+        _im[e->idn()] = T();
+        _ip[e->idn()] = false;
+      }
+    }
+  }
+
+  /// Remove all elements from the map
+  void clear() {
+    _sm.clear();
+    _im.clear();
+    _ip.clear();
+  }
+  T& get(Id* ident) {
+    if (ident->idn() == -1) {
+      auto it = _sm.find(ident);
+      if (it == _sm.end()) {
+        std::string msg = "Id not found";
+        throw InternalError(msg);
+      }
+      return it->second;
+    }
+    assert(ident->idn() < _ip.size() && _ip[ident->idn()]);
+    return _im[ident->idn()];
+  }
+  std::pair<bool, T*> find(Id* ident) {
+    if (ident->idn() == -1) {
+      auto it = _sm.find(ident);
+      if (it == _sm.end()) {
+        return {false, nullptr};
+      }
+      return {true, &it->second};
+    }
+    if (ident->idn() >= _ip.size() || !_ip[ident->idn()]) {
+      return {false, nullptr};
+    }
+    return {true, &_im[ident->idn()]};
+  }
+
+  DenseIdMapIterator begin() {
+    return DenseIdMapIterator(_sm.begin(), _sm.end(), _im.begin(), _im.end(), _ip.begin());
+  }
+  DenseIdMapIterator end() {
+    return DenseIdMapIterator(_sm.end(), _sm.end(), _im.end(), _im.end(), _ip.end());
+  }
+};
+
 /// Hash class for KeepAlive objects
 struct KAHash {
-  size_t operator()(const KeepAlive& e) const { return Expression::hash(e()); }
+  size_t operator()(const Expression* e) const { return Expression::hash(e); }
 };
 
 /// Equality test for KeepAlive objects
 struct KAEq {
-  bool operator()(const KeepAlive& e0, const KeepAlive& e1) const {
-    return Expression::equal(e0(), e1());
+  bool operator()(const Expression* e0, const Expression* e1) const {
+    return Expression::equal(e0, e1);
   }
 };
 
 /// Hash map from KeepAlive to \a T
 template <class T>
-class KeepAliveMap {
+class KeepAliveMap : public GCMarker {
 protected:
   /// The underlying map implementation
-  std::unordered_map<KeepAlive, T, KAHash, KAEq> _m;
+  std::unordered_map<Expression*, T, KAHash, KAEq> _m;
 
 public:
   /// Iterator type
-  typedef typename std::unordered_map<KeepAlive, T, KAHash, KAEq>::iterator iterator;
+  typedef typename std::unordered_map<Expression*, T, KAHash, KAEq>::iterator iterator;
   /// Insert mapping from \a e to \a t
-  void insert(KeepAlive& e, const T& t) {
-    assert(e() != nullptr);
-    _m.insert(std::pair<KeepAlive, T>(e, t));
+  void insert(Expression* e, const T& t) {
+    assert(e != nullptr);
+    _m.insert(std::pair<Expression*, T>(e, t));
   }
   /// Find \a e in map
-  iterator find(KeepAlive& e) { return _m.find(e); }
+  iterator find(Expression* e) { return _m.find(e); }
   /// Begin of iterator
   iterator begin() { return _m.begin(); }
   /// End of iterator
   iterator end() { return _m.end(); }
   /// Remove binding of \a e from map
-  void remove(KeepAlive& e) { _m.erase(e); }
+  void remove(Expression* e) { _m.erase(e); }
   void clear() { _m.clear(); }
   template <class D>
   void dump() {
     for (auto i = _m.begin(); i != _m.end(); ++i) {
-      std::cerr << D::k(i->first()) << ": " << D::d(i->second) << std::endl;
+      std::cerr << D::k(i->first) << ": " << D::d(i->second) << std::endl;
+    }
+  }
+  void mark() override {
+    for (auto& it : _m) {
+      Expression::mark(it.first);
     }
   }
 };

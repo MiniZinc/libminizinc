@@ -5,7 +5,7 @@ For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
 .. _unreleased:
- 
+
 Unreleased
 ~~~~~~~~~~
 
@@ -27,6 +27,8 @@ Changes:
 -  Remove more subsumed clauses and foralls in the optimisation phase of the compiler.
 -  Report approximate error locations for type errors in function arguments that
    are literals without location information.
+-  Many internal structures, such as the CSE table, and the representation of
+   variable declarations and calls have been optimised to require less memory.
 
 .. _v2.6.4:
 

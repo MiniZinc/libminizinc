@@ -507,6 +507,15 @@ inline void Call::arg(unsigned int i, Expression* e) {
   }
 }
 
+inline Call::CallArgs::CallArgs(const Call* c) {
+  if (static_cast<CallKind>(c->_secondaryId) >= CK_NARY) {
+    _begin = &(*static_cast<const CallNary*>(c)->_args)[0];
+  } else {
+    _begin = &(static_cast<const Call4*>(c)->_data[0]);
+  }
+  _end = _begin + c->argCount();
+}
+
 inline Call::Call(const Location& loc, const ASTString& id0, const std::vector<Expression*>& args)
     : Expression(loc, E_CALL, Type()) {
   _flag1 = false;
@@ -555,8 +564,8 @@ inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, const ASTString& id, 
       _id(nullptr),
       _flat(nullptr) {
   _id = new Id(loc, id, this);
-  _flag1 = true;
-  _flag2 = false;
+  _flag1 = false;
+  _secondaryId = 1;
   _ti = ti;
   _e = e;
   _id->type(type());
@@ -569,8 +578,8 @@ inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, long long int idn, Ex
       _id(nullptr),
       _flat(nullptr) {
   _id = new Id(loc, idn, this);
-  _flag1 = true;
-  _flag2 = false;
+  _flag1 = false;
+  _secondaryId = 1;
   _ti = ti;
   _e = e;
   _id->type(type());
@@ -581,8 +590,8 @@ inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, long long int idn, Ex
 inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, const std::string& id, Expression* e)
     : Expression(loc, E_VARDECL, ti->type()), _id(nullptr), _flat(nullptr) {
   _id = new Id(loc, ASTString(id), this);
-  _flag1 = true;
-  _flag2 = false;
+  _flag1 = false;
+  _secondaryId = 1;
   _ti = ti;
   _e = e;
   _id->type(type());
@@ -592,13 +601,16 @@ inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, const std::string& id
 
 inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, Id* id, Expression* e)
     : Expression(loc, E_VARDECL, ti->type()), _id(nullptr), _flat(nullptr) {
-  if (id->idn() == -1) {
+  if (id->decl() == nullptr) {
+    _id = id;
+    _id->decl(this);
+  } else if (id->idn() == -1) {
     _id = new Id(id->loc(), id->v(), this);
   } else {
     _id = new Id(id->loc(), id->idn(), this);
   }
-  _flag1 = true;
-  _flag2 = false;
+  _flag1 = false;
+  _secondaryId = 1;
   _ti = ti;
   _e = e;
   _id->type(type());
@@ -615,10 +627,22 @@ inline void VarDecl::e(Expression* rhs) {
   _e = rhs;
 }
 
-inline bool VarDecl::toplevel() const { return _flag1; }
-inline void VarDecl::toplevel(bool t) { _flag1 = t; }
-inline bool VarDecl::introduced() const { return _flag2; }
-inline void VarDecl::introduced(bool t) { _flag2 = t; }
+inline bool VarDecl::toplevel() const { return (_secondaryId & 1U) == 1U; }
+inline void VarDecl::toplevel(bool t) {
+  if (t) {
+    _secondaryId |= 1;
+  } else {
+    _secondaryId &= ~1;
+  }
+}
+inline bool VarDecl::introduced() const { return (_secondaryId & 2U) == 2U; }
+inline void VarDecl::introduced(bool t) {
+  if (t) {
+    _secondaryId |= 2;
+  } else {
+    _secondaryId &= ~2;
+  }
+}
 inline bool VarDecl::evaluated() const { return _e->isUnboxedVal() || _e->isTagged(); }
 inline void VarDecl::evaluated(bool t) {
   if (!_e->isUnboxedVal()) {
@@ -629,7 +653,7 @@ inline void VarDecl::evaluated(bool t) {
     }
   }
 }
-inline void VarDecl::flat(VarDecl* vd) { _flat = WeakRef(vd); }
+inline void VarDecl::flat(VarDecl* vd) { _flat = vd; }
 
 inline TypeInst::TypeInst(const Location& loc, const Type& type, const ASTExprVec<TypeInst>& ranges,
                           Expression* domain)
@@ -649,7 +673,9 @@ inline TypeInst::TypeInst(const Location& loc, const Type& type, Expression* dom
 inline IncludeI::IncludeI(const Location& loc, const ASTString& f)
     : Item(loc, II_INC), _f(f), _m(nullptr) {}
 
-inline VarDeclI::VarDeclI(const Location& loc, VarDecl* e) : Item(loc, II_VD), _e(e) {}
+inline VarDeclI* VarDeclI::a(const Location& loc, VarDecl* e) {
+  return reinterpret_cast<VarDeclI*>(e);
+}
 
 inline AssignI::AssignI(const Location& loc, const std::string& id, Expression* e)
     : Item(loc, II_ASN), _id(ASTString(id)), _e(e), _decl(nullptr) {}

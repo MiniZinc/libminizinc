@@ -509,7 +509,7 @@ void LECompressor::compress() {
           auto* i2f_ti = new TypeInst(lhs->loc().introduce(), Type::varfloat(), domain);
           i2f_lhs = new VarDecl(lhs->loc().introduce(), i2f_ti, _env.genId(), i2f);
           i2f_lhs->type(Type::varfloat());
-          addItem(new VarDeclI(lhs->loc().introduce(), i2f_lhs));
+          addItem(VarDeclI::a(lhs->loc().introduce(), i2f_lhs));
         }
 
         auto arange = find(alias);

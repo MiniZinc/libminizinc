@@ -51,7 +51,7 @@ inline void ManagedASTStringMap<Expression*>::mark() {
     it.first.mark();
     Expression::mark(it.second);
 #if defined(MINIZINC_GC_STATS)
-    GC::stats()[it->second->_id].keepalive++;
+    GC::stats()[it.second->eid()].keepalive++;
 #endif
   }
 }

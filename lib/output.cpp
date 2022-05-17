@@ -447,7 +447,7 @@ void check_rename_var(EnvI& e, VarDecl* vd) {
     vd_rename->flat(vd->flat());
     make_par(e, vd_rename);
     vd->e(vd_rename->id());
-    e.output->addItem(new VarDeclI(Location().introduce(), vd_rename));
+    e.output->addItem(VarDeclI::a(Location().introduce(), vd_rename));
   }
 }
 
@@ -559,11 +559,10 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e) {
         reallyFlat = reallyFlat->flat();
       }
       auto idx = reallyFlat != nullptr ? env.outputFlatVarOccurrences.idx.find(reallyFlat->id())
-                                       : env.outputFlatVarOccurrences.idx.end();
+                                       : std::make_pair(false, nullptr);
       auto idx2 = env.outputVarOccurrences.idx.find(vd->id());
-      if (idx == env.outputFlatVarOccurrences.idx.end() &&
-          idx2 == env.outputVarOccurrences.idx.end()) {
-        auto* nvi = new VarDeclI(Location().introduce(), copy(env, env.cmap, vd)->cast<VarDecl>());
+      if (!idx.first && !idx2.first) {
+        auto* nvi = VarDeclI::a(Location().introduce(), copy(env, env.cmap, vd)->cast<VarDecl>());
         Type t = nvi->e()->ti()->type();
         if (t.ti() != Type::TI_PAR) {
           t.ti(Type::TI_PAR);
@@ -644,8 +643,8 @@ void process_deletions(EnvI& e) {
     deletedVarDecls.pop_back();
     if (e.outputVarOccurrences.occurrences(cur) == 0) {
       auto cur_idx = e.outputVarOccurrences.idx.find(cur->id());
-      if (cur_idx != e.outputVarOccurrences.idx.end()) {
-        auto* vdi = (*e.output)[cur_idx->second]->cast<VarDeclI>();
+      if (cur_idx.first) {
+        auto* vdi = (*e.output)[*cur_idx.second]->cast<VarDeclI>();
         if (!vdi->removed()) {
           CollectDecls cd(e, e.outputVarOccurrences, deletedVarDecls, vdi);
           top_down(cd, cur->e());
@@ -660,15 +659,13 @@ void process_deletions(EnvI& e) {
   }
 
   for (auto& it : e.outputVarOccurrences.itemMap) {
-    std::vector<Item*> toRemove;
-    for (auto* iit : it.second) {
-      if (iit->removed()) {
-        toRemove.push_back(iit);
+    std::vector<Item*> keptItems;
+    for (auto* iit : it) {
+      if (!iit->removed()) {
+        keptItems.push_back(iit);
       }
     }
-    for (auto& i : toRemove) {
-      it.second.erase(i);
-    }
+    it = keptItems;
   }
 }
 
@@ -1441,7 +1438,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
         }
         auto* vd_orig = orig->cast<VarDecl>();
         Location loc = vd->loc();  // Close enough
-        auto* vdi_copy = new VarDeclI(loc, vd);
+        auto* vdi_copy = VarDeclI::a(loc, vd);
         vd->ti()->domain(nullptr);
         vd->flat(vd_orig->flat());
         vd->ti()->setIsEnum(false);
@@ -1659,8 +1656,8 @@ void finalise_output(EnvI& e) {
 
               if (e.varOccurrences.occurrences(reallyFlat) == 0 && reallyFlat->e() == nullptr) {
                 auto it = e.varOccurrences.idx.find(reallyFlat->id());
-                assert(it != e.varOccurrences.idx.end());
-                e.flatRemoveItem((*e.flat())[it->second]->cast<VarDeclI>());
+                assert(it.first);
+                e.flatRemoveItem((*e.flat())[*it.second]->cast<VarDeclI>());
               }
             } else {
               // If the VarDecl does not have a usable right hand side, it needs to be
@@ -1684,8 +1681,8 @@ void finalise_output(EnvI& e) {
 
                   if (e.varOccurrences.occurrences(reallyFlat) == 0) {
                     auto it = e.varOccurrences.idx.find(reallyFlat->id());
-                    assert(it != e.varOccurrences.idx.end());
-                    e.flatRemoveItem((*e.flat())[it->second]->cast<VarDeclI>());
+                    assert(it.first);
+                    e.flatRemoveItem((*e.flat())[*it.second]->cast<VarDeclI>());
                   }
                 }
               } else if ((reallyFlat->e() != nullptr) && reallyFlat->e()->isa<ArrayLit>()) {
@@ -1703,8 +1700,8 @@ void finalise_output(EnvI& e) {
                   remove_is_output(reallyFlat);
                   if (e.varOccurrences.occurrences(reallyFlat) == 0) {
                     auto it = e.varOccurrences.idx.find(reallyFlat->id());
-                    assert(it != e.varOccurrences.idx.end());
-                    e.flatRemoveItem((*e.flat())[it->second]->cast<VarDeclI>());
+                    assert(it.first);
+                    e.flatRemoveItem((*e.flat())[*it.second]->cast<VarDeclI>());
                   }
 
                   output_vardecls(e, item, al);

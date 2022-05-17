@@ -990,10 +990,10 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
       if (env.ignorePartial) {
         ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
       } else {
-        args_ee.emplace_back(nullptr, cit->second.b());
+        args_ee.emplace_back(nullptr, cit->second.b);
         ret.b = conj(env, b, Ctx(), args_ee);
       }
-      ret.r = bind(env, ctx, r, cit->second.r());
+      ret.r = bind(env, ctx, r, cit->second.r);
     } else {
       for (unsigned int i = 0; i < decl->paramCount(); i++) {
         if (decl->param(i)->type().dim() > 0) {

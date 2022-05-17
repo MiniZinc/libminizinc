@@ -1533,8 +1533,8 @@ bool b_annotate(EnvI& env, Call* call) {
   // Increase usage count of the annotation
   if (auto* ann_decl = follow_id_to_decl(ann)->dynamicCast<VarDecl>()) {
     auto var_it = env.varOccurrences.idx.find(var_decl->id());
-    assert(var_it != env.varOccurrences.idx.end());
-    env.varOccurrences.add(ann_decl, (*env.flat())[var_it->second]);
+    assert(var_it.first);
+    env.varOccurrences.add(ann_decl, (*env.flat())[*var_it.second]);
   }
   return true;
 }

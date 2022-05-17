@@ -219,10 +219,10 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
             }
           }
         } else {
-          if (it->second.r()->isa<VarDecl>()) {
-            vd = it->second.r()->cast<VarDecl>();
+          if (it->second.r->isa<VarDecl>()) {
+            vd = it->second.r->cast<VarDecl>();
           } else {
-            rete = it->second.r();
+            rete = it->second.r;
           }
         }
       }

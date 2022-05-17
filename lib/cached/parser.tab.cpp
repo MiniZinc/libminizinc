@@ -4235,7 +4235,7 @@ yyreduce:
             // This is an any type, not allowed without a right hand side
             yyerror(&(yylsp[0]), parm, "declarations with `any' type-inst require definition");
           }
-          (yyval.item) = new VarDeclI((yyloc),(yyvsp[0].vardeclexpr));
+          (yyval.item) = VarDeclI::a((yyloc),(yyvsp[0].vardeclexpr));
         }
       }
     break;
@@ -4243,7 +4243,7 @@ yyreduce:
   case 37: /* vardecl_item: ti_expr_and_id "=" expr  */
       { if ((yyvsp[-2].vardeclexpr)) (yyvsp[-2].vardeclexpr)->e((yyvsp[0].expression));
         if ((yyvsp[-2].vardeclexpr))
-          (yyval.item) = new VarDeclI((yyloc),(yyvsp[-2].vardeclexpr));
+          (yyval.item) = VarDeclI::a((yyloc),(yyvsp[-2].vardeclexpr));
       }
     break;
 
@@ -4255,7 +4255,7 @@ yyreduce:
         if ((yyvsp[-1].sValue) && (yyvsp[0].expressions1d))
           vd->addAnnotations(*(yyvsp[0].expressions1d));
         free((yyvsp[-1].sValue));
-        (yyval.item) = new VarDeclI((yyloc),vd);
+        (yyval.item) = VarDeclI::a((yyloc),vd);
       }
     break;
 
@@ -4272,7 +4272,7 @@ yyreduce:
             e = Call::a((yyloc), ASTString("enumFromConstructors"), {al});
           }
           VarDecl* vd = new VarDecl((yyloc),ti,(yyvsp[-3].sValue),e);
-          (yyval.item) = new VarDeclI((yyloc),vd);
+          (yyval.item) = VarDeclI::a((yyloc),vd);
         }
         free((yyvsp[-3].sValue));
         delete (yyvsp[0].expressions1d);
@@ -4291,7 +4291,7 @@ yyreduce:
           vd->addAnnotations(*(yyvsp[-4].expressions1d));
         free((yyvsp[-5].sValue));
         delete (yyvsp[-1].expressions1d);
-        (yyval.item) = new VarDeclI((yyloc),vd);
+        (yyval.item) = VarDeclI::a((yyloc),vd);
       }
     break;
 
@@ -4502,7 +4502,7 @@ yyreduce:
         TypeInst* ti=new TypeInst((yylsp[-2]),Type::ann());
         if ((yyvsp[0].vardeclexprs)==nullptr || (yyvsp[0].vardeclexprs)->empty()) {
           VarDecl* vd = new VarDecl((yyloc),ti,(yyvsp[-1].sValue));
-          (yyval.item) = new VarDeclI((yyloc),vd);
+          (yyval.item) = VarDeclI::a((yyloc),vd);
         } else {
           (yyval.item) = new FunctionI((yyloc),ASTString((yyvsp[-1].sValue)),ti,*(yyvsp[0].vardeclexprs),nullptr,pp->isSTDLib);
         }
