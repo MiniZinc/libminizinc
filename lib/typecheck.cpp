@@ -1538,13 +1538,14 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
   }
   if (c != nullptr) {
     FunctionI* fi = m->matchFn(env, c, false);
-    assert(fi);
-    Type ct = fi->rtype(env, args, false);
-    ct.cv(e->type().cv() || ct.cv());
-    c->type(ct);
-    c->decl(fi);
-    KeepAlive ka(c);
-    return ka;
+    if (fi != nullptr) {
+      Type ct = fi->rtype(env, args, false);
+      ct.cv(e->type().cv() || ct.cv());
+      c->type(ct);
+      c->decl(fi);
+      KeepAlive ka(c);
+      return ka;
+    }
   }
   throw TypeError(env, e->loc(),
                   "cannot determine coercion from type " + e->type().toString(env) + " to type " +

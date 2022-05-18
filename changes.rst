@@ -9,6 +9,12 @@ https://github.com/MiniZinc/libminizinc/issues.
 Unreleased
 ~~~~~~~~~~
 
+Bug fixes:
+^^^^^^^^^^
+
+-  Fix a bug in the type checker where unsupported coercions could cause crashes.
+   (:bugref:`581`).
+
 .. _v2.6.3:
 
 `Version 2.6.3 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.6.3>`__
