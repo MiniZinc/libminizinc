@@ -1537,8 +1537,8 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
     }
   } else if (e->type().bt() == Type::BT_TUPLE) {
     if (funarg_t.bt() == Type::BT_TUPLE) {
-      TupleType* current = env.getTupleType(e->type().typeId());
-      TupleType* intended = env.getTupleType(funarg_t.typeId());
+      TupleType* current = env.getTupleType(e->type());
+      TupleType* intended = env.getTupleType(funarg_t);
       auto* al = e->dynamicCast<ArrayLit>();
       VarDecl* vd = nullptr;
       if (al == nullptr) {
@@ -1699,14 +1699,7 @@ public:
   void vArrayLit(ArrayLit* al) {
     Type ty;
     if (al->isTuple()) {
-      ty.bt(Type::BT_TUPLE);
-      std::vector<Type> fields(al->size());
-      for (unsigned int i = 0; i < al->size(); i++) {
-        fields[i] = (*al)[i]->type();
-      }
-      unsigned int typeId = _env.registerTupleType(fields);
-      ty.typeId(typeId);
-      al->type(ty);
+      _env.registerTupleType(al);
       return;
     }
     ty.dim(static_cast<int>(al->dims()));
@@ -1767,8 +1760,8 @@ public:
             if (ty.bt() != Type::BT_TUPLE) {
               throw TypeError(_env, al->loc(), "non-uniform array literal");
             }
-            ty.typeId(Type::commonTuple(_env, ty.typeId(), vi->type().typeId()));
-            if (ty.typeId() == 0) {
+            ty = _env.commonTuple(ty, vi->type());
+            if (ty.isbot()) {
               throw TypeError(_env, al->loc(), "non-uniform array literal");
             }
           } else {
@@ -1975,7 +1968,7 @@ public:
       throw TypeError(_env, fa->loc(), "field access of a tuple must use an integer literal");
     }
     assert(fa->v()->type().typeId() != 0);
-    TupleType* tt = _env.getTupleType(fa->v()->type().typeId());
+    TupleType* tt = _env.getTupleType(fa->v()->type());
     IntVal i = fa->field()->cast<IntLit>()->v();
     if (!i.isFinite() || i < 1 || i.toInt() > tt->size()) {
       std::ostringstream oss;

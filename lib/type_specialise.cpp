@@ -355,10 +355,10 @@ private:
       for (size_t i = 0; i < tup->size(); ++i) {
         Type ty = (*match_types)[i];
         if ((*tup)[i].ver == TG_TUPLE) {
-          TupleType* concrete_tt = env.getTupleType((*concrete_types)[i].typeId());
+          TupleType* concrete_tt = env.getTupleType((*concrete_types)[i]);
           TupleType* match_tt = concrete_tt;
           if (ty.bt() == Type::BT_TUPLE) {
-            TupleType* match_tt = env.getTupleType(ty.typeId());
+            TupleType* match_tt = env.getTupleType(ty);
           } else if (ty.any()) {
             std::vector<Type> inst_types(concrete_tt->size());
             for (size_t j = 0; j < inst_types.size(); ++j) {
@@ -386,10 +386,10 @@ private:
         Type ty = (*match_types)[i];
         bool incremented = false;
         if ((*tup)[i].ver == TG_TUPLE) {
-          TupleType* concrete_tt = env.getTupleType((*concrete_types)[i].typeId());
+          TupleType* concrete_tt = env.getTupleType((*concrete_types)[i]);
           TupleType* match_tt = concrete_tt;
           if (ty.bt() == Type::BT_TUPLE) {
-            TupleType* match_tt = env.getTupleType(ty.typeId());
+            TupleType* match_tt = env.getTupleType(ty);
           } else if (ty.any()) {
             std::vector<Type> inst_types(concrete_tt->size());
             for (size_t j = 0; j < inst_types.size(); ++j) {
@@ -411,10 +411,10 @@ private:
           for (size_t j = i + 1; j < tup->size(); ++j) {
             Type ty_back = (*match_types)[j];
             if ((*tup)[j].ver == TG_TUPLE) {
-              TupleType* concrete_tt = env.getTupleType((*concrete_types)[j].typeId());
+              TupleType* concrete_tt = env.getTupleType((*concrete_types)[j]);
               TupleType* match_tt = concrete_tt;
               if (ty_back.bt() == Type::BT_TUPLE) {
-                TupleType* match_tt = env.getTupleType(ty.typeId());
+                TupleType* match_tt = env.getTupleType(ty_back);
               } else if (ty.any()) {
                 std::vector<Type> inst_types(concrete_tt->size());
                 for (size_t j = 0; j < inst_types.size(); ++j) {
@@ -444,15 +444,15 @@ private:
       for (size_t i = 0; i < match_types->size(); ++i) {
         Type parType = (*match_types)[i];
         if (parType.bt() == Type::BT_TUPLE) {
-          TupleType* match_tt = env.getTupleType(parType.typeId());
-          TupleType* concrete_tt = env.getTupleType((*concrete_types)[i].typeId());
+          TupleType* match_tt = env.getTupleType(parType);
+          TupleType* concrete_tt = env.getTupleType((*concrete_types)[i]);
           auto ret = fromTIs(env, match_tt, concrete_tt);
           hadAny = hadAny || ret.first;
           matchTypes.emplace_back(ret.second);
         } else if ((*concrete_types)[i].bt() == Type::BT_TUPLE) {
           // Found a $-type that is being instantiated by a tuple
           assert(parType.bt() == Type::BT_TOP);
-          TupleType* concrete_tt = env.getTupleType((*concrete_types)[i].typeId());
+          TupleType* concrete_tt = env.getTupleType((*concrete_types)[i]);
           TupleType* match_tt = concrete_tt;
           if (parType.any()) {
             std::vector<Type> inst_types(concrete_tt->size());
@@ -565,7 +565,7 @@ public:
           // replace tiid with empty domain
           ti->domain(nullptr);
         } else if (concrete_type.bt() == Type::BT_TUPLE) {
-          TupleType* ctt = env.getTupleType(concrete_type.typeId());
+          TupleType* ctt = env.getTupleType(concrete_type);
           // Create new TypeInst objects for tuple elements
           std::vector<Expression*> tuple_tis(ctt->size());
           for (int j = 0; j < ctt->size(); ++j) {
@@ -589,7 +589,7 @@ public:
       } else if (curType.bt() == Type::BT_TUPLE) {
         assert(concrete_type.bt() == Type::BT_TUPLE);
         assert(concrete_type.typeId() != 0);
-        tupleWalkTIMap(env, ti_map, ti, env.getTupleType(ti->type().typeId()), (*tg.tup)[i]);
+        tupleWalkTIMap(env, ti_map, ti, env.getTupleType(ti->type()), (*tg.tup)[i]);
       }
       for (unsigned int j = 0; j < ti->ranges().size(); j++) {
         if (TIId* tiid = Expression::dynamicCast<TIId>(ti->ranges()[j]->domain())) {

@@ -20,15 +20,7 @@ bool Type::btSubtype(const EnvI& env, const Type& t0, const Type& t1, bool stric
       if (t0.typeId() == t1.typeId()) {
         return true;
       }
-      auto t0id = t0.typeId();
-      if (t0.dim() != 0) {
-        t0id = env.getArrayEnum(t0id)[t0.dim()];
-      }
-      auto t1id = t1.typeId();
-      if (t1.dim() != 0) {
-        t1id = env.getArrayEnum(t1id)[t1.dim()];
-      }
-      if (env.getTupleType(t0id)->isSubtypeOf(env, *env.getTupleType(t1id), strictEnums)) {
+      if (env.getTupleType(t0)->isSubtypeOf(env, *env.getTupleType(t0), strictEnums)) {
         return true;
       }
     }
@@ -44,43 +36,6 @@ bool Type::btSubtype(const EnvI& env, const Type& t0, const Type& t1, bool stric
     default:
       return false;
   }
-}
-
-unsigned int Type::commonTuple(EnvI& env, unsigned int tupleId1, unsigned int tupleId2) {
-  if (tupleId1 == tupleId2) {
-    return tupleId1;
-  }
-  if (tupleId1 == 0 || tupleId2 == 0) {
-    return 0;
-  }
-  TupleType* tt1 = env.getTupleType(tupleId1);
-  TupleType* tt2 = env.getTupleType(tupleId2);
-  unsigned int size = std::min(tt1->size(), tt2->size());
-
-  std::vector<Type> common(size);
-  for (unsigned int i = 0; i < size; i++) {
-    if ((*tt1)[i].bt() == BT_TUPLE) {
-      common[i] = (*tt1)[i];
-      if ((*tt1)[i].typeId() != (*tt2)[i].typeId()) {
-        common[i].typeId(commonTuple(env, (*tt1)[i].typeId(), (*tt2)[i].typeId()));
-      }
-      if (common[i].typeId() == 0) {
-        return 0;
-      }
-    } else {
-      if (btSubtype(env, (*tt2)[i], (*tt1)[i], false)) {
-        common[i] = (*tt1)[i];
-      } else if (btSubtype(env, (*tt1)[i], (*tt2)[i], false)) {
-        common[i] = (*tt2)[i];
-      } else {
-        return 0;
-      }
-      if ((*tt1)[i].typeId() != (*tt2)[i].typeId()) {
-        common[i].typeId(0);
-      }
-    }
-  }
-  return env.registerTupleType(common);
 }
 
 std::string Type::toString(const EnvI& env) const {
@@ -151,15 +106,8 @@ std::string Type::toString(const EnvI& env) const {
       oss << "ann";
       break;
     case BT_TUPLE: {
-      unsigned int typeId;
       oss << "tuple(";
-      if (_typeId != 0U && _dim > 0) {
-        const std::vector<unsigned int>& arrayEnumIds = env.getArrayEnum(_typeId);
-        typeId = arrayEnumIds[arrayEnumIds.size() - 1];
-      } else {
-        typeId = _typeId;
-      }
-      TupleType* tt = env.getTupleType(typeId);
+      TupleType* tt = env.getTupleType(*this);
       for (size_t i = 0; i < tt->size(); ++i) {
         oss << (*tt)[i].toString(env);
         if (i < tt->size() - 1) {
@@ -236,18 +184,6 @@ std::string Type::nonEnumToString() const {
       break;
   }
   return oss.str();
-}
-
-bool Type::parTuple(const EnvI& env, const Type& t) {
-  assert(t.bt() == BT_TUPLE);
-  TupleType* tt = env.getTupleType(t.typeId());
-  for (size_t i = 0; i < tt->size(); ++i) {
-    if (!(*tt)[i].isPar() || (*tt)[i].cv() || (*tt)[i].bt() != Type::BT_ANN ||
-        ((*tt)[i].bt() == Type::BT_TUPLE && !parTuple(env, (*tt)[i]))) {
-      return false;
-    }
-  }
-  return true;
 }
 
 }  // namespace MiniZinc

@@ -307,6 +307,17 @@ protected:
   std::default_random_engine _g;
   std::atomic<bool> _cancel = {false};
 
+  /// Register tuple type directly from a list of fields
+  /// WARNING: This method is unsafe unless the tuple is explicitly made canonical and the types of
+  /// the TypeInst objects are actively maintained. Use method on TypeInst objects whenever
+  /// possible.
+  unsigned int registerTupleType(const std::vector<Type>& fields);
+
+  /// Get the tuple type from the register using a direct key (typeId in Type).
+  /// WARNING: This method is unsafe unless the ArrayTypes have been resolved. Use method on Type
+  /// whenever possible.
+  TupleType* getTupleType(unsigned int i) const;
+
 public:
   EnvI(Model* model0, std::ostream& outstream0 = std::cout, std::ostream& errstream0 = std::cerr);
   ~EnvI();
@@ -323,13 +334,20 @@ public:
   VarDeclI* getEnum(unsigned int i) const;
   unsigned int registerArrayEnum(const std::vector<unsigned int>& arrayEnum);
   const std::vector<unsigned int>& getArrayEnum(unsigned int i) const;
-  // Register tuple type directly from a list of fields
-  unsigned int registerTupleType(const std::vector<Type>& fields);
   // Register a new tuple type from a TypeInst.
-  // Note this method updates the types of the TypeInst and its domain to become cononical tuple
+  // NOTE: this method updates the types of the TypeInst and its domain to become cononical tuple
   // types.
   unsigned int registerTupleType(TypeInst* ti);
-  TupleType* getTupleType(unsigned int i) const;
+  // Register a new tuple type from an tuple literal.
+  // NOTE: this method updates the type of the ArrayLit object
+  unsigned int registerTupleType(ArrayLit* tup);
+  // Get the TupleType for Type with tuple BaseType (safe )
+  TupleType* getTupleType(Type t) const;
+  /// Returns the typeId of a common tuple type or 0 if no such tuple type exists
+  Type commonTuple(Type tuple1, Type tuple2);
+  /// Check if tuple can be evaluated (instead of flattened).
+  /// (i.e., true if the tuple contains to variable or annotation types)
+  bool tupleIsPar(const Type& tuple);
   std::string enumToString(unsigned int enumId, int i);
   /// Check if \a t1 is a subtype of \a t2 (including enumerated types if \a strictEnum is true)
   bool isSubtype(const Type& t1, const Type& t2, bool strictEnum) const;

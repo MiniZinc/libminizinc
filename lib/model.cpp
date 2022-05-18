@@ -39,7 +39,7 @@ bool Model::FnEntry::checkPoly(const EnvI& env, const Type& t) {
     return true;
   }
   if (t.bt() == Type::BT_TUPLE) {
-    TupleType* tt = env.getTupleType(t.typeId());
+    TupleType* tt = env.getTupleType(t);
     for (size_t i = 0; i < tt->size(); ++i) {
       if (checkPoly(env, (*tt)[i])) {
         return true;

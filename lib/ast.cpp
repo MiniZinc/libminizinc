@@ -1141,7 +1141,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
         }
       } else if (cur.second.bt() == Type::BT_TUPLE) {
         auto* al = tii->domain()->cast<ArrayLit>();
-        TupleType* tiit_tt = env.getTupleType(cur.second.typeId());
+        TupleType* tiit_tt = env.getTupleType(cur.second);
         for (size_t i = 0; i < al->size(); ++i) {
           stack.emplace_back((*al)[i]->cast<TypeInst>(), (*tiit_tt)[i]);
         }

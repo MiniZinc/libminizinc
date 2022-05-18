@@ -1189,9 +1189,108 @@ unsigned int EnvI::registerTupleType(TypeInst* ti) {
   return ret;
 }
 
+unsigned int EnvI::registerTupleType(ArrayLit* tup) {
+  assert(tup->isTuple() && tup->dims() == 1);
+  Type ty = tup->type();
+  ty.bt(Type::BT_TUPLE);
+  assert(!ty.isvar());  // How would a tuple literal be known to be fully var before this stage?
+  std::vector<Type> fields(tup->size());
+  bool all_var = true;
+  for (unsigned int i = 0; i < tup->size(); i++) {
+    fields[i] = (*tup)[i]->type();
+    assert(fields[i].bt() != Type::BT_TUPLE || fields[i].typeId() != 0);
+    all_var = all_var && fields[i].isvar();
+  }
+  unsigned int typeId = registerTupleType(fields);
+  ty.typeId(typeId);
+  assert(ty.dim() == 0);  // Tuple literals do not have array dimensions (otherwise, we should
+                          // register arrayEnumTypes)
+  tup->type(ty);
+  return typeId;
+}
+
 TupleType* EnvI::getTupleType(unsigned int i) const {
   assert(i > 0 && i <= _tupleTypes.size());
   return _tupleTypes[i - 1];
+}
+
+TupleType* EnvI::getTupleType(Type t) const {
+  assert(t.bt() == Type::BT_TUPLE);
+  unsigned int typeId = t.typeId();
+  assert(typeId != 0);
+  if (t.dim() > 0) {
+    const std::vector<unsigned int>& arrayEnumIds = getArrayEnum(typeId);
+    typeId = arrayEnumIds[arrayEnumIds.size() - 1];
+  }
+  return _tupleTypes[typeId - 1];
+}
+
+Type EnvI::commonTuple(Type tuple1, Type tuple2) {
+  if (tuple1 == tuple2) {
+    return tuple1;
+  }
+  if (tuple1.isbot() || tuple2.isbot()) {
+    return Type::bot();
+  }
+  if (tuple1.dim() != tuple2.dim()) {
+    return Type::bot();
+  }
+  TupleType* tt1 = getTupleType(tuple1);
+  TupleType* tt2 = getTupleType(tuple2);
+  unsigned int size = std::min(tt1->size(), tt2->size());
+
+  std::vector<Type> common(size);
+  for (unsigned int i = 0; i < size; i++) {
+    if ((*tt1)[i].bt() == Type::BT_TUPLE) {
+      common[i] = (*tt1)[i];
+      if ((*tt1)[i] != (*tt2)[i]) {
+        common[i] = commonTuple((*tt1)[i], (*tt2)[i]);
+      }
+      if (common[i].typeId() == 0) {
+        return Type::bot();
+      }
+    } else {
+      if (Type::btSubtype(*this, (*tt2)[i], (*tt1)[i], false)) {
+        common[i] = (*tt1)[i];
+      } else if (Type::btSubtype(*this, (*tt1)[i], (*tt2)[i], false)) {
+        common[i] = (*tt2)[i];
+      } else {
+        return Type::bot();
+      }
+      if ((*tt1)[i].typeId() != (*tt2)[i].typeId()) {
+        common[i].typeId(0);
+      }
+    }
+  }
+  unsigned int typeId = registerTupleType(common);
+  if (tuple1.dim() > 0) {
+    const std::vector<unsigned int>& arrayEnumIds1 = getArrayEnum(tuple1.typeId());
+    const std::vector<unsigned int>& arrayEnumIds2 = getArrayEnum(tuple2.typeId());
+    std::vector<unsigned int> typeIds(tuple1.dim() + 1);
+    for (unsigned int i = 0; i < tuple1.dim(); i++) {
+      if (arrayEnumIds1[i] == arrayEnumIds2[i]) {
+        typeIds[i] = arrayEnumIds1[i];
+      } else {
+        typeIds[i] = 0;
+      }
+    }
+    typeIds[tuple1.dim()] = typeId;
+    typeId = registerArrayEnum(typeIds);
+  }
+  tuple1.typeId(typeId);
+  return tuple1;
+}
+
+bool EnvI::tupleIsPar(const Type& tuple) {
+  assert(tuple.bt() == Type::BT_TUPLE);
+  TupleType* tt = getTupleType(tuple);
+  for (size_t i = 0; i < tt->size(); ++i) {
+    if (!(*tt)[i].isPar() || (*tt)[i].cv() || (*tt)[i].bt() != Type::BT_ANN ||
+        ((*tt)[i].bt() == Type::BT_TUPLE && !tupleIsPar((*tt)[i]))) {
+      return false;
+    }
+  }
+  return true;
 }
 
 std::string EnvI::enumToString(unsigned int enumId, int i) {
