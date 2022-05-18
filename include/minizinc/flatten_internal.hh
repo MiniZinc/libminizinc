@@ -326,7 +326,8 @@ public:
   // Register tuple type directly from a list of fields
   unsigned int registerTupleType(const std::vector<Type>& fields);
   // Register a new tuple type from a TypeInst.
-  // Note this method updates the types of the TypeInst and its domain to become cononical tuple types.
+  // Note this method updates the types of the TypeInst and its domain to become cononical tuple
+  // types.
   unsigned int registerTupleType(TypeInst* ti);
   TupleType* getTupleType(unsigned int i) const;
   std::string enumToString(unsigned int enumId, int i);

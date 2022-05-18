@@ -1169,6 +1169,18 @@ unsigned int EnvI::registerTupleType(TypeInst* ti) {
 
   unsigned int ret = registerTupleType(fields);
   Type t = ti->type();
+  // Register an array type when required
+  if (!ti->ranges().empty()) {
+    assert(t.dim() > 0);
+    std::vector<unsigned int> typeIds(ti->ranges().size() + 1);
+    for (unsigned int i = 0; i < ti->ranges().size(); i++) {
+      typeIds[i] = ti->ranges()[i]->type().typeId();
+    }
+    typeIds[ti->ranges().size()] = ret;
+    ret = registerArrayEnum(typeIds);
+  } else {
+    assert(t.dim() == 0);
+  }
   t.typeId(ret);
   if (all_var) {
     t.ti(Type::TI_VAR);

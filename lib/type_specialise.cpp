@@ -575,7 +575,6 @@ public:
           }
           ti->domain(new ArrayLit(ti->loc().introduce(), tuple_tis));
           tupleWalkTIMap(env, ti_map, ti, ctt, (*tg.tup)[i]);
-          env.registerTupleType(ti);
         } else {
           auto enumId = concrete_type.typeId();
           if (concrete_type.dim() != 0) {
@@ -591,7 +590,6 @@ public:
         assert(concrete_type.bt() == Type::BT_TUPLE);
         assert(concrete_type.typeId() != 0);
         tupleWalkTIMap(env, ti_map, ti, env.getTupleType(ti->type().typeId()), (*tg.tup)[i]);
-        env.registerTupleType(ti);
       }
       for (unsigned int j = 0; j < ti->ranges().size(); j++) {
         if (TIId* tiid = Expression::dynamicCast<TIId>(ti->ranges()[j]->domain())) {
@@ -621,10 +619,12 @@ public:
               newRanges[k] = new TypeInst(Location().introduce(), Type::parint());
             }
             ti->setRanges(newRanges);
-
             break;  // only one general tiid allowed in index set
           }
         }
+      }
+      if (ti->type().bt() == Type::BT_TUPLE) {
+        env.registerTupleType(ti);
       }
     }
     return true;

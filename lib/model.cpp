@@ -467,6 +467,7 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
           t2.ti(Type::TI_PAR);
           t1.ot(Type::OT_PRESENT);
           t2.ot(Type::OT_PRESENT);
+          // TODO: Fix for tuples. Can this just be (t1 subtype t2 or t2 subtype t2)?
           if (t1 != t2) {
             throw TypeError(env, fi->loc(),
                             "function with same type up to par/var but different return type "

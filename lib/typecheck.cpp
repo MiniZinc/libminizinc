@@ -2938,7 +2938,7 @@ public:
         if (tt.isOpt()) {
           throw TypeError(_env, ti->loc(), "opt tuples are not allowed");
         }
-        needsArrayType = needsArrayType || !ti->ranges().empty();
+        needsArrayType = false;  // will be registered by registerTupleType
 
         // Register and cononicalise tuple type
         _env.registerTupleType(ti);
