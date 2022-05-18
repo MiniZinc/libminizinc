@@ -501,6 +501,27 @@ public:
   Instantiator(EnvI& env, ConcreteCallAgenda& agenda, InstanceMap& instanceMap, TyperFn& typer)
       : _env(env), _agenda(agenda), _instanceMap(instanceMap), _typer(typer) {}
 
+  static void createTupleTI(EnvI& env, TupleType* tt, TypeInst* ti) {
+    std::vector<Expression*> tuple_tis(tt->size());
+    for (int i = 0; i < tt->size(); ++i) {
+      Type tti = (*tt)[i];
+      tti.any(true);
+      tuple_tis[i] = new TypeInst(ti->loc().introduce(), tti);
+      if (tti.bt() == Type::BT_TUPLE) {
+        createTupleTI(env, env.getTupleType(tti), tuple_tis[i]->cast<TypeInst>());
+      }
+    }
+    if (ti->ranges().size() != ti->type().dim()) {
+      assert(ti->ranges().empty());
+      std::vector<TypeInst*> newRanges(ti->type().dim());
+      for (unsigned int k = 0; k < ti->type().dim(); k++) {
+        newRanges[k] = new TypeInst(Location().introduce(), Type::parint());
+      }
+      ti->setRanges(newRanges);
+    }
+    ti->domain(new ArrayLit(ti->loc().introduce(), tuple_tis));
+  }
+
   static bool tupleWalkTIMap(EnvI& env, std::unordered_map<ASTString, Type>& ti_map,
                              TypeInst* tuple_ti, TupleType* tt, const ToGenerate& tg) {
     auto* al = tuple_ti->domain()->cast<ArrayLit>();
@@ -566,14 +587,8 @@ public:
           ti->domain(nullptr);
         } else if (concrete_type.bt() == Type::BT_TUPLE) {
           TupleType* ctt = env.getTupleType(concrete_type);
-          // Create new TypeInst objects for tuple elements
-          std::vector<Expression*> tuple_tis(ctt->size());
-          for (int j = 0; j < ctt->size(); ++j) {
-            Type cttj = (*ctt)[j];
-            cttj.any(true);
-            tuple_tis[j] = new TypeInst(ti->loc().introduce(), cttj);
-          }
-          ti->domain(new ArrayLit(ti->loc().introduce(), tuple_tis));
+          // Create new TypeInst domain for tuple argument
+          createTupleTI(env, ctt, ti);
           tupleWalkTIMap(env, ti_map, ti, ctt, (*tg.tup)[i]);
         } else {
           auto enumId = concrete_type.typeId();
