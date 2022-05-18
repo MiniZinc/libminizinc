@@ -2809,6 +2809,29 @@ KeepAlive conj(EnvI& env, VarDecl* b, const Ctx& ctx, const std::vector<EE>& e) 
   return flat_exp(env, nctx, ret, b, env.constants.varTrue).r;
 }
 
+Expression* eval_typeinst_domain(EnvI& env, const Ctx& ctx, Expression* dom) {
+  if (dom == nullptr) {
+    return nullptr;
+  }
+  if (auto* tup = dom->dynamicCast<ArrayLit>()) {
+    std::vector<Expression*> evaluated(tup->size());
+    for (int i = 0; i < tup->size(); ++i) {
+      auto* tupi = (*tup)[i]->cast<TypeInst>();
+      if (tupi->domain() == nullptr) {
+        evaluated[i] = tupi;
+      } else if (tupi->domain()->isa<ArrayLit>()) {
+        evaluated[i] =
+            new TypeInst(tupi->loc(), tupi->type(), eval_typeinst_domain(env, ctx, tupi->domain()));
+      } else {
+        evaluated[i] =
+            new TypeInst(tupi->loc(), tupi->type(), flat_cv_exp(env, ctx, tupi->domain())());
+      }
+    }
+    return ArrayLit::constructTuple(tup->loc(), evaluated);
+  }
+  return flat_cv_exp(env, ctx, dom)();
+}
+
 TypeInst* eval_typeinst(EnvI& env, const Ctx& ctx, VarDecl* vd) {
   bool domIsTiVar = (vd->ti()->domain() != nullptr) && vd->ti()->domain()->isa<TIId>();
   bool hasTiVars = domIsTiVar;
@@ -2848,7 +2871,7 @@ TypeInst* eval_typeinst(EnvI& env, const Ctx& ctx, VarDecl* vd) {
     }
   }
   Type t = ((vd->e() != nullptr) && !vd->e()->type().isbot()) ? vd->e()->type() : vd->ti()->type();
-  return new TypeInst(vd->ti()->loc(), t, dims, flat_cv_exp(env, ctx, vd->ti()->domain())());
+  return new TypeInst(vd->ti()->loc(), t, dims, eval_typeinst_domain(env, ctx, vd->ti()->domain()));
 }
 
 KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
