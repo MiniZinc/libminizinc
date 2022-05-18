@@ -573,7 +573,7 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e) {
           t.ti(Type::TI_PAR);
         }
         make_par(env, nvi->e());
-        nvi->e()->ti()->domain(nullptr);
+        nvi->e()->ti()->eraseDomain();
         nvi->e()->flat(vd->flat());
         ClearAnnotations::run(nvi->e());
         nvi->e()->introduced(false);
@@ -704,7 +704,7 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
       if (al == nullptr || !al->empty()) {
         // First check if we can use an array literal representation
         // or whether we have to introduce an arrayXd call
-        if (vd->type().dim() <= 2 && al != nullptr && vd->type().bt() != Type::BT_TUPLE) {
+        if (vd->type().dim() <= 2 && al != nullptr && vd->type().bt() == Type::BT_INT) {
           if (vd->type().dim() == 2) {
             s << "\n";
           }
@@ -1447,7 +1447,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
         auto* vd_orig = orig->cast<VarDecl>();
         Location loc = vd->loc();  // Close enough
         auto* vdi_copy = VarDeclI::a(loc, vd);
-        vd->ti()->domain(nullptr);
+        vd->ti()->eraseDomain();
         vd->flat(vd_orig->flat());
         vd->ti()->setIsEnum(false);
         vd->ann().clear();

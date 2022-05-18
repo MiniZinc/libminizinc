@@ -1516,6 +1516,18 @@ public:
   Expression* domain() const { return _domain; }
   //// Set domain
   void domain(Expression* d) { _domain = d; }
+  /// Erase domain, preserving tuple types stored in domain field
+  void eraseDomain() {
+    if (_domain == nullptr || !_domain->isa<ArrayLit>()) {
+      _domain = nullptr;
+      return;
+    }
+    auto* al = _domain->cast<ArrayLit>();
+    for (int i = 0; i < al->size(); ++i) {
+      auto* field_ti = (*al)[i]->cast<TypeInst>();
+      field_ti->eraseDomain();
+    }
+  }
 
   /// Set ranges to \a ranges
   void setRanges(const std::vector<TypeInst*>& ranges);

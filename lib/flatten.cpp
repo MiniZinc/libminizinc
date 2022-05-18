@@ -3378,6 +3378,9 @@ void flatten(Env& e, FlatteningOptions opt) {
             }
           }
           if (vdi->e()->type().dim() > 0 && vdi->e()->type().isvar()) {
+            assert(vdi->e()->ti()->type().bt() !=
+                   Type::BT_TUPLE);  // TODO: Does the next statement ever erase the tuple field
+                                     // types? If so, replace by ti->eraseDomain().
             vdi->e()->ti()->domain(nullptr);
           }
           if (vdi->e()->type().isint() && vdi->e()->type().isvar() &&
