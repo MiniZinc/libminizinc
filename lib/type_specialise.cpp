@@ -568,21 +568,14 @@ public:
           TupleType* ctt = env.getTupleType(concrete_type.typeId());
           // Create new TypeInst objects for tuple elements
           std::vector<Expression*> tuple_tis(ctt->size());
-          bool all_var = true;
           for (int j = 0; j < ctt->size(); ++j) {
             Type cttj = (*ctt)[j];
-            all_var = all_var && ((*(*tg.tup)[i].tup)[j] == ToGenerate::TG_VAR ||
-                                  (*(*tg.tup)[i].tup)[j] == ToGenerate::TG_VAROPT);
             cttj.any(true);
             tuple_tis[j] = new TypeInst(ti->loc().introduce(), cttj);
           }
-          if (all_var) {
-            curType.ti(Type::TI_VAR);
-            ti->type(curType);
-          }
           ti->domain(new ArrayLit(ti->loc().introduce(), tuple_tis));
           tupleWalkTIMap(env, ti_map, ti, ctt, (*tg.tup)[i]);
-          env.registerTupleType(ti, true);
+          env.registerTupleType(ti);
         } else {
           auto enumId = concrete_type.typeId();
           if (concrete_type.dim() != 0) {
@@ -598,7 +591,7 @@ public:
         assert(concrete_type.bt() == Type::BT_TUPLE);
         assert(concrete_type.typeId() != 0);
         tupleWalkTIMap(env, ti_map, ti, env.getTupleType(ti->type().typeId()), (*tg.tup)[i]);
-        env.registerTupleType(ti, true);
+        env.registerTupleType(ti);
       }
       for (unsigned int j = 0; j < ti->ranges().size(); j++) {
         if (TIId* tiid = Expression::dynamicCast<TIId>(ti->ranges()[j]->domain())) {

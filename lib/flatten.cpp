@@ -1132,23 +1132,48 @@ unsigned int EnvI::registerTupleType(const std::vector<Type>& fields) {
   return ret + 1;
 }
 
-unsigned int EnvI::registerTupleType(TypeInst* ti, bool write) {
+unsigned int EnvI::registerTupleType(TypeInst* ti) {
   auto* dom = ti->domain()->cast<ArrayLit>();
 
   std::vector<Type> fields(dom->size());
+  bool all_var = true;
   for (unsigned int i = 0; i < dom->size(); i++) {
     auto* tii = (*dom)[i]->cast<TypeInst>();
     fields[i] = tii->type();
-    if (fields[i].bt() == Type::BT_TUPLE && fields[i].typeId() == 0) {
-      fields[i].typeId(registerTupleType(tii, write));
+
+    // Varify the fields of the tuple when required
+    if (ti->type().isvar()) {
+      fields[i].ti(Type::TI_VAR);
+      tii->type(fields[i]);
+      if (fields[i].st() == Type::ST_SET && fields[i].bt() != Type::BT_INT &&
+          fields[i].bt() != Type::BT_TOP) {
+        throw TypeError(*this, ti->loc(),
+                        "var tuples with set element types other than `int' are not allowed");
+      }
+      if (fields[i].bt() == Type::BT_ANN || fields[i].bt() == Type::BT_STRING) {
+        throw TypeError(*this, ti->loc(),
+                        "var tuples with " + fields[i].toString(*this) + " types are not allowed");
+      }
+      if (fields[i].dim() != 0) {
+        throw TypeError(*this, ti->loc(), "var tuples with array types are not allowed");
+      }
     }
+
+    // Register tuple field type
+    if (fields[i].bt() == Type::BT_TUPLE && fields[i].typeId() == 0) {
+      registerTupleType(tii);
+      fields[i] = tii->type();  // update with new type
+    }
+    all_var = all_var && fields[i].isvar();
   }
+
   unsigned int ret = registerTupleType(fields);
-  if (write) {
-    Type t = ti->type();
-    t.typeId(ret);
-    ti->type(t);
+  Type t = ti->type();
+  t.typeId(ret);
+  if (all_var) {
+    t.ti(Type::TI_VAR);
   }
+  ti->type(t);
   return ret;
 }
 

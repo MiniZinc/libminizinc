@@ -26,7 +26,8 @@ Model::FnEntry::FnEntry(EnvI& env, FunctionI* fi0)
   for (unsigned int i = 0; i < fi->paramCount(); i++) {
     t[i] = fi->param(i)->type();
     if (t[i].bt() == Type::BT_TUPLE && t[i].typeId() == 0) {
-      t[i].typeId(env.registerTupleType(fi->param(i)->ti(), true));
+      env.registerTupleType(fi->param(i)->ti());
+      t[i] = fi->param(i)->ti()->type();
       fi->param(i)->type(t[i]);
     }
     isPolymorphic |= checkPoly(env, t[i]);
@@ -367,7 +368,8 @@ void Model::addPolymorphicInstances(EnvI& env, Model::FnEntry& fe, std::vector<F
         for (size_t i = 0; i < tis->size(); ++i) {
           cur.t[i] = (*tis)[i]->type();
           if (cur.t[i].bt() == Type::BT_TUPLE && cur.t[i].typeId() == 0) {
-            cur.t[i].typeId(env.registerTupleType((*tis)[i]->cast<TypeInst>(), false));
+            env.registerTupleType((*tis)[i]->cast<TypeInst>());
+            cur.t[i] = (*tis)[i]->type();
           }
         }
         // Then, If this instance isn't in entries yet, add it

@@ -2938,36 +2938,11 @@ public:
         if (tt.isOpt()) {
           throw TypeError(_env, ti->loc(), "opt tuples are not allowed");
         }
-
         needsArrayType = needsArrayType || !ti->ranges().empty();
-        assert(ti->domain()->isa<ArrayLit>());
-        auto* al = ti->domain()->cast<ArrayLit>();
 
-        bool all_var = true;
-        for (unsigned int i = 0; i < al->size(); i++) {
-          assert((*al)[i]->isa<TypeInst>());
-          Type field_ty = (*al)[i]->type();
-          all_var = all_var && field_ty.isvar();
-          if (tt.isvar()) {
-            if (field_ty.st() == Type::ST_SET && field_ty.bt() != Type::BT_INT &&
-                field_ty.bt() != Type::BT_TOP) {
-              throw TypeError(_env, ti->loc(),
-                              "var tuples with set element types other than `int' are not allowed");
-            }
-            if (tt.bt() == Type::BT_ANN || tt.bt() == Type::BT_STRING) {
-              throw TypeError(
-                  _env, ti->loc(),
-                  "var tuples with " + field_ty.toString(_env) + " types are not allowed");
-            }
-            if (field_ty.dim() != 0) {
-              throw TypeError(_env, ti->loc(), "var tuples with array types are not allowed");
-            }
-          }
-        }
-        tt.typeId(_env.registerTupleType(ti, true));
-        if (all_var) {
-          tt.ti(Type::TI_VAR);
-        }
+        // Register and cononicalise tuple type
+        _env.registerTupleType(ti);
+        tt = ti->type();
       } else if (TIId* tiid = ti->domain()->dynamicCast<TIId>()) {
         if (tiid->isEnum()) {
           tt.bt(Type::BT_INT);

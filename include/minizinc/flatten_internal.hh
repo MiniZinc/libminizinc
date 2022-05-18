@@ -323,8 +323,11 @@ public:
   VarDeclI* getEnum(unsigned int i) const;
   unsigned int registerArrayEnum(const std::vector<unsigned int>& arrayEnum);
   const std::vector<unsigned int>& getArrayEnum(unsigned int i) const;
+  // Register tuple type directly from a list of fields
   unsigned int registerTupleType(const std::vector<Type>& fields);
-  unsigned int registerTupleType(TypeInst* ti, bool write);
+  // Register a new tuple type from a TypeInst.
+  // Note this method updates the types of the TypeInst and its domain to become cononical tuple types.
+  unsigned int registerTupleType(TypeInst* ti);
   TupleType* getTupleType(unsigned int i) const;
   std::string enumToString(unsigned int enumId, int i);
   /// Check if \a t1 is a subtype of \a t2 (including enumerated types if \a strictEnum is true)
