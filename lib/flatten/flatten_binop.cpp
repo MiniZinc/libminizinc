@@ -839,6 +839,8 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
   }
 }
 
+EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarDecl* b);
+
 EE flatten_nonbool_op(EnvI& env, const Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expression* e,
                       VarDecl* r, VarDecl* b, bool isBuiltin, BinOp* bo, BinOpType bot) {
   assert(!ctx0.neg);
@@ -873,6 +875,25 @@ EE flatten_nonbool_op(EnvI& env, const Ctx& ctx, const Ctx& ctx0, const Ctx& ctx
       ret.b = bind(env, Ctx(), b, env.constants.literalFalse);
     }
     return ret;
+  }
+
+  if (!isBuiltin && (e0.r()->type() != bo->lhs()->type() || e1.r()->type() != bo->rhs()->type())) {
+    // The type has changed after flattening the arguments. E.g., the type may have gone
+    // from opt to non-opt. In this case, flatten the whole BinOp again with the new
+    // arguments, to ensure that the correct built-in is selected if necessary.
+    KeepAlive ka;
+    {
+      GCLock lock;
+      auto* newBo = new BinOp(bo->loc(), e0.r(), bo->op(), e1.r());
+      std::vector<Expression*> args({e0.r(), e1.r()});
+      FunctionI* fi = env.model->matchFn(env, bo->opToString(), args, true);
+      assert(fi != nullptr);
+      Type ty = fi->rtype(env, args, true);
+      newBo->type(ty);
+      newBo->decl(fi);
+      ka = newBo;
+    }
+    return flatten_binop(env, ctx, ka(), r, b);
   }
 
   if (isBuiltin && bot == BOT_MULT) {
