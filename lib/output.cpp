@@ -294,17 +294,19 @@ void make_par(EnvI& env, Expression* e) {
   top_down(_outputJSON, e);
   class Par : public EVisitor {
   public:
+    EnvI& env;
+    Par(EnvI& env0) : env(env0) {}
     /// Visit variable declaration
     static void vVarDecl(VarDecl* vd) { vd->ti()->type(vd->type()); }
     /// Determine whether to enter node
-    static bool enter(Expression* e) {
+    bool enter(Expression* e) {
       Type t = e->type();
-      t.ti(Type::TI_PAR);
+      t.mkPar(env);
       t.cv(false);
       e->type(t);
       return true;
     }
-  } _par;
+  } _par(env);
   top_down(_par, e);
   class Decls : public EVisitor {
   public:
@@ -569,9 +571,7 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e) {
       if (!idx.first && !idx2.first) {
         auto* nvi = VarDeclI::a(Location().introduce(), copy(env, env.cmap, vd)->cast<VarDecl>());
         Type t = nvi->e()->ti()->type();
-        if (t.ti() != Type::TI_PAR) {
-          t.ti(Type::TI_PAR);
-        }
+        t.mkPar(env);
         make_par(env, nvi->e());
         nvi->e()->ti()->eraseDomain();
         nvi->e()->flat(vd->flat());
@@ -1359,7 +1359,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
       std::vector<Type> tv(c->argCount());
       for (unsigned int i = c->argCount(); (i--) != 0U;) {
         tv[i] = c->arg(i)->type();
-        tv[i].ti(Type::TI_PAR);
+        tv[i].mkPar(env);
       }
       FunctionI* decl = env.output->matchFn(env, c->id(), tv, false);
       FunctionI* origdecl = env.model->matchFn(env, c->id(), tv, false);

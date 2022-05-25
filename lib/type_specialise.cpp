@@ -534,7 +534,7 @@ public:
       Type curType = ti->type();
       Type concrete_type = (*tt)[i];
       curType.bt(concrete_type.bt());
-      curType.typeId(concrete_type.typeId());
+      curType.typeId(0);
       curType.st(concrete_type.st());
       if (curType.dim() == -1) {
         curType.dim(concrete_type.dim());
@@ -572,13 +572,19 @@ public:
             break;
           case ToGenerate::TG_TUPLE:
             // Real "any" types are set in recursive call
+
+            // The following statements violate the cononical representation of tuples. (Hence the
+            // workaround of setting the typeId to 0 above, and then back to its concrete type
+            // below). The representation will be fixed again when the tuple is registered.
             curType.ot(Type::OT_PRESENT);
             curType.ti(Type::TI_PAR);
+            curType.cv(false);
             break;
           default:
             assert(false);
         }
       }
+      curType.typeId(concrete_type.typeId());
       ti->type(curType);
       if (TIId* tiid = Expression::dynamicCast<TIId>(ti->domain())) {
         ti_map.emplace(tiid->v(), concrete_type);

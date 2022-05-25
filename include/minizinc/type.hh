@@ -262,6 +262,8 @@ public:
   void mkVar(EnvI& env);
   /// Turn type or all fields of a tuple type into a optional types
   void mkOpt(EnvI& env);
+  /// Turn type or all fields of a tuple type into a present types
+  void mkPresent(EnvI& env);
   /// Go through the types (of tuple field type) in this order: var opt, var, par opt, par
   /// Returns whether the decrement operation was succesful (false when type is already par)
   bool decrement(EnvI& env);

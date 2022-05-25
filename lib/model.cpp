@@ -433,8 +433,8 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
           if (t1 != t2) {
             alleq = false;
           }
-          t1.ti(Type::TI_PAR);
-          t2.ti(Type::TI_PAR);
+          t1.mkPar(env);
+          t2.mkPar(env);
           if (t1 != t2) {
             eqExceptInst = false;
           }
@@ -461,13 +461,16 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
         if (eqExceptInst) {
           Type t1 = i.fi->ti()->type();
           Type t2 = fi->ti()->type();
-          t1.typeId(0);
-          t2.typeId(0);
-          t1.ti(Type::TI_PAR);
-          t2.ti(Type::TI_PAR);
-          t1.ot(Type::OT_PRESENT);
-          t2.ot(Type::OT_PRESENT);
-          // TODO: Fix for tuples. Can this just be (t1 subtype t2 or t2 subtype t2)?
+          t1.mkPar(env);
+          t2.mkPar(env);
+          t1.mkPresent(env);
+          t2.mkPresent(env);
+          if (t1.bt() == Type::BT_INT) {
+            t1.typeId(0);
+          }
+          if (t2.bt() == Type::BT_INT) {
+            t2.typeId(0);
+          }
           if (t1 != t2) {
             throw TypeError(env, fi->loc(),
                             "function with same type up to par/var but different return type "

@@ -3689,8 +3689,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           std::vector<Type> tv;
           for (int i = 0; i < f.paramCount(); i++) {
             Type t = f.param(i)->type();
+            t.mkPar(env.envi());
             t.cv(false);
-            t.ti(Type::TI_PAR);
             tv.push_back(t);
           }
           // check if specialised par version of function already exists
@@ -3841,12 +3841,12 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           for (int i = 0; i < cp->paramCount(); i++) {
             VarDecl* v = cp->param(i);
             Type vt = v->ti()->type();
-            vt.ti(Type::TI_PAR);
+            vt.mkPar(env.envi());
             v->ti()->type(vt);
             v->type(vt);
           }
           Type cpt(cp->ti()->type());
-          cpt.ti(Type::TI_PAR);
+          cpt.mkPar(env.envi());
           cp->ti()->type(cpt);
           bool didRegister = m->registerFn(env.envi(), cp, true, false);
           if (didRegister) {
@@ -3864,9 +3864,9 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         EnvI& env;
         Model* m;
         MakeFnPar(EnvI& env0, Model* m0) : env(env0), m(m0) {}
-        static bool enter(Expression* e) {
+        bool enter(Expression* e) {
           Type t(e->type());
-          t.ti(Type::TI_PAR);
+          t.mkPar(env);
           t.cv(false);
           e->type(t);
           return true;
