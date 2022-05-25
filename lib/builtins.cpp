@@ -2089,13 +2089,13 @@ std::string show(EnvI& env, Expression* exp) {
   if (e->type().isPar()) {
     e = eval_par(env, e);
   }
-  if (e->type().dim() > 0) {
+  if (e->type().dim() > 0 || e->type().bt() == Type::BT_TUPLE) {
     e = eval_array_lit(env, e);
   }
   if (auto* al = e->dynamicCast<ArrayLit>()) {
     oss << (al->isTuple() ? "(" : "[");
     for (unsigned int i = 0; i < al->size(); i++) {
-      p.print((*al)[i]);
+      oss << show(env, (*al)[i]);
       if (i < al->size() - 1) {
         oss << ", ";
       }

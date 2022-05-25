@@ -4,11 +4,11 @@ solvers: [gecode]
 expected: !Result
   status: SATISFIED
   solution: !Solution
-    _output_item: "full var: (0, true, 1.5)\nvar array: [(2, false), (1, true)]\nnested: (false, (3, 4))\nelement: 3\npartial: (10, false)\ndata: (-3.2, false)\n"
+    _output_item: "full var: (0, true, 1.5)\nvar array: [(2, false), (1, true)]\nnested: (false, (3, 4))\nelement: 3\npartial: (10, true)\ndata: (-3.2, false)\n"
 ***/
 
 % simple tuple variable
-tuple(var int, var bool, var float): x ::output;
+tuple(var int, var bool, var float): x;
 constraint x.1 = 0;
 constraint x.2 = true;
 constraint x.3 = 1.5;
@@ -32,4 +32,4 @@ constraint init.2 <-> init.1 mod 2 == 0;
 % data
 tuple(float, bool): dat = (-3.2, false);
 
-output ["full var: \(x)\nvar array: \(y)\nnested: \(z)\nelement: \((z.2).1)\npartial: \(init)\ndata: \(dat)"];
+output ["full var: \(x)\nvar array: \(y)\nnested: \(z)\nelement: \((z.2).1)\npartial: \(init)\ndata: \(dat)\n"];

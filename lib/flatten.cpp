@@ -2926,6 +2926,11 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
         for (unsigned int i = 0; i < al->size(); i++) {
           es[i] = flat_cv_exp(env, ctx, (*al)[i])();
         }
+        if (al->isTuple()) {
+          Expression* al_ret = eval_par(env, ArrayLit::constructTuple(Location().introduce(), es));
+          al_ret->type(al->type());  // still contains var, so still CV
+          return al_ret;
+        }
         std::vector<std::pair<int, int>> dims(al->dims());
         for (int i = 0; i < al->dims(); i++) {
           dims[i] = std::make_pair(al->min(i), al->max(i));
