@@ -11,7 +11,6 @@
 
 #include <minizinc/flat_exp.hh>
 
-#include <cassert>
 #include <list>
 
 namespace MiniZinc {
@@ -876,12 +875,6 @@ EE flatten_nonbool_op(EnvI& env, const Ctx& ctx, const Ctx& ctx0, const Ctx& ctx
     return ret;
   }
 
-  // Check whether the operator (with flattened argument types) is a BuiltIn
-  std::vector<Expression*> args({e0.r(), e1.r()});
-  if (FunctionI* fi = env.model->matchFn(env, bo->opToString(), args, false)) {
-    isBuiltin = (fi->e() == nullptr);
-  }
-
   if (isBuiltin && bot == BOT_MULT) {
     Expression* e0r = e0.r();
     Expression* e1r = e1.r();
@@ -917,6 +910,9 @@ EE flatten_nonbool_op(EnvI& env, const Ctx& ctx, const Ctx& ctx0, const Ctx& ctx
   }
 
   GC::lock();
+  std::vector<Expression*> args(2);
+  args[0] = e0.r();
+  args[1] = e1.r();
   Call* cc;
   if (!isBuiltin) {
     cc = new Call(bo->loc().introduce(), bo->opToString(), args);
@@ -930,8 +926,7 @@ EE flatten_nonbool_op(EnvI& env, const Ctx& ctx, const Ctx& ctx0, const Ctx& ctx
     ret.r = bind(env, ctx, r, cit->second.r());
   } else {
     if (FunctionI* fi = env.model->matchFn(env, cc->id(), args, false)) {
-      assert(isBuiltin || fi->e() != nullptr);
-      assert(env.isSubtype(fi->rtype(env, args, false), cc->type(), false));
+      assert(cc->type() == fi->rtype(env, args, false));
       cc->decl(fi);
       cc->type(cc->decl()->rtype(env, args, false));
       KeepAlive ka(cc);

@@ -14,9 +14,6 @@ Bug fixes:
 
 -  Fix a bug in the type checker where unsupported coercions could cause crashes.
    (:bugref:`581`).
--  Fix a bug in the flattening of binary operators when types of flattened
-   arguments match a different version function than matched by the type
-   checker. (:bugref:`588`)
 
 .. _v2.6.3:
 
