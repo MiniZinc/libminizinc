@@ -2171,8 +2171,7 @@ std::string b_show_json_basic(EnvI& env, Expression* e) {
   return oss.str();
 }
 
-std::string b_show_json(EnvI& env, Call* call) {
-  Expression* exp = call->arg(0);
+std::string b_show_json(EnvI& env, Expression* exp) {
   GCLock lock;
   Expression* e = eval_par(env, exp);
   if (e->type().isvar()) {
@@ -2199,7 +2198,7 @@ std::string b_show_json(EnvI& env, Call* call) {
           oss << "[";
         }
       }
-      oss << b_show_json_basic(env, (*al)[i]);
+      oss << b_show_json(env, (*al)[i]);
       for (unsigned int dim : dims) {
         if (i % dim == dim - 1) {
           oss << "]";
@@ -2215,6 +2214,11 @@ std::string b_show_json(EnvI& env, Call* call) {
     return oss.str();
   }
   return b_show_json_basic(env, e);
+}
+
+std::string b_show_json(EnvI& env, Call* call) {
+  Expression* exp = call->arg(0);
+  return b_show_json(env, exp);
 }
 
 Expression* b_output_json(EnvI& env, Call* call) {
