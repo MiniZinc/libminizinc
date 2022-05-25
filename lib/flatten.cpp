@@ -1217,13 +1217,20 @@ TupleType* EnvI::getTupleType(Type t) const {
   return _tupleTypes[typeId - 1];
 }
 
-Type EnvI::commonTuple(Type tuple1, Type tuple2) {
+Type EnvI::commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim) {
   if (tuple1 == tuple2) {
     return tuple1;
   }
   if (tuple1.isbot() || tuple2.isbot()) {
     return Type::bot();
   }
+
+  // Allow to ignore the dimensions of (in progress) LHS when arrayEnumIds not yet in use
+  int oldDim = tuple1.dim();
+  if (ignoreTuple1Dim) {
+    tuple1.dim(0);
+  }
+
   if (tuple1.dim() != tuple2.dim()) {
     return Type::bot();
   }
@@ -1270,6 +1277,9 @@ Type EnvI::commonTuple(Type tuple1, Type tuple2) {
     typeId = registerArrayEnum(typeIds);
   }
   tuple1.typeId(typeId);
+  if (ignoreTuple1Dim) {
+    tuple1.dim(oldDim);
+  }
   return tuple1;
 }
 

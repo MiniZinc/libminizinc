@@ -1760,7 +1760,7 @@ public:
             if (ty.bt() != Type::BT_TUPLE) {
               throw TypeError(_env, al->loc(), "non-uniform array literal");
             }
-            ty = _env.commonTuple(ty, vi->type());
+            ty = _env.commonTuple(ty, vi->type(), true);
             if (ty.isbot()) {
               throw TypeError(_env, al->loc(), "non-uniform array literal");
             }

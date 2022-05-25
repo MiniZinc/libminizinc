@@ -346,7 +346,7 @@ public:
   // Get the TupleType for Type with tuple BaseType (safe )
   TupleType* getTupleType(Type t) const;
   /// Returns the typeId of a common tuple type or 0 if no such tuple type exists
-  Type commonTuple(Type tuple1, Type tuple2);
+  Type commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim = false);
   /// Check if tuple can be evaluated (instead of flattened).
   /// (i.e., true if the tuple contains to variable or annotation types)
   bool tupleIsPar(const Type& tuple);
