@@ -1,0 +1,7 @@
+{
+	"singlet": [-3],
+	"duo": ["Albus", true],
+	"arr1d": [[0.2, true], [-23.1, false]],
+	"arr2d": [[[1, "one", true], [2, "two", true]], [[-1, "min one", false], [-2, "min two", false]]],
+	"empty_arr": []
+}

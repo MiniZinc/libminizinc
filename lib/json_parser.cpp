@@ -9,6 +9,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <minizinc/ast.hh>
 #include <minizinc/file_utils.hh>
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/iter.hh>
@@ -582,18 +583,23 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
 
   // Convert tuples
   if (ti->type().bt() == Type::BT_TUPLE) {
-    auto* types = ti->domain()->cast<ArrayLit>();
-    for (size_t i = 0; i < al->size(); ++i) {
-      if ((*al)[i]->isa<ArrayLit>()) {
-        auto* tup = ArrayLit::constructTuple((*al)[i]->loc(), (*al)[i]->cast<ArrayLit>());
-        al->set(i, tup);
+    if (ti->type().dim() == 0) {
+      assert(!ti->isarray());
+      al = ArrayLit::constructTuple(al->loc(), al);
+    } else {
+      auto* types = ti->domain()->cast<ArrayLit>();
+      for (size_t i = 0; i < al->size(); ++i) {
+        if ((*al)[i]->isa<ArrayLit>()) {
+          auto* tup = ArrayLit::constructTuple((*al)[i]->loc(), (*al)[i]->cast<ArrayLit>());
+          al->set(i, tup);
 
-        if (tup->size() != types->size()) {
-          continue;  // Error will be raised by typechecker
-        }
-        for (size_t j = 0; j < tup->size(); ++j) {
-          if ((*tup)[j]->isa<ArrayLit>()) {
-            tup->set(j, coerceArray((*types)[j]->cast<TypeInst>(), (*tup)[j]->cast<ArrayLit>()));
+          if (tup->size() != types->size()) {
+            continue;  // Error will be raised by typechecker
+          }
+          for (size_t j = 0; j < tup->size(); ++j) {
+            if ((*tup)[j]->isa<ArrayLit>()) {
+              tup->set(j, coerceArray((*types)[j]->cast<TypeInst>(), (*tup)[j]->cast<ArrayLit>()));
+            }
           }
         }
       }
@@ -610,7 +616,7 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
   bool needs_call = false;
   for (int i = 0; i < ti->ranges().size(); ++i) {
     TypeInst* nti = ti->ranges()[i];
-    if (nti->domain() == nullptr) {
+    if (nti->domain() == nullptr || nti->domain()->isa<AnonVar>()) {
       if (missing_index != -1) {
         return al;  // More than one index set is missing. Cannot compute correct index sets.
       }
@@ -683,7 +689,7 @@ void JSONParser::parseModel(Model* m, std::istream& is, bool isData) {
       } else {
         auto* al = e->dynamicCast<ArrayLit>();
         if (it != knownIds.end() && al != nullptr) {
-          if (it->second->isarray()) {
+          if (it->second->isarray() || it->second->type().bt() == Type::BT_TUPLE) {
             // Add correct index sets if they are non-standard
             e = coerceArray(it->second, al);
           } else if (it->second->type().isSet()) {
