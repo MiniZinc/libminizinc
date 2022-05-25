@@ -208,6 +208,8 @@ public:
 };
 
 class EnvI {
+  friend class Type;
+
 public:
   Model* model;
   Model* originalModel;

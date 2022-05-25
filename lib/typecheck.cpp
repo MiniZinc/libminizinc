@@ -1957,7 +1957,6 @@ public:
   }
   /// Visit field access
   void vFieldAccess(FieldAccess* fa) {
-    // TODO: Support for Records
     if (!fa->v()->type().istuple()) {
       std::ostringstream oss;
       oss << "field access attempted on expression of type `" << fa->v()->type().toString(_env)
@@ -1978,9 +1977,8 @@ public:
       throw TypeError(_env, fa->loc(), oss.str());
     }
     Type ty((*tt)[i.toInt() - 1]);
-    if (fa->v()->type().isvar()) {
-      ty.ti(Type::TI_VAR);
-    }
+    assert((!ty.cv()) || fa->v()->type().cv());
+    ty.cv(fa->v()->type().cv());
     fa->type(ty);
   }
   /// Visit array comprehension
@@ -2931,8 +2929,32 @@ public:
         if (tt.isOpt()) {
           throw TypeError(_env, ti->loc(), "opt tuples are not allowed");
         }
-        needsArrayType = false;  // will be registered by registerTupleType
 
+        if (ti->type().isvar()) {
+          auto* dom = ti->domain()->cast<ArrayLit>();
+          // Check if "var" tuple is allowed
+          for (unsigned int i = 0; i < dom->size(); i++) {
+            auto* tii = (*dom)[i]->cast<TypeInst>();
+            Type field = tii->type();
+            if (field.st() == Type::ST_SET && field.bt() != Type::BT_INT &&
+                field.bt() != Type::BT_TOP) {
+              throw TypeError(_env, ti->loc(),
+                              "var tuples with set element types other than `int' are not allowed");
+            }
+            if (field.bt() == Type::BT_ANN || field.bt() == Type::BT_STRING) {
+              throw TypeError(_env, ti->loc(),
+                              "var tuples with " + field.toString(_env) + " types are not allowed");
+            }
+            if (field.dim() != 0) {
+              throw TypeError(_env, ti->loc(), "var tuples with array types are not allowed");
+            }
+          }
+          // spread var keyword in field types:
+          // var tuple (X, Y, ...) -> var tuple(var X, var Y, ...)
+          ti->mkVar();
+        }
+
+        needsArrayType = false;  // will be registered by registerTupleType
         // Register and cononicalise tuple type
         _env.registerTupleType(ti);
         tt = ti->type();

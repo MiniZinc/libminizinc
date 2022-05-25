@@ -12,6 +12,8 @@
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/type.hh>
 
+#include <vector>
+
 namespace MiniZinc {
 
 bool Type::btSubtype(const EnvI& env, const Type& t0, const Type& t1, bool strictEnums) {
@@ -36,6 +38,164 @@ bool Type::btSubtype(const EnvI& env, const Type& t0, const Type& t1, bool stric
     default:
       return false;
   }
+}
+
+void Type::mkPar(EnvI& env) {
+  if (bt() != BT_TUPLE) {
+    ti(TI_PAR);
+    return;
+  }
+  if (!cv()) {
+    return;
+  }
+  std::vector<unsigned int> arrayEnumIds;
+  TupleType* tt = nullptr;
+  if (dim() > 0) {
+    arrayEnumIds = env.getArrayEnum(typeId());
+    tt = env.getTupleType(arrayEnumIds[arrayEnumIds.size() - 1]);
+  } else {
+    tt = env.getTupleType(typeId());
+  }
+  std::vector<Type> pt(tt->size());
+  for (int i = 0; i < tt->size(); ++i) {
+    pt[i] = (*tt)[i];
+    if (pt[i].bt() == BT_TUPLE) {
+      pt[i].mkPar(env);
+    } else {
+      pt[i].ti(TI_PAR);
+    }
+  }
+  if (dim() > 0) {
+    arrayEnumIds[arrayEnumIds.size() - 1] = env.registerTupleType(pt);
+    typeId(env.registerArrayEnum(arrayEnumIds));
+  } else {
+    typeId(env.registerTupleType(pt));
+  }
+  cv(false);
+}
+
+void Type::mkVar(EnvI& env) {
+  if (bt() != BT_TUPLE) {
+    ti(TI_VAR);
+    return;
+  }
+  std::vector<unsigned int> arrayEnumIds;
+  TupleType* tt = nullptr;
+  if (dim() > 0) {
+    arrayEnumIds = env.getArrayEnum(typeId());
+    tt = env.getTupleType(arrayEnumIds[arrayEnumIds.size() - 1]);
+  } else {
+    tt = env.getTupleType(typeId());
+  }
+  std::vector<Type> pt(tt->size());
+  bool changed = false;
+  for (int i = 0; i < tt->size(); ++i) {
+    pt[i] = (*tt)[i];
+    if (pt[i].bt() == BT_TUPLE) {
+      pt[i].mkVar(env);
+      changed = changed || (*tt)[i].typeId() != pt[i].typeId();
+    } else {
+      changed = changed || pt[i].ti() != TI_VAR;
+      pt[i].ti(TI_VAR);
+    }
+  }
+  if (changed) {
+    if (dim() > 0) {
+      arrayEnumIds[arrayEnumIds.size() - 1] = env.registerTupleType(pt);
+      typeId(env.registerArrayEnum(arrayEnumIds));
+    } else {
+      typeId(env.registerTupleType(pt));
+    }
+  }
+  cv(true);
+}
+
+void Type::mkOpt(EnvI& env) {
+  assert(st() == Type::ST_PLAIN);
+  if (bt() != BT_TUPLE) {
+    ot(OT_OPTIONAL);
+    return;
+  }
+  std::vector<unsigned int> arrayEnumIds;
+  TupleType* tt = nullptr;
+  if (dim() > 0) {
+    arrayEnumIds = env.getArrayEnum(typeId());
+    tt = env.getTupleType(arrayEnumIds[arrayEnumIds.size() - 1]);
+  } else {
+    tt = env.getTupleType(typeId());
+  }
+  std::vector<Type> pt(tt->size());
+  bool changed = false;
+  for (int i = 0; i < tt->size(); ++i) {
+    pt[i] = (*tt)[i];
+    if (pt[i].bt() == BT_TUPLE) {
+      pt[i].mkOpt(env);
+      changed = changed || (*tt)[i].typeId() != pt[i].typeId();
+    } else if (st() == Type::ST_PLAIN) {
+      changed = changed || pt[i].ot() != OT_OPTIONAL;
+      pt[i].ot(OT_OPTIONAL);
+    }
+  }
+  if (changed) {
+    if (dim() > 0) {
+      arrayEnumIds[arrayEnumIds.size() - 1] = env.registerTupleType(pt);
+      typeId(env.registerArrayEnum(arrayEnumIds));
+    } else {
+      typeId(env.registerTupleType(pt));
+    }
+  }
+}
+
+bool Type::decrement(EnvI& env) {
+  if (bt() != BT_TUPLE) {
+    if (ot() == Type::OT_OPTIONAL) {
+      // this is var or par opt, turn into just par or var
+      ot(Type::OT_PRESENT);
+      return true;
+    }
+    if (ti() == Type::TI_VAR) {
+      // var, turn into par opt
+      if (st() == Type::ST_PLAIN) {
+        ot(Type::OT_OPTIONAL);
+      }
+      ti(Type::TI_PAR);
+      return true;
+    }
+    return false;
+  }
+  std::vector<unsigned int> arrayEnumIds;
+  TupleType* tt = nullptr;
+  if (dim() > 0) {
+    arrayEnumIds = env.getArrayEnum(typeId());
+    tt = env.getTupleType(arrayEnumIds[arrayEnumIds.size() - 1]);
+  } else {
+    tt = env.getTupleType(typeId());
+  }
+  // Copy types
+  std::vector<Type> pt(tt->size());
+  for (int i = 0; i < tt->size(); ++i) {
+    pt[i] = (*tt)[i];
+  }
+  int changed = static_cast<int>(tt->size()) - 1;
+  for (; changed >= 0; --changed) {
+    if (pt[changed].decrement(env)) {
+      break;
+    }
+  }
+  if (changed < 0) {
+    return false;
+  }
+  for (int i = changed + 1; i < tt->size(); ++i) {
+    pt[i].mkVar(env);
+    pt[i].mkOpt(env);
+  }
+  if (dim() > 0) {
+    arrayEnumIds[arrayEnumIds.size() - 1] = env.registerTupleType(pt);
+    typeId(env.registerArrayEnum(arrayEnumIds));
+  } else {
+    typeId(env.registerTupleType(pt));
+  }
+  return true;
 }
 
 std::string Type::toString(const EnvI& env) const {

@@ -159,7 +159,7 @@ struct InstantiatedItem {
       : ident(ident0), argTypes(std::move(argTypes0)) {
     for (auto& t : argTypes) {
       t.ot(Type::OT_PRESENT);
-      t.ti(Type::TI_PAR);
+      t.mkPar(env);
     }
   }
 
@@ -481,8 +481,8 @@ private:
       assert(match_types->size() == matchTypes.size());
       return {hadAny, ToGenerate(std::move(matchTypes))};
     }
-    // returns generation template from function item. Template is added to toGenerate if condition
-    // returns true
+    // returns generation template from function item. Template is added to toGenerate if
+    // condition returns true
     static bool anyVariants(EnvI& env, ToGenerate& gen, TupleType* match_types,
                             TupleType* concrete_types, std::vector<ToGenerate>& toGenerate,
                             const std::function<bool(const ToGenerate&)>& condition) {

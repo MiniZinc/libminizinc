@@ -20,6 +20,7 @@
 #include <minizinc/optimize.hh>
 #include <minizinc/output.hh>
 #include <minizinc/statistics.hh>
+#include <minizinc/type.hh>
 #include <minizinc/typecheck.hh>
 #include <minizinc/utils.hh>
 
@@ -1136,39 +1137,29 @@ unsigned int EnvI::registerTupleType(TypeInst* ti) {
   auto* dom = ti->domain()->cast<ArrayLit>();
 
   std::vector<Type> fields(dom->size());
-  bool all_var = true;
+  bool cv = false;
+  bool var = true;
   for (unsigned int i = 0; i < dom->size(); i++) {
     auto* tii = (*dom)[i]->cast<TypeInst>();
     fields[i] = tii->type();
+    cv = cv || fields[i].isvar() || fields[i].cv();
+    var = var && fields[i].isvar();
 
-    // Varify the fields of the tuple when required
-    if (ti->type().isvar()) {
-      fields[i].ti(Type::TI_VAR);
-      tii->type(fields[i]);
-      if (fields[i].st() == Type::ST_SET && fields[i].bt() != Type::BT_INT &&
-          fields[i].bt() != Type::BT_TOP) {
-        throw TypeError(*this, ti->loc(),
-                        "var tuples with set element types other than `int' are not allowed");
-      }
-      if (fields[i].bt() == Type::BT_ANN || fields[i].bt() == Type::BT_STRING) {
-        throw TypeError(*this, ti->loc(),
-                        "var tuples with " + fields[i].toString(*this) + " types are not allowed");
-      }
-      if (fields[i].dim() != 0) {
-        throw TypeError(*this, ti->loc(), "var tuples with array types are not allowed");
-      }
-    }
-
-    // Register tuple field type
+    // Register tuple field type when required
     if (fields[i].bt() == Type::BT_TUPLE && fields[i].typeId() == 0) {
       registerTupleType(tii);
       fields[i] = tii->type();  // update with new type
     }
-    all_var = all_var && fields[i].isvar();
   }
+  // the TI_VAR ti is not processed by this function. This cononicalisation should have been done
+  // during typechecking.
+  assert(ti->type().ti() == Type::TI_PAR || var);
 
   unsigned int ret = registerTupleType(fields);
   Type t = ti->type();
+  t.typeId(0);  // Reset any current TypeId
+  t.cv(cv);
+  t.ti(var ? Type::TI_VAR : Type::TI_PAR);
   // Register an array type when required
   if (!ti->ranges().empty()) {
     assert(t.dim() > 0);
@@ -1182,9 +1173,6 @@ unsigned int EnvI::registerTupleType(TypeInst* ti) {
     assert(t.dim() == 0);
   }
   t.typeId(ret);
-  if (all_var) {
-    t.ti(Type::TI_VAR);
-  }
   ti->type(t);
   return ret;
 }
@@ -1193,18 +1181,22 @@ unsigned int EnvI::registerTupleType(ArrayLit* tup) {
   assert(tup->isTuple() && tup->dims() == 1);
   Type ty = tup->type();
   ty.bt(Type::BT_TUPLE);
-  assert(!ty.isvar());  // How would a tuple literal be known to be fully var before this stage?
+  ty.typeId(0);  // Reset any current TypeId
   std::vector<Type> fields(tup->size());
-  bool all_var = true;
+  bool cv = false;
+  bool var = true;
   for (unsigned int i = 0; i < tup->size(); i++) {
     fields[i] = (*tup)[i]->type();
+    cv = cv || fields[i].isvar() || fields[i].cv();
+    var = var && fields[i].isvar();
     assert(fields[i].bt() != Type::BT_TUPLE || fields[i].typeId() != 0);
-    all_var = all_var && fields[i].isvar();
   }
   unsigned int typeId = registerTupleType(fields);
-  ty.typeId(typeId);
   assert(ty.dim() == 0);  // Tuple literals do not have array dimensions (otherwise, we should
                           // register arrayEnumTypes)
+  ty.cv(cv);
+  ty.ti(var ? Type::TI_VAR : Type::TI_PAR);
+  ty.typeId(typeId);
   tup->type(ty);
   return typeId;
 }
@@ -1279,18 +1271,6 @@ Type EnvI::commonTuple(Type tuple1, Type tuple2) {
   }
   tuple1.typeId(typeId);
   return tuple1;
-}
-
-bool EnvI::tupleIsPar(const Type& tuple) {
-  assert(tuple.bt() == Type::BT_TUPLE);
-  TupleType* tt = getTupleType(tuple);
-  for (size_t i = 0; i < tt->size(); ++i) {
-    if (!(*tt)[i].isPar() || (*tt)[i].cv() || (*tt)[i].bt() != Type::BT_ANN ||
-        ((*tt)[i].bt() == Type::BT_TUPLE && !tupleIsPar((*tt)[i]))) {
-      return false;
-    }
-  }
-  return true;
 }
 
 std::string EnvI::enumToString(unsigned int enumId, int i) {
@@ -4142,7 +4122,7 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd,
   if (vd->type().isPar()) {
     vd->ann().clear();
     vd->introduced(false);
-    vd->ti()->domain(nullptr);
+    vd->ti()->eraseDomain();
   }
 
   // In FlatZinc the RHS of a VarDecl must be a literal, Id or empty

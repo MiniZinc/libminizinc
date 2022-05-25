@@ -1375,15 +1375,19 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
     // if any of the uses are var set.
 
     Type ty = ta[n]->type();
-    ty.st(curTiiT.st());
+    if (ty.bt() != Type::BT_TUPLE) {
+      ty.st(curTiiT.st());
+    }
     ty.dim(curTiiT.dim());
     ASTString tv = tii->domain()->cast<TIId>()->v();
     for (unsigned int i = 0; i < paramCount(); i++) {
       if ((param(i)->ti()->domain() != nullptr) && param(i)->ti()->domain()->isa<TIId>() &&
           param(i)->ti()->domain()->cast<TIId>()->v() == tv) {
         Type toCheck = ta[i]->type();
-        toCheck.ot(curTiiT.ot());
-        toCheck.st(curTiiT.st());
+        if (toCheck.bt() != Type::BT_TUPLE) {
+          toCheck.ot(curTiiT.ot());
+          toCheck.st(curTiiT.st());
+        }
         toCheck.dim(curTiiT.dim());
         if (toCheck != ty) {
           if (env.isSubtype(ty, toCheck, true)) {

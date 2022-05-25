@@ -17,8 +17,6 @@
 #include <minizinc/model.hh>
 #include <minizinc/prettyprinter.hh>
 
-#include "minizinc/ast.hh"
-
 #include <iomanip>
 #include <limits>
 #include <map>
@@ -371,6 +369,11 @@ public:
                 _os << "(≡";
                 p(new SetLit(Location().introduce(), parExp));
                 _os << ")";
+              } else if (e->type().istuple()) {
+                auto* parExp = eval_array_lit(*_env, const_cast<Expression*>(e));
+                _os << "(≡ ";
+                p(parExp);
+                _os << " )";
               }
             } catch (ResultUndefinedError&) {
               _os << "(≡⊥)";

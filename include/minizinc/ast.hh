@@ -1528,6 +1528,43 @@ public:
       field_ti->eraseDomain();
     }
   }
+  void mkVar() {
+    if (_domain == nullptr || !_domain->isa<ArrayLit>()) {
+      assert(type().bt() != Type::BT_TUPLE);
+      Type tt = type();
+      tt.ti(Type::TI_VAR);
+      type(tt);
+      return;
+    }
+    auto* al = _domain->cast<ArrayLit>();
+    for (int i = 0; i < al->size(); ++i) {
+      auto* field_ti = (*al)[i]->cast<TypeInst>();
+      field_ti->mkVar();
+    }
+    // TypeId would now be invalid. Tuple type must be re-registered after mkVar call
+    Type tt = type();
+    tt.typeId(0);
+    tt.cv(true);
+    type(tt);
+  }
+  void mkPar() {
+    if (_domain == nullptr || !_domain->isa<ArrayLit>()) {
+      assert(type().bt() == Type::BT_TUPLE);
+      Type tt = type();
+      tt.ti(Type::TI_PAR);
+      type(tt);
+      return;
+    }
+    auto* al = _domain->cast<ArrayLit>();
+    for (int i = 0; i < al->size(); ++i) {
+      auto* field_ti = (*al)[i]->cast<TypeInst>();
+      field_ti->mkVar();
+    }
+    // TypeId would now be invalid. Tuple type must be re-registered after mkPar call
+    Type tt = type();
+    tt.typeId(0);
+    type(tt);
+  }
 
   /// Set ranges to \a ranges
   void setRanges(const std::vector<TypeInst*>& ranges);

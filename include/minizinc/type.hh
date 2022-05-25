@@ -57,7 +57,7 @@ private:
    * This is an index into a table in the Env. It is currently limited to
    * 4095 different type identifiers.
    * For a non-array integer type, this maps directly to the identity of the enum.
-   * For a non-array struct type, this maps directly to the definition of an struct.
+   * For a non-array tuple type, this maps directly to the definition of a tuple.
    * For an array type, it maps to a tuple of type identifiers.
    */
   unsigned int _typeId : 12;
@@ -80,6 +80,8 @@ public:
   Inst ti() const { return static_cast<Inst>(_ti); }
   /// Set type-inst
   void ti(const Inst& t) {
+    // TI of tuple should not be changed after typechecking
+    assert(bt() != BT_TUPLE || typeId() == 0);
     _ti = t;
     if (t == TI_VAR) {
       _cv = CV_YES;
@@ -94,12 +96,20 @@ public:
   /// Access set type
   SetType st() const { return static_cast<SetType>(_st); }
   /// Set set type
-  void st(const SetType& s) { _st = s; }
+  void st(const SetType& s) {
+    assert(s == ST_PLAIN || bt() != BT_TUPLE ||
+           typeId() == 0);  // Cannot create "set of tuple" after typechecking
+    _st = s;
+  }
 
   /// Access opt type
   OptType ot() const { return static_cast<OptType>(_ot); }
   /// Set opt type
-  void ot(const OptType& o) { _ot = o; }
+  void ot(const OptType& o) {
+    assert(o == OT_PRESENT || bt() != BT_TUPLE ||
+           typeId() == 0);  // Cannot create "opt tuple" after typechecking
+    _ot = o;
+  }
 
   /// Access var-in-par type
   bool cv() const { return static_cast<ContainsVarType>(_cv) == CV_YES; }
@@ -141,7 +151,7 @@ public:
   static Type parenum(unsigned int enumId, int dim = 0) {
     return Type(TI_PAR, BT_INT, ST_PLAIN, enumId, dim);
   }
-  static Type partuple(unsigned int typeId, int dim = 0) {
+  static Type tuple(unsigned int typeId = 0, int dim = 0) {
     return Type(TI_PAR, BT_TUPLE, ST_PLAIN, typeId, dim);
   }
   static Type parbool(int dim = 0) { return Type(TI_PAR, BT_BOOL, ST_PLAIN, 0, dim); }
@@ -149,7 +159,6 @@ public:
   static Type parstring(int dim = 0) { return Type(TI_PAR, BT_STRING, ST_PLAIN, 0, dim); }
   static Type partop(int dim = 0) { return Type(TI_PAR, BT_TOP, ST_PLAIN, 0, dim); }
   static Type ann(int dim = 0) { return Type(TI_PAR, BT_ANN, ST_PLAIN, 0, dim); }
-  static Type tuple(int dim = 0) { return Type(TI_PAR, BT_TUPLE, ST_PLAIN, 0, dim); }
   static Type parsetint(int dim = 0) { return Type(TI_PAR, BT_INT, ST_SET, 0, dim); }
   static Type parsetenum(unsigned int enumId, int dim = 0) {
     return Type(TI_PAR, BT_INT, ST_SET, enumId, dim);
@@ -246,6 +255,17 @@ public:
     t._dim = (dim == 0 ? 0 : (dim == 1 ? -1 : dim - 1));
     return t;
   }
+
+  /// Turn type or all fields of a tuple type into a parameter types
+  void mkPar(EnvI& env);
+  /// Turn type or all fields of a tuple type into a parameter types
+  void mkVar(EnvI& env);
+  /// Turn type or all fields of a tuple type into a optional types
+  void mkOpt(EnvI& env);
+  /// Go through the types (of tuple field type) in this order: var opt, var, par opt, par
+  /// Returns whether the decrement operation was succesful (false when type is already par)
+  bool decrement(EnvI& env);
+
   std::string toString(const EnvI& env) const;
   std::string nonEnumToString() const;
 

@@ -150,9 +150,6 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
         for (size_t i = 0; i < fieldsti->size(); ++i) {
           auto* nti = (*fieldsti)[i]->cast<TypeInst>();
           Type nty(nti->type());
-          if (vd->ti()->type().isvar()) {
-            nty.ti(Type::TI_VAR);
-          }
           auto* vti = new TypeInst(Location().introduce(), nty, nti->ranges(), nti->domain());
           VarDecl* nvd = new_vardecl(env, Ctx(), vti, nullptr, vd, nullptr);
           elems[i] =

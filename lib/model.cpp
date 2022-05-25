@@ -514,15 +514,17 @@ void compute_possible_matches(EnvI& env, const Model* m, const ASTString& ident,
                               std::vector<FunctionI*>& ret) {
   // Go through the types in this order: var opt, var, par opt, par
   std::vector<Type> vp(ta.size());
-  for (unsigned int i = 0; i < ta.size(); i++) {
-    vp[i] = ta[i];
-    vp[i].ti(Type::TI_VAR);
-    if (vp[i].st() == Type::ST_PLAIN) {
-      vp[i].ot(Type::OT_OPTIONAL);
+  auto reset_types_from = [&](size_t from) {
+    for (size_t i = from; i < ta.size(); i++) {
+      vp[i] = ta[i];
+      vp[i].mkVar(env);
+      if (vp[i].st() == Type::ST_PLAIN) {
+        vp[i].mkOpt(env);
+      }
     }
-  }
+  };
+  reset_types_from(0);
   int finalType = static_cast<int>(ta.size()) - 1;
-  std::vector<int> stack;
 
   for (;;) {
     auto* fi = m->matchFn(env, ident, vp, false);
@@ -535,29 +537,8 @@ void compute_possible_matches(EnvI& env, const Model* m, const ASTString& ident,
     int i = finalType;
     for (; i >= 0; i--) {
       Type& t = vp[i];
-      if (t.ti() != Type::TI_PAR || t.ot() != Type::OT_PRESENT) {
-        if (t.ti() == Type::TI_VAR) {
-          if (t.ot() == Type::OT_OPTIONAL) {
-            // var opt, turn into var
-            t.ot(Type::OT_PRESENT);
-          } else {
-            // var, turn into par opt
-            if (t.st() == Type::ST_PLAIN) {
-              t.ot(Type::OT_OPTIONAL);
-            }
-            t.ti(Type::TI_PAR);
-          }
-        } else {
-          // this is par opt, turn into par
-          t.ot(Type::OT_PRESENT);
-        }
-        for (unsigned int j = i + 1; j < ta.size(); j++) {
-          vp[j] = ta[j];
-          vp[j].ti(Type::TI_VAR);
-          if (vp[j].st() == Type::ST_PLAIN) {
-            vp[j].ot(Type::OT_OPTIONAL);
-          }
-        }
+      if (t.decrement(env)) {
+        reset_types_from(i + 1);
         break;
       }
     }

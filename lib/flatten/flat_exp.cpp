@@ -118,8 +118,7 @@ EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
 
   bool is_par = e->type().isPar() &&
                 (!e->type().cv() || !e->type().isbool() || ctx.b != C_ROOT || e->isa<BoolLit>()) &&
-                (e->type().bt() != Type::BT_TUPLE || env.tupleIsPar(e->type())) && !e->isa<Let>() &&
-                !e->isa<VarDecl>() && e->type().bt() != Type::BT_ANN;
+                !e->isa<Let>() && !e->isa<VarDecl>() && e->type().bt() != Type::BT_ANN;
 
 #ifdef OUTPUT_CALLTREE
   if (auto* call = e->dynamicCast<Call>()) {
