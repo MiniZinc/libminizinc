@@ -745,6 +745,12 @@ void Model::checkFnOverloading(EnvI& env) {
         for (unsigned int i = 0; i < cur->paramCount(); i++) {
           Type t1 = cur->param(i)->type();
           Type t2 = cmp->param(i)->type();
+          if (t1.bt() == Type::BT_INT) {
+            t1.typeId(0);
+          }
+          if (t2.bt() == Type::BT_INT) {
+            t2.typeId(0);
+          }
           if (t1 != t2) {
             allEqual = false;
             break;
@@ -1019,7 +1025,9 @@ FunctionI* Model::matchRevMap(EnvI& env, const Type& t0) const {
     m = m->_parent;
   }
   Type t = t0;
-  t.typeId(0);
+  if (t.bt() == Type::BT_INT) {
+    t.typeId(0);
+  }
   auto it = _revmapmap.find(t.toInt());
   if (it != _revmapmap.end()) {
     return it->second;

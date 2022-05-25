@@ -692,8 +692,8 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
     std::ostringstream s;
     s << Printer::quoteId(name) << " = ";
     bool needArrayXd = false;
-    ArrayLit* al = nullptr;
     if (vd->type().dim() > 0) {
+      ArrayLit* al = nullptr;
       if (!vd->ann().contains(e.constants.ann.output_only)) {
         if ((vd->flat() != nullptr) && (vd->flat()->e() != nullptr)) {
           al = eval_array_lit(e, vd->flat()->e());
@@ -704,7 +704,7 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
       if (al == nullptr || !al->empty()) {
         // First check if we can use an array literal representation
         // or whether we have to introduce an arrayXd call
-        if (vd->type().dim() <= 2 && al != nullptr && vd->type().bt() == Type::BT_INT) {
+        if (vd->type().dim() <= 2 && al != nullptr) {
           if (vd->type().dim() == 2) {
             s << "\n";
           }
@@ -1008,7 +1008,6 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
     assert(fi);
     show->decl(fi);
     outputVars.push_back(show);
-
     std::string ends = needArrayXd ? ")" : "";
     ends += ";\n";
     auto* eol = new StringLit(Location().introduce(), ends);
