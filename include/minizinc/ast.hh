@@ -1558,7 +1558,7 @@ public:
     auto* al = _domain->cast<ArrayLit>();
     for (int i = 0; i < al->size(); ++i) {
       auto* field_ti = (*al)[i]->cast<TypeInst>();
-      field_ti->mkVar();
+      field_ti->mkPar();
     }
     // TypeId would now be invalid. Tuple type must be re-registered after mkPar call
     Type tt = type();
