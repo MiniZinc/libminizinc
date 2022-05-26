@@ -276,6 +276,9 @@ public:
   /// element typeId must be extracted.
   Type elemType(EnvI& env) const;
 
+  /// A helper function that merges the dimensions of dimTy into elemTy
+  static Type arrType(EnvI& env, const Type& dimTy, const Type& elemTy);
+
   std::string toString(const EnvI& env) const;
   std::string simpleToString() const;
 

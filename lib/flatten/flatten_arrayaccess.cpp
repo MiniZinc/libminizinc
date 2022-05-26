@@ -277,8 +277,10 @@ flatten_arrayaccess:
     }
 
     TupleType* tt = env.getTupleType(al->type());
+    TupleType* res_tt = env.getTupleType(aa->type());
     // WARNING: Expressions stored in ees, rely on being also in ees to be kept alive
     std::vector<Expression*> field_res(tt->size());
+    assert(tt->size() == res_tt->size());
     for (int i = 0; i < tt->size(); ++i) {
       Type field_ty = (*tt)[i];
       // Create an array containing current field
@@ -293,14 +295,10 @@ flatten_arrayaccess:
           tmp[j]->type(field_ty);
         }
         auto* field_al = new ArrayLit(al->loc().introduce(), tmp, dims);
-        Type al_type = field_ty;
-        al_type.dim(al->type().dim());
-        field_al->type(al_type);
+        field_al->type(Type::arrType(env, al->type(), field_ty));
 
         field_aa = new ArrayAccess(aa->loc().introduce(), field_al, idx);
-        Type aa_type = field_ty;
-        aa_type.mkVar(env);
-        field_aa()->type(aa_type);
+        field_aa()->type((*res_tt)[i]);
       }
       // TODO: Does the context need to be changed? Are 'r' and 'b' correct?
       EE ee = flat_exp(env, ctx, field_aa(), nullptr, b);

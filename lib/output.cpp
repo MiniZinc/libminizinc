@@ -772,6 +772,7 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
 
               auto* aa = new ArrayAccess(Location().introduce(), vd->id(), {i_vd->id()});
               Type vd_t = vd->type();
+              vd_t.typeId(0);
               vd_t.dim(0);
               vd_t.typeId(xEnumId);
               aa->type(vd_t);

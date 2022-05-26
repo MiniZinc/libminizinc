@@ -238,15 +238,33 @@ bool Type::decrement(EnvI& env) {
 
 Type Type::elemType(EnvI& env) const {
   Type elemTy = *this;
-  if (elemTy.typeId() == 0 || dim() == 0) {
-    elemTy.dim(0);
+  if (dim() == 0) {
+    return elemTy;
+  }
+  elemTy.typeId(0);
+  elemTy.dim(0);
+  if (typeId() == 0) {
     return elemTy;
   }
   const std::vector<unsigned int>& arrayEnumIds = env.getArrayEnum(typeId());
-  elemTy.typeId(0);
-  elemTy.dim(0);
   elemTy.typeId(arrayEnumIds[arrayEnumIds.size() - 1]);
   return elemTy;
+}
+
+Type Type::arrType(EnvI& env, const Type& dimTy, const Type& elemTy) {
+  assert(dimTy.dim() > 0 && elemTy.dim() == 0);
+  Type ret = elemTy;
+  ret.typeId(0);
+  ret.dim(dimTy.dim());
+  if (dimTy.typeId() == 0 && elemTy.typeId() == 0) {
+    return ret;
+  }
+  std::vector<unsigned int> arrayEnumIds = dimTy.typeId() != 0
+                                               ? env.getArrayEnum(dimTy.typeId())
+                                               : std::vector<unsigned int>(dimTy.dim() + 1, 0);
+  arrayEnumIds[arrayEnumIds.size() - 1] = elemTy.typeId();
+  ret.typeId(env.registerArrayEnum(arrayEnumIds));
+  return ret;
 }
 
 std::string Type::toString(const EnvI& env) const {
