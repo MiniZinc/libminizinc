@@ -12,6 +12,7 @@
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/type.hh>
 
+#include <cassert>
 #include <vector>
 
 namespace MiniZinc {
@@ -233,6 +234,19 @@ bool Type::decrement(EnvI& env) {
     typeId(env.registerTupleType(pt));
   }
   return true;
+}
+
+Type Type::elemType(EnvI& env) const {
+  Type elemTy = *this;
+  if (elemTy.typeId() == 0 || dim() == 0) {
+    elemTy.dim(0);
+    return elemTy;
+  }
+  const std::vector<unsigned int>& arrayEnumIds = env.getArrayEnum(typeId());
+  elemTy.typeId(0);
+  elemTy.dim(0);
+  elemTy.typeId(arrayEnumIds[arrayEnumIds.size() - 1]);
+  return elemTy;
 }
 
 std::string Type::toString(const EnvI& env) const {

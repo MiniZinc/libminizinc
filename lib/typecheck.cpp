@@ -1948,7 +1948,10 @@ public:
                               (tt.bt() == Type::BT_ANN ? "ann" : "string"));
         }
       }
+      unsigned int typeId = tt.typeId();
+      tt.typeId(0);
       tt.dim(n_dimensions);
+      tt.typeId(typeId);
       if (aai->type().cv()) {
         tt.cv(true);
       }

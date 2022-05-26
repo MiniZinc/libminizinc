@@ -1084,11 +1084,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
         if (tii->type().any()) {
           tiit.any(true);
         }
-        if (tiit.typeId() != 0 && tiit.dim() > 0) {
-          const std::vector<unsigned int>& enumIds = env.getArrayEnum(tiit.typeId());
-          tiit.typeId(enumIds[enumIds.size() - 1]);
-        }
-        tiit.dim(0);
+        tiit = tiit.elemType(env);
         auto it = tmap.find(tiid);
         if (it == tmap.end()) {
           tmap.insert(std::pair<ASTString, std::pair<Type, bool>>(tiid, {tiit, isEnumTIID}));

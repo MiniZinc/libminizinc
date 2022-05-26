@@ -130,6 +130,9 @@ public:
   int dim() const { return _dim; }
   /// Set dimensions
   void dim(int d) {
+    // Cannot change the dimension of a type that uses typeId, as the typeId would have to be
+    // changed (and registed) as well. (see changeDim)
+    assert(typeId() == 0 || _dim == d);
     _dim = d;
     assert(_dim == d);
   }
@@ -267,6 +270,11 @@ public:
   /// Go through the types (of tuple field type) in this order: var opt, var, par opt, par
   /// Returns whether the decrement operation was succesful (false when type is already par)
   bool decrement(EnvI& env);
+
+  /// A helper function that returns the Type for a element of te current array Type
+  /// NOTE: generally this is the same type with `_dim = 0`, but when typeId is set, the correct
+  /// element typeId must be extracted.
+  Type elemType(EnvI& env) const;
 
   std::string toString(const EnvI& env) const;
   std::string simpleToString() const;

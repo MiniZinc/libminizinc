@@ -197,8 +197,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
                             static_cast<int>(isv->max(0).toInt()));
         }
       }
-      Type tt = vd->ti()->type();
-      tt.dim(0);
+      Type tt = vd->ti()->type().elemType(env);
 
       if (asize > Constants::max_array_size) {
         std::ostringstream oss;
