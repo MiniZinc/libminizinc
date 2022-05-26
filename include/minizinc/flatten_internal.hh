@@ -167,7 +167,10 @@ public:
   ~TupleType() = delete;
 
   size_t size() const { return _size; }
-  Type operator[](size_t i) const { return _fields[i]; }
+  Type operator[](size_t i) const {
+    assert(i < size());
+    return _fields[i];
+  }
   size_t hash() const {
     std::size_t seed = _size;
     for (size_t i = 0; i < _size; ++i) {

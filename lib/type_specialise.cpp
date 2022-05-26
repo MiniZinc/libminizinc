@@ -449,7 +449,7 @@ private:
           auto ret = fromTIs(env, match_tt, concrete_tt);
           hadAny = hadAny || ret.first;
           matchTypes.emplace_back(ret.second);
-        } else if ((*concrete_types)[i].bt() == Type::BT_TUPLE) {
+        } else if (i < concrete_types->size() && (*concrete_types)[i].bt() == Type::BT_TUPLE) {
           // Found a $-type that is being instantiated by a tuple
           assert(parType.bt() == Type::BT_TOP);
           TupleType* concrete_tt = env.getTupleType((*concrete_types)[i]);
