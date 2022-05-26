@@ -1551,7 +1551,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
         }
         std::vector<Expression*> collect(intended->size());
         for (long long int i = 0; i < collect.size(); i++) {
-          collect[i] = new FieldAccess(e->loc().introduce(), ident, IntLit::a(i));
+          collect[i] = new FieldAccess(e->loc().introduce(), ident, IntLit::a(i + 1));
           collect[i]->type((*current)[i]);
         }
         al = ArrayLit::constructTuple(e->loc().introduce(), collect);
