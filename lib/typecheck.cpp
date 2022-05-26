@@ -1941,7 +1941,7 @@ public:
           throw TypeError(_env, aa->loc(),
                           "array slicing with variable range or index not supported");
         }
-        tt.ti(Type::TI_VAR);
+        tt.mkVar(_env);
         if (tt.bt() == Type::BT_ANN || tt.bt() == Type::BT_STRING) {
           throw TypeError(_env, aai->loc(),
                           std::string("array access using a variable not supported for array of ") +

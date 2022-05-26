@@ -9,7 +9,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <minizinc/ast.hh>
+#include <minizinc/eval_par.hh>
 #include <minizinc/flat_exp.hh>
+#include <minizinc/flatten_internal.hh>
+#include <minizinc/gc.hh>
+
+#include <cassert>
+#include <vector>
 
 namespace MiniZinc {
 
@@ -53,7 +60,7 @@ start_flatten_arrayaccess:
 
       std::vector<KeepAlive> elems;
       std::vector<IntVal> idx(aa->idx().size());
-      std::vector<std::pair<int, int> > dims;
+      std::vector<std::pair<int, int>> dims;
       std::vector<Expression*> newaccess;
       std::vector<int> nonpar;
       std::vector<int> stack;
@@ -179,7 +186,7 @@ start_flatten_arrayaccess:
         }
         composed_e[i] = (*al)[static_cast<int>(inner_idx.toInt()) - al->min(0)];
       }
-      std::vector<std::pair<int, int> > dims(al_inner->dims());
+      std::vector<std::pair<int, int>> dims(al_inner->dims());
       for (int i = 0; i < al_inner->dims(); i++) {
         dims[i] = std::make_pair(al_inner->min(i), al_inner->max(i));
       }
@@ -254,6 +261,56 @@ flatten_arrayaccess:
       ret.b = conj(env, b, ctx, ees);
       ret.r = bind(env, ctx, r, ka());
     }
+  } else if (aa->type().istuple()) {
+    // x[i], where x is an array of tuples, and i is an index variable
+    // Strategy: create/flatten a seperate array access for each field, combine to new tuple literal
+    assert(eev.r()->type().bt() == Type::BT_TUPLE);
+
+    ArrayLit* al = eval_array_lit(env, eev.r());
+    std::vector<std::pair<int, int>> dims(al->dims());
+    for (size_t i = 0; i < al->dims(); i++) {
+      dims[i] = std::make_pair(al->min(i), al->max(i));
+    }
+    std::vector<Expression*> idx(aa->idx().size());
+    for (size_t i = 0; i < aa->idx().size(); ++i) {
+      idx[i] = ees[i].r();
+    }
+
+    TupleType* tt = env.getTupleType(al->type());
+    // WARNING: Expressions stored in ees, rely on being also in ees to be kept alive
+    std::vector<Expression*> field_res(tt->size());
+    for (int i = 0; i < tt->size(); ++i) {
+      Type field_ty = (*tt)[i];
+      // Create an array containing current field
+      // TODO: This could be done efficiently using slicing (if we change the memory layout for
+      // arrays of tuples)
+      KeepAlive field_aa;
+      {
+        GCLock lock;
+        std::vector<Expression*> tmp(al->size());
+        for (int j = 0; j < al->size(); ++j) {
+          tmp[j] = new FieldAccess((*al)[j]->loc().introduce(), (*al)[j], IntLit::a(i + 1));
+          tmp[j]->type(field_ty);
+        }
+        auto* field_al = new ArrayLit(al->loc().introduce(), tmp, dims);
+        Type al_type = field_ty;
+        al_type.dim(al->type().dim());
+        field_al->type(al_type);
+
+        field_aa = new ArrayAccess(aa->loc().introduce(), field_al, idx);
+        Type aa_type = field_ty;
+        aa_type.mkVar(env);
+        field_aa()->type(aa_type);
+      }
+      // TODO: Does the context need to be changed? Are 'r' and 'b' correct?
+      EE ee = flat_exp(env, ctx, field_aa(), nullptr, b);
+      field_res[i] = ee.r();
+      ees.push_back(ee);
+    }
+    KeepAlive tuple_lit = ArrayLit::constructTuple(Location().introduce(), field_res);
+    tuple_lit()->type(aa->type());
+    ret.r = bind(env, ctx, r, tuple_lit());
+    ret.b = conj(env, b, ctx, ees);
   } else {
     std::vector<Expression*> args(aa->idx().size() + 1);
     for (unsigned int i = aa->idx().size(); (i--) != 0U;) {
