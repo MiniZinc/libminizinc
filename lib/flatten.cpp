@@ -1141,15 +1141,15 @@ unsigned int EnvI::registerTupleType(TypeInst* ti) {
   bool var = true;
   for (unsigned int i = 0; i < dom->size(); i++) {
     auto* tii = (*dom)[i]->cast<TypeInst>();
+
+    // Register tuple field type when required
+    if (tii->type().bt() == Type::BT_TUPLE && tii->type().typeId() == 0) {
+      registerTupleType(tii);
+    }
+
     fields[i] = tii->type();
     cv = cv || fields[i].isvar() || fields[i].cv();
     var = var && fields[i].isvar();
-
-    // Register tuple field type when required
-    if (fields[i].bt() == Type::BT_TUPLE && fields[i].typeId() == 0) {
-      registerTupleType(tii);
-      fields[i] = tii->type();  // update with new type
-    }
   }
   // the TI_VAR ti is not processed by this function. This cononicalisation should have been done
   // during typechecking.
