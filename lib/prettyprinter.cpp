@@ -2254,3 +2254,4 @@ void debugprint(const MiniZinc::Model* m) {
   p.print(m);
 }
 void debugprint(const MiniZinc::Location& loc) { std::cerr << loc << std::endl; }
+void debugprint(const MiniZinc::Type& t) { std::cerr << t.simpleToString() << std::endl; }

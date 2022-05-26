@@ -326,7 +326,7 @@ std::string Type::toString(const EnvI& env) const {
   return oss.str();
 }
 
-std::string Type::nonEnumToString() const {
+std::string Type::simpleToString() const {
   std::ostringstream oss;
   if (_dim > 0) {
     oss << "array[int";

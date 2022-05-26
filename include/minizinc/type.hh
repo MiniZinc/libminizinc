@@ -269,7 +269,7 @@ public:
   bool decrement(EnvI& env);
 
   std::string toString(const EnvI& env) const;
-  std::string nonEnumToString() const;
+  std::string simpleToString() const;
 
   /// Check if \a bt0 is a subtype of \a bt1
   static bool btSubtype(const EnvI& env, const Type& t0, const Type& t1, bool strictEnums);

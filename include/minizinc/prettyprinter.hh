@@ -137,3 +137,4 @@ void debugprint(const MiniZinc::Expression* e);
 void debugprint(const MiniZinc::Item* i);
 void debugprint(const MiniZinc::Model* m);
 void debugprint(const MiniZinc::Location& l);
+void debugprint(const MiniZinc::Type& t);
