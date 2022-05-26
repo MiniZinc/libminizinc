@@ -1495,6 +1495,14 @@ bool Expression::equalInternal(const Expression* e0, const Expression* e1) {
       }
       return true;
     }
+    case Expression::E_FIELDACCESS: {
+      const auto* f0 = e0->cast<FieldAccess>();
+      const auto* f1 = e1->cast<FieldAccess>();
+      if (!Expression::equal(f0->field(), f1->field())) {
+        return false;
+      }
+      return Expression::equal(f0->v(), f1->v());
+    }
     case Expression::E_COMP: {
       const auto* c0 = e0->cast<Comprehension>();
       const auto* c1 = e1->cast<Comprehension>();
