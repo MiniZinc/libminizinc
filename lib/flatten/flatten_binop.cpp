@@ -832,7 +832,7 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
     tt.dim(1);
     for (auto i = static_cast<unsigned int>(alv.size()); i--;) {
       if (alv[i]()->type().isvar()) {
-        tt.ti(Type::TI_VAR);
+        tt.mkVar(env);
       }
       alv_e[i] = alv[i]();
     }

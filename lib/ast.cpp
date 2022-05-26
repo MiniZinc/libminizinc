@@ -1097,15 +1097,15 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
           }
           Type tiit_par = tiit;
           tiit_par.any(false);
-          tiit_par.ti(Type::TI_PAR);
-          tiit_par.ot(Type::OT_PRESENT);
+          tiit_par.mkPar(env);
+          tiit_par.mkPresent(env);
           if (isEnumTIID) {
             tiit_par.st(Type::ST_SET);
           }
           Type its_par = it->second.first;
           its_par.any(false);
-          its_par.ti(Type::TI_PAR);
-          its_par.ot(Type::OT_PRESENT);
+          its_par.mkPar(env);
+          its_par.mkPresent(env);
           if (it->second.second) {
             its_par.st(Type::ST_SET);
           }
@@ -1129,10 +1129,10 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
             throw TypeError(env, get_loc(tiit, call, fi), ss.str());
           }
           if (tiit.isvar()) {
-            it->second.first.ti(Type::TI_VAR);
+            it->second.first.mkVar(env);
           }
           if (tiit.isOpt()) {
-            it->second.first.ot(Type::OT_OPTIONAL);
+            it->second.first.mkOpt(env);
           }
         }
       } else if (cur.second.bt() == Type::BT_TUPLE) {
@@ -1390,9 +1390,9 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
             ty = toCheck;
           } else {
             Type ty_par = ty;
-            ty_par.ti(Type::TI_PAR);
+            ty_par.mkPar(env);
             Type toCheck_par = toCheck;
-            toCheck_par.ti(Type::TI_PAR);
+            toCheck_par.mkPar(env);
             if (env.isSubtype(ty_par, toCheck_par, true)) {
               ty.bt(toCheck.bt());
             }

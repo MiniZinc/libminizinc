@@ -2014,8 +2014,7 @@ public:
           if (!c->set()) {
             tt.ot(Type::OT_OPTIONAL);
           }
-          tt.ti(Type::TI_VAR);
-          tt.cv(true);
+          tt.mkVar(_env);
         }
         if (ty_in.cv()) {
           tt.cv(true);
@@ -2029,8 +2028,7 @@ public:
               }
               tt.ot(Type::OT_OPTIONAL);
             }
-            tt.ti(Type::TI_VAR);
-            tt.cv(true);
+            tt.mkVar(_env);
           } else if (c->where(i)->type() != Type::parbool()) {
             throw TypeError(
                 _env, c->where(i)->loc(),
@@ -2314,7 +2312,7 @@ public:
       }
     }
     Type tret_var(tret);
-    tret_var.ti(Type::TI_VAR);
+    tret_var.mkVar(_env);
     for (auto& anon : anons) {
       anon->type(tret_var);
     }
@@ -2339,7 +2337,7 @@ public:
       }
     }
     if (varcond || !allpar) {
-      tret.ti(Type::TI_VAR);
+      tret.mkVar(_env);
     }
     if (!allpresent) {
       tret.ot(Type::OT_OPTIONAL);
@@ -2742,7 +2740,7 @@ public:
     Type ty = let->in()->type();
     ty.cv(cv || ty.cv());
     if (isVar && ty.bt() == Type::BT_BOOL && ty.dim() == 0) {
-      ty.ti(Type::TI_VAR);
+      ty.mkVar(_env);
     }
     let->type(ty);
   }
@@ -3613,7 +3611,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
             fi->ti()->type().isvar()) {
           // this is a par function declared as var, so change declared return type
           Type fi_t = fi->ti()->type();
-          fi_t.ti(Type::TI_PAR);
+          fi_t.mkPar(_env);
           fi->ti()->type(fi_t);
         }
         if (fi->e() != nullptr) {
@@ -3750,7 +3748,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
                     Type t = decl->param(i)->type();
                     t.cv(false);
                     t.any(false);
-                    t.ti(Type::TI_PAR);
+                    t.mkPar(env);
                     tv.push_back(t);
                   }
                   // check if specialised par version of function already exists
@@ -3969,7 +3967,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         vd->addAnnotation(checkEnum);
       }
       Type vdktype = vd_k()->type();
-      vdktype.ti(Type::TI_VAR);
+      vdktype.mkVar(env.envi());
       if (!vd_k()->type().isSubtypeOf(env.envi(), vd->type(), false)) {
         std::ostringstream ss;
         ss << "Solution checker requires `" << vd->id()->str() << "' to be of type `"

@@ -9,7 +9,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <minizinc/ast.hh>
 #include <minizinc/flat_exp.hh>
+#include <minizinc/flatten_internal.hh>
+
+#include <vector>
 
 namespace MiniZinc {
 
@@ -19,17 +23,25 @@ CallArgItem::CallArgItem(EnvI& env0) : env(env0) {
 CallArgItem::~CallArgItem() { env.idStack.pop_back(); }
 
 Expression* create_dummy_value(EnvI& env, const Type& t) {
+  Type ret_t = t;
+  ret_t.mkPar(env);
   if (t.dim() > 0) {
     Expression* ret = new ArrayLit(Location().introduce(), std::vector<Expression*>());
-    Type ret_t = t;
-    ret_t.ti(Type::TI_PAR);
+    ret->type(ret_t);
+    return ret;
+  }
+  if (t.istuple()) {
+    TupleType* tt = env.getTupleType(t);
+    std::vector<Expression*> fields(tt->size());
+    for (size_t i = 0; i < tt->size(); ++i) {
+      fields[i] = create_dummy_value(env, (*tt)[i]);
+    }
+    Expression* ret = ArrayLit::constructTuple(Location().introduce(), fields);
     ret->type(ret_t);
     return ret;
   }
   if (t.st() == Type::ST_SET) {
     Expression* ret = new SetLit(Location().introduce(), std::vector<Expression*>());
-    Type ret_t = t;
-    ret_t.ti(Type::TI_PAR);
     ret->type(ret_t);
     return ret;
   }

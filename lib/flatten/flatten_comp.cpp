@@ -260,10 +260,10 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
   }
   if (elemType.isbot()) {
     elemType = c->type();
-    elemType.ti(Type::TI_PAR);
+    elemType.mkPar(env);
   }
   if (!allPar) {
-    elemType.ti(Type::TI_VAR);
+    elemType.mkVar(env);
   }
   if (someOpt) {
     elemType.ot(Type::OT_OPTIONAL);

@@ -828,7 +828,7 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Expr
     return matched[0];
   }
   Type t = matched[0]->ti()->type();
-  t.ti(Type::TI_PAR);
+  t.mkPar(env);
   for (unsigned int i = 1; i < matched.size(); i++) {
     if (!env.isSubtype(t, matched[i]->ti()->type(), strictEnums)) {
       throw TypeError(env, botarg->loc(), "ambiguous overloading on return type of function");
@@ -947,7 +947,7 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
     return matched[0];
   }
   Type t = matched[0]->ti()->type();
-  t.ti(Type::TI_PAR);
+  t.mkPar(env);
   for (unsigned int i = 1; i < matched.size(); i++) {
     if (!env.isSubtype(t, matched[i]->ti()->type(), strictEnums)) {
       throw TypeError(env, botarg->loc(), "ambiguous overloading on return type of function");

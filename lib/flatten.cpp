@@ -1637,7 +1637,7 @@ void populate_output(Env& env, bool encapsulateJSON) {
 
         auto* vd_output = copy(env.envi(), vd)->cast<VarDecl>();
         Type vd_t = vd_output->type();
-        vd_t.ti(Type::TI_PAR);
+        vd_t.mkPar(env.envi());
         vd_output->type(vd_t);
         vd_output->ti()->type(vd_t);
 
@@ -2990,7 +2990,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
           }
         }
         if (!allPar) {
-          t.ti(Type::TI_VAR);
+          t.mkVar(env);
         }
         if (c->set()) {
           t.st(Type::ST_SET);
@@ -3090,7 +3090,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
         Type nct(c->type());
         if ((nc->decl()->e() != nullptr) && nc->decl()->e()->type().cv()) {
           nct.cv(false);
-          nct.ti(Type::TI_VAR);
+          nct.mkVar(env);
           nc->type(nct);
           EE ee;
           if (c->decl()->ann().contains(env.constants.ann.cache_result)) {

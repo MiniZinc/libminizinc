@@ -36,7 +36,7 @@ void check_output_par_fn(EnvI& env, Call* rhs) {
   std::vector<Type> tv(rhs->argCount());
   for (unsigned int i = rhs->argCount(); (i--) != 0U;) {
     tv[i] = rhs->arg(i)->type();
-    tv[i].ti(Type::TI_PAR);
+    tv[i].mkPar(env);
   }
   FunctionI* decl = env.output->matchFn(env, rhs->id(), tv, false);
   if (decl == nullptr) {
@@ -97,7 +97,7 @@ bool cannot_use_rhs_for_output(EnvI& env, Expression* e,
       std::vector<Type> tv(c->argCount());
       for (unsigned int i = c->argCount(); (i--) != 0U;) {
         tv[i] = c->arg(i)->type();
-        tv[i].ti(Type::TI_PAR);
+        tv[i].mkPar(env);
       }
       FunctionI* decl = env.output->matchFn(env, c->id(), tv, false);
       Type t;
@@ -122,7 +122,7 @@ bool cannot_use_rhs_for_output(EnvI& env, Expression* e,
               decl = copy(env, env.cmap, origdecl)->cast<FunctionI>();
               // We can use RHS for output, so this has to be able to be par
               auto rt = decl->ti()->type();
-              rt.ti(Type::TI_PAR);
+              rt.mkPar(env);
               decl->ti()->type(rt);
 
               CollectOccurrencesE ce(env, env.outputVarOccurrences, decl);
@@ -248,7 +248,7 @@ void copy_output(EnvI& e) {
       std::vector<Type> tv(c->argCount());
       for (unsigned int i = c->argCount(); (i--) != 0U;) {
         tv[i] = c->arg(i)->type();
-        tv[i].ti(Type::TI_PAR);
+        tv[i].mkPar(env);
       }
       FunctionI* decl = c->decl();
       if (!decl->fromStdLib()) {
@@ -1341,10 +1341,10 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
   public:
     EnvI& env;
     CollectFunctions(EnvI& env0) : env(env0) {}
-    static bool enter(Expression* e) {
+    bool enter(Expression* e) {
       if (e->type().isvar()) {
         Type t = e->type();
-        t.ti(Type::TI_PAR);
+        t.mkPar(env);
         e->type(t);
       }
       return true;
@@ -1684,7 +1684,7 @@ void finalise_output(EnvI& e) {
 
                   vd->e(copy(e, e.cmap, ident));
                   Type al_t(vd->e()->type());
-                  al_t.ti(Type::TI_PAR);
+                  al_t.mkPar(e);
                   vd->e()->type(al_t);
 
                   output_vardecls(e, item, ident);
@@ -1717,7 +1717,7 @@ void finalise_output(EnvI& e) {
                   output_vardecls(e, item, al);
                   vd->e(copy(e, e.cmap, al));
                   Type al_t(vd->e()->type());
-                  al_t.ti(Type::TI_PAR);
+                  al_t.mkPar(e);
                   vd->e()->type(al_t);
                 }
               }

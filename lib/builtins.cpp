@@ -1468,7 +1468,7 @@ Expression* b_fix_array(EnvI& env, Call* call) {
   }
   auto* ret = new ArrayLit(Location(), fixed, dims);
   Type tt = al->type();
-  tt.ti(Type::TI_PAR);
+  tt.mkPar(env);
   ret->type(tt);
   return ret;
 }
