@@ -1565,6 +1565,8 @@ public:
     tt.typeId(0);
     type(tt);
   }
+  // Set domain of a tuple based on a tuple type object
+  void setTupleDomain(const EnvI& env, const Type& tuple_type, bool setTypeAny = false);
 
   /// Set ranges to \a ranges
   void setRanges(const std::vector<TypeInst*>& ranges);

@@ -1004,6 +1004,28 @@ void TypeInst::setRanges(const std::vector<TypeInst*>& ranges) {
   rehash();
 }
 
+void TypeInst::setTupleDomain(const EnvI& env, const Type& tuple_type, bool setTypeAny) {
+  GCLock lock;
+  TupleType* tt = env.getTupleType(tuple_type);
+  std::vector<Expression*> field_ti(tt->size());
+  for (int i = 0; i < tt->size(); ++i) {
+    Type tti = (*tt)[i];
+    field_ti[i] = new TypeInst(loc().introduce(), tti);
+    if (tti.bt() == Type::BT_TUPLE) {
+      field_ti[i]->cast<TypeInst>()->setTupleDomain(env, tti);
+    }
+  }
+  if (ranges().size() != type().dim()) {
+    assert(ranges().empty());
+    std::vector<TypeInst*> newRanges(type().dim());
+    for (unsigned int k = 0; k < type().dim(); k++) {
+      newRanges[k] = new TypeInst(Location().introduce(), Type::parint());
+    }
+    setRanges(newRanges);
+  }
+  domain(new ArrayLit(loc().introduce(), field_ti));
+}
+
 bool TypeInst::hasTiVariable() const {
   if (domain() != nullptr) {
     if (domain()->isa<TIId>()) {

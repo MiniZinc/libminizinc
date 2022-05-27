@@ -2783,6 +2783,9 @@ public:
             }
             vd->ti()->setRanges(ranges);
           }
+          if (vdt.any() && vet.bt() == Type::BT_TUPLE) {
+            vd->ti()->setTupleDomain(_env, vet);
+          }
         } else if (!_env.isSubtype(vet, vdt, true)) {
           if (vet == Type::bot(1) && vd->e()->isa<ArrayLit>() &&
               vd->e()->cast<ArrayLit>()->empty() && vdt.dim() != 0) {
@@ -2879,6 +2882,7 @@ public:
         }
       }
     }
+    assert(vd->type().bt() != Type::BT_TUPLE || vd->ti()->domain() != nullptr);
   }
   /// Visit type inst
   void vTypeInst(TypeInst* ti) {
