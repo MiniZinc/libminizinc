@@ -166,9 +166,6 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
         // Set tuple instantiation as RHS
         vd->e(al);
 
-        // Add reverse mapper
-        env.reverseMappers.insert(vd->id(), al);
-
         // count flattened version and add to CSE
         env.voAddExp(vd);
         EE ee;
@@ -273,6 +270,12 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
           }
         }
       }
+    }
+    // Add reverse mapper for tuple var decls
+    // TODO: This only has to happen on first flatten_id call.
+    if (vd->type().istuple() && vd->e() != nullptr) {
+      assert(vd->e()->isa<ArrayLit>());
+      env.reverseMappers.insert(vd->id(), vd->e());
     }
     ret.r = bind(env, ctx, r, rete);
   }
