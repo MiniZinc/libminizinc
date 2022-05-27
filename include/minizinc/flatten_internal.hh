@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <minizinc/ast.hh>
 #include <minizinc/copy.hh>
 #include <minizinc/eval_par.hh>
 #include <minizinc/flatten.hh>
@@ -404,6 +405,8 @@ void set_computed_domain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_co
 EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
 EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
               bool doNotFollowChains);
+
+std::vector<Expression*> field_slices(EnvI& env, Expression* arrExpr);
 
 class CmpExpIdx {
 public:

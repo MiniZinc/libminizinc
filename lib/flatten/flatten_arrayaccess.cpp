@@ -266,42 +266,30 @@ flatten_arrayaccess:
     // Strategy: create/flatten a seperate array access for each field, combine to new tuple literal
     assert(eev.r()->type().bt() == Type::BT_TUPLE);
 
-    ArrayLit* al = eval_array_lit(env, eev.r());
-    std::vector<std::pair<int, int>> dims(al->dims());
-    for (size_t i = 0; i < al->dims(); i++) {
-      dims[i] = std::make_pair(al->min(i), al->max(i));
-    }
     std::vector<Expression*> idx(aa->idx().size());
     for (size_t i = 0; i < aa->idx().size(); ++i) {
       idx[i] = ees[i].r();
     }
 
-    TupleType* tt = env.getTupleType(al->type());
     TupleType* res_tt = env.getTupleType(aa->type());
-    // WARNING: Expressions stored in ees, rely on being also in ees to be kept alive
-    std::vector<Expression*> field_res(tt->size());
-    assert(tt->size() == res_tt->size());
-    for (int i = 0; i < tt->size(); ++i) {
-      Type field_ty = (*tt)[i];
-      // Create an array containing current field
-      // TODO: This could be done efficiently using slicing (if we change the memory layout for
-      // arrays of tuples)
-      KeepAlive field_aa;
-      {
-        GCLock lock;
-        std::vector<Expression*> tmp(al->size());
-        for (int j = 0; j < al->size(); ++j) {
-          tmp[j] = new FieldAccess((*al)[j]->loc().introduce(), (*al)[j], IntLit::a(i + 1));
-          tmp[j]->type(field_ty);
-        }
-        auto* field_al = new ArrayLit(al->loc().introduce(), tmp, dims);
-        field_al->type(Type::arrType(env, al->type(), field_ty));
 
-        field_aa = new ArrayAccess(aa->loc().introduce(), field_al, idx);
-        field_aa()->type((*res_tt)[i]);
+    // Construct field based array access expressions
+    std::vector<KeepAlive> field_aa(res_tt->size());
+    {
+      GCLock lock;
+      std::vector<Expression*> field_al = field_slices(env, eev.r());
+      assert(res_tt->size() == field_al.size());
+      for (int i = 0; i < res_tt->size(); ++i) {
+        field_aa[i] = new ArrayAccess(aa->loc().introduce(), field_al[i], idx);
+        field_aa[i]()->type((*res_tt)[i]);
       }
+    }
+    // Flatten field based array access expressions
+    // WARNING: Expressions stored in field_res, rely on being also in ees to be kept alive
+    std::vector<Expression*> field_res(res_tt->size());
+    for (int i = 0; i < res_tt->size(); ++i) {
       // TODO: Does the context need to be changed? Are 'r' and 'b' correct?
-      EE ee = flat_exp(env, ctx, field_aa(), nullptr, b);
+      EE ee = flat_exp(env, ctx, field_aa[i](), nullptr, b);
       field_res[i] = ee.r();
       ees.push_back(ee);
     }

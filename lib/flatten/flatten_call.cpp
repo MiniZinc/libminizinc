@@ -9,7 +9,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <minizinc/ast.hh>
+#include <minizinc/eval_par.hh>
 #include <minizinc/flat_exp.hh>
+#include <minizinc/flatten_internal.hh>
 #include <minizinc/typecheck.hh>
 
 namespace MiniZinc {
@@ -24,6 +27,62 @@ std::vector<Expression*> to_exp_vec(std::vector<KeepAlive>& v) {
 
 bool is_total(EnvI& env, FunctionI* fi) {
   return fi->ann().contains(env.constants.ann.promise_total);
+}
+
+Expression* mk_domain_constraint(EnvI& env, Expression* expr, Expression* dom) {
+  assert(GC::locked());
+  Type t = expr->type().isPar() ? Type::parbool() : Type::varbool();
+
+  if (expr->type().bt() == Type::BT_TUPLE) {
+    TupleType* tt = env.getTupleType(expr->type());
+    auto* dom_al = dom->cast<ArrayLit>();
+    std::vector<Expression*> field_expr;
+    if (expr->type().dim() > 0) {
+      field_expr = field_slices(env, expr);
+    } else {
+      field_expr.resize(tt->size());
+      for (int i = 0; i < tt->size(); ++i) {
+        field_expr[i] = new FieldAccess(Location().introduce(), expr, IntLit::a(i + 1));
+        field_expr[i]->type((*tt)[i]);
+      }
+    }
+    std::vector<Expression*> fieldwise;
+    for (int i = 0; i < tt->size(); ++i) {
+      auto* field_ti = (*dom_al)[i]->cast<TypeInst>();
+      if (field_ti->domain() != nullptr) {
+        fieldwise.push_back(mk_domain_constraint(env, field_expr[i], field_ti->domain()));
+        fieldwise.back()->type(t);
+      }
+    }
+    if (fieldwise.size() <= 1) {
+      return fieldwise.empty() ? nullptr : fieldwise[0];
+    }
+    auto* al = new ArrayLit(Location().introduce(), fieldwise);
+    Type al_t = t;
+    al_t.dim(1);
+    al->type(al_t);
+    auto* c = Call::a(Location().introduce(), env.constants.ids.forall, {al});
+    c->type(t);
+    return c;
+  }
+
+  if (expr->type().dim() > 0) {
+    GCLock lock;
+    std::vector<Expression*> domargs({expr, dom});
+    Call* c = Call::a(Location().introduce(), "var_dom", domargs);
+    c->type(Type::varbool());
+    c->decl(env.model->matchFn(env, c, false));
+    if (c->decl() == nullptr) {
+      throw InternalError("no matching declaration found for var_dom");
+    }
+    c->type(t);
+    return c;
+  }
+
+  BinOpType bot = expr->type().st() == Type::ST_SET ? BOT_SUBSET : BOT_IN;
+  auto* binop = new BinOp(Location().introduce(), expr, bot, dom);
+  binop->type(t);
+  return binop;
 }
 
 Call* same_call(EnvI& env, Expression* e, const ASTString& id) {
@@ -1025,13 +1084,10 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
               if (curArg->type().bt() == Type::BT_INT) {
                 GCLock lock;
                 IntSetVal* isv = eval_intset(env, dom);
-                BinOpType bot;
                 bool needToConstrain;
                 if (curArg->type().st() == Type::ST_SET) {
-                  bot = BOT_SUBSET;
                   needToConstrain = true;
                 } else {
-                  bot = BOT_IN;
                   if (curArg->type().dim() > 0) {
                     needToConstrain = true;
                   } else {
@@ -1041,28 +1097,16 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
                   }
                 }
                 if (needToConstrain) {
-                  GCLock lock;
-                  Expression* domconstraint;
-                  if (curArg->type().dim() > 0) {
-                    std::vector<Expression*> domargs(2);
-                    domargs[0] = curArg;
-                    domargs[1] = dom;
-                    Call* c = Call::a(Location().introduce(), "var_dom", domargs);
-                    c->type(Type::varbool());
-                    c->decl(env.model->matchFn(env, c, false));
-                    if (c->decl() == nullptr) {
-                      throw InternalError("no matching declaration found for var_dom");
-                    }
-                    domconstraint = c;
-                  } else {
-                    domconstraint = new BinOp(Location().introduce(), curArg, bot, dom);
+                  KeepAlive domconstraint;
+                  {
+                    GCLock lock;
+                    domconstraint = mk_domain_constraint(env, curArg, dom);
                   }
-                  domconstraint->type(curArg->type().isPar() ? Type::parbool() : Type::varbool());
                   if (ctx.b == C_ROOT) {
-                    (void)flat_exp(env, Ctx(), domconstraint, env.constants.varTrue,
+                    (void)flat_exp(env, Ctx(), domconstraint(), env.constants.varTrue,
                                    env.constants.varTrue);
                   } else {
-                    EE ee = flat_exp(env, Ctx(), domconstraint, nullptr, env.constants.varTrue);
+                    EE ee = flat_exp(env, Ctx(), domconstraint(), nullptr, env.constants.varTrue);
                     ee.b = ee.r;
                     args_ee.push_back(ee);
                   }
@@ -1081,28 +1125,16 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
                 }
 
                 if (needToConstrain) {
-                  GCLock lock;
-                  Expression* domconstraint;
-                  if (curArg->type().dim() > 0) {
-                    std::vector<Expression*> domargs(2);
-                    domargs[0] = curArg;
-                    domargs[1] = dom;
-                    Call* c = Call::a(Location().introduce(), "var_dom", domargs);
-                    c->type(Type::varbool());
-                    c->decl(env.model->matchFn(env, c, false));
-                    if (c->decl() == nullptr) {
-                      throw InternalError("no matching declaration found for var_dom");
-                    }
-                    domconstraint = c;
-                  } else {
-                    domconstraint = new BinOp(Location().introduce(), curArg, BOT_IN, dom);
+                  KeepAlive domconstraint;
+                  {
+                    GCLock lock;
+                    domconstraint = mk_domain_constraint(env, curArg, dom);
                   }
-                  domconstraint->type(curArg->type().isPar() ? Type::parbool() : Type::varbool());
                   if (ctx.b == C_ROOT) {
-                    (void)flat_exp(env, Ctx(), domconstraint, env.constants.varTrue,
+                    (void)flat_exp(env, Ctx(), domconstraint(), env.constants.varTrue,
                                    env.constants.varTrue);
                   } else {
-                    EE ee = flat_exp(env, Ctx(), domconstraint, nullptr, env.constants.varTrue);
+                    EE ee = flat_exp(env, Ctx(), domconstraint(), nullptr, env.constants.varTrue);
                     ee.b = ee.r;
                     args_ee.push_back(ee);
                   }
@@ -1297,32 +1329,11 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
               }
             }
             if ((decl->ti()->domain() != nullptr) && !decl->ti()->domain()->isa<TIId>()) {
-              BinOpType bot;
-              if (ret.r()->type().st() == Type::ST_SET) {
-                bot = BOT_SUBSET;
-              } else {
-                bot = BOT_IN;
-              }
-
               KeepAlive domconstraint;
-              if (decl->e()->type().dim() > 0) {
+              {
                 GCLock lock;
-                std::vector<Expression*> domargs(2);
-                domargs[0] = ret.r();
-                domargs[1] = decl->ti()->domain();
-                Call* c = Call::a(Location().introduce(), "var_dom", domargs);
-                c->type(Type::varbool());
-                c->decl(env.model->matchFn(env, c, false));
-                if (c->decl() == nullptr) {
-                  throw InternalError("no matching declaration found for var_dom");
-                }
-                domconstraint = c;
-              } else {
-                GCLock lock;
-                domconstraint =
-                    new BinOp(Location().introduce(), ret.r(), bot, decl->ti()->domain());
+                domconstraint = mk_domain_constraint(env, ret.r(), decl->ti()->domain());
               }
-              domconstraint()->type(ret.r()->type().isPar() ? Type::parbool() : Type::varbool());
               if (ctx.b == C_ROOT) {
                 (void)flat_exp(env, Ctx(), domconstraint(), env.constants.varTrue,
                                env.constants.varTrue);

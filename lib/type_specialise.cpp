@@ -53,8 +53,9 @@ Type base_type(EnvI& env, std::vector<Type>& types, const TIOcc& occ) {
     cur_t = types[occ.idx];
     if (cur_t.dim() > 0 && cur_t.typeId() != 0) {
       const auto& aes = env.getArrayEnum(cur_t.typeId());
-      cur_t.typeId(aes[aes.size() - 1]);
+      cur_t.typeId(0);
       cur_t.dim(0);
+      cur_t.typeId(aes[aes.size() - 1]);
     }
   } else {
     if (types[occ.idx].typeId() != 0) {

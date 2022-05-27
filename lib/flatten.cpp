@@ -4840,4 +4840,32 @@ FlatModelStatistics statistics(Env& m) {
   return stats;
 }
 
+std::vector<Expression*> field_slices(EnvI& env, Expression* arrExpr) {
+  assert(GC::locked());
+  assert(arrExpr->type().bt() == Type::BT_TUPLE && arrExpr->type().dim() > 0);
+  ArrayLit* al = eval_array_lit(env, arrExpr);
+
+  TupleType* tt = env.getTupleType(al->type());
+  std::vector<std::pair<int, int>> dims(al->dims());
+  for (size_t i = 0; i < al->dims(); i++) {
+    dims[i] = std::make_pair(al->min(i), al->max(i));
+  }
+
+  std::vector<Expression*> field_al(tt->size());
+  for (int i = 0; i < tt->size(); ++i) {
+    Type field_ty = (*tt)[i];
+    // TODO: This could be done efficiently using slicing (if we change the memory layout for
+    // arrays of tuples)
+    GCLock lock;
+    std::vector<Expression*> tmp(al->size());
+    for (int j = 0; j < al->size(); ++j) {
+      tmp[j] = new FieldAccess((*al)[j]->loc().introduce(), (*al)[j], IntLit::a(i + 1));
+      tmp[j]->type(field_ty);
+    }
+    field_al[i] = new ArrayLit(al->loc().introduce(), tmp, dims);
+    field_al[i]->type(Type::arrType(env, al->type(), field_ty));
+  }
+  return field_al;
+}
+
 }  // namespace MiniZinc
