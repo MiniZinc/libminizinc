@@ -4522,7 +4522,8 @@ void oldflatzinc(Env& e) {
 
   // Mark annotations and optional variables for removal, and clear flags
   for (auto& vdi : m->vardecls()) {
-    if (vdi.e()->type().ot() == Type::OT_OPTIONAL || vdi.e()->type().bt() == Type::BT_ANN) {
+    if (vdi.e()->type().ot() == Type::OT_OPTIONAL || vdi.e()->type().bt() == Type::BT_ANN ||
+        vdi.e()->type().bt() == Type::BT_TUPLE) {
       vdi.remove();
     }
   }
