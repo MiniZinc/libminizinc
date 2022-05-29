@@ -4029,15 +4029,7 @@ void output_var_desc_json(Env& env, TypeInst* ti, std::ostream& os, bool extra =
       os << "\"ann\"";
       break;
     case Type::BT_TUPLE: {
-      auto* dom = ti->domain()->cast<ArrayLit>();
-      os << "[";
-      for (size_t i = 0; i < dom->size(); ++i) {
-        output_var_desc_json(env, (*dom)[i]->cast<TypeInst>(), os, extra);
-        if (i < dom->size() - 1) {
-          os << ", ";
-        }
-      }
-      os << "]";
+      os << "\"tuple\"";
       break;
     }
     default:
@@ -4050,6 +4042,18 @@ void output_var_desc_json(Env& env, TypeInst* ti, std::ostream& os, bool extra =
   if (ti->type().st() == Type::ST_SET) {
     os << ", \"set\" : true";
   }
+
+  const auto tuple_types = [&]() {
+    auto* dom = ti->domain()->cast<ArrayLit>();
+    os << ", \"field_types\" : [";
+    for (size_t i = 0; i < dom->size(); ++i) {
+      output_var_desc_json(env, (*dom)[i]->cast<TypeInst>(), os, extra);
+      if (i < dom->size() - 1) {
+        os << ", ";
+      }
+    }
+    os << "]";
+  };
   if (ti->type().dim() > 0) {
     os << ", \"dim\" : " << ti->type().dim();
 
@@ -4071,14 +4075,25 @@ void output_var_desc_json(Env& env, TypeInst* ti, std::ostream& os, bool extra =
       if (ti->type().typeId() > 0) {
         const std::vector<unsigned int>& enumIds = env.envi().getArrayEnum(ti->type().typeId());
         if (enumIds.back() > 0) {
-          os << ", \"enum_type\" : \"" << *env.envi().getEnum(enumIds.back())->e()->id() << "\"";
+          if (ti->type().bt() == Type::BT_TUPLE) {
+            tuple_types();
+          } else {
+            assert(ti->type().bt() == Type::BT_INT);
+            os << ", \"enum_type\" : \"" << *env.envi().getEnum(enumIds.back())->e()->id() << "\"";
+          }
         }
       }
     }
   } else {
     if (extra) {
       if (ti->type().typeId() > 0) {
-        os << ", \"enum_type\" : \"" << *env.envi().getEnum(ti->type().typeId())->e()->id() << "\"";
+        if (ti->type().bt() == Type::BT_TUPLE) {
+          tuple_types();
+        } else {
+          assert(ti->type().bt() == Type::BT_INT);
+          os << ", \"enum_type\" : \"" << *env.envi().getEnum(ti->type().typeId())->e()->id()
+             << "\"";
+        }
       }
     }
   }
