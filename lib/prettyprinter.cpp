@@ -10,8 +10,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <minizinc/ast.hh>
 #include <minizinc/astexception.hh>
 #include <minizinc/eval_par.hh>
+#include <minizinc/gc.hh>
 #include <minizinc/hash.hh>
 #include <minizinc/iter.hh>
 #include <minizinc/model.hh>
@@ -2248,6 +2250,7 @@ void Printer::print(const Model* m) {
 }  // namespace MiniZinc
 
 void debugprint(const MiniZinc::Expression* e) { std::cerr << *e << "\n"; }
+void debugprint(const MiniZinc::KeepAlive& e) { debugprint(e()); }
 void debugprint(const MiniZinc::Item* i) { std::cerr << *i; }
 void debugprint(const MiniZinc::Model* m) {
   MiniZinc::Printer p(std::cerr, 0);
@@ -2258,3 +2261,14 @@ void debugprint(const MiniZinc::Type& t) { std::cerr << t.simpleToString() << st
 void debugprint(const MiniZinc::Type& t, const MiniZinc::EnvI& env) {
   std::cerr << t.toString(env) << std::endl;
 }
+
+template <class T>
+void debugprintvec(const std::vector<T>& x) {
+  for (const auto& xi : x) {
+    debugprint(xi);
+  }
+}
+void debugprint(const std::vector<MiniZinc::Expression*>& x) { debugprintvec(x); }
+void debugprint(const std::vector<MiniZinc::VarDecl*>& x) { debugprintvec(x); }
+void debugprint(const std::vector<MiniZinc::KeepAlive>& x) { debugprintvec(x); }
+void debugprint(const std::vector<MiniZinc::Item*>& x) { debugprintvec(x); }
