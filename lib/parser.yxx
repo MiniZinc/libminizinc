@@ -22,6 +22,7 @@
 #include <fstream>
 #include <map>
 #include <cerrno>
+#include <regex>
 
 namespace MiniZinc{ class ParserLocation; }
 #define YYLTYPE MiniZinc::ParserLocation
@@ -123,6 +124,19 @@ bool noTuple(ParserLocation& location, void* parm, Expression* e) {
   return e != nullptr;
 }
 
+// Variant of definition in lexer.lxx
+IntVal fast_strtointval(const std::string& s) {
+  MiniZinc::IntVal x = 0;
+  try {
+    for (size_t i = 0; i < s.size(); ++i) {
+      x = (x*10) + (s[i] - '0');
+    }
+  } catch (MiniZinc::ArithmeticError&) {
+    return false;
+  }
+  return x;
+}
+
 }
 
 %}
@@ -160,6 +174,7 @@ bool noTuple(ParserLocation& location, void* parm, Expression* e) {
 %token <sValue> MZN_IDENTIFIER "identifier" MZN_QUOTED_IDENTIFIER "quoted identifier" MZN_STRING_LITERAL "string literal"
 %token <sValue> MZN_STRING_QUOTE_START "interpolated string start" MZN_STRING_QUOTE_MID "interpolated string middle" MZN_STRING_QUOTE_END "interpolated string end"
 %token <sValue> MZN_TI_IDENTIFIER "type-inst identifier" MZN_TI_ENUM_IDENTIFIER "type-inst enum identifier" MZN_DOC_COMMENT "documentation comment" MZN_DOC_FILE_COMMENT "file-level documentation comment"
+%token <sValue> MZN_FIELD_TAIL "field access"
 
 %token MZN_VAR "var" MZN_PAR "par"
 
@@ -228,7 +243,6 @@ bool noTuple(ParserLocation& location, void* parm, Expression* e) {
 %token MZN_LE "<" MZN_GR ">" MZN_LQ "<=" MZN_GQ ">=" MZN_EQ "=" MZN_NQ "!=" MZN_WEAK_EQ "~=" MZN_WEAK_NQ "~!="
 %token MZN_IN "in" MZN_SUBSET "subset" MZN_SUPERSET "superset"
 %token MZN_UNION "union" MZN_DIFF "diff" MZN_SYMDIFF "symdiff"
-%token MZN_DOT "."
 %token MZN_DOTDOT ".."
 %token MZN_DOTDOT_LE "..<"
 %token MZN_LE_DOTDOT "<.."
@@ -1405,10 +1419,19 @@ access_tail :
           delete $2;
         }
       }
-		| MZN_DOT MZN_INTEGER_LITERAL
+		| MZN_FIELD_TAIL
       {
 				$$=new std::vector<Expression*>();
-				$$->push_back({ new FieldAccess(@$, nullptr, IntLit::a($2)) });
+        std::string tail($1); free($1);
+
+        // Find all field accesses
+        std::regex fieldR("[0-9]+");
+        std::smatch field_match;
+        while(std::regex_search(tail, field_match, fieldR)) {
+          IntVal fieldVal = MiniZinc::fast_strtointval(field_match.str());
+          $$->push_back({ new FieldAccess(@$, nullptr, IntLit::a(fieldVal)) });
+          tail = field_match.suffix();
+        }
 			}
     | access_tail MZN_LEFT_BRACKET array_access_expr_list MZN_RIGHT_BRACKET
       { 
@@ -1419,10 +1442,19 @@ access_tail :
           delete $3;
         }
       }
-		| access_tail MZN_DOT MZN_INTEGER_LITERAL
+		| access_tail MZN_FIELD_TAIL
       {
 			  $$=$1;
-				$$->push_back({ new FieldAccess(@$, nullptr, IntLit::a($3)) });
+        std::string tail($2); free($2);
+
+        // Find all field accesses
+        std::regex fieldR("[0-9]+");
+        std::smatch field_match;
+        while(std::regex_search(tail, field_match, fieldR)) {
+          IntVal fieldVal = MiniZinc::fast_strtointval(field_match.str());
+          $$->push_back({ new FieldAccess(@$, nullptr, IntLit::a(fieldVal)) });
+          tail = field_match.suffix();
+        }
 			}
 
 
