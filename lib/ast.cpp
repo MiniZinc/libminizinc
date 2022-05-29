@@ -1010,6 +1010,9 @@ void TypeInst::setTupleDomain(const EnvI& env, const Type& tuple_type, bool setT
   std::vector<Expression*> field_ti(tt->size());
   for (int i = 0; i < tt->size(); ++i) {
     Type tti = (*tt)[i];
+    if (setTypeAny) {
+      tti.any(true);
+    }
     field_ti[i] = new TypeInst(loc().introduce(), tti);
     if (tti.bt() == Type::BT_TUPLE) {
       field_ti[i]->cast<TypeInst>()->setTupleDomain(env, tti);

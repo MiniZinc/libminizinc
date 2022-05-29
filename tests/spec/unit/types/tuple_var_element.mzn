@@ -5,7 +5,7 @@ expected: !Result
   status: OPTIMAL_SOLUTION
   solution: !Solution
     idx: iE
-    selected: [5, 6]
+    selected: [6, [3, 3]]
 ***/
 
 include "strictly_increasing.mzn";
