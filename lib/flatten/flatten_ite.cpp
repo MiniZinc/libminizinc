@@ -9,7 +9,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <minizinc/ast.hh>
 #include <minizinc/flat_exp.hh>
+#include <minizinc/flatten_internal.hh>
+#include <minizinc/gc.hh>
+
+#include <vector>
 
 namespace MiniZinc {
 
@@ -61,6 +66,61 @@ void classify_conjunct(EnvI& env, Expression* e, IdMap<int>& eq_occurrences,
   other_branches.push_back(e);
 }
 
+Expression* ite_tuple_split(EnvI& env, Type ty, const std::vector<Expression*>& then_in,
+                            Expression* else_in, std::vector<KeepAlive>& results,
+                            std::vector<std::vector<KeepAlive>>& e_then,
+                            std::vector<KeepAlive>& e_else) {
+  TupleType* tt = env.getTupleType(ty);
+  GCLock lock;
+  std::vector<Expression*> tupleResult(tt->size());
+
+  std::vector<VarDecl*> then_decl(then_in.size());
+  for (int i = 0; i < then_in.size(); ++i) {
+    then_decl[i] = new VarDecl(Location().introduce(),
+                               new TypeInst(Location().introduce(), then_in[i]->type(), nullptr),
+                               env.genId(), then_in[i]);
+  }
+  auto* else_decl = new VarDecl(Location().introduce(),
+                                new TypeInst(Location().introduce(), else_in->type(), nullptr),
+                                env.genId(), else_in);
+
+  for (int i = 0; i < tt->size(); ++i) {
+    Type field = (*tt)[i];
+    if (field.bt() == Type::BT_TUPLE) {
+      std::vector<Expression*> f_then_in(then_decl.size());
+      for (int j = 0; j < then_decl.size(); ++j) {
+        f_then_in[j] =
+            new FieldAccess(Location().introduce(), then_decl[i]->id(), IntLit::a(i + 1));
+        f_then_in[j]->type(field);
+      }
+      Expression* f_else_in =
+          new FieldAccess(Location().introduce(), else_decl->id(), IntLit::a(i + 1));
+      tupleResult[i] = ite_tuple_split(env, field, f_then_in, f_else_in, results, e_then, e_else);
+    } else {
+      VarDecl* fieldRes =
+          new_vardecl(env, Ctx(), new TypeInst(Location().introduce(), field, nullptr), nullptr,
+                      nullptr, nullptr);
+      tupleResult[i] = fieldRes->id();
+
+      results.emplace_back(fieldRes);
+      e_then.emplace_back();
+      e_then.back().reserve(then_decl.size());
+      for (auto& decl : then_decl) {
+        e_then.back().push_back(
+            new FieldAccess(Location().introduce(), decl->id(), IntLit::a(i + 1)));
+        e_then.back().back()()->type(field);
+      }
+      e_else.emplace_back(
+          new FieldAccess(Location().introduce(), else_decl->id(), IntLit::a(i + 1)));
+      e_else.back()()->type(field);
+    }
+    assert(results.size() == e_then.size() && results.size() == e_else.size());
+  }
+  ArrayLit* tuple = ArrayLit::constructTuple(Location().introduce(), tupleResult);
+  tuple->type(ty);
+  return tuple;
+}
+
 EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   CallStackItem _csi(env, e);
   ITE* ite = e->cast<ITE>();
@@ -86,7 +146,8 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
   bool allDefined = true;
 
   // The result variables of each generated conditional
-  std::vector<VarDecl*> results;
+  std::vector<KeepAlive> results;
+  KeepAlive tupleResult;
   // The then-expressions of each generated conditional
   std::vector<std::vector<KeepAlive>> e_then;
   // The else-expressions of each generated conditional
@@ -116,7 +177,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     for (auto& eq : eq_occurrences) {
       if (eq.second >= ite->size()) {
         // Any identifier that occurs in all or all but one branch gets its own conditional
-        results.push_back(eq.first->decl());
+        results.emplace_back(eq.first->decl());
         e_then.emplace_back();
         for (int i = 0; i < ite->size(); i++) {
           auto it = eq_branches[i].find(eq.first);
@@ -149,7 +210,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
       }
     }
     if (!noOtherBranches) {
-      results.push_back(r);
+      results.emplace_back(r);
       e_then.emplace_back();
       for (int i = 0; i < ite->size(); i++) {
         if (eq_branches[i].empty()) {
@@ -186,9 +247,17 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
         }
       }
     }
+  } else if (ite->type().istuple()) {
+    noOtherBranches = false;
+    std::vector<Expression*> then_in(ite->size());
+    for (size_t i = 0; i < ite->size(); ++i) {
+      then_in[i] = ite->thenExpr(i);
+    }
+    tupleResult =
+        ite_tuple_split(env, ite->type(), then_in, ite->elseExpr(), results, e_then, e_else);
   } else {
     noOtherBranches = false;
-    results.push_back(r);
+    results.emplace_back(r);
     e_then.emplace_back();
     for (int i = 0; i < ite->size(); i++) {
       e_then.back().push_back(ite->thenExpr(i));
@@ -318,7 +387,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
   }
 
   for (auto& result : results) {
-    if (result == nullptr) {
+    if (result() == nullptr) {
       // need to introduce new result variable
       GCLock lock;
       auto* ti = new TypeInst(Location().introduce(), ite->type(), nullptr);
@@ -367,9 +436,8 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
   }
 
   // update domain of result variable with bounds from all branches
-
   for (unsigned int j = 0; j < results.size(); j++) {
-    VarDecl* nr = results[j];
+    auto* nr = results[j]()->cast<VarDecl>();
     GCLock lock;
     if (r_bounds_valid_int[j] && ite->type().isint()) {
       IntVal lb = IntVal::infinity();
@@ -440,27 +508,36 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
   }
 
   // Create ite predicate calls
-  GCLock lock;
-  auto* al_cond = new ArrayLit(Location().introduce(), conditions);
-  al_cond->type(Type::varbool(1));
+  KeepAlive al_cond;
+  {
+    GCLock lock;
+    al_cond = new ArrayLit(Location().introduce(), conditions);
+    al_cond()->type(Type::varbool(1));
+  }
   for (unsigned int j = 0; j < results.size(); j++) {
-    auto* al_branches = new ArrayLit(Location().introduce(), branches[j]);
-    Type branches_t = results[j]->type();
-    branches_t.dim(1);
-    branches_t.ti(allBranchesPar[j] ? Type::TI_PAR : Type::TI_VAR);
-    al_branches->type(branches_t);
-    Call* ite_pred = Call::a(ite->loc().introduce(), ASTString("if_then_else"),
-                             {al_cond, al_branches, results[j]->id()});
-    ite_pred->decl(env.model->matchFn(env, ite_pred, false));
-    ite_pred->type(Type::varbool());
-    make_defined_var(env, results[j], ite_pred);
-    (void)flat_exp(env, Ctx(), ite_pred, env.constants.varTrue, env.constants.varTrue);
+    KeepAlive ite_pred;
+    {
+      GCLock lock;
+      auto* al_branches = new ArrayLit(Location().introduce(), branches[j]);
+      Type branches_t = results[j]()->type();
+      branches_t.dim(1);
+      branches_t.ti(allBranchesPar[j] ? Type::TI_PAR : Type::TI_VAR);
+      al_branches->type(branches_t);
+      ite_pred = Call::a(ite->loc().introduce(), ASTString("if_then_else"),
+                         {al_cond(), al_branches, results[j]()->cast<VarDecl>()->id()});
+      ite_pred()->cast<Call>()->decl(env.model->matchFn(env, ite_pred()->cast<Call>(), false));
+      ite_pred()->cast<Call>()->type(Type::varbool());
+      make_defined_var(env, results[j]()->cast<VarDecl>(), ite_pred()->cast<Call>());
+    }
+    (void)flat_exp(env, Ctx(), ite_pred(), env.constants.varTrue, env.constants.varTrue);
   }
   EE ret;
   if (noOtherBranches) {
     ret.r = env.constants.varTrue->id();
+  } else if (ite->type().istuple()) {
+    ret.r = bind(env, ctx, r, tupleResult());
   } else {
-    ret.r = results.back()->id();
+    ret.r = results.back()()->cast<VarDecl>()->id();
   }
   if (allDefined) {
     bind(env, Ctx(), b, env.constants.literalTrue);
@@ -499,7 +576,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     auto* al_defined = new ArrayLit(Location().introduce(), defined_conjunctions);
     al_defined->type(Type::varbool(1));
     Call* ite_defined_pred = Call::a(ite->loc().introduce(), ASTString("if_then_else_partiality"),
-                                     {al_cond, al_defined, b->id()});
+                                     {al_cond(), al_defined, b->id()});
     ite_defined_pred->decl(env.model->matchFn(env, ite_defined_pred, false));
     ite_defined_pred->type(Type::varbool());
     (void)flat_exp(env, Ctx(), ite_defined_pred, env.constants.varTrue, env.constants.varTrue);
