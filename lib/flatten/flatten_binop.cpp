@@ -1076,7 +1076,7 @@ EE rewrite_tuple_op(EnvI& env, Ctx& ctx, Expression* lhs, BinOpType bot, Express
       }
       auto* al = new ArrayLit(Location().introduce(), comps);
       al->type(Type::varbool(1));
-      auto* call = new Call(Location().introduce(), env.constants.ids.forall, {al});
+      auto* call = Call::a(Location().introduce(), env.constants.ids.forall, {al});
       call->type(Type::varbool());
       call->decl(env.model->matchFn(env, call, false, true));
       rewrite = call;
@@ -1092,7 +1092,7 @@ EE rewrite_tuple_op(EnvI& env, Ctx& ctx, Expression* lhs, BinOpType bot, Express
       }
       auto* al = new ArrayLit(Location().introduce(), comps);
       al->type(Type::varbool(1));
-      auto* call = new Call(Location().introduce(), env.constants.ids.exists, {al});
+      auto* call = Call::a(Location().introduce(), env.constants.ids.exists, {al});
       call->type(Type::varbool());
       call->decl(env.model->matchFn(env, call, false, true));
       rewrite = call;
@@ -1131,7 +1131,7 @@ EE rewrite_tuple_op(EnvI& env, Ctx& ctx, Expression* lhs, BinOpType bot, Express
       }
       auto* al = new ArrayLit(Location().introduce(), impls);
       al->type(Type::varbool(1));
-      auto* forall = new Call(Location().introduce(), env.constants.ids.forall, {al});
+      auto* forall = Call::a(Location().introduce(), env.constants.ids.forall, {al});
       forall->type(Type::varbool());
       forall->decl(env.model->matchFn(env, forall, false, true));
       // Wrap in let

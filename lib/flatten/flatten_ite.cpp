@@ -544,42 +544,48 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     ret.b = env.constants.literalTrue;
   } else {
     // Otherwise, constraint linking conditions, b and the definedness variables
-    if (b == nullptr) {
-      CallStackItem _csi(env, new StringLit(Location().introduce(), "b"));
-      b = new_vardecl(env, Ctx(), new TypeInst(Location().introduce(), Type::varbool()), nullptr,
-                      nullptr, nullptr);
-    }
-    ret.b = b->id();
+    KeepAlive ite_defined_pred;
+    {
+      GCLock lock;
 
-    std::vector<Expression*> defined_conjunctions(conditions.size());
-    for (unsigned int i = 0; i < conditions.size(); i++) {
-      std::vector<Expression*> def_i;
-      for (auto& j : defined) {
-        assert(j.size() > i);
-        if (j[i]() != env.constants.literalTrue) {
-          def_i.push_back(j[i]());
+      if (b == nullptr) {
+        CallStackItem _csi(env, new StringLit(Location().introduce(), "b"));
+        b = new_vardecl(env, Ctx(), new TypeInst(Location().introduce(), Type::varbool()), nullptr,
+                        nullptr, nullptr);
+      }
+      ret.b = b->id();
+
+      std::vector<Expression*> defined_conjunctions(conditions.size());
+      for (unsigned int i = 0; i < conditions.size(); i++) {
+        std::vector<Expression*> def_i;
+        for (auto& j : defined) {
+          assert(j.size() > i);
+          if (j[i]() != env.constants.literalTrue) {
+            def_i.push_back(j[i]());
+          }
+        }
+        if (def_i.empty()) {
+          defined_conjunctions[i] = env.constants.literalTrue;
+        } else if (def_i.size() == 1) {
+          defined_conjunctions[i] = def_i[0];
+        } else {
+          auto* al = new ArrayLit(Location().introduce(), def_i);
+          al->type(Type::varbool(1));
+          Call* forall = Call::a(Location().introduce(), env.constants.ids.forall, {al});
+          forall->decl(env.model->matchFn(env, forall, false));
+          forall->type(forall->decl()->rtype(env, {al}, nullptr, false));
+          defined_conjunctions[i] = forall;
         }
       }
-      if (def_i.empty()) {
-        defined_conjunctions[i] = env.constants.literalTrue;
-      } else if (def_i.size() == 1) {
-        defined_conjunctions[i] = def_i[0];
-      } else {
-        auto* al = new ArrayLit(Location().introduce(), def_i);
-        al->type(Type::varbool(1));
-        Call* forall = Call::a(Location().introduce(), env.constants.ids.forall, {al});
-        forall->decl(env.model->matchFn(env, forall, false));
-        forall->type(forall->decl()->rtype(env, {al}, nullptr, false));
-        defined_conjunctions[i] = forall;
-      }
+      auto* al_defined = new ArrayLit(Location().introduce(), defined_conjunctions);
+      al_defined->type(Type::varbool(1));
+      ite_defined_pred = Call::a(ite->loc().introduce(), ASTString("if_then_else_partiality"),
+                                 {al_cond(), al_defined, b->id()});
+      ite_defined_pred()->cast<Call>()->decl(
+          env.model->matchFn(env, ite_defined_pred()->cast<Call>(), false));
+      ite_defined_pred()->type(Type::varbool());
     }
-    auto* al_defined = new ArrayLit(Location().introduce(), defined_conjunctions);
-    al_defined->type(Type::varbool(1));
-    Call* ite_defined_pred = Call::a(ite->loc().introduce(), ASTString("if_then_else_partiality"),
-                                     {al_cond(), al_defined, b->id()});
-    ite_defined_pred->decl(env.model->matchFn(env, ite_defined_pred, false));
-    ite_defined_pred->type(Type::varbool());
-    (void)flat_exp(env, Ctx(), ite_defined_pred, env.constants.varTrue, env.constants.varTrue);
+    (void)flat_exp(env, Ctx(), ite_defined_pred(), env.constants.varTrue, env.constants.varTrue);
   }
 
   return ret;
