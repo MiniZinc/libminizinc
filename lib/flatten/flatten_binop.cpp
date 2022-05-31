@@ -9,9 +9,17 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <minizinc/ast.hh>
+#include <minizinc/eval_par.hh>
+#include <minizinc/exception.hh>
 #include <minizinc/flat_exp.hh>
+#include <minizinc/flatten_internal.hh>
+#include <minizinc/gc.hh>
+#include <minizinc/values.hh>
 
+#include <cassert>
 #include <list>
+#include <vector>
 
 namespace MiniZinc {
 
@@ -1041,6 +1049,102 @@ bool flatten_dom_constraint(EnvI& env, Ctx& ctx, VarDecl* vd, Expression* dom, V
   return false;
 }
 
+EE rewrite_tuple_op(EnvI& env, Ctx& ctx, Expression* lhs, BinOpType bot, Expression* rhs,
+                    bool doubleNeg, VarDecl* r, VarDecl* b) {
+  KeepAlive rewrite = nullptr;
+  ArrayLit* tupLHS = eval_array_lit(env, lhs);
+  ArrayLit* tupRHS = eval_array_lit(env, rhs);
+
+  auto new_binop = [&](Expression* lhs, BinOpType bot, Expression* rhs) {
+    auto* binop = new BinOp(Location().introduce(), lhs, bot, rhs);
+    FunctionI* fi = env.model->matchFn(env, binop->opToString(),
+                                       std::vector<Type>({lhs->type(), rhs->type()}), false);
+    binop->decl(fi);
+    binop->type(fi->ti()->type());  // "par bool" or "var bool", don't need rtype
+    return binop;
+  };
+
+  switch (bot) {
+    // tupA == tupB ==> forall([tupA.1 == tupB.1, ..., tupA.n == tupB.n])
+    case BOT_EQ: {
+      GCLock lock;
+      assert(tupLHS->isTuple() == tupRHS->isTuple());
+      assert(tupLHS->size() == tupRHS->size());
+      std::vector<Expression*> comps(tupLHS->size());
+      for (size_t i = 0; i < tupLHS->size(); ++i) {
+        comps[i] = new_binop((*tupLHS)[i], BOT_EQ, (*tupRHS)[i]);
+      }
+      auto* al = new ArrayLit(Location().introduce(), comps);
+      al->type(Type::varbool(1));
+      auto* call = new Call(Location().introduce(), env.constants.ids.forall, {al});
+      call->type(Type::varbool());
+      call->decl(env.model->matchFn(env, call, false, true));
+      rewrite = call;
+    } break;
+    // tupA != tupB ==> exist([tupA.1 != tupB.1, ..., tupA.n != tupB.n])
+    case BOT_NQ: {
+      GCLock lock;
+      assert(tupLHS->isTuple() == tupRHS->isTuple());
+      assert(tupLHS->size() == tupRHS->size());
+      std::vector<Expression*> comps(tupLHS->size());
+      for (size_t i = 0; i < tupLHS->size(); ++i) {
+        comps[i] = new_binop((*tupLHS)[i], BOT_NQ, (*tupRHS)[i]);
+      }
+      auto* al = new ArrayLit(Location().introduce(), comps);
+      al->type(Type::varbool(1));
+      auto* call = new Call(Location().introduce(), env.constants.ids.exists, {al});
+      call->type(Type::varbool());
+      call->decl(env.model->matchFn(env, call, false, true));
+      rewrite = call;
+    } break;
+    // tupA <(=) tupB ==> lex_less(eq)(tupA.fields, tupB.fields)
+    case BOT_LE:  // fallthrough
+    case BOT_LQ: {
+      GCLock lock;
+      assert(tupLHS->isTuple() == tupRHS->isTuple());
+      assert(tupLHS->size() == tupRHS->size());
+      // Create temp bool variables for lex decomposition
+      auto* bool_ti = new TypeInst(Location().introduce(), Type::varbool(1));
+      auto* range = new SetLit(Location().introduce(), IntSetVal::a(1, tupLHS->size()));
+      bool_ti->setRanges({new TypeInst(Location().introduce(), Type::parint(), range)});
+      auto* b_decl = new VarDecl(Location().introduce(), bool_ti, env.genId());
+      b_decl->type(Type::varbool(1));
+      std::vector<Expression*> b(tupLHS->size());
+      for (int i = 0; i < tupLHS->size(); ++i) {
+        b[i] = new ArrayAccess(Location().introduce(), b_decl->id(), {IntLit::a(i + 1)});
+        b[i]->type(Type::varbool());
+      }
+      // Create the implications
+      std::vector<Expression*> impls(tupLHS->size());
+      for (int i = 0; i < tupLHS->size(); ++i) {
+        auto* lq = new_binop((*tupLHS)[i], BOT_LQ, (*tupRHS)[i]);
+        auto* le = new_binop((*tupLHS)[i], BOT_LE, (*tupRHS)[i]);
+        if (i < tupLHS->size() - 1) {
+          auto* _or = new_binop(le, BOT_OR, b[i + 1]);
+          auto* _and = new_binop(lq, BOT_AND, _or);
+          impls[i] = new_binop(b[i], BOT_IMPL, _and);
+        } else if (bot == BOT_LQ) {
+          impls[i] = new_binop(b[i], BOT_IMPL, lq);
+        } else {
+          impls[i] = new_binop(b[i], BOT_IMPL, le);
+        }
+      }
+      auto* al = new ArrayLit(Location().introduce(), impls);
+      al->type(Type::varbool(1));
+      auto* forall = new Call(Location().introduce(), env.constants.ids.forall, {al});
+      forall->type(Type::varbool());
+      forall->decl(env.model->matchFn(env, forall, false, true));
+      // Wrap in let
+      auto* let = new Let(Location().introduce(), {b_decl}, new_binop(b[0], BOT_AND, forall));
+      let->type(Type::varbool());
+      rewrite = let;
+    } break;
+    default:
+      throw InternalError("Tuple operator rewrite not defined");
+  }
+  return flat_exp(env, ctx, rewrite(), r, b);
+}
+
 EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expression* e, VarDecl* r,
                    VarDecl* b, bool isBuiltin, BinOp* bo, BinOpType bot, bool doubleNeg) {
   EE ret;
@@ -1132,6 +1236,9 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
         break;
       default:
         break;
+    }
+    if (e0.r()->type().istuple() && isBuiltin) {
+      return rewrite_tuple_op(env, ctx, e0.r(), bot, e1.r(), doubleNeg, r, b);
     }
     args.push_back(e0.r);
     args.push_back(e1.r);
