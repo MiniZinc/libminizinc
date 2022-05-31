@@ -42,10 +42,11 @@ predicate fzn_cumulative_task(array[int] of var int: s,
                      array[int] of var int: r, var int: b) =
     let { 
         set of int: Tasks = 
-            {i | i in index_set(s) where ub(r[i]) > 0 /\ ub(d[i]) > 0 }
+            { i | i in index_set(s) where ub(r[i]) > 0 /\ ub(d[i]) > 0 }
     } in (
-        forall( j in Tasks ) ( 
-            b >= r[j] + sum( i in Tasks where i != j ) ( 
+        forall(j in Tasks) (
+            % Note: i can equal j. If j has a duration of 0, then it is not considered.
+            b >= sum(i in Tasks) (
                 (s[i] <= s[j] /\ s[j] < s[i] + d[i] ) * r[i]
             )
         )

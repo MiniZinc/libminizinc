@@ -19,6 +19,9 @@ Bug fixes:
    checker. (:bugref:`588`)
 -  Fix a bug where statistics without a ``%%%mzn-stat-end`` were not always
    printed in ``--json-stream`` mode.
+-  Fix a bug in the task decomposition of the cumulative global constraint where
+   resource requirement would not always be correctly be ignored when the task 
+   duration is zero. (:bugref:`589`)
 
 .. _v2.6.3:
 
