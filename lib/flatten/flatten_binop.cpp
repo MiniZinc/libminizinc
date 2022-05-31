@@ -326,18 +326,14 @@ KeepAlive mklinexp(EnvI& env, typename LinearTraits<Lit>::Val c0,
 
     std::vector<Expression*> args(3);
     args[0] = new ArrayLit(e0->loc(), coeffs_e);
-    Type t = coeffs_e[0]->type();
-    t.dim(1);
+    Type t = Type::arrType(env, Type::partop(1), coeffs_e[0]->type());
     args[0]->type(t);
     args[1] = new ArrayLit(e0->loc(), vars_e);
-    Type tt = vars_e[0]->type();
-    tt.dim(1);
+    Type tt = Type::arrType(env, Type::partop(1), vars_e[0]->type());
     args[1]->type(tt);
     args[2] = LinearTraits<Lit>::newLit(constval);
     Call* c = Call::a(e0->loc().introduce(), env.constants.ids.lin_exp, args);
     add_path_annotation(env, c);
-    tt = args[1]->type();
-    tt.dim(0);
     c->decl(env.model->matchFn(env, c, false));
     if (c->decl() == nullptr) {
       throw FlatteningError(env, c->loc(), "cannot find matching declaration");
@@ -831,13 +827,11 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
       coeff_ev[i] = LinearTraits<Lit>::newLit(coeff_sign * coeffv[i]);
     }
     auto* ncoeff = new ArrayLit(Location().introduce(), coeff_ev);
-    Type t = coeff_ev[0]->type();
-    t.dim(1);
+    Type t = Type::arrType(env, Type::partop(1), coeff_ev[0]->type());
     ncoeff->type(t);
     args.emplace_back(ncoeff);
     std::vector<Expression*> alv_e(alv.size());
-    Type tt = alv[0]()->type();
-    tt.dim(1);
+    Type tt = Type::arrType(env, Type::partop(1), alv[0]()->type());
     for (auto i = static_cast<unsigned int>(alv.size()); i--;) {
       if (alv[i]()->type().isvar()) {
         tt.mkVar(env);

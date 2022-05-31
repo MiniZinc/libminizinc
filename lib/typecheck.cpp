@@ -2150,6 +2150,8 @@ public:
       }
       std::vector<unsigned int> enumIds;
       bool hadEnums = false;
+      unsigned int typeId = tt.typeId();
+      tt.typeId(0);
       if (indexTuple != nullptr) {
         tt.dim(static_cast<int>(indexTuple->size()) - 1);
         for (unsigned int i = 0; i < indexTuple->size() - 1; i++) {
@@ -2169,8 +2171,8 @@ public:
         tt.dim(1);
         enumIds.push_back(0);
       }
-      if (hadEnums || tt.typeId() != 0) {
-        enumIds.push_back(tt.typeId());
+      if (hadEnums || typeId != 0) {
+        enumIds.push_back(typeId);
         tt.typeId(_env.registerArrayEnum(enumIds));
       }
     }
@@ -2590,8 +2592,7 @@ public:
           c_e = (*indexTuple)[indexTuple->size() - 1];
         }
         Type t_before = c_e->type();
-        Type t = fi->argtype(_env, args, i);
-        t.dim(0);
+        Type t = fi->argtype(_env, args, i).elemType(_env);
         c_e = add_coercion(_env, _model, c_e, t)();
         Type t_after = c_e->type();
         if (t_before != t_after) {
@@ -2634,8 +2635,7 @@ public:
               std::vector<Expression*> a1dargs(1);
               a1dargs[0] = args[0];
               Call* array1d = Call::a(Location().introduce(), ASTString("array1d"), a1dargs);
-              Type array1dt = args[0]->type();
-              array1dt.dim(1);
+              Type array1dt = Type::arrType(_env, Type::partop(1), args[0]->type());
               array1d->type(array1dt);
               array1d->decl(_model->matchFn(_env, array1d, false, true));
               args[0] = array1d;

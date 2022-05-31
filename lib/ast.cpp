@@ -1156,7 +1156,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
           if (tiit.isvar()) {
             it->second.first.mkVar(env);
           }
-          if (tiit.isOpt()) {
+          if (tiit.isOpt() && it->second.first.st() == Type::ST_PLAIN) {
             it->second.first.mkOpt(env);
           }
         }
@@ -1267,19 +1267,21 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
       ss << "type-inst variable $" << rh << " used but not defined";
       throw TypeError(env, fi->loc(), ss.str());
     }
+    unsigned int curTypeId = ret.typeId();
+    ret.typeId(0);
     ret.dim(it->second.first.dim());
+    ret.typeId(curTypeId);
     if (it->second.first.typeId() != 0) {
       std::vector<unsigned int> enumIds(it->second.first.dim() + 1);
       const std::vector<unsigned int>& orig_enumIds = env.getArrayEnum(it->second.first.typeId());
       for (unsigned int i = 0; i < enumIds.size() - 1; i++) {
         enumIds[i] = orig_enumIds[i];
       }
-      unsigned int curEnumId = ret.typeId();
-      if (curEnumId != 0 && ret.dim() > 0) {
-        const auto& curIds = env.getArrayEnum(curEnumId);
-        curEnumId = curIds[curIds.size() - 1];
+      if (curTypeId != 0 && ret.dim() > 0) {
+        const auto& curIds = env.getArrayEnum(curTypeId);
+        curTypeId = curIds[curIds.size() - 1];
       }
-      enumIds[enumIds.size() - 1] = curEnumId;
+      enumIds[enumIds.size() - 1] = curTypeId;
       ret.typeId(env.registerArrayEnum(enumIds));
     }
   } else if (!fi->ti()->ranges().empty()) {
@@ -1403,7 +1405,7 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
       if (curTiiT.dim() == 0) {
         ty = ty.elemType(env);
       } else {
-        ty = Type::arrType(env, curTiiT.dim() > 0 ? curTiiT : Type::parint(1), ty);
+        ty = Type::arrType(env, curTiiT.dim() > 0 ? curTiiT : Type::partop(1), ty);
       }
     }
     ASTString tv = tii->domain()->cast<TIId>()->v();
@@ -1419,7 +1421,7 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
           if (curTiiT.dim() == 0) {
             toCheck = toCheck.elemType(env);
           } else {
-            toCheck = Type::arrType(env, curTiiT.dim() > 0 ? curTiiT : Type::parint(1), toCheck);
+            toCheck = Type::arrType(env, curTiiT.dim() > 0 ? curTiiT : Type::partop(1), toCheck);
           }
         }
         if (toCheck != ty) {

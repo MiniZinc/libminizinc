@@ -359,8 +359,7 @@ void make_par(EnvI& env, Expression* e) {
 
             auto* slice_call =
                 Call::a(Location().introduce(), "slice_1d", {obj, al_slice_dim, index_set_n});
-            Type tt = obj->type();
-            tt.dim(1);
+            Type tt = Type::arrType(env, Type::partop(1), obj->type());
             slice_call->type(tt);
             Call* _toString_ENUM =
                 Call::a(Location().introduce(), enumName,
@@ -872,6 +871,7 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
               auto* aa =
                   new ArrayAccess(Location().introduce(), vd->id(), {i_vd->id(), j_vd->id()});
               Type vd_t = vd->type();
+              vd_t.typeId(0);
               vd_t.dim(0);
               vd_t.typeId(xEnumId);
               aa->type(vd_t);

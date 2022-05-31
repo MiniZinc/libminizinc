@@ -252,17 +252,27 @@ Type Type::elemType(EnvI& env) const {
 }
 
 Type Type::arrType(EnvI& env, const Type& dimTy, const Type& elemTy) {
-  assert(dimTy.dim() > 0 && elemTy.dim() == 0);
+  assert(dimTy.dim() > 0);
   Type ret = elemTy;
   ret.typeId(0);
   ret.dim(dimTy.dim());
-  if (dimTy.typeId() == 0 && elemTy.typeId() == 0) {
-    return ret;
+  if (dimTy.typeId() == 0) {
+    if (elemTy.typeId() == 0) {
+      return ret;
+    }
+    if (dimTy.dim() == elemTy.dim()) {
+      return elemTy;
+    }
   }
   std::vector<unsigned int> arrayEnumIds = dimTy.typeId() != 0
                                                ? env.getArrayEnum(dimTy.typeId())
                                                : std::vector<unsigned int>(dimTy.dim() + 1, 0);
-  arrayEnumIds[arrayEnumIds.size() - 1] = elemTy.typeId();
+  unsigned int elemTypeId = elemTy.typeId();
+  if (elemTy.dim() > 0 && elemTypeId != 0) {
+    const std::vector<unsigned int>& elemArrayIds = env.getArrayEnum(elemTypeId);
+    elemTypeId = elemArrayIds.back();
+  }
+  arrayEnumIds.back() = elemTypeId;
   ret.typeId(env.registerArrayEnum(arrayEnumIds));
   return ret;
 }

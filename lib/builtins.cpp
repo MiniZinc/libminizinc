@@ -1238,8 +1238,7 @@ Expression* b_array1d_list(EnvI& env, Call* call) {
     return call->arg(0)->isa<Id>() ? call->arg(0) : al;
   }
   auto* ret = new ArrayLit(al->loc(), al);
-  Type t = al->type();
-  t.dim(1);
+  Type t = Type::arrType(env, Type::partop(1), al->type());
   ret->type(t);
   ret->flat(al->flat());
   return ret;
