@@ -429,7 +429,6 @@ inline FieldAccess::FieldAccess(const Location& loc, Expression* v, Expression* 
     : Expression(loc, E_FIELDACCESS, Type()) {
   _v = v;
   _field = field;
-  assert(_field->cast<IntLit>()->v() >= 1);
   rehash();
 }
 

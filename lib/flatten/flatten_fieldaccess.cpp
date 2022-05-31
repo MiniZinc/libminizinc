@@ -23,6 +23,10 @@ EE flatten_fieldaccess(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, Var
 
   // Resolve field
   IntVal i = fa->field()->cast<IntLit>()->v();
+  if (i < 1 || i > al->size()) {
+    // This should not happen, type checking should ensure all fields are valid.
+    throw EvalError(env, fa->loc(), "Internal error: acessing invalid field");
+  }
 
   // Bind result
   ret.r = bind(env, Ctx(), r, (*al)[i.toInt() - 1]);
