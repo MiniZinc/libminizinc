@@ -5,7 +5,7 @@ expected: !Result
   status: SATISFIED
   solution: !Solution
     eqA: [2, true]
-    nqB: [3, true]
+    nq: [3, true]
     leA: [2, 4]
     lqA: [2, 4]
     arrin: [3, 5.0]
