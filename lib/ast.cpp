@@ -1399,7 +1399,13 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
     if (ty.bt() != Type::BT_TUPLE) {
       ty.st(curTiiT.st());
     }
-    ty.dim(curTiiT.dim());
+    if (curTiiT.dim() != ty.dim()) {
+      if (curTiiT.dim() == 0) {
+        ty = ty.elemType(env);
+      } else {
+        ty = Type::arrType(env, curTiiT.dim() > 0 ? curTiiT : Type::parint(1), ty);
+      }
+    }
     ASTString tv = tii->domain()->cast<TIId>()->v();
     for (unsigned int i = 0; i < paramCount(); i++) {
       if ((param(i)->ti()->domain() != nullptr) && param(i)->ti()->domain()->isa<TIId>() &&
@@ -1409,7 +1415,13 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
           toCheck.ot(curTiiT.ot());
           toCheck.st(curTiiT.st());
         }
-        toCheck.dim(curTiiT.dim());
+        if (curTiiT.dim() != toCheck.dim()) {
+          if (curTiiT.dim() == 0) {
+            toCheck = toCheck.elemType(env);
+          } else {
+            toCheck = Type::arrType(env, curTiiT.dim() > 0 ? curTiiT : Type::parint(1), toCheck);
+          }
+        }
         if (toCheck != ty) {
           if (env.isSubtype(ty, toCheck, true)) {
             ty = toCheck;

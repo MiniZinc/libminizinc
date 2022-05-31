@@ -1228,7 +1228,10 @@ Type EnvI::commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim) {
   // Allow to ignore the dimensions of (in progress) LHS when arrayEnumIds not yet in use
   int oldDim = tuple1.dim();
   if (ignoreTuple1Dim) {
+    unsigned int typeId = tuple1.typeId();
+    tuple1.typeId(0);
     tuple1.dim(0);
+    tuple1.typeId(typeId);
   }
 
   if (tuple1.dim() != tuple2.dim()) {
@@ -1276,10 +1279,11 @@ Type EnvI::commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim) {
     typeIds[tuple1.dim()] = typeId;
     typeId = registerArrayEnum(typeIds);
   }
-  tuple1.typeId(typeId);
+  tuple1.typeId(0);
   if (ignoreTuple1Dim) {
     tuple1.dim(oldDim);
   }
+  tuple1.typeId(typeId);
   return tuple1;
 }
 

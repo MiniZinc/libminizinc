@@ -9,6 +9,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <minizinc/ast.hh>
 #include <minizinc/astexception.hh>
 #include <minizinc/astiterator.hh>
 #include <minizinc/file_utils.hh>
@@ -1792,7 +1793,9 @@ public:
       }
     } else {
       Type at = ty;
+      at.typeId(0);
       at.dim(0);
+      at.typeId(ty.typeId());  // valid because typeId was not yet converted to an arrayEnumType
       if (at.ti() == Type::TI_VAR && at.st() == Type::ST_SET && at.bt() != Type::BT_INT) {
         if (at.bt() == Type::BT_BOOL) {
           ty.bt(Type::BT_INT);
