@@ -23,11 +23,12 @@ bool Type::btSubtype(const EnvI& env, const Type& t0, const Type& t1, bool stric
       if (t0.typeId() == t1.typeId()) {
         return true;
       }
-      if (env.getTupleType(t0)->isSubtypeOf(env, *env.getTupleType(t0), strictEnums)) {
+      if (env.getTupleType(t0)->isSubtypeOf(env, *env.getTupleType(t1), strictEnums)) {
         return true;
       }
+      return false;
     }
-    if ((!strictEnums || t0.dim() != 0 || (t0.typeId() == t1.typeId() || t1.typeId() == 0))) {
+    if (!strictEnums || t0.dim() != 0 || (t0.typeId() == t1.typeId() || t1.typeId() == 0)) {
       return true;
     }
   }

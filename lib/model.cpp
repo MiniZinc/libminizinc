@@ -14,6 +14,7 @@
 #include <minizinc/model.hh>
 #include <minizinc/prettyprinter.hh>
 
+#include <algorithm>
 #include <unordered_set>
 #include <vector>
 
@@ -57,6 +58,7 @@ bool Model::FnEntry::compare(const EnvI& env, const Model::FnEntry& e1, const Mo
     for (unsigned int i = 0; i < e1.t.size(); i++) {
       if (e1.t[i] != e2.t[i]) {
         if (e1.t[i].isSubtypeOf(env, e2.t[i], true)) {
+          assert(!e2.t[i].isSubtypeOf(env, e1.t[i], true));
           return true;
         }
         if (e2.t[i].isSubtypeOf(env, e1.t[i], true)) {
@@ -483,10 +485,9 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
     FnEntry fe(env, fi);
     addPolymorphicInstances(env, fe, v);
     if (keepSorted) {
-      std::sort(i_id->second.begin(), i_id->second.end(),
-                [&env](const Model::FnEntry& e1, const Model::FnEntry& e2) {
-                  return Model::FnEntry::compare(env, e1, e2);
-                });
+      std::sort(v.begin(), v.end(), [&env](const Model::FnEntry& e1, const Model::FnEntry& e2) {
+        return Model::FnEntry::compare(env, e1, e2);
+      });
     }
   }
   if (fi->id() == env.constants.ids.mzn_reverse_map_var) {
