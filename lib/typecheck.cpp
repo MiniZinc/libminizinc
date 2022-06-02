@@ -1700,7 +1700,9 @@ public:
   void vArrayLit(ArrayLit* al) {
     Type ty;
     if (al->isTuple()) {
-      _env.registerTupleType(al);
+      if (al->type().typeId() != Type::COMP_INDEX) {
+        _env.registerTupleType(al);
+      }
       return;
     }
     ty.dim(static_cast<int>(al->dims()));
@@ -1991,12 +1993,12 @@ public:
   void vComprehension(Comprehension* c) {
     Expression* c_e = c->e();
     auto* indexTuple = Expression::dynamicCast<ArrayLit>(c->e());
-    if (indexTuple != nullptr && !indexTuple->isTuple()) {
+    if (indexTuple != nullptr &&
+        (!indexTuple->isTuple() || indexTuple->type().typeId() != Type::COMP_INDEX)) {
       indexTuple = nullptr;
     }
-    if (c_e->isa<ArrayLit>() && c_e->cast<ArrayLit>()->isTuple()) {
-      auto* al = c_e->cast<ArrayLit>();
-      c_e = (*al)[al->size() - 1];
+    if (indexTuple != nullptr) {
+      c_e = (*indexTuple)[indexTuple->size() - 1];
     }
     Type tt = c_e->type();
     typedef std::unordered_map<VarDecl*, std::pair<int, int>> genMap_t;
@@ -2587,7 +2589,8 @@ public:
         GCLock lock;
         Expression* c_e = c->e();
         ArrayLit* indexTuple = nullptr;
-        if (c_e->isa<ArrayLit>() && c_e->cast<ArrayLit>()->isTuple()) {
+        if (c_e->isa<ArrayLit>() && c_e->cast<ArrayLit>()->isTuple() &&
+            c_e->type().typeId() == Type::COMP_INDEX) {
           indexTuple = c_e->cast<ArrayLit>();
           c_e = (*indexTuple)[indexTuple->size() - 1];
         }

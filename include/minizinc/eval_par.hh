@@ -313,7 +313,8 @@ void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, K
 template <class Eval>
 EvaluatedComp<typename Eval::ArrayVal> eval_comp(EnvI& env, Eval& eval, Comprehension* e) {
   EvaluatedComp<typename Eval::ArrayVal> a;
-  bool isIndexed = e->e()->isa<ArrayLit>() && e->e()->cast<ArrayLit>()->isTuple();
+  bool isIndexed = e->e()->isa<ArrayLit>() && e->e()->cast<ArrayLit>()->isTuple() &&
+                   e->e()->type().typeId() == Type::COMP_INDEX;
   unsigned int dim = 0;
   if (isIndexed) {
     dim = e->e()->cast<ArrayLit>()->size() - 1;

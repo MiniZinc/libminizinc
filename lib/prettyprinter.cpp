@@ -484,7 +484,7 @@ public:
         const auto* c = e->cast<Comprehension>();
         _os << (c->set() ? "{" : "[");
         if (auto* tuple = c->e()->dynamicCast<ArrayLit>()) {
-          if (tuple->isTuple()) {
+          if (tuple->isTuple() && tuple->type().typeId() == Type::COMP_INDEX) {
             if (tuple->size() == 2) {
               p((*tuple)[0]);
               _os << " : ";

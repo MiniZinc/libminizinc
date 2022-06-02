@@ -45,6 +45,8 @@ public:
   enum ContainsVarType { CV_NO, CV_YES };
   /// Whether the type represents an "any" type-inst variable
   enum AnyType { AT_NO, AT_YES };
+  /// TypeId for tuples reserved for index tuples in comprehensions
+  static const unsigned int COMP_INDEX = 0b111111111111;
 
 private:
   unsigned int _ti : 1;

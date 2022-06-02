@@ -848,6 +848,9 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
 
                 ArrayLit* idxlit =
                     ArrayLit::constructTuple(Location().introduce(), {i_vd->id(), show_i});
+                Type tyIdxLit = Type::tuple();
+                tyIdxLit.typeId(Type::COMP_INDEX);
+                idxlit->type(tyIdxLit);
 
                 index = new Comprehension(Location().introduce(), idxlit, g, false);
               }
@@ -884,6 +887,9 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
 
               ArrayLit* idxlit = ArrayLit::constructTuple(Location().introduce(),
                                                           {i_vd->id(), j_vd->id(), show_i});
+              Type tyIdxLit = Type::tuple();
+              tyIdxLit.typeId(Type::COMP_INDEX);
+              idxlit->type(tyIdxLit);
 
               values = new Comprehension(Location().introduce(), idxlit, g, false);
             }

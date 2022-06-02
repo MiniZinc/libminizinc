@@ -153,7 +153,8 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
 
       auto* indexes = c->e()->dynamicCast<ArrayLit>();
       Expression* generatedExp = c->e();
-      if (indexes != nullptr && indexes->isTuple()) {
+      if (indexes != nullptr && indexes->isTuple() &&
+          indexes->type().typeId() == Type::COMP_INDEX) {
         generatedExp = (*indexes)[indexes->size() - 1];
       } else {
         indexes = nullptr;
