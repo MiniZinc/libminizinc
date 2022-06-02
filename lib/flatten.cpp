@@ -760,6 +760,22 @@ TupleType* TupleType::a(const std::vector<Type>& fields) {
   tt = new (tt) TupleType(fields);
   return tt;
 }
+bool TupleType::matchesBT(const EnvI& env, const TupleType& other) const {
+  if (other.size() != size()) {
+    return false;
+  }
+  for (size_t i = 0; i < other.size(); ++i) {
+    const Type& ty = operator[](i);
+    if (ty.bt() != other[i].bt()) {
+      return false;
+    }
+    if (ty.bt() == Type::BT_TUPLE &&
+        !env.getTupleType(ty)->matchesBT(env, *env.getTupleType(other[i]))) {
+      return false;
+    }
+  }
+  return true;
+}
 
 EnvI::EnvI(Model* model0, std::ostream& outstream0, std::ostream& errstream0)
     : model(model0),
@@ -1302,14 +1318,15 @@ bool EnvI::isSubtype(const Type& t1, const Type& t2, bool strictEnums) const {
   if (!t1.isSubtypeOf(*this, t2, strictEnums)) {
     return false;
   }
-  if (strictEnums && t1.dim() == 0 && t2.dim() != 0 && t2.typeId() != 0) {
+  if (strictEnums && t1.bt() == Type::BT_INT && t1.dim() == 0 && t2.dim() != 0 &&
+      t2.typeId() != 0) {
     // set assigned to an array
     const std::vector<unsigned int>& t2enumIds = getArrayEnum(t2.typeId());
     if (t2enumIds[t2enumIds.size() - 1] != 0 && t1.typeId() != t2enumIds[t2enumIds.size() - 1]) {
       return false;
     }
   }
-  if (strictEnums && t1.dim() > 0 && t1.typeId() != t2.typeId()) {
+  if (strictEnums && t1.bt() == Type::BT_INT && t1.dim() > 0 && t1.typeId() != t2.typeId()) {
     if (t1.typeId() == 0) {
       return t1.isbot();
     }

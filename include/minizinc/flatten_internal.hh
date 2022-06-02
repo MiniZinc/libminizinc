@@ -192,7 +192,7 @@ public:
   }
 
   bool isSubtypeOf(const EnvI& env, const TupleType& other, bool strictEnum) const {
-    if (other.size() > size()) {
+    if (other.size() != size()) {
       return false;
     }
     for (size_t i = 0; i < other.size(); ++i) {
@@ -202,6 +202,7 @@ public:
     }
     return true;
   }
+  bool matchesBT(const EnvI& env, const TupleType& other) const;
 
   struct Hash {
     size_t operator()(const TupleType* tt) const { return tt->hash(); }

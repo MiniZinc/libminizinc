@@ -1497,7 +1497,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
   auto sameBT = [&]() {
     return e->type().bt() == funarg_t.bt() &&
            (e->type().bt() != Type::BT_TUPLE ||
-            env.getTupleType(e->type()) == env.getTupleType(funarg_t));
+            env.getTupleType(e->type())->matchesBT(env, *env.getTupleType(funarg_t)));
   };
   if (e->type().dim() == funarg_t.dim() &&
       (funarg_t.bt() == Type::BT_BOT || funarg_t.bt() == Type::BT_TOP ||
