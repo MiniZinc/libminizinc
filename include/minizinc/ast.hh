@@ -2080,6 +2080,7 @@ public:
     ASTString trace_dbg;         // NOLINT(readability-identifier-naming)
     ASTString trace_to_section;  // NOLINT(readability-identifier-naming)
 
+    ASTString array1d;
     ASTString array2d;
     ASTString array3d;
     ASTString array4d;

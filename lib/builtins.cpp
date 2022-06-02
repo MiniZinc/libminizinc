@@ -3412,13 +3412,13 @@ void register_builtins(Env& e) {
     rb(env, m, ASTString("index_set_5of6"), t_anyarray6, b_index_set5);
     rb(env, m, ASTString("index_set_6of6"), t_anyarray6, b_index_set6);
   }
-  { rb(env, m, ASTString("array1d"), {Type::optvartop(-1)}, b_array1d_list); }
+  { rb(env, m, env.constants.ids.array1d, {Type::optvartop(-1)}, b_array1d_list); }
   {
     std::vector<Type> t_arrayXd(2);
     t_arrayXd[0] = Type::parsetint();
     t_arrayXd[1] = Type::top(-1);
     t_arrayXd[1] = Type::optvartop(-1);
-    rb(env, m, ASTString("array1d"), t_arrayXd, b_array1d);
+    rb(env, m, env.constants.ids.array1d, t_arrayXd, b_array1d);
   }
   {
     std::vector<Type> t_arrayXd(2);
@@ -3431,7 +3431,7 @@ void register_builtins(Env& e) {
     t_arrayXd[0] = Type::parsetint();
     t_arrayXd[1] = Type::parsetint();
     t_arrayXd[2] = Type::optvartop(-1);
-    rb(env, m, ASTString("array2d"), t_arrayXd, b_array2d);
+    rb(env, m, env.constants.ids.array2d, t_arrayXd, b_array2d);
   }
   {
     std::vector<Type> t_arrayXd(4);
@@ -3439,7 +3439,7 @@ void register_builtins(Env& e) {
     t_arrayXd[1] = Type::parsetint();
     t_arrayXd[2] = Type::parsetint();
     t_arrayXd[3] = Type::optvartop(-1);
-    rb(env, m, ASTString("array3d"), t_arrayXd, b_array3d);
+    rb(env, m, env.constants.ids.array3d, t_arrayXd, b_array3d);
   }
   {
     std::vector<Type> t_arrayXd(5);
@@ -3448,7 +3448,7 @@ void register_builtins(Env& e) {
     t_arrayXd[2] = Type::parsetint();
     t_arrayXd[3] = Type::parsetint();
     t_arrayXd[4] = Type::optvartop(-1);
-    rb(env, m, ASTString("array4d"), t_arrayXd, b_array4d);
+    rb(env, m, env.constants.ids.array4d, t_arrayXd, b_array4d);
   }
   {
     std::vector<Type> t_arrayXd(6);
@@ -3458,7 +3458,7 @@ void register_builtins(Env& e) {
     t_arrayXd[3] = Type::parsetint();
     t_arrayXd[4] = Type::parsetint();
     t_arrayXd[5] = Type::optvartop(-1);
-    rb(env, m, ASTString("array5d"), t_arrayXd, b_array5d);
+    rb(env, m, env.constants.ids.array5d, t_arrayXd, b_array5d);
   }
   {
     std::vector<Type> t_arrayXd(7);
@@ -3469,7 +3469,7 @@ void register_builtins(Env& e) {
     t_arrayXd[4] = Type::parsetint();
     t_arrayXd[5] = Type::parsetint();
     t_arrayXd[6] = Type::optvartop(-1);
-    rb(env, m, ASTString("array6d"), t_arrayXd, b_array6d);
+    rb(env, m, env.constants.ids.array6d, t_arrayXd, b_array6d);
   }
   {
     std::vector<Type> stv(3);

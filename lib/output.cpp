@@ -282,7 +282,7 @@ void make_par(EnvI& env, Expression* e) {
     void vCall(Call* c) {
       if (c->id() == env.constants.ids.outputJSON) {
         bool outputObjective = (c->argCount() == 1 && eval_bool(env, c->arg(0)));
-        c->id(ASTString("array1d"));
+        c->id(env.constants.ids.array1d);
         Expression* json =
             copy(env, env.cmap, create_json_output(env, outputObjective, false, false));
         std::vector<Expression*> new_args({json});

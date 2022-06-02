@@ -1730,6 +1730,7 @@ Constants::Constants() {
   ids.trace_dbg = addString("trace_dbg");
   ids.trace_to_section = addString("trace_to_section");
 
+  ids.array1d = addString("array1d");
   ids.array2d = addString("array2d");
   ids.array3d = addString("array3d");
   ids.array4d = addString("array4d");

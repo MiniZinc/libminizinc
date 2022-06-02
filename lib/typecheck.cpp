@@ -950,7 +950,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
 
     std::vector<Expression*> array1dArgs(1);
     array1dArgs[0] = vd_x->id();
-    Call* array1dCall = Call::a(Location().introduce(), "array1d", array1dArgs);
+    Call* array1dCall = Call::a(Location().introduce(), env.constants.ids.array1d, array1dArgs);
 
     auto* vd_xx = new VarDecl(Location().introduce(), xx_ti, "xx", array1dCall);
     vd_xx->toplevel(false);
@@ -1115,7 +1115,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
 
     std::vector<Expression*> array1dArgs(1);
     array1dArgs[0] = vd_x->id();
-    Call* array1dCall = Call::a(Location().introduce(), "array1d", array1dArgs);
+    Call* array1dCall = Call::a(Location().introduce(), env.constants.ids.array1d, array1dArgs);
 
     auto* vd_xx = new VarDecl(Location().introduce(), xx_ti, "xx", array1dCall);
     vd_xx->toplevel(false);
@@ -1494,12 +1494,14 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
     c->decl(fi);
     e = c;
   }
-  const bool sameBT =
-      (e->type().bt() == funarg_t.bt() &&
-       (e->type().bt() != Type::BT_TUPLE || e->type().typeId() == funarg_t.typeId()));
+  auto sameBT = [&]() {
+    return e->type().bt() == funarg_t.bt() &&
+           (e->type().bt() != Type::BT_TUPLE ||
+            env.getTupleType(e->type()) == env.getTupleType(funarg_t));
+  };
   if (e->type().dim() == funarg_t.dim() &&
       (funarg_t.bt() == Type::BT_BOT || funarg_t.bt() == Type::BT_TOP ||
-       e->type().bt() == Type::BT_BOT || sameBT)) {
+       e->type().bt() == Type::BT_BOT || sameBT())) {
     return e;
   }
   GCLock lock;
@@ -1521,8 +1523,108 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
       e = set2a;
     }
   }
-  if (funarg_t.bt() == Type::BT_TOP || sameBT || e->type().bt() == Type::BT_BOT) {
+  if (funarg_t.bt() == Type::BT_TOP || sameBT() || e->type().bt() == Type::BT_BOT) {
     return e;
+  }
+  if (e->type().bt() == Type::BT_TUPLE && funarg_t.bt() == Type::BT_TUPLE &&
+      e->type().dim() == funarg_t.dim()) {
+    TupleType* current = env.getTupleType(e->type());
+    TupleType* intended = env.getTupleType(funarg_t);
+    if (intended->size() == current->size()) {
+      // Directly add coercions in Array Literals
+      if (auto* al = e->dynamicCast<ArrayLit>()) {
+        std::vector<Expression*> elem(al->size());
+        ArrayLit* c_al = nullptr;
+        if (e->type().dim() > 0) {
+          // Array of tuples (coerce each tuple individually)
+          Type elemTy = funarg_t.elemType(env);
+          for (size_t i = 0; i < al->size(); i++) {
+            elem[i] = add_coercion(env, m, (*al)[i], elemTy)();
+          }
+          std::vector<std::pair<int, int>> dims(al->dims());
+          for (size_t i = 0; i < al->dims(); i++) {
+            dims[i] = {al->min(i), al->max(i)};
+          }
+          c_al = new ArrayLit(al->loc().introduce(), elem, dims);
+          c_al->type(Type::arrType(env, e->type(), funarg_t));
+        } else {
+          // Tuple (coerce each field)
+          assert(al->isTuple());
+          for (size_t i = 0; i < al->size(); i++) {
+            Type elemTy = (*intended)[i];
+            elem[i] = add_coercion(env, m, (*al)[i], elemTy)();
+          }
+          c_al = ArrayLit::constructTuple(al->loc().introduce(), elem);
+          c_al->type(funarg_t);
+        }
+        return c_al;
+      }
+      // Create (bounded) identifier for expression if not available
+      std::vector<Expression*> let_bindings;
+      Expression* ident = e;
+      if (!ident->isa<Id>()) {
+        auto* vd = new VarDecl(e->loc(), new TypeInst(e->loc().introduce(), e->type()), 1, e);
+        vd->ti()->setTupleDomain(env, e->type());
+        vd->toplevel(false);
+        vd->type(e->type());
+        let_bindings.push_back(vd);
+        ident = vd->id();
+      }
+      Expression* ret;
+      if (e->type().dim() > 0) {
+        Type tyElem = e->type().elemType(env);
+        Type ty1d = Type::arrType(env, Type::partop(1), e->type());
+        // Expressions that has array of tuple type
+        auto* array1d = Call::a(e->loc().introduce(), env.constants.ids.array1d, {ident});
+        array1d->type(ty1d);
+        array1d->decl(m->matchFn(env, array1d, false, true));
+        auto* vd_array1d =
+            new VarDecl(e->loc(), new TypeInst(e->loc().introduce(), ty1d), 2, array1d);
+        vd_array1d->ti()->setTupleDomain(env, ty1d);
+        vd_array1d->toplevel(false);
+        let_bindings.push_back(vd_array1d);
+
+        auto* index_set = Call::a(e->loc().introduce(), "index_set", {vd_array1d->id()});
+        index_set->decl(m->matchFn(env, index_set, false, true));
+        index_set->type(Type::parsetint());
+
+        auto* vd_it =
+            new VarDecl(Location().introduce(), new TypeInst(e->loc().introduce(), tyElem), 3);
+        vd_it->toplevel(false);
+        Generator gen({vd_it}, index_set, nullptr);
+        Generators gens;
+        gens.g = {gen};
+
+        auto* aa = new ArrayAccess(e->loc().introduce(), vd_array1d->id(), {vd_it->id()});
+        aa->type(tyElem);
+        Expression* elem = add_coercion(env, m, aa, funarg_t.elemType(env))();
+        auto* comprehension = new Comprehension(Location().introduce(), elem, gens, true);
+        comprehension->type(Type::arrType(env, Type::partop(1), funarg_t));
+
+        auto* arrayXd =
+            Call::a(e->loc().introduce(), env.constants.ids.arrayXd, {ident, comprehension});
+        arrayXd->type(Type::arrType(env, e->type(), funarg_t));
+        arrayXd->decl(m->matchFn(env, arrayXd, false, true));
+        ret = arrayXd;
+      } else {
+        // Expression that has tuple type
+        std::vector<Expression*> collect(intended->size());
+        for (long long int i = 0; i < collect.size(); i++) {
+          collect[i] = new FieldAccess(e->loc().introduce(), ident, IntLit::a(i + 1));
+          collect[i]->type((*current)[i]);
+          collect[i] = add_coercion(env, m, collect[i], (*intended)[i])();
+        }
+        auto* c_al = ArrayLit::constructTuple(e->loc().introduce(), collect);
+        c_al->type(funarg_t);
+        ret = c_al;
+      }
+      if (!let_bindings.empty()) {
+        auto* let = new Let(e->loc().introduce(), let_bindings, ret);
+        let->type(ret->type());
+        ret = let;
+      }
+      return ret;
+    }
   }
   std::vector<Expression*> args(1);
   args[0] = e;
@@ -1535,43 +1637,6 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
   } else if (e->type().bt() == Type::BT_INT) {
     if (funarg_t.bt() == Type::BT_FLOAT) {
       c = Call::a(e->loc(), env.constants.ids.int2float, args);
-    }
-  } else if (e->type().bt() == Type::BT_TUPLE) {
-    if (funarg_t.bt() == Type::BT_TUPLE) {
-      TupleType* current = env.getTupleType(e->type());
-      TupleType* intended = env.getTupleType(funarg_t);
-      auto* al = e->dynamicCast<ArrayLit>();
-      VarDecl* vd = nullptr;
-      if (al == nullptr) {
-        Expression* ident = e;
-        if (!ident->isa<Id>()) {
-          auto* vd =
-              new VarDecl(e->loc(), new TypeInst(e->loc().introduce(), e->type()), env.genId(), e);
-          vd->type(e->type());
-          ident = vd->id();
-        }
-        std::vector<Expression*> collect(intended->size());
-        for (long long int i = 0; i < collect.size(); i++) {
-          collect[i] = new FieldAccess(e->loc().introduce(), ident, IntLit::a(i + 1));
-          collect[i]->type((*current)[i]);
-        }
-        al = ArrayLit::constructTuple(e->loc().introduce(), collect);
-      } else if (intended->size() < al->size()) {
-        // Create tuple slice
-        al = new ArrayLit(al->loc().introduce(), al, {{1, intended->size()}},
-                          {{1, intended->size()}});
-      }
-      assert(intended->size() <= al->size());
-      for (size_t i = 0; i < intended->size(); i++) {
-        al->set(i, add_coercion(env, m, (*al)[i], (*intended)[i])());
-      }
-      al->type(funarg_t);
-      if (vd != nullptr) {
-        auto* let = new Let(e->loc().introduce(), {vd}, al);
-        let->type(al->type());
-        return let;
-      }
-      return al;
     }
   }
   if (c != nullptr) {
@@ -2311,11 +2376,10 @@ public:
             new ArrayLit(ite->loc().introduce(), std::vector<std::vector<Expression*>>()));
         ite->elseExpr()->type(tret);
       } else {
-        throw TypeError(
-            _env, ite->loc(),
-            std::string(
-                "conditional without `else' branch must have bool, string, ann, or array type, ") +
-                "but `then' branch has type `" + tret.toString(_env) + "'");
+        throw TypeError(_env, ite->loc(),
+                        std::string("conditional without `else' branch must have bool, string, "
+                                    "ann, or array type, ") +
+                            "but `then' branch has type `" + tret.toString(_env) + "'");
       }
     }
     Type tret_var(tret);
@@ -2637,7 +2701,7 @@ public:
             if (args[0]->type().dim() > 1) {
               std::vector<Expression*> a1dargs(1);
               a1dargs[0] = args[0];
-              Call* array1d = Call::a(Location().introduce(), ASTString("array1d"), a1dargs);
+              Call* array1d = Call::a(Location().introduce(), _env.constants.ids.array1d, a1dargs);
               Type array1dt = Type::arrType(_env, Type::partop(1), args[0]->type());
               array1d->type(array1dt);
               array1d->decl(_model->matchFn(_env, array1d, false, true));
