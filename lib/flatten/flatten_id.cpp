@@ -9,6 +9,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <minizinc/eval_par.hh>
 #include <minizinc/flat_exp.hh>
 
 namespace MiniZinc {
@@ -274,8 +275,9 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
     // Add reverse mapper for tuple var decls
     // TODO: This only has to happen on first flatten_id call.
     if (vd->type().istuple() && vd->e() != nullptr) {
-      assert(vd->e()->isa<ArrayLit>());
-      env.reverseMappers.insert(vd->id(), vd->e());
+      Expression* lit = follow_id(vd->e());
+      assert(lit->isa<ArrayLit>());
+      env.reverseMappers.insert(vd->id(), lit);
     }
     ret.r = bind(env, ctx, r, rete);
   }
