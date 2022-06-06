@@ -721,9 +721,13 @@ public:
       } break;
       case Expression::E_VARDECL: {
         const auto* vd = e->cast<VarDecl>();
-        p(vd->ti());
-        if (!vd->ti()->isEnum() && (vd->id()->idn() != -1 || !vd->id()->v().empty())) {
-          _os << ":";
+        if (vd->isTypeAlias()) {
+          _os << "type";
+        } else {
+          p(vd->ti());
+          if (!vd->ti()->isEnum() && (vd->id()->idn() != -1 || !vd->id()->v().empty())) {
+            _os << ":";
+          }
         }
         if (vd->id()->idn() != -1) {
           _os << " X_INTRODUCED_" << vd->id()->idn() << "_";
@@ -1736,13 +1740,24 @@ public:
   static ret mapVarDecl(const VarDecl* vd) {
     std::ostringstream oss;
     auto* dl = new DocumentList("", "", "");
-    dl->addDocumentToList(expression_to_document(vd->ti()));
-    if (vd->id()->idn() == -1) {
-      if (!vd->id()->v().empty()) {
-        oss << ": " << vd->id()->v().c_str();
+    if (vd->isTypeAlias()) {
+      oss << "type ";
+      if (vd->id()->idn() == -1) {
+        if (!vd->id()->v().empty()) {
+          oss << vd->id()->v().c_str();
+        }
+      } else {
+        oss << "X_INTRODUCED_" << vd->id()->idn() << "_";
       }
     } else {
-      oss << ": X_INTRODUCED_" << vd->id()->idn() << "_";
+      dl->addDocumentToList(expression_to_document(vd->ti()));
+      if (vd->id()->idn() == -1) {
+        if (!vd->id()->v().empty()) {
+          oss << ": " << vd->id()->v().c_str();
+        }
+      } else {
+        oss << ": X_INTRODUCED_" << vd->id()->idn() << "_";
+      }
     }
     dl->addStringToList(oss.str());
 

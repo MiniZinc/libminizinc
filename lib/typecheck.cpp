@@ -1175,7 +1175,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
 
 void TopoSorter::add(EnvI& env, VarDeclI* vdi, bool handleEnums, Model* enumItems) {
   VarDecl* vd = vdi->e();
-  if (handleEnums && vd->ti()->isEnum()) {
+  if (handleEnums && vd->ti() != nullptr && vd->ti()->isEnum()) {
     unsigned int enumId = env.registerEnum(vdi);
     Type vdt = vd->type();
     vdt.typeId(enumId);
@@ -1751,7 +1751,7 @@ public:
   void vStringLit(const StringLit* /*sl*/) {}
   /// Visit identifier
   void vId(Id* ident) {
-    if (ident != _env.constants.absent) {
+    if (ident != _env.constants.absent && !ident->decl()->isTypeAlias()) {
       if (ident->decl()->type().isunknown()) {
         ident->decl()->type(ident->decl()->ti()->type());
       }
@@ -2830,6 +2830,10 @@ public:
   }
   /// Visit variable declaration
   void vVarDecl(VarDecl* vd) {
+    if (vd->isTypeAlias()) {
+      // Processed in vTypeInst
+      return;
+    }
     vd->type(vd->ti()->type());
     if (ignoreVarDecl) {
       if (vd->e() != nullptr) {
@@ -2970,6 +2974,28 @@ public:
   }
   /// Visit type inst
   void vTypeInst(TypeInst* ti) {
+    /// Resolve type aliasing
+    TypeInst* alias = ti;
+    while (true) {
+      if (alias->domain() != nullptr && alias->domain()->isa<Id>() &&
+          alias->domain()->cast<Id>()->decl() != nullptr &&
+          alias->domain()->cast<Id>()->decl()->isTypeAlias()) {
+        // TODO: check for qualifiers (should probably not be allowed)
+        alias = alias->domain()->cast<Id>()->decl()->e()->cast<TypeInst>();
+      } else {
+        break;
+      }
+    }
+    if (alias != ti) {
+      GCLock lock;
+      ti->type(alias->type());
+      ti->domain(copy(_env, alias->domain()));
+      std::vector<TypeInst*> ranges(alias->ranges().size());
+      for (size_t i = 0; i < alias->ranges().size(); ++i) {
+        ranges[i] = alias->ranges()[i];
+      }
+      ti->setRanges(ranges);
+    }
     Type tt = ti->type();
     bool needsArrayType = false;
     // !ti->ranges().empty() && (ti->domain() != nullptr) && ti->domain()->type().typeId() != 0;
@@ -3508,7 +3534,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           : _env(env0), _m(m0), _bottomUpTyper(b), _typeErrors(typeErrors) {}
       void vVarDeclI(VarDeclI* i) {
         _bottomUpTyper.run(i->e());
-        if (i->e()->ti()->hasTiVariable()) {
+        if (i->e()->ti() != nullptr && i->e()->ti()->hasTiVariable()) {
           std::ostringstream ss;
           ss << "type-inst variables not allowed in type-inst for `" << i->e()->id()->str() << "'";
           _typeErrors.emplace_back(_env, i->e()->loc(), ss.str());
@@ -3720,6 +3746,11 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     OutputI* outputItem;
     TSV3(EnvI& env0, Model* m0) : env(env0), m(m0), outputItem(nullptr) {}
     void vAssignI(AssignI* i) { i->decl()->e(add_coercion(env, m, i->e(), i->decl()->type())()); }
+    static void vVarDeclI(VarDeclI* i) {
+      if (i->e()->isTypeAlias()) {
+        i->remove();  // no longer required
+      }
+    }
   } _tsv3(env.envi(), m);
   if (typeErrors.empty()) {
     iter_items(_tsv3, m);
@@ -4002,6 +4033,9 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
   }
 
   for (auto& decl : ts.decls) {
+    if (decl->isTypeAlias()) {
+      continue;
+    }
     if (decl->toplevel() && decl->type().isPar() && !decl->type().isAnn() && decl->e() == nullptr) {
       if (decl->type().isOpt() && decl->type().dim() == 0) {
         decl->e(Constants::constants().absent);

@@ -421,7 +421,7 @@ item_tail :
       include_item
       { $$=notInDatafile(&@$,parm,"include") ? $1 : nullptr; }
     | vardecl_item
-      { $$=notInDatafile(&@$,parm,"variable declaration") ? $1 : nullptr; }
+      { $$=notInDatafile(&@$,parm, $1->cast<VarDeclI>()->e()->isTypeAlias() ? "type alias" : "variable declaration") ? $1 : nullptr; }
     | assign_item
     | constraint_item
       { $$=notInDatafile(&@$,parm,"constraint") ? $1 : nullptr; }
@@ -474,9 +474,11 @@ vardecl_item :
         }
       }
     | ti_expr_and_id MZN_EQ expr
-      { if ($1) $1->e($3);
-        if ($1)
+      { 
+        if ($1) {
+          $1->e($3);
           $$ = VarDeclI::a(@$,$1);
+        }
       }
     | MZN_ENUM MZN_IDENTIFIER annotations
       {
@@ -519,6 +521,16 @@ vardecl_item :
         free($2);
         delete $6;
         $$ = VarDeclI::a(@$,vd);
+      }
+    | MZN_TYPE MZN_IDENTIFIER annotations MZN_EQ ti_expr
+      {
+        TypeInst* ti = $5;
+        VarDecl* vd = new VarDecl(@$, nullptr, $2, ti);
+        if ($3) {
+          vd->addAnnotations(*$3);
+        }
+        free($2);
+        $$ = VarDeclI::a(@$, vd);
       }
 
 enum_init :

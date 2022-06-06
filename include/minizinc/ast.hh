@@ -1438,6 +1438,8 @@ public:
   void payload(int i) { _payload = i; }
   /// Put current value on trail
   void trail();
+  /// Whether VarDecl object is a type alias
+  bool isTypeAlias() const { return _ti == nullptr && _e != nullptr && _e->isa<TypeInst>(); }
 };
 
 class EnvI;

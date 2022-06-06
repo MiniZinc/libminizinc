@@ -601,7 +601,9 @@ inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, long long int idn, Ex
 }
 
 inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, const std::string& id, Expression* e)
-    : Expression(loc, E_VARDECL, ti->type()), _id(nullptr), _flat(nullptr) {
+    : Expression(loc, E_VARDECL, ti != nullptr ? ti->type() : Type()),
+      _id(nullptr),
+      _flat(nullptr) {
   _id = new Id(loc, ASTString(id), this);
   _flag1 = false;
   _secondaryId = 1;
