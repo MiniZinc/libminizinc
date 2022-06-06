@@ -203,6 +203,7 @@ public:
     return true;
   }
   bool matchesBT(const EnvI& env, const TupleType& other) const;
+  bool containsArray(const EnvI& env) const;
 
   struct Hash {
     size_t operator()(const TupleType* tt) const { return tt->hash(); }

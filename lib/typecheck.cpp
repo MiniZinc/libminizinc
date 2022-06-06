@@ -1979,6 +1979,8 @@ public:
     int n_dimensions = 0;
     bool isVarAccess = false;
     bool isSlice = false;
+    bool containsArray =
+        tt.bt() == Type::BT_TUPLE && _env.getTupleType(aa->v()->type())->containsArray(_env);
     for (unsigned int i = 0; i < aa->idx().size(); i++) {
       Expression* aai = aa->idx()[i];
       if (aai->isa<AnonVar>()) {
@@ -2013,9 +2015,16 @@ public:
         }
         tt.mkVar(_env);
         if (tt.bt() == Type::BT_ANN || tt.bt() == Type::BT_STRING) {
-          throw TypeError(_env, aai->loc(),
-                          std::string("array access using a variable not supported for array of ") +
-                              (tt.bt() == Type::BT_ANN ? "ann" : "string"));
+          throw TypeError(
+              _env, aai->loc(),
+              std::string("array access using a variable is not supported for array of ") +
+                  (tt.bt() == Type::BT_ANN ? "ann" : "string"));
+        }
+        if (containsArray) {
+          throw TypeError(
+              _env, aai->loc(),
+              "array access using a variable is not supported for array of a tuple type which "
+              "contain an array.");
         }
       }
       unsigned int typeId = tt.typeId();
@@ -2394,6 +2403,11 @@ public:
     if (varcond) {
       if (tret.dim() > 0) {
         throw TypeError(_env, ite->loc(), "conditional with var condition cannot have array type");
+      }
+      if (tret.bt() == Type::BT_TUPLE && _env.getTupleType(tret)->containsArray(_env)) {
+        throw TypeError(
+            _env, ite->loc(),
+            "conditional with var condition cannot have a tuple type that contains an array");
       }
       if (tret.bt() == Type::BT_STRING) {
         throw TypeError(_env, ite->loc(), "conditional with var condition cannot have string type");
@@ -3005,7 +3019,10 @@ public:
           throw TypeError(_env, ti->loc(), "opt tuples are not allowed");
         }
 
-        if (ti->type().isvar()) {
+        // Warning: Do not check TypeInst twice! A cononical tuple does not abide by the rules that
+        // a user definition abides by (e.g., a tuple might be marked var (because all members are
+        // var) and contain an array (of with var members)).
+        if (ti->type().isvar() && ti->type().typeId() == 0) {
           auto* dom = ti->domain()->cast<ArrayLit>();
           // Check if "var" tuple is allowed
           for (unsigned int i = 0; i < dom->size(); i++) {

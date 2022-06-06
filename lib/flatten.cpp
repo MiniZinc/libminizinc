@@ -776,6 +776,18 @@ bool TupleType::matchesBT(const EnvI& env, const TupleType& other) const {
   }
   return true;
 }
+bool TupleType::containsArray(const EnvI& env) const {
+  for (size_t i = 0; i < size(); ++i) {
+    const Type& ti = operator[](i);
+    if (ti.dim() != 0) {
+      return true;
+    }
+    if (ti.bt() == Type::BT_TUPLE && env.getTupleType(ti)->containsArray(env)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 EnvI::EnvI(Model* model0, std::ostream& outstream0, std::ostream& errstream0)
     : model(model0),
