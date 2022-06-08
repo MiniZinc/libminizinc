@@ -23,8 +23,6 @@ class TupleType;
 /// Type of a MiniZinc expression
 class Type {
 public:
-  /// Type-inst
-  enum Inst { TI_PAR, TI_VAR };
   /// Basic type
   enum BaseType {
     BT_BOOL,
@@ -37,6 +35,10 @@ public:
     BT_BOT,
     BT_UNKNOWN
   };
+  /// Type-inst
+  enum Inst { TI_PAR, TI_VAR };
+  /// Whether a type element is explicitly set by user
+  enum ExplicitType { EXPL_NO, EXPL_YES };
   /// Whether the expression is plain or set
   enum SetType { ST_PLAIN, ST_SET };
   /// Whether the expression is normal or optional
@@ -46,37 +48,46 @@ public:
   /// Whether the type represents an "any" type-inst variable
   enum AnyType { AT_NO, AT_YES };
   /// TypeId for tuples reserved for index tuples in comprehensions
-  static const unsigned int COMP_INDEX = 0b111111111111;
+  static const unsigned int COMP_INDEX = 0xFFFF;
 
 private:
-  unsigned int _ti : 1;
   unsigned int _bt : 4;
+  unsigned int _ti : 1;
+  unsigned int _tiExplicit : 1;
   unsigned int _st : 1;
   unsigned int _ot : 1;
+  unsigned int _otExplicit : 1;
   unsigned int _cv : 1;
   unsigned int _at : 1;
   /** \brief Type identifier
    * This is an index into a table in the Env. It is currently limited to
-   * 4095 different type identifiers.
+   * 65,536 different type identifiers.
    * For a non-array integer type, this maps directly to the identity of the enum.
    * For a non-array tuple type, this maps directly to the definition of a tuple.
    * For an array type, it maps to a tuple of type identifiers.
    */
-  unsigned int _typeId : 12;
+  unsigned int _typeId : 16;
   /// Number of array dimensions
-  signed int _dim : 7;
+  unsigned int _dim : 3;
 
 public:
   /// Default constructor
   Type()
-      : _ti(TI_PAR),
-        _bt(BT_UNKNOWN),
+      : _bt(BT_UNKNOWN),
+        _ti(TI_PAR),
+        _tiExplicit(EXPL_NO),
         _st(ST_PLAIN),
         _ot(OT_PRESENT),
+        _otExplicit(EXPL_NO),
         _cv(CV_NO),
         _at(AT_NO),
         _typeId(0),
-        _dim(0) {}
+        _dim(1) {}
+
+  /// Access basic type
+  BaseType bt() const { return static_cast<BaseType>(_bt); }
+  /// Set basic type
+  void bt(const BaseType& b) { _bt = b; }
 
   /// Access type-inst
   Inst ti() const { return static_cast<Inst>(_ti); }
@@ -89,11 +100,8 @@ public:
       _cv = CV_YES;
     }
   }
-
-  /// Access basic type
-  BaseType bt() const { return static_cast<BaseType>(_bt); }
-  /// Set basic type
-  void bt(const BaseType& b) { _bt = b; }
+  bool tiExplicit() const { return static_cast<ExplicitType>(_tiExplicit) == EXPL_YES; }
+  void tiExplicit(bool b) { _tiExplicit = (b ? EXPL_YES : EXPL_NO); }
 
   /// Access set type
   SetType st() const { return static_cast<SetType>(_st); }
@@ -112,16 +120,18 @@ public:
            typeId() == 0);  // Cannot create "opt tuple" after typechecking
     _ot = o;
   }
+  bool otExplicit() const { return static_cast<ExplicitType>(_otExplicit) == EXPL_YES; }
+  void otExplicit(bool b) { _otExplicit = (b ? EXPL_YES : EXPL_NO); }
 
   /// Access var-in-par type
   bool cv() const { return static_cast<ContainsVarType>(_cv) == CV_YES; }
   /// Set var-in-par type
-  void cv(bool b) { _cv = b; }
+  void cv(bool b) { _cv = (b ? CV_YES : CV_NO); }
 
   /// Access any type
   bool any() const { return static_cast<AnyType>(_at) == AT_YES; }
   /// Set any type
-  void any(bool b) { _at = b; }
+  void any(bool b) { _at = (b ? AT_YES : AT_NO); }
 
   /// Access enum identifier
   unsigned int typeId() const { return _typeId; }
@@ -129,27 +139,31 @@ public:
   void typeId(unsigned int eid) { _typeId = eid; }
 
   /// Access dimensions
-  int dim() const { return _dim; }
+  int dim() const { return static_cast<signed int>(_dim) - 1; }
   /// Set dimensions
   void dim(int d) {
     // Cannot change the dimension of a type that uses typeId, as the typeId would have to be
     // changed (and registed) as well. (see changeDim)
-    assert(typeId() == 0 || _dim == d);
-    _dim = d;
-    assert(_dim == d);
+    assert(typeId() == 0 || dim() == d);
+    assert(d >= -1 && d < 7);
+    _dim = static_cast<unsigned int>(d + 1);
   }
 
 protected:
   /// Constructor
   Type(const Inst& ti, const BaseType& bt, const SetType& st, unsigned int typeId, int dim)
-      : _ti(ti),
-        _bt(bt),
+      : _bt(bt),
+        _ti(ti),
+        _tiExplicit(EXPL_NO),
         _st(st),
         _ot(OT_PRESENT),
+        _otExplicit(EXPL_NO),
         _cv(ti == TI_VAR ? CV_YES : CV_NO),
         _at(AT_NO),
         _typeId(typeId),
-        _dim(dim) {}
+        _dim(static_cast<unsigned int>(dim + 1)) {
+    assert(dim >= -1 && dim < 7);
+  }
 
 public:
   static Type parint(int dim = 0) { return Type(TI_PAR, BT_INT, ST_PLAIN, 0, dim); }
@@ -203,61 +217,65 @@ public:
   static Type unboxedfloat;
 
   bool isunknown() const { return bt() == BT_UNKNOWN; }
-  bool isplain() const { return _dim == 0 && st() == ST_PLAIN && ot() == OT_PRESENT; }
-  bool isint() const { return _dim == 0 && st() == ST_PLAIN && bt() == BT_INT; }
+  bool isplain() const { return dim() == 0 && st() == ST_PLAIN && ot() == OT_PRESENT; }
+  bool isint() const { return dim() == 0 && st() == ST_PLAIN && bt() == BT_INT; }
   bool isbot() const { return bt() == BT_BOT; }
-  bool isfloat() const { return _dim == 0 && st() == ST_PLAIN && bt() == BT_FLOAT; }
-  bool isbool() const { return _dim == 0 && st() == ST_PLAIN && bt() == BT_BOOL; }
+  bool isfloat() const { return dim() == 0 && st() == ST_PLAIN && bt() == BT_FLOAT; }
+  bool isbool() const { return dim() == 0 && st() == ST_PLAIN && bt() == BT_BOOL; }
   bool isstring() const { return isplain() && bt() == BT_STRING; }
   bool istuple() const { return isplain() && bt() == BT_TUPLE; }
   bool isvar() const { return ti() != TI_PAR; }
   bool isvarbool() const {
-    return ti() == TI_VAR && _dim == 0 && st() == ST_PLAIN && bt() == BT_BOOL && ot() == OT_PRESENT;
+    return ti() == TI_VAR && dim() == 0 && st() == ST_PLAIN && bt() == BT_BOOL &&
+           ot() == OT_PRESENT;
   }
   bool isvarfloat() const {
-    return ti() == TI_VAR && _dim == 0 && st() == ST_PLAIN && bt() == BT_FLOAT &&
+    return ti() == TI_VAR && dim() == 0 && st() == ST_PLAIN && bt() == BT_FLOAT &&
            ot() == OT_PRESENT;
   }
   bool isvarint() const {
-    return ti() == TI_VAR && _dim == 0 && st() == ST_PLAIN && bt() == BT_INT && ot() == OT_PRESENT;
+    return ti() == TI_VAR && dim() == 0 && st() == ST_PLAIN && bt() == BT_INT && ot() == OT_PRESENT;
   }
   bool isPar() const { return ti() == TI_PAR; }
   bool isOpt() const { return ot() == OT_OPTIONAL; }
   bool isPresent() const { return ot() == OT_PRESENT; }
-  bool isSet() const { return _dim == 0 && st() == ST_SET; }
+  bool isSet() const { return dim() == 0 && st() == ST_SET; }
   bool isIntSet() const { return isSet() && (bt() == BT_INT || bt() == BT_BOT); }
   bool isBoolSet() const { return isSet() && (bt() == BT_BOOL || bt() == BT_BOT); }
   bool isFloatSet() const { return isSet() && (bt() == BT_FLOAT || bt() == BT_BOT); }
   bool isAnn() const { return isplain() && bt() == BT_ANN; }
   bool isIntArray() const {
-    return _dim == 1 && st() == ST_PLAIN && ot() == OT_PRESENT && bt() == BT_INT;
+    return dim() == 1 && st() == ST_PLAIN && ot() == OT_PRESENT && bt() == BT_INT;
   }
   bool isBoolArray() const {
-    return _dim == 1 && st() == ST_PLAIN && ot() == OT_PRESENT && bt() == BT_BOOL;
+    return dim() == 1 && st() == ST_PLAIN && ot() == OT_PRESENT && bt() == BT_BOOL;
   }
-  bool isIntSetArray() const { return _dim == 1 && st() == ST_SET && bt() == BT_INT; }
+  bool isIntSetArray() const { return dim() == 1 && st() == ST_SET && bt() == BT_INT; }
 
   bool operator==(const Type& t) const {
-    return ti() == t.ti() && bt() == t.bt() && st() == t.st() && ot() == t.ot() && _dim == t._dim &&
-           (bt() != BT_TUPLE || typeId() == t.typeId());
+    return ti() == t.ti() && bt() == t.bt() && st() == t.st() && ot() == t.ot() &&
+           dim() == t.dim() && (bt() != BT_TUPLE || typeId() == t.typeId());
   }
   bool operator!=(const Type& t) const { return !this->operator==(t); }
   // protected:
 
   int toInt() const {
-    return +((1 - static_cast<int>(_st)) << 28) + (static_cast<int>(_bt) << 24) +
+    // WARNING: this method currently erases the flags that indicate whether type modifier are
+    // explicitly added
+    return +((1 - static_cast<int>(_st)) << 26) + (static_cast<int>(_bt) << 22) +
            (static_cast<int>(_ti) << 21) + (static_cast<int>(_ot) << 20) +
-           (static_cast<int>(_typeId) << 8) + (_dim == -1 ? 1 : (_dim == 0 ? 0 : _dim + 1));
+           (static_cast<int>(_typeId) << 4) + (dim() == -1 ? 1 : (dim() == 0 ? 0 : dim() + 1));
   }
   static Type fromInt(int i) {
     Type t;
-    t._st = 1 - static_cast<SetType>((i >> 28) & 0x1);
-    t._bt = static_cast<BaseType>((i >> 24) & 0xF);
-    t._ti = static_cast<Inst>((i >> 21) & 0x7);
+    t._st = 1 - static_cast<SetType>((i >> 26) & 0x1);
+    t._bt = static_cast<BaseType>((i >> 22) & 0xF);
+    t._ti = static_cast<Inst>((i >> 21) & 0x1);
     t._ot = static_cast<OptType>((i >> 20) & 0x1);
-    t._typeId = static_cast<unsigned int>((i >> 8) & 0xFFF);
-    int dim = (i & 0x7F);
-    t._dim = (dim == 0 ? 0 : (dim == 1 ? -1 : dim - 1));
+    int dim = (i & 0x7);
+    dim = (dim == 0 ? 0 : (dim == 1 ? -1 : dim - 1));
+    t.dim(dim);
+    t._typeId = static_cast<unsigned int>((i >> 4) & 0xFFF);
     return t;
   }
 
@@ -289,13 +307,13 @@ public:
 
   /// Check if this type is a subtype of \a t
   bool isSubtypeOf(const EnvI& env, const Type& t, bool strictEnums) const {
-    if (_dim == 0 && t._dim != 0 && st() == ST_SET && t.st() == ST_PLAIN && bt() != BT_FLOAT &&
+    if (dim() == 0 && t.dim() != 0 && st() == ST_SET && t.st() == ST_PLAIN && bt() != BT_FLOAT &&
         (bt() == BT_BOT || btSubtype(env, *this, t, false) || t.bt() == BT_TOP) && ti() == TI_PAR &&
         (ot() == OT_PRESENT || ot() == t.ot())) {
       return true;
     }
     // either same dimension or t has variable dimension
-    if (_dim != t._dim && (_dim == 0 || t._dim != -1)) {
+    if (dim() != t.dim() && (dim() == 0 || t.dim() != -1)) {
       return false;
     }
     if (any()) {

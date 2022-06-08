@@ -280,7 +280,7 @@ Type Type::arrType(EnvI& env, const Type& dimTy, const Type& elemTy) {
 
 std::string Type::toString(const EnvI& env) const {
   std::ostringstream oss;
-  if (_dim > 0) {
+  if (dim() > 0) {
     oss << "array[";
     if (_typeId != 0U) {
       const std::vector<unsigned int>& arrayEnumIds = env.getArrayEnum(_typeId);
@@ -296,17 +296,20 @@ std::string Type::toString(const EnvI& env) const {
         }
       }
     } else {
-      for (int i = 0; i < _dim; i++) {
+      for (int i = 0; i < dim(); i++) {
         oss << (i == 0 ? "" : ",") << "int";
       }
     }
     oss << "] of ";
   }
-  if (_dim < 0) {
+  if (dim() < 0) {
     oss << "array[$_] of ";
   }
   switch (static_cast<int>(_ti)) {
     case TI_PAR:
+      if (static_cast<ExplicitType>(_tiExplicit) == EXPL_YES) {
+        oss << "par ";
+      }
       break;
     case TI_VAR:
       oss << "var ";
@@ -321,7 +324,7 @@ std::string Type::toString(const EnvI& env) const {
   switch (static_cast<BaseType>(_bt)) {
     case BT_INT: {
       unsigned int enumId;
-      if (_typeId != 0U && _dim > 0) {
+      if (_typeId != 0U && dim() > 0) {
         const std::vector<unsigned int>& arrayEnumIds = env.getArrayEnum(_typeId);
         enumId = arrayEnumIds[arrayEnumIds.size() - 1];
       } else {
@@ -371,18 +374,21 @@ std::string Type::toString(const EnvI& env) const {
 
 std::string Type::simpleToString() const {
   std::ostringstream oss;
-  if (_dim > 0) {
+  if (dim() > 0) {
     oss << "array[int";
-    for (int i = 1; i < _dim; i++) {
+    for (int i = 1; i < dim(); i++) {
       oss << ",int";
     }
     oss << "] of ";
   }
-  if (_dim < 0) {
+  if (dim() < 0) {
     oss << "array[$_] of ";
   }
   switch (static_cast<Inst>(_ti)) {
     case TI_PAR:
+      if (static_cast<ExplicitType>(_tiExplicit) == EXPL_YES) {
+        oss << "par ";
+      }
       break;
     case TI_VAR:
       oss << "var ";

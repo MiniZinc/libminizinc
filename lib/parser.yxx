@@ -836,23 +836,32 @@ base_ti_expr :
         if ($$) {
           Type tt = $$->type();
           tt.ot(Type::OT_OPTIONAL);
+          tt.otExplicit(true);
           $$->type(tt);
         }
       }
     | MZN_PAR opt_opt base_ti_expr_tail
       { $$ = $3;
-        if ($$ && $2) {
+        if ($$) {
           Type tt = $$->type();
-          tt.ot(Type::OT_OPTIONAL);
+          tt.tiExplicit(true);
+          if ($2) {
+            tt.ot(Type::OT_OPTIONAL);
+            tt.otExplicit(true);
+          }
           $$->type(tt);
         }
       }
     | MZN_VAR opt_opt base_ti_expr_tail
       { $$ = $3;
+        Type tt = $$->type();
         if ($$) {
-          Type tt = $$->type();
           tt.ti(Type::TI_VAR);
-          if ($2) tt.ot(Type::OT_OPTIONAL);
+          tt.tiExplicit(true);
+          if ($2) {
+            tt.ot(Type::OT_OPTIONAL);
+            tt.otExplicit(true);
+          }
           $$->type(tt);
         }
       }
@@ -870,6 +879,7 @@ base_ti_expr :
           Type tt = $$->type();
           tt.st(Type::ST_SET);
           tt.ot(Type::OT_OPTIONAL);
+          tt.otExplicit(true);
           $$->type(tt);
         }
       }
@@ -877,8 +887,12 @@ base_ti_expr :
       { $$ = $5;
         if ($$) {
           Type tt = $$->type();
+          tt.tiExplicit(true);
           tt.st(Type::ST_SET);
-          if ($2) tt.ot(Type::OT_OPTIONAL);
+          if ($2) {
+            tt.ot(Type::OT_OPTIONAL);
+            tt.otExplicit(true);
+          }
           $$->type(tt);
         }
       }
@@ -887,8 +901,12 @@ base_ti_expr :
         if ($$) {
           Type tt = $$->type();
           tt.ti(Type::TI_VAR);
+          tt.tiExplicit(true);
           tt.st(Type::ST_SET);
-          if ($2) tt.ot(Type::OT_OPTIONAL);
+          if ($2) {
+            tt.ot(Type::OT_OPTIONAL);
+            tt.otExplicit(true);
+          }
           $$->type(tt);
         }
       }
