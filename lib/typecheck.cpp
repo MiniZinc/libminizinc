@@ -2831,7 +2831,8 @@ public:
   /// Visit variable declaration
   void vVarDecl(VarDecl* vd) {
     if (vd->isTypeAlias()) {
-      // Processed in vTypeInst
+      // Resolve any aliases in the alias definition
+      vd->e()->cast<TypeInst>()->resolveAlias(_env);
       return;
     }
     vd->type(vd->ti()->type());
@@ -2975,27 +2976,7 @@ public:
   /// Visit type inst
   void vTypeInst(TypeInst* ti) {
     /// Resolve type aliasing
-    TypeInst* alias = ti;
-    while (true) {
-      if (alias->domain() != nullptr && alias->domain()->isa<Id>() &&
-          alias->domain()->cast<Id>()->decl() != nullptr &&
-          alias->domain()->cast<Id>()->decl()->isTypeAlias()) {
-        // TODO: check for qualifiers (should probably not be allowed)
-        alias = alias->domain()->cast<Id>()->decl()->e()->cast<TypeInst>();
-      } else {
-        break;
-      }
-    }
-    if (alias != ti) {
-      GCLock lock;
-      ti->type(alias->type());
-      ti->domain(copy(_env, alias->domain()));
-      std::vector<TypeInst*> ranges(alias->ranges().size());
-      for (size_t i = 0; i < alias->ranges().size(); ++i) {
-        ranges[i] = alias->ranges()[i];
-      }
-      ti->setRanges(ranges);
-    }
+    ti->resolveAlias(_env);
     Type tt = ti->type();
     bool needsArrayType = false;
     // !ti->ranges().empty() && (ti->domain() != nullptr) && ti->domain()->type().typeId() != 0;

@@ -1029,6 +1029,26 @@ void TypeInst::setTupleDomain(const EnvI& env, const Type& tuple_type, bool setT
   domain(new ArrayLit(loc().introduce(), field_ti));
 }
 
+void TypeInst::resolveAlias(EnvI& env) {
+  auto is_aliased = [&]() {
+    return domain() != nullptr && domain()->isa<Id>() && domain()->cast<Id>()->decl() != nullptr &&
+           domain()->cast<Id>()->decl()->isTypeAlias();
+  };
+  if (is_aliased()) {
+    GCLock lock;
+    auto* alias = domain()->cast<Id>()->decl()->e()->cast<TypeInst>();
+    Type mod = type();  // TODO: modify according to current known type
+    type(alias->type());
+    domain(copy(env, alias->domain()));
+    std::vector<TypeInst*> ranges(alias->ranges().size());
+    for (size_t i = 0; i < alias->ranges().size(); ++i) {
+      ranges[i] = alias->ranges()[i];
+    }
+    setRanges(ranges);
+  }
+  assert(!is_aliased());  // Resolving aliases should be done in order
+}
+
 bool TypeInst::hasTiVariable() const {
   if (domain() != nullptr) {
     if (domain()->isa<TIId>()) {
