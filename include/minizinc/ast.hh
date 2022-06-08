@@ -1570,7 +1570,7 @@ public:
   // Set domain of a tuple based on a tuple type object
   void setTupleDomain(const EnvI& env, const Type& tuple_type, bool setTypeAny = false);
   // Resolve type aliases
-  void resolveAlias(EnvI& env);
+  bool resolveAlias(EnvI& env);
 
   /// Set ranges to \a ranges
   void setRanges(const std::vector<TypeInst*>& ranges);

@@ -2832,7 +2832,11 @@ public:
   void vVarDecl(VarDecl* vd) {
     if (vd->isTypeAlias()) {
       // Resolve any aliases in the alias definition
-      vd->e()->cast<TypeInst>()->resolveAlias(_env);
+      bool resolved = vd->e()->cast<TypeInst>()->resolveAlias(_env);
+      if (resolved) {
+        // Recheck the TypeInst (might now contain a problem)
+        vTypeInst(vd->e()->cast<TypeInst>());
+      }
       return;
     }
     vd->type(vd->ti()->type());

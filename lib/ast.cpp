@@ -1029,24 +1029,60 @@ void TypeInst::setTupleDomain(const EnvI& env, const Type& tuple_type, bool setT
   domain(new ArrayLit(loc().introduce(), field_ti));
 }
 
-void TypeInst::resolveAlias(EnvI& env) {
+bool TypeInst::resolveAlias(EnvI& env) {
   auto is_aliased = [&]() {
     return domain() != nullptr && domain()->isa<Id>() && domain()->cast<Id>()->decl() != nullptr &&
            domain()->cast<Id>()->decl()->isTypeAlias();
   };
-  if (is_aliased()) {
-    GCLock lock;
-    auto* alias = domain()->cast<Id>()->decl()->e()->cast<TypeInst>();
-    Type mod = type();  // TODO: modify according to current known type
-    type(alias->type());
-    domain(copy(env, alias->domain()));
+  if (!is_aliased()) {
+    return false;
+  }
+  GCLock lock;
+  auto* alias = domain()->cast<Id>()->decl()->e()->cast<TypeInst>();
+  Type ntype = alias->type();
+  if (type().tiExplicit()) {
+    if (ntype.bt() == Type::BT_TUPLE && ntype.ti() != type().ti()) {
+      ntype.typeId(0);
+    }
+    ntype.ti(type().ti());
+  }
+  if (type().otExplicit()) {
+    if (ntype.bt() == Type::BT_TUPLE && ntype.ot() != type().ot()) {
+      ntype.typeId(0);
+    }
+    ntype.ot(type().ot());
+  }
+  if (type().st() == Type::ST_SET) {
+    if (ntype.st() == Type::ST_SET) {
+      std::stringstream ss;
+      ss << "Unable to creata a `set of' the type aliased by '" << domain()
+         << "', which has been resolved to `" << alias->type().toString(env)
+         << "' and is already a set type";
+      throw TypeError(env, loc(), ss.str());
+    }
+    ntype.st(Type::ST_SET);
+  }
+  assert(type().dim() == ranges().size() && ntype.dim() == alias->ranges().size());
+  if (type().dim() != 0) {
+    if (ntype.dim() != 0) {
+      std::stringstream ss;
+      ss << "Unable to creata an array containing the type aliased by '" << domain()
+         << "', which has been resolved to `" << alias->type().toString(env)
+         << "' and is already an array type";
+      throw TypeError(env, loc(), ss.str());
+    }
+    ntype.dim(type().dim());
+  } else if (ntype.dim() != 0) {
     std::vector<TypeInst*> ranges(alias->ranges().size());
     for (size_t i = 0; i < alias->ranges().size(); ++i) {
       ranges[i] = alias->ranges()[i];
     }
     setRanges(ranges);
   }
+  type(ntype);
+  domain(copy(env, alias->domain()));
   assert(!is_aliased());  // Resolving aliases should be done in order
+  return true;
 }
 
 bool TypeInst::hasTiVariable() const {
