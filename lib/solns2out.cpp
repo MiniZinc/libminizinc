@@ -166,6 +166,7 @@ void Solns2Out::initFromOzn(const std::string& filename) {
       _envGuard.reset(_env);
       MiniZinc::typecheck(*_env, _outputModel, typeErrors, false, false);
       MiniZinc::register_builtins(*_env);
+      _env->model()->checkFnValid(_env->envi(), typeErrors);
       _env->envi().swapOutput();
       init();
     } else {

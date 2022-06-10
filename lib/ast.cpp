@@ -1799,6 +1799,8 @@ Constants::Constants() {
   ann.cache_result->type(Type::ann());
   ann.no_cse = addId("no_cse");
   ann.no_cse->type(Type::ann());
+  ann.mzn_internal_representation = addId("mzn_internal_representation");
+  ann.mzn_internal_representation->type(Type::ann());
 
   cli.cmdlineData_short_str = addString("-D");
   cli.cmdlineData_str = addString("--cmdline-data");

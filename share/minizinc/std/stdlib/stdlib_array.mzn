@@ -5,7 +5,7 @@
 */
 
 /** @group stdlib.builtins.array Return the concatenation of arrays \a x and \a y */
-function array[int] of any $T: '++'(array[int] of any $T: x, array[int] of any $T: y);
+function array[int] of any $T: '++'(array[int] of any $T: x, array[int] of any $T: y) ::mzn_internal_representation;
 
 /** @group stdlib.builtins.array Return the length of array \a x
 

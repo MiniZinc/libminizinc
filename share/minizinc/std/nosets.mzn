@@ -8,7 +8,7 @@ predicate mzn_reverse_map_var(var set of int: x) = let {
   array[int] of var bool: b = set2bools(x)
 } in true;
 
-function var set of int: reverse_map_ab2si(array[int] of var bool: b);
+function var set of int: reverse_map_ab2si(array[int] of var bool: b) ::output_only;
 function set of int: reverse_map_ab2si(array[int] of bool: b) ::promise_total =
   { i | i in index_set(b) where b[i] };
 

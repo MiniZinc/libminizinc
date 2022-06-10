@@ -29,5 +29,5 @@ predicate int_eq(var int: x, int: y) =
   } in x_enc[y];
 
 % Reverse mappings (unary to integer)
-function var int: reverse_unary(array[int] of var bool: x_enc);
+function var int: reverse_unary(array[int] of var bool: x_enc) ::output_only;
 function int: reverse_unary(array[int] of bool: x_enc) = arg_max(x_enc);

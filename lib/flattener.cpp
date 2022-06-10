@@ -732,6 +732,10 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             throw MultipleErrors<TypeError>(typeErrors);
           }
           MiniZinc::register_builtins(*env);
+          env->model()->checkFnValid(env->envi(), typeErrors);
+          if (!typeErrors.empty()) {
+            throw MultipleErrors<TypeError>(typeErrors);
+          }
           env->swap();
           populate_output(*env, _flags.encapsulateJSON);
         } else {

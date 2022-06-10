@@ -136,6 +136,10 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
   }
 
   register_builtins(*new_env);
+  new_env->model()->checkFnValid(_env->envi(), typeErrors);
+  if (!typeErrors.empty()) {
+    throw MultipleErrors<TypeError>(typeErrors);
+  }
 
   try {
     flatten(*new_env, _fopts);

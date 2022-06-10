@@ -2049,6 +2049,7 @@ public:
     ASTString expression_name_dbg;           // NOLINT(readability-identifier-naming)
     Id* cache_result;                        // NOLINT(readability-identifier-naming)
     Id* no_cse;                              // NOLINT(readability-identifier-naming)
+    Id* mzn_internal_representation;         // NOLINT(readability-identifier-naming)
   } ann;
 
   /// Command line options

@@ -544,3 +544,4 @@ predicate implied_constraint(var bool: b);
 
 annotation promise_ctx_monotone;
 annotation promise_ctx_antitone;
+annotation mzn_internal_representation;

@@ -1,5 +1,5 @@
 /** @group stdlib.output Create string to visualise a 2D boolean array \a x as a checkered board. */
-function string: show_array2d_bool(array[int,int] of var bool: x);
+function string: show_array2d_bool(array[int,int] of var bool: x) ::output_only;
 function string: show_array2d_bool(array[int,int] of bool: x) =
 	let {
 		int: one_digits = floor(log10(max(index_set_1of2(x)))) + 1;

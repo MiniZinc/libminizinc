@@ -31,6 +31,7 @@ class CopyMap;
 class EnvI;
 
 class Model;
+class TypeError;
 
 class VarDeclIteratorContainer {
 private:
@@ -166,6 +167,8 @@ public:
   void checkFnOverloading(EnvI& env);
   /// Fix function table after type checking
   void fixFnMap();
+  /// Check whether all functions in function map can be flattened or evaluated
+  void checkFnValid(EnvI& env, std::vector<TypeError>& errors);
   /// Return function declaration for \a id matching \a args
   FunctionI* matchFn(EnvI& env, const ASTString& id, const std::vector<Expression*>& args,
                      bool strictEnums) const;

@@ -5,25 +5,25 @@
 */
 
 /** @group stdlib.builtins.logic Return truth value of \a x &and; \a y */
-function     bool: '/\'(    bool: x,     bool: y);
+function     bool: '/\'(    bool: x,     bool: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.logic Return truth value of \a x &and; \a y with identity <> = True*/
 function     bool: '/\'(opt bool: x, opt bool: y) = (absent(x) \/ deopt(x)) /\ (absent(y) \/ deopt(y));
 /** @group stdlib.builtins.logic Return truth value of \a x &and; \a y */
-function var bool: '/\'(var bool: x, var bool: y);
+function var bool: '/\'(var bool: x, var bool: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.logic Return truth value of \a x &and; \a y with identity <> = True*/
 function var bool: '/\'(var opt bool: x, var opt bool: y) = (absent(x) \/ deopt(x)) /\ (absent(y) \/ deopt(y));
 
 /** @group stdlib.builtins.logic Return truth value of \a x &or; \a y */
-function     bool: '\/'(    bool: x,     bool: y);
+function     bool: '\/'(    bool: x,     bool: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.logic Return truth value of \a x &or; \a y with identity <> = False*/
 function     bool: '\/'(opt bool: x, opt bool: y) = (occurs(x) /\ deopt(x)) \/ (occurs(y) /\ deopt(y));
 /** @group stdlib.builtins.logic Return truth value of \a x &or; \a y */
-function var bool: '\/'(var bool: x, var bool: y);
+function var bool: '\/'(var bool: x, var bool: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.logic Return truth value of \a x &or; \a y with identity <> = False*/
 function var bool: '\/'(var opt bool: x, var opt bool: y) = (occurs(x) /\ deopt(x)) \/ (occurs(y) /\ deopt(y));
 
 /** @group stdlib.builtins.logic Return truth value of \a x implies \a y */
-function     bool: '->'(    bool: x,     bool: y);
+function     bool: '->'(    bool: x,     bool: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.logic Return truth value of \a x implies \a y */
 function     bool: '->'(opt bool: x, opt bool: y) =
   absent(x) \/ absent(y) \/ (deopt(x) -> deopt(y));
@@ -33,7 +33,7 @@ function var bool: '->'(var bool: x, var bool: y);
 function var bool: '->'(var opt bool: x, var opt bool: y) =
   absent(x) \/ absent(y) \/ (deopt(x) -> deopt(y));
 /** @group stdlib.builtins.logic Return truth value of \a y implies \a x */
-function     bool: '<-'(    bool: x,     bool: y);
+function     bool: '<-'(    bool: x,     bool: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.logic Return truth value of \a y implies \a x */
 function     bool: '<-'(opt bool: x, opt bool: y) =
   absent(x) \/ absent(y) \/ (deopt(x) <- deopt(y));
@@ -43,7 +43,7 @@ function var bool: '<-'(var bool: x, var bool: y);
 function var bool: '<-'(var opt bool: x, var opt bool: y) =
   absent(x) \/ absent(y) \/ (deopt(x) <- deopt(y));
 /** @group stdlib.builtins.logic Return truth value of \a x if-and-only-if \a y */
-function     bool: '<->'(    bool: x,     bool: y);
+function     bool: '<->'(    bool: x,     bool: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.logic Return truth value of \a x if-and-only-if \a y */
 function     bool: '<->'(opt bool: x, opt bool: y) =
   absent(x) \/ absent(y) \/ (deopt(x) <-> deopt(y));
@@ -53,7 +53,7 @@ function var bool: '<->'(var bool: x, var bool: y);
 function var bool: '<->'(var opt bool: x, var opt bool: y) =
   absent(x) \/ absent(y) \/ (deopt(x) <-> deopt(y));
 /** @group stdlib.builtins.logic Return truth value of \a x xor \a y */
-function     bool: 'xor'(    bool: x,     bool: y);
+function     bool: 'xor'(    bool: x,     bool: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.logic Return truth value of \a x xor \a y */
 function     bool: 'xor'(opt bool: x, opt bool: y) =
   absent(x) \/ absent(y) \/ (deopt(x) xor deopt(y));
@@ -63,7 +63,7 @@ function var bool: 'xor'(var bool: x, var bool: y);
 function var bool: 'xor'(var opt bool: x, var opt bool: y) =
   absent(x) \/ absent(y) \/ (deopt(x) xor deopt(y));
 /** @group stdlib.builtins.logic Return truth value of the negation of \a x */
-function     bool: 'not'(    bool: x);
+function     bool: 'not'(    bool: x) ::mzn_internal_representation;
 /** @group stdlib.builtins.logic Negation of \a x if it occurs, otherwise absent */
 function opt bool: 'not'(opt bool: x) = if absent(x) then <> else not deopt(x) endif;
 /** @group stdlib.builtins.logic Return truth value of the negation of \a x */

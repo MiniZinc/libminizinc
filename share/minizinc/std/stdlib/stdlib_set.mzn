@@ -5,7 +5,7 @@
 */
 
 /** @group stdlib.builtins.set Test if \a x is an element of the set \a y */
-function     bool: 'in'(    int: x,     set of int: y);
+function     bool: 'in'(    int: x,     set of int: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.set \a x is an element of the set \a y */
 function var bool: 'in'(var int: x, var set of int: y);
 /** @group stdlib.builtins.set \a x is an element of the set \a y. False if \a x is absent. */
@@ -16,7 +16,7 @@ function     bool: 'in'(opt int: x, set of int: y) = occurs(x) /\ deopt(x) in y;
 function var bool: 'in'(var opt int: x, var set of int: y) = occurs(x) /\ deopt(x) in y;
 
 /** @group stdlib.builtins.set Test if \a x is an element of the set \a y */
-function     bool: 'in'(    float: x,     set of float: y);
+function     bool: 'in'(    float: x,     set of float: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.set Test if \a x is an element of the set \a y */
 function var bool: 'in'(var float: x,     set of float: y);
 /** @group stdlib.builtins.set Test if \a x is an element of the set \a y. False if \a x is absent. */
@@ -25,35 +25,35 @@ function     bool: 'in'(opt float: x, set of float: y) = occurs(x) /\ deopt(x) i
 function var bool: 'in'(var opt float: x, set of float: y) = occurs(x) /\ deopt(x) in y;
 
 /** @group stdlib.builtins.set Test if \a x is a subset of \a y */
-function     bool: 'subset'(    set of $T: x,      set of $T: y);
+function     bool: 'subset'(    set of $T: x,      set of $T: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.set \a x is a subset of \a y */
 function var bool: 'subset'(var set of int: x, var set of int: y);
 /** @group stdlib.builtins.set Test if \a x is a superset of \a y */
-function     bool: 'superset'(    set of $T: x,      set of $T: y);
+function     bool: 'superset'(    set of $T: x,      set of $T: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.set \a x is a superset of \a y */
 function var bool: 'superset'(var set of int: x, var set of int: y);
 
 /** @group stdlib.builtins.set Return the union of sets \a x and \a y */
-function     set of $T:  'union'(    set of $T: x,      set of $T: y);
+function     set of $T:  'union'(    set of $T: x,      set of $T: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.set Return the union of sets \a x and \a y */
-function var set of $$T: 'union'(var set of $$T: x, var set of $$T: y);
+function var set of $$T: 'union'(var set of $$T: x, var set of $$T: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.set Return the intersection of sets \a x and \a y */
-function     set of $T:  'intersect'(    set of $T: x,      set of $T: y);
+function     set of $T:  'intersect'(    set of $T: x,      set of $T: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.set Return the intersection of sets \a x and \a y */
-function var set of $$T: 'intersect'(var set of $$T: x, var set of $$T: y);
+function var set of $$T: 'intersect'(var set of $$T: x, var set of $$T: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.set Return the set difference of sets \(\a x \setminus \a y \) */
-function     set of $T:  'diff'(    set of $T: x,      set of $T: y);
+function     set of $T:  'diff'(    set of $T: x,      set of $T: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.set Return the set difference of sets \(\a x \setminus \a y \) */
-function var set of $$T: 'diff'(var set of $$T: x, var set of $$T: y);
+function var set of $$T: 'diff'(var set of $$T: x, var set of $$T: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.set Return the symmetric set difference of sets \a x and \a y */
-function     set of $T:  'symdiff'(    set of $T: x,      set of $T: y);
+function     set of $T:  'symdiff'(    set of $T: x,      set of $T: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.set Return the symmetric set difference of sets \a x and \a y */
-function var set of $$T: 'symdiff'(var set of $$T: x, var set of $$T: y);
+function var set of $$T: 'symdiff'(var set of $$T: x, var set of $$T: y) ::mzn_internal_representation;
 
 /** @group stdlib.builtins.set Return the set \(\{\a a,\ldots,\a b\}\) */
-function set of $$E: '..'($$E: a,$$E: b);
+function set of $$E: '..'($$E: a,$$E: b) ::mzn_internal_representation;
 /** @group stdlib.builtins.set Return the set \(\{\a a,\ldots,\a b\}\) */
-function set of float: '..'(float: a,float: b);
+function set of float: '..'(float: a,float: b) ::mzn_internal_representation;
 /** @group stdlib.builtins.set Return the set \(\{\a a,\ldots,\a b\}\) */
 function set of bool: '..'(bool: a,bool: b) =
   if a then if b then {true} else {} endif elseif b then {false,true} else {false} endif;

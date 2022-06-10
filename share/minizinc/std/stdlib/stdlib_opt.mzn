@@ -7,16 +7,16 @@
 
 /** @group stdlib.optiontypes Return value of \a x if \a x is not absent. Aborts 
   when evaluated on absent value. */
-function $T: deopt(opt $T: x);
+function $$T: deopt(opt $$T: x);
 /** @group stdlib.optiontypes Return value of \a x if \a x is not absent. Aborts 
   when evaluated on absent value. */
-function $$T: deopt(opt $$T: x);
-/** @group stdlib.optiontypes Return array of the value of \a x[i] where \a x[i] is not absent.
-  Aborts when evaluated with an absent element. */
-function array [$$U] of $T: deopt(array [$$U] of opt $T: x) = array1d(index_set(x), [deopt(x[i]) | i in index_set(x)]);
+function $T: deopt(opt $T: x);
 /** @group stdlib.optiontypes Return array of the value of \a x[i] where \a x[i] is not absent.
   Aborts when evaluated with an absent element. */
 function array [$$U] of $$T: deopt(array [$$U] of opt $$T: x) = array1d(index_set(x), [deopt(x[i]) | i in index_set(x)]);
+/** @group stdlib.optiontypes Return array of the value of \a x[i] where \a x[i] is not absent.
+  Aborts when evaluated with an absent element. */
+function array [$$U] of $T: deopt(array [$$U] of opt $T: x) = array1d(index_set(x), [deopt(x[i]) | i in index_set(x)]);
 
 /** @group stdlib.optiontypes Return value \a x unchanged (since \a x is guaranteed
   to be non-optional). */
@@ -96,7 +96,7 @@ function var bool: occurs_internal_bool(var opt bool: x) ::promise_total =
 function var bool : deopt_internal_bool(var opt bool : x) ::promise_total =
   let { var bool: y } in y;
 
-function var opt bool: reverse_map_var_opt_bool(var bool: occ, var bool: d);
+function var opt bool: reverse_map_var_opt_bool(var bool: occ, var bool: d) ::output_only;
 function opt bool: reverse_map_var_opt_bool(bool: occ, bool: d) ::promise_total =
   if occ then d else <> endif;
 
@@ -171,7 +171,7 @@ function var int : deopt_internal_int(var opt int : x, var bool: b) ::promise_to
     endif;
   } in y;
 
-function var opt int: reverse_map_var_opt_int(var bool: occ, var int: d);
+function var opt int: reverse_map_var_opt_int(var bool: occ, var int: d) ::output_only;
 function opt int: reverse_map_var_opt_int(bool: occ, int: d) ::promise_total =
   if occ then d else <> endif;
 
@@ -238,7 +238,7 @@ function var bool: occurs_internal_float(var opt float: x) ::promise_total =
 function var float : deopt_internal_float(var opt float : x) ::promise_total =
   let { var lb(x)..ub(x): y } in y;
 
-function var opt float: reverse_map_var_opt_float(var bool: occ, var float: d); % :NOTE: Must define in cpp?
+function var opt float: reverse_map_var_opt_float(var bool: occ, var float: d) ::output_only;
 function opt float: reverse_map_var_opt_float(bool: occ, float: d) ::promise_total =
   if occ then d else <> endif;
 

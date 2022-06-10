@@ -15,6 +15,7 @@
 #include <minizinc/prettyprinter.hh>
 
 #include <unordered_set>
+#include <vector>
 
 #undef MZN_DEBUG_FUNCTION_REGISTRY
 
@@ -637,6 +638,64 @@ void Model::fixFnMap() {
       for (unsigned int j = 0; j < i.t.size(); j++) {
         if (i.t[j].isunknown()) {
           i.t[j] = i.fi->param(j)->type();
+        }
+      }
+    }
+  }
+}
+
+void Model::checkFnValid(EnvI& env, std::vector<TypeError>& errors) {
+  Model* m = this;
+  while (m->_parent != nullptr) {
+    m = m->_parent;
+  }
+  // Walk through registered functions check that functions that contain a non-FlatZinc type
+  // argument are either a builtin (registed with a C++ function), or have a body.
+  for (const auto& it : m->_fnmap) {
+    const std::vector<FnEntry>& variants = it.second;
+    for (const auto& fe : variants) {
+      FunctionI* fi = fe.fi;
+      Type ret = fi->ti()->type();
+      if (fi->e() != nullptr || ret.isAnn() || fi->builtins.e != nullptr ||
+          fi->builtins.b != nullptr || fi->builtins.f != nullptr || fi->builtins.i != nullptr ||
+          fi->builtins.s != nullptr || fi->builtins.fs != nullptr || fi->builtins.str != nullptr ||
+          fi->ann().contains(env.constants.ann.mzn_internal_representation)) {
+        continue;
+      }
+      if (fi->ann().contains(env.constants.ann.output_only)) {
+        std::vector<Type> tys(fi->paramCount());
+        for (int i = 0; i < fi->paramCount(); ++i) {
+          tys[i] = fi->param(i)->type();
+          tys[i].ti(Type::TI_PAR);
+        }
+        fi = matchFn(env, fi->id(), tys, true);
+        ret.ti(Type::TI_PAR);
+        if (fi != nullptr && ret == fi->ti()->type()) {
+          continue;
+        }
+        errors.emplace_back(env, fe.fi->loc(),
+                            "Missing parameter type variant of output only function");
+        continue;
+      }
+      // Par functions that are not implemented in the compiler should have an implementation
+      if (ret.isPar()) {
+        errors.emplace_back(env, fi->loc(),
+                            "Parameter type function is missing its implementation");
+        continue;
+      }
+      if (!ret.isvarbool()) {
+        errors.emplace_back(
+            env, fi->loc(),
+            "FlatZinc builtin functions must be predicates (i.e., have `var bool` return type)");
+        continue;
+      }
+      for (int i = 0; i < fi->paramCount(); ++i) {
+        const Type& t = fi->param(i)->type();
+        if (t.isOpt() || t.bt() == Type::BT_TOP) {
+          errors.emplace_back(
+              env, fi->param(i)->loc(),
+              "FlatZinc builtins are not allowed to have arguments of type " + t.toString(env));
+          break;  // Break from parameter, but does continue in FnMap
         }
       }
     }

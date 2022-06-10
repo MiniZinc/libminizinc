@@ -12,9 +12,9 @@ function string: show(array[$U] of any $T: x);
 function string: show_indexed(array[int] of string: idx, array[int] of string: x) =
 	"[" ++ join(", ", [idx[i]++": "++x[i] | i in index_set(x)]) ++ "]";
 
-function string: showDzn(any $T: x);
-function string: showDzn(array[$U] of any $T: x);
-function string: showDznId(string: x);
+function string: showDzn(any $T: x) ::mzn_internal_representation;
+function string: showDzn(array[$U] of any $T: x) ::mzn_internal_representation;
+function string: showDznId(string: x) ::mzn_internal_representation;
 
 function string: showCheckerOutput();
 
@@ -120,7 +120,7 @@ function string: json_array(array [int] of string: arr) = concat(["[", join(",",
 function int: string_length(string: s);
 
 /** @group stdlib.builtins.string Return concatenation of \a s1 and \a s2 */
-function string: '++'(string: s1, string: s2);
+function string: '++'(string: s1, string: s2) ::mzn_internal_representation;
 /** @group stdlib.builtins.string Return concatenation of strings in array \a s */
 function string: concat(array[$T] of string: s);
 /** @group stdlib.builtins.string Join string in array \a s using delimiter \a d */

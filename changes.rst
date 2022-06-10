@@ -9,6 +9,20 @@ https://github.com/MiniZinc/libminizinc/issues.
 Unreleased
 ~~~~~~~~~~
 
+Changes:
+^^^^^^^^
+
+-  All considered function items are now checked to ensure that they can be
+   correctly evaluated or flattened. This means that, to avoid a type error,
+   all functions must have a function body or, in case of a ``var`` function,
+   be valid FlatZinc builtins (i.e., they are predicates/return ``var bool``,
+   and their arguments are valid FlatZinc types) or, in case of a ``par``
+   function, must have an internal definition in the MiniZinc compiler.
+   Functions that are defined with ``var`` types for convient use in output
+   can be annotated ``output_only``. The compiler will check that a valid
+   ``par`` version of this function is available.
+
+
 Bug fixes:
 ^^^^^^^^^^
 

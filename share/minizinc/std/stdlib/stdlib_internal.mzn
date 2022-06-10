@@ -156,10 +156,10 @@ predicate float_ne(var opt float : x, var opt float : y) =
 predicate xorall_reif(array[int] of var bool: b, var bool: c) =
   let { var bool: nc ::is_defined_var; constraint xorall([nc]++b) ::defines_var(nc); } in c = not nc;
 
-function var int: lin_exp(array[int] of int, array[int] of var int, int);
-function var float: lin_exp(array[int] of float, array[int] of var float, float);
+function var int: lin_exp(array[int] of int, array[int] of var int, int) ::mzn_internal_representation;
+function var float: lin_exp(array[int] of float, array[int] of var float, float) ::mzn_internal_representation;
 
-test mzn_in_root_context(var $T);
+test mzn_in_root_context(var $T) ::mzn_internal_representation;
 
 test mzn_in_redundant_constraint();
 

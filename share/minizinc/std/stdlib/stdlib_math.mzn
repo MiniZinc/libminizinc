@@ -5,13 +5,13 @@
 */
 
 /** @group stdlib.builtins.arithmetic Return \a x + \a y */
-function     int:   '+'(    int: x,     int: y);
+function     int:   '+'(    int: x,     int: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Return \a x + \a y */
-function var int:   '+'(var int: x,  var int: y);
+function var int:   '+'(var int: x,  var int: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Return \a x + \a y */
-function     float: '+'(    float: x,    float: y);
+function     float: '+'(    float: x,    float: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Return \a x + \a y */
-function var float: '+'(var float: x,var float: y);
+function var float: '+'(var float: x,var float: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Optional addition. Return sum of \a x and \a y, with absent replaced by 0. */
 function var int: '+'(var opt int: x, var opt int: y) ::promise_total =
   if occurs(x) then deopt(x) else 0 endif + if occurs(y) then deopt(y) else 0 endif;
@@ -26,13 +26,13 @@ function float: '+'(opt float: x, opt float: y) ::promise_total =
   if occurs(x) then deopt(x) else 0 endif + if occurs(y) then deopt(y) else 0 endif;
 
 /** @group stdlib.builtins.arithmetic Return \a x - \a y */
-function     int:   '-'(    int: x,     int: y);
+function     int:   '-'(    int: x,     int: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Return \a x - \a y */
-function var int:   '-'(var int: x,  var int: y);
+function var int:   '-'(var int: x,  var int: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Return \a x - \a y */
-function     float: '-'(    float: x,    float: y);
+function     float: '-'(    float: x,    float: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Return \a x - \a y */
-function var float: '-'(var float: x,var float: y);
+function var float: '-'(var float: x,var float: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Optional subtraction. Return absent if \a x is absent, \a x if \a y is absent,
   difference of \a x and \a y if both are present. */
 function var opt int: '-'(var opt int: x, var opt int: y) ::promise_total =
@@ -115,9 +115,9 @@ function var opt float: '~*'(var opt float: x, var opt float: y) ::promise_total
     else deopt(x)*deopt(y) endif;
 
 /** @group stdlib.builtins.arithmetic Return \a x * \a y */
-function     int:   '*'(    int: x,     int: y);
+function     int:   '*'(    int: x,     int: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Return \a x * \a y */
-function var int:   '*'(var int: x,  var int: y);
+function var int:   '*'(var int: x,  var int: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Optional multiplication. Return product of \a x and \a y, with absent replaced by 1. */
 function var int: '*'(var opt int: x, var opt int: y) ::promise_total =
   if occurs(x) then deopt(x) else 1 endif * if occurs(y) then deopt(y) else 1 endif;
@@ -133,25 +133,25 @@ function float: '*'(opt float: x, opt float: y) ::promise_total =
 
 
 /** @group stdlib.builtins.arithmetic Return \(\a x ^ {\a y}\) */
-function     int:   '^'(    int: x,     int: y);
+function     int:   '^'(    int: x,     int: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Return \(\a x ^ {\a y}\) */
-function var int:   '^'(var int: x,  var int: y);
+function var int:   '^'(var int: x,  var int: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Return \a x * \a y */
-function     float: '*'(    float: x,    float: y);
+function     float: '*'(    float: x,    float: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Return \a x * \a y */
-function var float: '*'(var float: x,var float: y);
+function var float: '*'(var float: x,var float: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Return \(\a x ^ {\a y}\) */
-function     float: '^'(    float: x,    float: y);
+function     float: '^'(    float: x,    float: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Return \(\a x ^ {\a y}\) */
-function var float: '^'(var float: x,var float: y);
+function var float: '^'(var float: x,var float: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Return negative \a x */
-function     int:   '-'(    int: x);
+function     int:   '-'(    int: x) ::mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Return negative \a x */
-function var int:   '-'(var int: x);
+function var int:   '-'(var int: x) ::mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Return negative \a x */
-function     float: '-'(    float: x);
+function     float: '-'(    float: x) ::mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Return negative \a x */
-function var float: '-'(var float: x);
+function var float: '-'(var float: x) ::mzn_internal_representation;
 
 /** @group stdlib.builtins.arithmetic Return result of integer division \a x / \a y */
 function     int: 'div'(int: x,int: y);
@@ -248,11 +248,11 @@ function var int:  count(array[$T] of var bool: x :: promise_ctx_monotone) = let
 /** @group stdlib.builtins.arithmetic Return sum of elements in array \a x */
 function     int:   sum(array[$T] of     int: x);
 /** @group stdlib.builtins.arithmetic Return sum of elements in array \a x */
-function var int:   sum(array[$T] of var int: x);
+function var int:   sum(array[$T] of var int: x) ::mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Return sum of elements in array \a x */
 function     float: sum(array[$T] of     float: x);
 /** @group stdlib.builtins.arithmetic Return sum of elements in array \a x */
-function var float: sum(array[$T] of var float: x);
+function var float: sum(array[$T] of var float: x) ::mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Return sum of non-absent elements of \a x. */
 function var int: sum(array[int] of var opt int: x) =
   sum (i in index_set(x)) (x[i] default 0);

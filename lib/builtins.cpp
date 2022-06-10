@@ -858,12 +858,16 @@ IntVal b_max_parsetint(EnvI& env, Call* call) {
   IntSetVal* isv = eval_intset(env, call->arg(0));
   return isv->max();
 }
-IntSetVal* b_lb_set(EnvI& env, Call* e) {
-  Expression* ee = follow_id_to_value(e->arg(0));
+IntSetVal* b_lb_set(EnvI& env, Expression* e) {
+  Expression* ee = follow_id_to_value(e);
   if (ee->type().isPar()) {
     return eval_intset(env, ee);
   }
   return IntSetVal::a();
+}
+IntSetVal* b_lb_set(EnvI& env, Call* call) {
+  assert(call->argCount() == 1);
+  return b_lb_set(env, call->arg(0));
 }
 IntSetVal* b_ub_set(EnvI& env, Expression* e) {
   IntSetVal* isv = compute_intset_bounds(env, e);
@@ -914,6 +918,26 @@ IntSetVal* b_array_ub_set(EnvI& env, Call* call) {
     ub = IntSetVal::ai(u);
   }
   return ub;
+}
+
+IntSetVal* b_array_lb_set(EnvI& env, Call* call) {
+  assert(call->argCount() == 1);
+  GCLock lock;
+  ArrayLit* al = eval_array_lit(env, call->arg(0));
+  if (al->empty()) {
+    throw EvalError(env, Location(), "lower bound of empty array undefined");
+  }
+  IntSetVal* lb = b_lb_set(env, (*al)[0]);
+  for (unsigned int i = 1; i < al->size(); i++) {
+    if (lb->empty()) {
+      return lb;
+    }
+    IntSetRanges isr(lb);
+    IntSetRanges r(b_lb_set(env, (*al)[i]));
+    Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> u(isr, r);
+    lb = IntSetVal::ai(u);
+  }
+  return lb;
 }
 
 IntSetVal* b_dom_varint(EnvI& env, Expression* e) {
@@ -2940,20 +2964,6 @@ IntVal b_binomial(EnvI& env, Call* call) {
   return IntVal(distribution(env.rndGenerator()));
 }
 
-FloatVal b_atan(EnvI& env, Call* call) {
-  assert(call->argCount() == 1);
-  GCLock lock;
-  FloatVal f = eval_float(env, call->arg(0));
-  return std::atan(f.toDouble());
-}
-
-FloatVal b_cos(EnvI& env, Call* call) {
-  assert(call->argCount() == 1);
-  GCLock lock;
-  FloatVal f = eval_float(env, call->arg(0));
-  return std::cos(f.toDouble());
-}
-
 FloatVal b_sin(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
   GCLock lock;
@@ -2968,6 +2978,27 @@ FloatVal b_asin(EnvI& env, Call* call) {
   return std::asin(f.toDouble());
 }
 
+FloatVal b_sinh(EnvI& env, Call* call) {
+  assert(call->argCount() == 1);
+  GCLock lock;
+  FloatVal f = eval_float(env, call->arg(0));
+  return std::sinh(f.toDouble());
+}
+
+FloatVal b_asinh(EnvI& env, Call* call) {
+  assert(call->argCount() == 1);
+  GCLock lock;
+  FloatVal f = eval_float(env, call->arg(0));
+  return std::asinh(f.toDouble());
+}
+
+FloatVal b_cos(EnvI& env, Call* call) {
+  assert(call->argCount() == 1);
+  GCLock lock;
+  FloatVal f = eval_float(env, call->arg(0));
+  return std::cos(f.toDouble());
+}
+
 FloatVal b_acos(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
   GCLock lock;
@@ -2975,11 +3006,46 @@ FloatVal b_acos(EnvI& env, Call* call) {
   return std::acos(f.toDouble());
 }
 
+FloatVal b_cosh(EnvI& env, Call* call) {
+  assert(call->argCount() == 1);
+  GCLock lock;
+  FloatVal f = eval_float(env, call->arg(0));
+  return std::cosh(f.toDouble());
+}
+
+FloatVal b_acosh(EnvI& env, Call* call) {
+  assert(call->argCount() == 1);
+  GCLock lock;
+  FloatVal f = eval_float(env, call->arg(0));
+  return std::acosh(f.toDouble());
+}
+
 FloatVal b_tan(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
   GCLock lock;
   FloatVal f = eval_float(env, call->arg(0));
   return std::tan(f.toDouble());
+}
+
+FloatVal b_atan(EnvI& env, Call* call) {
+  assert(call->argCount() == 1);
+  GCLock lock;
+  FloatVal f = eval_float(env, call->arg(0));
+  return std::atan(f.toDouble());
+}
+
+FloatVal b_tanh(EnvI& env, Call* call) {
+  assert(call->argCount() == 1);
+  GCLock lock;
+  FloatVal f = eval_float(env, call->arg(0));
+  return std::tanh(f.toDouble());
+}
+
+FloatVal b_atanh(EnvI& env, Call* call) {
+  assert(call->argCount() == 1);
+  GCLock lock;
+  FloatVal f = eval_float(env, call->arg(0));
+  return std::atanh(f.toDouble());
 }
 
 IntVal b_to_enum(EnvI& env, Call* call) {
@@ -3586,6 +3652,11 @@ void register_builtins(Env& e) {
   {
     std::vector<Type> t(1);
     t[0] = Type::varsetint(1);
+    rb(env, m, ASTString("lb_array"), t, b_array_lb_set);
+  }
+  {
+    std::vector<Type> t(1);
+    t[0] = Type::varsetint(1);
     rb(env, m, ASTString("ub_array"), t, b_array_ub_set);
   }
   {
@@ -3891,6 +3962,8 @@ void register_builtins(Env& e) {
     std::vector<Type> t;
     rb(env, m, ASTString("outputJSON"), t, b_output_json);
     rb(env, m, ASTString("outputJSONParameters"), t, b_output_json_parameters);
+    t.push_back(Type::parbool());
+    rb(env, m, ASTString("outputJSON"), t, b_output_json);
   }
   {
     std::vector<Type> t(2);
@@ -3994,32 +4067,18 @@ void register_builtins(Env& e) {
   {
     std::vector<Type> t(1);
     t[0] = Type::parfloat();
-    rb(env, m, ASTString("atan"), t, b_atan);
-  }
-  {
-    std::vector<Type> t(1);
-    t[0] = Type::parfloat();
-    rb(env, m, ASTString("cos"), t, b_cos);
-  }
-  {
-    std::vector<Type> t(1);
-    t[0] = Type::parfloat();
     rb(env, m, ASTString("sin"), t, b_sin);
-  }
-  {
-    std::vector<Type> t(1);
-    t[0] = Type::parfloat();
     rb(env, m, ASTString("asin"), t, b_asin);
-  }
-  {
-    std::vector<Type> t(1);
-    t[0] = Type::parfloat();
+    rb(env, m, ASTString("sinh"), t, b_sinh);
+    rb(env, m, ASTString("asinh"), t, b_asinh);
+    rb(env, m, ASTString("cos"), t, b_cos);
     rb(env, m, ASTString("acos"), t, b_acos);
-  }
-  {
-    std::vector<Type> t(1);
-    t[0] = Type::parfloat();
+    rb(env, m, ASTString("cosh"), t, b_cosh);
+    rb(env, m, ASTString("acosh"), t, b_acosh);
     rb(env, m, ASTString("tan"), t, b_tan);
+    rb(env, m, ASTString("atan"), t, b_atan);
+    rb(env, m, ASTString("tanh"), t, b_tanh);
+    rb(env, m, ASTString("atanh"), t, b_atanh);
   }
   {
     std::vector<Type> t(2);

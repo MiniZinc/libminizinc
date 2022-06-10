@@ -45,7 +45,7 @@ function array[$T] of var float: bool2float(array[$T] of var bool: x) ::promise_
     array[int] of var bool: xx = array1d(x)
   } in arrayXd(x,[bool2float(xx[i]) | i in index_set(xx)]);
 /** @group stdlib.builtins.coercion Return Boolean \a b coerced to an integer  */
-function var int: bool2int(var bool: b);
+function var int: bool2int(var bool: b) ::mzn_internal_representation;
 /** @group stdlib.builtins.coercion Return array of Booleans \a b coerced to an array of integers  */
 function array[$T] of var int: bool2int(array[$T] of var bool: b);
 /** @group stdlib.builtins.coercion Return Boolean \a b coerced to a float  */
@@ -56,7 +56,7 @@ function float: int2float(int: x);
 function opt float: int2float(opt int: x) =
   if occurs(x) then int2float(deopt(x)) else <> endif;
 /** @group stdlib.builtins.coercion Return integer \a x coerced to a float  */
-function var float: int2float(var int: x) ::promise_total;
+function var float: int2float(var int: x) ::promise_total ::mzn_internal_representation;
 
 /** @group stdlib.builtins.coercion Return optional 0/1 float that is absent iff \a x
   is absent, and 1 iff \a x occurs and is true. */
