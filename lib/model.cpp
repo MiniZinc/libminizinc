@@ -662,7 +662,7 @@ void Model::fixFnMap() {
   for (auto& it : m->_fnmap) {
     for (auto& i : it.second) {
       for (unsigned int j = 0; j < i.t.size(); j++) {
-        if (i.t[j].isunknown()) {
+        if (i.t[j].isunknown() || i.t[j].bt() == Type::BT_TUPLE) {
           i.t[j] = i.fi->param(j)->type();
         }
       }
@@ -692,10 +692,10 @@ void Model::checkFnValid(EnvI& env, std::vector<TypeError>& errors) {
         std::vector<Type> tys(fi->paramCount());
         for (int i = 0; i < fi->paramCount(); ++i) {
           tys[i] = fi->param(i)->type();
-          tys[i].ti(Type::TI_PAR);
+          tys[i].mkPar(env);
         }
         fi = matchFn(env, fi->id(), tys, true);
-        ret.ti(Type::TI_PAR);
+        ret.mkPar(env);
         if (fi != nullptr && ret == fi->ti()->type()) {
           continue;
         }
@@ -717,7 +717,7 @@ void Model::checkFnValid(EnvI& env, std::vector<TypeError>& errors) {
       }
       for (int i = 0; i < fi->paramCount(); ++i) {
         const Type& t = fi->param(i)->type();
-        if (t.isOpt() || t.bt() == Type::BT_TOP) {
+        if (t.isOpt() || t.bt() == Type::BT_TUPLE || t.bt() == Type::BT_TOP) {
           errors.emplace_back(
               env, fi->param(i)->loc(),
               "FlatZinc builtins are not allowed to have arguments of type " + t.toString(env));
