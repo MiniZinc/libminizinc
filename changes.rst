@@ -22,6 +22,7 @@ Bug fixes:
 -  Fix a bug in the task decomposition of the cumulative global constraint where
    resource requirement would not always be correctly be ignored when the task 
    duration is zero. (:bugref:`589`)
+-  Fix handling of float values in ``.mpc`` parameter configuration files.
 
 .. _v2.6.3:
 

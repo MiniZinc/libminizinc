@@ -86,7 +86,6 @@ void ParamConfig::addValue(const ASTString& flag_input, Expression* e) {
     case Expression::E_FLOATLIT:
       _values.push_back(flag);
       val_ss << e->cast<FloatLit>()->v();
-      val_ss << e;
       _values.push_back(val_ss.str());
       break;
       break;
