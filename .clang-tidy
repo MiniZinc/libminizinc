@@ -15,6 +15,7 @@ Checks: '-*,
   -readability-magic-numbers,
   -readability-function-cognitive-complexity,
   -readability-suspicious-call-argument,
+  -readability-identifier-length,
 '
 # magic-numbers: Allow the usage of direct number literals in expressions
 # congitive-complexity: Do not check function complexity (TODO?)
