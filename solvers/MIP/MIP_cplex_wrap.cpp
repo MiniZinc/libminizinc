@@ -677,7 +677,8 @@ void MIPCplexWrapper::doAddVars(size_t n, double* obj, double* lb, double* ub,
         throw MiniZinc::InternalError("  MIPWrapper: unknown variable type");
     }
   }
-  _status = dll_CPXnewcols(_env, _lp, static_cast<int>(n), obj, lb, ub, &ctype[0], &pcNames[0]);
+  _status =
+      dll_CPXnewcols(_env, _lp, static_cast<int>(n), obj, lb, ub, ctype.data(), pcNames.data());
   wrapAssert(_status == 0, "Failed to declare variables.");
 }
 
@@ -1181,7 +1182,7 @@ void MIPCplexWrapper::solve() {  // Move into ancestor?
   /// Solution callback
   output.nCols = static_cast<int>(colObj.size());
   _x.resize(output.nCols);
-  output.x = &_x[0];
+  output.x = _x.data();
   if (_options->flagIntermediate && (cbui.solcbfn != nullptr)) {
     _status = dll_CPXsetinfocallbackfunc(_env, solcallback, &cbui);
     wrapAssert(_status == 0, "Failed to set solution callback", false);
@@ -1317,8 +1318,8 @@ void MIPCplexWrapper::solve() {  // Move into ancestor?
     assert(cur_numcols == colObj.size());
 
     _x.resize(cur_numcols);
-    output.x = &_x[0];
-    _status = dll_CPXgetx(_env, _lp, &_x[0], 0, cur_numcols - 1);
+    output.x = _x.data();
+    _status = dll_CPXgetx(_env, _lp, _x.data(), 0, cur_numcols - 1);
     wrapAssert(_status == 0, "Failed to get variable values.");
     if (cbui.solcbfn != nullptr /*&& (!_options->flagIntermediate || !cbui.printed)*/) {
       cbui.solcbfn(output, cbui.psi);

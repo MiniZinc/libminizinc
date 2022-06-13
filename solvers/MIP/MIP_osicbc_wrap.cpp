@@ -231,7 +231,7 @@ void MIPosicbcWrapper::doAddVars(size_t n, double* obj, double* lb, double* ub,
   CoinPackedVector cpv;
   vector<CoinPackedVectorBase*> pCpv(n, &cpv);
   _osi.addCols(static_cast<int>(n), pCpv.data(), lb, ub, obj);  // setting integer & names later
-  //   status = CBCnewcols (env, lp, n, obj, lb, ub, &ctype[0], &pcNames[0]);
+  //   status = CBCnewcols (env, lp, n, obj, lb, ub, ctype.data(), pcNames.data());
   //   wrapAssert( !status,  "Failed to declare variables." );
 }
 
@@ -835,7 +835,7 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
     /// Solution callback
     output.nCols = static_cast<int>(colObj.size());
     //    x.resize(output.nCols);
-    //    output.x = &x[0];
+    //    output.x = x.data();
 
     if (_options->flagIntermediate && (cbui.solcbfn != nullptr)) {
       // Event handler. Should be after CbcMain0()?
@@ -945,7 +945,7 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
       }
       cerr << "'..." << endl;
     }
-    CbcMain(static_cast<int>(cbc_argc), &cbc_argv[0], model);
+    CbcMain(static_cast<int>(cbc_argc), cbc_argv.data(), model);
     // callCbc(_options->cbcCmdOptions, model);
 //     callCbc1(cbcCmdOptions, model, callBack);
 // What is callBack() for?    TODO

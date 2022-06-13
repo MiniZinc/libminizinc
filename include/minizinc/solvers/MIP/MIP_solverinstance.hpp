@@ -779,7 +779,8 @@ void p_lin(SolverInstanceBase& si, const Call* call, typename MIPWrapper::LinCon
     remove_duplicates(vars, coefs);
     // See if the solver adds indexation itself: no.
     gi.getMIPWrapper()->addRow(
-        static_cast<int>(coefs.size()), &vars[0], &coefs[0], lt, rhs, get_mask_cons_type(call),
+        static_cast<int>(coefs.size()), vars.data(), coefs.data(), lt, rhs,
+        get_mask_cons_type(call),
         make_constraint_name("p_lin_", (gi.getMIPWrapper()->nAddedRows++), call));
   }
 }
@@ -834,7 +835,8 @@ void p_non_lin(SolverInstanceBase& si, const Call* call, typename MIPWrapper::Li
   } else {
     remove_duplicates(vars, coefs);
     gi.getMIPWrapper()->addRow(
-        static_cast<int>(vars.size()), &vars[0], &coefs[0], nCmp, rhs, get_mask_cons_type(call),
+        static_cast<int>(vars.size()), vars.data(), coefs.data(), nCmp, rhs,
+        get_mask_cons_type(call),
         make_constraint_name("p_eq_", (gi.getMIPWrapper()->nAddedRows++), call));
   }
 }
@@ -954,7 +956,7 @@ void p_indicator_eq_if1(SolverInstanceBase& si, const Call* call) {
     if (val2 > 0.999999) {  // so  var1<=0
       remove_duplicates(vars, coefs);
       gi.getMIPWrapper()->addRow(
-          static_cast<int>(vars.size()), &vars[0], &coefs[0], MIPWrapper::LinConType::EQ, rhs,
+          static_cast<int>(vars.size()), vars.data(), coefs.data(), MIPWrapper::LinConType::EQ, rhs,
           MIPWrapper::MaskConsType_Normal,
           make_constraint_name("p_eq_", (gi.getMIPWrapper()->nAddedRows++), call));
     }

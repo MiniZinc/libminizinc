@@ -647,7 +647,7 @@ std::string combine_cmd_line(const std::vector<std::string>& cmd) {
 }
 
 void inflate_string(std::string& s) {
-  auto* cc = reinterpret_cast<unsigned char*>(&s[0]);
+  const auto* cc = reinterpret_cast<const unsigned char*>(s.data());
   // autodetect compressed string
   if (s.size() >= 2 && ((cc[0] == 0x1F && cc[1] == 0x8B)     // gzip
                         || (cc[0] == 0x78 && (cc[1] == 0x01  // zlib
@@ -657,11 +657,10 @@ void inflate_string(std::string& s) {
     z_stream stream;
     std::memset(&stream, 0, sizeof(stream));
 
-    unsigned char* dataStart;
+    const unsigned char* dataStart = cc[0] == 0x1F && cc[1] == 0x8B ? (cc + 10) : cc;
     int windowBits;
     size_t dataLen;
     if (cc[0] == 0x1F && cc[1] == 0x8B) {
-      dataStart = cc + 10;
       windowBits = -Z_DEFAULT_WINDOW_BITS;
       if ((cc[3] & 0x4) != 0) {
         dataStart += 2;
@@ -701,7 +700,6 @@ void inflate_string(std::string& s) {
       }
       dataLen = s.size() - (dataStart - cc);
     } else {
-      dataStart = cc;
       windowBits = Z_DEFAULT_WINDOW_BITS;
       dataLen = s.size();
     }
@@ -741,7 +739,7 @@ void inflate_string(std::string& s) {
 std::string deflate_string(const std::string& s) {
   mz_ulong compressedLength = compressBound(static_cast<mz_ulong>(s.size()));
   auto* cmpr = static_cast<unsigned char*>(::malloc(compressedLength * sizeof(unsigned char)));
-  int status = compress(cmpr, &compressedLength, reinterpret_cast<const unsigned char*>(&s[0]),
+  int status = compress(cmpr, &compressedLength, reinterpret_cast<const unsigned char*>(s.data()),
                         static_cast<mz_ulong>(s.size()));
   if (status != Z_OK) {
     ::free(cmpr);

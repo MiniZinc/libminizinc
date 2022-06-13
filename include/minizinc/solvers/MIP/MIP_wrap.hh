@@ -244,7 +244,8 @@ public:
                 << std::flush;
     }
     if (!colObj.empty()) {
-      doAddVars(colObj.size(), &colObj[0], &colLB[0], &colUB[0], &colTypes[0], &colNames[0]);
+      doAddVars(colObj.size(), colObj.data(), colLB.data(), colUB.data(), colTypes.data(),
+                colNames.data());
     }
     if (fVerbose) {
       std::cerr << " done." << std::endl;

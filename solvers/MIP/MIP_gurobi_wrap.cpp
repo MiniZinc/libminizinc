@@ -485,7 +485,7 @@ void MIPGurobiWrapper::doAddVars(size_t n, double* obj, double* lb, double* ub,
     }
   }
   _error = dll_GRBaddvars(_model, static_cast<int>(n), 0, nullptr, nullptr, nullptr, obj, lb, ub,
-                          &ctype[0], &pcNames[0]);
+                          ctype.data(), pcNames.data());
   wrapAssert(_error == 0, "Failed to declare variables.");
   _error = dll_GRBupdatemodel(_model);
   wrapAssert(_error == 0, "Failed to update model.");
@@ -913,7 +913,7 @@ void MIPGurobiWrapper::solve() {        // Move into ancestor?
   /// Solution callback
   output.nCols = static_cast<int>(colObj.size());
   _x.resize(output.nCols);
-  output.x = &_x[0];
+  output.x = _x.data();
   SolCallbackFn solcbfn = cbui.solcbfn;
   if (true) {  // NOLINT: Need for logging
     cbui.fVerb = fVerbose;
@@ -1015,7 +1015,7 @@ void MIPGurobiWrapper::solve() {        // Move into ancestor?
     assert(cur_numcols == colObj.size());
 
     _x.resize(cur_numcols);
-    output.x = &_x[0];
+    output.x = _x.data();
     _error = dll_GRBgetdblattrarray(_model, GRB_DBL_ATTR_X, 0, cur_numcols, (double*)output.x);
     wrapAssert(_error == 0, "Failed to get variable values.");
     if ((!_options->flagIntermediate || !cbui.printed) && (solcbfn != nullptr)) {

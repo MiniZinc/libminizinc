@@ -416,7 +416,7 @@ SCIP_RETCODE MIPScipWrapper::doAddVarsSCIP(size_t n, double* obj, double* lb, do
                                              ub[j], obj[j], ctype));
     SCIP_PLUGIN_CALL_R(_plugin, _plugin->SCIPaddVar(_scip, _scipVars.back()));
   }
-  //   retcode = SCIP_newcols (env, lp, n, obj, lb, ub, &ctype[0], &pcNames[0]);
+  //   retcode = SCIP_newcols (env, lp, n, obj, lb, ub, ctype.data(), pcNames.data());
   //   wrap_assert( !retcode,  "Failed to declare variables." );
   return SCIP_OKAY;
 }
@@ -460,7 +460,7 @@ SCIP_RETCODE MIPScipWrapper::addRowSCIP(int nnz, int* rmatind, double* rmatval,
   }
 
   SCIP_PLUGIN_CALL_R(_plugin, _plugin->SCIPcreateConsBasicLinear(_scip, &cons, rowName.c_str(), nnz,
-                                                                 &ab[0], rmatval, lh, rh));
+                                                                 ab.data(), rmatval, lh, rh));
   SCIP_PLUGIN_CALL_R(_plugin, _plugin->SCIPaddCons(_scip, cons));
   SCIP_PLUGIN_CALL_R(_plugin, _plugin->SCIPreleaseCons(_scip, &cons));
   return SCIP_OKAY;
@@ -618,8 +618,9 @@ void MIPScipWrapper::addTimes(int x, int y, int z, const string& rowName) {
   SCIP_CONS* cons;
   std::array<SCIP_VAR*, 3> zxy = {_scipVars[z], _scipVars[x], _scipVars[y]};
 
-  SCIP_PLUGIN_CALL(_plugin->SCIPcreateConsBasicQuadratic(
-      _scip, &cons, rowName.c_str(), 1, &zxy[0], &zCoef, 1, &zxy[1], &zxy[2], &xyCoef, 0.0, 0.0));
+  SCIP_PLUGIN_CALL(_plugin->SCIPcreateConsBasicQuadratic(_scip, &cons, rowName.c_str(), 1,
+                                                         zxy.data(), &zCoef, 1, &zxy[1], &zxy[2],
+                                                         &xyCoef, 0.0, 0.0));
   SCIP_PLUGIN_CALL(_plugin->SCIPaddCons(_scip, cons));
   SCIP_PLUGIN_CALL(_plugin->SCIPreleaseCons(_scip, &cons));
 }
@@ -841,12 +842,12 @@ SCIP_RETCODE MIPScipWrapper::solveSCIP() {  // Move into ancestor?
   /// Solution callback
   output.nCols = static_cast<int>(colObj.size());
   _x.resize(output.nCols);
-  output.x = &_x[0];
+  output.x = _x.data();
   if (_options->flagIntermediate && cbui.solcbfn != nullptr && cbuiPtr == nullptr) {
     /* include event handler for best solution found */
     SCIP_PLUGIN_CALL_R(_plugin, includeEventHdlrBestsol());
     cbuiPtr = &cbui;  // not thread-safe...         TODO
-    _scipVarsPtr = &_scipVars[0];
+    _scipVarsPtr = _scipVars.data();
     //       retcode = SCIP_setinfocallbackfunc (env, solcallback, &cbui);
     //       wrap_assert(!retcode, "Failed to set solution callback", false);
   }
@@ -922,10 +923,10 @@ SCIP_RETCODE MIPScipWrapper::solveSCIP() {  // Move into ancestor?
     //       wrap_assert( !retcode, "No MIP objective value available." );
 
     _x.resize(cur_numcols);
-    output.x = &_x[0];
+    output.x = _x.data();
     SCIP_PLUGIN_CALL_R(_plugin,
                        _plugin->SCIPgetSolVals(_scip, _plugin->SCIPgetBestSol(_scip), cur_numcols,
-                                               &_scipVars[0], (double*)output.x));
+                                               _scipVars.data(), (double*)output.x));
     if (cbui.solcbfn != nullptr && (!_options->flagIntermediate || !cbui.printed)) {
       cbui.solcbfn(output, cbui.psi);
     }

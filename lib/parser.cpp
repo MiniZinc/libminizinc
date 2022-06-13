@@ -41,7 +41,8 @@ std::string get_file_contents(std::ifstream& in) {
     in.seekg(0, std::ios::end);
     contents.resize(static_cast<unsigned int>(in.tellg()));
     in.seekg(0, std::ios::beg);
-    in.read(&contents[0], static_cast<long>(contents.size()));
+    // Warning assume editability of the string underlying storage
+    in.read(const_cast<char*>(contents.data()), static_cast<long>(contents.size()));
     in.close();
     if (!contents.empty() && contents[0] == '@') {
       contents = MiniZinc::FileUtils::decode_base64(contents);
