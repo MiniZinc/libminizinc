@@ -155,19 +155,19 @@ Expression* createDocComment(const ParserLocation& loc, const std::string& s) {
 Expression* createAccess(const ParserLocation& loc, Expression* e, const std::vector<Expression*>& idx) {
   Expression* ret = e;
   for (auto* expr : idx) {
-		// Set location of access expression (TODO: can this be more accurate?)
-		expr->loc(loc);
+    // Set location of access expression (TODO: can this be more accurate?)
+    expr->loc(loc);
 
-		// Insert member being accessed
-		if (auto* fa = expr->dynamicCast<FieldAccess>()) {
-			fa->v(ret);
-		} else {
-			auto* aa = expr->cast<ArrayAccess>();
-			aa->v(ret);
-		}
+    // Insert member being accessed
+    if (auto* fa = expr->dynamicCast<FieldAccess>()) {
+      fa->v(ret);
+    } else {
+      auto* aa = expr->cast<ArrayAccess>();
+      aa->v(ret);
+    }
 
-		// Set access expression as current incumbent
-		ret = expr;
+    // Set access expression as current incumbent
+    ret = expr;
   }
   return ret;
 }
@@ -4537,11 +4537,11 @@ yyreduce:
 
   case 110: /* base_ti_expr_tail: "tuple" '(' ti_expr_list ')'  */
       {
-				std::vector<Expression*> tmp((yyvsp[-1].tiexprs)->begin(), (yyvsp[-1].tiexprs)->end());
-				ArrayLit* al = ArrayLit::constructTuple((yyloc), tmp);
-				(yyval.tiexpr) = new TypeInst((yyloc), Type::tuple(), al);
-				delete (yyvsp[-1].tiexprs);
-			}
+        std::vector<Expression*> tmp((yyvsp[-1].tiexprs)->begin(), (yyvsp[-1].tiexprs)->end());
+        ArrayLit* al = ArrayLit::constructTuple((yyloc), tmp);
+        (yyval.tiexpr) = new TypeInst((yyloc), Type::tuple(), al);
+        delete (yyvsp[-1].tiexprs);
+      }
     break;
 
   case 111: /* base_ti_expr_tail: set_expr  */
@@ -5321,7 +5321,7 @@ yyreduce:
 
   case 284: /* access_tail: "[" array_access_expr_list "]"  */
       {
-			  (yyval.expressions1d)=new std::vector<Expression*>();
+        (yyval.expressions1d)=new std::vector<Expression*>();
         if ((yyvsp[-1].expressions1d)) {
           auto* al = new ArrayAccess((yyloc), nullptr, *(yyvsp[-1].expressions1d));
           (yyval.expressions1d)->push_back(al);
@@ -5332,7 +5332,7 @@ yyreduce:
 
   case 285: /* access_tail: "field access"  */
       {
-				(yyval.expressions1d)=new std::vector<Expression*>();
+        (yyval.expressions1d)=new std::vector<Expression*>();
         std::string tail((yyvsp[0].sValue)); free((yyvsp[0].sValue));
 
         // Find all field accesses
@@ -5343,12 +5343,12 @@ yyreduce:
           (yyval.expressions1d)->push_back({ new FieldAccess((yyloc), nullptr, IntLit::a(fieldVal)) });
           tail = field_match.suffix();
         }
-			}
+      }
     break;
 
   case 286: /* access_tail: access_tail "[" array_access_expr_list "]"  */
       {
-			  (yyval.expressions1d)=(yyvsp[-3].expressions1d);
+        (yyval.expressions1d)=(yyvsp[-3].expressions1d);
         if ((yyval.expressions1d) && (yyvsp[-1].expressions1d)) {
           auto* al = new ArrayAccess((yyloc), nullptr, *(yyvsp[-1].expressions1d));
           (yyval.expressions1d)->push_back(al);
@@ -5359,7 +5359,7 @@ yyreduce:
 
   case 287: /* access_tail: access_tail "field access"  */
       {
-			  (yyval.expressions1d)=(yyvsp[-1].expressions1d);
+        (yyval.expressions1d)=(yyvsp[-1].expressions1d);
         std::string tail((yyvsp[0].sValue)); free((yyvsp[0].sValue));
 
         // Find all field accesses
@@ -5370,7 +5370,7 @@ yyreduce:
           (yyval.expressions1d)->push_back({ new FieldAccess((yyloc), nullptr, IntLit::a(fieldVal)) });
           tail = field_match.suffix();
         }
-			}
+      }
     break;
 
   case 288: /* set_literal: '{' '}'  */
@@ -5384,23 +5384,23 @@ yyreduce:
 
   case 290: /* tuple_literal: '(' expr ',' ')'  */
       {
-				std::vector<Expression*> list({ (yyvsp[-2].expression) });
-				(yyval.expression)=ArrayLit::constructTuple((yyloc), list);
-			}
+        std::vector<Expression*> list({ (yyvsp[-2].expression) });
+        (yyval.expression)=ArrayLit::constructTuple((yyloc), list);
+      }
     break;
 
   case 291: /* tuple_literal: '(' expr ',' expr_list ')'  */
       {
-				auto* list = (yyvsp[-1].expressions1d);
-				if (list == nullptr) {
-					list = new std::vector<Expression*>();
-				}
-				if ((yyvsp[-3].expression)) {
-					list->insert(list->begin(), (yyvsp[-3].expression));
-				}
-				(yyval.expression)=ArrayLit::constructTuple((yyloc), *list);
-				delete list;
-			}
+        auto* list = (yyvsp[-1].expressions1d);
+        if (list == nullptr) {
+          list = new std::vector<Expression*>();
+        }
+        if ((yyvsp[-3].expression)) {
+          list->insert(list->begin(), (yyvsp[-3].expression));
+        }
+        (yyval.expression)=ArrayLit::constructTuple((yyloc), *list);
+        delete list;
+      }
     break;
 
   case 292: /* set_comp: '{' expr '|' comp_tail '}'  */
@@ -5786,10 +5786,10 @@ yyreduce:
           if ((yyval.indexedexpression2d)->first.size() != (yyval.indexedexpression2d)->second.size()) {
             yyerror(&(yyloc),parm,"invalid array literal, mixing indexed and non-indexed values");
             (yyval.indexedexpression2d) = nullptr;
-					} else if ((yyvsp[-2].expression)->isa<ArrayLit>() && (yyvsp[-2].expression)->cast<ArrayLit>()->isTuple() && (yyvsp[-2].expression)->cast<ArrayLit>()->size() == 1) {
+          } else if ((yyvsp[-2].expression)->isa<ArrayLit>() && (yyvsp[-2].expression)->cast<ArrayLit>()->isTuple() && (yyvsp[-2].expression)->cast<ArrayLit>()->size() == 1) {
             (yyval.indexedexpression2d)->first.push_back((*(yyvsp[-2].expression)->cast<ArrayLit>())[0]);
             (yyval.indexedexpression2d)->second.push_back((yyvsp[0].expression));
-						delete (yyvsp[-2].expression);
+            delete (yyvsp[-2].expression);
           } else {
             (yyval.indexedexpression2d)->first.push_back((yyvsp[-2].expression));
             (yyval.indexedexpression2d)->second.push_back((yyvsp[0].expression));

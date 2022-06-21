@@ -99,19 +99,19 @@ Expression* createDocComment(const ParserLocation& loc, const std::string& s) {
 Expression* createAccess(const ParserLocation& loc, Expression* e, const std::vector<Expression*>& idx) {
   Expression* ret = e;
   for (auto* expr : idx) {
-		// Set location of access expression (TODO: can this be more accurate?)
-		expr->loc(loc);
+    // Set location of access expression (TODO: can this be more accurate?)
+    expr->loc(loc);
 
-		// Insert member being accessed
-		if (auto* fa = expr->dynamicCast<FieldAccess>()) {
-			fa->v(ret);
-		} else {
-			auto* aa = expr->cast<ArrayAccess>();
-			aa->v(ret);
-		}
+    // Insert member being accessed
+    if (auto* fa = expr->dynamicCast<FieldAccess>()) {
+      fa->v(ret);
+    } else {
+      auto* aa = expr->cast<ArrayAccess>();
+      aa->v(ret);
+    }
 
-		// Set access expression as current incumbent
-		ret = expr;
+    // Set access expression as current incumbent
+    ret = expr;
   }
   return ret;
 }
@@ -936,11 +936,11 @@ base_ti_expr_tail :
       { $$ = new TypeInst(@$,Type::ann()); }
     | MZN_TUPLE '(' ti_expr_list ')'
       {
-				std::vector<Expression*> tmp($3->begin(), $3->end());
-				ArrayLit* al = ArrayLit::constructTuple(@$, tmp);
-				$$ = new TypeInst(@$, Type::tuple(), al);
-				delete $3;
-			}
+        std::vector<Expression*> tmp($3->begin(), $3->end());
+        ArrayLit* al = ArrayLit::constructTuple(@$, tmp);
+        $$ = new TypeInst(@$, Type::tuple(), al);
+        delete $3;
+      }
     | set_expr
         { if ($1) $$ = new TypeInst(@$,Type(),$1); }
     | MZN_TI_IDENTIFIER
@@ -1441,16 +1441,16 @@ string_quote_rest:
 access_tail :
       MZN_LEFT_BRACKET array_access_expr_list MZN_RIGHT_BRACKET
       {
-			  $$=new std::vector<Expression*>();
+        $$=new std::vector<Expression*>();
         if ($2) {
           auto* al = new ArrayAccess(@$, nullptr, *$2);
           $$->push_back(al);
           delete $2;
         }
       }
-		| MZN_FIELD_TAIL
+    | MZN_FIELD_TAIL
       {
-				$$=new std::vector<Expression*>();
+        $$=new std::vector<Expression*>();
         std::string tail($1); free($1);
 
         // Find all field accesses
@@ -1461,19 +1461,19 @@ access_tail :
           $$->push_back({ new FieldAccess(@$, nullptr, IntLit::a(fieldVal)) });
           tail = field_match.suffix();
         }
-			}
+      }
     | access_tail MZN_LEFT_BRACKET array_access_expr_list MZN_RIGHT_BRACKET
       {
-			  $$=$1;
+        $$=$1;
         if ($$ && $3) {
           auto* al = new ArrayAccess(@$, nullptr, *$3);
           $$->push_back(al);
           delete $3;
         }
       }
-		| access_tail MZN_FIELD_TAIL
+    | access_tail MZN_FIELD_TAIL
       {
-			  $$=$1;
+        $$=$1;
         std::string tail($2); free($2);
 
         // Find all field accesses
@@ -1484,7 +1484,7 @@ access_tail :
           $$->push_back({ new FieldAccess(@$, nullptr, IntLit::a(fieldVal)) });
           tail = field_match.suffix();
         }
-			}
+      }
 
 
 set_literal :
@@ -1497,21 +1497,21 @@ set_literal :
 tuple_literal :
       '(' expr ',' ')'
       {
-				std::vector<Expression*> list({ $2 });
-				$$=ArrayLit::constructTuple(@$, list);
-			}
+        std::vector<Expression*> list({ $2 });
+        $$=ArrayLit::constructTuple(@$, list);
+      }
     | '(' expr ',' expr_list ')'
       {
-				auto* list = $4;
-				if (list == nullptr) {
-					list = new std::vector<Expression*>();
-				}
-				if ($2) {
-					list->insert(list->begin(), $2);
-				}
-				$$=ArrayLit::constructTuple(@$, *list);
-				delete list;
-			}
+        auto* list = $4;
+        if (list == nullptr) {
+          list = new std::vector<Expression*>();
+        }
+        if ($2) {
+          list->insert(list->begin(), $2);
+        }
+        $$=ArrayLit::constructTuple(@$, *list);
+        delete list;
+      }
 
 set_comp :
       '{' expr '|' comp_tail '}'
@@ -1863,10 +1863,10 @@ comp_expr_list_head :
           if ($$->first.size() != $$->second.size()) {
             yyerror(&@$,parm,"invalid array literal, mixing indexed and non-indexed values");
             $$ = nullptr;
-					} else if ($3->isa<ArrayLit>() && $3->cast<ArrayLit>()->isTuple() && $3->cast<ArrayLit>()->size() == 1) {
+          } else if ($3->isa<ArrayLit>() && $3->cast<ArrayLit>()->isTuple() && $3->cast<ArrayLit>()->size() == 1) {
             $$->first.push_back((*$3->cast<ArrayLit>())[0]);
             $$->second.push_back($5);
-						delete $3;
+            delete $3;
           } else {
             $$->first.push_back($3);
             $$->second.push_back($5);
