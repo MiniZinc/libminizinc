@@ -359,6 +359,18 @@ std::string Type::toString(const EnvI& env) const {
       }
       oss << ")";
     } break;
+    case BT_RECORD: {
+      oss << "record(";
+      // TupleType* tt = env.getTupleType(*this);
+      // for (size_t i = 0; i < tt->size(); ++i) {
+      //   oss << (*tt)[i].toString(env);
+      //   if (i < tt->size() - 1) {
+      //     oss << ", ";
+      //   }
+      // }
+      oss << ")";
+      assert(false);  // TODO: output fields
+    } break;
     case BT_BOT:
       oss << "bot";
       break;
@@ -418,6 +430,9 @@ std::string Type::simpleToString() const {
       break;
     case BT_TUPLE:
       oss << "tuple(...)";
+      break;
+    case BT_RECORD:
+      oss << "record(...)";
       break;
     case BT_BOT:
       oss << "bot";

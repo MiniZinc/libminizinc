@@ -31,6 +31,7 @@ public:
     BT_STRING,
     BT_ANN,
     BT_TUPLE,
+    BT_RECORD,
     BT_TOP,
     BT_BOT,
     BT_UNKNOWN
@@ -172,6 +173,9 @@ public:
   }
   static Type tuple(unsigned int typeId = 0, int dim = 0) {
     return Type(TI_PAR, BT_TUPLE, ST_PLAIN, typeId, dim);
+  }
+  static Type record(unsigned int typeId = 0, int dim = 0) {
+    return Type(TI_PAR, BT_RECORD, ST_PLAIN, typeId, dim);
   }
   static Type parbool(int dim = 0) { return Type(TI_PAR, BT_BOOL, ST_PLAIN, 0, dim); }
   static Type parfloat(int dim = 0) { return Type(TI_PAR, BT_FLOAT, ST_PLAIN, 0, dim); }

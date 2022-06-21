@@ -294,16 +294,17 @@ IntVal fast_strtointval(const std::string& s) {
 
 %type <item> item item_tail include_item vardecl_item assign_item constraint_item solve_item output_item predicate_item annotation_item function_item
 
-%type <vardeclexpr> ti_expr_and_id ti_expr_and_id_or_anon let_vardecl_item ann_param
+%type <vardeclexpr> ti_expr_and_id ti_expr_and_id_or_anon let_vardecl_item ann_param  record_field
 %type <vardeclexprs> params params_list params_list_head
 %type <tiexpr> ti_expr base_ti_expr base_ti_expr_tail
 %type <tiexprs> ti_expr_list ti_expr_list_head
+%type <vardeclexprs> ti_expr_and_id_list ti_expr_and_id_list_head
 
 %type <expression> expr expr_atom_head expr_atom_head_nonstring array_access_expr
 %type <expression> set_expr string_expr string_quote_rest annotation_expr enum_construct
-%type <expression> simple_array_literal simple_array_literal_2d simple_array_comp if_then_else_expr call_expr quoted_op_call let_expr operation_item_tail set_literal set_comp tuple_literal
+%type <expression> simple_array_literal simple_array_literal_2d simple_array_comp if_then_else_expr call_expr quoted_op_call let_expr operation_item_tail set_literal set_comp tuple_literal record_literal
 
-%type <expressions1d> expr_list expr_list_head array_access_expr_list array_access_expr_list_head elseif_list let_vardecl_item_list enum_init enum_id_list string_lit_list access_tail
+%type <expressions1d> expr_list expr_list_head array_access_expr_list array_access_expr_list_head elseif_list let_vardecl_item_list enum_init enum_id_list string_lit_list access_tail record_field_list_head
 %type <indexedexpression2d> comp_expr_list comp_expr_list_head
 %type <expressions2d> simple_array_literal_2d_list
 %type <indexedexpressions2d> simple_array_literal_2d_indexed_list simple_array_literal_2d_indexed_list_head
@@ -802,6 +803,15 @@ ti_expr_and_id :
         delete $4;
       }
 
+ti_expr_and_id_list : ti_expr_and_id_list_head comma_or_none
+      { $$=$1; }
+
+ti_expr_and_id_list_head :
+      ti_expr_and_id
+      { $$=new vector<VarDecl*>(); $$->push_back($1); }
+    | ti_expr_and_id_list_head ',' ti_expr_and_id
+      { $$=$1; if ($1 && $3) $1->push_back($3); }
+
 ti_expr_list : ti_expr_list_head comma_or_none
       { $$=$1; }
 
@@ -939,6 +949,13 @@ base_ti_expr_tail :
         std::vector<Expression*> tmp($3->begin(), $3->end());
         ArrayLit* al = ArrayLit::constructTuple(@$, tmp);
         $$ = new TypeInst(@$, Type::tuple(), al);
+        delete $3;
+      }
+    | MZN_RECORD '(' ti_expr_and_id_list ')'
+      {
+        std::vector<Expression*> tmp($3->begin(), $3->end());
+        ArrayLit* al = ArrayLit::constructTuple(@$, tmp);
+        $$ = new TypeInst(@$, Type::record(), nullptr);
         delete $3;
       }
     | set_expr
@@ -1416,6 +1433,15 @@ expr_atom_head_nonstring :
     | tuple_literal access_tail MZN_POW_MINUS1
       { if ($2) $$=new BinOp(@$,createAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
         delete $2; }
+    | record_literal
+    | record_literal access_tail
+      { if ($2) $$=createAccess(@$, $1, *$2);
+        delete $2; }
+    | record_literal MZN_POW_MINUS1
+      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+    | record_literal access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+        delete $2; }
 
 string_expr:
       MZN_STRING_LITERAL
@@ -1453,13 +1479,47 @@ access_tail :
         $$=new std::vector<Expression*>();
         std::string tail($1); free($1);
 
-        // Find all field accesses
-        std::regex fieldR("[0-9]+");
-        std::smatch field_match;
-        while(std::regex_search(tail, field_match, fieldR)) {
-          IntVal fieldVal = MiniZinc::fast_strtointval(field_match.str());
-          $$->push_back({ new FieldAccess(@$, nullptr, IntLit::a(fieldVal)) });
-          tail = field_match.suffix();
+        auto it = tail.begin();
+        auto isWS = [&]() {
+          return (*it == ' ' || *it == '\f' || *it == '\xd' || *it == '\t');
+        };
+        while (it != tail.end()) {
+          // skip whitespace and dot
+          while(isWS()) { ++it; }
+          assert(*it == '.'); // otherwise error in the lexer regex
+          ++it;
+          while(isWS()) { ++it; }
+
+          // parse field name
+          auto field_start = it;
+          bool is_num = isdigit(*it);
+          std::string field;
+          if (*it == '\'') {
+            ++field_start;
+            ++it;
+            while(*it != '\'') {
+              ++it;
+              assert(it != tail.end()); // otherwise error in the lexer regex
+            }
+            field = std::string(field_start, it);
+            ++it;
+          } else {
+            while(!isWS() && *it != '.' && it != tail.end()) {
+              is_num = is_num && isdigit(*it);
+              ++it;
+            }
+            field = std::string(field_start, it);
+          }
+
+          // emit field
+          Expression* field_expr = nullptr;
+          if (is_num) {
+            IntVal fieldVal = MiniZinc::fast_strtointval(field);
+            field_expr = IntLit::a(fieldVal);
+          } else {
+            field_expr = new Id(@$, field, nullptr);
+          }
+          $$->push_back({ new FieldAccess(@$, nullptr, field_expr) });
         }
       }
     | access_tail MZN_LEFT_BRACKET array_access_expr_list MZN_RIGHT_BRACKET
@@ -1511,6 +1571,26 @@ tuple_literal :
         }
         $$=ArrayLit::constructTuple(@$, *list);
         delete list;
+      }
+
+record_literal :
+      '(' record_field_list_head comma_or_none ')'
+      {
+        $$ = ArrayLit::constructTuple(@$, *$2);
+        delete($2);
+      }
+  
+record_field_list_head :
+      record_field
+      { $$ = new vector<Expression*>(1); (*$$)[0] = $1; }
+    | record_field_list_head ',' record_field
+      { $$=$1; $$->push_back($3); }
+
+record_field:
+      MZN_IDENTIFIER ':' expr
+      {
+        $$ = new VarDecl(@$, nullptr, $1, $3);
+        free($1);
       }
 
 set_comp :

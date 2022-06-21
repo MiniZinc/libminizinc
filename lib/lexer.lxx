@@ -225,7 +225,7 @@ namespace MiniZinc {
                       return MZN_INVALID_FLOAT_LITERAL;
                   }
 [:;|{},\[\]]      { return *yytext; }
-([ \f\xd\t]*\.[ \f\xd\t]*[0-9]+)+ { yylval->sValue = strdup(yytext); return MZN_FIELD_TAIL; }
+([ \f\xd\t]*\.[ \f\xd\t]*(([0-9]+)|(_?[A-Za-z][A-Za-z0-9_]*)|('[^\\'\xa\xd\x0]+')))+ { yylval->sValue = strdup(yytext); return MZN_FIELD_TAIL; }
 \.\.              { return MZN_DOTDOT; }
 "'\.\.'"          { return MZN_DOTDOT_QUOTED; }
 "\.\.<"           { return MZN_DOTDOT_LE; }
