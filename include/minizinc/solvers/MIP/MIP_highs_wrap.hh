@@ -45,10 +45,10 @@ public:
     std::string sExportModel;
     int nTimeout = 0;
 
-    bool flagIntermediate = false;
     double absGap = -1;
     double relGap = 1e-8;
     double intTol = 1e-8;
+    int randSeed = -1;
 
     std::unordered_map<std::string, std::string> extraParams;
 
@@ -70,7 +70,7 @@ public:
                                 MiniZinc::SolverInstanceBase::Options* opt = nullptr);
   static std::string getDescription(FactoryOptions& factoryOpt,
                                     MiniZinc::SolverInstanceBase::Options* opt = nullptr);
-  static std::vector<std::string> getStdFlags() { return {"-i", "-p", "-s", "-v", "-f"}; };
+  static std::vector<std::string> getStdFlags() { return {"-p", "-s", "-v", "-f", "-r"}; };
   static std::vector<std::string> getRequiredFlags(FactoryOptions& factoryOpt) { return {}; };
   static std::vector<std::string> getFactoryFlags() { return {}; };
   static std::vector<std::string> getTags() { return {"mip", "float", "api", "highs"}; };
@@ -94,9 +94,17 @@ public:
   // Get number of solver variables (matrix columns)
   int getNCols() override { return _highs.getNumCol(); };
   // Get number of linear constraints (matrix rows)
-  int getNRows() override { return _highs.getNumRows(); }
+  int getNRows() override { return _highs.getNumRow(); }
 
   void solve() override;
 
+protected:
+  // Convert HiGHSModelStatus to MIPWrapper internal status
   MIPWrapper::Status convertStatus(const HighsModelStatus& model_status) const;
+  // Set HiGHS internal options based on the command line flags given to the solver interface
+  void setOptions();
+  // Set variable values in "output" object (called when solution is found)
+  void setOutputVariables();
+  // Set other "output" attributes (called when solution is found)
+  void setOutputAttributes();
 };

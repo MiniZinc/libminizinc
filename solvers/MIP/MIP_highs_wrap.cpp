@@ -13,6 +13,7 @@
 #include <minizinc/solvers/MIP/MIP_highs_wrap.hh>
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
 
+#include <ostream>
 #include <string>
 
 using namespace MiniZinc;
@@ -33,11 +34,7 @@ std::string MIPHiGHSWrapper::getDescription(FactoryOptions& factoryOpt,
 }
 
 void MIPHiGHSWrapper::Options::printHelp(std::ostream& os) {
-  os << "HiGHS MIP wrapper options:"
-     << std::endl
-     // << "--backend-flags \"args\"" << std::endl
-     // << "    command-line args passed to callCbc, e.g., \"-cuts off -preprocess off -passc 1\"."
-     // << std::endl
+  os << "HiGHS MIP wrapper options:" << std::endl
      << "  --writeModel <file>" << std::endl
      << "    write model to <file> (.mps)" << std::endl
      << "  -i" << std::endl
@@ -55,12 +52,11 @@ bool MIPHiGHSWrapper::Options::processOption(int& i, std::vector<std::string>& a
                                              const std::string& workingDir) {
   MiniZinc::CLOParser cop(i, argv);
   std::string buffer;
-  if (cop.get("-i")) {
-    flagIntermediate = true;
-  } else if (string(argv[i]) == "-f") {  // NOLINT: Allow repeated empty if
+  if (string(argv[i]) == "-f") {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--writeModel", &buffer)) {
     sExportModel = MiniZinc::FileUtils::file_path(buffer, workingDir);
   } else if (cop.get("-p --parallel", &nThreads)) {        // NOLINT: Allow repeated empty if
+  } else if (cop.get("-r --random-seed", &randSeed)) {     // NOLINT: Allow repeated empty if
   } else if (cop.get("--solver-time-limit", &nTimeout)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--absGap", &absGap)) {               // NOLINT: Allow repeated empty if
   } else if (cop.get("--relGap", &relGap)) {               // NOLINT: Allow repeated empty if
@@ -107,9 +103,9 @@ std::vector<SolverConfig::ExtraFlag> MIPHiGHSWrapper::getExtraFlags(FactoryOptio
 void MIPHiGHSWrapper::doAddVars(size_t n, double* obj, double* lb, double* ub, VarType* vt,
                                 std::string* names) {
   HighsInt cur = _highs.getNumCol();
-  checkHiGHSReturn(_highs.addCols(static_cast<const HighsInt>(n), obj, lb, ub, 0, nullptr,
-                                  nullptr, nullptr),
-                   "failed to add new variables");
+  checkHiGHSReturn(
+      _highs.addCols(static_cast<const HighsInt>(n), obj, lb, ub, 0, nullptr, nullptr, nullptr),
+      "failed to add new variables");
   assert(cur + n == _highs.getNumCol());
   std::vector<HighsVarType> types;
   types.reserve(n);
@@ -153,90 +149,20 @@ void MIPHiGHSWrapper::addRow(int nnz, int* rmatind, double* rmatval, LinConType 
 }
 
 void MIPHiGHSWrapper::solve() {
-  // Set solver parameters
-  if (_options->nThreads > 0) {
-    checkHiGHSReturn(_highs.setOptionValue("threads", _options->nThreads),
-                     "unable to set number of threads");
-    checkHiGHSReturn(_highs.setOptionValue(kParallelString, "on"),
-                     "unable to enable parallel mode");
-  } else {
-    checkHiGHSReturn(_highs.setOptionValue(kParallelString, "off"),
-                     "unable to disable parallel mode");
-  }
-  if (_options->nTimeout > 0) {
-    checkHiGHSReturn(
-        _highs.setOptionValue(kTimeLimitString, static_cast<double>(_options->nTimeout) / 1000.0),
-        "unable to time limit");
-  }
-  if (_options->absGap >= 0.0) {
-    checkHiGHSReturn(_highs.setOptionValue("mip_abs_gap", _options->absGap),
-                     "unable to set absolute gap");
-  }
-  if (_options->relGap >= 0.0) {
-    checkHiGHSReturn(_highs.setOptionValue("mip_rel_gap", _options->relGap),
-                     "unable to set relative gap");
-  }
-  if (_options->intTol >= 0.0) {
-    checkHiGHSReturn(_highs.setOptionValue("mip_feasibility_tolerance", _options->intTol),
-                     "unable to set integer tolerance");
-  }
-  if (!_options->sExportModel.empty()) {
-    checkHiGHSReturn(_highs.writeModel(_options->sExportModel), "Unable to write model to file");
-  }
-  if (fVerbose) {
-    checkHiGHSReturn(_highs.setOptionValue("log_dev_level", kHighsLogDevLevelDetailed),
-                     "Unable to set verbose flag");
-  } else {
-    checkHiGHSReturn(_highs.setOptionValue("log_dev_level", kHighsLogDevLevelNone),
-                     "Unable to set logging to silent");
-  }
+  setOptions();
 
-  for (const auto& it : _options->extraParams) {
-    std::string name = it.first.substr(8);
-    HighsOptionType type;
-    checkHiGHSReturn(_highs.getOptionType(name, type),
-                     "Unable to find type of option `" + name + "'");
-    switch (type) {
-      case HighsOptionType::kBool: {
-        assert(it.second == "true" || it.second == "false");
-        checkHiGHSReturn(_highs.setOptionValue(name, it.second == "true"),
-                         "unable to set HiGHS option `" + name + "'");
-        break;
-      }
-      case HighsOptionType::kInt: {
-        checkHiGHSReturn(_highs.setOptionValue(name, stoi(it.second)),
-                         "unable to set HiGHS option `" + name + "'");
-        break;
-      }
-      case HighsOptionType::kDouble: {
-        checkHiGHSReturn(_highs.setOptionValue(name, stod(it.second)),
-                         "unable to set HiGHS option `" + name + "'");
-        break;
-      }
-      case HighsOptionType::kString: {
-        checkHiGHSReturn(_highs.setOptionValue(name, it.second),
-                         "unable to set HiGHS option `" + name + "'");
-        break;
-      }
-      default:
-        throw InternalError("Unknown HiGHS Option type");
-    }
-  }
+  cbui.pOutput->dWallTime0 = output.dWallTime0 = std::chrono::steady_clock::now();
+  cbui.pOutput->cCPUTime0 =
+      static_cast<clock_t>(output.dCPUTime = static_cast<double>(std::clock()));
 
   // Actually solve the current model
   checkHiGHSReturn(_highs.run(), "unable to solve model");
 
-  // Process Results
-  output.status = convertStatus(_highs.getModelStatus());
-  output.statusName = _highs.modelStatusToString(_highs.getModelStatus());
-  output.objVal = _highs.getObjectiveValue();
-  output.bestBound = _highs.getInfo().mip_dual_bound;
-  output.nNodes = static_cast<int>(_highs.getInfo().mip_node_count);
-  if (getStatus() == MIPWrapper::SAT || getStatus() == MIPWrapper::OPT) {
-    output.x = _highs.getSolution().col_value.data();
-    if (cbui.solcbfn != nullptr && (!_options->flagIntermediate || !cbui.printed)) {
-      cbui.solcbfn(output, cbui.psi);
-    }
+  setOutputVariables();
+  setOutputAttributes();
+
+  if (cbui.solcbfn != nullptr) {
+    cbui.solcbfn(output, cbui.psi);
   }
 }
 
@@ -283,4 +209,96 @@ MIPWrapper::Status MIPHiGHSWrapper::convertStatus(const HighsModelStatus& model_
       throw InternalError("Unknown HiGHS status");
     }
   }
+}
+
+void log_to_stderr(HighsLogType ty, const char* str, void* stream) {
+  auto* out = static_cast<std::ostream*>(stream);
+  *out << str;
+}
+
+void MIPHiGHSWrapper::setOptions() {
+  if (_options->nThreads > 0) {
+    checkHiGHSReturn(_highs.setOptionValue("threads", _options->nThreads),
+                     "unable to set number of threads");
+    checkHiGHSReturn(_highs.setOptionValue(kParallelString, "on"),
+                     "unable to enable parallel mode");
+  } else {
+    checkHiGHSReturn(_highs.setOptionValue(kParallelString, "off"),
+                     "unable to disable parallel mode");
+  }
+  if (_options->nTimeout > 0) {
+    checkHiGHSReturn(
+        _highs.setOptionValue(kTimeLimitString, static_cast<double>(_options->nTimeout) / 1000.0),
+        "unable to time limit");
+  }
+  if (_options->randSeed >= 0) {
+    checkHiGHSReturn(_highs.setOptionValue(kRandomSeedString, _options->randSeed),
+                     "unable to set random seed");
+  }
+  if (_options->absGap >= 0.0) {
+    checkHiGHSReturn(_highs.setOptionValue("mip_abs_gap", _options->absGap),
+                     "unable to set absolute gap");
+  }
+  if (_options->relGap >= 0.0) {
+    checkHiGHSReturn(_highs.setOptionValue("mip_rel_gap", _options->relGap),
+                     "unable to set relative gap");
+  }
+  if (_options->intTol >= 0.0) {
+    checkHiGHSReturn(_highs.setOptionValue("mip_feasibility_tolerance", _options->intTol),
+                     "unable to set integer tolerance");
+  }
+  if (!_options->sExportModel.empty()) {
+    checkHiGHSReturn(_highs.writeModel(_options->sExportModel), "Unable to write model to file");
+  }
+  checkHiGHSReturn(_highs.setOptionValue("log_to_console", fVerbose), "Unable to set verbosity");
+  if (fVerbose) {
+    _highs.setLogCallback(&log_to_stderr, &std::cerr);
+  }
+
+  for (const auto& it : _options->extraParams) {
+    std::string name = it.first.substr(8);
+    HighsOptionType type;
+    checkHiGHSReturn(_highs.getOptionType(name, type),
+                     "Unable to find type of option `" + name + "'");
+    switch (type) {
+      case HighsOptionType::kBool: {
+        assert(it.second == "true" || it.second == "false");
+        checkHiGHSReturn(_highs.setOptionValue(name, it.second == "true"),
+                         "unable to set HiGHS option `" + name + "'");
+        break;
+      }
+      case HighsOptionType::kInt: {
+        checkHiGHSReturn(_highs.setOptionValue(name, stoi(it.second)),
+                         "unable to set HiGHS option `" + name + "'");
+        break;
+      }
+      case HighsOptionType::kDouble: {
+        checkHiGHSReturn(_highs.setOptionValue(name, stod(it.second)),
+                         "unable to set HiGHS option `" + name + "'");
+        break;
+      }
+      case HighsOptionType::kString: {
+        checkHiGHSReturn(_highs.setOptionValue(name, it.second),
+                         "unable to set HiGHS option `" + name + "'");
+        break;
+      }
+      default:
+        throw InternalError("Unknown HiGHS Option type");
+    }
+  }
+}
+
+void MIPHiGHSWrapper::setOutputVariables() { output.x = _highs.getSolution().col_value.data(); }
+
+void MIPHiGHSWrapper::setOutputAttributes() {
+  output.status = convertStatus(_highs.getModelStatus());
+  output.statusName = _highs.modelStatusToString(_highs.getModelStatus());
+
+  output.objVal = _highs.getObjectiveValue();
+  output.bestBound = _highs.getInfo().mip_dual_bound;
+  output.nNodes = static_cast<int>(_highs.getInfo().mip_node_count);
+
+  output.dWallTime =
+      std::chrono::duration<double>(std::chrono::steady_clock::now() - output.dWallTime0).count();
+  output.dCPUTime = double(std::clock() - output.cCPUTime0) / CLOCKS_PER_SEC;
 }
