@@ -107,9 +107,7 @@ std::vector<SolverConfig::ExtraFlag> MIPHiGHSWrapper::getExtraFlags(FactoryOptio
 void MIPHiGHSWrapper::doAddVars(size_t n, double* obj, double* lb, double* ub, VarType* vt,
                                 std::string* names) {
   HighsInt cur = _highs.getNumCol();
-  std::vector<double> costs(n, 0.0);
-  // TODO: Change to addVars in HiGHS 1.2.3+
-  checkHiGHSReturn(_highs.addCols(static_cast<const HighsInt>(n), costs.data(), lb, ub, 0, nullptr,
+  checkHiGHSReturn(_highs.addCols(static_cast<const HighsInt>(n), obj, lb, ub, 0, nullptr,
                                   nullptr, nullptr),
                    "failed to add new variables");
   assert(cur + n == _highs.getNumCol());
@@ -232,6 +230,7 @@ void MIPHiGHSWrapper::solve() {
   output.status = convertStatus(_highs.getModelStatus());
   output.statusName = _highs.modelStatusToString(_highs.getModelStatus());
   output.objVal = _highs.getObjectiveValue();
+  output.bestBound = _highs.getInfo().mip_dual_bound;
   output.nNodes = static_cast<int>(_highs.getInfo().mip_node_count);
   if (getStatus() == MIPWrapper::SAT || getStatus() == MIPWrapper::OPT) {
     output.x = _highs.getSolution().col_value.data();
