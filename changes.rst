@@ -4,10 +4,12 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
-.. _unreleased:
+.. _v2.6.4:
 
-Unreleased
-~~~~~~~~~~
+`Version 2.6.4 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.6.4>`__
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(released 23 June 2022)
 
 Changes:
 ^^^^^^^^
@@ -21,7 +23,6 @@ Changes:
    Functions that are defined with ``var`` types for convient use in output
    can be annotated ``output_only``. The compiler will check that a valid
    ``par`` version of this function is available.
-
 
 Bug fixes:
 ^^^^^^^^^^
@@ -40,6 +41,10 @@ Bug fixes:
 -  Fix crash in SCIP plugin due to incorrect loading of ``SCIPinfinity`` symbol.
 -  Fix crash in CBC when there is a heuristic solution but no best solution
    (:bugref:`592`).
+
+Changes in the IDE:
+^^^^^^^^^^^^^^^^^^^
+-  Ensure the extra parameter filter is cleared when the textbox is cleared.
 
 .. _v2.6.3:
 
