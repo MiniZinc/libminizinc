@@ -38,6 +38,8 @@ Bug fixes:
    duration is zero. (:bugref:`589`)
 -  Fix handling of float values in ``.mpc`` parameter configuration files.
 -  Fix crash in SCIP plugin due to incorrect loading of ``SCIPinfinity`` symbol.
+-  Fix crash in CBC when there is a heuristic solution but no best solution
+   (:bugref:`592`).
 
 .. _v2.6.3:
 

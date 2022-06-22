@@ -476,7 +476,10 @@ CbcEventHandler::CbcAction MyEventHandler3::event(CbcEvent whichEvent) {
         // If preprocessing was done solution will be to processed model
         //       int numberColumns = model_->getNumCols();
         const double* bestSolution = model_->bestSolution();
-        assert(bestSolution);
+        if (bestSolution == nullptr) {
+          // Could happen if we only have heuristic solution?
+          return noAction;
+        }
         //       printf("value of solution is %g\n",model_->getObjValue());
 
         // Trying to obtain solution for the original model:
