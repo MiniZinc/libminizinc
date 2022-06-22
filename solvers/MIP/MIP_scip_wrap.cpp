@@ -78,9 +78,7 @@ void ScipPlugin::load() {
   load_symbol(SCIPcreateVarBasic);
   load_symbol(SCIPaddVar);
   load_symbol(SCIPreleaseVar);
-#ifndef NDEBUG
   load_symbol(SCIPinfinity);
-#endif
   load_symbol(SCIPcreateConsBasicLinear);
   load_symbol(SCIPcreateConsBasicQuadratic);
   load_symbol(SCIPaddCons);

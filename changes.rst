@@ -37,6 +37,7 @@ Bug fixes:
    resource requirement would not always be correctly be ignored when the task 
    duration is zero. (:bugref:`589`)
 -  Fix handling of float values in ``.mpc`` parameter configuration files.
+-  Fix crash in SCIP plugin due to incorrect loading of ``SCIPinfinity`` symbol.
 
 .. _v2.6.3:
 
