@@ -255,9 +255,6 @@ private:
 
 class MIPScipWrapper : public MIPWrapper {
   SCIP* _scip = nullptr;
-  //     SCIP_Retcode           retcode = SCIP_OKAY;
-  //     char          scip_buffer[SCIP_MESSAGEBUFSIZE];
-  //     char          scip_status_buffer[SCIP_MESSAGEBUFSIZE];
 
   std::vector<SCIP_VAR*> _scipVars;
   virtual SCIP_RETCODE delSCIPVars();
@@ -327,12 +324,7 @@ public:
                      const std::string& workingDir = std::string());
   void printVersion(std::ostream& os);
   void printHelp(std::ostream& os);
-  //       Statistics& getStatistics() { return _statistics; }
 
-  //      IloConstraintArray *userCuts, *lazyConstraints;
-
-  /// derived should overload and call the ancestor
-  //     virtual void cleanup();
   SCIP_RETCODE openSCIP();
   SCIP_RETCODE closeSCIP();
 
@@ -357,8 +349,7 @@ public:
   virtual SCIP_RETCODE addRowSCIP(int nnz, int* rmatind, double* rmatval, LinConType sense,
                                   double rhs, int mask = MaskConsType_Normal,
                                   const std::string& rowName = "");
-  /// adding an implication
-  //     virtual void addImpl() = 0;
+
   /// Indicator constraint: x[iBVar]==bVal -> lin constr
   void addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind, double* rmatval,
                               LinConType sense, double rhs,
@@ -391,26 +382,8 @@ public:
   int getNCols() override { return _plugin->SCIPgetNVars(_scip); }
   int getNRows() override { return _plugin->SCIPgetNConss(_scip); }
 
-  //     void setObjUB(double ub) { objUB = ub; }
-  //     void addQPUniform(double c) { qpu = c; } // also sets problem type to MIQP unless c=0
-
   void solve() override { SCIP_PLUGIN_CALL(solveSCIP()); }
   virtual SCIP_RETCODE solveSCIP();
-
-  /// OUTPUT:
-  const double* getValues() override { return output.x; }
-  double getObjValue() override { return output.objVal; }
-  double getBestBound() override { return output.bestBound; }
-  double getCPUTime() override { return output.dCPUTime; }
-
-  Status getStatus() override { return output.status; }
-  std::string getStatusName() override { return output.statusName; }
-
-  int getNNodes() override { return output.nNodes; }
-  int getNOpen() override { return output.nOpenNodes; }
-
-  //     virtual int getNNodes() = 0;
-  //     virtual double getTime() = 0;
 
 protected:
   // NOLINTNEXTLINE(readability-identifier-naming)

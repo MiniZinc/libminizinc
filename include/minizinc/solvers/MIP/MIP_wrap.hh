@@ -11,9 +11,6 @@
 
 #pragma once
 
-#include <utility>
-#include <vector>
-//#include <map>
 #include <minizinc/solver_instance_defs.hh>
 
 #include <cassert>
@@ -22,6 +19,8 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 /// Facilitate lhs computation of a cut
 inline double compute_sparse(int n, const int* ind, const double* coef, const double* dense,
@@ -346,17 +345,17 @@ public:
   virtual void solve() = 0;
 
   /// OUTPUT, should also work in a callback
-  virtual const double* getValues() = 0;
-  virtual double getObjValue() = 0;
-  virtual double getBestBound() = 0;
-  virtual double getWallTimeElapsed() { return output.dWallTime; }
-  virtual double getCPUTime() = 0;
+  const double* getValues() const { return output.x; }
+  double getObjValue() const { return output.objVal; }
+  double getBestBound() const { return output.bestBound; }
+  virtual double getWallTimeElapsed() const { return output.dWallTime; }
+  double getCPUTime() const { return output.dCPUTime; }
 
-  virtual Status getStatus() = 0;
-  virtual std::string getStatusName() = 0;
+  Status getStatus() const { return output.status; }
+  std::string getStatusName() const { return output.statusName; }
 
-  virtual int getNNodes() = 0;
-  virtual int getNOpen() = 0;
+  int getNNodes() const { return output.nNodes; }
+  int getNOpen() const { return output.nOpenNodes; }
 
   /// Default MZN library for MIP
   static std::string getMznLib();

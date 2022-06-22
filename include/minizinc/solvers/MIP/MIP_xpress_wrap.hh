@@ -169,14 +169,6 @@ public:
   int getNCols() override { return static_cast<int>(_variables.size()); }
   int getNRows() override { return static_cast<int>(_nRows); }
   double getInfBound() override { return XPRB_INFINITY; }
-  const double* getValues() override { return output.x; }
-  double getObjValue() override { return output.objVal; }
-  double getBestBound() override { return output.bestBound; }
-  double getCPUTime() override { return output.dCPUTime; }
-  Status getStatus() override { return output.status; }
-  string getStatusName() override { return output.statusName; }
-  int getNNodes() override { return output.nNodes; }
-  int getNOpen() override { return output.nOpenNodes; }
 
   MIPxpressWrapper(FactoryOptions& factoryOpt, Options* opt)
       : _factoryOptions(factoryOpt), _options(opt) {

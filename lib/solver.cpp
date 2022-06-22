@@ -56,6 +56,9 @@
 #ifdef HAS_GUROBI
 #include <minizinc/solvers/MIP/MIP_gurobi_solverfactory.hh>
 #endif
+#ifdef HAS_HIGHS
+#include <minizinc/solvers/MIP/MIP_highs_solverfactory.hh>
+#endif
 #include <minizinc/solvers/fzn_solverfactory.hh>
 #include <minizinc/solvers/fzn_solverinstance.hh>
 #include <minizinc/solvers/mzn_solverfactory.hh>
@@ -88,6 +91,9 @@ SolverInitialiser::SolverInitialiser() {
   static FZNSolverFactoryInitialiser _fzn_init;
 #ifdef HAS_GUROBI
   static GurobiSolverFactoryInitialiser _gurobi_init;
+#endif
+#ifdef HAS_HIGHS
+  static HiGHSSolverFactoryInitialiser _highs_init;
 #endif
   static MZNSolverFactoryInitialiser _mzn_init;
   static NLSolverFactoryInitialiser _nl_init;

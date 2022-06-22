@@ -95,12 +95,6 @@ public:
 
   static std::vector<MiniZinc::SolverConfig::ExtraFlag> getExtraFlags(FactoryOptions& factoryOpt);
 
-  //       Statistics& getStatistics() { return _statistics; }
-
-  //      IloConstraintArray *userCuts, *lazyConstraints;
-
-  /// derived should overload and call the ancestor
-  //     virtual void cleanup();
   void checkDLL();
   void openCPLEX();
   void closeCPLEX();
@@ -120,8 +114,7 @@ public:
                               LinConType sense, double rhs,
                               const std::string& rowName = "") override;
   bool addWarmStart(const std::vector<VarId>& vars, const std::vector<double>& vals) override;
-  /// adding an implication
-  //     virtual void addImpl() = 0;
+
   void setObjSense(int s) override;  // +/-1 for max/min
 
   double getInfBound() override { return CPX_INFBOUND; }
@@ -129,25 +122,7 @@ public:
   int getNCols() override { return dll_CPXgetnumcols(_env, _lp); }
   int getNRows() override { return dll_CPXgetnumrows(_env, _lp); }
 
-  //     void setObjUB(double ub) { objUB = ub; }
-  //     void addQPUniform(double c) { qpu = c; } // also sets problem type to MIQP unless c=0
-
   void solve() override;
-
-  /// OUTPUT:
-  const double* getValues() override { return output.x; }
-  double getObjValue() override { return output.objVal; }
-  double getBestBound() override { return output.bestBound; }
-  double getCPUTime() override { return output.dCPUTime; }
-
-  Status getStatus() override { return output.status; }
-  std::string getStatusName() override { return output.statusName; }
-
-  int getNNodes() override { return output.nNodes; }
-  int getNOpen() override { return output.nOpenNodes; }
-
-  //     virtual int getNNodes() = 0;
-  //     virtual double getTime() = 0;
 
   // CPLEX API
 

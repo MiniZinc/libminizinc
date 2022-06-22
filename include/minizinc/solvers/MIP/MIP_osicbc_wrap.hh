@@ -27,9 +27,7 @@
 // #include <coin/CbcSolver.hpp>
 
 class MIPosicbcWrapper : public MIPWrapper {
-  //     OsiCbcSolverInterface osi;   // deprecated in Cbc 2.9.6
   OsiClpSolverInterface _osi;
-  //     CoinPackedMatrix* matrix = 0;
   int _error;
   std::string _osicbcBuffer;  // [CBC_MESSAGEBUFSIZE];
                               //     string          osicbc_status_buffer; // [CBC_MESSAGEBUFSIZE];
@@ -37,7 +35,6 @@ class MIPosicbcWrapper : public MIPWrapper {
   std::vector<double> _x;
 
   // To add constraints:
-  //     vector<int> rowStarts, columns;
   std::vector<CoinPackedVector> _rows;
   std::vector<double>  // element,
       _rowlb, _rowub;
@@ -100,12 +97,8 @@ public:
 
   void printVersion(std::ostream&);
   void printHelp(std::ostream&);
-  //       Statistics& getStatistics() { return _statistics; }
-
-  //      IloConstraintArray *userCuts, *lazyConstraints;
 
   /// derived should overload and call the ancestor
-  //     virtual void cleanup();
   void openOSICBC() {}
   void closeOSICBC() {}
 
@@ -122,8 +115,6 @@ public:
   /// adding a linear constraint
   void addRow(int nnz, int* rmatind, double* rmatval, LinConType sense, double rhs,
               int mask = MaskConsType_Normal, const std::string& rowName = "") override;
-  /// adding an implication
-  //     virtual void addImpl() = 0;
 
   bool addWarmStart(const std::vector<VarId>& vars, const std::vector<double>& vals) override;
 
@@ -143,29 +134,9 @@ public:
     return _osi.getNumRows();
   }
 
-  //     void setObjUB(double ub) { objUB = ub; }
-  //     void addQPUniform(double c) { qpu = c; } // also sets problem type to MIQP unless c=0
-
   void solve() override;
 
-  /// OUTPUT:
-  const double* getValues() override { return output.x; }
-  double getObjValue() override { return output.objVal; }
-  double getBestBound() override { return output.bestBound; }
-  double getCPUTime() override { return output.dCPUTime; }
-
-  Status getStatus() override { return output.status; }
-  std::string getStatusName() override { return output.statusName; }
-
-  int getNNodes() override { return output.nNodes; }
-  int getNOpen() override { return output.nOpenNodes; }
-
-  //     virtual int getNNodes() = 0;
-  //     virtual double getTime() = 0;
-
 protected:
-  //     OsiSolverInterface& getOsiSolver() { return osi; }
-
   void wrapAssert(bool cond, const std::string& msg);
 
   /// Need to consider the 100 status codes in OSICBC and change with every version? TODO
