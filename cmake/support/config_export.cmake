@@ -17,6 +17,7 @@ file(RELATIVE_PATH REL_CMAKE_DIR "${CMAKE_INSTALL_PREFIX}"
 file(RELATIVE_PATH REL_INCLUDE_DIR "${INSTALL_CMAKE_DIR}"
      "${CMAKE_INSTALL_PREFIX}/include")
 
+set(CONF_DEPENDENCIES "${CONF_DEPENDENCIES}find_dependency(Threads)\n")
 # Add external (static) dependencies
 if(TARGET minizinc_geas)
   install(
@@ -43,6 +44,9 @@ if(TARGET minizinc_osicbc)
     DESTINATION ${REL_CMAKE_DIR}
     COMPONENT dev
   )
+  if(UNIX AND NOT WIN32 AND NOT DEFINED EMSCRIPTEN)
+    set(CONF_DEPENDENCIES "${CONF_DEPENDENCIES}find_dependency(ZLIB)\n")
+  endif()
   set(CONF_DEPENDENCIES "${CONF_DEPENDENCIES}find_dependency(OsiCBC)\n")
 endif()
 
