@@ -1,6 +1,5 @@
 /***
 !Test
-solvers: [gecode, chuffed, cbc]
 expected: !Result
   solution: !Solution
     z: 5

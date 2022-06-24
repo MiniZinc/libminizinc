@@ -14,6 +14,7 @@ solvers:
 - gecode
 - chuffed
 - cbc
+- highs
 type: solve
 ***/
 

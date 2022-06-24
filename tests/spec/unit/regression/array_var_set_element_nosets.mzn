@@ -1,6 +1,6 @@
 /***
 !Test
-solvers: [chuffed, cbc]
+solvers: [chuffed, cbc, highs]
 expected: !Result
   solution: !Solution
     x: 1

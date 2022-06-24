@@ -6,41 +6,36 @@ expected:
     execution_unit_1000_3: 0
     execution_unit_1000_4: 0
     uav1: 0
-    uav2: 3
-    uav3: 2
-    uav4: 1
 - !Result
   solution: !Solution
     execution_unit_1000_3: 1
     execution_unit_1000_4: 1
     uav1: 1
-    uav2: 0
-    uav3: 3
-    uav4: 2
 - !Result
   solution: !Solution
-    execution_unit_1000_3: 0
-    execution_unit_1000_4: 0
-    uav1: 0
-    uav2: 2
-    uav3: 3
-    uav4: 1
+    execution_unit_1000_3: 2
+    execution_unit_1000_4: 2
+    uav1: 2
 - !Result
   solution: !Solution
     execution_unit_1000_3: 3
     execution_unit_1000_4: 3
     uav1: 3
-    uav2: 1
-    uav3: 2
-    uav4: 0
+- !Result
+  solution: !Solution
+    execution_unit_1000_3: 4
+    execution_unit_1000_4: 4
+    uav1: 4
+- !Result
+  solution: !Solution
+    execution_unit_1000_3: 5
+    execution_unit_1000_4: 5
+    uav1: 5
 - !Result
   solution: !Solution
     execution_unit_1000_3: 6
     execution_unit_1000_4: 6
     uav1: 6
-    uav2: 3
-    uav3: 4
-    uav4: 5
 ***/
 
 % Regression test for bug #347: mzn2fzn's FlatZinc optimiser was incorrectly

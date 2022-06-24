@@ -1,6 +1,5 @@
 /***
 !Test
-solvers: [gecode, chuffed, cbc]
 expected: !Result
   solution: !Solution
     conjunction: [true, false, true, false, false, false, true, false, true]

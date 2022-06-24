@@ -1,5 +1,6 @@
 /***
 !Test
+solvers: [gecode, chuffed, cbc]
 expected: !Result
   status: OPTIMAL_SOLUTION
   solution: !Solution

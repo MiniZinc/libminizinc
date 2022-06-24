@@ -2526,7 +2526,7 @@ expected: !Result
 options:
   all_solutions: true
 --- !Test
-solvers: [cbc]
+solvers: [cbc, highs]
 check_against: [gecode]
 expected: !Result
   solution: !Solution {}

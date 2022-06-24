@@ -1,6 +1,6 @@
 /***
 !Test
-solvers: [cbc]
+solvers: [cbc, highs]
 expected: !Result
   solution: !Solution
     K: 11

@@ -1,6 +1,6 @@
 /***
 --- !Test
-solvers: [chuffed, cbc]
+solvers: [chuffed, cbc, highs]
 expected: !Result
   solution: !Solution
     y: !!set {1, 4}

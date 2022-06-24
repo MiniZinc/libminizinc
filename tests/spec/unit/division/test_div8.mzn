@@ -1,6 +1,6 @@
 /***
 !Test
-solvers: [gecode, cbc]
+solvers: [gecode, cbc, highs]
 expected:
 - !Result
   status: SATISFIED

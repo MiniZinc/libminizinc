@@ -3,6 +3,7 @@
 solvers:
 - gecode
 - cbc # Can't check as floats are imprecise
+- highs
 expected: !Result
   status: SATISFIED
   solution: !Solution

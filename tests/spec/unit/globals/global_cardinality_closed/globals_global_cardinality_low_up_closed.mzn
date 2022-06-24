@@ -22,6 +22,9 @@ expected:
 - !Result
   solution: !Solution
     x: [5, 6, 3, 3]
+- !Result
+  solution: !Solution
+    x: [6, 3, 5, 3]
 ***/
 
 include "global_cardinality_closed.mzn";

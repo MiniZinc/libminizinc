@@ -9,6 +9,13 @@ https://github.com/MiniZinc/libminizinc/issues.
 Unreleased
 ~~~~~~~~~~
 
+Changes in interfaces to solvers:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  MiniZinc now includes a solver interface for the [HiGHS](https://www.highs.dev)
+   linear optimisation suite. HiGHS is included by default in the MiniZincIDE
+   package, and available using `--solver highs`.
+
 Changes:
 ^^^^^^^^
 

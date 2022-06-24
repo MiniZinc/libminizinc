@@ -111,7 +111,7 @@ expected: !Result
   - !Solution
     x: [2, 1, 1, 1]
 --- !Test
-solvers: [cbc]
+solvers: [cbc, highs]
 expected:
 - !Result
   solution: !Solution

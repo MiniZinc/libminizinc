@@ -1,6 +1,5 @@
 /***
 !Test
-solvers: [gecode, chuffed, cbc]
 expected: !Result
   solution: !Solution
     addn: [0, -2, -1, 0, 1, 2, -2, -4, -3, -2, -1, 0, -1, -3, -2, -1, 0, 1, 0, -2, -1, 0, 1, 2, 1, -1, 0, 1, 2, 3, 2, 0, 1, 2, 3, 4]

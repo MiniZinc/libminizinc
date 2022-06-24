@@ -61,6 +61,9 @@ expected:
     - 3
     - 1
     - 4
+- !Result
+  solution: !Solution
+    x: [3, 1, 2]
 ***/
 
 % Regression test for bug #70: set2array coercions were not supported.
