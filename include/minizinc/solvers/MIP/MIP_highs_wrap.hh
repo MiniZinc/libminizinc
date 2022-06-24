@@ -96,8 +96,13 @@ public:
   // Get number of linear constraints (matrix rows)
   int getNRows() override { return _highs.getNumRow(); }
 
+  // Method to optimize the current MIP program
   void solve() override;
 
+  // Change variable bounds
+  void setVarBounds(int iVar, double lb, double ub) override {
+    checkHiGHSReturn(_highs.changeColBounds(iVar, lb, ub), "unable to set variable bounds");
+  }
 protected:
   // Convert HiGHSModelStatus to MIPWrapper internal status
   MIPWrapper::Status convertStatus(const HighsModelStatus& model_status) const;
