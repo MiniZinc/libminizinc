@@ -45,6 +45,7 @@ public:
     std::string sExportModel;
     int nTimeout = 0;
 
+    bool flagIntermediate = false;
     double absGap = -1;
     double relGap = 1e-8;
     double intTol = 1e-8;
@@ -70,7 +71,11 @@ public:
                                 MiniZinc::SolverInstanceBase::Options* opt = nullptr);
   static std::string getDescription(FactoryOptions& factoryOpt,
                                     MiniZinc::SolverInstanceBase::Options* opt = nullptr);
-  static std::vector<std::string> getStdFlags() { return {"-p", "-s", "-v", "-f", "-r"}; };
+  static std::vector<std::string> getStdFlags() {
+    return {
+        "-f", "-i", "-p", "-r", "-s", "-v",
+    };
+  };
   static std::vector<std::string> getRequiredFlags(FactoryOptions& factoryOpt) { return {}; };
   static std::vector<std::string> getFactoryFlags() { return {}; };
   static std::vector<std::string> getTags() { return {"mip", "float", "api", "highs"}; };
@@ -103,6 +108,7 @@ public:
   void setVarBounds(int iVar, double lb, double ub) override {
     checkHiGHSReturn(_highs.changeColBounds(iVar, lb, ub), "unable to set variable bounds");
   }
+
 protected:
   // Convert HiGHSModelStatus to MIPWrapper internal status
   MIPWrapper::Status convertStatus(const HighsModelStatus& model_status) const;

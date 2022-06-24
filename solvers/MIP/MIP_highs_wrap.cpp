@@ -52,7 +52,9 @@ bool MIPHiGHSWrapper::Options::processOption(int& i, std::vector<std::string>& a
                                              const std::string& workingDir) {
   MiniZinc::CLOParser cop(i, argv);
   std::string buffer;
-  if (string(argv[i]) == "-f") {  // NOLINT: Allow repeated empty if
+  if (cop.get("-i")) {
+    flagIntermediate = true;
+  } else if (string(argv[i]) == "-f") {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--writeModel", &buffer)) {
     sExportModel = MiniZinc::FileUtils::file_path(buffer, workingDir);
   } else if (cop.get("-p --parallel", &nThreads)) {        // NOLINT: Allow repeated empty if
