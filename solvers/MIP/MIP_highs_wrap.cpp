@@ -194,12 +194,10 @@ MIPWrapper::Status MIPHiGHSWrapper::convertStatus(const HighsModelStatus& model_
     }
     case HighsModelStatus::kObjectiveBound:
     case HighsModelStatus::kObjectiveTarget: {
-      assert(false);
-      return MIPWrapper::ERROR_STATUS;
+      return _highs.getSolution().value_valid ? MIPWrapper::OPT : MIPWrapper::UNSAT;
     }
     case HighsModelStatus::kTimeLimit:
     case HighsModelStatus::kIterationLimit: {
-      // TODO: is this a good check whether a solution has been found?
       if (_highs.getSolution().value_valid) {
         return MIPWrapper::SAT;
       }
