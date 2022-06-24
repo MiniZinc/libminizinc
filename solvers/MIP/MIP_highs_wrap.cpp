@@ -129,7 +129,7 @@ void MIPHiGHSWrapper::doAddVars(size_t n, double* obj, double* lb, double* ub, V
 /// Add a linear constraint
 void MIPHiGHSWrapper::addRow(int nnz, int* rmatind, double* rmatval, LinConType sense, double rhs,
                              int mask, const std::string& rowName) {
-  /// Convert var types:
+  /// Convert linear constraint type
   double rlb = rhs;
   double rub = rhs;
   switch (sense) {
