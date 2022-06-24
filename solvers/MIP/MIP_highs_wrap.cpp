@@ -161,7 +161,8 @@ void MIPHiGHSWrapper::solve() {
   setOutputVariables();
   setOutputAttributes();
 
-  if (cbui.solcbfn != nullptr) {
+  if (cbui.solcbfn != nullptr &&
+      (output.status == MIPWrapper::OPT || output.status == MIPWrapper::SAT)) {
     cbui.solcbfn(output, cbui.psi);
   }
 }
@@ -286,7 +287,12 @@ void MIPHiGHSWrapper::setOptions() {
   }
 }
 
-void MIPHiGHSWrapper::setOutputVariables() { output.x = _highs.getSolution().col_value.data(); }
+void MIPHiGHSWrapper::setOutputVariables() {
+  const HighsSolution& sol = _highs.getSolution();
+  if (sol.value_valid) {
+    output.x = sol.col_value.data();
+  }
+}
 
 void MIPHiGHSWrapper::setOutputAttributes() {
   output.status = convertStatus(_highs.getModelStatus());
