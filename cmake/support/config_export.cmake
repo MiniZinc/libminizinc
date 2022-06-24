@@ -38,6 +38,9 @@ if(TARGET minizinc_gecode)
   endif()
   set(CONF_DEPENDENCIES "${CONF_DEPENDENCIES}find_dependency(Gecode 6.0 COMPONENTS Driver Float Int Kernel Minimodel Search Set Support${_CONF_GIST})\n")
 endif()
+if(TARGET minizinc_highs)
+  set(CONF_DEPENDENCIES "${CONF_DEPENDENCIES}find_dependency(HIGHS)\n")
+endif()
 if(TARGET minizinc_osicbc)
   install(
     FILES cmake/modules/FindOsiCBC.cmake
