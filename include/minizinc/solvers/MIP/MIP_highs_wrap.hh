@@ -114,8 +114,6 @@ protected:
   MIPWrapper::Status convertStatus(const HighsModelStatus& model_status) const;
   // Set HiGHS internal options based on the command line flags given to the solver interface
   void setOptions();
-  // Set variable values in "output" object (called when solution is found)
-  void setOutputVariables();
-  // Set other "output" attributes (called when solution is found)
-  void setOutputAttributes();
+  // Synchronise "output" object with the current solver status
+  void setOutput();
 };

@@ -160,8 +160,7 @@ void MIPHiGHSWrapper::solve() {
   // Actually solve the current model
   checkHiGHSReturn(_highs.run(), "unable to solve model");
 
-  setOutputVariables();
-  setOutputAttributes();
+  setOutput();
 
   if (cbui.solcbfn != nullptr &&
       (output.status == MIPWrapper::OPT || output.status == MIPWrapper::SAT)) {
@@ -289,14 +288,11 @@ void MIPHiGHSWrapper::setOptions() {
   }
 }
 
-void MIPHiGHSWrapper::setOutputVariables() {
-  const HighsSolution& sol = _highs.getSolution();
-  if (sol.value_valid) {
-    output.x = sol.col_value.data();
-  }
-}
+void MIPHiGHSWrapper::setOutput() {
+  output.dWallTime =
+      std::chrono::duration<double>(std::chrono::steady_clock::now() - output.dWallTime0).count();
+  output.dCPUTime = double(std::clock() - output.cCPUTime0) / CLOCKS_PER_SEC;
 
-void MIPHiGHSWrapper::setOutputAttributes() {
   output.status = convertStatus(_highs.getModelStatus());
   output.statusName = _highs.modelStatusToString(_highs.getModelStatus());
 
@@ -304,7 +300,11 @@ void MIPHiGHSWrapper::setOutputAttributes() {
   output.bestBound = _highs.getInfo().mip_dual_bound;
   output.nNodes = static_cast<int>(_highs.getInfo().mip_node_count);
 
-  output.dWallTime =
-      std::chrono::duration<double>(std::chrono::steady_clock::now() - output.dWallTime0).count();
-  output.dCPUTime = double(std::clock() - output.cCPUTime0) / CLOCKS_PER_SEC;
+  const HighsSolution& sol = _highs.getSolution();
+  if (sol.value_valid) {
+    output.x = sol.col_value.data();
+  } else if (output.status == MIPWrapper::OPT || output.status == MIPWrapper::SAT) {
+    assert(false);  // MIP solver status did not match the validity of the solution
+    output.status = MIPWrapper::ERROR_STATUS;
+  }
 }
