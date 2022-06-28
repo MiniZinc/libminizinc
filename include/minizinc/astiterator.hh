@@ -199,7 +199,8 @@ void BottomUpIterator<T>::run(Expression* root) {
             stack.push_back(C(ce->template cast<ArrayAccess>()->v()));
             break;
           case Expression::E_FIELDACCESS:
-            stack.push_back(C(ce->template cast<FieldAccess>()->field()));
+            // TODO: is this ever required? Should be a literal
+            // stack.push_back(C(ce->template cast<FieldAccess>()->field()));
             stack.push_back(C(ce->template cast<FieldAccess>()->v()));
             break;
           case Expression::E_COMP: {
@@ -315,7 +316,8 @@ void TopDownIterator<T>::run(Expression* root) {
         break;
       case Expression::E_FIELDACCESS:
         _t.vFieldAccess(e->template cast<FieldAccess>());
-        stack.push_back(e->template cast<FieldAccess>()->field());
+        // TODO: Is this ever required? Should be a literal
+        // stack.push_back(e->template cast<FieldAccess>()->field());
         stack.push_back(e->template cast<FieldAccess>()->v());
         break;
       case Expression::E_COMP:

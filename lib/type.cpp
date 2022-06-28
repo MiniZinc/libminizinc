@@ -361,15 +361,14 @@ std::string Type::toString(const EnvI& env) const {
     } break;
     case BT_RECORD: {
       oss << "record(";
-      // TupleType* tt = env.getTupleType(*this);
-      // for (size_t i = 0; i < tt->size(); ++i) {
-      //   oss << (*tt)[i].toString(env);
-      //   if (i < tt->size() - 1) {
-      //     oss << ", ";
-      //   }
-      // }
+      RecordType* rt = env.getRecordType(*this);
+      for (size_t i = 0; i < rt->size(); ++i) {
+        oss << (*rt)[i].toString(env) << ": " << rt->fieldName(i);
+        if (i < rt->size() - 1) {
+          oss << ", ";
+        }
+      }
       oss << ")";
-      assert(false);  // TODO: output fields
     } break;
     case BT_BOT:
       oss << "bot";
@@ -429,10 +428,10 @@ std::string Type::simpleToString() const {
       oss << "ann";
       break;
     case BT_TUPLE:
-      oss << "tuple(...)";
+      oss << "tuple(\?\?\?)";
       break;
     case BT_RECORD:
-      oss << "record(...)";
+      oss << "record(\?\?\?)";
       break;
     case BT_BOT:
       oss << "bot";

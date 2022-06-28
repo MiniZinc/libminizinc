@@ -116,14 +116,6 @@ Expression* createAccess(const ParserLocation& loc, Expression* e, const std::ve
   return ret;
 }
 
-bool noTuple(ParserLocation& location, void* parm, Expression* e) {
-  if (e != nullptr && e->isa<ArrayLit>() && e->cast<ArrayLit>()->isTuple()) {
-    yyerror(&location, parm, "tuple not allowed here");
-    return false;
-  }
-  return e != nullptr;
-}
-
 // Variant of definition in lexer.lxx
 IntVal fast_strtointval(const std::string& s) {
   MiniZinc::IntVal x = 0;
@@ -135,6 +127,51 @@ IntVal fast_strtointval(const std::string& s) {
     return false;
   }
   return x;
+}
+
+void parseFieldTail(const ParserLocation& loc, std::vector<Expression*>& parsed, const std::string& tail) {
+  auto it = tail.begin();
+  auto isWS = [&]() {
+    return (*it == ' ' || *it == '\f' || *it == '\xd' || *it == '\t');
+  };
+  while (it != tail.end()) {
+    // skip whitespace and dot
+    while(isWS()) { ++it; }
+    assert(*it == '.'); // otherwise error in the lexer regex
+    ++it;
+    while(isWS()) { ++it; }
+
+    // parse field name
+    auto field_start = it;
+    bool is_num = isdigit(*it);
+    std::string field;
+    if (*it == '\'') {
+      ++field_start;
+      ++it;
+      while(*it != '\'') {
+        ++it;
+        assert(it != tail.end()); // otherwise error in the lexer regex
+      }
+      field = std::string(field_start, it);
+      ++it;
+    } else {
+      while(!isWS() && *it != '.' && it != tail.end()) {
+        is_num = is_num && isdigit(*it);
+        ++it;
+      }
+      field = std::string(field_start, it);
+    }
+
+    // emit field
+    Expression* field_expr = nullptr;
+    if (is_num) {
+      IntVal fieldVal = MiniZinc::fast_strtointval(field);
+      field_expr = IntLit::a(fieldVal);
+    } else {
+      field_expr = new Id(loc, field, nullptr);
+    }
+    parsed.push_back({ new FieldAccess(loc, nullptr, field_expr) });
+  }
 }
 
 }
@@ -953,9 +990,12 @@ base_ti_expr_tail :
       }
     | MZN_RECORD '(' ti_expr_and_id_list ')'
       {
+        for (auto* vd : *$3) {
+          vd->toplevel(false);
+        }
         std::vector<Expression*> tmp($3->begin(), $3->end());
         ArrayLit* al = ArrayLit::constructTuple(@$, tmp);
-        $$ = new TypeInst(@$, Type::record(), nullptr);
+        $$ = new TypeInst(@$, Type::record(), al);
         delete $3;
       }
     | set_expr
@@ -1478,49 +1518,7 @@ access_tail :
       {
         $$=new std::vector<Expression*>();
         std::string tail($1); free($1);
-
-        auto it = tail.begin();
-        auto isWS = [&]() {
-          return (*it == ' ' || *it == '\f' || *it == '\xd' || *it == '\t');
-        };
-        while (it != tail.end()) {
-          // skip whitespace and dot
-          while(isWS()) { ++it; }
-          assert(*it == '.'); // otherwise error in the lexer regex
-          ++it;
-          while(isWS()) { ++it; }
-
-          // parse field name
-          auto field_start = it;
-          bool is_num = isdigit(*it);
-          std::string field;
-          if (*it == '\'') {
-            ++field_start;
-            ++it;
-            while(*it != '\'') {
-              ++it;
-              assert(it != tail.end()); // otherwise error in the lexer regex
-            }
-            field = std::string(field_start, it);
-            ++it;
-          } else {
-            while(!isWS() && *it != '.' && it != tail.end()) {
-              is_num = is_num && isdigit(*it);
-              ++it;
-            }
-            field = std::string(field_start, it);
-          }
-
-          // emit field
-          Expression* field_expr = nullptr;
-          if (is_num) {
-            IntVal fieldVal = MiniZinc::fast_strtointval(field);
-            field_expr = IntLit::a(fieldVal);
-          } else {
-            field_expr = new Id(@$, field, nullptr);
-          }
-          $$->push_back({ new FieldAccess(@$, nullptr, field_expr) });
-        }
+        parseFieldTail(@$, *$$, tail);
       }
     | access_tail MZN_LEFT_BRACKET array_access_expr_list MZN_RIGHT_BRACKET
       {
@@ -1535,15 +1533,7 @@ access_tail :
       {
         $$=$1;
         std::string tail($2); free($2);
-
-        // Find all field accesses
-        std::regex fieldR("[0-9]+");
-        std::smatch field_match;
-        while(std::regex_search(tail, field_match, fieldR)) {
-          IntVal fieldVal = MiniZinc::fast_strtointval(field_match.str());
-          $$->push_back({ new FieldAccess(@$, nullptr, IntLit::a(fieldVal)) });
-          tail = field_match.suffix();
-        }
+        parseFieldTail(@$, *$$, tail);
       }
 
 
@@ -1577,6 +1567,7 @@ record_literal :
       '(' record_field_list_head comma_or_none ')'
       {
         $$ = ArrayLit::constructTuple(@$, *$2);
+        $$->type(Type::record());
         delete($2);
       }
   
@@ -1589,7 +1580,7 @@ record_field_list_head :
 record_field:
       MZN_IDENTIFIER ':' expr
       {
-        $$ = new VarDecl(@$, nullptr, $1, $3);
+        $$ = new VarDecl(@$, new TypeInst(@$, Type()), $1, $3);
         free($1);
       }
 

@@ -12,6 +12,7 @@
 #include <minizinc/ast.hh>
 #include <minizinc/astexception.hh>
 #include <minizinc/astiterator.hh>
+#include <minizinc/aststring.hh>
 #include <minizinc/file_utils.hh>
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/hash.hh>
@@ -1272,7 +1273,7 @@ void TopoSorter::run(EnvI& env, Expression* e) {
     case Expression::E_FIELDACCESS: {
       auto* fa = e->cast<FieldAccess>();
       run(env, fa->v());
-      run(env, fa->field());
+      // IGNORE fa->field(), must be IntLit or field identifier (checked later)
     } break;
     case Expression::E_COMP: {
       auto* ce = e->cast<Comprehension>();
@@ -1765,7 +1766,9 @@ public:
   void vArrayLit(ArrayLit* al) {
     Type ty;
     if (al->isTuple()) {
-      if (al->type().typeId() != Type::COMP_INDEX) {
+      if (al->type().isrecord()) {
+        _env.registerRecordType(al);
+      } else if (al->type().typeId() != Type::COMP_INDEX) {
         _env.registerTupleType(al);
       }
       return;
@@ -1829,6 +1832,14 @@ public:
               throw TypeError(_env, al->loc(), "non-uniform array literal");
             }
             ty = _env.commonTuple(ty, vi->type(), true);
+            if (ty.isbot()) {
+              throw TypeError(_env, al->loc(), "non-uniform array literal");
+            }
+          } else if (vi->type().bt() == Type::BT_RECORD) {
+            if (ty.bt() != Type::BT_RECORD) {
+              throw TypeError(_env, al->loc(), "non-uniform array literal");
+            }
+            ty = _env.commonRecord(ty, vi->type(), true);
             if (ty.isbot()) {
               throw TypeError(_env, al->loc(), "non-uniform array literal");
             }
@@ -2039,29 +2050,54 @@ public:
   }
   /// Visit field access
   void vFieldAccess(FieldAccess* fa) {
-    if (!fa->v()->type().istuple()) {
+    if (!fa->v()->type().istuple() && !fa->v()->type().isrecord()) {
       std::ostringstream oss;
       oss << "field access attempted on expression of type `" << fa->v()->type().toString(_env)
           << "'";
       throw TypeError(_env, fa->loc(), oss.str());
     }
-    if (!fa->field()->type().isint() || !fa->field()->isa<IntLit>()) {
-      throw TypeError(_env, fa->loc(), "field access of a tuple must use an integer literal");
+    if (fa->v()->type().istuple()) {
+      if (!fa->field()->isa<IntLit>()) {
+        throw TypeError(_env, fa->loc(), "field access of a tuple must use an integer literal");
+      }
+      assert(fa->v()->type().typeId() != 0);
+      TupleType* tt = _env.getTupleType(fa->v()->type());
+      IntVal i = fa->field()->cast<IntLit>()->v();
+      if (!i.isFinite() || i < 1 || i.toInt() > tt->size()) {
+        std::ostringstream oss;
+        oss << "unable to access field " << i << " of an expression of type `"
+            << fa->v()->type().toString(_env) << "'. Its fields are between 1 and " << tt->size()
+            << ".";
+        throw TypeError(_env, fa->loc(), oss.str());
+      }
+      Type ty((*tt)[i.toInt() - 1]);
+      assert((!ty.cv()) || fa->v()->type().cv());
+      ty.cv(fa->v()->type().cv());
+      fa->type(ty);
+    } else {
+      // Check if field exists
+      assert(fa->v()->type().isrecord());
+      if (!fa->field()->isa<Id>()) {
+        throw TypeError(_env, fa->loc(), "field access of a record must use a field identifier");
+      }
+      ASTString name = fa->field()->cast<Id>()->str();
+      RecordType* rt = _env.getRecordType(fa->v()->type());
+      auto find = rt->findField(name);
+      if (!find.first) {
+        std::ostringstream oss;
+        oss << "expression of type `" << fa->v()->type().toString(_env)
+            << "' does not have a field named `" << name << "'.";
+        throw TypeError(_env, fa->loc(), oss.str());
+      }
+      // Replace Id with IntLit
+      IntLit* nf = IntLit::a(static_cast<long long>(find.second + 1));
+      fa->field(nf);
+      // Set overall expression type
+      Type ty((*rt)[find.second]);
+      assert((!ty.cv()) || fa->v()->type().cv());
+      ty.cv(fa->v()->type().cv());
+      fa->type(ty);
     }
-    assert(fa->v()->type().typeId() != 0);
-    TupleType* tt = _env.getTupleType(fa->v()->type());
-    IntVal i = fa->field()->cast<IntLit>()->v();
-    if (!i.isFinite() || i < 1 || i.toInt() > tt->size()) {
-      std::ostringstream oss;
-      oss << "unable to access field " << i << " of an expression of type `"
-          << fa->v()->type().toString(_env) << "'. Its fields are between 1 and " << tt->size()
-          << ".";
-      throw TypeError(_env, fa->loc(), oss.str());
-    }
-    Type ty((*tt)[i.toInt() - 1]);
-    assert((!ty.cv()) || fa->v()->type().cv());
-    ty.cv(fa->v()->type().cv());
-    fa->type(ty);
   }
   /// Visit array comprehension
   void vComprehension(Comprehension* c) {
@@ -3060,6 +3096,42 @@ public:
         needsArrayType = false;  // will be registered by registerTupleType
         // Register and cononicalise tuple type
         _env.registerTupleType(ti);
+        tt = ti->type();
+      } else if (ti->type().bt() == Type::BT_RECORD) {
+        if (tt.isOpt()) {
+          throw TypeError(_env, ti->loc(), "opt records are not allowed");
+        }
+
+        // Warning: Do not check TypeInst twice! A cononical record does not abide by the rules that
+        // a user definition abides by (e.g., a tuple might be marked var (because all members are
+        // var) and contain an array (of with var members)).
+        if (ti->type().isvar() && ti->type().typeId() == 0) {
+          auto* dom = ti->domain()->cast<ArrayLit>();
+          // Check if "var" record is allowed
+          for (unsigned int i = 0; i < dom->size(); i++) {
+            auto* tii = (*dom)[i]->cast<VarDecl>();
+            Type field = tii->type();
+            if (field.st() == Type::ST_SET && field.bt() != Type::BT_INT &&
+                field.bt() != Type::BT_TOP) {
+              throw TypeError(_env, ti->loc(),
+                              "var record with set element types other than `int' are not allowed");
+            }
+            if (field.bt() == Type::BT_ANN || field.bt() == Type::BT_STRING) {
+              throw TypeError(_env, ti->loc(),
+                              "var record with " + field.toString(_env) + " types are not allowed");
+            }
+            if (field.dim() != 0) {
+              throw TypeError(_env, ti->loc(), "var record with array types are not allowed");
+            }
+          }
+          // spread var keyword in field types:
+          // var record (X: a, Y: b, ...) -> var tuple(var X: a, var Y: b, ...)
+          ti->mkVar();
+        }
+
+        needsArrayType = false;  // will be registered by registerRecordType
+        // Register and cononicalise record type
+        _env.registerRecordType(ti);
         tt = ti->type();
       } else if (TIId* tiid = ti->domain()->dynamicCast<TIId>()) {
         if (tiid->isEnum()) {

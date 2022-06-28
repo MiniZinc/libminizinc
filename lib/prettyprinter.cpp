@@ -13,11 +13,13 @@
 #include <minizinc/ast.hh>
 #include <minizinc/astexception.hh>
 #include <minizinc/eval_par.hh>
+#include <minizinc/flatten_internal.hh>
 #include <minizinc/gc.hh>
 #include <minizinc/hash.hh>
 #include <minizinc/iter.hh>
 #include <minizinc/model.hh>
 #include <minizinc/prettyprinter.hh>
+#include <minizinc/type.hh>
 
 #include <iomanip>
 #include <limits>
@@ -189,8 +191,37 @@ public:
         case Type::BT_ANN:
           _os << "ann";
           break;
-        case Type::BT_TUPLE:
-          _os << "tuple(...)";
+        case Type::BT_TUPLE: {
+          _os << "tuple(";
+          if (_env != nullptr && type.typeId() != 0) {
+            TupleType* tt = _env->getTupleType(type);
+            for (int i = 0; i < tt->size(); ++i) {
+              p((*tt)[i], nullptr);
+              if (i < tt->size() - 1) {
+                _os << ", ";
+              }
+            }
+          } else {
+            _os << "???";
+          }
+          _os << ")";
+          break;
+        }
+        case Type::BT_RECORD:
+          _os << "record(";
+          if (_env != nullptr && type.typeId() != 0) {
+            RecordType* rt = _env->getRecordType(type);
+            for (int i = 0; i < rt->size(); ++i) {
+              p((*rt)[i], nullptr);
+              _os << ": " << rt->fieldName(i);
+              if (i < rt->size() - 1) {
+                _os << ", ";
+              }
+            }
+          } else {
+            _os << "???";
+          }
+          _os << ")";
           break;
         case Type::BT_BOT:
           _os << "bot";
@@ -203,13 +234,29 @@ public:
           break;
       }
     } else if (const auto* al = e->dynamicCast<ArrayLit>()) {
-      assert(type.bt() == Type::BT_TUPLE);
-      _os << "tuple(";
-      for (size_t i = 0; i < al->size(); ++i) {
-        auto* ti = (*al)[i]->cast<TypeInst>();
-        p(ti);
-        if (i < al->size() - 1) {
-          _os << ", ";
+      assert(type.structBT());
+      _os << (type.bt() == Type::BT_TUPLE ? "tuple(" : "record(");
+      if (type.bt() != Type::BT_RECORD || type.typeId() != 0) {
+        for (size_t i = 0; i < al->size(); ++i) {
+          auto* ti = (*al)[i]->cast<TypeInst>();
+          p(ti);
+          if (type.bt() == Type::BT_RECORD) {
+            _os << ": "
+                << (_env != nullptr ? _env->getRecordType(type)->fieldName(i).c_str() : "???");
+          }
+          if (i < al->size() - 1) {
+            _os << ", ";
+          }
+        }
+      } else {
+        for (size_t i = 0; i < al->size(); ++i) {
+          auto* vd = (*al)[i]->cast<VarDecl>();
+          p(vd->ti());
+          _os << ": ";
+          p(vd->id());
+          if (i < al->size() - 1) {
+            _os << ", ";
+          }
         }
       }
       _os << ")";
@@ -1231,6 +1278,9 @@ Document* tiexpression_to_document(const Type& type, const Expression* e) {
         break;
       case Type::BT_TUPLE:
         dl->addStringToList("tuple(...)");
+        break;
+      case Type::BT_RECORD:
+        dl->addStringToList("record(...)");
         break;
       case Type::BT_BOT:
         dl->addStringToList("bot");

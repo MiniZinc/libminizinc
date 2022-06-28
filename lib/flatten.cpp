@@ -9,8 +9,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <minizinc/ast.hh>
 #include <minizinc/astexception.hh>
 #include <minizinc/astiterator.hh>
+#include <minizinc/aststring.hh>
 #include <minizinc/copy.hh>
 #include <minizinc/eval_par.hh>
 #include <minizinc/flat_exp.hh>
@@ -24,9 +26,13 @@
 #include <minizinc/typecheck.hh>
 #include <minizinc/utils.hh>
 
+#include <algorithm>
+#include <cassert>
 #include <map>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace MiniZinc {
 
@@ -785,6 +791,56 @@ bool TupleType::containsArray(const EnvI& env) const {
     if (ti.bt() == Type::BT_TUPLE && env.getTupleType(ti)->containsArray(env)) {
       return true;
     }
+    if (ti.bt() == Type::BT_RECORD && env.getRecordType(ti)->containsArray(env)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+RecordType::RecordType(const std::vector<std::pair<ASTString, Type>>& fields) {
+  _size = fields.size();
+  for (size_t i = 0; i < _size; ++i) {
+    _fields[i] = fields[i];
+  }
+}
+RecordType* RecordType::a(const std::vector<std::pair<ASTString, Type>>& fields) {
+  RecordType* tt = static_cast<RecordType*>(::malloc(
+      sizeof(RecordType) + sizeof(FieldTup) * (std::max(0, static_cast<int>(fields.size()) - 1))));
+  tt = new (tt) RecordType(fields);
+  return tt;
+}
+bool RecordType::matchesBT(const EnvI& env, const RecordType& other) const {
+  if (other.size() != size()) {
+    return false;
+  }
+  for (size_t i = 0; i < other.size(); ++i) {
+    if (fieldName(i) != other.fieldName(i)) {
+      return false;
+    }
+    const Type& ty = operator[](i);
+    if (ty.bt() != other[i].bt()) {
+      return false;
+    }
+    if (ty.bt() == Type::BT_TUPLE &&
+        !env.getTupleType(ty)->matchesBT(env, *env.getTupleType(other[i]))) {
+      return false;
+    }
+  }
+  return true;
+}
+bool RecordType::containsArray(const EnvI& env) const {
+  for (size_t i = 0; i < size(); ++i) {
+    const Type& ti = operator[](i);
+    if (ti.dim() != 0) {
+      return true;
+    }
+    if (ti.bt() == Type::BT_TUPLE && env.getTupleType(ti)->containsArray(env)) {
+      return true;
+    }
+    if (ti.bt() == Type::BT_RECORD && env.getRecordType(ti)->containsArray(env)) {
+      return true;
+    }
   }
   return false;
 }
@@ -1122,7 +1178,7 @@ unsigned int EnvI::registerArrayEnum(const std::vector<unsigned int>& arrayEnum)
   std::ostringstream oss;
   bool allZero = true;
   for (unsigned int i : arrayEnum) {
-    assert(i <= _enumVarDecls.size() || i <= _tupleTypes.size());
+    assert(i <= _enumVarDecls.size() || i <= _tupleTypes.size() || i <= _recordTypes.size());
     oss << i << ".";
     allZero = allZero && (i == 0);
   }
@@ -1156,6 +1212,7 @@ unsigned int EnvI::registerTupleType(const std::vector<Type>& fields) {
     _tupleTypes.push_back(tt);
     _tupleTypeMap.emplace(std::make_pair(tt, ret));
   } else {
+    TupleType::free(tt);
     ret = it->second;
   }
   return ret + 1;
@@ -1173,6 +1230,8 @@ unsigned int EnvI::registerTupleType(TypeInst* ti) {
     // Register tuple field type when required
     if (tii->type().bt() == Type::BT_TUPLE && tii->type().typeId() == 0) {
       registerTupleType(tii);
+    } else if (tii->type().bt() == Type::BT_RECORD && tii->type().typeId() == 0) {
+      registerRecordType(tii);
     }
 
     fields[i] = tii->type();
@@ -1229,20 +1288,33 @@ unsigned int EnvI::registerTupleType(ArrayLit* tup) {
   return typeId;
 }
 
-TupleType* EnvI::getTupleType(unsigned int i) const {
-  assert(i > 0 && i <= _tupleTypes.size());
-  return _tupleTypes[i - 1];
-}
-
-TupleType* EnvI::getTupleType(Type t) const {
-  assert(t.bt() == Type::BT_TUPLE);
-  unsigned int typeId = t.typeId();
-  assert(typeId != 0);
-  if (t.dim() > 0) {
-    const std::vector<unsigned int>& arrayEnumIds = getArrayEnum(typeId);
-    typeId = arrayEnumIds[arrayEnumIds.size() - 1];
+Type common_type(EnvI& env, Type t1, Type t2) {
+  Type common;
+  if (t1.bt() == Type::BT_TUPLE) {
+    common = t1;
+    if (t1 != t2) {
+      common = env.commonTuple(t1, t2);
+    }
+    return common;
   }
-  return _tupleTypes[typeId - 1];
+  if (t1.bt() == Type::BT_RECORD) {
+    common = t1;
+    if (t1 != t2) {
+      common = env.commonRecord(t1, t2);
+    }
+    return common;
+  }
+  if (Type::btSubtype(env, t2, t1, false)) {
+    common = t1;
+  } else if (Type::btSubtype(env, t1, t2, false)) {
+    common = t2;
+  } else {
+    return Type::bot();
+  }
+  if (t1.typeId() != t2.typeId()) {
+    common.typeId(0);
+  }
+  return common;
 }
 
 Type EnvI::commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim) {
@@ -1267,29 +1339,15 @@ Type EnvI::commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim) {
   }
   TupleType* tt1 = getTupleType(tuple1);
   TupleType* tt2 = getTupleType(tuple2);
-  unsigned int size = std::min(tt1->size(), tt2->size());
+  if (tt1->size() != tt2->size()) {
+    return Type::bot();
+  }
 
-  std::vector<Type> common(size);
-  for (unsigned int i = 0; i < size; i++) {
-    if ((*tt1)[i].bt() == Type::BT_TUPLE) {
-      common[i] = (*tt1)[i];
-      if ((*tt1)[i] != (*tt2)[i]) {
-        common[i] = commonTuple((*tt1)[i], (*tt2)[i]);
-      }
-      if (common[i].typeId() == 0) {
-        return Type::bot();
-      }
-    } else {
-      if (Type::btSubtype(*this, (*tt2)[i], (*tt1)[i], false)) {
-        common[i] = (*tt1)[i];
-      } else if (Type::btSubtype(*this, (*tt1)[i], (*tt2)[i], false)) {
-        common[i] = (*tt2)[i];
-      } else {
-        return Type::bot();
-      }
-      if ((*tt1)[i].typeId() != (*tt2)[i].typeId()) {
-        common[i].typeId(0);
-      }
+  std::vector<Type> common(tt1->size());
+  for (unsigned int i = 0; i < tt1->size(); i++) {
+    common[i] = common_type(*this, (*tt1)[i], (*tt2)[i]);
+    if (common[i].isbot()) {
+      return Type::bot();
     }
   }
   unsigned int typeId = registerTupleType(common);
@@ -1313,6 +1371,68 @@ Type EnvI::commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim) {
   }
   tuple1.typeId(typeId);
   return tuple1;
+}
+
+Type EnvI::commonRecord(Type record1, Type record2, bool ignoreRecord1Dim) {
+  if (record1 == record2) {
+    return record1;
+  }
+  if (record1.isbot() || record2.isbot()) {
+    return Type::bot();
+  }
+
+  // Allow to ignore the dimensions of (in progress) LHS when arrayEnumIds not yet in use
+  int oldDim = record1.dim();
+  if (ignoreRecord1Dim) {
+    unsigned int typeId = record1.typeId();
+    record1.typeId(0);
+    record1.dim(0);
+    record1.typeId(typeId);
+  }
+
+  if (record1.dim() != record2.dim()) {
+    return Type::bot();
+  }
+  RecordType* rt1 = getRecordType(record1);
+  RecordType* rt2 = getRecordType(record2);
+  if (rt1->size() != rt2->size()) {
+    return Type::bot();
+  }
+
+  std::vector<std::pair<ASTString, Type>> common(rt1->size());
+  for (unsigned int i = 0; i < rt1->size(); i++) {
+    ASTString name = rt1->fieldName(i);
+    if (name != rt2->fieldName(i)) {
+      return Type::bot();
+    }
+    Type ct = common_type(*this, (*rt1)[i], (*rt2)[i]);
+    if (ct.isbot()) {
+      return Type::bot();
+    }
+    common[i] = {name, ct};
+  }
+  unsigned int typeId = registerRecordType(common);
+
+  if (record1.dim() > 0) {
+    const std::vector<unsigned int>& arrayEnumIds1 = getArrayEnum(record1.typeId());
+    const std::vector<unsigned int>& arrayEnumIds2 = getArrayEnum(record2.typeId());
+    std::vector<unsigned int> typeIds(record1.dim() + 1);
+    for (unsigned int i = 0; i < record1.dim(); i++) {
+      if (arrayEnumIds1[i] == arrayEnumIds2[i]) {
+        typeIds[i] = arrayEnumIds1[i];
+      } else {
+        typeIds[i] = 0;
+      }
+    }
+    typeIds[record1.dim()] = typeId;
+    typeId = registerArrayEnum(typeIds);
+  }
+  record1.typeId(0);
+  if (ignoreRecord1Dim) {
+    record1.dim(oldDim);
+  }
+  record1.typeId(typeId);
+  return record1;
 }
 
 std::string EnvI::enumToString(unsigned int enumId, int i) {
@@ -1358,6 +1478,139 @@ bool EnvI::isSubtype(const Type& t1, const Type& t2, bool strictEnums) const {
     }
   }
   return true;
+}
+
+struct RecordFieldSort {
+  bool operator()(const VarDecl* a, const VarDecl* b) const {
+    return a->id()->str() < b->id()->str();
+  }
+  bool operator()(const std::pair<ASTString, Type>& a, const std::pair<ASTString, Type>& b) const {
+    return a.first < b.first;
+  }
+};
+
+unsigned int EnvI::registerRecordType(const std::vector<std::pair<ASTString, Type>>& fields) {
+  assert(!fields.empty());
+  assert(std::is_sorted(fields.begin(), fields.end(), RecordFieldSort{}));
+  auto* rt = RecordType::a(fields);
+
+  auto it = _recordTypeMap.find(rt);
+  unsigned int ret;
+  if (it == _recordTypeMap.end()) {
+    ret = static_cast<unsigned int>(_recordTypes.size());
+    _recordTypes.push_back(rt);
+    _recordTypeMap.emplace(std::make_pair(rt, ret));
+  } else {
+    RecordType::free(rt);
+    ret = it->second;
+  }
+  return ret + 1;
+}
+
+unsigned int EnvI::registerRecordType(ArrayLit* rec) {
+  assert(rec->isTuple() && rec->dims() == 1 && rec->type().isrecord());
+  Type ty = rec->type();
+  ty.bt(Type::BT_RECORD);
+  ty.typeId(0);  // Reset any current TypeId
+  std::vector<VarDecl*> fields(rec->size());
+  bool cv = false;
+  bool var = true;
+  for (unsigned int i = 0; i < rec->size(); i++) {
+    fields[i] = (*rec)[i]->cast<VarDecl>();
+    cv = cv || fields[i]->type().isvar() || fields[i]->type().cv();
+    var = var && fields[i]->type().isvar();
+    assert(fields[i]->type().bt() != Type::BT_TUPLE || fields[i]->type().typeId() != 0);
+    assert(fields[i]->type().bt() != Type::BT_RECORD || fields[i]->type().typeId() != 0);
+  }
+
+  // Sort fields (and literal content)
+  std::sort(fields.begin(), fields.end(), RecordFieldSort{});
+  for (unsigned int i = 0; i < rec->size(); i++) {
+    rec->set(i, fields[i]->e());
+  }
+
+  std::vector<std::pair<ASTString, Type>> field_pairs(fields.size());
+  for (unsigned int i = 0; i < fields.size(); i++) {
+    field_pairs[i] = {fields[i]->id()->str(), fields[i]->type()};
+  }
+
+  unsigned int typeId = registerRecordType(field_pairs);
+  assert(ty.dim() == 0);  // Tuple literals do not have array dimensions (otherwise, we should
+                          // register arrayEnumTypes)
+  ty.cv(cv);
+  ty.ti(var ? Type::TI_VAR : Type::TI_PAR);
+  ty.typeId(typeId);
+  rec->type(ty);
+  return typeId;
+}
+
+unsigned int EnvI::registerRecordType(TypeInst* ti) {
+  auto* dom = ti->domain()->cast<ArrayLit>();
+
+  std::vector<std::pair<ASTString, Type>> field_pairs(dom->size());
+  // Register new Record
+  bool cv = false;
+  bool var = true;
+  if (ti->type().typeId() == 0) {
+    std::vector<VarDecl*> fields(dom->size());
+    for (unsigned int i = 0; i < dom->size(); i++) {
+      fields[i] = (*dom)[i]->cast<VarDecl>();
+
+      // Register tuple field type when required
+      if (fields[i]->type().bt() == Type::BT_TUPLE && fields[i]->type().typeId() == 0) {
+        registerTupleType(fields[i]->ti());
+        fields[i]->type(ti->type());
+      } else if (fields[i]->type().bt() == Type::BT_RECORD && fields[i]->type().typeId() == 0) {
+        registerRecordType(fields[i]->ti());
+        fields[i]->type(ti->type());
+      }
+
+      cv = cv || fields[i]->type().isvar() || fields[i]->type().cv();
+      var = var && fields[i]->type().isvar();
+    }
+
+    // Sort fields (and literal content)
+    std::sort(fields.begin(), fields.end(), RecordFieldSort{});
+    for (unsigned int i = 0; i < dom->size(); i++) {
+      dom->set(i, fields[i]->ti());  // TODO: Is this a good idea?
+    }
+
+    for (unsigned int i = 0; i < fields.size(); i++) {
+      field_pairs[i] = {fields[i]->id()->str(), fields[i]->type()};
+    }
+  } else {  // Update already registered Record (dom contains TypeInst, no need to sort)
+    RecordType* rt = getRecordType(ti->type());
+    for (unsigned int i = 0; i < field_pairs.size(); i++) {
+      field_pairs[i] = {rt->fieldName(i), (*dom)[i]->type()};
+
+      cv = cv || (*dom)[i]->type().isvar() || (*dom)[i]->type().cv();
+      var = var && (*dom)[i]->type().isvar();
+    }
+  }
+  // the TI_VAR ti is not processed by this function. This cononicalisation should have been done
+  // during typechecking.
+  assert(ti->type().ti() == Type::TI_PAR || var);
+
+  unsigned int ret = registerRecordType(field_pairs);
+  Type t = ti->type();
+  t.typeId(0);  // Reset any current TypeId
+  t.cv(cv);
+  t.ti(var ? Type::TI_VAR : Type::TI_PAR);
+  // Register an array type when required
+  if (!ti->ranges().empty()) {
+    assert(t.dim() > 0);
+    std::vector<unsigned int> typeIds(ti->ranges().size() + 1);
+    for (unsigned int i = 0; i < ti->ranges().size(); i++) {
+      typeIds[i] = ti->ranges()[i]->type().typeId();
+    }
+    typeIds[ti->ranges().size()] = ret;
+    ret = registerArrayEnum(typeIds);
+  } else {
+    assert(t.dim() == 0);
+  }
+  t.typeId(ret);
+  ti->type(t);
+  return ret;
 }
 
 void EnvI::collectVarDecls(bool b) { _collectVardecls = b; }

@@ -12,6 +12,7 @@
 #pragma once
 
 #include <minizinc/ast.hh>
+#include <minizinc/aststring.hh>
 #include <minizinc/copy.hh>
 #include <minizinc/eval_par.hh>
 #include <minizinc/flatten.hh>
@@ -19,8 +20,10 @@
 #include <minizinc/warning.hh>
 
 #include <atomic>
+#include <cassert>
 #include <cmath>
 #include <random>
+#include <utility>
 
 // TODO: Should this be a command line option? It doesn't seem too expensive
 // #define OUTPUT_CALLTREE
@@ -164,7 +167,7 @@ protected:
 
 public:
   static TupleType* a(const std::vector<Type>& fields);
-  static void free(TupleType* tt) { ::free(tt); }
+  static void free(TupleType* rt) { ::free(rt); }
   ~TupleType() = delete;
 
   size_t size() const { return _size; }
@@ -210,6 +213,80 @@ public:
   };
   struct Equals {
     bool operator()(const TupleType* lhs, const TupleType* rhs) const { return *lhs == *rhs; }
+  };
+};
+
+class RecordType {
+protected:
+  using FieldTup = std::pair<ASTString, Type>;
+  size_t _size;
+  FieldTup _fields[1];  // Resized by TupleType::a
+  RecordType(const std::vector<std::pair<ASTString, Type>>& fields);
+
+public:
+  static RecordType* a(const std::vector<std::pair<ASTString, Type>>& fields);
+  static void free(RecordType* tt) { ::free(tt); }
+
+  size_t size() const { return _size; }
+  Type operator[](size_t i) const {
+    assert(i < size());
+    return _fields[i].second;
+  }
+  ASTString fieldName(size_t i) const {
+    assert(i < size());
+    return _fields[i].first;
+  }
+  std::pair<bool, size_t> findField(const ASTString& name) const {
+    for (size_t i = 0; i < size(); ++i) {
+      if (_fields[i].first == name) {
+        return {true, i};
+      }
+    }
+    return {false, 0};
+  };
+  size_t hash() const {
+    std::size_t seed = _size;
+    for (size_t i = 0; i < _size; ++i) {
+      seed ^= _fields[i].first.hash() + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+      seed ^= _fields[i].second.toInt() + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    }
+    return seed;
+  }
+  bool operator==(const RecordType& rhs) const {
+    if (_size != rhs._size) {
+      return false;
+    }
+    for (int i = 0; i < _size; ++i) {
+      if (_fields[i] != rhs._fields[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool isSubtypeOf(const EnvI& env, const RecordType& other, bool strictEnum) const {
+    if (other.size() != size()) {
+      return false;
+    }
+    for (size_t i = 0; i < other.size(); ++i) {
+      // TODO: Should we allow subtyping based on name?
+      if (fieldName(i) != other.fieldName(i)) {
+        return false;
+      }
+      if (!operator[](i).isSubtypeOf(env, other[i], strictEnum)) {
+        return false;
+      }
+    }
+    return true;
+  }
+  bool matchesBT(const EnvI& env, const RecordType& other) const;
+  bool containsArray(const EnvI& env) const;
+
+  struct Hash {
+    size_t operator()(const RecordType* tt) const { return tt->hash(); }
+  };
+  struct Equals {
+    bool operator()(const RecordType* lhs, const RecordType* rhs) const { return *lhs == *rhs; }
   };
 };
 
@@ -311,6 +388,10 @@ protected:
       TupleTypeMap;
   TupleTypeMap _tupleTypeMap;
   std::vector<TupleType*> _tupleTypes;
+  typedef std::unordered_map<RecordType*, unsigned int, RecordType::Hash, RecordType::Equals>
+      RecordTypeMap;
+  RecordTypeMap _recordTypeMap;
+  std::vector<RecordType*> _recordTypes;
   bool _collectVardecls;
   std::default_random_engine _g;
   std::atomic<bool> _cancel = {false};
@@ -320,11 +401,26 @@ protected:
   /// the TypeInst objects are actively maintained. Use method on TypeInst objects whenever
   /// possible.
   unsigned int registerTupleType(const std::vector<Type>& fields);
+  /// Register record type directly from a list of fields
+  /// WARNING: This method is unsafe unless the tuple is explicitly made canonical and the types of
+  /// the TypeInst objects are actively maintained. Use method on TypeInst objects whenever
+  /// possible.
+  unsigned int registerRecordType(const std::vector<std::pair<ASTString, Type>>& fields);
 
   /// Get the tuple type from the register using a direct key (typeId in Type).
   /// WARNING: This method is unsafe unless the ArrayTypes have been resolved. Use method on Type
   /// whenever possible.
-  TupleType* getTupleType(unsigned int i) const;
+  TupleType* getTupleType(unsigned int i) const {
+    assert(i > 0 && i <= _tupleTypes.size());
+    return _tupleTypes[i - 1];
+  }
+  /// Get the tuple type from the register using a direct key (typeId in Type).
+  /// WARNING: This method is unsafe unless the ArrayTypes have been resolved. Use method on Type
+  /// whenever possible.
+  RecordType* getRecordType(unsigned int i) const {
+    assert(i > 0 && i <= _recordTypes.size());
+    return _recordTypes[i - 1];
+  }
 
 public:
   EnvI(Model* model0, std::ostream& outstream0 = std::cout, std::ostream& errstream0 = std::cerr);
@@ -349,10 +445,40 @@ public:
   // Register a new tuple type from an tuple literal.
   // NOTE: this method updates the type of the ArrayLit object
   unsigned int registerTupleType(ArrayLit* tup);
-  // Get the TupleType for Type with tuple BaseType (safe )
-  TupleType* getTupleType(Type t) const;
-  /// Returns the typeId of a common tuple type or 0 if no such tuple type exists
+  // Get the TupleType for Type with tuple BaseType (safe)
+  TupleType* getTupleType(Type t) const {
+    assert(t.bt() == Type::BT_TUPLE);
+    unsigned int typeId = t.typeId();
+    assert(typeId != 0);
+    if (t.dim() > 0) {
+      const std::vector<unsigned int>& arrayEnumIds = getArrayEnum(typeId);
+      typeId = arrayEnumIds[arrayEnumIds.size() - 1];
+    }
+    return getTupleType(typeId - 1);
+  }
+  // Register a new record type from a TypeInst.
+  // NOTE: this method updates the types of the TypeInst and its domain to become cononical tuple
+  // types.
+  unsigned int registerRecordType(TypeInst* ti);
+  // Register a new tuple type from an tuple literal.
+  // NOTE: this method expects an array with VarDecl objects. It will update the type and content of
+  // the ArrayLit to only contain the expressions.
+  unsigned int registerRecordType(ArrayLit* rec);
+  // Get the TupleType for Type with tuple BaseType (safe)
+  RecordType* getRecordType(Type t) const {
+    assert(t.bt() == Type::BT_RECORD);
+    unsigned int typeId = t.typeId();
+    assert(typeId != 0);
+    if (t.dim() > 0) {
+      const std::vector<unsigned int>& arrayEnumIds = getArrayEnum(typeId);
+      typeId = arrayEnumIds[arrayEnumIds.size() - 1];
+    }
+    return getRecordType(typeId);
+  }
+  /// Returns the type of a common tuple type or bot if no such tuple type exists
   Type commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim = false);
+  /// Returns the type of a common record type or 0b if no such tuple type exists
+  Type commonRecord(Type record1, Type record2, bool ignoreRecord1Dim = false);
   /// Check if tuple can be evaluated (instead of flattened).
   /// (i.e., true if the tuple contains to variable or annotation types)
   bool tupleIsPar(const Type& tuple);

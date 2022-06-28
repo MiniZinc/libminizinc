@@ -17,7 +17,7 @@ constraint single.one == 1;
 constraint not double._a;
 constraint abs(double.'💀') == 1;
 constraint triple.nr1 + 1 == 2;
-constraint triple.n2 \/ true;
+constraint triple.nr2 \/ true;
 constraint 100 <= triple.nr3 /\ triple.nr3 <= 300;
 
 constraint square[1].left == 1;

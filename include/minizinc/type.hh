@@ -228,6 +228,7 @@ public:
   bool isbool() const { return dim() == 0 && st() == ST_PLAIN && bt() == BT_BOOL; }
   bool isstring() const { return isplain() && bt() == BT_STRING; }
   bool istuple() const { return isplain() && bt() == BT_TUPLE; }
+  bool isrecord() const { return isplain() && bt() == BT_RECORD; }
   bool isvar() const { return ti() != TI_PAR; }
   bool isvarbool() const {
     return ti() == TI_VAR && dim() == 0 && st() == ST_PLAIN && bt() == BT_BOOL &&
@@ -255,6 +256,7 @@ public:
     return dim() == 1 && st() == ST_PLAIN && ot() == OT_PRESENT && bt() == BT_BOOL;
   }
   bool isIntSetArray() const { return dim() == 1 && st() == ST_SET && bt() == BT_INT; }
+  bool structBT() const { return bt() == BT_TUPLE || bt() == BT_RECORD; }
 
   bool operator==(const Type& t) const {
     return ti() == t.ti() && bt() == t.bt() && st() == t.st() && ot() == t.ot() &&
