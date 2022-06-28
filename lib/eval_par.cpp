@@ -570,7 +570,7 @@ typename Eval::Val eval_call(EnvI& env, CallClass* ce) {
 }
 
 Expression* eval_fieldaccess(EnvI& env, FieldAccess* fa) {
-  assert(fa->v()->type().bt() == Type::BT_TUPLE);  // TODO: Support for Records
+  assert(fa->v()->type().istuple() || fa->v()->type().isrecord());  // TODO: Support for Records
   auto* al = eval_array_lit(env, fa->v())->dynamicCast<ArrayLit>();
   if (al == nullptr) {
     throw EvalError(env, fa->loc(), "Internal error: could not evaluate structural type");
@@ -630,7 +630,7 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
     case Expression::E_ARRAYLIT:
       return e->cast<ArrayLit>();
     case Expression::E_ARRAYACCESS: {
-      if (e->type().bt() != Type::BT_TUPLE) {
+      if (!e->type().structBT()) {
         throw EvalError(env, e->loc(), "arrays of arrays not supported");
       }
       GCLock lock;

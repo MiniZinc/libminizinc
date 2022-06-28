@@ -15,7 +15,7 @@ namespace MiniZinc {
 
 EE flatten_fieldaccess(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   auto* fa = e->cast<FieldAccess>();
-  assert(fa->v()->type().bt() == Type::BT_TUPLE);
+  assert(fa->v()->type().istuple() || fa->v()->type().isrecord());
 
   // Resolve tuple
   EE ret = flat_exp(env, ctx, fa->v(), nullptr, b);
