@@ -2191,6 +2191,20 @@ std::string b_show_json(EnvI& env, Expression* exp) {
     return oss.str();
   }
   if (auto* al = e->dynamicCast<ArrayLit>()) {
+    std::ostringstream oss;
+    if (al->type().isrecord()) {
+      assert(al->dims() == 1);
+      RecordType* rt = env.getRecordType(al->type());
+      oss << "{";
+      for (size_t i = 0; i < al->size(); ++i) {
+        oss << "\"" << rt->fieldName(i) << "\": " << b_show_json(env, (*al)[i]);
+        if (i < al->size() - 1) {
+          oss << ", ";
+        }
+      }
+      oss << "}";
+      return oss.str();
+    }
     std::vector<unsigned int> dims(al->dims() - 1);
     if (!dims.empty()) {
       dims[0] = al->max(al->dims() - 1) - al->min(al->dims() - 1) + 1;
@@ -2199,8 +2213,6 @@ std::string b_show_json(EnvI& env, Expression* exp) {
     for (int i = 1; i < al->dims() - 1; i++) {
       dims[i] = dims[i - 1] * (al->max(al->dims() - 1 - i) - al->min(al->dims() - 1 - i) + 1);
     }
-
-    std::ostringstream oss;
     oss << "[";
     for (unsigned int i = 0; i < al->size(); i++) {
       for (unsigned int dim : dims) {
