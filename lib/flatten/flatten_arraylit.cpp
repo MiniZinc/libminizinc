@@ -43,7 +43,7 @@ EE flatten_arraylit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDec
     {
       GCLock lock;
       ArrayLit* alr = nullptr;
-      if (al->type().istuple()) {
+      if (al->type().istuple() || al->type().isrecord()) {
         assert(dims.size() == 1 && dims[0].first == 1 && dims[0].second == al->size());
         alr = ArrayLit::constructTuple(al->loc().introduce(), elems);
       } else {

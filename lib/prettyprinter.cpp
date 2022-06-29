@@ -418,7 +418,7 @@ public:
                 _os << "(≡";
                 p(new SetLit(Location().introduce(), parExp));
                 _os << ")";
-              } else if (e->type().istuple()) {
+              } else if (e->type().istuple() || e->type().isrecord()) {
                 auto* parExp = eval_array_lit(*_env, const_cast<Expression*>(e));
                 _os << "(≡ ";
                 p(parExp);

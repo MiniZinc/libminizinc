@@ -247,7 +247,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
         }
       }
     }
-  } else if (ite->type().istuple()) {
+  } else if (ite->type().istuple() || ite->type().isrecord()) {
     noOtherBranches = false;
     std::vector<Expression*> then_in(ite->size());
     for (size_t i = 0; i < ite->size(); ++i) {
@@ -534,7 +534,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
   EE ret;
   if (noOtherBranches) {
     ret.r = env.constants.varTrue->id();
-  } else if (ite->type().istuple()) {
+  } else if (ite->type().istuple() || ite->type().isrecord()) {
     ret.r = bind(env, ctx, r, tupleResult());
   } else {
     ret.r = results.back()()->cast<VarDecl>()->id();

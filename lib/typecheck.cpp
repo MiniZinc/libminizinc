@@ -3094,7 +3094,7 @@ public:
           }
           // spread var keyword in field types:
           // var tuple (X, Y, ...) -> var tuple(var X, var Y, ...)
-          ti->mkVar();
+          ti->mkVar(_env);
         }
 
         needsArrayType = false;  // will be registered by registerTupleType
@@ -3130,7 +3130,7 @@ public:
           }
           // spread var keyword in field types:
           // var record (X: a, Y: b, ...) -> var tuple(var X: a, var Y: b, ...)
-          ti->mkVar();
+          ti->mkVar(_env);
         }
 
         needsArrayType = false;  // will be registered by registerRecordType

@@ -30,11 +30,11 @@ Expression* create_dummy_value(EnvI& env, const Type& t) {
     ret->type(ret_t);
     return ret;
   }
-  if (t.istuple()) {
-    TupleType* tt = env.getTupleType(t);
-    std::vector<Expression*> fields(tt->size());
-    for (size_t i = 0; i < tt->size(); ++i) {
-      fields[i] = create_dummy_value(env, (*tt)[i]);
+  if (t.istuple() || t.isrecord()) {
+    StructType* st = env.getStructType(t);
+    std::vector<Expression*> fields(st->size());
+    for (size_t i = 0; i < st->size(); ++i) {
+      fields[i] = create_dummy_value(env, (*st)[i]);
     }
     Expression* ret = ArrayLit::constructTuple(Location().introduce(), fields);
     ret->type(ret_t);

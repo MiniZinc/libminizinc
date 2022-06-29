@@ -1004,6 +1004,43 @@ void TypeInst::setRanges(const std::vector<TypeInst*>& ranges) {
   rehash();
 }
 
+void TypeInst::mkVar(const EnvI& env) {
+  if (_domain == nullptr || !_domain->isa<ArrayLit>()) {
+    assert(!type().structBT());
+    Type tt = type();
+    tt.ti(Type::TI_VAR);
+    type(tt);
+    return;
+  }
+  auto* al = _domain->cast<ArrayLit>();
+  if (type().bt() == Type::BT_TUPLE) {
+    for (int i = 0; i < al->size(); ++i) {
+      (*al)[i]->cast<TypeInst>()->mkVar(env);
+    }
+  } else {
+    if (type().typeId() != 0) {
+      GCLock lock;
+      RecordType* rt = env.getRecordType(type());
+      for (int i = 0; i < al->size(); ++i) {
+        auto* field_ti = (*al)[i]->cast<TypeInst>();
+        field_ti->mkVar(env);
+        auto* field_vd = new VarDecl(field_ti->loc(), field_ti, rt->fieldName(i));
+        al->set(i, field_vd);
+      }
+    } else {
+      for (int i = 0; i < al->size(); ++i) {
+        auto* field_vd = (*al)[i]->cast<VarDecl>();
+        field_vd->ti()->mkVar(env);
+        field_vd->type(field_vd->ti()->type());
+      }
+    }
+  }
+  // TypeId would now be invalid. Tuple type must be re-registered after mkVar call
+  Type tt = type();
+  tt.typeId(0);
+  tt.ti(Type::TI_VAR);
+  type(tt);
+}
 void TypeInst::setStructDomain(const EnvI& env, const Type& struct_type, bool setTypeAny) {
   GCLock lock;
   StructType* st = env.getStructType(struct_type);
