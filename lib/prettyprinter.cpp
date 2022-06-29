@@ -2335,13 +2335,27 @@ void Printer::print(const Model* m) {
 }  // namespace MiniZinc
 
 void debugprint(const MiniZinc::Expression* e) { std::cerr << *e << "\n"; }
+void debugprint(const MiniZinc::Expression* e, MiniZinc::EnvI& env) {
+  MiniZinc::Printer p(std::cerr, 0, true, &env);
+  p.print(e);
+}
 void debugprint(const MiniZinc::KeepAlive& e) { debugprint(e()); }
+void debugprint(const MiniZinc::KeepAlive& e, MiniZinc::EnvI& env) { debugprint(e(), env); }
 void debugprint(const MiniZinc::Item* i) { std::cerr << *i; }
+void debugprint(const MiniZinc::Item* i, MiniZinc::EnvI& env) {
+  MiniZinc::Printer p(std::cerr, 0, true, &env);
+  p.print(i);
+}
 void debugprint(const MiniZinc::Model* m) {
   MiniZinc::Printer p(std::cerr, 0);
   p.print(m);
 }
+void debugprint(const MiniZinc::Model* m, MiniZinc::EnvI& env) {
+  MiniZinc::Printer p(std::cerr, 0, true, &env);
+  p.print(m);
+}
 void debugprint(const MiniZinc::Location& loc) { std::cerr << loc << std::endl; }
+void debugprint(const MiniZinc::Location& loc, const MiniZinc::EnvI& /*env*/) { debugprint(loc); }
 void debugprint(const MiniZinc::Type& t) { std::cerr << t.simpleToString() << std::endl; }
 void debugprint(const MiniZinc::Type& t, const MiniZinc::EnvI& env) {
   std::cerr << t.toString(env) << std::endl;
@@ -2353,7 +2367,25 @@ void debugprintvec(const std::vector<T>& x) {
     debugprint(xi);
   }
 }
+template <class T>
+void debugprintvec(const std::vector<T>& x, MiniZinc::EnvI& env) {
+  for (const auto& xi : x) {
+    debugprint(xi, env);
+  }
+}
 void debugprint(const std::vector<MiniZinc::Expression*>& x) { debugprintvec(x); }
+void debugprint(const std::vector<MiniZinc::Expression*>& x, MiniZinc::EnvI& env) {
+  debugprintvec(x, env);
+}
 void debugprint(const std::vector<MiniZinc::VarDecl*>& x) { debugprintvec(x); }
+void debugprint(const std::vector<MiniZinc::VarDecl*>& x, MiniZinc::EnvI& env) {
+  debugprintvec(x, env);
+}
 void debugprint(const std::vector<MiniZinc::KeepAlive>& x) { debugprintvec(x); }
+void debugprint(const std::vector<MiniZinc::KeepAlive>& x, MiniZinc::EnvI& env) {
+  debugprintvec(x, env);
+}
 void debugprint(const std::vector<MiniZinc::Item*>& x) { debugprintvec(x); }
+void debugprint(const std::vector<MiniZinc::Item*>& x, MiniZinc::EnvI& env) {
+  debugprintvec(x, env);
+}
