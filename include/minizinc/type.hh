@@ -95,7 +95,7 @@ public:
   /// Set type-inst
   void ti(const Inst& t) {
     // TI of tuple should not be changed after typechecking
-    assert(bt() != BT_TUPLE || typeId() == 0);
+    assert(!structBT() || typeId() == 0);
     _ti = t;
     if (t == TI_VAR) {
       _cv = CV_YES;
@@ -108,7 +108,7 @@ public:
   SetType st() const { return static_cast<SetType>(_st); }
   /// Set set type
   void st(const SetType& s) {
-    assert(s == ST_PLAIN || bt() != BT_TUPLE ||
+    assert(s == ST_PLAIN || !structBT() ||
            typeId() == 0);  // Cannot create "set of tuple" after typechecking
     _st = s;
   }
@@ -117,7 +117,7 @@ public:
   OptType ot() const { return static_cast<OptType>(_ot); }
   /// Set opt type
   void ot(const OptType& o) {
-    assert(o == OT_PRESENT || bt() != BT_TUPLE ||
+    assert(o == OT_PRESENT || structBT() ||
            typeId() == 0);  // Cannot create "opt tuple" after typechecking
     _ot = o;
   }
@@ -260,7 +260,7 @@ public:
 
   bool operator==(const Type& t) const {
     return ti() == t.ti() && bt() == t.bt() && st() == t.st() && ot() == t.ot() &&
-           dim() == t.dim() && (bt() != BT_TUPLE || typeId() == t.typeId());
+           dim() == t.dim() && (!structBT() || typeId() == t.typeId());
   }
   bool operator!=(const Type& t) const { return !this->operator==(t); }
   // protected:

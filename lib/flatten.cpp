@@ -1497,6 +1497,17 @@ unsigned int EnvI::registerRecordType(const std::vector<std::pair<ASTString, Typ
   return ret + 1;
 }
 
+unsigned int EnvI::registerRecordType(const std::vector<Type>& field_type,
+                                      unsigned int recordTypeId) {
+  RecordType* rt = getRecordType(recordTypeId);
+  assert(rt->size() == field_type.size());
+  std::vector<std::pair<ASTString, Type>> fields(rt->size());
+  for (int i = 0; i < fields.size(); ++i) {
+    fields[i] = {rt->fieldName(i), field_type[i]};
+  }
+  return registerRecordType(fields);
+}
+
 unsigned int EnvI::registerRecordType(ArrayLit* rec) {
   assert(rec->isTuple() && rec->dims() == 1 && rec->type().isrecord());
   Type ty = rec->type();

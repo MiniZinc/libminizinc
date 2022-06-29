@@ -28,6 +28,15 @@ bool Type::btSubtype(const EnvI& env, const Type& t0, const Type& t1, bool stric
       }
       return false;
     }
+    if (t0.bt() == BT_RECORD) {
+      if (t0.typeId() == t1.typeId()) {
+        return true;
+      }
+      if (env.getRecordType(t0)->isSubtypeOf(env, *env.getRecordType(t1), strictEnums)) {
+        return true;
+      }
+      return false;
+    }
     if (!strictEnums || t0.dim() != 0 || (t0.typeId() == t1.typeId() || t1.typeId() == 0)) {
       return true;
     }
@@ -43,7 +52,7 @@ bool Type::btSubtype(const EnvI& env, const Type& t0, const Type& t1, bool stric
 }
 
 void Type::mkPar(EnvI& env) {
-  if (bt() != BT_TUPLE) {
+  if (!structBT()) {
     ti(TI_PAR);
     return;
   }
@@ -51,17 +60,16 @@ void Type::mkPar(EnvI& env) {
     return;
   }
   std::vector<unsigned int> arrayEnumIds;
-  TupleType* tt = nullptr;
+  unsigned int tId = typeId();
   if (dim() > 0) {
-    arrayEnumIds = env.getArrayEnum(typeId());
-    tt = env.getTupleType(arrayEnumIds[arrayEnumIds.size() - 1]);
-  } else {
-    tt = env.getTupleType(typeId());
+    arrayEnumIds = env.getArrayEnum(tId);
+    tId = arrayEnumIds[arrayEnumIds.size() - 1];
   }
-  std::vector<Type> pt(tt->size());
-  for (int i = 0; i < tt->size(); ++i) {
-    pt[i] = (*tt)[i];
-    if (pt[i].bt() == BT_TUPLE) {
+  StructType* st = env.getStructType(tId, bt());
+  std::vector<Type> pt(st->size());
+  for (int i = 0; i < st->size(); ++i) {
+    pt[i] = (*st)[i];
+    if (pt[i].structBT()) {
       pt[i].mkPar(env);
     } else {
       pt[i].ti(TI_PAR);
@@ -70,16 +78,18 @@ void Type::mkPar(EnvI& env) {
   typeId(0);
   cv(false);
   ti(TI_PAR);
+  unsigned int regId =
+      bt() == BT_TUPLE ? env.registerTupleType(pt) : env.registerRecordType(pt, tId);
   if (dim() > 0) {
-    arrayEnumIds[arrayEnumIds.size() - 1] = env.registerTupleType(pt);
+    arrayEnumIds[arrayEnumIds.size() - 1] = regId;
     typeId(env.registerArrayEnum(arrayEnumIds));
   } else {
-    typeId(env.registerTupleType(pt));
+    typeId(regId);
   }
 }
 
 void Type::mkVar(EnvI& env) {
-  if (bt() != BT_TUPLE) {
+  if (!structBT()) {
     ti(TI_VAR);
     return;
   }
@@ -87,17 +97,16 @@ void Type::mkVar(EnvI& env) {
     return;
   }
   std::vector<unsigned int> arrayEnumIds;
-  TupleType* tt = nullptr;
+  unsigned int tId = typeId();
   if (dim() > 0) {
-    arrayEnumIds = env.getArrayEnum(typeId());
-    tt = env.getTupleType(arrayEnumIds[arrayEnumIds.size() - 1]);
-  } else {
-    tt = env.getTupleType(typeId());
+    arrayEnumIds = env.getArrayEnum(tId);
+    tId = arrayEnumIds[arrayEnumIds.size() - 1];
   }
-  std::vector<Type> pt(tt->size());
-  for (int i = 0; i < tt->size(); ++i) {
-    pt[i] = (*tt)[i];
-    if (pt[i].bt() == BT_TUPLE) {
+  StructType* st = env.getStructType(tId, bt());
+  std::vector<Type> pt(st->size());
+  for (int i = 0; i < st->size(); ++i) {
+    pt[i] = (*st)[i];
+    if (pt[i].structBT()) {
       pt[i].mkVar(env);
     } else {
       pt[i].ti(TI_VAR);
@@ -106,87 +115,91 @@ void Type::mkVar(EnvI& env) {
   typeId(0);
   cv(true);
   ti(TI_VAR);
+  unsigned int regId =
+      bt() == BT_TUPLE ? env.registerTupleType(pt) : env.registerRecordType(pt, tId);
   if (dim() > 0) {
-    arrayEnumIds[arrayEnumIds.size() - 1] = env.registerTupleType(pt);
+    arrayEnumIds[arrayEnumIds.size() - 1] = regId;
     typeId(env.registerArrayEnum(arrayEnumIds));
   } else {
-    typeId(env.registerTupleType(pt));
+    typeId(regId);
   }
 }
 
 void Type::mkOpt(EnvI& env) {
   assert(st() == Type::ST_PLAIN);
-  if (bt() != BT_TUPLE) {
+  if (!structBT()) {
     ot(OT_OPTIONAL);
     return;
   }
   std::vector<unsigned int> arrayEnumIds;
-  TupleType* tt = nullptr;
+  unsigned int tId = typeId();
   if (dim() > 0) {
-    arrayEnumIds = env.getArrayEnum(typeId());
-    tt = env.getTupleType(arrayEnumIds[arrayEnumIds.size() - 1]);
-  } else {
-    tt = env.getTupleType(typeId());
+    arrayEnumIds = env.getArrayEnum(tId);
+    tId = arrayEnumIds[arrayEnumIds.size() - 1];
   }
-  std::vector<Type> pt(tt->size());
+  StructType* strt = env.getStructType(tId, bt());
+  std::vector<Type> pt(strt->size());
   bool changed = false;
-  for (int i = 0; i < tt->size(); ++i) {
-    pt[i] = (*tt)[i];
-    if (pt[i].bt() == BT_TUPLE) {
+  for (int i = 0; i < strt->size(); ++i) {
+    pt[i] = (*strt)[i];
+    if (pt[i].structBT()) {
       pt[i].mkOpt(env);
-      changed = changed || (*tt)[i].typeId() != pt[i].typeId();
+      changed = changed || (*strt)[i].typeId() != pt[i].typeId();
     } else if (st() == Type::ST_PLAIN) {
       changed = changed || pt[i].ot() != OT_OPTIONAL;
       pt[i].ot(OT_OPTIONAL);
     }
   }
   if (changed) {
+    unsigned int regId =
+        bt() == BT_TUPLE ? env.registerTupleType(pt) : env.registerRecordType(pt, tId);
     if (dim() > 0) {
-      arrayEnumIds[arrayEnumIds.size() - 1] = env.registerTupleType(pt);
+      arrayEnumIds[arrayEnumIds.size() - 1] = regId;
       typeId(env.registerArrayEnum(arrayEnumIds));
     } else {
-      typeId(env.registerTupleType(pt));
+      typeId(regId);
     }
   }
 }
 
 void Type::mkPresent(EnvI& env) {
-  if (bt() != BT_TUPLE) {
+  if (!structBT()) {
     ot(OT_PRESENT);
     return;
   }
   std::vector<unsigned int> arrayEnumIds;
-  TupleType* tt = nullptr;
+  unsigned int tId = typeId();
   if (dim() > 0) {
-    arrayEnumIds = env.getArrayEnum(typeId());
-    tt = env.getTupleType(arrayEnumIds[arrayEnumIds.size() - 1]);
-  } else {
-    tt = env.getTupleType(typeId());
+    arrayEnumIds = env.getArrayEnum(tId);
+    tId = arrayEnumIds[arrayEnumIds.size() - 1];
   }
-  std::vector<Type> pt(tt->size());
+  StructType* st = env.getStructType(tId, bt());
+  std::vector<Type> pt(st->size());
   bool changed = false;
-  for (int i = 0; i < tt->size(); ++i) {
-    pt[i] = (*tt)[i];
-    if (pt[i].bt() == BT_TUPLE) {
+  for (int i = 0; i < st->size(); ++i) {
+    pt[i] = (*st)[i];
+    if (pt[i].structBT()) {
       pt[i].mkOpt(env);
-      changed = changed || (*tt)[i].typeId() != pt[i].typeId();
+      changed = changed || (*st)[i].typeId() != pt[i].typeId();
     } else {
       changed = changed || pt[i].ot() != OT_PRESENT;
       pt[i].ot(OT_PRESENT);
     }
   }
   if (changed) {
+    unsigned int regId =
+        bt() == BT_TUPLE ? env.registerTupleType(pt) : env.registerRecordType(pt, tId);
     if (dim() > 0) {
-      arrayEnumIds[arrayEnumIds.size() - 1] = env.registerTupleType(pt);
+      arrayEnumIds[arrayEnumIds.size() - 1] = regId;
       typeId(env.registerArrayEnum(arrayEnumIds));
     } else {
-      typeId(env.registerTupleType(pt));
+      typeId(regId);
     }
   }
 }
 
 bool Type::decrement(EnvI& env) {
-  if (bt() != BT_TUPLE) {
+  if (!structBT()) {
     if (ot() == Type::OT_OPTIONAL) {
       // this is var or par opt, turn into just par or var
       ot(Type::OT_PRESENT);
@@ -203,19 +216,19 @@ bool Type::decrement(EnvI& env) {
     return false;
   }
   std::vector<unsigned int> arrayEnumIds;
-  TupleType* tt = nullptr;
+  unsigned int tId = typeId();
   if (dim() > 0) {
-    arrayEnumIds = env.getArrayEnum(typeId());
-    tt = env.getTupleType(arrayEnumIds[arrayEnumIds.size() - 1]);
-  } else {
-    tt = env.getTupleType(typeId());
+    arrayEnumIds = env.getArrayEnum(tId);
+    tId = arrayEnumIds[arrayEnumIds.size() - 1];
   }
+  StructType* st = env.getStructType(tId, bt());
+
   // Copy types
-  std::vector<Type> pt(tt->size());
-  for (int i = 0; i < tt->size(); ++i) {
-    pt[i] = (*tt)[i];
+  std::vector<Type> pt(st->size());
+  for (int i = 0; i < st->size(); ++i) {
+    pt[i] = (*st)[i];
   }
-  int changed = static_cast<int>(tt->size()) - 1;
+  int changed = static_cast<int>(st->size()) - 1;
   for (; changed >= 0; --changed) {
     if (pt[changed].decrement(env)) {
       break;
@@ -224,15 +237,17 @@ bool Type::decrement(EnvI& env) {
   if (changed < 0) {
     return false;
   }
-  for (int i = changed + 1; i < tt->size(); ++i) {
+  for (int i = changed + 1; i < st->size(); ++i) {
     pt[i].mkVar(env);
     pt[i].mkOpt(env);
   }
+  unsigned int regId =
+      bt() == BT_TUPLE ? env.registerTupleType(pt) : env.registerRecordType(pt, tId);
   if (dim() > 0) {
-    arrayEnumIds[arrayEnumIds.size() - 1] = env.registerTupleType(pt);
+    arrayEnumIds[arrayEnumIds.size() - 1] = regId;
     typeId(env.registerArrayEnum(arrayEnumIds));
   } else {
-    typeId(env.registerTupleType(pt));
+    typeId(regId);
   }
   return true;
 }

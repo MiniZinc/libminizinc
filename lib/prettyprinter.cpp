@@ -442,6 +442,11 @@ public:
         if (n == 1 && al->min(0) == 1) {
           _os << (al->isTuple() ? "(" : "[");
           for (unsigned int i = 0; i < al->size(); i++) {
+            if (al->type().isrecord()) {
+              _os << (_env != nullptr ? _env->getRecordType(al->type())->fieldName(i).c_str()
+                                      : "???")
+                  << ": ";
+            }
             p((*al)[i]);
             if (i < al->size() - 1) {
               _os << ",";

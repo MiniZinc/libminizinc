@@ -295,6 +295,13 @@ public:
   };
 };
 
+struct TypeList : public StructType {
+  const std::vector<Type>& tt;
+  TypeList(const std::vector<Type>& ts) : tt(ts){};
+  size_t size() const override { return tt.size(); }
+  Type operator[](size_t i) const override { return tt[i]; };
+};
+
 class EnvI {
   friend class Type;
 
@@ -411,6 +418,8 @@ protected:
   /// the TypeInst objects are actively maintained. Use method on TypeInst objects whenever
   /// possible.
   unsigned int registerRecordType(const std::vector<std::pair<ASTString, Type>>& fields);
+  /// Variant of above function which reused the list of names of previous record Type
+  unsigned int registerRecordType(const std::vector<Type>& field_type, unsigned int recordTypeId);
 
   /// Get the tuple type from the register using a direct key (typeId in Type).
   /// WARNING: This method is unsafe unless the ArrayTypes have been resolved. Use method on Type
@@ -425,6 +434,15 @@ protected:
   RecordType* getRecordType(unsigned int i) const {
     assert(i > 0 && i <= _recordTypes.size());
     return _recordTypes[i - 1];
+  }
+  /// Get the struct type from the register using a direct key (typeId in Type).
+  /// WARNING: This method is unsafe unless the ArrayTypes have been resolved. Use method on Type
+  /// whenever possible.
+  StructType* getStructType(unsigned int typeId, Type::BaseType bt) const {
+    if (bt == Type::BT_TUPLE) {
+      return getTupleType(typeId);
+    }
+    return getRecordType(typeId);
   }
 
 public:
@@ -481,10 +499,14 @@ public:
     return getRecordType(typeId);
   }
   StructType* getStructType(Type t) const {
-    if (t.bt() == Type::BT_TUPLE) {
-      return getTupleType(t);
+    assert(t.structBT());
+    unsigned int typeId = t.typeId();
+    assert(typeId != 0);
+    if (t.dim() > 0) {
+      const std::vector<unsigned int>& arrayEnumIds = getArrayEnum(typeId);
+      typeId = arrayEnumIds[arrayEnumIds.size() - 1];
     }
-    return getRecordType(t);
+    return getStructType(typeId, t.bt());
   }
   /// Returns the type of a common tuple type or bot if no such tuple type exists
   Type commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim = false);
