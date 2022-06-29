@@ -117,7 +117,7 @@ public:
   OptType ot() const { return static_cast<OptType>(_ot); }
   /// Set opt type
   void ot(const OptType& o) {
-    assert(o == OT_PRESENT || structBT() ||
+    assert(o == OT_PRESENT || !structBT() ||
            typeId() == 0);  // Cannot create "opt tuple" after typechecking
     _ot = o;
   }
