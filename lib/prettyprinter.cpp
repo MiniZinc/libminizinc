@@ -2338,6 +2338,7 @@ void debugprint(const MiniZinc::Expression* e) { std::cerr << *e << "\n"; }
 void debugprint(const MiniZinc::Expression* e, MiniZinc::EnvI& env) {
   MiniZinc::Printer p(std::cerr, 0, true, &env);
   p.print(e);
+  std::cerr << std::endl;
 }
 void debugprint(const MiniZinc::KeepAlive& e) { debugprint(e()); }
 void debugprint(const MiniZinc::KeepAlive& e, MiniZinc::EnvI& env) { debugprint(e(), env); }
@@ -2345,6 +2346,7 @@ void debugprint(const MiniZinc::Item* i) { std::cerr << *i; }
 void debugprint(const MiniZinc::Item* i, MiniZinc::EnvI& env) {
   MiniZinc::Printer p(std::cerr, 0, true, &env);
   p.print(i);
+  std::cerr << std::endl;
 }
 void debugprint(const MiniZinc::Model* m) {
   MiniZinc::Printer p(std::cerr, 0);
