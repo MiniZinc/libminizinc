@@ -1043,8 +1043,8 @@ bool flatten_dom_constraint(EnvI& env, Ctx& ctx, VarDecl* vd, Expression* dom, V
   return false;
 }
 
-EE rewrite_tuple_op(EnvI& env, Ctx& ctx, Expression* lhs, BinOpType bot, Expression* rhs,
-                    bool doubleNeg, VarDecl* r, VarDecl* b) {
+EE rewrite_struct_op(EnvI& env, Ctx& ctx, Expression* lhs, BinOpType bot, Expression* rhs,
+                     bool doubleNeg, VarDecl* r, VarDecl* b) {
   KeepAlive rewrite = nullptr;
   ArrayLit* tupLHS = eval_array_lit(env, lhs);
   ArrayLit* tupRHS = eval_array_lit(env, rhs);
@@ -1231,8 +1231,8 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
       default:
         break;
     }
-    if (e0.r()->type().istuple() && isBuiltin) {
-      return rewrite_tuple_op(env, ctx, e0.r(), bot, e1.r(), doubleNeg, r, b);
+    if ((e0.r()->type().istuple() || e0.r()->type().isrecord()) && isBuiltin) {
+      return rewrite_struct_op(env, ctx, e0.r(), bot, e1.r(), doubleNeg, r, b);
     }
     args.push_back(e0.r);
     args.push_back(e1.r);
