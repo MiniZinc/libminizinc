@@ -9,18 +9,18 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <minizinc/ast.hh>
 #include <minizinc/astexception.hh>
 #include <minizinc/astiterator.hh>
 #include <minizinc/copy.hh>
 #include <minizinc/eval_par.hh>
 #include <minizinc/flat_exp.hh>
 #include <minizinc/flatten.hh>
+#include <minizinc/flatten_internal.hh>
+#include <minizinc/gc.hh>
 #include <minizinc/hash.hh>
 #include <minizinc/iter.hh>
 #include <minizinc/typecheck.hh>
-
-#include "minizinc/ast.hh"
-#include "minizinc/gc.hh"
 
 #include <cassert>
 #include <cmath>
@@ -1356,27 +1356,22 @@ bool eval_bool(EnvI& env, Expression* e) {
           // follow ann id to value, since there might be indirection (e.g. func argument, see
           // test_equality_of_indirect_annotations.mzn)
           return Expression::equal(follow_id_to_value(lhs), follow_id_to_value(rhs));
-        } else if (lhs->type().istuple()) {
-          assert(rhs->type().bt() == Type::BT_TUPLE);
+        } else if (lhs->type().structBT()) {
+          assert(rhs->type().bt() == lhs->type().bt());
           try {
-            auto tup_is_equal = [&](ArrayLit* tupA, ArrayLit* tupB) {
-              if (tupA->size() != tupB->size()) {
-                return false;  // TODO: consider sub-typing
-              }
-              for (unsigned int i = 0; i < tupA->size(); ++i) {
-                if (!Expression::equal(eval_par(env, (*tupA)[i]), eval_par(env, (*tupB)[i]))) {
+            auto struct_equal = [&](ArrayLit* structA, ArrayLit* structB) {
+              for (unsigned int i = 0; i < structA->size(); ++i) {
+                if (!Expression::equal(eval_par(env, (*structA)[i]),
+                                       eval_par(env, (*structB)[i]))) {
                   return false;
                 }
               }
               return true;
             };
-            auto tup_less = [&](ArrayLit* tupA, ArrayLit* tupB, bool allow_equal) {
-              if (tupA->size() < tupB->size()) {
-                return true;  // TODO: consider sub-typing
-              }
-              for (unsigned int i = 0; i < tupA->size(); ++i) {
-                Expression* parA = eval_par(env, (*tupA)[i]);
-                Expression* parB = eval_par(env, (*tupB)[i]);
+            auto struct_less = [&](ArrayLit* structA, ArrayLit* structB, bool allow_equal) {
+              for (unsigned int i = 0; i < structA->size(); ++i) {
+                Expression* parA = eval_par(env, (*structA)[i]);
+                Expression* parB = eval_par(env, (*structB)[i]);
                 if (!Expression::equal(parA, parB)) {
                   KeepAlive binop;
                   {
@@ -1389,25 +1384,25 @@ bool eval_bool(EnvI& env, Expression* e) {
               }
               return allow_equal;
             };
-            ArrayLit* tup0 = eval_array_lit(env, lhs);
-            ArrayLit* tup1 = eval_array_lit(env, rhs);
+            ArrayLit* struct0 = eval_array_lit(env, lhs);
+            ArrayLit* struct1 = eval_array_lit(env, rhs);
             switch (bo->op()) {
               case BOT_EQ:
-                return tup_is_equal(tup0, tup1);
+                return struct_equal(struct0, struct1);
               case BOT_NQ:
-                return !tup_is_equal(tup0, tup1);
+                return !struct_equal(struct0, struct1);
               case BOT_LE:
-                return tup_less(tup0, tup1, false);
+                return struct_less(struct0, struct1, false);
               case BOT_LQ:
-                return tup_less(tup0, tup1, true);
+                return struct_less(struct0, struct1, true);
               case BOT_GR:
-                return tup_less(tup1, tup0, false);
+                return struct_less(struct1, struct0, false);
               case BOT_GQ:
-                return tup_less(tup1, tup0, true);
+                return struct_less(struct1, struct0, true);
               case BOT_IN: {
                 // Note: tup1 is an array of tuples
-                for (int i = 0; i < tup1->size(); ++i) {
-                  if (tup_is_equal(tup0, (*tup1)[0]->cast<ArrayLit>())) {
+                for (int i = 0; i < struct1->size(); ++i) {
+                  if (struct_equal(struct0, (*struct1)[0]->cast<ArrayLit>())) {
                     return true;
                   }
                 }

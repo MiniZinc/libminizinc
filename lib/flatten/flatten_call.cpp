@@ -33,21 +33,21 @@ Expression* mk_domain_constraint(EnvI& env, Expression* expr, Expression* dom) {
   assert(GC::locked());
   Type t = expr->type().isPar() ? Type::parbool() : Type::varbool();
 
-  if (expr->type().bt() == Type::BT_TUPLE) {
-    TupleType* tt = env.getTupleType(expr->type());
+  if (expr->type().structBT()) {
+    StructType* st = env.getStructType(expr->type());
     auto* dom_al = dom->cast<ArrayLit>();
     std::vector<Expression*> field_expr;
     if (expr->type().dim() > 0) {
       field_expr = field_slices(env, expr);
     } else {
-      field_expr.resize(tt->size());
-      for (int i = 0; i < tt->size(); ++i) {
+      field_expr.resize(st->size());
+      for (int i = 0; i < st->size(); ++i) {
         field_expr[i] = new FieldAccess(Location().introduce(), expr, IntLit::a(i + 1));
-        field_expr[i]->type((*tt)[i]);
+        field_expr[i]->type((*st)[i]);
       }
     }
     std::vector<Expression*> fieldwise;
-    for (int i = 0; i < tt->size(); ++i) {
+    for (int i = 0; i < st->size(); ++i) {
       auto* field_ti = (*dom_al)[i]->cast<TypeInst>();
       if (field_ti->domain() != nullptr) {
         fieldwise.push_back(mk_domain_constraint(env, field_expr[i], field_ti->domain()));
@@ -1139,7 +1139,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
                     args_ee.push_back(ee);
                   }
                 }
-              } else if (curArg->type().bt() == Type::BT_TUPLE) {
+              } else if (curArg->type().structBT()) {
                 GCLock lock;
                 auto* al = curInst->domain()->cast<ArrayLit>();
                 for (long long i = 0; i < al->size(); ++i) {

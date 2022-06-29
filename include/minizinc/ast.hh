@@ -1551,7 +1551,7 @@ public:
   }
   void mkPar() {
     if (_domain == nullptr || !_domain->isa<ArrayLit>()) {
-      assert(type().bt() == Type::BT_TUPLE);
+      assert(type().structBT());
       Type tt = type();
       tt.ti(Type::TI_PAR);
       type(tt);
@@ -1568,7 +1568,7 @@ public:
     type(tt);
   }
   // Set domain of a tuple based on a tuple type object
-  void setTupleDomain(const EnvI& env, const Type& tuple_type, bool setTypeAny = false);
+  void setStructDomain(const EnvI& env, const Type& struct_type, bool setTypeAny = false);
   // Resolve type aliases
   bool resolveAlias(EnvI& env);
 

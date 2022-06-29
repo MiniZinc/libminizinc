@@ -7,12 +7,11 @@
  * license, v. 2.0. if a copy of the mpl was not distributed with this
  * file, you can obtain one at http://mozilla.org/mpl/2.0/. */
 
-#include "minizinc/solvers/MIP/MIP_xpress_wrap.hh"
-
-#include "minizinc/config.hh"
-#include "minizinc/exception.hh"
-#include "minizinc/file_utils.hh"
-#include "minizinc/utils.hh"
+#include <minizinc/config.hh>
+#include <minizinc/exception.hh>
+#include <minizinc/file_utils.hh>
+#include <minizinc/solvers/MIP/MIP_xpress_wrap.hh>
+#include <minizinc/utils.hh>
 
 #include <cmath>
 #include <cstring>

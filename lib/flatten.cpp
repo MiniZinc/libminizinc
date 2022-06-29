@@ -779,19 +779,20 @@ bool TupleType::matchesBT(const EnvI& env, const TupleType& other) const {
         !env.getTupleType(ty)->matchesBT(env, *env.getTupleType(other[i]))) {
       return false;
     }
+    if (ty.bt() == Type::BT_RECORD &&
+        !env.getRecordType(ty)->matchesBT(env, *env.getRecordType(other[i]))) {
+      return false;
+    }
   }
   return true;
 }
-bool TupleType::containsArray(const EnvI& env) const {
+bool StructType::containsArray(const EnvI& env) const {
   for (size_t i = 0; i < size(); ++i) {
     const Type& ti = operator[](i);
     if (ti.dim() != 0) {
       return true;
     }
-    if (ti.bt() == Type::BT_TUPLE && env.getTupleType(ti)->containsArray(env)) {
-      return true;
-    }
-    if (ti.bt() == Type::BT_RECORD && env.getRecordType(ti)->containsArray(env)) {
+    if (ti.structBT() && env.getStructType(ti)->containsArray(env)) {
       return true;
     }
   }
@@ -826,23 +827,12 @@ bool RecordType::matchesBT(const EnvI& env, const RecordType& other) const {
         !env.getTupleType(ty)->matchesBT(env, *env.getTupleType(other[i]))) {
       return false;
     }
+    if (ty.bt() == Type::BT_RECORD &&
+        !env.getRecordType(ty)->matchesBT(env, *env.getRecordType(other[i]))) {
+      return false;
+    }
   }
   return true;
-}
-bool RecordType::containsArray(const EnvI& env) const {
-  for (size_t i = 0; i < size(); ++i) {
-    const Type& ti = operator[](i);
-    if (ti.dim() != 0) {
-      return true;
-    }
-    if (ti.bt() == Type::BT_TUPLE && env.getTupleType(ti)->containsArray(env)) {
-      return true;
-    }
-    if (ti.bt() == Type::BT_RECORD && env.getRecordType(ti)->containsArray(env)) {
-      return true;
-    }
-  }
-  return false;
 }
 
 EnvI::EnvI(Model* model0, std::ostream& outstream0, std::ostream& errstream0)
@@ -3243,7 +3233,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
       }
       case Expression::E_FIELDACCESS: {
         auto* fa = e->cast<FieldAccess>();
-        assert(fa->v()->type().bt() == Type::BT_TUPLE);  // TODO: Support for Records
+        assert(fa->v()->type().structBT());
 
         assert(fa->field()->isa<IntLit>());
         IntVal i = fa->field()->cast<IntLit>()->v();
@@ -4809,7 +4799,7 @@ void oldflatzinc(Env& e) {
   // Mark annotations and optional variables for removal, and clear flags
   for (auto& vdi : m->vardecls()) {
     if (vdi.e()->type().ot() == Type::OT_OPTIONAL || vdi.e()->type().bt() == Type::BT_ANN ||
-        vdi.e()->type().bt() == Type::BT_TUPLE) {
+        vdi.e()->type().structBT()) {
       vdi.remove();
     }
   }
@@ -5129,18 +5119,18 @@ FlatModelStatistics statistics(Env& m) {
 
 std::vector<Expression*> field_slices(EnvI& env, Expression* arrExpr) {
   assert(GC::locked());
-  assert(arrExpr->type().bt() == Type::BT_TUPLE && arrExpr->type().dim() > 0);
+  assert(arrExpr->type().structBT() && arrExpr->type().dim() > 0);
   ArrayLit* al = eval_array_lit(env, arrExpr);
 
-  TupleType* tt = env.getTupleType(al->type());
+  StructType* st = env.getStructType(al->type());
   std::vector<std::pair<int, int>> dims(al->dims());
   for (size_t i = 0; i < al->dims(); i++) {
     dims[i] = std::make_pair(al->min(i), al->max(i));
   }
 
-  std::vector<Expression*> field_al(tt->size());
-  for (int i = 0; i < tt->size(); ++i) {
-    Type field_ty = (*tt)[i];
+  std::vector<Expression*> field_al(st->size());
+  for (int i = 0; i < st->size(); ++i) {
+    Type field_ty = (*st)[i];
     // TODO: This could be done efficiently using slicing (if we change the memory layout for
     // arrays of tuples)
     GCLock lock;

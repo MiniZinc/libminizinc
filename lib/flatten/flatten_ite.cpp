@@ -66,13 +66,13 @@ void classify_conjunct(EnvI& env, Expression* e, IdMap<int>& eq_occurrences,
   other_branches.push_back(e);
 }
 
-Expression* ite_tuple_split(EnvI& env, Type ty, const std::vector<Expression*>& then_in,
-                            Expression* else_in, std::vector<KeepAlive>& results,
-                            std::vector<std::vector<KeepAlive>>& e_then,
-                            std::vector<KeepAlive>& e_else) {
-  TupleType* tt = env.getTupleType(ty);
+Expression* ite_struct_split(EnvI& env, Type ty, const std::vector<Expression*>& then_in,
+                             Expression* else_in, std::vector<KeepAlive>& results,
+                             std::vector<std::vector<KeepAlive>>& e_then,
+                             std::vector<KeepAlive>& e_else) {
+  StructType* st = env.getStructType(ty);
   GCLock lock;
-  std::vector<Expression*> tupleResult(tt->size());
+  std::vector<Expression*> tupleResult(st->size());
 
   std::vector<VarDecl*> then_decl(then_in.size());
   for (int i = 0; i < then_in.size(); ++i) {
@@ -84,9 +84,9 @@ Expression* ite_tuple_split(EnvI& env, Type ty, const std::vector<Expression*>& 
                                 new TypeInst(Location().introduce(), else_in->type(), nullptr),
                                 env.genId(), else_in);
 
-  for (int i = 0; i < tt->size(); ++i) {
-    Type field = (*tt)[i];
-    if (field.bt() == Type::BT_TUPLE) {
+  for (int i = 0; i < st->size(); ++i) {
+    Type field = (*st)[i];
+    if (field.structBT()) {
       std::vector<Expression*> f_then_in(then_decl.size());
       for (int j = 0; j < then_decl.size(); ++j) {
         f_then_in[j] =
@@ -95,7 +95,7 @@ Expression* ite_tuple_split(EnvI& env, Type ty, const std::vector<Expression*>& 
       }
       Expression* f_else_in =
           new FieldAccess(Location().introduce(), else_decl->id(), IntLit::a(i + 1));
-      tupleResult[i] = ite_tuple_split(env, field, f_then_in, f_else_in, results, e_then, e_else);
+      tupleResult[i] = ite_struct_split(env, field, f_then_in, f_else_in, results, e_then, e_else);
     } else {
       VarDecl* fieldRes =
           new_vardecl(env, Ctx(), new TypeInst(Location().introduce(), field, nullptr), nullptr,
@@ -254,7 +254,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
       then_in[i] = ite->thenExpr(i);
     }
     tupleResult =
-        ite_tuple_split(env, ite->type(), then_in, ite->elseExpr(), results, e_then, e_else);
+        ite_struct_split(env, ite->type(), then_in, ite->elseExpr(), results, e_then, e_else);
   } else {
     noOtherBranches = false;
     results.emplace_back(r);

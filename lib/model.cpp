@@ -30,6 +30,10 @@ Model::FnEntry::FnEntry(EnvI& env, FunctionI* fi0)
       env.registerTupleType(fi->param(i)->ti());
       t[i] = fi->param(i)->ti()->type();
       fi->param(i)->type(t[i]);
+    } else if (t[i].bt() == Type::BT_RECORD && t[i].typeId() == 0) {
+      env.registerRecordType(fi->param(i)->ti());
+      t[i] = fi->param(i)->ti()->type();
+      fi->param(i)->type(t[i]);
     }
     isPolymorphic |= checkPoly(env, t[i]);
   }
@@ -39,10 +43,10 @@ bool Model::FnEntry::checkPoly(const EnvI& env, const Type& t) {
   if (t.bt() == Type::BT_TOP) {
     return true;
   }
-  if (t.bt() == Type::BT_TUPLE) {
-    TupleType* tt = env.getTupleType(t);
-    for (size_t i = 0; i < tt->size(); ++i) {
-      if (checkPoly(env, (*tt)[i])) {
+  if (t.structBT()) {
+    StructType* st = env.getStructType(t);
+    for (size_t i = 0; i < st->size(); ++i) {
+      if (checkPoly(env, (*st)[i])) {
         return true;
       }
     }
@@ -309,7 +313,7 @@ void TypeInst::collectTypeIds(std::unordered_map<ASTString, size_t>& seen_tiids,
         info.pbt = pbt_join(info.pbt, pbt_from_type(ti->type()));
         info.t.push_back(&ti->_type);
       }
-    } else if (ti->type().bt() == Type::BT_TUPLE) {
+    } else if (ti->type().structBT()) {
       size_t size = seen_tiids.size();
       ti->collectTypeIds(seen_tiids, type_ids);
       if (size < seen_tiids.size()) {
@@ -371,6 +375,9 @@ void Model::addPolymorphicInstances(EnvI& env, Model::FnEntry& fe, std::vector<F
           cur.t[i] = (*tis)[i]->type();
           if (cur.t[i].bt() == Type::BT_TUPLE && cur.t[i].typeId() == 0) {
             env.registerTupleType((*tis)[i]->cast<TypeInst>());
+            cur.t[i] = (*tis)[i]->type();
+          } else if (cur.t[i].bt() == Type::BT_RECORD && cur.t[i].typeId() == 0) {
+            env.registerRecordType((*tis)[i]->cast<TypeInst>());
             cur.t[i] = (*tis)[i]->type();
           }
         }
@@ -662,7 +669,7 @@ void Model::fixFnMap() {
   for (auto& it : m->_fnmap) {
     for (auto& i : it.second) {
       for (unsigned int j = 0; j < i.t.size(); j++) {
-        if (i.t[j].isunknown() || i.t[j].bt() == Type::BT_TUPLE) {
+        if (i.t[j].isunknown() || i.t[j].structBT()) {
           i.t[j] = i.fi->param(j)->type();
         }
       }
@@ -717,7 +724,7 @@ void Model::checkFnValid(EnvI& env, std::vector<TypeError>& errors) {
       }
       for (int i = 0; i < fi->paramCount(); ++i) {
         const Type& t = fi->param(i)->type();
-        if (t.isOpt() || t.bt() == Type::BT_TUPLE || t.bt() == Type::BT_TOP) {
+        if (t.isOpt() || t.structBT() || t.bt() == Type::BT_TOP) {
           errors.emplace_back(
               env, fi->param(i)->loc(),
               "FlatZinc builtins are not allowed to have arguments of type " + t.toString(env));

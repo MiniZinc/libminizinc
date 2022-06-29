@@ -1498,7 +1498,9 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
   auto sameBT = [&]() {
     return e->type().bt() == funarg_t.bt() &&
            (e->type().bt() != Type::BT_TUPLE ||
-            env.getTupleType(e->type())->matchesBT(env, *env.getTupleType(funarg_t)));
+            env.getTupleType(e->type())->matchesBT(env, *env.getTupleType(funarg_t))) &&
+           (e->type().bt() != Type::BT_RECORD ||
+            env.getRecordType(e->type())->matchesBT(env, *env.getRecordType(funarg_t)));
   };
   if (e->type().dim() == funarg_t.dim() &&
       (funarg_t.bt() == Type::BT_BOT || funarg_t.bt() == Type::BT_TOP ||
@@ -1527,10 +1529,10 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
   if (funarg_t.bt() == Type::BT_TOP || sameBT() || e->type().bt() == Type::BT_BOT) {
     return e;
   }
-  if (e->type().bt() == Type::BT_TUPLE && funarg_t.bt() == Type::BT_TUPLE &&
+  if (e->type().structBT() && e->type().bt() == funarg_t.bt() &&
       e->type().dim() == funarg_t.dim()) {
-    TupleType* current = env.getTupleType(e->type());
-    TupleType* intended = env.getTupleType(funarg_t);
+    StructType* current = env.getStructType(e->type());
+    StructType* intended = env.getStructType(funarg_t);
     if (intended->size() == current->size()) {
       // Directly add coercions in Array Literals
       if (auto* al = e->dynamicCast<ArrayLit>()) {
@@ -1565,7 +1567,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
       Expression* ident = e;
       if (!ident->isa<Id>()) {
         auto* vd = new VarDecl(e->loc(), new TypeInst(e->loc().introduce(), e->type()), 1, e);
-        vd->ti()->setTupleDomain(env, e->type());
+        vd->ti()->setStructDomain(env, e->type());
         vd->toplevel(false);
         vd->type(e->type());
         let_bindings.push_back(vd);
@@ -1581,7 +1583,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
         array1d->decl(m->matchFn(env, array1d, false, true));
         auto* vd_array1d =
             new VarDecl(e->loc(), new TypeInst(e->loc().introduce(), ty1d), 2, array1d);
-        vd_array1d->ti()->setTupleDomain(env, ty1d);
+        vd_array1d->ti()->setStructDomain(env, ty1d);
         vd_array1d->toplevel(false);
         let_bindings.push_back(vd_array1d);
 
@@ -1990,8 +1992,7 @@ public:
     int n_dimensions = 0;
     bool isVarAccess = false;
     bool isSlice = false;
-    bool containsArray =
-        tt.bt() == Type::BT_TUPLE && _env.getTupleType(aa->v()->type())->containsArray(_env);
+    bool containsArray = tt.structBT() && _env.getStructType(aa->v()->type())->containsArray(_env);
     for (unsigned int i = 0; i < aa->idx().size(); i++) {
       Expression* aai = aa->idx()[i];
       if (aai->isa<AnonVar>()) {
@@ -2032,10 +2033,11 @@ public:
                   (tt.bt() == Type::BT_ANN ? "ann" : "string"));
         }
         if (containsArray) {
-          throw TypeError(
-              _env, aai->loc(),
-              "array access using a variable is not supported for array of a tuple type which "
-              "contain an array.");
+          std::ostringstream oss;
+          oss << "array access using a variable is not supported for array of a "
+              << (tt.bt() == Type::BT_TUPLE ? "tuple" : "record")
+              << " tuple type which contain an array.";
+          throw TypeError(_env, aai->loc(), oss.str());
         }
       }
       unsigned int typeId = tt.typeId();
@@ -2440,7 +2442,7 @@ public:
       if (tret.dim() > 0) {
         throw TypeError(_env, ite->loc(), "conditional with var condition cannot have array type");
       }
-      if (tret.bt() == Type::BT_TUPLE && _env.getTupleType(tret)->containsArray(_env)) {
+      if (tret.structBT() && _env.getStructType(tret)->containsArray(_env)) {
         throw TypeError(
             _env, ite->loc(),
             "conditional with var condition cannot have a tuple type that contains an array");
@@ -2904,16 +2906,17 @@ public:
         if (vd->type().any() || vd->type().isunknown()) {
           vd->ti()->type(vet);
           vd->type(vet);
-          if (vdt.any() && vet.dim() > 0) {
-            GCLock lock;
-            std::vector<TypeInst*> ranges(vet.dim());
-            for (unsigned int i = 0; i < vet.dim(); i++) {
-              ranges[i] = new TypeInst(Location().introduce(), Type::parint());
+          if (vdt.any()) {
+            if (vet.structBT()) {
+              vd->ti()->setStructDomain(_env, vet);
+            } else if (vet.dim() > 0) {
+              GCLock lock;
+              std::vector<TypeInst*> ranges(vet.dim());
+              for (unsigned int i = 0; i < vet.dim(); i++) {
+                ranges[i] = new TypeInst(Location().introduce(), Type::parint());
+              }
+              vd->ti()->setRanges(ranges);
             }
-            vd->ti()->setRanges(ranges);
-          }
-          if (vdt.any() && vet.bt() == Type::BT_TUPLE) {
-            vd->ti()->setTupleDomain(_env, vet);
           }
         } else if (!_env.isSubtype(vet, vdt, true)) {
           if (vet == Type::bot(1) && vd->e()->isa<ArrayLit>() &&
@@ -3726,7 +3729,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
             } else {
               ti_map.insert({tiid->v(), t});
             }
-          } else if (ti->type().bt() == Type::BT_TUPLE) {
+          } else if (ti->type().structBT()) {
             auto* al = ti->domain()->cast<ArrayLit>();
             for (size_t i = 0; i < al->size(); ++i) {
               checkTIId((*al)[i]->cast<TypeInst>(), t);
@@ -4232,6 +4235,19 @@ void output_var_desc_json(Env& env, TypeInst* ti, std::ostream& os, bool extra =
     }
     os << "]";
   };
+  const auto record_types = [&]() {
+    auto* dom = ti->domain()->cast<ArrayLit>();
+    auto* rt = env.envi().getRecordType(ti->type());
+    os << ", \"field_types\" : {";
+    for (size_t i = 0; i < dom->size(); ++i) {
+      os << "\"" << rt->fieldName(i) << "\": ";
+      output_var_desc_json(env, (*dom)[i]->cast<TypeInst>(), os, extra);
+      if (i < dom->size() - 1) {
+        os << ", ";
+      }
+    }
+    os << "}";
+  };
   if (ti->type().dim() > 0) {
     os << ", \"dim\" : " << ti->type().dim();
 
@@ -4251,13 +4267,15 @@ void output_var_desc_json(Env& env, TypeInst* ti, std::ostream& os, bool extra =
       os << "]";
 
       if (ti->type().typeId() > 0) {
-        const std::vector<unsigned int>& enumIds = env.envi().getArrayEnum(ti->type().typeId());
-        if (enumIds.back() > 0) {
+        const std::vector<unsigned int>& typeIds = env.envi().getArrayEnum(ti->type().typeId());
+        if (typeIds.back() > 0) {
           if (ti->type().bt() == Type::BT_TUPLE) {
             tuple_types();
+          } else if (ti->type().bt() == Type::BT_RECORD) {
+            record_types();
           } else {
             assert(ti->type().bt() == Type::BT_INT);
-            os << ", \"enum_type\" : \"" << *env.envi().getEnum(enumIds.back())->e()->id() << "\"";
+            os << ", \"enum_type\" : \"" << *env.envi().getEnum(typeIds.back())->e()->id() << "\"";
           }
         }
       }
@@ -4267,6 +4285,8 @@ void output_var_desc_json(Env& env, TypeInst* ti, std::ostream& os, bool extra =
       if (ti->type().typeId() > 0) {
         if (ti->type().bt() == Type::BT_TUPLE) {
           tuple_types();
+        } else if (ti->type().bt() == Type::BT_RECORD) {
+          record_types();
         } else {
           assert(ti->type().bt() == Type::BT_INT);
           os << ", \"enum_type\" : \"" << *env.envi().getEnum(ti->type().typeId())->e()->id()

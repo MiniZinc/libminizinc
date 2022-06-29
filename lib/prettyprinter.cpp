@@ -1293,13 +1293,28 @@ Document* tiexpression_to_document(const Type& type, const Expression* e) {
         break;
     }
   } else if (const auto* al = e->dynamicCast<ArrayLit>()) {
-    assert(type.bt() == Type::BT_TUPLE);
-    dl->addStringToList("tuple(");
-    for (size_t i = 0; i < al->size(); ++i) {
-      auto* ti = (*al)[i]->cast<TypeInst>();
-      dl->addDocumentToList(expression_to_document(ti));
-      if (i < al->size() - 1) {
-        dl->addStringToList(", ");
+    assert(type.structBT());
+    dl->addStringToList(type.bt() == Type::BT_TUPLE ? "tuple(" : "record(");
+    if (type.bt() != Type::BT_RECORD || type.typeId() != 0) {
+      for (size_t i = 0; i < al->size(); ++i) {
+        auto* ti = (*al)[i]->cast<TypeInst>();
+        dl->addDocumentToList(expression_to_document(ti));
+        if (type.bt() == Type::BT_RECORD) {
+          dl->addStringToList(": ???");  // TODO: Is there access to an environment?
+        }
+        if (i < al->size() - 1) {
+          dl->addStringToList(", ");
+        }
+      }
+    } else {
+      for (size_t i = 0; i < al->size(); ++i) {
+        auto* vd = (*al)[i]->cast<VarDecl>();
+        dl->addDocumentToList(expression_to_document(vd->ti()));
+        dl->addStringToList(": ");
+        dl->addDocumentToList(expression_to_document(vd->id()));
+        if (i < al->size() - 1) {
+          dl->addStringToList(", ");
+        }
       }
     }
     dl->addStringToList(")");

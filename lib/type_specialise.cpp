@@ -576,7 +576,7 @@ public:
         } else if (concrete_type.bt() == Type::BT_TUPLE) {
           TupleType* ctt = env.getTupleType(concrete_type);
           // Create new TypeInst domain for tuple argument
-          ti->setTupleDomain(env, concrete_type, true);
+          ti->setStructDomain(env, concrete_type, true);
           tupleWalkTIMap(env, ti_map, ti, ctt, (*tg.tup)[i]);
         } else {
           auto enumId = concrete_type.typeId();

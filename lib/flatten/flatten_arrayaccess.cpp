@@ -261,33 +261,33 @@ flatten_arrayaccess:
       ret.b = conj(env, b, ctx, ees);
       ret.r = bind(env, ctx, r, ka());
     }
-  } else if (aa->type().istuple()) {
+  } else if (aa->type().structBT()) {
     // x[i], where x is an array of tuples, and i is an index variable
     // Strategy: create/flatten a seperate array access for each field, combine to new tuple literal
-    assert(eev.r()->type().bt() == Type::BT_TUPLE);
+    assert(eev.r()->type().bt() == aa->type().bt());
 
     std::vector<Expression*> idx(aa->idx().size());
     for (size_t i = 0; i < aa->idx().size(); ++i) {
       idx[i] = ees[i].r();
     }
 
-    TupleType* res_tt = env.getTupleType(aa->type());
+    StructType* res_st = env.getStructType(aa->type());
 
     // Construct field based array access expressions
-    std::vector<KeepAlive> field_aa(res_tt->size());
+    std::vector<KeepAlive> field_aa(res_st->size());
     {
       GCLock lock;
       std::vector<Expression*> field_al = field_slices(env, eev.r());
-      assert(res_tt->size() == field_al.size());
-      for (int i = 0; i < res_tt->size(); ++i) {
+      assert(res_st->size() == field_al.size());
+      for (int i = 0; i < res_st->size(); ++i) {
         field_aa[i] = new ArrayAccess(aa->loc().introduce(), field_al[i], idx);
-        field_aa[i]()->type((*res_tt)[i]);
+        field_aa[i]()->type((*res_st)[i]);
       }
     }
     // Flatten field based array access expressions
     // WARNING: Expressions stored in field_res, rely on being also in ees to be kept alive
-    std::vector<Expression*> field_res(res_tt->size());
-    for (int i = 0; i < res_tt->size(); ++i) {
+    std::vector<Expression*> field_res(res_st->size());
+    for (int i = 0; i < res_st->size(); ++i) {
       // TODO: Does the context need to be changed? Are 'r' and 'b' correct?
       EE ee = flat_exp(env, ctx, field_aa[i](), nullptr, b);
       field_res[i] = ee.r();

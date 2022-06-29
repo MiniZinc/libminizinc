@@ -159,7 +159,14 @@ protected:
   }
 };
 
-class TupleType {
+class StructType {
+public:
+  virtual size_t size() const = 0;
+  virtual Type operator[](size_t i) const = 0;
+  bool containsArray(const EnvI& env) const;
+};
+
+class TupleType : public StructType {
 protected:
   size_t _size;
   Type _fields[1];  // Resized by TupleType::a
@@ -170,8 +177,8 @@ public:
   static void free(TupleType* rt) { ::free(rt); }
   ~TupleType() = delete;
 
-  size_t size() const { return _size; }
-  Type operator[](size_t i) const {
+  size_t size() const override { return _size; }
+  Type operator[](size_t i) const override {
     assert(i < size());
     return _fields[i];
   }
@@ -206,7 +213,6 @@ public:
     return true;
   }
   bool matchesBT(const EnvI& env, const TupleType& other) const;
-  bool containsArray(const EnvI& env) const;
 
   struct Hash {
     size_t operator()(const TupleType* tt) const { return tt->hash(); }
@@ -216,7 +222,7 @@ public:
   };
 };
 
-class RecordType {
+class RecordType : public StructType {
 protected:
   using FieldTup = std::pair<ASTString, Type>;
   size_t _size;
@@ -227,8 +233,8 @@ public:
   static RecordType* a(const std::vector<std::pair<ASTString, Type>>& fields);
   static void free(RecordType* tt) { ::free(tt); }
 
-  size_t size() const { return _size; }
-  Type operator[](size_t i) const {
+  size_t size() const override { return _size; }
+  Type operator[](size_t i) const override {
     assert(i < size());
     return _fields[i].second;
   }
@@ -280,7 +286,6 @@ public:
     return true;
   }
   bool matchesBT(const EnvI& env, const RecordType& other) const;
-  bool containsArray(const EnvI& env) const;
 
   struct Hash {
     size_t operator()(const RecordType* tt) const { return tt->hash(); }
@@ -454,7 +459,7 @@ public:
       const std::vector<unsigned int>& arrayEnumIds = getArrayEnum(typeId);
       typeId = arrayEnumIds[arrayEnumIds.size() - 1];
     }
-    return getTupleType(typeId - 1);
+    return getTupleType(typeId);
   }
   // Register a new record type from a TypeInst.
   // NOTE: this method updates the types of the TypeInst and its domain to become cononical tuple
@@ -474,6 +479,12 @@ public:
       typeId = arrayEnumIds[arrayEnumIds.size() - 1];
     }
     return getRecordType(typeId);
+  }
+  StructType* getStructType(Type t) const {
+    if (t.bt() == Type::BT_TUPLE) {
+      return getTupleType(t);
+    }
+    return getRecordType(t);
   }
   /// Returns the type of a common tuple type or bot if no such tuple type exists
   Type commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim = false);

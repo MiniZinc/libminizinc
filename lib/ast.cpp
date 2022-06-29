@@ -1004,18 +1004,18 @@ void TypeInst::setRanges(const std::vector<TypeInst*>& ranges) {
   rehash();
 }
 
-void TypeInst::setTupleDomain(const EnvI& env, const Type& tuple_type, bool setTypeAny) {
+void TypeInst::setStructDomain(const EnvI& env, const Type& struct_type, bool setTypeAny) {
   GCLock lock;
-  TupleType* tt = env.getTupleType(tuple_type);
-  std::vector<Expression*> field_ti(tt->size());
-  for (int i = 0; i < tt->size(); ++i) {
-    Type tti = (*tt)[i];
+  StructType* st = env.getStructType(struct_type);
+  std::vector<Expression*> field_ti(st->size());
+  for (int i = 0; i < st->size(); ++i) {
+    Type tti = (*st)[i];
     if (setTypeAny) {
       tti.any(true);
     }
     field_ti[i] = new TypeInst(loc().introduce(), tti);
-    if (tti.bt() == Type::BT_TUPLE) {
-      field_ti[i]->cast<TypeInst>()->setTupleDomain(env, tti);
+    if (tti.structBT()) {
+      field_ti[i]->cast<TypeInst>()->setStructDomain(env, tti);
     }
   }
   if (ranges().size() != type().dim()) {
@@ -1041,13 +1041,13 @@ bool TypeInst::resolveAlias(EnvI& env) {
   auto* alias = domain()->cast<Id>()->decl()->e()->cast<TypeInst>();
   Type ntype = alias->type();
   if (type().tiExplicit()) {
-    if (ntype.bt() == Type::BT_TUPLE && ntype.ti() != type().ti()) {
+    if (ntype.structBT() && ntype.ti() != type().ti()) {
       ntype.typeId(0);
     }
     ntype.ti(type().ti());
   }
   if (type().otExplicit()) {
-    if (ntype.bt() == Type::BT_TUPLE && ntype.ot() != type().ot()) {
+    if (ntype.structBT() && ntype.ot() != type().ot()) {
       ntype.typeId(0);
     }
     ntype.ot(type().ot());
@@ -1216,11 +1216,11 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
             it->second.first.mkOpt(env);
           }
         }
-      } else if (cur.second.bt() == Type::BT_TUPLE) {
+      } else if (cur.second.structBT()) {
         auto* al = tii->domain()->cast<ArrayLit>();
-        TupleType* tiit_tt = env.getTupleType(cur.second);
+        StructType* tiit_st = env.getStructType(cur.second);
         for (size_t i = 0; i < al->size(); ++i) {
-          stack.emplace_back((*al)[i]->cast<TypeInst>(), (*tiit_tt)[i]);
+          stack.emplace_back((*al)[i]->cast<TypeInst>(), (*tiit_st)[i]);
         }
       }
     }

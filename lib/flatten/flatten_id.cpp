@@ -145,7 +145,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
                  (vd->ti()->domain()->cast<SetLit>()->isv() != nullptr) &&
                  vd->ti()->domain()->cast<SetLit>()->isv()->card() == 1) {
         rete = IntLit::a(vd->ti()->domain()->cast<SetLit>()->isv()->min());
-      } else if (vd->ti()->type().bt() == Type::BT_TUPLE) {
+      } else if (vd->ti()->type().structBT()) {
         auto* fieldsti = vd->ti()->domain()->cast<ArrayLit>();
         std::vector<Expression*> elems(fieldsti->size());
         for (size_t i = 0; i < fieldsti->size(); ++i) {
@@ -210,7 +210,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
         auto* vti = new TypeInst(Location().introduce(), tt, vd->ti()->domain());
         VarDecl* nvd = new_vardecl(env, Ctx(), vti, nullptr, vd, nullptr);
         elems[i] = nvd->id();
-        if (tt.bt() == Type::BT_TUPLE) {
+        if (tt.structBT()) {
           elems[i] =
               flatten_id(env, ctx, nvd->id(), nullptr, env.constants.varTrue, doNotFollowChains)
                   .r();
@@ -274,7 +274,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
     }
     // Add reverse mapper for tuple var decls
     // TODO: This only has to happen on first flatten_id call.
-    if (vd->type().istuple() && vd->e() != nullptr) {
+    if ((vd->type().istuple() || vd->type().isrecord()) && vd->e() != nullptr) {
       Expression* lit = follow_id(vd->e());
       assert(lit->isa<ArrayLit>());
       env.reverseMappers.insert(vd->id(), lit);
