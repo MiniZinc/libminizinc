@@ -1472,10 +1472,10 @@ bool EnvI::isSubtype(const Type& t1, const Type& t2, bool strictEnums) const {
 
 struct RecordFieldSort {
   bool operator()(const VarDecl* a, const VarDecl* b) const {
-    return a->id()->str() < b->id()->str();
+    return std::strcmp(a->id()->str().c_str(), b->id()->str().c_str()) < 0;
   }
   bool operator()(const std::pair<ASTString, Type>& a, const std::pair<ASTString, Type>& b) const {
-    return a.first < b.first;
+    return std::strcmp(a.first.c_str(), b.first.c_str()) < 0;
   }
 };
 
