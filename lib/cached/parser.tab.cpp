@@ -172,14 +172,6 @@ Expression* createAccess(const ParserLocation& loc, Expression* e, const std::ve
   return ret;
 }
 
-bool noTuple(ParserLocation& location, void* parm, Expression* e) {
-  if (e != nullptr && e->isa<ArrayLit>() && e->cast<ArrayLit>()->isTuple()) {
-    yyerror(&location, parm, "tuple not allowed here");
-    return false;
-  }
-  return e != nullptr;
-}
-
 // Variant of definition in lexer.lxx
 IntVal fast_strtointval(const std::string& s) {
   MiniZinc::IntVal x = 0;
@@ -191,6 +183,51 @@ IntVal fast_strtointval(const std::string& s) {
     return false;
   }
   return x;
+}
+
+void parseFieldTail(const ParserLocation& loc, std::vector<Expression*>& parsed, const std::string& tail) {
+  auto it = tail.begin();
+  auto isWS = [&]() {
+    return (*it == ' ' || *it == '\f' || *it == '\xd' || *it == '\t');
+  };
+  while (it != tail.end()) {
+    // skip whitespace and dot
+    while(isWS()) { ++it; }
+    assert(*it == '.'); // otherwise error in the lexer regex
+    ++it;
+    while(isWS()) { ++it; }
+
+    // parse field name
+    auto field_start = it;
+    bool is_num = isdigit(*it);
+    std::string field;
+    if (*it == '\'') {
+      ++field_start;
+      ++it;
+      while(*it != '\'') {
+        ++it;
+        assert(it != tail.end()); // otherwise error in the lexer regex
+      }
+      field = std::string(field_start, it);
+      ++it;
+    } else {
+      while(!isWS() && *it != '.' && it != tail.end()) {
+        is_num = is_num && isdigit(*it);
+        ++it;
+      }
+      field = std::string(field_start, it);
+    }
+
+    // emit field
+    Expression* field_expr = nullptr;
+    if (is_num) {
+      IntVal fieldVal = MiniZinc::fast_strtointval(field);
+      field_expr = IntLit::a(fieldVal);
+    } else {
+      field_expr = new Id(loc, field, nullptr);
+    }
+    parsed.push_back({ new FieldAccess(loc, nullptr, field_expr) });
+  }
 }
 
 }
@@ -867,51 +904,51 @@ static const yytype_uint8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,   335,   335,   337,   339,   342,   351,   360,   369,   378,
-     380,   383,   391,   400,   400,   402,   418,   422,   424,   426,
-     427,   429,   431,   433,   435,   437,   440,   440,   440,   441,
-     441,   441,   441,   441,   442,   445,   468,   477,   484,   494,
-     512,   526,   538,   542,   551,   556,   562,   569,   570,   574,
-     582,   583,   587,   591,   597,   599,   606,   611,   616,   623,
-     625,   634,   645,   656,   667,   680,   694,   710,   723,   733,
-     734,   744,   745,   750,   751,   753,   758,   759,   763,   774,
-     786,   786,   787,   787,   790,   792,   796,   806,   810,   812,
-     815,   819,   821,   825,   826,   832,   841,   844,   853,   865,
-     878,   886,   896,   909,   923,   927,   932,   933,   937,   939,
-     941,   943,   945,   947,   954,   961,   963,   968,   974,   977,
-     979,   983,   985,   987,   989,   991,   994,   997,   999,  1005,
-    1006,  1008,  1010,  1012,  1014,  1023,  1025,  1027,  1029,  1031,
-    1033,  1035,  1037,  1039,  1041,  1043,  1045,  1047,  1049,  1051,
-    1060,  1062,  1064,  1066,  1068,  1070,  1072,  1074,  1076,  1078,
-    1083,  1088,  1093,  1098,  1103,  1108,  1113,  1119,  1125,  1127,
-    1140,  1141,  1143,  1145,  1147,  1149,  1151,  1153,  1155,  1157,
-    1159,  1161,  1163,  1165,  1167,  1169,  1171,  1173,  1175,  1177,
-    1179,  1188,  1190,  1192,  1194,  1196,  1198,  1200,  1202,  1204,
-    1206,  1208,  1210,  1212,  1214,  1216,  1225,  1227,  1229,  1231,
-    1233,  1235,  1237,  1239,  1241,  1243,  1248,  1253,  1258,  1263,
-    1268,  1273,  1278,  1283,  1289,  1291,  1298,  1310,  1312,  1316,
-    1318,  1320,  1322,  1324,  1326,  1329,  1331,  1334,  1336,  1339,
-    1341,  1344,  1346,  1348,  1350,  1352,  1354,  1356,  1358,  1360,
-    1362,  1364,  1365,  1368,  1370,  1373,  1374,  1377,  1379,  1382,
-    1383,  1386,  1388,  1391,  1392,  1395,  1397,  1400,  1401,  1404,
-    1406,  1409,  1410,  1413,  1415,  1418,  1419,  1420,  1423,  1424,
-    1427,  1428,  1431,  1433,  1436,  1437,  1440,  1442,  1447,  1449,
-    1455,  1460,  1468,  1477,  1525,  1534,  1551,  1553,  1558,  1563,
-    1577,  1584,  1586,  1590,  1597,  1603,  1606,  1609,  1611,  1613,
-    1619,  1621,  1623,  1631,  1633,  1636,  1639,  1642,  1644,  1646,
-    1648,  1652,  1654,  1701,  1703,  1764,  1804,  1807,  1812,  1819,
-    1824,  1827,  1830,  1840,  1852,  1863,  1866,  1870,  1881,  1892,
-    1911,  1918,  1922,  1925,  1929,  1940,  1960,  1967,  1983,  1984,
-    1988,  1990,  1992,  1994,  1996,  1998,  2000,  2002,  2004,  2006,
-    2008,  2010,  2012,  2014,  2016,  2018,  2020,  2022,  2024,  2026,
-    2028,  2030,  2032,  2034,  2036,  2038,  2040,  2042,  2046,  2054,
-    2086,  2088,  2090,  2091,  2111,  2165,  2185,  2240,  2243,  2249,
-    2255,  2257,  2261,  2263,  2270,  2279,  2281,  2289,  2291,  2300,
-    2300,  2303,  2311,  2322,  2323,  2326,  2328,  2330,  2334,  2338,
-    2342,  2344,  2346,  2348,  2350,  2352,  2354,  2356,  2358,  2360,
-    2362,  2364,  2366,  2368,  2370,  2372,  2374,  2376,  2378,  2380,
-    2382,  2384,  2386,  2388,  2390,  2392,  2394,  2396,  2398,  2400,
-    2402,  2404,  2406,  2408
+       0,   372,   372,   374,   376,   379,   388,   397,   406,   415,
+     417,   420,   428,   437,   437,   439,   455,   459,   461,   463,
+     464,   466,   468,   470,   472,   474,   477,   477,   477,   478,
+     478,   478,   478,   478,   479,   482,   505,   514,   521,   531,
+     549,   563,   575,   579,   588,   593,   599,   606,   607,   611,
+     619,   620,   624,   628,   634,   636,   643,   648,   653,   660,
+     662,   671,   682,   693,   704,   717,   731,   747,   760,   770,
+     771,   781,   782,   787,   788,   790,   795,   796,   800,   811,
+     823,   823,   824,   824,   827,   829,   833,   843,   847,   849,
+     852,   856,   858,   862,   863,   869,   878,   881,   890,   902,
+     915,   923,   933,   946,   960,   964,   969,   970,   974,   976,
+     978,   980,   982,   984,   991,  1001,  1003,  1008,  1014,  1017,
+    1019,  1023,  1025,  1027,  1029,  1031,  1034,  1037,  1039,  1045,
+    1046,  1048,  1050,  1052,  1054,  1063,  1065,  1067,  1069,  1071,
+    1073,  1075,  1077,  1079,  1081,  1083,  1085,  1087,  1089,  1091,
+    1100,  1102,  1104,  1106,  1108,  1110,  1112,  1114,  1116,  1118,
+    1123,  1128,  1133,  1138,  1143,  1148,  1153,  1159,  1165,  1167,
+    1180,  1181,  1183,  1185,  1187,  1189,  1191,  1193,  1195,  1197,
+    1199,  1201,  1203,  1205,  1207,  1209,  1211,  1213,  1215,  1217,
+    1219,  1228,  1230,  1232,  1234,  1236,  1238,  1240,  1242,  1244,
+    1246,  1248,  1250,  1252,  1254,  1256,  1265,  1267,  1269,  1271,
+    1273,  1275,  1277,  1279,  1281,  1283,  1288,  1293,  1298,  1303,
+    1308,  1313,  1318,  1323,  1329,  1331,  1338,  1350,  1352,  1356,
+    1358,  1360,  1362,  1364,  1366,  1369,  1371,  1374,  1376,  1379,
+    1381,  1384,  1386,  1388,  1390,  1392,  1394,  1396,  1398,  1400,
+    1402,  1404,  1405,  1408,  1410,  1413,  1414,  1417,  1419,  1422,
+    1423,  1426,  1428,  1431,  1432,  1435,  1437,  1440,  1441,  1444,
+    1446,  1449,  1450,  1453,  1455,  1458,  1459,  1460,  1463,  1464,
+    1467,  1468,  1471,  1473,  1476,  1477,  1480,  1482,  1487,  1489,
+    1495,  1500,  1508,  1517,  1523,  1532,  1541,  1543,  1548,  1553,
+    1567,  1575,  1577,  1581,  1588,  1594,  1597,  1600,  1602,  1604,
+    1610,  1612,  1614,  1622,  1624,  1627,  1630,  1633,  1635,  1637,
+    1639,  1643,  1645,  1692,  1694,  1755,  1795,  1798,  1803,  1810,
+    1815,  1818,  1821,  1831,  1843,  1854,  1857,  1861,  1872,  1883,
+    1902,  1909,  1913,  1916,  1920,  1931,  1951,  1958,  1974,  1975,
+    1979,  1981,  1983,  1985,  1987,  1989,  1991,  1993,  1995,  1997,
+    1999,  2001,  2003,  2005,  2007,  2009,  2011,  2013,  2015,  2017,
+    2019,  2021,  2023,  2025,  2027,  2029,  2031,  2033,  2037,  2045,
+    2077,  2079,  2081,  2082,  2102,  2156,  2176,  2231,  2234,  2240,
+    2246,  2248,  2252,  2254,  2261,  2270,  2272,  2280,  2282,  2291,
+    2291,  2294,  2302,  2313,  2314,  2317,  2319,  2321,  2325,  2329,
+    2333,  2335,  2337,  2339,  2341,  2343,  2345,  2347,  2349,  2351,
+    2353,  2355,  2357,  2359,  2361,  2363,  2365,  2367,  2369,  2371,
+    2373,  2375,  2377,  2379,  2381,  2383,  2385,  2387,  2389,  2391,
+    2393,  2395,  2397,  2399
 };
 #endif
 
@@ -4649,9 +4686,12 @@ yyreduce:
 
   case 114: /* base_ti_expr_tail: "record" '(' ti_expr_and_id_list ')'  */
       {
+        for (auto* vd : *(yyvsp[-1].vardeclexprs)) {
+          vd->toplevel(false);
+        }
         std::vector<Expression*> tmp((yyvsp[-1].vardeclexprs)->begin(), (yyvsp[-1].vardeclexprs)->end());
         ArrayLit* al = ArrayLit::constructTuple((yyloc), tmp);
-        (yyval.tiexpr) = new TypeInst((yyloc), Type::record(), nullptr);
+        (yyval.tiexpr) = new TypeInst((yyloc), Type::record(), al);
         delete (yyvsp[-1].vardeclexprs);
       }
     break;
@@ -5460,49 +5500,7 @@ yyreduce:
       {
         (yyval.expressions1d)=new std::vector<Expression*>();
         std::string tail((yyvsp[0].sValue)); free((yyvsp[0].sValue));
-
-        auto it = tail.begin();
-        auto isWS = [&]() {
-          return (*it == ' ' || *it == '\f' || *it == '\xd' || *it == '\t');
-        };
-        while (it != tail.end()) {
-          // skip whitespace and dot
-          while(isWS()) { ++it; }
-          assert(*it == '.'); // otherwise error in the lexer regex
-          ++it;
-          while(isWS()) { ++it; }
-
-          // parse field name
-          auto field_start = it;
-          bool is_num = isdigit(*it);
-          std::string field;
-          if (*it == '\'') {
-            ++field_start;
-            ++it;
-            while(*it != '\'') {
-              ++it;
-              assert(it != tail.end()); // otherwise error in the lexer regex
-            }
-            field = std::string(field_start, it);
-            ++it;
-          } else {
-            while(!isWS() && *it != '.' && it != tail.end()) {
-              is_num = is_num && isdigit(*it);
-              ++it;
-            }
-            field = std::string(field_start, it);
-          }
-
-          // emit field
-          Expression* field_expr = nullptr;
-          if (is_num) {
-            IntVal fieldVal = MiniZinc::fast_strtointval(field);
-            field_expr = IntLit::a(fieldVal);
-          } else {
-            field_expr = new Id((yyloc), field, nullptr);
-          }
-          (yyval.expressions1d)->push_back({ new FieldAccess((yyloc), nullptr, field_expr) });
-        }
+        parseFieldTail((yyloc), *(yyval.expressions1d), tail);
       }
     break;
 
@@ -5521,15 +5519,7 @@ yyreduce:
       {
         (yyval.expressions1d)=(yyvsp[-1].expressions1d);
         std::string tail((yyvsp[0].sValue)); free((yyvsp[0].sValue));
-
-        // Find all field accesses
-        std::regex fieldR("[0-9]+");
-        std::smatch field_match;
-        while(std::regex_search(tail, field_match, fieldR)) {
-          IntVal fieldVal = MiniZinc::fast_strtointval(field_match.str());
-          (yyval.expressions1d)->push_back({ new FieldAccess((yyloc), nullptr, IntLit::a(fieldVal)) });
-          tail = field_match.suffix();
-        }
+        parseFieldTail((yyloc), *(yyval.expressions1d), tail);
       }
     break;
 
@@ -5566,6 +5556,7 @@ yyreduce:
   case 300: /* record_literal: '(' record_field_list_head comma_or_none ')'  */
       {
         (yyval.expression) = ArrayLit::constructTuple((yyloc), *(yyvsp[-2].expressions1d));
+        (yyval.expression)->type(Type::record());
         delete((yyvsp[-2].expressions1d));
       }
     break;
@@ -5580,7 +5571,7 @@ yyreduce:
 
   case 303: /* record_field: "identifier" ':' expr  */
       {
-        (yyval.vardeclexpr) = new VarDecl((yyloc), nullptr, (yyvsp[-2].sValue), (yyvsp[0].expression));
+        (yyval.vardeclexpr) = new VarDecl((yyloc), new TypeInst((yyloc), Type()), (yyvsp[-2].sValue), (yyvsp[0].expression));
         free((yyvsp[-2].sValue));
       }
     break;
