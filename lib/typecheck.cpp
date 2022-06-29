@@ -2036,7 +2036,7 @@ public:
           std::ostringstream oss;
           oss << "array access using a variable is not supported for array of a "
               << (tt.bt() == Type::BT_TUPLE ? "tuple" : "record")
-              << " tuple type which contain an array.";
+              << " type which contain an array.";
           throw TypeError(_env, aai->loc(), oss.str());
         }
       }
@@ -2443,9 +2443,10 @@ public:
         throw TypeError(_env, ite->loc(), "conditional with var condition cannot have array type");
       }
       if (tret.structBT() && _env.getStructType(tret)->containsArray(_env)) {
-        throw TypeError(
-            _env, ite->loc(),
-            "conditional with var condition cannot have a tuple type that contains an array");
+        std::ostringstream oss;
+        oss << "conditional with var condition cannot have a "
+            << (tret.bt() == Type::BT_TUPLE ? "tuple" : "record") << " type that contains an array";
+        throw TypeError(_env, ite->loc(), oss.str());
       }
       if (tret.bt() == Type::BT_STRING) {
         throw TypeError(_env, ite->loc(), "conditional with var condition cannot have string type");
@@ -3014,7 +3015,7 @@ public:
         }
       }
     }
-    assert(vd->type().bt() != Type::BT_TUPLE || vd->ti()->domain() != nullptr);
+    assert(!vd->type().structBT() || vd->ti()->domain() != nullptr);
   }
   /// Visit type inst
   void vTypeInst(TypeInst* ti) {

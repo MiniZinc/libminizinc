@@ -1454,7 +1454,7 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
     // if any of the uses are var set.
 
     Type ty = ta[n]->type();
-    if (ty.bt() != Type::BT_TUPLE) {
+    if (!ty.structBT()) {
       ty.st(curTiiT.st());
     }
     if (curTiiT.dim() != ty.dim()) {
@@ -1469,7 +1469,7 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
       if ((param(i)->ti()->domain() != nullptr) && param(i)->ti()->domain()->isa<TIId>() &&
           param(i)->ti()->domain()->cast<TIId>()->v() == tv) {
         Type toCheck = ta[i]->type();
-        if (toCheck.bt() != Type::BT_TUPLE) {
+        if (!toCheck.structBT()) {
           toCheck.ot(curTiiT.ot());
           toCheck.st(curTiiT.st());
         }

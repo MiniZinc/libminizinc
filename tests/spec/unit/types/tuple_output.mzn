@@ -22,8 +22,8 @@ constraint y[1].1 > y[2].1;
 
 % nested tuple
 tuple(var bool, var tuple(3..4, 3..4)): z;
-constraint (z.2).1 < (z.2).2;
-constraint z.1 <-> ((z.2).1 > (z.2).2);
+constraint z.2.1 < (z.2).2;
+constraint z.1 <-> (z.2.1 > z.2.2);
 
 % initialised
 tuple(int, var bool): init = (10, let {var bool: b} in b);
@@ -32,4 +32,4 @@ constraint init.2 <-> init.1 mod 2 == 0;
 % data
 tuple(float, bool): dat = (-3.2, false);
 
-output ["full var: \(x)\nvar array: \(y)\nnested: \(z)\nelement: \((z.2).1)\npartial: \(init)\ndata: \(dat)\n"];
+output ["full var: \(x)\nvar array: \(y)\nnested: \(z)\nelement: \(z.2.1)\npartial: \(init)\ndata: \(dat)\n"];

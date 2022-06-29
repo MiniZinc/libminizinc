@@ -1532,21 +1532,28 @@ public:
   }
   void mkVar() {
     if (_domain == nullptr || !_domain->isa<ArrayLit>()) {
-      assert(type().bt() != Type::BT_TUPLE);
+      assert(!type().structBT());
       Type tt = type();
       tt.ti(Type::TI_VAR);
       type(tt);
       return;
     }
     auto* al = _domain->cast<ArrayLit>();
-    for (int i = 0; i < al->size(); ++i) {
-      auto* field_ti = (*al)[i]->cast<TypeInst>();
-      field_ti->mkVar();
+    if (type().bt() == Type::BT_TUPLE) {
+      for (int i = 0; i < al->size(); ++i) {
+        (*al)[i]->cast<TypeInst>()->mkVar();
+      }
+    } else {
+      for (int i = 0; i < al->size(); ++i) {
+        auto* field_vd = (*al)[i]->cast<VarDecl>();
+        field_vd->ti()->mkVar();
+        field_vd->type(field_vd->ti()->type());
+      }
     }
     // TypeId would now be invalid. Tuple type must be re-registered after mkVar call
     Type tt = type();
     tt.typeId(0);
-    tt.cv(true);
+    tt.ti(Type::TI_VAR);
     type(tt);
   }
   void mkPar() {
@@ -1558,13 +1565,21 @@ public:
       return;
     }
     auto* al = _domain->cast<ArrayLit>();
-    for (int i = 0; i < al->size(); ++i) {
-      auto* field_ti = (*al)[i]->cast<TypeInst>();
-      field_ti->mkPar();
+    if (type().bt() == Type::BT_TUPLE) {
+      for (int i = 0; i < al->size(); ++i) {
+        (*al)[i]->cast<TypeInst>()->mkPar();
+      }
+    } else {
+      for (int i = 0; i < al->size(); ++i) {
+        auto* field_vd = (*al)[i]->cast<VarDecl>();
+        field_vd->ti()->mkPar();
+        field_vd->type(field_vd->ti()->type());
+      }
     }
     // TypeId would now be invalid. Tuple type must be re-registered after mkPar call
     Type tt = type();
     tt.typeId(0);
+    tt.ti(Type::TI_PAR);
     type(tt);
   }
   // Set domain of a tuple based on a tuple type object

@@ -1266,7 +1266,7 @@ unsigned int EnvI::registerTupleType(ArrayLit* tup) {
     fields[i] = (*tup)[i]->type();
     cv = cv || fields[i].isvar() || fields[i].cv();
     var = var && fields[i].isvar();
-    assert(fields[i].bt() != Type::BT_TUPLE || fields[i].typeId() != 0);
+    assert(!fields[i].structBT() || fields[i].typeId() != 0);
   }
   unsigned int typeId = registerTupleType(fields);
   assert(ty.dim() == 0);  // Tuple literals do not have array dimensions (otherwise, we should
@@ -1509,8 +1509,7 @@ unsigned int EnvI::registerRecordType(ArrayLit* rec) {
     fields[i] = (*rec)[i]->cast<VarDecl>();
     cv = cv || fields[i]->type().isvar() || fields[i]->type().cv();
     var = var && fields[i]->type().isvar();
-    assert(fields[i]->type().bt() != Type::BT_TUPLE || fields[i]->type().typeId() != 0);
-    assert(fields[i]->type().bt() != Type::BT_RECORD || fields[i]->type().typeId() != 0);
+    assert(!fields[i]->type().structBT() || fields[i]->type().typeId() != 0);
   }
 
   // Sort fields (and literal content)
