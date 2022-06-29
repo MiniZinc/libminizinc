@@ -284,7 +284,7 @@ SolverInstance::Status FZNSolverInstance::solve() {
 
   FileUtils::TmpFile fznFile(".fzn");
   std::ofstream os(FILE_PATH(fznFile.name()));
-  Printer p(os, 0, true);
+  Printer p(os, 0, true, &_env.envi());
   for (FunctionIterator it = _fzn->functions().begin(); it != _fzn->functions().end(); ++it) {
     if (!it->removed()) {
       Item& item = *it;

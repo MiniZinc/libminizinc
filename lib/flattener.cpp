@@ -576,7 +576,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
         errstream.str("");
         std::ostringstream smm_oss;
         std::ostringstream smm_stats_oss;
-        Printer p(smm_oss, 0, false);
+        Printer p(smm_oss, 0, false, &env->envi());
         p.print(smm);
         Env smm_env(smm);
         GCLock lock;
@@ -701,7 +701,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           _flags.modelTypesOnly) {
         std::ostringstream compiledSolutionCheckModel;
         if (_flags.compileSolutionCheckModel) {
-          Printer p(compiledSolutionCheckModel, 0);
+          Printer p(compiledSolutionCheckModel, 0, true, &env->envi());
           type_demonomorphise_library(*env, m);
           p.print(m);
         }
@@ -936,7 +936,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           if (_flags.verbose) {
             _log << "Printing FlatZinc to stdout ..." << std::endl;
           }
-          Printer p(_os, 0);
+          Printer p(_os, 0, true, &env->envi());
           p.print(env->flat());
           if (_flags.verbose) {
             _log << " done (" << _starttime.stoptime() << ")" << std::endl;
@@ -947,7 +947,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           }
           std::ofstream ofs(FILE_PATH(_flagOutputFzn), ios::out);
           check_io_status(ofs.good(), " I/O error: cannot open fzn output file. ");
-          Printer p(ofs, 0);
+          Printer p(ofs, 0, true, &env->envi());
           p.print(env->flat());
           check_io_status(ofs.good(), " I/O error: cannot write fzn output file. ");
           ofs.close();
@@ -960,7 +960,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             if (_flags.verbose) {
               _log << "Printing .ozn to stdout ..." << std::endl;
             }
-            Printer p(_os, 0);
+            Printer p(_os, 0, true, &env->envi());
             Model* ozn;
             {
               GCLock lock;
@@ -977,7 +977,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             }
             std::ofstream ofs(FILE_PATH(_flagOutputOzn), std::ios::out);
             check_io_status(ofs.good(), " I/O error: cannot open ozn output file. ");
-            Printer p(ofs, 0);
+            Printer p(ofs, 0, true, &env->envi());
             Model* ozn;
             {
               GCLock lock;
@@ -994,7 +994,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
         }
       }
     } else {  // !flag_typecheck
-      Printer p(_os);
+      Printer p(_os, 80, true, &env->envi());
       p.print(m);
     }
   } catch (ResultUndefinedError& e) {

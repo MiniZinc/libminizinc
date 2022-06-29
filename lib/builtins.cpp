@@ -2076,7 +2076,7 @@ IntVal b_string_length(EnvI& env, Call* call) {
 std::string show(EnvI& env, Expression* exp) {
   std::ostringstream oss;
   GCLock lock;
-  Printer p(oss, 0, false);
+  Printer p(oss, 0, false, &env);
   Expression* e = follow_id_to_decl(exp);
   if (auto* vd = e->dynamicCast<VarDecl>()) {
     if ((vd->e() != nullptr) && !vd->e()->isa<Call>()) {
@@ -2125,7 +2125,7 @@ std::string b_show_dzn_id(EnvI& env, Call* call) {
 
 std::string b_show_json_basic(EnvI& env, Expression* e) {
   std::ostringstream oss;
-  Printer p(oss, 0, false);
+  Printer p(oss, 0, false, &env);
   if (auto* sl = e->dynamicCast<SetLit>()) {
     oss << "{ \"set\" : [";
     if (IntSetVal* isv = sl->isv()) {
@@ -2186,7 +2186,7 @@ std::string b_show_json(EnvI& env, Expression* exp) {
   Expression* e = eval_par(env, exp);
   if (e->type().isvar()) {
     std::ostringstream oss;
-    Printer p(oss, 0, false);
+    Printer p(oss, 0, false, &env);
     p.print(e);
     return oss.str();
   }
@@ -2412,7 +2412,7 @@ std::string b_show_int(EnvI& env, Call* call) {
       oss << " ";
     }
   } else {
-    Printer p(oss, 0, false);
+    Printer p(oss, 0, false, &env);
     p.print(e);
   }
   return oss.str();
@@ -2449,7 +2449,7 @@ std::string b_show_float(EnvI& env, Call* call) {
       oss << " ";
     }
   } else {
-    Printer p(oss, 0, false);
+    Printer p(oss, 0, false, &env);
     p.print(e);
   }
   return oss.str();
