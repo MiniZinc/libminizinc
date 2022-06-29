@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <cassert>
 #include <map>
+#include <sstream>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -1532,6 +1533,12 @@ unsigned int EnvI::registerRecordType(ArrayLit* rec) {
   std::vector<std::pair<ASTString, Type>> field_pairs(fields.size());
   for (unsigned int i = 0; i < fields.size(); i++) {
     field_pairs[i] = {fields[i]->id()->str(), fields[i]->type()};
+    if (i > 0 && field_pairs[i - 1].first == field_pairs[i].first) {
+      std::ostringstream oss;
+      oss << "record contains multiple fields with the name `" << field_pairs[i].first.c_str()
+          << "'.";
+      throw TypeError(*this, rec->loc(), oss.str());
+    }
   }
 
   unsigned int typeId = registerRecordType(field_pairs);
@@ -1572,11 +1579,17 @@ unsigned int EnvI::registerRecordType(TypeInst* ti) {
     // Sort fields (and literal content)
     std::sort(fields.begin(), fields.end(), RecordFieldSort{});
     for (unsigned int i = 0; i < dom->size(); i++) {
-      dom->set(i, fields[i]->ti());  // TODO: Is this a good idea?
+      dom->set(i, fields[i]->ti());
     }
 
     for (unsigned int i = 0; i < fields.size(); i++) {
       field_pairs[i] = {fields[i]->id()->str(), fields[i]->type()};
+      if (i > 0 && field_pairs[i - 1].first == field_pairs[i].first) {
+        std::ostringstream oss;
+        oss << "record type contains multiple fields with the name `"
+            << field_pairs[i].first.c_str() << "'.";
+        throw TypeError(*this, ti->loc(), oss.str());
+      }
     }
   } else {  // Update already registered Record (dom contains TypeInst, no need to sort)
     RecordType* rt = getRecordType(ti->type());
