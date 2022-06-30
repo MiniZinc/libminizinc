@@ -57,9 +57,10 @@ protected:
   void expectEof(std::istream& is);
   Expression* parseEnum(std::istream& is);
   Expression* parseEnumObject(std::istream& is, const std::string& seen);
-  Expression* parseExp(std::istream& is, bool parseObjects = true, bool possibleString = true);
-  ArrayLit* parseArray(std::istream& is, bool possibleString = true);
-  Expression* parseObject(std::istream& is, bool possibleString = true);
+  Expression* parseExp(std::istream& is, bool parseObjects = true, TypeInst* ti = nullptr);
+  Expression* parseArray(std::istream& is, TypeInst* ti = nullptr);
+  Expression* parseSet(std::istream& is, TypeInst* ti = nullptr);
+  Expression* parseObject(std::istream& is, TypeInst* ti = nullptr);
 
   void parseModel(Model* m, std::istream& is, bool isData);
 

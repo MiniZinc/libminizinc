@@ -10,6 +10,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/ast.hh>
+#include <minizinc/astmap.hh>
+#include <minizinc/aststring.hh>
 #include <minizinc/file_utils.hh>
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/iter.hh>
@@ -17,6 +19,7 @@
 
 #include <fstream>
 #include <sstream>
+#include <string>
 #include <utility>
 
 using namespace std;
@@ -332,142 +335,183 @@ Expression* JSONParser::parseEnumObject(std::istream& is, const std::string& see
   }
 }
 
-Expression* JSONParser::parseObject(istream& is, bool possibleString) {
-  // precondition: found T_OBJ_OPEN
-  Token objid = readToken(is);
-  if (objid.t != T_STRING) {
-    throw JSONError(_env, errLocation(), "invalid object");
-  }
-  expectToken(is, T_COLON);
-  if (objid.s == "set") {
-    expectToken(is, T_LIST_OPEN);
-    vector<Expression*> exprs;
-    vector<pair<Token, Token>> ranges;
-    TokenT listT = T_COLON;  // dummy marker
-    for (Token next = readToken(is); next.t != T_LIST_CLOSE; next = readToken(is)) {
-      switch (next.t) {
-        case T_COMMA:
-          break;
-        case T_INT:
-          if (listT == T_STRING || listT == T_OBJ_OPEN) {
-            throw JSONError(_env, errLocation(), "invalid set literal");
-          }
+Expression* JSONParser::parseSet(istream& is, TypeInst* ti) {
+  expectToken(is, T_LIST_OPEN);
+  vector<Expression*> exprs;
+  vector<pair<Token, Token>> ranges;
+  TokenT listT = T_COLON;  // dummy marker
+  for (Token next = readToken(is); next.t != T_LIST_CLOSE; next = readToken(is)) {
+    switch (next.t) {
+      case T_COMMA:
+        break;
+      case T_INT:
+        if (listT == T_STRING || listT == T_OBJ_OPEN) {
+          throw JSONError(_env, errLocation(), "invalid set literal");
+        }
+        if (listT != T_FLOAT) {
+          listT = T_INT;
+        }
+        ranges.emplace_back(next, next);
+        break;
+      case T_FLOAT:
+        if (listT == T_STRING || listT == T_OBJ_OPEN) {
+          throw JSONError(_env, errLocation(), "invalid set literal");
+        }
+        listT = T_FLOAT;
+        ranges.emplace_back(next, next);
+        break;
+      case T_STRING:
+        if (listT != T_COLON && listT != T_STRING) {
+          throw JSONError(_env, errLocation(), "invalid set literal");
+        }
+        listT = T_STRING;
+        if (ti == nullptr || (!ti->isEnum() && ti->type().bt() != Type::BT_UNKNOWN)) {
+          exprs.push_back(new StringLit(Location().introduce(), next.s));
+        } else {
+          exprs.push_back(new Id(Location().introduce(), next.s, nullptr));
+        }
+        break;
+      case T_BOOL:
+        if (listT == T_STRING || listT == T_OBJ_OPEN) {
+          throw JSONError(_env, errLocation(), "invalid set literal");
+        }
+        if (listT == T_COLON) {
+          listT = T_BOOL;
+        }
+        exprs.push_back(_env.constants.boollit(next.b));
+        break;
+      case T_OBJ_OPEN: {
+        if (listT != T_COLON && listT != T_OBJ_OPEN) {
+          throw JSONError(_env, errLocation(), "invalid set literal");
+        }
+        listT = T_OBJ_OPEN;
+        Token t = readToken(is);
+        expectToken(is, T_COLON);
+        exprs.push_back(parseEnumObject(is, t.s));
+        break;
+      }
+      case T_LIST_OPEN: {
+        if (listT != T_COLON && listT != T_INT && listT != T_FLOAT) {
+          throw JSONError(_env, errLocation(), "invalid set literal");
+        }
+
+        Token range_min = readToken(is);
+        if (range_min.t == T_INT) {
           if (listT != T_FLOAT) {
             listT = T_INT;
           }
-          ranges.emplace_back(next, next);
-          break;
-        case T_FLOAT:
-          if (listT == T_STRING || listT == T_OBJ_OPEN) {
-            throw JSONError(_env, errLocation(), "invalid set literal");
-          }
+        } else if (range_min.t == T_FLOAT) {
           listT = T_FLOAT;
-          ranges.emplace_back(next, next);
-          break;
-        case T_STRING:
-          if (listT != T_COLON && listT != T_STRING) {
-            throw JSONError(_env, errLocation(), "invalid set literal");
-          }
-          listT = T_STRING;
-          if (possibleString) {
-            exprs.push_back(new StringLit(Location().introduce(), next.s));
-          } else {
-            exprs.push_back(new Id(Location().introduce(), next.s, nullptr));
-          }
-          break;
-        case T_BOOL:
-          if (listT == T_STRING || listT == T_OBJ_OPEN) {
-            throw JSONError(_env, errLocation(), "invalid set literal");
-          }
-          if (listT == T_COLON) {
-            listT = T_BOOL;
-          }
-          exprs.push_back(_env.constants.boollit(next.b));
-          break;
-        case T_OBJ_OPEN: {
-          if (listT != T_COLON && listT != T_OBJ_OPEN) {
-            throw JSONError(_env, errLocation(), "invalid set literal");
-          }
-          listT = T_OBJ_OPEN;
-          Token t = readToken(is);
-          expectToken(is, T_COLON);
-          exprs.push_back(parseEnumObject(is, t.s));
-          break;
-        }
-        case T_LIST_OPEN: {
-          if (listT != T_COLON && listT != T_INT && listT != T_FLOAT) {
-            throw JSONError(_env, errLocation(), "invalid set literal");
-          }
-
-          Token range_min = readToken(is);
-          if (range_min.t == T_INT) {
-            if (listT != T_FLOAT) {
-              listT = T_INT;
-            }
-          } else if (range_min.t == T_FLOAT) {
-            listT = T_FLOAT;
-          } else {
-            throw JSONError(_env, errLocation(), "invalid set literal");
-          }
-
-          expectToken(is, T_COMMA);
-
-          Token range_max = readToken(is);
-          if (range_max.t == T_INT) {
-            if (listT != T_FLOAT) {
-              listT = T_INT;
-            }
-          } else if (range_max.t == T_FLOAT) {
-            listT = T_FLOAT;
-          } else {
-            throw JSONError(_env, errLocation(), "invalid set literal");
-          }
-          ranges.emplace_back(range_min, range_max);
-
-          expectToken(is, T_LIST_CLOSE);
-          break;
-        }
-        default:
+        } else {
           throw JSONError(_env, errLocation(), "invalid set literal");
-      }
-    }
-    expectToken(is, T_OBJ_CLOSE);
+        }
 
-    if (listT == T_INT) {
-      auto* res = IntSetVal::a();
-      for (const auto& range : ranges) {
-        auto* isv = IntSetVal::a(range.first.i, range.second.i);
-        IntSetRanges isr(isv);
-        IntSetRanges r(res);
-        Ranges::Union<IntVal, IntSetRanges, IntSetRanges> u(isr, r);
-        res = IntSetVal::ai(u);
-      }
-      return new SetLit(Location().introduce(), res);
-    }
-    if (listT == T_FLOAT) {
-      auto* res = FloatSetVal::a();
-      for (const auto& range : ranges) {
-        auto* fsv = FloatSetVal::a(range.first.d, range.second.d);
-        FloatSetRanges fsr(fsv);
-        FloatSetRanges r(res);
-        Ranges::Union<FloatVal, FloatSetRanges, FloatSetRanges> u(fsr, r);
-        res = FloatSetVal::ai(u);
-      }
-      return new SetLit(Location().introduce(), res);
-    }
+        expectToken(is, T_COMMA);
 
-    return new SetLit(Location().introduce(), exprs);
+        Token range_max = readToken(is);
+        if (range_max.t == T_INT) {
+          if (listT != T_FLOAT) {
+            listT = T_INT;
+          }
+        } else if (range_max.t == T_FLOAT) {
+          listT = T_FLOAT;
+        } else {
+          throw JSONError(_env, errLocation(), "invalid set literal");
+        }
+        ranges.emplace_back(range_min, range_max);
+
+        expectToken(is, T_LIST_CLOSE);
+        break;
+      }
+      default:
+        throw JSONError(_env, errLocation(), "invalid set literal");
+    }
   }
-  if (objid.s == "e" || objid.s == "c" || objid.s == "i") {
-    return parseEnumObject(is, objid.s);
+  expectToken(is, T_OBJ_CLOSE);
+
+  if (listT == T_INT) {
+    auto* res = IntSetVal::a();
+    for (const auto& range : ranges) {
+      auto* isv = IntSetVal::a(range.first.i, range.second.i);
+      IntSetRanges isr(isv);
+      IntSetRanges r(res);
+      Ranges::Union<IntVal, IntSetRanges, IntSetRanges> u(isr, r);
+      res = IntSetVal::ai(u);
+    }
+    return new SetLit(Location().introduce(), res);
   }
-  throw JSONError(_env, errLocation(), "invalid object");
+  if (listT == T_FLOAT) {
+    auto* res = FloatSetVal::a();
+    for (const auto& range : ranges) {
+      auto* fsv = FloatSetVal::a(range.first.d, range.second.d);
+      FloatSetRanges fsr(fsv);
+      FloatSetRanges r(res);
+      Ranges::Union<FloatVal, FloatSetRanges, FloatSetRanges> u(fsr, r);
+      res = FloatSetVal::ai(u);
+    }
+    return new SetLit(Location().introduce(), res);
+  }
+
+  return new SetLit(Location().introduce(), exprs);
 }
 
-ArrayLit* JSONParser::parseArray(std::istream& is, bool possibleString) {
+Expression* JSONParser::parseObject(istream& is, TypeInst* ti) {
+  // precondition: found T_OBJ_OPEN
+  std::vector<Expression*> fields;
+
+  ASTStringMap<TypeInst*> fieldTIs;
+  if (ti != nullptr && ti->type().isrecord()) {
+    auto* dom = ti->domain()->cast<ArrayLit>();
+    for (size_t i = 0; i < dom->size(); ++i) {
+      auto* fieldDef = (*dom)[i]->cast<VarDecl>();
+      fieldTIs.emplace(fieldDef->id()->str(), fieldDef->ti());
+    }
+  };
+
+  Token next;
+  do {
+    next = readToken(is);
+    if (next.t != T_STRING) {
+      throw JSONError(_env, errLocation(), "invalid object");
+    }
+    ASTString key(next.s);
+    expectToken(is, T_COLON);
+    if (key == "set") {
+      if (!fields.empty()) {
+        throw JSONError(_env, errLocation(), "invalid set literal");
+      }
+      return parseSet(is, ti);
+    }
+    if (ti != nullptr && (ti->isEnum() || ti->type().bt() == Type::BT_UNKNOWN) &&
+        (key == "e" || key == "i" || key == "c")) {
+      if (!fields.empty()) {
+        throw JSONError(_env, errLocation(), "invalid enum object");
+      }
+      return parseEnumObject(is, std::string(key.c_str(), key.size()));
+    }
+
+    auto it = fieldTIs.find(key);
+    Expression* e = parseExp(is, true, it != fieldTIs.end() ? it->second : nullptr);
+
+    fields.push_back(new VarDecl(Location().introduce(),
+                                 new TypeInst(Location().introduce(), e->type()), key, e));
+    next = readToken(is);
+  } while (next.t == T_COMMA);
+  if (next.t != T_OBJ_CLOSE) {
+    throw JSONError(_env, errLocation(), "invalid object");
+  }
+
+  auto* record = ArrayLit::constructTuple(Location().introduce(), fields);
+  record->type(Type::record());
+  return record;
+}
+
+Expression* JSONParser::parseArray(std::istream& is, TypeInst* ti) {
   // precondition: opening parenthesis has been read
   vector<Expression*> exps;
   Token next = readToken(is);
+
+  TypeInst* elTI = nullptr;
   while (next.t != T_LIST_CLOSE) {
     switch (next.t) {
       case T_LIST_OPEN:
@@ -482,7 +526,7 @@ ArrayLit* JSONParser::parseArray(std::istream& is, bool possibleString) {
         exps.push_back(FloatLit::a(next.d));
         break;
       case T_STRING: {
-        if (possibleString) {
+        if (ti == nullptr || (!ti->isEnum() && ti->type().bt() != Type::BT_UNKNOWN)) {
           exps.push_back(new StringLit(Location().introduce(), next.s));
         } else {
           exps.push_back(new Id(Location().introduce(), ASTString(next.s), nullptr));
@@ -495,19 +539,49 @@ ArrayLit* JSONParser::parseArray(std::istream& is, bool possibleString) {
       case T_NULL:
         exps.push_back(_env.constants.absent);
         break;
-      case T_OBJ_OPEN:
-        exps.push_back(parseObject(is));
+      case T_OBJ_OPEN: {
+        if (ti != nullptr) {
+          // If parsing a tuple, then retrieve field TI from domain
+          if (ti->type().istuple()) {
+            auto* dom = ti->domain()->cast<ArrayLit>();
+            if (exps.size() < dom->size()) {
+              elTI = (*dom)[exps.size()]->cast<TypeInst>();
+            }
+          } else if (elTI == nullptr) {  // only need to do once for all elements
+            if (ti->isEnum()) {
+              // Array defines an enum, pass the same TI to parseObject if required
+              elTI = ti;
+            } else if (ti->isarray()) {
+              // If parsing an array, then create element TI once.
+              elTI = copy(_env, ti)->cast<TypeInst>();
+              elTI->type(elTI->type().elemType(_env));
+              elTI->setRanges({});
+            }
+          }
+        }
+        exps.push_back(parseObject(is, elTI));
         break;
+      }
       default:
         throw JSONError(_env, errLocation(), "cannot parse JSON file");
         break;
     }
     next = readToken(is);
   }
+  if (ti != nullptr) {
+    if (ti->isarray() || ti->type().bt() == Type::BT_TUPLE) {
+      // Add correct index sets if they are non-standard
+      return coerceArray(ti, new ArrayLit(Location().introduce(), exps));
+    }
+    if (ti->type().isSet()) {
+      // Convert array to a set
+      return new SetLit(Location().introduce(), exps);
+    }
+  }
   return new ArrayLit(Location().introduce(), exps);
 }
 
-Expression* JSONParser::parseExp(std::istream& is, bool parseObjects, bool possibleString) {
+Expression* JSONParser::parseExp(std::istream& is, bool parseObjects, TypeInst* ti) {
   Token next = readToken(is);
   switch (next.t) {
     case T_INT:
@@ -516,18 +590,18 @@ Expression* JSONParser::parseExp(std::istream& is, bool parseObjects, bool possi
     case T_FLOAT:
       return FloatLit::a(next.d);
     case T_STRING:
-      if (!possibleString) {
-        return new Id(Location().introduce(), ASTString(next.s), nullptr);
+      if (ti == nullptr || (!ti->isEnum() && ti->type().bt() != Type::BT_UNKNOWN)) {
+        return new StringLit(Location().introduce(), next.s);
       }
-      return new StringLit(Location().introduce(), next.s);
+      return new Id(Location().introduce(), ASTString(next.s), nullptr);
     case T_BOOL:
       return new BoolLit(Location().introduce(), next.b);
     case T_NULL:
       return _env.constants.absent;
     case T_OBJ_OPEN:
-      return parseObjects ? parseObject(is, possibleString) : nullptr;
+      return parseObjects ? parseObject(is, ti) : nullptr;
     case T_LIST_OPEN:
-      return parseArray(is, possibleString);
+      return parseArray(is, ti);
     default:
       throw JSONError(_env, errLocation(), "cannot parse JSON file");
       break;
@@ -675,9 +749,8 @@ void JSONParser::parseModel(Model* m, std::istream& is, bool isData) {
     string ident = expectString(is);
     expectToken(is, T_COLON);
     auto it = knownIds.find(ident);
-    bool possibleString = it == knownIds.end() ||
-                          (!it->second->isEnum() && it->second->type().bt() != Type::BT_UNKNOWN);
-    Expression* e = parseExp(is, isData, possibleString);
+    Expression* e = parseExp(is, isData, it != knownIds.end() ? it->second : nullptr);
+
     if (ident[0] != '_' && (!isData || it != knownIds.end())) {
       if (e == nullptr) {
         // This is a nested object
@@ -687,20 +760,11 @@ void JSONParser::parseModel(Model* m, std::istream& is, bool isData) {
         ii->m(subModel, true);
         m->addItem(ii);
       } else {
-        auto* al = e->dynamicCast<ArrayLit>();
-        if (it != knownIds.end() && al != nullptr) {
-          if (it->second->isarray() || it->second->type().bt() == Type::BT_TUPLE) {
-            // Add correct index sets if they are non-standard
-            e = coerceArray(it->second, al);
-          } else if (it->second->type().isSet()) {
-            // Convert array to a set
-            e = new SetLit(Location().introduce(), al->getVec());
-          }
-        }
         auto* ai = new AssignI(e->loc().introduce(), ident, e);
         m->addItem(ai);
       }
     }
+
     Token next = readToken(is);
     if (next.t == T_OBJ_CLOSE) {
       break;
