@@ -16,8 +16,8 @@
 #define FALSE 0                              
 #define SCIP_Longint long long                         
 #define SCIP_Real double                               
-#define MAX(x,y)      ((x) >= (y) ? (x) : (y))     
-#define MIN(x,y)      ((x) <= (y) ? (x) : (y))     
+#define MAX(x, y) ((x) >= (y) ? (x) : (y)) 
+#define MIN(x, y) ((x) <= (y) ? (x) : (y)) 
 typedef struct Scip SCIP;
 enum SCIP_Retcode
 {
@@ -39,7 +39,8 @@ enum SCIP_Retcode
    SCIP_PARAMETERWRONGVAL  = -14,       
    SCIP_KEYALREADYEXISTING = -15,       
    SCIP_MAXDEPTHLEVEL      = -16,       
-   SCIP_BRANCHERROR        = -17        
+   SCIP_BRANCHERROR        = -17,       
+   SCIP_NOTIMPLEMENTED     = -18        
 };
 typedef enum SCIP_Retcode SCIP_RETCODE;
 #define SCIP_DECL_MESSAGEWARNING(x) void x (SCIP_MESSAGEHDLR* messagehdlr, FILE* file, const char* msg)
@@ -85,7 +86,7 @@ enum SCIP_Status
 typedef enum SCIP_Status SCIP_STATUS;
 typedef struct SCIP_Stat SCIP_STAT;
 typedef struct SCIP_Sol SCIP_SOL;
-#define SCIP_EVENTTYPE_BESTSOLFOUND     UINT64_C(0x01000000)  
+#define SCIP_EVENTTYPE_BESTSOLFOUND     UINT64_C(0x004000000)  
 #define SCIP_DECL_EVENTINIT(x) SCIP_RETCODE x (SCIP* scip, SCIP_EVENTHDLR* eventhdlr)
 #define SCIP_DECL_EVENTEXIT(x) SCIP_RETCODE x (SCIP* scip, SCIP_EVENTHDLR* eventhdlr)
 #define SCIP_DECL_EVENTEXEC(x) SCIP_RETCODE x (SCIP* scip, SCIP_EVENTHDLR* eventhdlr, SCIP_EVENT* event, SCIP_EVENTDATA* eventdata)

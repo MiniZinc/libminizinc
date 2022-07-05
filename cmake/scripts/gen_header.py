@@ -193,6 +193,7 @@ if __name__ == "__main__":
             "scip/type_paramset.h",
             "scip/type_lp.h",
             "scip/cons_orbitope.h",
+            "symmetry/type_symmetry.h"
         ]
         include = {
             "SCIP_Retcode",

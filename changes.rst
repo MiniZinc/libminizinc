@@ -15,6 +15,8 @@ Changes in interfaces to solvers:
 -  MiniZinc now includes a solver interface for the [HiGHS](https://www.highs.dev)
    linear optimisation suite. HiGHS is included by default in the MiniZincIDE
    package, and available using `--solver highs`.
+-  The SCIP interface has been updated and is now compatible with version
+   7 and 8 only.
 
 Changes:
 ^^^^^^^^
