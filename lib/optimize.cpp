@@ -1261,6 +1261,8 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
                 vd_out->e(env.constants.boollit(is_true));
               }
               vdi->remove();
+            } else {
+              vdi->e()->e(env.constants.boollit(is_true));
             }
           } else {
             ii->remove();
