@@ -27,6 +27,11 @@ expected:
   solution: !Solution
     p: 1000
     xs: [10, 10, 1, 10]
+- !Result
+  status: SATISFIED
+  solution: !Solution
+    p: 1000
+    xs: [10, 10, 10, 1]
 ***/
 
 array [1..4] of var 1..10: xs :: add_to_output;

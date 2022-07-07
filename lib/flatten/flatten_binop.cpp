@@ -424,9 +424,11 @@ Call* aggregate_and_or_ops(EnvI& env, BinOp* bo, bool negateArgs, BinOpType bot)
 /// Return a lin_exp or id if \a e is a lin_exp or id
 template <class Lit>
 Expression* get_linexp(EnvI& env, Expression* e) {
+  Expression* prev_e = nullptr;
   for (;;) {
     if (e && e->eid() == Expression::E_ID && e != env.constants.absent) {
       if (e->cast<Id>()->decl()->e()) {
+        prev_e = e;
         e = e->cast<Id>()->decl()->e();
       } else {
         break;
@@ -438,6 +440,9 @@ Expression* get_linexp(EnvI& env, Expression* e) {
   if (e && (e->isa<Id>() || e->isa<Lit>() ||
             (e->isa<Call>() && e->cast<Call>()->id() == env.constants.ids.lin_exp))) {
     return e;
+  }
+  if (prev_e != nullptr) {
+    return prev_e;
   }
   return nullptr;
 }
