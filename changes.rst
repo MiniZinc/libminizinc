@@ -24,6 +24,7 @@ Changes:
 -  The compiler will no longer introduce `array_bool_or`, only `bool_clause`.
 -  Improve translation of some simple constraints, which avoids introducing
    unneccessary int_eq (and similar) constraints.
+-  Remove more subsumed clauses and foralls in the optimisation phase of the compiler.
 
 .. _v2.6.4:
 

@@ -895,6 +895,7 @@ void optimize(Env& env, bool chain_compression) {
       }
       bool isConjunction = (c->id() == envi.constants.ids.forall);
       bool subsumed = false;
+      bool empty = true;
       for (unsigned int j = 0; j < c->argCount(); j++) {
         bool unit = (j == 0 ? isConjunction : !isConjunction);
         auto* al = follow_id(c->arg(j))->cast<ArrayLit>();
@@ -919,34 +920,61 @@ void optimize(Env& env, bool chain_compression) {
           c->arg(j, new ArrayLit(al->loc(), compactedAl));
           c->arg(j)->type(Type::varbool(1));
         }
+        empty = empty && compactedAl.empty();
       }
       if (subsumed) {
-        if (isConjunction) {
-          if (bi->isa<ConstraintI>()) {
+        if (bi->isa<ConstraintI>()) {
+          if (isConjunction) {
             env.envi().fail();
           } else {
+            CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls, bi);
+            top_down(cd, bi->cast<ConstraintI>()->e());
+            bi->remove();
+          }
+        } else {
+          if (isConjunction) {
             auto* al = follow_id(c->arg(0))->cast<ArrayLit>();
             for (unsigned int j = 0; j < al->size(); j++) {
               removedVarDecls.push_back((*al)[j]->cast<Id>()->decl());
             }
-            bi->cast<VarDeclI>()->e()->ti()->domain(envi.constants.literalFalse);
-            bi->cast<VarDeclI>()->e()->ti()->setComputedDomain(true);
-            bi->cast<VarDeclI>()->e()->e(envi.constants.literalFalse);
-          }
-        } else {
-          if (bi->isa<ConstraintI>()) {
-            CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls, bi);
-            top_down(cd, bi->cast<ConstraintI>()->e());
-            bi->remove();
           } else {
             CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls, bi);
             top_down(cd, bi->cast<VarDeclI>()->e()->e());
-            bi->cast<VarDeclI>()->e()->ti()->domain(envi.constants.literalTrue);
-            bi->cast<VarDeclI>()->e()->ti()->setComputedDomain(true);
-            bi->cast<VarDeclI>()->e()->e(envi.constants.literalTrue);
           }
+          bool result = !isConjunction;
+          auto* ti = bi->cast<VarDeclI>()->e()->ti();
+          if (ti->domain() != nullptr) {
+            if (Expression::equal(ti->domain(), env.envi().constants.boollit(!result))) {
+              env.envi().fail();
+            }
+          } else {
+            ti->domain(envi.constants.boollit(result));
+          }
+          ti->setComputedDomain(true);
+          bi->cast<VarDeclI>()->e()->e(envi.constants.boollit(result));
+        }
+      } else if (empty) {
+        bool result = isConjunction;
+        if (bi->isa<ConstraintI>()) {
+          if (result) {
+            bi->remove();
+          } else {
+            env.envi().fail();
+          }
+        } else {
+          auto* ti = bi->cast<VarDeclI>()->e()->ti();
+          if (ti->domain() != nullptr) {
+            if (Expression::equal(ti->domain(), env.envi().constants.boollit(!result))) {
+              env.envi().fail();
+            }
+          } else {
+            ti->domain(envi.constants.boollit(result));
+          }
+          ti->setComputedDomain(true);
+          bi->cast<VarDeclI>()->e()->e(envi.constants.boollit(result));
         }
       }
+
       for (auto& removedVarDecl : removedVarDecls) {
         if (env.envi().varOccurrences.remove(removedVarDecl, bi) == 0) {
           if ((removedVarDecl->e() == nullptr || removedVarDecl->ti()->domain() == nullptr ||
