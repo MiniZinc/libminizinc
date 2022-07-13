@@ -5,12 +5,12 @@ extra_files:
 solvers: [gecode]
 expected: !Result
   solution: !Solution
-    x:
-      e: Foo
-      i: 1
-    y:
-      e: Foo
-      i: 2
+    x: !AnonEnum
+      enumName: Foo
+      value: 1
+    y: !AnonEnum
+      enumName: Foo
+      value: 2
 --- !Test
 extra_files:
 - anon_enum_json_err.json

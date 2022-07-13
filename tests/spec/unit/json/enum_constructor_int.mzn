@@ -1,16 +1,15 @@
 /***
 !Test
 extra_files:
-- enum_constructor_basic_2.json
+- enum_constructor_int.json
 solvers: [gecode]
 expected: !Result
   solution: !Solution
     x: !ConstrEnum
-      constructor: F
-      argument: A
+      constructor: Foo
+      argument: 2
 ***/
 
-enum Foo = { A };
-enum Bar = F(Foo) ++ { B };
+enum Bar = Foo(1..3);
 
 Bar: x :: add_to_output;

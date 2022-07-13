@@ -274,6 +274,9 @@ Expression* JSONParser::parseEnum(std::istream& is) {
     case T_STRING:
       // Enum identifier
       return new Id(Location().introduce(), next.s, nullptr);
+    case T_INT:
+      // Integer member of contructor enum
+      return IntLit::a(next.i);
     case T_OBJ_OPEN: {
       // Enum object or enum constructor
       auto k = expectString(is);
@@ -311,7 +314,8 @@ Expression* JSONParser::parseEnumObject(std::istream& is, const std::string& see
         expectToken(is, T_COLON);
         break;
       case T_OBJ_CLOSE:
-        if (e == nullptr || (i != -1 && !e->isa<Id>())) {
+        if (e == nullptr || (!c.empty() && !e->isa<Id>() && !e->isa<IntLit>() && !e->isa<Call>()) ||
+            (i != -1 && !e->isa<Id>())) {
           throw JSONError(_env, errLocation(), "invalid enum object");
         }
         if (!c.empty()) {

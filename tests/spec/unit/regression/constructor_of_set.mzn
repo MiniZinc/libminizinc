@@ -4,9 +4,9 @@ check_against: []
 expected:
 - !Result
   solution: !Solution
-    y:
-      c: C
-      e: 2
+    y: !ConstrEnum
+      constructor: C
+      argument: 2
   status: SATISFIED
 extra_files: []
 markers: []

@@ -30,6 +30,11 @@ Changes:
 -  Many internal structures, such as the CSE table, and the representation of
    variable declarations and calls have been optimised to require less memory.
 
+Bug fixes:
+^^^^^^^^^^
+
+-  Fix the parsing of JSON enum constructor functions with integer arguments.
+
 .. _v2.6.4:
 
 `Version 2.6.4 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.6.4>`__

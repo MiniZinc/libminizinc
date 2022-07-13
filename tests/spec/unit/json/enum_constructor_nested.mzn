@@ -5,11 +5,11 @@ extra_files:
 solvers: [gecode]
 expected: !Result
   solution: !Solution
-    x:
-      c: G
-      e:
-        c: F
-        e: A
+    x: !ConstrEnum
+      constructor: G
+      argument: !ConstrEnum
+        constructor: F
+        argument: A
 ***/
 
 enum Foo = { A };
