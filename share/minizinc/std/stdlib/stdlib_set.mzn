@@ -94,7 +94,7 @@ function set of $$E: '<..'(set of $$E: s) = enum_next(min(s))..max(s);
 
 function var set of int: '..'(var int: a, var int: b) ::promise_total =
   let {
-    var set of min(lb(a),lb(b))..max(ub(a),ub(b)): s;
+    var set of lb(a)..ub(b): s;
     constraint forall (i in ub(s)) (i in s <-> (a <= i /\ i <= b));
   } in s;
 

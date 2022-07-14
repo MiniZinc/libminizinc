@@ -34,6 +34,7 @@ Bug fixes:
 ^^^^^^^^^^
 
 -  Fix the parsing of JSON enum constructor functions with integer arguments.
+-  Fix the `..` operator on variable integers to create sets with tighter bounds.
 
 .. _v2.6.4:
 
