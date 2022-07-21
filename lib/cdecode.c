@@ -8,7 +8,7 @@ For details, see http://sourceforge.net/projects/libb64
 #include <minizinc/_thirdparty/b64/cdecode.h>
 
 int base64_decode_value(char value_in) {
-  static const char decoding[] = {62, -1, -1, -1, 63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1,
+  static const signed char decoding[] = {62, -1, -1, -1, 63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1,
                                   -1, -1, -2, -1, -1, -1, 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
                                   10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
                                   -1, -1, -1, -1, -1, -1, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,
@@ -28,7 +28,7 @@ int base64_decode_block(const char* code_in, const int length_in, char* plaintex
                         base64_decodestate* state_in) {
   const char* codechar = code_in;
   char* plainchar = plaintext_out;
-  char fragment;
+  int fragment;
 
   *plainchar = state_in->plainchar;
 
@@ -41,7 +41,7 @@ int base64_decode_block(const char* code_in, const int length_in, char* plaintex
             state_in->plainchar = *plainchar;
             return plainchar - plaintext_out;
           }
-          fragment = (char)base64_decode_value(*codechar++);
+          fragment = base64_decode_value(*codechar++);
         } while (fragment < 0);
         *plainchar = (fragment & 0x03f) << 2;
       case step_b:
@@ -51,7 +51,7 @@ int base64_decode_block(const char* code_in, const int length_in, char* plaintex
             state_in->plainchar = *plainchar;
             return plainchar - plaintext_out;
           }
-          fragment = (char)base64_decode_value(*codechar++);
+          fragment = base64_decode_value(*codechar++);
         } while (fragment < 0);
         *plainchar++ |= (fragment & 0x030) >> 4;
         *plainchar = (fragment & 0x00f) << 4;
@@ -62,7 +62,7 @@ int base64_decode_block(const char* code_in, const int length_in, char* plaintex
             state_in->plainchar = *plainchar;
             return plainchar - plaintext_out;
           }
-          fragment = (char)base64_decode_value(*codechar++);
+          fragment = base64_decode_value(*codechar++);
         } while (fragment < 0);
         *plainchar++ |= (fragment & 0x03c) >> 2;
         *plainchar = (fragment & 0x003) << 6;
@@ -73,7 +73,7 @@ int base64_decode_block(const char* code_in, const int length_in, char* plaintex
             state_in->plainchar = *plainchar;
             return plainchar - plaintext_out;
           }
-          fragment = (char)base64_decode_value(*codechar++);
+          fragment = base64_decode_value(*codechar++);
         } while (fragment < 0);
         *plainchar++ |= (fragment & 0x03f);
     }
