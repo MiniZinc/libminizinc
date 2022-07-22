@@ -14,8 +14,6 @@ add_library(mzn
   lib/aststring.cpp
   lib/astvec.cpp
   lib/builtins.cpp
-  lib/cdecode.c
-  lib/cencode.c
   lib/chain_compressor.cpp
   lib/copy.cpp
   lib/exception.cpp
@@ -41,6 +39,8 @@ add_library(mzn
   lib/htmlprinter.cpp
   lib/json_parser.cpp
   lib/lexer.lxx
+  lib/thirdparty/cdecode.c
+  lib/thirdparty/cencode.c
   lib/thirdparty/miniz.c
   lib/model.cpp
   lib/optimize.cpp
