@@ -703,7 +703,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
                   additionalArgs_s.push_back(sc.mznlib());
                 } else {
                   additionalArgs_s.emplace_back("--mzn-flag");
-                  additionalArgs_s.emplace_back("-I");
+                  additionalArgs_s.emplace_back("-G");
                   additionalArgs_s.emplace_back("--mzn-flag");
                   std::string _mznlib;
                   if (!sc.mznlibResolved().empty()) {
@@ -786,7 +786,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               }
             } else {
               std::vector<std::string> additionalArgs(2);
-              additionalArgs[0] = "-I";
+              additionalArgs[0] = "-G";
               if (!sc.mznlibResolved().empty()) {
                 additionalArgs[1] = sc.mznlibResolved();
               } else {

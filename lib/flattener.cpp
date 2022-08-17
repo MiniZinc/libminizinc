@@ -16,6 +16,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
+#include <minizinc/file_utils.hh>
 #include <minizinc/flattener.hh>
 #include <minizinc/pathfileprinter.hh>
 #include <minizinc/statistics.hh>
@@ -68,7 +69,7 @@ void Flattener::printHelp(ostream& os) const {
      << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
      << "  -G <dir>, --globals-dir <dir>, --mzn-globals-dir <dir>\n    Search for included "
         "globals "
-        "in <stdlib>/<dir>."
+        "in <stdlib>/<dir>, or <dir> when given a absolute or relative path."
      << std::endl
      << "  -, --input-from-stdin\n    Read problem from standard input" << std::endl
      << "  -I <dir>, --search-dir <dir>\n    Additionally search for included files in <dir>."
@@ -255,7 +256,22 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv,
     _stdLibDir = FileUtils::file_path(buffer, workingDir);
   } else if (cop.getOption("-G --globals-dir --mzn-globals-dir",
                            &_globalsDir)) {  // NOLINT: Allow repeated empty if
-    // Parsed by reference
+    // Resolve globals directory to be an absolute path
+    const std::string share = FileUtils::file_path(_stdLibDir + "/" + _globalsDir + "/");
+    const std::string rel = FileUtils::file_path(_globalsDir, workingDir);
+    if (FileUtils::is_absolute(_globalsDir)) {
+      // Do nothing (already have absolute path)
+    } else if ((_globalsDir.size() >= 2 && _globalsDir[0] == '.' && _globalsDir[1] == '/') ||
+               (_globalsDir.size() >= 2 && _globalsDir[0] == '.' && _globalsDir[1] == '\\') ||
+               (_globalsDir.size() >= 3 && _globalsDir[0] == '.' && _globalsDir[1] == '.' &&
+                _globalsDir[2] == '/') ||
+               (_globalsDir.size() >= 3 && _globalsDir[0] == '.' && _globalsDir[1] == '.' &&
+                _globalsDir[2] == '\\') ||
+               (FileUtils::directory_exists(rel) && !FileUtils::directory_exists(share))) {
+      _globalsDir = rel;
+    } else {
+      _globalsDir = share;
+    }
   } else if (cop.getOption("-D --cmdline-data", &buffer)) {
     _datafiles.push_back("cmd:/" + buffer);
   } else if (cop.getOption("--cmdline-json-data", &buffer)) {
@@ -492,8 +508,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
   }
 
   if (!_globalsDir.empty()) {
-    _includePaths.insert(_includePaths.begin(),
-                         FileUtils::file_path(_stdLibDir + "/" + _globalsDir + "/"));
+    _includePaths.insert(_includePaths.begin(), _globalsDir);
   }
   _includePaths.push_back(FileUtils::file_path(_stdLibDir + "/std/"));
 

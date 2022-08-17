@@ -17,6 +17,9 @@ Changes in interfaces to solvers:
    package, and available using `--solver highs`.
 -  The SCIP interface has been updated and is now compatible with version
    7 and 8 only.
+-  A solver's globals library specified in a configuration file will now
+   always be passed to the compiler using the `-G` flag. This allows users to
+   easily override this library from command line when required.
 
 Changes:
 ^^^^^^^^
@@ -29,6 +32,8 @@ Changes:
    are literals without location information.
 -  Many internal structures, such as the CSE table, and the representation of
    variable declarations and calls have been optimised to require less memory.
+-  The compiler now accepts absolute and relative paths as arguments of the
+   `-G` flag.
 
 Bug fixes:
 ^^^^^^^^^^
