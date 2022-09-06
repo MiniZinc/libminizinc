@@ -14,7 +14,7 @@ Changes in interfaces to solvers:
 
 -  MiniZinc now includes a solver interface for the [HiGHS](https://www.highs.dev)
    linear optimisation suite. HiGHS is included by default in the MiniZincIDE
-   package, and available using `--solver highs`.
+   package, and available using ``--solver highs``.
 -  The SCIP interface has been updated and is now compatible with version
    7 and 8 only.
 -  A solver's globals library specified in a configuration file will now
@@ -24,9 +24,9 @@ Changes in interfaces to solvers:
 Changes:
 ^^^^^^^^
 
--  The compiler will no longer introduce `array_bool_or`, only `bool_clause`.
+-  The compiler will no longer introduce ``array_bool_or``, only ``bool_clause``.
 -  Improve translation of some simple constraints, which avoids introducing
-   unneccessary int_eq (and similar) constraints.
+   unneccessary ``int_eq`` (and similar) constraints.
 -  Remove more subsumed clauses and foralls in the optimisation phase of the compiler.
 -  Report approximate error locations for type errors in function arguments that
    are literals without location information.
@@ -34,12 +34,14 @@ Changes:
    variable declarations and calls have been optimised to require less memory.
 -  The compiler now accepts absolute and relative paths as arguments of the
    `-G` flag.
+-  Functions in the standard library that return arrays of variables are now
+   also annotated with ``is_defined_var`` and ``defines_var(x)`` annotations.
 
 Bug fixes:
 ^^^^^^^^^^
 
 -  Fix the parsing of JSON enum constructor functions with integer arguments.
--  Fix the `..` operator on variable integers to create sets with tighter bounds.
+-  Fix the ``..`` operator on variable integers to create sets with tighter bounds.
 
 .. _v2.6.4:
 

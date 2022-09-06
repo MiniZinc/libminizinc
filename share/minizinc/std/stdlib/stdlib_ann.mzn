@@ -72,6 +72,10 @@ annotation defines_var(var $t: c);
 /** @group stdlib.annotations.general Declare variable: \a c as being functionally defined
   by the annotated constraint. This annotation is introduced into FlatZinc code by the compiler. */
 annotation defines_var(var opt $t: c);
+/** @group stdlib.annotations.general Declare an array of variables \a arr as being
+  functionally defined by the annotated constraint. This annotation is introduced into FlatZinc
+  code by the compiler. */
+annotation defines_var(array[$u] of var opt $t: arr);
 /** @group stdlib.annotations.general Declare that the annotated array should be printed by
   the solver with the given index sets \a a. This annotation is introduced into FlatZinc code by
   the compiler. */

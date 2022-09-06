@@ -8,6 +8,6 @@ include "global_cardinality_closed.mzn";
 function array[$Y] of var int: global_cardinality_closed(array[$X] of var int: x,
                                                          array[$Y] of int: cover) :: promise_total =
   let { array[int] of int: cover1d = array1d(cover);
-        array[index_set(cover1d)] of var 0..length(x): counts;
-        constraint global_cardinality_closed(array1d(x),cover1d,counts); } 
+        array[index_set(cover1d)] of var 0..length(x): counts ::is_defined_var;
+        constraint global_cardinality_closed(array1d(x),cover1d,counts) ::defines_var(counts); } 
   in arrayXd(cover,counts);
