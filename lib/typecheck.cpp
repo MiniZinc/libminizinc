@@ -3545,6 +3545,9 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       decl->payload(0);
       if (decl->toplevel()) {
         bottomUpTyper.run(decl->ti());
+        if (decl->isTypeAlias()) {
+          bottomUpTyper.run(decl->e());
+        }
         ty.vVarDecl(decl);
       }
     }
