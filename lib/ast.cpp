@@ -1092,9 +1092,16 @@ bool TypeInst::resolveAlias(EnvI& env) {
   if (type().st() == Type::ST_SET) {
     if (ntype.st() == Type::ST_SET) {
       std::stringstream ss;
-      ss << "Unable to create a `set of' the type aliased by '" << domain()
+      ss << "Unable to create a `set of' the type aliased by `" << *domain()
          << "', which has been resolved to `" << alias->type().toString(env)
          << "' and is already a set type";
+      throw TypeError(env, loc(), ss.str());
+    }
+    if (ntype.dim() != 0) {
+      std::stringstream ss;
+      ss << "Unable to create a `set of' the type aliased by `" << *domain()
+         << "', which has been resolved to `" << alias->type().toString(env)
+         << "' and is an array type";
       throw TypeError(env, loc(), ss.str());
     }
     ntype.st(Type::ST_SET);
@@ -1103,7 +1110,7 @@ bool TypeInst::resolveAlias(EnvI& env) {
   if (type().dim() != 0) {
     if (ntype.dim() != 0) {
       std::stringstream ss;
-      ss << "Unable to create an array containing the type aliased by '" << domain()
+      ss << "Unable to create an array containing the type aliased by `" << *domain()
          << "', which has been resolved to `" << alias->type().toString(env)
          << "' and is already an array type";
       throw TypeError(env, loc(), ss.str());
