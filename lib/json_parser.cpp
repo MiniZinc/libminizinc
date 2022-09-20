@@ -515,7 +515,13 @@ Expression* JSONParser::parseArray(std::istream& is, TypeInst* ti) {
   while (next.t != T_LIST_CLOSE) {
     switch (next.t) {
       case T_LIST_OPEN:
-        exps.push_back(parseArray(is));
+        if (ti != nullptr && ti->isarray() && elTI == nullptr) {
+          // Create element TI once
+          elTI = copy(_env, ti)->cast<TypeInst>();
+          elTI->type(elTI->type().elemType(_env));
+          elTI->setRanges({});
+        }
+        exps.push_back(parseArray(is, elTI));
         break;
       case T_COMMA:
         break;
