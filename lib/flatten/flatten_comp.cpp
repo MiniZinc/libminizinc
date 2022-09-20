@@ -272,7 +272,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
   if (c->set()) {
     elemType.st(Type::ST_SET);
   } else {
-    elemType.dim(c->type().dim());
+    elemType = Type::arrType(env, c->type(), elemType);
   }
   KeepAlive ka;
   {
