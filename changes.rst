@@ -42,6 +42,7 @@ Bug fixes:
 
 -  Fix the parsing of JSON enum constructor functions with integer arguments.
 -  Fix the ``..`` operator on variable integers to create sets with tighter bounds.
+-  Fix incorrect memory allocation in Gecode interface (:bugref:`618`).
 
 .. _v2.6.4:
 

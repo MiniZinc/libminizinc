@@ -1087,15 +1087,14 @@ void p_regular(SolverInstanceBase& s, const Call* call) {
   IntSetVal* isv = eval_intset(s.env().envi(), call->arg(5));
   IntSetRanges isr(isv);
 
-  int* f = static_cast<int*>(malloc(sizeof(int) * (isv->card().toInt()) + 1));
-  int i = 0;
-  for (Ranges::ToValues<IntSetRanges> val_iter(isr); val_iter(); ++val_iter, ++i) {
-    f[i] = static_cast<int>(val_iter.val().toInt());
+  std::vector<int> f;
+  f.reserve(isv->card().toInt() + 1);
+  for (Ranges::ToValues<IntSetRanges> val_iter(isr); val_iter(); ++val_iter) {
+    f.push_back(static_cast<int>(val_iter.val().toInt()));
   }
-  f[i] = -1;
+  f.push_back(-1);
 
-  DFA dfa(q0, t, f);
-  free(f);
+  DFA dfa(q0, t, f.data());
   unshare(*gi.currentSpace, iv);
   extensional(*gi.currentSpace, iv, dfa, GecodeSolverInstance::ann2icl(ann));
 }
