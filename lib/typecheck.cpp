@@ -196,45 +196,57 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     return;
   }
 
-  Call* c = vd->e()->dynamicCast<Call>();
-  auto* al = vd->e()->dynamicCast<ArrayLit>();
-
+  std::vector<Expression*> stack = {vd->e()};
   std::vector<Expression*> parts;
-  if (vd->e()->isa<SetLit>()) {
-    parts.push_back(vd->e());
-  } else if ((al != nullptr) || ((c != nullptr) && c->id() == env.constants.ids.anon_enum &&
-                                 c->argCount() == 1 && c->arg(0)->isa<ArrayLit>())) {
-    if (c != nullptr) {
-      al = c->arg(0)->cast<ArrayLit>();
-    }
-    std::vector<Expression*> enumIds(al->size());
-    for (unsigned int i = 0; i < al->size(); i++) {
-      if (Id* eid = (*al)[i]->dynamicCast<Id>()) {
-        enumIds[i] = eid;
-      } else {
-        std::ostringstream ss;
-        ss << "invalid initialisation for enum `" << ident->v() << "'";
-        throw TypeError(env, vd->e()->loc(), ss.str());
+  while (!stack.empty()) {
+    Expression* vde = stack.back();
+    stack.pop_back();
+    Call* c = vde->dynamicCast<Call>();
+    auto* al = vde->dynamicCast<ArrayLit>();
+    if (vde->isa<SetLit>()) {
+      parts.push_back(vde);
+    } else if ((al != nullptr) || ((c != nullptr) && c->id() == env.constants.ids.anon_enum &&
+                                   c->argCount() == 1 && c->arg(0)->isa<ArrayLit>())) {
+      if (c != nullptr) {
+        al = c->arg(0)->cast<ArrayLit>();
       }
-    }
-    parts.push_back(new SetLit(vd->e()->loc(), enumIds));
-  } else if (c != nullptr) {
-    if (c->id() == env.constants.ids.enumFromConstructors) {
-      if (c->argCount() != 1 || !c->arg(0)->isa<ArrayLit>()) {
-        throw TypeError(env, c->loc(),
-                        "enumFromConstructors used with incorrect argument type (only supports "
-                        "array literals)");
-      }
-      auto* al = c->arg(0)->cast<ArrayLit>();
+      std::vector<Expression*> enumIds(al->size());
       for (unsigned int i = 0; i < al->size(); i++) {
-        parts.push_back((*al)[i]);
+        if (Id* eid = (*al)[i]->dynamicCast<Id>()) {
+          enumIds[i] = eid;
+        } else {
+          std::ostringstream ss;
+          ss << "invalid initialisation for enum `" << ident->v() << "'";
+          throw TypeError(env, vd->e()->loc(), ss.str());
+        }
       }
+      parts.push_back(new SetLit(vd->e()->loc(), enumIds));
+    } else if (c != nullptr) {
+      if (c->id() == env.constants.ids.enumFromConstructors) {
+        if (c->argCount() != 1 || !c->arg(0)->isa<ArrayLit>()) {
+          throw TypeError(env, c->loc(),
+                          "enumFromConstructors used with incorrect argument type (only supports "
+                          "array literals)");
+        }
+        auto* al = c->arg(0)->cast<ArrayLit>();
+        for (unsigned int i = 0; i < al->size(); i++) {
+          parts.push_back((*al)[i]);
+        }
+      } else {
+        parts.push_back(c);
+      }
+    } else if (auto* binop = vde->dynamicCast<BinOp>()) {
+      if (binop->op() != BinOpType::BOT_PLUSPLUS) {
+        throw TypeError(
+            env, vde->loc(),
+            std::string("invalid initialisation for enum `") + ident->v().c_str() + "'");
+      }
+      stack.push_back(binop->lhs());
+      stack.push_back(binop->rhs());
     } else {
-      parts.push_back(c);
+      throw TypeError(env, vd->e()->loc(),
+                      std::string("invalid initialisation for enum `") + ident->v().c_str() + "'");
     }
-  } else {
-    throw TypeError(env, vd->e()->loc(),
-                    std::string("invalid initialisation for enum `") + ident->v().c_str() + "'");
   }
 
   std::vector<Expression*> partCardinality;
