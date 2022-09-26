@@ -461,7 +461,17 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
             if (Call* deprecated = i.fi->ann().getCall(env.constants.ann.mzn_deprecated)) {
               fi->ann().add(deprecated);
             }
+            FunctionI* old_fi = i.fi;
             i = FnEntry(env, fi);
+            // If we are replacing a polymorphic function using a new polymorphic function, then
+            // replace in all entries generated using addPolymorphicInstances
+            if (i.isPolymorphic) {
+              for (auto& j : v) {
+                if (j.fi == old_fi) {
+                  j.fi = fi;
+                }
+              }
+            }
           } else if (Call* deprecated = fi->ann().getCall(env.constants.ann.mzn_deprecated)) {
             i.fi->ann().add(deprecated);
           }
