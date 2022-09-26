@@ -2391,3 +2391,15 @@ void debugprint(const std::vector<MiniZinc::Item*>& x) { debugprintvec(x); }
 void debugprint(const std::vector<MiniZinc::Item*>& x, MiniZinc::EnvI& env) {
   debugprintvec(x, env);
 }
+void debugprint(const std::vector<MiniZinc::Type>& x) {
+  for (size_t i = 0; i < x.size(); ++i) {
+    std::cerr << x[i].simpleToString() << (i < x.size() - 1 ? ", " : "");
+  }
+  std::cerr << std::endl;
+}
+void debugprint(const std::vector<MiniZinc::Type>& x, MiniZinc::EnvI& env) {
+  for (size_t i = 0; i < x.size(); ++i) {
+    std::cerr << x[i].toString(env) << (i < x.size() - 1 ? ", " : "");
+  }
+  std::cerr << std::endl;
+}

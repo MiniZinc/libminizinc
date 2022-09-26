@@ -154,3 +154,5 @@ void debugprint(const std::vector<MiniZinc::KeepAlive>& x);
 void debugprint(const std::vector<MiniZinc::KeepAlive>& x, MiniZinc::EnvI& env);
 void debugprint(const std::vector<MiniZinc::Item*>& x);
 void debugprint(const std::vector<MiniZinc::Item*>& x, MiniZinc::EnvI& env);
+void debugprint(const std::vector<MiniZinc::Type>& x);
+void debugprint(const std::vector<MiniZinc::Type>& x, MiniZinc::EnvI& env);
