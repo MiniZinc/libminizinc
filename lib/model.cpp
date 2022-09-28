@@ -324,7 +324,33 @@ void TypeInst::collectTypeIds(std::unordered_map<ASTString, size_t>& seen_tiids,
 }
 
 void Model::addPolymorphicInstances(EnvI& env, Model::FnEntry& fe, std::vector<FnEntry>& entries) {
-  entries.push_back(fe);
+  auto addEntry = [&](Model::FnEntry& toAdd) {
+    for (auto& entry : entries) {
+      if (entry.t == toAdd.t) {
+        bool more_specific = true;
+        for (unsigned int i = 0; i < toAdd.fi->paramCount(); i++) {
+          // If all parameters of the entry we are adding are subtypes of an
+          // existing function, this one should take priority
+          //
+          // E.g. (bool, int) is preferred over ($T, $U)
+          auto oldParamType = entry.fi->param(i)->type();
+          auto newParamType = toAdd.fi->param(i)->type();
+          if (!newParamType.isSubtypeOf(env, oldParamType, false)) {
+            more_specific = false;
+            break;
+          }
+        }
+        if (more_specific) {
+          entry = toAdd;
+        }
+        return;
+      }
+    }
+    // Entry not yet added
+    entries.push_back(toAdd);
+  };
+
+  addEntry(fe);
   if (fe.isPolymorphic) {
     GCLock lock;
     FnEntry cur = fe;
@@ -381,17 +407,7 @@ void Model::addPolymorphicInstances(EnvI& env, Model::FnEntry& fe, std::vector<F
             cur.t[i] = (*tis)[i]->type();
           }
         }
-        // Then, If this instance isn't in entries yet, add it
-        bool alreadyDefined = false;
-        for (auto& entry : entries) {
-          if (entry.t == cur.t) {
-            alreadyDefined = true;
-            break;
-          }
-        }
-        if (!alreadyDefined) {
-          entries.push_back(cur);
-        }
+        addEntry(cur);
       }
 
       const Type& back_t = *type_ids[stack.back()].t[0];

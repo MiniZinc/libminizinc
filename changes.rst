@@ -44,8 +44,10 @@ Bug fixes:
 -  Fix the ``..`` operator on variable integers to create sets with tighter bounds.
 -  Fix incorrect memory allocation in Gecode interface (:bugref:`618`).
 -  Fix an error thrown when the declaration of a polymorphic function is split from
-   .. its definition.
+   its definition.
 -  Fix assignment items of enumerated types using the ``++`` operator.
+-  Fix behaviour of overloading involving polymorphic functions which overlap
+   with more specific functions.
 
 .. _v2.6.4:
 
