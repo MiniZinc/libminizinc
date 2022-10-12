@@ -476,23 +476,20 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           // Add assertion that constructor argument is contiguous set
           // constraint assert(max(constructorArgId)-min(constructorArgId)+1 =
           // card(constructorArgId))
-          auto* min = Call::a(Location().introduce(), ASTString("min"), {constructorArgId});
-          auto* max = Call::a(Location().introduce(), ASTString("max"), {constructorArgId});
-          auto* card = Call::a(Location().introduce(), ASTString("card"), {constructorArgId});
-          auto* bo0 = new BinOp(Location().introduce(), max, BOT_MINUS, min);
-          auto* bo1 = new BinOp(Location().introduce(), bo0, BOT_PLUS, IntLit::a(1));
-          auto* bo2 = new BinOp(Location().introduce(), bo1, BOT_EQ, card);
+          auto* isContiguous = Call::a(Location().introduce(), ASTString("mzn_set_is_contiguous"),
+                                       {constructorArgId});
           std::ostringstream oss;
           oss << "argument for enum constructor `" << c->id() << "' is not a contiguous set";
           auto* e = new StringLit(Location().introduce(), oss.str());
-          Call* a = Call::a(c->loc(), env.constants.ids.assert, {bo2, e});
+          Call* a = Call::a(c->loc(), env.constants.ids.assert, {isContiguous, e});
           enumItems->addItem(new ConstraintI(Location().introduce(), a));
         }
 
         // Compute minimum-1 of constructor argument
         Id* constructorArgMin;
         {
-          auto* min = Call::a(Location().introduce(), ASTString("min"), {constructorArgId});
+          auto* min =
+              Call::a(Location().introduce(), ASTString("mzn_min_or_0"), {constructorArgId});
           Expression* prevCard = partCardinality.empty() ? IntLit::a(0) : partCardinality.back();
           auto* minMinusOne =
               new BinOp(Location().introduce(), prevCard, BOT_MINUS,

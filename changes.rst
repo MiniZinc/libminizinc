@@ -48,6 +48,7 @@ Bug fixes:
 -  Fix assignment items of enumerated types using the ``++`` operator.
 -  Fix behaviour of overloading involving polymorphic functions which overlap
    with more specific functions.
+-  Fix extended enum constructors with empty enums.
 
 .. _v2.6.4:
 

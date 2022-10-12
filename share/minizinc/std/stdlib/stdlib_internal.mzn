@@ -1298,3 +1298,11 @@ predicate mzn_set_in_internal(var int: x, set of int: s) =
         exists (i in 2..max_range-1) (x in ranges[i,1]..ranges[i,2])
       endif
   endif;
+
+/* Functions used for the type erasure of enumerated types */
+
+function int: mzn_min_or_0(set of int: X) =
+  if card(X)=0 then 0 else min(X) endif;
+
+test mzn_set_is_contiguous(set of int: X) =
+  card(X) = 0 \/ card(X)=(max(X)-min(X)+1);
