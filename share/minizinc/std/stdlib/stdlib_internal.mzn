@@ -23,6 +23,11 @@ predicate var_dom(array[$T] of var opt int: x, set of int: d) =
     let { array[int] of var opt int: xx = array1d(x) }
     in forall (i in index_set(xx)) (var_dom(xx[i],d));
 
+test var_dom(opt int:x, set of int: s) =
+  absent(x) \/ deopt(x) in s;
+test var_dom(array[$T] of opt int: x, set of int: d) =
+  forall (xx in array1d(x)) (var_dom(xx,d));
+
 predicate var_dom(var set of int: x, set of int: s) =
   if has_ub_set(x) /\ ub(x) subset s then true
   else set_subset(x,s)

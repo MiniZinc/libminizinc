@@ -49,6 +49,7 @@ Bug fixes:
 -  Fix behaviour of overloading involving polymorphic functions which overlap
    with more specific functions.
 -  Fix extended enum constructors with empty enums.
+-  Fix a bug that prevented the use of polymorphic optional arrays as function arguments.
 
 .. _v2.6.4:
 
