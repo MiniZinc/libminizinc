@@ -339,7 +339,13 @@ protected:
   /// Check if \a e0 and \a e1 are equal
   static bool equalInternal(const Expression* e0, const Expression* e1);
 
-  static ptrdiff_t asPtrDiff(const Expression* e) { return reinterpret_cast<ptrdiff_t>(e); }
+#ifdef __EMSCRIPTEN__
+  __attribute__((noinline))
+#endif
+  static ptrdiff_t
+  asPtrDiff(const Expression* e) {
+    return reinterpret_cast<ptrdiff_t>(e);
+  }
 
   /// Constructor
   Expression(const Location& loc, const ExpressionId& eid, const Type& t)
