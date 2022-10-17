@@ -3109,11 +3109,11 @@ Expression* eval_typeinst_domain(EnvI& env, const Ctx& ctx, Expression* dom) {
       if (tupi->domain() == nullptr) {
         evaluated[i] = tupi;
       } else if (tupi->domain()->isa<ArrayLit>()) {
-        evaluated[i] =
-            new TypeInst(tupi->loc(), tupi->type(), eval_typeinst_domain(env, ctx, tupi->domain()));
+        evaluated[i] = new TypeInst(tupi->loc(), tupi->type(), tupi->ranges(),
+                                    eval_typeinst_domain(env, ctx, tupi->domain()));
       } else {
-        evaluated[i] =
-            new TypeInst(tupi->loc(), tupi->type(), flat_cv_exp(env, ctx, tupi->domain())());
+        evaluated[i] = new TypeInst(tupi->loc(), tupi->type(), tupi->ranges(),
+                                    flat_cv_exp(env, ctx, tupi->domain())());
       }
     }
     return ArrayLit::constructTuple(tup->loc(), evaluated);
