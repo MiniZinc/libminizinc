@@ -283,27 +283,30 @@ SolverInstance::Status FZNSolverInstance::solve() {
   bool sigint = opt.fznSigint;
 
   FileUtils::TmpFile fznFile(".fzn");
-  std::ofstream os(FILE_PATH(fznFile.name()));
-  Printer p(os, 0, true, &_env.envi());
-  for (FunctionIterator it = _fzn->functions().begin(); it != _fzn->functions().end(); ++it) {
-    if (!it->removed()) {
-      Item& item = *it;
-      p.print(&item);
+  {  // Context to print FZN file, close file descriptor afterwards
+    std::ofstream os(FILE_PATH(fznFile.name()));
+    Printer p(os, 0, true, &_env.envi());
+    for (FunctionIterator it = _fzn->functions().begin(); it != _fzn->functions().end(); ++it) {
+      if (!it->removed()) {
+        Item& item = *it;
+        p.print(&item);
+      }
     }
-  }
-  for (VarDeclIterator it = _fzn->vardecls().begin(); it != _fzn->vardecls().end(); ++it) {
-    if (!it->removed()) {
-      Item& item = *it;
-      p.print(&item);
+    for (VarDeclIterator it = _fzn->vardecls().begin(); it != _fzn->vardecls().end(); ++it) {
+      if (!it->removed()) {
+        Item& item = *it;
+        p.print(&item);
+      }
     }
-  }
-  for (ConstraintIterator it = _fzn->constraints().begin(); it != _fzn->constraints().end(); ++it) {
-    if (!it->removed()) {
-      Item& item = *it;
-      p.print(&item);
+    for (ConstraintIterator it = _fzn->constraints().begin(); it != _fzn->constraints().end();
+         ++it) {
+      if (!it->removed()) {
+        Item& item = *it;
+        p.print(&item);
+      }
     }
+    p.print(_fzn->solveItem());
   }
-  p.print(_fzn->solveItem());
   cmd_line.push_back(fznFile.name());
 
   std::unique_ptr<FileUtils::TmpFile> pathsFile;

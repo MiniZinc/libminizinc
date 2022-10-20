@@ -50,6 +50,7 @@ Bug fixes:
    with more specific functions.
 -  Fix extended enum constructors with empty enums.
 -  Fix a bug that prevented the use of polymorphic optional arrays as function arguments.
+-  Generated FlatZinc files are now closed before a solver is called.
 
 .. _v2.6.4:
 
