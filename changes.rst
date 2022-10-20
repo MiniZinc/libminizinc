@@ -36,6 +36,8 @@ Changes:
    `-G` flag.
 -  Functions in the standard library that return arrays of variables are now
    also annotated with ``is_defined_var`` and ``defines_var(x)`` annotations.
+-  Revert changes in the ``fzn_count_*`` variants that tried to introduce
+   more positive contexts, but inadvertently came at the cost of count aggregation.
 
 Bug fixes:
 ^^^^^^^^^^
