@@ -2196,15 +2196,40 @@ std::string b_show_json(EnvI& env, Expression* exp) {
       assert(al->dims() == 1);
       RecordType* rt = env.getRecordType(al->type());
       oss << "{";
+      if (env.fopts.outputMode == FlatteningOptions::OUTPUT_TYPED_JSON) {
+        oss << "\"record\": {";
+      }
       for (size_t i = 0; i < al->size(); ++i) {
         oss << "\"" << rt->fieldName(i) << "\": " << b_show_json(env, (*al)[i]);
         if (i < al->size() - 1) {
           oss << ", ";
         }
       }
+      if (env.fopts.outputMode == FlatteningOptions::OUTPUT_TYPED_JSON) {
+        oss << "}";
+      }
       oss << "}";
       return oss.str();
     }
+    if (env.fopts.outputMode == FlatteningOptions::OUTPUT_TYPED_JSON && !al->type().istuple()) {
+      oss << "{\n\t\"indices\": [";
+      for (int i = 0; i < al->dims(); i++) {
+        oss << "[" << std::to_string(al->min(i)) << ", " << std::to_string(al->max(i)) << "]";
+        if (i < al->dims() - 1) {
+          oss << ", ";
+        }
+      }
+      oss << "],\n\t\"members\": [";
+      for (unsigned int i = 0; i < al->size(); i++) {
+        oss << b_show_json(env, (*al)[i]);
+        if (i < al->size() - 1) {
+          oss << ", ";
+        }
+      }
+      oss << "]}";
+      return oss.str();
+    }
+
     std::vector<unsigned int> dims(al->dims() - 1);
     if (!dims.empty()) {
       dims[0] = al->max(al->dims() - 1) - al->min(al->dims() - 1) + 1;

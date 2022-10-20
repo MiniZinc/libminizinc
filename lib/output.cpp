@@ -1301,7 +1301,8 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
       o = create_dzn_output(e, outputObjective, includeOutputItem, includeChecker);
       e.outputSections.add(ASTString("dzn"), o);  // Add to dzn section for encapsulation
       break;
-    case FlatteningOptions::OUTPUT_JSON:
+    case FlatteningOptions::OUTPUT_JSON:  // fall through
+    case FlatteningOptions::OUTPUT_TYPED_JSON:
       o = create_json_output(e, outputObjective, includeOutputItem, includeChecker);
       e.outputSections.add(ASTString("json"), o);  // Add to json section for encapsulation
       break;

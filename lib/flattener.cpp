@@ -215,6 +215,8 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv,
       _flagOutputMode = FlatteningOptions::OUTPUT_DZN;
     } else if (buffer == "json") {
       _flagOutputMode = FlatteningOptions::OUTPUT_JSON;
+    } else if (buffer == "typed-json") {
+      _flagOutputMode = FlatteningOptions::OUTPUT_TYPED_JSON;
     } else if (buffer == "item") {
       _flagOutputMode = FlatteningOptions::OUTPUT_ITEM;
     } else if (buffer == "checker") {

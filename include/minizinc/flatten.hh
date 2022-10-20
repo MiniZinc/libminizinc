@@ -44,7 +44,13 @@ struct FlatteningOptions {
   /// Allow the use of Half Reifications
   bool enableHalfReification;
   /// Create standard, DZN or JSON output
-  enum OutputMode { OUTPUT_ITEM, OUTPUT_DZN, OUTPUT_JSON, OUTPUT_CHECKER } outputMode;
+  enum OutputMode {
+    OUTPUT_ITEM,
+    OUTPUT_DZN,
+    OUTPUT_JSON,
+    OUTPUT_TYPED_JSON,
+    OUTPUT_CHECKER
+  } outputMode;
   /// Output objective value (only for DZN and JSON mode)
   bool outputObjective;
   /// Output original output item as string (only for DZN and JSON mode)
