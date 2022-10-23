@@ -597,7 +597,8 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e) {
           if (nvi->e()->type().dim() == 0) {
             reallyFlat->addAnnotation(env.constants.ann.output_var);
           } else {
-            std::vector<Expression*> args(reallyFlat->e()->type().dim());
+            const auto dims = reallyFlat->e()->type().dim();
+            std::vector<Expression*> args(dims);
             for (unsigned int i = 0; i < args.size(); i++) {
               if (nvi->e()->ti()->ranges()[i]->domain() == nullptr) {
                 args[i] = new SetLit(Location().introduce(),
@@ -605,6 +606,23 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e) {
               } else {
                 args[i] = new SetLit(Location().introduce(),
                                      eval_intset(env, nvi->e()->ti()->ranges()[i]->domain()));
+              }
+            }
+            if (env.fopts.ignoreStdlib) {
+              // Ensure array?d call output by solver is available in output model
+              std::vector<Type> ts(dims + 1);
+              for (auto i = 0; i < dims; i++) {
+                ts[i] = Type::parsetint();
+              }
+              ts[dims] = reallyFlat->e()->type();
+              std::stringstream ss;
+              ss << "array" << dims << "d";
+              ASTString ident(ss.str());
+              if (env.output->matchFn(env, ident, ts, false) == nullptr) {
+                auto* decl = copy(env, env.cmap, env.model->matchFn(env, ident, ts, true))
+                                 ->cast<FunctionI>();
+                (void)env.output->registerFn(env, decl, true);
+                env.output->addItem(decl);
               }
             }
             auto* al = new ArrayLit(Location().introduce(), args);
@@ -1524,7 +1542,8 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
                   }
                 }
                 if (needOutputAnn) {
-                  std::vector<Expression*> args(vd_orig->type().dim());
+                  const auto dims = vd_orig->type().dim();
+                  std::vector<Expression*> args(dims);
                   for (unsigned int i = 0; i < args.size(); i++) {
                     if (vd_orig->ti()->ranges()[i]->domain() == nullptr) {
                       args[i] = new SetLit(
@@ -1534,6 +1553,23 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
                       args[i] =
                           new SetLit(Location().introduce(),
                                      eval_intset(env, vd_followed->ti()->ranges()[i]->domain()));
+                    }
+                  }
+                  if (env.fopts.ignoreStdlib) {
+                    // Ensure array?d call output by solver is available in output model
+                    std::vector<Type> ts(dims + 1);
+                    for (auto i = 0; i < dims; i++) {
+                      ts[i] = Type::parsetint();
+                    }
+                    ts[dims] = reallyFlat->e()->type();
+                    std::stringstream ss;
+                    ss << "array" << dims << "d";
+                    ASTString ident(ss.str());
+                    if (env.output->matchFn(env, ident, ts, false) == nullptr) {
+                      auto* decl = copy(env, env.cmap, env.model->matchFn(env, ident, ts, true))
+                                       ->cast<FunctionI>();
+                      (void)env.output->registerFn(env, decl, true);
+                      env.output->addItem(decl);
                     }
                   }
                   auto* al = new ArrayLit(Location().introduce(), args);
@@ -1730,10 +1766,11 @@ void finalise_output(EnvI& e) {
               if (needOutputAnn) {
                 if (!is_output(vd->flat())) {
                   GCLock lock;
-                  if (vd->type().dim() == 0) {
+                  const auto dims = vd->type().dim();
+                  if (dims == 0) {
                     vd->flat()->addAnnotation(e.constants.ann.output_var);
                   } else {
-                    std::vector<Expression*> args(vd->type().dim());
+                    std::vector<Expression*> args(dims);
                     for (unsigned int i = 0; i < args.size(); i++) {
                       if (vd->ti()->ranges()[i]->domain() == nullptr) {
                         args[i] =
@@ -1742,6 +1779,23 @@ void finalise_output(EnvI& e) {
                       } else {
                         args[i] = new SetLit(Location().introduce(),
                                              eval_intset(e, vd->ti()->ranges()[i]->domain()));
+                      }
+                    }
+                    if (e.fopts.ignoreStdlib) {
+                      // Ensure array?d call output by solver is available in output model
+                      std::vector<Type> ts(dims + 1);
+                      for (auto i = 0; i < dims; i++) {
+                        ts[i] = Type::parsetint();
+                      }
+                      ts[dims] = reallyFlat->e()->type();
+                      std::stringstream ss;
+                      ss << "array" << dims << "d";
+                      ASTString ident(ss.str());
+                      if (e.output->matchFn(e, ident, ts, false) == nullptr) {
+                        auto* decl = copy(e, e.cmap, e.model->matchFn(e, ident, ts, true))
+                                         ->cast<FunctionI>();
+                        (void)e.output->registerFn(e, decl, true);
+                        e.output->addItem(decl);
                       }
                     }
                     auto* al = new ArrayLit(Location().introduce(), args);

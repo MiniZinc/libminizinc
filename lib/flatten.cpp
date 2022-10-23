@@ -4767,7 +4767,9 @@ Expression* cleanup_constraint(EnvI& env, std::unordered_set<Item*>& globals, Ex
     // If vc->decl() is a solver builtin and has not been added to the
     // FlatZinc, add it
     if ((vc->decl() != nullptr) && vc->decl() != env.constants.varRedef &&
-        !vc->decl()->fromStdLib() && globals.find(vc->decl()) == globals.end()) {
+        !vc->decl()->fromStdLib() &&
+        !vc->decl()->ann().contains(env.constants.ann.flatzinc_builtin) &&
+        globals.find(vc->decl()) == globals.end()) {
       std::vector<VarDecl*> params(vc->decl()->paramCount());
       for (unsigned int i = 0; i < params.size(); i++) {
         params[i] = vc->decl()->param(i);

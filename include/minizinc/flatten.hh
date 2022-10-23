@@ -63,6 +63,8 @@ struct FlatteningOptions {
   std::unordered_set<std::string> onlySections;
   /// Which output sections to exclude
   std::unordered_set<std::string> notSections;
+  /// Don't include stdlib
+  bool ignoreStdlib;
   /// Default constructor
   FlatteningOptions()
       : keepOutputInFzn(false),
@@ -77,7 +79,8 @@ struct FlatteningOptions {
         outputOutputItem(false),
         detailedTiming(false),
         debug(false),
-        encapsulateJSON(false) {
+        encapsulateJSON(false),
+        ignoreStdlib(false) {
     // Initialise random number generator seed.
     // Try random_device, if that doesn't work, use time.
     std::vector<long unsigned int> seeds;

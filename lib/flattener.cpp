@@ -767,6 +767,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           _fopts.outputOutputItem = _flags.outputOutputItem;
           _fopts.hasChecker = !_flagSolutionCheckModel.empty();
           _fopts.encapsulateJSON = _flags.encapsulateJSON;
+          _fopts.ignoreStdlib = _flags.ignoreStdlib;
 #ifdef HAS_GECODE
           GecodeOptions gopts;
           gopts.onlyRangeDomains = _flags.onlyRangeDomains;
