@@ -1147,16 +1147,14 @@ MZ_IntConLevel GecodeSolverInstance::ann2icl(const Annotation& ann) {
 }
 
 VarDecl* GecodeSolverInstance::getVarDecl(Expression* expr) {
-  VarDecl* vd = nullptr;
-  if ((vd = expr->dynamicCast<VarDecl>()) != nullptr) {
-    vd = expr->cast<VarDecl>();
-  } else if (Id* id = expr->dynamicCast<Id>()) {
+  auto* vd = expr->dynamicCast<VarDecl>();
+  if (Id* id = expr->dynamicCast<Id>()) {
     vd = id->decl();
   } else if (auto* aa = expr->dynamicCast<ArrayAccess>()) {
     vd = resolveArrayAccess(aa);
-  } else {
+  } else if (vd == nullptr) {
     std::stringstream ssm;
-    ssm << "Can not extract vardecl from " << *expr;
+    ssm << "Cannot extract vardecl from " << *expr;
     throw InternalError(ssm.str());
   }
   return vd;
@@ -1620,7 +1618,7 @@ bool GecodeSolverInstance::presolve(Model* originalModel) {
               nvd->ti(new TypeInst(nvd->loc(), Type::parint()));
               nvd->e(IntLit::a(l));
             }
-          } else if (!(l == Gecode::Int::Limits::min || u == Gecode::Int::Limits::max)) {
+          } else if (l != Gecode::Int::Limits::min && u != Gecode::Int::Limits::max) {
             if (_onlyRangeDomains && !holes) {
               nvd->ti()->domain(new SetLit(nvd->loc(), IntSetVal::a(l, u)));
             } else {

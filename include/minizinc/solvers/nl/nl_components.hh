@@ -6,8 +6,6 @@
 
 #pragma once
 
-//#include <assert.h>
-
 #include <exception>
 #include <iostream>
 #include <sstream>

@@ -24,7 +24,6 @@
 
 // temporary
 #include <minizinc/prettyprinter.hh>
-//#include <ostream>
 
 #include <map>
 #include <unordered_map>

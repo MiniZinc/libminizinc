@@ -19,7 +19,7 @@
 #include <new>
 #include <unordered_map>
 
-//#define MINIZINC_GC_STATS
+// #define MINIZINC_GC_STATS
 
 #if defined(MINIZINC_GC_STATS)
 #include <map>

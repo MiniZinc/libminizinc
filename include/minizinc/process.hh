@@ -18,7 +18,6 @@
 #include <Windows.h>
 #include <tchar.h>
 #undef ERROR
-//#include <atlstr.h>
 #else
 #include <sys/select.h>
 #include <sys/time.h>

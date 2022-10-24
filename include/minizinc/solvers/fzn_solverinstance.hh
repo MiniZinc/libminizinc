@@ -13,7 +13,6 @@
 
 #include <minizinc/flattener.hh>
 #include <minizinc/solver.hh>
-//#include <minizinc/solver_instance_base.hh>
 
 namespace MiniZinc {
 
