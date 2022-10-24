@@ -55,6 +55,7 @@ Bug fixes:
 -  Generated FlatZinc files are now closed before a solver is called.
 -  Disable inlining for one function when creating webassembly output, to prevent the clang compiler
    from exploiting undefined behaviour that our code relies on.
+-  Fix Gecode-based presolver to not crash when solving problems with a constant objective.
 
 .. _v2.6.4:
 

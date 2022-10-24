@@ -751,6 +751,13 @@ void GecodeSolverInstance::processFlatZinc() {
           assert(currentSpace->optVarIdx >= 0);
 #endif
         }
+      } else {
+        // Create a fixed variable
+        IntVar intVar(*this->currentSpace, 0, 0);
+        currentSpace->iv.push_back(intVar);
+        currentSpace->optVarIsInt = true;
+        insertVar(id, GecodeVariable(GecodeVariable::INT_TYPE, currentSpace->iv.size() - 1));
+        currentSpace->optVarIdx = static_cast<int>(currentSpace->iv.size() - 1);
       }
     } else {  // the solve expression has to be a variable/id
       assert(false);
