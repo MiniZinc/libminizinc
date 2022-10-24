@@ -130,6 +130,7 @@ add_library(mzn
 target_link_libraries(mzn ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
 
 ### Add Solver Interfaces to the MiniZinc library when available
+include(cmake/targets/libminizinc_chuffed.cmake)
 include(cmake/targets/libminizinc_cplex.cmake)
 include(cmake/targets/libminizinc_geas.cmake)
 include(cmake/targets/libminizinc_gecode.cmake)

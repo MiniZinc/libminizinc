@@ -666,6 +666,13 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
     _solverPath.emplace_back("/opt/homebrew/share/minizinc/solvers");
   }
 #endif
+
+  // Add share/minizinc/solvers next to current exe to solver search paths as for some builtin
+  // solvers we copy the mznlib and msc there to avoid keeping a copy in this repo
+  auto progpath_share = FileUtils::file_path(FileUtils::progpath() + "/share/minizinc");
+  if (progpath_share != _mznlibDir && FileUtils::directory_exists(progpath_share)) {
+    _solverPath.emplace_back(progpath_share + "/solvers");
+  }
 }
 
 void SolverConfigs::populate(std::ostream& log) {

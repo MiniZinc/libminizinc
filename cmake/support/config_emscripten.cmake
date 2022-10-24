@@ -2,8 +2,10 @@ if (DEFINED EMSCRIPTEN)
   option(ENABLE_WASM "Enable WebAssembly build" ON)
   option(ENABLE_ASM_JS "Enable asm.js build" OFF)
 
+  file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/share/minizinc)
+
   add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/CMakeFiles/file_packager.js
-                     COMMAND python3 ${EMSCRIPTEN_ROOT_PATH}/tools/file_packager.py minizinc.data --lz4 --preload ${PROJECT_SOURCE_DIR}/share/minizinc@usr/share/minizinc --from-emcc --js-output=${PROJECT_BINARY_DIR}/CMakeFiles/file_packager.js
+                     COMMAND python3 ${EMSCRIPTEN_ROOT_PATH}/tools/file_packager.py minizinc.data --lz4 --preload ${PROJECT_SOURCE_DIR}/share/minizinc@usr/share/minizinc ${CMAKE_BINARY_DIR}/share/minizinc@usr/share/minizinc --from-emcc --js-output=${PROJECT_BINARY_DIR}/CMakeFiles/file_packager.js
                      COMMENT "building data store minizinc.data")
   
   set(EMSCRIPTEN_CXX_FLAGS "-fexceptions")

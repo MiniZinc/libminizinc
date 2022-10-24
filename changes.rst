@@ -22,6 +22,8 @@ Changes in interfaces to solvers:
    easily override this library from command line when required.
 -  Automatically detect Gurobi 10.0 and potential future versions.
 -  Avoid loading all solver plugin DLLs on startup, instead loading when required.
+-  A built-in solver interface for `Chuffed <https://github.com/chuffed/chuffed>`_
+   has been added primarily for use with the WebAssembly version of MiniZinc.
 
 Changes:
 ^^^^^^^^

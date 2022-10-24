@@ -47,6 +47,9 @@
 #ifdef HAS_GEAS
 #include <minizinc/solvers/geas_solverfactory.hh>
 #endif
+#ifdef HAS_CHUFFED
+#include <minizinc/solvers/chuffed_solverfactory.hh>
+#endif
 #ifdef HAS_SCIP
 #include <minizinc/solvers/MIP/MIP_scip_solverfactory.hh>
 #endif
@@ -81,6 +84,9 @@ SolverInitialiser::SolverInitialiser() {
 #endif
 #ifdef HAS_GEAS
   static GeasSolverFactoryInitialiser _geas_init;
+#endif
+#ifdef HAS_CHUFFED
+  static ChuffedSolverFactoryInitialiser _chuffed_init;
 #endif
 #ifdef HAS_SCIP
   static SCIPSolverFactoryInitialiser _scip_init;
