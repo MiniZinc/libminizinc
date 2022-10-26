@@ -62,7 +62,9 @@ private:
   Options* _options = nullptr;
 
 public:
-  MIPHiGHSWrapper(FactoryOptions& factoryOpt, Options* opt) : _options(opt) {}
+  MIPHiGHSWrapper(FactoryOptions& factoryOpt, Options* opt) : _options(opt) {
+    checkHiGHSReturn(_highs.setOptionValue("log_to_console", false), "Unable to set verbosity");
+  }
   ~MIPHiGHSWrapper() override {}
 
   static std::string getId() { return "highs"; };

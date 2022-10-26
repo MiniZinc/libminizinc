@@ -117,7 +117,7 @@ void MIPHiGHSWrapper::doAddVars(size_t n, double* obj, double* lb, double* ub, V
         types.push_back(HighsVarType::kContinuous);
         break;
       }
-      case VarType::BINARY:
+      case VarType::BINARY:  // fall through
       case VarType::INT: {
         types.push_back(HighsVarType::kInteger);
         break;
