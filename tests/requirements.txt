@@ -1,6 +1,6 @@
 PyYAML==5.4
-pytest==6.*
-py==1.9.*
+pytest==7.*
+py==1.11.*
 pytest-html==2.*
 pytest-xdist==2.*
 pytest-instafail==0.4.*
