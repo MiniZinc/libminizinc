@@ -2334,11 +2334,12 @@ public:
         ty_id.typeId(ty_in.typeId());
       } else {
         ty_id = ty_in;
+        ty_id.typeId(0);
+        ty_id.dim(0);
         if (ty_in.typeId() != 0) {
           const std::vector<unsigned int>& enumIds = _env.getArrayEnum(ty_in.typeId());
           ty_id.typeId(enumIds.back());
         }
-        ty_id.dim(0);
       }
       for (int j = 0; j < c->numberOfDecls(gen_i); j++) {
         c->decl(gen_i, j)->type(ty_id);
