@@ -1904,25 +1904,13 @@ void GecodeSolverInstance::createBranchers(Annotation& ann, Expression* addition
   FloatValBranch def_float_valsel = FLOAT_VAL_SPLIT_MIN();
 #endif
 
-  std::vector<bool> iv_searched(currentSpace->iv.size());
-  for (unsigned int i = currentSpace->iv.size(); (i--) != 0U;) {
-    iv_searched[i] = false;
-  }
-  std::vector<bool> bv_searched(currentSpace->bv.size());
-  for (unsigned int i = currentSpace->bv.size(); (i--) != 0U;) {
-    bv_searched[i] = false;
-  }
+  std::vector<bool> iv_searched(currentSpace->iv.size(), false);
+  std::vector<bool> bv_searched(currentSpace->bv.size(), false);
 #ifdef GECODE_HAS_SET_VARS
-  std::vector<bool> sv_searched(currentSpace->sv.size());
-  for (unsigned int i = currentSpace->sv.size(); (i--) != 0U;) {
-    sv_searched[i] = false;
-  }
+  std::vector<bool> sv_searched(currentSpace->sv.size(), false);
 #endif
 #ifdef GECODE_HAS_FLOAT_VARS
-  std::vector<bool> fv_searched(currentSpace->fv.size());
-  for (unsigned int i = currentSpace->fv.size(); (i--) != 0U;) {
-    fv_searched[i] = false;
-  }
+  std::vector<bool> fv_searched(currentSpace->fv.size(), false);
 #endif
 
   // solving annotations
@@ -2104,21 +2092,25 @@ void GecodeSolverInstance::createBranchers(Annotation& ann, Expression* addition
   n_aux += currentSpace->fvAux.size();
 #endif
   if (n_aux > 0) {
-    AuxVarBrancher::post(*this->currentSpace, def_int_varsel, def_int_valsel, def_bool_varsel,
-                         def_bool_valsel
+    if (currentSpace->solveType == SolveI::ST_SAT) {
+      AuxVarBrancher::post(*this->currentSpace, def_int_varsel, def_int_valsel, def_bool_varsel,
+                           def_bool_valsel
 #ifdef GECODE_HAS_SET_VARS
-                         ,
-                         def_set_varsel, def_set_valsel
+                           ,
+                           def_set_varsel, def_set_valsel
 #endif
 #ifdef GECODE_HAS_FLOAT_VARS
-                         ,
-                         def_float_varsel, def_float_valsel
+                           ,
+                           def_float_varsel, def_float_valsel
 #endif
-    );  // end post
-    // std::cout << "DEBUG: Posted aux-var-brancher for " << n_aux << " aux-variables" << std::endl;
-  }  // end if n_aux > 0
-  // else
-  // std::cout << "DEBUG: No aux vars to branch on." << std::endl;
+      );  // end post
+      // std::cout << "DEBUG: Posted aux-var-brancher for " << n_aux << " aux-variables" <<
+      // std::endl;
+    } else {
+      branch(*currentSpace, currentSpace->ivAux, def_int_varsel, def_int_valsel);
+      branch(*currentSpace, currentSpace->bvAux, def_bool_varsel, def_bool_valsel);
+    }
+  }
 }
 
 TieBreak<IntVarBranch> GecodeSolverInstance::ann2ivarsel(const ASTString s, Rnd& rnd,
