@@ -1918,9 +1918,6 @@ void GecodeSolverInstance::createBranchers(Annotation& ann, Expression* addition
   if (!ann.isEmpty()) {
     flattenSearchAnnotations(ann, flatAnn);
   }
-  if (additionalAnn != nullptr) {
-    flatAnn.push_back(additionalAnn);
-  }
   if (!flatAnn.empty()) {
     setSearchStrategyFromAnnotation(flatAnn, iv_searched, bv_searched,
 #ifdef GECODE_HAS_SET_VARS
@@ -1943,8 +1940,10 @@ void GecodeSolverInstance::createBranchers(Annotation& ann, Expression* addition
   int introduced = 0;
   int funcdep = 0;
   int searched = 0;
+
   for (size_t i = currentSpace->iv.size(); (i--) != 0;) {
-    if (iv_searched[i]) {
+    if (iv_searched[i] || (currentSpace->solveType != SolveI::ST_SAT && currentSpace->optVarIsInt &&
+                           i == currentSpace->optVarIdx)) {
       searched++;
     } else if (currentSpace->ivIntroduced[i]) {
       if (currentSpace->ivDefined[i]) {
@@ -1957,7 +1956,8 @@ void GecodeSolverInstance::createBranchers(Annotation& ann, Expression* addition
   IntVarArgs iv_sol(static_cast<int>(currentSpace->iv.size()) - (introduced + funcdep + searched));
   IntVarArgs iv_tmp(introduced);
   for (size_t i = currentSpace->iv.size(), j = 0, k = 0; (i--) != 0U;) {
-    if (iv_searched[i]) {
+    if (iv_searched[i] || (currentSpace->solveType != SolveI::ST_SAT && currentSpace->optVarIsInt &&
+                           i == currentSpace->optVarIdx)) {
       continue;
     }
     if (currentSpace->ivIntroduced[i]) {
@@ -2014,7 +2014,8 @@ void GecodeSolverInstance::createBranchers(Annotation& ann, Expression* addition
   funcdep = 0;
   searched = 0;
   for (size_t i = currentSpace->fv.size(); (i--) != 0;) {
-    if (fv_searched[i]) {
+    if (fv_searched[i] || (currentSpace->solveType != SolveI::ST_SAT &&
+                           !currentSpace->optVarIsInt && i == currentSpace->optVarIdx)) {
       searched++;
     } else if (currentSpace->fvIntroduced[i]) {
       if (currentSpace->fvDefined[i]) {
@@ -2028,7 +2029,8 @@ void GecodeSolverInstance::createBranchers(Annotation& ann, Expression* addition
                       (introduced + funcdep + searched));
   FloatVarArgs fv_tmp(introduced);
   for (size_t i = currentSpace->fv.size(), j = 0, k = 0; (i--) != 0;) {
-    if (fv_searched[i]) {
+    if (fv_searched[i] || (currentSpace->solveType != SolveI::ST_SAT &&
+                           !currentSpace->optVarIsInt && i == currentSpace->optVarIdx)) {
       continue;
     }
     if (currentSpace->fvIntroduced[i]) {
@@ -2078,6 +2080,25 @@ void GecodeSolverInstance::createBranchers(Annotation& ann, Expression* addition
     branch(*this->currentSpace, sv_sol, def_set_varsel, def_set_valsel);
   }
 #endif
+
+  if (additionalAnn != nullptr) {
+    setSearchStrategyFromAnnotation({additionalAnn}, iv_searched, bv_searched,
+#ifdef GECODE_HAS_SET_VARS
+                                    sv_searched,
+#endif
+#ifdef GECODE_HAS_FLOAT_VARS
+                                    fv_searched,
+#endif
+                                    def_int_varsel, def_int_valsel, def_bool_varsel,
+                                    def_bool_valsel,
+#ifdef GECODE_HAS_SET_VARS
+                                    def_set_varsel, def_set_valsel,
+#endif
+#ifdef GECODE_HAS_FLOAT_VARS
+                                    def_float_varsel, def_float_valsel,
+#endif
+                                    rnd, decay, ignoreUnknown, err);
+  }
 
   // branching on auxiliary variables
   currentSpace->ivAux = IntVarArray(*this->currentSpace, iv_tmp);

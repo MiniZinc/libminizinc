@@ -57,6 +57,7 @@ Bug fixes:
    from exploiting undefined behaviour that our code relies on.
 -  Fix Gecode-based presolver to not crash when solving problems with a constant objective, or
    optimisation problems where some variables are not part of the search or output.
+-  Fix default search for Gecode-based presolver to be the same as standalone Gecode solver.
 
 .. _v2.6.4:
 
