@@ -58,6 +58,7 @@ Bug fixes:
 -  Fix Gecode-based presolver to not crash when solving problems with a constant objective, or
    optimisation problems where some variables are not part of the search or output.
 -  Fix default search for Gecode-based presolver to be the same as standalone Gecode solver.
+-  Fix possible extraneous newline when printing warnings in ``--json-stream`` mode.
 
 .. _v2.6.4:
 

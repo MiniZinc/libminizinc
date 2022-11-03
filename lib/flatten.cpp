@@ -2023,7 +2023,7 @@ std::ostream& Env::dumpWarnings(std::ostream& os, bool werror, bool json, int ex
     if (curIdx == exceptWarning) {
       continue;
     }
-    if (curIdx > 1 || (curIdx == 1 && exceptWarning != 0)) {
+    if (!json && (curIdx > 1 || (curIdx == 1 && exceptWarning != 0))) {
       os << "\n";
     }
     curIdx++;
