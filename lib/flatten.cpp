@@ -3294,7 +3294,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
         if (c->set()) {
           t.st(Type::ST_SET);
         } else {
-          t.dim(c->type().dim());
+          t = Type::arrType(env, c->type(), t);
         }
         t.cv(false);
         if (c->set()) {

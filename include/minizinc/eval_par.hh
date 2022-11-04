@@ -65,6 +65,7 @@ Expression* eval_arrayaccess(EnvI& env, ArrayLit* al, const IdxV& idx, ArrayAcce
     if (ix < al->min(i) || ix > al->max(i)) {
       success.fail(i, al->min(i), al->max(i), ix);
       Type t = al->type();
+      t.typeId(0);
       t.dim(0);
       if (t.isint()) {
         return IntLit::a(0);

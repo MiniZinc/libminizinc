@@ -144,7 +144,7 @@ public:
   /// Set dimensions
   void dim(int d) {
     // Cannot change the dimension of a type that uses typeId, as the typeId would have to be
-    // changed (and registed) as well. (see changeDim)
+    // changed (and registered) as well. (see elemType and arrType)
     assert(typeId() == 0 || dim() == d);
     assert(d >= -1 && d < 7);
     _dim = static_cast<unsigned int>(d + 1);

@@ -1225,9 +1225,7 @@ ArrayLit* b_arrayXd(EnvI& env, Call* call, int d) {
     throw EvalError(env, al->loc(), ss.str());
   }
   auto* ret = new ArrayLit(al->loc(), al, dims);
-  Type t = al->type();
-  t.dim(d);
-  ret->type(t);
+  ret->type(Type::arrType(env, Type::partop(d), al->type()));
   ret->flat(al->flat());
   return ret;
 }
@@ -1272,9 +1270,7 @@ Expression* b_arrayXd(EnvI& env, Call* call) {
     dims[i] = std::make_pair(al0->min(i), al0->max(i));
   }
   auto* ret = new ArrayLit(al1->loc(), al1, dims);
-  Type t = al1->type();
-  t.dim(static_cast<int>(dims.size()));
-  ret->type(t);
+  ret->type(Type::arrType(env, Type::partop(static_cast<int>(dims.size())), al1->type()));
   ret->flat(al1->flat());
   return ret;
 }

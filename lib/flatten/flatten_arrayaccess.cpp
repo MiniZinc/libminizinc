@@ -147,9 +147,7 @@ start_flatten_arrayaccess:
       {
         GCLock lock;
         Expression* newal = new ArrayLit(al->loc(), elems_e, dims);
-        Type t = al->type();
-        t.dim(static_cast<int>(dims.size()));
-        newal->type(t);
+        newal->type(Type::arrType(env, Type::partop(static_cast<int>(dims.size())), al->type()));
         eev.r = newal;
         auto* n_aa = new ArrayAccess(aa->loc(), newal, newaccess);
         n_aa->type(aa->type());
