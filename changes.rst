@@ -59,6 +59,7 @@ Bug fixes:
    optimisation problems where some variables are not part of the search or output.
 -  Fix default search for Gecode-based presolver to be the same as standalone Gecode solver.
 -  Fix possible extraneous newline when printing warnings in ``--json-stream`` mode.
+-  Allow option types to be declared with empty domains.
 
 .. _v2.6.4:
 

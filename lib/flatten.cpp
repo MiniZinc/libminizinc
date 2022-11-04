@@ -3800,7 +3800,7 @@ void flatten(Env& e, FlatteningOptions opt) {
             vdi->e()->ti()->domain(nullptr);
           }
           if (vdi->e()->type().isint() && vdi->e()->type().isvar() &&
-              vdi->e()->ti()->domain() != nullptr) {
+              vdi->e()->ti()->domain() != nullptr && !vdi->e()->type().isOpt()) {
             GCLock lock;
             IntSetVal* dom = eval_intset(env, vdi->e()->ti()->domain());
 
@@ -3810,8 +3810,8 @@ void flatten(Env& e, FlatteningOptions opt) {
               env.fail(oss.str());
             }
 
-            bool needRangeDomain = onlyRangeDomains && !vdi->e()->type().isOpt();
-            if (!needRangeDomain && !vdi->e()->type().isOpt()) {
+            bool needRangeDomain = onlyRangeDomains;
+            if (!needRangeDomain) {
               if (dom->min(0).isMinusInfinity() || dom->max(dom->size() - 1).isPlusInfinity()) {
                 needRangeDomain = true;
               }

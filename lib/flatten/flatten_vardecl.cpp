@@ -33,7 +33,8 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
       }
     }
     if (!isEmptyArray && ti->domain() != nullptr && ti->domain()->isa<SetLit>()) {
-      if (ti->type().bt() == Type::BT_INT && ti->type().st() == Type::ST_PLAIN) {
+      if (ti->type().bt() == Type::BT_INT && ti->type().st() == Type::ST_PLAIN &&
+          ti->type().ot() == Type::OT_PRESENT) {
         if (eval_intset(env, ti->domain())->empty()) {
           env.fail("domain is empty");
         }

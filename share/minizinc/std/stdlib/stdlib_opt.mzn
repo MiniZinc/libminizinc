@@ -164,12 +164,16 @@ function bool: had_zero(array [int] of var opt int: x) = exists (xi in x) (had_z
 function var bool: occurs_internal_int(var opt int: x) ::promise_total =
   let { var bool : b; } in b;
 function var int : deopt_internal_int(var opt int : x, var bool: b) ::promise_total =
-  let {
-    var dom(x) union if mzn_check_absent_zero() then {0} else {} endif: y;
-    constraint if mzn_check_absent_zero() then
-      if had_zero(x) then b \/ y = 0 else b <-> y != 0 endif
-    endif;
-  } in y;
+  if dom(x) = {} then
+    let { constraint not b; } in 0
+  else 
+    let {
+      var dom(x) union if mzn_check_absent_zero() then {0} else {} endif: y;
+      constraint if mzn_check_absent_zero() then
+        if had_zero(x) then b \/ y = 0 else b <-> y != 0 endif
+      endif;
+    } in y
+  endif;
 
 function var opt int: reverse_map_var_opt_int(var bool: occ, var int: d) ::output_only;
 function opt int: reverse_map_var_opt_int(bool: occ, int: d) ::promise_total =
