@@ -118,6 +118,7 @@ private:
     bool outputOutputItem = false;
     bool compileSolutionCheckModel = false;
     bool encapsulateJSON = false;
+    bool ignoreStdlib = false;
   } _flags;
 
   int _optMIPDmaxIntvEE = 0;

@@ -168,6 +168,8 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv,
 
   if (cop.getOption("-I --search-dir", &buffer)) {
     _includePaths.push_back(FileUtils::file_path(buffer + "/", workingDir));
+  } else if (cop.getOption("--ignore-stdlib")) {
+    _flags.ignoreStdlib = true;
   } else if (cop.getOption("--no-typecheck")) {
     _flags.typecheck = false;
   } else if (cop.getOption("--instance-check-only")) {
@@ -566,8 +568,8 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           _flagSolutionCheckModel.size() >= 4 &&
           _flagSolutionCheckModel.substr(_flagSolutionCheckModel.size() - 4) == ".mzc";
       std::vector<std::string> smm_model({_flagSolutionCheckModel});
-      Model* smm = parse(*env, smm_model, _datafiles, "", "", _includePaths, {}, _isFlatzinc, false,
-                         false, _flags.verbose, errstream);
+      Model* smm = parse(*env, smm_model, _datafiles, "", "", _includePaths, {}, _isFlatzinc,
+                         _flags.ignoreStdlib, false, _flags.verbose, errstream);
       if (_flags.verbose) {
         _log << " done parsing (" << _starttime.stoptime() << ")" << std::endl;
       }
@@ -682,8 +684,8 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
     errstream.str("");
     std::unordered_set<std::string> globalInc(global_includes(_stdLibDir));
     m = parse(*env, _filenames, _datafiles, modelText, modelName.empty() ? "stdin" : modelName,
-              _includePaths, std::move(globalInc), _isFlatzinc, false, false, _flags.verbose,
-              errstream);
+              _includePaths, std::move(globalInc), _isFlatzinc, _flags.ignoreStdlib, false,
+              _flags.verbose, errstream);
     if (!_globalsDir.empty()) {
       _includePaths.erase(_includePaths.begin());
     }
