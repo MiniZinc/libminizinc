@@ -42,6 +42,7 @@ Changes:
    processing of options whose names conflict with other flags.
 -  The Gecode-based pre-solver is now made available using the ``gecode`` solver
    tag when using the WebAssembly version of MiniZinc.
+-  Remove unnecessary file packager patch from WebAssembly build.
 
 Bug fixes:
 ^^^^^^^^^^

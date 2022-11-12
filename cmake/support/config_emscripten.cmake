@@ -16,7 +16,6 @@ if (DEFINED EMSCRIPTEN)
     #  -- Web Assembly Configuration.
 
     # MiniZinc main executable
-    em_link_pre_js(minizinc ${PROJECT_SOURCE_DIR}/cmake/support/emscripten_file_packager_patch.js)
     em_link_pre_js(minizinc ${PROJECT_BINARY_DIR}/CMakeFiles/file_packager.js)
 
     set_target_properties(minizinc PROPERTIES LINK_FLAGS "-s WASM=1 -s EXPORT_NAME=\"'MINIZINC'\" ${EMSCRIPTEN_LINK_FLAGS}")
@@ -25,7 +24,6 @@ if (DEFINED EMSCRIPTEN)
     install(FILES ${PROJECT_BINARY_DIR}/minizinc.data DESTINATION bin)
 
     # mzn2doc executable
-    em_link_pre_js(mzn2doc ${PROJECT_SOURCE_DIR}/cmake/support/emscripten_file_packager_patch.js)
     em_link_pre_js(mzn2doc ${PROJECT_BINARY_DIR}/CMakeFiles/file_packager.js)
 
     set_target_properties(mzn2doc PROPERTIES LINK_FLAGS "-s WASM=1 -s EXPORT_NAME=\"'MZN2DOC'\" ${EMSCRIPTEN_LINK_FLAGS}")
