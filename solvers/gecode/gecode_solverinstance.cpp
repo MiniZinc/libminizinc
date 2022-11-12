@@ -28,12 +28,18 @@ namespace MiniZinc {
 
 GecodeSolverFactory::GecodeSolverFactory() {
   SolverConfig sc("org.minizinc.gecode_presolver", GECODE_VERSION);
+#ifdef __EMSCRIPTEN__
+  // Allow use with the gecode tag and appear in --solvers for WASM build
+  sc.name("Gecode");
+  sc.tags({"cp", "float", "api", "set", "gecode_presolver", "gecode"});
+#else
   sc.name("Presolver");
+  sc.tags({"cp", "float", "api", "set", "gecode_presolver", "__internal__"});
+#endif
   sc.mznlib("-Ggecode_presolver");
   sc.mznlibVersion(1);
   sc.supportsMzn(false);
   sc.description("Internal Gecode presolver plugin");
-  sc.tags({"cp", "float", "api", "set", "gecode_presolver", "__internal__"});
   sc.stdFlags({"-a", "-n"});
   SolverConfigs::registerBuiltinSolver(sc);
 }

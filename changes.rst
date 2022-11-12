@@ -40,6 +40,8 @@ Changes:
    more positive contexts, but inadvertently came at the cost of count aggregation.
 -  The Gecode-based pre-solver can now accept ``--backend-flags`` to allow
    processing of options whose names conflict with other flags.
+-  The Gecode-based pre-solver is now made available using the ``gecode`` solver
+   tag when using the WebAssembly version of MiniZinc.
 
 Bug fixes:
 ^^^^^^^^^^
