@@ -59,7 +59,17 @@ bool GecodeSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i
                                         std::vector<std::string>& argv,
                                         const std::string& workingDir) {
   auto& _opt = static_cast<GecodeOptions&>(*opt);
-  if (string(argv[i]) == "--allow-unbounded-vars") {
+  if (string(argv[i]) == "--backend-flags") {
+    if (++i == argv.size()) {
+      return false;
+    }
+    auto args = FileUtils::parse_cmd_line(argv[i]);
+    for (int j = 0; j < args.size(); j++) {
+      if (!processOption(opt, j, args, workingDir)) {
+        return false;
+      }
+    }
+  } else if (string(argv[i]) == "--allow-unbounded-vars") {
     _opt.allowUnboundedVars = true;
   } else if (string(argv[i]) == "--only-range-domains") {
     _opt.onlyRangeDomains = true;
@@ -176,6 +186,8 @@ void GecodeSolverFactory::printHelp(ostream& os) {
      << "    print intermediate solutions" << std::endl
      << "  -n <sols>" << std::endl
      << "    number of solutions" << std::endl
+     << "  --backend-flags <options>" << std::endl
+     << "    process the given flags using this solver plugin" << std::endl
      << std::endl;
 }
 

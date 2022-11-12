@@ -26,7 +26,7 @@ Changes:
 
 -  The compiler will no longer introduce ``array_bool_or``, only ``bool_clause``.
 -  Improve translation of some simple constraints, which avoids introducing
-   unneccessary ``int_eq`` (and similar) constraints.
+   unnecessary ``int_eq`` (and similar) constraints.
 -  Remove more subsumed clauses and foralls in the optimisation phase of the compiler.
 -  Report approximate error locations for type errors in function arguments that
    are literals without location information.
@@ -38,6 +38,8 @@ Changes:
    also annotated with ``is_defined_var`` and ``defines_var(x)`` annotations.
 -  Revert changes in the ``fzn_count_*`` variants that tried to introduce
    more positive contexts, but inadvertently came at the cost of count aggregation.
+-  The Gecode-based pre-solver can now accept ``--backend-flags`` to allow
+   processing of options whose names conflict with other flags.
 
 Bug fixes:
 ^^^^^^^^^^
