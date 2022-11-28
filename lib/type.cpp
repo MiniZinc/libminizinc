@@ -54,6 +54,7 @@ bool Type::btSubtype(const EnvI& env, const Type& t0, const Type& t1, bool stric
 void Type::mkPar(EnvI& env) {
   if (!structBT()) {
     ti(TI_PAR);
+    cv(false);
     return;
   }
   if (!cv()) {
@@ -73,6 +74,7 @@ void Type::mkPar(EnvI& env) {
       pt[i].mkPar(env);
     } else {
       pt[i].ti(TI_PAR);
+      pt[i].cv(false);
     }
   }
   typeId(0);

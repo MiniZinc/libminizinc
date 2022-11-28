@@ -569,19 +569,19 @@ public:
       curType.typeId(concrete_type.typeId());
       ti->type(curType);
       if (TIId* tiid = Expression::dynamicCast<TIId>(ti->domain())) {
-        ti_map.emplace(tiid->v(), concrete_type);
-        if (concrete_type.typeId() == 0) {
+        ti_map.emplace(tiid->v(), curType);
+        if (curType.typeId() == 0) {
           // replace tiid with empty domain
           ti->domain(nullptr);
-        } else if (concrete_type.structBT()) {
-          StructType* ctt = env.getStructType(concrete_type);
+        } else if (curType.structBT()) {
+          StructType* ctt = env.getStructType(curType);
           // Create new TypeInst domain for struct argument
-          ti->setStructDomain(env, concrete_type, true);
+          ti->setStructDomain(env, curType, true);
           walkTIMap(env, ti_map, ti, ctt, (*tg.inner)[i]);
         } else {
-          auto enumId = concrete_type.typeId();
-          if (concrete_type.dim() != 0) {
-            const auto& aet = env.getArrayEnum(concrete_type.typeId());
+          auto enumId = curType.typeId();
+          if (curType.dim() != 0) {
+            const auto& aet = env.getArrayEnum(curType.typeId());
             enumId = aet[aet.size() - 1];
           }
           if (enumId != 0) {
@@ -598,12 +598,12 @@ public:
         if (TIId* tiid = Expression::dynamicCast<TIId>(ti->ranges()[j]->domain())) {
           if (tiid->isEnum()) {
             // find concrete enum type
-            if (concrete_type.typeId() == 0) {
+            if (curType.typeId() == 0) {
               // lct is not an enum type -> turn this one into a simple int
               ti->ranges()[j]->domain(nullptr);
               ti_map.emplace(tiid->v(), Type::parint());
             } else {
-              const auto& aet = env.getArrayEnum(concrete_type.typeId());
+              const auto& aet = env.getArrayEnum(curType.typeId());
               if (aet[j] == 0) {
                 // lct is not an enum type -> turn this one into a simple int
                 ti->ranges()[j]->domain(nullptr);
@@ -615,10 +615,10 @@ public:
               }
             }
           } else {
-            ti_map.emplace(tiid->v(), Type::parint(concrete_type.dim()));
+            ti_map.emplace(tiid->v(), Type::parint(curType.dim()));
             // add concrete number of ranges
-            std::vector<TypeInst*> newRanges(concrete_type.dim());
-            for (unsigned int k = 0; k < concrete_type.dim(); k++) {
+            std::vector<TypeInst*> newRanges(curType.dim());
+            for (unsigned int k = 0; k < curType.dim(); k++) {
               newRanges[k] = new TypeInst(Location().introduce(), Type::parint());
             }
             ti->setRanges(newRanges);
