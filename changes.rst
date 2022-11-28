@@ -20,6 +20,7 @@ Changes in interfaces to solvers:
 -  A solver's globals library specified in a configuration file will now
    always be passed to the compiler using the `-G` flag. This allows users to
    easily override this library from command line when required.
+-  Automatically detect Gurobi 10.0 and potential future versions.
 
 Changes:
 ^^^^^^^^
