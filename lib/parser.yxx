@@ -148,14 +148,14 @@ void parseFieldTail(const ParserLocation& loc, std::vector<Expression*>& parsed,
     if (*it == '\'') {
       ++field_start;
       ++it;
-      while(*it != '\'') {
+      while (*it != '\'') {
         ++it;
         assert(it != tail.end()); // otherwise error in the lexer regex
       }
       field = std::string(field_start, it);
       ++it;
     } else {
-      while(!isWS() && *it != '.' && it != tail.end()) {
+      while (it != tail.end() && !isWS() && *it != '.') {
         is_num = is_num && isdigit(*it);
         ++it;
       }
