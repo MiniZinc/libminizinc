@@ -52,16 +52,16 @@ namespace MiniZinc {
 #else
 #define MZN_PRINT_SRCLOC(e1, e2)
 #endif
-#define MZN_ASSERT_HARD(c)      \
-  do {                          \
-    if (!(c)) {                 \
-      MZN_PRINT_SRCLOC(#c, ""); \
-      throw InternalError(#c);  \
-    }                           \
+#define MZN_ASSERT_HARD(c)                                      \
+  do {                                                          \
+    if (!(c)) { /* NOLINT(readability-simplify-boolean-expr) */ \
+      MZN_PRINT_SRCLOC(#c, "");                                 \
+      throw InternalError(#c);                                  \
+    }                                                           \
   } while (0)
 #define MZN_ASSERT_HARD_MSG(c, e)                                                 \
   do {                                                                            \
-    if (!(c)) {                                                                   \
+    if (!(c)) { /* NOLINT(readability-simplify-boolean-expr) */                   \
       MZN_PRINT_SRCLOC(#c, e);                                                    \
       std::ostringstream oss;                                                     \
       oss << "not " << #c << ":  " << e; /* NOLINT(bugprone-macro-parentheses) */ \

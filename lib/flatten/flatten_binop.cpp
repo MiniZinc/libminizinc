@@ -948,8 +948,8 @@ EE flatten_nonbool_op(EnvI& env, const Ctx& ctx, const Ctx& ctx0, const Ctx& ctx
     cc = Call::a(bo->loc().introduce(), op_to_builtin(env, args[0], args[1], bot), args);
   }
   cc->type(bo->type());
-  EnvI::CSEMap::iterator cit;
-  if ((cit = env.cseMapFind(cc)) != env.cseMapEnd()) {
+  auto cit = env.cseMapFind(cc);
+  if (cit != env.cseMapEnd()) {
     ret.b = bind(env, Ctx(), b, env.ignorePartial ? env.constants.literalTrue : cit->second.b);
     ret.r = bind(env, ctx, r, cit->second.r);
   } else {

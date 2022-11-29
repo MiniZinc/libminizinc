@@ -36,7 +36,6 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     return ret;
   }
   if (e->type().dim() > 0) {
-    EnvI::CSEMap::iterator it;
     auto* ident = e->dynamicCast<Id>();
     if (ident != nullptr) {
       Expression* e_val = follow_id_to_decl(ident);
@@ -68,7 +67,8 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
         return ret;
       }
     }
-    if ((it = env.cseMapFind(e)) != env.cseMapEnd()) {
+    auto it = env.cseMapFind(e);
+    if (it != env.cseMapEnd()) {
       ret.r = bind(env, ctx, r, it->second.r->cast<VarDecl>()->id());
       ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
       return ret;
@@ -85,7 +85,8 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
       ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
       return ret;
     }
-    if ((it = env.cseMapFind(al)) != env.cseMapEnd()) {
+    it = env.cseMapFind(al);
+    if (it != env.cseMapEnd()) {
       ret.r = bind(env, ctx, r, it->second.r->cast<VarDecl>()->id());
       ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
       return ret;

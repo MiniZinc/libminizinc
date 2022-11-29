@@ -689,17 +689,18 @@ int get_mask_cons_type(const Call* call);
 /// otherwise pfx << cnt.
 inline std::string make_constraint_name(const char* pfx, int cnt,
                                         const Expression* cOrig = nullptr) {
-  Call* mznp;
   std::ostringstream ss;
-  if (nullptr != cOrig &&
-      ((mznp = cOrig->ann().getCall(Constants::constants().ann.mzn_path)) != nullptr)) {
-    assert(1 == mznp->argCount());
-    auto* strp = mznp->arg(0)->dynamicCast<StringLit>();
-    assert(strp);
-    ss << strp->v().substr(0, 255);  // Gurobi 8.1 has <=255 characters
-  } else {
-    ss << pfx << cnt;
+  if (cOrig != nullptr) {
+    auto* mznp = cOrig->ann().getCall(Constants::constants().ann.mzn_path);
+    if (mznp != nullptr) {
+      assert(1 == mznp->argCount());
+      auto* strp = mznp->arg(0)->dynamicCast<StringLit>();
+      assert(strp);
+      ss << strp->v().substr(0, 255);  // Gurobi 8.1 has <=255 characters
+      return ss.str();
+    }
   }
+  ss << pfx << cnt;
   return ss.str();
 }
 

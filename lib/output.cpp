@@ -583,8 +583,8 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e) {
         env.outputVarOccurrences.add(nvi->e(), ci);
         env.output->addItem(nvi);
 
-        IdMap<KeepAlive>::iterator it;
-        if ((it = env.reverseMappers.find(nvi->e()->id())) != env.reverseMappers.end()) {
+        auto it = env.reverseMappers.find(nvi->e()->id());
+        if (it != env.reverseMappers.end()) {
           Expression* rhs = copy(env, env.cmap, it->second());
           if (Call* crhs = rhs->dynamicCast<Call>()) {
             check_output_par_fn(env, crhs);
@@ -1477,7 +1477,6 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
         vd->ann().clear();
         vd->introduced(false);
 
-        IdMap<KeepAlive>::iterator it;
         if (!vd_orig->type().isPar()) {
           if (vd->flat() == nullptr && vd_orig->e() != nullptr && vd_orig->e()->type().isPar()) {
             // Don't have a flat version of this variable, but the original has a right hand
@@ -1505,79 +1504,82 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
               Expression* flate = copy(env, env.cmap, follow_id(reallyFlat->id()));
               output_vardecls(env, vdi_copy, flate);
               vd_followed->e(flate);
-            } else if ((it = env.reverseMappers.find(vd_followed->id())) !=
-                       env.reverseMappers.end()) {
-              // Found a reverse mapper, so we need to add the mapping function to the
-              // output model to map the FlatZinc value back to the model variable.
-              Expression* rhs = copy(env, env.cmap, it->second());
-              if (Call* crhs = rhs->dynamicCast<Call>()) {
-                check_output_par_fn(env, crhs);
-              }
-              output_vardecls(env, vdi_copy, rhs);
-              vd_followed->e(rhs);
-            } else if (reallyFlat == vd_orig || cannot_use_rhs_for_output(env, vd_followed->e()) ||
-                       rhs_contains_var_comp(env, vd_orig->e())) {
-              // If the VarDecl does not have a usable right hand side, it needs to be
-              // marked as output in the FlatZinc
-              vd_followed->e(nullptr);
-              assert(vd_followed->flat());
-              if (vd_followed->type().dim() == 0) {
-                vd_followed->flat()->addAnnotation(env.constants.ann.output_var);
-                check_rename_var(env, vd_followed);
-              } else {
-                bool needOutputAnn = true;
-                if ((reallyFlat->e() != nullptr) && reallyFlat->e()->isa<ArrayLit>()) {
-                  auto* al = reallyFlat->e()->cast<ArrayLit>();
-                  for (unsigned int i = 0; i < al->size(); i++) {
-                    if (Id* id = (*al)[i]->dynamicCast<Id>()) {
-                      if (env.reverseMappers.find(id) != env.reverseMappers.end()) {
-                        needOutputAnn = false;
-                        break;
+            } else {
+              auto it = env.reverseMappers.find(vd_followed->id());
+              if (it != env.reverseMappers.end()) {
+                // Found a reverse mapper, so we need to add the mapping function to the
+                // output model to map the FlatZinc value back to the model variable.
+                Expression* rhs = copy(env, env.cmap, it->second());
+                if (Call* crhs = rhs->dynamicCast<Call>()) {
+                  check_output_par_fn(env, crhs);
+                }
+                output_vardecls(env, vdi_copy, rhs);
+                vd_followed->e(rhs);
+              } else if (reallyFlat == vd_orig ||
+                         cannot_use_rhs_for_output(env, vd_followed->e()) ||
+                         rhs_contains_var_comp(env, vd_orig->e())) {
+                // If the VarDecl does not have a usable right hand side, it needs to be
+                // marked as output in the FlatZinc
+                vd_followed->e(nullptr);
+                assert(vd_followed->flat());
+                if (vd_followed->type().dim() == 0) {
+                  vd_followed->flat()->addAnnotation(env.constants.ann.output_var);
+                  check_rename_var(env, vd_followed);
+                } else {
+                  bool needOutputAnn = true;
+                  if ((reallyFlat->e() != nullptr) && reallyFlat->e()->isa<ArrayLit>()) {
+                    auto* al = reallyFlat->e()->cast<ArrayLit>();
+                    for (unsigned int i = 0; i < al->size(); i++) {
+                      if (Id* id = (*al)[i]->dynamicCast<Id>()) {
+                        if (env.reverseMappers.find(id) != env.reverseMappers.end()) {
+                          needOutputAnn = false;
+                          break;
+                        }
                       }
                     }
-                  }
-                  if (!needOutputAnn) {
-                    output_vardecls(env, vdi_copy, al);
-                    vd_followed->e(copy(env, env.cmap, al));
-                  }
-                }
-                if (needOutputAnn) {
-                  const auto dims = vd_orig->type().dim();
-                  std::vector<Expression*> args(dims);
-                  for (unsigned int i = 0; i < args.size(); i++) {
-                    if (vd_orig->ti()->ranges()[i]->domain() == nullptr) {
-                      args[i] = new SetLit(
-                          Location().introduce(),
-                          eval_intset(env, vd_followed->flat()->ti()->ranges()[i]->domain()));
-                    } else {
-                      args[i] =
-                          new SetLit(Location().introduce(),
-                                     eval_intset(env, vd_followed->ti()->ranges()[i]->domain()));
+                    if (!needOutputAnn) {
+                      output_vardecls(env, vdi_copy, al);
+                      vd_followed->e(copy(env, env.cmap, al));
                     }
                   }
-                  if (env.fopts.ignoreStdlib) {
-                    // Ensure array?d call output by solver is available in output model
-                    std::vector<Type> ts(dims + 1);
-                    for (auto i = 0; i < dims; i++) {
-                      ts[i] = Type::parsetint();
+                  if (needOutputAnn) {
+                    const auto dims = vd_orig->type().dim();
+                    std::vector<Expression*> args(dims);
+                    for (unsigned int i = 0; i < args.size(); i++) {
+                      if (vd_orig->ti()->ranges()[i]->domain() == nullptr) {
+                        args[i] = new SetLit(
+                            Location().introduce(),
+                            eval_intset(env, vd_followed->flat()->ti()->ranges()[i]->domain()));
+                      } else {
+                        args[i] =
+                            new SetLit(Location().introduce(),
+                                       eval_intset(env, vd_followed->ti()->ranges()[i]->domain()));
+                      }
                     }
-                    ts[dims] = reallyFlat->e()->type();
-                    std::stringstream ss;
-                    ss << "array" << dims << "d";
-                    ASTString ident(ss.str());
-                    if (env.output->matchFn(env, ident, ts, false) == nullptr) {
-                      auto* decl = copy(env, env.cmap, env.model->matchFn(env, ident, ts, true))
-                                       ->cast<FunctionI>();
-                      (void)env.output->registerFn(env, decl, true);
-                      env.output->addItem(decl);
+                    if (env.fopts.ignoreStdlib) {
+                      // Ensure array?d call output by solver is available in output model
+                      std::vector<Type> ts(dims + 1);
+                      for (auto i = 0; i < dims; i++) {
+                        ts[i] = Type::parsetint();
+                      }
+                      ts[dims] = reallyFlat->e()->type();
+                      std::stringstream ss;
+                      ss << "array" << dims << "d";
+                      ASTString ident(ss.str());
+                      if (env.output->matchFn(env, ident, ts, false) == nullptr) {
+                        auto* decl = copy(env, env.cmap, env.model->matchFn(env, ident, ts, true))
+                                         ->cast<FunctionI>();
+                        (void)env.output->registerFn(env, decl, true);
+                        env.output->addItem(decl);
+                      }
                     }
+                    auto* al = new ArrayLit(Location().introduce(), args);
+                    args.resize(1);
+                    args[0] = al;
+                    vd_followed->flat()->addAnnotation(
+                        Call::a(Location().introduce(), env.constants.ann.output_array, args));
+                    check_rename_var(env, vd_followed);
                   }
-                  auto* al = new ArrayLit(Location().introduce(), args);
-                  args.resize(1);
-                  args[0] = al;
-                  vd_followed->flat()->addAnnotation(
-                      Call::a(Location().introduce(), env.constants.ann.output_array, args));
-                  check_rename_var(env, vd_followed);
                 }
               }
             }
@@ -1676,7 +1678,6 @@ void finalise_output(EnvI& e) {
       switch (item->iid()) {
         case Item::II_VD: {
           VarDecl* vd = item->cast<VarDeclI>()->e();
-          IdMap<KeepAlive>::iterator it;
           GCLock lock;
           VarDecl* reallyFlat = vd->flat();
           while ((reallyFlat != nullptr) && reallyFlat != reallyFlat->flat()) {
@@ -1698,113 +1699,116 @@ void finalise_output(EnvI& e) {
               }
               output_vardecls(e, item, flate);
               vd->e(flate);
-            } else if ((it = e.reverseMappers.find(vd->id())) != e.reverseMappers.end()) {
-              Call* rhs = copy(e, e.cmap, it->second())->cast<Call>();
-              check_output_par_fn(e, rhs);
-              remove_is_output(reallyFlat);
-
-              output_vardecls(e, item, it->second()->cast<Call>());
-              vd->e(rhs);
-
-              if (e.varOccurrences.occurrences(reallyFlat) == 0 && reallyFlat->e() == nullptr) {
-                auto it = e.varOccurrences.idx.find(reallyFlat->id());
-                assert(it.first);
-                e.flatRemoveItem((*e.flat())[*it.second]->cast<VarDeclI>());
-              }
             } else {
-              // If the VarDecl does not have a usable right hand side, it needs to be
-              // marked as output in the FlatZinc
-              assert(vd->flat());
+              auto it = e.reverseMappers.find(vd->id());
+              if (it != e.reverseMappers.end()) {
+                Call* rhs = copy(e, e.cmap, it->second())->cast<Call>();
+                check_output_par_fn(e, rhs);
+                remove_is_output(reallyFlat);
 
-              bool needOutputAnn = true;
-              if ((reallyFlat->e() != nullptr) && reallyFlat->e()->isa<Id>()) {
-                Id* ident = reallyFlat->e()->cast<Id>();
-                if (e.reverseMappers.find(ident) != e.reverseMappers.end()) {
-                  needOutputAnn = false;
-                  remove_is_output(vd);
-                  remove_is_output(reallyFlat);
+                output_vardecls(e, item, it->second()->cast<Call>());
+                vd->e(rhs);
 
-                  vd->e(copy(e, e.cmap, ident));
-                  Type al_t(vd->e()->type());
-                  al_t.mkPar(e);
-                  vd->e()->type(al_t);
-
-                  output_vardecls(e, item, ident);
-
-                  if (e.varOccurrences.occurrences(reallyFlat) == 0) {
-                    auto it = e.varOccurrences.idx.find(reallyFlat->id());
-                    assert(it.first);
-                    e.flatRemoveItem((*e.flat())[*it.second]->cast<VarDeclI>());
-                  }
+                if (e.varOccurrences.occurrences(reallyFlat) == 0 && reallyFlat->e() == nullptr) {
+                  auto it = e.varOccurrences.idx.find(reallyFlat->id());
+                  assert(it.first);
+                  e.flatRemoveItem((*e.flat())[*it.second]->cast<VarDeclI>());
                 }
-              } else if ((reallyFlat->e() != nullptr) && reallyFlat->e()->isa<ArrayLit>()) {
-                auto* al = reallyFlat->e()->cast<ArrayLit>();
-                for (unsigned int i = 0; i < al->size(); i++) {
-                  if (Id* ident = follow_id_to_value((*al)[i])->dynamicCast<Id>()) {
-                    if (e.reverseMappers.find(ident) != e.reverseMappers.end()) {
-                      needOutputAnn = false;
-                      break;
+              } else {
+                // If the VarDecl does not have a usable right hand side, it needs to be
+                // marked as output in the FlatZinc
+                assert(vd->flat());
+
+                bool needOutputAnn = true;
+                if ((reallyFlat->e() != nullptr) && reallyFlat->e()->isa<Id>()) {
+                  Id* ident = reallyFlat->e()->cast<Id>();
+                  if (e.reverseMappers.find(ident) != e.reverseMappers.end()) {
+                    needOutputAnn = false;
+                    remove_is_output(vd);
+                    remove_is_output(reallyFlat);
+
+                    vd->e(copy(e, e.cmap, ident));
+                    Type al_t(vd->e()->type());
+                    al_t.mkPar(e);
+                    vd->e()->type(al_t);
+
+                    output_vardecls(e, item, ident);
+
+                    if (e.varOccurrences.occurrences(reallyFlat) == 0) {
+                      auto it = e.varOccurrences.idx.find(reallyFlat->id());
+                      assert(it.first);
+                      e.flatRemoveItem((*e.flat())[*it.second]->cast<VarDeclI>());
                     }
                   }
-                }
-                if (!needOutputAnn) {
-                  remove_is_output(vd);
-                  remove_is_output(reallyFlat);
-                  if (e.varOccurrences.occurrences(reallyFlat) == 0) {
-                    auto it = e.varOccurrences.idx.find(reallyFlat->id());
-                    assert(it.first);
-                    e.flatRemoveItem((*e.flat())[*it.second]->cast<VarDeclI>());
+                } else if ((reallyFlat->e() != nullptr) && reallyFlat->e()->isa<ArrayLit>()) {
+                  auto* al = reallyFlat->e()->cast<ArrayLit>();
+                  for (unsigned int i = 0; i < al->size(); i++) {
+                    if (Id* ident = follow_id_to_value((*al)[i])->dynamicCast<Id>()) {
+                      if (e.reverseMappers.find(ident) != e.reverseMappers.end()) {
+                        needOutputAnn = false;
+                        break;
+                      }
+                    }
                   }
+                  if (!needOutputAnn) {
+                    remove_is_output(vd);
+                    remove_is_output(reallyFlat);
+                    if (e.varOccurrences.occurrences(reallyFlat) == 0) {
+                      auto it = e.varOccurrences.idx.find(reallyFlat->id());
+                      assert(it.first);
+                      e.flatRemoveItem((*e.flat())[*it.second]->cast<VarDeclI>());
+                    }
 
-                  output_vardecls(e, item, al);
-                  vd->e(copy(e, e.cmap, al));
-                  Type al_t(vd->e()->type());
-                  al_t.mkPar(e);
-                  vd->e()->type(al_t);
-                }
-              }
-              if (needOutputAnn) {
-                if (!is_output(vd->flat())) {
-                  GCLock lock;
-                  const auto dims = vd->type().dim();
-                  if (dims == 0) {
-                    vd->flat()->addAnnotation(e.constants.ann.output_var);
-                  } else {
-                    std::vector<Expression*> args(dims);
-                    for (unsigned int i = 0; i < args.size(); i++) {
-                      if (vd->ti()->ranges()[i]->domain() == nullptr) {
-                        args[i] =
-                            new SetLit(Location().introduce(),
-                                       eval_intset(e, vd->flat()->ti()->ranges()[i]->domain()));
-                      } else {
-                        args[i] = new SetLit(Location().introduce(),
-                                             eval_intset(e, vd->ti()->ranges()[i]->domain()));
-                      }
-                    }
-                    if (e.fopts.ignoreStdlib) {
-                      // Ensure array?d call output by solver is available in output model
-                      std::vector<Type> ts(dims + 1);
-                      for (auto i = 0; i < dims; i++) {
-                        ts[i] = Type::parsetint();
-                      }
-                      ts[dims] = reallyFlat->e()->type();
-                      std::stringstream ss;
-                      ss << "array" << dims << "d";
-                      ASTString ident(ss.str());
-                      if (e.output->matchFn(e, ident, ts, false) == nullptr) {
-                        auto* decl = copy(e, e.cmap, e.model->matchFn(e, ident, ts, true))
-                                         ->cast<FunctionI>();
-                        (void)e.output->registerFn(e, decl, true);
-                        e.output->addItem(decl);
-                      }
-                    }
-                    auto* al = new ArrayLit(Location().introduce(), args);
-                    args.resize(1);
-                    args[0] = al;
-                    vd->flat()->addAnnotation(
-                        Call::a(Location().introduce(), e.constants.ann.output_array, args));
+                    output_vardecls(e, item, al);
+                    vd->e(copy(e, e.cmap, al));
+                    Type al_t(vd->e()->type());
+                    al_t.mkPar(e);
+                    vd->e()->type(al_t);
                   }
-                  check_rename_var(e, vd);
+                }
+                if (needOutputAnn) {
+                  if (!is_output(vd->flat())) {
+                    GCLock lock;
+                    const auto dims = vd->type().dim();
+                    if (dims == 0) {
+                      vd->flat()->addAnnotation(e.constants.ann.output_var);
+                    } else {
+                      std::vector<Expression*> args(dims);
+                      for (unsigned int i = 0; i < args.size(); i++) {
+                        if (vd->ti()->ranges()[i]->domain() == nullptr) {
+                          args[i] =
+                              new SetLit(Location().introduce(),
+                                         eval_intset(e, vd->flat()->ti()->ranges()[i]->domain()));
+                        } else {
+                          args[i] = new SetLit(Location().introduce(),
+                                               eval_intset(e, vd->ti()->ranges()[i]->domain()));
+                        }
+                      }
+                      if (e.fopts.ignoreStdlib) {
+                        // Ensure array?d call output by solver is available in output model
+                        std::vector<Type> ts(dims + 1);
+                        for (auto i = 0; i < dims; i++) {
+                          ts[i] = Type::parsetint();
+                        }
+                        ts[dims] = reallyFlat->e()->type();
+                        std::stringstream ss;
+                        ss << "array" << dims << "d";
+                        ASTString ident(ss.str());
+                        if (e.output->matchFn(e, ident, ts, false) == nullptr) {
+                          auto* decl = copy(e, e.cmap, e.model->matchFn(e, ident, ts, true))
+                                           ->cast<FunctionI>();
+                          (void)e.output->registerFn(e, decl, true);
+                          e.output->addItem(decl);
+                        }
+                      }
+                      auto* al = new ArrayLit(Location().introduce(), args);
+                      args.resize(1);
+                      args[0] = al;
+                      vd->flat()->addAnnotation(
+                          Call::a(Location().introduce(), e.constants.ann.output_array, args));
+                    }
+                    check_rename_var(e, vd);
+                  }
                 }
               }
             }

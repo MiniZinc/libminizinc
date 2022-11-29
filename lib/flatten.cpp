@@ -4331,16 +4331,17 @@ void flatten(Env& e, FlatteningOptions opt) {
     // Add redefinitions for output variables that may have been redefined since create_output
     for (unsigned int i = 0; i < env.output->size(); i++) {
       if (auto* vdi = (*env.output)[i]->dynamicCast<VarDeclI>()) {
-        IdMap<KeepAlive>::iterator it;
-        if (vdi->e()->e() == nullptr &&
-            (it = env.reverseMappers.find(vdi->e()->id())) != env.reverseMappers.end()) {
-          GCLock lock;
-          Call* rhs = copy(env, env.cmap, it->second())->cast<Call>();
-          check_output_par_fn(env, rhs);
-          output_vardecls(env, vdi, rhs);
+        if (vdi->e()->e() == nullptr) {
+          auto it = env.reverseMappers.find(vdi->e()->id());
+          if (it != env.reverseMappers.end()) {
+            GCLock lock;
+            Call* rhs = copy(env, env.cmap, it->second())->cast<Call>();
+            check_output_par_fn(env, rhs);
+            output_vardecls(env, vdi, rhs);
 
-          remove_is_output(vdi->e()->flat());
-          vdi->e()->e(rhs);
+            remove_is_output(vdi->e()->flat());
+            vdi->e()->e(rhs);
+          }
         }
       }
     }
