@@ -66,6 +66,7 @@ Bug fixes:
 -  Fix default search for Gecode-based presolver to be the same as standalone Gecode solver.
 -  Fix possible extraneous newline when printing warnings in ``--json-stream`` mode.
 -  Allow option types to be declared with empty domains.
+-  Fix an error in checking floating point array domains for functions with defined domains.
 
 .. _v2.6.4:
 

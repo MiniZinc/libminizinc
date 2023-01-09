@@ -558,7 +558,14 @@ typename Eval::Val eval_call(EnvI& env, CallClass* ce) {
             FloatSetVal* fsv = eval_floatset(env, dom);
             FloatVal dom_min = fsv->min();
             FloatVal dom_max = fsv->max();
-            check_dom(env, vd->id(), dom_min, dom_max, vd->e());
+            if (vd->e()->type().dim() > 0) {
+              ArrayLit* al = eval_array_lit(env, vd->e());
+              for (unsigned int i = 0; i < al->size(); i++) {
+                check_dom(env, vd->id(), dom_min, dom_max, (*al)[i]);
+              }
+            } else {
+              check_dom(env, vd->id(), dom_min, dom_max, vd->e());
+            }
           }
         }
       }
