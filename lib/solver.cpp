@@ -458,10 +458,6 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
     argv = remaining;
     argc = static_cast<int>(remaining.size());
   }
-  for (auto* sf : get_global_solver_registry()->getSolverFactories()) {
-    // Notify solver factories that factory flags are done
-    sf->factoryOptionsFinished();
-  }
 
   // After this point all solver configurations must be available
   _solverConfigs.populate(_log);
@@ -486,6 +482,9 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       return OPTION_FINISH;
     }
     if (argv[i] == "--solvers") {
+      for (auto* sf : get_global_solver_registry()->getSolverFactories()) {
+        sf->finaliseSolverConfigs(_solverConfigs);
+      }
       cout << "MiniZinc driver.\nAvailable solver configurations:\n";
       std::vector<std::string> solvers = _solverConfigs.solvers();
       if (solvers.empty()) {
@@ -501,6 +500,9 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       return OPTION_FINISH;
     }
     if (argv[i] == "--solvers-json") {
+      for (auto* sf : get_global_solver_registry()->getSolverFactories()) {
+        sf->finaliseSolverConfigs(_solverConfigs);
+      }
       cout << _solverConfigs.solverConfigsJSON();
       return OPTION_FINISH;
     }
@@ -516,6 +518,11 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       }
       solver = argv[i];
       const SolverConfig& sc = _solverConfigs.config(solver);
+      for (auto* sf : get_global_solver_registry()->getSolverFactories()) {
+        if (sf->getId() == sc.id()) {
+          sf->finaliseSolverConfigs(_solverConfigs);
+        }
+      }
       cout << sc.toJSON(_solverConfigs);
       return OPTION_FINISH;
     }
@@ -623,7 +630,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
 
   if (!flagIsSolns2out) {
     try {
-      const SolverConfig& sc = _solverConfigs.config(solver);
+      SolverConfig& sc = _solverConfigs.config(solver);
       string solverId;
       if (sc.executable().empty()) {
         solverId = sc.id();
@@ -638,21 +645,21 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
         return OPTION_ERROR;
       }
 
-      // Check support of -a and -i
-      for (const auto& flag : sc.stdFlags()) {
-        if (flag == "-a") {
-          _supportsA = true;
-        } else if (flag == "-i") {
-          _supportsI = true;
-        } else if (flag == "--json-stream") {
-          _supportsJSONStream = true;
-        }
-      }
-
       for (auto* it : get_global_solver_registry()->getSolverFactories()) {
         if (it->getId() ==
             solverId) {  /// TODO: also check version (currently assumes all ids are unique)
           _sf = it;
+          _sf->finaliseSolverConfigs(_solverConfigs);
+          // Check support of -a and -i
+          for (const auto& flag : sc.stdFlags()) {
+            if (flag == "-a") {
+              _supportsA = true;
+            } else if (flag == "-i") {
+              _supportsI = true;
+            } else if (flag == "--json-stream") {
+              _supportsJSONStream = true;
+            }
+          }
           delete _siOpt;
           _siOpt = _sf->createOptions();
           if (!sc.executable().empty() || solverId == "org.minizinc.mzn-fzn" ||

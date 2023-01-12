@@ -112,6 +112,8 @@ public:
   std::string id() const { return _id; }
   /// Return version string
   std::string version() const { return _version; }
+  /// Set version string
+  void version(const std::string& v) { _version = v; }
 
   /// Return configuration file name
   std::string configFile() const { return _configFile; }
@@ -287,7 +289,7 @@ public:
   ///   config("gecode@6.1.0") would request a gecode solver of version 6.1.0
   ///   config("mip,internal") would request a MIP solver that uses the internal API
   ///   config("org.minizinc.mip.coin-bc@2.9/1.16 would request a specific version of OSICBC
-  const SolverConfig& config(const std::string& s);
+  SolverConfig& config(const std::string& s);
   /// Return list of all solver ids
   std::vector<std::string> solvers() const;
   /// Return search path for solver configs

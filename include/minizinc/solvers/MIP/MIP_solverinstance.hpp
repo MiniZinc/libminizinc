@@ -10,6 +10,16 @@ MIPSolverFactory<MIPWrapper>::MIPSolverFactory() : _factoryOptions() {
   for (auto& flag : MIPWrapper::getFactoryFlags()) {
     get_global_solver_registry()->addFactoryFlag(flag, this);
   }
+
+  // Register solver without loading DLLs
+  SolverConfig sc(getId(), "<unknown version>");
+  sc.name(MIPWrapper::getName());
+  sc.mznlib(MIPWrapper::getMznLib());
+  sc.mznlibVersion(1);
+  sc.supportsMzn(true);
+  sc.tags(MIPWrapper::getTags());
+  sc.stdFlags(MIPWrapper::getStdFlags());
+  SolverConfigs::registerBuiltinSolver(sc);
 }
 
 template <class MIPWrapper>
@@ -19,19 +29,14 @@ bool MIPSolverFactory<MIPWrapper>::processFactoryOption(int& i, std::vector<std:
 }
 
 template <class MIPWrapper>
-void MIPSolverFactory<MIPWrapper>::factoryOptionsFinished() {
+void MIPSolverFactory<MIPWrapper>::finaliseSolverConfigs(SolverConfigs& solver_configs) {
+  // Finalise solver config (needs DLLs)
+  auto& sc = solver_configs.config(getId());
   _extraFlags = MIPWrapper::getExtraFlags(_factoryOptions);
-  SolverConfig sc(getId(), MIPWrapper::getVersion(_factoryOptions, nullptr));
-  sc.name(MIPWrapper::getName());
-  sc.mznlib(MIPWrapper::getMznLib());
-  sc.mznlibVersion(1);
-  sc.supportsMzn(true);
+  sc.version(MIPWrapper::getVersion(_factoryOptions, nullptr));
   sc.description(MIPWrapper::getDescription(_factoryOptions, nullptr));
   sc.requiredFlags(MIPWrapper::getRequiredFlags(_factoryOptions));
-  sc.tags(MIPWrapper::getTags());
-  sc.stdFlags(MIPWrapper::getStdFlags());
   sc.extraFlags(_extraFlags);
-  SolverConfigs::registerBuiltinSolver(sc);
 }
 
 template <class MIPWrapper>

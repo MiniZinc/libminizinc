@@ -102,8 +102,9 @@ public:
                                     const std::string& workingDir = std::string()) {
     return false;
   };
-  /// Called after any registered factory flags have been processed.
-  virtual void factoryOptionsFinished(){};
+
+  /// Called when the solver config needs to be fully finalised
+  virtual void finaliseSolverConfigs(SolverConfigs& solverConfigs){};
 
   /// Create solver-specific options object
   virtual SolverInstanceBase::Options* createOptions() = 0;

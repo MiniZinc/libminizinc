@@ -136,7 +136,7 @@ public:
   MIPSolverFactory();
   bool processFactoryOption(int& i, std::vector<std::string>& argv,
                             const std::string& workingDir = std::string()) override;
-  void factoryOptionsFinished() override;
+  void finaliseSolverConfigs(SolverConfigs& solver_configs) override;
   SolverInstanceBase::Options* createOptions() override { return new typename MIPWrapper::Options; }
   SolverInstanceBase* doCreateSI(Env& env, std::ostream& log,
                                  SolverInstanceBase::Options* opt) override {

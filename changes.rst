@@ -21,6 +21,7 @@ Changes in interfaces to solvers:
    always be passed to the compiler using the `-G` flag. This allows users to
    easily override this library from command line when required.
 -  Automatically detect Gurobi 10.0 and potential future versions.
+-  Avoid loading all solver plugin DLLs on startup, instead loading when required.
 
 Changes:
 ^^^^^^^^

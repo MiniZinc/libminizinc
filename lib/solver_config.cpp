@@ -761,7 +761,7 @@ std::string get_version(const std::string& t) {
 }
 }  // namespace
 
-const SolverConfig& SolverConfigs::config(const std::string& _s) {
+SolverConfig& SolverConfigs::config(const std::string& _s) {
   std::string s;
   if (_s.size() > 4 && _s.substr(_s.size() - 4) == ".msc") {
     SolverConfig sc = SolverConfig::load(_s);
