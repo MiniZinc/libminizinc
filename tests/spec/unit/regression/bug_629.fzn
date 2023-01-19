@@ -1,0 +1,10 @@
+array [1..2] of int: X_INTRODUCED_3_ = [1,1];
+array [1..2] of int: X_INTRODUCED_7_ = [-1,1];
+array [1..2] of int: X_INTRODUCED_9_ = [-1,-1];
+var 0..1: X_INTRODUCED_4_ ::var_is_introduced ;
+var 0..1: X_INTRODUCED_5_ ::var_is_introduced ;
+var 0..1: X_INTRODUCED_6_ ::var_is_introduced :: output_var;
+constraint int_lin_le(X_INTRODUCED_7_,[X_INTRODUCED_4_,X_INTRODUCED_6_],0);
+constraint int_lin_le(X_INTRODUCED_9_,[X_INTRODUCED_6_,X_INTRODUCED_5_],-1);
+constraint int_lin_eq(X_INTRODUCED_3_,[X_INTRODUCED_4_,X_INTRODUCED_5_],1);
+solve  satisfy;

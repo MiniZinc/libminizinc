@@ -794,7 +794,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
 
           if (_flags.twoPass) {
             std::string library = _stdLibDir + (_flags.gecode ? "/gecode_presolver/" : "/std/");
-            bool differentLibrary = (library != _stdLibDir + "/" + _globalsDir + "/");
+            bool differentLibrary = (library != _globalsDir);
             managed_passes.emplace_back(new CompilePass(env, pass_opts, cfs, library, _includePaths,
                                                         true, differentLibrary));
 #ifdef HAS_GECODE
@@ -803,9 +803,8 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             }
 #endif
           }
-          managed_passes.emplace_back(new CompilePass(env, _fopts, cfs,
-                                                      _stdLibDir + "/" + _globalsDir + "/",
-                                                      _includePaths, _flags.twoPass, false));
+          managed_passes.emplace_back(
+              new CompilePass(env, _fopts, cfs, _globalsDir, _includePaths, _flags.twoPass, false));
 
           Env* out_env = multiPassFlatten(managed_passes);
           if (out_env == nullptr) {
