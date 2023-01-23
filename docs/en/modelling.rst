@@ -527,13 +527,13 @@ similar to an integer variable using the keyword :mzn:`float` instead of
 :mzn:`int`.
 
 We can use the same model to answer a number of different questions.
-The first question is: if I borrow $1000 at 4% and repay $260 per
+The first question is: if I borrow $1000 at 4% quarterly interest and repay $260 per
 quarter, how much do I end up owing? This question is encoded by
 the data file :download:`loan1.dzn <examples/loan1.dzn>`.
 
 Since we wish to use real number variables and constraint we need to use a solver
 that supports this type of problem. While Gecode (the default solver in the MiniZinc bundled binary distribution) does support floating point variables, a mixed integer linear programming (MIP) solver may be better suited to this particular type of problem.
-The MiniZinc distribution contains such a solver. We can invoke it by selecting ``COIN-BC`` from the solver menu in the IDE (the triangle below the *Run* button), or on the command line using the command ``minizinc --solver cbc``:
+The MiniZinc distribution contains such a solver. We can invoke it by selecting ``COIN-BC`` from the solver configuration menu in the IDE, or on the command line using the command ``minizinc --solver cbc``. Note: When solving this problem with the MiniZinc IDE, you will have to open the tab with the data file `loan1.dzn` and then click the Run button. If you just click Run in the original model file, the IDE won't know that any data is missing (since all inputs were declared :mzn:`var`), and not pop up the dialog for selecting a data file.
 
 .. code-block:: bash
 
