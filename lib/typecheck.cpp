@@ -472,19 +472,6 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           constructorArgId = constructorArgVd->id();
         }
 
-        {
-          // Add assertion that constructor argument is contiguous set
-          // constraint assert(max(constructorArgId)-min(constructorArgId)+1 =
-          // card(constructorArgId))
-          auto* isContiguous = Call::a(Location().introduce(), ASTString("mzn_set_is_contiguous"),
-                                       {constructorArgId});
-          std::ostringstream oss;
-          oss << "argument for enum constructor `" << c->id() << "' is not a contiguous set";
-          auto* e = new StringLit(Location().introduce(), oss.str());
-          Call* a = Call::a(c->loc(), env.constants.ids.assert, {isContiguous, e});
-          enumItems->addItem(new ConstraintI(Location().introduce(), a));
-        }
-
         // Compute minimum-1 of constructor argument
         Id* constructorArgMin;
         {
@@ -503,263 +490,202 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           constructorArgMin = constructorArgMinVd->id();
         }
 
-        // Generate:
+        // Generate (both par and var versions):
         /*
-         function X: C(E: x) = to_enum(X,partCardinality.back()+x)
-         function var X: C(var E: x) = to_enum(X,partCardinality.back()+x)
+         function X: C(E: x) =
+             if mzn_set_is_contiguous(E) then
+               to_enum(X,partCardinality.back()+x)
+             else
+               (let { any: mx = set_sparse_inverse(E) } in
+               to_enum(X,partCardinality.back()+mx[x]))::mzn_evaluate_once
+             endif ::mzn_evaluate_once
          function opt X: C(opt E: x) = if occurs(x) then C(deopt(x)) else to_enum(x,<>) endif
-         function var opt X: C(var opt E: x) = if occurs(x) then C(deopt(x)) else to_enum(x,<>)
-         endif
          function set of X: C(set of E: x) = { C(i) | i in x }
-         function var set of X: C(var set of E: x) = { C(i) | i in x }
-         */
-        {
-          Type Xt = Type::parint();
-          Xt.typeId(enumId);
-          auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
-          auto* Cfn_x_ti = new TypeInst(Location().introduce(), Type(), constructorArgId);
-          auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
-          vd_x->toplevel(false);
-          Expression* realX =
-              new BinOp(Location().introduce(), constructorArgMin, BOT_PLUS, vd_x->id());
-          auto* Cfn_body = Call::a(Location().introduce(), "to_enum", {vd->id(), realX});
 
-          std::string Cfn_id(c->id().c_str());
-          auto* Cfn = new FunctionI(Location().introduce(), Cfn_id, Cfn_ti, {vd_x}, Cfn_body);
-          env.reverseEnum[Cfn_id] = Cfn;
-          enumItems->addItem(Cfn);
-        }
-        {
-          Type Xt = Type::varint();
-          Xt.typeId(enumId);
-          auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
-          Type argT;
-          argT.ti(Type::TI_VAR);
-          auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, constructorArgId);
-          auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
-          vd_x->toplevel(false);
-          Expression* realX =
-              new BinOp(Location().introduce(), constructorArgMin, BOT_PLUS, vd_x->id());
-          auto* Cfn_body = Call::a(Location().introduce(), "to_enum", {vd->id(), realX});
+         function E: C⁻¹(X: x) =
+           if mzn_set_is_contiguous(E) then
+             to_enum(E,x-partCardinality.back())
+           else
+             (let { any: mx = set2array(E) } in
+             to_enum(X,mx[x-partCardinality.back()]))::mzn_evaluate_once
+           endif ::mzn_evaluate_once
 
-          std::string Cfn_id(c->id().c_str());
-          auto* Cfn = new FunctionI(Location().introduce(), Cfn_id, Cfn_ti, {vd_x}, Cfn_body);
-          enumItems->addItem(Cfn);
-        }
-        {
-          Type Xt = Type::parint();
-          Xt.ot(Type::OT_OPTIONAL);
-          Xt.typeId(enumId);
-          auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
-          Type argT;
-          argT.ot(Type::OT_OPTIONAL);
-          auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, constructorArgId);
-          auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
-          std::string Cfn_id(c->id().c_str());
-          vd_x->toplevel(false);
-          auto* occurs = Call::a(Location().introduce(), "occurs", {vd_x->id()});
-          auto* deopt = Call::a(Location().introduce(), "deopt", {vd_x->id()});
-          auto* inv = Call::a(Location().introduce(), Cfn_id, {deopt});
-          auto* toEnumAbsent =
-              Call::a(Location().introduce(), "to_enum", {vd->id(), env.constants.absent});
-          auto* ite = new ITE(Location().introduce(), {occurs, inv}, toEnumAbsent);
-          auto* Cfn = new FunctionI(Location().introduce(), Cfn_id, Cfn_ti, {vd_x}, ite);
-          enumItems->addItem(Cfn);
-        }
-        {
-          Type Xt = Type::varint();
-          Xt.ot(Type::OT_OPTIONAL);
-          Xt.typeId(enumId);
-          auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
-          Type argT;
-          argT.ti(Type::TI_VAR);
-          argT.ot(Type::OT_OPTIONAL);
-          auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, constructorArgId);
-          auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
-          std::string Cfn_id(c->id().c_str());
-          vd_x->toplevel(false);
-          auto* occurs = Call::a(Location().introduce(), "occurs", {vd_x->id()});
-          auto* deopt = Call::a(Location().introduce(), "deopt", {vd_x->id()});
-          auto* toEnumAbsent =
-              Call::a(Location().introduce(), "to_enum", {vd->id(), env.constants.absent});
-          auto* inv = Call::a(Location().introduce(), Cfn_id, {deopt});
-          auto* ite = new ITE(Location().introduce(), {occurs, inv}, toEnumAbsent);
-          auto* Cfn = new FunctionI(Location().introduce(), Cfn_id, Cfn_ti, {vd_x}, ite);
-          enumItems->addItem(Cfn);
-        }
-        {
-          Type Xt = Type::parint();
-          Xt.st(Type::ST_SET);
-          Xt.typeId(enumId);
-          auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
-          Type argT;
-          argT.st(Type::ST_SET);
-          auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, constructorArgId);
-          auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
-          std::string Cfn_id(c->id().c_str());
-          vd_x->toplevel(false);
-          auto* s_ti = new TypeInst(Location().introduce(), Type::parint());
-          auto* s = new VarDecl(Location().introduce(), s_ti, "s", nullptr);
-          s->toplevel(false);
-          auto* inv = Call::a(Location().introduce(), Cfn_id, {s->id()});
-          Generator gen({s}, vd_x->id(), nullptr);
-          Generators gens;
-          gens.g = {gen};
-          auto* comprehension = new Comprehension(Location().introduce(), inv, gens, true);
-          auto* Cfn = new FunctionI(Location().introduce(), Cfn_id, Cfn_ti, {vd_x}, comprehension);
-          enumItems->addItem(Cfn);
-        }
-        {
-          Type Xt = Type::varint();
-          Xt.st(Type::ST_SET);
-          Xt.typeId(enumId);
-          auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
-          Type argT;
-          argT.ti(Type::TI_VAR);
-          argT.st(Type::ST_SET);
-          auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, constructorArgId);
-          auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
-          std::string Cfn_id(c->id().c_str());
-          vd_x->toplevel(false);
-          auto* s_ti = new TypeInst(Location().introduce(), Type::parint());
-          auto* s = new VarDecl(Location().introduce(), s_ti, "s", nullptr);
-          s->toplevel(false);
-          auto* inv = Call::a(Location().introduce(), Cfn_id, {s->id()});
-          Generator gen({s}, vd_x->id(), nullptr);
-          Generators gens;
-          gens.g = {gen};
-          auto* comprehension = new Comprehension(Location().introduce(), inv, gens, true);
-          auto* Cfn = new FunctionI(Location().introduce(), Cfn_id, Cfn_ti, {vd_x}, comprehension);
-          enumItems->addItem(Cfn);
-        }
-        /*
-         function E: C⁻¹(X: x) = to_enum(E,x-partCardinality.back())
-         function var E: C⁻¹(var X: x) = to_enum(E,x-partCardinality.back())
          function opt E: C⁻¹(opt X: x) = if occurs(x) then C⁻¹(deopt(x)) else to_enum(x,<>) endif
-         function var opt E: C⁻¹(var opt X: x) = if occurs(x) then C⁻¹(deopt(x)) else to_enum(x,<>)
-         endif
          function set of E: C⁻¹(set of X: x) = { C⁻¹(i) | i in x }
-         function var set of E: C⁻¹(var set of X: x) = { C⁻¹(i) | i in x }
          */
-        {
-          auto* toEfn_ti = new TypeInst(Location().introduce(), Type(), constructorArgId);
-          Type Xt = Type::parint();
-          Xt.typeId(enumId);
-          auto* toEfn_x_ti = new TypeInst(Location().introduce(), Xt, vd->id());
-          auto* vd_x = new VarDecl(Location().introduce(), toEfn_x_ti, "x");
-          vd_x->toplevel(false);
-          Expression* realX =
-              new BinOp(Location().introduce(), vd_x->id(), BOT_MINUS, constructorArgMin);
-          auto* toEfn_body = Call::a(Location().introduce(), "to_enum", {constructorArgId, realX});
+        for (Type baseType : {Type::parint(), Type::varint()}) {
+          {
+            Type Xt(baseType);
+            Xt.typeId(enumId);
+            auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
+            Type argT;
+            argT.ti(baseType.ti());
+            auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, constructorArgId);
+            auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
+            vd_x->toplevel(false);
 
-          std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
-          auto* toEfn =
-              new FunctionI(Location().introduce(), Cinv_id, toEfn_ti, {vd_x}, toEfn_body);
-          enumItems->addItem(toEfn);
-        }
-        {
-          Type rT;
-          rT.ti(Type::TI_VAR);
-          auto* toEfn_ti = new TypeInst(Location().introduce(), rT, constructorArgId);
-          Type Xt = Type::varint();
-          Xt.typeId(enumId);
-          auto* toEfn_x_ti = new TypeInst(Location().introduce(), Xt, vd->id());
-          auto* vd_x = new VarDecl(Location().introduce(), toEfn_x_ti, "x");
-          vd_x->toplevel(false);
-          Expression* realX =
-              new BinOp(Location().introduce(), vd_x->id(), BOT_MINUS, constructorArgMin);
-          auto* toEfn_body = Call::a(Location().introduce(), "to_enum", {constructorArgId, realX});
+            auto* isContiguous = Call::a(Location().introduce(), ASTString("mzn_set_is_contiguous"),
+                                         {constructorArgId});
 
-          std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
-          auto* toEfn =
-              new FunctionI(Location().introduce(), Cinv_id, toEfn_ti, {vd_x}, toEfn_body);
-          enumItems->addItem(toEfn);
-        }
-        {
-          Type rt;
-          rt.ot(Type::OT_OPTIONAL);
-          auto* Cfn_ti = new TypeInst(Location().introduce(), rt, constructorArgId);
-          Type argT = Type::parint();
-          argT.ot(Type::OT_OPTIONAL);
-          argT.typeId(enumId);
-          auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, vd->id());
-          auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
-          std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
-          vd_x->toplevel(false);
-          auto* occurs = Call::a(Location().introduce(), "occurs", {vd_x->id()});
-          auto* deopt = Call::a(Location().introduce(), "deopt", {vd_x->id()});
-          auto* inv = Call::a(Location().introduce(), Cinv_id, {deopt});
-          auto* toEnumAbsent =
-              Call::a(Location().introduce(), "to_enum", {constructorArgId, env.constants.absent});
-          auto* ite = new ITE(Location().introduce(), {occurs, inv}, toEnumAbsent);
-          auto* Cfn = new FunctionI(Location().introduce(), Cinv_id, Cfn_ti, {vd_x}, ite);
-          enumItems->addItem(Cfn);
-        }
-        {
-          Type rt;
-          rt.ti(Type::TI_VAR);
-          rt.ot(Type::OT_OPTIONAL);
-          auto* Cfn_ti = new TypeInst(Location().introduce(), rt, constructorArgId);
-          Type argT = Type::varint();
-          argT.ot(Type::OT_OPTIONAL);
-          argT.typeId(enumId);
-          auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, vd->id());
-          auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
-          std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
-          vd_x->toplevel(false);
-          auto* occurs = Call::a(Location().introduce(), "occurs", {vd_x->id()});
-          auto* deopt = Call::a(Location().introduce(), "deopt", {vd_x->id()});
-          auto* inv = Call::a(Location().introduce(), Cinv_id, {deopt});
-          auto* toEnumAbsent =
-              Call::a(Location().introduce(), "to_enum", {constructorArgId, env.constants.absent});
-          auto* ite = new ITE(Location().introduce(), {occurs, inv}, toEnumAbsent);
-          auto* Cfn = new FunctionI(Location().introduce(), Cinv_id, Cfn_ti, {vd_x}, ite);
-          enumItems->addItem(Cfn);
-        }
-        {
-          Type Xt;
-          Xt.st(Type::ST_SET);
-          auto* Cfn_ti = new TypeInst(Location().introduce(), Xt, constructorArgId);
-          Type argT = Type::parint();
-          argT.st(Type::ST_SET);
-          argT.typeId(enumId);
-          auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, vd->id());
-          auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
-          vd_x->toplevel(false);
-          std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
-          auto* s_ti = new TypeInst(Location().introduce(), Type::parint());
-          auto* s = new VarDecl(Location().introduce(), s_ti, "s", nullptr);
-          s->toplevel(false);
-          auto* inv = Call::a(Location().introduce(), Cinv_id, {s->id()});
-          Generator gen({s}, vd_x->id(), nullptr);
-          Generators gens;
-          gens.g = {gen};
-          auto* comprehension = new Comprehension(Location().introduce(), inv, gens, true);
-          auto* Cfn = new FunctionI(Location().introduce(), Cinv_id, Cfn_ti, {vd_x}, comprehension);
-          enumItems->addItem(Cfn);
-        }
-        {
-          Type Xt;
-          Xt.ti(Type::TI_VAR);
-          Xt.st(Type::ST_SET);
-          auto* Cfn_ti = new TypeInst(Location().introduce(), Xt, constructorArgId);
-          Type argT = Type::varint();
-          argT.st(Type::ST_SET);
-          argT.typeId(enumId);
-          auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, vd->id());
-          auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
-          vd_x->toplevel(false);
-          std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
-          auto* s_ti = new TypeInst(Location().introduce(), Type::varint());
-          auto* s = new VarDecl(Location().introduce(), s_ti, "s", nullptr);
-          s->toplevel(false);
-          auto* inv = Call::a(Location().introduce(), Cinv_id, {s->id()});
-          Generator gen({s}, vd_x->id(), nullptr);
-          Generators gens;
-          gens.g = {gen};
-          auto* comprehension = new Comprehension(Location().introduce(), inv, gens, true);
-          auto* Cfn = new FunctionI(Location().introduce(), Cinv_id, Cfn_ti, {vd_x}, comprehension);
-          enumItems->addItem(Cfn);
+            Expression* realX =
+                new BinOp(Location().introduce(), constructorArgMin, BOT_PLUS, vd_x->id());
+            auto* Cfn_then = Call::a(Location().introduce(), "to_enum", {vd->id(), realX});
+
+            auto* mxti = new TypeInst(Location().introduce(), Type::mkAny());
+            auto* sparse_inv = Call::a(Location().introduce(), ASTString("set_to_sparse_inverse"),
+                                       {constructorArgId});
+            auto* mx = new VarDecl(Location().introduce(), mxti, "mx", sparse_inv);
+
+            auto* mxx = new ArrayAccess(Location().introduce(), mx->id(), {vd_x->id()});
+            Expression* realMx =
+                new BinOp(Location().introduce(), constructorArgMin, BOT_PLUS, mxx);
+            auto* let_body = Call::a(Location().introduce(), "to_enum", {vd->id(), realMx});
+
+            auto* Cfn_else = new Let(Location().introduce(), {mx}, let_body);
+            Cfn_else->addAnnotation(env.constants.ann.mzn_evaluate_once);
+
+            auto* ite = new ITE(Location().introduce(), {isContiguous, Cfn_then}, Cfn_else);
+            ite->addAnnotation(env.constants.ann.mzn_evaluate_once);
+
+            std::string Cfn_id(c->id().c_str());
+            auto* Cfn = new FunctionI(Location().introduce(), Cfn_id, Cfn_ti, {vd_x}, ite);
+            env.reverseEnum[Cfn_id] = Cfn;
+            enumItems->addItem(Cfn);
+          }
+          {
+            Type Xt(baseType);
+            Xt.ot(Type::OT_OPTIONAL);
+            Xt.typeId(enumId);
+            auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
+            Type argT;
+            argT.ti(baseType.ti());
+            argT.ot(Type::OT_OPTIONAL);
+            auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, constructorArgId);
+            auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
+            std::string Cfn_id(c->id().c_str());
+            vd_x->toplevel(false);
+            auto* occurs = Call::a(Location().introduce(), "occurs", {vd_x->id()});
+            auto* deopt = Call::a(Location().introduce(), "deopt", {vd_x->id()});
+            auto* inv = Call::a(Location().introduce(), Cfn_id, {deopt});
+            auto* toEnumAbsent =
+                Call::a(Location().introduce(), "to_enum", {vd->id(), env.constants.absent});
+            auto* ite = new ITE(Location().introduce(), {occurs, inv}, toEnumAbsent);
+            auto* Cfn = new FunctionI(Location().introduce(), Cfn_id, Cfn_ti, {vd_x}, ite);
+            enumItems->addItem(Cfn);
+          }
+          {
+            Type Xt(baseType);
+            Xt.st(Type::ST_SET);
+            Xt.typeId(enumId);
+            auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
+            Type argT;
+            argT.ti(baseType.ti());
+            argT.st(Type::ST_SET);
+            auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, constructorArgId);
+            auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
+            std::string Cfn_id(c->id().c_str());
+            vd_x->toplevel(false);
+            auto* s_ti = new TypeInst(Location().introduce(), Type::parint());
+            auto* s = new VarDecl(Location().introduce(), s_ti, "s", nullptr);
+            s->toplevel(false);
+            auto* inv = Call::a(Location().introduce(), Cfn_id, {s->id()});
+            Generator gen({s}, vd_x->id(), nullptr);
+            Generators gens;
+            gens.g = {gen};
+            auto* comprehension = new Comprehension(Location().introduce(), inv, gens, true);
+            auto* Cfn =
+                new FunctionI(Location().introduce(), Cfn_id, Cfn_ti, {vd_x}, comprehension);
+            enumItems->addItem(Cfn);
+          }
+          {
+            Type rT;
+            rT.ti(baseType.ti());
+            rT.typeId(constructorArgId->type().typeId());
+            auto* toEfn_ti = new TypeInst(Location().introduce(), rT, constructorArgId);
+            Type Xt(baseType);
+            Xt.typeId(enumId);
+            auto* toEfn_x_ti = new TypeInst(Location().introduce(), Xt, vd->id());
+            auto* vd_x = new VarDecl(Location().introduce(), toEfn_x_ti, "x");
+            vd_x->toplevel(false);
+
+            auto* isContiguous = Call::a(Location().introduce(), ASTString("mzn_set_is_contiguous"),
+                                         {constructorArgId});
+
+            Expression* realX =
+                new BinOp(Location().introduce(), vd_x->id(), BOT_MINUS, constructorArgMin);
+            auto* toEfn_then =
+                Call::a(Location().introduce(), "to_enum", {constructorArgId, realX});
+
+            auto* mxti = new TypeInst(Location().introduce(), Type::mkAny());
+            auto* sparse_inv =
+                Call::a(Location().introduce(), ASTString("set2array"), {constructorArgId});
+            auto* mx = new VarDecl(Location().introduce(), mxti, "mx", sparse_inv);
+
+            Expression* realMx;
+            if (partCardinality.empty()) {
+              realMx = vd_x->id();
+            } else {
+              realMx =
+                  new BinOp(Location().introduce(), vd_x->id(), BOT_MINUS, partCardinality.back());
+            }
+            auto* mxx = new ArrayAccess(Location().introduce(), mx->id(), {realMx});
+            auto* let_body = Call::a(Location().introduce(), "to_enum", {constructorArgId, mxx});
+
+            auto* toEfn_else = new Let(Location().introduce(), {mx}, let_body);
+            toEfn_else->addAnnotation(env.constants.ann.mzn_evaluate_once);
+
+            auto* ite = new ITE(Location().introduce(), {isContiguous, toEfn_then}, toEfn_else);
+            ite->addAnnotation(env.constants.ann.mzn_evaluate_once);
+
+            std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
+            auto* toEfn = new FunctionI(Location().introduce(), Cinv_id, toEfn_ti, {vd_x}, ite);
+            enumItems->addItem(toEfn);
+          }
+          {
+            Type rt;
+            rt.ti(baseType.ti());
+            rt.ot(Type::OT_OPTIONAL);
+            auto* Cfn_ti = new TypeInst(Location().introduce(), rt, constructorArgId);
+            Type argT(baseType);
+            argT.ot(Type::OT_OPTIONAL);
+            argT.typeId(enumId);
+            auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, vd->id());
+            auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
+            std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
+            vd_x->toplevel(false);
+            auto* occurs = Call::a(Location().introduce(), "occurs", {vd_x->id()});
+            auto* deopt = Call::a(Location().introduce(), "deopt", {vd_x->id()});
+            auto* inv = Call::a(Location().introduce(), Cinv_id, {deopt});
+            auto* toEnumAbsent = Call::a(Location().introduce(), "to_enum",
+                                         {constructorArgId, env.constants.absent});
+            auto* ite = new ITE(Location().introduce(), {occurs, inv}, toEnumAbsent);
+            auto* Cfn = new FunctionI(Location().introduce(), Cinv_id, Cfn_ti, {vd_x}, ite);
+            enumItems->addItem(Cfn);
+          }
+          {
+            Type Xt;
+            Xt.ti(baseType.ti());
+            Xt.st(Type::ST_SET);
+            auto* Cfn_ti = new TypeInst(Location().introduce(), Xt, constructorArgId);
+            Type argT(baseType);
+            argT.st(Type::ST_SET);
+            argT.typeId(enumId);
+            auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, vd->id());
+            auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
+            vd_x->toplevel(false);
+            std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
+            auto* s_ti = new TypeInst(Location().introduce(), Type::parint());
+            auto* s = new VarDecl(Location().introduce(), s_ti, "s", nullptr);
+            s->toplevel(false);
+            auto* inv = Call::a(Location().introduce(), Cinv_id, {s->id()});
+            Generator gen({s}, vd_x->id(), nullptr);
+            Generators gens;
+            gens.g = {gen};
+            auto* comprehension = new Comprehension(Location().introduce(), inv, gens, true);
+            auto* Cfn =
+                new FunctionI(Location().introduce(), Cinv_id, Cfn_ti, {vd_x}, comprehension);
+            enumItems->addItem(Cfn);
+          }
         }
 
         /*

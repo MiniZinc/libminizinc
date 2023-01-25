@@ -3676,6 +3676,13 @@ public:
   }
 };
 
+class SimplifyFunctionBodiesVisitor : public ItemVisitor {
+public:
+  EnvI& env;
+  SimplifyFunctionBodiesVisitor(EnvI& env0) : env(env0) {}
+  void vFunctionI(FunctionI* fi) { eval_static_function_body(env, fi); }
+};
+
 }  // namespace
 
 void flatten(Env& e, FlatteningOptions opt) {
@@ -3691,6 +3698,10 @@ void flatten(Env& e, FlatteningOptions opt) {
   try {
     EnvI& env = e.envi();
     env.fopts = opt;
+
+    // Statically evaluate some function bodies
+    SimplifyFunctionBodiesVisitor _ffbv(env);
+    iter_items<SimplifyFunctionBodiesVisitor>(_ffbv, e.model());
 
     process_toplevel_output_vars(e.envi());
 

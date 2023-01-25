@@ -2460,6 +2460,14 @@ The same enum constructor syntax also works with integer sets, for example
 
 declares an enum for nodes in a bipartite graph with :mzn:`n` left nodes and :mzn:`n` right nodes.
 
+Enum constructors can be used to map non-contiguous sets to (contiguous) enumerated types. Consider the following example:
+
+.. code-block:: minizinc
+
+    enum Person = { Amy, Bert, Celeste, Doug, Emely };
+    enum Staff = S({Amy, Doug});
+    enum Customers = S(Person setminus S⁻¹(Staff));
+
 An enum can be declared but not defined, in which case it must be defined
 elsewhere within the model, or in a data file.
 For example, a model file could contain this:

@@ -56,6 +56,7 @@ Changes:
 -  Revert change in the standard decomposition of ``lex_less(eq)`` so it no
    longer uses implications which were intended promote half-reification,
    because this introduced free variables.
+-  Extended enumerated types can now be constructed from non-contiguous sets.
 
 Bug fixes:
 ^^^^^^^^^^

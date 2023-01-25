@@ -90,6 +90,9 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e);
 std::string eval_string(EnvI& env, Expression* e);
 /// Evaluate a par expression \a e and return it wrapped in a literal
 Expression* eval_par(EnvI& env, Expression* e);
+/// Evaluate conditionals and lets inside function bodies that are annotated with
+/// ::mzn_evaluate_once
+void eval_static_function_body(EnvI& env, FunctionI* decl);
 /// Check if variable declaration \a vd satisfies the domain and index set constraints
 void check_par_declaration(EnvI& env, VarDecl* vd);
 /// Merge two record literals and return the result.

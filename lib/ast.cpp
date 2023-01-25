@@ -2091,6 +2091,8 @@ Constants::Constants() {
   ann.mzn_internal_representation->type(Type::ann());
   ann.flatzinc_builtin = addId("flatzinc_builtin");
   ann.flatzinc_builtin->type(Type::ann());
+  ann.mzn_evaluate_once = addId("mzn_evaluate_once");
+  ann.mzn_evaluate_once->type(Type::ann());
 
   cli.cmdlineData_short_str = addString("-D");
   cli.cmdlineData_str = addString("--cmdline-data");

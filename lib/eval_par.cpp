@@ -3577,4 +3577,71 @@ Expression* follow_id_to_value(Expression* e) {
   return decl;
 }
 
+void eval_static_function_body(EnvI& env, FunctionI* decl) {
+  Expression* e = decl->e();
+  if (e == nullptr) {
+    return;
+  }
+  while (e->ann().contains(env.constants.ann.mzn_evaluate_once)) {
+    if (e->isa<ITE>()) {
+      ITE* ite = e->cast<ITE>();
+      if (ite->size() != 1) {
+        env.addWarning(ite->loc(),
+                       "::mzn_evaluate_once ignored, elseif expressions are not supported");
+        return;
+      }
+      if (!ite->ifExpr(0)->type().isPar()) {
+        env.addWarning(ite->ifExpr(0)->loc(),
+                       "::mzn_evaluate_once ignored, var conditions are not supported");
+        return;
+      }
+      if (ite->ifExpr(0)->type().cv()) {
+        env.addWarning(
+            ite->ifExpr(0)->loc(),
+            "::mzn_evaluate_once ignored, par conditions that contain variables are not supported");
+        return;
+      }
+      GCLock lock;
+      bool cond = eval_bool(env, ite->ifExpr(0));
+      if (cond) {
+        decl->e(ite->thenExpr(0));
+        e = decl->e();
+      } else {
+        decl->e(ite->elseExpr());
+        e = decl->e();
+      }
+    } else if (e->isa<Let>()) {
+      Let* let = e->cast<Let>();
+      if (let->let().size() != 1) {
+        env.addWarning(
+            let->loc(),
+            "::mzn_evaluate_once ignored, lets with more than one declaration are not supported");
+        return;
+      }
+      if (!let->let()[0]->type().isPar()) {
+        env.addWarning(let->loc(),
+                       "::mzn_evaluate_once ignored, lets with var declarations are not supported");
+        return;
+      }
+      if (!let->let()[0]->isa<VarDecl>()) {
+        env.addWarning(let->loc(),
+                       "::mzn_evaluate_once ignored, lets with constraints are not supported");
+        return;
+      }
+      GCLock lock;
+      auto* vd = let->let()[0]->cast<VarDecl>();
+      vd->e(eval_par(env, vd->e()));
+      check_par_declaration(env, vd);
+      vd->toplevel(true);
+      vd->id()->idn(env.genId());
+      env.model->addItem(VarDeclI::a(vd->loc(), vd));
+      decl->e(let->in());
+      e = decl->e();
+    } else {
+      env.addWarning(e->loc(), "::mzn_evaluate_once ignored, invalid expression");
+      return;
+    }
+  }
+}
+
 }  // namespace MiniZinc

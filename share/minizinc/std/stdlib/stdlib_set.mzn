@@ -153,4 +153,4 @@ function array[int] of float: set_to_ranges(set of float: S);
 function array[int] of bool: set_to_ranges(set of bool: S) =
   if S={false} then [false,false] elseif S={true} then [true,true] else [false,true] endif;
 
-
+function array[int] of $$E: set_to_sparse_inverse(set of $$E: S);

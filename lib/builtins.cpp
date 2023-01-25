@@ -2059,7 +2059,28 @@ Expression* b_set2array(EnvI& env, Call* call) {
     elems.push_back(IntLit::a(isr_v.val()));
   }
   auto* al = new ArrayLit(call->arg(0)->loc(), elems);
-  al->type(Type::parint(1));
+  Type t(Type::parint(1));
+  t.typeId(call->arg(0)->type().typeId());
+  al->type(t);
+  return al;
+}
+
+Expression* b_set_sparse_inverse(EnvI& env, Call* call) {
+  assert(call->argCount() == 1);
+  GCLock lock;
+  IntSetVal* isv = eval_intset(env, call->arg(0));
+  auto set_min = isv->min().toInt();
+  auto set_size = (isv->max() - isv->min() + 1).toInt();
+  std::vector<Expression*> elems(set_size, IntLit::a(1));
+  IntSetRanges isr(isv);
+  int i = 1;
+  for (Ranges::ToValues<IntSetRanges> isr_v(isr); isr_v(); ++isr_v) {
+    elems[isr_v.val().toInt() - set_min] = IntLit::a(i++);
+  }
+  auto* al = new ArrayLit(call->arg(0)->loc(), elems);
+  Type t(Type::parint(1));
+  t.typeId(call->arg(0)->type().typeId());
+  al->type(t);
   return al;
 }
 
@@ -3924,6 +3945,7 @@ void register_builtins(Env& e) {
     std::vector<Type> t(1);
     t[0] = Type::parsetint();
     rb(env, m, ASTString("set2array"), t, b_set2array);
+    rb(env, m, ASTString("set_to_sparse_inverse"), t, b_set_sparse_inverse);
   }
   {
     std::vector<Type> t(1);
