@@ -464,10 +464,13 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           // expression is not an identifer, create new VarDecl for the argument
           std::ostringstream constructorArgIdent;
           constructorArgIdent << "_constrId_" << p << "_" << *ident;
-          auto* constructorArgVd =
-              new VarDecl(Location().introduce(),
-                          new TypeInst(Location().introduce(), Type::parsetint(), nullptr),
-                          constructorArgIdent.str(), c->arg(0));
+          Call* enumOf = Call::a(Location().introduce(), ASTString("enum_of"), {c->arg(0)});
+          Type t;
+          t.st(Type::ST_SET);
+          auto* constructorArgVdTi = new TypeInst(Location().introduce(), t, enumOf);
+          auto* constructorArgVd = new VarDecl(Location().introduce(), constructorArgVdTi,
+                                               constructorArgIdent.str(), c->arg(0));
+
           enumItems->addItem(VarDeclI::a(Location().introduce(), constructorArgVd));
           constructorArgId = constructorArgVd->id();
         }
