@@ -1777,6 +1777,9 @@ public:
   void vArrayLit(ArrayLit* al) {
     Type ty;
     if (al->isTuple()) {
+      if (al->type().typeId() != 0) {
+        return;
+      }
       if (al->type().isrecord()) {
         _env.registerRecordType(al);
       } else if (al->type().typeId() != Type::COMP_INDEX) {
@@ -2623,6 +2626,28 @@ public:
           }
         }
       }
+    } else if (bop->op() == BOT_PLUSPLUS && bop->lhs()->isa<TypeInst>()) {
+      assert(bop->rhs()->isa<TypeInst>());
+      if (!bop->lhs()->type().structBT()) {
+        std::ostringstream ss;
+        ss << "operator application for `" << bop->opToString() << "' is not allowed on the `"
+           << bop->lhs()->type().toString(_env) << "' type.";
+        throw TypeError(_env, bop->loc(), ss.str());
+      }
+      if (!bop->rhs()->type().structBT()) {
+        std::ostringstream ss;
+        ss << "operator application for `" << bop->opToString() << "' is not allowed on the `"
+           << bop->rhs()->type().toString(_env) << "' type.";
+        throw TypeError(_env, bop->loc(), ss.str());
+      }
+      if (bop->lhs()->type().bt() != bop->rhs()->type().bt()) {
+        std::ostringstream ss;
+        ss << "operator application for `" << bop->opToString() << "' cannot combine type `"
+           << bop->lhs()->type().toString(_env) << "' with typ `"
+           << bop->rhs()->type().toString(_env) << "'.";
+        throw TypeError(_env, bop->loc(), ss.str());
+      }
+      // Note: BinOp is resolved during typechecking of TypeInst
     } else if (bop->op() == BOT_PLUSPLUS && bop->lhs()->type().structBT() &&
                bop->lhs()->type().bt() == bop->rhs()->type().bt() &&
                bop->lhs()->type().dim() == 0 && bop->rhs()->type().dim() == 0) {
@@ -3090,14 +3115,18 @@ public:
       if (ti->domain()->type().typeId() != 0) {
         needsArrayType = needsArrayType || !ti->ranges().empty();
       }
-      if (ti->type().bt() == Type::BT_TUPLE) {
+      if (ti->concatDomain(_env)) {
+        tt = ti->type();
+        // Concat domain has now added a typeId when combining domains
+        needsArrayType = needsArrayType || !ti->ranges().empty();
+      } else if (ti->type().bt() == Type::BT_TUPLE) {
         if (tt.isOpt()) {
           throw TypeError(_env, ti->loc(), "opt tuples are not allowed");
         }
 
-        // Warning: Do not check TypeInst twice! A cononical tuple does not abide by the rules that
-        // a user definition abides by (e.g., a tuple might be marked var (because all members are
-        // var) and contain an array (of with var members)).
+        // Warning: Do not check TypeInst twice! A cononical tuple does not abide by the rules
+        // that a user definition abides by (e.g., a tuple might be marked var (because all
+        // members are var) and contain an array (of with var members)).
         if (ti->type().isvar() && ti->type().typeId() == 0) {
           auto* dom = ti->domain()->cast<ArrayLit>();
           // Check if "var" tuple is allowed
@@ -3131,9 +3160,9 @@ public:
           throw TypeError(_env, ti->loc(), "opt records are not allowed");
         }
 
-        // Warning: Do not check TypeInst twice! A cononical record does not abide by the rules that
-        // a user definition abides by (e.g., a tuple might be marked var (because all members are
-        // var) and contain an array (of with var members)).
+        // Warning: Do not check TypeInst twice! A cononical record does not abide by the rules
+        // that a user definition abides by (e.g., a tuple might be marked var (because all
+        // members are var) and contain an array (of with var members)).
         if (ti->type().isvar() && ti->type().typeId() == 0) {
           auto* dom = ti->domain()->cast<ArrayLit>();
           // Check if "var" record is allowed

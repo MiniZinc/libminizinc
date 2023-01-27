@@ -873,6 +873,16 @@ ti_expr :
         ti[0] = new TypeInst(@$,Type::parint());
         if ($$) $$->setRanges(ti);
       }
+    | ti_expr MZN_PLUSPLUS base_ti_expr
+      {
+        $$ = $1;
+        Type tt = $$->type();
+        tt.dim(0);
+        TypeInst* lhs = new TypeInst(@$, tt, $1->domain());
+        BinOp* bop = new BinOp(@$, lhs, BOT_PLUSPLUS, $3);
+        bop->type(tt);
+        $$->domain(bop);
+      }
 
 base_ti_expr :
       base_ti_expr_tail

@@ -37,4 +37,4 @@ constraint arrin in [
   (6, 0.1),
 ];
 
-any: con1 :: output = eqA ++ nq;
+var tuple(int, bool) ++ tuple(var 2..3) ++ var tuple(bool): con1 :: output = eqA ++ nq;

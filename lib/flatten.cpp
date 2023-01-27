@@ -1252,6 +1252,7 @@ unsigned int EnvI::registerTupleType(TypeInst* ti) {
   }
   t.typeId(ret);
   ti->type(t);
+  ti->domain()->type(t);
   return ret;
 }
 
@@ -1688,6 +1689,7 @@ unsigned int EnvI::registerRecordType(TypeInst* ti) {
   }
   t.typeId(ret);
   ti->type(t);
+  ti->domain()->type(t);
   return ret;
 }
 

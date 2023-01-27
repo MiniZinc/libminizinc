@@ -1129,6 +1129,46 @@ bool TypeInst::resolveAlias(EnvI& env) {
   return true;
 }
 
+bool TypeInst::concatDomain(EnvI& env) {
+  if (domain() == nullptr || !domain()->isa<BinOp>()) {
+    return false;
+  }
+  auto* bop = domain()->cast<BinOp>();
+  if (bop->op() != BOT_PLUSPLUS) {
+    return false;
+  }
+  auto* lhs = bop->lhs()->cast<TypeInst>();
+  auto* rhs = bop->rhs()->cast<TypeInst>();
+
+  assert(lhs->type().typeId() != 0);
+  assert(rhs->type().typeId() != 0);
+
+  ArrayLit* dom;
+  Type ty;
+  if (type().isrecord()) {
+    GCLock lock;
+    // Merge domains
+    dom = eval_record_merge(env, lhs->domain()->cast<ArrayLit>(), rhs->domain()->cast<ArrayLit>());
+    // Merge types
+    ty = env.mergeRecord(lhs->type(), rhs->type(), loc());
+    dom->type(ty);
+  } else {
+    assert(type().istuple());
+    GCLock lock;
+    // Concat domains
+    auto* nbo = new BinOp(bop->loc(), lhs->domain(), bop->op(), rhs->domain());
+    nbo->type(bop->type());
+    dom = ArrayLit::constructTuple(bop->loc().introduce(), eval_array_lit(env, nbo));
+    // Concat types
+    ty = env.concatTuple(lhs->type(), rhs->type());
+    dom->type(ty);
+  }
+  // Update TI
+  domain(dom);
+  type(ty);
+  return true;
+}
+
 bool TypeInst::hasTiVariable() const {
   if (domain() != nullptr) {
     if (domain()->isa<TIId>()) {

@@ -37,4 +37,4 @@ constraint arrin in [
   (a: 6, b: 0.1),
 ];
 
-any: merge1 ::output = eqA ++ lqA;
+var record(int: a, bool: b) ++ var record(2..3: x, 4..5: y): merge1 ::output = eqA ++ lqA;

@@ -1539,8 +1539,11 @@ public:
   void mkVar(const EnvI& env);
   // Set domain of a tuple based on a tuple type object
   void setStructDomain(const EnvI& env, const Type& struct_type, bool setTypeAny = false);
-  // Resolve type aliases
+  /// Resolve type aliases
   bool resolveAlias(EnvI& env);
+  /// Resolve ++ binop expressions in the domain (if present)
+  /// Returns whether any expression had to be resolved
+  bool concatDomain(EnvI& env);
 
   /// Set ranges to \a ranges
   void setRanges(const std::vector<TypeInst*>& ranges);
