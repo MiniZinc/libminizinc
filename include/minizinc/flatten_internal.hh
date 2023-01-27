@@ -512,6 +512,11 @@ public:
   Type commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim = false);
   /// Returns the type of a common record type or 0b if no such tuple type exists
   Type commonRecord(Type record1, Type record2, bool ignoreRecord1Dim = false);
+  /// Returns a record type that merges the fields to two record types
+  /// WARNING: This method throws an error when two fields have the same name.
+  Type mergeRecord(Type record1, Type record2, Location loc);
+  /// Returns a tuple type of `tuple1 ++ tuple2'
+  Type concatTuple(Type tuple1, Type tuple2);
   /// Check if tuple can be evaluated (instead of flattened).
   /// (i.e., true if the tuple contains to variable or annotation types)
   bool tupleIsPar(const Type& tuple);
@@ -583,6 +588,16 @@ public:
     }
     return x[i]() < x[j]();
   }
+};
+
+struct RecordFieldSort {
+  bool operator()(const VarDecl* a, const VarDecl* b) const {
+    return operator()(a->id()->str(), b->id()->str());
+  }
+  bool operator()(const std::pair<ASTString, Type>& a, const std::pair<ASTString, Type>& b) const {
+    return operator()(a.first, b.first);
+  }
+  bool operator()(ASTString a, ASTString b) const { return std::strcmp(a.c_str(), b.c_str()) < 0; }
 };
 
 template <class Lit>

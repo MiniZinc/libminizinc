@@ -14,6 +14,7 @@ expected: !Result
     le0: false
     lq1: true
     lq0: false
+    con1: [1, 2.0, true]
 ***/
 
 bool: eq1 ::output = (1, "Albus") = (1, "Albus");
@@ -46,3 +47,5 @@ bool: ge0 ::output = (0, 0.1, false) > (0, 0.1, false);
 
 bool: gq1 ::output = (1, false) >= (1, false);
 bool: gq0 ::output = (0, 0.1, false) > (0, 0.1, true);
+
+tuple(int, float, bool): con1 ::output = (1, 2.0) ++ (true,);

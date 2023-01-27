@@ -9,6 +9,7 @@ expected: !Result
     leA: {"x": 2, "y": 4}
     lqA: {"x": 2, "y": 4}
     arrin: {"a": 3, "b": 5.0}
+    merge1: {"a": 2, "b": true, "x": 2, "y": 4}
 ***/
 
 var record(int: a, bool: b): eqA;
@@ -35,3 +36,5 @@ constraint arrin in [
   (a: 3, b: 5.0),
   (a: 6, b: 0.1),
 ];
+
+any: merge1 ::output = eqA ++ lqA;

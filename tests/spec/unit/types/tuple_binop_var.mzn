@@ -9,6 +9,7 @@ expected: !Result
     leA: [2, 4]
     lqA: [2, 4]
     arrin: [3, 5.0]
+    con1: [2, true, 3, true]
 ***/
 
 var tuple(int, bool): eqA;
@@ -35,3 +36,5 @@ constraint arrin in [
   (3, 5.0),
   (6, 0.1),
 ];
+
+any: con1 :: output = eqA ++ nq;

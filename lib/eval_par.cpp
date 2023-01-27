@@ -149,6 +149,44 @@ void check_par_declaration(EnvI& env, VarDecl* vd) {
   }
 }
 
+ArrayLit* eval_record_merge(EnvI& env, ArrayLit* lhs, ArrayLit* rhs) {
+  RecordType* fields1 = env.getRecordType(lhs->type());
+  RecordType* fields2 = env.getRecordType(rhs->type());
+  RecordFieldSort cmp;
+
+  std::vector<Expression*> all_fields;
+  const size_t total_size = fields1->size() + fields2->size();
+  all_fields.reserve(total_size);
+  size_t l = 0;
+  size_t r = 0;
+  for (size_t i = 0; i < total_size; i++) {
+    if (l >= fields1->size()) {
+      // must choose rhs
+      all_fields.emplace_back((*rhs)[r]);
+      ++r;
+    } else if (r >= fields2->size()) {
+      // must choose lhs
+      all_fields.emplace_back((*lhs)[l]);
+      ++l;
+    } else {
+      ASTString lhsN = fields1->fieldName(l);
+      ASTString rhsN = fields2->fieldName(r);
+      if (cmp(lhsN, rhsN)) {
+        // lhsN < rhsN
+        all_fields.emplace_back((*lhs)[l]);
+        ++l;
+      } else {
+        all_fields.emplace_back((*rhs)[r]);
+        ++r;
+      }
+    }
+  }
+  assert(r + l == all_fields.size());
+
+  ArrayLit* ret = ArrayLit::constructTuple(Location().introduce(), all_fields);
+  return ret;
+}
+
 template <class E>
 typename E::Val eval_id(EnvI& env, Expression* e) {
   Id* id = e->cast<Id>();
@@ -2267,6 +2305,22 @@ Expression* eval_par(EnvI& env, Expression* e) {
           auto* nbo =
               new BinOp(e->loc(), eval_par(env, bo->lhs()), bo->op(), eval_par(env, bo->rhs()));
           nbo->type(bo->type());
+          if (nbo->op() == BOT_PLUSPLUS && nbo->type().structBT()) {
+            assert(nbo->lhs()->type().structBT() &&
+                   nbo->lhs()->type().bt() == nbo->rhs()->type().bt() &&
+                   nbo->lhs()->type().dim() == 0 && nbo->rhs()->type().dim() == 0);
+            if (nbo->type().isrecord()) {
+              ArrayLit* rec = eval_record_merge(env, eval_array_lit(env, nbo->lhs()),
+                                                eval_array_lit(env, nbo->rhs()));
+              rec->type(nbo->type());
+              return rec;
+            }
+            assert(nbo->type().istuple());
+            ArrayLit* tup =
+                ArrayLit::constructTuple(nbo->loc().introduce(), eval_array_lit(env, nbo));
+            tup->type(nbo->type());
+            return tup;
+          }
           return nbo;
         }
         case Expression::E_UNOP: {

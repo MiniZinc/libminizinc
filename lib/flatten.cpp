@@ -1426,6 +1426,80 @@ Type EnvI::commonRecord(Type record1, Type record2, bool ignoreRecord1Dim) {
   return record1;
 }
 
+Type EnvI::mergeRecord(Type record1, Type record2, Location loc) {
+  RecordType* fields1 = getRecordType(record1);
+  RecordType* fields2 = getRecordType(record2);
+  RecordFieldSort cmp;
+
+  std::vector<std::pair<ASTString, Type>> all_fields;
+  const size_t total_size = fields1->size() + fields2->size();
+  all_fields.reserve(total_size);
+  size_t l = 0;
+  size_t r = 0;
+  for (size_t i = 0; i < total_size; i++) {
+    if (l >= fields1->size()) {
+      // must choose rhs
+      all_fields.emplace_back(fields2->fieldName(r), (*fields2)[r]);
+      ++r;
+    } else if (r >= fields2->size()) {
+      // must choose lhs
+      all_fields.emplace_back(fields1->fieldName(l), (*fields1)[l]);
+      ++l;
+    } else {
+      ASTString lhsN = fields1->fieldName(l);
+      ASTString rhsN = fields2->fieldName(r);
+      if (cmp(lhsN, rhsN)) {
+        // lhsN < rhsN
+        all_fields.emplace_back(lhsN, (*fields1)[l]);
+        ++l;
+      } else {
+        all_fields.emplace_back(rhsN, (*fields2)[r]);
+        ++r;
+      }
+    }
+    if (i > 0 && all_fields[i].first == all_fields[i - 1].first) {
+      std::ostringstream ss;
+      ss << "cannot merge of record types `" << record1.toString(*this) << "' and `"
+         << record2.toString(*this) << "'. Both record types contain a field with the name `"
+         << all_fields[i].first << "'";
+      throw TypeError(*this, loc, ss.str());
+    }
+  }
+  assert(r + l == all_fields.size());
+  unsigned int typeId = registerRecordType(all_fields);
+  bool is_var = record1.ti() == record2.ti() && record1.ti() == Type::TI_VAR;
+  bool is_cv = record1.cv() || record2.cv();
+
+  Type ret = Type::record(0, 0);  // Delay TypeId until TI and CV is set
+  ret.ti(is_var ? Type::TI_VAR : Type::TI_PAR);
+  ret.cv(is_cv);
+  ret.typeId(typeId);
+  return ret;
+}
+
+Type EnvI::concatTuple(Type tuple1, Type tuple2) {
+  TupleType* fields1 = getTupleType(tuple1);
+  TupleType* fields2 = getTupleType(tuple2);
+
+  std::vector<Type> all_fields(fields1->size() + fields2->size());
+  for (size_t i = 0; i < fields1->size(); i++) {
+    all_fields[i] = (*fields1)[i];
+  }
+  for (size_t i = 0; i < fields2->size(); i++) {
+    all_fields[fields1->size() + i] = (*fields2)[i];
+  }
+  unsigned int typeId = registerTupleType(all_fields);
+
+  bool is_var = tuple1.ti() == tuple2.ti() && tuple1.ti() == Type::TI_VAR;
+  bool is_cv = tuple1.cv() || tuple2.cv();
+
+  Type ret = Type::tuple(0, 0);  // Delay TypeId until TI and CV is set
+  ret.ti(is_var ? Type::TI_VAR : Type::TI_PAR);
+  ret.cv(is_cv);
+  ret.typeId(typeId);
+  return ret;
+}
+
 std::string EnvI::enumToString(unsigned int enumId, int i) {
   Id* ti_id = getEnum(enumId)->e()->id();
   ASTString enumName(create_enum_to_string_name(ti_id, "_toString_"));
@@ -1470,15 +1544,6 @@ bool EnvI::isSubtype(const Type& t1, const Type& t2, bool strictEnums) const {
   }
   return true;
 }
-
-struct RecordFieldSort {
-  bool operator()(const VarDecl* a, const VarDecl* b) const {
-    return std::strcmp(a->id()->str().c_str(), b->id()->str().c_str()) < 0;
-  }
-  bool operator()(const std::pair<ASTString, Type>& a, const std::pair<ASTString, Type>& b) const {
-    return std::strcmp(a.first.c_str(), b.first.c_str()) < 0;
-  }
-};
 
 unsigned int EnvI::registerRecordType(const std::vector<std::pair<ASTString, Type>>& fields) {
   assert(!fields.empty());

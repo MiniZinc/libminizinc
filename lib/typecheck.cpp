@@ -2623,6 +2623,18 @@ public:
           }
         }
       }
+    } else if (bop->op() == BOT_PLUSPLUS && bop->lhs()->type().structBT() &&
+               bop->lhs()->type().bt() == bop->rhs()->type().bt() &&
+               bop->lhs()->type().dim() == 0 && bop->rhs()->type().dim() == 0) {
+      // Special case: concatenating tuples or records
+      Type lhsT = bop->lhs()->type();
+      Type rhsT = bop->rhs()->type();
+      if (lhsT.isrecord()) {
+        bop->type(_env.mergeRecord(lhsT, rhsT, bop->loc()));
+      } else {
+        assert(lhsT.istuple());
+        bop->type(_env.concatTuple(lhsT, rhsT));
+      }
     } else {
       std::ostringstream ss;
       ss << "type error in operator application for `" << bop->opToString()

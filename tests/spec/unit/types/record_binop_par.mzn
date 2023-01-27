@@ -14,6 +14,7 @@ expected: !Result
     le0: false
     lq1: true
     lq0: false
+    merge1: {x: 1, y: 2.0, z: true}
 ***/
 
 bool: eq1 ::output = (A: 1, B: "Albus") = (A: 1, B: "Albus");
@@ -46,3 +47,5 @@ bool: ge0 ::output = (C: 0, E: false, D: 0.1) > (E: false, D: 0.1, C: 0,);
 
 bool: gq1 ::output = (A: 1, B: false) >= (A: 1, B: false);
 bool: gq0 ::output = (A: 0, B: 0.1, C: false) > (A: 0, B: 0.1, C: true);
+
+record(int: x, float: y, bool: z): merge1 ::output = (x: 1, z: true) ++ (y: 2.0);

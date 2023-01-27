@@ -109,6 +109,8 @@ std::string eval_string(EnvI& env, Expression* e);
 Expression* eval_par(EnvI& env, Expression* e);
 /// Check if variable declaration \a vd satisfies the domain and index set constraints
 void check_par_declaration(EnvI& env, VarDecl* vd);
+/// Merge two record literals and return the result.
+ArrayLit* eval_record_merge(EnvI& env, ArrayLit* lhs, ArrayLit* rhs);
 
 /// Representation for bounds of an integer expression
 struct IntBounds {
