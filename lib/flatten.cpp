@@ -3280,6 +3280,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
 
         Type t = Type::bot();
         bool allPar = true;
+        bool allOcc = true;
         for (auto& i : a.a) {
           if (t == Type::bot()) {
             t = i->type();
@@ -3287,9 +3288,15 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
           if (!i->type().isPar()) {
             allPar = false;
           }
+          if (i->type().isOpt()) {
+            allOcc = false;
+          }
         }
         if (!allPar) {
           t.mkVar(env);
+        }
+        if (!allOcc) {
+          t.ot(Type::OT_OPTIONAL);
         }
         if (c->set()) {
           t.st(Type::ST_SET);
