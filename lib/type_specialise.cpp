@@ -734,6 +734,7 @@ public:
         auto* fi = matches[matchIdx];
         for (auto& tg : toGenerate[matchIdx]) {
           // Copy function (without following Ids or copying other function decls)
+          _typer.reset(_env, fi);
           auto* fi_copy = copy(_env, fi, false, false, false)->cast<FunctionI>();
           fi_copy->isMonomorphised(true);
           // Rename copy
@@ -835,7 +836,7 @@ public:
             fi_copy->e(body);
           } else {
             // update all types in the body
-            _typer(_env, fi_copy);
+            _typer.retype(_env, fi_copy);
             // put calls in the body on the agenda
             CollectConcreteCalls ccc(_agenda);
             top_down(ccc, fi_copy->e());
@@ -847,6 +848,7 @@ public:
             call->decl(fi_copy);
             call->rehash();
           }
+          _typer.retype(_env, fi);
         }
       }
     } else {

@@ -68,6 +68,7 @@ Bug fixes:
 -  Allow option types to be declared with empty domains.
 -  Fix an error in checking floating point array domains for functions with defined domains.
 -  Fix a bug in the evaluation of array comprehensions with option types.
+-  Fix type inference for variables declared ``any`` in let expressions.
 
 .. _v2.6.4:
 

@@ -158,8 +158,8 @@ predicate float_ne(var opt float : x, var opt float : y) =
      (absent(x) != absent(y))
   \/ (occurs(x) /\ occurs(y) /\ (deopt(x)!=deopt(y))::maybe_partial);
 
-predicate xorall_reif(array[int] of var bool: b, var bool: c) =
-  let { var bool: nc ::is_defined_var; constraint xorall([nc]++b) ::defines_var(nc); } in c = not nc;
+predicate xorall_reif(array[$T] of var bool: b, var bool: c) =
+  let { var bool: nc ::is_defined_var; constraint xorall([nc]++array1d(b)) ::defines_var(nc); } in c = not nc;
 
 function var int: lin_exp(array[int] of int, array[int] of var int, int) ::mzn_internal_representation;
 function var float: lin_exp(array[int] of float, array[int] of var float, float) ::mzn_internal_representation;

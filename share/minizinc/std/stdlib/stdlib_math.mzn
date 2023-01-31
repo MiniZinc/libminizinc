@@ -278,17 +278,17 @@ function     float: product(array[$T] of     float: x);
 function var float: product(array[$T] of var float: x) =
   product_rec(array1d(x));
 /** @group stdlib.builtins.arithmetic Return product of non-absent elements of \a x. */
-function int: product(array[int] of opt int: x) =
-  product (i in index_set(x)) (x[i] default 1);
+function int: product(array[$T] of opt int: x) =
+  product (xi in x) (xi default 1);
 /** @group stdlib.builtins.arithmetic Return product of non-absent elements of \a x. */
-function var int: product(array[int] of var opt int: x) =
-  product (i in index_set(x)) (x[i] default 1);
+function var int: product(array[$T] of var opt int: x) =
+  product (xi in x) (xi default 1);
 /** @group stdlib.builtins.arithmetic Return product of non-absent elements of \a x. */
-function float: product(array[int] of opt float: x) =
-  product (i in index_set(x)) (x[i] default 1.0);
+function float: product(array[$T] of opt float: x) =
+  product (xi in x) (xi default 1.0);
 /** @group stdlib.builtins.arithmetic Return product of non-absent elements of \a x. */
-function var float: product(array[int] of var opt float: x) =
-  product (i in index_set(x)) (x[i] default 1.0);
+function var float: product(array[$T] of var opt float: x) =
+  product (xi in x) (xi default 1.0);
 
 
 /** @group stdlib.builtins.arithmetic Return minimum of \a x and \a y */
@@ -331,7 +331,7 @@ function var float: min(array[$U] of var float: x) =
 
 /** @group stdlib.builtins.arithmetic Return minimum of elements in \a x that are not absent.
     Result is undefined when all values are absent. */
-function var int: min(array[int] of var opt int: x) =
+function var int: min(array[$X] of var opt int: x) =
   let {
     int: xub = max(0, ub_array(x));
     constraint exists (xi in x) (occurs(xi));
@@ -339,14 +339,14 @@ function var int: min(array[int] of var opt int: x) =
 
 /** @group stdlib.builtins.arithmetic Return minimum of elements in \a x that are not absent.
     Result is absent when all values are absent. */
-function var opt int: min_weak(array[int] of var opt int: x) =
+function var opt int: min_weak(array[$X] of var opt int: x) =
   let {
     int: xub = max(0, ub_array(x));
   } in if exists (xi in x) (occurs(xi)) then min (xi in x) (xi default xub) else <> endif;
 
 /** @group stdlib.builtins.arithmetic Return minimum of elements in \a x that are not absent.
     Result is undefined when all values are absent. */
-function var float: min(array[int] of var opt float: x) =
+function var float: min(array[$X] of var opt float: x) =
   let {
     float: xub = max(0.0, ub_array(x));
     constraint exists (xi in x) (occurs(xi));
@@ -354,7 +354,7 @@ function var float: min(array[int] of var opt float: x) =
 
 /** @group stdlib.builtins.arithmetic Return minimum of elements in \a x that are not absent.
     Result is absent when all values are absent. */
-function var opt float: min_weak(array[int] of var opt float: x) =
+function var opt float: min_weak(array[$X] of var opt float: x) =
   let {
     float: xub = max(0.0, ub_array(x));
   } in if exists (xi in x) (occurs(xi)) then min (xi in x) (xi default xub) else <> endif;
@@ -402,7 +402,7 @@ function var float: max(array[$U] of var float: x) =
 
 /** @group stdlib.builtins.arithmetic Return maximum of elements in \a x that are not absent.
     Result is undefined when all values are absent. */
-function var int: max(array[int] of var opt int: x) =
+function var int: max(array[$X] of var opt int: x) =
   let {
     int: xlb = min(0, lb_array(x));
     constraint exists (xi in x) (occurs(xi));
@@ -410,14 +410,14 @@ function var int: max(array[int] of var opt int: x) =
 
 /** @group stdlib.builtins.arithmetic Return maximum of elements in \a x that are not absent.
     Result is absent when all values are absent. */
-function var opt int: max_weak(array[int] of var opt int: x) =
+function var opt int: max_weak(array[$X] of var opt int: x) =
   let {
     int: xlb = min(0, lb_array(x));
   } in if exists (xi in x) (occurs(xi)) then max (xi in x) (xi default xlb) else <> endif;
 
 /** @group stdlib.builtins.arithmetic Return maximum of elements in \a x that are not absent.
     Result is undefined when all values are absent. */
-function var float: max(array[int] of var opt float: x) =
+function var float: max(array[$X] of var opt float: x) =
   let {
     float: xlb = min(0.0, lb_array(x));
     constraint exists (xi in x) (occurs(xi));
@@ -425,7 +425,7 @@ function var float: max(array[int] of var opt float: x) =
 
 /** @group stdlib.builtins.arithmetic Return maximum of elements in \a x that are not absent.
     Result is absent when all values are absent. */
-function var opt float: max_weak(array[int] of var opt float: x) =
+function var opt float: max_weak(array[$X] of var opt float: x) =
   let {
     float: xlb = min(0.0, lb_array(x));
   } in if exists (xi in x) (occurs(xi)) then max (xi in x) (xi default xlb) else <> endif;

@@ -1676,11 +1676,11 @@ private:
   EnvI& _env;
   Model* _model;
   std::vector<TypeError>& _typeErrors;
-  bool _ignoreUndefined;
 
 public:
-  Typer(EnvI& env, Model* model, std::vector<TypeError>& typeErrors, bool ignoreUndefined)
-      : _env(env), _model(model), _typeErrors(typeErrors), _ignoreUndefined(ignoreUndefined) {}
+  std::unordered_set<VarDecl*> anyInLet;
+  Typer(EnvI& env, Model* model, std::vector<TypeError>& typeErrors)
+      : _env(env), _model(model), _typeErrors(typeErrors) {}
   /// Check annotations when expression is finished
   void exit(Expression* e) {
     for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it) {
@@ -2915,6 +2915,9 @@ public:
           }
         }
         if (vd->type().any() || vd->type().isunknown()) {
+          if (vd->type().any()) {
+            anyInLet.insert(vd);
+          }
           vd->ti()->type(vet);
           vd->type(vet);
           if (vdt.any()) {
@@ -3549,7 +3552,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
   }
 
   {
-    Typer<false> ty(env.envi(), m, typeErrors, ignoreUndefinedParameters);
+    Typer<false> ty(env.envi(), m, typeErrors);
     BottomUpIterator<Typer<false>> bottomUpTyper(ty);
     for (auto& decl : ts.decls) {
       decl->payload(0);
@@ -3574,8 +3577,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
   m->fixFnMap();
 
+  Typer<true> ty(env.envi(), m, typeErrors);
   {
-    Typer<true> ty(env.envi(), m, typeErrors, ignoreUndefinedParameters);
     BottomUpIterator<Typer<true>> bottomUpTyper(ty);
 
     for (auto* c : enumConstructorSetTypes) {
@@ -3832,17 +3835,39 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
   // Specialisation of parametric functions
   if (!isFlatZinc) {
-    Typer<false> ty(env.envi(), m, typeErrors, ignoreUndefinedParameters);
-    BottomUpIterator<Typer<false>> bottomUpTyper(ty);
+    BottomUpIterator<Typer<true>> bottomUpTyper(ty);
 
     class ConcreteTyper : public TyperFn {
     private:
-      BottomUpIterator<Typer<false>>& _bottomUpTyper;
+      Typer<true>& _ty;
+      BottomUpIterator<Typer<true>>& _bottomUpTyper;
 
     public:
-      ConcreteTyper(BottomUpIterator<Typer<false>>& i) : _bottomUpTyper(i) {}
-      void operator()(EnvI& env, FunctionI* fi) override { _bottomUpTyper.run(fi->e()); }
-    } concreteTyper(bottomUpTyper);
+      ConcreteTyper(Typer<true>& ty, BottomUpIterator<Typer<true>>& i)
+          : _ty(ty), _bottomUpTyper(i) {}
+      void retype(EnvI& env, FunctionI* fi) override { _bottomUpTyper.run(fi->e()); }
+      void reset(EnvI& env, FunctionI* fi) override {
+        class ResetAnyInLet : public EVisitor {
+        private:
+          EnvI& _env;
+          Typer<true>& _ty;
+
+        public:
+          ResetAnyInLet(EnvI& env, Typer<true>& ty) : _env(env), _ty(ty) {}
+          void vLet(Let* let) {
+            for (auto* l : let->let()) {
+              if (auto* vd = l->dynamicCast<VarDecl>()) {
+                if (_ty.anyInLet.find(vd) != _ty.anyInLet.end()) {
+                  vd->type(Type::mkAny());
+                  vd->ti()->type(Type::mkAny());
+                }
+              }
+            }
+          }
+        } ra(env, _ty);
+        bottom_up(ra, fi->e());
+      }
+    } concreteTyper(ty, bottomUpTyper);
     type_specialise(env, m, concreteTyper);
 
     class TSV4 : public ItemVisitor {
@@ -4189,7 +4214,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
 void typecheck(Env& env, Model* m, AssignI* ai) {
   std::vector<TypeError> typeErrors;
-  Typer<true> ty(env.envi(), m, typeErrors, false);
+  Typer<true> ty(env.envi(), m, typeErrors);
   BottomUpIterator<Typer<true>> bottomUpTyper(ty);
   bottomUpTyper.run(ai->e());
   if (!typeErrors.empty()) {

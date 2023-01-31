@@ -95,7 +95,8 @@ public:
 
 class TyperFn {
 public:
-  virtual void operator()(EnvI& env, FunctionI* fi) = 0;
+  virtual void retype(EnvI& env, FunctionI* fi) = 0;
+  virtual void reset(EnvI& env, FunctionI* fi) = 0;
 };
 
 /// Type check the model \a m
