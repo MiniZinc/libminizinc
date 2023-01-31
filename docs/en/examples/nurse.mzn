@@ -7,16 +7,17 @@ int: req_night;
 int: min_night;
 
 enum SHIFT = { d, n, o };
-int: S = card(SHIFT);
 
-int: Q = 6; int: q0 = 1; set of int: STATE = 1..Q;
-array[STATE,SHIFT] of int: t =
-     [| 2, 3, 1    % state 1
-      | 4, 4, 1    % state 2
-      | 4, 5, 1    % state 3
-      | 6, 6, 1    % state 4
-      | 6, 0, 1    % state 5
-      | 0, 0, 1|]; % state 6 
+enum STATE = { S1, S2, S3, S4, S5, S6 };
+
+array[STATE,SHIFT] of opt STATE: t =
+     [|      d:  n:  o:
+      | S1:  S2, S3, S1
+      | S2:  S4, S4, S1
+      | S3:  S4, S5, S1
+      | S4:  S6, S6, S1
+      | S5:  S6, <>, S1
+      | S6:  <>, <>, S1|];
 
 array[NURSE,DAY] of var SHIFT: roster;
 
@@ -25,11 +26,8 @@ constraint forall(j in DAY)(
              sum(i in NURSE)(roster[i,j] == n) == req_night
            );
 constraint forall(i in NURSE)(
-             regular([roster[i,j] | j in DAY], Q, S, t, q0, STATE) /\
+             regular([roster[i,j] | j in DAY], t, S1, STATE) /\
              sum(j in DAY)(roster[i,j] == n) >= min_night
            );
 
 solve satisfy;
-
-output [ show(roster[i,j]) ++ if j==card(DAY) then "\n" else " " endif
-       | i in NURSE, j in DAY ]; 

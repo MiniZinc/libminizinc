@@ -171,23 +171,24 @@ Regular
 
 
 The :mzn:`regular` constraint is used to enforce that a sequence of
-variables takes a value defined by a finite automaton.
+variables takes a value defined by a deterministic finite automaton (DFA).
 The usage of :mzn:`regular` has the form
 
 .. code-block:: minizinc
 
-  regular(array[int] of var int: x, int: Q, int: S,
-          array[int,int] of int: d, int: q0, set of int: F)
+  regular(array[int] of var $$Val: x,
+          array[$$State,$$Val] of opt $$State: d,
+          $$State: q0, set of $$State: F)
 
-It constrains that 
-the sequence of values in array :mzn:`x` (which must all be in the :index:`range`
-:mzn:`1..S`)
-is accepted by the :index:`DFA` of :mzn:`Q` states with input :mzn:`1..S`
-and transition function :mzn:`d` (which maps :mzn:`<1..Q, 1..S>` to 
-:mzn:`0..Q`) and initial state
-:mzn:`q0` (which must be in :mzn:`1..Q`) and accepting states :mzn:`F`
-(which all must be in :mzn:`1..Q`). 
-State 0 is reserved to be an always failing state. 
+We use the :mzn:`$$` prefix (here, :mzn:`$$Val` and :mzn:`$$State`) to indicate
+that these arguments can be of any enumerated type (including simple integers).
+
+The :mzn:`regular` constraint ensures that 
+the sequence of values in array :mzn:`x`
+is accepted by the :index:`DFA` with transition function :mzn:`d`, initial state
+:mzn:`q0` and accepting states :mzn:`F`. The transition function maps a state
+and a value to another state.
+Let's illustrate how to define the transition function using an example.
 
 .. _fig-dfa:
 
@@ -200,30 +201,40 @@ either: (d) on day shift, (n) on night shift, or (o) off.
 In each four day period a nurse must have at least one day off, and
 no nurse can be scheduled for 3 night shifts in a row.
 This can be encoded using the incomplete DFA shown in :numref:`fig-dfa`.
-We can encode this DFA as having start state :mzn:`1`, final states :mzn:`1..6`,
-and transition function 
+
+We can encode this DFA by introducing an enumerated type for the states
+
+.. code-block:: minizinc
+
+  enum State = {S1, S2, S3, S4, S5, S6};
+
+The start state is :mzn:`S1`, all states are final states,
+and the transition function is given by the matrix
 
 .. cssclass:: table-nonfluid table-bordered
 
-+---+---+---+---+
-|   | d | n | o |
-+===+===+===+===+
-| 1 | 2 | 3 | 1 |
-+---+---+---+---+
-| 2 | 4 | 4 | 1 |
-+---+---+---+---+
-| 3 | 4 | 5 | 1 |
-+---+---+---+---+
-| 4 | 6 | 6 | 1 |
-+---+---+---+---+
-| 5 | 6 | 0 | 1 |
-+---+---+---+---+
-| 6 | 0 | 0 | 1 |
-+---+---+---+---+
++----+----+----+----+
+|    |  d |  n |  o |
++====+====+====+====+
+| S1 | S2 | S3 | S1 |
++----+----+----+----+
+| S2 | S4 | S4 | S1 |
++----+----+----+----+
+| S3 | S4 | S5 | S1 |
++----+----+----+----+
+| S4 | S6 | S6 | S1 |
++----+----+----+----+
+| S5 | S6 | <> | S1 |
++----+----+----+----+
+| S6 | <> | <> | S1 |
++----+----+----+----+
 
-Note that state 0 in the table indicates an error state.
+Note that value :mzn:`<>` in the table indicates an error state,
+i.e., an illegal transition. This is an example of an
+option type, which will be discussed in more detail in :numref:`sec-optiontypes`.
+
 The model shown in :numref:`ex-nurse` finds a schedule for
-:mzn:`num_nurses` nurses over :mzn:`num_days` days, where we
+the nurses defined by enum :mzn:`NURSE` over the days defined by enum :mzn:`DAYS`, where we
 require :mzn:`req_day` nurses on day shift each day, and 
 :mzn:`req_night` nurses on night shift, and that each nurse
 takes at least :mzn:`min_night` night shifts.
@@ -245,13 +256,16 @@ A possible output is
 
 .. code-block:: none
 
-  d o n o n o d n o o
-  d o d n n o d d n o
-  o d d n o n d n o n
-  o d d d o n n o n n
-  d d n o d d n o d d
-  n n o d d d o d d d
-  n n o d d d o d d d
+  roster = 
+  [|           D(1): D(2): D(3): D(4): D(5): D(6): D(7): D(8): D(9): D(10): 
+   | Nurse(1):    d,    o,    n,    o,    n,    o,    n,    n,    o,     o
+   | Nurse(2):    d,    o,    d,    n,    n,    o,    d,    d,    n,     o
+   | Nurse(3):    o,    d,    d,    n,    o,    n,    d,    n,    o,     n
+   | Nurse(4):    d,    d,    d,    o,    d,    n,    d,    o,    n,     n
+   | Nurse(5):    o,    d,    n,    d,    o,    d,    n,    o,    d,     d
+   | Nurse(6):    n,    n,    o,    d,    d,    d,    o,    d,    d,     d
+   | Nurse(7):    n,    n,    o,    d,    d,    d,    o,    d,    d,     d
+   |];
   ----------
 
 There is an alternate form of the regular constraint
@@ -261,19 +275,15 @@ This constraint has the form
 
 .. code-block:: minizinc
 
-  regular_nfa(array[int] of var int: x, int: Q, int: S,
-          array[int,int] of set of int: d, int: q0, set of int: F)
+  regular_nfa(array[int] of var $$Val: x,
+          array[$$State,$$Val] of set of $$State: d, $$State: q0, set of $$State: F)
 
 It constrains that 
-the sequence of values in array :mzn:`x` (which must all be in the range
-:mzn:`1..S`)
-is accepted by the :index:`NFA` of :mzn:`Q` states with input :mzn:`1..S`
-and transition function :mzn:`d` (which maps :mzn:`<1..Q, 1..S>` to 
-subsets of :mzn:`1..Q`) and initial state
-:mzn:`q0` (which must be in :mzn:`1..Q`) and accepting states :mzn:`F` 
-(which all must be in :mzn:`1..Q`). 
-There is no need for a failing state 0, since the transition function can
-map to an empty set of states.
+the sequence of values in array :mzn:`x`
+is accepted by the :index:`NFA` with
+transition function :mzn:`d`, initial state
+:mzn:`q0` and accepting states :mzn:`F`. There is no need for option types in
+this case, since an impossible transition can be represented using the empty set.
 
 
 Defining Predicates

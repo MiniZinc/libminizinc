@@ -4,6 +4,29 @@ include "fzn_regular_set.mzn";
 include "fzn_regular_set_reif.mzn";
 
 /** @group globals.extensional
+  The sequence of values in array \a x
+  is accepted by the DFA with transition function \a d, initial state \a q0
+  and accepting states \a F.
+  The transition function maps states (from enumerated type \a State) and
+  values (from type \a Val) to states, or the absent value if the transition
+  is not possible.
+*/
+predicate regular(
+	array[int] of var $$Val: x,
+	array[$$State,$$Val] of opt $$State: d,
+	$$State: q0,
+	set of $$State: F
+) = let {
+    any: State = index_set_1of2(d);
+    any: Val = index_set_2of2(d);
+    any: q_off = min(State) - 1;
+    any: dd = [ (s,v): if occurs(d[s,v]) then deopt(d[s,v]) - q_off else 0 endif
+              | s in State, v in Val ];
+    any: qq0 = q0 - q_off;
+    any: FF = { i - q_off | i in F };
+  } in fzn_regular_set(x, card(State), Val, dd, qq0, FF);
+
+/** @group globals.extensional
   The sequence of values in array \a x (which must all be in the range 1..\a S)
   is accepted by the DFA of \a Q states with input 1..\a S and transition
   function \a d (which maps (1..\a Q, 1..\a S) -> 0..\a Q)) and initial state \a q0

@@ -4,6 +4,27 @@ include "fzn_regular_nfa_set.mzn";
 include "fzn_regular_nfa_set_reif.mzn";
 
 /** @group globals.extensional
+  The sequence of values in array \a x
+  is accepted by the NFA with transition
+  function \a d, initial state \a q0 and accepting states \a F.
+  The transition function maps states (from enumerated type \a State) and
+  values (from type \a Val) to sets of states.  
+*/
+predicate regular_nfa(
+	array[int] of var $$Val: x,
+	array[$$State,$$Val] of set of $$State: d,
+	$$State: q0,
+	set of $$State: F
+) = let {
+    any: State = index_set_1of2(d);
+    any: Val = index_set_2of2(d);
+    any: q_off = min(State) - 1;
+    any: dd = [ (s,v): { i - q_off | i in d[s,v] } | s in State, v in Val ];
+    any: qq0 = q0 - q_off;
+    any: FF = { i - q_off | i in F };
+  } in fzn_regular_nfa(x, card(State), Val, dd, qq0, FF);
+
+/** @group globals.extensional
   The sequence of values in array \a x (which must all be in the range 1..\a S)
   is accepted by the NFA of \a Q states with input 1..\a S and transition
   function \a d (which maps (1..\a Q, 1..\a S) -> set of 1..\a Q)) and initial state \a q0

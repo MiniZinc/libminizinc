@@ -44,6 +44,8 @@ Changes:
 -  The Gecode-based pre-solver is now made available using the ``gecode`` solver
    tag when using the WebAssembly version of MiniZinc.
 -  Remove unnecessary file packager patch from WebAssembly build.
+-  There is now a version of the ``regular`` constraint that uses enumerated types
+   to represent the states of the automaton.
 
 Bug fixes:
 ^^^^^^^^^^
