@@ -12,13 +12,13 @@ Unreleased
 Changes in interfaces to solvers:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  MiniZinc now includes a solver interface for the [HiGHS](https://www.highs.dev)
+-  MiniZinc now includes a solver interface for the `HiGHS <https://www.highs.dev>`_
    linear optimisation suite. HiGHS is included by default in the MiniZincIDE
    package, and available using ``--solver highs``.
 -  The SCIP interface has been updated and is now compatible with version
    7 and 8 only.
 -  A solver's globals library specified in a configuration file will now
-   always be passed to the compiler using the `-G` flag. This allows users to
+   always be passed to the compiler using the ``-G`` flag. This allows users to
    easily override this library from command line when required.
 -  Automatically detect Gurobi 10.0 and potential future versions.
 -  Avoid loading all solver plugin DLLs on startup, instead loading when required.
