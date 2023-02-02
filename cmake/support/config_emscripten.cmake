@@ -9,7 +9,7 @@ if (DEFINED EMSCRIPTEN)
                      COMMENT "building data store minizinc.data")
   
   set(EMSCRIPTEN_CXX_FLAGS "-fexceptions")
-  set(EMSCRIPTEN_LINK_FLAGS "-s FORCE_FILESYSTEM=1 -s LZ4=1 -s MODULARIZE=1 -s EXPORTED_RUNTIME_METHODS=callMain,cwrap,FS,ENV -s ALLOW_MEMORY_GROWTH=1 -fexceptions --no-heap-copy")
+  set(EMSCRIPTEN_LINK_FLAGS "-s FORCE_FILESYSTEM=1 -s LZ4=1 -s MODULARIZE=1 -s EXPORTED_RUNTIME_METHODS=callMain,cwrap,FS,ENV -s ALLOW_MEMORY_GROWTH=1 -s INITIAL_MEMORY=33554432 -s STACK_SIZE=4194304 -fexceptions --no-heap-copy")
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EMSCRIPTEN_CXX_FLAGS}")
 
