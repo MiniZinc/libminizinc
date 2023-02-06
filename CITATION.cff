@@ -1,0 +1,102 @@
+# This file contains metadata to help users cite MiniZinc in academic
+# publications. To add more details, see https://citation-file-format.github.io
+# for help.
+
+cff-version: 1.2.0
+title: MiniZinc
+message: >-
+  Please use the conference paper “MiniZinc: Towards a Standard CP Modelling
+  Language” as the primary citation for MiniZinc. *In addition* please consider
+  using the contained software citation to cite the specific version of MiniZinc
+  you are using.
+type: software
+preferred-citation:
+  title: "MiniZinc: Towards a Standard CP Modelling Language"
+  type: conference-paper
+  authors:
+    - given-names: Nicholas
+      family-names: Nethercote
+      affiliation: National ICT Australia and the University of Melbourne
+    - given-names: Peter J.
+      family-names: Stuckey
+      orcid: 'https://orcid.org/0000-0003-2186-0459'
+      affiliation: National ICT Australia and the University of Melbourne
+    - given-names: Sebastian
+      family-names: Brand
+      affiliation: National ICT Australia and the University of Melbourne
+    - given-names: Gregory J.
+      family-names: Duck
+      email: guido.tack@monash.edu
+      affiliation: National ICT Australia and the University of Melbourne
+      orcid: 'https://orcid.org/0000-0002-0837-9671'
+    - given-names: Guido
+      family-names: Tack
+      affiliation: Programming Systems Lab, Saarland University
+      orcid: 'https://orcid.org/0000-0003-3357-6498'
+  conference:
+    name: Principles and Practice of Constraint Programming 2007
+    location: Providence, RI, USA
+  collection-type: proceedings
+  collection-title: Principles and Practice of Constraint Programming - CP 2007
+  editors:
+    - given-names: Christian
+      family-names: Bessière
+  pages: "529-543"
+  year: 2007
+  publisher: Springer
+  url: 'https://doi.org/10.1007/978-3-540-74970-7_38'
+  doi: 10.1007/978-3-540-74970-7_38
+authors:
+  - given-names: Guido
+    family-names: Tack
+    email: guido.tack@monash.edu
+    affiliation: Monash University
+    orcid: 'https://orcid.org/0000-0003-3357-6498'
+  - given-names: Jip J.
+    family-names: Dekker
+    email: jip.dekker@monash.edu
+    affiliation: Monash University
+    orcid: 'https://orcid.org/0000-0002-0053-6724'
+  - given-names: Kevin
+    family-names: Leo
+    email: kevin.leo@monash.edu
+    affiliation: Monash University
+    orcid: 'https://orcid.org/0000-0003-4720-4265'
+  - given-names: Gleb
+    family-names: Belov
+    affiliation: Monash University
+    orcid: 'https://orcid.org/0000-0002-6120-8484'
+  - given-names: Jason
+    family-names: Nguyen
+    email: jason.nguyen@monash.edu
+    affiliation: Monash University
+  - given-names: Maria
+    family-names: Garcia de la Banda
+    email: maria.garciadelabanda@monash.edu
+    affiliation: Monash University
+    orcid: 'https://orcid.org/0000-0002-6666-514X'
+  - given-names: Peter J.
+    family-names: Stuckey
+    email: peter.stuckey@monash.edu
+    orcid: 'https://orcid.org/0000-0003-2186-0459'
+    affiliation: Monash University
+repository-code: 'https://github.com/MiniZinc/libminizinc'
+url: 'https://www.minizinc.org/'
+abstract: >-
+  MiniZinc is a free and open-source constraint modelling language.
+
+  You can use MiniZinc to model constraint satisfaction and optimization
+  problems in a high-level, solver-independent way, taking advantage of a large
+  library of pre-defined constraints. Your model is then compiled into FlatZinc,
+  a solver input language that is understood by a wide range of solvers.
+keywords:
+  - constraint modelling
+  - optimisation
+  - constraint programming
+  - Boolean Satisfiability
+  - mixed integer programming
+license: MPL-2.0
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.7340323
+    description: Zenodo Software Archival DOI
