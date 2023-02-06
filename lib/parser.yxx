@@ -1117,8 +1117,6 @@ set_expr :
       { $$=Call::a(@$, ASTString("'..'"), {$3}); }
     | set_expr MZN_INTERSECT set_expr
       { $$=new BinOp(@$, $1, BOT_INTERSECT, $3); }
-    | set_expr MZN_PLUSPLUS set_expr
-      { $$=new BinOp(@$, $1, BOT_PLUSPLUS, $3); }
     | set_expr MZN_PLUS set_expr
       { $$=new BinOp(@$, $1, BOT_PLUS, $3); }
     | set_expr MZN_MINUS set_expr

@@ -1145,7 +1145,8 @@ bool TypeInst::concatDomain(EnvI& env) {
 
   ArrayLit* dom;
   Type ty;
-  if (type().isrecord()) {
+  if (lhs->type().isrecord()) {
+    assert(rhs->type().isrecord());
     GCLock lock;
     // Merge domains
     dom = eval_record_merge(env, lhs->domain()->cast<ArrayLit>(), rhs->domain()->cast<ArrayLit>());
@@ -1153,7 +1154,8 @@ bool TypeInst::concatDomain(EnvI& env) {
     ty = env.mergeRecord(lhs->type(), rhs->type(), loc());
     dom->type(ty);
   } else {
-    assert(type().istuple());
+    assert(lhs->type().istuple());
+    assert(rhs->type().istuple());
     GCLock lock;
     // Concat domains
     auto* nbo = new BinOp(bop->loc(), lhs->domain(), bop->op(), rhs->domain());

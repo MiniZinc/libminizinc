@@ -2626,27 +2626,51 @@ public:
           }
         }
       }
-    } else if (bop->op() == BOT_PLUSPLUS && bop->lhs()->isa<TypeInst>()) {
-      assert(bop->rhs()->isa<TypeInst>());
-      if (!bop->lhs()->type().structBT()) {
+    } else if (bop->op() == BOT_PLUSPLUS &&
+               (bop->lhs()->isa<TypeInst>() ||
+                (bop->lhs()->isa<Id>() && bop->lhs()->cast<Id>()->decl()->isTypeAlias()))) {
+      // Special case: concatenating type expressions
+
+      // Check whether the rhs is also a type expression
+      if (!(bop->rhs()->isa<TypeInst>() ||
+            (bop->rhs()->isa<Id>() && bop->rhs()->cast<Id>()->decl()->isTypeAlias()))) {
         std::ostringstream ss;
-        ss << "operator application for `" << bop->opToString() << "' is not allowed on the `"
-           << bop->lhs()->type().toString(_env) << "' type.";
+        ss << "operator application for `" << bop->opToString()
+           << "' cannot combine type expression`" << bop->lhs() << "' with expression `"
+           << bop->rhs() << "'.";
         throw TypeError(_env, bop->loc(), ss.str());
       }
-      if (!bop->rhs()->type().structBT()) {
+
+      // Resolve potential type aliases
+      if (auto* alias = bop->lhs()->dynamicCast<Id>()) {
+        bop->lhs(alias->decl()->e()->cast<TypeInst>());
+      }
+      if (auto* alias = bop->rhs()->dynamicCast<Id>()) {
+        bop->rhs(alias->decl()->e()->cast<TypeInst>());
+      }
+
+      Type lhsT = bop->lhs()->type();
+      Type rhsT = bop->rhs()->type();
+      // Check whether type expressions can be correctly combined
+      if (!lhsT.structBT()) {
         std::ostringstream ss;
         ss << "operator application for `" << bop->opToString() << "' is not allowed on the `"
-           << bop->rhs()->type().toString(_env) << "' type.";
+           << lhsT.toString(_env) << "' type.";
         throw TypeError(_env, bop->loc(), ss.str());
       }
-      if (bop->lhs()->type().bt() != bop->rhs()->type().bt()) {
+      if (!rhsT.structBT()) {
+        std::ostringstream ss;
+        ss << "operator application for `" << bop->opToString() << "' is not allowed on the `"
+           << rhsT.toString(_env) << "' type.";
+        throw TypeError(_env, bop->loc(), ss.str());
+      }
+      if (lhsT.bt() != rhsT.bt()) {
         std::ostringstream ss;
         ss << "operator application for `" << bop->opToString() << "' cannot combine type `"
-           << bop->lhs()->type().toString(_env) << "' with typ `"
-           << bop->rhs()->type().toString(_env) << "'.";
+           << lhsT.toString(_env) << "' with typ `" << rhsT.toString(_env) << "'.";
         throw TypeError(_env, bop->loc(), ss.str());
       }
+
       // Note: BinOp is resolved during typechecking of TypeInst
     } else if (bop->op() == BOT_PLUSPLUS && bop->lhs()->type().structBT() &&
                bop->lhs()->type().bt() == bop->rhs()->type().bt() &&
