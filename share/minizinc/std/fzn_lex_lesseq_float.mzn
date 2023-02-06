@@ -15,14 +15,13 @@ predicate fzn_lex_lesseq_float(array[int] of var float: x,
     in
     b[0]
     /\
+    b[size + 1] = (ux - lx <= uy - ly)
+    /\
     forall(i in 0..size) (
         b[i] = ( x[lx + i] <= y[ly + i]
                  /\
                  (x[lx + i] <  y[ly + i] \/ b[i+1])
                )
-    )
-    /\
-    b[size + 1] = (ux - lx <= uy - ly)
-    ;
+    );
 
 %-----------------------------------------------------------------------------%

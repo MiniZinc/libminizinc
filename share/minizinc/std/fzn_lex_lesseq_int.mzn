@@ -15,12 +15,14 @@ predicate fzn_lex_lesseq_int(array[int] of var int: x ::promise_ctx_antitone,
     in
     b[0]
     /\
-    forall(i in 0..size) (
-        b[i] -> ( (x[lx + i] <= y[ly + i])
-                 /\
-                 ( (x[lx + i] <  y[ly + i]) \/ b[i+1]) )
-    )
+    b[size + 1] = (ux - lx <= uy - ly)
     /\
-    (b[size + 1] -> (ux - lx <= uy - ly));
+    forall(i in 0..size) (
+        b[i] = ( x[lx + i] <= y[ly + i]
+                 /\
+                 (x[lx + i] <  y[ly + i] \/ b[i+1])
+               )
+    )
+    ;
 
 %-----------------------------------------------------------------------------%

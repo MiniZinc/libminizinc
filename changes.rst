@@ -49,6 +49,9 @@ Changes:
 -  Remove unnecessary file packager patch from WebAssembly build.
 -  There is now a version of the ``regular`` constraint that uses enumerated types
    to represent the states of the automaton.
+-  Revert change in the standard decomposition of ``lex_less(eq)`` so it no
+   longer uses implications which were intended promote half-reification,
+   because this introduced free variables.
 
 Bug fixes:
 ^^^^^^^^^^
