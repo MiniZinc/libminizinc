@@ -23,3 +23,5 @@
 #cmakedefine COMPILE_BOOST_MINCUT
 
 #cmakedefine CPLEX_PLUGIN
+
+#cmakedefine HIGHS_PLUGIN

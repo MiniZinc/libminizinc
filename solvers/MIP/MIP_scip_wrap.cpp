@@ -13,6 +13,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
+#include <minizinc/exception.hh>
 #include <minizinc/solvers/MIP/MIP_scip_wrap.hh>
 #include <minizinc/utils.hh>
 
@@ -29,11 +30,11 @@
 using namespace std;
 
 /// Load SCIP DLL with the given path
-ScipPlugin::ScipPlugin(const std::string& dll) : Plugin(dll) { load(); }
+ScipPlugin::ScipPlugin(const std::string& dll) : _inner(dll) { load(); }
 
 /// Load SCIP DLL with default search paths on Windows
 ScipPlugin::ScipPlugin()
-    : Plugin(
+    : _inner(
 #ifdef _WIN32
           {
               "libscip",
@@ -61,89 +62,89 @@ ScipPlugin::ScipPlugin()
 }
 
 void ScipPlugin::load() {
-  load_symbol(SCIPmajorVersion);
-  load_symbol(SCIPminorVersion);
-  load_symbol(SCIPtechVersion);
-  load_symbol(SCIPsubversion);
-  load_symbol(SCIPprintError);
-  load_symbol(SCIPcreate);
-  load_symbol(SCIPincludeDefaultPlugins);
-  load_symbol(SCIPcreateProbBasic);
-  load_symbol(SCIPfree);
-  load_symbol(SCIPcreateVarBasic);
-  load_symbol(SCIPaddVar);
-  load_symbol(SCIPreleaseVar);
-  load_symbol(SCIPinfinity);
-  load_symbol(SCIPcreateConsBasicLinear);
-  load_symbol(SCIPcreateConsBasicQuadratic);
-  load_symbol(SCIPaddCons);
-  load_symbol(SCIPreleaseCons);
-  load_symbol(SCIPchgVarLbGlobal);
-  load_symbol(SCIPchgVarUbGlobal);
-  load_symbol(SCIPgetNegatedVar);
-  load_symbol(SCIPcreateConsBasicIndicator);
-  load_symbol(SCIPcreateConsBasicBounddisjunction);
-  load_symbol(SCIPcreateConsBasicCumulative);
-  load_symbol(SCIPcreateConsBasicOrbisack);
-  load_symbol(SCIPcreateConsBasicOrbitope);
-  load_symbol(SCIPgetNSolsFound);
-  load_symbol(SCIPgetNSols);
-  load_symbol(SCIPsetIntParam);
-  load_symbol(SCIPsetRealParam);
-  load_symbol(SCIPwriteOrigProblem);
-  load_symbol(SCIPsetMessagehdlrQuiet);
-  load_symbol(SCIPmessagehdlrCreate);
-  load_symbol(SCIPsetMessagehdlr);
-  load_symbol(SCIPreadParams);
-  load_symbol(SCIPwriteParams);
-  load_symbol(SCIPsolve);
-  load_symbol(SCIPgetStatus);
-  load_symbol(SCIPgetPrimalbound);
-  load_symbol(SCIPgetDualbound);
-  load_symbol(SCIPgetSolVals);
-  load_symbol(SCIPgetBestSol);
-  load_symbol(SCIPgetNTotalNodes);
-  load_symbol(SCIPgetNNodes);
-  load_symbol(SCIPgetNNodesLeft);
-  load_symbol(SCIPfreeTransform);
-  load_symbol(SCIPsetObjsense);
-  load_symbol(SCIPeventhdlrGetName);
-  load_symbol(SCIPcatchEvent);
-  load_symbol(SCIPdropEvent);
-  load_symbol(SCIPeventGetType);
-  load_symbol(SCIPgetSolOrigObj);
-  load_symbol(SCIPincludeEventhdlrBasic);
-  load_symbol(SCIPsetEventhdlrInit);
-  load_symbol(SCIPsetEventhdlrExit);
-  load_symbol(SCIPmessagePrintErrorHeader);
-  load_symbol(SCIPmessagePrintError);
-  load_symbol(SCIPgetNVars);
-  load_symbol(SCIPgetNConss);
-  load_symbol(SCIPgetParams);
-  load_symbol(SCIPgetNParams);
-  load_symbol(SCIPparamGetName);
-  load_symbol(SCIPparamGetType);
-  load_symbol(SCIPparamGetDesc);
-  load_symbol(SCIPparamGetBoolDefault);
-  load_symbol(SCIPparamGetCharAllowedValues);
-  load_symbol(SCIPparamGetCharDefault);
-  load_symbol(SCIPparamGetIntDefault);
-  load_symbol(SCIPparamGetIntMin);
-  load_symbol(SCIPparamGetIntMax);
-  load_symbol(SCIPparamGetLongintDefault);
-  load_symbol(SCIPparamGetLongintMin);
-  load_symbol(SCIPparamGetLongintMax);
-  load_symbol(SCIPparamGetRealDefault);
-  load_symbol(SCIPparamGetRealMin);
-  load_symbol(SCIPparamGetRealMax);
-  load_symbol(SCIPparamGetStringDefault);
-  load_symbol(SCIPgetParam);
-  load_symbol(SCIPchgBoolParam);
-  load_symbol(SCIPchgIntParam);
-  load_symbol(SCIPchgLongintParam);
-  load_symbol(SCIPchgRealParam);
-  load_symbol(SCIPchgCharParam);
-  load_symbol(SCIPchgStringParam);
+  load_symbol_dynamic(_inner, SCIPmajorVersion);
+  load_symbol_dynamic(_inner, SCIPminorVersion);
+  load_symbol_dynamic(_inner, SCIPtechVersion);
+  load_symbol_dynamic(_inner, SCIPsubversion);
+  load_symbol_dynamic(_inner, SCIPprintError);
+  load_symbol_dynamic(_inner, SCIPcreate);
+  load_symbol_dynamic(_inner, SCIPincludeDefaultPlugins);
+  load_symbol_dynamic(_inner, SCIPcreateProbBasic);
+  load_symbol_dynamic(_inner, SCIPfree);
+  load_symbol_dynamic(_inner, SCIPcreateVarBasic);
+  load_symbol_dynamic(_inner, SCIPaddVar);
+  load_symbol_dynamic(_inner, SCIPreleaseVar);
+  load_symbol_dynamic(_inner, SCIPinfinity);
+  load_symbol_dynamic(_inner, SCIPcreateConsBasicLinear);
+  load_symbol_dynamic(_inner, SCIPcreateConsBasicQuadratic);
+  load_symbol_dynamic(_inner, SCIPaddCons);
+  load_symbol_dynamic(_inner, SCIPreleaseCons);
+  load_symbol_dynamic(_inner, SCIPchgVarLbGlobal);
+  load_symbol_dynamic(_inner, SCIPchgVarUbGlobal);
+  load_symbol_dynamic(_inner, SCIPgetNegatedVar);
+  load_symbol_dynamic(_inner, SCIPcreateConsBasicIndicator);
+  load_symbol_dynamic(_inner, SCIPcreateConsBasicBounddisjunction);
+  load_symbol_dynamic(_inner, SCIPcreateConsBasicCumulative);
+  load_symbol_dynamic(_inner, SCIPcreateConsBasicOrbisack);
+  load_symbol_dynamic(_inner, SCIPcreateConsBasicOrbitope);
+  load_symbol_dynamic(_inner, SCIPgetNSolsFound);
+  load_symbol_dynamic(_inner, SCIPgetNSols);
+  load_symbol_dynamic(_inner, SCIPsetIntParam);
+  load_symbol_dynamic(_inner, SCIPsetRealParam);
+  load_symbol_dynamic(_inner, SCIPwriteOrigProblem);
+  load_symbol_dynamic(_inner, SCIPsetMessagehdlrQuiet);
+  load_symbol_dynamic(_inner, SCIPmessagehdlrCreate);
+  load_symbol_dynamic(_inner, SCIPsetMessagehdlr);
+  load_symbol_dynamic(_inner, SCIPreadParams);
+  load_symbol_dynamic(_inner, SCIPwriteParams);
+  load_symbol_dynamic(_inner, SCIPsolve);
+  load_symbol_dynamic(_inner, SCIPgetStatus);
+  load_symbol_dynamic(_inner, SCIPgetPrimalbound);
+  load_symbol_dynamic(_inner, SCIPgetDualbound);
+  load_symbol_dynamic(_inner, SCIPgetSolVals);
+  load_symbol_dynamic(_inner, SCIPgetBestSol);
+  load_symbol_dynamic(_inner, SCIPgetNTotalNodes);
+  load_symbol_dynamic(_inner, SCIPgetNNodes);
+  load_symbol_dynamic(_inner, SCIPgetNNodesLeft);
+  load_symbol_dynamic(_inner, SCIPfreeTransform);
+  load_symbol_dynamic(_inner, SCIPsetObjsense);
+  load_symbol_dynamic(_inner, SCIPeventhdlrGetName);
+  load_symbol_dynamic(_inner, SCIPcatchEvent);
+  load_symbol_dynamic(_inner, SCIPdropEvent);
+  load_symbol_dynamic(_inner, SCIPeventGetType);
+  load_symbol_dynamic(_inner, SCIPgetSolOrigObj);
+  load_symbol_dynamic(_inner, SCIPincludeEventhdlrBasic);
+  load_symbol_dynamic(_inner, SCIPsetEventhdlrInit);
+  load_symbol_dynamic(_inner, SCIPsetEventhdlrExit);
+  load_symbol_dynamic(_inner, SCIPmessagePrintErrorHeader);
+  load_symbol_dynamic(_inner, SCIPmessagePrintError);
+  load_symbol_dynamic(_inner, SCIPgetNVars);
+  load_symbol_dynamic(_inner, SCIPgetNConss);
+  load_symbol_dynamic(_inner, SCIPgetParams);
+  load_symbol_dynamic(_inner, SCIPgetNParams);
+  load_symbol_dynamic(_inner, SCIPparamGetName);
+  load_symbol_dynamic(_inner, SCIPparamGetType);
+  load_symbol_dynamic(_inner, SCIPparamGetDesc);
+  load_symbol_dynamic(_inner, SCIPparamGetBoolDefault);
+  load_symbol_dynamic(_inner, SCIPparamGetCharAllowedValues);
+  load_symbol_dynamic(_inner, SCIPparamGetCharDefault);
+  load_symbol_dynamic(_inner, SCIPparamGetIntDefault);
+  load_symbol_dynamic(_inner, SCIPparamGetIntMin);
+  load_symbol_dynamic(_inner, SCIPparamGetIntMax);
+  load_symbol_dynamic(_inner, SCIPparamGetLongintDefault);
+  load_symbol_dynamic(_inner, SCIPparamGetLongintMin);
+  load_symbol_dynamic(_inner, SCIPparamGetLongintMax);
+  load_symbol_dynamic(_inner, SCIPparamGetRealDefault);
+  load_symbol_dynamic(_inner, SCIPparamGetRealMin);
+  load_symbol_dynamic(_inner, SCIPparamGetRealMax);
+  load_symbol_dynamic(_inner, SCIPparamGetStringDefault);
+  load_symbol_dynamic(_inner, SCIPgetParam);
+  load_symbol_dynamic(_inner, SCIPchgBoolParam);
+  load_symbol_dynamic(_inner, SCIPchgIntParam);
+  load_symbol_dynamic(_inner, SCIPchgLongintParam);
+  load_symbol_dynamic(_inner, SCIPchgRealParam);
+  load_symbol_dynamic(_inner, SCIPchgCharParam);
+  load_symbol_dynamic(_inner, SCIPchgStringParam);
 }
 
 #define SCIP_PLUGIN_CALL_R(plugin, x)                                         \
@@ -172,7 +173,7 @@ string MIPScipWrapper::getVersion(FactoryOptions& factoryOpt,
         << '.' << p->SCIPsubversion();
     delete p;
     return oss.str();
-  } catch (MiniZinc::Plugin::PluginError&) {
+  } catch (MiniZinc::PluginError&) {
     return "<unknown version>";
   }
 }
@@ -180,7 +181,7 @@ vector<string> MIPScipWrapper::getRequiredFlags(FactoryOptions& factoryOpt) {
   try {
     ScipPlugin p;
     return {};
-  } catch (MiniZinc::Plugin::PluginError&) {
+  } catch (MiniZinc::PluginError&) {
     return {"--scip-dll"};
   }
 }
@@ -374,7 +375,7 @@ std::vector<MiniZinc::SolverConfig::ExtraFlag> MIPScipWrapper::getExtraFlags(
       res.emplace_back("--scip-" + name, desc, param_type, param_range, param_default);
     }
     return res;
-  } catch (MiniZinc::Plugin::PluginError&) {
+  } catch (MiniZinc::PluginError&) {
     return {};
   }
   return {};

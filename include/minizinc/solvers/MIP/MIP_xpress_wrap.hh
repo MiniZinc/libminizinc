@@ -18,7 +18,7 @@
 
 using namespace std;
 
-class XpressPlugin : public MiniZinc::Plugin {
+class XpressPlugin {
 public:
   XpressPlugin();
   XpressPlugin(const std::string& dll);
@@ -109,7 +109,10 @@ public:
   // NOLINTNEXTLINE(readability-identifier-naming)
   int(XPRS_CC* XPRSsetstrcontrol)(XPRSprob prob, int index, const char* svalue);
 
+  const std::string& path() const { return _inner.path(); }
+
 private:
+  MiniZinc::Plugin _inner;
   void loadDll();
   static const std::vector<std::string>& dlls();
 };

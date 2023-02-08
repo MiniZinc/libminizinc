@@ -15,6 +15,7 @@ endif()
 
 # Static vs. Dynamic linking
 option(CPLEX_PLUGIN "Build CPLEX binding as a plugin" ON)
+option(HIGHS_PLUGIN "Build HiGHS binding as a plugin" ON)
 
 # CMake options default value
 option(CMAKE_POSITION_INDEPENDENT_CODE "Default value for POSITION_INDEPENDENT_CODE of targets" TRUE)
@@ -38,7 +39,9 @@ endif(POLICY CMP0074)
 find_package(Geas)
 find_package(Gecode 6.2 COMPONENTS Driver Float Int Kernel Minimodel Search Set Support)
 find_package(chuffed)
-find_package(HIGHS)
+if(NOT HIGHS_PLUGIN)
+  find_package(HIGHS REQUIRED)
+endif()
 find_package(OsiCBC)
 if(NOT CPLEX_PLUGIN)
 	find_package(CPlex REQUIRED)

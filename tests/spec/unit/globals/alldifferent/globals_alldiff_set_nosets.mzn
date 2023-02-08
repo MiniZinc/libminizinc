@@ -1,6 +1,5 @@
 /***
 !Test
-solvers: [gecode, cbc, chuffed] # TODO: Fails on highs
 expected:
 - !Result
   solution: !Solution

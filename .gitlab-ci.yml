@@ -125,7 +125,7 @@ test:analyse:
   variables:
     PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
     MZN_SOLVER_PATH: "$CI_PROJECT_DIR/vendor/chuffed/share/minizinc/solvers/:$CI_PROJECT_DIR/vendor/gecode/share/minizinc/solvers/"
-    MZN_TEST_TAGS_PRESENT: gecode_presolver,cbc,cplex,scip,gurobi,xpress
+    MZN_TEST_TAGS_PRESENT: gecode_presolver,cbc,cplex,highs,scip,gurobi,xpress
   before_script:
     - *download_bundle
     - export PATH=$CI_PROJECT_DIR/minizinc/bin:$PATH
@@ -153,6 +153,7 @@ test:analyse:
   image: python:latest
   variables:
     MZNARCH: "linux"
+    LD_LIBRARY_PATH: "$CI_PROJECT_DIR/vendor/highs/lib64"
   tags: [linux, docker]
   dependencies: ["build:linux"]
   needs: ["build:linux"]
@@ -162,6 +163,7 @@ test:analyse:
   extends: .tests
   variables:
     MZNARCH: "osx"
+    DYLD_LIBRARY_PATH: "$CI_PROJECT_DIR/vendor/highs/lib"
   tags: [osx]
   dependencies: ["build:osx"]
   needs: ["build:osx"]
@@ -174,7 +176,7 @@ test:analyse:
     MZN_SOLVER_PATH: "$CI_PROJECT_DIR/vendor/chuffed/share/minizinc/solvers/;$CI_PROJECT_DIR/vendor/gecode/share/minizinc/solvers/"
   before_script:
     - *download_bundle_win
-    - set PATH=%CI_PROJECT_DIR%/minizinc/bin;%PATH%
+    - set PATH=%CI_PROJECT_DIR%/minizinc/bin;%CI_PROJECT_DIR%/vendor/highs/bin;%PATH%
     - cd tests
     - python -m venv env
     - call env\Scripts\activate.bat

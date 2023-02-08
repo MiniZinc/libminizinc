@@ -117,4 +117,14 @@ public:
   }
 };
 
+class PluginError : public Exception {
+public:
+  /// Construct with message \a msg
+  PluginError(const std::string& msg) : Exception(msg) {}
+  /// Destructor
+  ~PluginError() throw() override {}
+  /// Return description
+  const char* what() const throw() override { return "plugin loading error"; }
+};
+
 }  // namespace MiniZinc

@@ -35,52 +35,52 @@ public:
   XpressException(const string& msg) : runtime_error(" MIPxpressWrapper: " + msg) {}
 };
 
-XpressPlugin::XpressPlugin() : Plugin(XpressPlugin::dlls()) { loadDll(); }
+XpressPlugin::XpressPlugin() : _inner(XpressPlugin::dlls()) { loadDll(); }
 
-XpressPlugin::XpressPlugin(const std::string& dll_file) : Plugin(dll_file) { loadDll(); }
+XpressPlugin::XpressPlugin(const std::string& dll_file) : _inner(dll_file) { loadDll(); }
 
 void XpressPlugin::loadDll() {
-  load_symbol(XPRSinit);
-  load_symbol(XPRSfree);
-  load_symbol(XPRSgetversion);
-  load_symbol(XPRSgetlicerrmsg);
-  load_symbol(XPRBgetXPRSprob);
-  load_symbol(XPRBsetmsglevel);
-  load_symbol(XPRSsetlogfile);
-  load_symbol(XPRSsetintcontrol);
-  load_symbol(XPRSsetdblcontrol);
-  load_symbol(XPRBgetsol);
-  load_symbol(XPRSgetintattrib);
-  load_symbol(XPRSgetdblattrib);
-  load_symbol(XPRBbegincb);
-  load_symbol(XPRBsync);
-  load_symbol(XPRBendcb);
-  load_symbol(XPRBsetterm);
-  load_symbol(XPRBnewvar);
-  load_symbol(XPRBnewctr);
-  load_symbol(XPRBsetctrtype);
-  load_symbol(XPRBexportprob);
-  load_symbol(XPRBgetbounds);
-  load_symbol(XPRBsetobj);
-  load_symbol(XPRBmipoptimize);
-  load_symbol(XPRBsetsense);
-  load_symbol(XPRSsetcbintsol);
-  load_symbol(XPRBsetub);
-  load_symbol(XPRBsetlb);
-  load_symbol(XPRBsetindicator);
-  load_symbol(XPRBnewsol);
-  load_symbol(XPRBsetsolvar);
-  load_symbol(XPRBaddmipsol);
-  load_symbol(XPRBnewprob);
-  load_symbol(XPRBdelprob);
-  load_symbol(XPRSgetcontrolinfo);
-  load_symbol(XPRSgetintcontrol);
-  load_symbol(XPRSgetintcontrol64);
-  load_symbol(XPRSgetdblcontrol);
-  load_symbol(XPRSgetstrcontrol);
-  load_symbol(XPRSsetintcontrol64);
-  load_symbol(XPRSgetstringcontrol);
-  load_symbol(XPRSsetstrcontrol);
+  load_symbol_dynamic(_inner, XPRSinit);
+  load_symbol_dynamic(_inner, XPRSfree);
+  load_symbol_dynamic(_inner, XPRSgetversion);
+  load_symbol_dynamic(_inner, XPRSgetlicerrmsg);
+  load_symbol_dynamic(_inner, XPRBgetXPRSprob);
+  load_symbol_dynamic(_inner, XPRBsetmsglevel);
+  load_symbol_dynamic(_inner, XPRSsetlogfile);
+  load_symbol_dynamic(_inner, XPRSsetintcontrol);
+  load_symbol_dynamic(_inner, XPRSsetdblcontrol);
+  load_symbol_dynamic(_inner, XPRBgetsol);
+  load_symbol_dynamic(_inner, XPRSgetintattrib);
+  load_symbol_dynamic(_inner, XPRSgetdblattrib);
+  load_symbol_dynamic(_inner, XPRBbegincb);
+  load_symbol_dynamic(_inner, XPRBsync);
+  load_symbol_dynamic(_inner, XPRBendcb);
+  load_symbol_dynamic(_inner, XPRBsetterm);
+  load_symbol_dynamic(_inner, XPRBnewvar);
+  load_symbol_dynamic(_inner, XPRBnewctr);
+  load_symbol_dynamic(_inner, XPRBsetctrtype);
+  load_symbol_dynamic(_inner, XPRBexportprob);
+  load_symbol_dynamic(_inner, XPRBgetbounds);
+  load_symbol_dynamic(_inner, XPRBsetobj);
+  load_symbol_dynamic(_inner, XPRBmipoptimize);
+  load_symbol_dynamic(_inner, XPRBsetsense);
+  load_symbol_dynamic(_inner, XPRSsetcbintsol);
+  load_symbol_dynamic(_inner, XPRBsetub);
+  load_symbol_dynamic(_inner, XPRBsetlb);
+  load_symbol_dynamic(_inner, XPRBsetindicator);
+  load_symbol_dynamic(_inner, XPRBnewsol);
+  load_symbol_dynamic(_inner, XPRBsetsolvar);
+  load_symbol_dynamic(_inner, XPRBaddmipsol);
+  load_symbol_dynamic(_inner, XPRBnewprob);
+  load_symbol_dynamic(_inner, XPRBdelprob);
+  load_symbol_dynamic(_inner, XPRSgetcontrolinfo);
+  load_symbol_dynamic(_inner, XPRSgetintcontrol);
+  load_symbol_dynamic(_inner, XPRSgetintcontrol64);
+  load_symbol_dynamic(_inner, XPRSgetdblcontrol);
+  load_symbol_dynamic(_inner, XPRSgetstrcontrol);
+  load_symbol_dynamic(_inner, XPRSsetintcontrol64);
+  load_symbol_dynamic(_inner, XPRSgetstringcontrol);
+  load_symbol_dynamic(_inner, XPRSsetstrcontrol);
 }
 
 const std::vector<std::string>& XpressPlugin::dlls() {
@@ -165,7 +165,7 @@ string MIPxpressWrapper::getVersion(FactoryOptions& factoryOpt,
     p->XPRSgetversion(v);
     delete p;
     return v;
-  } catch (MiniZinc::Plugin::PluginError&) {
+  } catch (MiniZinc::PluginError&) {
     return "<unknown version>";
   }
 }
@@ -182,7 +182,7 @@ vector<string> MIPxpressWrapper::getRequiredFlags(FactoryOptions& factoryOpt) {
       // Try opening without considering factory options
       MIPxpressWrapper w(triedFactoryOpts, &opts);
       return ret;
-    } catch (MiniZinc::Plugin::PluginError&) {
+    } catch (MiniZinc::PluginError&) {
       ret.emplace_back("--xpress-dll");  // The DLL needs to be given
       if (triedFactoryOpts.xpressDll == factoryOpt.xpressDll) {
         return ret;
@@ -323,7 +323,7 @@ vector<MiniZinc::SolverConfig::ExtraFlag> MIPxpressWrapper::getExtraFlags(
       res.emplace_back("--xpress-" + param, param, param_type, param_range, param_default);
     }
     return res;
-  } catch (MiniZinc::Plugin::PluginError&) {
+  } catch (MiniZinc::PluginError&) {
     return {};
   } catch (XpressException&) {
     return {};

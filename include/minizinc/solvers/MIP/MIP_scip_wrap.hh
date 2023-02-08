@@ -24,7 +24,7 @@
 #define __stdcall
 #endif
 
-class ScipPlugin : public MiniZinc::Plugin {
+class ScipPlugin {
 public:
   ScipPlugin();
   ScipPlugin(const std::string& dll);
@@ -250,6 +250,7 @@ public:
   SCIP_RETCODE(__stdcall* SCIPchgStringParam)(SCIP* scip, SCIP_PARAM* param, const char* value);
 
 private:
+  MiniZinc::Plugin _inner;
   void load();
 };
 

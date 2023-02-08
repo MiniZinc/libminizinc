@@ -27,23 +27,14 @@
 #include <string>
 #include <vector>
 
-/// Convenience macro for loading symbols
-#define load_symbol(name) *(void**)(&(name)) = symbol(#name)
+/// Convenience macros for loading symbols
+#define load_symbol_dynamic(plugin, name) *(void**)(&(this->name)) = (plugin).symbol(#name)
+#define load_symbol_static(plugin, name) this->name = ::name
 
 namespace MiniZinc {
-/// Base class for plugins loaded from DLLs
+/// Helper for loading DLLs
 class Plugin {
 public:
-  class PluginError : public Exception {
-  public:
-    /// Construct with message \a msg
-    PluginError(const std::string& msg) : Exception(msg) {}
-    /// Destructor
-    ~PluginError() throw() override {}
-    /// Return description
-    const char* what() const throw() override { return "plugin loading error"; }
-  };
-
   /// Load a plugin with given DLL path
   Plugin(const std::string& file) {
     if (!open(file)) {
@@ -74,9 +65,8 @@ public:
   ~Plugin() { close(); }
 
   /// Get the path to the loaded DLL
-  const std::string& path() { return _loaded; }
+  const std::string& path() const { return _loaded; }
 
-protected:
   /// Load a symbol from this DLL
   void* symbol(const char* name) {
     void* ret;
@@ -134,4 +124,5 @@ private:
     _dll = nullptr;
   }
 };
+
 }  // namespace MiniZinc
