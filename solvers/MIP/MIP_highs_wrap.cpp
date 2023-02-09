@@ -40,6 +40,7 @@ void MIPHiGHSWrapper::Options::printHelp(std::ostream& os) {
      << "  -i" << std::endl
      << "    print intermediate solutions for optimization problems" << std::endl
      << "  -p <N>, --parallel <N>\n    use N threads, default: 1." << std::endl
+     << "  -r <N>, --random-seed <N>\n    use random number generator seed N." << std::endl
      << "  --solver-time-limit <N>\n    stop search after N milliseconds" << std::endl
      << "  --absGap <n>\n    absolute gap |primal-dual| to stop" << std::endl
      << "  --relGap <n>\n    relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 "
@@ -54,7 +55,8 @@ bool MIPHiGHSWrapper::Options::processOption(int& i, std::vector<std::string>& a
   std::string buffer;
   if (cop.get("-i")) {
     flagIntermediate = true;
-  } else if (string(argv[i]) == "-f") {  // NOLINT: Allow repeated empty if
+  } else if (string(argv[i]) == "-f" ||
+             string(argv[i]) == "--free-search") {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--writeModel", &buffer)) {
     sExportModel = MiniZinc::FileUtils::file_path(buffer, workingDir);
   } else if (cop.get("-p --parallel", &nThreads)) {        // NOLINT: Allow repeated empty if

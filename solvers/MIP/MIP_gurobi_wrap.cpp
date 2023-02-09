@@ -194,7 +194,8 @@ bool MIPGurobiWrapper::Options::processOption(int& i, std::vector<std::string>& 
   std::string buf;
   if (cop.get("-i")) {
     flagIntermediate = true;
-  } else if (string(argv[i]) == "-f") {              // NOLINT: Allow repeated empty if
+  } else if (string(argv[i]) == "-f" ||
+             string(argv[i]) == "--free-search") {   // NOLINT: Allow repeated empty if
   } else if (string(argv[i]) == "--fixed-search") {  // NOLINT: Allow repeated empty if
     nFreeSearch = MIPGurobiWrapper::SearchType::FIXED_SEARCH;
   } else if (string(argv[i]) == "--uniform-search") {  // NOLINT: Allow repeated empty if

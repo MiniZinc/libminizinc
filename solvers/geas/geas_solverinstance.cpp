@@ -729,7 +729,7 @@ bool GeasSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
     if (nodes >= 0) {
       _opt->conflicts = nodes;
     }
-  } else if (argv[i] == "-f") {
+  } else if (argv[i] == "-f" || argv[i] == "--free-search") {
     _opt->freeSearch = true;
   } else if (argv[i] == "-n") {
     if (++i == argv.size()) {

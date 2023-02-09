@@ -238,7 +238,8 @@ bool MIPScipWrapper::Options::processOption(int& i, vector<string>& argv,
   std::string buffer;
   if (cop.get("-i")) {
     flagIntermediate = true;
-  } else if (string(argv[i]) == "-f") {  // NOLINT: Allow repeated empty if
+  } else if (string(argv[i]) == "-f" ||
+             string(argv[i]) == "--free-search") {  // NOLINT: Allow repeated empty if
     //     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
   } else if (cop.get("--writeModel", &buffer)) {
     sExportModel = MiniZinc::FileUtils::file_path(buffer, workingDir);

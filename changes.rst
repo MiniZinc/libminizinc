@@ -24,6 +24,8 @@ Changes in interfaces to solvers:
 -  Avoid loading all solver plugin DLLs on startup, instead loading when required.
 -  A built-in solver interface for `Chuffed <https://github.com/chuffed/chuffed>`_
    has been added primarily for use with the WebAssembly version of MiniZinc.
+-  The non-FlatZinc interfaces now also accept the ``--free-search`` flag in
+   addition to the ``-f`` flag.
 
 Changes:
 ^^^^^^^^

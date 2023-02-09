@@ -110,7 +110,8 @@ bool MIPosicbcWrapper::Options::processOption(int& i, std::vector<std::string>& 
   std::string buffer;
   if (cop.get("-i")) {
     flagIntermediate = true;
-  } else if (string(argv[i]) == "-f") {  // NOLINT: Allow repeated empty if
+  } else if (string(argv[i]) == "-f" ||
+             string(argv[i]) == "--free-search") {  // NOLINT: Allow repeated empty if
     //     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
   } else if (cop.get("--writeModel", &buffer)) {
     sExportModel = MiniZinc::FileUtils::file_path(buffer, workingDir);
