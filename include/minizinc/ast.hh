@@ -778,6 +778,8 @@ public:
     assert(_decl == nullptr || _decl->isa<VarDecl>());
     _decl = id;
   }
+  /// Get the identifier or declaration this identifier directly points to
+  Expression* destination() const { return _decl; }
   /// Recompute hash value
   void rehash();
   /// Levenshtein distance to \a other identifier

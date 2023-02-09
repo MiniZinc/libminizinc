@@ -195,7 +195,7 @@ void Expression::mark(Expression* e) {
           if (cur->cast<Id>()->idn() == -1) {
             cur->cast<Id>()->v().mark();
           }
-          pushstack(cur->cast<Id>()->decl());
+          pushstack(cur->cast<Id>()->destination());
           break;
         case Expression::E_ARRAYLIT:
           if (cur->_flag2) {
