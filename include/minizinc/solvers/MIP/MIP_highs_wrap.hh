@@ -75,7 +75,7 @@ public:
                                     MiniZinc::SolverInstanceBase::Options* opt = nullptr);
   static std::vector<std::string> getStdFlags() {
     return {
-        "-f", "-i", "-p", "-r", "-s", "-v",
+        "-i", "-p", "-r", "-s", "-v",
     };
   };
   static std::vector<std::string> getRequiredFlags(FactoryOptions& factoryOpt) { return {}; };
