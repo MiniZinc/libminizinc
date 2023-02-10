@@ -26,6 +26,8 @@ Changes in interfaces to solvers:
    has been added primarily for use with the WebAssembly version of MiniZinc.
 -  The non-FlatZinc interfaces now also accept the ``--free-search`` flag in
    addition to the ``-f`` flag.
+-  The SCIP interface will now also try to find the SCIP library files in the
+   Homebrew locations.
 
 Changes:
 ^^^^^^^^

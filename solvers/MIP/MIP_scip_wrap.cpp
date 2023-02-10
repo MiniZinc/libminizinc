@@ -36,19 +36,25 @@ ScipPlugin::ScipPlugin()
     : Plugin(
 #ifdef _WIN32
           {
-            "libscip", "scip", "C:\\Program Files\\SCIPOptSuite 8.0.3\\bin\\libscip.dll",
-                "C:\\Program Files\\SCIPOptSuite 8.0.2\\bin\\libscip.dll",
-                "C:\\Program Files\\SCIPOptSuite 8.0.1\\bin\\libscip.dll",
-                "C:\\Program Files\\SCIPOptSuite 8.0.0\\bin\\libscip.dll",
-                "C:\\Program Files\\SCIPOptSuite 7.0.3\\bin\\libscip.dll",
-                "C:\\Program Files\\SCIPOptSuite 7.0.2\\bin\\libscip.dll",
-                "C:\\Program Files\\SCIPOptSuite 7.0.1\\bin\\libscip.dll",
-                "C:\\Program Files\\SCIPOptSuite 7.0.0\\bin\\libscip.dll",
-                "C:\\Program Files (x86)\\SCIPOptSuite 7.0.1\\bin\\scip.dll",
-                "C:\\Program Files (x86)\\SCIPOptSuite 7.0.0\\bin\\scip.dll",
+              "libscip",
+              "scip",
+              "C:\\Program Files\\SCIPOptSuite 8.0.3\\bin\\libscip.dll",
+              "C:\\Program Files\\SCIPOptSuite 8.0.2\\bin\\libscip.dll",
+              "C:\\Program Files\\SCIPOptSuite 8.0.1\\bin\\libscip.dll",
+              "C:\\Program Files\\SCIPOptSuite 8.0.0\\bin\\libscip.dll",
+              "C:\\Program Files\\SCIPOptSuite 7.0.3\\bin\\libscip.dll",
+              "C:\\Program Files\\SCIPOptSuite 7.0.2\\bin\\libscip.dll",
+              "C:\\Program Files\\SCIPOptSuite 7.0.1\\bin\\libscip.dll",
+              "C:\\Program Files\\SCIPOptSuite 7.0.0\\bin\\libscip.dll",
+              "C:\\Program Files (x86)\\SCIPOptSuite 7.0.1\\bin\\scip.dll",
+              "C:\\Program Files (x86)\\SCIPOptSuite 7.0.0\\bin\\scip.dll",
           }
 #else
-          "libscip"
+          std::vector<std::string>({
+              "libscip",
+              "/home/linuxbrew/.linuxbrew/lib/libscip.so",
+              "/opt/homebrew/lib/libscip.dylib",
+          })
 #endif
       ) {
   load();
