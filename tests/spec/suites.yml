@@ -11,13 +11,13 @@ optimize-2: !Suite
   includes: ['examples/*']
   strict: false
   options:
-    -O0: true
+    -O2: true
 
 optimize-3: !Suite
   includes: ['examples/*']
   strict: false
   options:
-    -O0: true
+    -O3: true
 
 no-mip-domains: !Suite
   includes: ['examples/*']
