@@ -577,7 +577,9 @@ public:
           StructType* ctt = env.getStructType(curType);
           // Create new TypeInst domain for struct argument
           ti->setStructDomain(env, curType, true);
-          walkTIMap(env, ti_map, ti, ctt, (*tg.inner)[i]);
+          if (!walkTIMap(env, ti_map, ti, ctt, (*tg.inner)[i])) {
+            return false;
+          }
         } else {
           auto enumId = curType.typeId();
           if (curType.dim() != 0) {
@@ -592,7 +594,9 @@ public:
       } else if (curType.structBT()) {
         assert(concrete_type.bt() == curType.bt());
         assert(concrete_type.typeId() != 0);
-        walkTIMap(env, ti_map, ti, env.getStructType(ti->type()), (*tg.inner)[i]);
+        if (!walkTIMap(env, ti_map, ti, env.getStructType(ti->type()), (*tg.inner)[i])) {
+          return false;
+        }
       }
       for (unsigned int j = 0; j < ti->ranges().size(); j++) {
         if (TIId* tiid = Expression::dynamicCast<TIId>(ti->ranges()[j]->domain())) {
