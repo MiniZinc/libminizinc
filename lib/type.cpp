@@ -241,7 +241,9 @@ bool Type::decrement(EnvI& env) {
   }
   for (int i = changed + 1; i < st->size(); ++i) {
     pt[i].mkVar(env);
-    pt[i].mkOpt(env);
+    if (pt[i].st() == Type::ST_PLAIN) {
+      pt[i].mkOpt(env);
+    }
   }
   unsigned int regId =
       bt() == BT_TUPLE ? env.registerTupleType(pt) : env.registerRecordType(pt, tId);
