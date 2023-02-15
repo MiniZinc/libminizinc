@@ -49,7 +49,9 @@ struct ArrayAccessSucess {
   }
   bool operator()() const { return success; }
   std::string errorMessage(EnvI& env, Expression* e) const;
+  Expression* dummyLiteral(EnvI& env, Type t) const;
 };
+
 /// Evaluate an access to array \a al with indices \a idx and return whether
 /// access succeeded in \a success
 template <class IdxV>
@@ -64,27 +66,8 @@ Expression* eval_arrayaccess(EnvI& env, ArrayLit* al, const IdxV& idx, ArrayAcce
     IntVal ix = idx[i];
     if (ix < al->min(i) || ix > al->max(i)) {
       success.fail(i, al->min(i), al->max(i), ix);
-      Type t = al->type();
-      t.typeId(0);
-      t.dim(0);
-      if (t.isint()) {
-        return IntLit::a(0);
-      }
-      if (t.isbool()) {
-        return Constants::constants().literalFalse;
-      }
-      if (t.isfloat()) {
-        return FloatLit::a(0.0);
-      }
-      if (t.st() == Type::ST_SET || t.isbot()) {
-        auto* ret = new SetLit(Location(), std::vector<Expression*>());
-        ret->type(t);
-        return ret;
-      }
-      if (t.isstring()) {
-        return new StringLit(Location(), "");
-      }
-      throw EvalError(env, al->loc(), "Internal error: unexpected type in array access expression");
+      Type t = al->type().elemType(env);
+      return success.dummyLiteral(env, t);
     }
     realdim /= al->max(i) - al->min(i) + 1;
     realidx += (ix - al->min(i)) * realdim;

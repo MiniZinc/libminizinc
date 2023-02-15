@@ -801,6 +801,38 @@ std::string ArrayAccessSucess::errorMessage(EnvI& env, Expression* e) const {
   return oss.str();
 }
 
+Expression* ArrayAccessSucess::dummyLiteral(EnvI& env, Type t) const {
+  if (t.isint()) {
+    return IntLit::a(0);
+  }
+  if (t.isbool()) {
+    return Constants::constants().literalFalse;
+  }
+  if (t.isfloat()) {
+    return FloatLit::a(0.0);
+  }
+  if (t.st() == Type::ST_SET || t.isbot()) {
+    auto* ret = new SetLit(Location(), std::vector<Expression*>());
+    ret->type(t);
+    return ret;
+  }
+  if (t.isstring()) {
+    return new StringLit(Location(), "");
+  }
+  if (t.structBT()) {
+    auto* tt = env.getStructType(t);
+    std::vector<Expression*> fields;
+    fields.reserve(tt->size());
+    for (size_t i = 0; i < tt->size(); i++) {
+      fields.push_back(dummyLiteral(env, (*tt)[i]));
+    }
+    auto* al = ArrayLit::constructTuple(Location(), fields);
+    al->type(t);
+    return al;
+  }
+  throw InternalError("unexpected type in array access expression");
+}
+
 Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e, ArrayAccessSucess& success) {
   ArrayLit* al = eval_array_lit(env, e->v());
   struct EvalIdx {
