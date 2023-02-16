@@ -511,6 +511,8 @@ void GC::Heap::sweep() {
   HeapPage* prev = nullptr;
   std::vector<VarDecl*> fixVDGCMarks;
   fixVDGCMarks.reserve(1000);
+  std::vector<HeapPage*> toFree;
+  toFree.reserve(1000);
   while (p != nullptr) {
     size_t off = 0;
     bool wholepage = true;
@@ -597,7 +599,9 @@ void GC::Heap::sweep() {
         _freeMem -= (pf->size - pf->used);
       }
       assert(_allocedMem >= _freeMem);
-      ::free(pf);
+      // Can't call free() yet because we might free a VarDecl which is the flat version of one in
+      // another page
+      toFree.push_back(pf);
     } else {
       for (auto ni : freeNodes) {
         auto* fln = static_cast<FreeListNode*>(ni.n);
@@ -615,6 +619,9 @@ void GC::Heap::sweep() {
   }
   for (auto* vd : fixVDGCMarks) {
     vd->_vdGcMark = 0U;
+  }
+  for (auto* pf : toFree) {
+    ::free(pf);
   }
 #if defined(MINIZINC_GC_STATS)
   for (auto stat : gc_stats) {

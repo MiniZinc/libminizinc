@@ -81,7 +81,7 @@ Bug fixes:
 -  Fix an error in checking floating point array domains for functions with defined domains.
 -  Fix a bug in the evaluation of array comprehensions with option types.
 -  Fix type inference for variables declared ``any`` in let expressions.
--  Fix garbage collection of identifiers
+-  Fix possible crashes during garbage collection of identifiers and variable declarations.
 
 .. _v2.6.4:
 
