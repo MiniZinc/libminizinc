@@ -87,6 +87,7 @@ Bug fixes:
 -  Fix possible crashes during garbage collection of identifiers and variable declarations.
 -  Boolean par functions (as declared using ``test``) now behave correctly when they
    contain partial operations that result in undefined values.
+-  Fix optimisation of values used in float arrays (:bugref:`635`).
 
 .. _v2.6.4:
 

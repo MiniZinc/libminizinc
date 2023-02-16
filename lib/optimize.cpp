@@ -385,7 +385,7 @@ void optimize(Env& env, bool chain_compression) {
     //  - remove "constraint x" where x is a bool var
     //  - unify variables that are assigned to an identifier
     //  - push bool vars that are fixed and have a RHS (to propagate the RHS constraint)
-    //  - push int vars that are fixed (either have a RHS or a singleton domain)
+    //  - push int/float vars that are fixed (either have a RHS or a singleton domain)
     for (int i = 0; i < m.size(); i++) {
       env.envi().checkCancel();
       if (m[i]->removed()) {
@@ -531,6 +531,17 @@ void optimize(Env& env, bool chain_compression) {
                vdi->e()->ti()->domain()->cast<SetLit>()->isv()->min() ==
                    vdi->e()->ti()->domain()->cast<SetLit>()->isv()->max())) {
             // Variable is assigned an integer, or has a singleton domain
+            push_vardecl(envi, vdi, i, vardeclQueue);
+            push_dependent_constraints(envi, vdi->e()->id(), constraintQueue);
+          }
+        }
+        if (vdi->e()->type().isfloat()) {
+          if (((vdi->e()->e() != nullptr) && vdi->e()->e()->isa<FloatLit>()) ||
+              ((vdi->e()->ti()->domain() != nullptr) && vdi->e()->ti()->domain()->isa<SetLit>() &&
+               vdi->e()->ti()->domain()->cast<SetLit>()->fsv()->size() == 1 &&
+               vdi->e()->ti()->domain()->cast<SetLit>()->fsv()->min() ==
+                   vdi->e()->ti()->domain()->cast<SetLit>()->fsv()->max())) {
+            // Variable is assigned a float, or has a singleton domain
             push_vardecl(envi, vdi, i, vardeclQueue);
             push_dependent_constraints(envi, vdi->e()->id(), constraintQueue);
           }
@@ -811,6 +822,11 @@ void optimize(Env& env, bool chain_compression) {
           if (isv->size() == 1 && isv->card() == 1) {
             simplify_constraint(envi, m[var_idx], deletedVarDecls, constraintQueue, vardeclQueue);
           }
+        } else if (vd->type().isfloat() && (vd->ti()->domain() != nullptr)) {
+          FloatSetVal* fsv = eval_floatset(envi, vd->ti()->domain());
+          if (fsv->size() == 1 && fsv->card() == 1) {
+            simplify_constraint(envi, m[var_idx], deletedVarDecls, constraintQueue, vardeclQueue);
+          }
         }
       }  // end of processing of variable queue
 
@@ -1029,6 +1045,15 @@ void optimize(Env& env, bool chain_compression) {
                              cur->ti()->domain()->cast<SetLit>()->isv()->max()) {
                 val = IntLit::a(cur->ti()->domain()->cast<SetLit>()->isv()->min());
               }
+            } else if (cur->type().isfloat()) {
+              if ((cur->e() != nullptr) && cur->e()->isa<FloatLit>()) {
+                val = cur->e();
+              } else if ((cur->ti()->domain() != nullptr) && cur->ti()->domain()->isa<SetLit>() &&
+                         cur->ti()->domain()->cast<SetLit>()->fsv()->size() == 1 &&
+                         cur->ti()->domain()->cast<SetLit>()->fsv()->min() ==
+                             cur->ti()->domain()->cast<SetLit>()->fsv()->max()) {
+                val = FloatLit::a(cur->ti()->domain()->cast<SetLit>()->fsv()->min());
+              }
             }
             if (val != nullptr) {
               // Find corresponding variable in output model and fix it
@@ -1073,6 +1098,19 @@ protected:
                 vd->ti()->domain()->cast<SetLit>()->isv()->max()) {
           _removed.push_back(vd);
           return IntLit::a(vd->ti()->domain()->cast<SetLit>()->isv()->min());
+        }
+      }
+      if (vd->type().isfloat()) {
+        if ((vd->e() != nullptr) && vd->e()->isa<FloatLit>()) {
+          _removed.push_back(vd);
+          return vd->e();
+        }
+        if ((vd->ti()->domain() != nullptr) && vd->ti()->domain()->isa<SetLit>() &&
+            vd->ti()->domain()->cast<SetLit>()->fsv()->size() == 1 &&
+            vd->ti()->domain()->cast<SetLit>()->fsv()->min() ==
+                vd->ti()->domain()->cast<SetLit>()->fsv()->max()) {
+          _removed.push_back(vd);
+          return FloatLit::a(vd->ti()->domain()->cast<SetLit>()->fsv()->min());
         }
       }
     }
@@ -1512,6 +1550,14 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
                 FloatVal fv = eval_float(env, vdi->e()->e());
                 FloatSetVal* dom = eval_floatset(env, vdi->e()->ti()->domain());
                 if (!dom->contains(fv)) {
+                  env.fail();
+                }
+              } else if (vdi->e()->e()->type().isFloatSet()) {
+                FloatSetVal* fsv = eval_floatset(env, vdi->e()->e());
+                FloatSetVal* dom = eval_floatset(env, vdi->e()->ti()->domain());
+                FloatSetRanges fsv_r(fsv);
+                FloatSetRanges dom_r(dom);
+                if (!Ranges::subset(fsv_r, dom_r)) {
                   env.fail();
                 }
               }
