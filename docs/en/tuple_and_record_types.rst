@@ -1,0 +1,137 @@
+.. _sec-tuple_and_record_types:
+
+Tuple and record types
+======================
+
+In MiniZinc models we often deal with multiple points of data and multiple
+decisions that all concern the same thing, an “object”. There are multiple ways
+to modelling this. It is common practice in MiniZinc to have different arrays
+for different types of data points or decisions. These arrays will then share a
+common index to map to which object each data point belongs.
+
+In this section we present an alternative, “object-oriented”, approach in
+MiniZinc in the form of tuple and record types. Using these types, different
+types of data points and decisions can be combined into collections for the
+modeller's convenience.
+
+Declaring and using tuples and records
+--------------------------------------
+
+.. defblock:: Tuple types and literals
+
+  A tuple type variable is declared as:
+  
+  .. code-block:: minizincdef
+
+    <var-par> tuple(<ti-expr>, ...): <var-name>
+
+  where one or more type instantiations, :mzndef:`<ti-expr>`, are placed between
+  the parentheses to declare the types contained in the tuple variable. 
+
+  For convenience the :mzn:`var` keyword can be used to varify all the member
+  types of the tuple (i.e., :mzn:`var tuple(int, bool)` is the same type as
+  :mzn:`tuple(var int, var bool)`).
+
+  A tuple literal is created using the following syntax:
+  
+  .. code-block:: minizincdef
+
+    (<expr>, [ <expr>, ... ])
+
+  For example, :mzn:`(1, true)` is a tuple literal of type :mzn:`tuple(int,
+  bool)`. Note that when a tuple contains multiple members, then adding a
+  trailing comma is optional, but when it contains a single member it is
+  **required** to distinguish the literal from a normal parenthesized expression.
+
+Tuples provide a very simple way to create a collection that contains values of
+different types. In a tuple variables, the values contained in the tuple can be
+accessed using a number representing the place in the tuple. For example, in the
+tuple :mzn:`any: x = (1, true, 2.0)` the first member, :mzn:`1`, can be
+retrieved using :mzn:`x.1`, and the final member, :mzn:`2.0`, can be retrieved
+using :mzn:`x.3`. Note that the MiniZinc compiler will raise a **Type Error**,
+when an integer that is used lower than one or higher than the number of members
+in the tuple.
+
+Although tuple types can be useful, it can often be confusing which member
+represents what. Record types improve on this by associating a name with each
+member of the type.
+
+.. defblock:: Record types and literals
+
+  A record type variable is declared as:
+  
+  .. code-block:: minizincdef
+
+    <var-par> record(<ti-expr-and-id>, ...): <var-name>
+
+  where one or more type instantiations with a corresponding identifier,
+  :mzndef:`<ti-expr-and-id>`, are placed between the parentheses to declare the
+  types contained in the record variable. 
+
+  For convenience the :mzn:`var` keyword can be used to varify all the member
+  types of the record (i.e., :mzn:`var record(int: i, bool: b)` is the same type
+  as :mzn:`record(var int: i, var bool: b)`).
+
+  A record literal is created using the following syntax:
+  
+  .. code-block:: minizincdef
+
+    (<ident>: <expr>[, ... ])
+
+  For example, :mzn:`(i: 1, b: true)` is a record literal of type
+  :mzn:`record(int: i, bool: b)`. Different from tuples, record literals with
+  only a single member do not require a trailing comma.
+
+The syntax to access the members of a record, are very similar to access the
+member of a tuple. The difference is that instead of a number, we use the name
+given to the member. For example, given the :mzn:`any: x = (i: 1, b: true)`, the
+integer value :mzn:`1` that is named by identifier :mzn:`i` is retrieved using
+:mzn:`x.i`. Using identifiers that do not name a member (or any number) will
+once more result in a **Type Error**.
+
+Using type-inst synonyms
+------------------------
+
+When using records and tuples, writing the types in many places can quickly
+become tedious and confusing. Additionally, it might often make sense to give a
+name to such a type-inst to describe its meaning. For this purpose, you can use
+type-inst synonyms in MiniZinc.
+
+.. defblock:: Type-inst synonyms
+
+  A type-inst synonym is declared as:
+  
+  .. code-block:: minizincdef
+
+    type <ident> <annotations> = <ti-expr>;
+
+  where the identifier :mzndef:`<ident>` can be used instead of the type-inst
+  :mzndef:`<ti-expr>` where required.
+
+  For example, in the following MiniZinc fragment we declare two synonyms, :mzn:`Coord` and :mzn:`Number`
+  
+  .. code-block:: minizinc
+
+    type Coord = var record(int: x, int: y, int: z);
+    type Number = int;
+
+  In a model that contains these definitions, we can now declare a variable
+  :mzn:`array[1..10] of Coord: placement;` or a function :mzn:`function Number:
+  add(Number: x, Number: y) = x + y;`
+
+Similar to record and tuple types, the `var` keyword can be used before the
+identifier of a type-inst synonym to varify the type-inst. For instance, the
+given the synonym :mzn:`type OnOff = bool;` and the variable declaration
+:mzn:`var OnOff: choice;` the type-inst of :mzndef:`choice` would be :mzn:`var
+bool`. Different from records and tuple, the reverse is also possible using the
+:mzn:`par` keyword. For instance, the given the synonym :mzn:`type Choice = var
+bool;` and the variable declaration :mzn:`par Choice: check = fix(choice);` the
+type-inst of :mzndef:`check` would be :mzn:`bool`.
+
+Types with both var and par members
+-----------------------------------
+
+
+
+An example using records
+------------------------
