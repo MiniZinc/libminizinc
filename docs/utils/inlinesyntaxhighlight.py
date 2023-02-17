@@ -34,7 +34,7 @@ code_role.options = { 'class': directives.class_option,
 register_canonical_role('code', code_role)
 
 
-from sphinx.writers.html import HTMLTranslator, BaseTranslator
+from sphinx.writers.html import HTMLTranslator
 
 DIV_PRE_RE = re.compile(r'^<div[^>]*><pre>')
 PRE_DIV_RE = re.compile(r'\s*</pre></div>\s*$')

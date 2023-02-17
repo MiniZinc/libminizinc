@@ -791,47 +791,6 @@ float variable need not be.
 :mzn:`var int` |coerce| :mzn:`var float`,
 :mzn:`par float` |coerce| :mzn:`var float`.
 
-.. _spec-enumerated-types:
-
-Enumerated Types
-++++++++++++++++
-
-|TyOverview|
-Enumerated types (or *enums* for short) provide a set of named
-alternatives. Each alternative is identified by its *case name*.
-Enumerated types, like in many other languages, can be used in the place of
-integer types to achieve stricter type checking.
-
-|TyInsts|
-Enums can be fixed or unfixed.
-
-|TySyntax|
-Variables of an enumerated type named ``X`` are represented by the term
-:mzn:`X` or :mzn:`par X` if fixed, and :mzn:`var X`
-if unfixed.
-
-|TyFiniteType|
-Yes.
-
-The domain of an enum is the set containing all of its case names.
-
-|TyVarifiable|
-:mzn:`par X` |varify| :mzn:`var X`,
-:mzn:`var X` |varify| :mzn:`var X`.
-
-|TyOrdering|
-When two enum values with different case names are compared, the value with
-the case name that is declared first is considered smaller than the value
-with the case name that is declared second.
-
-|TyInit|
-A fixed enum variable must be initialised at instance-time; an unfixed
-enum variable need not be.
-
-|TyCoercions|
-:mzn:`par X` |coerce| :mzn:`par int`,
-:mzn:`var X` |coerce| :mzn:`var int`.
-
 .. _spec-strings:
 
 Strings
@@ -1102,6 +1061,104 @@ initialised to :mzn:`<>`.
 |TyCoercions|
 :mzn:`TI` |coerce| :mzn:`opt UI` if :mzn:`TI` |coerce| :mzn:`UI`..
 
+.. _spec-tuple-types:
+
+Tuple Types
+++++++++++++
+
+|TyOverview|
+Tuples are fixed-size, heterogeneous collections. They must contain at least two
+elements; unary tuples are not allowed.
+
+|TyInsts|
+Tuples may contain unfixed elements.
+
+|TySyntax|
+A tuple base type-inst expression tail has this syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Tuple type-inst expressions
+  :end-before: %
+
+An example tuple type-inst expression:
+
+.. code-block:: minizinc
+
+  tuple(int, var float)
+
+|TyFiniteType| 
+Yes, if all its constituent elements are finite types. Otherwise, no. The domain
+of a tuple type that is a finite type is the Cartesian product of the domains of
+the element types. For example, the domain of :mzn:`tuple(1..2, {3,5})` is
+:mzn:`{(1,3), (1,5), (2,3), (2,5)}`.
+
+|TyVarifiable|
+Yes, if all its constituent elements are varifiable.
+
+|TyOrdering|
+Tuples are ordered lexicographically.
+
+|TyInit|
+A tuple variable must be initialised at instance-time if any of its constituent
+elements must be initialised at instance-time.
+
+|TyCoercions|
+:mzn:`tuple(TI1, ..., TIn)` |coerce| :mzn:`tuple(UI1, ..., UIn)` if :mzn:`TI1` |coerce| :mzn:`UI1`, ..., :mzn:`TIn` |coerce| :mzn:`UIn`.
+
+.. _spec-record-types:
+
+Record Types
+++++++++++++
+
+|TyOverview|
+Records are fixed-size, heterogeneous collections. They are similar to tuples,
+but have named fields. Field names in different records can be identical,
+because each record's field names belong to a different namespace.
+
+The order in which a record's field are specified is irrelevant; the following two record type-insts are equivalent:
+
+.. code-block:: minizinc
+
+  record(var int: x, var int: y)
+  record(var int: y, var int: x)
+
+|TyInsts|
+Records may contain unfixed elements.
+
+|TySyntax|
+A record base type-inst expression tail has this syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Record type-inst expressions
+  :end-before: %
+
+An example record type-inst expression:
+
+.. code-block:: minizinc
+
+  record(int: x, int: y)
+
+|TyFiniteType|
+Yes, if all its constituent elements are finite types. Otherwise, no. The domain
+of a record type that is a finite type is the same as that of a tuple type, but
+with the fields included. For example, the domain of :mzndef:`record(1..2: x, {3,5}: y)`
+is :mzndef:`{(x: 1,y: 3), (x: 1,y: 5), (x: 2,y: 3), (x: 2,y: 5)}`.
+
+|TyVarifiable|
+Yes, if all its constituent elements are varifiable.
+
+|TyOrdering|
+Records are ordered lexicographically according to the values of the fields,
+where the fields are sorted in alphabetical order.
+
+|TyInit|
+A record variable must be initialised at instance-time if any of its constituent elements must be initialised at instance-time.
+
+|TyCoercions|
+:mzn:`record(TI1: x1, ..., TIn: xn)` |coerce| :mzn:`record(UI1: x1, ..., UIn: xn)` if :mzn:`TI1` |coerce| :mzn:`UI1`, ..., :mzn:`TIn` |coerce| :mzn:`UIn`.
+
 .. _spec-the-annotation-type:
 
 The Annotation Type
@@ -1133,6 +1190,87 @@ An :mzn:`ann` variable must be initialised at instance-time.
 |TyCoercions|
 None.
 
+
+.. _spec-user-defined-type-insts:
+
+User-defined Types and Type-insts
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _spec-enumerated-types:
+
+Enumerated Types
+++++++++++++++++
+
+|TyOverview|
+Enumerated types (or *enums* for short) provide a set of named
+alternatives. Each alternative is identified by its *case name*.
+Enumerated types, like in many other languages, can be used in the place of
+integer types to achieve stricter type checking.
+
+|TyInsts|
+Enums can be fixed or unfixed.
+
+|TySyntax|
+Variables of an enumerated type named ``X`` are represented by the term
+:mzn:`X` or :mzn:`par X` if fixed, and :mzn:`var X`
+if unfixed.
+
+|TyFiniteType|
+Yes.
+
+The domain of an enum is the set containing all of its case names.
+
+|TyVarifiable|
+:mzn:`par X` |varify| :mzn:`var X`,
+:mzn:`var X` |varify| :mzn:`var X`.
+
+|TyOrdering|
+When two enum values with different case names are compared, the value with
+the case name that is declared first is considered smaller than the value
+with the case name that is declared second.
+
+|TyInit|
+A fixed enum variable must be initialised at instance-time; an unfixed
+enum variable need not be.
+
+|TyCoercions|
+:mzn:`par X` |coerce| :mzn:`par int`,
+:mzn:`var X` |coerce| :mzn:`var int`.
+
+.. _spec-type-aliases:
+
+Type-inst Synonyms
+++++++++++++++++++
+
+|TyOverview|
+A type-inst synonym is an alternative name for a pre-existing type-inst which
+can be used interchangeably with the pre-existing type-inst. For example, if
+:mzn:`MyFixedInt` is a synonym for :mzn:`par int` then :mzn:`MyFixedInt` can be
+used anywhere :mzn:`par int` can, and vice versa.
+
+|TyInsts|
+Preceding a type-inst synonym with :mzn:`var` varifies it, unless the type-inst
+is not varifiable, in which case it is a type-inst error. Preceding a type-inst
+synonym with :mzn:`par` has the reverse effect, and the type is explicitly made
+:mzn:`par`.
+
+|TySyntax|
+A type-inst synonym named “X” is represented by the term X.
+
+|TyFiniteType|
+As for the pre-existing type-inst.
+
+|TyVarifiable|
+Yes, if the pre-existing type-inst is varifiable.
+
+|TyOrdering|
+As for the pre-existing type-inst.
+
+|TyInit|
+As for the pre-existing type-inst.
+
+|TyCoercions|
+As for the pre-existing type-inst.
 
 .. _spec-constrained-type-insts:
 
@@ -2389,6 +2527,31 @@ For each enumerated type :mzn:`T`, the following functions exist:
   % Convert x to enum type X
   function T: to_enum(set of T: X, int: x);
   function var T: to_enum(set of T: X, var int: x);
+
+.. _spec-type-inst-synonym-items:
+
+Type-inst Synonym Items
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Type-inst synonym items have this syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Type-inst synonym items
+  :end-before: %
+
+For example:
+
+.. code-block:: minizinc
+
+    type MyInt     = int;
+    type Person    = record(string: name, int: height);
+    type Domain    = 1..n;
+
+It is a type-inst error if a type-inst synonym is declared and/or defined more
+than once in a model. Type-inst synonym items can be annotated. Section
+(:ref:`spec-Annotation-Items`) has more details on annotations. All type-inst
+synonyms must be defined at model-time.
 
 .. _spec-assignments:
 

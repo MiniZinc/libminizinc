@@ -5,6 +5,7 @@
 <item>  ::= <include-item>
           | <var-decl-item>
           | <enum-item>
+          | <type-inst-syn-item>
           | <assign-item>
           | <constraint-item> 
           | <solve-item>
@@ -33,6 +34,9 @@
                | "_" "(" <expr> ")"
                | <ident> "(" <ident> ")"
                | "anon_enum" "(" <expr> ")"
+
+% Type-inst synonym items
+<type-inst-syn-item> ::= "type" <ident> <annotations> "=" <ti-expr>
 
 % Assign items
 <assign-item> ::= <ident> "=" <expr>
@@ -66,7 +70,7 @@
 <ti-expr> ::= <base-ti-expr>
             | <array-ti-expr>
 
-<base-ti-expr> ::= <var-par> <opt-ti> <set-ti> <base-ti-expr-tail>
+<base-ti-expr> ::= <var-par> <opt-ti> <set-ti> <base-ti-expr-tail> ["++" <base-ti-expr>]
                  | "any" <ti-variable-expr-tail>
 
 <var-par> ::= "var" | "par" | ε
@@ -83,6 +87,8 @@
 <base-ti-expr-tail> ::= <ident>
                       | <base-type>
                       | <ti-variable-expr-tail>
+                      | <tuple-ti-expr-tail>
+                      | <record-ti-expr-tail>
                       | "ann"
                       | "{" <expr> "," ... "}"
                       | <num-expr> ".." <num-expr>
@@ -93,6 +99,12 @@
 % Array type-inst expressions
 <array-ti-expr> ::= "array" [ <ti-expr> "," ... ] "of" <base-ti-expr>
                   | "list" "of" <base-ti-expr>
+
+% Tuple type-inst expressions
+<tuple-ti-expr-tail> ::= "tuple" ( <ti-expr> "," ... )
+
+% Record type-inst expressions
+<record-ti-expr-tail> ::= "record" ( <ti-expr-and-id> "," ... )
 
 % Expressions
 <expr> ::= <expr-atom> <expr-binop-tail>
@@ -115,6 +127,8 @@
                    | <array-literal-2d>
                    | <indexed-array-literal>
                    | <indexed-array-literal-2d>
+                   | <tuple-literal>
+                   | <record-literal>
                    | <array-comp>
                    | <indexed-array-comp>
                    | <ann-literal>
@@ -213,6 +227,12 @@
 
 <index-tuple> ::= <expr>
                 | "(" [ <expr> "," ... ] ")"
+
+% Tuple literals
+<tuple-literal> ::= "(" <expr> "," [ <expr> "," ... ] ")"
+
+% Record literals
+<record-literal> ::= "(" <ident> ":" <expr> "," [ <ident> ":" <expr> "," ... ] ")"
 
 % Array comprehensions
 <array-comp> ::= "[" <expr> "|" <comp-tail> "]"
