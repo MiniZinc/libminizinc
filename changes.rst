@@ -57,6 +57,8 @@ Changes:
    longer uses implications which were intended promote half-reification,
    because this introduced free variables.
 -  Extended enumerated types can now be constructed from non-contiguous sets.
+-  Calls to par functions with constrained arguments now result in an undefined
+   value (just like calls to var functions) rather than an abort.
 
 Bug fixes:
 ^^^^^^^^^^

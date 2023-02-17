@@ -499,7 +499,7 @@ void check_dom(EnvI& env, Id* arg, IntSetVal* dom, Expression* e) {
   if (oob) {
     std::ostringstream oss;
     oss << "value for argument `" << *arg << "' out of bounds";
-    throw EvalError(env, e->loc(), oss.str());
+    throw ResultUndefinedError(env, e->loc(), oss.str());
   }
 }
 
@@ -509,7 +509,7 @@ void check_dom(EnvI& env, Id* arg, FloatVal dom_min, FloatVal dom_max, Expressio
     if (ev < dom_min || ev > dom_max) {
       std::ostringstream oss;
       oss << "value for argument `" << *arg << "' out of bounds";
-      throw EvalError(env, e->loc(), oss.str());
+      throw ResultUndefinedError(env, e->loc(), oss.str());
     }
   }
 }
@@ -1585,7 +1585,7 @@ bool eval_bool(EnvI& env, Expression* e) {
                 ret = false;
               } else {
                 throw ResultUndefinedError(env, l->let()[i]->loc(),
-                                           "domain constraint in let failed");
+                                           "constraint in let failed");
               }
             }
           }
