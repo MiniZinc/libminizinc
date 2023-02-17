@@ -85,6 +85,8 @@ Bug fixes:
 -  Fix a bug in the evaluation of array comprehensions with option types.
 -  Fix type inference for variables declared ``any`` in let expressions.
 -  Fix possible crashes during garbage collection of identifiers and variable declarations.
+-  Boolean par functions (as declared using ``test``) now behave correctly when they
+   contain partial operations that result in undefined values.
 
 .. _v2.6.4:
 

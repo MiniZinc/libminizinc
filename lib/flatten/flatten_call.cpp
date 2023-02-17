@@ -1237,13 +1237,22 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
         Type callt = decl->rtype(env, argt, nullptr, false);
         if (callt.isPar() && callt.bt() != Type::BT_ANN) {
           GCLock lock;
-          try {
-            ret.r = bind(env, ctx, r, eval_par(env, cr_c));
-            ret.b = conj(env, b, Ctx(), args_ee);
-          } catch (ResultUndefinedError&) {
-            ret.r = create_dummy_value(env, cr_c->type());
-            ret.b = bind(env, Ctx(), b, env.constants.literalFalse);
-            return ret;
+          if (callt.isbool() && !callt.isOpt()) {
+            ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
+            bool b = eval_bool(env, cr_c);
+            EE ee;
+            ee.b = env.constants.boollit(b);
+            args_ee.push_back(ee);
+            ret.r = conj(env, r, ctx, args_ee);
+          } else {
+            try {
+              ret.r = bind(env, ctx, r, eval_par(env, cr_c));
+              ret.b = conj(env, b, Ctx(), args_ee);
+            } catch (ResultUndefinedError&) {
+              ret.r = create_dummy_value(env, cr_c->type());
+              ret.b = bind(env, Ctx(), b, env.constants.literalFalse);
+              return ret;
+            }
           }
           // Do not insert into map, since par results will quickly become
           // garbage anyway and then disappear from the map
