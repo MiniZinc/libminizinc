@@ -108,16 +108,17 @@ type-inst synonyms in MiniZinc.
   where the identifier :mzndef:`<ident>` can be used instead of the type-inst
   :mzndef:`<ti-expr>` where required.
 
-  For example, in the following MiniZinc fragment we declare two synonyms, :mzn:`Coord` and :mzn:`Number`
-  
-  .. code-block:: minizinc
+For example, in the following MiniZinc fragment we declare two synonyms,
+:mzn:`Coord` and :mzn:`Number`
 
-    type Coord = var record(int: x, int: y, int: z);
-    type Number = int;
+.. code-block:: minizinc
 
-  In a model that contains these definitions, we can now declare a variable
-  :mzn:`array[1..10] of Coord: placement;` or a function :mzn:`function Number:
-  add(Number: x, Number: y) = x + y;`
+  type Coord = var record(int: x, int: y, int: z);
+  type Number = int;
+
+In a model that contains these definitions, we can now declare a variable
+:mzn:`array[1..10] of Coord: placement;` or a function :mzn:`function Number:
+add(Number: x, Number: y) = x + y;`
 
 Similar to record and tuple types, the `var` keyword can be used before the
 identifier of a type-inst synonym to varify the type-inst. For instance, the
@@ -131,7 +132,78 @@ type-inst of :mzndef:`check` would be :mzn:`bool`.
 Types with both var and par members
 -----------------------------------
 
+Tuples and records can be used to collect both data and decisions about an
+object, and it can be natural to mix data and decisions that concern the same
+object. However, when data and decisions are contained within the same tuple or
+record type, initialization of these types can be complex. To avoid the usage of
+anonymous variables or let-expressions and allow the assignment from data files,
+it is recommended to split data and decisions into separate types.
 
+For example, in rostering problem it would be natural to combine information
+about the employees, both data and decisions. It might thus be natural to define
+the following synonyms and variable declarations.
 
-An example using records
-------------------------
+.. code-block:: minizinc
+
+  enum EmpId;
+  type Employee = record(
+    string: name,
+    array[Timespan] of bool: available,
+    set of Capability: capacities,
+    array[Timespan] of var Shift: shifts,
+    var 0..infinity: hours,
+  );
+
+  array[EmpId] of Employee: employee;
+
+However, it is not possible to assign :mzn:`employees` from a data file.
+Instead, the data and the data could be split as follows.
+
+.. code-block:: minizinc
+
+  enum EmpId;
+  type EmployeeData = record(
+    string: name,
+    array[Timespan] of bool: available,
+    set of Capability: capacities,
+  );
+  type EmployeeVar = record(
+    array[Timespan] of var Shift: shifts,
+    var 0..infinity: hours,
+  );
+
+  array[EmpId] of EmployeeData: employee_data;
+  array[EmpId] of EmployeeVar: employee_var;
+
+Now it is possible to initialize :mzn:`employee_data` from a data file.
+Depending on the model, it might be easiest to use these synonyms and variable
+declarations separately, but it might be useful to combine them again. For
+instance, when your model contains functions that should operate on the complete
+record. The :mzn:`++` operator can be used to easily combine these synonyms and
+values, as shown in the following fragment.
+
+.. code-block:: minizinc
+
+  type Employee = EmployeeData ++ EmployeeVar;
+
+  array[EmpId] of Employee: employee = [employee_data[id] ++ employee_var[id] | id in EmpId];
+
+.. defblock:: ++ operator for tuples and records
+
+  The `++` operator can be used to combine expressions and type-inst expressions
+  that both have tuple types or both have record types.
+  
+  .. code-block:: minizincdef
+
+    <expr> ++ <expr>
+    <ti-expr> ++ <ti-expr>
+
+  When both (type-inst) expressions have a tuple type, this operation is very
+  similar to array concatenation. The result of evaluating the expression will
+  be a new tuple that contains all members of left-hand side followed by all the
+  members of the right-hand side.
+
+  When both (type-inst) expressions have a record type, then the result of
+  evaluating the expression is a record that merges the fields in both records.
+  Note that if both records contain a field with the same name, then the
+  compiler will reject this as a Type Error.
