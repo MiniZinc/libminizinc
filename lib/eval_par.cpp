@@ -1584,8 +1584,7 @@ bool eval_bool(EnvI& env, Expression* e) {
               if (l->let()[i]->ann().contains(env.constants.ann.maybe_partial)) {
                 ret = false;
               } else {
-                throw ResultUndefinedError(env, l->let()[i]->loc(),
-                                           "constraint in let failed");
+                throw ResultUndefinedError(env, l->let()[i]->loc(), "constraint in let failed");
               }
             }
           }
