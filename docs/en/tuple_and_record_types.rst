@@ -207,3 +207,53 @@ values, as shown in the following fragment.
   evaluating the expression is a record that merges the fields in both records.
   Note that if both records contain a field with the same name, then the
   compiler will reject this as a Type Error.
+
+Example: rectangle packing using records
+----------------------------------------
+
+Consider a packing problem where a collection of rectangle objects have to be
+packed into a rectangle space. Importantly, none of the rectangles being packed
+can overlap. To keep the model simple, we don't allow the rectangles to be
+turned. When we create a model to decide whether the packing is possible, we can
+use records to help us make the model easier to read.
+
+The data for the model comes in two parts: the total area of the space and the
+sizes of the rectangles being packed. We can represent both using a “dimensions”
+record that includes the width and the height of a rectangle. We therefore
+define the following type-inst synonym.
+
+.. literalinclude:: examples/rect_packing.mzn
+  :language: minizinc
+  :name: ex-rect-pack-dim
+  :lines: 2
+
+To decide whether the problem is satisfiable or not, we will have to find a
+placement for the rectangles being packed. We can thus use the coordinates of
+their left bottom corner as are decision variables, for which a type-inst
+synonym can be defined as follows.
+
+.. literalinclude:: examples/rect_packing.mzn
+  :language: minizinc
+  :name: ex-rect-pack-coord
+  :lines: 3
+
+To enforce that no rectangles overlap, it can be easy to start by writing a
+predicate that ensures that two rectangles do not overlap. This predicate will
+require both the information about the dimensions of the rectangle and the
+coordinate decision variable. As such, it can be valuable to first combine these
+records into a new record type. The following fragment shows the additional
+type-inst synonym, and a definition for the described predicate.
+
+.. literalinclude:: examples/rect_packing.mzn
+  :language: minizinc
+  :name: ex-rect-pack-pred
+  :lines: 4-11
+
+Using these definitions the remainder of the model is now easy to define as
+shown below.
+
+.. literalinclude:: examples/rect_packing.mzn
+  :language: minizinc
+  :name: ex-rect-pack-rem
+  :lines: 12-
+  :caption: Partial rectangle packing model using record types (full model: :download:`rect_packing.mzn <examples/rect_packing.mzn>` example data: :download:`rect_packing.json <examples/rect_packing.json>`).
