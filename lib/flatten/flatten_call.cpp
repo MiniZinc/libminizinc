@@ -1073,25 +1073,25 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
             }
           }
         }
-        std::vector<std::pair<Expression*, TypeInst*>> stack({{args[i](), decl->param(i)->ti()}});
+        std::vector<std::pair<KeepAlive, TypeInst*>> stack({{args[i], decl->param(i)->ti()}});
         while (!stack.empty()) {
-          Expression* curArg = stack.back().first;
+          KeepAlive curArg = stack.back().first;
           TypeInst* curInst = stack.back().second;
           stack.pop_back();
           if (Expression* dom = curInst->domain()) {
             if (!dom->isa<TIId>()) {
               // May have to constrain actual argument
-              if (curArg->type().bt() == Type::BT_INT) {
+              if (curArg()->type().bt() == Type::BT_INT) {
                 GCLock lock;
                 IntSetVal* isv = eval_intset(env, dom);
                 bool needToConstrain;
-                if (curArg->type().st() == Type::ST_SET) {
+                if (curArg()->type().st() == Type::ST_SET) {
                   needToConstrain = true;
                 } else {
-                  if (curArg->type().dim() > 0) {
+                  if (curArg()->type().dim() > 0) {
                     needToConstrain = true;
                   } else {
-                    IntBounds ib = compute_int_bounds(env, curArg);
+                    IntBounds ib = compute_int_bounds(env, curArg());
                     needToConstrain = !ib.valid || isv->empty() || ib.l < isv->min(0) ||
                                       ib.u > isv->max(isv->size() - 1);
                   }
@@ -1100,7 +1100,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
                   KeepAlive domconstraint;
                   {
                     GCLock lock;
-                    domconstraint = mk_domain_constraint(env, curArg, dom);
+                    domconstraint = mk_domain_constraint(env, curArg(), dom);
                   }
                   if (ctx.b == C_ROOT) {
                     (void)flat_exp(env, Ctx(), domconstraint(), env.constants.varTrue,
@@ -1111,15 +1111,15 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
                     args_ee.push_back(ee);
                   }
                 }
-              } else if (curArg->type().bt() == Type::BT_FLOAT) {
+              } else if (curArg()->type().bt() == Type::BT_FLOAT) {
                 GCLock lock;
 
                 FloatSetVal* fsv = eval_floatset(env, dom);
                 bool needToConstrain;
-                if (curArg->type().dim() > 0) {
+                if (curArg()->type().dim() > 0) {
                   needToConstrain = true;
                 } else {
-                  FloatBounds fb = compute_float_bounds(env, curArg);
+                  FloatBounds fb = compute_float_bounds(env, curArg());
                   needToConstrain = !fb.valid || fsv->empty() || fb.l < fsv->min(0) ||
                                     fb.u > fsv->max(fsv->size() - 1);
                 }
@@ -1128,7 +1128,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
                   KeepAlive domconstraint;
                   {
                     GCLock lock;
-                    domconstraint = mk_domain_constraint(env, curArg, dom);
+                    domconstraint = mk_domain_constraint(env, curArg(), dom);
                   }
                   if (ctx.b == C_ROOT) {
                     (void)flat_exp(env, Ctx(), domconstraint(), env.constants.varTrue,
@@ -1139,16 +1139,15 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
                     args_ee.push_back(ee);
                   }
                 }
-              } else if (curArg->type().structBT()) {
+              } else if (curArg()->type().structBT()) {
                 GCLock lock;
                 auto* al = curInst->domain()->cast<ArrayLit>();
                 for (long long i = 0; i < al->size(); ++i) {
-                  stack.emplace_back(
-                      new FieldAccess(curArg->loc().introduce(), curArg, IntLit::a(i)),
-                      (*al)[i]->cast<TypeInst>());
+                  auto* fa = new FieldAccess(curArg()->loc().introduce(), curArg(), IntLit::a(i));
+                  fa->type((*al)[i]->type());
+                  stack.emplace_back(fa, (*al)[i]->cast<TypeInst>());
                 }
-
-              } else if (curArg->type().bt() == Type::BT_BOT) {
+              } else if (curArg()->type().bt() == Type::BT_BOT) {
                 // Nothing to be done for empty arrays/sets
               } else {
                 throw EvalError(env, curInst->loc(),

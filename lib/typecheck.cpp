@@ -3089,7 +3089,6 @@ public:
         }
       }
     }
-    assert(!vd->type().structBT() || vd->ti()->domain() != nullptr);
   }
   /// Visit type inst
   void vTypeInst(TypeInst* ti) {
