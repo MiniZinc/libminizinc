@@ -166,13 +166,13 @@ predicate geost_smallest_bb(
     ))));
 
 /** @group globals.packing
- A global non-overlap constraint for \a 2 dimensional objects. It enforces that no two objects overlap
- and zero-length objects do not appear in the middle of other objects.
+ A non-overlap constraint for two \a k dimensional objects. It enforces that
+ there is at least one dimension where the objects occupy a different space.
     
-@param x1: first coordinate of each object
-@param w1: width in first dimension for each object
-@param x2: second coordinate of each object
-@param w2: width in second dimension for each object
+@param x1: coordinate of each dimension for the first object
+@param w1: width of each dimension for the first object
+@param x2: coordinate of each dimension for the second object
+@param w2: width of each dimension for the second object
 */
 predicate geost_nonoverlap_k(
     array[int] of var int : x1, 
