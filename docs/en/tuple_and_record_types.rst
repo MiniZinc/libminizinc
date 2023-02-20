@@ -7,7 +7,7 @@ In MiniZinc models we often deal with multiple points of data and multiple
 decisions that all concern the same thing, an “object”. There are multiple ways
 to modelling this. It is common practice in MiniZinc to have different arrays
 for different types of data points or decisions. These arrays will then share a
-common index to map to which object each data point belongs.
+common index mapping to which object each data point belongs.
 
 In this section we present an alternative, “object-oriented”, approach in
 MiniZinc in the form of tuple and record types. Using these types, different
@@ -44,13 +44,13 @@ Declaring and using tuples and records
   **required** to distinguish the literal from a normal parenthesized expression.
 
 Tuples provide a very simple way to create a collection that contains values of
-different types. In a tuple variables, the values contained in the tuple can be
+different types. In a tuple variable, the values contained in the tuple can be
 accessed using a number representing the place in the tuple. For example, in the
 tuple :mzn:`any: x = (1, true, 2.0)` the first member, :mzn:`1`, can be
 retrieved using :mzn:`x.1`, and the final member, :mzn:`2.0`, can be retrieved
 using :mzn:`x.3`. Note that the MiniZinc compiler will raise a **Type Error**,
-when an integer that is used lower than one or higher than the number of members
-in the tuple.
+when an integer is used that is lower than one or higher than the number of
+members in the tuple.
 
 Although tuple types can be useful, it can often be confusing which member
 represents what. Record types improve on this by associating a name with each
@@ -82,12 +82,12 @@ member of the type.
   :mzn:`record(int: i, bool: b)`. Different from tuples, record literals with
   only a single member do not require a trailing comma.
 
-The syntax to access the members of a record, are very similar to access the
+The syntax for accessing a member of a record is very similar to accessing a
 member of a tuple. The difference is that instead of a number, we use the name
-given to the member. For example, given the :mzn:`any: x = (i: 1, b: true)`, the
-integer value :mzn:`1` that is named by identifier :mzn:`i` is retrieved using
-:mzn:`x.i`. Using identifiers that do not name a member (or any number) will
-once more result in a **Type Error**.
+given to the member. For example, given the record :mzn:`any: x = (i: 1, b: true)`,
+the integer value :mzn:`1` that is named by identifier :mzn:`i` is retrieved
+using :mzn:`x.i`. Using identifiers that do not name a member (or any number)
+will once more result in a **Type Error**.
 
 Using type-inst synonyms
 ------------------------
@@ -120,10 +120,10 @@ In a model that contains these definitions, we can now declare a variable
 :mzn:`array[1..10] of Coord: placement;` or a function :mzn:`function Number:
 add(Number: x, Number: y) = x + y;`
 
-Similar to record and tuple types, the `var` keyword can be used before the
-identifier of a type-inst synonym to varify the type-inst. For instance, the
-given the synonym :mzn:`type OnOff = bool;` and the variable declaration
-:mzn:`var OnOff: choice;` the type-inst of :mzndef:`choice` would be :mzn:`var
+Similar to record and tuple types, the :mzn:`var` keyword can be used before the
+identifier of a type-inst synonym to varify the type-inst. For instance, given
+the synonym :mzn:`type OnOff = bool;` and the variable declaration
+:mzn:`var OnOff: choice;`, the type-inst of :mzndef:`choice` would be :mzn:`var
 bool`. Different from records and tuple, the reverse is also possible using the
 :mzn:`par` keyword. For instance, the given the synonym :mzn:`type Choice = var
 bool;` and the variable declaration :mzn:`par Choice: check = fix(choice);` the
@@ -139,7 +139,7 @@ record type, initialization of these types can be complex. To avoid the usage of
 anonymous variables or let-expressions and allow the assignment from data files,
 it is recommended to split data and decisions into separate types.
 
-For example, in rostering problem it would be natural to combine information
+For example, in a rostering problem it would be natural to combine information
 about the employees, both data and decisions. It might thus be natural to define
 the following synonyms and variable declarations.
 
@@ -211,11 +211,11 @@ values, as shown in the following fragment.
 Example: rectangle packing using records
 ----------------------------------------
 
-Consider a packing problem where a collection of rectangle objects have to be
-packed into a rectangle space. Importantly, none of the rectangles being packed
-can overlap. To keep the model simple, we don't allow the rectangles to be
-turned. When we create a model to decide whether the packing is possible, we can
-use records to help us make the model easier to read.
+Consider a packing problem where a collection of rectangular objects have to be
+packed into a rectangular space. Importantly, none of the rectangles being
+packed can overlap. To keep the model simple, we don't allow the rectangles to
+be turned. When we create a model to decide whether the packing is possible, we
+can use records to help us make the model easier to read.
 
 The data for the model comes in two parts: the total area of the space and the
 sizes of the rectangles being packed. We can represent both using a “dimensions”
@@ -229,7 +229,7 @@ define the following type-inst synonym.
 
 To decide whether the problem is satisfiable or not, we will have to find a
 placement for the rectangles being packed. We can thus use the coordinates of
-their left bottom corner as are decision variables, for which a type-inst
+their left bottom corner as our decision variables, for which a type-inst
 synonym can be defined as follows.
 
 .. literalinclude:: examples/rect_packing.mzn
