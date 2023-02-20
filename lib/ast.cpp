@@ -1115,7 +1115,28 @@ bool TypeInst::resolveAlias(EnvI& env) {
          << "' and is already an array type";
       throw TypeError(env, loc(), ss.str());
     }
-    ntype.dim(type().dim());
+    const int dim = type().dim();
+    const unsigned int curTypeId = type().typeId();
+    const unsigned int newTypeId = ntype.typeId();
+    if (curTypeId != 0 || newTypeId != 0) {
+      // Type needs an Array Enum type
+      std::vector<unsigned int> arrayEnumIds;
+      if (curTypeId != 0) {
+        arrayEnumIds = env.getArrayEnum(type().typeId());
+        // This should not have been set yet.
+        assert(arrayEnumIds[dim] == 0);
+      } else {
+        arrayEnumIds = std::vector<unsigned int>(dim + 1, 0);
+      }
+      if (newTypeId != 0) {
+        arrayEnumIds[dim] = newTypeId;
+      }
+      ntype.typeId(0);
+      ntype.dim(dim);
+      ntype.typeId(env.registerArrayEnum(arrayEnumIds));
+    } else {
+      ntype.dim(dim);
+    }
   } else if (ntype.dim() != 0) {
     std::vector<TypeInst*> ranges(alias->ranges().size());
     for (size_t i = 0; i < alias->ranges().size(); ++i) {
