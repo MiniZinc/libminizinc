@@ -583,9 +583,6 @@ void GC::Heap::sweep() {
       off += ns;
     }
     if (wholepage) {
-#ifndef NDEBUG
-      memset(p->data, 42, p->size);
-#endif
       if (prev != nullptr) {
         prev->next = p->next;
       } else {
@@ -621,6 +618,9 @@ void GC::Heap::sweep() {
     vd->_vdGcMark = 0U;
   }
   for (auto* pf : toFree) {
+#ifndef NDEBUG
+    memset(pf->data, 42, pf->size);
+#endif
     ::free(pf);
   }
 #if defined(MINIZINC_GC_STATS)
