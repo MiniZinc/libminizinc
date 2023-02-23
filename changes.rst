@@ -88,6 +88,8 @@ Bug fixes:
 -  Boolean par functions (as declared using ``test``) now behave correctly when they
    contain partial operations that result in undefined values.
 -  Fix optimisation of values used in float arrays (:bugref:`635`).
+-  Ensure that combining ``--solver-statistics`` and ``--compiler-statistics`` behaves the same as
+   using the ``--statistics`` flag (:bugref:`607`).
 
 .. _v2.6.4:
 

@@ -582,6 +582,8 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
     } else if (argv[i] == "-s" || argv[i] == "--statistics") {
       flagStatistics = true;
       flagCompilerStatistics = true;
+    } else if (argv[i] == "--solver-statistics") {
+      flagStatistics = true;
     } else if (argv[i] == "-r" || argv[i] == "--seed" || argv[i] == "--random-seed") {
       ++i;
       if (i == argc) {
