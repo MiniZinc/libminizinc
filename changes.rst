@@ -4,10 +4,12 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
-.. _unreleased:
+.. _v2.7.0:
 
-Unreleased
-~~~~~~~~~~
+`Version 2.7.0 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.7.0>`__
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(released 23 February 2023)
 
 Major changes:
 ^^^^^^^^^^^^^^
@@ -94,6 +96,16 @@ Bug fixes:
 -  Fix optimisation of values used in float arrays (:bugref:`635`).
 -  Ensure that combining ``--solver-statistics`` and ``--compiler-statistics`` behaves the same as
    using the ``--statistics`` flag (:bugref:`607`).
+
+Changes in the IDE:
+^^^^^^^^^^^^^^^^^^^
+
+-  Fix a bug where model selection dialog could run the wrong model.
+-  Fix a bug where the same data file could be added to the MiniZinc command twice.
+-  Ensure user config directory is created when modifying solver search paths (:idebugref:`167`).
+-  Ensure that IDE windows cannot spawn off-screen.
+-  Add tooltips to the CP-Profiler status bar legend.
+-  Add support for mooc submissions which include file editing history.
 
 .. _v2.6.4:
 
