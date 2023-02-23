@@ -15,4 +15,5 @@ User Manual
    find_mus
    jupyter
    python
+   javascript
    installation_detailed
