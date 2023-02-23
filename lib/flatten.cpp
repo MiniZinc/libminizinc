@@ -3987,6 +3987,7 @@ void flatten(Env& e, FlatteningOptions opt) {
             } else if (vdi_dom->size() > 1) {
               auto* dom_ranges = new BinOp(vdi->e()->ti()->domain()->loc().introduce(),
                                            FloatLit::a(vmin), BOT_DOTDOT, FloatLit::a(vmax));
+              dom_ranges->type(Type::parsetfloat());
               vdi->e()->ti()->domain(dom_ranges);
 
               std::vector<Expression*> ranges;
