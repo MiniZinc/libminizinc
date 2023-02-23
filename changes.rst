@@ -9,29 +9,14 @@ https://github.com/MiniZinc/libminizinc/issues.
 Unreleased
 ~~~~~~~~~~
 
-Changes in interfaces to solvers:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
--  MiniZinc now includes a solver interface for the `HiGHS <https://www.highs.dev>`_
-   linear optimisation suite. HiGHS is included by default in the MiniZincIDE
-   package, and available using ``--solver highs``.
--  The SCIP interface has been updated and is now compatible with version
-   7 and 8 only.
--  A solver's globals library specified in a configuration file will now
-   always be passed to the compiler using the ``-G`` flag. This allows users to
-   easily override this library from command line when required.
--  Automatically detect Gurobi 10.0 and potential future versions.
--  Avoid loading all solver plugin DLLs on startup, instead loading when required.
--  A built-in solver interface for `Chuffed <https://github.com/chuffed/chuffed>`_
-   has been added primarily for use with the WebAssembly version of MiniZinc.
--  The non-FlatZinc interfaces now also accept the ``--free-search`` flag in
-   addition to the ``-f`` flag.
--  The SCIP interface will now also try to find the SCIP library files in the
-   Homebrew locations.
+Major changes:
+^^^^^^^^^^^^^^
+-  Support for tuple and record types as well as type-inst synonyms has been added.
+-  Extended enumerated types can now be constructed from non-contiguous sets.
+-  WebAssembly is now fully supported as a target platform.
 
 Changes:
 ^^^^^^^^
-
 -  The compiler will no longer introduce ``array_bool_or``, only ``bool_clause``.
 -  Improve translation of some simple constraints, which avoids introducing
    unnecessary ``int_eq`` (and similar) constraints.
@@ -56,9 +41,28 @@ Changes:
 -  Revert change in the standard decomposition of ``lex_less(eq)`` so it no
    longer uses implications which were intended promote half-reification,
    because this introduced free variables.
--  Extended enumerated types can now be constructed from non-contiguous sets.
 -  Calls to par functions with constrained arguments now result in an undefined
    value (just like calls to var functions) rather than an abort.
+
+Changes in interfaces to solvers:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  MiniZinc now includes a solver interface for the `HiGHS <https://www.highs.dev>`_
+   linear optimisation suite. HiGHS is included by default in the MiniZincIDE
+   package, and available using ``--solver highs``.
+-  The SCIP interface has been updated and is now compatible with version
+   7 and 8 only.
+-  A solver's globals library specified in a configuration file will now
+   always be passed to the compiler using the ``-G`` flag. This allows users to
+   easily override this library from command line when required.
+-  Automatically detect Gurobi 10.0 and potential future versions.
+-  Avoid loading all solver plugin DLLs on startup, instead loading when required.
+-  A built-in solver interface for `Chuffed <https://github.com/chuffed/chuffed>`_
+   has been added primarily for use with the WebAssembly version of MiniZinc.
+-  The non-FlatZinc interfaces now also accept the ``--free-search`` flag in
+   addition to the ``-f`` flag.
+-  The SCIP interface will now also try to find the SCIP library files in the
+   Homebrew locations.
 
 Bug fixes:
 ^^^^^^^^^^
