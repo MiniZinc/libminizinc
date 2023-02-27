@@ -140,6 +140,15 @@ void ImpCompressor::compress() {
             output_var = output_var || usages.second;
             int occurrences = usages.first;
             unsigned long lhs_occurences = count(var);
+            bool is_fixed = var->ti()->domain() != nullptr;
+#ifndef NDEBUG
+            if (is_fixed) {
+              std::cerr << "ERROR: We expect propagation to have taken care of all fixed variables "
+                           "before chain propagation. This can be ignored in release builds, but "
+                           "should be investigated by the MiniZinc Team";
+              assert(!is_fixed);
+            }
+#endif
 
             // Compress if:
             // - There is one occurrence on the RHS of a clause and the others are on the LHS of a
@@ -148,7 +157,7 @@ void ImpCompressor::compress() {
             // has no other occurrences
             // - There is one occurrence on the RHS of a clause, that Id is a reification in a
             // positive context, and all other occurrences are on the LHS of a clause
-            bool compress = !output_var && lhs_occurences > 0;
+            bool compress = !is_fixed && !output_var && lhs_occurences > 0;
             if ((var->e() != nullptr) && (var->e()->dynamicCast<Call>() != nullptr)) {
               auto* call = var->e()->cast<Call>();
               if (call->id() == _env.constants.ids.forall) {
