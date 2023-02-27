@@ -14,6 +14,7 @@ Bug fixes:
 
 -  Fix incorrect chain compression when Boolean variables had constrained domains (:bugref:`638`).
 -  Fix incorrect compilation of let expressions in recursive functions (:bugref:`637`).
+-  Fix the evaluation of ``par`` optional types with a singular value in their domain (:bugref:`639`).
 
 
 .. _v2.7.0:

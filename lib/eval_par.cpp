@@ -2221,7 +2221,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
         }
         throw EvalError(env, e->loc(), "undefined identifier", id->v());
       }
-      if (id->decl()->ti()->domain() != nullptr) {
+      if (id->decl()->ti()->domain() != nullptr && id->decl()->type().isPresent()) {
         if (auto* bl = id->decl()->ti()->domain()->dynamicCast<BoolLit>()) {
           return bl;
         }
