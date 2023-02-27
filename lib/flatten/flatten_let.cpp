@@ -138,10 +138,9 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     }
   }
   // Restore previous mapping
-  for (unsigned int i = 0; i < let->let().size(); i++) {
+  for (unsigned int i = 0, j = 0; i < let->let().size(); i++) {
     if (auto* vd = let->let()[i]->dynamicCast<VarDecl>()) {
-      vd->flat(Expression::cast<VarDecl>(flatmap.back()()));
-      flatmap.pop_back();
+      vd->flat(Expression::cast<VarDecl>(flatmap[j++]()));
     }
   }
   return ret;

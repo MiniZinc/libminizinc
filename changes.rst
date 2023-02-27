@@ -13,6 +13,7 @@ Bug fixes:
 ^^^^^^^^^^
 
 -  Fix incorrect chain compression when Boolean variables had constrained domains (:bugref:`638`).
+-  Fix incorrect compilation of let expressions in recursive functions (:bugref:`637`).
 
 
 .. _v2.7.0:
