@@ -291,10 +291,13 @@ flatten_arrayaccess:
       field_res[i] = ee.r();
       ees.push_back(ee);
     }
-    KeepAlive tuple_lit = ArrayLit::constructTuple(Location().introduce(), field_res);
-    tuple_lit()->type(aa->type());
-    ret.r = bind(env, ctx, r, tuple_lit());
-    ret.b = conj(env, b, ctx, ees);
+    {
+      GCLock lock;
+      ArrayLit* tuple_lit = ArrayLit::constructTuple(Location().introduce(), field_res);
+      tuple_lit->type(aa->type());
+      ret.r = bind(env, ctx, r, tuple_lit);
+      ret.b = conj(env, b, ctx, ees);
+    }
   } else {
     std::vector<Expression*> args(aa->idx().size() + 1);
     for (unsigned int i = aa->idx().size(); (i--) != 0U;) {
