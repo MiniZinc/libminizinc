@@ -1046,13 +1046,19 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
     }
     auto cit = env.cseMapFind(cr());
     if (cit != env.cseMapEnd()) {
-      if (env.ignorePartial) {
+      if (e->type().isbool() && !e->type().isOpt()) {
         ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
+        args_ee.emplace_back(nullptr, cit->second.r);
+        ret.r = conj(env, r, ctx, args_ee);
       } else {
-        args_ee.emplace_back(nullptr, cit->second.b);
-        ret.b = conj(env, b, Ctx(), args_ee);
+        if (env.ignorePartial) {
+          ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
+        } else {
+          args_ee.emplace_back(nullptr, cit->second.b);
+          ret.b = conj(env, b, Ctx(), args_ee);
+        }
+        ret.r = bind(env, ctx, r, cit->second.r);
       }
-      ret.r = bind(env, ctx, r, cit->second.r);
     } else {
       for (unsigned int i = 0; i < decl->paramCount(); i++) {
         if (decl->param(i)->type().dim() > 0) {
