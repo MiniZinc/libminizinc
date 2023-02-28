@@ -241,45 +241,51 @@ void collect_linexps(EnvI& env, typename LinearTraits<Lit>::Val in_c, Expression
     } else if (Lit* l = e->dynamicCast<Lit>()) {
       constval += c * l->v();
     } else if (auto* bo = e->dynamicCast<BinOp>()) {
-      switch (bo->op()) {
-        case BOT_PLUS:
-          stack.push_back(StackItem(bo->lhs(), c));
-          stack.push_back(StackItem(bo->rhs(), c));
-          break;
-        case BOT_MINUS:
-          stack.push_back(StackItem(bo->lhs(), c));
-          stack.push_back(StackItem(bo->rhs(), -c));
-          break;
-        case BOT_MULT:
-          if (bo->lhs()->type().isPar()) {
-            stack.push_back(StackItem(bo->rhs(), c * LinearTraits<Lit>::eval(env, bo->lhs())));
-          } else if (bo->rhs()->type().isPar()) {
-            stack.push_back(StackItem(bo->lhs(), c * LinearTraits<Lit>::eval(env, bo->rhs())));
-          } else {
-            coeffs.push_back(c);
-            vars.emplace_back(e);
-          }
-          break;
-        case BOT_DIV:
-          if (bo->rhs()->isa<FloatLit>() && bo->rhs()->cast<FloatLit>()->v() == 1.0) {
+      if (bo->decl() != nullptr && bo->decl()->e() != nullptr) {
+        // This is an overloaded operator (e.g. on option types), so do not aggregate
+        coeffs.push_back(c);
+        vars.emplace_back(e);
+      } else {
+        switch (bo->op()) {
+          case BOT_PLUS:
             stack.push_back(StackItem(bo->lhs(), c));
-          } else {
-            coeffs.push_back(c);
-            vars.emplace_back(e);
-          }
-          break;
-        case BOT_IDIV:
-          if (bo->rhs()->isa<IntLit>() && bo->rhs()->cast<IntLit>()->v() == 1) {
+            stack.push_back(StackItem(bo->rhs(), c));
+            break;
+          case BOT_MINUS:
             stack.push_back(StackItem(bo->lhs(), c));
-          } else {
+            stack.push_back(StackItem(bo->rhs(), -c));
+            break;
+          case BOT_MULT:
+            if (bo->lhs()->type().isPar()) {
+              stack.push_back(StackItem(bo->rhs(), c * LinearTraits<Lit>::eval(env, bo->lhs())));
+            } else if (bo->rhs()->type().isPar()) {
+              stack.push_back(StackItem(bo->lhs(), c * LinearTraits<Lit>::eval(env, bo->rhs())));
+            } else {
+              coeffs.push_back(c);
+              vars.emplace_back(e);
+            }
+            break;
+          case BOT_DIV:
+            if (bo->rhs()->isa<FloatLit>() && bo->rhs()->cast<FloatLit>()->v() == 1.0) {
+              stack.push_back(StackItem(bo->lhs(), c));
+            } else {
+              coeffs.push_back(c);
+              vars.emplace_back(e);
+            }
+            break;
+          case BOT_IDIV:
+            if (bo->rhs()->isa<IntLit>() && bo->rhs()->cast<IntLit>()->v() == 1) {
+              stack.push_back(StackItem(bo->lhs(), c));
+            } else {
+              coeffs.push_back(c);
+              vars.emplace_back(e);
+            }
+            break;
+          default:
             coeffs.push_back(c);
             vars.emplace_back(e);
-          }
-          break;
-        default:
-          coeffs.push_back(c);
-          vars.emplace_back(e);
-          break;
+            break;
+        }
       }
       //      } else if (Call* call = e->dynamicCast<Call>()) {
       //        /// TODO! Handle sum, lin_exp (maybe not that important?)
