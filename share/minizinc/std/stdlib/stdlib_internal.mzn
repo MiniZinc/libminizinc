@@ -107,6 +107,9 @@ predicate bool_eq(var bool: b0, var opt bool: b1) =
 predicate bool_xor_reif(var bool: a, var bool: b, var bool: c) =
   bool_xor(a,b,c);
 
+predicate bool_xor(var opt bool: x, var opt bool: y) =
+  absent(x) \/ absent(y) \/ (deopt(x) xor deopt(y));
+
 predicate int_opt_eq(var opt int: x, var opt int: y) =
   deopt(x) = deopt(y) /\ occurs(x) = occurs(y);
 /* True iff both \a x and \a y are absent or
