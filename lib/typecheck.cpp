@@ -2431,6 +2431,7 @@ public:
       }
 
       if (bop->lhs()->type().isint() && bop->rhs()->type().isint() &&
+          bop->lhs()->type().isPresent() && bop->rhs()->type().isPresent() &&
           (bop->op() == BOT_EQ || bop->op() == BOT_GQ || bop->op() == BOT_GR ||
            bop->op() == BOT_NQ || bop->op() == BOT_LE || bop->op() == BOT_LQ)) {
         Call* call = bop->lhs()->dynamicCast<Call>();

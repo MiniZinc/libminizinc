@@ -18,6 +18,7 @@ Bug fixes:
 -  Fix common subexpression elimination for Boolean expressions that contain an undefined result
    that needs to become false in the Boolean context (:bugref:`639`).
 -  Fix linear aggregation to only aggregate non-optional values (:bugref:`644`).
+-  Fix rewriting to counting constraints to only occur when result is not optional (:bugref:`644`).
 
 .. _v2.7.0:
 
