@@ -69,6 +69,11 @@ function var opt int: '~+'(var opt int: x, var opt int: y) ::promise_total =
     constraint absent(x) \/ absent(y) \/ result = deopt(x)+deopt(y);
     } in result;
 
+/** @group stdlib.builtins.arithmetic Weak addition. Return sum of \a x and \a y if both
+are present, otherwise return absent. */
+function opt int: '~+'(opt int: x, opt int: y) ::promise_total =
+  if occurs(x) /\ occurs(y) then deopt(x) + deopt(y) else <> endif;
+
 /** @group stdlib.builtins.arithmetic Weak subtraction. Return difference of \a x and \a y if both
 are present, otherwise return absent. */
 function var opt int: '~-'(var opt int: x, var opt int: y) ::promise_total =
@@ -80,11 +85,21 @@ function var opt int: '~-'(var opt int: x, var opt int: y) ::promise_total =
     constraint absent(x) \/ absent(y) \/ result = deopt(x)-deopt(y);
     } in result;
 
+/** @group stdlib.builtins.arithmetic Weak subtraction. Return difference of \a x and \a y if both
+are present, otherwise return absent. */
+function opt int: '~-'(opt int: x, opt int: y) ::promise_total =
+  if occurs(x) /\ occurs(y) then deopt(x) - deopt(y) else <> endif;
+
 /** @group stdlib.builtins.arithmetic Weak multiplication. Return product of \a x and \a y if both
 are present, otherwise return absent. */
 function var opt int: '~*'(var opt int: x, var opt int: y) ::promise_total =
     if absent(x) \/ absent(y) then <>
     else deopt(x)*deopt(y) endif;
+
+/** @group stdlib.builtins.arithmetic Weak multiplication. Return product of \a x and \a y if both
+are present, otherwise return absent. */
+function opt int: '~*'(opt int: x, opt int: y) ::promise_total =
+  if occurs(x) /\ occurs(y) then deopt(x) * deopt(y) else <> endif;
 
 /** @group stdlib.builtins.arithmetic Weak addition. Return sum of \a x and \a y if both
 are present, otherwise return absent. */

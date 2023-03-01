@@ -22,6 +22,7 @@ Bug fixes:
 -  Add missing internal builtin for xor on optional bool variables (:bugref:`644`).
 -  Fix evaluation of par array access with absent value (:bugref:`644`).
 -  Fix potential crash when evaluating bounds of par let expressions that contain a variable (:bugref:`646`).
+-  Add missing ``par opt int`` versions of ``~+``, ``~-`` and ``~*`` (:bugref:`644`).
 
 .. _v2.7.0:
 
