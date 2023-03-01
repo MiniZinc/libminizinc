@@ -835,6 +835,13 @@ Expression* ArrayAccessSucess::dummyLiteral(EnvI& env, Type t) const {
 
 Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e, ArrayAccessSucess& success) {
   ArrayLit* al = eval_array_lit(env, e->v());
+  if (e->type().isOpt()) {
+    for (auto* idx : e->idx()) {
+      if (idx->type().isOpt() && eval_par(env, idx) == env.constants.absent) {
+        return env.constants.absent;
+      }
+    }
+  }
   struct EvalIdx {
     EnvI& env;
     ArrayAccess* aa;

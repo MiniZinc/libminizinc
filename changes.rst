@@ -20,6 +20,7 @@ Bug fixes:
 -  Fix linear aggregation to only aggregate non-optional values (:bugref:`644`).
 -  Fix rewriting to counting constraints to only occur when result is not optional (:bugref:`644`).
 -  Add missing internal builtin for xor on optional bool variables (:bugref:`644`).
+-  Fix evaluation of par array access with absent value (:bugref:`644`).
 -  Fix potential crash when evaluating bounds of par let expressions that contain a variable (:bugref:`646`).
 
 .. _v2.7.0:
