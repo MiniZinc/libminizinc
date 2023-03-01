@@ -2426,7 +2426,7 @@ public:
     if (e->type().dim() > 0) {
       return false;
     }
-    if (e->type().isPar()) {
+    if (e->type().isPar() && !e->type().cv()) {
       Expression* exp = eval_par(env, e);
       if (e->type().isint() && exp != env.constants.absent) {
         IntVal v = exp->cast<IntLit>()->v();
