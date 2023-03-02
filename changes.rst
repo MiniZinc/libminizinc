@@ -31,6 +31,7 @@ Bug fixes:
 -  Fix potential crash when evaluating bounds of par let expressions that contain a variable (:bugref:`646`).
 -  Add missing ``par opt int`` versions of ``~+``, ``~-`` and ``~*`` (:bugref:`644`).
 -  Add missing ``count`` function on ``array[_] of var opt bool`` (:bugref:`640`).
+-  Fix potential crash in typechecking of array of record access (:bugref:`647`).
 
 .. _v2.7.0:
 
