@@ -259,6 +259,9 @@ function int:  count(array[$T] of bool: x) = sum([bool2int(y) | y in array1d(x)]
 function var int:  count(array[$T] of var bool: x :: promise_ctx_monotone) = let {
   array[int] of var bool: xx :: promise_ctx_monotone = array1d(x);
 } in sum([bool2int(y) | y in xx]);
+/** @group stdlib.builtins.arithmetic Return number of true elments in array \a x */
+function var int:  count(array[$T] of var opt bool: x :: promise_ctx_monotone) =
+  count(i in x)(i default false);
 
 /** @group stdlib.builtins.arithmetic Return sum of elements in array \a x */
 function     int:   sum(array[$T] of     int: x);

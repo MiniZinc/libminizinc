@@ -23,6 +23,7 @@ Bug fixes:
 -  Fix evaluation of par array access with absent value (:bugref:`644`).
 -  Fix potential crash when evaluating bounds of par let expressions that contain a variable (:bugref:`646`).
 -  Add missing ``par opt int`` versions of ``~+``, ``~-`` and ``~*`` (:bugref:`644`).
+-  Add missing ``count`` function on ``array[_] of var opt bool`` (:bugref:`640`).
 
 .. _v2.7.0:
 
