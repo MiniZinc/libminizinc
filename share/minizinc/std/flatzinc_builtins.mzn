@@ -249,6 +249,12 @@ predicate float_times(var float: a, var float: b, var float: c);
 /** @group flatzinc.float Constrains \a y=\a x */
 predicate int2float(var int: x, var float: y);
 
+/** @group flatzinc.float Constrains \( \a y = \lceil{ \a x} \rceil \) */
+predicate float_ceil(var float: x, var int: y);
+/** @group flatzinc.float Constrains \( \a y = \lfloor{ \a x} \rfloor \) */
+predicate float_floor(var float: x, var int: y);
+/** @group flatzinc.float Constrains that \a y is the nearest integer to \a x */
+predicate float_round(var float: x, var int: y);
 
 % Array constraints
 

@@ -11,6 +11,27 @@ function int: floor(float: x);
 /** @group stdlib.builtins.coercion Return \a x rounded to nearest integer */
 function int: round(float: x);
 
+/** @group stdlib.builtins.coercion Return \( \lceil{ \a x} \rceil \) */
+function var int: ceil(var float: x) ::promise_total =
+  let {
+    var ceil(lb(x))..ceil(ub(x)): r;
+    constraint float_ceil(x, r);
+  } in r;
+
+/** @group stdlib.builtins.coercion Return \( \lfloor{ \a x} \rfloor \) */
+function var int: floor(var float: x) ::promise_total =
+  let {
+    var floor(lb(x))..floor(ub(x)): r;
+    constraint float_floor(x, r);
+  } in r;
+
+/** @group stdlib.builtins.coercion Return \a x rounded to nearest integer */
+function var int: round(var float: x) ::promise_total =
+  let {
+    var floor(lb(x))..ceil(ub(x)): r;
+    constraint float_round(x, r);
+  } in r;
+
 /** @group stdlib.builtins.coercion Return Boolean \a b coerced to an integer  */
 function int: bool2int(bool: b);
 

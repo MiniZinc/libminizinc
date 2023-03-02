@@ -9,6 +9,13 @@ https://github.com/MiniZinc/libminizinc/issues.
 Unreleased
 ~~~~~~~~~~
 
+Changes:
+^^^^^^^^
+
+-  Add ``ceil``, ``floor`` and ``round`` functions for ``var float``, and corresponding
+   FlatZinc builtins ``float_ceil``, ``float_floor`` and ``float_round`` that can be
+   overridden by solvers in the new ``redefinitions-2.7.1.mzn`` library file (:bugref:`636`).
+
 Bug fixes:
 ^^^^^^^^^^
 
