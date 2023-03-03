@@ -4,7 +4,7 @@ solvers: [gecode]
 expected: !Result
   status: SATISFIED
   solution: !Solution
-    _output_item: "full var: (0, true, 1.5)\nvar array: [(2, false), (1, true)]\nnested: (false, (3, 4))\nelement: 3\npartial: (10, true)\ndata: (-3.2, false)\n"
+    _output_item: "full var: (0, true, 1.5)\nvar array: [(2, false), (1, true)]\nnested: (false, (3, 4))\nelement: 3\npartial: (10, true)\ndata: (-3.2, false)\nenumtup: ((x: a a, y: c), c)\n"
 ***/
 
 % simple tuple variable
@@ -32,4 +32,8 @@ constraint init.2 <-> init.1 mod 2 == 0;
 % data
 tuple(float, bool): dat = (-3.2, false);
 
-output ["full var: \(x)\nvar array: \(y)\nnested: \(z)\nelement: \(z.2.1)\npartial: \(init)\ndata: \(dat)\n"];
+enum X = {'a a',c};
+tuple(record(X:x,X:y),X): enumtup = ((x:'a a',y:c),c);
+
+output ["full var: \(x)\nvar array: \(y)\nnested: \(z)\nelement: \(z.2.1)\npartial: \(init)\ndata: \(dat)\nenumtup: \(enumtup)\n"];
+

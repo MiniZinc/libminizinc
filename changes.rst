@@ -33,6 +33,7 @@ Bug fixes:
 -  Add missing ``par opt int`` versions of ``~+``, ``~-`` and ``~*`` (:bugref:`644`).
 -  Add missing ``count`` function on ``array[_] of var opt bool`` (:bugref:`640`).
 -  Fix potential crash in typechecking of array of record access (:bugref:`647`).
+-  Fix output of tuples and records that contain enumerated types.
 
 .. _v2.7.0:
 

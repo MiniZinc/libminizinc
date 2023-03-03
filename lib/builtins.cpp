@@ -2090,7 +2090,28 @@ IntVal b_string_length(EnvI& env, Call* call) {
   return static_cast<long long int>(s.size());
 }
 
-std::string show(EnvI& env, Expression* exp) {
+std::string b_show_enum_type(EnvI& env, Expression* e, Type t, bool dzn, bool json) {
+  Id* ti_id = env.getEnum(t.typeId())->e()->id();
+  GCLock lock;
+  std::vector<Expression*> args(3);
+  args[0] = e;
+  if (e->type().dim() > 1) {
+    Call* array1d = Call::a(Location().introduce(), env.constants.ids.array1d, {e});
+    Type array1dt = Type::arrType(env, Type::partop(1), t);
+    array1d->type(array1dt);
+    array1d->decl(env.model->matchFn(env, array1d, false, true));
+    args[0] = array1d;
+  }
+  args[1] = env.constants.boollit(dzn);
+  args[2] = env.constants.boollit(json);
+  ASTString enumName(create_enum_to_string_name(ti_id, "_toString_"));
+  auto* call = Call::a(Location().introduce(), enumName, args);
+  auto* fi = env.model->matchFn(env, call, false, true);
+  call->decl(fi);
+  return eval_string(env, call);
+}
+
+std::string show_with_type(EnvI& env, Expression* exp, Type t, bool showDzn) {
   std::ostringstream oss;
   GCLock lock;
   Printer p(oss, 0, false, &env);
@@ -2108,20 +2129,31 @@ std::string show(EnvI& env, Expression* exp) {
   if (e->type().dim() > 0 || e->type().structBT()) {
     e = eval_array_lit(env, e);
   }
+  if (t.bt() == Type::BT_INT && t.typeId() != 0) {
+    return b_show_enum_type(env, e, t, showDzn, false);
+  }
   if (auto* al = e->dynamicCast<ArrayLit>()) {
     oss << (al->isTuple() ? "(" : "[");
     if (al->type().isrecord()) {
       RecordType* rt = env.getRecordType(al->type());
       assert(al->size() == rt->size());
-      for (size_t i = 0; i < al->size(); i++) {
-        oss << rt->fieldName(i) << ": " << show(env, (*al)[i]);
+      for (unsigned int i = 0; i < al->size(); i++) {
+        oss << rt->fieldName(i) << ": " << show_with_type(env, (*al)[i], (*rt)[i], showDzn);
+        if (i < al->size() - 1) {
+          oss << ", ";
+        }
+      }
+    } else if (al->type().istuple()) {
+      TupleType* tt = env.getTupleType(al->type());
+      for (unsigned int i = 0; i < al->size(); i++) {
+        oss << show_with_type(env, (*al)[i], (*tt)[i], showDzn);
         if (i < al->size() - 1) {
           oss << ", ";
         }
       }
     } else {
-      for (size_t i = 0; i < al->size(); i++) {
-        oss << show(env, (*al)[i]);
+      for (unsigned int i = 0; i < al->size(); i++) {
+        oss << show_with_type(env, (*al)[i], (*al)[i]->type(), showDzn);
         if (i < al->size() - 1) {
           oss << ", ";
         }
@@ -2133,14 +2165,24 @@ std::string show(EnvI& env, Expression* exp) {
   }
   return oss.str();
 }
+std::string show(EnvI& env, Expression* exp) {
+  return show_with_type(env, exp, exp->type(), false);
+}
+
 std::string b_show(EnvI& env, Call* call) { return show(env, call->arg(0)); }
+std::string b_show_dzn(EnvI& env, Call* call) {
+  return show_with_type(env, call->arg(0), call->arg(0)->type(), true);
+}
 std::string b_show_dzn_id(EnvI& env, Call* call) {
   GCLock lock;
   std::string s = eval_string(env, call->arg(0));
   return Printer::quoteId(s);
 }
 
-std::string b_show_json_basic(EnvI& env, Expression* e) {
+std::string b_show_json_basic(EnvI& env, Expression* e, Type t) {
+  if (t.bt() == Type::BT_INT && t.typeId() != 0) {
+    return b_show_enum_type(env, e, t, false, true);
+  }
   std::ostringstream oss;
   Printer p(oss, 0, false, &env);
   if (auto* sl = e->dynamicCast<SetLit>()) {
@@ -2198,7 +2240,7 @@ std::string b_show_json_basic(EnvI& env, Expression* e) {
   return oss.str();
 }
 
-std::string b_show_json(EnvI& env, Expression* exp) {
+std::string b_show_json_with_type(EnvI& env, Expression* exp, Type t) {
   GCLock lock;
   Expression* e = eval_par(env, exp);
   if (e->type().isvar()) {
@@ -2213,8 +2255,8 @@ std::string b_show_json(EnvI& env, Expression* exp) {
       assert(al->dims() == 1);
       RecordType* rt = env.getRecordType(al->type());
       oss << "{";
-      for (size_t i = 0; i < al->size(); ++i) {
-        oss << "\"" << rt->fieldName(i) << "\": " << b_show_json(env, (*al)[i]);
+      for (unsigned int i = 0; i < al->size(); ++i) {
+        oss << "\"" << rt->fieldName(i) << "\": " << b_show_json_with_type(env, (*al)[i], (*rt)[i]);
         if (i < al->size() - 1) {
           oss << ", ";
         }
@@ -2231,13 +2273,18 @@ std::string b_show_json(EnvI& env, Expression* exp) {
       dims[i] = dims[i - 1] * (al->max(al->dims() - 1 - i) - al->min(al->dims() - 1 - i) + 1);
     }
     oss << "[";
+    TupleType* tt = al->type().istuple() ? env.getTupleType(al->type()) : nullptr;
     for (unsigned int i = 0; i < al->size(); i++) {
       for (unsigned int dim : dims) {
         if (i % dim == 0) {
           oss << "[";
         }
       }
-      oss << b_show_json(env, (*al)[i]);
+      if (tt == nullptr) {
+        oss << b_show_json_with_type(env, (*al)[i], (*al)[i]->type());
+      } else {
+        oss << b_show_json_with_type(env, (*al)[i], (*tt)[i]);
+      }
       for (unsigned int dim : dims) {
         if (i % dim == dim - 1) {
           oss << "]";
@@ -2252,12 +2299,12 @@ std::string b_show_json(EnvI& env, Expression* exp) {
 
     return oss.str();
   }
-  return b_show_json_basic(env, e);
+  return b_show_json_basic(env, e, t);
 }
 
 std::string b_show_json(EnvI& env, Call* call) {
   Expression* exp = call->arg(0);
-  return b_show_json(env, exp);
+  return b_show_json_with_type(env, exp, exp->type());
 }
 
 Expression* b_output_json(EnvI& env, Call* call) {
@@ -3957,18 +4004,22 @@ void register_builtins(Env& e) {
     std::vector<Type> t(1);
     t[0] = Type::vartop();
     rb(env, m, ASTString("show"), t, b_show);
+    rb(env, m, ASTString("showDzn"), t, b_show_dzn);
     rb(env, m, ASTString("showJSON"), t, b_show_json);
     t[0] = Type::vartop();
     t[0].st(Type::ST_SET);
     t[0].ot(Type::OT_PRESENT);
     rb(env, m, ASTString("show"), t, b_show);
+    rb(env, m, ASTString("showDzn"), t, b_show_dzn);
     rb(env, m, ASTString("showJSON"), t, b_show_json);
     t[0] = Type::vartop(-1);
     rb(env, m, ASTString("show"), t, b_show);
+    rb(env, m, ASTString("showDzn"), t, b_show_dzn);
     rb(env, m, ASTString("showJSON"), t, b_show_json);
     t[0].st(Type::ST_SET);
     t[0].ot(Type::OT_PRESENT);
     rb(env, m, ASTString("show"), t, b_show);
+    rb(env, m, ASTString("showDzn"), t, b_show_dzn);
     rb(env, m, ASTString("showJSON"), t, b_show_json);
   }
   {

@@ -1,3 +1,3 @@
-output ["\"output\": {","\"dzn\": ",showJSON(concat(["x = ",show(x),";\n"])),"}, \"sections\": [\"dzn\"]"];
+output ["\"output\": {","\"dzn\": ",showJSON(concat(["x = ",showDzn(x),";\n"])),"}, \"sections\": [\"dzn\"]"];
 set of int: S = 1..1;
 array [S] of int: x;

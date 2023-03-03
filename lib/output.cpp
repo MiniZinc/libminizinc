@@ -407,8 +407,7 @@ void make_par(EnvI& env, Expression* e) {
             c->id(ASTString(enumName));
           }
         }
-        if (c->id() == env.constants.ids.showDzn ||
-            (c->id() == env.constants.ids.showJSON && typeId > 0 && argtype.bt() == Type::BT_INT)) {
+        if (c->id() == env.constants.ids.showJSON && typeId > 0 && argtype.bt() == Type::BT_INT) {
           c->id(env.constants.ids.show);
         }
       }
