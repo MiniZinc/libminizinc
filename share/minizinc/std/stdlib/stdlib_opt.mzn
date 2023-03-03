@@ -5,17 +5,17 @@
   with option types. Note that option type support is still incomplete.
 */
 
-/** @group stdlib.optiontypes Return value of \a x if \a x is not absent. Aborts 
-  when evaluated on absent value. */
+/** @group stdlib.optiontypes Return value of \a x if \a x is not absent. Returns 
+  undefined when evaluated on absent value. */
 function $$T: deopt(opt $$T: x);
-/** @group stdlib.optiontypes Return value of \a x if \a x is not absent. Aborts 
-  when evaluated on absent value. */
+/** @group stdlib.optiontypes Return value of \a x if \a x is not absent. Returns
+  undefined when evaluated on absent value. */
 function $T: deopt(opt $T: x);
 /** @group stdlib.optiontypes Return array of the value of \a x[i] where \a x[i] is not absent.
-  Aborts when evaluated with an absent element. */
+  Returns undefined when evaluated with an absent element. */
 function array [$$U] of $$T: deopt(array [$$U] of opt $$T: x) = array1d(index_set(x), [deopt(x[i]) | i in index_set(x)]);
 /** @group stdlib.optiontypes Return array of the value of \a x[i] where \a x[i] is not absent.
-  Aborts when evaluated with an absent element. */
+  Returns undefined when evaluated with an absent element. */
 function array [$$U] of $T: deopt(array [$$U] of opt $T: x) = array1d(index_set(x), [deopt(x[i]) | i in index_set(x)]);
 
 /** @group stdlib.optiontypes Return value \a x unchanged (since \a x is guaranteed

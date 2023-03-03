@@ -313,7 +313,7 @@ IntVal b_deopt_int(EnvI& env, Call* call) {
   GCLock lock;
   Expression* e = eval_par(env, call->arg(0));
   if (e == env.constants.absent) {
-    throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
+    throw ResultUndefinedError(env, e->loc(), "deopt on absent value is undefined");
   }
   return eval_int(env, e);
 }
@@ -322,7 +322,7 @@ bool b_deopt_bool(EnvI& env, Call* call) {
   GCLock lock;
   Expression* e = eval_par(env, call->arg(0));
   if (e == env.constants.absent) {
-    throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
+    throw ResultUndefinedError(env, e->loc(), "deopt on absent value is undefined");
   }
   return eval_bool(env, e);
 }
@@ -331,7 +331,7 @@ FloatVal b_deopt_float(EnvI& env, Call* call) {
   GCLock lock;
   Expression* e = eval_par(env, call->arg(0));
   if (e == env.constants.absent) {
-    throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
+    throw ResultUndefinedError(env, e->loc(), "deopt on absent value is undefined");
   }
   return eval_float(env, e);
 }
@@ -340,7 +340,7 @@ IntSetVal* b_deopt_intset(EnvI& env, Call* call) {
   GCLock lock;
   Expression* e = eval_par(env, call->arg(0));
   if (e == env.constants.absent) {
-    throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
+    throw ResultUndefinedError(env, e->loc(), "deopt on absent value is undefined");
   }
   return eval_intset(env, e);
 }
@@ -349,7 +349,7 @@ std::string b_deopt_string(EnvI& env, Call* call) {
   GCLock lock;
   Expression* e = eval_par(env, call->arg(0));
   if (e == env.constants.absent) {
-    throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
+    throw ResultUndefinedError(env, e->loc(), "deopt on absent value is undefined");
   }
   return eval_string(env, e);
 }
@@ -358,7 +358,7 @@ Expression* b_deopt_expr(EnvI& env, Call* call) {
   GCLock lock;
   Expression* e = eval_par(env, call->arg(0));
   if (e == env.constants.absent) {
-    throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
+    throw ResultUndefinedError(env, e->loc(), "deopt on absent value is undefined");
   }
   return e;
 };

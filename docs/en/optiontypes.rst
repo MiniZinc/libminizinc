@@ -75,7 +75,7 @@ Similarly, it can sometimes be useful to have "weak" versions of the arithmetic 
   :mzn:`x default y` returns :mzn:`x` if :mzn:`x` occurs, and :mzn:`y` otherwise.
 
   In addition, the function
-  :mzn:`deopt(v)` returns the normal value of :mzn:`v` or fails if it takes the
+  :mzn:`deopt(v)` returns the normal value of :mzn:`v` or returns undefined if it takes the
   value :mzn:`<>`. This function should not be used in normal models, but is required
   to implement predicates over option type variables.
 

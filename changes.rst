@@ -15,6 +15,7 @@ Changes:
 -  Add ``ceil``, ``floor`` and ``round`` functions for ``var float``, and corresponding
    FlatZinc builtins ``float_ceil``, ``float_floor`` and ``float_round`` that can be
    overridden by solvers in the new ``redefinitions-2.7.1.mzn`` library file (:bugref:`636`).
+-  Make deopt on par absent values return undefined instead of error.
 
 Bug fixes:
 ^^^^^^^^^^
