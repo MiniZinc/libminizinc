@@ -34,6 +34,7 @@ Bug fixes:
 -  Add missing ``count`` function on ``array[_] of var opt bool`` (:bugref:`640`).
 -  Fix potential crash in typechecking of array of record access (:bugref:`647`).
 -  Fix output of tuples and records that contain enumerated types.
+-  Add missing newline to solver comment output when using ``--json-stream`` (:bugref:`649`).
 
 .. _v2.7.0:
 

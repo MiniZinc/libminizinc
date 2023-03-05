@@ -664,7 +664,7 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
               _stats.clear();
             } else {
               message << "{\"type\": \"comment\", \"comment\": \"" << Printer::escapeStringLit(line)
-                      << "\"}\n";
+                      << "\\n\"}\n";
             }
           } else {
             message << line << '\n';
