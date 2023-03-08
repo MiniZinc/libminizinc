@@ -35,6 +35,8 @@ Bug fixes:
 -  Fix potential crash in typechecking of array of record access (:bugref:`647`).
 -  Fix output of tuples and records that contain enumerated types.
 -  Add missing newline to solver comment output when using ``--json-stream`` (:bugref:`649`).
+-  Fix problem where field names of record types could be removed during garbage
+   collections.
 
 .. _v2.7.0:
 

@@ -224,13 +224,17 @@ public:
 
 class RecordType : public StructType {
 protected:
-  using FieldTup = std::pair<ASTString, Type>;
+  // name offset + type
+  using FieldTup = std::pair<size_t, Type>;
   size_t _size;
+  std::string _fieldNames;
   FieldTup _fields[1];  // Resized by TupleType::a
   RecordType(const std::vector<std::pair<ASTString, Type>>& fields);
+  RecordType(const RecordType& orig);
 
 public:
   static RecordType* a(const std::vector<std::pair<ASTString, Type>>& fields);
+  static RecordType* a(const RecordType* orig, const std::vector<Type>& types);
   static void free(RecordType* tt) { ::free(tt); }
 
   size_t size() const override { return _size; }
@@ -238,13 +242,16 @@ public:
     assert(i < size());
     return _fields[i].second;
   }
-  ASTString fieldName(size_t i) const {
+  std::string fieldName(size_t i) const {
     assert(i < size());
-    return _fields[i].first;
+    if (i + 1 < size()) {
+      return _fieldNames.substr(_fields[i].first, _fields[i + 1].first - _fields[i].first);
+    }
+    return _fieldNames.substr(_fields[i].first);
   }
   std::pair<bool, size_t> findField(const ASTString& name) const {
     for (size_t i = 0; i < size(); ++i) {
-      if (_fields[i].first == name) {
+      if (fieldName(i) == name) {
         return {true, i};
       }
     }
@@ -252,8 +259,9 @@ public:
   };
   size_t hash() const {
     std::size_t seed = _size;
+    std::hash<std::string> h;
     for (size_t i = 0; i < _size; ++i) {
-      seed ^= _fields[i].first.hash() + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+      seed ^= h(fieldName(i)) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
       seed ^= _fields[i].second.toInt() + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     }
     return seed;
@@ -409,17 +417,17 @@ protected:
   std::atomic<bool> _cancel = {false};
 
   /// Register tuple type directly from a list of fields
-  /// WARNING: This method is unsafe unless the tuple is explicitly made canonical and the types of
-  /// the TypeInst objects are actively maintained. Use method on TypeInst objects whenever
+  /// WARNING: This method is unsafe unless the tuple is explicitly made canonical and the types
+  /// of the TypeInst objects are actively maintained. Use method on TypeInst objects whenever
   /// possible.
   unsigned int registerTupleType(const std::vector<Type>& fields);
   /// Register record type directly from a list of fields
-  /// WARNING: This method is unsafe unless the tuple is explicitly made canonical and the types of
-  /// the TypeInst objects are actively maintained. Use method on TypeInst objects whenever
+  /// WARNING: This method is unsafe unless the tuple is explicitly made canonical and the types
+  /// of the TypeInst objects are actively maintained. Use method on TypeInst objects whenever
   /// possible.
   unsigned int registerRecordType(const std::vector<std::pair<ASTString, Type>>& fields);
   /// Variant of above function which reused the list of names of previous record Type
-  unsigned int registerRecordType(const std::vector<Type>& field_type, unsigned int recordTypeId);
+  unsigned int registerRecordType(const RecordType* orig, const std::vector<Type>& field_type);
 
   /// Get the tuple type from the register using a direct key (typeId in Type).
   /// WARNING: This method is unsafe unless the ArrayTypes have been resolved. Use method on Type
@@ -484,8 +492,8 @@ public:
   // types.
   unsigned int registerRecordType(TypeInst* ti);
   // Register a new tuple type from an tuple literal.
-  // NOTE: this method expects an array with VarDecl objects. It will update the type and content of
-  // the ArrayLit to only contain the expressions.
+  // NOTE: this method expects an array with VarDecl objects. It will update the type and content
+  // of the ArrayLit to only contain the expressions.
   unsigned int registerRecordType(ArrayLit* rec);
   // Get the TupleType for Type with tuple BaseType (safe)
   RecordType* getRecordType(Type t) const {

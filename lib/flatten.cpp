@@ -802,14 +802,37 @@ bool StructType::containsArray(const EnvI& env) const {
 
 RecordType::RecordType(const std::vector<std::pair<ASTString, Type>>& fields) {
   _size = fields.size();
+  size_t str_size = 0;
   for (size_t i = 0; i < _size; ++i) {
-    _fields[i] = fields[i];
+    _fields[i] = {str_size, fields[i].second};
+    str_size += fields[i].first.size();
+  }
+  _fieldNames.reserve(str_size);
+  for (size_t i = 0; i < _size; ++i) {
+    _fieldNames.append(std::string(fields[i].first.c_str()));
+  }
+}
+RecordType::RecordType(const RecordType& orig) {
+  _size = orig._size;
+  _fieldNames = orig._fieldNames;
+  for (size_t i = 0; i < _size; ++i) {
+    _fields[i] = orig._fields[i];
   }
 }
 RecordType* RecordType::a(const std::vector<std::pair<ASTString, Type>>& fields) {
   RecordType* tt = static_cast<RecordType*>(::malloc(
       sizeof(RecordType) + sizeof(FieldTup) * (std::max(0, static_cast<int>(fields.size()) - 1))));
   tt = new (tt) RecordType(fields);
+  return tt;
+}
+RecordType* RecordType::a(const RecordType* orig, const std::vector<Type>& types) {
+  RecordType* tt = static_cast<RecordType*>(::malloc(
+      sizeof(RecordType) + sizeof(FieldTup) * (std::max(0, static_cast<int>(orig->size()) - 1))));
+  tt = new (tt) RecordType(*orig);
+  assert(orig->size() == types.size());
+  for (size_t i = 0; i < types.size(); i++) {
+    tt->_fields[i].second = types[i];
+  }
   return tt;
 }
 bool RecordType::matchesBT(const EnvI& env, const RecordType& other) const {
@@ -1546,33 +1569,31 @@ bool EnvI::isSubtype(const Type& t1, const Type& t2, bool strictEnums) const {
   return true;
 }
 
+#define register_rt(rt)                                     \
+  do {                                                      \
+    auto it = _recordTypeMap.find(rt);                      \
+    unsigned int ret;                                       \
+    if (it == _recordTypeMap.end()) {                       \
+      ret = static_cast<unsigned int>(_recordTypes.size()); \
+      _recordTypes.push_back(rt);                           \
+      _recordTypeMap.emplace(std::make_pair(rt, ret));      \
+    } else {                                                \
+      RecordType::free(rt);                                 \
+      ret = it->second;                                     \
+    }                                                       \
+    return ret + 1;                                         \
+  } while (0);
+
 unsigned int EnvI::registerRecordType(const std::vector<std::pair<ASTString, Type>>& fields) {
   assert(!fields.empty());
   assert(std::is_sorted(fields.begin(), fields.end(), RecordFieldSort{}));
   auto* rt = RecordType::a(fields);
-
-  auto it = _recordTypeMap.find(rt);
-  unsigned int ret;
-  if (it == _recordTypeMap.end()) {
-    ret = static_cast<unsigned int>(_recordTypes.size());
-    _recordTypes.push_back(rt);
-    _recordTypeMap.emplace(std::make_pair(rt, ret));
-  } else {
-    RecordType::free(rt);
-    ret = it->second;
-  }
-  return ret + 1;
+  register_rt(rt);
 }
 
-unsigned int EnvI::registerRecordType(const std::vector<Type>& field_type,
-                                      unsigned int recordTypeId) {
-  RecordType* rt = getRecordType(recordTypeId);
-  assert(rt->size() == field_type.size());
-  std::vector<std::pair<ASTString, Type>> fields(rt->size());
-  for (int i = 0; i < fields.size(); ++i) {
-    fields[i] = {rt->fieldName(i), field_type[i]};
-  }
-  return registerRecordType(fields);
+unsigned int EnvI::registerRecordType(const RecordType* orig, const std::vector<Type>& field_type) {
+  RecordType* rt = RecordType::a(orig, field_type);
+  register_rt(rt);
 }
 
 unsigned int EnvI::registerRecordType(ArrayLit* rec) {
@@ -1620,11 +1641,12 @@ unsigned int EnvI::registerRecordType(ArrayLit* rec) {
 unsigned int EnvI::registerRecordType(TypeInst* ti) {
   auto* dom = ti->domain()->cast<ArrayLit>();
 
-  std::vector<std::pair<ASTString, Type>> field_pairs(dom->size());
   // Register new Record
   bool cv = false;
   bool var = true;
+  unsigned int ret;
   if (ti->type().typeId() == 0) {
+    std::vector<std::pair<ASTString, Type>> field_pairs(dom->size());
     std::vector<VarDecl*> fields(dom->size());
     for (unsigned int i = 0; i < dom->size(); i++) {
       fields[i] = (*dom)[i]->cast<VarDecl>();
@@ -1657,20 +1679,22 @@ unsigned int EnvI::registerRecordType(TypeInst* ti) {
         throw TypeError(*this, ti->loc(), oss.str());
       }
     }
+    ret = registerRecordType(field_pairs);
   } else {  // Update already registered Record (dom contains TypeInst, no need to sort)
-    RecordType* rt = getRecordType(ti->type());
-    for (unsigned int i = 0; i < field_pairs.size(); i++) {
-      field_pairs[i] = {rt->fieldName(i), (*dom)[i]->type()};
+    std::vector<Type> types(dom->size());
+    RecordType* orig = getRecordType(ti->type());
+    for (unsigned int i = 0; i < types.size(); i++) {
+      types[i] = (*dom)[i]->type();
 
       cv = cv || (*dom)[i]->type().isvar() || (*dom)[i]->type().cv();
       var = var && (*dom)[i]->type().isvar();
     }
+    ret = registerRecordType(orig, types);
   }
   // the TI_VAR ti is not processed by this function. This cononicalisation should have been done
   // during typechecking.
   assert(ti->type().ti() == Type::TI_PAR || var);
 
-  unsigned int ret = registerRecordType(field_pairs);
   Type t = ti->type();
   t.typeId(0);  // Reset any current TypeId
   t.cv(cv);

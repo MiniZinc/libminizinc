@@ -80,8 +80,8 @@ void Type::mkPar(EnvI& env) {
   typeId(0);
   cv(false);
   ti(TI_PAR);
-  unsigned int regId =
-      bt() == BT_TUPLE ? env.registerTupleType(pt) : env.registerRecordType(pt, tId);
+  unsigned int regId = bt() == BT_TUPLE ? env.registerTupleType(pt)
+                                        : env.registerRecordType(static_cast<RecordType*>(st), pt);
   if (dim() > 0) {
     arrayEnumIds[arrayEnumIds.size() - 1] = regId;
     typeId(env.registerArrayEnum(arrayEnumIds));
@@ -117,8 +117,8 @@ void Type::mkVar(EnvI& env) {
   typeId(0);
   cv(true);
   ti(TI_VAR);
-  unsigned int regId =
-      bt() == BT_TUPLE ? env.registerTupleType(pt) : env.registerRecordType(pt, tId);
+  unsigned int regId = bt() == BT_TUPLE ? env.registerTupleType(pt)
+                                        : env.registerRecordType(static_cast<RecordType*>(st), pt);
   if (dim() > 0) {
     arrayEnumIds[arrayEnumIds.size() - 1] = regId;
     typeId(env.registerArrayEnum(arrayEnumIds));
@@ -153,8 +153,9 @@ void Type::mkOpt(EnvI& env) {
     }
   }
   if (changed) {
-    unsigned int regId =
-        bt() == BT_TUPLE ? env.registerTupleType(pt) : env.registerRecordType(pt, tId);
+    unsigned int regId = bt() == BT_TUPLE
+                             ? env.registerTupleType(pt)
+                             : env.registerRecordType(static_cast<RecordType*>(strt), pt);
     if (dim() > 0) {
       arrayEnumIds[arrayEnumIds.size() - 1] = regId;
       typeId(env.registerArrayEnum(arrayEnumIds));
@@ -189,8 +190,9 @@ void Type::mkPresent(EnvI& env) {
     }
   }
   if (changed) {
-    unsigned int regId =
-        bt() == BT_TUPLE ? env.registerTupleType(pt) : env.registerRecordType(pt, tId);
+    unsigned int regId = bt() == BT_TUPLE
+                             ? env.registerTupleType(pt)
+                             : env.registerRecordType(static_cast<RecordType*>(st), pt);
     if (dim() > 0) {
       arrayEnumIds[arrayEnumIds.size() - 1] = regId;
       typeId(env.registerArrayEnum(arrayEnumIds));
@@ -245,8 +247,8 @@ bool Type::decrement(EnvI& env) {
       pt[i].mkOpt(env);
     }
   }
-  unsigned int regId =
-      bt() == BT_TUPLE ? env.registerTupleType(pt) : env.registerRecordType(pt, tId);
+  unsigned int regId = bt() == BT_TUPLE ? env.registerTupleType(pt)
+                                        : env.registerRecordType(static_cast<RecordType*>(st), pt);
   if (dim() > 0) {
     arrayEnumIds[arrayEnumIds.size() - 1] = regId;
     typeId(env.registerArrayEnum(arrayEnumIds));
