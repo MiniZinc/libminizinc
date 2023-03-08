@@ -267,7 +267,7 @@ public:
     return seed;
   }
   bool operator==(const RecordType& rhs) const {
-    if (_size != rhs._size) {
+    if (_size != rhs._size || _fieldNames != rhs._fieldNames) {
       return false;
     }
     for (int i = 0; i < _size; ++i) {
