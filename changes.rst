@@ -37,6 +37,7 @@ Bug fixes:
 -  Add missing newline to solver comment output when using ``--json-stream`` (:bugref:`649`).
 -  Fix problem where field names of record types could be removed during garbage
    collections.
+-  Fix the detection of Gurobi 10 (:bugref:`653`).
 
 .. _v2.7.0:
 

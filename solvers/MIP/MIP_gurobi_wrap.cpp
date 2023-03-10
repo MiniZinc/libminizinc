@@ -96,7 +96,7 @@ vector<string> gurobi_dlls() {
   vector<string> dlls;
   string lastMajorVersion;
   for (const auto& version : versions) {
-    string majorVersion = version.substr(0, 2);
+    string majorVersion = version.substr(0, version.length() - 1);
     if (majorVersion != lastMajorVersion) {
       dlls.push_back("gurobi" + majorVersion);
       lastMajorVersion = majorVersion;
@@ -105,6 +105,8 @@ vector<string> gurobi_dlls() {
     dlls.push_back("C:\\gurobi" + version + "\\win64\\bin\\gurobi" + majorVersion + ".dll");
 #elif __APPLE__
     dlls.push_back("/Library/gurobi" + version + "/mac64/lib/libgurobi" + majorVersion + ".dylib");
+    dlls.push_back("/Library/gurobi" + version + "/macos_universal2/lib/libgurobi" + majorVersion +
+                   ".dylib");
 #else
     dlls.push_back("/opt/gurobi" + version + "/linux64/lib/libgurobi" + majorVersion + ".so");
 #endif
