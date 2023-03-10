@@ -682,10 +682,10 @@ void process_deletions(EnvI& e) {
   }
 
   for (auto& it : e.outputVarOccurrences.itemMap) {
-    std::vector<Item*> keptItems;
+    VarOccurrences::Items keptItems;
     for (auto* iit : it) {
       if (!iit->removed()) {
-        keptItems.push_back(iit);
+        keptItems.insert(iit);
       }
     }
     it = keptItems;

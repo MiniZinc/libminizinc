@@ -38,6 +38,7 @@ Bug fixes:
 -  Fix problem where field names of record types could be removed during garbage
    collections.
 -  Fix the detection of Gurobi 10 (:bugref:`653`).
+-  Fix performance degradation for models with variables that appear in a large number of constraints (:bugref:`645`).
 
 .. _v2.7.0:
 

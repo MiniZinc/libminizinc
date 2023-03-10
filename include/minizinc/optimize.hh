@@ -14,11 +14,13 @@
 #include <minizinc/flatten.hh>
 #include <minizinc/hash.hh>
 
+#include <set>
+
 namespace MiniZinc {
 
 class VarOccurrences {
 public:
-  typedef std::vector<Item*> Items;
+  typedef std::set<Item*> Items;
   DenseIdMap<Items> itemMap;
   DenseIdMap<int> idx;
 

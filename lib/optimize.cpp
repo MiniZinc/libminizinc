@@ -38,9 +38,7 @@ void VarOccurrences::remove(VarDecl* vd) { idx.remove(vd->id()); }
 void VarOccurrences::add(VarDecl* v, Item* i) {
   auto vi = itemMap.find(v->id()->decl()->id());
   if (vi.first) {
-    if (std::find(vi.second->begin(), vi.second->end(), i) == vi.second->end()) {
-      vi.second->push_back(i);
-    }
+    vi.second->insert(i);
   } else {
     Items items({i});
     itemMap.insert(v->id()->decl()->id(), items);
@@ -50,13 +48,7 @@ void VarOccurrences::add(VarDecl* v, Item* i) {
 int VarOccurrences::remove(VarDecl* v, Item* i) {
   auto vi = itemMap.find(v->id()->decl()->id());
   assert(vi.first);
-  for (unsigned int j = 0; j < vi.second->size(); j++) {
-    if ((*vi.second)[j] == i) {
-      (*vi.second)[j] = vi.second->back();
-      vi.second->pop_back();
-      break;
-    }
-  }
+  vi.second->erase(i);
   return static_cast<int>(vi.second->size());
 }
 
@@ -86,9 +78,7 @@ void VarOccurrences::unify(EnvI& env, Model* m, Id* id0_0, Id* id1_0) {
     auto vi1 = itemMap.find(v1->id());
     if (vi1.first) {
       for (auto* item : *vi0.second) {
-        if (std::find(vi1.second->begin(), vi1.second->end(), item) == vi1.second->end()) {
-          vi1.second->push_back(item);
-        }
+        vi1.second->insert(item);
       }
     } else {
       itemMap.insert(v1->id(), *vi0.second);

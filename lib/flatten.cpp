@@ -5130,10 +5130,10 @@ void oldflatzinc(Env& e) {
   e.envi().output->compact();
 
   for (auto& it : env.varOccurrences.itemMap) {
-    std::vector<Item*> keptItems;
+    VarOccurrences::Items keptItems;
     for (auto* iit : it) {
       if (!iit->removed()) {
-        keptItems.push_back(iit);
+        keptItems.insert(iit);
       }
     }
     it = keptItems;
