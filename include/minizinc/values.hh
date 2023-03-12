@@ -193,6 +193,18 @@ public:
     if (exponent == 1) {
       return *this;
     }
+    if (exponent.toInt() < 0) {
+      if (*this == 0) {
+        throw ArithmeticError("negative power of zero");
+      }
+      if (*this == 1) {
+        return 1;
+      }
+      if (*this == -1) {
+        return exponent % 2 == 0 ? 1 : -1;
+      }
+      return 0;
+    }
     IntVal result = 1;
     for (int i = 0; i < exponent.toInt(); i++) {
       result *= *this;

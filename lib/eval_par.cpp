@@ -1827,6 +1827,9 @@ IntVal eval_int_internal(EnvI& env, Expression* e) {
           case BOT_MULT:
             return v0 * v1;
           case BOT_POW:
+            if (v0 == 0 && v1 < 0) {
+              throw ResultUndefinedError(env, e->loc(), "negative power of zero is undefined");
+            }
             return v0.pow(v1);
           case BOT_IDIV:
             if (v1 == 0) {

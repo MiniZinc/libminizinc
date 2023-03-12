@@ -1563,21 +1563,11 @@ FloatVal b_pow(EnvI& env, Call* call) {
 }
 IntVal b_pow_int(EnvI& env, Call* call) {
   IntVal p = eval_int(env, call->arg(0));
-  long long int e = eval_int(env, call->arg(1)).toInt();
-  if (e < 0) {
-    if (p == 0) {
-      throw ResultUndefinedError(env, call->loc(), "negative power of zero is undefined");
-    }
-    if (p == 1) {
-      return 1;
-    }
-    return 0;
+  IntVal e = eval_int(env, call->arg(1));
+  if (e < 0 && p == 0) {
+    throw ResultUndefinedError(env, call->loc(), "negative power of zero is undefined");
   }
-  IntVal r = 1;
-  for (long long int i = e; (i--) != 0;) {
-    r = r * p;
-  }
-  return r;
+  return p.pow(e);
 }
 FloatVal b_sqrt(EnvI& env, Call* call) {
   return std::sqrt(eval_float(env, call->arg(0)).toDouble());

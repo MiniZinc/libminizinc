@@ -527,7 +527,7 @@ function var float: sqrt(var float: x) =
 /** @group stdlib.builtins.arithmetic Return \(\a x ^ {\a y}\), when \(\a y < 0 \) it returns ``1 div pow(x, abs(y))``. */
 function int: pow(int: x, int: y);
 
-/** @group stdlib.builtins.arithmetic Return \(\a x ^ {\a y}\), when \(\a y < 0 \) it returns ``1 div pow(x, abs(y))`` */
+/** @group stdlib.builtins.arithmetic Return \(\a x ^ {\a y}\), when \(\a y < 0 \) it returns ``1 div pow(x, abs(y))``. */
 function var int: pow(var int: x, int: y) =
   if y = 0 then
     1
@@ -549,7 +549,7 @@ function var int: pow(var int: x, int: y) =
     } in pow_fixed_mt(x, y)
   endif;
 
-/** @group stdlib.builtins.arithmetic Return \(\a x ^ {\a y}\), when \(\a y < 0 \) it returns ``1 div pow(1, abs(y))`` */
+/** @group stdlib.builtins.arithmetic Return \(\a x ^ {\a y}\), when \(\a y < 0 \) it returns ``1 div pow(x, abs(y))``. */
 function var int: pow(var int: x, var int: y) =
   if lb(y) > 0 /\ dom(x) = 0..1 then
     x
