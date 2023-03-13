@@ -39,7 +39,7 @@ Bug fixes:
    collections.
 -  Fix the detection of Gurobi 10 (:bugref:`653`).
 -  Fix performance degradation for models with variables that appear in a large number of constraints (:bugref:`645`).
--  Fix result of ``pow`` arithmetic builtin when using a base of ``-1`` and a negative exponent.
+-  Fix result of ``pow`` when using a base of ``-1`` and a negative exponent.
 
 .. _v2.7.0:
 

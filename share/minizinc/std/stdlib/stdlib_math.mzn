@@ -537,9 +537,9 @@ function var int: pow(var int: x, int: y) =
     x
   elseif dom(x) = -1..1 /\ y mod 2 = 1 then
     x
-  elseif not (0 in dom(x)) /\ y < 0 then
+  elseif not (0 in dom(x) \/ -1 in dom(x)) /\ y < 0 then
     bool2int(x = 1)
-  elseif y >= 0 then
+  elseif y >= 0 \/ not (0 in dom(x)) then
     pow_fixed_t(x, y)
   elseif mzn_in_root_context(x) then
     pow_fixed_t(x, y)
@@ -556,7 +556,7 @@ function var int: pow(var int: x, var int: y) =
   elseif lb(y) >= 0 then
     pow_t(x, y)
   elseif not (0 in dom(x)) then
-    if ub(y) < 0 then
+    if ub(y) < 0 /\ not (-1 in dom(x)) then
       bool2int(x = 1)
     else
       pow_t(x, y)

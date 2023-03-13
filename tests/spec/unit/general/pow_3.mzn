@@ -118,11 +118,11 @@ expected: !Result
   - !Solution
     b: -1
     e: -2
-    z: 0
+    z: 1
   - !Solution
     b: -1
     e: -1
-    z: 0
+    z: -1
   - !Solution
     b: 1
     e: -2
