@@ -1137,6 +1137,7 @@ function var opt bool: element(var opt int: idx1, var opt int: idx2, array[int,i
 function set of int: compute_div_bounds(var int: x, var int: y);
 function set of int: compute_mod_bounds(var int: x, var int: y);
 function set of float: compute_float_div_bounds(var float: x, var float: y);
+function set of int: compute_pow_bounds(var int: x, var int: y);
 
 function var int: div_t(var int: x, var int: y) :: promise_total =
   let {
@@ -1256,7 +1257,7 @@ function var float: min_t(array[int] of var float: x) :: promise_total =
 function var int: pow_fixed_t(var int: x, int: y) ::promise_total =
   let {
     constraint y < 0 -> x != 0;
-    var int: r ::is_defined_var;
+    var compute_pow_bounds(x, y): r ::is_defined_var;
     constraint int_pow_fixed(x, y, r) ::defines_var(r);
   } in r;
 
@@ -1269,7 +1270,7 @@ function var int: pow_fixed_mt(var int: x, int: y) ::promise_total =
 function var int: pow_t(var int: x, var int: y) ::promise_total =
   let {
     constraint y < 0 -> x != 0;
-    var int: r ::is_defined_var;
+    var compute_pow_bounds(x, y): r ::is_defined_var;
     constraint int_pow(x, y, r) ::defines_var(r);
   } in r;
 

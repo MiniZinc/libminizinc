@@ -2630,18 +2630,7 @@ public:
           IntVal n = std::max(x0, std::max(x1, std::max(x2, x3)));
           bounds.emplace_back(m, n);
         } break;
-        case BOT_POW: {
-          IntVal exp_min = std::min(0, b1.first);
-          IntVal exp_max = std::min(0, b1.second);
-
-          IntVal x0 = b0.first.pow(exp_min);
-          IntVal x1 = b0.first.pow(exp_max);
-          IntVal x2 = b0.second.pow(exp_min);
-          IntVal x3 = b0.second.pow(exp_max);
-          IntVal m = std::min(x0, std::min(x1, std::min(x2, x3)));
-          IntVal n = std::max(x0, std::max(x1, std::max(x2, x3)));
-          bounds.emplace_back(m, n);
-        } break;
+        case BOT_POW:
         case BOT_DIV:
         case BOT_LE:
         case BOT_LQ:

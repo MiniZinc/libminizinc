@@ -1182,6 +1182,73 @@ FloatSetVal* b_compute_float_div_bounds(EnvI& env, Call* call) {
   return FloatSetVal::a(min, max);
 }
 
+IntSetVal* b_compute_pow_bounds(EnvI& env, Call* call) {
+  assert(call->argCount() == 2);
+  IntBounds base = compute_int_bounds(env, call->arg(0));
+  IntBounds exp = compute_int_bounds(env, call->arg(1));
+  if (!base.valid) {
+    throw EvalError(env, call->arg(0)->loc(), "cannot determine bounds");
+  }
+  if (!exp.valid) {
+    throw EvalError(env, call->arg(1)->loc(), "cannot determine bounds");
+  }
+
+  if (!base.l.isFinite() || !base.u.isFinite() || !exp.l.isFinite() || !exp.u.isFinite()) {
+    return env.constants.infinityInt->isv();
+  }
+
+  if (base.l == 0 && base.u == 0 && exp.u < 0) {
+    // 0 to power of negative is undefined
+    return IntSetVal::a();
+  }
+
+  IntVal m = IntVal::infinity();
+  IntVal n = -IntVal::infinity();
+  auto update = [&](IntVal v) {
+    m = std::min(m, v);
+    n = std::max(n, v);
+  };
+  if (base.l <= 1 && base.u >= 1 || exp.l <= 0 && exp.u >= 0) {
+    update(1);
+  }
+  if (base.l <= -1 && base.u >= -1) {
+    // base could be -1
+    if (exp.l != exp.u) {
+      // exp could be odd or even, so can be -1 or 1
+      update(-1);
+      update(1);
+    } else if (exp.l % 2 == 0) {
+      // exp is even, so can be 1
+      update(1);
+    } else {
+      // exp is odd, so can be -1
+      update(-1);
+    }
+  }
+
+  if (base.u != 0 || exp.u >= 0) {
+    update(base.u.pow(exp.u));
+  }
+  if (base.l < 0) {
+    // largest magnitude
+    update(base.l.pow(exp.u));
+    if (exp.l != exp.u) {
+      // next largest magnitude with flipped sign
+      update(base.l.pow(exp.u - 1));
+    } else if (base.u >= 0 && exp.l > 0) {
+      // crosses 0
+      update(0);
+    }
+  } else if (base.l == 0 && exp.u > 0 || base.u > 1 && exp.l < 0) {
+    // 0^1 = 0, 2^-1 = 0
+    update(0);
+  } else if (exp.l >= 0) {
+    update(base.l.pow(exp.l));
+  }
+
+  return IntSetVal::a(m, n);
+}
+
 // NOLINTNEXTLINE(readability-identifier-naming)
 ArrayLit* b_arrayXd(EnvI& env, Call* call, int d) {
   GCLock lock;
@@ -4080,6 +4147,7 @@ void register_builtins(Env& e) {
     t[1] = Type::varint();
     rb(env, m, ASTString("compute_div_bounds"), t, b_compute_div_bounds);
     rb(env, m, ASTString("compute_mod_bounds"), t, b_compute_mod_bounds);
+    rb(env, m, ASTString("compute_pow_bounds"), t, b_compute_pow_bounds);
   }
   {
     std::vector<Type> t(2);
