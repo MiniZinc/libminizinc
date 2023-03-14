@@ -22,7 +22,7 @@ expected: !Result
 array [1..3] of var bool: a :: add_to_output;
 array [1..3] of var opt {1.2, 2.4}: b :: add_to_output;
 
-var opt {1.0, 2.0}: x :: add_to_output;
+var opt {1.2, 2.4}: x :: add_to_output;
 
 constraint a[3];
 constraint fzn_if_then_else_var_opt_float(a, b, x);
