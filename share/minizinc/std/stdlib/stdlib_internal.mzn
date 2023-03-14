@@ -1264,7 +1264,7 @@ function var int: pow_fixed_t(var int: x, int: y) ::promise_total =
 function var int: pow_fixed_mt(var int: x, int: y) ::promise_total =
   let {
     constraint assert(y < 0 /\ 0 in dom(x), "pow_fixed_mt called on variant guaranteed to be total");
-    var dom(x) diff {0}: nx = if x = 0 then 1 else x endif;
+    var dom(x) diff {0} union {1}: nx = if x = 0 then 1 else x endif;
   } in pow_fixed_t(nx, y);
 
 function var int: pow_t(var int: x, var int: y) ::promise_total =
@@ -1277,7 +1277,7 @@ function var int: pow_t(var int: x, var int: y) ::promise_total =
 function var int: pow_mt(var int: x, var int: y) ::promise_total =
   let {
     constraint assert(lb(y) < 0 /\ 0 in dom(x), "pow_mt called on variant guaranteed to be total");
-    var dom(x): nx = if x = 0 /\ y < 0 then 1 else x endif;
+    var dom(x) union {1}: nx = if x = 0 /\ y < 0 then 1 else x endif;
   } in pow_t(nx, y);
 
 /* These predicates are used to intercept symmetry_breaking_constraint and
