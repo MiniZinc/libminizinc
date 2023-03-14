@@ -41,6 +41,7 @@ Bug fixes:
 -  Fix performance degradation for models with variables that appear in a large number of constraints (:bugref:`645`).
 -  Fix the definition of ``pow`` involving negative exponents.
 -  Ensure errors/warnings do not output mangled function names (:bugref:`648`).
+-  Fix the decomposition of optional ``inverse``.
 
 .. _v2.7.0:
 
