@@ -147,11 +147,14 @@ class SolutionSet:
     def __iter__(self):
         return iter(self.items)
 
+    def __len__(self):
+        return len(self.items)
+
     def is_satisfied(self, other):
         """
         Returns whether or not every solution in `other` matches one in this solution set
         """
-        return all(any(item.is_satisfied(o) for item in self.items) for o in other)
+        return len(self) == len(other) and all(any(item.is_satisfied(o) for item in self.items) for o in other)
 
 
 @yaml.mapping(u"!Solution")
