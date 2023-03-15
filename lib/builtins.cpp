@@ -2433,36 +2433,40 @@ std::string b_format(EnvI& env, Call* call) {
     e = eval_par(env, call->arg(0));
   }
   if (e->type() == Type::parint()) {
-    long long int i = eval_int(env, e).toInt();
-    std::ostringstream formatted;
-    if (width > 0) {
-      formatted.width(width);
-    } else if (width < 0) {
-      formatted.width(-width);
-      formatted.flags(std::ios::left);
+    IntVal i = eval_int(env, e);
+    if (i.isFinite()) {
+      std::ostringstream formatted;
+      if (width > 0) {
+        formatted.width(width);
+      } else if (width < 0) {
+        formatted.width(-width);
+        formatted.flags(std::ios::left);
+      }
+      if (prec != -1) {
+        formatted.precision(prec);
+      }
+      formatted << i.toInt();
+      return formatted.str();
     }
-    if (prec != -1) {
-      formatted.precision(prec);
-    }
-    formatted << i;
-    return formatted.str();
   }
   if (e->type() == Type::parfloat()) {
     FloatVal i = eval_float(env, e);
-    std::ostringstream formatted;
-    if (width > 0) {
-      formatted.width(width);
-    } else if (width < 0) {
-      formatted.width(-width);
-      formatted.flags(std::ios::left);
+    if (i.isFinite()) {
+      std::ostringstream formatted;
+      if (width > 0) {
+        formatted.width(width);
+      } else if (width < 0) {
+        formatted.width(-width);
+        formatted.flags(std::ios::left);
+      }
+      formatted.setf(std::ios::fixed);
+      formatted.precision(std::numeric_limits<double>::digits10 + 2);
+      if (prec != -1) {
+        formatted.precision(prec);
+      }
+      formatted << i.toDouble();
+      return formatted.str();
     }
-    formatted.setf(std::ios::fixed);
-    formatted.precision(std::numeric_limits<double>::digits10 + 2);
-    if (prec != -1) {
-      formatted.precision(prec);
-    }
-    formatted << i;
-    return formatted.str();
   }
   std::string s = show(env, e);
   if (prec >= 0 && prec < s.size()) {
@@ -2526,9 +2530,9 @@ std::string b_show_int(EnvI& env, Call* call) {
   std::ostringstream oss;
   if (auto* iv = e->dynamicCast<IntLit>()) {
     int justify = static_cast<int>(eval_int(env, call->arg(0)).toInt());
-    std::ostringstream oss_length;
-    oss_length << iv->v();
-    int iv_length = static_cast<int>(oss_length.str().size());
+    std::ostringstream oss_value;
+    oss_value << iv->v();
+    int iv_length = static_cast<int>(oss_value.str().size());
     int addLeft = justify < 0 ? 0 : (justify - iv_length);
     if (addLeft < 0) {
       addLeft = 0;
@@ -2540,7 +2544,7 @@ std::string b_show_int(EnvI& env, Call* call) {
     for (int i = addLeft; (i--) != 0;) {
       oss << " ";
     }
-    oss << iv->v();
+    oss << oss_value.str();
     for (int i = addRight; (i--) != 0;) {
       oss << " ";
     }
@@ -2563,9 +2567,13 @@ std::string b_show_float(EnvI& env, Call* call) {
       throw EvalError(env, call->arg(1)->loc(),
                       "number of digits in show_float cannot be negative");
     }
-    std::ostringstream oss_length;
-    oss_length << std::setprecision(prec) << std::fixed << fv->v();
-    int fv_length = static_cast<int>(oss_length.str().size());
+    std::ostringstream oss_value;
+    if (fv->v().isFinite()) {
+      oss_value << std::setprecision(prec) << std::fixed << fv->v().toDouble();
+    } else {
+      oss_value << fv->v();
+    }
+    int fv_length = static_cast<int>(oss_value.str().size());
     int addLeft = justify < 0 ? 0 : (justify - fv_length);
     if (addLeft < 0) {
       addLeft = 0;
@@ -2577,7 +2585,7 @@ std::string b_show_float(EnvI& env, Call* call) {
     for (int i = addLeft; (i--) != 0;) {
       oss << " ";
     }
-    oss << std::setprecision(prec) << std::fixed << fv->v();
+    oss << oss_value.str();
     for (int i = addRight; (i--) != 0;) {
       oss << " ";
     }
@@ -3205,7 +3213,7 @@ IntVal b_to_enum(EnvI& env, Call* call) {
       const auto* e = env.getEnum(call->arg(0)->type().typeId());
       oss << "value " << v << " outside of range of enum " << *e->e()->id();
     } else {
-      oss << "value " << v << " outside of range of enum " << *call->arg(0);
+      oss << "value " << v << " outside of range of enum " << *isv;
     }
     throw ResultUndefinedError(env, call->loc(), oss.str());
   }

@@ -120,28 +120,13 @@ Parentheses need_parentheses(const BinOp* bo, const Expression* left, const Expr
 }
 
 void pp_floatval(std::ostream& os, const FloatVal& fv, bool hexFloat) {
-  std::ostringstream oss;
-  if (fv.isFinite()) {
-    if (hexFloat) {
-      throw InternalError("disabled due to hexfloat being not supported by g++ 4.9");
-      //          std::hexfloat(oss);
-      oss << fv.toDouble();
-      os << oss.str();
-    }
-    oss << std::setprecision(std::numeric_limits<double>::digits10 + 1);
-    oss << fv;
-    if (oss.str().find('e') == std::string::npos && oss.str().find('.') == std::string::npos) {
-      oss << ".0";
-    }
+  if (fv.isFinite() && hexFloat) {
+    throw InternalError("disabled due to hexfloat being not supported by g++ 4.9");
+    std::ostringstream oss;
+    oss << std::hexfloat << fv.toDouble();
     os << oss.str();
-
-  } else {
-    if (fv.isPlusInfinity()) {
-      os << "infinity";
-    } else {
-      os << "-infinity";
-    }
   }
+  os << fv;
 }
 
 template <bool trace>
@@ -303,72 +288,17 @@ public:
               _os << "}";
             }
           } else {
-            if (sl->isv()->empty()) {
-              _os << (_flatZinc ? "1..0" : "{}");
-            } else if (sl->isv()->size() == 1) {
-              _os << sl->isv()->min(0) << ".." << sl->isv()->max(0);
+            if (sl->isv()->empty() && !_flatZinc) {
+              _os << "{}";
             } else {
-              if (!sl->isv()->min(0).isFinite()) {
-                _os << sl->isv()->min(0) << ".." << sl->isv()->max(0) << " union ";
-              }
-              _os << "{";
-              bool first = true;
-              for (IntSetRanges isr(sl->isv()); isr(); ++isr) {
-                if (isr.min().isFinite() && isr.max().isFinite()) {
-                  for (IntVal i = isr.min(); i <= isr.max(); i++) {
-                    if (!first) {
-                      _os << ",";
-                    }
-                    first = false;
-                    _os << i;
-                  }
-                }
-              }
-              _os << "}";
-              if (!sl->isv()->max(sl->isv()->size() - 1).isFinite()) {
-                _os << " union " << sl->isv()->min(sl->isv()->size() - 1) << ".."
-                    << sl->isv()->max(sl->isv()->size() - 1);
-              }
+              _os << *sl->isv();
             }
           }
         } else if (sl->fsv() != nullptr) {
-          if (sl->fsv()->empty()) {
-            _os << (_flatZinc ? "1.0..0.0" : "{}");
-          } else if (sl->fsv()->size() == 1) {
-            pp_floatval(_os, sl->fsv()->min(0));
-            _os << "..";
-            pp_floatval(_os, sl->fsv()->max(0));
+          if (sl->fsv()->empty() && !_flatZinc) {
+            _os << "{}";
           } else {
-            bool allSingleton = true;
-            for (FloatSetRanges isr(sl->fsv()); isr(); ++isr) {
-              if (isr.min() != isr.max()) {
-                allSingleton = false;
-                break;
-              }
-            }
-            if (allSingleton) {
-              _os << "{";
-              bool first = true;
-              for (FloatSetRanges isr(sl->fsv()); isr(); ++isr) {
-                if (!first) {
-                  _os << ",";
-                }
-                first = false;
-                pp_floatval(_os, isr.min());
-              }
-              _os << "}";
-            } else {
-              bool first = true;
-              for (FloatSetRanges isr(sl->fsv()); isr(); ++isr) {
-                if (!first) {
-                  _os << " union ";
-                }
-                first = false;
-                pp_floatval(_os, isr.min());
-                _os << "..";
-                pp_floatval(_os, isr.max());
-              }
-            }
+            _os << *sl->fsv();
           }
         } else {
           _os << "{";

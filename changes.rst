@@ -40,6 +40,7 @@ Bug fixes:
 -  Fix the detection of Gurobi 10 (:bugref:`653`).
 -  Fix performance degradation for models with variables that appear in a large number of constraints (:bugref:`645`).
 -  Fix the definition of ``pow`` involving negative exponents.
+-  Ensure errors/warnings do not output mangled function names (:bugref:`648`).
 
 .. _v2.7.0:
 

@@ -1814,6 +1814,30 @@ bool EnvI::outputSectionEnabled(ASTString section) const {
          (fopts.onlySections.empty() || fopts.onlySections.count(section.c_str()) > 0);
 }
 
+std::string EnvI::show(Expression* e) {
+  auto* call = Call::a(Location().introduce(), constants.ids.show, {e});
+  call->decl(model->matchFn(*this, call, false));
+  call->type(Type::parstring());
+  return eval_string(*this, call);
+}
+
+std::string EnvI::show(const IntVal& iv, unsigned int enumId) {
+  if (enumId == 0 || !iv.isFinite()) {
+    std::stringstream ss;
+    ss << iv;
+    return ss.str();
+  }
+  return enumToString(enumId, static_cast<int>(iv.toInt()));
+}
+
+std::string EnvI::show(IntSetVal* isv, unsigned int enumId) {
+  auto* sl = new SetLit(Location().introduce(), isv);
+  Type t = sl->type();
+  t.typeId(enumId);
+  sl->type(t);
+  return show(sl);
+}
+
 CallStackItem::CallStackItem(EnvI& env0, Expression* e) : _env(env0), _csiType(CSI_NONE) {
   env0.checkCancel();
 
@@ -2158,7 +2182,7 @@ void check_index_sets(EnvI& env, VarDecl* vd, Expression* e) {
             oss << " of `" << *vd->id() << "' " << (tis.size() == 1 ? "is [" : "are [");
             for (unsigned int j = 0; j < tis.size(); j++) {
               if (tis[j]->domain() != nullptr) {
-                oss << *eval_intset(env, tis[j]->domain());
+                oss << env.show(tis[j]->domain());
               } else {
                 oss << "int";
               }
@@ -2169,7 +2193,7 @@ void check_index_sets(EnvI& env, VarDecl* vd, Expression* e) {
             oss << "], but is assigned to array `" << *id << "' with index "
                 << (tis.size() == 1 ? "set [" : "sets [");
             for (unsigned int j = 0; j < e_tis.size(); j++) {
-              oss << *eval_intset(env, e_tis[j]->domain());
+              oss << env.show(e_tis[j]->domain());
               if (j < e_tis.size() - 1) {
                 oss << ", ";
               }
@@ -2200,7 +2224,7 @@ void check_index_sets(EnvI& env, VarDecl* vd, Expression* e) {
             oss << " of `" << *vd->id() << "' " << (tis.size() == 1 ? "is [" : "are [");
             for (unsigned int j = 0; j < tis.size(); j++) {
               if (tis[j]->domain() != nullptr) {
-                oss << *eval_intset(env, tis[j]->domain());
+                oss << env.show(tis[j]->domain());
               } else {
                 oss << "int";
               }
@@ -2677,7 +2701,8 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
                     IntVal iv = eval_int(env, (*al)[i]);
                     if (!isv->contains(iv)) {
                       std::ostringstream oss;
-                      oss << "value " << iv << " outside declared array domain " << *isv;
+                      oss << "value " << env.show((*al)[i]) << " outside declared array domain "
+                          << env.show(vd->ti()->domain());
                       env.fail(oss.str());
                     }
                   } else {
@@ -2686,7 +2711,8 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
                     IntSetRanges isv_r(isv);
                     if (!Ranges::subset(aisv_r, isv_r)) {
                       std::ostringstream oss;
-                      oss << "value " << *aisv << " outside declared array domain " << *isv;
+                      oss << "value " << env.show((*al)[i]) << " outside declared array domain "
+                          << env.show(vd->ti()->domain());
                       env.fail(oss.str());
                     }
                   }

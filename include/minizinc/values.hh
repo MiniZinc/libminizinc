@@ -521,7 +521,13 @@ std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& o
   if (s.isPlusInfinity()) {
     return os << "infinity";
   }
-  return os << s.toDouble();
+  std::ostringstream oss;
+  oss << std::setprecision(std::numeric_limits<double>::digits10 + 1);
+  oss << s.toDouble();
+  if (oss.str().find('e') == std::string::npos && oss.str().find('.') == std::string::npos) {
+    oss << ".0";
+  }
+  return os << oss.str();
 }
 
 inline IntVal::IntVal(const FloatVal& v)
@@ -776,19 +782,32 @@ std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& o
     IntSetRanges isr(&s);
     os << isr.min() << ".." << isr.max();
   } else {
-    // Print each element of the set
+    if (!s.min(0).isFinite()) {
+      os << s.min(0) << ".." << s.max(0) << " union ";
+    }
+    std::stringstream ss;
+    ss << "{";
     bool first = true;
-    os << "{";
     for (IntSetRanges isr(&s); isr(); ++isr) {
-      if (!first) {
-        os << ", ";
-      }
-      first = false;
-      for (IntVal v = isr.min(); v < isr.max(); ++v) {
-        os << v;
+      if (isr.min().isFinite() && isr.max().isFinite()) {
+        for (IntVal i = isr.min(); i <= isr.max(); i++) {
+          if (!first) {
+            ss << ",";
+          }
+          first = false;
+          ss << i;
+        }
       }
     }
-    os << "}";
+    ss << "}";
+    if (first) {
+      os << s.min(s.size() - 1) << ".." << s.max(s.size() - 1);
+    } else {
+      os << ss.str();
+      if (!s.max(s.size() - 1).isFinite()) {
+        os << " union " << s.min(s.size() - 1) << ".." << s.max(s.size() - 1);
+      }
+    }
   }
   return os;
 }
@@ -983,8 +1002,36 @@ public:
 template <class Char, class Traits>
 std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& os,
                                              const FloatSetVal& s) {
+  if (s.empty()) {
+    return os << "1.0..0.0";
+  }
+  bool allSingleton = true;
   for (FloatSetRanges isr(&s); isr(); ++isr) {
-    os << isr.min() << ".." << isr.max() << " ";
+    if (isr.min() != isr.max()) {
+      allSingleton = false;
+      break;
+    }
+  }
+  if (allSingleton && s.size() != 1) {
+    os << "{";
+    bool first = true;
+    for (FloatSetRanges isr(&s); isr(); ++isr) {
+      if (!first) {
+        os << ",";
+      }
+      first = false;
+      os << isr.min();
+    }
+    os << "}";
+  } else {
+    bool first = true;
+    for (FloatSetRanges isr(&s); isr(); ++isr) {
+      if (!first) {
+        os << " union ";
+      }
+      first = false;
+      os << isr.min() << ".." << isr.max();
+    }
   }
   return os;
 }

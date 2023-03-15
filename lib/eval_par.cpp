@@ -27,16 +27,33 @@
 
 namespace MiniZinc {
 
-bool check_par_domain(EnvI& env, Expression* e, Expression* domain) {
+struct CheckParDomainResult {
+  bool ok;
+  std::string e;
+  std::string domain;
+
+  CheckParDomainResult() : ok(true) {}
+  CheckParDomainResult(std::string _e, std::string _domain)
+      : ok(false), e(std::move(_e)), domain(std::move(_domain)) {}
+};
+
+CheckParDomainResult check_par_domain(EnvI& env, Expression* e, Expression* domain) {
   if (e->type() == Type::parint()) {
     IntSetVal* isv = eval_intset(env, domain);
-    if (!isv->contains(eval_int(env, e))) {
-      return false;
+    IntVal v = eval_int(env, e);
+    if (!isv->contains(v)) {
+      auto enumId = domain->type().typeId();
+      return CheckParDomainResult(env.show(v, enumId), env.show(isv, enumId));
     }
   } else if (e->type() == Type::parfloat()) {
     FloatSetVal* fsv = eval_floatset(env, domain);
-    if (!fsv->contains(eval_float(env, e))) {
-      return false;
+    FloatVal v = eval_float(env, e);
+    if (!fsv->contains(v)) {
+      std::stringstream vs;
+      vs << v;
+      std::stringstream ds;
+      ds << *fsv;
+      return CheckParDomainResult(vs.str(), ds.str());
     }
   } else if (e->type() == Type::parsetint()) {
     IntSetVal* isv = eval_intset(env, domain);
@@ -44,7 +61,8 @@ bool check_par_domain(EnvI& env, Expression* e, Expression* domain) {
     IntSetVal* rsv = eval_intset(env, e);
     IntSetRanges rr(rsv);
     if (!Ranges::subset(rr, ir)) {
-      return false;
+      auto enumId = domain->type().typeId();
+      return CheckParDomainResult(env.show(rsv, enumId), env.show(isv, enumId));
     }
   } else if (e->type() == Type::parsetfloat()) {
     FloatSetVal* fsv = eval_floatset(env, domain);
@@ -52,10 +70,14 @@ bool check_par_domain(EnvI& env, Expression* e, Expression* domain) {
     FloatSetVal* rsv = eval_floatset(env, e);
     FloatSetRanges rr(rsv);
     if (!Ranges::subset(rr, fr)) {
-      return false;
+      std::stringstream vs;
+      vs << *rsv;
+      std::stringstream ds;
+      ds << *fsv;
+      return CheckParDomainResult(vs.str(), ds.str());
     }
   }
-  return true;
+  return CheckParDomainResult();
 }
 
 void check_par_declaration(EnvI& env, VarDecl* vd) {
@@ -64,10 +86,11 @@ void check_par_declaration(EnvI& env, VarDecl* vd) {
     if (vd->ti()->domain() != nullptr) {
       ArrayLit* al = eval_array_lit(env, vd->e());
       for (unsigned int i = 0; i < al->size(); i++) {
-        if (!check_par_domain(env, (*al)[i], vd->ti()->domain())) {
+        auto check = check_par_domain(env, (*al)[i], vd->ti()->domain());
+        if (!check.ok) {
           std::ostringstream oss;
           oss << "parameter value out of range, ";
-          oss << "declared range of array `" << *vd->id() << "' is " << *vd->ti()->domain() << ", ";
+          oss << "declared range of array `" << *vd->id() << "' is " << check.domain << ", ";
 
           std::vector<int> indexes(al->dims());
           int remDim = static_cast<int>(i);
@@ -116,32 +139,19 @@ void check_par_declaration(EnvI& env, VarDecl* vd) {
             oss << ")";
           }
 
-          oss << " is ";
-          if (enumId != 0) {
-            oss << env.enumToString(enumId, static_cast<int>(eval_int(env, (*al)[i]).toInt()));
-          } else {
-            oss << *(*al)[i];
-          }
-
+          oss << " is " << check.e;
           throw ResultUndefinedError(env, vd->e()->loc(), oss.str());
         }
       }
     }
   } else {
     if (vd->ti()->domain() != nullptr) {
-      if (!check_par_domain(env, vd->e(), vd->ti()->domain())) {
+      auto check = check_par_domain(env, vd->e(), vd->ti()->domain());
+      if (!check.ok) {
         std::ostringstream oss;
         oss << "parameter value out of range, ";
-        oss << "declared range of `" << *vd->id() << "' is " << *vd->ti()->domain() << ", ";
-
-        oss << "but assigned value is ";
-        unsigned int enumId = vd->type().typeId();
-        if (enumId != 0) {
-          auto v = eval_int(env, vd->e()).toInt();
-          oss << env.enumToString(enumId, static_cast<int>(v));
-        } else {
-          oss << *vd->e();
-        }
+        oss << "declared range of `" << *vd->id() << "' is " << check.domain << ", ";
+        oss << "but assigned value is " << check.e;
 
         throw ResultUndefinedError(env, vd->e()->loc(), oss.str());
       }
@@ -246,8 +256,9 @@ public:
       IntSetVal* isv = eval_intset(env, fi->ti()->domain());
       if (!isv->contains(v)) {
         std::ostringstream oss;
-        oss << "result of function `" << demonomorphise_identifier(fi->id()) << "' is " << v
-            << ", which violates function type-inst " << *isv;
+        oss << "result of function `" << demonomorphise_identifier(fi->id()) << "' is "
+            << env.show(v, fi->ti()->type().typeId()) << ", which violates function type-inst "
+            << env.show(isv, fi->ti()->type().typeId());
         throw ResultUndefinedError(env, Location().introduce(), oss.str());
       }
     }
@@ -342,12 +353,14 @@ public:
       Type base_t = fi->ti()->type();
       if (base_t.bt() == Type::BT_INT) {
         IntSetVal* isv = eval_intset(env, fi->ti()->domain());
+        auto enumId = fi->ti()->domain()->type().typeId();
         if (base_t.st() == Type::ST_PLAIN) {
           for (unsigned int i = 0; i < v->size(); i++) {
             IntVal iv = eval_int(env, (*v)[i]);
             if (!isv->contains(iv)) {
               std::ostringstream oss;
-              oss << "array contains value " << iv << " which is not contained in " << *isv;
+              oss << "array contains value " << env.show(iv, enumId)
+                  << " which is not contained in " << env.show(isv, enumId);
               throw ResultUndefinedError(
                   env, fi->e()->loc(), "function result violates function type-inst, " + oss.str());
             }
@@ -359,7 +372,8 @@ public:
             IntSetRanges v_r(iv);
             if (!Ranges::subset(v_r, isv_r)) {
               std::ostringstream oss;
-              oss << "array contains value " << *iv << " which is not a subset of " << *isv;
+              oss << "array contains value " << env.show(iv, enumId) << " which is not a subset of "
+                  << env.show(isv, enumId);
               throw ResultUndefinedError(
                   env, fi->e()->loc(), "function result violates function type-inst, " + oss.str());
             }
@@ -401,13 +415,15 @@ public:
   static Expression* exp(IntSetVal* e) { return new SetLit(Location(), e); }
   static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {
     if ((fi->ti()->domain() != nullptr) && !fi->ti()->domain()->isa<TIId>()) {
+      auto enumId = fi->ti()->domain()->type().typeId();
       IntSetVal* isv = eval_intset(env, fi->ti()->domain());
       IntSetRanges isv_r(isv);
       IntSetRanges v_r(v);
       if (!Ranges::subset(v_r, isv_r)) {
         std::ostringstream oss;
-        oss << "result of function `" << demonomorphise_identifier(fi->id()) << "' is " << *v
-            << ", which violates function type-inst " << *isv;
+        oss << "result of function `" << demonomorphise_identifier(fi->id()) << "' is "
+            << env.show(v, enumId) << ", which violates function type-inst "
+            << env.show(isv, enumId);
         throw ResultUndefinedError(env, Location().introduce(), oss.str());
       }
     }
@@ -484,7 +500,7 @@ public:
   static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {}
 };
 
-void check_dom(EnvI& env, Id* arg, IntSetVal* dom, Expression* e) {
+void check_dom(EnvI& env, Id* arg, unsigned int arg_idx, IntSetVal* dom, Expression* e) {
   bool oob = false;
   if (!e->type().isOpt()) {
     if (e->type().isIntSet()) {
@@ -498,17 +514,30 @@ void check_dom(EnvI& env, Id* arg, IntSetVal* dom, Expression* e) {
   }
   if (oob) {
     std::ostringstream oss;
-    oss << "value for argument `" << *arg << "' out of bounds";
+    oss << "value for argument ";
+    if (arg->str().empty()) {
+      oss << arg_idx + 1;
+    } else {
+      oss << "`" << *arg << "'";
+    }
+    oss << " out of bounds";
     throw ResultUndefinedError(env, e->loc(), oss.str());
   }
 }
 
-void check_dom(EnvI& env, Id* arg, FloatVal dom_min, FloatVal dom_max, Expression* e) {
+void check_dom(EnvI& env, Id* arg, unsigned int arg_idx, FloatVal dom_min, FloatVal dom_max,
+               Expression* e) {
   if (!e->type().isOpt()) {
     FloatVal ev = eval_float(env, e);
     if (ev < dom_min || ev > dom_max) {
       std::ostringstream oss;
-      oss << "value for argument `" << *arg << "' out of bounds";
+      oss << "value for argument ";
+      if (arg->str().empty()) {
+        oss << arg_idx + 1;
+      } else {
+        oss << "`" << *arg << "'";
+      }
+      oss << " out of bounds";
       throw ResultUndefinedError(env, e->loc(), oss.str());
     }
   }
@@ -560,6 +589,7 @@ typename Eval::Val eval_call(EnvI& env, CallClass* ce) {
   EvalCallCleanup<CallClass> ecc(env, ce);
   for (unsigned int i = ce->decl()->paramCount(); i--;) {
     VarDecl* vd = ce->decl()->param(i);
+    auto arg_idx = i;
     if (vd->type().dim() > 0) {
       // Check array index sets
       auto* al = params[i]->cast<ArrayLit>();
@@ -586,10 +616,10 @@ typename Eval::Val eval_call(EnvI& env, CallClass* ce) {
             if (vd->e()->type().dim() > 0) {
               ArrayLit* al = eval_array_lit(env, vd->e());
               for (unsigned int i = 0; i < al->size(); i++) {
-                check_dom(env, vd->id(), isv, (*al)[i]);
+                check_dom(env, vd->id(), arg_idx, isv, (*al)[i]);
               }
             } else {
-              check_dom(env, vd->id(), isv, vd->e());
+              check_dom(env, vd->id(), arg_idx, isv, vd->e());
             }
           } else if (vd->e()->type().bt() == Type::BT_FLOAT) {
             GCLock lock;
@@ -599,10 +629,10 @@ typename Eval::Val eval_call(EnvI& env, CallClass* ce) {
             if (vd->e()->type().dim() > 0) {
               ArrayLit* al = eval_array_lit(env, vd->e());
               for (unsigned int i = 0; i < al->size(); i++) {
-                check_dom(env, vd->id(), dom_min, dom_max, (*al)[i]);
+                check_dom(env, vd->id(), arg_idx, dom_min, dom_max, (*al)[i]);
               }
             } else {
-              check_dom(env, vd->id(), dom_min, dom_max, vd->e());
+              check_dom(env, vd->id(), arg_idx, dom_min, dom_max, vd->e());
             }
           }
         }

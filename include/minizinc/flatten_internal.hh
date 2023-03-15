@@ -569,6 +569,10 @@ public:
   }
 
   bool outputSectionEnabled(ASTString section) const;
+
+  std::string show(Expression* e);
+  std::string show(const IntVal& iv, unsigned int enumId);
+  std::string show(IntSetVal* isv, unsigned int enumId);
 };
 
 inline VarDecl* Ctx::partialityVar(EnvI& env) const {
