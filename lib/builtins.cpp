@@ -2208,6 +2208,9 @@ std::string show_with_type(EnvI& env, Expression* exp, Type t, bool showDzn) {
           oss << ", ";
         }
       }
+      if (al->size() == 1) {
+        oss << ",";
+      }
     } else {
       for (unsigned int i = 0; i < al->size(); i++) {
         oss << show_with_type(env, (*al)[i], (*al)[i]->type(), showDzn);
