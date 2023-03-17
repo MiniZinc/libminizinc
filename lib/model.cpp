@@ -316,9 +316,6 @@ void TypeInst::collectTypeIds(std::unordered_map<ASTString, size_t>& seen_tiids,
     } else if (ti->type().structBT()) {
       size_t size = seen_tiids.size();
       ti->collectTypeIds(seen_tiids, type_ids);
-      if (size < seen_tiids.size()) {
-        ti->_type.typeId(0);
-      }
     }
   }
 }
