@@ -312,6 +312,7 @@ struct TypeList : public StructType {
 
 class EnvI {
   friend class Type;
+  friend KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t);
 
 public:
   Model* model;

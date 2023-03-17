@@ -1473,6 +1473,19 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
     StructType* intended = env.getStructType(funarg_t);
     if (intended->size() == current->size()) {
       // Directly add coercions in Array Literals
+
+      auto getStructType = [&](std::vector<Type>& pt) {
+        Type tt = funarg_t;
+        unsigned int nId;
+        if (e->type().bt() == Type::BT_TUPLE) {
+          nId = env.registerTupleType(pt);
+        } else {
+          assert(e->type().bt() == Type::BT_RECORD);
+          nId = env.registerRecordType(static_cast<RecordType*>(current), pt);
+        }
+        tt.typeId(nId);
+        return tt;
+      };
       if (auto* al = e->dynamicCast<ArrayLit>()) {
         std::vector<Expression*> elem(al->size());
         ArrayLit* c_al = nullptr;
@@ -1487,16 +1500,22 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
             dims[i] = {al->min(i), al->max(i)};
           }
           c_al = new ArrayLit(al->loc().introduce(), elem, dims);
-          c_al->type(Type::arrType(env, e->type(), funarg_t));
+          Type coercedTy = funarg_t;
+          if (!elem.empty()) {
+            coercedTy = elem[0]->type();
+          }
+          c_al->type(Type::arrType(env, e->type(), coercedTy));
         } else {
           // Tuple (coerce each field)
           assert(al->isTuple());
+          std::vector<Type> pt(al->size());
           for (size_t i = 0; i < al->size(); i++) {
             Type elemTy = (*intended)[i];
             elem[i] = add_coercion(env, m, (*al)[i], elemTy)();
+            pt[i] = elem[i]->type();
           }
           c_al = ArrayLit::constructTuple(al->loc().introduce(), elem);
-          c_al->type(funarg_t);
+          c_al->type(getStructType(pt));
         }
         return c_al;
       }
@@ -1540,23 +1559,25 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
         aa->type(tyElem);
         Expression* elem = add_coercion(env, m, aa, funarg_t.elemType(env))();
         auto* comprehension = new Comprehension(Location().introduce(), elem, gens, true);
-        comprehension->type(Type::arrType(env, Type::partop(1), funarg_t));
+        comprehension->type(Type::arrType(env, Type::partop(1), elem->type()));
 
         auto* arrayXd =
             Call::a(e->loc().introduce(), env.constants.ids.arrayXd, {ident, comprehension});
-        arrayXd->type(Type::arrType(env, e->type(), funarg_t));
+        arrayXd->type(Type::arrType(env, e->type(), elem->type()));
         arrayXd->decl(m->matchFn(env, arrayXd, false, true));
         ret = arrayXd;
       } else {
         // Expression that has tuple type
         std::vector<Expression*> collect(intended->size());
+        std::vector<Type> pt(intended->size());
         for (long long int i = 0; i < collect.size(); i++) {
           collect[i] = new FieldAccess(e->loc().introduce(), ident, IntLit::a(i + 1));
           collect[i]->type((*current)[i]);
           collect[i] = add_coercion(env, m, collect[i], (*intended)[i])();
+          pt[i] = collect[i]->type();
         }
         auto* c_al = ArrayLit::constructTuple(e->loc().introduce(), collect);
-        c_al->type(funarg_t);
+        c_al->type(getStructType(pt));
         ret = c_al;
       }
       if (!let_bindings.empty()) {
@@ -2020,23 +2041,29 @@ public:
     } else {
       // Check if field exists
       assert(fa->v()->type().isrecord());
-      if (!fa->field()->isa<Id>()) {
-        throw TypeError(_env, fa->loc(), "field access of a record must use a field identifier");
-      }
-      ASTString name = fa->field()->cast<Id>()->str();
+      size_t loc;
       RecordType* rt = _env.getRecordType(fa->v()->type());
-      auto find = rt->findField(name);
-      if (!find.first) {
-        std::ostringstream oss;
-        oss << "expression of type `" << fa->v()->type().toString(_env)
-            << "' does not have a field named `" << name << "'.";
-        throw TypeError(_env, fa->loc(), oss.str());
+      if (!fa->field()->isa<Id>()) {
+        if (fa->type().bt() == Type::BT_UNKNOWN) {
+          throw TypeError(_env, fa->loc(), "field access of a record must use a field identifier");
+        }
+        loc = fa->field()->cast<IntLit>()->v().toInt() - 1;
+      } else {
+        ASTString name = fa->field()->cast<Id>()->str();
+        auto find = rt->findField(name);
+        if (!find.first) {
+          std::ostringstream oss;
+          oss << "expression of type `" << fa->v()->type().toString(_env)
+              << "' does not have a field named `" << name << "'.";
+          throw TypeError(_env, fa->loc(), oss.str());
+        }
+        loc = find.second;
+        // Replace Id with IntLit
+        IntLit* nf = IntLit::a(static_cast<long long>(loc + 1));
+        fa->field(nf);
       }
-      // Replace Id with IntLit
-      IntLit* nf = IntLit::a(static_cast<long long>(find.second + 1));
-      fa->field(nf);
       // Set overall expression type
-      Type ty((*rt)[find.second]);
+      Type ty((*rt)[loc]);
       assert((!ty.cv()) || fa->v()->type().cv());
       ty.cv(fa->v()->type().cv());
       fa->type(ty);
