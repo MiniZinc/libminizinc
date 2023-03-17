@@ -249,6 +249,15 @@ bool Type::decrement(EnvI& env) {
   }
   unsigned int regId = bt() == BT_TUPLE ? env.registerTupleType(pt)
                                         : env.registerRecordType(static_cast<RecordType*>(st), pt);
+  bool all_var = true;
+  bool any_var = false;
+  for (auto& t : pt) {
+    all_var = all_var && t.ti() == TI_VAR;
+    any_var = any_var || t.cv();
+  }
+  typeId(0);
+  cv(any_var);
+  ti(all_var ? TI_VAR : TI_PAR);
   if (dim() > 0) {
     arrayEnumIds[arrayEnumIds.size() - 1] = regId;
     typeId(env.registerArrayEnum(arrayEnumIds));
