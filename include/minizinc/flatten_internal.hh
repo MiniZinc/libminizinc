@@ -194,7 +194,7 @@ public:
       return false;
     }
     for (int i = 0; i < _size; ++i) {
-      if (_fields[i] != rhs._fields[i]) {
+      if (_fields[i].cmp(rhs._fields[i]) != 0) {
         return false;
       }
     }
@@ -271,7 +271,8 @@ public:
       return false;
     }
     for (int i = 0; i < _size; ++i) {
-      if (_fields[i] != rhs._fields[i]) {
+      if (_fields[i].first != rhs._fields[i].first ||
+          _fields[i].second.cmp(rhs._fields[i].second) != 0) {
         return false;
       }
     }
