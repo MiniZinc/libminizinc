@@ -195,8 +195,7 @@ void flatten_linexp_call(EnvI& env, Ctx ctx, const Ctx& nctx, ASTString& cid, Ca
   auto* al = follow_id(flat_al.r())->template cast<ArrayLit>();
   KeepAlive al_ka = al;
   if (al->dims() > 1) {
-    Type alt = al->type();
-    alt.dim(1);
+    Type alt = Type::arrType(env, Type::partop(1), al->type());
     GCLock lock;
     al = new ArrayLit(al->loc(), al);
     al->type(alt);
