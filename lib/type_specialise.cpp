@@ -781,15 +781,14 @@ public:
               t.ot(ret_type.ot());
               t.ti(ret_type.ti());
             }
-            auto enumId = ret_type.typeId();
-            if (ret_type.dim() != 0 && enumId != 0) {
-              const auto& aet = _env.getArrayEnum(enumId);
-              enumId = aet[aet.size() - 1];
-            }
-            if (enumId == 0) {
-              fi_copy->ti()->domain(nullptr);
-            } else {
-              VarDeclI* enumVdi = _env.getEnum(enumId);
+            fi_copy->ti()->domain(nullptr);
+            auto typeId = ret_type.typeId();
+            if (typeId != 0 && ret_type.bt() == Type::BT_INT) {
+              if (ret_type.dim() != 0 && typeId != 0) {
+                const auto& aet = _env.getArrayEnum(typeId);
+                typeId = aet[aet.size() - 1];
+              }
+              VarDeclI* enumVdi = _env.getEnum(typeId);
               fi_copy->ti()->domain(enumVdi->e()->id());
             }
             fi_copy->ti()->type(t);

@@ -12,36 +12,51 @@ Unreleased
 Changes:
 ^^^^^^^^
 
--  Add ``ceil``, ``floor`` and ``round`` functions for ``var float``, and corresponding
-   FlatZinc builtins ``float_ceil``, ``float_floor`` and ``float_round`` that can be
-   overridden by solvers in the new ``redefinitions-2.7.1.mzn`` library file (:bugref:`636`).
+-  Add ``ceil``, ``floor`` and ``round`` functions for ``var float``, and
+   corresponding FlatZinc builtins ``float_ceil``, ``float_floor`` and
+   ``float_round`` that can be overridden by solvers in the new
+   ``redefinitions-2.7.1.mzn`` library file (:bugref:`636`).
 -  Make deopt on par absent values return undefined instead of error.
 
 Bug fixes:
 ^^^^^^^^^^
 
--  Fix incorrect chain compression when Boolean variables had constrained domains (:bugref:`638`).
--  Fix incorrect compilation of let expressions in recursive functions (:bugref:`637`).
--  Fix the evaluation of ``par`` optional types with a singular value in their domain (:bugref:`639`).
--  Fix common subexpression elimination for Boolean expressions that contain an undefined result
-   that needs to become false in the Boolean context (:bugref:`639`).
+-  Fix incorrect chain compression when Boolean variables had constrained
+   domains (:bugref:`638`).
+-  Fix incorrect compilation of let expressions in recursive functions
+   (:bugref:`637`).
+-  Fix the evaluation of ``par`` optional types with a singular value in their
+   domain (:bugref:`639`).
+-  Fix common subexpression elimination for Boolean expressions that contain an
+   undefined result that needs to become false in the Boolean context
+   (:bugref:`639`).
 -  Fix linear aggregation to only aggregate non-optional values (:bugref:`644`).
--  Fix rewriting to counting constraints to only occur when result is not optional (:bugref:`644`).
--  Add missing internal builtin for xor on optional bool variables (:bugref:`644`).
+-  Fix rewriting to counting constraints to only occur when result is not
+   optional (:bugref:`644`).
+-  Add missing internal builtin for xor on optional bool variables
+   (:bugref:`644`).
 -  Fix evaluation of par array access with absent value (:bugref:`644`).
--  Fix potential crash when evaluating bounds of par let expressions that contain a variable (:bugref:`646`).
--  Add missing ``par opt int`` versions of ``~+``, ``~-`` and ``~*`` (:bugref:`644`).
--  Add missing ``count`` function on ``array[_] of var opt bool`` (:bugref:`640`).
--  Fix potential crash in typechecking of array of record access (:bugref:`647`).
+-  Fix potential crash when evaluating bounds of par let expressions that
+   contain a variable (:bugref:`646`).
+-  Add missing ``par opt int`` versions of ``~+``, ``~-`` and ``~*``
+   (:bugref:`644`).
+-  Add missing ``count`` function on ``array[_] of var opt bool``
+   (:bugref:`640`).
+-  Fix potential crash in typechecking of array of record access
+   (:bugref:`647`).
 -  Fix output of tuples and records that contain enumerated types.
--  Add missing newline to solver comment output when using ``--json-stream`` (:bugref:`649`).
+-  Add missing newline to solver comment output when using ``--json-stream``
+   (:bugref:`649`).
 -  Fix problem where field names of record types could be removed during garbage
    collections.
 -  Fix the detection of Gurobi 10 (:bugref:`653`).
--  Fix performance degradation for models with variables that appear in a large number of constraints (:bugref:`645`).
+-  Fix performance degradation for models with variables that appear in a large
+   number of constraints (:bugref:`645`).
 -  Fix the definition of ``pow`` involving negative exponents.
 -  Ensure errors/warnings do not output mangled function names (:bugref:`648`).
 -  Fix the decomposition of optional ``inverse``.
+-  Fix various issues with the instantiation of generic functions involving
+   tuples or records.
 
 .. _v2.7.0:
 
