@@ -511,7 +511,10 @@ Expression* JSONParser::parseArray(std::istream& is, TypeInst* ti) {
   vector<Expression*> exps;
   Token next = readToken(is);
 
-  TypeInst* elTI = nullptr;
+  // NOTE: If the ti is not nullptr, but no longer describes an array or an
+  // enumerated type, then we assume it is the element TypeInst that is being
+  // passed in.
+  TypeInst* elTI = (ti != nullptr && !ti->isarray() && !ti->isEnum()) ? ti : nullptr;
   while (next.t != T_LIST_CLOSE) {
     switch (next.t) {
       case T_LIST_OPEN:

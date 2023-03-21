@@ -57,6 +57,8 @@ Bug fixes:
 -  Fix the decomposition of optional ``inverse``.
 -  Fix various issues with the instantiation of generic functions involving
    tuples or records.
+-  Fix the parsing multidimensional arrays containing values of enumerated types
+   in JSON.
 
 .. _v2.7.0:
 
