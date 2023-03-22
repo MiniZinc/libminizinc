@@ -61,6 +61,7 @@ Bug fixes:
    in JSON.
 -  Fix performance degradation for models with variables that appear in a large number of constraints (:bugref:`645`).
 -  Fix bug in enumerated types with non-contiguous constructor sets.
+-  Fix possible crash when simplifying static function bodies.
 
 .. _v2.7.0:
 

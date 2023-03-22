@@ -3605,7 +3605,7 @@ Expression* follow_id_to_value(Expression* e) {
   return decl;
 }
 
-void eval_static_function_body(EnvI& env, FunctionI* decl) {
+void eval_static_function_body(EnvI& env, FunctionI* decl, Model& toAdd) {
   Expression* e = decl->e();
   if (e == nullptr) {
     return;
@@ -3662,7 +3662,7 @@ void eval_static_function_body(EnvI& env, FunctionI* decl) {
       check_par_declaration(env, vd);
       vd->toplevel(true);
       vd->id()->idn(env.genId());
-      env.model->addItem(VarDeclI::a(vd->loc(), vd));
+      toAdd.addItem(VarDeclI::a(vd->loc(), vd));
       decl->e(let->in());
       e = decl->e();
     } else {

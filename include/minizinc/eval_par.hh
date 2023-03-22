@@ -92,7 +92,7 @@ std::string eval_string(EnvI& env, Expression* e);
 Expression* eval_par(EnvI& env, Expression* e);
 /// Evaluate conditionals and lets inside function bodies that are annotated with
 /// ::mzn_evaluate_once
-void eval_static_function_body(EnvI& env, FunctionI* decl);
+void eval_static_function_body(EnvI& env, FunctionI* decl, Model& toAdd);
 /// Check if variable declaration \a vd satisfies the domain and index set constraints
 void check_par_declaration(EnvI& env, VarDecl* vd);
 /// Merge two record literals and return the result.

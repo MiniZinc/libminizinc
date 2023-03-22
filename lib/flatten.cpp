@@ -3728,9 +3728,10 @@ public:
 
 class SimplifyFunctionBodiesVisitor : public ItemVisitor {
 public:
+  Model& toAdd;
   EnvI& env;
-  SimplifyFunctionBodiesVisitor(EnvI& env0) : env(env0) {}
-  void vFunctionI(FunctionI* fi) { eval_static_function_body(env, fi); }
+  SimplifyFunctionBodiesVisitor(EnvI& env0, Model& toAdd0) : env(env0), toAdd(toAdd0) {}
+  void vFunctionI(FunctionI* fi) { eval_static_function_body(env, fi, toAdd); }
 };
 
 }  // namespace
@@ -3750,8 +3751,14 @@ void flatten(Env& e, FlatteningOptions opt) {
     env.fopts = opt;
 
     // Statically evaluate some function bodies
-    SimplifyFunctionBodiesVisitor _ffbv(env);
-    iter_items<SimplifyFunctionBodiesVisitor>(_ffbv, e.model());
+    {
+      std::unique_ptr<Model> toAdd(new Model);
+      SimplifyFunctionBodiesVisitor _ffbv(env, *toAdd);
+      iter_items<SimplifyFunctionBodiesVisitor>(_ffbv, e.model());
+      for (auto* it : *toAdd) {
+        e.model()->addItem(it);
+      }
+    }
 
     process_toplevel_output_vars(e.envi());
 
