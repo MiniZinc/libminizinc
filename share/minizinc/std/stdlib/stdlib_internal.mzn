@@ -1310,8 +1310,10 @@ predicate mzn_set_in_internal(var int: x, set of int: s) =
 
 /* Functions used for the type erasure of enumerated types */
 
-function int: mzn_min_or_0(set of int: X) =
-  if card(X)=0 then 0 else min(X) endif;
-
 test mzn_set_is_contiguous(set of int: X) =
   card(X) = 0 \/ card(X)=(max(X)-min(X)+1);
+
+function int: mzn_min_or_0(set of int: X) =
+  if card(X)=0 then 0 
+  elseif mzn_set_is_contiguous(X) then min(X)
+  else 1 endif;

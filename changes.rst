@@ -59,6 +59,8 @@ Bug fixes:
    tuples or records.
 -  Fix the parsing multidimensional arrays containing values of enumerated types
    in JSON.
+-  Fix performance degradation for models with variables that appear in a large number of constraints (:bugref:`645`).
+-  Fix bug in enumerated types with non-contiguous constructor sets.
 
 .. _v2.7.0:
 
