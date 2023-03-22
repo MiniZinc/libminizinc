@@ -3,7 +3,10 @@
 check_against: []
 expected:
 - !Result
-  solution: !Solution {}
+  solution: !Solution
+    x: !!python/object:minizinc.types.ConstrEnum
+      argument: 6
+      constructor: S
   status: SATISFIED
 extra_files: []
 markers: []
@@ -13,7 +16,8 @@ options:
 solvers:
 - gecode
 type: solve
+
 ***/
 
 enum X = S({2,4,6});
-X: x = S(2);
+X: x ::output = S(6);

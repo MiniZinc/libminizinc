@@ -2134,7 +2134,7 @@ Expression* b_set_sparse_inverse(EnvI& env, Call* call) {
   for (Ranges::ToValues<IntSetRanges> isr_v(isr); isr_v(); ++isr_v) {
     elems[isr_v.val().toInt() - set_min] = IntLit::a(i++);
   }
-  auto* al = new ArrayLit(call->arg(0)->loc(), elems);
+  auto* al = new ArrayLit(call->arg(0)->loc(), elems, {{set_min, isv->max().toInt()}});
   Type t(Type::parint(1));
   t.typeId(call->arg(0)->type().typeId());
   al->type(t);
