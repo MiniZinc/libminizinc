@@ -101,37 +101,19 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
       if (vd->e()->type().isPar() && vd->e()->type().dim() == 0) {
         rete = eval_par(env, vd->e());
         if (vd->toplevel() && (vd->ti()->domain() != nullptr) && !vd->ti()->computedDomain()) {
-          // need to check if domain includes RHS value
+          check_par_domain(env, vd, rete);
           if (vd->type() == Type::varbool()) {
-            if (!Expression::equal(rete, vd->ti()->domain())) {
-              env.fail();
-            }
             vd->ti()->domain(rete);
           } else if (vd->type() == Type::varint()) {
-            IntSetVal* isv = eval_intset(env, vd->ti()->domain());
             IntVal v = eval_int(env, rete);
-            if (!isv->contains(v)) {
-              env.fail();
-            }
             vd->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(v, v)));
           } else if (vd->type() == Type::varfloat()) {
-            FloatSetVal* fsv = eval_floatset(env, vd->ti()->domain());
             FloatVal v = eval_float(env, rete);
-            if (!fsv->contains(v)) {
-              env.fail();
-            }
             vd->ti()->domain(new SetLit(Location().introduce(), FloatSetVal::a(v, v)));
           } else if (vd->type() == Type::varsetint()) {
-            IntSetVal* isv = eval_intset(env, vd->ti()->domain());
             IntSetVal* v = eval_intset(env, rete);
-            IntSetRanges isv_r(isv);
-            IntSetRanges v_r(v);
-            if (!Ranges::subset(v_r, isv_r)) {
-              env.fail();
-            }
             vd->ti()->domain(new SetLit(Location().introduce(), v));
           }
-          // If we made it to here, the new domain is equal to the RHS
           vd->ti()->setComputedDomain(true);
         }
       } else if (vd->e()->isa<Id>()) {

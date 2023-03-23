@@ -145,6 +145,8 @@ void debugprint(const MiniZinc::Location& l);
 void debugprint(const MiniZinc::Location& l, const MiniZinc::EnvI& env);
 void debugprint(const MiniZinc::Type& t);
 void debugprint(const MiniZinc::Type& t, const MiniZinc::EnvI& env);
+void debugprint(const MiniZinc::IntSetVal* isv);
+void debugprint(const MiniZinc::FloatSetVal* fsv);
 
 void debugprint(const std::vector<MiniZinc::Expression*>& x);
 void debugprint(const std::vector<MiniZinc::Expression*>& x, MiniZinc::EnvI& env);

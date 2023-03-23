@@ -26,12 +26,8 @@ Model::FnEntry::FnEntry(EnvI& env, FunctionI* fi0)
     : t(fi0->paramCount()), fi(fi0), isPolymorphic(false), isPolymorphicVariant(false) {
   for (unsigned int i = 0; i < fi->paramCount(); i++) {
     t[i] = fi->param(i)->type();
-    if (t[i].bt() == Type::BT_TUPLE && t[i].typeId() == 0) {
-      env.registerTupleType(fi->param(i)->ti());
-      t[i] = fi->param(i)->ti()->type();
-      fi->param(i)->type(t[i]);
-    } else if (t[i].bt() == Type::BT_RECORD && t[i].typeId() == 0) {
-      env.registerRecordType(fi->param(i)->ti());
+    if (t[i].structBT() && t[i].typeId() == 0) {
+      fi->param(i)->ti()->canonicaliseStruct(env);
       t[i] = fi->param(i)->ti()->type();
       fi->param(i)->type(t[i]);
     }

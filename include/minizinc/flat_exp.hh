@@ -32,7 +32,8 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
 KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e);
 
 void make_defined_var(EnvI& env, VarDecl* vd, Call* c);
-void check_index_sets(EnvI& env, VarDecl* vd, Expression* e);
+void check_index_sets(EnvI& env, VarDecl* vd, Expression* e, bool isArg = false);
+Expression* mk_domain_constraint(EnvI& env, Expression* expr, Expression* dom);
 
 class CallArgItem {
 public:

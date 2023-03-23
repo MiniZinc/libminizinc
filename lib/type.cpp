@@ -267,7 +267,7 @@ bool Type::decrement(EnvI& env) {
   return true;
 }
 
-Type Type::elemType(EnvI& env) const {
+Type Type::elemType(const EnvI& env) const {
   Type elemTy = *this;
   if (dim() == 0) {
     return elemTy;
@@ -380,11 +380,15 @@ std::string Type::toString(const EnvI& env) const {
       break;
     case BT_TUPLE: {
       oss << "tuple(";
-      TupleType* tt = env.getTupleType(*this);
-      for (size_t i = 0; i < tt->size(); ++i) {
-        oss << (*tt)[i].toString(env);
-        if (i < tt->size() - 1) {
-          oss << ", ";
+      if (typeId() == COMP_INDEX) {
+        oss << "???";
+      } else {
+        TupleType* tt = env.getTupleType(*this);
+        for (size_t i = 0; i < tt->size(); ++i) {
+          oss << (*tt)[i].toString(env);
+          if (i < tt->size() - 1) {
+            oss << ", ";
+          }
         }
       }
       oss << ")";

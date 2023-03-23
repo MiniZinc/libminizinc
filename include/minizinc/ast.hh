@@ -1537,9 +1537,11 @@ public:
       field_ti->eraseDomain();
     }
   }
+  void canonicaliseStruct(EnvI& env);
   void mkVar(const EnvI& env);
   // Set domain of a tuple based on a tuple type object
-  void setStructDomain(const EnvI& env, const Type& struct_type, bool setTypeAny = false);
+  void setStructDomain(const EnvI& env, const Type& struct_type, bool setTypeAny = false,
+                       bool setTIRanges = true);
   /// Resolve type aliases
   bool resolveAlias(EnvI& env);
   /// Resolve ++ binop expressions in the domain (if present)
@@ -2042,6 +2044,7 @@ public:
     ASTString occurs;
     ASTString card;
     ASTString abs;
+    ASTString mzn_alias_eq;  // NOLINT(readability-identifier-naming)
 
     ASTString symmetry_breaking_constraint;      // NOLINT(readability-identifier-naming)
     ASTString redundant_constraint;              // NOLINT(readability-identifier-naming)
@@ -2203,6 +2206,8 @@ public:
 
     ASTString introduced_var;  // NOLINT(readability-identifier-naming)
     ASTString anonEnumFromStrings;
+
+    ASTString unnamedArgument;
   } ids;
 
   bool isCallByReferenceId(const ASTString& cid) const;

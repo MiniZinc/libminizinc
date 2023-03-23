@@ -29,62 +29,6 @@ bool is_total(EnvI& env, FunctionI* fi) {
   return fi->ann().contains(env.constants.ann.promise_total);
 }
 
-Expression* mk_domain_constraint(EnvI& env, Expression* expr, Expression* dom) {
-  assert(GC::locked());
-  Type t = expr->type().isPar() ? Type::parbool() : Type::varbool();
-
-  if (expr->type().structBT()) {
-    StructType* st = env.getStructType(expr->type());
-    auto* dom_al = dom->cast<ArrayLit>();
-    std::vector<Expression*> field_expr;
-    if (expr->type().dim() > 0) {
-      field_expr = field_slices(env, expr);
-    } else {
-      field_expr.resize(st->size());
-      for (int i = 0; i < st->size(); ++i) {
-        field_expr[i] = new FieldAccess(Location().introduce(), expr, IntLit::a(i + 1));
-        field_expr[i]->type((*st)[i]);
-      }
-    }
-    std::vector<Expression*> fieldwise;
-    for (int i = 0; i < st->size(); ++i) {
-      auto* field_ti = (*dom_al)[i]->cast<TypeInst>();
-      if (field_ti->domain() != nullptr) {
-        fieldwise.push_back(mk_domain_constraint(env, field_expr[i], field_ti->domain()));
-        fieldwise.back()->type(t);
-      }
-    }
-    if (fieldwise.size() <= 1) {
-      return fieldwise.empty() ? nullptr : fieldwise[0];
-    }
-    auto* al = new ArrayLit(Location().introduce(), fieldwise);
-    Type al_t = t;
-    al_t.dim(1);
-    al->type(al_t);
-    auto* c = Call::a(Location().introduce(), env.constants.ids.forall, {al});
-    c->type(t);
-    return c;
-  }
-
-  if (expr->type().dim() > 0) {
-    GCLock lock;
-    std::vector<Expression*> domargs({expr, dom});
-    Call* c = Call::a(Location().introduce(), "var_dom", domargs);
-    c->type(Type::varbool());
-    c->decl(env.model->matchFn(env, c, false));
-    if (c->decl() == nullptr) {
-      throw InternalError("no matching declaration found for var_dom");
-    }
-    c->type(t);
-    return c;
-  }
-
-  BinOpType bot = expr->type().st() == Type::ST_SET ? BOT_SUBSET : BOT_IN;
-  auto* binop = new BinOp(Location().introduce(), expr, bot, dom);
-  binop->type(t);
-  return binop;
-}
-
 Call* same_call(EnvI& env, Expression* e, const ASTString& id) {
   assert(GC::locked());
   Expression* ce = follow_id(e);
@@ -1148,7 +1092,8 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
                 GCLock lock;
                 auto* al = curInst->domain()->cast<ArrayLit>();
                 for (long long i = 0; i < al->size(); ++i) {
-                  auto* fa = new FieldAccess(curArg()->loc().introduce(), curArg(), IntLit::a(i));
+                  auto* fa =
+                      new FieldAccess(curArg()->loc().introduce(), curArg(), IntLit::a(i + 1));
                   fa->type((*al)[i]->type());
                   stack.emplace_back(fa, (*al)[i]->cast<TypeInst>());
                 }

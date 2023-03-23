@@ -1727,11 +1727,19 @@ public:
   void vArrayLit(ArrayLit* al) {
     Type ty;
     if (al->isTuple()) {
-      if (al->type().typeId() != 0) {
-        return;
-      }
       if (al->type().isrecord()) {
-        _env.registerRecordType(al);
+        if (al->type().typeId() != 0) {
+          auto* rt = _env.getRecordType(al->type());
+          std::vector<Type> fields(al->size());
+          for (unsigned int i = 0; i < al->size(); i++) {
+            fields[i] = (*al)[i]->type();
+          }
+          auto ty = al->type();
+          ty.typeId(_env.registerRecordType(rt, fields));
+          al->type(ty);
+        } else {
+          _env.registerRecordType(al);
+        }
       } else if (al->type().typeId() != Type::COMP_INDEX) {
         _env.registerTupleType(al);
       }
@@ -2388,8 +2396,7 @@ public:
         ite->elseExpr(_env.constants.ann.empty_annotation);
       } else if (tret.dim() > 0) {
         GCLock lock;
-        ite->elseExpr(
-            new ArrayLit(ite->loc().introduce(), std::vector<std::vector<Expression*>>()));
+        ite->elseExpr(new ArrayLit(ite->loc().introduce(), std::vector<Expression*>()));
         ite->elseExpr()->type(tret);
       } else {
         throw TypeError(_env, ite->loc(),
@@ -3103,73 +3110,17 @@ public:
         if (tt.isOpt()) {
           throw TypeError(_env, ti->loc(), "opt tuples are not allowed");
         }
-
-        // Warning: Do not check TypeInst twice! A cononical tuple does not abide by the rules
-        // that a user definition abides by (e.g., a tuple might be marked var (because all
-        // members are var) and contain an array (of with var members)).
-        if (ti->type().isvar() && ti->type().typeId() == 0) {
-          auto* dom = ti->domain()->cast<ArrayLit>();
-          // Check if "var" tuple is allowed
-          for (unsigned int i = 0; i < dom->size(); i++) {
-            auto* tii = (*dom)[i]->cast<TypeInst>();
-            Type field = tii->type();
-            if (field.st() == Type::ST_SET && field.bt() != Type::BT_INT &&
-                field.bt() != Type::BT_TOP) {
-              throw TypeError(_env, ti->loc(),
-                              "var tuples with set element types other than `int' are not allowed");
-            }
-            if (field.bt() == Type::BT_ANN || field.bt() == Type::BT_STRING) {
-              throw TypeError(_env, ti->loc(),
-                              "var tuples with " + field.toString(_env) + " types are not allowed");
-            }
-            if (field.dim() != 0) {
-              throw TypeError(_env, ti->loc(), "var tuples with array types are not allowed");
-            }
-          }
-          // spread var keyword in field types:
-          // var tuple (X, Y, ...) -> var tuple(var X, var Y, ...)
-          ti->mkVar(_env);
-        }
-
         needsArrayType = false;  // will be registered by registerTupleType
         // Register and cononicalise tuple type
-        _env.registerTupleType(ti);
+        ti->canonicaliseStruct(_env);
         tt = ti->type();
       } else if (ti->type().bt() == Type::BT_RECORD) {
         if (tt.isOpt()) {
           throw TypeError(_env, ti->loc(), "opt records are not allowed");
         }
-
-        // Warning: Do not check TypeInst twice! A cononical record does not abide by the rules
-        // that a user definition abides by (e.g., a tuple might be marked var (because all
-        // members are var) and contain an array (of with var members)).
-        if (ti->type().isvar() && ti->type().typeId() == 0) {
-          auto* dom = ti->domain()->cast<ArrayLit>();
-          // Check if "var" record is allowed
-          for (unsigned int i = 0; i < dom->size(); i++) {
-            auto* tii = (*dom)[i]->cast<VarDecl>();
-            Type field = tii->type();
-            if (field.st() == Type::ST_SET && field.bt() != Type::BT_INT &&
-                field.bt() != Type::BT_TOP) {
-              throw TypeError(_env, ti->loc(),
-                              "var record with set element types other than `int' are not allowed");
-            }
-            if (field.bt() == Type::BT_ANN || field.bt() == Type::BT_STRING) {
-              throw TypeError(_env, ti->loc(),
-                              "var record with " + field.toString(_env) + " types are not allowed");
-            }
-            if (field.dim() != 0) {
-              throw TypeError(_env, ti->loc(), "var record with array types are not allowed");
-            }
-          }
-          // spread var keyword in field types:
-          // var record (X: a, Y: b, ...) -> var tuple(var X: a, var Y: b, ...)
-          ti->mkVar(_env);
-        }
-
         needsArrayType = false;  // will be registered by registerRecordType
         // Register and cononicalise record type
-        _env.registerRecordType(ti);
+        ti->canonicaliseStruct(_env);
         tt = ti->type();
       } else if (TIId* tiid = ti->domain()->dynamicCast<TIId>()) {
         if (tiid->isEnum()) {

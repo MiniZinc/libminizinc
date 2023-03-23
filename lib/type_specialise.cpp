@@ -639,6 +639,92 @@ public:
     return true;
   }
 
+  static void updateReturnTypeInst(EnvI& env, ASTStringMap<Type>& ti_map, TypeInst* ti) {
+    if (ti->type().bt() == Type::BT_TUPLE) {
+      auto* al = ti->domain()->cast<ArrayLit>();
+      auto* st = env.getStructType(ti->type());
+      for (unsigned int i = 0; i < st->size(); i++) {
+        updateReturnTypeInst(env, ti_map, (*al)[i]->cast<TypeInst>());
+      }
+    } else if (ti->type().bt() == Type::BT_RECORD) {
+      auto* al = ti->domain()->cast<ArrayLit>();
+      auto* st = env.getStructType(ti->type());
+      for (unsigned int i = 0; i < st->size(); i++) {
+        updateReturnTypeInst(env, ti_map, (*al)[i]->cast<TypeInst>());
+      }
+    } else if (TIId* tiid = Expression::dynamicCast<TIId>(ti->domain())) {
+      Type ret_type = ti_map.find(tiid->v())->second;
+      if (ret_type.structBT()) {
+        ti->setStructDomain(env, ret_type, false, false);
+      } else {
+        Type t = ti->type();
+        t.bt(ret_type.bt());
+        if (!tiid->isEnum()) {
+          t.st(ret_type.st());
+        }
+        if (t.any()) {
+          t.any(false);
+          t.ot(ret_type.ot());
+          t.ti(ret_type.ti());
+        }
+        ti->domain(nullptr);
+        auto typeId = ret_type.typeId();
+        if (typeId != 0 && ret_type.bt() == Type::BT_INT) {
+          if (ret_type.dim() != 0 && typeId != 0) {
+            const auto& aet = env.getArrayEnum(typeId);
+            typeId = aet[aet.size() - 1];
+          }
+          VarDeclI* enumVdi = env.getEnum(typeId);
+          ti->domain(enumVdi->e()->id());
+        }
+        t.typeId(typeId);
+        ti->type(t);
+      }
+    }
+    // update index sets in return type
+    for (unsigned int i = 0; i < ti->ranges().size(); i++) {
+      if (TIId* tiid = Expression::dynamicCast<TIId>(ti->ranges()[i]->domain())) {
+        Type ret_type = ti_map.find(tiid->v())->second;
+        if (tiid->isEnum()) {
+          // find concrete enum type
+          if (ret_type.typeId() == 0) {
+            // not an enum type -> turn this one into a simple int
+            ti->ranges()[i]->domain(nullptr);
+          } else if (ret_type.dim() != 0) {
+            const auto& aet = env.getArrayEnum(ret_type.typeId());
+            if (aet[i] == 0) {
+              // not an enum type -> turn this one into a simple int
+              ti->ranges()[i]->domain(nullptr);
+            } else {
+              ti->ranges()[i]->domain(nullptr);
+              ti->ranges()[i]->type(Type::parenum(aet[i]));
+            }
+          } else {
+            ti->ranges()[i]->domain(nullptr);
+            ti->ranges()[i]->type(Type::parenum(ret_type.typeId()));
+          }
+        } else {
+          // add concrete number of ranges
+          std::vector<TypeInst*> newRanges(ret_type.dim());
+          for (unsigned int k = 0; k < ret_type.dim(); k++) {
+            newRanges[k] = new TypeInst(Location().introduce(), Type::parint());
+          }
+          auto t = ti->type();
+          t.typeId(0);
+          ti->type(t);
+          ti->setRanges(newRanges);
+          break;  // only one general tiid allowed in index set
+        }
+      }
+    }
+
+    if (ti->type().bt() == Type::BT_TUPLE) {
+      env.registerTupleType(ti);
+    } else if (ti->type().bt() == Type::BT_RECORD) {
+      env.registerRecordType(ti);
+    }
+  }
+
   void operator()(Call* call) {
     if (call->id() == _env.constants.ids.enumOf && call->argCount() == 1) {
       // Rewrite to enum_of_internal with enum argument
@@ -768,64 +854,7 @@ public:
           }
 
           // update return type
-          if (TIId* tiid = Expression::dynamicCast<TIId>(fi_copy->ti()->domain())) {
-            // return type
-            Type ret_type = ti_map.find(tiid->v())->second;
-            Type t = fi_copy->ti()->type();
-            t.bt(ret_type.bt());
-            if (!tiid->isEnum()) {
-              t.st(ret_type.st());
-            }
-            if (t.any()) {
-              t.any(false);
-              t.ot(ret_type.ot());
-              t.ti(ret_type.ti());
-            }
-            fi_copy->ti()->domain(nullptr);
-            auto typeId = ret_type.typeId();
-            if (typeId != 0 && ret_type.bt() == Type::BT_INT) {
-              if (ret_type.dim() != 0 && typeId != 0) {
-                const auto& aet = _env.getArrayEnum(typeId);
-                typeId = aet[aet.size() - 1];
-              }
-              VarDeclI* enumVdi = _env.getEnum(typeId);
-              fi_copy->ti()->domain(enumVdi->e()->id());
-            }
-            fi_copy->ti()->type(t);
-          }
-          // update index sets in return type
-          for (unsigned int i = 0; i < fi_copy->ti()->ranges().size(); i++) {
-            if (TIId* tiid = Expression::dynamicCast<TIId>(fi_copy->ti()->ranges()[i]->domain())) {
-              Type ret_type = ti_map.find(tiid->v())->second;
-              if (tiid->isEnum()) {
-                // find concrete enum type
-                if (ret_type.typeId() == 0) {
-                  // not an enum type -> turn this one into a simple int
-                  fi_copy->ti()->ranges()[i]->domain(nullptr);
-                } else {
-                  const auto& aet = _env.getArrayEnum(ret_type.typeId());
-                  if (aet[i] == 0) {
-                    // not an enum type -> turn this one into a simple int
-                    fi_copy->ti()->ranges()[i]->domain(nullptr);
-                  } else {
-                    fi_copy->ti()->ranges()[i]->domain(nullptr);
-                    fi_copy->ti()->ranges()[i]->type(Type::parenum(aet[i]));
-                  }
-                }
-              } else {
-                // add concrete number of ranges
-                std::vector<TypeInst*> newRanges(ret_type.dim());
-                for (unsigned int k = 0; k < ret_type.dim(); k++) {
-                  newRanges[k] = new TypeInst(Location().introduce(), Type::parint());
-                }
-                fi_copy->ti()->setRanges(newRanges);
-                Type t = fi_copy->ti()->type();
-                t.dim(ret_type.dim());
-                fi_copy->ti()->type(t);
-                break;  // only one general tiid allowed in index set
-              }
-            }
-          }
+          updateReturnTypeInst(_env, ti_map, fi_copy->ti());
 
           if (fi_copy->e() == nullptr) {
             // built-in function, have to redirect to original polymorphic built-in

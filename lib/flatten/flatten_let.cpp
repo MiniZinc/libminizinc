@@ -49,36 +49,16 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
           EE ee = flat_exp(env, nctx, vd->e(), nullptr, nctx.partialityVar(env));
           let_e = ee.r();
           cs.push_back(ee);
+          check_index_sets(env, vd, let_e);
           if (vd->ti()->domain() != nullptr) {
             GCLock lock;
-            std::vector<Expression*> domargs(2);
-            domargs[0] = ee.r();
-            if (vd->ti()->type().isfloat()) {
-              FloatSetVal* fsv = eval_floatset(env, vd->ti()->domain());
-              if (fsv->size() == 1) {
-                domargs[1] = FloatLit::a(fsv->min());
-                domargs.push_back(FloatLit::a(fsv->max()));
-              } else {
-                domargs[1] = vd->ti()->domain();
-              }
-            } else {
-              domargs[1] = vd->ti()->domain();
-            }
-            Call* c = Call::a(vd->ti()->loc().introduce(), "var_dom", domargs);
-            c->type(Type::varbool());
-            c->decl(env.model->matchFn(env, c, false));
-            if (c->decl() == nullptr) {
-              throw InternalError("no matching declaration found for var_dom");
-            }
+            auto* c = mk_domain_constraint(env, ee.r(), vd->ti()->domain());
             VarDecl* b_b = (nctx.b == C_ROOT && b == env.constants.varTrue) ? b : nullptr;
             VarDecl* r_r = (nctx.b == C_ROOT && b == env.constants.varTrue) ? b : nullptr;
             ee = flat_exp(env, nctx, c, r_r, b_b);
             cs.push_back(ee);
             ee.b = ee.r;
             cs.push_back(ee);
-          }
-          if (vd->type().dim() > 0) {
-            check_index_sets(env, vd, let_e);
           }
           flatten_vardecl_annotations(env, vd, nullptr, vd);
         } else {

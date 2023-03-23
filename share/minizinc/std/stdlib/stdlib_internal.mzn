@@ -33,6 +33,9 @@ predicate var_dom(var set of int: x, set of int: s) =
   else set_subset(x,s)
   endif;
 
+predicate var_dom(set of int: x, set of int: s) =
+  x subset s;
+
 predicate var_dom(var float:x, float: l, float: u) =
   if has_bounds(x) /\ lb(x) >= l /\ ub(x) <= u then true
   else x >= l /\ x <= u
@@ -90,7 +93,8 @@ predicate array_var_float_element(var int: x, array[int] of float: y, var float:
 predicate array_var_set_element(var int: x, array[int] of set of int: y, var set of int: z) =
   array_set_element(x,y,z);
 
-predicate bool_opt_eq(var opt bool: x, var opt bool: y) =
+predicate mzn_alias_eq(var bool: x, var bool: y) = bool_eq(x, y);
+predicate mzn_alias_eq(var opt bool: x, var opt bool: y) =
   deopt(x)=deopt(y) /\ occurs(x)=occurs(y);
 /* True iff both \a b0 and \a b1 are absent or
   both are present and have the same value. */
@@ -110,7 +114,8 @@ predicate bool_xor_reif(var bool: a, var bool: b, var bool: c) =
 predicate bool_xor(var opt bool: x, var opt bool: y) =
   absent(x) \/ absent(y) \/ (deopt(x) xor deopt(y));
 
-predicate int_opt_eq(var opt int: x, var opt int: y) =
+predicate mzn_alias_eq(var int: x, var int: y) = int_eq(x, y);
+predicate mzn_alias_eq(var opt int: x, var opt int: y) =
   deopt(x) = deopt(y) /\ occurs(x) = occurs(y);
 /* True iff both \a x and \a y are absent or
   both are present and have the same value. */
@@ -147,7 +152,8 @@ predicate float_dom(var opt float: x, array[int] of float: as) =
     constraint (x = reverse_map_var_opt_float(b,dx)) :: is_reverse_map;
   } in float_dom(dx, as);
 
-predicate float_opt_eq(var opt float: x, var opt float: y) =
+predicate mzn_alias_eq(var float: x, var float: y) = float_eq(x, y);
+predicate mzn_alias_eq(var opt float: x, var opt float: y) =
   deopt(x) = deopt(y) /\ occurs(x) = occurs(y);
 /* True iff both \a x and \a y are absent or
   both are present and have the same value. */
@@ -179,6 +185,8 @@ function var float: objective_deopt_(var opt float: x, bool: direction) =
     float: worst = if direction then lb(x)-1 else ub(x)+1 endif;
   } in if occurs(x) then deopt(x) else worst endif;
 
+
+predicate mzn_alias_eq(var set of int: x, var set of int: y) = set_eq(x, y);
 
 %-----------------------------------------------------------------------------%
 %

@@ -1275,7 +1275,7 @@ unsigned int EnvI::registerTupleType(TypeInst* ti) {
   }
   t.typeId(ret);
   ti->type(t);
-  ti->domain()->type(t);
+  ti->domain()->type(t.elemType(*this));
   return ret;
 }
 
@@ -1713,7 +1713,7 @@ unsigned int EnvI::registerRecordType(TypeInst* ti) {
   }
   t.typeId(ret);
   ti->type(t);
-  ti->domain()->type(t);
+  ti->domain()->type(t.elemType(*this));
   return ret;
 }
 
@@ -2159,103 +2159,271 @@ void Env::clearWarnings() { envi().warnings.clear(); }
 
 unsigned int Env::maxCallStack() const { return envi().maxCallStack; }
 
-void check_index_sets(EnvI& env, VarDecl* vd, Expression* e) {
-  ASTExprVec<TypeInst> tis = vd->ti()->ranges();
-  std::vector<TypeInst*> newtis(tis.size());
-  bool needNewTypeInst = false;
+void check_index_sets(EnvI& env, VarDecl* vd, Expression* e, bool isArg) {
+  struct ToCheck {
+    Expression* accessor;
+    Expression* e;
+    TypeInst* ti;
+    ToCheck(Expression* _accessor, Expression* _e, TypeInst* _ti)
+        : accessor(_accessor), e(_e), ti(_ti) {}
+  };
   GCLock lock;
-  switch (e->eid()) {
-    case Expression::E_ID: {
-      Id* id = e->cast<Id>();
-      ASTExprVec<TypeInst> e_tis = id->decl()->ti()->ranges();
-      assert(tis.size() == e_tis.size());
-      for (unsigned int i = 0; i < tis.size(); i++) {
-        if (tis[i]->domain() == nullptr) {
-          newtis[i] = e_tis[i];
-          needNewTypeInst = true;
-        } else {
-          IntSetVal* isv0 = eval_intset(env, tis[i]->domain());
-          IntSetVal* isv1 = eval_intset(env, e_tis[i]->domain());
-          if (!isv0->equal(isv1)) {
-            std::ostringstream oss;
-            oss << "Index set mismatch. Declared index " << (tis.size() == 1 ? "set" : "sets");
-            oss << " of `" << *vd->id() << "' " << (tis.size() == 1 ? "is [" : "are [");
-            for (unsigned int j = 0; j < tis.size(); j++) {
-              if (tis[j]->domain() != nullptr) {
-                oss << env.show(tis[j]->domain());
-              } else {
-                oss << "int";
-              }
-              if (j < tis.size() - 1) {
-                oss << ", ";
-              }
-            }
-            oss << "], but is assigned to array `" << *id << "' with index "
-                << (tis.size() == 1 ? "set [" : "sets [");
-            for (unsigned int j = 0; j < e_tis.size(); j++) {
-              oss << env.show(e_tis[j]->domain());
-              if (j < e_tis.size() - 1) {
-                oss << ", ";
-              }
-            }
-            oss << "]. You may need to coerce the index sets using the array" << tis.size()
-                << "d function.";
-            throw EvalError(env, vd->loc(), oss.str());
+  bool hasName = !vd->id()->str().empty();
+  std::vector<ToCheck> todo({{hasName ? vd->id() : nullptr, e, vd->ti()}});
+  CopyMap cm;
+  bool needNewTypeInst = false;
+  // Firstly just walks through checking index sets, then if we encounter an error,
+  // starts again recording what field accessors are needed to generate the error message.
+  bool hadError = false;
+  while (!todo.empty()) {
+    auto item = todo.back();
+    todo.pop_back();
+    if (item.e->type().dim() > 0) {
+      ASTExprVec<TypeInst> tis = item.ti->ranges();
+      GCLock lock;
+      switch (item.e->eid()) {
+        case Expression::E_ID: {
+          Id* id = item.e->cast<Id>();
+          ASTExprVec<TypeInst> e_tis = id->decl()->ti()->ranges();
+          if (tis.size() != e_tis.size()) {
+            continue;
           }
-          newtis[i] = tis[i];
+          for (unsigned int i = 0; i < e_tis.size(); i++) {
+            if (tis[i]->domain() == nullptr) {
+              if (!isArg) {
+                cm.insert(tis[i], e_tis[i]);
+                needNewTypeInst = true;
+              }
+            } else if (!tis[i]->domain()->isa<TIId>()) {
+              IntSetVal* isv0 = eval_intset(env, tis[i]->domain());
+              IntSetVal* isv1 = eval_intset(env, e_tis[i]->domain());
+              if (!isv0->equal(isv1)) {
+                if (item.accessor != nullptr) {
+                  std::ostringstream oss;
+                  oss << "Index set mismatch. Declared index "
+                      << (tis.size() == 1 ? "set" : "sets");
+                  oss << (isArg ? " of argument " : " of ") << "`" << *item.accessor << "' "
+                      << (tis.size() == 1 ? "is [" : "are [");
+                  for (unsigned int j = 0; j < tis.size(); j++) {
+                    if (tis[j]->domain() != nullptr) {
+                      oss << env.show(tis[j]->domain());
+                    } else {
+                      oss << "int";
+                    }
+                    if (j < tis.size() - 1) {
+                      oss << ", ";
+                    }
+                  }
+                  oss << "], but is assigned to array `" << *id << "' with index "
+                      << (tis.size() == 1 ? "set [" : "sets [");
+                  for (unsigned int j = 0; j < e_tis.size(); j++) {
+                    oss << env.show(e_tis[j]->domain());
+                    if (j < e_tis.size() - 1) {
+                      oss << ", ";
+                    }
+                  }
+                  oss << "]. You may need to coerce the index sets using the array" << tis.size()
+                      << "d function.";
+                  throw EvalError(env, e->loc(), oss.str());
+                }
+                hadError = true;
+                todo.clear();
+                Id* ident = hasName ? vd->id()
+                                    : new Id(Location().introduce(),
+                                             env.constants.ids.unnamedArgument, nullptr);
+                todo.emplace_back(ident, e, vd->ti());
+              }
+            }
+          }
+        } break;
+        case Expression::E_ARRAYLIT: {
+          auto* al = item.e->cast<ArrayLit>();
+          if (tis.size() != al->dims()) {
+            continue;
+          }
+          for (unsigned int i = 0; i < tis.size(); i++) {
+            if (tis[i]->domain() == nullptr) {
+              if (!isArg) {
+                cm.insert(tis[i], new TypeInst(Location().introduce(), Type(),
+                                               new SetLit(Location().introduce(),
+                                                          IntSetVal::a(al->min(i), al->max(i)))));
+                needNewTypeInst = true;
+              }
+            } else if ((i == 0 || !al->empty()) && !tis[i]->domain()->isa<TIId>()) {
+              IntSetVal* isv = eval_intset(env, tis[i]->domain());
+              assert(isv->size() <= 1);
+              if ((isv->empty() && al->min(i) <= al->max(i)) ||
+                  (!isv->empty() && (isv->min(0) != al->min(i) || isv->max(0) != al->max(i)))) {
+                if (item.accessor != nullptr) {
+                  std::ostringstream oss;
+                  oss << "Index set mismatch. Declared index "
+                      << (tis.size() == 1 ? "set" : "sets");
+                  oss << (isArg ? " of argument " : " of ") << "`" << *item.accessor << "' "
+                      << (tis.size() == 1 ? "is [" : "are [");
+                  for (unsigned int j = 0; j < tis.size(); j++) {
+                    if (tis[j]->domain() != nullptr) {
+                      oss << env.show(tis[j]->domain());
+                    } else {
+                      oss << "int";
+                    }
+                    if (j < tis.size() - 1) {
+                      oss << ",";
+                    }
+                  }
+                  oss << "], but is assigned to array with index "
+                      << (tis.size() == 1 ? "set [" : "sets [");
+                  for (unsigned int j = 0; j < al->dims(); j++) {
+                    oss << al->min(j) << ".." << al->max(j);
+                    if (j < al->dims() - 1) {
+                      oss << ", ";
+                    }
+                  }
+                  oss << "]. You may need to coerce the index sets using the array" << tis.size()
+                      << "d function.";
+                  throw EvalError(env, e->loc(), oss.str());
+                }
+                hadError = true;
+                todo.clear();
+                Id* ident = hasName ? vd->id()
+                                    : new Id(Location().introduce(),
+                                             env.constants.ids.unnamedArgument, nullptr);
+                todo.emplace_back(ident, e, vd->ti());
+              } else {
+                unsigned int enumId = item.ti->type().typeId();
+                for (unsigned int i = 0; i < al->size(); i++) {
+                  Expression* access = nullptr;
+                  if (hadError) {
+                    std::vector<int> indexes(al->dims());
+                    int remDim = static_cast<int>(i);
+                    for (unsigned int j = al->dims(); (j--) != 0U;) {
+                      indexes[j] = (remDim % (al->max(j) - al->min(j) + 1)) + al->min(j);
+                      remDim = remDim / (al->max(j) - al->min(j) + 1);
+                    }
+                    std::vector<Expression*> indexes_s(indexes.size());
+                    if (enumId != 0) {
+                      const auto& enumIds = env.getArrayEnum(enumId);
+                      for (unsigned int j = 0; j < indexes.size(); j++) {
+                        std::ostringstream index_oss;
+                        if (enumIds[j] != 0) {
+                          auto name = env.enumToString(enumIds[j], indexes[j]);
+                          indexes_s[j] = new Id(Location().introduce(), name, nullptr);
+                        } else {
+                          indexes_s[j] = IntLit::a(indexes[j]);
+                        }
+                      }
+                    } else {
+                      for (unsigned int j = 0; j < indexes.size(); j++) {
+                        indexes_s[j] = IntLit::a(indexes[j]);
+                      }
+                    }
+                    access = new ArrayAccess(Location().introduce(), item.accessor, indexes_s);
+                  }
+                  todo.emplace_back(access, (*al)[i], item.ti);
+                }
+              }
+            }
+          }
+        } break;
+        default:
+          throw InternalError("not supported yet");
+      }
+    } else if (item.e->type().istuple()) {
+      auto* domains = item.ti->domain()->dynamicCast<ArrayLit>();
+      if (domains != nullptr) {
+        auto* al = eval_array_lit(env, item.e);
+        for (unsigned int i = 0; i < al->size(); i++) {
+          auto* access =
+              hadError ? new FieldAccess(Location().introduce(), item.accessor, IntLit::a(i + 1))
+                       : nullptr;
+          todo.emplace_back(access, (*al)[i], (*domains)[i]->cast<TypeInst>());
         }
       }
-    } break;
-    case Expression::E_ARRAYLIT: {
-      auto* al = e->cast<ArrayLit>();
-      for (unsigned int i = 0; i < tis.size(); i++) {
-        if (tis[i]->domain() == nullptr) {
-          newtis[i] = new TypeInst(
-              Location().introduce(), Type(),
-              new SetLit(Location().introduce(), IntSetVal::a(al->min(i), al->max(i))));
-          needNewTypeInst = true;
-        } else if (i == 0 || !al->empty()) {
-          IntSetVal* isv = eval_intset(env, tis[i]->domain());
-          assert(isv->size() <= 1);
-          if ((isv->empty() && al->min(i) <= al->max(i)) ||
-              (!isv->empty() && (isv->min(0) != al->min(i) || isv->max(0) != al->max(i)))) {
-            std::ostringstream oss;
-            oss << "Index set mismatch. Declared index " << (tis.size() == 1 ? "set" : "sets");
-            oss << " of `" << *vd->id() << "' " << (tis.size() == 1 ? "is [" : "are [");
-            for (unsigned int j = 0; j < tis.size(); j++) {
-              if (tis[j]->domain() != nullptr) {
-                oss << env.show(tis[j]->domain());
-              } else {
-                oss << "int";
-              }
-              if (j < tis.size() - 1) {
-                oss << ",";
-              }
-            }
-            oss << "], but is assigned to array with index "
-                << (tis.size() == 1 ? "set [" : "sets [");
-            for (unsigned int j = 0; j < al->dims(); j++) {
-              oss << al->min(j) << ".." << al->max(j);
-              if (j < al->dims() - 1) {
-                oss << ", ";
-              }
-            }
-            oss << "]. You may need to coerce the index sets using the array" << tis.size()
-                << "d function.";
-            throw EvalError(env, vd->loc(), oss.str());
+    } else if (item.e->type().isrecord()) {
+      auto* domains = item.ti->domain()->dynamicCast<ArrayLit>();
+      if (domains != nullptr) {
+        RecordType* rt = env.getRecordType(item.e->type());
+        auto* al = eval_array_lit(env, item.e);
+        for (unsigned int i = 0; i < al->size(); i++) {
+          Expression* access = nullptr;
+          if (hadError) {
+            auto* field =
+                new Id(Location().introduce(), rt->fieldName(static_cast<size_t>(i)), nullptr);
+            access = new FieldAccess(Location().introduce(), item.accessor, field);
           }
-          newtis[i] = tis[i];
+          todo.emplace_back(access, (*al)[i], (*domains)[i]->cast<TypeInst>());
         }
       }
-    } break;
-    default:
-      throw InternalError("not supported yet");
+    }
   }
   if (needNewTypeInst) {
-    auto* tic = copy(env, vd->ti())->cast<TypeInst>();
-    tic->setRanges(newtis);
-    vd->ti(tic);
+    vd->ti(copy(env, cm, vd->ti())->cast<TypeInst>());
   }
+}
+
+Expression* mk_domain_constraint(EnvI& env, Expression* expr, Expression* dom) {
+  assert(GC::locked());
+  Type t = expr->type().isPar() ? Type::parbool() : Type::varbool();
+
+  if (expr->type().structBT()) {
+    StructType* st = env.getStructType(expr->type());
+    auto* dom_al = dom->cast<ArrayLit>();
+    std::vector<Expression*> field_expr;
+    if (expr->type().dim() > 0) {
+      field_expr = field_slices(env, expr);
+    } else {
+      field_expr.resize(st->size());
+      for (int i = 0; i < st->size(); ++i) {
+        field_expr[i] = new FieldAccess(Location().introduce(), expr, IntLit::a(i + 1));
+        field_expr[i]->type((*st)[i]);
+      }
+    }
+    std::vector<Expression*> fieldwise;
+    for (int i = 0; i < st->size(); ++i) {
+      auto* field_ti = (*dom_al)[i]->cast<TypeInst>();
+      if (field_ti->domain() != nullptr) {
+        if (expr->type().dim() > 0 && (*st)[i].dim() > 0) {
+          auto* bad_al = field_expr[i]->cast<ArrayLit>();
+          for (unsigned int i = 0; i < bad_al->size(); i++) {
+            fieldwise.push_back(mk_domain_constraint(env, (*bad_al)[i], field_ti->domain()));
+            fieldwise.back()->type(t);
+          }
+        } else {
+          fieldwise.push_back(mk_domain_constraint(env, field_expr[i], field_ti->domain()));
+          fieldwise.back()->type(t);
+        }
+      }
+    }
+    if (fieldwise.size() <= 1) {
+      return fieldwise.empty() ? nullptr : fieldwise[0];
+    }
+    auto* al = new ArrayLit(Location().introduce(), fieldwise);
+    Type al_t = t;
+    al_t.dim(1);
+    al->type(al_t);
+    auto* c = Call::a(Location().introduce(), env.constants.ids.forall, {al});
+    c->type(t);
+    c->decl(env.model->matchFn(env, c, false));
+    return c;
+  }
+
+  GCLock lock;
+  std::vector<Expression*> domargs({expr, dom});
+  if (expr->type().isfloat()) {
+    FloatSetVal* fsv = eval_floatset(env, dom);
+    if (fsv->size() == 1) {
+      domargs[1] = FloatLit::a(fsv->min());
+      domargs.push_back(FloatLit::a(fsv->max()));
+    }
+  }
+
+  Call* c = Call::a(Location().introduce(), "var_dom", domargs);
+  c->type(Type::varbool());
+  c->decl(env.model->matchFn(env, c, false));
+  if (c->decl() == nullptr) {
+    throw InternalError("no matching declaration found for var_dom");
+  }
+  c->type(t);
+  return c;
 }
 
 /// Turn \a c into domain constraints if possible.
@@ -2660,147 +2828,177 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
           return vd->id();
         }
       } else {
-        if (e->type().dim() > 0) {
-          // Check that index sets match
-          check_index_sets(env, vd, e);
-          auto* al =
-              Expression::dynamicCast<ArrayLit>(e->isa<Id>() ? e->cast<Id>()->decl()->e() : e);
-          if ((al != nullptr) && (vd->ti()->domain() != nullptr) &&
-              !vd->ti()->domain()->isa<TIId>()) {
-            if (e->type().bt() == Type::BT_INT) {
-              IntSetVal* isv = eval_intset(env, vd->ti()->domain());
-              for (unsigned int i = 0; i < al->size(); i++) {
-                if (Id* id = (*al)[i]->dynamicCast<Id>()) {
-                  if (id == env.constants.absent) {
-                    continue;
-                  }
-                  VarDecl* vdi = id->decl();
-                  if (vdi->ti()->domain() == nullptr) {
-                    set_computed_domain(env, vdi, vd->ti()->domain(), vdi->ti()->computedDomain());
-                  } else {
-                    IntSetVal* vdi_dom = eval_intset(env, vdi->ti()->domain());
-                    IntSetRanges isvr(isv);
-                    IntSetRanges vdi_domr(vdi_dom);
-                    Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> inter(isvr, vdi_domr);
-                    IntSetVal* newdom = IntSetVal::ai(inter);
-                    if (newdom->empty()) {
-                      env.fail();
-                    } else {
-                      IntSetRanges vdi_domr2(vdi_dom);
-                      IntSetRanges newdomr(newdom);
-                      if (!Ranges::equal(vdi_domr2, newdomr)) {
-                        set_computed_domain(env, vdi, new SetLit(Location().introduce(), newdom),
-                                            false);
+        check_index_sets(env, vd, e);
+        std::vector<std::pair<TypeInst*, Expression*>> todo({{vd->ti(), e}});
+
+        bool domChange = false;
+        while (!todo.empty()) {
+          auto it = todo.back();
+          auto* ti = it.first;
+          auto* cur = it.second;
+          todo.pop_back();
+          if (cur->type().dim() > 0) {
+            if (ti->domain() != nullptr) {
+              auto* al = Expression::dynamicCast<ArrayLit>(
+                  cur->isa<Id>() ? cur->cast<Id>()->decl()->e() : cur);
+              if (al != nullptr) {
+                for (unsigned int i = 0; i < al->size(); i++) {
+                  todo.emplace_back(ti, (*al)[i]);
+                }
+                ti->setComputedDomain(true);
+              }
+            }
+          } else if (cur->type().structBT()) {
+            auto* tl = Expression::dynamicCast<ArrayLit>(
+                cur->isa<Id>() ? cur->cast<Id>()->decl()->e() : cur);
+            if (tl != nullptr) {
+              auto* tis = ti->domain()->cast<ArrayLit>();
+              for (unsigned int i = 0; i < tis->size(); i++) {
+                todo.emplace_back((*tis)[i]->cast<TypeInst>(), (*tl)[i]);
+              }
+              ti->setComputedDomain(true);
+            }
+          } else {
+            Id* ident = Expression::dynamicCast<Id>(cur);
+            if (ident != nullptr && (ident == env.constants.absent ||
+                                     (ident->type().isAnn() && ident->decl() == nullptr))) {
+              // no need to do anything
+            } else if (ident != nullptr && ident->decl()->ti()->domain() == nullptr) {
+              if (ti->domain() != nullptr) {
+                // RHS has no domain, so take ours
+                GCLock lock;
+                Expression* vd_dom = eval_par(env, vd->ti()->domain());
+                set_computed_domain(env, ident->decl(), vd_dom,
+                                    ident->decl()->ti()->computedDomain());
+              }
+            } else if (cur != nullptr && cur->type().bt() == Type::BT_INT) {
+              GCLock lock;
+              IntSetVal* rhsBounds = nullptr;
+              if (cur->type().isSet()) {
+                rhsBounds = compute_intset_bounds(env, cur);
+              } else {
+                IntBounds ib = compute_int_bounds(env, cur);
+                if (ib.valid) {
+                  Call* call = cur->dynamicCast<Call>();
+                  if ((call != nullptr) && call->id() == env.constants.ids.lin_exp) {
+                    ArrayLit* al = eval_array_lit(env, call->arg(1));
+                    if (al->size() == 1) {
+                      IntBounds check_zeroone = compute_int_bounds(env, (*al)[0]);
+                      if (check_zeroone.l == 0 && check_zeroone.u == 1) {
+                        ArrayLit* coeffs = eval_array_lit(env, call->arg(0));
+                        auto c = eval_int(env, (*coeffs)[0]);
+                        auto d = eval_int(env, call->arg(2));
+                        std::vector<IntVal> newdom(2);
+                        newdom[0] = std::min(c + d, d);
+                        newdom[1] = std::max(c + d, d);
+                        rhsBounds = IntSetVal::a(newdom);
                       }
                     }
                   }
-                } else {
-                  // at this point, can only be a constant
-                  assert((*al)[i]->type().isPar());
-                  if (e->type().st() == Type::ST_PLAIN) {
-                    IntVal iv = eval_int(env, (*al)[i]);
-                    if (!isv->contains(iv)) {
-                      std::ostringstream oss;
-                      oss << "value " << env.show((*al)[i]) << " outside declared array domain "
-                          << env.show(vd->ti()->domain());
-                      env.fail(oss.str());
-                    }
-                  } else {
-                    IntSetVal* aisv = eval_intset(env, (*al)[i]);
-                    IntSetRanges aisv_r(aisv);
-                    IntSetRanges isv_r(isv);
-                    if (!Ranges::subset(aisv_r, isv_r)) {
-                      std::ostringstream oss;
-                      oss << "value " << env.show((*al)[i]) << " outside declared array domain "
-                          << env.show(vd->ti()->domain());
-                      env.fail(oss.str());
-                    }
+                  if (rhsBounds == nullptr) {
+                    rhsBounds = IntSetVal::a(ib.l, ib.u);
                   }
                 }
               }
-              vd->ti()->setComputedDomain(true);
-            } else if (e->type().bt() == Type::BT_FLOAT) {
-              FloatSetVal* fsv = eval_floatset(env, vd->ti()->domain());
-              for (unsigned int i = 0; i < al->size(); i++) {
-                if (Id* id = (*al)[i]->dynamicCast<Id>()) {
-                  if (id == env.constants.absent) {
-                    continue;
+              IntSetVal* combinedBounds = rhsBounds;
+              if (rhsBounds != nullptr) {
+                IntSetVal* domain = nullptr;
+                if (ti->domain() != nullptr && !ti->domain()->isa<TIId>()) {
+                  domain = eval_intset(env, ti->domain());
+                  IntSetRanges dr(domain);
+                  IntSetRanges ibr(rhsBounds);
+                  Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> i(dr, ibr);
+                  combinedBounds = IntSetVal::ai(i);
+                  if (combinedBounds->card() == 0 && !cur->type().isSet()) {
+                    env.fail();
                   }
-                  VarDecl* vdi = id->decl();
-                  if (vdi->ti()->domain() == nullptr) {
-                    set_computed_domain(env, vdi, vd->ti()->domain(), vdi->ti()->computedDomain());
-                  } else {
-                    FloatSetVal* vdi_dom = eval_floatset(env, vdi->ti()->domain());
-                    FloatSetRanges fsvr(fsv);
-                    FloatSetRanges vdi_domr(vdi_dom);
-                    Ranges::Inter<FloatVal, FloatSetRanges, FloatSetRanges> inter(fsvr, vdi_domr);
-                    FloatSetVal* newdom = FloatSetVal::ai(inter);
-                    if (newdom->empty()) {
-                      env.fail();
-                    } else {
-                      FloatSetRanges vdi_domr2(vdi_dom);
-                      FloatSetRanges newdomr(newdom);
-                      if (!Ranges::equal(vdi_domr2, newdomr)) {
-                        set_computed_domain(env, vdi, new SetLit(Location().introduce(), newdom),
-                                            false);
-                      }
-                    }
+                }
+                if (ti->ranges().empty()) {
+                  // Make our domain match the intersection of ours and the RHS
+                  // if we're not an array (if we're an array, we can't update our domain
+                  // since it should really be the union of all the RHS array literal member
+                  // domains)
+                  ti->domain(new SetLit(Location().introduce(), combinedBounds));
+                  ti->setComputedDomain(true);
+                  domChange = domChange || domain == nullptr || !domain->equal(combinedBounds);
+                }
+                if (ident != nullptr && !combinedBounds->equal(rhsBounds)) {
+                  // If the RHS is an identifier, make its domain match
+                  set_computed_domain(env, ident->decl(),
+                                      new SetLit(Location().introduce(), combinedBounds), false);
+                }
+              }
+            } else if (cur != nullptr && cur->type().bt() == Type::BT_FLOAT) {
+              GCLock lock;
+              FloatSetVal* rhsBounds = nullptr;
+              FloatBounds fb = compute_float_bounds(env, cur);
+              if (fb.valid) {
+                rhsBounds = FloatSetVal::a(fb.l, fb.u);
+              }
+              FloatSetVal* combinedBounds = rhsBounds;
+              if (rhsBounds != nullptr) {
+                FloatSetVal* domain = nullptr;
+                if (ti->domain() != nullptr && !ti->domain()->isa<TIId>()) {
+                  domain = eval_floatset(env, ti->domain());
+                  FloatSetRanges dr(domain);
+                  FloatSetRanges fbr(rhsBounds);
+                  Ranges::Inter<FloatVal, FloatSetRanges, FloatSetRanges> i(dr, fbr);
+                  combinedBounds = FloatSetVal::ai(i);
+                  if (combinedBounds->empty()) {
+                    env.fail();
                   }
-                } else {
-                  // at this point, can only be a constant
-                  assert((*al)[i]->type().isPar());
-                  FloatVal fv = eval_float(env, (*al)[i]);
-                  if (!fsv->contains(fv)) {
-                    std::ostringstream oss;
-                    oss << "value " << fv << " outside declared array domain " << *fsv;
-                    env.fail(oss.str());
+                }
+                FloatSetRanges fsr(combinedBounds);
+                if (ti->ranges().empty()) {
+                  // Make our domain match the intersection of ours and the RHS
+                  // if we're not an array (if we're an array, we can't update our domain
+                  // since it should really be the union of all the RHS array literal member
+                  // domains)
+                  ti->domain(new SetLit(Location().introduce(), combinedBounds));
+                  ti->setComputedDomain(true);
+                  if (!domChange && domain != nullptr) {
+                    FloatSetRanges fsr1(domain);
+                    domChange = !Ranges::equal(fsr, fsr1);
+                  }
+                }
+                if (ident != nullptr) {
+                  FloatSetRanges fsr1(rhsBounds);
+                  if (!Ranges::equal(fsr, fsr1)) {
+                    // If the RHS is an identifier, make its domain match
+                    set_computed_domain(env, ident->decl(),
+                                        new SetLit(Location().introduce(), combinedBounds), false);
                   }
                 }
               }
-              vd->ti()->setComputedDomain(true);
             }
           }
-        } else if (Id* e_id = e->dynamicCast<Id>()) {
-          if (e_id == vd->id()) {
-            ret = vd->id();
-          } else {
-            ASTString cid;
-            if (e->type().isint()) {
-              if (e->type().isOpt()) {
-                cid = ASTString("int_opt_eq");
-              } else {
-                cid = env.constants.ids.int_.eq;
-              }
-            } else if (e->type().isbool()) {
-              if (e->type().isOpt()) {
-                cid = ASTString("bool_opt_eq");
-              } else {
-                cid = env.constants.ids.bool_.eq;
-              }
-            } else if (e->type().isSet()) {
-              cid = env.constants.ids.set_.eq;
-            } else if (e->type().isfloat()) {
-              cid = env.constants.ids.float_.eq;
-            }
-            if (!cid.empty() && env.hasReverseMapper(vd->id())) {
-              GCLock lock;
-              std::vector<Expression*> args(2);
-              args[0] = vd->id();
-              args[1] = e_id;
-              Call* c = Call::a(Location().introduce(), cid, args);
-              c->decl(env.model->matchFn(env, c, false));
-              c->type(c->decl()->rtype(env, args, nullptr, false));
-              if (c->type().isbool() && ctx.b != C_ROOT) {
+        }
+
+        if (env.hasReverseMapper(vd->id())) {
+          if (e->type().dim() == 0 && e->isa<Id>() && e->cast<Id>() != vd->id()) {
+            // Reverse mapped variable aliasing:
+            // E.g for optional variables, we can constrain the deopt values and the occurs values
+            // to match rather than only equating the deopts when they both occur.
+            GCLock lock;
+            auto* alias =
+                Call::a(Location().introduce(), env.constants.ids.mzn_alias_eq, {vd->id(), e});
+            auto* decl = env.model->matchFn(env, alias, false);
+            if (decl != nullptr) {
+              alias->decl(decl);
+              alias->type(Type::varbool());
+              if (ctx.b != C_ROOT) {
                 add_ctx_ann(env, vd, ctx.b);
-                add_ctx_ann(env, e_id->decl(), ctx.b);
+                add_ctx_ann(env, e->cast<Id>()->decl(), ctx.b);
               }
-              if (c->decl()->e() != nullptr) {
-                flat_exp(env, Ctx(), c, env.constants.varTrue, env.constants.varTrue);
-                ret = vd->id();
-                vd->e(e);
-                env.voAddExp(vd);
-              }
+              flat_exp(env, Ctx(), alias, env.constants.varTrue, env.constants.varTrue);
+              ret = vd->id();
+              vd->e(e);
+              env.voAddExp(vd);
             }
+          }
+          if (domChange) {
+            // Use set_computed_domain to create var_dom calls
+            set_computed_domain(env, vd, vd->ti()->domain(), vd->ti()->computedDomain());
           }
         }
 
@@ -2809,171 +3007,6 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
           add_path_annotation(env, ret);
           env.voAddExp(vd);
           ret = vd->id();
-        }
-        Id* vde_id = Expression::dynamicCast<Id>(vd->e());
-        if (vde_id != nullptr && (vde_id == env.constants.absent ||
-                                  (vde_id->type().isAnn() && vde_id->decl() == nullptr))) {
-          // no need to do anything
-        } else if (vde_id != nullptr && vde_id->decl()->ti()->domain() == nullptr) {
-          if (vd->ti()->domain() != nullptr) {
-            GCLock lock;
-            Expression* vd_dom = eval_par(env, vd->ti()->domain());
-            set_computed_domain(env, vde_id->decl(), vd_dom,
-                                vde_id->decl()->ti()->computedDomain());
-          }
-        } else if ((vd->e() != nullptr) && vd->e()->type().bt() == Type::BT_INT &&
-                   vd->e()->type().dim() == 0) {
-          GCLock lock;
-          IntSetVal* ibv = nullptr;
-          if (vd->e()->type().isSet()) {
-            ibv = compute_intset_bounds(env, vd->e());
-          } else {
-            IntBounds ib = compute_int_bounds(env, vd->e());
-            if (ib.valid) {
-              Call* call = vd->e()->dynamicCast<Call>();
-              if ((call != nullptr) && call->id() == env.constants.ids.lin_exp) {
-                ArrayLit* al = eval_array_lit(env, call->arg(1));
-                if (al->size() == 1) {
-                  IntBounds check_zeroone = compute_int_bounds(env, (*al)[0]);
-                  if (check_zeroone.l == 0 && check_zeroone.u == 1) {
-                    ArrayLit* coeffs = eval_array_lit(env, call->arg(0));
-                    auto c = eval_int(env, (*coeffs)[0]);
-                    auto d = eval_int(env, call->arg(2));
-                    std::vector<IntVal> newdom(2);
-                    newdom[0] = std::min(c + d, d);
-                    newdom[1] = std::max(c + d, d);
-                    ibv = IntSetVal::a(newdom);
-                  }
-                }
-              }
-              if (ibv == nullptr) {
-                ibv = IntSetVal::a(ib.l, ib.u);
-              }
-            }
-          }
-          if (ibv != nullptr) {
-            if (vd->ti()->domain() != nullptr) {
-              IntSetVal* domain = eval_intset(env, vd->ti()->domain());
-              IntSetRanges dr(domain);
-              IntSetRanges ibr(ibv);
-              Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> i(dr, ibr);
-              IntSetVal* newibv = IntSetVal::ai(i);
-              if (newibv->card() == 0 && !vd->e()->type().isSet()) {
-                env.fail();
-              } else if (ibv->equal(newibv)) {
-                vd->ti()->setComputedDomain(true);
-              } else {
-                ibv = newibv;
-              }
-            } else {
-              vd->ti()->setComputedDomain(true);
-            }
-            SetLit* ibv_l = nullptr;
-            if (Id* rhs_ident = vd->e()->dynamicCast<Id>()) {
-              if (rhs_ident->decl()->ti()->domain() != nullptr) {
-                IntSetVal* rhs_domain = eval_intset(env, rhs_ident->decl()->ti()->domain());
-                IntSetRanges dr(rhs_domain);
-                IntSetRanges ibr(ibv);
-                Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> i(dr, ibr);
-                IntSetVal* rhs_newibv = IntSetVal::ai(i);
-                if (!rhs_domain->equal(rhs_newibv)) {
-                  ibv_l = new SetLit(Location().introduce(), rhs_newibv);
-                  set_computed_domain(env, rhs_ident->decl(), ibv_l, false);
-                  if (rhs_ident->decl()->type().isOpt()) {
-                    std::vector<Expression*> args(2);
-                    args[0] = rhs_ident;
-                    args[1] = ibv_l;
-                    Call* c = Call::a(Location().introduce(), "var_dom", args);
-                    c->type(Type::varbool());
-                    c->decl(env.model->matchFn(env, c, false));
-                    (void)flat_exp(env, Ctx(), c, env.constants.varTrue, env.constants.varTrue);
-                  }
-                } else if (!ibv->equal(rhs_newibv)) {
-                  ibv_l = new SetLit(Location().introduce(), rhs_newibv);
-                }
-              }
-            }
-            if (ibv_l == nullptr) {
-              ibv_l = new SetLit(Location().introduce(), ibv);
-            }
-            set_computed_domain(env, vd, ibv_l, vd->ti()->computedDomain());
-
-            if (vd->type().isOpt()) {
-              std::vector<Expression*> args(2);
-              args[0] = vd->id();
-              args[1] = ibv_l;
-              Call* c = Call::a(Location().introduce(), "var_dom", args);
-              c->type(Type::varbool());
-              c->decl(env.model->matchFn(env, c, false));
-              (void)flat_exp(env, Ctx(), c, env.constants.varTrue, env.constants.varTrue);
-            }
-          }
-        } else if ((vd->e() != nullptr) && vd->e()->type().bt() == Type::BT_FLOAT &&
-                   vd->e()->type().dim() == 0) {
-          GCLock lock;
-          FloatSetVal* fbv = nullptr;
-          FloatBounds fb = compute_float_bounds(env, vd->e());
-          if (fb.valid) {
-            fbv = FloatSetVal::a(fb.l, fb.u);
-          }
-          if (fbv != nullptr) {
-            if (vd->ti()->domain() != nullptr) {
-              FloatSetVal* domain = eval_floatset(env, vd->ti()->domain());
-              FloatSetRanges dr(domain);
-              FloatSetRanges fbr(fbv);
-              Ranges::Inter<FloatVal, FloatSetRanges, FloatSetRanges> i(dr, fbr);
-              FloatSetVal* newfbv = FloatSetVal::ai(i);
-              if (newfbv->empty()) {
-                env.fail();
-              }
-              FloatSetRanges fbv_eq(fbv);
-              FloatSetRanges newfbv_eq(newfbv);
-              if (Ranges::equal(fbv_eq, newfbv_eq)) {
-                vd->ti()->setComputedDomain(true);
-              } else {
-                fbv = newfbv;
-              }
-            } else {
-              vd->ti()->setComputedDomain(true);
-            }
-            SetLit* fbv_l = nullptr;
-            if (Id* rhs_ident = vd->e()->dynamicCast<Id>()) {
-              if (rhs_ident->decl()->ti()->domain() != nullptr) {
-                FloatSetVal* rhs_domain = eval_floatset(env, rhs_ident->decl()->ti()->domain());
-                FloatSetRanges dr(rhs_domain);
-                FloatSetRanges ibr(fbv);
-                Ranges::Inter<FloatVal, FloatSetRanges, FloatSetRanges> i(dr, ibr);
-                FloatSetVal* rhs_newfbv = FloatSetVal::ai(i);
-                if (!rhs_domain->equal(rhs_newfbv)) {
-                  fbv_l = new SetLit(Location().introduce(), rhs_newfbv);
-                  set_computed_domain(env, rhs_ident->decl(), fbv_l, false);
-                  if (rhs_ident->decl()->type().isOpt()) {
-                    std::vector<Expression*> args(2);
-                    args[0] = rhs_ident;
-                    args[1] = fbv_l;
-                    Call* c = Call::a(Location().introduce(), "var_dom", args);
-                    c->type(Type::varbool());
-                    c->decl(env.model->matchFn(env, c, false));
-                    (void)flat_exp(env, Ctx(), c, env.constants.varTrue, env.constants.varTrue);
-                  }
-                } else if (!fbv->equal(rhs_newfbv)) {
-                  fbv_l = new SetLit(Location().introduce(), rhs_newfbv);
-                }
-              }
-            }
-            fbv_l = new SetLit(Location().introduce(), fbv);
-            set_computed_domain(env, vd, fbv_l, vd->ti()->computedDomain());
-
-            if (vd->type().isOpt()) {
-              std::vector<Expression*> args(2);
-              args[0] = vd->id();
-              args[1] = fbv_l;
-              Call* c = Call::a(Location().introduce(), "var_dom", args);
-              c->type(Type::varbool());
-              c->decl(env.model->matchFn(env, c, false));
-              (void)flat_exp(env, Ctx(), c, env.constants.varTrue, env.constants.varTrue);
-            }
-          }
         }
       }
       return ret;
@@ -3937,9 +3970,9 @@ void flatten(Env& e, FlatteningOptions opt) {
             }
           }
           if (vdi->e()->type().dim() > 0 && vdi->e()->type().isvar()) {
-            assert(vdi->e()->ti()->type().bt() !=
-                   Type::BT_TUPLE);  // TODO: Does the next statement ever erase the tuple field
-                                     // types? If so, replace by ti->eraseDomain().
+            assert(!vdi->e()->ti()->type().structBT());  // TODO: Does the next statement ever erase
+                                                         // the tuple field types? If so, replace by
+                                                         // ti->eraseDomain().
             vdi->e()->ti()->domain(nullptr);
           }
           if (vdi->e()->type().isint() && vdi->e()->type().isvar() &&

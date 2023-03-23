@@ -1513,6 +1513,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
                   check_output_par_fn(env, crhs);
                 }
                 output_vardecls(env, vdi_copy, rhs);
+                top_down(*this, rhs);
                 vd_followed->e(rhs);
               } else if (reallyFlat == vd_orig ||
                          cannot_use_rhs_for_output(env, vd_followed->e()) ||

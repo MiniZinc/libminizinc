@@ -1004,6 +1004,66 @@ void TypeInst::setRanges(const std::vector<TypeInst*>& ranges) {
   rehash();
 }
 
+void TypeInst::canonicaliseStruct(EnvI& env) {
+  if (type().bt() == Type::BT_TUPLE) {
+    // Warning: Do not check TypeInst twice! A canonical tuple does not abide by the rules
+    // that a user definition abides by (e.g., a tuple might be marked var (because all
+    // members are var) and contain an array (with var members)).
+    if (type().isvar() && type().typeId() == 0) {
+      auto* dom = domain()->cast<ArrayLit>();
+      // Check if "var" tuple is allowed
+      for (unsigned int i = 0; i < dom->size(); i++) {
+        auto* tii = (*dom)[i]->cast<TypeInst>();
+        Type field = tii->type();
+        if (field.st() == Type::ST_SET && field.bt() != Type::BT_INT &&
+            field.bt() != Type::BT_TOP) {
+          throw TypeError(env, loc(),
+                          "var tuples with set element types other than `int' are not allowed");
+        }
+        if (field.bt() == Type::BT_ANN || field.bt() == Type::BT_STRING) {
+          throw TypeError(env, loc(),
+                          "var tuples with " + field.toString(env) + " types are not allowed");
+        }
+        if (field.dim() != 0) {
+          throw TypeError(env, loc(), "var tuples with array types are not allowed");
+        }
+      }
+      // spread var keyword in field types:
+      // var tuple (X, Y, ...) -> var tuple(var X, var Y, ...)
+      mkVar(env);
+    }
+    env.registerTupleType(this);
+  } else if (type().bt() == Type::BT_RECORD) {
+    // Warning: Do not check TypeInst twice! A canonical record does not abide by the rules
+    // that a user definition abides by (e.g., a record might be marked var (because all
+    // members are var) and contain an array (with var members)).
+    if (type().isvar() && type().typeId() == 0) {
+      auto* dom = domain()->cast<ArrayLit>();
+      // Check if "var" record is allowed
+      for (unsigned int i = 0; i < dom->size(); i++) {
+        auto* tii = (*dom)[i]->cast<VarDecl>();
+        Type field = tii->type();
+        if (field.st() == Type::ST_SET && field.bt() != Type::BT_INT &&
+            field.bt() != Type::BT_TOP) {
+          throw TypeError(env, loc(),
+                          "var record with set element types other than `int' are not allowed");
+        }
+        if (field.bt() == Type::BT_ANN || field.bt() == Type::BT_STRING) {
+          throw TypeError(env, loc(),
+                          "var record with " + field.toString(env) + " types are not allowed");
+        }
+        if (field.dim() != 0) {
+          throw TypeError(env, loc(), "var record with array types are not allowed");
+        }
+      }
+      // spread var keyword in field types:
+      // var record (X: a, Y: b, ...) -> var tuple(var X: a, var Y: b, ...)
+      mkVar(env);
+    }
+    env.registerRecordType(this);
+  }
+}
+
 void TypeInst::mkVar(const EnvI& env) {
   if (_domain == nullptr || !_domain->isa<ArrayLit>()) {
     assert(!type().structBT());
@@ -1041,7 +1101,8 @@ void TypeInst::mkVar(const EnvI& env) {
   tt.ti(Type::TI_VAR);
   type(tt);
 }
-void TypeInst::setStructDomain(const EnvI& env, const Type& struct_type, bool setTypeAny) {
+void TypeInst::setStructDomain(const EnvI& env, const Type& struct_type, bool setTypeAny,
+                               bool setTIRanges) {
   GCLock lock;
   StructType* st = env.getStructType(struct_type);
   std::vector<Expression*> field_ti(st->size());
@@ -1053,9 +1114,15 @@ void TypeInst::setStructDomain(const EnvI& env, const Type& struct_type, bool se
     field_ti[i] = new TypeInst(loc().introduce(), tti);
     if (tti.structBT()) {
       field_ti[i]->cast<TypeInst>()->setStructDomain(env, tti);
+    } else if (tti.dim() != 0) {
+      std::vector<TypeInst*> newRanges(tti.dim());
+      for (unsigned int k = 0; k < tti.dim(); k++) {
+        newRanges[k] = new TypeInst(Location().introduce(), Type::parint());
+      }
+      field_ti[i]->cast<TypeInst>()->setRanges(newRanges);
     }
   }
-  if (ranges().size() != type().dim()) {
+  if (setTIRanges && ranges().size() != type().dim()) {
     assert(ranges().empty());
     std::vector<TypeInst*> newRanges(type().dim());
     for (unsigned int k = 0; k < type().dim(); k++) {
@@ -1063,7 +1130,10 @@ void TypeInst::setStructDomain(const EnvI& env, const Type& struct_type, bool se
     }
     setRanges(newRanges);
   }
-  domain(new ArrayLit(loc().introduce(), field_ti));
+  auto* al = ArrayLit::constructTuple(loc().introduce(), field_ti);
+  al->type(struct_type.elemType(env));
+  domain(al);
+  type(struct_type);
 }
 
 bool TypeInst::resolveAlias(EnvI& env) {
@@ -1244,16 +1314,6 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
   if (fi->id() == env.constants.varRedef->id()) {
     return Type::varbool();
   }
-  Type ret = fi->ti()->type();
-  ASTString dh;
-  if (fi->ti()->domain() && fi->ti()->domain()->isa<TIId>()) {
-    dh = fi->ti()->domain()->cast<TIId>()->v();
-  }
-  ASTString rh;
-  if (fi->ti()->ranges().size() == 1 && isa_tiid(fi->ti()->ranges()[0]->domain())) {
-    rh = fi->ti()->ranges()[0]->domain()->cast<TIId>()->v();
-  }
-
   std::vector<std::pair<TypeInst*, Type>> stack(ta.size());
   for (unsigned int i = 0; i < ta.size(); i++) {
     stack[i] = std::make_pair(fi->param(i)->ti(), get_type(ta[i]));
@@ -1391,12 +1451,50 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
       }
     }
   }
+  return type_from_tmap(env, fi->ti(), tmap);
+}
+}  // namespace
+
+Type type_from_tmap(EnvI& env, TypeInst* ti, const ASTStringMap<std::pair<Type, bool>>& tmap) {
+  Type ret = ti->type();
+  if (ret.structBT()) {
+    auto* al = ti->domain()->cast<ArrayLit>();
+    std::vector<Type> fields(al->size());
+    for (unsigned int i = 0; i < al->size(); i++) {
+      fields[i] = type_from_tmap(env, (*al)[i]->cast<TypeInst>(), tmap);
+    }
+    unsigned int typeId = 0;
+    if (ret.bt() == Type::BT_TUPLE) {
+      typeId = env.registerTupleType(fields);
+    } else {
+      auto* rt = env.getRecordType(ret);
+      typeId = env.registerRecordType(rt, fields);
+    }
+    if (!ti->ranges().empty()) {
+      std::vector<unsigned int> enumIds(ti->ranges().size() + 1);
+      for (unsigned int i = 0; i < ti->ranges().size(); i++) {
+        enumIds[i] = 0;
+      }
+      enumIds[enumIds.size() - 1] = typeId;
+      ret.typeId(env.registerArrayEnum(enumIds));
+    } else {
+      ret.typeId(typeId);
+    }
+  }
+  ASTString dh;
+  if (ti->domain() != nullptr && ti->domain()->isa<TIId>()) {
+    dh = ti->domain()->cast<TIId>()->v();
+  }
+  ASTString rh;
+  if (ti->ranges().size() == 1 && isa_tiid(ti->ranges()[0]->domain())) {
+    rh = ti->ranges()[0]->domain()->cast<TIId>()->v();
+  }
   if (!dh.empty()) {
     auto it = tmap.find(dh);
     if (it == tmap.end()) {
       std::ostringstream ss;
       ss << "type-inst variable $" << dh << " used but not defined";
-      throw TypeError(env, fi->loc(), ss.str());
+      throw TypeError(env, ti->loc(), ss.str());
     }
     if (dh.beginsWith("$")) {
       // this is an enum
@@ -1412,9 +1510,9 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
         ret.any(false);
       }
     }
-    if (!fi->ti()->ranges().empty() && it->second.first.typeId() != 0) {
-      std::vector<unsigned int> enumIds(fi->ti()->ranges().size() + 1);
-      for (unsigned int i = 0; i < fi->ti()->ranges().size(); i++) {
+    if (!ti->ranges().empty() && it->second.first.typeId() != 0) {
+      std::vector<unsigned int> enumIds(ti->ranges().size() + 1);
+      for (unsigned int i = 0; i < ti->ranges().size(); i++) {
         enumIds[i] = 0;
       }
       enumIds[enumIds.size() - 1] = it->second.first.typeId();
@@ -1428,7 +1526,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
     if (it == tmap.end()) {
       std::ostringstream ss;
       ss << "type-inst variable $" << rh << " used but not defined";
-      throw TypeError(env, fi->loc(), ss.str());
+      throw TypeError(env, ti->loc(), ss.str());
     }
     unsigned int curTypeId = ret.typeId();
     ret.typeId(0);
@@ -1447,8 +1545,8 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
       enumIds[enumIds.size() - 1] = curTypeId;
       ret.typeId(env.registerArrayEnum(enumIds));
     }
-  } else if (!fi->ti()->ranges().empty()) {
-    std::vector<unsigned int> enumIds(fi->ti()->ranges().size() + 1);
+  } else if (!ti->ranges().empty()) {
+    std::vector<unsigned int> enumIds(ti->ranges().size() + 1);
     bool hadRealEnum = false;
     if (ret.typeId() == 0) {
       enumIds[enumIds.size() - 1] = 0;
@@ -1457,14 +1555,14 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
       hadRealEnum = true;
     }
 
-    for (unsigned int i = 0; i < fi->ti()->ranges().size(); i++) {
-      if (isa_enum_tiid(fi->ti()->ranges()[i]->domain())) {
-        ASTString enumTIId = fi->ti()->ranges()[i]->domain()->cast<TIId>()->v();
+    for (unsigned int i = 0; i < ti->ranges().size(); i++) {
+      if (isa_enum_tiid(ti->ranges()[i]->domain())) {
+        ASTString enumTIId = ti->ranges()[i]->domain()->cast<TIId>()->v();
         auto it = tmap.find(enumTIId);
         if (it == tmap.end()) {
           std::ostringstream ss;
           ss << "type-inst variable $" << enumTIId << " used but not defined";
-          throw TypeError(env, fi->loc(), ss.str());
+          throw TypeError(env, ti->loc(), ss.str());
         }
         enumIds[i] = it->second.first.typeId();
         hadRealEnum |= (enumIds[i] != 0);
@@ -1476,7 +1574,6 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
   }
   return ret;
 }
-}  // namespace
 
 void Item::mark(Item* item) {
   if (item->hasMark()) {
@@ -1878,6 +1975,8 @@ Constants::Constants() {
   ids.card = addString("card");
   ids.abs = addString("abs");
 
+  ids.mzn_alias_eq = addString("mzn_alias_eq");
+
   ids.symmetry_breaking_constraint = addString("symmetry_breaking_constraint");
   ids.redundant_constraint = addString("redundant_constraint");
   ids.implied_constraint = addString("implied_constraint");
@@ -2022,6 +2121,7 @@ Constants::Constants() {
   ids.mzn_set_in_internal = addString("mzn_set_in_internal");
   ids.introduced_var = addString("__INTRODUCED");
   ids.anonEnumFromStrings = addString("anon_enum");
+  ids.unnamedArgument = addString("<unnamed argument>");
 
   ctx.root = addId("ctx_root");
   ctx.root->type(Type::ann());

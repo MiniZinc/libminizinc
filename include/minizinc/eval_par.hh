@@ -95,6 +95,8 @@ Expression* eval_par(EnvI& env, Expression* e);
 void eval_static_function_body(EnvI& env, FunctionI* decl, Model& toAdd);
 /// Check if variable declaration \a vd satisfies the domain and index set constraints
 void check_par_declaration(EnvI& env, VarDecl* vd);
+/// Check if an expression \a rhs satisfies the declaration's domain (ignores index sets)
+void check_par_domain(EnvI& env, VarDecl* vd, Expression* rhs, bool isArg = false);
 /// Merge two record literals and return the result.
 ArrayLit* eval_record_merge(EnvI& env, ArrayLit* lhs, ArrayLit* rhs);
 

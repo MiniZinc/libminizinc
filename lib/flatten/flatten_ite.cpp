@@ -79,10 +79,12 @@ Expression* ite_struct_split(EnvI& env, Type ty, const std::vector<Expression*>&
     then_decl[i] = new VarDecl(Location().introduce(),
                                new TypeInst(Location().introduce(), then_in[i]->type(), nullptr),
                                env.genId(), then_in[i]);
+    then_decl[i]->ti()->setStructDomain(env, then_in[i]->type());
   }
   auto* else_decl = new VarDecl(Location().introduce(),
                                 new TypeInst(Location().introduce(), else_in->type(), nullptr),
                                 env.genId(), else_in);
+  else_decl->ti()->setStructDomain(env, else_in->type());
 
   for (int i = 0; i < st->size(); ++i) {
     Type field = (*st)[i];

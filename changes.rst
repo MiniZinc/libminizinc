@@ -67,6 +67,8 @@ Bug fixes:
    interface.
 -  Fix bug where an already defined variable was made the argument of a
    ``defines_var`` annotation for a constraint.
+-  Fix handling of domains for tuple and record types.
+-  Fix index set checking for tuples and records which contain arrays.
 
 .. _v2.7.0:
 

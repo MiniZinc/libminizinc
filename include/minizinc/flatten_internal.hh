@@ -313,7 +313,11 @@ struct TypeList : public StructType {
 
 class EnvI {
   friend class Type;
+  template <bool ignoreVarDecl>
+  friend class Typer;
   friend KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t);
+  friend Type type_from_tmap(EnvI& env, TypeInst* ti,
+                             const ASTStringMap<std::pair<Type, bool>>& tmap);
 
 public:
   Model* model;

@@ -2292,6 +2292,8 @@ void debugprint(const MiniZinc::Type& t) { std::cerr << t.simpleToString() << st
 void debugprint(const MiniZinc::Type& t, const MiniZinc::EnvI& env) {
   std::cerr << t.toString(env) << std::endl;
 }
+void debugprint(const MiniZinc::IntSetVal* isv) { std::cerr << *isv << std::endl; }
+void debugprint(const MiniZinc::FloatSetVal* fsv) { std::cerr << *fsv << std::endl; }
 
 template <class T>
 void debugprintvec(const std::vector<T>& x) {

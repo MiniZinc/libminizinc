@@ -27,133 +27,239 @@
 
 namespace MiniZinc {
 
-struct CheckParDomainResult {
-  bool ok;
-  std::string e;
-  std::string domain;
+void check_par_domain(EnvI& env, VarDecl* vd, Expression* rhs, bool isArg) {
+  struct ToCheck {
+    Expression* accessor;
+    Expression* e;
+    TypeInst* ti;
+    ToCheck(Expression* _accessor, Expression* _e, TypeInst* _ti)
+        : accessor(_accessor), e(_e), ti(_ti) {}
+  };
+  bool hasName = !vd->id()->str().empty();
+  std::vector<ToCheck> todo({{hasName ? vd->id() : nullptr, rhs, vd->ti()}});
+  GCLock lock;
 
-  CheckParDomainResult() : ok(true) {}
-  CheckParDomainResult(std::string _e, std::string _domain)
-      : ok(false), e(std::move(_e)), domain(std::move(_domain)) {}
-};
-
-CheckParDomainResult check_par_domain(EnvI& env, Expression* e, Expression* domain) {
-  if (e->type() == Type::parint()) {
-    IntSetVal* isv = eval_intset(env, domain);
-    IntVal v = eval_int(env, e);
-    if (!isv->contains(v)) {
-      auto enumId = domain->type().typeId();
-      return CheckParDomainResult(env.show(v, enumId), env.show(isv, enumId));
+  // Firstly just walks through checking domains, then if we encounter an error,
+  // starts again recording what accessors are needed to generate the error message.
+  bool hadError = false;
+  while (!todo.empty()) {
+    auto it = todo.back();
+    todo.pop_back();
+    if (it.ti->domain() == nullptr || it.ti->domain()->isa<TIId>()) {
+      continue;
     }
-  } else if (e->type() == Type::parfloat()) {
-    FloatSetVal* fsv = eval_floatset(env, domain);
-    FloatVal v = eval_float(env, e);
-    if (!fsv->contains(v)) {
-      std::stringstream vs;
-      vs << v;
-      std::stringstream ds;
-      ds << *fsv;
-      return CheckParDomainResult(vs.str(), ds.str());
-    }
-  } else if (e->type() == Type::parsetint()) {
-    IntSetVal* isv = eval_intset(env, domain);
-    IntSetRanges ir(isv);
-    IntSetVal* rsv = eval_intset(env, e);
-    IntSetRanges rr(rsv);
-    if (!Ranges::subset(rr, ir)) {
-      auto enumId = domain->type().typeId();
-      return CheckParDomainResult(env.show(rsv, enumId), env.show(isv, enumId));
-    }
-  } else if (e->type() == Type::parsetfloat()) {
-    FloatSetVal* fsv = eval_floatset(env, domain);
-    FloatSetRanges fr(fsv);
-    FloatSetVal* rsv = eval_floatset(env, e);
-    FloatSetRanges rr(rsv);
-    if (!Ranges::subset(rr, fr)) {
-      std::stringstream vs;
-      vs << *rsv;
-      std::stringstream ds;
-      ds << *fsv;
-      return CheckParDomainResult(vs.str(), ds.str());
-    }
-  }
-  return CheckParDomainResult();
-}
-
-void check_par_declaration(EnvI& env, VarDecl* vd) {
-  if (vd->type().dim() > 0) {
-    check_index_sets(env, vd, vd->e());
-    if (vd->ti()->domain() != nullptr) {
-      ArrayLit* al = eval_array_lit(env, vd->e());
+    if (it.e->type().dim() > 0) {
+      ArrayLit* al = eval_array_lit(env, it.e);
+      unsigned int enumId = it.ti->type().typeId();
       for (unsigned int i = 0; i < al->size(); i++) {
-        auto check = check_par_domain(env, (*al)[i], vd->ti()->domain());
-        if (!check.ok) {
-          std::ostringstream oss;
-          oss << "parameter value out of range, ";
-          oss << "declared range of array `" << *vd->id() << "' is " << check.domain << ", ";
-
+        Expression* access = nullptr;
+        if (hadError) {
           std::vector<int> indexes(al->dims());
           int remDim = static_cast<int>(i);
           for (unsigned int j = al->dims(); (j--) != 0U;) {
             indexes[j] = (remDim % (al->max(j) - al->min(j) + 1)) + al->min(j);
             remDim = remDim / (al->max(j) - al->min(j) + 1);
           }
-
-          oss << "but element at index ";
-
-          std::vector<std::string> indexes_s(indexes.size());
-          unsigned int enumId = vd->type().typeId();
+          std::vector<Expression*> indexes_s(indexes.size());
           if (enumId != 0) {
             const auto& enumIds = env.getArrayEnum(enumId);
-            enumId = enumIds[enumIds.size() - 1];
             for (unsigned int j = 0; j < indexes.size(); j++) {
               std::ostringstream index_oss;
               if (enumIds[j] != 0) {
-                index_oss << env.enumToString(enumIds[j], indexes[j]);
+                auto name = env.enumToString(enumIds[j], indexes[j]);
+                indexes_s[j] = new Id(Location().introduce(), name, nullptr);
               } else {
-                index_oss << indexes[j];
+                indexes_s[j] = IntLit::a(indexes[j]);
               }
-              indexes_s[j] = index_oss.str();
             }
           } else {
             for (unsigned int j = 0; j < indexes.size(); j++) {
-              std::ostringstream index_oss;
-              index_oss << indexes[j];
-              indexes_s[j] = index_oss.str();
+              indexes_s[j] = IntLit::a(indexes[j]);
             }
           }
-
-          bool first = true;
-          if (indexes_s.size() > 1) {
-            oss << "(";
-          }
-          for (const auto& idx : indexes_s) {
-            if (first) {
-              first = false;
-            } else {
-              oss << ", ";
-            }
-            oss << idx;
-          }
-          if (indexes_s.size() > 1) {
-            oss << ")";
-          }
-
-          oss << " is " << check.e;
-          throw ResultUndefinedError(env, vd->e()->loc(), oss.str());
+          access = new ArrayAccess(Location().introduce(), it.accessor, indexes_s);
         }
+        todo.emplace_back(access, (*al)[i], it.ti);
+      }
+    } else if (it.e->type().istuple()) {
+      auto* domains = it.ti->domain()->cast<ArrayLit>();
+      auto* al = eval_array_lit(env, it.e);
+      for (unsigned int i = 0; i < al->size(); i++) {
+        auto* access = hadError
+                           ? new FieldAccess(Location().introduce(), it.accessor, IntLit::a(i + 1))
+                           : nullptr;
+        todo.emplace_back(access, (*al)[i], (*domains)[i]->cast<TypeInst>());
+      }
+    } else if (it.e->type().isrecord()) {
+      RecordType* rt = env.getRecordType(it.e->type());
+      auto* domains = it.ti->domain()->cast<ArrayLit>();
+      auto* al = eval_array_lit(env, it.e);
+      for (unsigned int i = 0; i < al->size(); i++) {
+        Expression* access = nullptr;
+        if (hadError) {
+          auto* field =
+              new Id(Location().introduce(), rt->fieldName(static_cast<size_t>(i)), nullptr);
+          access = new FieldAccess(Location().introduce(), it.accessor, field);
+        }
+        todo.emplace_back(access, (*al)[i], (*domains)[i]->cast<TypeInst>());
+      }
+    } else if (it.e->type() == Type::parint()) {
+      IntSetVal* isv = eval_intset(env, it.ti->domain());
+      IntVal v = eval_int(env, it.e);
+      if (!isv->contains(v)) {
+        if (it.accessor != nullptr) {
+          auto enumId = it.ti->domain()->type().typeId();
+          std::ostringstream oss;
+          oss << (isArg ? "argument" : "parameter") << " value out of range: ";
+          oss << "declared domain of `" << *it.accessor << "' is " << env.show(isv, enumId) << ", ";
+          oss << "but assigned value is " << env.show(v, enumId);
+          throw ResultUndefinedError(env, rhs->loc(), oss.str());
+        }
+        hadError = true;
+        todo.clear();
+        Id* ident =
+            hasName ? vd->id()
+                    : new Id(Location().introduce(), env.constants.ids.unnamedArgument, nullptr);
+        todo.emplace_back(ident, rhs, vd->ti());
+      }
+    } else if (it.e->type() == Type::parfloat()) {
+      FloatSetVal* fsv = eval_floatset(env, it.ti->domain());
+      FloatVal v = eval_float(env, it.e);
+      if (!fsv->contains(v)) {
+        if (it.accessor != nullptr) {
+          std::ostringstream oss;
+          oss << (isArg ? "argument" : "parameter") << " value out of range: ";
+          oss << "declared domain of `" << *it.accessor << "' is " << *fsv << ", ";
+          oss << "but assigned value is " << v;
+          throw ResultUndefinedError(env, rhs->loc(), oss.str());
+        }
+        hadError = true;
+        todo.clear();
+        Id* ident =
+            hasName ? vd->id()
+                    : new Id(Location().introduce(), env.constants.ids.unnamedArgument, nullptr);
+        todo.emplace_back(ident, rhs, vd->ti());
+      }
+    } else if (it.e->type() == Type::parsetint()) {
+      IntSetVal* isv = eval_intset(env, it.ti->domain());
+      IntSetRanges ir(isv);
+      IntSetVal* rsv = eval_intset(env, it.e);
+      IntSetRanges rr(rsv);
+      if (!Ranges::subset(rr, ir)) {
+        if (it.accessor != nullptr) {
+          auto enumId = it.ti->domain()->type().typeId();
+          std::ostringstream oss;
+          oss << (isArg ? "argument" : "parameter") << " value out of range: ";
+          oss << "declared domain of `" << *it.accessor << "' is " << env.show(isv, enumId) << ", ";
+          oss << "but assigned value is " << env.show(rsv, enumId);
+          throw ResultUndefinedError(env, rhs->loc(), oss.str());
+        }
+        hadError = true;
+        todo.clear();
+        Id* ident =
+            hasName ? vd->id()
+                    : new Id(Location().introduce(), env.constants.ids.unnamedArgument, nullptr);
+        todo.emplace_back(ident, rhs, vd->ti());
+      }
+    } else if (it.e->type() == Type::parsetfloat()) {
+      FloatSetVal* fsv = eval_floatset(env, it.ti->domain());
+      FloatSetRanges fr(fsv);
+      FloatSetVal* rsv = eval_floatset(env, it.e);
+      FloatSetRanges rr(rsv);
+      if (!Ranges::subset(rr, fr)) {
+        if (it.accessor != nullptr) {
+          std::ostringstream oss;
+          oss << (isArg ? "argument" : "parameter") << " value out of range: ";
+          oss << "declared domain of `" << *it.accessor << "' is " << *fsv << ", ";
+          oss << "but assigned value is " << *rsv;
+          throw ResultUndefinedError(env, rhs->loc(), oss.str());
+        }
+        hadError = true;
+        todo.clear();
+        Id* ident =
+            hasName ? vd->id()
+                    : new Id(Location().introduce(), env.constants.ids.unnamedArgument, nullptr);
+        todo.emplace_back(ident, rhs, vd->ti());
       }
     }
-  } else {
-    if (vd->ti()->domain() != nullptr) {
-      auto check = check_par_domain(env, vd->e(), vd->ti()->domain());
-      if (!check.ok) {
-        std::ostringstream oss;
-        oss << "parameter value out of range, ";
-        oss << "declared range of `" << *vd->id() << "' is " << check.domain << ", ";
-        oss << "but assigned value is " << check.e;
+  }
+}
 
-        throw ResultUndefinedError(env, vd->e()->loc(), oss.str());
+void check_par_declaration(EnvI& env, VarDecl* vd) {
+  check_index_sets(env, vd, vd->e());
+  check_par_domain(env, vd, vd->e());
+}
+
+void check_struct_retval(EnvI& env, Expression* v, FunctionI* fi) {
+  // TODO: more specific error messages
+  std::vector<std::pair<Expression*, TypeInst*>> todo({{v, fi->ti()}});
+  while (!todo.empty()) {
+    auto entry = todo.back();
+    todo.pop_back();
+
+    if (entry.first->type().dim() > 0) {
+      auto* al = eval_array_lit(env, entry.first);
+      for (unsigned int i = 0; i < entry.second->ranges().size(); i++) {
+        if ((entry.second->ranges()[i]->domain() != nullptr) &&
+            !entry.second->ranges()[i]->domain()->isa<TIId>()) {
+          IntSetVal* isv = eval_intset(env, entry.second->ranges()[i]->domain());
+          bool bothEmpty = isv->min() > isv->max() && al->min(i) > al->max(i);
+          if (!bothEmpty && (al->min(i) != isv->min() || al->max(i) != isv->max())) {
+            throw ResultUndefinedError(env, fi->e()->loc(),
+                                       "function result violates function type-inst");
+          }
+        }
+      }
+      for (unsigned int i = 0; i < al->size(); i++) {
+        todo.emplace_back((*al)[i], entry.second);
+      }
+      continue;
+    }
+
+    if (entry.second->domain() == nullptr || entry.second->domain()->isa<TIId>()) {
+      continue;
+    }
+
+    if (entry.first->type().structBT()) {
+      auto* domains = eval_array_lit(env, entry.second->domain());
+      auto* al = eval_array_lit(env, entry.first);
+      for (unsigned int i = 0; i < al->size(); i++) {
+        todo.emplace_back((*al)[i], (*domains)[i]->cast<TypeInst>());
+      }
+      continue;
+    }
+
+    if (entry.first->type() == Type::parint()) {
+      IntSetVal* isv = eval_intset(env, entry.second->domain());
+      IntVal v = eval_int(env, entry.first);
+      if (!isv->contains(v)) {
+        throw ResultUndefinedError(env, fi->e()->loc(),
+                                   "function result violates function type-inst");
+      }
+    } else if (entry.first->type() == Type::parfloat()) {
+      FloatSetVal* fsv = eval_floatset(env, entry.second->domain());
+      FloatVal v = eval_float(env, entry.first);
+      if (!fsv->contains(v)) {
+        throw ResultUndefinedError(env, fi->e()->loc(),
+                                   "function result violates function type-inst");
+      }
+    } else if (entry.first->type() == Type::parsetint()) {
+      IntSetVal* isv = eval_intset(env, entry.second->domain());
+      IntSetRanges ir(isv);
+      IntSetVal* rsv = eval_intset(env, entry.first);
+      IntSetRanges rr(rsv);
+      if (!Ranges::subset(rr, ir)) {
+        throw ResultUndefinedError(env, fi->e()->loc(),
+                                   "function result violates function type-inst");
+      }
+    } else if (entry.first->type() == Type::parsetfloat()) {
+      FloatSetVal* fsv = eval_floatset(env, entry.second->domain());
+      FloatSetRanges fr(fsv);
+      FloatSetVal* rsv = eval_floatset(env, entry.first);
+      FloatSetRanges rr(rsv);
+      if (!Ranges::subset(rr, fr)) {
+        throw ResultUndefinedError(env, fi->e()->loc(),
+                                   "function result violates function type-inst");
       }
     }
   }
@@ -404,6 +510,8 @@ public:
             }
           }
         }
+      } else if (base_t.structBT()) {
+        check_struct_retval(env, v, fi);
       }
     }
   }
@@ -497,51 +605,12 @@ public:
   typedef Expression* ArrayVal;
   static Expression* e(EnvI& env, Expression* e) { return eval_par(env, e); }
   static Expression* exp(Expression* e) { return e; }
-  static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {}
+  static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {
+    if (fi->ti()->type().structBT()) {
+      check_struct_retval(env, v, fi);
+    }
+  }
 };
-
-void check_dom(EnvI& env, Id* arg, unsigned int arg_idx, IntSetVal* dom, Expression* e) {
-  bool oob = false;
-  if (!e->type().isOpt()) {
-    if (e->type().isIntSet()) {
-      IntSetVal* ev = eval_intset(env, e);
-      IntSetRanges ev_r(ev);
-      IntSetRanges dom_r(dom);
-      oob = !Ranges::subset(ev_r, dom_r);
-    } else {
-      oob = !dom->contains(eval_int(env, e));
-    }
-  }
-  if (oob) {
-    std::ostringstream oss;
-    oss << "value for argument ";
-    if (arg->str().empty()) {
-      oss << arg_idx + 1;
-    } else {
-      oss << "`" << *arg << "'";
-    }
-    oss << " out of bounds";
-    throw ResultUndefinedError(env, e->loc(), oss.str());
-  }
-}
-
-void check_dom(EnvI& env, Id* arg, unsigned int arg_idx, FloatVal dom_min, FloatVal dom_max,
-               Expression* e) {
-  if (!e->type().isOpt()) {
-    FloatVal ev = eval_float(env, e);
-    if (ev < dom_min || ev > dom_max) {
-      std::ostringstream oss;
-      oss << "value for argument ";
-      if (arg->str().empty()) {
-        oss << arg_idx + 1;
-      } else {
-        oss << "`" << *arg << "'";
-      }
-      oss << " out of bounds";
-      throw ResultUndefinedError(env, e->loc(), oss.str());
-    }
-  }
-}
 
 template <class CallClass>
 class EvalCallCleanup {
@@ -590,53 +659,11 @@ typename Eval::Val eval_call(EnvI& env, CallClass* ce) {
   for (unsigned int i = ce->decl()->paramCount(); i--;) {
     VarDecl* vd = ce->decl()->param(i);
     auto arg_idx = i;
-    if (vd->type().dim() > 0) {
-      // Check array index sets
-      auto* al = params[i]->cast<ArrayLit>();
-      for (unsigned int j = 0; j < vd->ti()->ranges().size(); j++) {
-        TypeInst* range_ti = vd->ti()->ranges()[j];
-        if (range_ti->domain() && !range_ti->domain()->isa<TIId>()) {
-          IntSetVal* isv = eval_intset(env, range_ti->domain());
-          if (isv->min() != al->min(j) || isv->max() != al->max(j)) {
-            std::ostringstream oss;
-            oss << "array index set " << (j + 1) << " of argument " << (i + 1)
-                << " does not match declared index set";
-            throw EvalError(env, ce->loc(), oss.str());
-          }
-        }
-      }
-    }
+    check_index_sets(env, vd, params[i], true);
     vd->flat(vd);
     vd->e(params[i]);
     if (vd->e()->type().isPar()) {
-      if (Expression* dom = vd->ti()->domain()) {
-        if (!dom->isa<TIId>()) {
-          if (vd->e()->type().bt() == Type::BT_INT) {
-            IntSetVal* isv = eval_intset(env, dom);
-            if (vd->e()->type().dim() > 0) {
-              ArrayLit* al = eval_array_lit(env, vd->e());
-              for (unsigned int i = 0; i < al->size(); i++) {
-                check_dom(env, vd->id(), arg_idx, isv, (*al)[i]);
-              }
-            } else {
-              check_dom(env, vd->id(), arg_idx, isv, vd->e());
-            }
-          } else if (vd->e()->type().bt() == Type::BT_FLOAT) {
-            GCLock lock;
-            FloatSetVal* fsv = eval_floatset(env, dom);
-            FloatVal dom_min = fsv->min();
-            FloatVal dom_max = fsv->max();
-            if (vd->e()->type().dim() > 0) {
-              ArrayLit* al = eval_array_lit(env, vd->e());
-              for (unsigned int i = 0; i < al->size(); i++) {
-                check_dom(env, vd->id(), arg_idx, dom_min, dom_max, (*al)[i]);
-              }
-            } else {
-              check_dom(env, vd->id(), arg_idx, dom_min, dom_max, vd->e());
-            }
-          }
-        }
-      }
+      check_par_domain(env, vd, vd->e(), true);
     }
   }
   typename Eval::Val ret = Eval::e(env, ce->decl()->e());
@@ -653,7 +680,7 @@ Expression* eval_fieldaccess(EnvI& env, FieldAccess* fa) {
   IntVal i = eval_int(env, fa->field());
   if (i < 1 || i > al->size()) {
     // This should not happen, type checking should ensure all fields are valid.
-    throw EvalError(env, fa->loc(), "Internal error: acessing invalid field");
+    throw EvalError(env, fa->loc(), "Internal error: accessing invalid field");
   }
   return (*al)[i.toInt() - 1];
 }
@@ -2850,6 +2877,12 @@ public:
   }
   /// Visit TIId
   void vTIId(const TIId* /*e*/) {
+    valid = false;
+    bounds.emplace_back(0, 0);
+  }
+  // Visit field access
+  void vFieldAccess(const FieldAccess* fa) {
+    // TODO: actually allow bounds computation
     valid = false;
     bounds.emplace_back(0, 0);
   }

@@ -216,58 +216,71 @@ void unify(EnvI& env, std::vector<VarDecl*>& deletedVarDecls, Id* id0, Id* id1) 
       id1->decl()->e(nullptr);
     }
     // Compute intersection of domains
-    if (id0->decl()->ti()->domain() != nullptr) {
-      if (id1->decl()->ti()->domain() != nullptr) {
-        if (id0->type().isint() || id0->type().isIntSet()) {
-          IntSetVal* isv0 = eval_intset(env, id0->decl()->ti()->domain());
-          IntSetVal* isv1 = eval_intset(env, id1->decl()->ti()->domain());
-          IntSetRanges isv0r(isv0);
-          IntSetRanges isv1r(isv1);
-          Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> inter(isv0r, isv1r);
-          IntSetVal* nd = IntSetVal::ai(inter);
-          if (nd->empty()) {
-            env.fail();
-          } else if (!nd->equal(isv1)) {
-            id1->decl()->ti()->domain(new SetLit(Location(), nd));
-            if (nd->equal(isv0)) {
-              id1->decl()->ti()->setComputedDomain(id0->decl()->ti()->computedDomain());
-            } else {
-              id1->decl()->ti()->setComputedDomain(false);
+    std::vector<std::pair<TypeInst*, TypeInst*>> todo({{id0->decl()->ti(), id1->decl()->ti()}});
+    while (!todo.empty()) {
+      auto it = todo.back();
+      todo.pop_back();
+      auto* ti0 = it.first;
+      auto* ti1 = it.second;
+      if (ti0->domain() != nullptr) {
+        if (ti1->domain() != nullptr) {
+          if (ti0->type().structBT()) {
+            auto* tis0 = ti0->domain()->cast<ArrayLit>();
+            auto* tis1 = ti1->domain()->cast<ArrayLit>();
+            for (unsigned int i = 0; i < tis0->size(); i++) {
+              todo.emplace_back((*tis0)[i]->cast<TypeInst>(), (*tis1)[i]->cast<TypeInst>());
             }
-          }
-        } else if (id0->type().isbool()) {
-          if (eval_bool(env, id0->decl()->ti()->domain()) !=
-              eval_bool(env, id1->decl()->ti()->domain())) {
-            env.fail();
+          } else if (ti0->type().bt() == Type::BT_INT) {
+            IntSetVal* isv0 = eval_intset(env, ti0->domain());
+            IntSetVal* isv1 = eval_intset(env, ti1->domain());
+            IntSetRanges isv0r(isv0);
+            IntSetRanges isv1r(isv1);
+            Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> inter(isv0r, isv1r);
+            IntSetVal* nd = IntSetVal::ai(inter);
+            if (nd->empty()) {
+              env.fail();
+            } else if (!nd->equal(isv1)) {
+              ti1->domain(new SetLit(Location(), nd));
+              if (nd->equal(isv0)) {
+                ti1->setComputedDomain(ti0->computedDomain());
+              } else {
+                ti1->setComputedDomain(false);
+              }
+            }
+          } else if (ti0->type().bt() == Type::BT_BOOL) {
+            if (eval_bool(env, ti0->domain()) != eval_bool(env, ti1->domain())) {
+              env.fail();
+            }
+          } else if (ti0->type().bt() == Type::BT_FLOAT) {
+            // float
+            FloatSetVal* isv0 = eval_floatset(env, ti0->domain());
+            FloatSetVal* isv1 = eval_floatset(env, ti1->domain());
+            FloatSetRanges isv0r(isv0);
+            FloatSetRanges isv1r(isv1);
+            Ranges::Inter<FloatVal, FloatSetRanges, FloatSetRanges> inter(isv0r, isv1r);
+            FloatSetVal* nd = FloatSetVal::ai(inter);
+
+            FloatSetRanges nd_r(nd);
+            FloatSetRanges isv1r_2(isv1);
+
+            if (nd->empty()) {
+              env.fail();
+            } else if (!Ranges::equal(nd_r, isv1r_2)) {
+              ti1->domain(new SetLit(Location(), nd));
+              FloatSetRanges nd_r_2(nd);
+              FloatSetRanges isv0r_2(isv0);
+              if (Ranges::equal(nd_r_2, isv0r_2)) {
+                ti1->setComputedDomain(ti0->computedDomain());
+              } else {
+                ti1->setComputedDomain(false);
+              }
+            }
+          } else {
+            throw InternalError("Failed to unify identifiers during optimisation");
           }
         } else {
-          // float
-          FloatSetVal* isv0 = eval_floatset(env, id0->decl()->ti()->domain());
-          FloatSetVal* isv1 = eval_floatset(env, id1->decl()->ti()->domain());
-          FloatSetRanges isv0r(isv0);
-          FloatSetRanges isv1r(isv1);
-          Ranges::Inter<FloatVal, FloatSetRanges, FloatSetRanges> inter(isv0r, isv1r);
-          FloatSetVal* nd = FloatSetVal::ai(inter);
-
-          FloatSetRanges nd_r(nd);
-          FloatSetRanges isv1r_2(isv1);
-
-          if (nd->empty()) {
-            env.fail();
-          } else if (!Ranges::equal(nd_r, isv1r_2)) {
-            id1->decl()->ti()->domain(new SetLit(Location(), nd));
-            FloatSetRanges nd_r_2(nd);
-            FloatSetRanges isv0r_2(isv0);
-            if (Ranges::equal(nd_r_2, isv0r_2)) {
-              id1->decl()->ti()->setComputedDomain(id0->decl()->ti()->computedDomain());
-            } else {
-              id1->decl()->ti()->setComputedDomain(false);
-            }
-          }
+          ti1->domain(ti0->domain());
         }
-
-      } else {
-        id1->decl()->ti()->domain(id0->decl()->ti()->domain());
       }
     }
 
@@ -844,7 +857,7 @@ void optimize(Env& env, bool chain_compression) {
           al = Expression::dynamicCast<ArrayLit>(item->cast<VarDeclI>()->e()->e());
         }
         if (!item->removed()) {
-          if (al != nullptr) {
+          if (al != nullptr && !al->type().structBT()) {
             // Substitute all fixed variables by their values in array literals, then
             // push all constraints that depend on the array
             substitute_fixed_vars(envi, item, deletedVarDecls);

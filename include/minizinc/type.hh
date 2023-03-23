@@ -300,7 +300,7 @@ public:
   /// A helper function that returns the Type for a element of te current array Type
   /// NOTE: generally this is the same type with `_dim = 0`, but when typeId is set, the correct
   /// element typeId must be extracted.
-  Type elemType(EnvI& env) const;
+  Type elemType(const EnvI& env) const;
 
   /// A helper function that merges the dimensions of dimTy into elemTy
   static Type arrType(EnvI& env, const Type& dimTy, const Type& elemTy);
