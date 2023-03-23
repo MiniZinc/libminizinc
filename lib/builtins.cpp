@@ -2169,9 +2169,7 @@ std::string b_show_enum_type(EnvI& env, Expression* e, Type t, bool dzn, bool js
 }
 
 std::string show_with_type(EnvI& env, Expression* exp, Type t, bool showDzn) {
-  std::ostringstream oss;
   GCLock lock;
-  Printer p(oss, 0, false, &env);
   Expression* e = follow_id_to_decl(exp);
   if (auto* vd = e->dynamicCast<VarDecl>()) {
     if ((vd->e() != nullptr) && !vd->e()->isa<Call>()) {
@@ -2186,9 +2184,10 @@ std::string show_with_type(EnvI& env, Expression* exp, Type t, bool showDzn) {
   if (e->type().dim() > 0 || e->type().structBT()) {
     e = eval_array_lit(env, e);
   }
-  if (t.bt() == Type::BT_INT && t.typeId() != 0) {
+  if (e->type().dim() == 0 && t.bt() == Type::BT_INT && t.typeId() != 0) {
     return b_show_enum_type(env, e, t, showDzn, false);
   }
+  std::ostringstream oss;
   if (auto* al = e->dynamicCast<ArrayLit>()) {
     oss << (al->isTuple() ? "(" : "[");
     if (al->type().isrecord()) {
@@ -2221,6 +2220,7 @@ std::string show_with_type(EnvI& env, Expression* exp, Type t, bool showDzn) {
     }
     oss << (al->isTuple() ? ")" : "]");
   } else {
+    Printer p(oss, 0, false, &env);
     p.print(e);
   }
   return oss.str();
