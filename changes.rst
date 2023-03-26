@@ -62,6 +62,7 @@ Bug fixes:
 -  Fix performance degradation for models with variables that appear in a large number of constraints (:bugref:`645`).
 -  Fix bug in enumerated types with non-contiguous constructor sets.
 -  Fix possible crash when simplifying static function bodies.
+-  Fix handling of set literals and search annotation calls in built-in Chuffed interface.
 
 .. _v2.7.0:
 

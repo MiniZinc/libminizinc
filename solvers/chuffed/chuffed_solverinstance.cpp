@@ -190,6 +190,9 @@ void ChuffedSolverInstance::processFlatZinc() {
       }
       case Expression::E_CALL: {
         auto* c = e->cast<Call>();
+        if (c->argCount() == 1) {
+          return new FlatZinc::AST::Call(c->id().c_str(), toNode(c->arg(0)));
+        }
         std::vector<FlatZinc::AST::Node*> args(c->argCount());
         for (unsigned int i = 0; i < c->argCount(); i++) {
           args[i] = toNode(c->arg(i));
@@ -204,10 +207,28 @@ void ChuffedSolverInstance::processFlatZinc() {
         }
         return new FlatZinc::AST::Array(elems);
       }
+      case Expression::E_SETLIT: {
+        auto* sl = e->cast<SetLit>();
+        auto* isv = sl->isv();
+        if (isv != nullptr) {
+          if (isv->size() == 1) {
+            return new FlatZinc::AST::SetLit(static_cast<int>(isv->min(0).toInt()),
+                                             static_cast<int>(isv->max(0).toInt()));
+          } else {
+            std::vector<int> vs(isv->card().toInt());
+            for (unsigned int i = 0; isv->size(); i++) {
+              for (auto j = isv->min(i); j <= isv->max(i); j++) {
+                vs.push_back(static_cast<int>(j.toInt()));
+              }
+            }
+            return new FlatZinc::AST::SetLit(vs);
+          }
+        }
+      }
       default:
         break;
     }
-    throw new InternalError("Unsupported expression");
+    throw InternalError("Unsupported expression");
   };
 
   // Post constraints
