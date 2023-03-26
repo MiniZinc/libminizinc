@@ -3849,7 +3849,7 @@ void flatten(Env& e, FlatteningOptions opt) {
       argtypes[0] = Type::varbool();
       argtypes[1] = Type::varbool();
       argtypes[2] = Type::varbool();
-      fi = env.model->matchFn(env, env.constants.ids.bool_.not_, argtypes, false);
+      fi = env.model->matchFn(env, env.constants.ids.bool_.ne, argtypes, false);
       bool_xor = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
     }
 
