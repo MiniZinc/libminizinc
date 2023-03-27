@@ -3116,7 +3116,8 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
           }
           nc->decl(nc_decl);
           nc->type(nc->decl()->rtype(env, args, nullptr, false));
-          make_defined_var(env, vd, nc);
+          // vd already had a RHS, so don't make it a defined var
+          // make_defined_var(env, vd, nc);
           flat_exp(env, Ctx(), nc, env.constants.varTrue, env.constants.varTrue);
           return vd->id();
         } break;

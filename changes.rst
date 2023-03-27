@@ -59,10 +59,14 @@ Bug fixes:
    tuples or records.
 -  Fix the parsing multidimensional arrays containing values of enumerated types
    in JSON.
--  Fix performance degradation for models with variables that appear in a large number of constraints (:bugref:`645`).
+-  Fix performance degradation for models with variables that appear in a large
+   number of constraints (:bugref:`645`).
 -  Fix bug in enumerated types with non-contiguous constructor sets.
 -  Fix possible crash when simplifying static function bodies.
--  Fix handling of set literals and search annotation calls in built-in Chuffed interface.
+-  Fix handling of set literals and search annotation calls in built-in Chuffed
+   interface.
+-  Fix bug where an already defined variable was made the argument of a
+   ``defines_var`` annotation for a constraint.
 
 .. _v2.7.0:
 
