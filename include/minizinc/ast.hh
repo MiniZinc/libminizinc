@@ -1209,19 +1209,18 @@ public:
   UnOpType op() const;
 };
 
-class ExpressionContainerIterator
-    : public std::iterator<std::random_access_iterator_tag, Expression*> {
+class ExpressionContainerIterator {
 private:
   Expression* const* _e;
 
 public:
+  using iterator_category = std::random_access_iterator_tag;
+  using value_type = Expression*;
+  using difference_type = std::ptrdiff_t;
+  using pointer = Expression* const*;
+  using reference = Expression* const&;
+
   ExpressionContainerIterator(Expression* const* e) : _e(e) {}
-
-  typedef Expression* const* pointer;
-  typedef Expression* const& reference;
-
-  typedef typename std::iterator<std::random_access_iterator_tag, Expression*>::difference_type
-      difference_type;
 
   reference operator*() const { return *_e; }
   pointer operator->() const { return &*_e; }
