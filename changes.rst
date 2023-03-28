@@ -70,6 +70,7 @@ Bug fixes:
 -  Fix handling of domains for tuple and record types.
 -  Fix index set checking for tuples and records which contain arrays.
 -  Fix the handling of domain and index set expressions in aliases.
+-  Fix incorrect coercion of sets into multidimensional arrays (:bugref:`656`).
 
 .. _v2.7.0:
 

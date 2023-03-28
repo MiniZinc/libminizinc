@@ -1447,12 +1447,17 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
   }
   GCLock lock;
   Call* c = nullptr;
-  if (e->type().dim() == 0 && funarg_t.dim() != 0) {
+  if (e->type().isSet() && funarg_t.dim() != 0) {
     if (e->type().isvar()) {
       throw TypeError(env, e->loc(), "cannot coerce var set into array");
     }
     if (e->type().isOpt()) {
       throw TypeError(env, e->loc(), "cannot coerce opt set into array");
+    }
+    if (funarg_t.dim() > 1) {
+      std::stringstream ss;
+      ss << "cannot coerce set into " << funarg_t.dim() << "-dimensional array";
+      throw TypeError(env, e->loc(), ss.str());
     }
     std::vector<Expression*> set2a_args(1);
     set2a_args[0] = e;
