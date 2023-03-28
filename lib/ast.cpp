@@ -22,6 +22,29 @@
 
 namespace MiniZinc {
 
+/// Helper function that can copy the domain of a TI.
+///
+/// TypeInst objects cannot be shared between VarDecl's, so domains of records/tuples require copies
+/// of their domain's TypeInst objects, but normal domains can be shared by multiple VarDecl's
+Expression* domain_shallow_copy(Expression* orig) {
+  assert(GC::locked());
+  if (orig == nullptr) {
+    return nullptr;
+  }
+  auto* al = orig->dynamicCast<ArrayLit>();
+  if (al == nullptr) {
+    return orig;
+  }
+  std::vector<Expression*> clone(al->size());
+  for (unsigned int i = 0; i < al->size(); i++) {
+    auto* ti = (*al)[i]->cast<TypeInst>();
+    clone[i] = new TypeInst(ti->loc(), ti->type(), ti->ranges(), domain_shallow_copy(ti->domain()));
+  }
+  ArrayLit* tup = ArrayLit::constructTuple(orig->loc(), clone);
+  tup->type(orig->type());
+  return tup;
+}
+
 Location::LocVec* Location::LocVec::a(const ASTString& filename, unsigned int first_line,
                                       unsigned int first_column, unsigned int last_line,
                                       unsigned int last_column) {
@@ -1215,7 +1238,7 @@ bool TypeInst::resolveAlias(EnvI& env) {
     setRanges(ranges);
   }
   type(ntype);
-  domain(copy(env, alias->domain()));
+  domain(domain_shallow_copy(alias->domain()));
   assert(!is_aliased());  // Resolving aliases should be done in order
   return true;
 }

@@ -69,6 +69,7 @@ Bug fixes:
    ``defines_var`` annotation for a constraint.
 -  Fix handling of domains for tuple and record types.
 -  Fix index set checking for tuples and records which contain arrays.
+-  Fix the handling of domain and index set expressions in aliases.
 
 .. _v2.7.0:
 
