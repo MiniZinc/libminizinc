@@ -1170,14 +1170,14 @@ bool TypeInst::resolveAlias(EnvI& env) {
   GCLock lock;
   auto* alias = domain()->cast<Id>()->decl()->e()->cast<TypeInst>();
   Type ntype = alias->type();
-  if (type().tiExplicit()) {
-    if (ntype.structBT() && ntype.ti() != type().ti()) {
+  if (type().tiExplicit() && ntype.ti() != type().ti()) {
+    if (ntype.structBT()) {
       ntype.typeId(0);
     }
     ntype.ti(type().ti());
   }
-  if (type().otExplicit()) {
-    if (ntype.structBT() && ntype.ot() != type().ot()) {
+  if (type().otExplicit() && ntype.ot() != type().ot()) {
+    if (ntype.structBT()) {
       ntype.typeId(0);
     }
     ntype.ot(type().ot());
