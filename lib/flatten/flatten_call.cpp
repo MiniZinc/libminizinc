@@ -235,9 +235,7 @@ void flatten_linexp_call(EnvI& env, Ctx ctx, const Ctx& nctx, ASTString& cid, Ca
       dims[0].first = 1;
       dims[0].second = static_cast<int>(al->size());
       rd = new ArrayLit(al->loc(), al, dims);
-      Type t = al->type();
-      t.dim(1);
-      rd->type(t);
+      rd->type(Type::arrType(env, Type::top(1), al->type()));
     }
     args.emplace_back(rd);
   } else {
