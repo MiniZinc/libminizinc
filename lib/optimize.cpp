@@ -1624,6 +1624,40 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
   Expression* e = nullptr;
   auto* ci = ii->dynamicCast<ConstraintI>();
   auto* vdi = ii->dynamicCast<VarDeclI>();
+
+  Call* call;
+  if (ci != nullptr) {
+    call = Expression::dynamicCast<Call>(ci->e());
+  } else {
+    call = Expression::dynamicCast<Call>(vdi->e()->e());
+  }
+
+  if (call != nullptr) {
+    // Check that the vd actually occurs in the arguments of the call,
+    // and not just in an annotation
+    bool foundVd = false;
+    for (unsigned int i = 0; !foundVd && i < call->argCount(); i++) {
+      if (call->arg(i) == vd->id()) {
+        foundVd = true;
+        break;
+      }
+      auto* a = call->arg(i)->dynamicCast<ArrayLit>();
+      if (a != nullptr) {
+        for (unsigned int j = 0; j < a->size(); j++) {
+          if (Expression::equal((*a)[j], vd->id())) {
+            foundVd = true;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!foundVd) {
+      remove = false;
+      return;
+    }
+  }
+
   if (ci != nullptr) {
     e = ci->e();
 

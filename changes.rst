@@ -71,6 +71,8 @@ Bug fixes:
 -  Fix index set checking for tuples and records which contain arrays.
 -  Fix the handling of domain and index set expressions in aliases.
 -  Fix incorrect coercion of sets into multidimensional arrays (:bugref:`656`).
+-  Fix incorrect simplification of Boolean constraints that contain a fixed Boolean
+   variable in an annotation.
 
 .. _v2.7.0:
 
