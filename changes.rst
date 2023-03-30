@@ -4,10 +4,12 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
-.. _unreleased:
+.. _v2.7.1:
 
-Unreleased
-~~~~~~~~~~
+`Version 2.7.1 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.7.1>`__
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(released 31 March 2023)
 
 Changes:
 ^^^^^^^^
@@ -73,6 +75,14 @@ Bug fixes:
 -  Fix incorrect coercion of sets into multidimensional arrays (:bugref:`656`).
 -  Fix incorrect simplification of Boolean constraints that contain a fixed Boolean
    variable in an annotation.
+
+Changes in the IDE:
+^^^^^^^^^^^^^^^^^^^
+
+-  Fix highlighting of multiline comments starting with ``/*/`` (:idebugref:`172`).
+-  Fix bundling of incompatible OpenSSL version in linux packages.
+-  Remove support for glibc 2.27 and earlier from AppImage and tarball linux
+   packages. The Snap package may be used instead on such systems.
 
 .. _v2.7.0:
 
