@@ -674,8 +674,10 @@ public:
             const auto& aet = env.getArrayEnum(typeId);
             typeId = aet[aet.size() - 1];
           }
-          VarDeclI* enumVdi = env.getEnum(typeId);
-          ti->domain(enumVdi->e()->id());
+          if (typeId != 0) {
+            VarDeclI* enumVdi = env.getEnum(typeId);
+            ti->domain(enumVdi->e()->id());
+          }
         }
         t.typeId(typeId);
         ti->type(t);

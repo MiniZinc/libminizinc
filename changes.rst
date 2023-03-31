@@ -4,6 +4,17 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
+.. _unreleased:
+
+Unreleased
+~~~~~~~~~~
+
+Bug fixes:
+^^^^^^^^^^
+
+-  Fix crash when specialising a function to return an array with enum index
+   sets but integer element type.
+
 .. _v2.7.1:
 
 `Version 2.7.1 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.7.1>`__
