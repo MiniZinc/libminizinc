@@ -14,6 +14,7 @@ Bug fixes:
 
 -  Fix crash when specialising a function to return an array with enum index
    sets but integer element type.
+-  Fix decompositions for ``ceil`` and ``floor`` functions (:bugref:`657`).
 
 .. _v2.7.1:
 
