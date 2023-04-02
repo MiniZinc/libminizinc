@@ -2900,16 +2900,34 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
                   }
                 }
               }
-              IntSetVal* combinedBounds = rhsBounds;
-              if (rhsBounds != nullptr) {
-                IntSetVal* domain = nullptr;
-                if (ti->domain() != nullptr && !ti->domain()->isa<TIId>()) {
-                  domain = eval_intset(env, ti->domain());
-                  IntSetRanges dr(domain);
+              IntSetVal* combinedDomain = rhsBounds;
+              IntSetVal* rhsDomain = nullptr;
+              if (ident != nullptr && ident->decl()->ti()->domain() != nullptr &&
+                  !ident->decl()->ti()->domain()->isa<TIId>()) {
+                // RHS has a domain, so intersect with its bounds
+                rhsDomain = eval_intset(env, ident->decl()->ti()->domain());
+                if (rhsBounds == nullptr) {
+                  combinedDomain = rhsDomain;
+                } else {
+                  IntSetRanges dr(rhsDomain);
                   IntSetRanges ibr(rhsBounds);
                   Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> i(dr, ibr);
-                  combinedBounds = IntSetVal::ai(i);
-                  if (combinedBounds->card() == 0 && !cur->type().isSet()) {
+                  combinedDomain = IntSetVal::ai(i);
+                  if (combinedDomain->card() == 0 && !cur->type().isSet()) {
+                    env.fail();
+                  }
+                }
+              }
+              if (combinedDomain != nullptr) {
+                IntSetVal* domain = nullptr;
+                if (ti->domain() != nullptr && !ti->domain()->isa<TIId>()) {
+                  // LHS has a domain so intersect with RHS domain
+                  domain = eval_intset(env, ti->domain());
+                  IntSetRanges dr(domain);
+                  IntSetRanges ibr(combinedDomain);
+                  Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> i(dr, ibr);
+                  combinedDomain = IntSetVal::ai(i);
+                  if (combinedDomain->card() == 0 && !cur->type().isSet()) {
                     env.fail();
                   }
                 }
@@ -2918,14 +2936,15 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
                   // if we're not an array (if we're an array, we can't update our domain
                   // since it should really be the union of all the RHS array literal member
                   // domains)
-                  ti->domain(new SetLit(Location().introduce(), combinedBounds));
+                  ti->domain(new SetLit(Location().introduce(), combinedDomain));
                   ti->setComputedDomain(true);
-                  domChange = domChange || domain == nullptr || !domain->equal(combinedBounds);
+                  domChange = domChange || domain == nullptr || !domain->equal(combinedDomain);
                 }
-                if (ident != nullptr && !combinedBounds->equal(rhsBounds)) {
+                if (ident != nullptr &&
+                    (rhsDomain == nullptr || !combinedDomain->equal(rhsDomain))) {
                   // If the RHS is an identifier, make its domain match
                   set_computed_domain(env, ident->decl(),
-                                      new SetLit(Location().introduce(), combinedBounds), false);
+                                      new SetLit(Location().introduce(), combinedDomain), false);
                 }
               }
             } else if (cur != nullptr && cur->type().bt() == Type::BT_FLOAT) {
@@ -2935,26 +2954,44 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
               if (fb.valid) {
                 rhsBounds = FloatSetVal::a(fb.l, fb.u);
               }
-              FloatSetVal* combinedBounds = rhsBounds;
-              if (rhsBounds != nullptr) {
-                FloatSetVal* domain = nullptr;
-                if (ti->domain() != nullptr && !ti->domain()->isa<TIId>()) {
-                  domain = eval_floatset(env, ti->domain());
-                  FloatSetRanges dr(domain);
-                  FloatSetRanges fbr(rhsBounds);
-                  Ranges::Inter<FloatVal, FloatSetRanges, FloatSetRanges> i(dr, fbr);
-                  combinedBounds = FloatSetVal::ai(i);
-                  if (combinedBounds->empty()) {
+              FloatSetVal* combinedDomain = rhsBounds;
+              FloatSetVal* rhsDomain = nullptr;
+              if (ident != nullptr && ident->decl()->ti()->domain() != nullptr &&
+                  !ident->decl()->ti()->domain()->isa<TIId>()) {
+                // RHS has a domain, so intersect with its bounds
+                rhsDomain = eval_floatset(env, ident->decl()->ti()->domain());
+                if (rhsBounds == nullptr) {
+                  combinedDomain = rhsDomain;
+                } else {
+                  FloatSetRanges dr(rhsDomain);
+                  FloatSetRanges ibr(rhsBounds);
+                  Ranges::Inter<FloatVal, FloatSetRanges, FloatSetRanges> i(dr, ibr);
+                  combinedDomain = FloatSetVal::ai(i);
+                  if (combinedDomain->empty()) {
                     env.fail();
                   }
                 }
-                FloatSetRanges fsr(combinedBounds);
+              }
+              if (combinedDomain != nullptr) {
+                FloatSetVal* domain = nullptr;
+                if (ti->domain() != nullptr && !ti->domain()->isa<TIId>()) {
+                  // LHS has a domain so intersect with RHS domain
+                  domain = eval_floatset(env, ti->domain());
+                  FloatSetRanges dr(domain);
+                  FloatSetRanges fbr(combinedDomain);
+                  Ranges::Inter<FloatVal, FloatSetRanges, FloatSetRanges> i(dr, fbr);
+                  combinedDomain = FloatSetVal::ai(i);
+                  if (combinedDomain->empty()) {
+                    env.fail();
+                  }
+                }
+                FloatSetRanges fsr(combinedDomain);
                 if (ti->ranges().empty()) {
                   // Make our domain match the intersection of ours and the RHS
                   // if we're not an array (if we're an array, we can't update our domain
                   // since it should really be the union of all the RHS array literal member
                   // domains)
-                  ti->domain(new SetLit(Location().introduce(), combinedBounds));
+                  ti->domain(new SetLit(Location().introduce(), combinedDomain));
                   ti->setComputedDomain(true);
                   if (!domChange && domain != nullptr) {
                     FloatSetRanges fsr1(domain);
@@ -2962,11 +2999,17 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
                   }
                 }
                 if (ident != nullptr) {
-                  FloatSetRanges fsr1(rhsBounds);
-                  if (!Ranges::equal(fsr, fsr1)) {
-                    // If the RHS is an identifier, make its domain match
+                  // If the RHS is an identifier, make its domain match
+                  if (rhsDomain == nullptr) {
                     set_computed_domain(env, ident->decl(),
-                                        new SetLit(Location().introduce(), combinedBounds), false);
+                                        new SetLit(Location().introduce(), combinedDomain), false);
+                  } else {
+                    FloatSetRanges fsr1(rhsDomain);
+                    if (!Ranges::equal(fsr, fsr1)) {
+                      set_computed_domain(env, ident->decl(),
+                                          new SetLit(Location().introduce(), combinedDomain),
+                                          false);
+                    }
                   }
                 }
               }

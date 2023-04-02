@@ -15,6 +15,8 @@ Bug fixes:
 -  Fix crash when specialising a function to return an array with enum index
    sets but integer element type.
 -  Fix decompositions for ``ceil`` and ``floor`` functions (:bugref:`657`).
+-  Fix incorrect resultant domain when binding identifiers with domains to
+   variable declarations (:bugref:`660`).
 
 .. _v2.7.1:
 
