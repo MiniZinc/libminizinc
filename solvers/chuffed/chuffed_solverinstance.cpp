@@ -327,7 +327,11 @@ SolverInstanceBase::Status ChuffedSolverInstance::solve() {
   }
   switch (engine.status) {
     case RESULT::RES_UNK:
-      status = SolverInstanceBase::Status::UNKNOWN;
+      if (engine.solutions > 0) {
+        status = SolverInstanceBase::Status::SAT;
+      } else {
+        status = SolverInstanceBase::Status::UNKNOWN;
+      }
       break;
     case RESULT::RES_SAT:
       status = SolverInstanceBase::Status::SAT;

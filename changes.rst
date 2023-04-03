@@ -17,6 +17,8 @@ Bug fixes:
 -  Fix decompositions for ``ceil`` and ``floor`` functions (:bugref:`657`).
 -  Fix incorrect resultant domain when binding identifiers with domains to
    variable declarations (:bugref:`660`).
+-  Fix incorrect unknown status given by Chuffed builtin solver interface on
+   timeout.
 
 .. _v2.7.1:
 
