@@ -358,7 +358,7 @@ void Solns2Out::checkSolution(std::ostream& oss) {
           auto* al = e->dynamicCast<ArrayLit>();
           std::vector<Id*> enumids;
           if (Call* cev = vdi->e()->ann().getCall(Constants::constants().ann.mzn_check_enum_var)) {
-            auto* enumIdsAl = cev->arg(0)->cast<ArrayLit>();
+            auto* enumIdsAl = eval_array_lit(getEnv()->envi(), cev->arg(0));
             for (int j = 0; j < enumIdsAl->size(); j++) {
               enumids.push_back((*enumIdsAl)[j]->dynamicCast<Id>());
             }
