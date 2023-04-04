@@ -404,8 +404,10 @@ void ChuffedSolverInstance::printStatistics() {
   ss.add("randomSeed", so.rnd_seed);
 }
 
+#define CHUFFED_VERSION_TO_STRING(x) #x
+
 std::string ChuffedSolverFactory::getVersion(SolverInstanceBase::Options*) {
-  return CHUFFED_VERSION;
+  return CHUFFED_VERSION_TO_STRING(CHUFFED_VERSION);
 }
 
 SolverInstanceBase::Options* ChuffedSolverFactory::createOptions() { return new ChuffedOptions; }
