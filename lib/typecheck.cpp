@@ -4229,6 +4229,10 @@ void output_var_desc_json(Env& env, TypeInst* ti, std::ostream& os, bool extra =
       os << "\"tuple\"";
       break;
     }
+    case Type::BT_RECORD: {
+      os << "\"record\"";
+      break;
+    }
     default:
       os << "\"?\"";
       break;
