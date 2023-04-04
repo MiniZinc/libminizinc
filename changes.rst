@@ -22,6 +22,11 @@ Bug fixes:
 -  Fix incorrect unknown status given by Chuffed builtin solver interface on
    timeout.
 
+Changes:
+^^^^^^^^
+
+-  Add documentation for ``--input-is-flatzinc`` flag (:bugref:`655`).
+
 .. _v2.7.1:
 
 `Version 2.7.1 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.7.1>`__

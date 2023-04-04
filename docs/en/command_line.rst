@@ -279,7 +279,7 @@ These options control aspects of the MiniZinc compiler.
 
 .. option::  - --input-from-stdin
 
-    Read problem from standard input. Use ``--input-is-flatzinc`` when passing FlatZinc code.
+    Read problem from standard input. Combine with ``--input-is-flatzinc`` when passing FlatZinc code.
 
 .. option::  -I --search-dir
 

@@ -71,8 +71,9 @@ void Flattener::printHelp(ostream& os) const {
         "globals "
         "in <stdlib>/<dir>, or <dir> when given a absolute or relative path."
      << std::endl
-     << "  -, --input-from-stdin\n    Read problem from standard input. Use --input-is-flatzinc "
-        "when passing FlatZinc code." << std::endl
+     << "  -, --input-from-stdin\n    Read problem from standard input. Combine with "
+        "--input-is-flatzinc when passing FlatZinc code."
+     << std::endl
      << "  -I <dir>, --search-dir <dir>\n    Additionally search for included files in <dir>."
      << std::endl
      << "  -D \"fMIPdomains=true\"\n    Switch on MIPDomain Unification" << std::endl
