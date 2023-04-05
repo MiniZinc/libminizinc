@@ -137,9 +137,10 @@ JSONParser::Token JSONParser::readToken(istream& is) {
           case 't': {
             char rest[3];
             is.read(rest, sizeof(rest));
-            _column += sizeof(rest);
+            _column += static_cast<int>(is.gcount());
             if (!is.good() || std::strncmp(rest, "rue", 3) != 0) {
-              throw JSONError(_env, errLocation(), "unexpected token `" + string(rest) + "'");
+              throw JSONError(_env, errLocation(),
+                              "unexpected token `" + string(rest, is.gcount()) + "'");
             }
             state = S_NOTHING;
             return Token(true);
@@ -147,9 +148,10 @@ JSONParser::Token JSONParser::readToken(istream& is) {
           case 'f': {
             char rest[4];
             is.read(rest, sizeof(rest));
-            _column += sizeof(rest);
+            _column += static_cast<int>(is.gcount());
             if (!is.good() || std::strncmp(rest, "alse", 4) != 0) {
-              throw JSONError(_env, errLocation(), "unexpected token `" + string(rest) + "'");
+              throw JSONError(_env, errLocation(),
+                              "unexpected token `" + string(rest, is.gcount()) + "'");
             }
             state = S_NOTHING;
             return Token(false);
@@ -157,9 +159,10 @@ JSONParser::Token JSONParser::readToken(istream& is) {
           case 'n': {
             char rest[3];
             is.read(rest, sizeof(rest));
-            _column += sizeof(rest);
+            _column += static_cast<int>(is.gcount());
             if (!is.good() || std::strncmp(rest, "ull", 3) != 0) {
-              throw JSONError(_env, errLocation(), "unexpected token `" + string(rest) + "'");
+              throw JSONError(_env, errLocation(),
+                              "unexpected token `" + string(rest, is.gcount()) + "'");
             }
             state = S_NOTHING;
             return Token::null();
