@@ -1855,10 +1855,10 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
         }
         al = follow_id(id)->cast<ArrayLit>();
       }
+      GCLock lock;
       ArrayLit* al1 = al;
       ArrayLit* alret;
       if (e->type().isrecord()) {
-        GCLock lock;
         alret = eval_record_merge(env, al0, al1);
       } else {
         std::vector<Expression*> v(al0->size() + al1->size());
@@ -1868,7 +1868,6 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
         for (unsigned int i = al1->size(); (i--) != 0U;) {
           v[al0->size() + i] = (*al1)[i];
         }
-        GCLock lock;
         alret = new ArrayLit(e->loc(), v);
         if (e->type().istuple()) {
           alret = ArrayLit::constructTuple(e->loc(), alret);

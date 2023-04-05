@@ -27,6 +27,7 @@ Bug fixes:
    if-then-else expression with type ``array[_] of set of int`` (:bugref:`664`).
 -  Add support for unicode escapes in JSON input strings.
 -  Fix possible crash when outputting JSON parsing errors.
+-  Fix possible crash during flattening of ``++`` operator.
 
 Changes:
 ^^^^^^^^
