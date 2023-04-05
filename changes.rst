@@ -21,6 +21,10 @@ Bug fixes:
    variable declarations (:bugref:`660`).
 -  Fix incorrect unknown status given by Chuffed builtin solver interface on
    timeout.
+-  Fix segmentation fault that occurred when using some models with checkers
+   (:bugref:`662`).
+-  Fix incorrect type error when an empty array literal would be used in a
+   if-then-else expression with type ``array[_] of set of int`` (:bugref:`664`).
 
 Changes:
 ^^^^^^^^

@@ -2366,7 +2366,8 @@ public:
         }
         if ((!ethen->type().isbot() && !Type::btSubtype(_env, ethen->type(), tret, true) &&
              !Type::btSubtype(_env, tret, ethen->type(), true)) ||
-            ethen->type().st() != tret.st() || ethen->type().dim() != tret.dim()) {
+            (!ethen->type().isbot() && ethen->type().st() != tret.st()) ||
+            ethen->type().dim() != tret.dim()) {
           throw TypeError(_env, ethen->loc(),
                           "type mismatch in branches of conditional. `then' branch has type `" +
                               ethen->type().toString(_env) + "', but `else' branch has type `" +
