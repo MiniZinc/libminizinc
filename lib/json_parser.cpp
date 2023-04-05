@@ -176,18 +176,83 @@ JSONParser::Token JSONParser::readToken(istream& is) {
         break;
       case S_STRING_ESCAPE:
         switch (buf[0]) {
-          case 'n':
-            result += "\n";
-            break;
-          case 't':
-            result += "\t";
-            break;
           case '"':
             result += "\"";
             break;
           case '\\':
             result += "\\";
             break;
+          case '/':
+            result += "/";
+            break;
+          case 'n':
+            result += "\n";
+            break;
+          case 't':
+            result += "\t";
+            break;
+          case 'u': {
+            char rest[4];
+            is.read(rest, sizeof(rest));
+            _column += sizeof(rest);
+            if (is.eof()) {
+              throw JSONError(_env, errLocation(), "unexpected end of file");
+            }
+            if (!is.good()) {
+              throw JSONError(_env, errLocation(),
+                              "unexpected token `" + string(rest, is.gcount()) + "'");
+            }
+            std::stringstream ss;
+            ss << std::hex << std::string(rest, is.gcount());
+            unsigned long codepoint;
+            ss >> codepoint;
+            if (ss.fail()) {
+              throw JSONError(_env, errLocation(),
+                              "unexpected token `" + string(rest, is.gcount()) + "'");
+            }
+            if (codepoint >= 0xD800 && codepoint <= 0xDBFF) {
+              // high surrogate, should follow with low surrogate
+              char rest[6];
+              is.read(rest, sizeof(rest));
+              _column += sizeof(rest);
+              if (is.eof()) {
+                throw JSONError(_env, errLocation(), "unexpected end of file");
+              }
+              if (!is.good() || std::strncmp(rest, "\\u", 2) != 0) {
+                throw JSONError(_env, errLocation(),
+                                "unexpected token `" + string(rest, is.gcount()) + "'");
+              }
+              std::stringstream ss;
+              ss << std::hex << std::string(&rest[2], 4);
+              unsigned int lowSurrogate;
+              ss >> lowSurrogate;
+              if (ss.fail() || lowSurrogate < 0xDC00 || lowSurrogate > 0xDFFF) {
+                throw JSONError(_env, errLocation(),
+                                "unexpected token `" + string(rest, is.gcount()) + "'");
+              }
+              codepoint = (((codepoint - 0xD800) << 10) | (lowSurrogate - 0xDC00)) | 0x10000;
+            }
+
+            char utf8[4];
+            size_t bytes = 4;
+            if (codepoint <= 0x7F) {
+              bytes = 1;
+            } else if (codepoint <= 0x7FF) {
+              bytes = 2;
+            } else if (codepoint <= 0xFFFF) {
+              bytes = 3;
+            }
+            for (size_t i = bytes - 1; i > 0; i--) {
+              utf8[i] = static_cast<char>(0x80 | (codepoint & 0x3F));
+              codepoint = codepoint >> 6;
+            }
+            if (bytes > 1) {
+              codepoint = (0xF0 << (4 - bytes)) | codepoint;
+            }
+            utf8[0] = static_cast<char>(codepoint);
+            result += std::string(utf8, bytes);
+            break;
+          }
           default:
             result += "\\";
             result += buf[0];

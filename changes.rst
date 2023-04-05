@@ -25,6 +25,7 @@ Bug fixes:
    (:bugref:`662`).
 -  Fix incorrect type error when an empty array literal would be used in a
    if-then-else expression with type ``array[_] of set of int`` (:bugref:`664`).
+-  Add support for unicode escapes in JSON input strings.
 
 Changes:
 ^^^^^^^^
