@@ -1663,6 +1663,9 @@ Type FunctionI::rtype(EnvI& env, const std::vector<Type>& ta, Expression* call, 
 }
 
 Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned int n) const {
+  if (this == env.constants.varRedef) {
+    return Type::top();
+  }
   // Given the concrete types for all function arguments ta, compute the
   // least common supertype that fits function parameter n.
   TypeInst* tii = param(n)->ti();
