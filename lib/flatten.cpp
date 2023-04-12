@@ -2829,13 +2829,20 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
         }
       } else {
         check_index_sets(env, vd, e);
-        std::vector<std::pair<TypeInst*, Expression*>> todo({{vd->ti(), e}});
-
+        struct BindItem {
+          TypeInst* ti;
+          Expression* e;
+          bool inArray;
+          BindItem(TypeInst* _ti, Expression* _e, bool _inArray)
+              : ti(_ti), e(_e), inArray(_inArray) {}
+        };
+        std::vector<BindItem> todo({{vd->ti(), e, false}});
         bool domChange = false;
         while (!todo.empty()) {
           auto it = todo.back();
-          auto* ti = it.first;
-          auto* cur = it.second;
+          auto* ti = it.ti;
+          auto* cur = it.e;
+          bool inArray = it.inArray;
           todo.pop_back();
           if (cur->type().dim() > 0) {
             if (ti->domain() != nullptr) {
@@ -2843,7 +2850,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
                   cur->isa<Id>() ? cur->cast<Id>()->decl()->e() : cur);
               if (al != nullptr) {
                 for (unsigned int i = 0; i < al->size(); i++) {
-                  todo.emplace_back(ti, (*al)[i]);
+                  todo.emplace_back(ti, (*al)[i], true);
                 }
                 ti->setComputedDomain(true);
               }
@@ -2854,7 +2861,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
             if (tl != nullptr) {
               auto* tis = ti->domain()->cast<ArrayLit>();
               for (unsigned int i = 0; i < tis->size(); i++) {
-                todo.emplace_back((*tis)[i]->cast<TypeInst>(), (*tl)[i]);
+                todo.emplace_back((*tis)[i]->cast<TypeInst>(), (*tl)[i], inArray);
               }
               ti->setComputedDomain(true);
             }
@@ -2931,7 +2938,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
                     env.fail();
                   }
                 }
-                if (ti->ranges().empty()) {
+                if (!inArray) {
                   // Make our domain match the intersection of ours and the RHS
                   // if we're not an array (if we're an array, we can't update our domain
                   // since it should really be the union of all the RHS array literal member
@@ -2986,7 +2993,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
                   }
                 }
                 FloatSetRanges fsr(combinedDomain);
-                if (ti->ranges().empty()) {
+                if (!inArray) {
                   // Make our domain match the intersection of ours and the RHS
                   // if we're not an array (if we're an array, we can't update our domain
                   // since it should really be the union of all the RHS array literal member

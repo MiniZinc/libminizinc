@@ -14,6 +14,8 @@ Bug fixes:
 
 -  Fix incorrect handling of enum types during return type specialisation of
    functions (:bugref:`670`).
+-  Fix incorrect restriction of domains for arrays containing tuples/records
+   (:bugref:`669`).
 
 .. _v2.7.2:
 
