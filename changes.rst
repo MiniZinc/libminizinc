@@ -16,6 +16,8 @@ Bug fixes:
    functions (:bugref:`670`).
 -  Fix incorrect restriction of domains for arrays containing tuples/records
    (:bugref:`669`).
+-  Fix crashes/invalid FlatZinc generated due to incorrect aggregation of
+   boolean operators involving optional arguments (:bugref:`668`).
 
 .. _v2.7.2:
 

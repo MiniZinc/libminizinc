@@ -364,22 +364,26 @@ Call* aggregate_and_or_ops(EnvI& env, BinOp* bo, bool negateArgs, BinOpType bot)
     auto* bo_arg = i->first->dynamicCast<BinOp>();
     UnOp* uo_arg = i->first->dynamicCast<UnOp>();
     bool positive = i->second;
-    if ((bo_arg != nullptr) && positive && bo_arg->op() == bot) {
+    bool isBuiltin =
+        (bo_arg != nullptr && (bo_arg->decl() == nullptr || bo_arg->decl()->e() == nullptr)) ||
+        (uo_arg != nullptr && (uo_arg->decl() == nullptr || uo_arg->decl()->e() == nullptr));
+    if ((bo_arg != nullptr) && positive && bo_arg->op() == bot && isBuiltin) {
       i->first = bo_arg->lhs();
       i++;
       bo_args.insert(i, arg_literal(bo_arg->rhs(), true));
       i--;
       i--;
-    } else if ((bo_arg != nullptr) && !positive && bo_arg->op() == negbot) {
+    } else if ((bo_arg != nullptr) && !positive && bo_arg->op() == negbot && isBuiltin) {
       i->first = bo_arg->lhs();
       i++;
       bo_args.insert(i, arg_literal(bo_arg->rhs(), false));
       i--;
       i--;
-    } else if ((uo_arg != nullptr) && !positive && uo_arg->op() == UOT_NOT) {
+    } else if ((uo_arg != nullptr) && !positive && uo_arg->op() == UOT_NOT && isBuiltin) {
       i->first = uo_arg->e();
       i->second = true;
-    } else if (bot == BOT_OR && (uo_arg != nullptr) && positive && uo_arg->op() == UOT_NOT) {
+    } else if (bot == BOT_OR && (uo_arg != nullptr) && positive && uo_arg->op() == UOT_NOT &&
+               isBuiltin) {
       output_neg.push_back(uo_arg->e());
       i++;
     } else {
@@ -1462,7 +1466,8 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
             Expression* e_todo = todo.back();
             todo.pop_back();
             auto* e_bo = e_todo->dynamicCast<BinOp>();
-            if ((e_bo != nullptr) && e_bo->op() == (negArgs ? BOT_OR : BOT_AND)) {
+            if ((e_bo != nullptr) && e_bo->op() == (negArgs ? BOT_OR : BOT_AND) &&
+                (e_bo->decl() == nullptr || e_bo->decl()->e() == nullptr)) {
               todo.push_back(e_bo->rhs());
               todo.push_back(e_bo->lhs());
             } else {
