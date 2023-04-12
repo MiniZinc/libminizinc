@@ -79,30 +79,6 @@ build:win64:
     key: "build_win64"
   tags: [win64, cmake, cpp, ninja, buildcache]
 
-build:wasm_complete:
-  extends: .build
-  image: emscripten/emsdk
-  variables:
-    MZNARCH: "wasm"
-    CMAKE_ARCH: "Unix Makefiles"
-  script:
-    - emcmake cmake -v -S . -B build -G"$CMAKE_ARCH" -DCMAKE_FIND_ROOT_PATH="/" -DCMAKE_BUILD_TYPE=MinSizeRel -DBUILD_REF=$CI_PIPELINE_ID -DGecode_ROOT="$CI_PROJECT_DIR/vendor/gecode" -DOsiCBC_ROOT="$CI_PROJECT_DIR/vendor/cbc" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
-    - cmake --build build --config MinSizeRel --target install
-  tags: [docker, high-mem]
-  when: manual
-
-build:wasm_minimal:
-  extends: .build
-  image: emscripten/emsdk
-  variables:
-    MZNARCH: "wasm"
-    CMAKE_ARCH: "Unix Makefiles"
-  script:
-    - emcmake cmake -v -S . -B build -G"$CMAKE_ARCH" -DCMAKE_BUILD_TYPE=MinSizeRel -DBUILD_REF=$CI_PIPELINE_ID -DGecode_ROOT="$CI_PROJECT_DIR/vendor/gecode" -DOsiCBC_ROOT="$CI_PROJECT_DIR/vendor/cbc" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
-    - cmake --build build --config MinSizeRel --target install
-  tags: [docker]
-  when: manual
-
 # ----------- Test Suite -----------
 
 test:format:
