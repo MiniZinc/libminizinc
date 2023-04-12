@@ -20,6 +20,8 @@ Bug fixes:
    boolean operators involving optional arguments (:bugref:`668`).
 -  Fix handling of absent values when checking the return value of par functions
    against the type-inst (:bugref:`673`).
+-  Fix small redundancy in the flat_cv_exp that triggers errors (and assertions)
+   in some cases (:bugref:`674`).
 
 .. _v2.7.2:
 

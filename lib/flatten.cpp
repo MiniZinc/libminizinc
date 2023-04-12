@@ -3427,7 +3427,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
           es[i] = flat_cv_exp(env, ctx, (*al)[i])();
         }
         if (al->isTuple()) {
-          Expression* al_ret = eval_par(env, ArrayLit::constructTuple(Location().introduce(), es));
+          Expression* al_ret = ArrayLit::constructTuple(Location().introduce(), es);
           al_ret->type(al->type());  // still contains var, so still CV
           return al_ret;
         }
@@ -3435,7 +3435,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
         for (int i = 0; i < al->dims(); i++) {
           dims[i] = std::make_pair(al->min(i), al->max(i));
         }
-        Expression* al_ret = eval_par(env, new ArrayLit(Location().introduce(), es, dims));
+        Expression* al_ret = new ArrayLit(Location().introduce(), es, dims);
         Type t = al->type();
         t.cv(false);
         al_ret->type(t);
