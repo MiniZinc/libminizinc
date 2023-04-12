@@ -462,6 +462,9 @@ public:
         auto enumId = fi->ti()->domain()->type().typeId();
         if (base_t.st() == Type::ST_PLAIN) {
           for (unsigned int i = 0; i < v->size(); i++) {
+            if ((*v)[i] == env.constants.absent) {
+              continue;
+            }
             IntVal iv = eval_int(env, (*v)[i]);
             if (!isv->contains(iv)) {
               std::ostringstream oss;
@@ -489,6 +492,9 @@ public:
         FloatSetVal* fsv = eval_floatset(env, fi->ti()->domain());
         if (base_t.st() == Type::ST_PLAIN) {
           for (unsigned int i = 0; i < v->size(); i++) {
+            if ((*v)[i] == env.constants.absent) {
+              continue;
+            }
             FloatVal fv = eval_float(env, (*v)[i]);
             if (!fsv->contains(fv)) {
               std::ostringstream oss;

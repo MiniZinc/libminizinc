@@ -18,6 +18,8 @@ Bug fixes:
    (:bugref:`669`).
 -  Fix crashes/invalid FlatZinc generated due to incorrect aggregation of
    boolean operators involving optional arguments (:bugref:`668`).
+-  Fix handling of absent values when checking the return value of par functions
+   against the type-inst (:bugref:`673`).
 
 .. _v2.7.2:
 
