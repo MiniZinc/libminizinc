@@ -9,6 +9,12 @@ https://github.com/MiniZinc/libminizinc/issues.
 Unreleased
 ~~~~~~~~~~
 
+Bug fixes:
+^^^^^^^^^^
+
+-  Fix incorrect handling of enum types during return type specialisation of
+   functions (:bugref:`670`).
+
 .. _v2.7.2:
 
 `Version 2.7.2 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.7.2>`__

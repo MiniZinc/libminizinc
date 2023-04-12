@@ -713,14 +713,25 @@ public:
           }
           auto t = ti->type();
           t.typeId(0);
+          t.dim(ret_type.dim());
+          // Type ID is actually element type, array will be registered later
+          t.typeId(ti->type().typeId());
           ti->type(t);
           ti->setRanges(newRanges);
           break;  // only one general tiid allowed in index set
         }
       }
     }
-
-    if (ti->type().bt() == Type::BT_TUPLE) {
+    if (ti->type().dim() > 0 && !ti->type().structBT()) {
+      auto t = ti->type();
+      std::vector<unsigned int> enumIds(ti->type().dim() + 1, 0);
+      for (unsigned int i = 0; i < ti->ranges().size(); i++) {
+        enumIds[i] = ti->ranges()[i]->type().typeId();
+      }
+      enumIds[ti->type().dim()] = ti->type().typeId();
+      t.typeId(env.registerArrayEnum(enumIds));
+      ti->type(t);
+    } else if (ti->type().bt() == Type::BT_TUPLE) {
       env.registerTupleType(ti);
     } else if (ti->type().bt() == Type::BT_RECORD) {
       env.registerRecordType(ti);
