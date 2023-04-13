@@ -22,6 +22,8 @@ Bug fixes:
    against the type-inst (:bugref:`673`).
 -  Fix small redundancy in the flat_cv_exp that triggers errors (and assertions)
    in some cases (:bugref:`674`).
+-  Fix a mistake in the context when binding the result of builtins returning
+   an expression (:bugref:`667`).
 
 .. _v2.7.2:
 

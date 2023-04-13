@@ -1216,7 +1216,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
           args_ee.push_back(res);
           ret.b = conj(env, b, Ctx(), args_ee);
           add_path_annotation(env, res.r());
-          ret.r = bind(env, ctx, r, res.r());
+          ret.r = bind(env, Ctx(), r, res.r());
           if (!ctx.neg && !cr_c->type().isAnn()) {
             env.cseMapInsert(cr_c, ret);
           }
