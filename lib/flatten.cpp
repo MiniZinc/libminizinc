@@ -2551,6 +2551,17 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
   }
   if (ctx.neg) {
     assert(e->type().bt() == Type::BT_BOOL);
+    auto wrap_bool_not = [&](Expression* e) {
+      KeepAlive ka;
+      {
+        GCLock lock;
+        Call* bn = Call::a(e->loc(), env.constants.ids.bool_.not_, {e});
+        bn->type(e->type());
+        bn->decl(env.model->matchFn(env, bn, false));
+        ka = bn;
+      }
+      return flat_exp(env, Ctx(), ka(), vd, env.constants.varTrue);
+    };
     if (vd == env.constants.varTrue) {
       if (!isfalse(env, e)) {
         if (Id* id = e->dynamicCast<Id>()) {
@@ -2578,24 +2589,12 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
           }
           return env.constants.literalTrue;
         }
-        GC::lock();
-        Call* bn = Call::a(e->loc(), env.constants.ids.bool_.not_, {e});
-        bn->type(e->type());
-        bn->decl(env.model->matchFn(env, bn, false));
-        KeepAlive ka(bn);
-        GC::unlock();
-        EE ee = flat_exp(env, Ctx(), bn, vd, env.constants.varTrue);
+        EE ee = wrap_bool_not(e);
         return ee.r;
       }
       return env.constants.literalTrue;
     }
-    GC::lock();
-    Call* bn = Call::a(e->loc(), env.constants.ids.bool_.not_, {e});
-    bn->type(e->type());
-    bn->decl(env.model->matchFn(env, bn, false));
-    KeepAlive ka(bn);
-    GC::unlock();
-    EE ee = flat_exp(env, Ctx(), bn, vd, env.constants.varTrue);
+    EE ee = wrap_bool_not(e);
     return ee.r;
   }
   if (vd == env.constants.varTrue) {
