@@ -630,7 +630,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
           argctx.b = C_MIX;
         }
         auto* al = c->arg(0)->cast<ArrayLit>();
-        ArrayLit* al_new;
+        KeepAlive al_new;
         if (al->flat()) {
           al_new = al;
         } else {
@@ -650,12 +650,14 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
               flat_args.emplace_back(res.r());
             }
           }
-          GCLock lock;
-          al_new = new ArrayLit(al->loc(), to_exp_vec(flat_args));
-          al_new->type(Type::varbool(1));
-          al_new->flat(true);
+          {
+            GCLock lock;
+            al_new = new ArrayLit(al->loc(), to_exp_vec(flat_args));
+            al_new()->type(Type::varbool(1));
+            al_new()->cast<ArrayLit>()->flat(true);
+          }
         }
-        args_ee[0] = EE(al_new, env.constants.literalTrue);
+        args_ee[0] = EE(al_new(), env.constants.literalTrue);
       } else {
         BCtx transfer_ctx = c->type().bt() == Type::BT_INT ? nctx.i : nctx.b;
         for (unsigned int i = c->argCount(); (i--) != 0U;) {
