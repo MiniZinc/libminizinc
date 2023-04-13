@@ -1041,8 +1041,8 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
                     needToConstrain = true;
                   } else {
                     IntBounds ib = compute_int_bounds(env, curArg());
-                    needToConstrain = !ib.valid || isv->empty() || ib.l < isv->min(0) ||
-                                      ib.u > isv->max(isv->size() - 1);
+                    needToConstrain =
+                        !ib.valid || isv->empty() || !isv->isSubset(IntSetVal::Range(ib.l, ib.u));
                   }
                 }
                 if (needToConstrain) {
@@ -1069,8 +1069,8 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
                   needToConstrain = true;
                 } else {
                   FloatBounds fb = compute_float_bounds(env, curArg());
-                  needToConstrain = !fb.valid || fsv->empty() || fb.l < fsv->min(0) ||
-                                    fb.u > fsv->max(fsv->size() - 1);
+                  needToConstrain =
+                      !fb.valid || fsv->empty() || !fsv->isSubset(FloatSetVal::Range(fb.l, fb.u));
                 }
 
                 if (needToConstrain) {

@@ -659,6 +659,15 @@ public:
     }
     return c;
   }
+  /// Return whether the given range is a subset of any of the contained ranges
+  bool isSubset(Range r) const {
+    for (unsigned int i = size(); (i--) != 0U;) {
+      if (min(i) <= r.min && r.max <= max(i)) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   /// Allocate empty set from context
   static IntSetVal* a() {
@@ -886,6 +895,15 @@ public:
       }
     }
     return c;
+  }
+  /// Return whether the given range is a subset of any of the contained ranges
+  bool isSubset(Range r) const {
+    for (unsigned int i = size(); (i--) != 0U;) {
+      if (min(i) <= r.min && r.max <= max(i)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /// Allocate empty set from context
