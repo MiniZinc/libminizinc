@@ -18,7 +18,7 @@ if(BISON_FOUND AND FLEX_FOUND)
     ${PROJECT_SOURCE_DIR}/lib/parser.yxx
     ${PROJECT_BINARY_DIR}/parser.tab.cpp
     DEFINES_FILE ${PROJECT_BINARY_DIR}/include/minizinc/parser.tab.hh
-    COMPILE_FLAGS "-p mzn_yy -l"
+    COMPILE_FLAGS "-p mzn_yy -l -Werror"
   )
 
   file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/include/minizinc/support/)
@@ -26,7 +26,7 @@ if(BISON_FOUND AND FLEX_FOUND)
     ${PROJECT_SOURCE_DIR}/lib/support/regex/parser.yxx
     ${PROJECT_BINARY_DIR}/regex_parser.tab.cpp
     DEFINES_FILE ${PROJECT_BINARY_DIR}/include/minizinc/support/regex_parser.tab.hh
-    COMPILE_FLAGS "-p regex_yy -l"
+    COMPILE_FLAGS "-p regex_yy -l -Werror"
   )
 
   FLEX_TARGET(MZNLexer

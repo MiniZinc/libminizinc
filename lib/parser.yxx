@@ -1278,11 +1278,11 @@ expr :
           $$=new BinOp(@$, $3, BOT_DOTDOT, $5);
         }
       }
-    | MZN_DOTDOT_LE_QUOTED '(' set_expr ')'
+    | MZN_DOTDOT_LE_QUOTED '(' expr ')'
       { $$=Call::a(@$, ASTString("'..<'"), {$3}); }
-    | MZN_LE_DOTDOT_QUOTED '(' set_expr ')'
+    | MZN_LE_DOTDOT_QUOTED '(' expr ')'
       { $$=Call::a(@$, ASTString("'<..'"), {$3}); }
-    | MZN_LE_DOTDOT_LE_QUOTED '(' set_expr ')'
+    | MZN_LE_DOTDOT_LE_QUOTED '(' expr ')'
       { $$=Call::a(@$, ASTString("'<..<'"), {$3}); }
     | MZN_DOTDOT_QUOTED '(' expr ')'
       { $$=Call::a(@$, ASTString("'..'"), {$3}); }
