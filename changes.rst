@@ -24,6 +24,7 @@ Bug fixes:
    in some cases (:bugref:`674`).
 -  Fix a mistake in the context when binding the result of builtins returning
    an expression (:bugref:`667`).
+-  Fix problem with function domain constraints containing infinity.
 
 .. _v2.7.2:
 

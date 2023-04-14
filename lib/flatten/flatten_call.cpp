@@ -1055,7 +1055,9 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
                     (void)flat_exp(env, Ctx(), domconstraint(), env.constants.varTrue,
                                    env.constants.varTrue);
                   } else {
-                    EE ee = flat_exp(env, Ctx(), domconstraint(), nullptr, env.constants.varTrue);
+                    Ctx domctx = ctx;
+                    domctx.neg = false;
+                    EE ee = flat_exp(env, domctx, domconstraint(), nullptr, env.constants.varTrue);
                     ee.b = ee.r;
                     args_ee.push_back(ee);
                   }
@@ -1083,7 +1085,9 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
                     (void)flat_exp(env, Ctx(), domconstraint(), env.constants.varTrue,
                                    env.constants.varTrue);
                   } else {
-                    EE ee = flat_exp(env, Ctx(), domconstraint(), nullptr, env.constants.varTrue);
+                    Ctx domctx = ctx;
+                    domctx.neg = false;
+                    EE ee = flat_exp(env, domctx, domconstraint(), nullptr, env.constants.varTrue);
                     ee.b = ee.r;
                     args_ee.push_back(ee);
                   }
