@@ -6,7 +6,7 @@
 %
 
 % domain constraints
-predicate var_dom(var int:x, set of int: s) =
+predicate var_dom(var int: x, set of int: s) =
   if has_bounds(x) /\ dom(x) subset s then true
   else x in s
   endif;
@@ -16,7 +16,7 @@ predicate var_dom(var opt int:x, set of int: s) =
     var int: dx = deopt(x);
     set of int: new_dom = dom(dx) intersect s;
   } in if new_dom = {} then absent(x)
-    else dx in new_dom union if mzn_check_absent_zero() then {0} else {} endif
+    else var_dom(dx, new_dom union if mzn_check_absent_zero() then {0} else {} endif) 
     endif
   endif;
 predicate var_dom(array[$T] of var opt int: x, set of int: d) =
@@ -1307,13 +1307,17 @@ predicate mzn_set_in_internal(var int: x, set of int: s) =
   else let {
     array[int] of int: ranges_ = set_to_ranges(s);
     array[int,1..2] of int: ranges = array2d(1..length(ranges_) div 2,1..2,ranges_);
-    int: max_range = card(index_set_1of2(ranges));
-  } in if max_range=2 /\ ranges[1,2]=ranges[2,1]-2 then
-        x != ranges[1,2]+1
-      else
-        x <= ranges[1,2] \/ x >= ranges[max_range,1] \/
-        exists (i in 2..max_range-1) (x in ranges[i,1]..ranges[i,2])
-      endif
+  } in exists(i in index_set_1of2(ranges)) (
+    if ranges[i,1] = -infinity then
+      x <= ranges[i,2]
+    elseif ranges[i,2] = infinity then
+      x >= ranges[i,1]
+    elseif ranges[i,1] = ranges[i,2] then
+      x = ranges[i,1]
+    else
+      x in ranges[i,1]..ranges[i,2]
+    endif
+  )
   endif;
 
 /* Functions used for the type erasure of enumerated types */

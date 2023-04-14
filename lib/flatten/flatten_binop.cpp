@@ -1208,9 +1208,30 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
   Expression* le0 = nullptr;
   Expression* le1 = nullptr;
 
-  if (e0.r()->type().isint() && !e0.r()->type().isOpt() && bot != BOT_IN) {
+  if (bot == BOT_IN) {
+    if (e1.r()->type().isPar() && e0.r()->type().isint() && !e0.r()->type().isOpt()) {
+      bool has_infinity = false;
+      {
+        GCLock lock;
+        IntSetVal* dom = eval_intset(env, e1.r());
+        has_infinity = dom->min(0).isMinusInfinity() || dom->max(dom->size() - 1).isPlusInfinity();
+      }
+      if (has_infinity) {
+        KeepAlive ka;
+        {
+          GCLock lock;
+          Call* call = Call::a(bo->loc(), env.constants.ids.mzn_set_in_internal, {e0.r(), e1.r()});
+          call->type(Type::varbool());
+          call->decl(env.model->matchFn(env, call, false));
+          ka = call;
+        }
+        return flat_exp(env, ctx, ka(), r, b);
+      }
+    }
+    // Otherwise translate to set_in as normal
+  } else if (e0.r()->type().isint() && !e0.r()->type().isOpt()) {
     le0 = get_linexp<IntLit>(env, e0.r());
-  } else if (e0.r()->type().isfloat() && !e0.r()->type().isOpt() && bot != BOT_IN) {
+  } else if (e0.r()->type().isfloat() && !e0.r()->type().isOpt()) {
     le0 = get_linexp<FloatLit>(env, e0.r());
   }
   if (le0 != nullptr) {
