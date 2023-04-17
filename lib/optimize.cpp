@@ -783,17 +783,9 @@ void optimize(Env& env, bool chain_compression) {
               }
               if (auto* vdi = item->dynamicCast<VarDeclI>()) {
                 // The variable occurs in the RHS of another variable, so
-                // if that is an array variable, simplify all constraints that
-                // mention the array variable
-                if ((vdi->e()->e() != nullptr) && vdi->e()->e()->isa<ArrayLit>()) {
-                  auto ait = envi.varOccurrences.itemMap.find(vdi->e()->id()->decl()->id());
-                  if (ait.first) {
-                    for (auto* aitem : *ait.second) {
-                      simplify_bool_constraint(envi, aitem, vd, remove, vardeclQueue,
-                                               constraintQueue, toRemove, deletedVarDecls,
-                                               nonFixedLiteralCount);
-                    }
-                  }
+                // if that is an array variable, push it onto the stack for processing
+                if (vdi->e()->e() != nullptr && vdi->e()->e()->isa<ArrayLit>()) {
+                  push_vardecl(envi, envi.varOccurrences.idx.get(vdi->e()->id()), vardeclQueue);
                   continue;
                 }
               }
@@ -1600,7 +1592,8 @@ int decrement_non_fixed_vars(std::unordered_map<Expression*, int>& nonFixedLiter
       auto* al = follow_id(c->arg(i))->cast<ArrayLit>();
       nonFixedVars += static_cast<int>(al->size());
       for (unsigned int j = al->size(); (j--) != 0U;) {
-        if ((*al)[j]->type().isPar()) {
+        if ((*al)[j]->type().isPar() ||
+            ((*al)[j]->isa<Id>() && (*al)[j]->cast<Id>()->decl()->ti()->domain() != nullptr)) {
           nonFixedVars--;
         }
       }
