@@ -26,6 +26,8 @@ Bug fixes:
    an expression (:bugref:`667`).
 -  Fix problem with function domain constraints containing infinity.
 -  Fix crash when flattening field access in negative context (:bugref:`675`).
+-  Fix crash when flattening variable declaration annotations for tuple
+   variables with paths enabled (:bugref:`675`).
 
 .. _v2.7.2:
 

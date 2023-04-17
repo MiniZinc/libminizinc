@@ -558,8 +558,10 @@ void flatten_vardecl_annotations(EnvI& env, VarDecl* origVd, VarDeclI* vdi, VarD
             ident->decl()->ann().getCall(env.constants.ann.mzn_add_annotated_expression);
       }
     } else if (Call* call = (*it)->dynamicCast<Call>()) {
-      addAnnotatedExpression =
-          call->decl()->ann().getCall(env.constants.ann.mzn_add_annotated_expression);
+      if (call->decl() != nullptr) {
+        addAnnotatedExpression =
+            call->decl()->ann().getCall(env.constants.ann.mzn_add_annotated_expression);
+      }
     }
     KeepAlive ann;
     if (addAnnotatedExpression != nullptr) {
