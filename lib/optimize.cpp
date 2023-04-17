@@ -1331,7 +1331,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
         BinOpType bot =
             c->arg(0)->isa<Id>() ? (is_true ? BOT_LQ : BOT_GR) : (is_true ? BOT_GQ : BOT_LE);
         IntSetVal* newDomain = LinearTraits<IntLit>::limitDomain(bot, domain, eval_int(env, arg));
-        if (newDomain->card() == 0) {
+        if (newDomain->empty()) {
           env.fail();
         } else {
           ident->decl()->ti()->domain(new SetLit(Location().introduce(), newDomain));
@@ -1376,6 +1376,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
       if (vd != nullptr) {
         if (vd->ti()->domain() != nullptr) {
           vd_dom = eval_intset(env, vd->ti()->domain());
+          assert(!vd_dom->empty());
           if (vd_dom->max() < 0 || vd_dom->min() > 1) {
             env.fail();
             return true;

@@ -243,6 +243,7 @@ void GeasSolverInstance::processFlatZinc() {
           Expression* domain = vd->ti()->domain();
           if (domain != nullptr) {
             IntSetVal* isv = eval_intset(env().envi(), domain);
+            assert(!isv->empty());
             auto var = _solver.new_intvar(static_cast<geas::intvar::val_t>(isv->min().toInt()),
                                           static_cast<geas::intvar::val_t>(isv->max().toInt()));
             if (isv->size() > 1) {

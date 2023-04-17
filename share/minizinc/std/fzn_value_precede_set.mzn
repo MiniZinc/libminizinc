@@ -1,4 +1,7 @@
 predicate fzn_value_precede_set(int: s, int: t, array[int] of var set of int: x) =
+  if length(x) = 0 then
+    true
+  else
     let {
         int: imin = min(index_set(x)),
         int: imax = max(index_set(x)),
@@ -13,4 +16,5 @@ predicate fzn_value_precede_set(int: s, int: t, array[int] of var set of int: x)
                 /\  ((not b[i]) -> (s in x[i] \/ not (t in x[i])))
         )
         /\  b[imin] == false
-    );
+    )
+  endif;

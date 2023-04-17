@@ -1,7 +1,9 @@
 include "seq_precede_chain.mzn";
 
 predicate fzn_value_precede_chain_int(array[int] of int: T, array[int] of var int: X) = 
-    if min(index_set(T)) = 1 /\ forall (i in index_set(T))(T[i] = i)
+    if length(T) = 0 then
+        true
+    elseif min(index_set(T)) = 1 /\ forall (i in index_set(T))(T[i] = i)
        /\ max(T) = ub_array(X)
     then
         seq_precede_chain(X)

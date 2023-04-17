@@ -6,8 +6,8 @@
 opt bool: UseCPLexLesseq;         %% When not UseOrbisack, use CP decomposition
 opt bool: OrbisackAlwaysModelConstraint;                 %% Use with SCIP 7.0.2
 
-predicate fzn_lex_lesseq_int(array[int] of var int: x,
-                             array[int] of var int: y) =
+predicate fzn_lex_lesseq_int(array[int] of var int: x ::promise_ctx_antitone,
+                             array[int] of var int: y ::promise_ctx_monotone) =
     assert(length(x) == length(y),                       %% SCIP cannot
         "lex_lesseq_int(\(x), \(y)): arrays of different lengths")
     /\
@@ -18,35 +18,16 @@ predicate fzn_lex_lesseq_int(array[int] of var int: x,
               deopt(OrbisackAlwaysModelConstraint) ) \/
             not mzn_in_symmetry_breaking_constraint())
     elseif occurs(UseCPLexLesseq) /\ deopt(UseCPLexLesseq) then
-        fzn_lex_lesseq_int__CP(x, y)
+        lex_lesseq_std_decomposition(x, y)
     else
         fzn_lex_lesseq_int__MIP(x, y)
     endif;
 
-predicate fzn_lex_lesseq_int__CP(array[int] of var int: x,
-                                 array[int] of var int: y) =
-    let { int: lx = min(index_set(x)),
-          int: ux = max(index_set(x)),
-          int: ly = min(index_set(y)),
-          int: uy = max(index_set(y)),
-          int: size = min(ux - lx, uy - ly),
-          array[0..size+1] of var bool: b }
-          % b[i] is true if the lexicographical order holds from position i on.
-    in
-    b[0]
-    /\
-    forall(i in 0..size) (
-        b[i] = ( x[lx + i] <= y[ly + i]
-                 /\
-                 (x[lx + i] <  y[ly + i] \/ b[i+1])
-               )
-    )
-    /\
-    b[size + 1] = (ux - lx <= uy - ly)
-    ;
-
-predicate fzn_lex_lesseq_int__MIP(array[int] of var int: x,
-                                  array[int] of var int: y) =
+predicate fzn_lex_lesseq_int__MIP(array[int] of var int: x ::promise_ctx_antitone,
+                                  array[int] of var int: y ::promise_ctx_monotone) =
+  if length(x) = 0 then true
+  elseif length(y) = 0 then length(x) = 0
+  else
     let { int: lx = min(index_set(x)),
           int: ux = max(index_set(x)),
           int: ly = min(index_set(y)),
@@ -68,7 +49,7 @@ predicate fzn_lex_lesseq_int__MIP(array[int] of var int: x,
             /\
             aux_int_lt_if_1(x[lx+i], y[ly+i], fLT[i])
         )
-    ;
+  endif;
 
 %% SCIP constraint handler orbisack
 predicate fzn_lex_lesseq__orbisack(

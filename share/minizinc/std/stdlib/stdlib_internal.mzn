@@ -210,7 +210,7 @@ function var int: element_t(var int: idx, array[int] of var int: x) :: promise_t
 function var int: element_mt(var int: idx, array[int] of var int: x) :: promise_total =
   let {
     var lb_array(x)..ub_array(x): r ::is_defined_var;
-    var min(index_set(x))..max(index_set(x)): idx2;
+    var index_set(x): idx2;
     constraint idx in index_set(x) -> idx2=idx;
     constraint idx in index_set(x) \/ idx2=min(index_set(x));
     constraint array_var_int_element_nonshifted(idx2,x,r) ::defines_var(r);
@@ -227,8 +227,8 @@ function var int: element_t(var int: idx1, var int: idx2, array[int,int] of var 
 function var int: element_mt(var int: idx1, var int: idx2, array[int,int] of var int: x) :: promise_total =
   let {
     var lb_array(x)..ub_array(x): r ::is_defined_var;
-    var min(index_set_1of2(x))..max(index_set_1of2(x)): idx1_2;
-    var min(index_set_2of2(x))..max(index_set_2of2(x)): idx2_2;
+    var index_set_1of2(x): idx1_2;
+    var index_set_2of2(x): idx2_2;
     constraint (idx1 in index_set_1of2(x) /\ idx2 in index_set_2of2(x)) -> (idx1_2=idx1 /\ idx2_2=idx2);
     constraint (idx1 in index_set_1of2(x) /\ idx2 in index_set_2of2(x)) \/ (idx1_2=min(index_set_1of2(x)) /\ idx2_2=min(index_set_2of2(x)));
     constraint array_var_int_element2d_nonshifted(idx1_2,idx2_2,x,r) ::defines_var(r);
@@ -459,7 +459,7 @@ function var float: element_t(var int: idx, array[int] of var float: x) :: promi
 function var float: element_mt(var int: idx, array[int] of var float: x) :: promise_total =
   let {
     var lb_array(x)..ub_array(x): r ::is_defined_var;
-    var min(index_set(x))..max(index_set(x)): idx2;
+    var index_set(x): idx2;
     constraint idx in index_set(x) -> idx2=idx;
     constraint idx in index_set(x) \/ idx2=min(index_set(x));
     constraint array_var_float_element_nonshifted(idx2,x,r) ::defines_var(r);
@@ -476,8 +476,8 @@ function var float: element_t(var int: idx1, var int: idx2, array[int,int] of va
 function var float: element_mt(var int: idx1, var int: idx2, array[int,int] of var float: x) :: promise_total =
   let {
     var lb_array(x)..ub_array(x): r ::is_defined_var;
-    var min(index_set_1of2(x))..max(index_set_1of2(x)): idx1_2;
-    var min(index_set_2of2(x))..max(index_set_2of2(x)): idx2_2;
+    var index_set_1of2(x): idx1_2;
+    var index_set_2of2(x): idx2_2;
     constraint (idx1 in index_set_1of2(x) /\ idx2 in index_set_2of2(x)) -> (idx1_2=idx1 /\ idx2_2=idx2);
     constraint (idx1 in index_set_1of2(x) /\ idx2 in index_set_2of2(x)) \/ (idx1_2=min(index_set_1of2(x)) /\ idx2_2=min(index_set_2of2(x)));
     constraint array_var_float_element2d_nonshifted(idx1_2,idx2_2,x,r) ::defines_var(r);
@@ -700,7 +700,7 @@ function var set of int: element_t(var int: idx, array[int] of var set of int: x
 function var set of int: element_mt(var int: idx, array[int] of var set of int: x) :: promise_total =
   let {
     var set of min(ub_array(x))..max(ub_array(x)): r ::is_defined_var;
-    var min(index_set(x))..max(index_set(x)): idx2;
+    var index_set(x): idx2;
     constraint idx in index_set(x) -> idx2=idx;
     constraint idx in index_set(x) \/ idx2=min(index_set(x));
     constraint array_var_set_element_nonshifted(idx2,x,r) ::defines_var(r);
@@ -717,8 +717,8 @@ function var set of int: element_t(var int: idx1, var int: idx2, array[int,int] 
 function var set of int: element_mt(var int: idx1, var int: idx2, array[int,int] of var set of int: x) :: promise_total =
   let {
     var set of min(ub_array(x))..max(ub_array(x)): r ::is_defined_var;
-    var min(index_set_1of2(x))..max(index_set_1of2(x)): idx1_2;
-    var min(index_set_2of2(x))..max(index_set_2of2(x)): idx2_2;
+    var index_set_1of2(x): idx1_2;
+    var index_set_2of2(x): idx2_2;
     constraint (idx1 in index_set_1of2(x) /\ idx2 in index_set_2of2(x)) -> (idx1_2=idx1 /\ idx2_2=idx2);
     constraint (idx1 in index_set_1of2(x) /\ idx2 in index_set_2of2(x)) \/ (idx1_2=min(index_set_1of2(x)) /\ idx2_2=min(index_set_2of2(x)));
     constraint array_var_set_element2d_nonshifted(idx1_2,idx2_2,x,r) ::defines_var(r);
@@ -911,7 +911,7 @@ function var bool: element_t(var int: idx, array[int] of var bool: x) :: promise
 function var bool: element_mt(var int: idx, array[int] of var bool: x) :: promise_total =
   let {
     var bool: r ::is_defined_var;
-    var min(index_set(x))..max(index_set(x)): idx2;
+    var index_set(x): idx2;
     constraint idx in index_set(x) -> idx2=idx;
     constraint idx in index_set(x) \/ idx2=min(index_set(x));
     constraint array_var_bool_element_nonshifted(idx2,x,r) ::defines_var(r);
@@ -928,8 +928,8 @@ function var bool: element_t(var int: idx1, var int: idx2, array[int,int] of var
 function var bool: element_mt(var int: idx1, var int: idx2, array[int,int] of var bool: x) :: promise_total =
   let {
     var bool: r ::is_defined_var;
-    var min(index_set_1of2(x))..max(index_set_1of2(x)): idx1_2;
-    var min(index_set_2of2(x))..max(index_set_2of2(x)): idx2_2;
+    var index_set_1of2(x): idx1_2;
+    var index_set_2of2(x): idx2_2;
     constraint (idx1 in index_set_1of2(x) /\ idx2 in index_set_2of2(x)) -> (idx1_2=idx1 /\ idx2_2=idx2);
     constraint (idx1 in index_set_1of2(x) /\ idx2 in index_set_2of2(x)) \/ (idx1_2=min(index_set_1of2(x)) /\ idx2_2=min(index_set_2of2(x)));
     constraint array_var_bool_element2d_nonshifted(idx1_2,idx2_2,x,r) ::defines_var(r);
@@ -1303,7 +1303,7 @@ annotation mzn_was_undefined;
 /* Predicate used in the compiler for translating infinite domains into constraints */
 
 predicate mzn_set_in_internal(var int: x, set of int: s) =
-  if min(s) != -infinity /\ max(s) != infinity then set_in(x,s)
+  if card(s) = 0 \/ (min(s) != -infinity /\ max(s) != infinity) then set_in(x,s)
   else let {
     array[int] of int: ranges_ = set_to_ranges(s);
     array[int,1..2] of int: ranges = array2d(1..length(ranges_) div 2,1..2,ranges_);
@@ -1329,3 +1329,52 @@ function int: mzn_min_or_0(set of int: X) =
   if card(X)=0 then 0 
   elseif mzn_set_is_contiguous(X) then min(X)
   else 1 endif;
+
+predicate lex_less_std_decomposition(
+  array[int] of var $T: x ::promise_ctx_antitone,
+  array[int] of var $T: y ::promise_ctx_monotone,
+) =
+  if length(y) = 0 then false
+  elseif length(x) = 0 then true
+  else
+    let {
+      int: lx = min(index_set(x));
+      int: ux = max(index_set(x));
+      int: ly = min(index_set(y));
+      int: uy = max(index_set(y));
+      int: size = min(ux - lx, uy - ly);
+      array[0..size+1] of var bool: b;
+      constraint b[size + 1] = (ux - lx < uy - ly);  
+      constraint forall(i in 0..size) (
+        b[i] = (
+          x[lx + i] <= y[ly + i]
+          /\ (x[lx + i] <  y[ly + i] \/ b[i+1])
+        )
+      );
+    } in b[0]
+  endif;
+
+predicate lex_lesseq_std_decomposition(
+  array[int] of var $T: x ::promise_ctx_antitone,
+  array[int] of var $T: y ::promise_ctx_monotone,
+) =
+  if length(x) = 0 then true
+  elseif length(y) = 0 then length(x) = 0
+  else
+    let {
+      int: lx = min(index_set(x));
+      int: ux = max(index_set(x));
+      int: ly = min(index_set(y));
+      int: uy = max(index_set(y));
+      int: size = min(ux - lx, uy - ly);
+      % b[i] is true if the lexicographical order holds from position i on.
+      array[0..size+1] of var bool: b;
+      constraint b[size + 1] = (ux - lx <= uy - ly);
+      constraint forall(i in 0..size) (
+        b[i] = (
+          x[lx + i] <= y[ly + i]
+          /\ (x[lx + i] <  y[ly + i] \/ b[i+1])
+        )
+      );
+    } in b[0]
+  endif;

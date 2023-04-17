@@ -9,6 +9,16 @@ https://github.com/MiniZinc/libminizinc/issues.
 Unreleased
 ~~~~~~~~~~
 
+
+Changes:
+^^^^^^^^
+
+-  Calls to ``min`` and ``max`` with ``par set of int`` type argument will now
+   be undefined (becoming ``false`` in the closest Boolean context). This makes
+   them consistent with the calls with an argument of type ``var set of int``.
+   Note that previous behaviour would have returned ``infinity`` or
+   ``-infinity`` respectively (:bugref:`661`).
+
 Bug fixes:
 ^^^^^^^^^^
 

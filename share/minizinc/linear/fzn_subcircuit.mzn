@@ -1,7 +1,10 @@
 include "alldifferent.mzn";
 
 %% Linear version
-predicate fzn_subcircuit(array[int] of var int: x) = 
+predicate fzn_subcircuit(array[int] of var int: x) =
+   if length(x) = 0 then
+     true
+   else
     let { set of int: S = index_set(x),
           int: l = min(S),
           int: u = max(S),
@@ -58,6 +61,7 @@ predicate fzn_subcircuit(array[int] of var int: x) =
 %           (not ins[i]) <-> (n == order[i])
        )
        
-    );
+    )
+  endif;
 
 %-----------------------------------------------------------------------------%

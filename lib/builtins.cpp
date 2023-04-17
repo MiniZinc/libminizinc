@@ -851,11 +851,17 @@ IntSetVal* b_index_set6(EnvI& env, Call* call) {
 IntVal b_min_parsetint(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
   IntSetVal* isv = eval_intset(env, call->arg(0));
+  if (isv->empty()) {
+    throw ResultUndefinedError(env, call->loc(), "minimum of empty set is undefined");
+  }
   return isv->min();
 }
 IntVal b_max_parsetint(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
   IntSetVal* isv = eval_intset(env, call->arg(0));
+  if (isv->empty()) {
+    throw ResultUndefinedError(env, call->loc(), "maximum of empty set is undefined");
+  }
   return isv->max();
 }
 IntSetVal* b_lb_set(EnvI& env, Expression* e) {
@@ -1457,11 +1463,11 @@ Expression* exp_is_fixed(EnvI& env, Expression* e) {
           if ((dom != nullptr) && dom->isa<SetLit>()) {
             auto* sl = dom->cast<SetLit>();
             auto* isv = sl->isv();
-            if ((isv != nullptr) && isv->min() == isv->max()) {
+            if (isv != nullptr && !isv->empty() && isv->min() == isv->max()) {
               return IntLit::a(isv->min());
             }
             auto* fsv = sl->fsv();
-            if ((fsv != nullptr) && fsv->min() == fsv->max()) {
+            if (fsv != nullptr && !fsv->empty() && fsv->min() == fsv->max()) {
               return FloatLit::a(fsv->min());
             }
           }
@@ -2126,6 +2132,9 @@ Expression* b_set_sparse_inverse(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
   GCLock lock;
   IntSetVal* isv = eval_intset(env, call->arg(0));
+  if (isv->empty()) {
+    throw ResultUndefinedError(env, call->loc(), "sparse set of empty set is undefined");
+  }
   auto set_min = isv->min().toInt();
   auto set_size = (isv->max() - isv->min() + 1).toInt();
   std::vector<Expression*> elems(set_size, IntLit::a(1));
@@ -3326,8 +3335,8 @@ Expression* b_regular_from_string(EnvI& env, Call* call) {
       dom = IntSetVal::ai(u);
     }
   }
-  long long int card = dom->max().toInt() - dom->min().toInt() + 1;
-  int offset = 1 - static_cast<int>(dom->min().toInt());
+  long long int card = dom->empty() ? 0 : dom->max().toInt() - dom->min().toInt() + 1;
+  int offset = dom->empty() ? 0 : 1 - static_cast<int>(dom->min().toInt());
 
   // Replace all occurrences of enum constructor calls
   std::regex constructor_call(
@@ -3430,7 +3439,8 @@ Expression* b_regular_from_string(EnvI& env, Call* call) {
   while (trans()) {
     //      std::cerr << trans.i_state() + 1 << " -- " << trans.symbol() << " --> " <<
     //      trans.o_state() + 1 << "\n";
-    if (trans.symbol() >= dom->min().toInt() && trans.symbol() <= dom->max().toInt()) {
+    if (!dom->empty() && trans.symbol() >= dom->min().toInt() &&
+        trans.symbol() <= dom->max().toInt()) {
       reg_trans[trans.i_state()][trans.symbol() + offset - 1] =
           IntLit::a(IntVal(trans.o_state() + 1));
     }

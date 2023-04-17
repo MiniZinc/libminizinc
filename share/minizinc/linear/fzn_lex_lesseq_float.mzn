@@ -12,6 +12,9 @@ predicate fzn_lex_lesseq_float(array[int] of var float: x,
 
 predicate fzn_lex_lesseq_float__MIP(array[int] of var float: x,
                                     array[int] of var float: y) =
+  if length(x) = 0 then true
+  elseif length(y) = 0 then length(x) = 0
+  else
     let { int: lx = min(index_set(x)),
           int: ux = max(index_set(x)),
           int: ly = min(index_set(y)),
@@ -33,6 +36,6 @@ predicate fzn_lex_lesseq_float__MIP(array[int] of var float: x,
             /\
             aux_float_lt_if_1(x[lx+i], y[ly+i], fLT[i])
         )
-    ;
+  endif;
 
 %-----------------------------------------------------------------------------%

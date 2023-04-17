@@ -203,8 +203,9 @@ void check_struct_retval(EnvI& env, Expression* v, FunctionI* fi) {
         if ((entry.second->ranges()[i]->domain() != nullptr) &&
             !entry.second->ranges()[i]->domain()->isa<TIId>()) {
           IntSetVal* isv = eval_intset(env, entry.second->ranges()[i]->domain());
-          bool bothEmpty = isv->min() > isv->max() && al->min(i) > al->max(i);
-          if (!bothEmpty && (al->min(i) != isv->min() || al->max(i) != isv->max())) {
+          bool bothEmpty = isv->empty() && al->min(i) > al->max(i);
+          if (!bothEmpty && !isv->empty() &&
+              (al->min(i) != isv->min() || al->max(i) != isv->max())) {
             throw ResultUndefinedError(env, fi->e()->loc(),
                                        "function result violates function type-inst");
           }
@@ -446,8 +447,8 @@ public:
       if ((fi->ti()->ranges()[i]->domain() != nullptr) &&
           !fi->ti()->ranges()[i]->domain()->isa<TIId>()) {
         IntSetVal* isv = eval_intset(env, fi->ti()->ranges()[i]->domain());
-        bool bothEmpty = isv->min() > isv->max() && v->min(i) > v->max(i);
-        if (!bothEmpty && (v->min(i) != isv->min() || v->max(i) != isv->max())) {
+        bool bothEmpty = isv->empty() && v->min(i) > v->max(i);
+        if (!bothEmpty && !isv->empty() && (v->min(i) != isv->min() || v->max(i) != isv->max())) {
           std::ostringstream oss;
           oss << "array index set " << (i + 1) << " of function result violates function type-inst";
           throw ResultUndefinedError(env, fi->e()->loc(), oss.str());
@@ -2300,14 +2301,15 @@ Expression* eval_par(EnvI& env, Expression* e) {
         }
         if (id->decl()->ti()->type().isint()) {
           if (auto* sl = id->decl()->ti()->domain()->dynamicCast<SetLit>()) {
-            if ((sl->isv() != nullptr) && sl->isv()->min() == sl->isv()->max()) {
+            if ((sl->isv() != nullptr) && !sl->isv()->empty() &&
+                sl->isv()->min() == sl->isv()->max()) {
               return IntLit::a(sl->isv()->min());
             }
           }
         } else if (id->decl()->ti()->type().isfloat()) {
           if (id->decl()->ti()->domain() != nullptr) {
             FloatSetVal* fsv = eval_floatset(env, id->decl()->ti()->domain());
-            if (fsv->min() == fsv->max()) {
+            if (!fsv->empty() && fsv->min() == fsv->max()) {
               return FloatLit::a(fsv->min());
             }
           }
@@ -2855,7 +2857,11 @@ public:
         }
       }
       IntSetVal* isv = eval_intset(env, c->decl()->ti()->domain());
-      bounds.emplace_back(isv->min(), isv->max());
+      if (isv->empty()) {
+        bounds.emplace_back(1, 0);
+      } else {
+        bounds.emplace_back(isv->min(), isv->max());
+      }
     } else {
       valid = false;
       bounds.emplace_back(0, 0);
@@ -3049,8 +3055,11 @@ public:
       }
       if (id->decl()->ti()->domain() != nullptr) {
         FloatSetVal* fsv = eval_floatset(env, id->decl()->ti()->domain());
-        FBounds b(fsv->min(), fsv->max());
-        bounds.push_back(b);
+        if (fsv->empty()) {
+          bounds.emplace_back(1, 0);
+        } else {
+          bounds.emplace_back(fsv->min(), fsv->max());
+        }
         return;
       }
     }
@@ -3294,7 +3303,11 @@ public:
         }
       }
       FloatSetVal* fsv = eval_floatset(env, c->decl()->ti()->domain());
-      bounds.emplace_back(fsv->min(), fsv->max());
+      if (fsv->empty()) {
+        bounds.emplace_back(1, 0);
+      } else {
+        bounds.emplace_back(fsv->min(), fsv->max());
+      }
     } else {
       valid = false;
       bounds.emplace_back(0.0, 0.0);

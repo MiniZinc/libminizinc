@@ -5,14 +5,9 @@
 
 predicate fzn_lex_less_int(array[int] of var int: x,
                            array[int] of var int: y) =
-    assert(length(x) == length(y),
-        "lex_less_int(\(x), \(y)): arrays of different lengths")
-    /\
-    fzn_lex_less_int__MIP(x, y)
-    ;
-
-predicate fzn_lex_less_int__MIP(array[int] of var int: x,
-                                array[int] of var int: y) =
+  if length(y) = 0 then false
+  elseif length(x) = 0 then true
+  else
     let { int: lx = min(index_set(x)),
           int: ux = max(index_set(x)),
           int: ly = min(index_set(y)),
@@ -34,6 +29,6 @@ predicate fzn_lex_less_int__MIP(array[int] of var int: x,
             /\
             aux_int_lt_if_1(x[lx+i], y[ly+i], fLT[i])
         )
-    ;
+  endif;
 
 %-----------------------------------------------------------------------------%

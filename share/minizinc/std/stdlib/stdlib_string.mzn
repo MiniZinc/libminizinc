@@ -59,10 +59,10 @@ function string: show2d_indexed(array[int] of string: row_hdr,
 
 /** @group stdlib.builtins.string Convert two-dimensional array \a x into a string */
 function string: show2d(array[$$E,$$F] of any $T: x) = let {
-    bool: idx1_is_enum = min(enum_of(min(index_set_1of2(x)))) != -infinity;
-	bool: idx1_is_needed = idx1_is_enum \/ min(index_set_1of2(x)) != 1;
-    bool: idx2_is_enum = min(enum_of(min(index_set_2of2(x)))) != -infinity;
-	bool: idx2_is_needed = idx2_is_enum \/ min(index_set_2of2(x)) != 1;
+    bool: idx1_is_enum = if length(x) != 0 then min(enum_of(min(index_set_1of2(x)))) != -infinity else false endif;
+	bool: idx1_is_needed = if length(x) != 0 then idx1_is_enum \/ min(index_set_1of2(x)) != 1 else false endif;
+    bool: idx2_is_enum = if length(x) != 0 then min(enum_of(min(index_set_2of2(x)))) != -infinity else false endif;
+	bool: idx2_is_needed = if length(x) != 0 then idx2_is_enum \/ min(index_set_2of2(x)) != 1 else false endif;
     array[int] of string: col_hdr = if idx2_is_needed then [i : show(i) | i in index_set_2of2(x)] else [] endif;
     array[int] of string: row_hdr = if idx1_is_needed then [i : show(i) | i in index_set_1of2(x)] else [] endif;
 } in show2d_indexed(row_hdr, col_hdr, [ (i,j) : show(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x) ]);

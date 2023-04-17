@@ -1,4 +1,7 @@
 predicate fzn_seq_precede_chain_set(array[int] of var set of int: X) =
+  if length(X) = 0 then
+    true
+  else
     let {
         set of int: S = ub_array(X); % set of possible values
         int : l = min (S) ;     % least possible value
@@ -9,4 +12,5 @@ predicate fzn_seq_precede_chain_set(array[int] of var set of int: X) =
         H[f] <= 1 /\ H[f] = max (X[f] union {0}) /\
         forall ( i in index_set (X) diff {f} ) (
             H[i] <= H[i-1] + 1 /\ H[i] = max (max(X[i]), H[i-1])
-        );
+        )
+  endif;

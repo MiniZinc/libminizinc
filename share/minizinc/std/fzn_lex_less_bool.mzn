@@ -5,21 +5,6 @@
 
 predicate fzn_lex_less_bool(array[int] of var bool: x ::promise_ctx_antitone,
                             array[int] of var bool: y ::promise_ctx_monotone) =
-    let { int: lx = min(index_set(x)),
-          int: ux = max(index_set(x)),
-          int: ly = min(index_set(y)),
-          int: uy = max(index_set(y)),
-          int: size = min(ux - lx, uy - ly),
-          array[0..size+1] of var bool: b }
-    in
-    b[0]
-    /\
-    b[size + 1] = (ux - lx < uy - ly)
-    /\
-    forall(i in 0..size) (
-        b[i] = ( x[lx + i] <= y[ly + i]
-                 /\
-                (x[lx + i] <  y[ly + i] \/ b[i+1]) )
-    );
+  lex_less_std_decomposition(x,y);
 
 %-----------------------------------------------------------------------------%

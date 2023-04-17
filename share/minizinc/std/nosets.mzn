@@ -13,26 +13,30 @@ function set of int: reverse_map_ab2si(array[int] of bool: b) ::promise_total =
   { i | i in index_set(b) where b[i] };
 
 array[int] of var bool: set2bools(var set of int: x) ::promise_total =
-  if is_fixed(x) then set2bools(fix(x)) else
-  let {
-    array[int] of var bool: b = array1d( min(ub(x))..max(ub(x)),
-      [ set2bools_bit( x, i ) | i in min(ub(x))..max(ub(x)) ] );
-    constraint (x = reverse_map_ab2si(b)) :: is_reverse_map;
-  } in b
+  if is_fixed(x) then set2bools(fix(x))
+  elseif ub(x) = {} then []
+  else
+    let {
+      array[int] of var bool: b = array1d( min(ub(x))..max(ub(x)),
+        [ set2bools_bit( x, i ) | i in min(ub(x))..max(ub(x)) ] );
+      constraint (x = reverse_map_ab2si(b)) :: is_reverse_map;
+    } in b
   endif;
 array[int] of var bool: set2bools(var set of int: x, set of int: ubx) ::promise_total =
-  if is_fixed(x) then set2bools(fix(x), ubx) else
-  let {
-    array[int] of var bool: b0 = set2bools( x );       %% Call in any case ?? TODO
-    array[int] of var bool: b = array1d( min(ubx)..max(ubx),
-      [ if i in ubx then set2bools_bit( x, i ) else false endif
-        | i in min(ubx)..max(ubx) ] );
-  } in b
+  if is_fixed(x) then set2bools(fix(x), ubx)
+  elseif ub(x) = {} then []
+  else
+    let {
+      array[int] of var bool: b0 = set2bools( x );       %% Call in any case ?? TODO
+      array[int] of var bool: b = array1d( min(ubx)..max(ubx),
+        [ if i in ubx then set2bools_bit( x, i ) else false endif
+          | i in min(ubx)..max(ubx) ] );
+    } in b
   endif;
 array[int] of bool: set2bools(set of int: x) ::promise_total =
-  array1d(min(x)..max(x),[i in x | i in min(x)..max(x)]);
+  if x = {} then [] else array1d(min(x)..max(x),[i in x | i in min(x)..max(x)]) endif;
 array[int] of bool: set2bools(set of int: x, set of int: ubx) ::promise_total =
-  array1d(min(ubx)..max(ubx),[i in x | i in min(ubx)..max(ubx)]);
+  if ubx = {} then [] else array1d(min(ubx)..max(ubx),[i in x | i in min(ubx)..max(ubx)]) endif;
 function var bool: set2bools_bit( var set of int: x, int: i ) ::promise_total =
   if i in ub(x) then
   let {
@@ -116,106 +120,130 @@ predicate set_ne_imp(var set of int: x, var set of int: y, var bool: b) =
 
 % Set comparisons are often used just to avoid symmetries.
 predicate set_le(var set of int: x, var set of int: y) =
-  let {
-    set of int: U = ub(x) union ub(y);
-    int: l = min(U);
-    int: u = max(U);
-    array[l..u] of var bool: xb = array1d(l..u, [i in x | i in l..u]);
-    var l-1..u: xmax = max(x union {l-1});
-    array[l..u] of var bool: yb = array1d(l..u, [i in y | i in l..u]);
-    var l-1..u: ymax = max(y union {l-1});
-    array[l..u] of var bool: b; 
-    constraint forall(i in l..u-1) (
-        b[i] = let {var 1..4: cmp = 2*xb[i] + yb[i] + 1} in
-                   [b[i+1], xmax < i, ymax > i, b[i+1]][cmp]
-    );
-    constraint b[u] = (xb[u] -> yb[u]);
-  } in b[l];
+  if ub(x) = {} then true
+  elseif ub(y) = {} then x = {}
+  else
+    let {
+      set of int: U = ub(x) union ub(y);
+      int: l = min(U);
+      int: u = max(U);
+      array[l..u] of var bool: xb = array1d(l..u, [i in x | i in l..u]);
+      var l-1..u: xmax = max(x union {l-1});
+      array[l..u] of var bool: yb = array1d(l..u, [i in y | i in l..u]);
+      var l-1..u: ymax = max(y union {l-1});
+      array[l..u] of var bool: b; 
+      constraint forall(i in l..u-1) (
+          b[i] = let {var 1..4: cmp = 2*xb[i] + yb[i] + 1} in
+                    [b[i+1], xmax < i, ymax > i, b[i+1]][cmp]
+      );
+      constraint b[u] = (xb[u] -> yb[u]);
+    } in b[l]
+  endif;
 
 predicate set_le_reif(var set of int: x, var set of int: y, var bool: r) =
-  let {
-    set of int: U = ub(x) union ub(y);
-    int: l = min(U);
-    int: u = max(U);
-    array[l..u] of var bool: xb = array1d(l..u, [i in x | i in l..u]);
-    var l-1..u: xmax = max(x union {l-1});
-    array[l..u] of var bool: yb = array1d(l..u, [i in y | i in l..u]);
-    var l-1..u: ymax = max(y union {l-1});
-    array[l..u] of var bool: b; 
-    constraint forall(i in l..u-1) (
-        b[i] = let {var 1..4: cmp = 2*xb[i] + yb[i] + 1} in
-                   [b[i+1], xmax < i, ymax > i, b[i+1]][cmp]
-    );
-    constraint b[u] = (xb[u] -> yb[u]);
-  } in r <-> b[l];
+  if ub(x) = {} then true
+  elseif ub(y) = {} then set_eq_reif(x, {}, r)
+  else
+    let {
+      set of int: U = ub(x) union ub(y);
+      int: l = min(U);
+      int: u = max(U);
+      array[l..u] of var bool: xb = array1d(l..u, [i in x | i in l..u]);
+      var l-1..u: xmax = max(x union {l-1});
+      array[l..u] of var bool: yb = array1d(l..u, [i in y | i in l..u]);
+      var l-1..u: ymax = max(y union {l-1});
+      array[l..u] of var bool: b; 
+      constraint forall(i in l..u-1) (
+          b[i] = let {var 1..4: cmp = 2*xb[i] + yb[i] + 1} in
+                    [b[i+1], xmax < i, ymax > i, b[i+1]][cmp]
+      );
+      constraint b[u] = (xb[u] -> yb[u]);
+    } in r <-> b[l]
+  endif;
 
 predicate set_le_imp(var set of int: x, var set of int: y, var bool: r) =
-  let {
-    set of int: U = ub(x) union ub(y);
-    int: l = min(U);
-    int: u = max(U);
-    array[l..u] of var bool: xb = array1d(l..u, [i in x | i in l..u]);
-    var l-1..u: xmax = max(x union {l-1});
-    array[l..u] of var bool: yb = array1d(l..u, [i in y | i in l..u]);
-    var l-1..u: ymax = max(y union {l-1});
-    array[l..u] of var bool: b; 
-    constraint forall(i in l..u-1) (
-        b[i] = let {var 1..4: cmp = 2*xb[i] + yb[i] + 1} in
-                   [b[i+1], xmax < i, ymax > i, b[i+1]][cmp]
-    );
-    constraint b[u] = (xb[u] -> yb[u]);
-  } in r -> b[l];
+  if ub(x) = {} then true
+  elseif ub(y) = {} then set_eq_imp(x, {}, r)
+  else
+    let {
+      set of int: U = ub(x) union ub(y);
+      int: l = min(U);
+      int: u = max(U);
+      array[l..u] of var bool: xb = array1d(l..u, [i in x | i in l..u]);
+      var l-1..u: xmax = max(x union {l-1});
+      array[l..u] of var bool: yb = array1d(l..u, [i in y | i in l..u]);
+      var l-1..u: ymax = max(y union {l-1});
+      array[l..u] of var bool: b; 
+      constraint forall(i in l..u-1) (
+          b[i] = let {var 1..4: cmp = 2*xb[i] + yb[i] + 1} in
+                    [b[i+1], xmax < i, ymax > i, b[i+1]][cmp]
+      );
+      constraint b[u] = (xb[u] -> yb[u]);
+    } in r -> b[l]
+  endif;
 
 predicate set_lt(var set of int: x, var set of int: y) ::promise_total =
-  let {
-    set of int: U = ub(x) union ub(y);
-    int: l = min(U);
-    int: u = max(U);
-    array[l..u] of var bool: xb = array1d(l..u, [i in x | i in l..u]);
-    var l-1..u: xmax = max(x union {l-1});
-    array[l..u] of var bool: yb = array1d(l..u, [i in y | i in l..u]);
-    var l-1..u: ymax = max(y union {l-1});
-    array[l..u] of var bool: b; 
-    constraint forall(i in l..u-1) (
-        b[i] = let {var 1..4: cmp = 2*xb[i] + yb[i] + 1} in
-                   [b[i+1], xmax < i, ymax > i, b[i+1]][cmp]
-    );
-    constraint b[u] = (not xb[u] /\ yb[u]);
-  } in b[l];
+  if ub(x) = {} then card(y) >= 1
+  elseif ub(y) = {} then false
+  else
+    let {
+      set of int: U = ub(x) union ub(y);
+      int: l = min(U);
+      int: u = max(U);
+      array[l..u] of var bool: xb = array1d(l..u, [i in x | i in l..u]);
+      var l-1..u: xmax = max(x union {l-1});
+      array[l..u] of var bool: yb = array1d(l..u, [i in y | i in l..u]);
+      var l-1..u: ymax = max(y union {l-1});
+      array[l..u] of var bool: b; 
+      constraint forall(i in l..u-1) (
+          b[i] = let {var 1..4: cmp = 2*xb[i] + yb[i] + 1} in
+                    [b[i+1], xmax < i, ymax > i, b[i+1]][cmp]
+      );
+      constraint b[u] = (not xb[u] /\ yb[u]);
+    } in b[l]
+  endif;
 
-predicate set_lt_reif(var set of int: x, var set of int: y, var bool: r) ::promise_total =
-  let {
-    set of int: U = ub(x) union ub(y);
-    int: l = min(U);
-    int: u = max(U);
-    array[l..u] of var bool: xb = array1d(l..u, [i in x | i in l..u]);
-    var l-1..u: xmax = max(x union {l-1});
-    array[l..u] of var bool: yb = array1d(l..u, [i in y | i in l..u]);
-    var l-1..u: ymax = max(y union {l-1});
-    array[l..u] of var bool: b; 
-    constraint forall(i in l..u-1) (
-        b[i] = let {var 1..4: cmp = 2*xb[i] + yb[i] + 1} in
-                   [b[i+1], xmax < i, ymax > i, b[i+1]][cmp]
-    );
-    constraint b[u] = (not xb[u] /\ yb[u]);
-  } in r <-> b[l];
+predicate set_lt_reif(var set of int: x, var set of int: y, var bool: r) ::promise_total = 
+  if ub(x) = {} then r = (card(y) >= 1)
+  elseif ub(y) = {} then not r
+  else
+    let {
+      set of int: U = ub(x) union ub(y);
+      int: l = min(U);
+      int: u = max(U);
+      array[l..u] of var bool: xb = array1d(l..u, [i in x | i in l..u]);
+      var l-1..u: xmax = max(x union {l-1});
+      array[l..u] of var bool: yb = array1d(l..u, [i in y | i in l..u]);
+      var l-1..u: ymax = max(y union {l-1});
+      array[l..u] of var bool: b; 
+      constraint forall(i in l..u-1) (
+          b[i] = let {var 1..4: cmp = 2*xb[i] + yb[i] + 1} in
+                    [b[i+1], xmax < i, ymax > i, b[i+1]][cmp]
+      );
+      constraint b[u] = (not xb[u] /\ yb[u]);
+    } in r <-> b[l]
+  endif;
 
 predicate set_lt_imp(var set of int: x, var set of int: y, var bool: r) ::promise_total =
-  let {
-    set of int: U = ub(x) union ub(y);
-    int: l = min(U);
-    int: u = max(U);
-    array[l..u] of var bool: xb = array1d(l..u, [i in x | i in l..u]);
-    var l-1..u: xmax = max(x union {l-1});
-    array[l..u] of var bool: yb = array1d(l..u, [i in y | i in l..u]);
-    var l-1..u: ymax = max(y union {l-1});
-    array[l..u] of var bool: b; 
-    constraint forall(i in l..u-1) (
-        b[i] = let {var 1..4: cmp = 2*xb[i] + yb[i] + 1} in
-                   [b[i+1], xmax < i, ymax > i, b[i+1]][cmp]
-    );
-    constraint b[u] = (not xb[u] /\ yb[u]);
-  } in r -> b[l];
+  if ub(x) = {} then r -> (card(y) >= 1)
+  elseif ub(y) = {} then not r
+  else
+    let {
+      set of int: U = ub(x) union ub(y);
+      int: l = min(U);
+      int: u = max(U);
+      array[l..u] of var bool: xb = array1d(l..u, [i in x | i in l..u]);
+      var l-1..u: xmax = max(x union {l-1});
+      array[l..u] of var bool: yb = array1d(l..u, [i in y | i in l..u]);
+      var l-1..u: ymax = max(y union {l-1});
+      array[l..u] of var bool: b; 
+      constraint forall(i in l..u-1) (
+          b[i] = let {var 1..4: cmp = 2*xb[i] + yb[i] + 1} in
+                    [b[i+1], xmax < i, ymax > i, b[i+1]][cmp]
+      );
+      constraint b[u] = (not xb[u] /\ yb[u]);
+    } in r -> b[l]
+  endif;
 
 predicate set_subset(var set of int: x, var set of int: y) ::promise_total =
   let {

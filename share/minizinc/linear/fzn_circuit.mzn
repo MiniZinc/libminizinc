@@ -1,7 +1,10 @@
 include "alldifferent.mzn";
 
 % Linear version.
-predicate fzn_circuit(array[int] of var int: x) = 
+predicate fzn_circuit(array[int] of var int: x) =
+  if length(x) = 0 then
+    true
+  else
     let { set of int: S = index_set(x),
           int: l = min(S),
           int: u = max(S),
@@ -32,7 +35,7 @@ predicate fzn_circuit(array[int] of var int: x) =
     %% ... but seems improved with this (leaving also for SEC)
     /\ if n>2 then forall (i,j in S where i<j) ( x[i]!=j \/ x[j]!=i )      %% Only this improves overall with DL'91
        else true endif
-    ;
+  endif;
 
 %-----------------------------------------------------------------------------%
 predicate circuit__SECcuts(array[int,int] of var int: x);     %% passed on

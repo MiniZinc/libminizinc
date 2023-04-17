@@ -154,7 +154,7 @@ function var $$E: arg_max_total(array[$$E] of var float: x) :: promise_total =
 
 function var $$E: arg_max_total(array[$$E] of var opt int: x) :: promise_total = 
 	if length(x) = 0 then
-		min(index_set(x))
+		0
 	elseif exists (xi in x) (is_fixed(occurs(xi)) /\ fix(occurs(xi))) then
 		let {
 			var index_set(x): i;
@@ -172,7 +172,7 @@ function var $$E: arg_max_total(array[$$E] of var opt int: x) :: promise_total =
 
 function var $$E: arg_max_total(array[$$E] of var opt bool: x) :: promise_total = 
 	if length(x) = 0 then
-		min(index_set(x))
+		0
 	elseif exists (xi in x) (is_fixed(occurs(xi)) /\ fix(occurs(xi))) then
 		let {
 			var index_set(x): i;
@@ -190,7 +190,7 @@ function var $$E: arg_max_total(array[$$E] of var opt bool: x) :: promise_total 
 
 function var $$E: arg_max_total(array[$$E] of var opt float: x) :: promise_total = 
 	if length(x) = 0 then
-		min(index_set(x))
+		0
 	elseif exists (xi in x) (is_fixed(occurs(xi)) /\ fix(occurs(xi))) then
 		let {
 			var index_set(x): i;

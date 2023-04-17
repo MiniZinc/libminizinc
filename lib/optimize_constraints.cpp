@@ -68,6 +68,7 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expres
     VarDecl* vd = x[0]()->cast<Id>()->decl();
     IntSetVal* domain =
         vd->ti()->domain() != nullptr ? eval_intset(env, vd->ti()->domain()) : nullptr;
+    assert(!domain->empty());
     if (c->id() == env.constants.ids.int_.lin_eq) {
       IntVal rd = eval_int(env, c->arg(2)) - d;
       if (rd % coeffs[0] == 0) {

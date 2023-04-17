@@ -1,6 +1,9 @@
 include "alldifferent.mzn";
 
 predicate fzn_subcircuit(array[int] of var int: x) = 
+  if length(x) = 0 then
+    true
+  else
     let {
         set of int: S = index_set(x),
         int: l = min(S),
@@ -45,6 +48,7 @@ predicate fzn_subcircuit(array[int] of var int: x) =
           forall(i in S) (
               ins[i] \/ order[lastin] < order[i]
           )
-        );
+        )
+  endif;
 
 %-----------------------------------------------------------------------------%

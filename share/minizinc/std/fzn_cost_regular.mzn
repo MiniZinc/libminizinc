@@ -1,6 +1,9 @@
 predicate fzn_cost_regular(array[int] of var int: x, int: Q, int: S,
                            array[int,int] of int: d, int: q0, set of int: F,
                            array[int,int] of int: c, var int: C) =
+  if length(x) = 0 then
+    C = 0 /\ q0 in F
+  else
         let {
             % If x has index set m..n-1, then a[m] holds the initial state
             % (q0), and a[i+1] holds the state we're in after  processing
@@ -20,4 +23,4 @@ predicate fzn_cost_regular(array[int] of var int: x, int: Q, int: S,
         ) /\
         a[n] in F /\                        % Check the final state is in F.
         C = cc[n]                           % return final cost
-	;
+	endif;

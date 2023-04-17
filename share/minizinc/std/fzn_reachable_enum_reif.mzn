@@ -3,7 +3,7 @@ predicate fzn_reachable_reif(array[int] of $$N: from, array[int] of $$N: to,
                              var bool: b) =
     let {
         int: E = length(es);
-        set of int: NODE = min(index_set(ns))..max(index_set(ns));
+        set of int: NODE = index_set(ns);
         array[1..2*E] of NODE: dfrom = from ++ to;
         array[1..2*E] of NODE: dto   = to ++ from;
         array[1..2*E] of var bool: des = es ++ es;

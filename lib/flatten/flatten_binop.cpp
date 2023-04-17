@@ -1020,7 +1020,7 @@ bool flatten_dom_constraint(EnvI& env, Ctx& ctx, VarDecl* vd, Expression* dom, V
         } else if (changeDom) {
           set_computed_domain(env, ident->decl(), new SetLit(Location().introduce(), newdom),
                               false);
-          if (ident->decl()->e() == nullptr && newdom->min() == newdom->max() &&
+          if (ident->decl()->e() == nullptr && !newdom->empty() && newdom->min() == newdom->max() &&
               !vd->type().isSet()) {
             ident->decl()->e(LinearTraits<Lit>::newLit(newdom->min()));
           }

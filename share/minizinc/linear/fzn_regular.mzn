@@ -7,6 +7,9 @@
 */
 predicate fzn_regular(array[int] of var int: x, int: Q, int: S,
                   array[int,int] of int: d, int: q0, set of int: F) =
+  if length(x) = 0 then
+    q0 in F
+  else
 %          my_trace("  regular: index_set(x)=" ++ show(index_set(x))
 %            ++ ",  dom_array(x)=" ++ show(dom_array(x))
 %            ++ ",  dom_array(a)=" ++ show(1..Q)
@@ -96,4 +99,5 @@ predicate fzn_regular(array[int] of var int: x, int: Q, int: S,
               endif
             )
         endif
-        );
+        )
+  endif;

@@ -626,9 +626,15 @@ public:
   /// Return whether set is empty
   bool empty() const { return _size == 0; }
   /// Return minimum, or infinity if set is empty
-  IntVal min() const { return empty() ? IntVal::infinity() : get(0).min; }
+  IntVal min() const {
+    assert(!empty());
+    return get(0).min;
+  }
   /// Return maximum, or minus infinity if set is empty
-  IntVal max() const { return empty() ? -IntVal::infinity() : get(size() - 1).max; }
+  IntVal max() const {
+    assert(!empty());
+    return get(size() - 1).max;
+  }
   /// Return minimum of range \a i
   IntVal min(unsigned int i) const {
     assert(i < size());

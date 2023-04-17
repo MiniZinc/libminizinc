@@ -1,4 +1,7 @@
 predicate fzn_seq_precede_chain_int(array[int] of var int: X) =
+  if length(X) = 0 then
+    true
+  else
     let {
         int : l = lb_array (X) ; % least possible value
         int : u = ub_array (X) ; % greatest possible value
@@ -8,4 +11,5 @@ predicate fzn_seq_precede_chain_int(array[int] of var int: X) =
         H[f] <= 1 /\ H[f] = max (X[f], 0) /\
         forall ( i in index_set ( X) diff {f} ) (
              H[i] <= H[i-1] + 1 /\ H[i] = max (X[i], H[i-1])
-        );
+        )
+  endif;

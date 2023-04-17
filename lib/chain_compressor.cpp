@@ -630,9 +630,9 @@ bool LECompressor::eqBounds(Expression* a, Expression* b) {
     dom_b = IntSetVal::a(b_val, b_val);
   }
 
-  return ((dom_a != nullptr) && (dom_b != nullptr) && (dom_a->min() == dom_b->min()) &&
-          (dom_a->max() == dom_b->max())) ||
-         ((dom_a == nullptr) && (dom_b == nullptr));
+  return (dom_a != nullptr && dom_b != nullptr && !dom_a->empty() && !dom_b->empty() &&
+          dom_a->min() == dom_b->min() && dom_a->max() == dom_b->max()) ||
+         (dom_a == nullptr && dom_b == nullptr);
 }
 
 }  // namespace MiniZinc

@@ -2443,6 +2443,7 @@ bool check_domain_constraints(EnvI& env, Call* c) {
       IntVal lb = eval_int(env, e0);
       if (id->decl()->ti()->domain() != nullptr) {
         IntSetVal* domain = eval_intset(env, id->decl()->ti()->domain());
+        assert(!domain->empty());
         if (domain->min() >= lb) {
           return false;
         }
@@ -2509,6 +2510,7 @@ bool check_domain_constraints(EnvI& env, Call* c) {
       if (Id* id = (*al_x)[0]->dynamicCast<Id>()) {
         if (id->decl()->ti()->domain() != nullptr) {
           IntSetVal* domain = eval_intset(env, id->decl()->ti()->domain());
+          assert(!domain->empty());
           if (domain->max() <= ub && domain->min() >= lb) {
             return false;
           }

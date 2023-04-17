@@ -124,7 +124,11 @@ void NLFile::addVarDecl(const VarDecl* vd, const TypeInst* ti, const Expression*
         for (int i = 0; i < aa->size(); ++i) {
           IntSetVal* r = (*aa)[i]->cast<SetLit>()->isv();
           stringstream ss;
-          ss << r->min().toInt() << ".." << r->max().toInt();
+          if (r->empty()) {
+            ss << "1..0";
+          } else {
+            ss << r->min().toInt() << ".." << r->max().toInt();
+          }
           array.dimensions.push_back(ss.str());
         }
 

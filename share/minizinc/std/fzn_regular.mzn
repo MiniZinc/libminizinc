@@ -1,5 +1,8 @@
 predicate fzn_regular(array[int] of var int: x, int: Q, int: S,
                   array[int,int] of int: d, int: q0, set of int: F) =
+  if length(x) = 0 then
+    q0 in F
+  else
     let {
         % If x has index set m..n-1, then a[m] holds the initial state
         % (q0), and a[i+1] holds the state we're in after  processing
@@ -13,4 +16,5 @@ predicate fzn_regular(array[int] of var int: x, int: Q, int: S,
             x[i] in 1..S /\             % Do this in case it's a var.
             a[i+1] = d[a[i], x[i]]      % Determine a[i+1].
         ) /\
-        a[n] in F;                      % Check the final state is in F.
+        a[n] in F                       % Check the final state is in F.
+  endif;

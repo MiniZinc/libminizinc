@@ -5,21 +5,6 @@
 
 predicate fzn_lex_less_float(array[int] of var float: x,
                              array[int] of var float: y) =
-    let { int: lx = min(index_set(x)),
-          int: ux = max(index_set(x)),
-          int: ly = min(index_set(y)),
-          int: uy = max(index_set(y)),
-          int: size = min(ux - lx, uy - ly),
-          array[0..size+1] of var bool: b }
-    in
-    b[0]
-    /\
-    b[size + 1] = (ux - lx < uy - ly)
-    /\
-    forall(i in 0..size) (
-        b[i] = ( x[lx + i] <= y[ly + i]
-                 /\
-                (x[lx + i] <  y[ly + i] \/ b[i+1]) )
-    );
+  lex_less_std_decomposition(x,y);
 
 %-----------------------------------------------------------------------------%
