@@ -18,7 +18,10 @@ EE flatten_fieldaccess(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, Var
   assert(fa->v()->type().istuple() || fa->v()->type().isrecord());
 
   // Resolve tuple
-  EE ret = flat_exp(env, ctx, fa->v(), nullptr, b);
+  Ctx nctx = ctx;
+  nctx.b = +nctx.b;
+  nctx.neg = false;
+  EE ret = flat_exp(env, nctx, fa->v(), nullptr, b);
   auto* al = eval_array_lit(env, ret.r())->cast<ArrayLit>();
 
   // Resolve field
@@ -29,8 +32,7 @@ EE flatten_fieldaccess(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, Var
   }
 
   // Bind result
-  ret.r = bind(env, Ctx(), r, (*al)[i.toInt() - 1]);
-  ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
+  ret.r = bind(env, ctx, r, (*al)[i.toInt() - 1]);
   return ret;
 }
 

@@ -25,6 +25,7 @@ Bug fixes:
 -  Fix a mistake in the context when binding the result of builtins returning
    an expression (:bugref:`667`).
 -  Fix problem with function domain constraints containing infinity.
+-  Fix crash when flattening field access in negative context (:bugref:`675`).
 
 .. _v2.7.2:
 
