@@ -4080,7 +4080,8 @@ void flatten(Env& e, FlatteningOptions opt) {
           if (vdi->e()->type().isfloat() && vdi->e()->type().isvar() &&
               vdi->e()->ti()->domain() != nullptr) {
             GCLock lock;
-            FloatSetVal* vdi_dom = eval_floatset(env, vdi->e()->ti()->domain());
+            Expression* dom_expr = vdi->e()->ti()->domain();
+            FloatSetVal* vdi_dom = eval_floatset(env, dom_expr);
             if (vdi_dom->empty()) {
               std::ostringstream oss;
               oss << "Variable has empty domain: " << (*vdi->e());
@@ -4088,43 +4089,20 @@ void flatten(Env& e, FlatteningOptions opt) {
             }
             FloatVal vmin = vdi_dom->min();
             FloatVal vmax = vdi_dom->max();
-            if (vmin == -FloatVal::infinity() && vmax == FloatVal::infinity()) {
+            bool post = false;
+            if (vmin == -FloatVal::infinity() || vmax == FloatVal::infinity()) {
               vdi->e()->ti()->domain(nullptr);
-            } else if (vmin == -FloatVal::infinity()) {
-              vdi->e()->ti()->domain(nullptr);
-              std::vector<Expression*> args(2);
-              args[0] = vdi->e()->id();
-              args[1] = FloatLit::a(vmax);
-              Call* call = Call::a(Location().introduce(), env.constants.ids.float_.le, args);
-              call->type(Type::varbool());
-              call->decl(env.model->matchFn(env, call, false));
-              env.flatAddItem(new ConstraintI(Location().introduce(), call));
-            } else if (vmax == FloatVal::infinity()) {
-              vdi->e()->ti()->domain(nullptr);
-              std::vector<Expression*> args(2);
-              args[0] = FloatLit::a(vmin);
-              args[1] = vdi->e()->id();
-              Call* call = Call::a(Location().introduce(), env.constants.ids.float_.le, args);
-              call->type(Type::varbool());
-              call->decl(env.model->matchFn(env, call, false));
-              env.flatAddItem(new ConstraintI(Location().introduce(), call));
+              post = !(vmin == -FloatVal::infinity() && vmax == FloatVal::infinity());
             } else if (vdi_dom->size() > 1) {
-              auto* dom_ranges = new BinOp(vdi->e()->ti()->domain()->loc().introduce(),
-                                           FloatLit::a(vmin), BOT_DOTDOT, FloatLit::a(vmax));
-              dom_ranges->type(Type::parsetfloat());
-              vdi->e()->ti()->domain(dom_ranges);
-
-              std::vector<Expression*> ranges;
-              for (FloatSetRanges vdi_r(vdi_dom); vdi_r(); ++vdi_r) {
-                ranges.push_back(FloatLit::a(vdi_r.min()));
-                ranges.push_back(FloatLit::a(vdi_r.max()));
-              }
-              auto* al = new ArrayLit(Location().introduce(), ranges);
-              al->type(Type::parfloat(1));
-              std::vector<Expression*> args(2);
-              args[0] = vdi->e()->id();
-              args[1] = al;
-              Call* call = Call::a(Location().introduce(), env.constants.ids.float_.dom, args);
+              auto* range = new SetLit(vdi->e()->ti()->domain()->loc(),
+                                       FloatSetVal::a({FloatSetVal::Range(vmin, vmax)}));
+              range->type(Type::parsetfloat());
+              vdi->e()->ti()->domain(range);
+              post = true;
+            }
+            if (post) {
+              Call* call = Call::a(Location().introduce(), env.constants.ids.mzn_set_in_internal,
+                                   {vdi->e()->id(), dom_expr});
               call->type(Type::varbool());
               call->decl(env.model->matchFn(env, call, false));
               env.flatAddItem(new ConstraintI(Location().introduce(), call));

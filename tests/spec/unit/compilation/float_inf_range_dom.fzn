@@ -1,0 +1,11 @@
+var float: x:: output_var;
+var bool: X_INTRODUCED_1_ ::var_is_introduced :: is_defined_var;
+var bool: X_INTRODUCED_2_ ::var_is_introduced :: is_defined_var;
+var bool: X_INTRODUCED_3_ ::var_is_introduced :: is_defined_var;
+var bool: X_INTRODUCED_5_ ::var_is_introduced :: is_defined_var;
+constraint bool_clause([X_INTRODUCED_3_,X_INTRODUCED_5_],[]);
+constraint float_le_reif(1.0,x,X_INTRODUCED_1_):: defines_var(X_INTRODUCED_1_);
+constraint float_le_reif(x,2.0,X_INTRODUCED_2_):: defines_var(X_INTRODUCED_2_);
+constraint array_bool_and([X_INTRODUCED_1_,X_INTRODUCED_2_],X_INTRODUCED_3_):: defines_var(X_INTRODUCED_3_);
+constraint float_le_reif(3.0,x,X_INTRODUCED_5_):: defines_var(X_INTRODUCED_5_);
+solve  satisfy;

@@ -44,6 +44,8 @@ Bug fixes:
    correctly in fixed literal counting (:bugref:`671`).
 -  Propagate more Boolean constraints during the compiler optimisation phase
    (:bugref:`676`).
+-  Fix the tranlation of domains of floating point variables that contain
+   multiple ranges and include an infinity value.
 
 .. _v2.7.2:
 

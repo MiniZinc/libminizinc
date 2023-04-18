@@ -1301,7 +1301,6 @@ predicate mzn_redundant_constraint(var bool: b);
 annotation mzn_was_undefined;
 
 /* Predicate used in the compiler for translating infinite domains into constraints */
-
 predicate mzn_set_in_internal(var int: x, set of int: s) =
   if card(s) = 0 \/ (min(s) != -infinity /\ max(s) != infinity) then set_in(x,s)
   else let {
@@ -1319,6 +1318,23 @@ predicate mzn_set_in_internal(var int: x, set of int: s) =
     endif
   )
   endif;
+
+/* Predicate used in the compiler for translating infinite domains into constraints */
+predicate mzn_set_in_internal(var opt float: x, set of float: s) =
+  let {
+    array[int] of float: ranges = set_to_ranges(s);
+    int: len = length(ranges);
+    int: from = if ranges[1] = -infinity then 3 else 1 endif;
+    int: to = if ranges[len] = infinity then len-2 else len endif;
+  } in if ranges[1] = -infinity then
+    x <= ranges[2]
+  else false endif
+  \/ if from..to subset index_set(ranges) then
+    float_dom(x, array1d(ranges[from..to]))
+  else false endif
+  \/ if ranges[len] = infinity then
+    x >= ranges[len-1]
+  else false endif;
 
 /* Functions used for the type erasure of enumerated types */
 
