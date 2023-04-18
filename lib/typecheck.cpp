@@ -241,8 +241,8 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             env, vde->loc(),
             std::string("invalid initialisation for enum `") + ident->v().c_str() + "'");
       }
-      stack.push_back(binop->lhs());
       stack.push_back(binop->rhs());
+      stack.push_back(binop->lhs());
     } else {
       throw TypeError(env, vd->e()->loc(),
                       std::string("invalid initialisation for enum `") + ident->v().c_str() + "'");

@@ -38,6 +38,7 @@ Bug fixes:
 -  Fix crash when flattening field access in negative context (:bugref:`675`).
 -  Fix crash when flattening variable declaration annotations for tuple
    variables with paths enabled (:bugref:`675`).
+-  Fix incorrect ordering of enum parts when using separate assignment items.
 
 .. _v2.7.2:
 
