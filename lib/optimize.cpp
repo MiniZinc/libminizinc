@@ -854,9 +854,7 @@ void optimize(Env& env, bool chain_compression) {
             // push all constraints that depend on the array
             substitute_fixed_vars(envi, item, deletedVarDecls);
             push_dependent_constraints(envi, item->cast<VarDeclI>()->e()->id(), constraintQueue);
-          } else if ((c == nullptr) || !(c->id() == envi.constants.ids.forall ||
-                                         c->id() == envi.constants.ids.exists ||
-                                         c->id() == envi.constants.ids.clause)) {
+          } else {
             // For any constraint that is not forall, exists or clause,
             // substitute fixed arguments, then simplify it
             substitute_fixed_vars(envi, item, deletedVarDecls);

@@ -287,6 +287,58 @@ OptimizeRegistry::ConstraintStatus o_clause(EnvI& env, Item* i, Call* c, Express
   return OptimizeRegistry::CS_OK;
 }
 
+OptimizeRegistry::ConstraintStatus o_forall(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
+  ArrayLit* al = eval_array_lit(env, c->arg(0));
+  bool subsumed = true;
+  for (unsigned int j = 0; j < al->size(); j++) {
+    if ((*al)[j]->type().isPar()) {
+      if (!eval_bool(env, (*al)[j])) {
+        return OptimizeRegistry::CS_FAILED;
+      }
+    } else if (Id* ident = (*al)[j]->dynamicCast<Id>()) {
+      if (Expression* dom = ident->decl()->ti()->domain()) {
+        if (dom == env.constants.literalFalse) {
+          return OptimizeRegistry::CS_FAILED;
+        }
+      } else {
+        subsumed = false;
+      }
+    } else {
+      subsumed = false;
+    }
+  }
+  if (subsumed) {
+    return OptimizeRegistry::CS_ENTAILED;
+  }
+  return OptimizeRegistry::CS_OK;
+}
+
+OptimizeRegistry::ConstraintStatus o_exists(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
+  ArrayLit* al = eval_array_lit(env, c->arg(0));
+  bool failed = true;
+  for (unsigned int j = 0; j < al->size(); j++) {
+    if ((*al)[j]->type().isPar()) {
+      if (eval_bool(env, (*al)[j])) {
+        return OptimizeRegistry::CS_ENTAILED;
+      }
+    } else if (Id* ident = (*al)[j]->dynamicCast<Id>()) {
+      if (Expression* dom = ident->decl()->ti()->domain()) {
+        if (dom == env.constants.literalTrue) {
+          return OptimizeRegistry::CS_ENTAILED;
+        }
+      } else {
+        failed = false;
+      }
+    } else {
+      failed = false;
+    }
+  }
+  if (failed) {
+    return OptimizeRegistry::CS_FAILED;
+  }
+  return OptimizeRegistry::CS_OK;
+}
+
 OptimizeRegistry::ConstraintStatus o_not(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
   if (c->argCount() == 2) {
     Expression* e0 = c->arg(0);
@@ -488,6 +540,8 @@ public:
     OptimizeRegistry::registry().reg(id_var_element, o_element);
     OptimizeRegistry::registry().reg(Constants::constants().ids.clause, o_clause);
     OptimizeRegistry::registry().reg(Constants::constants().ids.bool_.clause, o_clause);
+    OptimizeRegistry::registry().reg(Constants::constants().ids.forall, o_forall);
+    OptimizeRegistry::registry().reg(Constants::constants().ids.exists, o_exists);
     OptimizeRegistry::registry().reg(Constants::constants().ids.bool_.not_, o_not);
     OptimizeRegistry::registry().reg(Constants::constants().ids.set_.in, o_set_in);
     OptimizeRegistry::registry().reg(Constants::constants().ids.int_.ne, o_int_ne);

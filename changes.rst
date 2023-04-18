@@ -42,6 +42,8 @@ Bug fixes:
 -  Simplify fixed arrays by pushing them on the queue, rather than using
    simplify_bool_constraint. Handle boolean variables with fixed domain
    correctly in fixed literal counting (:bugref:`671`).
+-  Propagate more Boolean constraints during the compiler optimisation phase
+   (:bugref:`676`).
 
 .. _v2.7.2:
 
