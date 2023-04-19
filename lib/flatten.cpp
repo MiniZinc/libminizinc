@@ -236,32 +236,32 @@ void dump_ee_r(const std::vector<EE>& ee) {
   }
 }
 
-std::tuple<BCtx, bool> ann_to_ctx(EnvI& env, VarDecl* vd) {
-  if (vd->ann().contains(env.constants.ctx.root)) {
+std::tuple<BCtx, bool> EnvI::annToCtx(VarDecl* vd) const {
+  if (vd->ann().contains(constants.ctx.root)) {
     return std::make_tuple(C_ROOT, true);
   }
-  if (vd->ann().contains(env.constants.ctx.mix)) {
+  if (vd->ann().contains(constants.ctx.mix)) {
     return std::make_tuple(C_MIX, true);
   }
-  if (vd->ann().contains(env.constants.ctx.pos)) {
+  if (vd->ann().contains(constants.ctx.pos)) {
     return std::make_tuple(C_POS, true);
   }
-  if (vd->ann().contains(env.constants.ctx.neg)) {
+  if (vd->ann().contains(constants.ctx.neg)) {
     return std::make_tuple(C_NEG, true);
   }
   return std::make_tuple(C_MIX, false);
 }
 
-Id* ctx_to_ann(EnvI& env, BCtx c) {
+Id* EnvI::ctxToAnn(BCtx c) const {
   switch (c) {
     case C_ROOT:
-      return env.constants.ctx.root;
+      return constants.ctx.root;
     case C_POS:
-      return env.constants.ctx.pos;
+      return constants.ctx.pos;
     case C_NEG:
-      return env.constants.ctx.neg;
+      return constants.ctx.neg;
     case C_MIX:
-      return env.constants.ctx.mix;
+      return constants.ctx.mix;
     default:
       assert(false);
       return nullptr;
@@ -272,7 +272,7 @@ void add_ctx_ann(EnvI& env, VarDecl* vd, BCtx& c) {
   if (vd != nullptr) {
     BCtx nc;
     bool annotated;
-    std::tie(nc, annotated) = ann_to_ctx(env, vd);
+    std::tie(nc, annotated) = env.annToCtx(vd);
     // If previously annotated
     if (annotated) {
       // Early exit
@@ -280,7 +280,7 @@ void add_ctx_ann(EnvI& env, VarDecl* vd, BCtx& c) {
         return;
       }
       // Remove old annotation
-      Id* old_ann = ctx_to_ann(env, nc);
+      Id* old_ann = env.ctxToAnn(nc);
       vd->ann().remove(old_ann);
       // Determine new context
       if (c == C_ROOT) {
@@ -292,7 +292,7 @@ void add_ctx_ann(EnvI& env, VarDecl* vd, BCtx& c) {
       nc = c;
     }
 
-    Id* ctx_id = ctx_to_ann(env, nc);
+    Id* ctx_id = env.ctxToAnn(nc);
     vd->addAnnotation(ctx_id);
   }
 }

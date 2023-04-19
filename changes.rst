@@ -44,10 +44,12 @@ Bug fixes:
    correctly in fixed literal counting (:bugref:`671`).
 -  Propagate more Boolean constraints during the compiler optimisation phase
    (:bugref:`676`).
--  Fix the tranlation of domains of floating point variables that contain
+-  Fix the translation of domains of floating point variables that contain
    multiple ranges and include an infinity value.
 -  Fix an issue where JSON arrays of sets where parsed incorrectly
    (:bugref:`679`).
+-  Fix common subexpression elimination for expressions used in incompatible
+   contexts (:bugref:`666`).
 
 .. _v2.7.2:
 

@@ -544,6 +544,9 @@ public:
   void flatRemoveItem(VarDeclI* i);
   void flatRemoveExpr(Expression* e, Item* i);
 
+  std::tuple<BCtx, bool> annToCtx(VarDecl* vd) const;
+  Id* ctxToAnn(BCtx c) const;
+
   void voAddExp(VarDecl* vd);
   void annotateFromCallStack(Expression* e);
   ArrayLit* createAnnotationArray(const BCtx& ctx);
