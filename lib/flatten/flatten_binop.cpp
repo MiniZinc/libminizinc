@@ -1328,6 +1328,11 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
         if (cseCtx != ctx.b && cseCtx != C_ROOT && cseCtx != C_MIX) {
           // Can't use CSE value because context doesn't match
           needsFlatten = true;
+          if (ctx.b != C_ROOT) {
+            ctx.b = C_MIX;
+          }
+          env.addCtxAnn(ident->decl(), C_MIX);
+          env.cseMapRemove(e);
           env.cseMapRemove(cc);
         }
       }
@@ -1339,7 +1344,7 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
           ees[2].b()->type(t);
         }
         if (Id* id = ees[2].b()->dynamicCast<Id>()) {
-          add_ctx_ann(env, id->decl(), ctx.b);
+          env.addCtxAnn(id->decl(), ctx.b);
         }
         ret.r = conj(env, r, ctx, ees);
         GC::unlock();
@@ -1370,7 +1375,7 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
           ees[2].b()->type(t);
         }
         if (Id* id = ees[2].b()->dynamicCast<Id>()) {
-          add_ctx_ann(env, id->decl(), ctx.b);
+          env.addCtxAnn(id->decl(), ctx.b);
         }
         ret.r = conj(env, r, ctx, ees);
       }
@@ -1520,7 +1525,7 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
         GC::unlock();
         ret = flat_exp(env, ctx, c, r, b);
         if (Id* id = ret.r()->dynamicCast<Id>()) {
-          add_ctx_ann(env, id->decl(), ctx.b);
+          env.addCtxAnn(id->decl(), ctx.b);
         }
         break;
       }
@@ -1532,7 +1537,7 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
         GC::unlock();
         ret = flat_exp(env, ctx, c, r, b);
         if (Id* id = ret.r()->dynamicCast<Id>()) {
-          add_ctx_ann(env, id->decl(), ctx.b);
+          env.addCtxAnn(id->decl(), ctx.b);
         }
         break;
       }
@@ -1696,7 +1701,7 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
       GC::unlock();
       ret = flat_exp(env, ctx, c, r, b);
       if (Id* id = ret.r()->dynamicCast<Id>()) {
-        add_ctx_ann(env, id->decl(), ctx.b);
+        env.addCtxAnn(id->decl(), ctx.b);
       }
     } break;
     case BOT_EQUIV:
@@ -1739,7 +1744,7 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
         Id* id = e0.r()->cast<Id>();
         ctx1.b = C_MIX;
         (void)flat_exp(env, ctx1, boe1, id->decl(), env.constants.varTrue);
-        add_ctx_ann(env, id->decl(), ctx1.b);
+        env.addCtxAnn(id->decl(), ctx1.b);
         ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
         ret.r = bind(env, Ctx(), r, env.constants.literalTrue);
         break;

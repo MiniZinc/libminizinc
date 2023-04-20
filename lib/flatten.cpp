@@ -268,11 +268,11 @@ Id* EnvI::ctxToAnn(BCtx c) const {
   }
 }
 
-void add_ctx_ann(EnvI& env, VarDecl* vd, BCtx& c) {
+void EnvI::addCtxAnn(VarDecl* vd, const BCtx& c) const {
   if (vd != nullptr) {
     BCtx nc;
     bool annotated;
-    std::tie(nc, annotated) = env.annToCtx(vd);
+    std::tie(nc, annotated) = annToCtx(vd);
     // If previously annotated
     if (annotated) {
       // Early exit
@@ -280,7 +280,7 @@ void add_ctx_ann(EnvI& env, VarDecl* vd, BCtx& c) {
         return;
       }
       // Remove old annotation
-      Id* old_ann = env.ctxToAnn(nc);
+      Id* old_ann = ctxToAnn(nc);
       vd->ann().remove(old_ann);
       // Determine new context
       if (c == C_ROOT) {
@@ -292,7 +292,7 @@ void add_ctx_ann(EnvI& env, VarDecl* vd, BCtx& c) {
       nc = c;
     }
 
-    Id* ctx_id = env.ctxToAnn(nc);
+    Id* ctx_id = ctxToAnn(nc);
     vd->addAnnotation(ctx_id);
   }
 }
@@ -2545,9 +2545,9 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
       if (auto* e_vd = e->dynamicCast<VarDecl>()) {
         e = e_vd->id();
         if (!env.inReverseMapVar && ctx.b != C_ROOT && e->type() == Type::varbool()) {
-          add_ctx_ann(env, e_vd, ctx.b);
+          env.addCtxAnn(e_vd, ctx.b);
           if (e_vd != ident->decl()) {
-            add_ctx_ann(env, ident->decl(), ctx.b);
+            env.addCtxAnn(ident->decl(), ctx.b);
           }
         }
       }
@@ -2762,7 +2762,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
             }
           }
         } else if (nvd->e()->type().isbool()) {
-          add_ctx_ann(env, nvd, ctx.b);
+          env.addCtxAnn(nvd, ctx.b);
         } else if (nvd->e()->type().bt() == Type::BT_FLOAT && nvd->e()->type().dim() == 0) {
           FloatBounds fb = compute_float_bounds(env, nvd->e());
           FloatSetVal* ibv = LinearTraits<FloatLit>::intersectDomain(nullptr, fb.l, fb.u);
@@ -3040,8 +3040,8 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
               alias->decl(decl);
               alias->type(Type::varbool());
               if (ctx.b != C_ROOT) {
-                add_ctx_ann(env, vd, ctx.b);
-                add_ctx_ann(env, e->cast<Id>()->decl(), ctx.b);
+                env.addCtxAnn(vd, ctx.b);
+                env.addCtxAnn(e->cast<Id>()->decl(), ctx.b);
               }
               flat_exp(env, Ctx(), alias, env.constants.varTrue, env.constants.varTrue);
               ret = vd->id();

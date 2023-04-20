@@ -15,7 +15,6 @@
 
 namespace MiniZinc {
 void add_path_annotation(EnvI& env, Expression* e);
-void add_ctx_ann(EnvI& env, VarDecl* vd, BCtx& c);
 bool istrue(EnvI& env, Expression* e);
 bool isfalse(EnvI& env, Expression* e);
 Expression* create_dummy_value(EnvI& env, const Type& t);

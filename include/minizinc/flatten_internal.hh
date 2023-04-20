@@ -546,6 +546,7 @@ public:
 
   std::tuple<BCtx, bool> annToCtx(VarDecl* vd) const;
   Id* ctxToAnn(BCtx c) const;
+  void addCtxAnn(VarDecl* vd, const BCtx& c) const;
 
   void voAddExp(VarDecl* vd);
   void annotateFromCallStack(Expression* e);

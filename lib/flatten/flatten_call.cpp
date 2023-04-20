@@ -1001,6 +1001,11 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
           if (cseCtx != ctx.b && cseCtx != C_ROOT && cseCtx != C_MIX) {
             // Can't use CSE value because context doesn't match
             needsFlatten = true;
+            if (ctx.b != C_ROOT) {
+              ctx.b = C_MIX;
+            }
+            env.addCtxAnn(ident->decl(), C_MIX);
+            env.cseMapRemove(e);
             env.cseMapRemove(cr());
           }
         }
@@ -1153,7 +1158,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
           if (r == nullptr || (r != nullptr && r->e() != nullptr)) {
             reif_b = new_vardecl(env, Ctx(), new TypeInst(Location().introduce(), Type::varbool()),
                                  nullptr, nullptr, nullptr);
-            add_ctx_ann(env, reif_b, ctx.b);
+            env.addCtxAnn(reif_b, ctx.b);
             if (reif_b->ti()->domain() != nullptr) {
               if (reif_b->ti()->domain() == env.constants.literalTrue) {
                 bind(env, ctx, r, env.constants.literalTrue);
