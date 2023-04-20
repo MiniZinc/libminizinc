@@ -58,7 +58,7 @@ protected:
   Expression* parseEnum(std::istream& is);
   Expression* parseEnumObject(std::istream& is, const std::string& seen);
   Expression* parseExp(std::istream& is, bool parseObjects = true, TypeInst* ti = nullptr);
-  Expression* parseArray(std::istream& is, TypeInst* ti = nullptr);
+  Expression* parseArray(std::istream& is, TypeInst* ti = nullptr, size_t range_index = 0);
   Expression* parseSet(std::istream& is, TypeInst* ti = nullptr);
   Expression* parseObject(std::istream& is, TypeInst* ti = nullptr);
 

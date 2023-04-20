@@ -528,7 +528,7 @@ Expression* JSONParser::parseObject(istream& is, TypeInst* ti) {
   std::vector<Expression*> fields;
 
   ASTStringMap<TypeInst*> fieldTIs;
-  if (ti != nullptr && ti->type().isrecord()) {
+  if (ti != nullptr && ti->type().bt() == Type::BT_RECORD) {
     auto* dom = ti->domain()->cast<ArrayLit>();
     for (size_t i = 0; i < dom->size(); ++i) {
       auto* fieldDef = (*dom)[i]->cast<VarDecl>();
@@ -574,26 +574,18 @@ Expression* JSONParser::parseObject(istream& is, TypeInst* ti) {
   return record;
 }
 
-Expression* JSONParser::parseArray(std::istream& is, TypeInst* ti) {
+Expression* JSONParser::parseArray(std::istream& is, TypeInst* ti, size_t range_index) {
   // precondition: opening parenthesis has been read
   vector<Expression*> exps;
   Token next = readToken(is);
 
-  // NOTE: If the ti is not nullptr, but no longer describes an array or an
-  // enumerated type, then we assume it is the element TypeInst that is being
-  // passed in.
-  TypeInst* elTI = (ti != nullptr && !ti->isarray() && !ti->isEnum()) ? ti : nullptr;
   while (next.t != T_LIST_CLOSE) {
     switch (next.t) {
-      case T_LIST_OPEN:
-        if (ti != nullptr && ti->isarray() && elTI == nullptr) {
-          // Create element TI once
-          elTI = copy(_env, ti)->cast<TypeInst>();
-          elTI->type(elTI->type().elemType(_env));
-          elTI->setRanges({});
-        }
-        exps.push_back(parseArray(is, elTI));
+      case T_LIST_OPEN: {
+        // Create element TI once
+        exps.push_back(parseArray(is, ti, ti == nullptr ? 0 : range_index + 1));
         break;
+      }
       case T_COMMA:
         break;
       case T_INT:
@@ -617,23 +609,12 @@ Expression* JSONParser::parseArray(std::istream& is, TypeInst* ti) {
         exps.push_back(_env.constants.absent);
         break;
       case T_OBJ_OPEN: {
-        if (ti != nullptr) {
+        TypeInst* elTI = ti;
+        if (ti != nullptr && ti->type().bt() == Type::BT_TUPLE) {
           // If parsing a tuple, then retrieve field TI from domain
-          if (ti->type().istuple()) {
-            auto* dom = ti->domain()->cast<ArrayLit>();
-            if (exps.size() < dom->size()) {
-              elTI = (*dom)[exps.size()]->cast<TypeInst>();
-            }
-          } else if (elTI == nullptr) {  // only need to do once for all elements
-            if (ti->isEnum()) {
-              // Array defines an enum, pass the same TI to parseObject if required
-              elTI = ti;
-            } else if (ti->isarray()) {
-              // If parsing an array, then create element TI once.
-              elTI = copy(_env, ti)->cast<TypeInst>();
-              elTI->type(elTI->type().elemType(_env));
-              elTI->setRanges({});
-            }
+          auto* dom = ti->domain()->cast<ArrayLit>();
+          if (exps.size() < dom->size()) {
+            elTI = (*dom)[exps.size()]->cast<TypeInst>();
           }
         }
         exps.push_back(parseObject(is, elTI));
@@ -646,13 +627,26 @@ Expression* JSONParser::parseArray(std::istream& is, TypeInst* ti) {
     next = readToken(is);
   }
   if (ti != nullptr) {
-    if (ti->isarray() || ti->type().bt() == Type::BT_TUPLE) {
+    if (range_index >= ti->ranges().size()) {
+      // Converting the element type of the ti
+      if (ti->type().isSet()) {
+        // Convert array to a set
+        return new SetLit(Location().introduce(), exps);
+      }
+      if (ti->type().bt() == Type::BT_TUPLE) {
+        // Add correct index sets if they are non-standard
+        TypeInst* tupTI = ti;
+        if (!ti->ranges().empty()) {
+          tupTI = copy(_env, ti)->cast<TypeInst>();
+          tupTI->type(ti->type().elemType(_env));
+          tupTI->setRanges({});
+        }
+        return coerceArray(tupTI, new ArrayLit(Location().introduce(), exps));
+      }
+    }
+    if (ti->isarray() && range_index == 0) {
       // Add correct index sets if they are non-standard
       return coerceArray(ti, new ArrayLit(Location().introduce(), exps));
-    }
-    if (ti->type().isSet()) {
-      // Convert array to a set
-      return new SetLit(Location().introduce(), exps);
     }
   }
   return new ArrayLit(Location().introduce(), exps);

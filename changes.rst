@@ -46,6 +46,8 @@ Bug fixes:
    (:bugref:`676`).
 -  Fix the tranlation of domains of floating point variables that contain
    multiple ranges and include an infinity value.
+-  Fix an issue where JSON arrays of sets where parsed incorrectly
+   (:bugref:`679`).
 
 .. _v2.7.2:
 
