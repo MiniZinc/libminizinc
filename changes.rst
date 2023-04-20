@@ -4,11 +4,12 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
-.. _unreleased:
+.. _v2.7.3:
 
-Unreleased
-~~~~~~~~~~
+`Version 2.7.3 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.7.3>`__
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+(released 20 April 2023)
 
 Changes:
 ^^^^^^^^
@@ -50,6 +51,12 @@ Bug fixes:
    (:bugref:`679`).
 -  Fix common subexpression elimination for expressions used in incompatible
    contexts (:bugref:`666`).
+
+Changes in the IDE:
+^^^^^^^^^^^^^^^^^^^
+
+-  Only show MOOC error code when response is actually an error
+   (:idebugref:`176`).
 
 .. _v2.7.2:
 
