@@ -1,9 +1,0 @@
-var 0..1: x:: output_var;
-var bool: b:: ctx_mix = int_eq(x,1);
-var bool: a:: ctx_mix:: output_var;
-var bool: c:: ctx_mix:: output_var;
-var bool: X_INTRODUCED_0_ ::var_is_introduced :: ctx_pos = forall([b,a]);
-constraint exists([c,X_INTRODUCED_0_]);
-var bool: X_INTRODUCED_1_ ::var_is_introduced :: ctx_mix = forall([b,a]);
-constraint bool_xor(c,X_INTRODUCED_1_);
-solve  satisfy;
