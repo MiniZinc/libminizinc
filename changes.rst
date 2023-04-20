@@ -51,6 +51,7 @@ Bug fixes:
    (:bugref:`679`).
 -  Fix common subexpression elimination for expressions used in incompatible
    contexts (:bugref:`666`).
+-  Add missing ``::promise_total`` to functional version of ``nvalue``.
 
 Changes in the IDE:
 ^^^^^^^^^^^^^^^^^^^
