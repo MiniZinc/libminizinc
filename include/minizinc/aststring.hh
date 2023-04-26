@@ -36,7 +36,7 @@ public:
   /// Default constructor
   ASTString() = default;
   /// Constructor
-  ASTString(const std::string& s);
+  explicit ASTString(const std::string& s);
   /// Constructor
   ASTString(ASTStringData* s) : _s(s){};
   /// Copy constructor

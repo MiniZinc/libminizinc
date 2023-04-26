@@ -170,7 +170,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
     files.emplace_back(lib, nullptr, "./", fullname, builtin);
     seenModels.insert(pair<string, Model*>(fullname, lib));
     Location libloc(ASTString(model->filename()), 0, 0, 0, 0);
-    auto* libinc = new IncludeI(libloc, libname);
+    auto* libinc = new IncludeI(libloc, ASTString(libname));
     libinc->m(lib, true);
     model->addItem(libinc);
   };

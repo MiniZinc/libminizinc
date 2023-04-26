@@ -1418,7 +1418,7 @@ Type EnvI::commonRecord(Type record1, Type record2, bool ignoreRecord1Dim) {
 
   std::vector<std::pair<ASTString, Type>> common(rt1->size());
   for (unsigned int i = 0; i < rt1->size(); i++) {
-    ASTString name = rt1->fieldName(i);
+    ASTString name(rt1->fieldName(i));
     if (name != rt2->fieldName(i)) {
       return Type::bot();
     }
@@ -1472,8 +1472,8 @@ Type EnvI::mergeRecord(Type record1, Type record2, Location loc) {
       all_fields.emplace_back(fields1->fieldName(l), (*fields1)[l]);
       ++l;
     } else {
-      ASTString lhsN = fields1->fieldName(l);
-      ASTString rhsN = fields2->fieldName(r);
+      ASTString lhsN(fields1->fieldName(l));
+      ASTString rhsN(fields2->fieldName(r));
       if (cmp(lhsN, rhsN)) {
         // lhsN < rhsN
         all_fields.emplace_back(lhsN, (*fields1)[l]);
@@ -1766,7 +1766,7 @@ ASTString EnvI::reifyId(const ASTString& id) {
   if (it == _reifyMap.end()) {
     std::ostringstream ss;
     ss << id << "_reif";
-    return {ss.str()};
+    return ASTString(ss.str());
   }
   return it->second;
 }
@@ -1774,7 +1774,7 @@ ASTString EnvI::reifyId(const ASTString& id) {
 ASTString EnvI::halfReifyId(const ASTString& id) {
   std::ostringstream ss;
   ss << id << "_imp";
-  return {ss.str()};
+  return ASTString(ss.str());
 }
 
 int EnvI::addWarning(const std::string& msg) { return addWarning(Location(), msg, false); }

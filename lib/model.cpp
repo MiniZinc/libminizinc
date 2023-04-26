@@ -595,14 +595,14 @@ std::vector<FunctionI*> Model::possibleMatches(EnvI& env, const ASTString& ident
   // Try reified/non-reified versions
   if (ident.endsWith("_reif")) {
     std::string ident_s(ident.c_str());
-    ASTString baseIdent = ident_s.substr(0, ident_s.length() - 5);
+    ASTString baseIdent(ident_s.substr(0, ident_s.length() - 5));
     std::vector<Type> ta_b = ta;
     compute_possible_matches(env, this, EnvI::halfReifyId(baseIdent), ta_b, matched, ret);
     ta_b.pop_back();
     compute_possible_matches(env, this, baseIdent, ta_b, matched, ret);
   } else if (ident.endsWith("_imp")) {
     std::string ident_s(ident.c_str());
-    ASTString baseIdent = ident_s.substr(0, ident_s.length() - 4);
+    ASTString baseIdent(ident_s.substr(0, ident_s.length() - 4));
     std::vector<Type> ta_b = ta;
     compute_possible_matches(env, this, env.reifyId(baseIdent), ta_b, matched, ret);
     ta_b.pop_back();

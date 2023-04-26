@@ -817,12 +817,12 @@ public:
       ASTString mangledImpName;
       if (mangledName.endsWith("_reif")) {
         std::string ident_s(mangledName.c_str());
-        mangledBaseName = ident_s.substr(0, ident_s.length() - 5);
+        mangledBaseName = ASTString(ident_s.substr(0, ident_s.length() - 5));
         mangledReifName = mangledName;
         mangledImpName = EnvI::halfReifyId(mangledBaseName);
       } else if (mangledName.endsWith("_imp")) {
         std::string ident_s(mangledName.c_str());
-        mangledBaseName = ident_s.substr(0, ident_s.length() - 4);
+        mangledBaseName = ASTString(ident_s.substr(0, ident_s.length() - 4));
         mangledReifName = _env.reifyId(mangledBaseName);
         mangledImpName = mangledName;
       } else {
@@ -1020,8 +1020,9 @@ void type_demonomorphise_library(Env& e, Model* model) {
     while (functionIds.find(ASTString(ident)) != functionIds.end()) {
       ident = "_" + ident;
     }
-    fi->id(ASTString(ident));
-    functionIds.insert(ident);
+    ASTString new_ident(ident);
+    fi->id(new_ident);
+    functionIds.insert(new_ident);
   }
   ItemDemonomorphiser idm;
   iter_items(idm, model);

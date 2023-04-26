@@ -188,9 +188,9 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     fi_params[0] = vd_aa;
     fi_params[1] = vd_ab;
     fi_params[2] = vd_aj;
-    auto* fi =
-        new FunctionI(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
-                      ti_fi, fi_params, nullptr);
+    auto* fi = new FunctionI(Location().introduce(),
+                             ASTString(create_enum_to_string_name(ident, "_toString_")), ti_fi,
+                             fi_params, nullptr);
     enumItems->addItem(fi);
 
     return;
@@ -272,7 +272,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
         Call* toEnum = Call::a(sl->v()[i]->loc(), ASTString("to_enum"), toEnumArgs);
         auto* vd_id = new VarDecl(ti_id->loc(), ti_id, sl->v()[i]->cast<Id>()->str(), toEnum);
         auto* vdi_id = VarDeclI::a(vd_id->loc(), vd_id);
-        std::string str(sl->v()[i]->cast<Id>()->str().c_str());
+        ASTString str = sl->v()[i]->cast<Id>()->str();
         env.reverseEnum[str] = vdi_id;
         enumItems->addItem(vdi_id);
         if (i == sl->v().size() - 1) {
@@ -354,8 +354,9 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
         toString += std::to_string(p) + "_";
       }
 
-      auto* fi = new FunctionI(Location().introduce(), create_enum_to_string_name(ident, toString),
-                               ti_fi, fi_params, ite);
+      auto* fi = new FunctionI(Location().introduce(),
+                               ASTString(create_enum_to_string_name(ident, toString)), ti_fi,
+                               fi_params, ite);
       enumItems->addItem(fi);
     } else if (Call* c = parts[p]->dynamicCast<Call>()) {
       enumConstructorSetTypes.push_back(c);
@@ -448,9 +449,9 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           toString += std::to_string(p) + "_";
         }
 
-        auto* fi =
-            new FunctionI(Location().introduce(), create_enum_to_string_name(ident, toString),
-                          ti_fi, fi_params, ite);
+        auto* fi = new FunctionI(Location().introduce(),
+                                 ASTString(create_enum_to_string_name(ident, toString)), ti_fi,
+                                 fi_params, ite);
         enumItems->addItem(fi);
       } else {
         // This is an enum constructor C(E)
@@ -550,7 +551,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             auto* ite = new ITE(Location().introduce(), {isContiguous, Cfn_then}, Cfn_else);
             ite->addAnnotation(env.constants.ann.mzn_evaluate_once);
 
-            std::string Cfn_id(c->id().c_str());
+            ASTString Cfn_id = c->id();
             auto* Cfn = new FunctionI(Location().introduce(), Cfn_id, Cfn_ti, {vd_x}, ite);
             env.reverseEnum[Cfn_id] = Cfn;
             enumItems->addItem(Cfn);
@@ -565,7 +566,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             argT.ot(Type::OT_OPTIONAL);
             auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, constructorArgId);
             auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
-            std::string Cfn_id(c->id().c_str());
+            ASTString Cfn_id = c->id();
             vd_x->toplevel(false);
             auto* occurs = Call::a(Location().introduce(), "occurs", {vd_x->id()});
             auto* deopt = Call::a(Location().introduce(), "deopt", {vd_x->id()});
@@ -586,7 +587,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             argT.st(Type::ST_SET);
             auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, constructorArgId);
             auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
-            std::string Cfn_id(c->id().c_str());
+            ASTString Cfn_id = c->id();
             vd_x->toplevel(false);
             auto* s_ti = new TypeInst(Location().introduce(), Type::parint());
             auto* s = new VarDecl(Location().introduce(), s_ti, "s", nullptr);
@@ -640,7 +641,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             auto* ite = new ITE(Location().introduce(), {isContiguous, toEfn_then}, toEfn_else);
             ite->addAnnotation(env.constants.ann.mzn_evaluate_once);
 
-            std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
+            ASTString Cinv_id(std::string(c->id().c_str()) + "⁻¹");
             auto* toEfn = new FunctionI(Location().introduce(), Cinv_id, toEfn_ti, {vd_x}, ite);
             enumItems->addItem(toEfn);
           }
@@ -654,7 +655,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             argT.typeId(enumId);
             auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, vd->id());
             auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
-            std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
+            ASTString Cinv_id(std::string(c->id().c_str()) + "⁻¹");
             vd_x->toplevel(false);
             auto* occurs = Call::a(Location().introduce(), "occurs", {vd_x->id()});
             auto* deopt = Call::a(Location().introduce(), "deopt", {vd_x->id()});
@@ -676,7 +677,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, vd->id());
             auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
             vd_x->toplevel(false);
-            std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
+            ASTString Cinv_id(std::string(c->id().c_str()) + "⁻¹");
             auto* s_ti = new TypeInst(Location().introduce(), Type::parint());
             auto* s = new VarDecl(Location().introduce(), s_ti, "s", nullptr);
             s->toplevel(false);
@@ -758,9 +759,9 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             XtoString += std::to_string(p) + "_";
           }
 
-          auto* fi =
-              new FunctionI(Location().introduce(), create_enum_to_string_name(ident, XtoString),
-                            ti_fi, fi_params, ite);
+          auto* fi = new FunctionI(Location().introduce(),
+                                   ASTString(create_enum_to_string_name(ident, XtoString)), ti_fi,
+                                   fi_params, ite);
           enumItems->addItem(fi);
         }
 
@@ -837,9 +838,9 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     fi_params[0] = vd_aa;
     fi_params[1] = vd_ab;
     fi_params[2] = vd_aj;
-    auto* fi =
-        new FunctionI(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
-                      ti_fi, fi_params, ite);
+    auto* fi = new FunctionI(Location().introduce(),
+                             ASTString(create_enum_to_string_name(ident, "_toString_")), ti_fi,
+                             fi_params, ite);
     enumItems->addItem(fi);
 
     /*
@@ -940,9 +941,9 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     fi_params[0] = vd_x;
     fi_params[1] = vd_b;
     fi_params[2] = vd_j;
-    auto* fi =
-        new FunctionI(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
-                      ti_fi, fi_params, let);
+    auto* fi = new FunctionI(Location().introduce(),
+                             ASTString(create_enum_to_string_name(ident, "_toString_")), ti_fi,
+                             fi_params, let);
     enumItems->addItem(fi);
   }
 
@@ -1013,9 +1014,9 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     fi_params[0] = vd_x;
     fi_params[1] = vd_b;
     fi_params[2] = vd_j;
-    auto* fi =
-        new FunctionI(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
-                      ti_fi, fi_params, bopp3);
+    auto* fi = new FunctionI(Location().introduce(),
+                             ASTString(create_enum_to_string_name(ident, "_toString_")), ti_fi,
+                             fi_params, bopp3);
     enumItems->addItem(fi);
   }
 
@@ -1105,9 +1106,9 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     fi_params[0] = vd_x;
     fi_params[1] = vd_b;
     fi_params[2] = vd_j;
-    auto* fi =
-        new FunctionI(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
-                      ti_fi, fi_params, let);
+    auto* fi = new FunctionI(Location().introduce(),
+                             ASTString(create_enum_to_string_name(ident, "_toString_")), ti_fi,
+                             fi_params, let);
     enumItems->addItem(fi);
   }
 }

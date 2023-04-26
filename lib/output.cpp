@@ -964,8 +964,8 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
 
               auto* sl = new StringLit(Location().introduce(), s.str());
               outputVars.push_back(sl);
-              ASTString toString =
-                  std::string("_toString_") + e.getEnum(enumId)->e()->id()->str().c_str();
+              ASTString toString(std::string("_toString_") +
+                                 e.getEnum(enumId)->e()->id()->str().c_str());
 
               auto* toStringMin =
                   Call::a(Location().introduce(), toString,

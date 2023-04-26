@@ -6,6 +6,11 @@ https://github.com/MiniZinc/libminizinc/issues.
 
 .. _unreleased:
 
+Changes:
+^^^^^^^^
+- ``ASTString`` constructor that uses ``std::string`` is now explicit to avoid
+  unexpected or unnecessary GC allocation.
+
 .. _v2.7.3:
 
 `Version 2.7.3 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.7.3>`__

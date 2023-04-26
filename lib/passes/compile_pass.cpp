@@ -90,7 +90,7 @@ Env* change_library(Env& e, vector<string>& includePaths, const string& globals_
   Model* inc_mod = parse_from_string(*fenv, ss.str(), dummy_file.str(), new_includePaths, false,
                                      false, true, verbose, std::cerr);
 
-  auto* new_inc = new IncludeI(Location().introduce(), string("MultiPassDummy.mzn"));
+  auto* new_inc = new IncludeI(Location().introduce(), ASTString("MultiPassDummy.mzn"));
   new_inc->m(inc_mod);
   inc_mod->setParent(new_mod);
   new_mod->addItem(new_inc);

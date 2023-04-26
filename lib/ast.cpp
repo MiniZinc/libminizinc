@@ -363,7 +363,7 @@ ASTString Id::str() const {
   }
   std::ostringstream oss;
   oss << "X_INTRODUCED_" << idn() << "_";
-  return oss.str();
+  return ASTString(oss.str());
 }
 
 void TIId::rehash() {

@@ -2033,7 +2033,7 @@ bool b_output_to_section(EnvI& env, Call* call) {
   std::vector<Expression*> al_v({expr});
   auto* al = new ArrayLit(Location().introduce(), al_v);
   al->type(Type::parstring(1));
-  env.outputSections.add(section_s, al);
+  env.outputSections.add(ASTString(section_s), al);
   return true;
 }
 
@@ -3344,6 +3344,7 @@ Expression* b_regular_from_string(EnvI& env, Call* call) {
       "|'[^'\\xa\\xd\\x0]*'|([0-9]*))[[:space:]]*\\)",
       std::regex_constants::egrep);
   while (std::regex_search(expr, constructor_call)) {
+    GCLock lock;
     std::ostringstream oss;
     auto id_re_it =
         std::sregex_token_iterator(expr.begin(), expr.end(), constructor_call, {-1, 1, 2, 3});
@@ -3354,9 +3355,9 @@ Expression* b_regular_from_string(EnvI& env, Call* call) {
       if (id_re_it == std::sregex_token_iterator()) {
         break;
       }
-      std::string id1 = *id_re_it;
+      ASTString id1(*id_re_it);
       ++id_re_it;
-      std::string id2 = *id_re_it;
+      ASTString id2(*id_re_it);
       ++id_re_it;
       std::string val3 = *id_re_it;
       ++id_re_it;
@@ -3365,11 +3366,15 @@ Expression* b_regular_from_string(EnvI& env, Call* call) {
       if (val3.empty()) {
         auto it = env.reverseEnum.find(id2);
         if (it == env.reverseEnum.end()) {
-          throw std::runtime_error("Unknown identifier: " + id2);
+          std::ostringstream ss;
+          ss << "Unknown identifier: " << id2;
+          throw std::runtime_error(ss.str());
         }
         auto* id2_vd = it->second->dynamicCast<VarDeclI>();
         if (id2_vd == nullptr) {
-          throw std::runtime_error("identifier " + id2 + " is not an enum constant");
+          std::ostringstream ss;
+          ss << "identifier " << id2 << " is not an enum constant";
+          throw std::runtime_error(ss.str());
         }
         arg = id2_vd->e()->id();
       } else {
@@ -3378,7 +3383,9 @@ Expression* b_regular_from_string(EnvI& env, Call* call) {
       }
       auto it = env.reverseEnum.find(id1);
       if (it == env.reverseEnum.end()) {
-        throw std::runtime_error("Unknown identifier: " + id2);
+        std::ostringstream ss;
+        ss << "Unknown identifier: " << id2;
+        throw std::runtime_error(ss.str());
       }
       if (auto* id1_vdi = it->second->dynamicCast<VarDeclI>()) {
         // this is not an enum constructor, simply output both values
@@ -3401,28 +3408,35 @@ Expression* b_regular_from_string(EnvI& env, Call* call) {
   // Replace all remaining enum identifiers
   std::regex enumid("[A-Za-z][A-Za-z0-9_]*|'[^'\\xa\\xd\\x0]*'", std::regex_constants::egrep);
   auto id_re_it = std::sregex_token_iterator(expr.begin(), expr.end(), enumid, {-1, 0});
-  std::ostringstream oss;
-  for (; id_re_it != std::sregex_token_iterator();) {
-    std::string rest = *id_re_it;
-    oss << rest;
-    ++id_re_it;
-    if (id_re_it == std::sregex_token_iterator()) {
-      break;
+  {
+    GCLock lock;
+    std::ostringstream oss;
+    for (; id_re_it != std::sregex_token_iterator();) {
+      std::string rest = *id_re_it;
+      oss << rest;
+      ++id_re_it;
+      if (id_re_it == std::sregex_token_iterator()) {
+        break;
+      }
+      ASTString id1(*id_re_it);
+      ++id_re_it;
+      auto it = env.reverseEnum.find(id1);
+      if (it == env.reverseEnum.end()) {
+        std::ostringstream ss;
+        ss << "Unknown identifier: " << id1;
+        throw std::runtime_error(ss.str());
+      }
+      auto* id1_vd = it->second->dynamicCast<VarDeclI>();
+      if (id1_vd == nullptr) {
+        std::ostringstream ss;
+        ss << "identifier " << id1 << " is not an enum constant";
+        throw std::runtime_error(ss.str());
+      }
+      IntVal result1 = eval_int(env, id1_vd->e()->id());
+      oss << result1;
     }
-    std::string id1 = *id_re_it;
-    ++id_re_it;
-    auto it = env.reverseEnum.find(id1);
-    if (it == env.reverseEnum.end()) {
-      throw std::runtime_error("Unknown identifier: " + id1);
-    }
-    auto* id1_vd = it->second->dynamicCast<VarDeclI>();
-    if (id1_vd == nullptr) {
-      throw std::runtime_error("identifier " + id1 + " is not an enum constant");
-    }
-    IntVal result1 = eval_int(env, id1_vd->e()->id());
-    oss << result1;
+    expr = oss.str();
   }
-  expr = oss.str();
 
   std::unique_ptr<REG> regex;
   try {

@@ -89,7 +89,7 @@ public:
 };
 
 Location JSONParser::errLocation() const {
-  Location loc(_filename, _line, _column, _line, _column);
+  Location loc(ASTString(_filename), _line, _column, _line, _column);
   return loc;
 }
 
@@ -818,8 +818,9 @@ void JSONParser::parseModel(Model* m, std::istream& is, bool isData) {
   }
   for (;;) {
     string ident = expectString(is);
+    ASTString ast_ident(ident);
     expectToken(is, T_COLON);
-    auto it = knownIds.find(ident);
+    auto it = knownIds.find(ast_ident);
     Expression* e = parseExp(is, isData, it != knownIds.end() ? it->second : nullptr);
 
     if (ident[0] != '_' && (!isData || it != knownIds.end())) {
@@ -827,11 +828,11 @@ void JSONParser::parseModel(Model* m, std::istream& is, bool isData) {
         // This is a nested object
         auto* subModel = new Model;
         parseModel(subModel, is, isData);
-        auto* ii = new IncludeI(Location().introduce(), ident);
+        auto* ii = new IncludeI(Location().introduce(), ast_ident);
         ii->m(subModel, true);
         m->addItem(ii);
       } else {
-        auto* ai = new AssignI(e->loc().introduce(), ident, e);
+        auto* ai = new AssignI(e->loc().introduce(), ast_ident, e);
         m->addItem(ai);
       }
     }

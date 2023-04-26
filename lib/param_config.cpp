@@ -57,7 +57,7 @@ void ParamConfig::addValue(const ASTString& flag_input, Expression* e) {
     case Expression::E_ARRAYLIT: {
       auto* al = e->cast<ArrayLit>();
       for (auto* exp : al->getVec()) {
-        addValue(flag, exp);
+        addValue(ASTString(flag), exp);
       }
       break;
     }

@@ -286,8 +286,8 @@ ArrayLit* eval_record_merge(EnvI& env, ArrayLit* lhs, ArrayLit* rhs) {
       all_fields.emplace_back((*lhs)[l]);
       ++l;
     } else {
-      ASTString lhsN = fields1->fieldName(l);
-      ASTString rhsN = fields2->fieldName(r);
+      ASTString lhsN(fields1->fieldName(l));
+      ASTString rhsN(fields2->fieldName(r));
       if (cmp(lhsN, rhsN)) {
         // lhsN < rhsN
         all_fields.emplace_back((*lhs)[l]);

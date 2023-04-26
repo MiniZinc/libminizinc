@@ -229,7 +229,7 @@ inline StringLit::StringLit(const Location& loc, const ASTString& v)
 
 inline Id::Id(const Location& loc, const std::string& v0, VarDecl* decl)
     : Expression(loc, E_ID, Type()), _decl(decl) {
-  v(v0);
+  v(ASTString(v0));
   rehash();
 }
 
