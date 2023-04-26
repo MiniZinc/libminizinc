@@ -4023,10 +4023,7 @@ void flatten(Env& e, FlatteningOptions opt) {
             }
           }
           if (vdi->e()->type().dim() > 0 && vdi->e()->type().isvar()) {
-            assert(!vdi->e()->ti()->type().structBT());  // TODO: Does the next statement ever erase
-                                                         // the tuple field types? If so, replace by
-                                                         // ti->eraseDomain().
-            vdi->e()->ti()->domain(nullptr);
+            vdi->e()->ti()->eraseDomain();
           }
           if (vdi->e()->type().isint() && vdi->e()->type().isvar() &&
               vdi->e()->ti()->domain() != nullptr && !vdi->e()->type().isOpt()) {

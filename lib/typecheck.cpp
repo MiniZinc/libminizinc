@@ -3780,13 +3780,6 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
                   fi->ti()->type().toString(_env) + "', body type is `" +
                   fi->e()->type().toString(_env) + "'");
         }
-        if (fi->e() != nullptr && fi->e()->type().isPar() && allParamsPar &&
-            fi->ti()->type().isvar()) {
-          // this is a par function declared as var, so change declared return type
-          Type fi_t = fi->ti()->type();
-          fi_t.mkPar(_env);
-          fi->ti()->type(fi_t);
-        }
         if (fi->e() != nullptr) {
           fi->e(add_coercion(_env, _m, fi->e(), fi->ti()->type())());
         }

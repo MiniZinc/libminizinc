@@ -8,8 +8,14 @@ https://github.com/MiniZinc/libminizinc/issues.
 
 Changes:
 ^^^^^^^^
-- ``ASTString`` constructor that uses ``std::string`` is now explicit to avoid
-  unexpected or unnecessary GC allocation.
+-  ``ASTString`` constructor that uses ``std::string`` is now explicit to avoid
+   unexpected or unnecessary GC allocation.
+
+Bug fixes:
+^^^^^^^^^^
+
+-  Remove redundant function return simplification that could create invalid
+   tuple/record types. (:bugref:`681`)
 
 .. _v2.7.3:
 
