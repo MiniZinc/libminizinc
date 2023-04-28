@@ -4068,29 +4068,51 @@ void flatten(Env& e, FlatteningOptions opt) {
               if (doConvertToRangeDomain) {
                 Expression* dom_expr = vdi->e()->ti()->domain();
                 if (dom->min(0).isMinusInfinity() || dom->max(dom->size() - 1).isPlusInfinity()) {
+                  // Erase the domain to remove infinity literal
                   auto* nti = Expression::cast<TypeInst>(copy(env, vdi->e()->ti()));
                   nti->domain(nullptr);
                   vdi->e()->ti(nti);
+                  // Add the ub/lb back as a constraint
+                  Call* call = nullptr;
+                  if (dom->min(0).isFinite()) {
+                    // Note: cannot be combined into `mzn_set_in_internal` as CSE interferes
+                    call = Call::a(vdi->loc(), env.constants.ids.int_.le,
+                                   {IntLit::a(dom->min(0)), vdi->e()->id()});
+                  } else if (dom->max(dom->size() - 1).isFinite()) {
+                    // Note: cannot be combined into `mzn_set_in_internal` as CSE interferes
+                    call = Call::a(vdi->loc(), env.constants.ids.int_.le,
+                                   {vdi->e()->id(), IntLit::a(dom->max(dom->size() - 1))});
+                  }
+                  if (call != nullptr) {
+                    call->type(Type::varbool());
+                    call->decl(env.model->matchFn(env, call, false));
+                    env.flatAddItem(new ConstraintI(vdi->loc(), call));
+                  }
                 } else if (dom->size() > 1) {
+                  // Simplify domains to be a single range
                   auto* newDom = new SetLit(Location().introduce(),
                                             IntSetVal::a(dom->min(0), dom->max(dom->size() - 1)));
                   auto* nti = Expression::cast<TypeInst>(copy(env, vdi->e()->ti()));
                   nti->domain(newDom);
                   vdi->e()->ti(nti);
                 }
-                GCLock lock;
-                Call* call = Call::a(vdi->loc(), env.constants.ids.mzn_set_in_internal,
-                                     {vdi->e()->id(), dom_expr});
-                call->type(Type::varbool());
-                call->decl(env.model->matchFn(env, call, false));
-                // Give distinct call stack
-                Annotation& ann = Expression::ann(vdi->e());
-                Expression* tmp = call;
-                if (Expression* mznpath_ann = ann.getCall(env.constants.ann.mzn_path)) {
-                  tmp = Expression::cast<Call>(mznpath_ann)->arg(0);
+
+                // Re-add the more complex (range) domain constraint
+                // note: might still be required when infinity in the domain
+                if (dom->size() > 1) {
+                  Call* call = Call::a(vdi->loc(), env.constants.ids.mzn_set_in_internal,
+                                       {vdi->e()->id(), dom_expr});
+                  call->type(Type::varbool());
+                  call->decl(env.model->matchFn(env, call, false));
+                  // Give distinct call stack
+                  Annotation& ann = Expression::ann(vdi->e());
+                  Expression* tmp = call;
+                  if (Expression* mznpath_ann = ann.getCall(env.constants.ann.mzn_path)) {
+                    tmp = Expression::cast<Call>(mznpath_ann)->arg(0);
+                  }
+                  CallStackItem csi(env, tmp);
+                  env.flatAddItem(new ConstraintI(vdi->loc(), call));
                 }
-                CallStackItem csi(env, tmp);
-                env.flatAddItem(new ConstraintI(Location().introduce(), call));
               } else {
                 convertToRangeDomain.push_back(i);
               }
@@ -4108,23 +4130,48 @@ void flatten(Env& e, FlatteningOptions opt) {
             }
             FloatVal vmin = vdi_dom->min();
             FloatVal vmax = vdi_dom->max();
-            bool post = false;
             if (vmin == -FloatVal::infinity() || vmax == FloatVal::infinity()) {
+              // Erase the domain to remove infinity literal
               vdi->e()->ti()->domain(nullptr);
-              post = !(vmin == -FloatVal::infinity() && vmax == FloatVal::infinity());
+              // Add the ub/lb back as a constraint
+              Call* call = nullptr;
+              if (vmax != FloatVal::infinity()) {
+                // Note: cannot be combined into `mzn_set_in_internal` as CSE interferes
+                call = Call::a(vdi->loc(), env.constants.ids.float_.le,
+                               {vdi->e()->id(), FloatLit::a(vmax)});
+              } else if (vmin != -FloatVal::infinity()) {
+                // Note: cannot be combined into `mzn_set_in_internal` as CSE interferes
+                call = Call::a(Location().introduce(), env.constants.ids.float_.le,
+                               {FloatLit::a(vmin), vdi->e()->id()});
+              }
+              if (call != nullptr) {
+                call->type(Type::varbool());
+                call->decl(env.model->matchFn(env, call, false));
+                env.flatAddItem(new ConstraintI(vdi->loc(), call));
+              }
             } else if (vdi_dom->size() > 1) {
+              // Simplify domains to be a single range
               auto* range = new SetLit(Expression::loc(vdi->e()->ti()->domain()),
                                        FloatSetVal::a({FloatSetVal::Range(vmin, vmax)}));
               range->type(Type::parsetfloat());
               vdi->e()->ti()->domain(range);
-              post = true;
             }
-            if (post) {
-              Call* call = Call::a(Location().introduce(), env.constants.ids.mzn_set_in_internal,
+
+            // Re-add the more complex (range) domain constraint
+            // note: might still be required when infinity in the domain
+            if (vdi_dom->size() > 1) {
+              Call* call = Call::a(vdi->loc(), env.constants.ids.mzn_set_in_internal,
                                    {vdi->e()->id(), dom_expr});
               call->type(Type::varbool());
               call->decl(env.model->matchFn(env, call, false));
-              env.flatAddItem(new ConstraintI(Location().introduce(), call));
+              // Give distinct call stack
+              Annotation& ann = Expression::ann(vdi->e());
+              Expression* tmp = call;
+              if (Expression* mznpath_ann = ann.getCall(env.constants.ann.mzn_path)) {
+                tmp = Expression::cast<Call>(mznpath_ann)->arg(0);
+              }
+              CallStackItem csi(env, tmp);
+              env.flatAddItem(new ConstraintI(vdi->loc(), call));
             }
           }
         }

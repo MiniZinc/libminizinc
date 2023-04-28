@@ -15,7 +15,9 @@ Bug fixes:
 ^^^^^^^^^^
 
 -  Remove redundant function return simplification that could create invalid
-   tuple/record types. (:bugref:`681`)
+   tuple/record types (:bugref:`681`).
+-  Fix regression in the creation of seperate domain constraints where domains
+   contained infinity (:bugref:`684`).
 
 .. _v2.7.3:
 
