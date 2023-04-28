@@ -61,7 +61,7 @@ void ChuffedSolverInstance::processFlatZinc() {
     if (!it.removed() && it.e()->type().isvar()) {
       auto* vd = it.e();
       if (it.e()->type().dim() == 0) {
-        auto output = vd->ann().contains(_env.envi().constants.ann.output_var);
+        auto output = Expression::ann(vd).contains(_env.envi().constants.ann.output_var);
         if (vd->type().isbool()) {
           if (vd->e() == nullptr) {
             Expression* domain = vd->ti()->domain();
@@ -85,13 +85,13 @@ void ChuffedSolverInstance::processFlatZinc() {
             }
           } else {
             Expression* init = vd->e();
-            if (auto* ident = init->dynamicCast<Id>()) {
+            if (auto* ident = Expression::dynamicCast<Id>(init)) {
               auto& var = _variableMap.get(ident);
               assert(var.isBool());
               FlatZinc::BoolVarSpec spec(FlatZinc::Alias(var.index()), output, vd->introduced());
               _variableMap.insert(vd->id(), ChuffedVariable::boolVar(_space, &spec));
             } else {
-              auto b = init->cast<BoolLit>()->v();
+              auto b = Expression::cast<BoolLit>(init)->v();
               FlatZinc::BoolVarSpec spec(b, output, vd->introduced());
               _variableMap.insert(vd->id(), ChuffedVariable::boolVar(_space, &spec));
             }
@@ -125,13 +125,13 @@ void ChuffedSolverInstance::processFlatZinc() {
             }
           } else {
             Expression* init = vd->e();
-            if (auto* ident = init->dynamicCast<Id>()) {
+            if (auto* ident = Expression::dynamicCast<Id>(init)) {
               auto& var = _variableMap.get(ident);
               assert(var.isInt());
               FlatZinc::IntVarSpec spec(FlatZinc::Alias(var.index()), output, vd->introduced());
               _variableMap.insert(vd->id(), ChuffedVariable::intVar(_space, &spec));
             } else {
-              auto il = static_cast<int>(init->cast<IntLit>()->v().toInt());
+              auto il = static_cast<int>(IntLit::v(Expression::cast<IntLit>(init)).toInt());
               FlatZinc::IntVarSpec spec(il, output, vd->introduced());
               _variableMap.insert(vd->id(), ChuffedVariable::intVar(_space, &spec));
             }
@@ -141,10 +141,10 @@ void ChuffedSolverInstance::processFlatZinc() {
           ssm << "Type " << *vd->ti() << " is currently not supported by Chuffed.";
           throw InternalError(ssm.str());
         }
-      } else if (vd->ann().containsCall(_env.envi().constants.ann.output_array)) {
-        auto* al = vd->e()->cast<ArrayLit>();
+      } else if (Expression::ann(vd).containsCall(_env.envi().constants.ann.output_array)) {
+        auto* al = Expression::cast<ArrayLit>(vd->e());
         for (unsigned int i = 0; i < al->size(); i++) {
-          if (auto* ident = (*al)[i]->dynamicCast<Id>()) {
+          if (auto* ident = Expression::dynamicCast<Id>((*al)[i])) {
             auto& var = _variableMap.get(ident->decl()->id());
             if (var.isBool()) {
               FlatZinc::AST::BoolVar bv(var.index());
@@ -161,19 +161,19 @@ void ChuffedSolverInstance::processFlatZinc() {
 
   std::function<FlatZinc::AST::Node*(Expression*)> toNode;
   toNode = [this, &toNode](Expression* e) -> FlatZinc::AST::Node* {
-    switch (e->eid()) {
+    switch (Expression::eid(e)) {
       case Expression::E_BOOLLIT: {
-        return new FlatZinc::AST::BoolLit(e->cast<BoolLit>()->v());
+        return new FlatZinc::AST::BoolLit(Expression::cast<BoolLit>(e)->v());
       }
       case Expression::E_INTLIT: {
-        auto v = static_cast<int>(e->cast<IntLit>()->v().toInt());
+        auto v = static_cast<int>(IntLit::v(Expression::cast<IntLit>(e)).toInt());
         return new FlatZinc::AST::IntLit(v);
       }
       case Expression::E_STRINGLIT: {
-        return new FlatZinc::AST::String(e->cast<StringLit>()->v().c_str());
+        return new FlatZinc::AST::String(Expression::cast<StringLit>(e)->v().c_str());
       }
       case Expression::E_ID: {
-        auto* ident = e->cast<Id>();
+        auto* ident = Expression::cast<Id>(e);
         if (ident->type().isAnn()) {
           return new FlatZinc::AST::Atom(ident->str().c_str());
         } else if (ident->type().dim() > 0) {
@@ -189,7 +189,7 @@ void ChuffedSolverInstance::processFlatZinc() {
         break;
       }
       case Expression::E_CALL: {
-        auto* c = e->cast<Call>();
+        auto* c = Expression::cast<Call>(e);
         if (c->argCount() == 1) {
           return new FlatZinc::AST::Call(c->id().c_str(), toNode(c->arg(0)));
         }
@@ -200,7 +200,7 @@ void ChuffedSolverInstance::processFlatZinc() {
         return new FlatZinc::AST::Call(c->id().c_str(), new FlatZinc::AST::Array(args));
       }
       case Expression::E_ARRAYLIT: {
-        auto* al = e->cast<ArrayLit>();
+        auto* al = Expression::cast<ArrayLit>(e);
         std::vector<FlatZinc::AST::Node*> elems(al->size());
         for (unsigned int i = 0; i < al->size(); i++) {
           elems[i] = toNode((*al)[i]);
@@ -208,7 +208,7 @@ void ChuffedSolverInstance::processFlatZinc() {
         return new FlatZinc::AST::Array(elems);
       }
       case Expression::E_SETLIT: {
-        auto* sl = e->cast<SetLit>();
+        auto* sl = Expression::cast<SetLit>(e);
         auto* isv = sl->isv();
         if (isv != nullptr) {
           if (isv->size() == 1) {
@@ -234,16 +234,16 @@ void ChuffedSolverInstance::processFlatZinc() {
   // Post constraints
   for (auto& it : _flat->constraints()) {
     if (!it.removed()) {
-      auto* c = it.e()->cast<Call>();
+      auto* c = Expression::cast<Call>(it.e());
       std::vector<FlatZinc::AST::Node*> args(c->argCount());
       for (unsigned int i = 0; i < c->argCount(); i++) {
         args[i] = toNode(c->arg(i));
       }
 
       FlatZinc::AST::Array* ann = nullptr;
-      if (!c->ann().isEmpty()) {
+      if (!Expression::ann(c).isEmpty()) {
         std::vector<FlatZinc::AST::Node*> annotations;
-        for (auto& ann : c->ann()) {
+        for (auto& ann : Expression::ann(c)) {
           annotations.push_back(toNode(ann));
         }
         ann = new FlatZinc::AST::Array(annotations);
@@ -274,11 +274,11 @@ void ChuffedSolverInstance::processFlatZinc() {
       break;
     case SolveI::ST_MIN:
       _isSatisfaction = false;
-      _space->minimize(_variableMap.get(si->e()->cast<Id>()).index(), ann);
+      _space->minimize(_variableMap.get(Expression::cast<Id>(si->e())).index(), ann);
       break;
     case SolveI::ST_MAX:
       _isSatisfaction = false;
-      _space->maximize(_variableMap.get(si->e()->cast<Id>()).index(), ann);
+      _space->maximize(_variableMap.get(Expression::cast<Id>(si->e())).index(), ann);
       break;
   }
 

@@ -208,20 +208,21 @@ void Solns2Out::parseAssignments(string& solution) {
   for (unsigned int i = 0; i < sm->size(); i++) {
     if (auto* ai = (*sm)[i]->dynamicCast<AssignI>()) {
       auto& de = findOutputVar(ai->id());
-      if (!ai->e()->isa<BoolLit>() && !ai->e()->isa<IntLit>() && !ai->e()->isa<FloatLit>()) {
+      if (!Expression::isa<BoolLit>(ai->e()) && !Expression::isa<IntLit>(ai->e()) &&
+          !Expression::isa<FloatLit>(ai->e())) {
         Type de_t = de.first->type();
         de_t.cv(false);
-        ai->e()->type(de_t);
+        Expression::type(ai->e(), de_t);
       }
       ai->decl(de.first);
       typecheck(*_env, getModel(), ai);
-      if (Call* c = ai->e()->dynamicCast<Call>()) {
+      if (Call* c = Expression::dynamicCast<Call>(ai->e())) {
         // This is an arrayXd call, make sure we get the right builtin
-        assert(c->arg(c->argCount() - 1)->isa<ArrayLit>());
+        assert(Expression::isa<ArrayLit>(c->arg(c->argCount() - 1)));
         for (unsigned int i = 0; i < c->argCount(); i++) {
-          c->arg(i)->type(Type::parsetint());
+          Expression::type(c->arg(i), Type::parsetint());
         }
-        c->arg(c->argCount() - 1)->type(de.first->type());
+        Expression::type(c->arg(c->argCount() - 1), de.first->type());
         c->decl(getModel()->matchFn(_env->envi(), c, false));
       }
       de.first->e(ai->e());
@@ -352,15 +353,16 @@ void Solns2Out::checkSolution(std::ostream& oss) {
     GCLock lock;
     for (auto& i : *getModel()) {
       if (auto* vdi = i->dynamicCast<VarDeclI>()) {
-        if (vdi->e()->ann().contains(Constants::constants().ann.mzn_check_var)) {
+        if (Expression::ann(vdi->e()).contains(Constants::constants().ann.mzn_check_var)) {
           checker << vdi->e()->id()->str() << " = ";
           Expression* e = eval_par(getEnv()->envi(), vdi->e()->e());
-          auto* al = e->dynamicCast<ArrayLit>();
+          auto* al = Expression::dynamicCast<ArrayLit>(e);
           std::vector<Id*> enumids;
-          if (Call* cev = vdi->e()->ann().getCall(Constants::constants().ann.mzn_check_enum_var)) {
+          if (Call* cev = Expression::ann(vdi->e()).getCall(
+                  Constants::constants().ann.mzn_check_enum_var)) {
             auto* enumIdsAl = eval_array_lit(getEnv()->envi(), cev->arg(0));
             for (int j = 0; j < enumIdsAl->size(); j++) {
-              enumids.push_back((*enumIdsAl)[j]->dynamicCast<Id>());
+              enumids.push_back(Expression::dynamicCast<Id>((*enumIdsAl)[j]));
             }
           }
 

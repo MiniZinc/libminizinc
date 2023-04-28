@@ -22,8 +22,8 @@ namespace MiniZinc {
 IntVal eval_int_internal(EnvI& env, Expression* e);
 /// Evaluate par int expression \a e
 inline IntVal eval_int(EnvI& env, Expression* e) {
-  if (e->isUnboxedInt()) {
-    return e->unboxedIntToIntVal();
+  if (Expression::isUnboxedInt(e)) {
+    return Expression::unboxedIntToIntVal(e);
   }
   return eval_int_internal(env, e);
 }
@@ -188,7 +188,7 @@ void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, I
     if (in() == nullptr) {
       // this is an assignment generator
       KeepAlive asn;
-      if (e->where(gen)->type().isvar() || e->where(gen)->type().cv()) {
+      if (Expression::type(e->where(gen)).isvar() || Expression::type(e->where(gen)).cv()) {
         asn = eval.flattenCV(env, e->where(gen));
       } else {
         GCLock lock;
@@ -197,20 +197,21 @@ void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, I
       e->decl(gen, id)->e(asn());
       e->rehash();
     } else {
-      auto* al = in()->cast<ArrayLit>();
+      auto* al = Expression::cast<ArrayLit>(in());
       e->decl(gen, id)->e((*al)[static_cast<int>(i.toInt())]);
       e->rehash();
     }
   }
   if (id == e->numberOfDecls(gen) - 1) {
     bool where = true;
-    if (e->in(gen) != nullptr && e->where(gen) != nullptr && !e->where(gen)->type().isvar()) {
+    if (e->in(gen) != nullptr && e->where(gen) != nullptr &&
+        !Expression::type(e->where(gen)).isvar()) {
       where = eval.evalBoolCV(env, e->where(gen));
     }
     if (where) {
       if (gen == e->numberOfGenerators() - 1) {
         if (isIndexed) {
-          auto* t = e->e()->cast<ArrayLit>();
+          auto* t = Expression::cast<ArrayLit>(e->e());
           for (unsigned int i = 0; i < t->size() - 1; i++) {
             IntVal curIdx = eval_int(env, (*t)[i]);
             a.indexes.push_back(curIdx.toInt());
@@ -227,17 +228,17 @@ void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, I
         } else {
           KeepAlive nextin;
           KeepAlive gen_in = e->in(gen + 1);
-          if (gen_in()->type().isvar() || gen_in()->type().cv()) {
+          if (Expression::type(gen_in()).isvar() || Expression::type(gen_in()).cv()) {
             gen_in = eval.flattenCV(env, e->in(gen + 1));
           }
-          if (gen_in()->type().dim() == 0) {
+          if (Expression::type(gen_in()).dim() == 0) {
             GCLock lock;
             nextin = new SetLit(Location(), eval_intset(env, gen_in()));
           } else {
             GCLock lock;
             nextin = eval_array_lit(env, gen_in());
           }
-          if (gen_in()->type().dim() == 0) {
+          if (Expression::type(gen_in()).dim() == 0) {
             eval_comp_set<Eval, isIndexed>(env, eval, e, gen + 1, 0, nextin, a);
           } else {
             eval_comp_array<Eval, isIndexed>(env, eval, e, gen + 1, 0, nextin, a);
@@ -269,7 +270,7 @@ void eval_comp_set(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, Kee
                    EvaluatedCompTmp<typename Eval::ArrayVal>& a) {
   IntSetVal* isv = eval_intset(env, in());
   if (isv->card().isPlusInfinity()) {
-    throw EvalError(env, in()->loc(), "comprehension iterates over an infinite set");
+    throw EvalError(env, Expression::loc(in()), "comprehension iterates over an infinite set");
   }
   IntSetRanges rsi(isv);
   Ranges::ToValues<IntSetRanges> rsv(rsi);
@@ -289,7 +290,7 @@ void eval_comp_set(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, Kee
 template <class Eval, bool isIndexed>
 void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, KeepAlive in,
                      EvaluatedCompTmp<typename Eval::ArrayVal>& a) {
-  auto* al = in()->cast<ArrayLit>();
+  auto* al = Expression::cast<ArrayLit>(in());
   for (unsigned int i = 0; i < al->size(); i++) {
     eval_comp_array<Eval, false, isIndexed>(env, eval, e, gen, id, i, in, a);
   }
@@ -304,11 +305,12 @@ void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, K
 template <class Eval>
 EvaluatedComp<typename Eval::ArrayVal> eval_comp(EnvI& env, Eval& eval, Comprehension* e) {
   EvaluatedComp<typename Eval::ArrayVal> a;
-  bool isIndexed = e->e()->isa<ArrayLit>() && e->e()->cast<ArrayLit>()->isTuple() &&
-                   e->e()->type().typeId() == Type::COMP_INDEX;
+  bool isIndexed = Expression::isa<ArrayLit>(e->e()) &&
+                   Expression::cast<ArrayLit>(e->e())->isTuple() &&
+                   Expression::type(e->e()).typeId() == Type::COMP_INDEX;
   unsigned int dim = 0;
   if (isIndexed) {
-    dim = e->e()->cast<ArrayLit>()->size() - 1;
+    dim = Expression::cast<ArrayLit>(e->e())->size() - 1;
   }
   EvaluatedCompTmp<typename Eval::ArrayVal> a_tmp(dim);
   if (e->in(0) == nullptr) {
@@ -321,23 +323,23 @@ EvaluatedComp<typename Eval::ArrayVal> eval_comp(EnvI& env, Eval& eval, Comprehe
     KeepAlive in;
     {
       GCLock lock;
-      if (e->in(0)->type().dim() == 0) {
-        if (e->in(0)->type().isvar()) {
+      if (Expression::type(e->in(0)).dim() == 0) {
+        if (Expression::type(e->in(0)).isvar()) {
           in = new SetLit(Location(), compute_intset_bounds(env, e->in(0)));
-        } else if (e->in(0)->type().cv()) {
+        } else if (Expression::type(e->in(0)).cv()) {
           in = new SetLit(Location(), eval_intset(env, eval.flattenCV(env, e->in(0))()));
         } else {
           in = new SetLit(Location(), eval_intset(env, e->in(0)));
         }
       } else {
-        if (e->in(0)->type().isvar() || e->in(0)->type().cv()) {
+        if (Expression::type(e->in(0)).isvar() || Expression::type(e->in(0)).cv()) {
           in = eval_array_lit(env, eval.flattenCV(env, e->in(0))());
         } else {
           in = eval_array_lit(env, e->in(0));
         }
       }
     }
-    if (e->in(0)->type().dim() == 0) {
+    if (Expression::type(e->in(0)).dim() == 0) {
       if (isIndexed) {
         eval_comp_set<Eval, true>(env, eval, e, 0, 0, in, a_tmp);
       } else {
@@ -362,7 +364,7 @@ EvaluatedComp<typename Eval::ArrayVal> eval_comp(EnvI& env, Eval& eval, Comprehe
         break;
       }
       if (!a_tmp.idxMin[i].isFinite() || !a_tmp.idxMax[i].isFinite()) {
-        throw EvalError(env, e->loc(), "indexes don't match size of generated array");
+        throw EvalError(env, Expression::loc(e), "indexes don't match size of generated array");
       }
       if (a_tmp.idxMin[i] > a_tmp.idxMax[i]) {
         size = 0;
@@ -374,7 +376,7 @@ EvaluatedComp<typename Eval::ArrayVal> eval_comp(EnvI& env, Eval& eval, Comprehe
       a.dims[i] = std::make_pair(a_tmp.idxMin[i].toInt(), a_tmp.idxMax[i].toInt());
     }
     if (size != a_tmp.a.size()) {
-      throw EvalError(env, e->loc(), "indexes don't match size of generated array");
+      throw EvalError(env, Expression::loc(e), "indexes don't match size of generated array");
     }
     if (size == 0) {
       for (unsigned int i = 0; i < a.dims.size(); i++) {
@@ -392,7 +394,8 @@ EvaluatedComp<typename Eval::ArrayVal> eval_comp(EnvI& env, Eval& eval, Comprehe
         idx += static_cast<int>(curIdx.toInt());
       }
       if (seen[idx]) {
-        throw EvalError(env, e->loc(), "comprehension generates multiple entries for same index");
+        throw EvalError(env, Expression::loc(e),
+                        "comprehension generates multiple entries for same index");
       }
       seen[idx] = true;
       a.a[idx] = a_tmp.a[i];

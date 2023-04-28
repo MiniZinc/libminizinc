@@ -587,7 +587,7 @@ private:
       if (ic->removed()) {
         continue;
       }
-      if (Call* c = ic->e()->dynamicCast<Call>()) {
+      if (Call* c = Expression::dynamicCast<Call>(ic->e())) {
         auto ipct = _mCallTypes.find(c->decl());
         if (ipct != _mCallTypes.end()) {
           // No ! here because might be deleted immediately in later versions.
@@ -645,7 +645,7 @@ private:
     if (!fCheckArg) {
       MZN_MIPD_assert_hard(vd->payload() >= 0);
     }
-    if (Id* id = vd->e()->dynamicCast<Id>()) {
+    if (Id* id = Expression::dynamicCast<Id>(vd->e())) {
       //         const int f1 = ( vd->payload()>=0 );
       //         const int f2 = ( id->decl()->payload()>=0 );
       if (!fCheckArg || (id->decl()->payload() >= 0)) {
@@ -664,13 +664,13 @@ private:
         }
         return true;  // in any case
       }
-    } else if (Call* c = vd->e()->dynamicCast<Call>()) {
+    } else if (Call* c = Expression::dynamicCast<Call>(vd->e())) {
       if (lin_exp_int == c->decl() || lin_exp_float == c->decl()) {
         //             std::cerr << "  !E call " << std::flush;
         //             debugprint(c);
         MZN_MIPD_assert_hard(c->argCount() == 3);
         //           ArrayLit* al = c->args()[1]->dynamicCast<ArrayLit>();
-        auto* al = follow_id(c->arg(1))->cast<ArrayLit>();
+        auto* al = Expression::cast<ArrayLit>(follow_id(c->arg(1)));
         MZN_MIPD_assert_hard(al);
         MZN_MIPD_assert_hard(!al->empty());
         if (al->size() == 1) {  // 1-term scalar product in the rhs
@@ -753,12 +753,12 @@ private:
       if (ic->removed()) {
         continue;
       }
-      if (Call* c = ic->e()->dynamicCast<Call>()) {
+      if (Call* c = Expression::dynamicCast<Call>(ic->e())) {
         const bool fIntLinEq = int_lin_eq == c->decl();
         const bool fFloatLinEq = float_lin_eq == c->decl();
         if (fIntLinEq || fFloatLinEq) {
           MZN_MIPD_assert_hard(c->argCount() == 3);
-          auto* al = follow_id(c->arg(1))->cast<ArrayLit>();
+          auto* al = Expression::cast<ArrayLit>(follow_id(c->arg(1)));
           MZN_MIPD_assert_hard(al);
           if (al->size() == 2) {  // 2-term eqn
             LinEq2Vars led;
@@ -782,7 +782,7 @@ private:
             }
           }       /// case with just 1 variable: else if (al->size() == 1) { }
           else {  // larger eqns
-            auto* eVD = get_annotation(c->ann(), Constants::constants().ann.defines_var);
+            auto* eVD = get_annotation(Expression::ann(c), Constants::constants().ann.defines_var);
             if (eVD != nullptr) {
               if (_sCallLinEqN.end() != _sCallLinEqN.find(c)) {
                 continue;
@@ -790,8 +790,7 @@ private:
               _sCallLinEqN.insert(c);  // memorize this call
               DBGOUT_MIPD("       REG N-call ");
               DBGOUT_MIPD_SELF(debugprint(c));
-              Call* pC = eVD->dynamicCast<Call>();
-              MZN_MIPD_assert_hard(pC);
+              Call* pC = Expression::cast<Call>(eVD);
               MZN_MIPD_assert_hard(pC->argCount());
               // Checking all but adding only touched defined vars? Seems too long.
               VarDecl* vd = expr2VarDecl(pC->arg(0));
@@ -844,8 +843,7 @@ private:
   // linexp: z = a^T x+b
   // _lin_eq: a^T x == b
   bool findOrAddDefining(Expression* exp, Call* pC) {
-    Id* pId = exp->dynamicCast<Id>();
-    MZN_MIPD_assert_hard(pId);
+    Id* pId = Expression::cast<Id>(exp);
     VarDecl* vd = pId->decl();
     MZN_MIPD_assert_hard(vd);
     MZN_MIPD_assert_hard(pC->argCount() == 3);
@@ -935,7 +933,7 @@ private:
       MZN_MIPD_assert_soft(
           0, "MIPD: STRANGE: registering var connection to itself: " << led << ", skipping");
       MZN_MIPD_ASSERT_FOR_SAT(fabs(led.coefs[0] + led.coefs[1]) < 1e-6,  // TODO param
-                              getEnv()->envi(), led.vd[0]->loc(),
+                              getEnv()->envi(), Expression::loc(led.vd[0]),
                               "Var connection to itself seems to indicate UNSAT: " << led);
       return;
     }
@@ -1184,12 +1182,12 @@ private:
       DBGOUT_MIPD("Clique " << nClique << ": main ref var " << cls.varRef1->id()->str()
                             << ", domain dec: " << sDomain);
 
-      MZN_MIPD_ASSERT_FOR_SAT(!sDomain.empty(), mipd.getEnv()->envi(), cls.varRef1->loc(),
+      MZN_MIPD_ASSERT_FOR_SAT(!sDomain.empty(), mipd.getEnv()->envi(), Expression::loc(cls.varRef1),
                               "clique " << nClique << ": main ref var " << *cls.varRef1->id()
                                         << ", domain decomposition seems empty: " << sDomain);
 
       MZN_MIPD_FLATTENING_ERROR_IF_NOT(sDomain.checkFiniteBounds(), mipd.getEnv()->envi(),
-                                       cls.varRef1->loc(),
+                                       Expression::loc(cls.varRef1),
                                        "variable " << *cls.varRef1->id()
                                                    << " needs finite bounds for linearisation."
                                                       " Or, use indicator constraints. "
@@ -1258,7 +1256,7 @@ private:
           lb = bnds.left;
           ub = bnds.right;
         } else {
-          MZN_MIPD_FLATTENING_ERROR_IF_NOT(0, mipd.getEnv()->envi(), cls.varRef1->loc(),
+          MZN_MIPD_FLATTENING_ERROR_IF_NOT(0, mipd.getEnv()->envi(), Expression::loc(cls.varRef1),
                                            "Variable " << vd->id()->str() << " of type "
                                                        << vd->type().toString(mipd._env->envi())
                                                        << " has a domain.");
@@ -1277,8 +1275,7 @@ private:
       for (Item* pItem : aCalls) {
         auto* pCI = pItem->dynamicCast<ConstraintI>();
         MZN_MIPD_assert_hard(pCI != nullptr);
-        Call* pCall = pCI->e()->dynamicCast<Call>();
-        MZN_MIPD_assert_hard(pCall != nullptr);
+        Call* pCall = Expression::cast<Call>(pCI->e());
         DBGOUT_MIPD_FLUSH("PROPAG CALL  ");
         DBGOUT_MIPD_SELF(debugprint(pCall));
         // check the bounds for bool in reifs?                     TODO
@@ -1413,7 +1410,7 @@ private:
       std::vector<Expression*> pp;
       auto bnds = sDomain.getBounds();
       const long long iMin = mipd.expr2ExprArray(
-          mipd._vVarDescr[cls.varRef1->payload()].pEqEncoding->e()->dynamicCast<Call>()->arg(1),
+          Expression::cast<Call>(mipd._vVarDescr[cls.varRef1->payload()].pEqEncoding->e())->arg(1),
           pp);
       MZN_MIPD_assert_hard(pp.size() >= bnds.right - bnds.left + 1);
       MZN_MIPD_assert_hard(iMin <= bnds.left);
@@ -1429,20 +1426,20 @@ private:
           if (vEE >= static_cast<long long>(iMin + pp.size())) {
             return;
           }
-          if (pp[vEE - iMin]->isa<Id>()) {
-            if (pp[vEE - iMin]->dynamicCast<Id>()->decl()->type().isvar()) {
+          if (Expression::isa<Id>(pp[vEE - iMin])) {
+            if (Expression::type(Expression::cast<Id>(pp[vEE - iMin])->decl()).isvar()) {
               DBGOUT_MIPD_FLUSH(vEE << ", ");
-              setVarDomain(pp[vEE - iMin]->dynamicCast<Id>()->decl(), 0.0, 0.0);
+              setVarDomain(Expression::cast<Id>(pp[vEE - iMin])->decl(), 0.0, 0.0);
             }
           }
         }
         vEE = static_cast<long long>(intv.right + 1);
       }
       for (; vEE < static_cast<long long>(iMin + pp.size()); ++vEE) {
-        if (pp[vEE - iMin]->isa<Id>()) {
-          if (pp[vEE - iMin]->dynamicCast<Id>()->decl()->type().isvar()) {
+        if (Expression::isa<Id>(pp[vEE - iMin])) {
+          if (Expression::type(Expression::cast<Id>(pp[vEE - iMin])->decl()).isvar()) {
             DBGOUT_MIPD_FLUSH(vEE << ", ");
-            setVarDomain(pp[vEE - iMin]->dynamicCast<Id>()->decl(), 0.0, 0.0);
+            setVarDomain(Expression::cast<Id>(pp[vEE - iMin])->decl(), 0.0, 0.0);
           }
         }
       }
@@ -1515,7 +1512,7 @@ private:
         for (Item* pItem : aCalls) {
           auto* pCI = pItem->dynamicCast<ConstraintI>();
           MZN_MIPD_assert_hard(pCI);
-          Call* pCall = pCI->e()->dynamicCast<Call>();
+          Call* pCall = Expression::dynamicCast<Call>(pCI->e());
           MZN_MIPD_assert_hard(pCall);
           DBGOUT_MIPD_FLUSH("IMPL CALL  ");
           DBGOUT_MIPD_SELF(debugprint(pCall));
@@ -1698,7 +1695,8 @@ private:
         std::vector<Expression*> pp;
         auto bnds = sDomain.getBounds();
         const long long iMin = mipd.expr2ExprArray(
-            mipd._vVarDescr[cls.varRef1->payload()].pEqEncoding->e()->dynamicCast<Call>()->arg(1),
+            Expression::cast<Call>(mipd._vVarDescr[cls.varRef1->payload()].pEqEncoding->e())
+                ->arg(1),
             pp);
         MZN_MIPD_assert_hard(pp.size() >= bnds.right - bnds.left + 1);
         MZN_MIPD_assert_hard(iMin <= bnds.left);
@@ -1790,9 +1788,10 @@ private:
       for (auto* v : vars) {
         MZN_MIPD_assert_hard(&v);
         //             throw std::string("addLinConstr: &var=NULL");
-        MZN_MIPD_assert_hard_msg(v->isa<Id>() || v->isa<IntLit>() || v->isa<FloatLit>(),
-                                 "  expression at " << (&v) << " eid = " << v->eid()
-                                                    << " while E_INTLIT=" << Expression::E_INTLIT);
+        MZN_MIPD_assert_hard_msg(
+            Expression::isa<Id>(v) || Expression::isa<IntLit>(v) || Expression::isa<FloatLit>(v),
+            "  expression at " << (&v) << " eid = " << Expression::eid(v)
+                               << " while E_INTLIT=" << Expression::E_INTLIT);
         //             throw std::string("addLinConstr: only id's as variables allowed");
       }
       MZN_MIPD_assert_hard(coefs.size() == vars.size());
@@ -1814,7 +1813,7 @@ private:
       std::vector<Expression*> nx;
       bool fFloat = false;
       for (auto* v : vars) {
-        if (!v->type().isint()) {
+        if (!Expression::type(v).isint()) {
           fFloat = true;
           break;
         }
@@ -1826,7 +1825,7 @@ private:
           if (fabs(coefs[i]) > 1e-8)  /// Only add terms with non-0 coefs. TODO Eps=param
           {
             nc_c.push_back(FloatLit::a(coefs[i]));
-            if (vars[i]->type().isint()) {
+            if (Expression::type(vars[i]).isint()) {
               std::vector<Expression*> i2f_args(1);
               i2f_args[0] = vars[i];
               Call* i2f =
@@ -1842,11 +1841,11 @@ private:
           }
         }
         args[2] = FloatLit::a(rhs);
-        args[2]->type(Type::parfloat(0));
+        Expression::type(args[2], Type::parfloat(0));
         args[0] = new ArrayLit(Location().introduce(), nc_c);
-        args[0]->type(Type::parfloat(1));
+        Expression::type(args[0], Type::parfloat(1));
         args[1] = new ArrayLit(Location().introduce(), nx);
-        args[1]->type(Type::varfloat(1));
+        Expression::type(args[1], Type::varfloat(1));
         if (CMPT_LE == nCmpType) {
           sName = Constants::constants().ids.float_.lin_le;  // "float_lin_le";
           fDecl = mipd.float_lin_le;
@@ -1860,11 +1859,11 @@ private:
           }
         }
         args[2] = IntLit::a(static_cast<long long int>(rhs));
-        args[2]->type(Type::parint(0));
+        Expression::type(args[2], Type::parint(0));
         args[0] = new ArrayLit(Location().introduce(), nc_c);
-        args[0]->type(Type::parint(1));
+        Expression::type(args[0], Type::parint(1));
         args[1] = new ArrayLit(Location().introduce(), nx);
-        args[1]->type(Type::varint(1));
+        Expression::type(args[1], Type::varint(1));
         if (CMPT_LE == nCmpType) {
           sName = Constants::constants().ids.int_.lin_le;  // "int_lin_le";
           fDecl = mipd.int_lin_le;
@@ -1886,7 +1885,7 @@ private:
     /// domain / reif set of one variable into that for a!her
     void convertIntSet(Expression* e, SetOfIntvReal& s, VarDecl* varTarget, double A, double B) {
       MZN_MIPD_assert_hard(A != 0.0);
-      if (e->type().isIntSet()) {
+      if (Expression::type(e).isIntSet()) {
         IntSetVal* S = eval_intset(mipd.getEnv()->envi(), e);
         IntSetRanges domr(S);
         for (; domr(); ++domr) {  // * A + B
@@ -1902,7 +1901,7 @@ private:
                               : IntvReal::infPlus()));
         }
       } else {
-        assert(e->type().isFloatSet());
+        assert(Expression::type(e).isFloatSet());
         FloatSetVal* S = eval_floatset(mipd.getEnv()->envi(), e);
         FloatSetRanges domr(S);
         for (; domr(); ++domr) {  // * A + B
@@ -1981,7 +1980,7 @@ private:
     //                                  "Expression " << *arg << " is an IntLit!" );
     //       MZN_MIPD_assert_hard( ! arg->dynamicCast<FloatLit>() );
     //       MZN_MIPD_assert_hard( ! arg->dynamicCast<BoolLit>() );
-    Id* id = arg->dynamicCast<Id>();
+    Id* id = Expression::dynamicCast<Id>(arg);
     //       MZN_MIPD_assert_hard(id);
     if (nullptr == id) {
       return nullptr;  // the call using this should be ignored?
@@ -2014,17 +2013,18 @@ private:
   }
 
   static double expr2Const(Expression* arg) {
-    if (auto* il = arg->dynamicCast<IntLit>()) {
-      return (static_cast<double>(il->v().toInt()));
+    if (auto* il = Expression::dynamicCast<IntLit>(arg)) {
+      return (static_cast<double>(IntLit::v(il).toInt()));
     }
-    if (auto* fl = arg->dynamicCast<FloatLit>()) {
-      return (fl->v().toDouble());
+    if (auto* fl = Expression::dynamicCast<FloatLit>(arg)) {
+      return (FloatLit::v(fl).toDouble());
     }
-    if (auto* bl = arg->dynamicCast<BoolLit>()) {
+    if (auto* bl = Expression::dynamicCast<BoolLit>(arg)) {
       return static_cast<double>(bl->v());
     }
     MZN_MIPD_assert_hard_msg(0, "unexpected expression instead of an int/float/bool literal: eid="
-                                    << arg->eid() << " while E_INTLIT=" << Expression::E_INTLIT);
+                                    << Expression::eid(arg)
+                                    << " while E_INTLIT=" << Expression::E_INTLIT);
 
     return 0.0;
   }

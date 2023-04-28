@@ -18,40 +18,40 @@ inline bool Expression::equal(const Expression* e0, const Expression* e1) {
   if (e0 == nullptr || e1 == nullptr) {
     return false;
   }
-  if (e0->isUnboxedInt() || e1->isUnboxedInt()) {
+  if (isUnboxedInt(e0) || isUnboxedInt(e1)) {
     return false;
   }
-  if (e0->isUnboxedFloatVal() || e1->isUnboxedFloatVal()) {
-    if (e0->isUnboxedFloatVal() && e1->isUnboxedFloatVal()) {
-      return e0->unboxedFloatToFloatVal() == e1->unboxedFloatToFloatVal();
+  if (isUnboxedFloatVal(e0) || isUnboxedFloatVal(e1)) {
+    if (isUnboxedFloatVal(e0) && isUnboxedFloatVal(e1)) {
+      return unboxedFloatToFloatVal(e0) == unboxedFloatToFloatVal(e1);
     }
     return false;
   }
   if (static_cast<ExpressionId>(e0->_id) != static_cast<ExpressionId>(e1->_id)) {
     return false;
   }
-  if (e0->type() != e1->type()) {
+  if (Expression::type(e0) != Expression::type(e1)) {
     return false;
   }
-  if (e0->hash() != e1->hash()) {
+  if (Expression::hash(e0) != Expression::hash(e1)) {
     return false;
   }
   return equalInternal(e0, e1);
 }
 
-inline void Expression::type(const Type& t) {
-  if (isUnboxedVal()) {
-    assert(!isUnboxedInt() || t == Type::parint());
-    assert(!isUnboxedFloatVal() || t == Type::parfloat());
+inline void Expression::type(Expression* e, const Type& t) {
+  if (isUnboxedVal(e)) {
+    assert(!isUnboxedInt(e) || t == Type::parint());
+    assert(!isUnboxedFloatVal(e) || t == Type::parfloat());
     return;
   }
-  if (eid() == E_VARDECL) {
-    this->cast<VarDecl>()->id()->_type = t;
-  } else if (eid() == E_ID && (this->cast<Id>()->decl() != nullptr)) {
-    assert(_type.bt() == Type::BT_UNKNOWN || _type.dim() == t.dim() || t.dim() != -1);
-    this->cast<Id>()->decl()->_type = t;
+  if (Expression::eid(e) == E_VARDECL) {
+    Expression::cast<VarDecl>(e)->id()->_type = t;
+  } else if (Expression::eid(e) == E_ID && (Expression::cast<Id>(e)->decl() != nullptr)) {
+    assert(e->_type.bt() == Type::BT_UNKNOWN || e->_type.dim() == t.dim() || t.dim() != -1);
+    Expression::cast<Id>(e)->decl()->_type = t;
   }
-  _type = t;
+  e->_type = t;
 }
 
 inline IntLit::IntLit(const Location& loc, IntVal v)
@@ -77,7 +77,7 @@ inline IntLit* IntLit::a(MiniZinc::IntVal v) {
     }
     return il;
   }
-  return it->second()->cast<IntLit>();
+  return Expression::cast<IntLit>(it->second());
 }
 
 inline IntLit* IntLit::aEnum(IntVal v, unsigned int enumId) {
@@ -85,9 +85,9 @@ inline IntLit* IntLit::aEnum(IntVal v, unsigned int enumId) {
     return a(v);
   }
   auto* il = new IntLit(Location().introduce(), v);
-  Type tt(il->type());
+  Type tt(Expression::type(il));
   tt.typeId(enumId);
-  il->type(tt);
+  Expression::type(il, tt);
   return il;
 }
 
@@ -103,11 +103,11 @@ inline unsigned int Location::LocVec::firstLine() const {
       long long int i;
       unsigned long long int u;
     } ui;
-    ui.i = il->v().toInt();
+    ui.i = IntLit::v(il).toInt();
     return static_cast<unsigned int>(ui.u & mask);
   }
   auto* il = static_cast<IntLit*>(_data[1]);
-  return il->v().toInt();
+  return IntLit::v(il).toInt();
 }
 inline unsigned int Location::LocVec::lastLine() const {
   if (_size == 2) {
@@ -120,12 +120,12 @@ inline unsigned int Location::LocVec::lastLine() const {
       long long int i;
       unsigned long long int u;
     } ui;
-    ui.i = il->v().toInt();
+    ui.i = IntLit::v(il).toInt();
     // return first line (8 bit) + offset (7 bit)
     return static_cast<unsigned int>((ui.u & mask) + ((ui.u >> first_line_size) & offsetmask));
   }
   auto* il = static_cast<IntLit*>(_data[2]);
-  return il->v().toInt();
+  return IntLit::v(il).toInt();
 }
 inline unsigned int Location::LocVec::firstColumn() const {
   if (_size == 2) {
@@ -137,12 +137,12 @@ inline unsigned int Location::LocVec::firstColumn() const {
       long long int i;
       unsigned long long int u;
     } ui;
-    ui.i = il->v().toInt();
+    ui.i = IntLit::v(il).toInt();
     // return first line (8 bit) + offset (7 bit)
     return static_cast<unsigned int>((ui.u >> first_col_offset) & mask);
   }
   auto* il = static_cast<IntLit*>(_data[3]);
-  return il->v().toInt();
+  return IntLit::v(il).toInt();
 }
 inline unsigned int Location::LocVec::lastColumn() const {
   if (_size == 2) {
@@ -154,12 +154,12 @@ inline unsigned int Location::LocVec::lastColumn() const {
       long long int i;
       unsigned long long int u;
     } ui;
-    ui.i = il->v().toInt();
+    ui.i = IntLit::v(il).toInt();
     // return first line (8 bit) + offset (7 bit)
     return static_cast<unsigned int>((ui.u >> last_col_offset) & mask);
   }
   auto* il = static_cast<IntLit*>(_data[4]);
-  return il->v().toInt();
+  return IntLit::v(il).toInt();
 }
 
 inline FloatLit::FloatLit(const Location& loc, FloatVal v)
@@ -185,62 +185,64 @@ inline FloatLit* FloatLit::a(MiniZinc::FloatVal v) {
     }
     return fl;
   }
-  return it->second()->cast<FloatLit>();
+  return Expression::cast<FloatLit>(it->second());
 }
 
 inline SetLit::SetLit(const Location& loc, const std::vector<Expression*>& v)
-    : Expression(loc, E_SETLIT, Type()), _v(ASTExprVec<Expression>(v)) {
+    : BoxedExpression(loc, E_SETLIT, Type()), _v(ASTExprVec<Expression>(v)) {
   _u.isv = nullptr;
   rehash();
 }
 
 inline SetLit::SetLit(const Location& loc, const ASTExprVec<Expression>& v)
-    : Expression(loc, E_SETLIT, Type()), _v(v) {
+    : BoxedExpression(loc, E_SETLIT, Type()), _v(v) {
   _u.isv = nullptr;
   rehash();
 }
 
-inline SetLit::SetLit(const Location& loc, IntSetVal* isv) : Expression(loc, E_SETLIT, Type()) {
+inline SetLit::SetLit(const Location& loc, IntSetVal* isv)
+    : BoxedExpression(loc, E_SETLIT, Type()) {
   _type = Type::parsetint();
   _u.isv = isv;
   rehash();
 }
 
-inline SetLit::SetLit(const Location& loc, FloatSetVal* fsv) : Expression(loc, E_SETLIT, Type()) {
+inline SetLit::SetLit(const Location& loc, FloatSetVal* fsv)
+    : BoxedExpression(loc, E_SETLIT, Type()) {
   _type = Type::parsetfloat();
   _u.fsv = fsv;
   rehash();
 }
 
 inline BoolLit::BoolLit(const Location& loc, bool v)
-    : Expression(loc, E_BOOLLIT, Type::parbool()), _v(v) {
+    : BoxedExpression(loc, E_BOOLLIT, Type::parbool()), _v(v) {
   rehash();
 }
 
 inline StringLit::StringLit(const Location& loc, const std::string& v)
-    : Expression(loc, E_STRINGLIT, Type::parstring()), _v(ASTString(v)) {
+    : BoxedExpression(loc, E_STRINGLIT, Type::parstring()), _v(ASTString(v)) {
   rehash();
 }
 
 inline StringLit::StringLit(const Location& loc, const ASTString& v)
-    : Expression(loc, E_STRINGLIT, Type::parstring()), _v(v) {
+    : BoxedExpression(loc, E_STRINGLIT, Type::parstring()), _v(v) {
   rehash();
 }
 
 inline Id::Id(const Location& loc, const std::string& v0, VarDecl* decl)
-    : Expression(loc, E_ID, Type()), _decl(decl) {
+    : BoxedExpression(loc, E_ID, Type()), _decl(decl) {
   v(ASTString(v0));
   rehash();
 }
 
 inline Id::Id(const Location& loc, const ASTString& v0, VarDecl* decl)
-    : Expression(loc, E_ID, Type()), _decl(decl) {
+    : BoxedExpression(loc, E_ID, Type()), _decl(decl) {
   v(v0);
   rehash();
 }
 
 inline Id::Id(const Location& loc, long long int idn0, VarDecl* decl)
-    : Expression(loc, E_ID, Type()), _decl(decl) {
+    : BoxedExpression(loc, E_ID, Type()), _decl(decl) {
   idn(idn0);
   rehash();
 }
@@ -248,24 +250,24 @@ inline Id::Id(const Location& loc, long long int idn0, VarDecl* decl)
 inline void Id::decl(VarDecl* d) { _decl = d; }
 
 inline ASTString Id::v() const {
-  if ((_decl != nullptr) && _decl->isa<Id>()) {
+  if ((_decl != nullptr) && Expression::isa<Id>(_decl)) {
     Expression* d = _decl;
-    while ((d != nullptr) && d->isa<Id>()) {
-      d = d->cast<Id>()->_decl;
+    while ((d != nullptr) && Expression::isa<Id>(d)) {
+      d = Expression::cast<Id>(d)->_decl;
     }
-    return d->cast<VarDecl>()->id()->v();
+    return Expression::cast<VarDecl>(d)->id()->v();
   }
   assert(hasStr());
   return _vOrIdn.val;
 }
 
 inline long long int Id::idn() const {
-  if ((_decl != nullptr) && _decl->isa<Id>()) {
+  if ((_decl != nullptr) && Expression::isa<Id>(_decl)) {
     Expression* d = _decl;
-    while ((d != nullptr) && d->isa<Id>()) {
-      d = d->cast<Id>()->_decl;
+    while ((d != nullptr) && Expression::isa<Id>(d)) {
+      d = Expression::cast<Id>(d)->_decl;
     }
-    return d->cast<VarDecl>()->id()->idn();
+    return Expression::cast<VarDecl>(d)->id()->idn();
   }
   if (hasStr()) {
     return -1;
@@ -275,20 +277,20 @@ inline long long int Id::idn() const {
 }
 
 inline TIId::TIId(const Location& loc, const std::string& v)
-    : Expression(loc, E_TIID, Type()), _v(ASTString(v)) {
+    : BoxedExpression(loc, E_TIID, Type()), _v(ASTString(v)) {
   rehash();
 }
 
 inline TIId::TIId(const Location& loc, const ASTString& v)
-    : Expression(loc, E_TIID, Type()), _v(v) {
+    : BoxedExpression(loc, E_TIID, Type()), _v(v) {
   rehash();
 }
 
-inline AnonVar::AnonVar(const Location& loc) : Expression(loc, E_ANON, Type()) { rehash(); }
+inline AnonVar::AnonVar(const Location& loc) : BoxedExpression(loc, E_ANON, Type()) { rehash(); }
 
 inline ArrayLit::ArrayLit(const Location& loc, ArrayLit* v,
                           const std::vector<std::pair<int, int> >& dims)
-    : Expression(loc, E_ARRAYLIT, Type()) {
+    : BoxedExpression(loc, E_ARRAYLIT, Type()) {
   _flag1 = false;
   _flag2 = v->_flag2;
   _secondaryId = AL_ARRAY;
@@ -320,7 +322,8 @@ inline ArrayLit::ArrayLit(const Location& loc, ArrayLit* v,
   rehash();
 }
 
-inline ArrayLit::ArrayLit(const Location& loc, ArrayLit* v) : Expression(loc, E_ARRAYLIT, Type()) {
+inline ArrayLit::ArrayLit(const Location& loc, ArrayLit* v)
+    : BoxedExpression(loc, E_ARRAYLIT, Type()) {
   _flag1 = false;
   _flag2 = v->_flag2;
   _secondaryId = AL_ARRAY;
@@ -350,7 +353,7 @@ inline ArrayLit::ArrayLit(const Location& loc, ArrayLit* v) : Expression(loc, E_
 }
 
 inline ArrayLit::ArrayLit(const Location& loc, const std::vector<Expression*>& v)
-    : Expression(loc, E_ARRAYLIT, Type()) {
+    : BoxedExpression(loc, E_ARRAYLIT, Type()) {
   _flag1 = false;
   _flag2 = false;
   _secondaryId = AL_ARRAY;
@@ -362,7 +365,7 @@ inline ArrayLit::ArrayLit(const Location& loc, const std::vector<Expression*>& v
 }
 
 inline ArrayLit::ArrayLit(const Location& loc, const std::vector<KeepAlive>& v)
-    : Expression(loc, E_ARRAYLIT, Type()) {
+    : BoxedExpression(loc, E_ARRAYLIT, Type()) {
   _flag1 = false;
   _flag2 = false;
   _secondaryId = AL_ARRAY;
@@ -378,7 +381,7 @@ inline ArrayLit::ArrayLit(const Location& loc, const std::vector<KeepAlive>& v)
 }
 
 inline ArrayLit::ArrayLit(const Location& loc, const std::vector<std::vector<Expression*> >& v)
-    : Expression(loc, E_ARRAYLIT, Type()) {
+    : BoxedExpression(loc, E_ARRAYLIT, Type()) {
   _flag1 = false;
   _flag2 = false;
   _secondaryId = AL_ARRAY;
@@ -411,7 +414,7 @@ inline ArrayLit* ArrayLit::constructTuple(const Location& loc, ArrayLit* v) {
 
 inline ArrayAccess::ArrayAccess(const Location& loc, Expression* v,
                                 const std::vector<Expression*>& idx)
-    : Expression(loc, E_ARRAYACCESS, Type()) {
+    : BoxedExpression(loc, E_ARRAYACCESS, Type()) {
   _v = v;
   _idx = ASTExprVec<Expression>(idx);
   rehash();
@@ -419,14 +422,14 @@ inline ArrayAccess::ArrayAccess(const Location& loc, Expression* v,
 
 inline ArrayAccess::ArrayAccess(const Location& loc, Expression* v,
                                 const ASTExprVec<Expression>& idx)
-    : Expression(loc, E_ARRAYACCESS, Type()) {
+    : BoxedExpression(loc, E_ARRAYACCESS, Type()) {
   _v = v;
   _idx = idx;
   rehash();
 }
 
 inline FieldAccess::FieldAccess(const Location& loc, Expression* v, Expression* field)
-    : Expression(loc, E_FIELDACCESS, Type()) {
+    : BoxedExpression(loc, E_FIELDACCESS, Type()) {
   _v = v;
   _field = field;
   rehash();
@@ -450,7 +453,7 @@ inline void Comprehension::init(Expression* e, Generators& g) {
   rehash();
 }
 inline Comprehension::Comprehension(const Location& loc, Expression* e, Generators& g, bool set)
-    : Expression(loc, E_COMP, Type()) {
+    : BoxedExpression(loc, E_COMP, Type()) {
   _flag1 = set;
   init(e, g);
 }
@@ -460,18 +463,18 @@ inline void ITE::init(const std::vector<Expression*>& e_if_then, Expression* e_e
   rehash();
 }
 inline ITE::ITE(const Location& loc, const std::vector<Expression*>& e_if_then, Expression* e_else)
-    : Expression(loc, E_ITE, Type()) {
+    : BoxedExpression(loc, E_ITE, Type()) {
   init(e_if_then, e_else);
 }
 
 inline BinOp::BinOp(const Location& loc, Expression* e0, BinOpType op, Expression* e1)
-    : Expression(loc, E_BINOP, Type()), _e0(e0), _e1(e1), _decl(nullptr) {
+    : BoxedExpression(loc, E_BINOP, Type()), _e0(e0), _e1(e1), _decl(nullptr) {
   _secondaryId = op;
   rehash();
 }
 
 inline UnOp::UnOp(const Location& loc, UnOpType op, Expression* e)
-    : Expression(loc, E_UNOP, Type()), _e0(e), _decl(nullptr) {
+    : BoxedExpression(loc, E_UNOP, Type()), _e0(e), _decl(nullptr) {
   _secondaryId = op;
   rehash();
 }
@@ -530,7 +533,7 @@ inline Call::CallArgs::CallArgs(const Call* c) {
 }
 
 inline Call::Call(const Location& loc, const ASTString& id0, const std::vector<Expression*>& args)
-    : Expression(loc, E_CALL, Type()) {
+    : BoxedExpression(loc, E_CALL, Type()) {
   _flag1 = false;
   id(ASTString(id0));
   if (args.size() >= CK_NARY) {
@@ -573,7 +576,7 @@ inline Call* Call::a(const Location& loc, const std::string& id0,
 }
 
 inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, const ASTString& id, Expression* e)
-    : Expression(loc, E_VARDECL, ti != nullptr ? ti->type() : Type()),
+    : BoxedExpression(loc, E_VARDECL, ti != nullptr ? ti->type() : Type()),
       _id(nullptr),
       _flat(nullptr) {
   _id = new Id(loc, id, this);
@@ -581,13 +584,13 @@ inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, const ASTString& id, 
   _secondaryId = 1;
   _ti = ti;
   _e = e;
-  _id->type(type());
+  Expression::type(_id, type());
   _payload = 0;
   rehash();
 }
 
 inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, long long int idn, Expression* e)
-    : Expression(loc, E_VARDECL, ti != nullptr ? ti->type() : Type()),
+    : BoxedExpression(loc, E_VARDECL, ti != nullptr ? ti->type() : Type()),
       _id(nullptr),
       _flat(nullptr) {
   _id = new Id(loc, idn, this);
@@ -595,13 +598,13 @@ inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, long long int idn, Ex
   _secondaryId = 1;
   _ti = ti;
   _e = e;
-  _id->type(type());
+  Expression::type(_id, type());
   _payload = 0;
   rehash();
 }
 
 inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, const std::string& id, Expression* e)
-    : Expression(loc, E_VARDECL, ti != nullptr ? ti->type() : Type()),
+    : BoxedExpression(loc, E_VARDECL, ti != nullptr ? ti->type() : Type()),
       _id(nullptr),
       _flat(nullptr) {
   _id = new Id(loc, ASTString(id), this);
@@ -609,36 +612,36 @@ inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, const std::string& id
   _secondaryId = 1;
   _ti = ti;
   _e = e;
-  _id->type(type());
+  Expression::type(_id, type());
   _payload = 0;
   rehash();
 }
 
 inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, Id* id, Expression* e)
-    : Expression(loc, E_VARDECL, ti->type()), _id(nullptr), _flat(nullptr) {
+    : BoxedExpression(loc, E_VARDECL, ti->type()), _id(nullptr), _flat(nullptr) {
   if (id->decl() == nullptr) {
     _id = id;
     _id->decl(this);
   } else if (id->idn() == -1) {
-    _id = new Id(id->loc(), id->v(), this);
+    _id = new Id(Expression::loc(id), id->v(), this);
   } else {
-    _id = new Id(id->loc(), id->idn(), this);
+    _id = new Id(Expression::loc(id), id->idn(), this);
   }
   _flag1 = false;
   _secondaryId = 1;
   _ti = ti;
   _e = e;
-  _id->type(type());
+  Expression::type(_id, type());
   _payload = 0;
   rehash();
 }
 
 inline Expression* VarDecl::e() const {
-  return (_e == nullptr || _e->isUnboxedVal()) ? _e : _e->untag();
+  return (_e == nullptr || isUnboxedVal(_e)) ? _e : untag(_e);
 }
 
 inline void VarDecl::e(Expression* rhs) {
-  assert(rhs == nullptr || !rhs->isa<Id>() || rhs->cast<Id>() != _id);
+  assert(rhs == nullptr || !Expression::isa<Id>(rhs) || Expression::cast<Id>(rhs) != _id);
   _e = rhs;
 }
 
@@ -658,13 +661,15 @@ inline void VarDecl::introduced(bool t) {
     _secondaryId &= ~2;
   }
 }
-inline bool VarDecl::evaluated() const { return _e->isUnboxedVal() || _e->isTagged(); }
+inline bool VarDecl::evaluated() const {
+  return Expression::isUnboxedVal(_e) || Expression::isTagged(_e);
+}
 inline void VarDecl::evaluated(bool t) {
-  if (!_e->isUnboxedVal()) {
+  if (!isUnboxedVal(_e)) {
     if (t) {
-      _e = _e->tag();
+      _e = Expression::tag(_e);
     } else {
-      _e = _e->untag();
+      _e = Expression::untag(_e);
     }
   }
 }
@@ -672,14 +677,14 @@ inline void VarDecl::flat(VarDecl* vd) { _flat = vd; }
 
 inline TypeInst::TypeInst(const Location& loc, const Type& type, const ASTExprVec<TypeInst>& ranges,
                           Expression* domain)
-    : Expression(loc, E_TI, type), _ranges(ranges), _domain(domain) {
+    : BoxedExpression(loc, E_TI, type), _ranges(ranges), _domain(domain) {
   _flag1 = false;
   _flag2 = false;
   rehash();
 }
 
 inline TypeInst::TypeInst(const Location& loc, const Type& type, Expression* domain)
-    : Expression(loc, E_TI, type), _domain(domain) {
+    : BoxedExpression(loc, E_TI, type), _domain(domain) {
   _flag1 = false;
   _flag2 = false;
   rehash();

@@ -308,21 +308,20 @@ public:
     EID_END = E_TIID
   };
 
-  bool isUnboxedVal() const;
-  bool isUnboxedInt() const;
-  bool isUnboxedFloatVal() const;
+  static bool isUnboxedVal(const Expression* e);
+  static bool isUnboxedInt(const Expression* e);
+  static bool isUnboxedFloatVal(const Expression* e);
 
-  ExpressionId eid() const;
+  static ExpressionId eid(const Expression* e);
 
-  const Location& loc() const;
-  void loc(const Location& l) {
-    if (!isUnboxedVal()) {
-      _loc = l;
+  static const Location& loc(const Expression* e);
+  static void loc(Expression* e, const Location& l) {
+    if (!Expression::isUnboxedVal(e)) {
+      e->_loc = l;
     }
   }
-  const Type& type() const;
-  void type(const Type& t);
-  size_t hash() const;
+  static const Type& type(const Expression* e);
+  static void type(Expression* e, const Type& t);
 
 protected:
   /// Combination function for hash values
@@ -352,18 +351,18 @@ protected:
       : ASTNode(eid), _type(t), _loc(loc) {}
 
 public:
-  IntVal unboxedIntToIntVal() const {
-    assert(isUnboxedInt());
+  static IntVal unboxedIntToIntVal(const Expression* e) {
+    assert(Expression::isUnboxedInt(e));
     if (sizeof(double) <= sizeof(void*)) {
-      unsigned long long int i = Expression::asPtrDiff(this) & ~static_cast<ptrdiff_t>(7);
-      bool pos = ((Expression::asPtrDiff(this) & static_cast<ptrdiff_t>(4)) == 0);
+      unsigned long long int i = Expression::asPtrDiff(e) & ~static_cast<ptrdiff_t>(7);
+      bool pos = ((Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(4)) == 0);
       if (pos) {
         return static_cast<long long int>(i >> 3);
       }
       return -(static_cast<long long int>(i >> 3));
     }
-    unsigned long long int i = Expression::asPtrDiff(this) & ~static_cast<ptrdiff_t>(3);
-    bool pos = ((Expression::asPtrDiff(this) & static_cast<ptrdiff_t>(2)) == 0);
+    unsigned long long int i = Expression::asPtrDiff(e) & ~static_cast<ptrdiff_t>(3);
+    bool pos = ((Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(2)) == 0);
     if (pos) {
       return static_cast<long long int>(i >> 2);
     }
@@ -396,14 +395,14 @@ public:
     }
     return reinterpret_cast<IntLit*>(ubi_p);
   }
-  FloatVal unboxedFloatToFloatVal() const {
-    assert(isUnboxedFloatVal());
+  static FloatVal unboxedFloatToFloatVal(const Expression* e) {
+    assert(Expression::isUnboxedFloatVal(e));
     union {
       double d;
       uint64_t bits;
       const Expression* p;
     } _u;
-    _u.p = this;
+    _u.p = e;
     _u.bits = _u.bits >> 1;
     uint64_t exponent = (_u.bits & (static_cast<uint64_t>(0x3FF) << 52)) >> 52;
     if (exponent != 0) {
@@ -441,50 +440,37 @@ public:
     return _u.p;
   }
 
-  bool isTagged() const {
+  static bool isTagged(Expression* e) {
     // only bit 2 is set
-    if (isUnboxedVal()) {
+    if (Expression::isUnboxedVal(e)) {
       return false;
     }
     if (sizeof(double) <= sizeof(void*)) {
-      return (Expression::asPtrDiff(this) & static_cast<ptrdiff_t>(7)) == 4;
+      return (Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(7)) == 4;
     }
-    return (Expression::asPtrDiff(this) & static_cast<ptrdiff_t>(3)) == 2;
+    return (Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(3)) == 2;
   }
 
-  Expression* tag() const {
-    assert(!isUnboxedVal());
+  static Expression* tag(Expression* e) {
+    assert(!Expression::isUnboxedVal(e));
     if (sizeof(double) <= sizeof(void*)) {
-      return reinterpret_cast<Expression*>(Expression::asPtrDiff(this) | static_cast<ptrdiff_t>(4));
+      return reinterpret_cast<Expression*>(Expression::asPtrDiff(e) | static_cast<ptrdiff_t>(4));
     }
-    return reinterpret_cast<Expression*>(Expression::asPtrDiff(this) | static_cast<ptrdiff_t>(2));
+    return reinterpret_cast<Expression*>(Expression::asPtrDiff(e) | static_cast<ptrdiff_t>(2));
   }
-  Expression* untag() {
-    if (isUnboxedVal()) {
-      return this;
+  static Expression* untag(Expression* e) {
+    if (Expression::isUnboxedVal(e)) {
+      return e;
     }
     if (sizeof(double) <= sizeof(void*)) {
-      return reinterpret_cast<Expression*>(Expression::asPtrDiff(this) &
-                                           ~static_cast<ptrdiff_t>(4));
+      return reinterpret_cast<Expression*>(Expression::asPtrDiff(e) & ~static_cast<ptrdiff_t>(4));
     }
-    return reinterpret_cast<Expression*>(Expression::asPtrDiff(this) & ~static_cast<ptrdiff_t>(2));
+    return reinterpret_cast<Expression*>(Expression::asPtrDiff(e) & ~static_cast<ptrdiff_t>(2));
   }
 
   /// Test if expression is of type \a T
   template <class T>
-  bool isa() const;
-  /// Cast expression to type \a T*
-  template <class T>
-  T* cast();
-  /// Cast expression to type \a const T*
-  template <class T>
-  const T* cast() const;
-  /// Cast expression to type \a T* or NULL if types do not match
-  template <class T>
-  T* dynamicCast();
-  /// Cast expression to type \a const T* or NULL if types do not match
-  template <class T>
-  const T* dynamicCast() const;
+  static bool isa(const Expression* e);
 
   /// Cast expression to type \a T*
   template <class T>
@@ -500,16 +486,20 @@ public:
   static const T* dynamicCast(const Expression* e);
 
   /// Add annotation \a ann to the expression
-  void addAnnotation(Expression* ann);
+  static void addAnnotation(Expression* e, Expression* ann);
 
   /// Add annotation \a ann to the expression
-  void addAnnotations(const std::vector<Expression*>& ann);
+  static void addAnnotations(Expression* e, const std::vector<Expression*>& ann);
 
-  const Annotation& ann() const { return isUnboxedVal() ? Annotation::empty : _ann; }
-  Annotation& ann() { return isUnboxedVal() ? Annotation::empty : _ann; }
+  static const Annotation& ann(const Expression* e) {
+    return Expression::isUnboxedVal(e) ? Annotation::empty : e->_ann;
+  }
+  static Annotation& ann(Expression* e) {
+    return Expression::isUnboxedVal(e) ? Annotation::empty : e->_ann;
+  }
 
   /// Return hash value of \a e
-  static size_t hash(const Expression* e) { return e == nullptr ? 0 : e->hash(); }
+  static size_t hash(const Expression* e);
 
   /// Check if \a e0 and \a e1 are equal
   static bool equal(const Expression* e0, const Expression* e1);
@@ -520,93 +510,96 @@ public:
   static bool hasMark(Expression* e);
 };
 
-inline bool Expression::isUnboxedVal() const {
+inline bool Expression::isUnboxedVal(const Expression* e) {
   if (sizeof(double) <= sizeof(void*)) {
     // bit 1 or bit 0 is set
-    return (Expression::asPtrDiff(this) & static_cast<ptrdiff_t>(3)) != 0;
+    return (Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(3)) != 0;
   }  // bit 0 is set
-  return (Expression::asPtrDiff(this) & static_cast<ptrdiff_t>(1)) != 0;
+  return (Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(1)) != 0;
 }
-inline bool Expression::isUnboxedInt() const {
+inline bool Expression::isUnboxedInt(const Expression* e) {
   if (sizeof(double) <= sizeof(void*)) {
     // bit 1 is set, bit 0 is not set
-    return (Expression::asPtrDiff(this) & static_cast<ptrdiff_t>(3)) == 2;
+    return (Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(3)) == 2;
   }  // bit 0 is set
-  return (Expression::asPtrDiff(this) & static_cast<ptrdiff_t>(1)) == 1;
+  return (Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(1)) == 1;
 }
-inline bool Expression::isUnboxedFloatVal() const {
+inline bool Expression::isUnboxedFloatVal(const Expression* e) {
   // bit 0 is set (and doubles fit inside pointers)
   return (sizeof(double) <= sizeof(void*)) &&
-         (Expression::asPtrDiff(this) & static_cast<ptrdiff_t>(1)) == 1;
+         (Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(1)) == 1;
 }
-inline Expression::ExpressionId Expression::eid() const {
-  return isUnboxedInt()        ? E_INTLIT
-         : isUnboxedFloatVal() ? E_FLOATLIT
-                               : static_cast<ExpressionId>(_id);
+inline Expression::ExpressionId Expression::eid(const Expression* e) {
+  return Expression::isUnboxedInt(e)        ? E_INTLIT
+         : Expression::isUnboxedFloatVal(e) ? E_FLOATLIT
+                                            : static_cast<ExpressionId>(e->_id);
 }
-inline const Location& Expression::loc() const {
-  return isUnboxedVal() ? Location::nonalloc : _loc;
+inline const Location& Expression::loc(const Expression* e) {
+  return Expression::isUnboxedVal(e) ? Location::nonalloc : e->_loc;
 }
-inline const Type& Expression::type() const {
-  return isUnboxedInt() ? Type::unboxedint : isUnboxedFloatVal() ? Type::unboxedfloat : _type;
+inline const Type& Expression::type(const Expression* e) {
+  return Expression::isUnboxedInt(e)        ? Type::unboxedint
+         : Expression::isUnboxedFloatVal(e) ? Type::unboxedfloat
+                                            : e->_type;
 }
-inline size_t Expression::hash() const {
-  return isUnboxedInt()        ? unboxedIntToIntVal().hash()
-         : isUnboxedFloatVal() ? unboxedFloatToFloatVal().hash()
-                               : _hash;
+inline size_t Expression::hash(const Expression* e) {
+  return e == nullptr
+             ? 0
+             : (Expression::isUnboxedInt(e)        ? Expression::unboxedIntToIntVal(e).hash()
+                : Expression::isUnboxedFloatVal(e) ? Expression::unboxedFloatToFloatVal(e).hash()
+                                                   : e->_hash);
 }
 
 template <class T>
-inline bool Expression::isa() const {
+inline bool Expression::isa(const Expression* e) {
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wtautological-undefined-compare"
 #endif
-  if (nullptr == this) {
+  if (nullptr == e) {
     throw InternalError("isa: nullptr");
   }
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
-  return isUnboxedInt()        ? T::eid == E_INTLIT
-         : isUnboxedFloatVal() ? T::eid == E_FLOATLIT
-                               : _id == T::eid;
-}
-template <class T>
-inline T* Expression::cast() {
-  assert(isa<T>());
-  return static_cast<T*>(this);
-}
-template <class T>
-inline const T* Expression::cast() const {
-  assert(isa<T>());
-  return static_cast<const T*>(this);
-}
-template <class T>
-inline T* Expression::dynamicCast() {
-  return isa<T>() ? static_cast<T*>(this) : nullptr;
-}
-template <class T>
-inline const T* Expression::dynamicCast() const {
-  return isa<T>() ? static_cast<const T*>(this) : nullptr;
+  return Expression::isUnboxedInt(e)        ? T::eid == E_INTLIT
+         : Expression::isUnboxedFloatVal(e) ? T::eid == E_FLOATLIT
+                                            : e->_id == T::eid;
 }
 
 template <class T>
 inline T* Expression::cast(Expression* e) {
-  return e == nullptr ? nullptr : e->cast<T>();
+  if (e == nullptr) {
+    return nullptr;
+  }
+  assert(isa<T>(e));
+  return static_cast<T*>(e);
 }
 template <class T>
 inline const T* Expression::cast(const Expression* e) {
-  return e == nullptr ? NULL : e->cast<T>();
+  if (e == nullptr) {
+    return nullptr;
+  }
+  assert(isa<T>(e));
+  return static_cast<const T*>(e);
 }
 template <class T>
 inline T* Expression::dynamicCast(Expression* e) {
-  return e == nullptr ? nullptr : e->dynamicCast<T>();
+  return e == nullptr || !isa<T>(e) ? nullptr : static_cast<T*>(e);
 }
 template <class T>
 inline const T* Expression::dynamicCast(const Expression* e) {
-  return e == nullptr ? NULL : e->dynamicCast<T>();
+  return e == nullptr || !isa<T>(e) ? nullptr : static_cast<const T*>(e);
 }
+
+class BoxedExpression : public Expression {
+public:
+  BoxedExpression(const Location& loc, const ExpressionId& eid, const Type& t)
+      : Expression(loc, eid, t) {}
+
+  const Type& type() const { return Expression::type(this); }
+  void type(const Type& t) { Expression::type(this, t); }
+};
 
 /// \brief Integer literal expression
 class IntLit : public Expression {
@@ -620,7 +613,9 @@ public:
   /// The identifier of this expression type
   static const ExpressionId eid = E_INTLIT;
   /// Access value
-  IntVal v() const { return isUnboxedInt() ? unboxedIntToIntVal() : _v; }
+  static IntVal v(const IntLit* il) {
+    return Expression::isUnboxedInt(il) ? Expression::unboxedIntToIntVal(il) : il->_v;
+  }
   /// Recompute hash value
   void rehash();
   /// Allocate literal
@@ -640,14 +635,16 @@ public:
   /// The identifier of this expression type
   static const ExpressionId eid = E_FLOATLIT;
   /// Access value
-  FloatVal v() const { return isUnboxedFloatVal() ? unboxedFloatToFloatVal() : _v; }
+  static FloatVal v(const FloatLit* fl) {
+    return Expression::isUnboxedFloatVal(fl) ? Expression::unboxedFloatToFloatVal(fl) : fl->_v;
+  }
   /// Recompute hash value
   void rehash();
   /// Allocate literal
   static FloatLit* a(FloatVal v);
 };
 /// \brief Set literal expression
-class SetLit : public Expression {
+class SetLit : public BoxedExpression {
 protected:
   /// The value of this expression
   ASTExprVec<Expression> _v;
@@ -689,7 +686,7 @@ public:
   void rehash();
 };
 /// \brief Boolean literal expression
-class BoolLit : public Expression {
+class BoolLit : public BoxedExpression {
 protected:
   /// The value of this expression
   bool _v;
@@ -705,7 +702,7 @@ public:
   void rehash();
 };
 /// \brief String literal expression
-class StringLit : public Expression {
+class StringLit : public BoxedExpression {
 protected:
   /// The value of this expression
   ASTString _v;
@@ -725,7 +722,7 @@ public:
   void rehash();
 };
 /// \brief Identifier expression
-class Id : public Expression {
+class Id : public BoxedExpression {
 protected:
   /// The string identifier
   union {
@@ -766,8 +763,8 @@ public:
   /// Access declaration
   VarDecl* decl() const {
     Expression* d = _decl;
-    while ((d != nullptr) && d->isa<Id>()) {
-      d = d->cast<Id>()->_decl;
+    while ((d != nullptr) && Expression::isa<Id>(d)) {
+      d = Expression::cast<Id>(d)->_decl;
     }
     return Expression::cast<VarDecl>(d);
   }
@@ -775,7 +772,7 @@ public:
   void decl(VarDecl* d);
   /// Redirect to another Id \a id
   void redirect(Id* id) {
-    assert(_decl == nullptr || _decl->isa<VarDecl>());
+    assert(_decl == nullptr || Expression::isa<VarDecl>(_decl));
     _decl = id;
   }
   /// Get the identifier or declaration this identifier directly points to
@@ -786,7 +783,7 @@ public:
   int levenshteinDistance(Id* other) const;
 };
 /// \brief Type-inst identifier expression
-class TIId : public Expression {
+class TIId : public BoxedExpression {
 protected:
   /// The string identifier
   ASTString _v;
@@ -808,7 +805,7 @@ public:
   void rehash();
 };
 /// \brief Anonymous variable expression
-class AnonVar : public Expression {
+class AnonVar : public BoxedExpression {
 public:
   /// The identifier of this expression type
   static const ExpressionId eid = E_ANON;
@@ -818,7 +815,7 @@ public:
   void rehash();
 };
 /// \brief Array literal expression
-class ArrayLit : public Expression {
+class ArrayLit : public BoxedExpression {
   friend class Expression;
 
 protected:
@@ -924,7 +921,7 @@ inline Expression* ArrayLit::operator[](unsigned int i) const {
 }
 
 /// \brief Array access expression
-class ArrayAccess : public Expression {
+class ArrayAccess : public BoxedExpression {
 protected:
   /// The array to access
   Expression* _v;
@@ -951,7 +948,7 @@ public:
 };
 
 /// \brief Field access expression
-class FieldAccess : public Expression {
+class FieldAccess : public BoxedExpression {
 protected:
   /// The structured type to access
   Expression* _v;
@@ -1017,7 +1014,7 @@ struct Generators {
   Generators() {}
 };
 /// \brief An expression representing an array- or set-comprehension
-class Comprehension : public Expression {
+class Comprehension : public BoxedExpression {
   friend class Expression;
 
 protected:
@@ -1064,7 +1061,7 @@ public:
   bool containsBoundVariable(Expression* e);
 };
 /// \brief If-then-else expression
-class ITE : public Expression {
+class ITE : public BoxedExpression {
   friend class Expression;
 
 protected:
@@ -1125,7 +1122,7 @@ enum BinOpType {
   BOT_DOTDOT
 };
 /// \brief Binary-operator expression
-class BinOp : public Expression {
+class BinOp : public BoxedExpression {
 protected:
   /// Left hand side expression
   Expression* _e0;
@@ -1175,7 +1172,7 @@ public:
 /// Type of unary operators
 enum UnOpType { UOT_NOT, UOT_PLUS, UOT_MINUS };
 /// \brief Unary-operator expressions
-class UnOp : public Expression {
+class UnOp : public BoxedExpression {
 protected:
   /// %Expression
   Expression* _e0;
@@ -1259,7 +1256,7 @@ public:
 };
 
 /// \brief A predicate or function call expression
-class Call : public Expression {
+class Call : public BoxedExpression {
   friend class Expression;
   friend class BinOp;
 
@@ -1385,7 +1382,7 @@ protected:
 };
 
 /// \brief A variable declaration expression
-class VarDecl : public Expression {
+class VarDecl : public BoxedExpression {
 protected:
   /// Type-inst of the declared variable
   TypeInst* _ti;
@@ -1446,7 +1443,9 @@ public:
   /// Put current value on trail
   void trail();
   /// Whether VarDecl object is a type alias
-  bool isTypeAlias() const { return _ti == nullptr && _e != nullptr && _e->isa<TypeInst>(); }
+  bool isTypeAlias() const {
+    return _ti == nullptr && _e != nullptr && Expression::isa<TypeInst>(_e);
+  }
 };
 
 class EnvI;
@@ -1454,7 +1453,7 @@ class CopyMap;
 class TIIDInfo;
 
 /// \brief %Let expression
-class Let : public Expression {
+class Let : public BoxedExpression {
   friend Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copyFundecls,
                           bool isFlatModel);
   friend class Expression;
@@ -1503,7 +1502,7 @@ public:
 };
 
 /// \brief Type-inst expression
-class TypeInst : public Expression {
+class TypeInst : public BoxedExpression {
 protected:
   /// Ranges of an array expression
   ASTExprVec<TypeInst> _ranges;
@@ -1527,13 +1526,13 @@ public:
   void domain(Expression* d) { _domain = d; }
   /// Erase domain, preserving tuple types stored in domain field
   void eraseDomain() {
-    if (_domain == nullptr || !_domain->isa<ArrayLit>()) {
+    if (_domain == nullptr || !Expression::isa<ArrayLit>(_domain)) {
       _domain = nullptr;
       return;
     }
-    auto* al = _domain->cast<ArrayLit>();
+    auto* al = Expression::cast<ArrayLit>(_domain);
     for (int i = 0; i < al->size(); ++i) {
-      auto* field_ti = (*al)[i]->cast<TypeInst>();
+      auto* field_ti = Expression::cast<TypeInst>((*al)[i]);
       field_ti->eraseDomain();
     }
   }

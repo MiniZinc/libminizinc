@@ -27,7 +27,7 @@ Expression* create_dummy_value(EnvI& env, const Type& t) {
   ret_t.mkPar(env);
   if (t.dim() > 0) {
     Expression* ret = new ArrayLit(Location().introduce(), std::vector<Expression*>());
-    ret->type(ret_t);
+    Expression::type(ret, ret_t);
     return ret;
   }
   if (t.istuple() || t.isrecord()) {
@@ -37,12 +37,12 @@ Expression* create_dummy_value(EnvI& env, const Type& t) {
       fields[i] = create_dummy_value(env, (*st)[i]);
     }
     Expression* ret = ArrayLit::constructTuple(Location().introduce(), fields);
-    ret->type(ret_t);
+    Expression::type(ret, ret_t);
     return ret;
   }
   if (t.st() == Type::ST_SET) {
     Expression* ret = new SetLit(Location().introduce(), std::vector<Expression*>());
-    ret->type(ret_t);
+    Expression::type(ret, ret_t);
     return ret;
   }
   if (t.ot() == Type::OT_OPTIONAL) {
@@ -97,13 +97,13 @@ EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   }
 
 #ifndef NDEBUG
-  Annotation& e_ann = e->ann();
+  Annotation& e_ann = Expression::ann(e);
   if (e_ann.contains(env.constants.ann.mzn_break_here)) {
     mzn_break_here(e);
   }
 #endif
 
-  assert(!e->type().isunknown());
+  assert(!Expression::type(e).isunknown());
 
   static const ExprFlattener flattener_dispatch[] = {
       &flatten_par,          //      par expressions
@@ -128,9 +128,11 @@ EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
       &flatten_error         //      E_TIID
   };
 
-  bool is_par = e->type().isPar() &&
-                (!e->type().cv() || !e->type().isbool() || ctx.b != C_ROOT || e->isa<BoolLit>()) &&
-                !e->isa<Let>() && !e->isa<VarDecl>() && e->type().bt() != Type::BT_ANN;
+  bool is_par = Expression::type(e).isPar() &&
+                (!Expression::type(e).cv() || !Expression::type(e).isbool() || ctx.b != C_ROOT ||
+                 Expression::isa<BoolLit>(e)) &&
+                !Expression::isa<Let>(e) && !Expression::isa<VarDecl>(e) &&
+                Expression::type(e).bt() != Type::BT_ANN;
 
 #ifdef OUTPUT_CALLTREE
   if (auto* call = e->dynamicCast<Call>()) {
@@ -147,7 +149,7 @@ EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   }
 #endif
 
-  int dispatch = is_par ? 0 : e->eid() - Expression::E_INTLIT + 1;
+  int dispatch = is_par ? 0 : Expression::eid(e) - Expression::E_INTLIT + 1;
 
   return flattener_dispatch[dispatch](env, ctx, e, r, b);
 }

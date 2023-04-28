@@ -16,15 +16,15 @@ namespace MiniZinc {
 EE flatten_arraylit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   CallStackItem _csi(env, e);
   EE ret;
-  auto* al = e->cast<ArrayLit>();
+  auto* al = Expression::cast<ArrayLit>(e);
   if (al->flat()) {
     ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
     ret.r = bind(env, Ctx(), r, al);
   } else {
     VarDecl* rr = r == env.constants.varIgnore ? env.constants.varTrue : nullptr;
     Ctx eval_ctx = ctx;
-    if (ctx.b == C_ROOT && r != env.constants.varIgnore && e->type().bt() == Type::BT_BOOL &&
-        e->type().st() == Type::ST_PLAIN) {
+    if (ctx.b == C_ROOT && r != env.constants.varIgnore &&
+        Expression::type(e).bt() == Type::BT_BOOL && Expression::type(e).st() == Type::ST_PLAIN) {
       eval_ctx.b = C_MIX;
     }
     std::vector<EE> elems_ee(al->size());
@@ -45,9 +45,9 @@ EE flatten_arraylit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDec
       ArrayLit* alr = nullptr;
       if (al->type().istuple() || al->type().isrecord()) {
         assert(dims.size() == 1 && dims[0].first == 1 && dims[0].second == al->size());
-        alr = ArrayLit::constructTuple(al->loc().introduce(), elems);
+        alr = ArrayLit::constructTuple(Expression::loc(al).introduce(), elems);
       } else {
-        alr = new ArrayLit(al->loc().introduce(), elems, dims);
+        alr = new ArrayLit(Expression::loc(al).introduce(), elems, dims);
       }
       alr->type(al->type());
       alr->flat(true);

@@ -51,6 +51,7 @@ protected:
   std::string _filename;
   Location errLocation() const;
   Token readToken(std::istream& is);
+  Token readTokenInternal(std::istream& is);
   void expectToken(std::istream& is, TokenT t);
   std::string expectString(std::istream& is);
   int expectInt(std::istream& is);

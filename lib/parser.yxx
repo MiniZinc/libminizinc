@@ -92,7 +92,7 @@ Expression* createDocComment(const ParserLocation& loc, const std::string& s) {
   std::vector<Expression*> args(1);
   args[0] = new StringLit(loc, s);
   Call* c = Call::a(Location(loc), Constants::constants().ann.doc_comment, args);
-  c->type(Type::ann());
+  Expression::type(c, Type::ann());
   return c;
 }
 
@@ -100,13 +100,13 @@ Expression* createAccess(const ParserLocation& loc, Expression* e, const std::ve
   Expression* ret = e;
   for (auto* expr : idx) {
     // Set location of access expression (TODO: can this be more accurate?)
-    expr->loc(loc);
+    Expression::loc(expr, loc);
 
     // Insert member being accessed
-    if (auto* fa = expr->dynamicCast<FieldAccess>()) {
+    if (auto* fa = Expression::dynamicCast<FieldAccess>(expr)) {
       fa->v(ret);
     } else {
-      auto* aa = expr->cast<ArrayAccess>();
+      auto* aa = Expression::cast<ArrayAccess>(expr);
       aa->v(ret);
     }
 
@@ -445,7 +445,7 @@ item : MZN_DOC_COMMENT item_tail
           }
         } else if (VarDeclI* vdi = Item::dynamicCast<VarDeclI>($$)) {
           if (pp->parseDocComments) {
-            vdi->e()->addAnnotation(createDocComment(@1,$1));
+            Expression::addAnnotation(vdi->e(), createDocComment(@1,$1));
           }
         } else {
           yyerror(&@2, parm, "documentation comments are only supported for function, predicate and variable declarations");
@@ -504,7 +504,7 @@ include_item :
 vardecl_item :
       ti_expr_and_id
       { if ($1) {
-          if ($1->ti()->type().any() && $1->ti()->domain() == nullptr) {
+          if (Expression::type($1->ti()).any() && $1->ti()->domain() == nullptr) {
             // This is an any type, not allowed without a right hand side
             yyerror(&@1, parm, "declarations with `any' type-inst require definition");
           }
@@ -524,7 +524,7 @@ vardecl_item :
         ti->setIsEnum(true);
         VarDecl* vd = new VarDecl(@$,ti,$2);
         if ($2 && $3)
-          vd->addAnnotations(*$3);
+        Expression::addAnnotations(vd, *$3);
         free($2);
         $$ = VarDeclI::a(@$,vd);
       }
@@ -555,7 +555,7 @@ vardecl_item :
         Call* sl = Call::a(@$, Constants::constants().ids.anonEnumFromStrings, args);
         VarDecl* vd = new VarDecl(@$,ti,$2,sl);
         if ($2 && $3)
-          vd->addAnnotations(*$3);
+        Expression::addAnnotations(vd, *$3);
         free($2);
         delete $6;
         $$ = VarDeclI::a(@$,vd);
@@ -565,7 +565,7 @@ vardecl_item :
         TypeInst* ti = $5;
         VarDecl* vd = new VarDecl(@$, nullptr, $2, ti);
         if ($3) {
-          vd->addAnnotations(*$3);
+          Expression::addAnnotations(vd, *$3);
         }
         free($2);
         $$ = VarDeclI::a(@$, vd);
@@ -636,7 +636,7 @@ constraint_item :
     | MZN_CONSTRAINT MZN_COLONCOLON string_expr expr
       { $$ = new ConstraintI(@$,$4);
         if ($4 && $3)
-          $$->cast<ConstraintI>()->e()->ann().add(Call::a(@2, ASTString("mzn_constraint_name"), {$3}));
+          Expression::ann($$->cast<ConstraintI>()->e()).add(Call::a(@2, ASTString("mzn_constraint_name"), {$3}));
       }
 
 solve_item :
@@ -718,7 +718,7 @@ function_item :
       {
         ParserState* pp = static_cast<ParserState*>(parm);
         if ($5 && $6) $5->push_back($6);
-        if ($2 && $2->type().any() && $2->domain() == nullptr) {
+        if ($2 && Expression::type($2).any() && $2->domain() == nullptr) {
           // This is an any type, not allowed without a right hand side
           yyerror(&@2, parm, "return type cannot have `any' type-inst without type-inst variable");
         }
@@ -731,7 +731,7 @@ function_item :
       | ti_expr ':' MZN_IDENTIFIER '(' params_list ')' ann_param annotations operation_item_tail
       {
         ParserState* pp = static_cast<ParserState*>(parm);
-        if ($1 && $1->type().any() && $1->domain() == nullptr) {
+        if ($1 && Expression::type($1).any() && $1->domain() == nullptr) {
           // This is an any type, not allowed without a right hand side
           yyerror(&@1, parm, "return type cannot have `any' type-inst without type-inst variable");
         }
@@ -800,7 +800,7 @@ params_list_head :
       ti_expr_and_id_or_anon
       { $$=new vector<VarDecl*>();
         if ($1) {
-          if ($1->ti()->type().any() && $1->ti()->domain() == nullptr) {
+          if (Expression::type($1->ti()).any() && $1->ti()->domain() == nullptr) {
             // This is an any type, not allowed in parameter list
             yyerror(&@1, parm, "parameter declaration cannot have `any' type-inst without type-inst variable");
           }
@@ -813,7 +813,7 @@ params_list_head :
         if ($3) $3->toplevel(false);
         if ($1 && $3) {
           $1->push_back($3);
-          if ($3->ti()->type().any() && $3->ti()->domain() == nullptr) {
+          if (Expression::type($3->ti()).any() && $3->ti()->domain() == nullptr) {
             // This is an any type, not allowed in parameter list
             yyerror(&@3, parm, "parameter declaration cannot have `any' type-inst without type-inst variable");
           }
@@ -834,7 +834,7 @@ ti_expr_and_id :
       { if ($1 && $3) {
           Id* ident = new Id(@3, $3, nullptr);
           $$ = new VarDecl(@$, $1, ident);
-          if ($4) $$->ann().add(*$4);
+          if ($4) Expression::ann($$).add(*$4);
         }
         free($3);
         delete $4;
@@ -876,7 +876,7 @@ ti_expr :
     | ti_expr MZN_PLUSPLUS base_ti_expr
       {
         $$ = $1;
-        Type tt = $$->type();
+        Type tt = Expression::type($$);
         tt.dim(0);
         TypeInst* lhs = new TypeInst(@$, tt, $1->domain());
         BinOp* bop = new BinOp(@$, lhs, BOT_PLUSPLUS, $3);
@@ -891,7 +891,7 @@ base_ti_expr :
     | MZN_OPT base_ti_expr_tail
       { $$ = $2;
         if ($$) {
-          Type tt = $$->type();
+          Type tt = Expression::type($$);
           tt.ot(Type::OT_OPTIONAL);
           tt.otExplicit(true);
           $$->type(tt);
@@ -900,7 +900,7 @@ base_ti_expr :
     | MZN_PAR opt_opt base_ti_expr_tail
       { $$ = $3;
         if ($$) {
-          Type tt = $$->type();
+          Type tt = Expression::type($$);
           tt.tiExplicit(true);
           if ($2) {
             tt.ot(Type::OT_OPTIONAL);
@@ -911,7 +911,7 @@ base_ti_expr :
       }
     | MZN_VAR opt_opt base_ti_expr_tail
       { $$ = $3;
-        Type tt = $$->type();
+        Type tt = Expression::type($$);
         if ($$) {
           tt.ti(Type::TI_VAR);
           tt.tiExplicit(true);
@@ -925,7 +925,7 @@ base_ti_expr :
     | MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $3;
         if ($$) {
-          Type tt = $$->type();
+          Type tt = Expression::type($$);
           tt.st(Type::ST_SET);
           $$->type(tt);
         }
@@ -933,7 +933,7 @@ base_ti_expr :
     | MZN_OPT MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $4;
         if ($$) {
-          Type tt = $$->type();
+          Type tt = Expression::type($$);
           tt.st(Type::ST_SET);
           tt.ot(Type::OT_OPTIONAL);
           tt.otExplicit(true);
@@ -943,7 +943,7 @@ base_ti_expr :
     | MZN_PAR opt_opt MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $5;
         if ($$) {
-          Type tt = $$->type();
+          Type tt = Expression::type($$);
           tt.tiExplicit(true);
           tt.st(Type::ST_SET);
           if ($2) {
@@ -956,7 +956,7 @@ base_ti_expr :
     | MZN_VAR opt_opt MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $5;
         if ($$) {
-          Type tt = $$->type();
+          Type tt = Expression::type($$);
           tt.ti(Type::TI_VAR);
           tt.tiExplicit(true);
           tt.st(Type::ST_SET);
@@ -1054,7 +1054,7 @@ expr_list_head :
 set_expr :
       expr_atom_head
     | set_expr MZN_COLONCOLON annotation_expr
-      { if ($1 && $3) $1->addAnnotation($3); $$=$1; }
+      { if ($1 && $3) Expression::addAnnotation($1, $3); $$=$1; }
     | set_expr MZN_UNION set_expr
       { $$=new BinOp(@$, $1, BOT_UNION, $3); }
     | set_expr MZN_DIFF set_expr
@@ -1064,8 +1064,8 @@ set_expr :
     | set_expr MZN_DOTDOT set_expr
       { if ($1==nullptr || $3==nullptr) {
           $$ = nullptr;
-        } else if ($1->isa<IntLit>() && $3->isa<IntLit>()) {
-          $$=new SetLit(@$, IntSetVal::a($1->cast<IntLit>()->v(),$3->cast<IntLit>()->v()));
+        } else if (Expression::isa<IntLit>($1) && Expression::isa<IntLit>($3)) {
+          $$=new SetLit(@$, IntSetVal::a(IntLit::v(Expression::cast<IntLit>($1)),IntLit::v(Expression::cast<IntLit>($3))));
         } else {
           $$=new BinOp(@$, $1, BOT_DOTDOT, $3);
         }
@@ -1101,8 +1101,8 @@ set_expr :
     | MZN_DOTDOT_QUOTED '(' expr ',' expr ')'
       { if ($3==nullptr || $5==nullptr) {
           $$ = nullptr;
-        } else if ($3->isa<IntLit>() && $5->isa<IntLit>()) {
-          $$=new SetLit(@$, IntSetVal::a($3->cast<IntLit>()->v(),$5->cast<IntLit>()->v()));
+        } else if (Expression::isa<IntLit>($3) && Expression::isa<IntLit>($5)) {
+          $$=new SetLit(@$, IntSetVal::a(IntLit::v(Expression::cast<IntLit>($3)),IntLit::v(Expression::cast<IntLit>($5))));
         } else {
           $$=new BinOp(@$, $3, BOT_DOTDOT, $5);
         }
@@ -1181,10 +1181,10 @@ set_expr :
     | MZN_PLUS set_expr %prec MZN_NOT
       { $$=new UnOp(@$, UOT_PLUS, $2); }
     | MZN_MINUS set_expr %prec MZN_NOT
-      { if ($2 && $2->isa<IntLit>()) {
-          $$ = IntLit::a(-$2->cast<IntLit>()->v());
-        } else if ($2 && $2->isa<FloatLit>()) {
-          $$ = FloatLit::a(-$2->cast<FloatLit>()->v());
+      { if ($2 && Expression::isa<IntLit>($2)) {
+          $$ = IntLit::a(-IntLit::v(Expression::cast<IntLit>($2)));
+        } else if ($2 && Expression::isa<FloatLit>($2)) {
+          $$ = FloatLit::a(-FloatLit::v(Expression::cast<FloatLit>($2)));
         } else {
           $$=new UnOp(@$, UOT_MINUS, $2);
         }
@@ -1195,7 +1195,7 @@ set_expr :
 expr :
       expr_atom_head
     | expr MZN_COLONCOLON annotation_expr
-      { if ($1 && $3) $1->addAnnotation($3); $$=$1; }
+      { if ($1 && $3) Expression::addAnnotation($1, $3); $$=$1; }
     | expr MZN_EQUIV expr
       { $$=new BinOp(@$, $1, BOT_EQUIV, $3); }
     | expr MZN_IMPL expr
@@ -1235,8 +1235,8 @@ expr :
     | expr MZN_DOTDOT expr
       { if ($1==nullptr || $3==nullptr) {
           $$ = nullptr;
-        } else if ($1->isa<IntLit>() && $3->isa<IntLit>()) {
-          $$=new SetLit(@$, IntSetVal::a($1->cast<IntLit>()->v(),$3->cast<IntLit>()->v()));
+        } else if (Expression::isa<IntLit>($1) && Expression::isa<IntLit>($3)) {
+          $$=new SetLit(@$, IntSetVal::a(IntLit::v(Expression::cast<IntLit>($1)),IntLit::v(Expression::cast<IntLit>($3))));
         } else {
           $$=new BinOp(@$, $1, BOT_DOTDOT, $3);
         }
@@ -1272,8 +1272,8 @@ expr :
     | MZN_DOTDOT_QUOTED '(' expr ',' expr ')'
       { if ($3==nullptr || $5==nullptr) {
           $$ = nullptr;
-        } else if ($3->isa<IntLit>() && $5->isa<IntLit>()) {
-          $$=new SetLit(@$, IntSetVal::a($3->cast<IntLit>()->v(),$5->cast<IntLit>()->v()));
+        } else if (Expression::isa<IntLit>($3) && Expression::isa<IntLit>($5)) {
+          $$=new SetLit(@$, IntSetVal::a(IntLit::v(Expression::cast<IntLit>($3)),IntLit::v(Expression::cast<IntLit>($5))));
         } else {
           $$=new BinOp(@$, $3, BOT_DOTDOT, $5);
         }
@@ -1353,17 +1353,17 @@ expr :
     | MZN_NOT expr %prec MZN_NOT
       { $$=new UnOp(@$, UOT_NOT, $2); }
     | MZN_PLUS expr %prec MZN_NOT
-      { if (($2 && $2->isa<IntLit>()) || ($2 && $2->isa<FloatLit>())) {
+      { if (($2 && Expression::isa<IntLit>($2)) || ($2 && Expression::isa<FloatLit>($2))) {
           $$ = $2;
         } else {
           $$=new UnOp(@$, UOT_PLUS, $2);
         }
       }
     | MZN_MINUS expr %prec MZN_NOT
-      { if ($2 && $2->isa<IntLit>()) {
-          $$ = IntLit::a(-$2->cast<IntLit>()->v());
-        } else if ($2 && $2->isa<FloatLit>()) {
-          $$ = FloatLit::a(-$2->cast<FloatLit>()->v());
+      { if ($2 && Expression::isa<IntLit>($2)) {
+          $$ = IntLit::a(-IntLit::v(Expression::cast<IntLit>($2)));
+        } else if ($2 && Expression::isa<FloatLit>($2)) {
+          $$ = FloatLit::a(-FloatLit::v(Expression::cast<FloatLit>($2)));
         } else {
           $$=new UnOp(@$, UOT_MINUS, $2);
         }
@@ -1591,7 +1591,7 @@ record_literal :
       '(' record_field_list_head comma_or_none ')'
       {
         $$ = ArrayLit::constructTuple(@$, *$2);
-        $$->type(Type::record());
+        Expression::type($$, Type::record());
         delete($2);
       }
   
@@ -1671,11 +1671,11 @@ simple_array_literal :
           if ($2->first.empty()) {
             $$=new ArrayLit(@$, $2->second);
           } else {
-            const auto* tuple = $2->first[0]->dynamicCast<ArrayLit>();
+            const auto* tuple = Expression::dynamicCast<ArrayLit>($2->first[0]);
             if (tuple) {
               std::vector<std::vector<Expression*>> dims(tuple->size());
               for (const auto* t : $2->first) {
-                if ( (tuple = t->dynamicCast<ArrayLit>()) != nullptr ) {
+                if ( (tuple = Expression::dynamicCast<ArrayLit>(t)) != nullptr ) {
                   if (tuple->size() == dims.size()) {
                     for (unsigned int i = 0; i < dims.size(); i++) {
                       dims[i].push_back((*tuple)[i]);
@@ -1701,7 +1701,7 @@ simple_array_literal :
               }
             } else {
               for (const auto* t : $2->first) {
-                if (t->isa<ArrayLit>()) {
+                if (Expression::isa<ArrayLit>(t)) {
                   yyerror(&@2, parm, "syntax error, non-uniform indexed array literal");
                 }
               }
@@ -1958,8 +1958,8 @@ comp_expr_list_head :
           if ($$->first.size() != $$->second.size()) {
             yyerror(&@$,parm,"invalid array literal, mixing indexed and non-indexed values");
             $$ = nullptr;
-          } else if ($3->isa<ArrayLit>() && $3->cast<ArrayLit>()->isTuple() && $3->cast<ArrayLit>()->size() == 1) {
-            $$->first.push_back((*$3->cast<ArrayLit>())[0]);
+          } else if (Expression::isa<ArrayLit>($3) && Expression::cast<ArrayLit>($3)->isTuple() && Expression::cast<ArrayLit>($3)->size() == 1) {
+            $$->first.push_back((*Expression::cast<ArrayLit>($3))[0]);
             $$->second.push_back($5);
             delete $3;
           } else {
@@ -2085,12 +2085,12 @@ quoted_op_call :
         if (uot==-1)
           $$=nullptr;
         else {
-          if (uot==UOT_PLUS && $3 && ($3->isa<IntLit>() || $3->isa<FloatLit>())) {
+          if (uot==UOT_PLUS && $3 && (Expression::isa<IntLit>($3) || Expression::isa<FloatLit>($3))) {
             $$ = $3;
-          } else if (uot==UOT_MINUS && $3 && $3->isa<IntLit>()) {
-            $$ = IntLit::a(-$3->cast<IntLit>()->v());
-          } else if (uot==UOT_MINUS && $3 && $3->isa<FloatLit>()) {
-            $$ = FloatLit::a(-$3->cast<FloatLit>()->v());
+          } else if (uot==UOT_MINUS && $3 && Expression::isa<IntLit>($3)) {
+            $$ = IntLit::a(-IntLit::v(Expression::cast<IntLit>($3)));
+          } else if (uot==UOT_MINUS && $3 && Expression::isa<FloatLit>($3)) {
+            $$ = FloatLit::a(-FloatLit::v(Expression::cast<FloatLit>($3)));
           } else {
             $$=new UnOp(@$, static_cast<UnOpType>(uot),$3);
           }
@@ -2131,7 +2131,7 @@ call_expr :
           for (unsigned int i=0; i<$3->size(); i++) {
             if (Id* id = Expression::dynamicCast<Id>((*$3)[i].first)) {
               if ((*$3)[i].second) {
-                ParserLocation loc = (*$3)[i].second->loc().parserLocation();
+                ParserLocation loc = Expression::loc((*$3)[i].second).parserLocation();
                 yyerror(&loc, parm, "illegal where expression in generator call");
               }
               ids.push_back(id);
@@ -2151,12 +2151,12 @@ call_expr :
                     }
                     ids = vector<Id*>();
                   } else {
-                    ParserLocation loc = (*$3)[i].first->loc().parserLocation();
+                    ParserLocation loc = Expression::loc((*$3)[i].first).parserLocation();
                     yyerror(&loc, parm, "illegal expression in generator call");
                   }
                 }
               } else {
-                ParserLocation loc = (*$3)[i].first->loc().parserLocation();
+                ParserLocation loc = Expression::loc((*$3)[i].first).parserLocation();
                 yyerror(&loc, parm, "illegal expression in generator call");
               }
             }
@@ -2205,7 +2205,7 @@ call_expr :
           for (unsigned int i=0; i<$4->size(); i++) {
             if (Id* id = Expression::dynamicCast<Id>((*$4)[i].first)) {
               if ((*$4)[i].second) {
-                ParserLocation loc = (*$4)[i].second->loc().parserLocation();
+                ParserLocation loc = Expression::loc((*$4)[i].second).parserLocation();
                 yyerror(&loc, parm, "illegal where expression in generator call");
               }
               ids.push_back(id);
@@ -2225,12 +2225,12 @@ call_expr :
                     }
                     ids = vector<Id*>();
                   } else {
-                    ParserLocation loc = (*$4)[i].first->loc().parserLocation();
+                    ParserLocation loc = Expression::loc((*$4)[i].first).parserLocation();
                     yyerror(&loc, parm, "illegal expression in generator call");
                   }
                 }
               } else {
-                ParserLocation loc = (*$4)[i].first->loc().parserLocation();
+                ParserLocation loc = Expression::loc((*$4)[i].first).parserLocation();
                 yyerror(&loc, parm, "illegal expression in generator call");
               }
             }
@@ -2317,7 +2317,7 @@ comma_or_semi : ',' | ';'
 let_vardecl_item :
       ti_expr_and_id
       { $$ = $1;
-        if ($1 && $1->ti()->type().any() && $1->ti()->domain() == nullptr) {
+        if ($1 && Expression::type($1->ti()).any() && $1->ti()->domain() == nullptr) {
           // This is an any type, not allowed without a right hand side
           yyerror(&@1, parm, "declarations with `any' type-inst require definition");
         }
@@ -2328,7 +2328,7 @@ let_vardecl_item :
           $1->e($3);
         }
         $$ = $1;
-        if ($$) $$->loc(@$);
+        if ($$) Expression::loc($$, @$);
         if ($$) $$->toplevel(false);
       }
 

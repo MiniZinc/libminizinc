@@ -45,10 +45,10 @@ void check_par_domain(EnvI& env, VarDecl* vd, Expression* rhs, bool isArg) {
   while (!todo.empty()) {
     auto it = todo.back();
     todo.pop_back();
-    if (it.ti->domain() == nullptr || it.ti->domain()->isa<TIId>()) {
+    if (it.ti->domain() == nullptr || Expression::isa<TIId>(it.ti->domain())) {
       continue;
     }
-    if (it.e->type().dim() > 0) {
+    if (Expression::type(it.e).dim() > 0) {
       ArrayLit* al = eval_array_lit(env, it.e);
       unsigned int enumId = it.ti->type().typeId();
       for (unsigned int i = 0; i < al->size(); i++) {
@@ -81,18 +81,18 @@ void check_par_domain(EnvI& env, VarDecl* vd, Expression* rhs, bool isArg) {
         }
         todo.emplace_back(access, (*al)[i], it.ti);
       }
-    } else if (it.e->type().istuple()) {
-      auto* domains = it.ti->domain()->cast<ArrayLit>();
+    } else if (Expression::type(it.e).istuple()) {
+      auto* domains = Expression::cast<ArrayLit>(it.ti->domain());
       auto* al = eval_array_lit(env, it.e);
       for (unsigned int i = 0; i < al->size(); i++) {
         auto* access = hadError
                            ? new FieldAccess(Location().introduce(), it.accessor, IntLit::a(i + 1))
                            : nullptr;
-        todo.emplace_back(access, (*al)[i], (*domains)[i]->cast<TypeInst>());
+        todo.emplace_back(access, (*al)[i], Expression::cast<TypeInst>((*domains)[i]));
       }
-    } else if (it.e->type().isrecord()) {
-      RecordType* rt = env.getRecordType(it.e->type());
-      auto* domains = it.ti->domain()->cast<ArrayLit>();
+    } else if (Expression::type(it.e).isrecord()) {
+      RecordType* rt = env.getRecordType(Expression::type(it.e));
+      auto* domains = Expression::cast<ArrayLit>(it.ti->domain());
       auto* al = eval_array_lit(env, it.e);
       for (unsigned int i = 0; i < al->size(); i++) {
         Expression* access = nullptr;
@@ -101,19 +101,19 @@ void check_par_domain(EnvI& env, VarDecl* vd, Expression* rhs, bool isArg) {
               new Id(Location().introduce(), rt->fieldName(static_cast<size_t>(i)), nullptr);
           access = new FieldAccess(Location().introduce(), it.accessor, field);
         }
-        todo.emplace_back(access, (*al)[i], (*domains)[i]->cast<TypeInst>());
+        todo.emplace_back(access, (*al)[i], Expression::cast<TypeInst>((*domains)[i]));
       }
-    } else if (it.e->type() == Type::parint()) {
+    } else if (Expression::type(it.e) == Type::parint()) {
       IntSetVal* isv = eval_intset(env, it.ti->domain());
       IntVal v = eval_int(env, it.e);
       if (!isv->contains(v)) {
         if (it.accessor != nullptr) {
-          auto enumId = it.ti->domain()->type().typeId();
+          auto enumId = Expression::type(it.ti->domain()).typeId();
           std::ostringstream oss;
           oss << (isArg ? "argument" : "parameter") << " value out of range: ";
           oss << "declared domain of `" << *it.accessor << "' is " << env.show(isv, enumId) << ", ";
           oss << "but assigned value is " << env.show(v, enumId);
-          throw ResultUndefinedError(env, rhs->loc(), oss.str());
+          throw ResultUndefinedError(env, Expression::loc(rhs), oss.str());
         }
         hadError = true;
         todo.clear();
@@ -122,7 +122,7 @@ void check_par_domain(EnvI& env, VarDecl* vd, Expression* rhs, bool isArg) {
                     : new Id(Location().introduce(), env.constants.ids.unnamedArgument, nullptr);
         todo.emplace_back(ident, rhs, vd->ti());
       }
-    } else if (it.e->type() == Type::parfloat()) {
+    } else if (Expression::type(it.e) == Type::parfloat()) {
       FloatSetVal* fsv = eval_floatset(env, it.ti->domain());
       FloatVal v = eval_float(env, it.e);
       if (!fsv->contains(v)) {
@@ -131,7 +131,7 @@ void check_par_domain(EnvI& env, VarDecl* vd, Expression* rhs, bool isArg) {
           oss << (isArg ? "argument" : "parameter") << " value out of range: ";
           oss << "declared domain of `" << *it.accessor << "' is " << *fsv << ", ";
           oss << "but assigned value is " << v;
-          throw ResultUndefinedError(env, rhs->loc(), oss.str());
+          throw ResultUndefinedError(env, Expression::loc(rhs), oss.str());
         }
         hadError = true;
         todo.clear();
@@ -140,19 +140,19 @@ void check_par_domain(EnvI& env, VarDecl* vd, Expression* rhs, bool isArg) {
                     : new Id(Location().introduce(), env.constants.ids.unnamedArgument, nullptr);
         todo.emplace_back(ident, rhs, vd->ti());
       }
-    } else if (it.e->type() == Type::parsetint()) {
+    } else if (Expression::type(it.e) == Type::parsetint()) {
       IntSetVal* isv = eval_intset(env, it.ti->domain());
       IntSetRanges ir(isv);
       IntSetVal* rsv = eval_intset(env, it.e);
       IntSetRanges rr(rsv);
       if (!Ranges::subset(rr, ir)) {
         if (it.accessor != nullptr) {
-          auto enumId = it.ti->domain()->type().typeId();
+          auto enumId = Expression::type(it.ti->domain()).typeId();
           std::ostringstream oss;
           oss << (isArg ? "argument" : "parameter") << " value out of range: ";
           oss << "declared domain of `" << *it.accessor << "' is " << env.show(isv, enumId) << ", ";
           oss << "but assigned value is " << env.show(rsv, enumId);
-          throw ResultUndefinedError(env, rhs->loc(), oss.str());
+          throw ResultUndefinedError(env, Expression::loc(rhs), oss.str());
         }
         hadError = true;
         todo.clear();
@@ -161,7 +161,7 @@ void check_par_domain(EnvI& env, VarDecl* vd, Expression* rhs, bool isArg) {
                     : new Id(Location().introduce(), env.constants.ids.unnamedArgument, nullptr);
         todo.emplace_back(ident, rhs, vd->ti());
       }
-    } else if (it.e->type() == Type::parsetfloat()) {
+    } else if (Expression::type(it.e) == Type::parsetfloat()) {
       FloatSetVal* fsv = eval_floatset(env, it.ti->domain());
       FloatSetRanges fr(fsv);
       FloatSetVal* rsv = eval_floatset(env, it.e);
@@ -172,7 +172,7 @@ void check_par_domain(EnvI& env, VarDecl* vd, Expression* rhs, bool isArg) {
           oss << (isArg ? "argument" : "parameter") << " value out of range: ";
           oss << "declared domain of `" << *it.accessor << "' is " << *fsv << ", ";
           oss << "but assigned value is " << *rsv;
-          throw ResultUndefinedError(env, rhs->loc(), oss.str());
+          throw ResultUndefinedError(env, Expression::loc(rhs), oss.str());
         }
         hadError = true;
         todo.clear();
@@ -197,16 +197,16 @@ void check_struct_retval(EnvI& env, Expression* v, FunctionI* fi) {
     auto entry = todo.back();
     todo.pop_back();
 
-    if (entry.first->type().dim() > 0) {
+    if (Expression::type(entry.first).dim() > 0) {
       auto* al = eval_array_lit(env, entry.first);
       for (unsigned int i = 0; i < entry.second->ranges().size(); i++) {
         if ((entry.second->ranges()[i]->domain() != nullptr) &&
-            !entry.second->ranges()[i]->domain()->isa<TIId>()) {
+            !Expression::isa<TIId>(entry.second->ranges()[i]->domain())) {
           IntSetVal* isv = eval_intset(env, entry.second->ranges()[i]->domain());
           bool bothEmpty = isv->empty() && al->min(i) > al->max(i);
           if (!bothEmpty && !isv->empty() &&
               (al->min(i) != isv->min() || al->max(i) != isv->max())) {
-            throw ResultUndefinedError(env, fi->e()->loc(),
+            throw ResultUndefinedError(env, Expression::loc(fi->e()),
                                        "function result violates function type-inst");
           }
         }
@@ -217,49 +217,49 @@ void check_struct_retval(EnvI& env, Expression* v, FunctionI* fi) {
       continue;
     }
 
-    if (entry.second->domain() == nullptr || entry.second->domain()->isa<TIId>()) {
+    if (entry.second->domain() == nullptr || Expression::isa<TIId>(entry.second->domain())) {
       continue;
     }
 
-    if (entry.first->type().structBT()) {
+    if (Expression::type(entry.first).structBT()) {
       auto* domains = eval_array_lit(env, entry.second->domain());
       auto* al = eval_array_lit(env, entry.first);
       for (unsigned int i = 0; i < al->size(); i++) {
-        todo.emplace_back((*al)[i], (*domains)[i]->cast<TypeInst>());
+        todo.emplace_back((*al)[i], Expression::cast<TypeInst>((*domains)[i]));
       }
       continue;
     }
 
-    if (entry.first->type() == Type::parint()) {
+    if (Expression::type(entry.first) == Type::parint()) {
       IntSetVal* isv = eval_intset(env, entry.second->domain());
       IntVal v = eval_int(env, entry.first);
       if (!isv->contains(v)) {
-        throw ResultUndefinedError(env, fi->e()->loc(),
+        throw ResultUndefinedError(env, Expression::loc(fi->e()),
                                    "function result violates function type-inst");
       }
-    } else if (entry.first->type() == Type::parfloat()) {
+    } else if (Expression::type(entry.first) == Type::parfloat()) {
       FloatSetVal* fsv = eval_floatset(env, entry.second->domain());
       FloatVal v = eval_float(env, entry.first);
       if (!fsv->contains(v)) {
-        throw ResultUndefinedError(env, fi->e()->loc(),
+        throw ResultUndefinedError(env, Expression::loc(fi->e()),
                                    "function result violates function type-inst");
       }
-    } else if (entry.first->type() == Type::parsetint()) {
+    } else if (Expression::type(entry.first) == Type::parsetint()) {
       IntSetVal* isv = eval_intset(env, entry.second->domain());
       IntSetRanges ir(isv);
       IntSetVal* rsv = eval_intset(env, entry.first);
       IntSetRanges rr(rsv);
       if (!Ranges::subset(rr, ir)) {
-        throw ResultUndefinedError(env, fi->e()->loc(),
+        throw ResultUndefinedError(env, Expression::loc(fi->e()),
                                    "function result violates function type-inst");
       }
-    } else if (entry.first->type() == Type::parsetfloat()) {
+    } else if (Expression::type(entry.first) == Type::parsetfloat()) {
       FloatSetVal* fsv = eval_floatset(env, entry.second->domain());
       FloatSetRanges fr(fsv);
       FloatSetVal* rsv = eval_floatset(env, entry.first);
       FloatSetRanges rr(rsv);
       if (!Ranges::subset(rr, fr)) {
-        throw ResultUndefinedError(env, fi->e()->loc(),
+        throw ResultUndefinedError(env, Expression::loc(fi->e()),
                                    "function result violates function type-inst");
       }
     }
@@ -306,10 +306,10 @@ ArrayLit* eval_record_merge(EnvI& env, ArrayLit* lhs, ArrayLit* rhs) {
 
 template <class E>
 typename E::Val eval_id(EnvI& env, Expression* e) {
-  Id* id = e->cast<Id>();
+  Id* id = Expression::cast<Id>(e);
   if (!id->decl()) {
     GCLock lock;
-    throw EvalError(env, e->loc(), "undeclared identifier", id->str());
+    throw EvalError(env, Expression::loc(e), "undeclared identifier", id->str());
   }
   VarDecl* vd = id->decl();
   while (vd->flat() && vd->flat() != vd) {
@@ -317,10 +317,11 @@ typename E::Val eval_id(EnvI& env, Expression* e) {
   }
   if (!vd->e()) {
     GCLock lock;
-    throw EvalError(env, vd->loc(), "cannot evaluate expression", id->str());
+    throw EvalError(env, Expression::loc(vd), "cannot evaluate expression", id->str());
   }
   typename E::Val r = E::e(env, vd->e());
-  if (!vd->evaluated() && (vd->toplevel() || (!vd->e()->isa<Id>() && vd->type().dim() > 0))) {
+  if (!vd->evaluated() &&
+      (vd->toplevel() || (!Expression::isa<Id>(vd->e()) && vd->type().dim() > 0))) {
     Expression* ne = E::exp(r);
     vd->e(ne);
     vd->evaluated(true);
@@ -330,7 +331,7 @@ typename E::Val eval_id(EnvI& env, Expression* e) {
 
 bool EvalBase::evalBoolCV(EnvI& env, Expression* e) {
   GCLock lock;
-  if (e->type().cv()) {
+  if (Expression::type(e).cv()) {
     return eval_bool(env, flat_cv_exp(env, Ctx(), e)());
   }
   return eval_bool(env, e);
@@ -340,7 +341,7 @@ KeepAlive EvalBase::flattenCV(EnvI& env, Expression* e) {
   GCLock lock;
   Ctx ctx;
   ctx.i = C_MIX;
-  ctx.b = (e->type().bt() == Type::BT_BOOL) ? C_MIX : C_ROOT;
+  ctx.b = (Expression::type(e).bt() == Type::BT_BOOL) ? C_MIX : C_ROOT;
   EE ee = flat_exp(env, ctx, e, nullptr, env.constants.varTrue);
   return ee.r;
 }
@@ -359,7 +360,7 @@ public:
   static IntVal e(EnvI& env, Expression* e) { return eval_int(env, e); }
   static Expression* exp(IntVal e) { return IntLit::a(e); }
   static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {
-    if ((fi->ti()->domain() != nullptr) && !fi->ti()->domain()->isa<TIId>()) {
+    if ((fi->ti()->domain() != nullptr) && !Expression::isa<TIId>(fi->ti()->domain())) {
       IntSetVal* isv = eval_intset(env, fi->ti()->domain());
       if (!isv->contains(v)) {
         std::ostringstream oss;
@@ -378,7 +379,7 @@ public:
   static FloatVal e(EnvI& env, Expression* e) { return eval_float(env, e); }
   static Expression* exp(FloatVal e) { return FloatLit::a(e); }
   static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {
-    if ((fi->ti()->domain() != nullptr) && !fi->ti()->domain()->isa<TIId>()) {
+    if ((fi->ti()->domain() != nullptr) && !Expression::isa<TIId>(fi->ti()->domain())) {
       FloatSetVal* fsv = eval_floatset(env, fi->ti()->domain());
       if (!fsv->contains(v)) {
         std::ostringstream oss;
@@ -439,28 +440,28 @@ public:
   typedef ArrayLit* Val;
   typedef Expression* ArrayVal;
   static ArrayLit* e(EnvI& env, Expression* e) {
-    return copy(env, eval_array_lit(env, e), true)->cast<ArrayLit>();
+    return Expression::cast<ArrayLit>(copy(env, eval_array_lit(env, e), true));
   }
   static Expression* exp(Expression* e) { return e; }
   static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {
     for (unsigned int i = 0; i < fi->ti()->ranges().size(); i++) {
       if ((fi->ti()->ranges()[i]->domain() != nullptr) &&
-          !fi->ti()->ranges()[i]->domain()->isa<TIId>()) {
+          !Expression::isa<TIId>(fi->ti()->ranges()[i]->domain())) {
         IntSetVal* isv = eval_intset(env, fi->ti()->ranges()[i]->domain());
         bool bothEmpty = isv->empty() && v->min(i) > v->max(i);
         if (!bothEmpty && !isv->empty() && (v->min(i) != isv->min() || v->max(i) != isv->max())) {
           std::ostringstream oss;
           oss << "array index set " << (i + 1) << " of function result violates function type-inst";
-          throw ResultUndefinedError(env, fi->e()->loc(), oss.str());
+          throw ResultUndefinedError(env, Expression::loc(fi->e()), oss.str());
         }
       }
     }
-    if ((fi->ti()->domain() != nullptr) && !fi->ti()->domain()->isa<TIId>() &&
+    if ((fi->ti()->domain() != nullptr) && !Expression::isa<TIId>(fi->ti()->domain()) &&
         fi->ti()->type().ti() == Type::TI_PAR) {
       Type base_t = fi->ti()->type();
       if (base_t.bt() == Type::BT_INT) {
         IntSetVal* isv = eval_intset(env, fi->ti()->domain());
-        auto enumId = fi->ti()->domain()->type().typeId();
+        auto enumId = Expression::type(fi->ti()->domain()).typeId();
         if (base_t.st() == Type::ST_PLAIN) {
           for (unsigned int i = 0; i < v->size(); i++) {
             if ((*v)[i] == env.constants.absent) {
@@ -472,7 +473,8 @@ public:
               oss << "array contains value " << env.show(iv, enumId)
                   << " which is not contained in " << env.show(isv, enumId);
               throw ResultUndefinedError(
-                  env, fi->e()->loc(), "function result violates function type-inst, " + oss.str());
+                  env, Expression::loc(fi->e()),
+                  "function result violates function type-inst, " + oss.str());
             }
           }
         } else {
@@ -485,7 +487,8 @@ public:
               oss << "array contains value " << env.show(iv, enumId) << " which is not a subset of "
                   << env.show(isv, enumId);
               throw ResultUndefinedError(
-                  env, fi->e()->loc(), "function result violates function type-inst, " + oss.str());
+                  env, Expression::loc(fi->e()),
+                  "function result violates function type-inst, " + oss.str());
             }
           }
         }
@@ -501,7 +504,8 @@ public:
               std::ostringstream oss;
               oss << "array contains value " << fv << " which is not contained in " << *fsv;
               throw ResultUndefinedError(
-                  env, fi->e()->loc(), "function result violates function type-inst, " + oss.str());
+                  env, Expression::loc(fi->e()),
+                  "function result violates function type-inst, " + oss.str());
             }
           }
         } else {
@@ -513,7 +517,8 @@ public:
               std::ostringstream oss;
               oss << "array contains value " << *fv << " which is not a subset of " << *fsv;
               throw ResultUndefinedError(
-                  env, fi->e()->loc(), "function result violates function type-inst, " + oss.str());
+                  env, Expression::loc(fi->e()),
+                  "function result violates function type-inst, " + oss.str());
             }
           }
         }
@@ -529,8 +534,8 @@ public:
   static IntSetVal* e(EnvI& env, Expression* e) { return eval_intset(env, e); }
   static Expression* exp(IntSetVal* e) { return new SetLit(Location(), e); }
   static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {
-    if ((fi->ti()->domain() != nullptr) && !fi->ti()->domain()->isa<TIId>()) {
-      auto enumId = fi->ti()->domain()->type().typeId();
+    if ((fi->ti()->domain() != nullptr) && !Expression::isa<TIId>(fi->ti()->domain())) {
+      auto enumId = Expression::type(fi->ti()->domain()).typeId();
       IntSetVal* isv = eval_intset(env, fi->ti()->domain());
       IntSetRanges isv_r(isv);
       IntSetRanges v_r(v);
@@ -550,7 +555,7 @@ public:
   static FloatSetVal* e(EnvI& env, Expression* e) { return eval_floatset(env, e); }
   static Expression* exp(FloatSetVal* e) { return new SetLit(Location(), e); }
   static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {
-    if ((fi->ti()->domain() != nullptr) && !fi->ti()->domain()->isa<TIId>()) {
+    if ((fi->ti()->domain() != nullptr) && !Expression::isa<TIId>(fi->ti()->domain())) {
       FloatSetVal* fsv = eval_floatset(env, fi->ti()->domain());
       FloatSetRanges fsv_r(fsv);
       FloatSetRanges v_r(v);
@@ -585,7 +590,9 @@ class EvalFloatSetLit : public EvalBase {
 public:
   typedef SetLit* Val;
   typedef Expression* ArrayVal;
-  static SetLit* e(EnvI& env, Expression* e) { return new SetLit(e->loc(), eval_floatset(env, e)); }
+  static SetLit* e(EnvI& env, Expression* e) {
+    return new SetLit(Expression::loc(e), eval_floatset(env, e));
+  }
   static Expression* exp(Expression* e) { return e; }
 };
 class EvalBoolSetLit : public EvalBase {
@@ -593,7 +600,7 @@ public:
   typedef SetLit* Val;
   typedef Expression* ArrayVal;
   static SetLit* e(EnvI& env, Expression* e) {
-    auto* sl = new SetLit(e->loc(), eval_boolset(env, e));
+    auto* sl = new SetLit(Expression::loc(e), eval_boolset(env, e));
     sl->type(Type::parsetbool());
     return sl;
   }
@@ -669,7 +676,7 @@ typename Eval::Val eval_call(EnvI& env, CallClass* ce) {
     check_index_sets(env, vd, params[i], true);
     vd->flat(vd);
     vd->e(params[i]);
-    if (vd->e()->type().isPar()) {
+    if (Expression::type(vd->e()).isPar()) {
       check_par_domain(env, vd, vd->e(), true);
     }
   }
@@ -679,15 +686,16 @@ typename Eval::Val eval_call(EnvI& env, CallClass* ce) {
 }
 
 Expression* eval_fieldaccess(EnvI& env, FieldAccess* fa) {
-  assert(fa->v()->type().istuple() || fa->v()->type().isrecord());  // TODO: Support for Records
-  auto* al = eval_array_lit(env, fa->v())->dynamicCast<ArrayLit>();
+  assert(Expression::type(fa->v()).istuple() ||
+         Expression::type(fa->v()).isrecord());  // TODO: Support for Records
+  auto* al = Expression::dynamicCast<ArrayLit>(eval_array_lit(env, fa->v()));
   if (al == nullptr) {
-    throw EvalError(env, fa->loc(), "Internal error: could not evaluate structural type");
+    throw EvalError(env, Expression::loc(fa), "Internal error: could not evaluate structural type");
   }
   IntVal i = eval_int(env, fa->field());
   if (i < 1 || i > al->size()) {
     // This should not happen, type checking should ensure all fields are valid.
-    throw EvalError(env, fa->loc(), "Internal error: accessing invalid field");
+    throw EvalError(env, Expression::loc(fa), "Internal error: accessing invalid field");
   }
   return (*al)[i.toInt() - 1];
 }
@@ -698,22 +706,22 @@ ArrayLit* eval_array_comp(EnvI& env, Comprehension* e) {
                            e->type().ot() == Type::OT_PRESENT;
   if (plainParNonAbsent && e->type().bt() == Type::BT_INT) {
     auto a = eval_comp<EvalIntLit>(env, e);
-    ret = new ArrayLit(e->loc(), a.a, a.dims);
+    ret = new ArrayLit(Expression::loc(e), a.a, a.dims);
   } else if (plainParNonAbsent && e->type().bt() == Type::BT_BOOL) {
     auto a = eval_comp<EvalBoolLit>(env, e);
-    ret = new ArrayLit(e->loc(), a.a, a.dims);
+    ret = new ArrayLit(Expression::loc(e), a.a, a.dims);
   } else if (plainParNonAbsent && e->type().bt() == Type::BT_FLOAT) {
     auto a = eval_comp<EvalFloatLit>(env, e);
-    ret = new ArrayLit(e->loc(), a.a, a.dims);
+    ret = new ArrayLit(Expression::loc(e), a.a, a.dims);
   } else if (e->type().st() == Type::ST_SET) {
     auto a = eval_comp<EvalSetLit>(env, e);
-    ret = new ArrayLit(e->loc(), a.a, a.dims);
+    ret = new ArrayLit(Expression::loc(e), a.a, a.dims);
   } else if (e->type().bt() == Type::BT_STRING) {
     auto a = eval_comp<EvalStringLit>(env, e);
-    ret = new ArrayLit(e->loc(), a.a, a.dims);
+    ret = new ArrayLit(Expression::loc(e), a.a, a.dims);
   } else {
     auto a = eval_comp<EvalCopy>(env, e);
-    ret = new ArrayLit(e->loc(), a.a, a.dims);
+    ret = new ArrayLit(Expression::loc(e), a.a, a.dims);
   }
   ret->type(e->type());
   return ret;
@@ -723,7 +731,7 @@ Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e);
 
 ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
   CallStackItem csi(env, e);
-  switch (e->eid()) {
+  switch (Expression::eid(e)) {
     case Expression::E_INTLIT:
     case Expression::E_FLOATLIT:
     case Expression::E_BOOLLIT:
@@ -733,26 +741,26 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
     case Expression::E_TI:
     case Expression::E_TIID:
     case Expression::E_VARDECL:
-      throw EvalError(env, e->loc(), "not an array expression");
+      throw EvalError(env, Expression::loc(e), "not an array expression");
     case Expression::E_ID:
       return eval_id<EvalArrayLit>(env, e);
     case Expression::E_ARRAYLIT:
-      return e->cast<ArrayLit>();
+      return Expression::cast<ArrayLit>(e);
     case Expression::E_ARRAYACCESS: {
-      if (!e->type().structBT()) {
-        throw EvalError(env, e->loc(), "arrays of arrays not supported");
+      if (!Expression::type(e).structBT()) {
+        throw EvalError(env, Expression::loc(e), "arrays of arrays not supported");
       }
       GCLock lock;
-      return eval_array_lit(env, eval_arrayaccess(env, e->cast<ArrayAccess>()));
+      return eval_array_lit(env, eval_arrayaccess(env, Expression::cast<ArrayAccess>(e)));
     }
     case Expression::E_FIELDACCESS: {
-      auto* fa = e->cast<FieldAccess>();
+      auto* fa = Expression::cast<FieldAccess>(e);
       return eval_array_lit(env, eval_fieldaccess(env, fa));
     }
     case Expression::E_COMP:
-      return eval_array_comp(env, e->cast<Comprehension>());
+      return eval_array_comp(env, Expression::cast<Comprehension>(e));
     case Expression::E_ITE: {
-      ITE* ite = e->cast<ITE>();
+      ITE* ite = Expression::cast<ITE>(e);
       for (int i = 0; i < ite->size(); i++) {
         if (eval_bool(env, ite->ifExpr(i))) {
           return eval_array_lit(env, ite->thenExpr(i));
@@ -761,7 +769,7 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
       return eval_array_lit(env, ite->elseExpr());
     }
     case Expression::E_BINOP: {
-      auto* bo = e->cast<BinOp>();
+      auto* bo = Expression::cast<BinOp>(e);
       if (bo->op() == BOT_PLUSPLUS) {
         ArrayLit* al0 = eval_array_lit(env, bo->lhs());
         ArrayLit* al1 = eval_array_lit(env, bo->rhs());
@@ -772,28 +780,28 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
         for (unsigned int i = al1->size(); (i--) != 0U;) {
           v[al0->size() + i] = (*al1)[i];
         }
-        auto* ret = new ArrayLit(e->loc(), v);
+        auto* ret = new ArrayLit(Expression::loc(e), v);
         ret->flat(al0->flat() && al1->flat());
-        ret->type(e->type());
+        ret->type(Expression::type(e));
         return ret;
       }
       if ((bo->decl() != nullptr) && (bo->decl()->e() != nullptr)) {
         return eval_call<EvalArrayLitCopy, BinOp>(env, bo);
       }
-      throw EvalError(env, e->loc(), "not an array expression", bo->opToString());
+      throw EvalError(env, Expression::loc(e), "not an array expression", bo->opToString());
 
     } break;
     case Expression::E_UNOP: {
-      UnOp* uo = e->cast<UnOp>();
+      UnOp* uo = Expression::cast<UnOp>(e);
       if ((uo->decl() != nullptr) && (uo->decl()->e() != nullptr)) {
         return eval_call<EvalArrayLitCopy, UnOp>(env, uo);
       }
-      throw EvalError(env, e->loc(), "not an array expression");
+      throw EvalError(env, Expression::loc(e), "not an array expression");
     }
     case Expression::E_CALL: {
-      Call* ce = e->cast<Call>();
+      Call* ce = Expression::cast<Call>(e);
       if (ce->decl() == nullptr) {
-        throw EvalError(env, e->loc(), "undeclared function", ce->id());
+        throw EvalError(env, Expression::loc(e), "undeclared function", ce->id());
       }
 
       if (ce->decl()->builtins.e != nullptr) {
@@ -803,17 +811,17 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
       if (ce->decl()->e() == nullptr) {
         std::ostringstream ss;
         ss << "internal error: missing builtin '" << ce->id() << "'";
-        throw EvalError(env, ce->loc(), ss.str());
+        throw EvalError(env, Expression::loc(ce), ss.str());
       }
 
       return eval_call<EvalArrayLitCopy>(env, ce);
     }
     case Expression::E_LET: {
-      Let* l = e->cast<Let>();
+      Let* l = Expression::cast<Let>(e);
       LetPushBindings lpb(l);
       for (unsigned int i = 0; i < l->let().size(); i++) {
         // Evaluate all variable declarations
-        if (auto* vdi = l->let()[i]->dynamicCast<VarDecl>()) {
+        if (auto* vdi = Expression::dynamicCast<VarDecl>(l->let()[i])) {
           vdi->e(eval_par(env, vdi->e()));
           check_par_declaration(env, vdi);
         } else {
@@ -821,12 +829,13 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
           // it can only be a par bool expression. If it evaluates
           // to false, it means that the value of this let is undefined.
           if (!eval_bool(env, l->let()[i])) {
-            throw ResultUndefinedError(env, l->let()[i]->loc(), "constraint in let failed");
+            throw ResultUndefinedError(env, Expression::loc(l->let()[i]),
+                                       "constraint in let failed");
           }
         }
       }
       ArrayLit* l_in = eval_array_lit(env, l->in());
-      auto* ret = copy(env, l_in, true)->cast<ArrayLit>();
+      auto* ret = Expression::cast<ArrayLit>(copy(env, l_in, true));
       ret->flat(l_in->flat());
       return ret;
     }
@@ -838,15 +847,15 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
 std::string ArrayAccessSucess::errorMessage(EnvI& env, Expression* e) const {
   std::ostringstream oss;
   oss << "array access out of bounds, ";
-  if (e->type().dim() > 1) {
+  if (Expression::type(e).dim() > 1) {
     oss << "dimension " << (dim + 1) << " of ";
   }
   oss << "array";
-  if (e->isa<Id>()) {
+  if (Expression::isa<Id>(e)) {
     oss << " `" << *e << "'";
   }
 
-  unsigned int enumId = e->type().typeId();
+  unsigned int enumId = Expression::type(e).typeId();
   if (enumId != 0) {
     const auto& enumIds = env.getArrayEnum(enumId);
     enumId = enumIds[dim];
@@ -901,7 +910,7 @@ Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e, ArrayAccessSucess& succe
   ArrayLit* al = eval_array_lit(env, e->v());
   if (e->type().isOpt()) {
     for (auto* idx : e->idx()) {
-      if (idx->type().isOpt() && eval_par(env, idx) == env.constants.absent) {
+      if (Expression::type(idx).isOpt() && eval_par(env, idx) == env.constants.absent) {
         return env.constants.absent;
       }
     }
@@ -921,43 +930,43 @@ Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e) {
   if (success()) {
     return ret;
   }
-  throw ResultUndefinedError(env, e->loc(), success.errorMessage(env, e->v()));
+  throw ResultUndefinedError(env, Expression::loc(e), success.errorMessage(env, e->v()));
 }
 
 SetLit* eval_set_lit(EnvI& env, Expression* e) {
-  switch (e->type().bt()) {
+  switch (Expression::type(e).bt()) {
     case Type::BT_INT:
     case Type::BT_BOT: {
-      auto* sl = new SetLit(e->loc(), eval_intset(env, e));
-      if (e->type().typeId() != 0) {
+      auto* sl = new SetLit(Expression::loc(e), eval_intset(env, e));
+      if (Expression::type(e).typeId() != 0) {
         Type t = sl->type();
-        t.typeId(e->type().typeId());
+        t.typeId(Expression::type(e).typeId());
         sl->type(t);
       }
       return sl;
     }
     case Type::BT_BOOL: {
-      auto* sl = new SetLit(e->loc(), eval_boolset(env, e));
+      auto* sl = new SetLit(Expression::loc(e), eval_boolset(env, e));
       sl->type(Type::parsetbool());
       return sl;
     }
     case Type::BT_FLOAT:
-      return new SetLit(e->loc(), eval_floatset(env, e));
+      return new SetLit(Expression::loc(e), eval_floatset(env, e));
     default:
       throw InternalError("invalid set literal type");
   }
 }
 
 IntSetVal* eval_intset(EnvI& env, Expression* e) {
-  if (auto* sl = e->dynamicCast<SetLit>()) {
+  if (auto* sl = Expression::dynamicCast<SetLit>(e)) {
     if (sl->isv() != nullptr) {
       return sl->isv();
     }
   }
   CallStackItem csi(env, e);
-  switch (e->eid()) {
+  switch (Expression::eid(e)) {
     case Expression::E_SETLIT: {
-      auto* sl = e->cast<SetLit>();
+      auto* sl = Expression::cast<SetLit>(e);
       std::vector<IntVal> vals;
       for (unsigned int i = 0; i < sl->v().size(); i++) {
         Expression* vi = eval_par(env, sl->v()[i]);
@@ -975,10 +984,10 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
     case Expression::E_TIID:
     case Expression::E_VARDECL:
     case Expression::E_TI:
-      throw EvalError(env, e->loc(), "not a set of int expression");
+      throw EvalError(env, Expression::loc(e), "not a set of int expression");
       break;
     case Expression::E_ARRAYLIT: {
-      auto* al = e->cast<ArrayLit>();
+      auto* al = Expression::cast<ArrayLit>(e);
       std::vector<IntVal> vals(al->size());
       for (unsigned int i = 0; i < al->size(); i++) {
         vals[i] = eval_int(env, (*al)[i]);
@@ -986,7 +995,7 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
       return IntSetVal::a(vals);
     } break;
     case Expression::E_COMP: {
-      auto* c = e->cast<Comprehension>();
+      auto* c = Expression::cast<Comprehension>(e);
       auto a = eval_comp<EvalIntVal>(env, c);
       return IntSetVal::a(a.a);
     }
@@ -996,13 +1005,13 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
     } break;
     case Expression::E_ARRAYACCESS: {
       GCLock lock;
-      return eval_intset(env, eval_arrayaccess(env, e->cast<ArrayAccess>()));
+      return eval_intset(env, eval_arrayaccess(env, Expression::cast<ArrayAccess>(e)));
     } break;
     case Expression::E_FIELDACCESS: {
-      return eval_intset(env, eval_fieldaccess(env, e->cast<FieldAccess>()));
+      return eval_intset(env, eval_fieldaccess(env, Expression::cast<FieldAccess>(e)));
     } break;
     case Expression::E_ITE: {
-      ITE* ite = e->cast<ITE>();
+      ITE* ite = Expression::cast<ITE>(e);
       for (int i = 0; i < ite->size(); i++) {
         if (eval_bool(env, ite->ifExpr(i))) {
           return eval_intset(env, ite->thenExpr(i));
@@ -1011,13 +1020,13 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
       return eval_intset(env, ite->elseExpr());
     } break;
     case Expression::E_BINOP: {
-      auto* bo = e->cast<BinOp>();
+      auto* bo = Expression::cast<BinOp>(e);
       if ((bo->decl() != nullptr) && (bo->decl()->e() != nullptr)) {
         return eval_call<EvalIntSet, BinOp>(env, bo);
       }
       Expression* lhs = eval_par(env, bo->lhs());
       Expression* rhs = eval_par(env, bo->rhs());
-      if (lhs->type().isIntSet() && rhs->type().isIntSet()) {
+      if (Expression::type(lhs).isIntSet() && Expression::type(rhs).isIntSet()) {
         IntSetVal* v0 = eval_intset(env, lhs);
         IntSetVal* v1 = eval_intset(env, rhs);
         IntSetRanges ir0(v0);
@@ -1044,28 +1053,29 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
             return IntSetVal::ai(u);
           }
           default:
-            throw EvalError(env, e->loc(), "not a set of int expression", bo->opToString());
+            throw EvalError(env, Expression::loc(e), "not a set of int expression",
+                            bo->opToString());
         }
-      } else if (lhs->type().isint() && rhs->type().isint()) {
+      } else if (Expression::type(lhs).isint() && Expression::type(rhs).isint()) {
         if (bo->op() != BOT_DOTDOT) {
-          throw EvalError(env, e->loc(), "not a set of int expression", bo->opToString());
+          throw EvalError(env, Expression::loc(e), "not a set of int expression", bo->opToString());
         }
         return IntSetVal::a(eval_int(env, lhs), eval_int(env, rhs));
       } else {
-        throw EvalError(env, e->loc(), "not a set of int expression", bo->opToString());
+        throw EvalError(env, Expression::loc(e), "not a set of int expression", bo->opToString());
       }
     } break;
     case Expression::E_UNOP: {
-      UnOp* uo = e->cast<UnOp>();
+      UnOp* uo = Expression::cast<UnOp>(e);
       if ((uo->decl() != nullptr) && (uo->decl()->e() != nullptr)) {
         return eval_call<EvalIntSet, UnOp>(env, uo);
       }
-      throw EvalError(env, e->loc(), "not a set of int expression");
+      throw EvalError(env, Expression::loc(e), "not a set of int expression");
     }
     case Expression::E_CALL: {
-      Call* ce = e->cast<Call>();
+      Call* ce = Expression::cast<Call>(e);
       if (ce->decl() == nullptr) {
-        throw EvalError(env, e->loc(), "undeclared function", ce->id());
+        throw EvalError(env, Expression::loc(e), "undeclared function", ce->id());
       }
 
       if (ce->decl()->builtins.s != nullptr) {
@@ -1079,17 +1089,17 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
       if (ce->decl()->e() == nullptr) {
         std::ostringstream ss;
         ss << "internal error: missing builtin '" << ce->id() << "'";
-        throw EvalError(env, ce->loc(), ss.str());
+        throw EvalError(env, Expression::loc(ce), ss.str());
       }
 
       return eval_call<EvalIntSet>(env, ce);
     } break;
     case Expression::E_LET: {
-      Let* l = e->cast<Let>();
+      Let* l = Expression::cast<Let>(e);
       LetPushBindings lpb(l);
       for (unsigned int i = 0; i < l->let().size(); i++) {
         // Evaluate all variable declarations
-        if (auto* vdi = l->let()[i]->dynamicCast<VarDecl>()) {
+        if (auto* vdi = Expression::dynamicCast<VarDecl>(l->let()[i])) {
           vdi->e(eval_par(env, vdi->e()));
           check_par_declaration(env, vdi);
         } else {
@@ -1097,7 +1107,8 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
           // it can only be a par bool expression. If it evaluates
           // to false, it means that the value of this let is undefined.
           if (!eval_bool(env, l->let()[i])) {
-            throw ResultUndefinedError(env, l->let()[i]->loc(), "constraint in let failed");
+            throw ResultUndefinedError(env, Expression::loc(l->let()[i]),
+                                       "constraint in let failed");
           }
         }
       }
@@ -1111,7 +1122,7 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
 }
 
 FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
-  if (auto* sl = e->dynamicCast<SetLit>()) {
+  if (auto* sl = Expression::dynamicCast<SetLit>(e)) {
     if (sl->fsv() != nullptr) {
       return sl->fsv();
     }
@@ -1121,9 +1132,9 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
     }
   }
   CallStackItem csi(env, e);
-  switch (e->eid()) {
+  switch (Expression::eid(e)) {
     case Expression::E_SETLIT: {
-      auto* sl = e->cast<SetLit>();
+      auto* sl = Expression::cast<SetLit>(e);
       std::vector<FloatVal> vals;
       for (unsigned int i = 0; i < sl->v().size(); i++) {
         Expression* vi = eval_par(env, sl->v()[i]);
@@ -1141,10 +1152,10 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
     case Expression::E_TIID:
     case Expression::E_VARDECL:
     case Expression::E_TI:
-      throw EvalError(env, e->loc(), "not a set of float expression");
+      throw EvalError(env, Expression::loc(e), "not a set of float expression");
       break;
     case Expression::E_ARRAYLIT: {
-      auto* al = e->cast<ArrayLit>();
+      auto* al = Expression::cast<ArrayLit>(e);
       std::vector<FloatVal> vals(al->size());
       for (unsigned int i = 0; i < al->size(); i++) {
         vals[i] = eval_float(env, (*al)[i]);
@@ -1152,7 +1163,7 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
       return FloatSetVal::a(vals);
     } break;
     case Expression::E_COMP: {
-      auto* c = e->cast<Comprehension>();
+      auto* c = Expression::cast<Comprehension>(e);
       auto a = eval_comp<EvalFloatVal>(env, c);
       return FloatSetVal::a(a.a);
     }
@@ -1162,13 +1173,13 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
     } break;
     case Expression::E_ARRAYACCESS: {
       GCLock lock;
-      return eval_floatset(env, eval_arrayaccess(env, e->cast<ArrayAccess>()));
+      return eval_floatset(env, eval_arrayaccess(env, Expression::cast<ArrayAccess>(e)));
     } break;
     case Expression::E_FIELDACCESS: {
-      return eval_floatset(env, eval_fieldaccess(env, e->cast<FieldAccess>()));
+      return eval_floatset(env, eval_fieldaccess(env, Expression::cast<FieldAccess>(e)));
     } break;
     case Expression::E_ITE: {
-      ITE* ite = e->cast<ITE>();
+      ITE* ite = Expression::cast<ITE>(e);
       for (int i = 0; i < ite->size(); i++) {
         if (eval_bool(env, ite->ifExpr(i))) {
           return eval_floatset(env, ite->thenExpr(i));
@@ -1177,13 +1188,13 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
       return eval_floatset(env, ite->elseExpr());
     } break;
     case Expression::E_BINOP: {
-      auto* bo = e->cast<BinOp>();
+      auto* bo = Expression::cast<BinOp>(e);
       if ((bo->decl() != nullptr) && (bo->decl()->e() != nullptr)) {
         return eval_call<EvalFloatSet, BinOp>(env, bo);
       }
       Expression* lhs = eval_par(env, bo->lhs());
       Expression* rhs = eval_par(env, bo->rhs());
-      if (lhs->type().isFloatSet() && rhs->type().isFloatSet()) {
+      if (Expression::type(lhs).isFloatSet() && Expression::type(rhs).isFloatSet()) {
         FloatSetVal* v0 = eval_floatset(env, lhs);
         FloatSetVal* v1 = eval_floatset(env, rhs);
         FloatSetRanges fr0(v0);
@@ -1210,28 +1221,30 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
             return FloatSetVal::ai(u);
           }
           default:
-            throw EvalError(env, e->loc(), "not a set of int expression", bo->opToString());
+            throw EvalError(env, Expression::loc(e), "not a set of int expression",
+                            bo->opToString());
         }
-      } else if (lhs->type().isfloat() && rhs->type().isfloat()) {
+      } else if (Expression::type(lhs).isfloat() && Expression::type(rhs).isfloat()) {
         if (bo->op() != BOT_DOTDOT) {
-          throw EvalError(env, e->loc(), "not a set of float expression", bo->opToString());
+          throw EvalError(env, Expression::loc(e), "not a set of float expression",
+                          bo->opToString());
         }
         return FloatSetVal::a(eval_float(env, lhs), eval_float(env, rhs));
       } else {
-        throw EvalError(env, e->loc(), "not a set of float expression", bo->opToString());
+        throw EvalError(env, Expression::loc(e), "not a set of float expression", bo->opToString());
       }
     } break;
     case Expression::E_UNOP: {
-      UnOp* uo = e->cast<UnOp>();
+      UnOp* uo = Expression::cast<UnOp>(e);
       if ((uo->decl() != nullptr) && (uo->decl()->e() != nullptr)) {
         return eval_call<EvalFloatSet, UnOp>(env, uo);
       }
-      throw EvalError(env, e->loc(), "not a set of float expression");
+      throw EvalError(env, Expression::loc(e), "not a set of float expression");
     }
     case Expression::E_CALL: {
-      Call* ce = e->cast<Call>();
+      Call* ce = Expression::cast<Call>(e);
       if (ce->decl() == nullptr) {
-        throw EvalError(env, e->loc(), "undeclared function", ce->id());
+        throw EvalError(env, Expression::loc(e), "undeclared function", ce->id());
       }
 
       if (ce->decl()->builtins.e != nullptr) {
@@ -1245,17 +1258,17 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
       if (ce->decl()->e() == nullptr) {
         std::ostringstream ss;
         ss << "internal error: missing builtin '" << ce->id() << "'";
-        throw EvalError(env, ce->loc(), ss.str());
+        throw EvalError(env, Expression::loc(ce), ss.str());
       }
 
       return eval_call<EvalFloatSet>(env, ce);
     } break;
     case Expression::E_LET: {
-      Let* l = e->cast<Let>();
+      Let* l = Expression::cast<Let>(e);
       LetPushBindings lpb(l);
       for (unsigned int i = 0; i < l->let().size(); i++) {
         // Evaluate all variable declarations
-        if (auto* vdi = l->let()[i]->dynamicCast<VarDecl>()) {
+        if (auto* vdi = Expression::dynamicCast<VarDecl>(l->let()[i])) {
           vdi->e(eval_par(env, vdi->e()));
           check_par_declaration(env, vdi);
         } else {
@@ -1263,7 +1276,8 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
           // it can only be a par bool expression. If it evaluates
           // to false, it means that the value of this let is undefined.
           if (!eval_bool(env, l->let()[i])) {
-            throw ResultUndefinedError(env, l->let()[i]->loc(), "constraint in let failed");
+            throw ResultUndefinedError(env, Expression::loc(l->let()[i]),
+                                       "constraint in let failed");
           }
         }
       }
@@ -1279,10 +1293,10 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
 bool eval_bool(EnvI& env, Expression* e) {
   CallStackItem csi(env, e);
   try {
-    if (auto* bl = e->dynamicCast<BoolLit>()) {
+    if (auto* bl = Expression::dynamicCast<BoolLit>(e)) {
       return bl->v();
     }
-    switch (e->eid()) {
+    switch (Expression::eid(e)) {
       case Expression::E_INTLIT:
       case Expression::E_FLOATLIT:
       case Expression::E_STRINGLIT:
@@ -1294,7 +1308,7 @@ bool eval_bool(EnvI& env, Expression* e) {
       case Expression::E_VARDECL:
       case Expression::E_TI:
         assert(false);
-        throw EvalError(env, e->loc(), "not a bool expression");
+        throw EvalError(env, Expression::loc(e), "not a bool expression");
         break;
       case Expression::E_ID: {
         GCLock lock;
@@ -1302,13 +1316,13 @@ bool eval_bool(EnvI& env, Expression* e) {
       } break;
       case Expression::E_ARRAYACCESS: {
         GCLock lock;
-        return eval_bool(env, eval_arrayaccess(env, e->cast<ArrayAccess>()));
+        return eval_bool(env, eval_arrayaccess(env, Expression::cast<ArrayAccess>(e)));
       } break;
       case Expression::E_FIELDACCESS: {
-        return eval_bool(env, eval_fieldaccess(env, e->cast<FieldAccess>()));
+        return eval_bool(env, eval_fieldaccess(env, Expression::cast<FieldAccess>(e)));
       } break;
       case Expression::E_ITE: {
-        ITE* ite = e->cast<ITE>();
+        ITE* ite = Expression::cast<ITE>(e);
         for (int i = 0; i < ite->size(); i++) {
           if (eval_bool(env, ite->ifExpr(i))) {
             return eval_bool(env, ite->thenExpr(i));
@@ -1317,20 +1331,20 @@ bool eval_bool(EnvI& env, Expression* e) {
         return eval_bool(env, ite->elseExpr());
       } break;
       case Expression::E_BINOP: {
-        auto* bo = e->cast<BinOp>();
+        auto* bo = Expression::cast<BinOp>(e);
         Expression* lhs = bo->lhs();
-        if (lhs->type().bt() == Type::BT_TOP) {
+        if (Expression::type(lhs).bt() == Type::BT_TOP) {
           lhs = eval_par(env, lhs);
         }
         Expression* rhs = bo->rhs();
-        if (rhs->type().bt() == Type::BT_TOP) {
+        if (Expression::type(rhs).bt() == Type::BT_TOP) {
           rhs = eval_par(env, rhs);
         }
         if ((bo->decl() != nullptr) && (bo->decl()->e() != nullptr)) {
           return eval_call<EvalBoolVal, BinOp>(env, bo);
         }
 
-        if (lhs->type().isbool() && rhs->type().isbool()) {
+        if (Expression::type(lhs).isbool() && Expression::type(rhs).isbool()) {
           try {
             switch (bo->op()) {
               case BOT_LE:
@@ -1363,12 +1377,12 @@ bool eval_bool(EnvI& env, Expression* e) {
                 return eval_bool(env, lhs) ^ eval_bool(env, rhs);
               default:
                 assert(false);
-                throw EvalError(env, e->loc(), "not a bool expression", bo->opToString());
+                throw EvalError(env, Expression::loc(e), "not a bool expression", bo->opToString());
             }
           } catch (ResultUndefinedError&) {
             return false;
           }
-        } else if (lhs->type().isint() && rhs->type().isint()) {
+        } else if (Expression::type(lhs).isint() && Expression::type(rhs).isint()) {
           try {
             IntVal v0 = eval_int(env, lhs);
             IntVal v1 = eval_int(env, rhs);
@@ -1387,12 +1401,12 @@ bool eval_bool(EnvI& env, Expression* e) {
                 return v0 != v1;
               default:
                 assert(false);
-                throw EvalError(env, e->loc(), "not a bool expression", bo->opToString());
+                throw EvalError(env, Expression::loc(e), "not a bool expression", bo->opToString());
             }
           } catch (ResultUndefinedError&) {
             return false;
           }
-        } else if (lhs->type().isfloat() && rhs->type().isfloat()) {
+        } else if (Expression::type(lhs).isfloat() && Expression::type(rhs).isfloat()) {
           try {
             FloatVal v0 = eval_float(env, lhs);
             FloatVal v1 = eval_float(env, rhs);
@@ -1411,12 +1425,12 @@ bool eval_bool(EnvI& env, Expression* e) {
                 return v0 != v1;
               default:
                 assert(false);
-                throw EvalError(env, e->loc(), "not a bool expression", bo->opToString());
+                throw EvalError(env, Expression::loc(e), "not a bool expression", bo->opToString());
             }
           } catch (ResultUndefinedError&) {
             return false;
           }
-        } else if (lhs->type().isint() && rhs->type().isIntSet()) {
+        } else if (Expression::type(lhs).isint() && Expression::type(rhs).isIntSet()) {
           try {
             IntVal v0 = eval_int(env, lhs);
             GCLock lock;
@@ -1426,12 +1440,12 @@ bool eval_bool(EnvI& env, Expression* e) {
                 return v1->contains(v0);
               default:
                 assert(false);
-                throw EvalError(env, e->loc(), "not a bool expression", bo->opToString());
+                throw EvalError(env, Expression::loc(e), "not a bool expression", bo->opToString());
             }
           } catch (ResultUndefinedError&) {
             return false;
           }
-        } else if (lhs->type().isfloat() && rhs->type().isFloatSet()) {
+        } else if (Expression::type(lhs).isfloat() && Expression::type(rhs).isFloatSet()) {
           try {
             FloatVal v0 = eval_float(env, lhs);
             GCLock lock;
@@ -1441,12 +1455,12 @@ bool eval_bool(EnvI& env, Expression* e) {
                 return v1->contains(v0);
               default:
                 assert(false);
-                throw EvalError(env, e->loc(), "not a bool expression", bo->opToString());
+                throw EvalError(env, Expression::loc(e), "not a bool expression", bo->opToString());
             }
           } catch (ResultUndefinedError&) {
             return false;
           }
-        } else if (lhs->type().isSet() && rhs->type().isSet()) {
+        } else if (Expression::type(lhs).isSet() && Expression::type(rhs).isSet()) {
           try {
             GCLock lock;
             IntSetVal* v0 = eval_intset(env, lhs);
@@ -1471,12 +1485,12 @@ bool eval_bool(EnvI& env, Expression* e) {
               case BOT_SUPERSET:
                 return Ranges::subset(ir1, ir0);
               default:
-                throw EvalError(env, e->loc(), "not a bool expression", bo->opToString());
+                throw EvalError(env, Expression::loc(e), "not a bool expression", bo->opToString());
             }
           } catch (ResultUndefinedError&) {
             return false;
           }
-        } else if (lhs->type().isstring() && rhs->type().isstring()) {
+        } else if (Expression::type(lhs).isstring() && Expression::type(rhs).isstring()) {
           try {
             GCLock lock;
             std::string s0 = eval_string(env, lhs);
@@ -1495,17 +1509,17 @@ bool eval_bool(EnvI& env, Expression* e) {
               case BOT_GQ:
                 return s0 >= s1;
               default:
-                throw EvalError(env, e->loc(), "not a bool expression", bo->opToString());
+                throw EvalError(env, Expression::loc(e), "not a bool expression", bo->opToString());
             }
           } catch (ResultUndefinedError&) {
             return false;
           }
-        } else if (bo->op() == BOT_EQ && lhs->type().isAnn()) {
+        } else if (bo->op() == BOT_EQ && Expression::type(lhs).isAnn()) {
           // follow ann id to value, since there might be indirection (e.g. func argument, see
           // test_equality_of_indirect_annotations.mzn)
           return Expression::equal(follow_id_to_value(lhs), follow_id_to_value(rhs));
-        } else if (lhs->type().structBT()) {
-          assert(rhs->type().bt() == lhs->type().bt());
+        } else if (Expression::type(lhs).structBT()) {
+          assert(Expression::type(rhs).bt() == Expression::type(lhs).bt());
           try {
             auto struct_equal = [&](ArrayLit* structA, ArrayLit* structB) {
               for (unsigned int i = 0; i < structA->size(); ++i) {
@@ -1525,7 +1539,7 @@ bool eval_bool(EnvI& env, Expression* e) {
                   {
                     GCLock lock;
                     binop = new BinOp(Location().introduce(), parA, BOT_LE, parB);
-                    binop()->type(Type::parbool());
+                    Expression::type(binop(), Type::parbool());
                   }
                   return eval_bool(env, binop());
                 }
@@ -1550,20 +1564,21 @@ bool eval_bool(EnvI& env, Expression* e) {
               case BOT_IN: {
                 // Note: tup1 is an array of tuples
                 for (int i = 0; i < struct1->size(); ++i) {
-                  if (struct_equal(struct0, (*struct1)[0]->cast<ArrayLit>())) {
+                  if (struct_equal(struct0, Expression::cast<ArrayLit>((*struct1)[0]))) {
                     return true;
                   }
                 }
                 return false;
               }
               default:
-                throw EvalError(env, e->loc(), "not a bool expression", bo->opToString());
+                throw EvalError(env, Expression::loc(e), "not a bool expression", bo->opToString());
             }
             return true;
           } catch (ResultUndefinedError&) {
             return false;
           }
-        } else if (bo->op() == BOT_EQ && lhs->type().dim() > 0 && rhs->type().dim() > 0) {
+        } else if (bo->op() == BOT_EQ && Expression::type(lhs).dim() > 0 &&
+                   Expression::type(rhs).dim() > 0) {
           try {
             ArrayLit* al0 = eval_array_lit(env, lhs);
             ArrayLit* al1 = eval_array_lit(env, rhs);
@@ -1580,11 +1595,11 @@ bool eval_bool(EnvI& env, Expression* e) {
             return false;
           }
         } else {
-          throw EvalError(env, e->loc(), "not a bool expression", bo->opToString());
+          throw EvalError(env, Expression::loc(e), "not a bool expression", bo->opToString());
         }
       } break;
       case Expression::E_UNOP: {
-        UnOp* uo = e->cast<UnOp>();
+        UnOp* uo = Expression::cast<UnOp>(e);
         if ((uo->decl() != nullptr) && (uo->decl()->e() != nullptr)) {
           return eval_call<EvalBoolVal, UnOp>(env, uo);
         }
@@ -1594,14 +1609,14 @@ bool eval_bool(EnvI& env, Expression* e) {
             return !v0;
           default:
             assert(false);
-            throw EvalError(env, e->loc(), "not a bool expression", uo->opToString());
+            throw EvalError(env, Expression::loc(e), "not a bool expression", uo->opToString());
         }
       } break;
       case Expression::E_CALL: {
         try {
-          Call* ce = e->cast<Call>();
+          Call* ce = Expression::cast<Call>(e);
           if (ce->decl() == nullptr) {
-            throw EvalError(env, e->loc(), "undeclared function", ce->id());
+            throw EvalError(env, Expression::loc(e), "undeclared function", ce->id());
           }
 
           if (ce->decl()->builtins.b != nullptr) {
@@ -1619,7 +1634,7 @@ bool eval_bool(EnvI& env, Expression* e) {
           if (ce->decl()->e() == nullptr) {
             std::ostringstream ss;
             ss << "internal error: missing builtin '" << ce->id() << "'";
-            throw EvalError(env, ce->loc(), ss.str());
+            throw EvalError(env, Expression::loc(ce), ss.str());
           }
 
           return eval_call<EvalBoolVal>(env, ce);
@@ -1628,14 +1643,14 @@ bool eval_bool(EnvI& env, Expression* e) {
         }
       } break;
       case Expression::E_LET: {
-        Let* l = e->cast<Let>();
+        Let* l = Expression::cast<Let>(e);
         LetPushBindings lpb(l);
         bool ret = true;
         for (unsigned int i = 0; i < l->let().size(); i++) {
           // Evaluate all variable declarations
-          if (auto* vdi = l->let()[i]->dynamicCast<VarDecl>()) {
+          if (auto* vdi = Expression::dynamicCast<VarDecl>(l->let()[i])) {
             vdi->e(eval_par(env, vdi->e()));
-            bool maybe_partial = vdi->ann().contains(env.constants.ann.maybe_partial);
+            bool maybe_partial = Expression::ann(vdi).contains(env.constants.ann.maybe_partial);
             if (maybe_partial) {
               env.inMaybePartial++;
             }
@@ -1652,10 +1667,11 @@ bool eval_bool(EnvI& env, Expression* e) {
             // it can only be a par bool expression. If it evaluates
             // to false, it means that the value of this let is false.
             if (!eval_bool(env, l->let()[i])) {
-              if (l->let()[i]->ann().contains(env.constants.ann.maybe_partial)) {
+              if (Expression::ann(l->let()[i]).contains(env.constants.ann.maybe_partial)) {
                 ret = false;
               } else {
-                throw ResultUndefinedError(env, l->let()[i]->loc(), "constraint in let failed");
+                throw ResultUndefinedError(env, Expression::loc(l->let()[i]),
+                                           "constraint in let failed");
               }
             }
           }
@@ -1675,9 +1691,9 @@ bool eval_bool(EnvI& env, Expression* e) {
 
 IntSetVal* eval_boolset(EnvI& env, Expression* e) {
   CallStackItem csi(env, e);
-  switch (e->eid()) {
+  switch (Expression::eid(e)) {
     case Expression::E_SETLIT: {
-      auto* sl = e->cast<SetLit>();
+      auto* sl = Expression::cast<SetLit>(e);
       if (sl->isv() != nullptr) {
         return sl->isv();
       }
@@ -1698,10 +1714,10 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
     case Expression::E_TIID:
     case Expression::E_VARDECL:
     case Expression::E_TI:
-      throw EvalError(env, e->loc(), "not a set of bool expression");
+      throw EvalError(env, Expression::loc(e), "not a set of bool expression");
       break;
     case Expression::E_ARRAYLIT: {
-      auto* al = e->cast<ArrayLit>();
+      auto* al = Expression::cast<ArrayLit>(e);
       std::vector<IntVal> vals(al->size());
       for (unsigned int i = 0; i < al->size(); i++) {
         vals[i] = static_cast<long long>(eval_bool(env, (*al)[i]));
@@ -1709,7 +1725,7 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
       return IntSetVal::a(vals);
     } break;
     case Expression::E_COMP: {
-      auto* c = e->cast<Comprehension>();
+      auto* c = Expression::cast<Comprehension>(e);
       auto a = eval_comp<EvalIntVal>(env, c);
       return IntSetVal::a(a.a);
     }
@@ -1719,13 +1735,13 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
     } break;
     case Expression::E_ARRAYACCESS: {
       GCLock lock;
-      return eval_boolset(env, eval_arrayaccess(env, e->cast<ArrayAccess>()));
+      return eval_boolset(env, eval_arrayaccess(env, Expression::cast<ArrayAccess>(e)));
     } break;
     case Expression::E_FIELDACCESS: {
-      return eval_boolset(env, eval_fieldaccess(env, e->cast<FieldAccess>()));
+      return eval_boolset(env, eval_fieldaccess(env, Expression::cast<FieldAccess>(e)));
     } break;
     case Expression::E_ITE: {
-      ITE* ite = e->cast<ITE>();
+      ITE* ite = Expression::cast<ITE>(e);
       for (int i = 0; i < ite->size(); i++) {
         if (eval_bool(env, ite->ifExpr(i))) {
           return eval_boolset(env, ite->thenExpr(i));
@@ -1734,13 +1750,13 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
       return eval_boolset(env, ite->elseExpr());
     } break;
     case Expression::E_BINOP: {
-      auto* bo = e->cast<BinOp>();
+      auto* bo = Expression::cast<BinOp>(e);
       if ((bo->decl() != nullptr) && (bo->decl()->e() != nullptr)) {
         return eval_call<EvalBoolSet, BinOp>(env, bo);
       }
       Expression* lhs = eval_par(env, bo->lhs());
       Expression* rhs = eval_par(env, bo->rhs());
-      if (lhs->type().isIntSet() && rhs->type().isIntSet()) {
+      if (Expression::type(lhs).isIntSet() && Expression::type(rhs).isIntSet()) {
         IntSetVal* v0 = eval_boolset(env, lhs);
         IntSetVal* v1 = eval_boolset(env, rhs);
         IntSetRanges ir0(v0);
@@ -1767,29 +1783,31 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
             return IntSetVal::ai(u);
           }
           default:
-            throw EvalError(env, e->loc(), "not a set of bool expression", bo->opToString());
+            throw EvalError(env, Expression::loc(e), "not a set of bool expression",
+                            bo->opToString());
         }
-      } else if (lhs->type().isbool() && rhs->type().isbool()) {
+      } else if (Expression::type(lhs).isbool() && Expression::type(rhs).isbool()) {
         if (bo->op() != BOT_DOTDOT) {
-          throw EvalError(env, e->loc(), "not a set of bool expression", bo->opToString());
+          throw EvalError(env, Expression::loc(e), "not a set of bool expression",
+                          bo->opToString());
         }
         return IntSetVal::a(static_cast<long long>(eval_bool(env, lhs)),
                             static_cast<long long>(eval_bool(env, rhs)));
       } else {
-        throw EvalError(env, e->loc(), "not a set of bool expression", bo->opToString());
+        throw EvalError(env, Expression::loc(e), "not a set of bool expression", bo->opToString());
       }
     } break;
     case Expression::E_UNOP: {
-      UnOp* uo = e->cast<UnOp>();
+      UnOp* uo = Expression::cast<UnOp>(e);
       if ((uo->decl() != nullptr) && (uo->decl()->e() != nullptr)) {
         return eval_call<EvalBoolSet, UnOp>(env, uo);
       }
-      throw EvalError(env, e->loc(), "not a set of bool expression");
+      throw EvalError(env, Expression::loc(e), "not a set of bool expression");
     }
     case Expression::E_CALL: {
-      Call* ce = e->cast<Call>();
+      Call* ce = Expression::cast<Call>(e);
       if (ce->decl() == nullptr) {
-        throw EvalError(env, e->loc(), "undeclared function", ce->id());
+        throw EvalError(env, Expression::loc(e), "undeclared function", ce->id());
       }
 
       if (ce->decl()->builtins.s != nullptr) {
@@ -1803,17 +1821,17 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
       if (ce->decl()->e() == nullptr) {
         std::ostringstream ss;
         ss << "internal error: missing builtin '" << ce->id() << "'";
-        throw EvalError(env, ce->loc(), ss.str());
+        throw EvalError(env, Expression::loc(ce), ss.str());
       }
 
       return eval_call<EvalBoolSet>(env, ce);
     } break;
     case Expression::E_LET: {
-      Let* l = e->cast<Let>();
+      Let* l = Expression::cast<Let>(e);
       LetPushBindings lpb(l);
       for (unsigned int i = 0; i < l->let().size(); i++) {
         // Evaluate all variable declarations
-        if (auto* vdi = l->let()[i]->dynamicCast<VarDecl>()) {
+        if (auto* vdi = Expression::dynamicCast<VarDecl>(l->let()[i])) {
           vdi->e(eval_par(env, vdi->e()));
           check_par_declaration(env, vdi);
         } else {
@@ -1821,7 +1839,8 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
           // it can only be a par bool expression. If it evaluates
           // to false, it means that the value of this let is undefined.
           if (!eval_bool(env, l->let()[i])) {
-            throw ResultUndefinedError(env, l->let()[i]->loc(), "constraint in let failed");
+            throw ResultUndefinedError(env, Expression::loc(l->let()[i]),
+                                       "constraint in let failed");
           }
         }
       }
@@ -1835,15 +1854,15 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
 }
 
 IntVal eval_int_internal(EnvI& env, Expression* e) {
-  if (e->type().isbool()) {
+  if (Expression::type(e).isbool()) {
     return static_cast<long long>(eval_bool(env, e));
   }
-  if (auto* il = e->dynamicCast<IntLit>()) {
-    return il->v();
+  if (auto* il = Expression::dynamicCast<IntLit>(e)) {
+    return IntLit::v(il);
   }
   CallStackItem csi(env, e);
   try {
-    switch (e->eid()) {
+    switch (Expression::eid(e)) {
       case Expression::E_FLOATLIT:
       case Expression::E_BOOLLIT:
       case Expression::E_STRINGLIT:
@@ -1854,21 +1873,21 @@ IntVal eval_int_internal(EnvI& env, Expression* e) {
       case Expression::E_COMP:
       case Expression::E_VARDECL:
       case Expression::E_TI:
-        throw EvalError(env, e->loc(), "not an integer expression");
+        throw EvalError(env, Expression::loc(e), "not an integer expression");
         break;
       case Expression::E_ID: {
         GCLock lock;
-        return eval_id<EvalIntLit>(env, e)->v();
+        return IntLit::v(eval_id<EvalIntLit>(env, e));
       } break;
       case Expression::E_ARRAYACCESS: {
         GCLock lock;
-        return eval_int(env, eval_arrayaccess(env, e->cast<ArrayAccess>()));
+        return eval_int(env, eval_arrayaccess(env, Expression::cast<ArrayAccess>(e)));
       } break;
       case Expression::E_FIELDACCESS: {
-        return eval_int(env, eval_fieldaccess(env, e->cast<FieldAccess>()));
+        return eval_int(env, eval_fieldaccess(env, Expression::cast<FieldAccess>(e)));
       } break;
       case Expression::E_ITE: {
-        ITE* ite = e->cast<ITE>();
+        ITE* ite = Expression::cast<ITE>(e);
         for (int i = 0; i < ite->size(); i++) {
           if (eval_bool(env, ite->ifExpr(i))) {
             return eval_int(env, ite->thenExpr(i));
@@ -1877,7 +1896,7 @@ IntVal eval_int_internal(EnvI& env, Expression* e) {
         return eval_int(env, ite->elseExpr());
       } break;
       case Expression::E_BINOP: {
-        auto* bo = e->cast<BinOp>();
+        auto* bo = Expression::cast<BinOp>(e);
         if ((bo->decl() != nullptr) && (bo->decl()->e() != nullptr)) {
           return eval_call<EvalIntVal, BinOp>(env, bo);
         }
@@ -1892,25 +1911,26 @@ IntVal eval_int_internal(EnvI& env, Expression* e) {
             return v0 * v1;
           case BOT_POW:
             if (v0 == 0 && v1 < 0) {
-              throw ResultUndefinedError(env, e->loc(), "negative power of zero is undefined");
+              throw ResultUndefinedError(env, Expression::loc(e),
+                                         "negative power of zero is undefined");
             }
             return v0.pow(v1);
           case BOT_IDIV:
             if (v1 == 0) {
-              throw ResultUndefinedError(env, e->loc(), "division by zero");
+              throw ResultUndefinedError(env, Expression::loc(e), "division by zero");
             }
             return v0 / v1;
           case BOT_MOD:
             if (v1 == 0) {
-              throw ResultUndefinedError(env, e->loc(), "division by zero");
+              throw ResultUndefinedError(env, Expression::loc(e), "division by zero");
             }
             return v0 % v1;
           default:
-            throw EvalError(env, e->loc(), "not an integer expression", bo->opToString());
+            throw EvalError(env, Expression::loc(e), "not an integer expression", bo->opToString());
         }
       } break;
       case Expression::E_UNOP: {
-        UnOp* uo = e->cast<UnOp>();
+        UnOp* uo = Expression::cast<UnOp>(e);
         if ((uo->decl() != nullptr) && (uo->decl()->e() != nullptr)) {
           return eval_call<EvalIntVal, UnOp>(env, uo);
         }
@@ -1921,13 +1941,13 @@ IntVal eval_int_internal(EnvI& env, Expression* e) {
           case UOT_MINUS:
             return -v0;
           default:
-            throw EvalError(env, e->loc(), "not an integer expression", uo->opToString());
+            throw EvalError(env, Expression::loc(e), "not an integer expression", uo->opToString());
         }
       } break;
       case Expression::E_CALL: {
-        Call* ce = e->cast<Call>();
+        Call* ce = Expression::cast<Call>(e);
         if (ce->decl() == nullptr) {
-          throw EvalError(env, e->loc(), "undeclared function", ce->id());
+          throw EvalError(env, Expression::loc(e), "undeclared function", ce->id());
         }
         if (ce->decl()->builtins.i != nullptr) {
           return ce->decl()->builtins.i(env, ce);
@@ -1940,17 +1960,17 @@ IntVal eval_int_internal(EnvI& env, Expression* e) {
         if (ce->decl()->e() == nullptr) {
           std::ostringstream ss;
           ss << "internal error: missing builtin '" << ce->id() << "'";
-          throw EvalError(env, ce->loc(), ss.str());
+          throw EvalError(env, Expression::loc(ce), ss.str());
         }
 
         return eval_call<EvalIntVal>(env, ce);
       } break;
       case Expression::E_LET: {
-        Let* l = e->cast<Let>();
+        Let* l = Expression::cast<Let>(e);
         LetPushBindings lpb(l);
         for (unsigned int i = 0; i < l->let().size(); i++) {
           // Evaluate all variable declarations
-          if (auto* vdi = l->let()[i]->dynamicCast<VarDecl>()) {
+          if (auto* vdi = Expression::dynamicCast<VarDecl>(l->let()[i])) {
             vdi->e(eval_par(env, vdi->e()));
             check_par_declaration(env, vdi);
           } else {
@@ -1958,7 +1978,8 @@ IntVal eval_int_internal(EnvI& env, Expression* e) {
             // it can only be a par bool expression. If it evaluates
             // to false, it means that the value of this let is undefined.
             if (!eval_bool(env, l->let()[i])) {
-              throw ResultUndefinedError(env, l->let()[i]->loc(), "constraint in let failed");
+              throw ResultUndefinedError(env, Expression::loc(l->let()[i]),
+                                         "constraint in let failed");
             }
           }
         }
@@ -1970,24 +1991,24 @@ IntVal eval_int_internal(EnvI& env, Expression* e) {
         return 0;
     }
   } catch (ArithmeticError& err) {
-    throw EvalError(env, e->loc(), err.msg());
+    throw EvalError(env, Expression::loc(e), err.msg());
   }
   return 0;
 }
 
 FloatVal eval_float(EnvI& env, Expression* e) {
-  if (e->type().isint()) {
+  if (Expression::type(e).isint()) {
     return static_cast<double>(eval_int(env, e).toInt());
   }
-  if (e->type().isbool()) {
+  if (Expression::type(e).isbool()) {
     return static_cast<double>(eval_bool(env, e));
   }
   CallStackItem csi(env, e);
   try {
-    if (auto* fl = e->dynamicCast<FloatLit>()) {
-      return fl->v();
+    if (auto* fl = Expression::dynamicCast<FloatLit>(e)) {
+      return FloatLit::v(fl);
     }
-    switch (e->eid()) {
+    switch (Expression::eid(e)) {
       case Expression::E_INTLIT:
       case Expression::E_BOOLLIT:
       case Expression::E_STRINGLIT:
@@ -1998,21 +2019,21 @@ FloatVal eval_float(EnvI& env, Expression* e) {
       case Expression::E_COMP:
       case Expression::E_VARDECL:
       case Expression::E_TI:
-        throw EvalError(env, e->loc(), "not a float expression");
+        throw EvalError(env, Expression::loc(e), "not a float expression");
         break;
       case Expression::E_ID: {
         GCLock lock;
-        return eval_id<EvalFloatLit>(env, e)->v();
+        return FloatLit::v(eval_id<EvalFloatLit>(env, e));
       } break;
       case Expression::E_ARRAYACCESS: {
         GCLock lock;
-        return eval_float(env, eval_arrayaccess(env, e->cast<ArrayAccess>()));
+        return eval_float(env, eval_arrayaccess(env, Expression::cast<ArrayAccess>(e)));
       } break;
       case Expression::E_FIELDACCESS: {
-        return eval_float(env, eval_fieldaccess(env, e->cast<FieldAccess>()));
+        return eval_float(env, eval_fieldaccess(env, Expression::cast<FieldAccess>(e)));
       } break;
       case Expression::E_ITE: {
-        ITE* ite = e->cast<ITE>();
+        ITE* ite = Expression::cast<ITE>(e);
         for (int i = 0; i < ite->size(); i++) {
           if (eval_bool(env, ite->ifExpr(i))) {
             return eval_float(env, ite->thenExpr(i));
@@ -2021,7 +2042,7 @@ FloatVal eval_float(EnvI& env, Expression* e) {
         return eval_float(env, ite->elseExpr());
       } break;
       case Expression::E_BINOP: {
-        auto* bo = e->cast<BinOp>();
+        auto* bo = Expression::cast<BinOp>(e);
         if ((bo->decl() != nullptr) && (bo->decl()->e() != nullptr)) {
           return eval_call<EvalFloatVal, BinOp>(env, bo);
         }
@@ -2038,15 +2059,15 @@ FloatVal eval_float(EnvI& env, Expression* e) {
             return std::pow(v0.toDouble(), v1.toDouble());
           case BOT_DIV:
             if (v1 == 0.0) {
-              throw ResultUndefinedError(env, e->loc(), "division by zero");
+              throw ResultUndefinedError(env, Expression::loc(e), "division by zero");
             }
             return v0 / v1;
           default:
-            throw EvalError(env, e->loc(), "not a float expression", bo->opToString());
+            throw EvalError(env, Expression::loc(e), "not a float expression", bo->opToString());
         }
       } break;
       case Expression::E_UNOP: {
-        UnOp* uo = e->cast<UnOp>();
+        UnOp* uo = Expression::cast<UnOp>(e);
         if ((uo->decl() != nullptr) && (uo->decl()->e() != nullptr)) {
           return eval_call<EvalFloatVal, UnOp>(env, uo);
         }
@@ -2057,13 +2078,13 @@ FloatVal eval_float(EnvI& env, Expression* e) {
           case UOT_MINUS:
             return -v0;
           default:
-            throw EvalError(env, e->loc(), "not a float expression", uo->opToString());
+            throw EvalError(env, Expression::loc(e), "not a float expression", uo->opToString());
         }
       } break;
       case Expression::E_CALL: {
-        Call* ce = e->cast<Call>();
+        Call* ce = Expression::cast<Call>(e);
         if (ce->decl() == nullptr) {
-          throw EvalError(env, e->loc(), "undeclared function", ce->id());
+          throw EvalError(env, Expression::loc(e), "undeclared function", ce->id());
         }
         if (ce->decl()->builtins.f != nullptr) {
           return ce->decl()->builtins.f(env, ce);
@@ -2076,17 +2097,17 @@ FloatVal eval_float(EnvI& env, Expression* e) {
         if (ce->decl()->e() == nullptr) {
           std::ostringstream ss;
           ss << "internal error: missing builtin '" << ce->id() << "'";
-          throw EvalError(env, ce->loc(), ss.str());
+          throw EvalError(env, Expression::loc(ce), ss.str());
         }
 
         return eval_call<EvalFloatVal>(env, ce);
       } break;
       case Expression::E_LET: {
-        Let* l = e->cast<Let>();
+        Let* l = Expression::cast<Let>(e);
         LetPushBindings lpb(l);
         for (unsigned int i = 0; i < l->let().size(); i++) {
           // Evaluate all variable declarations
-          if (auto* vdi = l->let()[i]->dynamicCast<VarDecl>()) {
+          if (auto* vdi = Expression::dynamicCast<VarDecl>(l->let()[i])) {
             vdi->e(eval_par(env, vdi->e()));
             check_par_declaration(env, vdi);
           } else {
@@ -2094,7 +2115,8 @@ FloatVal eval_float(EnvI& env, Expression* e) {
             // it can only be a par bool expression. If it evaluates
             // to false, it means that the value of this let is undefined.
             if (!eval_bool(env, l->let()[i])) {
-              throw ResultUndefinedError(env, l->let()[i]->loc(), "constraint in let failed");
+              throw ResultUndefinedError(env, Expression::loc(l->let()[i]),
+                                         "constraint in let failed");
             }
           }
         }
@@ -2106,16 +2128,16 @@ FloatVal eval_float(EnvI& env, Expression* e) {
         return 0.0;
     }
   } catch (ArithmeticError& err) {
-    throw EvalError(env, e->loc(), err.msg());
+    throw EvalError(env, Expression::loc(e), err.msg());
   }
   return 0.0;
 }
 
 std::string eval_string(EnvI& env, Expression* e) {
   CallStackItem csi(env, e);
-  switch (e->eid()) {
+  switch (Expression::eid(e)) {
     case Expression::E_STRINGLIT: {
-      ASTString str = e->cast<StringLit>()->v();
+      ASTString str = Expression::cast<StringLit>(e)->v();
       return std::string(str.c_str(), str.size());
     }
     case Expression::E_FLOATLIT:
@@ -2128,7 +2150,7 @@ std::string eval_string(EnvI& env, Expression* e) {
     case Expression::E_COMP:
     case Expression::E_VARDECL:
     case Expression::E_TI:
-      throw EvalError(env, e->loc(), "not a string expression");
+      throw EvalError(env, Expression::loc(e), "not a string expression");
       break;
     case Expression::E_ID: {
       GCLock lock;
@@ -2137,13 +2159,13 @@ std::string eval_string(EnvI& env, Expression* e) {
     } break;
     case Expression::E_ARRAYACCESS: {
       GCLock lock;
-      return eval_string(env, eval_arrayaccess(env, e->cast<ArrayAccess>()));
+      return eval_string(env, eval_arrayaccess(env, Expression::cast<ArrayAccess>(e)));
     } break;
     case Expression::E_FIELDACCESS: {
-      return eval_string(env, eval_fieldaccess(env, e->cast<FieldAccess>()));
+      return eval_string(env, eval_fieldaccess(env, Expression::cast<FieldAccess>(e)));
     } break;
     case Expression::E_ITE: {
-      ITE* ite = e->cast<ITE>();
+      ITE* ite = Expression::cast<ITE>(e);
       for (int i = 0; i < ite->size(); i++) {
         if (eval_bool(env, ite->ifExpr(i))) {
           return eval_string(env, ite->thenExpr(i));
@@ -2152,7 +2174,7 @@ std::string eval_string(EnvI& env, Expression* e) {
       return eval_string(env, ite->elseExpr());
     } break;
     case Expression::E_BINOP: {
-      auto* bo = e->cast<BinOp>();
+      auto* bo = Expression::cast<BinOp>(e);
       if ((bo->decl() != nullptr) && (bo->decl()->e() != nullptr)) {
         return eval_call<EvalString, BinOp>(env, bo);
       }
@@ -2162,20 +2184,20 @@ std::string eval_string(EnvI& env, Expression* e) {
         case BOT_PLUSPLUS:
           return v0 + v1;
         default:
-          throw EvalError(env, e->loc(), "not a string expression", bo->opToString());
+          throw EvalError(env, Expression::loc(e), "not a string expression", bo->opToString());
       }
     } break;
     case Expression::E_UNOP: {
-      UnOp* uo = e->cast<UnOp>();
+      UnOp* uo = Expression::cast<UnOp>(e);
       if ((uo->decl() != nullptr) && (uo->decl()->e() != nullptr)) {
         return eval_call<EvalString, UnOp>(env, uo);
       }
-      throw EvalError(env, e->loc(), "not a string expression");
+      throw EvalError(env, Expression::loc(e), "not a string expression");
     } break;
     case Expression::E_CALL: {
-      Call* ce = e->cast<Call>();
+      Call* ce = Expression::cast<Call>(e);
       if (ce->decl() == nullptr) {
-        throw EvalError(env, e->loc(), "undeclared function", ce->id());
+        throw EvalError(env, Expression::loc(e), "undeclared function", ce->id());
       }
 
       if (ce->decl()->builtins.str != nullptr) {
@@ -2188,17 +2210,17 @@ std::string eval_string(EnvI& env, Expression* e) {
       if (ce->decl()->e() == nullptr) {
         std::ostringstream ss;
         ss << "internal error: missing builtin '" << ce->id() << "'";
-        throw EvalError(env, ce->loc(), ss.str());
+        throw EvalError(env, Expression::loc(ce), ss.str());
       }
 
       return eval_call<EvalString>(env, ce);
     } break;
     case Expression::E_LET: {
-      Let* l = e->cast<Let>();
+      Let* l = Expression::cast<Let>(e);
       LetPushBindings lpb(l);
       for (unsigned int i = 0; i < l->let().size(); i++) {
         // Evaluate all variable declarations
-        if (auto* vdi = l->let()[i]->dynamicCast<VarDecl>()) {
+        if (auto* vdi = Expression::dynamicCast<VarDecl>(l->let()[i])) {
           vdi->e(eval_par(env, vdi->e()));
           check_par_declaration(env, vdi);
         } else {
@@ -2206,7 +2228,8 @@ std::string eval_string(EnvI& env, Expression* e) {
           // it can only be a par bool expression. If it evaluates
           // to false, it means that the value of this let is undefined.
           if (!eval_bool(env, l->let()[i])) {
-            throw ResultUndefinedError(env, l->let()[i]->loc(), "constraint in let failed");
+            throw ResultUndefinedError(env, Expression::loc(l->let()[i]),
+                                       "constraint in let failed");
           }
         }
       }
@@ -2223,13 +2246,13 @@ Expression* eval_par(EnvI& env, Expression* e) {
   if (e == nullptr) {
     return nullptr;
   }
-  switch (e->eid()) {
+  switch (Expression::eid(e)) {
     case Expression::E_ANON:
     case Expression::E_TIID: {
       return e;
     }
     case Expression::E_COMP:
-      if (e->cast<Comprehension>()->set()) {
+      if (Expression::cast<Comprehension>(e)->set()) {
         return EvalSetLit::e(env, e);
       }
       // fall through
@@ -2239,8 +2262,9 @@ Expression* eval_par(EnvI& env, Expression* e) {
       bool allFlat = true;
       for (unsigned int i = 0; i < al->size(); i++) {
         Expression* ali = (*al)[i];
-        if (!ali->isa<IntLit>() && !ali->isa<FloatLit>() && !ali->isa<BoolLit>() &&
-            !(ali->isa<SetLit>() && ali->cast<SetLit>()->evaluated())) {
+        if (!Expression::isa<IntLit>(ali) && !Expression::isa<FloatLit>(ali) &&
+            !Expression::isa<BoolLit>(ali) &&
+            !(Expression::isa<SetLit>(ali) && Expression::cast<SetLit>(ali)->evaluated())) {
           allFlat = false;
           args[i] = eval_par(env, ali);
         } else {
@@ -2252,28 +2276,29 @@ Expression* eval_par(EnvI& env, Expression* e) {
       }
       ArrayLit* ret = nullptr;
       if (al->isTuple()) {
-        ret = ArrayLit::constructTuple(al->loc(), args);
+        ret = ArrayLit::constructTuple(Expression::loc(al), args);
       } else {
         std::vector<std::pair<int, int>> dims(al->dims());
         for (unsigned int i = al->dims(); (i--) != 0U;) {
           dims[i].first = al->min(i);
           dims[i].second = al->max(i);
         }
-        ret = new ArrayLit(al->loc(), args, dims);
+        ret = new ArrayLit(Expression::loc(al), args, dims);
       }
       Type t = al->type();
       if (t.isbot() && !ret->empty()) {
-        t.bt((*ret)[0]->type().bt());
+        t.bt(Expression::type((*ret)[0]).bt());
       }
       ret->type(t);
       return ret;
     }
     case Expression::E_VARDECL: {
-      auto* vd = e->cast<VarDecl>();
-      throw EvalError(env, vd->loc(), "cannot evaluate variable declaration", vd->id()->v());
+      auto* vd = Expression::cast<VarDecl>(e);
+      throw EvalError(env, Expression::loc(vd), "cannot evaluate variable declaration",
+                      vd->id()->v());
     }
     case Expression::E_TI: {
-      auto* t = e->cast<TypeInst>();
+      auto* t = Expression::cast<TypeInst>(e);
       ASTExprVec<TypeInst> r;
       if (!t->ranges().empty()) {
         std::vector<TypeInst*> rv(t->ranges().size());
@@ -2288,19 +2313,19 @@ Expression* eval_par(EnvI& env, Expression* e) {
       if (e == env.constants.absent) {
         return e;
       }
-      Id* id = e->cast<Id>();
+      Id* id = Expression::cast<Id>(e);
       if (id->decl() == nullptr) {
         if (id->type().isAnn()) {
           return id;
         }
-        throw EvalError(env, e->loc(), "undefined identifier", id->v());
+        throw EvalError(env, Expression::loc(e), "undefined identifier", id->v());
       }
       if (id->decl()->ti()->domain() != nullptr && id->decl()->type().isPresent()) {
-        if (auto* bl = id->decl()->ti()->domain()->dynamicCast<BoolLit>()) {
+        if (auto* bl = Expression::dynamicCast<BoolLit>(id->decl()->ti()->domain())) {
           return bl;
         }
         if (id->decl()->ti()->type().isint()) {
-          if (auto* sl = id->decl()->ti()->domain()->dynamicCast<SetLit>()) {
+          if (auto* sl = Expression::dynamicCast<SetLit>(id->decl()->ti()->domain())) {
             if ((sl->isv() != nullptr) && !sl->isv()->empty() &&
                 sl->isv()->min() == sl->isv()->max()) {
               return IntLit::a(sl->isv()->min());
@@ -2323,7 +2348,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
     case Expression::E_STRINGLIT:
       return e;
     default: {
-      if (e->type().dim() != 0) {
+      if (Expression::type(e).dim() != 0) {
         ArrayLit* al = eval_array_lit(env, e);
         std::vector<Expression*> args(al->size());
         for (unsigned int i = al->size(); (i--) != 0U;) {
@@ -2334,36 +2359,36 @@ Expression* eval_par(EnvI& env, Expression* e) {
           dims[i].first = al->min(i);
           dims[i].second = al->max(i);
         }
-        auto* ret = new ArrayLit(al->loc(), args, dims);
+        auto* ret = new ArrayLit(Expression::loc(al), args, dims);
         Type t = al->type();
         if ((t.bt() == Type::BT_BOT || t.bt() == Type::BT_TOP) && !ret->empty()) {
-          t.bt((*ret)[0]->type().bt());
+          t.bt(Expression::type((*ret)[0]).bt());
         }
         ret->type(t);
         return ret;
       }
-      if (e->type().isPar()) {
-        if (e->type().isSet()) {
+      if (Expression::type(e).isPar()) {
+        if (Expression::type(e).isSet()) {
           return EvalSetLit::e(env, e);
         }
-        if (e->type() == Type::parint()) {
+        if (Expression::type(e) == Type::parint()) {
           return EvalIntLit::e(env, e);
         }
-        if (e->type() == Type::parbool()) {
+        if (Expression::type(e) == Type::parbool()) {
           return EvalBoolLit::e(env, e);
         }
-        if (e->type() == Type::parfloat()) {
+        if (Expression::type(e) == Type::parfloat()) {
           return EvalFloatLit::e(env, e);
         }
-        if (e->type() == Type::parstring()) {
+        if (Expression::type(e) == Type::parstring()) {
           return EvalStringLit::e(env, e);
         }
       }
-      switch (e->eid()) {
+      switch (Expression::eid(e)) {
         case Expression::E_ITE: {
-          ITE* ite = e->cast<ITE>();
+          ITE* ite = Expression::cast<ITE>(e);
           for (unsigned int i = 0; i < ite->size(); i++) {
-            if (ite->ifExpr(i)->type() == Type::parbool()) {
+            if (Expression::type(ite->ifExpr(i)) == Type::parbool()) {
               if (eval_bool(env, ite->ifExpr(i))) {
                 return eval_par(env, ite->thenExpr(i));
               }
@@ -2373,7 +2398,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
                 e_ifthen[2 * static_cast<size_t>(i)] = eval_par(env, ite->ifExpr(i));
                 e_ifthen[2 * static_cast<size_t>(i) + 1] = eval_par(env, ite->thenExpr(i));
               }
-              ITE* n_ite = new ITE(ite->loc(), e_ifthen, eval_par(env, ite->elseExpr()));
+              ITE* n_ite = new ITE(Expression::loc(ite), e_ifthen, eval_par(env, ite->elseExpr()));
               n_ite->type(ite->type());
               return n_ite;
             }
@@ -2381,7 +2406,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
           return eval_par(env, ite->elseExpr());
         }
         case Expression::E_CALL: {
-          Call* c = e->cast<Call>();
+          Call* c = Expression::cast<Call>(e);
           if (c->decl() != nullptr) {
             if (c->decl()->builtins.e != nullptr) {
               return eval_par(env, c->decl()->builtins.e(env, c));
@@ -2389,7 +2414,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
             if (c->decl()->e() == nullptr) {
               if (c->id() == env.constants.ids.deopt &&
                   Expression::equal(c->arg(0), env.constants.absent)) {
-                throw ResultUndefinedError(env, e->loc(), "deopt(<>) is undefined");
+                throw ResultUndefinedError(env, Expression::loc(e), "deopt(<>) is undefined");
               }
               return c;
             }
@@ -2399,22 +2424,23 @@ Expression* eval_par(EnvI& env, Expression* e) {
           for (unsigned int i = 0; i < args.size(); i++) {
             args[i] = eval_par(env, c->arg(i));
           }
-          Call* nc = Call::a(c->loc(), c->id(), args);
+          Call* nc = Call::a(Expression::loc(c), c->id(), args);
           nc->type(c->type());
           return nc;
         }
         case Expression::E_BINOP: {
-          auto* bo = e->cast<BinOp>();
+          auto* bo = Expression::cast<BinOp>(e);
           if ((bo->decl() != nullptr) && (bo->decl()->e() != nullptr)) {
             return eval_call<EvalPar, BinOp>(env, bo);
           }
-          auto* nbo =
-              new BinOp(e->loc(), eval_par(env, bo->lhs()), bo->op(), eval_par(env, bo->rhs()));
+          auto* nbo = new BinOp(Expression::loc(e), eval_par(env, bo->lhs()), bo->op(),
+                                eval_par(env, bo->rhs()));
           nbo->type(bo->type());
           if (nbo->op() == BOT_PLUSPLUS && nbo->type().structBT()) {
-            assert(nbo->lhs()->type().structBT() &&
-                   nbo->lhs()->type().bt() == nbo->rhs()->type().bt() &&
-                   nbo->lhs()->type().dim() == 0 && nbo->rhs()->type().dim() == 0);
+            assert(Expression::type(nbo->lhs()).structBT() &&
+                   Expression::type(nbo->lhs()).bt() == Expression::type(nbo->rhs()).bt() &&
+                   Expression::type(nbo->lhs()).dim() == 0 &&
+                   Expression::type(nbo->rhs()).dim() == 0);
             if (nbo->type().isrecord()) {
               ArrayLit* rec = eval_record_merge(env, eval_array_lit(env, nbo->lhs()),
                                                 eval_array_lit(env, nbo->rhs()));
@@ -2422,31 +2448,31 @@ Expression* eval_par(EnvI& env, Expression* e) {
               return rec;
             }
             assert(nbo->type().istuple());
-            ArrayLit* tup =
-                ArrayLit::constructTuple(nbo->loc().introduce(), eval_array_lit(env, nbo));
+            ArrayLit* tup = ArrayLit::constructTuple(Expression::loc(nbo).introduce(),
+                                                     eval_array_lit(env, nbo));
             tup->type(nbo->type());
             return tup;
           }
           return nbo;
         }
         case Expression::E_UNOP: {
-          UnOp* uo = e->cast<UnOp>();
+          UnOp* uo = Expression::cast<UnOp>(e);
           if ((uo->decl() != nullptr) && (uo->decl()->e() != nullptr)) {
             return eval_call<EvalPar, UnOp>(env, uo);
           }
-          UnOp* nuo = new UnOp(e->loc(), uo->op(), eval_par(env, uo->e()));
+          UnOp* nuo = new UnOp(Expression::loc(e), uo->op(), eval_par(env, uo->e()));
           nuo->type(uo->type());
           return nuo;
         }
         case Expression::E_ARRAYACCESS: {
-          auto* aa = e->cast<ArrayAccess>();
+          auto* aa = Expression::cast<ArrayAccess>(e);
           for (unsigned int i = 0; i < aa->idx().size(); i++) {
-            if (!aa->idx()[i]->type().isPar()) {
+            if (!Expression::type(aa->idx()[i]).isPar()) {
               std::vector<Expression*> idx(aa->idx().size());
               for (unsigned int j = 0; j < aa->idx().size(); j++) {
                 idx[j] = eval_par(env, aa->idx()[j]);
               }
-              auto* aa_new = new ArrayAccess(e->loc(), eval_par(env, aa->v()), idx);
+              auto* aa_new = new ArrayAccess(Expression::loc(e), eval_par(env, aa->v()), idx);
               aa_new->type(aa->type());
               return aa_new;
             }
@@ -2454,15 +2480,15 @@ Expression* eval_par(EnvI& env, Expression* e) {
           return eval_par(env, eval_arrayaccess(env, aa));
         }
         case Expression::E_FIELDACCESS: {
-          return eval_par(env, eval_fieldaccess(env, e->cast<FieldAccess>()));
+          return eval_par(env, eval_fieldaccess(env, Expression::cast<FieldAccess>(e)));
         } break;
         case Expression::E_LET: {
-          Let* l = e->cast<Let>();
+          Let* l = Expression::cast<Let>(e);
           assert(l->type().isPar());
           LetPushBindings lpb(l);
           for (unsigned int i = 0; i < l->let().size(); i++) {
             // Evaluate all variable declarations
-            if (auto* vdi = l->let()[i]->dynamicCast<VarDecl>()) {
+            if (auto* vdi = Expression::dynamicCast<VarDecl>(l->let()[i])) {
               vdi->e(eval_par(env, vdi->e()));
               check_par_declaration(env, vdi);
             } else {
@@ -2470,7 +2496,8 @@ Expression* eval_par(EnvI& env, Expression* e) {
               // it can only be a par bool expression. If it evaluates
               // to false, it means that the value of this let is undefined.
               if (!eval_bool(env, l->let()[i])) {
-                throw ResultUndefinedError(env, l->let()[i]->loc(), "constraint in let failed");
+                throw ResultUndefinedError(env, Expression::loc(l->let()[i]),
+                                           "constraint in let failed");
               }
             }
           }
@@ -2492,31 +2519,31 @@ public:
   EnvI& env;
   ComputeIntBounds(EnvI& env0) : valid(true), env(env0) {}
   bool enter(Expression* e) {
-    if (e->type().isAnn()) {
+    if (Expression::type(e).isAnn()) {
       return false;
     }
-    if (e->isa<VarDecl>()) {
+    if (Expression::isa<VarDecl>(e)) {
       return false;
     }
-    if (e->type().dim() > 0) {
+    if (Expression::type(e).dim() > 0) {
       return false;
     }
-    if (e->type().isPar() && !e->type().cv()) {
+    if (Expression::type(e).isPar() && !Expression::type(e).cv()) {
       Expression* exp = eval_par(env, e);
-      if (e->type().isint() && exp != env.constants.absent) {
-        IntVal v = exp->cast<IntLit>()->v();
+      if (Expression::type(e).isint() && exp != env.constants.absent) {
+        IntVal v = IntLit::v(Expression::cast<IntLit>(exp));
         bounds.emplace_back(v, v);
       } else {
         valid = false;
       }
       return false;
     }
-    if (e->type().isint()) {
-      if (ITE* ite = e->dynamicCast<ITE>()) {
+    if (Expression::type(e).isint()) {
+      if (ITE* ite = Expression::dynamicCast<ITE>(e)) {
         Bounds itebounds(IntVal::infinity(), -IntVal::infinity());
         for (int i = 0; i < ite->size(); i++) {
-          if (ite->ifExpr(i)->type().isPar() &&
-              static_cast<int>(ite->ifExpr(i)->type().cv()) == Type::CV_NO) {
+          if (Expression::type(ite->ifExpr(i)).isPar() &&
+              static_cast<int>(Expression::type(ite->ifExpr(i)).cv()) == Type::CV_NO) {
             if (eval_bool(env, ite->ifExpr(i))) {
               BottomUpIterator<ComputeIntBounds> cbi(*this);
               cbi.run(ite->thenExpr(i));
@@ -2546,7 +2573,7 @@ public:
     return false;
   }
   /// Visit integer literal
-  void vIntLit(const IntLit* i) { bounds.emplace_back(i->v(), i->v()); }
+  void vIntLit(const IntLit* i) { bounds.emplace_back(IntLit::v(i), IntLit::v(i)); }
   /// Visit floating point literal
   void vFloatLit(const FloatLit* /*f*/) {
     valid = false;
@@ -2603,13 +2630,13 @@ public:
     bool parAccess = true;
     for (unsigned int i = aa->idx().size(); (i--) != 0U;) {
       bounds.pop_back();
-      if (!aa->idx()[i]->type().isPar()) {
+      if (!Expression::type(aa->idx()[i]).isPar()) {
         parAccess = false;
       }
     }
-    if (Id* id = aa->v()->dynamicCast<Id>()) {
-      while ((id->decl()->e() != nullptr) && id->decl()->e()->isa<Id>()) {
-        id = id->decl()->e()->cast<Id>();
+    if (Id* id = Expression::dynamicCast<Id>(aa->v())) {
+      while ((id->decl()->e() != nullptr) && Expression::isa<Id>(id->decl()->e())) {
+        id = Expression::cast<Id>(id->decl()->e());
       }
       if (parAccess && (id->decl()->e() != nullptr)) {
         ArrayAccessSucess success;
@@ -2742,7 +2769,7 @@ public:
     if (c->id() == env.constants.ids.lin_exp || c->id() == env.constants.ids.sum) {
       bool le = c->id() == env.constants.ids.lin_exp;
       ArrayLit* coeff = le ? eval_array_lit(env, c->arg(0)) : nullptr;
-      if (c->arg(le ? 1 : 0)->type().isOpt()) {
+      if (Expression::type(c->arg(le ? 1 : 0)).isOpt()) {
         valid = false;
         bounds.emplace_back(0, 0);
         return;
@@ -2758,7 +2785,7 @@ public:
         bounds.pop_back();  // remove constant (third arg) from stack
       }
 
-      IntVal d = le ? c->arg(2)->cast<IntLit>()->v() : 0;
+      IntVal d = le ? IntLit::v(Expression::cast<IntLit>(c->arg(2))) : 0;
       int stacktop = static_cast<int>(bounds.size());
       for (unsigned int i = al->size(); (i--) != 0U;) {
         BottomUpIterator<ComputeIntBounds> cbi(*this);
@@ -2849,9 +2876,9 @@ public:
         }
       }
     } else if ((c->decl() != nullptr) && (c->decl()->ti()->domain() != nullptr) &&
-               !c->decl()->ti()->domain()->isa<TIId>()) {
+               !Expression::isa<TIId>(c->decl()->ti()->domain())) {
       for (int i = 0; i < c->argCount(); i++) {
-        if (c->arg(i)->type().isint()) {
+        if (Expression::type(c->arg(i)).isint()) {
           assert(!bounds.empty());
           bounds.pop_back();
         }
@@ -2926,31 +2953,31 @@ public:
   EnvI& env;
   ComputeFloatBounds(EnvI& env0) : valid(true), env(env0) {}
   bool enter(Expression* e) {
-    if (e->type().isAnn()) {
+    if (Expression::type(e).isAnn()) {
       return false;
     }
-    if (e->isa<VarDecl>()) {
+    if (Expression::isa<VarDecl>(e)) {
       return false;
     }
-    if (e->type().dim() > 0) {
+    if (Expression::type(e).dim() > 0) {
       return false;
     }
-    if (e->type().isPar()) {
+    if (Expression::type(e).isPar()) {
       Expression* exp = eval_par(env, e);
       if (exp == env.constants.absent) {
         valid = false;
-      } else if (e->type().isfloat()) {
-        FloatVal v = exp->cast<FloatLit>()->v();
+      } else if (Expression::type(e).isfloat()) {
+        FloatVal v = FloatLit::v(Expression::cast<FloatLit>(exp));
         bounds.emplace_back(v, v);
       }
       return false;
     }
-    if (e->type().isfloat()) {
-      if (ITE* ite = e->dynamicCast<ITE>()) {
+    if (Expression::type(e).isfloat()) {
+      if (ITE* ite = Expression::dynamicCast<ITE>(e)) {
         FBounds itebounds(FloatVal::infinity(), -FloatVal::infinity());
         for (int i = 0; i < ite->size(); i++) {
-          if (ite->ifExpr(i)->type().isPar() &&
-              static_cast<int>(ite->ifExpr(i)->type().cv()) == Type::CV_NO) {
+          if (Expression::type(ite->ifExpr(i)).isPar() &&
+              static_cast<int>(Expression::type(ite->ifExpr(i)).cv()) == Type::CV_NO) {
             if (eval_bool(env, ite->ifExpr(i))) {
               BottomUpIterator<ComputeFloatBounds> cbi(*this);
               cbi.run(ite->thenExpr(i));
@@ -2985,7 +3012,7 @@ public:
     bounds.emplace_back(0.0, 0.0);
   }
   /// Visit floating point literal
-  void vFloatLit(const FloatLit* f) { bounds.emplace_back(f->v(), f->v()); }
+  void vFloatLit(const FloatLit* f) { bounds.emplace_back(FloatLit::v(f), FloatLit::v(f)); }
   /// Visit Boolean literal
   void vBoolLit(const BoolLit* /*b*/) {
     valid = false;
@@ -3036,13 +3063,13 @@ public:
   void vArrayAccess(ArrayAccess* aa) {
     bool parAccess = true;
     for (unsigned int i = aa->idx().size(); (i--) != 0U;) {
-      if (!aa->idx()[i]->type().isPar()) {
+      if (!Expression::type(aa->idx()[i]).isPar()) {
         parAccess = false;
       }
     }
-    if (Id* id = aa->v()->dynamicCast<Id>()) {
-      while ((id->decl()->e() != nullptr) && id->decl()->e()->isa<Id>()) {
-        id = id->decl()->e()->cast<Id>();
+    if (Id* id = Expression::dynamicCast<Id>(aa->v())) {
+      while ((id->decl()->e() != nullptr) && Expression::isa<Id>(id->decl()->e())) {
+        id = Expression::cast<Id>(id->decl()->e());
       }
       if (parAccess && (id->decl()->e() != nullptr)) {
         ArrayAccessSucess success;
@@ -3184,7 +3211,7 @@ public:
       if (le) {
         bounds.pop_back();  // remove constant (third arg) from stack
       }
-      if (c->arg(le ? 1 : 0)->type().isOpt()) {
+      if (Expression::type(c->arg(le ? 1 : 0)).isOpt()) {
         valid = false;
         bounds.emplace_back(0.0, 0.0);
         return;
@@ -3196,7 +3223,7 @@ public:
         bounds.emplace_back(0, 0);
         return;
       }
-      FloatVal d = le ? c->arg(2)->cast<FloatLit>()->v() : 0.0;
+      FloatVal d = le ? FloatLit::v(Expression::cast<FloatLit>(c->arg(2))) : 0.0;
       int stacktop = static_cast<int>(bounds.size());
       for (unsigned int i = al->size(); (i--) != 0U;) {
         BottomUpIterator<ComputeFloatBounds> cbi(*this);
@@ -3295,9 +3322,9 @@ public:
         }
       }
     } else if ((c->decl() != nullptr) && (c->decl()->ti()->domain() != nullptr) &&
-               !c->decl()->ti()->domain()->isa<TIId>()) {
+               !Expression::isa<TIId>(c->decl()->ti()->domain())) {
       for (int i = 0; i < c->argCount(); i++) {
-        if (c->arg(i)->type().isfloat()) {
+        if (Expression::type(c->arg(i)).isfloat()) {
           assert(!bounds.empty());
           bounds.pop_back();
         }
@@ -3363,19 +3390,19 @@ public:
   EnvI& env;
   ComputeIntSetBounds(EnvI& env0) : valid(true), env(env0) {}
   bool enter(Expression* e) {
-    if (e->type().isAnn()) {
+    if (Expression::type(e).isAnn()) {
       return false;
     }
-    if (e->isa<VarDecl>()) {
+    if (Expression::isa<VarDecl>(e)) {
       return false;
     }
-    if (e->type().dim() > 0) {
+    if (Expression::type(e).dim() > 0) {
       return false;
     }
-    if (!e->type().isIntSet()) {
+    if (!Expression::type(e).isIntSet()) {
       return false;
     }
-    if (e->type().isPar()) {
+    if (Expression::type(e).isPar()) {
       bounds.push_back(eval_intset(env, e));
       return false;
     }
@@ -3403,7 +3430,8 @@ public:
   }
   /// Visit identifier
   void vId(const Id* id) {
-    if ((id->decl()->ti()->domain() != nullptr) && !id->decl()->ti()->domain()->isa<TIId>()) {
+    if ((id->decl()->ti()->domain() != nullptr) &&
+        !Expression::isa<TIId>(id->decl()->ti()->domain())) {
       bounds.push_back(eval_intset(env, id->decl()->ti()->domain()));
     } else {
       if (id->decl()->e() != nullptr) {
@@ -3424,14 +3452,14 @@ public:
   void vArrayAccess(ArrayAccess* aa) {
     bool parAccess = true;
     for (unsigned int i = aa->idx().size(); (i--) != 0U;) {
-      if (!aa->idx()[i]->type().isPar()) {
+      if (!Expression::type(aa->idx()[i]).isPar()) {
         parAccess = false;
         break;
       }
     }
-    if (Id* id = aa->v()->dynamicCast<Id>()) {
-      while ((id->decl()->e() != nullptr) && id->decl()->e()->isa<Id>()) {
-        id = id->decl()->e()->cast<Id>();
+    if (Id* id = Expression::dynamicCast<Id>(aa->v())) {
+      while ((id->decl()->e() != nullptr) && Expression::isa<Id>(id->decl()->e())) {
+        id = Expression::cast<Id>(id->decl()->e());
       }
       if (parAccess && (id->decl()->e() != nullptr)) {
         ArrayAccessSucess success;
@@ -3539,9 +3567,9 @@ public:
       bounds.pop_back();  // don't need bounds of right hand side
       bounds.push_back(b0);
     } else if ((c->decl() != nullptr) && (c->decl()->ti()->domain() != nullptr) &&
-               !c->decl()->ti()->domain()->isa<TIId>()) {
+               !Expression::isa<TIId>(c->decl()->ti()->domain())) {
       for (int i = 0; i < c->argCount(); i++) {
-        if (c->arg(i)->type().isIntSet()) {
+        if (Expression::type(c->arg(i)).isIntSet()) {
           assert(!bounds.empty());
           bounds.pop_back();
         }
@@ -3600,8 +3628,8 @@ Expression* follow_id(Expression* e) {
     if (e == nullptr) {
       return nullptr;
     }
-    if (e->eid() == Expression::E_ID) {
-      Id* ident = e->cast<Id>();
+    if (Expression::eid(e) == Expression::E_ID) {
+      Id* ident = Expression::cast<Id>(e);
       if (ident == Constants::constants().absent ||
           (ident->type().isAnn() && ident->decl() == nullptr)) {
         return ident;
@@ -3621,9 +3649,9 @@ Expression* follow_id_to_decl(Expression* e) {
     if (e == Constants::constants().absent) {
       return e;
     }
-    switch (e->eid()) {
+    switch (Expression::eid(e)) {
       case Expression::E_ID: {
-        Id* ident = e->cast<Id>();
+        Id* ident = Expression::cast<Id>(e);
         if (ident->type().isAnn() && ident->decl() == nullptr) {
           return ident;
         }
@@ -3631,9 +3659,9 @@ Expression* follow_id_to_decl(Expression* e) {
         break;
       }
       case Expression::E_VARDECL: {
-        Expression* vd_e = e->cast<VarDecl>()->e();
-        if (vd_e != nullptr && vd_e->isa<Id>() && vd_e != Constants::constants().absent &&
-            !(vd_e->type().isAnn() && vd_e->cast<Id>()->decl() == nullptr)) {
+        Expression* vd_e = Expression::cast<VarDecl>(e)->e();
+        if (vd_e != nullptr && Expression::isa<Id>(vd_e) && vd_e != Constants::constants().absent &&
+            !(Expression::type(vd_e).isAnn() && Expression::cast<Id>(vd_e)->decl() == nullptr)) {
           e = vd_e;
         } else {
           return e;
@@ -3648,8 +3676,8 @@ Expression* follow_id_to_decl(Expression* e) {
 
 Expression* follow_id_to_value(Expression* e) {
   Expression* decl = follow_id_to_decl(e);
-  if (auto* vd = decl->dynamicCast<VarDecl>()) {
-    if ((vd->e() != nullptr) && vd->e()->type().isPar()) {
+  if (auto* vd = Expression::dynamicCast<VarDecl>(decl)) {
+    if ((vd->e() != nullptr) && Expression::type(vd->e()).isPar()) {
       return vd->e();
     }
     return vd->id();
@@ -3662,22 +3690,22 @@ void eval_static_function_body(EnvI& env, FunctionI* decl, Model& toAdd) {
   if (e == nullptr) {
     return;
   }
-  while (e->ann().contains(env.constants.ann.mzn_evaluate_once)) {
-    if (e->isa<ITE>()) {
-      ITE* ite = e->cast<ITE>();
+  while (Expression::ann(e).contains(env.constants.ann.mzn_evaluate_once)) {
+    if (Expression::isa<ITE>(e)) {
+      ITE* ite = Expression::cast<ITE>(e);
       if (ite->size() != 1) {
-        env.addWarning(ite->loc(),
+        env.addWarning(Expression::loc(ite),
                        "::mzn_evaluate_once ignored, elseif expressions are not supported");
         return;
       }
-      if (!ite->ifExpr(0)->type().isPar()) {
-        env.addWarning(ite->ifExpr(0)->loc(),
+      if (!Expression::type(ite->ifExpr(0)).isPar()) {
+        env.addWarning(Expression::loc(ite->ifExpr(0)),
                        "::mzn_evaluate_once ignored, var conditions are not supported");
         return;
       }
-      if (ite->ifExpr(0)->type().cv()) {
+      if (Expression::type(ite->ifExpr(0)).cv()) {
         env.addWarning(
-            ite->ifExpr(0)->loc(),
+            Expression::loc(ite->ifExpr(0)),
             "::mzn_evaluate_once ignored, par conditions that contain variables are not supported");
         return;
       }
@@ -3690,35 +3718,35 @@ void eval_static_function_body(EnvI& env, FunctionI* decl, Model& toAdd) {
         decl->e(ite->elseExpr());
         e = decl->e();
       }
-    } else if (e->isa<Let>()) {
-      Let* let = e->cast<Let>();
+    } else if (Expression::isa<Let>(e)) {
+      Let* let = Expression::cast<Let>(e);
       if (let->let().size() != 1) {
         env.addWarning(
-            let->loc(),
+            Expression::loc(let),
             "::mzn_evaluate_once ignored, lets with more than one declaration are not supported");
         return;
       }
-      if (!let->let()[0]->type().isPar()) {
-        env.addWarning(let->loc(),
+      if (!Expression::type(let->let()[0]).isPar()) {
+        env.addWarning(Expression::loc(let),
                        "::mzn_evaluate_once ignored, lets with var declarations are not supported");
         return;
       }
-      if (!let->let()[0]->isa<VarDecl>()) {
-        env.addWarning(let->loc(),
+      if (!Expression::isa<VarDecl>(let->let()[0])) {
+        env.addWarning(Expression::loc(let),
                        "::mzn_evaluate_once ignored, lets with constraints are not supported");
         return;
       }
       GCLock lock;
-      auto* vd = let->let()[0]->cast<VarDecl>();
+      auto* vd = Expression::cast<VarDecl>(let->let()[0]);
       vd->e(eval_par(env, vd->e()));
       check_par_declaration(env, vd);
       vd->toplevel(true);
       vd->id()->idn(env.genId());
-      toAdd.addItem(VarDeclI::a(vd->loc(), vd));
+      toAdd.addItem(VarDeclI::a(Expression::loc(vd), vd));
       decl->e(let->in());
       e = decl->e();
     } else {
-      env.addWarning(e->loc(), "::mzn_evaluate_once ignored, invalid expression");
+      env.addWarning(Expression::loc(e), "::mzn_evaluate_once ignored, invalid expression");
       return;
     }
   }

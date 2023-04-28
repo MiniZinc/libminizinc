@@ -23,7 +23,7 @@ namespace MiniZinc {
 EE flatten_arrayaccess(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   CallStackItem _csi(env, e);
   EE ret;
-  auto* aa = e->cast<ArrayAccess>();
+  auto* aa = Expression::cast<ArrayAccess>(e);
   KeepAlive aa_ka = aa;
 
   Ctx nctx = ctx;
@@ -35,15 +35,15 @@ EE flatten_arrayaccess(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, Var
 start_flatten_arrayaccess:
   for (unsigned int i = 0; i < aa->idx().size(); i++) {
     Expression* tmp = follow_id_to_decl(aa->idx()[i]);
-    if (auto* vd = tmp->dynamicCast<VarDecl>()) {
+    if (auto* vd = Expression::dynamicCast<VarDecl>(tmp)) {
       tmp = vd->id();
     }
-    if (tmp->type().isPar()) {
+    if (Expression::type(tmp).isPar()) {
       ArrayLit* al;
-      if (eev.r()->isa<ArrayLit>()) {
-        al = eev.r()->cast<ArrayLit>();
+      if (Expression::isa<ArrayLit>(eev.r())) {
+        al = Expression::cast<ArrayLit>(eev.r());
       } else {
-        Id* id = eev.r()->cast<Id>();
+        Id* id = Expression::cast<Id>(eev.r());
         if (id->decl() == nullptr) {
           throw InternalError("undefined identifier");
         }
@@ -51,8 +51,8 @@ start_flatten_arrayaccess:
           throw InternalError("array without initialiser not supported");
         }
         Expression* id_e = follow_id(id);
-        if (id_e->isa<ArrayLit>()) {
-          al = id_e->cast<ArrayLit>();
+        if (Expression::isa<ArrayLit>(id_e)) {
+          al = Expression::cast<ArrayLit>(id_e);
         } else {
           throw InternalError("builtin function returning array not supported");
         }
@@ -66,10 +66,10 @@ start_flatten_arrayaccess:
       std::vector<int> stack;
       for (int j = 0; j < aa->idx().size(); j++) {
         Expression* tmp = follow_id_to_decl(aa->idx()[j]);
-        if (auto* vd = tmp->dynamicCast<VarDecl>()) {
+        if (auto* vd = Expression::dynamicCast<VarDecl>(tmp)) {
           tmp = vd->id();
         }
-        if (tmp->type().isPar()) {
+        if (Expression::type(tmp).isPar()) {
           GCLock lock;
           idx[j] = eval_int(env, tmp).toInt();
         } else {
@@ -87,7 +87,7 @@ start_flatten_arrayaccess:
           GCLock lock;
           ka = eval_arrayaccess(env, al, idx, success);
           if (!success() && env.inMaybePartial == 0) {
-            ResultUndefinedError warning(env, al->loc(), success.errorMessage(env, al));
+            ResultUndefinedError warning(env, Expression::loc(al), success.errorMessage(env, al));
           }
         }
         ees.emplace_back(nullptr, env.constants.boollit(success()));
@@ -113,7 +113,8 @@ start_flatten_arrayaccess:
             Expression* al_idx = eval_arrayaccess(env, al, idx, success);
             if (!success()) {
               if (env.inMaybePartial == 0) {
-                ResultUndefinedError warning(env, al->loc(), success.errorMessage(env, al));
+                ResultUndefinedError warning(env, Expression::loc(al),
+                                             success.errorMessage(env, al));
               }
               ees.emplace_back(nullptr, env.constants.literalFalse);
               ees.emplace_back(nullptr, eev.b());
@@ -146,10 +147,11 @@ start_flatten_arrayaccess:
       }
       {
         GCLock lock;
-        Expression* newal = new ArrayLit(al->loc(), elems_e, dims);
-        newal->type(Type::arrType(env, Type::partop(static_cast<int>(dims.size())), al->type()));
+        Expression* newal = new ArrayLit(Expression::loc(al), elems_e, dims);
+        Expression::type(
+            newal, Type::arrType(env, Type::partop(static_cast<int>(dims.size())), al->type()));
         eev.r = newal;
-        auto* n_aa = new ArrayAccess(aa->loc(), newal, newaccess);
+        auto* n_aa = new ArrayAccess(Expression::loc(aa), newal, newaccess);
         n_aa->type(aa->type());
         aa = n_aa;
         aa_ka = aa;
@@ -157,24 +159,24 @@ start_flatten_arrayaccess:
     }
   }
 
-  if (aa->idx().size() == 1 && aa->idx()[0]->isa<ArrayAccess>()) {
-    auto* aa_inner = aa->idx()[0]->cast<ArrayAccess>();
+  if (aa->idx().size() == 1 && Expression::isa<ArrayAccess>(aa->idx()[0])) {
+    auto* aa_inner = Expression::cast<ArrayAccess>(aa->idx()[0]);
     ArrayLit* al;
-    if (eev.r()->isa<ArrayLit>()) {
-      al = eev.r()->cast<ArrayLit>();
+    if (Expression::isa<ArrayLit>(eev.r())) {
+      al = Expression::cast<ArrayLit>(eev.r());
     } else {
-      Id* id = eev.r()->cast<Id>();
+      Id* id = Expression::cast<Id>(eev.r());
       if (id->decl() == nullptr) {
         throw InternalError("undefined identifier");
       }
       if (id->decl()->e() == nullptr) {
         throw InternalError("array without initialiser not supported");
       }
-      al = follow_id(id)->cast<ArrayLit>();
+      al = Expression::cast<ArrayLit>(follow_id(id));
     }
-    if (aa_inner->v()->type().isPar()) {
+    if (Expression::type(aa_inner->v()).isPar()) {
       KeepAlive ka_al_inner = flat_cv_exp(env, ctx, aa_inner->v());
-      auto* al_inner = ka_al_inner()->cast<ArrayLit>();
+      auto* al_inner = Expression::cast<ArrayLit>(ka_al_inner());
       std::vector<Expression*> composed_e(al_inner->size());
       for (unsigned int i = 0; i < al_inner->size(); i++) {
         GCLock lock;
@@ -190,12 +192,12 @@ start_flatten_arrayaccess:
       }
       {
         GCLock lock;
-        Expression* newal = new ArrayLit(al->loc(), composed_e, dims);
+        Expression* newal = new ArrayLit(Expression::loc(al), composed_e, dims);
         Type t = al->type();
         t.dim(static_cast<int>(dims.size()));
-        newal->type(t);
+        Expression::type(newal, t);
         eev.r = newal;
-        auto* n_aa = new ArrayAccess(aa->loc(), newal, aa_inner->idx());
+        auto* n_aa = new ArrayAccess(Expression::loc(aa), newal, aa_inner->idx());
         n_aa->type(aa->type());
         aa = n_aa;
         aa_ka = aa;
@@ -208,7 +210,7 @@ flatten_arrayaccess:
   dimctx.neg = false;
   for (unsigned int i = 0; i < aa->idx().size(); i++) {
     Expression* tmp = follow_id_to_decl(aa->idx()[i]);
-    if (auto* vd = tmp->dynamicCast<VarDecl>()) {
+    if (auto* vd = Expression::dynamicCast<VarDecl>(tmp)) {
       tmp = vd->id();
     }
     ees.push_back(flat_exp(env, dimctx, tmp, nullptr, dimctx.partialityVar(env)));
@@ -217,7 +219,7 @@ flatten_arrayaccess:
 
   bool parAccess = true;
   for (unsigned int i = 0; i < aa->idx().size(); i++) {
-    if (!ees[i].r()->type().isPar()) {
+    if (!Expression::type(ees[i].r()).isPar()) {
       parAccess = false;
       break;
     }
@@ -225,17 +227,17 @@ flatten_arrayaccess:
 
   if (parAccess) {
     ArrayLit* al;
-    if (eev.r()->isa<ArrayLit>()) {
-      al = eev.r()->cast<ArrayLit>();
+    if (Expression::isa<ArrayLit>(eev.r())) {
+      al = Expression::cast<ArrayLit>(eev.r());
     } else {
-      Id* id = eev.r()->cast<Id>();
+      Id* id = Expression::cast<Id>(eev.r());
       if (id->decl() == nullptr) {
         throw InternalError("undefined identifier");
       }
       if (id->decl()->e() == nullptr) {
         throw InternalError("array without initialiser not supported");
       }
-      al = follow_id(id)->cast<ArrayLit>();
+      al = Expression::cast<ArrayLit>(follow_id(id));
     }
     KeepAlive ka;
     ArrayAccessSucess success;
@@ -248,7 +250,7 @@ flatten_arrayaccess:
       ka = eval_arrayaccess(env, al, dims, success);
     }
     if (!success() && env.inMaybePartial == 0) {
-      ResultUndefinedError warning(env, al->loc(), "array access out of bounds");
+      ResultUndefinedError warning(env, Expression::loc(al), "array access out of bounds");
     }
     ees.emplace_back(nullptr, env.constants.boollit(success()));
     if (aa->type().isbool() && !aa->type().isOpt()) {
@@ -262,7 +264,7 @@ flatten_arrayaccess:
   } else if (aa->type().structBT()) {
     // x[i], where x is an array of tuples, and i is an index variable
     // Strategy: create/flatten a seperate array access for each field, combine to new tuple literal
-    assert(eev.r()->type().bt() == aa->type().bt());
+    assert(Expression::type(eev.r()).bt() == aa->type().bt());
 
     std::vector<Expression*> idx(aa->idx().size());
     for (size_t i = 0; i < aa->idx().size(); ++i) {
@@ -278,8 +280,8 @@ flatten_arrayaccess:
       std::vector<Expression*> field_al = field_slices(env, eev.r());
       assert(res_st->size() == field_al.size());
       for (int i = 0; i < res_st->size(); ++i) {
-        field_aa[i] = new ArrayAccess(aa->loc().introduce(), field_al[i], idx);
-        field_aa[i]()->type((*res_st)[i]);
+        field_aa[i] = new ArrayAccess(Expression::loc(aa).introduce(), field_al[i], idx);
+        Expression::type(field_aa[i](), (*res_st)[i]);
       }
     }
     // Flatten field based array access expressions
@@ -307,11 +309,11 @@ flatten_arrayaccess:
     KeepAlive ka;
     {
       GCLock lock;
-      Call* cc = Call::a(e->loc().introduce(), env.constants.ids.element, args);
+      Call* cc = Call::a(Expression::loc(e).introduce(), env.constants.ids.element, args);
       cc->type(aa->type());
       FunctionI* fi = env.model->matchFn(env, cc->id(), args, false);
       if (fi == nullptr) {
-        throw FlatteningError(env, cc->loc(), "cannot find matching declaration");
+        throw FlatteningError(env, Expression::loc(cc), "cannot find matching declaration");
       }
       assert(fi);
       assert(env.isSubtype(fi->rtype(env, args, nullptr, false), cc->type(), false));

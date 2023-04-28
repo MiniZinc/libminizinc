@@ -263,7 +263,7 @@ void NLSolverInstance::analyse(const Item* i) {
       DEBUG_MSG("II_VD: Variable Declaration.");
 
       const VarDecl* vd = i->cast<VarDeclI>()->e();
-      const auto* ti = vd->ti()->cast<TypeInst>();
+      const auto* ti = Expression::cast<TypeInst>(vd->ti());
       const Expression* rhs = vd->e();
       _nlFile.addVarDecl(vd, ti, rhs);
     } break;
@@ -278,8 +278,8 @@ void NLSolverInstance::analyse(const Item* i) {
     case Item::II_CON: {
       DEBUG_MSG("II_CON: Constraint.");
       Expression* e = i->cast<ConstraintI>()->e();
-      if (e->eid() == Expression::E_CALL) {
-        const auto* c = e->cast<Call>();
+      if (Expression::eid(e) == Expression::E_CALL) {
+        const auto* c = Expression::cast<Call>(e);
         DEBUG_MSG("     " << c->id() << " ");
         _nlFile.analyseConstraint(c);
       } else {

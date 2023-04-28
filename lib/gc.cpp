@@ -554,7 +554,7 @@ void GC::Heap::sweep() {
           default:
             if (n->_id >= static_cast<unsigned int>(ASTNode::NID_END) + 1 &&
                 n->_id <= static_cast<unsigned int>(Expression::EID_END)) {
-              static_cast<Expression*>(n)->ann().~Annotation();
+              Expression::ann(static_cast<Expression*>(n)).~Annotation();
             }
         }
         if (ns >= _fl_size[0] && ns <= _fl_size[_max_fl]) {
@@ -710,29 +710,29 @@ void GC::removeKeepAlive(KeepAlive* e) {
 }
 
 KeepAlive::KeepAlive(Expression* e) : _e(e), _p(nullptr), _n(nullptr) {
-  if ((_e != nullptr) && !_e->isUnboxedVal()) {
+  if ((_e != nullptr) && !Expression::isUnboxedVal(_e)) {
     GC::gc()->addKeepAlive(this);
   }
 }
 KeepAlive::~KeepAlive() {
-  if ((_e != nullptr) && !_e->isUnboxedVal()) {
+  if ((_e != nullptr) && !Expression::isUnboxedVal(_e)) {
     GC::gc()->removeKeepAlive(this);
   }
 }
 KeepAlive::KeepAlive(const KeepAlive& e) : _e(e._e), _p(nullptr), _n(nullptr) {
-  if ((_e != nullptr) && !_e->isUnboxedVal()) {
+  if ((_e != nullptr) && !Expression::isUnboxedVal(_e)) {
     GC::gc()->addKeepAlive(this);
   }
 }
 KeepAlive& KeepAlive::operator=(const KeepAlive& e) {
   if (this != &e) {
-    if ((_e != nullptr) && !_e->isUnboxedVal()) {
-      if (e._e == nullptr || e._e->isUnboxedVal()) {
+    if ((_e != nullptr) && !Expression::isUnboxedVal(_e)) {
+      if (e._e == nullptr || Expression::isUnboxedVal(e._e)) {
         GC::gc()->removeKeepAlive(this);
         _p = _n = nullptr;
       }
     } else {
-      if (e._e != nullptr && !e._e->isUnboxedVal()) {
+      if (e._e != nullptr && !Expression::isUnboxedVal(e._e)) {
         GC::gc()->addKeepAlive(this);
       }
     }
@@ -783,28 +783,28 @@ void GC::removeNodeWeakMap(ASTNodeWeakMap* m) {
 }
 
 WeakRef::WeakRef(Expression* e) : _e(e), _p(nullptr), _n(nullptr) {
-  if (_e != nullptr && !_e->isUnboxedVal()) {
+  if (_e != nullptr && !Expression::isUnboxedVal(_e)) {
     GC::gc()->addWeakRef(this);
   }
 }
 WeakRef::~WeakRef() {
-  if ((_e != nullptr) && !_e->isUnboxedVal()) {
+  if ((_e != nullptr) && !Expression::isUnboxedVal(_e)) {
     GC::gc()->removeWeakRef(this);
   }
 }
 WeakRef::WeakRef(const WeakRef& e) : _e(e()), _p(nullptr), _n(nullptr) {
-  if (_e != nullptr && !_e->isUnboxedVal()) {
+  if (_e != nullptr && !Expression::isUnboxedVal(_e)) {
     GC::gc()->addWeakRef(this);
   }
 }
 WeakRef& WeakRef::operator=(const WeakRef& e) {
   if (this != &e) {
     // Test if this WeakRef is currently active in the GC
-    bool isActive = ((_e != nullptr) && !_e->isUnboxedVal());
+    bool isActive = ((_e != nullptr) && !Expression::isUnboxedVal(_e));
     if (isActive) {
       // Yes, active WeakRef.
       // If after assigning WeakRef should be inactive, remove it.
-      if (e() == nullptr || e()->isUnboxedVal()) {
+      if (e() == nullptr || Expression::isUnboxedVal(e())) {
         GC::gc()->removeWeakRef(this);
         _n = _p = nullptr;
       }
@@ -812,16 +812,18 @@ WeakRef& WeakRef::operator=(const WeakRef& e) {
     _e = e();
 
     // If this WeakRef was not active but now should be, add it
-    if (!isActive && _e != nullptr && !_e->isUnboxedVal()) {
+    if (!isActive && _e != nullptr && !Expression::isUnboxedVal(_e)) {
       GC::gc()->addWeakRef(this);
     }
   }
   return *this;
 }
 
-Expression* WeakRef::operator()() { return _e->isUnboxedVal() ? _e : _p != nullptr ? _e : nullptr; }
+Expression* WeakRef::operator()() {
+  return Expression::isUnboxedVal(_e) ? _e : _p != nullptr ? _e : nullptr;
+}
 Expression* WeakRef::operator()() const {
-  return _e->isUnboxedVal() ? _e : _p != nullptr ? _e : nullptr;
+  return Expression::isUnboxedVal(_e) ? _e : _p != nullptr ? _e : nullptr;
 }
 
 ASTNodeWeakMap::ASTNodeWeakMap() : _p(nullptr), _n(nullptr) { GC::gc()->addNodeWeakMap(this); }

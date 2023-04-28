@@ -88,7 +88,7 @@ public:
       return true;
     }  /// TODO: test if id's domain is a superset of the right hand side
     /// this currently only tests for equality, and for Boolean domains
-    if (Id* ident = vd->e()->dynamicCast<Id>()) {
+    if (Id* ident = Expression::dynamicCast<Id>(vd->e())) {
       if (Expression::equal(ident->decl()->ti()->domain(), vd->ti()->domain())) {
         return true;
       }

@@ -148,7 +148,7 @@ Expression* createDocComment(const ParserLocation& loc, const std::string& s) {
   std::vector<Expression*> args(1);
   args[0] = new StringLit(loc, s);
   Call* c = Call::a(Location(loc), Constants::constants().ann.doc_comment, args);
-  c->type(Type::ann());
+  Expression::type(c, Type::ann());
   return c;
 }
 
@@ -156,13 +156,13 @@ Expression* createAccess(const ParserLocation& loc, Expression* e, const std::ve
   Expression* ret = e;
   for (auto* expr : idx) {
     // Set location of access expression (TODO: can this be more accurate?)
-    expr->loc(loc);
+    Expression::loc(expr, loc);
 
     // Insert member being accessed
-    if (auto* fa = expr->dynamicCast<FieldAccess>()) {
+    if (auto* fa = Expression::dynamicCast<FieldAccess>(expr)) {
       fa->v(ret);
     } else {
-      auto* aa = expr->cast<ArrayAccess>();
+      auto* aa = Expression::cast<ArrayAccess>(expr);
       aa->v(ret);
     }
 
@@ -4048,7 +4048,7 @@ yyreduce:
           }
         } else if (VarDeclI* vdi = Item::dynamicCast<VarDeclI>((yyval.item))) {
           if (pp->parseDocComments) {
-            vdi->e()->addAnnotation(createDocComment((yylsp[-1]),(yyvsp[-1].sValue)));
+            Expression::addAnnotation(vdi->e(), createDocComment((yylsp[-1]),(yyvsp[-1].sValue)));
           }
         } else {
           yyerror(&(yylsp[0]), parm, "documentation comments are only supported for function, predicate and variable declarations");
@@ -4118,7 +4118,7 @@ yyreduce:
 
   case 36: /* vardecl_item: ti_expr_and_id  */
       { if ((yyvsp[0].vardeclexpr)) {
-          if ((yyvsp[0].vardeclexpr)->ti()->type().any() && (yyvsp[0].vardeclexpr)->ti()->domain() == nullptr) {
+          if (Expression::type((yyvsp[0].vardeclexpr)->ti()).any() && (yyvsp[0].vardeclexpr)->ti()->domain() == nullptr) {
             // This is an any type, not allowed without a right hand side
             yyerror(&(yylsp[0]), parm, "declarations with `any' type-inst require definition");
           }
@@ -4142,7 +4142,7 @@ yyreduce:
         ti->setIsEnum(true);
         VarDecl* vd = new VarDecl((yyloc),ti,(yyvsp[-1].sValue));
         if ((yyvsp[-1].sValue) && (yyvsp[0].expressions1d))
-          vd->addAnnotations(*(yyvsp[0].expressions1d));
+        Expression::addAnnotations(vd, *(yyvsp[0].expressions1d));
         free((yyvsp[-1].sValue));
         (yyval.item) = VarDeclI::a((yyloc),vd);
       }
@@ -4177,7 +4177,7 @@ yyreduce:
         Call* sl = Call::a((yyloc), Constants::constants().ids.anonEnumFromStrings, args);
         VarDecl* vd = new VarDecl((yyloc),ti,(yyvsp[-5].sValue),sl);
         if ((yyvsp[-5].sValue) && (yyvsp[-4].expressions1d))
-          vd->addAnnotations(*(yyvsp[-4].expressions1d));
+        Expression::addAnnotations(vd, *(yyvsp[-4].expressions1d));
         free((yyvsp[-5].sValue));
         delete (yyvsp[-1].expressions1d);
         (yyval.item) = VarDeclI::a((yyloc),vd);
@@ -4189,7 +4189,7 @@ yyreduce:
         TypeInst* ti = (yyvsp[0].tiexpr);
         VarDecl* vd = new VarDecl((yyloc), nullptr, (yyvsp[-3].sValue), ti);
         if ((yyvsp[-2].expressions1d)) {
-          vd->addAnnotations(*(yyvsp[-2].expressions1d));
+          Expression::addAnnotations(vd, *(yyvsp[-2].expressions1d));
         }
         free((yyvsp[-3].sValue));
         (yyval.item) = VarDeclI::a((yyloc), vd);
@@ -4276,7 +4276,7 @@ yyreduce:
   case 55: /* constraint_item: "constraint" "::" string_expr expr  */
       { (yyval.item) = new ConstraintI((yyloc),(yyvsp[0].expression));
         if ((yyvsp[0].expression) && (yyvsp[-1].expression))
-          (yyval.item)->cast<ConstraintI>()->e()->ann().add(Call::a((yylsp[-2]), ASTString("mzn_constraint_name"), {(yyvsp[-1].expression)}));
+          Expression::ann((yyval.item)->cast<ConstraintI>()->e()).add(Call::a((yylsp[-2]), ASTString("mzn_constraint_name"), {(yyvsp[-1].expression)}));
       }
     break;
 
@@ -4369,7 +4369,7 @@ yyreduce:
       {
         ParserState* pp = static_cast<ParserState*>(parm);
         if ((yyvsp[-3].vardeclexprs) && (yyvsp[-2].vardeclexpr)) (yyvsp[-3].vardeclexprs)->push_back((yyvsp[-2].vardeclexpr));
-        if ((yyvsp[-6].tiexpr) && (yyvsp[-6].tiexpr)->type().any() && (yyvsp[-6].tiexpr)->domain() == nullptr) {
+        if ((yyvsp[-6].tiexpr) && Expression::type((yyvsp[-6].tiexpr)).any() && (yyvsp[-6].tiexpr)->domain() == nullptr) {
           // This is an any type, not allowed without a right hand side
           yyerror(&(yylsp[-6]), parm, "return type cannot have `any' type-inst without type-inst variable");
         }
@@ -4384,7 +4384,7 @@ yyreduce:
   case 66: /* function_item: ti_expr ':' "identifier" '(' params_list ')' ann_param annotations operation_item_tail  */
       {
         ParserState* pp = static_cast<ParserState*>(parm);
-        if ((yyvsp[-8].tiexpr) && (yyvsp[-8].tiexpr)->type().any() && (yyvsp[-8].tiexpr)->domain() == nullptr) {
+        if ((yyvsp[-8].tiexpr) && Expression::type((yyvsp[-8].tiexpr)).any() && (yyvsp[-8].tiexpr)->domain() == nullptr) {
           // This is an any type, not allowed without a right hand side
           yyerror(&(yylsp[-8]), parm, "return type cannot have `any' type-inst without type-inst variable");
         }
@@ -4465,7 +4465,7 @@ yyreduce:
   case 78: /* params_list_head: ti_expr_and_id_or_anon  */
       { (yyval.vardeclexprs)=new vector<VarDecl*>();
         if ((yyvsp[0].vardeclexpr)) {
-          if ((yyvsp[0].vardeclexpr)->ti()->type().any() && (yyvsp[0].vardeclexpr)->ti()->domain() == nullptr) {
+          if (Expression::type((yyvsp[0].vardeclexpr)->ti()).any() && (yyvsp[0].vardeclexpr)->ti()->domain() == nullptr) {
             // This is an any type, not allowed in parameter list
             yyerror(&(yylsp[0]), parm, "parameter declaration cannot have `any' type-inst without type-inst variable");
           }
@@ -4480,7 +4480,7 @@ yyreduce:
         if ((yyvsp[0].vardeclexpr)) (yyvsp[0].vardeclexpr)->toplevel(false);
         if ((yyvsp[-2].vardeclexprs) && (yyvsp[0].vardeclexpr)) {
           (yyvsp[-2].vardeclexprs)->push_back((yyvsp[0].vardeclexpr));
-          if ((yyvsp[0].vardeclexpr)->ti()->type().any() && (yyvsp[0].vardeclexpr)->ti()->domain() == nullptr) {
+          if (Expression::type((yyvsp[0].vardeclexpr)->ti()).any() && (yyvsp[0].vardeclexpr)->ti()->domain() == nullptr) {
             // This is an any type, not allowed in parameter list
             yyerror(&(yylsp[0]), parm, "parameter declaration cannot have `any' type-inst without type-inst variable");
           }
@@ -4500,7 +4500,7 @@ yyreduce:
       { if ((yyvsp[-3].tiexpr) && (yyvsp[-1].sValue)) {
           Id* ident = new Id((yylsp[-1]), (yyvsp[-1].sValue), nullptr);
           (yyval.vardeclexpr) = new VarDecl((yyloc), (yyvsp[-3].tiexpr), ident);
-          if ((yyvsp[0].expressions1d)) (yyval.vardeclexpr)->ann().add(*(yyvsp[0].expressions1d));
+          if ((yyvsp[0].expressions1d)) Expression::ann((yyval.vardeclexpr)).add(*(yyvsp[0].expressions1d));
         }
         free((yyvsp[-1].sValue));
         delete (yyvsp[0].expressions1d);
@@ -4551,7 +4551,7 @@ yyreduce:
   case 96: /* ti_expr: ti_expr "++" base_ti_expr  */
       {
         (yyval.tiexpr) = (yyvsp[-2].tiexpr);
-        Type tt = (yyval.tiexpr)->type();
+        Type tt = Expression::type((yyval.tiexpr));
         tt.dim(0);
         TypeInst* lhs = new TypeInst((yyloc), tt, (yyvsp[-2].tiexpr)->domain());
         BinOp* bop = new BinOp((yyloc), lhs, BOT_PLUSPLUS, (yyvsp[0].tiexpr));
@@ -4568,7 +4568,7 @@ yyreduce:
   case 98: /* base_ti_expr: "opt" base_ti_expr_tail  */
       { (yyval.tiexpr) = (yyvsp[0].tiexpr);
         if ((yyval.tiexpr)) {
-          Type tt = (yyval.tiexpr)->type();
+          Type tt = Expression::type((yyval.tiexpr));
           tt.ot(Type::OT_OPTIONAL);
           tt.otExplicit(true);
           (yyval.tiexpr)->type(tt);
@@ -4579,7 +4579,7 @@ yyreduce:
   case 99: /* base_ti_expr: "par" opt_opt base_ti_expr_tail  */
       { (yyval.tiexpr) = (yyvsp[0].tiexpr);
         if ((yyval.tiexpr)) {
-          Type tt = (yyval.tiexpr)->type();
+          Type tt = Expression::type((yyval.tiexpr));
           tt.tiExplicit(true);
           if ((yyvsp[-1].bValue)) {
             tt.ot(Type::OT_OPTIONAL);
@@ -4592,7 +4592,7 @@ yyreduce:
 
   case 100: /* base_ti_expr: "var" opt_opt base_ti_expr_tail  */
       { (yyval.tiexpr) = (yyvsp[0].tiexpr);
-        Type tt = (yyval.tiexpr)->type();
+        Type tt = Expression::type((yyval.tiexpr));
         if ((yyval.tiexpr)) {
           tt.ti(Type::TI_VAR);
           tt.tiExplicit(true);
@@ -4608,7 +4608,7 @@ yyreduce:
   case 101: /* base_ti_expr: "set" "of" base_ti_expr_tail  */
       { (yyval.tiexpr) = (yyvsp[0].tiexpr);
         if ((yyval.tiexpr)) {
-          Type tt = (yyval.tiexpr)->type();
+          Type tt = Expression::type((yyval.tiexpr));
           tt.st(Type::ST_SET);
           (yyval.tiexpr)->type(tt);
         }
@@ -4618,7 +4618,7 @@ yyreduce:
   case 102: /* base_ti_expr: "opt" "set" "of" base_ti_expr_tail  */
       { (yyval.tiexpr) = (yyvsp[0].tiexpr);
         if ((yyval.tiexpr)) {
-          Type tt = (yyval.tiexpr)->type();
+          Type tt = Expression::type((yyval.tiexpr));
           tt.st(Type::ST_SET);
           tt.ot(Type::OT_OPTIONAL);
           tt.otExplicit(true);
@@ -4630,7 +4630,7 @@ yyreduce:
   case 103: /* base_ti_expr: "par" opt_opt "set" "of" base_ti_expr_tail  */
       { (yyval.tiexpr) = (yyvsp[0].tiexpr);
         if ((yyval.tiexpr)) {
-          Type tt = (yyval.tiexpr)->type();
+          Type tt = Expression::type((yyval.tiexpr));
           tt.tiExplicit(true);
           tt.st(Type::ST_SET);
           if ((yyvsp[-3].bValue)) {
@@ -4645,7 +4645,7 @@ yyreduce:
   case 104: /* base_ti_expr: "var" opt_opt "set" "of" base_ti_expr_tail  */
       { (yyval.tiexpr) = (yyvsp[0].tiexpr);
         if ((yyval.tiexpr)) {
-          Type tt = (yyval.tiexpr)->type();
+          Type tt = Expression::type((yyval.tiexpr));
           tt.ti(Type::TI_VAR);
           tt.tiExplicit(true);
           tt.st(Type::ST_SET);
@@ -4772,7 +4772,7 @@ yyreduce:
     break;
 
   case 131: /* set_expr: set_expr "::" annotation_expr  */
-      { if ((yyvsp[-2].expression) && (yyvsp[0].expression)) (yyvsp[-2].expression)->addAnnotation((yyvsp[0].expression)); (yyval.expression)=(yyvsp[-2].expression); }
+      { if ((yyvsp[-2].expression) && (yyvsp[0].expression)) Expression::addAnnotation((yyvsp[-2].expression), (yyvsp[0].expression)); (yyval.expression)=(yyvsp[-2].expression); }
     break;
 
   case 132: /* set_expr: set_expr "union" set_expr  */
@@ -4790,8 +4790,8 @@ yyreduce:
   case 135: /* set_expr: set_expr ".." set_expr  */
       { if ((yyvsp[-2].expression)==nullptr || (yyvsp[0].expression)==nullptr) {
           (yyval.expression) = nullptr;
-        } else if ((yyvsp[-2].expression)->isa<IntLit>() && (yyvsp[0].expression)->isa<IntLit>()) {
-          (yyval.expression)=new SetLit((yyloc), IntSetVal::a((yyvsp[-2].expression)->cast<IntLit>()->v(),(yyvsp[0].expression)->cast<IntLit>()->v()));
+        } else if (Expression::isa<IntLit>((yyvsp[-2].expression)) && Expression::isa<IntLit>((yyvsp[0].expression))) {
+          (yyval.expression)=new SetLit((yyloc), IntSetVal::a(IntLit::v(Expression::cast<IntLit>((yyvsp[-2].expression))),IntLit::v(Expression::cast<IntLit>((yyvsp[0].expression)))));
         } else {
           (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_DOTDOT, (yyvsp[0].expression));
         }
@@ -4857,8 +4857,8 @@ yyreduce:
   case 150: /* set_expr: "'..'" '(' expr ',' expr ')'  */
       { if ((yyvsp[-3].expression)==nullptr || (yyvsp[-1].expression)==nullptr) {
           (yyval.expression) = nullptr;
-        } else if ((yyvsp[-3].expression)->isa<IntLit>() && (yyvsp[-1].expression)->isa<IntLit>()) {
-          (yyval.expression)=new SetLit((yyloc), IntSetVal::a((yyvsp[-3].expression)->cast<IntLit>()->v(),(yyvsp[-1].expression)->cast<IntLit>()->v()));
+        } else if (Expression::isa<IntLit>((yyvsp[-3].expression)) && Expression::isa<IntLit>((yyvsp[-1].expression))) {
+          (yyval.expression)=new SetLit((yyloc), IntSetVal::a(IntLit::v(Expression::cast<IntLit>((yyvsp[-3].expression))),IntLit::v(Expression::cast<IntLit>((yyvsp[-1].expression)))));
         } else {
           (yyval.expression)=new BinOp((yyloc), (yyvsp[-3].expression), BOT_DOTDOT, (yyvsp[-1].expression));
         }
@@ -4983,10 +4983,10 @@ yyreduce:
     break;
 
   case 173: /* set_expr: "-" set_expr  */
-      { if ((yyvsp[0].expression) && (yyvsp[0].expression)->isa<IntLit>()) {
-          (yyval.expression) = IntLit::a(-(yyvsp[0].expression)->cast<IntLit>()->v());
-        } else if ((yyvsp[0].expression) && (yyvsp[0].expression)->isa<FloatLit>()) {
-          (yyval.expression) = FloatLit::a(-(yyvsp[0].expression)->cast<FloatLit>()->v());
+      { if ((yyvsp[0].expression) && Expression::isa<IntLit>((yyvsp[0].expression))) {
+          (yyval.expression) = IntLit::a(-IntLit::v(Expression::cast<IntLit>((yyvsp[0].expression))));
+        } else if ((yyvsp[0].expression) && Expression::isa<FloatLit>((yyvsp[0].expression))) {
+          (yyval.expression) = FloatLit::a(-FloatLit::v(Expression::cast<FloatLit>((yyvsp[0].expression))));
         } else {
           (yyval.expression)=new UnOp((yyloc), UOT_MINUS, (yyvsp[0].expression));
         }
@@ -4994,7 +4994,7 @@ yyreduce:
     break;
 
   case 175: /* expr: expr "::" annotation_expr  */
-      { if ((yyvsp[-2].expression) && (yyvsp[0].expression)) (yyvsp[-2].expression)->addAnnotation((yyvsp[0].expression)); (yyval.expression)=(yyvsp[-2].expression); }
+      { if ((yyvsp[-2].expression) && (yyvsp[0].expression)) Expression::addAnnotation((yyvsp[-2].expression), (yyvsp[0].expression)); (yyval.expression)=(yyvsp[-2].expression); }
     break;
 
   case 176: /* expr: expr "<->" expr  */
@@ -5072,8 +5072,8 @@ yyreduce:
   case 194: /* expr: expr ".." expr  */
       { if ((yyvsp[-2].expression)==nullptr || (yyvsp[0].expression)==nullptr) {
           (yyval.expression) = nullptr;
-        } else if ((yyvsp[-2].expression)->isa<IntLit>() && (yyvsp[0].expression)->isa<IntLit>()) {
-          (yyval.expression)=new SetLit((yyloc), IntSetVal::a((yyvsp[-2].expression)->cast<IntLit>()->v(),(yyvsp[0].expression)->cast<IntLit>()->v()));
+        } else if (Expression::isa<IntLit>((yyvsp[-2].expression)) && Expression::isa<IntLit>((yyvsp[0].expression))) {
+          (yyval.expression)=new SetLit((yyloc), IntSetVal::a(IntLit::v(Expression::cast<IntLit>((yyvsp[-2].expression))),IntLit::v(Expression::cast<IntLit>((yyvsp[0].expression)))));
         } else {
           (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_DOTDOT, (yyvsp[0].expression));
         }
@@ -5139,8 +5139,8 @@ yyreduce:
   case 209: /* expr: "'..'" '(' expr ',' expr ')'  */
       { if ((yyvsp[-3].expression)==nullptr || (yyvsp[-1].expression)==nullptr) {
           (yyval.expression) = nullptr;
-        } else if ((yyvsp[-3].expression)->isa<IntLit>() && (yyvsp[-1].expression)->isa<IntLit>()) {
-          (yyval.expression)=new SetLit((yyloc), IntSetVal::a((yyvsp[-3].expression)->cast<IntLit>()->v(),(yyvsp[-1].expression)->cast<IntLit>()->v()));
+        } else if (Expression::isa<IntLit>((yyvsp[-3].expression)) && Expression::isa<IntLit>((yyvsp[-1].expression))) {
+          (yyval.expression)=new SetLit((yyloc), IntSetVal::a(IntLit::v(Expression::cast<IntLit>((yyvsp[-3].expression))),IntLit::v(Expression::cast<IntLit>((yyvsp[-1].expression)))));
         } else {
           (yyval.expression)=new BinOp((yyloc), (yyvsp[-3].expression), BOT_DOTDOT, (yyvsp[-1].expression));
         }
@@ -5268,7 +5268,7 @@ yyreduce:
     break;
 
   case 233: /* expr: "+" expr  */
-      { if (((yyvsp[0].expression) && (yyvsp[0].expression)->isa<IntLit>()) || ((yyvsp[0].expression) && (yyvsp[0].expression)->isa<FloatLit>())) {
+      { if (((yyvsp[0].expression) && Expression::isa<IntLit>((yyvsp[0].expression))) || ((yyvsp[0].expression) && Expression::isa<FloatLit>((yyvsp[0].expression)))) {
           (yyval.expression) = (yyvsp[0].expression);
         } else {
           (yyval.expression)=new UnOp((yyloc), UOT_PLUS, (yyvsp[0].expression));
@@ -5277,10 +5277,10 @@ yyreduce:
     break;
 
   case 234: /* expr: "-" expr  */
-      { if ((yyvsp[0].expression) && (yyvsp[0].expression)->isa<IntLit>()) {
-          (yyval.expression) = IntLit::a(-(yyvsp[0].expression)->cast<IntLit>()->v());
-        } else if ((yyvsp[0].expression) && (yyvsp[0].expression)->isa<FloatLit>()) {
-          (yyval.expression) = FloatLit::a(-(yyvsp[0].expression)->cast<FloatLit>()->v());
+      { if ((yyvsp[0].expression) && Expression::isa<IntLit>((yyvsp[0].expression))) {
+          (yyval.expression) = IntLit::a(-IntLit::v(Expression::cast<IntLit>((yyvsp[0].expression))));
+        } else if ((yyvsp[0].expression) && Expression::isa<FloatLit>((yyvsp[0].expression))) {
+          (yyval.expression) = FloatLit::a(-FloatLit::v(Expression::cast<FloatLit>((yyvsp[0].expression))));
         } else {
           (yyval.expression)=new UnOp((yyloc), UOT_MINUS, (yyvsp[0].expression));
         }
@@ -5605,7 +5605,7 @@ yyreduce:
   case 308: /* record_literal: '(' record_field_list_head comma_or_none ')'  */
       {
         (yyval.expression) = ArrayLit::constructTuple((yyloc), *(yyvsp[-2].expressions1d));
-        (yyval.expression)->type(Type::record());
+        Expression::type((yyval.expression), Type::record());
         delete((yyvsp[-2].expressions1d));
       }
     break;
@@ -5704,11 +5704,11 @@ yyreduce:
           if ((yyvsp[-1].indexedexpression2d)->first.empty()) {
             (yyval.expression)=new ArrayLit((yyloc), (yyvsp[-1].indexedexpression2d)->second);
           } else {
-            const auto* tuple = (yyvsp[-1].indexedexpression2d)->first[0]->dynamicCast<ArrayLit>();
+            const auto* tuple = Expression::dynamicCast<ArrayLit>((yyvsp[-1].indexedexpression2d)->first[0]);
             if (tuple) {
               std::vector<std::vector<Expression*>> dims(tuple->size());
               for (const auto* t : (yyvsp[-1].indexedexpression2d)->first) {
-                if ( (tuple = t->dynamicCast<ArrayLit>()) != nullptr ) {
+                if ( (tuple = Expression::dynamicCast<ArrayLit>(t)) != nullptr ) {
                   if (tuple->size() == dims.size()) {
                     for (unsigned int i = 0; i < dims.size(); i++) {
                       dims[i].push_back((*tuple)[i]);
@@ -5734,7 +5734,7 @@ yyreduce:
               }
             } else {
               for (const auto* t : (yyvsp[-1].indexedexpression2d)->first) {
-                if (t->isa<ArrayLit>()) {
+                if (Expression::isa<ArrayLit>(t)) {
                   yyerror(&(yylsp[-1]), parm, "syntax error, non-uniform indexed array literal");
                 }
               }
@@ -6008,8 +6008,8 @@ yyreduce:
           if ((yyval.indexedexpression2d)->first.size() != (yyval.indexedexpression2d)->second.size()) {
             yyerror(&(yyloc),parm,"invalid array literal, mixing indexed and non-indexed values");
             (yyval.indexedexpression2d) = nullptr;
-          } else if ((yyvsp[-2].expression)->isa<ArrayLit>() && (yyvsp[-2].expression)->cast<ArrayLit>()->isTuple() && (yyvsp[-2].expression)->cast<ArrayLit>()->size() == 1) {
-            (yyval.indexedexpression2d)->first.push_back((*(yyvsp[-2].expression)->cast<ArrayLit>())[0]);
+          } else if (Expression::isa<ArrayLit>((yyvsp[-2].expression)) && Expression::cast<ArrayLit>((yyvsp[-2].expression))->isTuple() && Expression::cast<ArrayLit>((yyvsp[-2].expression))->size() == 1) {
+            (yyval.indexedexpression2d)->first.push_back((*Expression::cast<ArrayLit>((yyvsp[-2].expression)))[0]);
             (yyval.indexedexpression2d)->second.push_back((yyvsp[0].expression));
             delete (yyvsp[-2].expression);
           } else {
@@ -6194,12 +6194,12 @@ yyreduce:
         if (uot==-1)
           (yyval.expression)=nullptr;
         else {
-          if (uot==UOT_PLUS && (yyvsp[-1].expression) && ((yyvsp[-1].expression)->isa<IntLit>() || (yyvsp[-1].expression)->isa<FloatLit>())) {
+          if (uot==UOT_PLUS && (yyvsp[-1].expression) && (Expression::isa<IntLit>((yyvsp[-1].expression)) || Expression::isa<FloatLit>((yyvsp[-1].expression)))) {
             (yyval.expression) = (yyvsp[-1].expression);
-          } else if (uot==UOT_MINUS && (yyvsp[-1].expression) && (yyvsp[-1].expression)->isa<IntLit>()) {
-            (yyval.expression) = IntLit::a(-(yyvsp[-1].expression)->cast<IntLit>()->v());
-          } else if (uot==UOT_MINUS && (yyvsp[-1].expression) && (yyvsp[-1].expression)->isa<FloatLit>()) {
-            (yyval.expression) = FloatLit::a(-(yyvsp[-1].expression)->cast<FloatLit>()->v());
+          } else if (uot==UOT_MINUS && (yyvsp[-1].expression) && Expression::isa<IntLit>((yyvsp[-1].expression))) {
+            (yyval.expression) = IntLit::a(-IntLit::v(Expression::cast<IntLit>((yyvsp[-1].expression))));
+          } else if (uot==UOT_MINUS && (yyvsp[-1].expression) && Expression::isa<FloatLit>((yyvsp[-1].expression))) {
+            (yyval.expression) = FloatLit::a(-FloatLit::v(Expression::cast<FloatLit>((yyvsp[-1].expression))));
           } else {
             (yyval.expression)=new UnOp((yyloc), static_cast<UnOpType>(uot),(yyvsp[-1].expression));
           }
@@ -6245,7 +6245,7 @@ yyreduce:
           for (unsigned int i=0; i<(yyvsp[-4].expressionPairs)->size(); i++) {
             if (Id* id = Expression::dynamicCast<Id>((*(yyvsp[-4].expressionPairs))[i].first)) {
               if ((*(yyvsp[-4].expressionPairs))[i].second) {
-                ParserLocation loc = (*(yyvsp[-4].expressionPairs))[i].second->loc().parserLocation();
+                ParserLocation loc = Expression::loc((*(yyvsp[-4].expressionPairs))[i].second).parserLocation();
                 yyerror(&loc, parm, "illegal where expression in generator call");
               }
               ids.push_back(id);
@@ -6265,12 +6265,12 @@ yyreduce:
                     }
                     ids = vector<Id*>();
                   } else {
-                    ParserLocation loc = (*(yyvsp[-4].expressionPairs))[i].first->loc().parserLocation();
+                    ParserLocation loc = Expression::loc((*(yyvsp[-4].expressionPairs))[i].first).parserLocation();
                     yyerror(&loc, parm, "illegal expression in generator call");
                   }
                 }
               } else {
-                ParserLocation loc = (*(yyvsp[-4].expressionPairs))[i].first->loc().parserLocation();
+                ParserLocation loc = Expression::loc((*(yyvsp[-4].expressionPairs))[i].first).parserLocation();
                 yyerror(&loc, parm, "illegal expression in generator call");
               }
             }
@@ -6323,7 +6323,7 @@ yyreduce:
           for (unsigned int i=0; i<(yyvsp[-4].expressionPairs)->size(); i++) {
             if (Id* id = Expression::dynamicCast<Id>((*(yyvsp[-4].expressionPairs))[i].first)) {
               if ((*(yyvsp[-4].expressionPairs))[i].second) {
-                ParserLocation loc = (*(yyvsp[-4].expressionPairs))[i].second->loc().parserLocation();
+                ParserLocation loc = Expression::loc((*(yyvsp[-4].expressionPairs))[i].second).parserLocation();
                 yyerror(&loc, parm, "illegal where expression in generator call");
               }
               ids.push_back(id);
@@ -6343,12 +6343,12 @@ yyreduce:
                     }
                     ids = vector<Id*>();
                   } else {
-                    ParserLocation loc = (*(yyvsp[-4].expressionPairs))[i].first->loc().parserLocation();
+                    ParserLocation loc = Expression::loc((*(yyvsp[-4].expressionPairs))[i].first).parserLocation();
                     yyerror(&loc, parm, "illegal expression in generator call");
                   }
                 }
               } else {
-                ParserLocation loc = (*(yyvsp[-4].expressionPairs))[i].first->loc().parserLocation();
+                ParserLocation loc = Expression::loc((*(yyvsp[-4].expressionPairs))[i].first).parserLocation();
                 yyerror(&loc, parm, "illegal expression in generator call");
               }
             }
@@ -6447,7 +6447,7 @@ yyreduce:
 
   case 409: /* let_vardecl_item: ti_expr_and_id  */
       { (yyval.vardeclexpr) = (yyvsp[0].vardeclexpr);
-        if ((yyvsp[0].vardeclexpr) && (yyvsp[0].vardeclexpr)->ti()->type().any() && (yyvsp[0].vardeclexpr)->ti()->domain() == nullptr) {
+        if ((yyvsp[0].vardeclexpr) && Expression::type((yyvsp[0].vardeclexpr)->ti()).any() && (yyvsp[0].vardeclexpr)->ti()->domain() == nullptr) {
           // This is an any type, not allowed without a right hand side
           yyerror(&(yylsp[0]), parm, "declarations with `any' type-inst require definition");
         }
@@ -6460,7 +6460,7 @@ yyreduce:
           (yyvsp[-2].vardeclexpr)->e((yyvsp[0].expression));
         }
         (yyval.vardeclexpr) = (yyvsp[-2].vardeclexpr);
-        if ((yyval.vardeclexpr)) (yyval.vardeclexpr)->loc((yyloc));
+        if ((yyval.vardeclexpr)) Expression::loc((yyval.vardeclexpr), (yyloc));
         if ((yyval.vardeclexpr)) (yyval.vardeclexpr)->toplevel(false);
       }
     break;

@@ -16,7 +16,7 @@ namespace MiniZinc {
 EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   CallStackItem _csi(env, e);
   EE ret;
-  auto* c = e->cast<Comprehension>();
+  auto* c = Expression::cast<Comprehension>(e);
   KeepAlive c_ka(c);
 
   bool isvarset = false;
@@ -24,13 +24,13 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
     for (int i = 0; i < c->numberOfGenerators(); i++) {
       Expression* g_in = c->in(i);
       if (g_in != nullptr) {
-        const Type& ty_in = g_in->type();
+        const Type& ty_in = Expression::type(g_in);
         if (ty_in == Type::varsetint()) {
           isvarset = true;
           break;
         }
         if (c->where(i) != nullptr) {
-          if (c->where(i)->type() == Type::varbool()) {
+          if (Expression::type(c->where(i)) == Type::varbool()) {
             isvarset = true;
             break;
           }
@@ -49,7 +49,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
         in[i] = nullptr;
         orig_where[i] = c->where(i);
       } else {
-        if (c->in(i)->type().isvar() && c->in(i)->type().dim() == 0) {
+        if (Expression::type(c->in(i)).isvar() && Expression::type(c->in(i)).dim() == 0) {
           std::vector<Expression*> args(1);
           args[0] = c->in(i);
           Call* ub = Call::a(Location().introduce(), "ub", args);
@@ -66,28 +66,31 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
         } else {
           in[i] = c->in(i);
         }
-        if ((c->where(i) != nullptr) && c->where(i)->type().isvar()) {
+        if ((c->where(i) != nullptr) && Expression::type(c->where(i)).isvar()) {
           // This is a generalised where clause. Split into par and var part.
           // The par parts can remain in where clause. The var parts are translated
           // into optionality constraints.
-          if (c->where(i)->isa<BinOp>() && c->where(i)->cast<BinOp>()->op() == BOT_AND) {
+          if (Expression::isa<BinOp>(c->where(i)) &&
+              Expression::cast<BinOp>(c->where(i))->op() == BOT_AND) {
             std::vector<Expression*> parWhere;
             std::vector<BinOp*> todo;
-            todo.push_back(c->where(i)->cast<BinOp>());
+            todo.push_back(Expression::cast<BinOp>(c->where(i)));
             while (!todo.empty()) {
               BinOp* bo = todo.back();
               todo.pop_back();
-              if (bo->rhs()->type().isPar()) {
+              if (Expression::type(bo->rhs()).isPar()) {
                 parWhere.push_back(bo->rhs());
-              } else if (bo->rhs()->isa<BinOp>() && bo->rhs()->cast<BinOp>()->op() == BOT_AND) {
-                todo.push_back(bo->rhs()->cast<BinOp>());
+              } else if (Expression::isa<BinOp>(bo->rhs()) &&
+                         Expression::cast<BinOp>(bo->rhs())->op() == BOT_AND) {
+                todo.push_back(Expression::cast<BinOp>(bo->rhs()));
               } else {
                 where.push_back(bo->rhs());
               }
-              if (bo->lhs()->type().isPar()) {
+              if (Expression::type(bo->lhs()).isPar()) {
                 parWhere.push_back(bo->lhs());
-              } else if (bo->lhs()->isa<BinOp>() && bo->lhs()->cast<BinOp>()->op() == BOT_AND) {
-                todo.push_back(bo->lhs()->cast<BinOp>());
+              } else if (Expression::isa<BinOp>(bo->lhs()) &&
+                         Expression::cast<BinOp>(bo->lhs())->op() == BOT_AND) {
+                todo.push_back(Expression::cast<BinOp>(bo->lhs()));
               } else {
                 where.push_back(bo->lhs());
               }
@@ -100,13 +103,15 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
                 orig_where[i] = parWhere[0];
                 break;
               case 2:
-                orig_where[i] = new BinOp(c->where(i)->loc(), parWhere[0], BOT_AND, parWhere[1]);
-                orig_where[i]->type(Type::parbool());
+                orig_where[i] =
+                    new BinOp(Expression::loc(c->where(i)), parWhere[0], BOT_AND, parWhere[1]);
+                Expression::type(orig_where[i], Type::parbool());
                 break;
               default: {
-                auto* parWhereAl = new ArrayLit(c->where(i)->loc(), parWhere);
+                auto* parWhereAl = new ArrayLit(Expression::loc(c->where(i)), parWhere);
                 parWhereAl->type(Type::parbool(1));
-                Call* forall = Call::a(c->where(i)->loc(), env.constants.ids.forall, {parWhereAl});
+                Call* forall =
+                    Call::a(Expression::loc(c->where(i)), env.constants.ids.forall, {parWhereAl});
                 forall->type(Type::parbool());
                 forall->decl(env.model->matchFn(env, forall, false));
                 orig_where[i] = forall;
@@ -151,7 +156,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
 
       Type ntype = c->type();
 
-      auto* indexes = c->e()->dynamicCast<ArrayLit>();
+      auto* indexes = Expression::dynamicCast<ArrayLit>(c->e());
       Expression* generatedExp = c->e();
       if (indexes != nullptr && indexes->isTuple() &&
           indexes->type().typeId() == Type::COMP_INDEX) {
@@ -162,42 +167,44 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
 
       if ((surround != nullptr) && surround->id() == env.constants.ids.forall) {
         new_e = new BinOp(Location().introduce(), cond, BOT_IMPL, generatedExp);
-        new_e->type(Type::varbool());
+        Expression::type(new_e, Type::varbool());
         ntype.ot(Type::OT_PRESENT);
       } else if ((surround != nullptr) && surround->id() == env.constants.ids.exists) {
         new_e = new BinOp(Location().introduce(), cond, BOT_AND, generatedExp);
-        new_e->type(Type::varbool());
+        Expression::type(new_e, Type::varbool());
         ntype.ot(Type::OT_PRESENT);
       } else if ((surround != nullptr) && surround->id() == env.constants.ids.sum) {
         // If the body of the comprehension is par, turn the whole expression into a linear sum.
         // Otherwise, generate if-then-else expressions.
         Type tt;
-        tt = generatedExp->type();
+        tt = Expression::type(generatedExp);
         tt.ti(Type::TI_VAR);
         tt.ot(Type::OT_PRESENT);
-        if (generatedExp->type().isPar()) {
-          ASTString cid = generatedExp->type().bt() == Type::BT_INT ? env.constants.ids.bool2int
-                                                                    : env.constants.ids.bool2float;
-          Type b2i_t =
-              generatedExp->type().bt() == Type::BT_INT ? Type::varint() : Type::varfloat();
-          auto* b2i = Call::a(c->loc().introduce(), cid, {cond});
+        if (Expression::type(generatedExp).isPar()) {
+          ASTString cid = Expression::type(generatedExp).bt() == Type::BT_INT
+                              ? env.constants.ids.bool2int
+                              : env.constants.ids.bool2float;
+          Type b2i_t = Expression::type(generatedExp).bt() == Type::BT_INT ? Type::varint()
+                                                                           : Type::varfloat();
+          auto* b2i = Call::a(Expression::loc(c).introduce(), cid, {cond});
           b2i->type(b2i_t);
           b2i->decl(env.model->matchFn(env, b2i, false));
-          auto* product = new BinOp(c->loc().introduce(), b2i, BOT_MULT, generatedExp);
+          auto* product = new BinOp(Expression::loc(c).introduce(), b2i, BOT_MULT, generatedExp);
           product->type(tt);
           new_e = product;
           ntype.ot(Type::OT_PRESENT);
         } else {
-          auto* if_b_else_zero = new ITE(c->loc().introduce(), {cond, generatedExp}, IntLit::a(0));
+          auto* if_b_else_zero =
+              new ITE(Expression::loc(c).introduce(), {cond, generatedExp}, IntLit::a(0));
           if_b_else_zero->type(tt);
           new_e = if_b_else_zero;
           ntype.ot(Type::OT_PRESENT);
         }
       } else {
         ITE* if_b_else_absent =
-            new ITE(c->loc().introduce(), {cond, generatedExp}, env.constants.absent);
+            new ITE(Expression::loc(c).introduce(), {cond, generatedExp}, env.constants.absent);
         Type tt;
-        tt = generatedExp->type();
+        tt = Expression::type(generatedExp);
         tt.ti(Type::TI_VAR);
         tt.ot(Type::OT_OPTIONAL);
         if_b_else_absent->type(tt);
@@ -209,9 +216,9 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
           new_indexes_v[i] = (*indexes)[i];
         }
         new_indexes_v.back() = new_e;
-        new_e = ArrayLit::constructTuple(indexes->loc(), new_indexes_v);
+        new_e = ArrayLit::constructTuple(Expression::loc(indexes), new_indexes_v);
       }
-      auto* nc = new Comprehension(c->loc(), new_e, gs, c->set());
+      auto* nc = new Comprehension(Expression::loc(c), new_e, gs, c->set());
       nc->type(ntype);
       c = nc;
       c_ka = c;
@@ -250,12 +257,12 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
   for (auto i = static_cast<unsigned int>(elems.size()); (i--) != 0U;) {
     elems[i] = elems_ee[i].r();
     if (elemType == Type::bot()) {
-      elemType = elems[i]->type();
+      elemType = Expression::type(elems[i]);
     }
-    if (!elems[i]->type().isPar()) {
+    if (!Expression::type(elems[i]).isPar()) {
       allPar = false;
     }
-    if (elems[i]->type().isOpt()) {
+    if (Expression::type(elems[i]).isOpt()) {
       someOpt = true;
     }
   }
@@ -279,10 +286,10 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
     GCLock lock;
     if (c->set()) {
       if (c->type().isPar() && allPar) {
-        auto* sl = new SetLit(c->loc(), elems);
+        auto* sl = new SetLit(Expression::loc(c), elems);
         sl->type(elemType);
         Expression* slr = eval_par(env, sl);
-        slr->type(elemType);
+        Expression::type(slr, elemType);
         ka = slr;
       } else {
         auto* alr = new ArrayLit(Location().introduce(), elems);
@@ -303,7 +310,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
       ka = alr;
     }
   }
-  assert(!ka()->type().isbot());
+  assert(!Expression::type(ka()).isbot());
   if (wasUndefined) {
     ret.b = bind(env, Ctx(), b, env.constants.literalFalse);
   } else {

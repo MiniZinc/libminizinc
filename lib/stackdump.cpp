@@ -20,7 +20,7 @@ StackDump::StackDump(EnvI& env) {
   // Make sure the call stack items are kept alive
   for (auto it = env.callStack.rbegin(); it != env.callStack.rend(); it++) {
     bool isCompIter = it->tag;
-    if (!it->e->loc().isIntroduced() && !isCompIter && it->e->isa<Id>()) {
+    if (!Expression::loc(it->e).isIntroduced() && !isCompIter && Expression::isa<Id>(it->e)) {
       // Stop at the inner-most ID
       // TODO: Is this actually necessary?
       if (_stack.empty()) {
@@ -37,10 +37,10 @@ void StackDump::print(std::ostream& os) const {
     return;
   }
 
-  if (_stack.size() == 1 && _stack[0].first->isa<Id>()) {
+  if (_stack.size() == 1 && Expression::isa<Id>(_stack[0].first)) {
     Expression* e = _stack[0].first;
-    if (!e->loc().isIntroduced()) {
-      os << e->loc().toString() << std::endl;
+    if (!Expression::loc(e).isIntroduced()) {
+      os << Expression::loc(e).toString() << std::endl;
       os << "  in variable declaration " << *e << std::endl;
     }
     return;
@@ -54,13 +54,13 @@ void StackDump::print(std::ostream& os) const {
 
     Expression* e = entry.e;
     bool isCompIter = entry.tag;
-    ASTString newloc_f = e->loc().filename();
-    if (e->loc().isIntroduced()) {
+    ASTString newloc_f = Expression::loc(e).filename();
+    if (Expression::loc(e).isIntroduced()) {
       continue;
     }
-    auto newloc_l = static_cast<long long int>(e->loc().firstLine());
+    auto newloc_l = static_cast<long long int>(Expression::loc(e).firstLine());
     if (newloc_f != curloc_f || newloc_l != curloc_l) {
-      os << e->loc().toString() << std::endl;
+      os << Expression::loc(e).toString() << std::endl;
       curloc_f = newloc_f;
       curloc_l = newloc_l;
     }
@@ -69,7 +69,7 @@ void StackDump::print(std::ostream& os) const {
     } else {
       os << "  in ";
     }
-    switch (e->eid()) {
+    switch (Expression::eid(e)) {
       case Expression::E_INTLIT:
         os << "integer literal" << std::endl;
         break;
@@ -87,9 +87,9 @@ void StackDump::print(std::ostream& os) const {
         break;
       case Expression::E_ID:
         if (isCompIter) {
-          if ((e->cast<Id>()->decl()->e() != nullptr) &&
-              e->cast<Id>()->decl()->e()->type().isPar()) {
-            os << *e << " = " << *e->cast<Id>()->decl()->e() << std::endl;
+          if ((Expression::cast<Id>(e)->decl()->e() != nullptr) &&
+              Expression::type(Expression::cast<Id>(e)->decl()->e()).isPar()) {
+            os << *e << " = " << *Expression::cast<Id>(e)->decl()->e() << std::endl;
           } else {
             os << *e << " = <expression>" << std::endl;
           }
@@ -110,7 +110,7 @@ void StackDump::print(std::ostream& os) const {
         os << "field access" << std::endl;
         break;
       case Expression::E_COMP: {
-        const Comprehension* cmp = e->cast<Comprehension>();
+        const Comprehension* cmp = Expression::cast<Comprehension>(e);
         if (cmp->set()) {
           os << "set ";
         } else {
@@ -122,17 +122,21 @@ void StackDump::print(std::ostream& os) const {
         os << "if-then-else expression" << std::endl;
         break;
       case Expression::E_BINOP:
-        os << "binary " << e->cast<BinOp>()->opToString() << " operator expression" << std::endl;
+        os << "binary " << Expression::cast<BinOp>(e)->opToString() << " operator expression"
+           << std::endl;
         break;
       case Expression::E_UNOP:
-        os << "unary " << e->cast<UnOp>()->opToString() << " operator expression" << std::endl;
+        os << "unary " << Expression::cast<UnOp>(e)->opToString() << " operator expression"
+           << std::endl;
         break;
       case Expression::E_CALL:
-        os << "call '" << demonomorphise_identifier(e->cast<Call>()->id()) << "'" << std::endl;
+        os << "call '" << demonomorphise_identifier(Expression::cast<Call>(e)->id()) << "'"
+           << std::endl;
         break;
       case Expression::E_VARDECL: {
         GCLock lock;
-        os << "variable declaration for '" << e->cast<VarDecl>()->id()->str() << "'" << std::endl;
+        os << "variable declaration for '" << Expression::cast<VarDecl>(e)->id()->str() << "'"
+           << std::endl;
       } break;
       case Expression::E_LET:
         os << "let expression" << std::endl;
@@ -157,11 +161,11 @@ void StackDump::json(std::ostream& os) const {
     return;
   }
 
-  if (_stack.size() == 1 && _stack[0].first->isa<Id>()) {
+  if (_stack.size() == 1 && Expression::isa<Id>(_stack[0].first)) {
     os << "[";
     Expression* e = _stack[0].first;
-    if (!e->loc().isIntroduced()) {
-      os << "{\"location\": " << e->loc().toJSON()
+    if (!Expression::loc(e).isIntroduced()) {
+      os << "{\"location\": " << Expression::loc(e).toJSON()
          << ", \"isCompIter\": false, \"description\": \"variable declaration\"}";
     }
     os << "]";
@@ -179,8 +183,8 @@ void StackDump::json(std::ostream& os) const {
 
     Expression* e = entry.e;
     bool isCompIter = entry.tag;
-    ASTString newloc_f = e->loc().filename();
-    if (e->loc().isIntroduced()) {
+    ASTString newloc_f = Expression::loc(e).filename();
+    if (Expression::loc(e).isIntroduced()) {
       continue;
     }
     if (first) {
@@ -188,10 +192,10 @@ void StackDump::json(std::ostream& os) const {
     } else {
       os << ", ";
     }
-    os << "{\"location\": " << e->loc().toJSON()
+    os << "{\"location\": " << Expression::loc(e).toJSON()
        << ", \"isCompIter\": " << (isCompIter ? "true" : "false") << ", \"description\": \"";
     std::stringstream ss;
-    switch (e->eid()) {
+    switch (Expression::eid(e)) {
       case Expression::E_INTLIT:
         ss << "integer literal";
         break;
@@ -209,9 +213,9 @@ void StackDump::json(std::ostream& os) const {
         break;
       case Expression::E_ID:
         if (isCompIter) {
-          if ((e->cast<Id>()->decl()->e() != nullptr) &&
-              e->cast<Id>()->decl()->e()->type().isPar()) {
-            ss << *e << " = " << *e->cast<Id>()->decl()->e();
+          if ((Expression::cast<Id>(e)->decl()->e() != nullptr) &&
+              Expression::type(Expression::cast<Id>(e)->decl()->e()).isPar()) {
+            ss << *e << " = " << *Expression::cast<Id>(e)->decl()->e();
           } else {
             ss << *e << " = <expression>";
           }
@@ -229,7 +233,7 @@ void StackDump::json(std::ostream& os) const {
         ss << "array access";
         break;
       case Expression::E_COMP: {
-        const Comprehension* cmp = e->cast<Comprehension>();
+        const Comprehension* cmp = Expression::cast<Comprehension>(e);
         if (cmp->set()) {
           ss << "set ";
         } else {
@@ -241,17 +245,17 @@ void StackDump::json(std::ostream& os) const {
         ss << "if-then-else expression";
         break;
       case Expression::E_BINOP:
-        ss << "binary " << e->cast<BinOp>()->opToString() << " operator expression";
+        ss << "binary " << Expression::cast<BinOp>(e)->opToString() << " operator expression";
         break;
       case Expression::E_UNOP:
-        ss << "unary " << e->cast<UnOp>()->opToString() << " operator expression";
+        ss << "unary " << Expression::cast<UnOp>(e)->opToString() << " operator expression";
         break;
       case Expression::E_CALL:
-        ss << "call '" << demonomorphise_identifier(e->cast<Call>()->id()) << "'";
+        ss << "call '" << demonomorphise_identifier(Expression::cast<Call>(e)->id()) << "'";
         break;
       case Expression::E_VARDECL: {
         GCLock lock;
-        ss << "variable declaration for '" << e->cast<VarDecl>()->id()->str() << "'";
+        ss << "variable declaration for '" << Expression::cast<VarDecl>(e)->id()->str() << "'";
       } break;
       case Expression::E_LET:
         ss << "let expression";

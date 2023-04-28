@@ -597,7 +597,8 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             if (auto* vdi = i->dynamicCast<VarDeclI>()) {
               if (vdi->e()->type().isPar() && vdi->e()->e() == nullptr) {
                 env->envi().checkVars.emplace_back(vdi->e());
-              } else if (vdi->e()->ann().contains(Constants::constants().ann.rhs_from_assignment)) {
+              } else if (Expression::ann(vdi->e()).contains(
+                             Constants::constants().ann.rhs_from_assignment)) {
                 smm_stats_oss << *vdi;
               }
             }
@@ -924,12 +925,12 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             static void removePath(Annotation& a) {
               a.removeCall(Constants::constants().ann.mzn_path);
             }
-            static void vVarDeclI(VarDeclI* vdi) { removePath(vdi->e()->ann()); }
-            static void vConstraintI(ConstraintI* ci) { removePath(ci->e()->ann()); }
+            static void vVarDeclI(VarDeclI* vdi) { removePath(Expression::ann(vdi->e())); }
+            static void vConstraintI(ConstraintI* ci) { removePath(Expression::ann(ci->e())); }
             static void vSolveI(SolveI* si) {
               removePath(si->ann());
               if (Expression* e = si->e()) {
-                removePath(e->ann());
+                removePath(Expression::ann(e));
               }
             }
           } removePaths;

@@ -115,13 +115,14 @@ void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
 IntVal b_int_min(EnvI& env, Call* call) {
   switch (call->argCount()) {
     case 1:
-      if (call->arg(0)->type().isSet()) {
-        throw EvalError(env, call->arg(0)->loc(), "sets not supported");
+      if (Expression::type(call->arg(0)).isSet()) {
+        throw EvalError(env, Expression::loc(call->arg(0)), "sets not supported");
       } else {
         GCLock lock;
         ArrayLit* al = eval_array_lit(env, call->arg(0));
         if (al->empty()) {
-          throw ResultUndefinedError(env, al->loc(), "minimum of empty array is undefined");
+          throw ResultUndefinedError(env, Expression::loc(al),
+                                     "minimum of empty array is undefined");
         }
         IntVal m = eval_int(env, (*al)[0]);
         for (unsigned int i = 1; i < al->size(); i++) {
@@ -140,13 +141,14 @@ IntVal b_int_min(EnvI& env, Call* call) {
 IntVal b_int_max(EnvI& env, Call* call) {
   switch (call->argCount()) {
     case 1:
-      if (call->arg(0)->type().isSet()) {
-        throw EvalError(env, call->arg(0)->loc(), "sets not supported");
+      if (Expression::type(call->arg(0)).isSet()) {
+        throw EvalError(env, Expression::loc(call->arg(0)), "sets not supported");
       } else {
         GCLock lock;
         ArrayLit* al = eval_array_lit(env, call->arg(0));
         if (al->empty()) {
-          throw ResultUndefinedError(env, al->loc(), "maximum of empty array is undefined");
+          throw ResultUndefinedError(env, Expression::loc(al),
+                                     "maximum of empty array is undefined");
         }
         IntVal m = eval_int(env, (*al)[0]);
         for (unsigned int i = 1; i < al->size(); i++) {
@@ -166,7 +168,7 @@ IntVal b_arg_min_bool(EnvI& env, Call* call) {
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   if (al->empty()) {
-    throw ResultUndefinedError(env, al->loc(), "arg_min of empty array is undefined");
+    throw ResultUndefinedError(env, Expression::loc(al), "arg_min of empty array is undefined");
   }
   assert(al->dims() == 1);
   for (unsigned int i = 0; i < al->size(); i++) {
@@ -181,7 +183,7 @@ IntVal b_arg_max_bool(EnvI& env, Call* call) {
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   if (al->empty()) {
-    throw ResultUndefinedError(env, al->loc(), "arg_max of empty array is undefined");
+    throw ResultUndefinedError(env, Expression::loc(al), "arg_max of empty array is undefined");
   }
   assert(al->dims() == 1);
   for (unsigned int i = 0; i < al->size(); i++) {
@@ -196,7 +198,7 @@ IntVal b_arg_min_int(EnvI& env, Call* call) {
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   if (al->empty()) {
-    throw ResultUndefinedError(env, al->loc(), "argmin of empty array is undefined");
+    throw ResultUndefinedError(env, Expression::loc(al), "argmin of empty array is undefined");
   }
   assert(al->dims() == 1);
   IntVal m = eval_int(env, (*al)[0]);
@@ -214,7 +216,7 @@ IntVal b_arg_max_int(EnvI& env, Call* call) {
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   if (al->empty()) {
-    throw ResultUndefinedError(env, al->loc(), "argmax of empty array is undefined");
+    throw ResultUndefinedError(env, Expression::loc(al), "argmax of empty array is undefined");
   }
   assert(al->dims() == 1);
   IntVal m = eval_int(env, (*al)[0]);
@@ -232,7 +234,7 @@ IntVal b_arg_min_float(EnvI& env, Call* call) {
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   if (al->empty()) {
-    throw ResultUndefinedError(env, al->loc(), "argmin of empty array is undefined");
+    throw ResultUndefinedError(env, Expression::loc(al), "argmin of empty array is undefined");
   }
   assert(al->dims() == 1);
   FloatVal m = eval_float(env, (*al)[0]);
@@ -250,7 +252,7 @@ IntVal b_arg_max_float(EnvI& env, Call* call) {
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   if (al->empty()) {
-    throw ResultUndefinedError(env, al->loc(), "argmax of empty array is undefined");
+    throw ResultUndefinedError(env, Expression::loc(al), "argmax of empty array is undefined");
   }
   assert(al->dims() == 1);
   FloatVal m = eval_float(env, (*al)[0]);
@@ -313,7 +315,7 @@ IntVal b_deopt_int(EnvI& env, Call* call) {
   GCLock lock;
   Expression* e = eval_par(env, call->arg(0));
   if (e == env.constants.absent) {
-    throw ResultUndefinedError(env, e->loc(), "deopt on absent value is undefined");
+    throw ResultUndefinedError(env, Expression::loc(e), "deopt on absent value is undefined");
   }
   return eval_int(env, e);
 }
@@ -322,7 +324,7 @@ bool b_deopt_bool(EnvI& env, Call* call) {
   GCLock lock;
   Expression* e = eval_par(env, call->arg(0));
   if (e == env.constants.absent) {
-    throw ResultUndefinedError(env, e->loc(), "deopt on absent value is undefined");
+    throw ResultUndefinedError(env, Expression::loc(e), "deopt on absent value is undefined");
   }
   return eval_bool(env, e);
 }
@@ -331,7 +333,7 @@ FloatVal b_deopt_float(EnvI& env, Call* call) {
   GCLock lock;
   Expression* e = eval_par(env, call->arg(0));
   if (e == env.constants.absent) {
-    throw ResultUndefinedError(env, e->loc(), "deopt on absent value is undefined");
+    throw ResultUndefinedError(env, Expression::loc(e), "deopt on absent value is undefined");
   }
   return eval_float(env, e);
 }
@@ -340,7 +342,7 @@ IntSetVal* b_deopt_intset(EnvI& env, Call* call) {
   GCLock lock;
   Expression* e = eval_par(env, call->arg(0));
   if (e == env.constants.absent) {
-    throw ResultUndefinedError(env, e->loc(), "deopt on absent value is undefined");
+    throw ResultUndefinedError(env, Expression::loc(e), "deopt on absent value is undefined");
   }
   return eval_intset(env, e);
 }
@@ -349,7 +351,7 @@ std::string b_deopt_string(EnvI& env, Call* call) {
   GCLock lock;
   Expression* e = eval_par(env, call->arg(0));
   if (e == env.constants.absent) {
-    throw ResultUndefinedError(env, e->loc(), "deopt on absent value is undefined");
+    throw ResultUndefinedError(env, Expression::loc(e), "deopt on absent value is undefined");
   }
   return eval_string(env, e);
 }
@@ -358,7 +360,7 @@ Expression* b_deopt_expr(EnvI& env, Call* call) {
   GCLock lock;
   Expression* e = eval_par(env, call->arg(0));
   if (e == env.constants.absent) {
-    throw ResultUndefinedError(env, e->loc(), "deopt on absent value is undefined");
+    throw ResultUndefinedError(env, Expression::loc(e), "deopt on absent value is undefined");
   }
   return e;
 };
@@ -370,7 +372,7 @@ IntVal b_array_lb_int(EnvI& env, Call* call) {
   bool foundMin = false;
   IntVal array_lb = -IntVal::infinity();
 
-  if (auto* vd = e->dynamicCast<VarDecl>()) {
+  if (auto* vd = Expression::dynamicCast<VarDecl>(e)) {
     if (vd->ti()->domain() != nullptr) {
       GCLock lock;
       IntSetVal* isv = eval_intset(env, vd->ti()->domain());
@@ -437,7 +439,7 @@ IntVal b_array_ub_int(EnvI& env, Call* call) {
   bool foundMax = false;
   IntVal array_ub = IntVal::infinity();
 
-  if (auto* vd = e->dynamicCast<VarDecl>()) {
+  if (auto* vd = Expression::dynamicCast<VarDecl>(e)) {
     if (vd->ti()->domain() != nullptr) {
       GCLock lock;
       IntSetVal* isv = eval_intset(env, vd->ti()->domain());
@@ -488,7 +490,7 @@ IntVal b_idiv(EnvI& env, Call* call) {
   IntVal a = eval_int(env, call->arg(0));
   IntVal b = eval_int(env, call->arg(1));
   if (b == 0) {
-    throw ResultUndefinedError(env, call->loc(), "division by zero");
+    throw ResultUndefinedError(env, Expression::loc(call), "division by zero");
   }
   return a / b;
 }
@@ -497,7 +499,7 @@ IntVal b_mod(EnvI& env, Call* call) {
   IntVal a = eval_int(env, call->arg(0));
   IntVal b = eval_int(env, call->arg(1));
   if (b == 0) {
-    throw ResultUndefinedError(env, call->loc(), "division by zero");
+    throw ResultUndefinedError(env, Expression::loc(call), "division by zero");
   }
   return a % b;
 }
@@ -506,7 +508,7 @@ FloatVal b_fdiv(EnvI& env, Call* call) {
   FloatVal a = eval_float(env, call->arg(0));
   FloatVal b = eval_float(env, call->arg(1));
   if (b == 0.0) {
-    throw ResultUndefinedError(env, call->loc(), "division by zero");
+    throw ResultUndefinedError(env, Expression::loc(call), "division by zero");
   }
   return a / b;
 }
@@ -564,14 +566,14 @@ FloatVal lb_varoptfloat(EnvI& env, Expression* e) {
   if (b.valid) {
     return b.l;
   }
-  throw EvalError(env, e->loc(), "cannot determine bounds");
+  throw EvalError(env, Expression::loc(e), "cannot determine bounds");
 }
 FloatVal ub_varoptfloat(EnvI& env, Expression* e) {
   FloatBounds b = compute_float_bounds(env, e);
   if (b.valid) {
     return b.u;
   }
-  throw EvalError(env, e->loc(), "cannot determine bounds");
+  throw EvalError(env, Expression::loc(e), "cannot determine bounds");
 }
 
 FloatVal b_lb_varoptfloat(EnvI& env, Call* call) {
@@ -594,7 +596,7 @@ FloatVal b_array_lb_float(EnvI& env, Call* call) {
   bool foundMin = false;
   FloatVal array_lb = 0.0;
 
-  if (auto* vd = e->dynamicCast<VarDecl>()) {
+  if (auto* vd = Expression::dynamicCast<VarDecl>(e)) {
     if (vd->ti()->domain() != nullptr) {
       FloatSetVal* fsv = eval_floatset(env, vd->ti()->domain());
       array_lb = fsv->min();
@@ -638,7 +640,7 @@ b_array_lb_float_done:
   if (foundMin) {
     return array_lb;
   } else {
-    throw EvalError(env, e->loc(), "cannot determine lower bound");
+    throw EvalError(env, Expression::loc(e), "cannot determine lower bound");
   }
 }
 
@@ -649,7 +651,7 @@ FloatVal b_array_ub_float(EnvI& env, Call* call) {
   bool foundMax = false;
   FloatVal array_ub = 0.0;
 
-  if (auto* vd = e->dynamicCast<VarDecl>()) {
+  if (auto* vd = Expression::dynamicCast<VarDecl>(e)) {
     if (vd->ti()->domain() != nullptr) {
       FloatSetVal* fsv = eval_floatset(env, vd->ti()->domain());
       array_ub = fsv->max();
@@ -693,7 +695,7 @@ b_array_ub_float_done:
   if (foundMax) {
     return array_ub;
   } else {
-    throw EvalError(env, e->loc(), "cannot determine upper bound");
+    throw EvalError(env, Expression::loc(e), "cannot determine upper bound");
   }
 }
 
@@ -714,13 +716,13 @@ FloatVal b_sum_float(EnvI& env, Call* call) {
 FloatVal b_float_min(EnvI& env, Call* call) {
   switch (call->argCount()) {
     case 1:
-      if (call->arg(0)->type().isSet()) {
-        throw EvalError(env, call->arg(0)->loc(), "sets not supported");
+      if (Expression::type(call->arg(0)).isSet()) {
+        throw EvalError(env, Expression::loc(call->arg(0)), "sets not supported");
       } else {
         GCLock lock;
         ArrayLit* al = eval_array_lit(env, call->arg(0));
         if (al->empty()) {
-          throw EvalError(env, al->loc(), "min on empty array undefined");
+          throw EvalError(env, Expression::loc(al), "min on empty array undefined");
         }
         FloatVal m = eval_float(env, (*al)[0]);
         for (unsigned int i = 1; i < al->size(); i++) {
@@ -739,13 +741,13 @@ FloatVal b_float_min(EnvI& env, Call* call) {
 FloatVal b_float_max(EnvI& env, Call* call) {
   switch (call->argCount()) {
     case 1:
-      if (call->arg(0)->type().isSet()) {
-        throw EvalError(env, call->arg(0)->loc(), "sets not supported");
+      if (Expression::type(call->arg(0)).isSet()) {
+        throw EvalError(env, Expression::loc(call->arg(0)), "sets not supported");
       } else {
         GCLock lock;
         ArrayLit* al = eval_array_lit(env, call->arg(0));
         if (al->empty()) {
-          throw EvalError(env, al->loc(), "max on empty array undefined");
+          throw EvalError(env, Expression::loc(al), "max on empty array undefined");
         }
         FloatVal m = eval_float(env, (*al)[0]);
         for (unsigned int i = 1; i < al->size(); i++) {
@@ -762,33 +764,33 @@ FloatVal b_float_max(EnvI& env, Call* call) {
 }
 
 IntSetVal* b_index_set(EnvI& env, Expression* e, int i) {
-  if (e->eid() != Expression::E_ID) {
+  if (Expression::eid(e) != Expression::E_ID) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env, e);
     if (al->dims() < i) {
-      throw EvalError(env, e->loc(), "index_set: wrong dimension");
+      throw EvalError(env, Expression::loc(e), "index_set: wrong dimension");
     }
     return IntSetVal::a(al->min(i - 1), al->max(i - 1));
   }
-  Id* id = e->cast<Id>();
+  Id* id = Expression::cast<Id>(e);
   if (id->decl() == nullptr) {
-    throw EvalError(env, id->loc(), "undefined identifier");
+    throw EvalError(env, Expression::loc(id), "undefined identifier");
   }
   if ((id->decl()->ti()->ranges().size() == 1 &&
        id->decl()->ti()->ranges()[0]->domain() != nullptr &&
-       id->decl()->ti()->ranges()[0]->domain()->isa<TIId>()) ||
+       Expression::isa<TIId>(id->decl()->ti()->ranges()[0]->domain())) ||
       (static_cast<int>(id->decl()->ti()->ranges().size()) >= i &&
        (id->decl()->ti()->ranges()[i - 1]->domain() == nullptr ||
-        id->decl()->ti()->ranges()[i - 1]->domain()->isa<TIId>()))) {
+        Expression::isa<TIId>(id->decl()->ti()->ranges()[i - 1]->domain())))) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env, id);
     if (al->dims() < i) {
-      throw EvalError(env, id->loc(), "index_set: wrong dimension");
+      throw EvalError(env, Expression::loc(id), "index_set: wrong dimension");
     }
     return IntSetVal::a(al->min(i - 1), al->max(i - 1));
   }
   if (static_cast<int>(id->decl()->ti()->ranges().size()) < i) {
-    throw EvalError(env, id->loc(), "index_set: wrong dimension");
+    throw EvalError(env, Expression::loc(id), "index_set: wrong dimension");
   }
   return eval_intset(env, id->decl()->ti()->ranges()[i - 1]->domain());
 }
@@ -852,7 +854,7 @@ IntVal b_min_parsetint(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
   IntSetVal* isv = eval_intset(env, call->arg(0));
   if (isv->empty()) {
-    throw ResultUndefinedError(env, call->loc(), "minimum of empty set is undefined");
+    throw ResultUndefinedError(env, Expression::loc(call), "minimum of empty set is undefined");
   }
   return isv->min();
 }
@@ -860,13 +862,13 @@ IntVal b_max_parsetint(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
   IntSetVal* isv = eval_intset(env, call->arg(0));
   if (isv->empty()) {
-    throw ResultUndefinedError(env, call->loc(), "maximum of empty set is undefined");
+    throw ResultUndefinedError(env, Expression::loc(call), "maximum of empty set is undefined");
   }
   return isv->max();
 }
 IntSetVal* b_lb_set(EnvI& env, Expression* e) {
   Expression* ee = follow_id_to_value(e);
-  if (ee->type().isPar()) {
+  if (Expression::type(ee).isPar()) {
     return eval_intset(env, ee);
   }
   return IntSetVal::a();
@@ -880,7 +882,7 @@ IntSetVal* b_ub_set(EnvI& env, Expression* e) {
   if (isv != nullptr) {
     return isv;
   }
-  throw EvalError(env, e->loc(), "cannot determine bounds of set expression");
+  throw EvalError(env, Expression::loc(e), "cannot determine bounds of set expression");
 }
 IntSetVal* b_ub_set(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
@@ -889,13 +891,13 @@ IntSetVal* b_ub_set(EnvI& env, Call* call) {
 bool b_has_ub_set(EnvI& env, Call* call) {
   Expression* e = call->arg(0);
   for (;;) {
-    switch (e->eid()) {
+    switch (Expression::eid(e)) {
       case Expression::E_SETLIT:
         return true;
       case Expression::E_ID: {
-        Id* id = e->cast<Id>();
+        Id* id = Expression::cast<Id>(e);
         if (id->decl() == nullptr) {
-          throw EvalError(env, id->loc(), "undefined identifier");
+          throw EvalError(env, Expression::loc(id), "undefined identifier");
         }
         if (id->decl()->e() == nullptr) {
           return id->decl()->ti()->domain() != nullptr;
@@ -904,7 +906,7 @@ bool b_has_ub_set(EnvI& env, Call* call) {
 
       } break;
       default:
-        throw EvalError(env, e->loc(), "invalid argument to has_ub_set");
+        throw EvalError(env, Expression::loc(e), "invalid argument to has_ub_set");
     }
   }
 }
@@ -960,24 +962,24 @@ IntSetVal* b_dom_varint(EnvI& env, Expression* e) {
       }
       return eval_intset(env, lastid->decl()->ti()->domain());
     }
-    switch (cur->eid()) {
+    switch (Expression::eid(cur)) {
       case Expression::E_INTLIT: {
-        IntVal v = cur->cast<IntLit>()->v();
+        IntVal v = IntLit::v(Expression::cast<IntLit>(cur));
         return IntSetVal::a(v, v);
       }
       case Expression::E_ID: {
-        lastid = cur->cast<Id>();
+        lastid = Expression::cast<Id>(cur);
         if (lastid == env.constants.absent) {
           return IntSetVal::a(-IntVal::infinity(), IntVal::infinity());
         }
         if (lastid->decl() == nullptr) {
-          throw EvalError(env, lastid->loc(), "undefined identifier");
+          throw EvalError(env, Expression::loc(lastid), "undefined identifier");
         }
         cur = lastid->decl()->e();
       } break;
       case Expression::E_ARRAYACCESS: {
         ArrayAccessSucess success;
-        cur = eval_arrayaccess(env, cur->cast<ArrayAccess>(), success);
+        cur = eval_arrayaccess(env, Expression::cast<ArrayAccess>(cur), success);
         if (!success()) {
           cur = nullptr;
         }
@@ -1002,7 +1004,7 @@ IntSetVal* b_dom_bounds_array(EnvI& env, Call* call) {
   IntVal array_lb = -IntVal::infinity();
   IntVal array_ub = IntVal::infinity();
 
-  if (auto* vd = e->dynamicCast<VarDecl>()) {
+  if (auto* vd = Expression::dynamicCast<VarDecl>(e)) {
     if (vd->ti()->domain() != nullptr) {
       GCLock lock;
       IntSetVal* isv = eval_intset(env, vd->ti()->domain());
@@ -1046,7 +1048,7 @@ b_array_lb_int_done:
   if (foundBounds) {
     return IntSetVal::a(array_lb, array_ub);
   } else {
-    throw EvalError(env, e->loc(), "cannot determine lower bound");
+    throw EvalError(env, Expression::loc(e), "cannot determine lower bound");
   }
 }
 
@@ -1055,21 +1057,21 @@ IntSetVal* b_dom_array(EnvI& env, Call* call) {
   Expression* ae = call->arg(0);
   ArrayLit* al = nullptr;
   while (al == nullptr) {
-    switch (ae->eid()) {
+    switch (Expression::eid(ae)) {
       case Expression::E_ARRAYLIT:
-        al = ae->cast<ArrayLit>();
+        al = Expression::cast<ArrayLit>(ae);
         break;
       case Expression::E_ID: {
-        Id* id = ae->cast<Id>();
+        Id* id = Expression::cast<Id>(ae);
         if (id->decl() == nullptr) {
-          throw EvalError(env, id->loc(), "undefined identifier");
+          throw EvalError(env, Expression::loc(id), "undefined identifier");
         }
         if (id->decl()->e() == nullptr) {
           if (id->decl()->flat() == nullptr) {
-            throw EvalError(env, id->loc(), "array without initialiser");
+            throw EvalError(env, Expression::loc(id), "array without initialiser");
           }
           if (id->decl()->flat()->e() == nullptr) {
-            throw EvalError(env, id->loc(), "array without initialiser");
+            throw EvalError(env, Expression::loc(id), "array without initialiser");
           }
           ae = id->decl()->flat()->e();
 
@@ -1078,7 +1080,7 @@ IntSetVal* b_dom_array(EnvI& env, Call* call) {
         }
       } break;
       default:
-        throw EvalError(env, ae->loc(), "invalid argument to dom");
+        throw EvalError(env, Expression::loc(ae), "invalid argument to dom");
     }
   }
   IntSetVal* isv = IntSetVal::a();
@@ -1097,7 +1099,7 @@ IntSetVal* b_compute_div_bounds(EnvI& env, Call* call) {
   assert(call->argCount() == 2);
   IntBounds bx = compute_int_bounds(env, call->arg(0));
   if (!bx.valid) {
-    throw EvalError(env, call->arg(0)->loc(), "cannot determine bounds");
+    throw EvalError(env, Expression::loc(call->arg(0)), "cannot determine bounds");
   }
   /// TODO: better bounds if only some input bounds are infinite
   if (!bx.l.isFinite() || !bx.u.isFinite()) {
@@ -1105,7 +1107,7 @@ IntSetVal* b_compute_div_bounds(EnvI& env, Call* call) {
   }
   IntBounds by = compute_int_bounds(env, call->arg(1));
   if (!by.valid) {
-    throw EvalError(env, call->arg(1)->loc(), "cannot determine bounds");
+    throw EvalError(env, Expression::loc(call->arg(1)), "cannot determine bounds");
   }
   if (!by.l.isFinite() || !by.u.isFinite()) {
     return env.constants.infinityInt->isv();
@@ -1144,7 +1146,7 @@ IntSetVal* b_compute_mod_bounds(EnvI& env, Call* call) {
   assert(call->argCount() == 2);
   IntBounds by = compute_int_bounds(env, call->arg(1));
   if (!by.valid) {
-    throw EvalError(env, call->arg(1)->loc(), "cannot determine bounds");
+    throw EvalError(env, Expression::loc(call->arg(1)), "cannot determine bounds");
   }
   if (!by.l.isFinite() || !by.u.isFinite()) {
     return env.constants.infinityInt->isv();
@@ -1157,7 +1159,7 @@ FloatSetVal* b_compute_float_div_bounds(EnvI& env, Call* call) {
   assert(call->argCount() == 2);
   FloatBounds bx = compute_float_bounds(env, call->arg(0));
   if (!bx.valid) {
-    throw EvalError(env, call->arg(0)->loc(), "cannot determine bounds");
+    throw EvalError(env, Expression::loc(call->arg(0)), "cannot determine bounds");
   }
   /// TODO: better bounds if only some input bounds are infinite
   if (!bx.l.isFinite() || !bx.u.isFinite()) {
@@ -1168,7 +1170,7 @@ FloatSetVal* b_compute_float_div_bounds(EnvI& env, Call* call) {
   }
   FloatBounds by = compute_float_bounds(env, call->arg(1));
   if (!by.valid) {
-    throw EvalError(env, call->arg(1)->loc(), "cannot determine bounds");
+    throw EvalError(env, Expression::loc(call->arg(1)), "cannot determine bounds");
   }
   if (!by.l.isFinite() || !by.u.isFinite() || by.l.toDouble() * by.u.toDouble() <= 0.0) {
     return env.constants.infinityFloat->fsv();
@@ -1193,10 +1195,10 @@ IntSetVal* b_compute_pow_bounds(EnvI& env, Call* call) {
   IntBounds base = compute_int_bounds(env, call->arg(0));
   IntBounds exp = compute_int_bounds(env, call->arg(1));
   if (!base.valid) {
-    throw EvalError(env, call->arg(0)->loc(), "cannot determine bounds");
+    throw EvalError(env, Expression::loc(call->arg(0)), "cannot determine bounds");
   }
   if (!exp.valid) {
-    throw EvalError(env, call->arg(1)->loc(), "cannot determine bounds");
+    throw EvalError(env, Expression::loc(call->arg(1)), "cannot determine bounds");
   }
 
   if (!base.l.isFinite() || !base.u.isFinite() || !exp.l.isFinite() || !exp.u.isFinite()) {
@@ -1258,7 +1260,7 @@ IntSetVal* b_compute_pow_bounds(EnvI& env, Call* call) {
 // NOLINTNEXTLINE(readability-identifier-naming)
 ArrayLit* b_arrayXd(EnvI& env, Call* call, int d) {
   GCLock lock;
-  bool check_form = call->ann().contains(env.constants.ann.array_check_form);
+  bool check_form = Expression::ann(call).contains(env.constants.ann.array_check_form);
   ArrayLit* al = eval_array_lit(env, call->arg(d));
   std::vector<std::pair<int, int>> dims(d);
   unsigned int dim1d = 1;
@@ -1267,7 +1269,7 @@ ArrayLit* b_arrayXd(EnvI& env, Call* call, int d) {
     std::ostringstream ss;
     ss << "number of dimensions of original array (" << al->dims()
        << ") does not match the given number of index sets (" << d << ")";
-    throw EvalError(env, call->loc(), ss.str());
+    throw EvalError(env, Expression::loc(call), ss.str());
   }
 
   for (int i = 0; i < d; i++) {
@@ -1276,7 +1278,7 @@ ArrayLit* b_arrayXd(EnvI& env, Call* call, int d) {
       dims[i] = std::pair<int, int>(1, 0);
       dim1d = 0;
     } else if (di->size() != 1) {
-      throw EvalError(env, call->arg(i)->loc(), "arrayXd only defined for ranges");
+      throw EvalError(env, Expression::loc(call->arg(i)), "arrayXd only defined for ranges");
     } else {
       dims[i] = std::pair<int, int>(static_cast<int>(di->min(0).toInt()),
                                     static_cast<int>(di->max(0).toInt()));
@@ -1286,7 +1288,7 @@ ArrayLit* b_arrayXd(EnvI& env, Call* call, int d) {
         ss << "index set " << i + 1 << " (" << dims[i].first << ".." << dims[i].second
            << ") does not match index set " << i + 1 << " of original array (" << al->min(i) << ".."
            << al->max(i) << ")";
-        throw EvalError(env, call->arg(i)->loc(), ss.str());
+        throw EvalError(env, Expression::loc(call->arg(i)), ss.str());
       }
     }
   }
@@ -1295,9 +1297,9 @@ ArrayLit* b_arrayXd(EnvI& env, Call* call, int d) {
     ss << "mismatch in array dimensions: the array contains " << al->size() << " elements, but "
        << dim1d << " elements were expected according to the given index set"
        << (d > 1 ? "s." : ".");
-    throw EvalError(env, al->loc(), ss.str());
+    throw EvalError(env, Expression::loc(al), ss.str());
   }
-  auto* ret = new ArrayLit(al->loc(), al, dims);
+  auto* ret = new ArrayLit(Expression::loc(al), al, dims);
   ret->type(Type::arrType(env, Type::partop(d), al->type()));
   ret->flat(al->flat());
   return ret;
@@ -1306,9 +1308,9 @@ Expression* b_array1d_list(EnvI& env, Call* call) {
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   if (al->dims() == 1 && al->min(0) == 1) {
-    return call->arg(0)->isa<Id>() ? call->arg(0) : al;
+    return Expression::isa<Id>(call->arg(0)) ? call->arg(0) : al;
   }
-  auto* ret = new ArrayLit(al->loc(), al);
+  auto* ret = new ArrayLit(Expression::loc(al), al);
   Type t = Type::arrType(env, Type::partop(1), al->type());
   ret->type(t);
   ret->flat(al->flat());
@@ -1335,14 +1337,14 @@ Expression* b_arrayXd(EnvI& env, Call* call) {
       }
     }
     if (sameDims) {
-      return call->arg(1)->isa<Id>() ? call->arg(1) : al1;
+      return Expression::isa<Id>(call->arg(1)) ? call->arg(1) : al1;
     }
   }
   std::vector<std::pair<int, int>> dims(al0->dims());
   for (unsigned int i = al0->dims(); (i--) != 0U;) {
     dims[i] = std::make_pair(al0->min(i), al0->max(i));
   }
-  auto* ret = new ArrayLit(al1->loc(), al1, dims);
+  auto* ret = new ArrayLit(Expression::loc(al1), al1, dims);
   ret->type(Type::arrType(env, Type::partop(static_cast<int>(dims.size())), al1->type()));
   ret->flat(al1->flat());
   return ret;
@@ -1446,22 +1448,22 @@ Expression* exp_is_fixed(EnvI& env, Expression* e) {
     if (cur == nullptr) {
       return nullptr;
     }
-    if (cur->type().isPar()) {
+    if (Expression::type(cur).isPar()) {
       return eval_par(env, cur);
     }
-    switch (cur->eid()) {
+    switch (Expression::eid(cur)) {
       case Expression::E_ID:
-        cur = cur->cast<Id>()->decl();
+        cur = Expression::cast<Id>(cur)->decl();
         break;
       case Expression::E_VARDECL:
-        if (cur->type().st() != Type::ST_SET) {
-          Expression* dom = cur->cast<VarDecl>()->ti()->domain();
-          if ((dom != nullptr) &&
-              (dom->isa<IntLit>() || dom->isa<BoolLit>() || dom->isa<FloatLit>())) {
+        if (Expression::type(cur).st() != Type::ST_SET) {
+          Expression* dom = Expression::cast<VarDecl>(cur)->ti()->domain();
+          if ((dom != nullptr) && (Expression::isa<IntLit>(dom) || Expression::isa<BoolLit>(dom) ||
+                                   Expression::isa<FloatLit>(dom))) {
             return dom;
           }
-          if ((dom != nullptr) && dom->isa<SetLit>()) {
-            auto* sl = dom->cast<SetLit>();
+          if ((dom != nullptr) && Expression::isa<SetLit>(dom)) {
+            auto* sl = Expression::cast<SetLit>(dom);
             auto* isv = sl->isv();
             if (isv != nullptr && !isv->empty() && isv->min() == isv->max()) {
               return IntLit::a(isv->min());
@@ -1472,7 +1474,7 @@ Expression* exp_is_fixed(EnvI& env, Expression* e) {
             }
           }
         }
-        cur = cur->cast<VarDecl>()->e();
+        cur = Expression::cast<VarDecl>(cur)->e();
         break;
       default:
         return nullptr;
@@ -1509,7 +1511,7 @@ Expression* b_fix(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
   Expression* ret = exp_is_fixed(env, call->arg(0));
   if (ret == nullptr) {
-    throw EvalError(env, call->arg(0)->loc(), "expression is not fixed");
+    throw EvalError(env, Expression::loc(call->arg(0)), "expression is not fixed");
   }
   return ret;
 }
@@ -1527,7 +1529,7 @@ Expression* b_fix_array(EnvI& env, Call* call) {
   for (unsigned int i = 0; i < fixed.size(); i++) {
     fixed[i] = exp_is_fixed(env, (*al)[i]);
     if (fixed[i] == nullptr) {
-      throw EvalError(env, (*al)[i]->loc(), "expression is not fixed");
+      throw EvalError(env, Expression::loc((*al)[i]), "expression is not fixed");
     }
   }
   std::vector<std::pair<int, int>> dims(al->dims());
@@ -1544,38 +1546,39 @@ Expression* b_fix_array(EnvI& env, Call* call) {
 bool b_has_ann(EnvI& env, Call* call) {
   assert(call->argCount() == 2);
   Expression* expr = call->arg(0);
-  if (!expr->isa<Id>()) {
+  if (!Expression::isa<Id>(expr)) {
     // Argument is a literal, unable to verify annotations
     return false;
   }
   expr = follow_id_to_decl(expr);
   Expression* ann = call->arg(1);
-  if (ann->isa<Id>()) {
-    return expr->ann().contains(ann);
+  if (Expression::isa<Id>(ann)) {
+    return Expression::ann(expr).contains(ann);
   }
-  auto* key = ann->cast<Call>();
-  if (Call* c = expr->ann().getCall(key->id())) {
+  auto* key = Expression::cast<Call>(ann);
+  if (Call* c = Expression::ann(expr).getCall(key->id())) {
     if (c->argCount() != key->argCount()) {
       return false;
     }
     for (int i = 0; i < c->argCount(); ++i) {
-      if (c->arg(i)->type() != key->arg(i)->type()) {
+      if (Expression::type(c->arg(i)) != Expression::type(key->arg(i))) {
         return false;
       }
-      if (c->arg(i)->type().isPar()) {
+      if (Expression::type(c->arg(i)).isPar()) {
         GCLock lock;
         Expression* check_eq = new BinOp(Location().introduce(), c->arg(i), BOT_EQ, key->arg(i));
-        check_eq->type(Type::parbool());
+        Expression::type(check_eq, Type::parbool());
         if (!eval_bool(env, check_eq)) {
           return false;
         }
       } else {
-        if (c->arg(i)->isa<Id>() && key->arg(i)->isa<Id>()) {
+        if (Expression::isa<Id>(c->arg(i)) && Expression::isa<Id>(key->arg(i))) {
           if (follow_id_to_decl(c->arg(i)) != follow_id_to_decl(key->arg(i))) {
             return false;
           }
         } else {
-          throw EvalError(env, call->loc(), "Unable to determine equality of variable expressions");
+          throw EvalError(env, Expression::loc(call),
+                          "Unable to determine equality of variable expressions");
         }
       }
     }
@@ -1587,19 +1590,19 @@ bool b_has_ann(EnvI& env, Call* call) {
 bool b_annotate(EnvI& env, Call* call) {
   assert(call->argCount() == 2);
   Expression* expr = call->arg(0);
-  if (!expr->isa<Id>()) {
+  if (!Expression::isa<Id>(expr)) {
     // Argument is a literal, unable to annotate
     std::ostringstream ss;
     ss << "Unable to annotate literal expression `" << *expr << "'.";
-    env.addWarning(call->loc(), ss.str());
+    env.addWarning(Expression::loc(call), ss.str());
     return true;
   }
-  auto* var_decl = follow_id_to_decl(expr)->cast<VarDecl>();
+  auto* var_decl = Expression::cast<VarDecl>(follow_id_to_decl(expr));
   // Add annotation
   Expression* ann = call->arg(1);
-  var_decl->addAnnotation(ann);
+  Expression::addAnnotation(var_decl, ann);
   // Increase usage count of the annotation
-  if (auto* ann_decl = follow_id_to_decl(ann)->dynamicCast<VarDecl>()) {
+  if (auto* ann_decl = Expression::dynamicCast<VarDecl>(follow_id_to_decl(ann))) {
     auto var_it = env.varOccurrences.idx.find(var_decl->id());
     assert(var_it.first);
     env.varOccurrences.add(ann_decl, (*env.flat())[*var_it.second]);
@@ -1638,7 +1641,7 @@ IntVal b_pow_int(EnvI& env, Call* call) {
   IntVal p = eval_int(env, call->arg(0));
   IntVal e = eval_int(env, call->arg(1));
   if (e < 0 && p == 0) {
-    throw ResultUndefinedError(env, call->loc(), "negative power of zero is undefined");
+    throw ResultUndefinedError(env, Expression::loc(call), "negative power of zero is undefined");
   }
   return p.pow(e);
 }
@@ -1650,7 +1653,7 @@ bool b_assert_bool(EnvI& env, Call* call) {
   assert(call->argCount() == 2);
   GCLock lock;
   Expression* cond_e;
-  if (call->arg(0)->type().cv()) {
+  if (Expression::type(call->arg(0)).cv()) {
     Ctx ctx;
     ctx.b = C_MIX;
     cond_e = flat_cv_exp(env, ctx, call->arg(0))();
@@ -1661,19 +1664,19 @@ bool b_assert_bool(EnvI& env, Call* call) {
     return true;
   }
   Expression* msg_e;
-  if (call->arg(1)->type().cv()) {
+  if (Expression::type(call->arg(1)).cv()) {
     msg_e = flat_cv_exp(env, Ctx(), call->arg(1))();
   } else {
     msg_e = call->arg(1);
   }
-  throw AssertionError(env, call->arg(0)->loc(), eval_string(env, msg_e));
+  throw AssertionError(env, Expression::loc(call->arg(0)), eval_string(env, msg_e));
 }
 
 Expression* b_assert(EnvI& env, Call* call) {
   assert(call->argCount() == 3);
   GCLock lock;
   Expression* cond_e;
-  if (call->arg(0)->type().cv()) {
+  if (Expression::type(call->arg(0)).cv()) {
     Ctx ctx;
     ctx.b = C_MIX;
     cond_e = flat_cv_exp(env, ctx, call->arg(0))();
@@ -1684,12 +1687,12 @@ Expression* b_assert(EnvI& env, Call* call) {
     return call->arg(2);
   }
   Expression* msg_e;
-  if (call->arg(1)->type().cv()) {
+  if (Expression::type(call->arg(1)).cv()) {
     msg_e = flat_cv_exp(env, Ctx(), call->arg(1))();
   } else {
     msg_e = call->arg(1);
   }
-  throw AssertionError(env, call->arg(0)->loc(), eval_string(env, msg_e));
+  throw AssertionError(env, Expression::loc(call->arg(0)), eval_string(env, msg_e));
 }
 
 Expression* b_mzn_deprecate(EnvI& env, Call* call) {
@@ -1706,7 +1709,7 @@ Expression* b_mzn_deprecate(EnvI& env, Call* call) {
       w << "\nIMPORTANT: This function/predicate will be removed in the next minor version release "
            "of MiniZinc.";
     }
-    env.addWarning(call->loc(), w.str());
+    env.addWarning(Expression::loc(call), w.str());
   }
   return call->arg(3);
 }
@@ -1714,14 +1717,14 @@ Expression* b_mzn_deprecate(EnvI& env, Call* call) {
 bool b_abort(EnvI& env, Call* call) {
   GCLock lock;
   Expression* msg_e;
-  if (call->arg(0)->type().cv()) {
+  if (Expression::type(call->arg(0)).cv()) {
     msg_e = flat_cv_exp(env, Ctx(), call->arg(0))();
   } else {
     msg_e = call->arg(0);
   }
   std::ostringstream ss;
   ss << "Abort: " << eval_string(env, msg_e);
-  throw EvalError(env, call->arg(0)->loc(), ss.str());
+  throw EvalError(env, Expression::loc(call->arg(0)), ss.str());
 }
 
 Expression* b_mzn_symmetry_breaking_constraint(EnvI& env, Call* call) {
@@ -1733,7 +1736,8 @@ Expression* b_mzn_symmetry_breaking_constraint(EnvI& env, Call* call) {
   if (eval_bool(env, check)) {
     return env.constants.literalTrue;
   }
-  Call* nc = Call::a(call->loc(), ASTString("symmetry_breaking_constraint"), {call->arg(0)});
+  Call* nc =
+      Call::a(Expression::loc(call), ASTString("symmetry_breaking_constraint"), {call->arg(0)});
   nc->type(Type::varbool());
   nc->decl(env.model->matchFn(env, nc, false, true));
   return nc;
@@ -1748,7 +1752,7 @@ Expression* b_mzn_redundant_constraint(EnvI& env, Call* call) {
   if (eval_bool(env, check)) {
     return env.constants.literalTrue;
   }
-  Call* nc = Call::a(call->loc(), ASTString("redundant_constraint"), {call->arg(0)});
+  Call* nc = Call::a(Expression::loc(call), ASTString("redundant_constraint"), {call->arg(0)});
   nc->type(Type::varbool());
   nc->decl(env.model->matchFn(env, nc, false, true));
   return nc;
@@ -1762,15 +1766,15 @@ Expression* b_default(EnvI& env, Call* call) {
   env.inMaybePartial++;
   EE arg0 = flat_exp(env, ctx, call->arg(0), nullptr, nullptr);
   env.inMaybePartial--;
-  auto def_t = call->arg(1)->type();
-  if (arg0.b()->type().isPar()) {
+  auto def_t = Expression::type(call->arg(1));
+  if (Expression::type(arg0.b()).isPar()) {
     bool isDefined = eval_bool(env, arg0.b());
     if (!isDefined) {
       return call->arg(1);
     }
-    if (call->arg(0)->type().isOpt() && call->arg(0)->type().dim() == 0) {
-      if (arg0.r()->type().isPar()) {
-        if (arg0.r()->type().isOpt() && arg0.r() == env.constants.absent) {
+    if (Expression::type(call->arg(0)).isOpt() && Expression::type(call->arg(0)).dim() == 0) {
+      if (Expression::type(arg0.r()).isPar()) {
+        if (Expression::type(arg0.r()).isOpt() && arg0.r() == env.constants.absent) {
           return call->arg(1);
         }
         return arg0.r();
@@ -1783,7 +1787,7 @@ Expression* b_default(EnvI& env, Call* call) {
         auto t = Type::parbool();
         t.cv(true);
         hzc->type(t);
-        auto* had_zero = flat_cv_exp(env, Ctx(), hzc)()->cast<BoolLit>();
+        auto* had_zero = Expression::cast<BoolLit>(flat_cv_exp(env, Ctx(), hzc)());
         if (had_zero == env.constants.boollit(false)) {
           // Can use deopt value directly as deopt(<>) will already be zero
           auto* deopt = Call::a(Location().introduce(), "deopt", {arg0.r()});
@@ -1796,11 +1800,12 @@ Expression* b_default(EnvI& env, Call* call) {
       // if occurs(x) then deopt(x) else y endif
       auto* occurs = Call::a(Location().introduce(), "occurs", {arg0.r()});
       occurs->decl(env.model->matchFn(env, occurs, false));
-      occurs->type(arg0.r()->type().isOpt() && arg0.r()->type().isvar() ? Type::varbool()
-                                                                        : Type::parbool());
+      occurs->type(Expression::type(arg0.r()).isOpt() && Expression::type(arg0.r()).isvar()
+                       ? Type::varbool()
+                       : Type::parbool());
       auto* deopt = Call::a(Location().introduce(), "deopt", {arg0.r()});
       deopt->decl(env.model->matchFn(env, deopt, false));
-      Type deopt_t = arg0.r()->type();
+      Type deopt_t = Expression::type(arg0.r());
       deopt_t.ot(Type::OT_PRESENT);
       deopt->type(deopt_t);
       auto* deoptIte = new ITE(Location().introduce(), {occurs, deopt}, call->arg(1));
@@ -1809,8 +1814,8 @@ Expression* b_default(EnvI& env, Call* call) {
     }
     return arg0.r();
   }
-  if (call->arg(0)->type().isOpt() && call->arg(0)->type().dim() == 0) {
-    if (arg0.r()->type().isvar() && def_t.isPar() &&
+  if (Expression::type(call->arg(0)).isOpt() && Expression::type(call->arg(0)).dim() == 0) {
+    if (Expression::type(arg0.r()).isvar() && def_t.isPar() &&
         ((def_t.isint() && eval_int(env, call->arg(1)) == 0))) {
       // Default value is 0, may be able to use deopt directly
       auto* hzc = Call::a(Location().introduce(), "had_zero", {arg0.r()});
@@ -1818,12 +1823,12 @@ Expression* b_default(EnvI& env, Call* call) {
       auto t = Type::parbool();
       t.cv(true);
       hzc->type(t);
-      auto* had_zero = flat_cv_exp(env, Ctx(), hzc)()->cast<BoolLit>();
+      auto* had_zero = Expression::cast<BoolLit>(flat_cv_exp(env, Ctx(), hzc)());
       if (had_zero == env.constants.boollit(false)) {
         // if defined(x) then deopt(x) else y endif
         auto* deopt = Call::a(Location().introduce(), "deopt", {arg0.r()});
         deopt->decl(env.model->matchFn(env, deopt, false));
-        Type deopt_t = arg0.r()->type();
+        Type deopt_t = Expression::type(arg0.r());
         deopt_t.ot(Type::OT_PRESENT);
         deopt->type(deopt_t);
         auto* deoptIte = new ITE(Location().introduce(), {arg0.b(), deopt}, call->arg(1));
@@ -1835,11 +1840,12 @@ Expression* b_default(EnvI& env, Call* call) {
     // if defined(x) /\ occurs(x) then deopt(x) else y endif
     auto* occurs = Call::a(Location().introduce(), "occurs", {arg0.r()});
     occurs->decl(env.model->matchFn(env, occurs, false));
-    occurs->type(arg0.r()->type().isOpt() && arg0.r()->type().isvar() ? Type::varbool()
-                                                                      : Type::parbool());
+    occurs->type(Expression::type(arg0.r()).isOpt() && Expression::type(arg0.r()).isvar()
+                     ? Type::varbool()
+                     : Type::parbool());
     auto* deopt = Call::a(Location().introduce(), "deopt", {arg0.r()});
     deopt->decl(env.model->matchFn(env, deopt, false));
-    Type deopt_t = arg0.r()->type();
+    Type deopt_t = Expression::type(arg0.r());
     deopt_t.ot(Type::OT_PRESENT);
     deopt->type(deopt_t);
     auto* defAndOcc = new BinOp(Location().introduce(), arg0.b(), BOT_AND, occurs);
@@ -1868,16 +1874,16 @@ Expression* b_trace_exp(EnvI& env, Call* call) {
     env.outstream
         << "{\"type\": \"trace\", \"section\": \"trace_exp\", \"message\": { \"message\": \"";
     env.outstream << Printer::escapeStringLit(oss.str()) << "\", \"location\": {";
-    env.outstream << "\"filename\": \"" << Printer::escapeStringLit(call->loc().filename())
-                  << "\", ";
-    env.outstream << "\"firstLine\": " << call->loc().firstLine() << ", ";
-    env.outstream << "\"firstColumn\": " << call->loc().firstColumn() << ", ";
-    env.outstream << "\"lastLine\": " << call->loc().lastLine() << ", ";
-    env.outstream << "\"lastColumn\": " << call->loc().lastColumn();
+    env.outstream << "\"filename\": \""
+                  << Printer::escapeStringLit(Expression::loc(call).filename()) << "\", ";
+    env.outstream << "\"firstLine\": " << Expression::loc(call).firstLine() << ", ";
+    env.outstream << "\"firstColumn\": " << Expression::loc(call).firstColumn() << ", ";
+    env.outstream << "\"lastLine\": " << Expression::loc(call).lastLine() << ", ";
+    env.outstream << "\"lastColumn\": " << Expression::loc(call).lastColumn();
     env.outstream << "}}}" << std::endl;
   } else {
     static std::string prevLoc;
-    std::string loc = call->loc().toString();
+    std::string loc = Expression::loc(call).toString();
     if (env.errstream.traceModified() || loc != env.errstream.prevTraceLoc()) {
       env.errstream << loc << ":\n";
     }
@@ -1895,7 +1901,7 @@ Expression* b_trace_exp(EnvI& env, Call* call) {
 Expression* b_trace(EnvI& env, Call* call) {
   GCLock lock;
   Expression* msg_e;
-  if (call->arg(0)->type().cv()) {
+  if (Expression::type(call->arg(0)).cv()) {
     msg_e = flat_cv_exp(env, Ctx(), call->arg(0))();
   } else {
     msg_e = call->arg(0);
@@ -1907,7 +1913,7 @@ Expression* b_trace(EnvI& env, Call* call) {
 Expression* b_trace_stdout(EnvI& env, Call* call) {
   GCLock lock;
   Expression* msg_e;
-  if (call->arg(0)->type().cv()) {
+  if (Expression::type(call->arg(0)).cv()) {
     msg_e = flat_cv_exp(env, Ctx(), call->arg(0))();
   } else {
     msg_e = call->arg(0);
@@ -1924,18 +1930,20 @@ Expression* b_trace_stdout(EnvI& env, Call* call) {
 Expression* b_trace_to_section(EnvI& env, Call* call) {
   GCLock lock;
   StringLit* section;
-  if (call->arg(0)->type().cv()) {
-    section = flat_cv_exp(env, Ctx(), call->arg(0))()->cast<StringLit>();
+  if (Expression::type(call->arg(0)).cv()) {
+    section = Expression::cast<StringLit>(flat_cv_exp(env, Ctx(), call->arg(0))());
   } else {
-    section = eval_par(env, call->arg(0))->cast<StringLit>();
+    section = Expression::cast<StringLit>(eval_par(env, call->arg(0)));
   }
   auto section_s = std::string(section->v().c_str());
   if (section_s == "dzn" || section_s == "json" || section_s == "trace_exp") {
-    throw EvalError(env, call->loc(), "The output section '" + section_s + "' is reserved.");
+    throw EvalError(env, Expression::loc(call),
+                    "The output section '" + section_s + "' is reserved.");
   }
   if (env.fopts.encapsulateJSON) {
-    auto msg = eval_string(
-        env, call->arg(1)->type().cv() ? flat_cv_exp(env, Ctx(), call->arg(1))() : call->arg(1));
+    auto msg = eval_string(env, Expression::type(call->arg(1)).cv()
+                                    ? flat_cv_exp(env, Ctx(), call->arg(1))()
+                                    : call->arg(1));
     env.outstream << "{\"type\": \"trace\", \"section\": \"" << Printer::escapeStringLit(section_s)
                   << "\", \"message\": ";
     if (section->v().endsWith("_json")) {
@@ -1950,8 +1958,9 @@ Expression* b_trace_to_section(EnvI& env, Call* call) {
     }
     env.outstream << "}" << std::endl;
   } else if (env.outputSectionEnabled(section->v())) {
-    auto msg = eval_string(
-        env, call->arg(1)->type().cv() ? flat_cv_exp(env, Ctx(), call->arg(1))() : call->arg(1));
+    auto msg = eval_string(env, Expression::type(call->arg(1)).cv()
+                                    ? flat_cv_exp(env, Ctx(), call->arg(1))()
+                                    : call->arg(1));
     env.outstream << msg;
   }
   return call->argCount() == 2 ? env.constants.literalTrue : call->arg(2);
@@ -1960,10 +1969,10 @@ Expression* b_trace_to_section(EnvI& env, Call* call) {
 Expression* b_trace_logstream(EnvI& env, Call* call) {
   GCLock lock;
   StringLit* msg;
-  if (call->arg(0)->type().cv()) {
-    msg = flat_cv_exp(env, Ctx(), call->arg(0))()->cast<StringLit>();
+  if (Expression::type(call->arg(0)).cv()) {
+    msg = Expression::cast<StringLit>(flat_cv_exp(env, Ctx(), call->arg(0))());
   } else {
-    msg = eval_par(env, call->arg(0))->cast<StringLit>();
+    msg = Expression::cast<StringLit>(eval_par(env, call->arg(0)));
   }
   env.logstream << msg->v();
   return call->argCount() == 1 ? env.constants.literalTrue : call->arg(1);
@@ -1973,15 +1982,16 @@ std::string b_logstream(EnvI& env, Call* call) { return env.logstream.str(); }
 bool b_output_to_section(EnvI& env, Call* call) {
   GCLock lock;
   StringLit* section;
-  if (call->arg(0)->type().cv()) {
-    section = flat_cv_exp(env, Ctx(), call->arg(0))()->cast<StringLit>();
+  if (Expression::type(call->arg(0)).cv()) {
+    section = Expression::cast<StringLit>(flat_cv_exp(env, Ctx(), call->arg(0))());
   } else {
-    section = eval_par(env, call->arg(0))->cast<StringLit>();
+    section = Expression::cast<StringLit>(eval_par(env, call->arg(0)));
   }
   std::string section_s = eval_string(env, section);
 
   if (section_s == "dzn" || section_s == "json" || section_s == "trace_exp") {
-    throw EvalError(env, call->loc(), "The output section '" + section_s + "' is reserved.");
+    throw EvalError(env, Expression::loc(call),
+                    "The output section '" + section_s + "' is reserved.");
   }
 
   // Collect the values of function arguments so that they are available
@@ -2006,19 +2016,19 @@ bool b_output_to_section(EnvI& env, Call* call) {
       }
       _visited.insert(i);
       auto* decl = follow_id_to_decl(i);
-      if (decl == nullptr || !decl->isa<VarDecl>()) {
+      if (decl == nullptr || !Expression::isa<VarDecl>(decl)) {
         return;
       }
-      auto* vd = decl->cast<VarDecl>();
+      auto* vd = Expression::cast<VarDecl>(decl);
       if (vd->toplevel()) {
         // Restore binding to original (and top-level) VarDecl
         auto* vd_orig = _cm.findOrig(vd);
-        i->redirect(vd_orig->cast<VarDecl>()->id());
+        i->redirect(Expression::cast<VarDecl>(vd_orig)->id());
       } else if (vd->e() != nullptr) {
-        if (vd->e()->type().isvar()) {
+        if (Expression::type(vd->e()).isvar()) {
           top_down(*this, vd->e());
         }
-        vd->ann().clear();
+        Expression::ann(vd).clear();
         _scope.emplace(vd);
       }
     }
@@ -2041,57 +2051,59 @@ Expression* b_output(EnvI& env, Call* call) {
   // Find the original VarDecl we are annotating so we can get its ID
   auto* arg = call->arg(0);
   auto cs_size = env.callStack.size();
-  if (cs_size < 2 || !env.callStack[cs_size - 2].e->isa<VarDecl>() ||
-      !env.callStack[cs_size - 2].e->cast<VarDecl>()->ann().contains(env.constants.ann.output)) {
-    env.addWarning(call->loc(),
+  if (cs_size < 2 || !Expression::isa<VarDecl>(env.callStack[cs_size - 2].e) ||
+      !Expression::ann(Expression::cast<VarDecl>(env.callStack[cs_size - 2].e))
+           .contains(env.constants.ann.output)) {
+    env.addWarning(Expression::loc(call),
                    "Failed to determine variable to output. The ::output annotation must be used "
                    "directly on a variable declaration.");
     return env.constants.ann.empty_annotation;
   }
 
-  auto* vd = env.callStack[cs_size - 2].e->cast<VarDecl>();
+  auto* vd = Expression::cast<VarDecl>(env.callStack[cs_size - 2].e);
   auto name = vd->id()->str();
   if (!vd->toplevel()) {
     GCLock lock;
     std::ostringstream oss;
-    oss << name << "@" << vd->loc().firstLine() << "." << vd->loc().firstColumn();
-    if (vd->loc().firstLine() != vd->loc().lastLine()) {
-      oss << "-" << vd->loc().lastLine() << "." << vd->loc().lastColumn();
-    } else if (vd->loc().firstColumn() != vd->loc().lastColumn()) {
-      oss << "-" << vd->loc().lastColumn();
+    oss << name << "@" << Expression::loc(vd).firstLine() << "."
+        << Expression::loc(vd).firstColumn();
+    if (Expression::loc(vd).firstLine() != Expression::loc(vd).lastLine()) {
+      oss << "-" << Expression::loc(vd).lastLine() << "." << Expression::loc(vd).lastColumn();
+    } else if (Expression::loc(vd).firstColumn() != Expression::loc(vd).lastColumn()) {
+      oss << "-" << Expression::loc(vd).lastColumn();
     }
     const auto* sep = "|";
     for (auto it = env.callStack.rbegin() + 2; it != env.callStack.rend(); it++) {
       auto* e = it->e;
       bool isCompIter = it->tag;
-      switch (e->eid()) {
+      switch (Expression::eid(e)) {
         case Expression::E_ID:
           oss << sep;
           if (isCompIter) {
-            oss << *e << "=" << *e->cast<Id>()->decl()->e();
+            oss << *e << "=" << *Expression::cast<Id>(e)->decl()->e();
           } else {
             oss << *e;
           }
           break;
         case Expression::E_BINOP: {
-          std::string quotedOp(e->cast<BinOp>()->opToString().c_str());
+          std::string quotedOp(Expression::cast<BinOp>(e)->opToString().c_str());
           oss << sep << quotedOp.substr(1, quotedOp.size() - 2);
           break;
         }
         case Expression::E_UNOP: {
-          std::string quotedOp(e->cast<UnOp>()->opToString().c_str());
+          std::string quotedOp(Expression::cast<UnOp>(e)->opToString().c_str());
           oss << sep << quotedOp.substr(1, quotedOp.size() - 2);
           break;
         }
         case Expression::E_CALL: {
-          oss << sep << demonomorphise_identifier(e->cast<Call>()->id());
+          oss << sep << demonomorphise_identifier(Expression::cast<Call>(e)->id());
           break;
         }
         default:
           continue;
       }
 
-      auto loc = e->loc();
+      auto loc = Expression::loc(e);
       oss << "@" << loc.firstLine() << "." << loc.firstColumn();
       if (loc.firstLine() != loc.lastLine()) {
         oss << "-" << loc.lastLine() << "." << loc.lastColumn();
@@ -2102,7 +2114,7 @@ Expression* b_output(EnvI& env, Call* call) {
     name = ASTString(oss.str());
   }
 
-  env.outputVars.emplace_back(name, call->arg(0)->cast<Id>()->decl());
+  env.outputVars.emplace_back(name, Expression::cast<Id>(call->arg(0))->decl());
   return env.constants.ann.empty_annotation;
 }
 
@@ -2121,9 +2133,9 @@ Expression* b_set2array(EnvI& env, Call* call) {
   for (Ranges::ToValues<IntSetRanges> isr_v(isr); isr_v(); ++isr_v) {
     elems.push_back(IntLit::a(isr_v.val()));
   }
-  auto* al = new ArrayLit(call->arg(0)->loc(), elems);
+  auto* al = new ArrayLit(Expression::loc(call->arg(0)), elems);
   Type t(Type::parint(1));
-  t.typeId(call->arg(0)->type().typeId());
+  t.typeId(Expression::type(call->arg(0)).typeId());
   al->type(t);
   return al;
 }
@@ -2133,7 +2145,7 @@ Expression* b_set_sparse_inverse(EnvI& env, Call* call) {
   GCLock lock;
   IntSetVal* isv = eval_intset(env, call->arg(0));
   if (isv->empty()) {
-    throw ResultUndefinedError(env, call->loc(), "sparse set of empty set is undefined");
+    throw ResultUndefinedError(env, Expression::loc(call), "sparse set of empty set is undefined");
   }
   auto set_min = isv->min().toInt();
   auto set_size = (isv->max() - isv->min() + 1).toInt();
@@ -2143,9 +2155,9 @@ Expression* b_set_sparse_inverse(EnvI& env, Call* call) {
   for (Ranges::ToValues<IntSetRanges> isr_v(isr); isr_v(); ++isr_v) {
     elems[isr_v.val().toInt() - set_min] = IntLit::a(i++);
   }
-  auto* al = new ArrayLit(call->arg(0)->loc(), elems, {{set_min, isv->max().toInt()}});
+  auto* al = new ArrayLit(Expression::loc(call->arg(0)), elems, {{set_min, isv->max().toInt()}});
   Type t(Type::parint(1));
-  t.typeId(call->arg(0)->type().typeId());
+  t.typeId(Expression::type(call->arg(0)).typeId());
   al->type(t);
   return al;
 }
@@ -2161,7 +2173,7 @@ std::string b_show_enum_type(EnvI& env, Expression* e, Type t, bool dzn, bool js
   GCLock lock;
   std::vector<Expression*> args(3);
   args[0] = e;
-  if (e->type().dim() > 1) {
+  if (Expression::type(e).dim() > 1) {
     Call* array1d = Call::a(Location().introduce(), env.constants.ids.array1d, {e});
     Type array1dt = Type::arrType(env, Type::partop(1), t);
     array1d->type(array1dt);
@@ -2180,24 +2192,24 @@ std::string b_show_enum_type(EnvI& env, Expression* e, Type t, bool dzn, bool js
 std::string show_with_type(EnvI& env, Expression* exp, Type t, bool showDzn) {
   GCLock lock;
   Expression* e = follow_id_to_decl(exp);
-  if (auto* vd = e->dynamicCast<VarDecl>()) {
-    if ((vd->e() != nullptr) && !vd->e()->isa<Call>()) {
+  if (auto* vd = Expression::dynamicCast<VarDecl>(e)) {
+    if ((vd->e() != nullptr) && !Expression::isa<Call>(vd->e())) {
       e = vd->e();
     } else {
       e = vd->id();
     }
   }
-  if (e->type().isPar()) {
+  if (Expression::type(e).isPar()) {
     e = eval_par(env, e);
   }
-  if (e->type().dim() > 0 || e->type().structBT()) {
+  if (Expression::type(e).dim() > 0 || Expression::type(e).structBT()) {
     e = eval_array_lit(env, e);
   }
-  if (e->type().dim() == 0 && t.bt() == Type::BT_INT && t.typeId() != 0) {
+  if (Expression::type(e).dim() == 0 && t.bt() == Type::BT_INT && t.typeId() != 0) {
     return b_show_enum_type(env, e, t, showDzn, false);
   }
   std::ostringstream oss;
-  if (auto* al = e->dynamicCast<ArrayLit>()) {
+  if (auto* al = Expression::dynamicCast<ArrayLit>(e)) {
     oss << (al->isTuple() ? "(" : "[");
     if (al->type().isrecord()) {
       RecordType* rt = env.getRecordType(al->type());
@@ -2221,7 +2233,7 @@ std::string show_with_type(EnvI& env, Expression* exp, Type t, bool showDzn) {
       }
     } else {
       for (unsigned int i = 0; i < al->size(); i++) {
-        oss << show_with_type(env, (*al)[i], (*al)[i]->type(), showDzn);
+        oss << show_with_type(env, (*al)[i], Expression::type((*al)[i]), showDzn);
         if (i < al->size() - 1) {
           oss << ", ";
         }
@@ -2235,12 +2247,12 @@ std::string show_with_type(EnvI& env, Expression* exp, Type t, bool showDzn) {
   return oss.str();
 }
 std::string show(EnvI& env, Expression* exp) {
-  return show_with_type(env, exp, exp->type(), false);
+  return show_with_type(env, exp, Expression::type(exp), false);
 }
 
 std::string b_show(EnvI& env, Call* call) { return show(env, call->arg(0)); }
 std::string b_show_dzn(EnvI& env, Call* call) {
-  return show_with_type(env, call->arg(0), call->arg(0)->type(), true);
+  return show_with_type(env, call->arg(0), Expression::type(call->arg(0)), true);
 }
 std::string b_show_dzn_id(EnvI& env, Call* call) {
   GCLock lock;
@@ -2254,7 +2266,7 @@ std::string b_show_json_basic(EnvI& env, Expression* e, Type t) {
   }
   std::ostringstream oss;
   Printer p(oss, 0, false, &env);
-  if (auto* sl = e->dynamicCast<SetLit>()) {
+  if (auto* sl = Expression::dynamicCast<SetLit>(e)) {
     oss << "{ \"set\" : [";
     if (IntSetVal* isv = sl->isv()) {
       bool first = true;
@@ -2303,7 +2315,7 @@ std::string b_show_json_basic(EnvI& env, Expression* e, Type t) {
     p.print(e);
   }
   // Annotations still need to be escaped
-  if (e->type().isAnn()) {
+  if (Expression::type(e).isAnn()) {
     return std::string("\"") + Printer::escapeStringLit(oss.str()) + "\"";
   }
   return oss.str();
@@ -2312,13 +2324,13 @@ std::string b_show_json_basic(EnvI& env, Expression* e, Type t) {
 std::string b_show_json_with_type(EnvI& env, Expression* exp, Type t) {
   GCLock lock;
   Expression* e = eval_par(env, exp);
-  if (e->type().isvar()) {
+  if (Expression::type(e).isvar()) {
     std::ostringstream oss;
     Printer p(oss, 0, false, &env);
     p.print(e);
     return oss.str();
   }
-  if (auto* al = e->dynamicCast<ArrayLit>()) {
+  if (auto* al = Expression::dynamicCast<ArrayLit>(e)) {
     std::ostringstream oss;
     if (al->type().isrecord()) {
       assert(al->dims() == 1);
@@ -2350,7 +2362,7 @@ std::string b_show_json_with_type(EnvI& env, Expression* exp, Type t) {
         }
       }
       if (tt == nullptr) {
-        oss << b_show_json_with_type(env, (*al)[i], (*al)[i]->type());
+        oss << b_show_json_with_type(env, (*al)[i], Expression::type((*al)[i]));
       } else {
         oss << b_show_json_with_type(env, (*al)[i], (*tt)[i]);
       }
@@ -2373,11 +2385,11 @@ std::string b_show_json_with_type(EnvI& env, Expression* exp, Type t) {
 
 std::string b_show_json(EnvI& env, Call* call) {
   Expression* exp = call->arg(0);
-  return b_show_json_with_type(env, exp, exp->type());
+  return b_show_json_with_type(env, exp, Expression::type(exp));
 }
 
 Expression* b_output_json(EnvI& env, Call* call) {
-  throw EvalError(env, call->loc(), "JSON output can only be evaluated during output");
+  throw EvalError(env, Expression::loc(call), "JSON output can only be evaluated during output");
 }
 
 Expression* b_output_json_parameters(EnvI& env, Call* call) {
@@ -2395,7 +2407,7 @@ Expression* b_output_json_parameters(EnvI& env, Call* call) {
         : _e(e), _outputVars(outputVars), _firstVar(true) {}
     void vVarDeclI(VarDeclI* vdi) {
       VarDecl* vd = vdi->e();
-      if (vd->ann().contains(Constants::constants().ann.rhs_from_assignment)) {
+      if (Expression::ann(vd).contains(Constants::constants().ann.rhs_from_assignment)) {
         std::ostringstream s;
         if (_firstVar) {
           _firstVar = false;
@@ -2437,14 +2449,14 @@ std::string b_format(EnvI& env, Call* call) {
       assert(call->argCount() == 3);
       prec = static_cast<int>(eval_int(env, call->arg(1)).toInt());
       if (prec < 0) {
-        throw EvalError(env, call->arg(1)->loc(), "output precision cannot be negative");
+        throw EvalError(env, Expression::loc(call->arg(1)), "output precision cannot be negative");
       }
       e = eval_par(env, call->arg(2));
     }
   } else {
     e = eval_par(env, call->arg(0));
   }
-  if (e->type() == Type::parint()) {
+  if (Expression::type(e) == Type::parint()) {
     IntVal i = eval_int(env, e);
     if (i.isFinite()) {
       std::ostringstream formatted;
@@ -2461,7 +2473,7 @@ std::string b_format(EnvI& env, Call* call) {
       return formatted.str();
     }
   }
-  if (e->type() == Type::parfloat()) {
+  if (Expression::type(e) == Type::parfloat()) {
     FloatVal i = eval_float(env, e);
     if (i.isFinite()) {
       std::ostringstream formatted;
@@ -2540,10 +2552,10 @@ std::string b_show_int(EnvI& env, Call* call) {
   GCLock lock;
   Expression* e = eval_par(env, call->arg(1));
   std::ostringstream oss;
-  if (auto* iv = e->dynamicCast<IntLit>()) {
+  if (auto* iv = Expression::dynamicCast<IntLit>(e)) {
     int justify = static_cast<int>(eval_int(env, call->arg(0)).toInt());
     std::ostringstream oss_value;
-    oss_value << iv->v();
+    oss_value << IntLit::v(iv);
     int iv_length = static_cast<int>(oss_value.str().size());
     int addLeft = justify < 0 ? 0 : (justify - iv_length);
     if (addLeft < 0) {
@@ -2572,18 +2584,18 @@ std::string b_show_float(EnvI& env, Call* call) {
   GCLock lock;
   Expression* e = eval_par(env, call->arg(2));
   std::ostringstream oss;
-  if (auto* fv = e->dynamicCast<FloatLit>()) {
+  if (auto* fv = Expression::dynamicCast<FloatLit>(e)) {
     int justify = static_cast<int>(eval_int(env, call->arg(0)).toInt());
     int prec = static_cast<int>(eval_int(env, call->arg(1)).toInt());
     if (prec < 0) {
-      throw EvalError(env, call->arg(1)->loc(),
+      throw EvalError(env, Expression::loc(call->arg(1)),
                       "number of digits in show_float cannot be negative");
     }
     std::ostringstream oss_value;
-    if (fv->v().isFinite()) {
-      oss_value << std::setprecision(prec) << std::fixed << fv->v().toDouble();
+    if (FloatLit::v(fv).isFinite()) {
+      oss_value << std::setprecision(prec) << std::fixed << FloatLit::v(fv).toDouble();
     } else {
-      oss_value << fv->v();
+      oss_value << FloatLit::v(fv);
     }
     int fv_length = static_cast<int>(oss_value.str().size());
     int addLeft = justify < 0 ? 0 : (justify - fv_length);
@@ -2609,8 +2621,8 @@ std::string b_show_float(EnvI& env, Call* call) {
 }
 
 std::string b_file_path(EnvI& /*env*/, Call* call) {
-  return FileUtils::file_path(
-      std::string(call->loc().filename().c_str(), call->loc().filename().size()));
+  return FileUtils::file_path(std::string(Expression::loc(call).filename().c_str(),
+                                          Expression::loc(call).filename().size()));
 }
 
 std::string b_concat(EnvI& env, Call* call) {
@@ -2701,7 +2713,8 @@ IntSetVal* b_array_intersect(EnvI& env, Call* call) {
       return IntSetVal::a();
     }
   } else {
-    throw ResultUndefinedError(env, call->loc(), "intersection of empty array is undefined");
+    throw ResultUndefinedError(env, Expression::loc(call),
+                               "intersection of empty array is undefined");
   }
 }
 
@@ -2725,7 +2738,7 @@ Expression* b_sort_by_int(EnvI& env, Call* call) {
   for (auto i = static_cast<unsigned int>(sorted.size()); (i--) != 0U;) {
     sorted[i] = (*al)[a[i]];
   }
-  auto* al_sorted = new ArrayLit(al->loc(), sorted);
+  auto* al_sorted = new ArrayLit(Expression::loc(al), sorted);
   al_sorted->type(al->type());
   return al_sorted;
 }
@@ -2750,7 +2763,7 @@ Expression* b_sort_by_float(EnvI& env, Call* call) {
   for (auto i = static_cast<unsigned int>(sorted.size()); (i--) != 0U;) {
     sorted[i] = (*al)[a[i]];
   }
-  auto* al_sorted = new ArrayLit(al->loc(), sorted);
+  auto* al_sorted = new ArrayLit(Expression::loc(al), sorted);
   al_sorted->type(al->type());
   return al_sorted;
 }
@@ -2766,7 +2779,7 @@ Expression* b_sort(EnvI& env, Call* call) {
     EnvI& env;
     Ord(EnvI& env0) : env(env0) {}
     bool operator()(Expression* e0, Expression* e1) {
-      switch (e0->type().bt()) {
+      switch (Expression::type(e0).bt()) {
         case Type::BT_INT:
           return eval_int(env, e0) < eval_int(env, e1);
         case Type::BT_BOOL:
@@ -2774,12 +2787,12 @@ Expression* b_sort(EnvI& env, Call* call) {
         case Type::BT_FLOAT:
           return eval_float(env, e0) < eval_float(env, e1);
         default:
-          throw EvalError(env, e0->loc(), "unsupported type for sorting");
+          throw EvalError(env, Expression::loc(e0), "unsupported type for sorting");
       }
     }
   } _ord(env);
   std::sort(sorted.begin(), sorted.end(), _ord);
-  auto* al_sorted = new ArrayLit(al->loc(), sorted);
+  auto* al_sorted = new ArrayLit(Expression::loc(al), sorted);
   al_sorted->type(al->type());
   return al_sorted;
 }
@@ -2803,7 +2816,7 @@ Expression* b_inverse(EnvI& env, Call* call) {
     maxVal = std::max(maxVal, ii);
   }
   if (maxVal - minVal + 1 != al->size()) {
-    throw ResultUndefinedError(env, call->loc(),
+    throw ResultUndefinedError(env, Expression::loc(call),
                                "inverse on non-contiguous set of values is undefined");
   }
 
@@ -2815,11 +2828,11 @@ Expression* b_inverse(EnvI& env, Call* call) {
   }
   for (bool b : used) {
     if (!b) {
-      throw ResultUndefinedError(env, call->loc(),
+      throw ResultUndefinedError(env, Expression::loc(call),
                                  "inverse on non-contiguous set of values is undefined");
     }
   }
-  auto* al_inv = new ArrayLit(al->loc(), inv, {{minVal.toInt(), maxVal.toInt()}});
+  auto* al_inv = new ArrayLit(Expression::loc(al), inv, {{minVal.toInt(), maxVal.toInt()}});
   al_inv->type(al->type());
   return al_inv;
 }
@@ -2832,7 +2845,7 @@ Expression* b_set_to_ranges_int(EnvI& env, Call* call) {
     v[2 * static_cast<size_t>(i)] = IntLit::a(isv->min(i));
     v[2 * static_cast<size_t>(i) + 1] = IntLit::a(isv->max(i));
   }
-  auto* al = new ArrayLit(call->loc().introduce(), v);
+  auto* al = new ArrayLit(Expression::loc(call).introduce(), v);
   al->type(Type::parint(1));
   return al;
 }
@@ -2845,7 +2858,7 @@ Expression* b_set_to_ranges_float(EnvI& env, Call* call) {
     v[2 * static_cast<size_t>(i)] = FloatLit::a(fsv->min(i));
     v[2 * static_cast<size_t>(i) + 1] = FloatLit::a(fsv->max(i));
   }
-  auto* al = new ArrayLit(call->loc().introduce(), v);
+  auto* al = new ArrayLit(Expression::loc(call).introduce(), v);
   al->type(Type::parfloat(1));
   return al;
 }
@@ -2876,7 +2889,7 @@ FloatVal b_uniform_float(EnvI& env, Call* call) {
     std::stringstream ssm;
     ssm << "lowerbound of uniform distribution \"" << lb
         << "\" is higher than its upperbound: " << ub;
-    throw EvalError(env, call->arg(0)->loc(), ssm.str());
+    throw EvalError(env, Expression::loc(call->arg(0)), ssm.str());
   }
   std::uniform_real_distribution<double> distribution(lb, ub);
   // return a sample from the distribution
@@ -2891,7 +2904,7 @@ IntVal b_uniform_int(EnvI& env, Call* call) {
     std::stringstream ssm;
     ssm << "lowerbound of uniform distribution \"" << lb
         << "\" is higher than its upperbound: " << ub;
-    throw EvalError(env, call->arg(0)->loc(), ssm.str());
+    throw EvalError(env, Expression::loc(call->arg(0)), ssm.str());
   }
   std::uniform_int_distribution<long long int> distribution(lb, ub);
   // return a sample from the distribution
@@ -2939,14 +2952,14 @@ FloatVal b_weibull_int_float(EnvI& env, Call* call) {
     std::stringstream ssm;
     ssm << "The shape factor for the weibull distribution \"" << shape
         << "\" has to be greater than zero.";
-    throw EvalError(env, call->arg(0)->loc(), ssm.str());
+    throw EvalError(env, Expression::loc(call->arg(0)), ssm.str());
   }
   const double scale = eval_float(env, call->arg(1)).toDouble();
   if (scale < 0) {
     std::stringstream ssm;
     ssm << "The scale factor for the weibull distribution \"" << scale
         << "\" has to be greater than zero.";
-    throw EvalError(env, call->arg(1)->loc(), ssm.str());
+    throw EvalError(env, Expression::loc(call->arg(1)), ssm.str());
   }
   std::weibull_distribution<double> distribution(shape, scale);
   // return a sample from the distribution
@@ -2960,14 +2973,14 @@ FloatVal b_weibull_float_float(EnvI& env, Call* call) {
     std::stringstream ssm;
     ssm << "The shape factor for the weibull distribution \"" << shape
         << "\" has to be greater than zero.";
-    throw EvalError(env, call->arg(0)->loc(), ssm.str());
+    throw EvalError(env, Expression::loc(call->arg(0)), ssm.str());
   }
   const double scale = eval_float(env, call->arg(1)).toDouble();
   if (scale < 0) {
     std::stringstream ssm;
     ssm << "The scale factor for the weibull distribution \"" << scale
         << "\" has to be greater than zero.";
-    throw EvalError(env, call->arg(1)->loc(), ssm.str());
+    throw EvalError(env, Expression::loc(call->arg(1)), ssm.str());
   }
   std::weibull_distribution<double> distribution(shape, scale);
   // return a sample from the distribution
@@ -2981,7 +2994,7 @@ FloatVal b_exponential_float(EnvI& env, Call* call) {
     std::stringstream ssm;
     ssm << "The lambda-parameter for the exponential distribution function \"" << lambda
         << "\" has to be greater than zero.";
-    throw EvalError(env, call->arg(0)->loc(), ssm.str());
+    throw EvalError(env, Expression::loc(call->arg(0)), ssm.str());
   }
   std::exponential_distribution<double> distribution(lambda);
   // return a sample from the distribution
@@ -2995,7 +3008,7 @@ FloatVal b_exponential_int(EnvI& env, Call* call) {
     std::stringstream ssm;
     ssm << "The lambda-parameter for the exponential distribution function \"" << lambda
         << "\" has to be greater than zero.";
-    throw EvalError(env, call->arg(0)->loc(), ssm.str());
+    throw EvalError(env, Expression::loc(call->arg(0)), ssm.str());
   }
   std::exponential_distribution<double> distribution(lambda);
   // return a sample from the distribution
@@ -3096,7 +3109,7 @@ IntVal b_discrete_distribution(EnvI& env, Call* call) {
     std::stringstream ssm;
     ssm << "expecting 1-dimensional array of weights for discrete distribution instead of: " << *al
         << std::endl;
-    throw EvalError(env, al->loc(), ssm.str());
+    throw EvalError(env, Expression::loc(al), ssm.str());
   }
   std::vector<long long int> weights(al->size());
   for (unsigned int i = 0; i < al->size(); i++) {
@@ -3221,13 +3234,13 @@ IntVal b_to_enum(EnvI& env, Call* call) {
   IntVal v = eval_int(env, call->arg(1));
   if (!isv->contains(v)) {
     std::ostringstream oss;
-    if (call->arg(0)->type().typeId() != 0) {
-      const auto* e = env.getEnum(call->arg(0)->type().typeId());
+    if (Expression::type(call->arg(0)).typeId() != 0) {
+      const auto* e = env.getEnum(Expression::type(call->arg(0)).typeId());
       oss << "value " << v << " outside of range of enum " << *e->e()->id();
     } else {
       oss << "value " << v << " outside of range of enum " << *isv;
     }
-    throw ResultUndefinedError(env, call->loc(), oss.str());
+    throw ResultUndefinedError(env, Expression::loc(call), oss.str());
   }
   return v;
 }
@@ -3237,19 +3250,20 @@ IntVal b_enum_next(EnvI& env, Call* call) {
   IntVal v = eval_int(env, call->arg(1));
   if (!isv->contains(v + 1)) {
     std::ostringstream oss;
-    if (call->arg(0)->type().typeId() != 0) {
-      const auto* e = env.getEnum(call->arg(0)->type().typeId());
+    if (Expression::type(call->arg(0)).typeId() != 0) {
+      const auto* e = env.getEnum(Expression::type(call->arg(0)).typeId());
       if (!isv->contains(v)) {
         oss << "value " << v << " outside of range of enum " << *e->e()->id();
       } else {
         oss << "value ";
-        oss << env.enumToString(call->arg(0)->type().typeId(), static_cast<int>(v.toInt()));
+        oss << env.enumToString(Expression::type(call->arg(0)).typeId(),
+                                static_cast<int>(v.toInt()));
         oss << " is max of enum " << *e->e()->id() << ", cannot get next value";
       }
     } else {
       oss << "enum_next of value " << v << " is undefined";
     }
-    throw ResultUndefinedError(env, call->loc(), oss.str());
+    throw ResultUndefinedError(env, Expression::loc(call), oss.str());
   }
   return v + 1;
 }
@@ -3259,19 +3273,20 @@ IntVal b_enum_prev(EnvI& env, Call* call) {
   IntVal v = eval_int(env, call->arg(1));
   if (!isv->contains(v - 1)) {
     std::ostringstream oss;
-    if (call->arg(0)->type().typeId() != 0) {
-      const auto* e = env.getEnum(call->arg(0)->type().typeId());
+    if (Expression::type(call->arg(0)).typeId() != 0) {
+      const auto* e = env.getEnum(Expression::type(call->arg(0)).typeId());
       if (!isv->contains(v)) {
         oss << "value " << v << " outside of range of enum " << *e->e()->id();
       } else {
         oss << "value ";
-        oss << env.enumToString(call->arg(0)->type().typeId(), static_cast<int>(v.toInt()));
+        oss << env.enumToString(Expression::type(call->arg(0)).typeId(),
+                                static_cast<int>(v.toInt()));
         oss << " is min of enum " << *e->e()->id() << ", cannot get previous value";
       }
     } else {
       oss << "enum_prev of value " << v << " is undefined";
     }
-    throw ResultUndefinedError(env, call->loc(), oss.str());
+    throw ResultUndefinedError(env, Expression::loc(call), oss.str());
   }
   return v - 1;
 }
@@ -3291,12 +3306,12 @@ Expression* b_slice(EnvI& env, Call* call) {
       newSlice[i] = std::pair<int, int>(1, 0);
     } else {
       if (isv->size() > 1) {
-        throw ResultUndefinedError(env, call->loc(), "array slice must be contiguous");
+        throw ResultUndefinedError(env, Expression::loc(call), "array slice must be contiguous");
       }
       int sl_min = isv->min().isFinite() ? static_cast<int>(isv->min().toInt()) : al->min(i);
       int sl_max = isv->max().isFinite() ? static_cast<int>(isv->max().toInt()) : al->max(i);
       if (sl_min < al->min(i) || sl_max > al->max(i)) {
-        throw ResultUndefinedError(env, call->loc(), "array slice out of bounds");
+        throw ResultUndefinedError(env, Expression::loc(call), "array slice out of bounds");
       }
       newSlice[i] = std::pair<int, int>(sl_min, sl_max);
     }
@@ -3312,7 +3327,7 @@ Expression* b_slice(EnvI& env, Call* call) {
                                        static_cast<int>(isv->max().toInt()));
     }
   }
-  auto* ret = new ArrayLit(al->loc(), al, newDims, newSlice);
+  auto* ret = new ArrayLit(Expression::loc(al), al, newDims, newSlice);
   ret->type(call->type());
   return ret;
 }
@@ -3395,7 +3410,7 @@ Expression* b_regular_from_string(EnvI& env, Call* call) {
       } else {
         auto* fi = it->second->cast<FunctionI>();
         Call* c = Call::a(Location().introduce(), fi->id(), {arg});
-        c->type(fi->rtype(env, {arg->type()}, nullptr, true));
+        c->type(fi->rtype(env, {Expression::type(arg)}, nullptr, true));
         c->decl(fi);
 
         IntVal result = eval_int(env, c);
@@ -3442,7 +3457,7 @@ Expression* b_regular_from_string(EnvI& env, Call* call) {
   try {
     regex = regex_from_string(expr, *dom);
   } catch (const std::exception& e) {
-    throw SyntaxError(call->arg(1)->loc(), e.what());
+    throw SyntaxError(Expression::loc(call->arg(1)), e.what());
   }
   DFA dfa = DFA(*regex);
 
@@ -3468,31 +3483,31 @@ Expression* b_regular_from_string(EnvI& env, Call* call) {
     std::vector<Expression*> nvars(vars->size());
     IntLit* loffset = IntLit::a(IntVal(offset));
     for (int i = 0; i < nvars.size(); ++i) {
-      nvars[i] = new BinOp(call->loc().introduce(), (*vars)[i], BOT_PLUS, loffset);
-      nvars[i]->type(Type::varint());
+      nvars[i] = new BinOp(Expression::loc(call).introduce(), (*vars)[i], BOT_PLUS, loffset);
+      Expression::type(nvars[i], Type::varint());
     }
-    args[0] = new ArrayLit(call->loc().introduce(), nvars);  // x
-    args[0]->type(Type::varint(1));
+    args[0] = new ArrayLit(Expression::loc(call).introduce(), nvars);  // x
+    Expression::type(args[0], Type::varint(1));
   }
   args[1] = IntLit::a(IntVal(dfa.n_states()));  // Q
-  args[1]->type(Type::parint());
+  Expression::type(args[1], Type::parint());
   args[2] = IntLit::a(IntVal(card));  // S
-  args[2]->type(Type::parint());
-  args[3] = new ArrayLit(call->loc().introduce(), reg_trans);  // d
-  args[3]->type(Type::parint(2));
+  Expression::type(args[2], Type::parint());
+  args[3] = new ArrayLit(Expression::loc(call).introduce(), reg_trans);  // d
+  Expression::type(args[3], Type::parint(2));
   args[4] = IntLit::a(IntVal(1));  // q0
-  args[4]->type(Type::parint());
-  args[5] = new SetLit(call->loc().introduce(),
+  Expression::type(args[4], Type::parint());
+  args[5] = new SetLit(Expression::loc(call).introduce(),
                        IntSetVal::a(IntVal(dfa.final_fst() + 1), IntVal(dfa.final_lst())));  // F
-  args[5]->type(Type::parsetint());
+  Expression::type(args[5], Type::parsetint());
 
-  auto* nc = Call::a(call->loc().introduce(), "regular", args);
+  auto* nc = Call::a(Expression::loc(call).introduce(), "regular", args);
   nc->type(Type::varbool());
 
   return nc;
 #else
   throw FlatteningError(
-      env, call->loc(),
+      env, Expression::loc(call),
       "MiniZinc was compiled without built-in Gecode, cannot parse regular expression");
 #endif
 }
@@ -3504,7 +3519,7 @@ Expression* b_show_checker_output(EnvI& env, Call* call) {
   // Reset checker output
   env.checkerOutput.str("");
   env.checkerOutput.clear();
-  return new StringLit(call->loc().introduce(), output);
+  return new StringLit(Expression::loc(call).introduce(), output);
 }
 
 Expression* b_check_debug_mode(EnvI& env, Call* call) {

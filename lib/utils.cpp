@@ -64,7 +64,7 @@ void dump_stack(const std::vector<EnvI::CallStackEntry>& stack) {
 
   int count = 15;
   for (unsigned int i = stack.size(); (i--) >= 0U;) {
-    if (stack[i].e->isa<Call>()) {
+    if (Expression::isa<Call>(stack[i].e)) {
       msg = "  frame #";
       write(2, msg, strlen(msg));
       itoa_async_safe(stack.size() - i - 1, buf);
@@ -75,11 +75,11 @@ void dump_stack(const std::vector<EnvI::CallStackEntry>& stack) {
         msg = ": ";
       }
       write(2, msg, strlen(msg));
-      msg = stack[i].e->cast<Call>()->id().c_str();
+      msg = Expression::cast<Call>(stack[i].e)->id().c_str();
       write(2, msg, strlen(msg));
       msg = " at ";
       write(2, msg, strlen(msg));
-      const Location& loc = stack[i].e->cast<Call>()->decl()->loc();
+      const Location& loc = Expression::cast<Call>(stack[i].e)->decl()->loc();
       msg = loc.filename().c_str();
       if (msg == nullptr) {
         msg = "unknown file";

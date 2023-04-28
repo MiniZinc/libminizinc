@@ -15,7 +15,7 @@ namespace MiniZinc {
 
 EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   EE ret;
-  if (e->type().cv()) {
+  if (Expression::type(e).cv()) {
     CallStackItem _csi(env, e);
     Ctx nctx;
     nctx.b = ctx.b == C_ROOT ? C_ROOT : C_MIX;
@@ -25,33 +25,33 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
       ret.r = bind(env, ctx, r, ka());
       ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
     } catch (ResultUndefinedError&) {
-      if (e->type().isbool()) {
+      if (Expression::type(e).isbool()) {
         ret.r = bind(env, ctx, r, env.constants.literalFalse);
         ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
       } else {
-        ret.r = create_dummy_value(env, e->type());
+        ret.r = create_dummy_value(env, Expression::type(e));
         ret.b = bind(env, Ctx(), b, env.constants.literalFalse);
       }
     }
     return ret;
   }
-  if (e->type().dim() > 0) {
-    auto* ident = e->dynamicCast<Id>();
+  if (Expression::type(e).dim() > 0) {
+    auto* ident = Expression::dynamicCast<Id>(e);
     if (ident != nullptr) {
       Expression* e_val = follow_id_to_decl(ident);
-      if (e_val->isa<Id>()) {
-        ident = e_val->cast<Id>();
-      } else if (e_val->isa<VarDecl>()) {
-        ident = e_val->cast<VarDecl>()->id();
+      if (Expression::isa<Id>(e_val)) {
+        ident = Expression::cast<Id>(e_val);
+      } else if (Expression::isa<VarDecl>(e_val)) {
+        ident = Expression::cast<VarDecl>(e_val)->id();
       }
       if (ident->decl()->flat() == nullptr || ident->decl()->toplevel()) {
         CallStackItem _csi(env, e);
         VarDecl* vd = ident->decl()->flat();
         if (vd == nullptr) {
           EE flat_ident = flat_exp(env, Ctx(), ident->decl(), nullptr, env.constants.varTrue);
-          vd = flat_ident.r()->cast<Id>()->decl();
+          vd = Expression::cast<Id>(flat_ident.r())->decl();
           ident->decl()->flat(vd);
-          auto* al = follow_id(vd->id())->cast<ArrayLit>();
+          auto* al = Expression::cast<ArrayLit>(follow_id(vd->id()));
           if (al->empty()) {
             if (r == nullptr) {
               ret.r = al;
@@ -69,12 +69,12 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     }
     auto it = env.cseMapFind(e);
     if (it != env.cseMapEnd()) {
-      ret.r = bind(env, ctx, r, it->second.r->cast<VarDecl>()->id());
+      ret.r = bind(env, ctx, r, Expression::cast<VarDecl>(it->second.r)->id());
       ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
       return ret;
     }
     GCLock lock;
-    auto* al = follow_id(eval_par(env, e))->cast<ArrayLit>();
+    auto* al = Expression::cast<ArrayLit>(follow_id(eval_par(env, e)));
     CallStackItem _csi(env, e);
     if (al->empty() || ((r != nullptr) && r->e() == nullptr)) {
       if (r == nullptr) {
@@ -87,19 +87,19 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     }
     it = env.cseMapFind(al);
     if (it != env.cseMapEnd()) {
-      ret.r = bind(env, ctx, r, it->second.r->cast<VarDecl>()->id());
+      ret.r = bind(env, ctx, r, Expression::cast<VarDecl>(it->second.r)->id());
       ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
       return ret;
     }
     std::vector<TypeInst*> ranges(al->dims());
     for (unsigned int i = 0; i < ranges.size(); i++) {
       ranges[i] =
-          new TypeInst(e->loc(), Type(),
+          new TypeInst(Expression::loc(e), Type(),
                        new SetLit(Location().introduce(), IntSetVal::a(al->min(i), al->max(i))));
     }
     ASTExprVec<TypeInst> ranges_v(ranges);
     assert(!al->type().isbot());
-    auto* ti = new TypeInst(e->loc(), al->type(), ranges_v, nullptr);
+    auto* ti = new TypeInst(Expression::loc(e), al->type(), ranges_v, nullptr);
     VarDecl* vd = new_vardecl(env, ctx, ti, nullptr, nullptr, al);
     EE ee(vd, nullptr);
     env.cseMapInsert(al, ee);
@@ -112,15 +112,15 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
   GCLock lock;
   try {
     auto* result = eval_par(env, e);
-    if (result->type() == Type::parbool()) {
+    if (Expression::type(result) == Type::parbool()) {
       if (ctx.b == C_ROOT && r == env.constants.varTrue && result == env.constants.boollit(false)) {
-        env.fail("expression evaluated to false", e->loc());
+        env.fail("expression evaluated to false", Expression::loc(e));
       }
     }
     ret.r = bind(env, ctx, r, result);
     ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
   } catch (ResultUndefinedError&) {
-    ret.r = create_dummy_value(env, e->type());
+    ret.r = create_dummy_value(env, Expression::type(e));
     ret.b = bind(env, Ctx(), b, env.constants.literalFalse);
   }
   return ret;

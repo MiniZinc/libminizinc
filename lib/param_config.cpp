@@ -53,16 +53,16 @@ void ParamConfig::addValue(const ASTString& flag_input, Expression* e) {
     throw ParamException("Parameter '" + flag + "' is not allowed in configuration file");
   }
   std::stringstream val_ss;
-  switch (e->eid()) {
+  switch (Expression::eid(e)) {
     case Expression::E_ARRAYLIT: {
-      auto* al = e->cast<ArrayLit>();
+      auto* al = Expression::cast<ArrayLit>(e);
       for (auto* exp : al->getVec()) {
         addValue(ASTString(flag), exp);
       }
       break;
     }
     case Expression::E_BOOLLIT: {
-      if (e->cast<BoolLit>()->v()) {
+      if (Expression::cast<BoolLit>(e)->v()) {
         _values.push_back(flag);
       } else {
         // If this flag has a negated version, use it
@@ -75,17 +75,17 @@ void ParamConfig::addValue(const ASTString& flag_input, Expression* e) {
     }
     case Expression::E_STRINGLIT:
       _values.push_back(flag);
-      val_ss << e->cast<StringLit>()->v();
+      val_ss << Expression::cast<StringLit>(e)->v();
       _values.push_back(val_ss.str());
       break;
     case Expression::E_INTLIT:
       _values.push_back(flag);
-      val_ss << e->cast<IntLit>()->v();
+      val_ss << IntLit::v(Expression::cast<IntLit>(e));
       _values.push_back(val_ss.str());
       break;
     case Expression::E_FLOATLIT:
       _values.push_back(flag);
-      val_ss << e->cast<FloatLit>()->v();
+      val_ss << FloatLit::v(Expression::cast<FloatLit>(e));
       _values.push_back(val_ss.str());
       break;
       break;
@@ -109,9 +109,9 @@ std::string ParamConfig::modelToString(Model& model) {
     if (auto* ai = i->dynamicCast<AssignI>()) {
       auto flag = ParamConfig::flagName(ai->id());
       auto* e = ai->e();
-      switch (e->eid()) {
+      switch (Expression::eid(e)) {
         case Expression::E_ARRAYLIT: {
-          auto* al = e->cast<ArrayLit>();
+          auto* al = Expression::cast<ArrayLit>(e);
           for (auto* exp : al->getVec()) {
             ss << " " << flag;
             ss << " " << exp;
@@ -119,21 +119,21 @@ std::string ParamConfig::modelToString(Model& model) {
           break;
         }
         case Expression::E_BOOLLIT:
-          if (e->cast<BoolLit>()->v()) {
+          if (Expression::cast<BoolLit>(e)->v()) {
             ss << " " << flag;
           }
           break;
         case Expression::E_STRINGLIT:
           ss << " " << flag;
-          ss << " " << ai->e()->cast<StringLit>()->v();
+          ss << " " << Expression::cast<StringLit>(ai->e())->v();
           break;
         case Expression::E_INTLIT:
           ss << " " << flag;
-          ss << " " << ai->e()->cast<IntLit>()->v();
+          ss << " " << IntLit::v(Expression::cast<IntLit>(ai->e()));
           break;
         case Expression::E_FLOATLIT:
           ss << " " << flag;
-          ss << " " << ai->e()->cast<FloatLit>()->v();
+          ss << " " << FloatLit::v(Expression::cast<FloatLit>(ai->e()));
           break;
         default:
           throw ParamException("Unsupported parameter type for '" + flag + "'");

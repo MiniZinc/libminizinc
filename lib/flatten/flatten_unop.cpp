@@ -16,7 +16,7 @@ namespace MiniZinc {
 EE flatten_unop(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   CallStackItem _csi(env, e);
   EE ret;
-  UnOp* uo = e->cast<UnOp>();
+  UnOp* uo = Expression::cast<UnOp>(e);
 
   bool isBuiltin = uo->decl() == nullptr || uo->decl()->e() == nullptr;
 
@@ -33,14 +33,14 @@ EE flatten_unop(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
         break;
       case UOT_MINUS: {
         GC::lock();
-        if (UnOp* uo_inner = uo->e()->dynamicCast<UnOp>()) {
+        if (UnOp* uo_inner = Expression::dynamicCast<UnOp>(uo->e())) {
           if (uo_inner->op() == UOT_MINUS) {
             ret = flat_exp(env, ctx, uo_inner->e(), r, b);
             break;
           }
         }
         Expression* zero;
-        if (uo->e()->type().bt() == Type::BT_INT) {
+        if (Expression::type(uo->e()).bt() == Type::BT_INT) {
           zero = IntLit::a(0);
         } else {
           zero = FloatLit::a(0.0);
@@ -56,7 +56,7 @@ EE flatten_unop(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
     }
   } else {
     GC::lock();
-    Call* c = Call::a(uo->loc().introduce(), uo->opToString(), {uo->e()});
+    Call* c = Call::a(Expression::loc(uo).introduce(), uo->opToString(), {uo->e()});
     c->decl(env.model->matchFn(env, c, false));
     c->type(uo->type());
     KeepAlive ka(c);

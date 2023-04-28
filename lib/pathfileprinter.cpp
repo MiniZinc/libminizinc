@@ -92,21 +92,21 @@ void PathFilePrinter::buildMap(Model* m) {
   // Build map
   for (VarDeclIterator vdit = m->vardecls().begin(); vdit != m->vardecls().end(); ++vdit) {
     VarDecl* e = vdit->e();
-    for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it) {
-      if (Call* ca = (*it)->dynamicCast<Call>()) {
+    for (ExpressionSetIter it = Expression::ann(e).begin(); it != Expression::ann(e).end(); ++it) {
+      if (Call* ca = Expression::dynamicCast<Call>(*it)) {
         ASTString cid = ca->id();
         if (cid == Constants::constants().ann.output_array) {
-          if (auto* rhs = e->e()->dynamicCast<ArrayLit>()) {
+          if (auto* rhs = Expression::dynamicCast<ArrayLit>(e->e())) {
             for (unsigned int ind = 0; ind < rhs->size(); ind++) {
-              if (Id* id = (*rhs)[ind]->dynamicCast<Id>()) {
+              if (Id* id = Expression::dynamicCast<Id>((*rhs)[ind])) {
                 std::stringstream bettername;
                 bettername << *e->id() << "[";
 
                 // Array of sets
-                ArrayLit& dimsets = *ca->arg(0)->cast<ArrayLit>();
+                ArrayLit& dimsets = *Expression::cast<ArrayLit>(ca->arg(0));
                 vector<IntVal> dims(dimsets.size(), 1);
                 for (unsigned int i = 0; i < dimsets.size(); i++) {
-                  auto* sl = dimsets[i]->cast<SetLit>();
+                  auto* sl = Expression::cast<SetLit>(dimsets[i]);
                   dims[i] = sl->isv()->card();
                 }
                 vector<IntVal> dimspan(dims.size(), 1);
@@ -120,9 +120,10 @@ void PathFilePrinter::buildMap(Model* m) {
                 for (unsigned int i = 0; i < dims.size() - 1; i++) {
                   IntVal thisind = curind / dimspan[i];
                   curind -= thisind * dimspan[i];
-                  bettername << dimsets[i]->cast<SetLit>()->isv()->min() + thisind << ",";
+                  bettername << Expression::cast<SetLit>(dimsets[i])->isv()->min() + thisind << ",";
                 }
-                bettername << dimsets[dimsets.size() - 1]->cast<SetLit>()->isv()->min() + curind
+                bettername << Expression::cast<SetLit>(dimsets[dimsets.size() - 1])->isv()->min() +
+                                  curind
                            << "]";
 
                 addBetterName(id, bettername.str(), "", true);
@@ -130,7 +131,7 @@ void PathFilePrinter::buildMap(Model* m) {
             }
           }
         } else if (ca->id() == Constants::constants().ann.mzn_path) {
-          auto* sl = ca->arg(0)->cast<StringLit>();
+          auto* sl = Expression::cast<StringLit>(ca->arg(0));
           addBetterName(e->id(), path2name(string(sl->v().c_str(), sl->v().size())),
                         string(sl->v().c_str()));
         }
@@ -173,11 +174,11 @@ void PathFilePrinter::print(Item* item) {
   } else if (auto* ci = item->dynamicCast<ConstraintI>()) {
     StringLit* sl = nullptr;
     Expression* e = ci->e();
-    for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it) {
-      if (Call* ca = (*it)->dynamicCast<Call>()) {
+    for (ExpressionSetIter it = Expression::ann(e).begin(); it != Expression::ann(e).end(); ++it) {
+      if (Call* ca = Expression::dynamicCast<Call>(*it)) {
         ASTString cid = ca->id();
         if (cid == Constants::constants().ann.mzn_path) {
-          sl = ca->arg(0)->cast<StringLit>();
+          sl = Expression::cast<StringLit>(ca->arg(0));
         }
       }
     }
@@ -234,11 +235,12 @@ void PathFilePrinter::json(Model* m) {
     } else if (auto* ci = item->dynamicCast<ConstraintI>()) {
       StringLit* sl = nullptr;
       Expression* e = ci->e();
-      for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it) {
-        if (Call* ca = (*it)->dynamicCast<Call>()) {
+      for (ExpressionSetIter it = Expression::ann(e).begin(); it != Expression::ann(e).end();
+           ++it) {
+        if (Call* ca = Expression::dynamicCast<Call>(*it)) {
           ASTString cid = ca->id();
           if (cid == Constants::constants().ann.mzn_path) {
-            sl = ca->arg(0)->cast<StringLit>();
+            sl = Expression::cast<StringLit>(ca->arg(0));
           }
         }
       }

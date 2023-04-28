@@ -135,7 +135,7 @@ std::vector<Type> instantiated_types(EnvI& env, Call* call) {
   TIOccMap ti_var_types;
 
   for (unsigned int i = 0; i < call->argCount(); i++) {
-    types[i] = call->arg(i)->type();
+    types[i] = Expression::type(call->arg(i));
     if (types[i].isbot() && call->arg(i) == env.constants.absent) {
       types[i] = decl->param(i)->type();
     }
@@ -247,8 +247,8 @@ public:
     if (c->decl() != nullptr) {
       if (c->decl()->e() != nullptr || (c->argCount() == 1 && c->id() == "enum_of")) {
         if (is_polymorphic(c->decl())) {
-          assert(c->argCount() != 1 || c->arg(0)->type().st() == Type::ST_PLAIN ||
-                 c->arg(0)->type().ot() == Type::OT_PRESENT);
+          assert(c->argCount() != 1 || Expression::type(c->arg(0)).st() == Type::ST_PLAIN ||
+                 Expression::type(c->arg(0)).ot() == Type::OT_PRESENT);
           agenda.push(c);
         }
       }
@@ -506,13 +506,13 @@ public:
 
   static bool walkTIMap(EnvI& env, ASTStringMap<Type>& ti_map, TypeInst* struct_ti, StructType* tt,
                         const ToGenerate& tg) {
-    auto* al = struct_ti->domain()->cast<ArrayLit>();
+    auto* al = Expression::cast<ArrayLit>(struct_ti->domain());
     assert(al->size() == tt->size() ||
            al->size() + 1 == tt->size());  // May have added concrete type for reification
     assert(tg.ver == ToGenerate::TG_STRUCT);
     assert(al->size() == tg.inner->size());
     for (size_t i = 0; i < al->size(); i++) {
-      auto* ti = (*al)[i]->cast<TypeInst>();
+      auto* ti = Expression::cast<TypeInst>((*al)[i]);
       Type curType = ti->type();
       Type concrete_type = (*tt)[i];
       curType.bt(concrete_type.bt());
@@ -641,16 +641,16 @@ public:
 
   static void updateReturnTypeInst(EnvI& env, ASTStringMap<Type>& ti_map, TypeInst* ti) {
     if (ti->type().bt() == Type::BT_TUPLE) {
-      auto* al = ti->domain()->cast<ArrayLit>();
+      auto* al = Expression::cast<ArrayLit>(ti->domain());
       auto* st = env.getStructType(ti->type());
       for (unsigned int i = 0; i < st->size(); i++) {
-        updateReturnTypeInst(env, ti_map, (*al)[i]->cast<TypeInst>());
+        updateReturnTypeInst(env, ti_map, Expression::cast<TypeInst>((*al)[i]));
       }
     } else if (ti->type().bt() == Type::BT_RECORD) {
-      auto* al = ti->domain()->cast<ArrayLit>();
+      auto* al = Expression::cast<ArrayLit>(ti->domain());
       auto* st = env.getStructType(ti->type());
       for (unsigned int i = 0; i < st->size(); i++) {
-        updateReturnTypeInst(env, ti_map, (*al)[i]->cast<TypeInst>());
+        updateReturnTypeInst(env, ti_map, Expression::cast<TypeInst>((*al)[i]));
       }
     } else if (TIId* tiid = Expression::dynamicCast<TIId>(ti->domain())) {
       Type ret_type = ti_map.find(tiid->v())->second;
@@ -741,8 +741,8 @@ public:
   void operator()(Call* call) {
     if (call->id() == _env.constants.ids.enumOf && call->argCount() == 1) {
       // Rewrite to enum_of_internal with enum argument
-      auto enumId = call->arg(0)->type().typeId();
-      if (enumId != 0 && call->arg(0)->type().dim() != 0) {
+      auto enumId = Expression::type(call->arg(0)).typeId();
+      if (enumId != 0 && Expression::type(call->arg(0)).dim() != 0) {
         const auto& enumIds = _env.getArrayEnum(enumId);
         enumId = enumIds[enumIds.size() - 1];
       }

@@ -14,21 +14,21 @@
 namespace MiniZinc {
 
 EE flatten_fieldaccess(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
-  auto* fa = e->cast<FieldAccess>();
-  assert(fa->v()->type().istuple() || fa->v()->type().isrecord());
+  auto* fa = Expression::cast<FieldAccess>(e);
+  assert(Expression::type(fa->v()).istuple() || Expression::type(fa->v()).isrecord());
 
   // Resolve tuple
   Ctx nctx = ctx;
   nctx.b = +nctx.b;
   nctx.neg = false;
   EE ret = flat_exp(env, nctx, fa->v(), nullptr, b);
-  auto* al = eval_array_lit(env, ret.r())->cast<ArrayLit>();
+  auto* al = Expression::cast<ArrayLit>(eval_array_lit(env, ret.r()));
 
   // Resolve field
-  IntVal i = fa->field()->cast<IntLit>()->v();
+  IntVal i = IntLit::v(Expression::cast<IntLit>(fa->field()));
   if (i < 1 || i > al->size()) {
     // This should not happen, type checking should ensure all fields are valid.
-    throw EvalError(env, fa->loc(), "Internal error: accessing invalid field");
+    throw EvalError(env, Expression::loc(fa), "Internal error: accessing invalid field");
   }
 
   // Bind result

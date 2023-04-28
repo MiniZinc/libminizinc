@@ -86,9 +86,9 @@ void SolverInstanceBase2::assignSolutionToOutput() {
          it != getEnv()->flat()->vardecls().end(); ++it) {
       if (!it->removed()) {
         VarDecl* vd = it->e();
-        if (!vd->ann().isEmpty()) {
-          if (vd->ann().containsCall(Constants::constants().ann.output_array.aststr()) ||
-              vd->ann().contains(Constants::constants().ann.output_var)) {
+        if (!Expression::ann(vd).isEmpty()) {
+          if (Expression::ann(vd).containsCall(Constants::constants().ann.output_array.aststr()) ||
+              Expression::ann(vd).contains(Constants::constants().ann.output_var)) {
             _varsWithOutput.push_back(vd);
           }
         }
@@ -102,27 +102,27 @@ void SolverInstanceBase2::assignSolutionToOutput() {
   // flat model
   for (auto* vd : _varsWithOutput) {
     // std::cout << "DEBUG: Looking at var-decl with output-annotation: " << *vd << std::endl;
-    if (Call* output_array_ann = Expression::dynamicCast<Call>(
-            get_annotation(vd->ann(), Constants::constants().ann.output_array.aststr()))) {
+    if (Call* output_array_ann = Expression::dynamicCast<Call>(get_annotation(
+            Expression::ann(vd), Constants::constants().ann.output_array.aststr()))) {
       assert(vd->e());
 
-      if (auto* al = vd->e()->dynamicCast<ArrayLit>()) {
+      if (auto* al = Expression::dynamicCast<ArrayLit>(vd->e())) {
         std::vector<Expression*> array_elems;
         ArrayLit& array = *al;
         for (unsigned int j = 0; j < array.size(); j++) {
-          if (Id* id = array[j]->dynamicCast<Id>()) {
+          if (Id* id = Expression::dynamicCast<Id>(array[j])) {
             // std::cout << "DEBUG: getting solution value from " << *id  << " : " << id->v() <<
             // std::endl;
             array_elems.push_back(getSolutionValue(id));
-          } else if (auto* floatLit = array[j]->dynamicCast<FloatLit>()) {
+          } else if (auto* floatLit = Expression::dynamicCast<FloatLit>(array[j])) {
             array_elems.push_back(floatLit);
-          } else if (auto* intLit = array[j]->dynamicCast<IntLit>()) {
+          } else if (auto* intLit = Expression::dynamicCast<IntLit>(array[j])) {
             array_elems.push_back(intLit);
-          } else if (auto* boolLit = array[j]->dynamicCast<BoolLit>()) {
+          } else if (auto* boolLit = Expression::dynamicCast<BoolLit>(array[j])) {
             array_elems.push_back(boolLit);
-          } else if (auto* setLit = array[j]->dynamicCast<SetLit>()) {
+          } else if (auto* setLit = Expression::dynamicCast<SetLit>(array[j])) {
             array_elems.push_back(setLit);
-          } else if (auto* strLit = array[j]->dynamicCast<StringLit>()) {
+          } else if (auto* strLit = Expression::dynamicCast<StringLit>(array[j])) {
             array_elems.push_back(strLit);
           } else {
             std::ostringstream oss;
@@ -133,10 +133,10 @@ void SolverInstanceBase2::assignSolutionToOutput() {
         GCLock lock;
         ArrayLit* dims;
         Expression* e = output_array_ann->arg(0);
-        if (auto* al = e->dynamicCast<ArrayLit>()) {
+        if (auto* al = Expression::dynamicCast<ArrayLit>(e)) {
           dims = al;
-        } else if (Id* id = e->dynamicCast<Id>()) {
-          dims = id->decl()->e()->cast<ArrayLit>();
+        } else if (Id* id = Expression::dynamicCast<Id>(e)) {
+          dims = Expression::cast<ArrayLit>(id->decl()->e());
         } else {
           throw -1;
         }
@@ -155,7 +155,7 @@ void SolverInstanceBase2::assignSolutionToOutput() {
         auto& de = getSolns2Out()->findOutputVar(vd->id()->str());
         de.first->e(array_solution);
       }
-    } else if (vd->ann().contains(Constants::constants().ann.output_var)) {
+    } else if (Expression::ann(vd).contains(Constants::constants().ann.output_var)) {
       Expression* sol = getSolutionValue(vd->id());
       vd->e(sol);
       auto& de = getSolns2Out()->findOutputVar(vd->id()->str());
@@ -168,10 +168,10 @@ void SolverInstanceBase::flattenSearchAnnotations(const Annotation& ann,
                                                   std::vector<Expression*>& out) {
   for (ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
     Expression* e = *i;
-    if (e->isa<Call>() &&
-        (e->cast<Call>()->id() == "seq_search" || e->cast<Call>()->id() == "warm_start_array")) {
-      Call* c = e->cast<Call>();
-      auto* anns = c->arg(0)->cast<ArrayLit>();
+    if (Expression::isa<Call>(e) && (Expression::cast<Call>(e)->id() == "seq_search" ||
+                                     Expression::cast<Call>(e)->id() == "warm_start_array")) {
+      Call* c = Expression::cast<Call>(e);
+      auto* anns = Expression::cast<ArrayLit>(c->arg(0));
       for (unsigned int i = 0; i < anns->size(); i++) {
         Annotation subann;
         subann.add((*anns)[i]);
@@ -188,12 +188,12 @@ void SolverInstanceBase::flattenMultipleObjectives(const Annotation& ann,
   int nGoalH = 0;
   for (ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
     Expression* e = *i;
-    if (e->isa<Call>() && (e->cast<Call>()->id() == "goal_hierarchy")) {
+    if (Expression::isa<Call>(e) && (Expression::cast<Call>(e)->id() == "goal_hierarchy")) {
       MZN_ASSERT_HARD_MSG(0 == nGoalH++, "Several goal hierarchies provided");
       MZN_ASSERT_HARD_MSG(getEnv()->flat()->solveItem()->st() == SolveI::SolveType::ST_SAT,
                           "goal_hierarchy provided but solve item is not SAT");
-      Call* c = e->cast<Call>();
-      auto* anns = c->arg(0)->cast<ArrayLit>();
+      Call* c = Expression::cast<Call>(e);
+      auto* anns = Expression::cast<ArrayLit>(c->arg(0));
       for (unsigned int i = 0; i < anns->size(); i++) {
         Annotation subann;
         subann.add((*anns)[i]);
@@ -209,8 +209,8 @@ void SolverInstanceBase::flattenMultObjComponent(const Annotation& ann,
                                                  MultipleObjectives::Objective& obj) {
   MZN_ASSERT_HARD(!ann.isEmpty());
   Expression* e = *ann.begin();
-  MZN_ASSERT_HARD(e->isa<Call>());
-  Call* c = e->cast<Call>();
+  MZN_ASSERT_HARD(Expression::isa<Call>(e));
+  Call* c = Expression::cast<Call>(e);
   obj.setVariable(c->arg(0));
   const auto id = c->id();
   if (id == "min_goal" || id == "int_min_goal" || id == "float_min_goal") {

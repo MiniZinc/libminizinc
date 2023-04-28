@@ -16,32 +16,32 @@ namespace MiniZinc {
 EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   CallStackItem _csi(env, e);
   EE ret;
-  Let* let = e->cast<Let>();
+  Let* let = Expression::cast<Let>(e);
   std::vector<EE> cs;
   std::vector<KeepAlive> flatmap;
   {
     LetPushBindings lpb(let);
     for (unsigned int i = 0; i < let->let().size(); i++) {
       Expression* le = let->let()[i];
-      if (auto* vd = le->dynamicCast<VarDecl>()) {
+      if (auto* vd = Expression::dynamicCast<VarDecl>(le)) {
         Expression* let_e = nullptr;
         if (vd->e() != nullptr) {
           Ctx nctx = ctx;
           BCtx transfer_ctx = let->type().bt() == Type::BT_INT ? nctx.i : nctx.b;
           nctx.neg = false;
-          if (vd->ann().contains(env.constants.ctx.promise_monotone)) {
-            if (vd->e()->type().bt() == Type::BT_BOOL) {
+          if (Expression::ann(vd).contains(env.constants.ctx.promise_monotone)) {
+            if (Expression::type(vd->e()).bt() == Type::BT_BOOL) {
               nctx.b = +transfer_ctx;
             } else {
               nctx.i = +transfer_ctx;
             }
-          } else if (vd->ann().contains(env.constants.ctx.promise_antitone)) {
-            if (vd->e()->type().bt() == Type::BT_BOOL) {
+          } else if (Expression::ann(vd).contains(env.constants.ctx.promise_antitone)) {
+            if (Expression::type(vd->e()).bt() == Type::BT_BOOL) {
               nctx.b = -transfer_ctx;
             } else {
               nctx.i = -transfer_ctx;
             }
-          } else if (vd->e()->type().bt() == Type::BT_BOOL) {
+          } else if (Expression::type(vd->e()).bt() == Type::BT_BOOL) {
             nctx.b = C_MIX;
           }
 
@@ -63,9 +63,10 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
           flatten_vardecl_annotations(env, vd, nullptr, vd);
         } else {
           if ((ctx.b == C_NEG || ctx.b == C_MIX) &&
-              !vd->ann().contains(env.constants.ann.promise_total)) {
+              !Expression::ann(vd).contains(env.constants.ann.promise_total)) {
             CallStackItem csi_vd(env, vd);
-            throw FlatteningError(env, vd->loc(), "free variable in non-positive context");
+            throw FlatteningError(env, Expression::loc(vd),
+                                  "free variable in non-positive context");
           }
           CallStackItem csi_vd(env, vd);
           GCLock lock;
@@ -81,7 +82,7 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
           vd->flat(vd);
         }
       } else {
-        if (ctx.b == C_ROOT || le->ann().contains(env.constants.ann.promise_total)) {
+        if (ctx.b == C_ROOT || Expression::ann(le).contains(env.constants.ann.promise_total)) {
           (void)flat_exp(env, Ctx(), le, env.constants.varTrue, env.constants.varTrue);
         } else {
           EE ee = flat_exp(env, ctx, le, nullptr, env.constants.varTrue);
@@ -119,7 +120,7 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
   }
   // Restore previous mapping
   for (unsigned int i = 0, j = 0; i < let->let().size(); i++) {
-    if (auto* vd = let->let()[i]->dynamicCast<VarDecl>()) {
+    if (auto* vd = Expression::dynamicCast<VarDecl>(let->let()[i])) {
       vd->flat(Expression::cast<VarDecl>(flatmap[j++]()));
     }
   }

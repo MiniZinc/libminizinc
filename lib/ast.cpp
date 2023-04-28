@@ -31,17 +31,18 @@ Expression* domain_shallow_copy(Expression* orig) {
   if (orig == nullptr) {
     return nullptr;
   }
-  auto* al = orig->dynamicCast<ArrayLit>();
+  auto* al = Expression::dynamicCast<ArrayLit>(orig);
   if (al == nullptr) {
     return orig;
   }
   std::vector<Expression*> clone(al->size());
   for (unsigned int i = 0; i < al->size(); i++) {
-    auto* ti = (*al)[i]->cast<TypeInst>();
-    clone[i] = new TypeInst(ti->loc(), ti->type(), ti->ranges(), domain_shallow_copy(ti->domain()));
+    auto* ti = Expression::cast<TypeInst>((*al)[i]);
+    clone[i] = new TypeInst(Expression::loc(ti), ti->type(), ti->ranges(),
+                            domain_shallow_copy(ti->domain()));
   }
-  ArrayLit* tup = ArrayLit::constructTuple(orig->loc(), clone);
-  tup->type(orig->type());
+  ArrayLit* tup = ArrayLit::constructTuple(Expression::loc(orig), clone);
+  tup->type(Expression::type(orig));
   return tup;
 }
 
@@ -144,19 +145,19 @@ Location Location::introduce() const {
   return l;
 }
 
-void Expression::addAnnotation(Expression* ann) {
-  if (!isUnboxedVal() && this != Constants::constants().literalTrue &&
-      this != Constants::constants().literalFalse &&
+void Expression::addAnnotation(Expression* e, Expression* ann) {
+  if (!isUnboxedVal(e) && e != Constants::constants().literalTrue &&
+      e != Constants::constants().literalFalse &&
       !Expression::equal(ann, Constants::constants().ann.empty_annotation)) {
-    _ann.add(ann);
+    e->_ann.add(ann);
   }
 }
-void Expression::addAnnotations(const std::vector<Expression*>& ann) {
-  if (!isUnboxedVal() && this != Constants::constants().literalTrue &&
-      this != Constants::constants().literalFalse) {
+void Expression::addAnnotations(Expression* e, const std::vector<Expression*>& ann) {
+  if (!isUnboxedVal(e) && e != Constants::constants().literalTrue &&
+      e != Constants::constants().literalFalse) {
     for (auto* a : ann) {
       if (a != nullptr && !Expression::equal(a, Constants::constants().ann.empty_annotation)) {
-        _ann.add(a);
+        e->_ann.add(a);
       }
     }
   }
@@ -183,7 +184,7 @@ void Expression::addAnnotations(const std::vector<Expression*>& ann) {
     }                                                                 \
   } while (0)
 void Expression::mark(Expression* e) {
-  if (e == nullptr || e->isUnboxedVal()) {
+  if (e == nullptr || isUnboxedVal(e)) {
     return;
   }
   std::vector<const Expression*> stack;
@@ -192,95 +193,95 @@ void Expression::mark(Expression* e) {
   while (!stack.empty()) {
     const Expression* cur = stack.back();
     stack.pop_back();
-    if (!cur->isUnboxedVal() && cur->_gcMark == 0U) {
+    if (!isUnboxedVal(cur) && cur->_gcMark == 0U) {
       cur->_gcMark = 1U;
-      cur->loc().mark();
-      pushann(cur->ann());
-      switch (cur->eid()) {
+      Expression::loc(cur).mark();
+      pushann(Expression::ann(cur));
+      switch (Expression::eid(cur)) {
         case Expression::E_INTLIT:
         case Expression::E_FLOATLIT:
         case Expression::E_BOOLLIT:
         case Expression::E_ANON:
           break;
         case Expression::E_SETLIT:
-          if (cur->cast<SetLit>()->isv() != nullptr) {
-            cur->cast<SetLit>()->isv()->mark();
-          } else if (cur->cast<SetLit>()->fsv() != nullptr) {
-            cur->cast<SetLit>()->fsv()->mark();
+          if (Expression::cast<SetLit>(cur)->isv() != nullptr) {
+            Expression::cast<SetLit>(cur)->isv()->mark();
+          } else if (Expression::cast<SetLit>(cur)->fsv() != nullptr) {
+            Expression::cast<SetLit>(cur)->fsv()->mark();
           } else {
-            pushall(cur->cast<SetLit>()->v());
+            pushall(Expression::cast<SetLit>(cur)->v());
           }
           break;
         case Expression::E_STRINGLIT:
-          cur->cast<StringLit>()->v().mark();
+          Expression::cast<StringLit>(cur)->v().mark();
           break;
         case Expression::E_ID:
-          if (cur->cast<Id>()->idn() == -1) {
-            cur->cast<Id>()->v().mark();
+          if (Expression::cast<Id>(cur)->idn() == -1) {
+            Expression::cast<Id>(cur)->v().mark();
           }
-          pushstack(cur->cast<Id>()->destination());
+          pushstack(Expression::cast<Id>(cur)->destination());
           break;
         case Expression::E_ARRAYLIT:
           if (cur->_flag2) {
-            pushstack(cur->cast<ArrayLit>()->_u.al);
+            pushstack(Expression::cast<ArrayLit>(cur)->_u.al);
           } else {
-            pushall(ASTExprVec<Expression>(cur->cast<ArrayLit>()->_u.v));
+            pushall(ASTExprVec<Expression>(Expression::cast<ArrayLit>(cur)->_u.v));
           }
-          cur->cast<ArrayLit>()->_dims.mark();
+          Expression::cast<ArrayLit>(cur)->_dims.mark();
           break;
         case Expression::E_ARRAYACCESS:
-          pushstack(cur->cast<ArrayAccess>()->v());
-          pushall(cur->cast<ArrayAccess>()->idx());
+          pushstack(Expression::cast<ArrayAccess>(cur)->v());
+          pushall(Expression::cast<ArrayAccess>(cur)->idx());
           break;
         case Expression::E_FIELDACCESS:
-          pushstack(cur->cast<FieldAccess>()->v());
-          pushstack(cur->cast<FieldAccess>()->field());
+          pushstack(Expression::cast<FieldAccess>(cur)->v());
+          pushstack(Expression::cast<FieldAccess>(cur)->field());
           break;
         case Expression::E_COMP:
-          pushstack(cur->cast<Comprehension>()->_e);
-          pushall(cur->cast<Comprehension>()->_g);
-          cur->cast<Comprehension>()->_gIndex.mark();
+          pushstack(Expression::cast<Comprehension>(cur)->_e);
+          pushall(Expression::cast<Comprehension>(cur)->_g);
+          Expression::cast<Comprehension>(cur)->_gIndex.mark();
           break;
         case Expression::E_ITE:
-          pushstack(cur->cast<ITE>()->elseExpr());
-          pushall(cur->cast<ITE>()->_eIfThen);
+          pushstack(Expression::cast<ITE>(cur)->elseExpr());
+          pushall(Expression::cast<ITE>(cur)->_eIfThen);
           break;
         case Expression::E_BINOP:
-          pushstack(cur->cast<BinOp>()->lhs());
-          pushstack(cur->cast<BinOp>()->rhs());
+          pushstack(Expression::cast<BinOp>(cur)->lhs());
+          pushstack(Expression::cast<BinOp>(cur)->rhs());
           break;
         case Expression::E_UNOP:
-          pushstack(cur->cast<UnOp>()->e());
+          pushstack(Expression::cast<UnOp>(cur)->e());
           break;
         case Expression::E_CALL:
-          cur->cast<Call>()->id().mark();
-          for (unsigned int i = cur->cast<Call>()->argCount(); (i--) != 0U;) {
-            pushstack(cur->cast<Call>()->arg(i));
+          Expression::cast<Call>(cur)->id().mark();
+          for (unsigned int i = Expression::cast<Call>(cur)->argCount(); (i--) != 0U;) {
+            pushstack(Expression::cast<Call>(cur)->arg(i));
           }
           if (static_cast<Call::CallKind>(cur->_secondaryId) >= Call::CK_NARY) {
-            cur->cast<CallNary>()->_args->mark();
+            Expression::cast<CallNary>(cur)->_args->mark();
           }
-          if (FunctionI* fi = cur->cast<Call>()->decl()) {
+          if (FunctionI* fi = Expression::cast<Call>(cur)->decl()) {
             Item::mark(fi);
           }
           break;
         case Expression::E_VARDECL:
           cur->_vdGcMark = 1U;
-          pushstack(cur->cast<VarDecl>()->ti());
-          pushstack(cur->cast<VarDecl>()->e());
-          pushstack(cur->cast<VarDecl>()->id());
+          pushstack(Expression::cast<VarDecl>(cur)->ti());
+          pushstack(Expression::cast<VarDecl>(cur)->e());
+          pushstack(Expression::cast<VarDecl>(cur)->id());
           break;
         case Expression::E_LET:
-          pushall(cur->cast<Let>()->let());
-          pushall(cur->cast<Let>()->_letOrig);
-          pushstack(cur->cast<Let>()->in());
+          pushall(Expression::cast<Let>(cur)->let());
+          pushall(Expression::cast<Let>(cur)->_letOrig);
+          pushstack(Expression::cast<Let>(cur)->in());
           break;
         case Expression::E_TI:
-          pushstack(cur->cast<TypeInst>()->domain());
-          pushall(cur->cast<TypeInst>()->ranges());
+          pushstack(Expression::cast<TypeInst>(cur)->domain());
+          pushall(Expression::cast<TypeInst>(cur)->ranges());
           break;
         case Expression::E_TIID:
-          cur->cast<TIId>()->v().mark();
+          Expression::cast<TIId>(cur)->v().mark();
           break;
       }
     }
@@ -290,7 +291,7 @@ void Expression::mark(Expression* e) {
 #undef pushall
 
 bool Expression::hasMark(Expression* e) {
-  return e != nullptr && !e->isUnboxedVal() && e->_gcMark != 0U;
+  return e != nullptr && !isUnboxedVal(e) && e->_gcMark != 0U;
 }
 
 void IntLit::rehash() {
@@ -465,7 +466,7 @@ void ArrayLit::setSlice(unsigned int i, Expression* e) {
 
 ArrayLit::ArrayLit(const Location& loc, ArrayLit* v, const std::vector<std::pair<int, int>>& dims,
                    const std::vector<std::pair<int, int>>& slice)
-    : Expression(loc, E_ARRAYLIT, Type()) {
+    : BoxedExpression(loc, E_ARRAYLIT, Type()) {
   _flag1 = false;
   _flag2 = true;
   _secondaryId = v->_secondaryId;
@@ -487,10 +488,11 @@ ArrayLit::ArrayLit(const Location& loc, ArrayLit* v, const std::vector<std::pair
 void ArrayLit::compress(const std::vector<Expression*>& v, const std::vector<int>& dims) {
   bool allFlat = true;
   for (auto* e : v) {
-    if (!e->isa<IntLit>() && !e->isa<FloatLit>() && !e->isa<BoolLit>() &&
-        !(e->isa<SetLit>() && e->cast<SetLit>()->evaluated()) &&
-        !(e->isa<Id>() && e->cast<Id>()->decl() != nullptr &&
-          e->cast<Id>()->decl()->flat() == e->cast<Id>()->decl())) {
+    if (!Expression::isa<IntLit>(e) && !Expression::isa<FloatLit>(e) &&
+        !Expression::isa<BoolLit>(e) &&
+        !(Expression::isa<SetLit>(e) && Expression::cast<SetLit>(e)->evaluated()) &&
+        !(Expression::isa<Id>(e) && Expression::cast<Id>(e)->decl() != nullptr &&
+          Expression::cast<Id>(e)->decl()->flat() == Expression::cast<Id>(e)->decl())) {
       allFlat = false;
       break;
     }
@@ -525,7 +527,7 @@ void ArrayLit::compress(const std::vector<Expression*>& v, const std::vector<int
 
 ArrayLit::ArrayLit(const Location& loc, const std::vector<Expression*>& v,
                    const std::vector<std::pair<int, int>>& dims)
-    : Expression(loc, E_ARRAYLIT, Type()) {
+    : BoxedExpression(loc, E_ARRAYLIT, Type()) {
   _flag1 = false;
   _flag2 = false;
   _secondaryId = AL_ARRAY;
@@ -572,7 +574,7 @@ void FieldAccess::rehash() {
 
 Generator::Generator(const std::vector<ASTString>& v, Expression* in, Expression* where) {
   std::vector<VarDecl*> vd;
-  Location loc = in == nullptr ? where->loc() : in->loc();
+  Location loc = in == nullptr ? Expression::loc(where) : Expression::loc(in);
   for (auto i : v) {
     auto* nvd = new VarDecl(loc, new TypeInst(loc, Type::parint()), i);
     nvd->toplevel(false);
@@ -585,7 +587,8 @@ Generator::Generator(const std::vector<ASTString>& v, Expression* in, Expression
 Generator::Generator(const std::vector<Id*>& v, Expression* in, Expression* where) {
   std::vector<VarDecl*> vd;
   for (auto* i : v) {
-    auto* nvd = new VarDecl(i->loc(), new TypeInst(i->loc(), Type::parint()), i->v());
+    auto* nvd =
+        new VarDecl(Expression::loc(i), new TypeInst(Expression::loc(i), Type::parint()), i->v());
     nvd->toplevel(false);
     vd.push_back(nvd);
   }
@@ -595,7 +598,7 @@ Generator::Generator(const std::vector<Id*>& v, Expression* in, Expression* wher
 }
 Generator::Generator(const std::vector<std::string>& v, Expression* in, Expression* where) {
   std::vector<VarDecl*> vd;
-  Location loc = in == nullptr ? where->loc() : in->loc();
+  Location loc = in == nullptr ? Expression::loc(where) : Expression::loc(in);
   int anon_count = -2;
   for (const auto& i : v) {
     VarDecl* nvd;
@@ -656,10 +659,10 @@ unsigned int Comprehension::numberOfDecls(unsigned int i) const {
   return _gIndex[i + 1] - _gIndex[i] - 2;
 }
 VarDecl* Comprehension::decl(unsigned int gen, unsigned int i) {
-  return _g[_gIndex[gen] + 2 + i]->cast<VarDecl>();
+  return Expression::cast<VarDecl>(_g[_gIndex[gen] + 2 + i]);
 }
 const VarDecl* Comprehension::decl(unsigned int gen, unsigned int i) const {
-  return _g[_gIndex[gen] + 2 + i]->cast<VarDecl>();
+  return Expression::cast<VarDecl>(_g[_gIndex[gen] + 2 + i]);
 }
 
 bool Comprehension::containsBoundVariable(Expression* e) {
@@ -711,7 +714,7 @@ Call* BinOp::morph(const ASTString& ident, const std::vector<Expression*>& args)
   _id = Call::eid;
   _secondaryId = Call::CK_TERNARY;
   _flag1 = true;
-  Call* c = cast<Call>();
+  Call* c = Expression::cast<Call>(this);
   c->id(ident);
   c->args(args);
   return c;
@@ -957,7 +960,7 @@ void VarDecl::trail() {
 void VarDecl::rehash() {
   initHash();
   combineHash(Expression::hash(_ti));
-  combineHash(_id->hash());
+  combineHash(Expression::hash(_id));
   combineHash(Expression::hash(_e));
 }
 
@@ -972,7 +975,7 @@ void Let::rehash() {
 }
 
 Let::Let(const Location& loc, const std::vector<Expression*>& let, Expression* in)
-    : Expression(loc, E_LET, Type()) {
+    : BoxedExpression(loc, E_LET, Type()) {
   _let = ASTExprVec<Expression>(let);
   std::vector<Expression*> vde;
   for (auto* i : let) {
@@ -991,7 +994,7 @@ Let::Let(const Location& loc, const std::vector<Expression*>& let, Expression* i
 void Let::pushbindings() {
   GC::mark();
   for (unsigned int i = 0, j = 0; i < _let.size(); i++) {
-    if (auto* vd = _let[i]->dynamicCast<VarDecl>()) {
+    if (auto* vd = Expression::dynamicCast<VarDecl>(_let[i])) {
       vd->trail();
       vd->e(_letOrig[j++]);
       for (unsigned int k = 0; k < vd->ti()->ranges().size(); k++) {
@@ -1016,10 +1019,12 @@ void TypeInst::rehash() {
 
 void TypeInst::setRanges(const std::vector<TypeInst*>& ranges) {
   _ranges = ASTExprVec<TypeInst>(ranges);
-  if (ranges.size() == 1 && (ranges[0] != nullptr) && ranges[0]->isa<TypeInst>() &&
-      (ranges[0]->cast<TypeInst>()->domain() != nullptr) &&
-      ranges[0]->cast<TypeInst>()->domain()->isa<TIId>() &&
-      !ranges[0]->cast<TypeInst>()->domain()->cast<TIId>()->v().beginsWith("$")) {
+  if (ranges.size() == 1 && (ranges[0] != nullptr) && Expression::isa<TypeInst>(ranges[0]) &&
+      (Expression::cast<TypeInst>(ranges[0])->domain() != nullptr) &&
+      Expression::isa<TIId>(Expression::cast<TypeInst>(ranges[0])->domain()) &&
+      !Expression::cast<TIId>(Expression::cast<TypeInst>(ranges[0])->domain())
+           ->v()
+           .beginsWith("$")) {
     _type.dim(-1);
   } else {
     _type.dim(static_cast<int>(ranges.size()));
@@ -1033,22 +1038,23 @@ void TypeInst::canonicaliseStruct(EnvI& env) {
     // that a user definition abides by (e.g., a tuple might be marked var (because all
     // members are var) and contain an array (with var members)).
     if (type().isvar() && type().typeId() == 0) {
-      auto* dom = domain()->cast<ArrayLit>();
+      auto* dom = Expression::cast<ArrayLit>(domain());
       // Check if "var" tuple is allowed
       for (unsigned int i = 0; i < dom->size(); i++) {
-        auto* tii = (*dom)[i]->cast<TypeInst>();
+        auto* tii = Expression::cast<TypeInst>((*dom)[i]);
         Type field = tii->type();
         if (field.st() == Type::ST_SET && field.bt() != Type::BT_INT &&
             field.bt() != Type::BT_TOP) {
-          throw TypeError(env, loc(),
+          throw TypeError(env, Expression::loc(this),
                           "var tuples with set element types other than `int' are not allowed");
         }
         if (field.bt() == Type::BT_ANN || field.bt() == Type::BT_STRING) {
-          throw TypeError(env, loc(),
+          throw TypeError(env, Expression::loc(this),
                           "var tuples with " + field.toString(env) + " types are not allowed");
         }
         if (field.dim() != 0) {
-          throw TypeError(env, loc(), "var tuples with array types are not allowed");
+          throw TypeError(env, Expression::loc(this),
+                          "var tuples with array types are not allowed");
         }
       }
       // spread var keyword in field types:
@@ -1061,22 +1067,23 @@ void TypeInst::canonicaliseStruct(EnvI& env) {
     // that a user definition abides by (e.g., a record might be marked var (because all
     // members are var) and contain an array (with var members)).
     if (type().isvar() && type().typeId() == 0) {
-      auto* dom = domain()->cast<ArrayLit>();
+      auto* dom = Expression::cast<ArrayLit>(domain());
       // Check if "var" record is allowed
       for (unsigned int i = 0; i < dom->size(); i++) {
-        auto* tii = (*dom)[i]->cast<VarDecl>();
+        auto* tii = Expression::cast<VarDecl>((*dom)[i]);
         Type field = tii->type();
         if (field.st() == Type::ST_SET && field.bt() != Type::BT_INT &&
             field.bt() != Type::BT_TOP) {
-          throw TypeError(env, loc(),
+          throw TypeError(env, Expression::loc(this),
                           "var record with set element types other than `int' are not allowed");
         }
         if (field.bt() == Type::BT_ANN || field.bt() == Type::BT_STRING) {
-          throw TypeError(env, loc(),
+          throw TypeError(env, Expression::loc(this),
                           "var record with " + field.toString(env) + " types are not allowed");
         }
         if (field.dim() != 0) {
-          throw TypeError(env, loc(), "var record with array types are not allowed");
+          throw TypeError(env, Expression::loc(this),
+                          "var record with array types are not allowed");
         }
       }
       // spread var keyword in field types:
@@ -1088,31 +1095,31 @@ void TypeInst::canonicaliseStruct(EnvI& env) {
 }
 
 void TypeInst::mkVar(const EnvI& env) {
-  if (_domain == nullptr || !_domain->isa<ArrayLit>()) {
+  if (_domain == nullptr || !Expression::isa<ArrayLit>(_domain)) {
     assert(!type().structBT());
     Type tt = type();
     tt.ti(Type::TI_VAR);
     type(tt);
     return;
   }
-  auto* al = _domain->cast<ArrayLit>();
+  auto* al = Expression::cast<ArrayLit>(_domain);
   if (type().bt() == Type::BT_TUPLE) {
     for (int i = 0; i < al->size(); ++i) {
-      (*al)[i]->cast<TypeInst>()->mkVar(env);
+      Expression::cast<TypeInst>((*al)[i])->mkVar(env);
     }
   } else {
     if (type().typeId() != 0) {
       GCLock lock;
       RecordType* rt = env.getRecordType(type());
       for (int i = 0; i < al->size(); ++i) {
-        auto* field_ti = (*al)[i]->cast<TypeInst>();
+        auto* field_ti = Expression::cast<TypeInst>((*al)[i]);
         field_ti->mkVar(env);
-        auto* field_vd = new VarDecl(field_ti->loc(), field_ti, rt->fieldName(i));
+        auto* field_vd = new VarDecl(Expression::loc(field_ti), field_ti, rt->fieldName(i));
         al->set(i, field_vd);
       }
     } else {
       for (int i = 0; i < al->size(); ++i) {
-        auto* field_vd = (*al)[i]->cast<VarDecl>();
+        auto* field_vd = Expression::cast<VarDecl>((*al)[i]);
         field_vd->ti()->mkVar(env);
         field_vd->type(field_vd->ti()->type());
       }
@@ -1134,15 +1141,15 @@ void TypeInst::setStructDomain(const EnvI& env, const Type& struct_type, bool se
     if (setTypeAny) {
       tti.any(true);
     }
-    field_ti[i] = new TypeInst(loc().introduce(), tti);
+    field_ti[i] = new TypeInst(Expression::loc(this).introduce(), tti);
     if (tti.structBT()) {
-      field_ti[i]->cast<TypeInst>()->setStructDomain(env, tti);
+      Expression::cast<TypeInst>(field_ti[i])->setStructDomain(env, tti);
     } else if (tti.dim() != 0) {
       std::vector<TypeInst*> newRanges(tti.dim());
       for (unsigned int k = 0; k < tti.dim(); k++) {
         newRanges[k] = new TypeInst(Location().introduce(), Type::parint());
       }
-      field_ti[i]->cast<TypeInst>()->setRanges(newRanges);
+      Expression::cast<TypeInst>(field_ti[i])->setRanges(newRanges);
     }
   }
   if (setTIRanges && ranges().size() != type().dim()) {
@@ -1153,7 +1160,7 @@ void TypeInst::setStructDomain(const EnvI& env, const Type& struct_type, bool se
     }
     setRanges(newRanges);
   }
-  auto* al = ArrayLit::constructTuple(loc().introduce(), field_ti);
+  auto* al = ArrayLit::constructTuple(Expression::loc(this).introduce(), field_ti);
   al->type(struct_type.elemType(env));
   domain(al);
   type(struct_type);
@@ -1161,14 +1168,15 @@ void TypeInst::setStructDomain(const EnvI& env, const Type& struct_type, bool se
 
 bool TypeInst::resolveAlias(EnvI& env) {
   auto is_aliased = [&]() {
-    return domain() != nullptr && domain()->isa<Id>() && domain()->cast<Id>()->decl() != nullptr &&
-           domain()->cast<Id>()->decl()->isTypeAlias();
+    return domain() != nullptr && Expression::isa<Id>(domain()) &&
+           Expression::cast<Id>(domain())->decl() != nullptr &&
+           Expression::cast<Id>(domain())->decl()->isTypeAlias();
   };
   if (!is_aliased()) {
     return false;
   }
   GCLock lock;
-  auto* alias = domain()->cast<Id>()->decl()->e()->cast<TypeInst>();
+  auto* alias = Expression::cast<TypeInst>(Expression::cast<Id>(domain())->decl()->e());
   Type ntype = alias->type();
   if (type().tiExplicit() && ntype.ti() != type().ti()) {
     if (ntype.structBT()) {
@@ -1188,14 +1196,14 @@ bool TypeInst::resolveAlias(EnvI& env) {
       ss << "Unable to create a `set of' the type aliased by `" << *domain()
          << "', which has been resolved to `" << alias->type().toString(env)
          << "' and is already a set type";
-      throw TypeError(env, loc(), ss.str());
+      throw TypeError(env, Expression::loc(this), ss.str());
     }
     if (ntype.dim() != 0) {
       std::stringstream ss;
       ss << "Unable to create a `set of' the type aliased by `" << *domain()
          << "', which has been resolved to `" << alias->type().toString(env)
          << "' and is an array type";
-      throw TypeError(env, loc(), ss.str());
+      throw TypeError(env, Expression::loc(this), ss.str());
     }
     ntype.st(Type::ST_SET);
   }
@@ -1206,7 +1214,7 @@ bool TypeInst::resolveAlias(EnvI& env) {
       ss << "Unable to create an array containing the type aliased by `" << *domain()
          << "', which has been resolved to `" << alias->type().toString(env)
          << "' and is already an array type";
-      throw TypeError(env, loc(), ss.str());
+      throw TypeError(env, Expression::loc(this), ss.str());
     }
     const int dim = type().dim();
     const unsigned int curTypeId = type().typeId();
@@ -1244,15 +1252,15 @@ bool TypeInst::resolveAlias(EnvI& env) {
 }
 
 bool TypeInst::concatDomain(EnvI& env) {
-  if (domain() == nullptr || !domain()->isa<BinOp>()) {
+  if (domain() == nullptr || !Expression::isa<BinOp>(domain())) {
     return false;
   }
-  auto* bop = domain()->cast<BinOp>();
+  auto* bop = Expression::cast<BinOp>(domain());
   if (bop->op() != BOT_PLUSPLUS) {
     return false;
   }
-  auto* lhs = bop->lhs()->cast<TypeInst>();
-  auto* rhs = bop->rhs()->cast<TypeInst>();
+  auto* lhs = Expression::cast<TypeInst>(bop->lhs());
+  auto* rhs = Expression::cast<TypeInst>(bop->rhs());
 
   assert(lhs->type().typeId() != 0);
   assert(rhs->type().typeId() != 0);
@@ -1263,18 +1271,19 @@ bool TypeInst::concatDomain(EnvI& env) {
     assert(rhs->type().isrecord());
     GCLock lock;
     // Merge domains
-    dom = eval_record_merge(env, lhs->domain()->cast<ArrayLit>(), rhs->domain()->cast<ArrayLit>());
+    dom = eval_record_merge(env, Expression::cast<ArrayLit>(lhs->domain()),
+                            Expression::cast<ArrayLit>(rhs->domain()));
     // Merge types
-    ty = env.mergeRecord(lhs->type(), rhs->type(), loc());
+    ty = env.mergeRecord(lhs->type(), rhs->type(), Expression::loc(this));
     dom->type(ty);
   } else {
     assert(lhs->type().istuple());
     assert(rhs->type().istuple());
     GCLock lock;
     // Concat domains
-    auto* nbo = new BinOp(bop->loc(), lhs->domain(), bop->op(), rhs->domain());
+    auto* nbo = new BinOp(Expression::loc(bop), lhs->domain(), bop->op(), rhs->domain());
     nbo->type(bop->type());
-    dom = ArrayLit::constructTuple(bop->loc().introduce(), eval_array_lit(env, nbo));
+    dom = ArrayLit::constructTuple(Expression::loc(bop).introduce(), eval_array_lit(env, nbo));
     // Concat types
     ty = env.concatTuple(lhs->type(), rhs->type());
     dom->type(ty);
@@ -1287,12 +1296,12 @@ bool TypeInst::concatDomain(EnvI& env) {
 
 bool TypeInst::hasTiVariable() const {
   if (domain() != nullptr) {
-    if (domain()->isa<TIId>()) {
+    if (Expression::isa<TIId>(domain())) {
       return true;
     }
-    if (auto* al = domain()->dynamicCast<ArrayLit>()) {
+    if (auto* al = Expression::dynamicCast<ArrayLit>(domain())) {
       for (size_t i = 0; i < al->size(); ++i) {
-        auto* ti = (*al)[i]->cast<TypeInst>();
+        auto* ti = Expression::cast<TypeInst>((*al)[i]);
         if (ti->hasTiVariable()) {
           return true;
         }
@@ -1300,7 +1309,7 @@ bool TypeInst::hasTiVariable() const {
     }
   }
   for (size_t i = 0; i < _ranges.size(); ++i) {
-    if (_ranges[i]->domain() != nullptr && _ranges[i]->domain()->isa<TIId>()) {
+    if (_ranges[i]->domain() != nullptr && Expression::isa<TIId>(_ranges[i]->domain())) {
       return true;
     }
   }
@@ -1308,10 +1317,10 @@ bool TypeInst::hasTiVariable() const {
 }
 
 namespace {
-Type get_type(Expression* e) { return e->type(); }
+Type get_type(Expression* e) { return Expression::type(e); }
 Type get_type(const Type& t) { return t; }
 const Location& get_loc(Expression* e, Expression* call, FunctionI* /*fi*/) {
-  return e->loc().isNonAlloc() ? call->loc() : e->loc();
+  return Expression::loc(e).isNonAlloc() ? Expression::loc(call) : Expression::loc(e);
 }
 const Location& get_loc(const Type& /*t*/, Expression* /*call*/, FunctionI* fi) {
   return fi->loc();
@@ -1348,8 +1357,8 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
     stack.pop_back();
     TypeInst* tii = cur.first;
     if (tii->domain()) {
-      if (tii->domain()->isa<TIId>()) {
-        ASTString tiid = tii->domain()->cast<TIId>()->v();
+      if (Expression::isa<TIId>(tii->domain())) {
+        ASTString tiid = Expression::cast<TIId>(tii->domain())->v();
         Type tiit = cur.second;
         bool isEnumTIID = isa_enum_tiid(tii->domain());
         if (tii->type().any()) {
@@ -1407,15 +1416,15 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
           }
         }
       } else if (cur.second.structBT()) {
-        auto* al = tii->domain()->cast<ArrayLit>();
+        auto* al = Expression::cast<ArrayLit>(tii->domain());
         StructType* tiit_st = env.getStructType(cur.second);
         for (size_t i = 0; i < al->size(); ++i) {
-          stack.emplace_back((*al)[i]->cast<TypeInst>(), (*tiit_st)[i]);
+          stack.emplace_back(Expression::cast<TypeInst>((*al)[i]), (*tiit_st)[i]);
         }
       }
     }
     if (tii->ranges().size() == 1 && isa_tiid(tii->ranges()[0]->domain())) {
-      ASTString tiid = tii->ranges()[0]->domain()->cast<TIId>()->v();
+      ASTString tiid = Expression::cast<TIId>(tii->ranges()[0]->domain())->v();
       Type orig_tiit = get_type(cur.second);
       if (orig_tiit.dim() == 0) {
         std::ostringstream ss;
@@ -1451,7 +1460,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
     } else if (!tii->ranges().empty()) {
       for (unsigned int j = 0; j < tii->ranges().size(); j++) {
         if (isa_enum_tiid(tii->ranges()[j]->domain())) {
-          ASTString enumTIId = tii->ranges()[j]->domain()->cast<TIId>()->v();
+          ASTString enumTIId = Expression::cast<TIId>(tii->ranges()[j]->domain())->v();
           Type tiit = cur.second;
           Type enumIdT;
           if (tiit.typeId() != 0) {
@@ -1481,10 +1490,10 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
 Type type_from_tmap(EnvI& env, TypeInst* ti, const ASTStringMap<std::pair<Type, bool>>& tmap) {
   Type ret = ti->type();
   if (ret.structBT()) {
-    auto* al = ti->domain()->cast<ArrayLit>();
+    auto* al = Expression::cast<ArrayLit>(ti->domain());
     std::vector<Type> fields(al->size());
     for (unsigned int i = 0; i < al->size(); i++) {
-      fields[i] = type_from_tmap(env, (*al)[i]->cast<TypeInst>(), tmap);
+      fields[i] = type_from_tmap(env, Expression::cast<TypeInst>((*al)[i]), tmap);
     }
     unsigned int typeId = 0;
     if (ret.bt() == Type::BT_TUPLE) {
@@ -1505,19 +1514,19 @@ Type type_from_tmap(EnvI& env, TypeInst* ti, const ASTStringMap<std::pair<Type, 
     }
   }
   ASTString dh;
-  if (ti->domain() != nullptr && ti->domain()->isa<TIId>()) {
-    dh = ti->domain()->cast<TIId>()->v();
+  if (ti->domain() != nullptr && Expression::isa<TIId>(ti->domain())) {
+    dh = Expression::cast<TIId>(ti->domain())->v();
   }
   ASTString rh;
   if (ti->ranges().size() == 1 && isa_tiid(ti->ranges()[0]->domain())) {
-    rh = ti->ranges()[0]->domain()->cast<TIId>()->v();
+    rh = Expression::cast<TIId>(ti->ranges()[0]->domain())->v();
   }
   if (!dh.empty()) {
     auto it = tmap.find(dh);
     if (it == tmap.end()) {
       std::ostringstream ss;
       ss << "type-inst variable $" << dh << " used but not defined";
-      throw TypeError(env, ti->loc(), ss.str());
+      throw TypeError(env, Expression::loc(ti), ss.str());
     }
     if (dh.beginsWith("$")) {
       // this is an enum
@@ -1549,7 +1558,7 @@ Type type_from_tmap(EnvI& env, TypeInst* ti, const ASTStringMap<std::pair<Type, 
     if (it == tmap.end()) {
       std::ostringstream ss;
       ss << "type-inst variable $" << rh << " used but not defined";
-      throw TypeError(env, ti->loc(), ss.str());
+      throw TypeError(env, Expression::loc(ti), ss.str());
     }
     unsigned int curTypeId = ret.typeId();
     ret.typeId(0);
@@ -1580,12 +1589,12 @@ Type type_from_tmap(EnvI& env, TypeInst* ti, const ASTStringMap<std::pair<Type, 
 
     for (unsigned int i = 0; i < ti->ranges().size(); i++) {
       if (isa_enum_tiid(ti->ranges()[i]->domain())) {
-        ASTString enumTIId = ti->ranges()[i]->domain()->cast<TIId>()->v();
+        ASTString enumTIId = Expression::cast<TIId>(ti->ranges()[i]->domain())->v();
         auto it = tmap.find(enumTIId);
         if (it == tmap.end()) {
           std::ostringstream ss;
           ss << "type-inst variable $" << enumTIId << " used but not defined";
-          throw TypeError(env, ti->loc(), ss.str());
+          throw TypeError(env, Expression::loc(ti), ss.str());
         }
         enumIds[i] = it->second.first.typeId();
         hadRealEnum |= (enumIds[i] != 0);
@@ -1671,19 +1680,19 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
   TypeInst* tii = param(n)->ti();
   Type curTiiT = tii->type();
   if (curTiiT.dim() == -1) {
-    if (ta[n]->type().dim() == 0) {
+    if (Expression::type(ta[n]).dim() == 0) {
       curTiiT.dim(1);
     } else {
-      curTiiT.dim(ta[n]->type().dim());
+      curTiiT.dim(Expression::type(ta[n]).dim());
     }
   }
-  if ((tii->domain() != nullptr) && tii->domain()->isa<TIId>()) {
+  if ((tii->domain() != nullptr) && Expression::isa<TIId>(tii->domain())) {
     // We need to determine both the base type and whether this tiid
     // can stand for a set. It can only stand for a set if none
     // of the uses of tiid is opt. The base type has to be int
     // if any of the uses are var set.
 
-    Type ty = ta[n]->type();
+    Type ty = Expression::type(ta[n]);
     if (!ty.structBT()) {
       ty.st(curTiiT.st());
     }
@@ -1694,11 +1703,12 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
         ty = Type::arrType(env, curTiiT.dim() > 0 ? curTiiT : Type::partop(1), ty);
       }
     }
-    ASTString tv = tii->domain()->cast<TIId>()->v();
+    ASTString tv = Expression::cast<TIId>(tii->domain())->v();
     for (unsigned int i = 0; i < paramCount(); i++) {
-      if ((param(i)->ti()->domain() != nullptr) && param(i)->ti()->domain()->isa<TIId>() &&
-          param(i)->ti()->domain()->cast<TIId>()->v() == tv) {
-        Type toCheck = ta[i]->type();
+      if ((param(i)->ti()->domain() != nullptr) &&
+          Expression::isa<TIId>(param(i)->ti()->domain()) &&
+          Expression::cast<TIId>(param(i)->ti()->domain())->v() == tv) {
+        Type toCheck = Expression::type(ta[i]);
         if (!toCheck.structBT()) {
           toCheck.ot(curTiiT.ot());
           toCheck.st(curTiiT.st());
@@ -1731,14 +1741,15 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
 }
 
 bool Expression::equalInternal(const Expression* e0, const Expression* e1) {
-  switch (e0->eid()) {
+  switch (Expression::eid(e0)) {
     case Expression::E_INTLIT:
-      return e0->cast<IntLit>()->v() == e1->cast<IntLit>()->v();
+      return IntLit::v(Expression::cast<IntLit>(e0)) == IntLit::v(Expression::cast<IntLit>(e1));
     case Expression::E_FLOATLIT:
-      return e0->cast<FloatLit>()->v() == e1->cast<FloatLit>()->v();
+      return FloatLit::v(Expression::cast<FloatLit>(e0)) ==
+             FloatLit::v(Expression::cast<FloatLit>(e1));
     case Expression::E_SETLIT: {
-      const auto* s0 = e0->cast<SetLit>();
-      const auto* s1 = e1->cast<SetLit>();
+      const auto* s0 = Expression::cast<SetLit>(e0);
+      const auto* s1 = Expression::cast<SetLit>(e1);
       if (s0->isv() != nullptr) {
         if (s1->isv() != nullptr) {
           IntSetRanges r0(s0->isv());
@@ -1769,12 +1780,12 @@ bool Expression::equalInternal(const Expression* e0, const Expression* e1) {
       return true;
     }
     case Expression::E_BOOLLIT:
-      return e0->cast<BoolLit>()->v() == e1->cast<BoolLit>()->v();
+      return Expression::cast<BoolLit>(e0)->v() == Expression::cast<BoolLit>(e1)->v();
     case Expression::E_STRINGLIT:
-      return e0->cast<StringLit>()->v() == e1->cast<StringLit>()->v();
+      return Expression::cast<StringLit>(e0)->v() == Expression::cast<StringLit>(e1)->v();
     case Expression::E_ID: {
-      const Id* id0 = e0->cast<Id>();
-      const Id* id1 = e1->cast<Id>();
+      const Id* id0 = Expression::cast<Id>(e0);
+      const Id* id1 = Expression::cast<Id>(e1);
       if (id0->decl() == nullptr || id1->decl() == nullptr) {
         return id0->v() == id1->v() && id0->idn() == id1->idn();
       }
@@ -1784,8 +1795,8 @@ bool Expression::equalInternal(const Expression* e0, const Expression* e1) {
     case Expression::E_ANON:
       return false;
     case Expression::E_ARRAYLIT: {
-      const auto* a0 = e0->cast<ArrayLit>();
-      const auto* a1 = e1->cast<ArrayLit>();
+      const auto* a0 = Expression::cast<ArrayLit>(e0);
+      const auto* a1 = Expression::cast<ArrayLit>(e1);
       if (a0->size() != a1->size()) {
         return false;
       }
@@ -1805,8 +1816,8 @@ bool Expression::equalInternal(const Expression* e0, const Expression* e1) {
       return true;
     }
     case Expression::E_ARRAYACCESS: {
-      const auto* a0 = e0->cast<ArrayAccess>();
-      const auto* a1 = e1->cast<ArrayAccess>();
+      const auto* a0 = Expression::cast<ArrayAccess>(e0);
+      const auto* a1 = Expression::cast<ArrayAccess>(e1);
       if (!Expression::equal(a0->v(), a1->v())) {
         return false;
       }
@@ -1821,16 +1832,16 @@ bool Expression::equalInternal(const Expression* e0, const Expression* e1) {
       return true;
     }
     case Expression::E_FIELDACCESS: {
-      const auto* f0 = e0->cast<FieldAccess>();
-      const auto* f1 = e1->cast<FieldAccess>();
+      const auto* f0 = Expression::cast<FieldAccess>(e0);
+      const auto* f1 = Expression::cast<FieldAccess>(e1);
       if (!Expression::equal(f0->field(), f1->field())) {
         return false;
       }
       return Expression::equal(f0->v(), f1->v());
     }
     case Expression::E_COMP: {
-      const auto* c0 = e0->cast<Comprehension>();
-      const auto* c1 = e1->cast<Comprehension>();
+      const auto* c0 = Expression::cast<Comprehension>(e0);
+      const auto* c1 = Expression::cast<Comprehension>(e1);
       if (c0->set() != c1->set()) {
         return false;
       }
@@ -1853,8 +1864,8 @@ bool Expression::equalInternal(const Expression* e0, const Expression* e1) {
       return true;
     }
     case Expression::E_ITE: {
-      const ITE* i0 = e0->cast<ITE>();
-      const ITE* i1 = e1->cast<ITE>();
+      const ITE* i0 = Expression::cast<ITE>(e0);
+      const ITE* i1 = Expression::cast<ITE>(e1);
       if (i0->_eIfThen.size() != i1->_eIfThen.size()) {
         return false;
       }
@@ -1866,8 +1877,8 @@ bool Expression::equalInternal(const Expression* e0, const Expression* e1) {
       return Expression::equal(i0->elseExpr(), i1->elseExpr());
     }
     case Expression::E_BINOP: {
-      const auto* b0 = e0->cast<BinOp>();
-      const auto* b1 = e1->cast<BinOp>();
+      const auto* b0 = Expression::cast<BinOp>(e0);
+      const auto* b1 = Expression::cast<BinOp>(e1);
       if (b0->op() != b1->op()) {
         return false;
       }
@@ -1880,8 +1891,8 @@ bool Expression::equalInternal(const Expression* e0, const Expression* e1) {
       return true;
     }
     case Expression::E_UNOP: {
-      const UnOp* b0 = e0->cast<UnOp>();
-      const UnOp* b1 = e1->cast<UnOp>();
+      const UnOp* b0 = Expression::cast<UnOp>(e0);
+      const UnOp* b1 = Expression::cast<UnOp>(e1);
       if (b0->op() != b1->op()) {
         return false;
       }
@@ -1891,8 +1902,8 @@ bool Expression::equalInternal(const Expression* e0, const Expression* e1) {
       return true;
     }
     case Expression::E_CALL: {
-      const Call* c0 = e0->cast<Call>();
-      const Call* c1 = e1->cast<Call>();
+      const Call* c0 = Expression::cast<Call>(e0);
+      const Call* c1 = Expression::cast<Call>(e1);
       if (c0->id() != c1->id()) {
         return false;
       }
@@ -1910,8 +1921,8 @@ bool Expression::equalInternal(const Expression* e0, const Expression* e1) {
       return true;
     }
     case Expression::E_VARDECL: {
-      const auto* v0 = e0->cast<VarDecl>();
-      const auto* v1 = e1->cast<VarDecl>();
+      const auto* v0 = Expression::cast<VarDecl>(e0);
+      const auto* v1 = Expression::cast<VarDecl>(e1);
       if (!Expression::equal(v0->ti(), v1->ti())) {
         return false;
       }
@@ -1924,8 +1935,8 @@ bool Expression::equalInternal(const Expression* e0, const Expression* e1) {
       return true;
     }
     case Expression::E_LET: {
-      const Let* l0 = e0->cast<Let>();
-      const Let* l1 = e1->cast<Let>();
+      const Let* l0 = Expression::cast<Let>(e0);
+      const Let* l1 = Expression::cast<Let>(e1);
       if (!Expression::equal(l0->in(), l1->in())) {
         return false;
       }
@@ -1940,8 +1951,8 @@ bool Expression::equalInternal(const Expression* e0, const Expression* e1) {
       return true;
     }
     case Expression::E_TI: {
-      const auto* t0 = e0->cast<TypeInst>();
-      const auto* t1 = e1->cast<TypeInst>();
+      const auto* t0 = Expression::cast<TypeInst>(e0);
+      const auto* t1 = Expression::cast<TypeInst>(e1);
       if (t0->ranges().size() != t1->ranges().size()) {
         return false;
       }
@@ -1978,7 +1989,7 @@ Constants::Constants() {
   absent_t.dim(0);
   absent_t.st(Type::ST_PLAIN);
   absent_t.ot(Type::OT_OPTIONAL);
-  absent->type(absent_t);
+  Expression::type(absent, absent_t);
 
   IntSetVal* isv_infty = IntSetVal::a(-IntVal::infinity(), IntVal::infinity());
   infinityInt = new SetLit(Location(), isv_infty);
@@ -2391,7 +2402,7 @@ void Annotation::removeCall(const ASTString& id) {
   }
   std::vector<Expression*> toRemove;
   for (ExpressionSetIter it = _s->begin(); it != _s->end(); ++it) {
-    if (Call* c = (*it)->dynamicCast<Call>()) {
+    if (Call* c = Expression::dynamicCast<Call>(*it)) {
       if (c->id() == id) {
         toRemove.push_back(*it);
       }
@@ -2407,7 +2418,7 @@ Call* Annotation::getCall(const ASTString& id) const {
     return nullptr;
   }
   for (ExpressionSetIter it = _s->begin(); it != _s->end(); ++it) {
-    if (Call* c = (*it)->dynamicCast<Call>()) {
+    if (Call* c = Expression::dynamicCast<Call>(*it)) {
       if (c->id() == id) {
         return c;
       }
@@ -2421,7 +2432,7 @@ bool Annotation::containsCall(const MiniZinc::ASTString& id) const {
     return false;
   }
   for (ExpressionSetIter it = _s->begin(); it != _s->end(); ++it) {
-    if (Call* c = (*it)->dynamicCast<Call>()) {
+    if (Call* c = Expression::dynamicCast<Call>(*it)) {
       if (c->id() == id) {
         return true;
       }
@@ -2451,8 +2462,8 @@ void Annotation::merge(const Annotation& ann) {
 Expression* get_annotation(const Annotation& ann, const std::string& str) {
   for (ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
     Expression* e = *i;
-    if ((e->isa<Id>() && e->cast<Id>()->str() == str) ||
-        (e->isa<Call>() && e->cast<Call>()->id() == str)) {
+    if ((Expression::isa<Id>(e) && Expression::cast<Id>(e)->str() == str) ||
+        (Expression::isa<Call>(e) && Expression::cast<Call>(e)->id() == str)) {
       return e;
     }
   }
@@ -2461,8 +2472,8 @@ Expression* get_annotation(const Annotation& ann, const std::string& str) {
 Expression* get_annotation(const Annotation& ann, const ASTString& str) {
   for (ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
     Expression* e = *i;
-    if ((e->isa<Id>() && e->cast<Id>()->str() == str) ||
-        (e->isa<Call>() && e->cast<Call>()->id() == str)) {
+    if ((Expression::isa<Id>(e) && Expression::cast<Id>(e)->str() == str) ||
+        (Expression::isa<Call>(e) && Expression::cast<Call>(e)->id() == str)) {
       return e;
     }
   }

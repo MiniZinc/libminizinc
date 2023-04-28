@@ -49,14 +49,15 @@ string NLFile::getConstraintName(const Call* c) {
 
 /** Obtain the vector of an array, either from an identifier or an array litteral */
 const ArrayLit* NLFile::getArrayLit(const Expression* e) {
-  switch (e->eid()) {
+  switch (Expression::eid(e)) {
     case Expression::E_ID: {
-      return getArrayLit(
-          e->cast<Id>()->decl()->e());  // Follow the pointer to the expression of the declaration
+      return getArrayLit(Expression::cast<Id>(e)
+                             ->decl()
+                             ->e());  // Follow the pointer to the expression of the declaration
     }
 
     case Expression::E_ARRAYLIT: {
-      return e->cast<ArrayLit>();
+      return Expression::cast<ArrayLit>(e);
     }
 
     default:
@@ -68,7 +69,7 @@ const ArrayLit* NLFile::getArrayLit(const Expression* e) {
 vector<double> NLFile::fromVecInt(const ArrayLit* v_int) {
   vector<double> v = {};
   for (unsigned int i = 0; i < v_int->size(); ++i) {
-    double d = static_cast<double>((*v_int)[i]->cast<IntLit>()->v().toInt());
+    double d = static_cast<double>(IntLit::v(Expression::cast<IntLit>((*v_int)[i])).toInt());
     v.push_back(d);
   }
   return v;
@@ -78,7 +79,7 @@ vector<double> NLFile::fromVecInt(const ArrayLit* v_int) {
 vector<double> NLFile::fromVecFloat(const ArrayLit* v_fp) {
   vector<double> v = {};
   for (unsigned int i = 0; i < v_fp->size(); ++i) {
-    double d = (*v_fp)[i]->cast<FloatLit>()->v().toDouble();
+    double d = FloatLit::v(Expression::cast<FloatLit>((*v_fp)[i])).toDouble();
     v.push_back(d);
   }
   return v;
@@ -88,7 +89,7 @@ vector<double> NLFile::fromVecFloat(const ArrayLit* v_fp) {
 vector<string> NLFile::fromVecId(const ArrayLit* v_id) {
   vector<string> v = {};
   for (unsigned int i = 0; i < v_id->size(); ++i) {
-    string s = getVarName((*v_id)[i]->cast<Id>()->decl());
+    string s = getVarName(Expression::cast<Id>((*v_id)[i])->decl());
     v.push_back(s);
   }
   return v;
@@ -112,8 +113,9 @@ void NLFile::addVarDecl(const VarDecl* vd, const TypeInst* ti, const Expression*
     DEBUG_MSG("     Definition of array " << name << " is not reproduced in nl.");
 
     // Look for the annotation "output_array"
-    for (ExpressionSetIter it = vd->ann().begin(); it != vd->ann().end(); ++it) {
-      Call* c = (*it)->dynamicCast<Call>();
+    for (ExpressionSetIter it = Expression::ann(vd).begin(); it != Expression::ann(vd).end();
+         ++it) {
+      Call* c = Expression::dynamicCast<Call>(*it);
       if (c != nullptr && c->id() == (Constants::constants().ann.output_array)) {
         NLArray array;
         array.name = name;
@@ -122,7 +124,7 @@ void NLFile::addVarDecl(const VarDecl* vd, const TypeInst* ti, const Expression*
         // Search the 'annotation' array
         const ArrayLit* aa = getArrayLit(c->arg(0));
         for (int i = 0; i < aa->size(); ++i) {
-          IntSetVal* r = (*aa)[i]->cast<SetLit>()->isv();
+          IntSetVal* r = Expression::cast<SetLit>((*aa)[i])->isv();
           stringstream ss;
           if (r->empty()) {
             ss << "1..0";
@@ -137,14 +139,14 @@ void NLFile::addVarDecl(const VarDecl* vd, const TypeInst* ti, const Expression*
         for (int i = 0; i < ra->size(); ++i) {
           NLArray::Item item;
 
-          if ((*ra)[i]->isa<Id>()) {
-            item.variable = getVarName((*ra)[i]->cast<Id>());
-          } else if ((*ra)[i]->isa<IntLit>()) {
+          if (Expression::isa<Id>((*ra)[i])) {
+            item.variable = getVarName(Expression::cast<Id>((*ra)[i]));
+          } else if (Expression::isa<IntLit>((*ra)[i])) {
             assert(array.isInteger);
-            item.value = static_cast<double>((*ra)[i]->cast<IntLit>()->v().toInt());
+            item.value = static_cast<double>(IntLit::v(Expression::cast<IntLit>((*ra)[i])).toInt());
           } else {
             assert(!array.isInteger);  // Floating point
-            item.value = (*ra)[i]->cast<FloatLit>()->v().toDouble();
+            item.value = FloatLit::v(Expression::cast<FloatLit>((*ra)[i])).toDouble();
           }
 
           array.items.push_back(item);
@@ -157,7 +159,7 @@ void NLFile::addVarDecl(const VarDecl* vd, const TypeInst* ti, const Expression*
     }
   } else {
     // Check if the variable needs to be reported
-    bool toReport = vd->ann().contains(Constants::constants().ann.output_var);
+    bool toReport = Expression::ann(vd).contains(Constants::constants().ann.output_var);
     DEBUG_MSG("     '" << name << "' to be reported? " << toReport);
 
     // variable declaration
@@ -175,14 +177,14 @@ void NLFile::addVarDecl(const VarDecl* vd, const TypeInst* ti, const Expression*
       // Integer
       IntSetVal* isv = nullptr;
       if (domain != nullptr) {
-        isv = domain->cast<SetLit>()->isv();
+        isv = Expression::cast<SetLit>(domain)->isv();
       }
       addVarDeclInteger(name, isv, toReport);
     } else {
       // Floating point
       FloatSetVal* fsv = nullptr;
       if (domain != nullptr) {
-        fsv = domain->cast<SetLit>()->fsv();
+        fsv = Expression::cast<SetLit>(domain)->fsv();
       }
       addVarDeclFloat(name, fsv, toReport);
     }
@@ -396,12 +398,12 @@ void NLFile::analyseConstraint(const Call* c) {
 
 /** Create a token from an expression representing a variable */
 NLToken NLFile::getTokenFromVarOrInt(const Expression* e) {
-  if (e->type().isPar()) {
+  if (Expression::type(e).isPar()) {
     // Constant
-    double value = static_cast<double>(e->cast<IntLit>()->v().toInt());
+    double value = static_cast<double>(IntLit::v(Expression::cast<IntLit>(e)).toInt());
     return NLToken::n(value);
   }  // Variable
-  VarDecl* vd = e->cast<Id>()->decl();
+  VarDecl* vd = Expression::cast<Id>(e)->decl();
   string n = getVarName(vd);
   return NLToken::v(n);
 }
@@ -409,21 +411,21 @@ NLToken NLFile::getTokenFromVarOrInt(const Expression* e) {
 /** Create a token from an expression representing either a variable or a floating point numeric
  * value. */
 NLToken NLFile::getTokenFromVarOrFloat(const Expression* e) {
-  if (e->type().isPar()) {
+  if (Expression::type(e).isPar()) {
     // Constant
-    double value = e->cast<FloatLit>()->v().toDouble();
+    double value = FloatLit::v(Expression::cast<FloatLit>(e)).toDouble();
     return NLToken::n(value);
   }  // Variable
-  VarDecl* vd = e->cast<Id>()->decl();
+  VarDecl* vd = Expression::cast<Id>(e)->decl();
   string n = getVarName(vd);
   return NLToken::v(n);
 }
 
 /** Create a token from an expression representing either a variable. */
 NLToken NLFile::getTokenFromVar(const Expression* e) {
-  assert(!e->type().isPar());
+  assert(!Expression::type(e).isPar());
   // Variable
-  VarDecl* vd = e->cast<Id>()->decl();
+  VarDecl* vd = Expression::cast<Id>(e)->decl();
   string n = getVarName(vd);
   return NLToken::v(n);
 }

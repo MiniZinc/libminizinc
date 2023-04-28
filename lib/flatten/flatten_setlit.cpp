@@ -16,7 +16,7 @@ namespace MiniZinc {
 EE flatten_setlit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   CallStackItem _csi(env, e);
   EE ret;
-  auto* sl = e->cast<SetLit>();
+  auto* sl = Expression::cast<SetLit>(e);
   assert(sl->isv() == nullptr && sl->fsv() == nullptr);
   std::vector<EE> elems_ee(sl->v().size());
   for (unsigned int i = sl->v().size(); (i--) != 0U;) {
@@ -27,22 +27,22 @@ EE flatten_setlit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl*
   bool hadOpt = false;
   for (auto i = static_cast<unsigned int>(elems.size()); (i--) != 0U;) {
     elems[i] = elems_ee[i].r();
-    allPar = allPar && elems[i]->type().isPar();
-    hadOpt = hadOpt || elems[i]->type().isOpt();
+    allPar = allPar && Expression::type(elems[i]).isPar();
+    hadOpt = hadOpt || Expression::type(elems[i]).isOpt();
   }
 
   ret.b = conj(env, b, Ctx(), elems_ee);
   if (allPar) {
     GCLock lock;
     auto* nsl = new SetLit(Location().introduce(), elems);
-    Type nsl_t(e->type());
+    Type nsl_t(Expression::type(e));
     nsl_t.ti(Type::TI_PAR);
     nsl->type(nsl_t);
     Expression* ee = eval_set_lit(env, nsl);
     ret.r = bind(env, Ctx(), r, ee);
   } else {
     GCLock lock;
-    auto* al = new ArrayLit(sl->loc(), elems);
+    auto* al = new ArrayLit(Expression::loc(sl), elems);
     Type al_t = Type::varint(1);
     if (hadOpt) {
       al_t.ot(Type::OT_OPTIONAL);
@@ -50,11 +50,11 @@ EE flatten_setlit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl*
     al->type(al_t);
     std::vector<Expression*> args(1);
     args[0] = al;
-    Call* cc = Call::a(sl->loc().introduce(), "array2set", args);
+    Call* cc = Call::a(Expression::loc(sl).introduce(), "array2set", args);
     cc->type(Type::varsetint());
     FunctionI* fi = env.model->matchFn(env, cc->id(), args, false);
     if (fi == nullptr) {
-      throw FlatteningError(env, cc->loc(), "cannot find matching declaration");
+      throw FlatteningError(env, Expression::loc(cc), "cannot find matching declaration");
     }
     assert(fi);
     assert(env.isSubtype(fi->rtype(env, args, nullptr, false), cc->type(), false));

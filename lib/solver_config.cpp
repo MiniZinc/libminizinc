@@ -31,7 +31,7 @@ void json_coerce_assignments_2d(JSONParser& jp, Model* m, const std::vector<std:
     if (auto* ai = i->dynamicCast<AssignI>()) {
       std::string ident(ai->id().c_str(), ai->id().size());
       if (std::find(names.begin(), names.end(), ident) != names.end()) {
-        if (auto* al = ai->e()->dynamicCast<ArrayLit>()) {
+        if (auto* al = Expression::dynamicCast<ArrayLit>(ai->e())) {
           GCLock lock;
           auto* ti = new TypeInst(Location().introduce(), Type::mkAny(2));
           ai->e(jp.coerceArray(ti, al));
@@ -66,28 +66,28 @@ bool SolverConfig::ExtraFlag::validate(const std::string& v) const {
 
 namespace {
 std::string get_string(AssignI* ai) {
-  if (auto* sl = ai->e()->dynamicCast<StringLit>()) {
+  if (auto* sl = Expression::dynamicCast<StringLit>(ai->e())) {
     return std::string(sl->v().c_str(), sl->v().size());
   }
   throw ConfigException("invalid configuration item (right hand side must be string)");
 }
 bool get_bool(AssignI* ai) {
-  if (auto* bl = ai->e()->dynamicCast<BoolLit>()) {
+  if (auto* bl = Expression::dynamicCast<BoolLit>(ai->e())) {
     return bl->v();
   }
   throw ConfigException("invalid configuration item (right hand side must be bool)");
 }
 int get_int(AssignI* ai) {
-  if (auto* il = ai->e()->dynamicCast<IntLit>()) {
-    return static_cast<int>(il->v().toInt());
+  if (auto* il = Expression::dynamicCast<IntLit>(ai->e())) {
+    return static_cast<int>(IntLit::v(il).toInt());
   }
   throw ConfigException("invalid configuration item (right hand side must be int)");
 }
 std::vector<std::string> get_string_list(AssignI* ai) {
-  if (auto* al = ai->e()->dynamicCast<ArrayLit>()) {
+  if (auto* al = Expression::dynamicCast<ArrayLit>(ai->e())) {
     std::vector<std::string> ret;
     for (unsigned int i = 0; i < al->size(); i++) {
-      if (auto* sl = (*al)[i]->dynamicCast<StringLit>()) {
+      if (auto* sl = Expression::dynamicCast<StringLit>((*al)[i])) {
         ret.emplace_back(sl->v().c_str(), sl->v().size());
       } else {
         throw ConfigException(
@@ -99,15 +99,15 @@ std::vector<std::string> get_string_list(AssignI* ai) {
   throw ConfigException("invalid configuration item (right hand side must be a list of strings)");
 }
 std::vector<std::pair<std::string, std::string> > get_string_pair_list(AssignI* ai) {
-  if (auto* al = ai->e()->dynamicCast<ArrayLit>()) {
+  if (auto* al = Expression::dynamicCast<ArrayLit>(ai->e())) {
     std::vector<std::pair<std::string, std::string> > ret;
     if (al->dims() != 2 || al->min(1) != 1 || al->max(1) != 2) {
       throw ConfigException(
           "invalid configuration item (right hand side must be a 2d array of strings)");
     }
     for (unsigned int i = 0; i < al->size(); i += 2) {
-      auto* sl1 = (*al)[i]->dynamicCast<StringLit>();
-      auto* sl2 = (*al)[i + 1]->dynamicCast<StringLit>();
+      auto* sl1 = Expression::dynamicCast<StringLit>((*al)[i]);
+      auto* sl2 = Expression::dynamicCast<StringLit>((*al)[i + 1]);
       if ((sl1 != nullptr) && (sl2 != nullptr)) {
         ret.emplace_back(std::string(sl1->v().c_str(), sl1->v().size()),
                          std::string(sl2->v().c_str(), sl2->v().size()));
@@ -122,7 +122,7 @@ std::vector<std::pair<std::string, std::string> > get_string_pair_list(AssignI* 
       "invalid configuration item (right hand side must be a 2d array of strings)");
 }
 std::vector<std::vector<std::string> > get_default_option_list(AssignI* ai) {
-  if (auto* al = ai->e()->dynamicCast<ArrayLit>()) {
+  if (auto* al = Expression::dynamicCast<ArrayLit>(ai->e())) {
     std::vector<std::vector<std::string> > ret;
     if (al->empty()) {
       return ret;
@@ -138,9 +138,9 @@ std::vector<std::vector<std::string> > get_default_option_list(AssignI* ai) {
           "columns)");
     }
     for (unsigned int i = 0; i < al->size(); i += nCols) {
-      auto* sl0 = (*al)[i]->dynamicCast<StringLit>();
-      auto* sl1 = (*al)[i + 1]->dynamicCast<StringLit>();
-      auto* sl2 = (*al)[i + 2]->dynamicCast<StringLit>();
+      auto* sl0 = Expression::dynamicCast<StringLit>((*al)[i]);
+      auto* sl1 = Expression::dynamicCast<StringLit>((*al)[i + 1]);
+      auto* sl2 = Expression::dynamicCast<StringLit>((*al)[i + 2]);
       if ((sl0 != nullptr) && (sl1 != nullptr) && (sl2 != nullptr)) {
         ret.push_back(std::vector<std::string>({std::string(sl0->v().c_str(), sl0->v().size()),
                                                 std::string(sl1->v().c_str(), sl1->v().size()),
@@ -156,7 +156,7 @@ std::vector<std::vector<std::string> > get_default_option_list(AssignI* ai) {
       "invalid configuration item (right hand side must be a 2d array of strings)");
 }
 std::vector<SolverConfig::ExtraFlag> get_extra_flag_list(AssignI* ai) {
-  if (auto* al = ai->e()->dynamicCast<ArrayLit>()) {
+  if (auto* al = Expression::dynamicCast<ArrayLit>(ai->e())) {
     std::vector<SolverConfig::ExtraFlag> ret;
     if (al->empty()) {
       return ret;
@@ -173,10 +173,10 @@ std::vector<SolverConfig::ExtraFlag> get_extra_flag_list(AssignI* ai) {
     bool haveType = (nCols >= 3);
     bool haveDefault = (nCols >= 4);
     for (unsigned int i = 0; i < al->size(); i += nCols) {
-      auto* sl1 = (*al)[i]->dynamicCast<StringLit>();
-      auto* sl2 = (*al)[i + 1]->dynamicCast<StringLit>();
-      StringLit* sl3 = haveType ? (*al)[i + 2]->dynamicCast<StringLit>() : nullptr;
-      StringLit* sl4 = haveDefault ? (*al)[i + 3]->dynamicCast<StringLit>() : nullptr;
+      auto* sl1 = Expression::dynamicCast<StringLit>((*al)[i]);
+      auto* sl2 = Expression::dynamicCast<StringLit>((*al)[i + 1]);
+      StringLit* sl3 = haveType ? Expression::dynamicCast<StringLit>((*al)[i + 2]) : nullptr;
+      StringLit* sl4 = haveDefault ? Expression::dynamicCast<StringLit>((*al)[i + 3]) : nullptr;
       std::string opt_type_full =
           sl3 != nullptr ? std::string(sl3->v().c_str(), sl3->v().size()) : "bool";
       std::vector<std::string> opt_range;
@@ -293,7 +293,7 @@ SolverConfig SolverConfig::load(const string& filename) {
             hadName = true;
           } else if (ai->id() == "executable") {
             std::string exePath;
-            if (ai->e()->isa<ArrayLit>()) {
+            if (Expression::isa<ArrayLit>(ai->e())) {
               std::vector<std::string> exeArgs(get_string_list(ai));
               if (!exeArgs.empty()) {
                 exePath = exeArgs[0];

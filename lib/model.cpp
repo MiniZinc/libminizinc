@@ -292,12 +292,12 @@ struct TIIDInfo {
 
 void TypeInst::collectTypeIds(std::unordered_map<ASTString, size_t>& seen_tiids,
                               std::vector<TIIDInfo>& type_ids) const {
-  auto* al = domain()->cast<ArrayLit>();
+  auto* al = Expression::cast<ArrayLit>(domain());
   for (size_t i = 0; i < al->size(); i++) {
-    auto* ti = (*al)[i]->cast<TypeInst>();
+    auto* ti = Expression::cast<TypeInst>((*al)[i]);
     if (ti->type().bt() == Type::BT_TOP) {
-      assert(ti->domain() && ti->domain()->isa<TIId>());
-      TIId* id0 = ti->domain()->cast<TIId>();
+      assert(ti->domain() && Expression::isa<TIId>(ti->domain()));
+      TIId* id0 = Expression::cast<TIId>(ti->domain());
       auto it = seen_tiids.find(id0->v());
       if (it == seen_tiids.end()) {
         type_ids.emplace_back(
@@ -373,7 +373,7 @@ void Model::addPolymorphicInstances(EnvI& env, Model::FnEntry& fe, std::vector<F
 
     // Create a parameter TypeInst in the format of a tuple TypeInst
     // Immediately copy so the internal TypeInst values can be changed
-    auto* paramtuple = copy(env, cur.fi->paramTypes())->cast<TypeInst>();
+    auto* paramtuple = Expression::cast<TypeInst>(copy(env, cur.fi->paramTypes()));
     paramtuple->collectTypeIds(type_id_map, type_ids);
 
     std::vector<size_t> stack;
@@ -389,15 +389,15 @@ void Model::addPolymorphicInstances(EnvI& env, Model::FnEntry& fe, std::vector<F
       if (stack.back() == final_id) {
         // New complete instance
         // First, update cur types
-        auto* tis = paramtuple->domain()->cast<ArrayLit>();
+        auto* tis = Expression::cast<ArrayLit>(paramtuple->domain());
         for (size_t i = 0; i < tis->size(); ++i) {
-          cur.t[i] = (*tis)[i]->type();
+          cur.t[i] = Expression::type((*tis)[i]);
           if (cur.t[i].bt() == Type::BT_TUPLE && cur.t[i].typeId() == 0) {
-            env.registerTupleType((*tis)[i]->cast<TypeInst>());
-            cur.t[i] = (*tis)[i]->type();
+            env.registerTupleType(Expression::cast<TypeInst>((*tis)[i]));
+            cur.t[i] = Expression::type((*tis)[i]);
           } else if (cur.t[i].bt() == Type::BT_RECORD && cur.t[i].typeId() == 0) {
-            env.registerRecordType((*tis)[i]->cast<TypeInst>());
-            cur.t[i] = (*tis)[i]->type();
+            env.registerRecordType(Expression::cast<TypeInst>((*tis)[i]));
+            cur.t[i] = Expression::type((*tis)[i]);
           }
         }
         addEntry(cur);
@@ -745,7 +745,7 @@ void Model::checkFnValid(EnvI& env, std::vector<TypeError>& errors) {
         const Type& t = fi->param(i)->type();
         if (t.isOpt() || t.structBT() || t.bt() == Type::BT_TOP) {
           errors.emplace_back(
-              env, fi->param(i)->loc(),
+              env, Expression::loc(fi->param(i)),
               "FlatZinc builtins are not allowed to have arguments of type " + t.toString(env));
           break;  // Break from parameter, but does continue in FnMap
         }
@@ -807,15 +807,15 @@ int match_idx(std::vector<FunctionI*>& matched, Expression*& botarg, EnvI& env,
     if (fi_t.size() == args.size()) {
       bool match = true;
       for (unsigned int j = 0; j < args.size(); j++) {
-        if (!env.isSubtype(args[j]->type(), fi_t[j], strictEnums)) {
+        if (!env.isSubtype(Expression::type(args[j]), fi_t[j], strictEnums)) {
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
-          std::cerr << args[j]->type().toString(env) << " does not match " << fi_t[j].toString(env)
-                    << "\n";
+          std::cerr << Expression::type(args[j]).toString(env) << " does not match "
+                    << fi_t[j].toString(env) << "\n";
 #endif
           match = false;
           break;
         }
-        if (args[j]->type().isbot() && fi_t[j].bt() != Type::BT_TOP) {
+        if (Expression::type(args[j]).isbot() && fi_t[j].bt() != Type::BT_TOP) {
           botarg = args[j];
         }
       }
@@ -858,7 +858,8 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Expr
   t.mkPar(env);
   for (unsigned int i = 1; i < matched.size(); i++) {
     if (!env.isSubtype(t, matched[i]->ti()->type(), strictEnums)) {
-      throw TypeError(env, botarg->loc(), "ambiguous overloading on return type of function");
+      throw TypeError(env, Expression::loc(botarg),
+                      "ambiguous overloading on return type of function");
     }
   }
   return matched[0];
@@ -894,7 +895,7 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
       if (!mostSimilar.empty()) {
         oss << ", did you mean `" << mostSimilar << "'?";
       }
-      throw TypeError(env, c->loc(), oss.str());
+      throw TypeError(env, Expression::loc(c), oss.str());
     }
     return nullptr;
   }
@@ -909,16 +910,16 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
     if (fi_t.size() == c->argCount()) {
       bool match = true;
       for (unsigned int j = 0; j < c->argCount(); j++) {
-        if (!env.isSubtype(c->arg(j)->type(), fi_t[j], strictEnums)) {
+        if (!env.isSubtype(Expression::type(c->arg(j)), fi_t[j], strictEnums)) {
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
-          std::cerr << c->arg(j)->type().toString(env) << " does not match "
+          std::cerr << Expression::type(c->arg(j)).toString(env) << " does not match "
                     << fi_t[j].toString(env) << "\n";
           std::cerr << "Wrong argument is " << *c->arg(j) << "\n";
 #endif
           match = false;
           break;
         }
-        if (c->arg(j)->type().isbot() && fi_t[j].bt() != Type::BT_TOP) {
+        if (Expression::type(c->arg(j)).isbot() && fi_t[j].bt() != Type::BT_TOP) {
           botarg = c->arg(j);
         }
       }
@@ -937,7 +938,7 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
       oss << "no function or predicate with this signature found: `";
       oss << c->id() << "(";
       for (unsigned int i = 0; i < c->argCount(); i++) {
-        oss << c->arg(i)->type().toString(env);
+        oss << Expression::type(c->arg(i)).toString(env);
         if (i < c->argCount() - 1) {
           oss << ",";
         }
@@ -956,9 +957,9 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
         i.fi->e(body);
         if (fi_t.size() == c->argCount()) {
           for (unsigned int j = 0; j < c->argCount(); j++) {
-            if (!env.isSubtype(c->arg(j)->type(), fi_t[j], strictEnums)) {
+            if (!env.isSubtype(Expression::type(c->arg(j)), fi_t[j], strictEnums)) {
               oss << "    (argument " << (j + 1) << " expects type " << fi_t[j].toString(env);
-              oss << ", but type " << c->arg(j)->type().toString(env) << " given)\n";
+              oss << ", but type " << Expression::type(c->arg(j)).toString(env) << " given)\n";
             }
           }
         } else {
@@ -966,7 +967,7 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
               << (i.fi->paramCount() == 1 ? "" : "s") << ", but " << c->argCount() << " given)\n";
         }
       }
-      throw TypeError(env, c->loc(), oss.str());
+      throw TypeError(env, Expression::loc(c), oss.str());
     }
     return nullptr;
   }
@@ -977,7 +978,8 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
   t.mkPar(env);
   for (unsigned int i = 1; i < matched.size(); i++) {
     if (!env.isSubtype(t, matched[i]->ti()->type(), strictEnums)) {
-      throw TypeError(env, botarg->loc(), "ambiguous overloading on return type of function");
+      throw TypeError(env, Expression::loc(botarg),
+                      "ambiguous overloading on return type of function");
     }
   }
   return matched[0];

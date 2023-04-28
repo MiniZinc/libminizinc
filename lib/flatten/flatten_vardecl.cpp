@@ -17,7 +17,7 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
   CallStackItem _csi(env, e);
   EE ret;
   GCLock lock;
-  auto* v = e->cast<VarDecl>();
+  auto* v = Expression::cast<VarDecl>(e);
   if (ctx.b != C_ROOT && !v->toplevel()) {
     throw InternalError("attempting to flatten non-toplevel VarDecl in context other than root");
   }
@@ -27,12 +27,12 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
     bool isEmptyArray = false;
     for (auto* nti : ti->ranges()) {
       if (nti->domain() != nullptr &&
-          (nti->domain()->isa<SetLit>() && eval_intset(env, nti->domain())->empty())) {
+          (Expression::isa<SetLit>(nti->domain()) && eval_intset(env, nti->domain())->empty())) {
         isEmptyArray = true;
         break;
       }
     }
-    if (!isEmptyArray && ti->domain() != nullptr && ti->domain()->isa<SetLit>()) {
+    if (!isEmptyArray && ti->domain() != nullptr && Expression::isa<SetLit>(ti->domain())) {
       if (ti->type().bt() == Type::BT_INT && ti->type().st() == Type::ST_PLAIN &&
           ti->type().ot() == Type::OT_PRESENT) {
         if (eval_intset(env, ti->domain())->empty()) {
@@ -51,20 +51,19 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
     v->flat(vd);
     if (v->e() != nullptr) {
       Ctx nctx;
-      if (v->e()->type().bt() == Type::BT_BOOL && v->e()->type().dim() == 0) {
+      if (Expression::type(v->e()).bt() == Type::BT_BOOL && Expression::type(v->e()).dim() == 0) {
         nctx.b = C_MIX;
       }
       (void)flat_exp(env, nctx, v->e(), vd, env.constants.varTrue);
-      if (v->e()->type().dim() > 0) {
+      if (Expression::type(v->e()).dim() > 0) {
         Expression* ee = follow_id_to_decl(vd->e());
-        if (ee->isa<VarDecl>()) {
-          ee = ee->cast<VarDecl>()->e();
+        if (Expression::isa<VarDecl>(ee)) {
+          ee = Expression::cast<VarDecl>(ee)->e();
         }
-        assert(ee && ee->isa<ArrayLit>());
-        auto* al = ee->cast<ArrayLit>();
+        auto* al = Expression::cast<ArrayLit>(ee);
         if (vd->ti()->domain() != nullptr) {
           for (unsigned int i = 0; i < al->size(); i++) {
-            if (Id* ali_id = (*al)[i]->dynamicCast<Id>()) {
+            if (Id* ali_id = Expression::dynamicCast<Id>((*al)[i])) {
               if (ali_id != env.constants.absent && ali_id->decl()->ti()->domain() == nullptr) {
                 ali_id->decl()->ti()->domain(vd->ti()->domain());
               }
@@ -72,7 +71,7 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
           }
         }
       }
-      if (vd->e() != nullptr && vd->e()->type().isPar() && !vd->ti()->type().isPar()) {
+      if (vd->e() != nullptr && Expression::type(vd->e()).isPar() && !vd->ti()->type().isPar()) {
         // Flattening the RHS resulted in a par expression. Make the variable par.
         Type t(vd->ti()->type());
         t.mkPar(env);

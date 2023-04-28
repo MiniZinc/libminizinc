@@ -729,7 +729,7 @@ public:
   /// Visit variable declaration
   void vVarDeclI(VarDeclI* vdi) {
     if (Call* docstring = Expression::dynamicCast<Call>(
-            get_annotation(vdi->e()->ann(), _env.constants.ann.doc_comment))) {
+            get_annotation(Expression::ann(vdi->e()), _env.constants.ann.doc_comment))) {
       std::string ds = eval_string(_env, docstring->arg(0));
       std::string group("main");
       size_t group_idx = ds.find("@group");
@@ -869,7 +869,7 @@ public:
           if ((c != nullptr) && c->argCount() == f_body->paramCount()) {
             bool sameParams = true;
             for (unsigned int i = 0; i < f_body->paramCount(); i++) {
-              Id* ident = c->arg(i)->dynamicCast<Id>();
+              Id* ident = Expression::dynamicCast<Id>(c->arg(i));
               if (ident == nullptr || ident->decl() != f_body->param(i) ||
                   ident->str() != c->decl()->param(i)->id()->str()) {
                 sameParams = false;
@@ -1535,7 +1535,7 @@ public:
   /// Visit variable declaration
   void vVarDeclI(VarDeclI* vdi) {
     if (Call* docstring = Expression::dynamicCast<Call>(
-            get_annotation(vdi->e()->ann(), _env.constants.ann.doc_comment))) {
+            get_annotation(Expression::ann(vdi->e()), _env.constants.ann.doc_comment))) {
       std::string ds = eval_string(_env, docstring->arg(0));
       std::string group("main");
       size_t group_idx = ds.find("@group");

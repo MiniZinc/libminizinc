@@ -604,9 +604,9 @@ public:
     if (Expression::equal(x[i](), x[j]())) {
       return false;
     }
-    if (x[i]()->isa<Id>() && x[j]()->isa<Id>() && x[i]()->cast<Id>()->idn() != -1 &&
-        x[j]()->cast<Id>()->idn() != -1) {
-      return x[i]()->cast<Id>()->idn() < x[j]()->cast<Id>()->idn();
+    if (Expression::isa<Id>(x[i]()) && Expression::isa<Id>(x[j]()) &&
+        Expression::cast<Id>(x[i]())->idn() != -1 && Expression::cast<Id>(x[j]())->idn() != -1) {
+      return Expression::cast<Id>(x[i]())->idn() < Expression::cast<Id>(x[j]())->idn();
     }
     return x[i]() < x[j]();
   }
@@ -757,6 +757,7 @@ public:
         ceil(static_cast<double>(v0.toInt()) / static_cast<double>(v1.toInt())));
   }
   static IntLit* newLit(Val v) { return IntLit::a(v); }
+  static IntVal v(const IntLit* il) { return IntLit::v(il); }
 };
 template <>
 class LinearTraits<FloatLit> {
@@ -896,6 +897,7 @@ public:
   static Val floorDiv(Val v0, Val v1) { return v0 / v1; }
   static Val ceilDiv(Val v0, Val v1) { return v0 / v1; }
   static FloatLit* newLit(Val v) { return FloatLit::a(v); }
+  static FloatVal v(const FloatLit* fl) { return FloatLit::v(fl); }
 };
 
 template <class Lit>
@@ -905,11 +907,11 @@ void simplify_lin(std::vector<typename LinearTraits<Lit>::Val>& c, std::vector<K
   for (auto i = static_cast<int>(idx.size()); i--;) {
     idx[i] = i;
     Expression* e = follow_id_to_decl(x[i]());
-    if (auto* vd = e->dynamicCast<VarDecl>()) {
-      if (vd->e() && vd->e()->isa<Lit>()) {
+    if (auto* vd = Expression::dynamicCast<VarDecl>(e)) {
+      if (vd->e() && Expression::isa<Lit>(vd->e())) {
         x[i] = vd->e();
       } else {
-        x[i] = e->cast<VarDecl>()->id();
+        x[i] = Expression::cast<VarDecl>(e)->id();
       }
     } else {
       x[i] = e;
@@ -918,8 +920,8 @@ void simplify_lin(std::vector<typename LinearTraits<Lit>::Val>& c, std::vector<K
   std::sort(idx.begin(), idx.end(), CmpExpIdx(x));
   unsigned int ci = 0;
   for (; ci < x.size(); ci++) {
-    if (Lit* il = x[idx[ci]]()->dynamicCast<Lit>()) {
-      d += c[idx[ci]] * il->v();
+    if (Lit* il = Expression::dynamicCast<Lit>(x[idx[ci]]())) {
+      d += c[idx[ci]] * LinearTraits<Lit>::v(il);
       c[idx[ci]] = 0;
     } else {
       break;
@@ -929,8 +931,8 @@ void simplify_lin(std::vector<typename LinearTraits<Lit>::Val>& c, std::vector<K
     if (Expression::equal(x[idx[i]](), x[idx[ci]]())) {
       c[idx[ci]] += c[idx[i]];
       c[idx[i]] = 0;
-    } else if (Lit* il = x[idx[i]]()->dynamicCast<Lit>()) {
-      d += c[idx[i]] * il->v();
+    } else if (Lit* il = Expression::dynamicCast<Lit>(x[idx[i]]())) {
+      d += c[idx[i]] * LinearTraits<Lit>::v(il);
       c[idx[i]] = 0;
     } else {
       ci = i;

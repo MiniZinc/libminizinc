@@ -386,8 +386,10 @@ Expression* JSONParser::parseEnumObject(std::istream& is, const std::string& see
         expectToken(is, T_COLON);
         break;
       case T_OBJ_CLOSE:
-        if (e == nullptr || (!c.empty() && !e->isa<Id>() && !e->isa<IntLit>() && !e->isa<Call>()) ||
-            (i != -1 && !e->isa<Id>())) {
+        if (e == nullptr ||
+            (!c.empty() && !Expression::isa<Id>(e) && !Expression::isa<IntLit>(e) &&
+             !Expression::isa<Call>(e)) ||
+            (i != -1 && !Expression::isa<Id>(e))) {
           throw JSONError(_env, errLocation(), "invalid enum object");
         }
         if (!c.empty()) {
@@ -529,9 +531,9 @@ Expression* JSONParser::parseObject(istream& is, TypeInst* ti) {
 
   ASTStringMap<TypeInst*> fieldTIs;
   if (ti != nullptr && ti->type().bt() == Type::BT_RECORD) {
-    auto* dom = ti->domain()->cast<ArrayLit>();
+    auto* dom = Expression::cast<ArrayLit>(ti->domain());
     for (size_t i = 0; i < dom->size(); ++i) {
-      auto* fieldDef = (*dom)[i]->cast<VarDecl>();
+      auto* fieldDef = Expression::cast<VarDecl>((*dom)[i]);
       fieldTIs.emplace(fieldDef->id()->str(), fieldDef->ti());
     }
   };
@@ -561,8 +563,8 @@ Expression* JSONParser::parseObject(istream& is, TypeInst* ti) {
     auto it = fieldTIs.find(key);
     Expression* e = parseExp(is, true, it != fieldTIs.end() ? it->second : nullptr);
 
-    fields.push_back(new VarDecl(Location().introduce(),
-                                 new TypeInst(Location().introduce(), e->type()), key, e));
+    fields.push_back(new VarDecl(
+        Location().introduce(), new TypeInst(Location().introduce(), Expression::type(e)), key, e));
     next = readToken(is);
   } while (next.t == T_COMMA);
   if (next.t != T_OBJ_CLOSE) {
@@ -612,9 +614,9 @@ Expression* JSONParser::parseArray(std::istream& is, TypeInst* ti, size_t range_
         TypeInst* elTI = ti;
         if (ti != nullptr && ti->type().bt() == Type::BT_TUPLE) {
           // If parsing a tuple, then retrieve field TI from domain
-          auto* dom = ti->domain()->cast<ArrayLit>();
+          auto* dom = Expression::cast<ArrayLit>(ti->domain());
           if (exps.size() < dom->size()) {
-            elTI = (*dom)[exps.size()]->cast<TypeInst>();
+            elTI = Expression::cast<TypeInst>((*dom)[exps.size()]);
           }
         }
         exps.push_back(parseObject(is, elTI));
@@ -637,7 +639,7 @@ Expression* JSONParser::parseArray(std::istream& is, TypeInst* ti, size_t range_
         // Add correct index sets if they are non-standard
         TypeInst* tupTI = ti;
         if (!ti->ranges().empty()) {
-          tupTI = copy(_env, ti)->cast<TypeInst>();
+          tupTI = Expression::cast<TypeInst>(copy(_env, ti));
           tupTI->type(ti->type().elemType(_env));
           tupTI->setRanges({});
         }
@@ -681,14 +683,14 @@ Expression* JSONParser::parseExp(std::istream& is, bool parseObjects, TypeInst* 
 
 Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
   assert(al != nullptr);
-  const Location& loc = al->loc();
+  const Location& loc = Expression::loc(al);
 
   if (al->empty()) {
     return al;  // Nothing to coerce
   }
 
   // Add dimensions for array parsed by JSON
-  if (ti->type().dim() > 1 && (*al)[0]->isa<ArrayLit>()) {
+  if (ti->type().dim() > 1 && Expression::isa<ArrayLit>((*al)[0])) {
     std::vector<Expression*> elements;
     std::vector<std::pair<size_t, ArrayLit*>> it({{0, al}});
     vector<pair<int, int>> dims;
@@ -703,13 +705,13 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
         if (it.back().first < it.back().second->size()) {
           Expression* expr = (*it.back().second)[it.back().first];
           it.back().first++;
-          if (!expr->isa<ArrayLit>()) {
-            throw JSONError(_env, expr->loc(),
+          if (!Expression::isa<ArrayLit>(expr)) {
+            throw JSONError(_env, Expression::loc(expr),
                             "Expected JSON array with " + std::to_string(ti->type().dim()) +
                                 " dimensions, but an expression in dimension " +
                                 std::to_string(it.size()) + " is not an array literal.");
           }
-          auto* nal = expr->cast<ArrayLit>();
+          auto* nal = Expression::cast<ArrayLit>(expr);
           it.emplace_back(0, nal);
           if (dims.size() < it.size()) {
             dims.emplace_back(1, nal->size());
@@ -723,27 +725,29 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
         }
       }
     }
-    al = new ArrayLit(al->loc(), elements, dims);
+    al = new ArrayLit(Expression::loc(al), elements, dims);
   }
 
   // Convert tuples
   if (ti->type().bt() == Type::BT_TUPLE) {
     if (ti->type().dim() == 0) {
       assert(!ti->isarray());
-      al = ArrayLit::constructTuple(al->loc(), al);
+      al = ArrayLit::constructTuple(Expression::loc(al), al);
     } else {
-      auto* types = ti->domain()->cast<ArrayLit>();
+      auto* types = Expression::cast<ArrayLit>(ti->domain());
       for (size_t i = 0; i < al->size(); ++i) {
-        if ((*al)[i]->isa<ArrayLit>()) {
-          auto* tup = ArrayLit::constructTuple((*al)[i]->loc(), (*al)[i]->cast<ArrayLit>());
+        if (Expression::isa<ArrayLit>((*al)[i])) {
+          auto* tup = ArrayLit::constructTuple(Expression::loc((*al)[i]),
+                                               Expression::cast<ArrayLit>((*al)[i]));
           al->set(i, tup);
 
           if (tup->size() != types->size()) {
             continue;  // Error will be raised by typechecker
           }
           for (size_t j = 0; j < tup->size(); ++j) {
-            if ((*tup)[j]->isa<ArrayLit>()) {
-              tup->set(j, coerceArray((*types)[j]->cast<TypeInst>(), (*tup)[j]->cast<ArrayLit>()));
+            if (Expression::isa<ArrayLit>((*tup)[j])) {
+              tup->set(j, coerceArray(Expression::cast<TypeInst>((*types)[j]),
+                                      Expression::cast<ArrayLit>((*tup)[j])));
             }
           }
         }
@@ -761,7 +765,7 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
   bool needs_call = false;
   for (int i = 0; i < ti->ranges().size(); ++i) {
     TypeInst* nti = ti->ranges()[i];
-    if (nti->domain() == nullptr || nti->domain()->isa<AnonVar>()) {
+    if (nti->domain() == nullptr || Expression::isa<AnonVar>(nti->domain())) {
       if (missing_index != -1) {
         return al;  // More than one index set is missing. Cannot compute correct index sets.
       }
@@ -791,9 +795,9 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
   args[args.size() - 1] = al;
 
   std::string name = "array" + std::to_string(ti->ranges().size()) + "d";
-  Call* c = Call::a(al->loc().introduce(), name, args);
+  Call* c = Call::a(Expression::loc(al).introduce(), name, args);
   if (al->dims() != 1) {
-    c->addAnnotation(Constants::constants().ann.array_check_form);
+    Expression::addAnnotation(c, Constants::constants().ann.array_check_form);
   }
   return c;
 }
@@ -832,7 +836,7 @@ void JSONParser::parseModel(Model* m, std::istream& is, bool isData) {
         ii->m(subModel, true);
         m->addItem(ii);
       } else {
-        auto* ai = new AssignI(e->loc().introduce(), ast_ident, e);
+        auto* ai = new AssignI(Expression::loc(e).introduce(), ast_ident, e);
         m->addItem(ai);
       }
     }

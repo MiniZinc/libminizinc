@@ -98,7 +98,7 @@ std::string MIPSolverFactory<MIPWrapper>::getId() {
 
 template <class MIPWrapper>
 MIPSolver::Variable MIPSolverinstance<MIPWrapper>::exprToVar(Expression* arg) {
-  if (Id* ident = arg->dynamicCast<Id>()) {
+  if (Id* ident = Expression::dynamicCast<Id>(arg)) {
     return _variableMap.get(ident->decl()->id());
   }
   return _mipWrapper->addLitVar(exprToConst(arg));
@@ -117,11 +117,11 @@ void MIPSolverinstance<MIPWrapper>::exprToVarArray(Expression* arg, std::vector<
 template <class MIPWrapper>
 std::pair<double, bool> MIPSolverinstance<MIPWrapper>::exprToConstEasy(Expression* e) {
   std::pair<double, bool> res{0.0, true};
-  if (auto* il = e->dynamicCast<IntLit>()) {
-    res.first = (static_cast<double>(il->v().toInt()));
-  } else if (auto* fl = e->dynamicCast<FloatLit>()) {
-    res.first = (fl->v().toDouble());
-  } else if (auto* bl = e->dynamicCast<BoolLit>()) {
+  if (auto* il = Expression::dynamicCast<IntLit>(e)) {
+    res.first = (static_cast<double>(IntLit::v(il).toInt()));
+  } else if (auto* fl = Expression::dynamicCast<FloatLit>(e)) {
+    res.first = (FloatLit::v(fl).toDouble());
+  } else if (auto* bl = Expression::dynamicCast<BoolLit>(e)) {
     res.first = static_cast<double>(bl->v());
   } else {
     res.second = false;
@@ -168,11 +168,11 @@ void MIPSolverinstance<MIPWrapper>::processSearchAnnotations(const Annotation& a
   auto priority = flattenedAnns.size();  // Variables at front get highest pri
   for (const auto& annExpression : flattenedAnns) {
     /// Skip expressions that are not meaningful or we cannot process
-    if (!annExpression->isa<Call>()) {
+    if (!Expression::isa<Call>(annExpression)) {
       continue;
     }
 
-    Call* annotation = annExpression->cast<Call>();
+    Call* annotation = Expression::cast<Call>(annExpression);
     const auto annotation_type = annotation->id();
     if (annotation_type != "int_search" && annotation_type != "float_search") {
       continue;
@@ -187,8 +187,8 @@ void MIPSolverinstance<MIPWrapper>::processSearchAnnotations(const Annotation& a
     /// Save the variable selection and the value selection strategies, indexed on priority.
     /// Rules are ordered by ascending priorities, i.e. rules with lower priorities are at the front
     /// so that we can index them by priority.
-    const auto cVarSel = annotation->arg(1)->cast<Id>()->str();
-    const auto cValSel = annotation->arg(2)->cast<Id>()->str();
+    const auto cVarSel = Expression::cast<Id>(annotation->arg(1))->str();
+    const auto cValSel = Expression::cast<Id>(annotation->arg(2))->str();
     variableSelection.push_front(cVarSel.c_str());
     valueSelection.push_front(cValSel.c_str());
 
@@ -233,10 +233,10 @@ void MIPSolverinstance<MIPWrapper>::processWarmstartAnnotations(const Annotation
   int nVal = 0;
   for (ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
     Expression* e = *i;
-    if (e->isa<Call>()) {
-      Call* c = e->cast<Call>();
+    if (Expression::isa<Call>(e)) {
+      Call* c = Expression::cast<Call>(e);
       if (c->id() == "warm_start_array" || c->id() == "seq_search") {
-        auto* anns = c->arg(0)->cast<ArrayLit>();
+        auto* anns = Expression::cast<ArrayLit>(c->arg(0));
         for (unsigned int i = 0; i < anns->size(); i++) {
           Annotation subann;
           subann.add((*anns)[i]);
@@ -259,7 +259,7 @@ void MIPSolverinstance<MIPWrapper>::processWarmstartAnnotations(const Annotation
           const auto e2c = exprToConstEasy((*alC)[i]);
           /// Check if it is not an opt int etc. and a proper variable
           if (e2c.second) {
-            if (Id* ident = (*alV)[i]->dynamicCast<Id>()) {
+            if (Id* ident = Expression::dynamicCast<Id>((*alV)[i])) {
               coefs.push_back(e2c.first);
               vars.push_back(exprToVar(ident));
             }  // else ignore
@@ -306,7 +306,7 @@ void MIPSolverinstance<MIPWrapper>::processFlatZinc() {
   VarDecl* objVd = nullptr;
 
   if (solveItem->st() != SolveI::SolveType::ST_SAT) {
-    if (Id* id = solveItem->e()->dynamicCast<Id>()) {
+    if (Id* id = Expression::dynamicCast<Id>(solveItem->e())) {
       objVd = id->decl();
     } else {
       throw InternalError("Objective must be Id");
@@ -319,9 +319,9 @@ void MIPSolverinstance<MIPWrapper>::processFlatZinc() {
       continue;
     }
     VarDecl* vd = it->e();
-    if (!vd->ann().isEmpty()) {
-      if (vd->ann().containsCall(Constants::constants().ann.output_array) ||
-          vd->ann().contains(Constants::constants().ann.output_var)) {
+    if (!Expression::ann(vd).isEmpty()) {
+      if (Expression::ann(vd).containsCall(Constants::constants().ann.output_array) ||
+          Expression::ann(vd).contains(Constants::constants().ann.output_var)) {
         _varsWithOutput.push_back(vd);
         //         std::cerr << (*vd);
         //         if ( vd->e() )
@@ -342,7 +342,7 @@ void MIPSolverinstance<MIPWrapper>::processFlatZinc() {
         ssm << "  VarDecl flags (ti, bt, st, ot): " << ti->type().ti() << ti->type().bt()
             << ti->type().st() << ti->type().ot() << ", dim == " << ti->type().dim()
             << "\nRemove the variable or add a constraint so it is redefined." << std::endl;
-        throw FlatteningError(getEnv()->envi(), ti->loc(), ssm.str());
+        throw FlatteningError(getEnv()->envi(), Expression::loc(ti), ssm.str());
       }
       double lb = 0.0;
       double ub = 1.0;  // for bool
@@ -382,9 +382,9 @@ void MIPSolverinstance<MIPWrapper>::processFlatZinc() {
       MZN_ASSERT_HARD(it->e() == id->decl());   // Assume all unified
       double obj = vd == objVd ? 1.0 : 0.0;
       auto* decl00 = follow_id_to_decl(it->e());
-      MZN_ASSERT_HARD(decl00->isa<VarDecl>());
+      MZN_ASSERT_HARD(Expression::isa<VarDecl>(decl00));
       {
-        auto* vd00 = decl00->dynamicCast<VarDecl>();
+        auto* vd00 = Expression::dynamicCast<VarDecl>(decl00);
         if (nullptr != vd00->e()) {
           // Should be a const
           auto dRHS = exprToConst(vd00->e());
@@ -440,7 +440,7 @@ void MIPSolverinstance<MIPWrapper>::processFlatZinc() {
   for (ConstraintIterator it = getEnv()->flat()->constraints().begin();
        it != getEnv()->flat()->constraints().end(); ++it) {
     if (!it->removed()) {
-      if (Call* c = it->e()->dynamicCast<Call>()) {
+      if (Call* c = Expression::dynamicCast<Call>(it->e())) {
         _constraintRegistry.post(c);
       }
     }
@@ -696,10 +696,10 @@ inline std::string make_constraint_name(const char* pfx, int cnt,
                                         const Expression* cOrig = nullptr) {
   std::ostringstream ss;
   if (cOrig != nullptr) {
-    auto* mznp = cOrig->ann().getCall(Constants::constants().ann.mzn_path);
+    auto* mznp = Expression::ann(cOrig).getCall(Constants::constants().ann.mzn_path);
     if (mznp != nullptr) {
       assert(1 == mznp->argCount());
-      auto* strp = mznp->arg(0)->dynamicCast<StringLit>();
+      auto* strp = Expression::dynamicCast<StringLit>(mznp->arg(0));
       assert(strp);
       ss << strp->v().substr(0, 255);  // Gurobi 8.1 has <=255 characters
       return ss.str();
@@ -744,10 +744,10 @@ void p_lin(SolverInstanceBase& si, const Call* call, typename MIPWrapper::LinCon
   FloatVal fres;
 
   double rhs;
-  if (call->arg(2)->type().isint()) {
+  if (Expression::type(call->arg(2)).isint()) {
     ires = eval_int(_env.envi(), call->arg(2));
     rhs = static_cast<double>(ires.toInt());
-  } else if (call->arg(2)->type().isfloat()) {
+  } else if (Expression::type(call->arg(2)).isfloat()) {
     fres = eval_float(_env.envi(), call->arg(2));
     rhs = fres.toDouble();
   } else {
@@ -761,7 +761,7 @@ void p_lin(SolverInstanceBase& si, const Call* call, typename MIPWrapper::LinCon
   vars.reserve(alV->size());
   for (unsigned int i = 0; i < alV->size(); i++) {
     const double dCoef = gi.exprToConst((*alC)[i]);
-    if (Id* ident = (*alV)[i]->dynamicCast<Id>()) {
+    if (Id* ident = Expression::dynamicCast<Id>((*alV)[i])) {
       coefs.push_back(dCoef);
       vars.push_back(gi.exprToVar(ident));
     } else {
@@ -815,13 +815,13 @@ void p_non_lin(SolverInstanceBase& si, const Call* call, typename MIPWrapper::Li
   std::vector<double> coefs;
   std::vector<MIPSolver::Variable> vars;
   double rhs = 0.0;
-  if (call->arg(0)->isa<Id>()) {
+  if (Expression::isa<Id>(call->arg(0))) {
     coefs.push_back(1.0);
     vars.push_back(gi.exprToVar(call->arg(0)));
   } else {
     rhs -= gi.exprToConst(call->arg(0));
   }
-  if (call->arg(1)->isa<Id>()) {
+  if (Expression::isa<Id>(call->arg(1))) {
     coefs.push_back(-1.0);
     vars.push_back(gi.exprToVar(call->arg(1)));
   } else {
@@ -866,13 +866,13 @@ void p_indicator_le0_if0(SolverInstanceBase& si, const Call* call) {
   double val2;
   MIPSolver::Variable var1;
   MIPSolver::Variable var2;
-  if (call->arg(0)->isa<Id>()) {
+  if (Expression::isa<Id>(call->arg(0))) {
     var1 = gi.exprToVar(call->arg(0));
   } else {
     f1const = 1;
     val1 = gi.exprToConst(call->arg(0));
   }
-  if (call->arg(1)->isa<Id>()) {
+  if (Expression::isa<Id>(call->arg(1))) {
     var2 = gi.exprToVar(call->arg(1));
   } else {
     f2const = 1;
@@ -921,7 +921,7 @@ void p_indicator_eq_if1(SolverInstanceBase& si, const Call* call) {
   MIPSolver::Variable var1;
   MIPSolver::Variable var2;
   MIPSolver::Variable varB;
-  if (call->arg(0)->isa<Id>()) {
+  if (Expression::isa<Id>(call->arg(0))) {
     var1 = gi.exprToVar(call->arg(0));
     coefs.push_back(1.0);
     vars.push_back(var1);
@@ -930,7 +930,7 @@ void p_indicator_eq_if1(SolverInstanceBase& si, const Call* call) {
     val1 = gi.exprToConst(call->arg(0));
     rhs -= val1;
   }
-  if (call->arg(1)->isa<Id>()) {
+  if (Expression::isa<Id>(call->arg(1))) {
     var2 = gi.exprToVar(call->arg(1));
     coefs.push_back(-1.0);
     vars.push_back(var2);
@@ -939,7 +939,7 @@ void p_indicator_eq_if1(SolverInstanceBase& si, const Call* call) {
     val2 = gi.exprToConst(call->arg(1));
     rhs += val2;
   }
-  if (call->arg(2)->isa<Id>()) {
+  if (Expression::isa<Id>(call->arg(2))) {
     varB = gi.exprToVar(call->arg(2));
   } else {
     fBconst = 1;
