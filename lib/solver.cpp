@@ -139,7 +139,7 @@ void SolverRegistry::removeSolverFactory(SolverFactory* pSF) {
 
 void SolverRegistry::addFactoryFlag(const std::string& flag, SolverFactory* sf) {
   assert(sf);
-  _factoryFlagStorage.push_back(std::make_pair(flag, sf));
+  _factoryFlagStorage.emplace_back(flag, sf);
 }
 
 void SolverRegistry::removeFactoryFlag(const std::string& flag, SolverFactory* sf) {

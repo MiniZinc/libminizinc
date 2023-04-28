@@ -187,9 +187,9 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
           auto it = eq_branches[i].find(eq.first);
           if (it == eq_branches[i].end()) {
             // not found, simply push x=x
-            e_then.back().push_back(eq.first);
+            e_then.back().emplace_back(eq.first);
           } else {
-            e_then.back().push_back(it->second.first);
+            e_then.back().emplace_back(it->second.first);
           }
         }
         {
@@ -218,11 +218,11 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
       e_then.emplace_back();
       for (int i = 0; i < ite->size(); i++) {
         if (eq_branches[i].empty()) {
-          e_then.back().push_back(ite->thenExpr(i));
+          e_then.back().emplace_back(ite->thenExpr(i));
         } else if (other_branches[i].empty()) {
-          e_then.back().push_back(env.constants.literalTrue);
+          e_then.back().emplace_back(env.constants.literalTrue);
         } else if (other_branches[i].size() == 1) {
-          e_then.back().push_back(other_branches[i][0]);
+          e_then.back().emplace_back(other_branches[i][0]);
         } else {
           GCLock lock;
           auto* al = new ArrayLit(Location().introduce(), other_branches[i]);
@@ -230,7 +230,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
           Call* forall = Call::a(Location().introduce(), env.constants.ids.forall, {al});
           forall->decl(env.model->matchFn(env, forall, false));
           forall->type(forall->decl()->rtype(env, {al}, nullptr, false));
-          e_then.back().push_back(forall);
+          e_then.back().emplace_back(forall);
         }
       }
       {
@@ -264,7 +264,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     results.emplace_back(r);
     e_then.emplace_back();
     for (int i = 0; i < ite->size(); i++) {
-      e_then.back().push_back(ite->thenExpr(i));
+      e_then.back().emplace_back(ite->thenExpr(i));
     }
     e_else.emplace_back(ite->elseExpr());
   }
@@ -332,8 +332,8 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
         GCLock lock;
         conditions.emplace_back(env.constants.literalFalse);
         for (unsigned int j = 0; j < results.size(); j++) {
-          defined[j].push_back(env.constants.literalTrue);
-          branches[j].push_back(create_dummy_value(env, Expression::type(e_then[j][i]())));
+          defined[j].emplace_back(env.constants.literalTrue);
+          branches[j].emplace_back(create_dummy_value(env, Expression::type(e_then[j][i]())));
         }
       }
     } else {

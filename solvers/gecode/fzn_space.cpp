@@ -30,10 +30,10 @@ FznSpace::FznSpace(FznSpace& f) : Space(f) {
   }
   if (f.copyAuxVars) {
     IntVarArgs iva;
-    for (int i = 0; i < f.ivAux.size(); i++) {
-      if (!f.ivAux[i].assigned()) {
+    for (auto& i : f.ivAux) {
+      if (!i.assigned()) {
         iva << IntVar();
-        iva[iva.size() - 1].update(*this, f.ivAux[i]);
+        iva[iva.size() - 1].update(*this, i);
       }
     }
     ivAux = IntVarArray(*this, iva);
@@ -46,10 +46,10 @@ FznSpace::FznSpace(FznSpace& f) : Space(f) {
   }
   if (f.copyAuxVars) {
     BoolVarArgs bva;
-    for (int i = 0; i < f.bvAux.size(); i++) {
-      if (!f.bvAux[i].assigned()) {
+    for (auto& i : f.bvAux) {
+      if (!i.assigned()) {
         bva << BoolVar();
-        bva[bva.size() - 1].update(*this, f.bvAux[i]);
+        bva[bva.size() - 1].update(*this, i);
       }
     }
     bvAux = BoolVarArray(*this, bva);
@@ -65,10 +65,10 @@ FznSpace::FznSpace(FznSpace& f) : Space(f) {
   }
   if (f.copyAuxVars) {
     SetVarArgs sva;
-    for (int i = 0; i < f.svAux.size(); i++) {
-      if (!f.svAux[i].assigned()) {
+    for (auto& i : f.svAux) {
+      if (!i.assigned()) {
         sva << SetVar();
-        sva[sva.size() - 1].update(*this, f.svAux[i]);
+        sva[sva.size() - 1].update(*this, i);
       }
     }
     svAux = SetVarArray(*this, sva);
@@ -85,10 +85,10 @@ FznSpace::FznSpace(FznSpace& f) : Space(f) {
   }
   if (f.copyAuxVars) {
     FloatVarArgs fva;
-    for (int i = 0; i < f.fvAux.size(); i++) {
-      if (!f.fvAux[i].assigned()) {
+    for (auto& i : f.fvAux) {
+      if (!i.assigned()) {
         fva << FloatVar();
-        fva[fva.size() - 1].update(*this, f.fvAux[i]);
+        fva[fva.size() - 1].update(*this, i);
       }
     }
     fvAux = FloatVarArray(*this, fva);

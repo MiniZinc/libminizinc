@@ -62,7 +62,7 @@ public:
   }
 
 private:
-  ChuffedVariable(VarType t, size_t idx) : _t(t), _index(idx) {}
+  ChuffedVariable(VarType t, size_t idx) : _t(t), _index(static_cast<int>(idx)) {}
 };
 
 class ChuffedTypes {

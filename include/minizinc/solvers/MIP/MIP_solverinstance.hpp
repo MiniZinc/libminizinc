@@ -189,8 +189,8 @@ void MIPSolverinstance<MIPWrapper>::processSearchAnnotations(const Annotation& a
     /// so that we can index them by priority.
     const auto cVarSel = Expression::cast<Id>(annotation->arg(1))->str();
     const auto cValSel = Expression::cast<Id>(annotation->arg(2))->str();
-    variableSelection.push_front(cVarSel.c_str());
-    valueSelection.push_front(cValSel.c_str());
+    variableSelection.emplace_front(cVarSel.c_str());
+    valueSelection.emplace_front(cValSel.c_str());
 
     ++nArrayAnns;
 
@@ -1049,7 +1049,7 @@ void p_xbz_cutgen(SolverInstanceBase& si, const Call* call) {
   //     cout << "  NEXT_CUTGEN" << endl;
   //     pCG->print( cout );
 
-  gi.registerCutGenerator(move(pCG));
+  gi.registerCutGenerator(std::move(pCG));
 }
 
 /// Initialize the SEC cut generator
@@ -1069,7 +1069,7 @@ void p_sec_cutgen(SolverInstanceBase& si, const Call* call) {
   //     cout << "  NEXT_CUTGEN" << endl;
   //     pCG->print( cout );
 
-  gi.registerCutGenerator(move(pCG));
+  gi.registerCutGenerator(std::move(pCG));
 }
 
 /// SCIP's bound disj

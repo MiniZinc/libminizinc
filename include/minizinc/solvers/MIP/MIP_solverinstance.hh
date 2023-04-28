@@ -86,7 +86,7 @@ protected:
 public:
   void registerCutGenerator(std::unique_ptr<CutGen>&& pCG) {
     getMIPWrapper()->cbui.cutMask |= pCG->getMask();
-    _cutGenerators.push_back(move(pCG));
+    _cutGenerators.push_back(std::move(pCG));
   }
 
   double lastIncumbent;

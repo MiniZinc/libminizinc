@@ -867,7 +867,7 @@ private:
         nVRest.rhs = -nVRest.rhs;
         ++nVD;
       } else {
-        rhsLin.push_back(std::make_pair(vars[i], coefs[i]));
+        rhsLin.emplace_back(vars[i], coefs[i]);
       }
     }
     MZN_MIPD_assert_hard(1 >= nVD);

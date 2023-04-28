@@ -176,17 +176,16 @@ void ChuffedSolverInstance::processFlatZinc() {
         auto* ident = Expression::cast<Id>(e);
         if (ident->type().isAnn()) {
           return new FlatZinc::AST::Atom(ident->str().c_str());
-        } else if (ident->type().dim() > 0) {
+        }
+        if (ident->type().dim() > 0) {
           assert(ident->decl()->e() != nullptr);
           return toNode(ident->decl()->e());
-        } else {
-          auto& var = _variableMap.get(ident->decl()->id());
-          if (var.isBool()) {
-            return new FlatZinc::AST::BoolVar(var.index());
-          }
-          return new FlatZinc::AST::IntVar(var.index());
         }
-        break;
+        auto& var = _variableMap.get(ident->decl()->id());
+        if (var.isBool()) {
+          return new FlatZinc::AST::BoolVar(var.index());
+        }
+        return new FlatZinc::AST::IntVar(var.index());
       }
       case Expression::E_CALL: {
         auto* c = Expression::cast<Call>(e);
@@ -214,15 +213,14 @@ void ChuffedSolverInstance::processFlatZinc() {
           if (isv->size() == 1) {
             return new FlatZinc::AST::SetLit(static_cast<int>(isv->min(0).toInt()),
                                              static_cast<int>(isv->max(0).toInt()));
-          } else {
-            std::vector<int> vs(isv->card().toInt());
-            for (unsigned int i = 0; isv->size(); i++) {
-              for (auto j = isv->min(i); j <= isv->max(i); j++) {
-                vs.push_back(static_cast<int>(j.toInt()));
-              }
-            }
-            return new FlatZinc::AST::SetLit(vs);
           }
+          std::vector<int> vs(isv->card().toInt());
+          for (unsigned int i = 0; i < isv->size(); i++) {
+            for (auto j = isv->min(i); j <= isv->max(i); j++) {
+              vs.push_back(static_cast<int>(j.toInt()));
+            }
+          }
+          return new FlatZinc::AST::SetLit(vs);
         }
       }
       default:
@@ -243,16 +241,14 @@ void ChuffedSolverInstance::processFlatZinc() {
       FlatZinc::AST::Array* ann = nullptr;
       if (!Expression::ann(c).isEmpty()) {
         std::vector<FlatZinc::AST::Node*> annotations;
-        for (auto& ann : Expression::ann(c)) {
+        for (const auto& ann : Expression::ann(c)) {
           annotations.push_back(toNode(ann));
         }
         ann = new FlatZinc::AST::Array(annotations);
       }
-      _space->postConstraint(FlatZinc::ConExpr(c->id().c_str(), new FlatZinc::AST::Array(args)),
-                             ann);
-      if (ann != nullptr) {
-        delete ann;
-      }
+      FlatZinc::FlatZincSpace::postConstraint(
+          FlatZinc::ConExpr(c->id().c_str(), new FlatZinc::AST::Array(args)), ann);
+      delete ann;
     }
   }
 
@@ -261,7 +257,7 @@ void ChuffedSolverInstance::processFlatZinc() {
   FlatZinc::AST::Array* ann = nullptr;
   if (!si->ann().isEmpty()) {
     std::vector<FlatZinc::AST::Node*> annotations;
-    for (auto& ann : si->ann()) {
+    for (const auto& ann : si->ann()) {
       annotations.push_back(toNode(ann));
     }
     ann = new FlatZinc::AST::Array(annotations);
@@ -282,9 +278,7 @@ void ChuffedSolverInstance::processFlatZinc() {
       break;
   }
 
-  if (ann != nullptr) {
-    delete ann;
-  }
+  delete ann;
 }
 
 SolverInstanceBase::Status ChuffedSolverInstance::solve() {
@@ -323,7 +317,7 @@ SolverInstanceBase::Status ChuffedSolverInstance::solve() {
   if (lastSolutionOnly && engine.solutions > 0) {
     // Print optimal solution
     GCLock lock;
-    SolverInstanceBase::printSolution();
+    printSolution();
   }
   switch (engine.status) {
     case RESULT::RES_UNK:
@@ -361,7 +355,7 @@ Expression* ChuffedSolverInstance::getSolutionValue(Id* i) {
     switch (ident->type().bt()) {
       case Type::BT_BOOL:
         assert(var.isBool());
-        return Constants::constants().boollit(_space->bv[var.index()].getVal());
+        return Constants::constants().boollit(_space->bv[var.index()].getVal() != 0);
       case Type::BT_INT:
         assert(var.isInt());
         return IntLit::a(_space->iv[var.index()]->getVal());
@@ -400,13 +394,13 @@ void ChuffedSolverInstance::printStatistics() {
     ss.add("optTime", to_sec(engine.opt_time));
   }
   ss.add("baseMem", engine.base_memory);
-  ss.add("trailMem", engine.trail.capacity() * sizeof(TrailElem) / 1048576.0);
+  ss.add("trailMem", static_cast<double>(engine.trail.capacity() * sizeof(TrailElem)) / 1048576.0);
   ss.add("randomSeed", so.rnd_seed);
 }
 
 #define CHUFFED_VERSION_TO_STRING(x) #x
 
-std::string ChuffedSolverFactory::getVersion(SolverInstanceBase::Options*) {
+std::string ChuffedSolverFactory::getVersion(SolverInstanceBase::Options* /*opt*/) {
   return CHUFFED_VERSION_TO_STRING(CHUFFED_VERSION);
 }
 

@@ -29,7 +29,6 @@
 #ifdef HAS_PIDPATH
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
 #include <libproc.h>
 #include <unistd.h>
 #elif defined(HAS_GETMODULEFILENAME) || defined(HAS_GETFILEATTRIBUTES)

@@ -365,7 +365,7 @@ static int statusOfCbc = 0;
 static CoinSighandler_t saveSignal = static_cast<CoinSighandler_t>(nullptr);
 
 extern "C" {
-static void
+void
 #if defined(_MSC_VER)
     __cdecl
 #endif  // _MSC_VER

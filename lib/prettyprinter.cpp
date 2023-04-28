@@ -2018,7 +2018,7 @@ PrettyPrinter::PrettyPrinter(int maxwidth, int indentationBase, bool sim, bool d
 const std::vector<Line>& PrettyPrinter::getCurrentItemLines() const { return _items[_currentItem]; }
 
 void PrettyPrinter::addLine(int indentation, bool bp, bool simpl, int level) {
-  _items[_currentItem].push_back(Line(indentation));
+  _items[_currentItem].emplace_back(indentation);
   _currentLine++;
   if (bp && _deeplySimp) {
     _linesToSimplify[_currentItem].addLine(level, _currentLine);
