@@ -23,6 +23,8 @@ Bug fixes:
    (:bugref:`685`).
 -  Fix incorrect context being used when flattening some binary operators
    (:bugref:`683`).
+-  Fix with problem with domain copies when varifying a type-inst synonyms
+   (:bugref:`687`).
 
 .. _v2.7.3:
 

@@ -26,7 +26,7 @@ namespace MiniZinc {
 ///
 /// TypeInst objects cannot be shared between VarDecl's, so domains of records/tuples require copies
 /// of their domain's TypeInst objects, but normal domains can be shared by multiple VarDecl's
-Expression* domain_shallow_copy(Expression* orig) {
+Expression* domain_shallow_copy(EnvI& env, Expression* orig, Type type) {
   assert(GC::locked());
   if (orig == nullptr) {
     return nullptr;
@@ -35,14 +35,16 @@ Expression* domain_shallow_copy(Expression* orig) {
   if (al == nullptr) {
     return orig;
   }
+  StructType* st = env.getStructType(type);
   std::vector<Expression*> clone(al->size());
   for (unsigned int i = 0; i < al->size(); i++) {
+    Type nt = (*st)[i];
     auto* ti = Expression::cast<TypeInst>((*al)[i]);
-    clone[i] = new TypeInst(Expression::loc(ti), ti->type(), ti->ranges(),
-                            domain_shallow_copy(ti->domain()));
+    clone[i] = new TypeInst(Expression::loc(ti), nt, ti->ranges(),
+                            domain_shallow_copy(env, ti->domain(), nt));
   }
   ArrayLit* tup = ArrayLit::constructTuple(Expression::loc(orig), clone);
-  tup->type(Expression::type(orig));
+  tup->type(type);
   return tup;
 }
 
@@ -1179,16 +1181,18 @@ bool TypeInst::resolveAlias(EnvI& env) {
   auto* alias = Expression::cast<TypeInst>(Expression::cast<Id>(domain())->decl()->e());
   Type ntype = alias->type();
   if (type().tiExplicit() && ntype.ti() != type().ti()) {
-    if (ntype.structBT()) {
-      ntype.typeId(0);
+    if (type().ti() == Type::TI_VAR) {
+      ntype.mkVar(env);
+    } else {
+      ntype.mkPar(env);
     }
-    ntype.ti(type().ti());
   }
   if (type().otExplicit() && ntype.ot() != type().ot()) {
-    if (ntype.structBT()) {
-      ntype.typeId(0);
+    if (type().ot() == Type::OT_OPTIONAL) {
+      ntype.mkOpt(env);
+    } else {
+      ntype.mkPresent(env);
     }
-    ntype.ot(type().ot());
   }
   if (type().st() == Type::ST_SET) {
     if (ntype.st() == Type::ST_SET) {
@@ -1246,7 +1250,7 @@ bool TypeInst::resolveAlias(EnvI& env) {
     setRanges(ranges);
   }
   type(ntype);
-  domain(domain_shallow_copy(alias->domain()));
+  domain(domain_shallow_copy(env, alias->domain(), ntype));
   assert(!is_aliased());  // Resolving aliases should be done in order
   return true;
 }
