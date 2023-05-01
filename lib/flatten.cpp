@@ -3485,7 +3485,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
         assert(Expression::isa<IntLit>(fa->field()));
         IntVal i = IntLit::v(Expression::cast<IntLit>(fa->field()));
 
-        auto* al = eval_array_lit(env, Expression::cast<ArrayLit>(fa->v()));
+        auto* al = Expression::cast<ArrayLit>(eval_array_lit(env, fa->v()));
 
         return flat_cv_exp(env, ctx, (*al)[i.toInt() - 1]);
       }
