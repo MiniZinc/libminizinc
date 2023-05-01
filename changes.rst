@@ -18,6 +18,9 @@ Bug fixes:
    tuple/record types (:bugref:`681`).
 -  Fix regression in the creation of seperate domain constraints where domains
    contained infinity (:bugref:`684`).
+-  Fix a flattening the decompositions of lex_less(eq) reifications in the
+   standard library, caused by a missing ``promise_total`` annotation
+   (:bugref:`685`).
 
 .. _v2.7.3:
 

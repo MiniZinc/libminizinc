@@ -1349,7 +1349,7 @@ function int: mzn_min_or_0(set of int: X) =
 predicate lex_less_std_decomposition(
   array[int] of var $T: x ::promise_ctx_antitone,
   array[int] of var $T: y ::promise_ctx_monotone,
-) =
+) ::promise_total =
   if length(y) = 0 then false
   elseif length(x) = 0 then true
   else
@@ -1373,7 +1373,7 @@ predicate lex_less_std_decomposition(
 predicate lex_lesseq_std_decomposition(
   array[int] of var $T: x ::promise_ctx_antitone,
   array[int] of var $T: y ::promise_ctx_monotone,
-) =
+) ::promise_total =
   if length(x) = 0 then true
   elseif length(y) = 0 then length(x) = 0
   else
