@@ -1176,6 +1176,11 @@ void TopoSorter::run(EnvI& env, Expression* e) {
   if (e == nullptr) {
     return;
   }
+  if (Expression::eid(e) != Expression::E_VARDECL) {
+    for (auto it = Expression::ann(e).begin(); it != Expression::ann(e).end(); ++it) {
+      run(env, *it);
+    }
+  }
   switch (Expression::eid(e)) {
     case Expression::E_INTLIT:
     case Expression::E_FLOATLIT:
@@ -1276,6 +1281,9 @@ void TopoSorter::run(EnvI& env, Expression* e) {
         pos.insert(std::pair<VarDecl*, int>(ve, -1));
         run(env, ve->ti());
         run(env, ve->e());
+        for (auto it = Expression::ann(e).begin(); it != Expression::ann(e).end(); ++it) {
+          run(env, *it);
+        }
         ve->payload(static_cast<int>(decls.size()));
         decls.push_back(ve);
         pi = pos.find(ve);

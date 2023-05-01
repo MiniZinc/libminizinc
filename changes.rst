@@ -10,6 +10,8 @@ Changes:
 ^^^^^^^^
 -  ``ASTString`` constructor that uses ``std::string`` is now explicit to avoid
    unexpected or unnecessary GC allocation.
+-  Circular definitions through the use of annotations will now be reported as
+   type errors, rather incurring infinite recursion (:bugref:`680`).
 
 Bug fixes:
 ^^^^^^^^^^
