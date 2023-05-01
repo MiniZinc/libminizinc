@@ -21,6 +21,8 @@ Bug fixes:
 -  Fix a flattening the decompositions of lex_less(eq) reifications in the
    standard library, caused by a missing ``promise_total`` annotation
    (:bugref:`685`).
+-  Fix incorrect context being used when flattening some binary operators
+   (:bugref:`683`).
 
 .. _v2.7.3:
 

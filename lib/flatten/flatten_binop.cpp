@@ -1381,7 +1381,7 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
         }
         ret.r = flat_exp(env, ctx, cc, r, ctx.partialityVar(env)).r;
       } else {
-        ees[2].b = flat_exp(env, Ctx(), cc, nullptr, env.constants.varTrue).r;
+        ees[2].b = flat_exp(env, ctx, cc, nullptr, env.constants.varTrue).r;
         if (doubleNeg) {
           GCLock lock;
           Type t = Expression::type(ees[2].b());
