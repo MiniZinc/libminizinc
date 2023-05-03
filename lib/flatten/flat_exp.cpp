@@ -135,7 +135,7 @@ EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
                 Expression::type(e).bt() != Type::BT_ANN;
 
 #ifdef OUTPUT_CALLTREE
-  if (auto* call = e->dynamicCast<Call>()) {
+  if (auto* call = Expression::dynamicCast<Call>(e)) {
     for (int i = 0; i < env.callDepth; ++i) {
       std::cerr << "──";
     }
