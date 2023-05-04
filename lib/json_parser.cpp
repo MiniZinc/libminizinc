@@ -96,8 +96,30 @@ Location JSONParser::errLocation() const {
 JSONParser::Token JSONParser::readToken(istream& is) {
   string result;
   char buf[1];
-  enum { S_NOTHING, S_STRING, S_STRING_ESCAPE, S_INT, S_FLOAT } state;
+  enum { S_NOTHING, S_STRING, S_STRING_ESCAPE, S_INT, S_FLOAT, S_FLOAT_EXPONENT } state;
   state = S_NOTHING;
+
+  auto read_exponent_start = [&]() {
+    char next[1];
+    is.read(next, sizeof(next));
+    _column += sizeof(next);
+    if (is.eof()) {
+      throw JSONError(_env, errLocation(), "unexpected end of file");
+    }
+    if (is.good() && next[0] == '-') {
+      result += next[0];
+      is.read(next, sizeof(next));
+      _column += sizeof(next);
+      if (is.eof()) {
+        throw JSONError(_env, errLocation(), "unexpected end of file");
+      }
+    }
+    if (!is.good() || !(next[0] >= '0' && next[0] <= '9')) {
+      throw JSONError(_env, errLocation(), "unexpected token `" + string(next, is.gcount()) + "'");
+    }
+    result += next[0];
+  };
+
   while (is.good()) {
     is.read(buf, sizeof(buf));
     _column += sizeof(buf);
@@ -278,6 +300,10 @@ JSONParser::Token JSONParser::readToken(istream& is) {
         if (buf[0] == '.') {
           result += buf[0];
           state = S_FLOAT;
+        } else if (buf[0] == 'e' || buf[0] == 'E') {
+          result += buf[0];
+          read_exponent_start();
+          state = S_FLOAT_EXPONENT;
         } else if (buf[0] >= '0' && buf[0] <= '9') {
           result += buf[0];
         } else {
@@ -290,6 +316,22 @@ JSONParser::Token JSONParser::readToken(istream& is) {
         }
         break;
       case S_FLOAT:
+        if (buf[0] == 'e' || buf[0] == 'E') {
+          result += buf[0];
+          read_exponent_start();
+          state = S_FLOAT_EXPONENT;
+        } else if (buf[0] >= '0' && buf[0] <= '9') {
+          result += buf[0];
+        } else {
+          is.unget();
+          std::istringstream iss(result);
+          double v;
+          iss >> v;
+          state = S_NOTHING;
+          return Token(v);
+        }
+        break;
+      case S_FLOAT_EXPONENT:
         if (buf[0] >= '0' && buf[0] <= '9') {
           result += buf[0];
         } else {

@@ -27,6 +27,8 @@ Bug fixes:
    (:bugref:`683`).
 -  Fix with problem with domain copies when varifying a type-inst synonyms
    (:bugref:`687`).
+-  Add missing support for floating point literals containing exponents in the
+   JSON parser (:bugref:`690`).
 
 .. _v2.7.3:
 
