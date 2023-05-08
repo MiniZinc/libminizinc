@@ -139,7 +139,8 @@ EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
     for (int i = 0; i < env.callDepth; ++i) {
       std::cerr << "──";
     }
-    std::cerr << *call << std::endl;
+    std::cerr << *call << " ::" << *env.ctxToAnn(Expression::type(e).isbool() ? ctx.b : ctx.i)
+              << std::endl;
     env.callDepth++;
 
     EE ee = flatten_call(env, ctx, e, r, b);
