@@ -30,7 +30,8 @@ Bug fixes:
 -  Add missing support for floating point literals containing exponents in the
    JSON parser (:bugref:`690`).
 -  Fix a problem where the compiler would incorrectly set the computed domain
-   flag. (:bugref:`691`).
+   flag (:bugref:`691`).
+-  Resolve garbage collection issue in the typechecker (:bugref:`688`).
 
 .. _v2.7.3:
 

@@ -3580,7 +3580,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
   {
     Typer<false> ty(env.envi(), m, typeErrors);
     BottomUpIterator<Typer<false>> bottomUpTyper(ty);
-    for (auto& decl : ts.decls) {
+    for (auto& declKA : ts.decls) {
+      auto* decl = Expression::cast<VarDecl>(declKA());
       decl->payload(0);
       if (decl->toplevel()) {
         bottomUpTyper.run(decl->ti());
@@ -4152,7 +4153,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     typeErrors.push_back(e);
   }
 
-  for (auto& decl : ts.decls) {
+  for (auto& declKA : ts.decls) {
+    auto* decl = Expression::cast<VarDecl>(declKA());
     if (decl->isTypeAlias()) {
       continue;
     }

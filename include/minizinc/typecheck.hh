@@ -61,7 +61,7 @@ public:
 /// Topological sorting of items
 class TopoSorter {
 public:
-  typedef std::vector<VarDecl*> Decls;
+  typedef std::vector<KeepAlive> Decls;
   typedef std::unordered_map<VarDecl*, int> PosMap;
 
   /// List of all declarations
