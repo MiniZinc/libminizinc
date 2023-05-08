@@ -2955,14 +2955,14 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
                     env.fail();
                   }
                 }
-                if (!inArray) {
+                if (!inArray && (domain == nullptr || !domain->equal(combinedDomain))) {
                   // Make our domain match the intersection of ours and the RHS
                   // if we're not an array (if we're an array, we can't update our domain
                   // since it should really be the union of all the RHS array literal member
                   // domains)
                   ti->domain(new SetLit(Location().introduce(), combinedDomain));
                   ti->setComputedDomain(true);
-                  domChange = domChange || domain == nullptr || !domain->equal(combinedDomain);
+                  domChange = true;
                 }
                 if (ident != nullptr &&
                     (rhsDomain == nullptr || !combinedDomain->equal(rhsDomain))) {
@@ -3009,32 +3009,20 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
                     env.fail();
                   }
                 }
-                FloatSetRanges fsr(combinedDomain);
-                if (!inArray) {
+                if (!inArray && (domain == nullptr || !domain->equal(combinedDomain))) {
                   // Make our domain match the intersection of ours and the RHS
                   // if we're not an array (if we're an array, we can't update our domain
                   // since it should really be the union of all the RHS array literal member
                   // domains)
                   ti->domain(new SetLit(Location().introduce(), combinedDomain));
                   ti->setComputedDomain(true);
-                  if (!domChange && domain != nullptr) {
-                    FloatSetRanges fsr1(domain);
-                    domChange = !Ranges::equal(fsr, fsr1);
-                  }
+                  domChange = true;
                 }
-                if (ident != nullptr) {
+                if (ident != nullptr &&
+                    (rhsDomain == nullptr || !combinedDomain->equal(rhsDomain))) {
                   // If the RHS is an identifier, make its domain match
-                  if (rhsDomain == nullptr) {
-                    set_computed_domain(env, ident->decl(),
-                                        new SetLit(Location().introduce(), combinedDomain), false);
-                  } else {
-                    FloatSetRanges fsr1(rhsDomain);
-                    if (!Ranges::equal(fsr, fsr1)) {
-                      set_computed_domain(env, ident->decl(),
-                                          new SetLit(Location().introduce(), combinedDomain),
-                                          false);
-                    }
-                  }
+                  set_computed_domain(env, ident->decl(),
+                                      new SetLit(Location().introduce(), combinedDomain), false);
                 }
               }
             }
