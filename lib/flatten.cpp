@@ -5422,4 +5422,41 @@ std::vector<Expression*> field_slices(EnvI& env, Expression* arrExpr) {
   return field_al;
 }
 
+void cse_result_change_ctx(EnvI& env, Expression* cseRes, BCtx newCtx) {
+  std::vector<Expression*> stack({cseRes});
+  bool first = true;
+
+  while (!stack.empty()) {
+    Expression* back = stack.back();
+    stack.pop_back();
+    auto* ident = Expression::dynamicCast<Id>(back);
+    if (ident != nullptr && ident->decl() != nullptr && ident->decl()->e() != nullptr) {
+      if (auto* al = Expression::dynamicCast<ArrayLit>(ident->decl()->e())) {
+        for (unsigned int i = 0; i < al->size(); i++) {
+          stack.push_back((*al)[i]);
+        }
+      } else if (auto* redirect = Expression::dynamicCast<Id>(ident->decl()->e())) {
+        stack.push_back(redirect);
+      } else if (auto* c = Expression::dynamicCast<Call>(ident->decl()->e())) {
+        BCtx vdCtx;
+        bool annotated;
+        std::tie(vdCtx, annotated) = env.annToCtx(ident->decl());
+        if ((!first || vdCtx != newCtx) && vdCtx != C_ROOT && vdCtx != C_MIX) {
+          env.addCtxAnn(ident->decl(), (first && newCtx == C_ROOT) ? C_ROOT : C_MIX);
+          for (unsigned int i = 0; i < c->argCount(); i++) {
+            if (auto* al = Expression::dynamicCast<ArrayLit>(c->arg(i))) {
+              for (unsigned int i = 0; i < al->size(); i++) {
+                stack.push_back((*al)[i]);
+              }
+            } else if (auto* arg = Expression::dynamicCast<Id>(c->arg(i))) {
+              stack.push_back(redirect);
+            }
+          }
+        }
+      }
+    }
+    first = false;
+  }
+}
+
 }  // namespace MiniZinc

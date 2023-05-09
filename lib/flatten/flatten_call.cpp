@@ -993,32 +993,13 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
       cr = cr_c;
     }
 
-    bool needsFlatten = true;
     auto cit = env.cseMapFind(cr());
     if (cit != env.cseMapEnd()) {
-      needsFlatten = false;
       if (Expression::type(e).isbool() && !Expression::type(e).isOpt()) {
-        auto* ident = Expression::dynamicCast<Id>(cit->second.r);
-        if (ident != nullptr && ident->decl() != nullptr && ident->decl()->e() != nullptr) {
-          BCtx cseCtx;
-          bool annotated;
-          std::tie(cseCtx, annotated) = env.annToCtx(ident->decl());
-          if (cseCtx != ctx.b && cseCtx != C_ROOT && cseCtx != C_MIX) {
-            // Can't use CSE value because context doesn't match
-            needsFlatten = true;
-            if (ctx.b != C_ROOT) {
-              ctx.b = C_MIX;
-            }
-            env.addCtxAnn(ident->decl(), C_MIX);
-            env.cseMapRemove(e);
-            env.cseMapRemove(cr());
-          }
-        }
-        if (!needsFlatten) {
-          ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
-          args_ee.emplace_back(nullptr, cit->second.r);
-          ret.r = conj(env, r, ctx, args_ee);
-        }
+        cse_result_change_ctx(env, cit->second.r, ctx.b);
+        ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
+        args_ee.emplace_back(nullptr, cit->second.r);
+        ret.r = conj(env, r, ctx, args_ee);
       } else {
         if (env.ignorePartial) {
           ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
@@ -1028,9 +1009,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
         }
         ret.r = bind(env, ctx, r, cit->second.r);
       }
-    }
-
-    if (needsFlatten) {
+    } else {
       for (unsigned int i = 0; i < decl->paramCount(); i++) {
         if (decl->param(i)->type().dim() > 0) {
           // Check array index sets

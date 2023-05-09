@@ -12,6 +12,9 @@ Changes:
    unexpected or unnecessary GC allocation.
 -  Circular definitions through the use of annotations will now be reported as
    type errors, rather incurring infinite recursion (:bugref:`680`).
+-  Optimize the compilation of identical calls in different contexts by
+   recursively changing the contexts of the (uncompiled) dependent calls,
+   instead of flattening multiple times.
 
 Bug fixes:
 ^^^^^^^^^^

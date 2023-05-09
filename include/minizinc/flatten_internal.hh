@@ -950,4 +950,8 @@ void simplify_lin(std::vector<typename LinearTraits<Lit>::Val>& c, std::vector<K
   x.resize(ci);
 }
 
+/// Helper function used to recursively change the context for (to be reified) functionally defined
+/// vardecls
+void cse_result_change_ctx(EnvI& env, Expression* cseRes, BCtx newCtx);
+
 }  // namespace MiniZinc

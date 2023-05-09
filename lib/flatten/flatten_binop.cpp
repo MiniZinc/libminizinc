@@ -1330,41 +1330,21 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
       }
     }
 
-    bool needsFlatten = true;
     auto cit = env.cseMapFind(cc);
     if (cit != env.cseMapEnd()) {
-      needsFlatten = false;
-      auto* ident = Expression::dynamicCast<Id>(cit->second.r);
-      if (ident != nullptr && ident->decl() != nullptr && ident->decl()->e() != nullptr) {
-        BCtx cseCtx;
-        bool annotated;
-        std::tie(cseCtx, annotated) = env.annToCtx(ident->decl());
-        if (cseCtx != ctx.b && cseCtx != C_ROOT && cseCtx != C_MIX) {
-          // Can't use CSE value because context doesn't match
-          needsFlatten = true;
-          if (ctx.b != C_ROOT) {
-            ctx.b = C_MIX;
-          }
-          env.addCtxAnn(ident->decl(), C_MIX);
-          env.cseMapRemove(e);
-          env.cseMapRemove(cc);
-        }
+      cse_result_change_ctx(env, cit->second.r, ctx.b);
+      ees[2].b = cit->second.r;
+      if (doubleNeg) {
+        Type t = Expression::type(ees[2].b());
+        ees[2].b = new UnOp(Location().introduce(), UOT_NOT, ees[2].b());
+        Expression::type(ees[2].b(), t);
       }
-      if (!needsFlatten) {
-        ees[2].b = cit->second.r;
-        if (doubleNeg) {
-          Type t = Expression::type(ees[2].b());
-          ees[2].b = new UnOp(Location().introduce(), UOT_NOT, ees[2].b());
-          Expression::type(ees[2].b(), t);
-        }
-        if (Id* id = Expression::dynamicCast<Id>(ees[2].b())) {
-          env.addCtxAnn(id->decl(), ctx.b);
-        }
-        ret.r = conj(env, r, ctx, ees);
-        GC::unlock();
+      if (Id* id = Expression::dynamicCast<Id>(ees[2].b())) {
+        env.addCtxAnn(id->decl(), ctx.b);
       }
-    }
-    if (needsFlatten) {
+      ret.r = conj(env, r, ctx, ees);
+      GC::unlock();
+    } else {
       bool singleExp = true;
       for (auto& ee : ees) {
         if (!istrue(env, ee.b())) {
