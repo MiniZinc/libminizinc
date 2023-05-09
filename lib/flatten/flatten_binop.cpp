@@ -1196,6 +1196,54 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
     ret.r = conj(env, r, ctx, ees);
     return ret;
   }
+  if (Expression::type(e0.r()).isPar() && (bot == BOT_EQ)) {
+    std::swap(e0, e1);
+  }
+
+  // Inclusions in set variable domain constraints
+  // Case 1: direct set assignment
+  if (isBuiltin && bot == BOT_EQ && ctx.b == C_ROOT && r == env.constants.varTrue &&
+      Expression::type(e1.r()).isPar() && Expression::type(e1.r()).isIntSet() &&
+      Expression::isa<Id>(e0.r())) {
+    auto* vd = Expression::cast<Id>(e0.r())->decl();
+    IntSetVal* sl = eval_intset(env, e1.r());
+    if (vd->ti()->domain() != nullptr) {
+      IntSetRanges slr(sl);
+      IntSetRanges dom(eval_intset(env, vd->ti()->domain()));
+      if (!Ranges::subset<IntSetRanges, IntSetRanges>(slr, dom)) {
+        env.fail("assignment to value outside of domain", Expression::loc(bo));
+      }
+    }
+    {
+      GCLock lock;
+      set_computed_value(env, vd, new SetLit(Expression::loc(e1.r()), sl));
+    }
+    ees[2].b = env.constants.literalTrue;
+    ret.r = conj(env, r, ctx, ees);
+    return ret;
+  }
+  // Case 2: exclusion from domain, e.g., not (5 in x)
+  if (isBuiltin && bot == BOT_IN && ctx.b == C_NEG && ctx.neg == true &&
+      r == env.constants.varTrue && Expression::type(e0.r()).isPar() &&
+      Expression::type(e1.r()).isIntSet() && Expression::isa<Id>(e1.r())) {
+    auto* vd = Expression::cast<Id>(e1.r())->decl();
+    if (vd->ti()->domain() != nullptr) {
+      GCLock lock;
+      // Rewrite to subset to change the domain
+      IntVal i = eval_int(env, e0.r());
+      IntSetRanges ri(IntSetVal::a(i, i));
+      IntSetRanges dom(eval_intset(env, vd->ti()->domain()));
+      Ranges::Diff<IntVal, IntSetRanges, IntSetRanges> ns(dom, ri);
+      ctx.b = C_ROOT;
+      ctx.neg = false;
+      std::swap(e0, e1);
+      bot = BOT_SUBSET;
+
+      auto* val = new SetLit(Location().introduce(), IntSetVal::ai(ns));
+      val->type(Type::parsetint());
+      e1.r = val;
+    }
+  }
 
   if (isBuiltin && Expression::type(e1.r()).isPar() && Expression::isa<Id>(e0.r()) &&
       (bot == BOT_IN || bot == BOT_SUBSET)) {

@@ -15,6 +15,8 @@ Changes:
 -  Optimize the compilation of identical calls in different contexts by
    recursively changing the contexts of the (uncompiled) dependent calls,
    instead of flattening multiple times.
+-  Change domains of set variables when encountering (par) equalities, or
+   negated ``in`` constraints at the root level.
 
 Bug fixes:
 ^^^^^^^^^^

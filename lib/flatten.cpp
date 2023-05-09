@@ -148,6 +148,65 @@ void set_computed_domain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_co
   vd->ti()->setComputedDomain(is_computed);
 }
 
+// Create assignment constraints. Return true if successful.
+bool create_explicit_assignment_constraints(EnvI& envi, VarDecl* vd, Expression* val) {
+  assert(vd->type().dim() == 0);
+  Call* call;
+  Location iloc = Location().introduce();
+
+  if (vd->type().isIntSet()) {
+    assert(Expression::type(val).isIntSet());
+    call = Call::a(iloc, envi.constants.ids.set_.eq, {vd->id(), val});
+  } else {
+    assert(vd->type().st() == Type::ST_PLAIN);
+    if (vd->type().bt() == Type::BT_BOOL) {
+      call = Call::a(iloc, envi.constants.ids.bool_.eq, {vd->id(), val});
+    } else if (vd->type().bt() == Type::BT_INT) {
+      call = Call::a(iloc, envi.constants.ids.int_.eq, {vd->id(), val});
+    } else if (vd->type().bt() == Type::BT_FLOAT) {
+      call = Call::a(iloc, envi.constants.ids.float_.eq, {vd->id(), val});
+    } else {
+      return false;
+    }
+  }
+
+  CallStackItem csi(envi, IntLit::a(0));
+  Expression::ann(call).add(envi.constants.ann.domain_change_constraint);
+  Expression::type(call, Type::varbool());
+  call->decl(envi.model->matchFn(envi, call, true));
+  flat_exp(envi, Ctx(), call, envi.constants.varTrue, envi.constants.varTrue);
+  return true;
+}
+
+void set_computed_value(EnvI& envi, VarDecl* vd, Expression* val) {
+  assert(Expression::type(val).isPar());
+  if (envi.hasReverseMapper(vd->id())) {
+    if (!create_explicit_assignment_constraints(envi, vd, val)) {
+      std::ostringstream ss;
+      ss << "Unable to create asignment constraint for reverse mapped variable: " << *vd->id()
+         << " = " << *val << std::endl;
+      throw EvalError(envi, Expression::loc(val), ss.str());
+    }
+  }
+  if (envi.fopts.recordDomainChanges &&
+      !Expression::ann(vd).contains(envi.constants.ann.is_defined_var) && !vd->introduced() &&
+      !(vd->type().dim() > 0)) {
+    if (create_explicit_assignment_constraints(envi, vd, val)) {
+      return;
+    }
+    std::cerr << "Warning: assignment not handled by -g mode: " << *vd->id() << " = " << *val
+              << std::endl;
+  }
+  Type nty = vd->type();
+  nty.mkPar(envi);
+  vd->type(nty);
+  {
+    GCLock lock;
+    vd->ti(new TypeInst(Expression::loc(vd), nty));
+  }
+  vd->e(val);
+}
+
 /// Output operator for contexts
 template <class Char, class Traits>
 std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& os, Ctx& ctx) {
