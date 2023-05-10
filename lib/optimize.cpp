@@ -559,6 +559,13 @@ void optimize(Env& env, bool chain_compression) {
             push_dependent_constraints(envi, vdi->e()->id(), constraintQueue);
           }
         }
+        if (vdi->e()->type().isIntSet()) {
+          if (vdi->e()->e() != nullptr && Expression::isa<SetLit>(vdi->e()->e())) {
+            // Set variable is assigned a literal
+            push_vardecl(envi, vdi, i, vardeclQueue);
+            push_dependent_constraints(envi, vdi->e()->id(), constraintQueue);
+          }
+        }
       }
     }
 
@@ -832,6 +839,8 @@ void optimize(Env& env, bool chain_compression) {
           if (fsv->size() == 1 && fsv->card() == 1) {
             simplify_constraint(envi, m[var_idx], deletedVarDecls, constraintQueue, vardeclQueue);
           }
+        } else if (vd->type().isIntSet() && (vd->e() != nullptr)) {
+          simplify_constraint(envi, m[var_idx], deletedVarDecls, constraintQueue, vardeclQueue);
         }
       }  // end of processing of variable queue
 
@@ -1058,6 +1067,14 @@ void optimize(Env& env, bool chain_compression) {
                              Expression::cast<SetLit>(cur->ti()->domain())->fsv()->max()) {
                 val = FloatLit::a(Expression::cast<SetLit>(cur->ti()->domain())->fsv()->min());
               }
+            } else if (cur->type().isIntSet()) {
+              if (cur->e() != nullptr && Expression::isa<SetLit>(cur->e())) {
+                val = cur->e();
+              }
+            } else if (cur->type().dim() > 0 && cur->type().isPar()) {
+              if (cur->e() != nullptr && Expression::isa<ArrayLit>(cur->e())) {
+                val = cur->e();
+              }
             }
             if (val != nullptr) {
               // Find corresponding variable in output model and fix it
@@ -1117,6 +1134,12 @@ protected:
           return FloatLit::a(Expression::cast<SetLit>(vd->ti()->domain())->fsv()->min());
         }
       }
+      if (vd->type().isIntSet()) {
+        if ((vd->e() != nullptr) && Expression::isa<SetLit>(vd->e())) {
+          _removed.push_back(vd);
+          return vd->e();
+        }
+      }
     }
     return e;
   }
@@ -1143,6 +1166,25 @@ public:
         if ((i->e() == nullptr || i->ti()->domain() == nullptr || i->ti()->computedDomain()) &&
             !is_output(i)) {
           deletedVarDecls.push_back(i);
+        }
+      }
+    }
+    // If we are replacing in an array and it is now all par, then remove it (or
+    // move to output model)
+    if (auto* vdi = Item::dynamicCast<VarDeclI>(item)) {
+      if (env.varOccurrences.occurrences(vdi->e()) == 0) {
+        if (auto* al = Expression::dynamicCast<ArrayLit>(vdi->e()->e())) {
+          for (unsigned int i = 0; i < al->size(); i++) {
+            if (!Expression::type((*al)[i]).isPar()) {
+              return;
+            }
+          }
+          Type nt = vdi->e()->type();
+          nt.mkPar(env);
+          vdi->e()->ti()->type(nt);
+          vdi->e()->type(nt);
+          Expression::type(vdi->e()->e(), nt);
+          deletedVarDecls.push_back(vdi->e());
         }
       }
     }
@@ -1194,7 +1236,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
   }
   if (Call* c = Expression::dynamicCast<Call>(con_e)) {
     if (c->id() == env.constants.ids.int_.eq || c->id() == env.constants.ids.bool_.eq ||
-        c->id() == env.constants.ids.float_.eq) {
+        c->id() == env.constants.ids.float_.eq || c->id() == env.constants.ids.set_.eq) {
       if (is_true && Expression::isa<Id>(c->arg(0)) && Expression::isa<Id>(c->arg(1)) &&
           (Expression::cast<Id>(c->arg(0))->decl()->e() == nullptr ||
            Expression::cast<Id>(c->arg(1))->decl()->e() == nullptr)) {
