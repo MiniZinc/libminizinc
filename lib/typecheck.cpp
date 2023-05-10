@@ -1695,6 +1695,12 @@ public:
       if (vi_t.st() == Type::ST_SET) {
         throw TypeError(_env, Expression::loc(sl->v()[i]), "set literals cannot contain sets");
       }
+      if (vi_t.structBT()) {
+        throw TypeError(
+            _env, Expression::loc(sl->v()[i]),
+            std::string("set literals cannot contain ") +
+                (vi_t.bt() == Type::BT_TUPLE ? std::string("tuples") : std::string("records")));
+      }
       if (vi_t.isvar()) {
         ty.ti(Type::TI_VAR);
       }
@@ -2256,7 +2262,8 @@ public:
     }
 
     if (c->set()) {
-      if (Expression::type(c_e).dim() != 0 || Expression::type(c_e).st() == Type::ST_SET) {
+      if (Expression::type(c_e).dim() != 0 || Expression::type(c_e).st() == Type::ST_SET ||
+          Expression::type(c_e).structBT()) {
         throw TypeError(_env, Expression::loc(c_e),
                         "set comprehension expression must be scalar, but is `" +
                             Expression::type(c_e).toString(_env) + "'");

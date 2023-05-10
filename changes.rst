@@ -37,6 +37,7 @@ Bug fixes:
 -  Fix a problem where the compiler would incorrectly set the computed domain
    flag (:bugref:`691`).
 -  Resolve garbage collection issue in the typechecker (:bugref:`688`).
+-  Add missing error message for sets of records and sets of tuples.
 
 .. _v2.7.3:
 
