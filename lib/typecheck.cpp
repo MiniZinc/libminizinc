@@ -1285,7 +1285,7 @@ void TopoSorter::run(EnvI& env, Expression* e) {
           run(env, *it);
         }
         ve->payload(static_cast<int>(decls.size()));
-        decls.push_back(ve);
+        decls.emplace_back(ve);
         pi = pos.find(ve);
         pi->second = static_cast<int>(decls.size()) - 1;
       } else {
