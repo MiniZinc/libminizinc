@@ -42,7 +42,8 @@ protected:
 
 public:
   static ChuffedVariable boolVar(FlatZinc::FlatZincSpace* space, FlatZinc::BoolVarSpec* spec);
-  static ChuffedVariable intVar(FlatZinc::FlatZincSpace* space, FlatZinc::IntVarSpec* spec);
+  static ChuffedVariable intVar(FlatZinc::FlatZincSpace* space, FlatZinc::IntVarSpec* spec,
+                                std::string name);
 
   bool isInt() const { return _t == INT_TYPE; }
   bool isBool() const { return _t == BOOL_TYPE; }

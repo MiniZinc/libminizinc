@@ -26,9 +26,9 @@ ChuffedVariable ChuffedVariable::boolVar(FlatZinc::FlatZincSpace* space,
   return ChuffedVariable(ChuffedVariable::BOOL_TYPE, space->boolVarCount - 1);
 }
 
-ChuffedVariable ChuffedVariable::intVar(FlatZinc::FlatZincSpace* space,
-                                        FlatZinc::IntVarSpec* spec) {
-  space->newIntVar(spec);
+ChuffedVariable ChuffedVariable::intVar(FlatZinc::FlatZincSpace* space, FlatZinc::IntVarSpec* spec,
+                                        std::string name) {
+  space->newIntVar(spec, name);
   if (spec->output) {
     space->setOutputElem(new FlatZinc::AST::IntVar(space->intVarCount - 1));
   }
@@ -117,11 +117,17 @@ void ChuffedSolverInstance::processFlatZinc() {
               }
               FlatZinc::IntVarSpec spec(FlatZinc::Option<FlatZinc::AST::SetLit*>::some(sl), output,
                                         vd->introduced());
-              _variableMap.insert(vd->id(), ChuffedVariable::intVar(_space, &spec));
+              _variableMap.insert(
+                  vd->id(),
+                  ChuffedVariable::intVar(
+                      _space, &spec, std::string(vd->id()->str().c_str(), vd->id()->str().size())));
             } else {
               FlatZinc::IntVarSpec spec(FlatZinc::Option<FlatZinc::AST::SetLit*>::none(), output,
                                         vd->introduced());
-              _variableMap.insert(vd->id(), ChuffedVariable::intVar(_space, &spec));
+              _variableMap.insert(
+                  vd->id(),
+                  ChuffedVariable::intVar(
+                      _space, &spec, std::string(vd->id()->str().c_str(), vd->id()->str().size())));
             }
           } else {
             Expression* init = vd->e();
@@ -129,11 +135,17 @@ void ChuffedSolverInstance::processFlatZinc() {
               auto& var = _variableMap.get(ident);
               assert(var.isInt());
               FlatZinc::IntVarSpec spec(FlatZinc::Alias(var.index()), output, vd->introduced());
-              _variableMap.insert(vd->id(), ChuffedVariable::intVar(_space, &spec));
+              _variableMap.insert(
+                  vd->id(),
+                  ChuffedVariable::intVar(
+                      _space, &spec, std::string(vd->id()->str().c_str(), vd->id()->str().size())));
             } else {
               auto il = static_cast<int>(IntLit::v(Expression::cast<IntLit>(init)).toInt());
               FlatZinc::IntVarSpec spec(il, output, vd->introduced());
-              _variableMap.insert(vd->id(), ChuffedVariable::intVar(_space, &spec));
+              _variableMap.insert(
+                  vd->id(),
+                  ChuffedVariable::intVar(
+                      _space, &spec, std::string(vd->id()->str().c_str(), vd->id()->str().size())));
             }
           }
         } else {
