@@ -4,6 +4,14 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
+.. _unreleased:
+
+Bug fixes:
+^^^^^^^^^^
+
+-  Resolve problem in the optimization of set variable constraints
+   (:bugref:`693`).
+
 .. _v2.7.4:
 
 `Version 2.7.4 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.7.4>`__

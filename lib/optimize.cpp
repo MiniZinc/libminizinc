@@ -9,15 +9,18 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <minizinc/ast.hh>
 #include <minizinc/astiterator.hh>
 #include <minizinc/chain_compressor.hh>
 #include <minizinc/eval_par.hh>
 #include <minizinc/flatten.hh>
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/hash.hh>
+#include <minizinc/iter.hh>
 #include <minizinc/optimize.hh>
 #include <minizinc/optimize_constraints.hh>
 #include <minizinc/prettyprinter.hh>
+#include <minizinc/values.hh>
 
 #include <deque>
 #include <vector>
@@ -1303,20 +1306,60 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
             }
             break;
           case Type::BT_INT: {
-            IntVal d = eval_int(env, arg);
-            if (ti->domain() == nullptr) {
-              ti->domain(new SetLit(Location().introduce(), IntSetVal::a(d, d)));
-              ti->setComputedDomain(false);
-              canRemove = true;
-            } else {
-              IntSetVal* isv = eval_intset(env, ti->domain());
-              if (isv->contains(d)) {
-                ident->decl()->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(d, d)));
-                ident->decl()->ti()->setComputedDomain(false);
+            if (ident->type().st() == Type::ST_SET) {
+              GCLock lock;
+              IntSetVal* isv = eval_intset(env, arg);
+              if (ti->domain() != nullptr) {
+                IntSetVal* dom = eval_intset(env, ti->domain());
+                IntSetRanges domr(dom);
+                IntSetRanges slr(isv);
+                if (!Ranges::subset(slr, domr)) {
+                  env.fail();
+                  canRemove = true;
+                }
+              }
+              if (ident->decl()->e() == nullptr) {
+                ident->decl()->e(new SetLit(Expression::loc(arg), isv));
+                canRemove = true;
+              } else if (auto* call = Expression::dynamicCast<Call>(ident->decl()->e())) {
+                // Remove call from RHS and add it as new constraint with the literal
+                auto* sl = new SetLit(Expression::loc(arg), isv);
+                std::vector<Expression*> args(call->argCount() + 1);
+                for (unsigned int i = 0; i < call->argCount(); ++i) {
+                  args[i] = call->arg(i);
+                }
+                args[call->argCount()] = sl;
+                auto* nc = Call::a(Expression::loc(call), call->id(), args);
+                nc->decl(env.model->matchFn(env, nc, false));
+                env.flatAddItem(new ConstraintI(Expression::loc(call), nc));
+
+                // Add literal as new RHS
+                ident->decl()->e(sl);
                 canRemove = true;
               } else {
-                env.fail();
+                IntSetVal* rhs = eval_intset(env, ident->decl()->e());
+                if (!rhs->equal(isv)) {
+                  env.fail();
+                }
                 canRemove = true;
+              }
+            } else {
+              IntVal d = eval_int(env, arg);
+              if (ti->domain() == nullptr) {
+                ti->domain(new SetLit(Location().introduce(), IntSetVal::a(d, d)));
+                ti->setComputedDomain(false);
+                canRemove = true;
+              } else {
+                IntSetVal* isv = eval_intset(env, ti->domain());
+                if (isv->contains(d)) {
+                  ident->decl()->ti()->domain(
+                      new SetLit(Location().introduce(), IntSetVal::a(d, d)));
+                  ident->decl()->ti()->setComputedDomain(false);
+                  canRemove = true;
+                } else {
+                  env.fail();
+                  canRemove = true;
+                }
               }
             }
           } break;
