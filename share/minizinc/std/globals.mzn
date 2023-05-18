@@ -151,6 +151,8 @@ include "table.mzn";
 include "tree.mzn";   
 include "value_precede.mzn";
 include "value_precede_chain.mzn";
+include "var_sqr_sym.mzn";
+include "var_perm_sym.mzn";
 include "weighted_spanning_tree.mzn";
 include "write.mzn";
 include "writes.mzn";

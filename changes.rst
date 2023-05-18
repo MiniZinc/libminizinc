@@ -10,6 +10,8 @@ Changes:
 ^^^^^^^^
 -  Introduces the ``arg_val`` and ``arg_val_weak`` globals that return the index
    of the first occurrence of a value in a given array. (:bugref:`544`).
+-  Introduces the ``var_perm_sym`` and ``var_sqr_sym`` symmetry breaking
+   globals.
 
 Bug fixes:
 ^^^^^^^^^^
