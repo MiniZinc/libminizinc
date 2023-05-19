@@ -552,16 +552,9 @@ inline size_t Expression::hash(const Expression* e) {
 
 template <class T>
 inline bool Expression::isa(const Expression* e) {
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wtautological-undefined-compare"
-#endif
   if (nullptr == e) {
     throw InternalError("isa: nullptr");
   }
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
   return Expression::isUnboxedInt(e)        ? T::eid == E_INTLIT
          : Expression::isUnboxedFloatVal(e) ? T::eid == E_FLOATLIT
                                             : e->_id == T::eid;
