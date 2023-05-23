@@ -1907,9 +1907,9 @@ public:
   void vArrayAccess(ArrayAccess* aa) {
     if (Expression::type(aa->v()).dim() == 0) {
       if (Expression::type(aa->v()).st() == Type::ST_SET) {
-        Type tv = Expression::type(aa->v());
-        tv.st(Type::ST_PLAIN);
-        tv.dim(1);
+        Type plainTy = Expression::type(aa->v());
+        plainTy.st(Type::ST_PLAIN);
+        Type tv = Type::arrType(_env, Type::partop(1), plainTy);
         aa->v(add_coercion(_env, _model, aa->v(), tv)());
       } else {
         std::ostringstream oss;
