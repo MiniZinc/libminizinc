@@ -18,6 +18,8 @@ Bug fixes:
 
 -  Resolve problem in the optimization of set variable constraints
    (:bugref:`693`).
+-  Fix regression in the context determination of negated binary operators
+   (:bugref:`695`).
 
 .. _v2.7.4:
 

@@ -1402,14 +1402,15 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
       }
       KeepAlive ka(cc);
       GC::unlock();
+      Ctx ccCtx = ctx;
+      if (doubleNeg) {
+        ccCtx.b = -ctx.b;
+        ccCtx.neg = !ctx.neg;
+      }
       if (singleExp) {
-        if (doubleNeg) {
-          ctx.b = -ctx.b;
-          ctx.neg = !ctx.neg;
-        }
-        ret.r = flat_exp(env, ctx, cc, r, ctx.partialityVar(env)).r;
+        ret.r = flat_exp(env, ccCtx, cc, r, ctx.partialityVar(env)).r;
       } else {
-        ees[2].b = flat_exp(env, ctx, cc, nullptr, env.constants.varTrue).r;
+        ees[2].b = flat_exp(env, ccCtx, cc, nullptr, env.constants.varTrue).r;
         if (doubleNeg) {
           GCLock lock;
           Type t = Expression::type(ees[2].b());
