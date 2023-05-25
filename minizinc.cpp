@@ -43,9 +43,12 @@ int run(const std::string& exe, const std::vector<std::string>& args, bool jsonS
       // Interrupted, just terminate
       if (slv.getFlagVerbose()) {
         std::cerr << std::endl << "Interrupted." << std::endl;
+        std::cerr << "   Done (";
+        std::cerr << "overall time " << startTime.stoptime() << ")." << std::endl;
       }
       // Re-raise signal
       e.raise();
+      return static_cast<int>(!fSuccess);
     } catch (const InternalError& e) {
       if (slv.getFlagVerbose()) {
         std::cerr << std::endl;

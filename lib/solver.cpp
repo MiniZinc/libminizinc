@@ -955,20 +955,34 @@ SolverInstance::Status MznSolver::solve() {
     GCLock lock;
     getSI()->processFlatZinc();
   }
-  SolverInstance::Status status = getSI()->solve();
-  GCLock lock;
-  if (!getSI()->getSolns2Out()->fStatusPrinted) {
-    getSI()->getSolns2Out()->evalStatus(status);
-  }
-  if (_siOpt->printStatistics) {
-    getSI()->printStatistics();
-  }
-  if (flagStatistics) {
-    getSI()->getSolns2Out()->printStatistics(_os);
-  }
-  // Print any statistics left in the buffer
-  getSI()->getSolns2Out()->flushStatistics(_os);
-  return status;
+
+  struct Solve {
+    MznSolver& solver;
+    SolverInstance::Status status = SolverInstance::Status::UNKNOWN;
+    Solve(MznSolver& s) : solver(s) {}
+    SolverInstance::Status operator()() {
+      status = solver.getSI()->solve();
+      return status;
+    }
+    ~Solve() {
+      // Put in destructor so that this still happens when interrupted
+      GCLock lock;
+      if (!solver.getSI()->getSolns2Out()->fStatusPrinted) {
+        solver.getSI()->getSolns2Out()->evalStatus(status);
+      }
+      if (solver._siOpt->printStatistics) {
+        solver.getSI()->printStatistics();
+      }
+      if (solver.flagStatistics) {
+        solver.getSI()->getSolns2Out()->printStatistics(solver._os);
+      }
+      // Print any statistics left in the buffer
+      solver.getSI()->getSolns2Out()->flushStatistics(solver._os);
+    }
+  };
+
+  Solve s(*this);
+  return s();
 }
 
 SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0,

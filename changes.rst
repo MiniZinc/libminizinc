@@ -20,6 +20,8 @@ Bug fixes:
    (:bugref:`693`).
 -  Fix regression in the context determination of negated binary operators
    (:bugref:`695`).
+-  Ensure statistics are output when MiniZinc is interrupted with JSON stream
+   output enabled (:bugref:`692`).
 
 .. _v2.7.4:
 
