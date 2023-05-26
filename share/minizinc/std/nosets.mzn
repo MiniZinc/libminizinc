@@ -354,6 +354,13 @@ predicate set_in_reif(int: x, var set of int: y, var bool: b) ::promise_total =
   endif;
 predicate set_in_reif(var int: x, var set of int: y, var bool: b) ::promise_total =
   b <-> set2bools(y)[x];
+
+predicate set_in_imp(int: x, var set of int: y, var bool: b) =
+  if x in ub(y) then
+    b -> set2bools(y)[x]
+  else
+    not b
+  endif;
 predicate set_in_imp(var int: x, var set of int: y, var bool: b) =
   b -> set2bools(y)[x];
 

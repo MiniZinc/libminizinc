@@ -22,6 +22,8 @@ Bug fixes:
    (:bugref:`695`).
 -  Ensure statistics are output when MiniZinc is interrupted with JSON stream
    output enabled (:bugref:`692`).
+-  Add ``par`` version of ``set_in_imp`` to the ``nosets.mzn`` library to
+   warnings about out-of-bound indices in non-user models (:bugref:`696`).
 
 .. _v2.7.4:
 
