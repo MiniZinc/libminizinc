@@ -3876,7 +3876,26 @@ public:
       } break;
     }
     for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it) {
-      nsi->ann().add(flat_exp(env, Ctx(), *it, nullptr, env.constants.varTrue).r());
+      Expression* ret = flat_exp(env, Ctx(), *it, nullptr, env.constants.varTrue).r();
+      if (auto* c = Expression::dynamicCast<Call>(ret)) {
+        if (c->id() == env.constants.ids.on_restart.on_restart) {
+          assert(c->argCount() == 1);
+          auto* pred = Expression::cast<StringLit>(c->arg(0));
+          Call* nc = Call::a(Expression::loc(c).introduce(), pred->v(), std::vector<Expression*>());
+          nc->type(Type::varbool());
+          FunctionI* decl = env.model->matchFn(env, nc, false);
+          if (decl == nullptr) {
+            std::ostringstream ss;
+            ss << "Unknown predicate `" << pred->v()
+               << "' found while evaluating on_restart annotation";
+            throw FlatteningError(env, Expression::loc(pred), ss.str());
+          }
+          nc->decl(decl);
+          env.flatAddItem(new ConstraintI(Expression::loc(c).introduce(), nc));
+          continue;
+        }
+      }
+      nsi->ann().add(ret);
     }
     env.flatAddItem(nsi);
   }

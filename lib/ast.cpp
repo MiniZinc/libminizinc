@@ -2158,6 +2158,11 @@ Constants::Constants() {
   ids.set_.symdiff = addString("set_symdiff");
   ids.set_.union_ = addString("set_union");
 
+  ids.on_restart.sol = addString("sol");
+  ids.on_restart.last_val = addString("last_val");
+  ids.on_restart.on_restart = addString("on_restart");
+  ids.on_restart.uniform_on_restart = addString("uniform_on_restart");
+
   ids.pow = addString("pow");
   ids.mzn_set_in_internal = addString("mzn_set_in_internal");
   ids.introduced_var = addString("__INTRODUCED");

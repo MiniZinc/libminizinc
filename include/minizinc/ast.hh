@@ -2192,6 +2192,14 @@ public:
       ASTString union_;  // NOLINT(readability-identifier-naming)
     } set_;              // NOLINT(readability-identifier-naming)
 
+    // Identifiers for experimental on_restart feature
+    struct {
+      ASTString sol;
+      ASTString last_val;            // NOLINT(readability-identifier-naming)
+      ASTString on_restart;          // NOLINT(readability-identifier-naming)
+      ASTString uniform_on_restart;  // NOLINT(readability-identifier-naming)
+    } on_restart;                    // NOLINT(readability-identifier-naming)
+
     ASTString pow;
 
     ASTString mzn_set_in_internal;  // NOLINT(readability-identifier-naming)

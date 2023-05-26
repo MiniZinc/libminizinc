@@ -17,6 +17,14 @@ function float: uniform(float: lowerbound, float: upperbound);
 /** @group stdlib.random Return a sample from the uniform distribution defined by \(\a lowerbound, \a upperbound\) */
 function int: uniform(int: lowerbound, int: upperbound);  
 
+/** @group stdlib.random Return a sample from the uniform distribution defined by \a S */
+function int: uniform(set of int: S) =
+  if card(S) == max(S) - min(S) + 1 then
+    uniform(min(S),max(S))
+  else
+    [ i | i in S ][uniform(1,card(S))]
+  endif;
+
 /** @group stdlib.random Return a sample from the poisson distribution defined by \a mean */
 function int: poisson(float: mean);
 

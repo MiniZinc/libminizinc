@@ -2875,6 +2875,20 @@ public:
           bounds.emplace_back(0, std::max(-b0.first, b0.second));
         }
       }
+    } else if (c->id() == env.constants.ids.on_restart.uniform_on_restart) {
+      if (c->argCount() == 2) {
+        Bounds b0 = bounds.back();
+        bounds.pop_back();
+        Bounds b1 = bounds.back();
+        bounds.pop_back();
+        assert(b0.first == b0.second && b1.first == b1.second);
+        bounds.emplace_back(b0.first, b1.first);
+      } else {
+        // Take bounds of the argument
+      }
+    } else if (c->id() == env.constants.ids.on_restart.sol ||
+               c->id() == env.constants.ids.on_restart.last_val) {
+      // Take bounds of the argument
     } else if ((c->decl() != nullptr) && (c->decl()->ti()->domain() != nullptr) &&
                !Expression::isa<TIId>(c->decl()->ti()->domain())) {
       for (int i = 0; i < c->argCount(); i++) {
@@ -3321,6 +3335,16 @@ public:
           bounds.emplace_back(0.0, std::max(-b0.first, b0.second));
         }
       }
+    } else if (c->id() == env.constants.ids.on_restart.uniform_on_restart) {
+      FBounds b0 = bounds.back();
+      bounds.pop_back();
+      FBounds b1 = bounds.back();
+      bounds.pop_back();
+      assert(b0.first == b0.second && b1.first == b1.second);
+      bounds.emplace_back(b0.first, b1.first);
+    } else if (c->id() == env.constants.ids.on_restart.sol ||
+               c->id() == env.constants.ids.on_restart.last_val) {
+      // Take bounds of the argument
     } else if ((c->decl() != nullptr) && (c->decl()->ti()->domain() != nullptr) &&
                !Expression::isa<TIId>(c->decl()->ti()->domain())) {
       for (int i = 0; i < c->argCount(); i++) {
