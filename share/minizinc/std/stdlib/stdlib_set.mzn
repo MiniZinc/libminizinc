@@ -102,7 +102,7 @@ function var set of int: '..'(var int: a, var int: b) ::promise_total =
 function     int: card(    set of $T: x);
 /** @group stdlib.builtins.set Return the cardinality of the set \a x */
 function var int: card(var set of int: x) ::promise_total = let {
-    var 0..card(ub(x)): c;
+    var 0..(if has_ub_set(x) then card(ub(x)) else infinity endif): c;
     constraint set_card(x,c);
   } in c;
 
