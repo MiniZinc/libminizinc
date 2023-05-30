@@ -899,14 +899,19 @@ bool b_has_ub_set(EnvI& env, Call* call) {
         if (id->decl() == nullptr) {
           throw EvalError(env, Expression::loc(id), "undefined identifier");
         }
+        if (id->decl()->ti()->domain() != nullptr) {
+          return true;
+        }
         if (id->decl()->e() == nullptr) {
-          return id->decl()->ti()->domain() != nullptr;
+          return false;
         }
         e = id->decl()->e();
-
       } break;
-      default:
-        throw EvalError(env, Expression::loc(e), "invalid argument to has_ub_set");
+      default: {
+        // Try and compute bounds
+        IntSetVal* isv = compute_intset_bounds(env, e);
+        return isv != nullptr;
+      }
     }
   }
 }
