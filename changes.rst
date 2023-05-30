@@ -24,6 +24,7 @@ Bug fixes:
    output enabled (:bugref:`692`).
 -  Add ``par`` version of ``set_in_imp`` to the ``nosets.mzn`` library to
    warnings about out-of-bound indices in non-user models (:bugref:`696`).
+-  Add missing bounds calculation for ``symdiff`` (:bugref:`700`).
 
 .. _v2.7.4:
 

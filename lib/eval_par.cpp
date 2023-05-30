@@ -3501,6 +3501,7 @@ public:
       IntSetVal* b0 = bounds.back();
       bounds.pop_back();
       switch (bo->op()) {
+        case BOT_SYMDIFF:
         case BOT_INTERSECT:
         case BOT_UNION: {
           IntSetRanges b0r(b0);
@@ -3511,10 +3512,6 @@ public:
         case BOT_DIFF: {
           bounds.push_back(b0);
         } break;
-        case BOT_SYMDIFF:
-          valid = false;
-          bounds.push_back(nullptr);
-          break;
         case BOT_PLUS:
         case BOT_MINUS:
         case BOT_MULT:
@@ -3552,7 +3549,8 @@ public:
   /// Visit call
   void vCall(Call* c) {
     if (valid &&
-        (c->id() == env.constants.ids.set_.intersect || c->id() == env.constants.ids.set_.union_)) {
+        (c->id() == env.constants.ids.set_.intersect || c->id() == env.constants.ids.set_.union_ ||
+         c->id() == env.constants.ids.set_.symdiff)) {
       IntSetVal* b0 = bounds.back();
       bounds.pop_back();
       IntSetVal* b1 = bounds.back();
