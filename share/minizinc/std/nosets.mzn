@@ -327,7 +327,7 @@ function var set of int: set_symdiff(var set of int: x, var set of int: y) ::pro
     var set of (ub(x) diff lb(y)) union (ub(y) diff lb(x)): z;
     array[int] of var bool: bz = set2bools(z);
     constraint forall (i in ub(z)) (
-      bz[i] = (bx[i] xor by[i])
+      bz[i] = ((bx[i]::maybe_partial) xor (by[i]::maybe_partial))
     );
   } in z;
 
