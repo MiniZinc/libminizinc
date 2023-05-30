@@ -12,6 +12,7 @@ Changes:
    of the first occurrence of a value in a given array. (:bugref:`544`).
 -  Introduces the ``var_perm_sym`` and ``var_sqr_sym`` symmetry breaking
    globals.
+-  Enable parallel search for the built-in Gecode presolver.
 
 Bug fixes:
 ^^^^^^^^^^

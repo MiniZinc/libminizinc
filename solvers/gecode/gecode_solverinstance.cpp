@@ -40,7 +40,7 @@ GecodeSolverFactory::GecodeSolverFactory() {
   sc.mznlibVersion(1);
   sc.supportsMzn(false);
   sc.description("Internal Gecode presolver plugin");
-  sc.stdFlags({"-a", "-n"});
+  sc.stdFlags({"-a", "-n", "-p"});
   SolverConfigs::registerBuiltinSolver(sc);
 }
 
@@ -155,6 +155,14 @@ bool GecodeSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i
     _opt.verbose = true;
   } else if (string(argv[i]) == "-s" || string(argv[i]) == "--solver-statistics") {
     _opt.statistics = true;
+  } else if (string(argv[i]) == "-p") {
+    if (++i == argv.size()) {
+      return false;
+    }
+    int threads = atoi(argv[i].c_str());
+    if (threads >= 1) {
+      _opt.threads = threads;
+    }
   } else {
     return false;
   }
@@ -531,9 +539,13 @@ void GecodeSolverInstance::processFlatZinc() {
               } else if (var.isbool()) {
                 currentSpace->bvIntroduced[var.index()] = false;
               } else if (var.isfloat()) {
+#ifdef GECODE_HAS_FLOAT_VARS
                 currentSpace->fvIntroduced[var.index()] = false;
+#endif
               } else if (var.isset()) {
+#ifdef GECODE_HAS_SET_VARS
                 currentSpace->svIntroduced[var.index()] = false;
+#endif
               }
             }
           }
@@ -1333,6 +1345,7 @@ void GecodeSolverInstance::prepareEngine() {
 
     engineOptions.c_d = _opt.c_d;
     engineOptions.a_d = _opt.a_d;
+    engineOptions.threads = _opt.threads;
 
     int seed = _opt.seed;
     double decay = _opt.decay;

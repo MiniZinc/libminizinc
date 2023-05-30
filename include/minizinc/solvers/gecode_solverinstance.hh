@@ -195,6 +195,7 @@ public:
   int restarts = 0;
   int seed = 1;
   double decay = 0.5;
+  int threads = 1;
 };
 
 class GecodeSolverInstance : public SolverInstanceImpl<GecodeSolver> {
