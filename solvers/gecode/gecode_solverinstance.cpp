@@ -1378,7 +1378,14 @@ void GecodeSolverInstance::printStatistics() {
   Gecode::Search::Statistics stat = engine->statistics();
   auto* solns2out = getSolns2Out();
   StatisticsStream ss(solns2out->getOutput(), solns2out->opt.flagEncapsulateJSON);
-  ss.add("variables", currentSpace->iv.size() + currentSpace->bv.size() + currentSpace->sv.size());
+  auto varcount = currentSpace->iv.size() + currentSpace->bv.size();
+#ifdef GECODE_HAS_SET_VARS
+  varcount += currentSpace->sv.size();
+#endif
+#ifdef GECODE_HAS_FLOAT_VARS
+  varcount += currentSpace->fv.size();
+#endif
+  ss.add("variables", varcount);
   ss.add("propagators", Gecode::PropagatorGroup::all.size(*currentSpace));
   ss.add("propagations", stat.propagate);
   ss.add("nodes", stat.node);
@@ -1855,9 +1862,7 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
       // branchInfo.add(bh,r0,r1,names);
 #else
       if (!ignoreUnknown) {
-        err << "Warning, ignored search annotation: ";
-        flatAnn[i]->print(err);
-        err << std::endl;
+        err << "Warning, ignored search annotation: " << *i << std::endl;
       }
 #endif
     } else if (Expression::isa<Call>(i) &&
@@ -1869,9 +1874,7 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
       def_set_valsel = ann2svalsel(Expression::cast<Id>(call->arg(1))->str(), r0, r0, rnd);
 #else
       if (!ignoreUnknown) {
-        err << "Warning, ignored search annotation: ";
-        flatAnn[i]->print(err);
-        err << std::endl;
+        err << "Warning, ignored search annotation: " << *i << std::endl;
       }
 #endif
     } else if (Expression::isa<Call>(i) &&

@@ -266,11 +266,13 @@ public:
   Gecode::BoolVar arg2boolvar(Expression* e);
   /// Convert \a n to IntVar
   Gecode::IntVar arg2intvar(Expression* e);
+#ifdef GECODE_HAS_SET_VARS
   /// Convert \a n to SetVar
   Gecode::SetVar arg2setvar(Expression* e);
   /// Convert \a arg to SetVarArgs
   Gecode::SetVarArgs arg2setvarargs(Expression* arg, int offset = 0, int doffset = 0,
                                     const Gecode::IntSet& od = Gecode::IntSet::empty);
+#endif
   /// convert \a arg to an ArrayLit (throws InternalError if not possible)
   ArrayLit* arg2arraylit(Expression* arg);
   /// Check if \a b is array of Booleans (or has a single integer)
