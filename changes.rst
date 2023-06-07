@@ -4,7 +4,12 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
-.. _unreleased:
+.. _v2.7.5:
+
+`Version 2.7.5 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.7.5>`__
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(released 7 June 2023)
 
 Changes:
 ^^^^^^^^
@@ -26,6 +31,12 @@ Bug fixes:
 -  Add ``par`` version of ``set_in_imp`` to the ``nosets.mzn`` library to
    warnings about out-of-bound indices in non-user models (:bugref:`696`).
 -  Add missing bounds calculation for ``symdiff`` (:bugref:`700`).
+
+Changes in the IDE:
+^^^^^^^^^^^^^^^^^^^
+
+-  Use native Qt dark mode on Windows where supported.
+-  Improve behaviour of the custom solver parameter dialog.
 
 .. _v2.7.4:
 
