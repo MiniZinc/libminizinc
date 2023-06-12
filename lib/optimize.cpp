@@ -1330,6 +1330,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
                 }
                 args[call->argCount()] = sl;
                 auto* nc = Call::a(Expression::loc(call), call->id(), args);
+                nc->type(Type::varbool());
                 nc->decl(env.model->matchFn(env, nc, false));
                 env.flatAddItem(new ConstraintI(Expression::loc(call), nc));
 

@@ -1214,10 +1214,12 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
         env.fail("assignment to value outside of domain", Expression::loc(bo));
       }
     }
+    KeepAlive val;
     {
       GCLock lock;
-      set_computed_value(env, vd, new SetLit(Expression::loc(e1.r()), sl));
+      val = new SetLit(Expression::loc(e1.r()), sl);
     }
+    set_computed_value(env, vd, val());
     ees[2].b = env.constants.literalTrue;
     ret.r = conj(env, r, ctx, ees);
     return ret;

@@ -4,6 +4,15 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
+.. _unreleased:
+
+
+Bug fixes:
+^^^^^^^^^^
+
+-  Resolve issue where right hand assignment of set types could potentially be
+   replaced by literal value (:bugref:`700`).
+
 .. _v2.7.5:
 
 `Version 2.7.5 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.7.5>`__

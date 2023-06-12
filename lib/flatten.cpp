@@ -18,6 +18,7 @@
 #include <minizinc/flat_exp.hh>
 #include <minizinc/flatten.hh>
 #include <minizinc/flatten_internal.hh>
+#include <minizinc/gc.hh>
 #include <minizinc/hash.hh>
 #include <minizinc/optimize.hh>
 #include <minizinc/output.hh>
@@ -151,30 +152,35 @@ void set_computed_domain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_co
 // Create assignment constraints. Return true if successful.
 bool create_explicit_assignment_constraints(EnvI& envi, VarDecl* vd, Expression* val) {
   assert(vd->type().dim() == 0);
-  Call* call;
+  KeepAlive ka;
   Location iloc = Location().introduce();
 
-  if (vd->type().isIntSet()) {
-    assert(Expression::type(val).isIntSet());
-    call = Call::a(iloc, envi.constants.ids.set_.eq, {vd->id(), val});
-  } else {
-    assert(vd->type().st() == Type::ST_PLAIN);
-    if (vd->type().bt() == Type::BT_BOOL) {
-      call = Call::a(iloc, envi.constants.ids.bool_.eq, {vd->id(), val});
-    } else if (vd->type().bt() == Type::BT_INT) {
-      call = Call::a(iloc, envi.constants.ids.int_.eq, {vd->id(), val});
-    } else if (vd->type().bt() == Type::BT_FLOAT) {
-      call = Call::a(iloc, envi.constants.ids.float_.eq, {vd->id(), val});
+  {
+    GCLock lock;
+    Call* call;
+    if (vd->type().isIntSet()) {
+      assert(Expression::type(val).isIntSet());
+      call = Call::a(iloc, envi.constants.ids.set_.eq, {vd->id(), val});
     } else {
-      return false;
+      assert(vd->type().st() == Type::ST_PLAIN);
+      if (vd->type().bt() == Type::BT_BOOL) {
+        call = Call::a(iloc, envi.constants.ids.bool_.eq, {vd->id(), val});
+      } else if (vd->type().bt() == Type::BT_INT) {
+        call = Call::a(iloc, envi.constants.ids.int_.eq, {vd->id(), val});
+      } else if (vd->type().bt() == Type::BT_FLOAT) {
+        call = Call::a(iloc, envi.constants.ids.float_.eq, {vd->id(), val});
+      } else {
+        return false;
+      }
     }
+    CallStackItem csi(envi, IntLit::a(0));
+    Expression::ann(call).add(envi.constants.ann.domain_change_constraint);
+    Expression::type(call, Type::varbool());
+    call->decl(envi.model->matchFn(envi, call, true));
+    ka = call;
   }
 
-  CallStackItem csi(envi, IntLit::a(0));
-  Expression::ann(call).add(envi.constants.ann.domain_change_constraint);
-  Expression::type(call, Type::varbool());
-  call->decl(envi.model->matchFn(envi, call, true));
-  flat_exp(envi, Ctx(), call, envi.constants.varTrue, envi.constants.varTrue);
+  flat_exp(envi, Ctx(), ka(), envi.constants.varTrue, envi.constants.varTrue);
   return true;
 }
 
@@ -196,6 +202,38 @@ void set_computed_value(EnvI& envi, VarDecl* vd, Expression* val) {
     }
     std::cerr << "Warning: assignment not handled by -g mode: " << *vd->id() << " = " << *val
               << std::endl;
+  }
+  // There is already a RHS. If it's a call, make it relational. Otherwise, create explicit
+  // constraint
+  if (vd->e() != nullptr) {
+    bool made_relational = false;
+    if (auto* c = Expression::dynamicCast<Call>(vd->e())) {
+      KeepAlive ka;
+      // Remove call from RHS and add it as new constraint with the literal
+      std::vector<Expression*> args(c->argCount() + 1);
+      for (unsigned int i = 0; i < c->argCount(); ++i) {
+        args[i] = c->arg(i);
+      }
+      args[c->argCount()] = vd->id();
+      {
+        GCLock lock;
+        auto* nc = Call::a(Expression::loc(c), c->id(), args);
+        nc->type(Type::varbool());
+        nc->decl(envi.model->matchFn(envi, nc, false));
+        ka = nc;
+      }
+      flat_exp(envi, Ctx(), ka(), envi.constants.varTrue, envi.constants.varTrue);
+      made_relational = true;
+    }
+    if (!made_relational) {
+      if (!create_explicit_assignment_constraints(envi, vd, val)) {
+        std::ostringstream ss;
+        ss << "Unable to create asignment constraint for defined variable " << *vd->id() << " = "
+           << *val << std::endl;
+        throw EvalError(envi, Expression::loc(val), ss.str());
+      }
+      return;
+    }
   }
   Type nty = vd->type();
   nty.mkPar(envi);
