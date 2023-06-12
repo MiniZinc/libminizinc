@@ -692,14 +692,14 @@ function var opt float: element(var opt int: idx1, var opt int: idx2, array[int,
 
 function var set of int: element_t(var int: idx, array[int] of var set of int: x) :: promise_total =
   let {
-    var set of min(ub_array(x))..max(ub_array(x)): r ::is_defined_var;
+    var set of set_min_to_max(ub_array(x)): r ::is_defined_var;
     constraint idx in index_set(x);
     constraint array_var_set_element_nonshifted(idx,x,r) ::defines_var(r);
   } in r;
 
 function var set of int: element_mt(var int: idx, array[int] of var set of int: x) :: promise_total =
   let {
-    var set of min(ub_array(x))..max(ub_array(x)): r ::is_defined_var;
+    var set of set_min_to_max(ub_array(x)): r ::is_defined_var;
     var index_set(x): idx2;
     constraint idx in index_set(x) -> idx2=idx;
     constraint idx in index_set(x) \/ idx2=min(index_set(x));
@@ -708,7 +708,7 @@ function var set of int: element_mt(var int: idx, array[int] of var set of int: 
 
 function var set of int: element_t(var int: idx1, var int: idx2, array[int,int] of var set of int: x) :: promise_total =
   let {
-    var set of min(ub_array(x))..max(ub_array(x)): r ::is_defined_var;
+    var set of set_min_to_max(ub_array(x)): r ::is_defined_var;
     constraint idx1 in index_set_1of2(x);
     constraint idx2 in index_set_2of2(x);
     constraint array_var_set_element2d_nonshifted(idx1,idx2,x,r) ::defines_var(r);
@@ -716,7 +716,7 @@ function var set of int: element_t(var int: idx1, var int: idx2, array[int,int] 
 
 function var set of int: element_mt(var int: idx1, var int: idx2, array[int,int] of var set of int: x) :: promise_total =
   let {
-    var set of min(ub_array(x))..max(ub_array(x)): r ::is_defined_var;
+    var set of set_min_to_max(ub_array(x)): r ::is_defined_var;
     var index_set_1of2(x): idx1_2;
     var index_set_2of2(x): idx2_2;
     constraint (idx1 in index_set_1of2(x) /\ idx2 in index_set_2of2(x)) -> (idx1_2=idx1 /\ idx2_2=idx2);
@@ -936,6 +936,7 @@ function var bool: element_mt(var int: idx1, var int: idx2, array[int,int] of va
   } in r;
 
 function var bool: element(var int: idx, array[int] of var bool: x) =
+  length(x) > 0 /\
   if mzn_in_root_context(idx) then
     idx in index_set(x) /\ element_t(idx,x)
   elseif (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
@@ -947,7 +948,7 @@ function var bool: element(var int: idx1, var int: idx2,
                            array[int,int] of var bool: x) =
   let {
     int: dim = card(index_set_2of2(x));
-  } in if mzn_in_root_context(idx1) then
+  } in length(x) > 0 /\ if mzn_in_root_context(idx1) then
          let {
            constraint idx1 in index_set_1of2(x);
            constraint idx2 in index_set_2of2(x);
@@ -966,6 +967,7 @@ function var bool: element(var int: idx1, var int: idx2,
 
 function var bool: element(var int: idx1, var int: idx2, var int: idx3,
                             array[int,int,int] of var bool: x) =
+  length(x) > 0 /\
   let {
     int: dim2 = card(index_set_2of3(x));
     int: dim3 = card(index_set_3of3(x));
@@ -994,6 +996,7 @@ function var bool: element(var int: idx1, var int: idx2, var int: idx3,
 
 function var bool: element(var int: idx1, var int: idx2, var int: idx3, var int: idx4,
                             array[int,int,int,int] of var bool: x) =
+  length(x) > 0 /\
   let {
     int: dim2 = card(index_set_2of4(x));
     int: dim3 = card(index_set_3of4(x));
@@ -1027,6 +1030,7 @@ function var bool: element(var int: idx1, var int: idx2, var int: idx3, var int:
 
 function var bool: element(var int: idx1, var int: idx2, var int: idx3, var int: idx4, var int: idx5,
                            array[int,int,int,int,int] of var bool: x) =
+  length(x) > 0 /\
   let {
     int: dim2 = card(index_set_2of5(x));
     int: dim3 = card(index_set_3of5(x));
@@ -1065,6 +1069,7 @@ function var bool: element(var int: idx1, var int: idx2, var int: idx3, var int:
 
 function var bool: element(var int: idx1, var int: idx2, var int: idx3, var int: idx4, var int: idx5, var int: idx6,
                            array[int,int,int,int,int,int] of var bool: x) =
+  length(x) > 0 /\
   let {
     int: dim2 = card(index_set_2of6(x));
     int: dim3 = card(index_set_3of6(x));
@@ -1394,3 +1399,5 @@ predicate lex_lesseq_std_decomposition(
       );
     } in b[0]
   endif;
+
+set of int: set_min_to_max(set of int: x) = if x = {} then {1 | _ in 1..0} else min(x)..max(x) endif;
