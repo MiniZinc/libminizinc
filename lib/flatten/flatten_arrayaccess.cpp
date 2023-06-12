@@ -311,7 +311,15 @@ flatten_arrayaccess:
       GCLock lock;
       Call* cc = Call::a(Expression::loc(e).introduce(), env.constants.ids.element, args);
       cc->type(aa->type());
-      FunctionI* fi = env.model->matchFn(env, cc->id(), args, false);
+      FunctionI* fi = nullptr;
+      try {
+        fi = env.model->matchFn(env, cc->id(), args, false);
+      } catch (TypeError&) {
+        // Actual array is bottom, but previously had a type so use that version
+        args[aa->idx().size()] = aa->v();
+        fi = env.model->matchFn(env, cc->id(), args, false);
+        args[aa->idx().size()] = eev.r();
+      }
       if (fi == nullptr) {
         throw FlatteningError(env, Expression::loc(cc), "cannot find matching declaration");
       }

@@ -13,6 +13,9 @@ Bug fixes:
 -  Resolve issue where right hand assignment of set types could potentially be
    replaced by literal value (:bugref:`700`).
 -  Fix incorrect undefinedness of element access of arrays of empty sets.
+-  Fix possible incorrect type error when calling an overloaded function with
+   an argument whose true type after flattening causes ambiguity when finding a
+   better match.
 
 .. _v2.7.5:
 

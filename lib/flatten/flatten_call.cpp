@@ -348,7 +348,13 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
   } else if (c->id().endsWith("_imp")) {
     env.counters.impConstraints++;
   }
-  FunctionI* decl = env.model->matchFn(env, c, false);
+  FunctionI* decl = c->decl();
+  try {
+    decl = env.model->matchFn(env, c, false);
+  } catch (TypeError&) {
+    // Can't actually match call, maybe it's being called with args which are now known to be
+    // bottom, so just use the decl that was already in the call if there was one
+  }
   if (decl == nullptr) {
     std::ostringstream ss;
     ss << "undeclared function or predicate " << demonomorphise_identifier(c->id());
@@ -957,9 +963,21 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
       GCLock lock;
       std::vector<Expression*> e_args = to_exp_vec(args);
       Call* cr_c = Call::a(Expression::loc(c).introduce(), cid, e_args);
-      decl = env.model->matchFn(env, cr_c, false);
-      if (decl == nullptr) {
-        throw FlatteningError(env, Expression::loc(cr_c), "cannot find matching declaration");
+      if (cid == c->id()) {
+        try {
+          auto* cr_d = env.model->matchFn(env, cr_c, false);
+          if (cr_d != nullptr) {
+            decl = cr_d;
+          }
+        } catch (TypeError&) {
+          // Matches multiple incompatible overloads (e.g. because arg is actually bottom)
+          // So just use original decl from type checker
+        }
+      } else {
+        decl = env.model->matchFn(env, cr_c, false);
+        if (decl == nullptr) {
+          throw FlatteningError(env, Expression::loc(cr_c), "cannot find matching declaration");
+        }
       }
       cr_c->type(decl->rtype(env, e_args, nullptr, false));
       assert(decl);
