@@ -16,6 +16,7 @@ Bug fixes:
 -  Fix possible incorrect type error when calling an overloaded function with
    an argument whose true type after flattening causes ambiguity when finding a
    better match.
+-  Accept ``--num-solutions`` rather than only ``-n`` in the Gecode presolver.
 
 .. _v2.7.5:
 

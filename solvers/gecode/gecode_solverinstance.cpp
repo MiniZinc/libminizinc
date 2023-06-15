@@ -93,7 +93,7 @@ bool GecodeSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i
     }
   } else if (string(argv[i]) == "-a" || string(argv[i]) == "--all-solutions") {
     _opt.allSolutions = true;
-  } else if (string(argv[i]) == "-n") {
+  } else if (string(argv[i]) == "-n" || string(argv[i]) == "--num-solutions") {
     if (++i == argv.size()) {
       return false;
     }
