@@ -17,6 +17,8 @@ Bug fixes:
    an argument whose true type after flattening causes ambiguity when finding a
    better match.
 -  Accept ``--num-solutions`` rather than only ``-n`` in the Gecode presolver.
+-  Fix crash when using a record type with a field that is itself a record or
+   tuple.
 
 .. _v2.7.5:
 

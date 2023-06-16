@@ -1762,10 +1762,10 @@ unsigned int EnvI::registerRecordType(TypeInst* ti) {
       // Register tuple field type when required
       if (fields[i]->type().bt() == Type::BT_TUPLE && fields[i]->type().typeId() == 0) {
         registerTupleType(fields[i]->ti());
-        Expression::type(fields[i], ti->type());
+        Expression::type(fields[i], fields[i]->ti()->type());
       } else if (fields[i]->type().bt() == Type::BT_RECORD && fields[i]->type().typeId() == 0) {
         registerRecordType(fields[i]->ti());
-        Expression::type(fields[i], ti->type());
+        Expression::type(fields[i], fields[i]->ti()->type());
       }
 
       cv = cv || fields[i]->type().isvar() || fields[i]->type().cv();
