@@ -21,27 +21,27 @@ if(CHUFFED_FOUND)
   target_link_libraries(mzn ${CHUFFED_LIBRARIES})
 
   ### Copy minizinc library from Chuffed (so we don't have to keep a copy in this repo)
-  file(COPY "${CHUFFED_SHARE_DIR}/minizinc/chuffed" DESTINATION "${CMAKE_BINARY_DIR}/share/minizinc")
+  file(COPY "${CHUFFED_SHARE_DIR}/minizinc/chuffed/" DESTINATION "${CMAKE_BINARY_DIR}/share/minizinc/chuffed_internal")
   install(
-    DIRECTORY "${CHUFFED_SHARE_DIR}/minizinc/chuffed"
-    DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/minizinc"
+    DIRECTORY "${CHUFFED_SHARE_DIR}/minizinc/chuffed/"
+    DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/minizinc/chuffed_internal"
   )
 
   ### Add Chuffed's msc file but remove the executable field so it loads the builtin solver
   file(READ "${CHUFFED_SHARE_DIR}/minizinc/solvers/chuffed.msc" chuffed_solver_config)
   string(REGEX REPLACE "\"org.chuffed.chuffed\"" "\"org.minizinc.chuffed\"" chuffed_solver_config ${chuffed_solver_config})
   string(REGEX REPLACE "\"executable\":" "\"_executable\":" chuffed_solver_config ${chuffed_solver_config})
-  file(WRITE "${CMAKE_BINARY_DIR}/share/minizinc/solvers/chuffed.msc" ${chuffed_solver_config})
+  string(REGEX REPLACE "\"\.\./chuffed\"" "\"../chuffed_internal\"" chuffed_solver_config ${chuffed_solver_config})
+  file(WRITE "${CMAKE_BINARY_DIR}/share/minizinc/solvers/chuffed_internal.msc" ${chuffed_solver_config})
   install(
-    FILES "${CMAKE_BINARY_DIR}/share/minizinc/solvers/chuffed.msc"
+    FILES "${CMAKE_BINARY_DIR}/share/minizinc/solvers/chuffed_internal.msc"
     DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/minizinc/solvers"
   )
 
 else()
 
   ### Remove Chuffed's library if present, so that it doesn't get accidentally picked up
-  file(REMOVE_RECURSE "${CMAKE_BINARY_DIR}/share/minizinc/chuffed")
-  file(REMOVE_RECURSE "${CMAKE_BINARY_DIR}/share/minizinc/chuffed")
-  file(REMOVE "${CMAKE_BINARY_DIR}/share/minizinc/solvers/chuffed.msc")
+  file(REMOVE_RECURSE "${CMAKE_BINARY_DIR}/share/minizinc/chuffed_internal")
+  file(REMOVE "${CMAKE_BINARY_DIR}/share/minizinc/solvers/chuffed_internal.msc")
 
 endif()

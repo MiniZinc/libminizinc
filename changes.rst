@@ -6,6 +6,11 @@ https://github.com/MiniZinc/libminizinc/issues.
 
 .. _unreleased:
 
+Changes:
+^^^^^^^^
+
+-  Change the library and solver configuration path of builtin version of
+   Chuffed to prevent file conflicts (:bugref:`708`).
 
 Bug fixes:
 ^^^^^^^^^^
@@ -29,6 +34,7 @@ Bug fixes:
 
 Changes:
 ^^^^^^^^
+
 -  Introduces the ``arg_val`` and ``arg_val_weak`` globals that return the index
    of the first occurrence of a value in a given array. (:bugref:`544`).
 -  Introduces the ``var_perm_sym`` and ``var_sqr_sym`` symmetry breaking
@@ -63,6 +69,7 @@ Changes in the IDE:
 
 Changes:
 ^^^^^^^^
+
 -  ``ASTString`` constructor that uses ``std::string`` is now explicit to avoid
    unexpected or unnecessary GC allocation.
 -  Circular definitions through the use of annotations will now be reported as
