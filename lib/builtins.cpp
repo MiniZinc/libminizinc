@@ -2210,7 +2210,8 @@ std::string show_with_type(EnvI& env, Expression* exp, Type t, bool showDzn) {
   if (Expression::type(e).dim() > 0 || Expression::type(e).structBT()) {
     e = eval_array_lit(env, e);
   }
-  if (Expression::type(e).dim() == 0 && t.bt() == Type::BT_INT && t.typeId() != 0) {
+  if (Expression::type(e).isPar() && Expression::type(e).dim() == 0 && t.bt() == Type::BT_INT &&
+      t.typeId() != 0) {
     return b_show_enum_type(env, e, t, showDzn, false);
   }
   std::ostringstream oss;
@@ -2266,7 +2267,7 @@ std::string b_show_dzn_id(EnvI& env, Call* call) {
 }
 
 std::string b_show_json_basic(EnvI& env, Expression* e, Type t) {
-  if (t.bt() == Type::BT_INT && t.typeId() != 0) {
+  if (t.bt() == Type::BT_INT && t.typeId() != 0 && t.isPar()) {
     return b_show_enum_type(env, e, t, false, true);
   }
   std::ostringstream oss;

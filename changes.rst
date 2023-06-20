@@ -24,6 +24,7 @@ Bug fixes:
 -  Accept ``--num-solutions`` rather than only ``-n`` in the Gecode presolver.
 -  Fix crash when using a record type with a field that is itself a record or
    tuple.
+-  Fix type error when calling ``show`` on var enum (:bugref:`711`).
 
 .. _v2.7.5:
 
