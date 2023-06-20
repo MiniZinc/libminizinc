@@ -2077,7 +2077,7 @@ private:
     double nSubintvAve = MIPD_stats[N_POSTs_NSubintvSum] / nc;
     MZN_MIPD_assert_hard(MIPD_stats[N_POSTs_NSubintvSum]);
     double dSubSizeAve = MIPD_stats[N_POSTs_SubSizeSum] / MIPD_stats[N_POSTs_NSubintvSum];
-    os << MIPD_stats[N_POSTs_all]
+    os << " " << MIPD_stats[N_POSTs_all]
        << " POSTs"
 #ifdef MZN_MIPDOMAINS_PRINTMORESTATS
           " [ ";
@@ -2104,7 +2104,7 @@ private:
       os << TCliqueSorter::LinEqGraph::dCoefMin << "--" << TCliqueSorter::LinEqGraph::dCoefMax
          << " abs coefs";
     }
-    os << " ... ";
+    os << std::endl;
   }
 
 };  // namespace MiniZinc

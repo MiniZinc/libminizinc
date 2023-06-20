@@ -11,6 +11,8 @@ Changes:
 
 -  Change the library and solver configuration path of builtin version of
    Chuffed to prevent file conflicts (:bugref:`708`).
+-  Use the verbose compilation flag to control the verbosity of the MIP domains
+   stage (:bugref:`705`). 
 
 Bug fixes:
 ^^^^^^^^^^

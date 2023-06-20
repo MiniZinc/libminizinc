@@ -153,9 +153,9 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
 
   if (!_compflags.noMIPdomains) {
     if (_compflags.verbose) {
-      log << "MIP domains ...";
+      log << "MIP domains ..." << std::endl;
     }
-    mip_domains(*new_env, _compflags.statistics);
+    mip_domains(*new_env, _compflags.verbose);
     if (_compflags.verbose) {
       log << " done (" << lasttime.stoptime() << ")" << std::endl;
     }
