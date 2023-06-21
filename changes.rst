@@ -6,6 +6,12 @@ https://github.com/MiniZinc/libminizinc/issues.
 
 .. _unreleased:
 
+Changes:
+^^^^^^^^
+
+- Allow libraries to define how to iterate over var set of int using the
+  function ``set2iter``, useful for different set representations.
+
 .. _v2.7.6:
 
 `Version 2.7.6 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.7.6>`__

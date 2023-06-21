@@ -2029,6 +2029,7 @@ public:
     ASTString bool2int;
     ASTString int2float;
     ASTString bool2float;
+    ASTString set2iter;
     ASTString assert;
     ASTString assert_dbg;  // NOLINT(readability-identifier-naming)
     ASTString deopt;

@@ -44,24 +44,67 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
     std::vector<Expression*> orig_where(c->numberOfGenerators());
     std::vector<Expression*> where;
     GCLock lock;
+
+    Generators gs;
     for (int i = 0; i < c->numberOfGenerators(); i++) {
+      bool handled_gen = false;
       if (c->in(i) == nullptr) {
         in[i] = nullptr;
         orig_where[i] = c->where(i);
       } else {
         if (Expression::type(c->in(i)).isvar() && Expression::type(c->in(i)).dim() == 0) {
-          std::vector<Expression*> args(1);
-          args[0] = c->in(i);
-          Call* ub = Call::a(Location().introduce(), "ub", args);
-          Type t = Type::parsetint();
-          t.cv(true);
-          ub->type(t);
-          ub->decl(env.model->matchFn(env, ub, false));
-          in[i] = ub;
-          for (int j = 0; j < c->numberOfDecls(i); j++) {
-            auto* bo = new BinOp(Location().introduce(), c->decl(i, j)->id(), BOT_IN, c->in(i));
-            bo->type(Type::varbool());
-            where.push_back(bo);
+          FunctionI* set2iter = env.model->matchFn(env, env.constants.ids.set2iter,
+                                                   {Expression::type(c->in(i))}, false);
+          assert(set2iter != nullptr && set2iter->ti()->type().bt() == Type::BT_INT &&
+                 set2iter->ti()->type().dim() == 1 && set2iter->ti()->type().ti() == Type::TI_VAR);
+          if (set2iter->e() != nullptr) {
+            Call* iter = Call::a(Location().introduce(), env.constants.ids.set2iter, {c->in(i)});
+            Type t = Type::varint(1);
+            t.ot(Type::OT_OPTIONAL);
+            iter->type(t);
+            iter->decl(set2iter);
+            in[i] = iter;
+
+            std::vector<VarDecl*> vds(c->numberOfDecls(i));
+            std::vector<Generator> redef;
+            redef.reserve(c->numberOfDecls(i));
+            for (int j = 0; j < c->numberOfDecls(i); j++) {
+              auto* vd = c->decl(i, j);
+              Type ty = vd->type();
+              ty.ot(Type::OT_OPTIONAL);
+              auto* nti = new TypeInst(Location().introduce(), ty);
+              auto* nvd = new VarDecl(Location().introduce(), nti, env.genId());
+              vds[j] = nvd;
+              // New where
+              auto* occ = Call::a(Location().introduce(), env.constants.ids.occurs, {nvd->id()});
+              occ->decl(env.model->matchFn(env, occ, false));
+              occ->type(Type::varbool());
+              where.push_back(occ);
+              // New generator defining the deopt
+              auto* deopt = Call::a(Location().introduce(), env.constants.ids.deopt, {nvd->id()});
+              deopt->decl(env.model->matchFn(env, deopt, false));
+              deopt->type(vd->type());
+              redef.emplace_back(std::vector<VarDecl*>{vd}, nullptr, deopt);
+            }
+
+            gs.g.emplace_back(vds, in[i], orig_where[i]);
+            for (auto& gen : redef) {
+              gs.g.emplace_back(std::move(gen));
+            }
+            handled_gen = true;
+
+          } else {
+            Call* ub = Call::a(Location().introduce(), "ub", {c->in(i)});
+            Type t = Type::parsetint();
+            t.cv(true);
+            ub->type(t);
+            ub->decl(env.model->matchFn(env, ub, false));
+            in[i] = ub;
+            for (int j = 0; j < c->numberOfDecls(i); j++) {
+              auto* bo = new BinOp(Location().introduce(), c->decl(i, j)->id(), BOT_IN, c->in(i));
+              bo->type(Type::varbool());
+              where.push_back(bo);
+            }
           }
         } else {
           in[i] = c->in(i);
@@ -126,16 +169,16 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
           orig_where[i] = c->where(i);
         }
       }
-    }
-    if (!where.empty()) {
-      Generators gs;
-      for (int i = 0; i < c->numberOfGenerators(); i++) {
+
+      if (!handled_gen) {
         std::vector<VarDecl*> vds(c->numberOfDecls(i));
         for (int j = 0; j < c->numberOfDecls(i); j++) {
           vds[j] = c->decl(i, j);
         }
         gs.g.emplace_back(vds, in[i], orig_where[i]);
       }
+    }
+    if (!where.empty()) {
       Expression* cond;
       if (where.size() > 1) {
         auto* al = new ArrayLit(Location().introduce(), where);
