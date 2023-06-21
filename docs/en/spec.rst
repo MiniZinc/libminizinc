@@ -1747,7 +1747,7 @@ It can be var, in which case the type of the comprehension is lifted to an optio
 
 .. _spec-array-literals:
 
-Simnple Array Literals
+Simple Array Literals
 ++++++++++++++++++++++
 
 Simple array literals have this syntax:
@@ -2741,6 +2741,7 @@ Predicate declarations that are natively supported
 in MiniZinc are restricted to using FlatZinc
 types (for instance, multi-dimensional and non-1-based arrays are
 forbidden).
+
 .. % \pjs{need to fix this if we allow2d arrays in FlatZinc!}
 
 Declarations for user-defined operations can be annotated.
@@ -2762,6 +2763,7 @@ Predicates and functions are allowed to be recursive. Termination of
 a recursive function call depends solely on its fixed arguments, i.e., 
 recursive functions and predicates cannot be used to define recursively 
 constrained variables.
+
 .. % \Rationale{This ensures that the satisfiability of models is decidable.}
 
 Predicates and functions introduce their own local names, being those of the
