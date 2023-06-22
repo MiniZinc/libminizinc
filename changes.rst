@@ -9,8 +9,9 @@ https://github.com/MiniZinc/libminizinc/issues.
 Changes:
 ^^^^^^^^
 
-- Allow libraries to define how to iterate over var set of int using the
-  function ``set2iter``, useful for different set representations.
+-  Allow libraries to define how to iterate over ``var set of int`` using the
+   function ``set2iter``, useful for different set representations.
+-  Update the reflection functions ``ub``, ``lb``, and ``dom`` to return 
 
 .. _v2.7.6:
 

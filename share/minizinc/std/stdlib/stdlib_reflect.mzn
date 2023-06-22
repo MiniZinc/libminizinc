@@ -6,13 +6,13 @@
 */
 
 /** @group stdlib.reflect Return lower bound of \a x */
-function int: lb(var int: x);
+function $$E: lb(var $$E: x);
 /** @group stdlib.reflect Return upper bound of \a x */
-function int: ub(var int: x);
+function $$E: ub(var $$E: x);
 /** @group stdlib.reflect Return lower bound of \a x */
-function int: lb(var opt int: x);
+function $$E: lb(var opt $$E: x);
 /** @group stdlib.reflect Return upper bound of \a x */
-function int: ub(var opt int: x);
+function $$E: ub(var opt $$E: x);
 /** @group stdlib.reflect Return lower bound of \a x */
 function float: lb(var float: x);
 /** @group stdlib.reflect Return upper bound of \a x */
@@ -22,14 +22,14 @@ function float: lb(var opt float: x);
 /** @group stdlib.reflect Return upper bound of \a x */
 function float: ub(var opt float: x);
 /** @group stdlib.reflect Return lower bound of \a x */
-function set of int: lb(var set of int: x);
+function set of $$E: lb(var set of $$E: x);
 /** @group stdlib.reflect Return upper bound of \a x */
-function set of int: ub(var set of int: x);
+function set of $$E: ub(var set of $$E: x);
 /** @group stdlib.reflect Return array of lower bounds of the elements in array \a x */
-function array[$U] of int: lb(array[$U] of var int: x) =
+function array[$U] of $$E: lb(array[$U] of var $$E: x) =
   arrayXd(x,[lb(xx) | xx in array1d(x)]);
 /** @group stdlib.reflect Return array of upper bounds of the elements in array \a x */
-function array[$U] of int: ub(array[$U] of var int: x) =
+function array[$U] of $$E: ub(array[$U] of var $$E: x) =
   arrayXd(x,[ub(xx) | xx in array1d(x)]);
 /** @group stdlib.reflect Return array of lower bounds of the elements in array \a x */
 function array[$U] of float: lb(array[$U] of var float: x) =
@@ -38,34 +38,34 @@ function array[$U] of float: lb(array[$U] of var float: x) =
 function array[$U] of float: ub(array[$U] of var float: x) =
   arrayXd(x,[ub(xx) | xx in array1d(x)]);
 /** @group stdlib.reflect Return array of lower bounds of the elements in array \a x */
-function array[$U] of set of int: lb(array[$U] of var set of int: x) =
+function array[$U] of set of $$E: lb(array[$U] of var set of $$E: x) =
   arrayXd(x,[lb(xx) | xx in array1d(x)]);
 /** @group stdlib.reflect Return array of upper bounds of the elements in array \a x */
-function array[$U] of set of int: ub(array[$U] of var set of int: x) =
+function array[$U] of set of $$E: ub(array[$U] of var set of $$E: x) =
   arrayXd(x,[ub(xx) | xx in array1d(x)]);
 /** @group stdlib.reflect Return minimum of all lower bounds of the elements in array \a x */
-function int: lb_array(array[$U] of var opt int: x);
+function $$E: lb_array(array[$U] of var opt $$E: x);
 /** @group stdlib.reflect Return maximum of all upper bounds of the elements in array \a x */
-function int: ub_array(array[$U] of var opt int: x);
+function $$E: ub_array(array[$U] of var opt $$E: x);
 /** @group stdlib.reflect Return minimum of all lower bounds of the elements in array \a x */
 function float: lb_array(array[$U] of var opt float: x);
 /** @group stdlib.reflect Return maximum of all upper bounds of the elements in array \a x */
 function float: ub_array(array[$U] of var opt float: x);
 /** @group stdlib.reflect Return intersection of all lower bounds of the elements in array \a x */
-function set of int: lb_array(array[$U] of var set of int: x);
+function set of $$E: lb_array(array[$U] of var set of $$E: x);
 /** @group stdlib.reflect Return union of all upper bounds of the elements in array \a x */
-function set of int: ub_array(array[$U] of var set of int: x);
+function set of $$E: ub_array(array[$U] of var set of $$E: x);
 /** @group stdlib.reflect Return domain of \a x */
-function set of int: dom(var int: x);
+function set of $$E: dom(var $$E: x);
 /** @group stdlib.reflect Return domain of \a x */
-function set of int: dom(var opt int: x);
+function set of $$E: dom(var opt $$E: x);
 function set of int: dom(var bool: b) =
   if is_fixed(b) then if fix(b) then {1} else {0} endif else {0,1} endif;
 
 /** @group stdlib.reflect Return union of all domains of the elements in array \a x */
-function set of int: dom_array(array[$T] of var int: x);
+function set of $$E: dom_array(array[$T] of var $$E: x);
 /** @group stdlib.reflect Return union of all domains of the elements in array \a x */
-function set of int: dom_array(array[$T] of var opt int: x);
+function set of $$E: dom_array(array[$T] of var opt $$E: x);
 /** @group stdlib.reflect Return union of all domains of the elements in array \a x, ignoring absent elements */
 function set of int: dom_array_occurring(array[$T] of var opt int: x) =
   array_union([if is_fixed(xi) /\ absent(fix(xi)) then {} else dom(xi) endif | xi in array1d(x)]);
