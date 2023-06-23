@@ -1305,7 +1305,7 @@ void EnvI::fail(const std::string& msg, const Location& loc) {
     }
     output->addItem(
         new OutputI(Location().introduce(), new ArrayLit(Location(), std::vector<Expression*>())));
-    throw ModelInconsistent(*this, Location().introduce());
+    throw ModelInconsistent(*this, Location().introduce(), msg);
   }
 }
 
