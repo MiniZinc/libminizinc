@@ -26,6 +26,7 @@
 #include <minizinc/type.hh>
 #include <minizinc/typecheck.hh>
 #include <minizinc/utils.hh>
+#include <minizinc/values.hh>
 
 #include <algorithm>
 #include <cassert>
@@ -215,17 +216,47 @@ void set_computed_value(EnvI& envi, VarDecl* vd, Expression* val) {
         args[i] = c->arg(i);
       }
       args[c->argCount()] = vd->id();
+      FunctionI* decl = nullptr;
       {
         GCLock lock;
         auto* nc = Call::a(Expression::loc(c), c->id(), args);
         nc->type(Type::varbool());
-        nc->decl(envi.model->matchFn(envi, nc, false));
+        decl = envi.model->matchFn(envi, nc, false);
         ka = nc;
       }
-      flat_exp(envi, Ctx(), ka(), envi.constants.varTrue, envi.constants.varTrue);
-      made_relational = true;
+      if (decl != nullptr) {
+        made_relational = true;
+        Expression::cast<Call>(ka())->decl(decl);
+        flat_exp(envi, Ctx(), ka(), envi.constants.varTrue, envi.constants.varTrue);
+      }
     }
     if (!made_relational) {
+      if (vd->type().isvarbool()) {
+        GCLock lock;
+        vd->type(Type::parbool());
+        vd->ti(new TypeInst(Expression::loc(vd), Type::parbool(), val));
+        return;
+      }
+      if (vd->type().isvarint()) {
+        GCLock lock;
+        Type nty = vd->type();
+        nty.mkPar(envi);
+        vd->type(nty);
+
+        IntVal v = eval_int(envi, val);
+        vd->ti(new TypeInst(Expression::loc(vd->ti()), nty,
+                            new SetLit(Location().introduce(), IntSetVal::a(v, v))));
+        return;
+      }
+      if (vd->type().isvarfloat()) {
+        GCLock lock;
+        vd->type(Type::parfloat());
+
+        FloatVal v = eval_float(envi, val);
+        vd->ti(new TypeInst(Expression::loc(vd->ti()), Type::parfloat(),
+                            new SetLit(Location().introduce(), FloatSetVal::a(v, v))));
+        return;
+      }
       if (!create_explicit_assignment_constraints(envi, vd, val)) {
         std::ostringstream ss;
         ss << "Unable to create asignment constraint for defined variable " << *vd->id() << " = "

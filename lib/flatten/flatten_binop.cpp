@@ -1200,31 +1200,7 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
     std::swap(e0, e1);
   }
 
-  // Inclusions in set variable domain constraints
-  // Case 1: direct set assignment
-  if (isBuiltin && bot == BOT_EQ && ctx.b == C_ROOT && r == env.constants.varTrue &&
-      Expression::type(e1.r()).isPar() && Expression::type(e1.r()).isIntSet() &&
-      Expression::isa<Id>(e0.r())) {
-    auto* vd = Expression::cast<Id>(e0.r())->decl();
-    IntSetVal* sl = eval_intset(env, e1.r());
-    if (vd->ti()->domain() != nullptr) {
-      IntSetRanges slr(sl);
-      IntSetRanges dom(eval_intset(env, vd->ti()->domain()));
-      if (!Ranges::subset<IntSetRanges, IntSetRanges>(slr, dom)) {
-        env.fail("assignment to value outside of domain", Expression::loc(bo));
-      }
-    }
-    KeepAlive val;
-    {
-      GCLock lock;
-      val = new SetLit(Expression::loc(e1.r()), sl);
-    }
-    set_computed_value(env, vd, val());
-    ees[2].b = env.constants.literalTrue;
-    ret.r = conj(env, r, ctx, ees);
-    return ret;
-  }
-  // Case 2: exclusion from domain, e.g., not (5 in x)
+  // Exclusion from domain, e.g., not (5 in x)
   if (isBuiltin && bot == BOT_IN && ctx.b == C_NEG && ctx.neg == true &&
       r == env.constants.varTrue && Expression::type(e0.r()).isPar() &&
       Expression::type(e1.r()).isIntSet() && Expression::isa<Id>(e1.r())) {
@@ -1312,6 +1288,14 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
       flatten_linexp_binop<FloatLit>(env, ctx, r, b, ret, le0, le1, bot, doubleNeg, ees, args,
                                      callid);
     }
+  } else if (isBuiltin && bot == BOT_EQ && ctx.b == C_ROOT && r == env.constants.varTrue &&
+             Expression::type(e1.r()).isPar() && Expression::isa<Id>(e0.r())) {
+    // Par assignment to Id with no right hand side
+    auto* vd = Expression::cast<Id>(e0.r())->decl();
+    set_computed_value(env, vd, e1.r());
+    ees[2].b = env.constants.literalTrue;
+    ret.r = conj(env, r, ctx, ees);
+    return ret;
   } else {
     switch (bot) {
       case BOT_GR:
