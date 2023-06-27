@@ -134,6 +134,8 @@ EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
                 !Expression::isa<Let>(e) && !Expression::isa<VarDecl>(e) &&
                 Expression::type(e).bt() != Type::BT_ANN;
 
+  int dispatch = is_par ? 0 : Expression::eid(e) - Expression::E_INTLIT + 1;
+
 #ifdef OUTPUT_CALLTREE
   if (auto* call = Expression::dynamicCast<Call>(e)) {
     for (int i = 0; i < env.callDepth; ++i) {
@@ -143,14 +145,12 @@ EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
               << std::endl;
     env.callDepth++;
 
-    EE ee = flatten_call(env, ctx, e, r, b);
+    EE ee = flattener_dispatch[dispatch](env, ctx, e, r, b);
 
     env.callDepth--;
     return ee;
   }
 #endif
-
-  int dispatch = is_par ? 0 : Expression::eid(e) - Expression::E_INTLIT + 1;
 
   return flattener_dispatch[dispatch](env, ctx, e, r, b);
 }
