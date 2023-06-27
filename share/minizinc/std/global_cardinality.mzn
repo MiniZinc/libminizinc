@@ -11,8 +11,8 @@ include "fzn_global_cardinality_low_up_set.mzn";
 /** @group globals.counting
   Requires that the number of occurrences of \a cover[\p i] in \a x is \a counts[\p i].
 */
-predicate global_cardinality(array[$X] of var int: x,
-                             array[$Y] of int: cover,
+predicate global_cardinality(array[$X] of var $$E: x,
+                             array[$Y] of $$E: cover,
                              array[$Y] of var int: counts) =
     assert(index_sets_agree(cover, counts),
         "global_cardinality: cover and counts must have identical index sets",
@@ -26,8 +26,8 @@ predicate global_cardinality(array[$X] of var int: x,
 /** @group globals.counting
   Requires that the number of occurrences of \a cover[\p i] in \a x is \a counts[\p i].
 */
-predicate global_cardinality(array[$X] of var opt int: x,
-                             array[$Y] of int: cover,
+predicate global_cardinality(array[$X] of var opt $$E: x,
+                             array[$Y] of $$E: cover,
                              array[$Y] of var int: counts) =
     assert(index_sets_agree(cover, counts),
         "global_cardinality: cover and counts must have identical index sets",
@@ -42,8 +42,8 @@ predicate global_cardinality(array[$X] of var opt int: x,
   Requires that for all \p i, the value \a cover[\p i] appears at least \a lbound[\p i]
   and at most \a ubound[\p i] times in the array \a x.
 */
-predicate global_cardinality(array[$X] of var int: x,
-                             array[$Y] of int: cover,
+predicate global_cardinality(array[$X] of var $$E: x,
+                             array[$Y] of $$E: cover,
                              array[$Y] of int: lbound,
                              array[$Y] of int: ubound) =
   assert(
@@ -65,8 +65,8 @@ predicate global_cardinality(array[$X] of var int: x,
   Requires that for all \p i, the value \a cover[\p i] appears at least \a lbound[\p i]
   and at most \a ubound[\p i] times in the array \a x.
 */
-predicate global_cardinality(array[$X] of var opt int: x,
-                             array[$Y] of int: cover,
+predicate global_cardinality(array[$X] of var opt $$E: x,
+                             array[$Y] of $$E: cover,
                              array[$Y] of int: lbound,
                              array[$Y] of int: ubound) =
   assert(
@@ -87,8 +87,8 @@ predicate global_cardinality(array[$X] of var opt int: x,
 /** @group globals.counting
   Requires that the number of occurrences of \a cover[\p i] in \a x is \a counts[\p i].
 */
-predicate global_cardinality(array[$X] of var set of int: x,
-                             array[$Y] of int: cover,
+predicate global_cardinality(array[$X] of var set of $$E: x,
+                             array[$Y] of $$E: cover,
                              array[$Y] of var int: counts) = 
     assert(index_sets_agree(cover, counts),
         "global_cardinality: cover and counts must have identical index sets",
@@ -103,8 +103,8 @@ predicate global_cardinality(array[$X] of var set of int: x,
   Requires that for all \p i, the value \a cover[\p i] appears at least \a lbound[\p i]
   and at most \a ubound[\p i] times in the array \a x.
 */
-predicate global_cardinality(array[$X] of var set of int: x,
-                             array[$Y] of int: cover,
+predicate global_cardinality(array[$X] of var set of $$E: x,
+                             array[$Y] of $$E: cover,
                              array[$Y] of int: lbound,
                              array[$Y] of int: ubound) = 
   assert(

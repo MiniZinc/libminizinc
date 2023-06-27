@@ -13,8 +13,8 @@ include "fzn_global_cardinality_low_up_closed_set.mzn";
 
   The elements of \a x must take their values from \a cover.
 */
-predicate global_cardinality_closed(array[$X] of var int: x,
-                                    array[$Y] of int: cover,
+predicate global_cardinality_closed(array[$X] of var $$E: x,
+                                    array[$Y] of $$E: cover,
                                     array[$Y] of var int: counts) =
     assert(index_sets_agree(cover, counts),
         "global_cardinality_closed: " ++
@@ -31,8 +31,8 @@ predicate global_cardinality_closed(array[$X] of var int: x,
 
   The elements of \a x must take their values from \a cover or be absent.
 */
-predicate global_cardinality_closed(array[$X] of var opt int: x,
-                                    array[$Y] of int: cover,
+predicate global_cardinality_closed(array[$X] of var opt $$E: x,
+                                    array[$Y] of $$E: cover,
                                     array[$Y] of var int: counts) =
     assert(index_sets_agree(cover, counts),
         "global_cardinality_closed: " ++
@@ -50,8 +50,8 @@ predicate global_cardinality_closed(array[$X] of var opt int: x,
 
   The elements of \a x must take their values from \a cover.
 */
-predicate global_cardinality_closed(array[$X] of var int: x,
-                                    array[$Y] of int: cover,
+predicate global_cardinality_closed(array[$X] of var $$E: x,
+                                    array[$Y] of $$E: cover,
                                     array[$Y] of int: lbound,
                                     array[$Y] of int: ubound) =
   assert(
@@ -79,8 +79,8 @@ predicate global_cardinality_closed(array[$X] of var int: x,
 
   The elements of \a x must take their values from \a cover or be absent.
 */
-predicate global_cardinality_closed(array[$X] of var opt int: x,
-                                    array[$Y] of int: cover,
+predicate global_cardinality_closed(array[$X] of var opt $$E: x,
+                                    array[$Y] of $$E: cover,
                                     array[$Y] of int: lbound,
                                     array[$Y] of int: ubound) =
   assert(
@@ -107,8 +107,8 @@ predicate global_cardinality_closed(array[$X] of var opt int: x,
 
   The elements of \a x must take their values from \a cover or be absent.
 */
-predicate global_cardinality_closed(array[$X] of var set of int: x,
-                                    array[$Y] of int: cover,
+predicate global_cardinality_closed(array[$X] of var set of $$E: x,
+                                    array[$Y] of $$E: cover,
                                     array[$Y] of var int: counts) = 
     assert(index_sets_agree(cover, counts),
         "global_cardinality_closed: " ++
@@ -126,8 +126,8 @@ predicate global_cardinality_closed(array[$X] of var set of int: x,
 
   The elements of \a x must take their values from \a cover or be absent.
 */
-predicate global_cardinality_closed(array[$X] of var set of int: x,
-                                    array[$Y] of int: cover,
+predicate global_cardinality_closed(array[$X] of var set of $$E: x,
+                                    array[$Y] of $$E: cover,
                                     array[$Y] of int: lbound,
                                     array[$Y] of int: ubound) = 
   assert(

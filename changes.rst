@@ -12,6 +12,9 @@ Changes:
 -  Allow libraries to define how to iterate over ``var set of int`` using the
    function ``set2iter``, useful for different set representations.
 -  Update the reflection functions ``ub``, ``lb``, and ``dom`` to return 
+-  Add the ``opt`` variants of the ``global_cardinality`` functions, and add
+   enumerated type typesafety between the values of the decision variables and
+   the cover parameters.
 
 .. _v2.7.6:
 
