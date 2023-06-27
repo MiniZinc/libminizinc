@@ -13,6 +13,8 @@
 #include <minizinc/output.hh>
 #include <minizinc/typecheck.hh>
 
+#include <string>
+
 namespace MiniZinc {
 
 namespace {
@@ -761,15 +763,17 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
 
             Comprehension* indexes;
             Comprehension* values;
+            auto* index_set = Call::a(Location().introduce(), "index_set", {vd->id()});
+            index_set->type(Type::varsetint());
+            index_set->decl(e.model->matchFn(e, index_set, false));
 
             {
               auto* i_ti = new TypeInst(Location().introduce(), Type::parenum(idx1EnumId));
               auto* i_vd = new VarDecl(Location().introduce(), i_ti, "i");
               i_vd->toplevel(false);
-              auto* sl = new SetLit(Location().introduce(), IntSetVal::a(al->min(0), al->max(0)));
 
               Generators g;
-              g.g.emplace_back(std::vector<VarDecl*>({i_vd}), sl, nullptr);
+              g.g.emplace_back(std::vector<VarDecl*>({i_vd}), index_set, nullptr);
               auto* show_i = Call::a(Location().introduce(), ASTString("showDzn"), {i_vd->id()});
               show_i->type(Type::parstring());
               FunctionI* fi = e.model->matchFn(e, show_i, false);
@@ -782,10 +786,9 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
               auto* i_ti = new TypeInst(Location().introduce(), Type::parenum(idx1EnumId));
               auto* i_vd = new VarDecl(Location().introduce(), i_ti, "i");
               i_vd->toplevel(false);
-              auto* sl = new SetLit(Location().introduce(), IntSetVal::a(al->min(0), al->max(0)));
 
               Generators g;
-              g.g.emplace_back(std::vector<VarDecl*>({i_vd}), sl, nullptr);
+              g.g.emplace_back(std::vector<VarDecl*>({i_vd}), index_set, nullptr);
 
               auto* aa = new ArrayAccess(Location().introduce(), vd->id(), {i_vd->id()});
               Type vd_t = vd->type();
@@ -843,8 +846,14 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
              */
             std::vector<Expression*> indexes(2);
             Comprehension* values;
+            Call* index_set[2];
 
             for (int i = 0; i < 2; i++) {
+              index_set[i] = Call::a(
+                  Location().introduce(),
+                  std::string("index_set") + std::to_string(i) + std::string("of2"), {vd->id()});
+              index_set[i]->type(Type::varsetint());
+              index_set[i]->decl(e.model->matchFn(e, index_set[i], false));
               Expression* index;
               if ((i == 0 && idx1EnumId == 0 && al->min(0) == 1) ||
                   (i == 1 && idx2EnumId == 0 && al->min(1) == 1)) {
@@ -854,10 +863,9 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
                                           Type::parenum(i == 0 ? idx1EnumId : idx2EnumId));
                 auto* i_vd = new VarDecl(Location().introduce(), i_ti, "i");
                 i_vd->toplevel(false);
-                auto* sl = new SetLit(Location().introduce(), IntSetVal::a(al->min(i), al->max(i)));
 
                 Generators g;
-                g.g.emplace_back(std::vector<VarDecl*>({i_vd}), sl, nullptr);
+                g.g.emplace_back(std::vector<VarDecl*>({i_vd}), index_set[i], nullptr);
                 auto* show_i = Call::a(Location().introduce(), ASTString("showDzn"), {i_vd->id()});
                 show_i->type(Type::parstring());
                 FunctionI* fi = e.model->matchFn(e, show_i, false);
@@ -879,15 +887,13 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
               auto* i_ti = new TypeInst(Location().introduce(), Type::parenum(idx1EnumId));
               auto* i_vd = new VarDecl(Location().introduce(), i_ti, "i");
               i_vd->toplevel(false);
-              auto* sl_i = new SetLit(Location().introduce(), IntSetVal::a(al->min(0), al->max(0)));
               auto* j_ti = new TypeInst(Location().introduce(), Type::parenum(idx2EnumId));
               auto* j_vd = new VarDecl(Location().introduce(), j_ti, "j");
               j_vd->toplevel(false);
-              auto* sl_j = new SetLit(Location().introduce(), IntSetVal::a(al->min(1), al->max(1)));
 
               Generators g;
-              g.g.emplace_back(std::vector<VarDecl*>({i_vd}), sl_i, nullptr);
-              g.g.emplace_back(std::vector<VarDecl*>({j_vd}), sl_j, nullptr);
+              g.g.emplace_back(std::vector<VarDecl*>({i_vd}), index_set[0], nullptr);
+              g.g.emplace_back(std::vector<VarDecl*>({j_vd}), index_set[1], nullptr);
 
               auto* aa =
                   new ArrayAccess(Location().introduce(), vd->id(), {i_vd->id(), j_vd->id()});
