@@ -15,6 +15,9 @@ Changes:
 -  Add the ``opt`` variants of the ``global_cardinality`` functions, and add
    enumerated type typesafety between the values of the decision variables and
    the cover parameters.
+-  ``mzn_reverse_map_var`` is now only called on output variables that do not
+   yet have reverse mappers after initial flattening, but are required by the
+   output model.
 
 .. _v2.7.6:
 

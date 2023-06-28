@@ -820,14 +820,6 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
   if (hasBeenAdded) {
     vdi = (*env.flat())[env.varOccurrences.find(vd)]->cast<VarDeclI>();
   } else {
-    if (FunctionI* fi = env.model->matchRevMap(env, vd->type())) {
-      // We need to introduce a reverse mapper
-      Call* revmap = Call::a(Location().introduce(), fi->id(), {vd->id()});
-      revmap->decl(fi);
-      Expression::type(revmap, Type::varbool());
-      env.flatAddItem(new ConstraintI(Location().introduce(), revmap));
-    }
-
     vdi = VarDeclI::a(Location().introduce(), vd);
     env.flatAddItem(vdi);
   }
@@ -4178,6 +4170,15 @@ void flatten(Env& e, FlatteningOptions opt) {
                 continue;
               }
             }
+          }
+          // If no reverse mapper has been put in place, introduce it now
+          FunctionI* fi = env.model->matchRevMap(env, vdi->e()->type());
+          if (fi != nullptr && !env.hasReverseMapper(vdi->e()->id())) {
+            GCLock lock;
+            Call* revmap = Call::a(Location().introduce(), fi->id(), {vdi->e()->id()});
+            revmap->decl(fi);
+            Expression::type(revmap, Type::varbool());
+            env.flatAddItem(new ConstraintI(Location().introduce(), revmap));
           }
           if (vdi->e()->type().dim() > 0 && vdi->e()->type().isvar()) {
             vdi->e()->ti()->eraseDomain();
