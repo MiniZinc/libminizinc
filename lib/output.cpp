@@ -850,9 +850,10 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
             Call* index_set[2];
 
             for (int i = 0; i < 2; i++) {
-              index_set[i] = Call::a(
-                  Location().introduce(),
-                  std::string("index_set") + std::to_string(i) + std::string("of2"), {vd->id()});
+              index_set[i] =
+                  Call::a(Location().introduce(),
+                          std::string("index_set_") + std::to_string(i + 1) + std::string("of2"),
+                          {vd->id()});
               index_set[i]->type(Type::varsetint());
               index_set[i]->decl(e.model->matchFn(e, index_set[i], false));
               Expression* index;
