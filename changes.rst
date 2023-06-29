@@ -70,8 +70,9 @@ Bug fixes:
    error was thrown (:bugref:`730`).
 -  Fix error management when reading preference files (:bugref:`729`).
 -  Fix segmentation fault caused by the creation of invalid domain constraints
-   generated for functions with arrays of tuples or records paramgeters
+   generated for functions with arrays of tuples or records parameters
    (:bugref:`732`).
+-  Fix crash when instantiating a type-inst identifier using only ``<>``.
 
 .. _v2.7.6:
 

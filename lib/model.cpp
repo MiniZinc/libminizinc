@@ -296,18 +296,21 @@ void TypeInst::collectTypeIds(std::unordered_map<ASTString, size_t>& seen_tiids,
   for (size_t i = 0; i < al->size(); i++) {
     auto* ti = Expression::cast<TypeInst>((*al)[i]);
     if (ti->type().bt() == Type::BT_TOP) {
-      assert(ti->domain() && Expression::isa<TIId>(ti->domain()));
-      TIId* id0 = Expression::cast<TIId>(ti->domain());
-      auto it = seen_tiids.find(id0->v());
-      if (it == seen_tiids.end()) {
-        type_ids.emplace_back(
-            std::vector<Type*>({&ti->_type}),
-            pbt_join(ti->type().any() ? PBT_ANY : PBT_ALL, pbt_from_type(ti->type())));
-        seen_tiids.emplace(id0->v(), type_ids.size() - 1);
-      } else {
-        TIIDInfo& info = type_ids[it->second];
-        info.pbt = pbt_join(info.pbt, pbt_from_type(ti->type()));
-        info.t.push_back(&ti->_type);
+      // If type is top, either this is a TIId, or it is caused by <>
+      if (ti->domain() != nullptr) {
+        assert(Expression::isa<TIId>(ti->domain()));
+        TIId* id0 = Expression::cast<TIId>(ti->domain());
+        auto it = seen_tiids.find(id0->v());
+        if (it == seen_tiids.end()) {
+          type_ids.emplace_back(
+              std::vector<Type*>({&ti->_type}),
+              pbt_join(ti->type().any() ? PBT_ANY : PBT_ALL, pbt_from_type(ti->type())));
+          seen_tiids.emplace(id0->v(), type_ids.size() - 1);
+        } else {
+          TIIDInfo& info = type_ids[it->second];
+          info.pbt = pbt_join(info.pbt, pbt_from_type(ti->type()));
+          info.t.push_back(&ti->_type);
+        }
       }
     } else if (ti->type().structBT()) {
       size_t size = seen_tiids.size();
