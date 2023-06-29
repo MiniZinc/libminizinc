@@ -139,7 +139,7 @@ The valid events are:
       visualiseSolution(solution);
     });
 * ``status``: triggered when a final status line is received (such as ``==========``).
-  The callback function is passed an object containing the ``status`` and ``time`` in milliseconds if there is a final status, or otherwise ``null``.
+  The callback function is passed an object containing the ``status`` and ``time`` in milliseconds.
   The ``status`` value can be one of
 
   * ``ALL_SOLUTIONS``
