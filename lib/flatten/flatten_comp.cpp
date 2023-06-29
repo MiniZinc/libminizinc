@@ -337,8 +337,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
       } else {
         auto* alr = new ArrayLit(Location().introduce(), elems);
         elemType.st(Type::ST_PLAIN);
-        elemType.dim(1);
-        alr->type(elemType);
+        alr->type(Type::arrType(env, Type::partop(1), elemType));
         alr->flat(true);
         Call* a2s = Call::a(Location().introduce(), "array2set", {alr});
         a2s->decl(env.model->matchFn(env, a2s, false));
