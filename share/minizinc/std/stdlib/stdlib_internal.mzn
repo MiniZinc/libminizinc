@@ -147,9 +147,10 @@ predicate var_dom(array[$T] of var opt float: x, set of float: d) =
 */
 predicate float_dom(var opt float: x, array[int] of float: as) =
   let {
-    var bool : b = occurs_internal_float(x);
-    var float : dx = deopt_internal_float(x);
-    constraint (x = reverse_map_var_opt_float(b,dx)) :: is_reverse_map;
+    any: xx = opt_internal_float(x);
+    any: b = xx.1;
+    any: dx = xx.2;
+    constraint (x = reverse_map_var_opt(b, dx)) :: is_reverse_map;
   } in float_dom(dx, as);
 
 predicate mzn_alias_eq(var float: x, var float: y) = float_eq(x, y);

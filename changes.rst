@@ -18,6 +18,8 @@ Changes:
 -  ``mzn_reverse_map_var`` is now only called on output variables that do not
    yet have reverse mappers after initial flattening, but are required by the
    output model.
+-  Use tuples to implement the decomposition of optional variables, avoiding
+   possible CSE aliasing problems.
 
 Bug fixes:
 ^^^^^^^^^^
