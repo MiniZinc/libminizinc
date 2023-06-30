@@ -2527,7 +2527,7 @@ Expression* mk_domain_constraint(EnvI& env, Expression* expr, Expression* dom) {
       }
     }
     if (fieldwise.size() <= 1) {
-      return fieldwise.empty() ? nullptr : fieldwise[0];
+      return fieldwise.empty() ? env.constants.literalTrue : fieldwise[0];
     }
     auto* al = new ArrayLit(Location().introduce(), fieldwise);
     Type al_t = t;
