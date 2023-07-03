@@ -19,6 +19,10 @@ Changes:
    yet have reverse mappers after initial flattening, but are required by the
    output model.
 
+Bug fixes:
+^^^^^^^^^^
+-  Fix restoration of tuple/record domains when flattening ``let`` expressions.
+
 .. _v2.7.6:
 
 `Version 2.7.6 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.7.6>`__

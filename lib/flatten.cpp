@@ -3437,7 +3437,7 @@ Expression* eval_typeinst_domain(EnvI& env, const Ctx& ctx, Expression* dom) {
     for (int i = 0; i < tup->size(); ++i) {
       auto* tupi = Expression::cast<TypeInst>((*tup)[i]);
       if (tupi->domain() == nullptr) {
-        evaluated[i] = tupi;
+        evaluated[i] = new TypeInst(Expression::loc(tupi), tupi->type(), tupi->ranges());
       } else if (Expression::isa<ArrayLit>(tupi->domain())) {
         evaluated[i] = new TypeInst(Expression::loc(tupi), tupi->type(), tupi->ranges(),
                                     eval_typeinst_domain(env, ctx, tupi->domain()));
