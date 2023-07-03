@@ -2377,7 +2377,7 @@ void check_index_sets(EnvI& env, VarDecl* vd, Expression* e, bool isArg) {
           for (unsigned int i = 0; i < tis.size(); i++) {
             if (tis[i]->domain() == nullptr) {
               if (!isArg) {
-                cm.insert(tis[i], new TypeInst(Location().introduce(), Type(),
+                cm.insert(tis[i], new TypeInst(Location().introduce(), Type::parint(),
                                                new SetLit(Location().introduce(),
                                                           IntSetVal::a(al->min(i), al->max(i)))));
                 needNewTypeInst = true;
