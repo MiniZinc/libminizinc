@@ -20,6 +20,7 @@ Changes:
    output model.
 -  Use tuples to implement the decomposition of optional variables, avoiding
    possible CSE aliasing problems.
+-  Improve error messaging for invalid parameter configuration (``.mpc``) files. 
 
 Bug fixes:
 ^^^^^^^^^^

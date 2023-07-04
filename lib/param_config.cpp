@@ -18,32 +18,28 @@
 namespace MiniZinc {
 
 void ParamConfig::load(const std::string& filename) {
-  if (JSONParser::fileIsJSON(filename)) {
-    try {
-      Env confenv;
-      JSONParser jp(confenv.envi());
-      Model m;
-      GCLock lock;
-      jp.parse(&m, filename, false);
-      for (auto& i : m) {
-        if (auto* ai = i->dynamicCast<AssignI>()) {
-          addValue(ai->id(), ai->e());
-        } else if (auto* ii = i->dynamicCast<IncludeI>()) {
-          auto flag = ParamConfig::flagName(ii->f());
-          if (_blacklist.count(flag) > 0) {
-            throw ParamException("Parameter '" + flag + "' is not allowed in configuration file");
-          }
-          _values.push_back(flag);
-          _values.push_back(ParamConfig::modelToString(*(ii->m())));
+  try {
+    Env confenv;
+    JSONParser jp(confenv.envi());
+    Model m;
+    GCLock lock;
+    jp.parse(&m, filename, false);
+    for (auto& i : m) {
+      if (auto* ai = i->dynamicCast<AssignI>()) {
+        addValue(ai->id(), ai->e());
+      } else if (auto* ii = i->dynamicCast<IncludeI>()) {
+        auto flag = ParamConfig::flagName(ii->f());
+        if (_blacklist.count(flag) > 0) {
+          throw ParamException("Parameter '" + flag + "' is not allowed in configuration file");
         }
+        _values.push_back(flag);
+        _values.push_back(ParamConfig::modelToString(*(ii->m())));
       }
-    } catch (ParamException& e) {
-      throw;
-    } catch (Exception& e) {
-      throw ParamException(e.what());
     }
-  } else {
-    throw ParamException("Invalid configuration file");
+  } catch (ParamException&) {
+    throw;
+  } catch (JSONError& e) {
+    throw ParamException(e.msg());
   }
 }
 
