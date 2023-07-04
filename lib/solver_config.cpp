@@ -773,11 +773,9 @@ SolverConfig& SolverConfigs::config(const std::string& _s) {
   if (_s.size() > 4 && _s.substr(_s.size() - 4) == ".msc") {
     SolverConfig sc = SolverConfig::load(_s);
     addConfig(sc);
-    s = sc.id() + "@" + sc.version();
-  } else {
-    s = _s;
+    return _solvers.back();
   }
-  s = string_to_lower(s);
+  s = string_to_lower(_s);
   std::vector<std::string> tags;
   std::istringstream iss(s);
   std::string next_s;
