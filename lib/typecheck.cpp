@@ -4098,14 +4098,10 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           auto* cp = copy(env.envi(), parCopyMap, p.first)->cast<FunctionI>();
           for (int i = 0; i < cp->paramCount(); i++) {
             VarDecl* v = cp->param(i);
-            Type vt = v->ti()->type();
-            vt.mkPar(env.envi());
-            v->ti()->type(vt);
-            v->type(vt);
+            v->ti()->mkPar(env.envi());
+            v->type(v->ti()->type());
           }
-          Type cpt(cp->ti()->type());
-          cpt.mkPar(env.envi());
-          cp->ti()->type(cpt);
+          cp->ti()->mkPar(env.envi());
           bool didRegister = m->registerFn(env.envi(), cp, true, false);
           if (didRegister) {
             m->addItem(cp);

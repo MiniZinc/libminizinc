@@ -1531,6 +1531,11 @@ public:
   }
   void canonicaliseStruct(EnvI& env);
   void mkVar(const EnvI& env);
+  /// Make this type-inst par, maintaining the domain.
+  ///
+  /// Assumes TypeInst has already gone through the typechecker,
+  /// (i.e. struct domains are ArrayLits containing TypeInsts)
+  void mkPar(EnvI& env);
   // Set domain of a tuple based on a tuple type object
   void setStructDomain(const EnvI& env, const Type& struct_type, bool setTypeAny = false,
                        bool setTIRanges = true);

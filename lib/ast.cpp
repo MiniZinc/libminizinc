@@ -1133,6 +1133,27 @@ void TypeInst::mkVar(const EnvI& env) {
   tt.ti(Type::TI_VAR);
   type(tt);
 }
+
+void TypeInst::mkPar(EnvI& env) {
+  Type tt = type();
+  tt.mkPar(env);
+  std::vector<std::pair<TypeInst*, Type>> todo({{this, tt}});
+  while (!todo.empty()) {
+    auto it = todo.back();
+    todo.pop_back();
+    it.first->type(it.second);
+    if (it.second.structBT()) {
+      auto* al = Expression::cast<ArrayLit>(it.first->domain());
+      al->type(it.second);
+      auto* st = env.getStructType(it.second);
+      assert(st->size() == al->size());
+      for (unsigned int i = 0; i < al->size(); i++) {
+        todo.emplace_back(Expression::cast<TypeInst>((*al)[i]), (*st)[i]);
+      }
+    }
+  }
+}
+
 void TypeInst::setStructDomain(const EnvI& env, const Type& struct_type, bool setTypeAny,
                                bool setTIRanges) {
   GCLock lock;

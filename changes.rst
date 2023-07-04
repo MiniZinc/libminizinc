@@ -24,6 +24,8 @@ Changes:
 Bug fixes:
 ^^^^^^^^^^
 -  Fix restoration of tuple/record domains when flattening ``let`` expressions.
+-  Fix type checking error due to creation of incorrect par versions of
+   functions involving tuples/records.
 
 .. _v2.7.6:
 
