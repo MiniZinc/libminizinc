@@ -30,6 +30,8 @@ Bug fixes:
 -  Ensure that when ``--solver <FILE.msc>`` is used, the given solver
    configuration file is always selected even when it collides with a solver
    in the search paths (:bugref:`715`).
+-  Fix error when running satisfaction problems using the Gecode presolver
+   where an output variable is also an introduced variable
 
 .. _v2.7.6:
 
