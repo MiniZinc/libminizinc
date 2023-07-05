@@ -2800,7 +2800,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
         GCLock lock;
         auto* al = Expression::cast<ArrayLit>(e);
         /// TODO: review if limit of 10 is a sensible choice
-        if (al->type().bt() == Type::BT_ANN || al->size() <= 10) {
+        if (al->type().isbot() || al->type().bt() == Type::BT_ANN || al->size() <= 10) {
           return e;
         }
 
@@ -2816,7 +2816,6 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
               new SetLit(Location().introduce(), IntSetVal::a(al->min(i), al->max(i))));
         }
         ASTExprVec<TypeInst> ranges_v(ranges);
-        assert(!al->type().isbot());
         Expression* domain = nullptr;
         if (!al->empty() && Expression::type((*al)[0]).isint()) {
           IntVal min = IntVal::infinity();
