@@ -277,7 +277,7 @@ predicate round_robin(array[int] of var bool: nbhs) =
     if status() == START then
       select = -1
     else
-      select = (sol(select) + 1) mod len
+      select = (last_val(select) + 1) mod len
     endif;
 
 /**

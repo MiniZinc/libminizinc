@@ -23,6 +23,11 @@ Changes:
 -  Improve error messaging for invalid parameter configuration (``.mpc``) files. 
 -  CSE has been adjusted to handle commutative functions when annotated using
    the ``promise_commutative`` annotation.
+-  Add *experimental* support for restart based meta-search specification for
+   the Gecode and Chuffed solvers, as first explored in `Solver-Independent
+   Large Neighbourhood Search <https://doi.org/10.1007/978-3-319-98334-9_6>`_
+   and `A Modern Architecture for Constraint Modelling Languages
+   <https://doi.org/10.26180/16968229.v1>`_.
 
 Bug fixes:
 ^^^^^^^^^^
