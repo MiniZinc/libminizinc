@@ -60,7 +60,6 @@ endif()
 # -------------------------------------------------------------------------------------------------------------------
 #  -- Compiler configuration
 
-include(cmake/support/ccache_setup.cmake)
 include(cmake/support/compiler_setup.cmake)
 
 configure_file(

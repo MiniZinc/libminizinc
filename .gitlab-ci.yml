@@ -40,6 +40,9 @@ default:
   cache:
     key: "$CI_JOB_STAGE:$CI_JOB_NAME"
     paths: [.ccache, vendor/]
+  variables:
+    CMAKE_C_COMPILER_LAUNCHER: "ccache"
+    CMAKE_CXX_COMPILER_LAUNCHER: "ccache"
   only: [tags, merge_requests, pipelines, develop, master]
 
 build:linux:
@@ -70,10 +73,12 @@ build:win64:
   variables:
     MZNARCH: "win64"
     CMAKE_ARCH: "Ninja"
+    CMAKE_C_COMPILER_LAUNCHER: "buildcache"
+    CMAKE_CXX_COMPILER_LAUNCHER: "buildcache"
     BUILDCACHE_DIR: "$CI_PROJECT_DIR/.ccache"
     BUILDCACHE_MAX_CACHE_SIZE: "104857600"
   script:
-    - cmake -S . -B build -G"%CMAKE_ARCH%" -DCMAKE_BUILD_TYPE=Release -DBUILD_REF=%CI_PIPELINE_ID% -DCCACHE_PROGRAM:STRING=buildcache -DGecode_ROOT="%CI_PROJECT_DIR%/vendor/gecode" -DOsiCBC_ROOT="%CI_PROJECT_DIR%/vendor/cbc" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
+    - cmake -S . -B build -G"%CMAKE_ARCH%" -DCMAKE_BUILD_TYPE=Release -DBUILD_REF=%CI_PIPELINE_ID% -DGecode_ROOT="%CI_PROJECT_DIR%/vendor/gecode" -DOsiCBC_ROOT="%CI_PROJECT_DIR%/vendor/cbc" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
     - cmake --build build --config Release --target install
   cache:
     key: "build_win64"
