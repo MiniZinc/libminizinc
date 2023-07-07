@@ -86,7 +86,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
         Ctx nctx;
         nctx.i = ctx.i;
         auto* flat_ident = Expression::cast<Id>(
-            flat_exp(env, ctx, id->decl(), nullptr, env.constants.varTrue).r());
+            flat_exp(env, nctx, id->decl(), nullptr, env.constants.varTrue).r());
         if (flat_ident->decl() == nullptr && id->type().isAnn()) {
           ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
           ret.r = bind(env, ctx, r, flat_ident);
