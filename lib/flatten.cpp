@@ -41,82 +41,88 @@ namespace MiniZinc {
 
 // Create domain constraints. Return true if successful.
 bool create_explicit_domain_constraints(EnvI& envi, VarDecl* vd, Expression* domain) {
-  std::vector<Call*> calls;
-  Location iloc = Location().introduce();
+  std::vector<KeepAlive> calls;
+  {
+    GCLock lock;
+    Location iloc = Location().introduce();
 
-  if (vd->type().isOpt()) {
-    calls.push_back(Call::a(iloc, "var_dom", {vd->id(), domain}));
-  } else if (vd->type().isIntSet()) {
-    assert(Expression::type(domain).isint() || Expression::type(domain).isIntSet());
-    IntSetVal* isv = eval_intset(envi, domain);
-    calls.push_back(
-        Call::a(iloc, envi.constants.ids.set_.subset, {vd->id(), new SetLit(iloc, isv)}));
-  } else if (Expression::type(domain).isbool()) {
-    calls.push_back(Call::a(iloc, envi.constants.ids.bool_.eq, {vd->id(), domain}));
-  } else if (Expression::type(domain).isBoolSet()) {
-    IntSetVal* bsv = eval_boolset(envi, domain);
-    assert(bsv->size() == 1);
-    if (bsv->min() != bsv->max()) {
-      return true;  // Both values are still possible, no change
-    }
-    calls.push_back(Call::a(iloc, envi.constants.ids.bool_.eq,
-                            {vd->id(), envi.constants.boollit(bsv->min() > 0)}));
-  } else if (Expression::type(domain).isfloat() || Expression::type(domain).isFloatSet()) {
-    FloatSetVal* fsv = eval_floatset(envi, domain);
-    if (fsv->size() == 1) {  // Range based
-      if (fsv->min() == fsv->max()) {
-        calls.push_back(
-            Call::a(iloc, envi.constants.ids.float_.eq, {vd->id(), FloatLit::a(fsv->min())}));
-      } else {
-        FloatSetVal* cfsv;
-        if (vd->ti()->domain() != nullptr) {
-          cfsv = eval_floatset(envi, vd->ti()->domain());
+    if (vd->type().isOpt()) {
+      calls.emplace_back(Call::a(iloc, "var_dom", {vd->id(), domain}));
+    } else if (vd->type().isIntSet()) {
+      assert(Expression::type(domain).isint() || Expression::type(domain).isIntSet());
+      IntSetVal* isv = eval_intset(envi, domain);
+      calls.emplace_back(
+          Call::a(iloc, envi.constants.ids.set_.subset, {vd->id(), new SetLit(iloc, isv)}));
+    } else if (Expression::type(domain).isbool()) {
+      calls.emplace_back(Call::a(iloc, envi.constants.ids.bool_.eq, {vd->id(), domain}));
+    } else if (Expression::type(domain).isBoolSet()) {
+      IntSetVal* bsv = eval_boolset(envi, domain);
+      assert(bsv->size() == 1);
+      if (bsv->min() != bsv->max()) {
+        return true;  // Both values are still possible, no change
+      }
+      calls.emplace_back(Call::a(iloc, envi.constants.ids.bool_.eq,
+                                 {vd->id(), envi.constants.boollit(bsv->min() > 0)}));
+    } else if (Expression::type(domain).isfloat() || Expression::type(domain).isFloatSet()) {
+      FloatSetVal* fsv = eval_floatset(envi, domain);
+      if (fsv->size() == 1) {  // Range based
+        if (fsv->min() == fsv->max()) {
+          calls.emplace_back(
+              Call::a(iloc, envi.constants.ids.float_.eq, {vd->id(), FloatLit::a(fsv->min())}));
         } else {
-          cfsv = FloatSetVal::a(-FloatVal::infinity(), FloatVal::infinity());
+          FloatSetVal* cfsv;
+          if (vd->ti()->domain() != nullptr) {
+            cfsv = eval_floatset(envi, vd->ti()->domain());
+          } else {
+            cfsv = FloatSetVal::a(-FloatVal::infinity(), FloatVal::infinity());
+          }
+          if (cfsv->min() < fsv->min()) {
+            calls.emplace_back(
+                Call::a(iloc, envi.constants.ids.float_.le, {FloatLit::a(fsv->min()), vd->id()}));
+          }
+          if (cfsv->max() > fsv->max()) {
+            calls.emplace_back(
+                Call::a(iloc, envi.constants.ids.float_.le, {vd->id(), FloatLit::a(fsv->max())}));
+          }
         }
-        if (cfsv->min() < fsv->min()) {
-          calls.push_back(
-              Call::a(iloc, envi.constants.ids.float_.le, {FloatLit::a(fsv->min()), vd->id()}));
+      } else {
+        calls.emplace_back(
+            Call::a(iloc, envi.constants.ids.set_.in, {vd->id(), new SetLit(iloc, fsv)}));
+      }
+    } else if (Expression::type(domain).isint() || Expression::type(domain).isIntSet()) {
+      IntSetVal* isv = eval_intset(envi, domain);
+      if (isv->size() == 1) {  // Range based
+        if (isv->min() == isv->max()) {
+          calls.emplace_back(
+              Call::a(iloc, envi.constants.ids.int_.eq, {vd->id(), IntLit::a(isv->min())}));
+        } else {
+          IntSetVal* cisv;
+          if (vd->ti()->domain() != nullptr) {
+            cisv = eval_intset(envi, vd->ti()->domain());
+          } else {
+            cisv = IntSetVal::a(-IntVal::infinity(), IntVal::infinity());
+          }
+          if (cisv->min() < isv->min()) {
+            calls.emplace_back(
+                Call::a(iloc, envi.constants.ids.int_.le, {IntLit::a(isv->min()), vd->id()}));
+          }
+          if (cisv->max() > isv->max()) {
+            calls.emplace_back(
+                Call::a(iloc, envi.constants.ids.int_.le, {vd->id(), IntLit::a(isv->max())}));
+          }
         }
-        if (cfsv->max() > fsv->max()) {
-          calls.push_back(
-              Call::a(iloc, envi.constants.ids.float_.le, {vd->id(), FloatLit::a(fsv->max())}));
-        }
+      } else {
+        calls.emplace_back(
+            Call::a(iloc, envi.constants.ids.set_.in, {vd->id(), new SetLit(iloc, isv)}));
       }
     } else {
-      calls.push_back(Call::a(iloc, envi.constants.ids.set_.in, {vd->id(), new SetLit(iloc, fsv)}));
+      return false;
     }
-  } else if (Expression::type(domain).isint() || Expression::type(domain).isIntSet()) {
-    IntSetVal* isv = eval_intset(envi, domain);
-    if (isv->size() == 1) {  // Range based
-      if (isv->min() == isv->max()) {
-        calls.push_back(
-            Call::a(iloc, envi.constants.ids.int_.eq, {vd->id(), IntLit::a(isv->min())}));
-      } else {
-        IntSetVal* cisv;
-        if (vd->ti()->domain() != nullptr) {
-          cisv = eval_intset(envi, vd->ti()->domain());
-        } else {
-          cisv = IntSetVal::a(-IntVal::infinity(), IntVal::infinity());
-        }
-        if (cisv->min() < isv->min()) {
-          calls.push_back(
-              Call::a(iloc, envi.constants.ids.int_.le, {IntLit::a(isv->min()), vd->id()}));
-        }
-        if (cisv->max() > isv->max()) {
-          calls.push_back(
-              Call::a(iloc, envi.constants.ids.int_.le, {vd->id(), IntLit::a(isv->max())}));
-        }
-      }
-    } else {
-      calls.push_back(Call::a(iloc, envi.constants.ids.set_.in, {vd->id(), new SetLit(iloc, isv)}));
-    }
-  } else {
-    return false;
   }
 
   int counter = 0;
-  for (Call* c : calls) {
+  for (const auto& ka : calls) {
+    auto* c = Expression::cast<Call>(ka());
     CallStackItem csi(envi, IntLit::a(counter++));
     Expression::ann(c).add(envi.constants.ann.domain_change_constraint);
     Expression::type(c, Type::varbool());
