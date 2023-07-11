@@ -31,7 +31,9 @@ Bug fixes:
    configuration file is always selected even when it collides with a solver
    in the search paths (:bugref:`715`).
 -  Fix error when running satisfaction problems using the Gecode presolver
-   where an output variable is also an introduced variable
+   where an output variable is also an introduced variable.
+-  Resolve a problem where unification in the optimization phase might remove
+   variables part of the output (:bugref:`716`).
 
 .. _v2.7.6:
 

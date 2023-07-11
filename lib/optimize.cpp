@@ -1258,7 +1258,12 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
         push_dependent_constraints(env, Expression::cast<Id>(c->arg(0)), constraintQueue);
         CollectDecls cd(env, env.varOccurrences, deletedVarDecls, ii);
         top_down(cd, c);
-        ii->remove();
+        if (auto* vdi = ii->dynamicCast<VarDeclI>()) {
+          vdi->e()->e(env.constants.literalTrue);
+          deletedVarDecls.push_back(vdi->e());
+        } else {
+          ii->remove();
+        }
       } else if (Expression::type(c->arg(0)).isPar() && Expression::type(c->arg(1)).isPar()) {
         Expression* e0 = eval_par(env, c->arg(0));
         Expression* e1 = eval_par(env, c->arg(1));
