@@ -605,8 +605,8 @@ Expression* JSONParser::parseObject(istream& is, TypeInst* ti) {
     auto it = fieldTIs.find(key);
     Expression* e = parseExp(is, true, it != fieldTIs.end() ? it->second : nullptr);
 
-    fields.push_back(new VarDecl(
-        Location().introduce(), new TypeInst(Location().introduce(), Expression::type(e)), key, e));
+    fields.push_back(
+        new VarDecl(Location().introduce(), new TypeInst(Location().introduce(), Type()), key, e));
     next = readToken(is);
   } while (next.t == T_COMMA);
   if (next.t != T_OBJ_CLOSE) {
