@@ -7,4 +7,4 @@ expected: !Error
   type: MiniZincError
 ***/
 
-constaint assert_dbg(false, "This fails with the --debug flag");
+constraint assert_dbg(false, "This fails with the --debug flag");
