@@ -4,7 +4,7 @@ solvers: [gecode]
 options:
   debug: true
 expected: !Error
-  type: MiniZincError
+  type: AssertionError
 ***/
 
-constaint assert_dbg(false, "This fails with the --debug flag");
+constraint assert_dbg(false, "This fails with the --debug flag");
