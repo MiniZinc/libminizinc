@@ -58,7 +58,7 @@ Expression* create_dummy_value(EnvI& env, const Type& t) {
     case Type::BT_STRING:
       return new StringLit(Location().introduce(), "");
     case Type::BT_ANN:
-      return env.constants.ann.promise_total;
+      return env.constants.ann.empty_annotation;
     default:
       return nullptr;
   }
