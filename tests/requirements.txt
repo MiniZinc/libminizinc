@@ -1,4 +1,4 @@
-PyYAML==5.4
+PyYAML==6.0
 pytest==7.*
 py==1.11.*
 pytest-html==2.*
