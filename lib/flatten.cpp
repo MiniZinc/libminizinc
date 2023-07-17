@@ -1059,12 +1059,18 @@ EnvI::~EnvI() {
 }
 long long int EnvI::genId() { return _ids++; }
 void EnvI::cseMapInsert(Expression* e, const EE& ee) {
+  GCLock lock;
   if (Expression::type(e).isPar() && !Expression::isa<ArrayLit>(e)) {
     return;
   }
   Call* c = Expression::dynamicCast<Call>(e);
-  if ((c != nullptr) && c->decl() != nullptr && c->decl()->ann().contains(constants.ann.no_cse)) {
-    return;
+  if ((c != nullptr) && c->decl() != nullptr) {
+    if (c->decl()->ann().contains(constants.ann.no_cse)) {
+      return;
+    }
+    if (c->decl()->ann().contains(constants.ann.promise_commutative)) {
+      e = Call::commutativeNormalized(*this, c);
+    }
   }
 
   _cseMap.insert(e, WW(ee.r(), ee.b()));
@@ -1077,6 +1083,14 @@ void EnvI::cseMapInsert(Expression* e, const EE& ee) {
   }
 }
 EnvI::CSEMap::iterator EnvI::cseMapFind(Expression* e) {
+  GCLock lock;
+  Call* c = Expression::dynamicCast<Call>(e);
+  if ((c != nullptr) && c->decl() != nullptr) {
+    if (c->decl()->ann().contains(constants.ann.promise_commutative)) {
+      e = Call::commutativeNormalized(*this, c);
+    }
+  }
+
   auto it = _cseMap.find(e);
   if (it != _cseMap.end()) {
     if (it->second.r != nullptr) {
@@ -4809,6 +4823,7 @@ void flatten(Env& e, FlatteningOptions opt) {
 void clear_internal_annotations(EnvI& env, Expression* e, bool keepDefinesVar) {
   auto& ann = Expression::ann(e);
   ann.remove(env.constants.ann.promise_total);
+  ann.remove(env.constants.ann.promise_commutative);
   ann.remove(env.constants.ann.maybe_partial);
   ann.remove(env.constants.ann.add_to_output);
   ann.remove(env.constants.ann.output);

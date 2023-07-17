@@ -21,6 +21,8 @@ Changes:
 -  Use tuples to implement the decomposition of optional variables, avoiding
    possible CSE aliasing problems.
 -  Improve error messaging for invalid parameter configuration (``.mpc``) files. 
+-  CSE has been adjusted to handle commutative functions when annotated using
+   the ``promise_commutative`` annotation.
 
 Bug fixes:
 ^^^^^^^^^^

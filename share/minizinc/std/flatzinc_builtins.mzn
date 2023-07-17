@@ -23,7 +23,7 @@ include "stdlib/stdlib_ann.mzn";
 /** @group flatzinc.int Constrains \a b to be the absolute value of \a a */
 predicate int_abs(var int: a, var int: b);
 /** @group flatzinc.int Constrains \a a to be equal to \a b */
-predicate int_eq(var int: a, var int: b);
+predicate int_eq(var int: a, var int: b) ::promise_commutative;
 /** @group flatzinc.int Constrains (\a a=\a b) \( \leftrightarrow \) \a r */
 predicate int_eq_reif(var int: a, var int: b, var bool: r);
 /** @group flatzinc.int Constrains \a a to be less than or equal to \a b */
@@ -44,7 +44,7 @@ predicate int_lin_le(array[int] of int: as, array[int] of var int: bs, int: c);
 /** @group flatzinc.int Constrains \a r \( \leftrightarrow \) (\( \sum \) \a as[\p i]*\a bs[\p i] ≤ \a c) */
 predicate int_lin_le_reif(array[int] of int: as, array[int] of var int: bs,int: c, var bool: r);
 /** @group flatzinc.int Constrains \a a ≠ \a b */
-predicate int_ne(var int: a, var int: b);
+predicate int_ne(var int: a, var int: b) ::promise_commutative;
 /** @group flatzinc.int \a r \( \leftrightarrow \) (\a a ≠ \a b) */
 predicate int_ne_reif(var int: a, var int: b, var bool: r);
 /** @group flatzinc.int Constrains \a a + \a b = \a c */
@@ -81,7 +81,7 @@ predicate bool_and(var bool: a, var bool: b, var bool: r);
 predicate bool_clause(array[int] of var bool: as ::promise_ctx_monotone, array[int] of var bool: bs ::promise_ctx_antitone);
 
 /** @group flatzinc.bool Constrains \a a = \a b */
-predicate bool_eq(var bool: a, var bool: b);
+predicate bool_eq(var bool: a, var bool: b) ::promise_commutative;
 /** @group flatzinc.bool Constrains \a r \( \leftrightarrow \) (\a a = \a b) */
 predicate bool_eq_reif(var bool: a, var bool: b, var bool: r);
 /** @group flatzinc.bool Constrains \a a ≤ \a b */
@@ -103,7 +103,7 @@ predicate bool_or(var bool: a, var bool: b, var bool: r);
 /** @group flatzinc.bool Constrains \( \a r \leftrightarrow \a a \oplus \a b \) */
 predicate bool_xor(var bool: a, var bool: b, var bool: r);
 /** @group flatzinc.bool Constrains \a a \( \oplus \) \a b */
-predicate bool_xor(var bool: a, var bool: b);
+predicate bool_xor(var bool: a, var bool: b) ::promise_commutative;
 
 /***
   @groupdef flatzinc.set Set FlatZinc builtins
@@ -134,11 +134,11 @@ predicate set_lt(var set of int: x, var set of int: y);
 /** @group flatzinc.set Constrains \( \a r \leftrightarrow (\a x < \a y) \) (lexicographic order of the sorted lists of elements) */
 predicate set_lt_reif(var set of int: x, var set of int: y, var bool: r);
 /** @group flatzinc.set Constrains \a x = \a y */
-predicate set_eq(var set of int: x, var set of int: y);
+predicate set_eq(var set of int: x, var set of int: y) ::promise_commutative;
 /** @group flatzinc.set Constrains \a r \( \leftrightarrow \) (\a x = \a y) */
 predicate set_eq_reif(var set of int: x, var set of int: y, var bool: r);
 /** @group flatzinc.set Constrains \a x ≠ \a y */
-predicate set_ne(var set of int: x, var set of int: y);
+predicate set_ne(var set of int: x, var set of int: y) ::promise_commutative;
 /** @group flatzinc.set Constrains \a r \( \leftrightarrow \) (\a x ≠ \a y) */
 predicate set_ne_reif(var set of int: x, var set of int: y, var bool: r);
 /** @group flatzinc.set Constrains \a r = \a x \( \cap \) \a y */
@@ -194,7 +194,7 @@ predicate float_tan(var float: a, var float: b);
 predicate float_tanh(var float: a, var float: b);
 
 /** @group flatzinc.float Constrains \a a = \a b */
-predicate float_eq(var float: a, var float: b);
+predicate float_eq(var float: a, var float: b) ::promise_commutative;
 /** @group flatzinc.float Constrains \a r \( \leftrightarrow \) (\a a = \a b) */
 predicate float_eq_reif(var float: a, var float: b, var bool: r);
 /** @group flatzinc.float Constrains \a a ≤ \a b */
@@ -206,7 +206,7 @@ predicate float_lt(var float: a, var float: b);
 /** @group flatzinc.float Constrains \a r \( \leftrightarrow \) (\a a < \a b) */
 predicate float_lt_reif(var float: a, var float: b, var bool: r);
 /** @group flatzinc.float Constrains \a a ≠ \a b */
-predicate float_ne(var float: a, var float: b);
+predicate float_ne(var float: a, var float: b) ::promise_commutative;
 /** @group flatzinc.float Constrains \a r \( \leftrightarrow \) (\a a ≠ \a b) */
 predicate float_ne_reif(var float: a, var float: b, var bool: r);
 /** @group flatzinc.float Constrains \( \a a \in\ [ \a b, \a c ] \) */

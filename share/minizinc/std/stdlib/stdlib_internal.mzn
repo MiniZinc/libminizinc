@@ -119,12 +119,12 @@ predicate mzn_alias_eq(var opt int: x, var opt int: y) =
   deopt(x) = deopt(y) /\ occurs(x) = occurs(y);
 /* True iff both \a x and \a y are absent or
   both are present and have the same value. */
-predicate int_eq(var opt int: x, var opt int: y) =
+predicate int_eq(var opt int: x, var opt int: y) ::promise_commutative =
      (absent(x) /\ absent(y))
   \/ (occurs(x) /\ occurs(y) /\ (deopt(x)=deopt(y))::maybe_partial);
 /* True iff only one of \a x and \a y is absent or
   both are present and have different values. */
-predicate int_ne(var opt int : x, var opt int : y) =
+predicate int_ne(var opt int : x, var opt int : y) ::promise_commutative =
      (absent(x) != absent(y))
   \/ (occurs(x) /\ occurs(y) /\ (deopt(x)!=deopt(y))::maybe_partial);
 /* Constrains \a x \( \in \) \a S */

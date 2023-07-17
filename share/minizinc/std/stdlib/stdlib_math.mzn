@@ -5,24 +5,24 @@
 */
 
 /** @group stdlib.builtins.arithmetic Return \a x + \a y */
-function     int:   '+'(    int: x,     int: y) ::mzn_internal_representation;
+function     int:   '+'(    int: x,     int: y) ::mzn_internal_representation ::promise_commutative;
 /** @group stdlib.builtins.arithmetic Return \a x + \a y */
-function var int:   '+'(var int: x,  var int: y) ::mzn_internal_representation;
+function var int:   '+'(var int: x,  var int: y) ::mzn_internal_representation ::promise_commutative;
 /** @group stdlib.builtins.arithmetic Return \a x + \a y */
-function     float: '+'(    float: x,    float: y) ::mzn_internal_representation;
+function     float: '+'(    float: x,    float: y) ::mzn_internal_representation ::promise_commutative;
 /** @group stdlib.builtins.arithmetic Return \a x + \a y */
-function var float: '+'(var float: x,var float: y) ::mzn_internal_representation;
+function var float: '+'(var float: x,var float: y) ::mzn_internal_representation ::promise_commutative;
 /** @group stdlib.builtins.arithmetic Optional addition. Return sum of \a x and \a y, with absent replaced by 0. */
-function var int: '+'(var opt int: x, var opt int: y) ::promise_total =
+function var int: '+'(var opt int: x, var opt int: y) ::promise_total ::promise_commutative =
   if occurs(x) then deopt(x) else 0 endif + if occurs(y) then deopt(y) else 0 endif;
 /** @group stdlib.builtins.arithmetic Optional addition. Return sum of \a x and \a y, with absent replaced by 0. */
-function int: '+'(opt int: x, opt int: y) ::promise_total =
+function int: '+'(opt int: x, opt int: y) ::promise_total ::promise_commutative =
   if occurs(x) then deopt(x) else 0 endif + if occurs(y) then deopt(y) else 0 endif;
 /** @group stdlib.builtins.arithmetic Optional addition. Return sum of \a x and \a y, with absent replaced by 0. */
-function var float: '+'(var opt float: x, var opt float: y) ::promise_total =
+function var float: '+'(var opt float: x, var opt float: y) ::promise_total ::promise_commutative =
   if occurs(x) then deopt(x) else 0 endif + if occurs(y) then deopt(y) else 0 endif;
 /** @group stdlib.builtins.arithmetic Optional addition. Return sum of \a x and \a y, with absent replaced by 0. */
-function float: '+'(opt float: x, opt float: y) ::promise_total =
+function float: '+'(opt float: x, opt float: y) ::promise_total ::promise_commutative =
   if occurs(x) then deopt(x) else 0 endif + if occurs(y) then deopt(y) else 0 endif;
 
 /** @group stdlib.builtins.arithmetic Return \a x - \a y */
@@ -60,7 +60,7 @@ function float: '-'(float: x, opt float: y) ::promise_total =
 
 /** @group stdlib.builtins.arithmetic Weak addition. Return sum of \a x and \a y if both
 are present, otherwise return absent. */
-function var opt int: '~+'(var opt int: x, var opt int: y) ::promise_total =
+function var opt int: '~+'(var opt int: x, var opt int: y) ::promise_total ::promise_commutative =
     let { 
     int: l = if lb(x)=-infinity \/ lb(y)=-infinity then -infinity else lb(x)+lb(y) endif;
     int: u = if ub(x)=infinity \/ ub(y)=infinity then infinity else ub(x)+ub(y) endif;
@@ -71,7 +71,7 @@ function var opt int: '~+'(var opt int: x, var opt int: y) ::promise_total =
 
 /** @group stdlib.builtins.arithmetic Weak addition. Return sum of \a x and \a y if both
 are present, otherwise return absent. */
-function opt int: '~+'(opt int: x, opt int: y) ::promise_total =
+function opt int: '~+'(opt int: x, opt int: y) ::promise_total ::promise_commutative =
   if occurs(x) /\ occurs(y) then deopt(x) + deopt(y) else <> endif;
 
 /** @group stdlib.builtins.arithmetic Weak subtraction. Return difference of \a x and \a y if both
@@ -92,18 +92,18 @@ function opt int: '~-'(opt int: x, opt int: y) ::promise_total =
 
 /** @group stdlib.builtins.arithmetic Weak multiplication. Return product of \a x and \a y if both
 are present, otherwise return absent. */
-function var opt int: '~*'(var opt int: x, var opt int: y) ::promise_total =
+function var opt int: '~*'(var opt int: x, var opt int: y) ::promise_total ::promise_commutative =
     if absent(x) \/ absent(y) then <>
     else deopt(x)*deopt(y) endif;
 
 /** @group stdlib.builtins.arithmetic Weak multiplication. Return product of \a x and \a y if both
 are present, otherwise return absent. */
-function opt int: '~*'(opt int: x, opt int: y) ::promise_total =
+function opt int: '~*'(opt int: x, opt int: y) ::promise_total ::promise_commutative =
   if occurs(x) /\ occurs(y) then deopt(x) * deopt(y) else <> endif;
 
 /** @group stdlib.builtins.arithmetic Weak addition. Return sum of \a x and \a y if both
 are present, otherwise return absent. */
-function var opt float: '~+'(var opt float: x, var opt float: y) ::promise_total =
+function var opt float: '~+'(var opt float: x, var opt float: y) ::promise_total ::promise_commutative =
     let { 
     float: l = if lb(x)=-infinity \/ lb(y)=-infinity then -infinity else lb(x)+lb(y) endif;
     float: u = if ub(x)=infinity \/ ub(y)=infinity then infinity else ub(x)+ub(y) endif;
@@ -125,25 +125,25 @@ function var opt float: '~-'(var opt float: x, var opt float: y) ::promise_total
 
 /** @group stdlib.builtins.arithmetic Weak multiplication. Return product of \a x and \a y if both
 are present, otherwise return absent. */
-function var opt float: '~*'(var opt float: x, var opt float: y) ::promise_total =
+function var opt float: '~*'(var opt float: x, var opt float: y) ::promise_total ::promise_commutative =
     if absent(x) \/ absent(y) then <>
     else deopt(x)*deopt(y) endif;
 
 /** @group stdlib.builtins.arithmetic Return \a x * \a y */
-function     int:   '*'(    int: x,     int: y) ::mzn_internal_representation;
+function     int:   '*'(    int: x,     int: y) ::mzn_internal_representation ::promise_commutative;
 /** @group stdlib.builtins.arithmetic Return \a x * \a y */
-function var int:   '*'(var int: x,  var int: y) ::mzn_internal_representation;
+function var int:   '*'(var int: x,  var int: y) ::mzn_internal_representation ::promise_commutative;
 /** @group stdlib.builtins.arithmetic Optional multiplication. Return product of \a x and \a y, with absent replaced by 1. */
-function var int: '*'(var opt int: x, var opt int: y) ::promise_total =
+function var int: '*'(var opt int: x, var opt int: y) ::promise_total ::promise_commutative =
   if occurs(x) then deopt(x) else 1 endif * if occurs(y) then deopt(y) else 1 endif;
 /** @group stdlib.builtins.arithmetic Optional multiplication. Return product of \a x and \a y, with absent replaced by 1. */
-function int: '*'(opt int: x, opt int: y) ::promise_total =
+function int: '*'(opt int: x, opt int: y) ::promise_total ::promise_commutative =
   if occurs(x) then deopt(x) else 1 endif * if occurs(y) then deopt(y) else 1 endif;
 /** @group stdlib.builtins.arithmetic Optional multiplication. Return product of \a x and \a y, with absent replaced by 1. */
-function var float: '*'(var opt float: x, var opt float: y) ::promise_total =
+function var float: '*'(var opt float: x, var opt float: y) ::promise_total ::promise_commutative =
   if occurs(x) then deopt(x) else 1 endif * if occurs(y) then deopt(y) else 1 endif;
 /** @group stdlib.builtins.arithmetic Optional multiplication. Return product of \a x and \a y, with absent replaced by 1. */
-function float: '*'(opt float: x, opt float: y) ::promise_total =
+function float: '*'(opt float: x, opt float: y) ::promise_total ::promise_commutative =
   if occurs(x) then deopt(x) else 1 endif * if occurs(y) then deopt(y) else 1 endif;
 
 
@@ -152,9 +152,9 @@ function     int:   '^'(    int: x,     int: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Return \(\a x ^ {\a y}\) */
 function var int:   '^'(var int: x,  var int: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Return \a x * \a y */
-function     float: '*'(    float: x,    float: y) ::mzn_internal_representation;
+function     float: '*'(    float: x,    float: y) ::mzn_internal_representation ::promise_commutative;
 /** @group stdlib.builtins.arithmetic Return \a x * \a y */
-function var float: '*'(var float: x,var float: y) ::mzn_internal_representation;
+function var float: '*'(var float: x,var float: y) ::mzn_internal_representation ::promise_commutative;
 /** @group stdlib.builtins.arithmetic Return \(\a x ^ {\a y}\) */
 function     float: '^'(    float: x,    float: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Return \(\a x ^ {\a y}\) */
@@ -254,72 +254,72 @@ function opt float: '~/'(opt float: x, opt float: y) =
   if absent(x) \/ absent(y) then <> else deopt(x) / deopt(y) endif;
 
 /** @group stdlib.builtins.arithmetic Return number of true elments in array \a x */
-function int:  count(array[$T] of bool: x) = sum([bool2int(y) | y in array1d(x)]);
+function int:  count(array[$T] of bool: x) ::promise_commutative = sum([bool2int(y) | y in array1d(x)]);
 /** @group stdlib.builtins.arithmetic Return number of true elments in array \a x */
-function var int:  count(array[$T] of var bool: x :: promise_ctx_monotone) = let {
+function var int:  count(array[$T] of var bool: x :: promise_ctx_monotone) ::promise_commutative = let {
   array[int] of var bool: xx :: promise_ctx_monotone = array1d(x);
 } in sum([bool2int(y) | y in xx]);
 /** @group stdlib.builtins.arithmetic Return number of true elments in array \a x */
-function var int:  count(array[$T] of var opt bool: x :: promise_ctx_monotone) =
+function var int:  count(array[$T] of var opt bool: x :: promise_ctx_monotone) ::promise_commutative =
   count(i in x)(i default false);
 
 /** @group stdlib.builtins.arithmetic Return sum of elements in array \a x */
-function     int:   sum(array[$T] of     int: x);
+function     int:   sum(array[$T] of     int: x) ::promise_commutative;
 /** @group stdlib.builtins.arithmetic Return sum of elements in array \a x */
-function var int:   sum(array[$T] of var int: x) ::mzn_internal_representation;
+function var int:   sum(array[$T] of var int: x) ::mzn_internal_representation ::promise_commutative;
 /** @group stdlib.builtins.arithmetic Return sum of elements in array \a x */
-function     float: sum(array[$T] of     float: x);
+function     float: sum(array[$T] of     float: x) ::promise_commutative;
 /** @group stdlib.builtins.arithmetic Return sum of elements in array \a x */
-function var float: sum(array[$T] of var float: x) ::mzn_internal_representation;
+function var float: sum(array[$T] of var float: x) ::promise_commutative ::mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Return sum of non-absent elements of \a x. */
-function var int: sum(array[int] of var opt int: x) =
+function var int: sum(array[int] of var opt int: x) ::promise_commutative =
   sum (i in index_set(x)) (x[i] default 0);
 /** @group stdlib.builtins.arithmetic Return sum of non-absent elements of \a x. */
-function int: sum(array[int] of opt int: x) =
+function int: sum(array[int] of opt int: x) ::promise_commutative =
   sum (i in index_set(x)) (x[i] default 0);
 /** @group stdlib.builtins.arithmetic Return sum of non-absent elements of \a x. */
-function var float: sum(array[int] of var opt float: x) =
+function var float: sum(array[int] of var opt float: x) ::promise_commutative =
   sum (i in index_set(x)) (x[i] default 0.0);
 /** @group stdlib.builtins.arithmetic Return sum of non-absent elements of \a x. */
-function float: sum(array[int] of opt float: x) =
+function float: sum(array[int] of opt float: x) ::promise_commutative =
   sum (i in index_set(x)) (x[i] default 0.0);
 
 
 /** @group stdlib.builtins.arithmetic Return product of elements in array \a x */
-function     int:   product(array[$T] of     int: x);
+function     int:   product(array[$T] of     int: x) ::promise_commutative;
 /** @group stdlib.builtins.arithmetic Return product of elements in array \a x */
-function var int:   product(array[$T] of var int: x) =
+function var int:   product(array[$T] of var int: x) ::promise_commutative =
   product_rec(array1d(x));
 /** @group stdlib.builtins.arithmetic Return product of elements in array \a x */
-function     float: product(array[$T] of     float: x);
+function     float: product(array[$T] of     float: x) ::promise_commutative;
 /** @group stdlib.builtins.arithmetic Return product of elements in array \a x */
-function var float: product(array[$T] of var float: x) =
+function var float: product(array[$T] of var float: x) ::promise_commutative =
   product_rec(array1d(x));
 /** @group stdlib.builtins.arithmetic Return product of non-absent elements of \a x. */
-function int: product(array[$T] of opt int: x) =
+function int: product(array[$T] of opt int: x) ::promise_commutative =
   product (xi in x) (xi default 1);
 /** @group stdlib.builtins.arithmetic Return product of non-absent elements of \a x. */
-function var int: product(array[$T] of var opt int: x) =
+function var int: product(array[$T] of var opt int: x) ::promise_commutative =
   product (xi in x) (xi default 1);
 /** @group stdlib.builtins.arithmetic Return product of non-absent elements of \a x. */
-function float: product(array[$T] of opt float: x) =
+function float: product(array[$T] of opt float: x) ::promise_commutative =
   product (xi in x) (xi default 1.0);
 /** @group stdlib.builtins.arithmetic Return product of non-absent elements of \a x. */
-function var float: product(array[$T] of var opt float: x) =
+function var float: product(array[$T] of var opt float: x) ::promise_commutative =
   product (xi in x) (xi default 1.0);
 
 
 /** @group stdlib.builtins.arithmetic Return minimum of \a x and \a y */
-function     $T: min(    $T: x,     $T: y);
+function     $T: min(    $T: x,     $T: y) ::promise_commutative;
 
 /** @group stdlib.builtins.arithmetic Return minimum of \a x and \a y */
-function var int: min(var int: x, var int: y) :: promise_total =
+function var int: min(var int: x, var int: y) :: promise_total :: promise_commutative =
   let { var min(lb(x),lb(y))..min(ub(x),ub(y)): m ::is_defined_var;
         constraint int_min(x,y,m) ::defines_var(m);
   } in m;
 
 /** @group stdlib.builtins.arithmetic Return minimum of \a x and \a y */
-function var float: min(var float: x, var float: y) :: promise_total =
+function var float: min(var float: x, var float: y) :: promise_total :: promise_commutative =
   if has_bounds(x) /\ has_bounds(y) then
   let { var min(lb(x),lb(y))..min(ub(x),ub(y)): m ::is_defined_var;
         constraint float_min(x,y,m) ::defines_var(m);
@@ -331,17 +331,17 @@ function var float: min(var float: x, var float: y) :: promise_total =
   endif;
 
 /** @group stdlib.builtins.arithmetic Return minimum of elements in array \a x */
-function     $T: min(array[$U] of     par $T: x);
+function     $T: min(array[$U] of     par $T: x) :: promise_commutative;
 
 /** @group stdlib.builtins.arithmetic Return minimum of elements in array \a x */
-function var int: min(array[$U] of var int: x) =
+function var int: min(array[$U] of var int: x) :: promise_commutative =
   let {
     array[int] of var int: xx = array1d(x);
     constraint length(x) >= 1;
   } in min_t(xx);
 
 /** @group stdlib.builtins.arithmetic Return minimum of elements in array \a x */
-function var float: min(array[$U] of var float: x) =
+function var float: min(array[$U] of var float: x) :: promise_commutative =
   let {
     array[int] of var float: xx = array1d(x);
     constraint length(x) >= 1;
@@ -349,7 +349,7 @@ function var float: min(array[$U] of var float: x) =
 
 /** @group stdlib.builtins.arithmetic Return minimum of elements in \a x that are not absent.
     Result is undefined when all values are absent. */
-function var int: min(array[$X] of var opt int: x) =
+function var int: min(array[$X] of var opt int: x) :: promise_commutative =
   let {
     int: xub = max(0, ub_array(x));
     constraint exists (xi in x) (occurs(xi));
@@ -357,14 +357,14 @@ function var int: min(array[$X] of var opt int: x) =
 
 /** @group stdlib.builtins.arithmetic Return minimum of elements in \a x that are not absent.
     Result is absent when all values are absent. */
-function var opt int: min_weak(array[$X] of var opt int: x) =
+function var opt int: min_weak(array[$X] of var opt int: x) ::promise_commutative =
   let {
     int: xub = max(0, ub_array(x));
   } in if exists (xi in x) (occurs(xi)) then min (xi in x) (xi default xub) else <> endif;
 
 /** @group stdlib.builtins.arithmetic Return minimum of elements in \a x that are not absent.
     Result is undefined when all values are absent. */
-function var float: min(array[$X] of var opt float: x) =
+function var float: min(array[$X] of var opt float: x) ::promise_commutative =
   let {
     float: xub = max(0.0, ub_array(x));
     constraint exists (xi in x) (occurs(xi));
@@ -372,7 +372,7 @@ function var float: min(array[$X] of var opt float: x) =
 
 /** @group stdlib.builtins.arithmetic Return minimum of elements in \a x that are not absent.
     Result is absent when all values are absent. */
-function var opt float: min_weak(array[$X] of var opt float: x) =
+function var opt float: min_weak(array[$X] of var opt float: x) :: promise_commutative =
   let {
     float: xub = max(0.0, ub_array(x));
   } in if exists (xi in x) (occurs(xi)) then min (xi in x) (xi default xub) else <> endif;
@@ -381,16 +381,16 @@ function var opt float: min_weak(array[$X] of var opt float: x) =
 function $$E: min(set of $$E: x);
 
 /** @group stdlib.builtins.arithmetic Return maximum of \a x and \a y */
-function     $T: max(    $T: x,     $T: y);
+function     $T: max(    $T: x,     $T: y) :: promise_commutative;
 
 /** @group stdlib.builtins.arithmetic Return maximum of \a x and \a y */
-function var int: max(var int: x, var int: y) :: promise_total =
+function var int: max(var int: x, var int: y) :: promise_total :: promise_commutative =
   let { var max(lb(x),lb(y))..max(ub(x),ub(y)): m ::is_defined_var;
         constraint int_max(x,y,m) ::defines_var(m);
   } in m;
 
 /** @group stdlib.builtins.arithmetic Return maximum of \a x and \a y */
-function var float: max(var float: x, var float: y) :: promise_total =
+function var float: max(var float: x, var float: y) :: promise_total :: promise_commutative =
   if has_bounds(x) /\ has_bounds(y) then
   let { var max(lb(x),lb(y))..max(ub(x),ub(y)): m ::is_defined_var;
         constraint float_max(x,y,m) ::defines_var(m);
@@ -402,17 +402,17 @@ function var float: max(var float: x, var float: y) :: promise_total =
   endif;
 
 /** @group stdlib.builtins.arithmetic Return maximum of elements in array \a x */
-function     $T: max(array[$U] of     $T: x);
+function     $T: max(array[$U] of     $T: x) :: promise_commutative;
 
 /** @group stdlib.builtins.arithmetic Return maximum of elements in array \a x */
-function var int: max(array[$U] of var int: x) =
+function var int: max(array[$U] of var int: x) :: promise_commutative =
   let {
     array[int] of var int: xx = array1d(x);
     constraint length(x) >= 1;
   } in max_t(xx);
 
 /** @group stdlib.builtins.arithmetic Return maximum of elements in array \a x */
-function var float: max(array[$U] of var float: x) =
+function var float: max(array[$U] of var float: x) :: promise_commutative =
   let {
     array[int] of var float: xx = array1d(x);
     constraint length(x) >= 1;
@@ -420,7 +420,7 @@ function var float: max(array[$U] of var float: x) =
 
 /** @group stdlib.builtins.arithmetic Return maximum of elements in \a x that are not absent.
     Result is undefined when all values are absent. */
-function var int: max(array[$X] of var opt int: x) =
+function var int: max(array[$X] of var opt int: x) :: promise_commutative =
   let {
     int: xlb = min(0, lb_array(x));
     constraint exists (xi in x) (occurs(xi));
@@ -428,14 +428,14 @@ function var int: max(array[$X] of var opt int: x) =
 
 /** @group stdlib.builtins.arithmetic Return maximum of elements in \a x that are not absent.
     Result is absent when all values are absent. */
-function var opt int: max_weak(array[$X] of var opt int: x) =
+function var opt int: max_weak(array[$X] of var opt int: x) :: promise_commutative =
   let {
     int: xlb = min(0, lb_array(x));
   } in if exists (xi in x) (occurs(xi)) then max (xi in x) (xi default xlb) else <> endif;
 
 /** @group stdlib.builtins.arithmetic Return maximum of elements in \a x that are not absent.
     Result is undefined when all values are absent. */
-function var float: max(array[$X] of var opt float: x) =
+function var float: max(array[$X] of var opt float: x) :: promise_commutative =
   let {
     float: xlb = min(0.0, lb_array(x));
     constraint exists (xi in x) (occurs(xi));
@@ -443,7 +443,7 @@ function var float: max(array[$X] of var opt float: x) =
 
 /** @group stdlib.builtins.arithmetic Return maximum of elements in \a x that are not absent.
     Result is absent when all values are absent. */
-function var opt float: max_weak(array[$X] of var opt float: x) =
+function var opt float: max_weak(array[$X] of var opt float: x) :: promise_commutative =
   let {
     float: xlb = min(0.0, lb_array(x));
   } in if exists (xi in x) (occurs(xi)) then max (xi in x) (xi default xlb) else <> endif;

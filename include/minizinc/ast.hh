@@ -1304,6 +1304,8 @@ public:
   static Call* a(const Location& loc, const std::string& id, const std::vector<Expression*>& args);
   /// Constructor
   static Call* a(const Location& loc, const ASTString& id, const std::vector<Expression*>& args);
+  /// Constructor to create commutative sorted call
+  static Call* commutativeNormalized(EnvI& env, const Call* orig);
   /// Access identifier
   ASTString id() const;
   /// Set identifier (overwrites decl)
@@ -2260,6 +2262,7 @@ public:
     Id* mzn_internal_representation;         // NOLINT(readability-identifier-naming)
     Id* flatzinc_builtin;                    // NOLINT(readability-identifier-naming)
     Id* mzn_evaluate_once;                   // NOLINT(readability-identifier-naming)
+    Id* promise_commutative;                 // NOLINT(readability-identifier-naming)
   } ann;
 
   /// Command line options

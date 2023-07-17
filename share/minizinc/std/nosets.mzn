@@ -279,7 +279,7 @@ predicate set_superset_reif(var set of int: x, var set of int: y, var bool: b) :
 predicate set_superset_imp(var set of int: x, var set of int: y, var bool: b) =
   set_subset_imp(y,x,b);
 
-function var set of int: set_intersect(var set of int: x, var set of int: y) ::promise_total =
+function var set of int: set_intersect(var set of int: x, var set of int: y) ::promise_total ::promise_commutative =
   let {
     array[int] of var bool: bx = set2bools(x);
     array[int] of var bool: by = set2bools(y);
@@ -290,7 +290,7 @@ function var set of int: set_intersect(var set of int: x, var set of int: y) ::p
     );
   } in z;
 
-function var set of int: set_union(var set of int: x, var set of int: y) ::promise_total =
+function var set of int: set_union(var set of int: x, var set of int: y) ::promise_total ::promise_commutative =
   let {
     array[int] of var bool: bx = set2bools(x);
     array[int] of var bool: by = set2bools(y);
@@ -320,7 +320,7 @@ function var set of int: set_diff(var set of int: x, var set of int: y) ::promis
     );
   } in z;
 
-function var set of int: set_symdiff(var set of int: x, var set of int: y) ::promise_total =
+function var set of int: set_symdiff(var set of int: x, var set of int: y) ::promise_total ::promise_commutative =
   let {
     array[int] of var bool: bx = set2bools(x);
     array[int] of var bool: by = set2bools(y);

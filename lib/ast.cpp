@@ -17,7 +17,9 @@
 #include <minizinc/iter.hh>
 #include <minizinc/model.hh>
 #include <minizinc/prettyprinter.hh>
+#include <minizinc/values.hh>
 
+#include <algorithm>
 #include <limits>
 
 namespace MiniZinc {
@@ -950,6 +952,93 @@ void Call::args(const std::vector<Expression*>& args) {
     }
     static_cast<CallNary*>(this)->_args = ASTExprVec<Expression>(args).vec();
   }
+}
+
+/// Constructor to create commutative sorted call
+Call* Call::commutativeNormalized(EnvI& env, const Call* orig) {
+  auto com_sort = [](Expression* x, Expression* y) {
+    if (Expression::eid(x) != Expression::eid(y)) {
+      return Expression::eid(x) < Expression::eid(y);
+    }
+    switch (Expression::eid(x)) {
+      case Expression::E_ID: {
+        return Expression::cast<Id>(x)->str() < Expression::cast<Id>(y)->str();
+      }
+      case Expression::E_BOOLLIT: {
+        return static_cast<int>(Expression::cast<BoolLit>(x)->v()) <
+               static_cast<int>(Expression::cast<BoolLit>(y)->v());
+      }
+      case Expression::E_INTLIT: {
+        return IntLit::v(Expression::cast<IntLit>(x)) < IntLit::v(Expression::cast<IntLit>(y));
+      }
+      case Expression::E_FLOATLIT: {
+        return FloatLit::v(Expression::cast<FloatLit>(x)) <
+               FloatLit::v(Expression::cast<FloatLit>(y));
+      }
+      case Expression::E_STRINGLIT: {
+        return Expression::cast<StringLit>(x)->v() < Expression::cast<StringLit>(y)->v();
+      }
+      case Expression::E_SETLIT: {
+        if (Expression::type(x).bt() == Type::BT_INT) {
+          IntSetVal* xs = Expression::cast<SetLit>(x)->isv();
+          IntSetVal* ys = Expression::cast<SetLit>(y)->isv();
+          if (xs->size() != ys->size()) {
+            return xs->size() < ys->size();
+          }
+          for (unsigned int i = 0; i < xs->size(); ++i) {
+            if (xs->min(i) != ys->min(i)) {
+              return xs->min(i) < ys->min(i);
+            }
+            if (xs->max(i) != ys->max(i)) {
+              return xs->max(i) < ys->max(i);
+            }
+          }
+          return true;  // equal
+        }
+        FloatSetVal* xs = Expression::cast<SetLit>(x)->fsv();
+        FloatSetVal* ys = Expression::cast<SetLit>(y)->fsv();
+        if (xs->size() != ys->size()) {
+          return xs->size() < ys->size();
+        }
+        for (unsigned int i = 0; i < xs->size(); ++i) {
+          if (xs->min(i) != ys->min(i)) {
+            return xs->min(i) < ys->min(i);
+          }
+          if (xs->max(i) != ys->max(i)) {
+            return xs->max(i) < ys->max(i);
+          }
+        }
+        return true;  // equal
+      }
+      default: {
+        return x < y;
+      }
+    }
+  };
+
+  assert(orig->argCount() > 0);
+  Call* c = nullptr;
+  if (orig->argCount() == 1) {
+    assert(Expression::type(orig->arg(0)).dim() != 0);
+    ArrayLit* al = eval_array_lit(env, orig->arg(0));
+    std::vector<Expression*> elem(al->size());
+    for (unsigned int i = 0; i < al->size(); ++i) {
+      elem[i] = (*al)[i];
+    }
+    std::sort(elem.begin(), elem.end(), com_sort);
+    auto* arg = new ArrayLit(Expression::loc(al), elem);
+    arg->type(Expression::type(al));
+    c = Call::a(Expression::loc(orig), orig->id(), {arg});
+  } else {
+    std::vector<Expression*> args(orig->argCount());
+    for (unsigned int i = 0; i < orig->argCount(); ++i) {
+      args[i] = orig->arg(i);
+    }
+    std::sort(args.begin(), args.end(), com_sort);
+    c = Call::a(Expression::loc(orig), orig->id(), args);
+  }
+  c->decl(orig->decl());
+  return c;
 }
 
 void VarDecl::trail() {
@@ -2261,6 +2350,8 @@ Constants::Constants() {
   ann.flatzinc_builtin->type(Type::ann());
   ann.mzn_evaluate_once = addId("mzn_evaluate_once");
   ann.mzn_evaluate_once->type(Type::ann());
+  ann.promise_commutative = addId("promise_commutative");
+  ann.promise_commutative->type(Type::ann());
 
   cli.cmdlineData_short_str = addString("-D");
   cli.cmdlineData_str = addString("--cmdline-data");

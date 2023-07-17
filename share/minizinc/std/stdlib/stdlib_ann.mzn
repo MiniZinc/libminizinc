@@ -116,6 +116,13 @@ annotation domain_change_constraint;
   **WARNING:** using this annotation might result in duplicated constraints when used incorrectly. */
 annotation no_cse;
 
+/** @group stdlib.annotations.general Declare the function to be commutative,
+    i.e., the function has the same result regardless of the order in which the
+    function parameters are provided.
+
+  **WARNING:** a commutative function must have only arguments of a single type,
+  or a single array as an argument. */
+annotation promise_commutative;
 
 /** @group stdlib.annotations.general Mark annotation argument as annotated expression */
 annotation annotated_expression;

@@ -3835,6 +3835,27 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           }
         }
 
+        if (fi->ann().contains(_env.constants.ann.promise_commutative)) {
+          bool valid = fi->paramCount() > 0;
+          if (fi->paramCount() == 1) {
+            valid = fi->param(0)->type().dim() != 0;
+          } else if (fi->paramCount() > 1) {
+            for (unsigned int i = 1; i < fi->paramCount(); ++i) {
+              if (fi->param(i)->type() != fi->param(0)->type()) {
+                valid = false;
+                break;
+              }
+            }
+          }
+          if (!valid) {
+            std::ostringstream ss;
+            ss << "the types of the paramaters for the function `" << fi->id()
+               << "', declared as `promise_commutative' are expected to all be the same, or be a "
+                  "single array type.";
+            _typeErrors.emplace_back(_env, fi->loc(), ss.str());
+          }
+        }
+
         _bottomUpTyper.run(fi->e());
         if ((fi->e() != nullptr) &&
             !_env.isSubtype(Expression::type(fi->e()), fi->ti()->type(), true)) {

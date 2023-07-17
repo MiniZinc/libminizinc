@@ -34,21 +34,21 @@ function     bool: 'superset'(    set of $T: x,      set of $T: y) ::mzn_interna
 function var bool: 'superset'(var set of int: x, var set of int: y);
 
 /** @group stdlib.builtins.set Return the union of sets \a x and \a y */
-function     set of $T:  'union'(    set of $T: x,      set of $T: y) ::mzn_internal_representation;
+function     set of $T:  'union'(    set of $T: x,      set of $T: y) ::mzn_internal_representation ::promise_commutative;
 /** @group stdlib.builtins.set Return the union of sets \a x and \a y */
-function var set of $$T: 'union'(var set of $$T: x, var set of $$T: y) ::mzn_internal_representation;
+function var set of $$T: 'union'(var set of $$T: x, var set of $$T: y) ::mzn_internal_representation ::promise_commutative;
 /** @group stdlib.builtins.set Return the intersection of sets \a x and \a y */
-function     set of $T:  'intersect'(    set of $T: x,      set of $T: y) ::mzn_internal_representation;
+function     set of $T:  'intersect'(    set of $T: x,      set of $T: y) ::mzn_internal_representation ::promise_commutative;
 /** @group stdlib.builtins.set Return the intersection of sets \a x and \a y */
-function var set of $$T: 'intersect'(var set of $$T: x, var set of $$T: y) ::mzn_internal_representation;
+function var set of $$T: 'intersect'(var set of $$T: x, var set of $$T: y) ::mzn_internal_representation ::promise_commutative;
 /** @group stdlib.builtins.set Return the set difference of sets \(\a x \setminus \a y \) */
 function     set of $T:  'diff'(    set of $T: x,      set of $T: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.set Return the set difference of sets \(\a x \setminus \a y \) */
 function var set of $$T: 'diff'(var set of $$T: x, var set of $$T: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.set Return the symmetric set difference of sets \a x and \a y */
-function     set of $T:  'symdiff'(    set of $T: x,      set of $T: y) ::mzn_internal_representation;
+function     set of $T:  'symdiff'(    set of $T: x,      set of $T: y) ::mzn_internal_representation ::promise_commutative;
 /** @group stdlib.builtins.set Return the symmetric set difference of sets \a x and \a y */
-function var set of $$T: 'symdiff'(var set of $$T: x, var set of $$T: y) ::mzn_internal_representation;
+function var set of $$T: 'symdiff'(var set of $$T: x, var set of $$T: y) ::mzn_internal_representation ::promise_commutative;
 
 /** @group stdlib.builtins.set Return the set \(\{\a a,\ldots,\a b\}\) */
 function set of $$E: '..'($$E: a,$$E: b) ::mzn_internal_representation;
@@ -107,9 +107,9 @@ function var int: card(var set of int: x) ::promise_total = let {
   } in c;
 
 /** @group stdlib.builtins.set Return the union of the sets in array \a x */
-function     set of $U:  array_union(array[$T] of     set of $U: x);
+function     set of $U:  array_union(array[$T] of     set of $U: x) ::promise_commutative;
 /** @group stdlib.builtins.set Return the union of the sets in array \a x */
-function var set of int: array_union(array[int] of var set of int: x) ::promise_total =
+function var set of int: array_union(array[int] of var set of int: x) ::promise_total ::promise_commutative =
     if length(x)=0 then {}
     elseif length(x)=1 then x[min(index_set(x))]
     else
@@ -120,10 +120,10 @@ function var set of int: array_union(array[int] of var set of int: x) ::promise_
     endif;
 
 /** @group stdlib.builtins.set Return the intersection of the sets in array \a x */
-function     set of $U:  array_intersect(array[$T] of     set of $U: x);
+function     set of $U:  array_intersect(array[$T] of     set of $U: x) ::promise_commutative;
 
 /** @group stdlib.builtins.set Return the intersection of the sets in array \a x. Undefined for empty \a x. */
-function var set of int: array_intersect(array[int] of var set of int: x) =
+function var set of int: array_intersect(array[int] of var set of int: x) ::promise_commutative =
     let {
       constraint length(x) > 0
     } in 
