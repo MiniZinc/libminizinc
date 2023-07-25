@@ -435,6 +435,22 @@ void optimize(Env& env, bool chain_compression) {
               top_down(cd, c);
               ci->e(envi.constants.literalTrue);
               ci->remove();
+            } else if ((c->id() == envi.constants.ids.int_.eq ||
+                        c->id() == envi.constants.ids.bool_.eq ||
+                        c->id() == envi.constants.ids.float_.eq ||
+                        c->id() == envi.constants.ids.set_.eq) &&
+                       ((Expression::isa<Id>(c->arg(0)) &&
+                         Expression::cast<Id>(c->arg(0))->decl()->e() == nullptr &&
+                         Expression::type(c->arg(1)).isPar()) ||
+                        (Expression::isa<Id>(c->arg(1)) &&
+                         Expression::cast<Id>(c->arg(1))->decl()->e() == nullptr &&
+                         Expression::type(c->arg(0)).isPar()))) {
+              // equality constraint with one fixed var can be resolved later by
+              // simplify_bool_constraint
+              auto* id = Expression::cast<Id>(c->arg(Expression::isa<Id>(c->arg(0)) ? 0 : 1));
+              int idx = envi.varOccurrences.find(id->decl());
+              push_vardecl(envi, m[idx]->cast<VarDeclI>(), idx, vardeclQueue);
+              push_dependent_constraints(envi, id, constraintQueue);
             } else if (c->id() == envi.constants.ids.int_.lin_eq &&
                        Expression::equal(c->arg(2), IntLit::a(0))) {
               auto* al_c = Expression::cast<ArrayLit>(follow_id(c->arg(0)));
