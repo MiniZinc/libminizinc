@@ -41,6 +41,8 @@ Bug fixes:
    where an output variable is also an introduced variable.
 -  Resolve a problem where unification in the optimization phase might remove
    variables part of the output (:bugref:`716`).
+-  Fix possible crash when printing the final solution using the built-in
+   Chuffed interface.
 
 .. _v2.7.6:
 
