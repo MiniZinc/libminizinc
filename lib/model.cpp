@@ -1010,6 +1010,9 @@ int first_overloaded(EnvI& env, const std::vector<Model::FnEntry>& v_f, int i_f)
 
 bool Model::sameOverloading(EnvI& env, const std::vector<Expression*>& args, FunctionI* f,
                             FunctionI* g) const {
+  if (f->id() == env.constants.varRedef->id() || g->id() == env.constants.varRedef->id()) {
+    return false;
+  }
   const Model* m = this;
   while (m->_parent != nullptr) {
     m = m->_parent;
