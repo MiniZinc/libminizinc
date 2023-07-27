@@ -15,7 +15,6 @@
 
 #include <chuffed/core/engine.h>
 #include <chuffed/core/sat.h>
-#include <memory>
 
 namespace MiniZinc {
 ChuffedSolverInstance::ChuffedSolverInstance(Env& env, std::ostream& log,
@@ -307,7 +306,7 @@ void ChuffedSolverInstance::processFlatZinc() {
             for (const auto& ann : Expression::ann(c)) {
               annotations.push_back(toNode(ann));
             }
-            ann = std::make_unique<FlatZinc::AST::Array>(annotations);
+            ann = std::unique_ptr<FlatZinc::AST::Array>(new FlatZinc::AST::Array(annotations));
           }
           FlatZinc::FlatZincSpace::postConstraint(
               FlatZinc::ConExpr(c->id().c_str(), new FlatZinc::AST::Array(args)), ann.get());
@@ -323,7 +322,7 @@ void ChuffedSolverInstance::processFlatZinc() {
       for (const auto& ann : si->ann()) {
         annotations.push_back(toNode(ann));
       }
-      ann = std::make_unique<FlatZinc::AST::Array>(annotations);
+      ann = std::unique_ptr<FlatZinc::AST::Array>(new FlatZinc::AST::Array(annotations));
     }
 
     switch (si->st()) {
