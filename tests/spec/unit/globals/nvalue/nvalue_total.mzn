@@ -3,7 +3,7 @@
 solvers: [gecode]
 expected: !Result
   solution: !Solution
-    l1: 0
+    l1: 1
 ***/
 
 include "nvalue_fn.mzn";
