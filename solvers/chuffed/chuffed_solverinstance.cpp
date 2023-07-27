@@ -15,6 +15,7 @@
 
 #include <chuffed/core/engine.h>
 #include <chuffed/core/sat.h>
+#include <memory>
 
 namespace MiniZinc {
 ChuffedSolverInstance::ChuffedSolverInstance(Env& env, std::ostream& log,
