@@ -116,6 +116,7 @@
               | "[" [ <basic-ann-expr> "," ... ] "]"
 
 <basic-ann-expr>   := <basic-literal-expr>
+                    | <var-par-identifier>
                     | <string-literal>
                     | <annotation>
 
