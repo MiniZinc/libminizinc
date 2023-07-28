@@ -2685,6 +2685,187 @@ bool check_domain_constraints(EnvI& env, Call* c) {
   return true;
 }
 
+// Computer a new domain for the given TypeInst given an expression being assigned to it.
+// Note that this function enforces tighter domains on the expression when possible.
+KeepAlive compute_combined_domain(EnvI& env, TypeInst* ti, Expression* cur) {
+  if (Expression::type(cur).dim() > 0) {
+    if (ti->domain() != nullptr) {
+      auto* al = Expression::dynamicCast<ArrayLit>(
+          Expression::isa<Id>(cur) ? Expression::cast<Id>(cur)->decl()->e() : cur);
+      if (al != nullptr) {
+        std::vector<Expression*> ndom(0);
+        for (unsigned int i = 0; i < al->size(); i++) {
+          // TODO: Currently ignores setting the union of the RHS, should we compute the union and
+          // set?
+          compute_combined_domain(env, ti, (*al)[i]);
+        }
+        ti->setComputedDomain(true);
+      }
+    }
+    return nullptr;
+  }
+  if (Expression::type(cur).structBT()) {
+    auto* tl = Expression::dynamicCast<ArrayLit>(
+        Expression::isa<Id>(cur) ? Expression::cast<Id>(cur)->decl()->e() : cur);
+    if (tl != nullptr) {
+      auto* tis = Expression::cast<ArrayLit>(ti->domain());
+      std::vector<KeepAlive> dom_expr(tis->size());
+      bool any_changed = false;
+      for (unsigned int i = 0; i < tis->size(); i++) {
+        dom_expr[i] = compute_combined_domain(env, Expression::cast<TypeInst>((*tis)[i]), (*tl)[i]);
+        any_changed = any_changed || dom_expr[i]() != nullptr;
+      }
+      if (any_changed) {
+        GCLock lock;
+        std::vector<Expression*> dom(tis->size());
+        for (unsigned int i = 0; i < tis->size(); i++) {
+          auto* ti = Expression::cast<TypeInst>((*tis)[i]);
+          dom[i] = new TypeInst(Location().introduce(), ti->type(),
+                                dom_expr[i]() == nullptr ? ti->domain() : dom_expr[i]());
+        }
+        return new ArrayLit(Location().introduce(), dom);
+      }
+    }
+    return nullptr;
+  }
+  Id* ident = Expression::dynamicCast<Id>(cur);
+  if (ident != nullptr &&
+      (ident == env.constants.absent || (ident->type().isAnn() && ident->decl() == nullptr))) {
+    // no need to do anything
+    return nullptr;
+  }
+  if (ident != nullptr && ident->decl()->ti()->domain() == nullptr) {
+    if (ti->domain() != nullptr) {
+      // RHS has no domain, so take ours
+      GCLock lock;
+      Expression* vd_dom = eval_par(env, ti->domain());
+      set_computed_domain(env, ident->decl(), vd_dom, ident->decl()->ti()->computedDomain());
+    }
+    return nullptr;
+  }
+  if (cur != nullptr && Expression::type(cur).bt() == Type::BT_INT) {
+    GCLock lock;
+    IntSetVal* rhsBounds = nullptr;
+    if (Expression::type(cur).isSet()) {
+      rhsBounds = compute_intset_bounds(env, cur);
+    } else {
+      IntBounds ib = compute_int_bounds(env, cur);
+      if (ib.valid) {
+        Call* call = Expression::dynamicCast<Call>(cur);
+        if ((call != nullptr) && call->id() == env.constants.ids.lin_exp) {
+          ArrayLit* al = eval_array_lit(env, call->arg(1));
+          if (al->size() == 1) {
+            IntBounds check_zeroone = compute_int_bounds(env, (*al)[0]);
+            if (check_zeroone.l == 0 && check_zeroone.u == 1) {
+              ArrayLit* coeffs = eval_array_lit(env, call->arg(0));
+              auto c = eval_int(env, (*coeffs)[0]);
+              auto d = eval_int(env, call->arg(2));
+              std::vector<IntVal> newdom(2);
+              newdom[0] = std::min(c + d, d);
+              newdom[1] = std::max(c + d, d);
+              rhsBounds = IntSetVal::a(newdom);
+            }
+          }
+        }
+        if (rhsBounds == nullptr) {
+          rhsBounds = IntSetVal::a(ib.l, ib.u);
+        }
+      }
+    }
+    IntSetVal* combinedDomain = rhsBounds;
+    IntSetVal* rhsDomain = nullptr;
+    if (ident != nullptr && ident->decl()->ti()->domain() != nullptr &&
+        !Expression::isa<TIId>(ident->decl()->ti()->domain())) {
+      // RHS has a domain, so intersect with its bounds
+      rhsDomain = eval_intset(env, ident->decl()->ti()->domain());
+      if (rhsBounds == nullptr) {
+        combinedDomain = rhsDomain;
+      } else {
+        IntSetRanges dr(rhsDomain);
+        IntSetRanges ibr(rhsBounds);
+        Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> i(dr, ibr);
+        combinedDomain = IntSetVal::ai(i);
+        if (combinedDomain->card() == 0 && !Expression::type(cur).isSet()) {
+          env.fail();
+        }
+      }
+    }
+    if (combinedDomain != nullptr) {
+      IntSetVal* domain = nullptr;
+      if (ti->domain() != nullptr && !Expression::isa<TIId>(ti->domain())) {
+        // LHS has a domain so intersect with RHS domain
+        domain = eval_intset(env, ti->domain());
+        IntSetRanges dr(domain);
+        IntSetRanges ibr(combinedDomain);
+        Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> i(dr, ibr);
+        combinedDomain = IntSetVal::ai(i);
+        if (combinedDomain->card() == 0 && !Expression::type(cur).isSet()) {
+          env.fail();
+        }
+      }
+      if (ident != nullptr && (rhsDomain == nullptr || !combinedDomain->equal(rhsDomain))) {
+        // If the RHS is an identifier, make its domain match
+        set_computed_domain(env, ident->decl(), new SetLit(Location().introduce(), combinedDomain),
+                            false);
+      }
+      if (domain == nullptr || !domain->equal(combinedDomain)) {
+        return new SetLit(Location().introduce(), combinedDomain);
+      }
+    }
+    return nullptr;
+  }
+  if (cur != nullptr && Expression::type(cur).bt() == Type::BT_FLOAT) {
+    GCLock lock;
+    FloatSetVal* rhsBounds = nullptr;
+    FloatBounds fb = compute_float_bounds(env, cur);
+    if (fb.valid) {
+      rhsBounds = FloatSetVal::a(fb.l, fb.u);
+    }
+    FloatSetVal* combinedDomain = rhsBounds;
+    FloatSetVal* rhsDomain = nullptr;
+    if (ident != nullptr && ident->decl()->ti()->domain() != nullptr &&
+        !Expression::isa<TIId>(ident->decl()->ti()->domain())) {
+      // RHS has a domain, so intersect with its bounds
+      rhsDomain = eval_floatset(env, ident->decl()->ti()->domain());
+      if (rhsBounds == nullptr) {
+        combinedDomain = rhsDomain;
+      } else {
+        FloatSetRanges dr(rhsDomain);
+        FloatSetRanges ibr(rhsBounds);
+        Ranges::Inter<FloatVal, FloatSetRanges, FloatSetRanges> i(dr, ibr);
+        combinedDomain = FloatSetVal::ai(i);
+        if (combinedDomain->empty()) {
+          env.fail();
+        }
+      }
+    }
+    if (combinedDomain != nullptr) {
+      FloatSetVal* domain = nullptr;
+      if (ti->domain() != nullptr && !Expression::isa<TIId>(ti->domain())) {
+        // LHS has a domain so intersect with RHS domain
+        domain = eval_floatset(env, ti->domain());
+        FloatSetRanges dr(domain);
+        FloatSetRanges fbr(combinedDomain);
+        Ranges::Inter<FloatVal, FloatSetRanges, FloatSetRanges> i(dr, fbr);
+        combinedDomain = FloatSetVal::ai(i);
+        if (combinedDomain->empty()) {
+          env.fail();
+        }
+      }
+      if (ident != nullptr && (rhsDomain == nullptr || !combinedDomain->equal(rhsDomain))) {
+        // If the RHS is an identifier, make its domain match
+        set_computed_domain(env, ident->decl(), new SetLit(Location().introduce(), combinedDomain),
+                            false);
+      }
+      if (domain == nullptr || !domain->equal(combinedDomain)) {
+        return new SetLit(Location().introduce(), combinedDomain);
+      }
+    }
+    return nullptr;
+  }
+  return nullptr;
+}
+
 KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
   assert(e == nullptr || !Expression::isa<VarDecl>(e));
   if (vd == env.constants.varIgnore) {
@@ -2985,215 +3166,32 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
         }
       } else {
         check_index_sets(env, vd, e);
-        struct BindItem {
-          TypeInst* ti;
-          Expression* e;
-          bool inArray;
-          BindItem(TypeInst* _ti, Expression* _e, bool _inArray)
-              : ti(_ti), e(_e), inArray(_inArray) {}
-        };
-        std::vector<BindItem> todo({{vd->ti(), e, false}});
-        bool domChange = false;
-        while (!todo.empty()) {
-          auto it = todo.back();
-          auto* ti = it.ti;
-          auto* cur = it.e;
-          bool inArray = it.inArray;
-          todo.pop_back();
-          if (Expression::type(cur).dim() > 0) {
-            if (ti->domain() != nullptr) {
-              auto* al = Expression::dynamicCast<ArrayLit>(
-                  Expression::isa<Id>(cur) ? Expression::cast<Id>(cur)->decl()->e() : cur);
-              if (al != nullptr) {
-                for (unsigned int i = 0; i < al->size(); i++) {
-                  todo.emplace_back(ti, (*al)[i], true);
-                }
-                ti->setComputedDomain(true);
-              }
-            }
-          } else if (Expression::type(cur).structBT()) {
-            auto* tl = Expression::dynamicCast<ArrayLit>(
-                Expression::isa<Id>(cur) ? Expression::cast<Id>(cur)->decl()->e() : cur);
-            if (tl != nullptr) {
-              auto* tis = Expression::cast<ArrayLit>(ti->domain());
-              for (unsigned int i = 0; i < tis->size(); i++) {
-                todo.emplace_back(Expression::cast<TypeInst>((*tis)[i]), (*tl)[i], inArray);
-              }
-              ti->setComputedDomain(true);
-            }
-          } else {
-            Id* ident = Expression::dynamicCast<Id>(cur);
-            if (ident != nullptr && (ident == env.constants.absent ||
-                                     (ident->type().isAnn() && ident->decl() == nullptr))) {
-              // no need to do anything
-            } else if (ident != nullptr && ident->decl()->ti()->domain() == nullptr) {
-              if (ti->domain() != nullptr) {
-                // RHS has no domain, so take ours
-                GCLock lock;
-                Expression* vd_dom = eval_par(env, vd->ti()->domain());
-                set_computed_domain(env, ident->decl(), vd_dom,
-                                    ident->decl()->ti()->computedDomain());
-              }
-            } else if (cur != nullptr && Expression::type(cur).bt() == Type::BT_INT) {
-              GCLock lock;
-              IntSetVal* rhsBounds = nullptr;
-              if (Expression::type(cur).isSet()) {
-                rhsBounds = compute_intset_bounds(env, cur);
-              } else {
-                IntBounds ib = compute_int_bounds(env, cur);
-                if (ib.valid) {
-                  Call* call = Expression::dynamicCast<Call>(cur);
-                  if ((call != nullptr) && call->id() == env.constants.ids.lin_exp) {
-                    ArrayLit* al = eval_array_lit(env, call->arg(1));
-                    if (al->size() == 1) {
-                      IntBounds check_zeroone = compute_int_bounds(env, (*al)[0]);
-                      if (check_zeroone.l == 0 && check_zeroone.u == 1) {
-                        ArrayLit* coeffs = eval_array_lit(env, call->arg(0));
-                        auto c = eval_int(env, (*coeffs)[0]);
-                        auto d = eval_int(env, call->arg(2));
-                        std::vector<IntVal> newdom(2);
-                        newdom[0] = std::min(c + d, d);
-                        newdom[1] = std::max(c + d, d);
-                        rhsBounds = IntSetVal::a(newdom);
-                      }
-                    }
-                  }
-                  if (rhsBounds == nullptr) {
-                    rhsBounds = IntSetVal::a(ib.l, ib.u);
-                  }
-                }
-              }
-              IntSetVal* combinedDomain = rhsBounds;
-              IntSetVal* rhsDomain = nullptr;
-              if (ident != nullptr && ident->decl()->ti()->domain() != nullptr &&
-                  !Expression::isa<TIId>(ident->decl()->ti()->domain())) {
-                // RHS has a domain, so intersect with its bounds
-                rhsDomain = eval_intset(env, ident->decl()->ti()->domain());
-                if (rhsBounds == nullptr) {
-                  combinedDomain = rhsDomain;
-                } else {
-                  IntSetRanges dr(rhsDomain);
-                  IntSetRanges ibr(rhsBounds);
-                  Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> i(dr, ibr);
-                  combinedDomain = IntSetVal::ai(i);
-                  if (combinedDomain->card() == 0 && !Expression::type(cur).isSet()) {
-                    env.fail();
-                  }
-                }
-              }
-              if (combinedDomain != nullptr) {
-                IntSetVal* domain = nullptr;
-                if (ti->domain() != nullptr && !Expression::isa<TIId>(ti->domain())) {
-                  // LHS has a domain so intersect with RHS domain
-                  domain = eval_intset(env, ti->domain());
-                  IntSetRanges dr(domain);
-                  IntSetRanges ibr(combinedDomain);
-                  Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> i(dr, ibr);
-                  combinedDomain = IntSetVal::ai(i);
-                  if (combinedDomain->card() == 0 && !Expression::type(cur).isSet()) {
-                    env.fail();
-                  }
-                }
-                if (!inArray && (domain == nullptr || !domain->equal(combinedDomain))) {
-                  // Make our domain match the intersection of ours and the RHS
-                  // if we're not an array (if we're an array, we can't update our domain
-                  // since it should really be the union of all the RHS array literal member
-                  // domains)
-                  ti->domain(new SetLit(Location().introduce(), combinedDomain));
-                  ti->setComputedDomain(true);
-                  domChange = true;
-                }
-                if (ident != nullptr &&
-                    (rhsDomain == nullptr || !combinedDomain->equal(rhsDomain))) {
-                  // If the RHS is an identifier, make its domain match
-                  set_computed_domain(env, ident->decl(),
-                                      new SetLit(Location().introduce(), combinedDomain), false);
-                }
-              }
-            } else if (cur != nullptr && Expression::type(cur).bt() == Type::BT_FLOAT) {
-              GCLock lock;
-              FloatSetVal* rhsBounds = nullptr;
-              FloatBounds fb = compute_float_bounds(env, cur);
-              if (fb.valid) {
-                rhsBounds = FloatSetVal::a(fb.l, fb.u);
-              }
-              FloatSetVal* combinedDomain = rhsBounds;
-              FloatSetVal* rhsDomain = nullptr;
-              if (ident != nullptr && ident->decl()->ti()->domain() != nullptr &&
-                  !Expression::isa<TIId>(ident->decl()->ti()->domain())) {
-                // RHS has a domain, so intersect with its bounds
-                rhsDomain = eval_floatset(env, ident->decl()->ti()->domain());
-                if (rhsBounds == nullptr) {
-                  combinedDomain = rhsDomain;
-                } else {
-                  FloatSetRanges dr(rhsDomain);
-                  FloatSetRanges ibr(rhsBounds);
-                  Ranges::Inter<FloatVal, FloatSetRanges, FloatSetRanges> i(dr, ibr);
-                  combinedDomain = FloatSetVal::ai(i);
-                  if (combinedDomain->empty()) {
-                    env.fail();
-                  }
-                }
-              }
-              if (combinedDomain != nullptr) {
-                FloatSetVal* domain = nullptr;
-                if (ti->domain() != nullptr && !Expression::isa<TIId>(ti->domain())) {
-                  // LHS has a domain so intersect with RHS domain
-                  domain = eval_floatset(env, ti->domain());
-                  FloatSetRanges dr(domain);
-                  FloatSetRanges fbr(combinedDomain);
-                  Ranges::Inter<FloatVal, FloatSetRanges, FloatSetRanges> i(dr, fbr);
-                  combinedDomain = FloatSetVal::ai(i);
-                  if (combinedDomain->empty()) {
-                    env.fail();
-                  }
-                }
-                if (!inArray && (domain == nullptr || !domain->equal(combinedDomain))) {
-                  // Make our domain match the intersection of ours and the RHS
-                  // if we're not an array (if we're an array, we can't update our domain
-                  // since it should really be the union of all the RHS array literal member
-                  // domains)
-                  ti->domain(new SetLit(Location().introduce(), combinedDomain));
-                  ti->setComputedDomain(true);
-                  domChange = true;
-                }
-                if (ident != nullptr &&
-                    (rhsDomain == nullptr || !combinedDomain->equal(rhsDomain))) {
-                  // If the RHS is an identifier, make its domain match
-                  set_computed_domain(env, ident->decl(),
-                                      new SetLit(Location().introduce(), combinedDomain), false);
-                }
-              }
-            }
-          }
+
+        KeepAlive combinedDom = compute_combined_domain(env, vd->ti(), e);
+        if (combinedDom() != nullptr) {
+          set_computed_domain(env, vd, combinedDom(), true);
         }
 
-        if (env.hasReverseMapper(vd->id())) {
-          if (Expression::type(e).dim() == 0 && Expression::isa<Id>(e) &&
-              Expression::cast<Id>(e) != vd->id()) {
-            // Reverse mapped variable aliasing:
-            // E.g for optional variables, we can constrain the deopt values and the occurs values
-            // to match rather than only equating the deopts when they both occur.
-            GCLock lock;
-            auto* alias =
-                Call::a(Location().introduce(), env.constants.ids.mzn_alias_eq, {vd->id(), e});
-            auto* decl = env.model->matchFn(env, alias, false);
-            if (decl != nullptr) {
-              alias->decl(decl);
-              alias->type(Type::varbool());
-              if (ctx.b != C_ROOT) {
-                env.addCtxAnn(vd, ctx.b);
-                env.addCtxAnn(Expression::cast<Id>(e)->decl(), ctx.b);
-              }
-              flat_exp(env, Ctx(), alias, env.constants.varTrue, env.constants.varTrue);
-              ret = vd->id();
-              vd->e(e);
-              env.voAddExp(vd);
+        if (env.hasReverseMapper(vd->id()) && Expression::type(e).dim() == 0 &&
+            Expression::isa<Id>(e) && Expression::cast<Id>(e) != vd->id()) {
+          // Reverse mapped variable aliasing:
+          // E.g for optional variables, we can constrain the deopt values and the occurs values
+          // to match rather than only equating the deopts when they both occur.
+          GCLock lock;
+          auto* alias =
+              Call::a(Location().introduce(), env.constants.ids.mzn_alias_eq, {vd->id(), e});
+          auto* decl = env.model->matchFn(env, alias, false);
+          if (decl != nullptr) {
+            alias->decl(decl);
+            alias->type(Type::varbool());
+            if (ctx.b != C_ROOT) {
+              env.addCtxAnn(vd, ctx.b);
+              env.addCtxAnn(Expression::cast<Id>(e)->decl(), ctx.b);
             }
-          }
-          if (domChange) {
-            // Use set_computed_domain to create var_dom calls
-            set_computed_domain(env, vd, vd->ti()->domain(), vd->ti()->computedDomain());
+            flat_exp(env, Ctx(), alias, env.constants.varTrue, env.constants.varTrue);
+            ret = vd->id();
+            vd->e(e);
+            env.voAddExp(vd);
           }
         }
 
