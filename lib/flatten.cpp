@@ -4106,10 +4106,10 @@ void flatten(Env& e, FlatteningOptions opt) {
       bool_xor = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
     }
 
-    std::vector<int> convertToRangeDomain;
+    std::vector<int> processLast;
     env.collectVarDecls(true);
 
-    while (startItem <= endItem || !env.modifiedVarDecls.empty() || !convertToRangeDomain.empty()) {
+    while (startItem <= endItem || !env.modifiedVarDecls.empty() || !processLast.empty()) {
       if (env.failed()) {
         return;
       }
@@ -4122,13 +4122,13 @@ void flatten(Env& e, FlatteningOptions opt) {
       }
       env.modifiedVarDecls.clear();
 
-      bool doConvertToRangeDomain = false;
+      bool doLastProcessing = false;
       if (agenda.empty()) {
-        for (auto i : convertToRangeDomain) {
+        for (auto i : processLast) {
           agenda.push_back(i);
         }
-        convertToRangeDomain.clear();
-        doConvertToRangeDomain = true;
+        processLast.clear();
+        doLastProcessing = true;
       }
 
       for (int i : agenda) {
@@ -4191,11 +4191,15 @@ void flatten(Env& e, FlatteningOptions opt) {
           // If no reverse mapper has been put in place, introduce it now
           FunctionI* fi = env.model->matchRevMap(env, vdi->e()->type());
           if (fi != nullptr && !env.hasReverseMapper(vdi->e()->id())) {
-            GCLock lock;
-            Call* revmap = Call::a(Location().introduce(), fi->id(), {vdi->e()->id()});
-            revmap->decl(fi);
-            Expression::type(revmap, Type::varbool());
-            env.flatAddItem(new ConstraintI(Location().introduce(), revmap));
+            if (doLastProcessing) {
+              GCLock lock;
+              Call* revmap = Call::a(Location().introduce(), fi->id(), {vdi->e()->id()});
+              revmap->decl(fi);
+              Expression::type(revmap, Type::varbool());
+              env.flatAddItem(new ConstraintI(Location().introduce(), revmap));
+            } else {
+              processLast.push_back(i);
+            }
           }
           if (vdi->e()->type().dim() > 0 && vdi->e()->type().isvar()) {
             vdi->e()->ti()->eraseDomain();
@@ -4218,7 +4222,7 @@ void flatten(Env& e, FlatteningOptions opt) {
               }
             }
             if (needRangeDomain) {
-              if (doConvertToRangeDomain) {
+              if (doLastProcessing) {
                 Expression* dom_expr = vdi->e()->ti()->domain();
                 if (dom->min(0).isMinusInfinity() || dom->max(dom->size() - 1).isPlusInfinity()) {
                   // Erase the domain to remove infinity literal
@@ -4267,7 +4271,7 @@ void flatten(Env& e, FlatteningOptions opt) {
                   env.flatAddItem(new ConstraintI(vdi->loc(), call));
                 }
               } else {
-                convertToRangeDomain.push_back(i);
+                processLast.push_back(i);
               }
             }
           }
