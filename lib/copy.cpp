@@ -9,6 +9,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <minizinc/ast.hh>
 #include <minizinc/copy.hh>
 #include <minizinc/hash.hh>
 
@@ -66,7 +67,10 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
     return nullptr;
   }
   if (Expression* cached = m.find(e)) {
-    return cached;
+    if (!Expression::isa<VarDecl>(cached) ||
+        !VarDeclI::a(Location(), Expression::cast<VarDecl>(cached))->removed()) {
+      return cached;
+    }
   }
   Expression* ret = nullptr;
   switch (Expression::eid(e)) {

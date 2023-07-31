@@ -569,7 +569,15 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e) {
       }
       auto idx = reallyFlat != nullptr ? env.outputFlatVarOccurrences.idx.find(reallyFlat->id())
                                        : std::make_pair(false, nullptr);
+      if (idx.first && (*env.output)[*idx.second]->removed()) {
+        idx = std::make_pair(false, nullptr);
+        env.outputFlatVarOccurrences.idx.remove(reallyFlat->id());
+      }
       auto idx2 = env.outputVarOccurrences.idx.find(vd->id());
+      if (idx2.first && (*env.output)[*idx2.second]->removed()) {
+        idx2 = std::make_pair(false, nullptr);
+        env.outputVarOccurrences.idx.remove(vd->id());
+      }
       if (!idx.first && !idx2.first) {
         auto* nvi =
             VarDeclI::a(Location().introduce(), Expression::cast<VarDecl>(copy(env, env.cmap, vd)));
