@@ -32,8 +32,7 @@ MZNSolverFactory::MZNSolverFactory() {
   sc.description("MiniZinc generic MiniZinc solver plugin");
   sc.requiredFlags({"-m"});
   sc.tags({"__internal__"});
-  sc.supportsFzn(false);
-  sc.supportsMzn(true);
+  sc.inputType(SolverConfig::O_MZN);
   sc.needsSolns2Out(false);
   SolverConfigs::registerBuiltinSolver(sc);
 }

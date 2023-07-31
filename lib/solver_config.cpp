@@ -340,11 +340,31 @@ SolverConfig SolverConfig::load(const string& filename) {
           } else if (ai->id() == "website") {
             sc._website = get_string(ai);
           } else if (ai->id() == "supportsMzn") {
-            sc._supportsMzn = get_bool(ai);
+            if (get_bool(ai)) {
+              sc._inputType = O_MZN;
+            }
           } else if (ai->id() == "supportsFzn") {
-            sc._supportsFzn = get_bool(ai);
+            if (get_bool(ai)) {
+              sc._inputType = O_FZN;
+            }
           } else if (ai->id() == "supportsNL") {
-            sc._supportsNL = get_bool(ai);
+            if (get_bool(ai)) {
+              sc._inputType = O_NL;
+            }
+          } else if (ai->id() == "inputType") {
+            std::string str = get_string(ai);
+            std::transform(str.begin(), str.end(), str.begin(), ::toupper);
+            if (str == "FZN") {
+              sc._inputType = O_FZN;
+            } else if (str == "MZN") {
+              sc._inputType = O_MZN;
+            } else if (str == "NL") {
+              sc._inputType = O_NL;
+            } else {
+              std::ostringstream ss;
+              ss << "unknown input type" << str << ")";
+              throw ConfigException(ss.str());
+            }
           } else if (ai->id() == "needsSolns2Out") {
             sc._needsSolns2Out = get_bool(ai);
           } else if (ai->id() == "isGUIApplication") {
@@ -501,9 +521,19 @@ std::string SolverConfig::toJSON(const SolverConfigs& configs) const {
     }
     oss << "],\n";
   }
-  oss << "  \"supportsMzn\": " << (supportsMzn() ? "true" : "false") << ",\n";
-  oss << "  \"supportsFzn\": " << (supportsFzn() ? "true" : "false") << ",\n";
-  oss << "  \"supportsNL\": " << (supportsNL() ? "true" : "false") << ",\n";
+  oss << "  \"inputType\": \"";
+  switch (inputType()) {
+    case O_FZN:
+      oss << "FZN";
+      break;
+    case O_MZN:
+      oss << "MZN";
+      break;
+    case O_NL:
+      oss << "NL";
+      break;
+  }
+  oss << "\",\n";
   oss << "  \"needsSolns2Out\": " << (needsSolns2Out() ? "true" : "false") << ",\n";
   oss << "  \"needsMznExecutable\": " << (needsMznExecutable() ? "true" : "false") << ",\n";
   oss << "  \"needsStdlibDir\": " << (needsStdlibDir() ? "true" : "false") << ",\n";

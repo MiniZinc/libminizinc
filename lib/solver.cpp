@@ -282,9 +282,22 @@ void MznSolver::printHelp(const std::string& selectedSolver) {
     }
   } else {
     const SolverConfig& sc = _solverConfigs.config(selectedSolver);
-    string solverId = sc.executable().empty() ? sc.id()
-                                              : (sc.supportsMzn() ? string("org.minizinc.mzn-mzn")
-                                                                  : string("org.minizinc.mzn-fzn"));
+    string solverId;
+    if (sc.executable().empty()) {
+      solverId = sc.id();
+    } else {
+      switch (sc.inputType()) {
+        case SolverConfig::O_FZN:
+          solverId = "org.minizinc.mzn-fzn";
+          break;
+        case SolverConfig::O_MZN:
+          solverId = "org.minizinc.mzn-mzn";
+          break;
+        case SolverConfig::O_NL:
+          solverId = "org.minizinc.mzn-nl";
+          break;
+      }
+    }
     bool found = false;
     for (auto it = get_global_solver_registry()->getSolverFactories().rbegin();
          it != get_global_solver_registry()->getSolverFactories().rend(); ++it) {
@@ -293,7 +306,18 @@ void MznSolver::printHelp(const std::string& selectedSolver) {
         (*it)->printHelp(_os);
         if (!sc.executable().empty() && !sc.extraFlags().empty()) {
           _os << "Extra solver flags (use with ";
-          _os << (sc.supportsMzn() ? "--mzn-flags" : "--fzn-flags") << ")" << endl;
+          switch (sc.inputType()) {
+            case SolverConfig::O_FZN:
+              _os << "--fzn-flags";
+              break;
+            case SolverConfig::O_MZN:
+              _os << "--mzn-flags";
+              break;
+            case SolverConfig::O_NL:
+              _os << "--nl-flags";
+              break;
+          }
+          _os << ")" << endl;
           for (const SolverConfig::ExtraFlag& ef : sc.extraFlags()) {
             _os << "  " << ef.flag << endl << "    " << ef.description << endl;
           }
@@ -642,20 +666,23 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       string solverId;
       if (sc.executable().empty()) {
         solverId = sc.id();
-      } else if (sc.supportsMzn()) {
-        solverId = "org.minizinc.mzn-mzn";
-      } else if (sc.supportsFzn()) {
-        solverId = "org.minizinc.mzn-fzn";
-      } else if (sc.supportsNL()) {
-        solverId = "org.minizinc.mzn-nl";
       } else {
-        _log << "Selected solver does not support MiniZinc, FlatZinc or NL input." << endl;
-        return OPTION_ERROR;
+        switch (sc.inputType()) {
+          case SolverConfig::O_FZN:
+            solverId = "org.minizinc.mzn-fzn";
+            break;
+          case SolverConfig::O_MZN:
+            solverId = "org.minizinc.mzn-mzn";
+            break;
+          case SolverConfig::O_NL:
+            solverId = "org.minizinc.mzn-nl";
+            break;
+        }
       }
 
       for (auto* it : get_global_solver_registry()->getSolverFactories()) {
-        if (it->getId() ==
-            solverId) {  /// TODO: also check version (currently assumes all ids are unique)
+        /// TODO: also check version (currently assumes all ids are unique)
+        if (it->getId() == solverId) {
           _sf = it;
           _sf->finaliseSolverConfigs(_solverConfigs);
           // Check support of -a and -i
@@ -671,7 +698,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
           delete _siOpt;
           _siOpt = _sf->createOptions();
           if (!sc.executable().empty() || solverId == "org.minizinc.mzn-fzn" ||
-              solverId == "org.minizinc.mzn-nl") {
+              solverId == "org.minizinc.mzn-nl" || solverId == "org.minizinc.mzn-sat") {
             std::vector<MZNFZNSolverFlag> acceptedFlags;
             for (const auto& sf : sc.stdFlags()) {
               acceptedFlags.push_back(MZNFZNSolverFlag::std(sf));
@@ -691,7 +718,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               fzn_mzn_flags.push_back(FileUtils::progpath() + "/" + _executableName);
             }
 
-            if (sc.supportsMzn()) {
+            if (sc.inputType() == SolverConfig::O_MZN) {
               isMznMzn = true;
               MZNSolverFactory::setAcceptedFlags(_siOpt, acceptedFlags);
               std::vector<std::string> additionalArgs_s;
@@ -739,14 +766,19 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
                 }
               }
             } else {
-              // supports fzn or nl
+              // supports fzn, nl, or dimacs
               std::vector<std::string> additionalArgs;
-              if (sc.supportsFzn()) {
-                FZNSolverFactory::setAcceptedFlags(_siOpt, acceptedFlags);
-                additionalArgs.emplace_back("--fzn-cmd");
-              } else {
-                // supports nl
-                additionalArgs.emplace_back("--nl-cmd");
+
+              switch (sc.inputType()) {
+                case SolverConfig::O_FZN:
+                  FZNSolverFactory::setAcceptedFlags(_siOpt, acceptedFlags);
+                  additionalArgs.emplace_back("--fzn-cmd");
+                  break;
+                case SolverConfig::O_NL:
+                  additionalArgs.emplace_back("--nl-cmd");
+                  break;
+                case SolverConfig::O_MZN:
+                  assert(false);  // unreachable
               }
               if (!sc.executableResolved().empty()) {
                 additionalArgs.push_back(sc.executableResolved());
@@ -754,17 +786,27 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
                 additionalArgs.push_back(sc.executable());
               }
               if (!sc.passFlags().empty()) {
-                if (sc.supportsFzn()) {
-                  add_flags("--fzn-flag", sc.passFlags(), additionalArgs);
-                } else {
-                  add_flags("--nl-flag", sc.passFlags(), additionalArgs);
+                switch (sc.inputType()) {
+                  case SolverConfig::O_FZN:
+                    add_flags("--fzn-flag", sc.passFlags(), additionalArgs);
+                    break;
+                  case SolverConfig::O_NL:
+                    add_flags("--nl-flag", sc.passFlags(), additionalArgs);
+                    break;
+                  case SolverConfig::O_MZN:
+                    assert(false);  // unreachable
                 }
               }
               if (!fzn_mzn_flags.empty()) {
-                if (sc.supportsFzn()) {
-                  add_flags("--fzn-flag", fzn_mzn_flags, additionalArgs);
-                } else {
-                  add_flags("--nl-flag", fzn_mzn_flags, additionalArgs);
+                switch (sc.inputType()) {
+                  case SolverConfig::O_FZN:
+                    add_flags("--fzn-flag", fzn_mzn_flags, additionalArgs);
+                    break;
+                  case SolverConfig::O_NL:
+                    add_flags("--nl-flag", fzn_mzn_flags, additionalArgs);
+                    break;
+                  case SolverConfig::O_MZN:
+                    assert(false);  // unreachable
                 }
               }
               if (sc.needsPathsFile()) {

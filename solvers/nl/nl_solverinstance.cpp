@@ -32,8 +32,7 @@ NLSolverFactory::NLSolverFactory() {
   sc.name("Generic Non Linear driver");
   sc.mznlibVersion(1);
   sc.description("MiniZinc generic Non Linear solver plugin");
-  sc.supportsFzn(false);
-  sc.supportsNL(true);
+  sc.inputType(SolverConfig::O_NL);
   sc.requiredFlags({"--nl-cmd"});
   sc.tags({"__internal__"});
   SolverConfigs::registerBuiltinSolver(sc);

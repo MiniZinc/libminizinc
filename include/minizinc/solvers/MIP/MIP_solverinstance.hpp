@@ -16,7 +16,6 @@ MIPSolverFactory<MIPWrapper>::MIPSolverFactory() : _factoryOptions() {
   sc.name(MIPWrapper::getName());
   sc.mznlib(MIPWrapper::getMznLib());
   sc.mznlibVersion(1);
-  sc.supportsMzn(true);
   sc.tags(MIPWrapper::getTags());
   sc.stdFlags(MIPWrapper::getStdFlags());
   SolverConfigs::registerBuiltinSolver(sc);

@@ -1094,9 +1094,10 @@ Here is a list of all configuration options recognised by the configuration file
   - ``"float:n:m"`` where ``n`` and ``m`` are floating point numbers, gives lower and upper bounds for the supported values
   - ``"bool:onstring:offstring"`` specifies strings to add to the command line flag to turn it on (``onstring``) and off (``offstring``). E.g., ``["-interrupt","whether to catch Ctrl-C","bool:false:true","true"]`` specifies a command line option that can be called as ``-interrupt true`` or ``-interrupt false``. The standard behaviour (just ``"bool"``) means that the option is either added to the command line or not.
   - ``"opt:first option:second option:...:last option"`` specifies a list of possible values for the option
-
-- ``supportsMzn`` (bool, default ``false``): Whether the solver can run MiniZinc directly (i.e., it implements its own compilation or interpretation of the model).
-- ``supportsFzn`` (bool, default ``true``): Whether the solver can run FlatZinc. This should be the case for most solvers
+- ``inputType`` (string, default ``FZN``, options ``MZN``, ``FZN``, ``NL``): The type of input expected by the solver.
+- ``supportsMzn`` (bool, default ``false``): Whether the solver can run MiniZinc directly (i.e., it implements its own compilation or interpretation of the model). [Deprecated, use ``inputType``]
+- ``supportsFzn`` (bool, default ``true``): Whether the solver can run FlatZinc. This should be the case for most solvers.  [Deprecated, use ``inputType``]
+- ``supportsNL`` (bool, default ``false``): Whether the solver supports NL input. Used for non-linear solvers.  [Deprecated, use ``inputType``]
 - ``needsSolns2Out`` (bool, default ``true``): Whether the output of the solver needs to be passed through the MiniZinc output processor.
 - ``needsMznExecutable`` (bool, default ``false``): Whether the solver needs to know the location of the MiniZinc executable. If true, it will be passed to the solver using the ``mzn-executable`` option.
 - ``needsStdlibDir`` (bool, default ``false``): Whether the solver needs to know the location of the MiniZinc standard library directory. If true, it will be passed to the solver using the ``stdlib-dir`` option.

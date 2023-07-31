@@ -38,7 +38,6 @@ GecodeSolverFactory::GecodeSolverFactory() {
 #endif
   sc.mznlib("-Ggecode_presolver");
   sc.mznlibVersion(1);
-  sc.supportsMzn(false);
   sc.description("Internal Gecode presolver plugin");
   sc.stdFlags({"-a", "-n", "-p"});
   SolverConfigs::registerBuiltinSolver(sc);

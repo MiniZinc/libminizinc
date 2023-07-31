@@ -27,6 +27,7 @@ class SolverConfigs;
  */
 class SolverConfig {
 public:
+  enum InputType { O_FZN, O_MZN, O_NL };
   /// Extra command line flags supported by solver
   struct ExtraFlag {
     enum FlagType { T_BOOL, T_INT, T_FLOAT, T_STRING };
@@ -71,12 +72,8 @@ protected:
   std::string _contact;
   /// URL for more information
   std::string _website;
-  /// Whether solver supports MiniZinc input
-  bool _supportsMzn = false;
-  /// Whether solver supports FlatZinc input
-  bool _supportsFzn = true;
-  /// Whether solver supports NL input
-  bool _supportsNL = false;
+  /// The input type used for the solver
+  InputType _inputType = O_FZN;
   /// Whether solver requires solutions2out processing
   bool _needsSolns2Out = true;
   /// Whether solver is a GUI application
@@ -159,19 +156,9 @@ public:
   void mznlibVersion(int i) { _mznlibVersion = i; }
 
   /// Whether solver supports MiniZinc input
-  bool supportsMzn() const { return _supportsMzn; }
+  InputType inputType() const { return _inputType; }
   /// Set whether solver supports MiniZinc input
-  void supportsMzn(bool b) { _supportsMzn = b; }
-
-  /// Whether solver supports FlatZinc input
-  bool supportsFzn() const { return _supportsFzn; }
-  /// Set whether solver supports FlatZinc input
-  void supportsFzn(bool b) { _supportsFzn = b; }
-
-  /// Whether solver supports NL input
-  bool supportsNL() const { return _supportsNL; }
-  /// Set whether solver supports NL input
-  void supportsNL(bool b) { _supportsNL = b; }
+  void inputType(InputType tt) { _inputType = tt; }
 
   /// Whether solver requires solutions2out processing
   bool needsSolns2Out() const { return _needsSolns2Out; }
