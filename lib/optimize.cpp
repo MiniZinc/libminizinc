@@ -850,6 +850,16 @@ void optimize(Env& env, bool chain_compression) {
           }
         } else if (vd->type().isint() && (vd->ti()->domain() != nullptr)) {
           IntSetVal* isv = eval_intset(envi, vd->ti()->domain());
+          if (auto* il = Expression::dynamicCast<IntLit>(vd->e())) {
+            auto iv = IntLit::v(il);
+            if (!isv->contains(iv)) {
+              env.envi().fail();
+            } else if (isv->size() != 1 || isv->card() != 1) {
+              isv = IntSetVal::a(iv, iv);
+              vd->ti()->domain(new SetLit(Location().introduce(), isv));
+              push_dependent_constraints(envi, vd->id(), constraintQueue);
+            }
+          }
           if (isv->size() == 1 && isv->card() == 1) {
             simplify_constraint(envi, m[var_idx], deletedVarDecls, constraintQueue, vardeclQueue);
           }
