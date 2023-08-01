@@ -444,14 +444,38 @@ void make_par(EnvI& env, Expression* e) {
   top_down(_decls, e);
 }
 
-void check_rename_var(EnvI& e, VarDecl* vd) {
+void check_rename_var(EnvI& e, VarDecl* vd, std::vector<Expression*> dimArgs, IntVal size1d) {
   if (vd->id()->idn() != vd->flat()->id()->idn()) {
     auto* vd_rename_ti = Expression::cast<TypeInst>(copy(e, e.cmap, vd->ti()));
+    if (!dimArgs.empty()) {
+      // Change variable with the FlatZinc identifier to be 1d and 1-based
+      Type t(vd_rename_ti->type());
+      t.dim(1);
+      auto* newTi = new TypeInst(Location().introduce(), Type::parint());
+      newTi->domain(new SetLit(Location().introduce(), IntSetVal::a(1, size1d)));
+      std::vector<TypeInst*> newRanges({newTi});
+      vd_rename_ti->setRanges(newRanges);
+      vd_rename_ti->type(t);
+    }
     auto* vd_rename =
         new VarDecl(Location().introduce(), vd_rename_ti, vd->flat()->id()->idn(), nullptr);
     vd_rename->flat(vd->flat());
     make_par(e, vd_rename);
-    vd->e(vd_rename->id());
+    Expression* vde = vd_rename->id();
+    if (!dimArgs.empty()) {
+      // Add arrayXd call
+      const auto& arrayXdId = e.constants.ids.arrayNd(vd->ti()->type().dim());
+      std::vector<Expression*> arrayXdargs;
+      for (auto* e : dimArgs) {
+        arrayXdargs.emplace_back(e);
+      }
+      arrayXdargs.emplace_back(vde);
+      auto* arrayXd = Call::a(Location().introduce(), arrayXdId, arrayXdargs);
+      arrayXd->type(vd->type());
+      arrayXd->decl(e.model->matchFn(e, arrayXd, false));
+      vde = arrayXd;
+    }
+    vd->e(vde);
     e.output->addItem(VarDeclI::a(Location().introduce(), vd_rename));
   }
 }
@@ -606,19 +630,22 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e) {
         } else if ((reallyFlat != nullptr) && cannot_use_rhs_for_output(env, nvi->e()->e())) {
           assert(nvi->e()->flat());
           nvi->e()->e(nullptr);
+          const auto dims =
+              (nvi->e()->type().dim() == 0 ? 0 : Expression::type(reallyFlat->e()).dim());
+          std::vector<Expression*> args(dims);
+          IntVal flatSize = 1;
           if (nvi->e()->type().dim() == 0) {
             Expression::addAnnotation(reallyFlat, env.constants.ann.output_var);
           } else {
-            const auto dims = Expression::type(reallyFlat->e()).dim();
-            std::vector<Expression*> args(dims);
             for (unsigned int i = 0; i < args.size(); i++) {
+              IntSetVal* range;
               if (nvi->e()->ti()->ranges()[i]->domain() == nullptr) {
-                args[i] = new SetLit(Location().introduce(),
-                                     eval_intset(env, reallyFlat->ti()->ranges()[i]->domain()));
+                range = eval_intset(env, reallyFlat->ti()->ranges()[i]->domain());
               } else {
-                args[i] = new SetLit(Location().introduce(),
-                                     eval_intset(env, nvi->e()->ti()->ranges()[i]->domain()));
+                range = eval_intset(env, nvi->e()->ti()->ranges()[i]->domain());
               }
+              args[i] = new SetLit(Location().introduce(), range);
+              flatSize *= range->empty() ? 0 : (range->max() - range->min() + 1);
             }
             if (env.fopts.ignoreStdlib) {
               // Ensure array?d call output by solver is available in output model
@@ -637,13 +664,13 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e) {
                 env.output->addItem(decl);
               }
             }
-            auto* al = new ArrayLit(Location().introduce(), args);
-            args.resize(1);
-            args[0] = al;
+            std::vector<Expression*> alArgs(
+                {new SetLit(Location().introduce(), IntSetVal::a(1, flatSize))});
+            auto* al = new ArrayLit(Location().introduce(), alArgs);
             Expression::addAnnotation(
-                reallyFlat, Call::a(Location().introduce(), env.constants.ann.output_array, args));
+                reallyFlat, Call::a(Location().introduce(), env.constants.ann.output_array, {al}));
           }
-          check_rename_var(env, nvi->e());
+          check_rename_var(env, nvi->e(), args, flatSize);
         } else {
           output_vardecls(env, nvi, nvi->e()->ti());
           output_vardecls(env, nvi, nvi->e()->e());
@@ -1544,7 +1571,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
                 assert(vd_followed->flat());
                 if (vd_followed->type().dim() == 0) {
                   Expression::addAnnotation(vd_followed->flat(), env.constants.ann.output_var);
-                  check_rename_var(env, vd_followed);
+                  check_rename_var(env, vd_followed, {}, 0);
                 } else {
                   bool needOutputAnn = true;
                   if (auto* al = Expression::dynamicCast<ArrayLit>(reallyFlat->e())) {
@@ -1564,16 +1591,16 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
                   if (needOutputAnn) {
                     const auto dims = vd_orig->type().dim();
                     std::vector<Expression*> args(dims);
+                    IntVal flatSize = 1;
                     for (unsigned int i = 0; i < args.size(); i++) {
+                      IntSetVal* range;
                       if (vd_orig->ti()->ranges()[i]->domain() == nullptr) {
-                        args[i] = new SetLit(
-                            Location().introduce(),
-                            eval_intset(env, vd_followed->flat()->ti()->ranges()[i]->domain()));
+                        range = eval_intset(env, vd_followed->flat()->ti()->ranges()[i]->domain());
                       } else {
-                        args[i] =
-                            new SetLit(Location().introduce(),
-                                       eval_intset(env, vd_followed->ti()->ranges()[i]->domain()));
+                        range = eval_intset(env, vd_followed->ti()->ranges()[i]->domain());
                       }
+                      args[i] = new SetLit(Location().introduce(), range);
+                      flatSize *= range->empty() ? 0 : (range->max() - range->min() + 1);
                     }
                     if (env.fopts.ignoreStdlib) {
                       // Ensure array?d call output by solver is available in output model
@@ -1592,13 +1619,13 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
                         env.output->addItem(decl);
                       }
                     }
-                    auto* al = new ArrayLit(Location().introduce(), args);
-                    args.resize(1);
-                    args[0] = al;
+                    std::vector<Expression*> alArgs(
+                        {new SetLit(Location().introduce(), IntSetVal::a(1, flatSize))});
+                    auto* al = new ArrayLit(Location().introduce(), alArgs);
                     Expression::addAnnotation(
                         vd_followed->flat(),
-                        Call::a(Location().introduce(), env.constants.ann.output_array, args));
-                    check_rename_var(env, vd_followed);
+                        Call::a(Location().introduce(), env.constants.ann.output_array, {al}));
+                    check_rename_var(env, vd_followed, args, flatSize);
                   }
                 }
               }
@@ -1789,19 +1816,20 @@ void finalise_output(EnvI& e) {
                   if (!is_output(vd->flat())) {
                     GCLock lock;
                     const auto dims = vd->type().dim();
+                    std::vector<Expression*> args(dims);
+                    IntVal flatSize = 1;
                     if (dims == 0) {
                       Expression::addAnnotation(vd->flat(), e.constants.ann.output_var);
                     } else {
-                      std::vector<Expression*> args(dims);
                       for (unsigned int i = 0; i < args.size(); i++) {
+                        IntSetVal* range;
                         if (vd->ti()->ranges()[i]->domain() == nullptr) {
-                          args[i] =
-                              new SetLit(Location().introduce(),
-                                         eval_intset(e, vd->flat()->ti()->ranges()[i]->domain()));
+                          range = eval_intset(e, vd->flat()->ti()->ranges()[i]->domain());
                         } else {
-                          args[i] = new SetLit(Location().introduce(),
-                                               eval_intset(e, vd->ti()->ranges()[i]->domain()));
+                          range = eval_intset(e, vd->ti()->ranges()[i]->domain());
                         }
+                        args[i] = new SetLit(Location().introduce(), range);
+                        flatSize *= range->empty() ? 0 : (range->max() - range->min() + 1);
                       }
                       if (e.fopts.ignoreStdlib) {
                         // Ensure array?d call output by solver is available in output model
@@ -1820,14 +1848,14 @@ void finalise_output(EnvI& e) {
                           e.output->addItem(decl);
                         }
                       }
-                      auto* al = new ArrayLit(Location().introduce(), args);
-                      args.resize(1);
-                      args[0] = al;
+                      std::vector<Expression*> alArgs(
+                          {new SetLit(Location().introduce(), IntSetVal::a(1, flatSize))});
+                      auto* al = new ArrayLit(Location().introduce(), alArgs);
                       Expression::addAnnotation(
                           vd->flat(),
-                          Call::a(Location().introduce(), e.constants.ann.output_array, args));
+                          Call::a(Location().introduce(), e.constants.ann.output_array, {al}));
                     }
-                    check_rename_var(e, vd);
+                    check_rename_var(e, vd, args, flatSize);
                   }
                 }
               }

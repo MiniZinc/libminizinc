@@ -533,11 +533,9 @@ Model output is specified through variable annotations.
 Non-array output variables are annotated with
 ``output_var``.
 Array output variables are annotated with
-``output_array([`` :math:`x_1` ``..`` :math:`x_2` ``, ... ])``
-where :math:`x_1` ``..`` :math:`x_2` ``, ...`` are the index set ranges of the
-original MiniZinc array (which
-may have had multiple dimensions and/or index sets that do not start at
-1). See :numref:`ch-fzn-output` for details on the output format.
+``output_array([`` :math:`1` ``..`` :math:`x` `` ])``
+where :math:`1` ``..`` :math:`x` is the index set range of the array.
+See :numref:`ch-fzn-output` for details on the output format.
 
 Variable definition annotations
 +++++++++++++++++++++++++++++++
@@ -619,8 +617,7 @@ For example:
 
   var 1..10: x :: output_var;
   var 1..10: y;       % y is not output.
-      % Output zs as a "flat" representation of a 2D array:
-  array [1..4] of var int: zs :: output_array([1..2, 1..2]);
+  array [1..4] of var int: zs :: output_array([1..4]);
 
 All non-error output must be sent to the standard output stream.
 
@@ -634,12 +631,11 @@ or, for array variables,
 
 .. code-block:: minizincdef
 
-  <var-par-identifier> = array<N>d(<a>..<b>, ..., [<y1>, <y2>, ... <yk>]);
+  <var-par-identifier> = [<y1>, <y2>, ... <yk>];
 
-where :mzndef:`<N>` is the number of index sets specified in the
-corresponding :mzndef:`output_array` annotation,
-:mzndef:`<a>..<b>, ...` are the index set ranges,
-and :mzndef:`<y1>, <y2>, ... <yk>` are literals of the element type.
+where :mzndef:`<y1>, <y2>, ... <yk>` are literals of the element type.
+
+**Note**: The argument to the :mzn:`output_array` annotation is kept for compatibility with older versions of FlatZinc. Previous versions of the MiniZinc compiler generated multi-dimensional :mzn:`output_array` annotations, and required the solver to output corresponding :mzn:`arrayNd` calls (with :mzn:`N` being the number of dimensions). Starting from MiniZinc version 2.7.8, all :mzn:`output_array` annotations are guaranteed to be one-dimensional and 1-based, so that no :mzn:`arrayNd` calls are required.
 
 Using this format, the output of a FlatZinc model solution is
 suitable for input to a MiniZinc model as a data file (this is why

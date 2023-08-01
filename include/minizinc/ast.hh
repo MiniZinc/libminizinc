@@ -2069,6 +2069,25 @@ public:
     ASTString array6d;
     ASTString arrayXd;
 
+    ASTString arrayNd(int n) const {
+      switch (n) {
+        case 1:
+          return array1d;
+        case 2:
+          return array2d;
+        case 3:
+          return array3d;
+        case 4:
+          return array4d;
+        case 5:
+          return array5d;
+        case 6:
+          return array6d;
+        default:
+          throw InternalError("arrayXd only defined for between 1 and 6 dimensions");
+      }
+    }
+
     ASTString sum;
     ASTString lin_exp;  // NOLINT(readability-identifier-naming)
     ASTString count;
