@@ -33,6 +33,10 @@ public:
   bool fznNeedsPaths = false;
   bool fznOutputPassthrough = false;
 
+  /// Whether solver accepts input in traditional FlatZinc or JSON
+  enum FZNFormat { FF_FZN, FF_JSON };
+  FZNFormat fznFormat = FF_FZN;
+
   bool supportsA = false;
   bool supportsN = false;
   bool supportsF = false;
@@ -88,7 +92,8 @@ public:
                      const std::string& workingDir = std::string()) override;
   void printHelp(std::ostream& os) override;
   static void setAcceptedFlags(SolverInstanceBase::Options* opt,
-                               const std::vector<MZNFZNSolverFlag>& flags);
+                               const std::vector<MZNFZNSolverFlag>& flags,
+                               const SolverConfig::InputType& inputType);
 };
 
 }  // namespace MiniZinc

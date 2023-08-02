@@ -360,9 +360,11 @@ SolverConfig SolverConfig::load(const string& filename) {
               sc._inputType = O_MZN;
             } else if (str == "NL") {
               sc._inputType = O_NL;
+            } else if (str == "JSON") {
+              sc._inputType = O_JSON;
             } else {
               std::ostringstream ss;
-              ss << "unknown input type" << str << ")";
+              ss << "unknown input type (" << str << ")";
               throw ConfigException(ss.str());
             }
           } else if (ai->id() == "needsSolns2Out") {
@@ -531,6 +533,9 @@ std::string SolverConfig::toJSON(const SolverConfigs& configs) const {
       break;
     case O_NL:
       oss << "NL";
+      break;
+    case O_JSON:
+      oss << "JSON";
       break;
   }
   oss << "\",\n";

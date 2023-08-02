@@ -250,6 +250,7 @@ public:
   bool contains(Expression* e) const;
   bool containsCall(const ASTString& id) const;
   bool isEmpty() const;
+  unsigned int size() const;
   ExpressionSetIter begin() const;
   ExpressionSetIter end() const;
   void add(Expression* e);

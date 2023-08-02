@@ -288,6 +288,7 @@ void MznSolver::printHelp(const std::string& selectedSolver) {
     } else {
       switch (sc.inputType()) {
         case SolverConfig::O_FZN:
+        case SolverConfig::O_JSON:
           solverId = "org.minizinc.mzn-fzn";
           break;
         case SolverConfig::O_MZN:
@@ -308,6 +309,7 @@ void MznSolver::printHelp(const std::string& selectedSolver) {
           _os << "Extra solver flags (use with ";
           switch (sc.inputType()) {
             case SolverConfig::O_FZN:
+            case SolverConfig::O_JSON:
               _os << "--fzn-flags";
               break;
             case SolverConfig::O_MZN:
@@ -669,6 +671,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       } else {
         switch (sc.inputType()) {
           case SolverConfig::O_FZN:
+          case SolverConfig::O_JSON:
             solverId = "org.minizinc.mzn-fzn";
             break;
           case SolverConfig::O_MZN:
@@ -771,7 +774,9 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
 
               switch (sc.inputType()) {
                 case SolverConfig::O_FZN:
-                  FZNSolverFactory::setAcceptedFlags(_siOpt, acceptedFlags);
+                case SolverConfig::O_JSON:
+                  FZNSolverFactory::setAcceptedFlags(_siOpt, acceptedFlags, sc.inputType());
+                  _flt.setFlagOutputJSON(sc.inputType() == SolverConfig::O_JSON);
                   additionalArgs.emplace_back("--fzn-cmd");
                   break;
                 case SolverConfig::O_NL:
@@ -788,6 +793,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               if (!sc.passFlags().empty()) {
                 switch (sc.inputType()) {
                   case SolverConfig::O_FZN:
+                  case SolverConfig::O_JSON:
                     add_flags("--fzn-flag", sc.passFlags(), additionalArgs);
                     break;
                   case SolverConfig::O_NL:
@@ -800,6 +806,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               if (!fzn_mzn_flags.empty()) {
                 switch (sc.inputType()) {
                   case SolverConfig::O_FZN:
+                  case SolverConfig::O_JSON:
                     add_flags("--fzn-flag", fzn_mzn_flags, additionalArgs);
                     break;
                   case SolverConfig::O_NL:

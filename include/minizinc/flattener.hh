@@ -69,6 +69,9 @@ public:
   bool getFlagEncapsulateJSON() const { return _flags.encapsulateJSON; }
   void setRandomSeed(long unsigned int r) { _fopts.randomSeed = r; }
   void setFlagOutputByDefault(bool f) { _fOutputByDefault = f; }
+  void setFlagOutputJSON(bool f) {
+    _flags.fznFormat = f ? FlattenerFlags::FF_JSON : FlattenerFlags::FF_FZN;
+  }
   Env* getEnv() const {
     assert(_pEnv.get());
     return _pEnv.get();
@@ -88,7 +91,7 @@ private:
   std::vector<std::string> _includePaths;
   bool _isFlatzinc = false;
 
-  struct {
+  struct FlattenerFlags {
     bool typecheck = true;
     bool verbose = false;
     bool newfzn = false;
@@ -105,6 +108,8 @@ private:
     bool twoPass = false;
     bool sac = false;
     bool shave = false;
+    enum FznFormat { FF_FZN, FF_JSON };
+    FznFormat fznFormat = FF_FZN;
     bool noOutputOzn = false;
     bool keepMznPaths = false;
     bool outputFznStdout = false;

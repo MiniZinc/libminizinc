@@ -27,7 +27,7 @@ class SolverConfigs;
  */
 class SolverConfig {
 public:
-  enum InputType { O_FZN, O_MZN, O_NL };
+  enum InputType { O_FZN, O_MZN, O_NL, O_JSON };
   /// Extra command line flags supported by solver
   struct ExtraFlag {
     enum FlagType { T_BOOL, T_INT, T_FLOAT, T_STRING };

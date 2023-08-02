@@ -1,0 +1,148 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "$id": "https://www.minizinc.org/schemas/fznjson",
+  "title" : "FlatZincJSON",
+  "description" : "A JSON representation of a FlatZinc model",
+
+  "$defs" : {
+    "identifier" : { "type" : "string", "pattern" : "[A-Za-z][A-Za-z0-9_]*" },
+    "literal" : { "oneOf" : [
+      { "type" : "number" },
+      { "$ref" : "#/$defs/identifier" },
+      { "type" : "boolean" },
+      { "type" : "object",
+        "properties" : {
+          "set" : {
+            "type" : "array",
+            "items" : {
+                        "type" : "array",
+                        "prefixItems" : [
+                          { "type" : "number" },
+                          { "type" : "number" }
+                        ]        
+                       }
+          }
+        },
+        "required" : [ "set" ]
+      }
+    ]},
+    "argument" : { "oneOf" : [
+      { "type" : "array", "items" : { "$ref" : "#/$defs/literal" } },
+      { "$ref" : "#/$defs/literal" }
+    ]},
+    "annotation" : { "oneOf" : [
+      { "$ref" : "#/$defs/call" },
+      { "type" : "string" }
+    ]},
+    "annotations" : {
+      "type" : "array",
+      "items" : { "$ref" : "#/$defs/annotation" }
+    },
+    "call" : {
+      "type" : "object",
+      "properties" : {
+        "id": { "$ref": "#/$defs/identifier" },
+        "args": {
+          "type": "array",
+          "items": { "$ref" : "#/$defs/argument" }
+        },
+        "ann" : { "$ref" : "#/$defs/annotations"}
+      },
+      "required": [
+        "id",
+        "args"
+      ]
+    },
+    "domain" : {
+      "type" : "array",
+      "items" : {
+        "type" : "array",
+        "prefixItems" : [
+          { "type" : "integer" },
+          { "type" : "integer" }
+        ]
+      }
+    }
+  },
+
+  "type": "object",
+  "properties": {
+    "variables": {
+      "type": "object",
+      "patternProperties": {
+        "[A-Za-z][A-Za-z0-9_]*": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string"
+            },
+            "domain": { "$ref" : "#/$defs/domain" },
+            "rhs": { "$ref" : "#/$defs/literal" },
+            "introduced": {
+              "type": "boolean"
+            },
+            "defined": {
+              "type": "boolean"
+            },
+            "ann" : { "$ref" : "#/$defs/annotations"}
+          },
+          "required": [
+            "type"
+          ]
+        }
+      }
+    },
+    "arrays": {
+      "type": "object",
+      "patternProperties": {
+        "[A-Za-z][A-Za-z0-9_]*": {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "array",
+              "items": { "$ref" : "#/$defs/literal" }
+            },
+            "ann" : { "$ref" : "#/$defs/annotations"},
+            "introduced": {
+              "type": "boolean"
+            },
+            "defined": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "a"
+          ]
+        }
+      }
+    },
+    "constraints": {
+      "type": "array",
+      "items": { "$ref" : "#/$defs/call" }
+    },
+    "output": {
+      "type": "array",
+      "items": { "$ref" : "#/$defs/identifier" }
+    },
+    "solve": {
+      "type": "object",
+      "properties": {
+        "method": {
+          "enum": [ "satisfy", "minimize", "maximize" ]
+        },
+        "objective": { "$ref" : "#/$defs/literal" },
+        "ann" : { "$ref" : "#/$defs/annotations"}
+    },
+      "required": [
+        "method"
+      ]
+    }
+  },
+  "required": [
+    "variables",
+    "arrays",
+    "output",
+    "constraints",
+    "solve"
+  ]
+}

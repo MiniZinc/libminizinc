@@ -9,6 +9,11 @@ https://github.com/MiniZinc/libminizinc/issues.
 Changes:
 ^^^^^^^^
 
+-  Add support for producing a JSON-based version of FlatZinc as the output
+   format of the MiniZinc compiler.
+-  Replace ``supportsMzn``, ``supportsFzn`` and ``supportsNL`` solver
+   configuration flags with new option ``inputType``. The old flags are
+   still supported for backwards compatibility.
 -  Allow libraries to define how to iterate over ``var set of int`` using the
    function ``set2iter``, useful for different set representations.
 -  Update the reflection functions ``ub``, ``lb``, and ``dom`` to return 

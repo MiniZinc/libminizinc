@@ -545,7 +545,14 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
 
   if (_fOutputByDefault) {
     if (_flagOutputFzn.empty()) {
-      _flagOutputFzn = _flagOutputBase + ".fzn";
+      switch (_flags.fznFormat) {
+        case FlattenerFlags::FF_FZN:
+          _flagOutputFzn = _flagOutputBase + ".fzn";
+          break;
+        case FlattenerFlags::FF_JSON:
+          _flagOutputFzn = _flagOutputBase + ".fjson";
+          break;
+      }
     }
     if (_flagOutputPaths.empty() && _fopts.collectMznPaths) {
       _flagOutputPaths = _flagOutputBase + ".paths";
@@ -941,8 +948,16 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           if (_flags.verbose) {
             _log << "Printing FlatZinc to stdout ..." << std::endl;
           }
-          Printer p(_os, 0, true, &env->envi());
-          p.print(env->flat());
+          switch (_flags.fznFormat) {
+            case FlattenerFlags::FF_FZN: {
+              Printer p(_os, 0, true, &env->envi());
+              p.print(env->flat());
+            } break;
+            case FlattenerFlags::FF_JSON: {
+              FznJSONPrinter p(_os, env->envi());
+              p.print(env->flat());
+            } break;
+          }
           if (_flags.verbose) {
             _log << " done (" << _starttime.stoptime() << ")" << std::endl;
           }
@@ -952,8 +967,16 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           }
           std::ofstream ofs(FILE_PATH(_flagOutputFzn), ios::out);
           check_io_status(ofs.good(), " I/O error: cannot open fzn output file. ");
-          Printer p(ofs, 0, true, &env->envi());
-          p.print(env->flat());
+          switch (_flags.fznFormat) {
+            case FlattenerFlags::FF_FZN: {
+              Printer p(ofs, 0, true, &env->envi());
+              p.print(env->flat());
+            } break;
+            case FlattenerFlags::FF_JSON: {
+              FznJSONPrinter p(ofs, env->envi());
+              p.print(env->flat());
+            } break;
+          }
           check_io_status(ofs.good(), " I/O error: cannot write fzn output file. ");
           ofs.close();
           if (_flags.verbose) {

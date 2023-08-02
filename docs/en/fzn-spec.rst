@@ -5,7 +5,7 @@ Interfacing Solvers to Flatzinc
 
 This document describes the interface between the MiniZinc system and FlatZinc solvers. Interfacing a solver with MiniZinc usually requires three components:
 
-#. The solver binary (or a script that runs the solver). It should support the command line options specified in :numref:`fzn-cmdline-options`, understand the FlatZinc input language as defined in :numref:`ch-fzn-spec`, and produce output as defined in :numref:`ch-fzn-output`.
+#. The solver binary (or a script that runs the solver). It should support the command line options specified in :numref:`fzn-cmdline-options`, understand either the FlatZinc input language as defined in :numref:`ch-fzn-spec`, or the FlatZinc-JSON input language as defined in :numref:`ch-fzn-json`. Solvers must produce output as defined in :numref:`ch-fzn-output`.
 
 #. The solver's MiniZinc library. This library defines the global constraints that the solver supports, and redefines FlatZinc built-in constraints that the solver does not support (see :numref:`ch-solver-specific-libraries`).
 
@@ -181,6 +181,8 @@ name of a non-array parameter or variable, ``v``. For example:
 
 :numref:`ch-fzn-syntax` gives the regular expressions specifying the
 syntax for float and int literals.
+
+.. _ch-fzn-models:
 
 FlatZinc models
 ~~~~~~~~~~~~~~~
@@ -596,6 +598,55 @@ Here are some constraint annotations supported by some solvers:
 |``priority(k)``            | where ``k`` is an integer constant indicating propagator priority.         |
 +---------------------------+----------------------------------------------------------------------------+
 
+.. _ch-fzn-json:
+
+Specification of FlatZinc-JSON
+------------------------------
+
+FlatZinc-JSON is an alternative syntax for FlatZinc that is compatible with the JSON data format. Solvers can indicate that they require FlatZinc output in their solver configuration files (see :numref:`sec-cmdline-conffiles`) using the `inputType` property.
+
+The JSON representation of FlatZinc contains the same elements as a FlatZinc file: declarations of variables, arrays, constraints and a solve item. A full specification is given as a JSON schema at the end of this section.
+Here is an example of the cake optimisation model from :numref:`ex-cakes`, compiled into FlatZinc-JSON:
+
+.. code-block:: json
+
+  {
+    "variables": {
+      "b" : { "type" : "int", "domain" : [[0, 3]] },
+      "c" : { "type" : "int", "domain" : [[0, 6]] },
+      "X_INTRODUCED_0_" : { "type" : "int", "domain" : [[0, 85000]], "defined" : true }
+    },
+    "arrays": {
+      "X_INTRODUCED_2_" : { "a": [250, 200] },
+      "X_INTRODUCED_6_" : { "a": [75, 150] },
+      "X_INTRODUCED_8_" : { "a": [100, 150] }
+    },
+    "constraints": [
+      { "id" : "int_lin_le", "args" : ["X_INTRODUCED_2_", ["b", "c"], 4000]},
+      { "id" : "int_lin_le", "args" : ["X_INTRODUCED_6_", ["b", "c"], 2000]},
+      { "id" : "int_lin_le", "args" : ["X_INTRODUCED_8_", ["b", "c"], 500]},
+      { "id" : "int_lin_eq", "args" : [[400, 450, -1], ["b", "c", "X_INTRODUCED_0_"], 0],
+        "ann" : ["ctx_pos"], "defines" : "X_INTRODUCED_0_"}
+    ],
+    "output": ["b", "c"],
+    "solve": { "method" : "maximize", "objective" : "X_INTRODUCED_0_" }
+  }
+
+There are a number of small differences compared to FlatZinc:
+
+- Variables and arrays are declared separately. Each variable must have an identifier and a type, and can optionally have a domain, a flag indicating that the variable was introduced by compilation, and a flag that the variable is functionally defined by a constraint.
+- Domains are written as lists of contiguous, ordered, non-overlapping ranges. E.g., the set :mzn:`{1,2,4,6,7}` would be written as ``[[1,2],[4,4],[6,7]]``.
+- Arrays are declared with an identifier and an object that has the property ``"a"``, which maps to the actual array. Arrays can contain numeric literals or identifiers (written as strings).
+- Constraints are declared as objects with a property ``"id"`` indicating the name of the constraint, a property ``"args"`` for the array of arguments to the constraint, and an optional property ``"defines"`` that indicates the variable identifier that this constraint functionally defines.
+- The ``"output"`` property is a list of all identifiers for which the solver must produce output for each solution. The output must follow the normal FlatZinc output rules as defined in :numref:`ch-fzn-output`.
+- The ``"solve"`` property maps to an object with a property ``"method"`` that indicates whether the problem is a satisfaction problem (``"satisfy"``) or an optimisation problem (``"minimize"`` or ``"maximize"``), in which case the ``"objective"`` property must be present, which maps to an identifier.
+- Variables, arrays, constraints and the solve item can have an optional list of annotations, indicated by the ``"ann"`` property. Each annotation is either a string, or it follows the same syntax as a constraint (i.e., an object with ``"id"`` and ``"args"`` properties).
+
+The full schema is listed below, and is available from https://www.minizinc.org/schemas/fznjson.
+
+.. literalinclude:: fznjson.json
+  :language: json
+
 .. _ch-fzn-output:
 
 Output
@@ -608,7 +659,7 @@ Solution output
 
 An implementation must output values for all and only the variables
 annotated with ``output_var`` or ``output_array`` (output
-annotations must not appear on parameters). Output must be printed to
+annotations must not appear on parameters) in a FlatZinc model, or those variables and arrays whose identifiers are listed in the ``"output"`` property of a FlatZinc-JSON model. Output must be printed to
 the standard output stream.
 
 For example:
@@ -1090,7 +1141,7 @@ Here is a list of all configuration options recognised by the configuration file
   - ``"float:n:m"`` where ``n`` and ``m`` are floating point numbers, gives lower and upper bounds for the supported values
   - ``"bool:onstring:offstring"`` specifies strings to add to the command line flag to turn it on (``onstring``) and off (``offstring``). E.g., ``["-interrupt","whether to catch Ctrl-C","bool:false:true","true"]`` specifies a command line option that can be called as ``-interrupt true`` or ``-interrupt false``. The standard behaviour (just ``"bool"``) means that the option is either added to the command line or not.
   - ``"opt:first option:second option:...:last option"`` specifies a list of possible values for the option
-- ``inputType`` (string, default ``FZN``, options ``MZN``, ``FZN``, ``NL``): The type of input expected by the solver.
+- ``inputType`` (string, default ``FZN``, options ``MZN``, ``FZN``, ``NL``, ``JSON``): The type of input expected by the solver.
 - ``supportsMzn`` (bool, default ``false``): Whether the solver can run MiniZinc directly (i.e., it implements its own compilation or interpretation of the model). [Deprecated, use ``inputType``]
 - ``supportsFzn`` (bool, default ``true``): Whether the solver can run FlatZinc. This should be the case for most solvers.  [Deprecated, use ``inputType``]
 - ``supportsNL`` (bool, default ``false``): Whether the solver supports NL input. Used for non-linear solvers.  [Deprecated, use ``inputType``]

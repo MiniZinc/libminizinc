@@ -182,8 +182,11 @@ bool FZNSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
 }
 
 void FZNSolverFactory::setAcceptedFlags(SolverInstanceBase::Options* opt,
-                                        const std::vector<MZNFZNSolverFlag>& flags) {
+                                        const std::vector<MZNFZNSolverFlag>& flags,
+                                        const SolverConfig::InputType& inputType) {
   auto& _opt = static_cast<FZNSolverOptions&>(*opt);
+  _opt.fznFormat =
+      inputType == SolverConfig::O_FZN ? FZNSolverOptions::FF_FZN : FZNSolverOptions::FF_JSON;
   _opt.fznSolverFlags.clear();
   for (const auto& f : flags) {
     if (f.n == "-a") {
@@ -282,32 +285,41 @@ SolverInstance::Status FZNSolverInstance::solve() {
   int timelimit = opt.fznTimeLimitMilliseconds;
   bool sigint = opt.fznSigint;
 
-  FileUtils::TmpFile fznFile(".fzn");
-  {  // Context to print FZN file, close file descriptor afterwards
-    std::ofstream os(FILE_PATH(fznFile.name()));
-    Printer p(os, 0, true, &_env.envi());
-    for (FunctionIterator it = _fzn->functions().begin(); it != _fzn->functions().end(); ++it) {
-      if (!it->removed()) {
-        Item& item = *it;
-        p.print(&item);
+  std::unique_ptr<FileUtils::TmpFile> fznFile;
+  if (opt.fznFormat == FZNSolverOptions::FF_FZN) {
+    {  // Context to print FZN file, close file descriptor afterwards
+      fznFile = std::unique_ptr<FileUtils::TmpFile>(new FileUtils::TmpFile(".fzn"));
+      std::ofstream os(FILE_PATH(fznFile->name()));
+      Printer p(os, 0, true, &_env.envi());
+      for (FunctionIterator it = _fzn->functions().begin(); it != _fzn->functions().end(); ++it) {
+        if (!it->removed()) {
+          Item& item = *it;
+          p.print(&item);
+        }
       }
-    }
-    for (VarDeclIterator it = _fzn->vardecls().begin(); it != _fzn->vardecls().end(); ++it) {
-      if (!it->removed()) {
-        Item& item = *it;
-        p.print(&item);
+      for (VarDeclIterator it = _fzn->vardecls().begin(); it != _fzn->vardecls().end(); ++it) {
+        if (!it->removed()) {
+          Item& item = *it;
+          p.print(&item);
+        }
       }
-    }
-    for (ConstraintIterator it = _fzn->constraints().begin(); it != _fzn->constraints().end();
-         ++it) {
-      if (!it->removed()) {
-        Item& item = *it;
-        p.print(&item);
+      for (ConstraintIterator it = _fzn->constraints().begin(); it != _fzn->constraints().end();
+           ++it) {
+        if (!it->removed()) {
+          Item& item = *it;
+          p.print(&item);
+        }
       }
+      p.print(_fzn->solveItem());
     }
-    p.print(_fzn->solveItem());
+  } else {
+    assert(opt.fznFormat == FZNSolverOptions::FF_JSON);
+    fznFile = std::unique_ptr<FileUtils::TmpFile>(new FileUtils::TmpFile(".fjson"));
+    std::ofstream os(FILE_PATH(fznFile->name()));
+    FznJSONPrinter p(os, _env.envi());
+    p.print(_fzn);
   }
-  cmd_line.push_back(fznFile.name());
+  cmd_line.push_back(fznFile->name());
 
   std::unique_ptr<FileUtils::TmpFile> pathsFile;
   if (opt.fznNeedsPaths) {

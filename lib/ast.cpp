@@ -2484,6 +2484,8 @@ bool Annotation::contains(Expression* e) const { return (_s != nullptr) && _s->c
 
 bool Annotation::isEmpty() const { return _s == nullptr || _s->isEmpty(); }
 
+unsigned int Annotation::size() const { return _s == nullptr ? 0 : _s->size(); }
+
 ExpressionSetIter Annotation::begin() const {
   return _s == nullptr ? ExpressionSetIter(true) : _s->begin();
 }

@@ -106,6 +106,20 @@ public:
   }
 };
 
+class FznJSONPrinter {
+private:
+  std::ostream& _os;
+  EnvI& _env;
+
+  void printBasicElement(std::ostream& os, Expression* e);
+  void printAnnotations(std::ostream& os, const Annotation& ann);
+
+public:
+  FznJSONPrinter(std::ostream& os, EnvI& env) : _os(os), _env(env) {}
+
+  void print(Model* m);
+};
+
 /// Output operator for expressions
 template <class Char, class Traits>
 std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& os,

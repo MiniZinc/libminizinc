@@ -2263,6 +2263,239 @@ void Printer::print(const Model* m) {
   }
 }
 
+void FznJSONPrinter::printBasicElement(std::ostream& os, Expression* e) {
+  if (auto* call = Expression::dynamicCast<Call>(e)) {
+    os << "{ \"id\" : \"" << call->id() << "\", \"args\" : [";
+    for (unsigned int i = 0; i < call->argCount(); i++) {
+      if (i != 0) {
+        os << ", ";
+      }
+      printBasicElement(os, call->arg(i));
+    }
+    os << "]";
+    printAnnotations(os, Expression::ann(call));
+    os << "}";
+  } else if (auto* ident = Expression::dynamicCast<Id>(e)) {
+    os << "\"" << *ident << "\"";
+  } else if (auto* al = Expression::dynamicCast<ArrayLit>(e)) {
+    os << "[";
+    for (unsigned int j = 0; j < al->size(); j++) {
+      if (j != 0) {
+        os << ", ";
+      }
+      printBasicElement(os, (*al)[j]);
+    }
+    os << "]";
+  } else if (auto* sl = Expression::dynamicCast<SetLit>(e)) {
+    os << "{ \"set\" : [";
+    if (sl->isv() != nullptr) {
+      for (unsigned int i = 0; i < sl->isv()->size(); i++) {
+        if (i != 0) {
+          os << ", ";
+        }
+        if (sl->type().isBoolSet()) {
+          os << "[" << (sl->isv()->min(i) == 0 ? "false" : "true") << ", "
+             << (sl->isv()->max(i) == 0 ? "false" : "true") << "]";
+        } else {
+          os << "[" << sl->isv()->min(i) << ", " << sl->isv()->max(i) << "]";
+        }
+      }
+    } else if (sl->fsv() != nullptr) {
+      for (unsigned int i = 0; i < sl->fsv()->size(); i++) {
+        if (i != 0) {
+          os << ", ";
+        }
+        os << "[" << sl->fsv()->min(i) << ", " << sl->fsv()->max(i) << "]";
+      }
+    } else {
+      throw InternalError("Generated FlatZinc contains unevaluated set literal");
+    }
+    os << "]}";
+  } else {
+    switch (Expression::eid(e)) {
+      case Expression::E_INTLIT:
+      case Expression::E_FLOATLIT:
+      case Expression::E_STRINGLIT:
+        os << *e;
+        break;
+      case Expression::E_BOOLLIT:
+        os << (eval_bool(_env, e) ? "true" : "false");
+        break;
+      default:
+        throw InternalError("Generated FlatZinc contains invalid expression type");
+    }
+  }
+}
+
+void FznJSONPrinter::printAnnotations(std::ostream& os, const Annotation& ann) {
+  bool addIsDefined = false;
+  Id* defines = nullptr;
+  if (!ann.isEmpty()) {
+    bool first = true;
+    for (const auto& it : ann) {
+      if (Expression::equal(it, _env.constants.ann.output_var)) {
+        continue;
+      }
+      if (Expression::equal(it, _env.constants.ann.is_defined_var)) {
+        addIsDefined = true;
+        continue;
+      }
+      if (Expression::isa<Call>(it)) {
+        if (Expression::cast<Call>(it)->id() == _env.constants.ann.output_array) {
+          continue;
+        }
+        if (Expression::cast<Call>(it)->id() == _env.constants.ann.defines_var) {
+          defines = Expression::dynamicCast<Id>(Expression::cast<Call>(it)->arg(0));
+          continue;
+        }
+      }
+
+      if (first) {
+        os << ", \"ann\" : [";
+        first = false;
+      } else {
+        os << ", ";
+      }
+      printBasicElement(os, it);
+    }
+    if (!first) {
+      os << "]";
+    }
+    if (addIsDefined) {
+      os << ", \"defined\" : true";
+    }
+    if (defines != nullptr) {
+      os << ", \"defines\" : \"" << *defines << "\"";
+    }
+  }
+}
+
+void FznJSONPrinter::print(MiniZinc::Model* m) {
+  std::ostringstream os_arrays;
+  std::ostringstream output_idents;
+
+  _os << "{\n";
+  _os << "  \"variables\": {\n";
+  bool firstVar = true;
+  bool firstArray = true;
+  bool firstOutput = true;
+  for (VarDeclIterator it = m->vardecls().begin(); it != m->vardecls().end(); ++it) {
+    auto* vd = it->e();
+
+    if (vd->type().dim() != 0) {
+      if (firstArray) {
+        firstArray = false;
+      } else {
+        os_arrays << ",\n";
+      }
+      os_arrays << "    \"" << *vd->id() << "\" : ";
+      os_arrays << "{ \"a\": ";
+      printBasicElement(os_arrays, vd->e());
+      printAnnotations(os_arrays, Expression::ann(vd));
+      os_arrays << " }";
+    } else {
+      if (firstVar) {
+        firstVar = false;
+      } else {
+        _os << ",\n";
+      }
+      _os << "    \"" << *vd->id() << "\" : {";
+      _os << " \"type\" : ";
+      if (vd->type().isIntSet()) {
+        _os << "\"set of int\"";
+      } else if (vd->type().isint()) {
+        _os << "\"int\"";
+      } else if (vd->type().isbool()) {
+        _os << "\"bool\"";
+      } else if (vd->type().isfloat()) {
+        _os << "\"float\"";
+      } else {
+        throw InternalError("Generated FlatZinc contains incorrect variable type");
+      }
+      if (vd->ti()->domain() != nullptr) {
+        _os << ", \"domain\" : [";
+        if (vd->type().bt() == Type::BT_INT) {
+          auto* isv = eval_intset(_env, vd->ti()->domain());
+          for (unsigned int i = 0; i < isv->size(); i++) {
+            if (i != 0) {
+              _os << ", ";
+            }
+            _os << "[" << isv->min(i) << ", " << isv->max(i) << "]";
+          }
+        } else if (vd->type().bt() == Type::BT_FLOAT) {
+          auto* isv = eval_floatset(_env, vd->ti()->domain());
+          for (unsigned int i = 0; i < isv->size(); i++) {
+            if (i != 0) {
+              _os << ", ";
+            }
+            _os << "[" << isv->min(i) << ", " << isv->max(i) << "]";
+          }
+        } else if (vd->type().bt() == Type::BT_BOOL) {
+          if (vd->ti()->domain() != nullptr) {
+            std::string domain = eval_bool(_env, vd->ti()->domain()) ? "true" : "false";
+            _os << "[" << domain << ", " << domain << "]";
+          }
+        } else {
+          throw InternalError("Generated FlatZinc contains incorrect variable domain type");
+        }
+        _os << "]";
+      }
+      if (vd->e() != nullptr) {
+        _os << ", \"rhs\" : ";
+        printBasicElement(_os, vd->e());
+      }
+      if (vd->introduced()) {
+        _os << ", \"introduced\": true";
+      }
+      printAnnotations(_os, Expression::ann(vd));
+      _os << " }";
+    }
+    if (Expression::ann(vd).containsCall(_env.constants.ann.output_array) ||
+        Expression::ann(vd).contains(_env.constants.ann.output_var)) {
+      if (firstOutput) {
+        firstOutput = false;
+      } else {
+        output_idents << ", ";
+      }
+      output_idents << "\"" << *vd->id() << "\"";
+    }
+  }
+  _os << "\n  },\n";
+  _os << "  \"arrays\": {\n" << os_arrays.str() << "\n  },\n";
+  _os << "  \"constraints\": [\n";
+  bool first = true;
+  for (ConstraintIterator it = m->constraints().begin(); it != m->constraints().end(); ++it) {
+    if (first) {
+      first = false;
+    } else {
+      _os << ",\n";
+    }
+    if (auto* call = Expression::dynamicCast<Call>(it->e())) {
+      _os << "    ";
+      printBasicElement(_os, it->e());
+    } else {
+      throw InternalError("Generated FlatZinc contains incorrect value type in constraint item");
+    }
+  }
+  _os << "\n  ],\n";
+  _os << "  \"output\": [" << output_idents.str() << "],\n";
+  _os << "  \"solve\": { \"method\" : ";
+  if (m->solveItem()->st() == SolveI::ST_SAT) {
+    _os << "\"satisfy\"";
+  } else {
+    if (m->solveItem()->st() == SolveI::ST_MIN) {
+      _os << "\"minimize\"";
+    } else {
+      _os << "\"maximize\"";
+    }
+    _os << ", \"objective\" : ";
+    printBasicElement(_os, m->solveItem()->e());
+  }
+  printAnnotations(_os, m->solveItem()->ann());
+  _os << " }\n";
+  _os << "}\n";
+}
+
 }  // namespace MiniZinc
 
 void debugprint(const MiniZinc::Expression* e) { std::cerr << *e << "\n"; }
