@@ -16,7 +16,7 @@
             "type" : "array",
             "items" : {
                         "type" : "array",
-                        "prefixItems" : [
+                        "items" : [
                           { "type" : "number" },
                           { "type" : "number" }
                         ]        
@@ -24,10 +24,17 @@
           }
         },
         "required" : [ "set" ]
+      },
+      { "type" : "object",
+        "properties" : {
+          "string" : { "type" : "string" }
+        },
+        "required" : [ "string" ]
       }
     ]},
+    "literals" : { "type" : "array", "items" : { "$ref" : "#/$defs/literal" } },
     "argument" : { "oneOf" : [
-      { "type" : "array", "items" : { "$ref" : "#/$defs/literal" } },
+      { "$ref" : "#/$defs/literals"},
       { "$ref" : "#/$defs/literal" }
     ]},
     "annotation" : { "oneOf" : [
@@ -57,7 +64,7 @@
       "type" : "array",
       "items" : {
         "type" : "array",
-        "prefixItems" : [
+        "items" : [
           { "type" : "integer" },
           { "type" : "integer" }
         ]
@@ -67,6 +74,7 @@
 
   "type": "object",
   "properties": {
+    "version" : { "type" : "string" },
     "variables": {
       "type": "object",
       "patternProperties": {
@@ -139,6 +147,7 @@
     }
   },
   "required": [
+    "version",
     "variables",
     "arrays",
     "output",

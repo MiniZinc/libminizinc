@@ -2265,7 +2265,7 @@ void Printer::print(const Model* m) {
 
 void FznJSONPrinter::printBasicElement(std::ostream& os, Expression* e) {
   if (auto* call = Expression::dynamicCast<Call>(e)) {
-    os << "{ \"id\" : \"" << call->id() << "\", \"args\" : [";
+    os << "{ \"id\" : \"" << Printer::escapeStringLit(call->id()) << "\", \"args\" : [";
     for (unsigned int i = 0; i < call->argCount(); i++) {
       if (i != 0) {
         os << ", ";
@@ -2276,7 +2276,9 @@ void FznJSONPrinter::printBasicElement(std::ostream& os, Expression* e) {
     printAnnotations(os, Expression::ann(call));
     os << "}";
   } else if (auto* ident = Expression::dynamicCast<Id>(e)) {
-    os << "\"" << *ident << "\"";
+    std::ostringstream ident_oss;
+    ident_oss << *ident;
+    os << "\"" << Printer::escapeStringLit(ident_oss.str()) << "\"";
   } else if (auto* al = Expression::dynamicCast<ArrayLit>(e)) {
     os << "[";
     for (unsigned int j = 0; j < al->size(); j++) {
@@ -2315,8 +2317,11 @@ void FznJSONPrinter::printBasicElement(std::ostream& os, Expression* e) {
     switch (Expression::eid(e)) {
       case Expression::E_INTLIT:
       case Expression::E_FLOATLIT:
-      case Expression::E_STRINGLIT:
         os << *e;
+        break;
+      case Expression::E_STRINGLIT:
+        os << "{ \"string\" : \"" << Printer::escapeStringLit(Expression::cast<StringLit>(e)->v())
+           << "\" }";
         break;
       case Expression::E_BOOLLIT:
         os << (eval_bool(_env, e) ? "true" : "false");

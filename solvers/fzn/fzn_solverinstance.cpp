@@ -314,7 +314,7 @@ SolverInstance::Status FZNSolverInstance::solve() {
     }
   } else {
     assert(opt.fznFormat == FZNSolverOptions::FF_JSON);
-    fznFile = std::unique_ptr<FileUtils::TmpFile>(new FileUtils::TmpFile(".fjson"));
+    fznFile = std::unique_ptr<FileUtils::TmpFile>(new FileUtils::TmpFile(".fzn.json"));
     std::ofstream os(FILE_PATH(fznFile->name()));
     FznJSONPrinter p(os, _env.envi());
     p.print(_fzn);

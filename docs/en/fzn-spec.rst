@@ -634,13 +634,14 @@ Here is an example of the cake optimisation model from :numref:`ex-cakes`, compi
 
 There are a number of small differences compared to FlatZinc:
 
-- Variables and arrays are declared separately. Each variable must have an identifier and a type, and can optionally have a domain, a flag indicating that the variable was introduced by compilation, and a flag that the variable is functionally defined by a constraint.
+- Variables and arrays are declared separately. Each variable must have an identifier and a type, and can optionally have a domain, a flag indicating that the variable was introduced by compilation, a flag that the variable is functionally defined by a constraint, and a property ``"rhs"`` to define the "right hand side" of the variable, i.e., its value or alias to another variable.
 - Domains are written as lists of contiguous, ordered, non-overlapping ranges. E.g., the set :mzn:`{1,2,4,6,7}` would be written as ``[[1,2],[4,4],[6,7]]``.
 - Arrays are declared with an identifier and an object that has the property ``"a"``, which maps to the actual array. Arrays can contain numeric literals or identifiers (written as strings).
 - Constraints are declared as objects with a property ``"id"`` indicating the name of the constraint, a property ``"args"`` for the array of arguments to the constraint, and an optional property ``"defines"`` that indicates the variable identifier that this constraint functionally defines.
 - The ``"output"`` property is a list of all identifiers for which the solver must produce output for each solution. The output must follow the normal FlatZinc output rules as defined in :numref:`ch-fzn-output`.
 - The ``"solve"`` property maps to an object with a property ``"method"`` that indicates whether the problem is a satisfaction problem (``"satisfy"``) or an optimisation problem (``"minimize"`` or ``"maximize"``), in which case the ``"objective"`` property must be present, which maps to an identifier.
-- Variables, arrays, constraints and the solve item can have an optional list of annotations, indicated by the ``"ann"`` property. Each annotation is either a string, or it follows the same syntax as a constraint (i.e., an object with ``"id"`` and ``"args"`` properties).
+- Variables, arrays, constraints and the solve item can have an optional list of annotations, indicated by the ``"ann"`` property. Atomic annotations (such as ``indomain_min``) are represented simply as strings. Non-atomic annotations (such as ``int_search``) follow the same syntax as constraints, i.e., an object with ``"id"`` and ``"args"`` properties.
+- String literals can occur in FlatZinc as arguments to annotations or special solver-defined predicates. In FlatZinc-JSON, these string literals are represented as objects ``{ "string" : "<string contents>" }``.
 
 The full schema is listed below, and is available from https://www.minizinc.org/schemas/fznjson.
 

@@ -550,7 +550,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           _flagOutputFzn = _flagOutputBase + ".fzn";
           break;
         case FlattenerFlags::FF_JSON:
-          _flagOutputFzn = _flagOutputBase + ".fjson";
+          _flagOutputFzn = _flagOutputBase + ".fzn.json";
           break;
       }
     }
