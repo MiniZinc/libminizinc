@@ -353,7 +353,7 @@ _                 { return MZN_UNDERSCORE; }
 
 _?[A-Za-z][A-Za-z0-9_]* {
                     yylval->sValue = strdup(yytext); return MZN_IDENTIFIER; }
-"'"[^\\'\xa\xd\x0]+"'" {
+"'"[^'\xa\xd\x0]+"'" {
                     MiniZinc::ParserState* parm = 
                     static_cast<MiniZinc::ParserState*>(yyget_extra(yyscanner));
                     if (parm->isFlatZinc) {
