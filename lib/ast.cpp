@@ -1684,7 +1684,7 @@ Type type_from_tmap(EnvI& env, TypeInst* ti, const ASTStringMap<std::pair<Type, 
       for (unsigned int i = 0; i < enumIds.size() - 1; i++) {
         enumIds[i] = orig_enumIds[i];
       }
-      if (curTypeId != 0 && ret.dim() > 0) {
+      if (curTypeId != 0 && ret.dim() != 0) {
         const auto& curIds = env.getArrayEnum(curTypeId);
         curTypeId = curIds[curIds.size() - 1];
       }

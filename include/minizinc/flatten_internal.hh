@@ -487,7 +487,7 @@ public:
     assert(t.bt() == Type::BT_TUPLE);
     unsigned int typeId = t.typeId();
     assert(typeId != 0);
-    if (t.dim() > 0) {
+    if (t.dim() != 0) {
       const std::vector<unsigned int>& arrayEnumIds = getArrayEnum(typeId);
       typeId = arrayEnumIds[arrayEnumIds.size() - 1];
     }
@@ -506,7 +506,7 @@ public:
     assert(t.bt() == Type::BT_RECORD);
     unsigned int typeId = t.typeId();
     assert(typeId != 0);
-    if (t.dim() > 0) {
+    if (t.dim() != 0) {
       const std::vector<unsigned int>& arrayEnumIds = getArrayEnum(typeId);
       typeId = arrayEnumIds[arrayEnumIds.size() - 1];
     }
@@ -516,7 +516,7 @@ public:
     assert(t.structBT());
     unsigned int typeId = t.typeId();
     assert(typeId != 0);
-    if (t.dim() > 0) {
+    if (t.dim() != 0) {
       const std::vector<unsigned int>& arrayEnumIds = getArrayEnum(typeId);
       typeId = arrayEnumIds[arrayEnumIds.size() - 1];
     }

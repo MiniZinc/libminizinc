@@ -62,7 +62,7 @@ void Type::mkPar(EnvI& env) {
   }
   std::vector<unsigned int> arrayEnumIds;
   unsigned int tId = typeId();
-  if (dim() > 0) {
+  if (dim() != 0) {
     arrayEnumIds = env.getArrayEnum(tId);
     tId = arrayEnumIds[arrayEnumIds.size() - 1];
   }
@@ -82,7 +82,7 @@ void Type::mkPar(EnvI& env) {
   ti(TI_PAR);
   unsigned int regId = bt() == BT_TUPLE ? env.registerTupleType(pt)
                                         : env.registerRecordType(static_cast<RecordType*>(st), pt);
-  if (dim() > 0) {
+  if (dim() != 0) {
     arrayEnumIds[arrayEnumIds.size() - 1] = regId;
     typeId(env.registerArrayEnum(arrayEnumIds));
   } else {
@@ -100,7 +100,7 @@ void Type::mkVar(EnvI& env) {
   }
   std::vector<unsigned int> arrayEnumIds;
   unsigned int tId = typeId();
-  if (dim() > 0) {
+  if (dim() != 0) {
     arrayEnumIds = env.getArrayEnum(tId);
     tId = arrayEnumIds[arrayEnumIds.size() - 1];
   }
@@ -119,7 +119,7 @@ void Type::mkVar(EnvI& env) {
   ti(TI_VAR);
   unsigned int regId = bt() == BT_TUPLE ? env.registerTupleType(pt)
                                         : env.registerRecordType(static_cast<RecordType*>(st), pt);
-  if (dim() > 0) {
+  if (dim() != 0) {
     arrayEnumIds[arrayEnumIds.size() - 1] = regId;
     typeId(env.registerArrayEnum(arrayEnumIds));
   } else {
@@ -135,7 +135,7 @@ void Type::mkOpt(EnvI& env) {
   }
   std::vector<unsigned int> arrayEnumIds;
   unsigned int tId = typeId();
-  if (dim() > 0) {
+  if (dim() != 0) {
     arrayEnumIds = env.getArrayEnum(tId);
     tId = arrayEnumIds[arrayEnumIds.size() - 1];
   }
@@ -156,7 +156,7 @@ void Type::mkOpt(EnvI& env) {
     unsigned int regId = bt() == BT_TUPLE
                              ? env.registerTupleType(pt)
                              : env.registerRecordType(static_cast<RecordType*>(strt), pt);
-    if (dim() > 0) {
+    if (dim() != 0) {
       arrayEnumIds[arrayEnumIds.size() - 1] = regId;
       typeId(env.registerArrayEnum(arrayEnumIds));
     } else {
@@ -172,7 +172,7 @@ void Type::mkPresent(EnvI& env) {
   }
   std::vector<unsigned int> arrayEnumIds;
   unsigned int tId = typeId();
-  if (dim() > 0) {
+  if (dim() != 0) {
     arrayEnumIds = env.getArrayEnum(tId);
     tId = arrayEnumIds[arrayEnumIds.size() - 1];
   }
@@ -193,7 +193,7 @@ void Type::mkPresent(EnvI& env) {
     unsigned int regId = bt() == BT_TUPLE
                              ? env.registerTupleType(pt)
                              : env.registerRecordType(static_cast<RecordType*>(st), pt);
-    if (dim() > 0) {
+    if (dim() != 0) {
       arrayEnumIds[arrayEnumIds.size() - 1] = regId;
       typeId(env.registerArrayEnum(arrayEnumIds));
     } else {
@@ -221,7 +221,7 @@ bool Type::decrement(EnvI& env) {
   }
   std::vector<unsigned int> arrayEnumIds;
   unsigned int tId = typeId();
-  if (dim() > 0) {
+  if (dim() != 0) {
     arrayEnumIds = env.getArrayEnum(tId);
     tId = arrayEnumIds[arrayEnumIds.size() - 1];
   }
@@ -258,7 +258,7 @@ bool Type::decrement(EnvI& env) {
   typeId(0);
   cv(any_var);
   ti(all_var ? TI_VAR : TI_PAR);
-  if (dim() > 0) {
+  if (dim() != 0) {
     arrayEnumIds[arrayEnumIds.size() - 1] = regId;
     typeId(env.registerArrayEnum(arrayEnumIds));
   } else {
@@ -283,7 +283,7 @@ Type Type::elemType(const EnvI& env) const {
 }
 
 Type Type::arrType(EnvI& env, const Type& dimTy, const Type& elemTy) {
-  assert(dimTy.dim() > 0);
+  assert(dimTy.dim() != 0);
   Type ret = elemTy;
   ret.typeId(0);
   ret.dim(dimTy.dim());
@@ -299,7 +299,7 @@ Type Type::arrType(EnvI& env, const Type& dimTy, const Type& elemTy) {
                                                ? env.getArrayEnum(dimTy.typeId())
                                                : std::vector<unsigned int>(dimTy.dim() + 1, 0);
   unsigned int elemTypeId = elemTy.typeId();
-  if (elemTy.dim() > 0 && elemTypeId != 0) {
+  if (elemTy.dim() != 0 && elemTypeId != 0) {
     const std::vector<unsigned int>& elemArrayIds = env.getArrayEnum(elemTypeId);
     elemTypeId = elemArrayIds.back();
   }

@@ -1414,7 +1414,7 @@ unsigned int EnvI::registerTupleType(TypeInst* ti) {
   t.ti(var ? Type::TI_VAR : Type::TI_PAR);
   // Register an array type when required
   if (!ti->ranges().empty()) {
-    assert(t.dim() > 0);
+    assert(t.dim() != 0);
     std::vector<unsigned int> typeIds(ti->ranges().size() + 1);
     for (unsigned int i = 0; i < ti->ranges().size(); i++) {
       typeIds[i] = ti->ranges()[i]->type().typeId();
@@ -1517,7 +1517,7 @@ Type EnvI::commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim) {
     }
   }
   unsigned int typeId = registerTupleType(common);
-  if (tuple1.dim() > 0) {
+  if (tuple1.dim() != 0) {
     const std::vector<unsigned int>& arrayEnumIds1 = getArrayEnum(tuple1.typeId());
     const std::vector<unsigned int>& arrayEnumIds2 = getArrayEnum(tuple2.typeId());
     std::vector<unsigned int> typeIds(tuple1.dim() + 1);
@@ -1579,7 +1579,7 @@ Type EnvI::commonRecord(Type record1, Type record2, bool ignoreRecord1Dim) {
   }
   unsigned int typeId = registerRecordType(common);
 
-  if (record1.dim() > 0) {
+  if (record1.dim() != 0) {
     const std::vector<unsigned int>& arrayEnumIds1 = getArrayEnum(record1.typeId());
     const std::vector<unsigned int>& arrayEnumIds2 = getArrayEnum(record2.typeId());
     std::vector<unsigned int> typeIds(record1.dim() + 1);
@@ -1698,7 +1698,7 @@ bool EnvI::isSubtype(const Type& t1, const Type& t2, bool strictEnums) const {
       return false;
     }
   }
-  if (strictEnums && t1.bt() == Type::BT_INT && t1.dim() > 0 && t1.typeId() != t2.typeId()) {
+  if (strictEnums && t1.bt() == Type::BT_INT && t1.dim() != 0 && t1.typeId() != t2.typeId()) {
     if (t1.typeId() == 0) {
       return t1.isbot();
     }
@@ -1852,7 +1852,7 @@ unsigned int EnvI::registerRecordType(TypeInst* ti) {
   t.ti(var ? Type::TI_VAR : Type::TI_PAR);
   // Register an array type when required
   if (!ti->ranges().empty()) {
-    assert(t.dim() > 0);
+    assert(t.dim() != 0);
     std::vector<unsigned int> typeIds(ti->ranges().size() + 1);
     for (unsigned int i = 0; i < ti->ranges().size(); i++) {
       typeIds[i] = ti->ranges()[i]->type().typeId();
