@@ -50,14 +50,19 @@ Checker messages
   
   {
     "type": "checker",
-    "output": {
-      "default": "foo output section"
-    },
-    "sections": ["default"]
+    "messages": [
+      {
+        "type": "solution",
+        "output": {
+          "default": "foo output section"
+        },
+        "sections": ["default"]
+      }
+    ]
   }
 
 This message gives solution checker results and is produced directly preceding the solution it is associated with.
-Its format is the same as the ``solution`` message.
+The ``messages`` field gives a list of JSON stream messages produced by the solution checker (usually a ``solution`` message).
 
 Status messages
 ---------------

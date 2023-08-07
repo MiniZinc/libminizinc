@@ -68,7 +68,6 @@ public:
     std::string flagOutputNoncanonical;
     std::string flagOutputRaw;
     int flagNumberOutput = -1;
-    bool flagIsChecker = false;
     /// Default values, also used for input
     const char* const solutionSeparatorDef = "----------";
     const char* const unsatisfiableMsgDef = "=====UNSATISFIABLE=====";
@@ -87,8 +86,7 @@ public:
     std::string errorMsg = errorMsgDef;
     std::string searchCompleteMsg = searchCompleteMsgDef;
 
-    std::vector<std::string> checkerArgs = {"--solver", "org.minizinc.gecode_presolver",
-                                            "--is-checker"};
+    std::vector<std::string> checkerArgs = {"--solver", "org.minizinc.gecode_presolver"};
   } opt;
 
   struct Statistics {

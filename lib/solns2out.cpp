@@ -112,8 +112,6 @@ bool Solns2Out::processOption(int& i, std::vector<std::string>& argv,
   } else if (cop.getOption("--output-raw",
                            &opt.flagOutputRaw)) {  // NOLINT: Allow repeated empty if
     // Parsed by reference
-  } else if (cop.getOption("--is-checker")) {
-    opt.flagIsChecker = true;
   } else if (opt.flagStandaloneSolns2Out) {
     std::string oznfile(argv[i]);
     if (oznfile.length() <= 4) {
@@ -238,8 +236,7 @@ void Solns2Out::declNewOutput() {
 
 void Solns2Out::printSolution(std::istream& sol, std::ostream& os, bool outputTime) {
   if (opt.flagEncapsulateJSON) {
-    std::string t = opt.flagIsChecker ? "checker" : "solution";
-    os << "{\"type\": \"" << t << "\", ";
+    os << "{\"type\": \"solution\", ";
     std::string line;
     while (std::getline(sol, line)) {
       // Remove line breaks from JSON object
@@ -307,7 +304,19 @@ bool Solns2Out::evalOutput() {
       std::string line;
       if (std::getline(checkerStream, line)) {
         if (opt.flagEncapsulateJSON) {
-          _os << line << "\n";
+          std::string last = line;
+          _os << "{\"type\": \"checker\", \"messages\": [" << line;
+          while (std::getline(checkerStream, line)) {
+            last = line;
+            _os << ", " << line;
+          }
+          _os << "]";
+          if (last.size() > 19 && last.substr(0, 19) == "{\"type\": \"solution\"") {
+            // For backwards compatibility, output solution message as part of this message
+            _os << last.substr(19) << "\n";
+          } else {
+            _os << "}\n";
+          }
         } else {
           _os << "% Solution checker report:\n";
           _os << "% " << line << "\n";
