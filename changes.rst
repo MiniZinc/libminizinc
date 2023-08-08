@@ -50,6 +50,7 @@ Bug fixes:
    variables part of the output (:bugref:`716`).
 -  Fix possible crash when printing the final solution using the built-in
    Chuffed interface.
+-  Don't print the final status line from solution checkers.
 
 .. _v2.7.6:
 

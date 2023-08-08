@@ -404,6 +404,7 @@ void Solns2Out::checkSolution(std::ostream& oss) {
 
   MznSolver slv(oss, _log, _starttime);
   slv.s2out.opt.solutionSeparator = "";
+  slv.s2out.opt.searchCompleteMsg = "";
   try {
     slv.run(opt.checkerArgs, checker.str(), "minizinc", "checker.mzc");
   } catch (const Exception& e) {
@@ -502,7 +503,7 @@ bool Solns2Out::evalStatusMsg(SolverInstance::Status status) {
       }
       return true;
     case SolverInstance::OPT: {
-      if (opt.flagEncapsulateJSON) {
+      if (opt.flagEncapsulateJSON && !opt.searchCompleteMsg.empty()) {
         bool sat = getEnv()->flat()->solveItem()->st() == SolveI::ST_SAT;
         label = sat ? "ALL_SOLUTIONS" : "OPTIMAL_SOLUTION";
       } else {
@@ -533,7 +534,9 @@ bool Solns2Out::evalStatusMsg(SolverInstance::Status status) {
   }
   if (opt.flagEncapsulateJSON) {
     if (label.empty()) {
-      getOutput() << "{\"type\": \"time\", \"time\": " << _starttime.ms().count() << "}\n";
+      if (opt.flagOutputTime) {
+        getOutput() << "{\"type\": \"time\", \"time\": " << _starttime.ms().count() << "}\n";
+      }
     } else {
       getOutput() << "{\"type\": \"status\", \"status\": \"" << label << "\"";
       if (opt.flagOutputTime) {
