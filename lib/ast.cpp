@@ -1505,13 +1505,16 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
           }
           if (tiit_par.bt() == Type::BT_TOP || tiit_par.bt() == Type::BT_BOT) {
             tiit_par.bt(its_par.bt());
+            tiit_par.typeId(its_par.typeId());
           }
           if (its_par.bt() == Type::BT_TOP || its_par.bt() == Type::BT_BOT) {
             its_par.bt(tiit_par.bt());
+            its_par.typeId(tiit_par.typeId());
           }
           if (env.isSubtype(tiit_par, its_par, strictEnum)) {
             if (it->second.first.bt() == Type::BT_TOP) {
               it->second.first.bt(tiit.bt());
+              it->second.first.typeId(tiit.typeId());
             }
           } else if (env.isSubtype(its_par, tiit_par, strictEnum)) {
             it->second.first.bt(tiit_par.bt());
@@ -1608,6 +1611,7 @@ Type type_from_tmap(EnvI& env, TypeInst* ti, const ASTStringMap<std::pair<Type, 
     std::vector<Type> fields(al->size());
     for (unsigned int i = 0; i < al->size(); i++) {
       fields[i] = type_from_tmap(env, Expression::cast<TypeInst>((*al)[i]), tmap);
+      ret.cv(ret.cv() || fields[i].cv());
     }
     unsigned int typeId = 0;
     if (ret.bt() == Type::BT_TUPLE) {
@@ -1665,6 +1669,7 @@ Type type_from_tmap(EnvI& env, TypeInst* ti, const ASTStringMap<std::pair<Type, 
       ret.typeId(env.registerArrayEnum(enumIds));
     } else {
       ret.typeId(it->second.first.typeId());
+      ret.cv(ret.cv() || it->second.first.cv());
     }
   }
   if (!rh.empty()) {
@@ -1717,6 +1722,9 @@ Type type_from_tmap(EnvI& env, TypeInst* ti, const ASTStringMap<std::pair<Type, 
     if (hadRealEnum) {
       ret.typeId(env.registerArrayEnum(enumIds));
     }
+  }
+  if (ti->type().isPar()) {
+    ret.mkPar(env);
   }
   return ret;
 }

@@ -51,6 +51,8 @@ Bug fixes:
 -  Fix possible crash when printing the final solution using the built-in
    Chuffed interface.
 -  Don't print the final status line from solution checkers.
+-  Fix typechecking of par type-inst identifiers when instantiated using
+   structured types involving ``var`` types.
 
 .. _v2.7.6:
 
