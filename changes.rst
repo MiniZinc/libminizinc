@@ -53,6 +53,7 @@ Bug fixes:
 -  Don't print the final status line from solution checkers.
 -  Fix typechecking of par type-inst identifiers when instantiated using
    structured types involving ``var`` types.
+-  Implement ``fix`` and ``is_fixed`` for strucutred types.
 
 .. _v2.7.6:
 

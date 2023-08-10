@@ -1456,6 +1456,28 @@ Expression* exp_is_fixed(EnvI& env, Expression* e) {
     if (Expression::type(cur).isPar()) {
       return eval_par(env, cur);
     }
+    if (Expression::type(cur).dim() != 0 || Expression::type(cur).structBT()) {
+      ArrayLit* al = eval_array_lit(env, cur);
+      std::vector<Expression*> fixed(al->size());
+      for (unsigned int i = 0; i < fixed.size(); i++) {
+        fixed[i] = exp_is_fixed(env, (*al)[i]);
+        if (fixed[i] == nullptr) {
+          return nullptr;
+        }
+      }
+      std::vector<std::pair<int, int>> dims(al->dims());
+      for (unsigned int i = 0; i < al->dims(); i++) {
+        dims[i] = std::make_pair(al->min(i), al->max(i));
+      }
+      auto* ret = new ArrayLit(Expression::loc(cur).introduce(), fixed, dims);
+      if (Expression::type(cur).structBT()) {
+        ret = ArrayLit::constructTuple(Expression::loc(ret), ret);
+      }
+      Type tt = Expression::type(cur);
+      tt.mkPar(env);
+      ret->type(tt);
+      return ret;
+    }
     switch (Expression::eid(cur)) {
       case Expression::E_ID:
         cur = Expression::cast<Id>(cur)->decl();
@@ -1492,21 +1514,6 @@ bool b_is_fixed(EnvI& env, Call* call) {
   return exp_is_fixed(env, call->arg(0)) != nullptr;
 }
 
-bool b_is_fixed_array(EnvI& env, Call* call) {
-  assert(call->argCount() == 1);
-  GCLock lock;
-  ArrayLit* al = eval_array_lit(env, call->arg(0));
-  if (al->empty()) {
-    return true;
-  }
-  for (unsigned int i = 0; i < al->size(); i++) {
-    if (exp_is_fixed(env, (*al)[i]) == nullptr) {
-      return false;
-    }
-  }
-  return true;
-}
-
 bool b_is_same(EnvI& env, Call* call) {
   assert(call->argCount() == 2);
   return follow_id_to_decl(call->arg(0)) == follow_id_to_decl(call->arg(1));
@@ -1525,28 +1532,6 @@ IntVal b_fix_int(EnvI& env, Call* call) { return eval_int(env, b_fix(env, call))
 bool b_fix_bool(EnvI& env, Call* call) { return eval_bool(env, b_fix(env, call)); }
 FloatVal b_fix_float(EnvI& env, Call* call) { return eval_float(env, b_fix(env, call)); }
 IntSetVal* b_fix_set(EnvI& env, Call* call) { return eval_intset(env, b_fix(env, call)); }
-
-Expression* b_fix_array(EnvI& env, Call* call) {
-  assert(call->argCount() == 1);
-  GCLock lock;
-  ArrayLit* al = eval_array_lit(env, call->arg(0));
-  std::vector<Expression*> fixed(al->size());
-  for (unsigned int i = 0; i < fixed.size(); i++) {
-    fixed[i] = exp_is_fixed(env, (*al)[i]);
-    if (fixed[i] == nullptr) {
-      throw EvalError(env, Expression::loc((*al)[i]), "expression is not fixed");
-    }
-  }
-  std::vector<std::pair<int, int>> dims(al->dims());
-  for (unsigned int i = 0; i < al->dims(); i++) {
-    dims[i] = std::make_pair(al->min(i), al->max(i));
-  }
-  auto* ret = new ArrayLit(Location(), fixed, dims);
-  Type tt = al->type();
-  tt.mkPar(env);
-  ret->type(tt);
-  return ret;
-}
 
 bool b_has_ann(EnvI& env, Call* call) {
   assert(call->argCount() == 2);
@@ -4007,7 +3992,7 @@ void register_builtins(Env& e) {
   {
     std::vector<Type> t(1);
     t[0] = Type::optvartop(-1);
-    rb(env, m, ASTString("is_fixed"), t, b_is_fixed_array);
+    rb(env, m, ASTString("is_fixed"), t, b_is_fixed);
   }
   {
     std::vector<Type> t(2);
@@ -4021,18 +4006,20 @@ void register_builtins(Env& e) {
     rb(env, m, ASTString("fix"), t, b_fix_int);
     rb(env, m, ASTString("fix"), t, b_fix_set);
     rb(env, m, ASTString("fix"), t, b_fix_float);
+    rb(env, m, ASTString("fix"), t, b_fix);
     t[0] = Type::vartop();
     rb(env, m, ASTString("fix"), t, b_fix_bool);
     rb(env, m, ASTString("fix"), t, b_fix_int);
     rb(env, m, ASTString("fix"), t, b_fix_set);
     rb(env, m, ASTString("fix"), t, b_fix_float);
+    rb(env, m, ASTString("fix"), t, b_fix);
   }
   {
     std::vector<Type> t(1);
     t[0] = Type::optvartop(-1);
-    rb(env, m, ASTString("fix"), t, b_fix_array);
+    rb(env, m, ASTString("fix"), t, b_fix);
     t[0] = Type::vartop(-1);
-    rb(env, m, ASTString("fix"), t, b_fix_array);
+    rb(env, m, ASTString("fix"), t, b_fix);
   }
   {
     std::vector<Type> t(2);
