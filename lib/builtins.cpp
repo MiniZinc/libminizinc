@@ -1589,13 +1589,13 @@ bool b_annotate(EnvI& env, Call* call) {
   }
   auto* var_decl = Expression::cast<VarDecl>(follow_id_to_decl(expr));
   // Add annotation
-  Expression* ann = call->arg(1);
+  Expression* ann = eval_par(env, call->arg(1));
   Expression::addAnnotation(var_decl, ann);
   // Increase usage count of the annotation
   if (auto* ann_decl = Expression::dynamicCast<VarDecl>(follow_id_to_decl(ann))) {
-    auto var_it = env.varOccurrences.idx.find(var_decl->id());
-    assert(var_it.first);
-    env.varOccurrences.add(ann_decl, (*env.flat())[*var_it.second]);
+    auto* var_it = reinterpret_cast<VarDeclI*>(var_decl);
+    assert(var_it->e() == var_decl);
+    env.varOccurrences.add(ann_decl, var_it);
   }
   return true;
 }
