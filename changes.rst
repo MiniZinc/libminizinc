@@ -54,6 +54,9 @@ Bug fixes:
 -  Fix typechecking of par type-inst identifiers when instantiated using
    structured types involving ``var`` types.
 -  Implement ``fix`` and ``is_fixed`` for strucutred types.
+-  Ensure reverse mappers are created when flattening tuple/record literals.
+   This resolves certain errors during output processing in models using these
+   types.
 
 .. _v2.7.6:
 

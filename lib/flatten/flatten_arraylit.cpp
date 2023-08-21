@@ -9,6 +9,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <minizinc/ast.hh>
 #include <minizinc/flat_exp.hh>
 
 namespace MiniZinc {
@@ -42,16 +43,25 @@ EE flatten_arraylit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDec
     KeepAlive ka;
     {
       GCLock lock;
-      ArrayLit* alr = nullptr;
       if (al->type().istuple() || al->type().isrecord()) {
         assert(dims.size() == 1 && dims[0].first == 1 && dims[0].second == al->size());
-        alr = ArrayLit::constructTuple(Expression::loc(al).introduce(), elems);
+
+        auto* alr = ArrayLit::constructTuple(Expression::loc(al).introduce(), elems);
+        alr->type(al->type());
+        alr->flat(true);
+
+        // Add reverse mapper for tuple literal containing variables
+        VarDecl* vd = new_vardecl(env, Ctx(), new TypeInst(Location().introduce(), al->type()),
+                                  nullptr, nullptr, alr);
+        vd->ti()->setStructDomain(env, al->type());
+        env.reverseMappers.insert(vd->id(), alr);
+        ka = vd->id();
       } else {
-        alr = new ArrayLit(Expression::loc(al).introduce(), elems, dims);
+        auto* alr = new ArrayLit(Expression::loc(al).introduce(), elems, dims);
+        alr->type(al->type());
+        alr->flat(true);
+        ka = alr;
       }
-      alr->type(al->type());
-      alr->flat(true);
-      ka = alr;
     }
     ret.b = conj(env, b, Ctx(), elems_ee);
     ret.r = bind(env, Ctx(), r, ka());

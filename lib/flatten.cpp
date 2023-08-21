@@ -3577,7 +3577,14 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
         if (al->isTuple()) {
           Expression* al_ret = ArrayLit::constructTuple(Location().introduce(), es);
           Expression::type(al_ret, al->type());  // still contains var, so still CV
-          return al_ret;
+
+          // Add reverse mapper for tuple literal containing variables
+          VarDecl* vd = new_vardecl(env, Ctx(), new TypeInst(Location().introduce(), al->type()),
+                                    nullptr, nullptr, al_ret);
+          vd->ti()->setStructDomain(env, al->type());
+          env.reverseMappers.insert(vd->id(), al_ret);
+
+          return vd->id();
         }
         std::vector<std::pair<int, int>> dims(al->dims());
         for (int i = 0; i < al->dims(); i++) {
