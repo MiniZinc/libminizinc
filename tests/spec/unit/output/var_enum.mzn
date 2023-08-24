@@ -3,7 +3,7 @@
 solvers: [gecode]
 expected: !Result
   solution: !Solution
-    _output_item: '["X_INTRODUCED_0_", "X_INTRODUCED_1_", "X_INTRODUCED_2_"] [X_INTRODUCED_0_, X_INTRODUCED_1_, X_INTRODUCED_2_] [Inch, Inch, Inch]'
+    _output_item: '["X_INTRODUCED_17_", "X_INTRODUCED_18_", "X_INTRODUCED_19_"] [X_INTRODUCED_17_, X_INTRODUCED_18_, X_INTRODUCED_19_] [Inch, Inch, Inch]'
 ***/
 
 enum Unit = {Inch, Meter, Foot};

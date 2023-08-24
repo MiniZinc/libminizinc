@@ -59,6 +59,8 @@ Bug fixes:
    types.
 -  Fix problem where certain strings in exceptions might be garbage collected
    before they are output (:bugref:`725`).
+-  Fix problem where argument names of generated functions could conflict with
+   model declared names (:bugref:`726`).
 
 .. _v2.7.6:
 

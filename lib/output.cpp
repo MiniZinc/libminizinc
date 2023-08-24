@@ -457,8 +457,7 @@ void check_rename_var(EnvI& e, VarDecl* vd, std::vector<Expression*> dimArgs, In
       vd_rename_ti->setRanges(newRanges);
       vd_rename_ti->type(t);
     }
-    auto* vd_rename =
-        new VarDecl(Location().introduce(), vd_rename_ti, vd->flat()->id()->idn(), nullptr);
+    auto* vd_rename = new VarDecl(Location().introduce(), vd_rename_ti, vd->flat()->id()->idn());
     vd_rename->flat(vd->flat());
     make_par(e, vd_rename);
     Expression* vde = vd_rename->id();
@@ -806,7 +805,7 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
 
             {
               auto* i_ti = new TypeInst(Location().introduce(), Type::parenum(idx1EnumId));
-              auto* i_vd = new VarDecl(Location().introduce(), i_ti, "i");
+              auto* i_vd = new VarDecl(Location().introduce(), i_ti, e.genId());
               i_vd->toplevel(false);
 
               Generators g;
@@ -821,7 +820,7 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
             }
             {
               auto* i_ti = new TypeInst(Location().introduce(), Type::parenum(idx1EnumId));
-              auto* i_vd = new VarDecl(Location().introduce(), i_ti, "i");
+              auto* i_vd = new VarDecl(Location().introduce(), i_ti, e.genId());
               i_vd->toplevel(false);
 
               Generators g;
@@ -846,13 +845,13 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
             auto* idx_ti_ti = new TypeInst(Location().introduce(), Type::parint());
             auto* idx_ti = new TypeInst(Location().introduce(), Type::parstring(1));
             idx_ti->setRanges({idx_ti_ti});
-            auto* idx_vd = new VarDecl(Location().introduce(), idx_ti, "idx", indexes);
+            auto* idx_vd = new VarDecl(Location().introduce(), idx_ti, e.genId(), indexes);
             idx_vd->toplevel(false);
 
             auto* x_ti_ti = new TypeInst(Location().introduce(), Type::parint());
             auto* x_ti = new TypeInst(Location().introduce(), Type::parstring(1));
             x_ti->setRanges({x_ti_ti});
-            auto* x_vd = new VarDecl(Location().introduce(), x_ti, "x", values);
+            auto* x_vd = new VarDecl(Location().introduce(), x_ti, e.genId(), values);
             x_vd->toplevel(false);
 
             auto* show_indexed = Call::a(Location().introduce(), ASTString("show_indexed"),
@@ -899,7 +898,7 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
               } else {
                 auto* i_ti = new TypeInst(Location().introduce(),
                                           Type::parenum(i == 0 ? idx1EnumId : idx2EnumId));
-                auto* i_vd = new VarDecl(Location().introduce(), i_ti, "i");
+                auto* i_vd = new VarDecl(Location().introduce(), i_ti, e.genId());
                 i_vd->toplevel(false);
 
                 Generators g;
@@ -923,10 +922,10 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
             }
             {
               auto* i_ti = new TypeInst(Location().introduce(), Type::parenum(idx1EnumId));
-              auto* i_vd = new VarDecl(Location().introduce(), i_ti, "i");
+              auto* i_vd = new VarDecl(Location().introduce(), i_ti, e.genId());
               i_vd->toplevel(false);
               auto* j_ti = new TypeInst(Location().introduce(), Type::parenum(idx2EnumId));
-              auto* j_vd = new VarDecl(Location().introduce(), j_ti, "j");
+              auto* j_vd = new VarDecl(Location().introduce(), j_ti, e.genId());
               j_vd->toplevel(false);
 
               Generators g;
@@ -959,19 +958,19 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
             auto* idx1_ti_ti = new TypeInst(Location().introduce(), Type::parint());
             auto* idx1_ti = new TypeInst(Location().introduce(), Type::parstring(1));
             idx1_ti->setRanges({idx1_ti_ti});
-            auto* idx1_vd = new VarDecl(Location().introduce(), idx1_ti, "idx1", indexes[0]);
+            auto* idx1_vd = new VarDecl(Location().introduce(), idx1_ti, e.genId(), indexes[0]);
             idx1_vd->toplevel(false);
 
             auto* idx2_ti_ti = new TypeInst(Location().introduce(), Type::parint());
             auto* idx2_ti = new TypeInst(Location().introduce(), Type::parstring(1));
             idx2_ti->setRanges({idx2_ti_ti});
-            auto* idx2_vd = new VarDecl(Location().introduce(), idx2_ti, "idx2", indexes[1]);
+            auto* idx2_vd = new VarDecl(Location().introduce(), idx2_ti, e.genId(), indexes[1]);
             idx2_vd->toplevel(false);
 
             auto* x_ti_ti = new TypeInst(Location().introduce(), Type::parint());
             auto* x_ti = new TypeInst(Location().introduce(), Type::parstring(2));
             x_ti->setRanges({x_ti_ti, x_ti_ti});
-            auto* x_vd = new VarDecl(Location().introduce(), x_ti, "x", values);
+            auto* x_vd = new VarDecl(Location().introduce(), x_ti, e.genId(), values);
             x_vd->toplevel(false);
 
             auto* show_indexed = Call::a(Location().introduce(), ASTString("show2d_indexed"),

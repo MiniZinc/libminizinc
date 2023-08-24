@@ -172,15 +172,15 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     Type tx = Type::parint();
     tx.ot(Type::OT_OPTIONAL);
     auto* ti_aa = new TypeInst(Location().introduce(), tx);
-    auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, "x");
+    auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, env.genId());
     vd_aa->toplevel(false);
 
     auto* ti_ab = new TypeInst(Location().introduce(), Type::parbool());
-    auto* vd_ab = new VarDecl(Location().introduce(), ti_ab, "b");
+    auto* vd_ab = new VarDecl(Location().introduce(), ti_ab, env.genId());
     vd_ab->toplevel(false);
 
     auto* ti_aj = new TypeInst(Location().introduce(), Type::parbool());
-    auto* vd_aj = new VarDecl(Location().introduce(), ti_aj, "json");
+    auto* vd_aj = new VarDecl(Location().introduce(), ti_aj, env.genId());
     vd_aj->toplevel(false);
 
     auto* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
@@ -303,13 +303,13 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
       Type tx = Type::parint();
       tx.ot(Type::OT_OPTIONAL);
       auto* ti_aa = new TypeInst(Location().introduce(), tx);
-      auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, "x");
+      auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, env.genId());
       vd_aa->toplevel(false);
       auto* ti_ab = new TypeInst(Location().introduce(), Type::parbool());
-      auto* vd_ab = new VarDecl(Location().introduce(), ti_ab, "b");
+      auto* vd_ab = new VarDecl(Location().introduce(), ti_ab, env.genId());
       vd_ab->toplevel(false);
       auto* ti_aj = new TypeInst(Location().introduce(), Type::parbool());
-      auto* vd_aj = new VarDecl(Location().introduce(), ti_aj, "json");
+      auto* vd_aj = new VarDecl(Location().introduce(), ti_aj, env.genId());
       vd_aj->toplevel(false);
       auto* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
       std::vector<VarDecl*> fi_params(3);
@@ -365,15 +365,15 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
         Type tx = Type::parint();
         tx.ot(Type::OT_OPTIONAL);
         auto* ti_aa = new TypeInst(Location().introduce(), tx);
-        auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, "x");
+        auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, env.genId());
         vd_aa->toplevel(false);
 
         auto* ti_ab = new TypeInst(Location().introduce(), Type::parbool());
-        auto* vd_ab = new VarDecl(Location().introduce(), ti_ab, "b");
+        auto* vd_ab = new VarDecl(Location().introduce(), ti_ab, env.genId());
         vd_ab->toplevel(false);
 
         auto* ti_aj = new TypeInst(Location().introduce(), Type::parbool());
-        auto* vd_aj = new VarDecl(Location().introduce(), ti_aj, "json");
+        auto* vd_aj = new VarDecl(Location().introduce(), ti_aj, env.genId());
         vd_aj->toplevel(false);
 
         std::vector<Expression*> deopt_args(1);
@@ -526,7 +526,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             Type argT;
             argT.ti(baseType.ti());
             auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, constructorArgId);
-            auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
+            auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, env.genId());
             vd_x->toplevel(false);
 
             auto* isContiguous = Call::a(Location().introduce(), ASTString("mzn_set_is_contiguous"),
@@ -539,7 +539,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             auto* mxti = new TypeInst(Location().introduce(), Type::mkAny());
             auto* sparse_inv = Call::a(Location().introduce(), ASTString("set_to_sparse_inverse"),
                                        {constructorArgId});
-            auto* mx = new VarDecl(Location().introduce(), mxti, "mx", sparse_inv);
+            auto* mx = new VarDecl(Location().introduce(), mxti, env.genId(), sparse_inv);
 
             auto* mxx = new ArrayAccess(Location().introduce(), mx->id(), {vd_x->id()});
             Expression* realMx =
@@ -566,7 +566,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             argT.ti(baseType.ti());
             argT.ot(Type::OT_OPTIONAL);
             auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, constructorArgId);
-            auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
+            auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, env.genId());
             ASTString Cfn_id = c->id();
             vd_x->toplevel(false);
             auto* occurs = Call::a(Location().introduce(), "occurs", {vd_x->id()});
@@ -587,11 +587,11 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             argT.ti(baseType.ti());
             argT.st(Type::ST_SET);
             auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, constructorArgId);
-            auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
+            auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, env.genId());
             ASTString Cfn_id = c->id();
             vd_x->toplevel(false);
             auto* s_ti = new TypeInst(Location().introduce(), Type::parint());
-            auto* s = new VarDecl(Location().introduce(), s_ti, "s", nullptr);
+            auto* s = new VarDecl(Location().introduce(), s_ti, env.genId());
             s->toplevel(false);
             auto* inv = Call::a(Location().introduce(), Cfn_id, {s->id()});
             Generator gen({s}, vd_x->id(), nullptr);
@@ -610,7 +610,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             Type Xt(baseType);
             Xt.typeId(enumId);
             auto* toEfn_x_ti = new TypeInst(Location().introduce(), Xt, vd->id());
-            auto* vd_x = new VarDecl(Location().introduce(), toEfn_x_ti, "x");
+            auto* vd_x = new VarDecl(Location().introduce(), toEfn_x_ti, env.genId());
             vd_x->toplevel(false);
 
             auto* isContiguous = Call::a(Location().introduce(), ASTString("mzn_set_is_contiguous"),
@@ -624,7 +624,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             auto* mxti = new TypeInst(Location().introduce(), Type::mkAny());
             auto* sparse_inv =
                 Call::a(Location().introduce(), ASTString("set2array"), {constructorArgId});
-            auto* mx = new VarDecl(Location().introduce(), mxti, "mx", sparse_inv);
+            auto* mx = new VarDecl(Location().introduce(), mxti, env.genId(), sparse_inv);
 
             Expression* realMx;
             if (partCardinality.empty()) {
@@ -655,7 +655,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             argT.ot(Type::OT_OPTIONAL);
             argT.typeId(enumId);
             auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, vd->id());
-            auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
+            auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, env.genId());
             ASTString Cinv_id(std::string(c->id().c_str()) + "⁻¹");
             vd_x->toplevel(false);
             auto* occurs = Call::a(Location().introduce(), "occurs", {vd_x->id()});
@@ -676,11 +676,11 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             argT.st(Type::ST_SET);
             argT.typeId(enumId);
             auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, vd->id());
-            auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
+            auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, env.genId());
             vd_x->toplevel(false);
             ASTString Cinv_id(std::string(c->id().c_str()) + "⁻¹");
             auto* s_ti = new TypeInst(Location().introduce(), Type::parint());
-            auto* s = new VarDecl(Location().introduce(), s_ti, "s", nullptr);
+            auto* s = new VarDecl(Location().introduce(), s_ti, env.genId());
             s->toplevel(false);
             auto* inv = Call::a(Location().introduce(), Cinv_id, {s->id()});
             Generator gen({s}, vd_x->id(), nullptr);
@@ -707,15 +707,15 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           tx.typeId(enumId);
           tx.ot(Type::OT_OPTIONAL);
           auto* ti_aa = new TypeInst(Location().introduce(), tx, vd->id());
-          auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, "x");
+          auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, env.genId());
           vd_aa->toplevel(false);
 
           auto* ti_ab = new TypeInst(Location().introduce(), Type::parbool());
-          auto* vd_ab = new VarDecl(Location().introduce(), ti_ab, "b");
+          auto* vd_ab = new VarDecl(Location().introduce(), ti_ab, env.genId());
           vd_ab->toplevel(false);
 
           auto* ti_aj = new TypeInst(Location().introduce(), Type::parbool());
-          auto* vd_aj = new VarDecl(Location().introduce(), ti_aj, "json");
+          auto* vd_aj = new VarDecl(Location().introduce(), ti_aj, env.genId());
           vd_aj->toplevel(false);
 
           std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
@@ -795,15 +795,15 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     tx.ot(Type::OT_OPTIONAL);
     tx.typeId(enumId);
     auto* ti_aa = new TypeInst(Location().introduce(), tx, vd->id());
-    auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, "x");
+    auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, env.genId());
     vd_aa->toplevel(false);
 
     auto* ti_ab = new TypeInst(Location().introduce(), Type::parbool());
-    auto* vd_ab = new VarDecl(Location().introduce(), ti_ab, "b");
+    auto* vd_ab = new VarDecl(Location().introduce(), ti_ab, env.genId());
     vd_ab->toplevel(false);
 
     auto* ti_aj = new TypeInst(Location().introduce(), Type::parbool());
-    auto* vd_aj = new VarDecl(Location().introduce(), ti_aj, "json");
+    auto* vd_aj = new VarDecl(Location().introduce(), ti_aj, env.genId());
     vd_aj->toplevel(false);
 
     std::vector<Expression*> deopt_args(1);
@@ -873,15 +873,15 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     Type tx = Type::parint(-1);
     tx.ot(Type::OT_OPTIONAL);
     auto* x_ti = new TypeInst(Location().introduce(), tx, ranges, ident);
-    auto* vd_x = new VarDecl(Location().introduce(), x_ti, "x");
+    auto* vd_x = new VarDecl(Location().introduce(), x_ti, env.genId());
     vd_x->toplevel(false);
 
     auto* b_ti = new TypeInst(Location().introduce(), Type::parbool());
-    auto* vd_b = new VarDecl(Location().introduce(), b_ti, "b");
+    auto* vd_b = new VarDecl(Location().introduce(), b_ti, env.genId());
     vd_b->toplevel(false);
 
     auto* j_ti = new TypeInst(Location().introduce(), Type::parbool());
-    auto* vd_j = new VarDecl(Location().introduce(), j_ti, "json");
+    auto* vd_j = new VarDecl(Location().introduce(), j_ti, env.genId());
     vd_j->toplevel(false);
 
     auto* xx_range = new TypeInst(Location().introduce(), Type::parint(), nullptr);
@@ -893,11 +893,11 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     array1dArgs[0] = vd_x->id();
     Call* array1dCall = Call::a(Location().introduce(), env.constants.ids.array1d, array1dArgs);
 
-    auto* vd_xx = new VarDecl(Location().introduce(), xx_ti, "xx", array1dCall);
+    auto* vd_xx = new VarDecl(Location().introduce(), xx_ti, env.genId(), array1dCall);
     vd_xx->toplevel(false);
 
     auto* idx_i_ti = new TypeInst(Location().introduce(), Type::parint());
-    auto* idx_i = new VarDecl(Location().introduce(), idx_i_ti, "i");
+    auto* idx_i = new VarDecl(Location().introduce(), idx_i_ti, env.genId());
     idx_i->toplevel(false);
 
     std::vector<Expression*> aa_xxi_idx(1);
@@ -959,19 +959,19 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
 
     Type argType = Type::parsetenum(ident->type().typeId());
     auto* x_ti = new TypeInst(Location().introduce(), argType, ident);
-    auto* vd_x = new VarDecl(Location().introduce(), x_ti, "x");
+    auto* vd_x = new VarDecl(Location().introduce(), x_ti, env.genId());
     vd_x->toplevel(false);
 
     auto* b_ti = new TypeInst(Location().introduce(), Type::parbool());
-    auto* vd_b = new VarDecl(Location().introduce(), b_ti, "b");
+    auto* vd_b = new VarDecl(Location().introduce(), b_ti, env.genId());
     vd_b->toplevel(false);
 
     auto* j_ti = new TypeInst(Location().introduce(), Type::parbool());
-    auto* vd_j = new VarDecl(Location().introduce(), j_ti, "json");
+    auto* vd_j = new VarDecl(Location().introduce(), j_ti, env.genId());
     vd_j->toplevel(false);
 
     auto* idx_i_ti = new TypeInst(Location().introduce(), Type::parint());
-    auto* idx_i = new VarDecl(Location().introduce(), idx_i_ti, "i");
+    auto* idx_i = new VarDecl(Location().introduce(), idx_i_ti, env.genId());
     idx_i->toplevel(false);
 
     std::vector<Expression*> _toString_ENUMArgs(3);
@@ -1038,15 +1038,15 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
 
     Type tx = Type::parsetint(-1);
     auto* x_ti = new TypeInst(Location().introduce(), tx, ranges, ident);
-    auto* vd_x = new VarDecl(Location().introduce(), x_ti, "x");
+    auto* vd_x = new VarDecl(Location().introduce(), x_ti, env.genId());
     vd_x->toplevel(false);
 
     auto* b_ti = new TypeInst(Location().introduce(), Type::parbool());
-    auto* vd_b = new VarDecl(Location().introduce(), b_ti, "b");
+    auto* vd_b = new VarDecl(Location().introduce(), b_ti, env.genId());
     vd_b->toplevel(false);
 
     auto* j_ti = new TypeInst(Location().introduce(), Type::parbool());
-    auto* vd_j = new VarDecl(Location().introduce(), j_ti, "json");
+    auto* vd_j = new VarDecl(Location().introduce(), j_ti, env.genId());
     vd_j->toplevel(false);
 
     auto* xx_range = new TypeInst(Location().introduce(), Type::parint(), nullptr);
@@ -1058,11 +1058,11 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     array1dArgs[0] = vd_x->id();
     Call* array1dCall = Call::a(Location().introduce(), env.constants.ids.array1d, array1dArgs);
 
-    auto* vd_xx = new VarDecl(Location().introduce(), xx_ti, "xx", array1dCall);
+    auto* vd_xx = new VarDecl(Location().introduce(), xx_ti, env.genId(), array1dCall);
     vd_xx->toplevel(false);
 
     auto* idx_i_ti = new TypeInst(Location().introduce(), Type::parint());
-    auto* idx_i = new VarDecl(Location().introduce(), idx_i_ti, "i");
+    auto* idx_i = new VarDecl(Location().introduce(), idx_i_ti, env.genId());
     idx_i->toplevel(false);
 
     std::vector<Expression*> aa_xxi_idx(1);
@@ -3505,15 +3505,15 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       Type tx = Type::parint();
       tx.ot(Type::OT_OPTIONAL);
       auto* ti_aa = new TypeInst(Location().introduce(), tx, new TIId(Location(), "$E"));
-      auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, "x");
+      auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, env.envi().genId());
       vd_aa->toplevel(false);
 
       auto* ti_ab = new TypeInst(Location().introduce(), Type::parbool());
-      auto* vd_ab = new VarDecl(Location().introduce(), ti_ab, "b");
+      auto* vd_ab = new VarDecl(Location().introduce(), ti_ab, env.envi().genId());
       vd_ab->toplevel(false);
 
       auto* ti_aj = new TypeInst(Location().introduce(), Type::parbool());
-      auto* vd_aj = new VarDecl(Location().introduce(), ti_aj, "json");
+      auto* vd_aj = new VarDecl(Location().introduce(), ti_aj, env.envi().genId());
       vd_aj->toplevel(false);
 
       auto* ti_fi = new TypeInst(Location().introduce(), Type::parstring());

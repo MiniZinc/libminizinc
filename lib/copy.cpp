@@ -362,9 +362,9 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
       auto* vd = Expression::cast<VarDecl>(e);
       VarDecl* c;
       if (vd->id()->hasStr()) {
-        c = new VarDecl(copy_location(m, e), nullptr, vd->id()->v(), nullptr);
+        c = new VarDecl(copy_location(m, e), nullptr, vd->id()->v());
       } else {
-        c = new VarDecl(copy_location(m, e), nullptr, vd->id()->idn(), nullptr);
+        c = new VarDecl(copy_location(m, e), nullptr, vd->id()->idn());
       }
       c->toplevel(vd->toplevel());
       c->introduced(vd->introduced());
