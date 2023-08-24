@@ -13,6 +13,7 @@
 
 #include <minizinc/ast.hh>
 #include <minizinc/exception.hh>
+#include <minizinc/gc.hh>
 #include <minizinc/model.hh>
 #include <minizinc/stackdump.hh>
 
@@ -20,32 +21,15 @@
 
 namespace MiniZinc {
 
-class SyntaxError : public Exception {
+class CyclicIncludeError : public Exception, public GCMarker {
 protected:
-  Location _loc;
-  std::string _currentLine;
-  std::vector<ASTString> _includeStack;
-
-public:
-  SyntaxError(const Location& loc, const std::string& msg) : Exception(msg) {}
-  SyntaxError(const Location& loc, std::string currentLine, std::vector<ASTString> includeStack,
-              const std::string& msg)
-      : Exception(msg),
-        _loc(loc),
-        _currentLine(std::move(currentLine)),
-        _includeStack(std::move(includeStack)) {}
-  ~SyntaxError() throw() override {}
-  const char* what() const throw() override { return "syntax error"; }
-  const Location& loc() const { return _loc; }
-
-  void print(std::ostream& os) const override;
-  void json(std::ostream& os) const override;
-};
-
-class CyclicIncludeError : public Exception {
-protected:
-  Location _loc;
   std::vector<ASTString> _cycle;
+
+  void mark() override {
+    for (auto s : _cycle) {
+      s.mark();
+    }
+  }
 
 public:
   CyclicIncludeError(std::vector<ASTString> cycle) : Exception(""), _cycle(std::move(cycle)) {}
@@ -68,12 +52,39 @@ protected:
   }
 
 public:
+  LocationException(const Location& loc, const std::string& msg);
   LocationException(EnvI& env, const Location& loc, const std::string& msg);
   ~LocationException() throw() override {}
   const Location& loc() const { return _loc; }
 
   bool dumpStack() const { return _dumpStack; }
   void dumpStack(bool dump) { _dumpStack = dump; }
+
+  void print(std::ostream& os) const override;
+  void json(std::ostream& os) const override;
+};
+
+class SyntaxError : public LocationException {
+protected:
+  std::string _currentLine;
+  std::vector<ASTString> _includeStack;
+
+  void mark() override {
+    LocationException::mark();
+    for (auto s : _includeStack) {
+      s.mark();
+    }
+  }
+
+public:
+  SyntaxError(const Location& loc, const std::string& msg) : LocationException(loc, msg) {}
+  SyntaxError(const Location& loc, std::string currentLine, std::vector<ASTString> includeStack,
+              const std::string& msg)
+      : LocationException(loc, msg),
+        _currentLine(std::move(currentLine)),
+        _includeStack(std::move(includeStack)) {}
+  ~SyntaxError() throw() override {}
+  const char* what() const throw() override { return "syntax error"; }
 
   void print(std::ostream& os) const override;
   void json(std::ostream& os) const override;

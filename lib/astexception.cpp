@@ -69,6 +69,9 @@ void CyclicIncludeError::json(std::ostream& os) const {
 LocationException::LocationException(EnvI& env, const Location& loc, const std::string& msg)
     : Exception(msg), _stack(env), _loc(loc) {}
 
+LocationException::LocationException(const Location& loc, const std::string& msg)
+    : Exception(msg), _loc(loc) {}
+
 void LocationException::print(std::ostream& os) const {
   Exception::print(os);
   if (_dumpStack) {

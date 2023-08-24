@@ -25,6 +25,7 @@ class Expression;
 class StackDump {
 public:
   StackDump(EnvI& env);
+  StackDump() {}
   void print(std::ostream& os) const;
   void json(std::ostream& os) const;
   bool empty() const { return _stack.empty(); }

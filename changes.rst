@@ -57,6 +57,8 @@ Bug fixes:
 -  Ensure reverse mappers are created when flattening tuple/record literals.
    This resolves certain errors during output processing in models using these
    types.
+-  Fix problem where certain strings in exceptions might be garbage collected
+   before they are output (:bugref:`725`).
 
 .. _v2.7.6:
 
