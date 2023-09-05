@@ -61,6 +61,8 @@ Bug fixes:
    before they are output (:bugref:`725`).
 -  Fix problem where argument names of generated functions could conflict with
    model declared names (:bugref:`726`).
+-  Fix problem where the common type of complex records or tuples was not
+   correctly determined in the array literals.
 
 .. _v2.7.6:
 

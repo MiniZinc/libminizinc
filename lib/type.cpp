@@ -46,6 +46,8 @@ bool Type::btSubtype(const EnvI& env, const Type& t0, const Type& t1, bool stric
       return (t1.bt() == Type::BT_INT || t1.bt() == BT_FLOAT);
     case BT_INT:
       return t1.bt() == BT_FLOAT;
+    case BT_BOT:
+      return true;
     default:
       return false;
   }

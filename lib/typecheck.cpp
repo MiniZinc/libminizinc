@@ -1834,7 +1834,7 @@ public:
               throw TypeError(_env, Expression::loc(al), "non-uniform array literal");
             }
             ty = _env.commonTuple(ty, Expression::type(vi), true);
-            if (ty.isbot()) {
+            if (ty.istop()) {
               throw TypeError(_env, Expression::loc(al), "non-uniform array literal");
             }
           } else if (Expression::type(vi).bt() == Type::BT_RECORD) {
@@ -1842,7 +1842,7 @@ public:
               throw TypeError(_env, Expression::loc(al), "non-uniform array literal");
             }
             ty = _env.commonRecord(ty, Expression::type(vi), true);
-            if (ty.isbot()) {
+            if (ty.istop()) {
               throw TypeError(_env, Expression::loc(al), "non-uniform array literal");
             }
           } else {

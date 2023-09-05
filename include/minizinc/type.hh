@@ -224,6 +224,7 @@ public:
   bool isplain() const { return dim() == 0 && st() == ST_PLAIN && ot() == OT_PRESENT; }
   bool isint() const { return dim() == 0 && st() == ST_PLAIN && bt() == BT_INT; }
   bool isbot() const { return bt() == BT_BOT; }
+  bool istop() const { return bt() == BT_TOP; }
   bool isfloat() const { return dim() == 0 && st() == ST_PLAIN && bt() == BT_FLOAT; }
   bool isbool() const { return dim() == 0 && st() == ST_PLAIN && bt() == BT_BOOL; }
   bool isstring() const { return isplain() && bt() == BT_STRING; }
