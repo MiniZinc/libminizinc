@@ -63,6 +63,8 @@ Bug fixes:
    model declared names (:bugref:`726`).
 -  Fix problem where the common type of complex records or tuples was not
    correctly determined in the array literals.
+-  Fix a problem in the parser where a nullptr would be used before a syntax
+   error was thrown (:bugref:`730`).
 
 .. _v2.7.6:
 

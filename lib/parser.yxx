@@ -863,7 +863,9 @@ ti_expr :
     | MZN_ARRAY MZN_LEFT_BRACKET ti_expr_list MZN_RIGHT_BRACKET MZN_OF base_ti_expr
       {
         $$ = $6;
-        if ($$ && $3) $$->setRanges(*$3);
+        if ($$ != nullptr && $3 != nullptr) {
+          $$->setRanges(*$3);
+        }
         delete $3;
       }
     | MZN_LIST MZN_OF base_ti_expr
@@ -871,17 +873,21 @@ ti_expr :
         $$ = $3;
         std::vector<TypeInst*> ti(1);
         ti[0] = new TypeInst(@$,Type::parint());
-        if ($$) $$->setRanges(ti);
+        if ($$ != nullptr){
+          $$->setRanges(ti);
+        }
       }
     | ti_expr MZN_PLUSPLUS base_ti_expr
       {
         $$ = $1;
-        Type tt = Expression::type($$);
-        tt.dim(0);
-        TypeInst* lhs = new TypeInst(@$, tt, $1->domain());
-        BinOp* bop = new BinOp(@$, lhs, BOT_PLUSPLUS, $3);
-        bop->type(tt);
-        $$->domain(bop);
+        if ($$ != nullptr) {
+          Type tt = Expression::type($$);
+          tt.dim(0);
+          TypeInst* lhs = new TypeInst(@$, tt, $1->domain());
+          BinOp* bop = new BinOp(@$, lhs, BOT_PLUSPLUS, $3);
+          bop->type(tt);
+          $$->domain(bop);
+        }
       }
 
 base_ti_expr :
@@ -890,7 +896,7 @@ base_ti_expr :
       }
     | MZN_OPT base_ti_expr_tail
       { $$ = $2;
-        if ($$) {
+        if ($$ != nullptr) {
           Type tt = Expression::type($$);
           tt.ot(Type::OT_OPTIONAL);
           tt.otExplicit(true);
@@ -899,7 +905,7 @@ base_ti_expr :
       }
     | MZN_PAR opt_opt base_ti_expr_tail
       { $$ = $3;
-        if ($$) {
+        if ($$ != nullptr) {
           Type tt = Expression::type($$);
           tt.tiExplicit(true);
           if ($2) {
@@ -911,8 +917,8 @@ base_ti_expr :
       }
     | MZN_VAR opt_opt base_ti_expr_tail
       { $$ = $3;
-        Type tt = Expression::type($$);
-        if ($$) {
+        if ($$ != nullptr) {
+          Type tt = Expression::type($$);
           tt.ti(Type::TI_VAR);
           tt.tiExplicit(true);
           if ($2) {
@@ -924,7 +930,7 @@ base_ti_expr :
       }
     | MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $3;
-        if ($$) {
+        if ($$ != nullptr) {
           Type tt = Expression::type($$);
           tt.st(Type::ST_SET);
           $$->type(tt);
@@ -932,7 +938,7 @@ base_ti_expr :
       }
     | MZN_OPT MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $4;
-        if ($$) {
+        if ($$ != nullptr) {
           Type tt = Expression::type($$);
           tt.st(Type::ST_SET);
           tt.ot(Type::OT_OPTIONAL);
@@ -942,7 +948,7 @@ base_ti_expr :
       }
     | MZN_PAR opt_opt MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $5;
-        if ($$) {
+        if ($$ != nullptr) {
           Type tt = Expression::type($$);
           tt.tiExplicit(true);
           tt.st(Type::ST_SET);
@@ -955,7 +961,7 @@ base_ti_expr :
       }
     | MZN_VAR opt_opt MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $5;
-        if ($$) {
+        if ($$ != nullptr) {
           Type tt = Expression::type($$);
           tt.ti(Type::TI_VAR);
           tt.tiExplicit(true);
