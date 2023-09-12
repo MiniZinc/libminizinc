@@ -759,7 +759,11 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
             dims.emplace_back(1, nal->size());
           } else {
             if (nal->size() != dims[it.size() - 1].second) {
-              // TODO: Inconsistent array size.
+              throw JSONError(_env, Expression::loc(expr),
+                              "Mismatch in array dimensions in JSON array literal: dimension " +
+                                  std::to_string(it.size()) + " was found with both length " +
+                                  std::to_string(dims[it.size() - 1].second) + " and length " +
+                                  std::to_string(nal->size()) + ".");
             }
           }
         } else {
