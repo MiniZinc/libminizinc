@@ -9,6 +9,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <minizinc/astexception.hh>
 #include <minizinc/file_utils.hh>
 #include <minizinc/json_parser.hh>
 #include <minizinc/parser.hh>
@@ -601,79 +602,65 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
       ostringstream errstream;
       try {
         Env userconfenv;
-        Model* m = nullptr;
-        if (JSONParser::fileIsJSON(cf)) {
-          JSONParser jp(userconfenv.envi());
-          try {
-            m = new Model;
-            GCLock lock;
-            jp.parse(m, cf, false);
-            json_coerce_assignments_2d(jp, m, {"tagDefaults", "solverDefaults"});
-          } catch (JSONError&) {
-            delete m;
-            m = nullptr;
-          }
+        if (!JSONParser::fileIsJSON(cf)) {
+          throw ConfigException(cf + "is not a JSON file.");
         }
-        if (m != nullptr) {
-          for (auto& i : *m) {
-            if (auto* ai = i->dynamicCast<AssignI>()) {
-              if (ai->id() == "mzn_solver_path") {
-                std::vector<std::string> sp = get_string_list(ai);
-                for (const auto& s : sp) {
-                  _solverPath.push_back(s);
-                }
-              } else if (ai->id() == "mzn_lib_dir") {
-                _mznlibDir = get_string(ai);
-              } else if (ai->id() == "tagDefaults") {
-                std::vector<std::pair<std::string, std::string> > tagDefs =
-                    get_string_pair_list(ai);
-                for (auto& td : tagDefs) {
-                  std::string tag = td.first;
-                  std::string solver_id = td.second;
-                  _tagDefault[tag] = solver_id;
-                }
-              } else if (ai->id() == "solverDefaults") {
-                std::vector<std::vector<std::string> > solverDefs = get_default_option_list(ai);
-                for (auto& sd : solverDefs) {
-                  assert(sd.size() == 3);
-                  std::string solver = sd[0];
-                  auto it = _solverDefaultOptions.find(solver);
-                  if (it == _solverDefaultOptions.end()) {
-                    std::vector<std::string> solverOptions({sd[1], sd[2]});
-                    _solverDefaultOptions.insert(std::make_pair(solver, solverOptions));
-                  } else {
-                    std::vector<std::string>& opts = it->second;
-                    bool found = false;
-                    for (unsigned int i = 0; i < opts.size(); i += 2) {
-                      if (opts[i] == sd[1]) {
-                        // Override existing option value
-                        opts[i + 1] = sd[2];
-                        found = true;
-                        break;
-                      }
-                    }
-                    if (!found) {
-                      // Option didn't exist, add to end of list
-                      opts.push_back(sd[1]);
-                      opts.push_back(sd[2]);
+        GCLock lock;
+        JSONParser jp(userconfenv.envi());
+        Model m;
+        jp.parse(&m, cf, false);
+        json_coerce_assignments_2d(jp, &m, {"tagDefaults", "solverDefaults"});
+        for (auto& i : m) {
+          if (auto* ai = i->dynamicCast<AssignI>()) {
+            if (ai->id() == "mzn_solver_path") {
+              std::vector<std::string> sp = get_string_list(ai);
+              for (const auto& s : sp) {
+                _solverPath.push_back(s);
+              }
+            } else if (ai->id() == "mzn_lib_dir") {
+              _mznlibDir = get_string(ai);
+            } else if (ai->id() == "tagDefaults") {
+              std::vector<std::pair<std::string, std::string> > tagDefs = get_string_pair_list(ai);
+              for (auto& td : tagDefs) {
+                std::string tag = td.first;
+                std::string solver_id = td.second;
+                _tagDefault[tag] = solver_id;
+              }
+            } else if (ai->id() == "solverDefaults") {
+              std::vector<std::vector<std::string> > solverDefs = get_default_option_list(ai);
+              for (auto& sd : solverDefs) {
+                assert(sd.size() == 3);
+                std::string solver = sd[0];
+                auto it = _solverDefaultOptions.find(solver);
+                if (it == _solverDefaultOptions.end()) {
+                  std::vector<std::string> solverOptions({sd[1], sd[2]});
+                  _solverDefaultOptions.insert(std::make_pair(solver, solverOptions));
+                } else {
+                  std::vector<std::string>& opts = it->second;
+                  bool found = false;
+                  for (unsigned int i = 0; i < opts.size(); i += 2) {
+                    if (opts[i] == sd[1]) {
+                      // Override existing option value
+                      opts[i + 1] = sd[2];
+                      found = true;
+                      break;
                     }
                   }
+                  if (!found) {
+                    // Option didn't exist, add to end of list
+                    opts.push_back(sd[1]);
+                    opts.push_back(sd[2]);
+                  }
                 }
-              } else {
-                throw ConfigException("invalid configuration item");
               }
-            } else {
-              throw ConfigException("invalid configuration item");
             }
           }
-        } else {
-          std::cerr << errstream.str();
-          throw ConfigException("internal error");
         }
       } catch (ConfigException& e) {
         log << "Warning: invalid configuration file: " << e.msg() << "\n";
       } catch (Exception& e) {
-        log << "Warning: invalid configuration file: " << e.what() << "\n";
+        log << "Warning: " << e.what() << " occured while reading " << cf << ": " << e.msg()
+            << "\n";
       }
     }
   }

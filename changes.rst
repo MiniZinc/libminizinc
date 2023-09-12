@@ -65,6 +65,7 @@ Bug fixes:
    correctly determined in the array literals.
 -  Fix a problem in the parser where a nullptr would be used before a syntax
    error was thrown (:bugref:`730`).
+-  Fix error management when reading preference files (:bugref:`729`).
 
 .. _v2.7.6:
 
