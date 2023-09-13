@@ -523,8 +523,10 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     {
       GCLock lock;
       auto* al_branches = new ArrayLit(Location().introduce(), branches[j]);
-      Type branches_t = Expression::type(results[j]());
-      branches_t.dim(1);
+      Type branches_t = Type::arrType(env, Type::bot(1), Expression::type(results[j]()));
+      if (!allBranchesPar[j]) {
+        branches_t.mkVar(env);
+      }
       branches_t.ti(allBranchesPar[j] ? Type::TI_PAR : Type::TI_VAR);
       al_branches->type(branches_t);
       ite_pred = Call::a(Expression::loc(ite).introduce(), ASTString("if_then_else"),
