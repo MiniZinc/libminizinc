@@ -32,6 +32,9 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e);
 
 void make_defined_var(EnvI& env, VarDecl* vd, Call* c);
 void check_index_sets(EnvI& env, VarDecl* vd, Expression* e, bool isArg = false);
+/// Create a domain constraint that enforces that `expr` falls within `dom`
+///
+/// This function might return nullptr if no constraint is required
 Expression* mk_domain_constraint(EnvI& env, Expression* expr, Expression* dom);
 
 class CallArgItem {

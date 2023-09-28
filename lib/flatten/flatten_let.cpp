@@ -53,12 +53,14 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
           if (vd->ti()->domain() != nullptr) {
             GCLock lock;
             auto* c = mk_domain_constraint(env, ee.r(), vd->ti()->domain());
-            VarDecl* b_b = (nctx.b == C_ROOT && b == env.constants.varTrue) ? b : nullptr;
-            VarDecl* r_r = (nctx.b == C_ROOT && b == env.constants.varTrue) ? b : nullptr;
-            ee = flat_exp(env, nctx, c, r_r, b_b);
-            cs.push_back(ee);
-            ee.b = ee.r;
-            cs.push_back(ee);
+            if (c != nullptr) {
+              VarDecl* b_b = (nctx.b == C_ROOT && b == env.constants.varTrue) ? b : nullptr;
+              VarDecl* r_r = (nctx.b == C_ROOT && b == env.constants.varTrue) ? b : nullptr;
+              ee = flat_exp(env, nctx, c, r_r, b_b);
+              cs.push_back(ee);
+              ee.b = ee.r;
+              cs.push_back(ee);
+            }
           }
           flatten_vardecl_annotations(env, vd, nullptr, vd);
         } else {

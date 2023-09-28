@@ -595,6 +595,8 @@ EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
 EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
               bool doNotFollowChains);
 
+ArrayLit* field_slice(EnvI& env, StructType* st, ArrayLit* al,
+                      std::vector<std::pair<int, int>> dims, long long int field);
 std::vector<Expression*> field_slices(EnvI& env, Expression* arrExpr);
 
 class CmpExpIdx {

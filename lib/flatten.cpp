@@ -2514,59 +2514,95 @@ void check_index_sets(EnvI& env, VarDecl* vd, Expression* e, bool isArg) {
 
 Expression* mk_domain_constraint(EnvI& env, Expression* expr, Expression* dom) {
   assert(GC::locked());
-  Type t = Expression::type(expr).isPar() ? Type::parbool() : Type::varbool();
+  Type ty = Expression::type(expr);
+  Type retType = ty.isPar() ? Type::parbool() : Type::varbool();
 
-  if (Expression::type(expr).structBT()) {
-    StructType* st = env.getStructType(Expression::type(expr));
-    auto* dom_al = Expression::cast<ArrayLit>(dom);
-    std::vector<Expression*> field_expr;
-    if (Expression::type(expr).dim() > 0) {
-      field_expr = field_slices(env, expr);
-    } else {
-      field_expr.resize(st->size());
-      for (int i = 0; i < st->size(); ++i) {
-        field_expr[i] = new FieldAccess(Location().introduce(), expr, IntLit::a(i + 1));
-        Expression::type(field_expr[i], (*st)[i]);
-      }
-    }
-    std::vector<Expression*> fieldwise;
-    for (int i = 0; i < st->size(); ++i) {
-      auto* field_ti = Expression::cast<TypeInst>((*dom_al)[i]);
-      if (field_ti->domain() != nullptr) {
-        if (Expression::type(expr).dim() > 0 && (*st)[i].dim() > 0) {
-          auto* bad_al = Expression::cast<ArrayLit>(field_expr[i]);
-          for (unsigned int i = 0; i < bad_al->size(); i++) {
-            fieldwise.push_back(mk_domain_constraint(env, (*bad_al)[i], field_ti->domain()));
-            Expression::type(fieldwise.back(), t);
-          }
-        } else {
-          fieldwise.push_back(mk_domain_constraint(env, field_expr[i], field_ti->domain()));
-          Expression::type(fieldwise.back(), t);
+  std::vector<Expression*> domargs(2, nullptr);
+  domargs[0] = expr;
+
+  switch (ty.bt()) {
+    case Type::BT_INT: {
+      IntSetVal* isv = eval_intset(env, dom);
+      if (ty.st() != Type::ST_SET && ty.dim() == 0) {
+        IntBounds ib = compute_int_bounds(env, expr);
+        if (ib.valid && !isv->empty() && isv->isSubset(IntSetVal::Range(ib.l, ib.u))) {
+          return nullptr;
         }
       }
+      domargs[1] = new SetLit(Expression::loc(dom), isv);
+      break;
     }
-    if (fieldwise.size() <= 1) {
-      return fieldwise.empty() ? env.constants.literalTrue : fieldwise[0];
+    case Type::BT_FLOAT: {
+      FloatSetVal* fsv = eval_floatset(env, dom);
+      if (ty.dim() == 0) {
+        FloatBounds fb = compute_float_bounds(env, expr);
+        if (fb.valid && !fsv->empty() && fsv->isSubset(FloatSetVal::Range(fb.l, fb.u))) {
+          return nullptr;
+        }
+      }
+      if (fsv->size() == 1) {
+        domargs[1] = FloatLit::a(fsv->min());
+        domargs.push_back(FloatLit::a(fsv->max()));
+      } else {
+        domargs[1] = new SetLit(Expression::loc(dom), fsv);
+      }
+      break;
     }
-    auto* al = new ArrayLit(Location().introduce(), fieldwise);
-    Type al_t = t;
-    al_t.dim(1);
-    al->type(al_t);
-    auto* c = Call::a(Location().introduce(), env.constants.ids.forall, {al});
-    c->type(t);
-    c->decl(env.model->matchFn(env, c, false));
-    return c;
-  }
+    case Type::BT_TUPLE:  // fall through
+    case Type::BT_RECORD: {
+      ArrayLit* al = eval_array_lit(env, expr);
+      StructType* st = env.getStructType(ty);
+      auto* dom_al = Expression::cast<ArrayLit>(dom);
 
-  GCLock lock;
-  std::vector<Expression*> domargs({expr, dom});
-  if (Expression::type(expr).isfloat()) {
-    FloatSetVal* fsv = eval_floatset(env, dom);
-    if (fsv->size() == 1) {
-      domargs[1] = FloatLit::a(fsv->min());
-      domargs.push_back(FloatLit::a(fsv->max()));
+      std::vector<std::pair<int, int>> dims;
+      if (ty.dim() > 0) {
+        dims.resize(al->dims());
+        for (size_t i = 0; i < al->dims(); i++) {
+          dims[i] = std::make_pair(al->min(i), al->max(i));
+        }
+      }
+      std::vector<Expression*> fieldwise;
+      for (long long int i = 0; i < st->size(); ++i) {
+        auto* field_ti = Expression::cast<TypeInst>((*dom_al)[i]);
+        if (field_ti->domain() != nullptr) {
+          if (ty.dim() > 0) {
+            ArrayLit* slice = field_slice(env, st, al, dims, i + 1);
+            for (unsigned int j = 0; j < slice->size(); j++) {
+              auto* con = mk_domain_constraint(env, (*slice)[j], field_ti->domain());
+              if (con != nullptr) {
+                fieldwise.push_back(con);
+              };
+            }
+          } else {
+            auto* con = mk_domain_constraint(env, (*al)[i], field_ti->domain());
+            if (con != nullptr) {
+              fieldwise.push_back(con);
+            };
+          }
+        }
+      }
+      if (fieldwise.size() <= 1) {
+        return fieldwise.empty() ? nullptr : fieldwise[0];
+      }
+      auto* forall_al = new ArrayLit(Location().introduce(), fieldwise);
+      Type al_t = retType;
+      al_t.dim(1);
+      forall_al->type(al_t);
+      auto* c = Call::a(Location().introduce(), env.constants.ids.forall, {forall_al});
+      c->type(retType);
+      c->decl(env.model->matchFn(env, c, false));
+      return c;
+    }
+    case Type::BT_BOT: {
+      // Nothing to be done for empty arrays/sets
+      return nullptr;
+    }
+    default: {
+      throw EvalError(env, Expression::loc(dom),
+                      "domain restrictions other than int and float not supported yet");
     }
   }
+  assert(domargs[1] != nullptr);
 
   Call* c = Call::a(Location().introduce(), "var_dom", domargs);
   c->type(Type::varbool());
@@ -2574,7 +2610,7 @@ Expression* mk_domain_constraint(EnvI& env, Expression* expr, Expression* dom) {
   if (c->decl() == nullptr) {
     throw InternalError("no matching declaration found for var_dom");
   }
-  c->type(t);
+  c->type(retType);
   return c;
 }
 
@@ -5570,6 +5606,23 @@ FlatModelStatistics statistics(Env& m) {
   return stats;
 }
 
+ArrayLit* field_slice(EnvI& env, StructType* st, ArrayLit* al,
+                      std::vector<std::pair<int, int>> dims, long long int field) {
+  assert(GC::locked());
+  assert(Expression::type(al).structBT() && Expression::type(al).dim() > 0);
+  Type field_ty = (*st)[field - 1];
+  // TODO: This could be done efficiently using slicing (if we change the memory layout for
+  // arrays of tuples)
+  std::vector<Expression*> tmp(al->size());
+  for (int i = 0; i < al->size(); ++i) {
+    tmp[i] = new FieldAccess(Expression::loc((*al)[i]).introduce(), (*al)[i], IntLit::a(field));
+    Expression::type(tmp[i], field_ty);
+  }
+  auto* field_slice = new ArrayLit(Expression::loc(al).introduce(), tmp, dims);
+  Expression::type(field_slice, Type::arrType(env, al->type(), field_ty));
+  return field_slice;
+}
+
 std::vector<Expression*> field_slices(EnvI& env, Expression* arrExpr) {
   assert(GC::locked());
   assert(Expression::type(arrExpr).structBT() && Expression::type(arrExpr).dim() > 0);
@@ -5582,18 +5635,8 @@ std::vector<Expression*> field_slices(EnvI& env, Expression* arrExpr) {
   }
 
   std::vector<Expression*> field_al(st->size());
-  for (int i = 0; i < st->size(); ++i) {
-    Type field_ty = (*st)[i];
-    // TODO: This could be done efficiently using slicing (if we change the memory layout for
-    // arrays of tuples)
-    GCLock lock;
-    std::vector<Expression*> tmp(al->size());
-    for (int j = 0; j < al->size(); ++j) {
-      tmp[j] = new FieldAccess(Expression::loc((*al)[j]).introduce(), (*al)[j], IntLit::a(i + 1));
-      Expression::type(tmp[j], field_ty);
-    }
-    field_al[i] = new ArrayLit(Expression::loc(al).introduce(), tmp, dims);
-    Expression::type(field_al[i], Type::arrType(env, al->type(), field_ty));
+  for (long long int i = 0; i < st->size(); ++i) {
+    field_al[i] = field_slice(env, st, al, dims, i + 1);
   }
   return field_al;
 }

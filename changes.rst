@@ -67,6 +67,9 @@ Bug fixes:
 -  Fix a problem in the parser where a nullptr would be used before a syntax
    error was thrown (:bugref:`730`).
 -  Fix error management when reading preference files (:bugref:`729`).
+-  Fix segmentation fault caused by the creation of invalid domain constraints
+   generated for functions with arrays of tuples or records paramgeters
+   (:bugref:`732`).
 
 .. _v2.7.6:
 

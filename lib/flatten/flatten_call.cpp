@@ -1030,107 +1030,25 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
     } else {
       for (unsigned int i = 0; i < decl->paramCount(); i++) {
         if (decl->param(i)->type().dim() > 0) {
-          // Check array index sets
-          auto* al = Expression::cast<ArrayLit>(follow_id(args[i]()));
-          VarDecl* pi = decl->param(i);
-          for (unsigned int j = 0; j < pi->ti()->ranges().size(); j++) {
-            TypeInst* range_ti = pi->ti()->ranges()[j];
-            if ((range_ti->domain() != nullptr) && !Expression::isa<TIId>(range_ti->domain())) {
-              GCLock lock;
-              IntSetVal* isv = eval_intset(env, range_ti->domain());
-              if (isv->min() != al->min(j) || isv->max() != al->max(j)) {
-                std::ostringstream oss;
-                oss << "array index set " << (j + 1) << " of argument " << (i + 1)
-                    << " does not match declared index set";
-                throw FlatteningError(env, Expression::loc(e), oss.str());
-              }
-            }
-          }
+          check_index_sets(env, decl->param(i), args[i](), true);
         }
-        std::vector<std::pair<KeepAlive, TypeInst*>> stack({{args[i], decl->param(i)->ti()}});
-        while (!stack.empty()) {
-          KeepAlive curArg = stack.back().first;
-          TypeInst* curInst = stack.back().second;
-          stack.pop_back();
-          if (Expression* dom = curInst->domain()) {
-            if (!Expression::isa<TIId>(dom)) {
-              // May have to constrain actual argument
-              if (Expression::type(curArg()).bt() == Type::BT_INT) {
-                GCLock lock;
-                IntSetVal* isv = eval_intset(env, dom);
-                bool needToConstrain;
-                if (Expression::type(curArg()).st() == Type::ST_SET) {
-                  needToConstrain = true;
-                } else {
-                  if (Expression::type(curArg()).dim() > 0) {
-                    needToConstrain = true;
-                  } else {
-                    IntBounds ib = compute_int_bounds(env, curArg());
-                    needToConstrain =
-                        !ib.valid || isv->empty() || !isv->isSubset(IntSetVal::Range(ib.l, ib.u));
-                  }
-                }
-                if (needToConstrain) {
-                  KeepAlive domconstraint;
-                  {
-                    GCLock lock;
-                    domconstraint = mk_domain_constraint(env, curArg(), dom);
-                  }
-                  if (ctx.b == C_ROOT) {
-                    (void)flat_exp(env, Ctx(), domconstraint(), env.constants.varTrue,
-                                   env.constants.varTrue);
-                  } else {
-                    Ctx domctx = ctx;
-                    domctx.neg = false;
-                    EE ee = flat_exp(env, domctx, domconstraint(), nullptr, env.constants.varTrue);
-                    ee.b = ee.r;
-                    args_ee.push_back(ee);
-                  }
-                }
-              } else if (Expression::type(curArg()).bt() == Type::BT_FLOAT) {
-                GCLock lock;
-
-                FloatSetVal* fsv = eval_floatset(env, dom);
-                bool needToConstrain;
-                if (Expression::type(curArg()).dim() > 0) {
-                  needToConstrain = true;
-                } else {
-                  FloatBounds fb = compute_float_bounds(env, curArg());
-                  needToConstrain =
-                      !fb.valid || fsv->empty() || !fsv->isSubset(FloatSetVal::Range(fb.l, fb.u));
-                }
-
-                if (needToConstrain) {
-                  KeepAlive domconstraint;
-                  {
-                    GCLock lock;
-                    domconstraint = mk_domain_constraint(env, curArg(), dom);
-                  }
-                  if (ctx.b == C_ROOT) {
-                    (void)flat_exp(env, Ctx(), domconstraint(), env.constants.varTrue,
-                                   env.constants.varTrue);
-                  } else {
-                    Ctx domctx = ctx;
-                    domctx.neg = false;
-                    EE ee = flat_exp(env, domctx, domconstraint(), nullptr, env.constants.varTrue);
-                    ee.b = ee.r;
-                    args_ee.push_back(ee);
-                  }
-                }
-              } else if (Expression::type(curArg()).structBT()) {
-                GCLock lock;
-                auto* al = Expression::cast<ArrayLit>(curInst->domain());
-                for (long long i = 0; i < al->size(); ++i) {
-                  auto* fa = new FieldAccess(Expression::loc(curArg()).introduce(), curArg(),
-                                             IntLit::a(i + 1));
-                  fa->type(Expression::type((*al)[i]));
-                  stack.emplace_back(fa, Expression::cast<TypeInst>((*al)[i]));
-                }
-              } else if (Expression::type(curArg()).bt() == Type::BT_BOT) {
-                // Nothing to be done for empty arrays/sets
+        if (Expression* dom = decl->param(i)->ti()->domain()) {
+          if (!Expression::isa<TIId>(dom)) {
+            KeepAlive domconstraint;
+            {
+              GCLock lock;
+              domconstraint = mk_domain_constraint(env, args[i](), dom);
+            }
+            if (domconstraint() != nullptr) {
+              if (ctx.b == C_ROOT) {
+                (void)flat_exp(env, Ctx(), domconstraint(), env.constants.varTrue,
+                               env.constants.varTrue);
               } else {
-                throw EvalError(env, Expression::loc(curInst),
-                                "domain restrictions other than int and float not supported yet");
+                Ctx domctx = ctx;
+                domctx.neg = false;
+                EE ee = flat_exp(env, domctx, domconstraint(), nullptr, env.constants.varTrue);
+                ee.b = ee.r;
+                args_ee.push_back(ee);
               }
             }
           }
@@ -1322,13 +1240,15 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
                 GCLock lock;
                 domconstraint = mk_domain_constraint(env, ret.r(), decl->ti()->domain());
               }
-              if (ctx.b == C_ROOT) {
-                (void)flat_exp(env, Ctx(), domconstraint(), env.constants.varTrue,
-                               env.constants.varTrue);
-              } else {
-                EE ee = flat_exp(env, Ctx(), domconstraint(), nullptr, env.constants.varTrue);
-                ee.b = ee.r;
-                args_ee.push_back(ee);
+              if (domconstraint() != nullptr) {
+                if (ctx.b == C_ROOT) {
+                  (void)flat_exp(env, Ctx(), domconstraint(), env.constants.varTrue,
+                                 env.constants.varTrue);
+                } else {
+                  EE ee = flat_exp(env, Ctx(), domconstraint(), nullptr, env.constants.varTrue);
+                  ee.b = ee.r;
+                  args_ee.push_back(ee);
+                }
               }
             }
           }
