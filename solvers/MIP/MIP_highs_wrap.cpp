@@ -32,7 +32,7 @@ HiGHSPlugin::HiGHSPlugin(const std::string& dll) {
 #ifdef _WIN32
         FileUtils::progpath() + "\\bin\\highs.dll", "highs"
 #elif __APPLE__
-        FileUtils::progpath() + "/../lib/libhighs.dylib", "libhighs"
+        FileUtils::progpath() + "/lib/libhighs.dylib", "libhighs"
 #else
         FileUtils::progpath() + "/../lib/libhighs.so", "libhighs"
 #endif
