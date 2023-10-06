@@ -150,7 +150,7 @@ test:analyse:
 # Linux specific config
 .tests_linux:
   extends: .tests
-  image: python:latest
+  image: python:3.11
   variables:
     MZNARCH: "linux"
     LD_LIBRARY_PATH: "$CI_PROJECT_DIR/vendor/highs/lib64"
