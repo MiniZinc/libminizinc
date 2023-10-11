@@ -74,6 +74,8 @@ Bug fixes:
    (:bugref:`732`).
 -  Fix crash when instantiating a type-inst identifier using only ``<>``.
 -  Fix evaluation of comprehensions containing ``opt string``.
+-  Fix crash when instantiating polymorphic functions using tuples/records with
+   many ``var`` or ``opt`` fields.
 
 .. _v2.7.6:
 

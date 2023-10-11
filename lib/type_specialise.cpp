@@ -135,9 +135,17 @@ std::vector<Type> instantiated_types(EnvI& env, Call* call) {
   TIOccMap ti_var_types;
 
   for (unsigned int i = 0; i < call->argCount(); i++) {
-    types[i] = Expression::type(call->arg(i));
-    if (types[i].isbot() && call->arg(i) == env.constants.absent) {
-      types[i] = decl->param(i)->type();
+    types[i] = decl->param(i)->ti()->hasTiVariable() ? Expression::type(call->arg(i))
+                                                     : decl->param(i)->ti()->type();
+    if (types[i].isbot()) {
+      if (decl->param(i)->ti()->type().st() == Type::ST_SET) {
+        // array of bot can be used for array of set of ... param
+        types[i].st(Type::ST_SET);
+      }
+      auto bt = decl->param(i)->ti()->type().bt();
+      if (bt != Type::BT_TUPLE && bt != Type::BT_RECORD && bt != Type::BT_TOP) {
+        types[i].bt(bt);
+      }
     }
     TypeInst* ti = decl->param(i)->ti();
     for (int j = 0; j < static_cast<int>(ti->ranges().size()); j++) {
@@ -159,12 +167,7 @@ struct InstantiatedItem {
 
   InstantiatedItem() {}
   InstantiatedItem(EnvI& env, ASTString ident0, std::vector<Type> argTypes0)
-      : ident(ident0), argTypes(std::move(argTypes0)) {
-    for (auto& t : argTypes) {
-      t.ot(Type::OT_PRESENT);
-      t.mkPar(env);
-    }
-  }
+      : ident(ident0), argTypes(std::move(argTypes0)) {}
 
   bool operator==(const InstantiatedItem& ia) const {
     if (ident != ia.ident || argTypes.size() != ia.argTypes.size()) {
@@ -189,24 +192,56 @@ struct IAHash {
   }
 };
 
+struct InstanceMapItem {
+  ASTString baseName;
+  bool exists;
+  int instanceId;
+  std::vector<Type> argTypes;
+
+  InstanceMapItem(const ASTString baseName0, bool exists0, int instanceId0,
+                  std::vector<Type> argTypes0)
+      : baseName(std::move(baseName0)),
+        exists(exists0),
+        instanceId(instanceId0),
+        argTypes(std::move(argTypes0)) {}
+};
+
 class InstanceMap {
 private:
   std::unordered_map<InstantiatedItem, int, IAHash> _map;
+  std::unordered_set<InstantiatedItem, IAHash> _instances;
+  int _instanceCount = 0;
 
 public:
-  void insert(EnvI& env, ASTString ident, const std::vector<Type>& argTypes, int instanceCount) {
-    _map.emplace(InstantiatedItem(env, ident, argTypes), instanceCount);
+  InstanceMapItem getOrInsert(EnvI& env, Call* call) {
+    auto argTypes = instantiated_types(env, call);
     for (const auto& t : argTypes) {
       assert(t.dim() >= 0);
     }
-  }
-  std::pair<int, std::vector<Type>> lookup(EnvI& env, Call* call) const {
-    std::vector<Type> argTypes = instantiated_types(env, call);
-    const auto& v = _map.find(InstantiatedItem(env, call->id(), argTypes));
-    if (v == _map.end()) {
-      return {-1, argTypes};
+    auto baseName = call->id();
+    if (baseName.endsWith("_reif")) {
+      std::string reifName(baseName.c_str());
+      baseName = ASTString(reifName.substr(0, reifName.length() - 5));
+      argTypes.pop_back();
+    } else if (baseName.endsWith("_imp")) {
+      std::string impName(baseName.c_str());
+      baseName = ASTString(impName.substr(0, impName.length() - 4));
+      argTypes.pop_back();
     }
-    return {v->second, argTypes};
+    auto baseArgTypes = argTypes;
+    for (auto& t : baseArgTypes) {
+      t.mkPar(env);
+      t.mkPresent(env);
+    }
+    auto baseInstance =
+        _map.emplace(InstantiatedItem(env, call->id(), baseArgTypes), _instanceCount);
+    if (baseInstance.second) {
+      // Base instance not created yet, so use new instance ID
+      _instanceCount++;
+    }
+    auto instanceId = baseInstance.first->second;
+    auto concreteInstance = _instances.emplace(env, call->id(), argTypes);
+    return {baseName, !concreteInstance.second, instanceId, argTypes};
   }
 };
 
@@ -226,19 +261,6 @@ public:
   bool empty() const { return _agenda.empty(); }
 };
 
-bool is_polymorphic(FunctionI* fi) {
-  bool isPoly = fi->ti()->hasTiVariable();
-  if (!isPoly) {
-    for (unsigned int i = 0; i < fi->paramCount(); i++) {
-      if (fi->param(i)->ti()->hasTiVariable()) {
-        return true;
-      }
-    }
-    return false;
-  }
-  return true;
-}
-
 class CollectConcreteCalls : public EVisitor {
 public:
   ConcreteCallAgenda& agenda;
@@ -246,7 +268,7 @@ public:
   void vCall(Call* c) {
     if (c->decl() != nullptr) {
       if (c->decl()->e() != nullptr || (c->argCount() == 1 && c->id() == "enum_of")) {
-        if (is_polymorphic(c->decl())) {
+        if (c->decl()->isPolymorphic()) {
           assert(c->argCount() != 1 || Expression::type(c->arg(0)).st() == Type::ST_PLAIN ||
                  Expression::type(c->arg(0)).ot() == Type::OT_PRESENT);
           agenda.push(c);
@@ -271,7 +293,7 @@ public:
   void vOutputI(OutputI* oi) { top_down(ccc, oi->e()); }
   void vFunctionI(FunctionI* fi) {
     // Check if function is polymorphic. If not, collect calls from body.
-    if (!is_polymorphic(fi)) {
+    if (!fi->isPolymorphic()) {
       top_down(ccc, fi->e());
       top_down(ccc, fi->ti());
       for (unsigned int i = 0; i < fi->paramCount(); i++) {
@@ -283,234 +305,25 @@ public:
 
 class Instantiator {
 private:
-  int _instanceCount = 0;
   EnvI& _env;
   ConcreteCallAgenda& _agenda;
   InstanceMap& _instanceMap;
   TyperFn& _typer;
-
-  struct ToGenerate {
-    // If matches contains TIIds with "any" type, we have to generate the
-    // corresponding par, par opt, var and var opt versions, but only if those
-    // are not present in matches yet
-    enum GenVersion { TG_STRUCT, TG_PAR, TG_PAROPT, TG_VAR, TG_VAROPT };
-    GenVersion ver;
-    std::unique_ptr<std::vector<ToGenerate>> inner;
-
-    ToGenerate(const GenVersion& ver0) : ver(ver0), inner(nullptr) { assert(ver0 != TG_STRUCT); }
-    ToGenerate(std::vector<ToGenerate>&& tup0)
-        : ver(TG_STRUCT), inner(new std::vector<ToGenerate>(std::move(tup0))) {}
-    ToGenerate(const std::vector<ToGenerate>& tup0)
-        : ver(TG_STRUCT), inner(new std::vector<ToGenerate>(tup0)) {}
-    ToGenerate(const ToGenerate& gen)
-        : ver(gen.ver),
-          inner(gen.inner == nullptr ? nullptr : new std::vector<ToGenerate>(*gen.inner)) {}
-    ToGenerate(ToGenerate&& gen) : ver(gen.ver), inner(std::move(gen.inner)) {}
-
-    ToGenerate& operator=(ToGenerate&&) = default;
-    bool operator==(const ToGenerate& other) const {
-      if (ver != other.ver) {
-        return false;
-      }
-      if (ver == TG_STRUCT) {
-        if (inner->size() != other.inner->size()) {
-          return false;
-        }
-        for (size_t i = 0; i < inner->size(); ++i) {
-          if (!((*inner)[i] == (*other.inner)[i])) {
-            return false;
-          }
-        }
-      }
-      return true;
-    }
-
-    std::string toString() const {
-      switch (ver) {
-        case TG_STRUCT: {
-          std::ostringstream ss;
-          ss << "(";
-          for (size_t i = 0; i < inner->size(); i++) {
-            ss << (*inner)[i].toString();
-            if (i < inner->size() - 1) {
-              ss << ", ";
-            }
-          }
-          ss << ")";
-          return ss.str();
-        }
-        case TG_PAR:
-          return "PAR";
-        case TG_PAROPT:
-          return "PAROPT";
-        case TG_VAR:
-          return "VAR";
-        case TG_VAROPT:
-          return "VAROPT";
-      }
-      assert(false);
-      return "";
-    }
-
-    void reset(EnvI& env, StructType* match_types, StructType* concrete_types) const {
-      assert(ver == TG_STRUCT);
-      assert(match_types->size() == inner->size());
-      assert(concrete_types->size() == inner->size());
-      for (size_t i = 0; i < inner->size(); ++i) {
-        Type ty = (*match_types)[i];
-        if ((*inner)[i].ver == TG_STRUCT) {
-          StructType* concrete_tt = env.getStructType((*concrete_types)[i]);
-          StructType* match_tt = concrete_tt;
-          std::vector<Type> inst_types;
-          TypeList inst_types_ref(inst_types);
-          if (ty.structBT()) {
-            StructType* match_tt = env.getStructType(ty);
-          } else if (ty.any()) {
-            inst_types.resize(concrete_tt->size());
-            for (size_t j = 0; j < inst_types.size(); ++j) {
-              inst_types[j] = (*concrete_tt)[j];
-              inst_types[j].any(true);
-            }
-            match_tt = &inst_types_ref;
-          }
-          (*inner)[i].reset(env, match_tt, concrete_tt);
-        } else if (ty.any()) {
-          assert(ver != TG_STRUCT);
-          (*inner)[i].ver = TG_PAR;
-        }
-      }
-    }
-
-    bool increment(EnvI& env, StructType* match_types, StructType* concrete_types) const {
-      assert(ver == TG_STRUCT);
-      assert(match_types->size() == inner->size());
-      assert(concrete_types->size() == inner->size());
-      for (int i = static_cast<int>(inner->size() - 1); i >= 0; --i) {
-        Type ty = (*match_types)[i];
-        bool incremented = false;
-        if ((*inner)[i].ver == TG_STRUCT) {
-          StructType* concrete_tt = env.getStructType((*concrete_types)[i]);
-          StructType* match_tt = concrete_tt;
-          std::vector<Type> inst_types;
-          TypeList inst_types_ref(inst_types);
-          if (ty.structBT()) {
-            StructType* match_tt = env.getStructType(ty);
-          } else if (ty.any()) {
-            inst_types.resize(concrete_tt->size());
-            for (size_t j = 0; j < inst_types.size(); ++j) {
-              inst_types[j] = (*concrete_tt)[j];
-              inst_types[j].any(true);
-            }
-            match_tt = &inst_types_ref;
-          }
-          incremented = (*inner)[i].increment(env, match_tt, concrete_tt);
-        } else if ((*inner)[i].ver < TG_VAROPT && ty.any()) {
-          // found a match type we can increment
-          (*inner)[i].ver = static_cast<GenVersion>((*inner)[i].ver + 1);
-          incremented = true;
-        }
-        if (incremented) {
-          for (size_t j = i + 1; j < inner->size(); ++j) {
-            Type ty_back = (*match_types)[j];
-            if ((*inner)[j].ver == TG_STRUCT) {
-              StructType* concrete_tt = env.getStructType((*concrete_types)[j]);
-              StructType* match_tt = concrete_tt;
-              std::vector<Type> inst_types;
-              TypeList inst_types_ref(inst_types);
-              if (ty_back.structBT()) {
-                StructType* match_tt = env.getStructType(ty_back);
-              } else if (ty.any()) {
-                inst_types.resize(concrete_tt->size());
-                for (size_t j = 0; j < inst_types.size(); ++j) {
-                  inst_types[j] = (*concrete_tt)[j];
-                  inst_types[j].any(true);
-                }
-                match_tt = &inst_types_ref;
-              }
-              (*inner)[j].reset(env, match_tt, concrete_tt);
-            } else if (ty_back.any()) {
-              (*inner)[j].ver = TG_PAR;
-            }
-          }
-          return true;
-        }
-      }
-      return false;
-    }
-
-    // returns generation template from function item. Template is added to toGenerate if
-    // isDuplicate return false. Returns whether the function parameters contained an "any".
-    static std::pair<bool, ToGenerate> fromTIs(const EnvI& env, StructType* match_types,
-                                               StructType* concrete_types) {
-      bool hadAny = false;
-      std::vector<ToGenerate> matchTypes;
-      matchTypes.reserve(match_types->size());
-      for (size_t i = 0; i < match_types->size(); ++i) {
-        Type parType = (*match_types)[i];
-        if (parType.structBT()) {
-          StructType* match_tt = env.getStructType(parType);
-          StructType* concrete_tt = env.getStructType((*concrete_types)[i]);
-          auto ret = fromTIs(env, match_tt, concrete_tt);
-          hadAny = hadAny || ret.first;
-          matchTypes.emplace_back(ret.second);
-        } else if (i < concrete_types->size() && (*concrete_types)[i].structBT()) {
-          // Found a $-type that is being instantiated by a struct
-          assert(parType.bt() == Type::BT_TOP);
-          StructType* concrete_tt = env.getStructType((*concrete_types)[i]);
-          StructType* match_tt = concrete_tt;
-          std::vector<Type> inst_types;
-          TypeList inst_types_ref(inst_types);
-          if (parType.any()) {
-            inst_types.resize(concrete_tt->size());
-            for (size_t j = 0; j < inst_types.size(); ++j) {
-              inst_types[j] = (*concrete_tt)[j];
-              inst_types[j].any(true);
-            }
-            match_tt = &inst_types_ref;
-          }
-          auto ret = fromTIs(env, match_tt, concrete_tt);
-          hadAny = hadAny || ret.first;
-          matchTypes.emplace_back(ret.second);
-        } else if (parType.any()) {
-          hadAny = true;
-          // start any types at TG_PAR (go through variants using increment)
-          matchTypes.emplace_back(TG_PAR);
-        } else if (parType.isPar()) {
-          matchTypes.emplace_back(parType.isOpt() ? TG_PAROPT : TG_PAR);
-        } else {
-          matchTypes.emplace_back(parType.isOpt() ? TG_VAROPT : TG_VAR);
-        }
-      }
-      assert(match_types->size() == matchTypes.size());
-      return {hadAny, ToGenerate(std::move(matchTypes))};
-    }
-    // returns generation template from function item. Template is added to toGenerate if
-    // condition returns true
-    static bool anyVariants(EnvI& env, ToGenerate& gen, StructType* match_types,
-                            StructType* concrete_types, std::vector<ToGenerate>& toGenerate,
-                            const std::function<bool(const ToGenerate&)>& condition) {
-      // Generate all versions for each any type that match "condition" and add them to toGenerate
-      do {
-        // check if current matchTypes already exists, if not, add it
-        if (condition(gen)) {
-          toGenerate.push_back(gen);
-        }
-      } while (gen.increment(env, match_types, concrete_types));
-      return true;
-    }
-  };
+  std::unique_ptr<Model> _specialised;
 
 public:
   Instantiator(EnvI& env, ConcreteCallAgenda& agenda, InstanceMap& instanceMap, TyperFn& typer)
-      : _env(env), _agenda(agenda), _instanceMap(instanceMap), _typer(typer) {}
+      : _env(env),
+        _agenda(agenda),
+        _instanceMap(instanceMap),
+        _typer(typer),
+        _specialised(new Model) {}
 
-  static bool walkTIMap(EnvI& env, ASTStringMap<Type>& ti_map, TypeInst* struct_ti, StructType* tt,
-                        const ToGenerate& tg) {
+  static bool walkTIMap(EnvI& env, ASTStringMap<Type>& ti_map, TypeInst* struct_ti,
+                        StructType* tt) {
     auto* al = Expression::cast<ArrayLit>(struct_ti->domain());
     assert(al->size() == tt->size() ||
            al->size() + 1 == tt->size());  // May have added concrete type for reification
-    assert(tg.ver == ToGenerate::TG_STRUCT);
-    assert(al->size() == tg.inner->size());
     for (size_t i = 0; i < al->size(); i++) {
       auto* ti = Expression::cast<TypeInst>((*al)[i]);
       Type curType = ti->type();
@@ -523,47 +336,14 @@ public:
       }
       if (curType.any()) {
         curType.any(false);
-        switch ((*tg.inner)[i].ver) {
-          case ToGenerate::TG_PAR:
-            curType.ot(Type::OT_PRESENT);
-            curType.ti(Type::TI_PAR);
-            break;
-          case ToGenerate::TG_PAROPT:
-            if (curType.st() == Type::ST_SET) {
-              return false;
-            }
-            curType.ot(Type::OT_OPTIONAL);
-            curType.ti(Type::TI_PAR);
-            break;
-          case ToGenerate::TG_VAR:
-            if (curType.bt() != Type::BT_BOOL && curType.bt() != Type::BT_INT &&
-                curType.bt() != Type::BT_FLOAT) {
-              return false;
-            }
-            curType.ot(Type::OT_PRESENT);
-            curType.ti(Type::TI_VAR);
-            break;
-          case ToGenerate::TG_VAROPT:
-            if ((curType.bt() != Type::BT_BOOL && curType.bt() != Type::BT_INT &&
-                 curType.bt() != Type::BT_FLOAT) ||
-                curType.st() == Type::ST_SET) {
-              return false;
-            }
-            curType.ot(Type::OT_OPTIONAL);
-            curType.ti(Type::TI_VAR);
-            break;
-          case ToGenerate::TG_STRUCT:
-            // Real "any" types are set in recursive call
-
-            // The following statements violate the cononical representation of structs. (Hence the
-            // workaround of setting the typeId to 0 above, and then back to its concrete type
-            // below). The representation will be fixed again when the struct is registered.
-            curType.ot(Type::OT_PRESENT);
-            curType.ti(Type::TI_PAR);
-            curType.cv(false);
-            break;
-          default:
-            assert(false);
+        if (curType.structBT()) {
+          curType.ot(Type::OT_PRESENT);
+          curType.ti(Type::TI_PAR);
+          curType.cv(false);
+        } else {
+          curType.ot(concrete_type.ot());
+          curType.ti(concrete_type.ti());
+          curType.cv(concrete_type.cv());
         }
       }
       curType.typeId(concrete_type.typeId());
@@ -577,7 +357,7 @@ public:
           StructType* ctt = env.getStructType(curType);
           // Create new TypeInst domain for struct argument
           ti->setStructDomain(env, curType, true);
-          if (!walkTIMap(env, ti_map, ti, ctt, (*tg.inner)[i])) {
+          if (!walkTIMap(env, ti_map, ti, ctt)) {
             return false;
           }
         } else {
@@ -594,7 +374,7 @@ public:
       } else if (curType.structBT()) {
         assert(concrete_type.bt() == curType.bt());
         assert(concrete_type.typeId() != 0);
-        if (!walkTIMap(env, ti_map, ti, env.getStructType(ti->type()), (*tg.inner)[i])) {
+        if (!walkTIMap(env, ti_map, ti, env.getStructType(ti->type()))) {
           return false;
         }
       }
@@ -759,154 +539,103 @@ public:
       call->decl(newDecl);
     }
     // Check if instance for this call already exists
-    auto lookup = _instanceMap.lookup(_env, call);
-    auto instanceId = lookup.first;
-    ASTString mangledName;
-    if (instanceId == -1) {
-      // new instance: create copies of all possible functions
+    auto lookup = _instanceMap.getOrInsert(_env, call);
+    auto instanceId = lookup.instanceId;
+    if (!lookup.exists) {
+      // new instance: create copies of non-reif, _reif and _imp function
+      std::vector<Type> concrete_types = lookup.argTypes;
+      auto* nonReif = _env.model->matchFn(_env, lookup.baseName, concrete_types, false);
+      // Push additional var bool for reified versions
+      concrete_types.push_back(Type::varbool());
+      auto* reified =
+          _env.model->matchFn(_env, _env.reifyId(lookup.baseName), concrete_types, false);
+      auto* halfReif =
+          _env.model->matchFn(_env, EnvI::halfReifyId(lookup.baseName), concrete_types, false);
+      assert(call->decl() == nonReif || call->decl() == reified || call->decl() == halfReif);
+      std::vector<FunctionI*> matches({nonReif, reified, halfReif});
 
-      auto matches = _env.model->possibleMatches(_env, call->id(), lookup.second);
-
-      instanceId = _instanceCount++;
-
-      TypeList concrete_tt = TypeList(lookup.second);
-      std::vector<std::vector<Type>> match_types;
-      match_types.reserve(matches.size());
-      std::vector<TypeList> match_tts;
-      match_tts.reserve(matches.size());
-
-      std::vector<std::vector<ToGenerate>> toGenerate(
-          matches.size(), std::vector<ToGenerate>(1, ToGenerate::TG_PAR));
-      std::vector<bool> generateVariants(matches.size(), false);
-      for (size_t i = 0; i < matches.size(); ++i) {
-        match_types.emplace_back(matches[i]->paramCount());
-        for (int j = 0; j < match_types[i].size(); ++j) {
-          match_types[i][j] = matches[i]->param(j)->ti()->type();
+      for (auto* fi : matches) {
+        if (fi == nullptr) {
+          continue;
         }
-        match_tts.emplace_back(match_types[i]);
-        auto pair = ToGenerate::fromTIs(_env, &match_tts[i], &concrete_tt);
-        generateVariants[i] = pair.first;
-        toGenerate[i][0] = std::move(pair.second);
-      }
 
-      // Reprocess functions that contain "any" parameters (non-"any" versions are preferred, and
-      // duplicates that would be generated by "any" versions are not not generated)
-      for (size_t i = 0; i < matches.size(); ++i) {
-        if (generateVariants[i]) {
-          ToGenerate tg(std::move(toGenerate[i][0]));
-          toGenerate[i].pop_back();
-          ToGenerate::anyVariants(_env, tg, &match_tts[i], &concrete_tt, toGenerate[i],
-                                  [&](const ToGenerate& gen) {
-                                    for (const auto& tg : toGenerate) {
-                                      for (const auto& m : tg) {
-                                        if (m == gen) {
-                                          return false;
-                                        }
-                                      }
-                                    }
-                                    return true;
-                                  });
+        // Copy function (without following Ids or copying other function decls)
+        _typer.reset(_env, fi);
+        auto* fi_copy = copy(_env, fi, false, false, false)->cast<FunctionI>();
+        fi_copy->isMonomorphised(true);
+        // Rename copy
+        std::ostringstream oss;
+        oss << "\\" << instanceId << "@" << fi->id();
+        fi_copy->id(ASTString(oss.str()));
+
+        // Replace type-inst vars by concrete types
+
+        std::unordered_map<ASTString, Type> ti_map;
+        // Update parameter types
+        TypeList tt(concrete_types);
+        walkTIMap(_env, ti_map, fi_copy->paramTypes(), &tt);
+        // Update VarDecl types based on updated TypeInst objects
+        for (unsigned int i = 0; i < fi_copy->paramCount(); ++i) {
+          fi_copy->param(i)->type(fi_copy->param(i)->ti()->type());
         }
-      }
 
-      std::ostringstream oss;
-      oss << "\\" << instanceId << "@" << call->decl()->id();
-      mangledName = ASTString(oss.str());
-      ASTString mangledBaseName;
-      ASTString mangledReifName;
-      ASTString mangledImpName;
-      if (mangledName.endsWith("_reif")) {
-        std::string ident_s(mangledName.c_str());
-        mangledBaseName = ASTString(ident_s.substr(0, ident_s.length() - 5));
-        mangledReifName = mangledName;
-        mangledImpName = EnvI::halfReifyId(mangledBaseName);
-      } else if (mangledName.endsWith("_imp")) {
-        std::string ident_s(mangledName.c_str());
-        mangledBaseName = ASTString(ident_s.substr(0, ident_s.length() - 4));
-        mangledReifName = _env.reifyId(mangledBaseName);
-        mangledImpName = mangledName;
-      } else {
-        mangledBaseName = mangledName;
-        mangledReifName = _env.reifyId(mangledBaseName);
-        mangledImpName = EnvI::halfReifyId(mangledBaseName);
-      }
+        // update return type
+        updateReturnTypeInst(_env, ti_map, fi_copy->ti());
 
-      _instanceMap.insert(_env, call->id(), lookup.second, instanceId);
-
-      for (unsigned int matchIdx = 0; matchIdx < matches.size(); matchIdx++) {
-        auto* fi = matches[matchIdx];
-        for (auto& tg : toGenerate[matchIdx]) {
-          // Copy function (without following Ids or copying other function decls)
-          _typer.reset(_env, fi);
-          auto* fi_copy = copy(_env, fi, false, false, false)->cast<FunctionI>();
-          fi_copy->isMonomorphised(true);
-          // Rename copy
-          if (fi->id().endsWith("_reif")) {
-            fi_copy->id(mangledReifName);
-          } else if (fi->id().endsWith("_imp")) {
-            fi_copy->id(mangledImpName);
-          } else {
-            fi_copy->id(mangledBaseName);
+        if (fi_copy->e() == nullptr) {
+          // built-in function, have to redirect to original polymorphic built-in
+          std::vector<Expression*> args(fi_copy->paramCount());
+          for (unsigned int i = 0; i < fi_copy->paramCount(); i++) {
+            args[i] = fi_copy->param(i)->id();
           }
-          // Replace type-inst vars by concrete types
-
-          std::vector<Type> concrete_types = lookup.second;
-          // Push additional var bool for reified versions
-          concrete_types.push_back(Type::varbool());
-
-          std::unordered_map<ASTString, Type> ti_map;
-
-          // Update parameter types
-          TypeList tt(concrete_types);
-          if (!walkTIMap(_env, ti_map, fi_copy->paramTypes(), &tt, tg)) {
-            continue;
-          }
-          // Update VarDecl types based on updated TypeInst objects
-          for (size_t i = 0; i < fi_copy->paramCount(); ++i) {
-            fi_copy->param(i)->type(fi_copy->param(i)->ti()->type());
-          }
-
-          // update return type
-          updateReturnTypeInst(_env, ti_map, fi_copy->ti());
-
-          if (fi_copy->e() == nullptr) {
-            // built-in function, have to redirect to original polymorphic built-in
-            std::vector<Expression*> args(fi_copy->paramCount());
-            for (unsigned int i = 0; i < fi_copy->paramCount(); i++) {
-              args[i] = fi_copy->param(i)->id();
-            }
-            Call* body = Call::a(Location().introduce(), fi->id(), args);
-            body->decl(fi);
-            body->type(fi_copy->ti()->type());
-            fi_copy->e(body);
-          } else {
-            // update all types in the body
-            _typer.retype(_env, fi_copy);
-            // put calls in the body on the agenda
-            CollectConcreteCalls ccc(_agenda);
-            top_down(ccc, fi_copy->e());
-          }
-          _env.model->registerFn(_env, fi_copy, true);
-          _env.model->addItem(fi_copy);
-
+          Call* body = Call::a(Location().introduce(), fi->id(), args);
+          body->decl(fi);
+          body->type(fi_copy->ti()->type());
+          fi_copy->e(body);
+        } else {
+          // update all types in the body
+          _typer.retype(_env, fi_copy);
+          // put calls in the body on the agenda
+          CollectConcreteCalls ccc(_agenda);
+          top_down(ccc, fi_copy->e());
+        }
+        // TODO: Currently it's possible for us to actually be generating the same
+        // concrete instance again, even though instantiated_types() gave a different
+        // result. We should probably fix instantiated_types() to be more accurate.
+        if (_specialised->registerFn(_env, fi_copy, true, false)) {
+          _specialised->addItem(fi_copy);
           if (call->decl() == fi) {
             call->decl(fi_copy);
             call->rehash();
           }
-          _typer.retype(_env, fi);
+        } else if (call->decl() == fi) {
+          call->id(fi_copy->id());
+          FunctionI* newDecl = _specialised->matchFn(_env, call, false);
+          assert(newDecl != nullptr);
+          call->decl(newDecl);
+          call->rehash();
         }
+
+        _typer.retype(_env, fi);
       }
     } else {
+      // match call to previously copied function
       std::ostringstream oss;
       oss << "\\" << instanceId << "@" << call->decl()->id();
-      mangledName = ASTString(oss.str());
+      call->id(ASTString(oss.str()));
+      FunctionI* newDecl = _specialised->matchFn(_env, call, false);
+      assert(newDecl != nullptr);
+      call->decl(newDecl);
+      call->rehash();
     }
-    // match call to previously copied function
-    call->id(mangledName);
-    FunctionI* newDecl = _env.model->matchFn(_env, call, false);
-    assert(newDecl != nullptr);
-    call->decl(newDecl);
-    call->rehash();
+  }
+
+  void finish() {
+    for (auto* it : *_specialised) {
+      auto* fi = it->cast<FunctionI>();
+      _env.model->registerFn(_env, fi, true);
+      _env.model->addItem(fi);
+    }
   }
 };
 
@@ -949,6 +678,8 @@ void type_specialise(Env& env, Model* model, TyperFn& typer) {
     agenda.pop();
     instantiate(call);
   }
+
+  instantiate.finish();
 }
 
 std::string demonomorphise_identifier(const ASTString& ident) {

@@ -3950,114 +3950,121 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
     // Create a par version of each function that returns par and
     // that has a body that can be made par
+    std::unique_ptr<Model> nonPolyFns(new Model);
+    std::vector<FunctionI*> fns;
     std::unordered_map<FunctionI*, std::pair<bool, std::vector<FunctionI*>>> fnsToMakePar;
     for (auto& f : m->functions()) {
-      if (f.id() == env.envi().constants.ids.mzn_reverse_map_var) {
+      if (f.id() == env.envi().constants.ids.mzn_reverse_map_var ||
+          f.ti()->type().bt() == Type::BT_ANN) {
         continue;
       }
-      if (f.e() != nullptr && f.ti()->type().bt() != Type::BT_ANN) {
-        bool foundVar = false;
-        for (int i = 0; i < f.paramCount(); i++) {
-          if (f.param(i)->type().isvar() && !f.param(i)->type().any()) {
-            foundVar = true;
+      if (f.e() == nullptr) {
+        if (f.isPolymorphic() || f.ti()->type().isPar()) {
+          // Builtin should be able to be called from a par function
+          fnsToMakePar.insert({&f, {true, std::vector<FunctionI*>()}});
+        } else {
+          continue;
+        }
+      } else if (f.isPolymorphic()) {
+        // Don't try to make polymorphic function par, just do this to the concrete instances
+        continue;
+      }
+      nonPolyFns->registerFn(env.envi(), &f);
+      fns.push_back(&f);
+    }
+    nonPolyFns->sortFn(env.envi());
+    for (auto* f : fns) {
+      bool alreadyPar = Expression::type(f->ti()).isPar();
+      if (alreadyPar) {
+        for (int i = 0; i < f->paramCount(); i++) {
+          if (f->param(i)->type().isvar()) {
+            alreadyPar = false;
             break;
           }
         }
-        if (foundVar) {
-          // create par version of parameter types
-          std::vector<Type> tv;
-          for (int i = 0; i < f.paramCount(); i++) {
-            Type t = f.param(i)->type();
-            t.mkPar(env.envi());
-            t.cv(false);
-            tv.push_back(t);
+      }
+      if (alreadyPar) {
+        fnsToMakePar.insert({f, {true, std::vector<FunctionI*>()}});
+        continue;
+      }
+      // create par version of parameter types
+      std::vector<Type> tv(f->paramCount());
+      for (int i = 0; i < f->paramCount(); i++) {
+        Type t = f->param(i)->type();
+        t.mkPar(env.envi());
+        t.cv(false);
+        tv[i] = t;
+      }
+      // check if specialised par version of function already exists
+      FunctionI* fi_par = nonPolyFns->matchFn(env.envi(), f->id(), tv, false);
+      alreadyPar = fi_par->ti()->type().isPar();
+      if (alreadyPar) {
+        for (int i = 0; i < fi_par->paramCount(); i++) {
+          if (fi_par->param(i)->type().isvar()) {
+            alreadyPar = false;
+            break;
           }
-          // check if specialised par version of function already exists
-          FunctionI* fi_par = m->matchFn(env.envi(), f.id(), tv, false);
-          bool parIsUsable = false;
-          if (fi_par != nullptr) {
-            bool foundVar = false;
-            for (int i = 0; i < fi_par->paramCount(); i++) {
-              if (fi_par->param(i)->type().isvar()) {
-                foundVar = true;
+        }
+      }
+      if (alreadyPar) {
+        fnsToMakePar.insert({fi_par, {true, std::vector<FunctionI*>()}});
+        continue;
+      }
+      if (fi_par->e() == nullptr) {
+        continue;
+      }
+      // check if body of f doesn't contain any free variables in lets,
+      // all calls in the body have par versions available,
+      // and all toplevel identifiers used in the body of f are par
+      class CheckParBody : public EVisitor {
+      public:
+        EnvI& env;
+        Model* m;
+        CheckParBody(EnvI& env0, Model* m0) : env(env0), m(m0) {}
+        bool isPar = true;
+        std::vector<FunctionI*> deps;
+        bool enter(Expression* e) const {
+          // if we have already found a var, don't continue
+          return isPar;
+        }
+        void vId(const Id* ident) {
+          if (ident->decl() != nullptr && ident->type().isvar() && ident->decl()->toplevel()) {
+            isPar = false;
+          }
+        }
+        void vLet(const Let* let) {
+          // check if any of the declared variables does not have a RHS
+          for (auto* e : let->let()) {
+            if (auto* vd = Expression::dynamicCast<VarDecl>(e)) {
+              if (vd->e() == nullptr) {
+                isPar = false;
                 break;
               }
             }
-            parIsUsable = !foundVar;
-          }
-          if (!parIsUsable) {
-            // check if body of f doesn't contain any free variables in lets,
-            // all calls in the body have par versions available,
-            // and all toplevel identifiers used in the body of f are par
-            class CheckParBody : public EVisitor {
-            public:
-              EnvI& env;
-              Model* m;
-              CheckParBody(EnvI& env0, Model* m0) : env(env0), m(m0) {}
-              bool isPar = true;
-              std::vector<FunctionI*> deps;
-              bool enter(Expression* e) const {
-                // if we have already found a var, don't continue
-                return isPar;
-              }
-              void vId(const Id* ident) {
-                if (ident->decl() != nullptr && ident->type().isvar() &&
-                    ident->decl()->toplevel()) {
-                  isPar = false;
-                }
-              }
-              void vLet(const Let* let) {
-                // check if any of the declared variables does not have a RHS
-                for (auto* e : let->let()) {
-                  if (auto* vd = Expression::dynamicCast<VarDecl>(e)) {
-                    if (vd->e() == nullptr) {
-                      isPar = false;
-                      break;
-                    }
-                  }
-                }
-              }
-              void vCall(const Call* c) {
-                if (!c->type().isAnn()) {
-                  FunctionI* decl = c->decl();
-                  // create par version of parameter types
-                  std::vector<Type> tv;
-                  for (int i = 0; i < decl->paramCount(); i++) {
-                    Type t = decl->param(i)->type();
-                    t.cv(false);
-                    t.any(false);
-                    t.mkPar(env);
-                    tv.push_back(t);
-                  }
-                  // check if specialised par version of function already exists
-                  FunctionI* decl_par = m->matchFn(env, decl->id(), tv, false);
-                  bool parIsUsable = decl_par->ti()->type().isPar();
-                  if (parIsUsable && decl_par->e() == nullptr && decl_par->fromStdLib()) {
-                    parIsUsable = true;
-                  } else if (parIsUsable) {
-                    bool foundVar = false;
-                    for (int i = 0; i < decl_par->paramCount(); i++) {
-                      if (decl_par->param(i)->type().isvar()) {
-                        foundVar = true;
-                        break;
-                      }
-                    }
-                    parIsUsable = !foundVar;
-                  }
-                  if (!parIsUsable) {
-                    deps.push_back(decl_par);
-                  }
-                }
-              }
-            } cpb(env.envi(), m);
-            top_down(cpb, f.e());
-            if (cpb.isPar) {
-              fnsToMakePar.insert({&f, {false, cpb.deps}});
-            }
-          } else {
-            fnsToMakePar.insert({fi_par, {true, std::vector<FunctionI*>()}});
           }
         }
+        void vCall(const Call* c) {
+          if (!c->type().isAnn()) {
+            FunctionI* decl = c->decl();
+            // create par version of parameter types
+            std::vector<Type> tv;
+            for (int i = 0; i < decl->paramCount(); i++) {
+              Type t = decl->param(i)->type();
+              t.mkPar(env);
+              tv.push_back(t);
+            }
+            FunctionI* decl_par = m->matchFn(env, decl->id(), tv, false);
+            if (decl_par == nullptr) {
+              isPar = false;
+              return;
+            }
+            deps.push_back(decl_par);
+          }
+        }
+      } cpb(env.envi(), &*nonPolyFns);
+      top_down(cpb, fi_par->e());
+      if (cpb.isPar) {
+        fnsToMakePar.insert({fi_par, {false, cpb.deps}});
       }
     }
 
@@ -4127,6 +4134,13 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           if (didRegister) {
             m->addItem(cp);
             parFunctions.push_back(cp);
+          } else {
+            // A function with par parameters already exists.
+            // This can only happen this can be made par, but the return type was given as var.
+            // Therefore, we can just set the return type to par.
+            assert(p.first->ti()->type().isvar());
+            p.first->ti()->mkPar(env.envi());
+            parFunctions.push_back(p.first);
           }
         }
       }
@@ -4171,9 +4185,12 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
       for (auto* p : parFunctions) {
         bottom_up(_mfp, p->e());
+      }
+
+      for (auto* p : parFunctions) {
         // type-check body again, to enable rewriting of calls like "show"
-        // TODO: probably better to do this in a separate pass
         bottomUpTyper.run(p->e());
+        assert(Expression::type(p->e()).isPar());
       }
     }
   }

@@ -1922,6 +1922,20 @@ public:
   /// Set whether function is a monomorphised version of another function
   void isMonomorphised(bool b) { _flag2 = b; }
 
+  /// Whether this function is polymorphic
+  bool isPolymorphic() const {
+    bool isPoly = ti()->hasTiVariable();
+    if (!isPoly) {
+      for (unsigned int i = 0; i < paramCount(); i++) {
+        if (param(i)->ti()->hasTiVariable()) {
+          return true;
+        }
+      }
+      return false;
+    }
+    return true;
+  }
+
   /// Return variable that captures annotations (or null)
   VarDecl* capturedAnnotationsVar() const {
     return _captureAnnotations ? _params[_params.size() - 1] : nullptr;

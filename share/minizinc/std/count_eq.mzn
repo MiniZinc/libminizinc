@@ -23,7 +23,7 @@ predicate count_eq(array[$X] of var opt $$E: x, var $$E: y, var int: c) =let {
 predicate count_eq(array[$X] of var $$E: x, $$E: y, int: c) =
   fzn_count_eq_par(array1d(x), y, c);
 
-predicate count_eq(array[$X] of $$E: x, $$E: y, int: c) =
+test count_eq(array[$X] of $$E: x, $$E: y, int: c) =
   c = count_eq(x, y);
 
 /** @group globals.counting
