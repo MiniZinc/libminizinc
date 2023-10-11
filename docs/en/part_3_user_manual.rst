@@ -13,6 +13,7 @@ User Manual
    checkers
    globalizer
    find_mus
+   mzn-analyse
    jupyter
    python
    javascript
