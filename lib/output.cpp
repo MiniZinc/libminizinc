@@ -450,12 +450,13 @@ void check_rename_var(EnvI& e, VarDecl* vd, std::vector<Expression*> dimArgs, In
     if (!dimArgs.empty()) {
       // Change variable with the FlatZinc identifier to be 1d and 1-based
       Type t(vd_rename_ti->type());
+      t.typeId(0);
       t.dim(1);
       auto* newTi = new TypeInst(Location().introduce(), Type::parint());
       newTi->domain(new SetLit(Location().introduce(), IntSetVal::a(1, size1d)));
       std::vector<TypeInst*> newRanges({newTi});
-      vd_rename_ti->setRanges(newRanges);
       vd_rename_ti->type(t);
+      vd_rename_ti->setRanges(newRanges);
     }
     auto* vd_rename = new VarDecl(Location().introduce(), vd_rename_ti, vd->flat()->id()->idn());
     vd_rename->flat(vd->flat());
