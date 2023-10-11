@@ -73,6 +73,7 @@ Bug fixes:
    generated for functions with arrays of tuples or records parameters
    (:bugref:`732`).
 -  Fix crash when instantiating a type-inst identifier using only ``<>``.
+-  Fix evaluation of comprehensions containing ``opt string``.
 
 .. _v2.7.6:
 

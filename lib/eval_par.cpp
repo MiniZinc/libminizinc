@@ -716,7 +716,7 @@ ArrayLit* eval_array_comp(EnvI& env, Comprehension* e) {
   } else if (e->type().st() == Type::ST_SET) {
     auto a = eval_comp<EvalSetLit>(env, e);
     ret = new ArrayLit(Expression::loc(e), a.a, a.dims);
-  } else if (e->type().bt() == Type::BT_STRING) {
+  } else if (plainParNonAbsent && e->type().bt() == Type::BT_STRING) {
     auto a = eval_comp<EvalStringLit>(env, e);
     ret = new ArrayLit(Expression::loc(e), a.a, a.dims);
   } else {
