@@ -1436,8 +1436,8 @@ Type get_type(const Type& t) { return t; }
 const Location& get_loc(Expression* e, Expression* call, FunctionI* /*fi*/) {
   return Expression::loc(e).isNonAlloc() ? Expression::loc(call) : Expression::loc(e);
 }
-const Location& get_loc(const Type& /*t*/, Expression* /*call*/, FunctionI* fi) {
-  return fi->loc();
+const Location& get_loc(const Type& /*t*/, Expression* call, FunctionI* fi) {
+  return Expression::loc(call).isNonAlloc() ? fi->loc() : Expression::loc(call);
 }
 
 bool isa_tiid(Expression* e) {
