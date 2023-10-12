@@ -71,12 +71,11 @@ All files should be placed in the same directory so that they are properly serve
 The MiniZinc model contains a call to :ref:`ide_launch_server <mzn_ide.visualisation.ide_launch_server>`.
 This initialises the visualisation, telling the IDE what page to load, and the user data to pass to it.
 In this case, we are passing string representations of the possible :mzn:`enum` values.
-The :mzn:`json_object` function is used to construct a JSON object from a 2D array of keys and strings of valid JSON values.
 
 .. defblock:: Passing JSON data to the visualisation
 
-  It should be noted that :mzn:`showJSON()` allows us to output all MiniZinc values in a JSON representation.
-  While this includes sets and enums, the format used may need special handling in the visualisation script.
+  It should be noted that :mzn:`showJSON()` is used on the user data to convert it into JSON for the visualisation script.
+  While this supports all MiniZinc values including as sets and enums, the format used may need special handling in the visualisation script.
 
   In many cases, it may be easier to convert sets into arrays and enums into strings to make them easier to deal with.
   For more information about the JSON format generated, see :ref:`spec-json`.

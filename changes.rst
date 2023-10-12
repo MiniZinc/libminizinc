@@ -38,6 +38,9 @@ Changes:
 -  Add optional versions of ``count_*`` global constriants. (:bugref:`728`)
 -  Load HiGHS as a dynamic plugin instead of statically linking it.
 -  Support output of intermediate solutions for HiGHS.
+-  Change the IDE visualisation function ``ide_launch_server()`` to take
+   structured types for user data. This is a breaking change for those who
+   have developed a custom visualisation using the experimental API.
 
 Bug fixes:
 ^^^^^^^^^^

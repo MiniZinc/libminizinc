@@ -83,6 +83,7 @@
                         [k]: {
                             color: colors[i % colors.length],
                             rects: userData.shape[i]
+                                .filter(r => r !== null)
                                 .map(r => rects[r])
                         }
                     }), {});
