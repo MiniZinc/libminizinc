@@ -575,7 +575,7 @@ test vis_graph_highlight(array [$$N] of string: node_labels,
 
 /** @group ide.visualisation
     Create a visualisation of the subgraph \a ns and \a es of a given directed graph.
-    The nodes are labelled using the index set of a ns.
+    The nodes are labelled using the index set of \a ns.
 
     @param from: the leaving node for each edge
     @param to: the entering node for each edge
@@ -624,7 +624,7 @@ test vis_digraph(array [$$N] of string: node_labels,
 
 /** @group ide.visualisation
     Create a visualisation of the subgraph \a ns and \a es of a given directed graph.
-    The nodes are labelled using the index set of a ns.
+    The nodes are labelled using the index set of \a ns.
     The entire graph is drawn, with the given subgraph highlighted.
 
     @param from: the leaving node for each edge
