@@ -257,6 +257,10 @@ print when the model has been run and a :index:`solution` is found.
   A model can contain multiple output statements. In that case, all outputs
   are concatenated in the order they appear in the model.
 
+  Additionally, output statements can be annotated using a string literal
+  giving a section name. These section names can be then used to filter the
+  output using the ``--only-sections`` and ``--not-sections`` options.
+
 We can evaluate our model by clicking the *Run* button in the MiniZinc IDE, or by typing
 
 .. code-block:: bash
@@ -455,6 +459,9 @@ output  will be
   A MiniZinc model with no output will output a line for each
   decision variable with its value, unless it is assigned an expression
   on its declaration. Note how the output is in the form of a correct datafile.
+
+  Declarations can be annotated as ``:: output`` or ``:: no_output`` to override
+  the default behaviour.
 
 .. literalinclude:: examples/pantry.dzn
   :language: minizinc

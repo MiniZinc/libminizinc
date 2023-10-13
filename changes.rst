@@ -79,6 +79,8 @@ Bug fixes:
 -  Fix evaluation of comprehensions containing ``opt string``.
 -  Fix crash when instantiating polymorphic functions using tuples/records with
    many ``var`` or ``opt`` fields.
+-  Do not generate default DZN output when there are only sectioned ``output``
+   items present (:bugref:`733`).
 
 .. _v2.7.6:
 

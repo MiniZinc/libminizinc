@@ -52,7 +52,10 @@ annotation mzn_expression_name(string: n);
 /** @group stdlib.annotations.general Declare a name \a n for the annotated constraint. */
 annotation mzn_constraint_name(string: n);
 
-/** @group stdlib.annotations.general Declare the output section \a s for an output item */
+/** @group stdlib.annotations.general Used internally by the compiler to set the output section \a s for an output item.
+  An output item can be annotated directly with a string literal to set its output section as in
+  ``output :: "my_section" ["hello, world\n"]``.
+ */
 annotation mzn_output_section(string: s);
 
 /** @group stdlib.annotations.general State that a function is deprecated since MiniZinc version \a version with humand readable \a explanation. */
