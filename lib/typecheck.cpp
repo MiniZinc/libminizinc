@@ -3248,6 +3248,254 @@ public:
   void vTIId(TIId* id) {}
 };
 
+void create_par_versions(Env& env, Model* m, BottomUpIterator<Typer<true>>& bottomUpTyper) {
+  // Create a par version of each function that returns par and
+  // that has a body that can be made par
+  std::unique_ptr<Model> nonPolyFns(new Model);
+  std::vector<FunctionI*> fns;
+  std::unordered_map<FunctionI*, std::pair<bool, std::vector<FunctionI*>>> fnsToMakePar;
+  for (auto& f : m->functions()) {
+    if (f.id() == env.envi().constants.ids.mzn_reverse_map_var ||
+        f.ti()->type().bt() == Type::BT_ANN) {
+      continue;
+    }
+    if (f.e() == nullptr) {
+      if (f.isPolymorphic() || f.ti()->type().isPar()) {
+        // Builtin should be able to be called from a par function
+        fnsToMakePar.insert({&f, {true, std::vector<FunctionI*>()}});
+      } else {
+        continue;
+      }
+    } else if (f.isPolymorphic()) {
+      // Don't try to make polymorphic function par, just do this to the concrete instances
+      continue;
+    }
+    nonPolyFns->registerFn(env.envi(), &f);
+    fns.push_back(&f);
+  }
+  nonPolyFns->sortFn(env.envi());
+  for (auto* f : fns) {
+    bool alreadyPar = Expression::type(f->ti()).isPar();
+    if (alreadyPar) {
+      for (int i = 0; i < f->paramCount(); i++) {
+        if (f->param(i)->type().isvar()) {
+          alreadyPar = false;
+          break;
+        }
+      }
+    }
+    if (alreadyPar) {
+      fnsToMakePar.insert({f, {true, std::vector<FunctionI*>()}});
+      continue;
+    }
+    // create par version of parameter types
+    std::vector<Type> tv(f->paramCount());
+    for (int i = 0; i < f->paramCount(); i++) {
+      Type t = f->param(i)->type();
+      t.mkPar(env.envi());
+      t.cv(false);
+      tv[i] = t;
+    }
+    // check if specialised par version of function already exists
+    FunctionI* fi_par = nonPolyFns->matchFn(env.envi(), f->id(), tv, false);
+    alreadyPar = fi_par->ti()->type().isPar();
+    if (alreadyPar) {
+      for (int i = 0; i < fi_par->paramCount(); i++) {
+        if (fi_par->param(i)->type().isvar()) {
+          alreadyPar = false;
+          break;
+        }
+      }
+    }
+    if (alreadyPar) {
+      fnsToMakePar.insert({fi_par, {true, std::vector<FunctionI*>()}});
+      continue;
+    }
+    if (fi_par->e() == nullptr) {
+      continue;
+    }
+    // check if body of f doesn't contain any free variables in lets,
+    // all calls in the body have par versions available,
+    // and all toplevel identifiers used in the body of f are par
+    class CheckParBody : public EVisitor {
+    public:
+      EnvI& env;
+      Model* m;
+      CheckParBody(EnvI& env0, Model* m0) : env(env0), m(m0) {}
+      bool isPar = true;
+      std::vector<FunctionI*> deps;
+      bool enter(Expression* e) const {
+        // if we have already found a var, don't continue
+        return isPar;
+      }
+      void vId(const Id* ident) {
+        if (ident->decl() != nullptr && ident->type().isvar() && ident->decl()->toplevel()) {
+          isPar = false;
+        }
+      }
+      void vLet(const Let* let) {
+        // check if any of the declared variables does not have a RHS
+        for (auto* e : let->let()) {
+          if (auto* vd = Expression::dynamicCast<VarDecl>(e)) {
+            if (vd->e() == nullptr) {
+              isPar = false;
+              break;
+            }
+          }
+        }
+      }
+      void vCall(const Call* c) {
+        if (!c->type().isAnn()) {
+          FunctionI* decl = c->decl();
+          // create par version of parameter types
+          std::vector<Type> tv;
+          for (int i = 0; i < decl->paramCount(); i++) {
+            Type t = decl->param(i)->type();
+            t.mkPar(env);
+            tv.push_back(t);
+          }
+          FunctionI* decl_par = m->matchFn(env, decl->id(), tv, false);
+          if (decl_par == nullptr) {
+            isPar = false;
+            return;
+          }
+          deps.push_back(decl_par);
+        }
+      }
+    } cpb(env.envi(), &*nonPolyFns);
+    top_down(cpb, fi_par->e());
+    if (cpb.isPar) {
+      fnsToMakePar.insert({fi_par, {false, cpb.deps}});
+    }
+  }
+
+  // Repeatedly remove functions whose dependencies cannot be made par
+  bool didRemove;
+  do {
+    didRemove = false;
+    std::vector<FunctionI*> toRemove;
+    for (auto& p : fnsToMakePar) {
+      for (auto* dep : p.second.second) {
+        if (fnsToMakePar.find(dep) == fnsToMakePar.end()) {
+          toRemove.push_back(p.first);
+        }
+      }
+    }
+    if (!toRemove.empty()) {
+      didRemove = true;
+      for (auto* p : toRemove) {
+        fnsToMakePar.erase(p);
+      }
+    }
+  } while (didRemove);
+
+  // Create par versions of remaining functions
+  if (!fnsToMakePar.empty()) {
+    // First step: copy and register functions
+    std::vector<FunctionI*> parFunctions;
+    CopyMap parCopyMap;
+    // Step 1a: enter all global declarations into copy map
+    class EnterGlobalDecls : public EVisitor {
+    public:
+      CopyMap& cm;
+      EnterGlobalDecls(CopyMap& cm0) : cm(cm0) {}
+      void vId(Id* ident) {
+        if (ident->decl() != nullptr && ident->decl()->toplevel()) {
+          cm.insert(ident->decl(), ident->decl());
+        }
+      }
+    } _egd(parCopyMap);
+    for (auto& p : fnsToMakePar) {
+      if (!p.second.first) {
+        for (unsigned int i = 0; i < p.first->paramCount(); i++) {
+          top_down(_egd, p.first->param(i));
+        }
+        if (p.first->capturedAnnotationsVar() != nullptr) {
+          top_down(_egd, p.first->capturedAnnotationsVar());
+        }
+        for (ExpressionSetIter i = p.first->ann().begin(); i != p.first->ann().end(); ++i) {
+          top_down(_egd, *i);
+        }
+        top_down(_egd, p.first->e());
+      }
+    }
+
+    // Step 1b: copy functions
+    for (auto& p : fnsToMakePar) {
+      if (!p.second.first) {
+        GCLock lock;
+        auto* cp = copy(env.envi(), parCopyMap, p.first)->cast<FunctionI>();
+        for (int i = 0; i < cp->paramCount(); i++) {
+          VarDecl* v = cp->param(i);
+          v->ti()->mkPar(env.envi());
+          v->type(v->ti()->type());
+        }
+        cp->ti()->mkPar(env.envi());
+        bool didRegister = m->registerFn(env.envi(), cp, true, false);
+        if (didRegister) {
+          m->addItem(cp);
+          parFunctions.push_back(cp);
+        } else {
+          // A function with par parameters already exists.
+          // This can only happen this can be made par, but the return type was given as var.
+          // Therefore, we can just set the return type to par.
+          assert(p.first->ti()->type().isvar());
+          p.first->ti()->mkPar(env.envi());
+          parFunctions.push_back(p.first);
+        }
+      }
+    }
+
+    // Second step: make function bodies par
+    // (needs to happen in a separate second step so that
+    //  matchFn will find the correct par function from first step)
+    class MakeFnPar : public EVisitor {
+    public:
+      EnvI& env;
+      Model* m;
+      MakeFnPar(EnvI& env0, Model* m0) : env(env0), m(m0) {}
+      bool enter(Expression* e) {
+        Type t(Expression::type(e));
+        t.mkPar(env);
+        t.cv(false);
+        Expression::type(e, t);
+        return true;
+      }
+      void vCall(Call* c) {
+        FunctionI* decl = m->matchFn(env, c, false);
+        c->decl(decl);
+      }
+      void vBinOp(BinOp* bo) {
+        if (bo->decl() != nullptr) {
+          std::vector<Type> ta(2);
+          ta[0] = Expression::type(bo->lhs());
+          ta[1] = Expression::type(bo->rhs());
+          FunctionI* decl = m->matchFn(env, bo->opToString(), ta, false);
+          bo->decl(decl);
+        }
+      }
+      void vUnOp(UnOp* uo) {
+        if (uo->decl() != nullptr) {
+          std::vector<Type> ta(1);
+          ta[0] = Expression::type(uo->e());
+          FunctionI* decl = m->matchFn(env, uo->opToString(), ta, false);
+          uo->decl(decl);
+        }
+      }
+    } _mfp(env.envi(), m);
+
+    for (auto* p : parFunctions) {
+      bottom_up(_mfp, p->e());
+    }
+
+    for (auto* p : parFunctions) {
+      // type-check body again, to enable rewriting of calls like "show"
+      bottomUpTyper.run(p->e());
+      assert(Expression::type(p->e()).isPar());
+    }
+  }
+}
+
 void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
                bool ignoreUndefinedParameters, bool allowMultiAssignment, bool isFlatZinc) {
   auto isChecker =
@@ -3948,251 +4196,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       iter_items(_tsv4, m);
     }
 
-    // Create a par version of each function that returns par and
-    // that has a body that can be made par
-    std::unique_ptr<Model> nonPolyFns(new Model);
-    std::vector<FunctionI*> fns;
-    std::unordered_map<FunctionI*, std::pair<bool, std::vector<FunctionI*>>> fnsToMakePar;
-    for (auto& f : m->functions()) {
-      if (f.id() == env.envi().constants.ids.mzn_reverse_map_var ||
-          f.ti()->type().bt() == Type::BT_ANN) {
-        continue;
-      }
-      if (f.e() == nullptr) {
-        if (f.isPolymorphic() || f.ti()->type().isPar()) {
-          // Builtin should be able to be called from a par function
-          fnsToMakePar.insert({&f, {true, std::vector<FunctionI*>()}});
-        } else {
-          continue;
-        }
-      } else if (f.isPolymorphic()) {
-        // Don't try to make polymorphic function par, just do this to the concrete instances
-        continue;
-      }
-      nonPolyFns->registerFn(env.envi(), &f);
-      fns.push_back(&f);
-    }
-    nonPolyFns->sortFn(env.envi());
-    for (auto* f : fns) {
-      bool alreadyPar = Expression::type(f->ti()).isPar();
-      if (alreadyPar) {
-        for (int i = 0; i < f->paramCount(); i++) {
-          if (f->param(i)->type().isvar()) {
-            alreadyPar = false;
-            break;
-          }
-        }
-      }
-      if (alreadyPar) {
-        fnsToMakePar.insert({f, {true, std::vector<FunctionI*>()}});
-        continue;
-      }
-      // create par version of parameter types
-      std::vector<Type> tv(f->paramCount());
-      for (int i = 0; i < f->paramCount(); i++) {
-        Type t = f->param(i)->type();
-        t.mkPar(env.envi());
-        t.cv(false);
-        tv[i] = t;
-      }
-      // check if specialised par version of function already exists
-      FunctionI* fi_par = nonPolyFns->matchFn(env.envi(), f->id(), tv, false);
-      alreadyPar = fi_par->ti()->type().isPar();
-      if (alreadyPar) {
-        for (int i = 0; i < fi_par->paramCount(); i++) {
-          if (fi_par->param(i)->type().isvar()) {
-            alreadyPar = false;
-            break;
-          }
-        }
-      }
-      if (alreadyPar) {
-        fnsToMakePar.insert({fi_par, {true, std::vector<FunctionI*>()}});
-        continue;
-      }
-      if (fi_par->e() == nullptr) {
-        continue;
-      }
-      // check if body of f doesn't contain any free variables in lets,
-      // all calls in the body have par versions available,
-      // and all toplevel identifiers used in the body of f are par
-      class CheckParBody : public EVisitor {
-      public:
-        EnvI& env;
-        Model* m;
-        CheckParBody(EnvI& env0, Model* m0) : env(env0), m(m0) {}
-        bool isPar = true;
-        std::vector<FunctionI*> deps;
-        bool enter(Expression* e) const {
-          // if we have already found a var, don't continue
-          return isPar;
-        }
-        void vId(const Id* ident) {
-          if (ident->decl() != nullptr && ident->type().isvar() && ident->decl()->toplevel()) {
-            isPar = false;
-          }
-        }
-        void vLet(const Let* let) {
-          // check if any of the declared variables does not have a RHS
-          for (auto* e : let->let()) {
-            if (auto* vd = Expression::dynamicCast<VarDecl>(e)) {
-              if (vd->e() == nullptr) {
-                isPar = false;
-                break;
-              }
-            }
-          }
-        }
-        void vCall(const Call* c) {
-          if (!c->type().isAnn()) {
-            FunctionI* decl = c->decl();
-            // create par version of parameter types
-            std::vector<Type> tv;
-            for (int i = 0; i < decl->paramCount(); i++) {
-              Type t = decl->param(i)->type();
-              t.mkPar(env);
-              tv.push_back(t);
-            }
-            FunctionI* decl_par = m->matchFn(env, decl->id(), tv, false);
-            if (decl_par == nullptr) {
-              isPar = false;
-              return;
-            }
-            deps.push_back(decl_par);
-          }
-        }
-      } cpb(env.envi(), &*nonPolyFns);
-      top_down(cpb, fi_par->e());
-      if (cpb.isPar) {
-        fnsToMakePar.insert({fi_par, {false, cpb.deps}});
-      }
-    }
-
-    // Repeatedly remove functions whose dependencies cannot be made par
-    bool didRemove;
-    do {
-      didRemove = false;
-      std::vector<FunctionI*> toRemove;
-      for (auto& p : fnsToMakePar) {
-        for (auto* dep : p.second.second) {
-          if (fnsToMakePar.find(dep) == fnsToMakePar.end()) {
-            toRemove.push_back(p.first);
-          }
-        }
-      }
-      if (!toRemove.empty()) {
-        didRemove = true;
-        for (auto* p : toRemove) {
-          fnsToMakePar.erase(p);
-        }
-      }
-    } while (didRemove);
-
-    // Create par versions of remaining functions
-    if (!fnsToMakePar.empty()) {
-      // First step: copy and register functions
-      std::vector<FunctionI*> parFunctions;
-      CopyMap parCopyMap;
-      // Step 1a: enter all global declarations into copy map
-      class EnterGlobalDecls : public EVisitor {
-      public:
-        CopyMap& cm;
-        EnterGlobalDecls(CopyMap& cm0) : cm(cm0) {}
-        void vId(Id* ident) {
-          if (ident->decl() != nullptr && ident->decl()->toplevel()) {
-            cm.insert(ident->decl(), ident->decl());
-          }
-        }
-      } _egd(parCopyMap);
-      for (auto& p : fnsToMakePar) {
-        if (!p.second.first) {
-          for (unsigned int i = 0; i < p.first->paramCount(); i++) {
-            top_down(_egd, p.first->param(i));
-          }
-          if (p.first->capturedAnnotationsVar() != nullptr) {
-            top_down(_egd, p.first->capturedAnnotationsVar());
-          }
-          for (ExpressionSetIter i = p.first->ann().begin(); i != p.first->ann().end(); ++i) {
-            top_down(_egd, *i);
-          }
-          top_down(_egd, p.first->e());
-        }
-      }
-
-      // Step 1b: copy functions
-      for (auto& p : fnsToMakePar) {
-        if (!p.second.first) {
-          GCLock lock;
-          auto* cp = copy(env.envi(), parCopyMap, p.first)->cast<FunctionI>();
-          for (int i = 0; i < cp->paramCount(); i++) {
-            VarDecl* v = cp->param(i);
-            v->ti()->mkPar(env.envi());
-            v->type(v->ti()->type());
-          }
-          cp->ti()->mkPar(env.envi());
-          bool didRegister = m->registerFn(env.envi(), cp, true, false);
-          if (didRegister) {
-            m->addItem(cp);
-            parFunctions.push_back(cp);
-          } else {
-            // A function with par parameters already exists.
-            // This can only happen this can be made par, but the return type was given as var.
-            // Therefore, we can just set the return type to par.
-            assert(p.first->ti()->type().isvar());
-            p.first->ti()->mkPar(env.envi());
-            parFunctions.push_back(p.first);
-          }
-        }
-      }
-
-      // Second step: make function bodies par
-      // (needs to happen in a separate second step so that
-      //  matchFn will find the correct par function from first step)
-      class MakeFnPar : public EVisitor {
-      public:
-        EnvI& env;
-        Model* m;
-        MakeFnPar(EnvI& env0, Model* m0) : env(env0), m(m0) {}
-        bool enter(Expression* e) {
-          Type t(Expression::type(e));
-          t.mkPar(env);
-          t.cv(false);
-          Expression::type(e, t);
-          return true;
-        }
-        void vCall(Call* c) {
-          FunctionI* decl = m->matchFn(env, c, false);
-          c->decl(decl);
-        }
-        void vBinOp(BinOp* bo) {
-          if (bo->decl() != nullptr) {
-            std::vector<Type> ta(2);
-            ta[0] = Expression::type(bo->lhs());
-            ta[1] = Expression::type(bo->rhs());
-            FunctionI* decl = m->matchFn(env, bo->opToString(), ta, false);
-            bo->decl(decl);
-          }
-        }
-        void vUnOp(UnOp* uo) {
-          if (uo->decl() != nullptr) {
-            std::vector<Type> ta(1);
-            ta[0] = Expression::type(uo->e());
-            FunctionI* decl = m->matchFn(env, uo->opToString(), ta, false);
-            uo->decl(decl);
-          }
-        }
-      } _mfp(env.envi(), m);
-
-      for (auto* p : parFunctions) {
-        bottom_up(_mfp, p->e());
-      }
-
-      for (auto* p : parFunctions) {
-        // type-check body again, to enable rewriting of calls like "show"
-        bottomUpTyper.run(p->e());
-        assert(Expression::type(p->e()).isPar());
-      }
-    }
+    create_par_versions(env, m, bottomUpTyper);
   }
 
   try {
