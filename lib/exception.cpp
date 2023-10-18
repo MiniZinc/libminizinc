@@ -49,4 +49,12 @@ void InternalError::print(std::ostream& os) const {
      << "The internal error message was: " << std::endl
      << "\"" << msg() << "\"" << std::endl;
 }
+
+void BadOption::print(std::ostream& os) const {
+  os << msg() << std::endl;
+  if (!_usage.empty()) {
+    os << _usage << std::endl;
+  }
+}
+
 }  // namespace MiniZinc

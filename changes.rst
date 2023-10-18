@@ -42,7 +42,9 @@ Changes:
    structured types for user data. This is a breaking change for those who
    have developed a custom visualisation using the experimental API.
 -  ``(strictly_)decreasing`` will now always be rewritten into
-   ``(strictly_)increasing`` and now supports for option types.
+   ``(strictly_)increasing`` and has support for option types.
+-  Support output of command line argument parsing errors in ``--json-stream``
+   mode.
 
 Bug fixes:
 ^^^^^^^^^^

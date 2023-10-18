@@ -135,7 +135,7 @@ class MznSolver {
 private:
   const Timer _startTime;
   SolverInitialiser _solverInit;
-  enum OptionStatus { OPTION_OK, OPTION_ERROR, OPTION_FINISH };
+  enum OptionStatus { OPTION_OK, OPTION_FINISH };
   /// Solver configurations
   SolverConfigs _solverConfigs;
   Flattener _flt;
@@ -188,10 +188,10 @@ public:
     return _siOpt;
   }
   bool getFlagVerbose() const { return flagVerbose; /*getFlt()->getFlagVerbose();*/ }
-  void printUsage();
+  void printUsage(std::ostream& os);
 
 private:
-  void printHelp(const std::string& selectedSolver = std::string());
+  void printHelp(std::ostream& os, const std::string& selectedSolver = std::string());
   /// Flatten model
   void flatten(const std::string& modelString = std::string(),
                const std::string& modelName = std::string("stdin"));

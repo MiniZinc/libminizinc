@@ -76,6 +76,20 @@ public:
   const char* what() const throw() override { return "time out"; }
 };
 
+class BadOption : public Exception {
+protected:
+  std::string _usage;
+
+public:
+  BadOption(const std::string& msg = "") : Exception(msg) {}
+  ~BadOption() throw() override {}
+  const char* what() const throw() override { return "argument parsing error"; }
+  void print(std::ostream& os) const override;
+
+  void usage(const std::string& usage) { _usage = usage; }
+  const std::string& usage() const { return _usage; }
+};
+
 class ArithmeticError : public Exception {
 public:
   ArithmeticError(const std::string& msg) : Exception(msg) {}
