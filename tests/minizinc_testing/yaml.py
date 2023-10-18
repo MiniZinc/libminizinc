@@ -130,31 +130,39 @@ def range_representer(dumper, data):
     """
     A YAML `!Range l..u` tag
     """
-    scalar = u"{}..{}".format(data.start, data.stop - 1)
-    return dumper.represent_scalar(u"!Range", scalar)
+    scalar = "{}..{}".format(data.start, data.stop - 1)
+    return dumper.represent_scalar("!Range", scalar)
 
 
 yaml.add_representer(range, range_representer, Dumper=Dumper)
 
 
-def range_constructor(loader, node):
-    """
-    A YAML `!Range l..u` tag
-    """
-    value = loader.construct_scalar(node)
-    a, b = map(int, value.split(".."))
-    return range(a, b + 1)
+@scalar("!Range")
+class SetRange:
+    def __init__(self, value):
+        a, b = map(int, value.split(".."))
+        self.value = range(a, b + 1)
 
+    def __eq__(self, other):
+        if isinstance(other, SetRange):
+            other = other.value
+        if isinstance(other, range):
+            other = set(other)
+        return set(self.value) == other
 
-yaml.add_constructor(u"!Range", range_constructor, Loader=Loader)
+    def __repr__(self):
+        return f"{self.value}"
+
+    def get_value(self):
+        return f"{self.value.start}..{self.value.stop - 1}"
 
 
 def dt_representer(dumper, data):
     """
     A YAML `!Duration` tag
     """
-    scalar = u"{}ms".format(data.total_seconds() * 1000)
-    return dumper.represent_scalar(u"!Duration", scalar)
+    scalar = "{}ms".format(data.total_seconds() * 1000)
+    return dumper.represent_scalar("!Duration", scalar)
 
 
 yaml.add_representer(datetime.timedelta, dt_representer, Dumper=Dumper)
@@ -173,7 +181,7 @@ def dt_constructor(loader, node):
         return datetime.timedelta(seconds=float(value[:-1]))
 
 
-yaml.add_constructor(u"!Duration", dt_constructor, Loader=Loader)
+yaml.add_constructor("!Duration", dt_constructor, Loader=Loader)
 
 
 def list_representer(dumper, data):

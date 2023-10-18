@@ -20,7 +20,7 @@ class Unordered:
         try:
             for x in other:
                 items.remove(x)
-            return True
+            return len(items) == 0
         except ValueError:
             return False
 
