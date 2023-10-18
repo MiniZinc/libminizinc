@@ -1,6 +1,7 @@
 include "fzn_strictly_increasing_int.mzn";
 include "fzn_strictly_increasing_int_opt.mzn";
 include "fzn_strictly_increasing_int_reif.mzn";
+include "fzn_strictly_increasing_int_opt_reif.mzn";
 include "fzn_strictly_increasing_bool.mzn";
 include "fzn_strictly_increasing_bool_reif.mzn";
 include "analyse_all_different.mzn";
@@ -30,3 +31,5 @@ predicate strictly_increasing(array[$X] of var opt int: x) =
 predicate strictly_increasing_reif(array[$X] of var int: x, var bool: b) =
     fzn_strictly_increasing_int_reif(array1d(x),b);
 
+predicate strictly_increasing_reif(array[$X] of var opt int: x, var bool: b) =
+    fzn_strictly_increasing_int_opt_reif(array1d(x),b);

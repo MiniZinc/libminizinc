@@ -41,6 +41,8 @@ Changes:
 -  Change the IDE visualisation function ``ide_launch_server()`` to take
    structured types for user data. This is a breaking change for those who
    have developed a custom visualisation using the experimental API.
+-  ``(strictly_)decreasing`` will now always be rewritten into
+   ``(strictly_)increasing`` and now supports for option types.
 
 Bug fixes:
 ^^^^^^^^^^
