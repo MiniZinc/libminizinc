@@ -97,11 +97,11 @@ We require that at most one task runs on any machine using the
 Finally we constrain that at most :mzn:`k` tasks run at any time, a redundant
 constraint that holds on the actual (not optional) tasks.
 
-.. literalinclude:: examples/flexible-js.mzn
+.. literalinclude:: examples/flexible-js/flexible-js.mzn
   :language: minizinc
   :name: ex-flexible-js
-  :caption: Model for flexible job shop scheduling using option types (:download:`flexible-js.mzn <examples/flexible-js.mzn>`).
-  
+  :caption: Model for flexible job shop scheduling using option types (:download:`flexible-js.mzn <examples/flexible-js/flexible-js.mzn>`). :playground:`flexible-js`
+
 .. \pjs{Finish the damn section!}
 
 

@@ -21,9 +21,9 @@ Como nuestro primer ejemplo, imagine que se desea colorear el mapa de Australia,
 
 Esta figura se compone de siete estados diferentes, cada uno de los estados debe de tener un color y cada región adyacentes tiene que poseer diferentes colores.
 
-.. literalinclude:: examples/aust_es.mzn
+.. literalinclude:: examples/aust/aust.mzn
   :language: minizinc
-  :caption: Un modelo de MiniZinc :download:`aust_es.mzn <examples/aust_es.mzn>` para colorear los estados y territorios en Australia
+  :caption: Un modelo de MiniZinc :download:`aust.mzn <examples/aust/aust.mzn>` para colorear los estados y territorios en Australia
   :name: ex-aust
 
 Este problema se puede modelar muy fácil en MiniZinc. El modelo se muestra en :numref:`ex-aust`.
@@ -218,9 +218,9 @@ Podemos evaluar nuestro modelo escribiendo
 
 .. code-block:: bash
 
-  $ mzn-gecode aust_es.mzn
+  $ mzn-gecode aust.mzn
 
-en donde :download:`aust_es.mzn <examples/aust_es.mzn>` es el nombre del archivo que contiene nuestro modelo MiniZinc.
+en donde :download:`aust.mzn <examples/aust/aust.mzn>` es el nombre del archivo que contiene nuestro modelo MiniZinc.
 Se debe de utilizar la extensión de archivo ``.mzn`` para indicar un modelo MiniZinc.
 El comando ``mzn-gecode`` utiliza el *solver* de dominios finitos Gecode para evaluar nuestro modelo.
 
@@ -252,9 +252,9 @@ La pregunta es, ¿cuántos de cada tipo de pastel debemos hornear para la fiesta
 
 A continuación se muestra el posible modelo de MiniZinc en :numref:`ex-cakes`.
 
-.. literalinclude:: examples/cakes_es.mzn
+.. literalinclude:: examples/cakes/cakes.mzn
   :language: minizinc
-  :caption: Modelo para determinar cuántos pasteles de banana y chocolate para hornear para la fiesta de la escuela (:download:`cakes_es.mzn <examples/cakes_es.mzn>`)
+  :caption: Modelo para determinar cuántos pasteles de banana y chocolate para hornear para la fiesta de la escuela (:download:`cakes.mzn <examples/cakes/cakes.mzn>`)
   :name: ex-cakes
 
 .. index::
@@ -340,9 +340,9 @@ Incluso mejor sería establecer el valor de estos parámetros en un archivo de d
 
 Los archivos de datos deben tener la extensión de archivo ``.dzn`` para indicar un archivo de datos MiniZinc y un modelo se puede ejecutar con cualquier número de archivos de datos (aunque una variable/parámetro sólo se puede asignar un valor en un archivo).
 
-.. literalinclude:: examples/cakes2_es.mzn
+.. literalinclude:: examples/cakes2/cakes2.mzn
   :language: minizinc
-  :caption: Modelo independiente de los datos para determinar cuántos pasteles de banana y chocolate para hornear para la fiesta de la escuela (:download:`cakes2_es.mzn <examples/cakes2_es.mzn>`)
+  :caption: Modelo independiente de los datos para determinar cuántos pasteles de banana y chocolate para hornear para la fiesta de la escuela (:download:`cakes2.mzn <examples/cakes2/cakes2.mzn>`)
   :name: ex-cakes2
 
 Nuestro nuevo modelo se muestra en :numref:`ex-cakes2`.
@@ -350,15 +350,15 @@ Podemos ejecutarlo usando el comando
 
 .. code-block: bash
 
-  $ mzn-gecode cakes2_es.mzn pantry.dzn
+  $ mzn-gecode cakes2.mzn pantry.dzn
 
-donde el archivo de datos :download:`pantry_es.dzn <examples/pantry_es.dzn>` es definido en
-:numref:`fig-pantry1`. Esto da el mismo resultado que :download:`cakes_es.mzn <examples/cakes_es.mzn>`.
+donde el archivo de datos :download:`pantry.dzn <examples/cakes2/pantry.dzn>` es definido en
+:numref:`fig-pantry1`. Esto da el mismo resultado que :download:`cakes.mzn <examples/cakes/cakes.mzn>`.
 El resultado de la ejecución del comando
 
 .. code-block:: bash
 
-  $ mzn-gecode cakes2_es.mzn pantry2_es.dzn
+  $ mzn-gecode cakes2.mzn pantry2.dzn
 
 con un conjunto de datos alternativo definido en
 :numref:`fig-pantry2` is
@@ -370,7 +370,7 @@ con un conjunto de datos alternativo definido en
   ----------
   ==========
 
-Si eliminamos la instrucción de salida de :download:`cakes_es.mzn <examples/cakes_es.mzn>` entonces MiniZinc utilizará una salida predeterminada. En este caso, la salida resultante será
+Si eliminamos la instrucción de salida de :download:`cakes.mzn <examples/cakes/cakes.mzn>` entonces MiniZinc utilizará una salida predeterminada. En este caso, la salida resultante será
 
 .. code-block:: none
 
@@ -383,14 +383,14 @@ Si eliminamos la instrucción de salida de :download:`cakes_es.mzn <examples/cak
 
   A MiniZinc model with no output will output a line for each decision variable with its value, unless it is assigned an expression on its declaration. Note how the output is in the form of a correct datafile.
 
-.. literalinclude:: examples/pantry_es.dzn
+.. literalinclude:: examples/cakes2/pantry.dzn
   :language: minizinc
-  :caption: Ejemplo de archivo de datos para :download:`cakes2_es.mzn <examples/cakes2_es.mzn>` (:download:`pantry_es.dzn <examples/pantry_es.dzn>`)
+  :caption: Ejemplo de archivo de datos para :download:`cakes2.mzn <examples/cakes2/cakes2.mzn>` (:download:`pantry.dzn <examples/cakes2/pantry.dzn>`)
   :name: fig-pantry1
 
-.. literalinclude:: examples/pantry2_es.dzn
+.. literalinclude:: examples/cakes2/pantry2.dzn
   :language: minizinc
-  :caption: Ejemplo de archivo de datos para :download:`cakes2_es.mzn <examples/cakes2_es.mzn>` (:download:`pantry2_es.dzn <examples/pantry2_es.dzn>`)
+  :caption: Ejemplo de archivo de datos para :download:`cakes2.mzn <examples/cakes2/cakes2.mzn>` (:download:`pantry2.dzn <examples/cakes2/pantry2.dzn>`)
   :name: fig-pantry2
 
 Se pueden introducir pequeños archivos de datos sin crear un archivo de datos ``.dzn``, usando una :index:`bandera en la línea de comandos <data file;command line>`
@@ -399,14 +399,14 @@ en donde *cadena* es el contenido del archivo de datos. Por ejemplo, el comando
 
 .. code-block:: bash
 
-  $ mzn-gecode cakes2_es.mzn -D \
+  $ mzn-gecode cakes2.mzn -D \
        "flour=4000;banana=6;sugar=2000;butter=500;cocoa=500;"
 
 dará idénticos resultados que
 
 .. code-block:: bash
 
-  $ mzn-g12fd cakes2_es.mzn pantry_es.dzn
+  $ mzn-g12fd cakes2.mzn pantry.dzn
 
 Los archivos de datos sólo pueden contener instrucciones de asignación para variables de decisión y parámetros en el modelo o modelos a los que están destinados.
 
@@ -435,16 +435,16 @@ Considere un problema de tomar un préstamo a corto por un año, el cual será r
 
 Un modelo para esto se muestra en :numref:`ex-loan`. Utiliza un cálculo de interés simple para calcular el saldo después de cada trimestre.
 
-.. literalinclude:: examples/loan_es.mzn
+.. literalinclude:: examples/loan/loan.mzn
   :language: minizinc
-  :caption: Modelo para determinar las relaciones entre un préstamo de 1 año y lo reembolsado cada trimestre (:download:`loan_es.mzn <examples/loan_es.mzn>`)
+  :caption: Modelo para determinar las relaciones entre un préstamo de 1 año y lo reembolsado cada trimestre (:download:`loan.mzn <examples/loan/loan.mzn>`)
   :name: ex-loan
 
 Tenga en cuenta que declaramos una variable flotante ``f`` similar a una variable entera utilizando la palabra clave :mzn:`float` en lugar de :mzn:`int`.
 
 Podemos utilizar el mismo modelo para responder a una serie de preguntas diferentes.
 La primera pregunta es: Si tomo prestado $1000 al 4% y debo pagar $260 por trimestre, cuánto puedo terminar debiendo?.
-Esta pregunta está codificada por el archivo de datos :download:`loan1_es.dzn <examples/loan1_es.dzn>`.
+Esta pregunta está codificada por el archivo de datos :download:`loan1.dzn <examples/loan/loan1.dzn>`.
 
 Puesto que deseamos utilizar variables de números reales y restricción, necesitamos usar un *solver* que soporte este tipo de problema.
 Un solver adecuado sería uno que soporta la programación lineal entera mixta.
@@ -453,7 +453,7 @@ La salida al ejecutar el comando ``mzn-cbc``:
 
 .. code-block:: bash
 
-  $ mzn-cbc loan_es.mzn loan1_es.dzn
+  $ mzn-cbc loan.mzn loan1.dzn
 
 La salida es
 
@@ -464,12 +464,12 @@ La salida es
   ----------
 
 La segunda pregunta es: Si tomo prestado $1000 al 4% y no debo nada al final, ¿cuánto tengo que pagar?.
-Esta pregunta está codificada por el archivo de datos :download:`loan2_es.dzn <examples/loan2_es.dzn>`.
+Esta pregunta está codificada por el archivo de datos :download:`loan2.dzn <examples/loan/loan2.dzn>`.
 La salida al ejecutar el comando
 
 .. code-block:: bash
 
-  $ mzn-cbc loan_es.mzn loan2_es.dzn
+  $ mzn-cbc loan.mzn loan2.dzn
 
 La salida es
 
@@ -480,12 +480,12 @@ La salida es
   ----------
 
 La tercera pregunta, es si puedo pagar $250 por trimestre, ¿cuánto puedo pedir prestado al 4% para terminar por no pagar nada?.
-Esta pregunta está codificada por el archivo de datos :download:`loan3_es.dzn <examples/loan3_es.dzn>`.
+Esta pregunta está codificada por el archivo de datos :download:`loan3.dzn <examples/loan/loan3.dzn>`.
 La salida al ejecutar el comando
 
 .. code-block:: bash
 
-  $ mzn-g12mip loan_es.mzn loan3_es.dzn
+  $ mzn-g12mip loan.mzn loan3.dzn
 
 La salida es:
 
@@ -495,17 +495,17 @@ La salida es:
   por trimestre para 1 año deja 0.00 debido
   ----------
 
-.. literalinclude:: examples/loan1_es.dzn
+.. literalinclude:: examples/loan/loan1.dzn
   :language: minizinc
-  :caption: Ejemplo de archivo de datos para :download:`loan_es.mzn <examples/loan_es.mzn>` (:download:`loan1_es.dzn <examples/loan1_es.dzn>`)
+  :caption: Ejemplo de archivo de datos para :download:`loan.mzn <examples/loan/loan.mzn>` (:download:`loan1.dzn <examples/loan/loan1.dzn>`)
 
-.. literalinclude:: examples/loan2_es.dzn
+.. literalinclude:: examples/loan/loan2.dzn
   :language: minizinc
-  :caption: Ejemplo de archivo de datos para :download:`loan_es.mzn <examples/loan_es.mzn>` (:download:`loan2.dzn <examples/loan2_es.dzn>`)
+  :caption: Ejemplo de archivo de datos para :download:`loan.mzn <examples/loan/loan.mzn>` (:download:`loan2.dzn <examples/loan/loan2.dzn>`)
 
-.. literalinclude:: examples/loan3_es.dzn
+.. literalinclude:: examples/loan/loan3.dzn
   :language: minizinc
-  :caption: Ejemplo de archivo de datos para :download:`loan_es.mzn <examples/loan_es.mzn>` (:download:`loan3_es.dzn <examples/loan3_es.dzn>`)
+  :caption: Ejemplo de archivo de datos para :download:`loan.mzn <examples/loan/loan.mzn>` (:download:`loan3.dzn <examples/loan/loan3.dzn>`)
 
 
 .. defblock:: Operadores de Coma Flotante

@@ -20,7 +20,7 @@ adding ``--allow-multiple-assignments`` option if ``--output-objective`` was use
 some variables inside let constructs need to be assigned, a solver has to be invoked for the
 smaller instance remaining after fixing the supplied values. For example, for the following model:
 
-.. code-block:: none
+.. code-block:: minizinc
 
   var int: a;
   var float: b = a;
@@ -46,7 +46,7 @@ checking by variable value substitution, run, e.g.,
 
 .. code-block:: bash
 
-  mzn-test.py --solver GECODE model.mzn data.dzn
+  mzn-test.py --solver gecode model.mzn data.dzn
 
 Moreover, ``mzn-test.py`` provides facility to run a list of instances and compare results
 from various test runs and different solvers.
@@ -88,18 +88,18 @@ Basic checker models
 
 At its core, a checker model takes each solution that a solver produces as input, and outputs whether the solution is correct or not. Let's use the simple map colouring model from the tutorial as an example. Here is the model again:
 
-.. literalinclude:: examples/aust.mzn
+.. literalinclude:: examples/aust-checker/aust.mzn
   :language: minizinc
-  :caption: A MiniZinc model :download:`aust.mzn <examples/aust.mzn>` for colouring the states and territories in Australia
+  :caption: A MiniZinc model :download:`aust.mzn <examples/aust-checker/aust.mzn>` for colouring the states and territories in Australia :playground:`aust-checker`
   :name: ex-aust-2
 
 A checker model for this model requires the values of the variables :mzn:`wa`, :mzn:`nt`, and so on, for each solution, and then has to test whether all constraints hold. The output of the checker model should contain a line starting with ``CORRECT`` if the solution passes the test, or ``INCORRECT`` if it doesn't.
 
 Since these values will be fixed in any solution, checker models simply declare parameters with the same name as the model variables:
 
-.. literalinclude:: examples/aust.mzc.mzn
+.. literalinclude:: examples/aust-checker/aust.mzc.mzn
   :language: minizinc
-  :caption: A MiniZinc checker model :download:`aust.mzc.mzn <examples/aust.mzc.mzn>` for the map colouring problem
+  :caption: A MiniZinc checker model :download:`aust.mzc.mzn <examples/aust-checker/aust.mzc.mzn>` for the map colouring problem :playground:`aust-checker`
   :name: ex-aust-check
 
 Running the model and the checker will produce output like this:
@@ -123,9 +123,9 @@ The basic checker model above only reports whether the solutions satisfy the con
 
 We can use standard MiniZinc functionality to provide much more detailed feedback. The following checker model introduces a helper function :mzn:`check` which outputs a detailed error message if a constraint doesn't hold. The results of all the checks are combined, and if any of the constraints was violated, the output is ``INCORRECT``, otherwise it is ``CORRECT``.
 
-.. literalinclude:: examples/aust-2.mzc.mzn
+.. literalinclude:: examples/aust-checker-2/aust-2.mzc.mzn
   :language: minizinc
-  :caption: A checker model :download:`aust-2.mzc.mzn <examples/aust-2.mzc.mzn>` for the map colouring problem with more detailed error messages
+  :caption: A checker model :download:`aust-2.mzc.mzn <examples/aust-checker-2/aust-2.mzc.mzn>` for the map colouring problem with more detailed error messages :playground:`aust-checker-2`
   :name: ex-aust-check-2
 
 However, the checker model will only report the first violated constraint, since the conjunction operator short-circuits the evaluation when one of its arguments is false. For example, if we remove all constraints from the original model, the output would be:
@@ -142,9 +142,9 @@ However, the checker model will only report the first violated constraint, since
 
 In order to get all error messages, we can force the evaluation of all checkers by creating an auxiliary array of check results:
 
-.. literalinclude:: examples/aust-3.mzc.mzn
+.. literalinclude:: examples/aust-checker-3/aust-3.mzc.mzn
   :language: minizinc
-  :caption: A checker model :download:`aust-3.mzc.mzn <examples/aust-3.mzc.mzn>` for the map colouring problem without short-circuit evaluation
+  :caption: A checker model :download:`aust-3.mzc.mzn <examples/aust-checker-3/aust-3.mzc.mzn>` for the map colouring problem without short-circuit evaluation :playground:`aust-checker-3`
   :name: ex-aust-check-3
 
 Now the output contains all error messages (for the case where the model has no constraints):
@@ -175,9 +175,9 @@ The map colouring example was quite simple because the model did not contain any
 
 For example, the following checker model could be used for the *n*-Queens problem.
 
-.. literalinclude:: examples/nqueens.mzc.mzn
+.. literalinclude:: examples/nqueens-checker/nqueens.mzc.mzn
   :language: minizinc
-  :caption: A checker model :download:`nqueens.mzc.mzn <examples/nqueens.mzc.mzn>` for the n-Queens problem
+  :caption: A checker model :download:`nqueens.mzc.mzn <examples/nqueens-checker/nqueens.mzc.mzn>` for the n-Queens problem :playground:`nqueens-checker`
   :name: ex-nqueens-check
 
 The checker model first makes sure that the solution has the right dimensions (correct array index set, and each variable is assigned a value in the correct domain), and then uses standard MiniZinc constructs to check each constraint.
@@ -203,9 +203,9 @@ minimize the total distance between the pairs of people who are numbered
 consecutively. The decisions are an array :mzn:`pos` which for each person
 gives their position in the line. A correct model for this is given in :numref:`ex-photo`.
 
-.. literalinclude:: examples/photo.mzn
+.. literalinclude:: examples/photo/photo.mzn
   :language: minizinc
-  :caption: A model :download:`photo.mzn <examples/photo.mzn>` for the photo lineup problem
+  :caption: A model :download:`photo.mzn <examples/photo/photo.mzn>` for the photo lineup problem :playground:`photo`
   :name: ex-photo
 
 A critical part of learning how to model this problem is to realise
@@ -220,6 +220,12 @@ variables.
 
 Consider this data file for the photo problem:
 
+.. literalinclude:: examples/photo/photo.dzn
+  :language: minizinc
+  :caption: Example data for the :download:`photo.mzn <examples/photo/photo.mzn>` photo lineup problem (:download:`photo.dzn <examples/photo/photo.dzn>`)  :playground:`photo`
+  :name: ex-photo-data
+
+
 .. code-block:: minizinc
 
   n = 9;
@@ -232,9 +238,9 @@ fail since there is no inverse of this position array, because persons 2 and
 constraint, and only when that succeeds use  the computed values of the 
 :mzn:`who` variables for checking the solution. A checking model for the photo problem might look like this:
 
-.. literalinclude:: examples/photo.mzc.mzn
+.. literalinclude:: examples/photo/photo.mzc.mzn
   :language: minizinc
-  :caption: A checker model :download:`photo.mzc.mzn <examples/photo.mzc.mzn>` for the photo lineup problem
+  :caption: A checker model :download:`photo.mzc.mzn <examples/photo/photo.mzc.mzn>` for the photo lineup problem :playground:`photo`
   :name: ex-photo-checker
 
 The checker model first tests whether the given :mzn:`pos` array satisfies the :mzn:`alldifferent` property (using a custom :mzn:`test` for :mzn:`alldifferent` on a par array). If it passes the test, the :mzn:`inverse` constraint is applied. Otherwise, the :mzn:`who` array is simply fixed to a list of ones.

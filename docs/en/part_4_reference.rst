@@ -3,11 +3,4 @@
 Reference Manual
 ++++++++++++++++
 
-.. toctree::
-   :maxdepth: 2
-
-   spec
-   lib
-   fzn-spec
-   json-stream
-..   api_interfacing
+.. include:: part_4_reference.toc.rst

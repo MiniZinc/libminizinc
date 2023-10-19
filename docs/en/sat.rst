@@ -65,10 +65,10 @@ is an :math:`n \times n` grid of numbers from :math:`1..n` such that
 each number appears exactly once in every row and column. 
 An integer model for latin squares is shown in :numref:`ex-latin`.
 
-.. literalinclude:: examples/latin.mzn
+.. literalinclude:: examples/latin/latin.mzn
   :language: minizinc
   :name: ex-latin
-  :caption: Integer model for Latin Squares (:download:`latin.mzn <examples/latin.mzn>`).
+  :caption: Integer model for Latin Squares (:download:`latin.mzn <examples/latin/latin.mzn>`). :playground:`latin`
 
 The only constraint on the integers is in fact disequality, which is encoded
 in the :mzn:`alldifferent` constraint. 
@@ -81,10 +81,10 @@ We use the :mzn:`exactlyone` predicate to encode that each value is used
 exactly once in every row and every column, as well as to encode that exactly
 one of the Booleans corresponding to integer array element :mzn:`a[i,j]` is true.
 
-.. literalinclude:: examples/latinbool.mzn
+.. literalinclude:: examples/latinbool/latinbool.mzn
   :language: minizinc
   :name: ex-latinbool
-  :caption: Boolean model for Latin Squares (:download:`latinbool.mzn <examples/latinbool.mzn>`).
+  :caption: Boolean model for Latin Squares (:download:`latinbool.mzn <examples/latinbool/latinbool.mzn>`). :playground:`latinbool`
 
 Modelling Cardinality
 ---------------------
@@ -121,19 +121,19 @@ using Boolean variables to determine which
 squares contain a light and which do not, but there is some integer
 arithmetic to consider for the filled squares.
 
-.. literalinclude:: examples/lightup.mzn
+.. literalinclude:: examples/lightup/lightup.mzn
   :language: minizinc
   :name: ex-lightup
-  :caption: SAT Model for the Light Up puzzle (:download:`lightup.mzn <examples/lightup.mzn>`).
+  :caption: SAT Model for the Light Up puzzle (:download:`lightup.mzn <examples/lightup/lightup.mzn>`). :playground:`lightup`
 
 A model for the problem is given in :numref:`ex-lightup`.
 A data file for the problem shown in :numref:`fig-lightup`
 is shown in :numref:`fig-lightupdzn`.
 
-.. literalinclude:: examples/lightup.dzn
+.. literalinclude:: examples/lightup/lightup.dzn
   :language: minizinc
   :name: fig-lightupdzn
-  :caption: Datafile for the Light Up puzzle instance shown in :numref:`fig-lightup`.
+  :caption: Datafile for the Light Up puzzle instance shown in :numref:`fig-lightup` (:download:`lightup.dzn <examples/lightup/lightup.dzn>`). :playground:`lightup`
 
 The model makes use of a Boolean sum predicate
 
@@ -154,15 +154,15 @@ integer. There are a number of ways of modelling such
   (BDD) that encodes the cardinality constraint.
 
 
-.. literalinclude:: examples/bboolsum.mzn
+.. literalinclude:: examples/bboolsum/bboolsum.mzn
   :language: minizinc
   :name: ex-bboolsum
-  :caption: Cardinality constraints by binary adder networks (:download:`bboolsum.mzn <examples/bboolsum.mzn>`).
+  :caption: Cardinality constraints by binary adder networks (:download:`bboolsum.mzn <examples/bboolsum/bboolsum.mzn>`). :playground:`bboolsum`
 
-.. literalinclude:: examples/binarysum.mzn
+.. literalinclude:: examples/binarysum/binarysum.mzn
   :language: minizinc
   :name: ex-binarysum
-  :caption: Code for building binary addition networks (:download:`binarysum.mzn <examples/binarysum.mzn>`).
+  :caption: Code for building binary addition networks (:download:`binarysum.mzn <examples/binarysum/binarysum.mzn>`). :playground:`binarysum`
 
 We can implement :mzn:`bool_sum_eq` using binary adder networks
 using the code shown in :numref:`ex-bboolsum`.
@@ -177,15 +177,15 @@ to the binary addition.
 
 .. \pjs{Add a picture of an adding network}
 
-.. literalinclude:: examples/uboolsum.mzn
+.. literalinclude:: examples/uboolsum/uboolsum.mzn
   :language: minizinc
   :name: ex-uboolsum
-  :caption: Cardinality constraints by sorting networks (:download:`uboolsum.mzn <examples/uboolsum.mzn>`).
+  :caption: Cardinality constraints by sorting networks (:download:`uboolsum.mzn <examples/uboolsum/uboolsum.mzn>`). :playground:`uboolsum`
 
-.. literalinclude:: examples/oesort.mzn
+.. literalinclude:: examples/oesort/oesort.mzn
   :language: minizinc
   :name: ex-oesort
-  :caption: Odd-even merge sorting networks (:download:`oesort.mzn <examples/oesort.mzn>`).
+  :caption: Odd-even merge sorting networks (:download:`oesort.mzn <examples/oesort/oesort.mzn>`). :playground:`oesort`
 
 We can implement :mzn:`bool_sum_eq` using unary sorting networks
 using the code shown in :numref:`ex-uboolsum`.
@@ -203,10 +203,10 @@ sorted lists.
 
 .. \pjs{Add a picture of an adding network}
 
-.. literalinclude:: examples/bddsum.mzn
+.. literalinclude:: examples/bddsum/bddsum.mzn
   :language: minizinc
   :name: ex-bddsum
-  :caption: Cardinality constraints by binary decision diagrams (:download:`bddsum.mzn <examples/bddsum.mzn>`).
+  :caption: Cardinality constraints by binary decision diagrams (:download:`bddsum.mzn <examples/bddsum/bddsum.mzn>`). :playground:`bddsum`
 
 We can implement :mzn:`bool_sum_eq` using binary decision diagrams
 using the code shown in :mzn:`ex:bddsum`.

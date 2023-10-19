@@ -3,8 +3,4 @@
 Overview
 ++++++++
 
-.. toctree::
-
-   intro
-   installation
-   basic_steps
+.. include:: part_1_overview.toc.rst

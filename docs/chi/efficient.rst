@@ -15,10 +15,10 @@ MiniZinc中的有效建模实践
 它也会当问题含有会取很大整型数值的子表达式时表现得很差，因为它们可能会隐式地限制整型变量的大小。
 
 
-.. literalinclude:: examples/grocery.mzn
+.. literalinclude:: examples/grocery/grocery.mzn
   :language: minizinc
   :name: ex-grocery
-  :caption: 没有无界整数的模型 (:download:`grocery.mzn <examples/grocery.mzn>`).
+  :caption: 没有无界整数的模型 (:download:`grocery.mzn <examples/grocery/grocery.mzn>`). :playground:`grocery`
 
 在 :numref:`ex-grocery` 中的中的杂货店问题要找寻4个物品使得它们的价格加起来有7.11元并且乘起来也有7.11元。变量被声明为无界限。运行
 
@@ -99,7 +99,7 @@ MiniZinc中的有效建模实践
 
 例如，我们可以查看在两种计算方式下的内部循环中分别进行了多少次测试。
 
-.. literalinclude:: examples/count1.mzn
+.. literalinclude:: examples/count1/count1.mzn
   :language: minizinc
   :lines: 8-15
 
@@ -112,7 +112,7 @@ MiniZinc中的有效建模实践
 
 表示内部循环进行了64次，而
 
-.. literalinclude:: examples/count2.mzn
+.. literalinclude:: examples/count2/count2.mzn
   :language: minizinc
   :lines: 13-14
 
@@ -127,7 +127,7 @@ MiniZinc中的有效建模实践
 
 注意你可以在 :mzn:`trace` 中使用单独的字符串来帮助你理解模型创建过程中发生了什么。 
 
-.. literalinclude:: examples/count3.mzn
+.. literalinclude:: examples/count3/count3.mzn
   :language: minizinc
   :lines: 13-15
 
@@ -172,10 +172,10 @@ MiniZinc中的有效建模实践
 类似地，由于这个序列是魔术的，我们知道 :mzn:`s[i] * i` 的和肯定也是 :mzn:`n` 。
 使用如下方式把这些约束加入我们的模型 :numref:`ex-magic-series2`.
 
-.. literalinclude:: examples/magic-series2.mzn
+.. literalinclude:: examples/magic-series2/magic-series2.mzn
   :language: minizinc
   :name: ex-magic-series2
-  :caption: 使用冗余约束求解魔术串问题模型 (:download:`magic-series2.mzn <examples/magic-series2.mzn>`).
+  :caption: 使用冗余约束求解魔术串问题模型 (:download:`magic-series2.mzn <examples/magic-series2/magic-series2.mzn>`). :playground:`magic-series2`
 
 像之前那样求解同一个问题
 
@@ -207,10 +207,10 @@ MiniZinc中的有效建模实践
 观察如下问题，我们要找寻1到 :math:`n` 这 :math:`n` 个数字的排列，使得相邻数字的差值也形成一个1到 :math:`n` 的排列。
 :numref:`ex-allint` 中给出了一个用直观的方式来建模此问题的模型。注意变量 :mzn:`u` 被变量 :mzn:`x` 功能性定义。所以最差情况下的搜索空间是 :math:`n^n`。
 
-.. literalinclude:: examples/allinterval.mzn
+.. literalinclude:: examples/allinterval/allinterval.mzn
   :language: minizinc
   :name: ex-allint
-  :caption: 对于CSPlib ``prob007`` 所有间隔系列问题的模型 (:download:`allinterval.mzn <examples/allinterval.mzn>`).
+  :caption: 对于CSPlib ``prob007`` 所有间隔系列问题的模型 (:download:`allinterval.mzn <examples/allinterval/allinterval.mzn>`). :playground:`allinterval`
 
 在这个模型中，数组 :mzn:`x` 代表 :mzn:`n` 个数字的排序。约束自然地可用 :mzn:`alldifferent` 来表示。
 
@@ -228,10 +228,10 @@ MiniZinc中的有效建模实践
 我们可以给这个模型加入两个冗余约束：由于我们知道差值 :mzn:`n-1` 肯定会产生，我们就可以推断出1和 :mzn:`n` 的位置必须是相邻的 :mzn:`abs( y[1] - y[n] ) = 1` 。同时也告诉我们差值 :mzn:`n-1` 的位置就是在 :mzn:`y[1]` 和 :mzn:`y[n]` 中的最早的那个位置，即 :mzn:`v[n-1] = min(y[1], y[n])` 。有了这些之后，我们可以建模此问题为:numref:`ex-allint2` 。
 输出语句从位置数组 :mzn:`y` 里重现了原本的序列 :mzn:`x` 。
 
-.. literalinclude:: examples/allinterval2.mzn
+.. literalinclude:: examples/allinterval2/allinterval2.mzn
   :language: minizinc
   :name: ex-allint2
-  :caption: CSPlib中全区间序列问题 ``prob007`` 的一个逆向模型。 (:download:`allinterval2.mzn <examples/allinterval2.mzn>`).
+  :caption: CSPlib中全区间序列问题 ``prob007`` 的一个逆向模型。 (:download:`allinterval2.mzn <examples/allinterval2/allinterval2.mzn>`). :playground:`allinterval2`
 
 逆向模型跟初始模型有同样的变量和定义域大小。但是相对于给变量 :mzn:`x` 和 :mzn:`u` 的关系建模，逆向模型使用了一个更加非直接的方式来给变量 :mzn:`y` 和 :mzn:`v` 的关系建模。所以我们或许期望初始模型更好些。
 
@@ -252,19 +252,19 @@ MiniZinc中的有效建模实践
 
 当我们对同一个问题有两个模型时，由于每个模型可以给求解器不同的信息，通过把两个模型中的变量系到一起从而同时使用两个模型或许对我们是有帮助的。
 
-.. literalinclude:: examples/allinterval3.mzn
+.. literalinclude:: examples/allinterval3/allinterval3.mzn
   :language: minizinc
   :name: ex-allint3
-  :caption: CSPlib中全区间序列问题 ``prob007`` 的一个双重模型。 (:download:`allinterval3.mzn <examples/allinterval3.mzn>`).
+  :caption: CSPlib中全区间序列问题 ``prob007`` 的一个双重模型。 (:download:`allinterval3.mzn <examples/allinterval3/allinterval3.mzn>`). :playground:`allinterval3`
 
-:numref:`ex-allint3` 给出了一个结合 :download:`allinterval.mzn <examples/allinterval.mzn>` 和 :download:`allinterval2.mzn <examples/allinterval2.mzn>` 特征的双重模型。
-模型的开始来自于 :download:`allinterval.mzn <examples/allinterval.mzn>` 。我们接着介绍了来自于 :download:`allinterval2.mzn <examples/allinterval2.mzn>` 中的变量 :mzn:`y` 和 :mzn:`v` 。我们使用全局约束 :mzn:`inverse` 来把变量绑到一起： :mzn:`inverse(x,y)` 约束 :mzn:`y` 为 :mzn:`x` 的逆向函数（反之亦然），即， :mzn:`x[i] = j <-> y[j] = i` 。 :numref:`ex-inverse` 中给出了它的一个定义。这个模型没有包含把变量 :mzn:`y` 和 :mzn:`v` 关联起来的约束，它们是冗余的（实际上是传播冗余）。所以它们不会给基于传播的求解器多余的信息。 :mzn:`alldifferent` 也不见了。原因是它们被逆向约束变得冗余了（传播冗余）。
+:numref:`ex-allint3` 给出了一个结合 :download:`allinterval.mzn <examples/allinterval/allinterval.mzn>` 和 :download:`allinterval2.mzn <examples/allinterval2/allinterval2.mzn>` 特征的双重模型。
+模型的开始来自于 :download:`allinterval.mzn <examples/allinterval/allinterval.mzn>` 。我们接着介绍了来自于 :download:`allinterval2.mzn <examples/allinterval2/allinterval2.mzn>` 中的变量 :mzn:`y` 和 :mzn:`v` 。我们使用全局约束 :mzn:`inverse` 来把变量绑到一起： :mzn:`inverse(x,y)` 约束 :mzn:`y` 为 :mzn:`x` 的逆向函数（反之亦然），即， :mzn:`x[i] = j <-> y[j] = i` 。 :numref:`ex-inverse` 中给出了它的一个定义。这个模型没有包含把变量 :mzn:`y` 和 :mzn:`v` 关联起来的约束，它们是冗余的（实际上是传播冗余）。所以它们不会给基于传播的求解器多余的信息。 :mzn:`alldifferent` 也不见了。原因是它们被逆向约束变得冗余了（传播冗余）。
 唯一的约束是关于变量 :mzn:`x` 和 :mzn:`u` 和关系的约束以及 :mzn:`y` 和 :mzn:`v` 的冗余约束。
 
-.. literalinclude:: examples/inverse.mzn
+.. literalinclude:: examples/inverse/inverse.mzn
   :language: minizinc
   :name: ex-inverse
-  :caption: 全局约束 ``inverse`` 的一个定义 (:download:`inverse.mzn <examples/inverse.mzn>`).
+  :caption: 全局约束 ``inverse`` 的一个定义 (:download:`inverse.mzn <examples/inverse/inverse.mzn>`). :playground:`inverse`
 
 双重模型的一个优点是我们可以有更多的定义不同搜索策略的视角。运行双重模型，
 
@@ -327,12 +327,12 @@ MiniZinc中的有效建模实践
 
 加入布尔变量,连通约束和对称性破缺约束的完整模型展示在 :numref:`ex-queens-sym` 里面。 我们可以做一些小实验来检查它是否成功的破坏所有对称性。 尝试用不断增加的 :mzn:`n` 运行模型, 比如从1到10, 数一下解的个数(比如,使用 Gecode求解器的 ``-s`` 标志, 或者选择IDE中"Print all solutions"和"Statistics for solving")。 你应该可以获得以下数列的解: 1, 0, 0, 1, 2, 1, 6, 12, 46, 92。 你可以搜索 *On-Line Encyclopedia of Integer Sequences* (http://oeis.org) 来校验这个序列。 
 
-.. literalinclude:: examples/nqueens_sym.mzn
+.. literalinclude:: examples/nqueens_sym/nqueens_sym.mzn
   :language: minizinc
   :name: ex-queens-sym
   :start-after: % 可选的
   :end-before: % 搜索
-  :caption: n皇后问题对称性破缺的部分模型 (full model: :download:`nqueens_sym.mzn <examples/nqueens_sym.mzn>`).
+  :caption: n皇后问题对称性破缺的部分模型 (full model: :download:`nqueens_sym.mzn <examples/nqueens_sym/nqueens_sym.mzn>`). :playground:`nqueens_sym`
 
 
 其他对称的例子

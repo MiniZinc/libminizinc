@@ -29,10 +29,10 @@ Documentation for these is available in :ref:`ch-lib-ide-visualisation`.
 
 An example model with a visualisation for a graph along with a time series line graph of the objective value is shown in :numref:`ex-vis-mst`.
 
-.. literalinclude:: examples/visualisation/vis_mst.mzn
+.. literalinclude:: examples/vis_mst/vis_mst.mzn
   :language: minizinc
   :name: ex-vis-mst
-  :caption: Minimum spanning tree data visualisation (:download:`vis_mst.mzn <examples/visualisation/vis_mst.mzn>`).
+  :caption: Minimum spanning tree data visualisation (:download:`vis_mst.mzn <examples/vis_mst/vis_mst.mzn>`). :playground:`vis_mst`
 
 .. figure:: figures/visualisation/mst.png
   
@@ -63,10 +63,10 @@ In this example, we will create a visualisation for a version of the colouring p
 
 All files should be placed in the same directory so that they are properly served by the IDE's embedded web server.
 
-.. literalinclude:: examples/visualisation/vis_aust.mzn
+.. literalinclude:: examples/vis_aust/vis_aust.mzn
   :language: minizinc
   :name: ex-vis-aust-mzn
-  :caption: Australia colouring data visualisation model (:download:`vis_aust.mzn <examples/visualisation/vis_aust.mzn>`).
+  :caption: Australia colouring data visualisation model (:download:`vis_aust.mzn <examples/vis_aust/vis_aust.mzn>`). :playground:`vis_aust`
 
 The MiniZinc model contains a call to :ref:`ide_launch_server <mzn_ide.visualisation.ide_launch_server>`.
 This initialises the visualisation, telling the IDE what page to load, and the user data to pass to it.
@@ -84,20 +84,20 @@ The :mzn:`output` statement contains an annotation specifying that it should be 
 Note that all output here must be valid JSON.
 The :mzn:`showJSON` function is used here to ensure this.
 
-.. literalinclude:: examples/visualisation/vis_aust.html
+.. literalinclude:: examples/vis_aust/vis_aust.html
   :language: html
   :name: ex-vis-aust-html
-  :caption: Australia colouring data visualisation HTML page (:download:`vis_aust.html <examples/visualisation/vis_aust.html>`).
+  :caption: Australia colouring data visualisation HTML page (:download:`vis_aust.html <examples/vis_aust/vis_aust.html>`). :playground:`vis_aust`
 
 The visualisation page includes the script ``/minizinc-ide.js``, which is provided by the embedded web server.
 This allows access ot the MiniZinc IDE JavaScript API using the ``MiniZincIDE`` object.
 The page contains an SVG element containing the basic parts of the visualisation, ready to be coloured when a solution is produced.
 Another script, ``vis_aust.js`` is loaded with the visualisation logic.
 
-.. literalinclude:: examples/visualisation/vis_aust.js
+.. literalinclude:: examples/vis_aust/vis_aust.js
   :language: javascript
   :name: ex-vis-aust-js
-  :caption: Australia colouring data visualisation script (:download:`vis_aust.js <examples/visualisation/vis_aust.js>`).
+  :caption: Australia colouring data visualisation script (:download:`vis_aust.js <examples/vis_aust/vis_aust.js>`). :playground:`vis_aust`
 
 The script uses an asynchronous immediately invoked function expression, allowing us to easily use the asynchronous functions in the MiniZincIDE JavaScript API.
 ``MiniZincIDE.getUserData()`` allows us to retrieve the data we passed to :mzn:`ide_launch_server`.

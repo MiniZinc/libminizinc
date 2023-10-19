@@ -33,10 +33,10 @@
 我们使用 :mzn:`disjunctive` 全局变量在每个机器上最多有一个任务在运行，这里我们延伸到可选择的任务。最后我们约束任何时候最多有$k$个任务在运行，利用一个在实际（不是可选择的）任务上作用的冗余约束。
 
 
-.. literalinclude:: examples/flexible-js.mzn
+.. literalinclude:: examples/flexible-js/flexible-js.mzn
   :language: minizinc
   :name: ex-flexible-js
-  :caption: 使用选项类型的灵活车间作业调度模型 (:download:`flexible-js.mzn <examples/flexible-js.mzn>`).
+  :caption: 使用选项类型的灵活车间作业调度模型 (:download:`flexible-js.mzn <examples/flexible-js/flexible-js.mzn>`). :playground:`flexible-js`
   
 .. \pjs{Finish the damn section!}
 

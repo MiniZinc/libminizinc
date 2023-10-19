@@ -33,9 +33,9 @@ FlatZinc反映了大多数约束求解器只会求解具有 :math:`\bar{exists} 
 
 思考以下保证两个在长方形箱子的两个圆不会重叠的模型:
 
-.. literalinclude:: examples/cnonoverlap.mzn
+.. literalinclude:: examples/cnonoverlap/cnonoverlap.mzn
   :language: minizinc
-  :caption: 两个不会重叠的圆的模型 (:download:`cnonoverlap.mzn <examples/cnonoverlap.mzn>`).
+  :caption: 两个不会重叠的圆的模型 (:download:`cnonoverlap.mzn <examples/cnonoverlap/cnonoverlap.mzn>`). :playground:`cnonoverlap`
   :name: fig-nonoverlap
 
 简化和求值
@@ -56,7 +56,7 @@ FlatZinc反映了大多数约束求解器只会求解具有 :math:`\bar{exists} 
 
 在简化后, :numref:`fig-nonoverlap` 的模型的变量和参数声明部分变为
 
-.. literalinclude:: examples/cnonoverlap.fzn
+.. literalinclude:: examples/cnonoverlap/cnonoverlap.fzn
   :language: minizinc
   :start-after: % 变量
   :end-before: %
@@ -96,7 +96,7 @@ FlatZinc约束形式
 不同约束形式. 所以 :mzn:`FLOAT01 = x1 - x2` 首先尝试重写为 :mzn:`FLOAT01 + x2 = x1` 
 然后使用 :mzn:`float_plus` 输出基本的约束. 得出的约束形式如下: 
 
-.. literalinclude:: examples/cnonoverlap.fzn
+.. literalinclude:: examples/cnonoverlap/cnonoverlap.fzn
   :language: minizinc
   :start-after: % 约束
   :end-before: %
@@ -115,7 +115,7 @@ MiniZinc尝试通过简单的分析确定新引入变量的上界和下界. 比�
 在后面没有非等约束. 因为一元的不等式可以完全被一个变量的边界表示出来,不等关系可以令 :mzn:`FLOAT05`
 的下界变为 :mzn:`25.0` , 然后这会变得冗余. 最后 :numref:`fig-nonoverlap` 的展平后形式是:
 
-.. literalinclude:: examples/cnonoverlap.fzn
+.. literalinclude:: examples/cnonoverlap/cnonoverlap.fzn
   :language: minizinc
 
 目标函数
@@ -139,9 +139,9 @@ MiniZinc 就像展平约束一样, 展平最小化和最大化目标函数. 跟�
 
 .. \pjs{Maybe use the equation from SEND-MORE-MONEY instead?}
 
-.. literalinclude:: examples/linear.mzn
+.. literalinclude:: examples/linear/linear.mzn
   :language: minizinc
-  :caption: 说明线性约束展平的MiniZinc模型 (:download:`linear.mzn <examples/linear.mzn>`).
+  :caption: 说明线性约束展平的MiniZinc模型 (:download:`linear.mzn <examples/linear/linear.mzn>`). :playground:`linear`
   :name: fig-lflat
 
 考虑在 :numref:`fig-lflat` 中的模型. 这里并没有为所有子表达式 :math:`3*x`, :math:`3*x - y` , :math:`x * z` , :math:`3*x - y + x*z` ,
@@ -316,7 +316,7 @@ MiniZinc支持多维数组,但是(目前来说)FlatZinc只支持单维度数组.
   
 考虑在有限元平面模型 :numref:`ex-laplace`: 的Laplace等式约束:
 
-.. literalinclude:: examples/laplace.mzn
+.. literalinclude:: examples/laplace/laplace.mzn
   :language: minizinc
   :start-after: % arraydec
   :end-before: % sides
@@ -437,7 +437,7 @@ FlatZinc模型包含了只有变量和参数声明,和一系列原始的约束. 
 
 考虑 :numref:`ex-magic-series` 中的魔术序列问题.
 
-.. literalinclude:: examples/magic-series.mzn
+.. literalinclude:: examples/magic-series/magic-series.mzn
   :language: minizinc
   :end-before: solve satisfy
 

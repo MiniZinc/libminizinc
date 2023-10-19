@@ -20,7 +20,7 @@ To run the model file ``model.mzn`` with data file ``data.dzn`` using the Gecode
 
 .. code-block:: bash
 
-  $ minizinc --solver Gecode model.mzn data.dzn
+  $ minizinc --solver gecode model.mzn data.dzn
 
 This would result in the output
 
@@ -34,13 +34,13 @@ However, each of the three functions can also be accessed individually. For exam
 
 .. code-block:: bash
 
-  $ minizinc -c --solver Gecode model.mzn data.dzn
+  $ minizinc -c --solver gecode model.mzn data.dzn
 
 This will result in two new files, ``model.fzn`` and ``model.ozn``, being output in the same directory as ``model.mzn``. You could then run a target solver directly on the ``model.fzn`` file, or use ``minizinc``:
 
 .. code-block:: bash
 
-  $ minizinc --solver Gecode model.fzn
+  $ minizinc --solver gecode model.fzn
 
 You will see that the solver produces output in a standardised form, but not the output prescribed by the output item in the model:
 
@@ -54,7 +54,7 @@ The translation from this output to the form specified in the model is encoded i
 
 .. code-block:: bash
 
-  $ minizinc --solver Gecode model.fzn | minizinc --ozn-file model.ozn
+  $ minizinc --solver gecode model.fzn | minizinc --ozn-file model.ozn
 
 These are the most basic command line options that you need in order to compile and run models and translate their output. The next section lists all available command line options in detail. :numref:`sec-cmdline-conffiles` explains how new solvers can be added to the system.
 
@@ -118,8 +118,8 @@ These options control the general behaviour of the ``minizinc`` tool.
     command). You can select a solver by name, id, or tag, and add a specific
     version. For example, to select a mixed-integer programming solver, 
     identified by the ``mip`` tag, you can use ``--solver mip``. To select
-    a specific version of Gurobi (in case you have two versions installed),
-    use ``--solver Gurobi@7.5.2``. Instead of the name you can also use
+    a specific version of Gecode (in case you have two versions installed),
+    use ``--solver Gecode@6.3.0``. Instead of the name you can also use
     the solver's identifier, e.g. ``--solver org.gecode.gecode``.
     
     The second form of the command selects the solver from the given

@@ -3,13 +3,4 @@
 Un Tutorial de MiniZinc
 +++++++++++++++++++++++
 
-.. toctree::
-
-   modelling
-   modelling2
-   predicates
-   optiontypes
-   mzn_search
-   efficient
-   sat
-   flattening
+.. include:: part_2_tutorial.toc.rst

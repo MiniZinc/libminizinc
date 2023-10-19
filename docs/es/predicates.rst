@@ -43,7 +43,7 @@ Un uso de :mzn:`alldifferent` tiene la forma
 El argumento es una matriz de variables enteras.
 
 La restricción :mzn:`alldifferent` es una de las restricciones globales más estudiadas y utilizadas en la programación de restricciones. Se usa para definir subproblemas de asignación y existen propagadores globales eficientes para :mzn:`alldifferent`.
-Los modelos :download:`send-more-money_es.mzn <examples/send-more-money_es.mzn>` (:numref:`ex-smm`) y :download:`sudoku_es.mzn <examples/sudoku_es.mzn>` (:numref:`ex-sudoku`) son ejemplos de modelos que usan :mzn:`alldifferent`.
+Los modelos :download:`send-more-money.mzn <examples/send-more-money/send-more-money.mzn>` (:numref:`ex-smm`) y :download:`sudoku.mzn <examples/sudoku/sudoku.mzn>` (:numref:`ex-sudoku`) son ejemplos de modelos que usan :mzn:`alldifferent`.
 
 
 
@@ -63,15 +63,15 @@ La restricción :mzn:`cumulative` se usa para describir el uso acumulado de recu
 
 Requiere que un conjunto de tareas proporcionadas por las horas de inicio :mzn:`s`, duraciones :mzn:`d` y requisitos de recursos :mzn:`r`, nunca requiera más que un límite global de recursos :mzn:`b` en cualquier momento.
 
-.. literalinclude:: examples/moving_es.mzn
+.. literalinclude:: examples/moving/moving.mzn
   :language: minizinc
   :name: ex-moving
-  :caption: Modelo para mover muebles usando ``cumulative`` (:download:`moving_es.mzn <examples/moving_es.mzn>`).
+  :caption: Modelo para mover muebles usando ``cumulative`` (:download:`moving.mzn <examples/moving/moving.mzn>`).
 
-.. literalinclude:: examples/moving_es.dzn
+.. literalinclude:: examples/moving/moving.dzn
   :language: minizinc
   :name: ex-movingd
-  :caption: Datos para mover muebles usando ``cumulative`` (:download:`moving_es.dzn <examples/moving_es.dzn>`).
+  :caption: Datos para mover muebles usando ``cumulative`` (:download:`moving.dzn <examples/moving/moving.dzn>`).
 
 El modelo en :numref:`ex-moving` encuentra un cronograma para mover los muebles de modo que cada mueble tenga suficientes manipuladores (personas) y suficientes carritos disponibles durante el movimiento. Se proporciona el tiempo disponible, los manipuladores y los carros, y los datos proporcionan para cada objeto la duración del movimiento, el número de manipuladores y la cantidad de carros requeridos.
 
@@ -79,7 +79,7 @@ Usando los datos mostrados en :mzn:`ex-movingd`, el comando
 
 .. code-block:: bash
 
-  $ mzn-gecode moving_es.mzn moving_es.dzn
+  $ mzn-gecode moving.mzn moving.dzn
 
 Puede dar como resultado la salida
 
@@ -94,13 +94,13 @@ Puede dar como resultado la salida
 
 .. _fig-histogram-a:
 
-.. figure:: figures/handlers_es.*
+.. figure:: figures/handlers.*
 
   Histograma de uso de los manipuladores en movimiento.
 
 .. _fig-histogram-b:
 
-.. figure:: figures/trolleys_es.*
+.. figure:: figures/trolleys.*
 
   Histograma de uso de carritos en el movimiento.
 
@@ -124,15 +124,15 @@ Dependiendo de si las tuplas son booleanas o enteras.
 
 La restricción impone :math:`x \in t` donde consideramos :math:`x` y cada fila en :math:`t` para ser una tupla, y :math:`t` para ser un conjunto de tuplas.
 
-.. literalinclude:: examples/meal_es.mzn
+.. literalinclude:: examples/meal/meal.mzn
   :language: minizinc
   :name: ex-meal
-  :caption: Modelo para la planificación de comidas usando la restricción ``table`` (:download:`meal_es.mzn <examples/meal_es.mzn>`).
+  :caption: Modelo para la planificación de comidas usando la restricción ``table`` (:download:`meal.mzn <examples/meal/meal.mzn>`).
 
-.. literalinclude:: examples/meal_es.dzn
+.. literalinclude:: examples/meal/meal.dzn
   :language: minizinc
   :name: ex-meald
-  :caption: Datos para la planificación de comidas que definen la tabla ``table`` usada (:download:`meal_es.dzn <examples/meal_es.dzn>`).
+  :caption: Datos para la planificación de comidas que definen la tabla ``table`` usada (:download:`meal.dzn <examples/meal/meal.dzn>`).
 
 El modelo en :numref:`ex-meal` busca comidas balanceadas.
 Cada elemento de comida tiene un nombre (codificado como un entero), un kilojulio, proteínas en gramos, sal en miligramos y grasa en gramos, así como un costo en centavos. La relación entre estos elementos se codifica utilizando una restricción :mzn:`table`.
@@ -194,16 +194,16 @@ Podemos codificar este DFA teniendo como estado de inicial :mzn:`1`, los estados
 Tenga en cuenta que el estado 0 en la tabla indica un estado de error.
 El modelo que se muestra en :numref:`ex-nurse` encuentra un cronograma para :mzn:`num_nurses` enfermeras sobre el :mzn:`num_days` días, donde requerimos :mzn:`req_day` enfermeras en el turno de día cada día, y enfermeras :mzn:`req_night` en el turno de noche. Cada cada enfermera toma al menos :mzn:`min_night` turnos nocturnos.
 
-.. literalinclude:: examples/nurse_es.mzn
+.. literalinclude:: examples/nurse/nurse.mzn
   :language: minizinc
   :name: ex-nurse
-  :caption: Modelo para la formación de la enfermera usando la restricción ``regular`` (:download:`nurse_es.mzn <examples/nurse_es.mzn>`)
+  :caption: Modelo para la formación de la enfermera usando la restricción ``regular`` (:download:`nurse.mzn <examples/nurse/nurse.mzn>`)
 
 Ejecutando el comando
 
 .. code-block:: bash
 
-  $ mzn-gecode nurse_es.mzn nurse_es.dzn
+  $ mzn-gecode nurse.mzn nurse.dzn
 
 Encuentra un horario de 10 días para 7 enfermeras, que requiere 3 en cada turno de día y 2 en cada turno de noche, con un mínimo de 2 turnos de noche por enfermera.
 Un posible resultado es:
@@ -242,14 +242,14 @@ Definición de Predicados
 
 Una de las características de modelado más potentes de MiniZinc, es la capacidad del modelador para definir sus propias restricciones de alto nivel. Esto les permite abstraer y modularizar su modelo. También permite la reutilización de restricciones en diferentes modelos y permite el desarrollo de bibliotecas específicas de aplicaciones que definen los tipos y restricciones estándar.
 
-.. literalinclude:: examples/jobshop2_es.mzn
+.. literalinclude:: examples/jobshop2/jobshop2.mzn
   :language: minizinc
   :name: ex-jobshop2
-  :caption: Modelo para la programación de taller de trabajo usando predicados (:download:`jobshop2_es.mzn <examples/jobshop2_es.mzn>`)
+  :caption: Modelo para la programación de taller de trabajo usando predicados (:download:`jobshop2.mzn <examples/jobshop2/jobshop2.mzn>`)
 
 Comenzamos con un ejemplo simple, revisando el problema de programación de la tienda de trabajo de la sección anterior. El modelo se muestra en :numref:`ex-jobshop2`. El elemento de interés es el elemento :mzn:`predicate`:
 
-.. literalinclude:: examples/jobshop2_es.mzn
+.. literalinclude:: examples/jobshop2/jobshop2.mzn
   :language: minizinc
   :lines: 12-13
 
@@ -264,7 +264,7 @@ Por ejemplo:
   test even(int:x) = x mod 2 = 0;
 
 .. \ignore{ % for capture for testing!
-.. $ mzn-g12fd jobshop2_es.mzn jobshop_es.dzn
+.. $ mzn-g12fd jobshop2.mzn jobshop.dzn
 .. } % $
 
 .. defblock:: Definiciones de Predicado
@@ -357,17 +357,17 @@ Las funciones son útiles para codificar expresiones complejas que se utilizan c
 
 El objetivo es minimizar el total de las distancias de Manhattan entre los pares. La función de distancia de Manhattan se puede expresar como:
 
-.. literalinclude:: examples/manhattan_es.mzn
+.. literalinclude:: examples/manhattan/manhattan.mzn
   :language: minizinc
   :lines: 12-14
 
 El modelo completo se muestra en :numref:`ex-manhattan`.
 
 
-.. literalinclude:: examples/manhattan_es.mzn
+.. literalinclude:: examples/manhattan/manhattan.mzn
   :language: minizinc
   :name: ex-manhattan
-  :caption: Modelo para un problema de ubicación numérica que ilustra el uso de funciones (:download:`manhattan_es.mzn <examples/manhattan_es.mzn>`).
+  :caption: Modelo para un problema de ubicación numérica que ilustra el uso de funciones (:download:`manhattan.mzn <examples/manhattan/manhattan.mzn>`).
 
 .. defblock:: Function definitions
 
@@ -397,10 +397,10 @@ Para ayudar a escribir pruebas genéricas y predicados, varias funciones de refl
 Un mejor modelo de tienda de trabajo combina todas las restricciones no superpuestas para una sola máquina en una única restricción disyuntiva.
 Una ventaja de este enfoque es que si bien inicialmente podemos modelar esto simplemente como una conjunción de: restricciones :mzn:`non-overlap`, si el solucionador subyacente tiene un mejor enfoque para resolver las restricciones disyuntivas, podemos usar eso en su lugar, con cambios mínimos en nuestro modelo. El modelo se muestra en :numref:`ex-jobshop3`.
 
-.. literalinclude:: examples/jobshop3_es.mzn
+.. literalinclude:: examples/jobshop3/jobshop3.mzn
   :language: minizinc
   :name: ex-jobshop3
-  :caption: Modelo para la programación de la tienda de trabajo usando un predicado ``disjunctive`` (:download:`jobshop3_es.mzn <examples/jobshop3_es.mzn>`).
+  :caption: Modelo para la programación de la tienda de trabajo usando un predicado ``disjunctive`` (:download:`jobshop3.mzn <examples/jobshop3/jobshop3.mzn>`).
 
 .. index::
   single: global constraint; disjunctive
@@ -412,12 +412,12 @@ La restricción :mzn:`disjunctive` toma una matriz de tiempos de inicio para cad
   predicate disjunctive(array[int] of var int:s, array[int] of int:d);
 
 Podemos usar la restricción disyuntiva para definir la no superposición de tareas como se muestra en :numref:`ex-jobshop3`.
-Suponemos una definición para el predicado :mzn:`disjunctive` está dada por el archivo :download:`disjunctive_es.mzn <examples/disjunctive_es.mzn>` que se incluye en el modelo.
+Suponemos una definición para el predicado :mzn:`disjunctive` está dada por el archivo :download:`disjunctive.mzn <examples/jobshop3/disjunctive.mzn>` que se incluye en el modelo.
 
-Si el sistema subyacente admite :mzn:`disjunctive` directamente, incluirá un archivo :download:`disjunctive_es.mzn <examples/disjunctive_es.mzn>` en su directorio global (con contenido solo la definición de firma anterior).
+Si el sistema subyacente admite :mzn:`disjunctive` directamente, incluirá un archivo :download:`disjunctive.mzn <examples/jobshop3/disjunctive.mzn>` en su directorio global (con contenido solo la definición de firma anterior).
 
 
-Si el sistema que estamos utilizando no es compatible directamente con disyuntivo, podemos dar nuestra propia definición creando el archivo :download:`disjunctive_es.mzn <examples/disjunctive_es.mzn>`.
+Si el sistema que estamos utilizando no es compatible directamente con disyuntivo, podemos dar nuestra propia definición creando el archivo :download:`disjunctive.mzn <examples/jobshop3/disjunctive.mzn>`.
 
 La implementación más simple simplemente hace uso del predicado :mzn:`no_overlap` definido anteriormente.
 Una mejor implementación es hacer uso de una restricción global :mzn:`cumulative` asumiendo que sea compatible con el solucionador subyacente. :numref:`ex-disj` muestra una implementación de :mzn:`disjunctive`.
@@ -427,13 +427,13 @@ Observe cómo usamos la función de reflexión :mzn:`index_set` para
 (b) construir la matriz de utilizaciones de recursos del tamaño apropiado para :mzn:`cumulative`.
 Tenga en cuenta también que utilizamos una versión ternaria :mzn:`assert` aquí.
 
-.. literalinclude:: examples/disjunctive_es.mzn
+.. literalinclude:: examples/jobshop3/disjunctive.mzn
   :language: minizinc
   :name: ex-disj
-  :caption: Definir un predicado ``disjunctive`` utilizando ``cumulative`` (:download:`disjunctive_es.mzn <examples/disjunctive_es.mzn>`).
+  :caption: Definir un predicado ``disjunctive`` utilizando ``cumulative`` (:download:`disjunctive.mzn <examples/jobshop3/disjunctive.mzn>`).
 
 .. \ignore{ % for capture for testing!
-.. $ mzn-g12fd jobshop3_es.mzn jobshop_es.dzn
+.. $ mzn-g12fd jobshop3.mzn jobshop.dzn
 .. } % $
 
 
@@ -467,10 +467,10 @@ Si bien es más útil en :index:`predicate`, :index:`function` y en las definici
 Las variables locales se pueden usar en cualquier lugar y pueden ser bastante útiles para simplificar expresiones complejas.
 :numref:`ex-wedding2` da una versión revisada del modelo de boda, usando variables locales para definir la función :index:`objective`, en lugar de agregar muchas variables al modelo explícitamente.
 
-.. literalinclude:: examples/wedding2_es.mzn
+.. literalinclude:: examples/wedding2/wedding2.mzn
   :language: minizinc
   :name: ex-wedding2
-  :caption: Usar variables locales para definir una función objetivo compleja (:download:`wedding2_es.mzn <examples/wedding2_es.mzn>`).
+  :caption: Usar variables locales para definir una función objetivo compleja (:download:`wedding2.mzn <examples/wedding2/wedding2.mzn>`).
 
 
 Contexto
@@ -607,14 +607,14 @@ Similarly the expression :mzn:`dom(x)` returns a (non-strict) superset of the po
 De nuevo, generalmente son los valores declarados, y de nuevo si no se declara como finito, entonces hay un error.
 
 .. \ignore{ % for capture for testing!
-.. $ mzn-g12fd reflection_es.mzn
+.. $ mzn-g12fd reflection.mzn
 .. } % $
 
 
-.. literalinclude:: examples/reflection_es.mzn
+.. literalinclude:: examples/reflection/reflection.mzn
   :language: minizinc
   :name: ex-reflect
-  :caption: Usar predicados de reflexión (:download:`reflection_es.mzn <examples/reflection_es.mzn>`).
+  :caption: Usar predicados de reflexión (:download:`reflection.mzn <examples/reflection/reflection.mzn>`).
 
 
 Por ejemplo, el modelo descrito en :numref:`ex-reflect` puede mostrar:
@@ -674,10 +674,10 @@ Dado que el uso de la aproximación más ajustada (correcta) conduce a más solu
 Las combinaciones de predicados, variables locales y reflexión de dominio permiten la definición de restricciones globales complejas por descomposición.
 Podemos definir la descomposición basada en el tiempo de la restricción :mzn:`cumulative` utilizando el código que se muestra en :numref:`ex-cumul`.
 
-.. literalinclude:: examples/cumulative_es.mzn
+.. literalinclude:: examples/cumulative/cumulative.mzn
   :language: minizinc
   :name: ex-cumul
-  :caption: Definiendo un predicado ``cumulative`` por descomposición (:download:`cumulative_es.mzn <examples/cumulative_es.mzn>`).
+  :caption: Definiendo un predicado ``cumulative`` por descomposición (:download:`cumulative.mzn <examples/cumulative/cumulative.mzn>`).
 
 La descomposición usa :mzn:`lb` y :mzn:`ub` para determinar el conjunto de veces :mzn:`times` sobre las cuales las tareas podrían estar en rango.
 A continuación, afirma para cada momento :mzn:`t` en :mzn:`times` que la suma de recursos para las tareas activas en el momento :mzn:`t` es menor que la límite :mzn:`b`.
@@ -699,9 +699,9 @@ MiniZinc presenta variables con ámbito local de varias maneras:
 
 Cualquier variable de ámbito local eclipsa las variables de ámbito externo del mismo nombre.
 
-.. literalinclude:: examples/scope_es.mzn
+.. literalinclude:: examples/scope/scope.mzn
   :language: minizinc
   :name: ex-scope
-  :caption: Un modelo para ilustrar alcances de variables (:download:`scope_es.mzn <examples/scope_es.mzn>`).
+  :caption: Un modelo para ilustrar alcances de variables (:download:`scope.mzn <examples/scope/scope.mzn>`).
 
 Por ejemplo, en el modelo que se muestra en :numref:`ex-scope` the :mzn:`x` en :mzn:`-x <= y` es el global :mzn:`x`, el :mzn:`x` en :mzn:`smallx (x)` es el iterador :mzn:`x in 1..u`, mientras que :mzn:`y` en la disyunción es el segundo argumento del predicado.

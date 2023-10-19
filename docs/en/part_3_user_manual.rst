@@ -3,18 +3,4 @@
 User Manual
 +++++++++++
 
-.. toctree::
-
-   command_line
-   minizinc_ide
-   visualisation
-   cpprofiler
-   solvers
-   checkers
-   globalizer
-   find_mus
-   mzn-analyse
-   jupyter
-   python
-   javascript
-   installation_detailed
+.. include:: part_3_user_manual.toc.rst

@@ -308,18 +308,17 @@ documentation:
     - echo 'include "globals.mzn"; include "gecode.mzn"; include "chuffed.mzn"; include "ide/vis.mzn"; include "experimental/all.mzn";' > $CI_PROJECT_DIR/share/minizinc/std/all.mzn
     - ./minizinc/bin/mzn2doc --rst-output --include-stdlib --output-base $CI_PROJECT_DIR/docs/en/lib $CI_PROJECT_DIR/share/minizinc/std/all.mzn
     - ./minizinc/bin/mzn2doc --rst-output --include-stdlib --output-base $CI_PROJECT_DIR/docs/chi/lib $CI_PROJECT_DIR/share/minizinc/std/all.mzn
-    - cd $CI_PROJECT_DIR/docs/en
-    - make html latexpdf
-    - cd $CI_PROJECT_DIR/docs/chi
-    - make html latexpdf
-    - MZNVERSION=$(python "$CI_PROJECT_DIR/docs/utils/minizinc_version.py")
+    - cd $CI_PROJECT_DIR/docs
+    - make BUILDDIR="en/_build" html latexpdf
+    - make SPHINXOPTS="-D language=zh-CN" BUILDDIR="chi/_build" html latexpdf
+    - MZNVERSION=$(python3 "$CI_PROJECT_DIR/docs/utils/minizinc_version.py")
     - mkdir -p $CI_PROJECT_DIR/docs-deploy/doc-${MZNVERSION}/en
     - mkdir -p $CI_PROJECT_DIR/docs-deploy/doc-${MZNVERSION}/chi
     - cp -r $CI_PROJECT_DIR/docs/en/_build/html/* $CI_PROJECT_DIR/docs-deploy/doc-${MZNVERSION}/en/
     - cp $CI_PROJECT_DIR/docs/en/_build/latex/MiniZinc.pdf $CI_PROJECT_DIR/docs-deploy/doc-${MZNVERSION}/en/MiniZinc\ Handbook.pdf
     - cp -r $CI_PROJECT_DIR/docs/chi/_build/html/* $CI_PROJECT_DIR/docs-deploy/doc-${MZNVERSION}/chi/
     - cp $CI_PROJECT_DIR/docs/chi/_build/latex/MiniZinc.pdf $CI_PROJECT_DIR/docs-deploy/doc-${MZNVERSION}/chi/MiniZinc\ Handbook.pdf
-    - python "$CI_PROJECT_DIR/docs/utils/gen_redirects.py" "$CI_PROJECT_DIR/docs-deploy/doc-${MZNVERSION}" "$CI_PROJECT_DIR/docs-deploy/doc-latest"
+    - python3 "$CI_PROJECT_DIR/docs/utils/gen_redirects.py" "$CI_PROJECT_DIR/docs-deploy/doc-${MZNVERSION}" "$CI_PROJECT_DIR/docs-deploy/doc-latest"
   artifacts:
     paths:
       - docs-deploy/

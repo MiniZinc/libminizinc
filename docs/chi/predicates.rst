@@ -42,7 +42,7 @@ Alldifferent
 即，参数是一个整型变量数组。
 
 :mzn:`alldifferent` 是约束规划中被最多研究以及使用的全局约束之一。
-它被用来定义分配子问题，人们也给出了 :mzn:`alldifferent` 的高效全局传播器。 :download:`send-more-money.mzn <examples/send-more-money.mzn>` (:numref:`ex-smm`) 和 :download:`sudoku.mzn <examples/sudoku.mzn>` (:numref:`ex-sudoku`) 是使用 :mzn:`alldifferent` 的模型例子。
+它被用来定义分配子问题，人们也给出了 :mzn:`alldifferent` 的高效全局传播器。 :download:`send-more-money.mzn <examples/send-more-money/send-more-money.mzn>` (:numref:`ex-smm`) 和 :download:`sudoku.mzn <examples/sudoku/sudoku.mzn>` (:numref:`ex-sudoku`) 是使用 :mzn:`alldifferent` 的模型例子。
 
 Cumulative
 ~~~~~~~~~~
@@ -60,15 +60,15 @@ Cumulative
 
 规定对于一个起始时间为 :mzn:`s` ，持续时间为 :mzn:`d` 以及资源需求量为 :mzn:`r` 的任务集合，在任何时间对资源的需求量都不能超过一个全局资源量界限 :mzn:`b` 。
 
-.. literalinclude:: examples/moving.mzn
+.. literalinclude:: examples/moving/moving.mzn
   :language: minizinc
   :name: ex-moving
-  :caption: 使用 ``cumulative`` 来建模搬运家具问题的模型 (:download:`moving.mzn <examples/moving.mzn>`).
+  :caption: 使用 ``cumulative`` 来建模搬运家具问题的模型 (:download:`moving.mzn <examples/moving/moving.mzn>`). :playground:`moving`
 
-.. literalinclude:: examples/moving.dzn
+.. literalinclude:: examples/moving/moving.dzn
   :language: minizinc
   :name: ex-movingd
-  :caption: 使用 ``cumulative`` 来建模搬运家具问题的数据   (:download:`moving.dzn <examples/moving.dzn>`).
+  :caption: 使用 ``cumulative`` 来建模搬运家具问题的数据   (:download:`moving.dzn <examples/moving/moving.dzn>`). :playground:`moving`
 
 :numref:`ex-moving` 中的模型为搬运家具规划一个行程表使得每一份家具在搬运的过程中都有足够的搬用工和足够的手推车可以使用。允许的时间，可以使用的搬运工以及手推车被给出，每个物体的搬运持续时间，需要的搬运工和手推车的数量等数据也被给出。使用 :numref:`ex-movingd` 中的数据，命令 
 
@@ -117,15 +117,15 @@ Table
 
 强制约束了 :math:`x \in t` ，其中 :math:`x` 和 :math:`t` 中的每一行是元组， :math:`t` 是一个元组集合。
 
-.. literalinclude:: examples/meal.mzn
+.. literalinclude:: examples/meal/meal.mzn
   :language: minizinc
   :name: ex-meal
-  :caption: 使用 ``table`` 约束来建模食物规划问题的模型 (:download:`meal.mzn <examples/meal.mzn>`).
+  :caption: 使用 ``table`` 约束来建模食物规划问题的模型 (:download:`meal.mzn <examples/meal/meal.mzn>`). :playground:`meal`
 
-.. literalinclude:: examples/meal.dzn
+.. literalinclude:: examples/meal/meal.dzn
   :language: minizinc
   :name: ex-meald
-  :caption: 定义 ``table`` 的食物规划的数据 (:download:`meal.dzn <examples/meal.dzn>`).
+  :caption: 定义 ``table`` 的食物规划的数据 (:download:`meal.dzn <examples/meal/meal.dzn>`). :playground:`meal`
 
 :numref:`ex-meal` 中的模型寻找均衡的膳食。每一个食物项都有一个名字（用整数表示），卡路里数，蛋白质克数，盐毫克数，脂肪克数以及单位为分的价钱。这些个项之间的关系用一个 :mzn:`table` 约束来描述。
 模型寻找拥有最小花费，最少卡路里数 :mzn:`min_energy` ，最少蛋白质量 :mzn:`min_protein` ，最大盐分 :mzn:`max_salt` 以及脂肪 :mzn:`max_fat` 的膳食。
@@ -179,10 +179,10 @@ Regular
 
 注意状态表中的状态0代表一个错误状态。 :numref:`ex-nurse` 中给出的模型为 :mzn:`num_nurses` 个护士 :mzn:`num_days` 天寻找一个排班，其中我们要求白天有 :mzn:`req_day` 个护士值班，晚上有 :mzn:`req_night` 个护士值班，以及每个护士至少有 :mzn:`min_night` 个夜班。
 
-.. literalinclude:: examples/nurse.mzn
+.. literalinclude:: examples/nurse/nurse.mzn
   :language: minizinc
   :name: ex-nurse
-  :caption: 使用 ``regular`` 约束来建模的护士排班问题模型  (:download:`nurse.mzn <examples/nurse.mzn>`)
+  :caption: 使用 ``regular`` 约束来建模的护士排班问题模型  (:download:`nurse.mzn <examples/nurse/nurse.mzn>`) :playground:`nurse`
 
 运行命令
 
@@ -225,14 +225,14 @@ Regular
 MiniZinc的其中一个最强大的建模特征是建模者可以定义他们自己的高级约束。这就使得他们可以对模型进行抽象化和模块化。也允许了在不同的模型之间重新利用约束以及促使了用来定义标准约束和类型的特殊库应用的发展。
 
 
-.. literalinclude:: examples/jobshop2.mzn
+.. literalinclude:: examples/jobshop2/jobshop2.mzn
   :language: minizinc
   :name: ex-jobshop2
-  :caption: 使用谓词的车间作业调度问题模型 (:download:`jobshop2.mzn <examples/jobshop2.mzn>`)
+  :caption: 使用谓词的车间作业调度问题模型 (:download:`jobshop2.mzn <examples/jobshop2/jobshop2.mzn>`) :playground:`jobshop2`
 
 我们用一个简单的例子开始，回顾下前面章节中的车间作业调度问题。这个模型在 :numref:`ex-jobshop2` 中给出。我们感兴趣的项是 :mzn:`谓词` 项：
 
-.. literalinclude:: examples/jobshop2.mzn
+.. literalinclude:: examples/jobshop2/jobshop2.mzn
   :language: minizinc
   :lines: 12-13
 
@@ -331,17 +331,17 @@ MiniZinc中的函数和谓词一样定义，但是它有一个更一般的返回
 函数对于描述模型中经常用到的复杂表达式非常有用。
 例如，想象下在 :math:`n \times n` 的方格的不同位置上放置数字1到 :math:`n` 使得任何两个数字 :math:`i` 和 :math:`j` 之间的曼哈顿距离比这两个数字其中最大的值减一还要大。我们的目的是最小化数组对之间的总的曼哈顿距离。曼哈顿距离函数可以表达为：
 
-.. literalinclude:: examples/manhattan.mzn
+.. literalinclude:: examples/manhattan/manhattan.mzn
   :language: minizinc
   :lines: 12-14
 
 完整的模型在 :numref:`ex-manhattan` 中给出。
 
 
-.. literalinclude:: examples/manhattan.mzn
+.. literalinclude:: examples/manhattan/manhattan.mzn
   :language: minizinc
   :name: ex-manhattan
-  :caption: 阐释如何使用函数的数字放置问题模型 (:download:`manhattan.mzn <examples/manhattan.mzn>`).
+  :caption: 阐释如何使用函数的数字放置问题模型 (:download:`manhattan.mzn <examples/manhattan/manhattan.mzn>`). :playground:`manhattan`
 
 .. defblock:: 函数定义
 
@@ -371,10 +371,10 @@ MiniZinc中的函数可以有任何返回类型，而不只是固定的返回类
 车间作业问题的一个更好的模型是把所有的对于同一个机器上的不重叠约束结合为一个单个的析取约束。
 这个方法的一个优点是虽然我们只是初始地把它建模成一个 :mzn:`non-overlap` 约束的连接，但是如果下层的求解器对于解决析取约束有一个更好的方法，在对我们的模型最小改变的情况下，我们可以直接使用它。这个模型在 :numref:`ex-jobshop3` 中给出。
 
-.. literalinclude:: examples/jobshop3.mzn
+.. literalinclude:: examples/jobshop3/jobshop3.mzn
   :language: minizinc
   :name: ex-jobshop3
-  :caption: 使用 ``disjunctive`` 谓词的车间作业调度问题模型 (:download:`jobshop3.mzn <examples/jobshop3.mzn>`).
+  :caption: 使用 ``disjunctive`` 谓词的车间作业调度问题模型 (:download:`jobshop3.mzn <examples/jobshop3/jobshop3.mzn>`). :playground:`jobshop3`
 
 .. index::
   single: global constraint; disjunctive
@@ -387,17 +387,17 @@ MiniZinc中的函数可以有任何返回类型，而不只是固定的返回类
   predicate disjunctive(array[int] of var int:s, array[int] of int:d);
 
 在 :numref:`ex-jobshop3` 中，我们可以用这个析取约束定义任务之间不重叠。
-我们假设 :mzn:`disjunctive` 谓词的定义已经在模型中引用的文件 :download:`disjunctive.mzn <examples/disjunctive.mzn>` 中给出。
+我们假设 :mzn:`disjunctive` 谓词的定义已经在模型中引用的文件 :download:`disjunctive.mzn <examples/jobshop3/disjunctive.mzn>` 中给出。
 
-如果下层的系统直接支持 :mzn:`disjunctive` ，则会在它的全局目录下包含一个 :download:`disjunctive.mzn <examples/disjunctive.mzn>` 文件（拥有上述特征定义内容）。
-如果我们使用的系统不直接支持析取，通过创建文件 :download:`disjunctive.mzn <examples/disjunctive.mzn>` ，我们可以给出我们自己的定义。最简单的实现是单单使用上面定义的 :mzn:`no_overlap` 谓词。
+如果下层的系统直接支持 :mzn:`disjunctive` ，则会在它的全局目录下包含一个 :download:`disjunctive.mzn <examples/jobshop3/disjunctive.mzn>` 文件（拥有上述特征定义内容）。
+如果我们使用的系统不直接支持析取，通过创建文件 :download:`disjunctive.mzn <examples/jobshop3/disjunctive.mzn>` ，我们可以给出我们自己的定义。最简单的实现是单单使用上面定义的 :mzn:`no_overlap` 谓词。
 一个更好的实现是利用全局约束 :mzn:`cumulative` ，假如下层求解器支持它的话。 :numref:`ex-disj` 给出了一个 :mzn:`disjunctive` 的实现。
 注意我们使用 :mzn:`index_set` 反射函数来（a）检查 :mzn:`disjunctive` 的参数是有意义的，以及（b）构建 :mzn:`cumulative` 的合适大小的资源利用数组。另外注意这里我们使用了 :mzn:`assert` 的三元组版本。
 
-.. literalinclude:: examples/disjunctive.mzn
+.. literalinclude:: examples/jobshop3/disjunctive.mzn
   :language: minizinc
   :name: ex-disj
-  :caption: 使用 ``cumulative`` 来定义一个 ``disjunctive`` 谓词  (:download:`disjunctive.mzn <examples/disjunctive.mzn>`).
+  :caption: 使用 ``cumulative`` 来定义一个 ``disjunctive`` 谓词  (:download:`disjunctive.mzn <examples/jobshop3/disjunctive.mzn>`). :playground:`jobshop3`
 
 .. \ignore{ % for capture for testing!
 .. $ mzn-g12fd jobshop3.mzn jobshop.dzn
@@ -434,10 +434,10 @@ MiniZinc中的函数可以有任何返回类型，而不只是固定的返回类
 通过使用局部变量来定义目标 :index:`objective` 函数而不是显式地加入很多个变量， :numref:`ex-wedding2` 给出了稳定婚姻模型的一个改进版本。
 
 
-.. literalinclude:: examples/wedding2.mzn
+.. literalinclude:: examples/wedding2/wedding2.mzn
   :language: minizinc
   :name: ex-wedding2
-  :caption: 使用局部变量来定义一个复杂的目标函数 (:download:`wedding2.mzn <examples/wedding2.mzn>`).
+  :caption: 使用局部变量来定义一个复杂的目标函数 (:download:`wedding2.mzn <examples/wedding2/wedding2.mzn>`). :playground:`wedding2`
 
 
 语境
@@ -563,10 +563,10 @@ Let表达式也可以被用来引入局部约束，通常用来约束局部变�
 .. } % $
 
 
-.. literalinclude:: examples/reflection.mzn
+.. literalinclude:: examples/reflection/reflection.mzn
   :language: minizinc
   :name: ex-reflect
-  :caption: 使用反射谓词 (:download:`reflection.mzn <examples/reflection.mzn>`).
+  :caption: 使用反射谓词 (:download:`reflection.mzn <examples/reflection/reflection.mzn>`). :playground:`reflection`
 
 例如， :numref:`ex-reflect` 中的模型或者输出
 
@@ -630,10 +630,10 @@ Let表达式也可以被用来引入局部约束，通常用来约束局部变�
 谓词，局部变量和定义域反射的结合使得复杂全局约束通过分解定义变为可能。
 利用 :numref:`ex-cumul` 中的代码，我们可以定义 :mzn:`cumulative` 约束的根据时间的分解。
 
-.. literalinclude:: examples/cumulative.mzn
+.. literalinclude:: examples/cumulative/cumulative.mzn
   :language: minizinc
   :name: ex-cumul
-  :caption: 利用分解来定义一个 ``谓词`` (:download:`cumulative.mzn <examples/cumulative.mzn>`).
+  :caption: 利用分解来定义一个 ``谓词`` (:download:`cumulative.mzn <examples/cumulative/cumulative.mzn>`). :playground:`cumulative`
 
 这个分解利用 :mzn:`lb` 和 :mzn:`ub` 来决定任务可以执行的时间范围集合。
 接下来，它对 :mzn:`times` 中的每个时间 :mzn:`times` 都断言在此时间 :mzn:`t`  激活的所有任务所需要的资源量总和小于界限 :mzn:`b` 。
@@ -654,9 +654,9 @@ MiniZinc只有一个作用域，所以出现在声明中的所有变量都可以
 
 任何局部作用域变量都会覆盖同名称的外部作用域变量。
 
-.. literalinclude:: examples/scope.mzn
+.. literalinclude:: examples/scope/scope.mzn
   :language: minizinc
   :name: ex-scope
-  :caption: 阐述变量作用域的模型 (:download:`scope.mzn <examples/scope.mzn>`).
+  :caption: 阐述变量作用域的模型 (:download:`scope.mzn <examples/scope/scope.mzn>`). :playground:`scope`
 
 例如，在 :numref:`ex-scope` 中给出的模型中， :mzn:`-x <= y` 中的 :mzn:`x` 是全局 :mzn:`x` ， :mzn:`smallx(x)` 中的 :mzn:`x` 是迭代器 :mzn:`x in 1..u` ，而析取中的 :mzn:`y` 是谓词的第二个参数。

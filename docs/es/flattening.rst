@@ -33,9 +33,9 @@ Las restricciones del solucionador subyacente significan que las expresiones com
 
 Considere el siguiente modelo para asegurarse de que dos círculos en un recuadro rectangular no se superpongan:
 
-.. literalinclude:: examples/cnonoverlap_es.mzn
+.. literalinclude:: examples/cnonoverlap/cnonoverlap.mzn
   :language: minizinc
-  :caption: Modelado de no superposición de dos círculos (:download:`cnonoverlap_es.mzn <examples/cnonoverlap_es.mzn>`).
+  :caption: Modelado de no superposición de dos círculos (:download:`cnonoverlap.mzn <examples/cnonoverlap/cnonoverlap.mzn>`).
   :name: fig-nonoverlap
 
 
@@ -58,7 +58,7 @@ Una excepción a esto, son las grandes matrices de valores paramétricos. Si se 
 
 Después de la simplificación, las partes de declaraciones de variables y parámetros del modelo de :numref:`fig-nonoverlap` se transforman en
 
-.. literalinclude:: examples/cnonoverlap_es.fzn
+.. literalinclude:: examples/cnonoverlap/cnonoverlap.fzn
   :language: minizinc
   :start-after: % Variables
   :end-before: %
@@ -95,7 +95,7 @@ El flatening como su paso final, convierte la forma de la restricción en una fo
 FlatZinc intenta usar un mínimo de diferentes formas de restricción, por ejemplo, la restricción :mzn:`FLOAT01 = x1 - x2` se reescribe primero como :mzn:`FLOAT01 + x2 = x1` y luego se genera usando la restricción primitiva:mzn:`float_plus`.
 La forma de restricción resultante es la siguiente:
 
-.. literalinclude:: examples/cnonoverlap_es.fzn
+.. literalinclude:: examples/cnonoverlap/cnonoverlap.fzn
   :language: minizinc
   :start-after: % Restricciones
   :end-before: %
@@ -111,7 +111,7 @@ Por ejemplo desde :mzn:`FLOAT01 = x1 - x2` y :math:`2.0 \leq` :mzn:`x1` :math:`\
 
 El lector alerta puede haber notado una discrepancia entre la forma aplanada de las restricciones en :ref:`sec-flat-sub` y :ref:`sec-flat-fzn`. En este último, no hay restricción de desigualdad. Como las desigualdades unarias pueden representarse completamente por los límites de una variable, la desigualdad fuerza al límite inferior de :mzn:`FLOAT05` a ser :mzn:`25.0` y luego es redundante. La forma aplanada final del modelo de :numref:`fig-nonoverlap` es:
 
-.. literalinclude:: examples/cnonoverlap_es.fzn
+.. literalinclude:: examples/cnonoverlap/cnonoverlap.fzn
   :language: minizinc
 
 Objetivos
@@ -132,9 +132,9 @@ En donde :math:`a_i` son constantes de coma flotante o entero, y :math:`x_i` son
 
 .. \pjs{Maybe use the equation from SEND-MORE-MONEY instead?}
 
-.. literalinclude:: examples/linear_es.mzn
+.. literalinclude:: examples/linear/linear.mzn
   :language: minizinc
-  :caption: Un modelo MiniZinc para ilustrar el aplanamiento de restricciones lineales (:download:`linear_es.mzn <examples/linear_es.mzn>`).
+  :caption: Un modelo MiniZinc para ilustrar el aplanamiento de restricciones lineales (:download:`linear.mzn <examples/linear/linear.mzn>`).
   :name: fig-lflat
 
 Considere el modelo que se muestra en :numref:`fig-lflat`. En lugar de crear variables para todas las subexpresiones :math:`3 * x`, :math:`3 * x - y`, :math:`x * z`, :math:`3 * x - y + x * z `, :math:`x + y + z`, :math:`d * (x + y + z)`, :math:`19 + d * (x + y + z)`, y :math:`19 + d * (x + y + z) - 4 * d` la traducción intentará crear una restricción lineal grande que capture la mayor cantidad posible de la restricción en una única restricción FlatZinc.
@@ -301,7 +301,7 @@ Esto significa que las matrices multidimensionales se deben asignar a matrices d
 
 Considere las restricciones de ecuación de Laplace definidas para un modelo de placa de elementos finitos en :numref:`ex-laplace`:
 
-.. literalinclude:: examples/laplace_es.mzn
+.. literalinclude:: examples/laplace/laplace.mzn
   :language: minizinc
   :start-after: % Array declaration.
   :end-before: % Lados.
@@ -420,7 +420,7 @@ Otro uso importante de la reificación surge cuando usamos la función de coerci
 
 Considere el problema de la serie mágica de :numref:`ex-magic-series`.
 
-.. literalinclude:: examples/magic-series_es.mzn
+.. literalinclude:: examples/magic-series/magic-series.mzn
   :language: minizinc
   :end-before: solve satisfy
 

@@ -17,7 +17,7 @@
 
 声明
 
-.. literalinclude:: examples/laplace.mzn
+.. literalinclude:: examples/laplace/laplace.mzn
   :language: minizinc
   :lines: 5-9
 
@@ -26,31 +26,31 @@
 
 拉普拉斯方程规定当金属板达到一个稳定状态时，每一个内部点的温度是它的正交相邻点的平均值。约束
 
-.. literalinclude:: examples/laplace.mzn
+.. literalinclude:: examples/laplace/laplace.mzn
   :language: minizinc
   :lines: 16-18
 
 保证了每一个内部点 :math:`(i,j)` 是它的四个正交相邻点的平均值。
 约束
 
-.. literalinclude:: examples/laplace.mzn
+.. literalinclude:: examples/laplace/laplace.mzn
   :language: minizinc
   :lines: 20-24
 
 限制了每一个边的温度必须是相等的，并且给了这些温度名字：``left`` ， ``right`` ， ``top`` 和 ``bottom``。
 而约束
 
-.. literalinclude:: examples/laplace.mzn
+.. literalinclude:: examples/laplace/laplace.mzn
   :language: minizinc
   :lines: 26-30
 
 确保了角的温度（这些是不相干的）被设置为0.0。
 我们可以用 :numref:`ex-laplace` 中给出的模型来决定一个被分成5 :math:`\times` 5个元素的金属板的温度。其中左右下侧的温度为0，上侧的温度为100。
 
-.. literalinclude:: examples/laplace.mzn
+.. literalinclude:: examples/laplace/laplace.mzn
   :language: minizinc
   :name: ex-laplace
-  :caption: 决定稳定状态温度的有限元平板模型 (:download:`laplace.mzn <examples/laplace.mzn>`).
+  :caption: 决定稳定状态温度的有限元平板模型 (:download:`laplace.mzn <examples/laplace/laplace.mzn>`). :playground:`laplace`
 
 运行命令
 
@@ -112,15 +112,15 @@
 我们可以扩展 :numref:`ex-cakes2` 中的MiniZinc模型为一个不限制资源和产品类型的模型去处理这种类型的问题。
 这个模型在 :numref:`ex-prod-planning` 中给出。一个（烤蛋糕问题的）数据文件例子在 :numref:`fig-prod-planning-data` 中给出。
 
-.. literalinclude:: examples/simple-prod-planning.mzn
+.. literalinclude:: examples/prod-planning/prod-planning.mzn
   :language: minizinc
   :name: ex-prod-planning
-  :caption: 简单批量生产计划模型 (:download:`simple-prod-planning.mzn <examples/simple-prod-planning.mzn>`).
+  :caption: 简单批量生产计划模型 (:download:`prod-planning.mzn <examples/prod-planning/prod-planning.mzn>`). :playground:`prod-planning`
 
-.. literalinclude:: examples/simple-prod-planning-data.dzn
+.. literalinclude:: examples/prod-planning/prod-planning-data.dzn
   :language: minizinc
   :name: fig-prod-planning-data
-  :caption: 简单批量生产计划模型的数据文件例子 (:download:`simple-prod-planning-data.dzn <examples/simple-prod-planning-data.dzn>`).
+  :caption: 简单批量生产计划模型的数据文件例子 (:download:`prod-planning-data.dzn <examples/prod-planning/prod-planning-data.dzn>`). :playground:`prod-planning`
 
 这个模型的新特征是只用枚举类型 :index:`枚举类型 <type; enumerated>` 。
 这使得我们可以把资源和产品的选择作为模型的参数。
@@ -418,7 +418,7 @@ MiniZinc同时也提供了集合推导式，它有类似的语法：例如 :mzn:
 
 .. code-block:: bash
 
-  $ minizinc --solver gecode simple-prod-planning.mzn simple-prod-planning-data.dzn
+  $ minizinc --solver gecode prod-planning.mzn prod-planning-data.dzn
 
 输出得到如下结果
 
@@ -443,10 +443,10 @@ MiniZinc同时也提供了集合推导式，它有类似的语法：例如 :mzn:
 
 MiniZinc包含了一个全局约束的库，这些全局约束也可以被用来定义模型。一个例子是 :mzn:`alldifferent` 约束，它要求所有参数中的变量都必须是互相不相等的。
 
-.. literalinclude:: examples/send-more-money.mzn
+.. literalinclude:: examples/send-more-money/send-more-money.mzn
   :language: minizinc
   :name: ex-smm
-  :caption: SEND+MORE=MONEY算式谜题模型 (:download:`send-more-money.mzn <examples/send-more-money.mzn>`)
+  :caption: SEND+MORE=MONEY算式谜题模型 (:download:`send-more-money.mzn <examples/send-more-money/send-more-money.mzn>`) :playground:`send-more-money`
 
 SEND+MORE=MONEY问题要求给每一个字母赋不同的数值使得此算术约束满足。 :numref:`ex-smm` 中的模型使用 :mzn:`alldifferent([S,E,N,D,M,O,R,Y])` 约束表达式来保证每个字母有不同的数字值。在使用了引用项 
 
@@ -495,22 +495,22 @@ MiniZinc提供了一个条件表达式 *if-then-else-endif* 。
   如果 :mzndef:`<布尔型表达式>` 包含决策变量，则表达式的类型-实例化是 :mzndef:`var <T>` ，其中 :mzndef:`<T>` 是
   :mzndef:`<表达式-1>` 和 :mzndef:`<表达式-2>` 的类型，就算是在两个表达式都已经固定了的情况下也是如此。
 
-.. literalinclude:: examples/sudoku.mzn
+.. literalinclude:: examples/sudoku/sudoku.mzn
   :language: minizinc
   :name: ex-sudoku
-  :caption: 广义数独问题的模型 (:download:`sudoku.mzn <examples/sudoku.mzn>`)
+  :caption: 广义数独问题的模型 (:download:`sudoku.mzn <examples/sudoku/sudoku.mzn>`) :playground:`sudoku`
 
 
-.. literalinclude:: examples/sudoku.dzn
+.. literalinclude:: examples/sudoku/sudoku.dzn
   :language: minizinc
   :name: ex-sudokud
-  :caption: 广义数独问题的数据文件例子 (:download:`sudoku.dzn <examples/sudoku.dzn>`)
+  :caption: 广义数独问题的数据文件例子 (:download:`sudoku.dzn <examples/sudoku/sudoku.dzn>`) :playground:`sudoku`
 
 .. _fig-sudoku:
 
 .. figure:: figures/sudoku.*
   
-  :download:`sudoku.dzn <examples/sudoku.dzn>` 代表的问题。
+  :download:`sudoku.dzn <examples/sudoku/sudoku.dzn>` 代表的问题。
 
 在创建复杂模型或者复杂输出时，条件表达式是非常有用的。我们来看下 :numref:`ex-sudoku` 中的数独问题模型。板的初始位置在参数 :mzn:`start` 中给出，其中0代表了一个空的板位置。通过使用以下条件表达式
 
@@ -576,10 +576,10 @@ MiniZinc提供了一个条件表达式 *if-then-else-endif* 。
 
 让我们重新回顾一下 :ref:`sec-modelling` 中的给澳大利亚涂色问题。
 
-.. literalinclude:: examples/aust-enum.mzn
+.. literalinclude:: examples/aust-enum/aust-enum.mzn
   :language: minizinc
   :name: ex-aust-enum
-  :caption: 使用枚举类型的澳大利亚涂色模型 (:download:`aust-enum.mzn <examples/aust-enum.mzn>`).
+  :caption: 使用枚举类型的澳大利亚涂色模型 (:download:`aust-enum.mzn <examples/aust-enum/aust-enum.mzn>`). :playground:`aust-enum`
 
 :numref:`ex-aust-enum` 中的模型声明了一个枚举类型 :mzn:`Color` ，而它必须在数据文件中被定义。每一个州变量被声明为从此枚举类型中取一个值。使用以下方式运行这个程序 
 
@@ -669,15 +669,15 @@ MiniZinc提供了一个条件表达式 *if-then-else-endif* 。
 
   MiniZinc中的布尔型表达式可以按照标准的数学语法来书写。布尔常量是 :mzn:`真`  或 :mzn:`假` ，布尔型操作符有合取，即，与 (``/\``) ，析取，即，或 (``\/``) ，必要条件蕴含 (:mzn:`<-`) ，充分条件蕴含 (:mzn:`->`) ，充分必要蕴含 (:mzn:`<->`) 以及非 (:mzn:`not`)。内建函数 :mzn:`bool2int` 强制转换布尔型为整型：如果参数为真，它返回1，否则返回0。
 
-.. literalinclude:: examples/jobshop.mzn
+.. literalinclude:: examples/jobshop/jobshop.mzn
   :language: minizinc
   :name: ex-jobshop
-  :caption: 车间作业调度问题模型 (:download:`jobshop.mzn <examples/jobshop.mzn>`).
+  :caption: 车间作业调度问题模型 (:download:`jobshop.mzn <examples/jobshop/jobshop.mzn>`). :playground:`jobshop`
 
-.. literalinclude:: examples/jdata.dzn
+.. literalinclude:: examples/jobshop/jdata.dzn
   :language: minizinc
   :name: ex-jdata
-  :caption: 车间作业调度问题数据 (:download:`jdata.dzn <examples/jdata.dzn>`).
+  :caption: 车间作业调度问题数据 (:download:`jdata.dzn <examples/jobshop/jdata.dzn>`). :playground:`jobshop`
 
 :numref:`ex-jobshop` 中的车间作业调度模型给出了一个使用析取建模功能的现实例子。车间作业调度问题中，我们有一个作业集合，每一个包含一系列的在不同机器上的任务：任务 :mzn:`[i,j]` 是在第 :math:`i^{th}` 个作业中运行在第 :math:`j^{th}` 个机器上的任务。每列任务必须按照顺序完成，并且运行在同一个机器上的任何两个任务在时间上都不能重叠。就算是对这个问题的小的实例找最优解都会是很有挑战性的。
 
@@ -731,15 +731,15 @@ MiniZinc提供了一个条件表达式 *if-then-else-endif* 。
 我们可以得到所有的 *最优解* 。
 这个问题有3,444,375个最优解。
 
-.. literalinclude:: examples/stable-marriage.mzn
+.. literalinclude:: examples/stable-marriage/stable-marriage.mzn
   :language: minizinc
   :name: ex-stable-marriage
-  :caption: 稳定婚姻问题模型 (:download:`stable-marriage.mzn <examples/stable-marriage.mzn>`).
+  :caption: 稳定婚姻问题模型 (:download:`stable-marriage.mzn <examples/stable-marriage/stable-marriage.mzn>`). :playground:`stable-marriage`
 
-.. literalinclude:: examples/stable-marriage.dzn
+.. literalinclude:: examples/stable-marriage/stable-marriage.dzn
   :language: minizinc
   :name: ex-sm-data
-  :caption: 稳定婚姻问题模型的数据文件例子。 (:download:`stable-marriage.dzn <examples/stable-marriage.dzn>`).
+  :caption: 稳定婚姻问题模型的数据文件例子。 (:download:`stable-marriage.dzn <examples/stable-marriage/stable-marriage.dzn>`). :playground:`stable-marriage`
 
 MiniZinc中的另外一个强大的建模特征是决策变量可以被用来访问数组 :index:`array access <array; access>` 。作为一个例子，考虑（老式的） *稳定婚姻问题*  。我们有 :mzn:`n` 个（直）女以及 :mzn:`n` 个（直）男。每一个男士有一个女士排行榜，女士也是。我们想给每一个女士/男士找一个丈夫/妻子来使得所有的婚姻按以下意义上来说都是 *稳定的* ：
 
@@ -757,7 +757,7 @@ MiniZinc中的另外一个强大的建模特征是决策变量可以被用来访
 
 前两个约束
 
-.. literalinclude:: examples/stable-marriage.mzn
+.. literalinclude:: examples/stable-marriage/stable-marriage.mzn
   :language: minizinc
   :lines: 13-14
   
@@ -765,7 +765,7 @@ MiniZinc中的另外一个强大的建模特征是决策变量可以被用来访
 
 接下来的两个约束是稳定条件的直接编码：
 
-.. literalinclude:: examples/stable-marriage.mzn
+.. literalinclude:: examples/stable-marriage/stable-marriage.mzn
   :language: minizinc
   :lines: 16-22
 
@@ -793,10 +793,10 @@ MiniZinc中的另外一个强大的建模特征是决策变量可以被用来访
 当参数无效访问数组时，正式的MiniZinc语义会把此情况看成失败来确保参数和决策变量
 的处理方式是一致的，但是会发出警告，因为这种情况下几乎总是会有错误出现。
 
-.. literalinclude:: examples/magic-series.mzn
+.. literalinclude:: examples/magic-series/magic-series.mzn
   :language: minizinc
   :name: ex-magic-series
-  :caption: 魔术串问题模型 (:download:`magic-series.mzn <examples/magic-series.mzn>`).
+  :caption: 魔术串问题模型 (:download:`magic-series.mzn <examples/magic-series/magic-series.mzn>`). :playground:`magic-series`
 
 .. index::
   single: bool2int
@@ -863,17 +863,22 @@ MiniZinc另外一个强大的建模特征是它允许包含整数的集合是决
 很自然地，我们在MiniZinc中使用单个的决策变量来建模： :mzn:`var set of ITEM: knapsack` 其中 :mzn:`ITEM` 是可放置的物品集合。如果数组 :mzn:`weight[i]` 和 :mzn:`profit[i]` 分别
 给出物品 :mzn:`i` 的重量和利润，以及背包可以装载的最大重量是 :mzn:`capacity`，则一个自然的模型在 :numref:`ex-knapsack-binary` 中给出。
 
-.. literalinclude:: examples/knapsack.mzn
+.. literalinclude:: examples/knapsack/knapsack.mzn
   :language: minizinc
   :name: ex-knapsack-binary
-  :caption: 0/1背包问题模型 (:download:`knapsack.mzn <examples/knapsack.mzn>`).
+  :caption: 0/1背包问题模型 (:download:`knapsack.mzn <examples/knapsack/knapsack.mzn>`). :playground:`knapsack`
 
 注意，关键字 :mzn:`var` 出现在 :mzn:`set` 声明之前，表明这个集合本身是决策变量。这就和一个 :mzn:`var` 关键字描述其中元素而不是数组自身的数组形成对比，因为此时数组的基本结构，即它的下标集合，是固定了的。
 
-.. literalinclude:: examples/social-golfers.mzn
+.. literalinclude:: examples/social-golfers/social-golfers.mzn
   :language: minizinc
   :name: ex-social-golfers
-  :caption: 高尔夫联谊问题模型 (:download:`social-golfers.mzn <examples/social-golfers.mzn>`).
+  :caption: 高尔夫联谊问题模型 (:download:`social-golfers.mzn <examples/social-golfers/social-golfers.mzn>`). :playground:`social-golfers`
+
+.. literalinclude:: examples/social-golfers/social-golfers.dzn
+  :language: minizinc
+  :name: ex-social-golfers-data
+  :caption: 高尔夫联谊问题数据 (:download:`social-golfers.dzn <examples/social-golfers/social-golfers.dzn>`). :playground:`social-golfers`
 
 我们来看一个更复杂的关于集合约束的例子， :numref:`ex-social-golfers` 中给出的高尔夫联谊问题。
 这个问题的目的是给 :mzn:`groups` :math:`\times` :mzn:`size` 个高尔夫手在 :mzn:`weeks` 时间内安排一个高尔夫联赛。每一周我们需要安排 :mzn:`groups` 个大小为 :mzn:`size` 的不同的组。任何一对高尔夫手都不能一起出现于两个组中进行比赛。
@@ -917,10 +922,10 @@ MiniZinc另外一个强大的建模特征是它允许包含整数的集合是决
 我们以一个可以阐释这一章介绍的大部分特征的复杂例子来结束这一节，
 包括枚举类型，复杂约束，全局约束以及复杂输出。
 
-.. literalinclude:: examples/wedding.mzn
+.. literalinclude:: examples/wedding/wedding.mzn
   :language: minizinc
   :name: ex-wedding
-  :caption: 使用枚举类型规划婚礼座位 (:download:`wedding.mzn <examples/wedding.mzn>`).
+  :caption: 使用枚举类型规划婚礼座位 (:download:`wedding.mzn <examples/wedding/wedding.mzn>`). :playground:`wedding`
 
 :numref:`ex-wedding` 中的模型安排婚礼桌上的座位。这个桌子有12个编码的顺序排列的座位，每边有6个。
 男士必须坐奇数号码的座位，女士坐偶数。Ed由于恐惧症不能坐在桌子的边缘，新郎和新娘必须坐在彼此旁边。我们的目的是最大化已知的互相憎恶的人之间的距离。如果在同一边，座位之间的距离是座位号码之间的差，否则则是和其对面座位的距离+ 1。

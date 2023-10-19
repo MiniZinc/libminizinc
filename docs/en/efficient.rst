@@ -27,10 +27,10 @@ variables involved.  They can also behave badly with problems which
 have subexpressions that take large integer values, since they may
 implicitly limit the size of integer variables.
 
-.. literalinclude:: examples/grocery.mzn
+.. literalinclude:: examples/grocery/grocery.mzn
   :language: minizinc
   :name: ex-grocery
-  :caption: A model with unbounded variables (:download:`grocery.mzn <examples/grocery.mzn>`).
+  :caption: A model with unbounded variables (:download:`grocery.mzn <examples/grocery/grocery.mzn>`). :playground:`grocery`
 
 The grocery problem shown in :numref:`ex-grocery` finds 4 items
 whose prices in dollars add up to 7.11 and multiply up to 7.11.
@@ -40,13 +40,7 @@ The variables are declared unbounded. Running
 
   $ minizinc --solver chuffed grocery.mzn
 
-yields 
-
-.. code-block:: none
-
-  =====UNSATISFIABLE=====
-
-This is because the 
+does not yield a solution because the 
 intermediate expressions in the multiplication
 are also :mzn:`var int` 
 and are given default bounds in the solver
@@ -74,14 +68,6 @@ With this modification, executing the model gives
  
 Note however that even the improved model may be too difficult for
 some solvers.
-Running 
-
-.. code-block:: bash
-
-  $ minizinc --solver g12lazy grocery.mzn
-
-does not return an answer, since the solver builds a huge representation
-for the intermediate product variables.
 
 .. defblock:: Bounding variables
 
@@ -135,7 +121,7 @@ determine what is happening inside generators.
 For example, we can see how many times the test is performed in the inner
 loop for both versions of the calculation.
 
-.. literalinclude:: examples/count1.mzn
+.. literalinclude:: examples/count1/count1.mzn
   :language: minizinc
   :lines: 8-15
 
@@ -148,7 +134,7 @@ Produces the output:
 
 indicating the inner loop is evaluated 64 times while
 
-.. literalinclude:: examples/count2.mzn
+.. literalinclude:: examples/count2/count2.mzn
   :language: minizinc
   :lines: 13-14
 
@@ -164,7 +150,7 @@ indicating the inner loop is evaluated 16 times.
 Note that you can use the dependent strings in :mzn:`trace` to
 understand what is happening during model creation.
 
-.. literalinclude:: examples/count3.mzn
+.. literalinclude:: examples/count3/count3.mzn
   :language: minizinc
   :lines: 13-15
 
@@ -221,10 +207,10 @@ These constraints do not actually constrain the model further: any solution of t
 The magic sequence model with these redundant constraints is shown in
 :numref:`ex-magic-series2`.
 
-.. literalinclude:: examples/magic-series2.mzn
+.. literalinclude:: examples/magic-series2/magic-series2.mzn
   :language: minizinc
   :name: ex-magic-series2
-  :caption: Model solving the magic series problem with redundant constraints (:download:`magic-series2.mzn <examples/magic-series2.mzn>`).
+  :caption: Model solving the magic series problem with redundant constraints (:download:`magic-series2.mzn <examples/magic-series2/magic-series2.mzn>`). :playground:`magic-series2`
 
 Running the same problem as before
 
@@ -272,10 +258,10 @@ Note that the :mzn:`u` variables are functionally defined by
 the :mzn:`x` variables so the raw search space is :math:`n^n`.
 The obvious way to model this problem is shown in :numref:`ex-allint`.
 
-.. literalinclude:: examples/allinterval.mzn
+.. literalinclude:: examples/allinterval/allinterval.mzn
   :language: minizinc
   :name: ex-allint
-  :caption: A natural model for the all interval series problem ``prob007`` in CSPlib (:download:`allinterval.mzn <examples/allinterval.mzn>`).
+  :caption: A natural model for the all interval series problem ``prob007`` in CSPlib (:download:`allinterval.mzn <examples/allinterval/allinterval.mzn>`). :playground:`allinterval`
 
 In this model the array :mzn:`x` represents the permutation of the :mzn:`n`
 numbers and the constraints are naturally represented using :mzn:`alldifferent`.
@@ -306,10 +292,10 @@ With this we can model the problem
 as shown in :numref:`ex-allint2`. The output statement recreates the
 original sequence :mzn:`x` from the array of positions :mzn:`y`.
 
-.. literalinclude:: examples/allinterval2.mzn
+.. literalinclude:: examples/allinterval2/allinterval2.mzn
   :language: minizinc
   :name: ex-allint2
-  :caption: An inverse model for the all interval series problem ``prob007`` in CSPlib (:download:`allinterval2.mzn <examples/allinterval2.mzn>`).
+  :caption: An inverse model for the all interval series problem ``prob007`` in CSPlib (:download:`allinterval2.mzn <examples/allinterval2/allinterval2.mzn>`). :playground:`allinterval2`
 
 The inverse model has the same size as the original model, in terms of
 number of variables and domain sizes.  But the inverse model has a much more
@@ -355,15 +341,15 @@ When we have two models for the same problem it may be
 useful to use both models together by tying the variables in the two models
 together, since each can give different information to the solver.
 
-.. literalinclude:: examples/allinterval3.mzn
+.. literalinclude:: examples/allinterval3/allinterval3.mzn
   :language: minizinc
   :name: ex-allint3
-  :caption: A dual model for the all interval series problem ``prob007`` in CSPlib (:download:`allinterval3.mzn <examples/allinterval3.mzn>`).
+  :caption: A dual model for the all interval series problem ``prob007`` in CSPlib (:download:`allinterval3.mzn <examples/allinterval3/allinterval3.mzn>`). :playground:`allinterval3`
 
 :numref:`ex-allint3` gives a dual model combining features of 
-:download:`allinterval.mzn <examples/allinterval.mzn>` and :download:`allinterval2.mzn <examples/allinterval2.mzn>`.
-The beginning of the model is taken from :download:`allinterval.mzn <examples/allinterval.mzn>`.
-We then introduce the :mzn:`y` and :mzn:`v` variables from :download:`allinterval2.mzn <examples/allinterval2.mzn>`.
+:download:`allinterval.mzn <examples/allinterval/allinterval.mzn>` and :download:`allinterval2.mzn <examples/allinterval2/allinterval2.mzn>`.
+The beginning of the model is taken from :download:`allinterval.mzn <examples/allinterval/allinterval.mzn>`.
+We then introduce the :mzn:`y` and :mzn:`v` variables from :download:`allinterval2.mzn <examples/allinterval2/allinterval2.mzn>`.
 We tie the variables together using the 
 global 
 :mzn:`inverse` constraint:
@@ -380,10 +366,10 @@ constraints.
 The only constraints are the relationships of the :mzn:`x` and :mzn:`u` variables
 and the redundant constraints on :mzn:`y` and :mzn:`v`.
 
-.. literalinclude:: examples/inverse.mzn
+.. literalinclude:: examples/inverse/inverse.mzn
   :language: minizinc
   :name: ex-inverse
-  :caption: A definition of the ``inverse`` global constraint (:download:`inverse.mzn <examples/inverse.mzn>`).
+  :caption: A definition of the ``inverse`` global constraint (:download:`inverse.mzn <examples/inverse/inverse.mzn>`). :playground:`inverse`
 
 One of the benefits of the dual model is that there is more scope for
 defining different search strategies.
@@ -391,13 +377,13 @@ Running the dual model,
 
 .. code-block:: bash
 
-  $ minizinc --solver g12fd --all-solutions --statistics allinterval3.mzn -D "n=10;"
+  $ minizinc --solver gecode --all-solutions --statistics allinterval3.mzn -D "n=10;"
 
 which uses the search strategy of
 the inverse model, labelling the :mzn:`y` variables, 
-finds all solutions in 1714 choice points and 0.5s.
+finds all solutions in 126031 nodes and 250ms.
 Note that running the same model with labelling on the :mzn:`x` variables
-requires 13142 choice points and 1.5s.
+requires 35245 nodes and 100ms.
 
 Symmetry
 --------
@@ -464,13 +450,12 @@ For the n-queens problem, unfortunately this technique does not immediately appl
 
 The full model, with added Boolean variables, channeling constraints and symmetry breaking constraints is shown in :numref:`ex-queens-sym`. We can conduct a little experiment to check whether it successfully breaks all the symmetry. Try running the model with increasing values for :mzn:`n`, e.g. from 1 to 10, counting the number of solutions (e.g., by using the ``-s`` flag with the Gecode solver, or selecting "Print all solutions" as well as "Statistics for solving" in the IDE). You should get the following sequence of numbers of solutions: 1, 0, 0, 1, 2, 1, 6, 12, 46, 92. To verify the sequence, you can search for it in the *On-Line Encyclopedia of Integer Sequences* (http://oeis.org).
 
-.. literalinclude:: examples/nqueens_sym.mzn
+.. literalinclude:: examples/nqueens_sym/nqueens_sym.mzn
   :language: minizinc
   :name: ex-queens-sym
   :start-after: % Symmetry breaking
   :end-before: % search
-  :caption: Partial model for n-queens with symmetry breaking (full model: :download:`nqueens_sym.mzn <examples/nqueens_sym.mzn>`).
-
+  :caption: Partial model for n-queens with symmetry breaking (full model: :download:`nqueens_sym.mzn <examples/nqueens_sym/nqueens_sym.mzn>`). :playground:`nqueens_sym`
 
 Other Examples of Symmetry
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

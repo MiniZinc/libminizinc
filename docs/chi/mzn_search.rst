@@ -23,10 +23,10 @@ MiniZinc通过使用 *annotations* 来用一个稳定的方法跟约束求解器
 搜索会当有限域求解器发现所有的约束都被满足，此时一个解已经被找到，或者有约束不被满足时停止。
 当不可满足出现的时候，搜索必须换另外一个不同的选择集合继续下去。通常有限域求解器使用 :index:`深度优先搜索 <search; depth first>` ，它会撤销最后一个做的选择然后尝试做一个新的选择。
 
-.. literalinclude:: examples/nqueens.mzn
+.. literalinclude:: examples/nqueens/nqueens.mzn
   :language: minizinc
   :name: ex-queens
-  :caption: n皇后问题模型 (:download:`nqueens.mzn <examples/nqueens.mzn>`).
+  :caption: n皇后问题模型 (:download:`nqueens.mzn <examples/nqueens/nqueens.mzn>`). :playground:`nqueens`
 
 有限域问题的一个简单例子是 :math:`n` 皇后问题，它要求我们放置 :math:`n` 个皇后在 :math:`n \times n` 棋盘上使得任何两个都不会互相攻击。变量 :mzn:`q[i]` 记录了在 :mzn:`i` 列的皇后放置在哪一行上。 :mzn:`alldifferent` 约束确保了任何两个皇后都不会在同一行或者对角线上。 :numref:`fig-9q-a` 的左边给出了 :mzn:`n = 9` 的典型（部分）搜索树。我们首选设置 :mzn:`q[1] = 1` ，
 这样就可以从其他变量的定义域里面移除一些数值，例如 :mzn:`q[2]` 不能取值1或者2.
@@ -67,7 +67,7 @@ MiniZinc中的搜索注解注明了为了找到一个问题的解应如何去搜
 注解附在求解项，在关键字 :mzn:`solve` 之后。
 搜索注解
 
-.. literalinclude:: examples/nqueens.mzn
+.. literalinclude:: examples/nqueens/nqueens.mzn
   :language: minizinc
   :lines: 11-12
 
@@ -187,10 +187,10 @@ MiniZinc中的搜索注解注明了为了找到一个问题的解应如何去搜
   
     annotation <注解名> ( <参数定义>, ..., <参数定义> ) ;
   
-.. literalinclude:: examples/nqueens-ann.mzn
+.. literalinclude:: examples/nqueens-ann/nqueens-ann.mzn
   :language: minizinc
   :name: ex-queens-ann
-  :caption: n皇后问题的注解模型 (:download:`nqueens-ann.mzn <examples/nqueens-ann.mzn>`).
+  :caption: n皇后问题的注解模型 (:download:`nqueens-ann.mzn <examples/nqueens-ann/nqueens-ann.mzn>`). :playground:`nqueens-ann`
 
 :numref:`ex-queens-ann` 中的程序阐述了注解声明，注解和注解变量的使用。
 我们声明一个新的注解 :mzn:`bitdomain` ，意思是来告诉求解器变量定义域应该通过大小为 :mzn:`nwords` 的比特数组来表示。

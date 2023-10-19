@@ -7,7 +7,8 @@ A complete installation of the MiniZinc system comprises the MiniZinc *compiler 
 
 The easiest way to get a full, working MiniZinc system is to use the **bundled binary packages**, available from http://www.minizinc.org/software.html.
 
-The bundled binary packages contain the compiler and IDE, as well as the following solvers: Gecode, Chuffed, COIN-OR CBC, and a interfaces to the Gurobi and CPLEX solvers (the Gurobi and CPLEX libraries are not included).
+The bundled binary packages contain the compiler and IDE, as well as the following solvers: Gecode, Chuffed, COIN-OR CBC, HiGHS, and OR-Tools CP-SAT.
+Interfaces to Gurobi, CPLEX, SCIP and XPress are also included and can be used if the corresponding solvers are installed.
 
 Alternatively, it is possible to compile all components from source code, as described in :ref:`ch-installation_detailed`.
 

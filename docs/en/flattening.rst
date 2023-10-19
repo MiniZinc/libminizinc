@@ -45,9 +45,9 @@ constraints which do not themselves contain structured terms.
 Consider the following model for ensuring that two circles in a rectangular
 box do not overlap:
 
-.. literalinclude:: examples/cnonoverlap.mzn
+.. literalinclude:: examples/cnonoverlap/cnonoverlap.mzn
   :language: minizinc
-  :caption: Modelling non overlap of two circles (:download:`cnonoverlap.mzn <examples/cnonoverlap.mzn>`).
+  :caption: Modelling non overlap of two circles (:download:`cnonoverlap.mzn <examples/cnonoverlap/cnonoverlap.mzn>`). :playground:`cnonoverlap`
   :name: fig-nonoverlap
 
 
@@ -73,7 +73,7 @@ large expression.
 After simplification the variable and parameter declarations parts of
 the model of :numref:`fig-nonoverlap` become
 
-.. literalinclude:: examples/cnonoverlap.fzn
+.. literalinclude:: examples/cnonoverlap/cnonoverlap.fzn
   :language: minizinc
   :start-after: % Variables
   :end-before: %
@@ -127,7 +127,7 @@ for example the constraint :mzn:`FLOAT01 = x1 - x2` is first rewritten to
 :mzn:`FLOAT01 + x2 = x1` and then output using the :mzn:`float_plus` primitive
 constraint. The resulting constraint form is as follows:
 
-.. literalinclude:: examples/cnonoverlap.fzn
+.. literalinclude:: examples/cnonoverlap/cnonoverlap.fzn
   :language: minizinc
   :start-after: % Constraints
   :end-before: %
@@ -154,7 +154,7 @@ be fully represented by the bounds of a variable, the inequality forces the
 lower bound of :mzn:`FLOAT05` to be :mzn:`25.0` and is then redundant.  The final
 flattened form of the model of :numref:`fig-nonoverlap` is:
 
-.. literalinclude:: examples/cnonoverlap.fzn
+.. literalinclude:: examples/cnonoverlap/cnonoverlap.fzn
   :language: minizinc
 
 Objectives
@@ -187,9 +187,9 @@ subexpressions.
 
 .. \pjs{Maybe use the equation from SEND-MORE-MONEY instead?}
 
-.. literalinclude:: examples/linear.mzn
+.. literalinclude:: examples/linear/linear.mzn
   :language: minizinc
-  :caption: A MiniZinc model to illustrate linear constraint flattening (:download:`linear.mzn <examples/linear.mzn>`).
+  :caption: A MiniZinc model to illustrate linear constraint flattening (:download:`linear.mzn <examples/linear/linear.mzn>`). :playground:`linear`
   :name: fig-lflat
 
 Consider the model shown in :numref:`fig-lflat`. Rather than create
@@ -388,7 +388,7 @@ array access.
 Consider the Laplace equation constraints defined for a finite element
 plate model in :numref:`ex-laplace`:
 
-.. literalinclude:: examples/laplace.mzn
+.. literalinclude:: examples/laplace/laplace.mzn
   :language: minizinc
   :start-after: % arraydec
   :end-before: % sides
@@ -527,7 +527,7 @@ integer variable (restricted to :mzn:`0..1`) to hold this value.
 
 Consider the magic series problem of :numref:`ex-magic-series`.
 
-.. literalinclude:: examples/magic-series.mzn
+.. literalinclude:: examples/magic-series/magic-series.mzn
   :language: minizinc
   :end-before: solve satisfy
 

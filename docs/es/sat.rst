@@ -51,10 +51,10 @@ Modelando Desigualdad
 Consideremos el modelado de un problema de cuadrados latinos. Un cuadrado latino es una matriz :math:`n \ times n` de números de :math:`1..n`, tal que cada número aparece exactamente una vez en cada fila y columna.
 Un modelo entero para cuadrados latinos se muestra en :numref:`ex-latin`.
 
-.. literalinclude:: examples/latin_es.mzn
+.. literalinclude:: examples/latin/latin.mzn
   :language: minizinc
   :name: ex-latin
-  :caption: Modelo entero para los cuadrados latino (:download:`latin_es.mzn <examples/latin_es.mzn>`).
+  :caption: Modelo entero para los cuadrados latino (:download:`latin.mzn <examples/latin/latin.mzn>`).
 
 La única limitación de los enteros es de hecho desigualdad, que se codifica en la restricción :mzn:`alldifferent`.
 La representación del valor es la mejor forma de representar la desigualdad.
@@ -62,10 +62,10 @@ Un modelo solo booleano para cuadrados latinos se muestra en :numref:`ex-latinbo
 Tenga en cuenta cada elemento del conjunto de enteros :mzn:`a[i, j]` se reemplaza por un arreglo de booleanos.
 Utilizamos el predicado :mzn:`exactlyone` para codificar que cada valor se use exactamente una vez en cada fila y en cada columna, así como para codificar que exactamente uno de los Booleanos correspondiente al elemento de arreglo entero :mzn:`a[i, j]` es verdadero.
 
-.. literalinclude:: examples/latinbool_es.mzn
+.. literalinclude:: examples/latinbool/latinbool.mzn
   :language: minizinc
   :name: ex-latinbool
-  :caption: Modelo booleano para los cuadrados latinos (:download:`latinbool_es.mzn <examples/latinbool_es.mzn>`).
+  :caption: Modelo booleano para los cuadrados latinos (:download:`latinbool.mzn <examples/latinbool/latinbool.mzn>`).
 
 
 Modelando Cardinalidad
@@ -94,10 +94,10 @@ con su solución en :numref:`fig-lightup-sol`.
 
 Es natural modelar este problema usando variables booleanas para determinar qué cuadrados contienen una luz y cuáles no, pero hay algo de aritmética entera que considerar para los cuadrados llenos.
 
-.. literalinclude:: examples/lightup_es.mzn
+.. literalinclude:: examples/lightup/lightup.mzn
   :language: minizinc
   :name: ex-lightup
-  :caption: Modelo SAT para el rompecabezas de Light Up (:download:`lightup_es.mzn <examples/lightup_es.mzn>`).
+  :caption: Modelo SAT para el rompecabezas de Light Up (:download:`lightup.mzn <examples/lightup/lightup.mzn>`).
 
 A model for the problem is given in :numref:`ex-lightup`.
 A data file for the problem shown in :numref:`fig-lightup`
@@ -106,7 +106,7 @@ is shown in :numref:`fig-lightupdzn`.
 Un modelo para el problema es dado en :numref:`ex-lightup`.
 Un archivo de datos para el problema :numref:`fig-lightup` se muestra en :numref:`fig-lightupdzn`.
 
-.. literalinclude:: examples/lightup_es.dzn
+.. literalinclude:: examples/lightup/lightup.dzn
   :language: minizinc
   :name: fig-lightupdzn
   :caption: El archivo de datos para la instancia del rompecabezas de Light Up se muestra en :numref:`fig-lightup`.
@@ -123,15 +123,15 @@ que requiere que la suma de un arreglo de Boolean sea igual a un entero fijo. Ex
 - Redes de clasificación: podemos usar una red de clasificación para ordenar el arreglo de Booleanos para crear una representación unaria de la suma de los Booleanos.
 - Diagramas de decisiones binarias: podemos crear un diagrama de decisión binario (BDD) que codifica la restricción de cardinalidad.
 
-.. literalinclude:: examples/bboolsum_es.mzn
+.. literalinclude:: examples/bboolsum/bboolsum.mzn
   :language: minizinc
   :name: ex-bboolsum
-  :caption: Restricciones de cardinalidad por las redes de sumador binarias (:download:`bboolsum_es.mzn <examples/bboolsum_es.mzn>`).
+  :caption: Restricciones de cardinalidad por las redes de sumador binarias (:download:`bboolsum.mzn <examples/bboolsum/bboolsum.mzn>`).
 
-.. literalinclude:: examples/binarysum_es.mzn
+.. literalinclude:: examples/binarysum/binarysum.mzn
   :language: minizinc
   :name: ex-binarysum
-  :caption: Código para construir redes de adición binaria (:download:`binarysum_es.mzn <examples/binarysum_es.mzn>`).
+  :caption: Código para construir redes de adición binaria (:download:`binarysum.mzn <examples/binarysum/binarysum.mzn>`).
 
 Podemos implementar :mzn:`bool_sum_eq` usando redes de sumador binarias usando el código que se muestra en :numref:`ex-bboolsum`.
 El predicado :mzn:`binary_sum` definido en :numref:`ex-binarysum` crea una representación binaria de la suma de :mzn:`x` al dividir la lista en dos, sumando cada mitad para crear una representación binaria y luego sumando estos dos números binarios usando :mzn:`binary_add`.
@@ -139,15 +139,15 @@ Si la lista :mzn:`x` es impar, el último bit se guarda para usar como un comple
 
 .. \pjs{Add a picture of an adding network}
 
-.. literalinclude:: examples/uboolsum_es.mzn
+.. literalinclude:: examples/uboolsum/uboolsum.mzn
   :language: minizinc
   :name: ex-uboolsum
-  :caption: Restricciones de Cardinalidad Clasificando Redes (:download:`uboolsum_es.mzn <examples/uboolsum_es.mzn>`).
+  :caption: Restricciones de Cardinalidad Clasificando Redes (:download:`uboolsum.mzn <examples/uboolsum/uboolsum.mzn>`).
 
-.. literalinclude:: examples/oesort_es.mzn
+.. literalinclude:: examples/oesort/oesort.mzn
   :language: minizinc
   :name: ex-oesort
-  :caption: Odd-even Fusionar Redes de Clasificación (:download:`oesort_es.mzn <examples/oesort_es.mzn>`).
+  :caption: Odd-even Fusionar Redes de Clasificación (:download:`oesort.mzn <examples/oesort/oesort.mzn>`).
 
 Podemos implementar :mzn:`bool_sum_eq` utilizando redes de clasificación unaria utilizando el código que se muestra en :numref:` ex-uboolsum`.
 La restricción de cardinalidad se define expandiendo la entrada :mzn:`x` para tener una longitud de una potencia de 2 y clasificar los bits resultantes utilizando una red de clasificación de combinación de pares impares.
@@ -159,10 +159,10 @@ El clasificador de combinación impar-par que se muestra en :mzn:`ex-oesort` fun
 
 .. \pjs{Add a picture of an adding network}
 
-.. literalinclude:: examples/bddsum_es.mzn
+.. literalinclude:: examples/bddsum/bddsum.mzn
   :language: minizinc
   :name: ex-bddsum
-  :caption: Restricciones de cardinalidad por diagramas de decisión binarios (:download:`bddsum_es.mzn <examples/bddsum_es.mzn>`).
+  :caption: Restricciones de cardinalidad por diagramas de decisión binarios (:download:`bddsum.mzn <examples/bddsum/bddsum.mzn>`).
 
 Nosotros podemos implementar :mzn:`bool_sum_eq` usando diagramas de decición binaria usando el codigo que se muestra en :mzn:`ex:bddsum`.
 La restricción de cardinalidad se divide en dos casos: ya sea en el primer elemento :mzn:`x[1]` es :mzn:`true`, y la suma de los bits restantes es :mzn:`s-1`, o :mzn:`x[1]` es :mzn:`false` y la suma de los bits restantes es :mzn:`s`. Por eficiencia, esto se basa en la eliminación de la subexpresión común para evitar crear muchas restricciones equivalentes.

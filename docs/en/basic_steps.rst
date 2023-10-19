@@ -71,7 +71,7 @@ The MiniZinc command line tool, ``minizinc``, combines the functionality of the 
 
 Let's assume we have a file ``model.mzn`` with the following contents:
 
-::
+.. code-block:: minizinc
 
   var 1..3: x;
   var 1..3: y;

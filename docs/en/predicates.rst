@@ -50,8 +50,8 @@ The argument is an array of integer variables.
 The :mzn:`alldifferent` constraint is one of the most studied and used global constraints in
 constraint programming.  It is used to define assignment subproblems, and
 efficient global propagators for :mzn:`alldifferent` exist.
-The models :download:`send-more-money.mzn <examples/send-more-money.mzn>` (:numref:`ex-smm`)
-and :download:`sudoku.mzn <examples/sudoku.mzn>` (:numref:`ex-sudoku`)
+The models :download:`send-more-money.mzn <examples/send-more-money/send-more-money.mzn>` (:numref:`ex-smm`)
+and :download:`sudoku.mzn <examples/sudoku/sudoku.mzn>` (:numref:`ex-sudoku`)
 are examples of models using :mzn:`alldifferent`.
 
 Cumulative
@@ -73,15 +73,15 @@ It requires that a set of tasks given by start times :mzn:`s`, durations :mzn:`d
 and resource requirements :mzn:`r`, never require more 
 than a global resource bound :mzn:`b` at any one time.
 
-.. literalinclude:: examples/moving.mzn
+.. literalinclude:: examples/moving/moving.mzn
   :language: minizinc
   :name: ex-moving
-  :caption: Model for moving furniture using ``cumulative`` (:download:`moving.mzn <examples/moving.mzn>`).
+  :caption: Model for moving furniture using ``cumulative`` (:download:`moving.mzn <examples/moving/moving.mzn>`). :playground:`moving`
 
-.. literalinclude:: examples/moving.dzn
+.. literalinclude:: examples/moving/moving.dzn
   :language: minizinc
   :name: ex-movingd
-  :caption: Data for moving furniture using ``cumulative`` (:download:`moving.dzn <examples/moving.dzn>`).
+  :caption: Data for moving furniture using ``cumulative`` (:download:`moving.dzn <examples/moving/moving.dzn>`). :playground:`moving`
 
 The model in :numref:`ex-moving` finds a schedule for moving furniture
 so that each piece of furniture has enough handlers (people) and enough trolleys
@@ -142,15 +142,15 @@ The constraint enforces :math:`x \in t` where we consider :math:`x`
 and each row in :math:`t` to be a tuple,
 and :math:`t` to be a set of tuples.
 
-.. literalinclude:: examples/meal.mzn
+.. literalinclude:: examples/meal/meal.mzn
   :language: minizinc
   :name: ex-meal
-  :caption: Model for meal planning using ``table`` constraint (:download:`meal.mzn <examples/meal.mzn>`).
+  :caption: Model for meal planning using ``table`` constraint (:download:`meal.mzn <examples/meal/meal.mzn>`). :playground:`meal`
 
-.. literalinclude:: examples/meal.dzn
+.. literalinclude:: examples/meal/meal.dzn
   :language: minizinc
   :name: ex-meald
-  :caption: Data for meal planning defining the ``table`` used (:download:`meal.dzn <examples/meal.dzn>`).
+  :caption: Data for meal planning defining the ``table`` used (:download:`meal.dzn <examples/meal/meal.dzn>`). :playground:`meal`
 
 The model in :numref:`ex-meal` searches for balanced meals.
 Each meal item has a name (encoded as an integer), a kilojoule count,
@@ -239,10 +239,15 @@ require :mzn:`req_day` nurses on day shift each day, and
 :mzn:`req_night` nurses on night shift, and that each nurse
 takes at least :mzn:`min_night` night shifts.
 
-.. literalinclude:: examples/nurse.mzn
+.. literalinclude:: examples/nurse/nurse.mzn
   :language: minizinc
   :name: ex-nurse
-  :caption: Model for nurse rostering using ``regular`` constraint (:download:`nurse.mzn <examples/nurse.mzn>`)
+  :caption: Model for nurse rostering using ``regular`` constraint (:download:`nurse.mzn <examples/nurse/nurse.mzn>`) :playground:`nurse`
+
+.. literalinclude:: examples/nurse/nurse.dzn
+  :language: minizinc
+  :name: ex-nurse-data
+  :caption: Example data for nurse rostering using ``regular`` constraint (:download:`nurse.dzn <examples/nurse/nurse.dzn>`) :playground:`nurse`
 
 Running the command
 
@@ -300,10 +305,10 @@ different models and allows the development of application specific
 libraries defining the standard constraints and types.
 
 
-.. literalinclude:: examples/jobshop2.mzn
+.. literalinclude:: examples/jobshop2/jobshop2.mzn
   :language: minizinc
   :name: ex-jobshop2
-  :caption: Model for job shop scheduling using predicates (:download:`jobshop2.mzn <examples/jobshop2.mzn>`)
+  :caption: Model for job shop scheduling using predicates (:download:`jobshop2.mzn <examples/jobshop2/jobshop2.mzn>`) :playground:`jobshop2`
 
 We start with a simple example, revisiting the job shop scheduling problem
 from the previous section.  The model is shown in
@@ -311,7 +316,7 @@ from the previous section.  The model is shown in
 :mzn:`predicate`
 item:
 
-.. literalinclude:: examples/jobshop2.mzn
+.. literalinclude:: examples/jobshop2/jobshop2.mzn
   :language: minizinc
   :lines: 12-13
 
@@ -441,17 +446,17 @@ The aim is to minimize the total of the Manhattan distances
 between the pairs.  The Manhattan distance function
 can be expressed as:
 
-.. literalinclude:: examples/manhattan.mzn
+.. literalinclude:: examples/manhattan/manhattan.mzn
   :language: minizinc
   :lines: 12-14
 
 The complete model is shown in :numref:`ex-manhattan`.
 
 
-.. literalinclude:: examples/manhattan.mzn
+.. literalinclude:: examples/manhattan/manhattan.mzn
   :language: minizinc
   :name: ex-manhattan
-  :caption: Model for a number placement problem illustrating the use of functions (:download:`manhattan.mzn <examples/manhattan.mzn>`).
+  :caption: Model for a number placement problem illustrating the use of functions (:download:`manhattan.mzn <examples/manhattan/manhattan.mzn>`). :playground:`manhattan`
 
 .. defblock:: Function definitions
 
@@ -497,10 +502,10 @@ with minimal changes to our model. The model is shown in
 :numref:`ex-jobshop3`. 
 
 
-.. literalinclude:: examples/jobshop3.mzn
+.. literalinclude:: examples/jobshop3/jobshop3.mzn
   :language: minizinc
   :name: ex-jobshop3
-  :caption: Model for job shop scheduling using ``disjunctive`` predicate (:download:`jobshop3.mzn <examples/jobshop3.mzn>`).
+  :caption: Model for job shop scheduling using ``disjunctive`` predicate (:download:`jobshop3.mzn <examples/jobshop3/jobshop3.mzn>`). :playground:`jobshop3`
 
 .. index::
   single: global constraint; disjunctive
@@ -519,14 +524,14 @@ signature
 We can use the disjunctive constraint to define the non-overlap of tasks as
 shown in :numref:`ex-jobshop3`. 
 We assume a definition for the :mzn:`disjunctive` predicate is given
-by the file :download:`disjunctive.mzn <examples/disjunctive.mzn>` which is included in the model.
+by the file :download:`disjunctive.mzn <examples/jobshop3/disjunctive.mzn>` which is included in the model.
 If the underlying system
 supports :mzn:`disjunctive` directly, it will include a file
-:download:`disjunctive.mzn <examples/disjunctive.mzn>` in its globals directory (with contents
+:download:`disjunctive.mzn <examples/jobshop3/disjunctive.mzn>` in its globals directory (with contents
 just the signature definition above).
 If the system we are using does not support disjunctive directly
 we can give our own definition by creating the file
-:download:`disjunctive.mzn <examples/disjunctive.mzn>`.
+:download:`disjunctive.mzn <examples/jobshop3/disjunctive.mzn>`.
 The simplest implementation simply makes use of the :mzn:`no_overlap`
 predicate defined above. 
 A better implementation is to make use of a global :mzn:`cumulative`
@@ -538,10 +543,10 @@ and (b) construct the array of resource utilisations of the appropriate
 size for :mzn:`cumulative`.
 Note also that we use a ternary version of :mzn:`assert` here.
 
-.. literalinclude:: examples/disjunctive.mzn
+.. literalinclude:: examples/jobshop3/disjunctive.mzn
   :language: minizinc
   :name: ex-disj
-  :caption: Defining a ``disjunctive`` predicate using ``cumulative`` (:download:`disjunctive.mzn <examples/disjunctive.mzn>`).
+  :caption: Defining a ``disjunctive`` predicate using ``cumulative`` (:download:`disjunctive.mzn <examples/jobshop3/disjunctive.mzn>`). :playground:`jobshop3`
 
 .. \ignore{ % for capture for testing!
 .. $ mzn-g12fd jobshop3.mzn jobshop.dzn
@@ -590,10 +595,10 @@ define the :index:`objective` function,
 rather than adding lots of variables
 to the model explicitly.
 
-.. literalinclude:: examples/wedding2.mzn
+.. literalinclude:: examples/wedding2/wedding2.mzn
   :language: minizinc
   :name: ex-wedding2
-  :caption: Using local variables to define a complex objective function (:download:`wedding2.mzn <examples/wedding2.mzn>`).
+  :caption: Using local variables to define a complex objective function (:download:`wedding2.mzn <examples/wedding2/wedding2.mzn>`). :playground:`wedding2`
 
 Using :mzn:`let` expressions, it is possible to define a function whose result is not well-defined. For example, we could write the following:
 
@@ -827,10 +832,10 @@ declared as finite then there is an error.
 .. } % $
 
 
-.. literalinclude:: examples/reflection.mzn
+.. literalinclude:: examples/reflection/reflection.mzn
   :language: minizinc
   :name: ex-reflect
-  :caption: Using reflection predicates (:download:`reflection.mzn <examples/reflection.mzn>`).
+  :caption: Using reflection predicates (:download:`reflection.mzn <examples/reflection/reflection.mzn>`). :playground:`reflection`
 
 For example, the model show in :numref:`ex-reflect`
 may output
@@ -911,10 +916,10 @@ We can define the time based decomposition
 of the :mzn:`cumulative`
 constraint using the code shown in :numref:`ex-cumul`.
 
-.. literalinclude:: examples/cumulative.mzn
+.. literalinclude:: examples/cumulative/cumulative.mzn
   :language: minizinc
   :name: ex-cumul
-  :caption: Defining a ``cumulative`` predicate by decomposition (:download:`cumulative.mzn <examples/cumulative.mzn>`).
+  :caption: Defining a ``cumulative`` predicate by decomposition (:download:`cumulative.mzn <examples/cumulative/cumulative.mzn>`). :playground:`cumulative`
 
 The decomposition uses :mzn:`lb` and :mzn:`ub` to determine
 the set of times :mzn:`times` over which tasks could range.
@@ -942,10 +947,10 @@ variables in a number of ways:
 Any local scoped variable overshadows the outer scoped variables
 of the same name.
 
-.. literalinclude:: examples/scope.mzn
+.. literalinclude:: examples/scope/scope.mzn
   :language: minizinc
   :name: ex-scope
-  :caption: A model for illustrating scopes of variables (:download:`scope.mzn <examples/scope.mzn>`).
+  :caption: A model for illustrating scopes of variables (:download:`scope.mzn <examples/scope/scope.mzn>`). :playground:`scope`
 
 For example, in the model shown in :numref:`ex-scope` 
 the :mzn:`x` in :mzn:`-x <= y` is the global :mzn:`x`,

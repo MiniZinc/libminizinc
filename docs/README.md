@@ -8,8 +8,8 @@ You need the following tools to build the documentation:
 
 * Python 3
 * GNU make
-* Sphinx version 1.8.0. Install it using the command
-  `pip install git+https://github.com/sphinx-doc/sphinx`
+* Sphinx version 7.2. Install it using the command
+  `pip install sphinx`
 * Sphinx Read The Docs html theme. Install it using the command
   `pip install sphinx_rtd_theme`
 * If you want to build the PDF documentation, you also need a LaTeX

@@ -157,7 +157,7 @@ the following synonyms and variable declarations.
   array[EmpId] of Employee: employee;
 
 However, it is not possible to assign :mzn:`employees` from a data file.
-Instead, the data and the data could be split as follows.
+Instead, the data and the decisions could be split as follows.
 
 .. code-block:: minizinc
 
@@ -222,7 +222,7 @@ sizes of the rectangles being packed. We can represent both using a “dimension
 record that includes the width and the height of a rectangle. We therefore
 define the following type-inst synonym.
 
-.. literalinclude:: examples/rect_packing.mzn
+.. literalinclude:: examples/rect_packing/rect_packing.mzn
   :language: minizinc
   :name: ex-rect-pack-dim
   :lines: 2
@@ -232,7 +232,7 @@ placement for the rectangles being packed. We can thus use the coordinates of
 their left bottom corner as our decision variables, for which a type-inst
 synonym can be defined as follows.
 
-.. literalinclude:: examples/rect_packing.mzn
+.. literalinclude:: examples/rect_packing/rect_packing.mzn
   :language: minizinc
   :name: ex-rect-pack-coord
   :lines: 3
@@ -244,7 +244,7 @@ coordinate decision variable. As such, it can be valuable to first combine these
 records into a new record type. The following fragment shows the additional
 type-inst synonym, and a definition for the described predicate.
 
-.. literalinclude:: examples/rect_packing.mzn
+.. literalinclude:: examples/rect_packing/rect_packing.mzn
   :language: minizinc
   :name: ex-rect-pack-pred
   :lines: 4-11
@@ -252,8 +252,8 @@ type-inst synonym, and a definition for the described predicate.
 Using these definitions the remainder of the model is now easy to define as
 shown below.
 
-.. literalinclude:: examples/rect_packing.mzn
+.. literalinclude:: examples/rect_packing/rect_packing.mzn
   :language: minizinc
   :name: ex-rect-pack-rem
   :lines: 12-
-  :caption: Partial rectangle packing model using record types (full model: :download:`rect_packing.mzn <examples/rect_packing.mzn>` example data: :download:`rect_packing.json <examples/rect_packing.json>`).
+  :caption: Partial rectangle packing model using record types (full model: :download:`rect_packing.mzn <examples/rect_packing/rect_packing.mzn>` example data: :download:`rect_packing.json <examples/rect_packing/rect_packing.json>`). :playground:`rect_packing`

@@ -33,3 +33,4 @@ __pycache__/
 _build/
 *.pyc
 .cache/
+!docs/Makefile

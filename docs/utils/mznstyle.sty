@@ -1,49 +1,39 @@
 \NeedsTeXFormat{LaTeX2e}[1995/12/01]
-\ProvidesPackage{mznstyle}[2016/12/18 LaTeX package (MiniZinc for Sphinx)]
+\ProvidesPackage{mznstyle}[2023/10/25 LaTeX package (MiniZinc for Sphinx)]
 
-\RequirePackage{fancyvrb}
-\RequirePackage{trace}
 \RequirePackage[breakable]{tcolorbox}
 \RequirePackage{caption}
 \PassOptionsToPackage{hanging,nooneline}{caption}
 
 \RequirePackage{chngcntr}
 
-\RequirePackage{inputenc}
-\PassOptionsToPackage{utf8}{inputenc}
+\renewcommand{\sphinxtableofcontentshook}{%
+  \renewcommand*\l@chapter{\vskip\bigskipamount\@dottedtocline{0}{0em}{2.5em}}%
+  \renewcommand*\l@section{\@dottedtocline{1}{1.5em}{4.5em}}%
+  \renewcommand*\l@subsection{\@dottedtocline{2}{3em}{5em}}%
+  \renewcommand*\l@subsubsection{\@dottedtocline{3}{4.5em}{6.5em}}%
+}
+
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{2}
 
 \counterwithin{chapter}{part}
 \renewcommand{\thepart}{\arabic{part}}
 
-%\definecolor{UglyGreen}{rgb}{0,1,0}
 \definecolor{UglyGreen}{rgb}{0.418,0.556,0.137}
-%\definecolor{UglyBlue}{rgb}{0,0,1}
 \definecolor{UglyBlue}{rgb}{0.273,0.508,0.703}
-%\definecolor{UglyRed}{rgb}{0.2,0,0}
 \definecolor{UglyRed}{rgb}{0.801,0.359,0.359}
-%\definecolor{UglyOrange}{rgb}{0.2,0,0}
 \definecolor{UglyOrange}{rgb}{0.930,0.906,0.664}
 
 \DeclareCaptionFont{white}{\color{white}}
 
 \setlength{\headheight}{14pt}
 
-\RequirePackage{tocloft}
-\PassOptionsToPackage{titles}{tocloft}
-
-\setcounter{tocdepth}{4}
-\renewcommand*\cftchapnumwidth{2em}
-\renewcommand*\cftsecnumwidth{3em}
-\renewcommand*\cftsubsecnumwidth{4em}
-
 \renewenvironment{sphinxadmonition}[2]{
   \begin{tcolorbox}[colbacktitle=UglyBlue,coltitle=white,colframe=UglyBlue,fonttitle=\bfseries\large,title=#2]
 }{\end{tcolorbox}}
 
 \tcbset{boxrule=0.4pt}
-
-\newtcolorbox[auto counter,number within=chapter]{codebox}[2][]{% 
-  title=\textbf{Listing~\thetcbcounter:} #2,#1}
 
 \renewcommand\sphinxcaption[2][\linewidth]{%
    \noindent\hb@xt@\linewidth{\hss
@@ -60,183 +50,52 @@
    \par\prevdepth\dp\strutbox
 }%
 
-\renewenvironment{sphinxVerbatim}{%
-  % first, let's check if there is a caption
-  \ifx\sphinxVerbatimTitle\empty
-      \sphinxvspacefixafterfrenchlists
-      \parskip\z@skip
-      \vskip\sphinxverbatimsmallskipamount
-      % there was no caption. Check if nevertheless a label was set.
-      \ifx\sphinxLiteralBlockLabel\empty\else
-      % we require some space to be sure hyperlink target from \phantomsection
-      % will not be separated from upcoming verbatim by a page break
-          \needspace{\sphinxliteralblockwithoutcaptionneedspace}%
-          \phantomsection\sphinxLiteralBlockLabel
-      \fi
-  \else
-     \parskip\z@skip
-     \if t\spx@opt@literalblockcappos
-       \vskip\spx@abovecaptionskip
-       \def\sphinxVerbatim@Before
-           {\sphinxVerbatim@Title\nointerlineskip
-            \kern\dimexpr-\dp\strutbox+\sphinxbelowcaptionspace
-                 % if no frame (code-blocks inside table cells), remove
-                 % the "verbatimsep" whitespace from the top (better visually)
-                 \ifspx@opt@verbatimwithframe\else-\sphinxverbatimsep\fi
-                 % caption package adds \abovecaptionskip vspace, remove it
-                 \spx@ifcaptionpackage{-\abovecaptionskip}{}\relax}%
-     \else
-       \vskip\sphinxverbatimsmallskipamount
-       \def\sphinxVerbatim@After
-          {\nointerlineskip\kern\dimexpr\dp\strutbox
-            \ifspx@opt@verbatimwithframe\else-\sphinxverbatimsep\fi
-            \spx@ifcaptionpackage{-\abovecaptionskip}{}\relax
-           \sphinxVerbatim@Title}%
-     \fi
-     \def\@captype{literalblock}%
-     \capstart
-     % \sphinxVerbatimTitle must reset color
-    %  \setbox\sphinxVerbatim@TitleBox
-    %         \hbox{\begin{minipage}{\linewidth}%
-    %  % caption package may detect wrongly if top or bottom, so we help it
-    %                 \spx@ifcaptionpackage
-    %                   {\caption@setposition{\spx@opt@literalblockcappos}}{}%
-    %                 \sphinxVerbatimTitle
-    %               \end{minipage}}%
+\def\mznVerbatimTitle{%
+  \ifx\sphinxVerbatimTitle\empty\else
+    \def\@captype{literalblock}%
+    \capstart
+    \captionsetup{margin=0pt,aboveskip=0pt,belowskip=0pt,justification=raggedright,singlelinecheck=false,font=white}
+    \sphinxVerbatimTitle
   \fi
-  \global\let\sphinxLiteralBlockLabel\empty
-  \global\let\sphinxVerbatimTitle\empty
-  \fboxsep\sphinxverbatimsep \fboxrule\sphinxverbatimborder
-  \ifspx@opt@verbatimwithframe\else\fboxrule\z@\fi
-  \let\FrameCommand     \sphinxVerbatim@FrameCommand
-  \let\FirstFrameCommand\sphinxVerbatim@FirstFrameCommand
-  \let\MidFrameCommand  \sphinxVerbatim@MidFrameCommand
-  \let\LastFrameCommand \sphinxVerbatim@LastFrameCommand
-  \ifspx@opt@verbatimhintsturnover\else
-      \let\sphinxVerbatim@Continued\@empty
-      \let\sphinxVerbatim@Continues\@empty
-  \fi
-  \ifspx@opt@verbatimwrapslines
-  % fancyvrb's Verbatim puts each input line in (unbreakable) horizontal boxes.
-  % This customization wraps each line from the input in a \vtop, thus
-  % allowing it to wrap and display on two or more lines in the latex output.
-  %     - The codeline counter will be increased only once.
-  %     - The wrapped material will not break across pages, it is impossible
-  %       to achieve this without extensive rewrite of fancyvrb.
-  %     - The (not used in sphinx) obeytabs option to Verbatim is
-  %       broken by this change (showtabs and tabspace work).
-    \let\sphinxVerbatimFormatLine\sphinxVerbatimFormatLineWrap
-    \let\FV@Space\spx@verbatim@space
-  % Allow breaks at special characters using \PYG... macros.
-    \sphinxbreaksatspecials
-  % Breaks at punctuation characters . , ; ? ! and / (needs catcode activation)
-    \fvset{codes*=\sphinxbreaksviaactive}%
-  \else % end of conditional code for wrapping long code lines
-    \let\sphinxVerbatimFormatLine\sphinxVerbatimFormatLineNoWrap
-  \fi
+}
+
+\renewenvironment{sphinxVerbatim}[1][]{%
+  \let\FV@@PreProcessLine\spx@verb@@PreProcessLine
+  \let\FV@Space\spx@verbatim@space
+  \sphinxbreaksatspecials
+  \fvset{codes*=\sphinxbreaksviaactive}%
   \let\FancyVerbFormatLine\sphinxFancyVerbFormatLine
   \VerbatimEnvironment
-  % workaround to fancyvrb's check of current list depth
   \def\@toodeep {\advance\@listdepth\@ne}%
-  % The list environment is needed to control perfectly the vertical space.
-  % Note: \OuterFrameSep used by framed.sty is later set to \topsep hence 0pt.
-  % - if caption: distance from last text baseline to caption baseline is
-  %   A+(B-F)+\ht\strutbox, A = \abovecaptionskip (default 10pt), B =
-  %   \baselineskip, F is the framed.sty \FrameHeightAdjust macro, default 6pt.
-  %   Formula valid for F < 10pt.
-  % - distance of baseline of caption to top of frame is like for tables:
-  %   \sphinxbelowcaptionspace (=0.5\baselineskip)
-  % - if no caption: distance of last text baseline to code frame is S+(B-F),
-  %   with S = \sphinxverbatimtopskip (=\smallskip)
-  % - and distance from bottom of frame to next text baseline is
-  %   \baselineskip+\parskip.
-  % The \trivlist is used to avoid possible "too deeply nested" error.
-  \itemsep   \z@skip
-  \topsep    \z@skip
-  \partopsep \z@skip
-  % trivlist will set \parsep to \parskip (which itself is set to zero above)
-  % \leftmargin will be set to zero by trivlist
+  \itemsep\z@skip
+  \topsep\z@skip
+  \partopsep\z@skip
   \rightmargin\z@
-  \parindent  \z@% becomes \itemindent. Default zero, but perhaps overwritten.
+  \parindent\z@
   \trivlist\item\relax
-     \ifspx@inframed\setbox\sphinxVerbatim@ContentsBox\vbox\bgroup
-        \@setminipage\hsize\linewidth
-        % use bulk of minipage paragraph shape restores (this is needed
-        % in indented contexts, at least for some)
-        \textwidth\hsize \columnwidth\hsize \@totalleftmargin\z@
-        \leftskip\z@skip \rightskip\z@skip  \@rightskip\z@skip
-     \else
-       \ifsphinxverbatimwithminipage\noindent\begin{minipage}{\linewidth}\fi
-        \ifx\sphinxVerbatimTitle\empty
-          \begin{tcolorbox}[breakable,toprule at break=0pt,bottomrule at break=0pt,pad at break*=2mm]
-        \else
-        % \show\sphinxVerbatimTitle
-        % \begin{codebox}{\sphinxLiteralBlockLabel \sphinxVerbatimTitle}
-          \captionsetup{margin=0pt,aboveskip=0pt,belowskip=0pt,justification=raggedright,singlelinecheck=false,font=white}
-        % \traceon
-          \begin{tcolorbox}[breakable,,toprule at break=0pt,bottomrule at break=0pt,pad at break*=2mm,title={\sphinxVerbatimTitle}]
-       % \traceoff
-        \fi        
-      %  \MakeFramed {% adapted over from framed.sty's snugshade environment
-      %   \advance\hsize-\width\@totalleftmargin\z@\linewidth\hsize\@setminipage
-      %   }%
-     \fi
-     % For grid placement from \strut's in \FancyVerbFormatLine
-     \lineskip\z@skip
-     % active comma should not be overwritten by \@noligs
-     \ifspx@opt@verbatimwrapslines
-       \let\verbatim@nolig@list \sphinx@verbatim@nolig@list
-     \fi
-     % will fetch its optional arguments if any
-     \OriginalVerbatim
-}
+  \ifx\sphinxVerbatimTitle\empty
+    \begin{tcolorbox}[breakable,toprule at break=0pt,bottomrule at break=0pt,pad at break*=2mm]
+  \else
+    \def\@captype{literalblock}%
+    \capstart
+    \captionsetup{margin=0pt,aboveskip=0pt,belowskip=0pt,justification=raggedright,singlelinecheck=false,font=white}
+    \begin{tcolorbox}[breakable,toprule at break=0pt,bottomrule at break=0pt,pad at break*=2mm,title={\sphinxVerbatimTitle}]
+  \fi
+  \lineskip\z@skip
+  \let\verbatim@nolig@list \sphinx@verbatim@nolig@list
+  \everypar{}%
+  \color@begingroup
+  \ifspx@pre@withtextcolor\color{VerbatimTextColor}\fi
+  \spx@pre@TeXextras
+  \OriginalVerbatim[numbersep=2em,#1]%
+}%
 {%
   \endOriginalVerbatim
+  \color@endgroup
   \end{tcolorbox}
-  \ifspx@inframed
-   \egroup % finish \sphinxVerbatim@ContentsBox vbox
-   \nobreak % update page totals
-   \ifdim\dimexpr\ht\sphinxVerbatim@ContentsBox+
-         \dp\sphinxVerbatim@ContentsBox+
-         \ht\sphinxVerbatim@TitleBox+
-         \dp\sphinxVerbatim@TitleBox+
-         2\fboxsep+2\fboxrule+
-         % try to account for external frame parameters
-         \FrameSep+\FrameRule+
-         % Usage here of 2 baseline distances is empirical.
-         % In border case where code-block fits barely in remaining space,
-         % it gets framed and looks good but the outer frame may continue
-         % on top of next page and give (if no contents after code-block)
-         % an empty framed line, as testing showed.
-         2\baselineskip+
-         % now add all to accumulated page totals and compare to \pagegoal
-         \pagetotal+\pagedepth>\pagegoal
-    % long contents: do not \MakeFramed. Do make a caption (either before or
-    % after) if title exists. Continuation hints across pagebreaks dropped.
-    % FIXME? a bottom caption may end up isolated at top of next page
-    %        (no problem with a top caption, which is default)
-    \spx@opt@verbatimwithframefalse
-    \def\sphinxVerbatim@Title{\noindent\box\sphinxVerbatim@TitleBox\par}%
-    \sphinxVerbatim@Before
-    \noindent\unvbox\sphinxVerbatim@ContentsBox\par
-    \sphinxVerbatim@After
-   \else
-    % short enough contents: use \MakeFramed. As it is nested, this requires
-    % minipage encapsulation.
-    \noindent\begin{minipage}{\linewidth}%
-     \MakeFramed {% Use it now with the fetched contents
-      \advance\hsize-\width\@totalleftmargin\z@\linewidth\hsize\@setminipage
-      }%
-     \unvbox\sphinxVerbatim@ContentsBox
-     % some of this may be superfluous:
-    %  \par\unskip\@minipagefalse\endMakeFramed
-    \end{minipage}%
-   \fi
-  \else % non-nested \MakeFramed
-    % \par\unskip\@minipagefalse\endMakeFramed % from framed.sty snugshade
-    \ifsphinxverbatimwithminipage\end{minipage}\fi
-  \fi
   \endtrivlist
+  \global\let\sphinxLiteralBlockLabel\empty
+  \global\let\sphinxVerbatimTitle\empty
 }
 
 \def\theliteralblock{\arabic{part}.\arabic{chapter}.\arabic{literalblock}}

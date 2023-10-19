@@ -16,10 +16,10 @@ Búsqueda de dominio finito
 
 La búsqueda en un solucionador de dominio finito implica examinar los restantes valores posibles de las variables y elegir restringir aún más algunas variables. La búsqueda agrega una nueva restricción que restringe los valores restantes de la variable (en efecto, adivinar dónde podría estar la solución), y luego aplica la propagación para determinar qué otros valores todavía son posibles en las soluciones. Para garantizar la integridad, la búsqueda deja otra opción que es la negación de la nueva restricción. La búsqueda finaliza cuando el solucionador de dominio finito detecta que se cumplen todas las restricciones y, por lo tanto, se ha encontrado una solución o que las restricciones no son satisfactorias. Cuando se detecta insatisfacción, la búsqueda debe continuar por un conjunto diferente de opciones. Normalmente, los solucionadores de dominio finito usan :index:`depth first search <search; depth first>` donde deshacer la última elección realizada y luego intentar hacer una nueva elección.
 
-.. literalinclude:: examples/nqueens_es.mzn
+.. literalinclude:: examples/nqueens/nqueens.mzn
   :language: minizinc
   :name: ex-queens
-  :caption: Modelo para n-reinas (:download:`nqueens_es.mzn <examples/nqueens_es.mzn>`).
+  :caption: Modelo para n-reinas (:download:`nqueens.mzn <examples/nqueens/nqueens.mzn>`).
 
 
 
@@ -79,7 +79,7 @@ Las anotaciones de búsqueda en MiniZinc especifican cómo buscar para encontrar
 
 La anotación de búsqueda
 
-.. literalinclude:: examples/nqueens_es.mzn
+.. literalinclude:: examples/nqueens/nqueens.mzn
   :language: minizinc
   :lines: 11-12
 
@@ -217,10 +217,10 @@ Las anotaciones son un objeto de primera clase en MiniZinc. Podemos declarar nue
 
     annotation <annotation-name> ( <arg-def>, ..., <arg-def> ) ;
 
-.. literalinclude:: examples/nqueens-ann_es.mzn
+.. literalinclude:: examples/nqueens-ann/nqueens-ann.mzn
   :language: minizinc
   :name: ex-queens-ann
-  :caption: Modelo anotado para n-reinas (:download:`nqueens-ann_es.mzn <examples/nqueens-ann_es.mzn>`).
+  :caption: Modelo anotado para n-reinas (:download:`nqueens-ann.mzn <examples/nqueens-ann/nqueens-ann.mzn>`).
 
 El programa en :numref:`ex-queens-ann` ilustra el uso de declaraciones de anotación, anotaciones y variables de anotación.
 

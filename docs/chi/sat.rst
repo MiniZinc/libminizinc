@@ -43,17 +43,17 @@ MiniZinc 可以被用来给布尔可满足性问题建模，这种问题的变�
 
 接下来，让我们考虑如何为一个拉丁方问题建模。一个拉丁方问题是在 :math:`n \times n` 个网 格上放置 :math:`1..n` 之间的数值使得每个数在每行每列都仅出现一次。图 :numref:`ex-latin` 中给出了拉丁方问题的的一个整数模型。
 
-.. literalinclude:: examples/latin.mzn
+.. literalinclude:: examples/latin/latin.mzn
   :language: minizinc
   :name: ex-latin
-  :caption: 拉丁方问题的整数模型 (:download:`latin.mzn <examples/latin.mzn>`).
+  :caption: 拉丁方问题的整数模型 (:download:`latin.mzn <examples/latin/latin.mzn>`). :playground:`latin`
 
 整型变量直接的唯一的约束实际上是非等式，而它在约束 :mzn:`alldifferent`  中被编码。 数值表示是表达非等式的最佳方式。图 :numref:`ex-latinbool` 给出了一个关于拉丁方问题的只含有布尔型 变量的模型。注意每个整型数组元素 :mzn:`a[i,j]` 被替换为一个布尔型数组。我们使用谓词 :mzn:`exactlyone` 来约束每个数值在每行每列都仅出现一次，也用来约束有且仅有一个布尔型 变量对应于整型数组元素 :mzn:`a[i,j]` 为真。
 
-.. literalinclude:: examples/latinbool.mzn
+.. literalinclude:: examples/latinbool/latinbool.mzn
   :language: minizinc
   :name: ex-latinbool
-  :caption: 拉丁方问题的布尔型模型 (:download:`latinbool.mzn <examples/latinbool.mzn>`).
+  :caption: 拉丁方问题的布尔型模型 (:download:`latinbool.mzn <examples/latinbool/latinbool.mzn>`). :playground:`latinbool`
 
 势约束建模
 ---------------------
@@ -81,17 +81,17 @@ MiniZinc 可以被用来给布尔可满足性问题建模，这种问题的变�
 这个问题很自然地可以使用布尔型变量建模。布尔型变量用来决定哪一个网格包含有一个点灯以及哪一个没有。同时我们也有一些作用于填充的网格上的整数算术运算要 考虑。
 
 
-.. literalinclude:: examples/lightup.mzn
+.. literalinclude:: examples/lightup/lightup.mzn
   :language: minizinc
   :name: ex-lightup
-  :caption: 点灯游戏的SAT模型 (:download:`lightup.mzn <examples/lightup.mzn>`).
+  :caption: 点灯游戏的SAT模型 (:download:`lightup.mzn <examples/lightup/lightup.mzn>`). :playground:`lightup`
 
 图 :numref:`ex-lightup` 中给出了这个问题的一个模型。图 :numref:`fig-lightup` 中给出的问题的数据文件在图 :numref:`fig-lightupdzn` 中给出。 
 
-.. literalinclude:: examples/lightup.dzn
+.. literalinclude:: examples/lightup/lightup.dzn
   :language: minizinc
   :name: fig-lightupdzn
-  :caption: 点灯游戏的 :numref:`fig-lightup` 中实例的数据文件
+  :caption: 点灯游戏的 :numref:`fig-lightup` 中实例的数据文件 :playground:`lightup`
 
 模型利用了一个布尔型求和谓词 
 
@@ -106,29 +106,29 @@ MiniZinc 可以被用来给布尔可满足性问题建模，这种问题的变�
 - 二元决策图：我们可以创建一个二维决策图（BDD）来编码势约束。
 
 
-.. literalinclude:: examples/bboolsum.mzn
+.. literalinclude:: examples/bboolsum/bboolsum.mzn
   :language: minizinc
   :name: ex-bboolsum
-  :caption: 使用二元加法器网络表示势约束 (:download:`bboolsum.mzn <examples/bboolsum.mzn>`).
+  :caption: 使用二元加法器网络表示势约束 (:download:`bboolsum.mzn <examples/bboolsum/bboolsum.mzn>`). :playground:`bboolsum`
 
-.. literalinclude:: examples/binarysum.mzn
+.. literalinclude:: examples/binarysum/binarysum.mzn
   :language: minizinc
   :name: ex-binarysum
-  :caption: 创建二元求和网络的代码 (:download:`binarysum.mzn <examples/binarysum.mzn>`).
+  :caption: 创建二元求和网络的代码 (:download:`binarysum.mzn <examples/binarysum/binarysum.mzn>`). :playground:`binarysum`
 
 我们可以使用图 :numref:`ex-bboolsum` 给出的二元加法器网络代码实现 :mzn:`bool_sum_eq` 。图 :numref:`ex-binarysum` 中定义的 谓词 :mzn:`binary_sum` 创建了一个 :mzn:`x` 总和的二维表示法。它把列表分为两部分，把每一部分 分别加起来得到它们的一个二元表示，然后用 :mzn:`binary_add` 把这两个二元数值加起来。 如果 :mzn:`x`  列大小是奇数，则最后一位被保存起来作为二元加法时的进位来使用。
 
 .. \pjs{Add a picture of an adding network}
 
-.. literalinclude:: examples/uboolsum.mzn
+.. literalinclude:: examples/uboolsum/uboolsum.mzn
   :language: minizinc
   :name: ex-uboolsum
-  :caption: 使用二元加法器网络表示势约束 (:download:`uboolsum.mzn <examples/uboolsum.mzn>`).
+  :caption: 使用二元加法器网络表示势约束 (:download:`uboolsum.mzn <examples/uboolsum/uboolsum.mzn>`). :playground:`uboolsum`
 
-.. literalinclude:: examples/oesort.mzn
+.. literalinclude:: examples/oesort/oesort.mzn
   :language: minizinc
   :name: ex-oesort
-  :caption: 奇偶归并排序网络 (:download:`oesort.mzn <examples/oesort.mzn>`).
+  :caption: 奇偶归并排序网络 (:download:`oesort.mzn <examples/oesort/oesort.mzn>`). :playground:`oesort`
 
 我们可以使用图 :numref:`ex-uboolsum` 中给出的一元排序网络代码来实现 :mzn:`bool_sum_eq` 。势约束通过扩展输入 :mzn:`x` 长度为2 的次幂，然后使用奇偶归并排序网络给得到的位排序来实现。奇偶归 并排序工作方式在图 :numref:`ex-oesort` 中给出，它递归地把输入列表拆为两部分，给每一部分排序，然 后再把有序的两部分归并起来。
  
@@ -138,10 +138,10 @@ MiniZinc 可以被用来给布尔可满足性问题建模，这种问题的变�
 
 .. \pjs{Add a picture of an adding network}
 
-.. literalinclude:: examples/bddsum.mzn
+.. literalinclude:: examples/bddsum/bddsum.mzn
   :language: minizinc
   :name: ex-bddsum
-  :caption: 使用二元加法器网络表示势约束 (:download:`bddsum.mzn <examples/bddsum.mzn>`).
+  :caption: 使用二元加法器网络表示势约束 (:download:`bddsum.mzn <examples/bddsum/bddsum.mzn>`). :playground:`bddsum`
 
 我们可以使用图 :numref:`ex-bddsum` 中给出的二元决策图代码来实现 :mzn:`bool_sum_eq` 。势约束被分为两种情况：或者第一个元素 :mzn:`x[1]` 为 :mzn:`true` 并且剩下位的总和是 :mzn:`s-1` ，或者 :mzn:`x[1]` 为 :mzn:`false` 并 且剩下位的总和是 :mzn:`s` 。它的效率的提高依赖于去除共同子表达式来避免产生太多的相同的约束。
 

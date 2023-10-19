@@ -1,0 +1,12 @@
+{
+    "openFiles": [
+        "laplace.mzn"
+    ],
+    "openTab": 0,
+    "projectFiles": [
+        "laplace.mzn"
+    ],
+    "selectedBuiltinConfigId": "org.minizinc.mip.coin-bc",
+    "selectedBuiltinConfigVersion": "2.10.10/1.17.8",
+    "version": 106
+}

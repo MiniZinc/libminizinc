@@ -33,10 +33,10 @@ Declarando y Utilizando Tipos de Opciones
 
 El uso más común de tipo de opciones es para tareas opcionales en una planificación. En el problema de la planificación de trabajo flexible en una tienda, tenemos :mzn:`n` tarea que ejecutar en la máquina :mzn:`k` ,y el tiempo para completar cada tarea en cada maquina puede ser diferente. El objetivo es minimizar el tiempo requerido para completar todas las tareas. Un modelo usando tipo de opciones para codificar el problema es dado en :numref:`ex-flexible-js`. Nosotros modelamos el problema usando :math:`n \times k` las tareas opcionales aquí representan la posibilidad de que cada tarea sea llevada a cabo en cada maquina. Nosotros requerimos que el tiempo de partida de cada tarea y su duración abarque las tareas optativas que las constituye, y de hecho requerimos que solo una sea ejecutada usando :mzn:`alternative` restricción global. Requerimos que como máximo una tarea sea ejecutada en una maquina usando el :mzn:`disjunctive` restricción global extendida a tareas opcionales. Finalmente restringimos que como máximo :mzn:`k` tareas sean ejecutadas en cualquier momento, una restricción redundante que se mantiene en la tarea actual, no las opcionales.
 
-.. literalinclude:: examples/flexible-js_es.mzn
+.. literalinclude:: examples/flexible-js/flexible-js.mzn
   :language: minizinc
   :name: ex-flexible-js
-  :caption: Modelo para la programación de taller de trabajo flexible utilizando tipos de opciones (:download:`flexible-js_es.mzn <examples/flexible-js_es.mzn>`).
+  :caption: Modelo para la programación de taller de trabajo flexible utilizando tipos de opciones (:download:`flexible-js.mzn <examples/flexible-js/flexible-js.mzn>`).
 
 .. \pjs{Finish the damn section!}
 

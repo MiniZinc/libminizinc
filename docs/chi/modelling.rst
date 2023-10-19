@@ -21,9 +21,9 @@ MiniZinc基本模型
 它包含了七个不同的州和地区，而每一块都要被涂一个颜色来保证相邻的区域有不同的颜色。
 
 
-.. literalinclude:: examples/aust.mzn
+.. literalinclude:: examples/aust/aust.mzn
   :language: minizinc
-  :caption: 一个用来给澳大利亚的州和地区涂色的MiniZinc模型 :download:`aust.mzn <examples/aust.mzn>` 
+  :caption: 一个用来给澳大利亚的州和地区涂色的MiniZinc模型 :download:`aust.mzn <examples/aust/aust.mzn>`  :playground:`aust`
   :name: ex-aust
 
 我们可以很容易的用MiniZinc给此问题建模。此模型在 :numref:`ex-aust` 中给出。
@@ -208,7 +208,7 @@ MiniZinc仔细地区别了以下两种模型变量：参数和决策变量。利
   $ minizinc --solver Gecode aust.mzn
 
 来评估我们的模型。
-其中 :download:`aust.mzn <examples/aust.mzn>` 是包含我们的MiniZinc模型的文件名字。
+其中 :download:`aust.mzn <examples/aust/aust.mzn>` 是包含我们的MiniZinc模型的文件名字。
 我们必须使用文件扩展名 ``.mzn`` 来表明一个MiniZinc模型。
 带有 ``--solver Gecode`` 选项的命令 ``minizinc`` 使用Gecode有限域求解器去评估我们的模型。如果你使用的是MiniZinc二进制发布,这个求解器实际上是预设的,所以你也可以运行 ``minizinc aust.mzn`` 。
 
@@ -239,9 +239,9 @@ MiniZinc仔细地区别了以下两种模型变量：参数和决策变量。利
 问题是对每一种类型的蛋糕，我们需要烤多少给游乐会来得到最大的利润。
 一个可能的MiniZinc模型在 :numref:`ex-cakes` 中给出。
 
-.. literalinclude:: examples/cakes.mzn
+.. literalinclude:: examples/cakes/cakes.mzn
   :language: minizinc
-  :caption: 决定为了校园游乐会要烤多少香蕉和巧克力蛋糕的模型。  (:download:`cakes.mzn <examples/cakes.mzn>`)
+  :caption: 决定为了校园游乐会要烤多少香蕉和巧克力蛋糕的模型。  (:download:`cakes.mzn <examples/cakes/cakes.mzn>`) :playground:`cakes`
   :name: ex-cakes
 
 .. index::
@@ -326,9 +326,9 @@ MiniZinc（就像很多其他的建模语言一样）允许使用数据文件来
 数据文件的文件扩展名必须是 ``.dzn`` ，来表明它是一个MiniZinc数据文件。
 一个模型可以被任何多个数据文件运行（但是每个变量/参数在每个文件中只能被赋一个值）
 
-.. literalinclude:: examples/cakes2.mzn
+.. literalinclude:: examples/cakes2/cakes2.mzn
   :language: minizinc
-  :caption: 独立于数据的用来决定为了校园游乐会要烤多少香蕉和巧克力蛋糕的模型。(:download:`cakes2.mzn <examples/cakes2.mzn>`)
+  :caption: 独立于数据的用来决定为了校园游乐会要烤多少香蕉和巧克力蛋糕的模型。(:download:`cakes2.mzn <examples/cakes2/cakes2.mzn>`) :playground:`cakes2`
   :name: ex-cakes2
 
 我们的新模型在 :numref:`ex-cakes2` 中给出。
@@ -338,7 +338,7 @@ MiniZinc（就像很多其他的建模语言一样）允许使用数据文件来
 
   $ minizinc cakes2.mzn pantry.dzn
 
-数据文件 :download:`pantry.dzn <examples/pantry.dzn>` 在 :numref:`fig-pantry1` 中给出。我们得到和 :download:`cakes.mzn <examples/cakes.mzn>` 同样的结果。
+数据文件 :download:`pantry.dzn <examples/cakes2/pantry.dzn>` 在 :numref:`fig-pantry1` 中给出。我们得到和 :download:`cakes.mzn <examples/cakes/cakes.mzn>` 同样的结果。
 运行下面的命令
 
 .. code-block:: bash
@@ -354,7 +354,7 @@ MiniZinc（就像很多其他的建模语言一样）允许使用数据文件来
   ----------
   ==========
 
-如果我们从 :download:`cakes.mzn <examples/cakes.mzn>` 中去掉输出语句，MiniZinc会使用默认的输出。
+如果我们从 :download:`cakes.mzn <examples/cakes/cakes.mzn>` 中去掉输出语句，MiniZinc会使用默认的输出。
 这种情况下得到的输出是
 
 .. code-block:: none
@@ -369,14 +369,14 @@ MiniZinc（就像很多其他的建模语言一样）允许使用数据文件来
   一个没有输出语句的MiniZinc模型会给每一个决策变量以及它的值一个输出行，除非决策变量已经在声明的时候被赋了一个表达式。
   注意观察此输出是如何呈现一个正确的数据文件格式的。
 
-.. literalinclude:: examples/pantry.dzn
+.. literalinclude:: examples/cakes2/pantry.dzn
   :language: minizinc
-  :caption: :download:`cakes2.mzn <examples/cakes2.mzn>` 的数据文件例子 (:download:`pantry.dzn <examples/pantry.dzn>`)
+  :caption: :download:`cakes2.mzn <examples/cakes2/cakes2.mzn>` 的数据文件例子 (:download:`pantry.dzn <examples/cakes2/pantry.dzn>`) :playground:`cakes2`
   :name: fig-pantry1
 
-.. literalinclude:: examples/pantry2.dzn
+.. literalinclude:: examples/cakes2/pantry2.dzn
   :language: minizinc
-  :caption: :download:`cakes2.mzn <examples/cakes2.mzn>` 的数据文件例子 (:download:`pantry2.dzn <examples/pantry2.dzn>`)
+  :caption: :download:`cakes2.mzn <examples/cakes2/cakes2.mzn>` 的数据文件例子 (:download:`pantry2.dzn <examples/cakes2/pantry2.dzn>`) :playground:`cakes2`
   :name: fig-pantry2
 
 通过使用 :index:`命令行标示 <data file;command line>` 
@@ -426,16 +426,17 @@ calculation to calculate the balance after each quarter.
 通过使用浮点数求解，MiniZinc也支持“实数”约束求解。考虑一个要在4季度分期偿还的一年短期贷款问题。
 此问题的一个模型在 :numref:`ex-loan` 中给出。它使用了一个简单的计算每季度结束后所欠款的利息计算方式。
 
-.. literalinclude:: examples/loan.mzn
+.. literalinclude:: examples/loan/loan.mzn
   :language: minizinc
-  :caption: 确定一年借款每季度还款关系的模型(:download:`loan.mzn <examples/loan.mzn>`)
+  :end-before: % inputs to allow us to enter values from playground/IDE
+  :caption: 确定一年借款每季度还款关系的模型(:download:`loan.mzn <examples/loan/loan.mzn>`) :playground:`loan`
   :name: ex-loan
 
 注意我们声明了一个浮点型变量 ``f`` ，它和整型变量很类似。只是这里我们
 使用关键字 :mzn:`float` 而不是 :mzn:`int` 。
 
 我们可以用同样的模型来回答一系列不同的问题。第一个问题是：如果我以利息
-4\%借款\$1000并且每季度还款\$260，我最终还欠款多少？这个问题在数据文件 :download:`loan1.dzn <examples/loan1.dzn>` 中被编码。
+4\%借款\$1000并且每季度还款\$260，我最终还欠款多少？这个问题在数据文件 :download:`loan1.dzn <examples/loan/loan1.dzn>` 中被编码。
 
 由于我们希望用实数求解，我们需要使用一个可以支持这种问题类型的求解器。Gecode(Minizinc捆绑二进制发布预设的求解器)支持浮点型变量,一个混合整数线性求解器可能更加适合这种类型的问题。
 MiniZinc发布包含了这样的一个求解器。我们可以通过从求解器IDE菜单( *Run* 按钮下面的三角形)选择 ``COIN-BC``  来使用, 或者在命令行中运行命令 ``minizinc --solver cbc`` :
@@ -453,7 +454,7 @@ MiniZinc发布包含了这样的一个求解器。我们可以通过从求解器
   ----------
 
 第二个问题是如果我希望用4\%的利息来借款\$1000并且在最后的时候一点都不欠款，我需要在每季度还款多少？
-这个问题在数据文件 :download:`loan2.dzn <examples/loan2.dzn>` 中被编码。
+这个问题在数据文件 :download:`loan2.dzn <examples/loan/loan2.dzn>` 中被编码。
 运行命令
 
 .. code-block:: bash
@@ -469,7 +470,7 @@ MiniZinc发布包含了这样的一个求解器。我们可以通过从求解器
   ----------
 
 第三个问题是如果我可以每个季度返还\$250, 我可以用4\%的利息来借款多少并且在最后的时候一点都不欠款？
-这个问题在数据文件 :download:`loan3.dzn <examples/loan3.dzn>` 中被编码。
+这个问题在数据文件 :download:`loan3.dzn <examples/loan/loan3.dzn>` 中被编码。
 运行命令
 
 .. code-block:: bash
@@ -484,17 +485,17 @@ MiniZinc发布包含了这样的一个求解器。我们可以通过从求解器
   per quarter for 1 year leaves 0.00 owing
   ----------
 
-.. literalinclude:: examples/loan1.dzn
+.. literalinclude:: examples/loan/loan1.dzn
   :language: minizinc
-  :caption: :download:`loan.mzn <examples/loan.mzn>` 的数据文件例子(:download:`loan1.dzn <examples/loan1.dzn>`)
+  :caption: :download:`loan.mzn <examples/loan/loan.mzn>` 的数据文件例子(:download:`loan1.dzn <examples/loan/loan1.dzn>`) :playground:`loan`
 
-.. literalinclude:: examples/loan2.dzn
+.. literalinclude:: examples/loan/loan2.dzn
   :language: minizinc
-  :caption: :download:`loan.mzn <examples/loan.mzn>` 的数据文件例子(:download:`loan2.dzn <examples/loan2.dzn>`)
+  :caption: :download:`loan.mzn <examples/loan/loan.mzn>` 的数据文件例子(:download:`loan2.dzn <examples/loan/loan2.dzn>`) :playground:`loan`
 
-.. literalinclude:: examples/loan3.dzn
+.. literalinclude:: examples/loan/loan3.dzn
   :language: minizinc
-  :caption: :download:`loan.mzn <examples/loan.mzn>` 的数据文件例子(:download:`loan3.dzn <examples/loan3.dzn>`)
+  :caption: :download:`loan.mzn <examples/loan/loan.mzn>` 的数据文件例子(:download:`loan3.dzn <examples/loan/loan3.dzn>`) :playground:`loan`
 
 
 .. defblock:: 浮点算术操作符

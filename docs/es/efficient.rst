@@ -14,17 +14,17 @@ Límites de las Variables
 
 Los motores de propagación de dominio finito, que son el principal tipo de solución objetivo de MiniZinc, son más efectivos cuanto más estrictos sean los límites de las variables involucradas. También pueden comportarse mal con problemas que tienen subexpresiones que toman valores enteros grandes, ya que pueden limitar implícitamente el tamaño de las variables enteras.
 
-.. literalinclude:: examples/grocery_es.mzn
+.. literalinclude:: examples/grocery/grocery.mzn
   :language: minizinc
   :name: ex-grocery
-  :caption: Un modelo con variables no acotadas (:download:`grocery_es.mzn <examples/grocery_es.mzn>`).
+  :caption: Un modelo con variables no acotadas (:download:`grocery.mzn <examples/grocery/grocery.mzn>`).
 
 
 El problema de comestibles que se muestra en :numref:`ex-grocery`, encuentra 4 elementos cuyos precios en dólares suman 7.11 y se multiplican hasta 7.11. Las variables son declaradas no acotadas. Corriendo
 
 .. code-block:: bash
 
-  $ mzn-g12fd grocery_es.mzn
+  $ mzn-g12fd grocery.mzn
 
 Salida:
 
@@ -56,7 +56,7 @@ Corriendo
 
 .. code-block:: bash
 
-  $ mzn-g12lazy grocery_es.mzn
+  $ mzn-g12lazy grocery.mzn
 
 no devuelve una respuesta, ya que el solucionador crea una gran representación para las variables intermedias del producto.
 
@@ -77,10 +77,10 @@ Variables sin restricciones
 
 A veces, cuando se modela, es más fácil introducir más variables de las que realmente se requieren para modelar el problema.
 
-.. literalinclude:: examples/golomb_es.mzn
+.. literalinclude:: examples/golomb/golomb.mzn
   :language: minizinc
   :name: ex-unc
-  :caption: Un modelo para los gobernantes de Golomb con variables sin restricciones (:download:`golomb_es.mzn <examples/golomb_es.mzn>`).
+  :caption: Un modelo para los gobernantes de Golomb con variables sin restricciones (:download:`golomb.mzn <examples/golomb/golomb.mzn>`).
 
 Considere el modelo de reglas de Golomb que se muestra en :numref:`ex-unc`.
 Una regla Golomb de :mzn:`n` marcas es una donde las diferencias absolutas entre cualesquiera de dos marcas son diferentes
@@ -89,7 +89,7 @@ Ejecutando el modelo como
 
 .. code-block:: bash
 
-  $ mzn-g12fd golomb_es.mzn -D "n = 4; m = 6;"
+  $ mzn-g12fd golomb.mzn -D "n = 4; m = 6;"
 
 resulta en la salida
 
@@ -105,7 +105,7 @@ Pero si requerimos todas las soluciones utilizando:
 
 .. code-block:: bash
 
-  $ mzn-g12fd -a golomb_es.mzn -D "n = 4; m = 6;"
+  $ mzn-g12fd -a golomb.mzn -D "n = 4; m = 6;"
 
 ¡Se nos presenta una lista interminable de la misma solución!
 
@@ -133,7 +133,7 @@ Con este cambio funcionando
 
 .. code-block:: bash
 
-  $ mzn-g12fd -a golomb_es.mzn -D "n = 4; m = 6;"
+  $ mzn-g12fd -a golomb.mzn -D "n = 4; m = 6;"
 
 Simplemente se traduce en
 
@@ -188,7 +188,7 @@ Puedes usar builitin :mzn:`trace` :index:`function <trace>` para ayudar determin
 
 Por ejemplo, podemos ver cuántas veces se realiza la prueba en el interior bucle para ambas versiones del cálculo.
 
-.. literalinclude:: examples/count1_es.mzn
+.. literalinclude:: examples/count1/count1.mzn
   :language: minizinc
   :lines: 8-15
 
@@ -201,7 +201,7 @@ Produce el resultado:
 
 Indicando el bucle interno se evalúa 64 veces mientras
 
-.. literalinclude:: examples/count2_es.mzn
+.. literalinclude:: examples/count2/count2.mzn
   :language: minizinc
   :lines: 13-14
 
@@ -216,7 +216,7 @@ Indicando el bucle interno se evalúa 16 veces.
 
 Tenga en cuenta que puede usar las cadenas dependientes en :mzn:`trace` para comprender lo que está sucediendo durante la creación del modelo.
 
-.. literalinclude:: examples/count3_es.mzn
+.. literalinclude:: examples/count3/count3.mzn
   :language: minizinc
   :lines: 13-15
 
@@ -249,7 +249,7 @@ Ingresando para :mzn:`n = 16` de la siguiente manera:
 
 .. code-block:: bash
 
-  $ mzn-g12fd --all-solutions --statistics magic-series_es.mzn -D "n=16;"
+  $ mzn-g12fd --all-solutions --statistics magic-series.mzn -D "n=16;"
 
 puede resultar en la salida
 
@@ -265,16 +265,16 @@ Podemos agregar restricciones redundantes al modelo. Como cada número en la sec
 
 Agregar estas restricciones dadas al modelo en :numref:`ex-magic-series2`.
 
-.. literalinclude:: examples/magic-series2_es.mzn
+.. literalinclude:: examples/magic-series2/magic-series2.mzn
   :language: minizinc
   :name: ex-magic-series2
-  :caption: Modelo que resuelve el problema de la serie mágica con restricciones redundantes (:download:`magic-series2_es.mzn <examples/magic-series2_es.mzn>`).
+  :caption: Modelo que resuelve el problema de la serie mágica con restricciones redundantes (:download:`magic-series2.mzn <examples/magic-series2/magic-series2.mzn>`).
 
 Ejecutando el mismo problema que antes
 
 .. code-block:: bash
 
-  $ mzn-g12fd --all-solutions --statistics magic-series2_es.mzn -D "n=16;"
+  $ mzn-g12fd --all-solutions --statistics magic-series2.mzn -D "n=16;"
 
 da como salida el mismo resultado, pero con estadísticas que muestran solo 13 puntos de elección explorados. Las restricciones redundantes han permitido al solucionador podar la búsqueda mucho antes.
 
@@ -301,10 +301,10 @@ Considere el problema de encontrar permutaciones de :math:`n` números del 1 al 
 Tenga en cuenta que las variables :mzn:`u` están definidas funcionalmente por las variables :mzn:`x`, por lo que el espacio de búsqueda sin formato es :math:`n^n`.
 La forma obvia de modelar este problema se muestra en :numref:`ex-allint`.
 
-.. literalinclude:: examples/allinterval_es.mzn
+.. literalinclude:: examples/allinterval/allinterval.mzn
   :language: minizinc
   :name: ex-allint
-  :caption: Un modelo natural para el problema de todas las series de intervalos ``prob007`` en CSPlib (:download:`allinterval_es.mzn <examples/allinterval_es.mzn>`).
+  :caption: Un modelo natural para el problema de todas las series de intervalos ``prob007`` en CSPlib (:download:`allinterval.mzn <examples/allinterval/allinterval.mzn>`).
 
 En este modelo, la matriz :mzn:`x` representa la permutación de los números :mzn:`n` y las restricciones se representan naturalmente usando :mzn:`alldifferent`.
 
@@ -312,7 +312,7 @@ Ejecutando el modelo
 
 .. code-block:: bash
 
-  $ mzn-g12fd -all-solutions --statistics allinterval_es.mzn -D "n=10;"
+  $ mzn-g12fd -all-solutions --statistics allinterval.mzn -D "n=10;"
 
 Encuentra todas las soluciones en 84598 puntos de elección y 3s.
 
@@ -325,10 +325,10 @@ Podemos agregar dos restricciones redundantes a este modelo: dado que sabemos qu
 
 Con esto podemos modelar el problema como se muestra en :numref:`ex-allint2`. La instrucción de salida recrea la secuencia original :mzn:`x` de la matriz de posiciones :mzn:`y`.
 
-.. literalinclude:: examples/allinterval2_es.mzn
+.. literalinclude:: examples/allinterval2/allinterval2.mzn
   :language: minizinc
   :name: ex-allint2
-  :caption: Un modelo inverso para el problema de toda la serie de intervalos ``prob007`` en CSPlib (:download:`allinterval2_es.mzn <examples/allinterval2_es.mzn>`).
+  :caption: Un modelo inverso para el problema de toda la serie de intervalos ``prob007`` en CSPlib (:download:`allinterval2.mzn <examples/allinterval2/allinterval2.mzn>`).
 
 El modelo inverso tiene el mismo tamaño que el modelo original, en términos de cantidad de variables y tamaños de dominio. Pero el modelo inverso tiene una forma mucho más indirecta de modelar la relación entre las variables :mzn:`y` y :mzn:`v` en oposición a la relación entre las variables :mzn:`x` y :mzn:`u`.
 
@@ -338,7 +338,7 @@ El comando
 
 .. code-block:: bash
 
-  $ mzn-g12fd --all-solutions --statistics allinterval2_es.mzn -D "n=10;"
+  $ mzn-g12fd --all-solutions --statistics allinterval2.mzn -D "n=10;"
 
 Encuentra todas las soluciones en 75536 puntos de elección y 18s.
 
@@ -353,16 +353,16 @@ Múltiples modelos y canales
 
 Cuando tenemos dos modelos para el mismo problema, puede ser útil utilizar ambos modelos juntos al vincular las variables en los dos modelos, ya que cada uno puede proporcionar información diferente al solucionador.
 
-.. literalinclude:: examples/allinterval3_es.mzn
+.. literalinclude:: examples/allinterval3/allinterval3.mzn
   :language: minizinc
   :name: ex-allint3
-  :caption: Un modelo dual para el problema de toda la serie de intervalos ``prob007`` en CSPlib (:download:`allinterval3_es.mzn <examples/allinterval3_es.mzn>`).
+  :caption: Un modelo dual para el problema de toda la serie de intervalos ``prob007`` en CSPlib (:download:`allinterval3.mzn <examples/allinterval3/allinterval3.mzn>`).
 
-:numref:`ex-allint3` gives a dual model combining features of :download:`allinterval_es.mzn <examples/allinterval_es.mzn>` and :download:`allinterval2_es.mzn <examples/allinterval2_es.mzn>`.
+:numref:`ex-allint3` gives a dual model combining features of :download:`allinterval.mzn <examples/allinterval/allinterval.mzn>` and :download:`allinterval2.mzn <examples/allinterval2/allinterval2.mzn>`.
 
-El comienzo del modelo está tomado de :download:`allinterval_es.mzn <examples/allinterval_es.mzn>`.
+El comienzo del modelo está tomado de :download:`allinterval.mzn <examples/allinterval/allinterval.mzn>`.
 
-Luego presentamos el :mzn:`y` y :mzn:`v` variables de :download:`allinterval2_es.mzn <examples/allinterval2_es.mzn>`.
+Luego presentamos el :mzn:`y` y :mzn:`v` variables de :download:`allinterval2.mzn <examples/allinterval2/allinterval2.mzn>`.
 
 Vinculamos las variables utilizando la restricción global :mzn:`inverse`, :mzn:`inverse(x,y)` si mantiene :mzn:`y` es la función inversa de :mzn:`x` (y vice versa), esto es :mzn:`x[i] = j <-> y[j] = i`. Una definición se muestra en :numref:`ex-inverse`.
 
@@ -373,10 +373,10 @@ Las restricciones :mzn:`alldifferent` también faltan porque se vuelven redundan
 Las únicas restricciones son las relaciones de las variables :mzn:`x` y :mzn:`u` y las restricciones redundantes en :mzn:`y` y :mzn:`v`.
 
 
-.. literalinclude:: examples/inverse_es.mzn
+.. literalinclude:: examples/inverse/inverse.mzn
   :language: minizinc
   :name: ex-inverse
-  :caption: Una definición de la restricción global ``inverse`` (:download:`inverse_es.mzn <examples/inverse_es.mzn>`).
+  :caption: Una definición de la restricción global ``inverse`` (:download:`inverse.mzn <examples/inverse/inverse.mzn>`).
 
 Uno de los beneficios del modelo dual es que hay más posibilidades para definir diferentes estrategias de búsqueda.
 
@@ -384,7 +384,7 @@ Ejecutando el modelo dual,
 
 .. code-block:: bash
 
-  $ mzn-g12fd -all-solutions --statistics allinterval3_es.mzn -D "n=10;"
+  $ mzn-g12fd -all-solutions --statistics allinterval3.mzn -D "n=10;"
 
 Que usa la estrategia de búsqueda del modelo inverso, etiquetando las variables :mzn:`y`, encuentra todas las soluciones en 1714 puntos de elección y 0.5s.
 
@@ -398,7 +398,7 @@ La simetría es muy común en problemas de satisfacción y optimización de rest
 
 .. _fig-queens-sym:
 
-.. figure:: figures/queens_symm_es.*
+.. figure:: figures/queens_symm.*
 
   Variantes simétricas de una solución de 8 reinas.
 
@@ -447,12 +447,12 @@ Ahora todas las simetrías se pueden modelar como permutaciones de esta matriz. 
 
 El modelo completo, con variables booleanas añadidas, restricciones de canalización y restricciones de ruptura de simetría se muestra en :numref:`ex-queens-sym`. Podemos realizar un pequeño experimento para verificar si rompe con éxito toda la simetría. Intente ejecutar el modelo con valores crecientes para :mzn:`n`. Ejemplo, desde 1 a 10, contando el número de soluciones (por ejemplo, utilizando el indicador ``-s`` con el solucionador Gecode, o seleccionando "Imprimir todas las soluciones", así como también "Estadísticas para resolver" en el IDE). Debe obtener la siguiente secuencia de números de soluciones: 1, 0, 0, 1, 2, 1, 6, 12, 46, 92. Para verificar la secuencia, puede buscarla en la *Enciclopedia en línea de Secuencias Enteras* (http://oeis.org).
 
-.. literalinclude:: examples/nqueens_sym_es.mzn
+.. literalinclude:: examples/nqueens_sym/nqueens_sym.mzn
   :language: minizinc
   :name: ex-queens-sym
   :start-after: % Modelo booleano alternativo:
   :end-before: % Búsqueda.
-  :caption: Modelo parcial para n-reinas con ruptura de simetría (full model: :download:`nqueens_sym_es.mzn <examples/nqueens_sym_es.mzn>`).
+  :caption: Modelo parcial para n-reinas con ruptura de simetría (full model: :download:`nqueens_sym.mzn <examples/nqueens_sym/nqueens_sym.mzn>`).
 
 
 Otros ejemplos de simetría

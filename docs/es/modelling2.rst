@@ -17,7 +17,7 @@ Declara el ancho ``w`` y la altura ``h`` del modelo de elementos finitos.
 
 La declaración
 
-.. literalinclude:: examples/laplace_es.mzn
+.. literalinclude:: examples/laplace/laplace.mzn
   :language: minizinc
   :lines: 5-9
 
@@ -33,7 +33,7 @@ La ecuación de Laplace indica que cuando la placa alcanza un estado estacionari
 
 La restricción
 
-.. literalinclude:: examples/laplace_es.mzn
+.. literalinclude:: examples/laplace/laplace.mzn
   :language: minizinc
   :lines: 16-18
 
@@ -41,7 +41,7 @@ Asegura que cada punto interno :math:`(i,j)` es el promedio de sus cuatro vecino
 
 Las restricciones
 
-.. literalinclude:: examples/laplace_es.mzn
+.. literalinclude:: examples/laplace/laplace.mzn
   :language: minizinc
   :lines: 20-24
 
@@ -49,7 +49,7 @@ Restringir las temperaturas en cada borde para ser iguales, y da estos nombres d
 
 Si bien las limitaciones
 
-.. literalinclude:: examples/laplace_es.mzn
+.. literalinclude:: examples/laplace/laplace.mzn
   :language: minizinc
   :lines: 26-30
 
@@ -57,16 +57,16 @@ Asegurarse que las esquinas (que son irrelevantes) se ajustan a 0.0.
 Podemos determinar las temperaturas en una placa dividida en 5 :math:`\times` 5 elementos con temperatura izquierda, derecha e inferior 0 y temperatura superior 100 con el modelo mostrado en:numref:`ex-laplace`.
 
 
-.. literalinclude:: examples/laplace_es.mzn
+.. literalinclude:: examples/laplace/laplace.mzn
   :language: minizinc
   :name: ex-laplace
-  :caption: Modelo de placa de elementos finitos para determinar las temperaturas en estado estable (:download:`laplace_es.mzn <examples/laplace_es.mzn>`).
+  :caption: Modelo de placa de elementos finitos para determinar las temperaturas en estado estable (:download:`laplace.mzn <examples/laplace/laplace.mzn>`).
 
 Ejecutando el comando
 
 .. code-block:: bash
 
-  $ mzn-cbc laplace_es.mzn
+  $ mzn-cbc laplace.mzn
 
 Da la salida
 
@@ -120,15 +120,15 @@ Como hemos visto, las variables establecidas y los literales establecidos (inclu
 Nuestro problema de horneado de pastele, es un ejemplo de un tipo muy simple de problema de planificación de la producción. En este tipo de problema, deseamos determinar qué cantidad de cada tipo de producto se debe hacer para maximizar los beneficios cuando la fabricación de un producto consume cantidades variables de algunos recursos fijos. Podemos generalizar el modelo MiniZinc en :numref:`ex-cakes2` para manejar este tipo de problema con un modelo que sea genérico en los tipos de recursos y productos. El modelo se muestra en :numref:`ex-prod-planning` y un archivo de datos de muestra (para el ejemplo de bicarbonato) se muestra en :numref:`fig-prod-planning-data`.
 
 
-.. literalinclude:: examples/simple-prod-planning_es.mzn
+.. literalinclude:: examples/prod-planning/prod-planning.mzn
   :language: minizinc
   :name: ex-prod-planning
-  :caption: Modelo para planificación de producción simple (:download:`simple-prod-planning_es.mzn <examples/simple-prod-planning_es.mzn>`).
+  :caption: Modelo para planificación de producción simple (:download:`prod-planning.mzn <examples/prod-planning/prod-planning.mzn>`).
 
-.. literalinclude:: examples/simple-prod-planning-data_es.dzn
+.. literalinclude:: examples/prod-planning/prod-planning-data.dzn
   :language: minizinc
   :name: fig-prod-planning-data
-  :caption: Archivo de datos de ejemplo para el problema simple de planificación de la producción (:download:`simple-prod-planning-data_es.dzn <examples/simple-prod-planning-data_es.dzn>`).
+  :caption: Archivo de datos de ejemplo para el problema simple de planificación de la producción (:download:`prod-planning-data.dzn <examples/prod-planning/prod-planning-data.dzn>`).
 
 La nueva característica de este modelo es el uso de :index:`enumerated types <type; enumerated>`.
 Esto nos permite tratar la elección de recursos y productos como parámetros para el modelo.
@@ -442,7 +442,7 @@ Ejecutando el código:
 
 .. code-block:: bash
 
-  $ mzn-gecode simple-prod-planning_es.mzn simple-prod-planning-data_es.dzn
+  $ mzn-gecode prod-planning.mzn prod-planning-data.dzn
 
 Resulta en la salida:
 
@@ -468,10 +468,10 @@ Restricciones Globales
 
 MiniZinc incluye una biblioteca de restricciones globales que también se puede usar para definir modelos. Un ejemplo es la restricción :mzn:`alldifferent` que requiere que todas las variables que aparecen en su argumento sean diferentes por pares.
 
-.. literalinclude:: examples/send-more-money_es.mzn
+.. literalinclude:: examples/send-more-money/send-more-money.mzn
   :language: minizinc
   :name: ex-smm
-  :caption: Modelo para el problema criptoaritméticos SEND + MORE = MONEY (:download:`send-more-money_es.mzn <examples/send-more-money_es.mzn>`)
+  :caption: Modelo para el problema criptoaritméticos SEND + MORE = MONEY (:download:`send-more-money.mzn <examples/send-more-money/send-more-money.mzn>`)
 
 El problema SEND + MORE = MONEY requiere asignar un dígito diferente a cada letra para que la restricción aritmética se mantenga. El modelo que se muestra en :numref:`ex-smm` usa la expresión de restricción :mzn:`alldifferent([S,E,N,D,M,O,R,Y])` para garantizar que cada letra tome un dígito diferente valor. La restricción global está disponible en el modelo utilizando el elemento *include*
 
@@ -522,22 +522,22 @@ Que establece :mzn:`r` a :mzn:`x` dividido por :mzn:`y` a menos que :mzn:`y` sea
 
   Si el :mzndef:`<bool-exp>` contiene variables de decisión, entonces el tipo-instansación (type-inst) de la expresión es :mzndef:`var <T>` donde :mzndef:`<T>` es el tipo de :mzndef:`<exp-1>` y :mzndef:`<exp-2>` incluso si ambas expresiones son correctas.
 
-.. literalinclude:: examples/sudoku_es.mzn
+.. literalinclude:: examples/sudoku/sudoku.mzn
   :language: minizinc
   :name: ex-sudoku
-  :caption: Modelo para el problema generalizado de Sudoku (:download:`sudoku_es.mzn <examples/sudoku_es.mzn>`)
+  :caption: Modelo para el problema generalizado de Sudoku (:download:`sudoku.mzn <examples/sudoku/sudoku.mzn>`)
 
 
-.. literalinclude:: examples/sudoku_es.dzn
+.. literalinclude:: examples/sudoku/sudoku.dzn
   :language: minizinc
   :name: ex-sudokud
-  :caption: Ejemplo de archivo de datos para el problema generalizado de Sudoku (:download:`sudoku_es.dzn <examples/sudoku_es.dzn>`)
+  :caption: Ejemplo de archivo de datos para el problema generalizado de Sudoku (:download:`sudoku.dzn <examples/sudoku/sudoku.dzn>`)
 
 .. _fig-sudoku:
 
 .. figure:: figures/sudoku.*
 
-  El problema representado por el archivo de datos :download:`sudoku_es.dzn <examples/sudoku_es.dzn>`
+  El problema representado por el archivo de datos :download:`sudoku.dzn <examples/sudoku/sudoku.dzn>`
 
 Las expresiones condicionales son muy útiles en la creación de modelos complejos, o en resultados complejos. Considere el modelo de problemas de Sudoku que se muestra en :numref:`ex-sudoku`. Las posiciones iniciales de la placa están dadas por el parámetro :mzn:`start`, donde 0 representa una posición de tablero vacío. Esto se convierte en restricciones en las variables de decisión :mzn:`puzzle` utilizando la expresión condicional
 
@@ -568,7 +568,7 @@ Ejecutando
 
 .. code-block:: bash
 
-  $ mzn-g12fd --all-solutions sudoku_es.mzn sudoku_es.dzn
+  $ mzn-g12fd --all-solutions sudoku.mzn sudoku.dzn
 
 Resulta en:
 
@@ -604,10 +604,10 @@ Los tipos enumerados nos permiten construir modelos que dependen de un conjunto 
 Volvamos al problema de colorear el gráfico de Australia en :ref:`sec-modelling`.
 
 
-.. literalinclude:: examples/aust-enum_es.mzn
+.. literalinclude:: examples/aust-enum/aust-enum.mzn
   :language: minizinc
   :name: ex-aust-enum
-  :caption: Modelo para colorear Australia usando tipos enumerados (:download:`aust-enum_es.mzn <examples/aust-enum_es.mzn>`).
+  :caption: Modelo para colorear Australia usando tipos enumerados (:download:`aust-enum.mzn <examples/aust-enum/aust-enum.mzn>`).
 
 El modelo que se muestra en :numref:`ex-aust-enum` declara un tipo enumerado :mzn:`Color` que debe definirse en el archivo de datos. Cada una de las variables de estado se declara para tomar un valor de este tipo enumerado.
 
@@ -615,7 +615,7 @@ Ejecutando este programa usando:
 
 .. code-block:: bash
 
-  $ mzn-gecode -D "Color = { red, yellow, blue };" aust-enum_es.mzn
+  $ mzn-gecode -D "Color = { red, yellow, blue };" aust-enum.mzn
 
 Puede resultar en la salida:
 
@@ -704,15 +704,15 @@ Que asegura que las tareas no se superponen.
 
   Las expresiones booleanas en MiniZinc se pueden escribir usando una sintaxis matemática estándar. Los literales booleanos son :mzn:`true`, :mzn:`false` y los operadores booleanos son conjunción, es decir, (``/\``), disyunción, es decir o (``\/``), only-if (:mzn:`<-`), implica (:mzn:`->`), if-and-only-if (:mzn:`<->`) y negación (:mzn:`not`). Los booleanos se pueden forzar automáticamente a enteros, pero para que esta coerción sea explícita la función incorporada :mzn:`bool2int` se puede usar: devuelve 1 si su argumento es verdadero y 0 en caso contrario.
 
-.. literalinclude:: examples/jobshop_es.mzn
+.. literalinclude:: examples/jobshop/jobshop.mzn
   :language: minizinc
   :name: ex-jobshop
-  :caption: Modelo para problemas de planificación de tiendas de trabajo (:download:`jobshop_es.mzn <examples/jobshop_es.mzn>`).
+  :caption: Modelo para problemas de planificación de tiendas de trabajo (:download:`jobshop.mzn <examples/jobshop/jobshop.mzn>`).
 
-.. literalinclude:: examples/jdata_es.dzn
+.. literalinclude:: examples/jobshop/jdata.dzn
   :language: minizinc
   :name: ex-jdata
-  :caption: Datos para problemas de planificación de tiendas de trabajo (:download:`jdata_es.dzn <examples/jdata_es.dzn>`).
+  :caption: Datos para problemas de planificación de tiendas de trabajo (:download:`jdata.dzn <examples/jobshop/jdata.dzn>`).
 
 El modelo de planificación de tiendas de trabajo dado en :numref:`ex-jobshop` brinda un ejemplo realista del uso de esta capacidad de modelado disyuntivo. En la planificación de tiendas de trabajo tenemos un conjunto de trabajos, cada uno de los cuales consiste en una secuencia de tareas en máquinas separadas: por lo que la tarea :mzn:`[i, j]` es la tarea en el trabajo :math:`i^{th}` realizado en la máquina :math:`j^{th}`. Cada secuencia de tareas debe completarse en orden, y no hay dos tareas en la misma máquina que puedan superponerse en el tiempo. Incluso pequeñas instancias de este problema pueden ser bastante desafiantes para encontrar soluciones óptimas.
 
@@ -720,7 +720,7 @@ El comando
 
 .. code-block:: bash
 
-  $ mzn-gecode --all-solutions jobshop_es.mzn jdata_es.dzn
+  $ mzn-gecode --all-solutions jobshop.mzn jdata.dzn
 
 Resuelve un pequeño problema de planificación de tiendas de trabajo e ilustra el comportamiento de \texttt{all-solutions} para problemas de optimización. Aquí el solucionador genera cada una de las mejores soluciones tal como la encuentra, en lugar de todas las soluciones óptimas posibles. El resultado de este comando es:
 
@@ -762,19 +762,19 @@ Posteriormente se debe de ejecutar el siguiente comando:
 
 .. code-block:: bash
 
-  $ mzn-gecode --all-solutions jobshop_es.mzn jobshop_es.dzn
+  $ mzn-gecode --all-solutions jobshop.mzn jobshop.dzn
 
 Para este problema, hay 3,444,375 soluciones óptimas.
 
-.. literalinclude:: examples/stable-marriage_es.mzn
+.. literalinclude:: examples/stable-marriage/stable-marriage.mzn
   :language: minizinc
   :name: ex-stable-marriage
-  :caption: Modelo para el problema del matrimonio estable (:download:`stable-marriage_es.mzn <examples/stable-marriage_es.mzn>`).
+  :caption: Modelo para el problema del matrimonio estable (:download:`stable-marriage.mzn <examples/stable-marriage/stable-marriage.mzn>`).
 
-.. literalinclude:: examples/stable-marriage_es.dzn
+.. literalinclude:: examples/stable-marriage/stable-marriage.dzn
   :language: minizinc
   :name: ex-sm-data
-  :caption: Datos de ejemplo para el problema de matrimonio estable (:download:`stable-marriage_es.dzn <examples/stable-marriage_es.dzn>`).
+  :caption: Datos de ejemplo para el problema de matrimonio estable (:download:`stable-marriage.dzn <examples/stable-marriage/stable-marriage.dzn>`).
 
 Otra poderosa característica de modelado en MiniZinc es que las variables de decisión se pueden usar para :index:`array access <array; access>`. Como por ejemplo, considere el (anticuado) *problema de matrimonio estable*.
 Tenemos que :mzn:`n` (hétero) mujeres y :mzn:`n` (straight) men. Cada hombre tiene una lista clasificada de mujeres y viceversa. Queremos encontrar un esposo/esposa para cada mujer/hombre para que todos los matrimonios sean *estables* en el sentido de que:
@@ -793,7 +793,7 @@ Hay dos matrices de variables de decisión :mzn:`wife` y :mzn:`husband`. Estos, 
 
 Las dos primeras restricciones:
 
-.. literalinclude:: examples/stable-marriage_es.mzn
+.. literalinclude:: examples/stable-marriage/stable-marriage.mzn
   :language: minizinc
   :lines: 13-14
 
@@ -801,7 +801,7 @@ Asegúrese de que la asignación de esposos y esposas sea consistente: :mzn:`w` 
 
 Las siguientes dos restricciones son una codificación directa de la condición de estabilidad:
 
-.. literalinclude:: examples/stable-marriage_es.mzn
+.. literalinclude:: examples/stable-marriage/stable-marriage.mzn
   :language: minizinc
   :lines: 16-22
 
@@ -829,10 +829,10 @@ La restricción :mzn:`a[x] = y` tendrá éxito con :math:`x=1 \wedge y=2` y :mat
 
 En el caso de los accesos de matriz no válida por un parámetro, la semántica formal de MiniZinc trata esto como un fallo para garantizar que el tratamiento de los parámetros y las variables de decisión sea coherente, pero se emite una advertencia ya que casi siempre es un error.
 
-.. literalinclude:: examples/magic-series_es.mzn
+.. literalinclude:: examples/magic-series/magic-series.mzn
   :language: minizinc
   :name: ex-magic-series
-  :caption: Modelo que soluciona el problema de la serie mágica (:download:`magic-series_es.mzn <examples/magic-series_es.mzn>`).
+  :caption: Modelo que soluciona el problema de la serie mágica (:download:`magic-series.mzn <examples/magic-series/magic-series.mzn>`).
 
 .. index::
   single: bool2int
@@ -845,7 +845,7 @@ Ejecutando el comando
 
 .. code-block:: bash
 
-  $ mzn-gecode --all-solutions magic-series_es.mzn -D "n=4;"
+  $ mzn-gecode --all-solutions magic-series.mzn -D "n=4;"
 
 Conduce a la salida
 
@@ -891,19 +891,19 @@ Esta es una forma restringida del problema de la mochila en la que podemos elegi
 
 Es natural modelar esto en MiniZinc con una única variable de decisión: :mzn:`var set of ITEM: knapsack` donde :mzn:`ITEM` es el conjunto de elementos posibles. Si los arreglos :mzn:`weight[i]` y :mzn:`profit[i]` respectivamente dan el peso y el beneficio del ítem :mzn:`i`, y el peso máximo que puede llevar la mochila viene dado por :mzn:`capacity` luego se da un modelo naural en :numref:`ex-knapsack-binary`.
 
-.. literalinclude:: examples/knapsack_es.mzn
+.. literalinclude:: examples/knapsack/knapsack.mzn
   :language: minizinc
   :name: ex-knapsack-binary
-  :caption: Modelo para el problema de mochila 0/1 (:download:`knapsack_es.mzn <examples/knapsack_es.mzn>`).
+  :caption: Modelo para el problema de mochila 0/1 (:download:`knapsack.mzn <examples/knapsack/knapsack.mzn>`).
 
 Observe que la palabra clave :mzn:`var` viene antes de la declaración :mzn:`set` que indica que el conjunto en sí es la variable de decisión.
 
 Esto contrasta con una matriz en la que la palabra clave :mzn:`var` califica los elementos en la matriz en lugar de la matriz en sí, ya que la estructura básica de la matriz es fija, es decir, su conjunto de índices.
 
-.. literalinclude:: examples/social-golfers_es.mzn
+.. literalinclude:: examples/social-golfers/social-golfers.mzn
   :language: minizinc
   :name: ex-social-golfers
-  :caption: Modelo para los problemas de los golfistas sociales (:download:`social-golfers_es.mzn <examples/social-golfers_es.mzn>`).
+  :caption: Modelo para los problemas de los golfistas sociales (:download:`social-golfers.mzn <examples/social-golfers/social-golfers.mzn>`).
 
 Como un ejemplo más complejo de restricción de conjuntos, considere el problema de los golfistas sociales que se muestra en :numref:`ex-social-golfers`. El objetivo es programar un torneo de golf sobre :mzn:`weeks` usando :mzn:`groups` :math:`\times` :mzn:`size` de golfistas. Cada semana tenemos que programar :mzn:`groups` diferentes grupos cada uno de tamaño :mzn:`size`. No hay dos pares de golfistas que jueguen en dos grupos
 
@@ -921,7 +921,7 @@ Ejecutando el comando:
 
 .. code-block:: bash
 
-  $ mzn-gecode social-golfers_es.mzn social-golfers_es.dzn
+  $ mzn-gecode social-golfers.mzn social-golfers.dzn
 
 Donde el archivo de datos define un problema con 4 semanas, con 4 grupos de tamaño 3 y que conduce a la salida:
 
@@ -941,10 +941,10 @@ Poniendolo Todo Junto
 
 Terminamos esta sección con un ejemplo complejo que ilustra la mayoría de las características presentadas en este capítulo, incluidos los tipos enumerados, las restricciones complejas, las restricciones globales y los resultados complejos.
 
-.. literalinclude:: examples/wedding_es.mzn
+.. literalinclude:: examples/wedding/wedding.mzn
   :language: minizinc
   :name: ex-wedding
-  :caption: Planificación de asientos de bodas utilizando tipos enumerados (:download:`wedding_es.mzn <examples/wedding_es.mzn>`).
+  :caption: Planificación de asientos de bodas utilizando tipos enumerados (:download:`wedding.mzn <examples/wedding/wedding.mzn>`).
 
 El modelo de :numref:`ex-wedding` organiza los asientos en la mesa de la boda.
 La mesa tiene 12 asientos numerados en orden alrededor de la mesa, 6 en cada lado. Los hombres deben sentarse en asientos con números impares y las mujeres en parejas. Ed no puede sentarse al final de la mesa debido a una fobia, y la novia y el novio deben sentarse uno al lado del otro. El objetivo es maximizar la distancia entre los odios conocidos. La distancia entre asientos es la diferencia en el número de asiento si está en el mismo lado, de lo contrario es la distancia al asiento opuesto + 1.
@@ -956,7 +956,7 @@ Ejecutando:
 
 .. code-block:: bash
 
-  $ mzn-gecode wedding_es.mzn
+  $ mzn-gecode wedding.mzn
 
 Resultados en la salida:
 
@@ -971,7 +971,7 @@ La colocación de la tabla resultante se ilustra en :numref:`fig-wedding` donde 
 
 .. _fig-wedding:
 
-.. figure:: figures/wedding_es.*
+.. figure:: figures/wedding.*
 
   Disposición de los asientos en la mesa de la boda
 

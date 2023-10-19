@@ -14,11 +14,6 @@ This documentation is licensed under a
 `Creative Commons Attribution-NoDerivatives 4.0 International License <http://creativecommons.org/licenses/by-nd/4.0/>`__. This means that you are free to copy and redistribute the material in any medium or format
 for any purpose, even commercially. However, you must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use. If you remix, transform, or build upon the material, you may **not** distribute the modified material.
 
-.. .. only:: builder_html
-..
-..   .. image:: figures/MiniZn_logo_2.*
-..     :height: 150px
-
 .. toctree::
    :maxdepth: 2
    :numbered: 4

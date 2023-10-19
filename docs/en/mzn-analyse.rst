@@ -122,30 +122,30 @@ The `no_out` command disables the automatic insertion of `out_fzn`.
 
 Gives the following output:
 
-.. code-block:: none
+.. code-block:: json
 
     {"constraint_info": [
-      [
-        ["in", "i", "Tasks"],
-        ["in", "j", "suc[i]"],
-        ["assign", "j", "24"],
-        ["assign", "i", "2"],
-        ["eq", "suc[i]", "23..24"],
-        ["eq", "Tasks", "1..32"]],
-      [
-        ["in", "i", "Tasks"],
-        ["in", "j", "suc[i]"],
-        ["assign", "j", "5"],
-        ["assign", "i", "3"],
-        ["eq", "suc[i]", "{5,6,17}"],
-        ["eq", "Tasks", "1..32"]],
-      [
-        ["in", "i", "Tasks"],
-        ["in", "j", "suc[i]"],
-        ["assign", "j", "6"],
-        ["assign", "i", "3"],
-        ["eq", "suc[i]", "{5,6,17}"],
-        ["eq", "Tasks", "1..32"]]]}
+      [
+        ["in", "i", "Tasks"],
+        ["in", "j", "suc[i]"],
+        ["assign", "j", "24"],
+        ["assign", "i", "2"],
+        ["eq", "suc[i]", "23..24"],
+        ["eq", "Tasks", "1..32"]],
+      [
+        ["in", "i", "Tasks"],
+        ["in", "j", "suc[i]"],
+        ["assign", "j", "5"],
+        ["assign", "i", "3"],
+        ["eq", "suc[i]", "{5,6,17}"],
+        ["eq", "Tasks", "1..32"]],
+      [
+        ["in", "i", "Tasks"],
+        ["in", "j", "suc[i]"],
+        ["assign", "j", "6"],
+        ["assign", "i", "3"],
+        ["eq", "suc[i]", "{5,6,17}"],
+        ["eq", "Tasks", "1..32"]]]}
 
 
 Limitations / Future work

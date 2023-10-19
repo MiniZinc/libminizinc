@@ -9,7 +9,7 @@ Basic Usage
 
 To use Globalizer simply execute it on a model and set of data files:
 
-``minizinc --solver org.minizinc.globalizer model.mzn data-1.dzn data-2.dzn``
+``minizinc --solver globalizer model.mzn data-1.dzn data-2.dzn``
 
 Note: Globalizer may also be executed on a non-parameterised model with
 no data files.
@@ -18,17 +18,17 @@ The following demonstrates the basic usage of Globalizer.
 Below, we see a simple model for the car sequencing problem [2]_, ``cars.mzn``.
 
 
-.. literalinclude:: examples/cars.mzn
+.. literalinclude:: examples/cars/cars.mzn
   :language: minizinc
   :name: ex-glob-cars
-  :caption: Model for the car sequencing problem (:download:`cars.mzn <examples/cars.mzn>`).
+  :caption: Model for the car sequencing problem (:download:`cars.mzn <examples/cars/cars.mzn>`).
 
 And here we have a data file ``cars_data.dzn``.
 
-.. literalinclude:: examples/cars_data.dzn
+.. literalinclude:: examples/cars/cars_data.dzn
   :language: minizinc
   :name: ex-glob-cars-data
-  :caption: Data for the car sequencing problem (:download:`cars_data.dzn <examples/cars_data.dzn>`).
+  :caption: Data for the car sequencing problem (:download:`cars_data.dzn <examples/cars/cars_data.dzn>`).
 
 Executing Globalizer on this model and data file we get the following output:
 

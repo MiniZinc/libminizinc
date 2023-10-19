@@ -1,6 +1,6 @@
 .. _ch-installation_detailed_wasm:
 
-Installation Instructions for Webassembly / JavaScript
+Installation Instructions for WebAssembly / JavaScript
 ------------------------------------------------------
 
 Required development tools:
@@ -14,7 +14,7 @@ Required development tools:
 
   mkdir build
   cd build
-  emconfigure cmake -DCMAKE_BUILD_TYPE=MinSizeRel ..
+  emcmake cmake -DCMAKE_BUILD_TYPE=MinSizeRel ..
   cmake --build .
 
 Webassemble/JavaScript support is currently experimental.

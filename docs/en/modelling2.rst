@@ -24,7 +24,7 @@ It declares the width ``w`` and height ``h``
 of the finite element model.
 The declaration
 
-.. literalinclude:: examples/laplace.mzn
+.. literalinclude:: examples/laplace/laplace.mzn
   :language: minizinc
   :lines: 5-9
 
@@ -47,7 +47,7 @@ equation states that when the plate reaches a steady state
 the temperature at each internal point is the average of its orthogonal
 neighbours. The constraint 
 
-.. literalinclude:: examples/laplace.mzn
+.. literalinclude:: examples/laplace/laplace.mzn
   :language: minizinc
   :lines: 16-18
 
@@ -55,7 +55,7 @@ ensures that each internal point :math:`(i,j)` is the
 average of its four orthogonal neighbours.  
 The constraints
 
-.. literalinclude:: examples/laplace.mzn
+.. literalinclude:: examples/laplace/laplace.mzn
   :language: minizinc
   :lines: 20-24
 
@@ -64,7 +64,7 @@ gives these temperatures names: ``left``, ``right``, ``top``
 and ``bottom``.
 While the constraints
 
-.. literalinclude:: examples/laplace.mzn
+.. literalinclude:: examples/laplace/laplace.mzn
   :language: minizinc
   :lines: 26-30
 
@@ -74,10 +74,10 @@ elements with left, right and bottom temperature 0 and top temperature 100
 with the model shown in :numref:`ex-laplace`.
 
 
-.. literalinclude:: examples/laplace.mzn
+.. literalinclude:: examples/laplace/laplace.mzn
   :language: minizinc
   :name: ex-laplace
-  :caption: Finite element plate model for determining steady state temperatures (:download:`laplace.mzn <examples/laplace.mzn>`).
+  :caption: Finite element plate model for determining steady state temperatures (:download:`laplace.mzn <examples/laplace/laplace.mzn>`). :playground:`laplace`
 
 Running the command
 
@@ -150,15 +150,15 @@ model is shown in :numref:`ex-prod-planning` and a sample data file (for
 the cake baking example) is shown in :numref:`fig-prod-planning-data`.
 
 
-.. literalinclude:: examples/prod-planning.mzn
+.. literalinclude:: examples/prod-planning/prod-planning.mzn
   :language: minizinc
   :name: ex-prod-planning
-  :caption: Model for simple production planning (:download:`prod-planning.mzn <examples/prod-planning.mzn>`).
+  :caption: Model for simple production planning (:download:`prod-planning.mzn <examples/prod-planning/prod-planning.mzn>`). :playground:`prod-planning`
 
-.. literalinclude:: examples/prod-planning-data.dzn
+.. literalinclude:: examples/prod-planning/prod-planning-data.dzn
   :language: minizinc
   :name: fig-prod-planning-data
-  :caption: Example data file for the simple production planning problem (:download:`prod-planning-data.dzn <examples/prod-planning-data.dzn>`).
+  :caption: Example data file for the simple production planning problem (:download:`prod-planning-data.dzn <examples/prod-planning/prod-planning-data.dzn>`). :playground:`prod-planning`
 
 The new feature in this model is the use of :index:`enumerated
 types <type; enumerated>`. 
@@ -595,10 +595,10 @@ constraint which requires
 all the variables appearing in its argument to be pairwise different.
 
 
-.. literalinclude:: examples/send-more-money.mzn
+.. literalinclude:: examples/send-more-money/send-more-money.mzn
   :language: minizinc
   :name: ex-smm
-  :caption: Model for the cryptarithmetic problem SEND+MORE=MONEY (:download:`send-more-money.mzn <examples/send-more-money.mzn>`)
+  :caption: Model for the cryptarithmetic problem SEND+MORE=MONEY (:download:`send-more-money.mzn <examples/send-more-money/send-more-money.mzn>`) :playground:`send-more-money`
 
 The SEND+MORE=MONEY problem requires assigning a different
 digit to each letter so that the arithmetic constraint holds.
@@ -667,22 +667,21 @@ it sets it to zero.
   :mzndef:`<exp-1>` and :mzndef:`<exp-2>` even if both
   expressions are fixed.
 
-.. literalinclude:: examples/sudoku.mzn
+.. literalinclude:: examples/sudoku/sudoku.mzn
   :language: minizinc
   :name: ex-sudoku
-  :caption: Model for generalized Sudoku problem (:download:`sudoku.mzn <examples/sudoku.mzn>`)
+  :caption: Model for generalized Sudoku problem (:download:`sudoku.mzn <examples/sudoku/sudoku.mzn>`) :playground:`sudoku`
 
-
-.. literalinclude:: examples/sudoku.dzn
+.. literalinclude:: examples/sudoku/sudoku.dzn
   :language: minizinc
   :name: ex-sudokud
-  :caption: Example data file for generalised Sudoku problem (:download:`sudoku.dzn <examples/sudoku.dzn>`)
+  :caption: Example data file for generalised Sudoku problem (:download:`sudoku.dzn <examples/sudoku/sudoku.dzn>`) :playground:`sudoku`
 
 .. _fig-sudoku:
 
 .. figure:: figures/sudoku.*
   
-  The problem represented by data file :download:`sudoku.dzn <examples/sudoku.dzn>`
+  The problem represented by data file :download:`sudoku.dzn <examples/sudoku/sudoku.dzn>`
 
 Conditional expressions are very useful in building complex models, or
 complex output. Consider the model of Sudoku problems shown in
@@ -718,7 +717,7 @@ row and column and :math:`S \times S` subsquare are all different.
   single: solution; all
 
 One can use MiniZinc to search 
-for all solutions to a satisfaction problem (:mzn:`solve satisfy`). In the MiniZinc IDE, this can be achieved by setting the number of solutions to zero in the "User-defined behavior" part of the solver configuration pane (see :numref:`ide_solver_config`). On the command line, one can use the flag ``-a``
+for all solutions to a satisfaction problem (:mzn:`solve satisfy`). In the MiniZinc IDE, this can be achieved by unticking the "Stop after this many solutions" option in the "User-defined behavior" part of the solver configuration pane (see :numref:`ide_solver_config`). On the command line, one can use the flag ``-a``
 or ``--all-solutions``. Running
 
 .. code-block:: bash
@@ -765,10 +764,10 @@ functions for dealing with enumerated types.
 Let's revisit the problem of coloring the graph of Australia from :ref:`sec-modelling`.
 
 
-.. literalinclude:: examples/aust-enum.mzn
+.. literalinclude:: examples/aust-enum/aust-enum.mzn
   :language: minizinc
   :name: ex-aust-enum
-  :caption: Model for coloring Australia using enumerated types (:download:`aust-enum.mzn <examples/aust-enum.mzn>`).
+  :caption: Model for coloring Australia using enumerated types (:download:`aust-enum.mzn <examples/aust-enum/aust-enum.mzn>`). :playground:`aust-enum`
 
 The model shown in :numref:`ex-aust-enum` declares an enumerated type
 :mzn:`Color` which must be defined in the data file.  Each of the state
@@ -860,10 +859,10 @@ It is often useful to define an enumerated type by *extending* another enumerate
 
 In the case where not every flatmate needs to be assigned a job, and not every chore needs to be assigned to a flatmate, we need to introduce a value that signals "no assignment". We can then use the :mzn:`alldifferent_except` constraint to constrain the assignment. 
 
-.. literalinclude:: examples/assignment-extend-enum.mzn
+.. literalinclude:: examples/assignment-extend-enum/assignment-extend-enum.mzn
   :language: minizinc
   :name: ex-assignment-extend-enum
-  :caption: Model for an assignment problem using extended enumerated types (:download:`assignment-extend-enum.mzn <examples/assignment-extend-enum.mzn>`).
+  :caption: Model for an assignment problem using extended enumerated types (:download:`assignment-extend-enum.mzn <examples/assignment-extend-enum/assignment-extend-enum.mzn>`). :playground:`assignment-extend-enum`
 
 The model is shown in :numref:`ex-assignment-extend-enum`. It introduces a new enumerated type :mzn:`ChoreOrNothing`, which is a combination of the :mzn:`Chores` type and a new constructor :mzn:`Nothing`. The :mzn:`Chores` type is *injected* into the new type via a *constructor function*. In this case, we chose the name :mzn:`C` for the constructor function, but you can use any valid identifier you like. The constructor function can then be used to coerce a value of type :mzn:`Chores` into a value of the new type :mzn:`ChoreOrNothing`. For example, we could write a constraint such as
 
@@ -875,11 +874,10 @@ This is required because the type :mzn:`ChoreOrNothing` is considered different 
 
 In the example above, we could have used option types, instead of adding a new value that acts essentially like the absent value :mzn:`<>`. However, extended enum types have some advantages in this scenario. For example, we can extend a type by multiple extra values (say, different reasons for not being assigned any chore). We can also combine multiple enumerated types into one. Consider the scenario in :numref:`ex-assignment-combine-enums` where we can assign chores to flatmates and/or robots. Flatmates have preferences for certain chores, while robots have integer benefits. The model also shows how to test if a value of the extended enum in fact belongs to the underlying enum: In the output item, the test :mzn:`w in F(Flatmates)` uses the :mzn:`F` constructor to translate the set :mzn:`Flatmates` into the :mzn:`Worker` type, which enables the use of the :mzn:`in` operator.
 
-.. literalinclude:: examples/assignment-combine-enums.mzn
+.. literalinclude:: examples/assignment-combine-enums/assignment-combine-enums.mzn
   :language: minizinc
   :name: ex-assignment-combine-enums
-  :caption: Model for an assignment problem using combined enumerated types (:download:`assignment-combine-enums.mzn <examples/assignment-combine-enums.mzn>`).
-
+  :caption: Model for an assignment problem using combined enumerated types (:download:`assignment-combine-enums.mzn <examples/assignment-combine-enums/assignment-combine-enums.mzn>`). :playground:`assignment-combine-enums`
 
 .. _sec-complex:
 
@@ -933,15 +931,15 @@ which ensures that the tasks do not overlap.
   built-in function :mzn:`bool2int` can be used: it 
   returns 1 if its argument is true and 0 otherwise.
 
-.. literalinclude:: examples/jobshop.mzn
+.. literalinclude:: examples/jobshop/jobshop.mzn
   :language: minizinc
   :name: ex-jobshop
-  :caption: Model for job-shop scheduling problems (:download:`jobshop.mzn <examples/jobshop.mzn>`).
+  :caption: Model for job-shop scheduling problems (:download:`jobshop.mzn <examples/jobshop/jobshop.mzn>`). :playground:`jobshop`
 
-.. literalinclude:: examples/jdata.dzn
+.. literalinclude:: examples/jobshop/jdata.dzn
   :language: minizinc
   :name: ex-jdata
-  :caption: Data for job-shop scheduling problems (:download:`jdata.dzn <examples/jdata.dzn>`).
+  :caption: Data for job-shop scheduling problems (:download:`jdata.dzn <examples/jobshop/jdata.dzn>`). :playground:`jobshop`
 
 The job shop scheduling model given in :numref:`ex-jobshop`
 gives a realistic example of the use of this disjunctive modelling
@@ -957,11 +955,12 @@ The command
 
 .. code-block:: bash
   
-  $ minizinc --solver gecode --all-solutions jobshop.mzn jdata.dzn
+  $ minizinc --solver gecode --intermediate jobshop.mzn jdata.dzn
 
-solves a small job shop scheduling problem, and illustrates the behaviour of 
-``--all-solutions`` for optimisation problems (note that when running this in the MiniZinc IDE, ``--all-solutions`` is the default behaviour for optimisation problems).  Here the solver outputs increasingly better solutions as it finds them, rather than all possible optimal
-solutions. The output from this command is:
+solves a small job shop scheduling problem, and illustrates the behaviour of ``--intermediate`` for optimisation problems (note that when running this in the MiniZinc IDE, ``--intermediate`` is the default behaviour for optimisation problems).
+Here the solver outputs increasingly better solutions as it finds them.
+This flag has no effect for satisfaction problems.
+The output from this command is:
 
 .. code-block:: none
 
@@ -1004,7 +1003,7 @@ and then executing
 
 .. code-block:: bash
 
-  $ minizinc --solver gecode --all-solutions jobshop.mzn jobshop.dzn
+  $ minizinc --solver gecode --all-solutions jobshop.mzn jdata.dzn
 
 For this problem there are 3,444,375 optimal solutions. In the MiniZinc IDE, you can select "User-defined behavior" in the configuration editor and uncheck the option "Stop after this many solutions" in order to display all solutions of this satisfaction problem.
 
@@ -1027,15 +1026,15 @@ This can be elegantly modelled in
 MiniZinc. 
 The model and sample data is shown in :numref:`ex-stable-marriage` and :numref:`ex-sm-data`. 
 
-.. literalinclude:: examples/stable-marriage.mzn
+.. literalinclude:: examples/stable-marriage/stable-marriage.mzn
   :language: minizinc
   :name: ex-stable-marriage
-  :caption: Model for the stable marriage problem (:download:`stable-marriage.mzn <examples/stable-marriage.mzn>`).
+  :caption: Model for the stable marriage problem (:download:`stable-marriage.mzn <examples/stable-marriage/stable-marriage.mzn>`). :playground:`stable-marriage`
 
-.. literalinclude:: examples/stable-marriage.dzn
+.. literalinclude:: examples/stable-marriage/stable-marriage.dzn
   :language: minizinc
   :name: ex-sm-data
-  :caption: Example data for the stable marriage problem (:download:`stable-marriage.dzn <examples/stable-marriage.dzn>`).
+  :caption: Example data for the stable marriage problem (:download:`stable-marriage.dzn <examples/stable-marriage/stable-marriage.dzn>`). :playground:`stable-marriage`
 
 The first three items in the model declare the number of men/women and the
 set of men and women. Here we introduce the use of *anonymous enumerated types*.
@@ -1056,10 +1055,10 @@ husband of each women.
 
 The first two constraints
 
-.. literalinclude:: examples/stable-marriage.mzn
+.. literalinclude:: examples/stable-marriage/stable-marriage.mzn
   :language: minizinc
   :lines: 13-14
-  
+
 ensure that the assignment of husbands and wives is consistent: :mzn:`w` is the
 wife of :mzn:`m` implies :mzn:`m` is the husband of :mzn:`w` and vice versa. Notice how in
 :mzn:`husband[wife[m]]` the index expression :mzn:`wife[m]` is a
@@ -1067,7 +1066,7 @@ decision variable, not a parameter.
 
 The next two constraints are a  direct encoding of the stability condition:
 
-.. literalinclude:: examples/stable-marriage.mzn
+.. literalinclude:: examples/stable-marriage/stable-marriage.mzn
   :language: minizinc
   :lines: 16-22
 
@@ -1089,8 +1088,8 @@ gives the index set of :mzn:`a`.
     single: type; enumerated; anonymous
 
   An *anonymous enumerated type*
-  is of the form :mzndef:`anon_enum(<n>)` where :mzndef:`<n>` is a fixed integer
-  expression defining the size of the enumerated type.
+  is of the form :mzndef:`_(<integer set>)` where :mzndef:`<integer set>` is a fixed integer
+  set expression such as ``1..6`` which defines the size of the enumerated type.
 
   An anonymous enumerated type is just like any other enumerated type except
   that we have no names for its elements. When printed out, they are given
@@ -1114,10 +1113,10 @@ of MiniZinc treats this as failure so as to ensure that the treatment of
 parameters and decision variables is consistent, but a warning is issued
 since it is almost always an error.
 
-.. literalinclude:: examples/magic-series.mzn
+.. literalinclude:: examples/magic-series/magic-series.mzn
   :language: minizinc
   :name: ex-magic-series
-  :caption: Model solving the magic series problem (:download:`magic-series.mzn <examples/magic-series.mzn>`).
+  :caption: Model solving the magic series problem (:download:`magic-series.mzn <examples/magic-series/magic-series.mzn>`). :playground:`magic-series`
 
 .. index::
   single: bool2int
@@ -1241,10 +1240,10 @@ profit of item :mzn:`i`, and the maximum weight the knapsack can carry is
 given by :mzn:`capacity` then a natural model is given in
 :numref:`ex-knapsack-binary`.
 
-.. literalinclude:: examples/knapsack.mzn
+.. literalinclude:: examples/knapsack/knapsack.mzn
   :language: minizinc
   :name: ex-knapsack-binary
-  :caption: Model for the 0/1 knapsack problem (:download:`knapsack.mzn <examples/knapsack.mzn>`).
+  :caption: Model for the 0/1 knapsack problem (:download:`knapsack.mzn <examples/knapsack/knapsack.mzn>`). :playground:`knapsack`
 
 Notice that the :mzn:`var`
 keyword comes before the :mzn:`set`
@@ -1254,11 +1253,15 @@ This contrasts with an array in which the :mzn:`var` keyword
 qualifies the elements in the array rather than the array itself since the
 basic structure of the array is fixed, i.e. its index set.
 
-.. literalinclude:: examples/social-golfers.mzn
+.. literalinclude:: examples/social-golfers/social-golfers.mzn
   :language: minizinc
   :name: ex-social-golfers
-  :caption: Model for the social golfers problems (:download:`social-golfers.mzn <examples/social-golfers.mzn>`).
+  :caption: Model for the social golfers problems (:download:`social-golfers.mzn <examples/social-golfers/social-golfers.mzn>`). :playground:`social-golfers`
 
+.. literalinclude:: examples/social-golfers/social-golfers.dzn
+  :language: minizinc
+  :name: ex-social-golfers-data
+  :caption: Example data file for the social golfers problems (:download:`social-golfers.dzn <examples/social-golfers/social-golfers.dzn>`). :playground:`social-golfers`
 
 As a more complex example of set constraint consider the social golfers
 problem shown in :numref:`ex-social-golfers`. 
@@ -1321,10 +1324,10 @@ of the features introduced in this chapter including
 enumerated types, complex constraints, global constraints, 
 and complex output.
 
-.. literalinclude:: examples/wedding.mzn
+.. literalinclude:: examples/wedding/wedding.mzn
   :language: minizinc
   :name: ex-wedding
-  :caption: Planning wedding seating using enumerated types (:download:`wedding.mzn <examples/wedding.mzn>`).
+  :caption: Planning wedding seating using enumerated types (:download:`wedding.mzn <examples/wedding/wedding.mzn>`). :playground:`wedding`
 
 The model of :numref:`ex-wedding` arranges seats at the wedding table.
 The table has 12 numbered seats in order around the table, 6 on each side.

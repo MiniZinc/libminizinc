@@ -1,0 +1,18 @@
+{
+    "openFiles": [
+        "loan.mzn",
+        "loan1.dzn",
+        "loan2.dzn",
+        "loan3.dzn"
+    ],
+    "openTab": 0,
+    "projectFiles": [
+        "loan.mzn",
+        "loan1.dzn",
+        "loan2.dzn",
+        "loan3.dzn"
+    ],
+    "selectedBuiltinConfigId": "org.minizinc.mip.coin-bc",
+    "selectedBuiltinConfigVersion": "2.10.10/1.17.8",
+    "version": 106
+}

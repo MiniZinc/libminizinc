@@ -24,9 +24,9 @@ each of which must be given a  colour so that adjacent regions
 have different colours. 
 
 
-.. literalinclude:: examples/aust.mzn
+.. literalinclude:: examples/aust/aust.mzn
   :language: minizinc
-  :caption: A MiniZinc model :download:`aust.mzn <examples/aust.mzn>` for colouring the states and territories in Australia
+  :caption: A MiniZinc model :download:`aust.mzn <examples/aust/aust.mzn>` for colouring the states and territories in Australia :playground:`aust`
   :name: ex-aust
 
 We can model this problem very easily in MiniZinc. The model is shown in :numref:`ex-aust`.
@@ -267,7 +267,7 @@ We can evaluate our model by clicking the *Run* button in the MiniZinc IDE, or b
   
   $ minizinc --solver gecode aust.mzn
 
-where :download:`aust.mzn <examples/aust.mzn>`
+where :download:`aust.mzn <examples/aust/aust.mzn>`
 is the name of the file containing our MiniZinc model.
 We must use the file extension ``.mzn`` to indicate a MiniZinc model.
 The command ``minizinc`` with the option ``--solver gecode``
@@ -309,9 +309,9 @@ maximise the profit.
 A possible
 MiniZinc model is shown in :numref:`ex-cakes`.
 
-.. literalinclude:: examples/cakes.mzn
+.. literalinclude:: examples/cakes/cakes.mzn
   :language: minizinc
-  :caption: Model for determining how many banana and chocolate cakes to bake for the school fete (:download:`cakes.mzn <examples/cakes.mzn>`)
+  :caption: Model for determining how many banana and chocolate cakes to bake for the school fete (:download:`cakes.mzn <examples/cakes/cakes.mzn>`) :playground:`cakes`
   :name: ex-cakes
 
 .. index::
@@ -413,20 +413,20 @@ running it with different data files.
 Data files must have the file extension ``.dzn`` to indicate a MiniZinc data file
 and a model can be run with any number of data files (though a variable/parameter can only be assigned a value in one file). 
 
-.. literalinclude:: examples/cakes2.mzn
+.. literalinclude:: examples/cakes2/cakes2.mzn
   :language: minizinc
-  :caption: Data-independent model for determining how many banana and chocolate cakes to bake for the school fete (:download:`cakes2.mzn <examples/cakes2.mzn>`)
+  :caption: Data-independent model for determining how many banana and chocolate cakes to bake for the school fete (:download:`cakes2.mzn <examples/cakes2/cakes2.mzn>`) :playground:`cakes2`
   :name: ex-cakes2
 
 Our new model is shown in :numref:`ex-cakes2`.
 We can run it using the command
 
-.. code-block: bash
+.. code-block:: bash
 
   $ minizinc cakes2.mzn pantry.dzn
 
-where the data file :download:`pantry.dzn <examples/pantry.dzn>` is defined in
-:numref:`fig-pantry1`. This gives the same result as :download:`cakes.mzn <examples/cakes.mzn>`.
+where the data file :download:`pantry.dzn <examples/cakes2/pantry.dzn>` is defined in
+:numref:`fig-pantry1`. This gives the same result as :download:`cakes.mzn <examples/cakes/cakes.mzn>`.
 The output from running the command
 
 .. code-block:: bash
@@ -443,7 +443,7 @@ with an alternate data set defined in
   ----------
   ==========
 
-If we remove the output statement from :download:`cakes.mzn <examples/cakes.mzn>` then
+If we remove the output statement from :download:`cakes.mzn <examples/cakes/cakes.mzn>` then
 MiniZinc will use a default output. In this case the resulting
 output  will be
 
@@ -463,14 +463,14 @@ output  will be
   Declarations can be annotated as ``:: output`` or ``:: no_output`` to override
   the default behaviour.
 
-.. literalinclude:: examples/pantry.dzn
+.. literalinclude:: examples/cakes2/pantry.dzn
   :language: minizinc
-  :caption: Example data file for :download:`cakes2.mzn <examples/cakes2.mzn>` (:download:`pantry.dzn <examples/pantry.dzn>`)
+  :caption: Example data file for :download:`cakes2.mzn <examples/cakes2/cakes2.mzn>` (:download:`pantry.dzn <examples/cakes2/pantry.dzn>`) :playground:`cakes2`
   :name: fig-pantry1
 
-.. literalinclude:: examples/pantry2.dzn
+.. literalinclude:: examples/cakes2/pantry2.dzn
   :language: minizinc
-  :caption: Example data file for :download:`cakes2.mzn <examples/cakes2.mzn>` (:download:`pantry2.dzn <examples/pantry2.dzn>`)
+  :caption: Example data file for :download:`cakes2.mzn <examples/cakes2/cakes2.mzn>` (:download:`pantry2.dzn <examples/cakes2/pantry2.dzn>`) :playground:`cakes2`
   :name: fig-pantry2
 
 Small data files can be entered 
@@ -524,9 +524,10 @@ for one year to be repaid in 4 quarterly instalments.
 A model for this is shown in :numref:`ex-loan`. It uses a simple interest
 calculation to calculate the balance after each quarter.
 
-.. literalinclude:: examples/loan.mzn
+.. literalinclude:: examples/loan/loan.mzn
   :language: minizinc
-  :caption: Model for determining relationships between a 1 year loan repaying every quarter (:download:`loan.mzn <examples/loan.mzn>`)
+  :end-before: % inputs to allow us to enter values from playground/IDE
+  :caption: Model for determining relationships between a 1 year loan repaying every quarter (:download:`loan.mzn <examples/loan/loan.mzn>`) :playground:`loan`
   :name: ex-loan
 
 Note that we declare a float variable ``f``
@@ -536,7 +537,7 @@ similar to an integer variable using the keyword :mzn:`float` instead of
 We can use the same model to answer a number of different questions.
 The first question is: if I borrow $1000 at 4% quarterly interest and repay $260 per
 quarter, how much do I end up owing? This question is encoded by
-the data file :download:`loan1.dzn <examples/loan1.dzn>`.
+the data file :download:`loan1.dzn <examples/loan/loan1.dzn>`.
 
 Since we wish to use real number variables and constraint we need to use a solver
 that supports this type of problem. While Gecode (the default solver in the MiniZinc bundled binary distribution) does support floating point variables, a mixed integer linear programming (MIP) solver may be better suited to this particular type of problem.
@@ -557,7 +558,7 @@ The output is
 The second question is if I want to borrow $1000 at 4% and owe nothing at
 the end, how much do I need to repay?
 This question is encoded by
-the data file :download:`loan2.dzn <examples/loan2.dzn>`.
+the data file :download:`loan2.dzn <examples/loan/loan2.dzn>`.
 The output from running the command
 
 .. code-block:: bash
@@ -574,7 +575,7 @@ is
 
 The third question is if I can repay $250 a quarter, how much can I borrow
 at 4% to end up owing nothing? 
-This question is encoded by the data file :download:`loan3.dzn <examples/loan3.dzn>`.
+This question is encoded by the data file :download:`loan3.dzn <examples/loan/loan3.dzn>`.
 The output from running the command
 
 .. code-block:: bash
@@ -589,18 +590,17 @@ is
   per quarter for 1 year leaves 0.00 owing
   ----------
 
-.. literalinclude:: examples/loan1.dzn
+.. literalinclude:: examples/loan/loan1.dzn
   :language: minizinc
-  :caption: Example data file for :download:`loan.mzn <examples/loan.mzn>` (:download:`loan1.dzn <examples/loan1.dzn>`)
+  :caption: Example data file for :download:`loan.mzn <examples/loan/loan.mzn>` (:download:`loan1.dzn <examples/loan/loan1.dzn>`) :playground:`loan`
 
-.. literalinclude:: examples/loan2.dzn
+.. literalinclude:: examples/loan/loan2.dzn
   :language: minizinc
-  :caption: Example data file for :download:`loan.mzn <examples/loan.mzn>` (:download:`loan2.dzn <examples/loan2.dzn>`)
+  :caption: Example data file for :download:`loan.mzn <examples/loan/loan.mzn>` (:download:`loan2.dzn <examples/loan/loan2.dzn>`) :playground:`loan`
 
-.. literalinclude:: examples/loan3.dzn
+.. literalinclude:: examples/loan/loan3.dzn
   :language: minizinc
-  :caption: Example data file for :download:`loan.mzn <examples/loan.mzn>` (:download:`loan3.dzn <examples/loan3.dzn>`)
-
+  :caption: Example data file for :download:`loan.mzn <examples/loan/loan.mzn>` (:download:`loan3.dzn <examples/loan/loan3.dzn>`) :playground:`loan`
 
 .. defblock:: Float Arithmetic Operators
 

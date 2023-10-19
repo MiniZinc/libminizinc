@@ -40,10 +40,10 @@ If you are new to MiniZinc, follow the installation instructions and the introdu
   box has a heading, it usually lists the name of a file that can be
   downloaded from http://minizinc.org/doc-latest/en/downloads/index.html.
 
-.. literalinclude:: examples/dummy.mzn
+.. literalinclude:: examples/dummy/dummy.mzn
   :language: minizinc
   :name: ex-ex
-  :caption: A code example (:download:`dummy.mzn <examples/dummy.mzn>`)
+  :caption: A code example (:download:`dummy.mzn <examples/dummy/dummy.mzn>`)
 
 Throughout the documentation, some concepts are defined slightly more formally in special sections like this one.
 

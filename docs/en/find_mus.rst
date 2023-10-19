@@ -228,10 +228,10 @@ Below, we see a model for the latin squares puzzle [2]_ with some
 incompatible symmetry breaking constraints added.
 
 
-.. literalinclude:: examples/latin_squares.mzn
+.. literalinclude:: examples/latin_squares/latin_squares.mzn
   :language: minizinc
   :name: ex-mus-latin
-  :caption: Faulty model for Latin Squares (:download:`latin_squares.mzn <examples/latin_squares.mzn>`).
+  :caption: Faulty model for Latin Squares (:download:`latin_squares.mzn <examples/latin_squares/latin_squares.mzn>`).
 
 Here we have used the new constraint and expression annotations
 added in MiniZinc 2.2.0. Note that these annotations are not

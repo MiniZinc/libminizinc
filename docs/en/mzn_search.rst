@@ -45,10 +45,10 @@ the search must proceed down a different set of
 choices.  Typically finite domain solvers use :index:`depth first search <search; depth first>`
 where they undo the last choice made and then try to make a new choice.
 
-.. literalinclude:: examples/nqueens.mzn
+.. literalinclude:: examples/nqueens/nqueens.mzn
   :language: minizinc
   :name: ex-queens
-  :caption: Model for n-queens (:download:`nqueens.mzn <examples/nqueens.mzn>`).
+  :caption: Model for n-queens (:download:`nqueens.mzn <examples/nqueens/nqueens.mzn>`). :playground:`nqueens`
 
 A simple example of a finite domain problem is the :math:`n` queens
 problem which requires that we
@@ -124,7 +124,7 @@ problem. The annotation is attached to the solve item, after the keyword
 :mzn:`solve`.
 The search annotation
 
-.. literalinclude:: examples/nqueens.mzn
+.. literalinclude:: examples/nqueens/nqueens.mzn
   :language: minizinc
   :lines: 11-12
 
@@ -288,10 +288,10 @@ to annotation variables.
   
     annotation <annotation-name> ( <arg-def>, ..., <arg-def> ) ;
   
-.. literalinclude:: examples/nqueens-ann.mzn
+.. literalinclude:: examples/nqueens-ann/nqueens-ann.mzn
   :language: minizinc
   :name: ex-queens-ann
-  :caption: Annotated model for n-queens (:download:`nqueens-ann.mzn <examples/nqueens-ann.mzn>`).
+  :caption: Annotated model for n-queens (:download:`nqueens-ann.mzn <examples/nqueens-ann/nqueens-ann.mzn>`). :playground:`nqueens-ann`
 
 The program in :numref:`ex-queens-ann` illustrates the use of annotation
 declarations, annotations and annotation variables.
