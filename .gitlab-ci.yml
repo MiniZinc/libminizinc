@@ -297,7 +297,7 @@ bench:linear:manual:
 
 documentation:
   stage: test
-  image: guidotack/sphinx-doc:latest
+  image: ghcr.io/minizinc/docker-build-environment:sphinx
   variables:
     MZNARCH: "linux"
   before_script:
