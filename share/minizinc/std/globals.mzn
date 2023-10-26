@@ -71,6 +71,7 @@ include "count.mzn";
 include "count_fn.mzn";
 include "cumulative.mzn";
 include "cumulative_opt.mzn";
+include "cumulatives.mzn";
 include "dag.mzn";   
 include "decreasing.mzn";
 include "diffn.mzn";

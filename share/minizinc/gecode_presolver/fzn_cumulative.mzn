@@ -39,15 +39,9 @@
 predicate fzn_cumulative(array[int] of var int: s,
                      array[int] of var int: d,
                      array[int] of var int: r, var int: b) =              
-    assert(index_set(s) == index_set(d) /\ index_set(s) == index_set(r),
-        "cumulative: the 3 array arguments must have identical index sets",
-        assert(lb_array(d) >= 0 /\ lb_array(r) >= 0,
-            "cumulative: durations and resource usages must be non-negative",
-             cumulatives(s, d, r, b)
-        )
-    );
+  gecode_cumulatives(s, d, r, b);
 
 % Specialized cumulatives propagator is only for fixed bounds
-predicate cumulatives(array[int] of var int: s,
-                      array[int] of var int: d,
-                      array[int] of var int: r, var int: b);
+predicate gecode_cumulatives(array[int] of var int: s,
+                             array[int] of var int: d,
+                             array[int] of var int: r, var int: b);

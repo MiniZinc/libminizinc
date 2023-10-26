@@ -1214,6 +1214,89 @@ void p_table_bool(SolverInstanceBase& s, const Call* call) {
 void p_cumulatives(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = Expression::ann(call);
   auto& gi = static_cast<GecodeSolverInstance&>(s);
+
+  if (call->argCount() == 6) {
+    // Full cumulatives call
+    IntVarArgs start = gi.arg2intvarargs(call->arg(0));
+    IntVarArgs duration = gi.arg2intvarargs(call->arg(1));
+    IntVarArgs resources = gi.arg2intvarargs(call->arg(2));
+    IntVarArgs machine = gi.arg2intvarargs(call->arg(3));
+    IntArgs bound = GecodeSolverInstance::arg2intargs(call->arg(4));
+    bool upper = Expression::cast<BoolLit>(call->arg(5))->v();
+    int n = start.size();
+
+    if (duration.assigned()) {
+      IntArgs durationI(n);
+      for (int i = n; (i--) != 0;) {
+        durationI[i] = duration[i].val();
+      }
+      IntVarArgs end(n);
+      for (int i = n; (i--) != 0;) {
+        end[i] = expr(*gi.currentSpace, start[i] + durationI[i]);
+      }
+      if (machine.assigned()) {
+        IntArgs machineI(n);
+        for (int i = n; (i--) != 0;) {
+          machineI[i] = machine[i].val();
+        }
+        if (resources.assigned()) {
+          IntArgs resourcesI(n);
+          for (int i = n; (i--) != 0;) {
+            resourcesI[i] = resources[i].val();
+          }
+          cumulatives(*gi.currentSpace, machineI, start, durationI, end, resourcesI, bound, upper,
+                      GecodeSolverInstance::ann2icl(ann));
+        } else {
+          cumulatives(*gi.currentSpace, machineI, start, durationI, end, resources, bound, upper,
+                      GecodeSolverInstance::ann2icl(ann));
+        }
+      } else if (resources.assigned()) {
+        IntArgs resourcesI(n);
+        for (int i = n; (i--) != 0;) {
+          resourcesI[i] = resources[i].val();
+        }
+        cumulatives(*gi.currentSpace, machine, start, durationI, end, resourcesI, bound, upper,
+                    GecodeSolverInstance::ann2icl(ann));
+      } else {
+        cumulatives(*gi.currentSpace, machine, start, durationI, end, resources, bound, upper,
+                    GecodeSolverInstance::ann2icl(ann));
+      }
+    } else {
+      IntVarArgs end(n);
+      for (int i = n; (i--) != 0;) {
+        end[i] = expr(*gi.currentSpace, start[i] + duration[i]);
+      }
+      if (machine.assigned()) {
+        IntArgs machineI(n);
+        for (int i = n; (i--) != 0;) {
+          machineI[i] = machine[i].val();
+        }
+        if (resources.assigned()) {
+          IntArgs resourcesI(n);
+          for (int i = n; (i--) != 0;) {
+            resourcesI[i] = resources[i].val();
+          }
+          cumulatives(*gi.currentSpace, machineI, start, duration, end, resourcesI, bound, upper,
+                      GecodeSolverInstance::ann2icl(ann));
+        } else {
+          cumulatives(*gi.currentSpace, machineI, start, duration, end, resources, bound, upper,
+                      GecodeSolverInstance::ann2icl(ann));
+        }
+      } else if (resources.assigned()) {
+        IntArgs resourcesI(n);
+        for (int i = n; (i--) != 0;) {
+          resourcesI[i] = resources[i].val();
+        }
+        cumulatives(*gi.currentSpace, machine, start, duration, end, resourcesI, bound, upper,
+                    GecodeSolverInstance::ann2icl(ann));
+      } else {
+        cumulatives(*gi.currentSpace, machine, start, duration, end, resources, bound, upper,
+                    GecodeSolverInstance::ann2icl(ann));
+      }
+    }
+    return;
+  }
+
   IntVarArgs start = gi.arg2intvarargs(call->arg(0));
   IntVarArgs duration = gi.arg2intvarargs(call->arg(1));
   IntVarArgs height = gi.arg2intvarargs(call->arg(2));
