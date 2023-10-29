@@ -1,0 +1,14 @@
+{
+    "openFiles": [
+        "playground/nqueens_sym.mzn"
+    ],
+    "openTab": 0,
+    "projectFiles": [
+        "../nqueens/playground/nqueens.html",
+        "playground/nqueens_sym.mzn",
+        "../nqueens/playground/visualise.mzn"
+    ],
+    "selectedBuiltinConfigId": "org.gecode.gecode",
+    "selectedBuiltinConfigVersion": "6.3.0",
+    "version": 106
+}

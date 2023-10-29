@@ -140,6 +140,7 @@ public:
   void add(ASTString section, Expression* e);
   bool empty() const { return _sections.empty(); };
   bool contains(ASTString section) const { return _idx.count(section) > 0; }
+  bool noUserDefined() const;
 
   iterator begin() { return _sections.begin(); }
   const_iterator begin() const { return _sections.begin(); }

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <script src="/minizinc-ide.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans&display=swap" rel="stylesheet">
+  <style>
+    #board {
+      border: solid 1px #29221d;
+      width: min-content;
+      font-family: 'Noto Sans', sans-serif;
+    }
+
+    .row {
+      display: flex;
+    }
+
+    .cell {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 40px;
+      background-color: #ede2cc;
+      color: #29221d;
+    }
+
+    .queen::after {
+      content: '♛';
+      cursor: pointer;
+    }
+
+    .queen:not(.selected):hover {
+      color: #053275;
+    }
+
+    .selected {
+      color: #a30d0d;
+    }
+
+    .e-w:not(.queen)::after {
+      content: '┄';
+    }
+
+    .n-s:not(.queen)::after {
+      content: '┆';
+    }
+
+    .ne-sw:not(.queen)::after {
+      content: '╱';
+    }
+
+    .nw-se:not(.queen)::after {
+      content: '╲';
+    }
+
+    .dark {
+      background-color: #8c7556;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="board"></div>
+  <script>
+    (async function () {
+      const n = await MiniZincIDE.getUserData();
+      const board = document.getElementById('board');
+      const cells = [];
+      let dark = false;
+      let selected = -1;
+      for (let i = 0; i < n; i++) {
+        const row = document.createElement('div');
+        row.classList.add('row');
+        const rowCells = [];
+        for (let j = 0; j < n; j++) {
+          const cell = document.createElement('div');
+          cell.addEventListener('click', () => {
+            if (cell.classList.contains('queen')) {
+              selected = i;
+            } else {
+              selected = -1;
+            }
+            updateSelected();
+          });
+          cell.classList.add('cell');
+          if (dark) {
+            cell.classList.add('dark');
+          }
+          dark = !dark;
+          rowCells.push(cell);
+          row.appendChild(cell);
+        }
+        board.appendChild(row);
+        cells.push(rowCells);
+        if (n % 2 === 0) {
+          dark = !dark;
+        }
+      }
+
+      function updateSelected() {
+        for (let i = 0; i < n; i++) {
+          for (let j = 0; j < n; j++) {
+            cells[i][j].classList.remove('selected');
+            cells[i][j].classList.remove('e-w');
+            cells[i][j].classList.remove('n-s');
+            cells[i][j].classList.remove('ne-sw');
+            cells[i][j].classList.remove('nw-se');
+          }
+        }
+        if (selected !== -1) {
+          let row = -1;
+          for (let j = 0; j < n; j++) {
+            if (cells[selected][j].classList.contains('queen')) {
+              row = j;
+              break;
+            }
+          }
+          if (row !== -1) {
+            for (let i = 0; i < n; i++) {
+              for (let j = 0; j < n; j++) {
+                if (i == selected) {
+                  cells[i][j].classList.add('selected');
+                  cells[i][j].classList.add('e-w');
+                }
+                if (j == row) {
+                  cells[i][j].classList.add('selected');
+                  cells[i][j].classList.add('n-s');
+                }
+                if (i + j === selected + row) {
+                  cells[i][j].classList.add('selected');
+                  cells[i][j].classList.add('ne-sw');
+                }
+                if (i - j === selected - row) {
+                  cells[i][j].classList.add('selected');
+                  cells[i][j].classList.add('nw-se');
+                }
+              }
+            }
+          }
+        }
+      }
+
+      function setSolution(data) {
+        for (let i = 0; i < n; i++) {
+          for (let j = 0; j < n; j++) {
+            if (data[j] === i) {
+              cells[i][j].classList.add('queen');
+            } else {
+              cells[i][j].classList.remove('queen');
+            }
+          }
+        }
+        updateSelected();
+      }
+
+      // Visualise last solution on startup
+      const numSols = await MiniZincIDE.getNumSolutions();
+      if (numSols > 0) {
+        const solution = await MiniZincIDE.getSolution(numSols - 1);
+        setSolution(solution.data);
+      }
+
+      // Show new solutions if we're following the latest solution
+      let followLatest = true;
+      MiniZincIDE.on('solution', (solution) => {
+        if (followLatest) {
+          setSolution(solution.data);
+        }
+      });
+
+      MiniZincIDE.on('goToSolution', async (index) => {
+        // Requesting index -1 turns on following latest solution
+        // Otherwise, we stop showing the latest solution and show the requested one
+        followLatest = index === -1;
+        const solution = await MiniZincIDE.getSolution(index);
+        setSolution(solution.data);
+      });
+    })();
+  </script>
+</body>
+
+</html>

@@ -52,14 +52,14 @@ def generate_playground_links(app):
                     ide_project = json.loads(mzp.read_text())
                     for file in ide_project["openFiles"]:
                         p = project / file
-                        localised = localised_src / project.name / p.name
+                        localised = localised_src / project.name / file
                         if localised.exists():
                             p = localised
                         files.append({"name": p.name, "contents": p.read_text()})
                     for file in ide_project["projectFiles"]:
                         if file not in ide_project["openFiles"]:
                             p = project / file
-                            localised = localised_src / project.name / p.name
+                            localised = localised_src / project.name / file
                             if localised.exists():
                                 p = localised
                             files.append(

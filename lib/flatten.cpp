@@ -886,6 +886,15 @@ void OutputSectionStore::add(ASTString section, Expression* e) {
   }
 }
 
+bool OutputSectionStore::noUserDefined() const {
+  for (const auto& section : _sections) {
+    if (!section.first.endsWith("_json")) {
+      return false;
+    }
+  }
+  return true;
+}
+
 TupleType::TupleType(const std::vector<Type>& fields) {
   _size = fields.size();
   for (size_t i = 0; i < _size; ++i) {

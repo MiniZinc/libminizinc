@@ -1372,8 +1372,9 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
       e.outputSections.add(ASTString("dzn"), o);  // Add to dzn section for encapsulation
       break;
     default:
-      if (e.outputSections.empty()) {
-        // If no output, use dzn output
+      if (e.outputSections.noUserDefined()) {
+        // If no user defined output, use dzn output (we still want to generate dzn output if there
+        // are only vis_json sections for example)
         auto* dzno = create_dzn_output(e, outputObjective, false, false);
         e.outputSections.add(ASTString("dzn"), dzno);  // Add to dzn section for encapsulation
         // Combine with other output so we don't lose other sections

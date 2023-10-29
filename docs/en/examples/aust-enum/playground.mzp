@@ -1,0 +1,14 @@
+{
+    "openFiles": [
+        "playground/aust-enum.mzn"
+    ],
+    "openTab": 0,
+    "projectFiles": [
+        "playground/aust-enum.mzn",
+        "playground/australia.html",
+        "playground/visualise.mzn"
+    ],
+    "selectedBuiltinConfigId": "org.gecode.gecode",
+    "selectedBuiltinConfigVersion": "6.3.0",
+    "version": 106
+}

@@ -265,8 +265,8 @@ test vis_bar(array [$$D] of var int: x,
              array [$$D] of string: data_labels) =
     ide_launch_server("std/ide/vis_bar.html", (
         'type': "bar",
-        seriesLabels:  "null",
-        dataLabels:  showJSON(data_labels)
+        seriesLabels: <>,
+        dataLabels: data_labels
     )) /\
     output_to_section("vis_json", showJSON([(1, i): x[i]| i in index_set(x)]));
 /** @group ide.visualisation 
@@ -277,8 +277,8 @@ test vis_bar(array [$$D] of var float: x,
              array [$$D] of string: data_labels) =
     ide_launch_server("std/ide/vis_bar.html", (
         'type': "bar",
-        seriesLabels:  "null",
-        dataLabels:  showJSON(data_labels)
+        seriesLabels: <>,
+        dataLabels: data_labels
     )) /\
     output_to_section("vis_json", showJSON([(1, i): x[i]| i in index_set(x)]));
 
