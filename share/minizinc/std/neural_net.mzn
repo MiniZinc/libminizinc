@@ -12,7 +12,7 @@ enum NEURON_TYPE = { NT_RELU, NT_STEP, NT_LINEAR, NT_SOFTPLUS };
   @param outputs: an array of float variables
   @param output_ids: array[int] of node
   @param bias: array[node] of float
-  @param edge_weight: array[edge] of float (dummy one at end!)
+  @param edge_weight: array[edge] of float
   @param edge_parent: array[edge] of neuron (start neuron for edge)
   @param first_edge: array[node] of 1..m+1
   @param neuron_type: { NT_RELU, NT_STEP, NT_LINEAR, NT_SOFTPLUS }

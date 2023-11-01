@@ -85,6 +85,8 @@ Bug fixes:
    many ``var`` or ``opt`` fields.
 -  Do not generate default DZN output when there are only sectioned ``output``
    items present (:bugref:`733`).
+-  Fix the edge indexing of the edges for the final node in the ``neural_net``
+   global constraint (:bugref:`738` :bugref:`573`).
 
 .. _v2.7.6:
 
