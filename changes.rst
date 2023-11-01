@@ -87,6 +87,8 @@ Bug fixes:
    items present (:bugref:`733`).
 -  Fix the edge indexing of the edges for the final node in the ``neural_net``
    global constraint (:bugref:`738` :bugref:`573`).
+-  Add better error messaging when an index set mismatch is encountered in the
+   standard library (:bugref:`740`).
 
 .. _v2.7.6:
 

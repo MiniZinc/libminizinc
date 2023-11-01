@@ -2433,10 +2433,21 @@ void check_index_sets(EnvI& env, VarDecl* vd, Expression* e, bool isArg) {
                   }
                   oss << "], but is assigned to array with index "
                       << (tis.size() == 1 ? "set [" : "sets [");
-                  for (unsigned int j = 0; j < al->dims(); j++) {
-                    oss << al->min(j) << ".." << al->max(j);
-                    if (j < al->dims() - 1) {
-                      oss << ", ";
+                  Type al_t = al->type();
+                  if (al_t.typeId() == 0) {
+                    for (unsigned int j = 0; j < al->dims(); j++) {
+                      oss << al->min(j) << ".." << al->max(j);
+                      if (j < al->dims() - 1) {
+                        oss << ", ";
+                      }
+                    }
+                  } else {
+                    const auto& arrayIds = env.getArrayEnum(al_t.typeId());
+                    for (unsigned int j = 0; j < al->dims(); j++) {
+                      display_enum_range(oss, env, al->min(j), al->max(j), arrayIds[j]);
+                      if (j < al->dims() - 1) {
+                        oss << ", ";
+                      }
                     }
                   }
                   oss << "]. You may need to coerce the index sets using the array" << tis.size()

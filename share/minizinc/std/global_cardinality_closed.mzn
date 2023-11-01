@@ -18,7 +18,7 @@ predicate global_cardinality_closed(array[$X] of var $$E: x,
                                     array[$Y] of var int: counts) =
     assert(index_sets_agree(cover, counts),
         "global_cardinality_closed: " ++
-        "cover and counts must have identical index sets",
+        "cover has index sets " ++ show_index_sets(cover) ++ " and count has index sets " ++ show_index_sets(counts) ++ ", but they must have identical index sets",
         if length(x) == 0 then
           forall(c in array1d(counts))(c = 0)
         else
@@ -57,7 +57,7 @@ predicate global_cardinality_closed(array[$X] of var $$E: x,
   assert(
    index_sets_agree(cover,lbound) /\ index_sets_agree(cover,ubound),
    "global_cardinality_low_up_closed: " ++
-     "cover, lbound and ubound must have identical index sets",
+   "cover has index sets " ++ show_index_sets(cover) ++ ", lbound has index sets " ++ show_index_sets(lbound) ++ ", and ubound has index sets " ++ show_index_sets(lbound) ++ ", but they must have identical index sets",
    if length(x) == 0 then
           assert(forall(l in array1d(lbound))( l <= 0) /\ forall(u in array1d(ubound))( u >= 0)
             \/ length(cover) == 0,
@@ -86,7 +86,7 @@ predicate global_cardinality_closed(array[$X] of var opt $$E: x,
   assert(
    index_sets_agree(cover,lbound) /\ index_sets_agree(cover,ubound),
    "global_cardinality_low_up_closed: " ++
-     "cover, lbound and ubound must have identical index sets",
+   "cover has index sets " ++ show_index_sets(cover) ++ ", lbound has index sets " ++ show_index_sets(lbound) ++ ", and ubound has index sets " ++ show_index_sets(lbound) ++ ", but they must have identical index sets",
    if length(x) == 0 then
           assert(forall(l in array1d(lbound))( l <= 0) /\ forall(u in array1d(ubound))( u >= 0)
             \/ length(cover) == 0,
@@ -112,7 +112,7 @@ predicate global_cardinality_closed(array[$X] of var set of $$E: x,
                                     array[$Y] of var int: counts) = 
     assert(index_sets_agree(cover, counts),
         "global_cardinality_closed: " ++
-        "cover and counts must have identical index sets",
+        "cover has index sets " ++ show_index_sets(cover) ++ " and count has index sets " ++ show_index_sets(counts) ++ ", but they must have identical index sets",
         if length(x) == 0 then
           forall(c in array1d(counts))(c = 0)
         else
@@ -133,7 +133,7 @@ predicate global_cardinality_closed(array[$X] of var set of $$E: x,
   assert(
    index_sets_agree(cover,lbound) /\ index_sets_agree(cover,ubound),
    "global_cardinality_low_up_closed: " ++
-     "cover, lbound and ubound must have identical index sets",
+   "cover has index sets " ++ show_index_sets(cover) ++ ", lbound has index sets " ++ show_index_sets(lbound) ++ ", and ubound has index sets " ++ show_index_sets(lbound) ++ ", but they must have identical index sets",
    if length(x) == 0 then
           assert(forall(l in array1d(lbound))( l <= 0) /\ forall(u in array1d(ubound))( u >= 0)
             \/ length(cover) == 0,

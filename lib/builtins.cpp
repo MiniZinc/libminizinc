@@ -23,12 +23,13 @@
 #include <minizinc/support/regex.hh>
 #include <minizinc/typecheck.hh>
 #include <minizinc/utils.hh>
+#include <minizinc/values.hh>
 
-#include <climits>
 #include <cmath>
 #include <iomanip>
 #include <random>
 #include <regex>
+#include <sstream>
 
 #define LAST_SUPPORTED_VERSION SemanticVersion(2, 4, 3)
 
@@ -2158,6 +2159,35 @@ IntVal b_string_length(EnvI& env, Call* call) {
   return static_cast<long long int>(s.size());
 }
 
+std::string b_show_index_sets(EnvI& env, Call* c) {
+  assert(c->argCount() == 1);
+  Expression* e = c->arg(0);
+  Type t = Expression::type(e);
+  assert(t.dim() != 0);
+  std::ostringstream oss;
+  oss << "[";
+  GCLock lock;
+  ArrayLit* al = eval_array_lit(env, e);
+  if (t.typeId() == 0) {
+    for (unsigned int j = 0; j < al->dims(); j++) {
+      oss << al->min(j) << ".." << al->max(j);
+      if (j < al->dims() - 1) {
+        oss << ", ";
+      }
+    }
+  } else {
+    const auto& arrayIds = env.getArrayEnum(t.typeId());
+    for (unsigned int j = 0; j < al->dims(); j++) {
+      display_enum_range(oss, env, al->min(j), al->max(j), arrayIds[j]);
+      if (j < al->dims() - 1) {
+        oss << ", ";
+      }
+    }
+  }
+  oss << "]";
+  return oss.str();
+}
+
 std::string b_show_enum_type(EnvI& env, Expression* e, Type t, bool dzn, bool json) {
   Id* ti_id = env.getEnum(t.typeId())->e()->id();
   GCLock lock;
@@ -4116,11 +4146,13 @@ void register_builtins(Env& e) {
     rb(env, m, ASTString("show"), t, b_show);
     rb(env, m, ASTString("showDzn"), t, b_show_dzn);
     rb(env, m, ASTString("showJSON"), t, b_show_json);
+    rb(env, m, ASTString("show_index_sets"), t, b_show_index_sets);
     t[0].st(Type::ST_SET);
     t[0].ot(Type::OT_PRESENT);
     rb(env, m, ASTString("show"), t, b_show);
     rb(env, m, ASTString("showDzn"), t, b_show_dzn);
     rb(env, m, ASTString("showJSON"), t, b_show_json);
+    rb(env, m, ASTString("show_index_sets"), t, b_show_index_sets);
   }
   {
     std::vector<Type> t(1);

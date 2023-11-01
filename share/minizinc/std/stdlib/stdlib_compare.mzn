@@ -192,161 +192,150 @@ test lex_lesseq(array[int] of $T: x,array[int] of $T: y) =
 
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically smaller than array \a y */
 function     bool: '<'(array[$U] of     $T: x,array[$U] of     $T: y) =
-  assert(index_sets_agree(x,y), "array index sets do not match",
-         lex_less(array1d(x),array1d(y)));
+  matching_index_sets(x, y) /\
+  lex_less(array1d(x),array1d(y));
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically smaller than array \a y */
-function var bool: '<'(array[$U] of var int: x,array[$U] of var int: y) = 
-  assert(index_sets_agree(x,y), "array index sets do not match",
-         lex_less(array1d(x),array1d(y)));
+function var bool: '<'(array[$U] of var int: x,array[$U] of var int: y) =
+  matching_index_sets(x, y) /\
+  lex_less(array1d(x),array1d(y));
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically smaller than array \a y */
-function var bool: '<'(array[$U] of var bool: x,array[$U] of var bool: y) = 
-  assert(index_sets_agree(x,y), "array index sets do not match",
-         lex_less(array1d(x),array1d(y)));
+function var bool: '<'(array[$U] of var bool: x,array[$U] of var bool: y) =
+  matching_index_sets(x, y) /\
+  lex_less(array1d(x),array1d(y));
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically smaller than array \a y */
-function var bool: '<'(array[$U] of var float: x,array[$U] of var float: y) = 
-  assert(index_sets_agree(x,y), "array index sets do not match",
-         lex_less(array1d(x),array1d(y)));
+function var bool: '<'(array[$U] of var float: x,array[$U] of var float: y) =
+  matching_index_sets(x, y) /\
+  lex_less(array1d(x),array1d(y));
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically smaller than array \a y */
-function var bool: '<'(array[$U] of var set of int: x,array[$U] of var set of int: y) = 
-  assert(index_sets_agree(x,y), "array index sets do not match",
-         lex_less(array1d(x),array1d(y)));
+function var bool: '<'(array[$U] of var set of int: x,array[$U] of var set of int: y) =
+  matching_index_sets(x, y) /\
+  lex_less(array1d(x),array1d(y));
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically greater than array \a y */
 function     bool: '>'(array[$U] of     $T: x,array[$U] of     $T: y) =
-  assert(index_sets_agree(x,y), "array index sets do not match",
-         lex_less(array1d(y),array1d(x)));
+  matching_index_sets(x, y) /\
+  lex_less(array1d(y),array1d(x));
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically greater than array \a y */
 function var bool: '>'(array[$U] of var int: x,array[$U] of var int: y) =
-  assert(index_sets_agree(x,y), "array index sets do not match",
-         lex_less(array1d(y),array1d(x)));
+  matching_index_sets(x, y) /\
+  lex_less(array1d(y),array1d(x));
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically greater than array \a y */
 function var bool: '>'(array[$U] of var bool: x,array[$U] of var bool: y) =
-  assert(index_sets_agree(x,y), "array index sets do not match",
-         lex_less(array1d(y),array1d(x)));
+  matching_index_sets(x, y) /\
+  lex_less(array1d(y),array1d(x));
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically greater than array \a y */
 function var bool: '>'(array[$U] of var float: x,array[$U] of var float: y) =
-  assert(index_sets_agree(x,y), "array index sets do not match",
-         lex_less(array1d(y),array1d(x)));
+  matching_index_sets(x, y) /\
+  lex_less(array1d(y),array1d(x));
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically greater than array \a y */
 function var bool: '>'(array[$U] of var set of int: x,array[$U] of var set of int: y) =
-  assert(index_sets_agree(x,y), "array index sets do not match",
-         lex_less(array1d(y),array1d(x)));
+  matching_index_sets(x, y) /\
+  lex_less(array1d(y),array1d(x));
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically smaller than or equal to array \a y */
 function     bool: '<='(array[$U] of     $T: x,array[$U] of     $T: y) =
-  assert(index_sets_agree(x,y), "array index sets do not match",
-         lex_lesseq(array1d(x),array1d(y)));
+  matching_index_sets(x, y) /\
+  lex_lesseq(array1d(x),array1d(y));
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically smaller than or equal to array \a y */
 function var bool: '<='(array[$U] of var int: x,array[$U] of var int: y) =
-  assert(index_sets_agree(x,y), "array index sets do not match",
-         lex_lesseq(array1d(x),array1d(y)));
+  matching_index_sets(x, y) /\
+  lex_lesseq(array1d(x),array1d(y));
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically smaller than or equal to array \a y */
 function var bool: '<='(array[$U] of var bool: x,array[$U] of var bool: y) =
-  assert(index_sets_agree(x,y), "array index sets do not match",
-         lex_lesseq(array1d(x),array1d(y)));
+  matching_index_sets(x, y) /\
+  lex_lesseq(array1d(x),array1d(y));
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically smaller than or equal to array \a y */
 function var bool: '<='(array[$U] of var float: x,array[$U] of var float: y) =
-  assert(index_sets_agree(x,y), "array index sets do not match",
-         lex_lesseq(array1d(x),array1d(y)));
+  matching_index_sets(x, y) /\
+  lex_lesseq(array1d(x),array1d(y));
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically smaller than or equal to array \a y */
 function var bool: '<='(array[$U] of var set of int: x,array[$U] of var set of int: y) =
-  assert(index_sets_agree(x,y), "array index sets do not match",
-         lex_lesseq(array1d(x),array1d(y)));
+  matching_index_sets(x, y) /\
+  lex_lesseq(array1d(x),array1d(y));
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically greater than or equal to array \a y */
 function     bool: '>='(array[$U] of     $T: x,array[$U] of     $T: y) =
-  assert(index_sets_agree(x,y), "array index sets do not match",
-         lex_lesseq(array1d(y),array1d(x)));
+  matching_index_sets(x, y) /\
+  lex_lesseq(array1d(y),array1d(x));
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically greater than or equal to array \a y */
 function var bool: '>='(array[$U] of var int: x,array[$U] of var int: y) =
-  assert(index_sets_agree(x,y), "array index sets do not match",
-         lex_lesseq(array1d(y),array1d(x)));
+  matching_index_sets(x, y) /\
+  lex_lesseq(array1d(y),array1d(x));
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically greater than or equal to array \a y */
 function var bool: '>='(array[$U] of var bool: x,array[$U] of var bool: y) =
-  assert(index_sets_agree(x,y), "array index sets do not match",
-         lex_lesseq(array1d(y),array1d(x)));
+  matching_index_sets(x, y) /\
+  lex_lesseq(array1d(y),array1d(x));
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically greater than or equal to array \a y */
 function var bool: '>='(array[$U] of var float: x,array[$U] of var float: y) =
-  assert(index_sets_agree(x,y), "array index sets do not match",
-         lex_lesseq(array1d(y),array1d(x)));
+  matching_index_sets(x, y) /\
+  lex_lesseq(array1d(y),array1d(x));
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically greater than or equal to array \a y */
 function var bool: '>='(array[$U] of var set of int: x,array[$U] of var set of int: y) =
-  assert(index_sets_agree(x,y), "array index sets do not match",
-         lex_lesseq(array1d(y),array1d(x)));
+  matching_index_sets(x, y) /\
+  lex_lesseq(array1d(y),array1d(x));
 
 /** @group stdlib.builtins.compare Return if array \a x is equal to array \a y */
 function bool: '='(array[$U] of $T: x, array[$U] of $T: y) ::promise_commutative =
-    let {
-        any: xx = array1d(x);
-        any: yy = array1d(y);
-    } in
-    assert(index_sets_agree(x,y), "array index sets do not match",
-      forall (i in index_set(xx)) (xx[i]=yy[i])
-    );
+  matching_index_sets(x, y) /\
+  let {
+    any: xx = array1d(x);
+    any: yy = array1d(y);
+  } in forall (i in index_set(xx)) (xx[i]=yy[i]);
 
 /** @group stdlib.builtins.compare Return if array \a x is equal to array \a y */
 function bool: '='(array[$U] of opt $T: x, array[$U] of opt $T: y) ::promise_commutative =
-    let {
-        any: xx = array1d(x);
-        any: yy = array1d(y);
-    } in
-    assert(index_sets_agree(x,y), "array index sets do not match",
-      forall (i in index_set(xx)) (xx[i]=yy[i])
-    );
+  matching_index_sets(x, y) /\
+  let {
+    any: xx = array1d(x);
+    any: yy = array1d(y);
+  } in forall (i in index_set(xx)) (xx[i]=yy[i]);
 
 /** @group stdlib.builtins.compare Return if array \a x is equal to array \a y */
 function var bool: '='(array[$U] of var $T: x, array[$U] of var $T: y) ::promise_commutative =
+  matching_index_sets(x, y) /\
     let {
         any: xx = array1d(x);
         any: yy = array1d(y);
-    } in
-    assert(index_sets_agree(x,y), "array index sets do not match",
-      forall (i in index_set(xx)) (xx[i]=yy[i])
-    );
+    } in forall (i in index_set(xx)) (xx[i]=yy[i]);
 
 /** @group stdlib.builtins.compare Return if array \a x is equal to array \a y */
 function var bool: '='(array[$U] of  var opt $T: x,array[$U] of var opt $T: y) ::promise_commutative =
+  matching_index_sets(x, y) /\
     let {
         any: xx = array1d(x);
         any: yy = array1d(y);
-    } in
-    assert(index_sets_agree(x,y), "array index sets do not match",
-      forall (i in index_set(xx)) (xx[i]=yy[i])
-    );
+    } in forall (i in index_set(xx)) (xx[i]=yy[i]);
 
 /** @group stdlib.builtins.compare Return if array \a x is not equal to array \a y */
 function bool: '!='(array[$U] of $T: x, array[$U] of $T: y) ::promise_commutative =
-    let {
-        any: xx = array1d(x);
-        any: yy = array1d(y);
-    } in
-    assert(index_sets_agree(x,y), "array index sets do not match",
-      exists (i in index_set(xx)) (xx[i]!=yy[i])
-    );
+  matching_index_sets(x, y) /\
+  let {
+    any: xx = array1d(x);
+    any: yy = array1d(y);
+  } in exists (i in index_set(xx)) (xx[i]!=yy[i]);
 
 /** @group stdlib.builtins.compare Return if array \a x is not equal to array \a y */
 function bool: '!='(array[$U] of opt $T: x, array[$U] of opt $T: y) ::promise_commutative =
-    let {
-        any: xx = array1d(x);
-        any: yy = array1d(y);
-    } in
-    assert(index_sets_agree(x,y), "array index sets do not match",
-      exists (i in index_set(xx)) (xx[i]!=yy[i])
-    );
+  matching_index_sets(x, y) /\
+  let {
+    any: xx = array1d(x);
+    any: yy = array1d(y);
+  } in exists (i in index_set(xx)) (xx[i]!=yy[i]);
 
 /** @group stdlib.builtins.compare Return if array \a x is not equal to array \a y */
 function var bool: '!='(array[$U] of var $T: x, array[$U] of var $T: y) ::promise_commutative =
-    let {
-        any: xx = array1d(x);
-        any: yy = array1d(y);
-    } in
-    assert(index_sets_agree(x,y), "array index sets do not match",
-      exists (i in index_set(xx)) (xx[i]!=yy[i])
-    );
+  matching_index_sets(x, y) /\
+  let {
+    any: xx = array1d(x);
+    any: yy = array1d(y);
+  } in exists (i in index_set(xx)) (xx[i]!=yy[i]);
 
 /** @group stdlib.builtins.compare Return if array \a x is not equal to array \a y */
 function var bool: '!='(array[$U] of var opt $T: x, array[$U] of var opt $T: y) ::promise_commutative =
-    let {
-        any: xx = array1d(x);
-        any: yy = array1d(y);
-    } in
-    assert(index_sets_agree(x,y), "array index sets do not match",
-      exists (i in index_set(xx)) (xx[i]!=yy[i])
-    );
+  matching_index_sets(x, y) /\
+  let {
+    any: xx = array1d(x);
+    any: yy = array1d(y);
+  } in exists (i in index_set(xx)) (xx[i]!=yy[i]);
+
+test matching_index_sets(array[$U] of any $T: x, array[$U] of any $T: y) =
+  assert(index_sets_agree(x,y), "Index set mismatch. The index set of the left hand side value is " ++ show_index_sets(x) ++ ", but index set of the right hand side value is " ++ show_index_sets(y) ++ ". You may need to coerce the index sets using an array transformation.");
+
+function string: show_index_sets(array[$U] of any $T: x);

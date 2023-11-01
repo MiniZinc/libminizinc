@@ -9,7 +9,7 @@ predicate fzn_geost(
     array[int    ] of var int    : kind
 ) =
         % A few useful definitions
-        assert(forall([has_bounds(k) | k in kind]), "fzn_geost: the `kind' argument must be bounded") /\
+        assert(forall([has_bounds(ki) | ki in kind]), "fzn_geost: the `kind' argument must be bounded") /\
         let { 
             set of int: DIMS    = 1..k;
             set of int: SHAPES  = 1..length(shape);

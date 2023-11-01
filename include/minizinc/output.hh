@@ -11,7 +11,13 @@
 
 #pragma once
 
+#include <minizinc/eval_par.hh>
 #include <minizinc/flatten_internal.hh>
+#include <minizinc/gc.hh>
+#include <minizinc/typecheck.hh>
+#include <minizinc/values.hh>
+
+#include <sstream>
 
 namespace MiniZinc {
 
@@ -41,5 +47,33 @@ void cleanup_output(EnvI& env);
 
 ArrayLit* create_json_output(EnvI& env, bool includeObjective, bool includeOutputItem,
                              bool includeChecker);
+
+inline void display_enum_range(std::ostringstream& ss, EnvI& env, IntVal min, IntVal max,
+                               unsigned int enumId) {
+  if (enumId == 0) {
+    ss << min << ".." << max;
+    return;
+  }
+  auto* vd = env.getEnum(enumId)->e();
+  IntVal card;
+  {
+    GCLock lock;
+    IntSetVal* isv = eval_intset(env, vd->e());
+    card = isv->card();
+  }
+  if (card == (max + 1 - min)) {
+    ss << *vd->id();
+  } else {
+    GCLock lock;
+    ASTString enumName(create_enum_to_string_name(vd->id(), "_toString_"));
+    auto* call = Call::a(Location().introduce(), enumName,
+                         {IntLit::a(min), env.constants.literalTrue, env.constants.literalFalse});
+    auto* fi = env.model->matchFn(env, call, false, true);
+    call->decl(fi);
+    ss << eval_string(env, call);
+    call->arg(0, IntLit::a(max));
+    ss << ".." << eval_string(env, call);
+  }
+}
 
 }  // namespace MiniZinc
