@@ -58,6 +58,8 @@ start_flatten_arrayaccess:
         }
       }
 
+      bool allAbsent = true;
+      bool anyAbsent = false;
       std::vector<KeepAlive> elems;
       std::vector<IntVal> idx(aa->idx().size());
       std::vector<std::pair<int, int>> dims;
@@ -71,8 +73,16 @@ start_flatten_arrayaccess:
         }
         if (Expression::type(tmp).isPar()) {
           GCLock lock;
-          idx[j] = eval_int(env, tmp).toInt();
+          auto* v = eval_par(env, tmp);
+          if (v == env.constants.absent) {
+            anyAbsent = true;
+            idx[j] = al->min(j);
+          } else {
+            allAbsent = false;
+            idx[j] = IntLit::v(Expression::cast<IntLit>(v));
+          }
         } else {
+          allAbsent = false;
           idx[j] = al->min(j);
           stack.push_back(static_cast<int>(nonpar.size()));
           nonpar.push_back(j);
@@ -83,9 +93,14 @@ start_flatten_arrayaccess:
       if (stack.empty()) {
         ArrayAccessSucess success;
         KeepAlive ka;
-        {
+        if (allAbsent) {
+          ka = env.constants.absent;
+        } else {
           GCLock lock;
           ka = eval_arrayaccess(env, al, idx, success);
+          if (anyAbsent) {
+            ka = env.constants.absent;
+          }
           if (!success() && env.inMaybePartial == 0) {
             ResultUndefinedError warning(env, Expression::loc(al), success.errorMessage(env, al));
           }
@@ -241,16 +256,32 @@ flatten_arrayaccess:
     }
     KeepAlive ka;
     ArrayAccessSucess success;
+    bool allAbsent = true;
+    bool anyAbsent = false;
     {
       GCLock lock;
       std::vector<IntVal> dims(aa->idx().size());
       for (unsigned int i = aa->idx().size(); (i--) != 0U;) {
-        dims[i] = eval_int(env, ees[i].r());
+        auto* v = eval_par(env, ees[i].r());
+        if (v == env.constants.absent) {
+          anyAbsent = true;
+          dims[i] = al->min(i);
+        } else {
+          allAbsent = false;
+          dims[i] = IntLit::v(Expression::cast<IntLit>(v));
+        }
       }
-      ka = eval_arrayaccess(env, al, dims, success);
+      if (allAbsent) {
+        ka = env.constants.absent;
+      } else {
+        ka = eval_arrayaccess(env, al, dims, success);
+        if (anyAbsent) {
+          ka = env.constants.absent;
+        }
+      }
     }
     if (!success() && env.inMaybePartial == 0) {
-      ResultUndefinedError warning(env, Expression::loc(al), "array access out of bounds");
+      ResultUndefinedError warning(env, Expression::loc(al), success.errorMessage(env, al));
     }
     ees.emplace_back(nullptr, env.constants.boollit(success()));
     if (aa->type().isbool() && !aa->type().isOpt()) {

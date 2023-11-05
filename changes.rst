@@ -89,6 +89,11 @@ Bug fixes:
    global constraint (:bugref:`738` :bugref:`573`).
 -  Add better error messaging when an index set mismatch is encountered in the
    standard library (:bugref:`740`).
+-  Fix evaluation error when indexing into an array using ``<>``.
+-  Fix incorrect unsatisfiability when equating optional variables with
+   non-intersecting domains.
+-  Fix array access using optional indices for multidimensional arrays. 
+-  Fix output of zero length arrays of optional variables.
 
 .. _v2.7.6:
 

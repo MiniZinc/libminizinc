@@ -2854,7 +2854,8 @@ KeepAlive compute_combined_domain(EnvI& env, TypeInst* ti, Expression* cur) {
         IntSetRanges ibr(combinedDomain);
         Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> i(dr, ibr);
         combinedDomain = IntSetVal::ai(i);
-        if (combinedDomain->card() == 0 && !Expression::type(cur).isSet()) {
+        if (combinedDomain->card() == 0 && !Expression::type(cur).isSet() &&
+            (!Expression::type(cur).isOpt() && !Expression::type(ident->decl()).isOpt())) {
           env.fail();
         }
       }

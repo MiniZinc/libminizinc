@@ -205,7 +205,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
       vd->ti()->setComputedDomain(true);
 
       auto* al = new ArrayLit(Location().introduce(), elems, dims);
-      al->type(vd->type());
+      al->type(elems.empty() ? Type::bot(vd->type().dim()) : vd->type());
       vd->e(al);
       env.voAddExp(vd);
       EE ee;

@@ -307,6 +307,9 @@ ArrayLit* eval_record_merge(EnvI& env, ArrayLit* lhs, ArrayLit* rhs) {
 template <class E>
 typename E::Val eval_id(EnvI& env, Expression* e) {
   Id* id = Expression::cast<Id>(e);
+  if (id == env.constants.absent) {
+    throw InternalError("unexpected absent literal");
+  }
   if (!id->decl()) {
     GCLock lock;
     throw EvalError(env, Expression::loc(e), "undeclared identifier", id->str());
@@ -847,6 +850,16 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
 std::string ArrayAccessSucess::errorMessage(EnvI& env, Expression* e) const {
   std::ostringstream oss;
   oss << "array access out of bounds, ";
+
+  if (dim == 0) {
+    oss << "array";
+    if (Expression::isa<Id>(e)) {
+      oss << " `" << *e << "'";
+    }
+    oss << " is empty";
+    return oss.str();
+  }
+
   if (Expression::type(e).dim() > 1) {
     oss << "dimension " << (dim + 1) << " of ";
   }
@@ -908,21 +921,24 @@ Expression* ArrayAccessSucess::dummyLiteral(EnvI& env, Type t) const {
 
 Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e, ArrayAccessSucess& success) {
   ArrayLit* al = eval_array_lit(env, e->v());
-  if (e->type().isOpt()) {
-    for (auto* idx : e->idx()) {
-      if (Expression::type(idx).isOpt() && eval_par(env, idx) == env.constants.absent) {
-        return env.constants.absent;
-      }
+  std::vector<IntVal> indices(e->idx().size());
+  bool allAbsent = true;
+  bool anyAbsent = false;
+  for (unsigned int i = 0; i < e->idx().size(); i++) {
+    auto* idx = eval_par(env, e->idx()[i]);
+    if (idx == env.constants.absent) {
+      anyAbsent = true;
+      indices[i] = al->min(i);
+    } else {
+      allAbsent = false;
+      indices[i] = IntLit::v(Expression::cast<IntLit>(idx));
     }
   }
-  struct EvalIdx {
-    EnvI& env;
-    ArrayAccess* aa;
-    EvalIdx(EnvI& env0, ArrayAccess* aa0) : env(env0), aa(aa0) {}
-    IntVal operator[](unsigned int i) const { return eval_int(env, aa->idx()[i]); }
-    unsigned int size() const { return aa->idx().size(); }
-  } evalIdx(env, e);
-  return eval_arrayaccess(env, al, evalIdx, success);
+  if (allAbsent) {
+    return env.constants.absent;
+  }
+  auto* result = eval_arrayaccess(env, al, indices, success);
+  return anyAbsent ? env.constants.absent : result;
 }
 Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e) {
   ArrayAccessSucess success;
