@@ -366,7 +366,10 @@ public:
             const auto& aet = env.getArrayEnum(curType.typeId());
             enumId = aet[aet.size() - 1];
           }
-          if (enumId != 0) {
+          if (enumId == 0) {
+            // replace tiid with empty domain
+            ti->domain(nullptr);
+          } else {
             VarDeclI* enumVdi = env.getEnum(enumId);
             ti->domain(enumVdi->e()->id());
           }

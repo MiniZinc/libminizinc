@@ -390,7 +390,7 @@ public:
   FlatteningOptions fopts;
   ASTStringMap<Item*> reverseEnum;
   std::vector<KeepAlive> checkVars;
-  std::vector<std::pair<ASTString, KeepAlive>> outputVars;
+  std::vector<KeepAlive> outputVars;
   OutputSectionStore outputSections;
 
   // General multipass information

@@ -445,6 +445,29 @@ void make_par(EnvI& env, Expression* e) {
 }
 
 void check_rename_var(EnvI& e, VarDecl* vd, std::vector<Expression*> dimArgs, IntVal size1d) {
+  auto* flat_copy = e.cmap.find(vd->flat());
+  if (flat_copy != nullptr) {
+    // Flat has been copied into the output, so use the copy as the ozn parameter
+    if (vd == flat_copy) {
+      if (!dimArgs.empty()) {
+        Type t(vd->type());
+        t.typeId(0);
+        t.dim(1);
+        auto* newTi = new TypeInst(Location().introduce(), Type::parint());
+        newTi->domain(new SetLit(Location().introduce(), IntSetVal::a(1, size1d)));
+        std::vector<TypeInst*> newRanges({newTi});
+        vd->ti()->type(t);
+        vd->ti()->setRanges(newRanges);
+        vd->type(vd->ti()->type());
+      }
+    } else if (vd->id()->idn() != vd->flat()->id()->idn()) {
+      // This is the original variable from the model, so just point it to the
+      // flat copy which will be (or has been) processed in the above branch
+      vd->e(Expression::cast<VarDecl>(flat_copy)->id());
+    }
+    return;
+  }
+
   if (vd->id()->idn() != vd->flat()->id()->idn()) {
     auto* vd_rename_ti = Expression::cast<TypeInst>(copy(e, e.cmap, vd->ti()));
     if (!dimArgs.empty()) {
@@ -737,16 +760,16 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
   std::vector<Expression*> outputVars;
 
   for (auto& it : e.outputVars) {
-    auto name = it.first;
-    auto* vd = Expression::cast<VarDecl>(it.second());
+    auto* vd = Expression::cast<VarDecl>(it());
 
-    if (!includeObjective && (name == "_objective" || name == "_checker_objective")) {
+    if (!includeObjective &&
+        (vd->id()->str() == "_objective" || vd->id()->str() == "_checker_objective")) {
       // Skip _objective if disabled
       continue;
     }
 
     std::ostringstream s;
-    s << Printer::quoteId(name) << " = ";
+    s << Printer::quoteId(vd->id()->str()) << " = ";
     bool needArrayXd = false;
     if (vd->type().dim() > 0) {
       ArrayLit* al = nullptr;
@@ -1131,11 +1154,11 @@ ArrayLit* create_json_output(EnvI& e, bool includeObjective, bool includeOutputI
   outputVars.push_back(new StringLit(Location().introduce(), "{\n"));
 
   bool firstVar = true;
-  for (auto it : e.outputVars) {
-    auto name = it.first;
-    auto* vd = Expression::cast<VarDecl>(it.second());
+  for (auto& it : e.outputVars) {
+    auto* vd = Expression::cast<VarDecl>(it());
 
-    if (!includeObjective && (name == "_objective" || name == "_checker_objective")) {
+    if (!includeObjective &&
+        (vd->id()->str() == "_objective" || vd->id()->str() == "_checker_objective")) {
       // Skip _objective if disabled
       continue;
     }
@@ -1146,7 +1169,7 @@ ArrayLit* create_json_output(EnvI& e, bool includeObjective, bool includeOutputI
     } else {
       s << ",\n";
     }
-    s << "  \"" << Printer::escapeStringLit(name) << "\""
+    s << "  \"" << Printer::escapeStringLit(vd->id()->str()) << "\""
       << " : ";
     auto* sl = new StringLit(Location().introduce(), s.str());
     outputVars.push_back(sl);
@@ -1281,19 +1304,19 @@ void process_toplevel_output_vars(EnvI& e) {
       auto* vd = vdi->e();
       if (_outputForChecker) {
         if (Expression::ann(vd).contains(_e.constants.ann.mzn_check_var)) {
-          _e.outputVars.emplace_back(vd->id()->str(), vd);
+          _e.outputVars.emplace_back(vd);
         }
       } else {
         if (Expression::ann(vd).contains(_e.constants.ann.add_to_output)) {
           hasAddToOutput = true;
           todo.clear();  // Skip 2nd pass
-          _e.outputVars.emplace_back(vd->id()->str(), vd);
+          _e.outputVars.emplace_back(vd);
         } else if (Expression::ann(vd).contains(_e.constants.ann.output) ||
                    (!_isChecker && vd->id()->idn() == -1 && vd->id()->v() == "_objective") ||
                    ((_isChecker && vd->id()->idn() == -1 &&
                      vd->id()->v() == "_checker_objective"))) {
           // Whether or not to actually include will be determined later
-          _e.outputVars.emplace_back(vd->id()->str(), vd);
+          _e.outputVars.emplace_back(vd);
         } else if (!hasAddToOutput) {
           todo.emplace_back(_e.outputVars.size(), vd);  // Needs to be processed in 2nd pass
         }
@@ -1314,7 +1337,7 @@ void process_toplevel_output_vars(EnvI& e) {
       }
       if (vd->e() == nullptr || Expression::ann(vd).contains(e.constants.ann.rhs_from_assignment)) {
         // Output anything without a RHS
-        e.outputVars.emplace(e.outputVars.begin() + inserted + idx, vd->id()->str(), vd);
+        e.outputVars.emplace(e.outputVars.begin() + inserted + idx, vd);
         inserted++;
         continue;
       }
@@ -1322,7 +1345,7 @@ void process_toplevel_output_vars(EnvI& e) {
         // Output array literals containing _
         for (unsigned int i = 0; i < al->size(); i++) {
           if (Expression::isa<AnonVar>((*al)[i])) {
-            e.outputVars.emplace(e.outputVars.begin() + inserted + idx, vd->id()->str(), vd);
+            e.outputVars.emplace(e.outputVars.begin() + inserted + idx, vd);
             inserted++;
             break;
           }
@@ -1489,7 +1512,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
     CollectVarDecls(EnvI& env0) : env(env0) {}
 
     void vCall(Call* c) {
-      if (!c->decl()->fromStdLib()) {
+      if (c->decl() != nullptr && !c->decl()->fromStdLib()) {
         auto it = visited.emplace(c->decl());
         if (it.second) {
           top_down(*this, c->decl()->e());

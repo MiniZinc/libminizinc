@@ -62,6 +62,7 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
               cs.push_back(ee);
             }
           }
+          vd->e(let_e);
           flatten_vardecl_annotations(env, vd, nullptr, vd);
         } else {
           if ((ctx.b == C_NEG || ctx.b == C_MIX) &&
@@ -75,8 +76,8 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
           TypeInst* ti = eval_typeinst(env, ctx, vd);
           VarDecl* nvd = new_vardecl(env, ctx, ti, nullptr, vd, nullptr);
           let_e = nvd->id();
+          vd->e(let_e);
         }
-        vd->e(let_e);
         flatmap.emplace_back(vd->flat());
         if (Id* id = Expression::dynamicCast<Id>(let_e)) {
           vd->flat(id->decl());

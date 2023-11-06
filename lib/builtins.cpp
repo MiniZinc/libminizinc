@@ -2042,19 +2042,27 @@ Expression* b_output(EnvI& env, Call* call) {
   // Find the original VarDecl we are annotating so we can get its ID
   auto* arg = call->arg(0);
   auto cs_size = env.callStack.size();
-  if (cs_size < 2 || !Expression::isa<VarDecl>(env.callStack[cs_size - 2].e) ||
-      !Expression::ann(Expression::cast<VarDecl>(env.callStack[cs_size - 2].e))
-           .contains(env.constants.ann.output)) {
+
+  // Top of the callstack will be 'output'(x), then next should be the ID/decl we're interested in
+  VarDecl* vd = nullptr;
+  if (cs_size >= 2) {
+    auto* e = env.callStack[cs_size - 2].e;
+    if (Expression::isa<Id>(e)) {
+      vd = Expression::cast<Id>(e)->decl();
+    } else if (Expression::isa<VarDecl>(e)) {
+      vd = Expression::cast<VarDecl>(e);
+    }
+  }
+  if (vd == nullptr || !Expression::ann(vd).contains(env.constants.ann.output)) {
     env.addWarning(Expression::loc(call),
                    "Failed to determine variable to output. The ::output annotation must be used "
                    "directly on a variable declaration.");
     return env.constants.ann.empty_annotation;
   }
 
-  auto* vd = Expression::cast<VarDecl>(env.callStack[cs_size - 2].e);
+  GCLock lock;
   auto name = vd->id()->str();
   if (!vd->toplevel()) {
-    GCLock lock;
     std::ostringstream oss;
     oss << name << "@" << Expression::loc(vd).firstLine() << "."
         << Expression::loc(vd).firstColumn();
@@ -2105,7 +2113,16 @@ Expression* b_output(EnvI& env, Call* call) {
     name = ASTString(oss.str());
   }
 
-  env.outputVars.emplace_back(name, Expression::cast<Id>(call->arg(0))->decl());
+  auto* arg_vd = Expression::cast<Id>(call->arg(0))->decl();
+  auto* out_vd = new VarDecl(Expression::loc(arg_vd).introduce(), arg_vd->ti(), name);
+  out_vd->flat(arg_vd->flat() == nullptr
+                   ? Expression::cast<VarDecl>(follow_id_to_decl(arg_vd))->flat()
+                   : arg_vd->flat());
+  if (out_vd->flat() == nullptr) {
+    out_vd->e(arg_vd->e());
+    out_vd->flat(out_vd);
+  }
+  env.outputVars.emplace_back(out_vd);
   return env.constants.ann.empty_annotation;
 }
 

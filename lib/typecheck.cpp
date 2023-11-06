@@ -4599,15 +4599,16 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
   bool hadOutput = false;
   std::ostringstream ossOutput;
   process_toplevel_output_vars(env.envi());
-  for (auto it : env.envi().outputVars) {
-    if (it.first == "_objective" || it.first == "_checker_objective") {
+  for (auto& it : env.envi().outputVars) {
+    auto* vd = Expression::cast<VarDecl>(it());
+    if (vd->id()->str() == "_objective" || vd->id()->str() == "_checker_objective") {
       // Never include
       continue;
     }
     if (hadOutput) {
       ossOutput << ", ";
     }
-    output_var_desc_json(env, Expression::cast<VarDecl>(it.second()), ossOutput);
+    output_var_desc_json(env, vd, ossOutput);
     hadOutput = true;
   }
 
