@@ -445,14 +445,18 @@ void p_int_div(SolverInstanceBase& s, const Call* call) {
   IntVar x0 = gi.arg2intvar(call->arg(0));
   IntVar x1 = gi.arg2intvar(call->arg(1));
   IntVar x2 = gi.arg2intvar(call->arg(2));
-  div(*gi.currentSpace, x0, x1, x2, GecodeSolverInstance::ann2icl(Expression::ann(call)));
+  IntVarArgs x = {x0, x1, x2};
+  unshare(*gi.currentSpace, x);
+  div(*gi.currentSpace, x[0], x[1], x[2], GecodeSolverInstance::ann2icl(Expression::ann(call)));
 }
 void p_int_mod(SolverInstanceBase& s, const Call* call) {
   auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVar x0 = gi.arg2intvar(call->arg(0));
   IntVar x1 = gi.arg2intvar(call->arg(1));
   IntVar x2 = gi.arg2intvar(call->arg(2));
-  mod(*gi.currentSpace, x0, x1, x2, GecodeSolverInstance::ann2icl(Expression::ann(call)));
+  IntVarArgs x = {x0, x1, x2};
+  unshare(*gi.currentSpace, x);
+  mod(*gi.currentSpace, x[0], x[1], x[2], GecodeSolverInstance::ann2icl(Expression::ann(call)));
 }
 
 void p_int_min(SolverInstanceBase& s, const Call* call) {
@@ -1137,13 +1141,14 @@ void p_sort(SolverInstanceBase& s, const Call* call) {
 void p_inverse_offsets(SolverInstanceBase& s, const Call* call) {
   auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs x = gi.arg2intvarargs(call->arg(0));
-  unshare(*gi.currentSpace, x);
   int xoff = static_cast<int>(IntLit::v(Expression::cast<IntLit>(call->arg(1))).toInt());
   IntVarArgs y = gi.arg2intvarargs(call->arg(2));
-  unshare(*gi.currentSpace, y);
   int yoff = static_cast<int>(IntLit::v(Expression::cast<IntLit>(call->arg(3))).toInt());
+  IntVarArgs xy = x + y;
+  unshare(*gi.currentSpace, xy);
   MZ_IntConLevel icl = GecodeSolverInstance::ann2icl(Expression::ann(call));
-  channel(*gi.currentSpace, x, xoff, y, yoff, icl == MZ_ICL_DEF ? MZ_ICL_DOM : icl);
+  channel(*gi.currentSpace, xy.slice(0, 1, x.size()), xoff, xy.slice(x.size()), yoff,
+          icl == MZ_ICL_DEF ? MZ_ICL_DOM : icl);
 }
 
 void p_increasing_int(SolverInstanceBase& s, const Call* call) {
@@ -1190,6 +1195,7 @@ void p_table_int(SolverInstanceBase& s, const Call* call) {
     ts.add(t);
   }
   ts.finalize();
+  unshare(*gi.currentSpace, x);
   extensional(*gi.currentSpace, x, ts, GecodeSolverInstance::ann2icl(ann));
 }
 void p_table_bool(SolverInstanceBase& s, const Call* call) {
@@ -1208,6 +1214,7 @@ void p_table_bool(SolverInstanceBase& s, const Call* call) {
     ts.add(t);
   }
   ts.finalize();
+  unshare(*gi.currentSpace, x);
   extensional(*gi.currentSpace, x, ts, GecodeSolverInstance::ann2icl(ann));
 }
 
