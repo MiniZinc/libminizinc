@@ -82,7 +82,10 @@ void dll_close(void* dll) {
 #endif
 
 const vector<string>& cplex_dlls() {
-  static const vector<string> sCPLEXDLLs = {"cplex12100", "cplex1290", "cplex1280", "cplex1270"};
+  static const vector<string> sCPLEXDLLs = {
+      "cplex2412", "cplex2411",  "cplex2410", "cplex2312", "cplex2311", "cplex2310",
+      "cplex2222", "cplex2221",  "cplex2220", "cplex2212", "cplex2211", "cplex2210",
+      "cplex2010", "cplex12100", "cplex1290", "cplex1280", "cplex1270"};
   return sCPLEXDLLs;
 }
 
