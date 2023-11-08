@@ -2000,6 +2000,8 @@ std::string EnvI::show(IntSetVal* isv, unsigned int enumId) {
 }
 
 CallStackItem::CallStackItem(EnvI& env0, Expression* e) : _env(env0), _csiType(CSI_NONE) {
+  assert(Expression::type(e).bt() != Type::BT_UNKNOWN);
+
   env0.checkCancel();
 
   if (Expression::isa<VarDecl>(e)) {

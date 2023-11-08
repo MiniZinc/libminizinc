@@ -841,6 +841,7 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
               show_i->decl(fi);
 
               indexes = new Comprehension(Location().introduce(), show_i, g, false);
+              Expression::type(indexes, Type::parstring(1));
             }
             {
               auto* i_ti = new TypeInst(Location().introduce(), Type::parenum(idx1EnumId));
@@ -864,6 +865,7 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
               show_i->decl(fi);
 
               values = new Comprehension(Location().introduce(), show_i, g, false);
+              Expression::type(values, Type::parstring(1));
             }
 
             auto* idx_ti_ti = new TypeInst(Location().introduce(), Type::parint());
@@ -940,6 +942,7 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
                 idxlit->type(tyIdxLit);
 
                 index = new Comprehension(Location().introduce(), idxlit, g, false);
+                Expression::type(index, Type::parstring(1));
               }
               Expression::type(index, Type::parstring(1));
               indexes[i] = index;
@@ -977,6 +980,10 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
               idxlit->type(tyIdxLit);
 
               values = new Comprehension(Location().introduce(), idxlit, g, false);
+              auto values_type = Type::parstring(2);
+              values_type.typeId(
+                  e.registerArrayEnum({i_vd->type().typeId(), j_vd->type().typeId(), 0}));
+              Expression::type(values, values_type);
             }
 
             auto* idx1_ti_ti = new TypeInst(Location().introduce(), Type::parint());
@@ -1002,6 +1009,7 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
             FunctionI* fi = e.model->matchFn(e, show_indexed, false);
             assert(fi);
             show_indexed->decl(fi);
+            show_indexed->type(Type::parstring());
             auto* let = new Let(Location().introduce(), {idx1_vd, idx2_vd, x_vd}, show_indexed);
             let->type(Type::parstring());
             outputVars.push_back(let);
