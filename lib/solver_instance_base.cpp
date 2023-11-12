@@ -151,6 +151,13 @@ void SolverInstanceBase2::assignSolutionToOutput() {
           }
         }
         auto* array_solution = new ArrayLit(Location(), array_elems, dims_v);
+        if (array_elems.empty()) {
+          Expression::type(array_solution, Type::bot(static_cast<int>(dims_v.size())));
+        } else {
+          auto t = Expression::type(array_elems.back());
+          t.dim(static_cast<int>(dims_v.size()));
+          Expression::type(array_solution, t);
+        }
         KeepAlive ka(array_solution);
         auto& de = getSolns2Out()->findOutputVar(vd->id()->str());
         de.first->e(array_solution);

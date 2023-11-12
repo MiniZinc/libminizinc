@@ -885,6 +885,7 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
             FunctionI* fi = e.model->matchFn(e, show_indexed, false);
             assert(fi);
             show_indexed->decl(fi);
+            show_indexed->type(Type::parstring());
             auto* let = new Let(Location().introduce(), {idx_vd, x_vd}, show_indexed);
             let->type(Type::parstring());
             outputVars.push_back(let);
@@ -1284,7 +1285,9 @@ Expression* create_encapsulated_output(EnvI& e) {
   }
   suffix << "]";
   es.push_back(new StringLit(Location().introduce(), suffix.str()));
-  return new ArrayLit(Location().introduce(), es);
+  auto* al = new ArrayLit(Location().introduce(), es);
+  al->type(Type::parstring(1));
+  return al;
 }
 
 void process_toplevel_output_vars(EnvI& e) {
