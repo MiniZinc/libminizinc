@@ -47,6 +47,8 @@ Changes:
    mode.
 -  Add ``cumulatives`` scheduling global constraint.
 -  Automatically detect current versions of CPLEX (:bugref:`745`).
+-  Add ``mzn_half_reify_clause`` compiler option to allow solvers to disable the
+   half reification of ``bool_clause`` constriants.
 
 Bug fixes:
 ^^^^^^^^^^

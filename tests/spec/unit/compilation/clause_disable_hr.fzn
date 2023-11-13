@@ -1,0 +1,12 @@
+predicate int_le_imp(var int: a,var int: b,var bool: r);
+predicate bool_clause_reif(array [int] of var bool: as,array [int] of var bool: bs,var bool: b);
+var -10..10: x:: output_var;
+var bool: c:: output_var;
+var bool: d:: output_var;
+var bool: X_INTRODUCED_1_ ::var_is_introduced :: is_defined_var;
+var bool: X_INTRODUCED_2_ ::var_is_introduced :: is_defined_var;
+constraint bool_clause([X_INTRODUCED_2_],[c]);
+constraint int_le_imp(0,x,c);
+constraint int_le_imp(x,0,X_INTRODUCED_1_):: defines_var(X_INTRODUCED_1_);
+constraint bool_clause_reif([X_INTRODUCED_1_],[d],X_INTRODUCED_2_):: defines_var(X_INTRODUCED_2_);
+solve  satisfy;

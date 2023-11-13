@@ -4085,11 +4085,21 @@ void flatten(Env& e, FlatteningOptions opt) {
       onlyRangeDomains = true;  // compulsory
     } else {
       GCLock lock;
-      Call* check_only_range =
-          Call::a(Location(), "mzn_check_only_range_domains", std::vector<Expression*>());
+      Call* check_only_range = Call::a(Location(), "mzn_check_only_range_domains", {});
       check_only_range->type(Type::parbool());
       check_only_range->decl(env.model->matchFn(e.envi(), check_only_range, false));
       onlyRangeDomains = eval_bool(e.envi(), check_only_range);
+    }
+
+    bool halfReifyClause = true;
+    if (!env.fopts.enableHalfReification) {
+      halfReifyClause = false;
+    } else {
+      GCLock lock;
+      Call* check_hr_clause = Call::a(Location(), "mzn_check_half_reify_clause", {});
+      check_hr_clause->type(Type::parbool());
+      check_hr_clause->decl(env.model->matchFn(e.envi(), check_hr_clause, false));
+      halfReifyClause = eval_bool(e.envi(), check_hr_clause);
     }
 
     // Flatten main model
@@ -4471,8 +4481,7 @@ void flatten(Env& e, FlatteningOptions opt) {
                   nc = Call::a(Expression::loc(c).introduce(), array_bool_clause->id(), args);
                   nc->type(Type::varbool());
                   nc->decl(array_bool_clause);
-                } else if (env.fopts.enableHalfReification &&
-                           Expression::ann(vd).contains(env.constants.ctx.pos)) {
+                } else if (halfReifyClause && Expression::ann(vd).contains(env.constants.ctx.pos)) {
                   std::vector<Expression*> args(2);
                   args[0] = c->arg(0);
                   args[1] = new ArrayLit(Expression::loc(vd).introduce(),
@@ -4520,7 +4529,7 @@ void flatten(Env& e, FlatteningOptions opt) {
                 nc = Call::a(Expression::loc(c).introduce(), array_bool_clause->id(), args);
                 nc->type(Type::varbool());
                 nc->decl(array_bool_clause);
-              } else if (c->id() == env.constants.ids.clause && env.fopts.enableHalfReification &&
+              } else if (c->id() == env.constants.ids.clause && halfReifyClause &&
                          Expression::ann(vd).contains(env.constants.ctx.pos)) {
                 std::vector<Expression*> args(2);
                 args[0] = c->arg(0);

@@ -83,3 +83,11 @@ opt bool: mzn_absent_zero;
 test mzn_check_absent_zero() =
   if absent(mzn_absent_zero) then true
   else deopt(mzn_absent_zero) endif;
+
+/** @group stdlib.options Whether to half reify bool_clause constraints */
+opt bool: mzn_half_reify_clause;
+
+/** @group stdlib.options Check to half reify bool_clause constraints  */
+test mzn_check_half_reify_clause() =
+  if absent(mzn_half_reify_clause) then true
+  else deopt(mzn_half_reify_clause) endif;
