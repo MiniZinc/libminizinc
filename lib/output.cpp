@@ -686,6 +686,15 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e) {
                 (void)env.output->registerFn(env, decl, true);
                 env.output->addItem(decl);
               }
+              // Ensure array1d for solver output is available
+              ident = env.constants.ids.array1d;
+              ts = {Type::parsetint(), Expression::type(reallyFlat->e())};
+              if (env.output->matchFn(env, ident, ts, false) == nullptr) {
+                auto* decl = copy(env, env.cmap, env.model->matchFn(env, ident, ts, true))
+                                 ->cast<FunctionI>();
+                (void)env.output->registerFn(env, decl, true);
+                env.output->addItem(decl);
+              }
             }
             std::vector<Expression*> alArgs(
                 {new SetLit(Location().introduce(), IntSetVal::a(1, flatSize))});
@@ -1653,6 +1662,15 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
                         (void)env.output->registerFn(env, decl, true);
                         env.output->addItem(decl);
                       }
+                      // Ensure array1d for solver output is available
+                      ident = env.constants.ids.array1d;
+                      ts = {Type::parsetint(), Expression::type(reallyFlat->e())};
+                      if (env.output->matchFn(env, ident, ts, false) == nullptr) {
+                        auto* decl = copy(env, env.cmap, env.model->matchFn(env, ident, ts, true))
+                                         ->cast<FunctionI>();
+                        (void)env.output->registerFn(env, decl, true);
+                        env.output->addItem(decl);
+                      }
                     }
                     std::vector<Expression*> alArgs(
                         {new SetLit(Location().introduce(), IntSetVal::a(1, flatSize))});
@@ -1876,6 +1894,15 @@ void finalise_output(EnvI& e) {
                         std::stringstream ss;
                         ss << "array" << dims << "d";
                         ASTString ident(ss.str());
+                        if (e.output->matchFn(e, ident, ts, false) == nullptr) {
+                          auto* decl = copy(e, e.cmap, e.model->matchFn(e, ident, ts, true))
+                                           ->cast<FunctionI>();
+                          (void)e.output->registerFn(e, decl, true);
+                          e.output->addItem(decl);
+                        }
+                        // Ensure array1d for solver output is available
+                        ident = e.constants.ids.array1d;
+                        ts = {Type::parsetint(), Expression::type(reallyFlat->e())};
                         if (e.output->matchFn(e, ident, ts, false) == nullptr) {
                           auto* decl = copy(e, e.cmap, e.model->matchFn(e, ident, ts, true))
                                            ->cast<FunctionI>();
