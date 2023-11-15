@@ -189,3 +189,8 @@ function string: file_path();
 
 /** @group stdlib.builtins.string Add \a o to the output section \a s */
 test output_to_section(string: s, string: o);
+
+/** @group stdlib.builtins.string Output \a o to the JSON section \a s */
+test output_to_json_section(string: s, any $T: o);
+/** @group stdlib.builtins.string Output \a o to the JSON section \a s */
+test output_to_json_section(string: s, array [$U] of any $T: o);

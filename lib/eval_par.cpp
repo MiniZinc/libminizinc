@@ -2432,9 +2432,9 @@ Expression* eval_par(EnvI& env, Expression* e) {
                   Expression::equal(c->arg(0), env.constants.absent)) {
                 throw ResultUndefinedError(env, Expression::loc(e), "deopt(<>) is undefined");
               }
-              return c;
+            } else {
+              return eval_call<EvalPar>(env, c);
             }
-            return eval_call<EvalPar>(env, c);
           }
           std::vector<Expression*> args(c->argCount());
           for (unsigned int i = 0; i < args.size(); i++) {

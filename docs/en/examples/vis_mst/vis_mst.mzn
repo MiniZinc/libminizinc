@@ -23,7 +23,7 @@ solve minimize total_weight;
 
 % Graph visualisation
 array [int] of string: edge_labels = [i: show(w[i]) | i in index_set(w)];
-constraint vis_graph_highlight(
+output vis_graph_highlight(
   from,                  % Edge from node
   to,                    % Edge to node
   edge_labels,           % Edges are labelled with their weights
@@ -32,4 +32,4 @@ constraint vis_graph_highlight(
 );
 
 % Objective visualisation
-constraint vis_line(total_weight, "Spanning tree weight");
+output vis_line(total_weight, "Spanning tree weight");

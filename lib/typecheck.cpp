@@ -3802,7 +3802,12 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       }
       ts.run(env, i->e());
     }
-    void vOutputI(OutputI* i) { ts.run(env, i->e()); }
+    void vOutputI(OutputI* i) {
+      for (ExpressionSetIter it = i->ann().begin(); it != i->ann().end(); ++it) {
+        ts.run(env, *it);
+      }
+      ts.run(env, i->e());
+    }
     void vFunctionI(FunctionI* fi) {
       ts.run(env, fi->ti());
       for (unsigned int i = 0; i < fi->paramCount(); i++) {
@@ -4008,7 +4013,9 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           }
         }
         _bottomUpTyper.run(i->e());
-        if (Expression::type(i->e()) != Type::parstring(1) &&
+        if (i->ann().isEmpty() && Expression::type(i->e()) != Type::parstring() &&
+            Expression::type(i->e()) != Type::ann() &&
+            Expression::type(i->e()) != Type::parstring(1) &&
             Expression::type(i->e()) != Type::bot(1)) {
           _typeErrors.emplace_back(_env, Expression::loc(i->e()),
                                    "invalid type in output item, expected `" +
@@ -4181,28 +4188,6 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       }
     } concreteTyper(ty, bottomUpTyper);
     type_specialise(env, m, concreteTyper);
-
-    class TSV4 : public ItemVisitor {
-    public:
-      EnvI& env;
-      Model* m;
-      OutputI* outputItem;
-      TSV4(EnvI& env0, Model* m0) : env(env0), m(m0), outputItem(nullptr) {}
-      void vOutputI(OutputI* oi) {
-        GCLock lock;
-        auto* call = oi->ann().getCall(ASTString("mzn_output_section"));
-        if (call == nullptr) {
-          env.outputSections.add(ASTString("default"), oi->e());
-        } else {
-          env.outputSections.add(ASTString(eval_string(env, call->arg(0))), oi->e());
-        }
-        oi->remove();
-      }
-    } _tsv4(env.envi(), m);
-    if (typeErrors.empty()) {
-      iter_items(_tsv4, m);
-    }
-
     create_par_versions(env, m, bottomUpTyper);
   }
 

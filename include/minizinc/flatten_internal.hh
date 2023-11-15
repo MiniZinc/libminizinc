@@ -130,17 +130,26 @@ public:
 };
 
 class OutputSectionStore : public GCMarker {
+public:
+  struct OutputSection {
+    ASTString section;
+    Expression* e;
+    bool json;
+    OutputSection(ASTString section0, Expression* e0, bool json0 = false)
+        : section(section0), e(e0), json(json0) {}
+  };
+
 private:
-  typedef std::vector<std::pair<ASTString, Expression*>> OutputSections;
+  typedef std::vector<OutputSection> OutputSections;
 
 public:
   typedef OutputSections::iterator iterator;
   typedef OutputSections::const_iterator const_iterator;
 
-  void add(ASTString section, Expression* e);
+  void add(EnvI& env, ASTString section, Expression* e, bool json);
   bool empty() const { return _sections.empty(); };
   bool contains(ASTString section) const { return _idx.count(section) > 0; }
-  bool noUserDefined() const;
+  bool noUserDefined() const { return _blank; };
 
   iterator begin() { return _sections.begin(); }
   const_iterator begin() const { return _sections.begin(); }
@@ -150,12 +159,13 @@ public:
 private:
   OutputSections _sections;
   std::unordered_map<ASTString, OutputSections::size_type> _idx;
+  bool _blank = true;
 
 protected:
   void mark() override {
     for (auto& it : *this) {
-      it.first.mark();
-      Expression::mark(it.second);
+      it.section.mark();
+      Expression::mark(it.e);
     }
   }
 };
@@ -392,6 +402,7 @@ public:
   std::vector<KeepAlive> checkVars;
   std::vector<KeepAlive> outputVars;
   OutputSectionStore outputSections;
+  std::unordered_map<std::string, int> keyCounters;
 
   // General multipass information
   MultiPassInfo multiPassInfo;

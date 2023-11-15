@@ -1,37 +1,43 @@
 include "ide/vis.mzn";
 
-enum REGION = { WA, NT, SA, Q, NSW, V, T };
-enum COLOR = Color(1..card(REGION));
+int: n_colors;
 
-% Neighboring regions
-array [_] of tuple(REGION, REGION): neighbors = [
-  (WA,  NT),
-  (WA,  SA),
-  (NT,  SA),
-  (NT,  Q),
-  (SA,  Q),
-  (SA,  NSW),
-  (SA,  V),
-  (Q,   NSW),
-  (NSW, V)
-];
+enum PALETTE = { red, lime, blue, cyan, magenta, yellow, orange };
+set of PALETTE: COLOR = to_enum(PALETTE, 1..n_colors);
 
-% Color of each Region
-array [REGION] of var COLOR: color;
-% Number of colors used
-var 1..card(COLOR): n_colors :: output = card({ c | c in color });
+% Color for each region
+var COLOR: wa;
+var COLOR: nt;
+var COLOR: sa;
+var COLOR: q;
+var COLOR: nsw;
+var COLOR: v;
+var COLOR: t;
 
 % Neighboring regions have different colours
-constraint forall (pair in neighbors) (color[pair.1] != color[pair.2]);
+constraint wa != nt;
+constraint wa != sa;
+constraint nt != sa;
+constraint nt != q;
+constraint sa != q;
+constraint sa != nsw;
+constraint sa != v;
+constraint q != nsw;
+constraint nsw != v;
 
-% Use as few colors as possible
-solve minimize n_colors;
+% Data to send during initialisation of the visualisation
+any: initial_data = (n: n_colors);
 
-% Launch the visualisation page and pass the along the regions and colors as strings
-constraint ide_launch_server("vis_aust.html", (
-  regions: [show(r) | r in REGION],
-  colors: [show(c) | c in COLOR]
-));
-
-% Pass solution colors as an array of color strings to the visualisation page
-output :: "vis_json" [showJSON([show(c) | c in color])];
+% Data to send on each solution
+% Note the use of :: output_only
+any: solution_data :: output_only = (
+  wa: show(wa), % Get colors as strings
+  nt: show(nt),
+  sa: show(sa),
+  q: show(q),
+  nsw: show(nsw),
+  v: show(v),
+  t: show(t)
+);
+% Launch the visualisation
+output :: vis_server("vis_aust.html", initial_data) solution_data;

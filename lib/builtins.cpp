@@ -1931,26 +1931,23 @@ Expression* b_trace_stdout(EnvI& env, Call* call) {
   return call->argCount() == 1 ? env.constants.literalTrue : call->arg(1);
 }
 
-Expression* b_trace_to_section(EnvI& env, Call* call) {
+bool b_trace_to_section(EnvI& env, Call* call) {
   GCLock lock;
-  StringLit* section;
-  if (Expression::type(call->arg(0)).cv()) {
-    section = Expression::cast<StringLit>(flat_cv_exp(env, Ctx(), call->arg(0))());
-  } else {
-    section = Expression::cast<StringLit>(eval_par(env, call->arg(0)));
-  }
-  auto section_s = std::string(section->v().c_str());
+  auto* section =
+      Expression::type(call->arg(0)).cv() ? flat_cv_exp(env, Ctx(), call->arg(0))() : call->arg(0);
+  auto section_s = eval_string(env, section);
   if (section_s == "dzn" || section_s == "json" || section_s == "trace_exp") {
     throw EvalError(env, Expression::loc(call),
                     "The output section '" + section_s + "' is reserved.");
   }
+  bool json = eval_bool(env, call->arg(2));
   if (env.fopts.encapsulateJSON) {
     auto msg = eval_string(env, Expression::type(call->arg(1)).cv()
                                     ? flat_cv_exp(env, Ctx(), call->arg(1))()
                                     : call->arg(1));
     env.outstream << "{\"type\": \"trace\", \"section\": \"" << Printer::escapeStringLit(section_s)
                   << "\", \"message\": ";
-    if (section->v().endsWith("_json")) {
+    if (json) {
       std::stringstream ss(msg);
       std::string line;
       while (std::getline(ss, line)) {
@@ -1961,13 +1958,13 @@ Expression* b_trace_to_section(EnvI& env, Call* call) {
       env.outstream << "\"" << Printer::escapeStringLit(msg) << "\"";
     }
     env.outstream << "}" << std::endl;
-  } else if (env.outputSectionEnabled(section->v())) {
+  } else if (env.outputSectionEnabled(ASTString(section_s))) {
     auto msg = eval_string(env, Expression::type(call->arg(1)).cv()
                                     ? flat_cv_exp(env, Ctx(), call->arg(1))()
                                     : call->arg(1));
     env.outstream << msg;
   }
-  return call->argCount() == 2 ? env.constants.literalTrue : call->arg(2);
+  return true;
 }
 
 Expression* b_trace_logstream(EnvI& env, Call* call) {
@@ -1983,7 +1980,7 @@ Expression* b_trace_logstream(EnvI& env, Call* call) {
 }
 std::string b_logstream(EnvI& env, Call* call) { return env.logstream.str(); }
 
-bool b_output_to_section(EnvI& env, Call* call) {
+void output_to_section(EnvI& env, Call* call, bool json) {
   GCLock lock;
   StringLit* section;
   if (Expression::type(call->arg(0)).cv()) {
@@ -2026,8 +2023,28 @@ bool b_output_to_section(EnvI& env, Call* call) {
       auto* vd = Expression::cast<VarDecl>(decl);
       if (vd->toplevel()) {
         // Restore binding to original (and top-level) VarDecl
-        auto* vd_orig = _cm.findOrig(vd);
-        i->redirect(Expression::cast<VarDecl>(vd_orig)->id());
+        auto* vd_orig = Expression::cast<VarDecl>(_cm.findOrig(vd));
+        if (vd_orig->flat() == vd_orig && vd_orig->type().dim() != 0) {
+          // Flat version will become 1D and 1-based, so we have to insert arrayXd call
+          const auto& ident = _env.constants.ids.arrayNd(vd->type().dim());
+          std::vector<Expression*> args;
+          args.reserve(vd->type().dim() + 1);
+          for (auto* range : vd->ti()->ranges()) {
+            assert(range != nullptr && range->domain() != nullptr);
+            args.push_back(range->domain());
+          }
+          args.emplace_back(vd_orig->id());
+          auto* call = Call::a(Location().introduce(), ident, args);
+          call->type(vd->type());
+          call->decl(_env.model->matchFn(_env, call, false));
+          auto* nvd = new VarDecl(Expression::loc(vd).introduce(), vd->ti(), _env.genId(), call);
+          nvd->toplevel(false);
+          nvd->type(vd->type());
+          i->redirect(nvd->id());
+          _scope.emplace(nvd);
+        } else {
+          i->redirect(vd_orig->id());
+        }
       } else if (vd->e() != nullptr) {
         if (Expression::type(vd->e()).isvar()) {
           top_down(*this, vd->e());
@@ -2043,11 +2060,28 @@ bool b_output_to_section(EnvI& env, Call* call) {
   if (!scope.empty()) {
     std::vector<Expression*> scope_vars(scope.begin(), scope.end());
     expr = new Let(Location().introduce(), scope_vars, e);
+    Expression::type(expr, Expression::type(e));
   }
   std::vector<Expression*> al_v({expr});
+  if (json) {
+    auto* show = Call::a(Expression::loc(call).introduce(), env.constants.ids.showJSON, {expr});
+    show->decl(env.model->matchFn(env, show, false));
+    show->type(Type::parstring());
+    al_v[0] = show;
+    al_v.push_back(new StringLit(Location().introduce(), "\n"));
+  }
   auto* al = new ArrayLit(Location().introduce(), al_v);
   al->type(Type::parstring(1));
-  env.outputSections.add(ASTString(section_s), al);
+  env.outputSections.add(env, ASTString(section_s), al, json);
+}
+
+bool b_output_to_section(EnvI& env, Call* call) {
+  output_to_section(env, call, false);
+  return true;
+}
+
+bool b_output_to_json_section(EnvI& env, Call* call) {
+  output_to_section(env, call, true);
   return true;
 }
 
@@ -3578,6 +3612,20 @@ Expression* b_check_debug_mode(EnvI& env, Call* call) {
   return env.fopts.debug ? env.constants.literalTrue : env.constants.literalFalse;
 }
 
+IntVal b_increment_counter(EnvI& env, Call* call) {
+  assert(call->argCount() == 1);
+  Expression* arg = nullptr;
+  if (Expression::type(call->arg(0)).cv()) {
+    arg = flat_cv_exp(env, Ctx(), call->arg(0))();
+  } else {
+    arg = call->arg(0);
+  }
+  auto key = eval_string(env, arg);
+  auto it = env.keyCounters.emplace(key, 0);
+  auto value = it.first->second++;
+  return IntVal(value);
+}
+
 void register_builtins(Env& e) {
   EnvI& env = e.envi();
   Model* m = env.model;
@@ -3808,19 +3856,11 @@ void register_builtins(Env& e) {
     rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
   }
   {
-    std::vector<Type> t(2);
-    t[0] = Type::parstring();
-    t[1] = Type::parstring();
-    rb(env, m, env.constants.ids.trace_to_section, t, b_trace_to_section);
-  }
-  {
     std::vector<Type> t(3);
     t[0] = Type::parstring();
     t[1] = Type::parstring();
-    t[2] = Type::optvartop();
-    rb(env, m, env.constants.ids.trace_to_section, t, b_trace_to_section);
-    t[2] = Type::optvartop(-1);
-    rb(env, m, env.constants.ids.trace_to_section, t, b_trace_to_section);
+    t[2] = Type::parbool();
+    rb(env, m, env.constants.ids.mzn_trace_to_section, t, b_trace_to_section);
   }
   {
     std::vector<Type> t(2);
@@ -3850,6 +3890,14 @@ void register_builtins(Env& e) {
   {
     rb(env, m, env.constants.ids.output_to_section, {Type::parstring(), Type::parstring()},
        b_output_to_section);
+  }
+  {
+    std::vector<Type> t(2);
+    t[0] = Type::parstring();
+    t[1] = Type::optvartop();
+    rb(env, m, env.constants.ids.output_to_json_section, t, b_output_to_json_section);
+    t[1] = Type::optvartop(-1);
+    rb(env, m, env.constants.ids.output_to_json_section, t, b_output_to_json_section);
   }
   {
     std::vector<Type> t(1);
@@ -4458,6 +4506,11 @@ void register_builtins(Env& e) {
   }
   { rb(env, m, ASTString("showCheckerOutput"), {}, b_show_checker_output); }
   { rb(env, m, ASTString("mzn_internal_check_debug_mode"), {}, b_check_debug_mode); }
+  {
+    std::vector<Type> t(1);
+    t[0] = Type::parstring();
+    rb(env, m, ASTString("mzn_increment_counter"), t, b_increment_counter);
+  }
 }
 
 }  // namespace MiniZinc

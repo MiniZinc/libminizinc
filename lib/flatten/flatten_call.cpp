@@ -399,7 +399,8 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
     return flat_exp(env, ctx, env.constants.literalTrue, r, b);
   } else if (decl->e() == nullptr && env.constants.isCallByReferenceId(cid)) {
     if ((cid == env.constants.ids.assert || cid == env.constants.ids.assert_dbg ||
-         cid == env.constants.ids.output_to_section) &&
+         cid == env.constants.ids.output_to_section ||
+         cid == env.constants.ids.output_to_json_section) &&
         c->argCount() == 2) {
       (void)decl->builtins.b(env, c);
       ret = flat_exp(env, ctx, env.constants.literalTrue, r, b);

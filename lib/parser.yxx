@@ -339,7 +339,7 @@ void parseFieldTail(const ParserLocation& loc, std::vector<Expression*>& parsed,
 
 %type <expression> expr expr_atom_head expr_atom_head_nonstring array_access_expr
 %type <expression> set_expr string_expr string_quote_rest annotation_expr enum_construct
-%type <expression> simple_array_literal simple_array_literal_2d simple_array_comp if_then_else_expr call_expr quoted_op_call let_expr operation_item_tail set_literal set_comp tuple_literal record_literal
+%type <expression> simple_array_literal simple_array_literal_2d simple_array_comp if_then_else_expr call_expr quoted_op_call let_expr operation_item_tail set_literal set_comp tuple_literal record_literal output_annotation
 
 %type <expressions1d> expr_list expr_list_head array_access_expr_list array_access_expr_list_head elseif_list let_vardecl_item_list enum_init enum_id_list string_lit_list access_tail record_field_list_head
 %type <indexedexpression2d> comp_expr_list comp_expr_list_head
@@ -659,13 +659,22 @@ solve_item :
 output_item :
         MZN_OUTPUT expr
       { $$ = new OutputI(@$,$2); }
-      | MZN_OUTPUT MZN_COLONCOLON string_expr expr
+      | MZN_OUTPUT MZN_COLONCOLON output_annotation expr
       { $$ = new OutputI(@$,$4);
         if ($$ && $3) {
           $$->cast<OutputI>()->ann().add(Call::a(@$, ASTString("mzn_output_section"), {$3}));
         }
       }
 
+output_annotation :
+        string_expr
+      { $$ = $1; }
+      | MZN_IDENTIFIER '(' ')'
+      { $$ = Call::a(@$, $1, std::vector<Expression*>()); free($1); }
+      | MZN_IDENTIFIER '(' expr_list ')'
+      { $$ = Call::a(@$, $1, *$3); free($1); }
+      | '(' expr ')'
+      { $$ = $2; }
 
 predicate_item :
         MZN_PREDICATE MZN_IDENTIFIER params ann_param annotations operation_item_tail

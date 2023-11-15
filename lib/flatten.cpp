@@ -845,54 +845,31 @@ MultiPassInfo::MultiPassInfo() : currentPassNumber(0), finalPassNumber(1) {}
 
 VarPathStore::VarPathStore() : maxPathDepth(0) {}
 
-void OutputSectionStore::add(ASTString section, Expression* e) {
-  if (section.endsWith("_json")) {
-    // *_json output sections get output as arrays
-    auto it = _idx.find(section);
-    if (it == _idx.end()) {
-      std::vector<Expression*> open({new StringLit(Location().introduce(), "[")});
-      std::vector<Expression*> close({new StringLit(Location().introduce(), "]\n")});
-      auto* bo1 = new BinOp(Location().introduce(), new ArrayLit(Location().introduce(), open),
-                            BOT_PLUSPLUS, e);
-      Expression::type(bo1, Type::parstring(1));
-      auto* bo2 = new BinOp(Location().introduce(), bo1, BOT_PLUSPLUS,
-                            new ArrayLit(Location().introduce(), close));
-      Expression::type(bo2, Type::parstring(1));
-      _idx.emplace(section, _sections.size());
-      _sections.emplace_back(section, bo2);
+void OutputSectionStore::add(EnvI& env, ASTString section, Expression* e, bool json) {
+  if (json) {
+    auto ret = _idx.emplace(section, _sections.size());
+    if (ret.second) {
+      _sections.emplace_back(section, e, true);
     } else {
-      auto* orig = Expression::cast<BinOp>(_sections[it->second].second);
-      std::vector<Expression*> sep({new StringLit(Location().introduce(), ", ")});
-      auto* bo1 = new BinOp(Location().introduce(), orig->lhs(), BOT_PLUSPLUS,
-                            new ArrayLit(Location().introduce(), sep));
-      Expression::type(bo1, Type::parstring(1));
-      auto* bo2 = new BinOp(Location().introduce(), bo1, BOT_PLUSPLUS, e);
-      Expression::type(bo2, Type::parstring(1));
-      orig->lhs(bo2);
+      std::stringstream ss;
+      ss << "JSON output section '" << section << "' already used. Ignoring.";
+      env.addWarning(Expression::loc(e), ss.str());
     }
     return;
   }
 
+  _blank = false;
   auto ret = _idx.emplace(section, _sections.size());
   if (ret.second) {
-    _sections.emplace_back(section, e);
+    _sections.emplace_back(section, e, false);
   } else {
     GCLock lock;
     auto idx = ret.first->second;
-    auto* orig = _sections[idx].second;
+    auto* orig = _sections[idx].e;
     auto* bo = new BinOp(Location().introduce(), orig, BOT_PLUSPLUS, e);
     Expression::type(bo, Type::parstring(1));
-    _sections[idx].second = bo;
+    _sections[idx].e = bo;
   }
-}
-
-bool OutputSectionStore::noUserDefined() const {
-  for (const auto& section : _sections) {
-    if (!section.first.endsWith("_json")) {
-      return false;
-    }
-  }
-  return true;
 }
 
 TupleType::TupleType(const std::vector<Type>& fields) {
@@ -4041,6 +4018,47 @@ public:
       nsi->ann().add(ret);
     }
     env.flatAddItem(nsi);
+  }
+  void vOutputI(OutputI* oi) {
+    assert(oi->ann().size() <= 1);
+    auto section = env.constants.ids.mzn_default;
+    bool json = false;
+    auto* e = oi->e();
+    GCLock lock;
+    for (auto* ann : oi->ann()) {
+      auto* s = Expression::dynamicCast<Call>(flat_cv_exp(env, Ctx(), ann)());
+      if (s == nullptr || (s->id() != env.constants.ids.mzn_output_section)) {
+        env.addWarning(Expression::loc(ann), "Unrecognised output item section annotation.");
+      }
+      json = eval_bool(env, s->arg(1));
+      section = ASTString(eval_string(env, s->arg(0)));
+    }
+    if (json) {
+      auto* c = Call::a(Expression::loc(e).introduce(), env.constants.ids.showJSON, {e});
+      c->decl(env.model->matchFn(env, c, false));
+      c->type(Type::parstring());
+      auto* nl = new StringLit(Expression::loc(e).introduce(), "\n");
+      std::vector<Expression*> v({c, nl});
+      e = new ArrayLit(Expression::loc(e).introduce(), v);
+      Expression::type(e, Type::parstring(1));
+    } else if (Expression::type(e) == Type::parstring()) {
+      std::vector<Expression*> v({e});
+      e = new ArrayLit(Expression::loc(e).introduce(), v);
+      Expression::type(e, Type::parstring(1));
+    } else if (Expression::type(e) == Type::ann()) {
+      auto* result = Expression::dynamicCast<Id>(flat_cv_exp(env, Ctx(), e)());
+      if (!Expression::equal(result, env.constants.ann.output_only)) {
+        throw FlatteningError(env, Expression::loc(e),
+                              "An annotation which is the expression of an output item must "
+                              "evaluate to `output_only'.");
+      }
+      return;
+    } else if (Expression::type(e) != Type::parstring(1) && Expression::type(e) != Type::bot(1)) {
+      throw TypeError(env, Expression::loc(e),
+                      "invalid type in output item, expected `" + Type::parstring(1).toString(env) +
+                          "', actual `" + Expression::type(e).toString(env) + "'");
+    }
+    env.outputSections.add(env, section, e, json);
   }
 };
 

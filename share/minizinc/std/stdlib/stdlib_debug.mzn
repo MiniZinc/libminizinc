@@ -31,12 +31,23 @@ function bool: trace(string: msg);
 function bool: trace_dbg(string: msg);
 
 /** @group stdlib.debug Return \a x, and print message \a msg to section \a section. */
-function any $T: trace_to_section(string: section, string: msg, any $T: x);
+function any $T: trace_to_section(string: section, string: msg, any $T: x) = let {
+  constraint mzn_trace_to_section(section, msg, false);
+} in x;
 /** @group stdlib.debug Return \a x, and print message \a msg to section \a section. */
-function array [$U] of any $T: trace_to_section(string: section, string: msg, array [$U] of any $T: x);
+function array [$U] of any $T: trace_to_section(string: section, string: msg, array [$U] of any $T: x) = let {
+  constraint mzn_trace_to_section(section, msg, false);
+} in x;
 
 /** @group stdlib.debug Return true, and print message \a msg to section \a section. */
-function bool: trace_to_section(string: section, string: msg);
+function bool: trace_to_section(string: section, string: msg) = mzn_trace_to_section(section, msg, false);
+
+/** @group stdlib.debug Return true, and print \a x to the JSON section \a section. */
+function bool: trace_to_json_section(string: section, opt $T: x) = mzn_trace_to_section(section, showJSON(x) ++ "\n", true);
+/** @group stdlib.debug Return true, and print \a x to the JSON section \a section. */
+function bool: trace_to_json_section(string: section, array [$U] of opt $T: x) = mzn_trace_to_section(section, showJSON(x) ++ "\n", true);
+
+function bool: mzn_trace_to_section(string: section, string: x, bool: json) :: mzn_internal_representation;
 
 /** @group stdlib.debug Return \a x, and print message \a msg. */
 function any $T: trace_stdout(string: msg, any $T: x);

@@ -2147,10 +2147,11 @@ Constants::Constants() {
   ids.mzn_in_root_context = addString("mzn_in_root_context");
   ids.mzn_output_section = addString("mzn_output_section");
   ids.output_to_section = addString("output_to_section");
+  ids.output_to_json_section = addString("output_to_json_section");
   ids.mzn_default = addString("default");
   ids.trace = addString("trace");
   ids.trace_dbg = addString("trace_dbg");
-  ids.trace_to_section = addString("trace_to_section");
+  ids.mzn_trace_to_section = addString("mzn_trace_to_section");
 
   ids.array1d = addString("array1d");
   ids.array2d = addString("array2d");
@@ -2444,7 +2445,8 @@ bool Constants::isCallByReferenceId(const ASTString& cid) const {
   return (cid == ids.assert || cid == ids.assert_dbg || cid == ids.trace || cid == ids.trace_dbg ||
           cid == "trace_exp" || cid == ids.mzn_symmetry_breaking_constraint ||
           cid == ids.mzn_redundant_constraint || cid == ids.mzn_default ||
-          cid == ids.mzn_deprecate || cid == ids.output_to_section || cid == ids.output);
+          cid == ids.mzn_deprecate || cid == ids.output_to_section ||
+          cid == ids.output_to_json_section || cid == ids.output);
 }
 
 void Constants::mark() {

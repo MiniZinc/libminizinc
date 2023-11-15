@@ -1,21 +1,15 @@
 const HTML_COLORS = ['red', 'yellow', 'blue', 'lime', 'magenta', 'cyan', 'orange'];
 
 (async function() {
-  // getUserData can be used to retrieve the JSON data passed to ide_launch_server()
+  // getUserData can be used to retrieve the JSON data passed to vis_server()
   const userData = await MiniZincIDE.getUserData();
-  // Get element for each REGION
-  const regions = userData.regions.map(r => document.getElementById(r.toLowerCase()));
-  // Create a mapping between COLOR enum name and HTML color
-  const colors = {};
-  userData.colors.forEach((c, i) => {
-    colors[c] = HTML_COLORS[i % HTML_COLORS.length]
-  });
-
+  document.getElementById('count').textContent = userData.n;
+  
   // Handler to set the colors for the solution
   function setSolution(data) {
-    data.forEach((c, i) => {
-      regions[i].setAttribute('fill', colors[c]);
-    });
+    for (const r in data) {
+      document.getElementById(r).setAttribute('fill', data[r]);
+    }
   }
 
   // Visualise last solution on startup

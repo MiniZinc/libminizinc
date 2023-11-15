@@ -54,9 +54,11 @@ annotation mzn_constraint_name(string: n);
 
 /** @group stdlib.annotations.general Used internally by the compiler to set the output section \a s for an output item.
   An output item can be annotated directly with a string literal to set its output section as in
-  ``output :: "my_section" ["hello, world\n"]``.
+  ``output :: "my_section" ["hello, world\n"]`` or using the syntax ``output ["hello, world\n"] to "my_section``.
  */
-annotation mzn_output_section(string: s);
+function ann: mzn_output_section(string: s) = mzn_output_section(s, false);
+function ann: mzn_output_section(ann: x) = x;
+annotation mzn_output_section(string: s, bool: json);
 
 /** @group stdlib.annotations.general State that a function is deprecated since MiniZinc version \a version with humand readable \a explanation. */
 annotation mzn_deprecated(string: version, string: explanation);

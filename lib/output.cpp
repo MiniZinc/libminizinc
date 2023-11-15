@@ -463,8 +463,23 @@ void check_rename_var(EnvI& e, VarDecl* vd, std::vector<Expression*> dimArgs, In
     } else if (vd->id()->idn() != vd->flat()->id()->idn()) {
       // This is the original variable from the model, so just point it to the
       // flat copy which will be (or has been) processed in the above branch
-      vd->e(Expression::cast<VarDecl>(flat_copy)->id());
+      Expression* vd_e = Expression::cast<VarDecl>(flat_copy)->id();
+      if (!dimArgs.empty()) {
+        // Add arrayXd call
+        const auto& arrayXdId = e.constants.ids.arrayNd(vd->ti()->type().dim());
+        std::vector<Expression*> arrayXdargs;
+        for (auto* e : dimArgs) {
+          arrayXdargs.emplace_back(e);
+        }
+        arrayXdargs.emplace_back(vd_e);
+        auto* arrayXd = Call::a(Location().introduce(), arrayXdId, arrayXdargs);
+        arrayXd->type(vd->type());
+        arrayXd->decl(e.model->matchFn(e, arrayXd, false));
+        vd_e = arrayXd;
+      }
+      vd->e(vd_e);
     }
+    make_par(e, vd);
     return;
   }
 
@@ -1271,18 +1286,17 @@ Expression* create_encapsulated_output(EnvI& e) {
   for (const auto& it : e.outputSections) {
     if (first) {
       es.push_back(new StringLit(Location().introduce(),
-                                 "\"" + Printer::escapeStringLit(it.first) + "\": "));
+                                 "\"" + Printer::escapeStringLit(it.section) + "\": "));
       first = false;
     } else {
       es.push_back(new StringLit(Location().introduce(),
-                                 ", \"" + Printer::escapeStringLit(it.first) + "\": "));
+                                 ", \"" + Printer::escapeStringLit(it.section) + "\": "));
       suffix << ", ";
     }
-    bool isJSON = it.first == "json" || it.first.endsWith("_json");
-    auto* concat = Call::a(Location().introduce(), "concat", {it.second});
+    auto* concat = Call::a(Location().introduce(), "concat", {it.e});
     concat->type(Type::parstring());
     concat->decl(e.model->matchFn(e, concat, false));
-    if (isJSON) {
+    if (it.json) {
       es.push_back(concat);
     } else {
       auto* showJSON = Call::a(Location().introduce(), "showJSON", {concat});
@@ -1290,7 +1304,7 @@ Expression* create_encapsulated_output(EnvI& e) {
       showJSON->decl(e.model->matchFn(e, showJSON, false));
       es.push_back(showJSON);
     }
-    suffix << "\"" << Printer::escapeStringLit(it.first) << "\"";
+    suffix << "\"" << Printer::escapeStringLit(it.section) << "\"";
   }
   suffix << "]";
   es.push_back(new StringLit(Location().introduce(), suffix.str()));
@@ -1382,20 +1396,21 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
   GCLock lock;
 
   // Combine output sections into one string
+  bool generateDefault = e.outputSections.noUserDefined();
   Expression* o = nullptr;
   for (const auto& it : e.outputSections) {
-    if (!e.outputSectionEnabled(it.first)) {
+    if (!e.outputSectionEnabled(it.section)) {
       continue;
     }
     if (o == nullptr) {
-      o = it.second;
+      o = it.e;
     } else {
-      o = new BinOp(Location().introduce(), o, BOT_PLUSPLUS, it.second);
+      o = new BinOp(Location().introduce(), o, BOT_PLUSPLUS, it.e);
       Expression::type(o, Type::parstring(1));
     }
   }
   if (o != nullptr) {
-    e.outputSections.add(ASTString("raw"), o);  // Add to raw section for encapsulation
+    e.outputSections.add(e, ASTString("raw"), o, false);  // Add to raw section for encapsulation
     e.model->addItem(new OutputI(Location().introduce(), o));
   }
 
@@ -1404,22 +1419,23 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
   switch (outputMode) {
     case FlatteningOptions::OUTPUT_DZN:
       o = create_dzn_output(e, outputObjective, includeOutputItem, includeChecker);
-      e.outputSections.add(ASTString("dzn"), o);  // Add to dzn section for encapsulation
+      e.outputSections.add(e, ASTString("dzn"), o, false);  // Add to dzn section for encapsulation
       break;
     case FlatteningOptions::OUTPUT_JSON:
       o = create_json_output(e, outputObjective, includeOutputItem, includeChecker);
-      e.outputSections.add(ASTString("json"), o);  // Add to json section for encapsulation
+      e.outputSections.add(e, ASTString("json"), o, true);  // Add to json section for encapsulation
       break;
     case FlatteningOptions::OUTPUT_CHECKER:
       o = create_dzn_output(e, true, false, false);
-      e.outputSections.add(ASTString("dzn"), o);  // Add to dzn section for encapsulation
+      e.outputSections.add(e, ASTString("dzn"), o, false);  // Add to dzn section for encapsulation
       break;
     default:
-      if (e.outputSections.noUserDefined()) {
+      if (generateDefault) {
         // If no user defined output, use dzn output (we still want to generate dzn output if there
         // are only vis_json sections for example)
         auto* dzno = create_dzn_output(e, outputObjective, false, false);
-        e.outputSections.add(ASTString("dzn"), dzno);  // Add to dzn section for encapsulation
+        e.outputSections.add(e, ASTString("dzn"), dzno,
+                             false);  // Add to dzn section for encapsulation
         // Combine with other output so we don't lose other sections
         if (o == nullptr) {
           o = dzno;

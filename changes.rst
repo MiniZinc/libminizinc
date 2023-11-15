@@ -48,7 +48,11 @@ Changes:
 -  Add ``cumulatives`` scheduling global constraint.
 -  Automatically detect current versions of CPLEX (:bugref:`745`).
 -  Add ``mzn_half_reify_clause`` compiler option to allow solvers to disable the
-   half reification of ``bool_clause`` constriants.
+   half reification of ``bool_clause`` constraints.
+-  Stabilise the IDE visualisation library, allowing all visualisation functions
+   to be used from ``output`` statements, and removing the need for manual calls
+   to ``showJSON`` in custom visualisations. This is a breaking change for users
+   of the previous experimental API.
 
 Bug fixes:
 ^^^^^^^^^^

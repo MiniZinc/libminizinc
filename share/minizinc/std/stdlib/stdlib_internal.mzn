@@ -2236,3 +2236,6 @@ predicate lex_lesseq_std_decomposition(
   endif;
 
 set of int: set_min_to_max(set of int: x) = if x = {} then {1 | _ in 1..0} else min(x)..max(x) endif;
+
+/* Used to generate fresh values */
+function int: mzn_increment_counter(string: key);

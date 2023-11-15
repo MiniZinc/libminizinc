@@ -3,7 +3,7 @@
 solvers: [gecode]
 expected: !Result
   solution: !Solution
-    _output_item: "y = 1\nx = 10\n"
+    _output_item: "x = 10\ny = 1\n"
 ***/
 
 var 1..10: x :: foo;
