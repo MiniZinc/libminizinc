@@ -1442,9 +1442,22 @@ IntVal b_card(EnvI& env, Call* call) {
   if (call->argCount() != 1) {
     throw EvalError(env, Location(), "card needs exactly one argument");
   }
-  IntSetVal* isv = eval_intset(env, call->arg(0));
-  IntSetRanges isr(isv);
-  return Ranges::cardinality(isr);
+  auto* sv = call->arg(0);
+  switch (Expression::type(sv).bt()) {
+    case Type::BT_INT:
+    case Type::BT_BOOL: {
+      IntSetVal* isv = eval_intset(env, sv);
+      IntSetRanges isr(isv);
+      return Ranges::cardinality(isr);
+    }
+    case Type::BT_FLOAT: {
+      FloatSetVal* fsv = eval_floatset(env, sv);
+      FloatSetRanges fsr(fsv);
+      return Ranges::cardinality(fsr);
+    }
+    default:
+      throw EvalError(env, Location(), "not implemented yet");
+  }
 }
 
 Expression* exp_is_fixed(EnvI& env, Expression* e) {
@@ -3991,6 +4004,7 @@ void register_builtins(Env& e) {
   {
     std::vector<Type> t(1);
     t[0] = Type::parsetint();
+    t[0].bt(Type::BT_TOP);
     rb(env, m, ASTString("card"), t, b_card);
   }
   {

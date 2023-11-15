@@ -1701,6 +1701,13 @@ public:
             std::string("set literals cannot contain ") +
                 (vi_t.bt() == Type::BT_TUPLE ? std::string("tuples") : std::string("records")));
       }
+      if (vi_t.bt() == Type::BT_ANN) {
+        throw TypeError(_env, Expression::loc(sl->v()[i]),
+                        "set literals cannot contain annotations");
+      }
+      if (vi_t.bt() == Type::BT_STRING) {
+        throw TypeError(_env, Expression::loc(sl->v()[i]), "set literals cannot contain strings");
+      }
       if (vi_t.isvar()) {
         ty.ti(Type::TI_VAR);
       }

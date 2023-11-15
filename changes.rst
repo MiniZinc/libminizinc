@@ -100,6 +100,8 @@ Bug fixes:
 -  Fix output of zero length arrays of optional variables.
 -  Fix output processing performance degradation when printing arrays in DZN
    output mode.
+-  Fix card function on set of floats and bools.
+-  Make set literals containing strings or annotations a type error.
 
 .. _v2.7.6:
 
