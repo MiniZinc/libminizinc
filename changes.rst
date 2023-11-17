@@ -4,6 +4,12 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
+.. _unreleased:
+
+Bug fixes:
+^^^^^^^^^^
+-  Fix incorrect message for par array out of bounds indicating that array is empty
+
 .. _v2.8.0:
 
 `Version 2.8.0 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.8.0>`__

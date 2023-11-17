@@ -851,7 +851,7 @@ std::string ArrayAccessSucess::errorMessage(EnvI& env, Expression* e) const {
   std::ostringstream oss;
   oss << "array access out of bounds, ";
 
-  if (dim == 0) {
+  if (dimMin.toInt() > dimMax.toInt()) {
     oss << "array";
     if (Expression::isa<Id>(e)) {
       oss << " `" << *e << "'";
