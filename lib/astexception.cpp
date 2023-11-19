@@ -74,7 +74,7 @@ LocationException::LocationException(const Location& loc, const std::string& msg
 
 void LocationException::print(std::ostream& os) const {
   Exception::print(os);
-  if (_dumpStack) {
+  if (_dumpStack && !_stack.empty()) {
     _stack.print(os);
   } else {
     os << loc() << "\n";

@@ -13,6 +13,7 @@ Bug fixes:
    accepted by Gecode and Chuffed (:bugref:`748`).
 -  Fix a problem where the usage of ``lb`` on a Boolean expression would return
    ``-infinity``. (:bugref:`749`).
+-  Fix omission of error location when there is no stack trace available.
 
 .. _v2.8.0:
 
