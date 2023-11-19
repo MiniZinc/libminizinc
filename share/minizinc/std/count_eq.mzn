@@ -12,9 +12,13 @@ predicate count_eq(array[$X] of var $$E: x, var $$E: y, var int: c) =
 /** @group globals.counting
   Constrains \a c to be the number of occurrences of \a y in \a x. 
 */
-predicate count_eq(array[$X] of var opt $$E: x, var $$E: y, var int: c) =let {
+predicate count_eq(array[$X] of var opt $$E: x, var $$E: y, var int: c) = let {
     % Set <> to something not y
-    int: def = if 0 in dom(y) then lb(y)-1 else 0 endif;
+    int: def = assert(
+      has_bounds(y),
+      "Unable to decompose count_eq without bounds for the y argument",
+      if 0 in dom(y) then lb(y)-1 else 0 endif
+    );
   } in count_eq([i default def | i in x], y, c);
 
 /** @group globals.counting

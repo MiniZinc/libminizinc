@@ -11,6 +11,8 @@ Bug fixes:
 -  Fix incorrect message for par array out of bounds indicating that array is empty
 -  Fix incorrect propagation of Boolean variables potentially causing output not
    accepted by Gecode and Chuffed (:bugref:`748`).
+-  Fix a problem where the usage of ``lb`` on a Boolean expression would return
+   ``-infinity``. (:bugref:`749`).
 
 .. _v2.8.0:
 

@@ -21,6 +21,7 @@
 #include <minizinc/hash.hh>
 #include <minizinc/iter.hh>
 #include <minizinc/typecheck.hh>
+#include <minizinc/values.hh>
 
 #include <cassert>
 #include <cmath>
@@ -2546,7 +2547,11 @@ public:
     }
     if (Expression::type(e).isPar() && !Expression::type(e).cv()) {
       Expression* exp = eval_par(env, e);
-      if (Expression::type(e).isint() && exp != env.constants.absent) {
+      if (Expression::type(e).isbool() && exp != env.constants.absent) {
+        auto* b = Expression::cast<BoolLit>(exp);
+        IntVal i = b->v() ? IntVal(1) : IntVal(0);
+        bounds.emplace_back(i, i);
+      } else if (Expression::type(e).isint() && exp != env.constants.absent) {
         IntVal v = IntLit::v(Expression::cast<IntLit>(exp));
         bounds.emplace_back(v, v);
       } else {
@@ -2586,6 +2591,14 @@ public:
       }
       return true;
     }
+    if (Expression::type(e).isbool()) {
+      if (Expression::isa<BoolLit>(e) || Expression::isa<Id>(e)) {
+        return true;
+      }
+      bounds.emplace_back(0, 1);
+      return false;
+    }
+    valid = false;
     return false;
   }
   /// Visit integer literal
@@ -2596,9 +2609,9 @@ public:
     bounds.emplace_back(0, 0);
   }
   /// Visit Boolean literal
-  void vBoolLit(const BoolLit* /*b*/) {
-    valid = false;
-    bounds.emplace_back(0, 0);
+  void vBoolLit(const BoolLit* b) {
+    IntVal i = b->v() ? IntVal(1) : IntVal(0);
+    bounds.emplace_back(i, i);
   }
   /// Visit set literal
   void vSetLit(const SetLit* /*sl*/) {
@@ -2618,17 +2631,25 @@ public:
     }
     if (vd->ti()->domain() != nullptr) {
       GCLock lock;
-      IntSetVal* isv = eval_intset(env, vd->ti()->domain());
-      if (isv->empty()) {
-        valid = false;
-        bounds.emplace_back(0, 0);
+      if (vd->type().isbool()) {
+        bool b = eval_bool(env, vd->ti()->domain());
+        IntVal i = b ? IntVal(1) : IntVal(0);
+        bounds.emplace_back(i, i);
       } else {
-        bounds.emplace_back(isv->min(0), isv->max(isv->size() - 1));
+        IntSetVal* isv = eval_intset(env, vd->ti()->domain());
+        if (isv->empty()) {
+          valid = false;
+          bounds.emplace_back(0, 0);
+        } else {
+          bounds.emplace_back(isv->min(0), isv->max(isv->size() - 1));
+        }
       }
     } else {
       if (vd->e() != nullptr) {
         BottomUpIterator<ComputeIntBounds> cbi(*this);
         cbi.run(vd->e());
+      } else if (vd->type().isbool()) {
+        bounds.emplace_back(0, 1);
       } else {
         bounds.emplace_back(-IntVal::infinity(), IntVal::infinity());
       }
@@ -2880,7 +2901,8 @@ public:
         bounds.emplace_back(m, n);
       }
     } else if (c->id() == env.constants.ids.bool2int) {
-      bounds.emplace_back(0, 1);
+      bounds.back().first = std::max(0, bounds.back().first);
+      bounds.back().second = std::min(1, bounds.back().second);
     } else if (c->id() == env.constants.ids.abs) {
       Bounds b0 = bounds.back();
       if (b0.first < 0) {
@@ -2965,6 +2987,9 @@ IntBounds compute_int_bounds(EnvI& env, Expression* e) {
     if (cb.valid) {
       assert(cb.bounds.size() == 1);
       return IntBounds(cb.bounds.back().first, cb.bounds.back().second, true);
+    }
+    if (Expression::type(e).isbool()) {
+      return IntBounds(0, 1, true);
     }
     return IntBounds(0, 0, false);
 
