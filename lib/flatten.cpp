@@ -210,6 +210,13 @@ void set_computed_value(EnvI& envi, VarDecl* vd, Expression* val) {
     std::cerr << "Warning: assignment not handled by -g mode: " << *vd->id() << " = " << *val
               << std::endl;
   }
+  // Special case handling for Booleans, where the domain should always just be changed
+  if (vd->type().isvarbool()) {
+    GCLock lock;
+    vd->type(Type::parbool());
+    vd->ti(new TypeInst(Expression::loc(vd), Type::parbool(), val));
+    return;
+  }
   // There is already a RHS. If it's a call, make it relational. Otherwise, create explicit
   // constraint
   if (vd->e() != nullptr) {
@@ -237,12 +244,6 @@ void set_computed_value(EnvI& envi, VarDecl* vd, Expression* val) {
       }
     }
     if (!made_relational) {
-      if (vd->type().isvarbool()) {
-        GCLock lock;
-        vd->type(Type::parbool());
-        vd->ti(new TypeInst(Expression::loc(vd), Type::parbool(), val));
-        return;
-      }
       if (vd->type().isvarint()) {
         GCLock lock;
         Type nty = vd->type();
