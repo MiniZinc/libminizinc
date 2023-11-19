@@ -197,13 +197,17 @@ struct InstanceMapItem {
   bool exists;
   int instanceId;
   std::vector<Type> argTypes;
+  bool parExists;
+  std::vector<Type> parTypes;
 
   InstanceMapItem(const ASTString baseName0, bool exists0, int instanceId0,
-                  std::vector<Type> argTypes0)
+                  std::vector<Type> argTypes0, bool parExists0, std::vector<Type> parTypes0)
       : baseName(std::move(baseName0)),
         exists(exists0),
         instanceId(instanceId0),
-        argTypes(std::move(argTypes0)) {}
+        argTypes(std::move(argTypes0)),
+        parExists(parExists0),
+        parTypes(std::move(parTypes0)) {}
 };
 
 class InstanceMap {
@@ -228,9 +232,12 @@ public:
       baseName = ASTString(impName.substr(0, impName.length() - 4));
       argTypes.pop_back();
     }
-    auto baseArgTypes = argTypes;
-    for (auto& t : baseArgTypes) {
+    auto parTypes = argTypes;
+    for (auto& t : parTypes) {
       t.mkPar(env);
+    }
+    auto baseArgTypes = parTypes;
+    for (auto& t : baseArgTypes) {
       t.mkPresent(env);
     }
     auto baseInstance =
@@ -241,7 +248,10 @@ public:
     }
     auto instanceId = baseInstance.first->second;
     auto concreteInstance = _instances.emplace(env, call->id(), argTypes);
-    return {baseName, !concreteInstance.second, instanceId, argTypes};
+    auto parInstance = _instances.emplace(env, call->id(), parTypes);
+
+    return {baseName, !concreteInstance.second, instanceId,
+            argTypes, !parInstance.second,      parTypes};
   }
 };
 
@@ -556,6 +566,27 @@ public:
           _env.model->matchFn(_env, EnvI::halfReifyId(lookup.baseName), concrete_types, false);
       assert(call->decl() == nonReif || call->decl() == reified || call->decl() == halfReif);
       std::vector<FunctionI*> matches({nonReif, reified, halfReif});
+      if (!lookup.parExists) {
+        // Also create par version in case required by output.
+        // This is needed since if this instance can't be made par by the type checker,
+        // but we actually have a par version of the polymorphic function, we should use it.
+        std::vector<Type> concrete_types = lookup.parTypes;
+        auto* parNonReif = _env.model->matchFn(_env, lookup.baseName, concrete_types, false);
+        if (nonReif != nullptr && nonReif != parNonReif) {
+          matches.push_back(parNonReif);
+        }
+        concrete_types.push_back(Type::parbool());
+        auto* parReified =
+            _env.model->matchFn(_env, _env.reifyId(lookup.baseName), concrete_types, false);
+        if (parReified != nullptr && reified != parReified) {
+          matches.push_back(parReified);
+        }
+        auto* parHalfReif =
+            _env.model->matchFn(_env, EnvI::halfReifyId(lookup.baseName), concrete_types, false);
+        if (parHalfReif != nullptr && halfReif != parHalfReif) {
+          matches.push_back(parHalfReif);
+        }
+      }
 
       for (auto* fi : matches) {
         if (fi == nullptr) {

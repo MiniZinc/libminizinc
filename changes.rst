@@ -14,6 +14,8 @@ Bug fixes:
 -  Fix a problem where the usage of ``lb`` on a Boolean expression would return
    ``-infinity``. (:bugref:`749`).
 -  Fix omission of error location when there is no stack trace available.
+-  Fix type specialisation to always make par versions of functions available
+   for output (:bugref:`751`).
 
 .. _v2.8.0:
 
