@@ -261,6 +261,10 @@ These options control aspects of the MiniZinc compiler.
 
     File named <file> contains data used by the model.
 
+.. option::  --checker <file>, --solution-checker <file>
+
+    File named <file> contains the solution checker model.
+
 .. option::  -D <data>, --cmdline-data <data>
 
     Include the given data assignment in the model.

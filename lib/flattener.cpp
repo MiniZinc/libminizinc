@@ -63,6 +63,9 @@ void Flattener::printHelp(ostream& os) const {
      << "  -m <file>, --model <file>\n    File named <file> is the model." << std::endl
      << "  -d <file>, --data <file>\n    File named <file> contains data used by the model."
      << std::endl
+     << "  --checker <file>, --solution-checker <file>\n    File named <file> contains the "
+        "solution checker model."
+     << std::endl
      << "  -D <data>, --cmdline-data <data>\n    Include the given data assignment in the model."
      << std::endl
      << "  --cmdline-json-data <data>\n    Include the given JSON data in the model." << std::endl
@@ -410,6 +413,16 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv,
     }
     _log << "Error: model must have extension .mzn (or .fzn)" << std::endl;
     return false;
+  } else if (cop.getOption("--checker --solution-checker", &buffer)) {
+    if (buffer.length() <= 4) {
+      return false;
+    }
+    if (buffer.substr(buffer.length() - 4, string::npos) != ".mzc" &&
+        (buffer.length() <= 8 || buffer.substr(buffer.length() - 8, string::npos) != ".mzc.mzn")) {
+      _log << "Error: solution must have extension .mzc or .mzc.mzn" << std::endl;
+      return false;
+    }
+    _flagSolutionCheckModel = buffer;
   } else {
     std::string input_file(argv[i]);
     if (input_file.length() <= 4) {

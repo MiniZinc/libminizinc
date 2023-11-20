@@ -17,6 +17,11 @@ Bug fixes:
 -  Fix type specialisation to always make par versions of functions available
    for output (:bugref:`751`).
 
+Changes:
+^^^^^^^^
+-  Add ``--solution-checker`` option to allow specifying the solution checker
+   (allowing use from a parameter configuration ``..mpc`` file).
+
 .. _v2.8.0:
 
 `Version 2.8.0 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.8.0>`__
