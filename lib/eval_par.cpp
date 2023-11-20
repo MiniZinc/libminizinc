@@ -468,10 +468,14 @@ public:
         auto enumId = Expression::type(fi->ti()->domain()).typeId();
         if (base_t.st() == Type::ST_PLAIN) {
           for (unsigned int i = 0; i < v->size(); i++) {
-            if ((*v)[i] == env.constants.absent) {
-              continue;
+            auto* v_i = (*v)[i];
+            if (Expression::type(v_i).isOpt()) {
+              v_i = eval_par(env, v_i);
+              if (v_i == env.constants.absent) {
+                continue;
+              }
             }
-            IntVal iv = eval_int(env, (*v)[i]);
+            IntVal iv = eval_int(env, v_i);
             if (!isv->contains(iv)) {
               std::ostringstream oss;
               oss << "array contains value " << env.show(iv, enumId)
@@ -500,10 +504,14 @@ public:
         FloatSetVal* fsv = eval_floatset(env, fi->ti()->domain());
         if (base_t.st() == Type::ST_PLAIN) {
           for (unsigned int i = 0; i < v->size(); i++) {
-            if ((*v)[i] == env.constants.absent) {
-              continue;
+            auto* v_i = (*v)[i];
+            if (Expression::type(v_i).isOpt()) {
+              v_i = eval_par(env, v_i);
+              if (v_i == env.constants.absent) {
+                continue;
+              }
             }
-            FloatVal fv = eval_float(env, (*v)[i]);
+            FloatVal fv = eval_float(env, v_i);
             if (!fsv->contains(fv)) {
               std::ostringstream oss;
               oss << "array contains value " << fv << " which is not contained in " << *fsv;

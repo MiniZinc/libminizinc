@@ -16,6 +16,8 @@ Bug fixes:
 -  Fix omission of error location when there is no stack trace available.
 -  Fix type specialisation to always make par versions of functions available
    for output (:bugref:`751`).
+-  Fix internal error when checking return value of functions involving arrays
+   of optional values (:bugref:`752`).
 
 Changes:
 ^^^^^^^^
