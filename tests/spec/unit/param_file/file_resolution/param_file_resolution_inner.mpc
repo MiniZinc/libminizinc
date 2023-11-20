@@ -4,5 +4,6 @@
         "inner_directory/data_file.json"
     ],
     "model": "inner_directory/model_file.mzn",
+    "checker": "inner_directory/checker.mzc.mzn",
     "search-dir": "includes"
 }

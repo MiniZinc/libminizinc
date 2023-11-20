@@ -422,7 +422,7 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv,
       _log << "Error: solution must have extension .mzc or .mzc.mzn" << std::endl;
       return false;
     }
-    _flagSolutionCheckModel = buffer;
+    _flagSolutionCheckModel = FileUtils::file_path(buffer, workingDir);
   } else {
     std::string input_file(argv[i]);
     if (input_file.length() <= 4) {
