@@ -711,9 +711,9 @@ void Model::checkFnValid(EnvI& env, std::vector<TypeError>& errors) {
     for (const auto& fe : variants) {
       FunctionI* fi = fe.fi;
       Type ret = fi->ti()->type();
-      if (fi->e() != nullptr || ret.isAnn() || fi->builtins.e != nullptr ||
-          fi->builtins.b != nullptr || fi->builtins.f != nullptr || fi->builtins.i != nullptr ||
-          fi->builtins.s != nullptr || fi->builtins.fs != nullptr || fi->builtins.str != nullptr ||
+      if (fi->e() != nullptr || fi->builtins.e != nullptr || fi->builtins.b != nullptr ||
+          fi->builtins.f != nullptr || fi->builtins.i != nullptr || fi->builtins.s != nullptr ||
+          fi->builtins.fs != nullptr || fi->builtins.str != nullptr ||
           fi->ann().contains(env.constants.ann.mzn_internal_representation)) {
         continue;
       }
@@ -733,12 +733,12 @@ void Model::checkFnValid(EnvI& env, std::vector<TypeError>& errors) {
         continue;
       }
       // Par functions that are not implemented in the compiler should have an implementation
-      if (ret.isPar()) {
+      if (!ret.isAnn() && ret.isPar()) {
         errors.emplace_back(env, fi->loc(),
                             "Parameter type function is missing its implementation");
         continue;
       }
-      if (!ret.isvarbool()) {
+      if (!ret.isAnn() && !ret.isvarbool()) {
         errors.emplace_back(
             env, fi->loc(),
             "FlatZinc builtin functions must be predicates (i.e., have `var bool` return type)");
