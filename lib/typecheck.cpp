@@ -4537,6 +4537,7 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
     bool hadInput;
     bool hadIncludedFiles;
     bool hadAddToOutput = false;
+    bool hasOutputItem = false;
     std::ostringstream ossInput;
     std::ostringstream ossIncludedFiles;
     std::string method;
@@ -4585,6 +4586,7 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
           break;
       }
     }
+    void vOutputI(OutputI* oi) { hasOutputItem = true; }
   } _ifc(env, skipDirs);
   iter_items(_ifc, m);
 
@@ -4609,7 +4611,7 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
   os << ", \"method\": \"";
   os << _ifc.method;
   os << "\"";
-  os << ", \"has_output_item\": " << (env.envi().outputSections.empty() ? "false" : "true");
+  os << ", \"has_output_item\": " << (_ifc.hasOutputItem ? "true" : "false");
   os << ", \"included_files\": [" << _ifc.ossIncludedFiles.str() << "]";
   os << ", \"globals\": [";
   bool first = true;

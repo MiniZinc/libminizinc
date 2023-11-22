@@ -18,6 +18,8 @@ Bug fixes:
    for output (:bugref:`751`).
 -  Fix internal error when checking return value of functions involving arrays
    of optional values (:bugref:`752`).
+-  Fix incorrect ``false`` values for ``has_output_item`` when running with
+   ``--model-interface-only``
 
 Changes:
 ^^^^^^^^
