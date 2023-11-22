@@ -25,3 +25,5 @@ constraint output_to_section("foo", "b");
 constraint output_to_section("bar", "c");
 constraint output_to_section("foo", "d");
 constraint output_to_section("default", "e");
+
+output [];

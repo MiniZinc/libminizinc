@@ -16,3 +16,5 @@ any: a :: output = let {
 } in x;
 
 solve minimize sum(a);
+
+output [];

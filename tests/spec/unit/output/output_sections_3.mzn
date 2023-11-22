@@ -15,3 +15,5 @@ constraint let {
 } in output_to_section("default", "x = \(x)");
 
 solve maximize objective;
+
+output [];

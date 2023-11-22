@@ -13,3 +13,5 @@ annotation foo(var int: x :: annotated_expression) = let {
 } in empty_annotation;
 
 solve maximize objective;
+
+output [];
