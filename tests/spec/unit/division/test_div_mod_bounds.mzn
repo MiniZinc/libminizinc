@@ -12,8 +12,8 @@ expected:
     zif: !Approx -6.666666666666667
     tf: !Approx 1.0
     tfbnd: [!Approx 0.1125, !Approx 8.888888888888889]
-    zmbnd: [-6, 6]
-    zm2lb: -6
+    zmbnd: [0, 6]
+    zm2lb: 0
 ***/
 
 

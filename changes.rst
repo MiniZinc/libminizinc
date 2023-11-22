@@ -27,6 +27,7 @@ Changes:
 ^^^^^^^^
 -  Add ``--solution-checker`` option to allow specifying the solution checker
    (allowing use from a parameter configuration ``..mpc`` file).
+-  Produce tighter bounds in ``compute_mod_bounds`` for the ``mod`` operator.
 
 .. _v2.8.0:
 

@@ -1150,6 +1150,18 @@ IntSetVal* b_compute_div_bounds(EnvI& env, Call* call) {
 
 IntSetVal* b_compute_mod_bounds(EnvI& env, Call* call) {
   assert(call->argCount() == 2);
+  IntBounds bx = compute_int_bounds(env, call->arg(0));
+  int sign = 0;
+  if (bx.valid) {
+    if (bx.l.isFinite() && bx.l.toInt() == 0 && bx.u.isFinite() && bx.u.toInt() == 0) {
+      return IntSetVal::a(0, 0);
+    }
+    if (bx.l.isFinite() && bx.l.toInt() >= 0) {
+      sign = 1;
+    } else if (bx.u.isFinite() && bx.u.toInt() <= 0) {
+      sign = -1;
+    }
+  }
   IntBounds by = compute_int_bounds(env, call->arg(1));
   if (!by.valid) {
     throw EvalError(env, Expression::loc(call->arg(1)), "cannot determine bounds");
@@ -1158,6 +1170,14 @@ IntSetVal* b_compute_mod_bounds(EnvI& env, Call* call) {
     return env.constants.infinityInt->isv();
   }
   IntVal am = std::max(-by.l, by.u) - 1;
+  if (sign > 0) {
+    // x >= 0 -> x mod y >= 0
+    return IntSetVal::a(0, am);
+  }
+  if (sign < 0) {
+    // x <= 0 -> x mod y <= 0
+    return IntSetVal::a(-am, 0);
+  }
   return IntSetVal::a(-am, am);
 }
 
