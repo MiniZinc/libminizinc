@@ -20,6 +20,8 @@ Bug fixes:
    of optional values (:bugref:`752`).
 -  Fix incorrect ``false`` values for ``has_output_item`` when running with
    ``--model-interface-only``
+-  Fix translation of search annotations with multi-dimensional arrays as arguments
+   (:bugref:`750`).
 
 Changes:
 ^^^^^^^^

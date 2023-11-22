@@ -435,13 +435,12 @@ predicate array_set_element(var int: x, array[int] of set of int: y, var set of 
     endif
   );
 
-annotation set_search(array[$X] of var set of int: x, ann: a1, ann: a2, ann: a3) =
+annotation set_search(array[int] of var set of int: x, ann: a1, ann: a2, ann: a3) =
   let {
-    array[int] of var set of int: xx = array1d(x);
     ann: cc = if a2 == indomain_min then indomain_max
               elseif a2 == indomain_max then indomain_min
               else a2 endif;
-  } in seq_search([bool_search(set2bools(xx[i]), a1, cc, a3) | i in index_set(xx)]);
+  } in seq_search([bool_search(set2bools(x[i]), a1, cc, a3) | i in index_set(x)]);
 
 annotation warm_start( array[int] of var set of int: x, array[int] of set of int: v ) =
    warm_start_array( [
