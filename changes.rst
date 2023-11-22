@@ -22,6 +22,7 @@ Bug fixes:
    ``--model-interface-only``
 -  Fix translation of search annotations with multi-dimensional arrays as arguments
    (:bugref:`750`).
+-  Fix bug in output generation for some visualisation functions.
 
 Changes:
 ^^^^^^^^

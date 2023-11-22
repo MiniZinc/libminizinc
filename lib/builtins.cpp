@@ -2069,6 +2069,7 @@ void output_to_section(EnvI& env, Call* call, bool json) {
         if (Expression::type(vd->e()).isvar()) {
           top_down(*this, vd->e());
         }
+        vd->flat(nullptr);
         Expression::ann(vd).clear();
         _scope.emplace(vd);
       }
