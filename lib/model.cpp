@@ -752,6 +752,13 @@ void Model::checkFnValid(EnvI& env, std::vector<TypeError>& errors) {
               "FlatZinc builtins are not allowed to have arguments of type " + t.toString(env));
           break;  // Break from parameter, but does continue in FnMap
         }
+        if (t.dim() > 1) {
+          errors.emplace_back(env, Expression::loc(fi->param(i)),
+                              "Type " + t.toString(env) +
+                                  " is not allowed in as a FlatZinc builtin argument, arrays must "
+                                  "be one dimensional");
+          break;  // Break from parameter, but does continue in FnMap
+        }
       }
     }
   }
