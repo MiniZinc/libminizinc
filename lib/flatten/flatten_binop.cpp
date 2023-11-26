@@ -1289,7 +1289,8 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
                                      callid);
     }
   } else if (isBuiltin && bot == BOT_EQ && ctx.b == C_ROOT && r == env.constants.varTrue &&
-             Expression::type(e1.r()).isPar() && Expression::isa<Id>(e0.r())) {
+             Expression::isa<Id>(e0.r()) && Expression::type(e1.r()).isPar() &&
+             !Expression::type(e1.r()).istuple() && !Expression::type(e1.r()).isrecord()) {
     // Par assignment to Id with no right hand side
     auto* vd = Expression::cast<Id>(e0.r())->decl();
     set_computed_value(env, vd, e1.r());

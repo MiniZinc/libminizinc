@@ -23,6 +23,8 @@ Bug fixes:
 -  Fix translation of search annotations with multi-dimensional arrays as arguments
    (:bugref:`750`).
 -  Fix bug in output generation for some visualisation functions.
+-  Fix problem where tuple or record assignments would sometimes trigger
+   segmentaion faults.
 
 Changes:
 ^^^^^^^^
