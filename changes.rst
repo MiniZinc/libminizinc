@@ -27,6 +27,8 @@ Bug fixes:
    segmentation faults.
 -  Fix context when binding the result of flattening a concatenation operation,
    resolving a possible segmentation fault (:bugref:`754`).
+-  Fix incorrect possible evaluation error for ``in`` operator involving an
+   array RHS.
 
 Changes:
 ^^^^^^^^

@@ -1244,8 +1244,8 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
   Expression* le1 = nullptr;
 
   if (bot == BOT_IN) {
-    if (Expression::type(e1.r()).isPar() && Expression::type(e0.r()).isint() &&
-        !Expression::type(e0.r()).isOpt()) {
+    if (Expression::type(e0.r()).isint() && !Expression::type(e0.r()).isOpt() &&
+        Expression::type(e1.r()).isPar() && Expression::type(e1.r()).isSet()) {
       bool has_infinity = false;
       {
         GCLock lock;
