@@ -1954,7 +1954,7 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
       }
       Expression::type(alret, Expression::type(e));
       ret.b = conj(env, b, Ctx(), ee);
-      ret.r = bind(env, ctx, r, alret);
+      ret.r = bind(env, Ctx(), r, alret);
     } break;
   }
   return ret;

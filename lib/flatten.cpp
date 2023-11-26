@@ -2922,7 +2922,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
     }
   }
   if (ctx.neg) {
-    assert(Expression::type(e).bt() == Type::BT_BOOL);
+    assert(Expression::type(e).isbool());
     auto wrap_bool_not = [&](Expression* e) {
       KeepAlive ka;
       {

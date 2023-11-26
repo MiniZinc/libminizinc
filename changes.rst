@@ -24,7 +24,9 @@ Bug fixes:
    (:bugref:`750`).
 -  Fix bug in output generation for some visualisation functions.
 -  Fix problem where tuple or record assignments would sometimes trigger
-   segmentaion faults.
+   segmentation faults.
+-  Fix context when binding the result of flattening a concatenation operation,
+   resolving a possible segmentation fault (:bugref:`754`).
 
 Changes:
 ^^^^^^^^
