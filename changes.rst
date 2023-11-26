@@ -4,7 +4,12 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
-.. _unreleased:
+.. _v2.8.1:
+
+`Version 2.8.1 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.8.1>`__
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(released 27 November 2023)
 
 Bug fixes:
 ^^^^^^^^^^
@@ -35,6 +40,13 @@ Changes:
 -  Add ``--solution-checker`` option to allow specifying the solution checker
    (allowing use from a parameter configuration ``..mpc`` file).
 -  Produce tighter bounds in ``compute_mod_bounds`` for the ``mod`` operator.
+
+Changes in the IDE:
+^^^^^^^^^^^^^^^^^^^
+-  Fix command used to run findMUS and Globalizer.
+-  Add ability to set the ports used for the visualisation server.
+-  Add option for printing the visualisation server URL for debugging purposes.
+-  Add more information to subprocess error messages.
 
 .. _v2.8.0:
 
