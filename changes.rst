@@ -9,6 +9,8 @@ https://github.com/MiniZinc/libminizinc/issues.
 Bug fixes:
 ^^^^^^^^^^
 -  Fix incorrect FlatZinc definition in the ``gecode_presolver`` solver library (:bugref:`755`).
+-  Fix type specialisation for function with an polymorphic array argument and a
+   non-array return type with the same type-inst identifier.
 
 .. _v2.8.1:
 
