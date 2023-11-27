@@ -19,7 +19,7 @@ predicate fzn_circuit(array[int] of var int: x) =
         constraint assert( l==min( index_set_2of2( eq_x ) ), "circuit: index set mismatch" ),   %% self-mapping
         constraint assert( u==max( index_set_2of2( eq_x ) ), "circuit: index set mismatch" ),
       } in
-      circuit__SECcuts( eq_x )
+      circuit__SECcuts(array1d(eq_x))
     else true endif /\
     if nMZN__fSECcuts<2 then
       %%% MTZ model. Note that INTEGER order vars seem better!:
@@ -38,5 +38,5 @@ predicate fzn_circuit(array[int] of var int: x) =
   endif;
 
 %-----------------------------------------------------------------------------%
-predicate circuit__SECcuts(array[int,int] of var int: x);     %% passed on
+predicate circuit__SECcuts(array[int] of var int: x);     %% passed on
 %-----------------------------------------------------------------------------%

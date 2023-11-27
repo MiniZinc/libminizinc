@@ -3,7 +3,7 @@ include "lex_lesseq.mzn";
 predicate fzn_lex_chain_lesseq_orbitope(
         array[int, int] of var int: a, int: kind) =
     if MZN__Orbitope then
-        fzn_lex_chain_lesseq__orbitope( a,
+        fzn_lex_chain_lesseq__orbitope( array1d(a),
             card(index_set_1of2(a)), kind, true,
             not mzn_in_symmetry_breaking_constraint()
         )
@@ -13,7 +13,7 @@ predicate fzn_lex_chain_lesseq_orbitope(
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SCIP 7.0.2, binary matrix, columns sorted
-predicate fzn_lex_chain_lesseq__orbitope(array[int, int] of var int: matr,
+predicate fzn_lex_chain_lesseq__orbitope(array[int] of var int: matr,
         int: m, int: orbType, bool: resolveprop, bool: isModelCons);
 
 
