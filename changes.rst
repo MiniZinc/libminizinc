@@ -4,6 +4,12 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
+.. _unreleased:
+
+Bug fixes:
+^^^^^^^^^^
+-  Fix incorrect FlatZinc definition in the ``gecode_presolver`` solver library (:bugref:`755`).
+
 .. _v2.8.1:
 
 `Version 2.8.1 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.8.1>`__
