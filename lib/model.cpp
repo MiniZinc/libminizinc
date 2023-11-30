@@ -33,6 +33,9 @@ Model::FnEntry::FnEntry(EnvI& env, FunctionI* fi0)
     }
     isPolymorphic |= checkPoly(env, t[i]);
   }
+  if (fi->ti()->type().structBT() && fi->ti()->type().typeId() == 0) {
+    fi->ti()->canonicaliseStruct(env);
+  }
 }
 
 bool Model::FnEntry::checkPoly(const EnvI& env, const Type& t) {
@@ -441,6 +444,7 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
   } else {
     // add to list of existing elements
     std::vector<FnEntry>& v = i_id->second;
+    FnEntry fe(env, fi);  // Create now so that struct types get canonicalised
     for (auto& i : v) {
       if (i.fi == fi) {
         return true;
@@ -511,7 +515,6 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
         }
       }
     }
-    FnEntry fe(env, fi);
     addPolymorphicInstances(env, fe, v);
     if (keepSorted) {
       std::sort(v.begin(), v.end(), [&env](const Model::FnEntry& e1, const Model::FnEntry& e2) {
