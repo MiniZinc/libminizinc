@@ -13,6 +13,8 @@ Bug fixes:
    non-array return type with the same type-inst identifier.
 -  Fix crash during typechecking of overloaded functions differing only by inst
    returning structured types.
+-  Fix incorrect type checking of polymorphic functions with type-inst IDs
+   inside structured types.
 
 .. _v2.8.1:
 

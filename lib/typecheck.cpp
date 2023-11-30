@@ -4052,49 +4052,45 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
             }
           } else if (ti->type().structBT()) {
             auto* al = Expression::cast<ArrayLit>(ti->domain());
-            for (size_t i = 0; i < al->size(); ++i) {
+            for (unsigned int i = 0; i < al->size(); i++) {
               checkTIId(Expression::cast<TypeInst>((*al)[i]), t);
             }
+          }
+          for (unsigned int j = 0; j < ti->ranges().size(); j++) {
+            checkTIId(ti->ranges()[j], TIVAR_INDEX);
           }
         };
         bool allParamsPar = true;
         for (unsigned int i = 0; i < fi->paramCount(); i++) {
           allParamsPar = allParamsPar && fi->param(i)->type().isPar();
           checkTIId(fi->param(i)->ti(), TIVAR_DOMAIN);
-          for (unsigned int j = 0; j < fi->param(i)->ti()->ranges().size(); j++) {
-            checkTIId(fi->param(i)->ti()->ranges()[j], TIVAR_INDEX);
-          }
         }
-        if (TIId* tiid = Expression::dynamicCast<TIId>(fi->ti()->domain())) {
-          auto it = ti_map.find(tiid->v());
-          if (it == ti_map.end()) {
-            std::ostringstream ss;
-            ss << "type-inst variable $" << tiid->v()
-               << " used in return type but not defined in argument list";
-            _typeErrors.emplace_back(_env, Expression::loc(tiid), ss.str());
-          } else if (!tiid->isEnum() && it->second == TIVAR_INDEX) {
-            std::ostringstream ss;
-            ss << "type-inst variable $" << tiid->v()
-               << " used in both array and non-array position";
-            _typeErrors.emplace_back(_env, Expression::loc(tiid), ss.str());
-          }
-        }
-        for (unsigned int i = 0; i < fi->ti()->ranges().size(); i++) {
-          if (TIId* tiid = Expression::dynamicCast<TIId>(fi->ti()->ranges()[i]->domain())) {
+        std::function<void(TypeInst * ti, TIVarType t)> checkRetTIId;
+        checkRetTIId = [&ti_map, this, &checkRetTIId](TypeInst* ti, TIVarType t) {
+          if (TIId* tiid = Expression::dynamicCast<TIId>(ti->domain())) {
             auto it = ti_map.find(tiid->v());
             if (it == ti_map.end()) {
               std::ostringstream ss;
               ss << "type-inst variable $" << tiid->v()
                  << " used in return type but not defined in argument list";
               _typeErrors.emplace_back(_env, Expression::loc(tiid), ss.str());
-            } else if (!tiid->isEnum() && it->second == TIVAR_DOMAIN) {
+            } else if (!tiid->isEnum() && it->second != t) {
               std::ostringstream ss;
               ss << "type-inst variable $" << tiid->v()
                  << " used in both array and non-array position";
               _typeErrors.emplace_back(_env, Expression::loc(tiid), ss.str());
             }
+          } else if (ti->type().structBT()) {
+            auto* al = Expression::cast<ArrayLit>(ti->domain());
+            for (unsigned int i = 0; i < al->size(); i++) {
+              checkRetTIId(Expression::cast<TypeInst>((*al)[i]), t);
+            }
           }
-        }
+          for (unsigned int j = 0; j < ti->ranges().size(); j++) {
+            checkRetTIId(ti->ranges()[j], TIVAR_INDEX);
+          }
+        };
+        checkRetTIId(fi->ti(), TIVAR_DOMAIN);
 
         if (fi->ann().contains(_env.constants.ann.promise_commutative)) {
           bool valid = fi->paramCount() > 0;
