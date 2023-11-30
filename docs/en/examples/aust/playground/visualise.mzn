@@ -1,8 +1,6 @@
 include "ide/vis.mzn";
 
-constraint ide_launch_server("australia.html");
-
-output :: "vis_json" [showJSON((
+output :: vis_server("australia.html") (
   wa: wa,
   nt: nt,
   sa: sa,
@@ -10,4 +8,4 @@ output :: "vis_json" [showJSON((
   nsw: nsw,
   v: v,
   t: t
-))];
+);
