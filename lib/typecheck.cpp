@@ -4087,8 +4087,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
               ss << "type-inst variable $" << tiid->v()
                  << " used in return type but not defined in argument list";
               _typeErrors.emplace_back(_env, Expression::loc(tiid), ss.str());
-            }
-            if (!tiid->isEnum() && it->second == TIVAR_DOMAIN) {
+            } else if (!tiid->isEnum() && it->second == TIVAR_DOMAIN) {
               std::ostringstream ss;
               ss << "type-inst variable $" << tiid->v()
                  << " used in both array and non-array position";
