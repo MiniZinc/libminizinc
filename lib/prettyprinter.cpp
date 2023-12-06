@@ -460,7 +460,14 @@ public:
         const auto* fa = Expression::cast<FieldAccess>(e);
         p(fa->v());
         _os << ".";
-        p(fa->field());
+        if (Expression::isa<IntLit>(fa->field()) && Expression::type(fa->v()).isrecord()) {
+          // Has been turned into field number, so need to convert back into name
+          auto* rt = _env->getRecordType(Expression::type(fa->v()));
+          auto* i = Expression::cast<IntLit>(fa->field());
+          _os << Printer::quoteId(rt->fieldName(IntLit::v(i).toInt() - 1));
+        } else {
+          p(fa->field());
+        }
       } break;
       case Expression::E_COMP: {
         const auto* c = Expression::cast<Comprehension>(e);

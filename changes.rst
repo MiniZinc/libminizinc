@@ -17,6 +17,8 @@ Bug fixes:
    inside structured types.
 -  Fix incorrect call names output when generating ``.ozn`` files
    (:bugref:`759`).
+-  Fix incorrect output of record access as tuple access in ``.ozn`` files
+   (:bugref:`759`).
 
 .. _v2.8.1:
 

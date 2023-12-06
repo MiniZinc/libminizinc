@@ -946,7 +946,7 @@ class FieldAccess : public BoxedExpression {
 protected:
   /// The structured type to access
   Expression* _v;
-  /// The field being acessed (must be IntLit for tuples)
+  /// The field being accessed (must be IntLit for tuples)
   Expression* _field;
 
 public:
@@ -958,9 +958,9 @@ public:
   Expression* v() const { return _v; }
   /// Set value
   void v(Expression* val) { _v = val; }
-  /// Access index sets
+  /// Field to be accessed
   Expression* field() const { return _field; }
-  /// Set index sets
+  /// Set field to be accessed
   void field(Expression* field) { _field = field; }
   /// Recompute hash value
   void rehash();
