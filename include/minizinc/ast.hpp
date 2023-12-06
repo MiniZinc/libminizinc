@@ -746,6 +746,10 @@ inline FunctionI::FunctionI(const Location& loc, const ASTString& id, TypeInst* 
   _flag2 = false;
 }
 
+inline void FunctionI::init(const std::vector<VarDecl*>& params) {
+  _params = ASTExprVec<VarDecl>(params);
+}
+
 inline void FunctionI::markParams() {
   _params.mark();
   for (auto* p : _params) {

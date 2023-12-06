@@ -346,7 +346,8 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
 
       if (ca->decl() != nullptr) {
         if (copyFundecls) {
-          c->decl(Item::cast<FunctionI>(copy(env, m, ca->decl())));
+          c->decl(Item::cast<FunctionI>(
+              copy(env, m, ca->decl(), followIds, copyFundecls, isFlatModel)));
         } else {
           c->decl(ca->decl());
         }
@@ -509,6 +510,9 @@ Item* copy(EnvI& env, CopyMap& m, Item* i, bool followIds, bool copyFundecls, bo
     }
     case Item::II_FUN: {
       auto* f = i->cast<FunctionI>();
+      auto* c = new FunctionI(copy_location(m, i), f->id(), nullptr, {}, nullptr, f->fromStdLib(),
+                              f->capturedAnnotationsVar() != nullptr);
+      m.insert(i, c);
       std::vector<VarDecl*> params(f->paramCount());
       for (unsigned int j = f->paramCount(); (j--) != 0U;) {
         params[j] =
@@ -518,11 +522,9 @@ Item* copy(EnvI& env, CopyMap& m, Item* i, bool followIds, bool copyFundecls, bo
         params.push_back(static_cast<VarDecl*>(
             copy(env, m, f->capturedAnnotationsVar(), followIds, copyFundecls, isFlatModel)));
       }
-      auto* c = new FunctionI(
-          copy_location(m, i), f->id(),
-          static_cast<TypeInst*>(copy(env, m, f->ti(), followIds, copyFundecls, isFlatModel)),
-          params, copy(env, m, f->e(), followIds, copyFundecls, isFlatModel), f->fromStdLib(),
-          f->capturedAnnotationsVar() != nullptr);
+      c->init(params);
+      c->ti(static_cast<TypeInst*>(copy(env, m, f->ti(), followIds, copyFundecls, isFlatModel)));
+      c->e(copy(env, m, f->e(), followIds, copyFundecls, isFlatModel));
       c->builtins.e = f->builtins.e;
       c->builtins.i = f->builtins.i;
       c->builtins.f = f->builtins.f;
@@ -533,7 +535,6 @@ Item* copy(EnvI& env, CopyMap& m, Item* i, bool followIds, bool copyFundecls, bo
       c->isMonomorphised(f->isMonomorphised());
 
       copy_ann(env, m, f->ann(), c->ann(), followIds, copyFundecls, isFlatModel);
-      m.insert(i, c);
       return c;
     }
     default:

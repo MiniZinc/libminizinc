@@ -1876,6 +1876,9 @@ public:
             const std::vector<VarDecl*>& params, Expression* e = nullptr, bool from_stdlib = false,
             bool capture_annotations = false);
 
+  /// Set parameters (only needed for copying)
+  void init(const std::vector<VarDecl*>& params);
+
   /// Access identifier
   ASTString id() const { return _id; }
   /// Set identifier

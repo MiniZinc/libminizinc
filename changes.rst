@@ -15,6 +15,8 @@ Bug fixes:
    returning structured types.
 -  Fix incorrect type checking of polymorphic functions with type-inst IDs
    inside structured types.
+-  Fix incorrect call names output when generating ``.ozn`` files
+   (:bugref:`759`).
 
 .. _v2.8.1:
 
