@@ -278,7 +278,7 @@ class FlatZinc:
             return False
 
         if self.fzn is None:
-            with open(actual.base.joinpath(self.path)) as f:
+            with open(actual.base.joinpath(self.path), encoding="utf-8") as f:
                 self.fzn = f.read()
 
         return self.normalized() == actual.normalized()
@@ -317,7 +317,7 @@ class FlatZinc:
         Also takes the base path the mzn file was from, so that when loading the expected fzn file
         it can be done relative to the mzn path.
         """
-        with open(fzn.name) as file:
+        with open(fzn.name, encoding="utf-8") as file:
             instance = FlatZinc(None)
             instance.fzn = file.read()
             instance.base = base
@@ -340,7 +340,7 @@ class OutputModel:
             return False
 
         if self.ozn is None:
-            with open(actual.base.joinpath(self.path)) as f:
+            with open(actual.base.joinpath(self.path), encoding="utf-8") as f:
                 self.ozn = f.read()
 
         return self.ozn == actual.ozn
@@ -358,7 +358,7 @@ class OutputModel:
         Also takes the base path the mzn file was from, so that when loading the expected ozn file
         it can be done relative to the mzn path.
         """
-        with open(ozn.name) as file:
+        with open(ozn.name, encoding="utf-8") as file:
             instance = OutputModel(None)
             instance.ozn = file.read()
             instance.base = base
