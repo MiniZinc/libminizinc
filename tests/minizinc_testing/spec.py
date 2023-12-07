@@ -175,6 +175,9 @@ class Solution:
     def items(self):
         return self.inner.items()
 
+    def as_dict(self):
+        return self.inner
+
     def is_satisfied(self, other):
         """
         Returns whether or not this solution is satisfied by an actual solution
@@ -256,8 +259,16 @@ class CachedResult:
         stored model with the given solver, is satisfied.
         """
         solver_instance = mzn.Solver.lookup(solver)
+
+        solution = (
+            [s.as_dict() for s in self.result.solution]
+            if isinstance(self.result.solution, list)
+            else [self.result.solution.as_dict()]
+        )
         passed = check_result(
-            model=self.model, result=self.result, solver=solver_instance
+            model=self.model,
+            result=mzn.Result(self.result.status, solution, {}),
+            solver=solver_instance,
         )
         return passed
 
