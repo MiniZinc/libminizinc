@@ -92,7 +92,7 @@ function set of $$E: '..<'(set of $$E: s) = min(s)..enum_prev(max(s));
 function set of int: '<..'() = assert(false, "internal function '<..'() called", {0});
 function set of $$E: '<..'(set of $$E: s) = enum_next(min(s))..max(s);
 
-function var set of int: '..'(var int: a, var int: b) ::promise_total =
+function var set of $$E: '..'(var $$E: a, var $$E: b) ::promise_total =
   let {
     var set of lb(a)..ub(b): s;
     constraint forall (i in ub(s)) (i in s <-> (a <= i /\ i <= b));
@@ -109,13 +109,13 @@ function var int: card(var set of int: x) ::promise_total = let {
 /** @group stdlib.builtins.set Return the union of the sets in array \a x */
 function     set of $U:  array_union(array[$T] of     set of $U: x) ::promise_commutative;
 /** @group stdlib.builtins.set Return the union of the sets in array \a x */
-function var set of int: array_union(array[int] of var set of int: x) ::promise_total ::promise_commutative =
+function var set of $$E: array_union(array[$T] of var set of $$E: x) ::promise_total ::promise_commutative =
     if length(x)=0 then {}
-    elseif length(x)=1 then x[min(index_set(x))]
+    elseif length(x)=1 then array1d(x)[1]
     else
       let {
-        var set of ub_array(x): y;
-        constraint fzn_array_set_union(x,y);
+        var set of ub_array(x): y ::is_defined_var;
+        constraint fzn_array_set_union(array1d(x), y) :: defines_var(y);
       } in y
     endif;
 
@@ -123,16 +123,18 @@ function var set of int: array_union(array[int] of var set of int: x) ::promise_
 function     set of $U:  array_intersect(array[$T] of     set of $U: x) ::promise_commutative;
 
 /** @group stdlib.builtins.set Return the intersection of the sets in array \a x. Undefined for empty \a x. */
-function var set of int: array_intersect(array[int] of var set of int: x) ::promise_commutative =
-    let {
-      constraint length(x) > 0
-    } in 
-    if length(x)=0 then {}
-    elseif length(x)=1 then x[min(index_set(x))]
+function var set of $$E: array_intersect(array[$T] of var set of $$E: x) ::promise_commutative =
+  let {
+    constraint length(x) > 0
+  } in array_intersect_t(x);
+
+function var set of $$E: array_intersect_t(array[$T] of var set of $$E: x) :: promise_total =
+    if length(x) = 0 then {}
+    elseif length(x) = 1 then array1d(x)[1]
     else
       let {
-        var set of ub_array(x): y;
-        constraint fzn_array_set_intersect(x,y);
+        var set of ub_array(x): y :: is_defined_var;
+        constraint fzn_array_set_intersect(array1d(x), y) :: defines_var(y);
       } in y
     endif;
 

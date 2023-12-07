@@ -19,6 +19,13 @@ Bug fixes:
    (:bugref:`759`).
 -  Fix incorrect output of record access as tuple access in ``.ozn`` files
    (:bugref:`759`).
+-  Fix definition of ``array_intersect`` so that it can be used in non-positive
+   contexts.
+
+Changes:
+^^^^^^^^
+-  Support ``var set``s of enums for ``array_union`` and ``array_intersect``.
+-  Support ``var`` enums for the ``..`` range operator.
 
 .. _v2.8.1:
 
