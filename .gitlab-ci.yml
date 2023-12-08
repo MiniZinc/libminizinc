@@ -303,7 +303,7 @@ documentation:
   before_script:
     - *download_bundle
   script:
-    - cp $CI_PROJECT_DIR/share/minizinc/gecode_presolver/gecode.mzn $CI_PROJECT_DIR/share/minizinc/std/
+    - cp $CI_PROJECT_DIR/vendor/gecode/share/minizinc/gecode/gecode.mzn $CI_PROJECT_DIR/share/minizinc/std/
     - cp $CI_PROJECT_DIR/vendor/chuffed/share/minizinc/chuffed/chuffed.mzn $CI_PROJECT_DIR/share/minizinc/std/
     - echo 'include "globals.mzn"; include "gecode.mzn"; include "chuffed.mzn"; include "ide/vis.mzn"; include "experimental/all.mzn";' > $CI_PROJECT_DIR/share/minizinc/std/all.mzn
     - ./minizinc/bin/mzn2doc --rst-output --include-stdlib --output-base $CI_PROJECT_DIR/docs/en/lib $CI_PROJECT_DIR/share/minizinc/std/all.mzn
