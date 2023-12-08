@@ -183,6 +183,7 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
     if (_compflags.verbose) {
       log << "Converting to old FlatZinc ...";
     }
+    substitute_fixed_vars(*new_env);
     oldflatzinc(*new_env);
     if (_compflags.verbose) {
       log << " done (" << lasttime.stoptime() << ")" << std::endl;

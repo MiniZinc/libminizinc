@@ -196,7 +196,7 @@ void set_computed_value(EnvI& envi, VarDecl* vd, Expression* val) {
   if (envi.hasReverseMapper(vd->id())) {
     if (!create_explicit_assignment_constraints(envi, vd, val)) {
       std::ostringstream ss;
-      ss << "Unable to create asignment constraint for reverse mapped variable: " << *vd->id()
+      ss << "Unable to create assignment constraint for reverse mapped variable: " << *vd->id()
          << " = " << *val << std::endl;
       throw EvalError(envi, Expression::loc(val), ss.str());
     }
@@ -209,13 +209,6 @@ void set_computed_value(EnvI& envi, VarDecl* vd, Expression* val) {
     }
     std::cerr << "Warning: assignment not handled by -g mode: " << *vd->id() << " = " << *val
               << std::endl;
-  }
-  // Special case handling for Booleans, where the domain should always just be changed
-  if (vd->type().isvarbool()) {
-    GCLock lock;
-    vd->type(Type::parbool());
-    vd->ti(new TypeInst(Expression::loc(vd), Type::parbool(), val));
-    return;
   }
   // There is already a RHS. If it's a call, make it relational. Otherwise, create explicit
   // constraint
@@ -244,6 +237,12 @@ void set_computed_value(EnvI& envi, VarDecl* vd, Expression* val) {
       }
     }
     if (!made_relational) {
+      if (vd->type().isvarbool()) {
+        GCLock lock;
+        vd->type(Type::parbool());
+        vd->ti(new TypeInst(Expression::loc(vd), Type::parbool(), val));
+        return;
+      }
       if (vd->type().isvarint()) {
         GCLock lock;
         Type nty = vd->type();
@@ -275,12 +274,28 @@ void set_computed_value(EnvI& envi, VarDecl* vd, Expression* val) {
   }
   Type nty = vd->type();
   nty.mkPar(envi);
-  vd->type(nty);
-  {
-    GCLock lock;
+  GCLock lock;
+  if (vd->type().isvarbool()) {
+    vd->ti(new TypeInst(Expression::loc(vd), Type::parbool(), val));
+    vd->ti()->setComputedDomain(true);
+    vd->e(val);
+  } else if (vd->type().isvarint()) {
+    IntVal v = eval_int(envi, val);
+    vd->ti(new TypeInst(Expression::loc(vd->ti()), nty,
+                        new SetLit(Location().introduce(), IntSetVal::a(v, v))));
+    vd->ti()->setComputedDomain(true);
+    vd->e(IntLit::a(v));
+  } else if (vd->type().isvarfloat()) {
+    FloatVal v = eval_float(envi, val);
+    vd->ti(new TypeInst(Expression::loc(vd->ti()), Type::parfloat(),
+                        new SetLit(Location().introduce(), FloatSetVal::a(v, v))));
+    vd->ti()->setComputedDomain(true);
+    vd->e(FloatLit::a(v));
+  } else {
     vd->ti(new TypeInst(Expression::loc(vd), nty));
+    vd->e(val);
   }
-  vd->e(val);
+  vd->type(nty);
 }
 
 /// Output operator for contexts

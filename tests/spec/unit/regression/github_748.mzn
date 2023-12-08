@@ -1,5 +1,5 @@
 /***
-!Test
+--- !Test
 expected: !Result
   status: ALL_SOLUTIONS
   solution: !SolutionSet
@@ -8,6 +8,17 @@ expected: !Result
     y: true
 options:
   all_solutions: true
+solvers: [gecode]
+--- !Test
+expected: !Result
+  status: ALL_SOLUTIONS
+  solution: !SolutionSet
+  - !Solution
+    x: [true, false, false]
+    y: true
+options:
+  all_solutions: true
+  -O0: true
 solvers: [gecode]
 ***/
 include "member.mzn";

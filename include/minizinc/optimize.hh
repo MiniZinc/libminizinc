@@ -104,7 +104,10 @@ public:
 
 bool is_output(VarDecl* vd);
 
-/// Simplyfy models in \a env
+/// Simplify models in \a env
 void optimize(Env& env, bool chain_compression = true);
+
+/// Substitute fixed variables the flat model
+void substitute_fixed_vars(Env& env);
 
 }  // namespace MiniZinc

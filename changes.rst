@@ -15,6 +15,8 @@ Bug fixes:
    returning structured types.
 -  Fix incorrect type checking of polymorphic functions with type-inst IDs
    inside structured types.
+-  Fix evaluation error when boolean variables are fixed during flattening
+   (:bugref:`758`).
 -  Fix incorrect call names output when generating ``.ozn`` files
    (:bugref:`759`).
 -  Fix incorrect output of record access as tuple access in ``.ozn`` files
@@ -26,6 +28,8 @@ Changes:
 ^^^^^^^^
 -  Support ``var set``s of enums for ``array_union`` and ``array_intersect``.
 -  Support ``var`` enums for the ``..`` range operator.
+-  Always perform substitution of fixed values before outputting FlatZinc for
+   consistency.
 
 .. _v2.8.1:
 

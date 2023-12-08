@@ -349,6 +349,72 @@ void push_dependent_constraints(EnvI& env, Id* id, std::deque<Item*>& q) {
   }
 }
 
+void remove_deleted_items(EnvI& envi, std::vector<VarDecl*>& deletedVarDecls) {
+  // TODO: The delayed deletion could be done eagerly by the creation of
+  // env.optRemoveItem() which contains the logic in this while loop.
+  auto& m = *envi.flat();
+  while (!deletedVarDecls.empty()) {
+    envi.checkCancel();
+    VarDecl* cur = deletedVarDecls.back();
+    deletedVarDecls.pop_back();
+    if (envi.varOccurrences.occurrences(cur) == 0) {
+      auto cur_idx = envi.varOccurrences.idx.find(cur->id());
+      if (cur_idx.first && !m[*cur_idx.second]->removed()) {
+        if (is_output(cur)) {
+          // We have to change the output model if we remove this variable
+          Expression* val = nullptr;
+          if (cur->type().isbool() && (cur->ti()->domain() != nullptr)) {
+            val = cur->ti()->domain();
+          } else if (cur->type().isint()) {
+            if ((cur->e() != nullptr) && Expression::isa<IntLit>(cur->e())) {
+              val = cur->e();
+            } else if ((cur->ti()->domain() != nullptr) &&
+                       Expression::isa<SetLit>(cur->ti()->domain()) &&
+                       Expression::cast<SetLit>(cur->ti()->domain())->isv()->size() == 1 &&
+                       Expression::cast<SetLit>(cur->ti()->domain())->isv()->min() ==
+                           Expression::cast<SetLit>(cur->ti()->domain())->isv()->max()) {
+              val = IntLit::a(Expression::cast<SetLit>(cur->ti()->domain())->isv()->min());
+            }
+          } else if (cur->type().isfloat()) {
+            if ((cur->e() != nullptr) && Expression::isa<FloatLit>(cur->e())) {
+              val = cur->e();
+            } else if ((cur->ti()->domain() != nullptr) &&
+                       Expression::isa<SetLit>(cur->ti()->domain()) &&
+                       Expression::cast<SetLit>(cur->ti()->domain())->fsv()->size() == 1 &&
+                       Expression::cast<SetLit>(cur->ti()->domain())->fsv()->min() ==
+                           Expression::cast<SetLit>(cur->ti()->domain())->fsv()->max()) {
+              val = FloatLit::a(Expression::cast<SetLit>(cur->ti()->domain())->fsv()->min());
+            }
+          } else if (cur->type().isIntSet()) {
+            if (cur->e() != nullptr && Expression::isa<SetLit>(cur->e())) {
+              val = cur->e();
+            }
+          } else if (cur->type().dim() > 0 && cur->type().isPar()) {
+            if (cur->e() != nullptr && Expression::isa<ArrayLit>(cur->e())) {
+              val = cur->e();
+            }
+          }
+          if (val != nullptr) {
+            // Find corresponding variable in output model and fix it
+            VarDecl* vd_out =
+                (*envi.output)[envi.outputFlatVarOccurrences.find(cur)]->cast<VarDeclI>()->e();
+            vd_out->e(val);
+            CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls,
+                            m[*cur_idx.second]->cast<VarDeclI>());
+            top_down(cd, cur->e());
+            (*envi.flat())[*cur_idx.second]->remove();
+          }
+        } else {
+          CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls,
+                          m[*cur_idx.second]->cast<VarDeclI>());
+          top_down(cd, cur->e());
+          (*envi.flat())[*cur_idx.second]->remove();
+        }
+      }
+    }
+  }
+}
+
 void optimize(Env& env, bool chain_compression) {
   env.envi().checkCancel();
 
@@ -542,7 +608,8 @@ void optimize(Env& env, bool chain_compression) {
         }
         if (vdi->e()->type().isbool() && vdi->e()->type().dim() == 0 &&
             (vdi->e()->ti()->domain() == envi.constants.literalTrue ||
-             vdi->e()->ti()->domain() == envi.constants.literalFalse)) {
+             vdi->e()->ti()->domain() == envi.constants.literalFalse ||
+             (vdi->e()->e() != nullptr && Expression::isa<BoolLit>(vdi->e()->e())))) {
           // push RHS onto constraint queue since this bool var is fixed
           push_vardecl(envi, vdi, i, vardeclQueue);
           push_dependent_constraints(envi, vdi->e()->id(), constraintQueue);
@@ -1062,68 +1129,7 @@ void optimize(Env& env, bool chain_compression) {
     }
 
     // Phase 6: remove deleted variables if possible
-    // TODO: The delayed deletion could be done eagerly by the creation of
-    // env.optRemoveItem() which contains the logic in this while loop.
-    while (!deletedVarDecls.empty()) {
-      env.envi().checkCancel();
-      VarDecl* cur = deletedVarDecls.back();
-      deletedVarDecls.pop_back();
-      if (envi.varOccurrences.occurrences(cur) == 0) {
-        auto cur_idx = envi.varOccurrences.idx.find(cur->id());
-        if (cur_idx.first && !m[*cur_idx.second]->removed()) {
-          if (is_output(cur)) {
-            // We have to change the output model if we remove this variable
-            Expression* val = nullptr;
-            if (cur->type().isbool() && (cur->ti()->domain() != nullptr)) {
-              val = cur->ti()->domain();
-            } else if (cur->type().isint()) {
-              if ((cur->e() != nullptr) && Expression::isa<IntLit>(cur->e())) {
-                val = cur->e();
-              } else if ((cur->ti()->domain() != nullptr) &&
-                         Expression::isa<SetLit>(cur->ti()->domain()) &&
-                         Expression::cast<SetLit>(cur->ti()->domain())->isv()->size() == 1 &&
-                         Expression::cast<SetLit>(cur->ti()->domain())->isv()->min() ==
-                             Expression::cast<SetLit>(cur->ti()->domain())->isv()->max()) {
-                val = IntLit::a(Expression::cast<SetLit>(cur->ti()->domain())->isv()->min());
-              }
-            } else if (cur->type().isfloat()) {
-              if ((cur->e() != nullptr) && Expression::isa<FloatLit>(cur->e())) {
-                val = cur->e();
-              } else if ((cur->ti()->domain() != nullptr) &&
-                         Expression::isa<SetLit>(cur->ti()->domain()) &&
-                         Expression::cast<SetLit>(cur->ti()->domain())->fsv()->size() == 1 &&
-                         Expression::cast<SetLit>(cur->ti()->domain())->fsv()->min() ==
-                             Expression::cast<SetLit>(cur->ti()->domain())->fsv()->max()) {
-                val = FloatLit::a(Expression::cast<SetLit>(cur->ti()->domain())->fsv()->min());
-              }
-            } else if (cur->type().isIntSet()) {
-              if (cur->e() != nullptr && Expression::isa<SetLit>(cur->e())) {
-                val = cur->e();
-              }
-            } else if (cur->type().dim() > 0 && cur->type().isPar()) {
-              if (cur->e() != nullptr && Expression::isa<ArrayLit>(cur->e())) {
-                val = cur->e();
-              }
-            }
-            if (val != nullptr) {
-              // Find corresponding variable in output model and fix it
-              VarDecl* vd_out =
-                  (*envi.output)[envi.outputFlatVarOccurrences.find(cur)]->cast<VarDeclI>()->e();
-              vd_out->e(val);
-              CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls,
-                              m[*cur_idx.second]->cast<VarDeclI>());
-              top_down(cd, cur->e());
-              (*envi.flat())[*cur_idx.second]->remove();
-            }
-          } else {
-            CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls,
-                            m[*cur_idx.second]->cast<VarDeclI>());
-            top_down(cd, cur->e());
-            (*envi.flat())[*cur_idx.second]->remove();
-          }
-        }
-      }
-    }
+    remove_deleted_items(envi, deletedVarDecls);
   } catch (ModelInconsistent&) {
   }
 }
@@ -1236,7 +1242,9 @@ void substitute_fixed_vars(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVa
     }
   } else {
     auto* si = ii->cast<SolveI>();
-    top_down(sv, si->e());
+    if (si->e() != nullptr) {
+      top_down(sv, si->e());
+    }
     for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it) {
       top_down(sv, *it);
     }
@@ -2071,6 +2079,23 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
     }
   } else {
     remove = false;
+  }
+}
+
+void substitute_fixed_vars(Env& env) {
+  env.envi().checkCancel();
+  if (env.envi().failed()) {
+    return;
+  }
+  try {
+    EnvI& envi = env.envi();
+    Model& m = *envi.flat();
+    std::vector<VarDecl*> deletedVarDecls;
+    for (auto* item : m) {
+      substitute_fixed_vars(envi, item, deletedVarDecls);
+    }
+    remove_deleted_items(envi, deletedVarDecls);
+  } catch (ModelInconsistent&) {
   }
 }
 
