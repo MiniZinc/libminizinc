@@ -23,6 +23,8 @@ Bug fixes:
    (:bugref:`759`).
 -  Fix definition of ``array_intersect`` so that it can be used in non-positive
    contexts.
+-  Fix standards definitions of ``increasing`` variants to correct be ignored
+   when the argument array is empty (:bugref:`762`).
 
 Changes:
 ^^^^^^^^

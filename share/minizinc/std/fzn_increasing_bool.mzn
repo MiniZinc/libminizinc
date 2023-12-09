@@ -3,4 +3,6 @@
 %-----------------------------------------------------------------------------%
 
 predicate fzn_increasing_bool(array[int] of var bool: x) =
-    forall(i in index_set(x) diff { min(index_set(x)) }) (x[i-1] <= x[i]);
+  if length(x) > 1 then
+    forall(i in index_set(x) diff { min(index_set(x)) }) (x[i-1] <= x[i])
+  endif;
