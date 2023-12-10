@@ -24,7 +24,10 @@ Bug fixes:
 -  Fix definition of ``array_intersect`` so that it can be used in non-positive
    contexts.
 -  Fix standards definitions of ``increasing`` variants to correct be ignored
-   when the argument array is empty (:bugref:`762`).
+   when the argument array is empty (:bugref:`762`).\
+-  Fix a problem where exceptions thrown for undefined expressions were not
+   caught during the aggregation of linear expressions, breaking relational
+   semantics (:bugref:`760`).
 
 Changes:
 ^^^^^^^^

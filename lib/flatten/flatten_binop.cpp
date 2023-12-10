@@ -919,38 +919,43 @@ EE flatten_nonbool_op(EnvI& env, const Ctx& ctx, const Ctx& ctx0, const Ctx& ctx
     return flatten_binop(env, ctx, ka(), r, b);
   }
 
-  if (isBuiltin && bot == BOT_MULT) {
-    Expression* e0r = e0.r();
-    Expression* e1r = e1.r();
-    if (Expression::type(e0r).isPar()) {
-      std::swap(e0r, e1r);
-    }
-    if (Expression::type(e1r).isPar() && Expression::type(e1r).isint()) {
-      IntVal coeff = eval_int(env, e1r);
-      KeepAlive ka = mklinexp<IntLit>(env, coeff, 0, e0r, nullptr);
-      return flat_exp(env, ctx, ka(), r, b);
-    }
-    if (Expression::type(e1r).isPar() && Expression::type(e1r).isfloat()) {
-      FloatVal coeff = eval_float(env, e1r);
-      KeepAlive ka = mklinexp<FloatLit>(env, coeff, 0.0, e0r, nullptr);
-      return flat_exp(env, ctx, ka(), r, b);
-    }
-  } else if (isBuiltin && (bot == BOT_DIV || bot == BOT_IDIV)) {
-    Expression* e0r = e0.r();
-    Expression* e1r = e1.r();
-    if (Expression::type(e1r).isPar() && Expression::type(e1r).isint()) {
-      IntVal coeff = eval_int(env, e1r);
-      if (coeff == 1) {
-        return flat_exp(env, ctx, e0r, r, b);
+  try {
+    if (isBuiltin && bot == BOT_MULT) {
+      Expression* e0r = e0.r();
+      Expression* e1r = e1.r();
+      if (Expression::type(e0r).isPar()) {
+        std::swap(e0r, e1r);
       }
-    } else if (Expression::type(e1r).isPar() && Expression::type(e1r).isfloat()) {
-      FloatVal coeff = eval_float(env, e1r);
-      if (coeff == 1.0) {
-        return flat_exp(env, ctx, e0r, r, b);
+      if (Expression::type(e1r).isPar() && Expression::type(e1r).isint()) {
+        IntVal coeff = eval_int(env, e1r);
+        KeepAlive ka = mklinexp<IntLit>(env, coeff, 0, e0r, nullptr);
+        return flat_exp(env, ctx, ka(), r, b);
       }
-      KeepAlive ka = mklinexp<FloatLit>(env, 1.0 / coeff, 0.0, e0r, nullptr);
-      return flat_exp(env, ctx, ka(), r, b);
+      if (Expression::type(e1r).isPar() && Expression::type(e1r).isfloat()) {
+        FloatVal coeff = eval_float(env, e1r);
+        KeepAlive ka = mklinexp<FloatLit>(env, coeff, 0.0, e0r, nullptr);
+        return flat_exp(env, ctx, ka(), r, b);
+      }
+    } else if (isBuiltin && (bot == BOT_DIV || bot == BOT_IDIV)) {
+      Expression* e0r = e0.r();
+      Expression* e1r = e1.r();
+      if (Expression::type(e1r).isPar() && Expression::type(e1r).isint()) {
+        IntVal coeff = eval_int(env, e1r);
+        if (coeff == 1) {
+          return flat_exp(env, ctx, e0r, r, b);
+        }
+      } else if (Expression::type(e1r).isPar() && Expression::type(e1r).isfloat()) {
+        FloatVal coeff = eval_float(env, e1r);
+        if (coeff == 1.0) {
+          return flat_exp(env, ctx, e0r, r, b);
+        }
+        KeepAlive ka = mklinexp<FloatLit>(env, 1.0 / coeff, 0.0, e0r, nullptr);
+        return flat_exp(env, ctx, ka(), r, b);
+      }
     }
+  } catch (ResultUndefinedError&) {
+    ret.r = create_dummy_value(env, Expression::type(e));
+    ret.b = bind(env, Ctx(), b, env.constants.literalFalse);
   }
 
   GC::lock();
@@ -1575,24 +1580,34 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
       }
     case BOT_PLUS:
       if (isBuiltin) {
-        KeepAlive ka;
-        if (Expression::type(boe0).isint()) {
-          ka = mklinexp<IntLit>(env, 1, 1, boe0, boe1);
-        } else {
-          ka = mklinexp<FloatLit>(env, 1.0, 1.0, boe0, boe1);
+        try {
+          KeepAlive ka;
+          if (Expression::type(boe0).isint()) {
+            ka = mklinexp<IntLit>(env, 1, 1, boe0, boe1);
+          } else {
+            ka = mklinexp<FloatLit>(env, 1.0, 1.0, boe0, boe1);
+          }
+          ret = flat_exp(env, ctx, ka(), r, b);
+        } catch (ResultUndefinedError&) {
+          ret.r = create_dummy_value(env, Expression::type(e));
+          ret.b = bind(env, Ctx(), b, env.constants.literalFalse);
         }
-        ret = flat_exp(env, ctx, ka(), r, b);
         break;
       }
     case BOT_MINUS:
       if (isBuiltin) {
-        KeepAlive ka;
-        if (Expression::type(boe0).isint()) {
-          ka = mklinexp<IntLit>(env, 1, -1, boe0, boe1);
-        } else {
-          ka = mklinexp<FloatLit>(env, 1.0, -1.0, boe0, boe1);
+        try {
+          KeepAlive ka;
+          if (Expression::type(boe0).isint()) {
+            ka = mklinexp<IntLit>(env, 1, -1, boe0, boe1);
+          } else {
+            ka = mklinexp<FloatLit>(env, 1.0, -1.0, boe0, boe1);
+          }
+          ret = flat_exp(env, ctx, ka(), r, b);
+        } catch (ResultUndefinedError&) {
+          ret.r = create_dummy_value(env, Expression::type(e));
+          ret.b = bind(env, Ctx(), b, env.constants.literalFalse);
         }
-        ret = flat_exp(env, ctx, ka(), r, b);
         break;
       }
     case BOT_MULT:
