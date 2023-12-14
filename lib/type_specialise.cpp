@@ -447,7 +447,7 @@ public:
       }
     } else if (TIId* tiid = Expression::dynamicCast<TIId>(ti->domain())) {
       Type ret_type = ti_map.find(tiid->v())->second;
-      if (ret_type.dim() != 0 && tiid->type().dim() == 0) {
+      if (ret_type.dim() != 0 && ti->type().dim() == 0) {
         ret_type = ret_type.elemType(env);
       }
       if (ret_type.structBT()) {

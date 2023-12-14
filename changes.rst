@@ -10,7 +10,7 @@ Bug fixes:
 ^^^^^^^^^^
 -  Fix incorrect FlatZinc definition in the ``gecode_presolver`` solver library (:bugref:`755`).
 -  Fix type specialisation for function with an polymorphic array argument and a
-   non-array return type with the same type-inst identifier.
+   non-array return type with the same type-inst identifier (related to :bugref:`671`).
 -  Fix crash during typechecking of overloaded functions differing only by inst
    returning structured types.
 -  Fix incorrect type checking of polymorphic functions with type-inst IDs
