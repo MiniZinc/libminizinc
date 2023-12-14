@@ -4,7 +4,12 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
-.. _unreleased:
+.. _v2.8.1:
+
+`Version 2.8.2 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.8.2>`__
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(released 15 December 2023)
 
 Bug fixes:
 ^^^^^^^^^^
@@ -37,6 +42,10 @@ Changes:
 -  Support ``var`` enums for the ``..`` range operator.
 -  Always perform substitution of fixed values before outputting FlatZinc for
    consistency.
+
+Changes in the IDE:
+^^^^^^^^^^^^^^^^^^^
+-  Make process handling more robust to failures.
 
 .. _v2.8.1:
 
