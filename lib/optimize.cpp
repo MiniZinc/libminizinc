@@ -1130,7 +1130,7 @@ void optimize(Env& env, bool chain_compression) {
 
     // Phase 6: remove deleted variables if possible
     remove_deleted_items(envi, deletedVarDecls);
-  } catch (ModelInconsistent&) {
+  } catch (ModelInconsistent&) { /* NOLINT(bugprone-empty-catch) */
   }
 }
 
@@ -2095,7 +2095,7 @@ void substitute_fixed_vars(Env& env) {
       substitute_fixed_vars(envi, item, deletedVarDecls);
     }
     remove_deleted_items(envi, deletedVarDecls);
-  } catch (ModelInconsistent&) {
+  } catch (ModelInconsistent&) { /* NOLINT(bugprone-empty-catch) */
   }
 }
 

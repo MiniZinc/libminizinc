@@ -450,7 +450,7 @@ public:
               } else {
                 _os << "(≡⊥)";
               }
-            } catch (EvalError) {
+            } catch (EvalError) { /* NOLINT(bugprone-empty-catch) */
               // nothing to print
             }
           }

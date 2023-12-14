@@ -4884,7 +4884,7 @@ void flatten(Env& e, FlatteningOptions opt) {
     }
 
     cleanup_output(env);
-  } catch (ModelInconsistent&) {
+  } catch (ModelInconsistent&) { /* NOLINT(bugprone-empty-catch) */
   }
 
   if (opt.detailedTiming) {

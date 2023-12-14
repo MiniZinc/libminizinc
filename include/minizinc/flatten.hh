@@ -91,7 +91,7 @@ struct FlatteningOptions {
       try {
         std::random_device rdev;
         seeds.push_back(rdev());
-      } catch (std::exception) {
+      } catch (std::exception) { /* NOLINT(bugprone-empty-catch) */
       }
     }
     auto highrestime = static_cast<long unsigned int>(

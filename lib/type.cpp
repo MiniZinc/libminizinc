@@ -337,7 +337,7 @@ std::string Type::toString(const EnvI& env) const {
   if (dim() < 0) {
     oss << "array[$_] of ";
   }
-  switch (static_cast<int>(_ti)) {
+  switch (static_cast<Inst>(_ti)) {
     case TI_PAR:
       if (static_cast<ExplicitType>(_tiExplicit) == EXPL_YES) {
         oss << "par ";

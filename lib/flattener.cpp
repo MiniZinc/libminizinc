@@ -627,9 +627,9 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           std::string smm_compressed =
               FileUtils::encode_base64(FileUtils::deflate_string(smm_oss.str()));
           auto* ti = new TypeInst(Location().introduce(), Type::parstring(), nullptr);
+          auto* sl = new StringLit(Location().introduce(), smm_compressed);
           auto* checkString =
-              new VarDecl(Location().introduce(), ti, ASTString("_mzn_solution_checker"),
-                          new StringLit(Location().introduce(), smm_compressed));
+              new VarDecl(Location().introduce(), ti, ASTString("_mzn_solution_checker"), sl);
           auto* checkStringI = VarDeclI::a(Location().introduce(), checkString);
           env->output()->addItem(checkStringI);
 
@@ -646,9 +646,9 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
               std::string smm_stats_compressed =
                   FileUtils::encode_base64(FileUtils::deflate_string(smm_stats_oss.str()));
               auto* ti = new TypeInst(Location().introduce(), Type::parstring(), nullptr);
+              auto* sl = new StringLit(Location().introduce(), smm_stats_compressed);
               auto* checkStatsString =
-                  new VarDecl(Location().introduce(), ti, ASTString("_mzn_stats_checker"),
-                              new StringLit(Location().introduce(), smm_stats_compressed));
+                  new VarDecl(Location().introduce(), ti, ASTString("_mzn_stats_checker"), sl);
               auto* checkStatsStringI = VarDeclI::a(Location().introduce(), checkStatsString);
               env->output()->addItem(checkStatsStringI);
             }

@@ -1710,6 +1710,7 @@ bool eval_bool(EnvI& env, Expression* e) {
     }
   } catch (ResultUndefinedError&) {
     // undefined means false
+    return false;
   }
   return false;
 }

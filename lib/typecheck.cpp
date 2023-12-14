@@ -3651,6 +3651,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
             try {
               vId = std::stoi(numId);
             } catch (std::exception&) {
+              vId = -1;
             }
             if (vId >= 0) {
               env.minId(vId);
@@ -3712,6 +3713,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       try {
         vd = ts.get(env.envi(), ai->id(), ai->loc());
       } catch (TypeError&) {
+        vd = nullptr;
       }
     } else {
       vd = ts.get(env.envi(), ai->id(), ai->loc());

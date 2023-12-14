@@ -351,7 +351,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
   FunctionI* decl = c->decl();
   try {
     decl = env.model->matchFn(env, c, false);
-  } catch (TypeError&) {
+  } catch (TypeError&) { /* NOLINT(bugprone-empty-catch) */
     // Can't actually match call, maybe it's being called with args which are now known to be
     // bottom, so just use the decl that was already in the call if there was one
   }
@@ -970,7 +970,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
           if (cr_d != nullptr) {
             decl = cr_d;
           }
-        } catch (TypeError&) {
+        } catch (TypeError&) { /* NOLINT(bugprone-empty-catch) */
           // Matches multiple incompatible overloads (e.g. because arg is actually bottom)
           // So just use original decl from type checker
         }

@@ -1274,12 +1274,12 @@ void NLFile::addSolve(SolveI::SolveType st, const Expression* e) {
   switch (st) {
     case SolveI::SolveType::ST_SAT: {
       // Satisfy: implemented by minimizing 0 (print n0 for an empty expression graph)
-      objective.minmax = objective.SATISFY;
+      objective.minmax = NLObjective::SATISFY;
       break;
     }
     case SolveI::SolveType::ST_MIN: {
       // Maximize an objective represented by a variable
-      objective.minmax = objective.MINIMIZE;
+      objective.minmax = NLObjective::MINIMIZE;
       string v = getTokenFromVar(e).str;
       // Use the gradient
       vector<double> coeffs = {1};
@@ -1289,7 +1289,7 @@ void NLFile::addSolve(SolveI::SolveType st, const Expression* e) {
     }
     case SolveI::SolveType::ST_MAX: {
       // Maximize an objective represented by a variable
-      objective.minmax = objective.MAXIMIZE;
+      objective.minmax = NLObjective::MAXIMIZE;
       string v = getTokenFromVar(e).str;
       // Use the gradient
       vector<double> coeffs = {1};

@@ -279,7 +279,7 @@ vector<string> MIPCplexWrapper::getRequiredFlags(FactoryOptions& f) {
     if (env != nullptr) {
       return {};
     }
-  } catch (MiniZinc::Error&) {
+  } catch (MiniZinc::Error&) { /* NOLINT(bugprone-empty-catch) */
   }
   return {"--cplex-dll"};
 }
