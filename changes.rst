@@ -29,6 +29,7 @@ Bug fixes:
    caught during the aggregation of linear expressions, breaking relational
    semantics (:bugref:`760`).
 -  Fix crash when calculating computed domain of a declaration (:bugref:`765`).
+-  Fix x-y line/scatter visualisations.
 
 Changes:
 ^^^^^^^^

@@ -137,7 +137,7 @@ function ann: vis_line(
                 xLabel: x_label,
                 yLabel: y_label
             )),
-            [(x: x[i], y: y[i]) | i in index_set(x)]
+            [(x: x, y: y)]
         );
     } in output_only;
 /** @group ide.visualisation 
@@ -159,7 +159,7 @@ function ann: vis_line(
                 xLabel: x_label,
                 yLabel: y_label
             )),
-            [(x: x[i], y: y[i]) | i in index_set(x)]
+            [(x: x, y: y)]
         );
     } in output_only;
 
@@ -182,7 +182,7 @@ function ann: vis_scatter(
                 xLabel: x_label,
                 yLabel: y_label
             )),
-            [(x: x[i], y: y[i]) | i in index_set(x)]
+            [(x: x, y: y)]
         );
     } in output_only;
 /** @group ide.visualisation 
@@ -204,7 +204,7 @@ function ann: vis_scatter(
                 xLabel: x_label,
                 yLabel: y_label
             )),
-            [(x: x[i], y: y[i] ) | i in index_set(x)]
+            [(x: x, y: y)]
         );
     } in output_only;
 

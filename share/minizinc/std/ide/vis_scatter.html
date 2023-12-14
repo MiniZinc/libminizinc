@@ -4,7 +4,7 @@
         <meta charset="utf-8">
         <title>MiniZinc Visualization</title>
         <script src="/minizinc-ide.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/chart.js@3.6.0/dist/chart.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
         <style>
             html, body {
                 margin: 0;
@@ -140,10 +140,18 @@
                         });
                     } else {
                         for (let j = 0; j < values[i].x.length; j++) {
-                            data[i].push({
-                                x: values[i].x[j],
-                                y: values[i].y[j]
-                            });
+                            if (!plotOverTime && data[i].length > j) {
+                                data[i][j] = {
+                                    x: values[i].x[j],
+                                    y: values[i].y[j]
+                                };
+                            } else {
+                                data[i].push({
+                                    x: values[i].x[j],
+                                    y: values[i].y[j]
+                                });
+                                chart.update();
+                            }
                         }
                     }
                 }
@@ -151,8 +159,10 @@
             }
 
             function finish(time) {
-                chart.options.scales.x.suggestedMax = time;
-                chart.update();
+                if (plotOverTime) {
+                    chart.options.scales.x.suggestedMax = time;
+                    chart.update();
+                }
             }
 
             (async function() {
@@ -185,8 +195,13 @@
                     finish(payload.time);
                 });
 
-                MiniZincIDE.on('goToSolution', (index) => {
-                    currentIndex = index;
+                MiniZincIDE.on('goToSolution', async (index) => {
+                    if (plotOverTime) {
+                        currentIndex = index;
+                    } else {
+                        const solution = await MiniZincIDE.getSolution(index);
+                        addSolution(solution.time, solution.data);
+                    }
                     chart.update();
                 });
             })();
