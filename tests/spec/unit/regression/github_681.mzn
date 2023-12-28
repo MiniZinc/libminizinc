@@ -3,8 +3,6 @@
 solvers: [gecode]
 expected: !Result
   solution: !Solution
-    arr: [false]
-  solution: !Solution
     arr: [true]
 ***/
 
