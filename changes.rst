@@ -4,6 +4,14 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
+.. _unreleased:
+
+Bug fixes:
+^^^^^^^^^^
+
+-  Fix problem where specialised flattening for some forms of binary operators
+   would not correctly forward the partiality of its arguments (:bugref:`766`).
+
 .. _v2.8.1:
 
 `Version 2.8.2 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.8.2>`__

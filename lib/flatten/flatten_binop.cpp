@@ -870,27 +870,24 @@ EE flatten_nonbool_op(EnvI& env, const Ctx& ctx, const Ctx& ctx0, const Ctx& ctx
 
   EE ret;
 
-  EE e0 = flat_exp(env, ctx0, bo->lhs(), nullptr, b);
-  EE e1 = flat_exp(env, ctx1, bo->rhs(), nullptr, b);
+  std::vector<EE> ees(2);
+  ees[0] = flat_exp(env, ctx0, bo->lhs(), nullptr, b);
+  ees[1] = flat_exp(env, ctx1, bo->rhs(), nullptr, b);
 
-  if (Expression::type(e0.r()).isPar() && Expression::type(e1.r()).isPar()) {
+  if (Expression::type(ees[0].r()).isPar() && Expression::type(ees[1].r()).isPar()) {
     GCLock lock;
-    auto* parbo = new BinOp(Expression::loc(bo), e0.r(), bo->op(), e1.r());
-    std::vector<Expression*> args(2);
-    args[0] = e0.r();
-    args[1] = e1.r();
+    auto* parbo = new BinOp(Expression::loc(bo), ees[0].r(), bo->op(), ees[1].r());
+    std::vector<Expression*> args = {ees[0].r(), ees[1].r()};
     FunctionI* fi = env.model->matchFn(env, bo->opToString(), args, false);
     parbo->decl(fi);
-    Type tt = fi->rtype(env, {Expression::type(e0.r()), Expression::type(e1.r())}, nullptr, false);
+    Type tt = fi->rtype(env, {Expression::type(ees[0].r()), Expression::type(ees[1].r())}, nullptr,
+                        false);
     assert(tt.isPar());
     parbo->type(tt);
     try {
       Expression* res = eval_par(env, parbo);
       assert(!Expression::type(res).isunknown());
       ret.r = bind(env, ctx, r, res);
-      std::vector<EE> ees(2);
-      ees[0].b = e0.b;
-      ees[1].b = e1.b;
       ret.b = conj(env, b, Ctx(), ees);
     } catch (ResultUndefinedError&) {
       ret.r = create_dummy_value(env, Expression::type(e));
@@ -899,16 +896,23 @@ EE flatten_nonbool_op(EnvI& env, const Ctx& ctx, const Ctx& ctx0, const Ctx& ctx
     return ret;
   }
 
-  if (!isBuiltin && (Expression::type(e0.r()) != Expression::type(bo->lhs()) ||
-                     Expression::type(e1.r()) != Expression::type(bo->rhs()))) {
+  auto with_ees = [&](EE&& flat_exp) {
+    ees.emplace_back(flat_exp);
+    ret.r = bind(env, ctx, r, ees.back().r());
+    ret.b = conj(env, b, Ctx(), ees);
+    return ret;
+  };
+
+  if (!isBuiltin && (Expression::type(ees[0].r()) != Expression::type(bo->lhs()) ||
+                     Expression::type(ees[1].r()) != Expression::type(bo->rhs()))) {
     // The type has changed after flattening the arguments. E.g., the type may have gone
     // from opt to non-opt. In this case, flatten the whole BinOp again with the new
     // arguments, to ensure that the correct built-in is selected if necessary.
     KeepAlive ka;
     {
       GCLock lock;
-      auto* newBo = new BinOp(Expression::loc(bo), e0.r(), bo->op(), e1.r());
-      std::vector<Expression*> args({e0.r(), e1.r()});
+      auto* newBo = new BinOp(Expression::loc(bo), ees[0].r(), bo->op(), ees[1].r());
+      std::vector<Expression*> args({ees[0].r(), ees[1].r()});
       FunctionI* fi = env.model->matchFn(env, bo->opToString(), args, true);
       assert(fi != nullptr);
       Type ty = fi->rtype(env, args, nullptr, true);
@@ -916,41 +920,41 @@ EE flatten_nonbool_op(EnvI& env, const Ctx& ctx, const Ctx& ctx0, const Ctx& ctx
       newBo->decl(fi);
       ka = newBo;
     }
-    return flatten_binop(env, ctx, ka(), r, b);
+    return with_ees(flatten_binop(env, ctx, ka(), r, b));
   }
 
   try {
     if (isBuiltin && bot == BOT_MULT) {
-      Expression* e0r = e0.r();
-      Expression* e1r = e1.r();
+      Expression* e0r = ees[0].r();
+      Expression* e1r = ees[1].r();
       if (Expression::type(e0r).isPar()) {
         std::swap(e0r, e1r);
       }
       if (Expression::type(e1r).isPar() && Expression::type(e1r).isint()) {
         IntVal coeff = eval_int(env, e1r);
         KeepAlive ka = mklinexp<IntLit>(env, coeff, 0, e0r, nullptr);
-        return flat_exp(env, ctx, ka(), r, b);
+        return with_ees(flat_exp(env, ctx, ka(), r, b));
       }
       if (Expression::type(e1r).isPar() && Expression::type(e1r).isfloat()) {
         FloatVal coeff = eval_float(env, e1r);
         KeepAlive ka = mklinexp<FloatLit>(env, coeff, 0.0, e0r, nullptr);
-        return flat_exp(env, ctx, ka(), r, b);
+        return with_ees(flat_exp(env, ctx, ka(), r, b));
       }
     } else if (isBuiltin && (bot == BOT_DIV || bot == BOT_IDIV)) {
-      Expression* e0r = e0.r();
-      Expression* e1r = e1.r();
+      Expression* e0r = ees[0].r();
+      Expression* e1r = ees[1].r();
       if (Expression::type(e1r).isPar() && Expression::type(e1r).isint()) {
         IntVal coeff = eval_int(env, e1r);
         if (coeff == 1) {
-          return flat_exp(env, ctx, e0r, r, b);
+          return with_ees(flat_exp(env, ctx, e0r, r, b));
         }
       } else if (Expression::type(e1r).isPar() && Expression::type(e1r).isfloat()) {
         FloatVal coeff = eval_float(env, e1r);
         if (coeff == 1.0) {
-          return flat_exp(env, ctx, e0r, r, b);
+          return with_ees(flat_exp(env, ctx, e0r, r, b));
         }
         KeepAlive ka = mklinexp<FloatLit>(env, 1.0 / coeff, 0.0, e0r, nullptr);
-        return flat_exp(env, ctx, ka(), r, b);
+        return with_ees(flat_exp(env, ctx, ka(), r, b));
       }
     }
   } catch (ResultUndefinedError&) {
@@ -959,9 +963,7 @@ EE flatten_nonbool_op(EnvI& env, const Ctx& ctx, const Ctx& ctx0, const Ctx& ctx
   }
 
   GC::lock();
-  std::vector<Expression*> args(2);
-  args[0] = e0.r();
-  args[1] = e1.r();
+  std::vector<Expression*> args = {ees[0].r(), ees[1].r()};
   Call* cc;
   if (!isBuiltin) {
     cc = Call::a(Expression::loc(bo).introduce(), bo->opToString(), args);
@@ -980,20 +982,13 @@ EE flatten_nonbool_op(EnvI& env, const Ctx& ctx, const Ctx& ctx0, const Ctx& ctx
       cc->type(cc->decl()->rtype(env, args, nullptr, false));
       KeepAlive ka(cc);
       GC::unlock();
-      EE ee = flat_exp(env, ctx, cc, r, ctx.partialityVar(env));
+      ees.emplace_back(flat_exp(env, ctx, cc, r, ctx.partialityVar(env)));
       GC::lock();
-      ret.r = ee.r;
-      std::vector<EE> ees(3);
-      ees[0].b = e0.b;
-      ees[1].b = e1.b;
-      ees[2].b = ee.b;
+      ret.r = ees.back().r;
       ret.b = conj(env, b, Ctx(), ees);
     } else {
       add_path_annotation(env, cc);
       ret.r = bind(env, ctx, r, cc);
-      std::vector<EE> ees(2);
-      ees[0].b = e0.b;
-      ees[1].b = e1.b;
       ret.b = conj(env, b, Ctx(), ees);
       if (!ctx.neg) {
         env.cseMapInsert(cc, ret);
