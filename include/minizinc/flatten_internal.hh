@@ -602,7 +602,6 @@ inline VarDecl* Ctx::partialityVar(EnvI& env) const {
 }
 
 void set_computed_domain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_computed);
-void set_computed_value(EnvI& envi, VarDecl* vd, Expression* val);
 EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
 EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
               bool doNotFollowChains);

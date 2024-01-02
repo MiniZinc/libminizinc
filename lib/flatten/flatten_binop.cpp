@@ -1290,11 +1290,11 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
     }
   } else if (isBuiltin && bot == BOT_EQ && ctx.b == C_ROOT && r == env.constants.varTrue &&
              Expression::isa<Id>(e0.r()) && Expression::type(e1.r()).isPar() &&
-             !Expression::type(e1.r()).istuple() && !Expression::type(e1.r()).isrecord()) {
+             !env.hasReverseMapper(Expression::cast<Id>(e0.r()))) {
     // Par assignment to Id with no right hand side
     auto* vd = Expression::cast<Id>(e0.r())->decl();
-    set_computed_value(env, vd, e1.r());
-    ees[2].b = env.constants.literalTrue;
+    (void)bind(env, ctx, vd, e1.r());
+    ees.resize(2);
     ret.r = conj(env, r, ctx, ees);
     return ret;
   } else {
