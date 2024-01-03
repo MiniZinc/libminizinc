@@ -13,6 +13,8 @@ Bug fixes:
    would not correctly forward the partiality of its arguments (:bugref:`766`).
 -  Remove internal duplicate functionality that could sometimes cause problems
    when assigning variables in constriants (:bugref:`769`).
+-  Do not try to check right hand side of parameter variable declarations that
+   are `par` because of singular domains (:bugref:`771`).
 
 .. _v2.8.1:
 

@@ -835,7 +835,10 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
         // Evaluate all variable declarations
         if (auto* vdi = Expression::dynamicCast<VarDecl>(l->let()[i])) {
           vdi->e(eval_par(env, vdi->e()));
-          check_par_declaration(env, vdi);
+          if (vdi->e() != nullptr) {
+            // Note: might be par because of singular domain, and might not have a right hand side.
+            check_par_declaration(env, vdi);
+          }
         } else {
           // This is a constraint item. Since the let is par,
           // it can only be a par bool expression. If it evaluates
