@@ -20,6 +20,7 @@
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/gc.hh>
 #include <minizinc/hash.hh>
+#include <minizinc/iter.hh>
 #include <minizinc/optimize.hh>
 #include <minizinc/output.hh>
 #include <minizinc/statistics.hh>
@@ -3166,9 +3167,9 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
             }
             if ((id->decl()->ti()->domain() != nullptr) &&
                 eval_bool(env, id->decl()->ti()->domain()) != Expression::cast<BoolLit>(e)->v()) {
-              GCLock lock;
-              env.flatAddItem(new ConstraintI(Location().introduce(), env.constants.literalFalse));
-            } else {
+              env.fail("domain is empty");
+            }
+            {
               GCLock lock;
               std::vector<Expression*> args(2);
               args[0] = id;
@@ -3194,27 +3195,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
           if (Expression::type(e).dim() != 0) {
             throw InternalError("not supported yet");
           }
-          GCLock lock;
-          ASTString cid;
-          Type et = Expression::type(e);
-          if (et.isint()) {
-            cid = env.constants.ids.int_.eq;
-          } else if (et.isbool()) {
-            cid = env.constants.ids.bool_.eq;
-          } else if (et.isSet()) {
-            cid = env.constants.ids.set_.eq;
-          } else if (et.isfloat()) {
-            cid = env.constants.ids.float_.eq;
-          } else {
-            throw InternalError("not yet implemented");
-          }
-          std::vector<Expression*> args(2);
-          args[0] = vd->id();
-          args[1] = e_vd->id();
-          Call* c = Call::a(Expression::loc(vd).introduce(), cid, args);
-          c->decl(env.model->matchFn(env, c, false));
-          c->type(c->decl()->rtype(env, args, nullptr, false));
-          flat_exp(env, Ctx(), c, env.constants.varTrue, env.constants.varTrue);
+          create_explicit_assignment_constraints(env, vd, e_vd->id());
           return vd->id();
         }
         case Expression::E_CALL: {
@@ -3294,6 +3275,80 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
           flat_exp(env, Ctx(), nc, env.constants.varTrue, env.constants.varTrue);
           return vd->id();
         } break;
+        case Expression::E_SETLIT: {
+          Id* id = vd->id();
+          auto* sl = Expression::cast<SetLit>(e);
+          while (id != nullptr) {
+            if (auto* rhs = Expression::dynamicCast<SetLit>(id->decl()->e())) {
+              if (id->type().isIntSet() ? sl->isv()->equal(rhs->isv())
+                                        : sl->fsv()->equal(rhs->fsv())) {
+                return sl;
+              }
+              env.fail("domain is empty");
+            }
+            if (id->decl()->ti()->domain() != nullptr) {
+              GCLock lock;
+              SetLit* dom = eval_set_lit(env, id->decl()->ti()->domain());
+              if (id->type().isIntSet()) {
+                IntSetRanges slr(sl->isv());
+                IntSetRanges domr(dom->isv());
+                if (!Ranges::subset(slr, domr)) {
+                  env.fail("domain is empty");
+                }
+              } else {
+                FloatSetRanges slr(sl->fsv());
+                FloatSetRanges domr(dom->fsv());
+                if (!Ranges::subset(slr, domr)) {
+                  env.fail("domain is empty");
+                }
+              }
+            }
+            Id* next =
+                id->decl()->e() != nullptr ? Expression::dynamicCast<Id>(id->decl()->e()) : nullptr;
+            if (auto* _rhs = Expression::dynamicCast<Id>(id->decl()->e())) {
+              id->decl()->e(nullptr);
+            }
+            // There is already a RHS. If it's a call, make it relational.
+            // Otherwise, create explicit constraint
+            bool made_relational = false;
+            if (id->decl()->e() != nullptr) {
+              if (auto* c = Expression::dynamicCast<Call>(id->decl()->e())) {
+                KeepAlive ka;
+                // Remove call from RHS and add it as new constraint with the literal
+                std::vector<Expression*> args(c->argCount() + 1);
+                for (unsigned int i = 0; i < c->argCount(); ++i) {
+                  args[i] = c->arg(i);
+                }
+                args[c->argCount()] = id->decl()->id();
+                FunctionI* decl = nullptr;
+                {
+                  GCLock lock;
+                  auto* nc = Call::a(Expression::loc(c), c->id(), args);
+                  nc->type(Type::varbool());
+                  decl = env.model->matchFn(env, nc, false);
+                  ka = nc;
+                }
+                if (decl != nullptr) {
+                  made_relational = true;
+                  Expression::cast<Call>(ka())->decl(decl);
+                  flat_exp(env, Ctx(), ka(), env.constants.varTrue, env.constants.varTrue);
+                }
+              }
+            }
+            if (id->decl()->e() == nullptr || made_relational) {
+              GCLock lock;
+              Type nty = vd->type();
+              nty.mkPar(env);
+              id->decl()->ti(new TypeInst(Expression::loc(vd), nty));
+              id->decl()->e(sl);
+              id->decl()->type(nty);
+            } else {
+              create_explicit_assignment_constraints(env, id->decl(), sl);
+            }
+            id = next;
+          }
+          return sl;
+        }
         default:
           throw InternalError("not supported yet");
       }
