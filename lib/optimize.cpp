@@ -242,7 +242,7 @@ void unify(EnvI& env, std::vector<VarDecl*>& deletedVarDecls, Id* id0, Id* id1) 
             IntSetRanges isv1r(isv1);
             Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> inter(isv0r, isv1r);
             IntSetVal* nd = IntSetVal::ai(inter);
-            if (nd->empty()) {
+            if (nd->empty() && !ti0->type().isSet()) {
               env.fail();
             } else if (!nd->equal(isv1)) {
               ti1->domain(new SetLit(Location(), nd));
