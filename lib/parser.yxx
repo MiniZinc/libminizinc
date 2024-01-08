@@ -1420,6 +1420,8 @@ expr_atom_head_nonstring :
     | MZN_UNDERSCORE access_tail MZN_POW_MINUS1
       { if ($2) $$=new BinOp(@$,createAccess(@$, new AnonVar(@$), *$2), BOT_POW, IntLit::a(-1));
         delete $2; }
+    | MZN_UNDERSCORE '(' expr ')'
+      { $$ = Call::a(@$, Constants::constants().ids.anon_enum_set, {$3}); }
     | MZN_BOOL_LITERAL
       { $$=Constants::constants().boollit(($1!=0)); }
     | MZN_BOOL_LITERAL MZN_POW_MINUS1

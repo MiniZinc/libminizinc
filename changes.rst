@@ -15,6 +15,8 @@ Bug fixes:
    when assigning variables in constriants (:bugref:`769`).
 -  Do not try to check right hand side of parameter variable declarations that
    are `par` because of singular domains (:bugref:`771`).
+-  Fix a problem in the parser where anonymous enumerated types could not be
+   used in DZN files (:bugref:`776`).
 
 .. _v2.8.1:
 
