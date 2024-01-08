@@ -34,3 +34,4 @@ _build/
 *.pyc
 .cache/
 !docs/Makefile
+result/
