@@ -17,6 +17,7 @@ Bug fixes:
    are `par` because of singular domains (:bugref:`771`).
 -  Fix a problem in the parser where anonymous enumerated types could not be
    used in DZN files (:bugref:`776`).
+-  Fix identifier lookup bug in internal Chuffed interface (:bugref:`782`).
 
 .. _v2.8.1:
 

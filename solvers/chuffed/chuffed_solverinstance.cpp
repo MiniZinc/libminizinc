@@ -82,7 +82,7 @@ void ChuffedSolverInstance::processFlatZinc() {
             } else {
               Expression* init = vd->e();
               if (auto* ident = Expression::dynamicCast<Id>(init)) {
-                auto& var = _variableMap.get(ident);
+                auto& var = _variableMap.get(ident->decl()->id());
                 assert(var.isBool());
                 std::unique_ptr<FlatZinc::BoolVarSpec> spec(new FlatZinc::BoolVarSpec(
                     FlatZinc::Alias(var.index()), output, vd->introduced(), looks));
@@ -127,7 +127,7 @@ void ChuffedSolverInstance::processFlatZinc() {
             } else {
               Expression* init = vd->e();
               if (auto* ident = Expression::dynamicCast<Id>(init)) {
-                auto& var = _variableMap.get(ident);
+                auto& var = _variableMap.get(ident->decl()->id());
                 assert(var.isInt());
                 std::unique_ptr<FlatZinc::IntVarSpec> spec(new FlatZinc::IntVarSpec(
                     FlatZinc::Alias(var.index()), output, vd->introduced(), looks));
