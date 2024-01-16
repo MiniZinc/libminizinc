@@ -8,7 +8,6 @@ https://github.com/MiniZinc/libminizinc/issues.
 
 Bug fixes:
 ^^^^^^^^^^
-
 -  Fix problem where specialised flattening for some forms of binary operators
    would not correctly forward the partiality of its arguments (:bugref:`766`).
 -  Remove internal duplicate functionality that could sometimes cause problems
@@ -19,7 +18,6 @@ Bug fixes:
    used in DZN files (:bugref:`776`).
 -  Fix identifier lookup bug in internal Chuffed interface (:bugref:`782`).
 
-
 Changes:
 ^^^^^^^^
 -  Remove documentation of ``strictly_increasing`` (and decreasing) for ``bool``
@@ -27,6 +25,7 @@ Changes:
    library definition with user warning (:bugref:`784`).
 -  Add version of ``strictly_increasing`` (and decreasing) for ``float``, ``opt
    float``, and ``set of int`` types.
+-  Automatically detect SCIP 8.1.0 and potential future versions on Windows.
 
 .. _v2.8.1:
 
