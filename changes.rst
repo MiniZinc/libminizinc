@@ -50,6 +50,7 @@ Bug fixes:
    semantics (:bugref:`760`).
 -  Fix crash when calculating computed domain of a declaration (:bugref:`765`).
 -  Fix x-y line/scatter visualisations.
+-  Fix `show_array2d_bool` for index set containing negative or zero (:bugref:`780`).
 
 Changes:
 ^^^^^^^^
