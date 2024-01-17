@@ -19,6 +19,13 @@ Bug fixes:
    used in DZN files (:bugref:`776`).
 -  Fix identifier lookup bug in internal Chuffed interface (:bugref:`782`).
 
+
+Changes:
+^^^^^^^^
+-  Remove documentation of ``strictly_increasing`` (and decreasing) for ``bool``
+   types, and change definition from a solver redefined global, to a simple
+   library definition with user warning (:bugref:`784`).
+
 .. _v2.8.1:
 
 `Version 2.8.2 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.8.2>`__
