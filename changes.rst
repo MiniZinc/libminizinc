@@ -13,7 +13,7 @@ Bug fixes:
 -  Remove internal duplicate functionality that could sometimes cause problems
    when assigning variables in constriants (:bugref:`769`).
 -  Do not try to check right hand side of parameter variable declarations that
-   are `par` because of singular domains (:bugref:`771`).
+   are ``par`` because of singular domains (:bugref:`771`).
 -  Fix a problem in the parser where anonymous enumerated types could not be
    used in DZN files (:bugref:`776`).
 -  Fix identifier lookup bug in internal Chuffed interface (:bugref:`782`).
@@ -26,6 +26,7 @@ Changes:
 -  Add version of ``strictly_increasing`` (and decreasing) for ``float``, ``opt
    float``, and ``set of int`` types.
 -  Automatically detect SCIP 8.1.0 and potential future versions on Windows.
+-  Fix crash when using type aliases with ``-O2`` (:bugref:`783`).
 
 .. _v2.8.1:
 

@@ -379,7 +379,9 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
       m.insert(c, c);
       c->ti(static_cast<TypeInst*>(copy(env, m, vd->ti(), followIds, copyFundecls, isFlatModel)));
       c->e(copy(env, m, vd->e(), followIds, copyFundecls, isFlatModel));
-      Expression::type(c, c->ti()->type());
+      if (c->ti() != nullptr) {
+        Expression::type(c, c->ti()->type());
+      }
       Expression::type(c->id(), c->type());
       ret = c;
     } break;
