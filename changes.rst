@@ -25,6 +25,8 @@ Changes:
 -  Remove documentation of ``strictly_increasing`` (and decreasing) for ``bool``
    types, and change definition from a solver redefined global, to a simple
    library definition with user warning (:bugref:`784`).
+-  Add version of ``strictly_increasing`` (and decreasing) for ``float``, ``opt
+   float``, and ``set of int`` types.
 
 .. _v2.8.1:
 
