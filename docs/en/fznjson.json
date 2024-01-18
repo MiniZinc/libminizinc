@@ -65,8 +65,8 @@
       "items" : {
         "type" : "array",
         "items" : [
-          { "type" : "integer" },
-          { "type" : "integer" }
+          { "type" : "number" },
+          { "type" : "number" }
         ]
       }
     }
@@ -82,7 +82,12 @@
           "type": "object",
           "properties": {
             "type": {
-              "type": "string"
+              "enum": [
+                "bool",
+                "float",
+                "int",
+                "set of int"
+               ]
             },
             "domain": { "$ref" : "#/$defs/domain" },
             "rhs": { "$ref" : "#/$defs/literal" },

@@ -2504,8 +2504,9 @@ void FznJSONPrinter::print(MiniZinc::Model* m) {
     printBasicElement(_os, m->solveItem()->e());
   }
   printAnnotations(_os, m->solveItem()->ann());
-  _os << " }\n";
-  _os << "}\n";
+  _os << " },\n"
+      << "  \"version\": \"1.0\"\n"
+      << "}\n";
 }
 
 }  // namespace MiniZinc

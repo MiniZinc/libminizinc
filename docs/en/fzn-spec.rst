@@ -629,7 +629,8 @@ Here is an example of the cake optimisation model from :numref:`ex-cakes`, compi
         "ann" : ["ctx_pos"], "defines" : "X_INTRODUCED_0_"}
     ],
     "output": ["b", "c"],
-    "solve": { "method" : "maximize", "objective" : "X_INTRODUCED_0_" }
+    "solve": { "method" : "maximize", "objective" : "X_INTRODUCED_0_" },
+    "version": "1.0"
   }
 
 There are a number of small differences compared to FlatZinc:
