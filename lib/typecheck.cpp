@@ -2316,7 +2316,7 @@ public:
     }
     if (tt.isvar()) {
       if (tt.bt() == Type::BT_ANN || tt.bt() == Type::BT_STRING ||
-          (tt.st() == Type::ST_SET && tt.bt() != Type::BT_INT)) {
+          (tt.st() == Type::ST_SET && (tt.bt() != Type::BT_INT || tt.isOpt()))) {
         throw TypeError(_env, Expression::loc(c),
                         "invalid type for comprehension: `" + tt.toString(_env) + "'");
       }
@@ -2410,6 +2410,9 @@ public:
         if (tret.isbot()) {
           tret.bt(Expression::type(ethen).bt());
           tret.typeId(Expression::type(ethen).typeId());
+          if (tret.isOptBot() && Expression::type(ethen).st() == Type::ST_SET) {
+            tret.st(Type::ST_SET);
+          }
         } else if (tret.isunknown()) {
           tret.bt(Expression::type(ethen).bt());
           tret.dim(Expression::type(ethen).dim());
@@ -2490,7 +2493,7 @@ public:
         throw TypeError(_env, Expression::loc(ite),
                         "conditional with var condition cannot have annotation type");
       }
-      if (tret.st() == Type::ST_SET && tret.bt() != Type::BT_INT) {
+      if (tret.st() == Type::ST_SET && (tret.bt() != Type::BT_INT || tret.isOpt())) {
         throw TypeError(_env, Expression::loc(ite),
                         "conditional with var condition cannot have type " + tret.toString(_env));
       }
@@ -3245,7 +3248,8 @@ public:
       throw TypeError(_env, Expression::loc(ti),
                       "var set element types other than `int' not allowed");
     }
-    if (tt.isvar() && (tt.bt() == Type::BT_ANN || tt.bt() == Type::BT_STRING)) {
+    if (tt.isvar() && (tt.bt() == Type::BT_ANN || tt.bt() == Type::BT_STRING ||
+                       (tt.isOpt() && tt.st() == Type::ST_SET))) {
       throw TypeError(_env, Expression::loc(ti),
                       "invalid type of variable declaration: `" + tt.toString(_env) + "'");
     }

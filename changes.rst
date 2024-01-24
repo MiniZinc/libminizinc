@@ -18,6 +18,9 @@ Bug fixes:
    used in DZN files (:bugref:`776`).
 -  Fix identifier lookup bug in internal Chuffed interface (:bugref:`782`).
 -  Fix some minor inconsistencies in the FlatZinc JSON schema and generation.
+-  Fix crash involving ``var`` comprehensions with set types by rejecting
+   unsupported type (:bugref:`779`).
+-  Fix internal error during evaluation of ``par opt set`` expressions.
 
 Changes:
 ^^^^^^^^

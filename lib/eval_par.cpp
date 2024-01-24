@@ -2397,7 +2397,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
         return ret;
       }
       if (Expression::type(e).isPar()) {
-        if (Expression::type(e).isSet()) {
+        if (Expression::type(e).isSet() && !Expression::type(e).isOpt()) {
           return EvalSetLit::e(env, e);
         }
         if (Expression::type(e) == Type::parint()) {
