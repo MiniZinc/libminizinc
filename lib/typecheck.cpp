@@ -1785,15 +1785,11 @@ public:
       ty.typeId(Expression::type((*al)[0]).typeId());
     }
     std::vector<AnonVar*> anons;
-    bool haveAbsents = false;
     bool haveInferredType = false;
     for (unsigned int i = 0; i < al->size(); i++) {
       Expression* vi = (*al)[i];
       if (Expression::type(vi).dim() > 0) {
         throw TypeError(_env, Expression::loc(vi), "arrays cannot be elements of arrays");
-      }
-      if (vi == _env.constants.absent) {
-        haveAbsents = true;
       }
       auto* av = Expression::dynamicCast<AnonVar>(vi);
       if (av != nullptr) {
@@ -1874,10 +1870,6 @@ public:
       if (!anons.empty()) {
         throw TypeError(_env, Expression::loc(al),
                         "array literal must contain at least one non-anonymous variable");
-      }
-      if (haveAbsents) {
-        throw TypeError(_env, Expression::loc(al),
-                        "array literal must contain at least one non-absent value");
       }
     } else {
       Type at = ty;
@@ -2410,7 +2402,8 @@ public:
         if (tret.isbot()) {
           tret.bt(Expression::type(ethen).bt());
           tret.typeId(Expression::type(ethen).typeId());
-          if (tret.isOptBot() && Expression::type(ethen).st() == Type::ST_SET) {
+          if (ite->elseExpr() != nullptr && Expression::type(ite->elseExpr()).isOptBot() &&
+              Expression::type(ethen).st() == Type::ST_SET) {
             tret.st(Type::ST_SET);
           }
         } else if (tret.isunknown()) {
@@ -2503,6 +2496,9 @@ public:
     }
     if (!allpresent) {
       tret.ot(Type::OT_OPTIONAL);
+    }
+    if (tret.isOptBot()) {
+      tret.cv(false);
     }
     ite->type(tret);
   }
@@ -3009,6 +3005,12 @@ public:
         if (vd->type().any() || vd->type().isunknown()) {
           if (vd->type().any()) {
             anyInLet.insert(vd);
+            if (vet.isbot()) {
+              const Location& loc = Expression::loc(vd->e()).isNonAlloc()
+                                        ? Expression::loc(vd)
+                                        : Expression::loc(vd->e());
+              _typeErrors.emplace_back(_env, loc, "Cannot infer type for declaration");
+            }
           }
           vd->ti()->type(vet);
           vd->type(vet);
@@ -3243,8 +3245,8 @@ public:
       tt.typeId(arrayTypeId);
     }
 
-    if (tt.st() == Type::ST_SET && tt.ti() == Type::TI_VAR && tt.bt() != Type::BT_INT &&
-        tt.bt() != Type::BT_TOP) {
+    if (tt.st() == Type::ST_SET && tt.ti() == Type::TI_VAR &&
+        (tt.bt() != Type::BT_INT && tt.bt() != Type::BT_TOP || tt.isOpt())) {
       throw TypeError(_env, Expression::loc(ti),
                       "var set element types other than `int' not allowed");
     }

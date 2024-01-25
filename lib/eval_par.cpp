@@ -2416,6 +2416,10 @@ Expression* eval_par(EnvI& env, Expression* e) {
       switch (Expression::eid(e)) {
         case Expression::E_ITE: {
           ITE* ite = Expression::cast<ITE>(e);
+          if (Expression::type(ite).isOptBot()) {
+            // Must be absent
+            return env.constants.absent;
+          }
           for (unsigned int i = 0; i < ite->size(); i++) {
             if (Expression::type(ite->ifExpr(i)) == Type::parbool()) {
               if (eval_bool(env, ite->ifExpr(i))) {

@@ -603,9 +603,7 @@ function var opt int: element(
 /* Return absent if \a idx is absent, otherwise return \a x[\a idx] */
 function var opt int: element(var opt int: idx, array[int] of var opt int: x) =
   if length(x) > 0 /\ not had_zero(idx) /\ min(index_set(x)) = 1 then
-    let {
-      opt int: absent_value = <>; % Workaround since [<>] array literal not allowed
-    } in element(deopt(idx), array1d(0..max(index_set(x)), [absent_value] ++ x))
+    element(deopt(idx), array1d(0..max(index_set(x)), [<>] ++ x))
   else
     if absent(idx) then <> else element(deopt(idx), x) endif
   endif;
@@ -1124,9 +1122,7 @@ function var opt float: element(
 /* Return absent if \a idx is absent, otherwise return \a x[\a idx] */
 function var opt float: element(var opt int: idx, array[int] of var opt float: x) =
   if length(x) > 0 /\ not had_zero(idx) /\ min(index_set(x)) = 1 then
-    let {
-      opt float: absent_value = <>; % Workaround since [<>] array literal not allowed
-    } in element(deopt(idx), array1d(0..max(index_set(x)), [absent_value] ++ x))
+    element(deopt(idx), array1d(0..max(index_set(x)), [<>] ++ x))
   else
     if absent(idx) then <> else element(deopt(idx), x) endif
   endif;
@@ -1860,9 +1856,7 @@ function var opt bool: element(
 /* Return absent if \a idx is absent, otherwise return \a x[\a idx] */
 function var opt bool: element(var opt int: idx, array[int] of var opt bool: x) =
   if length(x) > 0 /\ not had_zero(idx) /\ min(index_set(x)) = 1 then
-    let {
-      opt bool: absent_value = <>; % Workaround since [<>] array literal not allowed
-    } in element(deopt(idx), array1d(0..max(index_set(x)), [absent_value] ++ x))
+    element(deopt(idx), array1d(0..max(index_set(x)), [<>] ++ x))
   else
     if absent(idx) then <> else element(deopt(idx), x) endif
   endif;

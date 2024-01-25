@@ -94,7 +94,11 @@ void Type::mkPar(EnvI& env) {
 
 void Type::mkVar(EnvI& env) {
   if (!structBT()) {
-    ti(TI_VAR);
+    if (isOptBot()) {
+      // <> does not become var
+    } else {
+      ti(TI_VAR);
+    }
     return;
   }
   if (ti() == TI_VAR) {
@@ -110,11 +114,7 @@ void Type::mkVar(EnvI& env) {
   std::vector<Type> pt(st->size());
   for (int i = 0; i < st->size(); ++i) {
     pt[i] = (*st)[i];
-    if (pt[i].structBT()) {
-      pt[i].mkVar(env);
-    } else {
-      pt[i].ti(TI_VAR);
-    }
+    pt[i].mkVar(env);
   }
   typeId(0);
   cv(true);

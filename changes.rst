@@ -32,6 +32,7 @@ Changes:
 -  Automatically detect SCIP 8.1.0 and potential future versions on Windows.
 -  Fix crash when using type aliases with ``-O2`` (:bugref:`783`).
 -  Automatically detect Gurobi 11.0 and potential future versions.
+-  Allow array literals with all ``<>`` members (:bugref:`747`).
 
 .. _v2.8.1:
 

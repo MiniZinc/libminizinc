@@ -98,7 +98,6 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
                        new SetLit(Location().introduce(), IntSetVal::a(al->min(i), al->max(i))));
     }
     ASTExprVec<TypeInst> ranges_v(ranges);
-    assert(!al->type().isbot());
     auto* ti = new TypeInst(Expression::loc(e), al->type(), ranges_v, nullptr);
     VarDecl* vd = new_vardecl(env, ctx, ti, nullptr, nullptr, al);
     EE ee(vd, nullptr);

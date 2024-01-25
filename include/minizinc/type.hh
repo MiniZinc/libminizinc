@@ -257,6 +257,7 @@ public:
     return dim() == 1 && st() == ST_PLAIN && ot() == OT_PRESENT && bt() == BT_BOOL;
   }
   bool isIntSetArray() const { return dim() == 1 && st() == ST_SET && bt() == BT_INT; }
+  bool isOptBot() const { return st() == ST_PLAIN && bt() == BT_BOT && ot() == OT_OPTIONAL; }
   bool structBT() const { return bt() == BT_TUPLE || bt() == BT_RECORD; }
 
   bool operator==(const Type& t) const {

@@ -723,7 +723,6 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
       env.voAddExp(vd);
     }
   }
-  assert(!vd->type().isbot());
   if ((origVd != nullptr) && (origVd->id()->idn() != -1 || origVd->toplevel())) {
     vd->introduced(origVd->introduced());
   } else {

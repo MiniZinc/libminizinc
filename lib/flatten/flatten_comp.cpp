@@ -352,7 +352,6 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
       ka = alr;
     }
   }
-  assert(!Expression::type(ka()).isbot());
   if (wasUndefined) {
     ret.b = bind(env, Ctx(), b, env.constants.literalFalse);
   } else {
