@@ -18,7 +18,7 @@ predicate strictly_increasing(array[$X] of var bool: x) =
     let { array[int] of var bool: xx = array1d(x); } in 
     analyse_all_different(xx) /\
     if length(xx) >= 3 then
-        trace("Warning: strictly_increasing on an array of more than 3 boolean variables cannot be satisfied", false)
+        false
     elseif length(xx) = 2 then
         xx = [false, true]
     else
