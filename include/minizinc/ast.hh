@@ -2301,6 +2301,13 @@ public:
     Id* flatzinc_builtin;                    // NOLINT(readability-identifier-naming)
     Id* mzn_evaluate_once;                   // NOLINT(readability-identifier-naming)
     Id* promise_commutative;                 // NOLINT(readability-identifier-naming)
+    ASTString seq_search;                    // NOLINT(readability-identifier-naming)
+    ASTString int_search;                    // NOLINT(readability-identifier-naming)
+    ASTString bool_search;                   // NOLINT(readability-identifier-naming)
+    ASTString float_search;                  // NOLINT(readability-identifier-naming)
+    ASTString set_search;                    // NOLINT(readability-identifier-naming)
+    ASTString warm_start;                    // NOLINT(readability-identifier-naming)
+    ASTString warm_start_array;              // NOLINT(readability-identifier-naming)
   } ann;
 
   /// Command line options

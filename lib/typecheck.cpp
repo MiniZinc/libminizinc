@@ -2762,6 +2762,33 @@ public:
       fi = _model->matchFn(_env, call, true, true);
     }
 
+    if (fi != nullptr && fi->e() == nullptr && fi->paramCount() >= 1 &&
+        fi->param(0)->type().dim() != 0 &&
+        (fi->id() == _env.constants.ann.seq_search || fi->id() == _env.constants.ann.int_search ||
+         fi->id() == _env.constants.ann.bool_search ||
+         fi->id() == _env.constants.ann.float_search || fi->id() == _env.constants.ann.set_search ||
+         fi->id() == _env.constants.ann.warm_start ||
+         fi->id() == _env.constants.ann.warm_start_array)) {
+      // Need to make sure first argument is 1d and 1-based
+      GCLock lock;
+      auto* array = call->arg(0);
+      auto* array1d =
+          Call::a(Expression::loc(array).introduce(), _env.constants.ids.array1d, {array});
+      array1d->decl(_model->matchFn(_env, array1d, true, true));
+      Expression::type(array1d, Expression::type(array));
+      call->arg(0, array1d);
+      if ((fi->id() == _env.constants.ann.warm_start ||
+           fi->id() == _env.constants.ann.warm_start_array) &&
+          fi->paramCount() == 2 && fi->param(1)->type().dim() != 0) {
+        auto* array = call->arg(1);
+        auto* array1d =
+            Call::a(Expression::loc(array).introduce(), _env.constants.ids.array1d, {array});
+        array1d->decl(_model->matchFn(_env, array1d, true, true));
+        Expression::type(array1d, Expression::type(array));
+        call->arg(1, array1d);
+      }
+    }
+
     if ((fi->e() != nullptr) && Expression::isa<Call>(fi->e())) {
       Call* next_call = Expression::cast<Call>(fi->e());
       if ((next_call->decl() != nullptr) && next_call->argCount() == fi->paramCount() &&

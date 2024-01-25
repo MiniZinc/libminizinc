@@ -2361,6 +2361,13 @@ Constants::Constants() {
   ann.mzn_evaluate_once->type(Type::ann());
   ann.promise_commutative = addId("promise_commutative");
   ann.promise_commutative->type(Type::ann());
+  ann.seq_search = addString("seq_search");
+  ann.int_search = addString("int_search");
+  ann.bool_search = addString("bool_search");
+  ann.float_search = addString("float_search");
+  ann.set_search = addString("set_search");
+  ann.warm_start = addString("warm_start");
+  ann.warm_start_array = addString("warm_start_array");
 
   cli.cmdlineData_short_str = addString("-D");
   cli.cmdlineData_str = addString("--cmdline-data");

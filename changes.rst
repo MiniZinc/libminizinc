@@ -21,6 +21,8 @@ Bug fixes:
 -  Fix crash involving ``var`` comprehensions with set types by rejecting
    unsupported type (:bugref:`779`).
 -  Fix internal error during evaluation of ``par opt set`` expressions.
+-  Fix invalid FlatZinc produced when search annotations are passed non-1-based
+   arrays (:bugref:`768`).
 
 Changes:
 ^^^^^^^^
