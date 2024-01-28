@@ -2455,7 +2455,11 @@ Expression* eval_par(EnvI& env, Expression* e) {
           }
           std::vector<Expression*> args(c->argCount());
           for (unsigned int i = 0; i < args.size(); i++) {
-            args[i] = eval_par(env, c->arg(i));
+            if (Expression::type(c->arg(i)).isPar()) {
+              args[i] = eval_par(env, c->arg(i));
+            } else {
+              args[i] = c->arg(i);
+            }
           }
           Call* nc = Call::a(Expression::loc(c), c->id(), args);
           nc->type(c->type());

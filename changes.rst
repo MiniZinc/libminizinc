@@ -23,6 +23,8 @@ Bug fixes:
 -  Fix internal error during evaluation of ``par opt set`` expressions.
 -  Fix invalid FlatZinc produced when search annotations are passed non-1-based
    arrays (:bugref:`768`).
+-  Fix bug in evaluation of annotations causing invalid FlatZinc to be produced
+   (:bugref:`768`, :bugref:`788`).
 
 Changes:
 ^^^^^^^^

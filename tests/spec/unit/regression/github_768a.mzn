@@ -1,6 +1,6 @@
 /***
 !Test
-expected: !FlatZinc 'github_768.fzn'
+expected: !FlatZinc 'github_768a.fzn'
 solvers: [gecode]
 type: compile
 ***/
