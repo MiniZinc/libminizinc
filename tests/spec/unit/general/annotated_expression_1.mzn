@@ -1,4 +1,12 @@
-annotation foo_ann(int: a, int: b, var int: x :: annotated_expression) = let {
+/***
+!Test
+solvers: [gecode]
+expected: !Result
+  solution: !Solution
+    x: 3
+***/
+
+annotation foo_ann(var int: x :: annotated_expression, int: a, int: b) = let {
     constraint a * x + b = 10;
 } in empty_annotation;
 
