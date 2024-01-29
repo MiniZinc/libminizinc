@@ -27,6 +27,7 @@ Bug fixes:
    (:bugref:`768`, :bugref:`788`).
 -  Fix substitution of fixed objective variable value into solve item
    (:bufref:`773`).
+-  Fix check for presence of ``set2iter`` redefinition (:bugref:`778`).
 
 Changes:
 ^^^^^^^^

@@ -2339,7 +2339,7 @@ public:
       if (ty_in.dim() == 0) {
         FunctionI* set2iter =
             _env.model->matchFn(_env, _env.constants.ids.set2iter, {ty_in}, false);
-        if (ty_in.isvar() && set2iter != nullptr) {
+        if (ty_in.isvar() && set2iter != nullptr && set2iter->e() != nullptr) {
           ty_id = Type::varint();
           ty_id.typeId(ty_in.typeId());
         } else {

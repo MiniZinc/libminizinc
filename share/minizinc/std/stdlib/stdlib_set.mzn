@@ -157,6 +157,6 @@ function array[int] of bool: set_to_ranges(set of bool: S) =
 
 function array[int] of $$E: set_to_sparse_inverse(set of $$E: S);
 
-/* set2iter will be used to redefine compehensions over set decision variables
+/* set2iter will be used to redefine comprehensions over set decision variables
 when it has a definition. */
 function array[int] of var opt $$E: set2iter(var set of $$E: s) ::mzn_internal_representation;
