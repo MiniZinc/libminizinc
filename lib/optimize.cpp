@@ -1137,6 +1137,8 @@ void optimize(Env& env, bool chain_compression) {
 class SubstitutionVisitor : public EVisitor {
 protected:
   std::vector<VarDecl*> _removed;
+
+public:
   Expression* subst(Expression* e) {
     if (auto* vd = Expression::dynamicCast<VarDecl>(follow_id_to_decl(e))) {
       if (vd->type().isbool() && (vd->ti()->domain() != nullptr)) {
@@ -1178,8 +1180,6 @@ protected:
     }
     return e;
   }
-
-public:
   /// Visit array literal
   void vArrayLit(ArrayLit* al) {
     for (unsigned int i = 0; i < al->size(); i++) {
@@ -1243,6 +1243,7 @@ void substitute_fixed_vars(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVa
   } else {
     auto* si = ii->cast<SolveI>();
     if (si->e() != nullptr) {
+      si->e(sv.subst(si->e()));
       top_down(sv, si->e());
     }
     for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it) {

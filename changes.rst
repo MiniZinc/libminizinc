@@ -25,6 +25,8 @@ Bug fixes:
    arrays (:bugref:`768`).
 -  Fix bug in evaluation of annotations causing invalid FlatZinc to be produced
    (:bugref:`768`, :bugref:`788`).
+-  Fix substitution of fixed objective variable value into solve item
+   (:bufref:`773`).
 
 Changes:
 ^^^^^^^^

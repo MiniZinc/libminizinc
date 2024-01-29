@@ -1,0 +1,2 @@
+int: X_INTRODUCED_1_ = 2;
+solve :: int_search([2],input_order,indomain_min,complete) minimize X_INTRODUCED_1_;
