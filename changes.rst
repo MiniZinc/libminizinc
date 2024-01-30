@@ -28,6 +28,8 @@ Bug fixes:
 -  Fix substitution of fixed objective variable value into solve item
    (:bufref:`773`).
 -  Fix check for presence of ``set2iter`` redefinition (:bugref:`778`).
+-  Fix incorrect removal of constraint due to use of redefinition of
+   ``bool_clause_reif`` when constraint is not reified (:bugref:`785`).
 
 Changes:
 ^^^^^^^^

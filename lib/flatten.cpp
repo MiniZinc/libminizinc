@@ -4475,7 +4475,7 @@ void flatten(Env& e, FlatteningOptions opt) {
                   nc->type(Type::varbool());
                   nc->decl((array_bool_clause != nullptr) ? array_bool_clause
                                                           : env.model->matchFn(env, nc, false));
-                } else if (array_bool_clause_reif != nullptr) {
+                } else if (!isTrueVar && array_bool_clause_reif != nullptr) {
                   std::vector<Expression*> args(3);
                   args[0] = c->arg(0);
                   args[1] = env.constants.emptyBoolArray;
@@ -4528,7 +4528,7 @@ void flatten(Env& e, FlatteningOptions opt) {
                              args);
                 nc->type(Type::varbool());
                 nc->decl((array_bool_clause != nullptr) ? array_bool_clause : c->decl());
-              } else if (c->id() == env.constants.ids.clause &&
+              } else if (!isTrueVar && c->id() == env.constants.ids.clause &&
                          (array_bool_clause_reif != nullptr)) {
                 std::vector<Expression*> args(3);
                 args[0] = c->arg(0);
