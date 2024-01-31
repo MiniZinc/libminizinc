@@ -1,2 +1,2 @@
-pandas==1.2.*
-tabulate==0.8.*
+pandas==2.2.*
+tabulate==0.9.*

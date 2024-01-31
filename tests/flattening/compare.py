@@ -103,7 +103,7 @@ if __name__ == "__main__":
     df_s = (
         df.drop(["difference", "change", "modified"], axis=1)
         .groupby(by=["statistic"])
-        .sum()
+        .sum(numeric_only=True)
         .reset_index(level=0)
         .sort_values(by="statistic")
     )
