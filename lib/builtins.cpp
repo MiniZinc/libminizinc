@@ -2291,6 +2291,7 @@ std::string b_show_enum_type(EnvI& env, Expression* e, Type t, bool dzn, bool js
   auto* call = Call::a(Location().introduce(), enumName, args);
   auto* fi = env.model->matchFn(env, call, false, true);
   call->decl(fi);
+  Expression::type(call, Type::parstring());
   return eval_string(env, call);
 }
 
