@@ -4,7 +4,12 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
-.. _unreleased:
+.. _v2.8.3:
+
+`Version 2.8.3 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.8.3>`__
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(released 1 February 2024)
 
 Bug fixes:
 ^^^^^^^^^^
@@ -43,7 +48,11 @@ Changes:
 -  Automatically detect Gurobi 11.0 and potential future versions.
 -  Allow array literals with all ``<>`` members (:bugref:`747`).
 
-.. _v2.8.1:
+Changes in the IDE:
+^^^^^^^^^^^^^^^^^^^
+-  Increase maximum number of threads from default Qt limit (:idebugref:`196`).
+
+.. _v2.8.2:
 
 `Version 2.8.2 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.8.2>`__
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
