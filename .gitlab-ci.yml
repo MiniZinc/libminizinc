@@ -53,6 +53,14 @@ build:linux:
     CMAKE_ARCH: "Ninja"
   tags: [linux, docker]
 
+build:linux-arm64:
+  extends: .build
+  image: ghcr.io/minizinc/docker-build-environment:cpp
+  variables:
+    MZNARCH: "linux-arm64"
+    CMAKE_ARCH: "Ninja"
+  tags: [linux-arm64]
+
 build:musl:
   extends: .build
   image: ghcr.io/minizinc/docker-build-environment:alpine
@@ -60,6 +68,14 @@ build:musl:
     MZNARCH: "musl"
     CMAKE_ARCH: "Ninja"
   tags: [linux, docker]
+
+build:musl-arm64:
+  extends: .build
+  image: ghcr.io/minizinc/docker-build-environment:alpine
+  variables:
+    MZNARCH: "musl-arm64"
+    CMAKE_ARCH: "Ninja"
+  tags: [linux-arm64]
 
 build:osx:
   extends: .build
