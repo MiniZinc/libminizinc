@@ -1,6 +1,6 @@
 output ["\"output\": {","\"dzn\": ",showJSON(concat(["r = ",showDzn(r),";\n","a = ",showDzn(a),";\n","b = ",showDzn(b),";\n"])),"}, \"sections\": [\"dzn\"]"];
 int: X_INTRODUCED_1_;
 int: X_INTRODUCED_0_;
-record(int: x, int: x+): r = (x: X_INTRODUCED_0_,x+: X_INTRODUCED_1_);
+record(int: x, int: 'x+'): r = (x: X_INTRODUCED_0_,'x+': X_INTRODUCED_1_);
 int: b = r.'x+';
 int: a = r.x;

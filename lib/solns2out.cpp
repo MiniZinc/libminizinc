@@ -358,6 +358,7 @@ void Solns2Out::checkSolution(std::ostream& oss) {
 
   std::ostringstream checker;
   checker << _checkerModel;
+  Printer p(checker, 0, false, &getEnv()->envi());
   {
     GCLock lock;
     for (auto& i : *getModel()) {
@@ -374,8 +375,8 @@ void Solns2Out::checkSolution(std::ostream& oss) {
               enumids.push_back(Expression::dynamicCast<Id>((*enumIdsAl)[j]));
             }
           }
-
-          if (al != nullptr) {
+          bool isArray = al != nullptr && al->type().dim() > 0;
+          if (isArray) {
             checker << "array" << al->dims() << "d(";
             for (int i = 0; i < al->dims(); i++) {
               if (!enumids.empty() && enumids[i] != nullptr) {
@@ -391,9 +392,9 @@ void Solns2Out::checkSolution(std::ostream& oss) {
           if (!enumids.empty() && enumids.back() != nullptr) {
             checker << "to_enum(" << *enumids.back() << "," << *e << ")";
           } else {
-            checker << *e;
+            p.print(e);
           }
-          if (al != nullptr) {
+          if (isArray) {
             checker << ")";
           }
           checker << ";\n";

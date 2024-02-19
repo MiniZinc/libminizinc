@@ -198,7 +198,7 @@ public:
             RecordType* rt = _env->getRecordType(type);
             for (int i = 0; i < rt->size(); ++i) {
               p((*rt)[i], nullptr);
-              _os << ": " << rt->fieldName(i);
+              _os << ": " << Printer::quoteId(rt->fieldName(i));
               if (i < rt->size() - 1) {
                 _os << ", ";
               }
@@ -227,7 +227,9 @@ public:
           p(ti);
           if (type.bt() == Type::BT_RECORD) {
             _os << ": "
-                << (_env != nullptr ? _env->getRecordType(type)->fieldName(i).c_str() : "???");
+                << (_env != nullptr
+                        ? Printer::quoteId(_env->getRecordType(type)->fieldName(i)).c_str()
+                        : "???");
           }
           if (i < al->size() - 1) {
             _os << ", ";
@@ -373,11 +375,21 @@ public:
           _os << (al->isTuple() ? "(" : "[");
           for (unsigned int i = 0; i < al->size(); i++) {
             if (al->type().isrecord()) {
-              _os << (_env != nullptr ? _env->getRecordType(al->type())->fieldName(i).c_str()
-                                      : "???")
-                  << ": ";
+              if (auto* vd = Expression::dynamicCast<VarDecl>((*al)[i])) {
+                p(vd->id());
+                _os << ": ";
+                p(vd->e());
+              } else {
+                _os << (_env != nullptr
+                            ? Printer::quoteId(_env->getRecordType(al->type())->fieldName(i))
+                                  .c_str()
+                            : "???")
+                    << ": ";
+                p((*al)[i]);
+              }
+            } else {
+              p((*al)[i]);
             }
-            p((*al)[i]);
             if (i < al->size() - 1) {
               _os << ",";
             }

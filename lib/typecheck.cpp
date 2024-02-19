@@ -4264,7 +4264,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         throw;
       }
       Expression::addAnnotation(vd, Constants::constants().ann.mzn_check_var);
-      if (vd->type().typeId() != 0) {
+      if (vd->type().typeId() != 0 && vd->type().bt() == Type::BT_INT) {
         GCLock lock;
         std::vector<unsigned int> enumIds({vd->type().typeId()});
         if (vd->type().dim() > 0) {

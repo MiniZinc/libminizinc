@@ -4,6 +4,13 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
+.. _unreleased:
+
+Bug fixes:
+^^^^^^^^^^
+-  Fix crash when using records inside solution checker modules.
+-  Fix pretty printing of record literals and types with unicode field names.
+
 .. _v2.8.3:
 
 `Version 2.8.3 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.8.3>`__
