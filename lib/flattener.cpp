@@ -162,7 +162,8 @@ void Flattener::printHelp(ostream& os) const {
      << "    Enable only the given comma-separated output sections." << std::endl
      << "  --not-sections <section_1,...section_n>" << std::endl
      << "    Disable the given comma-separated output sections." << std::endl
-     << "  -Werror\n    Turn warnings into errors" << std::endl;
+     << "  -Werror\n    Turn warnings into errors" << std::endl
+     << "  -w --disable-warnings\n    Supress all warnings" << std::endl;
 }
 
 bool Flattener::processOption(int& i, std::vector<std::string>& argv,
@@ -297,6 +298,8 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv,
     // Parsed by reference
   } else if (cop.getOption("-Werror")) {
     _flags.werror = true;
+  } else if (cop.getOption("-w --disable-warnings")) {
+    _fopts.supressWarnings = true;
   } else if (cop.getOption("--use-gecode")) {
 #ifdef HAS_GECODE
     _flags.twoPass = true;

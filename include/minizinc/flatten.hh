@@ -55,6 +55,8 @@ struct FlatteningOptions {
   bool detailedTiming;
   /// Evaluate _dbg debugging intrinsics
   bool debug;
+  /// Supress warnings emitted during flattening
+  bool supressWarnings;
   /// Random seed for the random builtin functions
   long unsigned int randomSeed;
   /// Encapsulate output in a JSON object
@@ -79,6 +81,7 @@ struct FlatteningOptions {
         outputOutputItem(false),
         detailedTiming(false),
         debug(false),
+        supressWarnings(false),
         encapsulateJSON(false),
         ignoreStdlib(false) {
     // Initialise random number generator seed.

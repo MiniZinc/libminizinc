@@ -1825,6 +1825,9 @@ ASTString EnvI::halfReifyId(const ASTString& id) {
 int EnvI::addWarning(const std::string& msg) { return addWarning(Location(), msg, false); }
 
 int EnvI::addWarning(const Location& loc, const std::string& msg, bool dumpStack) {
+  if (fopts.supressWarnings) {
+    return -1;
+  }
   if (warnings.size() >= 20) {
     if (warnings.size() == 20) {
       warnings.emplace_back(new Warning("Further warnings have been suppressed."));

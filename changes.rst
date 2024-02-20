@@ -6,6 +6,11 @@ https://github.com/MiniZinc/libminizinc/issues.
 
 .. _unreleased:
 
+Changes:
+^^^^^^^^
+-  Add ``-w`` and ``--disable-warnings`` flags that will supress all warnings
+   emitted by the flattening process.
+
 Bug fixes:
 ^^^^^^^^^^
 -  Fix crash when using records inside solution checker modules.
