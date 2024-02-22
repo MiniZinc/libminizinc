@@ -39,6 +39,14 @@ test mzn_check_annotate_defines_var() =
   if absent(mzn_opt_annotate_defines_var) then true
   else deopt(mzn_opt_annotate_defines_var) endif;
 
+/** @group stdlib.options Whether to generate computed_domain annotations */
+opt bool: mzn_opt_annotate_computed_domains;
+
+/** @group stdlib.options Check whether to generate computed_domain annotations */
+test mzn_check_annotate_computed_domains() =
+  if absent(mzn_opt_annotate_computed_domains) then false
+  else deopt(mzn_opt_annotate_computed_domains) endif;
+
 /** @group stdlib.options Whether to ignore symmetry breaking constraints
  
     If not specified or set to false, it depends on the solver library whether

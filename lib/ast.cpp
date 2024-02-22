@@ -2368,6 +2368,8 @@ Constants::Constants() {
   ann.set_search = addString("set_search");
   ann.warm_start = addString("warm_start");
   ann.warm_start_array = addString("warm_start_array");
+  ann.computed_domain = addId("computed_domain");
+  ann.computed_domain->type(Type::ann());
 
   cli.cmdlineData_short_str = addString("-D");
   cli.cmdlineData_str = addString("--cmdline-data");

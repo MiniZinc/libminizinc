@@ -69,6 +69,10 @@ function array[$U] of any $T: mzn_deprecate(string: name, string: version, strin
 /** @group stdlib.annotations.general Declare the annotated variable as being functionally defined.
   This annotation is introduced into FlatZinc code by the compiler. */
 annotation is_defined_var;
+/** @group stdlib.annotations.general Declare the annotated variable as having a
+    domain computed for the convenience of the solver. The domain itself does
+    not impose a constraint in the overall problem and can be ignored. */
+annotation computed_domain;
 /** @group stdlib.annotations.general Declare a variable as being introduced by the compiler. */
 annotation var_is_introduced;
 /** @group stdlib.annotations.general Declare variable: \a c as being functionally defined

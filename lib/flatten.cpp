@@ -5302,6 +5302,19 @@ void oldflatzinc(Env& e) {
     }
   }
 
+  // Check wheter we need to add domain_computed annotations
+  bool addDomComputed = false;
+  {
+    GCLock lock;
+    Call* c = Call::a(Location().introduce(), "mzn_check_annotate_computed_domains", {});
+    c->type(Type::parbool());
+    FunctionI* fi = e.model()->matchFn(e.envi(), c, true);
+    if (fi != nullptr) {
+      c->decl(fi);
+      addDomComputed = eval_bool(e.envi(), c);
+    }
+  }
+
   // Mark annotations and optional variables for removal, and clear flags
   for (auto& vdi : m->vardecls()) {
     if (vdi.e()->type().ot() == Type::OT_OPTIONAL || vdi.e()->type().bt() == Type::BT_ANN ||
@@ -5496,6 +5509,16 @@ void oldflatzinc(Env& e) {
   // Remove marked items
   m->compact();
   e.envi().output->compact();
+
+  // Add computed domain annotations
+  if (addDomComputed) {
+    for (auto& vdi : m->vardecls()) {
+      auto* vd = vdi.e();
+      if (vd->ti()->computedDomain() && vd->ti()->domain() != nullptr) {
+        Expression::addAnnotation(vd, e.envi().constants.ann.computed_domain);
+      }
+    }
+  }
 
   for (auto& it : env.varOccurrences.itemMap) {
     VarOccurrences::Items keptItems;

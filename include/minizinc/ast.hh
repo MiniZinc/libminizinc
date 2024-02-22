@@ -2308,6 +2308,7 @@ public:
     ASTString set_search;                    // NOLINT(readability-identifier-naming)
     ASTString warm_start;                    // NOLINT(readability-identifier-naming)
     ASTString warm_start_array;              // NOLINT(readability-identifier-naming)
+    Id* computed_domain;                     // NOLINT(readability-identifier-naming)
   } ann;
 
   /// Command line options

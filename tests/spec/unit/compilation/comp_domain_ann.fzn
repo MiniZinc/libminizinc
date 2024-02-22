@@ -1,0 +1,14 @@
+array [1..5] of int: X_INTRODUCED_13_ = [1,1,1,1,-1];
+var 1..4: X_INTRODUCED_0_;
+var 1..4: X_INTRODUCED_1_;
+var 1..4: X_INTRODUCED_2_;
+var 1..4: X_INTRODUCED_3_;
+var 1..16: X_INTRODUCED_10_ ::var_is_introduced :: computed_domain:: is_defined_var;
+var 1..64: X_INTRODUCED_11_ ::var_is_introduced :: computed_domain:: is_defined_var;
+var 4..16: X_INTRODUCED_12_ ::var_is_introduced :: is_defined_var;
+array [1..4] of var int: x:: output_array([1..4]) = [X_INTRODUCED_0_,X_INTRODUCED_1_,X_INTRODUCED_2_,X_INTRODUCED_3_];
+constraint int_lin_eq(X_INTRODUCED_13_,[X_INTRODUCED_0_,X_INTRODUCED_1_,X_INTRODUCED_2_,X_INTRODUCED_3_,X_INTRODUCED_12_],0):: defines_var(X_INTRODUCED_12_);
+constraint int_times(X_INTRODUCED_0_,X_INTRODUCED_1_,X_INTRODUCED_10_):: defines_var(X_INTRODUCED_10_);
+constraint int_times(X_INTRODUCED_10_,X_INTRODUCED_2_,X_INTRODUCED_11_):: defines_var(X_INTRODUCED_11_);
+constraint int_times(X_INTRODUCED_11_,X_INTRODUCED_3_,X_INTRODUCED_12_);
+solve  satisfy;

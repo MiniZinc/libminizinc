@@ -10,6 +10,9 @@ Changes:
 ^^^^^^^^
 -  Add ``-w`` and ``--disable-warnings`` flags that will supress all warnings
    emitted by the flattening process.
+-  Add option for solver libraries to set ``mzn_opt_annotate_computed_domains``
+   such that the compiler will signal domains that are enforced by separate
+   constraints using a ``computed_domain`` annotation.
 
 Bug fixes:
 ^^^^^^^^^^
