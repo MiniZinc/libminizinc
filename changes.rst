@@ -20,6 +20,7 @@ Bug fixes:
 -  Fix pretty printing of record literals and types with unicode field names.
 -  Fix creation of par versions functions containing ``var`` binary/unary
    operators (:bugref:`792`).
+-  Fix potential crash when printing of output model involving records.
 
 .. _v2.8.3:
 

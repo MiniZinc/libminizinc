@@ -219,17 +219,18 @@ public:
           break;
       }
     } else if (const auto* al = Expression::dynamicCast<ArrayLit>(e)) {
-      assert(type.structBT());
-      _os << (type.bt() == Type::BT_TUPLE ? "tuple(" : "record(");
-      if (type.bt() != Type::BT_RECORD || type.typeId() != 0) {
+      // TODO: Why does `type` sometimes not have a type ID even though `al` does?
+      auto t = al->type().structBT() ? al->type() : type;
+      assert(t.structBT());
+      _os << (t.bt() == Type::BT_TUPLE ? "tuple(" : "record(");
+      if (t.bt() != Type::BT_RECORD || t.typeId() != 0) {
         for (size_t i = 0; i < al->size(); ++i) {
           auto* ti = Expression::cast<TypeInst>((*al)[i]);
           p(ti);
-          if (type.bt() == Type::BT_RECORD) {
+          if (t.bt() == Type::BT_RECORD) {
             _os << ": "
-                << (_env != nullptr
-                        ? Printer::quoteId(_env->getRecordType(type)->fieldName(i)).c_str()
-                        : "???");
+                << (_env != nullptr ? Printer::quoteId(_env->getRecordType(t)->fieldName(i)).c_str()
+                                    : "???");
           }
           if (i < al->size() - 1) {
             _os << ", ";
