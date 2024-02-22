@@ -93,25 +93,66 @@ bool cannot_use_rhs_for_output(EnvI& env, Expression* e,
     /// Visit if-then-else
     void vITE(const ITE* /*ite*/) {}
     /// Visit binary operator
-    void vBinOp(const BinOp* /*bo*/) {}
+    void vBinOp(BinOp* bo) {
+      if (bo->decl() != nullptr) {
+        auto t1 = Expression::type(bo->lhs());
+        t1.mkPar(env);
+        auto t2 = Expression::type(bo->rhs());
+        t2.mkPar(env);
+        std::vector<Type> tv({t1, t2});
+        auto* decl = checkFunction(Expression::loc(bo), bo->decl()->id(), tv);
+        if (decl != nullptr) {
+          bo->decl(decl);
+        }
+      }
+    }
     /// Visit unary operator
-    void vUnOp(const UnOp* /*uo*/) {}
+    void vUnOp(UnOp* uo) {
+      if (uo->decl() != nullptr) {
+        auto t = Expression::type(uo->e());
+        t.mkPar(env);
+        std::vector<Type> tv({t});
+        auto* decl = checkFunction(Expression::loc(uo), uo->decl()->id(), tv);
+        if (decl != nullptr) {
+          uo->decl(decl);
+        }
+      }
+    }
     /// Visit call
     void vCall(Call* c) {
       std::vector<Type> tv(c->argCount());
-      for (unsigned int i = c->argCount(); (i--) != 0U;) {
+      for (unsigned int i = 0; i < c->argCount(); i++) {
         tv[i] = Expression::type(c->arg(i));
         tv[i].mkPar(env);
       }
-      FunctionI* decl = env.output->matchFn(env, c->id(), tv, false);
+      auto* decl = checkFunction(Expression::loc(c), c->id(), tv);
+      if (decl != nullptr) {
+        c->decl(decl);
+      }
+    }
+    void vId(const Id* /*id*/) {}
+    /// Visit let
+    void vLet(const Let* /*let*/) { success = false; }
+    /// Visit variable declaration
+    void vVarDecl(const VarDecl* /*vd*/) {}
+    /// Visit type inst
+    void vTypeInst(const TypeInst* /*ti*/) {}
+    /// Visit TIId
+    void vTIId(const TIId* /*tiid*/) {}
+    /// Determine whether to enter node
+    bool enter(Expression* /*e*/) const { return success; }
+
+  private:
+    FunctionI* checkFunction(const Location& loc, const ASTString& name, std::vector<Type>& tv) {
+      FunctionI* decl = env.output->matchFn(env, name, tv, false);
       Type t;
       if (decl == nullptr) {
-        FunctionI* origdecl = env.model->matchFn(env, c->id(), tv, false);
+        FunctionI* origdecl = env.model->matchFn(env, name, tv, false);
         if (origdecl == nullptr) {
           std::ostringstream ss;
-          ss << "function " << demonomorphise_identifier(c->id())
+          ss << "function " << demonomorphise_identifier(name)
              << " is used in output, par version needed";
-          throw FlatteningError(env, Expression::loc(c), ss.str());
+          throw FlatteningError(env, loc, ss.str());
         }
         bool seen = (seenFunctions.find(origdecl) != seenFunctions.end());
         if (seen) {
@@ -142,7 +183,6 @@ bool cannot_use_rhs_for_output(EnvI& env, Expression* e,
             } else {
               decl = origdecl;
             }
-            c->decl(decl);
           }
         }
       }
@@ -152,18 +192,8 @@ bool cannot_use_rhs_for_output(EnvI& env, Expression* e,
           success = false;
         }
       }
+      return decl;
     }
-    void vId(const Id* /*id*/) {}
-    /// Visit let
-    void vLet(const Let* /*let*/) { success = false; }
-    /// Visit variable declaration
-    void vVarDecl(const VarDecl* /*vd*/) {}
-    /// Visit type inst
-    void vTypeInst(const TypeInst* /*ti*/) {}
-    /// Visit TIId
-    void vTIId(const TIId* /*tiid*/) {}
-    /// Determine whether to enter node
-    bool enter(Expression* /*e*/) const { return success; }
   } _v(env, seen_functions);
   top_down(_v, e);
 
