@@ -309,7 +309,12 @@ class FlatZinc:
             fzn = fzn.replace(needle, replacement)
         # Remove empty lines, truncate multiple spaces
         lines = [
-            re.sub(r"  +", " ", line)
+            re.sub(
+                r"::[^;]*",
+                ann_sort, 
+                re.sub(r"  +", " ", line),
+                count=1,
+            )
             for line in fzn.split("\n")
             if len(line.strip()) > 0
         ]
@@ -334,6 +339,10 @@ class FlatZinc:
             instance.base = base
             return instance
 
+def ann_sort(match):
+    s = match.group(0)
+    anns = sorted([ann for ann in s.split('::') if ann != ""])
+    return "::" + "::".join(anns)
 
 @yaml.scalar("!OutputModel")
 class OutputModel:
