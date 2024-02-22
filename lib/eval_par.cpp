@@ -1592,7 +1592,7 @@ bool eval_bool(EnvI& env, Expression* e) {
               case BOT_IN: {
                 // Note: tup1 is an array of tuples
                 for (int i = 0; i < struct1->size(); ++i) {
-                  if (struct_equal(struct0, Expression::cast<ArrayLit>((*struct1)[0]))) {
+                  if (struct_equal(struct0, eval_array_lit(env, (*struct1)[0]))) {
                     return true;
                   }
                 }
