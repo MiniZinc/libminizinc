@@ -1898,13 +1898,12 @@ void finalise_output(EnvI& e) {
                   if (!needOutputAnn) {
                     remove_is_output(vd);
                     remove_is_output(reallyFlat);
+                    output_vardecls(e, item, al);
                     if (e.varOccurrences.occurrences(reallyFlat) == 0) {
                       auto it = e.varOccurrences.idx.find(reallyFlat->id());
                       assert(it.first);
                       e.flatRemoveItem((*e.flat())[*it.second]->cast<VarDeclI>());
                     }
-
-                    output_vardecls(e, item, al);
                     vd->e(copy(e, e.cmap, al));
                     Type al_t(Expression::type(vd->e()));
                     al_t.mkPar(e);
