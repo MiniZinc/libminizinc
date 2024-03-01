@@ -21,6 +21,7 @@ Bug fixes:
 -  Fix creation of par versions functions containing ``var`` binary/unary
    operators (:bugref:`792`).
 -  Fix potential crash when printing of output model involving records.
+-  Fix computation of supertype of tuples/records involving ``<>`` fields. 
 
 .. _v2.8.3:
 

@@ -1372,8 +1372,11 @@ Type common_type(EnvI& env, Type t1, Type t2) {
   } else {
     return Type::top();
   }
-  if (!common.structBT() && t1.typeId() != t2.typeId()) {
+  if (!common.structBT() && t1.typeId() != t2.typeId() && !t1.isbot() && !t2.isbot()) {
     common.typeId(0);
+  }
+  if (t1.ot() != t2.ot()) {
+    common.ot(Type::OT_OPTIONAL);
   }
   return common;
 }
