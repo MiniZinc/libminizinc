@@ -8,7 +8,7 @@ https://github.com/MiniZinc/libminizinc/issues.
 
 Changes:
 ^^^^^^^^
--  Add ``-w`` and ``--disable-warnings`` flags that will supress all warnings
+-  Add ``-w`` and ``--disable-warnings`` flags that will suppress all warnings
    emitted by the flattening process.
 -  Add option for solver libraries to set ``mzn_opt_annotate_computed_domains``
    such that the compiler will signal domains that are enforced by separate
@@ -21,7 +21,9 @@ Bug fixes:
 -  Fix creation of par versions functions containing ``var`` binary/unary
    operators (:bugref:`792`).
 -  Fix potential crash when printing of output model involving records.
--  Fix computation of supertype of tuples/records involving ``<>`` fields. 
+-  Fix computation of supertype of tuples/records involving ``<>`` fields.
+-  Fix a bug where the compiler would incorrectly set variable domains as
+   computed when processing linear constraints.
 
 .. _v2.8.3:
 
@@ -35,7 +37,7 @@ Bug fixes:
 -  Fix problem where specialised flattening for some forms of binary operators
    would not correctly forward the partiality of its arguments (:bugref:`766`).
 -  Remove internal duplicate functionality that could sometimes cause problems
-   when assigning variables in constriants (:bugref:`769`).
+   when assigning variables in constraints (:bugref:`769`).
 -  Do not try to check right hand side of parameter variable declarations that
    are ``par`` because of singular domains (:bugref:`771`).
 -  Fix a problem in the parser where anonymous enumerated types could not be
@@ -50,7 +52,7 @@ Bug fixes:
 -  Fix bug in evaluation of annotations causing invalid FlatZinc to be produced
    (:bugref:`768`, :bugref:`788`).
 -  Fix substitution of fixed objective variable value into solve item
-   (:bufref:`773`).
+   (:bugref:`773`).
 -  Fix check for presence of ``set2iter`` redefinition (:bugref:`778`).
 -  Fix incorrect removal of constraint due to use of redefinition of
    ``bool_clause_reif`` when constraint is not reified (:bugref:`785`).
@@ -236,7 +238,7 @@ Bug fixes:
 -  Don't print the final status line from solution checkers.
 -  Fix typechecking of par type-inst identifiers when instantiated using
    structured types involving ``var`` types.
--  Implement ``fix`` and ``is_fixed`` for strucutred types.
+-  Implement ``fix`` and ``is_fixed`` for structured types.
 -  Ensure reverse mappers are created when flattening tuple/record literals.
    This resolves certain errors during output processing in models using these
    types.
@@ -369,7 +371,7 @@ Bug fixes:
 
 -  Remove redundant function return simplification that could create invalid
    tuple/record types (:bugref:`681`).
--  Fix regression in the creation of seperate domain constraints where domains
+-  Fix regression in the creation of separate domain constraints where domains
    contained infinity (:bugref:`684`).
 -  Fix a flattening the decompositions of lex_less(eq) reifications in the
    standard library, caused by a missing ``promise_total`` annotation
@@ -669,7 +671,7 @@ Changes:
    be valid FlatZinc builtins (i.e., they are predicates/return ``var bool``,
    and their arguments are valid FlatZinc types) or, in case of a ``par``
    function, must have an internal definition in the MiniZinc compiler.
-   Functions that are defined with ``var`` types for convient use in output
+   Functions that are defined with ``var`` types for convenient use in output
    can be annotated ``output_only``. The compiler will check that a valid
    ``par`` version of this function is available.
 
@@ -799,7 +801,7 @@ Bug fixes:
 -  Output the correct variables when using ``--output-mode checker``.
 -  Fix possible crash when handling errors due to incorrect garbage collection.
 -  Fix WebAssembly build of MiniZinc.
--  Allow comprenhensions to iterate over the ``{}`` literal.
+-  Allow comprehensions to iterate over the ``{}`` literal.
 -  Fix printing of multidimensional arrays of enums in output.
 -  Fix the output format when using ``--json-stream`` on FlatZinc files.
 -  Rename ``member_int_reif`` to ``fzn_member_int_reif`` in the Gecode presolver library

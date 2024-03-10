@@ -2093,7 +2093,9 @@ void substitute_fixed_vars(Env& env) {
     Model& m = *envi.flat();
     std::vector<VarDecl*> deletedVarDecls;
     for (auto* item : m) {
-      substitute_fixed_vars(envi, item, deletedVarDecls);
+      if (!item->removed()) {
+        substitute_fixed_vars(envi, item, deletedVarDecls);
+      }
     }
     remove_deleted_items(envi, deletedVarDecls);
   } catch (ModelInconsistent&) { /* NOLINT(bugprone-empty-catch) */

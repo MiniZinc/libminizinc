@@ -830,7 +830,10 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
             ret.r = bind(env, ctx, r, env.constants.literalFalse);
           }
         } else {
-          set_computed_domain(env, vd, LinearTraits<Lit>::newDomain(bounds.l, bounds.u), true);
+          // Can only set as computed if there was no other RHS
+          bool is_computed = vd->e() == nullptr;
+          set_computed_domain(env, vd, LinearTraits<Lit>::newDomain(bounds.l, bounds.u),
+                              is_computed);
         }
       }
     }
