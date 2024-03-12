@@ -24,6 +24,8 @@ Bug fixes:
 -  Fix computation of supertype of tuples/records involving ``<>`` fields.
 -  Fix a bug where the compiler would incorrectly set variable domains as
    computed when processing linear constraints.
+-  Fix invalid JSON produced by MIP interfaces due to infinite values for
+   statistics.
 
 .. _v2.8.3:
 

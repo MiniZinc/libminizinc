@@ -12,7 +12,9 @@
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/statistics.hh>
 
+#include <cmath>
 #include <iostream>
+#include <limits>
 #include <unordered_set>
 
 namespace MiniZinc {
@@ -58,7 +60,18 @@ void StatisticsStream::add(const std::string& stat, long long value) { addIntern
 void StatisticsStream::add(const std::string& stat, unsigned long long value) {
   addInternal(stat, value);
 }
-void StatisticsStream::add(const std::string& stat, double value) { addInternal(stat, value); }
+void StatisticsStream::add(const std::string& stat, double value) {
+  if (std::isfinite(value)) {
+    addInternal(stat, value);
+  } else if (!_json) {
+    auto inf = std::numeric_limits<double>::infinity();
+    if (value == inf) {
+      addInternal(stat, "infinity");
+    } else if (value == -inf) {
+      addInternal(stat, "-infinity");
+    }
+  }
+}
 void StatisticsStream::add(const std::string& stat, const std::string& value) {
   addInternal(stat, "\"" + Printer::escapeStringLit(value) + "\"");
 }
