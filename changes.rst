@@ -26,6 +26,8 @@ Bug fixes:
    computed when processing linear constraints.
 -  Fix invalid JSON produced by MIP interfaces due to infinite values for
    statistics.
+-  Fix possible crash during type specialisation involving ``array [_] of $$T``
+   types.
 
 .. _v2.8.3:
 

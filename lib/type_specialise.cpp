@@ -359,7 +359,7 @@ public:
       curType.typeId(concrete_type.typeId());
       ti->type(curType);
       if (TIId* tiid = Expression::dynamicCast<TIId>(ti->domain())) {
-        ti_map.emplace(tiid->v(), curType);
+        ti_map.emplace(tiid->v(), ti->ranges().empty() ? curType : curType.elemType(env));
         if (curType.typeId() == 0) {
           // replace tiid with empty domain
           ti->domain(nullptr);
