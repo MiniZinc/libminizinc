@@ -52,6 +52,9 @@ if(TARGET minizinc_osicbc)
   endif()
   set(CONF_DEPENDENCIES "${CONF_DEPENDENCIES}find_dependency(OsiCBC)\n")
 endif()
+if (TARGET minizinc_chuffed)
+  set(CONF_DEPENDENCIES "${CONF_DEPENDENCIES}find_dependency(chuffed)\n")
+endif()
 
 # Add all targets to the build-tree export set
 export(TARGETS mzn
