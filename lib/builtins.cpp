@@ -2339,8 +2339,10 @@ std::string show_with_type(EnvI& env, Expression* exp, Type t, bool showDzn) {
         oss << ",";
       }
     } else {
+      // Use element type from t since evaluating e may have removed the enum types
+      auto elemType = t.elemType(env);
       for (unsigned int i = 0; i < al->size(); i++) {
-        oss << show_with_type(env, (*al)[i], Expression::type((*al)[i]), showDzn);
+        oss << show_with_type(env, (*al)[i], elemType, showDzn);
         if (i < al->size() - 1) {
           oss << ", ";
         }
@@ -2439,6 +2441,18 @@ std::string b_show_json_with_type(EnvI& env, Expression* exp, Type t) {
   }
   if (auto* al = Expression::dynamicCast<ArrayLit>(e)) {
     std::ostringstream oss;
+    if (al->type().istuple()) {
+      TupleType* tt = env.getTupleType(al->type());
+      oss << "[";
+      for (unsigned int i = 0; i < al->size(); i++) {
+        oss << b_show_json_with_type(env, (*al)[i], (*tt)[i]);
+        if (i < al->size() - 1) {
+          oss << ", ";
+        }
+      }
+      oss << "]";
+      return oss.str();
+    }
     if (al->type().isrecord()) {
       assert(al->dims() == 1);
       RecordType* rt = env.getRecordType(al->type());
@@ -2452,39 +2466,57 @@ std::string b_show_json_with_type(EnvI& env, Expression* exp, Type t) {
       oss << "}";
       return oss.str();
     }
-    std::vector<unsigned int> dims(al->dims() - 1);
-    if (!dims.empty()) {
-      dims[0] = al->max(al->dims() - 1) - al->min(al->dims() - 1) + 1;
-    }
 
-    for (int i = 1; i < al->dims() - 1; i++) {
-      dims[i] = dims[i - 1] * (al->max(al->dims() - 1 - i) - al->min(al->dims() - 1 - i) + 1);
-    }
-    oss << "[";
-    TupleType* tt = al->type().istuple() ? env.getTupleType(al->type()) : nullptr;
-    for (unsigned int i = 0; i < al->size(); i++) {
-      for (unsigned int dim : dims) {
-        if (i % dim == 0) {
-          oss << "[";
+    auto elemType = t.elemType(env);
+    if (al->dims() == 1) {
+      oss << "[";
+      for (unsigned int i = 0; i < al->size(); i++) {
+        oss << b_show_json_with_type(env, (*al)[i], elemType);
+        if (i < al->size() - 1) {
+          oss << ", ";
         }
       }
-      if (tt == nullptr) {
-        oss << b_show_json_with_type(env, (*al)[i], Expression::type((*al)[i]));
+      oss << "]";
+      return oss.str();
+    }
+
+    std::vector<unsigned int> dims(al->dims() - 1);
+    for (unsigned int i = 0; i < al->dims() - 1; i++) {
+      dims[i] = al->max(i) - al->min(i) + 1;
+    }
+    auto lastDim = al->max(al->dims() - 1) - al->min(al->dims() - 1) + 1;
+    std::vector<unsigned int> counts(al->dims() - 1);
+    bool first = true;
+    unsigned int j = 0;
+    oss << "[";
+    while (counts[0] < dims[0]) {
+      if (first) {
+        first = false;
       } else {
-        oss << b_show_json_with_type(env, (*al)[i], (*tt)[i]);
+        oss << ", ";
       }
-      for (unsigned int dim : dims) {
-        if (i % dim == dim - 1) {
+      for (unsigned int i = al->dims() - 2; i > 0 && counts[i] == 0; i--) {
+        oss << "[";
+      }
+      oss << "[";
+      for (int i = 0; i < lastDim; i++) {
+        if (i > 0) {
+          oss << ", ";
+        }
+        oss << b_show_json_with_type(env, (*al)[j], elemType);
+        j++;
+      }
+      oss << "]";
+      counts.back()++;
+      for (unsigned int i = al->dims() - 2; i > 0; i--) {
+        if (counts[i] >= dims[i]) {
+          counts[i] = 0;
+          counts[i - 1]++;
           oss << "]";
         }
       }
-
-      if (i < al->size() - 1) {
-        oss << ", ";
-      }
     }
     oss << "]";
-
     return oss.str();
   }
   return b_show_json_basic(env, e, t);
@@ -2626,12 +2658,16 @@ std::string b_format(EnvI& env, Call* call) {
 }
 
 std::string b_format_justify_string(EnvI& env, Call* call) {
-  int width = 0;
   GCLock lock;
-  Expression* e;
-  width = static_cast<int>(eval_int(env, call->arg(0)).toInt());
-  e = eval_par(env, call->arg(1));
-  std::string s = eval_string(env, e);
+  int width = static_cast<int>(eval_int(env, call->arg(0)).toInt());
+  size_t max_length = call->argCount() == 3
+                          ? static_cast<size_t>(eval_int(env, call->arg(1)).toInt())
+                          : std::string::npos;
+  if (max_length < 0) {
+    throw EvalError(env, Expression::loc(call->arg(1)), "max string length cannot be negative");
+  }
+  Expression* e = eval_par(env, call->arg(call->argCount() - 1));
+  std::string s = eval_string(env, e).substr(0, max_length);
   std::ostringstream oss;
   if (s.size() < std::abs(width)) {
     int addLeft = width < 0 ? 0 : (width - static_cast<int>(s.size()));
@@ -4271,6 +4307,8 @@ void register_builtins(Env& e) {
     rb(env, m, ASTString("format"), t, b_format);
     t[2] = Type::vartop(-1);
     rb(env, m, ASTString("format"), t, b_format);
+    t[2] = Type::parstring();
+    rb(env, m, ASTString("format_justify_string"), t, b_format_justify_string);
   }
   {
     std::vector<Type> t(2);

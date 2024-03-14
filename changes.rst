@@ -13,6 +13,8 @@ Changes:
 -  Add option for solver libraries to set ``mzn_opt_annotate_computed_domains``
    such that the compiler will signal domains that are enforced by separate
    constraints using a ``computed_domain`` annotation.
+-  Always output multidimensional arrays as nested arrays when using
+   ``showJSON`` for consistency.
 
 Bug fixes:
 ^^^^^^^^^^
@@ -28,6 +30,8 @@ Bug fixes:
    statistics.
 -  Fix possible crash during type specialisation involving ``array [_] of $$T``
    types.
+-  Fix output of structured types containing arrays of enums (:bugref:`793`).
+-  Fix justified formatting to work with arrays of enums.
 
 .. _v2.8.3:
 

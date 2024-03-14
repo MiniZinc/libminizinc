@@ -2859,44 +2859,7 @@ public:
       }
       cv = cv || Expression::type(args[i]).cv();
     }
-    // Replace par enums with their string versions
-    if (call->id() == _env.constants.ids.format || call->id() == _env.constants.ids.show ||
-        call->id() == _env.constants.ids.showDzn || call->id() == _env.constants.ids.showJSON) {
-      if (Expression::type(call->arg(call->argCount() - 1)).isPar()) {
-        unsigned int typeId = Expression::type(call->arg(call->argCount() - 1)).typeId();
-        if (typeId != 0U && Expression::type(call->arg(call->argCount() - 1)).dim() != 0) {
-          const std::vector<unsigned int>& typeIds = _env.getArrayEnum(typeId);
-          typeId = typeIds[typeIds.size() - 1];
-        }
-        if (typeId > 0 && Expression::type(call->arg(call->argCount() - 1)).bt() == Type::BT_INT) {
-          VarDecl* enumDecl = _env.getEnum(typeId)->e();
-          if (enumDecl->e() != nullptr) {
-            Id* ti_id = _env.getEnum(typeId)->e()->id();
-            GCLock lock;
-            std::vector<Expression*> args(3);
-            args[0] = call->arg(call->argCount() - 1);
-            if (Expression::type(args[0]).dim() > 1) {
-              std::vector<Expression*> a1dargs(1);
-              a1dargs[0] = args[0];
-              Call* array1d = Call::a(Location().introduce(), _env.constants.ids.array1d, a1dargs);
-              Type array1dt = Type::arrType(_env, Type::partop(1), Expression::type(args[0]));
-              array1d->type(array1dt);
-              array1d->decl(_model->matchFn(_env, array1d, false, true));
-              args[0] = array1d;
-            }
-            args[1] = _env.constants.boollit(call->id() == _env.constants.ids.showDzn);
-            args[2] = _env.constants.boollit(call->id() == _env.constants.ids.showJSON);
-            ASTString enumName(create_enum_to_string_name(ti_id, "_toString_"));
-            call->id(enumName);
-            call->args(args);
-            if (call->id() == _env.constants.ids.showDzn) {
-              call->id(_env.constants.ids.show);
-            }
-            fi = _model->matchFn(_env, call, false, true);
-          }
-        }
-      }
-    } else if (call->id() == _env.constants.ids.enumOf) {
+    if (call->id() == _env.constants.ids.enumOf) {
       auto enumId = Expression::type(call->arg(0)).typeId();
       if (enumId != 0 && Expression::type(call->arg(0)).dim() != 0) {
         const auto& enumIds = _env.getArrayEnum(enumId);

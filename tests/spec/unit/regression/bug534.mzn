@@ -3,7 +3,7 @@
 solvers: [gecode]
 expected: !Result
   solution: !Solution
-    x: []
+    x: [[], []]
 ***/
 
 % Regression test for bug #534 (fail on empty domain even for empty array).

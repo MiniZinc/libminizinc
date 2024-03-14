@@ -2121,6 +2121,7 @@ public:
     ASTString join;
     ASTString show;
     ASTString format;
+    ASTString format_justify_string;  // NOLINT(readability-identifier-naming)
     ASTString showDzn;
     ASTString showJSON;
     ASTString fix;

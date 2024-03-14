@@ -183,6 +183,16 @@ justified by the number of characters given by \a w, or left
 justified if \a w is negative.
 */
 function string: format_justify_string(int: w, string: x);
+/** @group stdlib.builtins.string String justification
+
+Returns the string \a x right
+justified by the number of characters given by \a w, or left
+justified if \a w is negative.
+
+The maximum length of of \a x to be formatted is given by
+\a p. It is a run-time error for \a p to be negative.
+*/
+function string: format_justify_string(int: w, int: p, string: x);
 
 /** @group stdlib.builtins.string Return path of file where this function is called */
 function string: file_path();

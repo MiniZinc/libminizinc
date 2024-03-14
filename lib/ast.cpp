@@ -2175,6 +2175,7 @@ Constants::Constants() {
   ids.join = addString("join");
   ids.show = addString("show");
   ids.format = addString("format");
+  ids.format_justify_string = addString("format_justify_string");
   ids.showDzn = addString("showDzn");
   ids.showJSON = addString("showJSON");
   ids.output = addString("output");

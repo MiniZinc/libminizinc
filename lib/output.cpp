@@ -308,6 +308,233 @@ void cleanup_output(EnvI& env) {
   }
 }
 
+/**
+ * Returns a call which will show the given expression, or nullptr if this expression can be shown
+ * using the normal builtin.
+ *
+ * Needed because ozn has no enums, so just doing the builtin show will give numbers instead of
+ * enums.
+ */
+Call* generate_show(EnvI& env, Expression* e, Expression* w, Expression* p, bool show_dzn,
+                    bool is_json) {
+  auto t = Expression::type(e);
+  auto typeId = t.typeId();
+  if (t.dim() != 0) {
+    if (is_json && t.dim() > 1) {
+      // Create generators for dimensions selection
+      std::vector<Expression*> slice_dimensions(t.dim());
+      std::vector<Generator> generators;
+      generators.reserve(t.dim() - 1);
+      auto* idx_ti = new TypeInst(Location().introduce(), Type::parint());
+      for (int i = 0; i < t.dim() - 1; ++i) {
+        auto* idx_i = new VarDecl(Location().introduce(), idx_ti, env.genId());
+        idx_i->toplevel(false);
+        Call* index_set_xx =
+            Call::a(Location().introduce(),
+                    "index_set_" + std::to_string(i + 1) + "of" + std::to_string(t.dim()), {e});
+        index_set_xx->type(Type::parsetint());
+        generators.push_back(Generator({idx_i}, index_set_xx, nullptr));
+        slice_dimensions[i] =
+            new BinOp(Location().introduce(), idx_i->id(), BOT_DOTDOT, idx_i->id());
+        Expression::type(slice_dimensions[i], Type::parsetint());
+      }
+
+      // Construct innermost slicing operation
+      Call* index_set_n =
+          Call::a(Location().introduce(),
+                  "index_set_" + std::to_string(t.dim()) + "of" + std::to_string(t.dim()), {e});
+      index_set_n->type(Type::parsetint());
+      slice_dimensions[t.dim() - 1] = index_set_n;
+      auto* al_slice_dim = new ArrayLit(Location().introduce(), slice_dimensions);
+      al_slice_dim->type(Type::parsetint(1));
+
+      auto* slice_call =
+          Call::a(Location().introduce(), "slice_1d", {e, al_slice_dim, index_set_n});
+      Type tt = Type::arrType(env, Type::partop(1), t);
+      slice_call->type(tt);
+      auto* shown_slice = generate_show(env, slice_call, nullptr, nullptr, show_dzn, is_json);
+      if (shown_slice == nullptr) {
+        shown_slice =
+            Call::a(Location().introduce(),
+                    show_dzn ? env.constants.ids.showDzn
+                             : (is_json ? env.constants.ids.showJSON : env.constants.ids.show),
+                    {slice_call});
+        Expression::type(shown_slice, Type::parstring());
+      }
+
+      // Build multi-level JSON Array string
+      auto* comma = new StringLit(Location().introduce(), ", ");
+      comma->type(Type::parstring());
+      auto join = [&](Expression* expr, Generator gen) -> Expression* {
+        Generators generators;
+        generators.g.push_back(gen);
+        auto* comp = new Comprehension(Location().introduce(), expr, generators, false);
+        comp->type(Type::parstring(1));
+        Call* cc = Call::a(Location().introduce(), env.constants.ids.join, {comma, comp});
+        cc->type(Type::parstring());
+        return cc;
+      };
+      auto* sl_open = new StringLit(Location().introduce(), "[");
+      auto* sl_close = new StringLit(Location().introduce(), "]");
+      auto* al_concat =
+          new ArrayLit(Location().introduce(),
+                       std::vector<Expression*>(
+                           {sl_open, join(shown_slice, generators[t.dim() - 2]), sl_close}));
+      al_concat->type(Type::parstring(1));
+      for (int i = t.dim() - 3; i >= 0; --i) {
+        Call* concat = Call::a(Location().introduce(), env.constants.ids.concat, {al_concat});
+        concat->type(Type::parstring());
+        al_concat = new ArrayLit(
+            Location().introduce(),
+            std::vector<Expression*>({sl_open, join(concat, generators[i]), sl_close}));
+        al_concat->type(Type::parstring(1));
+      }
+      std::vector<Expression*> args = {al_concat};
+      auto* concat = Call::a(Location().introduce(), env.constants.ids.concat, args);
+      concat->type(Type::parstring());
+      return concat;
+    }
+    auto elem = t.elemType(env);
+    if (elem.typeId() == 0) {
+      // Can show using builtin
+      return nullptr;
+    }
+    if (elem.bt() == Type::BT_INT) {
+      // Array of enums
+      Id* ti_id = env.getEnum(elem.typeId())->e()->id();
+      auto enum_to_string = create_enum_to_string_name(ti_id, "_toString_");
+      auto* c = Call::a(Location().introduce(), enum_to_string,
+                        {e, env.constants.boollit(show_dzn), env.constants.boollit(is_json)});
+      c->type(Type::parstring());
+      return c;
+    }
+    auto* it = new TypeInst(Location().introduce(), elem);
+    auto* vd = new VarDecl(Location().introduce(), it, env.genId());
+    vd->toplevel(false);
+    Generators generators;
+    generators.g.push_back(Generator({vd}, e, nullptr));
+    auto* inner = generate_show(env, vd->id(), nullptr, nullptr, show_dzn, is_json);
+    if (inner == nullptr) {
+      // Can show using builtin
+      return nullptr;
+    }
+    // Iterate over array and show each element
+    auto* comp = new Comprehension(Location().introduce(), inner, generators, false);
+    auto* comma = new StringLit(Location().introduce(), ", ");
+    auto* joined = Call::a(Location().introduce(), "join", {comma, comp});
+    joined->type(Type::parstring());
+    auto* open_bracket = new StringLit(Location().introduce(), "[");
+    auto* close_bracket = new StringLit(Location().introduce(), "]");
+    std::vector<Expression*> parts({open_bracket, joined, close_bracket});
+    auto* al = new ArrayLit(Location().introduce(), parts);
+    auto* concat = Call::a(Location().introduce(), env.constants.ids.concat, {al});
+    concat->type(Type::parstring());
+    return concat;
+  }
+
+  if (t.typeId() == 0) {
+    // Can show using builtin
+    return nullptr;
+  }
+
+  if (t.bt() == Type::BT_TUPLE) {
+    auto* tt = env.getTupleType(t);
+    std::vector<Expression*> shown_fields(tt->size() == 1 && !is_json ? 4 : tt->size() * 2 + 1,
+                                          tt->size() == 1
+                                              ? new StringLit(Location().introduce(), ",")
+                                              : new StringLit(Location().introduce(), ", "));
+    bool canUseBuiltin = true;
+    for (size_t i = 0; i < tt->size(); i++) {
+      auto field_type = (*tt)[i];
+      auto* field_access =
+          new FieldAccess(Location().introduce(), e, IntLit::a(static_cast<long long int>(i + 1)));
+      Expression::type(field_access, field_type);
+      auto* inner = generate_show(env, field_access, nullptr, nullptr, show_dzn, is_json);
+      if (inner == nullptr) {
+        auto* shown =
+            Call::a(Location().introduce(),
+                    show_dzn ? env.constants.ids.showDzn
+                             : (is_json ? env.constants.ids.showJSON : env.constants.ids.show),
+                    {field_access});
+        shown->type(Type::parstring());
+        shown_fields[2 * i + 1] = shown;
+
+      } else {
+        shown_fields[2 * i + 1] = inner;
+        canUseBuiltin = false;
+      }
+    }
+    if (canUseBuiltin) {
+      return nullptr;
+    }
+    shown_fields[0] = new StringLit(Location().introduce(), is_json ? "[" : "(");
+    shown_fields[shown_fields.size() - 1] =
+        new StringLit(Location().introduce(), is_json ? "]" : ")");
+    auto* al = new ArrayLit(Location().introduce(), shown_fields);
+    al->type(Type::parstring(1));
+    auto* concat = Call::a(Location().introduce(), env.constants.ids.concat, {al});
+    concat->type(Type::parstring());
+    return concat;
+  }
+
+  if (t.bt() == Type::BT_RECORD) {
+    auto* rt = env.getRecordType(t);
+    std::vector<Expression*> shown_fields(rt->size() * 2 + 2);
+    bool canUseBuiltin = true;
+    for (size_t i = 0; i < rt->size(); i++) {
+      auto field_name = rt->fieldName(i);
+      auto field_type = (*rt)[i];
+      auto* field_access =
+          new FieldAccess(Location().introduce(), e, IntLit::a(static_cast<long long int>(i + 1)));
+      Expression::type(field_access, field_type);
+      std::stringstream lhs;
+      if (i > 0) {
+        lhs << ", ";
+      }
+      if (is_json) {
+        lhs << "\"" << Printer::escapeStringLit(field_name) << "\"";
+      } else {
+        lhs << Printer::quoteId(field_name);
+      }
+      lhs << ": ";
+      shown_fields[2 * i + 1] = new StringLit(Location().introduce(), lhs.str());
+
+      auto* inner = generate_show(env, field_access, nullptr, nullptr, show_dzn, is_json);
+      if (inner == nullptr) {
+        auto* shown =
+            Call::a(Location().introduce(),
+                    show_dzn ? env.constants.ids.showDzn
+                             : (is_json ? env.constants.ids.showJSON : env.constants.ids.show),
+                    {field_access});
+        shown->type(Type::parstring());
+        shown_fields[2 * i + 2] = shown;
+      } else {
+        shown_fields[2 * i + 2] = inner;
+        canUseBuiltin = false;
+      }
+    }
+    if (canUseBuiltin) {
+      return nullptr;
+    }
+    shown_fields[0] = new StringLit(Location().introduce(), is_json ? "{" : "(");
+    shown_fields[shown_fields.size() - 1] =
+        new StringLit(Location().introduce(), is_json ? "}" : ")");
+    auto* al = new ArrayLit(Location().introduce(), shown_fields);
+    al->type(Type::parstring(1));
+    auto* concat = Call::a(Location().introduce(), ASTString("concat"), {al});
+    concat->type(Type::parstring());
+    return concat;
+  }
+
+  // A single enum value
+  Id* ti_id = env.getEnum(typeId)->e()->id();
+  auto enum_to_string = create_enum_to_string_name(ti_id, "_toString_");
+  auto* c = Call::a(Location().introduce(), enum_to_string,
+                    {e, env.constants.boollit(show_dzn), env.constants.boollit(is_json)});
+  c->type(Type::parstring());
+  return c;
+}
+
 void make_par(EnvI& env, Expression* e) {
   class OutputJSON : public EVisitor {
   public:
@@ -349,100 +576,23 @@ void make_par(EnvI& env, Expression* e) {
     void vCall(Call* c) {
       if (c->id() == env.constants.ids.format || c->id() == env.constants.ids.show ||
           c->id() == env.constants.ids.showDzn || c->id() == env.constants.ids.showJSON) {
-        Type argtype = Expression::type(c->arg(c->argCount() - 1));
-        unsigned int typeId = argtype.typeId();
-        if (typeId != 0U && argtype.dim() != 0) {
-          const std::vector<unsigned int>& typeIds = env.getArrayEnum(typeId);
-          typeId = typeIds[typeIds.size() - 1];
-        }
-        if (typeId > 0 && argtype.bt() == Type::BT_INT) {
-          GCLock lock;
-          Expression* obj = c->arg(c->argCount() - 1);
-          Id* ti_id = env.getEnum(typeId)->e()->id();
-          std::string enumName = create_enum_to_string_name(ti_id, "_toString_");
-          bool is_json = c->id() == env.constants.ids.showJSON;
-          const int dimensions = Expression::type(obj).dim();
-          if (is_json && dimensions > 1) {
-            // Create generators for dimensions selection
-            std::vector<Expression*> slice_dimensions(dimensions);
-            std::vector<Generator> generators;
-            generators.reserve(dimensions - 1);
-            auto* idx_ti = new TypeInst(Location().introduce(), Type::parint());
-            for (int i = 0; i < dimensions - 1; ++i) {
-              auto* idx_i = new VarDecl(Location().introduce(), idx_ti, env.genId());
-              idx_i->toplevel(false);
-              Call* index_set_xx = Call::a(
-                  Location().introduce(),
-                  "index_set_" + std::to_string(i + 1) + "of" + std::to_string(dimensions), {obj});
-              index_set_xx->type(Type::parsetint());
-              generators.push_back(Generator({idx_i}, index_set_xx, nullptr));
-              slice_dimensions[i] =
-                  new BinOp(Location().introduce(), idx_i->id(), BOT_DOTDOT, idx_i->id());
-              Expression::type(slice_dimensions[i], Type::parsetint());
+        auto* shown = generate_show(
+            env, c->arg(c->argCount() - 1), c->argCount() > 1 ? c->arg(0) : nullptr,
+            c->argCount() > 2 ? c->arg(1) : nullptr, c->id() == env.constants.ids.showDzn,
+            c->id() == env.constants.ids.showJSON);
+        if (shown != nullptr) {
+          if (c->argCount() == 1) {
+            c->id(shown->id());
+            std::vector<Expression*> args;
+            args.reserve(shown->argCount());
+            for (auto* arg : shown->args()) {
+              args.push_back(arg);
             }
-
-            // Construct innermost slicing operation
-            Call* index_set_n = Call::a(
-                Location().introduce(),
-                "index_set_" + std::to_string(dimensions) + "of" + std::to_string(dimensions),
-                {obj});
-            index_set_n->type(Type::parsetint());
-            slice_dimensions[dimensions - 1] = index_set_n;
-            auto* al_slice_dim = new ArrayLit(Location().introduce(), slice_dimensions);
-            al_slice_dim->type(Type::parsetint(1));
-
-            auto* slice_call =
-                Call::a(Location().introduce(), "slice_1d", {obj, al_slice_dim, index_set_n});
-            Type tt = Type::arrType(env, Type::partop(1), Expression::type(obj));
-            slice_call->type(tt);
-            Call* _toString_ENUM =
-                Call::a(Location().introduce(), enumName,
-                        {slice_call, env.constants.literalFalse, env.constants.literalTrue});
-            _toString_ENUM->type(Type::parstring());
-
-            // Build multi-level JSON Array string
-            auto* comma = new StringLit(Location().introduce(), ", ");
-            comma->type(Type::parstring());
-            auto join = [&](Expression* expr, Generator gen) -> Expression* {
-              Generators generators;
-              generators.g.push_back(gen);
-              auto* comp = new Comprehension(Location().introduce(), expr, generators, false);
-              comp->type(Type::parstring(1));
-              Call* cc = Call::a(Location().introduce(), "join", {comma, comp});
-              cc->type(Type::parstring());
-              return cc;
-            };
-            auto* sl_open = new StringLit(Location().introduce(), "[");
-            sl_open->type(Type::parstring());
-            auto* sl_close = new StringLit(Location().introduce(), "]");
-            sl_close->type(Type::parstring());
-
-            auto* al_concat = new ArrayLit(
-                Location().introduce(),
-                std::vector<Expression*>(
-                    {sl_open, join(_toString_ENUM, generators[dimensions - 2]), sl_close}));
-            al_concat->type(Type::parstring(1));
-            for (int i = dimensions - 3; i >= 0; --i) {
-              Call* concat = Call::a(Location().introduce(), "concat", {al_concat});
-              concat->type(Type::parstring());
-              al_concat = new ArrayLit(
-                  Location().introduce(),
-                  std::vector<Expression*>({sl_open, join(concat, generators[i]), sl_close}));
-              al_concat->type(Type::parstring(1));
-            }
-            std::vector<Expression*> args = {al_concat};
             c->args(args);
-            c->id(ASTString("concat"));
           } else {
-            std::vector<Expression*> args = {
-                obj, env.constants.boollit(c->id() == env.constants.ids.showDzn),
-                env.constants.boollit(is_json)};
-            c->args(args);
-            c->id(ASTString(enumName));
+            c->id(env.constants.ids.format_justify_string);
+            c->arg(c->argCount() - 1, shown);
           }
-        }
-        if (c->id() == env.constants.ids.showJSON && typeId > 0 && argtype.bt() == Type::BT_INT) {
-          c->id(env.constants.ids.show);
         }
       }
       auto* fi = env.output->matchFn(env, c, false);
