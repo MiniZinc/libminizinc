@@ -4258,6 +4258,13 @@ void flatten(Env& e, FlatteningOptions opt) {
               Call* revmap = Call::a(Location().introduce(), fi->id(), {vdi->e()->id()});
               revmap->decl(fi);
               Expression::type(revmap, Type::varbool());
+              // Give distinct call stack
+              Annotation& ann = Expression::ann(vdi->e());
+              Expression* tmp = revmap;
+              if (Expression* mznpath_ann = ann.getCall(env.constants.ann.mzn_path)) {
+                tmp = Expression::cast<Call>(mznpath_ann)->arg(0);
+              }
+              CallStackItem csi(env, tmp);
               env.flatAddItem(new ConstraintI(Location().introduce(), revmap));
             } else {
               processLast.push_back(i);

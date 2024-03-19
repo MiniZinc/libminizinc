@@ -32,6 +32,8 @@ Bug fixes:
    types.
 -  Fix output of structured types containing arrays of enums (:bugref:`793`).
 -  Fix justified formatting to work with arrays of enums.
+-  Fix incorrect unification of arrays of reverse mapped variables with paths
+   enabled.
 
 .. _v2.8.3:
 
