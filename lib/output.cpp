@@ -2117,7 +2117,6 @@ void finalise_output(EnvI& e) {
                 }
               }
             }
-            vd->flat(nullptr);
             // Remove enum type
             Type vdt = vd->type();
             vdt.typeId(0);

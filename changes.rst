@@ -36,6 +36,8 @@ Bug fixes:
    enabled.
 -  Fix problem where incorrect type errors would occur when merging records or
    tuples types in an array declaration.
+-  Fix bug where unused reverse-mapped variables were removed from the output
+   model while still being marked as output in the FlatZinc.
 
 .. _v2.8.3:
 
