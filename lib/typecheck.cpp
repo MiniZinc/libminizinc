@@ -3155,7 +3155,10 @@ public:
                               "' as array index set (did you mean `int'?)");
         }
       }
+      unsigned int tId = tt.typeId();
+      tt.typeId(0);
       tt.dim(foundTIId ? -1 : static_cast<int>(ti->ranges().size()));
+      tt.typeId(tId);
     }
     if ((ti->domain() != nullptr) && Expression::type(ti->domain()).cv()) {
       tt.cv(true);
@@ -3225,6 +3228,7 @@ public:
       //        assert(ti->domain()==NULL || ti->domain()->isa<TIId>());
     }
     if (needsArrayType) {
+      assert(tt.dim() != 0);
       std::vector<unsigned int> typeIds(ti->ranges().size() + 1);
       for (unsigned int i = 0; i < ti->ranges().size(); i++) {
         typeIds[i] = ti->ranges()[i]->type().typeId();

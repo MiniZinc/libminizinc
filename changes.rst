@@ -34,6 +34,8 @@ Bug fixes:
 -  Fix justified formatting to work with arrays of enums.
 -  Fix incorrect unification of arrays of reverse mapped variables with paths
    enabled.
+-  Fix problem where incorrect type errors would occur when merging records or
+   tuples types in an array declaration.
 
 .. _v2.8.3:
 

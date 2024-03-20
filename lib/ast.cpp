@@ -1404,6 +1404,11 @@ bool TypeInst::concatDomain(EnvI& env) {
   }
   // Update TI
   domain(dom);
+
+  unsigned int tId = ty.typeId();
+  ty.typeId(0);
+  ty.dim(type().dim());
+  ty.typeId(tId);
   type(ty);
   return true;
 }
