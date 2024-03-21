@@ -19,6 +19,9 @@ file(RELATIVE_PATH REL_INCLUDE_DIR "${INSTALL_CMAKE_DIR}"
 
 set(CONF_DEPENDENCIES "${CONF_DEPENDENCIES}find_dependency(Threads)\n")
 # Add external (static) dependencies
+if (TARGET minizinc_atlantis)
+  set(CONF_DEPENDENCIES "${CONF_DEPENDENCIES}find_dependency(atlantis)\n")
+endif()
 if(TARGET minizinc_geas)
   install(
     FILES cmake/modules/FindGeas.cmake

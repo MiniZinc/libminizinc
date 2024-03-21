@@ -47,6 +47,9 @@
 #ifdef HAS_GEAS
 #include <minizinc/solvers/geas_solverfactory.hh>
 #endif
+#ifdef HAS_ATLANTIS
+#include <minizinc/solvers/atlantis_solverfactory.hh>
+#endif
 #ifdef HAS_CHUFFED
 #include <minizinc/solvers/chuffed_solverfactory.hh>
 #endif
@@ -84,6 +87,9 @@ SolverInitialiser::SolverInitialiser() {
 #endif
 #ifdef HAS_GEAS
   static GeasSolverFactoryInitialiser _geas_init;
+#endif
+#ifdef HAS_ATLANTIS
+  static AtlantisSolverFactoryInitialiser _atlantis_init;
 #endif
 #ifdef HAS_CHUFFED
   static ChuffedSolverFactoryInitialiser _chuffed_init;
