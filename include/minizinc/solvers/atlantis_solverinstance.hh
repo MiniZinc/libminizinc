@@ -32,7 +32,7 @@ public:
   std::string annealingSchedule;
 };
 
-class AtlantisSolverInstance : public SolverInstanceBase2 {
+class AtlantisSolverInstance : public SolverInstanceBase2<true> {
 public:
   AtlantisSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
   ~AtlantisSolverInstance() override{};

@@ -58,7 +58,11 @@ void SolverInstanceBase::printSolution() {
   }
 }
 
-void SolverInstanceBase2::printSolution() {
+template class SolverInstanceBase2<false>;
+template class SolverInstanceBase2<true>;
+
+template <bool AsgArray>
+void SolverInstanceBase2<AsgArray>::printSolution() {
   GCLock lock;
   assignSolutionToOutput();
   SolverInstanceBase::printSolution();
@@ -74,7 +78,8 @@ void SolverInstanceBase2::printSolution() {
 //     }
 //   }
 
-void SolverInstanceBase2::assignSolutionToOutput() {
+template <bool AsgArray>
+void SolverInstanceBase2<AsgArray>::assignSolutionToOutput() {
   GCLock lock;
 
   MZN_ASSERT_HARD_MSG(
@@ -102,8 +107,11 @@ void SolverInstanceBase2::assignSolutionToOutput() {
   // flat model
   for (auto* vd : _varsWithOutput) {
     // std::cout << "DEBUG: Looking at var-decl with output-annotation: " << *vd << std::endl;
-    if (Call* output_array_ann = Expression::dynamicCast<Call>(get_annotation(
-            Expression::ann(vd), Constants::constants().ann.output_array.aststr()))) {
+    Call* output_array_ann =
+        AsgArray ? nullptr
+                 : Expression::dynamicCast<Call>(get_annotation(
+                       Expression::ann(vd), Constants::constants().ann.output_array.aststr()));
+    if (output_array_ann != nullptr) {
       assert(vd->e());
 
       if (auto* al = Expression::dynamicCast<ArrayLit>(vd->e())) {
@@ -162,7 +170,7 @@ void SolverInstanceBase2::assignSolutionToOutput() {
         auto& de = getSolns2Out()->findOutputVar(vd->id()->str());
         de.first->e(array_solution);
       }
-    } else if (Expression::ann(vd).contains(Constants::constants().ann.output_var)) {
+    } else {
       Expression* sol = getSolutionValue(vd->id());
       vd->e(sol);
       auto& de = getSolns2Out()->findOutputVar(vd->id()->str());

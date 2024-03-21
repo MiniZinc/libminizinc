@@ -114,6 +114,7 @@ private:
 };
 
 /// This implements a solver which is linked and returns its solution by assignSolutionToOutput()
+template <bool AsgArray = false>
 class SolverInstanceBase2 : public SolverInstanceBase {
 protected:
   virtual Expression* getSolutionValue(Id* id) = 0;
@@ -152,7 +153,7 @@ public:
 /// It is a template holding parameterized VarId and Statistics, so cannot have members defined in a
 /// .cpp
 template <class Solver>
-class SolverInstanceImpl : public SolverInstanceBase2 {
+class SolverInstanceImpl : public SolverInstanceBase2<false> {
 public:
   typedef typename Solver::Variable VarId;
 
