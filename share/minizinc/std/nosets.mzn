@@ -14,7 +14,11 @@ function set of int: reverse_map_ab2si(array[int] of bool: b) ::promise_total =
 
 array[int] of var bool: set2bools(var set of int: x) ::promise_total =
   if is_fixed(x) then set2bools(fix(x))
-  elseif ub(x) = {} then []
+  elseif ub(x) = {} then
+  let {
+    array[int] of bool: b = [];
+    constraint (x = reverse_map_ab2si(b)) :: is_reverse_map;
+  } in []
   else
     let {
       array[int] of var bool: b = array1d( min(ub(x))..max(ub(x)),
@@ -24,7 +28,11 @@ array[int] of var bool: set2bools(var set of int: x) ::promise_total =
   endif;
 array[int] of var bool: set2bools(var set of int: x, set of int: ubx) ::promise_total =
   if is_fixed(x) then set2bools(fix(x), ubx)
-  elseif ub(x) = {} then []
+  elseif ub(x) = {} then
+  let {
+    array[int] of bool: b = [];
+    constraint (x = reverse_map_ab2si(b)) :: is_reverse_map;
+  } in []
   else
     let {
       array[int] of var bool: b0 = set2bools( x );       %% Call in any case ?? TODO
