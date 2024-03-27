@@ -38,6 +38,8 @@ Bug fixes:
    tuples types in an array declaration.
 -  Fix bug where unused reverse-mapped variables were removed from the output
    model while still being marked as output in the FlatZinc.
+-  Fix decomposition of set variables with empty domains when using
+   ``nosets.mzn``.
 
 .. _v2.8.3:
 
