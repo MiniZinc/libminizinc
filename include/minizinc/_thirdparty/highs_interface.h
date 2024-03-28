@@ -81,3 +81,20 @@ const HighsInt kHighsCallbackIpmInterrupt = 2;
 const HighsInt kHighsCallbackMipImprovingSolution = 3;
 const HighsInt kHighsCallbackMipLogging = 4;
 const HighsInt kHighsCallbackMipInterrupt = 5;
+
+struct HighsCallbackDataOut {
+  int log_type;
+  double running_time;
+  HighsInt simplex_iteration_count;
+  HighsInt ipm_iteration_count;
+  double objective_function_value;
+  int64_t mip_node_count;
+  double mip_primal_bound;
+  double mip_dual_bound;
+  double mip_gap;
+  double* mip_solution;
+};
+
+struct HighsCallbackDataIn {
+  int user_interrupt;
+};

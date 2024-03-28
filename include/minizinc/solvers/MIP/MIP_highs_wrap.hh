@@ -103,8 +103,9 @@ public:
   HighsInt (*Highs_getDoubleInfoValue)(const void* highs, const char* info, double* value);
   // NOLINTNEXTLINE(readability-identifier-naming)
   HighsInt (*Highs_setCallback)(void* highs,
-                                void (*user_callback)(const int, const char*, const void*, void*,
-                                                      void*),
+                                void (*user_callback)(const int, const char*,
+                                                      const struct HighsCallbackDataOut*,
+                                                      struct HighsCallbackDataIn*, void*),
                                 void* user_callback_data);
   // NOLINTNEXTLINE(readability-identifier-naming)
   HighsInt (*Highs_startCallback)(void* highs, const int callback_type);
@@ -227,6 +228,7 @@ protected:
   // Set HiGHS internal options based on the command line flags given to the solver interface
   void setOptions();
 
-  static void callback(int callback_type, const char* message, const void* data_out, void* data_in,
-                       void* user_callback_data);
+  static void callback(int callback_type, const char* message,
+                       const struct HighsCallbackDataOut* data_out,
+                       struct HighsCallbackDataIn* data_in, void* user_callback_data);
 };
