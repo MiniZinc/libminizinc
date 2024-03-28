@@ -477,32 +477,41 @@ void MIPHiGHSWrapper::setOptions() {
   }
 }
 
-void MIPHiGHSWrapper::callback(const int callback_type, const char* message,
-                               const struct HighsCallbackDataOut* data_out,
-                               struct HighsCallbackDataIn* data_in, void* user_callback_data) {
+void MIPHiGHSWrapper::callback(const int callback_type, const char* message, const void* data_out,
+                               void* data_in, void* user_callback_data) {
   auto* info = (MIPWrapper::CBUserInfo*)user_callback_data;
   auto* hw = static_cast<MIPHiGHSWrapper*>(info->wrapper);
   switch (callback_type) {
     case kHighsCallbackLogging:
       std::cerr << message;
       break;
-    case kHighsCallbackMipImprovingSolution:
+    case kHighsCallbackMipImprovingSolution: {
       hw->output.dWallTime =
           std::chrono::duration<double>(std::chrono::steady_clock::now() - hw->output.dWallTime0)
               .count();
       hw->output.dCPUTime = double(std::clock() - hw->output.cCPUTime0) / CLOCKS_PER_SEC;
       hw->output.status = Status::SAT;
       hw->output.statusName = "Unknown";
-      hw->output.objVal = data_out->objective_function_value;
-      hw->output.bestBound = data_out->mip_dual_bound;
-      hw->output.nNodes = static_cast<int>(data_out->mip_node_count);
-      hw->_x.assign(data_out->mip_solution, data_out->mip_solution + hw->output.nCols);
+
+      hw->output.objVal = hw->_plugin->Highs_getObjectiveValue(hw->_highs);
+      checkHiGHSReturn(hw->_plugin->Highs_getDoubleInfoValue(hw->_highs, "mip_dual_bound",
+                                                             &hw->output.bestBound),
+                       "failed to get mip_dual_bound");
+      int64_t nNodes = hw->output.nNodes;
+      checkHiGHSReturn(hw->_plugin->Highs_getInt64InfoValue(hw->_highs, "mip_node_count", &nNodes),
+                       "failed to get mip_node_count");
+      hw->output.nNodes = static_cast<int>(nNodes);
+
+      checkHiGHSReturn(
+          hw->_plugin->Highs_getSolution(hw->_highs, hw->_x.data(), nullptr, nullptr, nullptr),
+          "Failed to get solution");
       hw->output.x = hw->_x.data();
       if (hw->_options->flagIntermediate && info->solcbfn != nullptr) {
         (info->solcbfn)(*info->pOutput, info->psi);
         info->printed = true;
       }
       break;
+    }
     default:
       break;
   }

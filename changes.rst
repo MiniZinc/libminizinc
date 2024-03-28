@@ -16,6 +16,7 @@ Changes:
 -  Always output multidimensional arrays as nested arrays when using
    ``showJSON`` for consistency.
 -  Add missing implementation for ``default`` for sets expressions.
+-  Fix compatibility issue with version HiGHS 1.7.0.
 
 Bug fixes:
 ^^^^^^^^^^
