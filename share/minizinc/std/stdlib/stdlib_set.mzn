@@ -70,18 +70,18 @@ function set of $$E: '..o'($$E: a) = a..max(enum_of(a));
 /** @group stdlib.builtins.set Return the set \(\{\a a,\ldots,\a b-1\}\) */
 function set of $$E: '..<o'($$E: a) = a..enum_prev(max(enum_of(a)));
 /** @group stdlib.builtins.set Return the set \(\{\a a+1,\ldots,\a b\}\) */
-function set of $$E: '<..o'($$E: a) = enum_next(a)..max(enum_of(a));
+function set of $$E: '<..o'($$E: a) = (enum_next(a)..max(enum_of(a))) default {};
 /** @group stdlib.builtins.set Return the set \(\{\a a+1,\ldots,\a b-1\}\) */
-function set of $$E: '<..<o'($$E: a) = enum_next(a)..enum_prev(max(enum_of(a)));
+function set of $$E: '<..<o'($$E: a) = (enum_next(a)..enum_prev(max(enum_of(a)))) default {};
 
 /** @group stdlib.builtins.set Return the set \(\{\a a,\ldots,\a b-1\}\) */
 function set of $$E: 'o..'($$E: a) = min(enum_of(a))..a;
 /** @group stdlib.builtins.set Return the set \(\{\a a,\ldots,\a b-1\}\) */
-function set of $$E: 'o..<'($$E: a) = min(enum_of(a))..enum_prev(a);
+function set of $$E: 'o..<'($$E: a) = (min(enum_of(a))..enum_prev(a)) default {};
 /** @group stdlib.builtins.set Return the set \(\{\a a+1,\ldots,\a b\}\) */
 function set of $$E: 'o<..'($$E: a) = enum_next(min(enum_of(a)))..a;
 /** @group stdlib.builtins.set Return the set \(\{\a a+1,\ldots,\a b-1\}\) */
-function set of $$E: 'o<..<'($$E: a) = enum_next(min(enum_of(a)))..enum_prev(a);
+function set of $$E: 'o<..<'($$E: a) = (enum_next(min(enum_of(a)))..enum_prev(a)) default {};
 
 function set of int: '..'() = assert(false, "internal function '..'() called", {0});
 function set of $$E: '..'(set of $$E: s) = min(s)..max(s);

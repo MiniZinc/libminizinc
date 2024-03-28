@@ -41,6 +41,8 @@ Bug fixes:
    model while still being marked as output in the FlatZinc.
 -  Fix decomposition of set variables with empty domains when using
    ``nosets.mzn``.
+-  Fix a problem where the reduced range syntax in combination with enums would
+   produce an error when the resulting range was empty.
 
 .. _v2.8.3:
 
