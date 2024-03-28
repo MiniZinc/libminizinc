@@ -3944,6 +3944,12 @@ void register_builtins(Env& e) {
     t[0] = Type::optvartop(-1);
     t[1] = Type::optvartop(-1);
     rb(env, m, env.constants.ids.mzn_default, t, b_default);
+    t[0] = Type::parsetint();
+    t[1] = Type::parsetint();
+    rb(env, m, env.constants.ids.mzn_default, t, b_default);
+    t[0] = Type::varsetint();
+    t[1] = Type::varsetint();
+    rb(env, m, env.constants.ids.mzn_default, t, b_default);
   }
   {
     rb(env, m, env.constants.ids.output_to_section, {Type::parstring(), Type::parstring()},

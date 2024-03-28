@@ -190,3 +190,8 @@ function array[$U] of opt $T: 'default'(array[$U] of opt $T:x, array[$U] of opt 
 function array[$U] of var $T: 'default'(array[$U] of var $T:x, array[$U] of var $T: y);
 /** @group stdlib.debug If \a x is defined, return \a x, otherwise return \a y. */
 function array[$U] of var opt $T: 'default'(array[$U] of var opt $T:x, array[$U] of var opt $T: y);
+
+/** @group stdlib.debug If \a x is defined, return \a x, otherwise return \a y. */
+function set of $$E: 'default'(set of $$E:x, set of $$E: y);
+/** @group stdlib.debug If \a x is defined, return \a x, otherwise return \a y. */
+function var set of $$E: 'default'(var set of $$E:x, var set of $$E: y);
