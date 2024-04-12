@@ -7,7 +7,7 @@ _TL_REGEX = r"\.\. literalinclude::\s*(.*)\s*|:download:`.*<(.*)>`"
 
 
 def translate_doc(app, docname, source):
-    lang = {"zh-CN": "chi"}.get(app.config.language, app.config.language)
+    lang = {"zh-cn": "chi"}.get(app.config.language, app.config.language)
     if lang == "en":
         return
     translated = _TL_ROOT / lang / f"{docname}.rst"

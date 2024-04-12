@@ -1,0 +1,32 @@
+# Read the Docs configuration file for Sphinx projects
+# See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
+
+version: 2
+
+build:
+  os: ubuntu-22.04
+  tools:
+    python: "3.12"
+  apt_packages:
+    - cmake
+    - build-essential
+    - ninja-build
+    - fonts-inconsolata
+  jobs:
+    pre_build:
+      - curl -L "https://raw.githubusercontent.com/Gecode/gecode/release/6.3.0/gecode/flatzinc/mznlib/gecode.mzn" -o share/minizinc/std/gecode.mzn
+      - curl -L "https://raw.githubusercontent.com/chuffed/chuffed/stable/chuffed/flatzinc/mznlib/chuffed.mzn" -o share/minizinc/std/chuffed.mzn
+      - cmake -S . -B build -G"Ninja" -DCMAKE_BUILD_TYPE=Debug
+      - cmake --build build --target mzn2doc
+      - ./build/mzn2doc --rst-output --include-stdlib --output-base docs/en/lib docs/all.mzn
+      - ./build/mzn2doc --rst-output --include-stdlib --output-base docs/chi/lib docs/all.mzn
+
+sphinx:
+  configuration: docs/en/conf.py
+
+formats:
+  - pdf
+
+python:
+  install:
+    - requirements: docs/requirements.txt

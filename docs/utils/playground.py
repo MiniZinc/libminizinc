@@ -42,7 +42,7 @@ def process_playground_nodes(app, doctree, fromdocname):
 def generate_playground_links(app):
     if app.builder.format == "html":
         src = Path(app.srcdir) / "examples"
-        lang = {"zh-CN": "chi"}.get(app.config.language, app.config.language)
+        lang = {"zh-cn": "chi"}.get(app.config.language, app.config.language)
         localised_src = Path(app.srcdir).parent / lang / "examples"
         for project in src.iterdir():
             if project.is_dir():
