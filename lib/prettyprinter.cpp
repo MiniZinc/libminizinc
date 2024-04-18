@@ -473,7 +473,8 @@ public:
         const auto* fa = Expression::cast<FieldAccess>(e);
         p(fa->v());
         _os << ".";
-        if (Expression::isa<IntLit>(fa->field()) && Expression::type(fa->v()).isrecord()) {
+        if (_env != nullptr && Expression::isa<IntLit>(fa->field()) &&
+            Expression::type(fa->v()).isrecord()) {
           // Has been turned into field number, so need to convert back into name
           auto* rt = _env->getRecordType(Expression::type(fa->v()));
           auto* i = Expression::cast<IntLit>(fa->field());
