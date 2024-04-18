@@ -320,6 +320,7 @@ flatten_arrayaccess:
     std::vector<Expression*> field_res(res_st->size());
     for (int i = 0; i < res_st->size(); ++i) {
       // TODO: Does the context need to be changed? Are 'r' and 'b' correct?
+      CallStackItem _csi(env, IntLit::a(i));
       EE ee = flat_exp(env, ctx, field_aa[i](), nullptr, b);
       field_res[i] = ee.r();
       ees.push_back(ee);

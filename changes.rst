@@ -43,6 +43,8 @@ Bug fixes:
    ``nosets.mzn``.
 -  Fix a problem where the reduced range syntax in combination with enums would
    produce an error when the resulting range was empty.
+-  Fix incorrect unification of tuple/record fields in array accesses with paths
+   enabled (:bugref:`802`).
 
 .. _v2.8.3:
 
