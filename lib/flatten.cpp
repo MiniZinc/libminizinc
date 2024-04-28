@@ -3579,6 +3579,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
           es[i] = flat_cv_exp(env, ctx, (*al)[i])();
         }
         if (al->isTuple()) {
+          CallStackItem csi(env, al);
           Expression* al_ret = ArrayLit::constructTuple(Location().introduce(), es);
           Expression::type(al_ret, al->type());  // still contains var, so still CV
 

@@ -45,6 +45,8 @@ Bug fixes:
    produce an error when the resulting range was empty.
 -  Fix incorrect unification of tuple/record fields in array accesses with paths
    enabled (:bugref:`802`).
+-  Fix crash when using tuples/records in par arrays or calls containing var
+   expressions.
 
 .. _v2.8.3:
 
