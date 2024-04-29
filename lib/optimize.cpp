@@ -1532,7 +1532,22 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
           } else {
             CollectDecls cd(env, env.varOccurrences, deletedVarDecls, ii);
             top_down(cd, c);
-            ii->remove();
+            if (auto* vdi = ii->dynamicCast<VarDeclI>()) {
+              auto* v = IntLit::a(b2i_val ? 1 : 0);
+              if (env.varOccurrences.occurrences(vdi->e()) == 0) {
+                if (is_output(vdi->e())) {
+                  VarDecl* vd_out = (*env.output)[env.outputFlatVarOccurrences.find(vdi->e())]
+                                        ->cast<VarDeclI>()
+                                        ->e();
+                  vd_out->e(v);
+                }
+                vdi->remove();
+              } else {
+                vdi->e()->e(v);
+              }
+            } else {
+              ii->remove();
+            }
           }
         } else {
           Id* ident = Expression::cast<Id>(c->arg(0));

@@ -47,6 +47,8 @@ Bug fixes:
    enabled (:bugref:`802`).
 -  Fix crash when using tuples/records in par arrays or calls containing var
    expressions.
+-  Fix bug where variables could be removed from the FlatZinc but not the output
+   model when optimising ``bool2int`` (:bugref:`803`).
 
 .. _v2.8.3:
 
