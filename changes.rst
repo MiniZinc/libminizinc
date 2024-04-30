@@ -49,6 +49,8 @@ Bug fixes:
    expressions.
 -  Fix bug where variables could be removed from the FlatZinc but not the output
    model when optimising ``bool2int`` (:bugref:`803`).
+-  Add missing coercions for comprehension where clauses and assignment
+   generators (:bugref:`807`).
 
 .. _v2.8.3:
 

@@ -2234,6 +2234,7 @@ public:
           if (!whereMap[c->decl(i, j)].empty()) {
             // need a generator for all the decls up to this point
             Expression* whereExpr = whereMap[c->decl(i, j)][0];
+            whereExpr = add_coercion(_env, _model, whereExpr, Expression::type(whereExpr))();
             for (unsigned int k = 1; k < whereMap[c->decl(i, j)].size(); k++) {
               GCLock lock;
               auto* bo =
