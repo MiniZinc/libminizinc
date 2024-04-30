@@ -53,6 +53,7 @@ Bug fixes:
    generators (:bugref:`807`).
 -  Fix bug in handling of domains for structured types during type
    specialisation.
+-  Fix handling of search annotations when reading FlatZinc files.
 
 .. _v2.8.3:
 

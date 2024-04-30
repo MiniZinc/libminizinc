@@ -1646,11 +1646,12 @@ private:
   EnvI& _env;
   Model* _model;
   std::vector<TypeError>& _typeErrors;
+  bool _isFlatZinc;
 
 public:
   std::unordered_set<VarDecl*> anyInLet;
-  Typer(EnvI& env, Model* model, std::vector<TypeError>& typeErrors)
-      : _env(env), _model(model), _typeErrors(typeErrors) {}
+  Typer(EnvI& env, Model* model, std::vector<TypeError>& typeErrors, bool isFlatZinc)
+      : _env(env), _model(model), _typeErrors(typeErrors), _isFlatZinc(isFlatZinc) {}
   /// Check annotations when expression is finished
   void exit(Expression* e) {
     for (ExpressionSetIter it = Expression::ann(e).begin(); it != Expression::ann(e).end(); ++it) {
@@ -2763,7 +2764,7 @@ public:
       fi = _model->matchFn(_env, call, true, true);
     }
 
-    if (fi != nullptr && fi->e() == nullptr && fi->paramCount() >= 1 &&
+    if (!_isFlatZinc && fi != nullptr && fi->e() == nullptr && fi->paramCount() >= 1 &&
         fi->param(0)->type().dim() != 0 &&
         (fi->id() == _env.constants.ann.seq_search || fi->id() == _env.constants.ann.int_search ||
          fi->id() == _env.constants.ann.bool_search ||
@@ -3855,7 +3856,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
   }
 
   {
-    Typer<false> ty(env.envi(), m, typeErrors);
+    Typer<false> ty(env.envi(), m, typeErrors, isFlatZinc);
     BottomUpIterator<Typer<false>> bottomUpTyper(ty);
     for (auto& declKA : ts.decls) {
       auto* decl = Expression::cast<VarDecl>(declKA());
@@ -3881,7 +3882,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
   m->fixFnMap();
 
-  Typer<true> ty(env.envi(), m, typeErrors);
+  Typer<true> ty(env.envi(), m, typeErrors, isFlatZinc);
   {
     BottomUpIterator<Typer<true>> bottomUpTyper(ty);
 
@@ -4279,7 +4280,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
 void typecheck(Env& env, Model* m, AssignI* ai) {
   std::vector<TypeError> typeErrors;
-  Typer<true> ty(env.envi(), m, typeErrors);
+  Typer<true> ty(env.envi(), m, typeErrors, false);
   BottomUpIterator<Typer<true>> bottomUpTyper(ty);
   bottomUpTyper.run(ai->e());
   if (!typeErrors.empty()) {

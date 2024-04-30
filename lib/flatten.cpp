@@ -2157,6 +2157,7 @@ void populate_output(Env& env, bool encapsulateJSON) {
         {new StringLit(Location().introduce(), "\"output\": {\"dzn\": "), showJSON,
          new StringLit(Location().introduce(), "}, \"sections\": [\"dzn\"]")});
     al = new ArrayLit(Location().introduce(), al_v);
+    Expression::type(al, Type::parstring(1));
   }
   auto* newOutputItem = new OutputI(Location().introduce(), al);
   _output->addItem(newOutputItem);
