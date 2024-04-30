@@ -51,6 +51,8 @@ Bug fixes:
    model when optimising ``bool2int`` (:bugref:`803`).
 -  Add missing coercions for comprehension where clauses and assignment
    generators (:bugref:`807`).
+-  Fix bug in handling of domains for structured types during type
+   specialisation.
 
 .. _v2.8.3:
 

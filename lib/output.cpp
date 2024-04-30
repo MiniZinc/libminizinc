@@ -420,6 +420,7 @@ Call* generate_show(EnvI& env, Expression* e, Expression* w, Expression* p, bool
     }
     // Iterate over array and show each element
     auto* comp = new Comprehension(Location().introduce(), inner, generators, false);
+    comp->type(Type::parstring(1));
     auto* comma = new StringLit(Location().introduce(), ", ");
     auto* joined = Call::a(Location().introduce(), "join", {comma, comp});
     joined->type(Type::parstring());
@@ -427,6 +428,7 @@ Call* generate_show(EnvI& env, Expression* e, Expression* w, Expression* p, bool
     auto* close_bracket = new StringLit(Location().introduce(), "]");
     std::vector<Expression*> parts({open_bracket, joined, close_bracket});
     auto* al = new ArrayLit(Location().introduce(), parts);
+    al->type(Type::parstring(1));
     auto* concat = Call::a(Location().introduce(), env.constants.ids.concat, {al});
     concat->type(Type::parstring());
     return concat;

@@ -1243,7 +1243,7 @@ void TypeInst::mkPar(EnvI& env) {
   }
 }
 
-void TypeInst::setStructDomain(const EnvI& env, const Type& struct_type, bool setTypeAny,
+void TypeInst::setStructDomain(EnvI& env, const Type& struct_type, bool setTypeAny,
                                bool setTIRanges) {
   GCLock lock;
   StructType* st = env.getStructType(struct_type);
@@ -1275,7 +1275,20 @@ void TypeInst::setStructDomain(const EnvI& env, const Type& struct_type, bool se
   auto* al = ArrayLit::constructTuple(Expression::loc(this).introduce(), field_ti);
   al->type(struct_type.elemType(env));
   domain(al);
-  type(struct_type);
+  if (struct_type.dim() == 0 && !ranges().empty()) {
+    std::vector<unsigned int> enumIds(ranges().size() + 1);
+    for (unsigned int k = 0; k < ranges().size(); k++) {
+      enumIds[k] = ranges()[k]->type().typeId();
+    }
+    enumIds[ranges().size()] = struct_type.typeId();
+    Type t = struct_type;
+    t.typeId(0);
+    t.dim(static_cast<int>(ranges().size()));
+    t.typeId(env.registerArrayEnum(enumIds));
+    type(t);
+  } else {
+    type(struct_type);
+  }
 }
 
 bool TypeInst::resolveAlias(EnvI& env) {
@@ -1442,7 +1455,10 @@ const Location& get_loc(Expression* e, Expression* call, FunctionI* /*fi*/) {
   return Expression::loc(e).isNonAlloc() ? Expression::loc(call) : Expression::loc(e);
 }
 const Location& get_loc(const Type& /*t*/, Expression* call, FunctionI* fi) {
-  return Expression::loc(call).isNonAlloc() ? fi->loc() : Expression::loc(call);
+  if (call == nullptr || Expression::loc(call).isNonAlloc()) {
+    return fi == nullptr ? Location::nonalloc : fi->loc();
+  }
+  return Expression::loc(call);
 }
 
 bool isa_tiid(Expression* e) {
