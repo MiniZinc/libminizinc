@@ -38,8 +38,9 @@ predicate gecode_all_different_int(array[int] of var int: x);
 %predicate all_different_int(array[int] of var int: x) = gecode_all_different_int(x);
 predicate fzn_all_different_int(array[int] of var int: xs) = 
   let {
-    set of int: cs = {fix(x) | x in xs where is_fixed(x)};
+    array[int] of int: cs = [fix(x) | x in xs where is_fixed(x)];
     array[int] of var int: ys = [x | x in xs where not is_fixed(x)];
+    constraint length(cs) = card(array2set(cs));
     constraint forall(y in ys, c in cs) (y != c);
   } in
     if length(ys) <= 1 then true

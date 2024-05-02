@@ -56,6 +56,9 @@ Bug fixes:
 -  Fix handling of search annotations when reading FlatZinc files.
 -  Fix bug during optimisation which could cause the compiler to hang due to
    not updating hashes of identifiers (:bugref:`805`).
+-  Fix incorrect definition of ``all_different`` in the ``gecode_presolver``
+   library where it was not enforced that fixed values be all different
+   (:bugref:`798`).
 
 .. _v2.8.3:
 
