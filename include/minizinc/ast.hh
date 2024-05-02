@@ -768,6 +768,7 @@ public:
   void redirect(Id* id) {
     assert(_decl == nullptr || Expression::isa<VarDecl>(_decl));
     _decl = id;
+    rehash();
   }
   /// Get the identifier or declaration this identifier directly points to
   Expression* destination() const { return _decl; }

@@ -54,6 +54,8 @@ Bug fixes:
 -  Fix bug in handling of domains for structured types during type
    specialisation.
 -  Fix handling of search annotations when reading FlatZinc files.
+-  Fix bug during optimisation which could cause the compiler to hang due to
+   not updating hashes of identifiers (:bugref:`805`).
 
 .. _v2.8.3:
 
