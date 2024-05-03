@@ -1334,7 +1334,8 @@ bool TypeInst::resolveAlias(EnvI& env) {
     }
     ntype.st(Type::ST_SET);
   }
-  assert(type().dim() == ranges().size() && ntype.dim() == alias->ranges().size());
+  assert(type().dim() == -1 ||
+         type().dim() == ranges().size() && ntype.dim() == alias->ranges().size());
   if (type().dim() != 0) {
     if (ntype.dim() != 0) {
       std::stringstream ss;
@@ -1343,7 +1344,7 @@ bool TypeInst::resolveAlias(EnvI& env) {
          << "' and is already an array type";
       throw TypeError(env, Expression::loc(this), ss.str());
     }
-    const int dim = type().dim();
+    const int dim = type().dim() == -1 ? 1 : type().dim();
     const unsigned int curTypeId = type().typeId();
     const unsigned int newTypeId = ntype.typeId();
     if (curTypeId != 0 || newTypeId != 0) {
@@ -1360,10 +1361,10 @@ bool TypeInst::resolveAlias(EnvI& env) {
         arrayEnumIds[dim] = newTypeId;
       }
       ntype.typeId(0);
-      ntype.dim(dim);
+      ntype.dim(type().dim());
       ntype.typeId(env.registerArrayEnum(arrayEnumIds));
     } else {
-      ntype.dim(dim);
+      ntype.dim(type().dim());
     }
   } else if (ntype.dim() != 0) {
     std::vector<TypeInst*> ranges(alias->ranges().size());
@@ -1571,11 +1572,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
       }
       Type tiit = Type::top(orig_tiit.dim());
       if (orig_tiit.typeId() != 0) {
-        std::vector<unsigned int> enumIds(tiit.dim() + 1);
-        const std::vector<unsigned int>& orig_enumIds = env.getArrayEnum(orig_tiit.typeId());
-        for (unsigned int i = 0; i < enumIds.size() - 1; i++) {
-          enumIds[i] = orig_enumIds[i];
-        }
+        std::vector<unsigned int> enumIds = env.getArrayEnum(orig_tiit.typeId());
         enumIds[enumIds.size() - 1] = 0;
         tiit.typeId(env.registerArrayEnum(enumIds));
       }
@@ -1822,11 +1819,15 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
   // least common supertype that fits function parameter n.
   TypeInst* tii = param(n)->ti();
   Type curTiiT = tii->type();
+  Type dimTy = curTiiT;
   if (curTiiT.dim() == -1) {
     if (Expression::type(ta[n]).dim() == 0) {
-      curTiiT.dim(1);
+      dimTy = Type::partop(1);
     } else {
-      curTiiT.dim(Expression::type(ta[n]).dim());
+      dimTy = Expression::type(ta[n]);
+      if (dimTy.dim() == -1) {
+        dimTy = Type::partop(1);
+      }
     }
   }
   if ((tii->domain() != nullptr) && Expression::isa<TIId>(tii->domain())) {
@@ -1839,11 +1840,11 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
     if (!ty.structBT()) {
       ty.st(curTiiT.st());
     }
-    if (curTiiT.dim() != ty.dim()) {
-      if (curTiiT.dim() == 0) {
+    if (dimTy.dim() != ty.dim()) {
+      if (dimTy.dim() == 0) {
         ty = ty.elemType(env);
       } else {
-        ty = Type::arrType(env, curTiiT.dim() > 0 ? curTiiT : Type::partop(1), ty);
+        ty = Type::arrType(env, dimTy, ty);
       }
     }
     ASTString tv = Expression::cast<TIId>(tii->domain())->v();
@@ -1856,11 +1857,11 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
           toCheck.ot(curTiiT.ot());
           toCheck.st(curTiiT.st());
         }
-        if (curTiiT.dim() != toCheck.dim()) {
-          if (curTiiT.dim() == 0) {
+        if (dimTy.dim() != toCheck.dim()) {
+          if (dimTy.dim() == 0) {
             toCheck = toCheck.elemType(env);
           } else {
-            toCheck = Type::arrType(env, curTiiT.dim() > 0 ? curTiiT : Type::partop(1), toCheck);
+            toCheck = Type::arrType(env, dimTy, toCheck);
           }
         }
         if (toCheck != ty) {

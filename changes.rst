@@ -59,6 +59,8 @@ Bug fixes:
 -  Fix incorrect definition of ``all_different`` in the ``gecode_presolver``
    library where it was not enforced that fixed values be all different
    (:bugref:`798`).
+-  Fix crash when resolving type aliases for function parameters with ``$T``
+   array dimensions (:bugref:`806`).
 
 .. _v2.8.3:
 
