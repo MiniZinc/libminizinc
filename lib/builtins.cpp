@@ -3950,6 +3950,13 @@ void register_builtins(Env& e) {
     t[0] = Type::varsetint();
     t[1] = Type::varsetint();
     rb(env, m, env.constants.ids.mzn_default, t, b_default);
+    t[0] = Type::optpartop();
+    t[0].st(Type::ST_SET);
+    t[1] = Type::partop();
+    t[1].st(Type::ST_SET);
+    rb(env, m, env.constants.ids.mzn_default, t, b_default);
+    t[1].ot(Type::OT_OPTIONAL);
+    rb(env, m, env.constants.ids.mzn_default, t, b_default);
   }
   {
     rb(env, m, env.constants.ids.output_to_section, {Type::parstring(), Type::parstring()},

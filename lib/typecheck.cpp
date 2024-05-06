@@ -951,13 +951,17 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
   {
     /*
 
-     function _toString_ENUM(set of ENUM: x, bool: b, bool: json) =
-       "{" ++ join(", ", [ _toString_ENUM(i,b,json) | i in x ]) ++ "}"
-     endif;
+     function _toString_ENUM(opt set of ENUM: x, bool: b, bool: json) =
+       if absent(x) then
+         "<>"
+       else
+         "{" ++ join(", ", [ _toString_ENUM(i,b,json) | i in deopt(x) ]) ++ "}"
+       endif
 
      */
 
     Type argType = Type::parsetenum(ident->type().typeId());
+    argType.ot(Type::OT_OPTIONAL);
     auto* x_ti = new TypeInst(Location().introduce(), argType, ident);
     auto* vd_x = new VarDecl(Location().introduce(), x_ti, env.genId());
     vd_x->toplevel(false);
@@ -969,6 +973,15 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     auto* j_ti = new TypeInst(Location().introduce(), Type::parbool());
     auto* vd_j = new VarDecl(Location().introduce(), j_ti, env.genId());
     vd_j->toplevel(false);
+
+    std::vector<Expression*> deopt_args(1);
+    deopt_args[0] = vd_x->id();
+    Call* deopt = Call::a(Location().introduce(), "deopt", deopt_args);
+    Call* if_absent = Call::a(Location().introduce(), "absent", deopt_args);
+    auto* sl_absent_dzn = new StringLit(Location().introduce(), "<>");
+    ITE* sl_absent = new ITE(Location().introduce(),
+                             {vd_j->id(), new StringLit(Location().introduce(), ASTString("null"))},
+                             sl_absent_dzn);
 
     auto* idx_i_ti = new TypeInst(Location().introduce(), Type::parint());
     auto* idx_i = new VarDecl(Location().introduce(), idx_i_ti, env.genId());
@@ -984,7 +997,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
 
     std::vector<VarDecl*> gen_exps(1);
     gen_exps[0] = idx_i;
-    Generator gen(gen_exps, vd_x->id(), nullptr);
+    Generator gen(gen_exps, deopt, nullptr);
 
     Generators generators;
     generators.g.push_back(gen);
@@ -1009,6 +1022,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     auto* bopp2 = new BinOp(Location().introduce(), bopp1, BOT_PLUSPLUS, json_set_close);
     auto* sl_close = new StringLit(Location().introduce(), "}");
     auto* bopp3 = new BinOp(Location().introduce(), bopp2, BOT_PLUSPLUS, sl_close);
+    ITE* ite = new ITE(Location().introduce(), {if_absent, sl_absent}, bopp3);
 
     auto* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
     std::vector<VarDecl*> fi_params(3);
@@ -1017,17 +1031,15 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     fi_params[2] = vd_j;
     auto* fi = new FunctionI(Location().introduce(),
                              ASTString(create_enum_to_string_name(ident, "_toString_")), ti_fi,
-                             fi_params, bopp3);
+                             fi_params, ite);
     enumItems->addItem(fi);
   }
 
   {
     /*
 
-     function _toString_ENUM(array[$U] of set of ENUM: x, bool: b, bool: json) =
-     let {
-     array[int] of opt set of ENUM: xx = array1d(x)
-     } in "[" ++ join(", ", [ _toString_ENUM(xx[i],b,json) | i in index_set(xx) ]) ++ "]";
+     function _toString_ENUM(array[$U] of opt set of ENUM: x, bool: b, bool: json) =
+       "[" ++ join(", ", [ _toString_ENUM(x_i,b,json) | x_i in x ]) ++ "]";
 
      */
 
@@ -1037,6 +1049,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     ranges[0] = ti_range;
 
     Type tx = Type::parsetint(-1);
+    tx.ot(Type::OT_OPTIONAL);
     auto* x_ti = new TypeInst(Location().introduce(), tx, ranges, ident);
     auto* vd_x = new VarDecl(Location().introduce(), x_ti, env.genId());
     vd_x->toplevel(false);
@@ -1049,40 +1062,21 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     auto* vd_j = new VarDecl(Location().introduce(), j_ti, env.genId());
     vd_j->toplevel(false);
 
-    auto* xx_range = new TypeInst(Location().introduce(), Type::parint(), nullptr);
-    std::vector<TypeInst*> xx_ranges(1);
-    xx_ranges[0] = xx_range;
-    auto* xx_ti = new TypeInst(Location().introduce(), tx, xx_ranges, ident);
-
-    std::vector<Expression*> array1dArgs(1);
-    array1dArgs[0] = vd_x->id();
-    Call* array1dCall = Call::a(Location().introduce(), env.constants.ids.array1d, array1dArgs);
-
-    auto* vd_xx = new VarDecl(Location().introduce(), xx_ti, env.genId(), array1dCall);
-    vd_xx->toplevel(false);
-
-    auto* idx_i_ti = new TypeInst(Location().introduce(), Type::parint());
-    auto* idx_i = new VarDecl(Location().introduce(), idx_i_ti, env.genId());
-    idx_i->toplevel(false);
-
-    std::vector<Expression*> aa_xxi_idx(1);
-    aa_xxi_idx[0] = idx_i->id();
-    auto* aa_xxi = new ArrayAccess(Location().introduce(), vd_xx->id(), aa_xxi_idx);
+    auto* idx_xi_ti = new TypeInst(Location().introduce(), tx);
+    auto* idx_xi = new VarDecl(Location().introduce(), idx_xi_ti, env.genId());
+    idx_xi->toplevel(false);
 
     std::vector<Expression*> _toString_ENUMArgs(3);
-    _toString_ENUMArgs[0] = aa_xxi;
+    _toString_ENUMArgs[0] = idx_xi->id();
     _toString_ENUMArgs[1] = vd_b->id();
     _toString_ENUMArgs[2] = vd_j->id();
     Call* _toString_ENUM =
         Call::a(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
                 _toString_ENUMArgs);
 
-    std::vector<Expression*> index_set_xx_args(1);
-    index_set_xx_args[0] = vd_xx->id();
-    Call* index_set_xx = Call::a(Location().introduce(), "index_set", index_set_xx_args);
     std::vector<VarDecl*> gen_exps(1);
-    gen_exps[0] = idx_i;
-    Generator gen(gen_exps, index_set_xx, nullptr);
+    gen_exps[0] = idx_xi;
+    Generator gen(gen_exps, vd_x->id(), nullptr);
 
     Generators generators;
     generators.g.push_back(gen);
@@ -1098,10 +1092,6 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     auto* sl_close = new StringLit(Location().introduce(), "]");
     auto* bopp1 = new BinOp(Location().introduce(), bopp0, BOT_PLUSPLUS, sl_close);
 
-    std::vector<Expression*> let_args(1);
-    let_args[0] = vd_xx;
-    Let* let = new Let(Location().introduce(), let_args, bopp1);
-
     auto* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
     std::vector<VarDecl*> fi_params(3);
     fi_params[0] = vd_x;
@@ -1109,7 +1099,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     fi_params[2] = vd_j;
     auto* fi = new FunctionI(Location().introduce(),
                              ASTString(create_enum_to_string_name(ident, "_toString_")), ti_fi,
-                             fi_params, let);
+                             fi_params, bopp1);
     enumItems->addItem(fi);
   }
 }

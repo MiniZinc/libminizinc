@@ -61,6 +61,8 @@ Bug fixes:
    (:bugref:`798`).
 -  Fix crash when resolving type aliases for function parameters with ``$T``
    array dimensions (:bugref:`806`).
+-  Fix ``default`` operator for ``par opt set`` parameters (:bugref:`809`). 
+-  Fix output of ``par opt set`` enumerated types.
 
 .. _v2.8.3:
 

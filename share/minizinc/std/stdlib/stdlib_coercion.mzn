@@ -195,3 +195,8 @@ function array[$U] of var opt $T: 'default'(array[$U] of var opt $T:x, array[$U]
 function set of $$E: 'default'(set of $$E:x, set of $$E: y);
 /** @group stdlib.debug If \a x is defined, return \a x, otherwise return \a y. */
 function var set of $$E: 'default'(var set of $$E:x, var set of $$E: y);
+
+/** @group stdlib.debug If \a x is define amd mpt absent, return \a x, otherwise return \a y. */
+function set of $T: 'default'(opt set of $T: x, set of $T: y);
+/** @group stdlib.debug If \a x is define amd mpt absent, return \a x, otherwise return \a y. */
+function opt set of $T: 'default'(opt set of $T: x, opt set of $T: y);

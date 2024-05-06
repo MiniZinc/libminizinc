@@ -279,8 +279,6 @@ public:
     if (c->decl() != nullptr) {
       if (c->decl()->e() != nullptr || (c->argCount() == 1 && c->id() == "enum_of")) {
         if (c->decl()->isPolymorphic()) {
-          assert(c->argCount() != 1 || Expression::type(c->arg(0)).st() == Type::ST_PLAIN ||
-                 Expression::type(c->arg(0)).ot() == Type::OT_PRESENT);
           agenda.push(c);
         }
       }
