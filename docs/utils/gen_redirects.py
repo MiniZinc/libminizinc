@@ -44,15 +44,28 @@ if __name__ == "__main__":
 
     for src, dst in redirects:
         source = src.replace("\\", "/")
-        destination = dst.replace("\\", "/")
+        destination = "/" + dst.replace("\\", "/")
         print("Redirecting " + source + " to " + destination + ".", file=sys.stderr)
         out_file = os.path.join(os.path.dirname(out_dir), source)
         out_path = os.path.dirname(out_file)
         if not os.path.exists(out_path):
             os.makedirs(out_path)
         with io.open(out_file, "w", encoding="utf-8", newline="\n") as f:
-            f.write("---\n")
-            f.write('redirect_to: "/' + destination + '"\n')
-            f.write("---\n")
+            text = f'''<!DOCTYPE html>
+<html lang="en-US">
+<meta charset="utf-8">
+<title>Redirecting&hellip;</title>
+<link rel="canonical" href="{destination}">
+<script>
+    const url = "{destination}";
+    location = `${{url}}${{location.search}}${{location.hash}}`;
+</script>
+<meta http-equiv="refresh" content="0; url={destination}">
+<meta name="robots" content="noindex">
+<h1>Redirecting&hellip;</h1>
+<a href="{destination}">Click here if you are not redirected.</a>
+</html>'''
+
+            f.write(text)
 
     print("Done.", file=sys.stderr)
