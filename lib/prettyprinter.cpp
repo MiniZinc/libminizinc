@@ -1195,9 +1195,9 @@ public:
   }
 };
 
-Document* expression_to_document(const Expression* e);
-Document* annotation_to_document(const Annotation& ann);
-Document* tiexpression_to_document(const Type& type, const Expression* e) {
+Document* expression_to_document(const Expression* e, EnvI* env);
+Document* annotation_to_document(const Annotation& ann, EnvI* env);
+Document* tiexpression_to_document(const Type& type, const Expression* e, EnvI* env) {
   auto* dl = new DocumentList("", "", "", false);
   if (type.any()) {
     dl->addStringToList("any ");
@@ -1255,9 +1255,14 @@ Document* tiexpression_to_document(const Type& type, const Expression* e) {
     if (type.bt() != Type::BT_RECORD || type.typeId() != 0) {
       for (size_t i = 0; i < al->size(); ++i) {
         auto* ti = Expression::cast<TypeInst>((*al)[i]);
-        dl->addDocumentToList(expression_to_document(ti));
+        dl->addDocumentToList(expression_to_document(ti, env));
         if (type.bt() == Type::BT_RECORD) {
-          dl->addStringToList(": ???");  // TODO: Is there access to an environment?
+          if (env == nullptr) {
+            dl->addStringToList(": ???");
+          } else {
+            dl->addStringToList(": ");
+            dl->addStringToList(Printer::quoteId(env->getRecordType(type)->fieldName(i)));
+          }
         }
         if (i < al->size() - 1) {
           dl->addStringToList(", ");
@@ -1266,9 +1271,9 @@ Document* tiexpression_to_document(const Type& type, const Expression* e) {
     } else {
       for (size_t i = 0; i < al->size(); ++i) {
         auto* vd = Expression::cast<VarDecl>((*al)[i]);
-        dl->addDocumentToList(expression_to_document(vd->ti()));
+        dl->addDocumentToList(expression_to_document(vd->ti(), env));
         dl->addStringToList(": ");
-        dl->addDocumentToList(expression_to_document(vd->id()));
+        dl->addDocumentToList(expression_to_document(vd->id(), env));
         if (i < al->size() - 1) {
           dl->addStringToList(", ");
         }
@@ -1276,13 +1281,17 @@ Document* tiexpression_to_document(const Type& type, const Expression* e) {
     }
     dl->addStringToList(")");
   } else {
-    dl->addDocumentToList(expression_to_document(e));
+    dl->addDocumentToList(expression_to_document(e, env));
   }
   return dl;
 }
 
 class ExpressionDocumentMapper {
+  EnvI* _env;
+
 public:
+  ExpressionDocumentMapper(EnvI* env) : _env(env) {}
+
   typedef Document* ret;
   static ret mapIntLit(const IntLit* il) {
     std::ostringstream oss;
@@ -1294,7 +1303,7 @@ public:
     pp_floatval(oss, FloatLit::v(fl));
     return new StringDocument(oss.str());
   }
-  static ret mapSetLit(const SetLit* sl) {
+  ret mapSetLit(const SetLit* sl) {
     DocumentList* dl;
     if (sl->isv() != nullptr) {
       if (sl->type().bt() == Type::BT_BOOL) {
@@ -1366,7 +1375,7 @@ public:
     } else {
       dl = new DocumentList("{", ", ", "}", true);
       for (unsigned int i = 0; i < sl->v().size(); i++) {
-        dl->addDocumentToList(expression_to_document((sl->v()[i])));
+        dl->addDocumentToList(expression_to_document(sl->v()[i], _env));
       }
     }
     return dl;
@@ -1396,7 +1405,7 @@ public:
     return new StringDocument(ss.str());
   }
   static ret mapAnonVar(const AnonVar* /*v*/) { return new StringDocument("_"); }
-  static ret mapArrayLit(const ArrayLit* al) {
+  ret mapArrayLit(const ArrayLit* al) {
     /// TODO: test multi-dimensional arrays handling
     DocumentList* dl;
     unsigned int n = al->dims();
@@ -1411,7 +1420,7 @@ public:
         dl = new DocumentList("[", ", ", "]");
       }
       for (unsigned int i = 0; i < al->size(); i++) {
-        dl->addDocumentToList(expression_to_document((*al)[i]));
+        dl->addDocumentToList(expression_to_document((*al)[i], _env));
       }
       if (al->isTuple() && al->size() == 1) {
         dl->addStringToList(",");
@@ -1421,7 +1430,7 @@ public:
       for (int i = 0; i < al->max(0); i++) {
         auto* row = new DocumentList("", ", ", "");
         for (int j = 0; j < al->max(1); j++) {
-          row->addDocumentToList(expression_to_document((*al)[i * al->max(1) + j]));
+          row->addDocumentToList(expression_to_document((*al)[i * al->max(1) + j], _env));
         }
         dl->addDocumentToList(row);
         if (i != al->max(0) - 1) {
@@ -1442,32 +1451,32 @@ public:
       }
       auto* array = new DocumentList("[", ", ", "]");
       for (unsigned int i = 0; i < al->size(); i++) {
-        array->addDocumentToList(expression_to_document((*al)[i]));
+        array->addDocumentToList(expression_to_document((*al)[i], _env));
       }
       args->addDocumentToList(array);
       dl->addDocumentToList(args);
     }
     return dl;
   }
-  static ret mapArrayAccess(const ArrayAccess* aa) {
+  ret mapArrayAccess(const ArrayAccess* aa) {
     auto* dl = new DocumentList("", "", "");
 
-    dl->addDocumentToList(expression_to_document(aa->v()));
+    dl->addDocumentToList(expression_to_document(aa->v(), _env));
     auto* args = new DocumentList("[", ", ", "]");
     for (unsigned int i = 0; i < aa->idx().size(); i++) {
-      args->addDocumentToList(expression_to_document(aa->idx()[i]));
+      args->addDocumentToList(expression_to_document(aa->idx()[i], _env));
     }
     dl->addDocumentToList(args);
     return dl;
   }
-  static ret mapFieldAccess(const FieldAccess* fa) {
+  ret mapFieldAccess(const FieldAccess* fa) {
     auto* dl = new DocumentList("", ".", "");
 
-    dl->addDocumentToList(expression_to_document(fa->v()));
-    dl->addDocumentToList(expression_to_document(fa->field()));
+    dl->addDocumentToList(expression_to_document(fa->v(), _env));
+    dl->addDocumentToList(expression_to_document(fa->field(), _env));
     return dl;
   }
-  static ret mapComprehension(const Comprehension* c) {
+  ret mapComprehension(const Comprehension* c) {
     std::ostringstream oss;
     DocumentList* dl;
     if (c->set()) {
@@ -1475,7 +1484,7 @@ public:
     } else {
       dl = new DocumentList("[ ", " | ", " ]");
     }
-    dl->addDocumentToList(expression_to_document(c->e()));
+    dl->addDocumentToList(expression_to_document(c->e(), _env));
     auto* head = new DocumentList("", " ", "");
     auto* generators = new DocumentList("", ", ", "");
     for (int i = 0; i < c->numberOfGenerators(); i++) {
@@ -1496,13 +1505,13 @@ public:
       gen->addDocumentToList(idents);
       if (c->in(i) == nullptr) {
         gen->addStringToList(" = ");
-        gen->addDocumentToList(expression_to_document(c->where(i)));
+        gen->addDocumentToList(expression_to_document(c->where(i), _env));
       } else {
         gen->addStringToList(" in ");
-        gen->addDocumentToList(expression_to_document(c->in(i)));
+        gen->addDocumentToList(expression_to_document(c->in(i), _env));
         if (c->where(i) != nullptr) {
           gen->addStringToList(" where ");
-          gen->addDocumentToList(expression_to_document(c->where(i)));
+          gen->addDocumentToList(expression_to_document(c->where(i), _env));
         }
       }
       generators->addDocumentToList(gen);
@@ -1512,17 +1521,17 @@ public:
 
     return dl;
   }
-  static ret mapITE(const ITE* ite) {
+  ret mapITE(const ITE* ite) {
     auto* dl = new DocumentList("", "", "");
     for (int i = 0; i < ite->size(); i++) {
       std::string beg = (i == 0 ? "if " : " elseif ");
       dl->addStringToList(beg);
-      dl->addDocumentToList(expression_to_document(ite->ifExpr(i)));
+      dl->addDocumentToList(expression_to_document(ite->ifExpr(i), _env));
       dl->addStringToList(" then ");
 
       auto* ifdoc = new DocumentList("", "", "", false);
       ifdoc->addBreakPoint();
-      ifdoc->addDocumentToList(expression_to_document(ite->thenExpr(i)));
+      ifdoc->addDocumentToList(expression_to_document(ite->thenExpr(i), _env));
       dl->addDocumentToList(ifdoc);
       dl->addStringToList(" ");
     }
@@ -1531,7 +1540,7 @@ public:
 
     auto* elsedoc = new DocumentList("", "", "", false);
     elsedoc->addBreakPoint();
-    elsedoc->addDocumentToList(expression_to_document(ite->elseExpr()));
+    elsedoc->addDocumentToList(expression_to_document(ite->elseExpr(), _env));
     dl->addDocumentToList(elsedoc);
     dl->addStringToList(" ");
     dl->addBreakPoint();
@@ -1539,7 +1548,7 @@ public:
 
     return dl;
   }
-  static ret mapBinOp(const BinOp* bo) {
+  ret mapBinOp(const BinOp* bo) {
     Parentheses ps = need_parentheses(bo, bo->lhs(), bo->rhs());
     DocumentList* opLeft;
     DocumentList* dl;
@@ -1550,7 +1559,7 @@ public:
     } else {
       opLeft = new DocumentList("", " ", "");
     }
-    opLeft->addDocumentToList(expression_to_document(bo->lhs()));
+    opLeft->addDocumentToList(expression_to_document(bo->lhs(), _env));
     std::string op;
     switch (bo->op()) {
       case BOT_PLUS:
@@ -1651,7 +1660,7 @@ public:
     } else {
       opRight = new DocumentList("", "", "");
     }
-    opRight->addDocumentToList(expression_to_document(bo->rhs()));
+    opRight->addDocumentToList(expression_to_document(bo->rhs(), _env));
     dl->addDocumentToList(opLeft);
     if (linebreak) {
       dl->addBreakPoint();
@@ -1660,7 +1669,7 @@ public:
 
     return dl;
   }
-  static ret mapUnOp(const UnOp* uo) {
+  ret mapUnOp(const UnOp* uo) {
     auto* dl = new DocumentList("", "", "");
     std::string op;
     switch (uo->op()) {
@@ -1686,11 +1695,11 @@ public:
       unop = new DocumentList("", " ", "");
     }
 
-    unop->addDocumentToList(expression_to_document(uo->e()));
+    unop->addDocumentToList(expression_to_document(uo->e(), _env));
     dl->addDocumentToList(unop);
     return dl;
   }
-  static ret mapCall(const Call* c) {
+  ret mapCall(const Call* c) {
     if (c->argCount() == 1) {
       /*
        * if we have only one argument, and this is an array comprehension,
@@ -1723,13 +1732,13 @@ public:
             gen->addDocumentToList(idents);
             if (com->in(i) == nullptr) {
               gen->addStringToList(" = ");
-              gen->addDocumentToList(expression_to_document(com->where(i)));
+              gen->addDocumentToList(expression_to_document(com->where(i), _env));
             } else {
               gen->addStringToList(" in ");
-              gen->addDocumentToList(expression_to_document(com->in(i)));
+              gen->addDocumentToList(expression_to_document(com->in(i), _env));
               if (com->where(i) != nullptr) {
                 gen->addStringToList(" where ");
-                gen->addDocumentToList(expression_to_document(com->where(i)));
+                gen->addDocumentToList(expression_to_document(com->where(i), _env));
               }
             }
             generators->addDocumentToList(gen);
@@ -1741,7 +1750,7 @@ public:
 
           args->addStringToList("(");
           args->addBreakPoint();
-          args->addDocumentToList(expression_to_document(com->e()));
+          args->addDocumentToList(expression_to_document(com->e(), _env));
 
           dl->addDocumentToList(args);
           dl->addBreakPoint();
@@ -1755,11 +1764,11 @@ public:
     beg << c->id() << "(";
     auto* dl = new DocumentList(beg.str(), ", ", ")");
     for (unsigned int i = 0; i < c->argCount(); i++) {
-      dl->addDocumentToList(expression_to_document(c->arg(i)));
+      dl->addDocumentToList(expression_to_document(c->arg(i), _env));
     }
     return dl;
   }
-  static ret mapVarDecl(const VarDecl* vd) {
+  ret mapVarDecl(const VarDecl* vd) {
     std::ostringstream oss;
     auto* dl = new DocumentList("", "", "");
     if (vd->isTypeAlias()) {
@@ -1772,7 +1781,7 @@ public:
         oss << "X_INTRODUCED_" << vd->id()->idn() << "_";
       }
     } else {
-      dl->addDocumentToList(expression_to_document(vd->ti()));
+      dl->addDocumentToList(expression_to_document(vd->ti(), _env));
       if (vd->id()->idn() == -1) {
         if (!vd->id()->v().empty()) {
           oss << ": " << vd->id()->v().c_str();
@@ -1787,15 +1796,15 @@ public:
       dl->addStringToList(" ::var_is_introduced ");
     }
     if (!Expression::ann(vd).isEmpty()) {
-      dl->addDocumentToList(annotation_to_document(Expression::ann(vd)));
+      dl->addDocumentToList(annotation_to_document(Expression::ann(vd), _env));
     }
     if (vd->e() != nullptr) {
       dl->addStringToList(" = ");
-      dl->addDocumentToList(expression_to_document(vd->e()));
+      dl->addDocumentToList(expression_to_document(vd->e(), _env));
     }
     return dl;
   }
-  static ret mapLet(const Let* l) {
+  ret mapLet(const Let* l) {
     auto* letin = new DocumentList("", "", "", false);
     auto* lets = new DocumentList("", " ", "", true);
     auto* inexpr = new DocumentList("", "", "");
@@ -1810,11 +1819,11 @@ public:
       if (!Expression::isa<VarDecl>(li)) {
         exp->addStringToList("constraint");
       }
-      exp->addDocumentToList(expression_to_document(li));
+      exp->addDocumentToList(expression_to_document(li, _env));
       lets->addDocumentToList(exp);
     }
 
-    inexpr->addDocumentToList(expression_to_document(l->in()));
+    inexpr->addDocumentToList(expression_to_document(l->in(), _env));
     letin->addBreakPoint(ds);
     letin->addDocumentToList(lets);
 
@@ -1833,74 +1842,79 @@ public:
     dl->addStringToList(")");
     return dl;
   }
-  static ret mapTypeInst(const TypeInst* ti) {
+  ret mapTypeInst(const TypeInst* ti) {
     auto* dl = new DocumentList("", "", "");
     if (ti->isarray()) {
       dl->addStringToList("array [");
       auto* ran = new DocumentList("", ", ", "");
       for (unsigned int i = 0; i < ti->ranges().size(); i++) {
-        ran->addDocumentToList(tiexpression_to_document(Type::parint(), ti->ranges()[i]));
+        ran->addDocumentToList(tiexpression_to_document(Type::parint(), ti->ranges()[i], _env));
       }
       dl->addDocumentToList(ran);
       dl->addStringToList("] of ");
     }
-    dl->addDocumentToList(tiexpression_to_document(ti->type(), ti->domain()));
+    dl->addDocumentToList(tiexpression_to_document(ti->type(), ti->domain(), _env));
     return dl;
   }
 };
 
-Document* annotation_to_document(const Annotation& ann) {
+Document* annotation_to_document(const Annotation& ann, EnvI* env) {
   auto* dl = new DocumentList(" :: ", " :: ", "");
   for (ExpressionSetIter it = ann.begin(); it != ann.end(); ++it) {
-    dl->addDocumentToList(expression_to_document(*it));
+    dl->addDocumentToList(expression_to_document(*it, env));
   }
   return dl;
 }
 
-Document* expression_to_document(const Expression* e) {
+Document* expression_to_document(const Expression* e, EnvI* env) {
   if (e == nullptr) {
     return new StringDocument("NULL");
   }
-  ExpressionDocumentMapper esm;
+  ExpressionDocumentMapper esm(env);
   ExpressionMapper<ExpressionDocumentMapper> em(esm);
   auto* dl = new DocumentList("", "", "");
   Document* s = em.map(e);
   dl->addDocumentToList(s);
   if (!Expression::isa<VarDecl>(e) && !Expression::ann(e).isEmpty()) {
-    dl->addDocumentToList(annotation_to_document(Expression::ann(e)));
+    dl->addDocumentToList(annotation_to_document(Expression::ann(e), env));
   }
   return dl;
 }
 
 class ItemDocumentMapper {
+protected:
+  EnvI* _env;
+
 public:
+  ItemDocumentMapper(EnvI* env) : _env(env) {}
+
   typedef Document* ret;
   static ret mapIncludeI(const IncludeI& ii) {
     std::ostringstream oss;
     oss << "include \"" << Printer::escapeStringLit(ii.f()) << "\";";
     return new StringDocument(oss.str());
   }
-  static ret mapVarDeclI(const VarDeclI& vi) {
+  ret mapVarDeclI(const VarDeclI& vi) {
     auto* dl = new DocumentList("", " ", ";");
-    dl->addDocumentToList(expression_to_document(vi.e()));
+    dl->addDocumentToList(expression_to_document(vi.e(), _env));
     return dl;
   }
-  static ret mapAssignI(const AssignI& ai) {
+  ret mapAssignI(const AssignI& ai) {
     auto* dl = new DocumentList("", " = ", ";");
     dl->addStringToList(std::string(ai.id().c_str(), ai.id().size()));
-    dl->addDocumentToList(expression_to_document(ai.e()));
+    dl->addDocumentToList(expression_to_document(ai.e(), _env));
     return dl;
   }
-  static ret mapConstraintI(const ConstraintI& ci) {
+  ret mapConstraintI(const ConstraintI& ci) {
     auto* dl = new DocumentList("constraint ", " ", ";");
-    dl->addDocumentToList(expression_to_document(ci.e()));
+    dl->addDocumentToList(expression_to_document(ci.e(), _env));
     return dl;
   }
-  static ret mapSolveI(const SolveI& si) {
+  ret mapSolveI(const SolveI& si) {
     auto* dl = new DocumentList("", "", ";");
     dl->addStringToList("solve");
     if (!si.ann().isEmpty()) {
-      dl->addDocumentToList(annotation_to_document(si.ann()));
+      dl->addDocumentToList(annotation_to_document(si.ann(), _env));
     }
     switch (si.st()) {
       case SolveI::ST_SAT:
@@ -1908,32 +1922,32 @@ public:
         break;
       case SolveI::ST_MIN:
         dl->addStringToList(" minimize ");
-        dl->addDocumentToList(expression_to_document(si.e()));
+        dl->addDocumentToList(expression_to_document(si.e(), _env));
         break;
       case SolveI::ST_MAX:
         dl->addStringToList(" maximize ");
-        dl->addDocumentToList(expression_to_document(si.e()));
+        dl->addDocumentToList(expression_to_document(si.e(), _env));
         break;
     }
     return dl;
   }
-  static ret mapOutputI(const OutputI& oi) {
+  ret mapOutputI(const OutputI& oi) {
     auto* dl = new DocumentList("", " ", ";");
     dl->addStringToList("output ");
     for (ExpressionSetIter i = oi.ann().begin(); i != oi.ann().end(); ++i) {
       Call* c = Expression::dynamicCast<Call>(*i);
       if (c != nullptr && c->id() == "mzn_output_section") {
         dl->addStringToList(":: ");
-        dl->addDocumentToList(expression_to_document(c->arg(0)));
+        dl->addDocumentToList(expression_to_document(c->arg(0), _env));
       }
     }
     if (!oi.ann().isEmpty()) {
       dl->addStringToList(" ");
     }
-    dl->addDocumentToList(expression_to_document(oi.e()));
+    dl->addDocumentToList(expression_to_document(oi.e(), _env));
     return dl;
   }
-  static ret mapFunctionI(const FunctionI& fi) {
+  ret mapFunctionI(const FunctionI& fi) {
     DocumentList* dl;
     if (fi.ti()->type().isAnn() && fi.e() == nullptr) {
       dl = new DocumentList("annotation ", " ", ";", false);
@@ -1943,7 +1957,7 @@ public:
       dl = new DocumentList("predicate ", "", ";", false);
     } else {
       dl = new DocumentList("function ", "", ";", false);
-      dl->addDocumentToList(expression_to_document(fi.ti()));
+      dl->addDocumentToList(expression_to_document(fi.ti(), _env));
       dl->addStringToList(": ");
     }
     dl->addStringToList(std::string(fi.id().c_str(), fi.id().size()));
@@ -1952,23 +1966,23 @@ public:
       for (unsigned int i = 0; i < fi.paramCount(); i++) {
         auto* par = new DocumentList("", "", "");
         par->setUnbreakable(true);
-        par->addDocumentToList(expression_to_document(fi.param(i)));
+        par->addDocumentToList(expression_to_document(fi.param(i), _env));
         params->addDocumentToList(par);
       }
       dl->addDocumentToList(params);
     }
     if (fi.capturedAnnotationsVar() != nullptr) {
       dl->addStringToList(" ann : ");
-      dl->addDocumentToList(expression_to_document(fi.capturedAnnotationsVar()->id()));
+      dl->addDocumentToList(expression_to_document(fi.capturedAnnotationsVar()->id(), _env));
       dl->addStringToList(" ");
     }
     if (!fi.ann().isEmpty()) {
-      dl->addDocumentToList(annotation_to_document(fi.ann()));
+      dl->addDocumentToList(annotation_to_document(fi.ann(), _env));
     }
     if (fi.e() != nullptr) {
       dl->addStringToList(" = ");
       dl->addBreakPoint();
-      dl->addDocumentToList(expression_to_document(fi.e()));
+      dl->addDocumentToList(expression_to_document(fi.e(), _env));
     }
 
     return dl;
@@ -2201,7 +2215,7 @@ Printer::Printer(std::ostream& os, int width, bool flatZinc, EnvI* env)
     : _env(env), _ism(nullptr), _printer(nullptr), _os(os), _width(width), _flatZinc(flatZinc) {}
 void Printer::init() {
   if (_ism == nullptr) {
-    _ism = new ItemDocumentMapper();
+    _ism = new ItemDocumentMapper(_env);
     _printer = new PrettyPrinter(_width, 4, true, true);
   }
 }
@@ -2223,22 +2237,22 @@ void Printer::p(const Item* i) {
       d = ItemDocumentMapper::mapIncludeI(*i->cast<IncludeI>());
       break;
     case Item::II_VD:
-      d = ItemDocumentMapper::mapVarDeclI(*i->cast<VarDeclI>());
+      d = _ism->mapVarDeclI(*i->cast<VarDeclI>());
       break;
     case Item::II_ASN:
-      d = ItemDocumentMapper::mapAssignI(*i->cast<AssignI>());
+      d = _ism->mapAssignI(*i->cast<AssignI>());
       break;
     case Item::II_CON:
-      d = ItemDocumentMapper::mapConstraintI(*i->cast<ConstraintI>());
+      d = _ism->mapConstraintI(*i->cast<ConstraintI>());
       break;
     case Item::II_SOL:
-      d = ItemDocumentMapper::mapSolveI(*i->cast<SolveI>());
+      d = _ism->mapSolveI(*i->cast<SolveI>());
       break;
     case Item::II_OUT:
-      d = ItemDocumentMapper::mapOutputI(*i->cast<OutputI>());
+      d = _ism->mapOutputI(*i->cast<OutputI>());
       break;
     case Item::II_FUN:
-      d = ItemDocumentMapper::mapFunctionI(*i->cast<FunctionI>());
+      d = _ism->mapFunctionI(*i->cast<FunctionI>());
       break;
   }
   p(d);
@@ -2256,7 +2270,7 @@ void Printer::print(const Expression* e) {
     p.p(e);
   } else {
     init();
-    Document* d = expression_to_document(e);
+    Document* d = expression_to_document(e, _env);
     p(d);
     delete d;
   }

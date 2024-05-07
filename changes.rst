@@ -63,6 +63,7 @@ Bug fixes:
    array dimensions (:bugref:`806`).
 -  Fix ``default`` operator for ``par opt set`` parameters (:bugref:`809`). 
 -  Fix output of ``par opt set`` enumerated types.
+-  Fix pretty printing of records when using the document printer.
 
 .. _v2.8.3:
 
