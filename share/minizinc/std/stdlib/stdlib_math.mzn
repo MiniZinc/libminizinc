@@ -167,6 +167,18 @@ function var int:   '-'(var int: x) ::mzn_internal_representation;
 function     float: '-'(    float: x) ::mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Return negative \a x */
 function var float: '-'(var float: x) ::mzn_internal_representation;
+/** @group stdlib.builtins.arithmetic Return negative \a x if it occurs, otherwise return absent*/
+function opt int: '-'(opt int: x) =
+  if occurs(x) then -deopt(x) else <> endif;
+/** @group stdlib.builtins.arithmetic Return negative \a x if it occurs, otherwise return absent*/
+function var opt int: '-'(var opt int: x) =
+  if occurs(x) then -deopt(x) else <> endif;
+/** @group stdlib.builtins.arithmetic Return negative \a x if it occurs, otherwise return absent*/
+function opt float: '-'(opt float: x) =
+  if occurs(x) then -deopt(x) else <> endif;
+/** @group stdlib.builtins.arithmetic Return negative \a x if it occurs, otherwise return absent*/
+function var opt float: '-'(var opt float: x) =
+  if occurs(x) then -deopt(x) else <> endif;
 
 /** @group stdlib.builtins.arithmetic Return result of integer division \a x / \a y */
 function     int: 'div'(int: x,int: y);
@@ -497,6 +509,14 @@ function var int: abs(var int: x) :: promise_total =
   } in m
   endif;
 
+/** @group stdlib.builtins.arithmetic Return absolute value of \a x if it occurs, otherwise return absent */
+function opt int: abs(opt int: x) =
+  if occurs(x) then abs(deopt(x)) else <> endif;
+
+/** @group stdlib.builtins.arithmetic Return absolute value of \a x if it occurs, otherwise return absent */
+function var opt int: abs(var opt int: x) =
+  if occurs(x) then abs(deopt(x)) else <> endif;
+
 /** @group stdlib.builtins.arithmetic Return absolute value of \a x */
 function float: abs(float: x);
 /** @group stdlib.builtins.arithmetic Return absolute value of \a x */
@@ -514,6 +534,12 @@ function var float: abs(var float: x) :: promise_total =
           constraint float_abs(x,m) ::defines_var(m);
     } in m
   endif;
+/** @group stdlib.builtins.arithmetic Return absolute value of \a x if it occurs, otherwise return absent */
+function opt float: abs(opt float: x) =
+  if occurs(x) then abs(deopt(x)) else <> endif;
+/** @group stdlib.builtins.arithmetic Return absolute value of \a x if it occurs, otherwise return absent */
+function var opt float: abs(var opt float: x) =
+  if occurs(x) then abs(deopt(x)) else <> endif;
 
 /** @group stdlib.builtins.arithmetic Return \(\sqrt{\a x}\) */
 function float: sqrt(float: x);
@@ -523,6 +549,12 @@ function var float: sqrt(var float: x) =
   elseif lb(x) >= 0.0 then sqrt_t(x)
   else let { constraint x >= 0.0; } in sqrt_mt(x)
   endif;
+/** @group stdlib.builtins.arithmetic Return \(\sqrt{\a x}\) if \a x occurs, otherwise return absent */
+function opt float: sqrt(opt float: x) =
+  if occurs(x) then sqrt(deopt(x)) else <> endif;
+/** @group stdlib.builtins.arithmetic Return \(\sqrt{\a x}\) if \a x occurs, otherwise return absent */
+function var opt float: sqrt(var opt float: x) =
+  if occurs(x) then sqrt(deopt(x)) else <> endif;
 
 /** @group stdlib.builtins.arithmetic Return \(\a x ^ {\a y}\), when \(\a y < 0 \) it returns ``1 div pow(x, abs(y))``. */
 function int: pow(int: x, int: y);
@@ -599,6 +631,12 @@ function var float: exp(var float: x) ::promise_total =
     var float: r ::is_defined_var;
     constraint float_exp(x,r) ::defines_var(r);
   } in r;
+/** @group stdlib.builtins.explog Return \(e ^ {\a x}\) if \a x occurs, otherwise return absent */
+function opt float: exp(opt float: x) =
+  if occurs(x) then exp(deopt(x)) else <> endif;
+/** @group stdlib.builtins.explog Return \(e ^ {\a x}\) if \a x occurs, otherwise return absent */
+function var opt float: exp(var opt float: x) =
+  if occurs(x) then exp(deopt(x)) else <> endif;
 
 /** @group stdlib.builtins.explog Return \(\ln \a x\) */
 function float: ln(float: x);
@@ -608,6 +646,12 @@ function var float: ln(var float: x) ::promise_total =
     var float: r ::is_defined_var;
     constraint float_ln(x,r) ::defines_var(r);
   } in r;
+/** @group stdlib.builtins.explog Return \(\ln \a x\) if \a x occurs, otherwise return absent */
+function opt float: ln(opt float: x) =
+  if occurs(x) then ln(deopt(x)) else <> endif;
+/** @group stdlib.builtins.explog Return \(\ln \a x\) if \a x occurs, otherwise return absent */
+function var opt float: ln(var opt float: x) =
+  if occurs(x) then ln(deopt(x)) else <> endif;
 
 /** @group stdlib.builtins.explog Return \(\log_{10} \a x\) */
 function float: log10(float: x);
@@ -617,6 +661,12 @@ function var float: log10(var float: x) ::promise_total =
     var float: r ::is_defined_var;
     constraint float_log10(x,r) ::defines_var(r);
   } in r;
+/** @group stdlib.builtins.explog Return \(\log_{10} \a x\) if \a x occurs, otherwise return absent */
+function opt float: log10(opt float: x) =
+  if occurs(x) then log10(deopt(x)) else <> endif;
+/** @group stdlib.builtins.explog Return \(\log_{10} \a x\) if \a x occurs, otherwise return absent */
+function var opt float: log10(var opt float: x) =
+  if occurs(x) then log10(deopt(x)) else <> endif;
 
 /** @group stdlib.builtins.explog Return \(\log_{2} \a x\) */
 function float: log2(float: x);
@@ -626,6 +676,12 @@ function var float: log2(var float: x) ::promise_total =
     var float: r ::is_defined_var;
     constraint float_log2(x,r) ::defines_var(r);
   } in r;
+/** @group stdlib.builtins.explog Return \(\log_{2} \a x\) if \a x occurs, otherwise return absent */
+function opt float: log2(opt float: x) =
+  if occurs(x) then log2(deopt(x)) else <> endif;
+/** @group stdlib.builtins.explog Return \(\log_{2} \a x\) if \a x occurs, otherwise return absent */
+function var opt float: log2(var opt float: x) =
+  if occurs(x) then log2(deopt(x)) else <> endif;
 
 /** @group stdlib.builtins.explog Return \(\log_{\a x} \a y\) */
 function float: log(float: x, float: y);
@@ -644,6 +700,12 @@ function var float: sin(var float: x) ::promise_total =
     var -1.0..1.0: r ::is_defined_var;
     constraint float_sin(x,r) ::defines_var(r);
   } in r;
+/** @group stdlib.builtins.trigonometric Return \(\sin \a x\) if \a x occurs, otherwise return absent */
+function opt float: sin(opt float: x) =
+  if occurs(x) then sin(deopt(x)) else <> endif;
+/** @group stdlib.builtins.trigonometric Return \(\sin \a x\) if \a x occurs, otherwise return absent */
+function var opt float: sin(var opt float: x) =
+  if occurs(x) then sin(deopt(x)) else <> endif;
 
 /** @group stdlib.builtins.trigonometric Return \(\cos \a x\) */
 function float: cos(float: x);
@@ -653,6 +715,12 @@ function var float: cos(var float: x) ::promise_total =
     var -1.0..1.0: r ::is_defined_var;
     constraint float_cos(x,r) ::defines_var(r);
   } in r;
+/** @group stdlib.builtins.trigonometric Return \(\cos \a x\) if \a x occurs, otherwise return absent */
+function opt float: cos(opt float: x) =
+  if occurs(x) then cos(deopt(x)) else <> endif;
+/** @group stdlib.builtins.trigonometric Return \(\cos \a x\) if \a x occurs, otherwise return absent */
+function var opt float: cos(var opt float: x) =
+  if occurs(x) then cos(deopt(x)) else <> endif;
 
 /** @group stdlib.builtins.trigonometric Return \(\tan \a x\) */
 function float: tan(float: x);
@@ -662,6 +730,12 @@ function var float: tan(var float: x) ::promise_total =
     var float: r ::is_defined_var;
     constraint float_tan(x,r) ::defines_var(r);
   } in r;
+/** @group stdlib.builtins.trigonometric Return \(\tan \a x\) if \a x occurs, otherwise return absent */
+function opt float: tan(opt float: x) =
+  if occurs(x) then tan(deopt(x)) else <> endif;
+/** @group stdlib.builtins.trigonometric Return \(\tan \a x\) if \a x occurs, otherwise return absent */
+function var opt float: tan(var opt float: x) =
+  if occurs(x) then tan(deopt(x)) else <> endif;
 
 /** @group stdlib.builtins.trigonometric Return \(\mbox{asin}\ \a x\) */
 function float: asin(float: x);
@@ -671,6 +745,12 @@ function var float: asin(var float: x) ::promise_total =
     var float: r ::is_defined_var;
     constraint float_asin(x,r) ::defines_var(r);
   } in r;
+/** @group stdlib.builtins.trigonometric Return \(\mbox{asin}\ \a x\) if \a x occurs, otherwise return absent */
+function opt float: asin(opt float: x) =
+  if occurs(x) then asin(deopt(x)) else <> endif;
+/** @group stdlib.builtins.trigonometric Return \(\mbox{asin}\ \a x\) if \a x occurs, otherwise return absent */
+function var opt float: asin(var opt float: x) =
+  if occurs(x) then asin(deopt(x)) else <> endif;
 
 /** @group stdlib.builtins.trigonometric Return \(\mbox{acos}\ \a x\) */
 function float: acos(float: x);
@@ -680,6 +760,12 @@ function var float: acos(var float: x) ::promise_total =
     var float: r ::is_defined_var;
     constraint float_acos(x,r) ::defines_var(r);
   } in r;
+/** @group stdlib.builtins.trigonometric Return \(\mbox{acos}\ \a x\) if \a x occurs, otherwise return absent */
+function opt float: acos(opt float: x) =
+  if occurs(x) then acos(deopt(x)) else <> endif;
+/** @group stdlib.builtins.trigonometric Return \(\mbox{acos}\ \a x\) if \a x occurs, otherwise return absent */
+function var opt float: acos(var opt float: x) =
+  if occurs(x) then acos(deopt(x)) else <> endif;
 
 /** @group stdlib.builtins.trigonometric Return \(\mbox{atan}\ \a x\) */
 function float: atan(float: x);
@@ -689,6 +775,12 @@ function var float: atan(var float: x) ::promise_total =
     var float: r ::is_defined_var;
     constraint float_atan(x,r) ::defines_var(r);
   } in r;
+/** @group stdlib.builtins.trigonometric Return \(\mbox{atan}\ \a x\) if \a x occurs, otherwise return absent */
+function opt float: atan(opt float: x) =
+  if occurs(x) then atan(deopt(x)) else <> endif;
+/** @group stdlib.builtins.trigonometric Return \(\mbox{atan}\ \a x\) if \a x occurs, otherwise return absent */
+function var opt float: atan(var opt float: x) =
+  if occurs(x) then atan(deopt(x)) else <> endif;
 
 /** @group stdlib.builtins.trigonometric Return \(\sinh \a x\) */
 function float: sinh(float: x);
@@ -698,6 +790,12 @@ function var float: sinh(var float: x) ::promise_total =
     var float: r ::is_defined_var;
     constraint float_sinh(x,r) ::defines_var(r);
   } in r;
+/** @group stdlib.builtins.trigonometric Return \(\sinh \a x\) if \a x occurs, otherwise return absent */
+function opt float: sinh(opt float: x) =
+  if occurs(x) then sinh(deopt(x)) else <> endif;
+/** @group stdlib.builtins.trigonometric Return \(\sinh \a x\) if \a x occurs, otherwise return absent */
+function var opt float: sinh(var opt float: x) =
+  if occurs(x) then sinh(deopt(x)) else <> endif;
 
 /** @group stdlib.builtins.trigonometric Return \(\cosh \a x\) */
 function float: cosh(float: x);
@@ -707,6 +805,12 @@ function var float: cosh(var float: x) ::promise_total =
     var float: r ::is_defined_var;
     constraint float_cosh(x,r) ::defines_var(r);
   } in r;
+/** @group stdlib.builtins.trigonometric Return \(\cosh \a x\) if \a x occurs, otherwise return absent */
+function opt float: cosh(opt float: x) =
+  if occurs(x) then cosh(deopt(x)) else <> endif;
+/** @group stdlib.builtins.trigonometric Return \(\cosh \a x\) if \a x occurs, otherwise return absent */
+function var opt float: cosh(var opt float: x) =
+  if occurs(x) then cosh(deopt(x)) else <> endif;
 
 /** @group stdlib.builtins.trigonometric Return \(\tanh \a x\) */
 function float: tanh(float: x);
@@ -716,6 +820,12 @@ function var float: tanh(var float: x) ::promise_total =
     var float: r ::is_defined_var;
     constraint float_tanh(x,r) ::defines_var(r);
   } in r;
+/** @group stdlib.builtins.trigonometric Return \(\tanh \a x\) if \a x occurs, otherwise return absent */
+function opt float: tanh(opt float: x) =
+  if occurs(x) then tanh(deopt(x)) else <> endif;
+/** @group stdlib.builtins.trigonometric Return \(\tanh \a x\) if \a x occurs, otherwise return absent */
+function var opt float: tanh(var opt float: x) =
+  if occurs(x) then tanh(deopt(x)) else <> endif;
 
 /** @group stdlib.builtins.trigonometric Return \(\mbox{asinh}\ \a x\) */
 function float: asinh(float: x);
@@ -725,6 +835,12 @@ function var float: asinh(var float: x) ::promise_total =
     var float: r ::is_defined_var;
     constraint float_asinh(x,r) ::defines_var(r);
   } in r;
+/** @group stdlib.builtins.trigonometric Return \(\mbox{asinh}\ \a x\) if \a x occurs, otherwise return absent */
+function opt float: asinh(opt float: x) =
+  if occurs(x) then asinh(deopt(x)) else <> endif;
+/** @group stdlib.builtins.trigonometric Return \(\mbox{asinh}\ \a x\) if \a x occurs, otherwise return absent */
+function var opt float: asinh(var opt float: x) =
+  if occurs(x) then asinh(deopt(x)) else <> endif;
 
 /** @group stdlib.builtins.trigonometric Return \(\mbox{acosh}\ \a x\) */
 function float: acosh(float: x);
@@ -734,6 +850,12 @@ function var float: acosh(var float: x) ::promise_total =
     var float: r ::is_defined_var;
     constraint float_acosh(x,r) ::defines_var(r);
   } in r;
+/** @group stdlib.builtins.trigonometric Return \(\mbox{acosh}\ \a x\) if \a x occurs, otherwise return absent */
+function opt float: acosh(opt float: x) = 
+  if occurs(x) then acosh(deopt(x)) else <> endif;
+/** @group stdlib.builtins.trigonometric Return \(\mbox{acosh}\ \a x\) if \a x occurs, otherwise return absent*/
+function var opt float: acosh(var opt float: x) =
+  if occurs(x) then acosh(deopt(x)) else <> endif;
 
 /** @group stdlib.builtins.trigonometric Return \(\mbox{atanh}\ \a x\) */
 function float: atanh(float: x);
@@ -743,4 +865,9 @@ function var float: atanh(var float: x) ::promise_total =
     var float: r ::is_defined_var;
     constraint float_atanh(x,r) ::defines_var(r);
   } in r;
-
+/** @group stdlib.builtins.trigonometric Return \(\mbox{atanh}\ \a x\) if \a x occurs, otherwise return absent */
+function opt float: atanh(opt float: x) =
+  if occurs(x) then atanh(deopt(x)) else <> endif;
+/** @group stdlib.builtins.trigonometric Return \(\mbox{atanh}\ \a x\) if \a x occurs, otherwise return absent */
+function var opt float: atanh(var opt float: x) =
+  if occurs(x) then atanh(deopt(x)) else <> endif;

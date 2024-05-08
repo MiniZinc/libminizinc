@@ -16,6 +16,7 @@ Changes:
 -  Always output multidimensional arrays as nested arrays when using
    ``showJSON`` for consistency.
 -  Add missing implementation for ``default`` for sets expressions.
+-  Add missing optional versions of unary mathematical functions/operators.
 
 Bug fixes:
 ^^^^^^^^^^
