@@ -3193,6 +3193,70 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
           }
           return env.constants.literalTrue;
         }
+        case Expression::E_INTLIT: {
+          Id* id = vd->id();
+          while (id != nullptr) {
+            if (id->decl()->ti()->domain() != nullptr) {
+              GCLock lock;
+              IntSetVal* dom = eval_set_lit(env, id->decl()->ti()->domain())->isv();
+              IntVal v = IntLit::v(Expression::cast<IntLit>(e));
+              if (!dom->contains(v)) {
+                env.fail("domain is empty");
+              }
+              if (dom->min(0) == v && dom->max(dom->size() - 1) == v) {
+                return e;
+              }
+            }
+            {
+              GCLock lock;
+              std::vector<Expression*> args(2);
+              args[0] = id;
+              args[1] = e;
+              Call* c = Call::a(Location().introduce(), env.constants.ids.int_.eq, args);
+              c->decl(env.model->matchFn(env, c, false));
+              c->type(c->decl()->rtype(env, args, nullptr, false));
+              if (c->decl()->e() != nullptr) {
+                flat_exp(env, Ctx(), c, env.constants.varTrue, env.constants.varTrue);
+              }
+              set_computed_domain(env, id->decl(), e, id->decl()->ti()->computedDomain());
+            }
+            id =
+                id->decl()->e() != nullptr ? Expression::dynamicCast<Id>(id->decl()->e()) : nullptr;
+          }
+          return e;
+        }
+        case Expression::E_FLOATLIT: {
+          Id* id = vd->id();
+          while (id != nullptr) {
+            if (id->decl()->ti()->domain() != nullptr) {
+              GCLock lock;
+              FloatSetVal* dom = eval_set_lit(env, id->decl()->ti()->domain())->fsv();
+              FloatVal v = FloatLit::v(Expression::cast<FloatLit>(e));
+              if (!dom->contains(v)) {
+                env.fail("domain is empty");
+              }
+              if (dom->min(0) == v && dom->max(dom->size() - 1) == v) {
+                return e;
+              }
+            }
+            {
+              GCLock lock;
+              std::vector<Expression*> args(2);
+              args[0] = id;
+              args[1] = e;
+              Call* c = Call::a(Location().introduce(), env.constants.ids.float_.eq, args);
+              c->decl(env.model->matchFn(env, c, false));
+              c->type(c->decl()->rtype(env, args, nullptr, false));
+              if (c->decl()->e() != nullptr) {
+                flat_exp(env, Ctx(), c, env.constants.varTrue, env.constants.varTrue);
+              }
+              set_computed_domain(env, id->decl(), e, id->decl()->ti()->computedDomain());
+            }
+            id =
+                id->decl()->e() != nullptr ? Expression::dynamicCast<Id>(id->decl()->e()) : nullptr;
+          }
+          return e;
+        }
         case Expression::E_VARDECL: {
           auto* e_vd = Expression::cast<VarDecl>(e);
           if (vd->e() == e_vd->id() || e_vd->e() == vd->id()) {

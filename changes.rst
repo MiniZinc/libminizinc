@@ -64,6 +64,8 @@ Bug fixes:
 -  Fix ``default`` operator for ``par opt set`` parameters (:bugref:`809`). 
 -  Fix output of ``par opt set`` enumerated types.
 -  Fix pretty printing of records when using the document printer.
+-  Fix internal error when binding numeric literals to declarations with
+   existing right-hand sides.
 
 .. _v2.8.3:
 

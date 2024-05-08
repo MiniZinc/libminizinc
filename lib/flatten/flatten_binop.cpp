@@ -1294,7 +1294,7 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
   } else if (isBuiltin && bot == BOT_EQ && ctx.b == C_ROOT && r == env.constants.varTrue &&
              Expression::isa<Id>(e0.r()) && Expression::type(e1.r()).isPar() &&
              !env.hasReverseMapper(Expression::cast<Id>(e0.r()))) {
-    // Par assignment to Id with no right hand side
+    // Par assignment to Id
     auto* vd = Expression::cast<Id>(e0.r())->decl();
     (void)bind(env, ctx, vd, e1.r());
     ees.resize(2);
