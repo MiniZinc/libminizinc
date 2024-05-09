@@ -1808,84 +1808,52 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
       if (ctx.neg) {
         doubleNeg = true;
         bot = BOT_GQ;
-        if (Expression::type(boe0).bt() == Type::BT_BOOL) {
-          ctx0.b = +ctx0.b;
-          ctx1.b = -ctx1.b;
-        } else if (Expression::type(boe0).bt() == Type::BT_INT) {
-          ctx0.i = +ctx0.b;
-          ctx1.i = -ctx1.b;
-        }
-      } else {
-        if (Expression::type(boe0).bt() == Type::BT_BOOL) {
-          ctx0.b = -ctx0.b;
-          ctx1.b = +ctx1.b;
-        } else if (Expression::type(boe0).bt() == Type::BT_INT) {
-          ctx0.i = -ctx0.b;
-          ctx1.i = +ctx1.b;
-        }
+      }
+      if (Expression::type(boe0).bt() == Type::BT_BOOL) {
+        ctx0.b = -ctx0.b;
+        ctx1.b = +ctx1.b;
+      } else if (Expression::type(boe0).bt() == Type::BT_INT) {
+        ctx0.i = -ctx0.b;
+        ctx1.i = +ctx1.b;
       }
       return flatten_bool_op(env, ctx, ctx0, ctx1, e, r, b, isBuiltin, bo, bot, doubleNeg);
     case BOT_LQ:
       if (ctx.neg) {
         doubleNeg = true;
         bot = BOT_GR;
-        if (Expression::type(boe0).bt() == Type::BT_BOOL) {
-          ctx0.b = +ctx0.b;
-          ctx1.b = -ctx1.b;
-        } else if (Expression::type(boe0).bt() == Type::BT_INT) {
-          ctx0.i = +ctx0.b;
-          ctx1.i = -ctx1.b;
-        }
-      } else {
-        if (Expression::type(boe0).bt() == Type::BT_BOOL) {
-          ctx0.b = -ctx0.b;
-          ctx1.b = +ctx1.b;
-        } else if (Expression::type(boe0).bt() == Type::BT_INT) {
-          ctx0.i = -ctx0.b;
-          ctx1.i = +ctx1.b;
-        }
+      }
+      if (Expression::type(boe0).bt() == Type::BT_BOOL) {
+        ctx0.b = -ctx0.b;
+        ctx1.b = +ctx1.b;
+      } else if (Expression::type(boe0).bt() == Type::BT_INT) {
+        ctx0.i = -ctx0.b;
+        ctx1.i = +ctx1.b;
       }
       return flatten_bool_op(env, ctx, ctx0, ctx1, e, r, b, isBuiltin, bo, bot, doubleNeg);
     case BOT_GR:
       if (ctx.neg) {
         doubleNeg = true;
         bot = BOT_LQ;
-        if (Expression::type(boe0).bt() == Type::BT_BOOL) {
-          ctx0.b = -ctx0.b;
-          ctx1.b = +ctx1.b;
-        } else if (Expression::type(boe0).bt() == Type::BT_INT) {
-          ctx0.i = -ctx0.b;
-          ctx1.i = +ctx1.b;
-        }
-      } else {
-        if (Expression::type(boe0).bt() == Type::BT_BOOL) {
-          ctx0.b = +ctx0.b;
-          ctx1.b = -ctx1.b;
-        } else if (Expression::type(boe0).bt() == Type::BT_INT) {
-          ctx0.i = +ctx0.b;
-          ctx1.i = -ctx1.b;
-        }
+      }
+      if (Expression::type(boe0).bt() == Type::BT_BOOL) {
+        ctx0.b = +ctx0.b;
+        ctx1.b = -ctx1.b;
+      } else if (Expression::type(boe0).bt() == Type::BT_INT) {
+        ctx0.i = +ctx0.b;
+        ctx1.i = -ctx1.b;
       }
       return flatten_bool_op(env, ctx, ctx0, ctx1, e, r, b, isBuiltin, bo, bot, doubleNeg);
     case BOT_GQ:
       if (ctx.neg) {
         doubleNeg = true;
         bot = BOT_LE;
-        if (Expression::type(boe0).bt() == Type::BT_BOOL) {
-          ctx0.b = -ctx0.b;
-          ctx1.b = +ctx1.b;
-        } else if (Expression::type(boe0).bt() == Type::BT_INT) {
-          ctx0.i = -ctx0.b;
-          ctx1.i = +ctx1.b;
-        }
-      } else {
-        if (Expression::type(boe0).bt() == Type::BT_BOOL) {
-          ctx0.b = +ctx0.b;
-          ctx1.b = -ctx1.b;
-        } else if (Expression::type(boe0).bt() == Type::BT_INT) {
-          ctx0.i = +ctx0.b;
-          ctx1.i = -ctx1.b;
-        }
+      }
+      if (Expression::type(boe0).bt() == Type::BT_BOOL) {
+        ctx0.b = +ctx0.b;
+        ctx1.b = -ctx1.b;
+      } else if (Expression::type(boe0).bt() == Type::BT_INT) {
+        ctx0.i = +ctx0.b;
+        ctx1.i = -ctx1.b;
       }
       return flatten_bool_op(env, ctx, ctx0, ctx1, e, r, b, isBuiltin, bo, bot, doubleNeg);
     case BOT_EQ:
@@ -1893,9 +1861,7 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
         doubleNeg = true;
         bot = BOT_NQ;
       }
-      if (Expression::type(boe0).bt() == Type::BT_BOOL) {
-        ctx0.b = ctx1.b = C_MIX;
-      } else if (Expression::type(boe0).bt() == Type::BT_INT) {
+      if (Expression::type(boe0).bt() == Type::BT_INT) {
         ctx0.i = ctx1.i = C_MIX;
       }
       return flatten_bool_op(env, ctx, ctx0, ctx1, e, r, b, isBuiltin, bo, bot, doubleNeg);
@@ -1904,9 +1870,7 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
         doubleNeg = true;
         bot = BOT_EQ;
       }
-      if (Expression::type(boe0).bt() == Type::BT_BOOL) {
-        ctx0.b = ctx1.b = C_MIX;
-      } else if (Expression::type(boe0).bt() == Type::BT_INT) {
+      if (Expression::type(boe0).bt() == Type::BT_INT) {
         ctx0.i = ctx1.i = C_MIX;
       }
       return flatten_bool_op(env, ctx, ctx0, ctx1, e, r, b, isBuiltin, bo, bot, doubleNeg);
