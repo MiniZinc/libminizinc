@@ -1529,6 +1529,19 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
   Expression* boe0 = bo->lhs();
   Expression* boe1 = bo->rhs();
   bool isBuiltin = bo->decl() == nullptr || bo->decl()->e() == nullptr;
+
+  if (ctx.neg) {
+    if (bot == BOT_EQUIV) {
+      ctx.neg = false;
+      ctx.b = -ctx.b;
+      bot = BOT_XOR;
+    } else if (bot == BOT_XOR) {
+      ctx.neg = false;
+      ctx.b = -ctx.b;
+      bot = BOT_EQUIV;
+    }
+  }
+
   switch (bot) {
     case BOT_AND:
       if (isBuiltin) {
@@ -1750,27 +1763,19 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
       }
     } break;
     case BOT_EQUIV:
-      if (ctx.neg) {
-        ctx.neg = false;
-        ctx.b = -ctx.b;
-        bot = BOT_XOR;
-        ctx0.b = ctx1.b = C_MIX;
-        return flatten_bool_op(env, ctx, ctx0, ctx1, e, r, b, isBuiltin, bo, bot, doubleNeg);
-      }
+      assert(!ctx.neg);
       if (!Expression::type(boe1).isOpt() && istrue(env, boe0)) {
         return flat_exp(env, ctx, boe1, r, b);
       }
       if (!Expression::type(boe0).isOpt() && istrue(env, boe1)) {
         return flat_exp(env, ctx, boe0, r, b);
       }
-      if (!Expression::type(boe0).isOpt() && !Expression::type(boe1).isOpt() && (r != nullptr) &&
+      if (!Expression::type(boe0).isOpt() && !Expression::type(boe1).isOpt() &&
           r == env.constants.varTrue) {
         if (Expression::type(boe1).isPar() || Expression::isa<Id>(boe1)) {
           std::swap(boe0, boe1);
         }
-        if (istrue(env, boe0)) {
-          return flat_exp(env, ctx1, boe1, r, b);
-        }
+        assert(!istrue(env, boe0));
         if (isfalse(env, boe0)) {
           ctx1.neg = true;
           ctx1.b = -ctx1.b;
@@ -1797,10 +1802,42 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
       ctx0.b = ctx1.b = C_MIX;
       return flatten_bool_op(env, ctx, ctx0, ctx1, e, r, b, isBuiltin, bo, bot, doubleNeg);
     case BOT_XOR:
-      if (ctx.neg) {
-        ctx.neg = false;
-        ctx.b = -ctx.b;
-        bot = BOT_EQUIV;
+      assert(!ctx.neg);
+      if (!Expression::type(boe1).isOpt() && isfalse(env, boe0)) {
+        return flat_exp(env, ctx, boe1, r, b);
+      }
+      if (!Expression::type(boe0).isOpt() && isfalse(env, boe1)) {
+        return flat_exp(env, ctx, boe0, r, b);
+      }
+      if (!Expression::type(boe0).isOpt() && !Expression::type(boe1).isOpt() &&
+          r == env.constants.varTrue) {
+        if (Expression::type(boe1).isPar() || Expression::isa<Id>(boe1)) {
+          std::swap(boe0, boe1);
+        }
+        assert(!isfalse(env, boe0));
+        if (istrue(env, boe0)) {
+          ctx1.neg = true;
+          ctx1.b = -ctx1.b;
+          return flat_exp(env, ctx1, boe1, r, b);
+        }
+        ctx0.b = C_MIX;
+        EE e0 = flat_exp(env, ctx0, boe0, nullptr, ctx0.partialityVar(env));
+        if (isfalse(env, e0.r())) {
+          return flat_exp(env, ctx1, boe1, r, b);
+        }
+        if (istrue(env, e0.r())) {
+          ctx1.neg = true;
+          ctx1.b = -ctx1.b;
+          return flat_exp(env, ctx1, boe1, r, b);
+        }
+        Id* id = Expression::cast<Id>(e0.r());
+        ctx1.neg = true;
+        ctx1.b = C_MIX;
+        (void)flat_exp(env, ctx1, boe1, id->decl(), env.constants.varTrue);
+        env.addCtxAnn(id->decl(), ctx1.b);
+        ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
+        ret.r = bind(env, Ctx(), r, env.constants.literalTrue);
+        break;
       }
       ctx0.b = ctx1.b = C_MIX;
       return flatten_bool_op(env, ctx, ctx0, ctx1, e, r, b, isBuiltin, bo, bot, doubleNeg);
