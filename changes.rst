@@ -4,7 +4,12 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
-.. _unreleased:
+.. _v2.8.4:
+
+`Version 2.8.4 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.8.4>`__
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(released 10 May 2024)
 
 Changes:
 ^^^^^^^^
@@ -18,6 +23,12 @@ Changes:
 -  Add missing implementation for ``default`` for sets expressions.
 -  Add missing optional versions of unary mathematical functions/operators.
 -  Improve special-case handling of boolean ``<->`` and ``xor`` operators.
+
+Changes in the IDE:
+^^^^^^^^^^^^^^^^^^^
+-  Fix bundled OpenSSL libraries on Windows.
+-  Allow MOOC submission window to be scrolled.
+-  Increase hard process termination timeout to 1s.
 
 Bug fixes:
 ^^^^^^^^^^
