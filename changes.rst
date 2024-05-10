@@ -17,6 +17,7 @@ Changes:
    ``showJSON`` for consistency.
 -  Add missing implementation for ``default`` for sets expressions.
 -  Add missing optional versions of unary mathematical functions/operators.
+-  Improve special-case handling of boolean ``<->`` and ``xor`` operators.
 
 Bug fixes:
 ^^^^^^^^^^
@@ -67,6 +68,8 @@ Bug fixes:
 -  Fix pretty printing of records when using the document printer.
 -  Fix internal error when binding numeric literals to declarations with
    existing right-hand sides.
+-  Fix contexts of arguments of double-negated integer comparisons
+   (:bugref:`810`).
 
 .. _v2.8.3:
 
