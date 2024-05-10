@@ -70,6 +70,7 @@ Bug fixes:
    existing right-hand sides.
 -  Fix contexts of arguments of double-negated integer comparisons
    (:bugref:`810`).
+-  Fix context of indices in array access expressions (:bugref:`719`).
 
 .. _v2.8.3:
 

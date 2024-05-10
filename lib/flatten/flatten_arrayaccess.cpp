@@ -222,6 +222,7 @@ start_flatten_arrayaccess:
   }
 flatten_arrayaccess:
   Ctx dimctx = ctx;
+  dimctx.i = C_MIX;
   dimctx.neg = false;
   for (unsigned int i = 0; i < aa->idx().size(); i++) {
     Expression* tmp = follow_id_to_decl(aa->idx()[i]);
