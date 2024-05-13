@@ -38,28 +38,36 @@
       { "$ref" : "#/$defs/literal" }
     ]},
     "annotation" : { "oneOf" : [
-      { "$ref" : "#/$defs/call" },
+      { "$ref" : "#/$defs/annotationCall" },
       { "type" : "string" }
     ]},
     "annotations" : {
       "type" : "array",
       "items" : { "$ref" : "#/$defs/annotation" }
     },
-    "call" : {
+    "annotationArgument" : { "oneOf" : [
+      { "$ref" : "#/$defs/annotationLiterals"},
+      { "$ref" : "#/$defs/annotationLiteral" }
+    ]},
+    "annotationCall" : {
       "type" : "object",
       "properties" : {
         "id": { "$ref": "#/$defs/identifier" },
         "args": {
           "type": "array",
-          "items": { "$ref" : "#/$defs/argument" }
-        },
-        "ann" : { "$ref" : "#/$defs/annotations"}
+          "items": { "$ref" : "#/$defs/annotationArgument" }
+        }
       },
       "required": [
         "id",
         "args"
       ]
     },
+    "annotationLiterals" : { "type" : "array", "items" : { "$ref" : "#/$defs/annotationLiteral" } },
+    "annotationLiteral" : { "oneOf" : [
+      { "$ref" : "#/$defs/literal"},
+      { "$ref" : "#/$defs/annotationCall" }
+    ]},
     "domain" : {
       "type" : "array",
       "items" : {
@@ -131,7 +139,22 @@
     },
     "constraints": {
       "type": "array",
-      "items": { "$ref" : "#/$defs/call" }
+      "items": {
+        "type" : "object",
+        "properties" : {
+          "id": { "$ref": "#/$defs/identifier" },
+          "args": {
+            "type": "array",
+            "items": { "$ref" : "#/$defs/argument" }
+          },
+          "ann" : { "$ref" : "#/$defs/annotations"},
+          "defines": { "$ref": "#/$defs/identifier" }
+        },
+        "required": [
+          "id",
+          "args"
+        ]
+      }
     },
     "output": {
       "type": "array",
