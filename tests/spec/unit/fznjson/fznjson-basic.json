@@ -1,0 +1,59 @@
+{
+  "variables": {
+    "x": { "type": "int", "domain": [[1, 3]] },
+    "y": { "type": "int", "domain": [[1, 3]] },
+    "b": { "type": "bool", "defined": true },
+    "X_INTRODUCED_3_": { "type": "bool", "introduced": true, "defined": true }
+  },
+  "arrays": {
+    "X_INTRODUCED_0_": { "a": [1, -1] },
+    "X_INTRODUCED_1_": { "a": [1, 1] },
+    "X_INTRODUCED_4_": { "a": ["b"] },
+    "X_INTRODUCED_5_": { "a": ["x", "y"] }
+  },
+  "constraints": [
+    { "id": "bool_clause", "args": [["X_INTRODUCED_3_"], ["b"]] },
+    {
+      "id": "int_lin_le_reif",
+      "args": ["X_INTRODUCED_0_", ["x", "y"], -1, "b"],
+      "defines": "b"
+    },
+    {
+      "id": "int_lin_le_reif",
+      "args": ["X_INTRODUCED_1_", ["x", "y"], 3, "X_INTRODUCED_3_"],
+      "defines": "X_INTRODUCED_3_"
+    }
+  ],
+  "output": ["x", "y"],
+  "solve": {
+    "method": "satisfy",
+    "ann": [
+      {
+        "id": "seq_search",
+        "args": [
+          [
+            {
+              "id": "int_search",
+              "args": [
+                "X_INTRODUCED_5_",
+                "input_order",
+                "indomain_min",
+                "complete"
+              ]
+            },
+            {
+              "id": "bool_search",
+              "args": [
+                "X_INTRODUCED_4_",
+                "input_order",
+                "indomain_min",
+                "complete"
+              ]
+            }
+          ]
+        ]
+      }
+    ]
+  },
+  "version": "1.0"
+}

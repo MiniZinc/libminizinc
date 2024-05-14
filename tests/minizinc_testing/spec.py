@@ -4,6 +4,9 @@ import minizinc as mzn
 from minizinc.helpers import check_result
 import pathlib
 import re
+from json import load, dumps
+import jsonschema
+import warnings
 
 
 @yaml.mapping("!Test")
@@ -50,15 +53,22 @@ class Test:
         try:
             model = mzn.Model([file] + extra_files)
             model.output_type = Solution
-            solver = mzn.Solver.lookup(solver)
+            if solver.endswith(".msc"):
+                solver = mzn.Solver.load(file.parent.joinpath(solver))
+            else:
+                solver = mzn.Solver.lookup(solver)
             instance = mzn.Instance(solver, model)
             if self.type == "solve":
                 result = instance.solve(**options)
                 obtained = Result.from_mzn(result)
             elif self.type == "compile":
                 with instance.flat(**options) as (fzn, ozn, stats):
-                    obtained = FlatZinc.from_mzn(fzn, file.parent)
-                    result = obtained
+                    if solver.inputType == "JSON":
+                        obtained = FlatZincJSON.from_mzn(fzn, file.parent)
+                        result = obtained
+                    else:
+                        obtained = FlatZinc.from_mzn(fzn, file.parent)
+                        result = obtained
             elif self.type == "output-model":
                 with instance.flat(**options) as (fzn, ozn, stats):
                     obtained = OutputModel.from_mzn(ozn, file.parent)
@@ -311,7 +321,7 @@ class FlatZinc:
         lines = [
             re.sub(
                 r"::[^;]*",
-                ann_sort, 
+                ann_sort,
                 re.sub(r"  +", " ", line),
                 count=1,
             )
@@ -339,10 +349,103 @@ class FlatZinc:
             instance.base = base
             return instance
 
+
 def ann_sort(match):
     s = match.group(0)
-    anns = sorted([ann for ann in s.split('::') if ann != ""])
+    anns = sorted([ann for ann in s.split("::") if ann != ""])
     return "::" + "::".join(anns)
+
+
+@yaml.scalar("!FlatZincJSON")
+class FlatZincJSON:
+    """
+    A FlatZinc JSON result, encoded by !FlatZincJSON in YAML.
+    """
+
+    def __init__(self, path):
+        self.path = path
+        self.base = None
+        self.fzn = None
+
+    def check(self, actual):
+        if not isinstance(actual, FlatZincJSON):
+            return False
+
+        if self.fzn is None:
+            with open(actual.base.joinpath(self.path), encoding="utf-8") as f:
+                self.fzn = load(f)
+
+        obtained = actual.normalized()
+
+        schema_path = (
+            pathlib.Path(__file__).parent.parent.parent / "docs/en/fznjson.json"
+        )
+        if schema_path.exists():
+            with open(schema_path, encoding="utf-8") as fp:
+                schema = load(fp)
+            jsonschema.validate(instance=obtained, schema=schema)
+        else:
+            warnings.warn(
+                "Unable to find FlatZinc JSON schema. Cannot verify validity."
+            )
+
+        return self.normalized() == obtained
+
+    def normalized(self):
+        var_nums = set()
+        for v in list(self.fzn["variables"].keys()) + list(self.fzn["arrays"].keys()):
+            m = re.match(r"X_INTRODUCED_(\d+)_", v)
+            if m is not None:
+                var_nums.add(int(m.group(1)))
+        var_map = {
+            f"X_INTRODUCED_{src}_": f"X_INTRODUCED_{dst}_"
+            for dst, src in enumerate(sorted(var_nums))
+        }
+
+        def get_ident(obj):
+            if isinstance(obj, dict):
+                return obj.get("id")
+            return obj
+
+        def walk(obj, key=None):
+            if isinstance(obj, dict):
+                return {walk(k): walk(v, k) for k, v in obj.items()}
+            if isinstance(obj, list):
+                items = [walk(v) for v in obj]
+                if key == "ann":
+                    return sorted(items, key=get_ident)
+                return items
+            if isinstance(obj, str):
+                return var_map.get(obj, obj)
+            return obj
+
+        return walk(self.fzn)
+
+    def get_value(self):
+        if self.fzn is None:
+            return self.path
+        return dumps(self.normalized())
+
+    @staticmethod
+    def from_mzn(fzn, base):
+        """
+        Creates a `FlatZinc` object from a `File` returned by `flat()` in the minizinc interface.
+
+        Also takes the base path the mzn file was from, so that when loading the expected fzn file
+        it can be done relative to the mzn path.
+        """
+        with open(fzn.name, encoding="utf-8") as file:
+            instance = FlatZincJSON(None)
+            instance.fzn = load(file)
+            instance.base = base
+            return instance
+
+
+def ann_sort(match):
+    s = match.group(0)
+    anns = sorted([ann for ann in s.split("::") if ann != ""])
+    return "::" + "::".join(anns)
+
 
 @yaml.scalar("!OutputModel")
 class OutputModel:

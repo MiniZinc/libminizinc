@@ -48,9 +48,9 @@ def pytest_addoption(parser):
     )
 
 
-def pytest_collect_file(parent, path):
-    if path.ext == ".mzn":
-        return MznFile.from_parent(parent, fspath=path)
+def pytest_collect_file(parent, file_path):
+    if file_path.suffix == ".mzn":
+        return MznFile.from_parent(parent, path=file_path)
 
 
 def pytest_html_results_table_header(cells):
@@ -192,6 +192,8 @@ class MznItem(pytest.Item):
         return self.allowed is None or solver in self.allowed
 
     def solver_exists(self, solver):
+        if solver.endswith(".msc"):
+            return True
         solver_exists = pytest.solver_cache.get(solver, None)
         if solver_exists is None:
             try:

@@ -4,6 +4,12 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
+.. _unreleased:
+
+Bug fixes:
+^^^^^^^^^^
+-  Fix specification for constraint items and annotations in FlatZinc JSON.
+
 .. _v2.8.4:
 
 `Version 2.8.4 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.8.4>`__
