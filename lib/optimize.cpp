@@ -360,6 +360,8 @@ void remove_deleted_items(EnvI& envi, std::vector<VarDecl*>& deletedVarDecls) {
     if (envi.varOccurrences.occurrences(cur) == 0) {
       auto cur_idx = envi.varOccurrences.idx.find(cur->id());
       if (cur_idx.first && !m[*cur_idx.second]->removed()) {
+        auto* vdi = m[*cur_idx.second]->cast<VarDeclI>();
+        cur = vdi->e();
         if (is_output(cur)) {
           // We have to change the output model if we remove this variable
           Expression* val = nullptr;
@@ -399,16 +401,14 @@ void remove_deleted_items(EnvI& envi, std::vector<VarDecl*>& deletedVarDecls) {
             VarDecl* vd_out =
                 (*envi.output)[envi.outputFlatVarOccurrences.find(cur)]->cast<VarDeclI>()->e();
             vd_out->e(val);
-            CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls,
-                            m[*cur_idx.second]->cast<VarDeclI>());
+            CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls, vdi);
             top_down(cd, cur->e());
-            (*envi.flat())[*cur_idx.second]->remove();
+            vdi->remove();
           }
         } else {
-          CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls,
-                          m[*cur_idx.second]->cast<VarDeclI>());
+          CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls, vdi);
           top_down(cd, cur->e());
-          (*envi.flat())[*cur_idx.second]->remove();
+          vdi->remove();
         }
       }
     }

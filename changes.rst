@@ -18,6 +18,8 @@ Bug fixes:
 -  Fix evaluation of par partial functions returning arrays.
 -  Fix type inference for if-then-else expressions with different tuple or
    record types in the branches.
+-  Fix evaluation error caused by removal of fixed FlatZinc variables without
+   fixing them in the output model.
 
 Changes:
 ^^^^^^^^
