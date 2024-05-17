@@ -137,11 +137,11 @@ EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   int dispatch = is_par ? 0 : Expression::eid(e) - Expression::E_INTLIT + 1;
 
 #ifdef OUTPUT_CALLTREE
-  if (auto* call = Expression::dynamicCast<Call>(e)) {
+  if (Expression::isa<Call>(e) || Expression::isa<UnOp>(e) || Expression::isa<BinOp>(e)) {
     for (int i = 0; i < env.callDepth; ++i) {
       std::cerr << "──";
     }
-    std::cerr << *call << " ::" << *env.ctxToAnn(Expression::type(e).isbool() ? ctx.b : ctx.i)
+    std::cerr << *e << " ::" << *env.ctxToAnn(Expression::type(e).isbool() ? ctx.b : ctx.i)
               << std::endl;
     env.callDepth++;
 
