@@ -9,6 +9,7 @@ https://github.com/MiniZinc/libminizinc/issues.
 Bug fixes:
 ^^^^^^^^^^
 -  Fix specification for constraint items and annotations in FlatZinc JSON.
+-  Fix flattening of negated let expressions with constraints.
 
 .. _v2.8.4:
 
