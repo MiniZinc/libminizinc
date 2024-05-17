@@ -88,7 +88,9 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
         if (ctx.b == C_ROOT || Expression::ann(le).contains(env.constants.ann.promise_total)) {
           (void)flat_exp(env, Ctx(), le, env.constants.varTrue, env.constants.varTrue);
         } else {
-          EE ee = flat_exp(env, ctx, le, nullptr, env.constants.varTrue);
+          Ctx nctx = ctx;
+          nctx.neg = false;
+          EE ee = flat_exp(env, nctx, le, nullptr, env.constants.varTrue);
           ee.b = ee.r;
           cs.push_back(ee);
         }
