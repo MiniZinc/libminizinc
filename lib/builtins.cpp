@@ -2241,7 +2241,52 @@ Expression* b_set_sparse_inverse(EnvI& env, Call* call) {
 IntVal b_string_length(EnvI& env, Call* call) {
   GCLock lock;
   std::string s = eval_string(env, call->arg(0));
-  return static_cast<long long int>(s.size());
+  IntVal size = 0;
+  // Count size, taking UTF-8 characters into account
+  for (size_t i = 0; i < s.size(); i++) {
+    size++;
+    if ((s[i] & 0xE0) == 0xC0) {
+      i += 1;
+    } else if ((s[i] & 0xF0) == 0xE0) {
+      i += 2;
+    } else if ((s[i] & 0xF8) == 0xF0) {
+      i += 3;
+    }
+  }
+  return size;
+}
+
+Expression* b_string_split(EnvI& env, Call* call) {
+  GCLock lock;
+  std::string s = eval_string(env, call->arg(0));
+  std::string sep = eval_string(env, call->arg(1));
+  std::vector<Expression*> elems;
+  if (sep.empty()) {
+    // Split into characters (taking UTF-8 encoding into account)
+    for (size_t i = 0; i < s.size(); i++) {
+      size_t start = i;
+      if ((s[i] & 0xE0) == 0xC0) {
+        i += 1;
+      } else if ((s[i] & 0xF0) == 0xE0) {
+        i += 2;
+      } else if ((s[i] & 0xF8) == 0xF0) {
+        i += 3;
+      }
+      elems.push_back(new StringLit(Expression::loc(call->arg(0)), s.substr(start, i - start + 1)));
+    }
+  } else {
+    size_t start = 0;
+    size_t end = s.find(sep);
+    while (end != std::string::npos) {
+      elems.push_back(new StringLit(Expression::loc(call->arg(0)), s.substr(start, end - start)));
+      start = end + sep.size();
+      end = s.find(sep, start);
+    }
+    elems.push_back(new StringLit(Location().introduce(), s.substr(start, end)));
+  }
+  auto* al = new ArrayLit(Expression::loc(call->arg(0)), elems);
+  al->type(Type::parstring(1));
+  return al;
 }
 
 std::string b_show_index_sets(EnvI& env, Call* c) {
@@ -4278,6 +4323,12 @@ void register_builtins(Env& e) {
     std::vector<Type> t(1);
     t[0] = Type::parstring();
     rb(env, m, ASTString("string_length"), t, b_string_length);
+  }
+  {
+    std::vector<Type> t(2);
+    t[0] = Type::parstring();
+    t[1] = Type::parstring();
+    rb(env, m, ASTString("string_split"), t, b_string_split);
   }
   { rb(env, m, ASTString("file_path"), std::vector<Type>(), b_file_path); }
   {

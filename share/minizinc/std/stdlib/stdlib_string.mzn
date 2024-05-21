@@ -116,8 +116,24 @@ function string: json_object(array [int, 1..2] of string: obj) =
  */
 function string: json_array(array [int] of string: arr) = concat(["[", join(",", arr), "]"]);
 
-/** @group stdlib.builtins.string Return length of \a s */
+/** @group stdlib.builtins.string Return length of \a s 
+
+    This function interprets the string as UTF-8 encoded.
+    The length is the number of Unicode code points in the string.
+*/
 function int: string_length(string: s);
+
+/** @group stdlib.builtins.string Split \a s by separator \a sep
+
+    Returns an array of strings containing the substrings of \a s
+    that are separated by \a sep. If \a sep is empty, the result is
+    an array of characters of \a s.
+
+    This function interprets the string as UTF-8 encoded, so when
+    splitting with an empty separator, the result is an array of
+    Unicode code points.
+  */
+function array[int] of string: string_split(string: s, string: sep);
 
 /** @group stdlib.builtins.string Return concatenation of \a s1 and \a s2 */
 function string: '++'(string: s1, string: s2) ::mzn_internal_representation;

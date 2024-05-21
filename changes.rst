@@ -12,6 +12,13 @@ Bug fixes:
 -  Fix flattening of negated let expressions with constraints.
 -  Fix crash when equating identifiers to tuples/records in if-then-else
    expressions.
+-  Fix ``string_length`` function to return the number of Unicode code points
+   rather than the number of bytes (i.e., to interpret the string as UTF-8).
+
+Changes:
+^^^^^^^^
+-  Add ``string_split`` function that splits a string into an array of strings
+   based on a separator.
 
 .. _v2.8.4:
 
