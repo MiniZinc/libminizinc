@@ -43,7 +43,8 @@ void classify_conjunct(EnvI& env, Expression* e, IdMap<int>& eq_occurrences,
                        IdMap<std::pair<Expression*, Expression*>>& eq_branches,
                        std::vector<Expression*>& other_branches) {
   if (auto* bo = Expression::dynamicCast<BinOp>(e)) {
-    if (bo->op() == BOT_EQ && Expression::type(bo->lhs()).dim() == 0) {
+    if (bo->op() == BOT_EQ && Expression::type(bo->lhs()).dim() == 0 &&
+        !Expression::type(bo->lhs()).structBT()) {
       auto* ident = Expression::dynamicCast<Id>(bo->lhs());
       auto* other = bo->rhs();
       if (ident == nullptr || ident == env.constants.absent) {

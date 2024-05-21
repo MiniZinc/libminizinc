@@ -10,6 +10,8 @@ Bug fixes:
 ^^^^^^^^^^
 -  Fix specification for constraint items and annotations in FlatZinc JSON.
 -  Fix flattening of negated let expressions with constraints.
+-  Fix crash when equating identifiers to tuples/records in if-then-else
+   expressions.
 
 .. _v2.8.4:
 
