@@ -1265,7 +1265,9 @@ void TypeInst::setStructDomain(EnvI& env, const Type& struct_type, bool setTypeA
     }
   }
   if (setTIRanges && ranges().size() != type().dim()) {
-    assert(ranges().empty());
+    assert(ranges().empty() || ranges().size() == 1 &&
+                                   Expression::isa<TIId>(ranges()[0]->domain()) &&
+                                   !Expression::cast<TIId>(ranges()[0]->domain())->isEnum());
     std::vector<TypeInst*> newRanges(type().dim());
     for (unsigned int k = 0; k < type().dim(); k++) {
       newRanges[k] = new TypeInst(Location().introduce(), Type::parint());
