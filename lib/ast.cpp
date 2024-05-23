@@ -46,7 +46,7 @@ Expression* domain_shallow_copy(EnvI& env, Expression* orig, Type type) {
                             domain_shallow_copy(env, ti->domain(), nt));
   }
   ArrayLit* tup = ArrayLit::constructTuple(Expression::loc(orig), clone);
-  tup->type(type);
+  tup->type(type.elemType(env));
   return tup;
 }
 
