@@ -2401,6 +2401,25 @@ public:
         } else if (tret.isunknown()) {
           tret.bt(Expression::type(ethen).bt());
           tret.dim(Expression::type(ethen).dim());
+        } else if (tret.structBT()) {
+          Type ty = Expression::type(ethen);
+          if (tret.bt() == Type::BT_TUPLE) {
+            if (ty.bt() != Type::BT_TUPLE) {
+              throw TypeError(_env, Expression::loc(ethen), "non-uniform branches in if-then-else");
+            }
+            tret = _env.commonTuple(tret, ty, true);
+            if (tret.istop()) {
+              throw TypeError(_env, Expression::loc(ethen), "non-uniform branches in if-then-else");
+            }
+          } else {  // (tret.bt() == Type::BT_RECORD)
+            if (ty.bt() != Type::BT_RECORD) {
+              throw TypeError(_env, Expression::loc(ethen), "non-uniform branches in if-then-else");
+            }
+            tret = _env.commonRecord(tret, ty, true);
+            if (tret.istop()) {
+              throw TypeError(_env, Expression::loc(ethen), "non-uniform branches in if-then-else");
+            }
+          }
         }
         if ((!Expression::type(ethen).isbot() &&
              !Type::btSubtype(_env, Expression::type(ethen), tret, true) &&
