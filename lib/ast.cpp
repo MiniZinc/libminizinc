@@ -1314,6 +1314,12 @@ bool TypeInst::resolveAlias(EnvI& env) {
   }
   if (type().otExplicit() && ntype.ot() != type().ot()) {
     if (type().ot() == Type::OT_OPTIONAL) {
+      if (ntype.bt() == Type::BT_TUPLE) {
+        throw TypeError(env, Expression::loc(this), "opt tuples are not allowed");
+      }
+      if (ntype.bt() == Type::BT_RECORD) {
+        throw TypeError(env, Expression::loc(this), "opt records are not allowed");
+      }
       ntype.mkOpt(env);
     } else {
       ntype.mkPresent(env);
