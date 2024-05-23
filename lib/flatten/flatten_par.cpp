@@ -74,7 +74,14 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
       return ret;
     }
     GCLock lock;
-    auto* al = Expression::cast<ArrayLit>(follow_id(eval_par(env, e)));
+    ArrayLit* al = nullptr;
+    try {
+      al = Expression::cast<ArrayLit>(follow_id(eval_par(env, e)));
+    } catch (ResultUndefinedError&) {
+      ret.r = create_dummy_value(env, Expression::type(e));
+      ret.b = bind(env, Ctx(), b, env.constants.literalFalse);
+      return ret;
+    }
     CallStackItem _csi(env, e);
     if (al->empty() || ((r != nullptr) && r->e() == nullptr)) {
       if (r == nullptr) {

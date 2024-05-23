@@ -15,6 +15,7 @@ Bug fixes:
 -  Fix ``string_length`` function to return the number of Unicode code points
    rather than the number of bytes (i.e., to interpret the string as UTF-8).
 -  Emit type error for opt tuples and records created through type aliases.
+-  Fix evaluation of par partial functions returning arrays.
 
 Changes:
 ^^^^^^^^
