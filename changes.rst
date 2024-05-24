@@ -20,6 +20,8 @@ Bug fixes:
    record types in the branches.
 -  Fix evaluation error caused by removal of fixed FlatZinc variables without
    fixing them in the output model.
+-  Fix computed type when flattening cv comprehensions containing tuple or
+   record types.
 
 Changes:
 ^^^^^^^^
