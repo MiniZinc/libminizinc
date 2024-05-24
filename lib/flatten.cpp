@@ -3710,6 +3710,12 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
         for (auto& i : a.a) {
           if (t == Type::bot()) {
             t = Expression::type(i);
+          } else if (t.structBT()) {
+            if (t.bt() == Type::BT_TUPLE) {
+              t = env.commonTuple(t, Expression::type(i), true);
+            } else {  // (tret.bt() == Type::BT_RECORD)
+              t = env.commonRecord(t, Expression::type(i), true);
+            }
           }
           if (!Expression::type(i).isPar()) {
             allPar = false;
@@ -5745,7 +5751,7 @@ std::vector<Expression*> field_slices(EnvI& env, Expression* arrExpr) {
 
   StructType* st = env.getStructType(al->type());
   std::vector<std::pair<int, int>> dims(al->dims());
-  for (size_t i = 0; i < al->dims(); i++) {
+  for (unsigned int i = 0; i < al->dims(); i++) {
     dims[i] = std::make_pair(al->min(i), al->max(i));
   }
 
