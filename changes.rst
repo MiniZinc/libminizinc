@@ -22,6 +22,8 @@ Bug fixes:
    fixing them in the output model.
 -  Fix computed type when flattening cv comprehensions containing tuple or
    record types.
+-  Fix unsatisfiability caused by reification in negated boolean context
+   (:bugref:`813`).
 
 Changes:
 ^^^^^^^^

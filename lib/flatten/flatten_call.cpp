@@ -1076,7 +1076,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
         if ((reif_decl != nullptr) && (reif_decl->e() != nullptr)) {
           add_path_annotation(env, reif_decl->e());
           VarDecl* reif_b;
-          if (r == nullptr || (r != nullptr && r->e() != nullptr)) {
+          if (r == nullptr || (r != nullptr && r->e() != nullptr) || ctx.neg) {
             reif_b = new_vardecl(env, Ctx(), new TypeInst(Location().introduce(), Type::varbool()),
                                  nullptr, nullptr, nullptr);
             env.addCtxAnn(reif_b, ctx.b);
@@ -1108,7 +1108,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
           // Annotate cr() with get_path()
           add_path_annotation(env, cr());
           reif_b->e(cr());
-          if (r != nullptr && r->e() != nullptr) {
+          if (r != nullptr && r != reif_b) {
             Ctx reif_ctx;
             reif_ctx.neg = ctx.neg;
             bind(env, reif_ctx, r, reif_b->id());
