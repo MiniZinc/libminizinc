@@ -24,6 +24,7 @@ Bug fixes:
    record types.
 -  Fix unsatisfiability caused by reification in negated boolean context
    (:bugref:`813`).
+-  Fix bug in computation of common type of incompatible record types.
 
 Changes:
 ^^^^^^^^

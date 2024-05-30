@@ -1455,12 +1455,12 @@ Type EnvI::commonRecord(Type record1, Type record2, bool ignoreRecord1Dim) {
   }
 
   if (record1.dim() != record2.dim()) {
-    return Type::bot();
+    return Type::top();
   }
   RecordType* rt1 = getRecordType(record1);
   RecordType* rt2 = getRecordType(record2);
   if (rt1->size() != rt2->size()) {
-    return Type::bot();
+    return Type::top();
   }
 
   std::vector<std::pair<ASTString, Type>> common(rt1->size());
