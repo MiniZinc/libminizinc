@@ -2676,6 +2676,21 @@ which the output is associated with. Sections can be turned on or off using the
 ``--only-sections`` and ``--not-sections`` command line arguments
 (:ref:`ch-cmdline`).
 
+.. _spec-json-sections:
+
+JSON Output Items
++++++++++++++++++
+
+Output items can also be used to format an expression as JSON (see :ref:`spec-json`)
+by annotating the output item with :mzn:`json_section("<section name>")`:
+
+.. code-block:: minizinc
+
+    output :: json_section("my_section") (a: 1, b: [2, 3]);
+
+The output expression can have any type and is encoded using :mzn:`showJSON` function. 
+If there are multiple output items with the same JSON section name, only the first one is used.
+
 .. _spec-annotation-items:
 
 Annotation Items

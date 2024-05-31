@@ -60,6 +60,9 @@ function ann: mzn_output_section(string: s) = mzn_output_section(s, false);
 function ann: mzn_output_section(ann: x) = x;
 annotation mzn_output_section(string: s, bool: json);
 
+/** @group stdlib.annotations.general Declare that the annotated output item should be output to the section \s and formatted as JSON. */
+function ann: json_section(string: s) = mzn_output_section(s, true);
+
 /** @group stdlib.annotations.general State that a function is deprecated since MiniZinc version \a version with humand readable \a explanation. */
 annotation mzn_deprecated(string: version, string: explanation);
 

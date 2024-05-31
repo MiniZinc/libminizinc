@@ -36,7 +36,7 @@ The ``output`` field contains an object mapping output section names to their co
 Output section contents can be either:
 
 - A string containing the output value
-- A JSON value if the section is a JSON section (the ``json`` section, or a section ending with ``_json``)
+- A JSON value if the section is the ``json`` section (generated when using ``--output-mode json``), or if the section was specified using the ``json_section`` annotation.
 
 The ``sections`` field contain a list of output section names (strings) to show the order that they were produced.
 

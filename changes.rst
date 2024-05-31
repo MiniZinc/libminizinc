@@ -39,6 +39,8 @@ Changes:
 ^^^^^^^^
 -  Add ``string_split`` function that splits a string into an array of strings
    based on a separator.
+-  Add ``json_section`` annotation to mark an output item as a JSON section
+   (:bugref:`816`).
 
 .. _v2.8.4:
 
