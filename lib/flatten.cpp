@@ -1351,14 +1351,14 @@ unsigned int EnvI::registerTupleType(ArrayLit* tup) {
 
 Type common_type(EnvI& env, Type t1, Type t2) {
   Type common;
-  if (t1.bt() == Type::BT_TUPLE) {
+  if (t1.bt() == Type::BT_TUPLE && t2.bt() == Type::BT_TUPLE) {
     common = t1;
     if (t1 != t2) {
       common = env.commonTuple(t1, t2);
     }
     return common;
   }
-  if (t1.bt() == Type::BT_RECORD) {
+  if (t1.bt() == Type::BT_RECORD && t2.bt() == Type::BT_RECORD) {
     common = t1;
     if (t1 != t2) {
       common = env.commonRecord(t1, t2);

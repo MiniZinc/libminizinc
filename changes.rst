@@ -25,6 +25,7 @@ Bug fixes:
 -  Fix unsatisfiability caused by reification in negated boolean context
    (:bugref:`813`).
 -  Fix bug in computation of common type of incompatible record types.
+-  Fix crash when type checking nested arrays of tuples or records.
 
 Changes:
 ^^^^^^^^
