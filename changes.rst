@@ -31,6 +31,9 @@ Bug fixes:
    (:bugref:`813`).
 -  Fix bug in computation of common type of incompatible record types.
 -  Fix crash when type checking nested arrays of tuples or records.
+-  Fix incorrect unification of flattened tuple/record fields with paths
+   enabled. 
+
 
 Changes:
 ^^^^^^^^
