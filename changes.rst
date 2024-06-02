@@ -9,7 +9,7 @@ https://github.com/MiniZinc/libminizinc/issues.
 `Version 2.8.5 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.8.5>`__
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-(released 31 May 2024)
+(released 3 June 2024)
 
 Bug fixes:
 ^^^^^^^^^^
