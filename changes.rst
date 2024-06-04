@@ -34,7 +34,6 @@ Bug fixes:
 -  Fix incorrect unification of flattened tuple/record fields with paths
    enabled. 
 
-
 Changes:
 ^^^^^^^^
 -  Add ``string_split`` function that splits a string into an array of strings
