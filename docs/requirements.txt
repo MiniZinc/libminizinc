@@ -1,2 +1,2 @@
-six
 sphinx_rtd_theme
+sphinx-notfound-page

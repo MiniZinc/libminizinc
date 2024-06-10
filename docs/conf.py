@@ -42,6 +42,7 @@ extensions = [
     "inlinesyntaxhighlight",
     "playground",
     "sphinxtogithub",
+    "notfound.extension",
 ]
 
 inline_highlight_respect_highlight = False
