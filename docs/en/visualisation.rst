@@ -46,6 +46,7 @@ A user-defined visualisation can be created by making use of the visualisation J
 The visualisation is setup using an :mzn:`output` item annotated with :mzn:`vis_server`:
 
   .. code-block:: minizinc
+
     any: init_data = (
       size: 10,
       label: "My custom visualisation"

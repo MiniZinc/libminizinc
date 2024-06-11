@@ -22,6 +22,7 @@ Bug fixes:
 ^^^^^^^^^^
 -  Fix incorrect type error for array literals where the first element is ``<>``
    and subsequent elements are sets (:bugref:`818`).
+-  Fix missing code block in visualisation feature documentation.
 
 .. _v2.8.5:
 
