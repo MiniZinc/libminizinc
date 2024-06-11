@@ -1803,7 +1803,8 @@ public:
                 Expression::type(vi).ot() != Type::OT_OPTIONAL) {
               throw TypeError(_env, Expression::loc(al), "non-uniform array literal");
             }
-          } else {
+          } else if (Expression::type(vi).bt() != Type::BT_BOT ||
+                     Expression::type(vi).st() == Type::ST_SET) {
             haveInferredType = true;
             ty.st(Expression::type(vi).st());
           }

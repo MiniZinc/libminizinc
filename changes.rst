@@ -18,6 +18,11 @@ Changes:
    tuples containing only enumerable (enum, int, or bool) will now be rewritten
    into ``lex_less`` or ``lex_lesseq`` global constraints.
 
+Bug fixes:
+^^^^^^^^^^
+-  Fix incorrect type error for array literals where the first element is ``<>``
+   and subsequent elements are sets (:bugref:`818`).
+
 .. _v2.8.5:
 
 `Version 2.8.5 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.8.5>`__
