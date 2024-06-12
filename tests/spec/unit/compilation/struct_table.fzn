@@ -1,0 +1,11 @@
+predicate gecode_table_int(array [int] of var int: x,array [int] of int: t);
+array [1..12] of int: X_INTRODUCED_24_ = [1,1,1,3,2,2,0,6,3,3,0,9];
+var int: X_INTRODUCED_16_:: output_var;
+var 1..3: X_INTRODUCED_17_:: output_var;
+var bool: X_INTRODUCED_19_:: output_var;
+var int: X_INTRODUCED_20_:: output_var;
+var 0..1: X_INTRODUCED_22_ ::var_is_introduced :: is_defined_var;
+array [1..4] of var int: X_INTRODUCED_23_ ::var_is_introduced  = [X_INTRODUCED_16_,X_INTRODUCED_17_,X_INTRODUCED_22_,X_INTRODUCED_20_];
+constraint gecode_table_int(X_INTRODUCED_23_,X_INTRODUCED_24_);
+constraint bool2int(X_INTRODUCED_19_,X_INTRODUCED_22_):: defines_var(X_INTRODUCED_22_);
+solve  satisfy;

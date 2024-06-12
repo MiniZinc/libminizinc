@@ -15,6 +15,7 @@
 #include <minizinc/flat_exp.hh>
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/gc.hh>
+#include <minizinc/type.hh>
 #include <minizinc/values.hh>
 
 #include <cassert>
@@ -1062,6 +1063,119 @@ bool flatten_dom_constraint(EnvI& env, Ctx& ctx, VarDecl* vd, Expression* dom, V
   return false;
 }
 
+/// Check whether a BOT_IN BinOp Expression (on tuples or records) can be converted to an table
+/// constraint as an optimization.
+bool check_struct_table(EnvI& env, Type elem_t, Type arr_t) {
+  assert(elem_t.structBT() && arr_t.structBT());  // No need to check otherwise
+  if (!arr_t.isPar()) {
+    // Cannot be made into a table
+    return false;
+  }
+  if (!elem_t.isvar()) {
+    // Par LHS, can be checked directly
+    return false;
+  }
+  std::vector<std::pair<StructType*, size_t>> stack{{env.getStructType(elem_t), 0}};
+  // Doing this doesn't make sense on singular structs
+  if (stack.back().first->size() <= 1) {
+    return false;
+  }
+  // Check that the struct doesn't contain any types we (currently) cannot handle.
+  while (!stack.empty()) {
+    auto& b = stack.back();
+    if (b.second >= b.first->size()) {
+      stack.pop_back();
+      continue;
+    }
+    Type t = (*b.first)[b.second];
+    b.second++;
+    switch (t.bt()) {
+      case Type::BT_FLOAT:   // TODO: Can be interned
+      case Type::BT_STRING:  // TODO: Can be filtered
+      case Type::BT_ANN:     // TODO: Can be filtered
+      case Type::BT_TOP:
+      case Type::BT_BOT:
+      case Type::BT_UNKNOWN:
+        return false;
+      case Type::BT_TUPLE:
+      case Type::BT_RECORD:
+        stack.emplace_back(env.getStructType(t), 0);
+        break;
+      default:
+        // No action
+        break;
+    }
+    if (t.dim() != 0) {
+      // TODO: Can be filtered (on index set, then flattened)
+      return false;
+    }
+    if (t.st() == Type::ST_SET) {
+      // TODO: Can be filtered if float (because it must be par) or interned if int.
+      return false;
+    }
+  }
+  return true;
+}
+
+/// Convert struct object (or array of objects) to an array
+ArrayLit* struct_as_array(EnvI& env, ArrayLit* obj) {
+  assert(GC::locked());
+  std::vector<Expression*> elems;
+  bool all_bool = true;
+  bool has_bool = false;
+  bool is_par = Expression::type(obj).isPar();
+
+  std::vector<std::pair<ArrayLit*, size_t>> stack{{obj, 0}};
+  while (!stack.empty()) {
+    auto& b = stack.back();
+    if (b.second >= b.first->size()) {
+      stack.pop_back();
+      continue;
+    }
+    auto* elem = (*b.first)[b.second];
+    b.second++;
+    Type t = Expression::type(elem);
+    assert(t.dim() == 0 && t.st() != Type::ST_SET);
+    switch (t.bt()) {
+      case Type::BT_BOOL: {
+        has_bool = true;
+        elems.push_back(elem);
+      } break;
+      case Type::BT_INT: {
+        all_bool = false;
+        elems.push_back(elem);
+      } break;
+      case Type::BT_RECORD:
+      case Type::BT_TUPLE: {
+        ArrayLit* seq = eval_array_lit(env, elem);
+        stack.emplace_back(seq, 0);
+      } break;
+      default:
+        assert(false);
+    }
+  }
+  if (!all_bool && has_bool) {
+    auto* zero = IntLit::a(0);
+    auto* one = IntLit::a(1);
+    for (auto& elem : elems) {
+      Type t = Expression::type(elem);
+      if (t.isvarbool()) {
+        auto* c = Call::a(Location().introduce(), env.constants.ids.bool2int, {elem});
+        c->type(Type::varint());
+        c->decl(env.model->matchFn(env, c, false));
+        elem = c;
+      } else if (t.isbool()) {
+        elem = eval_bool(env, elem) ? one : zero;
+      }
+    }
+  }
+  Type t = is_par ? (all_bool ? Type::parbool(1) : Type::parint(1))
+                  : (all_bool ? Type::varbool(1) : Type::varint(1));
+  auto* al = new ArrayLit(Expression::loc(obj).introduce(), elems);
+  al->type(t);
+  return al;
+}
+
 EE rewrite_struct_op(EnvI& env, Ctx& ctx, Expression* lhs, BinOpType bot, Expression* rhs,
                      bool doubleNeg, VarDecl* r, VarDecl* b) {
   KeepAlive rewrite = nullptr;
@@ -1152,6 +1266,23 @@ EE rewrite_struct_op(EnvI& env, Ctx& ctx, Expression* lhs, BinOpType bot, Expres
       auto* let = new Let(Location().introduce(), {b_decl}, new_binop(b[0], BOT_AND, forall));
       let->type(Type::varbool());
       rewrite = let;
+    } break;
+    case BOT_IN: {
+      GCLock lock;
+      ArrayLit* arrLHS = struct_as_array(env, tupLHS);
+      ArrayLit* arrRHS = struct_as_array(env, tupRHS);
+      unsigned int cols = arrLHS->size();
+      unsigned int rows = arrRHS->size() / arrLHS->size();
+
+      auto* indexedRHS =
+          new ArrayLit(Expression::loc(arrRHS).introduce(), arrRHS, {{1, rows}, {1, cols}});
+      Type t = Type::arrType(env, Type::bot(2), arrRHS->type());
+      indexedRHS->type(t);
+
+      auto* c = Call::a(Location().introduce(), env.constants.ids.table, {arrLHS, indexedRHS});
+      c->type(Type::varbool());
+      c->decl(env.model->matchFn(env, c, false));
+      rewrite = c;
     } break;
     default:
       throw InternalError("Tuple operator rewrite not defined");
@@ -1313,7 +1444,9 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
       default:
         break;
     }
-    if ((Expression::type(e0.r()).istuple() || Expression::type(e0.r()).isrecord()) && isBuiltin) {
+    if ((Expression::type(e0.r()).istuple() || Expression::type(e0.r()).isrecord()) &&
+        (isBuiltin || (bot == BOT_IN && check_struct_table(env, Expression::type(e0.r()),
+                                                           Expression::type(e1.r()))))) {
       return rewrite_struct_op(env, ctx, e0.r(), bot, e1.r(), doubleNeg, r, b);
     }
     args.push_back(e0.r);

@@ -2195,6 +2195,7 @@ Constants::Constants() {
   ids.lin_exp = addString("lin_exp");
   ids.count = addString("count");
   ids.element = addString("element");
+  ids.table = addString("table");
   ids.anon_enum = addString("anon_enum");
   ids.anon_enum_set = addString("anon_enum_set");
   ids.enumFromConstructors = addString("enumFromConstructors");

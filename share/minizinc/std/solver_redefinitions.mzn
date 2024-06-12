@@ -43,3 +43,4 @@ include "fzn_array_int_union.mzn";
 include "fzn_array_opt_int_union.mzn";
 include "fzn_array_set_union.mzn";
 include "fzn_array_set_intersect.mzn";
+include "table.mzn";

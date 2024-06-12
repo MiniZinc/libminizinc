@@ -4,6 +4,13 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
+Changes:
+^^^^^^^^
+
+-  Variable ``in`` operators on arrays of (nested) records and tuples containing
+   only enumerable (enum, int, or bool) will now be rewritten into ``table``
+   global constraints.
+
 .. _v2.8.5:
 
 `Version 2.8.5 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.8.5>`__
