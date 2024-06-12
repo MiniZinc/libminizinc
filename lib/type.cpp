@@ -269,6 +269,35 @@ bool Type::decrement(EnvI& env) {
   return true;
 }
 
+bool Type::contains(const EnvI& env, std::function<bool(const Type)> p) const {
+  if (p(*this)) {
+    return true;
+  }
+  if (!structBT()) {
+    return false;
+  }
+  auto* st = env.getStructType(*this);
+  std::vector<Type> todo;
+  todo.reserve(st->size());
+  for (size_t i = 0; i < st->size(); i++) {
+    todo.push_back((*st)[i]);
+  }
+  while (!todo.empty()) {
+    auto t = todo.back();
+    if (p(t)) {
+      return true;
+    }
+    todo.pop_back();
+    if (t.structBT()) {
+      auto* st = env.getStructType(t);
+      for (size_t i = 0; i < st->size(); i++) {
+        todo.push_back((*st)[i]);
+      }
+    }
+  }
+  return false;
+}
+
 Type Type::elemType(const EnvI& env) const {
   Type elemTy = *this;
   if (dim() == 0) {

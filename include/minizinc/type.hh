@@ -12,6 +12,7 @@
 #pragma once
 
 #include <cassert>
+#include <functional>
 #include <sstream>
 #include <string>
 
@@ -298,6 +299,9 @@ public:
   /// Go through the types (of tuple field type) in this order: var opt, var, par opt, par
   /// Returns whether the decrement operation was succesful (false when type is already par)
   bool decrement(EnvI& env);
+
+  /// Return true if the predicate holds for this type or any nested type for structs
+  bool contains(const EnvI& env, std::function<bool(const Type)> p) const;
 
   /// A helper function that returns the Type for a element of te current array Type
   /// NOTE: generally this is the same type with `_dim = 0`, but when typeId is set, the correct

@@ -23,6 +23,11 @@ Bug fixes:
 -  Fix incorrect type error for array literals where the first element is ``<>``
    and subsequent elements are sets (:bugref:`818`).
 -  Fix missing code block in visualisation feature documentation.
+-  Emit type error when using variable if-then-else/array access containing
+   tuples or records containing non-varifiable types.
+-  Emit type error when using a variable comprehension with a tuple/record type.
+-  Emit type error when using optional array access for arrays of
+   tuples/records.
 
 .. _v2.8.5:
 

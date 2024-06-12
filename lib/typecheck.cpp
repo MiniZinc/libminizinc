@@ -2012,6 +2012,12 @@ public:
       }
 
       if (Expression::type(aai).isOpt()) {
+        if (tt.structBT()) {
+          std::ostringstream oss;
+          oss << "array access using an optional index is not supported for array of "
+              << (tt.bt() == Type::BT_TUPLE ? "tuple" : "record") << "s.";
+          throw TypeError(_env, Expression::loc(aai), oss.str());
+        }
         tt.ot(Type::OT_OPTIONAL);
       }
       unsigned int typeId = tt.typeId();
@@ -2025,11 +2031,15 @@ public:
                           "array slicing with variable range or index not supported");
         }
         tt.mkVar(_env);
-        if (tt.bt() == Type::BT_ANN || tt.bt() == Type::BT_STRING) {
-          throw TypeError(
-              _env, Expression::loc(aai),
-              std::string("array access using a variable is not supported for array of ") +
-                  (tt.bt() == Type::BT_ANN ? "ann" : "string"));
+        if (tt.contains(_env, [](Type t) {
+              return t.bt() == Type::BT_ANN || t.bt() == Type::BT_STRING ||
+                     t.st() == Type::ST_SET &&
+                         (t.bt() != Type::BT_INT && t.bt() != Type::BT_TOP || t.isOpt());
+            })) {
+          std::ostringstream oss;
+          oss << "array access using a variable is not supported for array of "
+              << Expression::type(aa->v()).elemType(_env).toString(_env) << ".";
+          throw TypeError(_env, Expression::loc(aai), oss.str());
         }
         if (containsArray) {
           std::ostringstream oss;
@@ -2131,6 +2141,12 @@ public:
       if (g_in != nullptr) {
         const Type& ty_in = Expression::type(g_in);
         if (ty_in == Type::varsetint()) {
+          if (tt.structBT()) {
+            std::ostringstream oss;
+            oss << "variable set generator not supported for "
+                << (tt.bt() == Type::BT_TUPLE ? "tuple" : "record") << "-valued comprehension";
+            throw TypeError(_env, Expression::loc(g_in), oss.str());
+          }
           if (!c->set()) {
             tt.ot(Type::OT_OPTIONAL);
           }
@@ -2141,6 +2157,13 @@ public:
         }
         if (c->where(i) != nullptr) {
           if (Expression::type(c->where(i)) == Type::varbool()) {
+            if (tt.structBT()) {
+              std::ostringstream oss;
+              oss << "variable where clause for "
+                  << (tt.bt() == Type::BT_TUPLE ? "tuple" : "record")
+                  << "-valued comprehension not supported";
+              throw TypeError(_env, Expression::loc(c->where(i)), oss.str());
+            }
             if (!c->set()) {
               if (Expression::type(c_e).isSet()) {
                 throw TypeError(_env, Expression::loc(c->where(i)),
@@ -2498,7 +2521,10 @@ public:
         throw TypeError(_env, Expression::loc(ite),
                         "conditional with var condition cannot have annotation type");
       }
-      if (tret.st() == Type::ST_SET && (tret.bt() != Type::BT_INT || tret.isOpt())) {
+      if (tret.contains(_env, [](Type t) {
+            return t.bt() == Type::BT_STRING || t.bt() == Type::BT_ANN ||
+                   t.st() == Type::ST_SET && (t.bt() != Type::BT_INT || t.isOpt());
+          })) {
         throw TypeError(_env, Expression::loc(ite),
                         "conditional with var condition cannot have type " + tret.toString(_env));
       }
