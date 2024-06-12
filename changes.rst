@@ -8,7 +8,6 @@ https://github.com/MiniZinc/libminizinc/issues.
 
 Changes:
 ^^^^^^^^
-
 -  Variable ``in`` operators on arrays of (nested) records and tuples containing
    only enumerable (enum, int, or bool) will now be rewritten into ``table``
    global constraints.
@@ -17,6 +16,7 @@ Changes:
 -  Variable ``<``, ``<=``, ``>``  and ``>=`` operators on (nested) records and
    tuples containing only enumerable (enum, int, or bool) will now be rewritten
    into ``lex_less`` or ``lex_lesseq`` global constraints.
+-  Automatically detect SCIP 9.0.1 and potential future versions on Windows.
 
 Bug fixes:
 ^^^^^^^^^^
