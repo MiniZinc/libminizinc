@@ -2109,7 +2109,9 @@ public:
     }
 
     ASTString sum;
-    ASTString lin_exp;  // NOLINT(readability-identifier-naming)
+    ASTString lex_less;    // NOLINT(readability-identifier-naming)
+    ASTString lex_lesseq;  // NOLINT(readability-identifier-naming)
+    ASTString lin_exp;     // NOLINT(readability-identifier-naming)
     ASTString count;
     ASTString element;
     ASTString table;

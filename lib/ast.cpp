@@ -2192,6 +2192,8 @@ Constants::Constants() {
   ids.arrayXd = addString("arrayXd");
 
   ids.sum = addString("sum");
+  ids.lex_less = addString("lex_less");
+  ids.lex_lesseq = addString("lex_lesseq");
   ids.lin_exp = addString("lin_exp");
   ids.count = addString("count");
   ids.element = addString("element");

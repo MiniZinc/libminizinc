@@ -10,6 +10,9 @@ Changes:
 -  Variable ``in`` operators on arrays of (nested) records and tuples containing
    only enumerable (enum, int, or bool) will now be rewritten into ``table``
    global constraints.
+-  Variable ``<``, ``<=``, ``>``  and ``>=`` operators on (nested) records and
+   tuples containing only enumerable (enum, int, or bool) will now be rewritten
+   into ``lex_less`` or ``lex_lesseq`` global constraints.
 
 .. _v2.8.5:
 

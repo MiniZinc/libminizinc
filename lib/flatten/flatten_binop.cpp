@@ -1063,8 +1063,8 @@ bool flatten_dom_constraint(EnvI& env, Ctx& ctx, VarDecl* vd, Expression* dom, V
   return false;
 }
 
-/// Check whether a BOT_IN BinOp Expression (on tuples or records) can be converted to an table
-/// constraint as an optimization.
+/// Check whether a BOT_IN BinOp Expression (on tuples or records) can be
+/// converted to an table constraint as an optimization.
 bool check_struct_table(EnvI& env, Type elem_t, Type arr_t) {
   assert(elem_t.structBT() && arr_t.structBT());  // No need to check otherwise
   if (!arr_t.isPar()) {
@@ -1111,6 +1111,52 @@ bool check_struct_table(EnvI& env, Type elem_t, Type arr_t) {
     }
     if (t.st() == Type::ST_SET) {
       // TODO: Can be filtered if float (because it must be par) or interned if int.
+      return false;
+    }
+  }
+  return true;
+}
+
+/// Check whether a BOT_LE or BOT_LQ BinOp Expression (on tuples or records) can
+/// be converted to an lex_less(eq) constraint as an optimization.
+bool check_struct_lex(EnvI& env, Type t) {
+  assert(t.structBT());  // No need to check otherwise
+  std::vector<std::pair<StructType*, size_t>> stack{{env.getStructType(t), 0}};
+  // Doing this doesn't make sense on singular structs
+  if (stack.back().first->size() <= 1) {
+    return false;
+  }
+  // Check that the struct doesn't contain any types we (currently) cannot handle.
+  while (!stack.empty()) {
+    auto& b = stack.back();
+    if (b.second >= b.first->size()) {
+      stack.pop_back();
+      continue;
+    }
+    Type t = (*b.first)[b.second];
+    b.second++;
+    switch (t.bt()) {
+      case Type::BT_FLOAT:   // TODO: replace if par
+      case Type::BT_STRING:  // TODO: Can be replaced
+      case Type::BT_ANN:     // TODO: Can be replaced
+      case Type::BT_TOP:
+      case Type::BT_BOT:
+      case Type::BT_UNKNOWN:
+        return false;
+      case Type::BT_TUPLE:
+      case Type::BT_RECORD:
+        stack.emplace_back(env.getStructType(t), 0);
+        break;
+      default:
+        // No action
+        break;
+    }
+    if (t.dim() != 0) {
+      // TODO: Can be filtered (on index set, then flattened)
+      return false;
+    }
+    if (t.st() == Type::ST_SET) {
+      // TODO: Can be replaced if par
       return false;
     }
   }
@@ -1231,41 +1277,54 @@ EE rewrite_struct_op(EnvI& env, Ctx& ctx, Expression* lhs, BinOpType bot, Expres
       GCLock lock;
       assert(tupLHS->isTuple() == tupRHS->isTuple());
       assert(tupLHS->size() == tupRHS->size());
-      // Create temp bool variables for lex decomposition
-      auto* bool_ti = new TypeInst(Location().introduce(), Type::varbool(1));
-      auto* range = new SetLit(Location().introduce(), IntSetVal::a(1, tupLHS->size()));
-      bool_ti->setRanges({new TypeInst(Location().introduce(), Type::parint(), range)});
-      auto* b_decl = new VarDecl(Location().introduce(), bool_ti, env.genId());
-      b_decl->type(Type::varbool(1));
-      std::vector<Expression*> b(tupLHS->size());
-      for (int i = 0; i < tupLHS->size(); ++i) {
-        b[i] = new ArrayAccess(Location().introduce(), b_decl->id(), {IntLit::a(i + 1)});
-        Expression::type(b[i], Type::varbool());
-      }
-      // Create the implications
-      std::vector<Expression*> impls(tupLHS->size());
-      for (int i = 0; i < tupLHS->size(); ++i) {
-        auto* lq = new_binop((*tupLHS)[i], BOT_LQ, (*tupRHS)[i]);
-        auto* le = new_binop((*tupLHS)[i], BOT_LE, (*tupRHS)[i]);
-        if (i < tupLHS->size() - 1) {
-          auto* _or = new_binop(le, BOT_OR, b[i + 1]);
-          auto* _and = new_binop(lq, BOT_AND, _or);
-          impls[i] = new_binop(b[i], BOT_IMPL, _and);
-        } else if (bot == BOT_LQ) {
-          impls[i] = new_binop(b[i], BOT_IMPL, lq);
-        } else {
-          impls[i] = new_binop(b[i], BOT_IMPL, le);
+      if (check_struct_lex(env, Expression::type(lhs))) {
+        // Create a lex_less(eq) call
+        ArrayLit* arrLHS = struct_as_array(env, tupLHS);
+        ArrayLit* arrRHS = struct_as_array(env, tupRHS);
+
+        auto* c = Call::a(Location().introduce(),
+                          bot == BOT_LQ ? env.constants.ids.lex_lesseq : env.constants.ids.lex_less,
+                          {arrLHS, arrRHS});
+        c->type(Type::varbool());
+        c->decl(env.model->matchFn(env, c, false));
+        rewrite = c;
+      } else {
+        // Create temp bool variables for lex decomposition
+        auto* bool_ti = new TypeInst(Location().introduce(), Type::varbool(1));
+        auto* range = new SetLit(Location().introduce(), IntSetVal::a(1, tupLHS->size()));
+        bool_ti->setRanges({new TypeInst(Location().introduce(), Type::parint(), range)});
+        auto* b_decl = new VarDecl(Location().introduce(), bool_ti, env.genId());
+        b_decl->type(Type::varbool(1));
+        std::vector<Expression*> b(tupLHS->size());
+        for (int i = 0; i < tupLHS->size(); ++i) {
+          b[i] = new ArrayAccess(Location().introduce(), b_decl->id(), {IntLit::a(i + 1)});
+          Expression::type(b[i], Type::varbool());
         }
+        // Create the implications
+        std::vector<Expression*> impls(tupLHS->size());
+        for (int i = 0; i < tupLHS->size(); ++i) {
+          auto* lq = new_binop((*tupLHS)[i], BOT_LQ, (*tupRHS)[i]);
+          auto* le = new_binop((*tupLHS)[i], BOT_LE, (*tupRHS)[i]);
+          if (i < tupLHS->size() - 1) {
+            auto* _or = new_binop(le, BOT_OR, b[i + 1]);
+            auto* _and = new_binop(lq, BOT_AND, _or);
+            impls[i] = new_binop(b[i], BOT_IMPL, _and);
+          } else if (bot == BOT_LQ) {
+            impls[i] = new_binop(b[i], BOT_IMPL, lq);
+          } else {
+            impls[i] = new_binop(b[i], BOT_IMPL, le);
+          }
+        }
+        auto* al = new ArrayLit(Location().introduce(), impls);
+        al->type(Type::varbool(1));
+        auto* forall = Call::a(Location().introduce(), env.constants.ids.forall, {al});
+        forall->type(Type::varbool());
+        forall->decl(env.model->matchFn(env, forall, false, true));
+        // Wrap in let
+        auto* let = new Let(Location().introduce(), {b_decl}, new_binop(b[0], BOT_AND, forall));
+        let->type(Type::varbool());
+        rewrite = let;
       }
-      auto* al = new ArrayLit(Location().introduce(), impls);
-      al->type(Type::varbool(1));
-      auto* forall = Call::a(Location().introduce(), env.constants.ids.forall, {al});
-      forall->type(Type::varbool());
-      forall->decl(env.model->matchFn(env, forall, false, true));
-      // Wrap in let
-      auto* let = new Let(Location().introduce(), {b_decl}, new_binop(b[0], BOT_AND, forall));
-      let->type(Type::varbool());
-      rewrite = let;
     } break;
     case BOT_IN: {
       GCLock lock;
