@@ -19,11 +19,11 @@
 
         devShells.default = pkgs.mkShell {
           name = "minizinc";
-          # inputsFrom = [ self.packages.${system}.minizinc ];
 
           packages = with pkgs; [
             bison
             cbc
+            highs
             ccache
             cmake
             flex

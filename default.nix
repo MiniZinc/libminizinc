@@ -1,11 +1,11 @@
-{ lib, stdenv, cbc, cmake, gecode, mpfr, ninja, zlib }:
+{ lib, stdenv, cbc, cmake, gecode, highs, mpfr, ninja, zlib }:
 
 stdenv.mkDerivation {
   name = "minizinc";
   src = ./.;
 
   nativeBuildInputs = [ cmake ninja ];
-  buildInputs = [ gecode mpfr zlib cbc ];
+  buildInputs = [ gecode mpfr zlib cbc highs ];
 
   meta = with lib; {
     homepage = "https://www.minizinc.org/";
