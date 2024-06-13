@@ -49,7 +49,7 @@ predicate int_ne(var int: a, var int: b) ::promise_commutative;
 predicate int_ne_reif(var int: a, var int: b, var bool: r);
 /** @group flatzinc.int Constrains \a a + \a b = \a c */
 predicate int_plus(var int: a, var int: b, var int: c);
-/** @group flatzinc.int Constrains \a a / \a b = \a c */
+/** @group flatzinc.int Constrains \a a / \a b = \a c, where \a c is rounded to the value closest to zero (i.e., truncated). */
 predicate int_div(var int: a, var int: b, var int: c);
 /** @group flatzinc.int Constrains \a a < \a b */
 predicate int_lt(var int: a, var int: b);
