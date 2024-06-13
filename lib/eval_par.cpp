@@ -3044,7 +3044,9 @@ public:
       } else if (Expression::type(e).isfloat()) {
         FloatVal v = FloatLit::v(Expression::cast<FloatLit>(exp));
         bounds.emplace_back(v, v);
+        return false;
       }
+      valid = false;
       return false;
     }
     if (Expression::type(e).isfloat()) {
