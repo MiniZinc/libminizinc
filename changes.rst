@@ -4,12 +4,16 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
+.. _unreleased:
+
 Changes:
 ^^^^^^^^
 
 -  Variable ``in`` operators on arrays of (nested) records and tuples containing
    only enumerable (enum, int, or bool) will now be rewritten into ``table``
    global constraints.
+   -  Values that are `par` in the left hand side will be checked and filtered
+      from the resulting table constraint.
 -  Variable ``<``, ``<=``, ``>``  and ``>=`` operators on (nested) records and
    tuples containing only enumerable (enum, int, or bool) will now be rewritten
    into ``lex_less`` or ``lex_lesseq`` global constraints.

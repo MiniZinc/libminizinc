@@ -1067,11 +1067,11 @@ bool flatten_dom_constraint(EnvI& env, Ctx& ctx, VarDecl* vd, Expression* dom, V
 /// converted to an table constraint as an optimization.
 bool check_struct_table(EnvI& env, Type elem_t, Type arr_t) {
   assert(elem_t.structBT() && arr_t.structBT());  // No need to check otherwise
-  if (!arr_t.isPar()) {
+  if (arr_t.cv()) {
     // Cannot be made into a table
     return false;
   }
-  if (!elem_t.isvar()) {
+  if (!elem_t.cv()) {
     // Par LHS, can be checked directly
     return false;
   }
@@ -1089,10 +1089,11 @@ bool check_struct_table(EnvI& env, Type elem_t, Type arr_t) {
     }
     Type t = (*b.first)[b.second];
     b.second++;
+    if (!t.cv()) {
+      continue;
+    }
     switch (t.bt()) {
-      case Type::BT_FLOAT:   // TODO: Can be interned
-      case Type::BT_STRING:  // TODO: Can be filtered
-      case Type::BT_ANN:     // TODO: Can be filtered
+      case Type::BT_FLOAT:  // TODO: Can be interned
       case Type::BT_TOP:
       case Type::BT_BOT:
       case Type::BT_UNKNOWN:
@@ -1164,14 +1165,14 @@ bool check_struct_lex(EnvI& env, Type t) {
 }
 
 /// Convert struct object (or array of objects) to an array
-ArrayLit* struct_as_array(EnvI& env, ArrayLit* obj) {
+ArrayLit* struct_as_array(EnvI& env, ArrayLit* obj, bool filter_par = false) {
   assert(GC::locked());
   std::vector<Expression*> elems;
   bool all_bool = true;
   bool has_bool = false;
-  bool is_par = Expression::type(obj).isPar();
+  bool is_par = !Expression::type(obj).cv();
 
-  std::vector<std::pair<ArrayLit*, size_t>> stack{{obj, 0}};
+  std::vector<std::pair<ArrayLit*, unsigned int>> stack{{obj, 0}};
   while (!stack.empty()) {
     auto& b = stack.back();
     if (b.second >= b.first->size()) {
@@ -1181,6 +1182,9 @@ ArrayLit* struct_as_array(EnvI& env, ArrayLit* obj) {
     auto* elem = (*b.first)[b.second];
     b.second++;
     Type t = Expression::type(elem);
+    if (filter_par && !t.cv()) {
+      continue;
+    }
     assert(t.dim() == 0 && t.st() != Type::ST_SET);
     switch (t.bt()) {
       case Type::BT_BOOL: {
@@ -1217,6 +1221,95 @@ ArrayLit* struct_as_array(EnvI& env, ArrayLit* obj) {
   }
   Type t = is_par ? (all_bool ? Type::parbool(1) : Type::parint(1))
                   : (all_bool ? Type::varbool(1) : Type::varint(1));
+  auto* al = new ArrayLit(Expression::loc(obj).introduce(), elems);
+  al->type(t);
+  return al;
+}
+
+/// Convert struct object (or array of objects) to an table for the table
+/// global constraint
+///
+/// Note that this function will filter out any members of the struct that are
+/// `par` for `obj`, and will remove any rows in which these members do not
+/// match the members of `obj`.
+ArrayLit* struct_as_table(EnvI& env, ArrayLit* table, ArrayLit* obj) {
+  assert(Expression::type(table).dim() == 1 && !Expression::type(table).cv() &&
+         Expression::type(table).structBT());
+  assert(Expression::type(obj).structBT());
+  assert(GC::locked());
+  std::vector<Expression*> elems;
+  bool all_bool = true;
+  bool has_bool = false;
+
+  for (unsigned int i = 0; i < table->size(); ++i) {
+    ArrayLit* row = eval_array_lit(env, (*table)[i]);
+    std::vector<std::tuple<ArrayLit*, ArrayLit*, unsigned int>> stack{{row, obj, 0}};
+    std::vector<Expression*> row_elems;
+    while (!stack.empty()) {
+      // Extract elements from top of the stack
+      auto& b = stack.back();
+      if (std::get<2>(b) >= std::get<0>(b)->size()) {
+        assert(std::get<2>(b) >= std::get<1>(b)->size());
+        stack.pop_back();
+        continue;
+      }
+      auto* row_elem = (*std::get<0>(b))[std::get<2>(b)];
+      auto* obj_elem = (*std::get<1>(b))[std::get<2>(b)];
+      std::get<2>(b)++;
+
+      Type t = Expression::type(obj_elem);
+      // Par on `obj` -> remove row if not equal, otherwise ignore element
+      if (!t.cv()) {
+        Expression* r = eval_par(env, row_elem);
+        Expression* o = eval_par(env, obj_elem);
+        if (Expression::equal(r, o)) {
+          continue;
+        }
+        row_elems.clear();
+        break;
+      }
+      // Var on `obj` -> add row element
+      assert(t.dim() == 0 && t.st() != Type::ST_SET);
+      switch (t.bt()) {
+        case Type::BT_BOOL: {
+          has_bool = true;
+          row_elems.push_back(row_elem);
+        } break;
+        case Type::BT_INT: {
+          all_bool = false;
+          row_elems.push_back(row_elem);
+        } break;
+        case Type::BT_RECORD:
+        case Type::BT_TUPLE: {
+          ArrayLit* row_seq = eval_array_lit(env, row_elem);
+          ArrayLit* obj_seq = eval_array_lit(env, obj_elem);
+          stack.emplace_back(row_seq, obj_seq, 0);
+        } break;
+        default:
+          assert(false);
+      }
+    }
+    elems.reserve(elems.size() + row_elems.size());
+    for (auto* e : row_elems) {
+      elems.push_back(e);
+    }
+  }
+  if (!all_bool && has_bool) {
+    auto* zero = IntLit::a(0);
+    auto* one = IntLit::a(1);
+    for (auto& elem : elems) {
+      Type t = Expression::type(elem);
+      if (t.isvarbool()) {
+        auto* c = Call::a(Location().introduce(), env.constants.ids.bool2int, {elem});
+        c->type(Type::varint());
+        c->decl(env.model->matchFn(env, c, false));
+        elem = c;
+      } else if (t.isbool()) {
+        elem = eval_bool(env, elem) ? one : zero;
+      }
+    }
+  }
+  Type t = all_bool ? Type::parbool(1) : Type::parint(1);
   auto* al = new ArrayLit(Expression::loc(obj).introduce(), elems);
   al->type(t);
   return al;
@@ -1328,17 +1421,17 @@ EE rewrite_struct_op(EnvI& env, Ctx& ctx, Expression* lhs, BinOpType bot, Expres
     } break;
     case BOT_IN: {
       GCLock lock;
-      ArrayLit* arrLHS = struct_as_array(env, tupLHS);
-      ArrayLit* arrRHS = struct_as_array(env, tupRHS);
-      unsigned int cols = arrLHS->size();
-      unsigned int rows = arrRHS->size() / arrLHS->size();
+      ArrayLit* table = struct_as_table(env, tupRHS, tupLHS);
+      ArrayLit* elem = struct_as_array(env, tupLHS, true);
+      unsigned int cols = elem->size();
+      unsigned int rows = table->size() / elem->size();
 
-      auto* indexedRHS =
-          new ArrayLit(Expression::loc(arrRHS).introduce(), arrRHS, {{1, rows}, {1, cols}});
-      Type t = Type::arrType(env, Type::bot(2), arrRHS->type());
-      indexedRHS->type(t);
+      auto* indexedTable =
+          new ArrayLit(Expression::loc(table).introduce(), table, {{1, rows}, {1, cols}});
+      Type t = Type::arrType(env, Type::bot(2), table->type());
+      indexedTable->type(t);
 
-      auto* c = Call::a(Location().introduce(), env.constants.ids.table, {arrLHS, indexedRHS});
+      auto* c = Call::a(Location().introduce(), env.constants.ids.table, {elem, indexedTable});
       c->type(Type::varbool());
       c->decl(env.model->matchFn(env, c, false));
       rewrite = c;
@@ -1372,7 +1465,9 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
     return ret;
   }
 
-  if (Expression::type(e0.r()).isPar() && Expression::type(e1.r()).isPar()) {
+  if (Expression::type(e0.r()).structBT()
+          ? (!Expression::type(e0.r()).cv() && !Expression::type(e1.r()).cv())
+          : (Expression::type(e0.r()).isPar() && Expression::type(e1.r()).isPar())) {
     GCLock lock;
     auto* bo_par = new BinOp(Expression::loc(e), e0.r(), bot, e1.r());
     std::vector<Expression*> args({e0.r(), e1.r()});
