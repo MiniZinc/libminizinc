@@ -1868,13 +1868,18 @@ public:
       at.typeId(0);
       at.dim(0);
       at.typeId(ty.typeId());  // valid because typeId was not yet converted to an arrayEnumType
-      if (at.ti() == Type::TI_VAR && at.st() == Type::ST_SET && at.bt() != Type::BT_INT) {
-        if (at.bt() == Type::BT_BOOL) {
-          ty.bt(Type::BT_INT);
-          at.bt(Type::BT_INT);
-        } else {
-          throw TypeError(_env, Expression::loc(al),
-                          "cannot coerce array element to var set of int");
+      if (at.ti() == Type::TI_VAR && at.st() == Type::ST_SET) {
+        if (at.isOpt()) {
+          throw TypeError(_env, Expression::loc(al), "var opt sets not supported");
+        }
+        if (at.bt() != Type::BT_INT) {
+          if (at.bt() == Type::BT_BOOL) {
+            ty.bt(Type::BT_INT);
+            at.bt(Type::BT_INT);
+          } else {
+            throw TypeError(_env, Expression::loc(al),
+                            "cannot coerce array element to var set of int");
+          }
         }
       }
       for (auto& anon : anons) {

@@ -1378,6 +1378,9 @@ Type common_type(EnvI& env, Type t1, Type t2) {
   if (t1.ot() != t2.ot()) {
     common.ot(Type::OT_OPTIONAL);
   }
+  if (common.isvar() && common.isOpt() && common.st() == Type::ST_SET) {
+    return Type::top();
+  }
   return common;
 }
 

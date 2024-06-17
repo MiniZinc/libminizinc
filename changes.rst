@@ -28,6 +28,7 @@ Bug fixes:
 -  Emit type error when using a variable comprehension with a tuple/record type.
 -  Emit type error when using optional array access for arrays of
    tuples/records.
+-  Emit type error for array literals with ``<>`` and var set elements.
 
 .. _v2.8.5:
 
