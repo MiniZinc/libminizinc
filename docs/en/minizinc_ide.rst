@@ -278,6 +278,8 @@ Editing options
 .. figure:: figures/ide-preferences-editing.jpg
     :width: 500px
     
+    Configuring code editor preferences
+
 The **Editing** tab contains options for the code editor, such as fonts, indentation, and theming.
 
 Output options
@@ -287,6 +289,8 @@ Output options
 
 .. figure:: figures/ide-preferences-output.jpg
     :width: 500px
+
+    Configuring output settings
 
 There are also a number of output-related options. The first tick box (*Check solutions*) enables checking as described in :numref:`ch-ide-solution-checking`. The second tick box enables you to clear the *Output* window automatically every time you run a model. The third *Compress solution output* option is useful for problems that produce a lot (read: thousands) of solutions, which can slow down and clutter the output window. The compression works by printing just the number of solutions rather than the solutions themselves. For example, the following model would produce 1000 solutions when run with *User-defined behavior* and solution limit disabled:
 

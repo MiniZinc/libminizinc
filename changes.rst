@@ -31,6 +31,7 @@ Bug fixes:
 -  Emit type error when using optional array access for arrays of
    tuples/records.
 -  Emit type error for array literals with ``<>`` and var set elements.
+-  Fix missing cross-references for IDE preference dialog documentation figures.
 
 .. _v2.8.5:
 
