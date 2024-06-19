@@ -18,6 +18,7 @@
 #include <minizinc/file_utils.hh>
 
 #include <algorithm>
+#include <cstdint>  // Required on some platforms for miniz
 #include <cstring>
 #include <sstream>
 #include <string>
