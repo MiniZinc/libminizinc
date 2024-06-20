@@ -57,7 +57,7 @@ Passes: Manipulate Models
 
 These passes are for making modifications to models or isolating/removing parts of models.
 
-  ``inline-includes`` Inline non-library includes (this allows a model to be reclocated without needing to move models it includes)
+  ``inline-includes`` Inline non-library includes (this allows a model to be relocated without needing to move models it includes)
   
   ``inline-all-includes`` Inline all includes
   
@@ -95,7 +95,7 @@ They are more specific to the projects where they are used.
   
   ``get-term-types:out.terms``  Write .terms file with types of objective terms
   
-  ``get-data-deps:out.cons`` (FlatZinc only) Write .cons file with data dependenceis of FlatZinc constraints
+  ``get-data-deps:out.cons`` (FlatZinc only) Write .cons file with data dependencies of FlatZinc constraints
   
   ``get-exprs:location1,location2`` Extract list of expressions occurring inside location location = path.mzn|sl|sc|el|ec
   
@@ -106,7 +106,7 @@ Examples
 
 The following are a few examples of the usage of the ``mzn-analyse`` tool.
 
-1. Remove the solve and output items from the model and write the model to solveless.mzn. It then inlines the local includes and outputs to stdout as "FlatZinc" (no linebreaks while printing an item).
+1. Remove the solve and output items from the model and write the model to solveless.mzn. It then inlines the local includes and outputs to stdout as "FlatZinc" (no line breaks while printing an item).
 
   ``mzn-analyse in.mzn remove-items:solve,output out:solveless.mzn inline-includes out_fzn``
 

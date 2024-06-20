@@ -23,7 +23,7 @@ Constraint Programming Solvers
 ------------------------------
 
 Constraint Programming is the 'native' paradigm of MiniZinc. Below we discuss most common CP solvers.
-For their performance, consult MiniZinc Challenges (https://www.minizinc.org/challenge.html).
+For their performance, consult MiniZinc Challenges (https://www.minizinc.org/challenge/).
 
 Gecode
 ~~~~~~
@@ -64,7 +64,7 @@ analogously to Chuffed.
 Mixed-Integer Programming Solvers
 ---------------------------------
 
-MiniZinc has built-in support for Mixed Integer Programing solvers.
+MiniZinc has built-in support for Mixed Integer Programming solvers.
 If you have any MIP solver installed (and MiniZinc was compiled with its support),
 you can run a model using MIP like this on the command line:
 
@@ -148,7 +148,7 @@ The following parameters can be given on the command line or modified in ``share
   -DOrbisackAlwaysModelConstraint=true         %% lex_lesseq ignores being in symmetry_breaking_constraint() (SCIP only)
                                                %% Required for SCIP 7.0.2, or use patch: http://listserv.zib.de/pipermail/scip/2021-February/004213.html
   -DUseOrbitope=false                          %% Not forward lex_chain_lesseq for binary/bool matrices (SCIP only)
-  --no-half-reifications                       %% Turn off halfreification (full reification was until v2.2.3)
+  --no-half-reifications                       %% Turn off half-reification (full reification was until v2.2.3)
 
 Some Solver Options and Changed Default Values
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -232,7 +232,7 @@ Warm Starts
 ~~~~~~~~~~~
 
 For general information of warm start annotations, see :ref:`sec_warm_starts`.
-Warm starts are currently implemented for Gurobi, IBM ILOG CPLEX, XPRESS, and COIN-OR CBC.
+Warm starts are currently implemented for Gurobi, IBM ILOG CPLEX, Xpress, and COIN-OR CBC.
 
 .. _ch-solvers-nonlinear:
 

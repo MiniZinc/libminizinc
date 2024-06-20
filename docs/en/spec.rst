@@ -254,7 +254,7 @@ Solutions end with a sequence of ten dashes followed by a newline.
   :start-after: % Unsatisfiable
   :end-before: %
 
-The completness result is printed on a separate line.
+The completeness result is printed on a separate line.
 *Rationale: The strings are designed to clearly indicate
 the end of the solutions.*
 
@@ -868,7 +868,7 @@ Some example set type-inst expressions:
 |TyFiniteType|
 Yes, if the set elements are finite types.  Otherwise, no.
 
-The domain of a set type that is a finite type is the powerset of the domain
+The domain of a set type that is a finite type is the power set of the domain
 of its element type.  For example, the domain of :mzn:`set of 1..2` is
 :mzn:`powerset(1..2)`, which is :mzn:`{}, {1}, {1,2}, {2}`.
 
@@ -2195,7 +2195,7 @@ is a decision variable.  For example:
     let { var int: x; } in ...;    % ok
     let {     int: x; } in ...;    % illegal
 
-For let local variables with initialisers, the type-inst can be ommitted by using
+For let local variables with initialisers, the type-inst can be omitted by using
 the :mzn:`any` keyword, in which case the type-inst is inferred from the initialiser:
 
 .. code-block:: minizinc
@@ -2466,7 +2466,7 @@ Enum constructors can be used to map non-contiguous sets to (contiguous) enumera
 
     enum Person = { Amy, Bert, Celeste, Doug, Emely };
     enum Staff = S({Amy, Doug});
-    enum Customers = S(Person setminus S⁻¹(Staff));
+    enum Customers = S(Person diff S⁻¹(Staff));
 
 An enum can be declared but not defined, in which case it must be defined
 elsewhere within the model, or in a data file.
@@ -2723,7 +2723,7 @@ User-defined Operations
 .. 
   % XXX: not saying if operations need to be defined.  Implementation
   % currently requires functions and tests to be defined if used, but
-  % predicates can be bodyless even if used.  Should perhaps require functions
+  % predicates can be bodiless even if used.  Should perhaps require functions
   % to be defined even if they're not used (like parameters), and make tests
   % like predicates?
 

@@ -109,7 +109,7 @@ tests can be applied as soon as we select :mzn:`i` and :mzn:`j`.
   int: count = sum ([ 1 | i,j in NODES where i < j  /\ adj[i,j],
                           k in NODES where j < k /\ adj[i,k] /\ adj[j,k]]);
 
-You can use the builitin :mzn:`trace` :index:`function <trace>` to help
+You can use the builtin :mzn:`trace` :index:`function <trace>` to help
 determine what is happening inside generators. 
 
 .. defblock:: Tracing

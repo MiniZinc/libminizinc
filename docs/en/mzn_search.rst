@@ -541,7 +541,7 @@ important (especially for CP), so they all might need to be put into a ``seq_sea
       ] )
       minimize x[1] + b + xf[2] + card( xs[1] intersect xs[3] );
 
-If you'd like to provide a most complete warmstart information, please provide values for all
+If you'd like to provide a most complete warm start information, please provide values for all
 variables which are output when there is no output item or when compiled with ``--output-mode dzn``.
 
 ..

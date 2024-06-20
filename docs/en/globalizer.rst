@@ -205,7 +205,7 @@ Globalizing constraint models can be a time consuming task. If
   The implication check can also be disabled to improve performance. This results in less accurate results but may still help a user to understand the structure of their model.
 
 - **Free-search.**
-  To improve accuracy and to avoid false positives, subproblems solved by Globalizer are solved using a random heuristic and restarts. If the subproblems are particularly difficult to solve a random heuristic may be prohibitive and the solver may not be able to produce enough samples within the solving timelimit.
+  To improve accuracy and to avoid false positives, subproblems solved by Globalizer are solved using a random heuristic and restarts. If the subproblems are particularly difficult to solve a random heuristic may be prohibitive and the solver may not be able to produce enough samples within the solving time-limit.
   In these circumstances a user can either increase the solver timeout using the ``-t`` argument followed by the number of milliseconds a solver should be given to find samples.
   Alternatively the ``--free-search`` argument can be used to force Globalizer to use the solver's free search to find samples.
   This has the downside of reducing the diversity of samples but allows enough samples to be found to allow suggested globals to be found.

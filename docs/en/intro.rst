@@ -26,7 +26,7 @@ This documentation consists of four parts. :ref:`The first part <part-introducti
 How to Read This
 ----------------
 
-If you are new to MiniZinc, follow the installation instructions and the introduction to the IDE and then work your way through the tutorial. Most example code can be downloaded, but it is sometimes more useful to type it in yourself to get the language into your muscle memory! If you need help, visit the MiniZinc web site at http://www.minizinc.org where you find a disucssion forum.
+If you are new to MiniZinc, follow the installation instructions and the introduction to the IDE and then work your way through the tutorial. Most example code can be downloaded, but it is sometimes more useful to type it in yourself to get the language into your muscle memory! If you need help, visit the MiniZinc web site at http://www.minizinc.org where you find a discussion forum.
 
 .. only:: builder_html
 

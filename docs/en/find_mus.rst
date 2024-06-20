@@ -143,7 +143,7 @@ in later versions of the tool.
   Set hard time limit for solver in milliseconds. (Default: 1100)
 
 ``--adapt-timelimit``
-  Automatically tighten solver timelimit based on
+  Automatically tighten solver time-limit based on
   performance during initial sanity check (prove background is SAT,
   background + entire foreground is UNSAT)
 

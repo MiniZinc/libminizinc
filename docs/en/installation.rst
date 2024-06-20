@@ -5,7 +5,7 @@ Installation
 
 A complete installation of the MiniZinc system comprises the MiniZinc *compiler tool chain*, one or more *solvers*, and (optionally) the *MiniZinc IDE*. 
 
-The easiest way to get a full, working MiniZinc system is to use the **bundled binary packages**, available from http://www.minizinc.org/software.html.
+The easiest way to get a full, working MiniZinc system is to use the **bundled binary packages**, available from https://www.minizinc.org/downloads/.
 
 The bundled binary packages contain the compiler and IDE, as well as the following solvers: Gecode, Chuffed, COIN-OR CBC, HiGHS, and OR-Tools CP-SAT.
 Interfaces to Gurobi, CPLEX, SCIP and XPress are also included and can be used if the corresponding solvers are installed.
@@ -34,7 +34,7 @@ The MiniZinc bundled binary distribution for Linux is provided using three diffe
 Snap
 ~~~~
 
-The MiniZinc Snap is the easiest way to install the MiniZinc bundle if Snap (https://snapcraft.io/) is available on you system. The installation will provide the ``minizinc`` command within terminal environments and will add an application entry for the MiniZincIDE. The IDE can be started from the command line using ``minizinc.ide``. The following command will commence the installation the MiniZinc snap:
+The MiniZinc Snap is the easiest way to install the MiniZinc bundle if Snap (https://snapcraft.io/) is available on your system. The installation will provide the ``minizinc`` command within terminal environments and will add an application entry for the MiniZincIDE. The IDE can be started from the command line using ``minizinc.ide``. The following command will commence the installation the MiniZinc snap:
 
 .. code-block:: bash
 
