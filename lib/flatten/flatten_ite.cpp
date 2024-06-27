@@ -100,6 +100,7 @@ Expression* ite_struct_split(EnvI& env, Type ty, const std::vector<Expression*>&
       }
       Expression* f_else_in =
           new FieldAccess(Location().introduce(), else_decl->id(), IntLit::a(i + 1));
+      Expression::type(f_else_in, field);
       tupleResult[i] = ite_struct_split(env, field, f_then_in, f_else_in, results, e_then, e_else);
     } else {
       VarDecl* fieldRes =

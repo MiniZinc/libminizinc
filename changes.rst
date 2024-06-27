@@ -32,6 +32,8 @@ Bug fixes:
    tuples/records.
 -  Emit type error for array literals with ``<>`` and var set elements.
 -  Fix missing cross-references for IDE preference dialog documentation figures.
+-  Fix crash when using nested tuples/record types inside ``var`` if-then-else
+   expressions.
 
 .. _v2.8.5:
 
