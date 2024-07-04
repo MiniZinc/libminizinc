@@ -2213,10 +2213,15 @@ public:
               const genMap_t& generatorMap;
               Comprehension* comp;
               FindLatestGen(const genMap_t& generatorMap0, Comprehension* comp0)
-                  : declIndex(-1),
-                    decl(comp0->decl(0, 0)),
-                    generatorMap(generatorMap0),
-                    comp(comp0) {}
+                  : generatorMap(generatorMap0),
+                    comp(comp0) {
+                for (int i = 0; i < comp->numberOfGenerators(); i++) {
+                  if (comp->in(i) != nullptr) {
+                    declIndex = i;
+                    decl = comp->decl(i, 0);
+                  }
+                }
+              }
               void vId(const Id* ident) {
                 auto it = generatorMap.find(ident->decl());
                 if (it != generatorMap.end() && it->second.second > declIndex) {
