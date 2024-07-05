@@ -34,6 +34,8 @@ Bug fixes:
 -  Fix missing cross-references for IDE preference dialog documentation figures.
 -  Fix crash when using nested tuples/record types inside ``var`` if-then-else
    expressions.
+-  Fix evaluation error for comprehensions with an initial assignment generator
+   and a where clause which doesn't involve any of the generator identifiers.
 
 .. _v2.8.5:
 

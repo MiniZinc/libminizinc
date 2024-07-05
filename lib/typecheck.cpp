@@ -2213,8 +2213,7 @@ public:
               const genMap_t& generatorMap;
               Comprehension* comp;
               FindLatestGen(const genMap_t& generatorMap0, Comprehension* comp0)
-                  : generatorMap(generatorMap0),
-                    comp(comp0) {
+                  : generatorMap(generatorMap0), comp(comp0) {
                 for (int i = 0; i < comp->numberOfGenerators(); i++) {
                   if (comp->in(i) != nullptr) {
                     declIndex = i;
