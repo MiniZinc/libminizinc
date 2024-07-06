@@ -896,6 +896,8 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           if (stats.n_lin_del != 0) {
             ss.add("eliminatedLinearConstraints", stats.n_lin_del);
           }
+          
+          ss.add("averageDomainSize", stats.avg_domain_size);
 
           /// Objective / SAT. These messages are used by mzn-test.py.
           SolveI* solveItem = env->flat()->solveItem();

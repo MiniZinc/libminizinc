@@ -5671,6 +5671,7 @@ FlatModelStatistics statistics(Env& m) {
   stats.n_imp_ct = m.envi().counters.impConstraints;
   stats.n_imp_del = m.envi().counters.impDel;
   stats.n_lin_del = m.envi().counters.linDel;
+  int domain_sizes = 0;
   for (auto& i : *flat) {
     if (!i->removed()) {
       if (auto* vdi = i->dynamicCast<VarDeclI>()) {
@@ -5680,6 +5681,13 @@ FlatModelStatistics statistics(Env& m) {
             stats.n_set_vars++;
           } else if (t.isint()) {
             stats.n_int_vars++;
+            Expression* domain = vdi->e()->ti()->domain();
+            IntSetVal* bounds = eval_intset(m.envi(), domain);
+            //std::cout << "max " << bounds->max().toInt() << std::endl;
+            //std::cout << "min " << bounds->min().toInt() << std::endl;
+            int length = abs(bounds->max().toInt() - bounds->min().toInt());
+            //std::cout << length << std::endl;
+            domain_sizes += length;
           } else if (t.isbool()) {
             stats.n_bool_vars++;
           } else if (t.isfloat()) {
@@ -5724,6 +5732,9 @@ FlatModelStatistics statistics(Env& m) {
       }
     }
   }
+  //std::cout << domain_sizes << std::endl;
+  //std::cout << "computation result " << (domain_sizes / stats.n_int_vars) << std::endl;
+  stats.avg_domain_size = (domain_sizes / stats.n_int_vars);
   return stats;
 }
 

@@ -150,6 +150,7 @@ struct FlatModelStatistics {
   int n_imp_del;  // NOLINT(readability-identifier-naming)
   /// Number of linear expressions eliminated using path compression
   int n_lin_del;  // NOLINT(readability-identifier-naming)
+  int avg_domain_size;
   /// Constructor
   FlatModelStatistics()
       : n_int_vars(0),
@@ -163,7 +164,8 @@ struct FlatModelStatistics {
         n_reif_ct(0),
         n_imp_ct(0),
         n_imp_del(0),
-        n_lin_del(0) {}
+        n_lin_del(0),
+        avg_domain_size(0) {}
 };
 
 /// Compute statistics for flat model in \a m
