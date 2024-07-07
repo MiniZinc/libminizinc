@@ -5664,14 +5664,37 @@ void oldflatzinc(Env& e) {
   std::stable_sort(m->begin(), m->end(), _cmp);
 }
 
+std::vector<double> domain_overlap_avgs(std::vector<std::pair<double, double>>& domains) {
+  std::vector<double> result;
+  for (int i = 0; i < domains.size(); i++) {
+    auto p1 = domains[i];
+    for (int j = i + 1; j < domains.size(); j++) {
+      auto p2 = domains[j];
+      auto overlap_start = std::max(p1.first, p2.first);
+      auto overlap_end = std::min(p1.second, p2.second);
+      if (overlap_start <= overlap_end) {
+        auto overlap = abs(overlap_start - overlap_end) + 1;
+        auto combinedDomains = std::max(p1.second, p2.second) - std::min(p1.first, p2.first) + 1;
+        result.push_back(overlap / combinedDomains);
+      } else {
+        result.push_back(0);
+      }
+    }
+  }
+  return result;
+}
+
 FlatModelStatistics statistics(Env& m) {
+  Model* nflat = m.envi().originalModel;
   Model* flat = m.flat();
   FlatModelStatistics stats;
   stats.n_reif_ct = m.envi().counters.reifConstraints;
   stats.n_imp_ct = m.envi().counters.impConstraints;
   stats.n_imp_del = m.envi().counters.impDel;
   stats.n_lin_del = m.envi().counters.linDel;
-  int domain_sizes = 0;
+  std::vector<double> domain_sizes;
+  std::vector<std::pair<double, double>> domains;
+
   for (auto& i : *flat) {
     if (!i->removed()) {
       if (auto* vdi = i->dynamicCast<VarDeclI>()) {
@@ -5683,15 +5706,20 @@ FlatModelStatistics statistics(Env& m) {
             stats.n_int_vars++;
             Expression* domain = vdi->e()->ti()->domain();
             IntSetVal* bounds = eval_intset(m.envi(), domain);
-            //std::cout << "max " << bounds->max().toInt() << std::endl;
-            //std::cout << "min " << bounds->min().toInt() << std::endl;
-            int length = abs(bounds->max().toInt() - bounds->min().toInt());
-            //std::cout << length << std::endl;
-            domain_sizes += length;
+            auto boundPair = std::make_pair(bounds->min().toInt(), bounds->max().toInt());
+            auto length = abs(boundPair.first - boundPair.second) + 1;
+            domain_sizes.push_back(length);
+            domains.push_back(boundPair);
           } else if (t.isbool()) {
             stats.n_bool_vars++;
           } else if (t.isfloat()) {
             stats.n_float_vars++;
+            Expression* domain = vdi->e()->ti()->domain();
+            FloatSetVal* bounds = eval_floatset(m.envi(), domain);
+            auto boundPair = std::make_pair(bounds->min().toDouble(), bounds->max().toDouble());
+            auto length = abs(boundPair.first - boundPair.second) + 1;
+            domain_sizes.push_back(length);
+            domains.push_back(boundPair);
           }
         }
       } else if (auto* ci = i->dynamicCast<ConstraintI>()) {
@@ -5732,9 +5760,20 @@ FlatModelStatistics statistics(Env& m) {
       }
     }
   }
-  //std::cout << domain_sizes << std::endl;
-  //std::cout << "computation result " << (domain_sizes / stats.n_int_vars) << std::endl;
-  stats.avg_domain_size = (domain_sizes / stats.n_int_vars);
+  if (!domain_sizes.empty()) {
+    stats.std_dev_domain_size = new double(std::round(stdDev(domain_sizes) * 1000) /1000.0);
+
+    stats.avg_domain_size = new double(mean(domain_sizes));
+
+    std::sort(domain_sizes.begin(), domain_sizes.end());
+    stats.median_domain_size = new double(domain_sizes[domain_sizes.size() / 2]);
+
+    auto overlaps = domain_overlap_avgs(domains);
+    stats.n_disjoint_domain_pairs = new int(std::count(overlaps.begin(), overlaps.end(), 0.0));
+
+    stats.avg_domain_overlap = new double(mean(overlaps));
+  }
+  stats.n_total_ct += stats.n_set_ct + stats.n_int_ct + stats.n_bool_ct + stats.n_float_ct;
   return stats;
 }
 
