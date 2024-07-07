@@ -150,7 +150,14 @@ struct FlatModelStatistics {
   int n_imp_del;  // NOLINT(readability-identifier-naming)
   /// Number of linear expressions eliminated using path compression
   int n_lin_del;  // NOLINT(readability-identifier-naming)
-  int avg_domain_size;
+
+  double* std_dev_domain_size;
+  double* avg_domain_size;
+  double* median_domain_size;
+  double* avg_domain_overlap;
+  int* n_disjoint_domain_pairs;
+  int n_total_ct;
+
   /// Constructor
   FlatModelStatistics()
       : n_int_vars(0),
@@ -165,7 +172,12 @@ struct FlatModelStatistics {
         n_imp_ct(0),
         n_imp_del(0),
         n_lin_del(0),
-        avg_domain_size(0) {}
+        std_dev_domain_size(nullptr), // nullptrs instead 0, because 0 is within the valid range of values
+        avg_domain_size(nullptr),
+        median_domain_size(nullptr),
+        avg_domain_overlap(nullptr),
+        n_disjoint_domain_pairs(nullptr),
+        n_total_ct(0) {}
 };
 
 /// Compute statistics for flat model in \a m
