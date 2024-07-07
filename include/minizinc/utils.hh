@@ -26,6 +26,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <type_traits>
 
 #ifdef MZN_HAS_LLROUND
 #include <cmath>
@@ -211,6 +212,46 @@ inline void vec_string2vec_pchar(const std::vector<std::string>& vS,
   for (size_t i = 0; i < vS.size(); ++i) {
     vPC[i] = vS[i].c_str();
   }
+}
+
+// computes the average without running the risk of overflows
+template <typename T>
+inline T mean(const std::vector<T>& numbers) {
+  static_assert(std::is_arithmetic<T>::value, "Template argument must be a numeric type.");
+
+  if (numbers.empty()) {
+    return 0;
+  }
+
+  int s = numbers.size();
+  double avg = 0.0;
+
+  for (T n : numbers) {
+    avg += static_cast<double>(n) / s;
+  }
+
+  return static_cast<T>(avg);
+}
+
+// computes the standard deviation of a vector
+template <typename T>
+inline double stdDev(const std::vector<T>& numbers) {
+  static_assert(std::is_arithmetic<T>::value, "Template argument must be a numeric type.");
+
+  if (numbers.empty()) {
+    return 0;
+  }
+
+  double m = mean(numbers);
+
+  double sumSquaredDiffs = 0.0;
+  for (T n : numbers) {
+    double diff = static_cast<double>(n) - m;
+    sumSquaredDiffs += diff * diff;
+  }
+
+  double variance = sumSquaredDiffs / numbers.size();
+  return std::sqrt(variance);
 }
 
 class Env;
