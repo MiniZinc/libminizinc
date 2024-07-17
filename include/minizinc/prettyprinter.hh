@@ -82,14 +82,14 @@ public:
       return std::string(str);
     }
     const std::vector<std::string> reserved = {
-        "ann",   "annotation", "any",      "array",    "bool",      "case",    "constraint",
-        "diff",  "div",        "else",     "elseif",   "endif",     "enum",    "false",
-        "float", "function",   "if",       "in",       "include",   "int",     "intersect",
-        "let",   "list",       "maximize", "minimize", "mod",       "not",     "of",
-        "op",    "opt",        "output",   "par",      "predicate", "record",  "satisfy",
-        "set",   "solve",      "string",   "subset",   "superset",  "symdiff", "test",
-        "then",  "true",       "tuple",    "type",     "union",     "var",     "where",
-        "xor"};
+        "ann",       "annotation", "any",      "array",    "bool",     "case",      "constraint",
+        "default",   "diff",       "div",      "else",     "elseif",   "endif",     "enum",
+        "false",     "float",      "function", "if",       "in",       "include",   "int",
+        "intersect", "let",        "list",     "maximize", "minimize", "mod",       "not",
+        "of",        "op",         "opt",      "output",   "par",      "predicate", "record",
+        "satisfy",   "set",        "solve",    "string",   "subset",   "superset",  "symdiff",
+        "test",      "then",       "true",     "tuple",    "type",     "union",     "var",
+        "where",     "xor"};
     bool is_reserved =
         std::find(reserved.begin(), reserved.end(), std::string(str)) != reserved.end();
     int offset = str[0] == '_' ? 1 : 0;

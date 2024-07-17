@@ -146,6 +146,10 @@ public:
       p(e);
       return;
     }
+    if (type.istop() && e == nullptr) {
+      _os << "any";
+      return;
+    }
     switch (type.ti()) {
       case Type::TI_PAR:
         break;
@@ -433,7 +437,16 @@ public:
       } break;
       case Expression::E_ARRAYACCESS: {
         const auto* aa = Expression::cast<ArrayAccess>(e);
+        bool needParentheses =
+            !(Expression::isa<Id>(aa->v()) || Expression::isa<Call>(aa->v()) ||
+              Expression::isa<ArrayLit>(aa->v()) || Expression::isa<Comprehension>(aa->v()));
+        if (needParentheses) {
+          _os << "(";
+        }
         p(aa->v());
+        if (needParentheses) {
+          _os << ")";
+        }
         _os << "[";
         for (unsigned int i = 0; i < aa->idx().size(); i++) {
           p(aa->idx()[i]);
@@ -703,23 +716,31 @@ public:
       } break;
       case Expression::E_CALL: {
         const auto* c = Expression::cast<Call>(e);
-        _os << Printer::quoteId(c->id()) << "(";
-        for (unsigned int i = 0; i < c->argCount(); i++) {
-          p(c->arg(i));
-          if (i < c->argCount() - 1) {
-            _os << ",";
+        if (c->id() == "default" && c->argCount() == 2) {
+          _os << "((";
+          p(c->arg(0));
+          _os << ") default (";
+          p(c->arg(1));
+          _os << "))";
+        } else {
+          _os << Printer::quoteId(c->id()) << "(";
+          for (unsigned int i = 0; i < c->argCount(); i++) {
+            p(c->arg(i));
+            if (i < c->argCount() - 1) {
+              _os << ",";
+            }
           }
-        }
-        _os << ")";
-        if (trace && Expression::type(e).isPar()) {
-          Expression* result = nullptr;
-          try {
-            result = eval_par(*_env, const_cast<Expression*>(e));
-            _os << "(≡";
-            p(result);
-            _os << ")";
-          } catch (ResultUndefinedError) {
-            _os << "(≡⊥)";
+          _os << ")";
+          if (trace && Expression::type(e).isPar()) {
+            Expression* result = nullptr;
+            try {
+              result = eval_par(*_env, const_cast<Expression*>(e));
+              _os << "(≡";
+              p(result);
+              _os << ")";
+            } catch (ResultUndefinedError) {
+              _os << "(≡⊥)";
+            }
           }
         }
       } break;
@@ -846,10 +867,23 @@ public:
       case Item::II_FUN: {
         const FunctionI& fi = *i->cast<FunctionI>();
         if (fi.ti()->type().isAnn() && fi.e() == nullptr) {
-          _os << "annotation ";
-        } else if (fi.ti()->type() == Type::parbool()) {
+          bool internalRepr = false;
+          for (auto* a : fi.ann()) {
+            if (auto* ident = Expression::dynamicCast<Id>(a)) {
+              if (ident->idn() == -1 && ident->v() == "mzn_internal_representation") {
+                internalRepr = true;
+                break;
+              }
+            }
+          }
+          if (internalRepr) {
+            _os << "function ann: ";
+          } else {
+            _os << "annotation ";
+          }
+        } else if (fi.ti()->type() == Type::parbool() && fi.id().c_str()[0] != '\'') {
           _os << "test ";
-        } else if (fi.ti()->type() == Type::varbool()) {
+        } else if (fi.ti()->type() == Type::varbool() && fi.id().c_str()[0] != '\'') {
           _os << "predicate ";
         } else {
           _os << "function ";
