@@ -2367,7 +2367,8 @@ std::string show_with_type(EnvI& env, Expression* exp, Type t, bool showDzn) {
       RecordType* rt = env.getRecordType(al->type());
       assert(al->size() == rt->size());
       for (unsigned int i = 0; i < al->size(); i++) {
-        oss << rt->fieldName(i) << ": " << show_with_type(env, (*al)[i], (*rt)[i], showDzn);
+        oss << Printer::quoteId(rt->fieldName(i)) << ": "
+            << show_with_type(env, (*al)[i], (*rt)[i], showDzn);
         if (i < al->size() - 1) {
           oss << ", ";
         }
