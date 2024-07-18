@@ -478,8 +478,9 @@ void MIPHiGHSWrapper::setOptions() {
   }
 }
 
-void MIPHiGHSWrapper::callback(const int callback_type, const char* message, const void* data_out,
-                               struct HighsCallbackDataIn* data_in, void* user_callback_data) {
+void MIPHiGHSWrapper::callback(const int callback_type, const char* message,
+                               const HighsCallbackDataOut* data_out, HighsCallbackDataIn* data_in,
+                               void* user_callback_data) {
   auto* info = (MIPWrapper::CBUserInfo*)user_callback_data;
   auto* hw = static_cast<MIPHiGHSWrapper*>(info->wrapper);
   switch (callback_type) {

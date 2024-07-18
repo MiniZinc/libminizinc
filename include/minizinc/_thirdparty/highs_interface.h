@@ -87,6 +87,5 @@ const char* const kHighsCallbackDataOutMipNodeCountName = "mip_node_count";
 const char* const kHighsCallbackDataOutMipDualBoundName = "mip_dual_bound";
 const char* const kHighsCallbackDataOutMipSolutionName = "mip_solution";
 
-struct HighsCallbackDataIn {
-  int user_interrupt;
-};
+typedef struct HighsCallbackDataIn HighsCallbackDataIn;
+typedef struct HighsCallbackDataOut HighsCallbackDataOut;

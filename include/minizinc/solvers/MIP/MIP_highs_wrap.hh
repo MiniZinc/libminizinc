@@ -103,15 +103,17 @@ public:
   HighsInt (*Highs_getDoubleInfoValue)(const void* highs, const char* info, double* value);
   // NOLINTNEXTLINE(readability-identifier-naming)
   HighsInt (*Highs_setCallback)(void* highs,
-                                void (*user_callback)(const int, const char*, const void*,
-                                                      struct HighsCallbackDataIn*, void*),
+                                void (*user_callback)(const int, const char*,
+                                                      const HighsCallbackDataOut*,
+                                                      HighsCallbackDataIn*, void*),
                                 void* user_callback_data);
   // NOLINTNEXTLINE(readability-identifier-naming)
   HighsInt (*Highs_startCallback)(void* highs, const int callback_type);
   // NOLINTNEXTLINE(readability-identifier-naming)
   HighsInt (*Highs_stopCallback)(void* highs, const int callback_type);
   // NOLINTNEXTLINE(readability-identifier-naming)
-  const void* (*Highs_getCallbackDataOutItem)(const void* data_out, const char* item_name);
+  const void* (*Highs_getCallbackDataOutItem)(const HighsCallbackDataOut* data_out,
+                                              const char* item_name);
 
 private:
 #ifdef HIGHS_PLUGIN
@@ -229,6 +231,6 @@ protected:
   // Set HiGHS internal options based on the command line flags given to the solver interface
   void setOptions();
 
-  static void callback(int callback_type, const char* message, const void* data_out,
-                       struct HighsCallbackDataIn* data_in, void* user_callback_data);
+  static void callback(int callback_type, const char* message, const HighsCallbackDataOut* data_out,
+                       HighsCallbackDataIn* data_in, void* user_callback_data);
 };
