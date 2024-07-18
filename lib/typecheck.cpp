@@ -4394,7 +4394,7 @@ void output_var_desc_json(Env& env, TypeInst* ti, std::ostream& os, bool extra =
     auto* rt = env.envi().getRecordType(ti->type());
     os << ", \"field_types\" : {";
     for (size_t i = 0; i < dom->size(); ++i) {
-      os << "\"" << rt->fieldName(i) << "\": ";
+      os << "\"" << Printer::escapeStringLit(rt->fieldName(i)) << "\": ";
       output_var_desc_json(env, Expression::cast<TypeInst>((*dom)[i]), os, extra);
       if (i < dom->size() - 1) {
         os << ", ";

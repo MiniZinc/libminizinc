@@ -2504,7 +2504,8 @@ std::string b_show_json_with_type(EnvI& env, Expression* exp, Type t) {
       RecordType* rt = env.getRecordType(al->type());
       oss << "{";
       for (unsigned int i = 0; i < al->size(); ++i) {
-        oss << "\"" << rt->fieldName(i) << "\": " << b_show_json_with_type(env, (*al)[i], (*rt)[i]);
+        oss << "\"" << Printer::escapeStringLit(rt->fieldName(i))
+            << "\": " << b_show_json_with_type(env, (*al)[i], (*rt)[i]);
         if (i < al->size() - 1) {
           oss << ", ";
         }

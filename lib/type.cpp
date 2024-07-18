@@ -428,7 +428,7 @@ std::string Type::toString(const EnvI& env) const {
       oss << "record(";
       RecordType* rt = env.getRecordType(*this);
       for (size_t i = 0; i < rt->size(); ++i) {
-        oss << (*rt)[i].toString(env) << ": " << rt->fieldName(i);
+        oss << (*rt)[i].toString(env) << ": " << Printer::quoteId(rt->fieldName(i));
         if (i < rt->size() - 1) {
           oss << ", ";
         }
