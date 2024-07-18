@@ -75,6 +75,7 @@ HiGHSPlugin::HiGHSPlugin(const std::string& dll) {
   load_symbol(plugin, Highs_setCallback);
   load_symbol(plugin, Highs_startCallback);
   load_symbol(plugin, Highs_stopCallback);
+  load_symbol(plugin, Highs_getCallbackDataOutItem);
 }
 
 std::string MIPHiGHSWrapper::getVersion(FactoryOptions& factoryOpt,
@@ -477,8 +478,7 @@ void MIPHiGHSWrapper::setOptions() {
   }
 }
 
-void MIPHiGHSWrapper::callback(const int callback_type, const char* message,
-                               const struct HighsCallbackDataOut* data_out,
+void MIPHiGHSWrapper::callback(const int callback_type, const char* message, const void* data_out,
                                struct HighsCallbackDataIn* data_in, void* user_callback_data) {
   auto* info = (MIPWrapper::CBUserInfo*)user_callback_data;
   auto* hw = static_cast<MIPHiGHSWrapper*>(info->wrapper);
@@ -486,23 +486,29 @@ void MIPHiGHSWrapper::callback(const int callback_type, const char* message,
     case kHighsCallbackLogging:
       std::cerr << message;
       break;
-    case kHighsCallbackMipImprovingSolution:
+    case kHighsCallbackMipImprovingSolution: {
       hw->output.dWallTime =
           std::chrono::duration<double>(std::chrono::steady_clock::now() - hw->output.dWallTime0)
               .count();
       hw->output.dCPUTime = double(std::clock() - hw->output.cCPUTime0) / CLOCKS_PER_SEC;
       hw->output.status = Status::SAT;
       hw->output.statusName = "Unknown";
-      hw->output.objVal = data_out->objective_function_value;
-      hw->output.bestBound = data_out->mip_dual_bound;
-      hw->output.nNodes = static_cast<int>(data_out->mip_node_count);
-      hw->_x.assign(data_out->mip_solution, data_out->mip_solution + hw->output.nCols);
+      hw->output.objVal = *(double*)hw->_plugin->Highs_getCallbackDataOutItem(
+          data_out, kHighsCallbackDataOutObjectiveFunctionValueName);
+      hw->output.bestBound = *(double*)hw->_plugin->Highs_getCallbackDataOutItem(
+          data_out, kHighsCallbackDataOutMipDualBoundName);
+      hw->output.nNodes = static_cast<int>(*(int64_t*)hw->_plugin->Highs_getCallbackDataOutItem(
+          data_out, kHighsCallbackDataOutMipNodeCountName));
+      auto* mip_solution = (double*)hw->_plugin->Highs_getCallbackDataOutItem(
+          data_out, kHighsCallbackDataOutMipSolutionName);
+      hw->_x.assign(mip_solution, mip_solution + hw->output.nCols);
       hw->output.x = hw->_x.data();
       if (hw->_options->flagIntermediate && info->solcbfn != nullptr) {
         (info->solcbfn)(*info->pOutput, info->psi);
         info->printed = true;
       }
       break;
+    }
     default:
       break;
   }
