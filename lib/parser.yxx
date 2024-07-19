@@ -254,6 +254,7 @@ void parseFieldTail(const ParserLocation& loc, std::vector<Expression*>& parsed,
 %token MZN_UNDERSCORE "_"
 %token MZN_VARIANT_RECORD "variant_record"
 %token MZN_WHERE "where"
+%token MZN_MAX_NEGATIVE_INTEGER_LITERAL "9223372036854775808"
 
 %token MZN_LEFT_BRACKET "["
 %token MZN_LEFT_2D_BRACKET "[|"
@@ -1204,6 +1205,8 @@ set_expr :
           $$=new UnOp(@$, UOT_MINUS, $2);
         }
       }
+    | MZN_MINUS MZN_MAX_NEGATIVE_INTEGER_LITERAL %prec MZN_NOT
+      { $$ = IntLit::a(-9223372036854775808); }
 
 ///
 
@@ -1383,6 +1386,8 @@ expr :
           $$=new UnOp(@$, UOT_MINUS, $2);
         }
       }
+    | MZN_MINUS MZN_MAX_NEGATIVE_INTEGER_LITERAL %prec MZN_NOT
+      { $$ = IntLit::a(-9223372036854775808); }
 
 
 expr_atom_head :

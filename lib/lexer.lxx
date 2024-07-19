@@ -199,6 +199,9 @@ namespace MiniZinc {
                   else
                     return MZN_INVALID_INTEGER_LITERAL;
                 }
+"9223372036854775808" {
+                  return MZN_MAX_NEGATIVE_INTEGER_LITERAL;
+                }
 [0-9]+          {
                   if (::MiniZinc::fast_strtointval(yytext, yylval->iValue))
                     return MZN_INTEGER_LITERAL;

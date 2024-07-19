@@ -35,8 +35,8 @@
    especially those whose name start with YY_ or yy_.  They are
    private implementation details that can be changed or removed.  */
 
-#ifndef YY_MZN_YY_USERS_DEKKER1_CODE_GITHUB_COM_MINIZINC_LIBMINIZINC_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
-# define YY_MZN_YY_USERS_DEKKER1_CODE_GITHUB_COM_MINIZINC_LIBMINIZINC_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
+#ifndef YY_MZN_YY_USERS_GUIDOT_PROGRAMMING_MINIZINC_LIBMZN_BUILD_XCODE_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
+# define YY_MZN_YY_USERS_GUIDOT_PROGRAMMING_MINIZINC_LIBMZN_BUILD_XCODE_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
@@ -109,92 +109,93 @@ extern int mzn_yydebug;
     MZN_UNDERSCORE = 310,          /* "_"  */
     MZN_VARIANT_RECORD = 311,      /* "variant_record"  */
     MZN_WHERE = 312,               /* "where"  */
-    MZN_LEFT_BRACKET = 313,        /* "["  */
-    MZN_LEFT_2D_BRACKET = 314,     /* "[|"  */
-    MZN_RIGHT_BRACKET = 315,       /* "]"  */
-    MZN_RIGHT_2D_BRACKET = 316,    /* "|]"  */
-    QUOTED_IDENTIFIER = 317,       /* QUOTED_IDENTIFIER  */
-    MZN_INVALID_INTEGER_LITERAL = 318, /* "invalid integer literal"  */
-    MZN_INVALID_FLOAT_LITERAL = 319, /* "invalid float literal"  */
-    MZN_UNTERMINATED_STRING = 320, /* "unterminated string"  */
-    MZN_END_OF_LINE_IN_STRING = 321, /* "end of line inside string literal"  */
-    MZN_INVALID_NULL = 322,        /* "null character"  */
-    MZN_INVALID_STRING_LITERAL = 323, /* "invalid string literal"  */
-    MZN_EQUIV = 324,               /* "<->"  */
-    MZN_IMPL = 325,                /* "->"  */
-    MZN_RIMPL = 326,               /* "<-"  */
-    MZN_OR = 327,                  /* "\\/"  */
-    MZN_XOR = 328,                 /* "xor"  */
-    MZN_AND = 329,                 /* "/\\"  */
-    MZN_LE = 330,                  /* "<"  */
-    MZN_GR = 331,                  /* ">"  */
-    MZN_LQ = 332,                  /* "<="  */
-    MZN_GQ = 333,                  /* ">="  */
-    MZN_EQ = 334,                  /* "="  */
-    MZN_NQ = 335,                  /* "!="  */
-    MZN_WEAK_EQ = 336,             /* "~="  */
-    MZN_WEAK_NQ = 337,             /* "~!="  */
-    MZN_IN = 338,                  /* "in"  */
-    MZN_SUBSET = 339,              /* "subset"  */
-    MZN_SUPERSET = 340,            /* "superset"  */
-    MZN_UNION = 341,               /* "union"  */
-    MZN_DIFF = 342,                /* "diff"  */
-    MZN_SYMDIFF = 343,             /* "symdiff"  */
-    MZN_DOTDOT = 344,              /* ".."  */
-    MZN_DOTDOT_LE = 345,           /* "..<"  */
-    MZN_LE_DOTDOT = 346,           /* "<.."  */
-    MZN_LE_DOTDOT_LE = 347,        /* "<..<"  */
-    MZN_PLUS = 348,                /* "+"  */
-    MZN_MINUS = 349,               /* "-"  */
-    MZN_WEAK_PLUS = 350,           /* "~+"  */
-    MZN_WEAK_MINUS = 351,          /* "~-"  */
-    MZN_MULT = 352,                /* "*"  */
-    MZN_DIV = 353,                 /* "/"  */
-    MZN_IDIV = 354,                /* "div"  */
-    MZN_MOD = 355,                 /* "mod"  */
-    MZN_WEAK_DIV = 356,            /* "~/"  */
-    MZN_WEAK_IDIV = 357,           /* "~div"  */
-    MZN_INTERSECT = 358,           /* "intersect"  */
-    MZN_WEAK_MULT = 359,           /* "~*"  */
-    MZN_POW = 360,                 /* "^"  */
-    MZN_POW_MINUS1 = 361,          /* "^-1"  */
-    MZN_NOT = 362,                 /* "not"  */
-    MZN_PLUSPLUS = 363,            /* "++"  */
-    MZN_COLONCOLON = 364,          /* "::"  */
-    PREC_ANNO = 365,               /* PREC_ANNO  */
-    MZN_EQUIV_QUOTED = 366,        /* "'<->'"  */
-    MZN_IMPL_QUOTED = 367,         /* "'->'"  */
-    MZN_RIMPL_QUOTED = 368,        /* "'<-'"  */
-    MZN_OR_QUOTED = 369,           /* "'\\/'"  */
-    MZN_XOR_QUOTED = 370,          /* "'xor'"  */
-    MZN_AND_QUOTED = 371,          /* "'/\\'"  */
-    MZN_LE_QUOTED = 372,           /* "'<'"  */
-    MZN_GR_QUOTED = 373,           /* "'>'"  */
-    MZN_LQ_QUOTED = 374,           /* "'<='"  */
-    MZN_GQ_QUOTED = 375,           /* "'>='"  */
-    MZN_EQ_QUOTED = 376,           /* "'='"  */
-    MZN_NQ_QUOTED = 377,           /* "'!='"  */
-    MZN_IN_QUOTED = 378,           /* "'in'"  */
-    MZN_SUBSET_QUOTED = 379,       /* "'subset'"  */
-    MZN_SUPERSET_QUOTED = 380,     /* "'superset'"  */
-    MZN_UNION_QUOTED = 381,        /* "'union'"  */
-    MZN_DIFF_QUOTED = 382,         /* "'diff'"  */
-    MZN_SYMDIFF_QUOTED = 383,      /* "'symdiff'"  */
-    MZN_DOTDOT_QUOTED = 384,       /* "'..'"  */
-    MZN_LE_DOTDOT_QUOTED = 385,    /* "'<..'"  */
-    MZN_DOTDOT_LE_QUOTED = 386,    /* "'..<'"  */
-    MZN_LE_DOTDOT_LE_QUOTED = 387, /* "'<..<'"  */
-    MZN_PLUS_QUOTED = 388,         /* "'+'"  */
-    MZN_MINUS_QUOTED = 389,        /* "'-'"  */
-    MZN_MULT_QUOTED = 390,         /* "'*'"  */
-    MZN_DIV_QUOTED = 391,          /* "'/'"  */
-    MZN_IDIV_QUOTED = 392,         /* "'div'"  */
-    MZN_MOD_QUOTED = 393,          /* "'mod'"  */
-    MZN_INTERSECT_QUOTED = 394,    /* "'intersect'"  */
-    MZN_POW_QUOTED = 395,          /* "'^'"  */
-    MZN_NOT_QUOTED = 396,          /* "'not'"  */
-    MZN_COLONCOLON_QUOTED = 397,   /* "'::'"  */
-    MZN_PLUSPLUS_QUOTED = 398      /* "'++'"  */
+    MZN_MAX_NEGATIVE_INTEGER_LITERAL = 313, /* "9223372036854775808"  */
+    MZN_LEFT_BRACKET = 314,        /* "["  */
+    MZN_LEFT_2D_BRACKET = 315,     /* "[|"  */
+    MZN_RIGHT_BRACKET = 316,       /* "]"  */
+    MZN_RIGHT_2D_BRACKET = 317,    /* "|]"  */
+    QUOTED_IDENTIFIER = 318,       /* QUOTED_IDENTIFIER  */
+    MZN_INVALID_INTEGER_LITERAL = 319, /* "invalid integer literal"  */
+    MZN_INVALID_FLOAT_LITERAL = 320, /* "invalid float literal"  */
+    MZN_UNTERMINATED_STRING = 321, /* "unterminated string"  */
+    MZN_END_OF_LINE_IN_STRING = 322, /* "end of line inside string literal"  */
+    MZN_INVALID_NULL = 323,        /* "null character"  */
+    MZN_INVALID_STRING_LITERAL = 324, /* "invalid string literal"  */
+    MZN_EQUIV = 325,               /* "<->"  */
+    MZN_IMPL = 326,                /* "->"  */
+    MZN_RIMPL = 327,               /* "<-"  */
+    MZN_OR = 328,                  /* "\\/"  */
+    MZN_XOR = 329,                 /* "xor"  */
+    MZN_AND = 330,                 /* "/\\"  */
+    MZN_LE = 331,                  /* "<"  */
+    MZN_GR = 332,                  /* ">"  */
+    MZN_LQ = 333,                  /* "<="  */
+    MZN_GQ = 334,                  /* ">="  */
+    MZN_EQ = 335,                  /* "="  */
+    MZN_NQ = 336,                  /* "!="  */
+    MZN_WEAK_EQ = 337,             /* "~="  */
+    MZN_WEAK_NQ = 338,             /* "~!="  */
+    MZN_IN = 339,                  /* "in"  */
+    MZN_SUBSET = 340,              /* "subset"  */
+    MZN_SUPERSET = 341,            /* "superset"  */
+    MZN_UNION = 342,               /* "union"  */
+    MZN_DIFF = 343,                /* "diff"  */
+    MZN_SYMDIFF = 344,             /* "symdiff"  */
+    MZN_DOTDOT = 345,              /* ".."  */
+    MZN_DOTDOT_LE = 346,           /* "..<"  */
+    MZN_LE_DOTDOT = 347,           /* "<.."  */
+    MZN_LE_DOTDOT_LE = 348,        /* "<..<"  */
+    MZN_PLUS = 349,                /* "+"  */
+    MZN_MINUS = 350,               /* "-"  */
+    MZN_WEAK_PLUS = 351,           /* "~+"  */
+    MZN_WEAK_MINUS = 352,          /* "~-"  */
+    MZN_MULT = 353,                /* "*"  */
+    MZN_DIV = 354,                 /* "/"  */
+    MZN_IDIV = 355,                /* "div"  */
+    MZN_MOD = 356,                 /* "mod"  */
+    MZN_WEAK_DIV = 357,            /* "~/"  */
+    MZN_WEAK_IDIV = 358,           /* "~div"  */
+    MZN_INTERSECT = 359,           /* "intersect"  */
+    MZN_WEAK_MULT = 360,           /* "~*"  */
+    MZN_POW = 361,                 /* "^"  */
+    MZN_POW_MINUS1 = 362,          /* "^-1"  */
+    MZN_NOT = 363,                 /* "not"  */
+    MZN_PLUSPLUS = 364,            /* "++"  */
+    MZN_COLONCOLON = 365,          /* "::"  */
+    PREC_ANNO = 366,               /* PREC_ANNO  */
+    MZN_EQUIV_QUOTED = 367,        /* "'<->'"  */
+    MZN_IMPL_QUOTED = 368,         /* "'->'"  */
+    MZN_RIMPL_QUOTED = 369,        /* "'<-'"  */
+    MZN_OR_QUOTED = 370,           /* "'\\/'"  */
+    MZN_XOR_QUOTED = 371,          /* "'xor'"  */
+    MZN_AND_QUOTED = 372,          /* "'/\\'"  */
+    MZN_LE_QUOTED = 373,           /* "'<'"  */
+    MZN_GR_QUOTED = 374,           /* "'>'"  */
+    MZN_LQ_QUOTED = 375,           /* "'<='"  */
+    MZN_GQ_QUOTED = 376,           /* "'>='"  */
+    MZN_EQ_QUOTED = 377,           /* "'='"  */
+    MZN_NQ_QUOTED = 378,           /* "'!='"  */
+    MZN_IN_QUOTED = 379,           /* "'in'"  */
+    MZN_SUBSET_QUOTED = 380,       /* "'subset'"  */
+    MZN_SUPERSET_QUOTED = 381,     /* "'superset'"  */
+    MZN_UNION_QUOTED = 382,        /* "'union'"  */
+    MZN_DIFF_QUOTED = 383,         /* "'diff'"  */
+    MZN_SYMDIFF_QUOTED = 384,      /* "'symdiff'"  */
+    MZN_DOTDOT_QUOTED = 385,       /* "'..'"  */
+    MZN_LE_DOTDOT_QUOTED = 386,    /* "'<..'"  */
+    MZN_DOTDOT_LE_QUOTED = 387,    /* "'..<'"  */
+    MZN_LE_DOTDOT_LE_QUOTED = 388, /* "'<..<'"  */
+    MZN_PLUS_QUOTED = 389,         /* "'+'"  */
+    MZN_MINUS_QUOTED = 390,        /* "'-'"  */
+    MZN_MULT_QUOTED = 391,         /* "'*'"  */
+    MZN_DIV_QUOTED = 392,          /* "'/'"  */
+    MZN_IDIV_QUOTED = 393,         /* "'div'"  */
+    MZN_MOD_QUOTED = 394,          /* "'mod'"  */
+    MZN_INTERSECT_QUOTED = 395,    /* "'intersect'"  */
+    MZN_POW_QUOTED = 396,          /* "'^'"  */
+    MZN_NOT_QUOTED = 397,          /* "'not'"  */
+    MZN_COLONCOLON_QUOTED = 398,   /* "'::'"  */
+    MZN_PLUSPLUS_QUOTED = 399      /* "'++'"  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -249,4 +250,4 @@ struct YYLTYPE
 int mzn_yyparse (void *parm);
 
 
-#endif /* !YY_MZN_YY_USERS_DEKKER1_CODE_GITHUB_COM_MINIZINC_LIBMINIZINC_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED  */
+#endif /* !YY_MZN_YY_USERS_GUIDOT_PROGRAMMING_MINIZINC_LIBMZN_BUILD_XCODE_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED  */
