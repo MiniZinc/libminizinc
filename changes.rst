@@ -29,6 +29,15 @@ Changes:
    clauses in root context instead of reified context.
 -  Improve compilation of comprehensions with complex variable generators
    by moving the generator expression into a generator alias.
+-  Add an experimental black-box propagator interface. A bodyless predicate
+   or function annotated with ``::minizinc_value_propagator`` or
+   ``::minizinc_bounds_propagator`` (in ``experimental/blackbox.mzn``) together
+   with a source annotation (``::blackbox_exec`` for an external executable or
+   ``::blackbox_dll`` for a dynamically loaded library) has its body generated
+   by the compiler as a call to a solver-overridable ``blackbox`` /
+   ``blackbox_bounds`` constraint. Supporting solvers invoke the external code
+   during search to propagate values or bounds; solvers without support abort
+   with a clear message.
 
 Language changes:
 ^^^^^^^^^^^^^^^^^

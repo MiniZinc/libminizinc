@@ -1,0 +1,7 @@
+predicate chuffed_blackbox_bounds(array [int] of var int: int_input,array [int] of int: flat_reason);
+array [1..38] of int: X_INTRODUCED_18_ = [1,4,1,1,1,2,2,1,2,2,4,1,1,1,2,2,1,2,2,2,4,1,1,1,2,2,1,2,2,4,1,1,1,2,2,1,2,2];
+var 1..10: X_INTRODUCED_16_;
+var 1..10: X_INTRODUCED_17_;
+array [1..2] of var int: x:: output_array([1..2]) = [X_INTRODUCED_16_,X_INTRODUCED_17_];
+constraint chuffed_blackbox_bounds(x,X_INTRODUCED_18_):: blackbox_exec("bounds.py",[]);
+solve  satisfy;

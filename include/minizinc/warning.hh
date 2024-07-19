@@ -41,6 +41,11 @@ public:
   Warning(EnvI& env, const Location& loc, std::string msg)
       : _loc(loc), _msg(std::move(msg)), _stack(new StackDump(env)) {}
 
+  /// Access the warning message
+  const std::string& msg() const { return _msg; }
+  /// Access the location the warning was raised at
+  const Location& loc() const { return _loc; }
+
   /// Print human-readable warning/error message
   void print(std::ostream& os, bool werror) const;
   /// Print JSON stream formatted warning/error message

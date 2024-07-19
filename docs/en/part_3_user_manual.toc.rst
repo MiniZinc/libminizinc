@@ -7,6 +7,7 @@
    solvers
    checkers
    assumptions
+   blackbox
    globalizer
    find_mus
    mzn-analyse

@@ -223,7 +223,8 @@ std::vector<std::string> get_env_list(const std::string& env) {
   return ret;
 }
 
-std::string find_executable(const std::string& filename, const std::string& basePath) {
+std::string find_executable(const std::string& filename, const std::string& basePath,
+                            const std::vector<std::string>& extraSearchDirs) {
 #ifdef _MSC_VER
   // On Windows, executables must end with one of these extensions
   std::vector<std::string> exeSuffixes = get_env_list("PATHEXT");
@@ -252,7 +253,8 @@ std::string find_executable(const std::string& filename, const std::string& base
 
   std::vector<std::string> searchDirs = {};
   if (base_name(filename) == filename) {
-    // Filename only, so search PATH
+    // Filename only, so search the extra directories first, then the PATH
+    searchDirs.insert(searchDirs.end(), extraSearchDirs.begin(), extraSearchDirs.end());
     auto path_dirs = get_env_list("PATH");
     searchDirs.insert(searchDirs.end(), path_dirs.begin(), path_dirs.end());
   } else {
@@ -265,6 +267,69 @@ std::string find_executable(const std::string& filename, const std::string& base
     for (const auto& suffix : exeSuffixes) {
       if (file_exists(fileWithPath + suffix)) {
         return file_path(fileWithPath + suffix);
+      }
+    }
+  }
+  return "";
+}
+
+std::string find_library(const std::string& name, const std::string& basePath) {
+  const bool bare = (base_name(name) == name) && !is_absolute(name);
+
+  // Candidate leaf filenames to try, in priority order, following the platform
+  // library-naming convention. `name` itself is always tried (it may already
+  // carry an extension or `lib` prefix).
+  std::vector<std::string> leaves;
+#ifdef _WIN32
+  if (bare) {
+    leaves = {name + ".dll", "lib" + name + ".dll", name};
+  } else {
+    leaves = {name, name + ".dll"};
+  }
+#elif defined(__APPLE__)
+  if (bare) {
+    leaves = {"lib" + name + ".dylib", name + ".dylib", "lib" + name + ".so", name + ".so", name};
+  } else {
+    leaves = {name, name + ".dylib", name + ".so"};
+  }
+#else
+  if (bare) {
+    leaves = {"lib" + name + ".so", name + ".so", name};
+  } else {
+    leaves = {name, name + ".so"};
+  }
+#endif
+
+  // Directories to search, approximating the dynamic loader's search order.
+  std::vector<std::string> dirs;
+  if (bare) {
+    if (!basePath.empty()) {
+      dirs.push_back(basePath);
+    }
+#ifdef _WIN32
+    auto env_dirs = get_env_list("PATH");
+#elif defined(__APPLE__)
+    auto env_dirs = get_env_list("DYLD_LIBRARY_PATH");
+#else
+    auto env_dirs = get_env_list("LD_LIBRARY_PATH");
+#endif
+    dirs.insert(dirs.end(), env_dirs.begin(), env_dirs.end());
+#ifndef _WIN32
+    dirs.emplace_back("/usr/local/lib");
+    dirs.emplace_back("/usr/lib");
+    dirs.emplace_back("/lib");
+#endif
+  } else if (is_absolute(name)) {
+    dirs.emplace_back("");  // the leaves are (or resolve to) absolute paths
+  } else {
+    dirs.push_back(basePath);  // relative path: resolve against the base path
+  }
+
+  for (const auto& dir : dirs) {
+    for (const auto& leaf : leaves) {
+      const std::string full = is_absolute(leaf) ? leaf : file_path(dir + "/" + leaf);
+      if (file_exists(full)) {
+        return file_path(full);
       }
     }
   }

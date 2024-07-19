@@ -2166,6 +2166,8 @@ public:
     ASTString array5d;
     ASTString array6d;
     ASTString arrayXd;
+    ASTString length;
+    ASTString index_set;  // NOLINT(readability-identifier-naming)
 
     ASTString arrayNd(int n) const {
       switch (n) {
@@ -2207,6 +2209,7 @@ public:
     ASTString showDzn;
     ASTString showJSON;
     ASTString fix;
+    ASTString lb;
     ASTString output;
     ASTString outputJSON;
 
@@ -2337,6 +2340,14 @@ public:
     ASTString anonEnumFromStrings;
 
     ASTString unnamedArgument;
+
+    // Identifiers for the experimental black-box propagator feature (see lib/blackbox.cpp)
+    struct {
+      ASTString blackbox;
+      ASTString blackbox_bounds;          // NOLINT(readability-identifier-naming)
+      ASTString blackbox_default_reason;  // NOLINT(readability-identifier-naming)
+      ASTString resolve_blackbox_source;  // NOLINT(readability-identifier-naming)
+    } blackbox;                           // NOLINT(readability-identifier-naming)
   } ids;
 
   bool isCallByReferenceId(const ASTString& cid) const;
@@ -2399,6 +2410,11 @@ public:
     ASTString warm_start_array;              // NOLINT(readability-identifier-naming)
     ASTString warm_start_array_internal;     // NOLINT(readability-identifier-naming)
     Id* computed_domain;                     // NOLINT(readability-identifier-naming)
+    // Experimental black-box propagator annotations (see lib/blackbox.cpp)
+    Id* minizinc_value_propagator;   // NOLINT(readability-identifier-naming)
+    Id* minizinc_bounds_propagator;  // NOLINT(readability-identifier-naming)
+    ASTString blackbox_exec;         // NOLINT(readability-identifier-naming)
+    ASTString blackbox_dll;          // NOLINT(readability-identifier-naming)
   } ann;
 
   /// Command line options

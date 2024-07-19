@@ -2928,6 +2928,28 @@ std::string b_file_path(EnvI& /*env*/, Call* call) {
                                           Expression::loc(call).filename().size()));
 }
 
+std::string b_resolve_blackbox_source(EnvI& env, Call* call) {
+  const std::string name = eval_string(env, call->arg(0));
+  const bool isLib = eval_bool(env, call->arg(1));
+  // Resolve relative to the file containing the (source-annotation) call.
+  const std::string baseDir = FileUtils::dir_name(std::string(
+      Expression::loc(call).filename().c_str(), Expression::loc(call).filename().size()));
+  const std::string resolved = isLib ? FileUtils::find_library(name, baseDir)
+                                     : FileUtils::find_executable(name, baseDir, {baseDir});
+  if (!resolved.empty()) {
+    return resolved;
+  }
+  // Not found: pass the name through and let the solver resolve it at run time.
+  // The warning uses the call location, so `addWarning` collapses the repeats
+  // from a predicate used many times into a single message.
+  std::ostringstream oss;
+  oss << "unable to locate the black-box " << (isLib ? "library" : "executable") << " `" << name
+      << "' on the compilation host; it is passed through unchanged and the solver will attempt to "
+         "resolve it at run time.";
+  env.addWarning(Expression::loc(call), oss.str());
+  return name;
+}
+
 std::string b_concat(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
   GCLock lock;
@@ -4574,6 +4596,12 @@ void register_builtins(Env& e) {
     t[0] = Type::parstring();
     t[1] = Type::parstring();
     rb(env, m, ASTString("string_split"), t, b_string_split);
+  }
+  {
+    std::vector<Type> t = {Type::parstring(), Type::parbool()};
+    // Only present when the experimental black-box library is included.
+    rb(env, m, env.constants.ids.blackbox.resolve_blackbox_source, t, b_resolve_blackbox_source,
+       true);
   }
   {
     rb(env, m, ASTString("file_path"), std::vector<Type>(), b_file_path);

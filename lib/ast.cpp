@@ -2644,6 +2644,8 @@ Constants::Constants() {
   ids.array5d = addString("array5d");
   ids.array6d = addString("array6d");
   ids.arrayXd = addString("arrayXd");
+  ids.length = addString("length");
+  ids.index_set = addString("index_set");
 
   ids.sum = addString("sum");
   ids.lex_less = addString("lex_less");
@@ -2668,6 +2670,7 @@ Constants::Constants() {
   ids.output = addString("output");
   ids.outputJSON = addString("outputJSON");
   ids.fix = addString("fix");
+  ids.lb = addString("lb");
 
   ids.int_.lin_eq = addString("int_lin_eq");
   ids.int_.lin_le = addString("int_lin_le");
@@ -2777,6 +2780,11 @@ Constants::Constants() {
   ids.anonEnumFromStrings = addString("anon_enum");
   ids.unnamedArgument = addString("<unnamed argument>");
 
+  ids.blackbox.blackbox = addString("blackbox");
+  ids.blackbox.blackbox_bounds = addString("blackbox_bounds");
+  ids.blackbox.blackbox_default_reason = addString("blackbox_default_reason");
+  ids.blackbox.resolve_blackbox_source = addString("mzn_resolve_blackbox_source");
+
   ctx.root = addId("ctx_root");
   ctx.root->type(Type::ann());
   ctx.pos = addId("ctx_pos");
@@ -2865,6 +2873,12 @@ Constants::Constants() {
   ann.warm_start_array_internal = addString("mzn_internal_warm_start_array");
   ann.computed_domain = addId("computed_domain");
   ann.computed_domain->type(Type::ann());
+  ann.minizinc_value_propagator = addId("minizinc_value_propagator");
+  ann.minizinc_value_propagator->type(Type::ann());
+  ann.minizinc_bounds_propagator = addId("minizinc_bounds_propagator");
+  ann.minizinc_bounds_propagator->type(Type::ann());
+  ann.blackbox_exec = addString("blackbox_exec");
+  ann.blackbox_dll = addString("blackbox_dll");
 
   cli.cmdlineData_short_str = addString("-D");
   cli.cmdlineData_str = addString("--cmdline-data");

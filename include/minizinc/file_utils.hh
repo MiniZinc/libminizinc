@@ -35,7 +35,16 @@ std::vector<std::string> get_env_list(const std::string& env);
 /// Find executable \a filename relative to basePath if set,
 /// or if filename is a basename only, find anywhere on the PATH.
 /// On Windows, also check extensions .exe, .bat and .cmd
-std::string find_executable(const std::string& filename, const std::string& basePath = "");
+/// If \a filename is a basename only, \a extraSearchDirs are searched before
+/// the PATH.
+std::string find_executable(const std::string& filename, const std::string& basePath = "",
+                            const std::vector<std::string>& extraSearchDirs = {});
+/// Find a dynamically loadable library named \a name. If \a name is a bare name
+/// (no directory separator), the platform library-naming convention is applied
+/// (e.g. `lib<name>.so` / `<name>.dll`) and it is searched for in \a basePath,
+/// the dynamic-loader search path, and common system library directories.
+/// Returns the absolute path if found, or the empty string otherwise.
+std::string find_library(const std::string& name, const std::string& basePath = "");
 /// Return full path to file. If \a basePath is not empty, resolve
 /// relative paths with respect to \a basePath.
 std::string file_path(const std::string& filename, const std::string& basePath = std::string());

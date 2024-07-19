@@ -13,6 +13,7 @@
 #include <minizinc/astexception.hh>
 #include <minizinc/astiterator.hh>
 #include <minizinc/aststring.hh>
+#include <minizinc/blackbox.hh>
 #include <minizinc/copy.hh>
 #include <minizinc/file_utils.hh>
 #include <minizinc/flatten_internal.hh>
@@ -4939,6 +4940,11 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       typeUndefinedDecls.run(functionItem);
     }
   }
+
+  // EXPERIMENTAL: black-box propagator body synthesis (see lib/blackbox.cpp).
+  // Runs after the function signatures (left-hand sides) have been typed, but before the bodies
+  // are type checked, so the synthesised bodies are type checked like any other function body.
+  synthesize_blackbox_bodies(env.envi(), m, functionItems, typeErrors);
 
   Typer<true> ty(env.envi(), m, typeErrors, isFlatZinc);
   {

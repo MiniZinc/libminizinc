@@ -13,6 +13,7 @@ add_library(mzn
   
   lib/aststring.cpp
   lib/astvec.cpp
+  lib/blackbox.cpp
   lib/builtins.cpp
   lib/chain_compressor.cpp
   lib/copy.cpp
@@ -75,6 +76,7 @@ add_library(mzn
   include/minizinc/astmap.hh
   include/minizinc/aststring.hh
   include/minizinc/astvec.hh
+  include/minizinc/blackbox.hh
   include/minizinc/builtins.hh
   include/minizinc/chain_compressor.hh
   include/minizinc/config.hh.in

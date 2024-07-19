@@ -1,0 +1,8 @@
+predicate chuffed_blackbox(array [int] of var int: int_input,array [int] of var int: int_output);
+var 1..10: X_INTRODUCED_17_;
+var 1..10: X_INTRODUCED_18_;
+var 1..10: X_INTRODUCED_19_;
+array [1..3] of var int: x:: output_array([1..3]) = [X_INTRODUCED_17_,X_INTRODUCED_18_,X_INTRODUCED_19_];
+array [1..1] of var int: X_INTRODUCED_21_ ::var_is_introduced  = [1];
+constraint chuffed_blackbox(x,X_INTRODUCED_21_):: blackbox_exec("checker.py",[]);
+solve  satisfy;

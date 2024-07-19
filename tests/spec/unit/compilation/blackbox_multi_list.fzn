@@ -1,0 +1,10 @@
+predicate gecode_blackbox(array [int] of var int: int_input,array [int] of var float: float_input,array [int] of var int: int_output,array [int] of var float: float_output);
+var 1..10: X_INTRODUCED_17_;
+var 1..10: X_INTRODUCED_18_;
+var 0.0..1.0: X_INTRODUCED_19_;
+var 0.0..1.0: X_INTRODUCED_20_;
+array [1..2] of var int: a:: output_array([1..2]) = [X_INTRODUCED_17_,X_INTRODUCED_18_];
+array [1..2] of var float: b:: output_array([1..2]) = [X_INTRODUCED_19_,X_INTRODUCED_20_];
+array [1..1] of var int: X_INTRODUCED_22_ ::var_is_introduced  = [1];
+constraint gecode_blackbox(a,b,X_INTRODUCED_22_,[]):: blackbox_exec("m.py",[]);
+solve  satisfy;

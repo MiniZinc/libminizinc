@@ -1874,6 +1874,16 @@ int EnvI::addWarning(const Location& loc, const std::string& msg, bool dumpStack
   if (fopts.supressWarnings) {
     return -1;
   }
+  // Deduplicate: an identical warning (same message and location) is only kept
+  // once. Duplicates do not count towards the warning limit below.
+  for (size_t i = 0; i < warnings.size(); ++i) {
+    const Location& wl = warnings[i]->loc();
+    if (warnings[i]->msg() == msg && wl.filename() == loc.filename() &&
+        wl.firstLine() == loc.firstLine() && wl.lastLine() == loc.lastLine() &&
+        wl.firstColumn() == loc.firstColumn() && wl.lastColumn() == loc.lastColumn()) {
+      return static_cast<int>(i);
+    }
+  }
   if (warnings.size() >= 20) {
     if (warnings.size() == 20) {
       warnings.emplace_back(new Warning("Further warnings have been suppressed."));
