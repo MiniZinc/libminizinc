@@ -2389,7 +2389,10 @@ public:
   /// Visit if-then-else
   void vITE(ITE* ite) {
     // Set return type to else type or, in case of no else, unknown
-    Type tret = ite->elseExpr() != nullptr ? Expression::type(ite->elseExpr()) : Type();
+    Type tret;
+    if (ite->elseExpr() != nullptr && !Expression::isa<AnonVar>(ite->elseExpr())) {
+      tret = Expression::type(ite->elseExpr());
+    }
     std::vector<AnonVar*> anons;
     bool allpar = !(tret.isvar());
     if (ite->elseExpr() != nullptr && tret.isunknown()) {
@@ -2434,6 +2437,7 @@ public:
         } else if (tret.isunknown()) {
           tret.bt(Expression::type(ethen).bt());
           tret.dim(Expression::type(ethen).dim());
+          tret.typeId(Expression::type(ethen).typeId());
         } else if (tret.structBT()) {
           Type ty = Expression::type(ethen);
           if (tret.bt() == Type::BT_TUPLE) {
