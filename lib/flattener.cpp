@@ -20,6 +20,7 @@
 #include <minizinc/flattener.hh>
 #include <minizinc/pathfileprinter.hh>
 #include <minizinc/statistics.hh>
+#include <minizinc/feature_extraction.hh>
 
 #include <fstream>
 
@@ -897,24 +898,6 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             ss.add("eliminatedLinearConstraints", stats.n_lin_del);
           }
           
-          if (stats.std_dev_domain_size != nullptr) {
-            ss.add("stdDeviationDomain", *stats.std_dev_domain_size);
-          }
-          if (stats.avg_domain_size != nullptr) {
-            ss.add("averageDomainSize", *stats.avg_domain_size);
-          }
-          if (stats.median_domain_size != nullptr) {
-            ss.add("medianDomainSize", *stats.median_domain_size);
-          }
-          if (stats.avg_domain_overlap != nullptr) {
-            ss.add("averageDomainOverlap", *stats.avg_domain_overlap);
-          }
-          if (stats.n_disjoint_domain_pairs != nullptr) {
-            ss.add("numberOfDisjointPairs", *stats.n_disjoint_domain_pairs);
-          }
-          if (stats.n_total_ct != 0) {
-            ss.add("totalConstraints", stats.n_total_ct);
-          }
 
           /// Objective / SAT. These messages are used by mzn-test.py.
           SolveI* solveItem = env->flat()->solveItem();
@@ -929,6 +912,31 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           }
 
           ss.add("flatTime", flatten_time.s());
+        }
+
+        if (_flags.featureVector) {
+          StatisticsStream ss(_os, _flags.encapsulateJSON); //todo own impl
+          FlatModelFeatureVector features = extract_feature_vector(*env);
+          ss.add("test", "test");
+
+          if (features.std_dev_domain_size != nullptr) {
+            ss.add("stdDeviationDomain", *features.std_dev_domain_size);
+          }
+          if (features.avg_domain_size != nullptr) {
+            ss.add("averageDomainSize", *features.avg_domain_size);
+          }
+          if (features.median_domain_size != nullptr) {
+            ss.add("medianDomainSize", *features.median_domain_size);
+          }
+          if (features.avg_domain_overlap != nullptr) {
+            ss.add("averageDomainOverlap", *features.avg_domain_overlap);
+          }
+          if (features.n_disjoint_domain_pairs != nullptr) {
+            ss.add("numberOfDisjointPairs", *features.n_disjoint_domain_pairs);
+          }
+          if (features.n_total_ct != 0) {
+            ss.add("totalConstraints", features.n_total_ct);
+          }
         }
 
         if (_flags.outputPathsStdout) {
