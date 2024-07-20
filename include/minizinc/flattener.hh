@@ -65,6 +65,8 @@ public:
   bool getFlagVerbose() const { return _flags.verbose; }
   void setFlagStatistics(bool f) { _flags.statistics = f; }
   bool getFlagStatistics() const { return _flags.statistics; }
+  void setFlagFeatureVector(bool f) { _flags.featureVector = f; }
+  bool getFlagFeatureVector() const { return _flags.featureVector; }
   void setFlagEncapsulateJSON(bool f) { _flags.encapsulateJSON = f; }
   bool getFlagEncapsulateJSON() const { return _flags.encapsulateJSON; }
   void setRandomSeed(long unsigned int r) { _fopts.randomSeed = r; }
@@ -102,6 +104,7 @@ private:
     bool allowUnboundedVars = false;
     bool noMIPdomains = false;
     bool statistics = false;
+    bool featureVector = false;
     bool stdinInput = false;
     bool allowMultiAssign = false;
     bool gecode = false;

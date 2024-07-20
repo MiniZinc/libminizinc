@@ -147,6 +147,10 @@ These options control the general behaviour of the ``minizinc`` tool.
 
     Print statistics for compilation.
 
+.. option::  --feature-vector
+
+    Print feature vector of the FlatZinc model.
+
 .. option::  -c, --compile
 
     Compile only (do not run solver).

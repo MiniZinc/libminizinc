@@ -266,6 +266,7 @@ void MznSolver::printHelp(std::ostream& os, const std::string& selectedSolver) {
      << "  --verbose-compilation\n    Print progress/log statements for compilation." << std::endl
      << "  -s, --statistics\n    Print statistics." << std::endl
      << "  --compiler-statistics\n    Print statistics for compilation." << std::endl
+     << "  --feature-vector\n     Print feature vector of the FlatZinc model." << std::endl
      << "  -c, --compile\n    Compile only (do not run solver)." << std::endl
      << "  --config-dirs\n    Output configuration directories." << std::endl
      << "  --param-file <file>\n    Load parameters from the given JSON file." << std::endl
@@ -617,6 +618,8 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       randomSeed = atoi(argv[i].c_str());
     } else if (argv[i] == "--compiler-statistics") {
       flagCompilerStatistics = true;
+    } else if (argv[i] == "--feature-vector") {
+      flagFeatureVector = true;
     } else if (argv[i] == "--json-stream") {
       flagEncapsulateJSON = true;
       s2out.opt.checkerArgs.emplace_back("--json-stream");
@@ -945,6 +948,7 @@ void MznSolver::flatten(const std::string& modelString, const std::string& model
   std::exception_ptr exc;
   _flt.setFlagVerbose(flagCompilerVerbose);
   _flt.setFlagStatistics(flagCompilerStatistics);
+  _flt.setFlagFeatureVector(flagFeatureVector);
   _flt.setFlagEncapsulateJSON(flagEncapsulateJSON);
   if (flagRandomSeed) {
     _flt.setRandomSeed(randomSeed);
