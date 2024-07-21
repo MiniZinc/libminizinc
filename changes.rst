@@ -37,6 +37,9 @@ Bug fixes:
    expressions.
 -  Fix evaluation error for comprehensions with an initial assignment generator
    and a where clause which doesn't involve any of the generator identifiers.
+-  Fix type checking of if then else expressions with ``_`` in the else branch
+   (:bugref:`821`).
+-  Fix parsing of the most negative integer literal (:bugref:`822`).
 
 .. _v2.8.5:
 
