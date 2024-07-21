@@ -216,7 +216,7 @@ inline void vec_string2vec_pchar(const std::vector<std::string>& vS,
 
 // computes the average without running the risk of overflows
 template <typename T>
-inline T mean(const std::vector<T>& numbers) {
+inline double mean(const std::vector<T>& numbers) {
   static_assert(std::is_arithmetic<T>::value, "Template argument must be a numeric type.");
 
   if (numbers.empty()) {
@@ -230,7 +230,7 @@ inline T mean(const std::vector<T>& numbers) {
     avg += static_cast<double>(n) / s;
   }
 
-  return static_cast<T>(avg);
+  return avg;
 }
 
 // computes the standard deviation of a vector
