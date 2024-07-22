@@ -40,6 +40,7 @@ Bug fixes:
 -  Fix type checking of if then else expressions with ``_`` in the else branch
    (:bugref:`821`).
 -  Fix parsing of the most negative integer literal (:bugref:`822`).
+-  Fix typo in warning messages for undefined results in function calls.
 
 .. _v2.8.5:
 

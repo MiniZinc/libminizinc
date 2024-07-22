@@ -3849,7 +3849,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
           }
           if (isfalse(env, ee.b())) {
             std::ostringstream ss;
-            ss << "evaluation of `" << demonomorphise_identifier(nc->id()) << "was undefined";
+            ss << "evaluation of `" << demonomorphise_identifier(nc->id()) << "` was undefined";
             throw ResultUndefinedError(env, Expression::loc(e), ss.str());
           }
           return ee.r();
