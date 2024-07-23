@@ -9,8 +9,8 @@ add_library(minizinc_highs OBJECT
 )
 
 if(NOT HIGHS_PLUGIN)
-  target_include_directories(minizinc_highs PRIVATE ${HIGHS_INCLUDE_DIRS})
-  target_link_libraries(mzn ${HIGHS_LIBRARIES})
+  target_link_libraries(minizinc_highs PRIVATE highs::highs)
+  target_link_libraries(mzn highs::highs)
 endif()
 
 # ## Setup correct compilation into the MiniZinc library
