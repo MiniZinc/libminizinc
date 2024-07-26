@@ -53,6 +53,8 @@ Bug fixes:
 -  Fix crash due to incorrect handling of negated constraints matching entry in
    CSE map (:bugref:`832`).
 -  Fix type error due to missing overload of ``max`` (:bugref:`848`).
+-  Fix handling of contexts and ``maybe_partial`` annotations when flattening
+   par expressions.
 
 .. _v2.8.5:
 

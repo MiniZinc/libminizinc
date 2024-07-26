@@ -3756,10 +3756,17 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
       }
       case Expression::E_ITE: {
         ITE* ite = Expression::cast<ITE>(e);
+        Ctx nctx = ctx;
+        nctx.b = C_MIX;
         for (int i = 0; i < ite->size(); i++) {
           bool condition;
-          KeepAlive ka = flat_cv_exp(env, ctx, ite->ifExpr(i));
-          condition = eval_bool(env, ka());
+          KeepAlive ka;
+          try {
+            ka = flat_cv_exp(env, nctx, ite->ifExpr(i));
+            condition = eval_bool(env, ka());
+          } catch (ResultUndefinedError&) {
+            condition = false;
+          }
           if (condition) {
             return flat_cv_exp(env, ctx, ite->thenExpr(i));
           }
@@ -3768,34 +3775,58 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
       }
       case Expression::E_BINOP: {
         auto* bo = Expression::cast<BinOp>(e);
-        if (bo->op() == BOT_AND) {
-          GCLock lock;
-          Expression* lhs = flat_cv_exp(env, ctx, bo->lhs())();
-          if (!eval_bool(env, lhs)) {
-            return env.constants.literalFalse;
+        BinOp* nbo = nullptr;
+        Ctx nctx = ctx;
+        {
+          CallStackItem _csi(env, bo);
+          if (bo->op() == BOT_AND) {
+            GCLock lock;
+            nctx.b = +nctx.b;
+            Expression* lhs = flat_cv_exp(env, nctx, bo->lhs())();
+            if (!eval_bool(env, lhs)) {
+              return env.constants.literalFalse;
+            }
+            return eval_par(env, flat_cv_exp(env, ctx, bo->rhs())());
           }
-          return eval_par(env, flat_cv_exp(env, ctx, bo->rhs())());
-        }
-        if (bo->op() == BOT_OR) {
-          GCLock lock;
-          Expression* lhs = flat_cv_exp(env, ctx, bo->lhs())();
-          if (eval_bool(env, lhs)) {
-            return env.constants.literalTrue;
+          if (bo->op() == BOT_OR) {
+            GCLock lock;
+            nctx.b = +nctx.b;
+            Expression* lhs = flat_cv_exp(env, nctx, bo->lhs())();
+            if (eval_bool(env, lhs)) {
+              return env.constants.literalTrue;
+            }
+            return eval_par(env, flat_cv_exp(env, ctx, bo->rhs())());
           }
-          return eval_par(env, flat_cv_exp(env, ctx, bo->rhs())());
+          GCLock lock;
+          if (Expression::type(bo).isbool()) {
+            nctx.b = C_MIX;
+          }
+          nbo = new BinOp(Expression::loc(bo).introduce(), flat_cv_exp(env, nctx, bo->lhs())(),
+                          bo->op(), flat_cv_exp(env, nctx, bo->rhs())());
+          for (auto* ann : Expression::ann(bo)) {
+            Expression::addAnnotation(nbo, ann);
+          }
+          nbo->type(bo->type());
+          nbo->decl(bo->decl());
         }
-        GCLock lock;
-        auto* nbo = new BinOp(Expression::loc(bo).introduce(), flat_cv_exp(env, ctx, bo->lhs())(),
-                              bo->op(), flat_cv_exp(env, ctx, bo->rhs())());
-        nbo->type(bo->type());
-        nbo->decl(bo->decl());
         return eval_par(env, nbo);
       }
       case Expression::E_UNOP: {
         UnOp* uo = Expression::cast<UnOp>(e);
-        GCLock lock;
-        UnOp* nuo = new UnOp(Expression::loc(uo), uo->op(), flat_cv_exp(env, ctx, uo->e())());
-        nuo->type(uo->type());
+        UnOp* nuo = nullptr;
+        Ctx nctx = ctx;
+        {
+          CallStackItem _csi(env, uo);
+          if (Expression::type(uo).isbool()) {
+            nctx.b = -nctx.b;
+          }
+          GCLock lock;
+          nuo = new UnOp(Expression::loc(uo), uo->op(), flat_cv_exp(env, nctx, uo->e())());
+          for (auto* ann : Expression::ann(uo)) {
+            Expression::addAnnotation(nuo, ann);
+          }
+          nuo->type(uo->type());
+        }
         return eval_par(env, nuo);
       }
       case Expression::E_CALL: {
@@ -3821,6 +3852,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
         if (env.constants.isCallByReferenceId(c->id())) {
           return eval_par(env, c);
         }
+        CallStackItem _csi(env, c);
         for (unsigned int i = 0; i < c->argCount(); i++) {
           Ctx c_mix;
           c_mix.b = C_MIX;
@@ -3830,6 +3862,9 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
         Call* nc = Call::a(Expression::loc(c), c->id(), args);
         nc->decl(c->decl());
         Type nct(c->type());
+        for (auto* ann : Expression::ann(c)) {
+          Expression::addAnnotation(nc, ann);
+        }
         if ((nc->decl()->e() != nullptr) && Expression::type(nc->decl()->e()).cv()) {
           nct.cv(false);
           nct.mkVar(env);

@@ -1683,6 +1683,7 @@ Type type_from_tmap(EnvI& env, TypeInst* ti, const ASTStringMap<std::pair<Type, 
       if (ret.any()) {
         ret.ot(it->second.first.ot());
         ret.ti(it->second.first.ti());
+        ret.cv(it->second.first.cv());
         ret.any(false);
       }
     }

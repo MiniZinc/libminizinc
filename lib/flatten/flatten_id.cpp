@@ -101,6 +101,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
       if (Expression::type(vd->e()).isPar() && Expression::type(vd->e()).dim() == 0) {
         rete = eval_par(env, vd->e());
         if (vd->toplevel() && (vd->ti()->domain() != nullptr) && !vd->ti()->computedDomain()) {
+          check_index_sets(env, vd, rete);
           check_par_domain(env, vd, rete);
           if (vd->type() == Type::varbool()) {
             vd->ti()->domain(rete);
