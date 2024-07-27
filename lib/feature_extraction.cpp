@@ -1,31 +1,31 @@
 #include <minizinc/eval_par.hh>
 #include <minizinc/feature_extraction.hh>
 #include <minizinc/utils.hh>
-#include <numeric>
-#include <iostream>
 #include <algorithm>
+#include <iostream>
+#include <numeric>
+#include "eval_par.cpp"
 
 namespace MiniZinc {
 
 /*
-* A Domain in this context consists of at least one pair of int vals.
-* The pair encodes a range (min, max).
-* If the Domain consists of multiple ranges, they are disjoint.
-*/
+ * A Domain in this context consists of at least one pair of int vals.
+ * The pair encodes a range (min, max).
+ * If the Domain consists of multiple ranges, they are disjoint.
+ */
 
 class Domain {
-
 public:
   class Range {
-    public:
-      long long min;
-      long long max;
+  public:
+    long long min;
+    long long max;
 
-      // Constructor
-      Range(long long minValue, long long maxValue) : min(minValue), max(maxValue) {}
+    // Constructor
+    Range(long long minValue, long long maxValue) : min(minValue), max(maxValue) {}
 
-      // Overload less-than operator for sorting
-      bool operator<(const Range& other) const { return min < other.min; }
+    // Overload less-than operator for sorting
+    bool operator<(const Range& other) const { return min < other.min; }
   };
 
 private:
@@ -90,37 +90,61 @@ public:
       }
       _width = size;
     }
-   
+
     return _width;
   }
 
   // Number of ranges in the domain
-  int inline size() const { return _ranges.size();}
-
+  int inline size() const { return _ranges.size(); }
 };
 
-static std::vector<double> domain_overlap_avgs(std::vector<std::pair<double, double>>& domains) {
-  std::vector<double> result;
-  for (int i = 0; i < domains.size(); i++) {
-    auto p1 = domains[i];
-    for (int j = i + 1; j < domains.size(); j++) {
-      auto p2 = domains[j];
-      auto overlap_start = std::max(p1.first, p2.first);
-      auto overlap_end = std::min(p1.second, p2.second);
-      if (overlap_start <= overlap_end) {
-        auto overlap = abs(overlap_start - overlap_end) + 1;
-        auto combinedDomains = std::max(p1.second, p2.second) - std::min(p1.first, p2.first) + 1;
-        result.push_back(overlap / combinedDomains);
-      } else {
-        result.push_back(0);
+class BipartiteGraph {
+public:
+  // Constructor to initialize the graph with sizes of U and V
+  BipartiteGraph(int uSize, int vSize)
+      : uSize(uSize), vSize(vSize), adjacencyMatrix(uSize, std::vector<int>(vSize, 0)) {}
+
+  // Method to add an edge between vertex u in U and vertex v in V
+  // We can not use iterators to determine the num of vardecls and constraints 
+  void addEdge(int u, int v) {
+    if (u < 0 || v < 0) {
+      std::cerr << "Invalid vertex index." << std::endl;
+      return;
+    }
+
+    // Resize the matrix if necessary
+    if (u >= uSize) {
+      adjacencyMatrix.resize(u + 1, std::vector<int>(vSize, 0));
+      uSize = u + 1;
+    }
+    if (v >= vSize) {
+      for (auto& row : adjacencyMatrix) {
+        row.resize(v + 1, 0);
       }
+      vSize = v + 1;
+    }
+
+    // Add the edge
+    adjacencyMatrix[u][v] = 1;
+  }
+
+  void printMatrix() const {
+    for (const auto& row : adjacencyMatrix) {
+      for (const auto& cell : row) {
+        std::cout << cell << " ";
+      }
+      std::cout << std::endl;
     }
   }
-  return result;
-}
 
-static std::vector<long long> calculate_domain_width(std::vector<Domain>& domains) { 
-  
+private:
+  int uSize;                                      // Number of vertices in set U
+  int vSize;                                      // Number of vertices in set V
+  std::vector<std::vector<int>> adjacencyMatrix;  // Adjacency matrix
+};
+
+
+static std::vector<long long> calculate_domain_width(std::vector<Domain>& domains) {
   std::vector<long long> domain_sizes;
 
   for (auto& d : domains) {
@@ -130,8 +154,7 @@ static std::vector<long long> calculate_domain_width(std::vector<Domain>& domain
   return domain_sizes;
 }
 
-static std::vector<double> domain_overlap_avgs2(std::vector<Domain>& domains) {
-
+static std::vector<double> domain_overlap_avgs(std::vector<Domain>& domains) {
   std::vector<double> domain_overlaps;
 
   // pair the domains up for comparison
@@ -152,7 +175,7 @@ static std::vector<double> domain_overlap_avgs2(std::vector<Domain>& domains) {
           auto overlap_end = std::min(p1.max, p2.max);
           if (overlap_start <= overlap_end) {
             auto range_overlap = overlap_end - overlap_start + 1;
-            range_overlaps.push_back(range_overlap / (double) merged_domains.width());
+            range_overlaps.push_back(range_overlap / (double)merged_domains.width());
           }
         }
       }
@@ -165,11 +188,16 @@ static std::vector<double> domain_overlap_avgs2(std::vector<Domain>& domains) {
   return domain_overlaps;
 }
 
-
 FlatModelFeatureVector extract_feature_vector(Env& m) {
   Model* flat = m.flat();
   FlatModelFeatureVector features;
   std::vector<Domain> domains;
+  std::map<std::string, int> varIdToNumMap;
+  std::map<int, std::string> numToConstraintIdMap;
+  int varIdCounter = 0;
+  int constraintIdCounter = 0;
+
+  BipartiteGraph constraintGraph = BipartiteGraph(0, 0);
 
   for (auto& i : *flat) {
     if (!i->removed()) {
@@ -178,6 +206,7 @@ FlatModelFeatureVector extract_feature_vector(Env& m) {
         // iterate over every var decl that is not an array
         if (t.isvar() && t.dim() == 0) {
           if (t.isSet()) {
+            // todo handle other sets or constraint to intSet
             features.n_set_vars++;
             Expression* domain = vdi->e()->ti()->domain();
             IntSetVal* bounds = eval_intset(m.envi(), domain);
@@ -185,6 +214,7 @@ FlatModelFeatureVector extract_feature_vector(Env& m) {
             domains.push_back(d);
           } else if (t.isint()) {
             features.n_int_vars++;
+            GCLock lock;
             Expression* domain = vdi->e()->ti()->domain();
             IntSetVal* bounds = eval_intset(m.envi(), domain);
             Domain d = Domain::from(*bounds);
@@ -196,6 +226,10 @@ FlatModelFeatureVector extract_feature_vector(Env& m) {
           } else if (t.isfloat()) {
             // currently ommited in model training
           }
+          GCLock lock;
+          varIdToNumMap[vdi->e()->id()->str().c_str()] = varIdCounter++;
+        } else {
+          std::cout << "is sth else " << t.toString(m.envi()) << std::endl;
         }
       } else if (auto* ci = i->dynamicCast<ConstraintI>()) {
         if (Call* call = Expression::dynamicCast<Call>(ci->e())) {
@@ -206,6 +240,8 @@ FlatModelFeatureVector extract_feature_vector(Env& m) {
           }
           if (call->argCount() > 0) {
             Type all_t;
+            auto constraintId = constraintIdCounter++;
+            numToConstraintIdMap[constraintId] = call->id().c_str();
             for (unsigned int i = 0; i < call->argCount(); i++) {
               Type t = Expression::type(call->arg(i));
               if (t.isvar()) {
@@ -216,6 +252,25 @@ FlatModelFeatureVector extract_feature_vector(Env& m) {
                     (t.bt() == Type::BT_BOOL && all_t.bt() != Type::BT_INT &&
                      all_t.bt() != Type::BT_FLOAT && all_t.st() != Type::ST_SET)) {
                   all_t = t;
+
+                  const auto a = call->arg(i);
+                  // add variable argument to constraint graph
+                  if (Expression::isa<Id>(a)) {
+                    GCLock lock;
+                    Id* id = Expression::cast<Id>(a);
+                    constraintGraph.addEdge(varIdToNumMap[id->str().c_str()], constraintId);
+                  }
+                  // add array arguments elements to constraint graphs if they are variables
+                  else if (Expression::isa<ArrayLit>(a)) {
+                    const auto* di = Expression::cast<ArrayLit>(a);
+                    for (auto v : di->getVec()) {
+                      const Id* ident = Expression::dynamicCast<Id>(v);
+                      if (ident->decl() != nullptr) {
+                        ident = ident->decl()->id();
+                      }
+                      constraintGraph.addEdge(varIdToNumMap[ident->str().c_str()], constraintId);
+                    }
+                  }
                 }
               }
             }
@@ -235,7 +290,7 @@ FlatModelFeatureVector extract_feature_vector(Env& m) {
       }
     }
   }
-
+  constraintGraph.printMatrix();
   auto domain_sizes = calculate_domain_width(domains);
 
   if (!domain_sizes.empty()) {
@@ -247,7 +302,7 @@ FlatModelFeatureVector extract_feature_vector(Env& m) {
     std::sort(domain_sizes.begin(), domain_sizes.end());
     features.median_domain_size = new double(domain_sizes[domain_sizes.size() / 2]);
 
-    auto overlaps = domain_overlap_avgs2(domains);
+    auto overlaps = domain_overlap_avgs(domains);
     features.n_disjoint_domain_pairs = new int(std::count(overlaps.begin(), overlaps.end(), 0.0));
 
     features.avg_domain_overlap = new double(mean(overlaps));

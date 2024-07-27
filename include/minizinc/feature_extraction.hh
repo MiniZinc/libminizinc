@@ -23,6 +23,7 @@ struct FlatModelFeatureVector {
   double* avg_domain_overlap;
   int* n_disjoint_domain_pairs;
   int n_total_ct;
+  std::string constraint_graph;
 
   /// Constructor
   FlatModelFeatureVector()
@@ -37,7 +38,9 @@ struct FlatModelFeatureVector {
         median_domain_size(nullptr),
         avg_domain_overlap(nullptr),
         n_disjoint_domain_pairs(nullptr),
-        n_total_ct(0) {}
+        n_total_ct(0),
+        constraint_graph("")
+        {}
 };
 
 /// Extract the features for flat model in \a m
