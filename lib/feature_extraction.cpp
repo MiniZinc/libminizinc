@@ -137,6 +137,12 @@ public:
     }
   }
 
+  std::vector<std::vector<int>> getAdjecencyMatrix() const { 
+    return adjacencyMatrix;
+  }
+
+  int currentVSize() const { return vSize;}
+
 private:
   int uSize;                                      // Number of vertices in set U
   int vSize;                                      // Number of vertices in set V
@@ -202,6 +208,16 @@ static void add_to_annotation_histogram(FlatModelFeatureVector& features, Expres
       features.ann_histogram[ident->v().c_str()]++;
     }
   }
+}
+
+static double average_decision_variables_in_constraints(BipartiteGraph& constraintGraph) {
+  double result = 0;
+  if (constraintGraph.currentVSize() > 0) {
+    for (auto& row : constraintGraph.getAdjecencyMatrix()) {
+      result += mean(row);
+    }
+  }
+  return result;
 }
 
 FlatModelFeatureVector extract_feature_vector(Env& m) {
@@ -311,6 +327,8 @@ FlatModelFeatureVector extract_feature_vector(Env& m) {
 
   constraintGraph.printMatrix();
   auto domain_sizes = calculate_domain_width(domains);
+
+  features.avg_decision_vars_in_cts = average_decision_variables_in_constraints(constraintGraph);
 
   if (!domain_sizes.empty()) {
     features.std_dev_domain_size = new double(std::round(stdDev(domain_sizes) * 1000) / 1000.0);

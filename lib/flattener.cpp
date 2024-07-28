@@ -936,6 +936,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           if (features.n_total_ct != 0) {
             ss.add("totalConstraints", features.n_total_ct);
           }
+          ss.add("avgDecisionVarsInConstraints", features.avg_decision_vars_in_cts);
         }
 
         if (_flags.outputPathsStdout) {
