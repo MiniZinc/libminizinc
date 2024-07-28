@@ -933,6 +933,9 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           if (features.n_disjoint_domain_pairs != nullptr) {
             ss.add("numberOfDisjointPairs", *features.n_disjoint_domain_pairs);
           }
+          if (features.n_meta_ct != 0) {
+            ss.add("metaConstraints", features.n_meta_ct);
+          }
           if (features.n_total_ct != 0) {
             ss.add("totalConstraints", features.n_total_ct);
           }

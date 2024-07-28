@@ -194,6 +194,33 @@ static std::vector<double> domain_overlap_avgs(std::vector<Domain>& domains) {
   return domain_overlaps;
 }
 
+static bool is_var_defined_by_call(Call* call, EnvI& envi, Id* var) { 
+
+  auto& ann = Expression::ann(call);
+  std::vector<Expression*> removeAnns;
+  for (ExpressionSetIter anns = ann.begin(); anns != ann.end(); ++anns) {
+    if (Call* c = Expression::dynamicCast<Call>(*anns)) {
+      if (c->id() == envi.constants.ann.defines_var) {
+        for (int i = 0; i < call->argCount(); i++) {
+          auto a = c->arg(i);
+          if (Expression::isa<Id>(a)) {
+            auto id = Expression::cast<Id>(a);
+            if (Expression::equal(id, var)) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
+static bool is_call_using_var_defined_by_other(Call* call, EnvI& envi, Id* var) {
+  bool isDefined = Expression::ann(var->decl()).contains(envi.constants.ann.is_defined_var);
+  return (isDefined && !is_var_defined_by_call(call, envi, var));
+}
+
 static void add_to_constraint_histogram(FlatModelFeatureVector& features, const char* constraintName) {
   features.ct_histogram[constraintName]++;
 }
@@ -224,8 +251,8 @@ FlatModelFeatureVector extract_feature_vector(Env& m) {
   Model* flat = m.flat();
   FlatModelFeatureVector features;
   std::vector<Domain> domains;
-  std::map<std::string, int> varIdToNumMap; //todo maybe we can use idn() for this
-  std::map<int, std::string> numToConstraintIdMap; //todo maybe we can use idn() for this
+  std::map<std::string, int> varIdToNumMap;
+  std::map<int, std::string> numToConstraintIdMap;
   int varIdCounter = 0;
   int constraintIdCounter = 0;
 
@@ -275,6 +302,7 @@ FlatModelFeatureVector extract_feature_vector(Env& m) {
             auto constraintId = constraintIdCounter++;
             const char* constraintName = call->id().c_str();
             numToConstraintIdMap[constraintId] = constraintName;
+            int foreignDefinedVarsUsedByCall = 0;
             add_to_constraint_histogram(features, constraintName);
             for (unsigned int i = 0; i < call->argCount(); i++) {
               Type t = Expression::type(call->arg(i));
@@ -293,16 +321,24 @@ FlatModelFeatureVector extract_feature_vector(Env& m) {
                     GCLock lock;
                     Id* id = Expression::cast<Id>(a);
                     constraintGraph.addEdge(varIdToNumMap[id->str().c_str()], constraintId);
+
+                    if (is_call_using_var_defined_by_other(call, m.envi(), id)) {
+                      foreignDefinedVarsUsedByCall++;
+                    }
                   }
                   // add array arguments elements to constraint graphs if they are variables
                   else if (Expression::isa<ArrayLit>(a)) {
                     const auto* di = Expression::cast<ArrayLit>(a);
                     for (auto v : di->getVec()) {
-                      const Id* ident = Expression::dynamicCast<Id>(v);
-                      if (ident->decl() != nullptr) {
-                        ident = ident->decl()->id();
+                      Id* id = Expression::dynamicCast<Id>(v);
+                      if (id->decl() != nullptr) {
+                        id = id->decl()->id();
                       }
-                      constraintGraph.addEdge(varIdToNumMap[ident->str().c_str()], constraintId);
+                      constraintGraph.addEdge(varIdToNumMap[id->str().c_str()], constraintId);
+
+                      if (is_call_using_var_defined_by_other(call, m.envi(), id)) {
+                        foreignDefinedVarsUsedByCall++;
+                      }
                     }
                   }
                 }
@@ -318,6 +354,9 @@ FlatModelFeatureVector extract_feature_vector(Env& m) {
               } else if (all_t.bt() == Type::BT_FLOAT) {
                 // currently ommited in model training
               }
+            }
+            if (foreignDefinedVarsUsedByCall > 1) {
+              features.n_meta_ct++;
             }
           }
         }
