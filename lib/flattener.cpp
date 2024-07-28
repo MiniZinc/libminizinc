@@ -917,7 +917,6 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
         if (_flags.featureVector) {
           StatisticsStream ss(_os, _flags.encapsulateJSON); //todo own impl
           FlatModelFeatureVector features = extract_feature_vector(*env);
-          ss.add("test", "test");
 
           if (features.std_dev_domain_size != nullptr) {
             ss.add("stdDeviationDomain", *features.std_dev_domain_size);

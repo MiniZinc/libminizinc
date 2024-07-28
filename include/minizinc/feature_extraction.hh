@@ -24,6 +24,9 @@ struct FlatModelFeatureVector {
   int* n_disjoint_domain_pairs;
   int n_total_ct;
   std::string constraint_graph;
+  std::map<std::string, int> ct_histogram;
+  std::map<std::string, int> ann_histogram;
+
 
   /// Constructor
   FlatModelFeatureVector()
@@ -39,7 +42,9 @@ struct FlatModelFeatureVector {
         avg_domain_overlap(nullptr),
         n_disjoint_domain_pairs(nullptr),
         n_total_ct(0),
-        constraint_graph("")
+        constraint_graph(""),
+        ct_histogram(),
+        ann_histogram()
         {}
 };
 

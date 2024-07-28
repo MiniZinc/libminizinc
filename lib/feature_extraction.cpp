@@ -188,12 +188,28 @@ static std::vector<double> domain_overlap_avgs(std::vector<Domain>& domains) {
   return domain_overlaps;
 }
 
+static void add_to_constraint_histogram(FlatModelFeatureVector& features, const char* constraintName) {
+  features.ct_histogram[constraintName]++;
+}
+
+static void add_to_annotation_histogram(FlatModelFeatureVector& features, Expression* annotations) {
+  for (auto ann : Expression::ann(annotations)) {
+    const Id* ident = Expression::cast<Id>(ann);
+    if (ident->decl() != nullptr) {
+      ident = ident->decl()->id();
+    }
+    if (ident->idn() == -1) {
+      features.ann_histogram[ident->v().c_str()]++;
+    }
+  }
+}
+
 FlatModelFeatureVector extract_feature_vector(Env& m) {
   Model* flat = m.flat();
   FlatModelFeatureVector features;
   std::vector<Domain> domains;
-  std::map<std::string, int> varIdToNumMap;
-  std::map<int, std::string> numToConstraintIdMap;
+  std::map<std::string, int> varIdToNumMap; //todo maybe we can use idn() for this
+  std::map<int, std::string> numToConstraintIdMap; //todo maybe we can use idn() for this
   int varIdCounter = 0;
   int constraintIdCounter = 0;
 
@@ -214,7 +230,6 @@ FlatModelFeatureVector extract_feature_vector(Env& m) {
             domains.push_back(d);
           } else if (t.isint()) {
             features.n_int_vars++;
-            GCLock lock;
             Expression* domain = vdi->e()->ti()->domain();
             IntSetVal* bounds = eval_intset(m.envi(), domain);
             Domain d = Domain::from(*bounds);
@@ -228,6 +243,7 @@ FlatModelFeatureVector extract_feature_vector(Env& m) {
           }
           GCLock lock;
           varIdToNumMap[vdi->e()->id()->str().c_str()] = varIdCounter++;
+          add_to_annotation_histogram(features, vdi->e());
         } else {
           std::cout << "is sth else " << t.toString(m.envi()) << std::endl;
         }
@@ -241,7 +257,9 @@ FlatModelFeatureVector extract_feature_vector(Env& m) {
           if (call->argCount() > 0) {
             Type all_t;
             auto constraintId = constraintIdCounter++;
-            numToConstraintIdMap[constraintId] = call->id().c_str();
+            const char* constraintName = call->id().c_str();
+            numToConstraintIdMap[constraintId] = constraintName;
+            add_to_constraint_histogram(features, constraintName);
             for (unsigned int i = 0; i < call->argCount(); i++) {
               Type t = Expression::type(call->arg(i));
               if (t.isvar()) {
@@ -290,6 +308,7 @@ FlatModelFeatureVector extract_feature_vector(Env& m) {
       }
     }
   }
+
   constraintGraph.printMatrix();
   auto domain_sizes = calculate_domain_width(domains);
 
