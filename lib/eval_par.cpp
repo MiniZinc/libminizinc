@@ -1361,11 +1361,11 @@ bool eval_bool(EnvI& env, Expression* e) {
       case Expression::E_BINOP: {
         auto* bo = Expression::cast<BinOp>(e);
         Expression* lhs = bo->lhs();
-        if (Expression::type(lhs).bt() == Type::BT_TOP) {
+        if (Expression::type(lhs).bt() == Type::BT_TOP || Expression::type(lhs).isbot()) {
           lhs = eval_par(env, lhs);
         }
         Expression* rhs = bo->rhs();
-        if (Expression::type(rhs).bt() == Type::BT_TOP) {
+        if (Expression::type(rhs).bt() == Type::BT_TOP || Expression::type(rhs).isbot()) {
           rhs = eval_par(env, rhs);
         }
         if ((bo->decl() != nullptr) && (bo->decl()->e() != nullptr)) {
@@ -1513,6 +1513,7 @@ bool eval_bool(EnvI& env, Expression* e) {
               case BOT_SUPERSET:
                 return Ranges::subset(ir1, ir0);
               default:
+                assert(false);
                 throw EvalError(env, Expression::loc(e), "not a bool expression", bo->opToString());
             }
           } catch (ResultUndefinedError&) {
@@ -1537,6 +1538,7 @@ bool eval_bool(EnvI& env, Expression* e) {
               case BOT_GQ:
                 return s0 >= s1;
               default:
+                assert(false);
                 throw EvalError(env, Expression::loc(e), "not a bool expression", bo->opToString());
             }
           } catch (ResultUndefinedError&) {
@@ -1623,6 +1625,7 @@ bool eval_bool(EnvI& env, Expression* e) {
             return false;
           }
         } else {
+          assert(false);
           throw EvalError(env, Expression::loc(e), "not a bool expression", bo->opToString());
         }
       } break;

@@ -55,6 +55,8 @@ Bug fixes:
 -  Fix type error due to missing overload of ``max`` (:bugref:`848`).
 -  Fix handling of contexts and ``maybe_partial`` annotations when flattening
    par expressions.
+-  Fix par evaluation of boolean operators where an operand is an array access
+   into an empty array literal.
 
 .. _v2.8.5:
 
