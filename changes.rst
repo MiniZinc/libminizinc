@@ -41,6 +41,8 @@ Bug fixes:
    (:bugref:`821`).
 -  Fix parsing of the most negative integer literal (:bugref:`822`).
 -  Fix typo in warning messages for undefined results in function calls.
+-  Fix bug in flattening identifier causing debug assertion to fail
+   (:bugref:`826`).
 
 .. _v2.8.5:
 

@@ -64,8 +64,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
       idx[0] = bodyidx;
       auto* aa = new ArrayAccess(Expression::loc(id), id, idx);
       aanot->e(aa);
-      Type tt = id->type();
-      tt.dim(0);
+      Type tt = id->type().elemType(env);
       aa->type(tt);
       aanot->type(aa->type());
       cp->type(id->type());
