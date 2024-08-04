@@ -15,15 +15,22 @@
 #include <cmath>
 #include <iostream>
 #include <limits>
+#include <map>
 #include <unordered_set>
+#include <format>
 
 namespace MiniZinc {
 
-StatisticsStream::StatisticsStream(std::ostream& os, bool json)
-    : _os(os), _json(json), _ios(nullptr) {
+StatisticsStream::StatisticsStream(std::ostream& os, bool json, std::string jsonType, std::string linePrefix, std::string outputEndMarker)
+    : _os(os),
+      _json(json),
+      _jsonType(jsonType) /*currently in use: statistics, feature_vector*/,
+      _ios(nullptr),
+      _prefix(linePrefix),
+      _endMarker(outputEndMarker) {
   _ios.copyfmt(os);
   if (_json) {
-    _os << "{\"type\": \"statistics\", \"statistics\": {";
+    _os << "{\"type\": \"" << _jsonType << "\", \"" << _jsonType << "\": {";
   }
 }
 
@@ -31,7 +38,7 @@ StatisticsStream::~StatisticsStream() {
   if (_json) {
     _os << "}}\n";
   } else {
-    _os << "%%%mzn-stat-end\n";
+    _os << _endMarker << std::endl;
   }
   _os.copyfmt(_ios);
 }

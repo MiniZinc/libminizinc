@@ -12,6 +12,7 @@
 #pragma once
 
 #include <iterator>
+#include <map>
 
 namespace MiniZinc {
 
@@ -22,6 +23,9 @@ private:
   bool _json;
   bool _first = true;
   std::ios _ios;
+  std::string _jsonType;
+  std::string _prefix;
+  std::string _endMarker;
 
   template <class T>
   void addInternal(const std::string& stat, const T& value) {
@@ -33,12 +37,75 @@ private:
       }
       _os << "\"" << Printer::escapeStringLit(stat) << "\": " << value;
     } else {
-      _os << "%%%mzn-stat: " << stat << "=" << value << "\n";
+      _os << _prefix << stat << "=" << value << "\n";
+    }
+  }
+
+  template <class T>
+  void addArrayInternal(const std::string& stat, const std::vector<T>& value) {
+    if (_json) {
+      if (_first) {
+        _first = false;
+      } else {
+        _os << ", ";
+      }
+      _os << "\"" << Printer::escapeStringLit(stat) << "\": [";
+      for (size_t i = 0; i < value.size(); ++i) {
+        if (i > 0) {
+          _os << ", ";
+        }
+        _os << "\"" << value[i] << "\"";
+      }
+      _os << "]";
+    } else {
+      _os << _prefix << stat << "=[";
+      for (size_t i = 0; i < value.size(); ++i) {
+        if (i > 0) {
+          _os << ", ";
+        }
+        _os << value[i];
+      }
+      _os << "]\n";
+    }
+  }
+
+  template <class K, class V>
+  void addMapInternal(const std::string& stat, const std::map<K, V>& value) {
+    if (_json) {
+      if (_first) {
+        _first = false;
+      } else {
+        _os << ", ";
+      }
+      _os << "\"" << Printer::escapeStringLit(stat) << "\": {";
+      bool firstElem = true;
+      for (const auto& pair : value) {
+        if (!firstElem) {
+          _os << ", ";
+        }
+        firstElem = false;
+        _os << "\"" << pair.first << "\": \"" << pair.second << "\"";
+      }
+      _os << "}";
+    } else {
+      _os << _prefix << stat << "={";
+      bool firstElem = true;
+      for (const auto& pair : value) {
+        if (!firstElem) {
+          _os << ", ";
+        }
+        firstElem = false;
+        _os << pair.first << ": " << pair.second;
+      }
+      _os << "}\n";
     }
   }
 
 public:
-  StatisticsStream(std::ostream& os, bool json = false);
+  StatisticsStream(std::ostream& os, bool json = false,
+                   std::string jsonType = "statistics", 
+                   std::string linePrefix = "%%%mzn-stat: ",
+                   std::string outputEndMarker = "%%%mzn-stat-end");
   ~StatisticsStream();
 
   void precision(std::streamsize prec, bool fixed = false);
@@ -52,6 +119,16 @@ public:
   void add(const std::string& stat, double value);
   void add(const std::string& stat, const std::string& value);
   void addRaw(const std::string& stat, const std::string& value);
+  
+  template <class T>
+  void addArray(const std::string& stat, const std::vector<T>& value) {
+    addArrayInternal(stat, value);
+  }
+
+  template <class K, class V>
+  void addMap(const std::string& stat, const std::map<K, V>& value) {
+    addMapInternal(stat, value);
+  }
 };
 
 class Statistics {
