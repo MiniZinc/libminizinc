@@ -128,13 +128,18 @@ public:
     adjacencyMatrix[u][v] = 1;
   }
 
-  void printMatrix() const {
-    for (const auto& row : adjacencyMatrix) {
+  std::string formatMatrix() const {
+    std::ostringstream oss;
+    for (int i = 0; i < adjacencyMatrix.size(); i++) {
+      const auto& row = adjacencyMatrix[i];
       for (const auto& cell : row) {
-        std::cout << cell << " ";
+        oss << cell;
       }
-      std::cout << std::endl;
+      if (i != adjacencyMatrix.size() - 1) {
+        oss << "|";
+      }
     }
+    return oss.str();
   }
 
   std::vector<std::vector<int>> getAdjecencyMatrix() const { 
@@ -150,7 +155,7 @@ private:
 };
 
 
-static std::vector<long long> calculate_domain_width(std::vector<Domain>& domains) {
+static std::vector<long long> calculate_domain_widths(std::vector<Domain>& domains) {
   std::vector<long long> domain_sizes;
 
   for (auto& d : domains) {
@@ -251,8 +256,7 @@ FlatModelFeatureVector extract_feature_vector(Env& m) {
   Model* flat = m.flat();
   FlatModelFeatureVector features;
   std::vector<Domain> domains;
-  std::map<std::string, int> varIdToNumMap;
-  std::map<int, std::string> numToConstraintIdMap;
+  std::map<std::string, int> varIdToCustomIdMap;
   int varIdCounter = 0;
   int constraintIdCounter = 0;
 
@@ -285,23 +289,17 @@ FlatModelFeatureVector extract_feature_vector(Env& m) {
             // currently ommited in model training
           }
           GCLock lock;
-          varIdToNumMap[vdi->e()->id()->str().c_str()] = varIdCounter++;
+          varIdToCustomIdMap[vdi->e()->id()->str().c_str()] = varIdCounter;
+          features.customIdToVarNameMap[varIdCounter++] = vdi->e()->id()->str().c_str();
           add_to_annotation_histogram(features, vdi->e());
-        } else {
-          std::cout << "is sth else " << t.toString(m.envi()) << std::endl;
         }
       } else if (auto* ci = i->dynamicCast<ConstraintI>()) {
         if (Call* call = Expression::dynamicCast<Call>(ci->e())) {
-          if (call->id().endsWith("_reif")) {
-            // currently ommited in model training
-          } else if (call->id().endsWith("_imp")) {
-            // currently ommited in model training
-          }
           if (call->argCount() > 0) {
             Type all_t;
             auto constraintId = constraintIdCounter++;
             const char* constraintName = call->id().c_str();
-            numToConstraintIdMap[constraintId] = constraintName;
+            features.customIdToConstraintNameMap[constraintId] = constraintName;
             int foreignDefinedVarsUsedByCall = 0;
             add_to_constraint_histogram(features, constraintName);
             for (unsigned int i = 0; i < call->argCount(); i++) {
@@ -320,7 +318,7 @@ FlatModelFeatureVector extract_feature_vector(Env& m) {
                   if (Expression::isa<Id>(a)) {
                     GCLock lock;
                     Id* id = Expression::cast<Id>(a);
-                    constraintGraph.addEdge(varIdToNumMap[id->str().c_str()], constraintId);
+                    constraintGraph.addEdge(varIdToCustomIdMap[id->str().c_str()], constraintId);
 
                     if (is_call_using_var_defined_by_other(call, m.envi(), id)) {
                       foreignDefinedVarsUsedByCall++;
@@ -334,7 +332,7 @@ FlatModelFeatureVector extract_feature_vector(Env& m) {
                       if (id->decl() != nullptr) {
                         id = id->decl()->id();
                       }
-                      constraintGraph.addEdge(varIdToNumMap[id->str().c_str()], constraintId);
+                      constraintGraph.addEdge(varIdToCustomIdMap[id->str().c_str()], constraintId);
 
                       if (is_call_using_var_defined_by_other(call, m.envi(), id)) {
                         foreignDefinedVarsUsedByCall++;
@@ -364,24 +362,24 @@ FlatModelFeatureVector extract_feature_vector(Env& m) {
     }
   }
 
-  constraintGraph.printMatrix();
-  auto domain_sizes = calculate_domain_width(domains);
+  features.constraint_graph = constraintGraph.formatMatrix();
+  auto domain_sizes = calculate_domain_widths(domains);
 
   features.avg_decision_vars_in_cts = average_decision_variables_in_constraints(constraintGraph);
 
   if (!domain_sizes.empty()) {
-    features.std_dev_domain_size = new double(std::round(stdDev(domain_sizes) * 1000) / 1000.0);
+    features.std_dev_domain_size = std::round(stdDev(domain_sizes) * 1000) / 1000.0;
 
     double d = mean(domain_sizes);
-    features.avg_domain_size = new double(mean(domain_sizes));
+    features.avg_domain_size = mean(domain_sizes);
 
     std::sort(domain_sizes.begin(), domain_sizes.end());
-    features.median_domain_size = new double(domain_sizes[domain_sizes.size() / 2]);
+    features.median_domain_size = domain_sizes[domain_sizes.size() / 2];
 
     auto overlaps = domain_overlap_avgs(domains);
-    features.n_disjoint_domain_pairs = new int(std::count(overlaps.begin(), overlaps.end(), 0.0));
+    features.n_disjoint_domain_pairs = std::count(overlaps.begin(), overlaps.end(), 0.0);
 
-    features.avg_domain_overlap = new double(mean(overlaps));
+    features.avg_domain_overlap = mean(overlaps);
   }
   features.n_total_ct += features.n_set_ct + features.n_int_ct + features.n_bool_ct;
   return features;

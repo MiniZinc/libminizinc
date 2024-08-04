@@ -915,31 +915,44 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
         }
 
         if (_flags.featureVector) {
-          StatisticsStream ss(_os, _flags.encapsulateJSON); //todo own impl
+          StatisticsStream ss(_os, _flags.encapsulateJSON, "feature_vector",
+                              "%%%mzn-fvec: ", "%%%mzn-fvec-end");
           FlatModelFeatureVector features = extract_feature_vector(*env);
 
-          if (features.std_dev_domain_size != nullptr) {
-            ss.add("stdDeviationDomain", *features.std_dev_domain_size);
+           if (!_flags.encapsulateJSON) {
+            _os << "% Generated FlatZinc Feature Vector:\n";
           }
-          if (features.avg_domain_size != nullptr) {
-            ss.add("averageDomainSize", *features.avg_domain_size);
-          }
-          if (features.median_domain_size != nullptr) {
-            ss.add("medianDomainSize", *features.median_domain_size);
-          }
-          if (features.avg_domain_overlap != nullptr) {
-            ss.add("averageDomainOverlap", *features.avg_domain_overlap);
-          }
-          if (features.n_disjoint_domain_pairs != nullptr) {
-            ss.add("numberOfDisjointPairs", *features.n_disjoint_domain_pairs);
-          }
-          if (features.n_meta_ct != 0) {
-            ss.add("metaConstraints", features.n_meta_ct);
-          }
-          if (features.n_total_ct != 0) {
-            ss.add("totalConstraints", features.n_total_ct);
-          }
+
+          ss.add("flatBoolVars", features.n_bool_vars);
+          ss.add("flatIntVars", features.n_int_vars);
+          ss.add("flatSetVars", features.n_set_vars);
+          
+          ss.addMap("idToVarNameMap", features.customIdToVarNameMap);
+          ss.addMap("idToConstraintNameMap", features.customIdToConstraintNameMap);
+
+          ss.add("stdDeviationDomain", features.std_dev_domain_size);
+          ss.add("averageDomainSize", features.avg_domain_size);
+          ss.add("medianDomainSize", features.median_domain_size);
+          ss.add("averageDomainOverlap", features.avg_domain_overlap);
+          ss.add("numberOfDisjointPairs", features.n_disjoint_domain_pairs);
+          ss.add("metaConstraints", features.n_meta_ct);
+          ss.add("totalConstraints", features.n_total_ct);
           ss.add("avgDecisionVarsInConstraints", features.avg_decision_vars_in_cts);
+
+          ss.add("constraintGraph", features.constraint_graph);
+          ss.addMap("constraintHistogram", features.ct_histogram);
+          ss.addMap("annotationHistogram", features.ann_histogram);
+
+          SolveI* solveItem = env->flat()->solveItem();
+          if (solveItem->st() != SolveI::SolveType::ST_SAT) {
+            if (solveItem->st() == SolveI::SolveType::ST_MAX) {
+              ss.add("method", "maximize");
+            } else {
+              ss.add("method", "minimize");
+            }
+          } else {
+            ss.add("method", "satisfy");
+          }
         }
 
         if (_flags.outputPathsStdout) {

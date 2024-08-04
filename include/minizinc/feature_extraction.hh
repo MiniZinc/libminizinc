@@ -17,17 +17,21 @@ struct FlatModelFeatureVector {
   /// Number of set constraints
   int n_set_ct;  // NOLINT(readability-identifier-naming)
 
-  double* std_dev_domain_size;
-  double* avg_domain_size;
-  double* median_domain_size;
-  double* avg_domain_overlap;
+  double std_dev_domain_size;
+  double avg_domain_size;
+  double median_domain_size;
+  double avg_domain_overlap;
   double avg_decision_vars_in_cts;
-  int* n_disjoint_domain_pairs;
+  int n_disjoint_domain_pairs;
   int n_meta_ct;
   int n_total_ct;
   std::string constraint_graph;
   std::map<std::string, int> ct_histogram;
   std::map<std::string, int> ann_histogram;
+
+  // mainly for debugging purposes 
+  std::map<int, std::string> customIdToVarNameMap; // it's important that the IDs are consecutive [0, 1, ..] , so we can not use idn() here
+  std::map<int, std::string> customIdToConstraintNameMap; // same as with customIdToVarNameMap, ids can overlap
 
 
   /// Constructor
@@ -38,15 +42,17 @@ struct FlatModelFeatureVector {
         n_bool_ct(0),
         n_int_ct(0),
         n_set_ct(0),
-        std_dev_domain_size(nullptr),  // nullptrs instead 0, because 0 is within the valid range of values
-        avg_domain_size(nullptr),
-        median_domain_size(nullptr),
-        avg_domain_overlap(nullptr),
+        std_dev_domain_size(0),
+        avg_domain_size(0),
+        median_domain_size(0),
+        avg_domain_overlap(0),
         avg_decision_vars_in_cts(0),
-        n_disjoint_domain_pairs(nullptr),
+        n_disjoint_domain_pairs(0),
         n_meta_ct(0),
         n_total_ct(0),
         constraint_graph(""),
+        customIdToVarNameMap(),
+        customIdToConstraintNameMap(),
         ct_histogram(),
         ann_histogram()
         {}
