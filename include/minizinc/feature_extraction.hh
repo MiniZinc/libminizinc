@@ -28,10 +28,14 @@ struct FlatModelFeatureVector {
   std::string constraint_graph;
   std::map<std::string, int> ct_histogram;
   std::map<std::string, int> ann_histogram;
+  std::vector<long long> domain_widths; // indices in this array match keys in customIdToVarNameMap
 
-  // mainly for debugging purposes 
-  std::map<int, std::string> customIdToVarNameMap; // it's important that the IDs are consecutive [0, 1, ..] , so we can not use idn() here
-  std::map<int, std::string> customIdToConstraintNameMap; // same as with customIdToVarNameMap, ids can overlap
+  // mainly for debugging purposes
+  // it's important that the IDs are consecutive [0, 1, ..] , so we can not use idn() here
+  // example: we want the first variable defined in the file to have id 0, the second one 1 ...
+  // same goes for constraints, the first constraint gets id 0
+  std::map<int, std::string> customIdToVarNameMap; 
+  std::map<int, std::string> customIdToConstraintNameMap;
 
 
   /// Constructor
@@ -54,7 +58,8 @@ struct FlatModelFeatureVector {
         customIdToVarNameMap(),
         customIdToConstraintNameMap(),
         ct_histogram(),
-        ann_histogram()
+        ann_histogram(),
+        domain_widths()
         {}
 };
 

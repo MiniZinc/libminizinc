@@ -286,7 +286,7 @@ FlatModelFeatureVector extract_feature_vector(Env& m) {
             Domain d = Domain({{0, 1}});
             domains.push_back(d);
           } else if (t.isfloat()) {
-            // currently ommited in model training
+            // currently omitted in model training
           }
           GCLock lock;
           varIdToCustomIdMap[vdi->e()->id()->str().c_str()] = varIdCounter;
@@ -354,7 +354,7 @@ FlatModelFeatureVector extract_feature_vector(Env& m) {
               } else if (all_t.bt() == Type::BT_BOOL) {
                 features.n_bool_ct++;
               } else if (all_t.bt() == Type::BT_FLOAT) {
-                // currently ommited in model training
+                // currently omitted in model training
               }
             }
             if (foreignDefinedVarsUsedByCall > 1) {
@@ -368,6 +368,7 @@ FlatModelFeatureVector extract_feature_vector(Env& m) {
 
   features.constraint_graph = constraintGraph.formatMatrix();
   auto domain_sizes = calculate_domain_widths(domains);
+  features.domain_widths = domain_sizes;  //copying intentional
 
   features.avg_decision_vars_in_cts = average_decision_variables_in_constraints(constraintGraph);
 

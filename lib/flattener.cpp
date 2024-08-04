@@ -930,6 +930,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           ss.addMap("idToVarNameMap", features.customIdToVarNameMap);
           ss.addMap("idToConstraintNameMap", features.customIdToConstraintNameMap);
 
+          ss.addArray("domainWidths", features.domain_widths);
           ss.add("stdDeviationDomain", features.std_dev_domain_size);
           ss.add("averageDomainSize", features.avg_domain_size);
           ss.add("medianDomainSize", features.median_domain_size);
