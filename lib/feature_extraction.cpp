@@ -206,7 +206,7 @@ static bool is_var_defined_by_call(Call* call, EnvI& envi, Id* var) {
   for (ExpressionSetIter anns = ann.begin(); anns != ann.end(); ++anns) {
     if (Call* c = Expression::dynamicCast<Call>(*anns)) {
       if (c->id() == envi.constants.ann.defines_var) {
-        for (int i = 0; i < call->argCount(); i++) {
+        for (unsigned int i = 0; i < c->argCount(); i++) {
           auto a = c->arg(i);
           if (Expression::isa<Id>(a)) {
             auto id = Expression::cast<Id>(a);
@@ -299,6 +299,10 @@ FlatModelFeatureVector extract_feature_vector(Env& m) {
             Type all_t;
             auto constraintId = constraintIdCounter++;
             const char* constraintName = call->id().c_str();
+            // skip everything float related in this section todo make floats optional for feature vector
+            if (std::strstr(constraintName, "float") != nullptr) {
+              continue;
+            }
             features.customIdToConstraintNameMap[constraintId] = constraintName;
             int foreignDefinedVarsUsedByCall = 0;
             add_to_constraint_histogram(features, constraintName);
