@@ -332,14 +332,18 @@ FlatModelFeatureVector extract_feature_vector(Env& m) {
                   else if (Expression::isa<ArrayLit>(a)) {
                     const auto* di = Expression::cast<ArrayLit>(a);
                     for (auto v : di->getVec()) {
-                      Id* id = Expression::dynamicCast<Id>(v);
-                      if (id->decl() != nullptr) {
-                        id = id->decl()->id();
-                      }
-                      constraintGraph.addEdge(varIdToCustomIdMap[id->str().c_str()], constraintId);
+                      if (Expression::isa<Id>(v)) {
+                        GCLock lock;
+                        Id* id = Expression::cast<Id>(v);
+                        if (id->decl() != nullptr) {
+                          id = id->decl()->id();
+                        }
+                        constraintGraph.addEdge(varIdToCustomIdMap[id->str().c_str()],
+                                                constraintId);
 
-                      if (is_call_using_var_defined_by_other(call, m.envi(), id)) {
-                        foreignDefinedVarsUsedByCall++;
+                        if (is_call_using_var_defined_by_other(call, m.envi(), id)) {
+                          foreignDefinedVarsUsedByCall++;
+                        }
                       }
                     }
                   }
