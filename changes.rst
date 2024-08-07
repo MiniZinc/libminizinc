@@ -20,6 +20,7 @@ Changes:
    into ``lex_less`` or ``lex_lesseq`` global constraints.
 -  Automatically detect SCIP 9.0.1 and potential future versions on Windows.
 -  The interface to the HiGHS solver now requires version 1.7.2 or later.
+-  Enforce strict enum type correctness for set operations (:bugref:`828`).
 
 Bug fixes:
 ^^^^^^^^^^

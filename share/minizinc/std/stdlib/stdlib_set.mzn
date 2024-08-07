@@ -5,15 +5,15 @@
 */
 
 /** @group stdlib.builtins.set Test if \a x is an element of the set \a y */
-function     bool: 'in'(    int: x,     set of int: y) ::mzn_internal_representation;
+function     bool: 'in'(    $$E: x,     set of $$E: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.set \a x is an element of the set \a y */
-function var bool: 'in'(var int: x, var set of int: y);
+function var bool: 'in'(var $$E: x, var set of $$E: y);
 /** @group stdlib.builtins.set \a x is an element of the set \a y. False if \a x is absent. */
-function var bool: 'in'(var opt int: x, set of int: y) = occurs(x) /\ deopt(x) in y;
+function var bool: 'in'(var opt $$E: x, set of $$E: y) = occurs(x) /\ deopt(x) in y;
 /** @group stdlib.builtins.set Test if \a x is an element of the set \a y. False if \a x is absent. */
-function     bool: 'in'(opt int: x, set of int: y) = occurs(x) /\ deopt(x) in y;
+function     bool: 'in'(opt $$E: x, set of $$E: y) = occurs(x) /\ deopt(x) in y;
 /** @group stdlib.builtins.set \a x is an element of the set \a y. False if \a x is absent. */
-function var bool: 'in'(var opt int: x, var set of int: y) = occurs(x) /\ deopt(x) in y;
+function var bool: 'in'(var opt $$E: x, var set of $$E: y) = occurs(x) /\ deopt(x) in y;
 
 /** @group stdlib.builtins.set Test if \a x is an element of the set \a y */
 function     bool: 'in'(    float: x,     set of float: y) ::mzn_internal_representation;
@@ -27,11 +27,11 @@ function var bool: 'in'(var opt float: x, set of float: y) = occurs(x) /\ deopt(
 /** @group stdlib.builtins.set Test if \a x is a subset of \a y */
 function     bool: 'subset'(    set of $T: x,      set of $T: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.set \a x is a subset of \a y */
-function var bool: 'subset'(var set of int: x, var set of int: y);
+function var bool: 'subset'(var set of $$E: x, var set of $$E: y);
 /** @group stdlib.builtins.set Test if \a x is a superset of \a y */
 function     bool: 'superset'(    set of $T: x,      set of $T: y) ::mzn_internal_representation;
 /** @group stdlib.builtins.set \a x is a superset of \a y */
-function var bool: 'superset'(var set of int: x, var set of int: y);
+function var bool: 'superset'(var set of $$E: x, var set of $$E: y);
 
 /** @group stdlib.builtins.set Return the union of sets \a x and \a y */
 function     set of $T:  'union'(    set of $T: x,      set of $T: y) ::mzn_internal_representation ::promise_commutative;
@@ -148,7 +148,7 @@ function var $$E: max(var set of $$E: s);
 predicate set_in(var float: x, set of float: S) = float_set_in(x, S);
 
 /** @group stdlib.builtins.set Return a sorted list of the non-overlapping ranges in \a S */
-function array[int] of int: set_to_ranges(set of int: S);
+function array[int] of $$E: set_to_ranges(set of $$E: S);
 /** @group stdlib.builtins.set Return a sorted list of the non-overlapping ranges in \a S */
 function array[int] of float: set_to_ranges(set of float: S);
 /** @group stdlib.builtins.set Return a sorted list of the non-overlapping ranges in \a S */
