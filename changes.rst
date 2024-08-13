@@ -44,6 +44,8 @@ Bug fixes:
 -  Fix typo in warning messages for undefined results in function calls.
 -  Fix bug in flattening identifier causing debug assertion to fail
    (:bugref:`826`).
+-  Fix missing type when flattening indexed var comprehension leading to error
+   or incorrect value type.
 
 .. _v2.8.5:
 

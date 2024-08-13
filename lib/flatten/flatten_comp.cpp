@@ -260,6 +260,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
         }
         new_indexes_v.back() = new_e;
         new_e = ArrayLit::constructTuple(Expression::loc(indexes), new_indexes_v);
+        Expression::type(new_e, Expression::type(indexes));
       }
       auto* nc = new Comprehension(Expression::loc(c), new_e, gs, c->set());
       nc->type(ntype);
