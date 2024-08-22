@@ -51,21 +51,21 @@ foreach(GECODE_COMP ${GECODE_COMPONENTS})
   endif()
 endforeach(GECODE_COMP)
 
+if(GECODE_HAS_MPFR)
+  find_package(MPFR)
+  set_target_properties(Gecode::Float PROPERTIES
+                        INTERFACE_LINK_LIBRARIES ${MPFR_LIBRARIES})
+  list(APPEND GECODE_LIBRARY ${MPFR_LIBRARIES})
+  list(APPEND GECODE_TARGETS ${MPFR_LIBRARIES})
+endif()
+
 if(WIN32 AND GECODE_HAS_GIST AND GECODE_STATIC_LIBS)
   find_package(Qt5 QUIET COMPONENTS Core Gui Widgets PrintSupport)
   set_target_properties(Gecode::Gist PROPERTIES
                         INTERFACE_LINK_LIBRARIES "Qt5::Core;Qt5::Gui;Qt5::Widgets;Qt5::PrintSupport")
 endif()
 
-unset(GECODE_REQ_LIBS)
-unset(GECODE_LIB_WIN)
 unset(GECODE_LIB_LOC)
-
-if(GECODE_LIBRARY AND GECODE_HAS_MPFR)
-  find_package(MPFR)
-  list(APPEND GECODE_LIBRARY ${MPFR_LIBRARIES})
-  list(APPEND GECODE_TARGETS ${MPFR_LIBRARIES})
-endif()
 
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set GECODE_FOUND to TRUE
