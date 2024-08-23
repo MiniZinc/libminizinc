@@ -27,6 +27,15 @@ private:
   std::string _prefix;
   std::string _endMarker;
 
+  template <typename T>
+  void serializeValue(std::ostream& os, const T& value) {
+    if constexpr (std::is_arithmetic_v<T>) {
+      os << value;
+    } else {
+      os << "\"" << value << "\"";
+    }
+  }
+
   template <class T>
   void addInternal(const std::string& stat, const T& value) {
     if (_json) {
@@ -54,7 +63,7 @@ private:
         if (i > 0) {
           _os << ", ";
         }
-        _os << "\"" << value[i] << "\"";
+        serializeValue(_os, value[i]);
       }
       _os << "]";
     } else {
@@ -84,7 +93,8 @@ private:
           _os << ", ";
         }
         firstElem = false;
-        _os << "\"" << pair.first << "\": \"" << pair.second << "\"";
+        _os << "\"" << pair.first << "\": ";
+        serializeValue(_os, pair.second);
       }
       _os << "}";
     } else {
