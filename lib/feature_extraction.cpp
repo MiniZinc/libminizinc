@@ -99,10 +99,15 @@ public:
 };
 
 class BipartiteGraph {
+private:
+  int uSize;  // Number of vertices in set U
+  int vSize;  // Number of vertices in set V
+  bool autoResize;
+  std::vector<std::vector<int>> adjacencyMatrix;  // Adjacency matrix
 public:
   // Constructor to initialize the graph with sizes of U and V
   BipartiteGraph(int uSize, int vSize)
-      : uSize(uSize), vSize(vSize), adjacencyMatrix(uSize, std::vector<int>(vSize, 0)) {}
+      : uSize(uSize), vSize(vSize),autoResize(uSize == 0 && vSize == 0), adjacencyMatrix(uSize, std::vector<int>(vSize, 0)) {}
 
   // Method to add an edge between vertex u in U and vertex v in V
   // We can not use iterators to determine the num of vardecls and constraints 
@@ -112,20 +117,24 @@ public:
       return;
     }
 
-    // Resize the matrix if necessary
-    if (u >= uSize) {
+    // Resize the matrix if necessary & allowed
+    if (autoResize && u >= uSize) {
       adjacencyMatrix.resize(u + 1, std::vector<int>(vSize, 0));
       uSize = u + 1;
     }
-    if (v >= vSize) {
+    if (autoResize && v >= vSize) {
       for (auto& row : adjacencyMatrix) {
         row.resize(v + 1, 0);
       }
       vSize = v + 1;
     }
 
-    // Add the edge
-    adjacencyMatrix[u][v] = 1;
+    // we will only enter this block if:
+    // autoResize is on || the index is within predefined bounds
+    // all other values will be dropped
+    if (u < uSize && v < vSize) {
+      adjacencyMatrix[u][v] = 1;
+    }
   }
 
   std::string formatMatrix() const {
@@ -147,11 +156,6 @@ public:
   }
 
   int currentVSize() const { return vSize;}
-
-private:
-  int uSize;                                      // Number of vertices in set U
-  int vSize;                                      // Number of vertices in set V
-  std::vector<std::vector<int>> adjacencyMatrix;  // Adjacency matrix
 };
 
 
@@ -252,15 +256,18 @@ static double average_decision_variables_in_constraints(BipartiteGraph& constrai
   return result;
 }
 
-FlatModelFeatureVector extract_feature_vector(Env& m) {
+FlatModelFeatureVector extract_feature_vector(Env& m, FlatModelFeatureVector::Options& o) {
   Model* flat = m.flat();
   FlatModelFeatureVector features;
   std::vector<Domain> domains;
   std::map<std::string, int> varIdToCustomIdMap;
   int varIdCounter = 0;
   int constraintIdCounter = 0;
-
   BipartiteGraph constraintGraph = BipartiteGraph(0, 0);
+
+  if (o.dimensions > 0) {
+    constraintGraph = BipartiteGraph(o.dimensions, o.dimensions);
+  }
 
   for (auto& i : *flat) {
     if (!i->removed()) {

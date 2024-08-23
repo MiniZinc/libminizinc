@@ -1,7 +1,12 @@
 #pragma once
 #include <minizinc/model.hh>
+#include <regex>
 
 namespace MiniZinc {
+
+static std::regex featureVectorOptionsRegex("(\\d*)(f?)", std::regex_constants::ECMAScript |
+                                                              std::regex_constants::icase);
+
 /// Feature Vector of the FlatModel
 struct FlatModelFeatureVector {
   /// Number of integer variables
@@ -61,9 +66,33 @@ struct FlatModelFeatureVector {
         ann_histogram(),
         domain_widths()
         {}
+  
+  struct Options {
+    int dimensions = -1;       // for making uniform dimensions of the constraint graph. -1 will not //TODO impl
+                               // apply padding / cropping
+    bool ignoreFloats = true;  // decide whether to ignore floats in all features
+
+    static Options parse_from_string(const std::string input) {
+      Options opts;
+
+      std::smatch match;
+      std::regex_match(input, match, featureVectorOptionsRegex);
+      std::string number = match[1].str();
+
+      opts.dimensions = atoi(number.c_str());
+      opts.ignoreFloats = match[2].matched;
+
+      return opts;
+    }
+
+    static bool is_valid_options_regex(const std::string input) {
+      return std::regex_match(input, featureVectorOptionsRegex);
+    }
+  };
 };
 
 /// Extract the features for flat model in \a m
-FlatModelFeatureVector extract_feature_vector(Env& m);
+FlatModelFeatureVector extract_feature_vector(Env& m, FlatModelFeatureVector::Options& o);
 
 }
+

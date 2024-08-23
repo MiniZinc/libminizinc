@@ -25,6 +25,7 @@
 
 #include <minizinc/param_config.hh>
 #include <minizinc/solver.hh>
+#include <minizinc/feature_extraction.hh>
 
 #include <chrono>
 #include <cstdlib>
@@ -34,6 +35,7 @@
 #include <iomanip>
 #include <iostream>
 #include <ratio>
+
 
 #ifdef HAS_OSICBC
 #include <minizinc/solvers/MIP/MIP_osicbc_solverfactory.hh>
@@ -266,7 +268,7 @@ void MznSolver::printHelp(std::ostream& os, const std::string& selectedSolver) {
      << "  --verbose-compilation\n    Print progress/log statements for compilation." << std::endl
      << "  -s, --statistics\n    Print statistics." << std::endl
      << "  --compiler-statistics\n    Print statistics for compilation." << std::endl
-     << "  --feature-vector\n     Print feature vector of the FlatZinc model." << std::endl
+     << "  --feature-vector\n    Extracts and prints feature vector of the FlatZinc model.\n    Can be configured to constraint constraint graph dimensions and ignore floats.\n    By default uses \"-1f\" which will not apply padding / cropping to the constraint graph and will ignore floats." << std::endl
      << "  -c, --compile\n    Compile only (do not run solver)." << std::endl
      << "  --config-dirs\n    Output configuration directories." << std::endl
      << "  --param-file <file>\n    Load parameters from the given JSON file." << std::endl
@@ -619,6 +621,11 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
     } else if (argv[i] == "--compiler-statistics") {
       flagCompilerStatistics = true;
     } else if (argv[i] == "--feature-vector") {
+      int j = i + 1;
+      if (j < argc && FlatModelFeatureVector::Options::is_valid_options_regex(argv[j])) {
+        featureVectorOptions = FlatModelFeatureVector::Options::parse_from_string(argv[j]);
+        ++i;
+      }
       flagFeatureVector = true;
     } else if (argv[i] == "--json-stream") {
       flagEncapsulateJSON = true;
@@ -948,10 +955,12 @@ void MznSolver::flatten(const std::string& modelString, const std::string& model
   std::exception_ptr exc;
   _flt.setFlagVerbose(flagCompilerVerbose);
   _flt.setFlagStatistics(flagCompilerStatistics);
-  _flt.setFlagFeatureVector(flagFeatureVector);
   _flt.setFlagEncapsulateJSON(flagEncapsulateJSON);
   if (flagRandomSeed) {
     _flt.setRandomSeed(randomSeed);
+  }
+  if (flagFeatureVector) {
+    _flt.setFlagFeatureVector(&featureVectorOptions);
   }
 
 #ifndef __EMSCRIPTEN__

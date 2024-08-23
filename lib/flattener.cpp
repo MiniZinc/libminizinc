@@ -914,10 +914,10 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           ss.add("flatTime", flatten_time.s());
         }
 
-        if (_flags.featureVector) {
+        if (_flags.featureVector != nullptr) {
           StatisticsStream ss(_os, _flags.encapsulateJSON, "feature_vector",
                               "%%%mzn-fvec: ", "%%%mzn-fvec-end");
-          FlatModelFeatureVector features = extract_feature_vector(*env);
+          FlatModelFeatureVector features = extract_feature_vector(*env, *_flags.featureVector);
 
            if (!_flags.encapsulateJSON) {
             _os << "% Generated FlatZinc Feature Vector:\n";
