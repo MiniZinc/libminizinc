@@ -1416,12 +1416,12 @@ bool TypeInst::concatDomain(EnvI& env) {
     assert(lhs->type().istuple());
     assert(rhs->type().istuple());
     GCLock lock;
-    // Concat domains
-    auto* nbo = new BinOp(Expression::loc(bop), lhs->domain(), bop->op(), rhs->domain());
-    nbo->type(bop->type());
-    dom = ArrayLit::constructTuple(Expression::loc(bop).introduce(), eval_array_lit(env, nbo));
     // Concat types
     ty = env.concatTuple(lhs->type(), rhs->type());
+    // Concat domains
+    auto* nbo = new BinOp(Expression::loc(bop), lhs->domain(), bop->op(), rhs->domain());
+    nbo->type(ty);
+    dom = ArrayLit::constructTuple(Expression::loc(bop).introduce(), eval_array_lit(env, nbo));
     dom->type(ty);
   }
   // Update TI

@@ -1753,6 +1753,7 @@ private:
         //           if ( 0.0==lb && 0.0==ub ) {
         auto* newDom =
             new BinOp(Location().introduce(), FloatLit::a(lb), BOT_DOTDOT, FloatLit::a(ub));
+        newDom->type(Type::parsetfloat());
         vd->ti()->domain(newDom);
         DBGOUT_MIPD("  NULL OUT:  " << vd->id()->str());
         //           }
@@ -1760,6 +1761,7 @@ private:
         auto* newDom = new SetLit(
             Location().introduce(),
             IntSetVal::a(static_cast<long long int>(lb), static_cast<long long int>(ub)));
+        newDom->type(Type::parsetint());
         //           TypeInst* nti = copy(mipd.getEnv()->envi(),varFlag->ti())->cast<TypeInst>();
         //           nti->domain(newDom);
         vd->ti()->domain(newDom);
@@ -1774,6 +1776,7 @@ private:
       auto* newDom =
           new SetLit(Location().introduce(),
                      IntSetVal::a(static_cast<long long int>(LB), static_cast<long long int>(UB)));
+      newDom->type(Type::parsetint());
       auto* ti = new TypeInst(Location().introduce(), Type::varint(), newDom);
       auto* newVar = new VarDecl(Location().introduce(), ti, mipd.getEnv()->envi().genId());
       newVar->flat(newVar);
