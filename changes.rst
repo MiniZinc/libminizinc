@@ -46,6 +46,8 @@ Bug fixes:
    (:bugref:`826`).
 -  Fix missing type when flattening indexed var comprehension leading to error
    or incorrect value type.
+-  Fix crash when generating error message for mismatched index set where an
+   enum index set is empty.
 
 .. _v2.8.5:
 

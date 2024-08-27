@@ -63,6 +63,8 @@ inline void display_enum_range(std::ostringstream& ss, EnvI& env, IntVal min, In
   }
   if (card == (max + 1 - min)) {
     ss << *vd->id();
+  } else if (max + 1 - min == 0) {
+    ss << "{}";
   } else {
     GCLock lock;
     ASTString enumName(create_enum_to_string_name(vd->id(), "_toString_"));
@@ -70,6 +72,7 @@ inline void display_enum_range(std::ostringstream& ss, EnvI& env, IntVal min, In
                          {IntLit::a(min), env.constants.literalTrue, env.constants.literalFalse});
     auto* fi = env.model->matchFn(env, call, false, true);
     call->decl(fi);
+    call->type(Type::parstring());
     ss << eval_string(env, call);
     call->arg(0, IntLit::a(max));
     ss << ".." << eval_string(env, call);
