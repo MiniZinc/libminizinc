@@ -1012,7 +1012,10 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
       cr = cr_c;
     }
 
-    auto cit = env.cseMapFind(cr());
+    auto cit = env.cseMapEnd();
+    if (!ctx.neg && !Expression::type(cr()).isAnn()) {
+      cit = env.cseMapFind(cr());
+    }
     if (cit != env.cseMapEnd()) {
       if (Expression::type(e).isbool() && !Expression::type(e).isOpt()) {
         cse_result_change_ctx(env, cit->second.r, ctx.b);

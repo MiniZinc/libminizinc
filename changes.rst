@@ -48,6 +48,8 @@ Bug fixes:
    or incorrect value type.
 -  Fix crash when generating error message for mismatched index set where an
    enum index set is empty.
+-  Fix crash due to incorrect handling of negated constraints matching entry in
+   CSE map (:bugref:`832`).
 
 .. _v2.8.5:
 
