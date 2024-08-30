@@ -236,12 +236,14 @@ static void add_to_constraint_histogram(FlatModelFeatureVector& features, const 
 
 static void add_to_annotation_histogram(FlatModelFeatureVector& features, Expression* annotations) {
   for (auto ann : Expression::ann(annotations)) {
-    const Id* ident = Expression::cast<Id>(ann);
-    if (ident->decl() != nullptr) {
-      ident = ident->decl()->id();
-    }
-    if (ident->idn() == -1) {
-      features.ann_histogram[ident->v().c_str()]++;
+    if (Expression::isa<Id>(ann)) {
+      const Id* ident = Expression::cast<Id>(ann);
+      if (ident->decl() != nullptr) {
+        ident = ident->decl()->id();
+      }
+      if (ident->idn() == -1) {
+        features.ann_histogram[ident->v().c_str()]++;
+      }
     }
   }
 }
