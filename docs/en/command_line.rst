@@ -147,11 +147,12 @@ These options control the general behaviour of the ``minizinc`` tool.
 
     Print statistics for compilation.
 
-.. option::  --feature-vector, --feature-vector <[0-9]*(f?)>
+.. option::  --feature-vector, --feature-vector <(\\d*v)?(\\d*c)?(f)?>
 
     Extract and print feature vector of the FlatZinc model.
-    Can be configured to constraint constraint graph dimensions and ignore floats.
-    By default uses ""-1f"" which will not apply padding / cropping to the constraint graph and will ignore floats.
+    Allows configuration of the feature-extraction process.
+    [0-9]+v limits variables in constraint graph, [0-9]+c limits constraints in constraint graph, f ignores floats.
+    By default uses ""0v0cf"" which will not apply padding / cropping to the constraint graph and will ignore floats.
 
 .. option::  -c, --compile
 

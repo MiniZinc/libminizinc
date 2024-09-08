@@ -268,7 +268,7 @@ void MznSolver::printHelp(std::ostream& os, const std::string& selectedSolver) {
      << "  --verbose-compilation\n    Print progress/log statements for compilation." << std::endl
      << "  -s, --statistics\n    Print statistics." << std::endl
      << "  --compiler-statistics\n    Print statistics for compilation." << std::endl
-     << "  --feature-vector\n    Extracts and prints feature vector of the FlatZinc model.\n    Can be configured to constraint constraint graph dimensions and ignore floats.\n    By default uses \"-1f\" which will not apply padding / cropping to the constraint graph and will ignore floats." << std::endl
+     << "  --feature-vector, --feature-vector <(\\d*v)?(\\d*c)?(f)?>\n    Extracts and prints feature vector of the FlatZinc model.\n    Allows configuration of the feature-extraction process.\n    [0-9]+v limits variables in constraint graph, [0-9]+c limits constraints in constraint graph, f ignores floats.\n    By default uses \"0v0cf\" which will not apply padding / cropping to the constraint graph and will ignore floats." << std::endl
      << "  -c, --compile\n    Compile only (do not run solver)." << std::endl
      << "  --config-dirs\n    Output configuration directories." << std::endl
      << "  --param-file <file>\n    Load parameters from the given JSON file." << std::endl

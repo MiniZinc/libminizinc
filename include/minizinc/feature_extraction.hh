@@ -4,7 +4,7 @@
 
 namespace MiniZinc {
 
-static std::regex featureVectorOptionsRegex("(\\d*)(f?)", std::regex_constants::ECMAScript |
+static std::regex featureVectorOptionsRegex("(\\d*v)?(\\d*c)?(f)?", std::regex_constants::ECMAScript |
                                                               std::regex_constants::icase);
 
 /// Feature Vector of the FlatModel
@@ -68,8 +68,8 @@ struct FlatModelFeatureVector {
         {}
   
   struct Options {
-    int dimensions = -1;       // for making uniform dimensions of the constraint graph. -1 will not //TODO impl
-                               // apply padding / cropping
+    int vDimensions = -1;       // for making uniform dimensions of the constraint graph. -1 will not apply padding / cropping
+    int cDimensions = -1;
     bool ignoreFloats = true;  // decide whether to ignore floats in all features
 
     static Options parse_from_string(const std::string input) {
@@ -77,10 +77,22 @@ struct FlatModelFeatureVector {
 
       std::smatch match;
       std::regex_match(input, match, featureVectorOptionsRegex);
-      std::string number = match[1].str();
+      std::string vars_limit = match[1].str();
+      std::string constraints_limit = match[2].str();
 
-      opts.dimensions = atoi(number.c_str());
-      opts.ignoreFloats = match[2].matched;
+      auto vpos = vars_limit.find_last_of('v');
+      auto cpos = constraints_limit.find_last_of('c');
+
+      if (vpos != std::string::npos) {
+        vars_limit = vars_limit.erase(vpos, std::string::npos);
+      }
+      if (cpos != std::string::npos) {
+        constraints_limit = constraints_limit.erase(cpos, std::string::npos);
+      }
+
+      opts.vDimensions = atoi(vars_limit.c_str());
+      opts.cDimensions = atoi(constraints_limit.c_str());
+      opts.ignoreFloats = match[3].matched;
 
       return opts;
     }

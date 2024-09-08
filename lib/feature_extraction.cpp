@@ -102,12 +102,17 @@ class BipartiteGraph {
 private:
   int uSize;  // Number of vertices in set U
   int vSize;  // Number of vertices in set V
-  bool autoResize;
+  bool uAutoResize;
+  bool vAutoResize;
   std::vector<std::vector<int>> adjacencyMatrix;  // Adjacency matrix
 public:
   // Constructor to initialize the graph with sizes of U and V
   BipartiteGraph(int uSize, int vSize)
-      : uSize(uSize), vSize(vSize),autoResize(uSize == 0 && vSize == 0), adjacencyMatrix(uSize, std::vector<int>(vSize, 0)) {}
+      : uSize(uSize),
+        vSize(vSize),
+        uAutoResize(uSize == 0),
+        vAutoResize(vSize == 0),
+        adjacencyMatrix(uSize, std::vector<int>(vSize, 0)) {}
 
   // Method to add an edge between vertex u in U and vertex v in V
   // We can not use iterators to determine the num of vardecls and constraints 
@@ -118,11 +123,11 @@ public:
     }
 
     // Resize the matrix if necessary & allowed
-    if (autoResize && u >= uSize) {
+    if (uAutoResize && u >= uSize) {
       adjacencyMatrix.resize(u + 1, std::vector<int>(vSize, 0));
       uSize = u + 1;
     }
-    if (autoResize && v >= vSize) {
+    if (vAutoResize && v >= vSize) {
       for (auto& row : adjacencyMatrix) {
         row.resize(v + 1, 0);
       }
@@ -267,8 +272,8 @@ FlatModelFeatureVector extract_feature_vector(Env& m, FlatModelFeatureVector::Op
   int constraintIdCounter = 0;
   BipartiteGraph constraintGraph = BipartiteGraph(0, 0);
 
-  if (o.dimensions > 0) {
-    constraintGraph = BipartiteGraph(o.dimensions, o.dimensions);
+  if (o.vDimensions > 0 || o.cDimensions > 0) {
+    constraintGraph = BipartiteGraph(o.vDimensions, o.cDimensions);
   }
 
   for (auto& i : *flat) {
