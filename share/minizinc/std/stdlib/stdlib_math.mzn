@@ -345,6 +345,18 @@ function var float: min(var float: x, var float: y) :: promise_total :: promise_
 /** @group stdlib.builtins.arithmetic Return minimum of elements in array \a x */
 function     $T: min(array[$U] of     par $T: x) :: promise_commutative;
 
+/** @group stdlib.builtins.arithmetic Return minimum of elements in \a x that are not absent.
+    Result is undefined when all values are absent. */
+function $T: min(array[$X] of opt $T: x) :: promise_commutative =
+  let {
+    constraint exists (xi in x) (occurs(xi));
+  } in min (xi in x) (xi default infinity);
+
+/** @group stdlib.builtins.arithmetic Return maximum of elements in \a x that are not absent.
+    Result is absent when all values are absent. */
+function opt $T: min_weak(array[$X] of opt $T: x) :: promise_commutative =
+  if exists (xi in x) (occurs(xi)) then min(x) else <> endif;
+
 /** @group stdlib.builtins.arithmetic Return minimum of elements in array \a x */
 function var int: min(array[$U] of var int: x) :: promise_commutative =
   let {
@@ -396,12 +408,6 @@ function $$E: min(set of $$E: x);
 function     $T: max(    $T: x,     $T: y) :: promise_commutative;
 
 /** @group stdlib.builtins.arithmetic Return maximum of \a x and \a y */
-function var int: max(var int: x, var int: y) :: promise_total :: promise_commutative =
-  let { var max(lb(x),lb(y))..max(ub(x),ub(y)): m ::is_defined_var;
-        constraint int_max(x,y,m) ::defines_var(m);
-  } in m;
-
-/** @group stdlib.builtins.arithmetic Return maximum of \a x and \a y */
 function var float: max(var float: x, var float: y) :: promise_total :: promise_commutative =
   if has_bounds(x) /\ has_bounds(y) then
   let { var max(lb(x),lb(y))..max(ub(x),ub(y)): m ::is_defined_var;
@@ -415,6 +421,24 @@ function var float: max(var float: x, var float: y) :: promise_total :: promise_
 
 /** @group stdlib.builtins.arithmetic Return maximum of elements in array \a x */
 function     $T: max(array[$U] of     $T: x) :: promise_commutative;
+
+/** @group stdlib.builtins.arithmetic Return maximum of \a x and \a y */
+function var int: max(var int: x, var int: y) :: promise_total :: promise_commutative =
+  let { var max(lb(x),lb(y))..max(ub(x),ub(y)): m ::is_defined_var;
+        constraint int_max(x,y,m) ::defines_var(m);
+  } in m;
+
+/** @group stdlib.builtins.arithmetic Return maximum of elements in \a x that are not absent.
+    Result is undefined when all values are absent. */
+function $T: max(array[$X] of opt $T: x) :: promise_commutative =
+  let {
+    constraint exists (xi in x) (occurs(xi));
+  } in max (xi in x) (xi default -infinity);
+
+/** @group stdlib.builtins.arithmetic Return maximum of elements in \a x that are not absent.
+    Result is absent when all values are absent. */
+function opt $T: max_weak(array[$X] of opt $T: x) :: promise_commutative =
+  if exists (xi in x) (occurs(xi)) then max(x) else <> endif;
 
 /** @group stdlib.builtins.arithmetic Return maximum of elements in array \a x */
 function var int: max(array[$U] of var int: x) :: promise_commutative =
