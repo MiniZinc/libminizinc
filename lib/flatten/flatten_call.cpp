@@ -1128,7 +1128,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
       }
     call_nonreif:
       if (decl->e() == nullptr ||
-          (Expression::type(cr()).isPar() && !Expression::type(cr()).isAnn() &&
+          (Expression::type(cr()).isPar() && Expression::type(cr()).bt() != Type::BT_ANN &&
            !Expression::type(decl->e()).cv())) {
         Call* cr_c = Expression::cast<Call>(cr());
         /// All builtins are total
@@ -1137,7 +1137,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
           argt[i] = Expression::type(cr_c->arg(i));
         }
         Type callt = decl->rtype(env, argt, nullptr, false);
-        if (callt.isPar() && callt.bt() != Type::BT_ANN) {
+        if (callt.isPar()) {
           GCLock lock;
           if (callt.isbool() && !callt.isOpt()) {
             ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
