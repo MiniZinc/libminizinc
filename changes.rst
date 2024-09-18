@@ -21,6 +21,8 @@ Changes:
 -  Automatically detect SCIP 9.0.1 and potential future versions on Windows.
 -  The interface to the HiGHS solver now requires version 1.7.2 or later.
 -  Enforce strict enum type correctness for set operations (:bugref:`828`).
+-  Add ``par opt`` overloads of ``min`` / ``max`` and return enum values instead
+   of coercing to integers.
 
 Bug fixes:
 ^^^^^^^^^^
@@ -50,6 +52,7 @@ Bug fixes:
    enum index set is empty.
 -  Fix crash due to incorrect handling of negated constraints matching entry in
    CSE map (:bugref:`832`).
+-  Fix type error due to missing overload of ``max`` (:bugref:`848`).
 
 .. _v2.8.5:
 
