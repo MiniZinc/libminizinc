@@ -594,7 +594,8 @@ Expression* JSONParser::parseObject(istream& is, TypeInst* ti) {
       }
       return parseSet(is, ti);
     }
-    if (ti != nullptr && (ti->isEnum() || ti->type().bt() == Type::BT_UNKNOWN) &&
+    if (ti != nullptr &&
+        (ti->isEnum() || ti->type().bt() == Type::BT_INT || ti->type().bt() == Type::BT_UNKNOWN) &&
         (key == "e" || key == "i" || key == "c")) {
       if (!fields.empty()) {
         throw JSONError(_env, errLocation(), "invalid enum object");
