@@ -5653,6 +5653,9 @@ void oldflatzinc(Env& e) {
   class Cmp {
   public:
     bool operator()(Item* i, Item* j) {
+      if (i == j) {
+        return false;
+      }
       if (i->iid() == Item::II_FUN || j->iid() == Item::II_FUN) {
         if (i->iid() == j->iid()) {
           return false;
