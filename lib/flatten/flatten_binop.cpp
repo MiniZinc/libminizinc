@@ -1962,7 +1962,7 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
     }
       // fall through
     case BOT_IMPL: {
-      if (ctx.b == C_ROOT && r == env.constants.varTrue && Expression::type(boe0).isPar()) {
+      if (ctx.b == C_ROOT && r == env.constants.varTrue && Expression::type(boe0).isPar() && !Expression::type(boe0).isOpt()) {
         bool bval;
         {
           GCLock lock;
@@ -1982,7 +1982,7 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
         }
         break;
       }
-      if (ctx.b == C_ROOT && r == env.constants.varTrue && Expression::type(boe1).isPar()) {
+      if (ctx.b == C_ROOT && r == env.constants.varTrue && Expression::type(boe1).isPar() && !Expression::type(boe0).isOpt()) {
         bool bval;
         {
           GCLock lock;

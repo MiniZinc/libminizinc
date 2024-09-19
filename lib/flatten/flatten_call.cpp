@@ -531,7 +531,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
       if (cid == env.constants.ids.mzn_reverse_map_var) {
         env.inReverseMapVar = true;
       }
-      if (cid == env.constants.ids.clause && Expression::isa<ArrayLit>(c->arg(0)) &&
+      if (decl->e() == nullptr && cid == env.constants.ids.clause && Expression::isa<ArrayLit>(c->arg(0)) &&
           Expression::isa<ArrayLit>(c->arg(1))) {
         Ctx argctx = nctx;
 
@@ -581,7 +581,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
               positives.emplace_back(notBoe0);
             } else {
               EE res = flat_exp(env, argctx, negative(), nullptr, env.constants.varTrue);
-              if (Expression::type(res.r()).isPar()) {
+              if (Expression::type(res.r()).isPar() && !Expression::type(res.r()).isOpt()) {
                 if (eval_bool(env, res.r())) {
                   // this element is irrelevant
                 } else {
