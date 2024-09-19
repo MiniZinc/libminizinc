@@ -60,6 +60,7 @@ Bug fixes:
 -  Fix crash when concatenating arrays of annotations (:bugref:`842`).
 -  Ensure DZN output of enum index sets of multidimensional arrays is properly
    quoted.
+-  Fix parsing of enumerated values in JSON for integer parameters.
 
 .. _v2.8.5:
 
