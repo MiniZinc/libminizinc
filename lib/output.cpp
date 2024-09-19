@@ -1252,7 +1252,7 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
 
               auto* toStringMin =
                   Call::a(Location().introduce(), toString,
-                          {IntLit::a(idxMin), e.constants.literalFalse, e.constants.literalFalse});
+                          {IntLit::a(idxMin), e.constants.literalTrue, e.constants.literalFalse});
               toStringMin->type(Type::parstring());
               FunctionI* toStringMin_fi = e.model->matchFn(e, toStringMin, false);
               toStringMin->decl(toStringMin_fi);
@@ -1263,7 +1263,7 @@ Expression* create_dzn_output(EnvI& e, bool includeObjective, bool includeOutput
 
               auto* toStringMax =
                   Call::a(Location().introduce(), toString,
-                          {IntLit::a(idxMax), e.constants.literalFalse, e.constants.literalFalse});
+                          {IntLit::a(idxMax), e.constants.literalTrue, e.constants.literalFalse});
               toStringMax->type(Type::parstring());
               FunctionI* toStringMax_fi = e.model->matchFn(e, toStringMax, false);
               toStringMax->decl(toStringMax_fi);

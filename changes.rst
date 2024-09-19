@@ -58,6 +58,8 @@ Bug fixes:
 -  Fix par evaluation of boolean operators where an operand is an array access
    into an empty array literal.
 -  Fix crash when concatenating arrays of annotations (:bugref:`842`).
+-  Ensure DZN output of enum index sets of multidimensional arrays is properly
+   quoted.
 
 .. _v2.8.5:
 
