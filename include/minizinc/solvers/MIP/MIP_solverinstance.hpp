@@ -536,7 +536,9 @@ void MIPSolverinstance<MIPWrapper>::printStatistics() {
     StatisticsStream ss(solns2out->getOutput(), solns2out->opt.flagEncapsulateJSON);
     ss.precision(12, false);
     if (_solveType != SolveI::SolveType::ST_SAT) {
-      ss.add("objective", _mipWrapper->getObjValue());
+      if (!std::isinf(_mipWrapper->getObjValue())) {
+        ss.add("objective", _mipWrapper->getObjValue());
+      }
       if (!std::isnan(_mipWrapper->getBestBound())) {
         ss.add("objectiveBound", _mipWrapper->getBestBound());
       }

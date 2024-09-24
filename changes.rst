@@ -69,6 +69,8 @@ Bug fixes:
 -  Fix the coercions of index set for empty array literals to allow any of the
    index sets to be empty (:bugref:`844`).
 -  Fix behaviour of overloading for the ``++`` operator (:bugref:`840`).
+-  Avoid outputting ``objective`` statistic when value is invalid for MIP
+   solvers (:bugref:`841`).
 
 .. _v2.8.5:
 
