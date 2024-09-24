@@ -531,8 +531,8 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
       if (cid == env.constants.ids.mzn_reverse_map_var) {
         env.inReverseMapVar = true;
       }
-      if (decl->e() == nullptr && cid == env.constants.ids.clause && Expression::isa<ArrayLit>(c->arg(0)) &&
-          Expression::isa<ArrayLit>(c->arg(1))) {
+      if (decl->e() == nullptr && cid == env.constants.ids.clause &&
+          Expression::isa<ArrayLit>(c->arg(0)) && Expression::isa<ArrayLit>(c->arg(1))) {
         Ctx argctx = nctx;
 
         // handle negated args first, try to make them positive

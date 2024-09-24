@@ -61,6 +61,8 @@ Bug fixes:
 -  Ensure DZN output of enum index sets of multidimensional arrays is properly
    quoted.
 -  Fix parsing of enumerated values in JSON for integer parameters.
+-  Fix crash during flattening of clauses with opt bool arguments
+   (:bugref:`845`).
 
 .. _v2.8.5:
 
