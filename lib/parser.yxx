@@ -1206,7 +1206,7 @@ set_expr :
         }
       }
     | MZN_MINUS MZN_MAX_NEGATIVE_INTEGER_LITERAL %prec MZN_NOT
-      { $$ = IntLit::a(-9223372036854775808); }
+      { $$ = IntLit::a(-9223372036854775808ull); }
 
 ///
 
@@ -1387,7 +1387,7 @@ expr :
         }
       }
     | MZN_MINUS MZN_MAX_NEGATIVE_INTEGER_LITERAL %prec MZN_NOT
-      { $$ = IntLit::a(-9223372036854775808); }
+      { $$ = IntLit::a(-9223372036854775808ull); }
 
 
 expr_atom_head :

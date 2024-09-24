@@ -5122,7 +5122,7 @@ yyreduce:
     break;
 
   case 178: /* set_expr: "-" "9223372036854775808"  */
-      { (yyval.expression) = IntLit::a(-9223372036854775808); }
+      { (yyval.expression) = IntLit::a(-9223372036854775808ull); }
     break;
 
   case 180: /* expr: expr "::" annotation_expr  */
@@ -5420,7 +5420,7 @@ yyreduce:
     break;
 
   case 240: /* expr: "-" "9223372036854775808"  */
-      { (yyval.expression) = IntLit::a(-9223372036854775808); }
+      { (yyval.expression) = IntLit::a(-9223372036854775808ull); }
     break;
 
   case 241: /* expr_atom_head: expr_atom_head_nonstring  */
