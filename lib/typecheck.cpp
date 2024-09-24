@@ -3067,17 +3067,30 @@ public:
               vd->ti()->setRanges(ranges);
             }
           }
+        } else if (vet.isbot() && vet.dim() != 0 && vdt.dim() > 1 &&
+                   (vet.dim() == 1 || vet.dim() == vdt.dim()) &&
+                   Expression::isa<ArrayLit>(vd->e()) &&
+                   Expression::cast<ArrayLit>(vd->e())->empty()) {
+          // Replace [] with empty array literal of the correct dimensions
+          GCLock lock;
+          std::vector<Expression*> args;
+          args.reserve(vdt.dim() + 1);
+          for (auto* r : vd->ti()->ranges()) {
+            if (r->domain() != nullptr) {
+              args.push_back(r->domain());
+              r->domain(nullptr);
+            } else {
+              args.push_back(new SetLit(Location().introduce(), IntSetVal::a()));
+            }
+          }
+          args.push_back(vd->e());
+          const auto& ident = _env.constants.ids.arrayNd(vd->type().dim());
+          auto* call = Call::a(Location().introduce(), ident, args);
+          call->type(vd->type());
+          call->decl(_env.model->matchFn(_env, call, false));
+          vd->e(call);
         } else if (!_env.isSubtype(vet, vdt, true)) {
-          if (vet == Type::bot(1) && Expression::isa<ArrayLit>(vd->e()) &&
-              Expression::cast<ArrayLit>(vd->e())->empty() && vdt.dim() != 0) {
-            // Replace [] with empty array literal of the correct dimensions
-            GCLock lock;
-            std::vector<std::pair<int, int>> dims(vdt.dim(), {1, 0});
-            auto* emptyAl =
-                new ArrayLit(Expression::loc(vd->e()), std::vector<Expression*>(), dims);
-            emptyAl->type(vd->type());
-            vd->e(emptyAl);
-          } else if (vd->ti()->isEnum() && vet == Type::parsetint()) {
+          if (vd->ti()->isEnum() && vet == Type::parsetint()) {
             // let's ignore this for now (TODO: add an annotation to make sure only
             // compiler-generated ones are accepted)
           } else {
