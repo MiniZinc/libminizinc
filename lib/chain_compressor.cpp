@@ -103,16 +103,14 @@ bool ImpCompressor::trackItem(Item* i) {
             storeItem(vdi->e(), i);
           } else {
             GCLock lock;
-            auto cid = EnvI::halfReifyId(c->id());
             std::vector<Type> args;
             args.reserve(c->argCount() + 1);
             for (int j = 0; j < c->argCount(); ++j) {
               args.push_back(Expression::type(c->arg(j)));
             }
             args.push_back(Type::varbool());
-            FunctionI* decl = _env.model->matchFn(_env, cid, args, false);
-
-            if (decl != nullptr) {
+            FunctionI* decl = _env.model->matchReification(_env, c->id(), args, true, false);
+            if (decl != nullptr && decl->id() == EnvI::halfReifyId(c->id())) {
               storeItem(vdi->e(), i);
               return true;
             }

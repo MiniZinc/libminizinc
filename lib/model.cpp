@@ -10,9 +10,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/astexception.hh>
+#include <minizinc/aststring.hh>
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/model.hh>
 #include <minizinc/prettyprinter.hh>
+#include <minizinc/type.hh>
 
 #include <algorithm>
 #include <unordered_set>
@@ -843,6 +845,46 @@ int match_idx(std::vector<FunctionI*>& matched, Expression*& botarg, EnvI& env,
   return -1;
 }
 }  // namespace
+
+FunctionI* Model::matchReification(EnvI& env, const ASTString& id,
+                                   const std::vector<Expression*>& args, bool canHalfReify,
+                                   bool strictEnums) const {
+  std::vector<Type> t;
+  t.reserve(args.size());
+  for (const auto* e : args) {
+    t.push_back(Expression::type(e));
+  }
+  return this->matchReification(env, id, t, canHalfReify, strictEnums);
+}
+
+FunctionI* Model::matchReification(EnvI& env, const ASTString& id, const std::vector<Type>& t,
+                                   bool canHalfReify, bool strictEnums) const {
+  ASTString reif_id = env.reifyId(id);
+  FunctionI* reif_decl = this->matchFn(env, reif_id, t, strictEnums);
+  if (canHalfReify) {
+    ASTString imp_id = EnvI::halfReifyId(id);
+    if (FunctionI* imp_decl = this->matchFn(env, imp_id, t, strictEnums)) {
+      // If reification failed, then go with half-reification immediately
+      if (reif_decl == nullptr) {
+        return imp_decl;
+      }
+
+      // If there is both a reification and a half-reification, then make sure the half-reification
+      // is at least as specific as the reification. That is the parameters of the matching
+      // half-reification declaration should be the same or subtypes of the matching reification.
+      assert(imp_decl->paramCount() == reif_decl->paramCount());
+      for (size_t i = 0; i < imp_decl->paramCount(); ++i) {
+        Type a = imp_decl->param(i)->ti()->type();
+        Type b = reif_decl->param(i)->ti()->type();
+        if (!env.isSubtype(a, b, strictEnums)) {
+          return reif_decl;
+        }
+      }
+      return imp_decl;
+    }
+  }
+  return reif_decl;
+}
 
 FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Expression*>& args,
                           bool strictEnums) const {

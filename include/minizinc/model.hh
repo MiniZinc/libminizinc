@@ -169,6 +169,18 @@ public:
   void fixFnMap();
   /// Check whether all functions in function map can be flattened or evaluated
   void checkFnValid(EnvI& env, std::vector<TypeError>& errors);
+  /// Return the function declaration for the reficiation for a function with identifier \a id that
+  /// will take arguments \a args.
+  ///
+  /// WARNING: \a args is expected to include the reification argument.
+  FunctionI* matchReification(EnvI& env, const ASTString& id, const std::vector<Expression*>& args,
+                              bool canHalfReify, bool strictEnums) const;
+  /// Return the function declaration for the reficiation for a function with identifier \a id that
+  /// will take the argument types \a t.
+  ///
+  /// WARNING: \a t is expected to include the type of the reification variable.
+  FunctionI* matchReification(EnvI& env, const ASTString& id, const std::vector<Type>& t,
+                              bool canHalfReify, bool strictEnums) const;
   /// Return function declaration for \a id matching \a args
   FunctionI* matchFn(EnvI& env, const ASTString& id, const std::vector<Expression*>& args,
                      bool strictEnums) const;

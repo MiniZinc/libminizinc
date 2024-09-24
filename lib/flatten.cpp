@@ -3323,14 +3323,10 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
           } else if (c->id() == env.constants.ids.forall) {
             nid = env.constants.ids.bool_reif.array_and;
           } else if (vd->type().isbool()) {
-            if (env.fopts.enableHalfReification &&
-                Expression::ann(vd).contains(env.constants.ctx.pos)) {
-              nid = EnvI::halfReifyId(c->id());
-              nc_decl = env.model->matchFn(env, nid, args, false);
-            }
-            if (nc_decl == nullptr) {
-              nid = env.reifyId(c->id());
-            }
+            bool canHalfReify = env.fopts.enableHalfReification &&
+                                Expression::ann(vd).contains(env.constants.ctx.pos);
+            nc_decl = env.model->matchReification(env, c->id(), args, canHalfReify, false);
+            nid = (nc_decl != nullptr) ? nc_decl->id() : env.reifyId(c->id());
           }
           nc = Call::a(Expression::loc(c).introduce(), nid, args);
           if (nc_decl == nullptr) {
@@ -4723,18 +4719,12 @@ void flatten(Env& e, FlatteningOptions opt) {
                     args[i] = c->arg(i);
                   }
                   args.push_back(vd->id());
-                  ASTString cid = c->id();
-                  FunctionI* decl(nullptr);
+                  FunctionI* decl = nullptr;
                   if (c->type().isbool() && vd->type().isbool()) {
-                    if (env.fopts.enableHalfReification &&
-                        Expression::ann(vd).contains(env.constants.ctx.pos)) {
-                      cid = EnvI::halfReifyId(c->id());
-                      decl = env.model->matchFn(env, cid, args, false);
-                    }
-                    if (decl == nullptr) {
-                      cid = env.reifyId(c->id());
-                      decl = env.model->matchFn(env, cid, args, false);
-                    }
+                    bool canHalfReify = env.fopts.enableHalfReification &&
+                                        Expression::ann(vd).contains(env.constants.ctx.pos);
+                    decl = env.model->matchReification(env, c->id(), args, canHalfReify, false);
+
                     if (decl == nullptr) {
                       std::ostringstream ss;
                       ss << "'" << demonomorphise_identifier(c->id())
@@ -4743,11 +4733,11 @@ void flatten(Env& e, FlatteningOptions opt) {
                       throw FlatteningError(env, Expression::loc(c), ss.str());
                     }
                   } else {
-                    decl = env.model->matchFn(env, cid, args, false);
+                    decl = env.model->matchFn(env, c->id(), args, false);
                   }
                   if ((decl != nullptr) && (decl->e() != nullptr)) {
                     add_path_annotation(env, decl->e());
-                    nc = Call::a(Expression::loc(c).introduce(), cid, args);
+                    nc = Call::a(Expression::loc(c).introduce(), decl->id(), args);
                     nc->type(Type::varbool());
                     nc->decl(decl);
                   }
@@ -5136,14 +5126,10 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd,
           } else if (c->id() == env.constants.ids.forall) {
             cid = env.constants.ids.bool_reif.array_and;
           } else {
-            if (env.fopts.enableHalfReification &&
-                Expression::ann(vd).contains(env.constants.ctx.pos)) {
-              cid = EnvI::halfReifyId(c->id());
-              decl = env.model->matchFn(env, cid, args, false);
-            }
-            if (decl == nullptr) {
-              cid = env.reifyId(c->id());
-            }
+            bool canHalfReify = env.fopts.enableHalfReification &&
+                                Expression::ann(vd).contains(env.constants.ctx.pos);
+            decl = env.model->matchReification(env, c->id(), args, canHalfReify, false);
+            cid = (decl != nullptr) ? decl->id() : env.reifyId(c->id());
           }
           Call* nc = Call::a(Expression::loc(c).introduce(), cid, args);
           nc->type(c->type());

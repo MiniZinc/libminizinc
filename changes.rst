@@ -23,6 +23,8 @@ Changes:
 -  Enforce strict enum type correctness for set operations (:bugref:`828`).
 -  Add ``par opt`` overloads of ``min`` / ``max`` and return enum values instead
    of coercing to integers.
+-  Use half-reification only when there isn't a reification that is a more 
+   specific match.
 
 Bug fixes:
 ^^^^^^^^^^

@@ -1066,16 +1066,8 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
         }
         argtypes.push_back(Type::varbool());
         GCLock lock;
-        ASTString r_cid;
-        FunctionI* reif_decl(nullptr);
-        if (env.fopts.enableHalfReification && ctx.b == C_POS) {
-          r_cid = EnvI::halfReifyId(cid);
-          reif_decl = env.model->matchFn(env, r_cid, argtypes, false);
-        }
-        if (reif_decl == nullptr) {
-          r_cid = env.reifyId(cid);
-          reif_decl = env.model->matchFn(env, r_cid, argtypes, false);
-        }
+        FunctionI* reif_decl = env.model->matchReification(
+            env, cid, argtypes, env.fopts.enableHalfReification && ctx.b == C_POS, false);
         if ((reif_decl != nullptr) && (reif_decl->e() != nullptr)) {
           add_path_annotation(env, reif_decl->e());
           VarDecl* reif_b;
@@ -1095,7 +1087,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
                   args_e[i] = args[i]();
                 }
                 args_e[args.size()] = env.constants.literalFalse;
-                Call* reif_call = Call::a(Location().introduce(), r_cid, args_e);
+                Call* reif_call = Call::a(Location().introduce(), reif_decl->id(), args_e);
                 reif_call->type(Type::varbool());
                 reif_call->decl(reif_decl);
                 flat_exp(env, Ctx(), reif_call, env.constants.varTrue, env.constants.varTrue);
