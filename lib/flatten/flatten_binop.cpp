@@ -2206,6 +2206,9 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
       ctx0.i = ctx1.i = C_MIX;
       return flatten_bool_op(env, ctx, ctx0, ctx1, e, r, b, isBuiltin, bo, bot, doubleNeg);
     case BOT_PLUSPLUS: {
+      if (Expression::type(boe0).dim() > 1 || Expression::type(boe1).dim() > 1) {
+        return flatten_bool_op(env, ctx, ctx0, ctx1, e, r, b, isBuiltin, bo, bot, doubleNeg);
+      }
       std::vector<EE> ee(2);
       EE eev = flat_exp(env, ctx, boe0, nullptr, ctx.partialityVar(env));
       ee[0] = eev;

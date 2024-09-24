@@ -7,6 +7,87 @@
 /** @group stdlib.builtins.array Return the concatenation of arrays \a x and \a y */
 function array[int] of any $T: '++'(array[int] of any $T: x, array[int] of any $T: y) ::mzn_internal_representation;
 
+/** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
+
+The index sets of the arrays must match except for the first index set.
+ */
+function array[int, $$E] of any $T: '++'(array[int, $$E] of any $T: x, array[int, $$E] of any $T: y) =
+  assert(
+    index_sets_agree(x[1..0, ..], y[1..0, ..]),
+    "Column index sets must match",
+    array2d(
+      1..card(index_set_1of2(x)) + card(index_set_1of2(y)),
+      index_set_2of2(x),
+      array1d(x) ++ array1d(y)
+    )
+  );
+/** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
+
+The index sets of the arrays must match except for the first index set.
+ */
+function array[int, $$E, $$F] of any $T: '++'(array[int, $$E, $$F] of any $T: x, array[int, $$E, $$F] of any $T: y) =
+  assert(
+    index_sets_agree(x[1..0, .., ..], y[1..0, .., ..]),
+    "Index sets other than the first index set must match",
+    array3d(
+      1..card(index_set_1of3(x)) + card(index_set_1of3(y)),
+      index_set_2of3(x),
+      index_set_3of3(x),
+      array1d(x) ++ array1d(y)
+    )
+  );
+/** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
+
+The index sets of the arrays must match except for the first index set.
+ */
+function array[int, $$E, $$F, $$G] of any $T: '++'(array[int, $$E, $$F, $$G] of any $T: x, array[int, $$E, $$F, $$G] of any $T: y) =
+  assert(
+    index_sets_agree(x[1..0, .., .., ..], y[1..0, .., .., ..]),
+    "Index sets other than the first index set must match",
+    array4d(
+      1..card(index_set_1of4(x)) + card(index_set_1of4(y)),
+      index_set_2of4(x),
+      index_set_3of4(x),
+      index_set_4of4(x),
+      array1d(x) ++ array1d(y)
+    )
+  );
+/** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
+
+The index sets of the arrays must match except for the first index set.
+ */
+function array[int, $$E, $$F, $$G, $$H] of any $T: '++'(array[int, $$E, $$F, $$G, $$H] of any $T: x, array[int, $$E, $$F, $$G, $$H] of any $T: y) =
+  assert(
+    index_sets_agree(x[1..0, .., .., .., ..], y[1..0, .., .., .., ..]),
+    "Index sets other than the first index set must match",
+    array5d(
+      1..card(index_set_1of5(x)) + card(index_set_1of5(y)),
+      index_set_2of5(x),
+      index_set_3of5(x),
+      index_set_4of5(x),
+      index_set_5of5(x),
+      array1d(x) ++ array1d(y)
+    )
+  );
+/** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
+
+The index sets of the arrays must match except for the first index set.
+ */
+function array[int, $$E, $$F, $$G, $$H, $$I] of any $T: '++'(array[int, $$E, $$F, $$G, $$H, $$I] of any $T: x, array[int, $$E, $$F, $$G, $$H, $$I] of any $T: y) =
+  assert(
+    index_sets_agree(x[1..0, .., .., .., .., ..], y[1..0, .., .., .., .., ..]),
+    "Index sets other than the first index set must match",
+    array6d(
+      1..card(index_set_1of6(x)) + card(index_set_1of6(y)),
+      index_set_2of6(x),
+      index_set_3of6(x),
+      index_set_4of6(x),
+      index_set_5of6(x),
+      index_set_6of6(x),
+      array1d(x) ++ array1d(y)
+    )
+  );
+
 /** @group stdlib.builtins.array Return the length of array \a x
 
   Note that the length is defined as the number of elements in the

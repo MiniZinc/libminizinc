@@ -25,6 +25,7 @@ Changes:
    of coercing to integers.
 -  Use half-reification only when there isn't a reification that is a more 
    specific match.
+-  Add multidimensional overloads for the ``++`` array concatenation operator.
 
 Bug fixes:
 ^^^^^^^^^^
@@ -67,6 +68,7 @@ Bug fixes:
    (:bugref:`845`).
 -  Fix the coercions of index set for empty array literals to allow any of the
    index sets to be empty (:bugref:`844`).
+-  Fix behaviour of overloading for the ``++`` operator (:bugref:`840`).
 
 .. _v2.8.5:
 

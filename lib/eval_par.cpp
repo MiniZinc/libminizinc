@@ -782,6 +782,9 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
     }
     case Expression::E_BINOP: {
       auto* bo = Expression::cast<BinOp>(e);
+      if ((bo->decl() != nullptr) && (bo->decl()->e() != nullptr)) {
+        return eval_call<EvalArrayLitCopy, BinOp>(env, bo);
+      }
       if (bo->op() == BOT_PLUSPLUS) {
         ArrayLit* al0 = eval_array_lit(env, bo->lhs());
         ArrayLit* al1 = eval_array_lit(env, bo->rhs());
@@ -796,9 +799,6 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
         ret->flat(al0->flat() && al1->flat());
         ret->type(Expression::type(e));
         return ret;
-      }
-      if ((bo->decl() != nullptr) && (bo->decl()->e() != nullptr)) {
-        return eval_call<EvalArrayLitCopy, BinOp>(env, bo);
       }
       throw EvalError(env, Expression::loc(e), "not an array expression", bo->opToString());
 
