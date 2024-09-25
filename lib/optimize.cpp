@@ -297,8 +297,9 @@ void unify(EnvI& env, std::vector<VarDecl*>& deletedVarDecls, Id* id0, Id* id1) 
       assert(env.outputFlatVarOccurrences.find(id1->decl()) != -1);
       VarDecl* id1_output =
           (*env.output)[env.outputFlatVarOccurrences.find(id1->decl())]->cast<VarDeclI>()->e();
-      if (id0_output->e() == nullptr) {
-        id0_output->e(id1_output->id());
+      auto* decl = Expression::cast<VarDecl>(follow_id_to_decl(id0_output));
+      if (decl->e() == nullptr) {
+        decl->e(id1_output->id());
       }
     }
 

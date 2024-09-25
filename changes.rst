@@ -71,6 +71,8 @@ Bug fixes:
 -  Fix behaviour of overloading for the ``++`` operator (:bugref:`840`).
 -  Avoid outputting ``objective`` statistic when value is invalid for MIP
    solvers (:bugref:`841`).
+-  Fix bug in unification of aliased output variables when using ``-O2`` and
+   above.
 
 .. _v2.8.5:
 
