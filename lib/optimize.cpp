@@ -312,7 +312,8 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
                               std::deque<unsigned int>& vardeclQueue,
                               std::deque<Item*>& constraintQueue, std::vector<Item*>& toRemove,
                               std::vector<VarDecl*>& deletedVarDecls,
-                              std::unordered_map<Expression*, int>& nonFixedLiteralCount);
+                              std::unordered_map<Expression*, int>& nonFixedLiteralCount,
+                              std::vector<std::pair<Id*, Item*>>& toUnsubscribe);
 
 bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarDecls,
                          std::deque<Item*>& constraintQueue,
@@ -881,6 +882,7 @@ void optimize(Env& env, bool chain_compression) {
 
           // Handle all boolean constraints that involve this variable
           if (it.first) {
+            std::vector<std::pair<Id*, Item*>> toUnsubscribe;
             for (auto* item : *it.second) {
               if (item->removed()) {
                 continue;
@@ -895,7 +897,14 @@ void optimize(Env& env, bool chain_compression) {
               }
               // Simplify the constraint *item (which depends on this variable)
               simplify_bool_constraint(envi, item, vd, remove, vardeclQueue, constraintQueue,
-                                       toRemove, deletedVarDecls, nonFixedLiteralCount);
+                                       toRemove, deletedVarDecls, nonFixedLiteralCount,
+                                       toUnsubscribe);
+            }
+            for (auto& unsubscribe : toUnsubscribe) {
+              auto it = envi.varOccurrences.itemMap.find(unsubscribe.first);
+              if (it.first) {
+                it.second->erase(unsubscribe.second);
+              }
             }
           }
           // Actually remove all items that have become unnecessary in the step above
@@ -1744,7 +1753,8 @@ int bool_state(EnvI& env, Expression* e) {
   return static_cast<int>(id->decl()->ti()->domain() == env.constants.literalTrue);
 }
 
-int decrement_non_fixed_vars(std::unordered_map<Expression*, int>& nonFixedLiteralCount, Call* c) {
+int decrement_non_fixed_vars(EnvI& env, Item* ii, std::vector<std::pair<Id*, Item*>>& toUnsubscribe,
+                             std::unordered_map<Expression*, int>& nonFixedLiteralCount, Call* c) {
   auto it = nonFixedLiteralCount.find(c);
   if (it == nonFixedLiteralCount.end()) {
     int nonFixedVars = 0;
@@ -1756,6 +1766,9 @@ int decrement_non_fixed_vars(std::unordered_map<Expression*, int>& nonFixedLiter
             (Expression::isa<Id>((*al)[j]) &&
              Expression::cast<Id>((*al)[j])->decl()->ti()->domain() != nullptr)) {
           nonFixedVars--;
+          if (Expression::isa<Id>((*al)[j])) {
+            toUnsubscribe.emplace_back(Expression::cast<Id>((*al)[j]), ii);
+          }
         }
       }
     }
@@ -1770,7 +1783,8 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
                               std::deque<unsigned int>& vardeclQueue,
                               std::deque<Item*>& constraintQueue, std::vector<Item*>& toRemove,
                               std::vector<VarDecl*>& deletedVarDecls,
-                              std::unordered_map<Expression*, int>& nonFixedLiteralCount) {
+                              std::unordered_map<Expression*, int>& nonFixedLiteralCount,
+                              std::vector<std::pair<Id*, Item*>>& toUnsubscribe) {
   if (ii->isa<SolveI>()) {
     remove = false;
     return;
@@ -1930,7 +1944,7 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
         }
       }
     } else {
-      int nonfixed = decrement_non_fixed_vars(nonFixedLiteralCount, c);
+      int nonfixed = decrement_non_fixed_vars(env, ii, toUnsubscribe, nonFixedLiteralCount, c);
       bool isConjunction = (c->id() == env.constants.ids.forall);
       assert(nonfixed >= 0);
       if (nonfixed <= 1) {
