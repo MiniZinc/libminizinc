@@ -2218,6 +2218,7 @@ public:
                   if (comp->in(i) != nullptr) {
                     declIndex = i;
                     decl = comp->decl(i, 0);
+                    break;
                   }
                 }
               }

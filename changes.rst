@@ -78,6 +78,9 @@ Bug fixes:
    solvers (:bugref:`841`).
 -  Fix bug in unification of aliased output variables when using ``-O2`` and
    above.
+-  Fix bug that caused where clauses to be removed from comprehensions.
+-  Fix optimisation of Boolean constraints that could sometimes trigger an assertion
+   failure in debug builds (:bugref:`843`).
 
 .. _v2.8.5:
 
