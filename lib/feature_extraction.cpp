@@ -292,9 +292,13 @@ FlatModelFeatureVector extract_feature_vector(Env& m, FlatModelFeatureVector::Op
           } else if (t.isint()) {
             features.n_int_vars++;
             Expression* domain = vdi->e()->ti()->domain();
-            IntSetVal* bounds = eval_intset(m.envi(), domain);
-            Domain d = Domain::from(*bounds);
-            domains.push_back(d);
+            if (domain != nullptr) {
+              IntSetVal* bounds = eval_intset(m.envi(), domain);
+              Domain d = Domain::from(*bounds);
+              domains.push_back(d);
+            } else {
+              //std::cout << "Nullptr Domain in FeatureExtraction - is this a bug?" << std::endl; //TODO discuss with maintainers
+            }
           } else if (t.isbool()) {
             features.n_bool_vars++;
             Domain d = Domain({{0, 1}});
