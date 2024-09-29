@@ -4,6 +4,14 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
+.. _unreleased:
+
+Bug fixes:
+^^^^^^^^^^
+-  Fix bug that caused where clauses to be removed from comprehensions.
+-  Fix optimisation of Boolean constraints that could sometimes trigger an
+   assertion failure in debug builds (:bugref:`843`).
+
 .. _v2.8.6:
 
 `Version 2.8.6 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.8.6>`__
@@ -78,9 +86,6 @@ Bug fixes:
    solvers (:bugref:`841`).
 -  Fix bug in unification of aliased output variables when using ``-O2`` and
    above.
--  Fix bug that caused where clauses to be removed from comprehensions.
--  Fix optimisation of Boolean constraints that could sometimes trigger an assertion
-   failure in debug builds (:bugref:`843`).
 
 .. _v2.8.5:
 
