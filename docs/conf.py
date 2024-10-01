@@ -272,7 +272,7 @@ latex_elements = {
     #
     "papersize": "a4paper",
     "fontpkg": r"""
-\IfFontExistsTF{XCharter}{\setmainfont{XCharter}}{\setmainfont{Charter}}
+\setmainfont{Noto Serif}
 \setsansfont{Lato}
 \setmonofont{Inconsolata}
 """,
