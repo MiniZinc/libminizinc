@@ -4,7 +4,12 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
-.. _unreleased:
+.. _v2.8.7:
+
+`Version 2.8.7 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.8.7>`__
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(released 2 October 2024)
 
 Bug fixes:
 ^^^^^^^^^^
