@@ -11,15 +11,16 @@
 
 #pragma once
 
-#ifdef HAS_GECODE
-
 // Regex Parser Requirements
 #include <minizinc/astmap.hh>
 #include <minizinc/aststring.hh>
+#include <minizinc/config.hh>
 #include <minizinc/values.hh>
 
 #include <memory>
 #include <set>
+
+#ifdef HAS_GECODE
 
 #include <gecode/minimodel.hh>
 #undef ERROR

@@ -9,6 +9,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+%code requires {
+#include <minizinc/ast.hh>
+}
+
 %define api.pure
 
 %parse-param {void *parm}
@@ -31,6 +35,8 @@ namespace MiniZinc{ class ParserLocation; }
 
 #define YYMAXDEPTH 10000
 #define YYINITDEPTH 10000
+
+#include <vector>
 
 #include <minizinc/parser.hh>
 #include <minizinc/file_utils.hh>
