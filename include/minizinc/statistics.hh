@@ -11,8 +11,11 @@
 
 #pragma once
 
+#include <minizinc/ast.hh>
+#include <minizinc/prettyprinter.hh>
 #include <minizinc/warning.hh>
 
+#include <ios>
 #include <iterator>
 #include <memory>
 
