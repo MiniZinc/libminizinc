@@ -15,6 +15,8 @@
 #include <utility>
 #include <vector>
 
+#include <minizinc/flatten_internal.hh>
+
 namespace MiniZinc {
 
 class Model;

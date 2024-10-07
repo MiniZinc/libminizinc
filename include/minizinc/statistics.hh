@@ -12,6 +12,10 @@
 #pragma once
 
 #include <iterator>
+#include <ios>
+
+#include <minizinc/ast.hh>
+#include <minizinc/prettyprinter.hh>
 
 namespace MiniZinc {
 
