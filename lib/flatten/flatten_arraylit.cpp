@@ -23,14 +23,23 @@ EE flatten_arraylit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDec
     ret.r = bind(env, Ctx(), r, al);
   } else {
     VarDecl* rr = r == env.constants.varIgnore ? env.constants.varTrue : nullptr;
+    bool c_root = ctx.b == C_ROOT && r != env.constants.varIgnore;
     Ctx eval_ctx = ctx;
-    if (ctx.b == C_ROOT && r != env.constants.varIgnore &&
-        Expression::type(e).bt() == Type::BT_BOOL && Expression::type(e).st() == Type::ST_PLAIN) {
-      eval_ctx.b = C_MIX;
-    }
     std::vector<EE> elems_ee(al->size());
-    for (unsigned int i = al->size(); (i--) != 0U;) {
-      elems_ee[i] = flat_exp(env, eval_ctx, (*al)[i], rr, ctx.partialityVar(env));
+    if (al->type().istuple() || al->type().isrecord()) {
+      // Struct types have to check if any element is boolean to ensure correct context
+      for (unsigned int i = al->size(); (i--) != 0U;) {
+        eval_ctx.b = c_root && Expression::type((*al)[i]).isbool() ? C_MIX : C_ROOT;
+        elems_ee[i] = flat_exp(env, eval_ctx, (*al)[i], rr, ctx.partialityVar(env));
+      }
+    } else {
+      if (c_root && Expression::type(e).bt() == Type::BT_BOOL &&
+          Expression::type(e).st() == Type::ST_PLAIN) {
+        eval_ctx.b = C_MIX;
+      }
+      for (unsigned int i = al->size(); (i--) != 0U;) {
+        elems_ee[i] = flat_exp(env, eval_ctx, (*al)[i], rr, ctx.partialityVar(env));
+      }
     }
     std::vector<Expression*> elems(elems_ee.size());
     for (auto i = static_cast<unsigned int>(elems.size()); (i--) != 0U;) {
