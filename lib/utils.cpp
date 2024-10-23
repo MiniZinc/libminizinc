@@ -159,7 +159,10 @@ void OverflowHandler::handle(unsigned int code) {
 struct OverflowHandler::OverflowInfo {
   const char* stackTop;
   EnvI* env;
-  OverflowInfo(const char** argv) : stackTop(reinterpret_cast<const char*>(*argv)), env(nullptr) {}
+  void* altstack;
+  OverflowInfo(const char** argv, void* altstack0)
+      : stackTop(reinterpret_cast<const char*>(*argv)), env(nullptr), altstack(altstack0) {}
+  ~OverflowInfo() { ::free(altstack); }
   static void overflow(int sig, siginfo_t* info, void* context);
 };
 
@@ -230,9 +233,9 @@ void OverflowHandler::OverflowInfo::overflow(int sig, siginfo_t* info, void* con
 }
 
 void OverflowHandler::install(const char** argv) {
-  _ofi = std::unique_ptr<OverflowInfo>(new OverflowInfo(argv));
+  _ofi = std::unique_ptr<OverflowInfo>(new OverflowInfo(argv, ::malloc(SIGSTKSZ)));
   stack_t stk;
-  stk.ss_sp = ::malloc(SIGSTKSZ);
+  stk.ss_sp = _ofi->altstack;
   if (stk.ss_sp != nullptr) {
     stk.ss_size = SIGSTKSZ;
     stk.ss_flags = 0;
@@ -245,7 +248,6 @@ void OverflowHandler::install(const char** argv) {
       sigaction(SIGSEGV, &act, nullptr);
       return;
     }
-    ::free(stk.ss_sp);
   }
   _ofi.reset();
   std::cerr << "WARNING: Cannot initialise stack overflow handler." << std::endl;

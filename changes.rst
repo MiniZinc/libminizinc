@@ -10,6 +10,7 @@ Bug fixes:
 ^^^^^^^^^^
 -  Fix boolean context when flattening tuple or record literals containing
    booleans.
+-  Fix memory leak in overflow handler.
 
 .. _v2.8.7:
 
