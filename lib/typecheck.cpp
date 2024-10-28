@@ -2488,7 +2488,7 @@ public:
       }
     }
     if (ite->elseExpr() == nullptr) {
-      // this is an "if <cond> then <expr> endif" so the <expr> must be bool
+      // this is an "if <cond> then <expr> endif" so the <expr> must be bool, string, ann or array
       if (tret.isbool()) {
         ite->elseExpr(_env.constants.literalTrue);
       } else if (tret.isstring()) {

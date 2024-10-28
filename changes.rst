@@ -6,6 +6,11 @@ https://github.com/MiniZinc/libminizinc/issues.
 
 .. _unreleased:
 
+Changes:
+^^^^^^^^
+-  Add support for `elseif` in `if then elseif endif` expressions without an
+   `else` branch.
+
 Bug fixes:
 ^^^^^^^^^^
 -  Fix boolean context when flattening tuple or record literals containing
