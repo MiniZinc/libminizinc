@@ -247,7 +247,7 @@
 <ann-literal> ::= <ident> [ "(" <expr> "," ... ")" ]
 
 % If-then-else expressions
-<if-then-else-expr> ::= "if" <expr> "then" <expr> [ "elseif" <expr> "then" <expr> ]* "else" <expr> "endif"
+<if-then-else-expr> ::= "if" <expr> "then" <expr> [ "elseif" <expr> "then" <expr> ]* [ "else" <expr> ] "endif"
 
 % Call expressions
 <call-expr> ::= <ident-or-quoted-op> [ "(" <expr> "," ... ")" ]

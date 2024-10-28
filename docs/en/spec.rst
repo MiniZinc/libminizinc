@@ -2135,6 +2135,14 @@ and then only one of the :mzn:`then` and :mzn:`else` branches are evaluated,
 depending on whether the condition succeeded or failed. 
 This is not the case if it is :mzn:`var bool`.
 
+The :mzn:`else` branch is optional if the type of the :mzn:`then` branches is
+:mzn:`bool`, :mzn:`string`, :mzn:`ann` or an :mzn:`array` type. In that case,
+the :mzn:`else` branch is taken to be the default value of the type:
+
+- :mzn:`false` for :mzn:`bool`
+- :mzn:`""` for :mzn:`string`
+- :mzn:`empty_annotation` for :mzn:`ann`
+- :mzn:`[]` for :mzn:`array`
 
 .. _spec-let-expressions:
 
