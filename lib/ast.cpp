@@ -934,8 +934,10 @@ void Call::args(const std::vector<Expression*>& args) {
     for (unsigned int i = 0; i < argCount(); i++) {
       arg(i, args[i]);
     }
+  } else if (argCount() == 0 && args.size() == 1) {
+    _secondaryId = CK_UNARY;
+    arg(0, args[0]);
   } else {
-    assert(static_cast<CallKind>(_secondaryId) != CK_NULLARY);
     switch (static_cast<CallKind>(_secondaryId)) {
       case CK_BINARY:
         _secondaryId = CK_NARY_2;

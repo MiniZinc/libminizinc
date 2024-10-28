@@ -556,7 +556,7 @@ inline Call* Call::a(const Location& loc, const ASTString& id0,
                      const std::vector<Expression*>& args) {
   switch (args.size()) {
     case 0:
-      return new Call0(loc, id0);
+      return new Call1(loc, id0, {});
     case 1:
       return new Call1(loc, id0, args);
     case 2:

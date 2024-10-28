@@ -292,7 +292,7 @@ protected:
       case Call::eid:
         switch (static_cast<Call::CallKind>(n->_secondaryId)) {
           case Call::CK_NULLARY:
-            ns = sizeof(Call0);
+            ns = sizeof(Call1);
             break;
           case Call::CK_BINARY:
           case Call::CK_NARY_2:

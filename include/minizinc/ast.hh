@@ -1330,12 +1330,6 @@ public:
   CallArgs args() const { return CallArgs(this); }
 };
 
-class Call0 : public Call {
-  friend class Call;
-
-protected:
-  Call0(const Location& loc, const ASTString& id) : Call(loc, id, {}) {}
-};
 class Call1 : public Call {
   friend class Call;
 
