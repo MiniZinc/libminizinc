@@ -19,6 +19,7 @@ Bug fixes:
 -  Fix crash when calling ``outputJSON`` (:bugref:`856`).
 -  Fix incorrect typing of arrays in assignment generators (:bugref:`858`).
 -  Fix bug in flattening of implication with optional right hand side.
+-  Fix flattening of ``exists`` and ``forall`` with optional arguments.
 
 .. _v2.8.7:
 
