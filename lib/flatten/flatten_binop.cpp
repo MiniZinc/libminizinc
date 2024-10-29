@@ -1984,7 +1984,7 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
         break;
       }
       if (ctx.b == C_ROOT && r == env.constants.varTrue && Expression::type(boe1).isPar() &&
-          !Expression::type(boe0).isOpt()) {
+          !Expression::type(boe1).isOpt()) {
         bool bval;
         {
           GCLock lock;
