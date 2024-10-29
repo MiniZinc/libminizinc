@@ -17,6 +17,7 @@ Bug fixes:
    booleans.
 -  Fix memory leak in overflow handler.
 -  Fix crash when calling ``outputJSON`` (:bugref:`856`).
+-  Fix incorrect typing of arrays in assignment generators (:bugref:`858`).
 
 .. _v2.8.7:
 

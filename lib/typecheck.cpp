@@ -2351,6 +2351,16 @@ public:
       const Type& ty_where = Expression::type(c->where(gen_i));
       c->decl(gen_i, 0)->type(ty_where);
       c->decl(gen_i, 0)->ti()->type(ty_where);
+      if (ty_where.structBT()) {
+        c->decl(gen_i, 0)->ti()->setStructDomain(_env, ty_where);
+      } else if (ty_where.dim() > 0) {
+        GCLock lock;
+        std::vector<TypeInst*> ranges(ty_where.dim());
+        for (int i = 0; i < ty_where.dim(); i++) {
+          ranges[i] = new TypeInst(Location().introduce(), Type::parint());
+        }
+        c->decl(gen_i, 0)->ti()->setRanges(ranges);
+      }
     } else {
       const Type& ty_in = Expression::type(g_in);
       if (ty_in != Type::varsetint() && ty_in != Type::parsetint() && ty_in.dim() == 0) {
