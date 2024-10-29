@@ -8,7 +8,7 @@ https://github.com/MiniZinc/libminizinc/issues.
 
 Changes:
 ^^^^^^^^
--  Add support for `elseif` in `if then elseif endif` expressions without an
+-  Add support for ``elseif`` in ``if then elseif endif`` expressions without an
    `else` branch.
 
 Bug fixes:
@@ -16,6 +16,7 @@ Bug fixes:
 -  Fix boolean context when flattening tuple or record literals containing
    booleans.
 -  Fix memory leak in overflow handler.
+-  Fix crash when calling ``outputJSON`` (:bugref:`856`).
 
 .. _v2.8.7:
 
