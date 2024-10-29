@@ -10,6 +10,8 @@ Changes:
 ^^^^^^^^
 -  Add support for ``elseif`` in ``if then elseif endif`` expressions without an
    `else` branch.
+-  Make ``sort`` functions return array of enum when input is array of
+   enum (:bugref:`853`).
 
 Bug fixes:
 ^^^^^^^^^^

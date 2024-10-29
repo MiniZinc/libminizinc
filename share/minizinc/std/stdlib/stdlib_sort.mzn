@@ -17,7 +17,7 @@ The sort is stable, i.e. if \a y[\p i] = \a y[\p j] with \p i < \p j, then
 function array[$$E] of any $T: sort_by(array[$$E] of any $T: x, array[$$E] of float: y);
 
 /** @group stdlib.sort Return values from array \a x sorted in non-decreasing order */
-function array[$$E] of int: sort(array[$$E] of int: x);
+function array[$$E] of $$F: sort(array[$$E] of $$F: x);
 /** @group stdlib.sort Return values from array \a x sorted in non-decreasing order */
 function array[$$E] of float: sort(array[$$E] of float: x);
 /** @group stdlib.sort Return values from array \a x sorted in non-decreasing order */
