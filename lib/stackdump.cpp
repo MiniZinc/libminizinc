@@ -50,10 +50,8 @@ void StackDump::print(std::ostream& os) const {
   long long int curloc_l = -1;
 
   for (auto it = _stack.rbegin(); it != _stack.rend(); it++) {
-    EnvI::CallStackEntry entry(it->first, it->second);
-
-    Expression* e = entry.e;
-    bool isCompIter = entry.tag;
+    Expression* e = it->first;
+    bool isCompIter = it->second;
     ASTString newloc_f = Expression::loc(e).filename();
     if (Expression::loc(e).isIntroduced()) {
       continue;
@@ -179,10 +177,8 @@ void StackDump::json(std::ostream& os) const {
   os << "[";
 
   for (auto it = _stack.rbegin(); it != _stack.rend(); it++) {
-    EnvI::CallStackEntry entry(it->first, it->second);
-
-    Expression* e = entry.e;
-    bool isCompIter = entry.tag;
+    Expression* e = it->first;
+    bool isCompIter = it->second;
     ASTString newloc_f = Expression::loc(e).filename();
     if (Expression::loc(e).isIntroduced()) {
       continue;

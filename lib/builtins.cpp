@@ -2200,6 +2200,17 @@ bool b_in_symmetry_breaking_constraint(EnvI& env, Call* /*call*/) {
   return env.inSymmetryBreakingConstraint > 0;
 }
 
+bool b_mzn_in_root_context(EnvI& env, Call* call) {
+  // Find context of enclosing call
+  for (unsigned int i = env.callStack.size(); (i--) != 0U;) {
+    if (env.callStack[i].e != nullptr && Expression::isa<Call>(env.callStack[i].e) &&
+        Expression::cast<Call>(env.callStack[i].e)->id() != env.constants.ids.mzn_in_root_context) {
+      return env.callStack[i].ctx.b == C_ROOT;
+    }
+  }
+  throw EvalError(env, Expression::loc(call), "mzn_in_root_context used outside of predicate");
+}
+
 Expression* b_set2array(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
   GCLock lock;
@@ -3930,6 +3941,10 @@ void register_builtins(Env& e) {
        b_mzn_symmetry_breaking_constraint);
     rb(env, m, env.constants.ids.mzn_redundant_constraint, {Type::varbool()},
        b_mzn_redundant_constraint);
+  }
+  {
+    rb(env, m, env.constants.ids.mzn_in_root_context, {}, b_mzn_in_root_context);
+    rb(env, m, env.constants.ids.mzn_in_root_context, {Type::vartop()}, b_mzn_in_root_context);
   }
   {
     std::vector<Type> t(1);

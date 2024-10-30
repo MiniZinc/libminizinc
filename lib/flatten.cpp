@@ -1894,7 +1894,8 @@ std::string EnvI::show(IntSetVal* isv, unsigned int enumId) {
   return show(sl);
 }
 
-CallStackItem::CallStackItem(EnvI& env0, Expression* e) : _env(env0), _csiType(CSI_NONE) {
+CallStackItem::CallStackItem(EnvI& env0, Expression* e, const Ctx& ctx)
+    : _env(env0), _csiType(CSI_NONE) {
   assert(Expression::type(e).bt() != Type::BT_UNKNOWN);
 
   env0.checkCancel();
@@ -1917,12 +1918,12 @@ CallStackItem::CallStackItem(EnvI& env0, Expression* e) : _env(env0), _csiType(C
   } else {
     _maybePartial = false;
   }
-  _env.callStack.emplace_back(e, false);
+  _env.callStack.emplace_back(e, false, ctx);
   _env.maxCallStack = std::max(_env.maxCallStack, static_cast<unsigned int>(_env.callStack.size()));
 }
 CallStackItem::CallStackItem(EnvI& env0, Id* ident, IntVal i)
     : _env(env0), _csiType(CSI_NONE), _maybePartial(false) {
-  _env.callStack.emplace_back(ident, true);
+  _env.callStack.emplace_back(ident, true, Ctx());
   _env.maxCallStack = std::max(_env.maxCallStack, static_cast<unsigned int>(_env.callStack.size()));
 }
 void CallStackItem::replace() { _env.callStack.back().replaced = true; }
@@ -3827,9 +3828,6 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
       }
       case Expression::E_CALL: {
         Call* c = Expression::cast<Call>(e);
-        if (c->id() == env.constants.ids.mzn_in_root_context) {
-          return env.constants.boollit(ctx.b == C_ROOT);
-        }
         if (ctx.b == C_ROOT && (c->decl()->e() != nullptr) &&
             Expression::isa<BoolLit>(c->decl()->e())) {
           bool allBool = true;

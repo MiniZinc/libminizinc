@@ -295,15 +295,10 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
   for (int i = 0; i < ite->size() && !foundTrueBranch; i++) {
     bool cond = true;
     EE e_if;
-    if (Expression::isa<Call>(ite->ifExpr(i)) &&
-        Expression::cast<Call>(ite->ifExpr(i))->id() == env.constants.ids.mzn_in_root_context) {
-      e_if = EE(env.constants.boollit(ctx.b == C_ROOT), env.constants.literalTrue);
-    } else {
-      Ctx cmix_not_negated;
-      cmix_not_negated.b = C_MIX;
-      cmix_not_negated.i = C_MIX;
-      e_if = flat_exp(env, cmix_not_negated, ite->ifExpr(i), nullptr, env.constants.varTrue);
-    }
+    Ctx cmix_not_negated;
+    cmix_not_negated.b = C_MIX;
+    cmix_not_negated.i = C_MIX;
+    e_if = flat_exp(env, cmix_not_negated, ite->ifExpr(i), nullptr, env.constants.varTrue);
     if (Expression::type(e_if.r()) == Type::parbool()) {
       {
         GCLock lock;

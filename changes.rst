@@ -12,6 +12,8 @@ Changes:
    `else` branch.
 -  Make ``sort`` functions return array of enum when input is array of
    enum (:bugref:`853`).
+-  Make the ``mzn_in_root_context`` function (which is used only internally and
+   should not be used in user models) more flexible in where it can be called.
 
 Bug fixes:
 ^^^^^^^^^^

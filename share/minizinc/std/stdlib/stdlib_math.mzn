@@ -185,7 +185,7 @@ function     int: 'div'(int: x,int: y);
 
 /** @group stdlib.builtins.arithmetic Return result of integer division \a x / \a y */
 function var int: 'div'(var int: x,var int: y) =
-  if mzn_in_root_context(y) then div_t(x,y)
+  if mzn_in_root_context() then div_t(x,y)
   elseif not (0 in dom(y)) then div_t(x,y)
   else let { constraint y != 0 } in div_mt(x,y) endif;
 
@@ -220,7 +220,7 @@ function     int: 'mod'(int: x,int: y);
 
 /** @group stdlib.builtins.arithmetic Return remainder of integer division \a x % \a y */
 function var int: 'mod'(var int: x,var int: y) =
-  if mzn_in_root_context(y) then mod_t(x,y)
+  if mzn_in_root_context() then mod_t(x,y)
   elseif not (0 in dom(y)) then mod_t(x,y)
   else let { constraint y != 0 } in mod_mt(x,y) endif;
 
@@ -239,7 +239,7 @@ function opt int: 'mod'(opt int: x, opt int: y) =
 function     float: '/'(    float: x,    float: y);
 /** @group stdlib.builtins.arithmetic Return result of floating point division \a x / \a y */
 function var float: '/'(var float: x,var float: y) =
-  if mzn_in_root_context(y) then fldiv_t(x,y)
+  if mzn_in_root_context() then fldiv_t(x,y)
   elseif lb(y) > 0.0 \/ ub(y) < 0.0 then fldiv_t(x,y)
   else let { constraint y != 0.0 } in fldiv_mt(x,y) endif;
 /** @group stdlib.builtins.arithmetic Optional division. Return absent if \a x is absent, \a x if \a y is absent,
@@ -593,7 +593,7 @@ function var opt float: abs(var opt float: x) =
 function float: sqrt(float: x);
 /** @group stdlib.builtins.arithmetic Return \(\sqrt{\a x}\) */
 function var float: sqrt(var float: x) =
-  if mzn_in_root_context(x) then sqrt_t(x)
+  if mzn_in_root_context() then sqrt_t(x)
   elseif lb(x) >= 0.0 then sqrt_t(x)
   else let { constraint x >= 0.0; } in sqrt_mt(x)
   endif;
@@ -621,7 +621,7 @@ function var int: pow(var int: x, int: y) =
     bool2int(x = 1)
   elseif y >= 0 \/ not (0 in dom(x)) then
     pow_fixed_t(x, y)
-  elseif mzn_in_root_context(x) then
+  elseif mzn_in_root_context() then
     pow_fixed_t(x, y)
   else 
     let {
@@ -641,7 +641,7 @@ function var int: pow(var int: x, var int: y) =
     else
       pow_t(x, y)
     endif
-  elseif mzn_in_root_context(x) then
+  elseif mzn_in_root_context() then
     pow_t(x, y)
   else
     let {

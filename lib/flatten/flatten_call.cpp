@@ -365,7 +365,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
   Ctx nctx = ctx;
   nctx.neg = false;
   ASTString cid = c->id();
-  CallStackItem _csi(env, e);
+  CallStackItem _csi(env, e, input_ctx);
 
   if (cid == env.constants.ids.bool2int && c->type().dim() == 0) {
     if (ctx.neg) {

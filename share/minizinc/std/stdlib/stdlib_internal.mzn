@@ -174,6 +174,8 @@ predicate xorall_reif(array[$T] of var bool: b, var bool: c) =
 function var int: lin_exp(array[int] of int, array[int] of var int, int) ::mzn_internal_representation;
 function var float: lin_exp(array[int] of float, array[int] of var float, float) ::mzn_internal_representation;
 
+test mzn_in_root_context() ::mzn_internal_representation;
+
 test mzn_in_root_context(var $T) ::mzn_internal_representation;
 
 test mzn_in_redundant_constraint();
@@ -244,7 +246,7 @@ function var int: element_mt(var int: idx1, var int: idx2, array[int,int] of var
   } in r;
 
 function var int: element(var int: idx, array[int] of var int: x) =
-  if length(x) = 0 \/ mzn_in_root_context(idx) then let {
+  if length(x) = 0 \/ mzn_in_root_context() then let {
     constraint idx in index_set(x)
   } in element_t(idx,x)
   elseif (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
@@ -258,7 +260,7 @@ function var int: element(var int: idx1, var int: idx2,
                           array[int,int] of var int: x) =
   let {
     int: dim = card(index_set_2of2(x));
-  } in if length(x) = 0 \/ mzn_in_root_context(idx1) then
+  } in if length(x) = 0 \/ mzn_in_root_context() then
          let {
            constraint idx1 in index_set_1of2(x);
            constraint idx2 in index_set_2of2(x);
@@ -284,7 +286,7 @@ function var int: element(var int: idx1, var int: idx2, var int: idx3,
     int: min = min(index_set_1of3(x))*dim2*dim3+
                min(index_set_2of3(x))*dim3+
                min(index_set_3of3(x))-1;
-  } in if length(x) = 0 \/ mzn_in_root_context(idx1) then
+  } in if length(x) = 0 \/ mzn_in_root_context() then
        let {
          constraint idx1 in index_set_1of3(x);
          constraint idx2 in index_set_2of3(x);
@@ -314,7 +316,7 @@ function var int: element(var int: idx1, var int: idx2, var int: idx3, var int: 
                min(index_set_2of4(x))*dim3*dim4+
                min(index_set_3of4(x))*dim4+
                min(index_set_4of4(x))-1;
-  } in if length(x) = 0 \/ mzn_in_root_context(idx1) then
+  } in if length(x) = 0 \/ mzn_in_root_context() then
          let {
            constraint idx1 in index_set_1of4(x);
            constraint idx2 in index_set_2of4(x);
@@ -349,7 +351,7 @@ function var int: element(var int: idx1, var int: idx2, var int: idx3, var int: 
                min(index_set_3of5(x))*dim4*dim5+
                min(index_set_4of5(x))*dim5+
                min(index_set_5of5(x))-1;
-  } in if length(x) = 0 \/ mzn_in_root_context(idx1) then
+  } in if length(x) = 0 \/ mzn_in_root_context() then
          let {
            constraint idx1 in index_set_1of5(x);
            constraint idx2 in index_set_2of5(x);
@@ -389,7 +391,7 @@ function var int: element(var int: idx1, var int: idx2, var int: idx3, var int: 
                min(index_set_4of6(x))*dim5*dim6+
                min(index_set_5of6(x))*dim6+
                min(index_set_6of6(x))-1;
-  } in if length(x) = 0 \/ mzn_in_root_context(idx1) then
+  } in if length(x) = 0 \/ mzn_in_root_context() then
          let {
            constraint idx1 in index_set_1of6(x);
            constraint idx2 in index_set_2of6(x);
@@ -765,7 +767,7 @@ function var float: element_mt(var int: idx1, var int: idx2, array[int,int] of v
   } in r;
 
 function var float: element(var int: idx, array[int] of var float: x) =
-  if length(x) = 0 \/ mzn_in_root_context(idx) then let {
+  if length(x) = 0 \/ mzn_in_root_context() then let {
     constraint idx in index_set(x)
   } in element_t(idx,x)
   elseif (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
@@ -779,7 +781,7 @@ function var float: element(var int: idx1, var int: idx2,
                             array[int,int] of var float: x) =
   let {
     int: dim = card(index_set_2of2(x));
-  } in if length(x) = 0 \/ mzn_in_root_context(idx1) then
+  } in if length(x) = 0 \/ mzn_in_root_context() then
          let {
            constraint idx1 in index_set_1of2(x);
            constraint idx2 in index_set_2of2(x);
@@ -805,7 +807,7 @@ function var float: element(var int: idx1, var int: idx2, var int: idx3,
     int: min = min(index_set_1of3(x))*dim2*dim3+
                min(index_set_2of3(x))*dim3+
                min(index_set_3of3(x))-1;
-  } in if length(x) = 0 \/ mzn_in_root_context(idx1) then let {
+  } in if length(x) = 0 \/ mzn_in_root_context() then let {
          constraint idx1 in index_set_1of3(x);
          constraint idx2 in index_set_2of3(x);
          constraint idx3 in index_set_3of3(x);
@@ -834,7 +836,7 @@ function var float: element(var int: idx1, var int: idx2, var int: idx3, var int
                min(index_set_2of4(x))*dim3*dim4+
                min(index_set_3of4(x))*dim4+
                min(index_set_4of4(x))-1;
-  } in if length(x) = 0 \/ mzn_in_root_context(idx1) then let {
+  } in if length(x) = 0 \/ mzn_in_root_context() then let {
          constraint idx1 in index_set_1of4(x);
          constraint idx2 in index_set_2of4(x);
          constraint idx3 in index_set_3of4(x);
@@ -868,7 +870,7 @@ function var float: element(var int: idx1, var int: idx2, var int: idx3, var int
                min(index_set_3of5(x))*dim4*dim5+
                min(index_set_4of5(x))*dim5+
                min(index_set_5of5(x))-1;
-  } in if length(x) = 0 \/ mzn_in_root_context(idx1) then
+  } in if length(x) = 0 \/ mzn_in_root_context() then
          let {
            constraint idx1 in index_set_1of5(x);
            constraint idx2 in index_set_2of5(x);
@@ -908,7 +910,7 @@ function var float: element(var int: idx1, var int: idx2, var int: idx3, var int
                min(index_set_4of6(x))*dim5*dim6+
                min(index_set_5of6(x))*dim6+
                min(index_set_6of6(x))-1;
-  } in if length(x) = 0 \/ mzn_in_root_context(idx1) then
+  } in if length(x) = 0 \/ mzn_in_root_context() then
          let {
            constraint idx1 in index_set_1of6(x);
            constraint idx2 in index_set_2of6(x);
@@ -1284,7 +1286,7 @@ function var set of int: element_mt(var int: idx1, var int: idx2, array[int,int]
   } in r;
 
 function var set of int: element(var int: idx, array[int] of var set of int: x) =
-  if length(x) = 0 \/ mzn_in_root_context(idx) then let {
+  if length(x) = 0 \/ mzn_in_root_context() then let {
     constraint idx in index_set(x)
   } in element_t(idx,x)
   elseif (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
@@ -1298,7 +1300,7 @@ function var set of int: element(var int: idx1, var int: idx2,
                                  array[int,int] of var set of int: x) =
   let {
     int: dim = card(index_set_2of2(x));
-  } in if length(x) = 0 \/ mzn_in_root_context(idx1) then
+  } in if length(x) = 0 \/ mzn_in_root_context() then
          let {
            constraint idx1 in index_set_1of2(x);
            constraint idx2 in index_set_2of2(x);
@@ -1324,7 +1326,7 @@ function var set of int: element(var int: idx1, var int: idx2, var int: idx3,
     int: min = min(index_set_1of3(x))*dim2*dim3+
                min(index_set_2of3(x))*dim3+
                min(index_set_3of3(x))-1;
-  } in if length(x) = 0 \/ mzn_in_root_context(idx1) then
+  } in if length(x) = 0 \/ mzn_in_root_context() then
        let {
          constraint idx1 in index_set_1of3(x);
          constraint idx2 in index_set_2of3(x);
@@ -1354,7 +1356,7 @@ function var set of int: element(var int: idx1, var int: idx2, var int: idx3, va
                min(index_set_2of4(x))*dim3*dim4+
                min(index_set_3of4(x))*dim4+
                min(index_set_4of4(x))-1;
-  } in if length(x) = 0 \/ mzn_in_root_context(idx1) then
+  } in if length(x) = 0 \/ mzn_in_root_context() then
        let {
          constraint idx1 in index_set_1of4(x);
          constraint idx2 in index_set_2of4(x);
@@ -1389,7 +1391,7 @@ function var set of int: element(var int: idx1, var int: idx2, var int: idx3, va
                min(index_set_3of5(x))*dim4*dim5+
                min(index_set_4of5(x))*dim5+
                min(index_set_5of5(x))-1;
-  } in if length(x) = 0 \/ mzn_in_root_context(idx1) then
+  } in if length(x) = 0 \/ mzn_in_root_context() then
          let {
            constraint idx1 in index_set_1of5(x);
            constraint idx2 in index_set_2of5(x);
@@ -1429,7 +1431,7 @@ function var set of int: element(var int: idx1, var int: idx2, var int: idx3, va
                min(index_set_4of6(x))*dim5*dim6+
                min(index_set_5of6(x))*dim6+
                min(index_set_6of6(x))-1;
-  } in if length(x) = 0 \/ mzn_in_root_context(idx1) then
+  } in if length(x) = 0 \/ mzn_in_root_context() then
          let {
            constraint idx1 in index_set_1of6(x);
            constraint idx2 in index_set_2of6(x);
@@ -1496,7 +1498,7 @@ function var bool: element_mt(var int: idx1, var int: idx2, array[int,int] of va
 
 function var bool: element(var int: idx, array[int] of var bool: x) =
   length(x) > 0 /\
-  if mzn_in_root_context(idx) then
+  if mzn_in_root_context() then
     idx in index_set(x) /\ element_t(idx,x)
   elseif (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
     element_t(idx,x)
@@ -1507,7 +1509,7 @@ function var bool: element(var int: idx1, var int: idx2,
                            array[int,int] of var bool: x) =
   let {
     int: dim = card(index_set_2of2(x));
-  } in length(x) > 0 /\ if mzn_in_root_context(idx1) then
+  } in length(x) > 0 /\ if mzn_in_root_context() then
          let {
            constraint idx1 in index_set_1of2(x);
            constraint idx2 in index_set_2of2(x);
@@ -1534,7 +1536,7 @@ function var bool: element(var int: idx1, var int: idx2, var int: idx3,
     int: min = min(index_set_1of3(x))*dim2*dim3+
                min(index_set_2of3(x))*dim3+
                min(index_set_3of3(x))-1;
-  } in if mzn_in_root_context(idx1) then
+  } in if mzn_in_root_context() then
        let {
          constraint idx1 in index_set_1of3(x);
          constraint idx2 in index_set_2of3(x);
@@ -1565,7 +1567,7 @@ function var bool: element(var int: idx1, var int: idx2, var int: idx3, var int:
                min(index_set_2of4(x))*dim3*dim4+
                min(index_set_3of4(x))*dim4+
                min(index_set_4of4(x))-1;
-  } in if length(x) = 0 \/ mzn_in_root_context(idx1) then
+  } in if length(x) = 0 \/ mzn_in_root_context() then
        let {
          constraint idx1 in index_set_1of4(x);
          constraint idx2 in index_set_2of4(x);
@@ -1601,7 +1603,7 @@ function var bool: element(var int: idx1, var int: idx2, var int: idx3, var int:
                min(index_set_3of5(x))*dim4*dim5+
                min(index_set_4of5(x))*dim5+
                min(index_set_5of5(x))-1;
-  } in if length(x) = 0 \/ mzn_in_root_context(idx1) then
+  } in if length(x) = 0 \/ mzn_in_root_context() then
          let {
            constraint idx1 in index_set_1of5(x);
            constraint idx2 in index_set_2of5(x);
@@ -1642,7 +1644,7 @@ function var bool: element(var int: idx1, var int: idx2, var int: idx3, var int:
                min(index_set_4of6(x))*dim5*dim6+
                min(index_set_5of6(x))*dim6+
                min(index_set_6of6(x))-1;
-  } in if length(x) = 0 \/ mzn_in_root_context(idx1) then
+  } in if length(x) = 0 \/ mzn_in_root_context() then
          let {
            constraint idx1 in index_set_1of6(x);
            constraint idx2 in index_set_2of6(x);

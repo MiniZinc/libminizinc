@@ -11,7 +11,7 @@ function var $$E: min(var set of $$E: s) =
 % predicate set_min(var set of int: s, var int: m);
 % 
 % function var $$E: min(var set of $$E: s) =
-%   if mzn_in_root_context(s) then min_t(s) else
+%   if mzn_in_root_context() then min_t(s) else
 %   let { constraint card(s) > 0 } in min_mt(s) endif;
 % 
 % function var $$E: min_t(var set of $$E: s) ::promise_total =
@@ -39,8 +39,8 @@ function var $$E: max(var set of $$E: s) =
 % predicate set_max(var set of int: s, var int: m);
 % 
 % function var $$E: max(var set of $$E: s) =
-%   if mzn_in_root_context(s) then max_t(s) else
-%   let { constraint card(s) > 0 } in max_mt(s) endif;
+%   if mzn_in_root_context() then max_t(s) else
+%   let { constraint card() > 0 } in max_mt(s) endif;
 % 
 % function var $$E: max_t(var set of $$E: s) ::promise_total =
 %   let {
