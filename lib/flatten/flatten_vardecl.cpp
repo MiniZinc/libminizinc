@@ -26,7 +26,7 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
     TypeInst* ti = eval_typeinst(env, Ctx(), v);
     bool isEmptyArray = false;
     for (auto* nti : ti->ranges()) {
-      if (nti->domain() != nullptr &&
+      if (nti->domain() == nullptr ||
           (Expression::isa<SetLit>(nti->domain()) && eval_intset(env, nti->domain())->empty())) {
         isEmptyArray = true;
         break;

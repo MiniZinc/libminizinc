@@ -25,6 +25,7 @@ Bug fixes:
 -  Fix bug in flattening of implication with optional right hand side.
 -  Fix flattening of ``exists`` and ``forall`` with optional arguments.
 -  Fix handling of absent values when removing unused code (:bugref:`864`).
+-  Fix compilation of empty arrays with empty domains (:bugref:`860`).
 
 .. _v2.8.7:
 
