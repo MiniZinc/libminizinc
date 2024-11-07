@@ -53,7 +53,7 @@
 <output-item> ::= "output" [ <string-annotation> ] <expr>
 
 % Annotation items
-<annotation-item> ::= "annotation" <ident> <params>
+<annotation-item> ::= "annotation" <ident> <params> [ "=" <expr> ]
 
 % Predicate, test and function items
 <predicate-item> ::= "predicate" <operation-item-tail>
