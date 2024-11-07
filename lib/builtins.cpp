@@ -1061,6 +1061,9 @@ b_array_lb_int_done:
 IntSetVal* b_dom_array(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
   Expression* ae = call->arg(0);
+  if (Expression::type(ae).isPar()) {
+    ae = eval_par(env, ae);
+  }
   ArrayLit* al = nullptr;
   while (al == nullptr) {
     switch (Expression::eid(ae)) {

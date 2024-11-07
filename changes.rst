@@ -26,6 +26,7 @@ Bug fixes:
 -  Fix flattening of ``exists`` and ``forall`` with optional arguments.
 -  Fix handling of absent values when removing unused code (:bugref:`864`).
 -  Fix compilation of empty arrays with empty domains (:bugref:`860`).
+-  Fix evaluation of ``dom_array`` on par arrays (:bugref:`851`).
 
 .. _v2.8.7:
 
