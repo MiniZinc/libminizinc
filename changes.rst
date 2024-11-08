@@ -27,6 +27,7 @@ Bug fixes:
 -  Fix handling of absent values when removing unused code (:bugref:`864`).
 -  Fix compilation of empty arrays with empty domains (:bugref:`860`).
 -  Fix evaluation of ``dom_array`` on par arrays (:bugref:`851`).
+-  Fix flattening of array slices inside tuples and records (:bugref:`859`).
 
 .. _v2.8.7:
 

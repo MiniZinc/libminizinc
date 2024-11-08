@@ -1334,6 +1334,7 @@ void TopoSorter::run(EnvI& env, Expression* e) {
 }
 
 KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t) {
+  GCLock lock;
   if (Expression::isa<ArrayAccess>(e) && Expression::type(e).dim() > 0) {
     auto* aa = Expression::cast<ArrayAccess>(e);
     // Turn ArrayAccess into a slicing operation
@@ -1341,7 +1342,6 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
     args.push_back(aa->v());
     args.push_back(nullptr);
     std::vector<Expression*> slice;
-    GCLock lock;
     for (unsigned int i = 0; i < aa->idx().size(); i++) {
       if (Expression::type(aa->idx()[i]).isSet()) {
         bool needIdxSet = true;
@@ -1436,6 +1436,70 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
     c->decl(fi);
     e = c;
   }
+
+  auto getStructType = [&](StructType* current, std::vector<Type>& pt) {
+    Type tt = funarg_t;
+    unsigned int nId;
+    if (Expression::type(e).bt() == Type::BT_TUPLE) {
+      nId = env.registerTupleType(pt);
+    } else {
+      assert(Expression::type(e).bt() == Type::BT_RECORD);
+      nId = env.registerRecordType(static_cast<RecordType*>(current), pt);
+    }
+    tt.typeId(nId);
+    return tt;
+  };
+
+  Expression* e_coerced = e;
+  if (Expression::type(e).structBT() && Expression::type(e).bt() == funarg_t.bt() &&
+      Expression::type(e).dim() == funarg_t.dim()) {
+    StructType* current = env.getStructType(Expression::type(e));
+    StructType* intended = env.getStructType(funarg_t);
+    if (intended->size() == current->size()) {
+      // Directly add coercions in Array Literals
+      if (auto* al = Expression::dynamicCast<ArrayLit>(e)) {
+        std::vector<Expression*> elem(al->size());
+        ArrayLit* c_al = nullptr;
+        if (Expression::type(e).dim() > 0) {
+          // Array of tuples (coerce each tuple individually)
+          Type elemTy = funarg_t.elemType(env);
+          for (unsigned int i = 0; i < al->size(); i++) {
+            elem[i] = add_coercion(env, m, (*al)[i], elemTy)();
+          }
+          std::vector<std::pair<int, int>> dims(al->dims());
+          for (unsigned int i = 0; i < al->dims(); i++) {
+            dims[i] = {al->min(i), al->max(i)};
+          }
+          c_al = new ArrayLit(Expression::loc(al).introduce(), elem, dims);
+          Type coercedTy = funarg_t;
+          if (!elem.empty()) {
+            coercedTy = Expression::type(elem[0]);
+          }
+          c_al->type(Type::arrType(env, Expression::type(e), coercedTy));
+        } else {
+          assert(al->isTuple());
+          std::vector<Type> pt(al->size());
+          bool allPar = true;
+          for (unsigned int i = 0; i < al->size(); i++) {
+            Type elemTy = (*intended)[i];
+            elem[i] = add_coercion(env, m, (*al)[i], elemTy)();
+            pt[i] = Expression::type(elem[i]);
+            if (pt[i].isvar()) {
+              allPar = false;
+            }
+          }
+          c_al = ArrayLit::constructTuple(Expression::loc(al).introduce(), elem);
+          Type st = getStructType(current, pt);
+          if (allPar) {
+            st.mkPar(env);
+          }
+          c_al->type(st);
+        }
+        e_coerced = c_al;
+      }
+    }
+  }
+
   auto sameBT = [&]() {
     return Expression::type(e).bt() == funarg_t.bt() &&
            (Expression::type(e).bt() != Type::BT_TUPLE ||
@@ -1446,9 +1510,9 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
   if (Expression::type(e).dim() == funarg_t.dim() &&
       (funarg_t.bt() == Type::BT_BOT || funarg_t.bt() == Type::BT_TOP ||
        Expression::type(e).bt() == Type::BT_BOT || sameBT())) {
-    return e;
+    return e_coerced;
   }
-  GCLock lock;
+  e = e_coerced;
   Call* c = nullptr;
   if (Expression::type(e).isSet() && funarg_t.dim() != 0) {
     if (Expression::type(e).isvar()) {
@@ -1481,52 +1545,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
     StructType* intended = env.getStructType(funarg_t);
     if (intended->size() == current->size()) {
       // Directly add coercions in Array Literals
-
-      auto getStructType = [&](std::vector<Type>& pt) {
-        Type tt = funarg_t;
-        unsigned int nId;
-        if (Expression::type(e).bt() == Type::BT_TUPLE) {
-          nId = env.registerTupleType(pt);
-        } else {
-          assert(Expression::type(e).bt() == Type::BT_RECORD);
-          nId = env.registerRecordType(static_cast<RecordType*>(current), pt);
-        }
-        tt.typeId(nId);
-        return tt;
-      };
-      if (auto* al = Expression::dynamicCast<ArrayLit>(e)) {
-        std::vector<Expression*> elem(al->size());
-        ArrayLit* c_al = nullptr;
-        if (Expression::type(e).dim() > 0) {
-          // Array of tuples (coerce each tuple individually)
-          Type elemTy = funarg_t.elemType(env);
-          for (size_t i = 0; i < al->size(); i++) {
-            elem[i] = add_coercion(env, m, (*al)[i], elemTy)();
-          }
-          std::vector<std::pair<int, int>> dims(al->dims());
-          for (size_t i = 0; i < al->dims(); i++) {
-            dims[i] = {al->min(i), al->max(i)};
-          }
-          c_al = new ArrayLit(Expression::loc(al).introduce(), elem, dims);
-          Type coercedTy = funarg_t;
-          if (!elem.empty()) {
-            coercedTy = Expression::type(elem[0]);
-          }
-          c_al->type(Type::arrType(env, Expression::type(e), coercedTy));
-        } else {
-          // Tuple (coerce each field)
-          assert(al->isTuple());
-          std::vector<Type> pt(al->size());
-          for (size_t i = 0; i < al->size(); i++) {
-            Type elemTy = (*intended)[i];
-            elem[i] = add_coercion(env, m, (*al)[i], elemTy)();
-            pt[i] = Expression::type(elem[i]);
-          }
-          c_al = ArrayLit::constructTuple(Expression::loc(al).introduce(), elem);
-          c_al->type(getStructType(pt));
-        }
-        return c_al;
-      }
+      assert(!Expression::isa<ArrayLit>(e));
       // Create (bounded) identifier for expression if not available
       std::vector<Expression*> let_bindings;
       Expression* ident = e;
@@ -1587,7 +1606,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
           pt[i] = Expression::type(collect[i]);
         }
         auto* c_al = ArrayLit::constructTuple(Expression::loc(e).introduce(), collect);
-        c_al->type(getStructType(pt));
+        c_al->type(getStructType(current, pt));
         ret = c_al;
       }
       if (!let_bindings.empty()) {
