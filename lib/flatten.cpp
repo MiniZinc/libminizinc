@@ -5527,10 +5527,10 @@ void oldflatzinc(Env& e) {
       }
       auto it = definition_map.find(ident->decl());
       if (it != definition_map.end()) {
-        if (it->second.second == 0) {
+        if (it->second.second == DFS_UNKNOWN) {
           // not yet visited, push
           definesStack.push_back(it->first);
-        } else if (it->second.second == 1) {
+        } else if (it->second.second == DFS_SEEN) {
           // Found a cycle through variable ident
           // Break cycle by removing annotations
           Expression::ann(ident->decl()).remove(Constants::constants().ann.is_defined_var);
@@ -5540,7 +5540,7 @@ void oldflatzinc(Env& e) {
       }
     };
     for (auto* it : definitions) {
-      if (definition_map[it].second == 0) {
+      if (definition_map[it].second == DFS_UNKNOWN) {
         // not yet visited
         definesStack.push_back(it);
         while (!definesStack.empty()) {
@@ -5555,6 +5555,7 @@ void oldflatzinc(Env& e) {
             if (Call* c = Expression::dynamicCast<Call>(
                     (*m)[definition_map[cur].first]->cast<ConstraintI>()->e())) {
               // Variable is defined by a call, push all arguments
+              unsigned int count_cur = 0;
               for (unsigned int i = 0; i < c->argCount(); i++) {
                 if (Expression::type(c->arg(i)).isPar()) {
                   continue;
@@ -5564,20 +5565,35 @@ void oldflatzinc(Env& e) {
                     if (auto* al = Expression::dynamicCast<ArrayLit>(ident->decl()->e())) {
                       for (auto* e : al->getVec()) {
                         if (auto* ident = Expression::dynamicCast<Id>(e)) {
+                          if (cur == ident->decl()) {
+                            count_cur++;
+                          }
                           checkId(cur, ident);
                         }
                       }
                     }
                   } else if (ident->type().isvar()) {
+                    if (cur == ident->decl()) {
+                      count_cur++;
+                    }
                     checkId(cur, ident);
                   }
                 } else if (auto* al = Expression::dynamicCast<ArrayLit>(c->arg(i))) {
                   for (auto* e : al->getVec()) {
                     if (auto* ident = Expression::dynamicCast<Id>(e)) {
+                      if (cur == ident->decl()) {
+                        count_cur++;
+                      }
                       checkId(cur, ident);
                     }
                   }
                 }
+              }
+              if (count_cur != 1) {
+                // We've seen the defined variable 0 times or more than once,
+                // so this call cannot define the variable
+                Expression::ann(cur).remove(Constants::constants().ann.is_defined_var);
+                Expression::ann(c).removeCall(Constants::constants().ann.defines_var);
               }
             }
           }
