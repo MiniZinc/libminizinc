@@ -29,7 +29,10 @@ EE flatten_arraylit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDec
     if (al->type().istuple() || al->type().isrecord()) {
       // Struct types have to check if any element is boolean to ensure correct context
       for (unsigned int i = al->size(); (i--) != 0U;) {
-        eval_ctx.b = c_root && Expression::type((*al)[i]).isbool() ? C_MIX : C_ROOT;
+        eval_ctx = ctx;
+        if (c_root && Expression::type((*al)[i]).isbool()) {
+          eval_ctx.b = C_MIX;
+        }
         elems_ee[i] = flat_exp(env, eval_ctx, (*al)[i], rr, ctx.partialityVar(env));
       }
     } else {
