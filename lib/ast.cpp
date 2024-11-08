@@ -1126,11 +1126,23 @@ void TypeInst::setRanges(const std::vector<TypeInst*>& ranges) {
 }
 
 void TypeInst::canonicaliseStruct(EnvI& env) {
+  bool isArrayOfArray = domain() != nullptr && Expression::isa<TypeInst>(domain());
+  if (isArrayOfArray) {
+    GCLock lock;
+    auto* inner = Expression::cast<TypeInst>(domain());
+    assert(inner->isarray());
+    auto tid = env.registerTupleType({Expression::type(inner), Type()});
+    auto nt = Type::tuple(tid);
+    ArrayLit* al = ArrayLit::constructTuple(Expression::loc(inner), {inner});
+    al->type(nt);
+    domain(al);
+  }
+
   if (type().bt() == Type::BT_TUPLE) {
     // Warning: Do not check TypeInst twice! A canonical tuple does not abide by the rules
     // that a user definition abides by (e.g., a tuple might be marked var (because all
     // members are var) and contain an array (with var members)).
-    if (type().isvar() && type().typeId() == 0) {
+    if (type().isvar() && (isArrayOfArray || type().typeId() == 0)) {
       auto* dom = Expression::cast<ArrayLit>(domain());
       // Check if "var" tuple is allowed
       for (unsigned int i = 0; i < dom->size(); i++) {
@@ -1145,7 +1157,7 @@ void TypeInst::canonicaliseStruct(EnvI& env) {
           throw TypeError(env, Expression::loc(this),
                           "var tuples with " + field.toString(env) + " types are not allowed");
         }
-        if (field.dim() != 0) {
+        if (!isArrayOfArray && field.dim() != 0) {
           throw TypeError(env, Expression::loc(this),
                           "var tuples with array types are not allowed");
         }
@@ -1237,7 +1249,8 @@ void TypeInst::mkPar(EnvI& env) {
       auto* al = Expression::cast<ArrayLit>(it.first->domain());
       al->type(it.second);
       auto* st = env.getStructType(it.second);
-      assert(st->size() == al->size());
+      assert(st->size() == al->size() ||
+             al->size() == 1 && st->size() == 2 && (*st)[1].isunknown());
       for (unsigned int i = 0; i < al->size(); i++) {
         todo.emplace_back(Expression::cast<TypeInst>((*al)[i]), (*st)[i]);
       }
@@ -1307,6 +1320,13 @@ bool TypeInst::resolveAlias(EnvI& env) {
   GCLock lock;
   auto* alias = Expression::cast<TypeInst>(Expression::cast<Id>(domain())->decl()->e());
   Type ntype = alias->type();
+  bool isArrayOfArray = false;
+  if (type().dim() != 0 && ntype.dim() != 0) {
+    // Array of array will get turned into a tuple
+    ntype = Type::tuple(env.registerTupleType({ntype, Type()}));
+    isArrayOfArray = true;
+  }
+
   if (type().tiExplicit() && ntype.ti() != type().ti()) {
     if (type().ti() == Type::TI_VAR) {
       ntype.mkVar(env);
@@ -1344,16 +1364,9 @@ bool TypeInst::resolveAlias(EnvI& env) {
     }
     ntype.st(Type::ST_SET);
   }
-  assert(type().dim() == -1 ||
-         type().dim() == ranges().size() && ntype.dim() == alias->ranges().size());
+  assert(type().dim() == -1 || type().dim() == ranges().size() &&
+                                   (isArrayOfArray || ntype.dim() == alias->ranges().size()));
   if (type().dim() != 0) {
-    if (ntype.dim() != 0) {
-      std::stringstream ss;
-      ss << "Unable to create an array containing the type aliased by `" << *domain()
-         << "', which has been resolved to `" << alias->type().toString(env)
-         << "' and is already an array type";
-      throw TypeError(env, Expression::loc(this), ss.str());
-    }
     const int dim = type().dim() == -1 ? 1 : type().dim();
     const unsigned int curTypeId = type().typeId();
     const unsigned int newTypeId = ntype.typeId();
@@ -1384,7 +1397,11 @@ bool TypeInst::resolveAlias(EnvI& env) {
     setRanges(ranges);
   }
   type(ntype);
-  domain(domain_shallow_copy(env, alias->domain(), ntype));
+  if (isArrayOfArray) {
+    domain(domain_shallow_copy(env, alias, ntype));
+  } else {
+    domain(domain_shallow_copy(env, alias->domain(), ntype));
+  }
   assert(!is_aliased());  // Resolving aliases should be done in order
   return true;
 }
@@ -1636,10 +1653,20 @@ Type type_from_tmap(EnvI& env, TypeInst* ti, const ASTStringMap<std::pair<Type, 
   Type ret = ti->type();
   if (ret.structBT()) {
     auto* al = Expression::cast<ArrayLit>(ti->domain());
-    std::vector<Type> fields(al->size());
+    auto isArrayOfArray = false;
+    if (ret.bt() == Type::BT_TUPLE && ret.typeId() != 0) {
+      auto* tt = env.getTupleType(ret);
+      if (tt->size() == 2 && (*tt)[1].isunknown()) {
+        isArrayOfArray = true;
+      }
+    }
+    std::vector<Type> fields(al->size() + (isArrayOfArray ? 1U : 0U));
     for (unsigned int i = 0; i < al->size(); i++) {
       fields[i] = type_from_tmap(env, Expression::cast<TypeInst>((*al)[i]), tmap);
       ret.cv(ret.cv() || fields[i].cv());
+    }
+    if (isArrayOfArray) {
+      fields[al->size()] = Type();
     }
     unsigned int typeId = 0;
     if (ret.bt() == Type::BT_TUPLE) {
@@ -1832,10 +1859,10 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
   Type curTiiT = tii->type();
   Type dimTy = curTiiT;
   if (curTiiT.dim() == -1) {
-    if (Expression::type(ta[n]).dim() == 0) {
+    if (env.getTransparentType(ta[n]).dim() == 0) {
       dimTy = Type::partop(1);
     } else {
-      dimTy = Expression::type(ta[n]);
+      dimTy = env.getTransparentType(ta[n]);
       if (dimTy.dim() == -1) {
         dimTy = Type::partop(1);
       }
@@ -1847,7 +1874,7 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
     // of the uses of tiid is opt. The base type has to be int
     // if any of the uses are var set.
 
-    Type ty = Expression::type(ta[n]);
+    Type ty = env.getTransparentType(ta[n]);
     if (!ty.structBT()) {
       ty.st(curTiiT.st());
     }
@@ -1863,7 +1890,7 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
       if ((param(i)->ti()->domain() != nullptr) &&
           Expression::isa<TIId>(param(i)->ti()->domain()) &&
           Expression::cast<TIId>(param(i)->ti()->domain())->v() == tv) {
-        Type toCheck = Expression::type(ta[i]);
+        Type toCheck = env.getTransparentType(ta[i]);
         if (!toCheck.structBT()) {
           toCheck.ot(curTiiT.ot());
           toCheck.st(curTiiT.st());

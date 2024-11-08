@@ -28,6 +28,8 @@ Changes:
 -  Comments regarding the compilation invocation are now included in user-facing
    FlatZinc (``.fzn``) files, created by the ``--compile`` or ``--fzn`` flags.
 -  Add ``par`` version of the ``among`` function.
+-  Add support for arrays containing arrays (which only support access using
+   ``par`` indices).
 
 Bug fixes:
 ^^^^^^^^^^
@@ -48,7 +50,7 @@ Bug fixes:
 -  Fix operator precedences for ``intersect`` and unary plus/minus.
 -  Fix crash when type instance concatenation is performed on invalid types
    (:bugref:`867`).
--  Fix a bug in the typeing of enum constructor functions, which would cause
+-  Fix a bug in the typing of enum constructor functions, which would cause
    incorrect type errors when using them in the type-inst of a variable
    declaration.
 -  Fix a segfault caused by an internal `float_times` variant not correctly being

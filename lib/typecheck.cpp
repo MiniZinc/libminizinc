@@ -1336,8 +1336,20 @@ void TopoSorter::run(EnvI& env, Expression* e) {
   }
 }
 
-KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t) {
+KeepAlive add_coercion(EnvI& env, Model* m, Expression* e0, const Type& funarg_t) {
   GCLock lock;
+  Expression* e = e0;
+  if (Expression::type(e).istuple() && funarg_t.dim() != 0) {
+    // Check if this is an array of array type, wrapped in a tuple
+    auto* tupleType = env.getTupleType(Expression::type(e));
+    if (tupleType->size() == 2 && (*tupleType)[1].isunknown()) {
+      // Yes: insert field access
+      GCLock lock;
+      e = new FieldAccess(Expression::loc(e).introduce(), e, IntLit::a(1));
+      Expression::type(e, (*tupleType)[0]);
+    }
+  }
+
   if (Expression::isa<ArrayAccess>(e) && Expression::type(e).dim() > 0) {
     auto* aa = Expression::cast<ArrayAccess>(e);
     // Turn ArrayAccess into a slicing operation
@@ -1481,7 +1493,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
           c_al->type(Type::arrType(env, Expression::type(e), coercedTy));
         } else {
           assert(al->isTuple());
-          std::vector<Type> pt(al->size());
+          std::vector<Type> pt(current->size());
           bool allPar = true;
           for (unsigned int i = 0; i < al->size(); i++) {
             Type elemTy = (*intended)[i];
@@ -1490,6 +1502,10 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
             if (pt[i].isvar()) {
               allPar = false;
             }
+          }
+          if (current->size() > al->size()) {
+            // Nested array wrapper
+            pt[al->size()] = Type();
           }
           c_al = ArrayLit::constructTuple(Expression::loc(al).introduce(), elem);
           Type st = getStructType(current, pt);
@@ -1802,7 +1818,14 @@ public:
     for (unsigned int i = 0; i < al->size(); i++) {
       Expression* vi = (*al)[i];
       if (Expression::type(vi).dim() > 0) {
-        throw TypeError(_env, Expression::loc(vi), "arrays cannot be elements of arrays");
+        GCLock lock;
+        auto* wrapper = ArrayLit::constructTuple(Expression::loc(vi).introduce(), {vi});
+        auto wrapper_t = _env.registerTupleType({Expression::type(vi), Type()});
+        Type tt = Type::tuple();
+        tt.typeId(wrapper_t);
+        Expression::type(wrapper, tt);
+        al->set(i, wrapper);
+        vi = wrapper;
       }
       auto* av = Expression::dynamicCast<AnonVar>(vi);
       if (av != nullptr) {
@@ -1929,6 +1952,18 @@ public:
         plainTy.st(Type::ST_PLAIN);
         Type tv = Type::arrType(_env, Type::partop(1), plainTy);
         aa->v(add_coercion(_env, _model, aa->v(), tv)());
+      } else if (Expression::type(aa->v()).bt() == Type::BT_TUPLE) {
+        assert(Expression::type(aa->v()).typeId() != 0);
+        TupleType* tt = _env.getTupleType(Expression::type(aa->v()));
+        if (tt->size() != 2 || !(*tt)[1].isunknown()) {
+          assert((*tt)[0].dim() != 0);
+          std::ostringstream oss;
+          oss << "array access attempted on expression of type `"
+              << Expression::type(aa->v()).toString(_env) << "'";
+          throw TypeError(_env, Expression::loc(aa->v()), oss.str());
+        }
+        Type resultType = (*tt)[0];
+        aa->v(add_coercion(_env, _model, aa->v(), resultType)());
       } else {
         std::ostringstream oss;
         oss << "array access attempted on expression of type `"
@@ -2070,9 +2105,8 @@ public:
         }
         if (containsArray) {
           std::ostringstream oss;
-          oss << "array access using a variable is not supported for array of a "
-              << (tt.bt() == Type::BT_TUPLE ? "tuple" : "record")
-              << " type which contain an array.";
+          oss << "array access using a variable is not supported for arrays which contain other "
+                 "arrays";
           throw TypeError(_env, Expression::loc(aai), oss.str());
         }
       }
@@ -2097,6 +2131,12 @@ public:
       }
       assert(Expression::type(fa->v()).typeId() != 0);
       TupleType* tt = _env.getTupleType(Expression::type(fa->v()));
+      if (tt->size() == 2 && (*tt)[1].isunknown() && !Expression::loc(fa).isIntroduced()) {
+        std::ostringstream oss;
+        oss << "field access attempted on expression of type `"
+            << Expression::type(fa->v()).toString(_env) << "'";
+        throw TypeError(_env, Expression::loc(fa), oss.str());
+      }
       IntVal i = IntLit::v(Expression::cast<IntLit>(fa->field()));
       if (!i.isFinite() || i < 1 || i.toInt() > tt->size()) {
         std::ostringstream oss;
@@ -2154,6 +2194,18 @@ public:
       c_e = (*indexTuple)[indexTuple->size() - 1];
     }
     Type tt = Expression::type(c_e);
+
+    if (tt.dim() > 0) {
+      GCLock lock;
+      auto* wrapper = ArrayLit::constructTuple(Expression::loc(c_e).introduce(), {c_e});
+      auto wrapper_t = _env.registerTupleType({tt, Type()});
+      tt = Type::tuple();
+      tt.typeId(wrapper_t);
+      Expression::type(wrapper, tt);
+      c->e(wrapper);
+      c_e = wrapper;
+    }
+
     typedef std::unordered_map<VarDecl*, std::pair<unsigned int, unsigned int>> genMap_t;
     typedef std::unordered_map<VarDecl*, std::vector<Expression*>> whereMap_t;
     genMap_t generatorMap;
@@ -2322,10 +2374,6 @@ public:
         tt.bt(Type::BT_INT);
       }
     } else {
-      if (Expression::type(c_e).dim() != 0) {
-        throw TypeError(_env, Expression::loc(c_e),
-                        "array comprehension expression cannot be an array");
-      }
       std::vector<unsigned int> enumIds;
       bool hadEnums = false;
       unsigned int typeId = tt.typeId();
@@ -2639,9 +2687,11 @@ public:
       }
 
       // Note: BinOp is resolved during typechecking of TypeInst
-    } else if (bop->op() == BOT_PLUSPLUS && Expression::type(bop->lhs()).structBT() &&
-               Expression::type(bop->lhs()).bt() == Expression::type(bop->rhs()).bt() &&
-               Expression::type(bop->lhs()).dim() == 0 && Expression::type(bop->rhs()).dim() == 0) {
+    } else if (bop->op() == BOT_PLUSPLUS && _env.getTransparentType(bop->lhs()).structBT() &&
+               _env.getTransparentType(bop->lhs()).bt() ==
+                   _env.getTransparentType(bop->rhs()).bt() &&
+               _env.getTransparentType(bop->lhs()).dim() == 0 &&
+               _env.getTransparentType(bop->rhs()).dim() == 0) {
       // Special case: concatenating tuples or records
       Type lhsT = Expression::type(bop->lhs());
       Type rhsT = Expression::type(bop->rhs());
@@ -3053,7 +3103,7 @@ public:
     if (ignoreVarDecl) {
       if (vd->e() != nullptr) {
         Type vdt = vd->ti()->type();
-        Type vet = Expression::type(vd->e());
+        Type vet = _env.getTransparentType(vd->e());
         if (!vdt.any() && vdt.typeId() != 0 && vdt.dim() > 0 &&
             (Expression::isa<ArrayLit>(vd->e()) || Expression::isa<Comprehension>(vd->e()) ||
              (Expression::isa<BinOp>(vd->e()) &&
@@ -3137,6 +3187,7 @@ public:
           }
         }
         vd->e(add_coercion(_env, _model, vd->e(), vd->ti()->type())());
+        vet = Expression::type(vd->e());
         if (vd->type().dim() > 0) {
           if (vet.typeId() != 0) {
             // check if the VarDecl has _ as index sets and copy correct enum information

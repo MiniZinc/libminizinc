@@ -441,6 +441,12 @@ Call* generate_show(EnvI& env, Expression* e, Expression* w, Expression* p, bool
 
   if (t.bt() == Type::BT_TUPLE) {
     auto* tt = env.getTupleType(t);
+    if (tt->size() == 2 && (*tt)[1].isunknown()) {
+      auto field_type = (*tt)[0];
+      auto* field_access = new FieldAccess(Location().introduce(), e, IntLit::a(1LL));
+      Expression::type(field_access, field_type);
+      return generate_show(env, field_access, w, p, show_dzn, is_json);
+    }
     std::vector<Expression*> shown_fields(tt->size() == 1 && !is_json ? 4 : tt->size() * 2 + 1,
                                           tt->size() == 1
                                               ? new StringLit(Location().introduce(), ",")

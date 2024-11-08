@@ -291,6 +291,7 @@ struct TypeList : public StructType {
 
 class EnvI {
   friend class Type;
+  friend class TypeInst;
   template <bool ignoreVarDecl>
   friend class Typer;
   friend KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t);
@@ -512,9 +513,10 @@ public:
   Type mergeRecord(Type record1, Type record2, Location loc);
   /// Returns a tuple type of `tuple1 ++ tuple2'
   Type concatTuple(Type tuple1, Type tuple2);
-  /// Check if tuple can be evaluated (instead of flattened).
-  /// (i.e., true if the tuple contains to variable or annotation types)
-  bool tupleIsPar(const Type& tuple);
+  /// Get the type t, but remove surrounding transparent tuple if necessary
+  Type getTransparentType(Type t) const;
+  /// Get the type of e, but remove surrounding transparent tuple if necessary
+  Type getTransparentType(const Expression* e) const;
   std::string enumToString(unsigned int enumId, int i);
   /// Check if \a t1 is a subtype of \a t2 (including enumerated types if \a strictEnum is true)
   bool isSubtype(const Type& t1, const Type& t2, bool strictEnum) const;

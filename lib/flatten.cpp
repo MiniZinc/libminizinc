@@ -1281,7 +1281,9 @@ unsigned int EnvI::registerTupleType(const std::vector<Type>& fields) {
 unsigned int EnvI::registerTupleType(TypeInst* ti) {
   auto* dom = Expression::cast<ArrayLit>(ti->domain());
 
-  std::vector<Type> fields(dom->size());
+  bool isArrayOfArray = getTransparentType(dom) != Expression::type(dom);
+
+  std::vector<Type> fields(isArrayOfArray ? 2 : dom->size());
   bool cv = false;
   bool var = true;
   for (unsigned int i = 0; i < dom->size(); i++) {
@@ -1298,6 +1300,11 @@ unsigned int EnvI::registerTupleType(TypeInst* ti) {
     cv = cv || fields[i].isvar() || fields[i].cv();
     var = var && fields[i].isvar();
   }
+  if (isArrayOfArray) {
+    // Add marker for array of array
+    fields[1] = Type();
+  }
+
   // the TI_VAR ti is not processed by this function. This cononicalisation should have been done
   // during typechecking.
   assert(ti->type().ti() == Type::TI_PAR || var);
@@ -1328,9 +1335,10 @@ unsigned int EnvI::registerTupleType(TypeInst* ti) {
 unsigned int EnvI::registerTupleType(ArrayLit* tup) {
   assert(tup->isTuple() && tup->dims() == 1);
   Type ty = tup->type();
+  bool isArrayOfArray = ty.typeId() != 0 && getTupleType(ty.typeId())->size() != tup->size();
   ty.bt(Type::BT_TUPLE);
   ty.typeId(0);  // Reset any current TypeId
-  std::vector<Type> fields(tup->size());
+  std::vector<Type> fields(isArrayOfArray ? 2 : tup->size());
   bool cv = false;
   bool var = true;
   for (unsigned int i = 0; i < tup->size(); i++) {
@@ -1338,6 +1346,9 @@ unsigned int EnvI::registerTupleType(ArrayLit* tup) {
     cv = cv || fields[i].isvar() || fields[i].cv();
     var = var && fields[i].isvar();
     assert(!fields[i].structBT() || fields[i].typeId() != 0);
+  }
+  if (isArrayOfArray) {
+    fields[1] = Type();
   }
   unsigned int typeId = registerTupleType(fields);
   assert(ty.dim() == 0);  // Tuple literals do not have array dimensions (otherwise, we should
@@ -1575,6 +1586,19 @@ Type EnvI::concatTuple(Type tuple1, Type tuple2) {
   return ret;
 }
 
+Type EnvI::getTransparentType(Type t) const {
+  if (t.istuple()) {
+    auto* tt = getTupleType(t);
+    if (tt->size() == 2 && (*tt)[1].isunknown()) {
+      return (*tt)[0];
+    }
+  }
+  return t;
+}
+Type EnvI::getTransparentType(const Expression* e) const {
+  return getTransparentType(Expression::type(e));
+}
+
 std::string EnvI::enumToString(unsigned int enumId, int i) {
   Id* ti_id = getEnum(enumId)->e()->id();
   ASTString enumName(create_enum_to_string_name(ti_id, "_toString_"));
@@ -1586,7 +1610,14 @@ std::string EnvI::enumToString(unsigned int enumId, int i) {
   Expression::type(call, Type::parstring());
   return eval_string(*this, call);
 }
-bool EnvI::isSubtype(const Type& t1, const Type& t2, bool strictEnums) const {
+bool EnvI::isSubtype(const Type& t10, const Type& t2, bool strictEnums) const {
+  Type t1 = t10;
+  if (t1.istuple() && t2.dim() != 0) {
+    auto* tupleType = getTupleType(t1);
+    if (tupleType->size() == 2 && (*tupleType)[1].isunknown()) {
+      t1 = (*tupleType)[0];
+    }
+  }
   if (!t1.isSubtypeOf(*this, t2, strictEnums)) {
     return false;
   }
@@ -2480,7 +2511,7 @@ Expression* mk_domain_constraint(EnvI& env, Expression* expr, Expression* dom) {
         }
       }
       std::vector<Expression*> fieldwise;
-      for (unsigned int i = 0; i < st->size(); ++i) {
+      for (unsigned int i = 0; i < dom_al->size(); ++i) {
         auto* field_ti = Expression::cast<TypeInst>((*dom_al)[static_cast<unsigned int>(i)]);
         if (field_ti->domain() != nullptr) {
           if (ty.dim() > 0) {

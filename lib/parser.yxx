@@ -871,9 +871,13 @@ ti_expr_list_head :
 
 ti_expr :
       base_ti_expr
-    | MZN_ARRAY MZN_LEFT_BRACKET ti_expr_list MZN_RIGHT_BRACKET MZN_OF base_ti_expr
+    | MZN_ARRAY MZN_LEFT_BRACKET ti_expr_list MZN_RIGHT_BRACKET MZN_OF ti_expr  %prec MZN_NOT
       {
-        $$ = $6;
+        if ($6 != nullptr && $6->isarray()) {
+          $$ = new TypeInst(@$, Type::tuple(), $6);
+        } else {
+          $$ = $6;
+        }
         if ($$ != nullptr && $3 != nullptr) {
           $$->setRanges(*$3);
         }

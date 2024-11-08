@@ -2377,6 +2377,12 @@ std::string show_with_type(EnvI& env, Expression* exp, Type t, bool showDzn) {
   }
   std::ostringstream oss;
   if (auto* al = Expression::dynamicCast<ArrayLit>(e)) {
+    auto al_t = t;
+    if (al->isTuple() && env.getTransparentType(t) != t) {
+      // Unwrap nested array type
+      al = eval_array_lit(env, (*al)[0]);
+      al_t = env.getTransparentType(t);
+    }
     oss << (al->isTuple() ? "(" : "[");
     if (al->type().isrecord()) {
       RecordType* rt = env.getRecordType(al->type());
@@ -2400,8 +2406,8 @@ std::string show_with_type(EnvI& env, Expression* exp, Type t, bool showDzn) {
         oss << ",";
       }
     } else {
-      // Use element type from t since evaluating e may have removed the enum types
-      auto elemType = t.elemType(env);
+      // Use element type from al_t since evaluating e may have removed the enum types
+      auto elemType = al_t.elemType(env);
       for (unsigned int i = 0; i < al->size(); i++) {
         oss << show_with_type(env, (*al)[i], elemType, showDzn);
         if (i < al->size() - 1) {
@@ -2501,6 +2507,9 @@ std::string b_show_json_with_type(EnvI& env, Expression* exp, Type t) {
     return oss.str();
   }
   if (auto* al = Expression::dynamicCast<ArrayLit>(e)) {
+    if (al->isTuple() && env.getTransparentType(t) != t) {
+      al = eval_array_lit(env, (*al)[0]);
+    }
     std::ostringstream oss;
     if (al->type().istuple()) {
       TupleType* tt = env.getTupleType(al->type());

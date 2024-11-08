@@ -410,19 +410,23 @@ std::string Type::toString(const EnvI& env) const {
       oss << "ann";
       break;
     case BT_TUPLE: {
-      oss << "tuple(";
       if (typeId() == COMP_INDEX) {
-        oss << "???";
+        oss << "tuple(???)";
       } else {
         TupleType* tt = env.getTupleType(*this);
-        for (unsigned int i = 0; i < tt->size(); ++i) {
-          oss << (*tt)[i].toString(env);
-          if (i < tt->size() - 1) {
-            oss << ", ";
+        if (tt->size() == 2 && (*tt)[1].isunknown()) {
+          oss << (*tt)[0].toString(env);
+        } else {
+          oss << "tuple(";
+          for (unsigned int i = 0; i < tt->size(); ++i) {
+            oss << (*tt)[i].toString(env);
+            if (i < tt->size() - 1) {
+              oss << ", ";
+            }
           }
+          oss << ")";
         }
       }
-      oss << ")";
     } break;
     case BT_RECORD: {
       oss << "record(";
