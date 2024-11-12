@@ -301,7 +301,8 @@ void parseFieldTail(const ParserLocation& loc, std::vector<Expression*>& parsed,
 %left MZN_AND
 %nonassoc MZN_LE MZN_GR MZN_LQ MZN_GQ MZN_EQ MZN_NQ MZN_WEAK_EQ MZN_WEAK_NQ
 %nonassoc MZN_IN MZN_SUBSET MZN_SUPERSET
-%left MZN_UNION MZN_DIFF MZN_SYMDIFF MZN_INTERSECT
+%left MZN_UNION MZN_DIFF MZN_SYMDIFF
+%left MZN_INTERSECT
 %nonassoc MZN_DOTDOT MZN_DOTDOT_LE MZN_LE_DOTDOT MZN_LE_DOTDOT_LE
 %left MZN_PLUS MZN_MINUS MZN_WEAK_PLUS MZN_WEAK_MINUS
 %left MZN_MULT MZN_DIV MZN_IDIV MZN_MOD MZN_WEAK_MULT MZN_WEAK_DIV MZN_WEAK_IDIV
@@ -1370,14 +1371,14 @@ expr :
       }
     | MZN_NOT expr %prec MZN_NOT
       { $$=new UnOp(@$, UOT_NOT, $2); }
-    | MZN_PLUS expr %prec MZN_NOT
+    | MZN_PLUS expr %prec MZN_MULT
       { if (($2 && Expression::isa<IntLit>($2)) || ($2 && Expression::isa<FloatLit>($2))) {
           $$ = $2;
         } else {
           $$=new UnOp(@$, UOT_PLUS, $2);
         }
       }
-    | MZN_MINUS expr %prec MZN_NOT
+    | MZN_MINUS expr %prec MZN_MULT
       { if ($2 && Expression::isa<IntLit>($2)) {
           $$ = IntLit::a(-IntLit::v(Expression::cast<IntLit>($2)));
         } else if ($2 && Expression::isa<FloatLit>($2)) {

@@ -90,8 +90,7 @@
                       | <tuple-ti-expr-tail>
                       | <record-ti-expr-tail>
                       | "ann"
-                      | "{" <expr> "," ... "}"
-                      | <num-expr> ".." <num-expr>
+                      | <expr>
 
 % Type-inst variables
 <ti-variable-expr-tail> ::= $[A-Za-z$][A-Za-z0-9_]*

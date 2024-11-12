@@ -31,6 +31,7 @@ Bug fixes:
 -  Fix defines_var annotation for cyclic definitions (:bugref:`863`).
 -  Fix assertion failures when using arrays as argument to bin packing constraints
    (:bugref:`865`).
+-  Fix operator precedences for ``intersect`` and unary plus/minus.
 
 .. _v2.8.7:
 

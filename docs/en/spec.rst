@@ -1447,53 +1447,57 @@ Note that the last entry in the table, :mzn:`^-1`, is a combination of the binar
   ===============================  ====== ======
   Symbol(s)                        Assoc. Prec. 
   ===============================  ====== ======
-  :mzn:`<->`                       left   1200  
+  :mzn:`<->`                       left   1600  
 
-  :mzn:`->`                        left   1100  
-  :mzn:`<-`                        left   1100  
+  :mzn:`->`                        left   1500  
+  :mzn:`<-`                        left   1500  
 
-  ``\/``                           left   1000  
-  :mzn:`xor`                       left   1000  
+  ``\/``                           left   1400  
+  :mzn:`xor`                       left   1400  
 
-  ``/\``                           left   900   
+  ``/\``                           left   1300   
 
-  :mzn:`<`                         none   800   
-  :mzn:`>`                         none   800   
-  :mzn:`<=`                        none   800   
-  :mzn:`>=`                        none   800   
-  :mzn:`==`,                   
-  :mzn:`=`                         none   800   
-  :mzn:`!=`                        none   800   
+  :mzn:`<`                         none   1200   
+  :mzn:`>`                         none   1200   
+  :mzn:`<=`                        none   1200   
+  :mzn:`>=`                        none   1200   
+  
+  :mzn:`==`                        none   1100
+  :mzn:`=`                         none   1100   
+  :mzn:`!=`                        none   1100   
                              
-  :mzn:`in`                        none   700   
-  :mzn:`subset`                    none   700   
-  :mzn:`superset`                  none   700   
-                             
-  :mzn:`union`                     left   600   
-  :mzn:`diff`                      left   600   
-  :mzn:`symdiff`                   left   600   
-                             
-  :mzn:`..`                        none   500   
-  :mzn:`<..`                       none   500   
-  :mzn:`..<`                       none   500   
-  :mzn:`<..<`                      none   500   
-                             
-  :mzn:`+`                         left   400   
-  :mzn:`-`                         left   400   
-                             
-  :mzn:`*`                         left   300   
-  :mzn:`div`                       left   300   
-  :mzn:`mod`                       left   300   
-  :mzn:`/`                         left   300   
-  :mzn:`intersect`                 left   300   
+  :mzn:`in`                        none   1000   
+  :mzn:`subset`                    none   1000   
+  :mzn:`superset`                  none   1000   
 
-  :mzn:`^`                         left   200
+  :mzn:`union`                     left    900   
+  :mzn:`diff`                      left    900   
+  :mzn:`symdiff`                   left    900   
+
+  :mzn:`intersect`                 left    800
+                           
+  :mzn:`..`                        none    700   
+  :mzn:`<..`                       none    700   
+  :mzn:`..<`                       none    700   
+  :mzn:`<..<`                      none    700   
                              
-  :mzn:`++`                        right  100   
+  :mzn:`+`                         left    600   
+  :mzn:`-`                         left    600   
+                             
+  :mzn:`*`                         left    500   
+  :mzn:`div`                       left    500   
+  :mzn:`mod`                       left    500   
+  :mzn:`/`                         left    500   
+  
+  :mzn:`^`                         left    400
+                             
+  :mzn:`++`                        right   300   
 
-  :mzn:`default`                   left    70
+  :mzn:`default`                   left    200
 
-  `````  :mzndef:`<ident>` `````   left    50   
+  `````  :mzndef:`<ident>` `````   left    100
+
+  :mzn:`::`                        left      0 
   ===============================  ====== ======
 
 
@@ -1508,6 +1512,11 @@ This is a static error if the identifier is not the name of a binary
 function or predicate.
 
 The unary operators are: :mzn:`+`, :mzn:`-` and :mzn:`not`.
+Unary :mzn:`+` and :mzn:`-` have the same precedence as the binary
+multiplication operator :mzn:`*`. The logic :mzn:`not` operator
+has precedence 350, i.e., it binds more tightly than all other
+Boolean and numeric operators.
+
 User-defined unary operators are not possible.
 
 As :ref:`spec-Identifiers` explains, any built-in operator can be used as
