@@ -29,6 +29,8 @@ Bug fixes:
 -  Fix evaluation of ``dom_array`` on par arrays (:bugref:`851`).
 -  Fix flattening of array slices inside tuples and records (:bugref:`859`).
 -  Fix defines_var annotation for cyclic definitions (:bugref:`863`).
+-  Fix assertion failures when using arrays as argument to bin packing constraints
+   (:bugref:`865`).
 
 .. _v2.8.7:
 
@@ -67,7 +69,7 @@ Changes:
 -  Enforce strict enum type correctness for set operations (:bugref:`828`).
 -  Add ``par opt`` overloads of ``min`` / ``max`` and return enum values instead
    of coercing to integers.
--  Use half-reification only when there isn't a reification that is a more 
+-  Use half-reification only when there isn't a reification that is a more
    specific match.
 -  Add multidimensional overloads for the ``++`` array concatenation operator.
 
@@ -146,7 +148,7 @@ Bug fixes:
 -  Fix bug in computation of common type of incompatible record types.
 -  Fix crash when type checking nested arrays of tuples or records.
 -  Fix incorrect unification of flattened tuple/record fields with paths
-   enabled. 
+   enabled.
 
 Changes:
 ^^^^^^^^
@@ -225,7 +227,7 @@ Bug fixes:
    (:bugref:`798`).
 -  Fix crash when resolving type aliases for function parameters with ``$T``
    array dimensions (:bugref:`806`).
--  Fix ``default`` operator for ``par opt set`` parameters (:bugref:`809`). 
+-  Fix ``default`` operator for ``par opt set`` parameters (:bugref:`809`).
 -  Fix output of ``par opt set`` enumerated types.
 -  Fix pretty printing of records when using the document printer.
 -  Fix internal error when binding numeric literals to declarations with
