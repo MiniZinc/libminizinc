@@ -14,6 +14,7 @@ Changes:
    enum (:bugref:`853`).
 -  Make the ``mzn_in_root_context`` function (which is used only internally and
    should not be used in user models) more flexible in where it can be called.
+-  Update packaged version of the HiGHS solver to version 1.8.1.
 
 Bug fixes:
 ^^^^^^^^^^
