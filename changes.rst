@@ -32,6 +32,8 @@ Bug fixes:
 -  Fix assertion failures when using arrays as argument to bin packing constraints
    (:bugref:`865`).
 -  Fix operator precedences for ``intersect`` and unary plus/minus.
+-  Fix crash when type instance concatenation is performed on invalid types
+   (:bugref:`867`).
 
 .. _v2.8.7:
 

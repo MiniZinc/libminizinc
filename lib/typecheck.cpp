@@ -2588,7 +2588,66 @@ public:
     std::vector<Expression*> args(2);
     args[0] = bop->lhs();
     args[1] = bop->rhs();
-    if (FunctionI* fi = _model->matchFn(_env, bop->opToString(), args, true)) {
+    if (bop->op() == BOT_PLUSPLUS && (Expression::isa<TypeInst>(bop->lhs()) ||
+                                      (Expression::isa<Id>(bop->lhs()) &&
+                                       Expression::cast<Id>(bop->lhs())->decl()->isTypeAlias()))) {
+      // Special case: concatenating type expressions
+
+      // Check whether the rhs is also a type expression
+      if (!(Expression::isa<TypeInst>(bop->rhs()) ||
+            (Expression::isa<Id>(bop->rhs()) &&
+             Expression::cast<Id>(bop->rhs())->decl()->isTypeAlias()))) {
+        std::ostringstream ss;
+        ss << "operator application for `" << bop->opToString()
+           << "' cannot combine type expression`" << bop->lhs() << "' with expression `"
+           << bop->rhs() << "'.";
+        throw TypeError(_env, Expression::loc(bop), ss.str());
+      }
+
+      // Resolve potential type aliases
+      if (auto* alias = Expression::dynamicCast<Id>(bop->lhs())) {
+        bop->lhs(Expression::cast<TypeInst>(alias->decl()->e()));
+      }
+      if (auto* alias = Expression::dynamicCast<Id>(bop->rhs())) {
+        bop->rhs(Expression::cast<TypeInst>(alias->decl()->e()));
+      }
+
+      Type lhsT = Expression::type(bop->lhs());
+      Type rhsT = Expression::type(bop->rhs());
+      // Check whether type expressions can be correctly combined
+      if (!lhsT.structBT()) {
+        std::ostringstream ss;
+        ss << "operator application for `" << bop->opToString() << "' is not allowed on the `"
+           << lhsT.toString(_env) << "' type instance.";
+        throw TypeError(_env, Expression::loc(bop), ss.str());
+      }
+      if (!rhsT.structBT()) {
+        std::ostringstream ss;
+        ss << "operator application for `" << bop->opToString() << "' is not allowed on the `"
+           << rhsT.toString(_env) << "' type instance.";
+        throw TypeError(_env, Expression::loc(bop), ss.str());
+      }
+      if (lhsT.bt() != rhsT.bt()) {
+        std::ostringstream ss;
+        ss << "operator application for `" << bop->opToString() << "' cannot combine type `"
+           << lhsT.toString(_env) << "' with typ `" << rhsT.toString(_env) << "'.";
+        throw TypeError(_env, Expression::loc(bop), ss.str());
+      }
+
+      // Note: BinOp is resolved during typechecking of TypeInst
+    } else if (bop->op() == BOT_PLUSPLUS && Expression::type(bop->lhs()).structBT() &&
+               Expression::type(bop->lhs()).bt() == Expression::type(bop->rhs()).bt() &&
+               Expression::type(bop->lhs()).dim() == 0 && Expression::type(bop->rhs()).dim() == 0) {
+      // Special case: concatenating tuples or records
+      Type lhsT = Expression::type(bop->lhs());
+      Type rhsT = Expression::type(bop->rhs());
+      if (lhsT.isrecord()) {
+        bop->type(_env.mergeRecord(lhsT, rhsT, Expression::loc(bop)));
+      } else {
+        assert(lhsT.istuple());
+        bop->type(_env.concatTuple(lhsT, rhsT));
+      }
+    } else if (FunctionI* fi = _model->matchFn(_env, bop->opToString(), args, true)) {
       bop->lhs(add_coercion(_env, _model, bop->lhs(), fi->argtype(_env, args, 0))());
       bop->rhs(add_coercion(_env, _model, bop->rhs(), fi->argtype(_env, args, 1))());
       args[0] = bop->lhs();
@@ -2729,66 +2788,6 @@ public:
             newCall->decl(newCall_decl);
           }
         }
-      }
-    } else if (bop->op() == BOT_PLUSPLUS &&
-               (Expression::isa<TypeInst>(bop->lhs()) ||
-                (Expression::isa<Id>(bop->lhs()) &&
-                 Expression::cast<Id>(bop->lhs())->decl()->isTypeAlias()))) {
-      // Special case: concatenating type expressions
-
-      // Check whether the rhs is also a type expression
-      if (!(Expression::isa<TypeInst>(bop->rhs()) ||
-            (Expression::isa<Id>(bop->rhs()) &&
-             Expression::cast<Id>(bop->rhs())->decl()->isTypeAlias()))) {
-        std::ostringstream ss;
-        ss << "operator application for `" << bop->opToString()
-           << "' cannot combine type expression`" << bop->lhs() << "' with expression `"
-           << bop->rhs() << "'.";
-        throw TypeError(_env, Expression::loc(bop), ss.str());
-      }
-
-      // Resolve potential type aliases
-      if (auto* alias = Expression::dynamicCast<Id>(bop->lhs())) {
-        bop->lhs(Expression::cast<TypeInst>(alias->decl()->e()));
-      }
-      if (auto* alias = Expression::dynamicCast<Id>(bop->rhs())) {
-        bop->rhs(Expression::cast<TypeInst>(alias->decl()->e()));
-      }
-
-      Type lhsT = Expression::type(bop->lhs());
-      Type rhsT = Expression::type(bop->rhs());
-      // Check whether type expressions can be correctly combined
-      if (!lhsT.structBT()) {
-        std::ostringstream ss;
-        ss << "operator application for `" << bop->opToString() << "' is not allowed on the `"
-           << lhsT.toString(_env) << "' type.";
-        throw TypeError(_env, Expression::loc(bop), ss.str());
-      }
-      if (!rhsT.structBT()) {
-        std::ostringstream ss;
-        ss << "operator application for `" << bop->opToString() << "' is not allowed on the `"
-           << rhsT.toString(_env) << "' type.";
-        throw TypeError(_env, Expression::loc(bop), ss.str());
-      }
-      if (lhsT.bt() != rhsT.bt()) {
-        std::ostringstream ss;
-        ss << "operator application for `" << bop->opToString() << "' cannot combine type `"
-           << lhsT.toString(_env) << "' with typ `" << rhsT.toString(_env) << "'.";
-        throw TypeError(_env, Expression::loc(bop), ss.str());
-      }
-
-      // Note: BinOp is resolved during typechecking of TypeInst
-    } else if (bop->op() == BOT_PLUSPLUS && Expression::type(bop->lhs()).structBT() &&
-               Expression::type(bop->lhs()).bt() == Expression::type(bop->rhs()).bt() &&
-               Expression::type(bop->lhs()).dim() == 0 && Expression::type(bop->rhs()).dim() == 0) {
-      // Special case: concatenating tuples or records
-      Type lhsT = Expression::type(bop->lhs());
-      Type rhsT = Expression::type(bop->rhs());
-      if (lhsT.isrecord()) {
-        bop->type(_env.mergeRecord(lhsT, rhsT, Expression::loc(bop)));
-      } else {
-        assert(lhsT.istuple());
-        bop->type(_env.concatTuple(lhsT, rhsT));
       }
     } else {
       std::ostringstream ss;
