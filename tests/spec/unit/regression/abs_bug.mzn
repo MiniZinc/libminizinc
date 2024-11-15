@@ -9,12 +9,20 @@ expected:
       {1,3,4}
       depot(a,4).
       depot(c,10).
+- !Result
+  solution: !Solution
+    _output_item: |
+      [4, 13]
+      {4,10,13}
+      {1,3,4}
+      depot(a,4).
+      depot(d,13).
 
 ***/
 
 % Regression test.
 % The bounds inferred for absolute values expressions where incorrect in r13710
-% and before.  
+% and before.
 
 int: nr; % number of restaurants
 set of int: Restaurant = 1..nr;
