@@ -35,6 +35,9 @@ Bug fixes:
 -  Fix operator precedences for ``intersect`` and unary plus/minus.
 -  Fix crash when type instance concatenation is performed on invalid types
    (:bugref:`867`).
+-  Fix a bug in the typeing of enum constructor functions, which would cause
+   incorrect type errors when using them in the type-inst of a variable
+   declaration.
 
 .. _v2.8.7:
 

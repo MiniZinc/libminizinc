@@ -524,6 +524,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             Xt.typeId(enumId);
             auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
             Type argT;
+            argT.bt(Type::BT_INT);
             argT.ti(baseType.ti());
             auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, constructorArgId);
             auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, env.genId());
@@ -563,6 +564,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             Xt.typeId(enumId);
             auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
             Type argT;
+            argT.bt(Type::BT_INT);
             argT.ti(baseType.ti());
             argT.ot(Type::OT_OPTIONAL);
             auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, constructorArgId);
@@ -584,6 +586,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             Xt.typeId(enumId);
             auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
             Type argT;
+            argT.bt(Type::BT_INT);
             argT.ti(baseType.ti());
             argT.st(Type::ST_SET);
             auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, constructorArgId);
