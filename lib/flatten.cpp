@@ -5429,8 +5429,6 @@ void oldflatzinc(Env& e) {
 
   EnvI& env = e.envi();
 
-  unsigned int msize = m->size();
-
   // Predicate declarations of solver builtins
   std::unordered_set<Item*> globals;
 
@@ -5441,7 +5439,11 @@ void oldflatzinc(Env& e) {
 
   // Record indices of VarDeclIs with Id RHS for sorting & unification
   std::vector<int> declsWithIds;
-  for (int i = 0; i < msize; i++) {
+
+  // Important: items are being added to m while iterating over it.
+  // The loop therefore needs to check the size in each iteration to make
+  // sure it also handles the new items.
+  for (int i = 0; i < m->size(); i++) {
     if ((*m)[i]->removed()) {
       continue;
     }
@@ -5463,6 +5465,13 @@ void oldflatzinc(Env& e) {
           e.envi().flatAddItem(new ConstraintI(Location().introduce(), new_ce));
         }
       }
+      if (Expression::ann(vd).contains(e.envi().constants.ann.is_defined_var)) {
+        if (definition_map.find(vd) == definition_map.end()) {
+          // We haven't seen this variable before
+          definition_map.insert({vd, {-1, DFS_UNKNOWN}});
+          definitions.push_back(vd);
+        }
+      }
     } else if (auto* ci = (*m)[i]->dynamicCast<ConstraintI>()) {
       Expression* new_ce = cleanup_constraint(e.envi(), globals, ci->e(), keepDefinesVar);
       if (new_ce != nullptr) {
@@ -5470,9 +5479,15 @@ void oldflatzinc(Env& e) {
         if (keepDefinesVar) {
           if (Call* defines_var = Expression::ann(new_ce).getCall(env.constants.ann.defines_var)) {
             if (Id* ident = Expression::dynamicCast<Id>(defines_var->arg(0))) {
-              if (definition_map.find(ident->decl()) != definition_map.end()) {
-                // This is the second definition, remove it
-                Expression::ann(new_ce).removeCall(env.constants.ann.defines_var);
+              auto it = definition_map.find(ident->decl());
+              if (it != definition_map.end()) {
+                if (it->second.first == -1) {
+                  // We've only seen the decl before, but not yet the defining constraint
+                  it->second.first = i;
+                } else {
+                  // This is the second definition, remove it
+                  Expression::ann(new_ce).removeCall(env.constants.ann.defines_var);
+                }
               } else {
                 definition_map.insert({ident->decl(), {i, DFS_UNKNOWN}});
                 definitions.push_back(ident->decl());
@@ -5552,8 +5567,11 @@ void oldflatzinc(Env& e) {
           } else {
             // now visited and on stack
             definition_map[cur].second = DFS_SEEN;
-            if (Call* c = Expression::dynamicCast<Call>(
-                    (*m)[definition_map[cur].first]->cast<ConstraintI>()->e())) {
+            if (definition_map[cur].first == -1) {
+              // No associated call, remove annotation
+              Expression::ann(cur).remove(Constants::constants().ann.is_defined_var);
+            } else if (Call* c = Expression::dynamicCast<Call>(
+                           (*m)[definition_map[cur].first]->cast<ConstraintI>()->e())) {
               // Variable is defined by a call, push all arguments
               unsigned int count_cur = 0;
               for (unsigned int i = 0; i < c->argCount(); i++) {

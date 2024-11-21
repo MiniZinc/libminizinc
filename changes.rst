@@ -29,7 +29,7 @@ Bug fixes:
 -  Fix compilation of empty arrays with empty domains (:bugref:`860`).
 -  Fix evaluation of ``dom_array`` on par arrays (:bugref:`851`).
 -  Fix flattening of array slices inside tuples and records (:bugref:`859`).
--  Fix defines_var annotation for cyclic definitions (:bugref:`863`).
+-  Fix defines_var annotation for cyclic and missing definitions (:bugref:`863`).
 -  Fix assertion failures when using arrays as argument to bin packing constraints
    (:bugref:`865`).
 -  Fix operator precedences for ``intersect`` and unary plus/minus.
