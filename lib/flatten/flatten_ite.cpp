@@ -256,7 +256,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
   } else if (ite->type().istuple() || ite->type().isrecord()) {
     noOtherBranches = false;
     std::vector<Expression*> then_in(ite->size());
-    for (size_t i = 0; i < ite->size(); ++i) {
+    for (unsigned int i = 0; i < ite->size(); ++i) {
       then_in[i] = ite->thenExpr(i);
     }
     tupleResult =

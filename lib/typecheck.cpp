@@ -2060,8 +2060,8 @@ public:
         tt.mkVar(_env);
         if (tt.contains(_env, [](Type t) {
               return t.bt() == Type::BT_ANN || t.bt() == Type::BT_STRING ||
-                     t.st() == Type::ST_SET &&
-                         (t.bt() != Type::BT_INT && t.bt() != Type::BT_TOP || t.isOpt());
+                     (t.st() == Type::ST_SET &&
+                      ((t.bt() != Type::BT_INT && t.bt() != Type::BT_TOP) || t.isOpt()));
             })) {
           std::ostringstream oss;
           oss << "array access using a variable is not supported for array of "
@@ -2569,7 +2569,7 @@ public:
       }
       if (tret.contains(_env, [](Type t) {
             return t.bt() == Type::BT_STRING || t.bt() == Type::BT_ANN ||
-                   t.st() == Type::ST_SET && (t.bt() != Type::BT_INT || t.isOpt());
+                   (t.st() == Type::ST_SET && (t.bt() != Type::BT_INT || t.isOpt()));
           })) {
         throw TypeError(_env, Expression::loc(ite),
                         "conditional with var condition cannot have type " + tret.toString(_env));
@@ -3336,7 +3336,7 @@ public:
     }
 
     if (tt.st() == Type::ST_SET && tt.ti() == Type::TI_VAR &&
-        (tt.bt() != Type::BT_INT && tt.bt() != Type::BT_TOP || tt.isOpt())) {
+        ((tt.bt() != Type::BT_INT && tt.bt() != Type::BT_TOP) || tt.isOpt())) {
       throw TypeError(_env, Expression::loc(ti),
                       "var set element types other than `int' not allowed");
     }
@@ -4430,7 +4430,7 @@ void output_var_desc_json(Env& env, TypeInst* ti, std::ostream& os, bool extra =
   const auto tuple_types = [&]() {
     auto* dom = Expression::cast<ArrayLit>(ti->domain());
     os << ", \"field_types\" : [";
-    for (size_t i = 0; i < dom->size(); ++i) {
+    for (unsigned int i = 0; i < dom->size(); ++i) {
       output_var_desc_json(env, Expression::cast<TypeInst>((*dom)[i]), os, extra);
       if (i < dom->size() - 1) {
         os << ", ";
@@ -4442,7 +4442,7 @@ void output_var_desc_json(Env& env, TypeInst* ti, std::ostream& os, bool extra =
     auto* dom = Expression::cast<ArrayLit>(ti->domain());
     auto* rt = env.envi().getRecordType(ti->type());
     os << ", \"field_types\" : {";
-    for (size_t i = 0; i < dom->size(); ++i) {
+    for (unsigned int i = 0; i < dom->size(); ++i) {
       os << "\"" << Printer::escapeStringLit(rt->fieldName(i)) << "\": ";
       output_var_desc_json(env, Expression::cast<TypeInst>((*dom)[i]), os, extra);
       if (i < dom->size() - 1) {

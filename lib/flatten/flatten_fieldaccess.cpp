@@ -32,7 +32,7 @@ EE flatten_fieldaccess(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, Var
   }
 
   // Bind result
-  ret.r = bind(env, ctx, r, (*al)[i.toInt() - 1]);
+  ret.r = bind(env, ctx, r, (*al)[static_cast<unsigned int>(i.toInt()) - 1]);
   return ret;
 }
 

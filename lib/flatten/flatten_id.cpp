@@ -132,7 +132,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
       } else if (vd->ti()->type().structBT()) {
         auto* fieldsti = Expression::cast<ArrayLit>(vd->ti()->domain());
         std::vector<Expression*> elems(fieldsti->size());
-        for (size_t i = 0; i < fieldsti->size(); ++i) {
+        for (unsigned int i = 0; i < fieldsti->size(); ++i) {
           CallStackItem csi(env, IntLit::a(static_cast<long long int>(i)));
           auto* nti = Expression::cast<TypeInst>((*fieldsti)[i]);
           Type nty(nti->type());

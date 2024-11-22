@@ -1378,7 +1378,7 @@ bool TypeInst::resolveAlias(EnvI& env) {
     }
   } else if (ntype.dim() != 0) {
     std::vector<TypeInst*> ranges(alias->ranges().size());
-    for (size_t i = 0; i < alias->ranges().size(); ++i) {
+    for (unsigned int i = 0; i < alias->ranges().size(); ++i) {
       ranges[i] = alias->ranges()[i];
     }
     setRanges(ranges);
@@ -1443,7 +1443,7 @@ bool TypeInst::hasTiVariable() const {
       return true;
     }
     if (auto* al = Expression::dynamicCast<ArrayLit>(domain())) {
-      for (size_t i = 0; i < al->size(); ++i) {
+      for (unsigned int i = 0; i < al->size(); ++i) {
         auto* ti = Expression::cast<TypeInst>((*al)[i]);
         if (ti->hasTiVariable()) {
           return true;
@@ -1451,7 +1451,7 @@ bool TypeInst::hasTiVariable() const {
       }
     }
   }
-  for (size_t i = 0; i < _ranges.size(); ++i) {
+  for (unsigned int i = 0; i < _ranges.size(); ++i) {
     if (_ranges[i]->domain() != nullptr && Expression::isa<TIId>(_ranges[i]->domain())) {
       return true;
     }
@@ -1567,7 +1567,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
       } else if (cur.second.structBT()) {
         auto* al = Expression::cast<ArrayLit>(tii->domain());
         StructType* tiit_st = env.getStructType(cur.second);
-        for (size_t i = 0; i < al->size(); ++i) {
+        for (unsigned int i = 0; i < al->size(); ++i) {
           stack.emplace_back(Expression::cast<TypeInst>((*al)[i]), (*tiit_st)[i]);
         }
       }

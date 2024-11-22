@@ -383,7 +383,7 @@ protected:
   CSEMap _cseMap;
   Model* _flat;
   bool _failed;
-  unsigned int _ids;
+  long long int _ids;
   ASTStringMap<ASTString> _reifyMap;
   typedef std::unordered_map<VarDeclI*, unsigned int> EnumMap;
   EnumMap _enumMap;
@@ -445,7 +445,7 @@ public:
   ~EnvI();
   long long int genId();
   /// Set minimum new temporary id to \a i+1
-  void minId(unsigned int i) { _ids = std::max(_ids, i + 1); }
+  void minId(long long int i) { _ids = std::max(_ids, i + 1); }
   void cseMapInsert(Expression* e, const EE& ee);
   CSEMap::iterator cseMapFind(Expression* e);
   void cseMapRemove(Expression* e);
@@ -551,7 +551,9 @@ public:
 
   void cleanupExceptOutput();
   std::default_random_engine& rndGenerator() { return _g; }
-  void setRandomSeed(long unsigned int r) { _g.seed(r); }
+  void setRandomSeed(long unsigned int r) {
+    _g.seed(static_cast<std::default_random_engine::result_type>(r));
+  }
   void cancel() { _cancel = true; }
   void checkCancel() {
     if (_cancel) {  // TODO: Should this be annotated "unlikely"?

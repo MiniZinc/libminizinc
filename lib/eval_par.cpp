@@ -280,21 +280,21 @@ ArrayLit* eval_record_merge(EnvI& env, ArrayLit* lhs, ArrayLit* rhs) {
   for (size_t i = 0; i < total_size; i++) {
     if (l >= fields1->size()) {
       // must choose rhs
-      all_fields.emplace_back((*rhs)[r]);
+      all_fields.emplace_back((*rhs)[static_cast<unsigned int>(r)]);
       ++r;
     } else if (r >= fields2->size()) {
       // must choose lhs
-      all_fields.emplace_back((*lhs)[l]);
+      all_fields.emplace_back((*lhs)[static_cast<unsigned int>(l)]);
       ++l;
     } else {
       ASTString lhsN(fields1->fieldName(l));
       ASTString rhsN(fields2->fieldName(r));
       if (cmp(lhsN, rhsN)) {
         // lhsN < rhsN
-        all_fields.emplace_back((*lhs)[l]);
+        all_fields.emplace_back((*lhs)[static_cast<unsigned int>(l)]);
         ++l;
       } else {
-        all_fields.emplace_back((*rhs)[r]);
+        all_fields.emplace_back((*rhs)[static_cast<unsigned int>(r)]);
         ++r;
       }
     }
@@ -709,7 +709,7 @@ Expression* eval_fieldaccess(EnvI& env, FieldAccess* fa) {
     // This should not happen, type checking should ensure all fields are valid.
     throw EvalError(env, Expression::loc(fa), "Internal error: accessing invalid field");
   }
-  return (*al)[i.toInt() - 1];
+  return (*al)[static_cast<unsigned int>(i.toInt()) - 1];
 }
 
 ArrayLit* eval_array_comp(EnvI& env, Comprehension* e) {

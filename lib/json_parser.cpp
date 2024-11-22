@@ -574,7 +574,7 @@ Expression* JSONParser::parseObject(istream& is, TypeInst* ti) {
   ASTStringMap<TypeInst*> fieldTIs;
   if (ti != nullptr && ti->type().bt() == Type::BT_RECORD) {
     auto* dom = Expression::cast<ArrayLit>(ti->domain());
-    for (size_t i = 0; i < dom->size(); ++i) {
+    for (unsigned int i = 0; i < dom->size(); ++i) {
       auto* fieldDef = Expression::cast<VarDecl>((*dom)[i]);
       fieldTIs.emplace(fieldDef->id()->str(), fieldDef->ti());
     }
@@ -659,7 +659,7 @@ Expression* JSONParser::parseArray(std::istream& is, TypeInst* ti, size_t range_
           // If parsing a tuple, then retrieve field TI from domain
           auto* dom = Expression::cast<ArrayLit>(ti->domain());
           if (exps.size() < dom->size()) {
-            elTI = Expression::cast<TypeInst>((*dom)[exps.size()]);
+            elTI = Expression::cast<TypeInst>((*dom)[static_cast<unsigned int>(exps.size())]);
           }
         }
         exps.push_back(parseObject(is, elTI));
@@ -741,12 +741,12 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
     while (!it.empty()) {
       if (it.size() == ti->type().dim()) {
         for (size_t i = 0; i < it.back().second->size(); ++i) {
-          elements.push_back((*it.back().second)[i]);
+          elements.push_back((*it.back().second)[static_cast<unsigned int>(i)]);
         }
         it.pop_back();
       } else {
         if (it.back().first < it.back().second->size()) {
-          Expression* expr = (*it.back().second)[it.back().first];
+          Expression* expr = (*it.back().second)[static_cast<unsigned int>(it.back().first)];
           it.back().first++;
           if (!Expression::isa<ArrayLit>(expr)) {
             throw JSONError(_env, Expression::loc(expr),
@@ -782,7 +782,7 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
       al = ArrayLit::constructTuple(Expression::loc(al), al);
     } else {
       auto* types = Expression::cast<ArrayLit>(ti->domain());
-      for (size_t i = 0; i < al->size(); ++i) {
+      for (unsigned int i = 0; i < al->size(); ++i) {
         if (Expression::isa<ArrayLit>((*al)[i])) {
           auto* tup = ArrayLit::constructTuple(Expression::loc((*al)[i]),
                                                Expression::cast<ArrayLit>((*al)[i]));
@@ -791,7 +791,7 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
           if (tup->size() != types->size()) {
             continue;  // Error will be raised by typechecker
           }
-          for (size_t j = 0; j < tup->size(); ++j) {
+          for (unsigned int j = 0; j < tup->size(); ++j) {
             if (Expression::isa<ArrayLit>((*tup)[j])) {
               tup->set(j, coerceArray(Expression::cast<TypeInst>((*types)[j]),
                                       Expression::cast<ArrayLit>((*tup)[j])));

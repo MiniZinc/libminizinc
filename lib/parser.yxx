@@ -1651,7 +1651,7 @@ generator_list_head :
     | generator_eq MZN_WHERE expr
       { $$=new std::vector<Generator>;
         if ($1) $$->push_back(*$1);
-        if ($1 && $3) $$->push_back(Generator($$->size(),$3));
+        if ($1 && $3) $$->push_back(Generator(static_cast<int>($$->size()),$3));
         delete $1;
       }
     | generator_list_head ',' generator
@@ -1661,7 +1661,7 @@ generator_list_head :
     | generator_list_head ',' generator_eq MZN_WHERE expr
       { $$=$1;
         if ($$ && $3) $$->push_back(*$3);
-        if ($$ && $3 && $5) $$->push_back(Generator($$->size(),$5));
+        if ($$ && $3 && $5) $$->push_back(Generator(static_cast<int>($$->size()),$5));
         delete $3;
       }
 
@@ -2177,7 +2177,7 @@ call_expr :
                     ids.push_back(id);
                     gens.push_back(Generator(ids,nullptr,boe->rhs()));
                     if ((*$3)[i].second) {
-                      gens.push_back(Generator(gens.size(),(*$3)[i].second));
+                      gens.push_back(Generator(static_cast<int>(gens.size()),(*$3)[i].second));
                     }
                     ids = vector<Id*>();
                   } else {
@@ -2251,7 +2251,7 @@ call_expr :
                     ids.push_back(id);
                     gens.push_back(Generator(ids,nullptr,boe->rhs()));
                     if ((*$4)[i].second) {
-                      gens.push_back(Generator(gens.size(),(*$4)[i].second));
+                      gens.push_back(Generator(static_cast<int>(gens.size()),(*$4)[i].second));
                     }
                     ids = vector<Id*>();
                   } else {

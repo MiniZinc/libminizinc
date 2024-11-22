@@ -2476,13 +2476,13 @@ Expression* mk_domain_constraint(EnvI& env, Expression* expr, Expression* dom) {
       std::vector<std::pair<int, int>> dims;
       if (ty.dim() > 0) {
         dims.resize(al->dims());
-        for (size_t i = 0; i < al->dims(); i++) {
+        for (unsigned int i = 0; i < al->dims(); i++) {
           dims[i] = std::make_pair(al->min(i), al->max(i));
         }
       }
       std::vector<Expression*> fieldwise;
-      for (long long int i = 0; i < st->size(); ++i) {
-        auto* field_ti = Expression::cast<TypeInst>((*dom_al)[i]);
+      for (size_t i = 0; i < st->size(); ++i) {
+        auto* field_ti = Expression::cast<TypeInst>((*dom_al)[static_cast<unsigned int>(i)]);
         if (field_ti->domain() != nullptr) {
           if (ty.dim() > 0) {
             ArrayLit* slice = field_slice(env, st, al, dims, i + 1);
@@ -2493,7 +2493,8 @@ Expression* mk_domain_constraint(EnvI& env, Expression* expr, Expression* dom) {
               };
             }
           } else {
-            auto* con = mk_domain_constraint(env, (*al)[i], field_ti->domain());
+            auto* con =
+                mk_domain_constraint(env, (*al)[static_cast<unsigned int>(i)], field_ti->domain());
             if (con != nullptr) {
               fieldwise.push_back(con);
             };
@@ -3689,7 +3690,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
 
         auto* al = Expression::cast<ArrayLit>(eval_array_lit(env, fa->v()));
 
-        return flat_cv_exp(env, ctx, (*al)[i.toInt() - 1]);
+        return flat_cv_exp(env, ctx, (*al)[static_cast<unsigned int>(i.toInt()) - 1]);
       }
       case Expression::E_COMP: {
         auto* c = Expression::cast<Comprehension>(e);
@@ -4633,7 +4634,7 @@ void flatten(Env& e, FlatteningOptions opt) {
                 args[0] = c->arg(0);
                 ArrayLit* old = eval_array_lit(env, c->arg(1));
                 std::vector<Expression*> neg(old->size() + 1);
-                for (size_t i = 0; i < old->size(); ++i) {
+                for (unsigned int i = 0; i < old->size(); ++i) {
                   neg[i] = (*old)[i];
                 }
                 neg[old->size()] = vd->id();
@@ -5107,7 +5108,7 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd,
           FunctionI* decl(nullptr);
 
           std::vector<Expression*> args(c->argCount());
-          for (unsigned int i = args.size(); (i--) != 0U;) {
+          for (unsigned int i = c->argCount(); (i--) != 0U;) {
             args[i] = c->arg(i);
           }
           if (c->id() == env.constants.ids.exists) {

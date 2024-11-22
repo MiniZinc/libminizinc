@@ -5770,7 +5770,7 @@ yyreduce:
   case 324: /* generator_list_head: generator_eq "where" expr  */
       { (yyval.generators)=new std::vector<Generator>;
         if ((yyvsp[-2].generator)) (yyval.generators)->push_back(*(yyvsp[-2].generator));
-        if ((yyvsp[-2].generator) && (yyvsp[0].expression)) (yyval.generators)->push_back(Generator((yyval.generators)->size(),(yyvsp[0].expression)));
+        if ((yyvsp[-2].generator) && (yyvsp[0].expression)) (yyval.generators)->push_back(Generator(static_cast<int>((yyval.generators)->size()),(yyvsp[0].expression)));
         delete (yyvsp[-2].generator);
       }
     break;
@@ -5786,7 +5786,7 @@ yyreduce:
   case 327: /* generator_list_head: generator_list_head ',' generator_eq "where" expr  */
       { (yyval.generators)=(yyvsp[-4].generators);
         if ((yyval.generators) && (yyvsp[-2].generator)) (yyval.generators)->push_back(*(yyvsp[-2].generator));
-        if ((yyval.generators) && (yyvsp[-2].generator) && (yyvsp[0].expression)) (yyval.generators)->push_back(Generator((yyval.generators)->size(),(yyvsp[0].expression)));
+        if ((yyval.generators) && (yyvsp[-2].generator) && (yyvsp[0].expression)) (yyval.generators)->push_back(Generator(static_cast<int>((yyval.generators)->size()),(yyvsp[0].expression)));
         delete (yyvsp[-2].generator);
       }
     break;
@@ -6392,7 +6392,7 @@ yyreduce:
                     ids.push_back(id);
                     gens.push_back(Generator(ids,nullptr,boe->rhs()));
                     if ((*(yyvsp[-4].expressionPairs))[i].second) {
-                      gens.push_back(Generator(gens.size(),(*(yyvsp[-4].expressionPairs))[i].second));
+                      gens.push_back(Generator(static_cast<int>(gens.size()),(*(yyvsp[-4].expressionPairs))[i].second));
                     }
                     ids = vector<Id*>();
                   } else {
@@ -6470,7 +6470,7 @@ yyreduce:
                     ids.push_back(id);
                     gens.push_back(Generator(ids,nullptr,boe->rhs()));
                     if ((*(yyvsp[-4].expressionPairs))[i].second) {
-                      gens.push_back(Generator(gens.size(),(*(yyvsp[-4].expressionPairs))[i].second));
+                      gens.push_back(Generator(static_cast<int>(gens.size()),(*(yyvsp[-4].expressionPairs))[i].second));
                     }
                     ids = vector<Id*>();
                   } else {

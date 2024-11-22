@@ -571,14 +571,16 @@ void GecodeSolverInstance::processFlatZinc() {
             IntVar intVar(*this->currentSpace, arg2intset(_env.envi(), domain));
             currentSpace->iv.push_back(intVar);
             insertVar(it->e()->id(),
-                      GecodeVariable(GecodeVariable::INT_TYPE, currentSpace->iv.size() - 1));
+                      GecodeVariable(GecodeVariable::INT_TYPE,
+                                     static_cast<unsigned int>(currentSpace->iv.size()) - 1));
           } else {
             if (_allowUnboundedVars) {
               IntVar intVar(*this->currentSpace, Gecode::Int::Limits::min,
                             Gecode::Int::Limits::max);
               currentSpace->iv.push_back(intVar);
               insertVar(it->e()->id(),
-                        GecodeVariable(GecodeVariable::INT_TYPE, currentSpace->iv.size() - 1));
+                        GecodeVariable(GecodeVariable::INT_TYPE,
+                                       static_cast<unsigned int>(currentSpace->iv.size()) - 1));
               std::cerr << "% GecodeSolverInstance::processFlatZinc: Warning: Unbounded variable "
                         << *vd->id()
                         << " given maximum integer bounds, this may be incorrect: " << std::endl;
@@ -604,7 +606,8 @@ void GecodeSolverInstance::processFlatZinc() {
               IntVar intVar(*this->currentSpace, static_cast<int>(il), static_cast<int>(il));
               currentSpace->iv.push_back(intVar);
               insertVar(it->e()->id(),
-                        GecodeVariable(GecodeVariable::INT_TYPE, currentSpace->iv.size() - 1));
+                        GecodeVariable(GecodeVariable::INT_TYPE,
+                                       static_cast<unsigned int>(currentSpace->iv.size()) - 1));
             } else {
               std::stringstream ssm;
               ssm << "GecodeSolverInstance::processFlatZinc: Error: Unsafe value for Gecode: " << il
@@ -635,7 +638,8 @@ void GecodeSolverInstance::processFlatZinc() {
           BoolVar boolVar(*this->currentSpace, static_cast<int>(lb), static_cast<int>(ub));
           currentSpace->bv.push_back(boolVar);
           insertVar(it->e()->id(),
-                    GecodeVariable(GecodeVariable::BOOL_TYPE, currentSpace->bv.size() - 1));
+                    GecodeVariable(GecodeVariable::BOOL_TYPE,
+                                   static_cast<unsigned int>(currentSpace->bv.size()) - 1));
         } else {  // there is an initialisation expression
           Expression* init = it->e()->e();
           if (Expression::isa<Id>(init) || Expression::isa<ArrayAccess>(init)) {
@@ -650,7 +654,8 @@ void GecodeSolverInstance::processFlatZinc() {
             BoolVar boolVar(*this->currentSpace, static_cast<int>(b), static_cast<int>(b));
             currentSpace->bv.push_back(boolVar);
             insertVar(it->e()->id(),
-                      GecodeVariable(GecodeVariable::BOOL_TYPE, currentSpace->bv.size() - 1));
+                      GecodeVariable(GecodeVariable::BOOL_TYPE,
+                                     static_cast<unsigned int>(currentSpace->bv.size()) - 1));
           }
         }
         currentSpace->bvIntroduced.push_back(!isOutput);
@@ -686,7 +691,8 @@ void GecodeSolverInstance::processFlatZinc() {
           FloatVar floatVar(*this->currentSpace, lb, ub);
           currentSpace->fv.push_back(floatVar);
           insertVar(it->e()->id(),
-                    GecodeVariable(GecodeVariable::FLOAT_TYPE, currentSpace->fv.size() - 1));
+                    GecodeVariable(GecodeVariable::FLOAT_TYPE,
+                                   static_cast<unsigned int>(currentSpace->fv.size()) - 1));
         } else {
           Expression* init = it->e()->e();
           if (Expression::isa<Id>(init) || Expression::isa<ArrayAccess>(init)) {
@@ -700,7 +706,8 @@ void GecodeSolverInstance::processFlatZinc() {
             FloatVar floatVar(*this->currentSpace, il, il);
             currentSpace->fv.push_back(floatVar);
             insertVar(it->e()->id(),
-                      GecodeVariable(GecodeVariable::FLOAT_TYPE, currentSpace->fv.size() - 1));
+                      GecodeVariable(GecodeVariable::FLOAT_TYPE,
+                                     static_cast<unsigned int>(currentSpace->fv.size()) - 1));
           }
         }
         currentSpace->fvIntroduced.push_back(!isOutput);
@@ -721,7 +728,8 @@ void GecodeSolverInstance::processFlatZinc() {
                                      Constants::constants().ann.is_defined_var->str()) != nullptr;
         currentSpace->svDefined.push_back(isDefined);
         insertVar(it->e()->id(),
-                  GecodeVariable(GecodeVariable::SET_TYPE, currentSpace->sv.size() - 1));
+                  GecodeVariable(GecodeVariable::SET_TYPE,
+                                 static_cast<unsigned int>(currentSpace->sv.size()) - 1));
 #endif
       } else {
         std::stringstream ssm;
@@ -775,7 +783,8 @@ void GecodeSolverInstance::processFlatZinc() {
         IntVar intVar(*this->currentSpace, 0, 0);
         currentSpace->iv.push_back(intVar);
         currentSpace->optVarIsInt = true;
-        insertVar(id, GecodeVariable(GecodeVariable::INT_TYPE, currentSpace->iv.size() - 1));
+        insertVar(id, GecodeVariable(GecodeVariable::INT_TYPE,
+                                     static_cast<unsigned int>(currentSpace->iv.size()) - 1));
         currentSpace->optVarIdx = static_cast<int>(currentSpace->iv.size() - 1);
       }
     } else {  // the solve expression has to be a variable/id
@@ -1540,7 +1549,7 @@ bool GecodeSolverInstance::sac(bool toFixedPoint = false, bool shaving = false) 
       }
     }
 
-    for (unsigned int idx : sorted_iv) {
+    for (auto idx : sorted_iv) {
       IntVar ivar = currentSpace->iv[idx];
       bool tight = false;
       int nnq = 0;

@@ -332,7 +332,7 @@ public:
     auto* al = Expression::cast<ArrayLit>(struct_ti->domain());
     assert(al->size() == tt->size() ||
            al->size() + 1 == tt->size());  // May have added concrete type for reification
-    for (size_t i = 0; i < al->size(); i++) {
+    for (unsigned int i = 0; i < al->size(); i++) {
       auto* ti = Expression::cast<TypeInst>((*al)[i]);
       Type curType = ti->type();
       Type concrete_type = (*tt)[i];

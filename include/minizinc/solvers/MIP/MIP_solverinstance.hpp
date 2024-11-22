@@ -715,7 +715,7 @@ inline std::string make_constraint_name(const char* pfx, int cnt,
 template <class Idx>
 void remove_duplicates(std::vector<Idx>& rmi, std::vector<double>& rmv) {
   std::unordered_map<Idx, double> linExp;
-  for (int i = rmi.size(); i--;) {
+  for (size_t i = rmi.size(); i--;) {
     linExp[rmi[i]] += rmv[i];
   }
   if (rmi.size() == linExp.size()) {
@@ -994,7 +994,7 @@ void p_cumulative(SolverInstanceBase& si, const Call* call) {
   double b = gi.exprToConst(call->arg(3));
 
   gi.getMIPWrapper()->addCumulative(
-      startTimes.size(), startTimes.data(), durations.data(), demands.data(), b,
+      static_cast<int>(startTimes.size()), startTimes.data(), durations.data(), demands.data(), b,
       make_constraint_name("p_cumulative_", (gi.getMIPWrapper()->nAddedRows++), call));
 }
 
@@ -1012,7 +1012,7 @@ void p_lex_lesseq_binary(SolverInstanceBase& si, const Call* call) {
   MZN_ASSERT_HARD(vec1.size() == vec2.size());
 
   gi.getMIPWrapper()->addLexLesseq(
-      vec1.size(), vec1.data(), vec2.data(), (bool)isModelCons,
+      static_cast<int>(vec1.size()), vec1.data(), vec2.data(), (bool)isModelCons,
       make_constraint_name("p_lex_lesseq__orbisack_", (gi.getMIPWrapper()->nAddedRows++), call));
 }
 
@@ -1092,8 +1092,8 @@ void p_bounds_disj(SolverInstanceBase& si, const Call* call) {
   gi.exprToVarArray(call->arg(5), varsF);
   double coef = 1.0;
   gi.getMIPWrapper()->addBoundsDisj(
-      fUB.size(), fUB.data(), bnd.data(), vars.data(), fUBF.size(), fUBF.data(), bndF.data(),
-      varsF.data(),
+      static_cast<int>(fUB.size()), fUB.data(), bnd.data(), vars.data(),
+      static_cast<int>(fUBF.size()), fUBF.data(), bndF.data(), varsF.data(),
       make_constraint_name("p_bounds_disj_", (gi.getMIPWrapper()->nAddedRows++), call));
 }
 
@@ -1105,7 +1105,7 @@ void p_array_minimum(SolverInstanceBase& si, const Call* call) {
   std::vector<MIPSolver::Variable> args;
   gi.exprToVarArray(call->arg(1), args);
   gi.getMIPWrapper()->addMinimum(
-      res, args.size(), args.data(),
+      res, static_cast<int>(args.size()), args.data(),
       make_constraint_name("p_minimum_", (gi.getMIPWrapper()->nAddedRows++), call));
 }
 

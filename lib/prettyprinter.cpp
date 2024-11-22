@@ -228,7 +228,7 @@ public:
       assert(t.structBT());
       _os << (t.bt() == Type::BT_TUPLE ? "tuple(" : "record(");
       if (t.bt() != Type::BT_RECORD || t.typeId() != 0) {
-        for (size_t i = 0; i < al->size(); ++i) {
+        for (unsigned int i = 0; i < al->size(); ++i) {
           auto* ti = Expression::cast<TypeInst>((*al)[i]);
           p(ti);
           if (t.bt() == Type::BT_RECORD) {
@@ -241,7 +241,7 @@ public:
           }
         }
       } else {
-        for (size_t i = 0; i < al->size(); ++i) {
+        for (unsigned int i = 0; i < al->size(); ++i) {
           auto* vd = Expression::cast<VarDecl>((*al)[i]);
           p(vd->ti());
           _os << ": ";
@@ -1287,7 +1287,7 @@ Document* tiexpression_to_document(const Type& type, const Expression* e, EnvI* 
     assert(type.structBT());
     dl->addStringToList(type.bt() == Type::BT_TUPLE ? "tuple(" : "record(");
     if (type.bt() != Type::BT_RECORD || type.typeId() != 0) {
-      for (size_t i = 0; i < al->size(); ++i) {
+      for (unsigned int i = 0; i < al->size(); ++i) {
         auto* ti = Expression::cast<TypeInst>((*al)[i]);
         dl->addDocumentToList(expression_to_document(ti, env));
         if (type.bt() == Type::BT_RECORD) {
@@ -1303,7 +1303,7 @@ Document* tiexpression_to_document(const Type& type, const Expression* e, EnvI* 
         }
       }
     } else {
-      for (size_t i = 0; i < al->size(); ++i) {
+      for (unsigned int i = 0; i < al->size(); ++i) {
         auto* vd = Expression::cast<VarDecl>((*al)[i]);
         dl->addDocumentToList(expression_to_document(vd->ti(), env));
         dl->addStringToList(": ");

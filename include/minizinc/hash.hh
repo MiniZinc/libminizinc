@@ -352,7 +352,7 @@ public:
   /// Remove all elements from the map
   void clear() { _s.clear(); }
   bool isEmpty() const { return _s.begin() == _s.end(); }
-  unsigned int size() const { return _s.size(); }
+  unsigned int size() const { return static_cast<unsigned int>(_s.size()); }
 };
 
 }  // namespace MiniZinc

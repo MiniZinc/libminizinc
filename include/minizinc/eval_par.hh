@@ -214,7 +214,7 @@ void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, I
           auto* t = Expression::cast<ArrayLit>(e->e());
           for (unsigned int i = 0; i < t->size() - 1; i++) {
             IntVal curIdx = eval_int(env, (*t)[i]);
-            a.indexes.push_back(curIdx.toInt());
+            a.indexes.push_back(static_cast<unsigned int>(curIdx.toInt()));
             a.idxMin[i] = std::min(a.idxMin[i], curIdx);
             a.idxMax[i] = std::max(a.idxMax[i], curIdx);
           }
@@ -358,7 +358,7 @@ EvaluatedComp<typename Eval::ArrayVal> eval_comp(EnvI& env, Eval& eval, Comprehe
     IntVal size = 1;
     std::vector<long long int> dimSize(a_tmp.idxMin.size());
     a.dims.resize(a_tmp.idxMin.size());
-    for (unsigned int i = a_tmp.idxMin.size(); (i--) != 0U;) {
+    for (size_t i = a_tmp.idxMin.size(); (i--) != 0U;) {
       if (a_tmp.idxMin[i] == IntVal::infinity() && a_tmp.idxMax[i] == -IntVal::infinity()) {
         size = 0;
         break;

@@ -1944,7 +1944,7 @@ public:
     assert(GC::locked());
     // Create a parameter TypeInst in the format of a tuple TypeInst
     std::vector<Expression*> tis(paramCount());
-    for (size_t i = 0; i < paramCount(); ++i) {
+    for (unsigned int i = 0; i < paramCount(); ++i) {
       tis[i] = param(i)->ti();
     }
     return new TypeInst(Location().introduce(), Type::tuple(),

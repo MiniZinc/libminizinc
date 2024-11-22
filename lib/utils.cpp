@@ -57,17 +57,17 @@ void dump_stack(const std::vector<EnvI::CallStackEntry>& stack) {
   char buf[24];
   const char* msg = "Stack depth: ";
   write(2, msg, strlen(msg));
-  itoa_async_safe(stack.size(), buf);
+  itoa_async_safe(static_cast<unsigned int>(stack.size()), buf);
   write(2, buf, strlen(buf));
   msg = "\nStack backtrace (only showing function/predicate calls):\n";
   write(2, msg, strlen(msg));
 
   int count = 15;
-  for (unsigned int i = stack.size(); (i--) >= 0U;) {
+  for (size_t i = stack.size(); (i--) >= 0U;) {
     if (Expression::isa<Call>(stack[i].e)) {
       msg = "  frame #";
       write(2, msg, strlen(msg));
-      itoa_async_safe(stack.size() - i - 1, buf);
+      itoa_async_safe(static_cast<unsigned int>(stack.size() - i) - 1, buf);
       write(2, buf, strlen(buf));
       if (stack.size() - i - 1 < 10) {
         msg = ":  ";

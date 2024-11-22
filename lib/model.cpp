@@ -298,7 +298,7 @@ struct TIIDInfo {
 void TypeInst::collectTypeIds(std::unordered_map<ASTString, size_t>& seen_tiids,
                               std::vector<TIIDInfo>& type_ids) const {
   auto* al = Expression::cast<ArrayLit>(domain());
-  for (size_t i = 0; i < al->size(); i++) {
+  for (unsigned int i = 0; i < al->size(); i++) {
     auto* ti = Expression::cast<TypeInst>((*al)[i]);
     if (ti->type().bt() == Type::BT_TOP) {
       // If type is top, either this is a TIId, or it is caused by <>
@@ -398,7 +398,7 @@ void Model::addPolymorphicInstances(EnvI& env, Model::FnEntry& fe, std::vector<F
         // New complete instance
         // First, update cur types
         auto* tis = Expression::cast<ArrayLit>(paramtuple->domain());
-        for (size_t i = 0; i < tis->size(); ++i) {
+        for (unsigned int i = 0; i < tis->size(); ++i) {
           cur.t[i] = Expression::type((*tis)[i]);
           if (cur.t[i].bt() == Type::BT_TUPLE && cur.t[i].typeId() == 0) {
             env.registerTupleType(Expression::cast<TypeInst>((*tis)[i]));
@@ -873,7 +873,7 @@ FunctionI* Model::matchReification(EnvI& env, const ASTString& id, const std::ve
       // is at least as specific as the reification. That is the parameters of the matching
       // half-reification declaration should be the same or subtypes of the matching reification.
       assert(imp_decl->paramCount() == reif_decl->paramCount());
-      for (size_t i = 0; i < imp_decl->paramCount(); ++i) {
+      for (unsigned int i = 0; i < imp_decl->paramCount(); ++i) {
         Type a = imp_decl->param(i)->ti()->type();
         Type b = reif_decl->param(i)->ti()->type();
         if (!env.isSubtype(a, b, strictEnums)) {

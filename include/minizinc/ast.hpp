@@ -107,7 +107,7 @@ inline unsigned int Location::LocVec::firstLine() const {
     return static_cast<unsigned int>(ui.u & mask);
   }
   auto* il = static_cast<IntLit*>(_data[1]);
-  return IntLit::v(il).toInt();
+  return static_cast<unsigned int>(IntLit::v(il).toInt());
 }
 inline unsigned int Location::LocVec::lastLine() const {
   if (_size == 2) {
@@ -125,7 +125,7 @@ inline unsigned int Location::LocVec::lastLine() const {
     return static_cast<unsigned int>((ui.u & mask) + ((ui.u >> first_line_size) & offsetmask));
   }
   auto* il = static_cast<IntLit*>(_data[2]);
-  return IntLit::v(il).toInt();
+  return static_cast<unsigned int>(IntLit::v(il).toInt());
 }
 inline unsigned int Location::LocVec::firstColumn() const {
   if (_size == 2) {
@@ -142,7 +142,7 @@ inline unsigned int Location::LocVec::firstColumn() const {
     return static_cast<unsigned int>((ui.u >> first_col_offset) & mask);
   }
   auto* il = static_cast<IntLit*>(_data[3]);
-  return IntLit::v(il).toInt();
+  return static_cast<unsigned int>(IntLit::v(il).toInt());
 }
 inline unsigned int Location::LocVec::lastColumn() const {
   if (_size == 2) {
@@ -159,7 +159,7 @@ inline unsigned int Location::LocVec::lastColumn() const {
     return static_cast<unsigned int>((ui.u >> last_col_offset) & mask);
   }
   auto* il = static_cast<IntLit*>(_data[4]);
-  return IntLit::v(il).toInt();
+  return static_cast<unsigned int>(IntLit::v(il).toInt());
 }
 
 inline FloatLit::FloatLit(const Location& loc, FloatVal v)

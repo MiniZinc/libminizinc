@@ -1245,7 +1245,7 @@ IntSetVal* b_compute_pow_bounds(EnvI& env, Call* call) {
     m = std::min(m, v);
     n = std::max(n, v);
   };
-  if (base.l <= 1 && base.u >= 1 || exp.l <= 0 && exp.u >= 0) {
+  if ((base.l <= 1 && base.u >= 1) || (exp.l <= 0 && exp.u >= 0)) {
     update(1);
   }
   if (base.l <= -1 && base.u >= -1) {
@@ -1276,7 +1276,7 @@ IntSetVal* b_compute_pow_bounds(EnvI& env, Call* call) {
       // crosses 0
       update(0);
     }
-  } else if (base.l == 0 && exp.u > 0 || base.u > 1 && exp.l < 0) {
+  } else if ((base.l == 0 && exp.u > 0) || (base.u > 1 && exp.l < 0)) {
     // 0^1 = 0, 2^-1 = 0
     update(0);
   } else if (exp.l >= 0) {
@@ -2205,7 +2205,7 @@ bool b_in_symmetry_breaking_constraint(EnvI& env, Call* /*call*/) {
 
 bool b_mzn_in_root_context(EnvI& env, Call* call) {
   // Find context of enclosing call
-  for (unsigned int i = env.callStack.size(); (i--) != 0U;) {
+  for (size_t i = env.callStack.size(); (i--) != 0U;) {
     if (env.callStack[i].e != nullptr && Expression::isa<Call>(env.callStack[i].e) &&
         Expression::cast<Call>(env.callStack[i].e)->id() != env.constants.ids.mzn_in_root_context) {
       return env.callStack[i].ctx.b == C_ROOT;
@@ -2930,7 +2930,7 @@ Expression* b_sort_by_int(EnvI& env, Call* call) {
   std::vector<size_t> a(order_e->size());
   for (size_t i = 0; i < order.size(); i++) {
     a[i] = i;
-    order[i] = eval_int(env, (*order_e)[i]);
+    order[i] = eval_int(env, (*order_e)[static_cast<unsigned int>(i)]);
   }
   struct Ord {
     std::vector<IntVal>& order;
@@ -2940,7 +2940,7 @@ Expression* b_sort_by_int(EnvI& env, Call* call) {
   std::stable_sort(a.begin(), a.end(), _ord);
   std::vector<Expression*> sorted(a.size());
   for (auto i = static_cast<unsigned int>(sorted.size()); (i--) != 0U;) {
-    sorted[i] = (*al)[a[i]];
+    sorted[i] = (*al)[static_cast<unsigned int>(a[i])];
   }
   auto* al_sorted = new ArrayLit(Expression::loc(al), sorted);
   al_sorted->type(al->type());
@@ -2955,7 +2955,7 @@ Expression* b_sort_by_float(EnvI& env, Call* call) {
   std::vector<size_t> a(order_e->size());
   for (size_t i = 0; i < order.size(); i++) {
     a[i] = i;
-    order[i] = eval_float(env, (*order_e)[i]);
+    order[i] = eval_float(env, (*order_e)[static_cast<unsigned int>(i)]);
   }
   struct Ord {
     std::vector<FloatVal>& order;
@@ -2965,7 +2965,7 @@ Expression* b_sort_by_float(EnvI& env, Call* call) {
   std::stable_sort(a.begin(), a.end(), _ord);
   std::vector<Expression*> sorted(a.size());
   for (auto i = static_cast<unsigned int>(sorted.size()); (i--) != 0U;) {
-    sorted[i] = (*al)[a[i]];
+    sorted[i] = (*al)[static_cast<unsigned int>(a[i])];
   }
   auto* al_sorted = new ArrayLit(Expression::loc(al), sorted);
   al_sorted->type(al->type());

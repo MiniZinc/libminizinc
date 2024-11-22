@@ -1449,40 +1449,42 @@ bool NLFile::hasContinousVars() const { return !hasIntegerVars(); }
 unsigned int NLFile::jacobianCount() const { return _jacobianCount; }
 
 /** Total number of variables. */
-unsigned int NLFile::varCount() const { return variables.size(); }
+unsigned int NLFile::varCount() const { return static_cast<unsigned int>(variables.size()); }
 
 /** Number of variables appearing nonlinearly in constraints. */
 unsigned int NLFile::lvcCount() const {
   // Variables in both + variables in constraint only (integer+continuous)
-  return lvbCount() + vname_nliv_cons.size() + vname_nlcv_cons.size();
+  return static_cast<unsigned int>(lvbCount() + vname_nliv_cons.size() + vname_nlcv_cons.size());
 }
 
 /** Number of variables appearing nonlinearly in objectives. */
 unsigned int NLFile::lvoCount() const {
   // Variables in both + variables in objective only (integer+continuous)
-  return lvbCount() + vname_nliv_obj.size() + vname_nlcv_obj.size();
+  return static_cast<unsigned int>(lvbCount() + vname_nliv_obj.size() + vname_nlcv_obj.size());
 }
 
 /** Number of variables appearing nonlinearly in both constraints and objectives.*/
-unsigned int NLFile::lvbCount() const { return vname_nlcv_both.size() + vname_nliv_both.size(); }
+unsigned int NLFile::lvbCount() const {
+  return static_cast<unsigned int>(vname_nlcv_both.size() + vname_nliv_both.size());
+}
 
 /** Number of integer variables appearing nonlinearly in both constraints and objectives.*/
-unsigned int NLFile::lvbiCount() const { return vname_nliv_both.size(); }
+unsigned int NLFile::lvbiCount() const { return static_cast<unsigned int>(vname_nliv_both.size()); }
 
 /** Number of integer variables appearing nonlinearly in constraints **only**.*/
-unsigned int NLFile::lvciCount() const { return vname_nliv_cons.size(); }
+unsigned int NLFile::lvciCount() const { return static_cast<unsigned int>(vname_nliv_cons.size()); }
 
 /** Number of integer variables appearing nonlinearly in objectives **only**.*/
-unsigned int NLFile::lvoiCount() const { return vname_nliv_obj.size(); }
+unsigned int NLFile::lvoiCount() const { return static_cast<unsigned int>(vname_nliv_obj.size()); }
 
 /** Number of linear arcs. Network nor implemented, so always 0.*/
-unsigned int NLFile::wvCount() const { return vname_larc_all.size(); }
+unsigned int NLFile::wvCount() const { return static_cast<unsigned int>(vname_larc_all.size()); }
 
 /** Number of "other" integer variables.*/
-unsigned int NLFile::ivCount() const { return vname_liv_all.size(); }
+unsigned int NLFile::ivCount() const { return static_cast<unsigned int>(vname_liv_all.size()); }
 
 /** Number of binary variables.*/
-unsigned int NLFile::bvCount() const { return vname_bv_all.size(); }
+unsigned int NLFile::bvCount() const { return static_cast<unsigned int>(vname_bv_all.size()); }
 
 /** *** *** *** Printable *** *** *** **/
 // Note:  * empty line not allowed

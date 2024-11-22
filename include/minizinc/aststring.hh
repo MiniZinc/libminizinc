@@ -254,7 +254,7 @@ inline bool ASTString::operator<(const ASTString& s) const {
   if (size() == 0) {
     return 0 < s.size();
   }
-  unsigned int size = std::min(_s->size(), s.size());
+  unsigned int size = static_cast<unsigned int>(std::min(_s->size(), s.size()));
   int cmp = strncmp(_s->c_str(), s.c_str(), size);
   if (cmp == 0) {
     return _s->size() < s.size();

@@ -1338,7 +1338,7 @@ EE rewrite_struct_op(EnvI& env, Ctx& ctx, Expression* lhs, BinOpType bot, Expres
       assert(tupLHS->isTuple() == tupRHS->isTuple());
       assert(tupLHS->size() == tupRHS->size());
       std::vector<Expression*> comps(tupLHS->size());
-      for (size_t i = 0; i < tupLHS->size(); ++i) {
+      for (unsigned int i = 0; i < tupLHS->size(); ++i) {
         comps[i] = new_binop((*tupLHS)[i], BOT_EQ, (*tupRHS)[i]);
       }
       auto* al = new ArrayLit(Location().introduce(), comps);
@@ -1354,7 +1354,7 @@ EE rewrite_struct_op(EnvI& env, Ctx& ctx, Expression* lhs, BinOpType bot, Expres
       assert(tupLHS->isTuple() == tupRHS->isTuple());
       assert(tupLHS->size() == tupRHS->size());
       std::vector<Expression*> comps(tupLHS->size());
-      for (size_t i = 0; i < tupLHS->size(); ++i) {
+      for (unsigned int i = 0; i < tupLHS->size(); ++i) {
         comps[i] = new_binop((*tupLHS)[i], BOT_NQ, (*tupRHS)[i]);
       }
       auto* al = new ArrayLit(Location().introduce(), comps);
