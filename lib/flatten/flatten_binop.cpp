@@ -1075,7 +1075,7 @@ bool check_struct_table(EnvI& env, Type elem_t, Type arr_t) {
     // Par LHS, can be checked directly
     return false;
   }
-  std::vector<std::pair<StructType*, size_t>> stack{{env.getStructType(elem_t), 0}};
+  std::vector<std::pair<StructType*, unsigned int>> stack{{env.getStructType(elem_t), 0}};
   // Doing this doesn't make sense on singular structs
   if (stack.back().first->size() <= 1) {
     return false;
@@ -1122,7 +1122,7 @@ bool check_struct_table(EnvI& env, Type elem_t, Type arr_t) {
 /// be converted to an lex_less(eq) constraint as an optimization.
 bool check_struct_lex(EnvI& env, Type t) {
   assert(t.structBT());  // No need to check otherwise
-  std::vector<std::pair<StructType*, size_t>> stack{{env.getStructType(t), 0}};
+  std::vector<std::pair<StructType*, unsigned int>> stack{{env.getStructType(t), 0}};
   // Doing this doesn't make sense on singular structs
   if (stack.back().first->size() <= 1) {
     return false;

@@ -1602,7 +1602,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t)
         // Expression that has tuple type
         std::vector<Expression*> collect(intended->size());
         std::vector<Type> pt(intended->size());
-        for (long long int i = 0; i < collect.size(); i++) {
+        for (unsigned int i = 0; i < collect.size(); i++) {
           collect[i] = new FieldAccess(Expression::loc(e).introduce(), ident, IntLit::a(i + 1));
           Expression::type(collect[i], (*current)[i]);
           collect[i] = add_coercion(env, m, collect[i], (*intended)[i])();
@@ -2105,21 +2105,22 @@ public:
             << tt->size() << ".";
         throw TypeError(_env, Expression::loc(fa), oss.str());
       }
-      Type ty((*tt)[i.toInt() - 1]);
+      Type ty((*tt)[static_cast<unsigned int>(i.toInt()) - 1]);
       assert((!ty.cv()) || Expression::type(fa->v()).cv());
       ty.cv(Expression::type(fa->v()).cv());
       fa->type(ty);
     } else {
       // Check if field exists
       assert(Expression::type(fa->v()).isrecord());
-      size_t loc;
+      unsigned int loc;
       RecordType* rt = _env.getRecordType(Expression::type(fa->v()));
       if (!Expression::isa<Id>(fa->field())) {
         if (fa->type().bt() == Type::BT_UNKNOWN) {
           throw TypeError(_env, Expression::loc(fa),
                           "field access of a record must use a field identifier");
         }
-        loc = IntLit::v(Expression::cast<IntLit>(fa->field())).toInt() - 1;
+        loc =
+            static_cast<unsigned int>(IntLit::v(Expression::cast<IntLit>(fa->field())).toInt()) - 1;
       } else {
         ASTString name = Expression::cast<Id>(fa->field())->str();
         auto find = rt->findField(name);

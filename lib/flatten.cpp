@@ -782,7 +782,7 @@ void OutputSectionStore::add(EnvI& env, ASTString section, Expression* e, bool j
 }
 
 TupleType::TupleType(const std::vector<Type>& fields) {
-  _size = fields.size();
+  _size = static_cast<unsigned int>(fields.size());
   for (size_t i = 0; i < _size; ++i) {
     _fields[i] = fields[i];
   }
@@ -797,7 +797,7 @@ bool TupleType::matchesBT(const EnvI& env, const TupleType& other) const {
   if (other.size() != size()) {
     return false;
   }
-  for (size_t i = 0; i < other.size(); ++i) {
+  for (unsigned int i = 0; i < other.size(); ++i) {
     const Type& ty = operator[](i);
     if (ty.bt() != other[i].bt()) {
       return false;
@@ -814,7 +814,7 @@ bool TupleType::matchesBT(const EnvI& env, const TupleType& other) const {
   return true;
 }
 bool StructType::containsArray(const EnvI& env) const {
-  for (size_t i = 0; i < size(); ++i) {
+  for (unsigned int i = 0; i < size(); ++i) {
     const Type& ti = operator[](i);
     if (ti.dim() != 0) {
       return true;
@@ -827,7 +827,7 @@ bool StructType::containsArray(const EnvI& env) const {
 }
 
 RecordType::RecordType(const std::vector<std::pair<ASTString, Type>>& fields) {
-  _size = fields.size();
+  _size = static_cast<unsigned int>(fields.size());
   size_t str_size = 0;
   for (size_t i = 0; i < _size; ++i) {
     _fields[i] = {str_size, fields[i].second};
@@ -865,7 +865,7 @@ bool RecordType::matchesBT(const EnvI& env, const RecordType& other) const {
   if (other.size() != size()) {
     return false;
   }
-  for (size_t i = 0; i < other.size(); ++i) {
+  for (unsigned int i = 0; i < other.size(); ++i) {
     if (fieldName(i) != other.fieldName(i)) {
       return false;
     }
@@ -1507,11 +1507,11 @@ Type EnvI::mergeRecord(Type record1, Type record2, Location loc) {
   RecordFieldSort cmp;
 
   std::vector<std::pair<ASTString, Type>> all_fields;
-  const size_t total_size = fields1->size() + fields2->size();
+  const unsigned int total_size = fields1->size() + fields2->size();
   all_fields.reserve(total_size);
-  size_t l = 0;
-  size_t r = 0;
-  for (size_t i = 0; i < total_size; i++) {
+  unsigned int l = 0;
+  unsigned int r = 0;
+  for (unsigned int i = 0; i < total_size; i++) {
     if (l >= fields1->size()) {
       // must choose rhs
       all_fields.emplace_back(fields2->fieldName(r), (*fields2)[r]);
@@ -1557,10 +1557,10 @@ Type EnvI::concatTuple(Type tuple1, Type tuple2) {
   TupleType* fields2 = getTupleType(tuple2);
 
   std::vector<Type> all_fields(fields1->size() + fields2->size());
-  for (size_t i = 0; i < fields1->size(); i++) {
+  for (unsigned int i = 0; i < fields1->size(); i++) {
     all_fields[i] = (*fields1)[i];
   }
-  for (size_t i = 0; i < fields2->size(); i++) {
+  for (unsigned int i = 0; i < fields2->size(); i++) {
     all_fields[fields1->size() + i] = (*fields2)[i];
   }
   unsigned int typeId = registerTupleType(all_fields);
@@ -2417,8 +2417,7 @@ void check_index_sets(EnvI& env, VarDecl* vd, Expression* e, bool isArg) {
         for (unsigned int i = 0; i < al->size(); i++) {
           Expression* access = nullptr;
           if (hadError) {
-            auto* field =
-                new Id(Location().introduce(), rt->fieldName(static_cast<size_t>(i)), nullptr);
+            auto* field = new Id(Location().introduce(), rt->fieldName(i), nullptr);
             access = new FieldAccess(Location().introduce(), item.accessor, field);
           }
           todo.emplace_back(access, (*al)[i], Expression::cast<TypeInst>((*domains)[i]));
@@ -2481,7 +2480,7 @@ Expression* mk_domain_constraint(EnvI& env, Expression* expr, Expression* dom) {
         }
       }
       std::vector<Expression*> fieldwise;
-      for (size_t i = 0; i < st->size(); ++i) {
+      for (unsigned int i = 0; i < st->size(); ++i) {
         auto* field_ti = Expression::cast<TypeInst>((*dom_al)[static_cast<unsigned int>(i)]);
         if (field_ti->domain() != nullptr) {
           if (ty.dim() > 0) {
@@ -5788,7 +5787,7 @@ FlatModelStatistics statistics(Env& m) {
 }
 
 ArrayLit* field_slice(EnvI& env, StructType* st, ArrayLit* al,
-                      std::vector<std::pair<int, int>> dims, long long int field) {
+                      std::vector<std::pair<int, int>> dims, unsigned int field) {
   assert(GC::locked());
   assert(Expression::type(al).structBT() && Expression::type(al).dim() > 0);
   Type field_ty = (*st)[field - 1];
@@ -5816,7 +5815,7 @@ std::vector<Expression*> field_slices(EnvI& env, Expression* arrExpr) {
   }
 
   std::vector<Expression*> field_al(st->size());
-  for (long long int i = 0; i < st->size(); ++i) {
+  for (unsigned int i = 0; i < st->size(); ++i) {
     field_al[i] = field_slice(env, st, al, dims, i + 1);
   }
   return field_al;

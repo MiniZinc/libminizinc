@@ -279,7 +279,7 @@ bool Type::contains(const EnvI& env, std::function<bool(const Type)> p) const {
   auto* st = env.getStructType(*this);
   std::vector<Type> todo;
   todo.reserve(st->size());
-  for (size_t i = 0; i < st->size(); i++) {
+  for (unsigned int i = 0; i < st->size(); i++) {
     todo.push_back((*st)[i]);
   }
   while (!todo.empty()) {
@@ -290,7 +290,7 @@ bool Type::contains(const EnvI& env, std::function<bool(const Type)> p) const {
     todo.pop_back();
     if (t.structBT()) {
       auto* st = env.getStructType(t);
-      for (size_t i = 0; i < st->size(); i++) {
+      for (unsigned int i = 0; i < st->size(); i++) {
         todo.push_back((*st)[i]);
       }
     }
@@ -415,7 +415,7 @@ std::string Type::toString(const EnvI& env) const {
         oss << "???";
       } else {
         TupleType* tt = env.getTupleType(*this);
-        for (size_t i = 0; i < tt->size(); ++i) {
+        for (unsigned int i = 0; i < tt->size(); ++i) {
           oss << (*tt)[i].toString(env);
           if (i < tt->size() - 1) {
             oss << ", ";
@@ -427,7 +427,7 @@ std::string Type::toString(const EnvI& env) const {
     case BT_RECORD: {
       oss << "record(";
       RecordType* rt = env.getRecordType(*this);
-      for (size_t i = 0; i < rt->size(); ++i) {
+      for (unsigned int i = 0; i < rt->size(); ++i) {
         oss << (*rt)[i].toString(env) << ": " << Printer::quoteId(rt->fieldName(i));
         if (i < rt->size() - 1) {
           oss << ", ";

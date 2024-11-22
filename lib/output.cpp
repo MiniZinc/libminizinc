@@ -446,7 +446,7 @@ Call* generate_show(EnvI& env, Expression* e, Expression* w, Expression* p, bool
                                               ? new StringLit(Location().introduce(), ",")
                                               : new StringLit(Location().introduce(), ", "));
     bool canUseBuiltin = true;
-    for (size_t i = 0; i < tt->size(); i++) {
+    for (unsigned int i = 0; i < tt->size(); i++) {
       auto field_type = (*tt)[i];
       auto* field_access =
           new FieldAccess(Location().introduce(), e, IntLit::a(static_cast<long long int>(i + 1)));
@@ -483,7 +483,7 @@ Call* generate_show(EnvI& env, Expression* e, Expression* w, Expression* p, bool
     auto* rt = env.getRecordType(t);
     std::vector<Expression*> shown_fields(rt->size() * 2 + 2);
     bool canUseBuiltin = true;
-    for (size_t i = 0; i < rt->size(); i++) {
+    for (unsigned int i = 0; i < rt->size(); i++) {
       auto field_name = rt->fieldName(i);
       auto field_type = (*rt)[i];
       auto* field_access =

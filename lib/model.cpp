@@ -46,7 +46,7 @@ bool Model::FnEntry::checkPoly(const EnvI& env, const Type& t) {
   }
   if (t.structBT()) {
     StructType* st = env.getStructType(t);
-    for (size_t i = 0; i < st->size(); ++i) {
+    for (unsigned int i = 0; i < st->size(); ++i) {
       if (checkPoly(env, (*st)[i])) {
         return true;
       }

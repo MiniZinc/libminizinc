@@ -98,8 +98,7 @@ void check_par_domain(EnvI& env, VarDecl* vd, Expression* rhs, bool isArg) {
       for (unsigned int i = 0; i < al->size(); i++) {
         Expression* access = nullptr;
         if (hadError) {
-          auto* field =
-              new Id(Location().introduce(), rt->fieldName(static_cast<size_t>(i)), nullptr);
+          auto* field = new Id(Location().introduce(), rt->fieldName(i), nullptr);
           access = new FieldAccess(Location().introduce(), it.accessor, field);
         }
         todo.emplace_back(access, (*al)[i], Expression::cast<TypeInst>((*domains)[i]));
@@ -273,11 +272,11 @@ ArrayLit* eval_record_merge(EnvI& env, ArrayLit* lhs, ArrayLit* rhs) {
   RecordFieldSort cmp;
 
   std::vector<Expression*> all_fields;
-  const size_t total_size = fields1->size() + fields2->size();
+  const unsigned int total_size = fields1->size() + fields2->size();
   all_fields.reserve(total_size);
-  size_t l = 0;
-  size_t r = 0;
-  for (size_t i = 0; i < total_size; i++) {
+  unsigned int l = 0;
+  unsigned int r = 0;
+  for (unsigned int i = 0; i < total_size; i++) {
     if (l >= fields1->size()) {
       // must choose rhs
       all_fields.emplace_back((*rhs)[static_cast<unsigned int>(r)]);
@@ -921,7 +920,7 @@ Expression* ArrayAccessSucess::dummyLiteral(EnvI& env, Type t) const {
     auto* tt = env.getStructType(t);
     std::vector<Expression*> fields;
     fields.reserve(tt->size());
-    for (size_t i = 0; i < tt->size(); i++) {
+    for (unsigned int i = 0; i < tt->size(); i++) {
       fields.push_back(dummyLiteral(env, (*tt)[i]));
     }
     auto* al = ArrayLit::constructTuple(Location(), fields);

@@ -491,7 +491,8 @@ public:
           // Has been turned into field number, so need to convert back into name
           auto* rt = _env->getRecordType(Expression::type(fa->v()));
           auto* i = Expression::cast<IntLit>(fa->field());
-          _os << Printer::quoteId(rt->fieldName(IntLit::v(i).toInt() - 1));
+          _os << Printer::quoteId(
+              rt->fieldName(static_cast<unsigned int>(IntLit::v(i).toInt()) - 1));
         } else {
           p(fa->field());
         }

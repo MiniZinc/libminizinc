@@ -139,14 +139,14 @@ protected:
 
 class StructType {
 public:
-  virtual size_t size() const = 0;
-  virtual Type operator[](size_t i) const = 0;
+  virtual unsigned int size() const = 0;
+  virtual Type operator[](unsigned int i) const = 0;
   bool containsArray(const EnvI& env) const;
 };
 
 class TupleType : public StructType {
 protected:
-  size_t _size;
+  unsigned int _size;
   Type _fields[1];  // Resized by TupleType::a
   TupleType(const std::vector<Type>& fields);
 
@@ -155,14 +155,14 @@ public:
   static void free(TupleType* rt) { ::free(rt); }
   ~TupleType() = delete;
 
-  size_t size() const override { return _size; }
-  Type operator[](size_t i) const override {
+  unsigned int size() const override { return _size; }
+  Type operator[](unsigned int i) const override {
     assert(i < size());
     return _fields[i];
   }
   size_t hash() const {
     std::size_t seed = _size;
-    for (size_t i = 0; i < _size; ++i) {
+    for (unsigned int i = 0; i < _size; ++i) {
       seed ^= _fields[i].toInt() + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     }
     return seed;
@@ -171,7 +171,7 @@ public:
     if (_size != rhs._size) {
       return false;
     }
-    for (int i = 0; i < _size; ++i) {
+    for (unsigned int i = 0; i < _size; ++i) {
       if (_fields[i].cmp(rhs._fields[i]) != 0) {
         return false;
       }
@@ -183,7 +183,7 @@ public:
     if (other.size() != size()) {
       return false;
     }
-    for (size_t i = 0; i < other.size(); ++i) {
+    for (unsigned int i = 0; i < other.size(); ++i) {
       if (!operator[](i).isSubtypeOf(env, other[i], strictEnum)) {
         return false;
       }
@@ -204,7 +204,7 @@ class RecordType : public StructType {
 protected:
   // name offset + type
   using FieldTup = std::pair<size_t, Type>;
-  size_t _size;
+  unsigned int _size;
   std::string _fieldNames;
   FieldTup _fields[1];  // Resized by TupleType::a
   RecordType(const std::vector<std::pair<ASTString, Type>>& fields);
@@ -215,20 +215,20 @@ public:
   static RecordType* a(const RecordType* orig, const std::vector<Type>& types);
   static void free(RecordType* tt) { ::free(tt); }
 
-  size_t size() const override { return _size; }
-  Type operator[](size_t i) const override {
+  unsigned int size() const override { return _size; }
+  Type operator[](unsigned int i) const override {
     assert(i < size());
     return _fields[i].second;
   }
-  std::string fieldName(size_t i) const {
+  std::string fieldName(unsigned int i) const {
     assert(i < size());
     if (i + 1 < size()) {
       return _fieldNames.substr(_fields[i].first, _fields[i + 1].first - _fields[i].first);
     }
     return _fieldNames.substr(_fields[i].first);
   }
-  std::pair<bool, size_t> findField(const ASTString& name) const {
-    for (size_t i = 0; i < size(); ++i) {
+  std::pair<bool, unsigned int> findField(const ASTString& name) const {
+    for (unsigned int i = 0; i < size(); ++i) {
       if (fieldName(i) == name) {
         return {true, i};
       }
@@ -238,7 +238,7 @@ public:
   size_t hash() const {
     std::size_t seed = _size;
     std::hash<std::string> h;
-    for (size_t i = 0; i < _size; ++i) {
+    for (unsigned int i = 0; i < _size; ++i) {
       seed ^= h(fieldName(i)) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
       seed ^= _fields[i].second.toInt() + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     }
@@ -261,7 +261,7 @@ public:
     if (other.size() != size()) {
       return false;
     }
-    for (size_t i = 0; i < other.size(); ++i) {
+    for (unsigned int i = 0; i < other.size(); ++i) {
       // TODO: Should we allow subtyping based on name?
       if (fieldName(i) != other.fieldName(i)) {
         return false;
@@ -285,8 +285,8 @@ public:
 struct TypeList : public StructType {
   const std::vector<Type>& tt;
   TypeList(const std::vector<Type>& ts) : tt(ts){};
-  size_t size() const override { return tt.size(); }
-  Type operator[](size_t i) const override { return tt[i]; };
+  unsigned int size() const override { return static_cast<unsigned int>(tt.size()); }
+  Type operator[](unsigned int i) const override { return tt[i]; };
 };
 
 class EnvI {
@@ -578,7 +578,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
               bool doNotFollowChains);
 
 ArrayLit* field_slice(EnvI& env, StructType* st, ArrayLit* al,
-                      std::vector<std::pair<int, int>> dims, long long int field);
+                      std::vector<std::pair<int, int>> dims, unsigned int field);
 std::vector<Expression*> field_slices(EnvI& env, Expression* arrExpr);
 
 class CmpExpIdx {
