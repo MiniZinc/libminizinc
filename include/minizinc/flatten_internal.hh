@@ -248,7 +248,7 @@ public:
     if (_size != rhs._size || _fieldNames != rhs._fieldNames) {
       return false;
     }
-    for (int i = 0; i < _size; ++i) {
+    for (unsigned int i = 0; i < _size; ++i) {
       if (_fields[i].first != rhs._fields[i].first ||
           _fields[i].second.cmp(rhs._fields[i].second) != 0) {
         return false;

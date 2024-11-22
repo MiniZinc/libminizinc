@@ -1522,7 +1522,7 @@ public:
       return;
     }
     auto* al = Expression::cast<ArrayLit>(_domain);
-    for (int i = 0; i < al->size(); ++i) {
+    for (unsigned int i = 0; i < al->size(); ++i) {
       auto* field_ti = Expression::cast<TypeInst>((*al)[i]);
       field_ti->eraseDomain();
     }

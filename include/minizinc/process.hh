@@ -50,7 +50,7 @@ void ReadPipePrint(HANDLE g_hCh, bool* _done, std::ostream* pOs,
     BOOL bSuccess = ReadFile(g_hCh, buffer, sizeof(buffer) - 1, &count, NULL);
     if (bSuccess && count > 0) {
       int nl_count = 0;
-      for (int i = 0; i < count; i++) {
+      for (DWORD i = 0; i < count; i++) {
         if (buffer[i] != 13) {
           nl_buffer[nl_count++] = buffer[i];
         }
