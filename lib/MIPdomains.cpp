@@ -827,7 +827,7 @@ private:
 
   /// This vector stores the linear part of a general view
   /// x = <linear part> + rhs
-  typedef std::vector<std::pair<VarDecl*, float> > TLinExpLin;
+  typedef std::vector<std::pair<VarDecl*, double> > TLinExpLin;
   /// This struct has data describing the rest of a general view
   struct NViewData {
     VarDecl* pVarDefined = nullptr;
@@ -879,7 +879,7 @@ private:
     nVRest.coef0 /= coef1;
     nVRest.rhs /= coef1;
     for (auto& rhsL : rhsLin) {
-      rhsL.second /= static_cast<float>(coef1);
+      rhsL.second /= coef1;
     }
 
     auto it = _mNViews.find(rhsLin);

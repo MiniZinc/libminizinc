@@ -14,6 +14,10 @@
 %option noyywrap
 %option stack
 
+%top{
+#include <cstdint>
+}
+
 %{
 #if defined __GNUC__
 #pragma GCC diagnostic ignored "-Wunused-function"

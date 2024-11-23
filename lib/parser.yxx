@@ -1207,7 +1207,7 @@ set_expr :
         }
       }
     | MZN_MINUS MZN_MAX_NEGATIVE_INTEGER_LITERAL %prec MZN_NOT
-      { $$ = IntLit::a(-9223372036854775808ull); }
+      { $$ = IntLit::a((-9223372036854775807ll)-1); }
 
 ///
 
@@ -1388,7 +1388,7 @@ expr :
         }
       }
     | MZN_MINUS MZN_MAX_NEGATIVE_INTEGER_LITERAL %prec MZN_NOT
-      { $$ = IntLit::a(-9223372036854775808ull); }
+      { $$ = IntLit::a((-9223372036854775807ll)-1); }
 
 
 expr_atom_head :
@@ -1760,10 +1760,10 @@ simple_array_literal_2d :
                 yyerror(&@2, parm, "syntax error, all sub-arrays of 2d array literal must have the same length");
               }
             }
-            if (i > hadHeaderRow && (*$2)[i].first.size() != (*$2)[i-1].first.size()) {
+            if (i > static_cast<unsigned int>(hadHeaderRow) && (*$2)[i].first.size() != (*$2)[i-1].first.size()) {
               yyerror(&@2, parm, "syntax error, mixing indexed and non-indexed sub-arrays in 2d array literal");
             }
-            if (i >= hadHeaderRow && !(*$2)[i].first.empty()) {
+            if (i >= static_cast<unsigned int>(hadHeaderRow) && !(*$2)[i].first.empty()) {
               rowHeader.push_back((*$2)[i].first[0]);
             }
             for (unsigned int j = 0; j < (*$2)[i].second.size(); j++) {

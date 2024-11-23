@@ -70,7 +70,7 @@ void Type::mkPar(EnvI& env) {
   }
   StructType* st = env.getStructType(tId, bt());
   std::vector<Type> pt(st->size());
-  for (int i = 0; i < st->size(); ++i) {
+  for (unsigned int i = 0; i < st->size(); ++i) {
     pt[i] = (*st)[i];
     if (pt[i].structBT()) {
       pt[i].mkPar(env);
@@ -112,7 +112,7 @@ void Type::mkVar(EnvI& env) {
   }
   StructType* st = env.getStructType(tId, bt());
   std::vector<Type> pt(st->size());
-  for (int i = 0; i < st->size(); ++i) {
+  for (unsigned int i = 0; i < st->size(); ++i) {
     pt[i] = (*st)[i];
     pt[i].mkVar(env);
   }
@@ -144,7 +144,7 @@ void Type::mkOpt(EnvI& env) {
   StructType* strt = env.getStructType(tId, bt());
   std::vector<Type> pt(strt->size());
   bool changed = false;
-  for (int i = 0; i < strt->size(); ++i) {
+  for (unsigned int i = 0; i < strt->size(); ++i) {
     pt[i] = (*strt)[i];
     if (pt[i].structBT()) {
       pt[i].mkOpt(env);
@@ -181,7 +181,7 @@ void Type::mkPresent(EnvI& env) {
   StructType* st = env.getStructType(tId, bt());
   std::vector<Type> pt(st->size());
   bool changed = false;
-  for (int i = 0; i < st->size(); ++i) {
+  for (unsigned int i = 0; i < st->size(); ++i) {
     pt[i] = (*st)[i];
     if (pt[i].structBT()) {
       pt[i].mkOpt(env);
@@ -231,7 +231,7 @@ bool Type::decrement(EnvI& env) {
 
   // Copy types
   std::vector<Type> pt(st->size());
-  for (int i = 0; i < st->size(); ++i) {
+  for (unsigned int i = 0; i < st->size(); ++i) {
     pt[i] = (*st)[i];
   }
   int changed = static_cast<int>(st->size()) - 1;
@@ -243,7 +243,7 @@ bool Type::decrement(EnvI& env) {
   if (changed < 0) {
     return false;
   }
-  for (int i = changed + 1; i < st->size(); ++i) {
+  for (unsigned int i = changed + 1; i < st->size(); ++i) {
     pt[i].mkVar(env);
     if (pt[i].st() == Type::ST_PLAIN) {
       pt[i].mkOpt(env);

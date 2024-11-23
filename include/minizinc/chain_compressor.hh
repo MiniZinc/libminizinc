@@ -38,7 +38,7 @@ protected:
 
   void updateCount();
 
-  unsigned long count(VarDecl* v) { return _items.count(v); }
+  unsigned long count(VarDecl* v) { return static_cast<unsigned long>(_items.count(v)); }
 
   std::pair<iterator, iterator> find(VarDecl* v) { return _items.equal_range(v); };
 
@@ -52,7 +52,7 @@ protected:
 class ImpCompressor : public ChainCompressor {
 public:
   ImpCompressor(EnvI& env, Model& m, std::vector<VarDecl*>& deletedVarDecls,
-                std::vector<int>& boolConstraints0)
+                std::vector<unsigned int>& boolConstraints0)
       : ChainCompressor(env, m, deletedVarDecls), _boolConstraints(boolConstraints0){};
 
   bool trackItem(Item* i) override;
@@ -60,7 +60,7 @@ public:
   void compress() override;
 
 protected:
-  std::vector<int>& _boolConstraints;
+  std::vector<unsigned int>& _boolConstraints;
 
   // Compress two implications. e.g. (x -> y) /\ (y -> z) => x -> z
   // In this case i: (y -> z), newLHS: x

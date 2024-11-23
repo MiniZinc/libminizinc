@@ -5106,7 +5106,7 @@ yyreduce:
     break;
 
   case 178: /* set_expr: "-" "9223372036854775808"  */
-      { (yyval.expression) = IntLit::a(-9223372036854775808ull); }
+      { (yyval.expression) = IntLit::a((-9223372036854775807ll)-1); }
     break;
 
   case 180: /* expr: expr "::" annotation_expr  */
@@ -5404,7 +5404,7 @@ yyreduce:
     break;
 
   case 240: /* expr: "-" "9223372036854775808"  */
-      { (yyval.expression) = IntLit::a(-9223372036854775808ull); }
+      { (yyval.expression) = IntLit::a((-9223372036854775807ll)-1); }
     break;
 
   case 241: /* expr_atom_head: expr_atom_head_nonstring  */
@@ -5896,10 +5896,10 @@ yyreduce:
                 yyerror(&(yylsp[-1]), parm, "syntax error, all sub-arrays of 2d array literal must have the same length");
               }
             }
-            if (i > hadHeaderRow && (*(yyvsp[-1].indexedexpressions2d))[i].first.size() != (*(yyvsp[-1].indexedexpressions2d))[i-1].first.size()) {
+            if (i > static_cast<unsigned int>(hadHeaderRow) && (*(yyvsp[-1].indexedexpressions2d))[i].first.size() != (*(yyvsp[-1].indexedexpressions2d))[i-1].first.size()) {
               yyerror(&(yylsp[-1]), parm, "syntax error, mixing indexed and non-indexed sub-arrays in 2d array literal");
             }
-            if (i >= hadHeaderRow && !(*(yyvsp[-1].indexedexpressions2d))[i].first.empty()) {
+            if (i >= static_cast<unsigned int>(hadHeaderRow) && !(*(yyvsp[-1].indexedexpressions2d))[i].first.empty()) {
               rowHeader.push_back((*(yyvsp[-1].indexedexpressions2d))[i].first[0]);
             }
             for (unsigned int j = 0; j < (*(yyvsp[-1].indexedexpressions2d))[i].second.size(); j++) {

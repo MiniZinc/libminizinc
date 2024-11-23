@@ -617,11 +617,11 @@ void flatten_vardecl_annotations(EnvI& env, VarDecl* origVd, VarDeclI* vdi, VarD
       if (Expression::isa<Id>(*it)) {
         c = Call::a(Location().introduce(), Expression::cast<Id>(*it)->v(), {toAnnotate->id()});
       } else {
-        int annotatedExpressionIdx =
-            static_cast<int>(eval_int(env, addAnnotatedExpression->arg(0)).toInt());
+        unsigned int annotatedExpressionIdx =
+            static_cast<unsigned int>(eval_int(env, addAnnotatedExpression->arg(0)).toInt());
         Call* orig_call = Expression::cast<Call>(*it);
         std::vector<Expression*> args(orig_call->argCount() + 1);
-        for (int i = 0, j = 0; i < orig_call->argCount(); i++) {
+        for (unsigned int i = 0, j = 0; i < orig_call->argCount(); i++) {
           if (j == annotatedExpressionIdx) {
             args[j++] = toAnnotate->id();
           }
@@ -1038,7 +1038,7 @@ void EnvI::flatAddItem(Item* i) {
       auto* vd = i->cast<VarDeclI>();
       add_path_annotation(*this, vd->e());
       toAnnotate = vd->e()->e();
-      varOccurrences.addIndex(vd, static_cast<int>(_flat->size()) - 1);
+      varOccurrences.addIndex(vd, static_cast<unsigned int>(_flat->size()) - 1);
       toAdd = vd->e();
       break;
     }
@@ -1425,7 +1425,7 @@ Type EnvI::commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim) {
     const std::vector<unsigned int>& arrayEnumIds1 = getArrayEnum(tuple1.typeId());
     const std::vector<unsigned int>& arrayEnumIds2 = getArrayEnum(tuple2.typeId());
     std::vector<unsigned int> typeIds(tuple1.dim() + 1);
-    for (unsigned int i = 0; i < tuple1.dim(); i++) {
+    for (int i = 0; i < tuple1.dim(); i++) {
       if (arrayEnumIds1[i] == arrayEnumIds2[i]) {
         typeIds[i] = arrayEnumIds1[i];
       } else {
@@ -1487,7 +1487,7 @@ Type EnvI::commonRecord(Type record1, Type record2, bool ignoreRecord1Dim) {
     const std::vector<unsigned int>& arrayEnumIds1 = getArrayEnum(record1.typeId());
     const std::vector<unsigned int>& arrayEnumIds2 = getArrayEnum(record2.typeId());
     std::vector<unsigned int> typeIds(record1.dim() + 1);
-    for (unsigned int i = 0; i < record1.dim(); i++) {
+    for (int i = 0; i < record1.dim(); i++) {
       if (arrayEnumIds1[i] == arrayEnumIds2[i]) {
         typeIds[i] = arrayEnumIds1[i];
       } else {
@@ -3520,7 +3520,7 @@ Expression* eval_typeinst_domain(EnvI& env, const Ctx& ctx, Expression* dom) {
   }
   if (auto* tup = Expression::dynamicCast<ArrayLit>(dom)) {
     std::vector<Expression*> evaluated(tup->size());
-    for (int i = 0; i < tup->size(); ++i) {
+    for (unsigned int i = 0; i < tup->size(); ++i) {
       auto* tupi = Expression::cast<TypeInst>((*tup)[i]);
       if (tupi->domain() == nullptr) {
         evaluated[i] = new TypeInst(Expression::loc(tupi), tupi->type(), tupi->ranges());
@@ -3588,7 +3588,6 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
   GCLock lock;
   if (Expression::type(e).isPar() && !Expression::type(e).cv()) {
     if (Expression::type(e) == Type::parbool()) {
-      bool condition;
       try {
         return eval_par(env, e);
       } catch (ResultUndefinedError&) {
@@ -3657,7 +3656,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
           return vd->id();
         }
         std::vector<std::pair<int, int>> dims(al->dims());
-        for (int i = 0; i < al->dims(); i++) {
+        for (unsigned int i = 0; i < al->dims(); i++) {
           dims[i] = std::make_pair(al->min(i), al->max(i));
         }
         Expression* al_ret = new ArrayLit(Location().introduce(), es, dims);
@@ -3755,7 +3754,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
         ITE* ite = Expression::cast<ITE>(e);
         Ctx nctx = ctx;
         nctx.b = C_MIX;
-        for (int i = 0; i < ite->size(); i++) {
+        for (unsigned int i = 0; i < ite->size(); i++) {
           bool condition;
           KeepAlive ka;
           try {
@@ -3925,7 +3924,7 @@ public:
           _tm->insert(std::make_pair(std::make_pair(_loc.filename(), line), end - _start));
         }
       }
-    } catch (std::exception& e) {
+    } catch (std::exception& /*e*/) {
       assert(false);  // Invariant: Operations on the TimingMap will not throw an exception
     }
   }
@@ -5438,12 +5437,12 @@ void oldflatzinc(Env& e) {
   std::vector<VarDecl*> definitions;  // Make iteration over definition_map deterministic
 
   // Record indices of VarDeclIs with Id RHS for sorting & unification
-  std::vector<int> declsWithIds;
+  std::vector<unsigned int> declsWithIds;
 
   // Important: items are being added to m while iterating over it.
   // The loop therefore needs to check the size in each iteration to make
   // sure it also handles the new items.
-  for (int i = 0; i < m->size(); i++) {
+  for (unsigned int i = 0; i < m->size(); i++) {
     if ((*m)[i]->removed()) {
       continue;
     }
@@ -5457,7 +5456,7 @@ void oldflatzinc(Env& e) {
         declsWithIds.push_back(i);
         vdi->e()->payload(-static_cast<int>(i) - 1);
       } else {
-        vdi->e()->payload(i);
+        vdi->e()->payload(static_cast<int>(i));
       }
       for (auto* nc : added_constraints) {
         Expression* new_ce = cleanup_constraint(e.envi(), globals, nc, keepDefinesVar);
@@ -5483,7 +5482,7 @@ void oldflatzinc(Env& e) {
               if (it != definition_map.end()) {
                 if (it->second.first == -1) {
                   // We've only seen the decl before, but not yet the defining constraint
-                  it->second.first = i;
+                  it->second.first = static_cast<int>(i);
                 } else {
                   // This is the second definition, remove it
                   Expression::ann(new_ce).removeCall(env.constants.ann.defines_var);
@@ -5623,7 +5622,7 @@ void oldflatzinc(Env& e) {
   // Sort VarDecls in FlatZinc so that VarDecls are declared before use
   std::vector<VarDeclI*> sortedVarDecls(declsWithIds.size());
   int vdCount = 0;
-  for (int declsWithId : declsWithIds) {
+  for (auto declsWithId : declsWithIds) {
     VarDecl* cur = (*m)[declsWithId]->cast<VarDeclI>()->e();
     std::vector<int> stack;
     while ((cur != nullptr) && cur->payload() < 0) {
@@ -5794,7 +5793,7 @@ ArrayLit* field_slice(EnvI& env, StructType* st, ArrayLit* al,
   // TODO: This could be done efficiently using slicing (if we change the memory layout for
   // arrays of tuples)
   std::vector<Expression*> tmp(al->size());
-  for (int i = 0; i < al->size(); ++i) {
+  for (unsigned int i = 0; i < al->size(); ++i) {
     tmp[i] = new FieldAccess(Expression::loc((*al)[i]).introduce(), (*al)[i], IntLit::a(field));
     Expression::type(tmp[i], field_ty);
   }

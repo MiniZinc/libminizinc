@@ -279,21 +279,21 @@ ArrayLit* eval_record_merge(EnvI& env, ArrayLit* lhs, ArrayLit* rhs) {
   for (unsigned int i = 0; i < total_size; i++) {
     if (l >= fields1->size()) {
       // must choose rhs
-      all_fields.emplace_back((*rhs)[static_cast<unsigned int>(r)]);
+      all_fields.emplace_back((*rhs)[r]);
       ++r;
     } else if (r >= fields2->size()) {
       // must choose lhs
-      all_fields.emplace_back((*lhs)[static_cast<unsigned int>(l)]);
+      all_fields.emplace_back((*lhs)[l]);
       ++l;
     } else {
       ASTString lhsN(fields1->fieldName(l));
       ASTString rhsN(fields2->fieldName(r));
       if (cmp(lhsN, rhsN)) {
         // lhsN < rhsN
-        all_fields.emplace_back((*lhs)[static_cast<unsigned int>(l)]);
+        all_fields.emplace_back((*lhs)[l]);
         ++l;
       } else {
-        all_fields.emplace_back((*rhs)[static_cast<unsigned int>(r)]);
+        all_fields.emplace_back((*rhs)[r]);
         ++r;
       }
     }
@@ -772,7 +772,7 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
       return eval_array_comp(env, Expression::cast<Comprehension>(e));
     case Expression::E_ITE: {
       ITE* ite = Expression::cast<ITE>(e);
-      for (int i = 0; i < ite->size(); i++) {
+      for (unsigned int i = 0; i < ite->size(); i++) {
         if (eval_bool(env, ite->ifExpr(i))) {
           return eval_array_lit(env, ite->thenExpr(i));
         }
@@ -1039,7 +1039,7 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
     } break;
     case Expression::E_ITE: {
       ITE* ite = Expression::cast<ITE>(e);
-      for (int i = 0; i < ite->size(); i++) {
+      for (unsigned int i = 0; i < ite->size(); i++) {
         if (eval_bool(env, ite->ifExpr(i))) {
           return eval_intset(env, ite->thenExpr(i));
         }
@@ -1207,7 +1207,7 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
     } break;
     case Expression::E_ITE: {
       ITE* ite = Expression::cast<ITE>(e);
-      for (int i = 0; i < ite->size(); i++) {
+      for (unsigned int i = 0; i < ite->size(); i++) {
         if (eval_bool(env, ite->ifExpr(i))) {
           return eval_floatset(env, ite->thenExpr(i));
         }
@@ -1350,7 +1350,7 @@ bool eval_bool(EnvI& env, Expression* e) {
       } break;
       case Expression::E_ITE: {
         ITE* ite = Expression::cast<ITE>(e);
-        for (int i = 0; i < ite->size(); i++) {
+        for (unsigned int i = 0; i < ite->size(); i++) {
           if (eval_bool(env, ite->ifExpr(i))) {
             return eval_bool(env, ite->thenExpr(i));
           }
@@ -1592,7 +1592,7 @@ bool eval_bool(EnvI& env, Expression* e) {
                 return struct_less(struct1, struct0, true);
               case BOT_IN: {
                 // Note: tup1 is an array of tuples
-                for (int i = 0; i < struct1->size(); ++i) {
+                for (unsigned int i = 0; i < struct1->size(); ++i) {
                   if (struct_equal(struct0, eval_array_lit(env, (*struct1)[0]))) {
                     return true;
                   }
@@ -1773,7 +1773,7 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
     } break;
     case Expression::E_ITE: {
       ITE* ite = Expression::cast<ITE>(e);
-      for (int i = 0; i < ite->size(); i++) {
+      for (unsigned int i = 0; i < ite->size(); i++) {
         if (eval_bool(env, ite->ifExpr(i))) {
           return eval_boolset(env, ite->thenExpr(i));
         }
@@ -1919,7 +1919,7 @@ IntVal eval_int_internal(EnvI& env, Expression* e) {
       } break;
       case Expression::E_ITE: {
         ITE* ite = Expression::cast<ITE>(e);
-        for (int i = 0; i < ite->size(); i++) {
+        for (unsigned int i = 0; i < ite->size(); i++) {
           if (eval_bool(env, ite->ifExpr(i))) {
             return eval_int(env, ite->thenExpr(i));
           }
@@ -2065,7 +2065,7 @@ FloatVal eval_float(EnvI& env, Expression* e) {
       } break;
       case Expression::E_ITE: {
         ITE* ite = Expression::cast<ITE>(e);
-        for (int i = 0; i < ite->size(); i++) {
+        for (unsigned int i = 0; i < ite->size(); i++) {
           if (eval_bool(env, ite->ifExpr(i))) {
             return eval_float(env, ite->thenExpr(i));
           }
@@ -2197,7 +2197,7 @@ std::string eval_string(EnvI& env, Expression* e) {
     } break;
     case Expression::E_ITE: {
       ITE* ite = Expression::cast<ITE>(e);
-      for (int i = 0; i < ite->size(); i++) {
+      for (unsigned int i = 0; i < ite->size(); i++) {
         if (eval_bool(env, ite->ifExpr(i))) {
           return eval_string(env, ite->thenExpr(i));
         }
@@ -2584,7 +2584,7 @@ public:
     if (Expression::type(e).isint()) {
       if (ITE* ite = Expression::dynamicCast<ITE>(e)) {
         Bounds itebounds(IntVal::infinity(), -IntVal::infinity());
-        for (int i = 0; i < ite->size(); i++) {
+        for (unsigned int i = 0; i < ite->size(); i++) {
           if (Expression::type(ite->ifExpr(i)).isPar() &&
               static_cast<int>(Expression::type(ite->ifExpr(i)).cv()) == Type::CV_NO) {
             if (eval_bool(env, ite->ifExpr(i))) {
@@ -2951,7 +2951,7 @@ public:
       // Take bounds of the argument
     } else if ((c->decl() != nullptr) && (c->decl()->ti()->domain() != nullptr) &&
                !Expression::isa<TIId>(c->decl()->ti()->domain())) {
-      for (int i = 0; i < c->argCount(); i++) {
+      for (unsigned int i = 0; i < c->argCount(); i++) {
         if (Expression::type(c->arg(i)).isint()) {
           assert(!bounds.empty());
           bounds.pop_back();
@@ -3054,7 +3054,7 @@ public:
     if (Expression::type(e).isfloat()) {
       if (ITE* ite = Expression::dynamicCast<ITE>(e)) {
         FBounds itebounds(FloatVal::infinity(), -FloatVal::infinity());
-        for (int i = 0; i < ite->size(); i++) {
+        for (unsigned int i = 0; i < ite->size(); i++) {
           if (Expression::type(ite->ifExpr(i)).isPar() &&
               static_cast<int>(Expression::type(ite->ifExpr(i)).cv()) == Type::CV_NO) {
             if (eval_bool(env, ite->ifExpr(i))) {
@@ -3412,7 +3412,7 @@ public:
       // Take bounds of the argument
     } else if ((c->decl() != nullptr) && (c->decl()->ti()->domain() != nullptr) &&
                !Expression::isa<TIId>(c->decl()->ti()->domain())) {
-      for (int i = 0; i < c->argCount(); i++) {
+      for (unsigned int i = 0; i < c->argCount(); i++) {
         if (Expression::type(c->arg(i)).isfloat()) {
           assert(!bounds.empty());
           bounds.pop_back();
@@ -3655,7 +3655,7 @@ public:
       bounds.push_back(b0);
     } else if ((c->decl() != nullptr) && (c->decl()->ti()->domain() != nullptr) &&
                !Expression::isa<TIId>(c->decl()->ti()->domain())) {
-      for (int i = 0; i < c->argCount(); i++) {
+      for (unsigned int i = 0; i < c->argCount(); i++) {
         if (Expression::type(c->arg(i)).isIntSet()) {
           assert(!bounds.empty());
           bounds.pop_back();

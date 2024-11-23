@@ -21,7 +21,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
 
   bool isvarset = false;
   if (c->set()) {
-    for (int i = 0; i < c->numberOfGenerators(); i++) {
+    for (unsigned int i = 0; i < c->numberOfGenerators(); i++) {
       Expression* g_in = c->in(i);
       if (g_in != nullptr) {
         const Type& ty_in = Expression::type(g_in);
@@ -46,7 +46,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
     GCLock lock;
 
     Generators gs;
-    for (int i = 0; i < c->numberOfGenerators(); i++) {
+    for (unsigned int i = 0; i < c->numberOfGenerators(); i++) {
       bool handled_gen = false;
       if (c->in(i) == nullptr) {
         in[i] = nullptr;
@@ -68,7 +68,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
             std::vector<VarDecl*> vds(c->numberOfDecls(i));
             std::vector<Generator> redef;
             redef.reserve(c->numberOfDecls(i));
-            for (int j = 0; j < c->numberOfDecls(i); j++) {
+            for (unsigned int j = 0; j < c->numberOfDecls(i); j++) {
               auto* vd = c->decl(i, j);
               Type ty = vd->type();
               ty.ot(Type::OT_OPTIONAL);
@@ -100,7 +100,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
             ub->type(t);
             ub->decl(env.model->matchFn(env, ub, false));
             in[i] = ub;
-            for (int j = 0; j < c->numberOfDecls(i); j++) {
+            for (unsigned int j = 0; j < c->numberOfDecls(i); j++) {
               auto* bo = new BinOp(Location().introduce(), c->decl(i, j)->id(), BOT_IN, c->in(i));
               bo->type(Type::varbool());
               where.push_back(bo);
@@ -172,7 +172,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
 
       if (!handled_gen) {
         std::vector<VarDecl*> vds(c->numberOfDecls(i));
-        for (int j = 0; j < c->numberOfDecls(i); j++) {
+        for (unsigned int j = 0; j < c->numberOfDecls(i); j++) {
           vds[j] = c->decl(i, j);
         }
         gs.g.emplace_back(vds, in[i], orig_where[i]);

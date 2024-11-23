@@ -22,12 +22,12 @@ class VarOccurrences {
 public:
   typedef std::set<Item*> Items;
   DenseIdMap<Items> itemMap;
-  DenseIdMap<int> idx;
+  DenseIdMap<unsigned int> idx;
 
   /// Add \a to the index
-  void addIndex(VarDeclI* i, int idx_i);
+  void addIndex(VarDeclI* i, unsigned int idx_i);
   /// Add \a to the index
-  void addIndex(VarDecl* e, int idx_i);
+  void addIndex(VarDecl* e, unsigned int idx_i);
   /// Find index of \a vd
   int find(VarDecl* vd);
   /// Remove index of \a vd

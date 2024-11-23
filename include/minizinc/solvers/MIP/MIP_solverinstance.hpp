@@ -164,7 +164,7 @@ void MIPSolverinstance<MIPWrapper>::processSearchAnnotations(const Annotation& a
   std::deque<std::string> valueSelection;
 
   int nArrayAnns = 0;
-  auto priority = flattenedAnns.size();  // Variables at front get highest pri
+  auto priority = static_cast<int>(flattenedAnns.size());  // Variables at front get highest pri
   for (const auto& annExpression : flattenedAnns) {
     /// Skip expressions that are not meaningful or we cannot process
     if (!Expression::isa<Call>(annExpression)) {
@@ -196,7 +196,7 @@ void MIPSolverinstance<MIPWrapper>::processSearchAnnotations(const Annotation& a
     /// Take the variables and append them with set prioirty.
     std::vector<MIPSolverinstance::VarId> annVars;
     exprToVarArray(annotation->arg(0), annVars);
-    aPri.insert(aPri.end(), annVars.size(), static_cast<int>(--priority));
+    aPri.insert(aPri.end(), annVars.size(), --priority);
     std::move(annVars.begin(), annVars.end(), std::back_inserter(vars));
   }
 
@@ -1030,7 +1030,9 @@ void p_lex_chain_lesseq_binary(SolverInstanceBase& si, const Call* call) {
   auto isModelCons = gi.exprToConst(call->arg(4));
 
   gi.getMIPWrapper()->addLexChainLesseq(
-      m, vars.size() / m, vars.data(), orbitopeType, (bool)resolveprop, (bool)isModelCons,
+      static_cast<int>(m), static_cast<int>(static_cast<double>(vars.size()) / m), vars.data(),
+      static_cast<int>(orbitopeType), static_cast<bool>(resolveprop),
+      static_cast<bool>(isModelCons),
       make_constraint_name("p_lex_lesseq__orbisack_", (gi.getMIPWrapper()->nAddedRows++), call));
 }
 

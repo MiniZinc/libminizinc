@@ -123,7 +123,7 @@ void NLFile::addVarDecl(const VarDecl* vd, const TypeInst* ti, const Expression*
 
         // Search the 'annotation' array
         const ArrayLit* aa = getArrayLit(c->arg(0));
-        for (int i = 0; i < aa->size(); ++i) {
+        for (unsigned int i = 0; i < aa->size(); ++i) {
           IntSetVal* r = Expression::cast<SetLit>((*aa)[i])->isv();
           stringstream ss;
           if (r->empty()) {
@@ -136,7 +136,7 @@ void NLFile::addVarDecl(const VarDecl* vd, const TypeInst* ti, const Expression*
 
         // Search the 'real' array. Items can be an identifier or a litteral.
         const ArrayLit* ra = getArrayLit(rhs);
-        for (int i = 0; i < ra->size(); ++i) {
+        for (unsigned int i = 0; i < ra->size(); ++i) {
           NLArray::Item item;
 
           if (Expression::isa<Id>((*ra)[i])) {
@@ -1491,10 +1491,7 @@ unsigned int NLFile::bvCount() const { return static_cast<unsigned int>(vname_bv
 //        * comment only not allowed
 ostream& NLFile::printToStream(ostream& os) const {
   // Print the header
-  {
-    NLHeader header;
-    NLHeader::printToStream(os, *this);
-  }
+  NLHeader::printToStream(os, *this);
   os << endl;
 
   // Print the unique segments about the variables
@@ -1504,7 +1501,7 @@ ostream& NLFile::printToStream(ostream& os) const {
        << "   # Cumulative Sum of non-zero in the jacobian matrix's (nbvar-1) columns." << endl;
     unsigned int acc = 0;
     // Note stop before the last var. Total jacobian count is in the header.
-    for (int i = 0; i < varCount() - 1; ++i) {
+    for (unsigned int i = 0; i < varCount() - 1; ++i) {
       string name = vnames[i];
       acc += variables.at(name).jacobianCount;
       os << acc << "   # " << name << endl;

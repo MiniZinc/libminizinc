@@ -724,7 +724,7 @@ void Model::checkFnValid(EnvI& env, std::vector<TypeError>& errors) {
       }
       if (fi->ann().contains(env.constants.ann.output_only)) {
         std::vector<Type> tys(fi->paramCount());
-        for (int i = 0; i < fi->paramCount(); ++i) {
+        for (unsigned int i = 0; i < fi->paramCount(); ++i) {
           tys[i] = fi->param(i)->type();
           tys[i].mkPar(env);
         }
@@ -749,7 +749,7 @@ void Model::checkFnValid(EnvI& env, std::vector<TypeError>& errors) {
             "FlatZinc builtin functions must be predicates (i.e., have `var bool` return type)");
         continue;
       }
-      for (int i = 0; i < fi->paramCount(); ++i) {
+      for (unsigned int i = 0; i < fi->paramCount(); ++i) {
         const Type& t = fi->param(i)->type();
         if (t.isOpt() || t.structBT() || t.bt() == Type::BT_TOP) {
           errors.emplace_back(
@@ -1097,7 +1097,7 @@ bool Model::sameOverloading(EnvI& env, const std::vector<Expression*>& args, Fun
     // not the same number of overloaded versions
     return false;
   }
-  for (; first_i_f <= i_f; first_i_f++, first_i_g++) {
+  for (; first_i_f <= static_cast<unsigned int>(i_f); first_i_f++, first_i_g++) {
     if (!(v_f[first_i_f].t == v_g[first_i_g].t)) {
       // one of the overloaded versions does not agree in the types
       return false;

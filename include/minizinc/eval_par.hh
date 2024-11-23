@@ -59,13 +59,13 @@ Expression* eval_arrayaccess(EnvI& env, ArrayLit* al, const IdxV& idx, ArrayAcce
   assert(al->dims() == idx.size());
   IntVal realidx = 0;
   int realdim = 1;
-  for (int i = 0; i < al->dims(); i++) {
+  for (unsigned int i = 0; i < al->dims(); i++) {
     realdim *= al->max(i) - al->min(i) + 1;
   }
-  for (int i = 0; i < al->dims(); i++) {
+  for (unsigned int i = 0; i < al->dims(); i++) {
     IntVal ix = idx[i];
     if (ix < al->min(i) || ix > al->max(i)) {
-      success.fail(i, al->min(i), al->max(i), ix);
+      success.fail(static_cast<int>(i), al->min(i), al->max(i), ix);
       Type t = al->type().elemType(env);
       return success.dummyLiteral(env, t);
     }
@@ -373,7 +373,8 @@ EvaluatedComp<typename Eval::ArrayVal> eval_comp(EnvI& env, Eval& eval, Comprehe
       IntVal s = (a_tmp.idxMax[i] - a_tmp.idxMin[i] + 1);
       dimSize[i] = size.toInt();  // before multiplication!
       size *= s;
-      a.dims[i] = std::make_pair(a_tmp.idxMin[i].toInt(), a_tmp.idxMax[i].toInt());
+      a.dims[i] = std::make_pair(static_cast<int>(a_tmp.idxMin[i].toInt()),
+                                 static_cast<int>(a_tmp.idxMax[i].toInt()));
     }
     if (size != a_tmp.a.size()) {
       throw EvalError(env, Expression::loc(e), "indexes don't match size of generated array");
@@ -402,7 +403,7 @@ EvaluatedComp<typename Eval::ArrayVal> eval_comp(EnvI& env, Eval& eval, Comprehe
     }
   } else {
     a.a = a_tmp.a;
-    a.dims.emplace_back(1, a.a.size());
+    a.dims.emplace_back(1, static_cast<int>(a.a.size()));
   }
   return a;
 }

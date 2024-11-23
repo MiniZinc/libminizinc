@@ -764,7 +764,7 @@ FloatVal b_float_max(EnvI& env, Call* call) {
   }
 }
 
-IntSetVal* b_index_set(EnvI& env, Expression* e, int i) {
+IntSetVal* b_index_set(EnvI& env, Expression* e, unsigned int i) {
   if (Expression::eid(e) != Expression::E_ID) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env, e);
@@ -806,8 +806,8 @@ bool b_index_sets_agree(EnvI& env, Call* call) {
     return false;
   }
   for (int i = 1; i <= al0->type().dim(); i++) {
-    IntSetVal* index0 = b_index_set(env, al0, i);
-    IntSetVal* index1 = b_index_set(env, al1, i);
+    IntSetVal* index0 = b_index_set(env, al0, static_cast<unsigned int>(i));
+    IntSetVal* index1 = b_index_set(env, al1, static_cast<unsigned int>(i));
     if (!index0->equal(index1)) {
       return false;
     }
@@ -818,37 +818,37 @@ IntSetVal* b_index_set1(EnvI& env, Call* call) {
   if (call->argCount() != 1) {
     throw EvalError(env, Location(), "index_set needs exactly one argument");
   }
-  return b_index_set(env, call->arg(0), 1);
+  return b_index_set(env, call->arg(0), 1U);
 }
 IntSetVal* b_index_set2(EnvI& env, Call* call) {
   if (call->argCount() != 1) {
     throw EvalError(env, Location(), "index_set needs exactly one argument");
   }
-  return b_index_set(env, call->arg(0), 2);
+  return b_index_set(env, call->arg(0), 2U);
 }
 IntSetVal* b_index_set3(EnvI& env, Call* call) {
   if (call->argCount() != 1) {
     throw EvalError(env, Location(), "index_set needs exactly one argument");
   }
-  return b_index_set(env, call->arg(0), 3);
+  return b_index_set(env, call->arg(0), 3U);
 }
 IntSetVal* b_index_set4(EnvI& env, Call* call) {
   if (call->argCount() != 1) {
     throw EvalError(env, Location(), "index_set needs exactly one argument");
   }
-  return b_index_set(env, call->arg(0), 4);
+  return b_index_set(env, call->arg(0), 4U);
 }
 IntSetVal* b_index_set5(EnvI& env, Call* call) {
   if (call->argCount() != 1) {
     throw EvalError(env, Location(), "index_set needs exactly one argument");
   }
-  return b_index_set(env, call->arg(0), 5);
+  return b_index_set(env, call->arg(0), 5U);
 }
 IntSetVal* b_index_set6(EnvI& env, Call* call) {
   if (call->argCount() != 1) {
     throw EvalError(env, Location(), "index_set needs exactly one argument");
   }
-  return b_index_set(env, call->arg(0), 6);
+  return b_index_set(env, call->arg(0), 6U);
 }
 
 IntVal b_min_parsetint(EnvI& env, Call* call) {
@@ -1587,7 +1587,7 @@ bool b_has_ann(EnvI& env, Call* call) {
     if (c->argCount() != key->argCount()) {
       return false;
     }
-    for (int i = 0; i < c->argCount(); ++i) {
+    for (unsigned int i = 0; i < c->argCount(); ++i) {
       if (Expression::type(c->arg(i)) != Expression::type(key->arg(i))) {
         return false;
       }
@@ -2245,7 +2245,8 @@ Expression* b_set_sparse_inverse(EnvI& env, Call* call) {
   for (Ranges::ToValues<IntSetRanges> isr_v(isr); isr_v(); ++isr_v) {
     elems[isr_v.val().toInt() - set_min] = IntLit::a(i++);
   }
-  auto* al = new ArrayLit(Expression::loc(call->arg(0)), elems, {{set_min, isv->max().toInt()}});
+  auto* al = new ArrayLit(Expression::loc(call->arg(0)), elems,
+                          {{static_cast<int>(set_min), static_cast<int>(isv->max().toInt())}});
   Type t(Type::parint(1));
   t.typeId(Expression::type(call->arg(0)).typeId());
   al->type(t);
@@ -3036,7 +3037,9 @@ Expression* b_inverse(EnvI& env, Call* call) {
                                  "inverse on non-contiguous set of values is undefined");
     }
   }
-  auto* al_inv = new ArrayLit(Expression::loc(al), inv, {{minVal.toInt(), maxVal.toInt()}});
+  auto* al_inv =
+      new ArrayLit(Expression::loc(al), inv,
+                   {{static_cast<int>(minVal.toInt()), static_cast<int>(maxVal.toInt())}});
   al_inv->type(al->type());
   return al_inv;
 }
@@ -3322,7 +3325,8 @@ IntVal b_discrete_distribution(EnvI& env, Call* call) {
 #ifdef _MSC_VER
   std::size_t i(0);
   std::discrete_distribution<long long int> distribution(
-      weights.size(), 0.0, 1.0, [&weights, &i](double d) { return weights[i++]; });
+      weights.size(), 0.0, 1.0,
+      [&weights, &i](double d) { return static_cast<double>(weights[i++]); });
 #else
   std::discrete_distribution<long long int> distribution(weights.begin(), weights.end());
 #endif

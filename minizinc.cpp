@@ -108,7 +108,7 @@ int wmain(int argc, wchar_t* argv[], wchar_t* envp[]) {
   }
   auto exe = FileUtils::wide_to_utf8(argv[0]);
 
-#ifdef NDEBUG && !__MINGW32__
+#if defined(NDEBUG) && !defined(__MINGW32__)
   // Lambda to prevent object unwinding not allowed with __try..__except
   return ([&]() {
     __try {

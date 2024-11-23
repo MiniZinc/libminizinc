@@ -27,14 +27,14 @@
 
 namespace MiniZinc {
 
-void VarOccurrences::addIndex(VarDeclI* i, int idx_i) { idx.insert(i->e()->id(), idx_i); }
-void VarOccurrences::addIndex(VarDecl* e, int idx_i) {
+void VarOccurrences::addIndex(VarDeclI* i, unsigned int idx_i) { idx.insert(i->e()->id(), idx_i); }
+void VarOccurrences::addIndex(VarDecl* e, unsigned int idx_i) {
   assert(find(e) == -1);
   idx.insert(e->id(), idx_i);
 }
 int VarOccurrences::find(VarDecl* vd) {
   auto it = idx.find(vd->id());
-  return it.first ? *it.second : -1;
+  return it.first ? static_cast<int>(*it.second) : -1;
 }
 void VarOccurrences::remove(VarDecl* vd) { idx.remove(vd->id()); }
 
@@ -426,8 +426,8 @@ void optimize(Env& env, bool chain_compression) {
   try {
     EnvI& envi = env.envi();
     Model& m = *envi.flat();
-    std::vector<int> toAssignBoolVars;
-    std::vector<int> toRemoveConstraints;
+    std::vector<unsigned int> toAssignBoolVars;
+    std::vector<unsigned int> toRemoveConstraints;
     std::vector<VarDecl*> deletedVarDecls;
 
     // Queue of constraint and variable items that still need to be optimised
@@ -435,7 +435,7 @@ void optimize(Env& env, bool chain_compression) {
     // Queue of variable declarations (indexes into the model) that still need to be optimised
     std::deque<unsigned int> vardeclQueue;
 
-    std::vector<int> boolConstraints;
+    std::vector<unsigned int> boolConstraints;
 
     GCLock lock;
 
@@ -462,7 +462,7 @@ void optimize(Env& env, bool chain_compression) {
     //  - unify variables that are assigned to an identifier
     //  - push bool vars that are fixed and have a RHS (to propagate the RHS constraint)
     //  - push int/float vars that are fixed (either have a RHS or a singleton domain)
-    for (int i = 0; i < m.size(); i++) {
+    for (unsigned int i = 0; i < m.size(); i++) {
       env.envi().checkCancel();
       if (m[i]->removed()) {
         continue;

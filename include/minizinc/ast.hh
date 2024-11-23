@@ -1441,7 +1441,7 @@ public:
 
 class EnvI;
 class CopyMap;
-class TIIDInfo;
+struct TIIDInfo;
 
 /// \brief %Let expression
 class Let : public BoxedExpression {

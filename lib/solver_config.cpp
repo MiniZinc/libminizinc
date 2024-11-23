@@ -248,7 +248,7 @@ struct SortByName {
   const std::vector<SolverConfig>& solvers;
   SortByLowercase sortByLowercase;
   SortByName(const std::vector<SolverConfig>& solvers0) : solvers(solvers0) {}
-  bool operator()(int idx1, int idx2) {
+  bool operator()(size_t idx1, size_t idx2) {
     return sortByLowercase(solvers[idx1].name(), solvers[idx2].name());
   }
 };

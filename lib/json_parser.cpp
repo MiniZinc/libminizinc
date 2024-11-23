@@ -810,13 +810,13 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
   // Check if any indexes are missing
   int missing_index = -1;
   bool needs_call = false;
-  for (int i = 0; i < ti->ranges().size(); ++i) {
+  for (unsigned int i = 0; i < ti->ranges().size(); ++i) {
     TypeInst* nti = ti->ranges()[i];
     if (nti->domain() == nullptr || Expression::isa<AnonVar>(nti->domain())) {
       if (missing_index != -1) {
         return al;  // More than one index set is missing. Cannot compute correct index sets.
       }
-      missing_index = i;
+      missing_index = static_cast<int>(i);
       needs_call = true;
     } else {
       needs_call = true;
@@ -826,7 +826,7 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
   // Construct index set arguments for an "arrayXd" call.
   std::vector<Expression*> args(ti->ranges().size() + 1);
   Expression* missing_max = missing_index >= 0 ? IntLit::a(al->size()) : nullptr;
-  for (int i = 0; i < ti->ranges().size(); ++i) {
+  for (unsigned int i = 0; i < ti->ranges().size(); ++i) {
     if (i != missing_index) {
       assert(ti->ranges()[i]->domain() != nullptr);
       args[i] = ti->ranges()[i]->domain();

@@ -413,7 +413,7 @@ public:
             ti_map.emplace(tiid->v(), Type::parint(curType.dim()));
             // add concrete number of ranges
             std::vector<TypeInst*> newRanges(curType.dim());
-            for (unsigned int k = 0; k < curType.dim(); k++) {
+            for (int k = 0; k < curType.dim(); k++) {
               newRanges[k] = new TypeInst(Location().introduce(), Type::parint());
             }
             ti->setRanges(newRanges);
@@ -502,7 +502,7 @@ public:
         } else {
           // add concrete number of ranges
           std::vector<TypeInst*> newRanges(ret_type.dim());
-          for (unsigned int k = 0; k < ret_type.dim(); k++) {
+          for (int k = 0; k < ret_type.dim(); k++) {
             newRanges[k] = new TypeInst(Location().introduce(), Type::parint());
           }
           auto t = ti->type();

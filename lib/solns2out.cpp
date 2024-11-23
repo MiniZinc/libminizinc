@@ -371,14 +371,14 @@ void Solns2Out::checkSolution(std::ostream& oss) {
           if (Call* cev = Expression::ann(vdi->e()).getCall(
                   Constants::constants().ann.mzn_check_enum_var)) {
             auto* enumIdsAl = eval_array_lit(getEnv()->envi(), cev->arg(0));
-            for (int j = 0; j < enumIdsAl->size(); j++) {
+            for (unsigned int j = 0; j < enumIdsAl->size(); j++) {
               enumids.push_back(Expression::dynamicCast<Id>((*enumIdsAl)[j]));
             }
           }
           bool isArray = al != nullptr && al->type().dim() > 0;
           if (isArray) {
             checker << "array" << al->dims() << "d(";
-            for (int i = 0; i < al->dims(); i++) {
+            for (unsigned int i = 0; i < al->dims(); i++) {
               if (!enumids.empty() && enumids[i] != nullptr) {
                 checker << "to_enum(" << *enumids[i] << ",";
               }

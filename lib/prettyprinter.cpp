@@ -184,7 +184,7 @@ public:
           _os << "tuple(";
           if (_env != nullptr && type.typeId() != 0) {
             TupleType* tt = _env->getTupleType(type);
-            for (int i = 0; i < tt->size(); ++i) {
+            for (unsigned int i = 0; i < tt->size(); ++i) {
               p((*tt)[i], nullptr);
               if (i < tt->size() - 1) {
                 _os << ", ";
@@ -200,7 +200,7 @@ public:
           _os << "record(";
           if (_env != nullptr && type.typeId() != 0) {
             RecordType* rt = _env->getRecordType(type);
-            for (int i = 0; i < rt->size(); ++i) {
+            for (unsigned int i = 0; i < rt->size(); ++i) {
               p((*rt)[i], nullptr);
               _os << ": " << Printer::quoteId(rt->fieldName(i));
               if (i < rt->size() - 1) {
@@ -421,7 +421,7 @@ public:
         } else {
           assert(!al->isTuple());
           _os << "array" << n << "d(";
-          for (int i = 0; i < al->dims(); i++) {
+          for (unsigned int i = 0; i < al->dims(); i++) {
             _os << al->min(i) << ".." << al->max(i);
             _os << ",";
           }
@@ -525,8 +525,8 @@ public:
         }
 
         _os << " | ";
-        for (int i = 0; i < c->numberOfGenerators(); i++) {
-          for (int j = 0; j < c->numberOfDecls(i); j++) {
+        for (unsigned int i = 0; i < c->numberOfGenerators(); i++) {
+          for (unsigned int j = 0; j < c->numberOfDecls(i); j++) {
             auto* ident = c->decl(i, j)->id();
             if (ident->idn() == -1) {
               _os << ident->v();
@@ -569,7 +569,7 @@ public:
       } break;
       case Expression::E_ITE: {
         const auto* ite = Expression::cast<ITE>(e);
-        for (int i = 0; i < ite->size(); i++) {
+        for (unsigned int i = 0; i < ite->size(); i++) {
           _os << (i == 0 ? "if " : " elseif ");
           p(ite->ifExpr(i));
           _os << " then ";
@@ -1479,7 +1479,7 @@ public:
       dl->addStringToList(oss.str());
       auto* args = new DocumentList("(", ", ", ")");
 
-      for (int i = 0; i < al->dims(); i++) {
+      for (unsigned int i = 0; i < al->dims(); i++) {
         oss.str("");
         oss << al->min(i) << ".." << al->max(i);
         args->addStringToList(oss.str());
@@ -1522,10 +1522,10 @@ public:
     dl->addDocumentToList(expression_to_document(c->e(), _env));
     auto* head = new DocumentList("", " ", "");
     auto* generators = new DocumentList("", ", ", "");
-    for (int i = 0; i < c->numberOfGenerators(); i++) {
+    for (unsigned int i = 0; i < c->numberOfGenerators(); i++) {
       auto* gen = new DocumentList("", "", "");
       auto* idents = new DocumentList("", ", ", "");
-      for (int j = 0; j < c->numberOfDecls(i); j++) {
+      for (unsigned int j = 0; j < c->numberOfDecls(i); j++) {
         std::ostringstream ss;
         Id* ident = c->decl(i, j)->id();
         if (ident->idn() == -1) {
@@ -1558,7 +1558,7 @@ public:
   }
   ret mapITE(const ITE* ite) {
     auto* dl = new DocumentList("", "", "");
-    for (int i = 0; i < ite->size(); i++) {
+    for (unsigned int i = 0; i < ite->size(); i++) {
       std::string beg = (i == 0 ? "if " : " elseif ");
       dl->addStringToList(beg);
       dl->addDocumentToList(expression_to_document(ite->ifExpr(i), _env));
@@ -1753,10 +1753,10 @@ public:
           auto* args = new DocumentList("", " ", "", false);
           auto* generators = new DocumentList("", ", ", "");
 
-          for (int i = 0; i < com->numberOfGenerators(); i++) {
+          for (unsigned int i = 0; i < com->numberOfGenerators(); i++) {
             auto* gen = new DocumentList("", "", "");
             auto* idents = new DocumentList("", ", ", "");
-            for (int j = 0; j < com->numberOfDecls(i); j++) {
+            for (unsigned int j = 0; j < com->numberOfDecls(i); j++) {
               if (com->decl(i, j)->id()->idn() < -1) {
                 idents->addStringToList("_");
               } else {

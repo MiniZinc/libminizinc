@@ -802,7 +802,7 @@ public:
       {
         GCLock lock;
         std::vector<VarDecl*> params(fi->paramCount());
-        for (int i = 0; i < fi->paramCount(); i++) {
+        for (unsigned int i = 0; i < fi->paramCount(); i++) {
           params[i] = fi->param(i);
         }
         auto* fi_c = new FunctionI(Location(), fi->id(), fi->ti(), params);
@@ -1630,7 +1630,7 @@ public:
             {
               GCLock lock;
               std::vector<VarDecl*> params(fi->paramCount());
-              for (int i = 0; i < fi->paramCount(); i++) {
+              for (unsigned int i = 0; i < fi->paramCount(); i++) {
                 params[i] = fi->param(i);
               }
               auto* fi_c = new FunctionI(Location(), fi->id(), fi->ti(), params);

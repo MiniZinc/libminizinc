@@ -1389,13 +1389,13 @@ EE rewrite_struct_op(EnvI& env, Ctx& ctx, Expression* lhs, BinOpType bot, Expres
         auto* b_decl = new VarDecl(Location().introduce(), bool_ti, env.genId());
         b_decl->type(Type::varbool(1));
         std::vector<Expression*> b(tupLHS->size());
-        for (int i = 0; i < tupLHS->size(); ++i) {
+        for (unsigned int i = 0; i < tupLHS->size(); ++i) {
           b[i] = new ArrayAccess(Location().introduce(), b_decl->id(), {IntLit::a(i + 1)});
           Expression::type(b[i], Type::varbool());
         }
         // Create the implications
         std::vector<Expression*> impls(tupLHS->size());
-        for (int i = 0; i < tupLHS->size(); ++i) {
+        for (unsigned int i = 0; i < tupLHS->size(); ++i) {
           auto* lq = new_binop((*tupLHS)[i], BOT_LQ, (*tupRHS)[i]);
           auto* le = new_binop((*tupLHS)[i], BOT_LE, (*tupRHS)[i]);
           if (i < tupLHS->size() - 1) {

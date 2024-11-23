@@ -61,7 +61,7 @@ bool ImpCompressor::trackItem(Item* i) {
       // clause([...], [...]); e.g. x -> y
       if (c->id() == _env.constants.ids.clause) {
         ArrayLit* negative = eval_array_lit(_env, c->arg(1));
-        for (int j = 0; j < negative->size(); ++j) {
+        for (unsigned int j = 0; j < negative->size(); ++j) {
           auto* var = Expression::dynamicCast<Id>((*negative)[j]);
           if (var != nullptr) {
             storeItem(var->decl(), i);
@@ -105,7 +105,7 @@ bool ImpCompressor::trackItem(Item* i) {
             GCLock lock;
             std::vector<Type> args;
             args.reserve(c->argCount() + 1);
-            for (int j = 0; j < c->argCount(); ++j) {
+            for (unsigned int j = 0; j < c->argCount(); ++j) {
               args.push_back(Expression::type(c->arg(j)));
             }
             args.push_back(Type::varbool());
@@ -225,7 +225,7 @@ bool ImpCompressor::compressItem(Item* i, VarDecl* oldLHS, VarDecl* newLHS) {
 
       // Create new negative array
       std::vector<Expression*> contents = std::vector<Expression*>(negative->size());
-      for (int i = 0; i < negative->size(); ++i) {
+      for (unsigned int i = 0; i < negative->size(); ++i) {
         auto* vd = Expression::cast<VarDecl>(follow_id_to_decl((*negative)[i]));
         if (vd == oldLHS) {
           contents[i] = newLHS->id();
@@ -265,7 +265,7 @@ bool ImpCompressor::compressItem(Item* i, VarDecl* oldLHS, VarDecl* newLHS) {
     // Given: (x -> y) /\  (y -> (a /\ b /\ ...)), produce (x -> a) /\ (x -> b) /\ ...
     if (c->id() == _env.constants.ids.forall) {
       auto* exprs = eval_array_lit(_env, c->arg(0));
-      for (int j = 0; j < exprs->size(); ++j) {
+      for (unsigned int j = 0; j < exprs->size(); ++j) {
         auto* rhsDecl = Expression::dynamicCast<VarDecl>(follow_id_to_decl((*exprs)[j]));
         if (rhsDecl != newLHS) {
           ConstraintI* nci = constructClause((*exprs)[j], newLHS->id());
@@ -299,7 +299,7 @@ ArrayLit* ImpCompressor::arrayLitCopyReplace(ArrayLit* arr, VarDecl* oldVar, Var
   assert(GC::locked());
 
   std::vector<Expression*> contents = std::vector<Expression*>(arr->size());
-  for (int i = 0; i < arr->size(); ++i) {
+  for (unsigned int i = 0; i < arr->size(); ++i) {
     auto* vd = Expression::cast<VarDecl>(follow_id_to_decl((*arr)[i]));
     if (vd == oldVar) {
       contents[i] = newVar->id();
@@ -352,7 +352,7 @@ ConstraintI* ImpCompressor::constructHalfReif(Call* call, Id* control) {
   assert(GC::locked());
   auto cid = EnvI::halfReifyId(call->id());
   std::vector<Expression*> args(call->argCount());
-  for (int i = 0; i < call->argCount(); ++i) {
+  for (unsigned int i = 0; i < call->argCount(); ++i) {
     args[i] = call->arg(i);
   }
   args.push_back(control);
@@ -380,7 +380,7 @@ bool LECompressor::trackItem(Item* i) {
         ArrayLit* bs = eval_array_lit(_env, call->arg(1));
         assert(as->size() == bs->size());
 
-        for (int j = 0; j < as->size(); ++j) {
+        for (unsigned int j = 0; j < as->size(); ++j) {
           if (as->type().isIntArray()) {
             if (eval_int(_env, (*as)[j]) > IntVal(0)) {
               // Check if left hand side is a variable (could be constant)
@@ -562,12 +562,12 @@ void LECompressor::leReplaceVar(Item* i, VarDecl* oldVar, VarDecl* newVar) {
 
   ArrayLit* al_c = eval_array_lit(_env, call->arg(0));
   std::vector<Val> coeffs(al_c->size());
-  for (int j = 0; j < al_c->size(); j++) {
+  for (unsigned int j = 0; j < al_c->size(); j++) {
     coeffs[j] = LinearTraits<Lit>::eval(_env, (*al_c)[j]);
   }
   ArrayLit* al_x = eval_array_lit(_env, call->arg(1));
   std::vector<KeepAlive> x(al_x->size());
-  for (int j = 0; j < al_x->size(); j++) {
+  for (unsigned int j = 0; j < al_x->size(); j++) {
     Expression* decl = Expression::dynamicCast<VarDecl>(follow_id_to_decl((*al_x)[j]));
     if (decl && decl == oldVar) {
       x[j] = newVar->id();

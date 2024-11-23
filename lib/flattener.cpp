@@ -656,7 +656,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
               env->output()->addItem(checkStatsStringI);
             }
           }
-        } catch (TypeError& e) {
+        } catch (TypeError& /*e*/) {
           if (isCompressedChecker) {
             _log << "Warning: type error in solution checker model\n";
           } else {

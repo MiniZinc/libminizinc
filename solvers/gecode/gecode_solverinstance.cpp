@@ -531,7 +531,7 @@ void GecodeSolverInstance::processFlatZinc() {
                 << *vd->id() << std::endl;
             throw InternalError(ssm.str());
           }
-          for (int i = 0; i < al->size(); i++) {
+          for (unsigned int i = 0; i < al->size(); i++) {
             if (Id* id = Expression::dynamicCast<Id>((*al)[i])) {
               GecodeVariable var = resolveVar(id);
               if (var.isint()) {
@@ -1504,7 +1504,7 @@ class IntVarComp {
 public:
   std::vector<Gecode::IntVar> iv;
   IntVarComp(std::vector<Gecode::IntVar> b) { iv = std::move(b); }
-  int operator()(int a, int b) { return static_cast<int>(iv[a].size() < iv[b].size()); }
+  int operator()(size_t a, size_t b) { return static_cast<int>(iv[a].size() < iv[b].size()); }
 };
 
 class IntVarRangesBwd : public Int::IntVarImpBwd {

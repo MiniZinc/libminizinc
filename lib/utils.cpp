@@ -15,9 +15,11 @@
 #if _WIN32
 #include <Windows.h>
 #include <io.h>
+#define mzn_write(fd, buf, s) _write((fd), (buf), static_cast<unsigned int>(s))
 #else
 #include <csignal>
 #include <unistd.h>
+#define mzn_write(fd, buf, s) write((fd), (buf), (s))
 #endif
 
 namespace MiniZinc {
@@ -56,29 +58,29 @@ const char* basename_async_safe(const char* f) {
 void dump_stack(const std::vector<EnvI::CallStackEntry>& stack) {
   char buf[24];
   const char* msg = "Stack depth: ";
-  write(2, msg, strlen(msg));
+  mzn_write(2, msg, strlen(msg));
   itoa_async_safe(static_cast<unsigned int>(stack.size()), buf);
-  write(2, buf, strlen(buf));
+  mzn_write(2, buf, strlen(buf));
   msg = "\nStack backtrace (only showing function/predicate calls):\n";
-  write(2, msg, strlen(msg));
+  mzn_write(2, msg, strlen(msg));
 
   int count = 15;
   for (size_t i = stack.size(); (i--) >= 0U;) {
     if (Expression::isa<Call>(stack[i].e)) {
       msg = "  frame #";
-      write(2, msg, strlen(msg));
+      mzn_write(2, msg, strlen(msg));
       itoa_async_safe(static_cast<unsigned int>(stack.size() - i) - 1, buf);
-      write(2, buf, strlen(buf));
+      mzn_write(2, buf, strlen(buf));
       if (stack.size() - i - 1 < 10) {
         msg = ":  ";
       } else {
         msg = ": ";
       }
-      write(2, msg, strlen(msg));
+      mzn_write(2, msg, strlen(msg));
       msg = Expression::cast<Call>(stack[i].e)->id().c_str();
-      write(2, msg, strlen(msg));
+      mzn_write(2, msg, strlen(msg));
       msg = " at ";
-      write(2, msg, strlen(msg));
+      mzn_write(2, msg, strlen(msg));
       const Location& loc = Expression::cast<Call>(stack[i].e)->decl()->loc();
       msg = loc.filename().c_str();
       if (msg == nullptr) {
@@ -86,17 +88,17 @@ void dump_stack(const std::vector<EnvI::CallStackEntry>& stack) {
       } else {
         msg = basename_async_safe(msg);
       }
-      write(2, msg, strlen(msg));
+      mzn_write(2, msg, strlen(msg));
       msg = ":";
-      write(2, msg, strlen(msg));
+      mzn_write(2, msg, strlen(msg));
       itoa_async_safe(loc.firstLine(), buf);
-      write(2, buf, strlen(buf));
+      mzn_write(2, buf, strlen(buf));
       msg = ".";
-      write(2, msg, strlen(msg));
+      mzn_write(2, msg, strlen(msg));
       itoa_async_safe(loc.firstColumn(), buf);
-      write(2, buf, strlen(buf));
+      mzn_write(2, buf, strlen(buf));
       msg = "\n";
-      write(2, msg, strlen(msg));
+      mzn_write(2, msg, strlen(msg));
       if (--count == 0) {
         break;
       }
@@ -104,7 +106,7 @@ void dump_stack(const std::vector<EnvI::CallStackEntry>& stack) {
   }
   if (stack.size() > 15) {
     msg = "  ...\n";
-    write(2, msg, strlen(msg));
+    mzn_write(2, msg, strlen(msg));
   }
 }
 
@@ -218,16 +220,16 @@ void OverflowHandler::OverflowInfo::overflow(int sig, siginfo_t* info, void* con
         "MiniZinc error: Memory violation detected (segmentation fault).\n"
         "This is most likely due to a stack overflow.\n"
         "Check for deep (or infinite) recursion in the model.\n";
-    write(2, msg, strlen(msg));
+    mzn_write(2, msg, strlen(msg));
     if (_ofi->env != nullptr) {
       dump_stack(_ofi->env->callStack);
     }
     _exit(1);
   } else {
     const char* msg = "MiniZinc error: Memory violation detected (segmentation fault).\n";
-    write(2, msg, strlen(msg));
+    mzn_write(2, msg, strlen(msg));
     msg = "This is a bug. Please file a bug report using the MiniZinc bug tracker.\n";
-    write(2, msg, strlen(msg));
+    mzn_write(2, msg, strlen(msg));
     abort();
   }
 }

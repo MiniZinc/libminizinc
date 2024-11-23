@@ -340,7 +340,7 @@ Model* parse(Env& env, const vector<string>& filenames, const vector<string>& da
   try {
     parse(env, model, filenames, datafiles, textModel, textModelName, includePaths,
           std::move(globalInc), isFlatZinc, ignoreStdlib, parseDocComments, verbose, err);
-  } catch (Exception& e) {
+  } catch (Exception& /*e*/) {
     delete model;
     throw;
   }
@@ -369,7 +369,7 @@ Model* parse_from_string(Env& env, const string& text, const string& filename,
   try {
     parse(env, model, filenames, datafiles, text, filename, includePaths, {}, isFlatZinc,
           ignoreStdlib, parseDocComments, verbose, err);
-  } catch (Exception& e) {
+  } catch (Exception& /*e*/) {
     delete model;
     throw;
   }

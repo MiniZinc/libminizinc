@@ -1216,9 +1216,9 @@ void TopoSorter::run(EnvI& env, Expression* e) {
     case Expression::E_COMP: {
       auto* ce = Expression::cast<Comprehension>(e);
       scopes.push();
-      for (int i = 0; i < ce->numberOfGenerators(); i++) {
+      for (unsigned int i = 0; i < ce->numberOfGenerators(); i++) {
         run(env, ce->in(i));
-        for (int j = 0; j < ce->numberOfDecls(i); j++) {
+        for (unsigned int j = 0; j < ce->numberOfDecls(i); j++) {
           run(env, ce->decl(i, j));
           scopes.add(env, ce->decl(i, j));
         }
@@ -1231,7 +1231,7 @@ void TopoSorter::run(EnvI& env, Expression* e) {
     } break;
     case Expression::E_ITE: {
       ITE* ite = Expression::cast<ITE>(e);
-      for (int i = 0; i < ite->size(); i++) {
+      for (unsigned int i = 0; i < ite->size(); i++) {
         run(env, ite->ifExpr(i));
         run(env, ite->thenExpr(i));
       }
@@ -2154,15 +2154,15 @@ public:
       c_e = (*indexTuple)[indexTuple->size() - 1];
     }
     Type tt = Expression::type(c_e);
-    typedef std::unordered_map<VarDecl*, std::pair<int, int>> genMap_t;
+    typedef std::unordered_map<VarDecl*, std::pair<unsigned int, unsigned int>> genMap_t;
     typedef std::unordered_map<VarDecl*, std::vector<Expression*>> whereMap_t;
     genMap_t generatorMap;
     whereMap_t whereMap;
-    int declCount = 0;
+    unsigned int declCount = 0;
 
-    for (int i = 0; i < c->numberOfGenerators(); i++) {
-      for (int j = 0; j < c->numberOfDecls(i); j++) {
-        generatorMap[c->decl(i, j)] = std::pair<int, int>(i, declCount++);
+    for (unsigned int i = 0; i < c->numberOfGenerators(); i++) {
+      for (unsigned int j = 0; j < c->numberOfDecls(i); j++) {
+        generatorMap[c->decl(i, j)] = std::pair<unsigned int, unsigned int>(i, declCount++);
         whereMap[c->decl(i, j)] = std::vector<Expression*>();
       }
       Expression* g_in = c->in(i);
@@ -2231,13 +2231,13 @@ public:
           for (auto* wp : whereParts) {
             class FindLatestGen : public EVisitor {
             public:
-              int declIndex;
+              unsigned int declIndex;
               VarDecl* decl;
               const genMap_t& generatorMap;
               Comprehension* comp;
               FindLatestGen(const genMap_t& generatorMap0, Comprehension* comp0)
                   : generatorMap(generatorMap0), comp(comp0) {
-                for (int i = 0; i < comp->numberOfGenerators(); i++) {
+                for (unsigned int i = 0; i < comp->numberOfGenerators(); i++) {
                   if (comp->in(i) != nullptr) {
                     declIndex = i;
                     decl = comp->decl(i, 0);
@@ -2250,7 +2250,7 @@ public:
                 if (it != generatorMap.end() && it->second.second > declIndex) {
                   declIndex = it->second.second;
                   decl = ident->decl();
-                  int gen = it->second.first;
+                  auto gen = it->second.first;
                   while (comp->in(gen) == nullptr && gen < comp->numberOfGenerators() - 1) {
                     declIndex++;
                     gen++;
@@ -2272,9 +2272,9 @@ public:
     {
       GCLock lock;
       Generators generators;
-      for (int i = 0; i < c->numberOfGenerators(); i++) {
+      for (unsigned int i = 0; i < c->numberOfGenerators(); i++) {
         std::vector<VarDecl*> decls;
-        for (int j = 0; j < c->numberOfDecls(i); j++) {
+        for (unsigned int j = 0; j < c->numberOfDecls(i); j++) {
           decls.push_back(c->decl(i, j));
           KeepAlive c_in = c->in(i) != nullptr
                                ? add_coercion(_env, _model, c->in(i), Expression::type(c->in(i)))
@@ -2414,7 +2414,7 @@ public:
           ty_id.typeId(enumIds.back());
         }
       }
-      for (int j = 0; j < c->numberOfDecls(gen_i); j++) {
+      for (unsigned int j = 0; j < c->numberOfDecls(gen_i); j++) {
         c->decl(gen_i, j)->type(ty_id);
         c->decl(gen_i, j)->ti()->type(ty_id);
       }
@@ -2440,7 +2440,7 @@ public:
     }
     bool allpresent = !(tret.isOpt());
     bool varcond = false;
-    for (int i = 0; i < ite->size(); i++) {
+    for (unsigned int i = 0; i < ite->size(); i++) {
       Expression* eif = ite->ifExpr(i);
       Expression* ethen = ite->thenExpr(i);
       varcond = varcond || (Expression::type(eif) == Type::varbool());
@@ -2545,7 +2545,7 @@ public:
     for (auto& anon : anons) {
       anon->type(tret_var);
     }
-    for (int i = 0; i < ite->size(); i++) {
+    for (unsigned int i = 0; i < ite->size(); i++) {
       ite->thenExpr(i, add_coercion(_env, _model, ite->thenExpr(i), tret)());
     }
     ite->elseExpr(add_coercion(_env, _model, ite->elseExpr(), tret)());
@@ -3094,7 +3094,7 @@ public:
             } else if (vet.dim() > 0) {
               GCLock lock;
               std::vector<TypeInst*> ranges(vet.dim());
-              for (unsigned int i = 0; i < vet.dim(); i++) {
+              for (int i = 0; i < vet.dim(); i++) {
                 ranges[i] = new TypeInst(Location().introduce(), Type::parint());
               }
               vd->ti()->setRanges(ranges);
@@ -3190,10 +3190,10 @@ public:
           if (c->decl()->ann().containsCall(_env.constants.ann.mzn_add_annotated_expression)) {
             Call* addAnnExp =
                 c->decl()->ann().getCall(_env.constants.ann.mzn_add_annotated_expression);
-            int annotatedExpressionIdx =
-                static_cast<int>(eval_int(_env, addAnnExp->arg(0)).toInt());
+            auto annotatedExpressionIdx =
+                static_cast<unsigned int>(eval_int(_env, addAnnExp->arg(0)).toInt());
             addAnnArgs.resize(c->argCount() + 1);
-            for (int i = 0, j = 0; i < c->argCount(); i++) {
+            for (unsigned int i = 0, j = 0; i < c->argCount(); i++) {
               if (j == annotatedExpressionIdx) {
                 addAnnArgs[j++] = vd->id();
               }
@@ -3381,7 +3381,7 @@ void create_par_versions(Env& env, Model* m, BottomUpIterator<Typer<true>>& bott
   for (auto* f : fns) {
     bool alreadyPar = Expression::type(f->ti()).isPar();
     if (alreadyPar) {
-      for (int i = 0; i < f->paramCount(); i++) {
+      for (unsigned int i = 0; i < f->paramCount(); i++) {
         if (f->param(i)->type().isvar()) {
           alreadyPar = false;
           break;
@@ -3394,7 +3394,7 @@ void create_par_versions(Env& env, Model* m, BottomUpIterator<Typer<true>>& bott
     }
     // create par version of parameter types
     std::vector<Type> tv(f->paramCount());
-    for (int i = 0; i < f->paramCount(); i++) {
+    for (unsigned int i = 0; i < f->paramCount(); i++) {
       Type t = f->param(i)->type();
       t.mkPar(env.envi());
       t.cv(false);
@@ -3404,7 +3404,7 @@ void create_par_versions(Env& env, Model* m, BottomUpIterator<Typer<true>>& bott
     FunctionI* fi_par = nonPolyFns->matchFn(env.envi(), f->id(), tv, false);
     alreadyPar = fi_par->ti()->type().isPar();
     if (alreadyPar) {
-      for (int i = 0; i < fi_par->paramCount(); i++) {
+      for (unsigned int i = 0; i < fi_par->paramCount(); i++) {
         if (fi_par->param(i)->type().isvar()) {
           alreadyPar = false;
           break;
@@ -3453,7 +3453,7 @@ void create_par_versions(Env& env, Model* m, BottomUpIterator<Typer<true>>& bott
           FunctionI* decl = c->decl();
           // create par version of parameter types
           std::vector<Type> tv;
-          for (int i = 0; i < decl->paramCount(); i++) {
+          for (unsigned int i = 0; i < decl->paramCount(); i++) {
             Type t = decl->param(i)->type();
             t.mkPar(env);
             tv.push_back(t);
@@ -3529,7 +3529,7 @@ void create_par_versions(Env& env, Model* m, BottomUpIterator<Typer<true>>& bott
       if (!p.second.first) {
         GCLock lock;
         auto* cp = copy(env.envi(), parCopyMap, p.first)->cast<FunctionI>();
-        for (int i = 0; i < cp->paramCount(); i++) {
+        for (unsigned int i = 0; i < cp->paramCount(); i++) {
           VarDecl* v = cp->param(i);
           v->ti()->mkPar(env.envi());
           v->type(v->ti()->type());
@@ -3653,8 +3653,9 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       (void)model->registerFn(env, i);
       fis.push_back(i);
       // check if one of the arguments is annotated with ::annotated_expression
-      int reifiedAnnotationIdx = -1;
-      for (int j = 0; j < i->paramCount(); j++) {
+      unsigned int reifiedAnnotationIdx = 0;
+      bool foundReifiedAnnotation = false;
+      for (unsigned int j = 0; j < i->paramCount(); j++) {
         Expression* param = i->param(j);
         for (auto* ii : Expression::ann(param)) {
           if (Expression::isa<Id>(ii) &&
@@ -3665,10 +3666,11 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
                   "only the first argument can be annotated with annotated_expression");
             }
             reifiedAnnotationIdx = j;
+            foundReifiedAnnotation = true;
           }
         }
       }
-      if (reifiedAnnotationIdx >= 0) {
+      if (foundReifiedAnnotation) {
         GCLock lock;
         if (i->paramCount() == 1) {
           // turn into atomic annotation
@@ -3685,7 +3687,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           // turn into annotation function with one argument less
           std::vector<VarDecl*> newParams(i->paramCount() - 1);
           int j = 0;
-          for (int k = 0; k < i->paramCount(); k++) {
+          for (unsigned int k = 0; k < i->paramCount(); k++) {
             if (k != reifiedAnnotationIdx) {
               newParams[j++] = Expression::cast<VarDecl>(copy(env, i->param(k)));
             }

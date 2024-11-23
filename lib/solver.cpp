@@ -954,7 +954,7 @@ void MznSolver::flatten(const std::string& modelString, const std::string& model
   // Create timing thread
   std::promise<void> done;
   auto done_future = done.get_future();
-  std::packaged_task<int()> timer([&] {
+  std::packaged_task<std::chrono::milliseconds::rep()> timer([&] {
     auto time_left = std::max(std::chrono::milliseconds(1), flagOverallTimeLimit - _startTime.ms());
     if (flagOverallTimeLimit != std::chrono::milliseconds(0)) {
       auto time_left =

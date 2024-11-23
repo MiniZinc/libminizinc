@@ -224,7 +224,7 @@ void BottomUpIterator<T>::run(Expression* root) {
           case Expression::E_ITE: {
             ITE* ite = Expression::cast<ITE>(ce);
             stack.push_back(C(ite->elseExpr()));
-            for (int i = 0; i < ite->size(); i++) {
+            for (unsigned int i = 0; i < ite->size(); i++) {
               stack.push_back(C(ite->ifExpr(i)));
               stack.push_back(C(ite->thenExpr(i)));
             }
@@ -340,7 +340,7 @@ void TopDownIterator<T>::run(Expression* root) {
         {
           ITE* ite = Expression::cast<ITE>(e);
           stack.push_back(ite->elseExpr());
-          for (int i = 0; i < ite->size(); i++) {
+          for (unsigned int i = 0; i < ite->size(); i++) {
             stack.push_back(ite->ifExpr(i));
             stack.push_back(ite->thenExpr(i));
           }

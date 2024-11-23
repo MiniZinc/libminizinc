@@ -400,7 +400,7 @@ unsigned int ArrayLit::length() const {
     return 0;
   }
   unsigned int l = max(0) - min(0) + 1;
-  for (int i = 1; i < dims(); i++) {
+  for (unsigned int i = 1; i < dims(); i++) {
     l *= (max(i) - min(i) + 1);
   }
   return l;
@@ -447,7 +447,7 @@ Expression* ArrayLit::getSlice(unsigned int i) const {
   if (!_flag2) {
     assert(_u.v->flag());
     int off = static_cast<int>(length()) - static_cast<int>(_u.v->size());
-    return i <= off ? (*_u.v)[0] : (*_u.v)[i - off];
+    return static_cast<int>(i) <= off ? (*_u.v)[0] : (*_u.v)[i - off];
   }
   assert(_flag2);
   return (*_u.al)[origIdx(i)];
@@ -457,7 +457,7 @@ void ArrayLit::setSlice(unsigned int i, Expression* e) {
   if (!_flag2) {
     assert(_u.v->flag());
     int off = static_cast<int>(length()) - static_cast<int>(_u.v->size());
-    if (i <= off) {
+    if (static_cast<int>(i) <= off) {
       (*_u.v)[0] = e;
     } else {
       (*_u.v)[i - off] = e;
@@ -1197,21 +1197,21 @@ void TypeInst::mkVar(const EnvI& env) {
   }
   auto* al = Expression::cast<ArrayLit>(_domain);
   if (type().bt() == Type::BT_TUPLE) {
-    for (int i = 0; i < al->size(); ++i) {
+    for (unsigned int i = 0; i < al->size(); ++i) {
       Expression::cast<TypeInst>((*al)[i])->mkVar(env);
     }
   } else {
     if (type().typeId() != 0) {
       GCLock lock;
       RecordType* rt = env.getRecordType(type());
-      for (int i = 0; i < al->size(); ++i) {
+      for (unsigned int i = 0; i < al->size(); ++i) {
         auto* field_ti = Expression::cast<TypeInst>((*al)[i]);
         field_ti->mkVar(env);
         auto* field_vd = new VarDecl(Expression::loc(field_ti), field_ti, rt->fieldName(i));
         al->set(i, field_vd);
       }
     } else {
-      for (int i = 0; i < al->size(); ++i) {
+      for (unsigned int i = 0; i < al->size(); ++i) {
         auto* field_vd = Expression::cast<VarDecl>((*al)[i]);
         field_vd->ti()->mkVar(env);
         field_vd->type(field_vd->ti()->type());
@@ -1250,7 +1250,7 @@ void TypeInst::setStructDomain(EnvI& env, const Type& struct_type, bool setTypeA
   GCLock lock;
   StructType* st = env.getStructType(struct_type);
   std::vector<Expression*> field_ti(st->size());
-  for (int i = 0; i < st->size(); ++i) {
+  for (unsigned int i = 0; i < st->size(); ++i) {
     Type tti = (*st)[i];
     if (setTypeAny) {
       tti.any(true);
@@ -1260,7 +1260,7 @@ void TypeInst::setStructDomain(EnvI& env, const Type& struct_type, bool setTypeA
       Expression::cast<TypeInst>(field_ti[i])->setStructDomain(env, tti);
     } else if (tti.dim() != 0) {
       std::vector<TypeInst*> newRanges(tti.dim());
-      for (unsigned int k = 0; k < tti.dim(); k++) {
+      for (int k = 0; k < tti.dim(); k++) {
         newRanges[k] = new TypeInst(Location().introduce(), Type::parint());
       }
       Expression::cast<TypeInst>(field_ti[i])->setRanges(newRanges);
@@ -1271,7 +1271,7 @@ void TypeInst::setStructDomain(EnvI& env, const Type& struct_type, bool setTypeA
                                    Expression::isa<TIId>(ranges()[0]->domain()) &&
                                    !Expression::cast<TIId>(ranges()[0]->domain())->isEnum());
     std::vector<TypeInst*> newRanges(type().dim());
-    for (unsigned int k = 0; k < type().dim(); k++) {
+    for (int k = 0; k < type().dim(); k++) {
       newRanges[k] = new TypeInst(Location().introduce(), Type::parint());
     }
     setRanges(newRanges);

@@ -249,7 +249,11 @@ public:
       version.append("0");
     }
     // Parse version number
+#ifdef _WIN32
+    sscanf_s(version.c_str(), "%d.%d.%d", &major, &minor, &patch);
+#else
     sscanf(version.c_str(), "%d.%d.%d", &major, &minor, &patch);
+#endif
   }
   bool operator<(const SemanticVersion& other) const {
     if (major < other.major) {

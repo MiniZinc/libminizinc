@@ -89,7 +89,7 @@ Expression* ite_struct_split(EnvI& env, Type ty, const std::vector<Expression*>&
                   env.genId(), else_in);
   else_decl->ti()->setStructDomain(env, Expression::type(else_in));
 
-  for (int i = 0; i < st->size(); ++i) {
+  for (unsigned int i = 0; i < st->size(); ++i) {
     Type field = (*st)[i];
     if (field.structBT()) {
       std::vector<Expression*> f_then_in(then_decl.size());
@@ -165,7 +165,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     IdMap<int> eq_occurrences;
     std::vector<IdMap<std::pair<Expression*, Expression*>>> eq_branches(ite->size() + 1);
     std::vector<std::vector<Expression*>> other_branches(ite->size() + 1);
-    for (int i = 0; i < ite->size(); i++) {
+    for (unsigned int i = 0; i < ite->size(); i++) {
       auto conjuncts = get_conjuncts(ite->thenExpr(i));
       for (auto* c : conjuncts) {
         classify_conjunct(env, c, eq_occurrences, eq_branches[i], other_branches[i]);
@@ -181,11 +181,11 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
       noOtherBranches = noOtherBranches && other_branches[ite->size()].empty();
     }
     for (auto& eq : eq_occurrences) {
-      if (eq.second >= ite->size()) {
+      if (eq.second >= static_cast<int>(ite->size())) {
         // Any identifier that occurs in all or all but one branch gets its own conditional
         results.emplace_back(eq.first->decl());
         e_then.emplace_back();
-        for (int i = 0; i < ite->size(); i++) {
+        for (unsigned int i = 0; i < ite->size(); i++) {
           auto it = eq_branches[i].find(eq.first);
           if (it == eq_branches[i].end()) {
             // not found, simply push x=x
@@ -205,7 +205,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
         }
       } else {
         // All other identifiers are put in the vector of "other" branches
-        for (int i = 0; i <= ite->size(); i++) {
+        for (unsigned int i = 0; i <= ite->size(); i++) {
           auto it = eq_branches[i].find(eq.first);
           if (it != eq_branches[i].end()) {
             other_branches[i].push_back(it->second.second);
@@ -218,7 +218,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     if (!noOtherBranches) {
       results.emplace_back(r);
       e_then.emplace_back();
-      for (int i = 0; i < ite->size(); i++) {
+      for (unsigned int i = 0; i < ite->size(); i++) {
         if (eq_branches[i].empty()) {
           e_then.back().emplace_back(ite->thenExpr(i));
         } else if (other_branches[i].empty()) {
@@ -265,7 +265,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     noOtherBranches = false;
     results.emplace_back(r);
     e_then.emplace_back();
-    for (int i = 0; i < ite->size(); i++) {
+    for (unsigned int i = 0; i < ite->size(); i++) {
       e_then.back().emplace_back(ite->thenExpr(i));
     }
     e_else.emplace_back(ite->elseExpr());
@@ -292,7 +292,7 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
   cmix.neg = ctx.neg;
 
   bool foundTrueBranch = false;
-  for (int i = 0; i < ite->size() && !foundTrueBranch; i++) {
+  for (unsigned int i = 0; i < ite->size() && !foundTrueBranch; i++) {
     bool cond = true;
     EE e_if;
     Ctx cmix_not_negated;

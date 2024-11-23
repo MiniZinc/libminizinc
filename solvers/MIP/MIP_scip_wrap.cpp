@@ -282,8 +282,6 @@ bool MIPScipWrapper::Options::processOption(int& i, vector<string>& argv,
     return false;
   }
   return true;
-error:
-  return false;
 }
 
 // NOLINTNEXTLINE(readability-identifier-naming)
