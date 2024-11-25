@@ -15,6 +15,7 @@ Changes:
 -  Make the ``mzn_in_root_context`` function (which is used only internally and
    should not be used in user models) more flexible in where it can be called.
 -  Update packaged version of the HiGHS solver to version 1.8.1.
+-  Update Gurobi interface to be compatible with Gurobi 12.0.0.
 
 Bug fixes:
 ^^^^^^^^^^

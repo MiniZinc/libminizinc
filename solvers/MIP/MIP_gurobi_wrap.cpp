@@ -89,10 +89,10 @@ vector<string> MIPGurobiWrapper::getStdFlags() { return {"-i", "-p", "-s", "-v"}
 
 vector<string> gurobi_dlls() {
   const vector<string> versions = {
-      "1103", "1102", "1101",  // Potential future versions which should load correctly
-      "1100", "1003", "1002", "1001", "1000", "952", "951", "950", "912", "911",
-      "910",  "903",  "902",  "901",  "900",  "811", "810", "801", "800", "752",
-      "751",  "750",  "702",  "701",  "700",  "652", "651", "650"};
+      "1203", "1202", "1201",  // Potential future versions which should load correctly
+      "1200", "1103", "1102", "1101", "1100", "1003", "1002", "1001", "1000", "952", "951",
+      "950",  "912",  "911",  "910",  "903",  "902",  "901",  "900",  "811",  "810", "801",
+      "800",  "752",  "751",  "750",  "702",  "701",  "700",  "652",  "651",  "650"};
   vector<string> dlls;
   string lastMajorVersion;
   for (const auto& version : versions) {
@@ -265,12 +265,16 @@ void* dll_open(const char* file) {
   return dlopen((std::string("lib") + file + ".so").c_str(), RTLD_NOW);
 #endif
 }
-void* dll_sym(void* dll, const char* sym) {
+void* try_dll_sym(void* dll, const char* sym) {
 #ifdef _WIN32
   void* ret = GetProcAddress((HMODULE)dll, sym);
 #else
   void* ret = dlsym(dll, sym);
 #endif
+  return ret;
+}
+void* dll_sym(void* dll, const char* sym) {
+  void* ret = try_dll_sym(dll, sym);
   if (ret == nullptr) {
     throw MiniZinc::Error("cannot load symbol " + string(sym) + " from gurobi dll");
   }
@@ -321,7 +325,11 @@ void MIPGurobiWrapper::checkDLL() {
   *(void**)(&dll_GRBgetenv) = dll_sym(_gurobiDll, "GRBgetenv");
   *(void**)(&dll_GRBgeterrormsg) = dll_sym(_gurobiDll, "GRBgeterrormsg");
   *(void**)(&dll_GRBgetintattr) = dll_sym(_gurobiDll, "GRBgetintattr");
-  *(void**)(&dll_GRBloadenv) = dll_sym(_gurobiDll, "GRBloadenv");
+  *(void**)(&dll_GRBloadenv) = try_dll_sym(_gurobiDll, "GRBloadenv");
+  if (dll_GRBloadenv == nullptr) {
+    // Workaround for missing symbol in 12.0.0
+    *(void**)(&dll_GRBloadenvinternal) = dll_sym(_gurobiDll, "GRBloadenvinternal");
+  }
   *(void**)(&dll_GRBgetconcurrentenv) = dll_sym(_gurobiDll, "GRBgetconcurrentenv");
   *(void**)(&dll_GRBnewmodel) = dll_sym(_gurobiDll, "GRBnewmodel");
   *(void**)(&dll_GRBoptimize) = dll_sym(_gurobiDll, "GRBoptimize");
@@ -339,7 +347,11 @@ void MIPGurobiWrapper::checkDLL() {
   *(void**)(&dll_GRBupdatemodel) = dll_sym(_gurobiDll, "GRBupdatemodel");
   *(void**)(&dll_GRBwrite) = dll_sym(_gurobiDll, "GRBwrite");
   *(void**)(&dll_GRBwriteparams) = dll_sym(_gurobiDll, "GRBwriteparams");
-  *(void**)(&dll_GRBemptyenv) = dll_sym(_gurobiDll, "GRBemptyenv");
+  *(void**)(&dll_GRBemptyenv) = try_dll_sym(_gurobiDll, "GRBemptyenv");
+  if (dll_GRBemptyenv == nullptr) {
+    // Workaround for missing symbol in 12.0.0
+    *(void**)(&dll_GRBemptyenvinternal) = dll_sym(_gurobiDll, "GRBemptyenvinternal");
+  }
   *(void**)(&dll_GRBgetnumparams) = dll_sym(_gurobiDll, "GRBgetnumparams");
   *(void**)(&dll_GRBgetparamname) = dll_sym(_gurobiDll, "GRBgetparamname");
   *(void**)(&dll_GRBgetparamtype) = dll_sym(_gurobiDll, "GRBgetparamtype");
@@ -355,7 +367,12 @@ void MIPGurobiWrapper::openGUROBI() {
   {
     //   cout << "% " << flush;               // Gurobi 7.5.2 prints "Academic License..."
     MiniZinc::StreamRedir redirStdout(stdout, stderr);
-    _error = dll_GRBloadenv(&_env, nullptr);
+    if (dll_GRBloadenv == nullptr) {
+      // Workaround for missing symbol in 12.0.0
+      _error = dll_GRBloadenvinternal(&_env, nullptr, 12, 0, 0);
+    } else {
+      _error = dll_GRBloadenv(&_env, nullptr);
+    }
   }
   wrapAssert(_error == 0, "Could not open GUROBI environment.");
   _error = dll_GRBsetintparam(_env, "OutputFlag", 0);  // Switch off output
@@ -395,7 +412,12 @@ std::vector<MiniZinc::SolverConfig::ExtraFlag> MIPGurobiWrapper::getExtraFlags(
   GRBenv* env;
   try {
     mgw.checkDLL();
-    mgw.dll_GRBemptyenv(&env);
+    if (mgw.dll_GRBemptyenv == nullptr) {
+      // Workaround for missing symbol in 12.0.0
+      mgw.dll_GRBemptyenvinternal(&env, 12, 0, 0);
+    } else {
+      mgw.dll_GRBemptyenv(&env);
+    }
     int num_params = mgw.dll_GRBgetnumparams(env);
     std::vector<MiniZinc::SolverConfig::ExtraFlag> flags;
     flags.reserve(num_params);
