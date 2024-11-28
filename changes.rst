@@ -22,6 +22,9 @@ Changes:
    user to explicitly specify the solver for which the MiniZinc instance is being
    compiled, using ``--solver``. To select the default solver (and keep the
    previous behaviour) you can use ``--solver default``.
+-  Add the ``--fzn-format`` flag to influence whether the generated FlatZinc from
+   ``--compile`` or ``--fzn`` is given in the traditional FlatZinc format or the
+   new JSON-based format.
 
 Bug fixes:
 ^^^^^^^^^^

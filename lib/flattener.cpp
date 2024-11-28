@@ -135,6 +135,8 @@ void Flattener::printHelp(ostream& os) const {
              ? "  -o <file>, --fzn <file>, --output-to-file <file>, --output-fzn-to-file <file>\n"
              : "  --fzn <file>, --output-fzn-to-file <file>\n")
      << "    Filename for generated FlatZinc output" << std::endl
+     << "  --fzn-format <fzn|json>\n    Whether the FlatZinc generated for the user is formatted traditionally or as JSON.\n    (Does not affect the FlatZinc directly passed to the solver.)"
+     << std::endl
      << "  --ozn, --output-ozn-to-file <file>\n    Filename for model output specification "
         "(--ozn- "
         "for none)"
@@ -204,6 +206,14 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv,
                                              : "--fzn --output-fzn-to-file",
                            &buffer)) {
     _flagOutputFzn = FileUtils::file_path(buffer, workingDir);
+  } else if (cop.getOption("--fzn-format", &buffer)) {
+	  if (buffer == "fzn") {
+			_flags.fznFormat = FlattenerFlags::FF_FZN;
+		} else if (buffer == "json") {
+			_flags.fznFormat = FlattenerFlags::FF_JSON;
+		} else {
+			return false;
+		}
   } else if (cop.getOption("--output-paths")) {
     _fopts.collectMznPaths = true;
   } else if (cop.getOption("--output-paths-to-file", &buffer)) {
