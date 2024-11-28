@@ -71,6 +71,7 @@
 #include <minizinc/solvers/mzn_solverinstance.hh>
 #include <minizinc/solvers/nl/nl_solverfactory.hh>
 #include <minizinc/solvers/nl/nl_solverinstance.hh>
+#include <minizinc/exception.hh>
 
 using namespace std;
 using namespace MiniZinc;
@@ -256,7 +257,7 @@ void MznSolver::printHelp(std::ostream& os, const std::string& selectedSolver) {
      << "  --solvers\n    Print list of available solvers." << std::endl
      << "  --time-limit <ms>\n    Stop after <ms> milliseconds (includes compilation and solving)."
      << std::endl
-     << "  --solver <solver id>, --solver <solver config file>.msc\n    Select solver to use."
+     << "  --solver <solver id>, --solver <solver config file>.msc, --solver default\n    Select solver to use, or explicitly specify using the default solver."
      << std::endl
      << "  --help <solver id>\n    Print help for a particular solver." << std::endl
      << "  -v, -l, --verbose\n    Print progress/log statements. Note that some solvers may log "
@@ -654,7 +655,12 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
     argc++;
   }
 
-  _flt.setFlagOutputByDefault(ifMzn2Fzn());
+  if (ifMzn2Fzn()) {
+    _flt.setFlagOutputByDefault(true);
+    if (solver.empty()) {
+    	throw BadOption("Using the --compile (or -c) flag requires that a solver is selected explicitly using the --solver flag");
+    }
+  }
 
   bool isMznMzn = false;
   s2out.opt.flagEncapsulateJSON = flagEncapsulateJSON;

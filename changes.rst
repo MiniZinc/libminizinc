@@ -18,6 +18,10 @@ Changes:
 -  Update Gurobi interface to be compatible with Gurobi 12.0.0.
 -  Address compiler warnings concerning unsafe signed/unsigned comparisons and
    implicit casts between different integer types.
+-  **BREAKING**: The usage of ``--compile`` (or ``-c``) flag now requires the
+   user to explicitly specify the solver for which the MiniZinc instance is being
+   compiled, using ``--solver``. To select the default solver (and keep the
+   previous behaviour) you can use ``--solver default``.
 
 Bug fixes:
 ^^^^^^^^^^
