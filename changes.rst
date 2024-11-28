@@ -24,7 +24,9 @@ Changes:
    previous behaviour) you can use ``--solver default``.
 -  Add the ``--fzn-format`` flag to influence whether the generated FlatZinc from
    ``--compile`` or ``--fzn`` is given in the traditional FlatZinc format or the
-   new JSON-based format.
+   new JSON-based format. (:bugref:`868`)
+-  Comments regarding the compilation invocation are now included in user-facing
+   FlatZinc (``.fzn``) files, created by the ``--compile`` or ``--fzn`` flags.
 
 Bug fixes:
 ^^^^^^^^^^

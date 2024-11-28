@@ -380,8 +380,9 @@ SolverConfig SolverConfig::load(const string& filename) {
             sc._needsPathsFile = get_bool(ai);
           } else if (ai->id() == "tags") {
             std::vector<std::string> loaded = get_string_list(ai);
-          	std::vector<std::string> tags;
-           	std::copy_if (loaded.begin(), loaded.end(), std::back_inserter(tags), [](std::string s){return s != "default";} );
+            std::vector<std::string> tags;
+            std::copy_if(loaded.begin(), loaded.end(), std::back_inserter(tags),
+                         [](std::string s) { return s != "default"; });
             sc._tags = tags;
           } else if (ai->id() == "stdFlags") {
             sc._stdFlags = get_string_list(ai);
@@ -582,8 +583,8 @@ void SolverConfigs::addConfig(const MiniZinc::SolverConfig& sc) {
   // Add default tag if the solver is marked as the overall default
   DefaultMap::const_iterator def_it = _tagDefault.find("");
   if (def_it != _tagDefault.end() && def_it->second == id) {
-		sc_tags.emplace_back("default");
-	}
+    sc_tags.emplace_back("default");
+  }
 
   for (const auto& t : sc_tags) {
     auto it = _tags.find(t);

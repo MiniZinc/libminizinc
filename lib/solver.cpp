@@ -34,6 +34,7 @@
 #include <iomanip>
 #include <iostream>
 #include <ratio>
+#include <sstream>
 
 #ifdef HAS_OSICBC
 #include <minizinc/solvers/MIP/MIP_osicbc_solverfactory.hh>
@@ -65,13 +66,13 @@
 #ifdef HAS_HIGHS
 #include <minizinc/solvers/MIP/MIP_highs_solverfactory.hh>
 #endif
+#include <minizinc/exception.hh>
 #include <minizinc/solvers/fzn_solverfactory.hh>
 #include <minizinc/solvers/fzn_solverinstance.hh>
 #include <minizinc/solvers/mzn_solverfactory.hh>
 #include <minizinc/solvers/mzn_solverinstance.hh>
 #include <minizinc/solvers/nl/nl_solverfactory.hh>
 #include <minizinc/solvers/nl/nl_solverinstance.hh>
-#include <minizinc/exception.hh>
 
 using namespace std;
 using namespace MiniZinc;
@@ -257,7 +258,8 @@ void MznSolver::printHelp(std::ostream& os, const std::string& selectedSolver) {
      << "  --solvers\n    Print list of available solvers." << std::endl
      << "  --time-limit <ms>\n    Stop after <ms> milliseconds (includes compilation and solving)."
      << std::endl
-     << "  --solver <solver id>, --solver <solver config file>.msc, --solver default\n    Select solver to use, or explicitly specify using the default solver."
+     << "  --solver <solver id>, --solver <solver config file>.msc, --solver default\n    Select "
+        "solver to use, or explicitly specify using the default solver."
      << std::endl
      << "  --help <solver id>\n    Print help for a particular solver." << std::endl
      << "  -v, -l, --verbose\n    Print progress/log statements. Note that some solvers may log "
@@ -349,6 +351,11 @@ void add_flags(const std::string& sep, const std::vector<std::string>& in_args,
 }
 
 MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv) {
+  std::ostringstream cmdline_ss;
+  for (const auto& arg : argv) {
+    cmdline_ss << arg << " ";
+  }
+
   _executableName = argv[0];
   _executableName = _executableName.substr(_executableName.find_last_of("/\\") + 1);
   size_t lastdot = _executableName.find_last_of('.');
@@ -658,7 +665,9 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
   if (ifMzn2Fzn()) {
     _flt.setFlagOutputByDefault(true);
     if (solver.empty()) {
-    	throw BadOption("Using the --compile (or -c) flag requires that a solver is selected explicitly using the --solver flag");
+      throw BadOption(
+          "Using the --compile (or -c) flag requires that a solver is selected explicitly using "
+          "the --solver flag");
     }
   }
 
@@ -928,6 +937,10 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
         throw BadOption(ss.str());
       }
     }
+
+    /// Set the command line string for printing user FlatZinc
+    _flt.setCmdLineStr(std::move(cmdline_ss.str()));
+
     return OPTION_OK;
   }
   for (i = 1; i < argc; ++i) {
