@@ -1879,16 +1879,20 @@ public:
   }
   ret mapTypeInst(const TypeInst* ti) {
     auto* dl = new DocumentList("", "", "");
-    if (ti->isarray()) {
-      dl->addStringToList("array [");
-      auto* ran = new DocumentList("", ", ", "");
-      for (unsigned int i = 0; i < ti->ranges().size(); i++) {
-        ran->addDocumentToList(tiexpression_to_document(Type::parint(), ti->ranges()[i], _env));
+    if (ti->type().istop() && ti->domain() == nullptr) {
+      dl->addStringToList("any");
+    } else {
+      if (ti->isarray()) {
+        dl->addStringToList("array [");
+        auto* ran = new DocumentList("", ", ", "");
+        for (unsigned int i = 0; i < ti->ranges().size(); i++) {
+          ran->addDocumentToList(tiexpression_to_document(Type::parint(), ti->ranges()[i], _env));
+        }
+        dl->addDocumentToList(ran);
+        dl->addStringToList("] of ");
       }
-      dl->addDocumentToList(ran);
-      dl->addStringToList("] of ");
+      dl->addDocumentToList(tiexpression_to_document(ti->type(), ti->domain(), _env));
     }
-    dl->addDocumentToList(tiexpression_to_document(ti->type(), ti->domain(), _env));
     return dl;
   }
 };
