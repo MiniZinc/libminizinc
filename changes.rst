@@ -50,6 +50,8 @@ Bug fixes:
 -  Fix a bug in the typeing of enum constructor functions, which would cause
    incorrect type errors when using them in the type-inst of a variable
    declaration.
+-  Fix a segfault caused by an internal `float_times` variant not correctly being
+	 handled during output processing (:bugref:`870`).
 
 .. _v2.8.7:
 

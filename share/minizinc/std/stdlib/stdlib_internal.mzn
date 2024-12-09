@@ -84,6 +84,8 @@ predicate int_le(int:s, array[$T] of var int: X) = forall(x in array1d(X)) (x >=
 predicate float_le(array[$T] of var float: X, float: s) = forall(x in array1d(X)) (x <= s);
 predicate float_le(float:s, array[$T] of var float: X) = forall(x in array1d(X)) (x >= s);
 
+function float: float_times(float: x, float: y) = x*y;
+
 predicate array_var_int_element(var int: x, array[int] of int: y, var int: z) =
   array_int_element(x,y,z);
 predicate array_var_bool_element(var int: x, array[int] of bool: y, var bool: z) =
