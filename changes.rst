@@ -27,6 +27,7 @@ Changes:
    new JSON-based format. (:bugref:`868`)
 -  Comments regarding the compilation invocation are now included in user-facing
    FlatZinc (``.fzn``) files, created by the ``--compile`` or ``--fzn`` flags.
+-  Add ``par`` version of the ``among`` function.
 
 Bug fixes:
 ^^^^^^^^^^

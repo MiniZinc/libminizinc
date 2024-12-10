@@ -8,3 +8,8 @@ function var int: among(array[$X] of var $$E: x, set of $$E: v) :: promise_total
 		var 0..length(x): n ::is_defined_var; 
 		constraint fzn_among(n, array1d(x), v) ::defines_var(n);
 	} in n;
+
+/**  @group globals.counting
+  Returns the number of variables in \a xi that take one of the values in \a v.
+*/
+function int: among(array[$X] of $$E: xi, set of $$E: v) = count (x in xi) (x in v);
