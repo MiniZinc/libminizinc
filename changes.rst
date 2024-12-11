@@ -54,7 +54,9 @@ Bug fixes:
    incorrect type errors when using them in the type-inst of a variable
    declaration.
 -  Fix a segfault caused by an internal `float_times` variant not correctly being
-	 handled during output processing (:bugref:`870`).
+	handled during output processing (:bugref:`870`).
+-  Fix incorrect non-uniform if-then-else type error when one branch is an empty
+   array and another branch is an array of tuples or records.
 
 .. _v2.8.7:
 

@@ -2522,21 +2522,27 @@ public:
           tret.typeId(Expression::type(ethen).typeId());
         } else if (tret.structBT()) {
           Type ty = Expression::type(ethen);
-          if (tret.bt() == Type::BT_TUPLE) {
-            if (ty.bt() != Type::BT_TUPLE) {
-              throw TypeError(_env, Expression::loc(ethen), "non-uniform branches in if-then-else");
-            }
-            tret = _env.commonTuple(tret, ty, true);
-            if (tret.istop()) {
-              throw TypeError(_env, Expression::loc(ethen), "non-uniform branches in if-then-else");
-            }
-          } else {  // (tret.bt() == Type::BT_RECORD)
-            if (ty.bt() != Type::BT_RECORD) {
-              throw TypeError(_env, Expression::loc(ethen), "non-uniform branches in if-then-else");
-            }
-            tret = _env.commonRecord(tret, ty, true);
-            if (tret.istop()) {
-              throw TypeError(_env, Expression::loc(ethen), "non-uniform branches in if-then-else");
+          if (!ty.isbot()) {
+            if (tret.bt() == Type::BT_TUPLE) {
+              if (ty.bt() != Type::BT_TUPLE) {
+                throw TypeError(_env, Expression::loc(ethen),
+                                "non-uniform branches in if-then-else");
+              }
+              tret = _env.commonTuple(tret, ty, true);
+              if (tret.istop()) {
+                throw TypeError(_env, Expression::loc(ethen),
+                                "non-uniform branches in if-then-else");
+              }
+            } else {  // (tret.bt() == Type::BT_RECORD)
+              if (ty.bt() != Type::BT_RECORD) {
+                throw TypeError(_env, Expression::loc(ethen),
+                                "non-uniform branches in if-then-else");
+              }
+              tret = _env.commonRecord(tret, ty, true);
+              if (tret.istop()) {
+                throw TypeError(_env, Expression::loc(ethen),
+                                "non-uniform branches in if-then-else");
+              }
             }
           }
         }
