@@ -799,7 +799,7 @@ bool TupleType::matchesBT(const EnvI& env, const TupleType& other) const {
   }
   for (unsigned int i = 0; i < other.size(); ++i) {
     const Type& ty = operator[](i);
-    if (ty.bt() != other[i].bt()) {
+    if (other[i].bt() != Type::BT_TOP && ty.bt() != other[i].bt()) {
       return false;
     }
     if (ty.bt() == Type::BT_TUPLE &&
@@ -870,7 +870,7 @@ bool RecordType::matchesBT(const EnvI& env, const RecordType& other) const {
       return false;
     }
     const Type& ty = operator[](i);
-    if (ty.bt() != other[i].bt()) {
+    if (other[i].bt() != Type::BT_TOP && ty.bt() != other[i].bt()) {
       return false;
     }
     if (ty.bt() == Type::BT_TUPLE &&

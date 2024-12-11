@@ -4332,6 +4332,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
                 if (_ty.anyInLet.find(vd) != _ty.anyInLet.end()) {
                   vd->type(Type::mkAny());
                   vd->ti()->type(Type::mkAny());
+                  vd->ti()->domain(nullptr);
                 }
               }
             }
