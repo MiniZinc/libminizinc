@@ -793,17 +793,21 @@ public:
         if (ti->isEnum()) {
           _os << "enum";
         } else {
-          if (ti->isarray()) {
-            _os << "array [";
-            for (unsigned int i = 0; i < ti->ranges().size(); i++) {
-              p(Type::parint(), ti->ranges()[i]);
-              if (i < ti->ranges().size() - 1) {
-                _os << ",";
+          if (ti->type().istop() && ti->domain() == nullptr) {
+            _os << "any";
+          } else {
+            if (ti->isarray()) {
+              _os << "array [";
+              for (unsigned int i = 0; i < ti->ranges().size(); i++) {
+                p(Type::parint(), ti->ranges()[i]);
+                if (i < ti->ranges().size() - 1) {
+                  _os << ",";
+                }
               }
+              _os << "] of ";
             }
-            _os << "] of ";
+            p(ti->type(), ti->domain());
           }
-          p(ti->type(), ti->domain());
         }
       }
     }
