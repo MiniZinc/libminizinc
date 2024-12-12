@@ -57,7 +57,8 @@ Bug fixes:
    handled during output processing (:bugref:`870`).
 -  Fix incorrect non-uniform if-then-else type error when one branch is an empty
    array and another branch is an array of tuples or records.
--  Fix type checking for any in let expressions with tuple types.
+-  Fix type checking for `any`` in `let` expressions with tuple types.
+-  Fix pretty printing of variable declarations with `any` type.
 
 .. _v2.8.7:
 

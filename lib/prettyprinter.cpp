@@ -129,6 +129,30 @@ void pp_floatval(std::ostream& os, const FloatVal& fv, bool hexFloat) {
   os << fv;
 }
 
+bool pp_type_is_any(const VarDecl* vd) {
+  if (vd->type().structBT()) {
+    // Check if the type needs to be printed as "any"
+    std::vector<TypeInst*> ti_stack({vd->ti()});
+    while (!ti_stack.empty()) {
+      auto* ti = ti_stack.back();
+      ti_stack.pop_back();
+      if (ti->type().istop() && ti->domain() == nullptr) {
+        return true;
+      }
+      if (const auto* al = Expression::dynamicCast<ArrayLit>(ti->domain())) {
+        for (unsigned int i = 0; i < al->size(); ++i) {
+          if (auto* vd = Expression::dynamicCast<VarDecl>((*al)[i])) {
+            ti_stack.push_back(vd->ti());
+          } else {
+            ti_stack.push_back(Expression::cast<TypeInst>((*al)[i]));
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
 template <bool trace>
 class PlainPrinter {
 private:
@@ -750,7 +774,11 @@ public:
         if (vd->isTypeAlias()) {
           _os << "type";
         } else {
-          p(vd->ti());
+          if (pp_type_is_any(vd)) {
+            _os << "any";
+          } else {
+            p(vd->ti());
+          }
           if (!vd->ti()->isEnum() && (vd->id()->idn() != -1 || !vd->id()->v().empty())) {
             _os << ":";
           }
@@ -1820,7 +1848,11 @@ public:
         oss << "X_INTRODUCED_" << vd->id()->idn() << "_";
       }
     } else {
-      dl->addDocumentToList(expression_to_document(vd->ti(), _env));
+      if (pp_type_is_any(vd)) {
+        dl->addStringToList("any");
+      } else {
+        dl->addDocumentToList(expression_to_document(vd->ti(), _env));
+      }
       if (vd->id()->idn() == -1) {
         if (!vd->id()->v().empty()) {
           oss << ": " << vd->id()->v().c_str();
