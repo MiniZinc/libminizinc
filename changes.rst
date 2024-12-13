@@ -30,6 +30,8 @@ Changes:
 -  Add ``par`` version of the ``among`` function.
 -  Add support for arrays containing arrays (which only support access using
    ``par`` indices).
+-  Add ``diversity.mzn`` library to be used with the diverse solutions toolchain
+   included in MiniZinc Python.
 
 Bug fixes:
 ^^^^^^^^^^
