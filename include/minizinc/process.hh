@@ -182,6 +182,7 @@ public:
 
     HANDLE hJobObject = CreateJobObject(NULL, NULL);
 
+    SetDllDirectoryW(FileUtils::utf8_to_wide(FileUtils::progpath()).c_str());
     BOOL processStarted = CreateProcessW(NULL,
                                          cmdstr,        // command line
                                          NULL,          // process security attributes
@@ -295,6 +296,7 @@ public:
     CloseHandle(piProcInfo.hProcess);
 
     SetConsoleCtrlHandler(handleInterrupt, FALSE);
+    SetDllDirectoryW(L"");
     if (hadInterrupt) {
       // Re-trigger signal if it was not caused by our own timeout
       throw SignalRaised(CTRL_C_EVENT);

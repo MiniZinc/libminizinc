@@ -32,6 +32,8 @@ Changes:
    ``par`` indices).
 -  Add ``diversity.mzn`` library to be used with the diverse solutions toolchain
    included in MiniZinc Python.
+-  Ensure the MiniZinc directory is added to the DLL search path when running
+   child processes on Windows (:idebugref:`206`).
 
 Bug fixes:
 ^^^^^^^^^^
