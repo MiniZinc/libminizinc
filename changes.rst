@@ -63,6 +63,8 @@ Bug fixes:
    array and another branch is an array of tuples or records.
 -  Fix type checking for `any`` in `let` expressions with tuple types.
 -  Fix pretty printing of variable declarations with `any` type.
+-  Fix bug where the JSON parser would not add absent literals for known optional
+	 types that are missing from the JSON objects.
 
 .. _v2.8.7:
 

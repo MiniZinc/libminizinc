@@ -1,7 +1,20 @@
 {
-	"singlet": {"x": -3},
-	"duo": {"x": "Albus", "y": true},
-	"arr1d": [{"e": 0.2, "b": true}, {"b": false, "e": -23.1}],
-	"arr2d": [[{"x1": 1, "x2": "one", "x3": true}, {"x1": 2, "x2": "two", "x3": true}], [{"x1": -1, "x2": "min one", "x3": false}, {"x1": -2, "x2": "min two", "x3": false}]],
-	"empty_arr": []
+	"singlet": { "x": -3 },
+	"duo": { "x": "Albus", "y": true },
+	"arr1d": [
+		{ "e": 0.2, "b": true },
+		{ "b": false, "e": -23.1 }
+	],
+	"arr2d": [
+		[
+			{ "x1": 1, "x2": "one", "x3": true },
+			{ "x1": 2, "x2": "two", "x3": true }
+		],
+		[
+			{ "x1": -1, "x2": "min one", "x3": false },
+			{ "x1": -2, "x2": "min two", "x3": false }
+		]
+	],
+	"empty_arr": [],
+	"mixed_arr": [{ "x": 1, "y": 2 }, { "x": 3 }, { "x": 5, "y": null }]
 }

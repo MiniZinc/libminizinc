@@ -572,11 +572,15 @@ Expression* JSONParser::parseObject(istream& is, TypeInst* ti) {
   std::vector<Expression*> fields;
 
   ASTStringMap<TypeInst*> fieldTIs;
+  ASTStringSet optFields;
   if (ti != nullptr && ti->type().bt() == Type::BT_RECORD) {
     auto* dom = Expression::cast<ArrayLit>(ti->domain());
     for (unsigned int i = 0; i < dom->size(); ++i) {
       auto* fieldDef = Expression::cast<VarDecl>((*dom)[i]);
       fieldTIs.emplace(fieldDef->id()->str(), fieldDef->ti());
+      if (fieldDef->ti()->type().isOpt()) {
+        optFields.insert(fieldDef->id()->str());
+      }
     }
   };
 
@@ -608,10 +612,18 @@ Expression* JSONParser::parseObject(istream& is, TypeInst* ti) {
 
     fields.push_back(
         new VarDecl(Location().introduce(), new TypeInst(Location().introduce(), Type()), key, e));
+    optFields.erase(key);
     next = readToken(is);
   } while (next.t == T_COMMA);
   if (next.t != T_OBJ_CLOSE) {
     throw JSONError(_env, errLocation(), "invalid object");
+  }
+
+  // Add <> literal for known optional fields
+  for (const auto& key : optFields) {
+    fields.push_back(new VarDecl(Location().introduce(),
+                                 new TypeInst(Location().introduce(), Type()), key,
+                                 _env.constants.absent));
   }
 
   auto* record = ArrayLit::constructTuple(Location().introduce(), fields);
