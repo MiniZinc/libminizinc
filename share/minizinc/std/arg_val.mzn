@@ -10,6 +10,28 @@ include "fzn_arg_val_int_opt.mzn";
 	When breaking ties the least index is returned.
 	Note that this function forces the value \a v to occur in \a x.
 */
+function $$E: arg_val(array [$$E] of $T: x, $T: v) =
+	let {
+		any: matches = [i | i in index_set(x) where x[i] = v];
+	} in matches[1];
+
+
+/** @group globals.math
+	Returns the index of the value \a v in the array \a x when \a v.
+	When breaking ties the least index is returned.
+	Returns absent when \a v does not occur in \a x.
+*/
+function opt $$E: arg_val_weak(array[$$E] of $T: x, $T: v) =
+	let {
+		any: matches = [i | i in index_set(x) where x[i] = v];
+	} in if length(matches) = 0 then <> else matches[1] endif;
+
+
+/** @group globals.math
+	Returns the index of the value \a v in the array \a x.
+	When breaking ties the least index is returned.
+	Note that this function forces the value \a v to occur in \a x.
+*/
 function var $$E: arg_val(array [$$E] of var bool: x, var bool: v) =
 	let { constraint length(x) > 0; } in arg_val_total(x, v);
 
@@ -28,7 +50,7 @@ function var $$E: arg_val_total(array [$$E] of var bool: x, var bool: v) :: prom
 	When breaking ties the least index is returned.
 	Returns absent when \a v does not occur in \a x.
 */
-function var opt $$E: arg_val_weak(array[$$E] of var bool: x, var bool: v) :: promise_total = 
+function var opt $$E: arg_val_weak(array[$$E] of var bool: x, var bool: v) :: promise_total =
 	if length(x) = 0 then
 		<>
 	else
@@ -64,7 +86,7 @@ function var $$E: arg_val_total(array [$$E] of var opt bool: x, var opt bool: v)
 	When breaking ties the least index is returned.
 	Returns absent when \a v does not occur in \a x.
 */
-function var opt $$E: arg_val_weak(array[$$E] of var opt bool: x, var opt bool: v) :: promise_total = 
+function var opt $$E: arg_val_weak(array[$$E] of var opt bool: x, var opt bool: v) :: promise_total =
 	if length(x) = 0 then
 		<>
 	else
@@ -100,7 +122,7 @@ function var $$E: arg_val_total(array [$$E] of var float: x, var float: v) :: pr
 	When breaking ties the least index is returned.
 	Returns absent when \a v does not occur in \a x.
 */
-function var opt $$E: arg_val_weak(array[$$E] of var float: x, var float: v) :: promise_total = 
+function var opt $$E: arg_val_weak(array[$$E] of var float: x, var float: v) :: promise_total =
 	if length(x) = 0 then
 		<>
 	else
@@ -136,7 +158,7 @@ function var $$E: arg_val_total(array [$$E] of var opt float: x, var opt float: 
 	When breaking ties the least index is returned.
 	Returns absent when \a v does not occur in \a x.
 */
-function var opt $$E: arg_val_weak(array[$$E] of var opt float: x, var opt float: v) :: promise_total = 
+function var opt $$E: arg_val_weak(array[$$E] of var opt float: x, var opt float: v) :: promise_total =
 	if length(x) = 0 then
 		<>
 	else
@@ -172,7 +194,7 @@ function var $$E: arg_val_total(array [$$E] of var $$V: x, var $$V: v) :: promis
 	When breaking ties the least index is returned.
 	Returns absent when \a v does not occur in \a x.
 */
-function var opt $$E: arg_val_weak(array [$$E] of var $$V: x, var $$V: v) :: promise_total = 
+function var opt $$E: arg_val_weak(array [$$E] of var $$V: x, var $$V: v) :: promise_total =
 	if length(x) = 0 then
 		<>
 	else
@@ -208,7 +230,7 @@ function var $$E: arg_val_total(array [$$E] of var opt $$V: x, var opt $$V: v) :
 	When breaking ties the least index is returned.
 	Returns absent when \a v does not occur in \a x.
 */
-function var opt $$E: arg_val_weak(array [$$E] of var opt $$V: x, var opt $$V: v) :: promise_total = 
+function var opt $$E: arg_val_weak(array [$$E] of var opt $$V: x, var opt $$V: v) :: promise_total =
 	if length(x) = 0 then
 		<>
 	else

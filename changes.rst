@@ -34,6 +34,7 @@ Changes:
    included in MiniZinc Python.
 -  Ensure the MiniZinc directory is added to the DLL search path when running
    child processes on Windows (:idebugref:`206`).
+-  Add ``par`` implementations for the ``arg_val`` and ``arg_val_weak`` functions.
 
 Bug fixes:
 ^^^^^^^^^^
