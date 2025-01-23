@@ -506,6 +506,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
              endif ::mzn_evaluate_once
          function opt X: C(opt E: x) = if occurs(x) then C(deopt(x)) else to_enum(x,<>) endif
          function set of X: C(set of E: x) = { C(i) | i in x }
+         function set of X: C() = C(E);
 
          function E: C⁻¹(X: x) =
            if mzn_set_is_contiguous(E) then
@@ -518,6 +519,18 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
          function opt E: C⁻¹(opt X: x) = if occurs(x) then C⁻¹(deopt(x)) else to_enum(x,<>) endif
          function set of E: C⁻¹(set of X: x) = { C⁻¹(i) | i in x }
          */
+
+        {
+          Type Xt(Type::parint());
+          Xt.st(Type::ST_SET);
+          Xt.typeId(enumId);
+          auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
+          ASTString Cfn_id = c->id();
+          auto* inv = Call::a(Location().introduce(), Cfn_id, {constructorArgId});
+          auto* Cfn = new FunctionI(Location().introduce(), Cfn_id, Cfn_ti, {}, inv);
+          enumItems->addItem(Cfn);
+        }
+
         for (Type baseType : {Type::parint(), Type::varint()}) {
           {
             Type Xt(baseType);

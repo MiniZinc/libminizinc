@@ -2477,6 +2477,8 @@ The same enum constructor syntax also works with integer sets, for example
 
 declares an enum for nodes in a bipartite graph with :mzn:`n` left nodes and :mzn:`n` right nodes.
 
+The enum constructor can also be used without arguments to return the set of values of the particular constructor. For example, given a :mzn:`Node: n`, we can use the syntax `n in Left()` to test if :mzn:`n` is in the :mzn:`Left` set.
+
 Enum constructors can be used to map non-contiguous sets to (contiguous) enumerated types. Consider the following example:
 
 .. code-block:: minizinc

@@ -35,6 +35,8 @@ Changes:
 -  Ensure the MiniZinc directory is added to the DLL search path when running
    child processes on Windows (:idebugref:`206`).
 -  Add ``par`` implementations for the ``arg_val`` and ``arg_val_weak`` functions.
+-  Add support for calling enum constructors without arguments to return the set
+   of all constructed values.
 
 Bug fixes:
 ^^^^^^^^^^
