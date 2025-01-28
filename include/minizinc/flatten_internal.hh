@@ -615,12 +615,17 @@ public:
   std::vector<KeepAlive>& x;
   CmpExpIdx(std::vector<KeepAlive>& x0) : x(x0) {}
   bool operator()(int i, int j) const {
-    if (Expression::equal(x[i](), x[j]())) {
-      return false;
+    const long long int i_idn =
+        Expression::isa<Id>(x[i]()) ? Expression::cast<Id>(x[i]())->idn() : -1;
+    const long long int j_idn =
+        Expression::isa<Id>(x[j]()) ? Expression::cast<Id>(x[j]())->idn() : -1;
+    const bool i_is_valid_id = i_idn != -1;
+    const bool j_is_valid_id = j_idn != -1;
+    if (i_is_valid_id != j_is_valid_id) {
+      return i_is_valid_id > j_is_valid_id;
     }
-    if (Expression::isa<Id>(x[i]()) && Expression::isa<Id>(x[j]()) &&
-        Expression::cast<Id>(x[i]())->idn() != -1 && Expression::cast<Id>(x[j]())->idn() != -1) {
-      return Expression::cast<Id>(x[i]())->idn() < Expression::cast<Id>(x[j]())->idn();
+    if (i_is_valid_id && j_is_valid_id) {
+      return i_idn < j_idn;
     }
     return x[i]() < x[j]();
   }
