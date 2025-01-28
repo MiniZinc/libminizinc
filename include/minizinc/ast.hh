@@ -748,8 +748,8 @@ public:
   long long int idn() const;
   /// Set identifier number
   void idn(long long int n) {
-    _vOrIdn.idn =
-        reinterpret_cast<void*>((static_cast<ptrdiff_t>(n) << 1) | static_cast<ptrdiff_t>(1));
+    auto n1 = static_cast<long long unsigned int>(n) << 1;
+    _vOrIdn.idn = reinterpret_cast<void*>(static_cast<ptrdiff_t>(n1) | static_cast<ptrdiff_t>(1));
     rehash();
   }
   /// Return identifier or X_INTRODUCED plus identifier number
