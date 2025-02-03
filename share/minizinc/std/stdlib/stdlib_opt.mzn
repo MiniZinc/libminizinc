@@ -163,7 +163,7 @@ function bool: had_zero(var opt int: x) :: cache_result =
 
     Returns true if absent zero representation is disabled or if it is possible
     that \( \text{occurs}(x) \wedge \text{deopt}(x) = 0 \) */
-function bool: had_zero(opt int: x) = not mzn_check_absent_zero() \/ (x = 0);
+function bool: had_zero(opt int: x) = not mzn_check_absent_zero() \/ x = 0;
 /** @group stdlib.optiontypes.int True if \a x had zero in its original domain.
 
     Returns true if absent zero representation is disabled or if it is possible

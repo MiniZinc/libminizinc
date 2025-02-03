@@ -326,7 +326,7 @@ predicate float_eq_reif(var float: x, var float: y, var bool: b) =
   elseif fPostprocessDomains /\ fPostproDom_DIFF then
     float_eq_reif__POST(x - y, 0, b, float_lt_EPS)
   else
-    aux_float_eq_iff_1(x, y, (bool2int(b)))
+    aux_float_eq_iff_1(x, y, bool2int(b))
   endif;
 
 predicate float_ne_reif(var float: x, var float: y, var bool: b) = float_eq_reif(x, y, not (b));

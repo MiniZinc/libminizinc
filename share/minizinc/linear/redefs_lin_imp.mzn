@@ -37,10 +37,10 @@ predicate int_eq_imp(var int: x, var int: y, var bool: b) =
 %% var, const
 predicate int_eq_imp(var int: x, int: y, var bool: b) =
   if is_fixed(b) then
-    if fix(b) then (x = y) else true endif
+    if fix(b) then x = y else true endif
   elseif y in dom(x) then
     if is_fixed(x) then
-      b -> (y = fix(x))
+      b -> y = fix(x)
     else
       aux_int_eq_if_1(x, y, b) %% Simple disjunction
     endif
@@ -107,11 +107,11 @@ predicate float_lt_imp(var float: x, var float: y, var bool: b) =
 %% var float, var float
 predicate float_eq_imp(var float: x, var float: y, var bool: b) =
   if is_fixed(b) then
-    if fix(b) then (x = y) else true endif
-  elseif (ub(x) < lb(y)) \/ (lb(x) > ub(y)) then
+    if fix(b) then x = y else true endif
+  elseif ub(x) < lb(y) \/ lb(x) > ub(y) then
     not b
   elseif is_fixed(x) /\ is_fixed(y) then
-    b -> (fix(x) == fix(y))
+    b -> fix(x) == fix(y)
   else
     aux_float_eq_if_1(x, y, b)
   endif;
@@ -119,11 +119,11 @@ predicate float_eq_imp(var float: x, var float: y, var bool: b) =
 %% var float, var float
 predicate float_ne_imp(var float: x, var float: y, var bool: b) =
   if is_fixed(b) then
-    if fix(b) then (x != y) else true endif
-  elseif (ub(x) < lb(y)) \/ (lb(x) > ub(y)) then
+    if fix(b) then x != y else true endif
+  elseif ub(x) < lb(y) \/ lb(x) > ub(y) then
     true
   elseif is_fixed(x) /\ is_fixed(y) then
-    b -> (fix(x) != fix(y))
+    b -> fix(x) != fix(y)
   else
     aux_float_ne_if_1(x, y, b)
   endif;

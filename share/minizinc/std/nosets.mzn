@@ -99,7 +99,7 @@ predicate set_eq_reif(var set of int: x, var set of int: y, var bool: b) :: prom
 
 predicate set_eq_imp(var set of int: x, var set of int: y, var bool: b) =
   if is_fixed(b) then
-    if fix(b) then (x = y) else true endif
+    if fix(b) then x = y else true endif
   else
     let {
       array [int] of var bool: bx = set2bools(x);
@@ -135,7 +135,7 @@ predicate set_ne_reif(var set of int: x, var set of int: y, var bool: b) :: prom
 
 predicate set_ne_imp(var set of int: x, var set of int: y, var bool: b) =
   if is_fixed(b) then
-    if fix(b) then (x != y) else true endif
+    if fix(b) then x != y else true endif
   else
     let {
       array [int] of var bool: bx = set2bools(x);

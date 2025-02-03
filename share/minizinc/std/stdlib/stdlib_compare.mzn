@@ -128,10 +128,10 @@ function bool: '!='(opt $T: x, opt $T: y) :: promise_commutative = not (x = y);
 function var bool: '!='(any $T: x, any $T: y) :: mzn_internal_representation :: promise_commutative;
 
 % Special case comparison operators for integer variable and float constant
-function var bool: '<='(var int: x, float: y) = (x <= floor(y));
-function var bool: '>='(var int: x, float: y) = (x >= ceil(y));
-function var bool: '<='(float: x, var int: y) = (y >= ceil(x));
-function var bool: '>='(float: x, var int: y) = (y <= floor(x));
+function var bool: '<='(var int: x, float: y) = x <= floor(y);
+function var bool: '>='(var int: x, float: y) = x >= ceil(y);
+function var bool: '<='(float: x, var int: y) = y >= ceil(x);
+function var bool: '>='(float: x, var int: y) = y <= floor(x);
 
 function var bool: '<'(var int: x, float: y) = (x <= ceil(y) - 1);
 function var bool: '>'(float: x, var int: y) = (y <= ceil(x) - 1);
@@ -148,10 +148,10 @@ function var bool: '!='(var int: x, float: y) =
 function var bool: '!='(float: x, var int: y) =
   if ceil(x) = floor(x) then y != ceil(x) else true endif;
 
-function bool: '<='(int: x, float: y) = (x <= floor(y));
-function bool: '>='(int: x, float: y) = (x >= ceil(y));
-function bool: '<='(float: x, int: y) = (y >= ceil(x));
-function bool: '>='(float: x, int: y) = (y <= floor(x));
+function bool: '<='(int: x, float: y) = x <= floor(y);
+function bool: '>='(int: x, float: y) = x >= ceil(y);
+function bool: '<='(float: x, int: y) = y >= ceil(x);
+function bool: '>='(float: x, int: y) = y <= floor(x);
 
 function bool: '<'(int: x, float: y) = (x <= ceil(y) - 1);
 function bool: '>'(float: x, int: y) = (y <= ceil(x) - 1);

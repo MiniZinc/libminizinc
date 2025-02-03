@@ -2727,7 +2727,7 @@ function var float: fldiv_t(var float: x, var float: y) :: promise_total =
 
 function var float: fldiv_mt(var float: x, var float: y) :: promise_total =
   let {
-    var (lb(y)..ub(y) diff {0.0}) union {1.0}: yy = if (y = 0.0) then 1.0 else y endif;
+    var lb(y)..ub(y) diff {0.0} union {1.0}: yy = if y = 0.0 then 1.0 else y endif;
   } in fldiv_t(x, yy);
 
 function var int: mod_t(var int: x, var int: y) :: promise_total =
