@@ -23,7 +23,7 @@ include "experimental/on_restart/fzn_on_restart_uniform_int.mzn";
   @group experimental.on_restart A search annotation that triggers a function
   to be executed on restart
 */
-ann: on_restart(string: pred);
+annotation on_restart(string: pred);
 
 /**
   @group experimental.on_restart Reports the status of the solver (before

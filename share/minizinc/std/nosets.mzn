@@ -12,7 +12,7 @@ function var set of int: reverse_map_ab2si(array[int] of var bool: b) ::output_o
 function set of int: reverse_map_ab2si(array[int] of bool: b) ::promise_total =
   { i | i in index_set(b) where b[i] };
 
-array[int] of var bool: set2bools(var set of int: x) ::promise_total =
+function array[int] of var bool: set2bools(var set of int: x) ::promise_total =
   if is_fixed(x) then set2bools(fix(x))
   elseif ub(x) = {} then
   let {
@@ -26,7 +26,7 @@ array[int] of var bool: set2bools(var set of int: x) ::promise_total =
       constraint (x = reverse_map_ab2si(b)) :: is_reverse_map;
     } in b
   endif;
-array[int] of var bool: set2bools(var set of int: x, set of int: ubx) ::promise_total =
+function array[int] of var bool: set2bools(var set of int: x, set of int: ubx) ::promise_total =
   if is_fixed(x) then set2bools(fix(x), ubx)
   elseif ub(x) = {} then
   let {
@@ -41,9 +41,9 @@ array[int] of var bool: set2bools(var set of int: x, set of int: ubx) ::promise_
           | i in min(ubx)..max(ubx) ] );
     } in b
   endif;
-array[int] of bool: set2bools(set of int: x) ::promise_total =
+function array[int] of bool: set2bools(set of int: x) ::promise_total =
   if x = {} then [] else array1d(min(x)..max(x),[i in x | i in min(x)..max(x)]) endif;
-array[int] of bool: set2bools(set of int: x, set of int: ubx) ::promise_total =
+function array[int] of bool: set2bools(set of int: x, set of int: ubx) ::promise_total =
   if ubx = {} then [] else array1d(min(ubx)..max(ubx),[i in x | i in min(ubx)..max(ubx)]) endif;
 function var bool: set2bools_bit( var set of int: x, int: i ) ::promise_total =
   if i in ub(x) then
@@ -443,14 +443,14 @@ predicate array_set_element(var int: x, array[int] of set of int: y, var set of 
     endif
   );
 
-annotation set_search(array[int] of var set of int: x, ann: a1, ann: a2, ann: a3) =
+function ann: set_search(array[int] of var set of int: x, ann: a1, ann: a2, ann: a3) =
   let {
     ann: cc = if a2 == indomain_min then indomain_max
               elseif a2 == indomain_max then indomain_min
               else a2 endif;
   } in seq_search([bool_search(set2bools(x[i]), a1, cc, a3) | i in index_set(x)]);
 
-annotation warm_start( array[int] of var set of int: x, array[int] of set of int: v ) =
+function ann: warm_start( array[int] of var set of int: x, array[int] of set of int: v ) =
    warm_start_array( [
        let {
          array[int] of var bool: xb = set2bools(x[i]),

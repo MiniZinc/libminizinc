@@ -676,14 +676,14 @@ function var 0..1: fVarInBigSetOfInt(var int: x, set of int: s)
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%
 
-annotation bool_search(array[int] of var bool: x, ann: a1, ann: a2, ann: a3) =
+function ann: bool_search(array[int] of var bool: x, ann: a1, ann: a2, ann: a3) =
   int_search([bool2int(x_i) | x_i in x], a1, a2, a3);
 
-annotation warm_start( array[int] of var bool: x, array[int] of bool: v ) =
+function ann: warm_start( array[int] of var bool: x, array[int] of bool: v ) =
    warm_start( [ bool2int(x[i]) | i in index_set(x) ], [ bool2int(v[i]) | i in index_set(v) ] );
    
    
-annotation sat_goal(var bool: b) = int_max_goal(b);
+function ann: sat_goal(var bool: b) = int_max_goal(b);
 annotation int_max_goal(var int: x);
 
 
