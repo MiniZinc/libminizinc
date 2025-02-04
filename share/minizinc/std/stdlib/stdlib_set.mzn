@@ -7,6 +7,8 @@
 /** @group stdlib.builtins.set Test if \a x is an element of the set \a y */
 function bool: 'in'($$E: x, set of $$E: y) :: mzn_internal_representation;
 /** @group stdlib.builtins.set \a x is an element of the set \a y */
+function var bool: 'in'(var $$E: x, set of $$E: y);
+/** @group stdlib.builtins.set \a x is an element of the set \a y */
 function var bool: 'in'(var $$E: x, var set of $$E: y);
 /** @group stdlib.builtins.set \a x is an element of the set \a y. False if \a x is absent. */
 function var bool: 'in'(var opt $$E: x, set of $$E: y) = occurs(x) /\ deopt(x) in y;
@@ -72,12 +74,14 @@ function set of bool: '..'(bool: a, bool: b) =
   if a then if b then {true} else {} endif elseif b then {false, true} else {false} endif;
 
 /** @group stdlib.builtins.set Return the set \(\{\a a,\ldots,\a b-1\}\) */
-function set of $$E: '..<'($$E: a, $$E: b) = if a >= b then {} else a..enum_prev(b) endif;
+function set of $$E: '..<'($$E: a, $$E: b) =
+  if enum2int(a) >= enum2int(b) then {} else a..enum_prev(b) endif;
 /** @group stdlib.builtins.set Return the set \(\{\a a+1,\ldots,\a b\}\) */
-function set of $$E: '<..'($$E: a, $$E: b) = if a >= b then {} else enum_next(a)..b endif;
+function set of $$E: '<..'($$E: a, $$E: b) =
+  if enum2int(a) >= enum2int(b) then {} else enum_next(a)..b endif;
 /** @group stdlib.builtins.set Return the set \(\{\a a+1,\ldots,\a b-1\}\) */
 function set of $$E: '<..<'($$E: a, $$E: b) =
-  if b - a <= 1 then {} else enum_next(a)..enum_prev(b) endif;
+  if enum2int(b) - enum2int(a) <= 1 then {} else enum_next(a)..enum_prev(b) endif;
 
 /** @group stdlib.builtins.set Return the set \(\{\a a,\ldots,\a b-1\}\) */
 function set of $$E: '..o'($$E: a) = a..max(enum_of(a));
@@ -134,7 +138,7 @@ function var set of $$E: array_union(array [$T] of var set of $$E: x)
   else
     let {
       var set of ub_array(x): y :: is_defined_var;
-      constraint fzn_array_set_union(array1d(x), y) :: defines_var(y);
+      constraint fzn_array_set_union(enum2int(array1d(x)), enum2int(y)) :: defines_var(y);
     } in y
   endif;
 
@@ -153,7 +157,7 @@ function var set of $$E: array_intersect_t(array [$T] of var set of $$E: x) :: p
   else
     let {
       var set of ub_array(x): y :: is_defined_var;
-      constraint fzn_array_set_intersect(array1d(x), y) :: defines_var(y);
+      constraint fzn_array_set_intersect(enum2int(array1d(x)), enum2int(y)) :: defines_var(y);
     } in y
   endif;
 

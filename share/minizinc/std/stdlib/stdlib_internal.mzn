@@ -2926,10 +2926,11 @@ predicate mzn_set_in_internal(var opt float: x, set of float: s) =
 
 /* Functions used for the type erasure of enumerated types */
 
-test mzn_set_is_contiguous(set of int: X) = card(X) = 0 \/ card(X) = (max(X) - min(X) + 1);
+test mzn_set_is_contiguous(set of $$E: X) =
+  card(X) = 0 \/ card(X) = (enum2int(max(X)) - enum2int(min(X)) + 1);
 
-function int: mzn_min_or_0(set of int: X) =
-  if card(X) = 0 then 0 elseif mzn_set_is_contiguous(X) then min(X) else 1 endif;
+function int: mzn_min_or_0(set of $$E: X) =
+  if card(X) = 0 then 0 elseif mzn_set_is_contiguous(X) then enum2int(min(X)) else 1 endif;
 
 predicate lex_less_std_decomposition(
   array [int] of var $T: x :: promise_ctx_antitone,

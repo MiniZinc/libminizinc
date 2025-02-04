@@ -12,7 +12,7 @@ include "fzn_disjunctive_strict_reif.mzn";
 */
 predicate disjunctive_strict(array [$$T] of var int: s, array [$$T] of var int: d) =
   assert(
-    index_set(s) == index_set(d),
+    index_sets_agree(s, d),
     "disjunctive: the array arguments must have identical index sets",
-    fzn_disjunctive_strict(s, d),
+    fzn_disjunctive_strict(index2int(s), index2int(d)),
   );

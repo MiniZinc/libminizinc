@@ -367,6 +367,7 @@ public:
     int linDel;
   } counters;
   bool inReverseMapVar;
+  bool warnImplicitEnum2Int;
   FlatteningOptions fopts;
   ASTStringMap<Item*> reverseEnum;
   std::vector<KeepAlive> checkVars;

@@ -1,7 +1,7 @@
 include "fzn_var_perm_sym.mzn";
 
 predicate fzn_var_sqr_sym(
-  array [$$X, $$X] of var $$Y: x,
+  array [int, int] of var int: x,
 ) =
   let {
     int: n = card(index_set_1of2(x));

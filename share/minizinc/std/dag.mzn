@@ -31,4 +31,4 @@ predicate dag(
       dom_array(to) subset index_set(ns),
       "dreachable: nodes in to must be in index set of ns",
     ) /\
-    fzn_dag(from, to, ns, es);
+    fzn_dag(index2int(enum2int(from)), index2int(enum2int(to)), index2int(ns), index2int(es));

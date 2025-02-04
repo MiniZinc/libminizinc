@@ -16,8 +16,8 @@ predicate network_flow(
   array [$$E] of var int: flow,
 ) =
   let {
-    set of int: ARCS = index_set_1of2(arc);
-    set of int: NODES = index_set(balance);
+    any: ARCS = index_set_1of2(arc);
+    any: NODES = index_set(balance);
   } in assert(
     ARCS == index_set(flow),
     "network_flow: index set of arcs, \(ARCS), does not match the index set of flow, \(
@@ -30,7 +30,11 @@ predicate network_flow(
         dom_bounds_array(arc)
       ), do not match the index set of balance \(NODES)",
     ) /\
-    if sum(balance) != 0 then false else fzn_network_flow(arc, balance, flow) endif;
+    if sum(balance) != 0 then
+      false
+    else
+      fzn_network_flow(index2int(enum2int(arc)), index2int(balance), index2int(flow))
+    endif;
 
 /** @group globals.graph
   Defines a network flow constraint with cost.
@@ -49,8 +53,8 @@ predicate network_flow_cost(
   var int: cost,
 ) =
   let {
-    set of int: ARCS = index_set_1of2(arc);
-    set of int: NODES = index_set(balance);
+    any: ARCS = index_set_1of2(arc);
+    any: NODES = index_set(balance);
   } in assert(
     ARCS == index_set(flow),
     "network_flow_cost: index set of arcs, \(ARCS), does not match the index set of flow, \(
@@ -72,5 +76,11 @@ predicate network_flow_cost(
     if sum(balance) != 0 then
       false
     else
-      fzn_network_flow_cost(arc, balance, weight, flow, cost)
+      fzn_network_flow_cost(
+        index2int(enum2int(arc)),
+        index2int(balance),
+        index2int(weight),
+        index2int(flow),
+        cost,
+      )
     endif;

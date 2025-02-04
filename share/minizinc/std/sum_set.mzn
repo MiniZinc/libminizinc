@@ -6,4 +6,4 @@ include "fzn_sum_set_reif.mzn";
   where \a vs[\p i1]..\a vs[\p iN] are the elements appearing in set \a x
 */
 predicate sum_set(array [$$X] of $$Y: vs, array [$$X] of int: ws, var set of $$Y: x, var int: s) =
-  fzn_sum_set(vs, ws, x, s);
+  fzn_sum_set(index2int(enum2int(vs)), index2int(ws), enum2int(x), s);

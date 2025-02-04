@@ -37,6 +37,8 @@ Changes:
 -  Add ``par`` implementations for the ``arg_val`` and ``arg_val_weak`` functions.
 -  Add support for calling enum constructors without arguments to return the set
    of all constructed values.
+-  Deprecate and emit warning for implicit coercion of enums to integers. The
+   ``enum2int`` function should be used to perform the coercion where required.
 
 Bug fixes:
 ^^^^^^^^^^

@@ -12,23 +12,24 @@ include "fzn_regular_set_reif.mzn";
   is not possible.
 */
 predicate regular(
-  array [int] of var $$Val: x,
+  array [$$X] of var $$Val: x,
   array [$$State, $$Val] of opt $$State: d,
   $$State: q0,
   set of $$State: F,
 ) =
   let {
-    any: State = index_set_1of2(d);
-    any: Val = index_set_2of2(d);
-    any: q_off = min(State) - 1;
-    any: dd = [
-      (s, v): if occurs(d[s, v]) then deopt(d[s, v]) - q_off else 0 endif |
-        s in State,
-        v in Val,
-    ];
-    any: qq0 = q0 - q_off;
-    any: FF = {i - q_off | i in F};
-  } in fzn_regular_set(x, card(State), Val, dd, qq0, FF);
+    any: State = enum2int(index_set_1of2(d));
+    any: Val = enum2int(index_set_2of2(d));
+    any: q_off = enum2int(min(State)) - 1;
+    any: dd =
+      array2d(
+        State,
+        Val,
+        [if occurs(d_sv) then enum2int(deopt(d_sv)) - q_off else 0 endif | d_sv in d],
+      );
+    any: qq0 = enum2int(q0) - q_off;
+    any: FF = {enum2int(i) - q_off | i in F};
+  } in fzn_regular_set(index2int(enum2int(x)), card(State), Val, dd, qq0, FF);
 
 /** @group globals.extensional
   The sequence of values in array \a x (which must all be in the range 1..\a S)

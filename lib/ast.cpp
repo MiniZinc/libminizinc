@@ -2185,6 +2185,9 @@ Constants::Constants() {
   ids.bool2int = addString("bool2int");
   ids.int2float = addString("int2float");
   ids.bool2float = addString("bool2float");
+  ids.enum2int = addString("enum2int");
+  ids.index2int = addString("index2int");
+  ids.to_enum_internal = addString("to_enum_internal");
   ids.set2iter = addString("set2iter");
   ids.assert = addString("assert");
   ids.assert_dbg = addString("assert_dbg");

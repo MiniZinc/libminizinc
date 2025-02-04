@@ -8,13 +8,17 @@
 function bool: '<'($T: x, $T: y) :: mzn_internal_representation;
 /** @group stdlib.builtins.compare Return if \a x is less than \a y */
 function var bool: '<'(var $T: x, var $T: y) :: mzn_internal_representation;
+/** @group stdlib.builtins.compare Return if \a x is less than \a y */
+function var bool: '<'($T: x, var $T: y) :: mzn_internal_representation;
+/** @group stdlib.builtins.compare Return if \a x is less than \a y */
+function var bool: '<'(var $T: x, $T: y) :: mzn_internal_representation;
 /** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is less than the value of \a y. */
-function var bool: '<'(var opt int: x, var opt int: y) =
+function var bool: '<'(var opt $$E: x, var opt $$E: y) =
   absent(x) \/ absent(y) \/ deopt(x) < deopt(y);
 /** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is less than the value of \a y. */
-function bool: '<'(opt int: x, opt int: y) = absent(x) \/ absent(y) \/ deopt(x) < deopt(y);
+function bool: '<'(opt $$E: x, opt $$E: y) = absent(x) \/ absent(y) \/ deopt(x) < deopt(y);
 /** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is less than the value of \a y. */
 function var bool: '<'(var opt float: x, var opt float: y) =
@@ -27,13 +31,17 @@ function bool: '<'(opt float: x, opt float: y) = absent(x) \/ absent(y) \/ deopt
 function bool: '>'($T: x, $T: y) :: mzn_internal_representation;
 /** @group stdlib.builtins.compare Return if \a x is greater than \a y */
 function var bool: '>'(var $T: x, var $T: y) :: mzn_internal_representation;
+/** @group stdlib.builtins.compare Return if \a x is greater than \a y */
+function var bool: '>'($T: x, var $T: y) :: mzn_internal_representation;
+/** @group stdlib.builtins.compare Return if \a x is greater than \a y */
+function var bool: '>'(var $T: x, $T: y) :: mzn_internal_representation;
 /** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is greater than the value of \a y. */
-function var bool: '>'(var opt int: x, var opt int: y) =
+function var bool: '>'(var opt $$E: x, var opt $$E: y) =
   absent(x) \/ absent(y) \/ deopt(x) > deopt(y);
 /** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is greater than the value of \a y. */
-function bool: '>'(opt int: x, opt int: y) = absent(x) \/ absent(y) \/ deopt(x) > deopt(y);
+function bool: '>'(opt $$E: x, opt $$E: y) = absent(x) \/ absent(y) \/ deopt(x) > deopt(y);
 /** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is greater than the value of \a y. */
 function var bool: '>'(var opt float: x, var opt float: y) =
@@ -46,13 +54,17 @@ function bool: '>'(opt float: x, opt float: y) = absent(x) \/ absent(y) \/ deopt
 function bool: '<='($T: x, $T: y) :: mzn_internal_representation;
 /** @group stdlib.builtins.compare Return if \a x is less than or equal to \a y */
 function var bool: '<='(var $T: x, var $T: y) :: mzn_internal_representation;
+/** @group stdlib.builtins.compare Return if \a x is less than or equal to \a y */
+function var bool: '<='($T: x, var $T: y) :: mzn_internal_representation;
+/** @group stdlib.builtins.compare Return if \a x is less than or equal to \a y */
+function var bool: '<='(var $T: x, $T: y) :: mzn_internal_representation;
 /** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is less than or equal to the value of \a y. */
-function var bool: '<='(var opt int: x, var opt int: y) =
+function var bool: '<='(var opt $$E: x, var opt $$E: y) =
   absent(x) \/ absent(y) \/ deopt(x) <= deopt(y);
 /** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is less than or equal to the value of \a y. */
-function bool: '<='(opt int: x, opt int: y) = absent(x) \/ absent(y) \/ deopt(x) <= deopt(y);
+function bool: '<='(opt $$E: x, opt $$E: y) = absent(x) \/ absent(y) \/ deopt(x) <= deopt(y);
 /** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is less than or equal to the value of \a y. */
 function var bool: '<='(var opt float: x, var opt float: y) =
@@ -65,13 +77,17 @@ function bool: '<='(opt float: x, opt float: y) = absent(x) \/ absent(y) \/ deop
 function bool: '>='($T: x, $T: y) :: mzn_internal_representation;
 /** @group stdlib.builtins.compare Return if \a x is greater than or equal to \a y */
 function var bool: '>='(var $T: x, var $T: y) :: mzn_internal_representation;
+/** @group stdlib.builtins.compare Return if \a x is greater than or equal to \a y */
+function var bool: '>='($T: x, var $T: y) :: mzn_internal_representation;
+/** @group stdlib.builtins.compare Return if \a x is greater than or equal to \a y */
+function var bool: '>='(var $T: x, $T: y) :: mzn_internal_representation;
 /** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is greater than or equal to the value of \a y. */
-function var bool: '>='(var opt int: x, var opt int: y) =
+function var bool: '>='(var opt $$E: x, var opt $$E: y) =
   absent(x) \/ absent(y) \/ deopt(x) >= deopt(y);
 /** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is greater than or equal to the value of \a y. */
-function bool: '>='(opt int: x, opt int: y) = absent(x) \/ absent(y) \/ deopt(x) >= deopt(y);
+function bool: '>='(opt $$E: x, opt $$E: y) = absent(x) \/ absent(y) \/ deopt(x) >= deopt(y);
 /** @group stdlib.builtins.compare Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is greater than or equal to the value of \a y. */
 function var bool: '>='(var opt float: x, var opt float: y) =
@@ -100,12 +116,12 @@ function var bool: '~!='(var opt bool: x, var opt bool: y) :: promise_total :: p
 
 /** @group stdlib.builtins.compare Weak equality. True if either \a x or \a y are absent, or
 present and equal.*/
-function var bool: '~='(var opt int: x, var opt int: y) :: promise_total :: promise_commutative =
+function var bool: '~='(var opt $$E: x, var opt $$E: y) :: promise_total :: promise_commutative =
   absent(x) \/ absent(y) \/ deopt(x) = deopt(y);
 
 /** @group stdlib.builtins.compare Weak disequality. True if either \a x or \a y are absent, or
 present and not equal.*/
-function var bool: '~!='(var opt int: x, var opt int: y) :: promise_total :: promise_commutative =
+function var bool: '~!='(var opt $$E: x, var opt $$E: y) :: promise_total :: promise_commutative =
   absent(x) \/ absent(y) \/ deopt(x) != deopt(y);
 
 /** @group stdlib.builtins.compare Weak equality. True if either \a x or \a y are absent, or

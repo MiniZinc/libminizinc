@@ -62,12 +62,12 @@ function var bool: '<->'(var opt bool: x, var opt bool: y) :: promise_commutativ
 function bool: 'xor'(bool: x, bool: y) :: mzn_internal_representation :: promise_commutative;
 /** @group stdlib.builtins.logic Return truth value of \a x xor \a y */
 function bool: 'xor'(opt bool: x, opt bool: y) :: promise_commutative =
-  absent(x) \/ absent(y) \/ (deopt(x) xor deopt(y));
+  absent(x) \/ absent(y) \/ deopt(x) xor deopt(y);
 /** @group stdlib.builtins.logic Return truth value of \a x xor \a y */
 function var bool: 'xor'(var bool: x, var bool: y) :: promise_commutative;
 /** @group stdlib.builtins.logic Return truth value of \a x xor \a y */
 function var bool: 'xor'(var opt bool: x, var opt bool: y) :: promise_commutative =
-  absent(x) \/ absent(y) \/ (deopt(x) xor deopt(y));
+  absent(x) \/ absent(y) \/ deopt(x) xor deopt(y);
 /** @group stdlib.builtins.logic Return truth value of the negation of \a x */
 function bool: 'not'(bool: x) :: mzn_internal_representation;
 /** @group stdlib.builtins.logic Negation of \a x if it occurs, otherwise absent */

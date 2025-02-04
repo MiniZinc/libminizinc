@@ -24,10 +24,10 @@ annotation add_to_output;
 
 /** @group stdlib.annotations.general Declare that the annotated variable \a x should be added to the output
 of the model. This annotation only has an effect when the model does not have an output item. */
-annotation 'output'(any $T: x :: annotated_expression);
+function ann: 'output'(any $T: x :: annotated_expression);
 /** @group stdlib.annotations.general Declare that the annotated variable \a x should be added to the output
 of the model. This annotation only has an effect when the model does not have an output item. */
-annotation 'output'(array [$U] of any $T: x :: annotated_expression);
+function ann: 'output'(array [$U] of any $T: x :: annotated_expression);
 
 /** @group stdlib.annotations.general Declare that the annotated variable should not be added to the output
 of the model. This annotation only has an effect when the model does not have an output item. */
@@ -185,15 +185,15 @@ annotation int_search(array [int] of var int: x, ann: select, ann: choice, ann: 
   \a explore. If \a x is a multi-dimensional array, it is coerced to one-dimensional
   in row-major order (as with the array1d function).
 */
-function ann: int_search(array [$X] of var int: x, ann: select, ann: choice, ann: explore) =
-  int_search(array1d(x), select, choice, explore);
+function ann: int_search(array [$X] of var $$E: x, ann: select, ann: choice, ann: explore) =
+  int_search(array1d(enum2int(x)), select, choice, explore);
 
 /** @group stdlib.annotations.search Specify search on variables \a x, with variable selection
   strategy \a select, and value choice strategy \a choice.
   If \a x is a multi-dimensional array, it is coerced to one-dimensional
   in row-major order (as with the array1d function).
 */
-function ann: int_search(array [$X] of var int: x, ann: select, ann: choice) =
+function ann: int_search(array [$X] of var $$E: x, ann: select, ann: choice) =
   int_search(x, select, choice, complete);
 
 /** @group stdlib.annotations.search Search annotation for optional integer variables.
@@ -202,8 +202,13 @@ function ann: int_search(array [$X] of var int: x, ann: select, ann: choice) =
   \a explore. If \a x is a multi-dimensional array, it is coerced to one-dimensional
   in row-major order (as with the array1d function).
 */
-function ann: int_search(array [$X] of var opt int: x, ann: select, ann: choice, ann: explore) =
-  int_search([if occurs(xi) then deopt(xi) else 0 endif | xi in x], select, choice, explore);
+function ann: int_search(array [$X] of var opt $$E: x, ann: select, ann: choice, ann: explore) =
+  int_search(
+    [if occurs(xi) then enum2int(deopt(xi)) else 0 endif | xi in x],
+    select,
+    choice,
+    explore,
+  );
 
 /** @group stdlib.annotations.search Search annotation for optional integer variables.
   Specify search on variables \a x, with variable selection
@@ -211,8 +216,8 @@ function ann: int_search(array [$X] of var opt int: x, ann: select, ann: choice,
   If \a x is a multi-dimensional array, it is coerced to one-dimensional
   in row-major order (as with the array1d function).
 */
-function ann: int_search(array [$X] of var opt int: x, ann: select, ann: choice) =
-  int_search([if occurs(xi) then deopt(xi) else 0 endif | xi in x], select, choice);
+function ann: int_search(array [$X] of var opt $$E: x, ann: select, ann: choice) =
+  int_search([if occurs(xi) then enum2int(deopt(xi)) else 0 endif | xi in x], select, choice);
 
 annotation bool_search(array [int] of var bool: x, ann: select, ann: choice, ann: explore);
 /** @group stdlib.annotations.search Specify search on variables \a x, with variable selection
@@ -440,13 +445,13 @@ annotation restart_none;
 annotation warm_start_array(array [int] of ann: w);
 
 /** @group stdlib.annotations.warmstart Specify warm start values \a v for an array of booleans \a x */
-annotation warm_start(array [int] of var bool: x, array [int] of bool: v);
+function ann: warm_start(array [int] of var bool: x, array [int] of bool: v);
 /** @group stdlib.annotations.warmstart Specify warm start values \a v for an array of integers \a x */
-annotation warm_start(array [int] of var int: x, array [int] of int: v);
+function ann: warm_start(array [int] of var int: x, array [int] of int: v);
 /** @group stdlib.annotations.warmstart Specify warm start values \a v for an array of floats \a x */
-annotation warm_start(array [int] of var float: x, array [int] of float: v);
+function ann: warm_start(array [int] of var float: x, array [int] of float: v);
 /** @group stdlib.annotations.warmstart Specify warm start values \a v for an array of sets \a x */
-annotation warm_start(array [int] of var set of int: x, array [int] of set of int: v);
+function ann: warm_start(array [int] of var set of int: x, array [int] of set of int: v);
 
 /***
  @groupdef stdlib.annotations.warmstart.optvals Warm start annotations with optional values

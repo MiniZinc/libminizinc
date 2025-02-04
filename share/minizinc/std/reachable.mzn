@@ -43,11 +43,11 @@ predicate dreachable(
     @param es: a Boolean for each edge whether it is in the subgraph
 */
 predicate dreachable(
-  array [int] of $$N: from,
-  array [int] of $$N: to,
+  array [$$E] of $$N: from,
+  array [$$E] of $$N: to,
   var $$N: r,
   array [$$N] of var bool: ns,
-  array [int] of var bool: es,
+  array [$$E] of var bool: es,
 ) =
   assert(
     index_set(from) = index_set(to),
@@ -65,7 +65,13 @@ predicate dreachable(
       dom_array(to) subset index_set(ns),
       "dreachable: nodes in to must be in index set of ns",
     ) /\
-    fzn_dreachable(from, to, r, ns, es);
+    fzn_dreachable(
+      index2int(enum2int(from)),
+      index2int(enum2int(to)),
+      enum2int(r),
+      index2int(ns),
+      index2int(es),
+    );
 
 %-----------------------------------------------------------------------------%
 
@@ -105,11 +111,11 @@ predicate reachable(
     @param es: a Boolean for each edge whether it is in the subgraph
 */
 predicate reachable(
-  array [int] of $$N: from,
-  array [int] of $$N: to,
+  array [$$E] of $$N: from,
+  array [$$E] of $$N: to,
   var $$N: r,
   array [$$N] of var bool: ns,
-  array [int] of var bool: es,
+  array [$$E] of var bool: es,
 ) =
   assert(
     index_set(from) = index_set(to),
@@ -127,4 +133,10 @@ predicate reachable(
       dom_array(to) subset index_set(ns),
       "reachable: nodes in to must be in index set of ns",
     ) /\
-    fzn_reachable(from, to, r, ns, es);
+    fzn_reachable(
+      index2int(enum2int(from)),
+      index2int(enum2int(to)),
+      enum2int(r),
+      index2int(ns),
+      index2int(es),
+    );

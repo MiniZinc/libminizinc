@@ -11,19 +11,19 @@ include "fzn_regular_nfa_set_reif.mzn";
   values (from type \a Val) to sets of states.  
 */
 predicate regular_nfa(
-  array [int] of var $$Val: x,
+  array [$$X] of var $$Val: x,
   array [$$State, $$Val] of set of $$State: d,
   $$State: q0,
   set of $$State: F,
 ) =
   let {
-    any: State = index_set_1of2(d);
-    any: Val = index_set_2of2(d);
+    any: State = enum2int(index_set_1of2(d));
+    any: Val = enum2int(index_set_2of2(d));
     any: q_off = min(State) - 1;
-    any: dd = [(s, v): {i - q_off | i in d[s, v]} | s in State, v in Val];
-    any: qq0 = q0 - q_off;
-    any: FF = {i - q_off | i in F};
-  } in fzn_regular_nfa(x, card(State), Val, dd, qq0, FF);
+    any: dd = array2d(State, Val, [{enum2int(i) - q_off | i in d_sv} | d_sv in d]);
+    any: qq0 = enum2int(q0) - q_off;
+    any: FF = {enum2int(i) - q_off | i in F};
+  } in fzn_regular_nfa(index2int(enum2int(x)), card(State), Val, dd, qq0, FF);
 
 /** @group globals.extensional
   The sequence of values in array \a x (which must all be in the range 1..\a S)

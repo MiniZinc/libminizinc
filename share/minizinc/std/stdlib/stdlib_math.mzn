@@ -344,7 +344,7 @@ function $T: min($T: x, $T: y) :: promise_commutative;
 function var $$T: min(var $$T: x, var $$T: y) :: promise_total :: promise_commutative =
   let {
     var min(lb(x), lb(y))..min(ub(x), ub(y)): m :: is_defined_var;
-    constraint int_min(x, y, m) :: defines_var(m);
+    constraint int_min(enum2int(x), enum2int(y), enum2int(m)) :: defines_var(m);
   } in m;
 
 /** @group stdlib.builtins.arithmetic Return minimum of \a x and \a y */
@@ -367,7 +367,9 @@ function $T: min(array [$U] of par $T: x) :: promise_commutative;
 /** @group stdlib.builtins.arithmetic Return minimum of elements in \a x that are not absent.
     Result is undefined when all values are absent. */
 function $$T: min(array [$X] of opt $$T: x) :: promise_commutative =
-  let { constraint exists (xi in x) (occurs(xi)) } in min (xi in x) (xi default infinity);
+  let {
+    constraint exists (xi in x) (occurs(xi));
+  } in min (xi in x) (xi default to_enum_internal(enum_of(x), infinity));
 
 /** @group stdlib.builtins.arithmetic Return minimum of elements in \a x that are not absent.
     Result is undefined when all values are absent. */
@@ -385,14 +387,11 @@ function opt float: min_weak(array [$X] of opt float: x) :: promise_commutative 
   if exists (xi in x) (occurs(xi)) then min(x) else <> endif;
 
 /** @group stdlib.builtins.arithmetic Return minimum of elements in array \a x */
-function var $$T: min(
-  array [$U] of var $$T: x,
-)
-  :: promise_commutative =
+function var $$T: min(array [$U] of var $$T: x) :: promise_commutative =
   let {
-    any: xx = array1d(x);
+    any: xx = enum2int(array1d(x));
     constraint length(x) >= 1;
-  } in min_t(xx);
+  } in to_enum_internal(enum_of(x), min_t(xx));
 
 /** @group stdlib.builtins.arithmetic Return minimum of elements in array \a x */
 function var float: min(array [$U] of var float: x) :: promise_commutative =
@@ -405,16 +404,20 @@ function var float: min(array [$U] of var float: x) :: promise_commutative =
     Result is undefined when all values are absent. */
 function var $$T: min(array [$X] of var opt $$T: x) :: promise_commutative =
   let {
-    int: xub = max(0, ub_array(x));
+    int: xub = max(0, enum2int(ub_array(x)));
     constraint exists (xi in x) (occurs(xi));
-  } in min (xi in x) (xi default xub);
+  } in min (xi in x) (xi default to_enum_internal(enum_of(x), xub));
 
 /** @group stdlib.builtins.arithmetic Return minimum of elements in \a x that are not absent.
     Result is absent when all values are absent. */
 function var opt $$T: min_weak(array [$X] of var opt $$T: x) :: promise_commutative =
   let {
-    int: xub = max(0, ub_array(x));
-  } in if exists (xi in x) (occurs(xi)) then min (xi in x) (xi default xub) else <> endif;
+    int: xub = max(0, enum2int(ub_array(x)));
+  } in if exists (xi in x) (occurs(xi)) then
+    min (xi in x) (xi default to_enum_internal(enum_of(x), xub))
+  else
+    <>
+  endif;
 
 /** @group stdlib.builtins.arithmetic Return minimum of elements in \a x that are not absent.
     Result is undefined when all values are absent. */
@@ -458,13 +461,15 @@ function $T: max(array [$U] of $T: x) :: promise_commutative;
 function var $$T: max(var $$T: x, var $$T: y) :: promise_total :: promise_commutative =
   let {
     var max(lb(x), lb(y))..max(ub(x), ub(y)): m :: is_defined_var;
-    constraint int_max(x, y, m) :: defines_var(m);
+    constraint int_max(enum2int(x), enum2int(y), enum2int(m)) :: defines_var(m);
   } in m;
 
 /** @group stdlib.builtins.arithmetic Return maximum of elements in \a x that are not absent.
     Result is undefined when all values are absent. */
 function $$T: max(array [$X] of opt $$T: x) :: promise_commutative =
-  let { constraint exists (xi in x) (occurs(xi)) } in max (xi in x) (xi default (-infinity));
+  let {
+    constraint exists (xi in x) (occurs(xi));
+  } in max (xi in x) (xi default to_enum_internal(enum_of(x), -infinity));
 
 /** @group stdlib.builtins.arithmetic Return maximum of elements in \a x that are not absent.
     Result is undefined when all values are absent. */
@@ -482,14 +487,11 @@ function opt float: max_weak(array [$X] of opt float: x) :: promise_commutative 
   if exists (xi in x) (occurs(xi)) then max(x) else <> endif;
 
 /** @group stdlib.builtins.arithmetic Return maximum of elements in array \a x */
-function var $$T: max(
-  array [$U] of var $$T: x,
-)
-  :: promise_commutative =
+function var $$T: max(array [$U] of var $$T: x) :: promise_commutative =
   let {
-    any: xx = array1d(x);
+    any: xx = enum2int(array1d(x));
     constraint length(x) >= 1;
-  } in max_t(xx);
+  } in to_enum_internal(enum_of(x), max_t(xx));
 
 /** @group stdlib.builtins.arithmetic Return maximum of elements in array \a x */
 function var float: max(array [$U] of var float: x) :: promise_commutative =
@@ -502,16 +504,20 @@ function var float: max(array [$U] of var float: x) :: promise_commutative =
     Result is undefined when all values are absent. */
 function var $$T: max(array [$X] of var opt $$T: x) :: promise_commutative =
   let {
-    int: xlb = min(0, lb_array(x));
+    int: xlb = min(0, enum2int(lb_array(x)));
     constraint exists (xi in x) (occurs(xi));
-  } in max (xi in x) (xi default xlb);
+  } in max (xi in x) (xi default to_enum_internal(enum_of(x), xlb));
 
 /** @group stdlib.builtins.arithmetic Return maximum of elements in \a x that are not absent.
     Result is absent when all values are absent. */
 function var opt $$T: max_weak(array [$X] of var opt $$T: x) :: promise_commutative =
   let {
-    int: xlb = min(0, lb_array(x));
-  } in if exists (xi in x) (occurs(xi)) then max (xi in x) (xi default xlb) else <> endif;
+    int: xlb = min(0, enum2int(lb_array(x)));
+  } in if exists (xi in x) (occurs(xi)) then
+    max (xi in x) (xi default to_enum_internal(enum_of(x), xlb))
+  else
+    <>
+  endif;
 
 /** @group stdlib.builtins.arithmetic Return maximum of elements in \a x that are not absent.
     Result is undefined when all values are absent. */

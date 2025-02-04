@@ -11,5 +11,5 @@ predicate link_set_to_booleans(var set of $$E: s, array [$$E] of var bool: b) =
   assert(
     ub(s) subset index_set(b),
     "link_set_to_booleans: the index set of b must be a superset of the possible values of s",
-    fzn_link_set_to_booleans(s, b),
+    fzn_link_set_to_booleans(enum2int(s), index2int(b)),
   );

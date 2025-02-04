@@ -2049,6 +2049,9 @@ public:
     ASTString bool2int;
     ASTString int2float;
     ASTString bool2float;
+    ASTString enum2int;
+    ASTString index2int;
+    ASTString to_enum_internal;  // NOLINT(readability-identifier-naming)
     ASTString set2iter;
     ASTString assert;
     ASTString assert_dbg;  // NOLINT(readability-identifier-naming)

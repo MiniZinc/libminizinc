@@ -9,7 +9,11 @@ include "analyse_all_different.mzn";
   set of the other array.
 */
 predicate inverse(array [$$X] of var $$Y: f, array [$$Y] of var $$X: invf) =
-  analyse_all_different(f) /\ analyse_all_different(invf) /\ fzn_inverse(f, invf);
+  analyse_all_different(f) /\
+    analyse_all_different(invf) /\
+    fzn_inverse(index2int(enum2int(f)), index2int(enum2int(invf)));
 
 predicate inverse(array [$$X] of var opt $$Y: f, array [$$Y] of var opt $$X: invf) =
-  analyse_all_different(f) /\ analyse_all_different(invf) /\ fzn_inverse_opt(f, invf);
+  analyse_all_different(f) /\
+    analyse_all_different(invf) /\
+    fzn_inverse_opt(index2int(enum2int(f)), index2int(enum2int(invf)));

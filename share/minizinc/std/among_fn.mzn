@@ -6,7 +6,7 @@ include "fzn_among.mzn";
 function var int: among(array [$X] of var $$E: x, set of $$E: v) :: promise_total =
   let {
     var 0..length(x): n :: is_defined_var;
-    constraint fzn_among(n, array1d(x), v) :: defines_var(n);
+    constraint fzn_among(n, enum2int(array1d(x)), enum2int(v)) :: defines_var(n);
   } in n;
 
 /**  @group globals.counting

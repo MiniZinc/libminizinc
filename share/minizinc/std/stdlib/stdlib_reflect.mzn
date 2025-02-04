@@ -57,29 +57,29 @@ function set of $$E: ub_array(array [$U] of var set of $$E: x);
 function set of $$E: dom(var $$E: x);
 /** @group stdlib.reflect Return domain of \a x */
 function set of $$E: dom(var opt $$E: x);
-function set of int: dom(var bool: b) =
-  if is_fixed(b) then if fix(b) then {1} else {0} endif else {0, 1} endif;
+function set of bool: dom(var bool: b) =
+  if is_fixed(b) then if fix(b) then {true} else {false} endif else {false, true} endif;
 
 /** @group stdlib.reflect Return union of all domains of the elements in array \a x */
 function set of $$E: dom_array(array [$T] of var $$E: x);
 /** @group stdlib.reflect Return union of all domains of the elements in array \a x */
 function set of $$E: dom_array(array [$T] of var opt $$E: x);
 /** @group stdlib.reflect Return union of all domains of the elements in array \a x, ignoring absent elements */
-function set of int: dom_array_occurring(array [$T] of var opt int: x) =
-  array_union([if is_fixed(xi) /\ absent(fix(xi)) then {} else dom(xi) endif | xi in array1d(x)]);
+function set of $$E: dom_array_occurring(array [$T] of var opt $$E: x) =
+  array_union([if is_fixed(xi) /\ absent(fix(xi)) then {} else dom(xi) endif | xi in x]);
 /** @group stdlib.reflect Return approximation of union of all domains of the elements in array \a x */
-function set of int: dom_bounds_array(array [$T] of var int: x);
+function set of $$E: dom_bounds_array(array [$T] of var $$E: x);
 /** @group stdlib.reflect Return approximation of union of all domains of the elements in array \a x */
-function set of int: dom_bounds_array(array [$T] of var opt int: x);
+function set of $$E: dom_bounds_array(array [$T] of var opt $$E: x);
 /** @group stdlib.reflect Return cardinality of the domain of \a x */
 function int: dom_size(var int: x) = card(dom(x));
 
 /** @group stdlib.reflect Test if variable \a x has declared, finite bounds */
-function par bool: has_bounds(var int: x);
+function par bool: has_bounds(var $$E: x);
 /** @group stdlib.reflect Test if variable \a x has declared, finite bounds */
 function par bool: has_bounds(var float: x);
 /** @group stdlib.reflect Test if variable \a x has a declared, finite upper bound */
-function par bool: has_ub_set(var set of int: x);
+function par bool: has_ub_set(var set of $$E: x);
 
 /** @group stdlib.reflect Check if the value of \a x is fixed at this point
   in evaluation. If it is fixed, return its value, otherwise abort. */

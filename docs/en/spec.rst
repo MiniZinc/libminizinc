@@ -2551,6 +2551,10 @@ For each enumerated type :mzn:`T`, the following functions exist:
   function set of T: enum_of(set of T: x);
   function set of T: enum_of(var set of T: x);
 
+  % Convert enum type x to an integer
+  function int: enum2int(T: x);
+  function var int: enum2int(var T: x);
+
   % Convert x to enum type X
   function T: to_enum(set of T: X, int: x);
   function var T: to_enum(set of T: X, var int: x);

@@ -60,7 +60,7 @@ predicate dpath(
       "dpath: nodes in from must be in index set of ns",
     ) /\
     assert(dom_array(to) subset index_set(ns), "dpath: nodes in to must be in index set of ns") /\
-    fzn_dpath(from, to, s, t, ns, es);
+    fzn_dpath(enum2int(from), enum2int(to), enum2int(s), enum2int(t), index2int(ns), es);
 
 %-----------------------------------------------------------------------------%
 
@@ -117,4 +117,4 @@ predicate path(
       "path: nodes in from must be in index set of ns",
     ) /\
     assert(dom_array(to) subset index_set(ns), "path: nodes in to must be in index set of ns") /\
-    fzn_path(from, to, s, t, ns, es);
+    fzn_path(enum2int(from), enum2int(to), enum2int(s), enum2int(t), index2int(ns), es);

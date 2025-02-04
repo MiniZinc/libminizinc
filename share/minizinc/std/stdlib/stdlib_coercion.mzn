@@ -219,3 +219,61 @@ function var set of $$E: 'default'(var set of $$E: x, var set of $$E: y);
 function set of $T: 'default'(opt set of $T: x, set of $T: y);
 /** @group stdlib.debug If \a x is define amd mpt absent, return \a x, otherwise return \a y. */
 function opt set of $T: 'default'(opt set of $T: x, opt set of $T: y);
+
+/** @group stdlib.builtins.coercion Return the underlying integer representation of \a x */
+function int: enum2int($$E: x) :: mzn_internal_representation;
+/** @group stdlib.builtins.coercion Return the underlying integer representation of \a x */
+function var int: enum2int(var $$E: x) :: mzn_internal_representation;
+
+/** @group stdlib.builtins.coercion Return the underlying integer representation of \a x */
+function opt int: enum2int(opt $$E: x) :: mzn_internal_representation;
+/** @group stdlib.builtins.coercion Return the underlying integer representation of \a x */
+function var opt int: enum2int(var opt $$E: x) :: mzn_internal_representation;
+
+/** @group stdlib.builtins.coercion Return the underlying integer representation of \a x */
+function opt set of int: enum2int(opt set of $$E: x) :: mzn_internal_representation;
+/** @group stdlib.builtins.coercion Return the underlying integer representation of \a x */
+function set of int: enum2int(set of $$E: x) :: mzn_internal_representation;
+/** @group stdlib.builtins.coercion Return the underlying integer representation of \a x */
+function var set of int: enum2int(var set of $$E: x) :: mzn_internal_representation;
+
+/** @group stdlib.builtins.coercion Return the underlying integer representation of \a x */
+function array [$X] of int: enum2int(array [$X] of $$E: x) :: mzn_internal_representation;
+/** @group stdlib.builtins.coercion Return the underlying integer representation of \a x */
+function array [$X] of var int: enum2int(array [$X] of var $$E: x) :: mzn_internal_representation;
+
+/** @group stdlib.builtins.coercion Return the underlying integer representation of \a x */
+function array [$X] of opt int: enum2int(array [$X] of opt $$E: x) :: mzn_internal_representation;
+/** @group stdlib.builtins.coercion Return the underlying integer representation of \a x */
+function array [$X] of var opt int: enum2int(array [$X] of var opt $$E: x)
+  :: mzn_internal_representation;
+
+/** @group stdlib.builtins.coercion Return the underlying integer representation of \a x */
+function array [$X] of opt set of int: enum2int(array [$X] of opt set of $$E: x)
+  :: mzn_internal_representation;
+/** @group stdlib.builtins.coercion Return the underlying integer representation of \a x */
+function array [$X] of set of int: enum2int(array [$X] of set of $$E: x)
+  :: mzn_internal_representation;
+/** @group stdlib.builtins.coercion Return the underlying integer representation of \a x */
+function array [$X] of var set of int: enum2int(array [$X] of var set of $$E: x)
+  :: mzn_internal_representation;
+
+/** @group stdlib.builtins.coercion Return x with its index set coerced to integers */
+function array [int] of any $T: index2int(array [$$E] of any $T: x) :: mzn_internal_representation;
+/** @group stdlib.builtins.coercion Return x with its index sets coerced to integers */
+function array [int, int] of any $T: index2int(array [$$E, $$F] of any $T: x)
+  :: mzn_internal_representation;
+/** @group stdlib.builtins.coercion Return x with its index sets coerced to integers */
+function array [int, int, int] of any $T: index2int(array [$$E, $$F, $$G] of any $T: x)
+  :: mzn_internal_representation;
+/** @group stdlib.builtins.coercion Return x with its index sets coerced to integers */
+function array [int, int, int, int] of any $T: index2int(array [$$E, $$F, $$G, $$H] of any $T: x)
+  :: mzn_internal_representation;
+/** @group stdlib.builtins.coercion Return x with its index sets coerced to integers */
+function array [int, int, int, int, int] of any $T: index2int(
+  array [$$E, $$F, $$G, $$H, $$I] of any $T: x,
+) :: mzn_internal_representation;
+/** @group stdlib.builtins.coercion Return x with its index sets coerced to integers */
+function array [int, int, int, int, int, int] of any $T: index2int(
+  array [$$E, $$F, $$G, $$H, $$I, $$J] of any $T: x,
+) :: mzn_internal_representation;

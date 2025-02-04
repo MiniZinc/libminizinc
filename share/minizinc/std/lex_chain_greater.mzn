@@ -4,18 +4,17 @@ include "lex_chain_less.mzn";
   Requires that the columns of matrix \a a are lexicographically sorted,
   strictly decreasing.
 */
-predicate lex_chain_greater(array [int, int] of var bool: a) =
-  if 1 >= card(index_set_2of2(a)) then
-    true
-  else
-    lex_chain_less(
-      array2d(
-        index_set_1of2(a),
-        index_set_2of2(a),
+predicate lex_chain_greater(array [$$E, $$F] of var bool: a) =
+  if card(index_set_2of2(a)) > 1 then
+    let {
+      any: aa = index2int(a);
+    } in lex_chain_less(
+      arrayXd(
+        aa,
         [
-          a[i, max(index_set_2of2(a)) - j + min(index_set_2of2(a))] |
-            i in index_set_1of2(a),
-            j in index_set_2of2(a),
+          aa[i, max(index_set_2of2(aa)) - j + min(index_set_2of2(aa))] |
+            i in index_set_1of2(aa),
+            j in index_set_2of2(aa),
         ],
       ),
     )
@@ -25,18 +24,17 @@ predicate lex_chain_greater(array [int, int] of var bool: a) =
   Requires that the columns of matrix \a a are lexicographically sorted,
   strictly decreasing.
 */
-predicate lex_chain_greater(array [int, int] of var int: a) =
-  if 1 >= card(index_set_2of2(a)) then
-    true
-  else
-    lex_chain_less(
-      array2d(
-        index_set_1of2(a),
-        index_set_2of2(a),
+predicate lex_chain_greater(array [$$E, $$F] of var $$T: a) =
+  if card(index_set_2of2(a)) > 1 then
+    let {
+      any: aa = index2int(enum2int(a));
+    } in lex_chain_less(
+      arrayXd(
+        aa,
         [
-          a[i, max(index_set_2of2(a)) - j + min(index_set_2of2(a))] |
-            i in index_set_1of2(a),
-            j in index_set_2of2(a),
+          aa[i, max(index_set_2of2(aa)) - j + min(index_set_2of2(aa))] |
+            i in index_set_1of2(aa),
+            j in index_set_2of2(aa),
         ],
       ),
     )

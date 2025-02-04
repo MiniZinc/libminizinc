@@ -11,7 +11,8 @@ include "fzn_value_precede_set_reif.mzn";
   is equal to \a t, then another element of \a x with a lower index is equal
   to \a s.
 */
-predicate value_precede($$E: s, $$E: t, array [int] of var $$E: x) = fzn_value_precede_int(s, t, x);
+predicate value_precede($$E: s, $$E: t, array [$$X] of var $$E: x) =
+  fzn_value_precede_int(enum2int(s), enum2int(t), index2int(enum2int(x)));
 
 /** @group globals.lexicographic
   Requires that \a s precede \a t in the array \a x.
@@ -20,8 +21,8 @@ predicate value_precede($$E: s, $$E: t, array [int] of var $$E: x) = fzn_value_p
   is equal to \a t, then another element of \a x with a lower index is equal
   to \a s.
 */
-predicate value_precede($$E: s, $$E: t, array [int] of var opt $$E: x) =
-  fzn_value_precede_int_opt(s, t, x);
+predicate value_precede($$E: s, $$E: t, array [$$X] of var opt $$E: x) =
+  fzn_value_precede_int_opt(enum2int(s), enum2int(t), index2int(enum2int(x)));
 
 /** @group globals.lexicographic
   Requires that \a s precede \a t in the array \a x.
@@ -30,5 +31,5 @@ predicate value_precede($$E: s, $$E: t, array [int] of var opt $$E: x) =
   contains \a t but not \a s, then another element of \a x with lower index contains
   \a s but not \a t.
 */
-predicate value_precede($$E: s, $$E: t, array [int] of var set of $$E: x) =
-  fzn_value_precede_set(s, t, x);
+predicate value_precede($$E: s, $$E: t, array [$$X] of var set of $$E: x) =
+  fzn_value_precede_set(enum2int(s), enum2int(t), index2int(enum2int(x)));

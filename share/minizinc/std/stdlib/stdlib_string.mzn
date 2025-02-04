@@ -81,35 +81,38 @@ function string: show2d_indexed(
 function string: show2d(array [$$E, $$F] of any $T: x) =
   let {
     bool: idx1_is_enum =
-      if length(x) != 0 then min(enum_of(min(index_set_1of2(x)))) != -infinity else false endif;
+      if length(x) != 0 then
+        enum2int(min(enum_of(min(index_set_1of2(x))))) != -infinity
+      else
+        false
+      endif;
     bool: idx1_is_needed =
-      if length(x) != 0 then idx1_is_enum \/ min(index_set_1of2(x)) != 1 else false endif;
+      if length(x) != 0 then idx1_is_enum \/ enum2int(min(index_set_1of2(x))) != 1 else false endif;
     bool: idx2_is_enum =
-      if length(x) != 0 then min(enum_of(min(index_set_2of2(x)))) != -infinity else false endif;
+      if length(x) != 0 then
+        enum2int(min(enum_of(min(index_set_2of2(x))))) != -infinity
+      else
+        false
+      endif;
     bool: idx2_is_needed =
-      if length(x) != 0 then idx2_is_enum \/ min(index_set_2of2(x)) != 1 else false endif;
-    array [int] of string: col_hdr =
-      if idx2_is_needed then [i: show(i) | i in index_set_2of2(x)] else [] endif;
-    array [int] of string: row_hdr =
-      if idx1_is_needed then [i: show(i) | i in index_set_1of2(x)] else [] endif;
+      if length(x) != 0 then idx2_is_enum \/ enum2int(min(index_set_2of2(x))) != 1 else false endif;
+    any: col_hdr =
+      if idx2_is_needed then [enum2int(i): show(i) | i in index_set_2of2(x)] else [] endif;
+    any: row_hdr =
+      if idx1_is_needed then [enum2int(i): show(i) | i in index_set_1of2(x)] else [] endif;
   } in show2d_indexed(
     row_hdr,
     col_hdr,
-    [(i, j): show(x[i, j]) | i in index_set_1of2(x), j in index_set_2of2(x)],
+    array2d(enum2int(index_set_1of2(x)), enum2int(index_set_2of2(x)), [show(x_i) | x_i in x]),
   );
 
 /** @group stdlib.builtins.string Convert three-dimensional array \a x into a string */
-function string: show3d(array [int, int, int] of any $T: x) =
+function string: show3d(array [$$E, $$F, $$G] of any $T: x) =
   let {
     int: len1 = card(index_set_1of3(x));
     int: len2 = card(index_set_2of3(x));
     int: len3 = card(index_set_3of3(x));
-    array [int] of string: s = [
-      show(x[i, j, k]) |
-        i in index_set_1of3(x),
-        j in index_set_2of3(x),
-        k in index_set_3of3(x),
-    ];
+    array [int] of string: s = [show(x_i) | x_i in x];
     int: max_length =
       if length(s) > 0 then max([string_length(s[i]) | i in index_set(s)]) else 0 endif;
   } in "[| | " ++

@@ -319,8 +319,8 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
 
       std::vector<Expression*> deopt_args(1);
       deopt_args[0] = vd_aa->id();
-      Call* deopt = Call::a(Location().introduce(), "deopt", deopt_args);
-      Call* occurs = Call::a(Location().introduce(), "occurs", deopt_args);
+      Call* deopt = Call::a(Location().introduce(), env.constants.ids.deopt, deopt_args);
+      Call* occurs = Call::a(Location().introduce(), env.constants.ids.occurs, deopt_args);
       std::vector<Expression*> aa_args(1);
       if (prevCardinality == nullptr) {
         aa_args[0] = deopt;
@@ -584,8 +584,8 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, env.genId());
             ASTString Cfn_id = c->id();
             vd_x->toplevel(false);
-            auto* occurs = Call::a(Location().introduce(), "occurs", {vd_x->id()});
-            auto* deopt = Call::a(Location().introduce(), "deopt", {vd_x->id()});
+            auto* occurs = Call::a(Location().introduce(), env.constants.ids.occurs, {vd_x->id()});
+            auto* deopt = Call::a(Location().introduce(), env.constants.ids.deopt, {vd_x->id()});
             auto* inv = Call::a(Location().introduce(), Cfn_id, {deopt});
             auto* toEnumAbsent =
                 Call::a(Location().introduce(), "to_enum", {vd->id(), env.constants.absent});
@@ -674,8 +674,8 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, env.genId());
             ASTString Cinv_id(std::string(c->id().c_str()) + "⁻¹");
             vd_x->toplevel(false);
-            auto* occurs = Call::a(Location().introduce(), "occurs", {vd_x->id()});
-            auto* deopt = Call::a(Location().introduce(), "deopt", {vd_x->id()});
+            auto* occurs = Call::a(Location().introduce(), env.constants.ids.occurs, {vd_x->id()});
+            auto* deopt = Call::a(Location().introduce(), env.constants.ids.deopt, {vd_x->id()});
             auto* inv = Call::a(Location().introduce(), Cinv_id, {deopt});
             auto* toEnumAbsent = Call::a(Location().introduce(), "to_enum",
                                          {constructorArgId, env.constants.absent});
@@ -824,7 +824,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
 
     std::vector<Expression*> deopt_args(1);
     deopt_args[0] = vd_aa->id();
-    Call* deopt = Call::a(Location().introduce(), "deopt", deopt_args);
+    Call* deopt = Call::a(Location().introduce(), env.constants.ids.deopt, deopt_args);
     Call* if_absent = Call::a(Location().introduce(), "absent", deopt_args);
     auto* sl_absent_dzn = new StringLit(Location().introduce(), "<>");
     ITE* sl_absent = new ITE(
@@ -992,7 +992,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
 
     std::vector<Expression*> deopt_args(1);
     deopt_args[0] = vd_x->id();
-    Call* deopt = Call::a(Location().introduce(), "deopt", deopt_args);
+    Call* deopt = Call::a(Location().introduce(), env.constants.ids.deopt, deopt_args);
     Call* if_absent = Call::a(Location().introduce(), "absent", deopt_args);
     auto* sl_absent_dzn = new StringLit(Location().introduce(), "<>");
     ITE* sl_absent = new ITE(Location().introduce(),
@@ -1352,6 +1352,30 @@ void TopoSorter::run(EnvI& env, Expression* e) {
 KeepAlive add_coercion(EnvI& env, Model* m, Expression* e0, const Type& funarg_t) {
   GCLock lock;
   Expression* e = e0;
+
+  if (env.warnImplicitEnum2Int &&
+      (funarg_t.bt() == Type::BT_INT || funarg_t.bt() == Type::BT_FLOAT) &&
+      funarg_t.typeId() == 0 && !Expression::loc(e).isIntroduced() &&
+      Expression::type(e).bt() == Type::BT_INT && Expression::type(e).elemType(env).typeId() != 0) {
+    // Implicit coercion of enum to int is deprecated
+    env.addWarning(Expression::loc(e),
+                   "Implicit coercion of enums to integers is deprecated and will be removed in a "
+                   "future version.\n"
+                   "Use the explicit coercion function enum2int instead.");
+  }
+  if (Expression::isa<Call>(e)) {
+    auto* c = Expression::cast<Call>(e);
+    if (c->id() == env.constants.ids.enum2int || c->id() == env.constants.ids.index2int) {
+      // Remove call to enum2int/index2int
+      assert(c->argCount() == 1);
+      e = c->arg(0);
+    } else if (c->id() == env.constants.ids.to_enum_internal) {
+      // Remove call to to_enum_internal
+      assert(c->argCount() == 2);
+      e = c->arg(1);
+    }
+  }
+
   if (Expression::type(e).istuple() && funarg_t.dim() != 0) {
     // Check if this is an array of array type, wrapped in a tuple
     auto* tupleType = env.getTupleType(Expression::type(e));
@@ -1365,6 +1389,19 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e0, const Type& funarg_t
 
   if (Expression::isa<ArrayAccess>(e) && Expression::type(e).dim() > 0) {
     auto* aa = Expression::cast<ArrayAccess>(e);
+    if (Expression::isa<Call>(aa->v())) {
+      auto* c = Expression::cast<Call>(aa->v());
+      if (c->id() == env.constants.ids.enum2int || c->id() == env.constants.ids.index2int) {
+        // Remove call to enum2int/index2int
+        assert(c->argCount() == 1);
+        aa->v(c->arg(0));
+      } else if (c->id() == env.constants.ids.to_enum_internal) {
+        // Remove call to to_enum_internal
+        assert(c->argCount() == 2);
+        aa->v(c->arg(1));
+      }
+    }
+
     // Turn ArrayAccess into a slicing operation
     std::vector<Expression*> args;
     args.push_back(aa->v());
@@ -1993,8 +2030,9 @@ public:
       throw TypeError(_env, Expression::loc(aa->v()), oss.str());
     }
     Type tt = Expression::type(aa->v());
+    std::vector<unsigned int> arrayEnumIds;
     if (tt.typeId() != 0) {
-      const std::vector<unsigned int>& arrayEnumIds = _env.getArrayEnum(tt.typeId());
+      arrayEnumIds = _env.getArrayEnum(tt.typeId());
       std::vector<unsigned int> newArrayEnumids;
 
       for (unsigned int i = 0; i < arrayEnumIds.size() - 1; i++) {
@@ -2080,10 +2118,18 @@ public:
                           "array slicing with variable range or index not supported");
         }
         isSlice = true;
-        aa->idx()[i] = add_coercion(_env, _model, aai, Type::varsetint())();
+        Type t = Type::varsetint();
+        if (!arrayEnumIds.empty()) {
+          t.typeId(arrayEnumIds[i]);
+        }
+        aa->idx()[i] = add_coercion(_env, _model, aai, t)();
         n_dimensions++;
       } else {
-        aa->idx()[i] = add_coercion(_env, _model, aai, Type::varint())();
+        Type t = Type::varint();
+        if (!arrayEnumIds.empty()) {
+          t.typeId(arrayEnumIds[i]);
+        }
+        aa->idx()[i] = add_coercion(_env, _model, aai, t)();
       }
 
       if (Expression::type(aai).isOpt()) {
@@ -2383,7 +2429,9 @@ public:
       }
       tt.st(Type::ST_SET);
       if (tt.isvar()) {
-        c->e(add_coercion(_env, _model, c->e(), Type::varint())());
+        Type var_int = Type::varint();
+        var_int.typeId(tt.typeId());
+        c->e(add_coercion(_env, _model, c->e(), var_int)());
         tt.bt(Type::BT_INT);
       }
     } else {

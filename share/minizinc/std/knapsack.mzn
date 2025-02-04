@@ -28,6 +28,10 @@ predicate knapsack(
     assert(
       lb_array(w) >= 0,
       "weights must be non-negative",
-      assert(lb_array(p) >= 0, "profits must be non-negative", fzn_knapsack(w, p, x, W, P)),
+      assert(
+        lb_array(p) >= 0,
+        "profits must be non-negative",
+        fzn_knapsack(index2int(w), index2int(p), index2int(x), W, P),
+      ),
     ),
   );

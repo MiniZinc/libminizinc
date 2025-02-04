@@ -19,6 +19,19 @@ function set of $$E: enum_of(array [$T] of var opt $$E: x) :: mzn_internal_repre
 function set of $$E: enum_of(array [$T] of var set of $$E: x) :: mzn_internal_representation;
 
 function set of $$E: enum_of_internal(set of $$E: e) = e;
+function $$E: to_enum_internal(set of $$E: X, int: x) :: mzn_internal_representation;
+function opt $$E: to_enum_internal(set of $$E: X, opt int: x) :: mzn_internal_representation;
+function var $$E: to_enum_internal(set of $$E: X, var int: x) :: mzn_internal_representation;
+function var opt $$E: to_enum_internal(set of $$E: X, var opt int: x)
+   :: mzn_internal_representation;
+function array [int] of $$E: to_enum_internal(set of $$E: X, array [int] of int: x)
+  :: mzn_internal_representation;
+function array [int] of opt $$E: to_enum_internal(set of $$E: X, array [int] of opt int: x)
+  :: mzn_internal_representation;
+function array [int] of var $$E: to_enum_internal(set of $$E: X, array [int] of var int: x)
+  :: mzn_internal_representation;
+function array [int] of var opt $$E: to_enum_internal(set of $$E: X, array [int] of var opt int: x)
+  :: mzn_internal_representation;
 
 /** @group stdlib.builtins.enum Return next greater enum value of \a x */
 function $$E: enum_next($$E: x) = enum_next(enum_of(x), x);
@@ -35,7 +48,8 @@ function $$E: enum_next(set of $$E: e, $$E: x);
 function opt $$E: enum_next(set of $$E: e, opt $$E: x) =
   if occurs(x) then enum_next(e, deopt(x)) else <> endif;
 /** @group stdlib.builtins.enum Return next greater enum value of \a x in enum \a e */
-function var $$E: enum_next(set of $$E: e, var $$E: x) = let { constraint x < max(e) } in x + 1;
+function var $$E: enum_next(set of $$E: e, var $$E: x) =
+  let { constraint x < max(e) } in to_enum_internal(e, enum2int(x) + 1);
 /** @group stdlib.builtins.enum Return next greater enum value of \a x in enum \a e */
 function var opt $$E: enum_next(set of $$E: e, var opt $$E: x) =
   if occurs(x) then enum_next(e, deopt(x)) else <> endif;
@@ -55,7 +69,8 @@ function $$E: enum_prev(set of $$E: e, $$E: x);
 function opt $$E: enum_prev(set of $$E: e, opt $$E: x) =
   if occurs(x) then enum_prev(e, deopt(x)) else <> endif;
 /** @group stdlib.builtins.enum Return next smaller enum value of \a x in enum \a e */
-function var $$E: enum_prev(set of $$E: e, var $$E: x) = let { constraint x > min(e) } in x - 1;
+function var $$E: enum_prev(set of $$E: e, var $$E: x) =
+  let { constraint x > min(e) } in to_enum_internal(e, enum2int(x) - 1);
 /** @group stdlib.builtins.enum Return next smaller enum value of \a x in enum \a e */
 function var opt $$E: enum_prev(set of $$E: e, var opt $$E: x) =
   if occurs(x) then enum_prev(e, deopt(x)) else <> endif;
@@ -66,7 +81,8 @@ function $$E: to_enum(set of $$E: X, int: x);
 function opt $$E: to_enum(set of $$E: X, opt int: x) =
   if occurs(x) then to_enum(X, deopt(x)) else <> endif;
 /** @group stdlib.builtins.enum Convert \a x to enum type \a X */
-function var $$E: to_enum(set of $$E: X, var int: x) = let { constraint x in X } in x;
+function var $$E: to_enum(set of $$E: X, var int: x) =
+  let { constraint x in enum2int(X) } in to_enum_internal(X, x);
 /** @group stdlib.builtins.enum Convert \a x to enum type \a X */
 function var opt $$E: to_enum(set of $$E: X, var opt int: x) =
   if occurs(x) then to_enum(X, deopt(x)) else <> endif;
@@ -105,8 +121,8 @@ function var set of $$E: to_enum(
 ) =
   let {
     var set of X: y;
-    constraint x subset X;
-    constraint forall (i in X) (i in x <-> i in y);
+    constraint x subset enum2int(X);
+    constraint forall (i in X) (enum2int(i) in x <-> i in y);
   } in y;
 
 /** @group stdlib.builtins.enum Convert \a x to enum type \a X */

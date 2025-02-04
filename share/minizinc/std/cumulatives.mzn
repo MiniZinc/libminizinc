@@ -33,6 +33,14 @@ predicate cumulatives(
           lb_array(m) >= min(index_set(b)) /\ ub_array(m) <= max(index_set(b)),
           "cumulatives: machines must be in the index set of the 5th argument",
         ) /\
-        fzn_cumulatives(s, d, r, m, b, upper, min(index_set(b)))
+        fzn_cumulatives(
+          index2int(s),
+          index2int(d),
+          index2int(r),
+          index2int(enum2int(m)),
+          index2int(b),
+          upper,
+          enum2int(min(index_set(b))),
+        )
     endif,
   );

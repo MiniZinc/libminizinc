@@ -698,6 +698,9 @@ public:
      - keep a registry of (name,concrete type) -> instantiated function
  */
 void type_specialise(Env& env, Model* model, TyperFn& typer) {
+  // Don't warn about enum2int emitted from specialised functions
+  env.envi().warnImplicitEnum2Int = false;
+
   ConcreteCallAgenda agenda;
 
   CollectConcreteCallsFromItems cci(agenda);

@@ -2636,6 +2636,7 @@ Expression* b_output_json_parameters(EnvI& env, Call* call) {
         FunctionI* fi = _e.model->matchFn(_e, show, false);
         assert(fi);
         show->decl(fi);
+        show->type(Type::parstring());
         _outputVars.push_back(show);
       }
     }
@@ -2643,7 +2644,9 @@ Expression* b_output_json_parameters(EnvI& env, Call* call) {
 
   iter_items(jsonov, env.model);
   outputVars.push_back(new StringLit(Location().introduce(), "\n}\n"));
-  return new ArrayLit(Location().introduce(), outputVars);
+  auto* al = new ArrayLit(Location().introduce(), outputVars);
+  al->type(Type::parstring(1));
+  return al;
 }
 
 std::string b_format(EnvI& env, Call* call) {

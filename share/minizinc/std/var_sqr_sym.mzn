@@ -10,4 +10,4 @@ predicate var_sqr_sym(
   let {
     int: n = card(index_set_1of2(x));
     constraint assert(n = card(index_set_2of2(x)), "square symmetry applied to non-square array");
-  } in fzn_var_sqr_sym(array2d(1..n, 1..n, x));
+  } in fzn_var_sqr_sym(array2d(1..n, 1..n, enum2int(x)));

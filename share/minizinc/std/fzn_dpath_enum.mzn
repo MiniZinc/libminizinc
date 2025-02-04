@@ -2,11 +2,11 @@ include "tree.mzn";
 include "subgraph.mzn";
 
 predicate fzn_dpath(
-  array [int] of $$N: from,
-  array [int] of $$N: to,
-  var $$N: s,
-  var $$N: t,
-  array [$$N] of var bool: ns,
+  array [int] of int: from,
+  array [int] of int: to,
+  var int: s,
+  var int: t,
+  array [int] of var bool: ns,
   array [int] of var bool: es,
 ) =
   let {

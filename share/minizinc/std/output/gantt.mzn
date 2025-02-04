@@ -19,10 +19,10 @@ function string: show_gantt(
     array [0..n_dots] of int: thresholds =
       array1d(
         0..n_dots,
-        [ceil(min(start) + i * length(span) / n_dots) | i in 0..n_dots - 1] ++ [final],
+        [ceil(min(start) + i * card(span) / n_dots) | i in 0..n_dots - 1] ++ [final],
       );
     int: name_len = max([string_length(name[i]) | i in index_set(start)]);
-    array [int] of index_set(start): sort = arg_sort(start);
+    any: sort = arg_sort(start);
     string: dot_line = concat (i in 1..name_len + 1) (" ") ++ concat (i in 1..n_dots) (dot);
     string: legend =
       concat (i in 1..name_len + 1) (" ") ++
@@ -32,21 +32,18 @@ function string: show_gantt(
     "\n" ++
     dot_line ++
     "\n" ++
-    concat (i in index_set(sort)) (
-      format_justify_string(name_len, name[sort[i]]) ++
+    concat (s_i in sort) (
+      format_justify_string(name_len, name[s_i]) ++
         " " ++
-        concat (d in 1..n_dots where thresholds[d] <= start[sort[i]] + dur[sort[i]]) (
-          if card(
-            thresholds[d - 1]..thresholds[d] intersect
-               start[sort[i]]..start[sort[i]] + dur[sort[i]],
-          ) >
-            0 then
+        concat (d in 1..n_dots where thresholds[d] <= start[s_i] + dur[s_i]) (
+          if card(thresholds[d - 1]..thresholds[d] intersect start[s_i]..start[s_i] + dur[s_i]) >
+             0 then
             block
           else
             " "
           endif
         ) ++
-        " \(start[sort[i]]) - \(start[sort[i]] + dur[sort[i]])\n"
+        " \(start[s_i]) - \(start[s_i] + dur[s_i])\n"
     ) ++
     dot_line ++
     "\n" ++

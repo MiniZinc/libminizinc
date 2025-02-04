@@ -73,7 +73,16 @@ predicate bounded_dpath(
       dom_array(to) subset index_set(ns),
       "bounded_dpath: nodes in to must be in index set of ns",
     ) /\
-    fzn_bounded_dpath(from, to, w, s, t, ns, es, K);
+    fzn_bounded_dpath(
+      enum2int(from),
+      enum2int(to),
+      w,
+      enum2int(s),
+      enum2int(t),
+      index2int(ns),
+      es,
+      K,
+    );
 
 /** @group globals.graph
    Constrains the subgraph \a ns and \a es of a given undirected graph to be a path from \a s to \a t of weight \a K.
@@ -147,7 +156,16 @@ predicate bounded_path(
       dom_array(to) subset index_set(ns),
       "bounded_path: nodes in to must be in index set of ns",
     ) /\
-    fzn_bounded_path(from, to, w, s, t, ns, es, K);
+    fzn_bounded_path(
+      enum2int(from),
+      enum2int(to),
+      w,
+      enum2int(s),
+      enum2int(t),
+      index2int(ns),
+      es,
+      K,
+    );
 
 include "fzn_bounded_path_int.mzn";
 include "fzn_bounded_path_int_reif.mzn";

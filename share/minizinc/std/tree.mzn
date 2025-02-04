@@ -65,7 +65,13 @@ predicate dtree(
       dom_array(to) subset index_set(ns),
       "dreachable: nodes in to must be in index set of ns",
     ) /\
-    fzn_dtree(from, to, r, ns, es);
+    fzn_dtree(
+      index2int(enum2int(from)),
+      index2int(enum2int(to)),
+      enum2int(r),
+      index2int(ns),
+      index2int(es),
+    );
 
 %-----------------------------------------------------------------------------%
 
@@ -127,4 +133,10 @@ predicate tree(
       dom_array(to) subset index_set(ns),
       "dreachable: nodes in to must be in index set of ns",
     ) /\
-    fzn_tree(from, to, r, ns, es);
+    fzn_tree(
+      index2int(enum2int(from)),
+      index2int(enum2int(to)),
+      enum2int(r),
+      index2int(ns),
+      index2int(es),
+    );

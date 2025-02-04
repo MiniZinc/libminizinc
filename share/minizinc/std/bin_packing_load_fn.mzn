@@ -9,9 +9,9 @@ include "fzn_bin_packing_load.mzn";
 
   - forall \p i, \a w[\p i] >=0
 */
-function array [int] of var int: bin_packing_load(
-  array [int] of var int: bin,
-  array [int] of int: w,
+function array [$$B] of var int: bin_packing_load(
+  array [$$I] of var $$B: bin,
+  array [$$I] of int: w,
 ) :: promise_total =
   assert(
     index_set(bin) == index_set(w),
@@ -19,7 +19,9 @@ function array [int] of var int: bin_packing_load(
     if length(bin) > 0 then
       let {
         array [dom_bounds_array(bin)] of var 0..sum(w): load :: is_defined_var;
-        constraint fzn_bin_packing_load(load, bin, w) :: defines_var(load);
+        constraint
+          fzn_bin_packing_load(index2int(load), index2int(enum2int(bin)), index2int(w))
+            :: defines_var(load);
       } in load
     endif,
   );

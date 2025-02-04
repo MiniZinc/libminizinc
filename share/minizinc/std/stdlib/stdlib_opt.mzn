@@ -116,7 +116,7 @@ predicate mzn_reverse_map_var(
 */
 
 /** @group stdlib.optiontypes.int True iff \a x is not absent */
-function var bool: occurs(var opt int: x) :: promise_total = occurs_int(x);
+function var bool: occurs(var opt $$E: x) :: promise_total = occurs_int(enum2int(x));
 
 function bool: occurs_int(opt int: x) :: promise_total = occurs(x);
 function bool: occurs_int(var int: x) :: promise_total = true;
@@ -132,7 +132,8 @@ function bool: occurs_int(opt bool: x) :: promise_total = occurs(x);
 function bool: occurs_int(var bool: x) :: promise_total = true;
 
 /** @group stdlib.optiontypes.int Return value of \a x (assumes that \a x is not absent) */
-function var $$E: deopt(var opt $$E: x) :: promise_total = deopt_int(x);
+function var $$E: deopt(var opt $$E: x) :: promise_total =
+  to_enum_internal(enum_of(x), deopt_int(enum2int(x)));
 
 function int: deopt_int(opt int: x) :: promise_total = deopt(x);
 function var int: deopt_int(var int: x) :: promise_total = x;
@@ -151,24 +152,27 @@ function var bool: deopt_int(var bool: x) :: promise_total = x;
 function bool: deopt_int(opt bool: x) :: promise_total = deopt(x);
 
 /** @group stdlib.optiontypes.int True iff \a x is absent */
-function var bool: absent(var opt int: x) :: promise_total = not occurs(x);
+function var bool: absent(var opt $$E: x) :: promise_total = not occurs(x);
 
 /** @group stdlib.optiontypes.int True if \a x had zero in its original domain.
 
     Returns true if absent zero representation is disabled or if it is possible
     that \( \text{occurs}(x) \wedge \text{deopt}(x) = 0 \) */
-function bool: had_zero(var opt int: x) :: cache_result =
+function bool: had_zero(var opt $$E: x) = mzn_had_zero(enum2int(x));
+
+function bool: mzn_had_zero(var opt int: x) :: cache_result =
   not mzn_check_absent_zero() \/ (0 in dom(x));
+
 /** @group stdlib.optiontypes.int True if \a x had zero in its original domain.
 
     Returns true if absent zero representation is disabled or if it is possible
     that \( \text{occurs}(x) \wedge \text{deopt}(x) = 0 \) */
-function bool: had_zero(opt int: x) = not mzn_check_absent_zero() \/ x = 0;
+function bool: had_zero(opt $$E: x) = not mzn_check_absent_zero() \/ enum2int(x) = 0;
 /** @group stdlib.optiontypes.int True if \a x had zero in its original domain.
 
     Returns true if absent zero representation is disabled or if it is possible
     that \( \text{occurs}(x) \wedge \text{deopt}(x) = 0 \) */
-function bool: had_zero(array [int] of var opt int: x) = exists (xi in x) (had_zero(xi));
+function bool: had_zero(array [int] of var opt $$E: x) = exists (xi in x) (had_zero(xi));
 
 function tuple(var bool, var int): opt_internal_int(var opt int: x) :: promise_total =
   if dom(x) = {} then

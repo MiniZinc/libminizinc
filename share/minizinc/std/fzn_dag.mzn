@@ -1,7 +1,7 @@
 predicate fzn_dag(
-  array [int] of $$N: from,
-  array [int] of $$N: to,
-  array [$$N] of var bool: ns,
+  array [int] of int: from,
+  array [int] of int: to,
+  array [int] of var bool: ns,
   array [int] of var bool: es,
 ) =
   let {

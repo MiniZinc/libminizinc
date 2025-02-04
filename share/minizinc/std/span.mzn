@@ -12,7 +12,7 @@ predicate span(
   array [$$E] of var int: d,
 ) =
   assert(
-    index_set(s) = index_set(d),
+    index_sets_agree(s, d),
     "span: index sets of third and fourth argument must be identical",
   ) /\
-    fzn_span(s0, d0, s, d);
+    fzn_span(s0, d0, index2int(s), index2int(d));

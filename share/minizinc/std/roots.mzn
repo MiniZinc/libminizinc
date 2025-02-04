@@ -9,4 +9,4 @@ predicate roots(array [$$X] of var $$Y: x, var set of $$X: s, var set of $$Y: t)
     ub(s) subset index_set(x),
     "roots: upper bound of 's' must be a subset of the index set of 'x'",
   ) /\
-    fzn_roots(x, s, t);
+    fzn_roots(index2int(enum2int(x)), enum2int(s), enum2int(t));

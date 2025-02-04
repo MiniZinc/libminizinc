@@ -13,9 +13,9 @@ include "fzn_cumulative_reif.mzn";
   - forall \p i, \a d[\p i] >= 0 and \a r[\p i] >= 0
 */
 predicate cumulative(
-  array [int] of var int: s,
-  array [int] of var int: d,
-  array [int] of var int: r,
+  array [$$E] of var int: s,
+  array [$$E] of var int: d,
+  array [$$E] of var int: r,
   var int: b,
 ) =
   assert(
@@ -29,7 +29,7 @@ predicate cumulative(
       ) /\
         if let {
           int: mr = lb_array(r);
-          int: mri = arg_min([lb(r[i]) | i in index_set(r)]);
+          any: mri = arg_min(arrayXd(r, [lb(r_i) | r_i in r]));
         } in forall (i in index_set(r)) (is_fixed(r[i]) /\ (fix(r[i]) + mr > ub(b) \/ i = mri)) then
           forall (i in index_set(r)) (d[i] = 0 \/ fix(r[i]) <= b) /\
             if length(s) = 1 then
@@ -40,6 +40,6 @@ predicate cumulative(
               disjunctive(s, d)
             endif
         else
-          fzn_cumulative(s, d, r, b)
+          fzn_cumulative(index2int(s), index2int(d), index2int(r), b)
         endif
     endif;

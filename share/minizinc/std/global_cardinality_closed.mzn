@@ -29,7 +29,11 @@ predicate global_cardinality_closed(
     if length(x) == 0 then
       forall (c in array1d(counts)) (c = 0)
     else
-      fzn_global_cardinality_closed(array1d(x), array1d(cover), array1d(counts))
+      fzn_global_cardinality_closed(
+        enum2int(array1d(x)),
+        enum2int(array1d(cover)),
+        array1d(counts),
+      )
     endif,
   );
 
@@ -49,7 +53,11 @@ predicate global_cardinality_closed(
     if length(x) == 0 then
       forall (c in array1d(counts)) (c = 0)
     else
-      fzn_global_cardinality_closed_opt(array1d(x), array1d(cover), array1d(counts))
+      fzn_global_cardinality_closed_opt(
+        enum2int(array1d(x)),
+        enum2int(array1d(cover)),
+        array1d(counts),
+      )
     endif,
   );
 
@@ -91,8 +99,8 @@ predicate global_cardinality_closed(
       )
     else
       fzn_global_cardinality_low_up_closed(
-        array1d(x),
-        array1d(cover),
+        enum2int(array1d(x)),
+        enum2int(array1d(cover)),
         array1d(lbound),
         array1d(ubound),
       )
@@ -137,8 +145,8 @@ predicate global_cardinality_closed(
       )
     else
       fzn_global_cardinality_low_up_closed_opt(
-        array1d(x),
-        array1d(cover),
+        enum2int(array1d(x)),
+        enum2int(array1d(cover)),
         array1d(lbound),
         array1d(ubound),
       )
@@ -166,7 +174,11 @@ predicate global_cardinality_closed(
     if length(x) == 0 then
       forall (c in array1d(counts)) (c = 0)
     else
-      fzn_global_cardinality_closed_set(array1d(x), array1d(cover), array1d(counts))
+      fzn_global_cardinality_closed_set(
+        enum2int(array1d(x)),
+        enum2int(array1d(cover)),
+        array1d(counts),
+      )
     endif,
   );
 
@@ -208,8 +220,8 @@ predicate global_cardinality_closed(
       )
     else
       fzn_global_cardinality_low_up_closed_set(
-        array1d(x),
-        array1d(cover),
+        enum2int(array1d(x)),
+        enum2int(array1d(cover)),
         array1d(lbound),
         array1d(ubound),
       )

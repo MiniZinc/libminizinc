@@ -13,4 +13,4 @@ predicate sum_pred(
   array [$$X] of set of $$Y: sets,
   array [$$Y] of int: cs,
   var int: s,
-) = fzn_sum_pred(i, sets, cs, s);
+) = fzn_sum_pred(enum2int(i), index2int(enum2int(sets)), index2int(cs), s);

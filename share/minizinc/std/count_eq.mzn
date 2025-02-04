@@ -7,7 +7,7 @@ include "fzn_count_eq_par_reif.mzn";
   Constrains \a c to be the number of occurrences of \a y in \a x. 
 */
 predicate count_eq(array [$X] of var $$E: x, var $$E: y, var int: c) =
-  fzn_count_eq(array1d(x), y, c);
+  fzn_count_eq(enum2int(array1d(x)), enum2int(y), c);
 
 /** @group globals.counting
   Constrains \a c to be the number of occurrences of \a y in \a x. 
@@ -19,14 +19,15 @@ predicate count_eq(array [$X] of var opt $$E: x, var $$E: y, var int: c) =
       assert(
         has_bounds(y),
         "Unable to decompose count_eq without bounds for the y argument",
-        if 0 in dom(y) then lb(y) - 1 else 0 endif,
+        if 0 in dom(enum2int(y)) then lb(enum2int(y)) - 1 else 0 endif,
       );
-  } in count_eq([i default def | i in x], y, c);
+  } in count_eq([i default to_enum_internal(enum_of(y), def) | i in x], y, c);
 
 /** @group globals.counting
   Constrains \a c to be the number of occurrences of \a y in \a x. 
 */
-predicate count_eq(array [$X] of var $$E: x, $$E: y, int: c) = fzn_count_eq_par(array1d(x), y, c);
+predicate count_eq(array [$X] of var $$E: x, $$E: y, int: c) =
+  fzn_count_eq_par(enum2int(array1d(x)), enum2int(y), c);
 
 test count_eq(array [$X] of $$E: x, $$E: y, int: c) = c = count_eq(x, y);
 

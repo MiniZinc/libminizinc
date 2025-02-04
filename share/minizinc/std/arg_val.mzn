@@ -29,9 +29,11 @@ function opt $$E: arg_val_weak(array [$$E] of $T: x, $T: v) =
 	Note that this function forces the value \a v to occur in \a x.
 */
 function var $$E: arg_val(array [$$E] of var bool: x, var bool: v) =
-  let { constraint length(x) > 0 } in arg_val_total(x, v);
+  let {
+    constraint length(x) > 0;
+  } in to_enum_internal(enum_of(index_set(x)), arg_val_total(index2int(x), v));
 
-function var $$E: arg_val_total(array [$$E] of var bool: x, var bool: v) :: promise_total =
+function var int: arg_val_total(array [int] of var bool: x, var bool: v) :: promise_total =
   if length(x) = 0 then
     min(index_set(x))
   else
@@ -46,7 +48,9 @@ function var $$E: arg_val_total(array [$$E] of var bool: x, var bool: v) :: prom
 	When breaking ties the least index is returned.
 	Returns absent when \a v does not occur in \a x.
 */
-function var opt $$E: arg_val_weak(array [$$E] of var bool: x, var bool: v) :: promise_total =
+function var opt $$E: arg_val_weak(array [$$E] of var bool: x, var bool: v) =
+  to_enum_internal(enum_of(index_set(x)), arg_val_weak_bool(index2int(x), v));
+function var opt int: arg_val_weak_bool(array [int] of var bool: x, var bool: v) :: promise_total =
   if length(x) = 0 then
     <>
   else
@@ -65,9 +69,11 @@ function var opt $$E: arg_val_weak(array [$$E] of var bool: x, var bool: v) :: p
 	Note that this function forces the value \a v to occur in \a x.
 */
 function var $$E: arg_val(array [$$E] of var opt bool: x, var opt bool: v) =
-  let { constraint length(x) > 0 } in arg_val_total(x, v);
+  let {
+    constraint length(x) > 0;
+  } in to_enum_internal(enum_of(index_set(x)), arg_val_total(index2int(x), v));
 
-function var $$E: arg_val_total(array [$$E] of var opt bool: x, var opt bool: v) :: promise_total =
+function var int: arg_val_total(array [int] of var opt bool: x, var opt bool: v) :: promise_total =
   if length(x) = 0 then
     min(index_set(x))
   else
@@ -82,8 +88,10 @@ function var $$E: arg_val_total(array [$$E] of var opt bool: x, var opt bool: v)
 	When breaking ties the least index is returned.
 	Returns absent when \a v does not occur in \a x.
 */
-function var opt $$E: arg_val_weak(array [$$E] of var opt bool: x, var opt bool: v)
-   :: promise_total =
+function var opt $$E: arg_val_weak(array [$$E] of var opt bool: x, var opt bool: v) =
+  to_enum_internal(enum_of(index_set(x)), arg_val_weak_opt_bool(index2int(x), v));
+function var opt int: arg_val_weak_opt_bool(array [int] of var opt bool: x, var opt bool: v)
+  :: promise_total =
   if length(x) = 0 then
     <>
   else
@@ -102,9 +110,11 @@ function var opt $$E: arg_val_weak(array [$$E] of var opt bool: x, var opt bool:
 	Note that this function forces the value \a v to occur in \a x.
 */
 function var $$E: arg_val(array [$$E] of var float: x, var float: v) =
-  let { constraint length(x) > 0 } in arg_val_total(x, v);
+  let {
+    constraint length(x) > 0;
+  } in to_enum_internal(enum_of(index_set(x)), arg_val_total(index2int(x), v));
 
-function var $$E: arg_val_total(array [$$E] of var float: x, var float: v) :: promise_total =
+function var int: arg_val_total(array [int] of var float: x, var float: v) :: promise_total =
   if length(x) = 0 then
     min(index_set(x))
   else
@@ -119,7 +129,10 @@ function var $$E: arg_val_total(array [$$E] of var float: x, var float: v) :: pr
 	When breaking ties the least index is returned.
 	Returns absent when \a v does not occur in \a x.
 */
-function var opt $$E: arg_val_weak(array [$$E] of var float: x, var float: v) :: promise_total =
+function var opt $$E: arg_val_weak(array [$$E] of var float: x, var float: v) =
+  to_enum_internal(enum_of(index_set(x)), arg_val_weak_float(index2int(x), v));
+function var opt int: arg_val_weak_float(array [int] of var float: x, var float: v)
+   :: promise_total =
   if length(x) = 0 then
     <>
   else
@@ -138,9 +151,11 @@ function var opt $$E: arg_val_weak(array [$$E] of var float: x, var float: v) ::
 	Note that this function forces the value \a v to occur in \a x.
 */
 function var $$E: arg_val(array [$$E] of var opt float: x, var float: v) =
-  let { constraint length(x) > 0 } in arg_val_total(x, v);
+  let {
+    constraint length(x) > 0;
+  } in to_enum_internal(enum_of(index_set(x)), arg_val_total(index2int(x), v));
 
-function var $$E: arg_val_total(array [$$E] of var opt float: x, var opt float: v)
+function var int: arg_val_total(array [int] of var opt float: x, var opt float: v)
   :: promise_total =
   if length(x) = 0 then
     min(index_set(x))
@@ -156,7 +171,9 @@ function var $$E: arg_val_total(array [$$E] of var opt float: x, var opt float: 
 	When breaking ties the least index is returned.
 	Returns absent when \a v does not occur in \a x.
 */
-function var opt $$E: arg_val_weak(array [$$E] of var opt float: x, var opt float: v)
+function var opt $$E: arg_val_weak(array [$$E] of var opt float: x, var opt float: v) =
+  to_enum_internal(enum_of(index_set(x)), arg_val_weak_opt_float(index2int(x), v));
+function var opt int: arg_val_weak_opt_float(array [int] of var opt float: x, var opt float: v)
   :: promise_total =
   if length(x) = 0 then
     <>
@@ -176,9 +193,11 @@ function var opt $$E: arg_val_weak(array [$$E] of var opt float: x, var opt floa
 	Note that this function forces the value \a v to occur in \a x.
 */
 function var $$E: arg_val(array [$$E] of var $$V: x, var $$V: v) =
-  let { constraint length(x) > 0 } in arg_val_total(x, v);
+  let {
+    constraint length(x) > 0;
+  } in to_enum_internal(enum_of(index_set(x)), arg_val_total(index2int(enum2int(x)), enum2int(v)));
 
-function var $$E: arg_val_total(array [$$E] of var $$V: x, var $$V: v) :: promise_total =
+function var int: arg_val_total(array [int] of var int: x, var int: v) :: promise_total =
   if length(x) = 0 then
     min(index_set(x))
   else
@@ -193,7 +212,9 @@ function var $$E: arg_val_total(array [$$E] of var $$V: x, var $$V: v) :: promis
 	When breaking ties the least index is returned.
 	Returns absent when \a v does not occur in \a x.
 */
-function var opt $$E: arg_val_weak(array [$$E] of var $$V: x, var $$V: v) :: promise_total =
+function var opt $$E: arg_val_weak(array [$$E] of var $$V: x, var $$V: v) =
+  to_enum_internal(enum_of(index_set(x)), arg_val_weak_int(index2int(enum2int(x)), enum2int(v)));
+function var opt int: arg_val_weak_int(array [int] of var int: x, var int: v) :: promise_total =
   if length(x) = 0 then
     <>
   else
@@ -212,9 +233,11 @@ function var opt $$E: arg_val_weak(array [$$E] of var $$V: x, var $$V: v) :: pro
 	Note that this function forces the value \a v to occur in \a x.
 */
 function var $$E: arg_val(array [$$E] of var opt $$V: x, var opt $$V: v) =
-  let { constraint length(x) > 0 } in arg_val_total(x, v);
+  let {
+    constraint length(x) > 0;
+  } in to_enum_internal(enum_of(index_set(x)), arg_val_total(index2int(enum2int(x)), enum2int(v)));
 
-function var $$E: arg_val_total(array [$$E] of var opt $$V: x, var opt $$V: v) :: promise_total =
+function var int: arg_val_total(array [int] of var opt int: x, var opt int: v) :: promise_total =
   if length(x) = 0 then
     min(index_set(x))
   else
@@ -229,7 +252,13 @@ function var $$E: arg_val_total(array [$$E] of var opt $$V: x, var opt $$V: v) :
 	When breaking ties the least index is returned.
 	Returns absent when \a v does not occur in \a x.
 */
-function var opt $$E: arg_val_weak(array [$$E] of var opt $$V: x, var opt $$V: v) :: promise_total =
+function var opt $$E: arg_val_weak(array [$$E] of var opt $$V: x, var opt $$V: v) =
+  to_enum_internal(
+    enum_of(index_set(x)),
+    arg_val_weak_opt_int(index2int(enum2int(x)), enum2int(v)),
+  );
+function var opt int: arg_val_weak_opt_int(array [int] of var opt int: x, var opt int: v)
+  :: promise_total =
   if length(x) = 0 then
     <>
   else

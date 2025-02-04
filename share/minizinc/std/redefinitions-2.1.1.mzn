@@ -1,10 +1,13 @@
 % This file contains redefinitions of standard builtins for version 2.1.1
 % that can be overridden by solvers.
 
-function var $$E: min(var set of $$E: s) =
+function var $$E: min(
+  var set of $$E: xs,
+) =
   let {
+    var set of int: s = enum2int(xs);
     var min(ub(s))..max(ub(s)): m = min([e + (max(ub(s)) + 1 - e) * (1 - (e in s)) | e in ub(s)]);
-  } in m;
+  } in to_enum_internal(enum_of(xs), m);
 
 %% The following can be used as an alternative if the solver supports
 %% a FlatZinc builtin set_min:
@@ -30,10 +33,13 @@ function var $$E: min(var set of $$E: s) =
 %     constraint b \/ 1 in x;
 %   } in min_t(x);
 
-function var $$E: max(var set of $$E: s) =
+function var $$E: max(
+  var set of $$E: xs,
+) =
   let {
+    var set of int: s = enum2int(xs);
     var min(ub(s))..max(ub(s)): m = max([e + (min(ub(s)) - 1 - e) * (1 - (e in s)) | e in ub(s)]);
-  } in m;
+  } in to_enum_internal(enum_of(xs), m);
 
 %% The following can be used as an alternative if the solver supports
 %% a FlatZinc builtin set_max:

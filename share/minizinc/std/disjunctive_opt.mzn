@@ -14,8 +14,12 @@ include "fzn_disjunctive_opt_reif.mzn";
 */
 predicate disjunctive(array [$$T] of var opt int: s, array [$$T] of var int: d) =
   assert(
-    index_set(s) == index_set(d),
+    index_sets_agree(s, d),
     "disjunctive: the array arguments must have identical index sets",
     forall (i in index_set(d)) (d[i] >= 0) /\
-      if (lb_array(d) > 0) then disjunctive_strict(s, d) else fzn_disjunctive_opt(s, d) endif,
+      if lb_array(d) > 0 then
+        disjunctive_strict(s, d)
+      else
+        fzn_disjunctive_opt(index2int(s), index2int(d))
+      endif,
   );

@@ -5,7 +5,7 @@
 */
 
 /** @group stdlib.builtins.array Return the concatenation of arrays \a x and \a y */
-function array [int] of any $T: '++'(array [int] of any $T: x, array [int] of any $T: y)
+function array [int] of any $T: '++'(array [$$X] of any $T: x, array [$$Y] of any $T: y)
   :: mzn_internal_representation;
 
 /** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
@@ -13,11 +13,11 @@ function array [int] of any $T: '++'(array [int] of any $T: x, array [int] of an
 The index sets of the arrays must match except for the first index set.
  */
 function array [int, $$E] of any $T: '++'(
-  array [int, $$E] of any $T: x,
-  array [int, $$E] of any $T: y,
+  array [$$X, $$E] of any $T: x,
+  array [$$Y, $$E] of any $T: y,
 ) =
   assert(
-    index_sets_agree(x[1..0, ..], y[1..0, ..]),
+    index_sets_agree(index2int(x)[1..0, ..], index2int(y)[1..0, ..]),
     "Column index sets must match",
     array2d(
       1..card(index_set_1of2(x)) + card(index_set_1of2(y)),
@@ -30,11 +30,11 @@ function array [int, $$E] of any $T: '++'(
 The index sets of the arrays must match except for the first index set.
  */
 function array [int, $$E, $$F] of any $T: '++'(
-  array [int, $$E, $$F] of any $T: x,
-  array [int, $$E, $$F] of any $T: y,
+  array [$$X, $$E, $$F] of any $T: x,
+  array [$$Y, $$E, $$F] of any $T: y,
 ) =
   assert(
-    index_sets_agree(x[1..0, .., ..], y[1..0, .., ..]),
+    index_sets_agree(index2int(x)[1..0, .., ..], index2int(y)[1..0, .., ..]),
     "Index sets other than the first index set must match",
     array3d(
       1..card(index_set_1of3(x)) + card(index_set_1of3(y)),
@@ -48,11 +48,11 @@ function array [int, $$E, $$F] of any $T: '++'(
 The index sets of the arrays must match except for the first index set.
  */
 function array [int, $$E, $$F, $$G] of any $T: '++'(
-  array [int, $$E, $$F, $$G] of any $T: x,
-  array [int, $$E, $$F, $$G] of any $T: y,
+  array [$$X, $$E, $$F, $$G] of any $T: x,
+  array [$$Y, $$E, $$F, $$G] of any $T: y,
 ) =
   assert(
-    index_sets_agree(x[1..0, .., .., ..], y[1..0, .., .., ..]),
+    index_sets_agree(index2int(x)[1..0, .., .., ..], index2int(y)[1..0, .., .., ..]),
     "Index sets other than the first index set must match",
     array4d(
       1..card(index_set_1of4(x)) + card(index_set_1of4(y)),
@@ -67,11 +67,11 @@ function array [int, $$E, $$F, $$G] of any $T: '++'(
 The index sets of the arrays must match except for the first index set.
  */
 function array [int, $$E, $$F, $$G, $$H] of any $T: '++'(
-  array [int, $$E, $$F, $$G, $$H] of any $T: x,
-  array [int, $$E, $$F, $$G, $$H] of any $T: y,
+  array [$$X, $$E, $$F, $$G, $$H] of any $T: x,
+  array [$$Y, $$E, $$F, $$G, $$H] of any $T: y,
 ) =
   assert(
-    index_sets_agree(x[1..0, .., .., .., ..], y[1..0, .., .., .., ..]),
+    index_sets_agree(index2int(x)[1..0, .., .., .., ..], index2int(y)[1..0, .., .., .., ..]),
     "Index sets other than the first index set must match",
     array5d(
       1..card(index_set_1of5(x)) + card(index_set_1of5(y)),
@@ -87,11 +87,14 @@ function array [int, $$E, $$F, $$G, $$H] of any $T: '++'(
 The index sets of the arrays must match except for the first index set.
  */
 function array [int, $$E, $$F, $$G, $$H, $$I] of any $T: '++'(
-  array [int, $$E, $$F, $$G, $$H, $$I] of any $T: x,
-  array [int, $$E, $$F, $$G, $$H, $$I] of any $T: y,
+  array [$$X, $$E, $$F, $$G, $$H, $$I] of any $T: x,
+  array [$$Y, $$E, $$F, $$G, $$H, $$I] of any $T: y,
 ) =
   assert(
-    index_sets_agree(x[1..0, .., .., .., .., ..], y[1..0, .., .., .., .., ..]),
+    index_sets_agree(
+      index2int(x)[1..0, .., .., .., .., ..],
+      index2int(y)[1..0, .., .., .., .., ..],
+    ),
     "Index sets other than the first index set must match",
     array6d(
       1..card(index_set_1of6(x)) + card(index_set_1of6(y)),
@@ -115,39 +118,14 @@ function int: length(array [$T] of any $U: x);
 
   The resulting array has the same index set as \a x.
 */
-function array [$$E] of $T: reverse(array [$$E] of $T: x) =
-  if length(x) = 0 then
-    []
-  else
-    let {
-      int: l = max(index_set(x)) + min(index_set(x));
-    } in array1d(index_set(x), [x[l - i] | i in index_set(x)])
-  endif;
-
-/** @group stdlib.builtins.array Return the array \a x in reverse order
-
-  The resulting array has the same index set as \a x.
-*/
-function array [$$E] of opt $T: reverse(array [$$E] of opt $T: x) =
-  if length(x) = 0 then
-    []
-  else
-    let {
-      int: l = max(index_set(x)) + min(index_set(x));
-    } in array1d(index_set(x), [x[l - i] | i in index_set(x)])
-  endif;
-
-/** @group stdlib.builtins.array Return the array \a x in reverse order
-
-  The resulting array has the same index set as \a x.
-*/
 function array [$$E] of any $T: reverse(array [$$E] of any $T: x) =
   if length(x) = 0 then
     []
   else
     let {
-      int: l = max(index_set(x)) + min(index_set(x));
-    } in array1d(index_set(x), [x[l - i] | i in index_set(x)])
+      any: xx = array1d(x);
+      int: l = length(x) + 1;
+    } in array1d(index_set(x), [xx[l - i] | i in index_set(xx)])
   endif;
 
 /** @group stdlib.builtins.array Test if \a x and \a y have the same index sets */
@@ -156,45 +134,45 @@ test index_sets_agree(array [$T] of any $U: x, array [$T] of any $W: y);
 /** @group stdlib.builtins.array Return index set of one-dimensional array \a x */
 function set of $$E: index_set(array [$$E] of any $U: x);
 /** @group stdlib.builtins.array Return index set of first dimension of two-dimensional array \a x */
-function set of $$E: index_set_1of2(array [$$E, int] of any $U: x);
+function set of $$E: index_set_1of2(array [$$E, $$F] of any $U: x);
 /** @group stdlib.builtins.array Return index set of second dimension of two-dimensional array \a x */
-function set of $$E: index_set_2of2(array [int, $$E] of any $U: x);
+function set of $$F: index_set_2of2(array [$$E, $$F] of any $U: x);
 /** @group stdlib.builtins.array Return index set of first dimension of 3-dimensional array \a x */
-function set of $$E: index_set_1of3(array [$$E, int, int] of any $U: x);
+function set of $$E: index_set_1of3(array [$$E, $$F, $$G] of any $U: x);
 /** @group stdlib.builtins.array Return index set of second dimension of 3-dimensional array \a x */
-function set of $$E: index_set_2of3(array [int, $$E, int] of any $U: x);
+function set of $$F: index_set_2of3(array [$$E, $$F, $$G] of any $U: x);
 /** @group stdlib.builtins.array Return index set of third dimension of 3-dimensional array \a x */
-function set of $$E: index_set_3of3(array [int, int, $$E] of any $U: x);
+function set of $$G: index_set_3of3(array [$$E, $$F, $$G] of any $U: x);
 /** @group stdlib.builtins.array Return index set of first dimension of 4-dimensional array \a x */
-function set of $$E: index_set_1of4(array [$$E, int, int, int] of any $U: x);
+function set of $$E: index_set_1of4(array [$$E, $$F, $$G, $$H] of any $U: x);
 /** @group stdlib.builtins.array Return index set of second dimension of 4-dimensional array \a x */
-function set of $$E: index_set_2of4(array [int, $$E, int, int] of any $U: x);
+function set of $$F: index_set_2of4(array [$$E, $$F, $$G, $$H] of any $U: x);
 /** @group stdlib.builtins.array Return index set of third dimension of 4-dimensional array \a x */
-function set of $$E: index_set_3of4(array [int, int, $$E, int] of any $U: x);
+function set of $$G: index_set_3of4(array [$$E, $$F, $$G, $$H] of any $U: x);
 /** @group stdlib.builtins.array Return index set of fourth dimension of 4-dimensional array \a x */
-function set of $$E: index_set_4of4(array [int, int, int, $$E] of any $U: x);
+function set of $$H: index_set_4of4(array [$$E, $$F, $$G, $$H] of any $U: x);
 /** @group stdlib.builtins.array Return index set of first dimension of 5-dimensional array \a x */
-function set of $$E: index_set_1of5(array [$$E, int, int, int, int] of any $U: x);
+function set of $$E: index_set_1of5(array [$$E, $$F, $$G, $$H, $$I] of any $U: x);
 /** @group stdlib.builtins.array Return index set of second dimension of 5-dimensional array \a x */
-function set of $$E: index_set_2of5(array [int, $$E, int, int, int] of any $U: x);
+function set of $$F: index_set_2of5(array [$$E, $$F, $$G, $$H, $$I] of any $U: x);
 /** @group stdlib.builtins.array Return index set of third dimension of 5-dimensional array \a x */
-function set of $$E: index_set_3of5(array [int, int, $$E, int, int] of any $U: x);
+function set of $$G: index_set_3of5(array [$$E, $$F, $$G, $$H, $$I] of any $U: x);
 /** @group stdlib.builtins.array Return index set of fourth dimension of 5-dimensional array \a x */
-function set of $$E: index_set_4of5(array [int, int, int, $$E, int] of any $U: x);
+function set of $$H: index_set_4of5(array [$$E, $$F, $$G, $$H, $$I] of any $U: x);
 /** @group stdlib.builtins.array Return index set of fifth dimension of 5-dimensional array \a x */
-function set of $$E: index_set_5of5(array [int, int, int, int, $$E] of any $U: x);
+function set of $$I: index_set_5of5(array [$$E, $$F, $$G, $$H, $$I] of any $U: x);
 /** @group stdlib.builtins.array Return index set of first dimension of 6-dimensional array \a x */
-function set of $$E: index_set_1of6(array [$$E, int, int, int, int, int] of any $U: x);
+function set of $$E: index_set_1of6(array [$$E, $$F, $$G, $$H, $$I, $$J] of any $U: x);
 /** @group stdlib.builtins.array Return index set of second dimension of 6-dimensional array \a x */
-function set of $$E: index_set_2of6(array [int, $$E, int, int, int, int] of any $U: x);
+function set of $$F: index_set_2of6(array [$$E, $$F, $$G, $$H, $$I, $$J] of any $U: x);
 /** @group stdlib.builtins.array Return index set of third dimension of 6-dimensional array \a x */
-function set of $$E: index_set_3of6(array [int, int, $$E, int, int, int] of any $U: x);
+function set of $$G: index_set_3of6(array [$$E, $$F, $$G, $$H, $$I, $$J] of any $U: x);
 /** @group stdlib.builtins.array Return index set of fourth dimension of 6-dimensional array \a x */
-function set of $$E: index_set_4of6(array [int, int, int, $$E, int, int] of any $U: x);
+function set of $$H: index_set_4of6(array [$$E, $$F, $$G, $$H, $$I, $$J] of any $U: x);
 /** @group stdlib.builtins.array Return index set of fifth dimension of 6-dimensional array \a x */
-function set of $$E: index_set_5of6(array [int, int, int, int, $$E, int] of any $U: x);
+function set of $$I: index_set_5of6(array [$$E, $$F, $$G, $$H, $$I, $$J] of any $U: x);
 /** @group stdlib.builtins.array Return index set of sixth dimension of 6-dimensional array \a x */
-function set of $$E: index_set_6of6(array [int, int, int, int, int, $$E] of any $U: x);
+function set of $$J: index_set_6of6(array [$$E, $$F, $$G, $$H, $$I, $$J] of any $U: x);
 
 /** @group stdlib.builtins.array Return array \a x coerced to index set 1..length(\a x).
   Coercions are performed by considering the array \a x in row-major order. */
@@ -223,7 +201,7 @@ function array [$$E, $$F] of any $V: array2d(
 
 function array [$$E] of any $V: arrayNd(array [int] of $$E: S1, array [int] of any $V: x) =
   if length(S1) = 1 /\ length(x) > 1 then
-    array1d(S1[1]..to_enum(enum_of(S1[1]), S1[1] + length(x) - 1), x)
+    array1d(S1[1]..to_enum(enum_of(S1[1]), enum2int(S1[1]) + length(x) - 1), x)
   else
     [S1[i]: x[i] | i in index_set(x)]
   endif;
@@ -391,42 +369,43 @@ test has_element($T: e, array [int] of opt $T: x) = exists (i in index_set(x)) (
 predicate has_element($T: e, array [$$E] of any $T: x) = exists (i in index_set(x)) (x[i] = e);
 
 /** @group stdlib.builtins.array Return the set containing the elements of \a x */
-function var set of $$T: array2set(array [int] of var $$T: x) :: promise_total =
+function var set of $$T: array2set(array [$X] of var $$T: x) :: promise_total =
   if length(x) = 0 then
     {}
   else
     let {
-      set of int: D = dom_array(x);
+      any: D = dom_array(x);
       constraint
         assert(
-          min(D) > -infinity /\ max(D) < infinity,
+          min(enum2int(D)) > -infinity /\ max(enum2int(D)) < infinity,
           "array2set needs finite bounds on argument array",
         );
       var set of D: y;
-      constraint fzn_array_int_union(x, y);
+      constraint fzn_array_int_union(enum2int(array1d(x)), enum2int(y));
     } in y
   endif;
 
-function var set of $$T: array2set(array [int] of var opt $$T: x) :: promise_total =
+/** @group stdlib.builtins.array Return the set containing the non-absent elements of \a x */
+function var set of $$T: array2set(array [$X] of var opt $$T: x) :: promise_total =
   if length(x) = 0 then
     {}
   else
     let {
-      set of int: D = dom_array_occurring(x);
+      any: D = dom_array_occurring(x);
       constraint
         assert(
-          min(D) > -infinity /\ max(D) < infinity,
+          min(enum2int(D)) > -infinity /\ max(enum2int(D)) < infinity,
           "array2set needs finite bounds on argument array",
         );
       var set of D: y;
-      constraint fzn_array_opt_int_union(x, y);
+      constraint fzn_array_opt_int_union(enum2int(array1d(x)), enum2int(y));
     } in y
   endif;
 
 /** @group stdlib.builtins.array Return the set containing the elements of \a x */
 function set of $$T: array2set(array [int] of $$T: x) = {x[i] | i in index_set(x)};
 
-/** @group stdlib.builtins.array Return the set containing the elements of \a x */
+/** @group stdlib.builtins.array Return the set containing the non-absent elements of \a x */
 function set of $$T: array2set(array [int] of opt $$T: x) = {
   deopt(x[i]) |
     i in index_set(x) where occurs(x[i]),
@@ -461,5 +440,5 @@ function var bool: 'in'(var opt $X: x, array [$T] of var opt $X: y) =
 function bool: 'in'(set of $X: x, array [$T] of set of $X: y) = exists (z in array1d(y)) (z = x);
 
 /** @group stdlib.builtins.array Return if \a y contains \a x */
-function var bool: 'in'(var set of $X: x, array [$T] of var set of $X: y) =
+function var bool: 'in'(var set of $$X: x, array [$T] of var set of $$X: y) =
   exists (z in array1d(y)) (z = x);

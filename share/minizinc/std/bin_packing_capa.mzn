@@ -12,9 +12,9 @@ include "fzn_bin_packing_capa_reif.mzn";
   - forall \p b, \a c[\p b] >=0
 */
 predicate bin_packing_capa(
-  array [int] of int: c,
-  array [int] of var int: bin,
-  array [int] of int: w,
+  array [$$B] of int: c,
+  array [$$I] of var $$B: bin,
+  array [$$I] of int: w,
 ) =
   assert(
     index_set(bin) = index_set(w),
@@ -25,7 +25,7 @@ predicate bin_packing_capa(
       assert(
         length(c) == 0 \/ lb_array(c) >= 0,
         "bin_packing_capa: the capacities must be non-negative",
-        fzn_bin_packing_capa(c, bin, w),
+        fzn_bin_packing_capa(index2int(c), index2int(enum2int(bin)), index2int(w)),
       ),
     ),
   );
