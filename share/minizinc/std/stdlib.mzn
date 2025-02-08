@@ -15,7 +15,7 @@
 %  This section contains declarations for the standard FlatZinc builtins.  They
 %  can be redefined by providing a custom redefinitions.mzn in the solver
 %  globals library. A standard redefinition is provided for FlatZinc builtins
-%  after version 2.0. This redefinition can be overriden by providing a custom
+%  after version 2.0. This redefinition can be overridden by providing a custom
 %  redefinitions-<VERSION>.mzn
 
 include "flatzinc_builtins.mzn";

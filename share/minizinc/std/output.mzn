@@ -1,5 +1,5 @@
 /***
-  @groupdef stdlib.output Stuctured Output
+  @groupdef stdlib.output Structured Output
 
   These functions provide structured output for common structures modelled in the MiniZinc language.
 */

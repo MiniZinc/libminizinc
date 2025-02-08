@@ -45,7 +45,7 @@ predicate complete_reif(var bool: marker) = fzn_on_restart_complete(marker);
 
 /**
   @group experimental.on_restart Returns a new random value between \a low
-  and \a high chosen from a uniform distribution whenver the solver restarts.
+  and \a high chosen from a uniform distribution whenever the solver restarts.
 */
 function var $$E: uniform_on_restart($$E: low, $$E: high) ::no_cse ::promise_total = let {
   var low..high: ret;
@@ -54,7 +54,7 @@ function var $$E: uniform_on_restart($$E: low, $$E: high) ::no_cse ::promise_tot
 
 /**
   @group experimental.on_restart Returns a new random value from the set \a S
-  chosen from a uniform distribution whenver the solver restarts.
+  chosen from a uniform distribution whenever the solver restarts.
 */
 function var $$E: uniform_on_restart(set of $$E: S) ::no_cse =
   if card(S) == max(S) - min(S) + 1 then
@@ -65,7 +65,7 @@ function var $$E: uniform_on_restart(set of $$E: S) ::no_cse =
 
 /**
   @group experimental.on_restart Returns a new random value between \a low
-  and \a high chosen from a uniform distribution whenver the solver restarts.
+  and \a high chosen from a uniform distribution whenever the solver restarts.
 */
 function var float: uniform_on_restart(float: low, float: high) ::no_cse ::promise_total = let {
   var low..high: ret;

@@ -11,7 +11,7 @@ include "fzn_write_reif.mzn";
 */
 predicate write(array[$$E] of var int: I, var int: i, var int: v,
                 array[$$E] of var int: O) =
-    assert(index_set(O) = index_set(I),"writet: index set of I must be same as O") /\
+    assert(index_set(O) = index_set(I),"write: index set of I must be same as O") /\
     fzn_write(I, i, v, O);
 
 function array[int] of var int: write(array[int] of var int: I, var int: i, var int: v) =
