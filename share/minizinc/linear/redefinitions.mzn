@@ -39,7 +39,7 @@ include "redefs_lin_reifs.mzn";
 include "redefs_lin_imp.mzn";
 include "redefs_lin_halfreifs.mzn";
 
-include "nosets.mzn"; %% For set_le, set_lt ... Usind std/nosets
+include "nosets.mzn"; %% For set_le, set_lt ... Using std/nosets
 %% as long as the linearization is good.
 
 %-----------------------------------------------------------------------------%

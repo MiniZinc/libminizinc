@@ -20,11 +20,11 @@ predicate strictly_increasing(array [$X] of var bool: x) =
   } in analyse_all_different(xx) /\
     if length(xx) >= 3 then false elseif length(xx) = 2 then xx = [false, true] else true endif;
 
-/** @group globals.sort Requires that the array \a x is in a stricly increasing order (duplicates are *not* allowed). */
+/** @group globals.sort Requires that the array \a x is in a strictly increasing order (duplicates are *not* allowed). */
 predicate strictly_increasing(array [$X] of var $$E: x) =
   analyse_all_different(array1d(x)) /\ fzn_strictly_increasing_int(enum2int(array1d(x)));
 
-/** @group globals.sort Requires that the array \a x is in a stricly increasing order (duplicates are *not* allowed). */
+/** @group globals.sort Requires that the array \a x is in a strictly increasing order (duplicates are *not* allowed). */
 predicate strictly_increasing(array [$X] of var opt $$E: x) =
   analyse_all_different(array1d(x)) /\ fzn_strictly_increasing_int_opt(enum2int(array1d(x)));
 

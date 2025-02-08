@@ -10,7 +10,7 @@ include "fzn_write_reif.mzn";
     \a v is the value to write
 */
 predicate write(array [$$E] of var $$T: I, var $$E: i, var $$T: v, array [$$E] of var $$T: O) =
-  assert(index_sets_agree(O, I), "writet: index set of I must be same as O") /\
+  assert(index_sets_agree(O, I), "write: index set of I must be same as O") /\
     fzn_write(index2int(enum2int(I)), enum2int(i), enum2int(v), index2int(enum2int(O)));
 
 /** @group globals.array

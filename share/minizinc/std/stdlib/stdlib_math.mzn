@@ -277,15 +277,15 @@ function var opt float: '~/'(var opt float: x, var opt float: y) =
 function opt float: '~/'(opt float: x, opt float: y) =
   if absent(x) \/ absent(y) then <> else deopt(x) / deopt(y) endif;
 
-/** @group stdlib.builtins.arithmetic Return number of true elments in array \a x */
+/** @group stdlib.builtins.arithmetic Return number of true elements in array \a x */
 function int: count(array [$T] of bool: x) :: promise_commutative =
   sum([bool2int(y) | y in array1d(x)]);
-/** @group stdlib.builtins.arithmetic Return number of true elments in array \a x */
+/** @group stdlib.builtins.arithmetic Return number of true elements in array \a x */
 function var int: count(array [$T] of var bool: x :: promise_ctx_monotone) :: promise_commutative =
   let {
     array [int] of var bool: xx :: promise_ctx_monotone = array1d(x);
   } in sum([bool2int(y) | y in xx]);
-/** @group stdlib.builtins.arithmetic Return number of true elments in array \a x */
+/** @group stdlib.builtins.arithmetic Return number of true elements in array \a x */
 function var int: count(array [$T] of var opt bool: x :: promise_ctx_monotone)
   :: promise_commutative = count (i in x) (i default false);
 
