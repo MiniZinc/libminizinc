@@ -59,9 +59,6 @@ Bug fixes:
 -  Fix operator precedences for ``intersect`` and unary plus/minus.
 -  Fix crash when type instance concatenation is performed on invalid types
    (:bugref:`867`).
--  Fix a bug in the typing of enum constructor functions, which would cause
-   incorrect type errors when using them in the type-inst of a variable
-   declaration.
 -  Fix a segfault caused by an internal `float_times` variant not correctly being
    handled during output processing (:bugref:`870`).
 -  Fix incorrect non-uniform if-then-else type error when one branch is an empty
