@@ -30,5 +30,4 @@ include "regular.mzn";
   Members of enumerated types can be used in place of any integer (e.g., "A B",
   A followed by B). Enumerated identifiers still use whitespace for concatenation.
 */
-predicate regular(array[int] of var int: x, string: r) =
-          fzn_regular(x, r);
+predicate regular(array [int] of var int: x, string: r) = fzn_regular(x, r);

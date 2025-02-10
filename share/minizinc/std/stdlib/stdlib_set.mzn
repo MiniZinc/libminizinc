@@ -5,65 +5,79 @@
 */
 
 /** @group stdlib.builtins.set Test if \a x is an element of the set \a y */
-function     bool: 'in'(    $$E: x,     set of $$E: y) ::mzn_internal_representation;
+function bool: 'in'($$E: x, set of $$E: y) :: mzn_internal_representation;
 /** @group stdlib.builtins.set \a x is an element of the set \a y */
 function var bool: 'in'(var $$E: x, var set of $$E: y);
 /** @group stdlib.builtins.set \a x is an element of the set \a y. False if \a x is absent. */
 function var bool: 'in'(var opt $$E: x, set of $$E: y) = occurs(x) /\ deopt(x) in y;
 /** @group stdlib.builtins.set Test if \a x is an element of the set \a y. False if \a x is absent. */
-function     bool: 'in'(opt $$E: x, set of $$E: y) = occurs(x) /\ deopt(x) in y;
+function bool: 'in'(opt $$E: x, set of $$E: y) = occurs(x) /\ deopt(x) in y;
 /** @group stdlib.builtins.set \a x is an element of the set \a y. False if \a x is absent. */
 function var bool: 'in'(var opt $$E: x, var set of $$E: y) = occurs(x) /\ deopt(x) in y;
 
 /** @group stdlib.builtins.set Test if \a x is an element of the set \a y */
-function     bool: 'in'(    float: x,     set of float: y) ::mzn_internal_representation;
+function bool: 'in'(float: x, set of float: y) :: mzn_internal_representation;
 /** @group stdlib.builtins.set Test if \a x is an element of the set \a y */
-function var bool: 'in'(var float: x,     set of float: y);
+function var bool: 'in'(var float: x, set of float: y);
 /** @group stdlib.builtins.set Test if \a x is an element of the set \a y. False if \a x is absent. */
-function     bool: 'in'(opt float: x, set of float: y) = occurs(x) /\ deopt(x) in y;
+function bool: 'in'(opt float: x, set of float: y) = occurs(x) /\ deopt(x) in y;
 /** @group stdlib.builtins.set \a x is an element of the set \a y. False if \a x is absent. */
 function var bool: 'in'(var opt float: x, set of float: y) = occurs(x) /\ deopt(x) in y;
 
 /** @group stdlib.builtins.set Test if \a x is a subset of \a y */
-function     bool: 'subset'(    set of $T: x,      set of $T: y) ::mzn_internal_representation;
+function bool: 'subset'(set of $T: x, set of $T: y) :: mzn_internal_representation;
 /** @group stdlib.builtins.set \a x is a subset of \a y */
 function var bool: 'subset'(var set of $$E: x, var set of $$E: y);
 /** @group stdlib.builtins.set Test if \a x is a superset of \a y */
-function     bool: 'superset'(    set of $T: x,      set of $T: y) ::mzn_internal_representation;
+function bool: 'superset'(set of $T: x, set of $T: y) :: mzn_internal_representation;
 /** @group stdlib.builtins.set \a x is a superset of \a y */
 function var bool: 'superset'(var set of $$E: x, var set of $$E: y);
 
 /** @group stdlib.builtins.set Return the union of sets \a x and \a y */
-function     set of $T:  'union'(    set of $T: x,      set of $T: y) ::mzn_internal_representation ::promise_commutative;
+function set of $T: 'union'(set of $T: x, set of $T: y)
+  :: mzn_internal_representation
+  :: promise_commutative;
 /** @group stdlib.builtins.set Return the union of sets \a x and \a y */
-function var set of $$T: 'union'(var set of $$T: x, var set of $$T: y) ::mzn_internal_representation ::promise_commutative;
+function var set of $$T: 'union'(var set of $$T: x, var set of $$T: y)
+  :: mzn_internal_representation
+  :: promise_commutative;
 /** @group stdlib.builtins.set Return the intersection of sets \a x and \a y */
-function     set of $T:  'intersect'(    set of $T: x,      set of $T: y) ::mzn_internal_representation ::promise_commutative;
+function set of $T: 'intersect'(set of $T: x, set of $T: y)
+  :: mzn_internal_representation
+  :: promise_commutative;
 /** @group stdlib.builtins.set Return the intersection of sets \a x and \a y */
-function var set of $$T: 'intersect'(var set of $$T: x, var set of $$T: y) ::mzn_internal_representation ::promise_commutative;
+function var set of $$T: 'intersect'(var set of $$T: x, var set of $$T: y)
+  :: mzn_internal_representation
+  :: promise_commutative;
 /** @group stdlib.builtins.set Return the set difference of sets \(\a x \setminus \a y \) */
-function     set of $T:  'diff'(    set of $T: x,      set of $T: y) ::mzn_internal_representation;
+function set of $T: 'diff'(set of $T: x, set of $T: y) :: mzn_internal_representation;
 /** @group stdlib.builtins.set Return the set difference of sets \(\a x \setminus \a y \) */
-function var set of $$T: 'diff'(var set of $$T: x, var set of $$T: y) ::mzn_internal_representation;
+function var set of $$T: 'diff'(var set of $$T: x, var set of $$T: y)
+   :: mzn_internal_representation;
 /** @group stdlib.builtins.set Return the symmetric set difference of sets \a x and \a y */
-function     set of $T:  'symdiff'(    set of $T: x,      set of $T: y) ::mzn_internal_representation ::promise_commutative;
+function set of $T: 'symdiff'(set of $T: x, set of $T: y)
+  :: mzn_internal_representation
+  :: promise_commutative;
 /** @group stdlib.builtins.set Return the symmetric set difference of sets \a x and \a y */
-function var set of $$T: 'symdiff'(var set of $$T: x, var set of $$T: y) ::mzn_internal_representation ::promise_commutative;
+function var set of $$T: 'symdiff'(var set of $$T: x, var set of $$T: y)
+  :: mzn_internal_representation
+  :: promise_commutative;
 
 /** @group stdlib.builtins.set Return the set \(\{\a a,\ldots,\a b\}\) */
-function set of $$E: '..'($$E: a,$$E: b) ::mzn_internal_representation;
+function set of $$E: '..'($$E: a, $$E: b) :: mzn_internal_representation;
 /** @group stdlib.builtins.set Return the set \(\{\a a,\ldots,\a b\}\) */
-function set of float: '..'(float: a,float: b) ::mzn_internal_representation;
+function set of float: '..'(float: a, float: b) :: mzn_internal_representation;
 /** @group stdlib.builtins.set Return the set \(\{\a a,\ldots,\a b\}\) */
-function set of bool: '..'(bool: a,bool: b) =
-  if a then if b then {true} else {} endif elseif b then {false,true} else {false} endif;
+function set of bool: '..'(bool: a, bool: b) =
+  if a then if b then {true} else {} endif elseif b then {false, true} else {false} endif;
 
 /** @group stdlib.builtins.set Return the set \(\{\a a,\ldots,\a b-1\}\) */
-function set of $$E: '..<'($$E: a,$$E: b) = if a >= b then {} else a..enum_prev(b) endif;
+function set of $$E: '..<'($$E: a, $$E: b) = if a >= b then {} else a..enum_prev(b) endif;
 /** @group stdlib.builtins.set Return the set \(\{\a a+1,\ldots,\a b\}\) */
-function set of $$E: '<..'($$E: a,$$E: b) = if a >= b then {} else enum_next(a)..b endif;
+function set of $$E: '<..'($$E: a, $$E: b) = if a >= b then {} else enum_next(a)..b endif;
 /** @group stdlib.builtins.set Return the set \(\{\a a+1,\ldots,\a b-1\}\) */
-function set of $$E: '<..<'($$E: a,$$E: b) = if b-a <= 1 then {} else enum_next(a)..enum_prev(b) endif;
+function set of $$E: '<..<'($$E: a, $$E: b) =
+  if b - a <= 1 then {} else enum_next(a)..enum_prev(b) endif;
 
 /** @group stdlib.builtins.set Return the set \(\{\a a,\ldots,\a b-1\}\) */
 function set of $$E: '..o'($$E: a) = a..max(enum_of(a));
@@ -92,51 +106,56 @@ function set of $$E: '..<'(set of $$E: s) = min(s)..enum_prev(max(s));
 function set of int: '<..'() = assert(false, "internal function '<..'() called", {0});
 function set of $$E: '<..'(set of $$E: s) = enum_next(min(s))..max(s);
 
-function var set of $$E: '..'(var $$E: a, var $$E: b) ::promise_total =
+function var set of $$E: '..'(var $$E: a, var $$E: b) :: promise_total =
   let {
     var set of lb(a)..ub(b): s;
     constraint forall (i in ub(s)) (i in s <-> (a <= i /\ i <= b));
   } in s;
 
 /** @group stdlib.builtins.set Return the cardinality of the set \a x */
-function     int: card(    set of $T: x);
+function int: card(set of $T: x);
 /** @group stdlib.builtins.set Return the cardinality of the set \a x */
-function var int: card(var set of int: x) ::promise_total = let {
+function var int: card(var set of int: x) :: promise_total =
+  let {
     var 0..(if has_ub_set(x) then card(ub(x)) else infinity endif): c;
-    constraint set_card(x,c);
+    constraint set_card(x, c);
   } in c;
 
 /** @group stdlib.builtins.set Return the union of the sets in array \a x */
-function     set of $U:  array_union(array[$T] of     set of $U: x) ::promise_commutative;
+function set of $U: array_union(array [$T] of set of $U: x) :: promise_commutative;
 /** @group stdlib.builtins.set Return the union of the sets in array \a x */
-function var set of $$E: array_union(array[$T] of var set of $$E: x) ::promise_total ::promise_commutative =
-    if length(x)=0 then {}
-    elseif length(x)=1 then array1d(x)[1]
-    else
-      let {
-        var set of ub_array(x): y ::is_defined_var;
-        constraint fzn_array_set_union(array1d(x), y) :: defines_var(y);
-      } in y
-    endif;
+function var set of $$E: array_union(array [$T] of var set of $$E: x)
+  :: promise_total
+  :: promise_commutative =
+  if length(x) = 0 then
+    {}
+  elseif length(x) = 1 then
+    array1d(x)[1]
+  else
+    let {
+      var set of ub_array(x): y :: is_defined_var;
+      constraint fzn_array_set_union(array1d(x), y) :: defines_var(y);
+    } in y
+  endif;
 
 /** @group stdlib.builtins.set Return the intersection of the sets in array \a x */
-function     set of $U:  array_intersect(array[$T] of     set of $U: x) ::promise_commutative;
+function set of $U: array_intersect(array [$T] of set of $U: x) :: promise_commutative;
 
 /** @group stdlib.builtins.set Return the intersection of the sets in array \a x. Undefined for empty \a x. */
-function var set of $$E: array_intersect(array[$T] of var set of $$E: x) ::promise_commutative =
-  let {
-    constraint length(x) > 0
-  } in array_intersect_t(x);
+function var set of $$E: array_intersect(array [$T] of var set of $$E: x) :: promise_commutative =
+  let { constraint length(x) > 0 } in array_intersect_t(x);
 
-function var set of $$E: array_intersect_t(array[$T] of var set of $$E: x) :: promise_total =
-    if length(x) = 0 then {}
-    elseif length(x) = 1 then array1d(x)[1]
-    else
-      let {
-        var set of ub_array(x): y :: is_defined_var;
-        constraint fzn_array_set_intersect(array1d(x), y) :: defines_var(y);
-      } in y
-    endif;
+function var set of $$E: array_intersect_t(array [$T] of var set of $$E: x) :: promise_total =
+  if length(x) = 0 then
+    {}
+  elseif length(x) = 1 then
+    array1d(x)[1]
+  else
+    let {
+      var set of ub_array(x): y :: is_defined_var;
+      constraint fzn_array_set_intersect(array1d(x), y) :: defines_var(y);
+    } in y
+  endif;
 
 /** @group stdlib.builtins.set Return the minimum of the set \a s */
 function var $$E: min(var set of $$E: s);
@@ -148,15 +167,15 @@ function var $$E: max(var set of $$E: s);
 predicate set_in(var float: x, set of float: S) = float_set_in(x, S);
 
 /** @group stdlib.builtins.set Return a sorted list of the non-overlapping ranges in \a S */
-function array[int] of $$E: set_to_ranges(set of $$E: S);
+function array [int] of $$E: set_to_ranges(set of $$E: S);
 /** @group stdlib.builtins.set Return a sorted list of the non-overlapping ranges in \a S */
-function array[int] of float: set_to_ranges(set of float: S);
+function array [int] of float: set_to_ranges(set of float: S);
 /** @group stdlib.builtins.set Return a sorted list of the non-overlapping ranges in \a S */
-function array[int] of bool: set_to_ranges(set of bool: S) =
-  if S={false} then [false,false] elseif S={true} then [true,true] else [false,true] endif;
+function array [int] of bool: set_to_ranges(set of bool: S) =
+  if S = {false} then [false, false] elseif S = {true} then [true, true] else [false, true] endif;
 
-function array[int] of $$E: set_to_sparse_inverse(set of $$E: S);
+function array [int] of $$E: set_to_sparse_inverse(set of $$E: S);
 
 /* set2iter will be used to redefine comprehensions over set decision variables
 when it has a definition. */
-function array[int] of var opt $$E: set2iter(var set of $$E: s) ::mzn_internal_representation;
+function array [int] of var opt $$E: set2iter(var set of $$E: s) :: mzn_internal_representation;

@@ -6,7 +6,6 @@ include "fzn_lex_chain_lesseq_int_reif.mzn";
 % non-decreasing.
 %-----------------------------------------------------------------------------%
 
-predicate lex_chain_lesseq_int(array[int, int] of var int: a) =
-    fzn_lex_chain_lesseq_int(a);
+predicate lex_chain_lesseq_int(array [int, int] of var int: a) = fzn_lex_chain_lesseq_int(a);
 
 %-----------------------------------------------------------------------------%

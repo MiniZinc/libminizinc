@@ -34,9 +34,7 @@
 %
 %
 
-predicate gecode_array_bool_lq(array[int] of var bool: x,
-                               array[int] of var bool: y);
+predicate gecode_array_bool_lq(array [int] of var bool: x, array [int] of var bool: y);
 
-predicate fzn_lex_lesseq_bool(array[int] of var bool: x,
-                              array[int] of var bool: y) =
-    gecode_array_bool_lq(x,y);
+predicate fzn_lex_lesseq_bool(array [int] of var bool: x, array [int] of var bool: y) =
+  gecode_array_bool_lq(x, y);

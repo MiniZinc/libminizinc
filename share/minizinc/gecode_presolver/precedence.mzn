@@ -34,8 +34,7 @@
 %
 %
 
-predicate gecode_precede(array[int] of var int: x, array[int] of int: c);
+predicate gecode_precede(array [int] of var int: x, array [int] of int: c);
 
-predicate precedence(array[int] of var int: x) =
-    forall (i in index_set(x)) (x[i] <= length(x)) /\
-    gecode_precede(x, [i|i in 1..length(x)]);
+predicate precedence(array [int] of var int: x) =
+  forall (i in index_set(x)) (x[i] <= length(x)) /\ gecode_precede(x, [i | i in 1..length(x)]);

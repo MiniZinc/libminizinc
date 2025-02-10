@@ -34,11 +34,16 @@
 %
 %
 
-predicate gecode_nooverlap(array[int] of var int: x, array[int] of var int: w,
-    array[int] of var int: y, array[int] of var int: h);
+predicate gecode_nooverlap(
+  array [int] of var int: x,
+  array [int] of var int: w,
+  array [int] of var int: y,
+  array [int] of var int: h,
+);
 
-predicate fzn_diffn(array[int] of var int: x,
-                    array[int] of var int: y,
-                    array[int] of var int: dx,
-                    array[int] of var int: dy) =
-    gecode_nooverlap(x,dx,y,dy);
+predicate fzn_diffn(
+  array [int] of var int: x,
+  array [int] of var int: y,
+  array [int] of var int: dx,
+  array [int] of var int: dy,
+) = gecode_nooverlap(x, dx, y, dy);

@@ -9,8 +9,8 @@ include "fzn_sum_pred_reif.mzn";
   MiniZinc built-in function.
 */
 predicate sum_pred(
-	var $$X: i,
-	array[$$X] of set of $$Y: sets,
-	array[$$Y] of int: cs,
-	var int: s
+  var $$X: i,
+  array [$$X] of set of $$Y: sets,
+  array [$$Y] of int: cs,
+  var int: s,
 ) = fzn_sum_pred(i, sets, cs, s);

@@ -6,9 +6,7 @@ include "fzn_table_bool_reif.mzn";
 % consider each row in t to be a tuple and t as a set of tuples.
 %-----------------------------------------------------------------------------%
 
-predicate table_bool(
-	array[$$E] of var bool: x,
-	array[int, $$E] of bool: t
-) = fzn_table_bool(x, t);
+predicate table_bool(array [$$E] of var bool: x, array [int, $$E] of bool: t) =
+   fzn_table_bool(x, t);
 
 %-----------------------------------------------------------------------------%

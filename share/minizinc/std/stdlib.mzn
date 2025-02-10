@@ -66,4 +66,3 @@ include "output.mzn";
 
 % Undocumented internal implementation used during compilation
 include "stdlib/stdlib_internal.mzn";
-

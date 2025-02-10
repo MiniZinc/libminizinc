@@ -34,9 +34,12 @@
 %
 %
 
-predicate gecode_inverse_offsets(array[int] of var int: f, int: foff,
-                          array[int] of var int: invf, int: invfoff);
+predicate gecode_inverse_offsets(
+  array [int] of var int: f,
+  int: foff,
+  array [int] of var int: invf,
+  int: invfoff,
+);
 
-predicate fzn_inverse(array[int] of var int: f,
-                  array[int] of var int: invf) =
-    gecode_inverse_offsets(f, min(index_set(invf)), invf, min(index_set(f)));
+predicate fzn_inverse(array [int] of var int: f, array [int] of var int: invf) =
+  gecode_inverse_offsets(f, min(index_set(invf)), invf, min(index_set(f)));

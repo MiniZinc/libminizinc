@@ -8,8 +8,9 @@ include "global_cardinality_closed.mzn";
 
   This constraint is deprecated. Use global_cardinality_closed(x, cover, lbound, ubound) instead.
 */
-predicate global_cardinality_low_up_closed(array[$X] of var int: x,
-                                           array[$Y] of int: cover,
-                                           array[$Y] of int: lbound,
-                                           array[$Y] of int: ubound) =
-  global_cardinality_closed(x, cover, lbound, ubound);
+predicate global_cardinality_low_up_closed(
+  array [$X] of var int: x,
+  array [$Y] of int: cover,
+  array [$Y] of int: lbound,
+  array [$Y] of int: ubound,
+) = global_cardinality_closed(x, cover, lbound, ubound);

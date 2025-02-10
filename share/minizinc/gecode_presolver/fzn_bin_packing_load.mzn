@@ -34,12 +34,15 @@
 %
 %
 
-predicate gecode_bin_packing_load(array[int] of var int: l,
-                                  array[int] of var int: bin,
-                                  array[int] of int: w,
-                                  int: minIndex);
+predicate gecode_bin_packing_load(
+  array [int] of var int: l,
+  array [int] of var int: bin,
+  array [int] of int: w,
+  int: minIndex,
+);
 
-predicate fzn_bin_packing_load(array[int] of var int: l,
-                           array[int] of var int: bin,
-                           array[int] of int: w) =
-    gecode_bin_packing_load(l,bin,w,min(index_set(l)));
+predicate fzn_bin_packing_load(
+  array [int] of var int: l,
+  array [int] of var int: bin,
+  array [int] of int: w,
+) = gecode_bin_packing_load(l, bin, w, min(index_set(l)));

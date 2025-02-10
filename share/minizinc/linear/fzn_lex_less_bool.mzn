@@ -5,8 +5,7 @@
 
 include "fzn_lex_less_int.mzn";
 
-predicate fzn_lex_less_bool(array[int] of var bool: x,
-                            array[int] of var bool: y) =
-    fzn_lex_less_int(x, y);
+predicate fzn_lex_less_bool(array [int] of var bool: x, array [int] of var bool: y) =
+  fzn_lex_less_int(x, y);
 
 %-----------------------------------------------------------------------------%

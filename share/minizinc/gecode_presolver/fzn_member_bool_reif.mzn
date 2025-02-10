@@ -34,7 +34,6 @@
 %
 %
 
-predicate gecode_member_bool_reif(array[int] of var bool: x, var bool: y,
-                                  var bool: b);
-predicate fzn_member_bool_reif(array[int] of var bool: x, var bool: y,
-                           var bool: b) = gecode_member_bool_reif(x,y,b);
+predicate gecode_member_bool_reif(array [int] of var bool: x, var bool: y, var bool: b);
+predicate fzn_member_bool_reif(array [int] of var bool: x, var bool: y, var bool: b) =
+  gecode_member_bool_reif(x, y, b);

@@ -15,36 +15,40 @@ include "fzn_mdd_reif.mzn";
   The MDD must be deterministic, i.e., there cannot be two edges
   with the same label leaving the same node.
 */
-predicate mdd(array[int] of var int: x,    % variables constrained by MDD
-              int: N,                      % number of nodes    root is node 1
-              array[int] of int: level,    % level of each node root is level 1, T is level length(x)+1
-              int: E,                      % number of edges
-              array[int] of int: from,     % edge leaving node  1..N
-              array[int] of set of int: label,    % possible values of variable 
-              array[int] of int: to        % edge entering node 0..N where 0 = T node
-             ) =
-        let { set of int: NODE = 1..N;
-              set of int: EDGE = 1..E; 
-              int: L = length(x);
-              array[0..N] of int: levele = array1d(0..N,[L+1]++level); } in
-        assert(index_set(level) = NODE,
-               "mdd: third argument must be of length N = \(N)") /\
-        assert(index_set(from) = EDGE,
-               "mdd: 5th argument must be of length E = \(E)") /\
-        assert(index_set(to) = EDGE,
-               "mdd: 7th argument must be of length E = \(E)") /\
-        forall(e in EDGE)(assert(from[e] in NODE,
-                                 "mdd: from[\(e)] must be in \(NODE)")) /\
-        forall(e in EDGE)(assert(to[e] in 0..N,
-                                 "mdd: to[\(e)] must be in 0..\(N)")) /\
-        forall(e in EDGE)(assert(level[from[e]]+1 = levele[to[e]],
-                                 "mdd level of from[\(e)] = \(level[from[e]])" ++
-                                 "must be 1 less than level of to[\(e)] = \(levele[to[e]])")) /\
-        forall(e1,e2 in EDGE where e1 < e2 /\ from[e1] = from[e2])
-              (assert(label[e1] intersect label[e2] = {},
-                      "mdd: Two edges \(e1) and \(e2) leaving node \(from[e1]) with overlapping labels")) /\
-	fzn_mdd(x, N, level, E, from, label, to);
-                             
+predicate mdd(
+  array [int] of var int: x, % variables constrained by MDD
+  int: N, % number of nodes    root is node 1
+  array [int] of int: level, % level of each node root is level 1, T is level length(x)+1
+  int: E, % number of edges
+  array [int] of int: from, % edge leaving node  1..N
+  array [int] of set of int: label, % possible values of variable
+  array [int] of int: to, % edge entering node 0..N where 0 = T node
+) =
+  let {
+    set of int: NODE = 1..N;
+    set of int: EDGE = 1..E;
+    int: L = length(x);
+    array [0..N] of int: levele = array1d(0..N, [L + 1] ++ level);
+  } in assert(index_set(level) = NODE, "mdd: third argument must be of length N = \(N)") /\
+    assert(index_set(from) = EDGE, "mdd: 5th argument must be of length E = \(E)") /\
+    assert(index_set(to) = EDGE, "mdd: 7th argument must be of length E = \(E)") /\
+    forall (e in EDGE) (assert(from[e] in NODE, "mdd: from[\(e)] must be in \(NODE)")) /\
+    forall (e in EDGE) (assert(to[e] in 0..N, "mdd: to[\(e)] must be in 0..\(N)")) /\
+    forall (e in EDGE) (
+      assert(
+        level[from[e]] + 1 = levele[to[e]],
+        "mdd level of from[\(e)] = \(level[from[e]])" ++
+          "must be 1 less than level of to[\(e)] = \(levele[to[e]])",
+      )
+    ) /\
+    forall (e1, e2 in EDGE where e1 < e2 /\ from[e1] = from[e2]) (
+      assert(
+        label[e1] intersect label[e2] = {},
+        "mdd: Two edges \(e1) and \(e2) leaving node \(from[e1]) with overlapping labels",
+      )
+    ) /\
+    fzn_mdd(x, N, level, E, from, label, to);
+
 % Example consider an MDD over 3 variables
 % 5 nodes and 12 edges
 % level 1 root = 1

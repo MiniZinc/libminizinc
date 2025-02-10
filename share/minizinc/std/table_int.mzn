@@ -6,9 +6,6 @@ include "fzn_table_int_reif.mzn";
 % consider each row in t to be a tuple and t as a set of tuples.
 %-----------------------------------------------------------------------------%
 
-predicate table_int(
-	array[$$E] of var int: x,
-	array[int, $$E] of int: t
-) = fzn_table_int(x, t);
+predicate table_int(array [$$E] of var int: x, array [int, $$E] of int: t) = fzn_table_int(x, t);
 
 %-----------------------------------------------------------------------------%

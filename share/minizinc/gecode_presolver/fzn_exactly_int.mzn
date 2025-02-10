@@ -36,5 +36,4 @@
 
 include "count.mzn";
 
-predicate fzn_exactly_int(int: n, array[int] of var int: x, int: v) =
-    count(x, v, n);
+predicate fzn_exactly_int(int: n, array [int] of var int: x, int: v) = count(x, v, n);

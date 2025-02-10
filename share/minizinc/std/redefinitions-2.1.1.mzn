@@ -2,8 +2,9 @@
 % that can be overridden by solvers.
 
 function var $$E: min(var set of $$E: s) =
-         let { var min(ub(s)) .. max(ub(s)): m =  
-         min([ e + (max(ub(s))+1-e)*(1 - (e in s)) | e in ub(s) ]) } in m;
+  let {
+    var min(ub(s))..max(ub(s)): m = min([e + (max(ub(s)) + 1 - e) * (1 - (e in s)) | e in ub(s)]);
+  } in m;
 
 %% The following can be used as an alternative if the solver supports
 %% a FlatZinc builtin set_min:
@@ -30,8 +31,9 @@ function var $$E: min(var set of $$E: s) =
 %   } in min_t(x);
 
 function var $$E: max(var set of $$E: s) =
-         let { var min(ub(s)) .. max(ub(s)): m =  
-         max([ e + (min(ub(s))-1-e)*(1 - (e in s)) | e in ub(s) ]) } in m;
+  let {
+    var min(ub(s))..max(ub(s)): m = max([e + (min(ub(s)) - 1 - e) * (1 - (e in s)) | e in ub(s)]);
+  } in m;
 
 %% The following can be used as an alternative if the solver supports
 %% a FlatZinc builtin set_max:

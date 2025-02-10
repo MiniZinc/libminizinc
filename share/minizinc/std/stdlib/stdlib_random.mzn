@@ -6,23 +6,23 @@
 */
 
 /** @group stdlib.random Return a sample from the normal distribution defined by \(\a mean, \a std\) */
-function float: normal(float: mean, float: std);  
+function float: normal(float: mean, float: std);
 
 /** @group stdlib.random Return a sample from the normal distribution defined by \(\a mean, \a std\) */
-function float: normal(int: mean, float: std);  
+function float: normal(int: mean, float: std);
 
 /** @group stdlib.random Return a sample from the uniform distribution defined by \(\a lowerbound, \a upperbound\) */
-function float: uniform(float: lowerbound, float: upperbound);  
+function float: uniform(float: lowerbound, float: upperbound);
 
 /** @group stdlib.random Return a sample from the uniform distribution defined by \(\a lowerbound, \a upperbound\) */
-function int: uniform(int: lowerbound, int: upperbound);  
+function int: uniform(int: lowerbound, int: upperbound);
 
 /** @group stdlib.random Return a sample from the uniform distribution defined by \a S */
 function int: uniform(set of int: S) =
   if card(S) == max(S) - min(S) + 1 then
-    uniform(min(S),max(S))
+    uniform(min(S), max(S))
   else
-    [ i | i in S ][uniform(1,card(S))]
+    [i | i in S][uniform(1, card(S))]
   endif;
 
 /** @group stdlib.random Return a sample from the poisson distribution defined by \a mean */
@@ -50,10 +50,10 @@ function float: exponential(int: lambda);
 function float: exponential(float: lambda);
 
 /** @group stdlib.random Return a sample from the lognormal distribution defined by \(\a mean, \a std\) */
-function float: lognormal(float: mean, float: std);  
+function float: lognormal(float: mean, float: std);
 
 /** @group stdlib.random Return a sample from the lognormal distribution defined by \(\a mean, \a std\) */
-function float: lognormal(int: mean, float: std);  
+function float: lognormal(int: mean, float: std);
 
 /** @group stdlib.random Return a sample from the chi-squared distribution defined by the degree of freedom \(\a n\) */
 function float: chisquared(int: n);
@@ -80,11 +80,10 @@ function float: tdistribution(float: n);
 function float: tdistribution(int: n);
 
 /** @group stdlib.random Return a sample from the discrete distribution defined by the array of weights \(\a weights\) that assigns a weight to each integer starting from zero */
-function int: discrete_distribution(array[int] of int: weights);
+function int: discrete_distribution(array [int] of int: weights);
 
 /** @group stdlib.random Return a boolean sample from the Bernoulli distribution defined by probability \(\a p\) */
 function bool: bernoulli(float: p);
 
 /** @group stdlib.random Return a sample from the binomial distribution defined by sample number \a t and probability \a p */
-function int: binomial(int: t, float: p);  
-
+function int: binomial(int: t, float: p);
