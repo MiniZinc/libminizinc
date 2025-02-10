@@ -1,21 +1,24 @@
 /***
 !Test
-check_against: []
-expected:
-- !Result
-  solution: !Solution
-    arr:
-    - null
-    - null
-  status: SATISFIED
-extra_files: []
-markers: []
-name: ''
+solvers: [gecode]
 options:
-  all_solutions: false
-solvers:
-- gecode
-type: solve
+  all_solutions: true
+expected: !Result
+  solution: !SolutionSet
+  - !Solution
+    arr: [null, null]
+  - !Solution
+    arr: [null, false]
+  - !Solution
+    arr: [null, true]
+  - !Solution
+    arr: [false, null]
+  - !Solution
+    arr: [false, false]
+  - !Solution
+    arr: [false, true]
+  - !Solution
+    arr: [true, true]
 ***/
 
 array[1..2] of var opt bool: arr;
