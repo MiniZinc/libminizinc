@@ -113,7 +113,7 @@ function set of $$E: '<..'(set of $$E: s) = enum_next(min(s))..max(s);
 function var set of $$E: '..'(var $$E: a, var $$E: b) :: promise_total =
   let {
     var set of lb(a)..ub(b): s;
-    constraint forall (i in ub(s)) (i in s <-> a <= i /\ i <= b);
+    constraint forall (i in ub(s)) (i in s <-> (a <= i /\ i <= b));
   } in s;
 
 /** @group stdlib.builtins.set Return the cardinality of the set \a x */
