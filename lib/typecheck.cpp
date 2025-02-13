@@ -1386,19 +1386,6 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e0, const Type& funarg_t
 
   if (Expression::isa<ArrayAccess>(e) && Expression::type(e).dim() > 0) {
     auto* aa = Expression::cast<ArrayAccess>(e);
-    if (Expression::isa<Call>(aa->v())) {
-      auto* c = Expression::cast<Call>(aa->v());
-      if (c->id() == env.constants.ids.enum2int || c->id() == env.constants.ids.index2int) {
-        // Remove call to enum2int/index2int
-        assert(c->argCount() == 1);
-        aa->v(c->arg(0));
-      } else if (c->id() == env.constants.ids.to_enum_internal) {
-        // Remove call to to_enum_internal
-        assert(c->argCount() == 2);
-        aa->v(c->arg(1));
-      }
-    }
-
     // Turn ArrayAccess into a slicing operation
     std::vector<Expression*> args;
     args.push_back(aa->v());
@@ -2017,7 +2004,7 @@ public:
             << Expression::type(aa->v()).toString(_env) << "'";
         throw TypeError(_env, Expression::loc(aa->v()), oss.str());
       }
-    } else if (Expression::isa<ArrayAccess>(aa->v())) {
+    } else if (Expression::isa<ArrayAccess>(aa->v()) || Expression::isa<Call>(aa->v())) {
       aa->v(add_coercion(_env, _model, aa->v(), Expression::type(aa->v()))());
     }
     if (Expression::type(aa->v()).dim() != aa->idx().size()) {
@@ -2246,7 +2233,19 @@ public:
         (!indexTuple->isTuple() || indexTuple->type().typeId() != Type::COMP_INDEX)) {
       indexTuple = nullptr;
     }
-    if (indexTuple != nullptr) {
+    if (indexTuple == nullptr) {
+      if (Expression::isa<Call>(c_e)) {
+        // Ensure enum2int and similar get removed if necessary
+        c->e(add_coercion(_env, _model, c_e, Expression::type(c_e))());
+      }
+    } else {
+      for (unsigned int i = 0; i < indexTuple->size(); i++) {
+        auto* elem = (*indexTuple)[i];
+        if (Expression::isa<Call>(elem)) {
+          // Ensure enum2int and similar get removed if necessary
+          indexTuple->set(i, add_coercion(_env, _model, elem, Expression::type(elem))());
+        }
+      }
       c_e = (*indexTuple)[indexTuple->size() - 1];
     }
     Type tt = Expression::type(c_e);

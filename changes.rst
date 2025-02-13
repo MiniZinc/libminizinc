@@ -4,6 +4,13 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
+.. _unreleased:
+
+Bug fixes:
+^^^^^^^^^^
+-  Fix a bug where calls to ``enum2int`` weren't correctly removed in
+   comprehensions, leading to an internal error (:bugref:`879`).
+
 .. _v2.9.0:
 
 `Version 2.9.0 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.9.0>`__
