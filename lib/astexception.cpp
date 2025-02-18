@@ -85,7 +85,7 @@ void LocationException::json(std::ostream& os) const {
   os << "{\"type\": \"error\", \"what\": \"" << Printer::escapeStringLit(std::string(what()))
      << "\", \"location\": " << loc().toJSON() << ", \"message\": \""
      << Printer::escapeStringLit(msg()) << "\"";
-  if (_dumpStack) {
+  if (_dumpStack && !_stack.empty()) {
     os << ", \"stack\": ";
     _stack.json(os);
   }

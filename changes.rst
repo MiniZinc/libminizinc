@@ -6,6 +6,11 @@ https://github.com/MiniZinc/libminizinc/issues.
 
 .. _unreleased:
 
+Changes:
+^^^^^^^^
+-  Don't include empty stack traces in JSON stream errors or warnings
+   (:bugref:`880`, :idebugref:`212`).
+
 Bug fixes:
 ^^^^^^^^^^
 -  Fix a bug where calls to ``enum2int`` weren't correctly removed in

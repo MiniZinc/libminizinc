@@ -32,7 +32,7 @@ void Warning::json(std::ostream& os, bool werror) const {
   if (!_loc.filename().empty()) {
     os << "\"location\": " << _loc.toJSON() << ", ";
   }
-  if (_stack != nullptr) {
+  if (_stack != nullptr && !_stack->empty()) {
     os << "\"stack\": ";
     _stack->json(os);
     os << ", ";
