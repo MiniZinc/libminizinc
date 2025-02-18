@@ -15,6 +15,8 @@ Bug fixes:
 ^^^^^^^^^^
 -  Fix a bug where calls to ``enum2int`` weren't correctly removed in
    comprehensions, leading to an internal error (:bugref:`879`).
+-  Fix false-positive implicit enum coercion warnings when calling ``card`` and
+   some inequality operators.
 
 .. _v2.9.0:
 

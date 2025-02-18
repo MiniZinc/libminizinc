@@ -237,7 +237,7 @@ function var bool: '<'(array [$U] of var bool: x, array [$U] of var bool: y) =
 function var bool: '<'(array [$U] of var float: x, array [$U] of var float: y) =
   matching_index_sets(x, y) /\ lex_less(array1d(x), array1d(y));
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically smaller than array \a y */
-function var bool: '<'(array [$U] of var set of int: x, array [$U] of var set of int: y) =
+function var bool: '<'(array [$U] of var set of $$E: x, array [$U] of var set of $$E: y) =
   matching_index_sets(x, y) /\ lex_less(array1d(x), array1d(y));
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically greater than array \a y */
 function bool: '>'(array [$U] of $T: x, array [$U] of $T: y) =
@@ -252,7 +252,7 @@ function var bool: '>'(array [$U] of var bool: x, array [$U] of var bool: y) =
 function var bool: '>'(array [$U] of var float: x, array [$U] of var float: y) =
   matching_index_sets(x, y) /\ lex_less(array1d(y), array1d(x));
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically greater than array \a y */
-function var bool: '>'(array [$U] of var set of int: x, array [$U] of var set of int: y) =
+function var bool: '>'(array [$U] of var set of $$E: x, array [$U] of var set of $$E: y) =
   matching_index_sets(x, y) /\ lex_less(array1d(y), array1d(x));
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically smaller than or equal to array \a y */
 function bool: '<='(array [$U] of $T: x, array [$U] of $T: y) =
@@ -266,8 +266,8 @@ function var bool: '<='(array [$U] of var bool: x, array [$U] of var bool: y) =
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically smaller than or equal to array \a y */
 function var bool: '<='(array [$U] of var float: x, array [$U] of var float: y) =
   matching_index_sets(x, y) /\ lex_lesseq(array1d(x), array1d(y));
-/** @group stdlib.builtins.compare Return if array \a x is lexicographically smaller than or equal to array \a y */
-function var bool: '<='(array [$U] of var set of int: x, array [$U] of var set of int: y) =
+/** @group stdlib.builtins.compare Return if array \a x is lexicographically $$E than or equal to array \a y */
+function var bool: '<='(array [$U] of var set of $$E: x, array [$U] of var set of $$E: y) =
   matching_index_sets(x, y) /\ lex_lesseq(array1d(x), array1d(y));
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically greater than or equal to array \a y */
 function bool: '>='(array [$U] of $T: x, array [$U] of $T: y) =
@@ -282,7 +282,7 @@ function var bool: '>='(array [$U] of var bool: x, array [$U] of var bool: y) =
 function var bool: '>='(array [$U] of var float: x, array [$U] of var float: y) =
   matching_index_sets(x, y) /\ lex_lesseq(array1d(y), array1d(x));
 /** @group stdlib.builtins.compare Return if array \a x is lexicographically greater than or equal to array \a y */
-function var bool: '>='(array [$U] of var set of int: x, array [$U] of var set of int: y) =
+function var bool: '>='(array [$U] of var set of $$E: x, array [$U] of var set of $$E: y) =
   matching_index_sets(x, y) /\ lex_lesseq(array1d(y), array1d(x));
 
 /** @group stdlib.builtins.compare Return if array \a x is equal to array \a y */

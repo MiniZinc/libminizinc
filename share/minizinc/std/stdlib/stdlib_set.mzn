@@ -119,10 +119,10 @@ function var set of $$E: '..'(var $$E: a, var $$E: b) :: promise_total =
 /** @group stdlib.builtins.set Return the cardinality of the set \a x */
 function int: card(set of $T: x);
 /** @group stdlib.builtins.set Return the cardinality of the set \a x */
-function var int: card(var set of int: x) :: promise_total =
+function var int: card(var set of $$E: x) :: promise_total =
   let {
     var 0..(if has_ub_set(x) then card(ub(x)) else infinity endif): c;
-    constraint set_card(x, c);
+    constraint set_card(enum2int(x), c);
   } in c;
 
 /** @group stdlib.builtins.set Return the union of the sets in array \a x */
