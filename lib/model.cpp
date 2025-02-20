@@ -688,13 +688,15 @@ void Model::sortFn(const EnvI& env) {
   }
 }
 
-void Model::fixFnMap() {
+void Model::fixFnMap(FunctionI* fi) {
   Model* m = this;
   while (m->_parent != nullptr) {
     m = m->_parent;
   }
-  for (auto& it : m->_fnmap) {
-    for (auto& i : it.second) {
+
+  auto& it = *m->_fnmap.find(fi->id());
+  for (auto& i : it.second) {
+    if (i.fi == fi) {
       for (unsigned int j = 0; j < i.t.size(); j++) {
         if (i.t[j].isunknown() || i.t[j].structBT()) {
           i.t[j] = i.fi->param(j)->type();
@@ -1038,6 +1040,61 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
     }
   }
   return matched[0];
+}
+
+std::vector<FunctionI*> Model::potentialOverloads(EnvI& env, Call* c) const {
+  if (c->id() == env.constants.varRedef->id()) {
+    return {env.constants.varRedef};
+  }
+  const Model* m = this;
+  while (m->_parent != nullptr) {
+    m = m->_parent;
+  }
+  auto it = m->_fnmap.find(c->id());
+  if (it == m->_fnmap.end()) {
+    std::ostringstream oss;
+    oss << "no function or predicate with name `";
+    oss << c->id() << "' found";
+
+    ASTString mostSimilar;
+    int minEdits = 3;
+    for (const auto& decls : m->_fnmap) {
+      if (std::abs(static_cast<int>(c->id().size()) - static_cast<int>(decls.first.size())) <= 3) {
+        int edits = c->id().levenshteinDistance(decls.first);
+        if (edits < minEdits && edits < std::min(c->id().size(), decls.first.size())) {
+          minEdits = edits;
+          mostSimilar = decls.first;
+        }
+      }
+    }
+    if (!mostSimilar.empty()) {
+      oss << ", did you mean `" << mostSimilar << "'?";
+    }
+    throw TypeError(env, Expression::loc(c), oss.str());
+  }
+
+  const std::vector<FnEntry>& v = it->second;
+  std::vector<FunctionI*> matched;
+  for (const auto& i : v) {
+    if (i.t.size() == c->argCount()) {
+      matched.push_back(i.fi);
+    }
+  }
+  if (matched.empty()) {
+    std::ostringstream oss;
+    oss << "no function or predicate with this signature found: `";
+    oss << c->id() << "(";
+    for (unsigned int i = 0; i < c->argCount(); i++) {
+      oss << Expression::type(c->arg(i)).toString(env);
+      if (i < c->argCount() - 1) {
+        oss << ",";
+      }
+    }
+    oss << ")'\n";
+    throw TypeError(env, Expression::loc(c), oss.str());
+  }
+
+  return matched;
 }
 
 namespace {

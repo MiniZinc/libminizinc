@@ -1372,6 +1372,8 @@ protected:
       : Call(loc, id, args) {}
 };
 
+class VarDeclI;
+
 /// \brief A variable declaration expression
 class VarDecl : public BoxedExpression {
 protected:
@@ -1412,6 +1414,10 @@ public:
   VarDecl* flat() { return _flat; }
   /// Set flattened version
   void flat(VarDecl* vd);
+  /// Access item
+  VarDeclI* item() { return reinterpret_cast<VarDeclI*>(this); }
+  /// Access item
+  const VarDeclI* item() const { return reinterpret_cast<const VarDeclI*>(this); }
 
   /// Recompute hash value
   void rehash();

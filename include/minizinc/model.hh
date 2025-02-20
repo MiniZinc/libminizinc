@@ -165,8 +165,8 @@ public:
   void sortFn(const EnvI& env);
   /// Check that registered functions do not clash wrt overloading
   void checkFnOverloading(EnvI& env);
-  /// Fix function table after type checking
-  void fixFnMap();
+  /// Fix function table for fi during type checking
+  void fixFnMap(FunctionI* fi);
   /// Check whether all functions in function map can be flattened or evaluated
   void checkFnValid(EnvI& env, std::vector<TypeError>& errors);
   /// Return the function declaration for the reficiation for a function with identifier \a id that
@@ -189,6 +189,9 @@ public:
                      bool strictEnums) const;
   /// Return function declaration matching call \a c
   FunctionI* matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotFound = false) const;
+  /// Return function declarations that are potential overloads for call \a c (same identifier and
+  /// same number of arguments)
+  std::vector<FunctionI*> potentialOverloads(EnvI& env, Call* c) const;
   /// Return function declaration for reverse mapper for type \a t
   FunctionI* matchRevMap(EnvI& env, const Type& t) const;
   /// Check if function with this name exists

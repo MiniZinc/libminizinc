@@ -4066,32 +4066,183 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     std::stable_sort(m->begin(), m->end(), _sbp);
   }
 
-  {
-    Typer<false> ty(env.envi(), m, typeErrors, isFlatZinc);
-    BottomUpIterator<Typer<false>> bottomUpTyper(ty);
-    for (auto& declKA : ts.decls) {
-      auto* decl = Expression::cast<VarDecl>(declKA());
-      decl->payload(0);
-      if (decl->toplevel()) {
-        bottomUpTyper.run(decl->ti());
-        if (decl->isTypeAlias()) {
-          bottomUpTyper.run(decl->e());
+  // The first phase of type checking needs to check and infer types
+  // for all "left-hand sides" (LHS). This includes type-insts in variable
+  // declarations, as well as the signatures of all functions
+  // (type-insts of their parameters and the return type-inst).
+
+  // Since all those type-insts may refer to other declarations
+  // (both to other variables, and to functions), this needs to be done
+  // in topological order.
+
+  // The algorithm has a stack of items (vardecls and functions) that
+  // need to be LHS-typed. For each item, we first push all items they
+  // refer to, and process those. Then we can type the item itself.
+
+  class PushUndefinedDeclsStackItem {
+  private:
+    Item* _item;
+    bool _marked;
+
+  public:
+    PushUndefinedDeclsStackItem(Item* item) : _item(item), _marked(false) {}
+    Item* item(void) { return _item; }
+    const Item* item(void) const { return _item; }
+    bool marked(void) const { return _marked; }
+    void mark(void) {
+      assert(!_marked);
+      _marked = true;
+    }
+  };
+
+  /// This visitor finds declarations that have undefined type and pushes them onto the stack
+  class PushUndefinedDeclsV : public EVisitor {
+  private:
+    EnvI& _env;
+    Model* _m;
+    std::vector<PushUndefinedDeclsStackItem>& _stack;
+    std::unordered_set<Item*>& _seen_items;
+
+  public:
+    PushUndefinedDeclsV(EnvI& env, Model* m, std::vector<PushUndefinedDeclsStackItem>& stack,
+                        std::unordered_set<Item*>& seen_items)
+        : _env(env), _m(m), _stack(stack), _seen_items(seen_items) {}
+
+    void pushItemAndCheckCycle(Item* item) {
+      if (_seen_items.find(item) != _seen_items.end()) {
+        std::ostringstream ss;
+        ss << "circular definition of `";
+        if (auto* fi = Item::dynamicCast<FunctionI>(item)) {
+          ss << fi->id();
+        } else {
+          auto* vd = Item::cast<VarDeclI>(item)->e();
+          ss << vd->id()->str();
         }
-        ty.vVarDecl(decl);
+        ss << "'";
+        throw TypeError(_env, item->loc(), ss.str());
+      }
+      _stack.push_back(item);
+    }
+
+    void vId(Id* ident) {
+      auto* decl = ident->decl();
+      if (decl->type().isunknown() &&
+          (!decl->isTypeAlias() || Expression::type(decl->e()).isunknown())) {
+        pushItemAndCheckCycle(decl->item());
+      }
+    }
+    void vCall(Call* call) {
+      auto* decl = call->decl();
+      if (decl == nullptr) {
+        auto potentialOverloads = _m->potentialOverloads(_env, call);
+        for (auto* decl : potentialOverloads) {
+          if (decl->ti()->type().isunknown()) {
+            pushItemAndCheckCycle(decl);
+          } else {
+            for (unsigned int i = 0; i < decl->paramCount(); i++) {
+              if (decl->param(i)->type().isunknown()) {
+                pushItemAndCheckCycle(decl);
+                break;
+              }
+            }
+          }
+        }
+      } else {
+        if (decl->ti()->type().isunknown()) {
+          pushItemAndCheckCycle(decl);
+        } else {
+          for (unsigned int i = 0; i < decl->paramCount(); i++) {
+            if (decl->param(i)->type().isunknown()) {
+              pushItemAndCheckCycle(decl);
+              break;
+            }
+          }
+        }
+      }
+    }
+  };
+
+  class TypeUndefinedDecls {
+  private:
+    EnvI& _env;
+    std::vector<PushUndefinedDeclsStackItem> stack;
+    std::unordered_set<Item*> seen_items;
+    Model* _m;
+    Typer<false> typer;
+    BottomUpIterator<Typer<false>> bottomUpTyper;
+    PushUndefinedDeclsV pushUndefinedDeclsV;
+    BottomUpIterator<PushUndefinedDeclsV> pushUndefinedDecls;
+
+  public:
+    TypeUndefinedDecls(EnvI& env, Model* m, std::vector<TypeError>& typeErrors)
+        : _env(env),
+          _m(m),
+          typer(env, m, typeErrors, false),
+          bottomUpTyper(typer),
+          pushUndefinedDeclsV(_env, _m, stack, seen_items),
+          pushUndefinedDecls(pushUndefinedDeclsV) {}
+
+    void run(Item* rootItem) {
+      if (seen_items.find(rootItem) == seen_items.end()) {
+        stack.push_back(rootItem);
+        while (!stack.empty()) {
+          auto& top = stack.back();
+          if (top.marked()) {
+            // All dependencies have been processed, now type this item
+            if (FunctionI* fi = Item::dynamicCast<FunctionI>(top.item())) {
+              bottomUpTyper.run(fi->ti());
+              for (unsigned int j = 0; j < fi->paramCount(); j++) {
+                bottomUpTyper.run(fi->param(j));
+              }
+              if (fi->capturedAnnotationsVar() != nullptr) {
+                bottomUpTyper.run(fi->capturedAnnotationsVar());
+              }
+
+              _m->fixFnMap(fi);
+
+            } else {
+              auto* decl = Item::cast<VarDeclI>(top.item())->e();
+              bottomUpTyper.run(decl->ti());
+              if (decl->isTypeAlias()) {
+                bottomUpTyper.run(decl->e());
+              }
+              typer.vVarDecl(decl);
+            }
+            stack.pop_back();
+          } else {
+            top.mark();
+            seen_items.insert(top.item());
+            if (FunctionI* fi = Item::dynamicCast<FunctionI>(top.item())) {
+              pushUndefinedDecls.run(fi->ti());
+              for (unsigned int j = 0; j < fi->paramCount(); j++) {
+                pushUndefinedDecls.run(fi->param(j));
+              }
+              if (fi->capturedAnnotationsVar() != nullptr) {
+                pushUndefinedDecls.run(fi->capturedAnnotationsVar());
+              }
+            } else {
+              auto* vd = Item::cast<VarDeclI>(top.item())->e();
+              pushUndefinedDecls.run(vd->ti());
+            }
+          }
+        }
+      }
+    }
+  };
+
+  {
+    TypeUndefinedDecls typeUndefinedDecls(env.envi(), m, typeErrors);
+    for (auto& declKA : ts.decls) {
+      auto* decl_item = Expression::cast<VarDecl>(declKA())->item();
+      decl_item->e()->payload(0);
+      if (decl_item->e()->toplevel()) {
+        typeUndefinedDecls.run(decl_item);
       }
     }
     for (auto& functionItem : functionItems) {
-      bottomUpTyper.run(functionItem->ti());
-      for (unsigned int j = 0; j < functionItem->paramCount(); j++) {
-        bottomUpTyper.run(functionItem->param(j));
-      }
-      if (functionItem->capturedAnnotationsVar() != nullptr) {
-        bottomUpTyper.run(functionItem->capturedAnnotationsVar());
-      }
+      typeUndefinedDecls.run(functionItem);
     }
   }
-
-  m->fixFnMap();
 
   Typer<true> ty(env.envi(), m, typeErrors, isFlatZinc);
   {
