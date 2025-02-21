@@ -163,6 +163,8 @@ public:
   bool registerFn(EnvI& env, FunctionI* fi, bool keepSorted = false, bool throwIfDuplicate = true);
   /// Sort functions by type
   void sortFn(const EnvI& env);
+  /// Sort functions with same name as \a fi by type
+  void sortFn(const EnvI& env, FunctionI* fi);
   /// Check that registered functions do not clash wrt overloading
   void checkFnOverloading(EnvI& env);
   /// Fix function table for fi during type checking

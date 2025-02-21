@@ -674,6 +674,19 @@ void Model::mergeStdLib(EnvI& env, Model* m) const {
   m->sortFn(env);
 }
 
+void Model::sortFn(const EnvI& env, FunctionI* fi) {
+  Model* m = this;
+  while (m->_parent != nullptr) {
+    m = m->_parent;
+  }
+  auto& it = *m->_fnmap.find(fi->id());
+  // Sort all functions by type
+  std::sort(it.second.begin(), it.second.end(),
+            [&env](const Model::FnEntry& e1, const Model::FnEntry& e2) {
+              return Model::FnEntry::compare(env, e1, e2);
+            });
+}
+
 void Model::sortFn(const EnvI& env) {
   Model* m = this;
   while (m->_parent != nullptr) {
