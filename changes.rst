@@ -17,6 +17,12 @@ Bug fixes:
    comprehensions, leading to an internal error (:bugref:`879`).
 -  Fix false-positive implicit enum coercion warnings when calling ``card`` and
    some inequality operators.
+-  Recursively type check type-insts of variable declarations and function
+   items.
+   
+   -  This enables enum constructors and other functions to be used on the
+      left hand side of declarations, and allows overloading of functions
+      with identifiers in type-insts to be correctly resolved.
 
 .. _v2.9.0:
 
