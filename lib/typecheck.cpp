@@ -3963,11 +3963,14 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
   ASTStringMap<std::vector<FunctionI*>> overload_map;
   for (auto* functionItem : functionItems) {
     bool fullyKnown = true;
-    if (functionItem->ti()->type().isunknown()) {
+    if (functionItem->ti()->type().isunknown() ||
+        functionItem->ti()->type().structBT() && functionItem->ti()->type().typeId() == 0) {
       fullyKnown = false;
     } else {
       for (unsigned int i = 0; i < functionItem->paramCount(); i++) {
-        if (functionItem->param(i)->type().isunknown()) {
+        if (functionItem->param(i)->type().isunknown() ||
+            functionItem->param(i)->type().structBT() &&
+                functionItem->param(i)->type().typeId() == 0) {
           fullyKnown = false;
           break;
         }
@@ -4152,7 +4155,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     void vId(Id* ident) {
       auto* decl = ident->decl();
       if (decl->type().isunknown() &&
-          (!decl->isTypeAlias() || Expression::type(decl->e()).isunknown())) {
+          (!decl->isTypeAlias() || Expression::type(decl->e()).isunknown()) &&
+          (!decl->type().structBT() || decl->type().typeId() == 0)) {
         pushItemAndCheckCycle(decl->item());
       }
     }
@@ -4169,11 +4173,13 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           }
         }
         for (auto* decl : potentialOverloads) {
-          if (decl->ti()->type().isunknown()) {
+          if (decl->ti()->type().isunknown() ||
+              (decl->ti()->type().structBT() && decl->ti()->type().typeId() == 0)) {
             pushItemAndCheckCycle(decl);
           } else {
             for (unsigned int i = 0; i < decl->paramCount(); i++) {
-              if (decl->param(i)->type().isunknown()) {
+              if (decl->param(i)->type().isunknown() ||
+                  (decl->param(i)->type().structBT() && decl->param(i)->type().typeId() == 0)) {
                 pushItemAndCheckCycle(decl);
                 break;
               }
@@ -4181,11 +4187,13 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           }
         }
       } else {
-        if (decl->ti()->type().isunknown()) {
+        if (decl->ti()->type().isunknown() ||
+            (decl->ti()->type().structBT() && decl->ti()->type().typeId() == 0)) {
           pushItemAndCheckCycle(decl);
         } else {
           for (unsigned int i = 0; i < decl->paramCount(); i++) {
-            if (decl->param(i)->type().isunknown()) {
+            if (decl->param(i)->type().isunknown() ||
+                (decl->param(i)->type().structBT() && decl->param(i)->type().typeId() == 0)) {
               pushItemAndCheckCycle(decl);
               break;
             }
