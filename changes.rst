@@ -24,6 +24,9 @@ Bug fixes:
       left hand side of declarations, and allows overloading of functions
       with identifiers in type-insts to be correctly resolved.
 
+-  Fix type error in flexible job shop documentation example caused by change
+   of signature of ``cumulative`` to enum-safe version in 2.9.0.
+
 .. _v2.9.0:
 
 `Version 2.9.0 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.9.0>`__
