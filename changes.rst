@@ -10,6 +10,8 @@ Changes:
 ^^^^^^^^
 -  Don't include empty stack traces in JSON stream errors or warnings
    (:bugref:`880`, :idebugref:`212`).
+-  Wait 1 second between sending ``SIGTERM`` and ``SIGKILL`` signals to solvers
+   to allow more time for cleanup (:bugref:`882`).
 
 Bug fixes:
 ^^^^^^^^^^

@@ -246,9 +246,9 @@ public:
       }
       // At this point the child should be stopped/stopping
       if (!doneStderr || !doneStdout) {
-        if (!_interruptCondition.wait_for(lck, std::chrono::milliseconds(200),
+        if (!_interruptCondition.wait_for(lck, std::chrono::seconds(1),
                                           [&] { return doneStderr && doneStdout; })) {
-          // Force terminate the child after 200ms
+          // Force terminate the child after 1s
           TerminateJobObject(hJobObject, 0);
         };
       }
@@ -410,8 +410,8 @@ public:
               // Fallback to killing the child if killing the process group fails
               kill(childPID, signal);
             }
-            timeout.tv_sec = 0;
-            timeout.tv_usec = 200000;
+            timeout.tv_sec = 1;
+            timeout.tv_usec = 0;
             timeout_orig = timeout;
             starttime = currentTime;
             // Upgrade signal for next attempt
