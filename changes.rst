@@ -28,10 +28,10 @@ Bug fixes:
 
 -  Fix type error in flexible job shop documentation example caused by change
    of signature of ``cumulative`` to enum-safe version in 2.9.0.
-
+-  Accept enum types for the two argument ``regular`` constraint to avoid
+   false-positive warnings about implicit enum to int coercion.
 -  Disallow multiple comma-separated arguments in string interpolations,
    which previously caused unexpected behaviour.
-
 
 .. _v2.9.0:
 
