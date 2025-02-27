@@ -4,7 +4,12 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
-.. _unreleased:
+.. _v2.9.1:
+
+`Version 2.9.1 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.9.1>`__
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(released 27 February 2025)
 
 Changes:
 ^^^^^^^^
@@ -33,6 +38,11 @@ Bug fixes:
 -  Disallow multiple comma-separated arguments in string interpolations,
    which previously caused unexpected behaviour.
 -  Fix incorrect output of non-improving solutions when using HiGHS.
+
+Changes in the IDE:
+^^^^^^^^^^^^^^^^^^^
+-  Use scroll buttons when the tab bar overflows to ensure the side panels can
+   be resized (:idebugref:`213`).
 
 .. _v2.9.0:
 
