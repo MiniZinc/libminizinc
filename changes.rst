@@ -27,6 +27,10 @@ Bug fixes:
 -  Fix type error in flexible job shop documentation example caused by change
    of signature of ``cumulative`` to enum-safe version in 2.9.0.
 
+-  Disallow multiple comma-separated arguments in string interpolations,
+   which previously caused unexpected behaviour.
+
+
 .. _v2.9.0:
 
 `Version 2.9.0 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.9.0>`__

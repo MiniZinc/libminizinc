@@ -1543,14 +1543,18 @@ string_expr:
       }
 
 string_quote_rest:
-      expr_list_head MZN_STRING_QUOTE_END
-      { if ($1) $$=new BinOp(@$, Call::a(@$, ASTString("format"), *$1), BOT_PLUSPLUS, new StringLit(@$,$2));
+      expr MZN_STRING_QUOTE_END
+      { if ($1) {
+          $$=new BinOp(@$, Call::a(@$, ASTString("format"), {$1}), BOT_PLUSPLUS, new StringLit(@$,$2));
+        }
         free($2);
         delete $1;
       }
-    | expr_list_head MZN_STRING_QUOTE_MID string_quote_rest
-      { if ($1) $$=new BinOp(@$, Call::a(@$, ASTString("format"), *$1), BOT_PLUSPLUS,
-                             new BinOp(@$, new StringLit(@$,$2), BOT_PLUSPLUS, $3));
+    | expr MZN_STRING_QUOTE_MID string_quote_rest
+      { if ($1) {
+          $$=new BinOp(@$, Call::a(@$, ASTString("format"), {$1}), BOT_PLUSPLUS,
+                       new BinOp(@$, new StringLit(@$,$2), BOT_PLUSPLUS, $3));
+        }
         free($2);
         delete $1;
       }

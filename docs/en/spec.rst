@@ -1655,7 +1655,8 @@ concatenation.  For example:
 
 A string expression can contain an arbitrary MiniZinc expression, which will
 be converted to a string similar to the builtin :mzn:`show` function and
-inserted into the string.
+inserted into the string. This is called *string interpolation*. You need
+to use the :mzn:`\(e)` syntax to interpolate an expression `e` into a string.
 
 For example:
 
