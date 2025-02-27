@@ -32,6 +32,7 @@ Bug fixes:
    false-positive warnings about implicit enum to int coercion.
 -  Disallow multiple comma-separated arguments in string interpolations,
    which previously caused unexpected behaviour.
+-  Fix incorrect output of non-improving solutions when using HiGHS.
 
 .. _v2.9.0:
 
