@@ -3034,7 +3034,12 @@ public:
         }
         Type t_before = Expression::type(c_e);
         Type t = fi->argtype(_env, args, i).elemType(_env);
+        // Call to enum2int would have been removed when processing the comprehension,
+        // so don't warn here
+        bool warnImplicitEnum2Int = _env.warnImplicitEnum2Int;
+        _env.warnImplicitEnum2Int = false;
         c_e = add_coercion(_env, _model, c_e, t)();
+        _env.warnImplicitEnum2Int = warnImplicitEnum2Int;
         Type t_after = Expression::type(c_e);
         if (t_before != t_after) {
           if (indexTuple != nullptr) {

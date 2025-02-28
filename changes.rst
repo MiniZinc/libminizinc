@@ -24,6 +24,8 @@ Bug fixes:
    comprehensions, leading to an internal error (:bugref:`879`).
 -  Fix false-positive implicit enum coercion warnings when calling ``card`` and
    some inequality operators.
+-  Fix false-positive implicit enum coercion warnings for calls with
+   comprehension arguments (:bugref:`887`).
 -  Recursively type check type-insts of variable declarations and function
    items.
    
