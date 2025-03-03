@@ -11,7 +11,10 @@
 
 #pragma once
 
+#include <minizinc/warning.hh>
+
 #include <iterator>
+#include <memory>
 
 namespace MiniZinc {
 
@@ -22,6 +25,7 @@ private:
   bool _json;
   bool _first = true;
   std::ios _ios;
+  std::vector<std::unique_ptr<Warning>> _warnings;
 
   template <class T>
   void addInternal(const std::string& stat, const T& value) {
@@ -42,7 +46,7 @@ public:
   ~StatisticsStream();
 
   void precision(std::streamsize prec, bool fixed = false);
-  void add(const std::string& stat, const Expression& value);
+  void add(const std::string& stat, const Expression* value);
   void add(const std::string& stat, int value);
   void add(const std::string& stat, unsigned int value);
   void add(const std::string& stat, long value);

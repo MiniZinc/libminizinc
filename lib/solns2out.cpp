@@ -270,7 +270,7 @@ void Solns2Out::parseStatistics(const std::string& stats, std::ostream& os) {
   StatisticsStream ss(os, opt.flagEncapsulateJSON);
   for (unsigned int i = 0; i < sm->size(); i++) {
     if (auto* ai = (*sm)[i]->dynamicCast<AssignI>()) {
-      ss.add(ai->id().c_str(), *(ai->e()));
+      ss.add(ai->id().c_str(), ai->e());
     }
   }
 }

@@ -4,6 +4,13 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
+.. _unreleased:
+
+Bug fixes:
+^^^^^^^^^^
+-  Prevent output and emit warning for invalid statistics in JSON streaming
+   mode.
+
 .. _v2.9.1:
 
 `Version 2.9.1 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.9.1>`__
