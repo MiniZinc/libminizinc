@@ -10,6 +10,7 @@ Bug fixes:
 ^^^^^^^^^^
 -  Prevent output and emit warning for invalid statistics in JSON streaming
    mode.
+-  Fix crash in string interpolation (:bugref:`891`).
 
 .. _v2.9.1:
 
