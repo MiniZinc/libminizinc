@@ -8,9 +8,11 @@ https://github.com/MiniZinc/libminizinc/issues.
 
 Bug fixes:
 ^^^^^^^^^^
--  Prevent output and emit warning for invalid statistics in JSON streaming
+-  Prevent output of and emit warning for invalid statistics in JSON streaming
    mode.
 -  Fix crash in string interpolation (:bugref:`891`).
+-  Fix ``row`` and ``col`` functions to use enumerated types instead of
+   ``int`` (:bugref:`888`).
 
 .. _v2.9.1:
 

@@ -302,10 +302,10 @@ annotation array_check_form;
 function array [$T] of any $V: arrayXd(array [$T] of any $X: x, array [$U] of any $V: y);
 
 /** @group stdlib.builtins.array Return row \a r of array \a x */
-function array [$$E] of any $T: row(array [int, $$E] of any $T: x, int: r) = x[r, ..];
+function array [$$E] of any $T: row(array [$$F, $$E] of any $T: x, $$F: r) = x[r, ..];
 
 /** @group stdlib.builtins.array Return column \a c of array \a x */
-function array [$$E] of any $T: col(array [$$E, int] of any $T: x, int: c) = x[.., c];
+function array [$$E] of any $T: col(array [$$E, $$F] of any $T: x, $$F: c) = x[.., c];
 
 /** @group stdlib.builtins.array Return slice of array \a x specified by sets \a s, coerced to new 1d array with index set \a dims1 */
 function array [$$F] of any $T: slice_1d(
@@ -360,7 +360,7 @@ function array [$$F, $$G, $$H, $$I, $$J, $$K] of any $T: slice_6d(
 );
 
 /** @group stdlib.builtins.array Test if \a i is in the index set of \a x */
-test has_index(int: i, array [int] of any $T: x) = i in index_set(x);
+test has_index($$E: i, array [$$E] of any $T: x) = i in index_set(x);
 /** @group stdlib.builtins.array Test if \a e is an element of array \a x */
 test has_element($T: e, array [int] of $T: x) = exists (i in index_set(x)) (x[i] = e);
 /** @group stdlib.builtins.array Test if \a e is an element of array \a x */
