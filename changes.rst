@@ -6,6 +6,13 @@ https://github.com/MiniZinc/libminizinc/issues.
 
 .. _unreleased:
 
+.. _v2.9.2:
+
+`Version 2.9.2 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.9.2>`__
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(released 6 March 2025)
+
 Bug fixes:
 ^^^^^^^^^^
 -  Prevent output of and emit warning for invalid statistics in JSON streaming
@@ -38,7 +45,7 @@ Bug fixes:
    comprehension arguments (:bugref:`887`).
 -  Recursively type check type-insts of variable declarations and function
    items.
-   
+
    -  This enables enum constructors and other functions to be used on the
       left hand side of declarations, and allows overloading of functions
       with identifiers in type-insts to be correctly resolved.
