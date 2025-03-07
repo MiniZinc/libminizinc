@@ -2959,30 +2959,33 @@ public:
       fi = _model->matchFn(_env, call, true, true);
     }
 
-    if (!_isFlatZinc && fi != nullptr && fi->e() == nullptr && fi->paramCount() >= 1 &&
-        fi->param(0)->type().dim() != 0 &&
-        (fi->id() == _env.constants.ann.seq_search || fi->id() == _env.constants.ann.int_search ||
-         fi->id() == _env.constants.ann.bool_search ||
-         fi->id() == _env.constants.ann.float_search || fi->id() == _env.constants.ann.set_search ||
-         fi->id() == _env.constants.ann.warm_start ||
-         fi->id() == _env.constants.ann.warm_start_array)) {
-      // Need to make sure first argument is 1d and 1-based
-      GCLock lock;
-      auto* array = call->arg(0);
-      auto* array1d =
-          Call::a(Expression::loc(array).introduce(), _env.constants.ids.array1d, {array});
-      array1d->decl(_model->matchFn(_env, array1d, true, true));
-      Expression::type(array1d, Expression::type(array));
-      call->arg(0, array1d);
-      if ((fi->id() == _env.constants.ann.warm_start ||
-           fi->id() == _env.constants.ann.warm_start_array) &&
-          fi->paramCount() == 2 && fi->param(1)->type().dim() != 0) {
-        auto* array = call->arg(1);
-        auto* array1d =
-            Call::a(Expression::loc(array).introduce(), _env.constants.ids.array1d, {array});
-        array1d->decl(_model->matchFn(_env, array1d, true, true));
-        Expression::type(array1d, Expression::type(array));
-        call->arg(1, array1d);
+    // Rewrite multi-dimensional search into internal version to flatten arrays
+    if (!_isFlatZinc && fi != nullptr && fi->e() == nullptr && fi->paramCount() >= 1) {
+      Type p1 = fi->param(0)->type();
+      if (p1.dim() != 0) {
+        ASTString cid = call->id();
+        ASTString nid;
+        if (cid == _env.constants.ann.bool_search) {
+          nid = _env.constants.ann.bool_search_internal;
+        } else if (cid == _env.constants.ann.float_search) {
+          nid = _env.constants.ann.float_search_internal;
+        } else if (cid == _env.constants.ann.int_search) {
+          nid = _env.constants.ann.int_search_internal;
+        } else if (cid == _env.constants.ann.seq_search) {
+          nid = _env.constants.ann.seq_search_internal;
+        } else if (cid == _env.constants.ann.set_search) {
+          nid = _env.constants.ann.set_search_internal;
+        } else if (cid == _env.constants.ann.warm_start) {
+          nid = _env.constants.ann.warm_start_internal;
+        } else if (cid == _env.constants.ann.warm_start_array) {
+          nid = _env.constants.ann.warm_start_array_internal;
+        }
+
+        if (!nid.empty() &&
+            !Expression::ann(call).contains(_env.constants.ann.mzn_internal_representation)) {
+          call->id(nid);
+          fi = _model->matchFn(_env, call, true, true);
+        }
       }
     }
 

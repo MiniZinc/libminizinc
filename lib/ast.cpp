@@ -2429,12 +2429,19 @@ Constants::Constants() {
   ann.promise_commutative = addId("promise_commutative");
   ann.promise_commutative->type(Type::ann());
   ann.seq_search = addString("seq_search");
+  ann.seq_search_internal = addString("mzn_internal_seq_search");
   ann.int_search = addString("int_search");
+  ann.int_search_internal = addString("mzn_internal_int_search");
   ann.bool_search = addString("bool_search");
+  ann.bool_search_internal = addString("mzn_internal_bool_search");
   ann.float_search = addString("float_search");
+  ann.float_search_internal = addString("mzn_internal_float_search");
   ann.set_search = addString("set_search");
+  ann.set_search_internal = addString("mzn_internal_set_search");
   ann.warm_start = addString("warm_start");
+  ann.warm_start_internal = addString("mzn_internal_warm_start");
   ann.warm_start_array = addString("warm_start_array");
+  ann.warm_start_array_internal = addString("mzn_internal_warm_start_array");
   ann.computed_domain = addId("computed_domain");
   ann.computed_domain->type(Type::ann());
 

@@ -2986,3 +2986,54 @@ function set of int: set_min_to_max(set of int: x) =
 
 /* Used to generate fresh values */
 function int: mzn_increment_counter(string: key);
+
+/* Rewriting functions to resolve multi-dimensional search annotations */
+
+function ann: mzn_internal_bool_search(array [$X] of var bool: x, ann: select, ann: choice, ann: explore) =
+  bool_search(array1d(x), select, choice, explore) :: mzn_internal_representation;
+
+function ann: mzn_internal_float_search(
+  array [$X] of var float: x,
+  float: prec,
+  ann: select,
+  ann: choice,
+  ann: explore,
+) = float_search(array1d(x), prec, select, choice, explore) :: mzn_internal_representation;
+
+function ann: mzn_internal_int_search(array [$X] of var $$E: x, ann: select, ann: choice, ann: explore) =
+  int_search(array1d(enum2int(x)), select, choice, explore) :: mzn_internal_representation;
+
+function ann: mzn_internal_set_search(array [$X] of var set of int: x, ann: select, ann: choice, ann: explore) =
+  set_search(array1d(x), select, choice, explore) :: mzn_internal_representation;
+
+function ann: mzn_internal_warm_start(array [$X] of var bool: x, array [$X] of bool: v) = 
+  assert(
+    index_sets_agree(x, v),
+    "warm_start: x and v must have identical index sets",
+    warm_start(array1d(x), array1d(v)) :: mzn_internal_representation
+  );
+
+function ann: mzn_internal_warm_start(array [$X] of var $$E: x, array [$X] of $$E: v) = 
+  assert(
+    index_sets_agree(x, v),
+    "warm_start: x and v must have identical index sets",
+    warm_start(array1d(enum2int(x)), array1d(enum2int(v))) :: mzn_internal_representation
+  );
+
+function ann: mzn_internal_warm_start(array [$X] of var float: x, array [$X] of float: v) = 
+  assert(
+    index_sets_agree(x, v),
+    "warm_start: x and v must have identical index sets",
+    warm_start(array1d(x), array1d(v)) :: mzn_internal_representation
+  );
+
+function ann: mzn_internal_warm_start(array [$X] of var set of $$E: x, array [$X] of set of $$E: v) = 
+  assert(
+    index_sets_agree(x, v),
+    "warm_start: x and v must have identical index sets",
+    warm_start(array1d(enum2int(x)), array1d(enum2int(v))) :: mzn_internal_representation
+  );
+
+annotation mzn_internal_seq_search(array [int] of ann: s) = seq_search(array1d(s)) :: mzn_internal_representation;
+
+annotation mzn_internal_warm_start_array(array [int] of ann: w) = warm_start_array(array1d(w)) :: mzn_internal_representation;

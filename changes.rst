@@ -6,6 +6,10 @@ https://github.com/MiniZinc/libminizinc/issues.
 
 .. _unreleased:
 
+Bug fixes:
+^^^^^^^^^^
+-  Fix the rewriting of the multidimensional search annotations to ensure correct coercion of arguments (:bugref:`897`).
+
 .. _v2.9.2:
 
 `Version 2.9.2 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.9.2>`__

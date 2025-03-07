@@ -185,8 +185,7 @@ annotation int_search(array [int] of var int: x, ann: select, ann: choice, ann: 
   \a explore. If \a x is a multi-dimensional array, it is coerced to one-dimensional
   in row-major order (as with the array1d function).
 */
-function ann: int_search(array [$X] of var $$E: x, ann: select, ann: choice, ann: explore) =
-  int_search(array1d(enum2int(x)), select, choice, explore);
+function ann: int_search(array [$X] of var $$E: x, ann: select, ann: choice, ann: explore);
 
 /** @group stdlib.annotations.search Specify search on variables \a x, with variable selection
   strategy \a select, and value choice strategy \a choice.
@@ -226,8 +225,7 @@ annotation bool_search(array [int] of var bool: x, ann: select, ann: choice, ann
   If \a x is a multi-dimensional array, it is coerced to one-dimensional
   in row-major order (as with the array1d function).
 */
-function ann: bool_search(array [$X] of var bool: x, ann: select, ann: choice, ann: explore) =
-  bool_search(array1d(x), select, choice, explore);
+function ann: bool_search(array [$X] of var bool: x, ann: select, ann: choice, ann: explore);
 
 /** @group stdlib.annotations.search Specify search on variables \a x, with variable selection
   strategy \a select, and value choice strategy \a choice.
@@ -276,7 +274,7 @@ function ann: float_search(
   ann: select,
   ann: choice,
   ann: explore,
-) = float_search(array1d(x), prec, select, choice, explore);
+);
 
 /** @group stdlib.annotations.search Specify search on variables \a x, 
   with precision \a prec, variable selection
@@ -327,8 +325,7 @@ annotation set_search(array [int] of var set of int: x, ann: select, ann: choice
   If \a x is a multi-dimensional array, it is coerced to one-dimensional
   in row-major order (as with the array1d function).
 */
-function ann: set_search(array [$X] of var set of int: x, ann: select, ann: choice, ann: explore) =
-  set_search(array1d(x), select, choice, explore);
+function ann: set_search(array [$X] of var set of int: x, ann: select, ann: choice, ann: explore);
 
 /** @group stdlib.annotations.search Specify search on variables \a x, with variable selection
   strategy \a select, and value choice strategy \a choice.
@@ -445,11 +442,19 @@ annotation restart_none;
 annotation warm_start_array(array [int] of ann: w);
 
 /** @group stdlib.annotations.warmstart Specify warm start values \a v for an array of booleans \a x */
+function ann: warm_start(array [$X] of var bool: x, array [$X] of bool: v);
+/** @group stdlib.annotations.warmstart Specify warm start values \a v for an array of booleans \a x */
 function ann: warm_start(array [int] of var bool: x, array [int] of bool: v);
 /** @group stdlib.annotations.warmstart Specify warm start values \a v for an array of integers \a x */
-function ann: warm_start(array [int] of var int: x, array [int] of int: v);
+function ann: warm_start(array [$X] of var $$E: x, array [$X] of $$E: v);
+/** @group stdlib.annotations.warmstart Specify warm start values \a v for an array of integers \a x */
+function ann: warm_start(array [int] of var $$E: x, array [int] of $$E: v);
+/** @group stdlib.annotations.warmstart Specify warm start values \a v for an array of floats \a x */
+function ann: warm_start(array [$X] of var float: x, array [$X] of float: v);
 /** @group stdlib.annotations.warmstart Specify warm start values \a v for an array of floats \a x */
 function ann: warm_start(array [int] of var float: x, array [int] of float: v);
+/** @group stdlib.annotations.warmstart Specify warm start values \a v for an array of sets \a x */
+function ann: warm_start(array [$X] of var set of $$E: x, array [$X] of set of $$E: v);
 /** @group stdlib.annotations.warmstart Specify warm start values \a v for an array of sets \a x */
 function ann: warm_start(array [int] of var set of int: x, array [int] of set of int: v);
 
