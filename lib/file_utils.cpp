@@ -21,6 +21,7 @@
 #include <cstring>
 #include <sstream>
 #include <string>
+#include <cstdint>
 
 #include <minizinc/_thirdparty/b64/decode.h>
 #include <minizinc/_thirdparty/b64/encode.h>
