@@ -1,10 +1,10 @@
 #include <minizinc/eval_par.hh>
 #include <minizinc/feature_extraction.hh>
+#include <minizinc/flatten_internal.hh>
 #include <minizinc/utils.hh>
 #include <algorithm>
 #include <iostream>
 #include <numeric>
-#include "eval_par.cpp"
 
 namespace MiniZinc {
 
