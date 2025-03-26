@@ -18,6 +18,7 @@
 #include <chrono>
 #include <cstring>
 #include <ctime>
+#include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <limits>

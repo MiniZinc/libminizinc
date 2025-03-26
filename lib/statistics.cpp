@@ -17,7 +17,7 @@
 #include <limits>
 #include <map>
 #include <unordered_set>
-#include <format>
+#include <sstream>
 
 namespace MiniZinc {
 
@@ -55,18 +55,25 @@ void StatisticsStream::precision(std::streamsize prec, bool fixed) {
 void StatisticsStream::add(const std::string& stat, const Expression& value) {
   addInternal(stat, value);
 }
+
 void StatisticsStream::add(const std::string& stat, int value) { addInternal(stat, value); }
+
 void StatisticsStream::add(const std::string& stat, unsigned int value) {
   addInternal(stat, value);
 }
+
 void StatisticsStream::add(const std::string& stat, long value) { addInternal(stat, value); }
+
 void StatisticsStream::add(const std::string& stat, unsigned long value) {
   addInternal(stat, value);
 }
+
 void StatisticsStream::add(const std::string& stat, long long value) { addInternal(stat, value); }
+
 void StatisticsStream::add(const std::string& stat, unsigned long long value) {
   addInternal(stat, value);
 }
+
 void StatisticsStream::add(const std::string& stat, double value) {
   if (std::isfinite(value)) {
     addInternal(stat, value);
@@ -79,9 +86,11 @@ void StatisticsStream::add(const std::string& stat, double value) {
     }
   }
 }
+
 void StatisticsStream::add(const std::string& stat, const std::string& value) {
   addInternal(stat, "\"" + Printer::escapeStringLit(value) + "\"");
 }
+
 void StatisticsStream::addRaw(const std::string& stat, const std::string& value) {
   addInternal(stat, value);
 }

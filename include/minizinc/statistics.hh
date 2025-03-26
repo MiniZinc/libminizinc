@@ -29,7 +29,7 @@ private:
 
   template <typename T>
   void serializeValue(std::ostream& os, const T& value) {
-    if constexpr (std::is_arithmetic_v<T>) {
+    if constexpr (std::is_arithmetic<T>::value) {
       os << value;
     } else {
       os << "\"" << value << "\"";
