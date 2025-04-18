@@ -1160,6 +1160,7 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0,
     return SolverInstance::NONE;
   }
   if (!ifMzn2Fzn()) {
+    addSolverInterface();
     s2out.evalStatus(getFltStatus());
   }
   return getFltStatus();
