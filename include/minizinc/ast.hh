@@ -316,6 +316,8 @@ public:
   static ExpressionId eid(const Expression* e);
 
   static const Location& loc(const Expression* e);
+  static const Location& locDefault(const Expression* e0, const Expression* e1);
+  static const Location& locDefault(const Expression* e0, const Location& ldef);
   static void loc(Expression* e, const Location& l) {
     if (!Expression::isUnboxedVal(e)) {
       e->_loc = l;
@@ -537,6 +539,12 @@ inline Expression::ExpressionId Expression::eid(const Expression* e) {
 }
 inline const Location& Expression::loc(const Expression* e) {
   return Expression::isUnboxedVal(e) ? Location::nonalloc : e->_loc;
+}
+inline const Location& Expression::locDefault(const Expression* e0, const Expression* e1) {
+  return Expression::isUnboxedVal(e0) ? loc(e1) : e0->_loc;
+}
+inline const Location& Expression::locDefault(const Expression* e0, const Location& ldef) {
+  return Expression::isUnboxedVal(e0) ? ldef : e0->_loc;
 }
 inline const Type& Expression::type(const Expression* e) {
   return Expression::isUnboxedInt(e)        ? Type::unboxedint

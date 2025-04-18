@@ -9,6 +9,7 @@ https://github.com/MiniZinc/libminizinc/issues.
 Bug fixes:
 ^^^^^^^^^^
 -  Fix the rewriting of the multidimensional search annotations to ensure correct coercion of arguments (:bugref:`897`).
+-  Output location of some errors where the problematic expression previously did not have a location (:bugref:`899`).
 
 .. _v2.9.2:
 
