@@ -3162,7 +3162,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
 
         KeepAlive combinedDom = compute_combined_domain(env, vd->ti(), e);
         if (combinedDom() != nullptr) {
-          set_computed_domain(env, vd, combinedDom(), true);
+          set_computed_domain(env, vd, combinedDom(), vd->ti()->domain() == nullptr);
         }
 
         if (env.hasReverseMapper(vd->id()) && Expression::type(e).dim() == 0 &&

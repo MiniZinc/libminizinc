@@ -10,6 +10,7 @@ Bug fixes:
 ^^^^^^^^^^
 -  Fix the rewriting of the multidimensional search annotations to ensure correct coercion of arguments (:bugref:`897`).
 -  Output location of some errors where the problematic expression previously did not have a location (:bugref:`899`).
+-  Fix domain computation to avoid variables being moved to the output model when they are constrained (:bugref:`911`).
 
 .. _v2.9.2:
 
