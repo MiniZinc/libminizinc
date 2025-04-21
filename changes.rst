@@ -12,6 +12,7 @@ Bug fixes:
 -  Output location of some errors where the problematic expression previously did not have a location (:bugref:`899`).
 -  Fix domain computation to avoid variables being moved to the output model when they are constrained (:bugref:`911`).
 -  Fix output processing to also respect the ``-o`` flag when flattening already detects unsatisfiability (:bugref:`908`).
+-  Report an error when solving a FlatZinc file that does not contain a solve item (:bugref:`907`).
 
 .. _v2.9.2:
 
