@@ -487,6 +487,7 @@ Env* Flattener::multiPassFlatten(const vector<unique_ptr<Pass> >& passes) {
   Env& e = *getEnv();
 
   Env* pre_env = &e;
+  pre_env->envi().fopts = _fopts;
   size_t npasses = passes.size();
   pre_env->envi().multiPassInfo.finalPassNumber = static_cast<unsigned int>(npasses);
   Timer starttime;

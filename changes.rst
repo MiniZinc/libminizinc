@@ -13,6 +13,7 @@ Bug fixes:
 -  Fix domain computation to avoid variables being moved to the output model when they are constrained (:bugref:`911`).
 -  Fix output processing to also respect the ``-o`` flag when flattening already detects unsatisfiability (:bugref:`908`).
 -  Report an error when solving a FlatZinc file that does not contain a solve item (:bugref:`907`).
+-  Pass command line options to the compiler phases earlier to avoid problems with e.g. the ``--disable-warnings`` flag (:bugref:`893`).
 
 .. _v2.9.2:
 
