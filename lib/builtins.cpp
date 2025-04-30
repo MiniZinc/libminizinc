@@ -2333,95 +2333,6 @@ std::string b_show_index_sets(EnvI& env, Call* c) {
   return oss.str();
 }
 
-std::string b_show_enum_type(EnvI& env, Expression* e, Type t, bool dzn, bool json) {
-  Id* ti_id = env.getEnum(t.typeId())->e()->id();
-  GCLock lock;
-  std::vector<Expression*> args(3);
-  args[0] = e;
-  if (Expression::type(e).dim() > 1) {
-    Call* array1d = Call::a(Location().introduce(), env.constants.ids.array1d, {e});
-    Type array1dt = Type::arrType(env, Type::partop(1), t);
-    array1d->type(array1dt);
-    array1d->decl(env.model->matchFn(env, array1d, false, true));
-    args[0] = array1d;
-  }
-  args[1] = env.constants.boollit(dzn);
-  args[2] = env.constants.boollit(json);
-  ASTString enumName(create_enum_to_string_name(ti_id, "_toString_"));
-  auto* call = Call::a(Location().introduce(), enumName, args);
-  auto* fi = env.model->matchFn(env, call, false, true);
-  call->decl(fi);
-  Expression::type(call, Type::parstring());
-  return eval_string(env, call);
-}
-
-std::string show_with_type(EnvI& env, Expression* exp, Type t, bool showDzn) {
-  GCLock lock;
-  Expression* e = follow_id_to_decl(exp);
-  if (auto* vd = Expression::dynamicCast<VarDecl>(e)) {
-    if ((vd->e() != nullptr) && !Expression::isa<Call>(vd->e())) {
-      e = vd->e();
-    } else {
-      e = vd->id();
-    }
-  }
-  if (Expression::type(e).isPar()) {
-    e = eval_par(env, e);
-  }
-  if (Expression::type(e).dim() > 0 || Expression::type(e).structBT()) {
-    e = eval_array_lit(env, e);
-  }
-  if (Expression::type(e).isPar() && Expression::type(e).dim() == 0 && t.bt() == Type::BT_INT &&
-      t.typeId() != 0) {
-    return b_show_enum_type(env, e, t, showDzn, false);
-  }
-  std::ostringstream oss;
-  if (auto* al = Expression::dynamicCast<ArrayLit>(e)) {
-    auto al_t = t;
-    if (al->isTuple() && env.getTransparentType(t) != t) {
-      // Unwrap nested array type
-      al = eval_array_lit(env, (*al)[0]);
-      al_t = env.getTransparentType(t);
-    }
-    oss << (al->isTuple() ? "(" : "[");
-    if (al->type().isrecord()) {
-      RecordType* rt = env.getRecordType(al->type());
-      assert(al->size() == rt->size());
-      for (unsigned int i = 0; i < al->size(); i++) {
-        oss << Printer::quoteId(rt->fieldName(i)) << ": "
-            << show_with_type(env, (*al)[i], (*rt)[i], showDzn);
-        if (i < al->size() - 1) {
-          oss << ", ";
-        }
-      }
-    } else if (al->type().istuple()) {
-      TupleType* tt = env.getTupleType(al->type());
-      for (unsigned int i = 0; i < al->size(); i++) {
-        oss << show_with_type(env, (*al)[i], (*tt)[i], showDzn);
-        if (i < al->size() - 1) {
-          oss << ", ";
-        }
-      }
-      if (al->size() == 1) {
-        oss << ",";
-      }
-    } else {
-      // Use element type from al_t since evaluating e may have removed the enum types
-      auto elemType = al_t.elemType(env);
-      for (unsigned int i = 0; i < al->size(); i++) {
-        oss << show_with_type(env, (*al)[i], elemType, showDzn);
-        if (i < al->size() - 1) {
-          oss << ", ";
-        }
-      }
-    }
-    oss << (al->isTuple() ? ")" : "]");
-  } else {
-    Printer p(oss, 0, false, &env);
-    p.print(e);
-  }
-  return oss.str();
-}
 std::string show(EnvI& env, Expression* exp) {
   return show_with_type(env, exp, Expression::type(exp), false);
 }
@@ -2438,7 +2349,7 @@ std::string b_show_dzn_id(EnvI& env, Call* call) {
 
 std::string b_show_json_basic(EnvI& env, Expression* e, Type t) {
   if (t.bt() == Type::BT_INT && t.typeId() != 0 && t.isPar()) {
-    return b_show_enum_type(env, e, t, false, true);
+    return show_enum_type(env, e, t, false, true);
   }
   std::ostringstream oss;
   Printer p(oss, 0, false, &env);

@@ -25,7 +25,7 @@ class Expression;
 class StackDump {
 public:
   StackDump(EnvI& env);
-  StackDump() {}
+  StackDump() : _env(nullptr) {}
   void print(std::ostream& os) const;
   void json(std::ostream& os) const;
   bool empty() const { return _stack.empty(); }
@@ -37,6 +37,7 @@ public:
   }
 
 private:
+  EnvI* _env;
   std::vector<std::pair<Expression*, bool>> _stack;
 };
 
