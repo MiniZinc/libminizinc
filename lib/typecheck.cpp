@@ -3568,7 +3568,8 @@ void create_par_versions(Env& env, Model* m, BottomUpIterator<Typer<true>>& bott
         return isPar;
       }
       void vId(const Id* ident) {
-        if (ident->decl() != nullptr && ident->type().isvar() && ident->decl()->toplevel()) {
+        if (ident->decl() != nullptr && (ident->type().isvar() || ident->type().cv()) &&
+            ident->decl()->toplevel()) {
           isPar = false;
         }
       }

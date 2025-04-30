@@ -8,12 +8,20 @@ https://github.com/MiniZinc/libminizinc/issues.
 
 Bug fixes:
 ^^^^^^^^^^
--  Fix the rewriting of the multidimensional search annotations to ensure correct coercion of arguments (:bugref:`897`).
--  Output location of some errors where the problematic expression previously did not have a location (:bugref:`899`).
--  Fix domain computation to avoid variables being moved to the output model when they are constrained (:bugref:`911`).
--  Fix output processing to also respect the ``-o`` flag when flattening already detects unsatisfiability (:bugref:`908`).
--  Report an error when solving a FlatZinc file that does not contain a solve item (:bugref:`907`).
--  Pass command line options to the compiler phases earlier to avoid problems with e.g. the ``--disable-warnings`` flag (:bugref:`893`).
+-  Fix the rewriting of the multidimensional search annotations to ensure
+   correct coercion of arguments (:bugref:`897`).
+-  Output location of some errors where the problematic expression previously
+   did not have a location (:bugref:`899`).
+-  Fix domain computation to avoid variables being moved to the output model
+   when they are constrained (:bugref:`911`).
+-  Fix output processing to also respect the ``-o`` flag when flattening already
+   detects unsatisfiability (:bugref:`908`).
+-  Report an error when solving a FlatZinc file that does not contain a solve
+   item (:bugref:`907`).
+-  Pass command line options to the compiler phases earlier to avoid problems
+   with e.g. the ``--disable-warnings`` flag (:bugref:`893`).
+-  Fix incorrect generation of par versions of functions referencing top-level
+   tuples/records containing var fields (:bugref:`919`).
 
 .. _v2.9.2:
 
