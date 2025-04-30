@@ -24,6 +24,8 @@ Bug fixes:
    tuples/records containing var fields (:bugref:`919`).
 -  Fix problem where using an iterator of variable tuple or record types could
    result in a segfault (:bugref:`901`).
+-  Fix a problem where an operator such as ``<=`` on an optional type would
+   sometimes lead to an internal compiler error (:bugref:`898`).
 
 .. _v2.9.2:
 
