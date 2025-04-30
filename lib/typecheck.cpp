@@ -2399,6 +2399,10 @@ public:
           KeepAlive c_in = c->in(i) != nullptr
                                ? add_coercion(_env, _model, c->in(i), c, Expression::type(c->in(i)))
                                : nullptr;
+          auto* decl_ti = c->decl(i, j)->ti();
+          if (decl_ti->type().structBT() && decl_ti->domain() == nullptr) {
+            decl_ti->setStructDomain(_env, decl_ti->type());
+          }
           if (!whereMap[c->decl(i, j)].empty()) {
             // need a generator for all the decls up to this point
             Expression* whereExpr = whereMap[c->decl(i, j)][0];

@@ -22,6 +22,8 @@ Bug fixes:
    with e.g. the ``--disable-warnings`` flag (:bugref:`893`).
 -  Fix incorrect generation of par versions of functions referencing top-level
    tuples/records containing var fields (:bugref:`919`).
+-  Fix problem where using an iterator of variable tuple or record types could
+   result in a segfault (:bugref:`901`).
 
 .. _v2.9.2:
 
