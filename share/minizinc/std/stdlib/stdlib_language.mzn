@@ -24,6 +24,18 @@ constraint
       mzn_version_to_string(mzn_compiler_version()),
   );
 
+/** @group stdlib.language If defined, this can be used to check that the MiniZinc compiler is not newer than the given version. */
+opt int: mzn_max_version_required;
+
+constraint
+  assert(
+    absent(mzn_max_version_required) \/ deopt(mzn_max_version_required) >= mzn_compiler_version(),
+    "This model only works with MiniZinc up to version " ++
+      mzn_version_to_string(deopt(mzn_max_version_required)) ++
+      " but you are running version " ++
+      mzn_version_to_string(mzn_compiler_version()),
+  );
+
 /***
  @groupdef stdlib.options Compiler options
 */

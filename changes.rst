@@ -6,6 +6,11 @@ https://github.com/MiniZinc/libminizinc/issues.
 
 .. _unreleased:
 
+Changes:
+^^^^^^^^
+-  Add ``mzn_max_version_required`` to enable models to speficy the maximum
+   version of MiniZinc required to run the model (:bugref:`872`).
+
 Bug fixes:
 ^^^^^^^^^^
 -  Fix the rewriting of the multidimensional search annotations to ensure
