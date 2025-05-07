@@ -34,6 +34,8 @@ Bug fixes:
 -  Print enum values in stack traces (:bugref:`912`).
 -  Fix a bug where incompatible overloads could be used when dispatching to more
    specific versions of functions (:bugref:`905`).
+-  Fix internal error when constraining the domain of ``var opt bool``
+   variables.
 
 .. _v2.9.2:
 

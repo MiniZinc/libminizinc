@@ -43,6 +43,9 @@ test var_dom(float: x, float: l, float: u) = x >= l /\ x <= u;
 
 test var_dom(float: x, set of float: d) = x in d;
 
+predicate var_dom(var opt bool: x, bool: d) = absent(x) \/ (deopt(x) <-> d);
+test var_dom(opt bool: x, bool: d) = absent(x) \/ (deopt(x) <-> d);
+
 predicate var_dom(array [$T] of var set of int: x, set of int: d) =
   let {
     array [int] of var set of int: xx = array1d(x);
