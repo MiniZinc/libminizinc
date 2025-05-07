@@ -972,7 +972,8 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
         try {
           auto* cr_d = env.model->matchFn(env, cr_c, false);
           if (cr_d != nullptr &&
-              !cr_d->ann().contains(env.constants.ann.mzn_internal_representation)) {
+              !cr_d->ann().contains(env.constants.ann.mzn_internal_representation) &&
+              cr_d->rtype(env, e_args, cr_c, false).isSubtypeOf(env, c->type(), false)) {
             decl = cr_d;
           }
         } catch (TypeError&) { /* NOLINT(bugprone-empty-catch) */

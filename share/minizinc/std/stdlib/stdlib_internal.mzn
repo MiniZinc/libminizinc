@@ -186,6 +186,36 @@ function var float: objective_deopt_(var opt float: x, bool: direction) =
 
 predicate mzn_alias_eq(var set of int: x, var set of int: y) = set_eq(x, y);
 
+% Par versions of element to allow for dynamic dispatch
+function any $T: element(int: idx, array [int] of any $T: x) = x[idx];
+function any $T: element(int: idx1, int: idx2, array [int, int] of any $T: x) = x[idx1, idx2];
+function any $T: element(int: idx1, int: idx2, int: idx3, array [int, int, int] of any $T: x) =
+      x[idx1, idx2, idx3];
+function any $T: element(
+      int: idx1,
+      int: idx2,
+      int: idx3,
+      int: idx4,
+      array [int, int, int, int] of any $T: x,
+) = x[idx1, idx2, idx3, idx4];
+function any $T: element(
+      int: idx1,
+      int: idx2,
+      int: idx3,
+      int: idx4,
+      int: idx5,
+      array [int, int, int, int, int] of any $T: x,
+) = x[idx1, idx2, idx3, idx4, idx5];
+function any $T: element(
+      int: idx1,
+      int: idx2,
+      int: idx3,
+      int: idx4,
+      int: idx5,
+      int: idx6,
+      array [int, int, int, int, int, int] of any $T: x,
+) = x[idx1, idx2, idx3, idx4, idx5, idx6];
+
 %-----------------------------------------------------------------------------%
 %
 % Element constraint implementations

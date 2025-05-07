@@ -1559,6 +1559,8 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
           if (its_par.bt() == Type::BT_TOP || its_par.bt() == Type::BT_BOT) {
             its_par.bt(tiit_par.bt());
             its_par.typeId(tiit_par.typeId());
+            it->second.first.bt(tiit.bt());
+            it->second.first.typeId(tiit.typeId());
           }
           if (env.isSubtype(tiit_par, its_par, strictEnum)) {
             if (it->second.first.bt() == Type::BT_TOP) {

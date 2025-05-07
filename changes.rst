@@ -32,6 +32,8 @@ Bug fixes:
 -  Fix a problem where an operator such as ``<=`` on an optional type would
    sometimes lead to an internal compiler error (:bugref:`898`).
 -  Print enum values in stack traces (:bugref:`912`).
+-  Fix a bug where incompatible overloads could be used when dispatching to more
+   specific versions of functions (:bugref:`905`).
 
 .. _v2.9.2:
 
