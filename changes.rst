@@ -40,6 +40,8 @@ Bug fixes:
 -  Update documentation to indicate that the  ``float_ceil``, ``float_floor``,
    and ``float_round`` FlatZinc builtins need to be placed in
    ``redefinitions-2.7.1.mzn`` (:bugref:`914`).
+-  Fix handling of basic standard flags when running ``.fzn`` files
+   (:bugref:`920`).
 
 .. _v2.9.2:
 

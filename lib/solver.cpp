@@ -1132,7 +1132,7 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0,
   if (SolverInstance::UNKNOWN == getFltStatus()) {
     if (!ifMzn2Fzn()) {  // only then
       // Special handling of basic stdFlags
-      auto* solve_item = _flt.getEnv()->model()->solveItem();
+      auto* solve_item = _flt.getEnv()->flat()->solveItem();
       bool is_sat_problem =
           solve_item != nullptr ? solve_item->st() == SolveI::SolveType::ST_SAT : true;
       if (is_sat_problem && _flagAllSatisfaction) {
