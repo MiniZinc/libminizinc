@@ -272,13 +272,6 @@ predicate float_times(var float: a, var float: b, var float: c);
 /** @group flatzinc.float Constrains \a y=\a x */
 predicate int2float(var int: x, var float: y);
 
-/** @group flatzinc.float Constrains \( \a y = \lceil{ \a x} \rceil \) */
-predicate float_ceil(var float: x, var int: y);
-/** @group flatzinc.float Constrains \( \a y = \lfloor{ \a x} \rfloor \) */
-predicate float_floor(var float: x, var int: y);
-/** @group flatzinc.float Constrains that \a y is the nearest integer to \a x */
-predicate float_round(var float: x, var int: y);
-
 % Array constraints
 
 /** @group flatzinc.bool Constrains \( \a r \leftrightarrow \bigwedge_i \a as[i]\) */
@@ -489,6 +482,23 @@ predicate array_var_set_element2d_nonshifted(
   array [int, int] of var set of int: x,
   var set of int: c,
 );
+
+/***
+  @groupdef flatzinc.twosevenone FlatZinc builtins added in MiniZinc 2.7.1.
+
+  These functions and predicates define built-in operations of the MiniZinc language
+  that have been added in MiniZinc 2.7.1. Solvers that support these natively need
+  to include a file called redefinitions-2.7.1.mzn in their solver library that
+  redefines these predicates as builtins.
+
+*/
+
+/** @group flatzinc.twosevenone Constrains \( \a y = \lceil{ \a x} \rceil \) */
+predicate float_ceil(var float: x, var int: y);
+/** @group flatzinc.twosevenone Constrains \( \a y = \lfloor{ \a x} \rfloor \) */
+predicate float_floor(var float: x, var int: y);
+/** @group flatzinc.twosevenone Constrains that \a y is the nearest integer to \a x */
+predicate float_round(var float: x, var int: y);
 
 /***
   @groupdef flatzinc.deprecated Deprecated FlatZinc builtins

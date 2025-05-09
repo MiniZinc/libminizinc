@@ -37,6 +37,9 @@ Bug fixes:
 -  Fix internal error when constraining the domain of ``var opt bool``
    variables.
 -  Fix record merge operator when evaluated via a field access (:bugref:`892`).
+-  Update documentation to indicate that the  ``float_ceil``, ``float_floor``,
+   and ``float_round`` FlatZinc builtins need to be placed in
+   ``redefinitions-2.7.1.mzn`` (:bugref:`914`).
 
 .. _v2.9.2:
 
