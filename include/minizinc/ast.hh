@@ -27,6 +27,54 @@
 
 namespace MiniZinc {
 
+namespace find_pointer_type {
+
+// Functions to implement static selection of suitable integer type
+// that can hold pointer values.
+
+template <bool IsSuitable, typename T, typename... Rest>
+struct find_pointer_type;
+
+template <typename T, typename... Rest>
+struct find_pointer_type<true, T, Rest...> {
+  using type = T;
+};
+
+template <typename T, typename Next, typename... Rest>
+struct find_pointer_type<false, T, Next, Rest...> {
+  using type = typename find_pointer_type<(sizeof(Next) >= sizeof(void*)), Next, Rest...>::type;
+};
+
+template <typename T>
+struct find_pointer_type<false, T> {};
+}  // namespace find_pointer_type
+
+#ifdef UINTPTR_MAX
+// Use uintptr_t if available
+typedef uintptr_t mzn_uintptr_t;
+#else
+// Otherwise, try size_t, unsigned long, unsigned long long (in that order)
+typedef mzn_uintptr_t =
+    typename find_pointer_type::find_pointer_type<(sizeof(size_t) >= sizeof(void*)), size_t,
+                                                  unsigned long, unsigned long long>::type;
+#endif
+
+#ifdef INTPTR_MAX
+// Use intptr_t if available
+typedef intptr_t mzn_intptr_t;
+#else
+// Otherwise, try ptrdiff_t, long, long long (in that order)
+typedef mzn_intptr_t =
+    typename find_pointer_type::find_pointer_type<(sizeof(ptrdiff_t) >= sizeof(void*)), ptrdiff_t,
+                                                  long, long long>::type;
+#endif
+
+static_assert(sizeof(mzn_uintptr_t) >= sizeof(void*),
+              "No suitable unsigned integer type found to hold pointer values");
+
+static_assert(sizeof(mzn_intptr_t) >= sizeof(void*),
+              "No suitable signed integer type found to hold pointer values");
+
 class IntLit;
 class FloatLit;
 class SetLit;
@@ -142,12 +190,12 @@ protected:
 
   union LI {
     LocVec* lv;
-    ptrdiff_t t;
+    mzn_uintptr_t t;
   } _locInfo;
 
   LocVec* lv() const {
     LI li = _locInfo;
-    li.t &= ~static_cast<ptrdiff_t>(1);
+    li.t &= ~static_cast<mzn_uintptr_t>(1);
     return li.lv;
   }
 
@@ -344,9 +392,9 @@ protected:
 #ifdef __EMSCRIPTEN__
   __attribute__((noinline))
 #endif
-  static ptrdiff_t
+  static mzn_uintptr_t
   asPtrDiff(const Expression* e) {
-    return reinterpret_cast<ptrdiff_t>(e);
+    return reinterpret_cast<mzn_uintptr_t>(e);
   }
 
   /// Constructor
@@ -357,15 +405,15 @@ public:
   static IntVal unboxedIntToIntVal(const Expression* e) {
     assert(Expression::isUnboxedInt(e));
     if (sizeof(double) <= sizeof(void*)) {
-      unsigned long long int i = Expression::asPtrDiff(e) & ~static_cast<ptrdiff_t>(7);
-      bool pos = ((Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(4)) == 0);
+      unsigned long long int i = Expression::asPtrDiff(e) & ~static_cast<mzn_uintptr_t>(7);
+      bool pos = ((Expression::asPtrDiff(e) & static_cast<mzn_uintptr_t>(4)) == 0);
       if (pos) {
         return static_cast<long long int>(i >> 3);
       }
       return -(static_cast<long long int>(i >> 3));
     }
-    unsigned long long int i = Expression::asPtrDiff(e) & ~static_cast<ptrdiff_t>(3);
-    bool pos = ((Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(2)) == 0);
+    unsigned long long int i = Expression::asPtrDiff(e) & ~static_cast<mzn_uintptr_t>(3);
+    bool pos = ((Expression::asPtrDiff(e) & static_cast<mzn_uintptr_t>(2)) == 0);
     if (pos) {
       return static_cast<long long int>(i >> 2);
     }
@@ -380,9 +428,9 @@ public:
         return nullptr;
       }
       long long int j = i < 0 ? -i : i;
-      ptrdiff_t ubi_p = (static_cast<ptrdiff_t>(j) << 3) | static_cast<ptrdiff_t>(2);
+      mzn_uintptr_t ubi_p = (static_cast<mzn_uintptr_t>(j) << 3) | static_cast<mzn_uintptr_t>(2);
       if (i < 0) {
-        ubi_p = ubi_p | static_cast<ptrdiff_t>(4);
+        ubi_p = ubi_p | static_cast<mzn_uintptr_t>(4);
       }
       return reinterpret_cast<IntLit*>(ubi_p);
     }
@@ -392,9 +440,9 @@ public:
       return nullptr;
     }
     long long int j = i < 0 ? -i : i;
-    ptrdiff_t ubi_p = (static_cast<ptrdiff_t>(j) << 2) | static_cast<ptrdiff_t>(1);
+    mzn_uintptr_t ubi_p = (static_cast<mzn_uintptr_t>(j) << 2) | static_cast<mzn_uintptr_t>(1);
     if (i < 0) {
-      ubi_p = ubi_p | static_cast<ptrdiff_t>(2);
+      ubi_p = ubi_p | static_cast<mzn_uintptr_t>(2);
     }
     return reinterpret_cast<IntLit*>(ubi_p);
   }
@@ -449,26 +497,28 @@ public:
       return false;
     }
     if (sizeof(double) <= sizeof(void*)) {
-      return (Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(7)) == 4;
+      return (Expression::asPtrDiff(e) & static_cast<mzn_uintptr_t>(7)) == 4;
     }
-    return (Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(3)) == 2;
+    return (Expression::asPtrDiff(e) & static_cast<mzn_uintptr_t>(3)) == 2;
   }
 
   static Expression* tag(Expression* e) {
     assert(!Expression::isUnboxedVal(e));
     if (sizeof(double) <= sizeof(void*)) {
-      return reinterpret_cast<Expression*>(Expression::asPtrDiff(e) | static_cast<ptrdiff_t>(4));
+      return reinterpret_cast<Expression*>(Expression::asPtrDiff(e) |
+                                           static_cast<mzn_uintptr_t>(4));
     }
-    return reinterpret_cast<Expression*>(Expression::asPtrDiff(e) | static_cast<ptrdiff_t>(2));
+    return reinterpret_cast<Expression*>(Expression::asPtrDiff(e) | static_cast<mzn_uintptr_t>(2));
   }
   static Expression* untag(Expression* e) {
     if (Expression::isUnboxedVal(e)) {
       return e;
     }
     if (sizeof(double) <= sizeof(void*)) {
-      return reinterpret_cast<Expression*>(Expression::asPtrDiff(e) & ~static_cast<ptrdiff_t>(4));
+      return reinterpret_cast<Expression*>(Expression::asPtrDiff(e) &
+                                           ~static_cast<mzn_uintptr_t>(4));
     }
-    return reinterpret_cast<Expression*>(Expression::asPtrDiff(e) & ~static_cast<ptrdiff_t>(2));
+    return reinterpret_cast<Expression*>(Expression::asPtrDiff(e) & ~static_cast<mzn_uintptr_t>(2));
   }
 
   /// Test if expression is of type \a T
@@ -516,21 +566,21 @@ public:
 inline bool Expression::isUnboxedVal(const Expression* e) {
   if (sizeof(double) <= sizeof(void*)) {
     // bit 1 or bit 0 is set
-    return (Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(3)) != 0;
+    return (Expression::asPtrDiff(e) & static_cast<mzn_uintptr_t>(3)) != 0;
   }  // bit 0 is set
-  return (Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(1)) != 0;
+  return (Expression::asPtrDiff(e) & static_cast<mzn_uintptr_t>(1)) != 0;
 }
 inline bool Expression::isUnboxedInt(const Expression* e) {
   if (sizeof(double) <= sizeof(void*)) {
     // bit 1 is set, bit 0 is not set
-    return (Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(3)) == 2;
+    return (Expression::asPtrDiff(e) & static_cast<mzn_uintptr_t>(3)) == 2;
   }  // bit 0 is set
-  return (Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(1)) == 1;
+  return (Expression::asPtrDiff(e) & static_cast<mzn_uintptr_t>(1)) == 1;
 }
 inline bool Expression::isUnboxedFloatVal(const Expression* e) {
   // bit 0 is set (and doubles fit inside pointers)
   return (sizeof(double) <= sizeof(void*)) &&
-         (Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(1)) == 1;
+         (Expression::asPtrDiff(e) & static_cast<mzn_uintptr_t>(1)) == 1;
 }
 inline Expression::ExpressionId Expression::eid(const Expression* e) {
   return Expression::isUnboxedInt(e)        ? E_INTLIT
@@ -748,7 +798,7 @@ public:
   /// Access identifier
   ASTString v() const;
   inline bool hasStr() const {
-    return (reinterpret_cast<ptrdiff_t>(_vOrIdn.idn) & static_cast<ptrdiff_t>(1)) == 0;
+    return (reinterpret_cast<mzn_uintptr_t>(_vOrIdn.idn) & static_cast<mzn_uintptr_t>(1)) == 0;
   }
   /// Set identifier
   void v(const ASTString& val) { _vOrIdn.val = val; }
@@ -756,8 +806,9 @@ public:
   long long int idn() const;
   /// Set identifier number
   void idn(long long int n) {
-    auto n1 = static_cast<long long unsigned int>(n) << 1;
-    _vOrIdn.idn = reinterpret_cast<void*>(static_cast<ptrdiff_t>(n1) | static_cast<ptrdiff_t>(1));
+    auto n1 = static_cast<mzn_uintptr_t>(n) << 1;
+    _vOrIdn.idn =
+        reinterpret_cast<void*>(static_cast<mzn_uintptr_t>(n1) | static_cast<mzn_uintptr_t>(1));
     rehash();
   }
   /// Return identifier or X_INTRODUCED plus identifier number

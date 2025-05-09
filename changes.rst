@@ -10,6 +10,7 @@ Changes:
 ^^^^^^^^
 -  Add ``mzn_max_version_required`` to enable models to speficy the maximum
    version of MiniZinc required to run the model (:bugref:`872`).
+-  Replace use of ``ptrdiff_t`` with appropriate unsigned integer type.
 
 Bug fixes:
 ^^^^^^^^^^
