@@ -36,6 +36,7 @@ Bug fixes:
    specific versions of functions (:bugref:`905`).
 -  Fix internal error when constraining the domain of ``var opt bool``
    variables.
+-  Fix record merge operator when evaluated via a field access (:bugref:`892`).
 
 .. _v2.9.2:
 

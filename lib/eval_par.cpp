@@ -787,6 +787,11 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
       if (bo->op() == BOT_PLUSPLUS) {
         ArrayLit* al0 = eval_array_lit(env, bo->lhs());
         ArrayLit* al1 = eval_array_lit(env, bo->rhs());
+        if (bo->type().isrecord()) {
+          ArrayLit* rec = eval_record_merge(env, al0, al1);
+          rec->type(bo->type());
+          return rec;
+        }
         std::vector<Expression*> v(al0->size() + al1->size());
         for (unsigned int i = al0->size(); (i--) != 0U;) {
           v[i] = (*al0)[i];
@@ -794,7 +799,8 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
         for (unsigned int i = al1->size(); (i--) != 0U;) {
           v[al0->size() + i] = (*al1)[i];
         }
-        auto* ret = new ArrayLit(Expression::loc(e), v);
+        auto* ret = bo->type().istuple() ? ArrayLit::constructTuple(Expression::loc(e), v)
+                                         : new ArrayLit(Expression::loc(e), v);
         ret->flat(al0->flat() && al1->flat());
         ret->type(Expression::type(e));
         return ret;
@@ -2480,17 +2486,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
                    Expression::type(nbo->lhs()).bt() == Expression::type(nbo->rhs()).bt() &&
                    Expression::type(nbo->lhs()).dim() == 0 &&
                    Expression::type(nbo->rhs()).dim() == 0);
-            if (nbo->type().isrecord()) {
-              ArrayLit* rec = eval_record_merge(env, eval_array_lit(env, nbo->lhs()),
-                                                eval_array_lit(env, nbo->rhs()));
-              rec->type(nbo->type());
-              return rec;
-            }
-            assert(nbo->type().istuple());
-            ArrayLit* tup = ArrayLit::constructTuple(Expression::loc(nbo).introduce(),
-                                                     eval_array_lit(env, nbo));
-            tup->type(nbo->type());
-            return tup;
+            return eval_array_lit(env, nbo);
           }
           return nbo;
         }
