@@ -46,6 +46,7 @@ Bug fixes:
 -  Fix return type computation for generic functions called with tuple or record
    types (:bugref:`902`).
 -  Fix type computation for arrays of tuples/records containing ``$T`` members.
+-  Fix flattening of anonymous variables of enum type to be correctly bounded.
 -  Emit type errors for unsupported usage of anonymous variables in tuples and
    records. 
 
