@@ -1367,47 +1367,12 @@ unsigned int EnvI::registerTupleType(ArrayLit* tup) {
   return typeId;
 }
 
-Type common_type(EnvI& env, Type t1, Type t2) {
-  Type common;
-  if (t1.bt() == Type::BT_TUPLE && t2.bt() == Type::BT_TUPLE) {
-    common = t1;
-    if (t1 != t2) {
-      common = env.commonTuple(t1, t2);
-    }
-    return common;
-  }
-  if (t1.bt() == Type::BT_RECORD && t2.bt() == Type::BT_RECORD) {
-    common = t1;
-    if (t1 != t2) {
-      common = env.commonRecord(t1, t2);
-    }
-    return common;
-  }
-  if (Type::btSubtype(env, t2, t1, false)) {
-    common = t1;
-  } else if (Type::btSubtype(env, t1, t2, false)) {
-    common = t2;
-  } else {
-    return Type::top();
-  }
-  if (!common.structBT() && t1.typeId() != t2.typeId() && !t1.isbot() && !t2.isbot()) {
-    common.typeId(0);
-  }
-  if (t1.ot() != t2.ot()) {
-    common.ot(Type::OT_OPTIONAL);
-  }
-  if (common.isvar() && common.isOpt() && common.st() == Type::ST_SET) {
-    return Type::top();
-  }
-  return common;
-}
-
 Type EnvI::commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim) {
   if (tuple1 == tuple2) {
     return tuple1;
   }
-  if (tuple1.istop() || tuple2.istop()) {
-    return Type::top();
+  if (tuple1.isunknown() || tuple2.isunknown()) {
+    return Type();
   }
 
   // Allow to ignore the dimensions of (in progress) LHS when arrayEnumIds not yet in use
@@ -1420,19 +1385,19 @@ Type EnvI::commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim) {
   }
 
   if (tuple1.dim() != tuple2.dim()) {
-    return Type::top();
+    return Type();
   }
   TupleType* tt1 = getTupleType(tuple1);
   TupleType* tt2 = getTupleType(tuple2);
   if (tt1->size() != tt2->size()) {
-    return Type::top();
+    return Type();
   }
 
   std::vector<Type> common(tt1->size());
   for (unsigned int i = 0; i < tt1->size(); i++) {
-    common[i] = common_type(*this, (*tt1)[i], (*tt2)[i]);
-    if (common[i].istop()) {
-      return Type::top();
+    common[i] = Type::commonType(*this, (*tt1)[i], (*tt2)[i]);
+    if (common[i].isunknown()) {
+      return Type();
     }
   }
   unsigned int typeId = registerTupleType(common);
@@ -1454,6 +1419,7 @@ Type EnvI::commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim) {
     typeId = registerArrayEnum(typeIds);
   }
   tuple1.typeId(typeId);
+  tuple1.cv(tuple1.cv() || tuple2.cv());
   assert(tuple1.bt() != Type::BT_TUPLE || tuple1.typeId() != 0);
   return tuple1;
 }
@@ -1462,8 +1428,8 @@ Type EnvI::commonRecord(Type record1, Type record2, bool ignoreRecord1Dim) {
   if (record1 == record2) {
     return record1;
   }
-  if (record1.istop() || record2.istop()) {
-    return Type::top();
+  if (record1.isunknown() || record2.isunknown()) {
+    return Type();
   }
 
   // Allow to ignore the dimensions of (in progress) LHS when arrayEnumIds not yet in use
@@ -1476,23 +1442,23 @@ Type EnvI::commonRecord(Type record1, Type record2, bool ignoreRecord1Dim) {
   }
 
   if (record1.dim() != record2.dim()) {
-    return Type::top();
+    return Type();
   }
   RecordType* rt1 = getRecordType(record1);
   RecordType* rt2 = getRecordType(record2);
   if (rt1->size() != rt2->size()) {
-    return Type::top();
+    return Type();
   }
 
   std::vector<std::pair<ASTString, Type>> common(rt1->size());
   for (unsigned int i = 0; i < rt1->size(); i++) {
     ASTString name(rt1->fieldName(i));
     if (name != rt2->fieldName(i)) {
-      return Type::top();
+      return Type();
     }
-    Type ct = common_type(*this, (*rt1)[i], (*rt2)[i]);
-    if (ct.istop()) {
-      return Type::top();
+    Type ct = Type::commonType(*this, (*rt1)[i], (*rt2)[i]);
+    if (ct.isunknown()) {
+      return Type();
     }
     common[i] = {name, ct};
   }
@@ -1516,6 +1482,7 @@ Type EnvI::commonRecord(Type record1, Type record2, bool ignoreRecord1Dim) {
     typeId = registerArrayEnum(typeIds);
   }
   record1.typeId(typeId);
+  record1.cv(record1.cv() || record2.cv());
   return record1;
 }
 

@@ -42,7 +42,7 @@ Expression* domain_shallow_copy(EnvI& env, Expression* orig, Type type) {
   for (unsigned int i = 0; i < al->size(); i++) {
     Type nt = (*st)[i];
     auto* ti = Expression::cast<TypeInst>((*al)[i]);
-    clone[i] = new TypeInst(Expression::loc(ti), nt, ti->ranges(),
+    clone[i] = new TypeInst(Expression::loc(orig), nt, ti->ranges(),
                             domain_shallow_copy(env, ti->domain(), nt));
   }
   ArrayLit* tup = ArrayLit::constructTuple(Expression::loc(orig), clone);
@@ -1515,6 +1515,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
   }
 
   ASTStringMap<std::pair<Type, bool>> tmap;
+  ASTStringSet hadIntInstantiation;
   while (!stack.empty()) {
     std::pair<TypeInst*, Type> cur(stack.back());
     stack.pop_back();
@@ -1527,7 +1528,13 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
         if (tii->type().any()) {
           tiit.any(true);
         }
+        if (tii->type().st() || tiit.isSet() && tii->type().dim() == 1) {
+          tiit.st(Type::ST_PLAIN);
+        }
         tiit = tiit.elemType(env);
+        if (strictEnum && tiit.bt() == Type::BT_INT && tiit.typeId() == 0) {
+          hadIntInstantiation.insert(tiid);
+        }
         auto it = tmap.find(tiid);
         if (it == tmap.end()) {
           tmap.insert(std::pair<ASTString, std::pair<Type, bool>>(tiid, {tiit, isEnumTIID}));
@@ -1538,50 +1545,16 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
             ss << "type-inst variable $" << tiid << " used in both array and non-array position";
             throw TypeError(env, get_loc(tiit, call, fi), ss.str());
           }
-          Type tiit_par = tiit;
-          tiit_par.any(false);
-          tiit_par.mkPar(env);
-          tiit_par.mkPresent(env);
-          if (isEnumTIID) {
-            tiit_par.st(Type::ST_SET);
-          }
-          Type its_par = it->second.first;
-          its_par.any(false);
-          its_par.mkPar(env);
-          its_par.mkPresent(env);
-          if (it->second.second) {
-            its_par.st(Type::ST_SET);
-          }
-          if (tiit_par.bt() == Type::BT_TOP || tiit_par.bt() == Type::BT_BOT) {
-            tiit_par.bt(its_par.bt());
-            tiit_par.typeId(its_par.typeId());
-          }
-          if (its_par.bt() == Type::BT_TOP || its_par.bt() == Type::BT_BOT) {
-            its_par.bt(tiit_par.bt());
-            its_par.typeId(tiit_par.typeId());
-            it->second.first.bt(tiit.bt());
-            it->second.first.typeId(tiit.typeId());
-          }
-          if (env.isSubtype(tiit_par, its_par, strictEnum)) {
-            if (it->second.first.bt() == Type::BT_TOP) {
-              it->second.first.bt(tiit.bt());
-              it->second.first.typeId(tiit.typeId());
-            }
-          } else if (env.isSubtype(its_par, tiit_par, strictEnum)) {
-            it->second.first.bt(tiit_par.bt());
-            it->second.first.typeId(tiit_par.typeId());
-          } else {
+
+          auto common = Type::commonType(env, it->second.first, tiit);
+          if (common.isunknown()) {
             std::ostringstream ss;
-            ss << "type-inst variable $" << tiid << " instantiated with different types ("
+            ss << "type-inst variable $" << tiid << " instantiated with incompatible types ("
                << tiit.toString(env) << " vs " << it->second.first.toString(env) << ")";
             throw TypeError(env, get_loc(tiit, call, fi), ss.str());
           }
-          if (tiit.isvar()) {
-            it->second.first.mkVar(env);
-          }
-          if (tiit.isOpt() && it->second.first.st() == Type::ST_PLAIN) {
-            it->second.first.mkOpt(env);
-          }
+
+          it->second.first = common;
         }
       } else if (cur.second.structBT()) {
         auto* al = Expression::cast<ArrayLit>(tii->domain());
@@ -1629,9 +1602,15 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
           Type enumIdT;
           if (tiit.typeId() != 0) {
             unsigned int enumId = env.getArrayEnum(tiit.typeId())[j];
-            enumIdT = Type::parsetenum(enumId);
+            enumIdT = Type::parenum(enumId);
+            if (strictEnum && enumId == 0) {
+              hadIntInstantiation.insert(enumTIId);
+            }
           } else {
-            enumIdT = Type::parsetint();
+            enumIdT = Type::parint();
+            if (strictEnum) {
+              hadIntInstantiation.insert(enumTIId);
+            }
           }
           auto it = tmap.find(enumTIId);
           // TODO: this may clash if the same enum TIId is used for different types
@@ -1644,6 +1623,16 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
             throw TypeError(env, get_loc(cur.second, call, fi), ss.str());
           }
         }
+      }
+    }
+  }
+  if (strictEnum) {
+    for (auto& it : tmap) {
+      if (it.second.first.bt() == Type::BT_INT && it.second.first.typeId() == 0 &&
+          hadIntInstantiation.find(it.first) == hadIntInstantiation.end()) {
+        std::ostringstream ss;
+        ss << "type-inst variable $" << it.first << " used for different enum types";
+        throw TypeError(env, get_loc(it.second.first, call, fi), ss.str());
       }
     }
   }

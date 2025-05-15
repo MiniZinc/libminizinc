@@ -43,6 +43,11 @@ Bug fixes:
    ``redefinitions-2.7.1.mzn`` (:bugref:`914`).
 -  Fix handling of basic standard flags when running ``.fzn`` files
    (:bugref:`920`).
+-  Fix return type computation for generic functions called with tuple or record
+   types (:bugref:`902`).
+-  Fix type computation for arrays of tuples/records containing ``$T`` members.
+-  Emit type errors for unsupported usage of anonymous variables in tuples and
+   records. 
 
 .. _v2.9.2:
 

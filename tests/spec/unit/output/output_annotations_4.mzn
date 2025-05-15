@@ -7,7 +7,7 @@ expected: !Result
     y@11.3-24|foo@15.12-17: 10
 ***/
 
-predicate foo(var $T: x) = let {
+predicate foo(var int: x) = let {
   var 1..10: y :: output;
 } in x < y;
 

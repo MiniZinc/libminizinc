@@ -204,6 +204,13 @@ void Type::mkPresent(EnvI& env) {
   }
 }
 
+bool Type::isVarifiable(const EnvI& env) const {
+  return !contains(env, [](Type t) {
+    return t.dim() != 0 || t.bt() == BT_STRING || t.bt() == BT_ANN ||
+           t.st() == ST_SET && (t.isOpt() || t.bt() != BT_INT && t.bt() != BT_BOT);
+  });
+}
+
 bool Type::decrement(EnvI& env) {
   if (!structBT()) {
     if (ot() == Type::OT_OPTIONAL) {
@@ -337,6 +344,98 @@ Type Type::arrType(EnvI& env, const Type& dimTy, const Type& elemTy) {
   arrayEnumIds.back() = elemTypeId;
   ret.typeId(env.registerArrayEnum(arrayEnumIds));
   return ret;
+}
+
+Type Type::commonType(EnvI& env, Type t1, Type t2) {
+  if (t1 == t2 && t1.typeId() == t2.typeId() || t2 == Type::bot()) {
+    t1.cv(t1.cv() || t2.cv());
+    return t1;
+  }
+  if (t1 == Type::bot()) {
+    return t2;
+  }
+
+  if (t1.isSet() && t2.dim() == 1) {
+    t1.st(ST_PLAIN);
+    t1 = Type::arrType(env, Type::parint(1), t1);
+  } else if (t2.isSet() && t1.dim() == 1) {
+    t2.st(ST_PLAIN);
+    t2 = Type::arrType(env, Type::parint(1), t2);
+  }
+
+  if (t1.isunknown() || t2.isunknown() || t1.dim() != t2.dim() ||
+      t1.st() != t2.st() && !t1.isbot() && !t2.isbot()) {
+    return Type();
+  }
+
+  if (t1.dim() != 0) {
+    Type e1 = env.getTransparentType(t1.elemType(env));
+    Type e2 = env.getTransparentType(t2.elemType(env));
+
+    Type commonEl = Type::commonType(env, e1, e2);
+    if (commonEl.isunknown()) {
+      return Type();
+    }
+    if (commonEl.dim() != 0) {
+      auto wrapper_t = env.registerTupleType({commonEl, Type()});
+      commonEl = Type::tuple();
+      commonEl.typeId(wrapper_t);
+    }
+
+    if (t1.typeId() != 0 && t2.typeId() != 0) {
+      const auto& array1 = env.getArrayEnum(t1.typeId());
+      const auto& array2 = env.getArrayEnum(t2.typeId());
+
+      std::vector<unsigned int> arrayEnum(array1.size());
+      for (size_t i = 0; i < array1.size(); i++) {
+        if (array1[i] == array2[i]) {
+          arrayEnum[i] = array1[i];
+        }
+      }
+      arrayEnum.back() = commonEl.typeId();
+
+      Type commonArray = commonEl;
+      commonArray.typeId(env.registerArrayEnum(arrayEnum));
+      return commonArray;
+    }
+
+    return Type::arrType(env, Type::parint(t1.dim()), commonEl);
+  }
+
+  if ((t1.structBT() || t2.structBT()) && t1.bt() != t2.bt()) {
+    return Type();
+  }
+
+  if (t1.istuple()) {
+    return env.commonTuple(t1, t2);
+  }
+  if (t1.isrecord()) {
+    return env.commonRecord(t1, t2);
+  }
+
+  Type common;
+  if (Type::btSubtype(env, t2, t1, false)) {
+    common = t1;
+  } else if (Type::btSubtype(env, t1, t2, false)) {
+    common = t2;
+  } else {
+    return Type();
+  }
+
+  if (t1.typeId() != t2.typeId() && !t1.isbot() && !t2.isbot()) {
+    common.typeId(0);
+  }
+  if (t1.ti() != t2.ti()) {
+    common.ti(Type::TI_VAR);
+  }
+  if (t1.ot() != t2.ot()) {
+    common.ot(Type::OT_OPTIONAL);
+  }
+  common.cv(t1.cv() || t2.cv());
+  if (common.isvar() && common.isOpt() && common.st() == Type::ST_SET) {
+    return Type();
+  }
+  return common;
 }
 
 std::string Type::toString(const EnvI& env) const {

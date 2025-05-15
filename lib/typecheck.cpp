@@ -1524,7 +1524,12 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e0, const Location& loc_
           c_al = new ArrayLit(Expression::loc(al).introduce(), elem, dims);
           Type coercedTy = funarg_t;
           if (!elem.empty()) {
-            coercedTy = Expression::type(elem[0]);
+            auto common = Type::bot();
+            for (auto* el : elem) {
+              common = Type::commonType(env, common, Expression::type(el));
+            }
+            assert(!common.isunknown());
+            coercedTy = common;
           }
           c_al->type(Type::arrType(env, Expression::type(e), coercedTy));
         } else {
@@ -1835,7 +1840,6 @@ public:
   void vAnonVar(const AnonVar* /*v*/) {}
   /// Visit array literal
   void vArrayLit(ArrayLit* al) {
-    Type ty;
     if (al->isTuple()) {
       if (al->type().isrecord()) {
         if (al->type().typeId() != 0) {
@@ -1853,13 +1857,18 @@ public:
       } else if (al->type().typeId() != Type::COMP_INDEX) {
         _env.registerTupleType(al);
       }
+      for (unsigned int i = 0; i < al->size(); i++) {
+        auto* vi = Expression::dynamicCast<AnonVar>((*al)[i]);
+        if (vi != nullptr) {
+          std::stringstream ss;
+          ss << "anonymous variables in " << (al->type().isrecord() ? "record" : "tuple")
+             << " literals are not currently supported";
+          throw TypeError(_env, Expression::loc(vi), ss.str());
+        }
+      }
       return;
     }
-    ty.dim(static_cast<int>(al->dims()));
-    // Initialise typeId
-    if (!al->empty()) {
-      ty.typeId(Expression::type((*al)[0]).typeId());
-    }
+    Type elemTy = Type::bot();
     std::vector<AnonVar*> anons;
     bool haveInferredType = false;
     for (unsigned int i = 0; i < al->size(); i++) {
@@ -1875,121 +1884,49 @@ public:
         vi = wrapper;
       }
       auto* av = Expression::dynamicCast<AnonVar>(vi);
-      if (av != nullptr) {
-        ty.ti(Type::TI_VAR);
-        anons.push_back(av);
-      } else if (Expression::type(vi).isvar()) {
-        ty.ti(Type::TI_VAR);
-      }
-      if (Expression::type(vi).cv()) {
-        ty.cv(true);
-      }
-      if (Expression::type(vi).isOpt()) {
-        ty.ot(Type::OT_OPTIONAL);
-      }
-
-      if (ty.bt() == Type::BT_UNKNOWN) {
-        if (av == nullptr) {
-          if (haveInferredType) {
-            if (ty.st() != Expression::type(vi).st() &&
-                Expression::type(vi).ot() != Type::OT_OPTIONAL) {
-              throw TypeError(_env, Expression::loc(al), "non-uniform array literal");
-            }
-          } else if (Expression::type(vi).bt() != Type::BT_BOT ||
-                     Expression::type(vi).st() == Type::ST_SET) {
-            haveInferredType = true;
-            ty.st(Expression::type(vi).st());
-          }
-          if (Expression::type(vi).bt() != Type::BT_BOT) {
-            ty.bt(Expression::type(vi).bt());
-            ty.typeId(Expression::type(vi).typeId());
-          }
+      if (av == nullptr) {
+        auto common = Type::commonType(_env, elemTy, Expression::type(vi));
+        if (common.isunknown()) {
+          std::stringstream ss;
+          ss << "non-uniform array literal. Expected `" << elemTy.toString(_env) << "' but got `"
+             << Expression::type(vi).toString(_env) << "'.";
+          throw TypeError(_env, Expression::locDefault(vi, al), ss.str());
         }
+        elemTy = common;
       } else {
-        if (av == nullptr) {
-          if (Expression::type(vi).bt() == Type::BT_BOT) {
-            if (Expression::type(vi).st() != ty.st() &&
-                Expression::type(vi).ot() != Type::OT_OPTIONAL) {
-              throw TypeError(_env, Expression::loc(al), "non-uniform array literal");
-            }
-            if (Expression::type(vi).typeId() != 0 &&
-                ty.typeId() != Expression::type(vi).typeId()) {
-              ty.typeId(0);
-            }
-          } else if (Expression::type(vi).bt() == Type::BT_TUPLE) {
-            if (ty.bt() != Type::BT_TUPLE) {
-              throw TypeError(_env, Expression::loc(al), "non-uniform array literal");
-            }
-            ty = _env.commonTuple(ty, Expression::type(vi), true);
-            if (ty.istop()) {
-              throw TypeError(_env, Expression::loc(al), "non-uniform array literal");
-            }
-          } else if (Expression::type(vi).bt() == Type::BT_RECORD) {
-            if (ty.bt() != Type::BT_RECORD) {
-              throw TypeError(_env, Expression::loc(al), "non-uniform array literal");
-            }
-            ty = _env.commonRecord(ty, Expression::type(vi), true);
-            if (ty.istop()) {
-              throw TypeError(_env, Expression::loc(al), "non-uniform array literal");
-            }
-          } else {
-            unsigned int tyEnumId = ty.typeId();
-            ty.typeId(Expression::type(vi).typeId());
-            if (Type::btSubtype(_env, ty, Expression::type(vi), true)) {
-              ty.bt(Expression::type(vi).bt());
-            }
-            if (tyEnumId != Expression::type(vi).typeId()) {
-              ty.typeId(0);
-            }
-            if (!Type::btSubtype(_env, Expression::type(vi), ty, true) ||
-                ty.st() != Expression::type(vi).st()) {
-              throw TypeError(_env, Expression::loc(al), "non-uniform array literal");
-            }
-          }
-        }
+        anons.push_back(av);
       }
     }
-    if (ty.bt() == Type::BT_UNKNOWN) {
-      ty.bt(Type::BT_BOT);
-      if (!anons.empty()) {
+
+    if (!anons.empty()) {
+      if (elemTy.isbot()) {
         throw TypeError(_env, Expression::loc(al),
                         "array literal must contain at least one non-anonymous variable");
       }
-    } else {
-      Type at = ty;
-      at.typeId(0);
-      at.dim(0);
-      at.typeId(ty.typeId());  // valid because typeId was not yet converted to an arrayEnumType
-      if (at.ti() == Type::TI_VAR && at.st() == Type::ST_SET) {
-        if (at.isOpt()) {
-          throw TypeError(_env, Expression::loc(al), "var opt sets not supported");
-        }
-        if (at.bt() != Type::BT_INT) {
-          if (at.bt() == Type::BT_BOOL) {
-            ty.bt(Type::BT_INT);
-            at.bt(Type::BT_INT);
-          } else {
-            throw TypeError(_env, Expression::loc(al),
-                            "cannot coerce array element to var set of int");
-          }
-        }
+      if (!elemTy.isVarifiable(_env)) {
+        std::stringstream ss;
+        ss << "anonymous variable of type `" << elemTy.toString(_env) << "' not allowed";
+        throw TypeError(_env, Expression::loc(anons[0]), ss.str());
       }
+      if (elemTy.structBT()) {
+        // TODO: Fix flattening of struct type anon vars and remove this
+        std::stringstream ss;
+        ss << (elemTy.istuple() ? "tuple" : "record")
+           << " type anonymous variables are not yet supported";
+        throw TypeError(_env, Expression::loc(anons[0]), ss.str());
+      }
+      elemTy.mkVar(_env);
       for (auto& anon : anons) {
-        anon->type(at);
-      }
-      for (unsigned int i = 0; i < al->size(); i++) {
-        al->set(i, add_coercion(_env, _model, (*al)[i], al, at)());
+        anon->type(elemTy);
       }
     }
-    if (ty.typeId() != 0) {
-      std::vector<unsigned int> enumIds(ty.dim() + 1);
-      for (int i = 0; i < ty.dim(); i++) {
-        enumIds[i] = 0;
-      }
-      enumIds[ty.dim()] = ty.typeId();
-      ty.typeId(_env.registerArrayEnum(enumIds));
+
+    for (unsigned int i = 0; i < al->size(); i++) {
+      al->set(i, add_coercion(_env, _model, (*al)[i], al, elemTy)());
     }
-    al->type(ty);
+
+    auto arrType = Type::arrType(_env, Type::parint(static_cast<int>(al->dims())), elemTy);
+    al->type(arrType);
   }
   /// Visit array access
   void vArrayAccess(ArrayAccess* aa) {
@@ -2545,22 +2482,8 @@ public:
   /// Visit if-then-else
   void vITE(ITE* ite) {
     // Set return type to else type or, in case of no else, unknown
-    Type tret;
-    if (ite->elseExpr() != nullptr && !Expression::isa<AnonVar>(ite->elseExpr())) {
-      tret = Expression::type(ite->elseExpr());
-    }
+    Type tret = Type::bot();
     std::vector<AnonVar*> anons;
-    bool allpar = !(tret.isvar());
-    if (ite->elseExpr() != nullptr && tret.isunknown()) {
-      if (auto* av = Expression::dynamicCast<AnonVar>(ite->elseExpr())) {
-        allpar = false;
-        anons.push_back(av);
-      } else {
-        throw TypeError(_env, Expression::locDefault(ite->elseExpr(), ite),
-                        "cannot infer type of expression in `else' branch of conditional");
-      }
-    }
-    bool allpresent = !(tret.isOpt());
     bool varcond = false;
     for (unsigned int i = 0; i < ite->size(); i++) {
       Expression* eif = ite->ifExpr(i);
@@ -2574,80 +2497,21 @@ public:
       if (Expression::type(eif).cv()) {
         tret.cv(true);
       }
-      if (Expression::type(ethen).isunknown()) {
-        if (auto* av = Expression::dynamicCast<AnonVar>(ethen)) {
-          allpar = false;
-          anons.push_back(av);
-        } else {
-          throw TypeError(_env, Expression::locDefault(ethen, ite),
-                          "cannot infer type of expression in `then' branch of conditional");
-        }
+
+      if (auto* av = Expression::dynamicCast<AnonVar>(ethen)) {
+        anons.push_back(av);
       } else {
-        if (tret.isbot()) {
-          tret.bt(Expression::type(ethen).bt());
-          tret.typeId(Expression::type(ethen).typeId());
-          if (ite->elseExpr() != nullptr && Expression::type(ite->elseExpr()).isOptBot() &&
-              Expression::type(ethen).st() == Type::ST_SET) {
-            tret.st(Type::ST_SET);
-          }
-        } else if (tret.isunknown()) {
-          tret.bt(Expression::type(ethen).bt());
-          tret.dim(Expression::type(ethen).dim());
-          tret.typeId(Expression::type(ethen).typeId());
-        } else if (tret.structBT()) {
-          Type ty = Expression::type(ethen);
-          if (!ty.isbot()) {
-            if (tret.bt() == Type::BT_TUPLE) {
-              if (ty.bt() != Type::BT_TUPLE) {
-                throw TypeError(_env, Expression::locDefault(ethen, ite),
-                                "non-uniform branches in if-then-else");
-              }
-              tret = _env.commonTuple(tret, ty, true);
-              if (tret.istop()) {
-                throw TypeError(_env, Expression::locDefault(ethen, ite),
-                                "non-uniform branches in if-then-else");
-              }
-            } else {  // (tret.bt() == Type::BT_RECORD)
-              if (ty.bt() != Type::BT_RECORD) {
-                throw TypeError(_env, Expression::locDefault(ethen, ite),
-                                "non-uniform branches in if-then-else");
-              }
-              tret = _env.commonRecord(tret, ty, true);
-              if (tret.istop()) {
-                throw TypeError(_env, Expression::locDefault(ethen, ite),
-                                "non-uniform branches in if-then-else");
-              }
-            }
-          }
+        Type common = Type::commonType(_env, tret, Expression::type(ethen));
+        if (common.isunknown()) {
+          std::stringstream ss;
+          ss << "incompatible branch in if-then-else. Expected `" << tret.toString(_env)
+             << "' but got `" << Expression::type(ethen).toString(_env) << "'.";
+          throw TypeError(_env, Expression::locDefault(ethen, ite), ss.str());
         }
-        if ((!Expression::type(ethen).isbot() &&
-             !Type::btSubtype(_env, Expression::type(ethen), tret, true) &&
-             !Type::btSubtype(_env, tret, Expression::type(ethen), true)) ||
-            (!Expression::type(ethen).isbot() && Expression::type(ethen).st() != tret.st()) ||
-            Expression::type(ethen).dim() != tret.dim()) {
-          throw TypeError(_env, Expression::locDefault(ethen, ite),
-                          "type mismatch in branches of conditional. `then' branch has type `" +
-                              Expression::type(ethen).toString(_env) +
-                              "', but `else' branch has type `" + tret.toString(_env) + "'");
-        }
-        if (Type::btSubtype(_env, tret, Expression::type(ethen), true)) {
-          tret.bt(Expression::type(ethen).bt());
-        }
-        if (tret.typeId() != 0 && Expression::type(ethen).typeId() == 0 &&
-            Expression::type(ethen).bt() != Type::BT_BOT) {
-          tret.typeId(0);
-        }
-        if (Expression::type(ethen).isvar()) {
-          allpar = false;
-        }
-        if (Expression::type(ethen).isOpt()) {
-          allpresent = false;
-        }
-        if (Expression::type(ethen).cv()) {
-          tret.cv(true);
-        }
+        tret = common;
       }
     }
+
     if (ite->elseExpr() == nullptr) {
       // this is an "if <cond> then <expr> endif" so the <expr> must be bool, string, ann or array
       if (tret.isbool()) {
@@ -2667,52 +2531,54 @@ public:
                                     "ann, or array type, ") +
                             "but `then' branch has type `" + tret.toString(_env) + "'");
       }
+    } else {
+      if (auto* av = Expression::dynamicCast<AnonVar>(ite->elseExpr())) {
+        anons.push_back(av);
+      } else {
+        Type common = Type::commonType(_env, tret, Expression::type(ite->elseExpr()));
+        if (common.isunknown()) {
+          std::stringstream ss;
+          ss << "incompatible branch in if-then-else. Expected `" << tret.toString(_env)
+             << "' but got `" << Expression::type(ite->elseExpr()).toString(_env) << "'.";
+          throw TypeError(_env, Expression::locDefault(ite->elseExpr(), ite), ss.str());
+        }
+        tret = common;
+      }
     }
-    Type tret_var(tret);
-    tret_var.mkVar(_env);
-    for (auto& anon : anons) {
-      anon->type(tret_var);
+
+    if (!anons.empty()) {
+      if (tret.isbot()) {
+        throw TypeError(_env, Expression::loc(anons[0]),
+                        "if-then-else must have at least one non-anonymous branch");
+      }
+      if (!tret.isVarifiable(_env)) {
+        throw TypeError(_env, Expression::loc(anons[0]),
+                        "anonymous variable of type `" + tret.toString(_env) + "' is not allowed");
+      }
+      if (tret.structBT()) {
+        // TODO: Fix flattening of struct type anon vars and remove this
+        std::stringstream ss;
+        ss << (tret.istuple() ? "tuple" : "record")
+           << " type anonymous variables are not yet supported";
+        throw TypeError(_env, Expression::loc(anons[0]), ss.str());
+      }
+      tret.mkVar(_env);
+      for (auto& anon : anons) {
+        anon->type(tret);
+      }
+    }
+    if (varcond) {
+      if (!tret.isVarifiable(_env)) {
+        throw TypeError(
+            _env, Expression::loc(ite),
+            "if-then-else with var condition cannot have type `" + tret.toString(_env) + "'");
+      }
+      tret.mkVar(_env);
     }
     for (unsigned int i = 0; i < ite->size(); i++) {
       ite->thenExpr(i, add_coercion(_env, _model, ite->thenExpr(i), ite, tret)());
     }
     ite->elseExpr(add_coercion(_env, _model, ite->elseExpr(), ite, tret)());
-    if (varcond) {
-      if (tret.dim() > 0) {
-        throw TypeError(_env, Expression::loc(ite),
-                        "conditional with var condition cannot have array type");
-      }
-      if (tret.structBT() && _env.getStructType(tret)->containsArray(_env)) {
-        std::ostringstream oss;
-        oss << "conditional with var condition cannot have a "
-            << (tret.bt() == Type::BT_TUPLE ? "tuple" : "record") << " type that contains an array";
-        throw TypeError(_env, Expression::loc(ite), oss.str());
-      }
-      if (tret.bt() == Type::BT_STRING) {
-        throw TypeError(_env, Expression::loc(ite),
-                        "conditional with var condition cannot have string type");
-      }
-      if (tret.bt() == Type::BT_ANN) {
-        throw TypeError(_env, Expression::loc(ite),
-                        "conditional with var condition cannot have annotation type");
-      }
-      if (tret.contains(_env, [](Type t) {
-            return t.bt() == Type::BT_STRING || t.bt() == Type::BT_ANN ||
-                   (t.st() == Type::ST_SET && (t.bt() != Type::BT_INT || t.isOpt()));
-          })) {
-        throw TypeError(_env, Expression::loc(ite),
-                        "conditional with var condition cannot have type " + tret.toString(_env));
-      }
-    }
-    if (varcond || !allpar) {
-      tret.mkVar(_env);
-    }
-    if (!allpresent) {
-      tret.ot(Type::OT_OPTIONAL);
-    }
-    if (tret.isOptBot()) {
-      tret.cv(false);
-    }
     ite->type(tret);
   }
   /// Visit binary operator
