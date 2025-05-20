@@ -13,6 +13,8 @@ Changes:
 -  Replace use of ``ptrdiff_t`` with appropriate unsigned integer type.
 -  Clarify documentation example use of boolean extra flags in solver
    configuration files.
+-  Warnings produced in solution checkers are now output as part of the
+   ``checker`` message when running in ``--json-stream`` mode.
 
 Bug fixes:
 ^^^^^^^^^^
