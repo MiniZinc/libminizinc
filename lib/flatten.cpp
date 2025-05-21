@@ -1045,7 +1045,7 @@ void EnvI::flatAddItem(Item* i) {
       auto* vd = i->cast<VarDeclI>();
       add_path_annotation(*this, vd->e());
       toAnnotate = vd->e()->e();
-      varOccurrences.addIndex(vd, static_cast<unsigned int>(_flat->size()) - 1);
+      varOccurrences.addIndex(vd, _flat->size() - 1);
       toAdd = vd->e();
       break;
     }
@@ -2486,7 +2486,7 @@ Expression* mk_domain_constraint(EnvI& env, Expression* expr, Expression* dom) {
       }
       std::vector<Expression*> fieldwise;
       for (unsigned int i = 0; i < dom_al->size(); ++i) {
-        auto* field_ti = Expression::cast<TypeInst>((*dom_al)[static_cast<unsigned int>(i)]);
+        auto* field_ti = Expression::cast<TypeInst>((*dom_al)[i]);
         if (field_ti->domain() != nullptr) {
           if (ty.dim() > 0) {
             ArrayLit* slice = field_slice(env, st, al, dims, i + 1);
@@ -2497,8 +2497,7 @@ Expression* mk_domain_constraint(EnvI& env, Expression* expr, Expression* dom) {
               };
             }
           } else {
-            auto* con =
-                mk_domain_constraint(env, (*al)[static_cast<unsigned int>(i)], field_ti->domain());
+            auto* con = mk_domain_constraint(env, (*al)[i], field_ti->domain());
             if (con != nullptr) {
               fieldwise.push_back(con);
             };

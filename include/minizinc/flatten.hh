@@ -110,9 +110,9 @@ struct FlatteningOptions {
 
 class Pass {
 public:
-  Pass(){};
+  Pass() {};
   virtual Env* run(Env* env, std::ostream& log) = 0;
-  virtual ~Pass(){};
+  virtual ~Pass() {};
 };
 
 /// Flatten model in environment \a e

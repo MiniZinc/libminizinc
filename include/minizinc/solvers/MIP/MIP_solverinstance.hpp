@@ -572,8 +572,8 @@ void handle_solution_callback(const typename MIPWrapper::Output& out, void* pp) 
     std::cerr << "  Error when evaluating an intermediate solution:  " << e.what() << std::endl;
   } catch (...) {
     std::cerr << std::endl;
-    std::cerr << "  Error when evaluating an intermediate solution:  "
-              << "  UNKNOWN EXCEPTION." << std::endl;
+    std::cerr << "  Error when evaluating an intermediate solution:  " << "  UNKNOWN EXCEPTION."
+              << std::endl;
   }
   //   }
 }

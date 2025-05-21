@@ -151,8 +151,7 @@ public:
   CBUserInfo cbui;
 
   MIPWrapper() { cbui.wrapper = this; }
-  virtual ~MIPWrapper() { /* cleanup(); */
-  }
+  virtual ~MIPWrapper() { /* cleanup(); */ }
 
   /// derived should overload and call the ancestor
   //     virtual void cleanup() {

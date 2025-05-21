@@ -34,7 +34,7 @@ void Registry::add(const ASTString name, poster p) { _registry.insert(std::make_
 void Registry::add(const std::string& name, poster p) {
   GCLock lock;
   ASTString str(name);
-  return add(str, p);
+  add(str, p);
 }
 void Registry::post(Call* c) {
   auto it = _registry.find(c->id());

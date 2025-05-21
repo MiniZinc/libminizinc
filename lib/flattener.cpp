@@ -855,8 +855,8 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           }
           env = out_env;
           if (_flags.verbose) {
-            _log << " done (" << _starttime.stoptime() << "),"
-                 << " max stack depth " << env->maxCallStack() << std::endl;
+            _log << " done (" << _starttime.stoptime() << ")," << " max stack depth "
+                 << env->maxCallStack() << std::endl;
           }
         }
 

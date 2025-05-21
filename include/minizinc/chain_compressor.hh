@@ -20,7 +20,7 @@ namespace MiniZinc {
 class ChainCompressor {
 public:
   ChainCompressor(EnvI& env, Model& m, std::vector<VarDecl*>& deletedVarDecls)
-      : _env(env), _m(m), _deletedVarDecls(deletedVarDecls){};
+      : _env(env), _m(m), _deletedVarDecls(deletedVarDecls) {};
 
   virtual bool trackItem(Item* i) = 0;
 
@@ -53,7 +53,7 @@ class ImpCompressor : public ChainCompressor {
 public:
   ImpCompressor(EnvI& env, Model& m, std::vector<VarDecl*>& deletedVarDecls,
                 std::vector<unsigned int>& boolConstraints0)
-      : ChainCompressor(env, m, deletedVarDecls), _boolConstraints(boolConstraints0){};
+      : ChainCompressor(env, m, deletedVarDecls), _boolConstraints(boolConstraints0) {};
 
   bool trackItem(Item* i) override;
 
@@ -81,7 +81,7 @@ protected:
 class LECompressor : public ChainCompressor {
 public:
   LECompressor(EnvI& env, Model& m, std::vector<VarDecl*>& deletedVarDecls)
-      : ChainCompressor(env, m, deletedVarDecls){};
+      : ChainCompressor(env, m, deletedVarDecls) {};
 
   bool trackItem(Item* i) override;
 

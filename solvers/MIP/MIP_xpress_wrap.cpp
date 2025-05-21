@@ -349,8 +349,7 @@ void MIPxpressWrapper::Options::printHelp(ostream& os) {
      << 0.0001 << std::endl
      << "-i                   print intermediate solution, default: false" << std::endl
      << "-r <N>, --seed <N>, --random-seed <N>" << std::endl
-     << "    random seed, integer"
-     << "-p <N>, --parallel <N>   use N threads" << std::endl
+     << "    random seed, integer" << "-p <N>, --parallel <N>   use N threads" << std::endl
      << "--xpress-dll <file>      Xpress DLL file (xprs.dll/libxprs.so/libxprs.dylib)" << std::endl
      << "--xpress-password <dir>  directory where xpauth.xpr is located (optional)" << std::endl
      << std::endl;
@@ -398,8 +397,7 @@ void MIPxpressWrapper::setOptions() {
 
   _plugin->XPRSsetlogfile(xprsProblem, _options->logFile.c_str());
   if (_options->timeout > 1000 || _options->timeout < -1000) {
-    _plugin->XPRSsetintcontrol(xprsProblem, XPRS_MAXTIME,
-                               static_cast<int>(_options->timeout / 1000));
+    _plugin->XPRSsetintcontrol(xprsProblem, XPRS_MAXTIME, _options->timeout / 1000);
   }
   _plugin->XPRSsetintcontrol(xprsProblem, XPRS_MAXMIPSOL, _options->numSolutions);
   _plugin->XPRSsetdblcontrol(xprsProblem, XPRS_MIPABSSTOP, _options->absGap);

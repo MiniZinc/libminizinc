@@ -25,8 +25,6 @@
 namespace MiniZinc {
 
 ASTString op_to_builtin(EnvI& env, Expression* op_lhs, Expression* op_rhs, BinOpType bot) {
-  std::string builtin;
-
   if (Expression::type(op_rhs).st() == Type::ST_SET) {
     switch (bot) {
       case BOT_LE:

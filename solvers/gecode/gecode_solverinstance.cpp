@@ -737,7 +737,7 @@ void GecodeSolverInstance::processFlatZinc() {
         throw InternalError(ssm.str());
       }
     }  // end if it is a variable
-  }    // end for all var decls
+  }  // end for all var decls
 
   // post the constraints
   for (ConstraintIterator it = _flat->constraints().begin(); it != _flat->constraints().end();
@@ -846,7 +846,7 @@ public:
   GecodeRangeIter(GecodeSolverInstance& gsi, IntSetRanges& isr0) : si(gsi), isr(isr0) {}
   int min() const {
     long long int val = isr.min().toInt();
-    if (si.valueWithinBounds(static_cast<double>(val))) {
+    if (GecodeSolverInstance::valueWithinBounds(static_cast<double>(val))) {
       return (int)val;
     }
     std::stringstream ssm;
@@ -855,7 +855,7 @@ public:
   }
   int max() const {
     long long int val = isr.max().toInt();
-    if (si.valueWithinBounds(static_cast<double>(val))) {
+    if (GecodeSolverInstance::valueWithinBounds(static_cast<double>(val))) {
       return (int)val;
     }
     std::stringstream ssm;
@@ -927,7 +927,7 @@ Gecode::IntVarArgs GecodeSolverInstance::arg2intvarargs(Expression* arg, int off
 
 Gecode::BoolVarArgs GecodeSolverInstance::arg2boolvarargs(Expression* arg, int offset, int siv) {
   ArrayLit* a = arg2arraylit(arg);
-  if (a->length() == 0) {
+  if (a->empty()) {
     BoolVarArgs emptyIa(0);
     return emptyIa;
   }
@@ -1038,7 +1038,7 @@ ArrayLit* GecodeSolverInstance::arg2arraylit(Expression* arg) {
 
 bool GecodeSolverInstance::isBoolArray(ArrayLit* a, int& singleInt) {
   singleInt = -1;
-  if (a->length() == 0) {
+  if (a->empty()) {
     return true;
   }
   for (int i = static_cast<int>(a->length()); (i--) != 0;) {

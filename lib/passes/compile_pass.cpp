@@ -200,6 +200,6 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
   return new_env;
 }
 
-CompilePass::~CompilePass(){};
+CompilePass::~CompilePass() {};
 
 }  // namespace MiniZinc

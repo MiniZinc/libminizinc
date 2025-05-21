@@ -486,8 +486,7 @@ public:
     _u.bits = _u.bits &
               ~(static_cast<uint64_t>(0x7FF) << 52);  // mask out top 11 bits (previously exponent)
     _u.bits = (_u.bits << 1) | 1U;                    // shift by one bit and add tag for double
-    _u.bits =
-        _u.bits | (static_cast<uint64_t>(sign) << 63) | (static_cast<uint64_t>(exponent) << 53);
+    _u.bits = _u.bits | (static_cast<uint64_t>(sign) << 63) | (exponent << 53);
     return _u.p;
   }
 
@@ -797,7 +796,7 @@ public:
   Id(const Location& loc, long long int idn, VarDecl* decl);
   /// Access identifier
   ASTString v() const;
-  inline bool hasStr() const {
+  bool hasStr() const {
     return (reinterpret_cast<mzn_uintptr_t>(_vOrIdn.idn) & static_cast<mzn_uintptr_t>(1)) == 0;
   }
   /// Set identifier
@@ -807,8 +806,7 @@ public:
   /// Set identifier number
   void idn(long long int n) {
     auto n1 = static_cast<mzn_uintptr_t>(n) << 1;
-    _vOrIdn.idn =
-        reinterpret_cast<void*>(static_cast<mzn_uintptr_t>(n1) | static_cast<mzn_uintptr_t>(1));
+    _vOrIdn.idn = reinterpret_cast<void*>(n1 | static_cast<mzn_uintptr_t>(1));
     rehash();
   }
   /// Return identifier or X_INTRODUCED plus identifier number

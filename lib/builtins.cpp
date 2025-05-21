@@ -2535,8 +2535,7 @@ Expression* b_output_json_parameters(EnvI& env, Call* call) {
         } else {
           s << ",\n";
         }
-        s << "  \"" << vd->id()->str() << "\""
-          << " : ";
+        s << "  \"" << vd->id()->str() << "\"" << " : ";
         auto* sl = new StringLit(Location().introduce(), s.str());
         _outputVars.push_back(sl);
 
@@ -2622,14 +2621,8 @@ std::string b_format(EnvI& env, Call* call) {
   }
   std::ostringstream oss;
   if (s.size() < std::abs(width)) {
-    int addLeft = width < 0 ? 0 : (width - static_cast<int>(s.size()));
-    if (addLeft < 0) {
-      addLeft = 0;
-    }
-    int addRight = width < 0 ? (-width - static_cast<int>(s.size())) : 0;
-    if (addRight < 0) {
-      addRight = 0;
-    }
+    int addLeft = std::max(0, width < 0 ? 0 : (width - static_cast<int>(s.size())));
+    int addRight = std::max(0, width < 0 ? (-width - static_cast<int>(s.size())) : 0);
     for (int i = addLeft; (i--) != 0;) {
       oss << " ";
     }
@@ -3751,7 +3744,9 @@ void register_builtins(Env& e) {
     rb(env, m, ASTString("index_set_5of6"), t_anyarray6, b_index_set5);
     rb(env, m, ASTString("index_set_6of6"), t_anyarray6, b_index_set6);
   }
-  { rb(env, m, env.constants.ids.array1d, {Type::optvartop(-1)}, b_array1d_list); }
+  {
+    rb(env, m, env.constants.ids.array1d, {Type::optvartop(-1)}, b_array1d_list);
+  }
   {
     std::vector<Type> t_arrayXd(2);
     t_arrayXd[0] = Type::parsetint();
@@ -3995,7 +3990,9 @@ void register_builtins(Env& e) {
     rb(env, m, ASTString("xorall"), t, b_xorall_par);
     rb(env, m, ASTString("iffall"), t, b_iffall_par);
   }
-  { rb(env, m, env.constants.ids.bool_.not_, {Type::parbool()}, b_not_par); }
+  {
+    rb(env, m, env.constants.ids.bool_.not_, {Type::parbool()}, b_not_par);
+  }
   {
     std::vector<Type> t(2);
     t[0] = Type::parbool(-1);
@@ -4277,7 +4274,9 @@ void register_builtins(Env& e) {
     t[1] = Type::parstring();
     rb(env, m, ASTString("string_split"), t, b_string_split);
   }
-  { rb(env, m, ASTString("file_path"), std::vector<Type>(), b_file_path); }
+  {
+    rb(env, m, ASTString("file_path"), std::vector<Type>(), b_file_path);
+  }
   {
     std::vector<Type> t(1);
     t[0] = Type::vartop();
@@ -4568,15 +4567,21 @@ void register_builtins(Env& e) {
     rb(env, m, ASTString("enum_next"), t, b_enum_next);
     rb(env, m, ASTString("enum_prev"), t, b_enum_prev);
   }
-  { rb(env, m, ASTString("mzn_compiler_version"), std::vector<Type>(), b_mzn_compiler_version); }
+  {
+    rb(env, m, ASTString("mzn_compiler_version"), std::vector<Type>(), b_mzn_compiler_version);
+  }
   {
     std::vector<Type> t(2);
     t[0] = Type::varint(1);
     t[1] = Type::parstring();
     rb(env, m, ASTString("fzn_regular"), t, b_regular_from_string, true);
   }
-  { rb(env, m, ASTString("showCheckerOutput"), {}, b_show_checker_output); }
-  { rb(env, m, ASTString("mzn_internal_check_debug_mode"), {}, b_check_debug_mode); }
+  {
+    rb(env, m, ASTString("showCheckerOutput"), {}, b_show_checker_output);
+  }
+  {
+    rb(env, m, ASTString("mzn_internal_check_debug_mode"), {}, b_check_debug_mode);
+  }
   {
     std::vector<Type> t(1);
     t[0] = Type::parstring();

@@ -394,12 +394,12 @@ public:
    *  Used to produce a new, standalone, C segment.
    *  If the expression graph is empty (linear constraint), produce the expression graph 'n0'
    */
-  std::vector<NLToken> expressionGraph = {};
+  std::vector<NLToken> expressionGraph;
 
   /** Jacobian, used for the linear part. Identify a variable by its name and associate a
    * coefficent. Used to produce a new, standalone, J segment.
    */
-  std::vector<std::pair<std::string, double>> jacobian = {};
+  std::vector<std::pair<std::string, double>> jacobian;
 
   /** Method to build the var_coeff vector.
    *  The NLFile is used to access the variables through their name in order to increase their
@@ -436,7 +436,7 @@ public:
    *  Used to produce a new, standalone, L segment.
    *  If the expression graph is empty (linear constraint), produce the expression graph 'n0'
    */
-  std::vector<NLToken> expressionGraph = {};
+  std::vector<NLToken> expressionGraph;
 
   /* *** *** *** Constructor *** *** *** */
   NLLogicalCons(int idx) : index(idx) {}
@@ -471,14 +471,14 @@ public:
 
   /* *** *** *** Fields *** *** *** */
   MinMax minmax = UNDEF;
-  std::vector<NLToken> expressionGraph = {};  // If empty, produce a 'n0' when printing
+  std::vector<NLToken> expressionGraph;  // If empty, produce a 'n0' when printing
 
   /* *** *** *** Gradient *** *** *** */
 
   /** Gradient, used for the linear part. Identify a variable by its name and associate a
    * coefficent. Used to produce a new, standalone, G segment.
    */
-  std::vector<std::pair<std::string, double>> gradient = {};
+  std::vector<std::pair<std::string, double>> gradient;
 
   /** Method to build the var_coeff vector. */
   void setGradient(const std::vector<std::string>& vnames, const std::vector<double>& coeffs);

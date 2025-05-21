@@ -668,7 +668,7 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
     /* Message callback */
     if (info->fVerb) {
       char* msg;
-      gw->dll_GRBcbget(cbdata, where, GRB_CB_MSG_STRING, &msg);
+      gw->dll_GRBcbget(cbdata, where, GRB_CB_MSG_STRING, static_cast<void*>(&msg));
       cerr << msg << flush;
     }
   } else if (GRB_CB_MIPSOL == where) {

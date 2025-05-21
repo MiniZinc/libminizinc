@@ -104,16 +104,16 @@ class CLOParser {
 public:
   CLOParser(int& ii, std::vector<std::string>& av) : _i(ii), _argv(av) {}
   template <class Value = int>
-  inline bool get(const char* names,           // space-separated option list
-                  Value* pResult = nullptr,    // pointer to value storage
-                  bool fValueOptional = false  // if pResult, for non-string values
+  bool get(const char* names,           // space-separated option list
+           Value* pResult = nullptr,    // pointer to value storage
+           bool fValueOptional = false  // if pResult, for non-string values
   ) {
     return getOption(names, pResult, fValueOptional);
   }
   template <class Value = int>
-  inline bool getOption(const char* names,           // space-separated option list
-                        Value* pResult = nullptr,    // pointer to value storage
-                        bool fValueOptional = false  // if pResult, for non-string values
+  bool getOption(const char* names,           // space-separated option list
+                 Value* pResult = nullptr,    // pointer to value storage
+                 bool fValueOptional = false  // if pResult, for non-string values
   ) {
     assert(nullptr == strchr(names, ','));
     assert(nullptr == strchr(names, ';'));

@@ -353,7 +353,7 @@ bool Solns2Out::evalOutput() {
 }
 
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static): Appears static without Gecode
-void Solns2Out::checkSolution(std::ostream& oss) {
+void Solns2Out::checkSolution(std::ostream& oss) const {
 #ifdef HAS_GECODE
 
   std::ostringstream checker;

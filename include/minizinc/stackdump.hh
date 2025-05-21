@@ -30,7 +30,7 @@ public:
   void json(std::ostream& os) const;
   bool empty() const { return _stack.empty(); }
 
-  inline void mark() {
+  void mark() {
     for (auto pair : _stack) {
       Expression::mark(pair.first);
     }

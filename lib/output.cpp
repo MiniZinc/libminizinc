@@ -839,10 +839,9 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e) {
         ClearAnnotations::run(nvi->e());
         nvi->e()->introduced(false);
         if (reallyFlat != nullptr) {
-          env.outputFlatVarOccurrences.addIndex(reallyFlat,
-                                                static_cast<unsigned int>(env.output->size()));
+          env.outputFlatVarOccurrences.addIndex(reallyFlat, env.output->size());
         }
-        env.outputVarOccurrences.addIndex(nvi, static_cast<unsigned int>(env.output->size()));
+        env.outputVarOccurrences.addIndex(nvi, env.output->size());
         env.outputVarOccurrences.add(nvi->e(), ci);
         env.output->addItem(nvi);
 
@@ -1391,8 +1390,7 @@ ArrayLit* create_json_output(EnvI& e, bool includeObjective, bool includeOutputI
     } else {
       s << ",\n";
     }
-    s << "  \"" << Printer::escapeStringLit(vd->id()->str()) << "\""
-      << " : ";
+    s << "  \"" << Printer::escapeStringLit(vd->id()->str()) << "\"" << " : ";
     auto* sl = new StringLit(Location().introduce(), s.str());
     outputVars.push_back(sl);
 
@@ -1415,8 +1413,7 @@ ArrayLit* create_json_output(EnvI& e, bool includeObjective, bool includeOutputI
       } else {
         s << ",\n";
       }
-      s << "  \"_output\""
-        << " : ";
+      s << "  \"_output\"" << " : ";
       auto* sl = new StringLit(Location().introduce(), s.str());
       outputVars.push_back(sl);
       Call* concat = Call::a(Location().introduce(), ASTString("concat"), {oi->e()});
@@ -1442,8 +1439,7 @@ ArrayLit* create_json_output(EnvI& e, bool includeObjective, bool includeOutputI
     } else {
       s << ",\n";
     }
-    s << "  \"_checker\""
-      << " : ";
+    s << "  \"_checker\"" << " : ";
     auto* sl = new StringLit(Location().introduce(), s.str());
     outputVars.push_back(sl);
     Call* checker_output = Call::a(Location().introduce(), ASTString("showCheckerOutput"), {});
@@ -1889,8 +1885,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
               }
             }
             if ((reallyFlat != nullptr) && env.outputFlatVarOccurrences.find(reallyFlat) == -1) {
-              env.outputFlatVarOccurrences.addIndex(reallyFlat,
-                                                    static_cast<unsigned int>(env.output->size()));
+              env.outputFlatVarOccurrences.addIndex(reallyFlat, env.output->size());
             }
           }
         } else {
@@ -1903,7 +1898,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
           }
         }
         make_par(env, vdi_copy->e());
-        env.outputVarOccurrences.addIndex(vdi_copy, static_cast<unsigned int>(env.output->size()));
+        env.outputVarOccurrences.addIndex(vdi_copy, env.output->size());
         CollectOccurrencesE ce(env, env.outputVarOccurrences, vdi_copy);
         top_down(ce, vdi_copy->e());
         env.output->addItem(vdi_copy);

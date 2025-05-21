@@ -238,7 +238,6 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
         std::string deprecatedName = includePath + "/" + basename + ".deprecated.mzn";
         if (FileUtils::file_exists(deprecatedName)) {
           string deprecatedFullPath = FileUtils::file_path(deprecatedName);
-          string deprecatedBaseName = FileUtils::base_name(deprecatedFullPath);
           string deprecatedDirName = FileUtils::dir_name(deprecatedFullPath);
           auto* includedModel = new Model;
           includedModel->setFilename(deprecatedName);

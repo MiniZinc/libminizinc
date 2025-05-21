@@ -85,17 +85,17 @@ protected:
   /// Whether solver needs path to symbol table (paths file) (passed as --paths)
   bool _needsPathsFile = false;
   /// Supported standard command line flags
-  std::vector<std::string> _stdFlags = {};
+  std::vector<std::string> _stdFlags;
   /// The flags (or arguments) always passed to the solver
-  std::vector<std::string> _passFlags = {};
+  std::vector<std::string> _passFlags;
   /// Required command line flags
-  std::vector<std::string> _requiredFlags = {};
+  std::vector<std::string> _requiredFlags;
   /// Supported extra command line flags (flag and description)
-  std::vector<ExtraFlag> _extraFlags = {};
+  std::vector<ExtraFlag> _extraFlags;
   /// Default command line flags (imported from global or user configuration)
-  std::vector<std::string> _defaultFlags = {};
+  std::vector<std::string> _defaultFlags;
   /// Tags
-  std::vector<std::string> _tags = {};
+  std::vector<std::string> _tags;
 
 public:
   /// Load solver configuration from \a filename

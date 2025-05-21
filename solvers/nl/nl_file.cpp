@@ -67,7 +67,7 @@ const ArrayLit* NLFile::getArrayLit(const Expression* e) {
 
 /** Create a vector of double from a vector containing Expression being IntLit. */
 vector<double> NLFile::fromVecInt(const ArrayLit* v_int) {
-  vector<double> v = {};
+  vector<double> v;
   for (unsigned int i = 0; i < v_int->size(); ++i) {
     double d = static_cast<double>(IntLit::v(Expression::cast<IntLit>((*v_int)[i])).toInt());
     v.push_back(d);
@@ -77,7 +77,7 @@ vector<double> NLFile::fromVecInt(const ArrayLit* v_int) {
 
 /** Create a vector of double from a vector containing Expression being FloatLit. */
 vector<double> NLFile::fromVecFloat(const ArrayLit* v_fp) {
-  vector<double> v = {};
+  vector<double> v;
   for (unsigned int i = 0; i < v_fp->size(); ++i) {
     double d = FloatLit::v(Expression::cast<FloatLit>((*v_fp)[i])).toDouble();
     v.push_back(d);
@@ -87,7 +87,7 @@ vector<double> NLFile::fromVecFloat(const ArrayLit* v_fp) {
 
 /** Create a vector of variable names from a vector containing Expression being identifier Id. */
 vector<string> NLFile::fromVecId(const ArrayLit* v_id) {
-  vector<string> v = {};
+  vector<string> v;
   for (unsigned int i = 0; i < v_id->size(); ++i) {
     string s = getVarName(Expression::cast<Id>((*v_id)[i])->decl());
     v.push_back(s);
@@ -691,8 +691,8 @@ void NLFile::nlconsOperatorBinary(const Call* c, NLToken::OpCode oc, const NLTok
     NLBound bound = NLBound::makeEqual(0);
     cons.range = bound;
 
-    vector<double> coeffs = {};
-    vector<string> vars = {};
+    vector<double> coeffs;
+    vector<string> vars;
 
     // If x is a variable different from y (and must be different from z), give it 0 for the linear
     // part
@@ -747,8 +747,8 @@ void NLFile::nlconsOperatorBinary(const Call* c, NLToken::MOpCode moc, const NLT
     NLBound bound = NLBound::makeEqual(0);
     cons.range = bound;
 
-    vector<double> coeffs = {};
-    vector<string> vars = {};
+    vector<double> coeffs;
+    vector<string> vars;
 
     // If x is a variable different from y (and must be different from z), give it 0 for the linear
     // part
@@ -801,8 +801,8 @@ void NLFile::nlconsOperatorUnary(const Call* c, NLToken::OpCode oc, const NLToke
     NLBound bound = NLBound::makeEqual(0);
     cons.range = bound;
 
-    vector<double> coeffs = {};
-    vector<string> vars = {};
+    vector<double> coeffs;
+    vector<string> vars;
 
     // If x is a variable (must be different from y), give it '0' for the linear part
     if (x.isVariable()) {
@@ -847,8 +847,8 @@ void NLFile::nlconsOperatorUnaryLog2(const Call* c, const NLToken& x, const NLTo
     NLBound bound = NLBound::makeEqual(0);
     cons.range = bound;
 
-    vector<double> coeffs = {};
-    vector<string> vars = {};
+    vector<double> coeffs;
+    vector<string> vars;
 
     // If x is a variable (must be different from y), give it '0' for the linear part
     if (x.isVariable()) {
@@ -1257,7 +1257,7 @@ void NLFile::float_tanh(const Call* c) {
  */
 void NLFile::int2float(const Call* c) {
   vector<double> coeffs = {1, -1};
-  vector<string> vars = {};
+  vector<string> vars;
   vars.push_back(getTokenFromVar(c->arg(0)).str);
   vars.push_back(getTokenFromVar(c->arg(1)).str);
   // Create the constraint

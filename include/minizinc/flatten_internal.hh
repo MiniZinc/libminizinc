@@ -284,7 +284,7 @@ public:
 
 struct TypeList : public StructType {
   const std::vector<Type>& tt;
-  TypeList(const std::vector<Type>& ts) : tt(ts){};
+  TypeList(const std::vector<Type>& ts) : tt(ts) {};
   unsigned int size() const override { return static_cast<unsigned int>(tt.size()); }
   Type operator[](unsigned int i) const override { return tt[i]; };
 };

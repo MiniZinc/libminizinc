@@ -490,8 +490,7 @@ std::string SolverConfig::toJSON(const SolverConfigs& configs) const {
   if (!extraFlags().empty()) {
     oss << "  \"extraFlags\": [";
     for (unsigned int j = 0; j < extraFlags().size(); j++) {
-      oss << "\n    ["
-          << "\"" << Printer::escapeStringLit(extraFlags()[j].flag) << "\",\""
+      oss << "\n    [" << "\"" << Printer::escapeStringLit(extraFlags()[j].flag) << "\",\""
           << Printer::escapeStringLit(extraFlags()[j].description) << "\",\"";
       switch (extraFlags()[j].flagType) {
         case ExtraFlag::FlagType::T_BOOL:

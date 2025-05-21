@@ -844,8 +844,9 @@ public:
       }
       bool splitArgs = (fs.str().size() > 70);
       for (unsigned int i = 0; i < fi->paramCount(); i++) {
-        os << "<span class='mzn-ti'>" << *fi->param(i)->ti() << "</span>: "
-           << "<span class='mzn-id'>" << Printer::quoteId(fi->param(i)->id()->str()) << "</span>";
+        os << "<span class='mzn-ti'>" << *fi->param(i)->ti()
+           << "</span>: " << "<span class='mzn-id'>" << Printer::quoteId(fi->param(i)->id()->str())
+           << "</span>";
         if (i < fi->paramCount() - 1) {
           os << ",";
           if (splitArgs) {
@@ -1032,8 +1033,7 @@ std::vector<HtmlDocument> HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m,
         IndexEntry& cur = curEntries[0];
         if (curEntries.size() == 1) {
           oss << cur.id << " <a href='" << cur.link << ".html#"
-              << HtmlDocOutput::make_html_id(cur.sig) << "'>"
-              << "(" << cur.groupName << ")</a>";
+              << HtmlDocOutput::make_html_id(cur.sig) << "'>" << "(" << cur.groupName << ")</a>";
         } else {
           oss << cur.id << " (";
           bool first = true;
@@ -1438,8 +1438,7 @@ public:
       // Output as table
       os << "  .. container:: mznDocTable\n\n";
 
-      os << "    +-" << std::string(maxLineWidth, '-') << "-+"
-         << "\n";
+      os << "    +-" << std::string(maxLineWidth, '-') << "-+" << "\n";
       os << "    | " << codeRef << std::string(maxLineWidth - codeRef.size(), ' ') << " |\n";
       os << "    | " << std::string(maxLineWidth, ' ') << " |\n";
       unsigned int curLineWidth = 0;
@@ -1463,8 +1462,7 @@ public:
         os << std::string(maxLineWidth - curLineWidth, ' ');
         os << " |\n";
       }
-      os << "    +-" << std::string(maxLineWidth, '-') << "-+"
-         << "\n";
+      os << "    +-" << std::string(maxLineWidth, '-') << "-+" << "\n";
       curLineWidth = 0;
       for (auto c : doc) {
         if (curLineWidth == 0) {
@@ -1486,8 +1484,7 @@ public:
         os << std::string(maxLineWidth - curLineWidth, ' ');
         os << " |\n";
       }
-      os << "    +-" << std::string(maxLineWidth, '-') << "-+"
-         << "\n\n";
+      os << "    +-" << std::string(maxLineWidth, '-') << "-+" << "\n\n";
     }
 
     os << ".. only:: builder_latex\n\n";
@@ -1525,8 +1522,7 @@ public:
         os << "\n";
       }
       os << "\n\n";
-      os << "  .. raw:: latex"
-         << "\n\n";
+      os << "  .. raw:: latex" << "\n\n";
       os << "     \\noindent\\makebox[\\linewidth]{\\rule{\\textwidth}{0.4pt}}\n\n";
     }
     return os.str();

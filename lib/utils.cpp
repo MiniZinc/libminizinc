@@ -163,7 +163,7 @@ struct OverflowHandler::OverflowInfo {
   EnvI* env;
   void* altstack;
   OverflowInfo(const char** argv, void* altstack0)
-      : stackTop(reinterpret_cast<const char*>(*argv)), env(nullptr), altstack(altstack0) {}
+      : stackTop(*argv), env(nullptr), altstack(altstack0) {}
   ~OverflowInfo() { ::free(altstack); }
   static void overflow(int sig, siginfo_t* info, void* context);
 };

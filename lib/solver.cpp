@@ -985,7 +985,6 @@ void MznSolver::flatten(const std::string& modelString, const std::string& model
     }
     return time_left.count();
   });
-  auto timer_future = timer.get_future();
   std::thread thr(std::move(timer));
 #endif
 

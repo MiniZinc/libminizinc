@@ -38,7 +38,7 @@ public:
   /// Constructor
   explicit ASTString(const std::string& s);
   /// Constructor
-  ASTString(ASTStringData* s) : _s(s){};
+  ASTString(ASTStringData* s) : _s(s) {};
   /// Copy constructor
   ASTString(const ASTString& s) = default;
   /// Assignment operator
