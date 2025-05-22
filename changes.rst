@@ -53,6 +53,8 @@ Bug fixes:
 -  Fix flattening of anonymous variables of enum type to be correctly bounded.
 -  Emit type errors for unsupported usage of anonymous variables in tuples and
    records. 
+-  Fix incorrect flattening of ``in`` for tuples/records containing optional
+   values (:bugref:`900`).
 
 .. _v2.9.2:
 

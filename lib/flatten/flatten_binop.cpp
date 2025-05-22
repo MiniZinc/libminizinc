@@ -1112,6 +1112,10 @@ bool check_struct_table(EnvI& env, Type elem_t, Type arr_t) {
       // TODO: Can be filtered if float (because it must be par) or interned if int.
       return false;
     }
+    if (t.isOpt()) {
+      // TODO: Absent can be interned
+      return false;
+    }
   }
   return true;
 }
