@@ -4,7 +4,12 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
-.. _unreleased:
+.. _v2.9.3:
+
+`Version 2.9.3 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.9.3>`__
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(released 23 May 2025)
 
 Changes:
 ^^^^^^^^
@@ -55,6 +60,10 @@ Bug fixes:
    records. 
 -  Fix incorrect flattening of ``in`` for tuples/records containing optional
    values (:bugref:`900`).
+
+Changes in the IDE:
+^^^^^^^^^^^^^^^^^^^
+-  Suppress warnings generated when running compiled solution checkers.
 
 .. _v2.9.2:
 
