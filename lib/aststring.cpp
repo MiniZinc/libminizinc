@@ -60,10 +60,23 @@ ASTStringData::Interner& ASTStringData::interner() {
 
 ASTStringData::ASTStringData(const std::string& s)
     : ASTChunk(s.size() + sizeof(size_t) + 1, ASTNode::NID_STR) {
-  memcpy_s(_data + sizeof(size_t), s.size() + 1, s.c_str(), s.size());
-  *(_data + sizeof(size_t) + s.size()) = 0;
-  std::hash<std::string> h;
-  reinterpret_cast<size_t*>(_data)[0] = h(s);
+
+  // Get a pointer to the start of the data area
+  char* dataPtr = _data; // Access the _data member inherited from ASTChunk
+
+  // Compute the hash
+  CStringHash hasher;
+  size_t hashValue = hasher(std::make_pair(s.c_str(), s.size()));
+
+  // Store the hash
+  *reinterpret_cast<size_t*>(dataPtr) = hashValue;
+
+  // Calculate pointer after size_t
+  char* stringPtr = dataPtr + sizeof(size_t);
+
+  // Copy the string into it.
+  std::memcpy(stringPtr, s.c_str(), s.size());
+  stringPtr[s.size()] = 0; // Null terminate
 }
 
 ASTStringData* ASTStringData::a(const std::string& s) {
