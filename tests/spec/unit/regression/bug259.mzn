@@ -1,5 +1,6 @@
 /***
 !Test
+solvers: [gecode]
 expected:
 - !Result
   solution: !Solution
@@ -24,6 +25,14 @@ expected:
       sz[1][2][1][5] = 1
       pz[1][1][1][1][13] = 1
       pz[1][2][1][2][13] = 1
+    obj: 62
+- !Result
+  solution: !Solution
+    _output_item: !Trim |
+      sz[1][1][1][1] = 1
+      sz[1][2][1][5] = 1
+      pz[1][1][1][2][13] = 1
+      pz[1][2][1][1][13] = 1
     obj: 62
 ***/
 
