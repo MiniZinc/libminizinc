@@ -5,12 +5,12 @@ stages:
   - bench
 
 .download_bundle: &download_bundle
-  - curl --location --header "PRIVATE-TOKEN:$ACCESS_TOKEN" --silent https://gitlab.com/api/v4/snippets/1796163/raw | tr -d '\r' > download.sh
+  - curl --retry 10 --location --header "PRIVATE-TOKEN:$ACCESS_TOKEN" --silent https://gitlab.com/api/v4/snippets/1796163/raw | tr -d '\r' > download.sh
   - sh download.sh minizinc-vendor master bundle:${MZNARCH} vendor.zip
   - unzip -q vendor.zip
 
 .download_bundle_win: &download_bundle_win
-  - curl -o download.sh --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" --silent https://gitlab.com/api/v4/snippets/1796163/raw
+  - curl --retry 10 -o download.sh --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" --silent https://gitlab.com/api/v4/snippets/1796163/raw
   - dos2unix download.sh
   - sh download.sh minizinc-vendor master bundle:%MZNARCH% vendor.zip
   - unzip -q vendor.zip
@@ -258,7 +258,7 @@ test:win64:full:
     - cd tests/flattening
     - mkdir -p results
     # Download instances to benchmark
-    - curl --location --silent https://gitlab.com/-/snippets/2095682/raw/master/instances.csv | tr -d '\r' > instances.csv
+    - curl --retry 10 --location --silent https://gitlab.com/-/snippets/2095682/raw/master/instances.csv | tr -d '\r' > instances.csv
     - git clone https://github.com/minizinc/minizinc-benchmarks.git
   script:
     # Run benchmarks
