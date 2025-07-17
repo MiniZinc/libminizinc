@@ -16,6 +16,8 @@
 
 %top{
 #include <cstdint>
+#include <cerrno>
+#include <cstdlib>
 }
 
 %{
@@ -101,9 +103,28 @@ namespace MiniZinc {
   }
 
   bool strtofloatval(const char* s, double& v) {
-    std::istringstream iss(s);
-    iss >> v;
-    return !iss.fail();
+    char* endptr;
+    errno = 0;
+    v = std::strtod(s, &endptr);
+    
+    // Check if the entire string was consumed
+    if (*endptr != '\0') {
+      return false;
+    }
+    
+    // Check for overflow or underflow
+    if (errno == ERANGE) {
+      // ERANGE can indicate overflow to infinity or underflow to zero
+      // Both are valid floating point representations, so we accept them
+      return true;
+    }
+    
+    // Any other errno value indicates an error
+    if (errno != 0) {
+      return false;
+    }
+    
+    return true;
   }
 
   void clearBuffer(void* parm) {
