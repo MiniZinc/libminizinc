@@ -2667,16 +2667,18 @@ KeepAlive compute_combined_domain(EnvI& env, TypeInst* ti, Expression* cur) {
         Expression::isa<Id>(cur) ? Expression::cast<Id>(cur)->decl()->e() : cur);
     if (tl != nullptr) {
       auto* tis = Expression::cast<ArrayLit>(ti->domain());
-      std::vector<KeepAlive> dom_expr(tis->size());
+      assert(tis->size() == tl->size() || (tis->size() == 2 && tl->size() == 1));
+      unsigned int tis_size = tis->size() == tl->size() ? tis->size() : 1;
+      std::vector<KeepAlive> dom_expr(tis_size);
       bool any_changed = false;
-      for (unsigned int i = 0; i < tis->size(); i++) {
+      for (unsigned int i = 0; i < tis_size; i++) {
         dom_expr[i] = compute_combined_domain(env, Expression::cast<TypeInst>((*tis)[i]), (*tl)[i]);
         any_changed = any_changed || dom_expr[i]() != nullptr;
       }
       if (any_changed) {
         GCLock lock;
-        std::vector<Expression*> dom(tis->size());
-        for (unsigned int i = 0; i < tis->size(); i++) {
+        std::vector<Expression*> dom(tis_size);
+        for (unsigned int i = 0; i < tis_size; i++) {
           auto* ti = Expression::cast<TypeInst>((*tis)[i]);
           dom[i] = new TypeInst(Location().introduce(), ti->type(),
                                 dom_expr[i]() == nullptr ? ti->domain() : dom_expr[i]());

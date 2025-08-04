@@ -60,6 +60,8 @@ Bug fixes:
    records. 
 -  Fix incorrect flattening of ``in`` for tuples/records containing optional
    values (:bugref:`900`).
+-  Fix compilation of arrays of arrays when inferred type-inst is var, and
+   pretty-printing of arrays of arrays (:bugref:`942`).
 
 Changes in the IDE:
 ^^^^^^^^^^^^^^^^^^^

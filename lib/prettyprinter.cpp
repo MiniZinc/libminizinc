@@ -251,6 +251,14 @@ public:
       // TODO: Why does `type` sometimes not have a type ID even though `al` does?
       auto t = al->type().structBT() ? al->type() : type;
       assert(t.structBT());
+      if (t.bt() == Type::BT_TUPLE) {
+        auto* tt = _env->getTupleType(t);
+        if (tt->size() == 2 && (*tt)[1].isunknown()) {
+          // This is an array of arrays - print first component only
+          p((*tt)[0], (*al)[0]);
+          return;
+        }
+      }
       _os << (t.bt() == Type::BT_TUPLE ? "tuple(" : "record(");
       if (t.bt() != Type::BT_RECORD || t.typeId() != 0) {
         for (unsigned int i = 0; i < al->size(); ++i) {
@@ -400,6 +408,14 @@ public:
         break;
       case Expression::E_ARRAYLIT: {
         const auto* al = Expression::cast<ArrayLit>(e);
+        if (al->isTuple()) {
+          auto* tt = _env->getTupleType(Expression::type(al));
+          if (tt->size() == 2 && (*tt)[1].isunknown()) {
+            // This is an array of arrays, print the first element
+            p((*al)[0]);
+            break;
+          }
+        }
         unsigned int n = al->dims();
         if (n == 1 && al->min(0) == 1) {
           _os << (al->isTuple() ? "(" : "[");
@@ -1475,6 +1491,13 @@ public:
   static ret mapAnonVar(const AnonVar* /*v*/) { return new StringDocument("_"); }
   ret mapArrayLit(const ArrayLit* al) {
     /// TODO: test multi-dimensional arrays handling
+    if (al->isTuple()) {
+      auto* tt = _env->getTupleType(Expression::type(al));
+      if (tt->size() == 2 && (*tt)[1].isunknown()) {
+        // This is an array of arrays, print the first element
+        return expression_to_document((*al)[0], _env);
+      }
+    }
     DocumentList* dl;
     unsigned int n = al->dims();
     if (n == 1 && al->min(0) == 1) {

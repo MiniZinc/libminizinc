@@ -2206,8 +2206,10 @@ bool b_in_symmetry_breaking_constraint(EnvI& env, Call* /*call*/) {
 bool b_mzn_in_root_context(EnvI& env, Call* call) {
   // Find context of enclosing call
   for (size_t i = env.callStack.size(); (i--) != 0U;) {
-    if (env.callStack[i].e != nullptr && Expression::isa<Call>(env.callStack[i].e) &&
-        Expression::cast<Call>(env.callStack[i].e)->id() != env.constants.ids.mzn_in_root_context) {
+    if (env.callStack[i].e != nullptr && ((Expression::isa<Call>(env.callStack[i].e) &&
+                                           Expression::cast<Call>(env.callStack[i].e)->id() !=
+                                               env.constants.ids.mzn_in_root_context) ||
+                                          Expression::isa<BinOp>(env.callStack[i].e))) {
       return env.callStack[i].ctx.b == C_ROOT;
     }
   }

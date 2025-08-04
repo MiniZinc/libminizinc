@@ -2458,6 +2458,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
                 throw ResultUndefinedError(env, Expression::loc(e), "deopt(<>) is undefined");
               }
             } else {
+              CallStackItem csi(env, c);
               return eval_call<EvalPar>(env, c);
             }
           }
@@ -2476,6 +2477,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
         case Expression::E_BINOP: {
           auto* bo = Expression::cast<BinOp>(e);
           if ((bo->decl() != nullptr) && (bo->decl()->e() != nullptr)) {
+            CallStackItem csi(env, bo);
             return eval_call<EvalPar, BinOp>(env, bo);
           }
           auto* nbo = new BinOp(Expression::loc(e), eval_par(env, bo->lhs()), bo->op(),
@@ -2493,6 +2495,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
         case Expression::E_UNOP: {
           UnOp* uo = Expression::cast<UnOp>(e);
           if ((uo->decl() != nullptr) && (uo->decl()->e() != nullptr)) {
+            CallStackItem csi(env, uo);
             return eval_call<EvalPar, UnOp>(env, uo);
           }
           UnOp* nuo = new UnOp(Expression::loc(e), uo->op(), eval_par(env, uo->e()));

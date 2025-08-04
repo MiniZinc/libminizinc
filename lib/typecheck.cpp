@@ -1878,6 +1878,7 @@ public:
         auto* wrapper = ArrayLit::constructTuple(Expression::loc(vi).introduce(), {vi});
         auto wrapper_t = _env.registerTupleType({Expression::type(vi), Type()});
         Type tt = Type::tuple();
+        tt.ti(Expression::type(vi).ti());
         tt.typeId(wrapper_t);
         Expression::type(wrapper, tt);
         al->set(i, wrapper);
