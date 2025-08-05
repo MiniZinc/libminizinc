@@ -62,6 +62,8 @@ Bug fixes:
    values (:bugref:`900`).
 -  Fix compilation of arrays of arrays when inferred type-inst is var, and
    pretty-printing of arrays of arrays (:bugref:`942`).
+-  Fix CSE for empty arrays, which could cause incorrect function overloads
+   to be called (:bugref:`946`).
 
 Changes in the IDE:
 ^^^^^^^^^^^^^^^^^^^

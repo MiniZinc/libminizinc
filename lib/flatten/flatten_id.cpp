@@ -209,9 +209,11 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
       al->type(elems.empty() ? Type::bot(vd->type().dim()) : vd->type());
       vd->e(al);
       env.voAddExp(vd);
-      EE ee;
-      ee.r = vd;
-      env.cseMapInsert(vd->e(), ee);
+      if (!elems.empty()) {
+        EE ee;
+        ee.r = vd;
+        env.cseMapInsert(vd->e(), ee);
+      }
     }
     if (rete == nullptr) {
       if (!vd->toplevel()) {
