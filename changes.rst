@@ -64,6 +64,8 @@ Bug fixes:
    pretty-printing of arrays of arrays (:bugref:`942`).
 -  Fix CSE for empty arrays, which could cause incorrect function overloads
    to be called (:bugref:`946`).
+-  Fix a bug in the Constants class that caused the GC to access uninitialised
+   memory (:bugref:`933`).
 
 Changes in the IDE:
 ^^^^^^^^^^^^^^^^^^^

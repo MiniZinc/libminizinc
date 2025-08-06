@@ -759,7 +759,7 @@ public:
   Id* sBOT_NOT;        // NOLINT(readability-identifier-naming)
 
   OpToString() {
-    GCLock lock;
+    GC::lockNoGC();
 
     sBOT_PLUS = new Id(Location(), "'+'", nullptr);
     sBOT_MINUS = new Id(Location(), "'-'", nullptr);
@@ -790,6 +790,8 @@ public:
     sBOT_XOR = new Id(Location(), "'xor'", nullptr);
     sBOT_DOTDOT = new Id(Location(), "'..'", nullptr);
     sBOT_NOT = new Id(Location(), "'not'", nullptr);
+
+    GC::unlock();
   }
 
   static OpToString& o() {
@@ -2145,7 +2147,7 @@ bool Expression::equalInternal(const Expression* e0, const Expression* e1) {
 }
 
 Constants::Constants() {
-  GCLock lock;
+  GC::lockNoGC();
   auto* ti = new TypeInst(Location(), Type::parbool());
   emptyBoolArray = new ArrayLit(Location(), std::vector<Expression*>{});
   emptyBoolArray->type(Type::parbool(1));
@@ -2513,6 +2515,7 @@ Constants::Constants() {
   cli_cat.io = addString("Input/Output Options");
   cli_cat.solver = addString("Solver Options");
   cli_cat.translation = addString("Translation Options");
+  GC::unlock();
 };
 
 bool Constants::isCallByReferenceId(const ASTString& cid) const {

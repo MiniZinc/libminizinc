@@ -167,6 +167,8 @@ private:
 public:
   /// Acquire garbage collector lock for this thread
   static void lock();
+  /// Acquire garbage collector lock for this thread and do not run GC
+  static void lockNoGC();
   /// Release garbage collector lock for this thread
   static void unlock();
   /// Manually trigger garbage collector (must be unlocked)

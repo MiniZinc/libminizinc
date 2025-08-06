@@ -366,6 +366,12 @@ void GC::lock() {
   }
   gc()->_lockCount++;
 }
+void GC::lockNoGC() {
+  if (gc() == nullptr) {
+    gc() = new GC();
+  }
+  gc()->_lockCount++;
+}
 void GC::unlock() {
   assert(locked());
   gc()->_lockCount--;
