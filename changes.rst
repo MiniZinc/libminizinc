@@ -66,6 +66,8 @@ Bug fixes:
    to be called (:bugref:`946`).
 -  Fix a bug in the Constants class that caused the GC to access uninitialised
    memory (:bugref:`933`).
+-  Fix a bug in the chain compression algorithm that resulted in incorrectly
+   removing constraints that were not redundant (:bugref:`943`).
 
 Changes in the IDE:
 ^^^^^^^^^^^^^^^^^^^

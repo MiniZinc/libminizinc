@@ -443,7 +443,7 @@ void LECompressor::compress() {
               break;
             }
             auto* neg = Expression::dynamicCast<VarDecl>(follow_id_to_decl((*bs)[i]));
-            if (neg == nullptr) {
+            if (neg == nullptr || neg->e() != nullptr) {
               continue;
             }
             bool output_var = Expression::ann(neg).contains(_env.constants.ann.output_var);
@@ -632,8 +632,7 @@ bool LECompressor::eqBounds(Expression* a, Expression* b) {
     dom_b = IntSetVal::a(b_val, b_val);
   }
 
-  return (dom_a != nullptr && dom_b != nullptr && !dom_a->empty() && !dom_b->empty() &&
-          dom_a->min() == dom_b->min() && dom_a->max() == dom_b->max()) ||
+  return (dom_a != nullptr && dom_b != nullptr && dom_a->equal(dom_b)) ||
          (dom_a == nullptr && dom_b == nullptr);
 }
 
