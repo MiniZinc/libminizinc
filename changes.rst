@@ -68,6 +68,7 @@ Bug fixes:
    memory (:bugref:`933`).
 -  Fix a bug in the chain compression algorithm that resulted in incorrectly
    removing constraints that were not redundant (:bugref:`943`).
+-  Fix a bug in the nvalue decomposition to also make it work for empty arrays.
 
 Changes in the IDE:
 ^^^^^^^^^^^^^^^^^^^
