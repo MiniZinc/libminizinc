@@ -5,14 +5,11 @@ stages:
   - bench
 
 .download_bundle: &download_bundle
-  - curl --retry 10 --location --header "PRIVATE-TOKEN:$ACCESS_TOKEN" --silent https://gitlab.com/api/v4/snippets/1796163/raw | tr -d '\r' > download.sh
-  - sh download.sh minizinc-vendor master bundle:${MZNARCH} vendor.zip
+  - sh ${VENDOR_SCRIPT} minizinc-vendor master bundle:${MZNARCH} vendor.zip
   - unzip -q vendor.zip
 
 .download_bundle_win: &download_bundle_win
-  - curl --retry 10 -o download.sh --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" --silent https://gitlab.com/api/v4/snippets/1796163/raw
-  - dos2unix download.sh
-  - sh download.sh minizinc-vendor master bundle:%MZNARCH% vendor.zip
+  - sh %VENDOR_SCRIPT% minizinc-vendor master bundle:%MZNARCH% vendor.zip
   - unzip -q vendor.zip
 
 variables:
