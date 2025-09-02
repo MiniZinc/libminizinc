@@ -444,6 +444,7 @@ void LECompressor::compress() {
             }
             auto* neg = Expression::dynamicCast<VarDecl>(follow_id_to_decl((*bs)[i]));
             if (neg == nullptr || neg->e() != nullptr) {
+              ++it;
               continue;
             }
             bool output_var = Expression::ann(neg).contains(_env.constants.ann.output_var);
