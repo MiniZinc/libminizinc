@@ -251,7 +251,7 @@ public:
       // TODO: Why does `type` sometimes not have a type ID even though `al` does?
       auto t = al->type().structBT() ? al->type() : type;
       assert(t.structBT());
-      if (t.bt() == Type::BT_TUPLE) {
+      if (_env != nullptr && t.bt() == Type::BT_TUPLE && t.typeId() != 0) {
         auto* tt = _env->getTupleType(t);
         if (tt->size() == 2 && (*tt)[1].isunknown()) {
           // This is an array of arrays - print first component only
@@ -408,7 +408,7 @@ public:
         break;
       case Expression::E_ARRAYLIT: {
         const auto* al = Expression::cast<ArrayLit>(e);
-        if (al->isTuple()) {
+        if (_env != nullptr && al->type().bt() == Type::BT_TUPLE && al->type().typeId() != 0) {
           auto* tt = _env->getTupleType(Expression::type(al));
           if (tt->size() == 2 && (*tt)[1].isunknown()) {
             // This is an array of arrays, print the first element
@@ -1491,7 +1491,7 @@ public:
   static ret mapAnonVar(const AnonVar* /*v*/) { return new StringDocument("_"); }
   ret mapArrayLit(const ArrayLit* al) {
     /// TODO: test multi-dimensional arrays handling
-    if (al->isTuple()) {
+    if (_env != nullptr && al->type().bt() == Type::BT_TUPLE && al->type().typeId() != 0) {
       auto* tt = _env->getTupleType(Expression::type(al));
       if (tt->size() == 2 && (*tt)[1].isunknown()) {
         // This is an array of arrays, print the first element
