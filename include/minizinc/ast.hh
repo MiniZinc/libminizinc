@@ -593,6 +593,7 @@ inline const Location& Expression::locDefault(const Expression* e0, const Expres
   return Expression::isUnboxedVal(e0) ? loc(e1) : e0->_loc;
 }
 inline const Location& Expression::locDefault(const Expression* e0, const Location& ldef) {
+  // NOLINTNEXTLINE(bugprone-return-const-ref-from-parameter)
   return Expression::isUnboxedVal(e0) ? ldef : e0->_loc;
 }
 inline const Type& Expression::type(const Expression* e) {

@@ -3485,6 +3485,7 @@ void create_par_versions(Env& env, Model* m, BottomUpIterator<Typer<true>>& bott
   do {
     didRemove = false;
     std::vector<FunctionI*> toRemove;
+    // NOLINTNEXTLINE(bugprone-nondeterministic-pointer-iteration-order)
     for (auto& p : fnsToMakePar) {
       for (auto* dep : p.second.second) {
         if (fnsToMakePar.find(dep) == fnsToMakePar.end()) {
@@ -3499,6 +3500,14 @@ void create_par_versions(Env& env, Model* m, BottomUpIterator<Typer<true>>& bott
       }
     }
   } while (didRemove);
+  std::vector<FunctionI*> parFnTodo;
+  parFnTodo.reserve(fnsToMakePar.size());
+  for (auto& f : m->functions()) {
+    auto it = fnsToMakePar.find(&f);
+    if (it != fnsToMakePar.end() && !it->second.first) {
+      parFnTodo.push_back(it->first);
+    }
+  }
 
   // Create par versions of remaining functions
   if (!fnsToMakePar.empty()) {
@@ -3516,44 +3525,40 @@ void create_par_versions(Env& env, Model* m, BottomUpIterator<Typer<true>>& bott
         }
       }
     } _egd(parCopyMap);
-    for (auto& p : fnsToMakePar) {
-      if (!p.second.first) {
-        for (unsigned int i = 0; i < p.first->paramCount(); i++) {
-          top_down(_egd, p.first->param(i));
-        }
-        if (p.first->capturedAnnotationsVar() != nullptr) {
-          top_down(_egd, p.first->capturedAnnotationsVar());
-        }
-        for (ExpressionSetIter i = p.first->ann().begin(); i != p.first->ann().end(); ++i) {
-          top_down(_egd, *i);
-        }
-        top_down(_egd, p.first->e());
+    for (auto* f : parFnTodo) {
+      for (unsigned int i = 0; i < f->paramCount(); i++) {
+        top_down(_egd, f->param(i));
       }
+      if (f->capturedAnnotationsVar() != nullptr) {
+        top_down(_egd, f->capturedAnnotationsVar());
+      }
+      for (ExpressionSetIter i = f->ann().begin(); i != f->ann().end(); ++i) {
+        top_down(_egd, *i);
+      }
+      top_down(_egd, f->e());
     }
 
     // Step 1b: copy functions
-    for (auto& p : fnsToMakePar) {
-      if (!p.second.first) {
-        GCLock lock;
-        auto* cp = copy(env.envi(), parCopyMap, p.first)->cast<FunctionI>();
-        for (unsigned int i = 0; i < cp->paramCount(); i++) {
-          VarDecl* v = cp->param(i);
-          v->ti()->mkPar(env.envi());
-          v->type(v->ti()->type());
-        }
-        cp->ti()->mkPar(env.envi());
-        bool didRegister = m->registerFn(env.envi(), cp, true, false);
-        if (didRegister) {
-          m->addItem(cp);
-          parFunctions.push_back(cp);
-        } else {
-          // A function with par parameters already exists.
-          // This can only happen this can be made par, but the return type was given as var.
-          // Therefore, we can just set the return type to par.
-          assert(p.first->ti()->type().isvar());
-          p.first->ti()->mkPar(env.envi());
-          parFunctions.push_back(p.first);
-        }
+    for (auto* f : parFnTodo) {
+      GCLock lock;
+      auto* cp = copy(env.envi(), parCopyMap, f)->cast<FunctionI>();
+      for (unsigned int i = 0; i < cp->paramCount(); i++) {
+        VarDecl* v = cp->param(i);
+        v->ti()->mkPar(env.envi());
+        v->type(v->ti()->type());
+      }
+      cp->ti()->mkPar(env.envi());
+      bool didRegister = m->registerFn(env.envi(), cp, true, false);
+      if (didRegister) {
+        m->addItem(cp);
+        parFunctions.push_back(cp);
+      } else {
+        // A function with par parameters already exists.
+        // This can only happen this can be made par, but the return type was given as var.
+        // Therefore, we can just set the return type to par.
+        assert(f->ti()->type().isvar());
+        f->ti()->mkPar(env.envi());
+        parFunctions.push_back(f);
       }
     }
 
