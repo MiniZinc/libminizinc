@@ -2206,11 +2206,20 @@ bool b_in_symmetry_breaking_constraint(EnvI& env, Call* /*call*/) {
 bool b_mzn_in_root_context(EnvI& env, Call* call) {
   // Find context of enclosing call
   for (size_t i = env.callStack.size(); (i--) != 0U;) {
-    if (env.callStack[i].e != nullptr && ((Expression::isa<Call>(env.callStack[i].e) &&
-                                           Expression::cast<Call>(env.callStack[i].e)->id() !=
-                                               env.constants.ids.mzn_in_root_context) ||
-                                          Expression::isa<BinOp>(env.callStack[i].e))) {
-      return env.callStack[i].ctx.b == C_ROOT;
+    if (env.callStack[i].e != nullptr) {
+      if (auto* c = Expression::dynamicCast<Call>(env.callStack[i].e)) {
+        if (c->decl() != nullptr && c->decl()->e() != nullptr) {
+          return env.callStack[i].ctx.b == C_ROOT;
+        }
+      } else if (auto* bo = Expression::dynamicCast<BinOp>(env.callStack[i].e)) {
+        if (bo->decl() != nullptr && bo->decl()->e() != nullptr) {
+          return env.callStack[i].ctx.b == C_ROOT;
+        }
+      } else if (auto* uo = Expression::dynamicCast<UnOp>(env.callStack[i].e)) {
+        if (uo->decl() != nullptr && uo->decl()->e() != nullptr) {
+          return env.callStack[i].ctx.b == C_ROOT;
+        }
+      }
     }
   }
   throw EvalError(env, Expression::loc(call), "mzn_in_root_context used outside of predicate");

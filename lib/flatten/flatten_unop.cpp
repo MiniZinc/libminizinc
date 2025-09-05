@@ -14,7 +14,7 @@
 namespace MiniZinc {
 
 EE flatten_unop(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
-  CallStackItem _csi(env, e);
+  CallStackItem _csi(env, e, ctx);
   UnOp* uo = Expression::cast<UnOp>(e);
 
   bool isBuiltin = uo->decl() == nullptr || uo->decl()->e() == nullptr;

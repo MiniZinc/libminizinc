@@ -1710,7 +1710,7 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
 
 EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarDecl* b) {
   Ctx ctx = input_ctx;
-  CallStackItem _csi(env, e);
+  CallStackItem _csi(env, e, input_ctx);
   EE ret;
   auto* bo = Expression::cast<BinOp>(e);
   if (is_reverse_map(env, bo)) {
