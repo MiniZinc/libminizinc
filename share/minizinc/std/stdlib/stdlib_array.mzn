@@ -107,6 +107,208 @@ function array [int, $$E, $$F, $$G, $$H, $$I] of any $T: '++'(
     ),
   );
 
+/** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
+   in the first index.
+ */
+function array[int] of $T: concat_index_1(array[$$X11] of any $T: x, array[$$X12] of any $T: y);
+/** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
+   in the first index.
+ */
+function array[int,$$X2] of $T: concat_index_1(array[$$X11,$$X2] of any $T: x, array[$$X12,$$X2] of any $T: y);
+/** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
+   in the first index.
+ */
+function array[int,$$X2,$$X3] of $T: concat_index_1(array[$$X11,$$X2,$$X3] of any $T: x, array[$$X12,$$X2,$$X3] of any $T: y);
+/** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
+   in the first index.
+ */
+function array[int,$$X2,$$X3,$$X4] of $T: concat_index_1(array[$$X11,$$X2,$$X3,$$X4] of any $T: x, array[$$X12,$$X2,$$X3,$$X4] of any $T: y);
+/** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
+   in the first index.
+ */
+function array[int,$$X2,$$X3,$$X4,$$X5] of $T: concat_index_1(array[$$X11,$$X2,$$X3,$$X4,$$X5] of any $T: x, array[$$X12,$$X2,$$X3,$$X4,$$X5] of any $T: y);
+/** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
+   in the first index.
+ */
+function array[int,$$X2,$$X3,$$X4,$$X5,$$X6] of $T: concat_index_1(array[$$X11,$$X2,$$X3,$$X4,$$X5,$$X6] of any $T: x, array[$$X12,$$X2,$$X3,$$X4,$$X5,$$X6] of any $T: y);
+
+/** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
+   in the second index.
+ */
+function array[$$X1,int] of $T: concat_index_2(array[$$X1,$$X21] of any $T: x, array[$$X1,$$X22] of any $T: y);
+/** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
+   in the second index.
+ */
+function array[$$X1,int,$$X3] of $T: concat_index_2(array[$$X1,$$X21,$$X3] of any $T: x, array[$$X1,$$X22,$$X3] of any $T: y);
+/** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
+   in the second index.
+ */
+function array[$$X1,int,$$X3,$$X4] of $T: concat_index_2(array[$$X1,$$X21,$$X3,$$X4] of any $T: x, array[$$X1,$$X22,$$X3,$$X4] of any $T: y);
+/** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
+   in the second index.
+ */
+function array[$$X1,int,$$X3,$$X4,$$X5] of $T: concat_index_2(array[$$X1,$$X21,$$X3,$$X4,$$X5] of any $T: x, array[$$X1,$$X22,$$X3,$$X4,$$X5] of any $T: y);
+/** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
+   in the second index.
+ */
+function array[$$X1,int,$$X3,$$X4,$$X5,$$X6] of $T: concat_index_2(array[$$X1,$$X21,$$X3,$$X4,$$X5,$$X6] of any $T: x, array[$$X1,$$X22,$$X3,$$X4,$$X5,$$X6] of any $T: y);
+
+/** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
+   in the third index.
+ */
+function array[$$X1,$$X2,int] of $T: concat_index_3(array[$$X1,$$X2,$$X31] of any $T: x, array[$$X1,$$X2,$$X32] of any $T: y);
+/** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
+   in the third index.
+ */
+function array[$$X1,$$X2,int,$$X4] of $T: concat_index_3(array[$$X1,$$X2,$$X31,$$X4] of any $T: x, array[$$X1,$$X2,$$X32,$$X4] of any $T: y);
+/** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
+   in the third index.
+ */
+function array[$$X1,$$X2,int,$$X4,$$X5] of $T: concat_index_3(array[$$X1,$$X2,$$X31,$$X4,$$X5] of any $T: x, array[$$X1,$$X2,$$X32,$$X4,$$X5] of any $T: y);
+/** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
+   in the third index.
+ */
+function array[$$X1,$$X2,int,$$X4,$$X5,$$X6] of $T: concat_index_3(array[$$X1,$$X2,$$X31,$$X4,$$X5,$$X6] of any $T: x, array[$$X1,$$X2,$$X32,$$X4,$$X5,$$X6] of any $T: y);
+
+/** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
+   in the fourth index.
+ */
+function array[$$X1,$$X2,$$X3,int] of $T: concat_index_4(array[$$X1,$$X2,$$X3,$$X41] of any $T: x, array[$$X1,$$X2,$$X3,$$X42] of any $T: y);
+/** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
+   in the fourth index.
+ */
+function array[$$X1,$$X2,$$X3,int,$$X5] of $T: concat_index_4(array[$$X1,$$X2,$$X3,$$X41,$$X5] of any $T: x, array[$$X1,$$X2,$$X3,$$X42,$$X5] of any $T: y);
+/** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
+   in the fourth index.
+ */
+function array[$$X1,$$X2,$$X3,int,$$X5,$$X6] of $T: concat_index_4(array[$$X1,$$X2,$$X3,$$X41,$$X5,$$X6] of any $T: x, array[$$X1,$$X2,$$X3,$$X42,$$X5,$$X6] of any $T: y);
+
+/** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
+   in the fifth index.
+ */
+function array[$$X1,$$X2,$$X3,$$X4,int] of $T: concat_index_5(array[$$X1,$$X2,$$X3,$$X4,$$X51] of any $T: x, array[$$X1,$$X2,$$X3,$$X4,$$X52] of any $T: y);
+/** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
+   in the fifth index.
+ */
+function array[$$X1,$$X2,$$X3,$$X4,int,$$X6] of $T: concat_index_5(array[$$X1,$$X2,$$X3,$$X4,$$X51,$$X6] of any $T: x, array[$$X1,$$X2,$$X3,$$X4,$$X52,$$X6] of any $T: y);
+
+/** @group stdlib.builtins.array Return the concatenation of the multidimensional arrays \a x and \a y
+   in the sixth index.
+ */
+function array[$$X1,$$X2,$$X3,$$X4,$$X5,int] of $T: concat_index_6(array[$$X1,$$X2,$$X3,$$X4,$$X5,$$X61] of any $T: x, array[$$X1,$$X2,$$X3,$$X4,$$X5,$$X61] of any $T: y);
+
+
+/** @group stdlib.builtins.array Return a (potentially non-contiguous) slice of array \a x,
+  in the first index, specified by the set \a S. The result is undefined if \a S is not
+  a subset of the first index set of \a x.
+ */
+function array[int] of $T: select_from_index_1(array[$$X1] of any $T: x, set of $$X1: S);
+/** @group stdlib.builtins.array Return a (potentially non-contiguous) slice of array \a x,
+  in the first index, specified by the set \a S. The result is undefined if \a S is not
+  a subset of the first index set of \a x.
+ */
+function array[int,$$X2] of $T: select_from_index_1(array[$$X1, $$X2] of any $T: x, set of $$X1: S);
+/** @group stdlib.builtins.array Return a (potentially non-contiguous) slice of array \a x,
+  in the first index, specified by the set \a S. The result is undefined if \a S is not
+  a subset of the first index set of \a x.
+ */
+function array[int,$$X2,$$X3] of $T: select_from_index_1(array[$$X1, $$X2, $$X3] of any $T: x, set of $$X1: S);
+/** @group stdlib.builtins.array Return a (potentially non-contiguous) slice of array \a x,
+  in the first index, specified by the set \a S. The result is undefined if \a S is not
+  a subset of the first index set of \a x.
+ */
+function array[int,$$X2,$$X3,$$X4] of $T: select_from_index_1(array[$$X1, $$X2, $$X3, $$X4] of any $T: x, set of $$X1: S);
+/** @group stdlib.builtins.array Return a (potentially non-contiguous) slice of array \a x,
+  in the first index, specified by the set \a S. The result is undefined if \a S is not
+  a subset of the first index set of \a x.
+ */
+function array[int,$$X2,$$X3,$$X4,$$X5] of $T: select_from_index_1(array[$$X1, $$X2, $$X3, $$X4, $$X5] of any $T: x, set of $$X1: S);
+/** @group stdlib.builtins.array Return a (potentially non-contiguous) slice of array \a x,
+  in the first index, specified by the set \a S. The result is undefined if \a S is not
+  a subset of the first index set of \a x.
+ */
+function array[int,$$X2,$$X3,$$X4,$$X5,$$X6] of $T: select_from_index_1(array[$$X1, $$X2, $$X3, $$X4, $$X5, $$X6] of any $T: x, set of $$X1: S);
+
+/** @group stdlib.builtins.array Return a (potentially non-contiguous) slice of array \a x,
+  in the second index, specified by the set \a S. The result is undefined if \a S is not
+  a subset of the second index set of \a x.
+ */
+function array[$$X1,int] of $T: select_from_index_2(array[$$X1, $$X2] of any $T: x, set of $$X2: S);
+/** @group stdlib.builtins.array Return a (potentially non-contiguous) slice of array \a x,
+  in the second index, specified by the set \a S. The result is undefined if \a S is not
+  a subset of the second index set of \a x.
+ */
+function array[$$X1,int,$$X3] of $T: select_from_index_2(array[$$X1, $$X2, $$X3] of any $T: x, set of $$X2: S);
+/** @group stdlib.builtins.array Return a (potentially non-contiguous) slice of array \a x,
+  in the second index, specified by the set \a S. The result is undefined if \a S is not
+  a subset of the second index set of \a x.
+ */
+function array[$$X1,int,$$X3,$$X4] of $T: select_from_index_2(array[$$X1, $$X2, $$X3, $$X4] of any $T: x, set of $$X2: S);
+/** @group stdlib.builtins.array Return a (potentially non-contiguous) slice of array \a x,
+  in the second index, specified by the set \a S. The result is undefined if \a S is not
+  a subset of the second index set of \a x.
+ */
+function array[$$X1,int,$$X3,$$X4,$$X5] of $T: select_from_index_2(array[$$X1, $$X2, $$X3, $$X4, $$X5] of any $T: x, set of $$X2: S);
+/** @group stdlib.builtins.array Return a (potentially non-contiguous) slice of array \a x,
+  in the second index, specified by the set \a S. The result is undefined if \a S is not
+  a subset of the second index set of \a x.
+ */
+function array[$$X1,int,$$X3,$$X4,$$X5,$$X6] of $T: select_from_index_2(array[$$X1, $$X2, $$X3, $$X4, $$X5, $$X6] of any $T: x, set of $$X2: S);
+
+/** @group stdlib.builtins.array Return a (potentially non-contiguous) slice of array \a x,
+  in the third index, specified by the set \a S. The result is undefined if \a S is not
+  a subset of the third index set of \a x.
+ */
+function array[$$X1,$$X2,int] of $T: select_from_index_3(array[$$X1, $$X2, $$X3] of any $T: x, set of $$X3: S);
+/** @group stdlib.builtins.array Return a (potentially non-contiguous) slice of array \a x,
+  in the third index, specified by the set \a S. The result is undefined if \a S is not
+  a subset of the third index set of \a x.
+ */
+function array[$$X1,$$X2,int,$$X4] of $T: select_from_index_3(array[$$X1, $$X2, $$X3, $$X4] of any $T: x, set of $$X3: S);
+/** @group stdlib.builtins.array Return a (potentially non-contiguous) slice of array \a x,
+  in the third index, specified by the set \a S. The result is undefined if \a S is not
+  a subset of the third index set of \a x.
+ */
+function array[$$X1,$$X2,int,$$X4,$$X5] of $T: select_from_index_3(array[$$X1, $$X2, $$X3, $$X4, $$X5] of any $T: x, set of $$X3: S);
+/** @group stdlib.builtins.array Return a (potentially non-contiguous) slice of array \a x,
+  in the third index, specified by the set \a S. The result is undefined if \a S is not
+  a subset of the third index set of \a x.
+ */
+function array[$$X1,$$X2,int,$$X4,$$X5,$$X6] of $T: select_from_index_3(array[$$X1, $$X2, $$X3, $$X4, $$X5, $$X6] of any $T: x, set of $$X3: S);
+
+/** @group stdlib.builtins.array Return a (potentially non-contiguous) slice of array \a x,
+  in the fourth index, specified by the set \a S. The result is undefined if \a S is not
+  a subset of the fourth index set of \a x.
+ */
+function array[$$X1,$$X2,$$X3,int] of $T: select_from_index_4(array[$$X1, $$X2, $$X3, $$X4] of any $T: x, set of $$X4: S);
+/** @group stdlib.builtins.array Return a (potentially non-contiguous) slice of array \a x,
+  in the fourth index, specified by the set \a S. The result is undefined if \a S is not
+  a subset of the fourth index set of \a x.
+ */
+function array[$$X1,$$X2,$$X3,int,$$X5] of $T: select_from_index_4(array[$$X1, $$X2, $$X3, $$X4, $$X5] of any $T: x, set of $$X4: S);
+/** @group stdlib.builtins.array Return a (potentially non-contiguous) slice of array \a x,
+  in the fourth index, specified by the set \a S. The result is undefined if \a S is not
+  a subset of the fourth index set of \a x.
+ */
+function array[$$X1,$$X2,$$X3,int,$$X5,$$X6] of $T: select_from_index_4(array[$$X1, $$X2, $$X3, $$X4, $$X5, $$X6] of any $T: x, set of $$X4: S);
+
+/** @group stdlib.builtins.array Return a (potentially non-contiguous) slice of array \a x,
+  in the fifth index, specified by the set \a S. The result is undefined if \a S is not
+  a subset of the fifth index set of \a x.
+ */
+function array[$$X1,$$X2,$$X3,$$X4,int] of $T: select_from_index_5(array[$$X1, $$X2, $$X3, $$X4, $$X5] of any $T: x, set of $$X5: S);
+/** @group stdlib.builtins.array Return a (potentially non-contiguous) slice of array \a x,
+  in the fifth index, specified by the set \a S. The result is undefined if \a S is not
+  a subset of the fifth index set of \a x.
+ */
+function array[$$X1,$$X2,$$X3,$$X4,int,$$X6] of $T: select_from_index_5(array[$$X1, $$X2, $$X3, $$X4, $$X5, $$X6] of any $T: x, set of $$X5: S);
+
+/** @group stdlib.builtins.array Return a (potentially non-contiguous) slice of array \a x,
+  in the sixth index, specified by the set \a S. The result is undefined if \a S is not
+  a subset of the sixth index set of \a x.
+ */
+function array[$$X1,$$X2,$$X3,$$X4,$$X5,int] of $T: select_from_index_6(array[$$X1, $$X2, $$X3, $$X4, $$X5, $$X6] of any $T: x, set of $$X6: S);
+
 /** @group stdlib.builtins.array Return the length of array \a x
 
   Note that the length is defined as the number of elements in the

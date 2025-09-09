@@ -18,6 +18,7 @@
 #include <minizinc/file_utils.hh>
 #include <minizinc/flat_exp.hh>
 #include <minizinc/flatten_internal.hh>
+#include <minizinc/iter.hh>
 #include <minizinc/output.hh>
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/support/regex.hh>
@@ -1383,6 +1384,187 @@ IntVal b_length(EnvI& env, Call* call) {
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   return al->size();
+}
+
+unsigned int array_dim_product(const std::vector<std::pair<int, int>>& dims, int start, int end) {
+  unsigned int product = 1;
+  for (unsigned int i = start; i < end; i++) {
+    product *= static_cast<unsigned int>(dims[i].second - dims[i].first) + 1;
+  }
+  return product;
+}
+
+// NOLINTNEXTLINE(readability-identifier-naming)
+Expression* b_concat_index(EnvI& env, Call* call, int idx) {
+  GCLock lock;
+  ArrayLit* al0 = eval_array_lit(env, call->arg(0));
+  ArrayLit* al1 = eval_array_lit(env, call->arg(1));
+
+  if (al0->dims() != al1->dims()) {
+    throw EvalError(env, Location(),
+                    "concatenation needs arrays with identical number of dimensions");
+  }
+
+  std::vector<std::pair<int, int>> concat_dims(al0->dims());
+  for (unsigned int i = 0; i < al0->dims(); i++) {
+    if (i + 1 != idx) {
+      if (al0->min(i) != al1->min(i) || al0->max(i) != al1->max(i)) {
+        throw EvalError(env, Location(), "arrays index sets do not match");
+      }
+      concat_dims[i] = {al0->min(i), al0->max(i)};
+    } else {
+      concat_dims[i] = {1, al0->max(i) - al0->min(i) + 1 + al1->max(i) - al1->min(i) + 1};
+    }
+  }
+
+  auto size_out = array_dim_product(concat_dims, 0, static_cast<int>(concat_dims.size()));
+  assert(size_out == al0->size() + al1->size());
+  std::vector<Expression*> elements_out(size_out);
+
+  if (size_out != 0) {
+    const unsigned int inner_block =
+        (idx >= concat_dims.size())
+            ? 1
+            : array_dim_product(concat_dims, idx, static_cast<int>(concat_dims.size()));
+
+    const unsigned int block_size_0 = (al0->max(idx - 1) - al0->min(idx - 1) + 1) * inner_block;
+    const unsigned int block_size_1 = (al1->max(idx - 1) - al1->min(idx - 1) + 1) * inner_block;
+    const unsigned int block_size_out =
+        (al0->max(idx - 1) - al0->min(idx - 1) + 1 + al1->max(idx - 1) - al1->min(idx - 1) + 1) *
+        inner_block;
+
+    unsigned int offset_0 = 0;
+    unsigned int offset_1 = 0;
+
+    for (unsigned int offset_out = 0; offset_out < size_out; offset_out += block_size_out) {
+      for (unsigned int i = 0; i < block_size_0; i++) {
+        elements_out[offset_out + i] = (*al0)[offset_0 + i];
+      }
+      for (unsigned int i = 0; i < block_size_1; i++) {
+        elements_out[offset_out + block_size_0 + i] = (*al1)[offset_1 + i];
+      }
+      offset_0 += block_size_0;
+      offset_1 += block_size_1;
+    }
+  }
+  auto* al_out = new ArrayLit(Expression::loc(call).introduce(), elements_out, concat_dims);
+  Expression::type(al_out, call->type());
+  return al_out;
+}
+Expression* b_concat_index_1(EnvI& env, Call* call) { return b_concat_index(env, call, 1); }
+Expression* b_concat_index_2(EnvI& env, Call* call) { return b_concat_index(env, call, 2); }
+Expression* b_concat_index_3(EnvI& env, Call* call) { return b_concat_index(env, call, 3); }
+Expression* b_concat_index_4(EnvI& env, Call* call) { return b_concat_index(env, call, 4); }
+Expression* b_concat_index_5(EnvI& env, Call* call) { return b_concat_index(env, call, 5); }
+Expression* b_concat_index_6(EnvI& env, Call* call) { return b_concat_index(env, call, 6); }
+
+Expression* b_select_from_index(EnvI& env, Call* call, int idx) {
+  ArrayLit* al = eval_array_lit(env, call->arg(0));
+  if (idx > al->dims()) {
+    throw EvalError(env, Expression::loc(call), "array selection index out of bounds");
+  }
+  auto* selection = eval_intset(env, call->arg(1));
+  if (selection->size() <= 1) {
+    // This is just a copy of the entire array
+    if (!selection->empty() && selection->min() == al->min(idx - 1) &&
+        selection->max() == al->max(idx - 1)) {
+      return al;
+    }
+    // This is a slice, so we don't have to do any copying
+    std::vector<std::pair<int, int>> newDims(al->dims());
+    for (unsigned int i = 0; i < newDims.size(); i++) {
+      if (i == idx - 1) {
+        auto selectMin = selection->empty() ? 1
+                                            : (selection->min().isFinite()
+                                                   ? static_cast<int>(selection->min().toInt())
+                                                   : al->min(i));
+        auto selectMax = selection->empty() ? 0
+                                            : (selection->max().isFinite()
+                                                   ? static_cast<int>(selection->max().toInt())
+                                                   : al->max(i));
+        if (!selection->empty() && (selectMin < al->min(i) || selectMax > al->max(i))) {
+          throw ResultUndefinedError(env, Expression::loc(call), "array selection out of bounds");
+        }
+        // replace with new index set
+        newDims[i] = {selectMin, selectMax};
+      } else {
+        // copy from original array
+        newDims[i] = {al->min(i), al->max(i)};
+      }
+    }
+    auto* ret = new ArrayLit(Expression::loc(al), al, newDims, newDims);
+    ret->type(call->type());
+    return ret;
+  }
+
+  // General case: the selection set is non-empty and non-contiguous
+
+  if (selection->min() < al->min(idx - 1) || selection->max() > al->max(idx - 1)) {
+    throw ResultUndefinedError(env, Expression::loc(call), "array selection out of bounds");
+  }
+
+  std::vector<std::pair<int, int>> out_dims(al->dims());
+  for (unsigned int i = 0; i < al->dims(); i++) {
+    if (i + 1 != idx) {
+      out_dims[i] = {al->min(i), al->max(i)};
+    } else {
+      out_dims[i] = {1, static_cast<int>(selection->card().toInt())};
+    }
+  }
+
+  auto size_out = array_dim_product(out_dims, 0, static_cast<int>(out_dims.size()));
+  std::vector<Expression*> elements_out(size_out);
+
+  const unsigned int inner_block =
+      (idx >= out_dims.size())
+          ? 1
+          : array_dim_product(out_dims, idx, static_cast<int>(out_dims.size()));
+  const unsigned int idx_span_in =
+      (al->max(idx - 1) - al->min(idx - 1) + 1) * inner_block;  // elements per prefix in al
+  const unsigned int idx_span_out = static_cast<unsigned int>(selection->card().toInt()) *
+                                    inner_block;  // elements per prefix in output
+  const auto min_idx = al->min(idx - 1);
+
+  unsigned int offset_al = 0;
+
+  for (unsigned int offset_out = 0; offset_out < size_out; offset_out += idx_span_out) {
+    unsigned int out_block_offset = 0;
+    IntSetRanges isr(selection);
+    Ranges::ToValues<IntSetRanges> isv(isr);
+    for (; isv(); ++isv) {
+      auto i = static_cast<unsigned int>((isv.val() - min_idx).toInt());
+      const unsigned int src = offset_al + i * inner_block;
+      const unsigned int dst = offset_out + out_block_offset;
+      for (unsigned int j = 0; j < inner_block; j++) {
+        elements_out[dst + j] = (*al)[src + j];
+      }
+      out_block_offset += inner_block;
+    }
+    offset_al += idx_span_in;
+  }
+
+  auto* al_out = new ArrayLit(Expression::loc(call).introduce(), elements_out, out_dims);
+  Expression::type(al_out, call->type());
+  return al_out;
+}
+
+Expression* b_select_from_index_1(EnvI& env, Call* call) {
+  return b_select_from_index(env, call, 1);
+}
+Expression* b_select_from_index_2(EnvI& env, Call* call) {
+  return b_select_from_index(env, call, 2);
+}
+Expression* b_select_from_index_3(EnvI& env, Call* call) {
+  return b_select_from_index(env, call, 3);
+}
+Expression* b_select_from_index_4(EnvI& env, Call* call) {
+  return b_select_from_index(env, call, 4);
+}
+Expression* b_select_from_index_5(EnvI& env, Call* call) {
+  return b_select_from_index(env, call, 5);
+}
+Expression* b_select_from_index_6(EnvI& env, Call* call) {
+  return b_select_from_index(env, call, 6);
 }
 
 IntVal b_bool2int(EnvI& env, Call* call) { return eval_bool(env, call->arg(0)) ? 1 : 0; }
@@ -3758,6 +3940,110 @@ void register_builtins(Env& e) {
   {
     rb(env, m, env.constants.ids.array1d, {Type::optvartop(-1)}, b_array1d_list);
   }
+  {
+    std::vector<Type> t_anyarray(2);
+    t_anyarray[0] = Type::optvartop(1);
+    t_anyarray[1] = Type::optvartop(1);
+    rb(env, m, ASTString("concat_index_1"), t_anyarray, b_concat_index_1);
+  }
+  {
+    std::vector<Type> t_anyarray(2);
+    t_anyarray[0] = Type::optvartop(2);
+    t_anyarray[1] = Type::optvartop(2);
+    rb(env, m, ASTString("concat_index_1"), t_anyarray, b_concat_index_1);
+    rb(env, m, ASTString("concat_index_2"), t_anyarray, b_concat_index_2);
+  }
+  {
+    std::vector<Type> t_anyarray(2);
+    t_anyarray[0] = Type::optvartop(3);
+    t_anyarray[1] = Type::optvartop(3);
+    rb(env, m, ASTString("concat_index_1"), t_anyarray, b_concat_index_1);
+    rb(env, m, ASTString("concat_index_2"), t_anyarray, b_concat_index_2);
+    rb(env, m, ASTString("concat_index_3"), t_anyarray, b_concat_index_3);
+  }
+  {
+    std::vector<Type> t_anyarray(2);
+    t_anyarray[0] = Type::optvartop(4);
+    t_anyarray[1] = Type::optvartop(4);
+    rb(env, m, ASTString("concat_index_1"), t_anyarray, b_concat_index_1);
+    rb(env, m, ASTString("concat_index_2"), t_anyarray, b_concat_index_2);
+    rb(env, m, ASTString("concat_index_3"), t_anyarray, b_concat_index_3);
+    rb(env, m, ASTString("concat_index_4"), t_anyarray, b_concat_index_4);
+  }
+  {
+    std::vector<Type> t_anyarray(2);
+    t_anyarray[0] = Type::optvartop(5);
+    t_anyarray[1] = Type::optvartop(5);
+    rb(env, m, ASTString("concat_index_1"), t_anyarray, b_concat_index_1);
+    rb(env, m, ASTString("concat_index_2"), t_anyarray, b_concat_index_2);
+    rb(env, m, ASTString("concat_index_3"), t_anyarray, b_concat_index_3);
+    rb(env, m, ASTString("concat_index_4"), t_anyarray, b_concat_index_4);
+    rb(env, m, ASTString("concat_index_5"), t_anyarray, b_concat_index_5);
+  }
+  {
+    std::vector<Type> t_anyarray(2);
+    t_anyarray[0] = Type::optvartop(6);
+    t_anyarray[1] = Type::optvartop(6);
+    rb(env, m, ASTString("concat_index_1"), t_anyarray, b_concat_index_1);
+    rb(env, m, ASTString("concat_index_2"), t_anyarray, b_concat_index_2);
+    rb(env, m, ASTString("concat_index_3"), t_anyarray, b_concat_index_3);
+    rb(env, m, ASTString("concat_index_4"), t_anyarray, b_concat_index_4);
+    rb(env, m, ASTString("concat_index_5"), t_anyarray, b_concat_index_5);
+    rb(env, m, ASTString("concat_index_6"), t_anyarray, b_concat_index_6);
+  }
+
+  {
+    std::vector<Type> t_anyarray(2);
+    t_anyarray[0] = Type::optvartop(1);
+    t_anyarray[1] = Type::parsetint();
+    rb(env, m, ASTString("select_from_index_1"), t_anyarray, b_select_from_index_1);
+  }
+  {
+    std::vector<Type> t_anyarray(2);
+    t_anyarray[0] = Type::optvartop(2);
+    t_anyarray[1] = Type::parsetint();
+    rb(env, m, ASTString("select_from_index_1"), t_anyarray, b_select_from_index_1);
+    rb(env, m, ASTString("select_from_index_2"), t_anyarray, b_select_from_index_2);
+  }
+  {
+    std::vector<Type> t_anyarray(2);
+    t_anyarray[0] = Type::optvartop(3);
+    t_anyarray[1] = Type::parsetint();
+    rb(env, m, ASTString("select_from_index_1"), t_anyarray, b_select_from_index_1);
+    rb(env, m, ASTString("select_from_index_2"), t_anyarray, b_select_from_index_2);
+    rb(env, m, ASTString("select_from_index_3"), t_anyarray, b_select_from_index_3);
+  }
+  {
+    std::vector<Type> t_anyarray(2);
+    t_anyarray[0] = Type::optvartop(4);
+    t_anyarray[1] = Type::parsetint();
+    rb(env, m, ASTString("select_from_index_1"), t_anyarray, b_select_from_index_1);
+    rb(env, m, ASTString("select_from_index_2"), t_anyarray, b_select_from_index_2);
+    rb(env, m, ASTString("select_from_index_3"), t_anyarray, b_select_from_index_3);
+    rb(env, m, ASTString("select_from_index_4"), t_anyarray, b_select_from_index_4);
+  }
+  {
+    std::vector<Type> t_anyarray(2);
+    t_anyarray[0] = Type::optvartop(5);
+    t_anyarray[1] = Type::parsetint();
+    rb(env, m, ASTString("select_from_index_1"), t_anyarray, b_select_from_index_1);
+    rb(env, m, ASTString("select_from_index_2"), t_anyarray, b_select_from_index_2);
+    rb(env, m, ASTString("select_from_index_3"), t_anyarray, b_select_from_index_3);
+    rb(env, m, ASTString("select_from_index_4"), t_anyarray, b_select_from_index_4);
+    rb(env, m, ASTString("select_from_index_5"), t_anyarray, b_select_from_index_5);
+  }
+  {
+    std::vector<Type> t_anyarray(2);
+    t_anyarray[0] = Type::optvartop(6);
+    t_anyarray[1] = Type::parsetint();
+    rb(env, m, ASTString("select_from_index_1"), t_anyarray, b_select_from_index_1);
+    rb(env, m, ASTString("select_from_index_2"), t_anyarray, b_select_from_index_2);
+    rb(env, m, ASTString("select_from_index_3"), t_anyarray, b_select_from_index_3);
+    rb(env, m, ASTString("select_from_index_4"), t_anyarray, b_select_from_index_4);
+    rb(env, m, ASTString("select_from_index_5"), t_anyarray, b_select_from_index_5);
+    rb(env, m, ASTString("select_from_index_6"), t_anyarray, b_select_from_index_6);
+  }
+
   {
     std::vector<Type> t_arrayXd(2);
     t_arrayXd[0] = Type::parsetint();
