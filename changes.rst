@@ -23,6 +23,7 @@ Changes:
 -  Add new builtin functions for array manipulation: ``select_from_index_X``
    can slice an array with a non-contiguous set of indices, and
    ``concat_index_X`` can concatenate two arrays along a specified index.
+-  Add option type versions of bin packing and cumulatives constraints.
 
 Bug fixes:
 ^^^^^^^^^^
