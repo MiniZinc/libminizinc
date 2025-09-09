@@ -941,17 +941,17 @@ static const yytype_int16 yyrline[] =
     1647,  1650,  1653,  1655,  1657,  1663,  1665,  1667,  1675,  1677,
     1680,  1683,  1686,  1688,  1690,  1692,  1696,  1698,  1745,  1747,
     1808,  1848,  1851,  1856,  1863,  1868,  1871,  1874,  1884,  1896,
-    1907,  1910,  1914,  1925,  1936,  1955,  1962,  1966,  1969,  1973,
-    1984,  2004,  2018,  2034,  2035,  2039,  2041,  2043,  2045,  2047,
-    2049,  2051,  2053,  2055,  2057,  2059,  2061,  2063,  2065,  2067,
-    2069,  2071,  2073,  2075,  2077,  2079,  2081,  2083,  2085,  2087,
-    2089,  2091,  2093,  2097,  2105,  2137,  2139,  2141,  2142,  2162,
-    2216,  2236,  2291,  2294,  2300,  2306,  2308,  2312,  2314,  2321,
-    2330,  2332,  2340,  2342,  2351,  2351,  2354,  2362,  2373,  2374,
-    2377,  2379,  2381,  2385,  2389,  2393,  2395,  2397,  2399,  2401,
-    2403,  2405,  2407,  2409,  2411,  2413,  2415,  2417,  2419,  2421,
-    2423,  2425,  2427,  2429,  2431,  2433,  2435,  2437,  2439,  2441,
-    2443,  2445,  2447,  2449,  2451,  2453,  2455,  2457,  2459
+    1907,  1910,  1914,  1925,  1936,  1955,  1962,  1966,  1969,  1976,
+    1987,  2007,  2021,  2037,  2038,  2042,  2044,  2046,  2048,  2050,
+    2052,  2054,  2056,  2058,  2060,  2062,  2064,  2066,  2068,  2070,
+    2072,  2074,  2076,  2078,  2080,  2082,  2084,  2086,  2088,  2090,
+    2092,  2094,  2096,  2100,  2108,  2140,  2142,  2144,  2145,  2165,
+    2219,  2239,  2294,  2297,  2303,  2309,  2311,  2315,  2317,  2324,
+    2333,  2335,  2343,  2345,  2354,  2354,  2357,  2365,  2376,  2377,
+    2380,  2382,  2384,  2388,  2392,  2396,  2398,  2400,  2402,  2404,
+    2406,  2408,  2410,  2412,  2414,  2416,  2418,  2420,  2422,  2424,
+    2426,  2428,  2430,  2432,  2434,  2436,  2438,  2440,  2442,  2444,
+    2446,  2448,  2450,  2452,  2454,  2456,  2458,  2460,  2462
 };
 #endif
 
@@ -6132,13 +6132,16 @@ yyreduce:
 
   case 357: /* comp_expr_list_head: expr  */
       { (yyval.indexedexpression2d)=new std::pair<std::vector<MiniZinc::Expression*>,std::vector<MiniZinc::Expression*>>;
-        (yyval.indexedexpression2d)->second.push_back((yyvsp[0].expression)); }
+        if ((yyvsp[0].expression)) (yyval.indexedexpression2d)->second.push_back((yyvsp[0].expression)); }
     break;
 
   case 358: /* comp_expr_list_head: expr ':' expr  */
       { (yyval.indexedexpression2d)=new std::pair<std::vector<MiniZinc::Expression*>,std::vector<MiniZinc::Expression*>>;
-        (yyval.indexedexpression2d)->first.push_back((yyvsp[-2].expression));
-        (yyval.indexedexpression2d)->second.push_back((yyvsp[0].expression)); }
+        if ((yyvsp[0].expression)) {
+          (yyval.indexedexpression2d)->first.push_back((yyvsp[-2].expression));
+          (yyval.indexedexpression2d)->second.push_back((yyvsp[0].expression));
+        }
+      }
     break;
 
   case 359: /* comp_expr_list_head: comp_expr_list_head ',' expr  */
@@ -6156,7 +6159,7 @@ yyreduce:
 
   case 360: /* comp_expr_list_head: comp_expr_list_head ',' expr ':' expr  */
       { (yyval.indexedexpression2d)=(yyvsp[-4].indexedexpression2d);
-        if ((yyval.indexedexpression2d) && (yyvsp[-2].expression)) {
+        if ((yyval.indexedexpression2d) && (yyvsp[-2].expression) && (yyvsp[0].expression)) {
           if ((yyval.indexedexpression2d)->first.size() != (yyval.indexedexpression2d)->second.size()) {
             yyerror(&(yyloc),parm,"invalid array literal, mixing indexed and non-indexed values");
             (yyval.indexedexpression2d) = nullptr;

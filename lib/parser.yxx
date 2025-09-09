@@ -1965,11 +1965,14 @@ comp_expr_list : comp_expr_list_head comma_or_none
 comp_expr_list_head :
       expr
       { $$=new std::pair<std::vector<MiniZinc::Expression*>,std::vector<MiniZinc::Expression*>>;
-        $$->second.push_back($1); }
+        if ($1) $$->second.push_back($1); }
     | expr ':' expr
       { $$=new std::pair<std::vector<MiniZinc::Expression*>,std::vector<MiniZinc::Expression*>>;
-        $$->first.push_back($1);
-        $$->second.push_back($3); }
+        if ($3) {
+          $$->first.push_back($1);
+          $$->second.push_back($3);
+        }
+      }
     | comp_expr_list_head ',' expr
       { $$=$1;
         if ($$ && $3) {
@@ -1983,7 +1986,7 @@ comp_expr_list_head :
       }
     | comp_expr_list_head ',' expr ':' expr
       { $$=$1;
-        if ($$ && $3) {
+        if ($$ && $3 && $5) {
           if ($$->first.size() != $$->second.size()) {
             yyerror(&@$,parm,"invalid array literal, mixing indexed and non-indexed values");
             $$ = nullptr;

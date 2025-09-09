@@ -73,6 +73,8 @@ Bug fixes:
 -  Fix a bug in the chain compression algorithm that resulted in incorrectly
    removing constraints that were not redundant (:bugref:`943`).
 -  Fix a bug in the nvalue decomposition to also make it work for empty arrays.
+-  Fix a bug in the parser that could sometimes cause a crash when parsing
+   invalid syntax (:bugref:`950`).
 
 Changes in the IDE:
 ^^^^^^^^^^^^^^^^^^^
