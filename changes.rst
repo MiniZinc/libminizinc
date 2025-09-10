@@ -30,6 +30,8 @@ Bug fixes:
    presence of the ``--debug`` flag (:bugref:`926`).
 -  Fix a bug where the argument to ``--fzn-flags`` would not be correctly parsed
    if it also matched a MiniZinc flag (:bugref:`940`).
+-  Fix bounds computation for division and modulo operations to not abort if
+   the bounds cannot be computed (:bugref:`917`).
 
 .. _v2.9.3:
 

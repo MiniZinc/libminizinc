@@ -1108,18 +1108,11 @@ IntSetVal* b_dom_array(EnvI& env, Call* call) {
 IntSetVal* b_compute_div_bounds(EnvI& env, Call* call) {
   assert(call->argCount() == 2);
   IntBounds bx = compute_int_bounds(env, call->arg(0));
-  if (!bx.valid) {
-    throw EvalError(env, Expression::loc(call->arg(0)), "cannot determine bounds");
-  }
-  /// TODO: better bounds if only some input bounds are infinite
-  if (!bx.l.isFinite() || !bx.u.isFinite()) {
+  if (!bx.valid || !bx.l.isFinite() || !bx.u.isFinite()) {
     return env.constants.infinityInt->isv();
   }
   IntBounds by = compute_int_bounds(env, call->arg(1));
-  if (!by.valid) {
-    throw EvalError(env, Expression::loc(call->arg(1)), "cannot determine bounds");
-  }
-  if (!by.l.isFinite() || !by.u.isFinite()) {
+  if (!by.valid || !by.l.isFinite() || !by.u.isFinite()) {
     return env.constants.infinityInt->isv();
   }
   Ranges::Const<IntVal> byr(by.l, by.u);
@@ -1167,10 +1160,7 @@ IntSetVal* b_compute_mod_bounds(EnvI& env, Call* call) {
     }
   }
   IntBounds by = compute_int_bounds(env, call->arg(1));
-  if (!by.valid) {
-    throw EvalError(env, Expression::loc(call->arg(1)), "cannot determine bounds");
-  }
-  if (!by.l.isFinite() || !by.u.isFinite()) {
+  if (!by.valid || !by.l.isFinite() || !by.u.isFinite()) {
     return env.constants.infinityInt->isv();
   }
   IntVal am = std::max(-by.l, by.u) - 1;
@@ -1188,21 +1178,15 @@ IntSetVal* b_compute_mod_bounds(EnvI& env, Call* call) {
 FloatSetVal* b_compute_float_div_bounds(EnvI& env, Call* call) {
   assert(call->argCount() == 2);
   FloatBounds bx = compute_float_bounds(env, call->arg(0));
-  if (!bx.valid) {
-    throw EvalError(env, Expression::loc(call->arg(0)), "cannot determine bounds");
-  }
-  /// TODO: better bounds if only some input bounds are infinite
-  if (!bx.l.isFinite() || !bx.u.isFinite()) {
+  if (!bx.valid || !bx.l.isFinite() || !bx.u.isFinite()) {
     return env.constants.infinityFloat->fsv();
   }
   if (0.0 == std::fabs(bx.l.toDouble()) && 0.0 == std::fabs(bx.u.toDouble())) {
     return FloatSetVal::a(0.0, 0.0);
   }
   FloatBounds by = compute_float_bounds(env, call->arg(1));
-  if (!by.valid) {
-    throw EvalError(env, Expression::loc(call->arg(1)), "cannot determine bounds");
-  }
-  if (!by.l.isFinite() || !by.u.isFinite() || by.l.toDouble() * by.u.toDouble() <= 0.0) {
+  if (!by.valid || !by.l.isFinite() || !by.u.isFinite() ||
+      by.l.toDouble() * by.u.toDouble() <= 0.0) {
     return env.constants.infinityFloat->fsv();
   }
   FloatVal min = FloatVal::maxfloat();
@@ -1224,14 +1208,8 @@ IntSetVal* b_compute_pow_bounds(EnvI& env, Call* call) {
   assert(call->argCount() == 2);
   IntBounds base = compute_int_bounds(env, call->arg(0));
   IntBounds exp = compute_int_bounds(env, call->arg(1));
-  if (!base.valid) {
-    throw EvalError(env, Expression::loc(call->arg(0)), "cannot determine bounds");
-  }
-  if (!exp.valid) {
-    throw EvalError(env, Expression::loc(call->arg(1)), "cannot determine bounds");
-  }
-
-  if (!base.l.isFinite() || !base.u.isFinite() || !exp.l.isFinite() || !exp.u.isFinite()) {
+  if (!base.valid || !exp.valid || !base.l.isFinite() || !base.u.isFinite() || !exp.l.isFinite() ||
+      !exp.u.isFinite()) {
     return env.constants.infinityInt->isv();
   }
 

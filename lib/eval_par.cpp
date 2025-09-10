@@ -3385,8 +3385,7 @@ public:
       }
       ComputeIntBounds::Bounds result = ib.bounds.back();
       if (!result.first.isFinite() || !result.second.isFinite()) {
-        valid = false;
-        bounds.emplace_back(0.0, 0.0);
+        bounds.emplace_back(-FloatVal::infinity(), FloatVal::infinity());
       } else {
         bounds.emplace_back(static_cast<double>(result.first.toInt()),
                             static_cast<double>(result.second.toInt()));
