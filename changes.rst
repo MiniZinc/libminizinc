@@ -4,6 +4,29 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
+.. _unreleased:
+
+Changes:
+^^^^^^^^
+-  Add new builtin functions for array manipulation: ``select_from_index_X``
+   can slice an array with a non-contiguous set of indices, and
+   ``concat_index_X`` can concatenate two arrays along a specified index.
+-  Add option type versions of bin packing and cumulatives constraints.
+
+Bug fixes:
+^^^^^^^^^^
+-  Fix compilation of arrays of arrays when inferred type-inst is var, and
+   pretty-printing of arrays of arrays (:bugref:`942`).
+-  Fix CSE for empty arrays, which could cause incorrect function overloads
+   to be called (:bugref:`946`).
+-  Fix a bug in the Constants class that caused the GC to access uninitialised
+   memory (:bugref:`933`).
+-  Fix a bug in the chain compression algorithm that resulted in incorrectly
+   removing constraints that were not redundant (:bugref:`943`).
+-  Fix a bug in the nvalue decomposition to also make it work for empty arrays.
+-  Fix a bug in the parser that could sometimes cause a crash when parsing
+   invalid syntax (:bugref:`950`).
+
 .. _v2.9.3:
 
 `Version 2.9.3 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.9.3>`__
@@ -20,10 +43,6 @@ Changes:
    configuration files.
 -  Warnings produced in solution checkers are now output as part of the
    ``checker`` message when running in ``--json-stream`` mode.
--  Add new builtin functions for array manipulation: ``select_from_index_X``
-   can slice an array with a non-contiguous set of indices, and
-   ``concat_index_X`` can concatenate two arrays along a specified index.
--  Add option type versions of bin packing and cumulatives constraints.
 
 Bug fixes:
 ^^^^^^^^^^
@@ -64,17 +83,6 @@ Bug fixes:
    records. 
 -  Fix incorrect flattening of ``in`` for tuples/records containing optional
    values (:bugref:`900`).
--  Fix compilation of arrays of arrays when inferred type-inst is var, and
-   pretty-printing of arrays of arrays (:bugref:`942`).
--  Fix CSE for empty arrays, which could cause incorrect function overloads
-   to be called (:bugref:`946`).
--  Fix a bug in the Constants class that caused the GC to access uninitialised
-   memory (:bugref:`933`).
--  Fix a bug in the chain compression algorithm that resulted in incorrectly
-   removing constraints that were not redundant (:bugref:`943`).
--  Fix a bug in the nvalue decomposition to also make it work for empty arrays.
--  Fix a bug in the parser that could sometimes cause a crash when parsing
-   invalid syntax (:bugref:`950`).
 
 Changes in the IDE:
 ^^^^^^^^^^^^^^^^^^^
