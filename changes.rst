@@ -26,6 +26,8 @@ Bug fixes:
 -  Fix a bug in the nvalue decomposition to also make it work for empty arrays.
 -  Fix a bug in the parser that could sometimes cause a crash when parsing
    invalid syntax (:bugref:`950`).
+-  Fix a bug in type specialisation that could sometimes lead to a crash
+   (:bugref:`950`).
 -  Fix a bug where ``trace_dbg`` would always get evaluated regardless of the
    presence of the ``--debug`` flag (:bugref:`926`).
 -  Fix a bug where the argument to ``--fzn-flags`` would not be correctly parsed

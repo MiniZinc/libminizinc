@@ -566,30 +566,33 @@ public:
       auto* halfReif =
           _env.model->matchFn(_env, EnvI::halfReifyId(lookup.baseName), concrete_types, false);
       assert(call->decl() == nonReif || call->decl() == reified || call->decl() == halfReif);
-      std::vector<FunctionI*> matches({nonReif, reified, halfReif});
+      std::vector<std::pair<FunctionI*, std::vector<Type>>> matches(
+          {{nonReif, lookup.argTypes}, {reified, concrete_types}, {halfReif, concrete_types}});
       if (!lookup.parExists) {
         // Also create par version in case required by output.
         // This is needed since if this instance can't be made par by the type checker,
         // but we actually have a par version of the polymorphic function, we should use it.
         std::vector<Type> concrete_types = lookup.parTypes;
         auto* parNonReif = _env.model->matchFn(_env, lookup.baseName, concrete_types, false);
-        if (nonReif != nullptr && nonReif != parNonReif) {
-          matches.push_back(parNonReif);
+        if (nonReif != nullptr && (nonReif != parNonReif || nonReif->isPolymorphic())) {
+          matches.emplace_back(parNonReif, concrete_types);
         }
         concrete_types.push_back(Type::parbool());
         auto* parReified =
             _env.model->matchFn(_env, _env.reifyId(lookup.baseName), concrete_types, false);
         if (parReified != nullptr && reified != parReified) {
-          matches.push_back(parReified);
+          matches.emplace_back(parReified, concrete_types);
         }
         auto* parHalfReif =
             _env.model->matchFn(_env, EnvI::halfReifyId(lookup.baseName), concrete_types, false);
         if (parHalfReif != nullptr && halfReif != parHalfReif) {
-          matches.push_back(parHalfReif);
+          matches.emplace_back(parHalfReif, concrete_types);
         }
       }
 
-      for (auto* fi : matches) {
+      for (auto& m : matches) {
+        auto* fi = m.first;
+        auto& concrete_types = m.second;
         if (fi == nullptr) {
           continue;
         }
