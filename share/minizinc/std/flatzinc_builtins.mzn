@@ -105,8 +105,6 @@ predicate bool_not(var bool: a, var bool: b);
 predicate bool_or(var bool: a, var bool: b, var bool: r);
 /** @group flatzinc.bool Constrains \( \a r \leftrightarrow \a a \oplus \a b \) */
 predicate bool_xor(var bool: a, var bool: b, var bool: r);
-/** @group flatzinc.bool Constrains \a a \( \oplus \) \a b */
-predicate bool_xor(var bool: a, var bool: b) :: promise_commutative;
 
 /***
   @groupdef flatzinc.set Set FlatZinc builtins
@@ -212,14 +210,6 @@ predicate float_lt_reif(var float: a, var float: b, var bool: r);
 predicate float_ne(var float: a, var float: b) :: promise_commutative;
 /** @group flatzinc.float Constrains \a r \( \leftrightarrow \) (\a a ≠ \a b) */
 predicate float_ne_reif(var float: a, var float: b, var bool: r);
-/** @group flatzinc.float Constrains \( \a a \in\ [ \a b, \a c ] \) */
-predicate float_in(var float: a, float: b, float: c);
-/** @group flatzinc.float Constrains \a r \( \leftrightarrow \) \( \a a \in\ [ \a b, \a c ] \) */
-predicate float_in_reif(var float: a, float: b, float: c, var bool: r);
-/** @group flatzinc.float Constrains the domain of \a x using the values in \a as, using each
-  pair of values \a as[2*\p i-1]..\a as[2*\p i] for \p i in 1..\p n/2 as a possible range
- */
-predicate float_dom(var float: x, array [int] of float: as);
 
 /** @group flatzinc.float Constrains \( \a c = \sum_i \a as[i]*\a bs[i] \) */
 predicate float_lin_eq(array [int] of float: as, array [int] of var float: bs, float: c);
@@ -294,18 +284,6 @@ predicate array_var_int_element(var int: b, array [int] of var int: as, var int:
 predicate array_var_float_element(var int: b, array [int] of var float: as, var float: c);
 /** @group flatzinc.set Constrains \a as[\a b] = \a c */
 predicate array_var_set_element(var int: b, array [int] of var set of int: as, var set of int: c);
-/** @group flatzinc.int Constrains \a m to be the maximum value of the (non-empty)
-  array \a x */
-predicate array_int_maximum(var int: m, array [int] of var int: x);
-/** @group flatzinc.float Constrains \a m to be the maximum value of the (non-empty)
-  array \a x */
-predicate array_float_maximum(var int: m, array [int] of var int: x);
-/** @group flatzinc.int Constrains \a m to be the minimum value of the (non-empty)
-  array \a x */
-predicate array_int_minimum(var int: m, array [int] of var int: x);
-/** @group flatzinc.float Constrains \a m to be the minimum value of the (non-empty)
-  array \a x */
-predicate array_float_minimum(var int: m, array [int] of var int: x);
 
 /***
   @groupdef flatzinc.two FlatZinc builtins added in MiniZinc 2.0.0.
@@ -379,9 +357,11 @@ predicate array_var_set_element_nonshifted(
 
 */
 
-/** @group flatzinc.twoone Constrains \a a ≤ \a x ≤ \a b */
-predicate float_in(var float: x, float: a, float: b);
-/** @group flatzinc.twoone Constrains \a x to take one of the values in \a as */
+/** @group flatzinc.twoone Constrains \( \a a \in\ [ \a b, \a c ] \) */
+predicate float_in(var float: a, float: b, float: c);
+/** @group flatzinc.twoone Constrains the domain of \a x using the values in \a as, using each
+  pair of values \a as[2*\p i-1]..\a as[2*\p i] for \p i in 1..\p n/2 as a possible range
+ */
 predicate float_dom(var float: x, array [int] of float: as);
 
 /***

@@ -12,6 +12,10 @@ Changes:
    can slice an array with a non-contiguous set of indices, and
    ``concat_index_X`` can concatenate two arrays along a specified index.
 -  Add option type versions of bin packing and cumulatives constraints.
+-  Remove ``bool_xor`` with two arguments from the FlatZinc builtins.
+   It is never output into FlatZinc by the compiler and violated the rule that
+   FlatZinc builtins are not overloaded (:bugref:`913`). Also remove
+   some other duplicates and incorrect overloads from ``flatzinc_builtins.mzn``.
 
 Bug fixes:
 ^^^^^^^^^^

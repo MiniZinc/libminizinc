@@ -112,6 +112,8 @@ predicate bool_xor_reif(var bool: a, var bool: b, var bool: c) = bool_xor(a, b, 
 predicate bool_xor(var opt bool: x, var opt bool: y) =
   absent(x) \/ absent(y) \/ (deopt(x) xor deopt(y));
 
+predicate bool_xor(var bool: a, var bool: b) :: promise_commutative;
+
 predicate mzn_alias_eq(var int: x, var int: y) = int_eq(x, y);
 predicate mzn_alias_eq(var opt int: x, var opt int: y) =
   deopt(x) = deopt(y) /\ occurs(x) = occurs(y);
