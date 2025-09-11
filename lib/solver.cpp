@@ -507,8 +507,10 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
   _solverConfigs.populate(_log);
 
   for (i = 1; i < argc; ++i) {
-    if (argv[i] == "--backend-flags") {
-      // Ensure that we don't consume the argument to --backend-flags
+    if (argv[i] == "--backend-flags" || argv[i] == "--backend-flag" || argv[i] == "--fzn-flags" ||
+        argv[i] == "--fzn-flag" || argv[i] == "--mzn-flags" || argv[i] == "--mzn-flag" ||
+        argv[i] == "--nl-flags" || argv[i] == "--nl-flag") {
+      // Ensure that we don't consume the argument to --backend-flags and similar
       argv[j++] = argv[i++];
       argv[j++] = argv[i];
       continue;

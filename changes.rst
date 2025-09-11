@@ -28,6 +28,8 @@ Bug fixes:
    invalid syntax (:bugref:`950`).
 -  Fix a bug where ``trace_dbg`` would always get evaluated regardless of the
    presence of the ``--debug`` flag (:bugref:`926`).
+-  Fix a bug where the argument to ``--fzn-flags`` would not be correctly parsed
+   if it also matched a MiniZinc flag (:bugref:`940`).
 
 .. _v2.9.3:
 
