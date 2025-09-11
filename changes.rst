@@ -38,6 +38,8 @@ Bug fixes:
    if it also matched a MiniZinc flag (:bugref:`940`).
 -  Fix bounds computation for division and modulo operations to not abort if
    the bounds cannot be computed (:bugref:`917`).
+-  Fix an incorrect comparison function that could trigger assertions in debug builds
+   (and likely incorrect behaviour in optimised builds).
 
 .. _v2.9.3:
 
