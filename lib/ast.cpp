@@ -1569,13 +1569,13 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
     if (tii->ranges().size() == 1 && isa_tiid(tii->ranges()[0]->domain())) {
       ASTString tiid = Expression::cast<TIId>(tii->ranges()[0]->domain())->v();
       Type orig_tiit = get_type(cur.second);
-      if (orig_tiit.dim() == 0) {
+      if (orig_tiit.dim() == 0 && !orig_tiit.isSet()) {
         std::ostringstream ss;
         ss << "type-inst variable $" << tiid << " must be an array index";
         throw TypeError(env, get_loc(cur.second, call, fi), ss.str());
       }
-      Type tiit = Type::top(orig_tiit.dim());
-      if (orig_tiit.typeId() != 0) {
+      Type tiit = Type::top(orig_tiit.dim() == 0 && orig_tiit.isSet() ? 1 : orig_tiit.dim());
+      if (orig_tiit.typeId() != 0 && orig_tiit.dim() != 0) {
         std::vector<unsigned int> enumIds = env.getArrayEnum(orig_tiit.typeId());
         enumIds[enumIds.size() - 1] = 0;
         tiit.typeId(env.registerArrayEnum(enumIds));

@@ -480,7 +480,9 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
               fi->ann().add(deprecated);
             }
             FunctionI* old_fi = i.fi;
-            i = FnEntry(env, fi);
+            if (!fe.isPolymorphic) {
+              i = fe;
+            }
             // If we are replacing a polymorphic function using a new polymorphic function, then
             // replace in all entries generated using addPolymorphicInstances
             if (i.isPolymorphic) {
@@ -924,10 +926,11 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Expr
   if (matched.size() == 1) {
     return matched[0];
   }
-  Type t = matched[0]->ti()->type();
+  auto t = matched[0]->rtype(env, args, nullptr, false);
   t.mkPar(env);
   for (unsigned int i = 1; i < matched.size(); i++) {
-    if (!env.isSubtype(t, matched[i]->ti()->type(), strictEnums)) {
+    auto rt = matched[i]->rtype(env, args, nullptr, false);
+    if (!env.isSubtype(t, rt, strictEnums)) {
       throw TypeError(env, Expression::loc(botarg),
                       "ambiguous overloading on return type of function");
     }

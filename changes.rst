@@ -40,6 +40,10 @@ Bug fixes:
    the bounds cannot be computed (:bugref:`917`).
 -  Fix an incorrect comparison function that could trigger assertions in debug builds
    (and likely incorrect behaviour in optimised builds).
+-  Fix incorrect overloading resolution for polymorphic functions when called
+   with empty set literals as arguments (:bugref:`875`).
+-  Fix handling of duplicate polymorphic function definitions with empty bodies
+   (:bugref:`875`).
 
 .. _v2.9.3:
 
