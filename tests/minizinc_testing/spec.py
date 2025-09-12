@@ -19,7 +19,7 @@ class Test:
 
     def __init__(self, **kwargs):
         self.name = yaml.Undefined
-        self.solvers = ["gecode", "cbc", "chuffed", "highs"]
+        self.solvers = ["cp-sat", "gecode", "cbc", "chuffed", "highs", "scip"]
         self.check_against = []
         self.expected = []
         self.options = {}
