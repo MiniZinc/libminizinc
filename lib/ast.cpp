@@ -995,7 +995,7 @@ Call* Call::commutativeNormalized(EnvI& env, const Call* orig) {
               return xs->max(i) < ys->max(i);
             }
           }
-          return true;  // equal
+          return false;  // equal
         }
         FloatSetVal* xs = Expression::cast<SetLit>(x)->fsv();
         FloatSetVal* ys = Expression::cast<SetLit>(y)->fsv();
@@ -1010,7 +1010,7 @@ Call* Call::commutativeNormalized(EnvI& env, const Call* orig) {
             return xs->max(i) < ys->max(i);
           }
         }
-        return true;  // equal
+        return false;  // equal
       }
       default: {
         return x < y;
