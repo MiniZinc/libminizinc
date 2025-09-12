@@ -3,28 +3,40 @@
 expected:
 - !Result
   solution: !Solution
-    x: [6, 5, 3, 3]
-- !Result
-  solution: !Solution
-    x: [5, 3, 3, 6]
-- !Result
-  solution: !Solution
-    x: [3, 6, 5, 3]
-- !Result
-  solution: !Solution
     x: [3, 3, 5, 6]
-- !Result
-  solution: !Solution
-    x: [6, 3, 3, 5]
 - !Result
   solution: !Solution
     x: [3, 3, 6, 5]
 - !Result
   solution: !Solution
+    x: [3, 5, 3, 6]
+- !Result
+  solution: !Solution
+    x: [3, 5, 6, 3]
+- !Result
+  solution: !Solution
+    x: [3, 6, 3, 5]
+- !Result
+  solution: !Solution
+    x: [3, 6, 5, 3]
+- !Result
+  solution: !Solution
+    x: [5, 3, 3, 6]
+- !Result
+  solution: !Solution
+    x: [5, 3, 6, 3]
+- !Result
+  solution: !Solution
     x: [5, 6, 3, 3]
 - !Result
   solution: !Solution
+    x: [6, 3, 3, 5]
+- !Result
+  solution: !Solution
     x: [6, 3, 5, 3]
+- !Result
+  solution: !Solution
+    x: [6, 5, 3, 3]
 ***/
 
 include "global_cardinality_closed.mzn";
