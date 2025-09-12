@@ -38,7 +38,7 @@ public:
   /// Constructor
   explicit ASTString(const std::string& s);
   /// Constructor
-  ASTString(ASTStringData* s) : _s(s){};
+  ASTString(ASTStringData* s) : _s(s) {};
   /// Copy constructor
   ASTString(const ASTString& s) = default;
   /// Assignment operator
@@ -254,7 +254,7 @@ inline bool ASTString::operator<(const ASTString& s) const {
   if (size() == 0) {
     return 0 < s.size();
   }
-  unsigned int size = std::min(_s->size(), s.size());
+  unsigned int size = static_cast<unsigned int>(std::min(_s->size(), s.size()));
   int cmp = strncmp(_s->c_str(), s.c_str(), size);
   if (cmp == 0) {
     return _s->size() < s.size();

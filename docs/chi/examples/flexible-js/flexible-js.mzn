@@ -17,6 +17,6 @@ constraint forall(t in Task)(alternative(S[t],D[t],
                  [O[t,m]|m in Machine],[d[t,m]|m in Machine]));
 constraint forall(m in Machine)
                  (disjunctive([O[t,m]|t in Task],[d[t,m]|t in Task]));
-constraint cumulative(S,D,[1|i in Task],card(Machine));
+constraint cumulative(S, D, [i: 1 | i in Task],card(Machine));
 
 solve minimize max(t in Task)(S[t] + D[t]);

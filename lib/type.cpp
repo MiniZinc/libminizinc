@@ -70,7 +70,7 @@ void Type::mkPar(EnvI& env) {
   }
   StructType* st = env.getStructType(tId, bt());
   std::vector<Type> pt(st->size());
-  for (int i = 0; i < st->size(); ++i) {
+  for (unsigned int i = 0; i < st->size(); ++i) {
     pt[i] = (*st)[i];
     if (pt[i].structBT()) {
       pt[i].mkPar(env);
@@ -112,7 +112,7 @@ void Type::mkVar(EnvI& env) {
   }
   StructType* st = env.getStructType(tId, bt());
   std::vector<Type> pt(st->size());
-  for (int i = 0; i < st->size(); ++i) {
+  for (unsigned int i = 0; i < st->size(); ++i) {
     pt[i] = (*st)[i];
     pt[i].mkVar(env);
   }
@@ -144,7 +144,7 @@ void Type::mkOpt(EnvI& env) {
   StructType* strt = env.getStructType(tId, bt());
   std::vector<Type> pt(strt->size());
   bool changed = false;
-  for (int i = 0; i < strt->size(); ++i) {
+  for (unsigned int i = 0; i < strt->size(); ++i) {
     pt[i] = (*strt)[i];
     if (pt[i].structBT()) {
       pt[i].mkOpt(env);
@@ -181,7 +181,7 @@ void Type::mkPresent(EnvI& env) {
   StructType* st = env.getStructType(tId, bt());
   std::vector<Type> pt(st->size());
   bool changed = false;
-  for (int i = 0; i < st->size(); ++i) {
+  for (unsigned int i = 0; i < st->size(); ++i) {
     pt[i] = (*st)[i];
     if (pt[i].structBT()) {
       pt[i].mkOpt(env);
@@ -202,6 +202,13 @@ void Type::mkPresent(EnvI& env) {
       typeId(regId);
     }
   }
+}
+
+bool Type::isVarifiable(const EnvI& env) const {
+  return !contains(env, [](Type t) {
+    return t.dim() != 0 || t.bt() == BT_STRING || t.bt() == BT_ANN ||
+           t.st() == ST_SET && (t.isOpt() || t.bt() != BT_INT && t.bt() != BT_BOT);
+  });
 }
 
 bool Type::decrement(EnvI& env) {
@@ -231,7 +238,7 @@ bool Type::decrement(EnvI& env) {
 
   // Copy types
   std::vector<Type> pt(st->size());
-  for (int i = 0; i < st->size(); ++i) {
+  for (unsigned int i = 0; i < st->size(); ++i) {
     pt[i] = (*st)[i];
   }
   int changed = static_cast<int>(st->size()) - 1;
@@ -243,7 +250,7 @@ bool Type::decrement(EnvI& env) {
   if (changed < 0) {
     return false;
   }
-  for (int i = changed + 1; i < st->size(); ++i) {
+  for (unsigned int i = changed + 1; i < st->size(); ++i) {
     pt[i].mkVar(env);
     if (pt[i].st() == Type::ST_PLAIN) {
       pt[i].mkOpt(env);
@@ -279,7 +286,7 @@ bool Type::contains(const EnvI& env, std::function<bool(const Type)> p) const {
   auto* st = env.getStructType(*this);
   std::vector<Type> todo;
   todo.reserve(st->size());
-  for (size_t i = 0; i < st->size(); i++) {
+  for (unsigned int i = 0; i < st->size(); i++) {
     todo.push_back((*st)[i]);
   }
   while (!todo.empty()) {
@@ -290,7 +297,7 @@ bool Type::contains(const EnvI& env, std::function<bool(const Type)> p) const {
     todo.pop_back();
     if (t.structBT()) {
       auto* st = env.getStructType(t);
-      for (size_t i = 0; i < st->size(); i++) {
+      for (unsigned int i = 0; i < st->size(); i++) {
         todo.push_back((*st)[i]);
       }
     }
@@ -337,6 +344,98 @@ Type Type::arrType(EnvI& env, const Type& dimTy, const Type& elemTy) {
   arrayEnumIds.back() = elemTypeId;
   ret.typeId(env.registerArrayEnum(arrayEnumIds));
   return ret;
+}
+
+Type Type::commonType(EnvI& env, Type t1, Type t2) {
+  if (t1 == t2 && t1.typeId() == t2.typeId() || t2 == Type::bot()) {
+    t1.cv(t1.cv() || t2.cv());
+    return t1;
+  }
+  if (t1 == Type::bot()) {
+    return t2;
+  }
+
+  if (t1.isSet() && t2.dim() == 1) {
+    t1.st(ST_PLAIN);
+    t1 = Type::arrType(env, Type::parint(1), t1);
+  } else if (t2.isSet() && t1.dim() == 1) {
+    t2.st(ST_PLAIN);
+    t2 = Type::arrType(env, Type::parint(1), t2);
+  }
+
+  if (t1.isunknown() || t2.isunknown() || t1.dim() != t2.dim() ||
+      t1.st() != t2.st() && !t1.isbot() && !t2.isbot()) {
+    return Type();
+  }
+
+  if (t1.dim() != 0) {
+    Type e1 = env.getTransparentType(t1.elemType(env));
+    Type e2 = env.getTransparentType(t2.elemType(env));
+
+    Type commonEl = Type::commonType(env, e1, e2);
+    if (commonEl.isunknown()) {
+      return Type();
+    }
+    if (commonEl.dim() != 0) {
+      auto wrapper_t = env.registerTupleType({commonEl, Type()});
+      commonEl = Type::tuple();
+      commonEl.typeId(wrapper_t);
+    }
+
+    if (t1.typeId() != 0 && t2.typeId() != 0) {
+      const auto& array1 = env.getArrayEnum(t1.typeId());
+      const auto& array2 = env.getArrayEnum(t2.typeId());
+
+      std::vector<unsigned int> arrayEnum(array1.size());
+      for (size_t i = 0; i < array1.size(); i++) {
+        if (array1[i] == array2[i]) {
+          arrayEnum[i] = array1[i];
+        }
+      }
+      arrayEnum.back() = commonEl.typeId();
+
+      Type commonArray = commonEl;
+      commonArray.typeId(env.registerArrayEnum(arrayEnum));
+      return commonArray;
+    }
+
+    return Type::arrType(env, Type::parint(t1.dim()), commonEl);
+  }
+
+  if ((t1.structBT() || t2.structBT()) && t1.bt() != t2.bt()) {
+    return Type();
+  }
+
+  if (t1.istuple()) {
+    return env.commonTuple(t1, t2);
+  }
+  if (t1.isrecord()) {
+    return env.commonRecord(t1, t2);
+  }
+
+  Type common;
+  if (Type::btSubtype(env, t2, t1, false)) {
+    common = t1;
+  } else if (Type::btSubtype(env, t1, t2, false)) {
+    common = t2;
+  } else {
+    return Type();
+  }
+
+  if (t1.typeId() != t2.typeId() && !t1.isbot() && !t2.isbot()) {
+    common.typeId(0);
+  }
+  if (t1.ti() != t2.ti()) {
+    common.ti(Type::TI_VAR);
+  }
+  if (t1.ot() != t2.ot()) {
+    common.ot(Type::OT_OPTIONAL);
+  }
+  common.cv(t1.cv() || t2.cv());
+  if (common.isvar() && common.isOpt() && common.st() == Type::ST_SET) {
+    return Type();
+  }
+  return common;
 }
 
 std::string Type::toString(const EnvI& env) const {
@@ -410,24 +509,28 @@ std::string Type::toString(const EnvI& env) const {
       oss << "ann";
       break;
     case BT_TUPLE: {
-      oss << "tuple(";
       if (typeId() == COMP_INDEX) {
-        oss << "???";
+        oss << "tuple(???)";
       } else {
         TupleType* tt = env.getTupleType(*this);
-        for (size_t i = 0; i < tt->size(); ++i) {
-          oss << (*tt)[i].toString(env);
-          if (i < tt->size() - 1) {
-            oss << ", ";
+        if (tt->size() == 2 && (*tt)[1].isunknown()) {
+          oss << (*tt)[0].toString(env);
+        } else {
+          oss << "tuple(";
+          for (unsigned int i = 0; i < tt->size(); ++i) {
+            oss << (*tt)[i].toString(env);
+            if (i < tt->size() - 1) {
+              oss << ", ";
+            }
           }
+          oss << ")";
         }
       }
-      oss << ")";
     } break;
     case BT_RECORD: {
       oss << "record(";
       RecordType* rt = env.getRecordType(*this);
-      for (size_t i = 0; i < rt->size(); ++i) {
+      for (unsigned int i = 0; i < rt->size(); ++i) {
         oss << (*rt)[i].toString(env) << ": " << Printer::quoteId(rt->fieldName(i));
         if (i < rt->size() - 1) {
           oss << ", ";

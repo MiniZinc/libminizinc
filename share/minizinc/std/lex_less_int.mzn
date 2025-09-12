@@ -7,12 +7,14 @@ include "fzn_lex_less_int_reif.mzn";
 % Compares them from first to last element, regardless of indices
 %-----------------------------------------------------------------------------%
 
-predicate lex_less_int(array[int] of var int: x ::promise_ctx_antitone,
-                       array[int] of var int: y ::promise_ctx_monotone) =
-    fzn_lex_less_int(x, y);
+predicate lex_less_int(
+  array [int] of var int: x :: promise_ctx_antitone,
+  array [int] of var int: y :: promise_ctx_monotone,
+) = fzn_lex_less_int(x, y);
 
-predicate lex_lt_int(array[int] of var int: x ::promise_ctx_antitone,
-                     array[int] of var int: y ::promise_ctx_monotone) =
-          lex_less(x, y);
+predicate lex_lt_int(
+  array [int] of var int: x :: promise_ctx_antitone,
+  array [int] of var int: y :: promise_ctx_monotone,
+) = lex_less(x, y);
 
 %-----------------------------------------------------------------------------%

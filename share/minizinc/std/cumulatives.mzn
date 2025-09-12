@@ -17,27 +17,30 @@ include "fzn_cumulatives.mzn";
   - forall \p i, \a d[\p i] >= 0
 */
 predicate cumulatives(
-  array[$$E] of var int: s,
-  array[$$E] of var int: d,
-  array[$$E] of var int: r,
-  array[$$E] of var $$M: m,
-  array[$$M] of var int: b,
-  bool: upper
+  array [$$E] of var int: s,
+  array [$$E] of var int: d,
+  array [$$E] of var int: r,
+  array [$$E] of var $$M: m,
+  array [$$M] of var int: b,
+  bool: upper,
 ) =
   assert(
-    index_sets_agree(s, d) /\
-    index_sets_agree(s, r) /\
-    index_sets_agree(s, m),
+    index_sets_agree(s, d) /\ index_sets_agree(s, r) /\ index_sets_agree(s, m),
     "cumulatives: the 4 first array arguments must have identical index sets",
     if length(s) >= 1 then
-      assert(
-        lb_array(d) >= 0,
-        "cumulatives: durations must be non-negative"
-      ) /\
-      assert(
-        lb_array(m) >= min(index_set(b)) /\ ub_array(m) <= max(index_set(b)),
-        "cumulatives: machines must be in the index set of the 5th argument"
-      ) /\
-      fzn_cumulatives(s, d, r, m, b, upper, min(index_set(b)))
-    endif
+      assert(lb_array(d) >= 0, "cumulatives: durations must be non-negative") /\
+        assert(
+          lb_array(m) >= min(index_set(b)) /\ ub_array(m) <= max(index_set(b)),
+          "cumulatives: machines must be in the index set of the 5th argument",
+        ) /\
+        fzn_cumulatives(
+          index2int(s),
+          index2int(d),
+          index2int(r),
+          index2int(enum2int(m)),
+          index2int(b),
+          upper,
+          enum2int(min(index_set(b))),
+        )
+    endif,
   );

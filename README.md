@@ -35,6 +35,7 @@
   - [Compilation](#compilation)
 - [Testing](#testing)
 - [License](#license)
+- [Acknowledgements](#acknowledgements)
 - [Contact](#contact)
 
 <!-- ABOUT THE PROJECT -->
@@ -48,8 +49,7 @@ in a high-level, solver-independent way, taking advantage of a large library of
 pre-defined constraints. Your model is then compiled into FlatZinc, a solver
 input language that is understood by a wide range of solvers.
 
-MiniZinc is developed at Monash University in collaboration with Data61
-Decision Sciences.
+MiniZinc is developed at Monash University with support from OPTIMA.
 
 <!-- GETTING STARTED -->
 
@@ -156,6 +156,12 @@ run the test suite and how to add new tests can be found
 ## License
 
 Distributed under the Mozilla Public License Version 2.0. See `LICENSE` for more information.
+
+<!-- ACKNOWLEDGEMENTS -->
+
+## Acknowledgements
+
+This research was partially funded by the Australian Government through the Australian Research Council Industrial Transformation Training Centre in Optimization Technologies, Integrated Methodologies, and Applications ([OPTIMA](https://optima.org.au)), Project ID IC200100009.
 
 <!-- CONTACT -->
 

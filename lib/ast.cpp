@@ -42,7 +42,7 @@ Expression* domain_shallow_copy(EnvI& env, Expression* orig, Type type) {
   for (unsigned int i = 0; i < al->size(); i++) {
     Type nt = (*st)[i];
     auto* ti = Expression::cast<TypeInst>((*al)[i]);
-    clone[i] = new TypeInst(Expression::loc(ti), nt, ti->ranges(),
+    clone[i] = new TypeInst(Expression::loc(orig), nt, ti->ranges(),
                             domain_shallow_copy(env, ti->domain(), nt));
   }
   ArrayLit* tup = ArrayLit::constructTuple(Expression::loc(orig), clone);
@@ -400,7 +400,7 @@ unsigned int ArrayLit::length() const {
     return 0;
   }
   unsigned int l = max(0) - min(0) + 1;
-  for (int i = 1; i < dims(); i++) {
+  for (unsigned int i = 1; i < dims(); i++) {
     l *= (max(i) - min(i) + 1);
   }
   return l;
@@ -447,7 +447,7 @@ Expression* ArrayLit::getSlice(unsigned int i) const {
   if (!_flag2) {
     assert(_u.v->flag());
     int off = static_cast<int>(length()) - static_cast<int>(_u.v->size());
-    return i <= off ? (*_u.v)[0] : (*_u.v)[i - off];
+    return static_cast<int>(i) <= off ? (*_u.v)[0] : (*_u.v)[i - off];
   }
   assert(_flag2);
   return (*_u.al)[origIdx(i)];
@@ -457,7 +457,7 @@ void ArrayLit::setSlice(unsigned int i, Expression* e) {
   if (!_flag2) {
     assert(_u.v->flag());
     int off = static_cast<int>(length()) - static_cast<int>(_u.v->size());
-    if (i <= off) {
+    if (static_cast<int>(i) <= off) {
       (*_u.v)[0] = e;
     } else {
       (*_u.v)[i - off] = e;
@@ -934,8 +934,10 @@ void Call::args(const std::vector<Expression*>& args) {
     for (unsigned int i = 0; i < argCount(); i++) {
       arg(i, args[i]);
     }
+  } else if (argCount() == 0 && args.size() == 1) {
+    _secondaryId = CK_UNARY;
+    arg(0, args[0]);
   } else {
-    assert(static_cast<CallKind>(_secondaryId) != CK_NULLARY);
     switch (static_cast<CallKind>(_secondaryId)) {
       case CK_BINARY:
         _secondaryId = CK_NARY_2;
@@ -1124,11 +1126,23 @@ void TypeInst::setRanges(const std::vector<TypeInst*>& ranges) {
 }
 
 void TypeInst::canonicaliseStruct(EnvI& env) {
+  bool isArrayOfArray = domain() != nullptr && Expression::isa<TypeInst>(domain());
+  if (isArrayOfArray) {
+    GCLock lock;
+    auto* inner = Expression::cast<TypeInst>(domain());
+    assert(inner->isarray());
+    auto tid = env.registerTupleType({Expression::type(inner), Type()});
+    auto nt = Type::tuple(tid);
+    ArrayLit* al = ArrayLit::constructTuple(Expression::loc(inner), {inner});
+    al->type(nt);
+    domain(al);
+  }
+
   if (type().bt() == Type::BT_TUPLE) {
     // Warning: Do not check TypeInst twice! A canonical tuple does not abide by the rules
     // that a user definition abides by (e.g., a tuple might be marked var (because all
     // members are var) and contain an array (with var members)).
-    if (type().isvar() && type().typeId() == 0) {
+    if (type().isvar() && (isArrayOfArray || type().typeId() == 0)) {
       auto* dom = Expression::cast<ArrayLit>(domain());
       // Check if "var" tuple is allowed
       for (unsigned int i = 0; i < dom->size(); i++) {
@@ -1143,7 +1157,7 @@ void TypeInst::canonicaliseStruct(EnvI& env) {
           throw TypeError(env, Expression::loc(this),
                           "var tuples with " + field.toString(env) + " types are not allowed");
         }
-        if (field.dim() != 0) {
+        if (!isArrayOfArray && field.dim() != 0) {
           throw TypeError(env, Expression::loc(this),
                           "var tuples with array types are not allowed");
         }
@@ -1195,21 +1209,21 @@ void TypeInst::mkVar(const EnvI& env) {
   }
   auto* al = Expression::cast<ArrayLit>(_domain);
   if (type().bt() == Type::BT_TUPLE) {
-    for (int i = 0; i < al->size(); ++i) {
+    for (unsigned int i = 0; i < al->size(); ++i) {
       Expression::cast<TypeInst>((*al)[i])->mkVar(env);
     }
   } else {
     if (type().typeId() != 0) {
       GCLock lock;
       RecordType* rt = env.getRecordType(type());
-      for (int i = 0; i < al->size(); ++i) {
+      for (unsigned int i = 0; i < al->size(); ++i) {
         auto* field_ti = Expression::cast<TypeInst>((*al)[i]);
         field_ti->mkVar(env);
         auto* field_vd = new VarDecl(Expression::loc(field_ti), field_ti, rt->fieldName(i));
         al->set(i, field_vd);
       }
     } else {
-      for (int i = 0; i < al->size(); ++i) {
+      for (unsigned int i = 0; i < al->size(); ++i) {
         auto* field_vd = Expression::cast<VarDecl>((*al)[i]);
         field_vd->ti()->mkVar(env);
         field_vd->type(field_vd->ti()->type());
@@ -1235,7 +1249,8 @@ void TypeInst::mkPar(EnvI& env) {
       auto* al = Expression::cast<ArrayLit>(it.first->domain());
       al->type(it.second);
       auto* st = env.getStructType(it.second);
-      assert(st->size() == al->size());
+      assert(st->size() == al->size() ||
+             al->size() == 1 && st->size() == 2 && (*st)[1].isunknown());
       for (unsigned int i = 0; i < al->size(); i++) {
         todo.emplace_back(Expression::cast<TypeInst>((*al)[i]), (*st)[i]);
       }
@@ -1248,7 +1263,7 @@ void TypeInst::setStructDomain(EnvI& env, const Type& struct_type, bool setTypeA
   GCLock lock;
   StructType* st = env.getStructType(struct_type);
   std::vector<Expression*> field_ti(st->size());
-  for (int i = 0; i < st->size(); ++i) {
+  for (unsigned int i = 0; i < st->size(); ++i) {
     Type tti = (*st)[i];
     if (setTypeAny) {
       tti.any(true);
@@ -1258,7 +1273,7 @@ void TypeInst::setStructDomain(EnvI& env, const Type& struct_type, bool setTypeA
       Expression::cast<TypeInst>(field_ti[i])->setStructDomain(env, tti);
     } else if (tti.dim() != 0) {
       std::vector<TypeInst*> newRanges(tti.dim());
-      for (unsigned int k = 0; k < tti.dim(); k++) {
+      for (int k = 0; k < tti.dim(); k++) {
         newRanges[k] = new TypeInst(Location().introduce(), Type::parint());
       }
       Expression::cast<TypeInst>(field_ti[i])->setRanges(newRanges);
@@ -1269,7 +1284,7 @@ void TypeInst::setStructDomain(EnvI& env, const Type& struct_type, bool setTypeA
                                    Expression::isa<TIId>(ranges()[0]->domain()) &&
                                    !Expression::cast<TIId>(ranges()[0]->domain())->isEnum());
     std::vector<TypeInst*> newRanges(type().dim());
-    for (unsigned int k = 0; k < type().dim(); k++) {
+    for (int k = 0; k < type().dim(); k++) {
       newRanges[k] = new TypeInst(Location().introduce(), Type::parint());
     }
     setRanges(newRanges);
@@ -1305,6 +1320,13 @@ bool TypeInst::resolveAlias(EnvI& env) {
   GCLock lock;
   auto* alias = Expression::cast<TypeInst>(Expression::cast<Id>(domain())->decl()->e());
   Type ntype = alias->type();
+  bool isArrayOfArray = false;
+  if (type().dim() != 0 && ntype.dim() != 0) {
+    // Array of array will get turned into a tuple
+    ntype = Type::tuple(env.registerTupleType({ntype, Type()}));
+    isArrayOfArray = true;
+  }
+
   if (type().tiExplicit() && ntype.ti() != type().ti()) {
     if (type().ti() == Type::TI_VAR) {
       ntype.mkVar(env);
@@ -1342,16 +1364,9 @@ bool TypeInst::resolveAlias(EnvI& env) {
     }
     ntype.st(Type::ST_SET);
   }
-  assert(type().dim() == -1 ||
-         type().dim() == ranges().size() && ntype.dim() == alias->ranges().size());
+  assert(type().dim() == -1 || type().dim() == ranges().size() &&
+                                   (isArrayOfArray || ntype.dim() == alias->ranges().size()));
   if (type().dim() != 0) {
-    if (ntype.dim() != 0) {
-      std::stringstream ss;
-      ss << "Unable to create an array containing the type aliased by `" << *domain()
-         << "', which has been resolved to `" << alias->type().toString(env)
-         << "' and is already an array type";
-      throw TypeError(env, Expression::loc(this), ss.str());
-    }
     const int dim = type().dim() == -1 ? 1 : type().dim();
     const unsigned int curTypeId = type().typeId();
     const unsigned int newTypeId = ntype.typeId();
@@ -1376,13 +1391,17 @@ bool TypeInst::resolveAlias(EnvI& env) {
     }
   } else if (ntype.dim() != 0) {
     std::vector<TypeInst*> ranges(alias->ranges().size());
-    for (size_t i = 0; i < alias->ranges().size(); ++i) {
+    for (unsigned int i = 0; i < alias->ranges().size(); ++i) {
       ranges[i] = alias->ranges()[i];
     }
     setRanges(ranges);
   }
   type(ntype);
-  domain(domain_shallow_copy(env, alias->domain(), ntype));
+  if (isArrayOfArray) {
+    domain(domain_shallow_copy(env, alias, ntype));
+  } else {
+    domain(domain_shallow_copy(env, alias->domain(), ntype));
+  }
   assert(!is_aliased());  // Resolving aliases should be done in order
   return true;
 }
@@ -1441,7 +1460,7 @@ bool TypeInst::hasTiVariable() const {
       return true;
     }
     if (auto* al = Expression::dynamicCast<ArrayLit>(domain())) {
-      for (size_t i = 0; i < al->size(); ++i) {
+      for (unsigned int i = 0; i < al->size(); ++i) {
         auto* ti = Expression::cast<TypeInst>((*al)[i]);
         if (ti->hasTiVariable()) {
           return true;
@@ -1449,7 +1468,7 @@ bool TypeInst::hasTiVariable() const {
       }
     }
   }
-  for (size_t i = 0; i < _ranges.size(); ++i) {
+  for (unsigned int i = 0; i < _ranges.size(); ++i) {
     if (_ranges[i]->domain() != nullptr && Expression::isa<TIId>(_ranges[i]->domain())) {
       return true;
     }
@@ -1496,6 +1515,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
   }
 
   ASTStringMap<std::pair<Type, bool>> tmap;
+  ASTStringSet hadIntInstantiation;
   while (!stack.empty()) {
     std::pair<TypeInst*, Type> cur(stack.back());
     stack.pop_back();
@@ -1508,7 +1528,13 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
         if (tii->type().any()) {
           tiit.any(true);
         }
+        if (tii->type().st() || tiit.isSet() && tii->type().dim() == 1) {
+          tiit.st(Type::ST_PLAIN);
+        }
         tiit = tiit.elemType(env);
+        if (strictEnum && tiit.bt() == Type::BT_INT && tiit.typeId() == 0) {
+          hadIntInstantiation.insert(tiid);
+        }
         auto it = tmap.find(tiid);
         if (it == tmap.end()) {
           tmap.insert(std::pair<ASTString, std::pair<Type, bool>>(tiid, {tiit, isEnumTIID}));
@@ -1519,53 +1545,21 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
             ss << "type-inst variable $" << tiid << " used in both array and non-array position";
             throw TypeError(env, get_loc(tiit, call, fi), ss.str());
           }
-          Type tiit_par = tiit;
-          tiit_par.any(false);
-          tiit_par.mkPar(env);
-          tiit_par.mkPresent(env);
-          if (isEnumTIID) {
-            tiit_par.st(Type::ST_SET);
-          }
-          Type its_par = it->second.first;
-          its_par.any(false);
-          its_par.mkPar(env);
-          its_par.mkPresent(env);
-          if (it->second.second) {
-            its_par.st(Type::ST_SET);
-          }
-          if (tiit_par.bt() == Type::BT_TOP || tiit_par.bt() == Type::BT_BOT) {
-            tiit_par.bt(its_par.bt());
-            tiit_par.typeId(its_par.typeId());
-          }
-          if (its_par.bt() == Type::BT_TOP || its_par.bt() == Type::BT_BOT) {
-            its_par.bt(tiit_par.bt());
-            its_par.typeId(tiit_par.typeId());
-          }
-          if (env.isSubtype(tiit_par, its_par, strictEnum)) {
-            if (it->second.first.bt() == Type::BT_TOP) {
-              it->second.first.bt(tiit.bt());
-              it->second.first.typeId(tiit.typeId());
-            }
-          } else if (env.isSubtype(its_par, tiit_par, strictEnum)) {
-            it->second.first.bt(tiit_par.bt());
-            it->second.first.typeId(tiit_par.typeId());
-          } else {
+
+          auto common = Type::commonType(env, it->second.first, tiit);
+          if (common.isunknown()) {
             std::ostringstream ss;
-            ss << "type-inst variable $" << tiid << " instantiated with different types ("
+            ss << "type-inst variable $" << tiid << " instantiated with incompatible types ("
                << tiit.toString(env) << " vs " << it->second.first.toString(env) << ")";
             throw TypeError(env, get_loc(tiit, call, fi), ss.str());
           }
-          if (tiit.isvar()) {
-            it->second.first.mkVar(env);
-          }
-          if (tiit.isOpt() && it->second.first.st() == Type::ST_PLAIN) {
-            it->second.first.mkOpt(env);
-          }
+
+          it->second.first = common;
         }
       } else if (cur.second.structBT()) {
         auto* al = Expression::cast<ArrayLit>(tii->domain());
         StructType* tiit_st = env.getStructType(cur.second);
-        for (size_t i = 0; i < al->size(); ++i) {
+        for (unsigned int i = 0; i < al->size(); ++i) {
           stack.emplace_back(Expression::cast<TypeInst>((*al)[i]), (*tiit_st)[i]);
         }
       }
@@ -1608,9 +1602,15 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
           Type enumIdT;
           if (tiit.typeId() != 0) {
             unsigned int enumId = env.getArrayEnum(tiit.typeId())[j];
-            enumIdT = Type::parsetenum(enumId);
+            enumIdT = Type::parenum(enumId);
+            if (strictEnum && enumId == 0) {
+              hadIntInstantiation.insert(enumTIId);
+            }
           } else {
-            enumIdT = Type::parsetint();
+            enumIdT = Type::parint();
+            if (strictEnum) {
+              hadIntInstantiation.insert(enumTIId);
+            }
           }
           auto it = tmap.find(enumTIId);
           // TODO: this may clash if the same enum TIId is used for different types
@@ -1626,6 +1626,16 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
       }
     }
   }
+  if (strictEnum) {
+    for (auto& it : tmap) {
+      if (it.second.first.bt() == Type::BT_INT && it.second.first.typeId() == 0 &&
+          hadIntInstantiation.find(it.first) == hadIntInstantiation.end()) {
+        std::ostringstream ss;
+        ss << "type-inst variable $" << it.first << " used for different enum types";
+        throw TypeError(env, get_loc(it.second.first, call, fi), ss.str());
+      }
+    }
+  }
   return type_from_tmap(env, fi->ti(), tmap);
 }
 }  // namespace
@@ -1634,10 +1644,20 @@ Type type_from_tmap(EnvI& env, TypeInst* ti, const ASTStringMap<std::pair<Type, 
   Type ret = ti->type();
   if (ret.structBT()) {
     auto* al = Expression::cast<ArrayLit>(ti->domain());
-    std::vector<Type> fields(al->size());
+    auto isArrayOfArray = false;
+    if (ret.bt() == Type::BT_TUPLE && ret.typeId() != 0) {
+      auto* tt = env.getTupleType(ret);
+      if (tt->size() == 2 && (*tt)[1].isunknown()) {
+        isArrayOfArray = true;
+      }
+    }
+    std::vector<Type> fields(al->size() + (isArrayOfArray ? 1U : 0U));
     for (unsigned int i = 0; i < al->size(); i++) {
       fields[i] = type_from_tmap(env, Expression::cast<TypeInst>((*al)[i]), tmap);
       ret.cv(ret.cv() || fields[i].cv());
+    }
+    if (isArrayOfArray) {
+      fields[al->size()] = Type();
     }
     unsigned int typeId = 0;
     if (ret.bt() == Type::BT_TUPLE) {
@@ -1830,10 +1850,10 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
   Type curTiiT = tii->type();
   Type dimTy = curTiiT;
   if (curTiiT.dim() == -1) {
-    if (Expression::type(ta[n]).dim() == 0) {
+    if (env.getTransparentType(ta[n]).dim() == 0) {
       dimTy = Type::partop(1);
     } else {
-      dimTy = Expression::type(ta[n]);
+      dimTy = env.getTransparentType(ta[n]);
       if (dimTy.dim() == -1) {
         dimTy = Type::partop(1);
       }
@@ -1845,7 +1865,7 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
     // of the uses of tiid is opt. The base type has to be int
     // if any of the uses are var set.
 
-    Type ty = Expression::type(ta[n]);
+    Type ty = env.getTransparentType(ta[n]);
     if (!ty.structBT()) {
       ty.st(curTiiT.st());
     }
@@ -1861,7 +1881,7 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
       if ((param(i)->ti()->domain() != nullptr) &&
           Expression::isa<TIId>(param(i)->ti()->domain()) &&
           Expression::cast<TIId>(param(i)->ti()->domain())->v() == tv) {
-        Type toCheck = Expression::type(ta[i]);
+        Type toCheck = env.getTransparentType(ta[i]);
         if (!toCheck.structBT()) {
           toCheck.ot(curTiiT.ot());
           toCheck.st(curTiiT.st());
@@ -2156,6 +2176,9 @@ Constants::Constants() {
   ids.bool2int = addString("bool2int");
   ids.int2float = addString("int2float");
   ids.bool2float = addString("bool2float");
+  ids.enum2int = addString("enum2int");
+  ids.index2int = addString("index2int");
+  ids.to_enum_internal = addString("to_enum_internal");
   ids.set2iter = addString("set2iter");
   ids.assert = addString("assert");
   ids.assert_dbg = addString("assert_dbg");
@@ -2397,12 +2420,19 @@ Constants::Constants() {
   ann.promise_commutative = addId("promise_commutative");
   ann.promise_commutative->type(Type::ann());
   ann.seq_search = addString("seq_search");
+  ann.seq_search_internal = addString("mzn_internal_seq_search");
   ann.int_search = addString("int_search");
+  ann.int_search_internal = addString("mzn_internal_int_search");
   ann.bool_search = addString("bool_search");
+  ann.bool_search_internal = addString("mzn_internal_bool_search");
   ann.float_search = addString("float_search");
+  ann.float_search_internal = addString("mzn_internal_float_search");
   ann.set_search = addString("set_search");
+  ann.set_search_internal = addString("mzn_internal_set_search");
   ann.warm_start = addString("warm_start");
+  ann.warm_start_internal = addString("mzn_internal_warm_start");
   ann.warm_start_array = addString("warm_start_array");
+  ann.warm_start_array_internal = addString("mzn_internal_warm_start_array");
   ann.computed_domain = addId("computed_domain");
   ann.computed_domain->type(Type::ann());
 

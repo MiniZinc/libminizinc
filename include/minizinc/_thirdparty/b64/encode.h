@@ -42,7 +42,7 @@ namespace base64
 
 		int encode_end(char* plaintext_out)
 		{
-			return base64_encode_blockend(plaintext_out, &_state);
+			return static_cast<int>(base64_encode_blockend(plaintext_out, &_state));
 		}
 
 		void encode(std::istream& istream_in, std::ostream& ostream_in)

@@ -104,7 +104,7 @@ public:
   };
 
   /// Called when the solver config needs to be fully finalised
-  virtual void finaliseSolverConfigs(SolverConfigs& solverConfigs){};
+  virtual void finaliseSolverConfigs(SolverConfigs& solverConfigs) {};
 
   /// Create solver-specific options object
   virtual SolverInstanceBase::Options* createOptions() = 0;

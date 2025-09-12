@@ -145,6 +145,10 @@ std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& o
 
 void pp_floatval(std::ostream& os, const FloatVal& fv, bool hexFloat = false);
 
+std::string show_enum_type(EnvI& env, Expression* e, Type t, bool dzn, bool json);
+
+std::string show_with_type(EnvI& env, Expression* exp, Type t, bool showDzn);
+
 }  // namespace MiniZinc
 
 void debugprint(const MiniZinc::Expression* e);

@@ -41,39 +41,6 @@ public:
   explicit EE(Expression* r0 = nullptr, Expression* b0 = nullptr) : r(r0), b(b0) {}
 };
 
-/// Boolean evaluation context
-enum BCtx { C_ROOT, C_POS, C_NEG, C_MIX };
-
-/// Evaluation context
-struct Ctx {
-  /// Boolean context
-  BCtx b;
-  /// Integer context
-  BCtx i;
-  /// Boolen negation flag
-  bool neg;
-  /// Default constructor (root context)
-  Ctx() : b(C_ROOT), i(C_MIX), neg(false) {}
-  /// Copy constructor
-  Ctx(const Ctx& ctx) : b(ctx.b), i(ctx.i), neg(ctx.neg) {}
-  /// Assignment operator
-  Ctx& operator=(const Ctx& ctx) {
-    if (this != &ctx) {
-      b = ctx.b;
-      i = ctx.i;
-      neg = ctx.neg;
-    }
-    return *this;
-  }
-  /// Return true variable if in root context, nullptr otherwise
-  VarDecl* partialityVar(EnvI& env) const;
-};
-
-/// Turn \a c into positive context
-BCtx operator+(const BCtx& c);
-/// Negate context \a c
-BCtx operator-(const BCtx& c);
-
 struct MultiPassInfo {
   // The current pass number (used for unifying and disabling path construction in final pass)
   unsigned int currentPassNumber;
@@ -172,14 +139,14 @@ protected:
 
 class StructType {
 public:
-  virtual size_t size() const = 0;
-  virtual Type operator[](size_t i) const = 0;
+  virtual unsigned int size() const = 0;
+  virtual Type operator[](unsigned int i) const = 0;
   bool containsArray(const EnvI& env) const;
 };
 
 class TupleType : public StructType {
 protected:
-  size_t _size;
+  unsigned int _size;
   Type _fields[1];  // Resized by TupleType::a
   TupleType(const std::vector<Type>& fields);
 
@@ -188,14 +155,14 @@ public:
   static void free(TupleType* rt) { ::free(rt); }
   ~TupleType() = delete;
 
-  size_t size() const override { return _size; }
-  Type operator[](size_t i) const override {
+  unsigned int size() const override { return _size; }
+  Type operator[](unsigned int i) const override {
     assert(i < size());
     return _fields[i];
   }
   size_t hash() const {
     std::size_t seed = _size;
-    for (size_t i = 0; i < _size; ++i) {
+    for (unsigned int i = 0; i < _size; ++i) {
       seed ^= _fields[i].toInt() + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     }
     return seed;
@@ -204,7 +171,7 @@ public:
     if (_size != rhs._size) {
       return false;
     }
-    for (int i = 0; i < _size; ++i) {
+    for (unsigned int i = 0; i < _size; ++i) {
       if (_fields[i].cmp(rhs._fields[i]) != 0) {
         return false;
       }
@@ -216,7 +183,7 @@ public:
     if (other.size() != size()) {
       return false;
     }
-    for (size_t i = 0; i < other.size(); ++i) {
+    for (unsigned int i = 0; i < other.size(); ++i) {
       if (!operator[](i).isSubtypeOf(env, other[i], strictEnum)) {
         return false;
       }
@@ -237,7 +204,7 @@ class RecordType : public StructType {
 protected:
   // name offset + type
   using FieldTup = std::pair<size_t, Type>;
-  size_t _size;
+  unsigned int _size;
   std::string _fieldNames;
   FieldTup _fields[1];  // Resized by TupleType::a
   RecordType(const std::vector<std::pair<ASTString, Type>>& fields);
@@ -248,20 +215,20 @@ public:
   static RecordType* a(const RecordType* orig, const std::vector<Type>& types);
   static void free(RecordType* tt) { ::free(tt); }
 
-  size_t size() const override { return _size; }
-  Type operator[](size_t i) const override {
+  unsigned int size() const override { return _size; }
+  Type operator[](unsigned int i) const override {
     assert(i < size());
     return _fields[i].second;
   }
-  std::string fieldName(size_t i) const {
+  std::string fieldName(unsigned int i) const {
     assert(i < size());
     if (i + 1 < size()) {
       return _fieldNames.substr(_fields[i].first, _fields[i + 1].first - _fields[i].first);
     }
     return _fieldNames.substr(_fields[i].first);
   }
-  std::pair<bool, size_t> findField(const ASTString& name) const {
-    for (size_t i = 0; i < size(); ++i) {
+  std::pair<bool, unsigned int> findField(const ASTString& name) const {
+    for (unsigned int i = 0; i < size(); ++i) {
       if (fieldName(i) == name) {
         return {true, i};
       }
@@ -271,7 +238,7 @@ public:
   size_t hash() const {
     std::size_t seed = _size;
     std::hash<std::string> h;
-    for (size_t i = 0; i < _size; ++i) {
+    for (unsigned int i = 0; i < _size; ++i) {
       seed ^= h(fieldName(i)) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
       seed ^= _fields[i].second.toInt() + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     }
@@ -281,7 +248,7 @@ public:
     if (_size != rhs._size || _fieldNames != rhs._fieldNames) {
       return false;
     }
-    for (int i = 0; i < _size; ++i) {
+    for (unsigned int i = 0; i < _size; ++i) {
       if (_fields[i].first != rhs._fields[i].first ||
           _fields[i].second.cmp(rhs._fields[i].second) != 0) {
         return false;
@@ -294,7 +261,7 @@ public:
     if (other.size() != size()) {
       return false;
     }
-    for (size_t i = 0; i < other.size(); ++i) {
+    for (unsigned int i = 0; i < other.size(); ++i) {
       // TODO: Should we allow subtyping based on name?
       if (fieldName(i) != other.fieldName(i)) {
         return false;
@@ -317,16 +284,18 @@ public:
 
 struct TypeList : public StructType {
   const std::vector<Type>& tt;
-  TypeList(const std::vector<Type>& ts) : tt(ts){};
-  size_t size() const override { return tt.size(); }
-  Type operator[](size_t i) const override { return tt[i]; };
+  TypeList(const std::vector<Type>& ts) : tt(ts) {};
+  unsigned int size() const override { return static_cast<unsigned int>(tt.size()); }
+  Type operator[](unsigned int i) const override { return tt[i]; };
 };
 
 class EnvI {
   friend class Type;
+  friend class TypeInst;
   template <bool ignoreVarDecl>
   friend class Typer;
-  friend KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t);
+  friend KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Location& loc_default,
+                                const Type& funarg_t);
   friend Type type_from_tmap(EnvI& env, TypeInst* ti,
                              const ASTStringMap<std::pair<Type, bool>>& tmap);
 
@@ -375,10 +344,12 @@ public:
   bool ignoreUnknownIds;
   struct CallStackEntry {
     Expression* e;
+    Ctx ctx;
     bool tag;
     bool replaced;
-    CallStackEntry(Expression* e0 = nullptr, bool tag0 = false)
-        : e(e0), tag(tag0), replaced(false) {}
+    CallStackEntry() : e(nullptr), tag(false), replaced(false) {}
+    CallStackEntry(Expression* e0, bool tag0, const Ctx& ctx0)
+        : e(e0), ctx(ctx0), tag(tag0), replaced(false) {}
   };
   std::vector<CallStackEntry> callStack;
   std::vector<int> idStack;
@@ -397,6 +368,7 @@ public:
     int linDel;
   } counters;
   bool inReverseMapVar;
+  bool warnImplicitEnum2Int;
   FlatteningOptions fopts;
   ASTStringMap<Item*> reverseEnum;
   std::vector<KeepAlive> checkVars;
@@ -414,7 +386,7 @@ protected:
   CSEMap _cseMap;
   Model* _flat;
   bool _failed;
-  unsigned int _ids;
+  long long int _ids;
   ASTStringMap<ASTString> _reifyMap;
   typedef std::unordered_map<VarDeclI*, unsigned int> EnumMap;
   EnumMap _enumMap;
@@ -476,7 +448,7 @@ public:
   ~EnvI();
   long long int genId();
   /// Set minimum new temporary id to \a i+1
-  void minId(unsigned int i) { _ids = std::max(_ids, i + 1); }
+  void minId(long long int i) { _ids = std::max(_ids, i + 1); }
   void cseMapInsert(Expression* e, const EE& ee);
   CSEMap::iterator cseMapFind(Expression* e);
   void cseMapRemove(Expression* e);
@@ -543,9 +515,10 @@ public:
   Type mergeRecord(Type record1, Type record2, Location loc);
   /// Returns a tuple type of `tuple1 ++ tuple2'
   Type concatTuple(Type tuple1, Type tuple2);
-  /// Check if tuple can be evaluated (instead of flattened).
-  /// (i.e., true if the tuple contains to variable or annotation types)
-  bool tupleIsPar(const Type& tuple);
+  /// Get the type t, but remove surrounding transparent tuple if necessary
+  Type getTransparentType(Type t) const;
+  /// Get the type of e, but remove surrounding transparent tuple if necessary
+  Type getTransparentType(const Expression* e) const;
   std::string enumToString(unsigned int enumId, int i);
   /// Check if \a t1 is a subtype of \a t2 (including enumerated types if \a strictEnum is true)
   bool isSubtype(const Type& t1, const Type& t2, bool strictEnum) const;
@@ -582,7 +555,9 @@ public:
 
   void cleanupExceptOutput();
   std::default_random_engine& rndGenerator() { return _g; }
-  void setRandomSeed(long unsigned int r) { _g.seed(r); }
+  void setRandomSeed(long unsigned int r) {
+    _g.seed(static_cast<std::default_random_engine::result_type>(r));
+  }
   void cancel() { _cancel = true; }
   void checkCancel() {
     if (_cancel) {  // TODO: Should this be annotated "unlikely"?
@@ -607,7 +582,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
               bool doNotFollowChains);
 
 ArrayLit* field_slice(EnvI& env, StructType* st, ArrayLit* al,
-                      std::vector<std::pair<int, int>> dims, long long int field);
+                      std::vector<std::pair<int, int>> dims, unsigned int field);
 std::vector<Expression*> field_slices(EnvI& env, Expression* arrExpr);
 
 class CmpExpIdx {

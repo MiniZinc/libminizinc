@@ -34,9 +34,7 @@
 %
 %
 
-predicate gecode_array_int_lt(array[int] of var int: x,
-                              array[int] of var int: y);
+predicate gecode_array_int_lt(array [int] of var int: x, array [int] of var int: y);
 
-predicate fzn_lex_less_int(array[int] of var int: x,
-                           array[int] of var int: y) =
-    gecode_array_int_lt(x,y);
+predicate fzn_lex_less_int(array [int] of var int: x, array [int] of var int: y) =
+  gecode_array_int_lt(x, y);

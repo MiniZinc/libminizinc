@@ -34,7 +34,6 @@
 %
 %
 
-predicate gecode_count(array[int] of var int: x, var int: y, var int: c);
+predicate gecode_count(array [int] of var int: x, var int: y, var int: c);
 
-predicate fzn_count_eq(array[int] of var int: x, var int: y, var int: c) =
-  gecode_count(x, y, c);
+predicate fzn_count_eq(array [int] of var int: x, var int: y, var int: c) = gecode_count(x, y, c);

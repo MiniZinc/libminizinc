@@ -292,7 +292,7 @@ protected:
       case Call::eid:
         switch (static_cast<Call::CallKind>(n->_secondaryId)) {
           case Call::CK_NULLARY:
-            ns = sizeof(Call0);
+            ns = sizeof(Call1);
             break;
           case Call::CK_BINARY:
           case Call::CK_NARY_2:
@@ -711,29 +711,29 @@ void GC::removeKeepAlive(KeepAlive* e) {
 
 KeepAlive::KeepAlive(Expression* e) : _e(e), _p(nullptr), _n(nullptr) {
   if ((_e != nullptr) && !Expression::isUnboxedVal(_e)) {
-    GC::gc()->addKeepAlive(this);
+    GC::addKeepAlive(this);
   }
 }
 KeepAlive::~KeepAlive() {
   if ((_e != nullptr) && !Expression::isUnboxedVal(_e)) {
-    GC::gc()->removeKeepAlive(this);
+    GC::removeKeepAlive(this);
   }
 }
 KeepAlive::KeepAlive(const KeepAlive& e) : _e(e._e), _p(nullptr), _n(nullptr) {
   if ((_e != nullptr) && !Expression::isUnboxedVal(_e)) {
-    GC::gc()->addKeepAlive(this);
+    GC::addKeepAlive(this);
   }
 }
 KeepAlive& KeepAlive::operator=(const KeepAlive& e) {
   if (this != &e) {
     if ((_e != nullptr) && !Expression::isUnboxedVal(_e)) {
       if (e._e == nullptr || Expression::isUnboxedVal(e._e)) {
-        GC::gc()->removeKeepAlive(this);
+        GC::removeKeepAlive(this);
         _p = _n = nullptr;
       }
     } else {
       if (e._e != nullptr && !Expression::isUnboxedVal(e._e)) {
-        GC::gc()->addKeepAlive(this);
+        GC::addKeepAlive(this);
       }
     }
     _e = e._e;
@@ -784,17 +784,17 @@ void GC::removeNodeWeakMap(ASTNodeWeakMap* m) {
 
 WeakRef::WeakRef(Expression* e) : _e(e), _p(nullptr), _n(nullptr) {
   if (_e != nullptr && !Expression::isUnboxedVal(_e)) {
-    GC::gc()->addWeakRef(this);
+    GC::addWeakRef(this);
   }
 }
 WeakRef::~WeakRef() {
   if ((_e != nullptr) && !Expression::isUnboxedVal(_e)) {
-    GC::gc()->removeWeakRef(this);
+    GC::removeWeakRef(this);
   }
 }
 WeakRef::WeakRef(const WeakRef& e) : _e(e()), _p(nullptr), _n(nullptr) {
   if (_e != nullptr && !Expression::isUnboxedVal(_e)) {
-    GC::gc()->addWeakRef(this);
+    GC::addWeakRef(this);
   }
 }
 WeakRef& WeakRef::operator=(const WeakRef& e) {
@@ -805,7 +805,7 @@ WeakRef& WeakRef::operator=(const WeakRef& e) {
       // Yes, active WeakRef.
       // If after assigning WeakRef should be inactive, remove it.
       if (e() == nullptr || Expression::isUnboxedVal(e())) {
-        GC::gc()->removeWeakRef(this);
+        GC::removeWeakRef(this);
         _n = _p = nullptr;
       }
     }
@@ -813,7 +813,7 @@ WeakRef& WeakRef::operator=(const WeakRef& e) {
 
     // If this WeakRef was not active but now should be, add it
     if (!isActive && _e != nullptr && !Expression::isUnboxedVal(_e)) {
-      GC::gc()->addWeakRef(this);
+      GC::addWeakRef(this);
     }
   }
   return *this;
@@ -826,9 +826,9 @@ Expression* WeakRef::operator()() const {
   return Expression::isUnboxedVal(_e) ? _e : _p != nullptr ? _e : nullptr;
 }
 
-ASTNodeWeakMap::ASTNodeWeakMap() : _p(nullptr), _n(nullptr) { GC::gc()->addNodeWeakMap(this); }
+ASTNodeWeakMap::ASTNodeWeakMap() : _p(nullptr), _n(nullptr) { GC::addNodeWeakMap(this); }
 
-ASTNodeWeakMap::~ASTNodeWeakMap() { GC::gc()->removeNodeWeakMap(this); }
+ASTNodeWeakMap::~ASTNodeWeakMap() { GC::removeNodeWeakMap(this); }
 
 void ASTNodeWeakMap::insert(ASTNode* n0, ASTNode* n1) { _m.insert(std::make_pair(n0, n1)); }
 

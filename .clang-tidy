@@ -19,6 +19,10 @@ Checks: '-*,
   -readability-suspicious-call-argument,
   -readability-identifier-length,
   -readability-simplify-boolean-expr,
+  -readability-math-missing-parentheses,
+  -readability-avoid-nested-conditional-operator,
+  -readability-use-std-min-max,
+  -readability-enum-initial-value,
 '
 # magic-numbers: Allow the usage of direct number literals in expressions
 # congitive-complexity: Do not check function complexity (TODO?)

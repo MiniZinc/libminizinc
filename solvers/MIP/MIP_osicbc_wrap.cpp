@@ -194,8 +194,8 @@ std::vector<MiniZinc::SolverConfig::ExtraFlag> MIPosicbcWrapper::getExtraFlags(
       param_default = std::to_string(param.intParameter(model));
     } else if (t <= 400) {
       auto allowed = param.definedKeywords();
-      if (allowed.size() == 2 && (allowed[0] == "on" && allowed[1] == "off" ||
-                                  allowed[0] == "off" && allowed[1] == "on")) {
+      if (allowed.size() == 2 && ((allowed[0] == "on" && allowed[1] == "off") ||
+                                  (allowed[0] == "off" && allowed[1] == "on"))) {
         param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_BOOL;
       } else {
         param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_STRING;

@@ -44,7 +44,7 @@ var int: r = round(x);
 
 constraint exists(i in [-2.0, -1.75, -1.5, -1.25, -1.0, -0.25, 0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0])(x=i);
 
-output [ "\(2, 2, x), \(c), \(f), \(r) " ++ let {
+output [ format(2, 2, x) ++", \(c), \(f), \(r) " ++ let {
     constraint assert(fix(c)=ceil(fix(x)), "incorrect ceil");
     constraint assert(fix(f)=floor(fix(x)), "incorrect floor");
     constraint assert(fix(r)=round(fix(x)), "incorrect round"); } in "OK" ];

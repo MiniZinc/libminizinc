@@ -21,8 +21,13 @@ EE flatten_anon(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
     throw InternalError("type of anonymous variable could not be inferred");
   }
   GCLock lock;
-  VarDecl* vd = new_vardecl(env, Ctx(), new TypeInst(Location().introduce(), av->type()), nullptr,
-                            nullptr, nullptr);
+  auto* ti = new TypeInst(Location().introduce(), av->type());
+  if (av->type().bt() == Type::BT_INT && av->type().typeId() != 0) {
+    // Ensure enums are bounded by their defining set
+    auto* enumVdi = env.getEnum(av->type().typeId());
+    ti->domain(eval_par(env, enumVdi->e()->id()));
+  }
+  VarDecl* vd = new_vardecl(env, Ctx(), ti, nullptr, nullptr, nullptr);
   ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
   ret.r = bind(env, ctx, r, vd->id());
   return ret;

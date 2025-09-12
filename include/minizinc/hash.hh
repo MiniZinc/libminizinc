@@ -202,7 +202,7 @@ public:
     if (e->idn() == -1) {
       _sm.insert(std::pair<Id*, T>(e, t));
     } else {
-      if (_im.size() < e->idn() + 1) {
+      if (static_cast<int>(_im.size()) < e->idn() + 1) {
         auto newSize = static_cast<unsigned int>(static_cast<double>(e->idn() + 1) * 1.5);
         _im.resize(newSize);
         _ip.resize(newSize, false);
@@ -216,7 +216,7 @@ public:
     if (e->idn() == -1) {
       _sm.erase(e);
     } else {
-      if (e->idn() < _ip.size()) {
+      if (e->idn() < static_cast<int>(_ip.size())) {
         _im[e->idn()] = T();
         _ip[e->idn()] = false;
       }
@@ -249,7 +249,7 @@ public:
       }
       return {true, &it->second};
     }
-    if (ident->idn() >= _ip.size() || !_ip[ident->idn()]) {
+    if (ident->idn() >= static_cast<long long int>(_ip.size()) || !_ip[ident->idn()]) {
       return {false, nullptr};
     }
     return {true, &_im[ident->idn()]};
@@ -352,7 +352,7 @@ public:
   /// Remove all elements from the map
   void clear() { _s.clear(); }
   bool isEmpty() const { return _s.begin() == _s.end(); }
-  unsigned int size() const { return _s.size(); }
+  unsigned int size() const { return static_cast<unsigned int>(_s.size()); }
 };
 
 }  // namespace MiniZinc

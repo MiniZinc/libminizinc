@@ -281,9 +281,9 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
       auto* cc = new Comprehension(copy_location(m, e), nullptr, g, c->set());
       m.insert(c, cc);
 
-      for (int i = 0; i < c->numberOfGenerators(); i++) {
+      for (unsigned int i = 0; i < c->numberOfGenerators(); i++) {
         std::vector<VarDecl*> vv;
-        for (int j = 0; j < c->numberOfDecls(i); j++) {
+        for (unsigned int j = 0; j < c->numberOfDecls(i); j++) {
           vv.push_back(static_cast<VarDecl*>(
               copy(env, m, c->decl(i, j), followIds, copyFundecls, isFlatModel)));
           // Comprehension VarDecl should not be assigned to a particular value when copying the

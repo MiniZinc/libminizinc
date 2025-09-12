@@ -736,7 +736,7 @@ public:
 
   /// Check if set contains \a v
   bool contains(const IntVal& v) const {
-    for (int i = 0; i < size(); i++) {
+    for (unsigned int i = 0; i < size(); i++) {
       if (v < min(i)) {
         return false;
       }
@@ -752,7 +752,7 @@ public:
     if (size() != s->size()) {
       return false;
     }
-    for (int i = 0; i < size(); i++) {
+    for (unsigned int i = 0; i < size(); i++) {
       if (min(i) != s->min(i) || max(i) != s->max(i)) {
         return false;
       }
@@ -776,7 +776,7 @@ public:
   /// Constructor
   IntSetRanges(const IntSetVal* r) : _rs(r), _n(0) {}
   /// Check if iterator is still valid
-  bool operator()() const { return _n < _rs->size(); }
+  bool operator()() const { return _n < static_cast<int>(_rs->size()); }
   /// Move to next range
   void operator++() { ++_n; }
   /// Return minimum of current range
@@ -973,7 +973,7 @@ public:
 
   /// Check if set contains \a v
   bool contains(const FloatVal& v) const {
-    for (int i = 0; i < size(); i++) {
+    for (unsigned int i = 0; i < size(); i++) {
       if (v < min(i)) {
         return false;
       }
@@ -989,7 +989,7 @@ public:
     if (size() != s->size()) {
       return false;
     }
-    for (int i = 0; i < size(); i++) {
+    for (unsigned int i = 0; i < size(); i++) {
       if (min(i) != s->min(i) || max(i) != s->max(i)) {
         return false;
       }
@@ -1012,7 +1012,7 @@ public:
   /// Constructor
   FloatSetRanges(const FloatSetVal* r) : _rs(r), _n(0) {}
   /// Check if iterator is still valid
-  bool operator()() const { return _n < _rs->size(); }
+  bool operator()() const { return _n < static_cast<int>(_rs->size()); }
   /// Move to next range
   void operator++() { ++_n; }
   /// Return minimum of current range

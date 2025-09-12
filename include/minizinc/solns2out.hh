@@ -176,7 +176,7 @@ protected:
   /// Parsing fznsolver's complete raw text output
   void parseAssignments(std::string& solution);
   /// Checking solution against checker model
-  void checkSolution(std::ostream& os);
+  void checkSolution(std::ostream& os) const;
   void checkStatistics(std::ostream& os);
   bool evalOutputInternal(std::ostream& fout);
   bool evalOutputFinalInternal(bool flag_flush);

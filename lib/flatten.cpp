@@ -617,11 +617,11 @@ void flatten_vardecl_annotations(EnvI& env, VarDecl* origVd, VarDeclI* vdi, VarD
       if (Expression::isa<Id>(*it)) {
         c = Call::a(Location().introduce(), Expression::cast<Id>(*it)->v(), {toAnnotate->id()});
       } else {
-        int annotatedExpressionIdx =
-            static_cast<int>(eval_int(env, addAnnotatedExpression->arg(0)).toInt());
+        unsigned int annotatedExpressionIdx =
+            static_cast<unsigned int>(eval_int(env, addAnnotatedExpression->arg(0)).toInt());
         Call* orig_call = Expression::cast<Call>(*it);
         std::vector<Expression*> args(orig_call->argCount() + 1);
-        for (int i = 0, j = 0; i < orig_call->argCount(); i++) {
+        for (unsigned int i = 0, j = 0; i < orig_call->argCount(); i++) {
           if (j == annotatedExpressionIdx) {
             args[j++] = toAnnotate->id();
           }
@@ -782,7 +782,7 @@ void OutputSectionStore::add(EnvI& env, ASTString section, Expression* e, bool j
 }
 
 TupleType::TupleType(const std::vector<Type>& fields) {
-  _size = fields.size();
+  _size = static_cast<unsigned int>(fields.size());
   for (size_t i = 0; i < _size; ++i) {
     _fields[i] = fields[i];
   }
@@ -797,9 +797,12 @@ bool TupleType::matchesBT(const EnvI& env, const TupleType& other) const {
   if (other.size() != size()) {
     return false;
   }
-  for (size_t i = 0; i < other.size(); ++i) {
+  for (unsigned int i = 0; i < other.size(); ++i) {
     const Type& ty = operator[](i);
-    if (ty.bt() != other[i].bt()) {
+    if (ty.bt() != Type::BT_BOT || other[i].bt() != Type::BT_BOT) {
+      continue;
+    }
+    if (other[i].bt() != Type::BT_TOP && ty.bt() != other[i].bt()) {
       return false;
     }
     if (ty.bt() == Type::BT_TUPLE &&
@@ -814,7 +817,7 @@ bool TupleType::matchesBT(const EnvI& env, const TupleType& other) const {
   return true;
 }
 bool StructType::containsArray(const EnvI& env) const {
-  for (size_t i = 0; i < size(); ++i) {
+  for (unsigned int i = 0; i < size(); ++i) {
     const Type& ti = operator[](i);
     if (ti.dim() != 0) {
       return true;
@@ -827,7 +830,7 @@ bool StructType::containsArray(const EnvI& env) const {
 }
 
 RecordType::RecordType(const std::vector<std::pair<ASTString, Type>>& fields) {
-  _size = fields.size();
+  _size = static_cast<unsigned int>(fields.size());
   size_t str_size = 0;
   for (size_t i = 0; i < _size; ++i) {
     _fields[i] = {str_size, fields[i].second};
@@ -865,12 +868,15 @@ bool RecordType::matchesBT(const EnvI& env, const RecordType& other) const {
   if (other.size() != size()) {
     return false;
   }
-  for (size_t i = 0; i < other.size(); ++i) {
+  for (unsigned int i = 0; i < other.size(); ++i) {
     if (fieldName(i) != other.fieldName(i)) {
       return false;
     }
     const Type& ty = operator[](i);
-    if (ty.bt() != other[i].bt()) {
+    if (ty.bt() != Type::BT_BOT || other[i].bt() != Type::BT_BOT) {
+      continue;
+    }
+    if (other[i].bt() != Type::BT_TOP && ty.bt() != other[i].bt()) {
       return false;
     }
     if (ty.bt() == Type::BT_TUPLE &&
@@ -900,6 +906,7 @@ EnvI::EnvI(Model* model0, std::ostream& outstream0, std::ostream& errstream0)
       inMaybePartial(0),
       inTraceExp(false),
       inReverseMapVar(false),
+      warnImplicitEnum2Int(true),
       counters({0, 0, 0, 0}),
       _flat(new Model),
       _failed(false),
@@ -1038,7 +1045,7 @@ void EnvI::flatAddItem(Item* i) {
       auto* vd = i->cast<VarDeclI>();
       add_path_annotation(*this, vd->e());
       toAnnotate = vd->e()->e();
-      varOccurrences.addIndex(vd, static_cast<int>(_flat->size()) - 1);
+      varOccurrences.addIndex(vd, _flat->size() - 1);
       toAdd = vd->e();
       break;
     }
@@ -1281,7 +1288,9 @@ unsigned int EnvI::registerTupleType(const std::vector<Type>& fields) {
 unsigned int EnvI::registerTupleType(TypeInst* ti) {
   auto* dom = Expression::cast<ArrayLit>(ti->domain());
 
-  std::vector<Type> fields(dom->size());
+  bool isArrayOfArray = getTransparentType(dom) != Expression::type(dom);
+
+  std::vector<Type> fields(isArrayOfArray ? 2 : dom->size());
   bool cv = false;
   bool var = true;
   for (unsigned int i = 0; i < dom->size(); i++) {
@@ -1298,6 +1307,11 @@ unsigned int EnvI::registerTupleType(TypeInst* ti) {
     cv = cv || fields[i].isvar() || fields[i].cv();
     var = var && fields[i].isvar();
   }
+  if (isArrayOfArray) {
+    // Add marker for array of array
+    fields[1] = Type();
+  }
+
   // the TI_VAR ti is not processed by this function. This cononicalisation should have been done
   // during typechecking.
   assert(ti->type().ti() == Type::TI_PAR || var);
@@ -1328,9 +1342,10 @@ unsigned int EnvI::registerTupleType(TypeInst* ti) {
 unsigned int EnvI::registerTupleType(ArrayLit* tup) {
   assert(tup->isTuple() && tup->dims() == 1);
   Type ty = tup->type();
+  bool isArrayOfArray = ty.typeId() != 0 && getTupleType(ty.typeId())->size() != tup->size();
   ty.bt(Type::BT_TUPLE);
   ty.typeId(0);  // Reset any current TypeId
-  std::vector<Type> fields(tup->size());
+  std::vector<Type> fields(isArrayOfArray ? 2 : tup->size());
   bool cv = false;
   bool var = true;
   for (unsigned int i = 0; i < tup->size(); i++) {
@@ -1338,6 +1353,9 @@ unsigned int EnvI::registerTupleType(ArrayLit* tup) {
     cv = cv || fields[i].isvar() || fields[i].cv();
     var = var && fields[i].isvar();
     assert(!fields[i].structBT() || fields[i].typeId() != 0);
+  }
+  if (isArrayOfArray) {
+    fields[1] = Type();
   }
   unsigned int typeId = registerTupleType(fields);
   assert(ty.dim() == 0);  // Tuple literals do not have array dimensions (otherwise, we should
@@ -1349,47 +1367,12 @@ unsigned int EnvI::registerTupleType(ArrayLit* tup) {
   return typeId;
 }
 
-Type common_type(EnvI& env, Type t1, Type t2) {
-  Type common;
-  if (t1.bt() == Type::BT_TUPLE && t2.bt() == Type::BT_TUPLE) {
-    common = t1;
-    if (t1 != t2) {
-      common = env.commonTuple(t1, t2);
-    }
-    return common;
-  }
-  if (t1.bt() == Type::BT_RECORD && t2.bt() == Type::BT_RECORD) {
-    common = t1;
-    if (t1 != t2) {
-      common = env.commonRecord(t1, t2);
-    }
-    return common;
-  }
-  if (Type::btSubtype(env, t2, t1, false)) {
-    common = t1;
-  } else if (Type::btSubtype(env, t1, t2, false)) {
-    common = t2;
-  } else {
-    return Type::top();
-  }
-  if (!common.structBT() && t1.typeId() != t2.typeId() && !t1.isbot() && !t2.isbot()) {
-    common.typeId(0);
-  }
-  if (t1.ot() != t2.ot()) {
-    common.ot(Type::OT_OPTIONAL);
-  }
-  if (common.isvar() && common.isOpt() && common.st() == Type::ST_SET) {
-    return Type::top();
-  }
-  return common;
-}
-
 Type EnvI::commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim) {
   if (tuple1 == tuple2) {
     return tuple1;
   }
-  if (tuple1.istop() || tuple2.istop()) {
-    return Type::top();
+  if (tuple1.isunknown() || tuple2.isunknown()) {
+    return Type();
   }
 
   // Allow to ignore the dimensions of (in progress) LHS when arrayEnumIds not yet in use
@@ -1402,19 +1385,19 @@ Type EnvI::commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim) {
   }
 
   if (tuple1.dim() != tuple2.dim()) {
-    return Type::top();
+    return Type();
   }
   TupleType* tt1 = getTupleType(tuple1);
   TupleType* tt2 = getTupleType(tuple2);
   if (tt1->size() != tt2->size()) {
-    return Type::top();
+    return Type();
   }
 
   std::vector<Type> common(tt1->size());
   for (unsigned int i = 0; i < tt1->size(); i++) {
-    common[i] = common_type(*this, (*tt1)[i], (*tt2)[i]);
-    if (common[i].istop()) {
-      return Type::top();
+    common[i] = Type::commonType(*this, (*tt1)[i], (*tt2)[i]);
+    if (common[i].isunknown()) {
+      return Type();
     }
   }
   unsigned int typeId = registerTupleType(common);
@@ -1425,7 +1408,7 @@ Type EnvI::commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim) {
     const std::vector<unsigned int>& arrayEnumIds1 = getArrayEnum(tuple1.typeId());
     const std::vector<unsigned int>& arrayEnumIds2 = getArrayEnum(tuple2.typeId());
     std::vector<unsigned int> typeIds(tuple1.dim() + 1);
-    for (unsigned int i = 0; i < tuple1.dim(); i++) {
+    for (int i = 0; i < tuple1.dim(); i++) {
       if (arrayEnumIds1[i] == arrayEnumIds2[i]) {
         typeIds[i] = arrayEnumIds1[i];
       } else {
@@ -1436,6 +1419,7 @@ Type EnvI::commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim) {
     typeId = registerArrayEnum(typeIds);
   }
   tuple1.typeId(typeId);
+  tuple1.cv(tuple1.cv() || tuple2.cv());
   assert(tuple1.bt() != Type::BT_TUPLE || tuple1.typeId() != 0);
   return tuple1;
 }
@@ -1444,8 +1428,8 @@ Type EnvI::commonRecord(Type record1, Type record2, bool ignoreRecord1Dim) {
   if (record1 == record2) {
     return record1;
   }
-  if (record1.istop() || record2.istop()) {
-    return Type::top();
+  if (record1.isunknown() || record2.isunknown()) {
+    return Type();
   }
 
   // Allow to ignore the dimensions of (in progress) LHS when arrayEnumIds not yet in use
@@ -1458,23 +1442,23 @@ Type EnvI::commonRecord(Type record1, Type record2, bool ignoreRecord1Dim) {
   }
 
   if (record1.dim() != record2.dim()) {
-    return Type::top();
+    return Type();
   }
   RecordType* rt1 = getRecordType(record1);
   RecordType* rt2 = getRecordType(record2);
   if (rt1->size() != rt2->size()) {
-    return Type::top();
+    return Type();
   }
 
   std::vector<std::pair<ASTString, Type>> common(rt1->size());
   for (unsigned int i = 0; i < rt1->size(); i++) {
     ASTString name(rt1->fieldName(i));
     if (name != rt2->fieldName(i)) {
-      return Type::top();
+      return Type();
     }
-    Type ct = common_type(*this, (*rt1)[i], (*rt2)[i]);
-    if (ct.istop()) {
-      return Type::top();
+    Type ct = Type::commonType(*this, (*rt1)[i], (*rt2)[i]);
+    if (ct.isunknown()) {
+      return Type();
     }
     common[i] = {name, ct};
   }
@@ -1487,7 +1471,7 @@ Type EnvI::commonRecord(Type record1, Type record2, bool ignoreRecord1Dim) {
     const std::vector<unsigned int>& arrayEnumIds1 = getArrayEnum(record1.typeId());
     const std::vector<unsigned int>& arrayEnumIds2 = getArrayEnum(record2.typeId());
     std::vector<unsigned int> typeIds(record1.dim() + 1);
-    for (unsigned int i = 0; i < record1.dim(); i++) {
+    for (int i = 0; i < record1.dim(); i++) {
       if (arrayEnumIds1[i] == arrayEnumIds2[i]) {
         typeIds[i] = arrayEnumIds1[i];
       } else {
@@ -1498,6 +1482,7 @@ Type EnvI::commonRecord(Type record1, Type record2, bool ignoreRecord1Dim) {
     typeId = registerArrayEnum(typeIds);
   }
   record1.typeId(typeId);
+  record1.cv(record1.cv() || record2.cv());
   return record1;
 }
 
@@ -1507,11 +1492,11 @@ Type EnvI::mergeRecord(Type record1, Type record2, Location loc) {
   RecordFieldSort cmp;
 
   std::vector<std::pair<ASTString, Type>> all_fields;
-  const size_t total_size = fields1->size() + fields2->size();
+  const unsigned int total_size = fields1->size() + fields2->size();
   all_fields.reserve(total_size);
-  size_t l = 0;
-  size_t r = 0;
-  for (size_t i = 0; i < total_size; i++) {
+  unsigned int l = 0;
+  unsigned int r = 0;
+  for (unsigned int i = 0; i < total_size; i++) {
     if (l >= fields1->size()) {
       // must choose rhs
       all_fields.emplace_back(fields2->fieldName(r), (*fields2)[r]);
@@ -1557,10 +1542,10 @@ Type EnvI::concatTuple(Type tuple1, Type tuple2) {
   TupleType* fields2 = getTupleType(tuple2);
 
   std::vector<Type> all_fields(fields1->size() + fields2->size());
-  for (size_t i = 0; i < fields1->size(); i++) {
+  for (unsigned int i = 0; i < fields1->size(); i++) {
     all_fields[i] = (*fields1)[i];
   }
-  for (size_t i = 0; i < fields2->size(); i++) {
+  for (unsigned int i = 0; i < fields2->size(); i++) {
     all_fields[fields1->size() + i] = (*fields2)[i];
   }
   unsigned int typeId = registerTupleType(all_fields);
@@ -1575,6 +1560,19 @@ Type EnvI::concatTuple(Type tuple1, Type tuple2) {
   return ret;
 }
 
+Type EnvI::getTransparentType(Type t) const {
+  if (t.istuple()) {
+    auto* tt = getTupleType(t);
+    if (tt->size() == 2 && (*tt)[1].isunknown()) {
+      return (*tt)[0];
+    }
+  }
+  return t;
+}
+Type EnvI::getTransparentType(const Expression* e) const {
+  return getTransparentType(Expression::type(e));
+}
+
 std::string EnvI::enumToString(unsigned int enumId, int i) {
   Id* ti_id = getEnum(enumId)->e()->id();
   ASTString enumName(create_enum_to_string_name(ti_id, "_toString_"));
@@ -1586,7 +1584,14 @@ std::string EnvI::enumToString(unsigned int enumId, int i) {
   Expression::type(call, Type::parstring());
   return eval_string(*this, call);
 }
-bool EnvI::isSubtype(const Type& t1, const Type& t2, bool strictEnums) const {
+bool EnvI::isSubtype(const Type& t10, const Type& t2, bool strictEnums) const {
+  Type t1 = t10;
+  if (t1.istuple() && t2.dim() != 0) {
+    auto* tupleType = getTupleType(t1);
+    if (tupleType->size() == 2 && (*tupleType)[1].isunknown()) {
+      t1 = (*tupleType)[0];
+    }
+  }
   if (!t1.isSubtypeOf(*this, t2, strictEnums)) {
     return false;
   }
@@ -1894,7 +1899,8 @@ std::string EnvI::show(IntSetVal* isv, unsigned int enumId) {
   return show(sl);
 }
 
-CallStackItem::CallStackItem(EnvI& env0, Expression* e) : _env(env0), _csiType(CSI_NONE) {
+CallStackItem::CallStackItem(EnvI& env0, Expression* e, const Ctx& ctx)
+    : _env(env0), _csiType(CSI_NONE) {
   assert(Expression::type(e).bt() != Type::BT_UNKNOWN);
 
   env0.checkCancel();
@@ -1917,12 +1923,12 @@ CallStackItem::CallStackItem(EnvI& env0, Expression* e) : _env(env0), _csiType(C
   } else {
     _maybePartial = false;
   }
-  _env.callStack.emplace_back(e, false);
+  _env.callStack.emplace_back(e, false, ctx);
   _env.maxCallStack = std::max(_env.maxCallStack, static_cast<unsigned int>(_env.callStack.size()));
 }
 CallStackItem::CallStackItem(EnvI& env0, Id* ident, IntVal i)
     : _env(env0), _csiType(CSI_NONE), _maybePartial(false) {
-  _env.callStack.emplace_back(ident, true);
+  _env.callStack.emplace_back(ident, true, Ctx());
   _env.maxCallStack = std::max(_env.maxCallStack, static_cast<unsigned int>(_env.callStack.size()));
 }
 void CallStackItem::replace() { _env.callStack.back().replaced = true; }
@@ -2416,8 +2422,7 @@ void check_index_sets(EnvI& env, VarDecl* vd, Expression* e, bool isArg) {
         for (unsigned int i = 0; i < al->size(); i++) {
           Expression* access = nullptr;
           if (hadError) {
-            auto* field =
-                new Id(Location().introduce(), rt->fieldName(static_cast<size_t>(i)), nullptr);
+            auto* field = new Id(Location().introduce(), rt->fieldName(i), nullptr);
             access = new FieldAccess(Location().introduce(), item.accessor, field);
           }
           todo.emplace_back(access, (*al)[i], Expression::cast<TypeInst>((*domains)[i]));
@@ -2475,12 +2480,12 @@ Expression* mk_domain_constraint(EnvI& env, Expression* expr, Expression* dom) {
       std::vector<std::pair<int, int>> dims;
       if (ty.dim() > 0) {
         dims.resize(al->dims());
-        for (size_t i = 0; i < al->dims(); i++) {
+        for (unsigned int i = 0; i < al->dims(); i++) {
           dims[i] = std::make_pair(al->min(i), al->max(i));
         }
       }
       std::vector<Expression*> fieldwise;
-      for (long long int i = 0; i < st->size(); ++i) {
+      for (unsigned int i = 0; i < dom_al->size(); ++i) {
         auto* field_ti = Expression::cast<TypeInst>((*dom_al)[i]);
         if (field_ti->domain() != nullptr) {
           if (ty.dim() > 0) {
@@ -3123,7 +3128,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
 
         KeepAlive combinedDom = compute_combined_domain(env, vd->ti(), e);
         if (combinedDom() != nullptr) {
-          set_computed_domain(env, vd, combinedDom(), true);
+          set_computed_domain(env, vd, combinedDom(), vd->ti()->domain() == nullptr);
         }
 
         if (env.hasReverseMapper(vd->id()) && Expression::type(e).dim() == 0 &&
@@ -3519,7 +3524,7 @@ Expression* eval_typeinst_domain(EnvI& env, const Ctx& ctx, Expression* dom) {
   }
   if (auto* tup = Expression::dynamicCast<ArrayLit>(dom)) {
     std::vector<Expression*> evaluated(tup->size());
-    for (int i = 0; i < tup->size(); ++i) {
+    for (unsigned int i = 0; i < tup->size(); ++i) {
       auto* tupi = Expression::cast<TypeInst>((*tup)[i]);
       if (tupi->domain() == nullptr) {
         evaluated[i] = new TypeInst(Expression::loc(tupi), tupi->type(), tupi->ranges());
@@ -3587,7 +3592,6 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
   GCLock lock;
   if (Expression::type(e).isPar() && !Expression::type(e).cv()) {
     if (Expression::type(e) == Type::parbool()) {
-      bool condition;
       try {
         return eval_par(env, e);
       } catch (ResultUndefinedError&) {
@@ -3656,7 +3660,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
           return vd->id();
         }
         std::vector<std::pair<int, int>> dims(al->dims());
-        for (int i = 0; i < al->dims(); i++) {
+        for (unsigned int i = 0; i < al->dims(); i++) {
           dims[i] = std::make_pair(al->min(i), al->max(i));
         }
         Expression* al_ret = new ArrayLit(Location().introduce(), es, dims);
@@ -3688,7 +3692,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
 
         auto* al = Expression::cast<ArrayLit>(eval_array_lit(env, fa->v()));
 
-        return flat_cv_exp(env, ctx, (*al)[i.toInt() - 1]);
+        return flat_cv_exp(env, ctx, (*al)[static_cast<unsigned int>(i.toInt()) - 1]);
       }
       case Expression::E_COMP: {
         auto* c = Expression::cast<Comprehension>(e);
@@ -3754,7 +3758,7 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
         ITE* ite = Expression::cast<ITE>(e);
         Ctx nctx = ctx;
         nctx.b = C_MIX;
-        for (int i = 0; i < ite->size(); i++) {
+        for (unsigned int i = 0; i < ite->size(); i++) {
           bool condition;
           KeepAlive ka;
           try {
@@ -3827,9 +3831,6 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
       }
       case Expression::E_CALL: {
         Call* c = Expression::cast<Call>(e);
-        if (c->id() == env.constants.ids.mzn_in_root_context) {
-          return env.constants.boollit(ctx.b == C_ROOT);
-        }
         if (ctx.b == C_ROOT && (c->decl()->e() != nullptr) &&
             Expression::isa<BoolLit>(c->decl()->e())) {
           bool allBool = true;
@@ -3927,7 +3928,7 @@ public:
           _tm->insert(std::make_pair(std::make_pair(_loc.filename(), line), end - _start));
         }
       }
-    } catch (std::exception& e) {
+    } catch (std::exception& /*e*/) {
       assert(false);  // Invariant: Operations on the TimingMap will not throw an exception
     }
   }
@@ -4635,7 +4636,7 @@ void flatten(Env& e, FlatteningOptions opt) {
                 args[0] = c->arg(0);
                 ArrayLit* old = eval_array_lit(env, c->arg(1));
                 std::vector<Expression*> neg(old->size() + 1);
-                for (size_t i = 0; i < old->size(); ++i) {
+                for (unsigned int i = 0; i < old->size(); ++i) {
                   neg[i] = (*old)[i];
                 }
                 neg[old->size()] = vd->id();
@@ -5109,7 +5110,7 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd,
           FunctionI* decl(nullptr);
 
           std::vector<Expression*> args(c->argCount());
-          for (unsigned int i = args.size(); (i--) != 0U;) {
+          for (unsigned int i = c->argCount(); (i--) != 0U;) {
             args[i] = c->arg(i);
           }
           if (c->id() == env.constants.ids.exists) {
@@ -5431,8 +5432,6 @@ void oldflatzinc(Env& e) {
 
   EnvI& env = e.envi();
 
-  unsigned int msize = m->size();
-
   // Predicate declarations of solver builtins
   std::unordered_set<Item*> globals;
 
@@ -5442,8 +5441,12 @@ void oldflatzinc(Env& e) {
   std::vector<VarDecl*> definitions;  // Make iteration over definition_map deterministic
 
   // Record indices of VarDeclIs with Id RHS for sorting & unification
-  std::vector<int> declsWithIds;
-  for (int i = 0; i < msize; i++) {
+  std::vector<unsigned int> declsWithIds;
+
+  // Important: items are being added to m while iterating over it.
+  // The loop therefore needs to check the size in each iteration to make
+  // sure it also handles the new items.
+  for (unsigned int i = 0; i < m->size(); i++) {
     if ((*m)[i]->removed()) {
       continue;
     }
@@ -5457,12 +5460,19 @@ void oldflatzinc(Env& e) {
         declsWithIds.push_back(i);
         vdi->e()->payload(-static_cast<int>(i) - 1);
       } else {
-        vdi->e()->payload(i);
+        vdi->e()->payload(static_cast<int>(i));
       }
       for (auto* nc : added_constraints) {
         Expression* new_ce = cleanup_constraint(e.envi(), globals, nc, keepDefinesVar);
         if (new_ce != nullptr) {
           e.envi().flatAddItem(new ConstraintI(Location().introduce(), new_ce));
+        }
+      }
+      if (Expression::ann(vd).contains(e.envi().constants.ann.is_defined_var)) {
+        if (definition_map.find(vd) == definition_map.end()) {
+          // We haven't seen this variable before
+          definition_map.insert({vd, {-1, DFS_UNKNOWN}});
+          definitions.push_back(vd);
         }
       }
     } else if (auto* ci = (*m)[i]->dynamicCast<ConstraintI>()) {
@@ -5472,9 +5482,15 @@ void oldflatzinc(Env& e) {
         if (keepDefinesVar) {
           if (Call* defines_var = Expression::ann(new_ce).getCall(env.constants.ann.defines_var)) {
             if (Id* ident = Expression::dynamicCast<Id>(defines_var->arg(0))) {
-              if (definition_map.find(ident->decl()) != definition_map.end()) {
-                // This is the second definition, remove it
-                Expression::ann(new_ce).removeCall(env.constants.ann.defines_var);
+              auto it = definition_map.find(ident->decl());
+              if (it != definition_map.end()) {
+                if (it->second.first == -1) {
+                  // We've only seen the decl before, but not yet the defining constraint
+                  it->second.first = static_cast<int>(i);
+                } else {
+                  // This is the second definition, remove it
+                  Expression::ann(new_ce).removeCall(env.constants.ann.defines_var);
+                }
               } else {
                 definition_map.insert({ident->decl(), {i, DFS_UNKNOWN}});
                 definitions.push_back(ident->decl());
@@ -5529,10 +5545,10 @@ void oldflatzinc(Env& e) {
       }
       auto it = definition_map.find(ident->decl());
       if (it != definition_map.end()) {
-        if (it->second.second == 0) {
+        if (it->second.second == DFS_UNKNOWN) {
           // not yet visited, push
           definesStack.push_back(it->first);
-        } else if (it->second.second == 1) {
+        } else if (it->second.second == DFS_SEEN) {
           // Found a cycle through variable ident
           // Break cycle by removing annotations
           Expression::ann(ident->decl()).remove(Constants::constants().ann.is_defined_var);
@@ -5542,7 +5558,7 @@ void oldflatzinc(Env& e) {
       }
     };
     for (auto* it : definitions) {
-      if (definition_map[it].second == 0) {
+      if (definition_map[it].second == DFS_UNKNOWN) {
         // not yet visited
         definesStack.push_back(it);
         while (!definesStack.empty()) {
@@ -5554,9 +5570,13 @@ void oldflatzinc(Env& e) {
           } else {
             // now visited and on stack
             definition_map[cur].second = DFS_SEEN;
-            if (Call* c = Expression::dynamicCast<Call>(
-                    (*m)[definition_map[cur].first]->cast<ConstraintI>()->e())) {
+            if (definition_map[cur].first == -1) {
+              // No associated call, remove annotation
+              Expression::ann(cur).remove(Constants::constants().ann.is_defined_var);
+            } else if (Call* c = Expression::dynamicCast<Call>(
+                           (*m)[definition_map[cur].first]->cast<ConstraintI>()->e())) {
               // Variable is defined by a call, push all arguments
+              unsigned int count_cur = 0;
               for (unsigned int i = 0; i < c->argCount(); i++) {
                 if (Expression::type(c->arg(i)).isPar()) {
                   continue;
@@ -5566,20 +5586,35 @@ void oldflatzinc(Env& e) {
                     if (auto* al = Expression::dynamicCast<ArrayLit>(ident->decl()->e())) {
                       for (auto* e : al->getVec()) {
                         if (auto* ident = Expression::dynamicCast<Id>(e)) {
+                          if (cur == ident->decl()) {
+                            count_cur++;
+                          }
                           checkId(cur, ident);
                         }
                       }
                     }
                   } else if (ident->type().isvar()) {
+                    if (cur == ident->decl()) {
+                      count_cur++;
+                    }
                     checkId(cur, ident);
                   }
                 } else if (auto* al = Expression::dynamicCast<ArrayLit>(c->arg(i))) {
                   for (auto* e : al->getVec()) {
                     if (auto* ident = Expression::dynamicCast<Id>(e)) {
+                      if (cur == ident->decl()) {
+                        count_cur++;
+                      }
                       checkId(cur, ident);
                     }
                   }
                 }
+              }
+              if (count_cur != 1) {
+                // We've seen the defined variable 0 times or more than once,
+                // so this call cannot define the variable
+                Expression::ann(cur).remove(Constants::constants().ann.is_defined_var);
+                Expression::ann(c).removeCall(Constants::constants().ann.defines_var);
               }
             }
           }
@@ -5591,7 +5626,7 @@ void oldflatzinc(Env& e) {
   // Sort VarDecls in FlatZinc so that VarDecls are declared before use
   std::vector<VarDeclI*> sortedVarDecls(declsWithIds.size());
   int vdCount = 0;
-  for (int declsWithId : declsWithIds) {
+  for (auto declsWithId : declsWithIds) {
     VarDecl* cur = (*m)[declsWithId]->cast<VarDeclI>()->e();
     std::vector<int> stack;
     while ((cur != nullptr) && cur->payload() < 0) {
@@ -5755,14 +5790,14 @@ FlatModelStatistics statistics(Env& m) {
 }
 
 ArrayLit* field_slice(EnvI& env, StructType* st, ArrayLit* al,
-                      std::vector<std::pair<int, int>> dims, long long int field) {
+                      std::vector<std::pair<int, int>> dims, unsigned int field) {
   assert(GC::locked());
   assert(Expression::type(al).structBT() && Expression::type(al).dim() > 0);
   Type field_ty = (*st)[field - 1];
   // TODO: This could be done efficiently using slicing (if we change the memory layout for
   // arrays of tuples)
   std::vector<Expression*> tmp(al->size());
-  for (int i = 0; i < al->size(); ++i) {
+  for (unsigned int i = 0; i < al->size(); ++i) {
     tmp[i] = new FieldAccess(Expression::loc((*al)[i]).introduce(), (*al)[i], IntLit::a(field));
     Expression::type(tmp[i], field_ty);
   }
@@ -5783,7 +5818,7 @@ std::vector<Expression*> field_slices(EnvI& env, Expression* arrExpr) {
   }
 
   std::vector<Expression*> field_al(st->size());
-  for (long long int i = 0; i < st->size(); ++i) {
+  for (unsigned int i = 0; i < st->size(); ++i) {
     field_al[i] = field_slice(env, st, al, dims, i + 1);
   }
   return field_al;

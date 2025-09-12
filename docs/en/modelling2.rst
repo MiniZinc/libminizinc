@@ -844,6 +844,7 @@ colored blue.
   - :mzn:`enum_prev(X,x)`:
     returns the previous value before :mzn:`x` in the
     enumerated type :mzn:`X`. Similarly :mzn:`enum_prev` is a partial function. 
+  - :mzn:`enum2int(x)`: coerces the enumerated type value :mzn:`x` into an integer.
   - :mzn:`to_enum(X,i)`: maps an integer expression :mzn:`i` to an
     enumerated type value in type :mzn:`X` or evaluates to :math:`\bot` if :mzn:`i` is less
     than or equal to 0 or greater than the number of elements in :mzn:`X`.

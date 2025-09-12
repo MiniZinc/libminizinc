@@ -67,7 +67,7 @@ const ArrayLit* NLFile::getArrayLit(const Expression* e) {
 
 /** Create a vector of double from a vector containing Expression being IntLit. */
 vector<double> NLFile::fromVecInt(const ArrayLit* v_int) {
-  vector<double> v = {};
+  vector<double> v;
   for (unsigned int i = 0; i < v_int->size(); ++i) {
     double d = static_cast<double>(IntLit::v(Expression::cast<IntLit>((*v_int)[i])).toInt());
     v.push_back(d);
@@ -77,7 +77,7 @@ vector<double> NLFile::fromVecInt(const ArrayLit* v_int) {
 
 /** Create a vector of double from a vector containing Expression being FloatLit. */
 vector<double> NLFile::fromVecFloat(const ArrayLit* v_fp) {
-  vector<double> v = {};
+  vector<double> v;
   for (unsigned int i = 0; i < v_fp->size(); ++i) {
     double d = FloatLit::v(Expression::cast<FloatLit>((*v_fp)[i])).toDouble();
     v.push_back(d);
@@ -87,7 +87,7 @@ vector<double> NLFile::fromVecFloat(const ArrayLit* v_fp) {
 
 /** Create a vector of variable names from a vector containing Expression being identifier Id. */
 vector<string> NLFile::fromVecId(const ArrayLit* v_id) {
-  vector<string> v = {};
+  vector<string> v;
   for (unsigned int i = 0; i < v_id->size(); ++i) {
     string s = getVarName(Expression::cast<Id>((*v_id)[i])->decl());
     v.push_back(s);
@@ -123,7 +123,7 @@ void NLFile::addVarDecl(const VarDecl* vd, const TypeInst* ti, const Expression*
 
         // Search the 'annotation' array
         const ArrayLit* aa = getArrayLit(c->arg(0));
-        for (int i = 0; i < aa->size(); ++i) {
+        for (unsigned int i = 0; i < aa->size(); ++i) {
           IntSetVal* r = Expression::cast<SetLit>((*aa)[i])->isv();
           stringstream ss;
           if (r->empty()) {
@@ -136,7 +136,7 @@ void NLFile::addVarDecl(const VarDecl* vd, const TypeInst* ti, const Expression*
 
         // Search the 'real' array. Items can be an identifier or a litteral.
         const ArrayLit* ra = getArrayLit(rhs);
-        for (int i = 0; i < ra->size(); ++i) {
+        for (unsigned int i = 0; i < ra->size(); ++i) {
           NLArray::Item item;
 
           if (Expression::isa<Id>((*ra)[i])) {
@@ -691,8 +691,8 @@ void NLFile::nlconsOperatorBinary(const Call* c, NLToken::OpCode oc, const NLTok
     NLBound bound = NLBound::makeEqual(0);
     cons.range = bound;
 
-    vector<double> coeffs = {};
-    vector<string> vars = {};
+    vector<double> coeffs;
+    vector<string> vars;
 
     // If x is a variable different from y (and must be different from z), give it 0 for the linear
     // part
@@ -747,8 +747,8 @@ void NLFile::nlconsOperatorBinary(const Call* c, NLToken::MOpCode moc, const NLT
     NLBound bound = NLBound::makeEqual(0);
     cons.range = bound;
 
-    vector<double> coeffs = {};
-    vector<string> vars = {};
+    vector<double> coeffs;
+    vector<string> vars;
 
     // If x is a variable different from y (and must be different from z), give it 0 for the linear
     // part
@@ -801,8 +801,8 @@ void NLFile::nlconsOperatorUnary(const Call* c, NLToken::OpCode oc, const NLToke
     NLBound bound = NLBound::makeEqual(0);
     cons.range = bound;
 
-    vector<double> coeffs = {};
-    vector<string> vars = {};
+    vector<double> coeffs;
+    vector<string> vars;
 
     // If x is a variable (must be different from y), give it '0' for the linear part
     if (x.isVariable()) {
@@ -847,8 +847,8 @@ void NLFile::nlconsOperatorUnaryLog2(const Call* c, const NLToken& x, const NLTo
     NLBound bound = NLBound::makeEqual(0);
     cons.range = bound;
 
-    vector<double> coeffs = {};
-    vector<string> vars = {};
+    vector<double> coeffs;
+    vector<string> vars;
 
     // If x is a variable (must be different from y), give it '0' for the linear part
     if (x.isVariable()) {
@@ -1257,7 +1257,7 @@ void NLFile::float_tanh(const Call* c) {
  */
 void NLFile::int2float(const Call* c) {
   vector<double> coeffs = {1, -1};
-  vector<string> vars = {};
+  vector<string> vars;
   vars.push_back(getTokenFromVar(c->arg(0)).str);
   vars.push_back(getTokenFromVar(c->arg(1)).str);
   // Create the constraint
@@ -1449,50 +1449,49 @@ bool NLFile::hasContinousVars() const { return !hasIntegerVars(); }
 unsigned int NLFile::jacobianCount() const { return _jacobianCount; }
 
 /** Total number of variables. */
-unsigned int NLFile::varCount() const { return variables.size(); }
+unsigned int NLFile::varCount() const { return static_cast<unsigned int>(variables.size()); }
 
 /** Number of variables appearing nonlinearly in constraints. */
 unsigned int NLFile::lvcCount() const {
   // Variables in both + variables in constraint only (integer+continuous)
-  return lvbCount() + vname_nliv_cons.size() + vname_nlcv_cons.size();
+  return static_cast<unsigned int>(lvbCount() + vname_nliv_cons.size() + vname_nlcv_cons.size());
 }
 
 /** Number of variables appearing nonlinearly in objectives. */
 unsigned int NLFile::lvoCount() const {
   // Variables in both + variables in objective only (integer+continuous)
-  return lvbCount() + vname_nliv_obj.size() + vname_nlcv_obj.size();
+  return static_cast<unsigned int>(lvbCount() + vname_nliv_obj.size() + vname_nlcv_obj.size());
 }
 
 /** Number of variables appearing nonlinearly in both constraints and objectives.*/
-unsigned int NLFile::lvbCount() const { return vname_nlcv_both.size() + vname_nliv_both.size(); }
+unsigned int NLFile::lvbCount() const {
+  return static_cast<unsigned int>(vname_nlcv_both.size() + vname_nliv_both.size());
+}
 
 /** Number of integer variables appearing nonlinearly in both constraints and objectives.*/
-unsigned int NLFile::lvbiCount() const { return vname_nliv_both.size(); }
+unsigned int NLFile::lvbiCount() const { return static_cast<unsigned int>(vname_nliv_both.size()); }
 
 /** Number of integer variables appearing nonlinearly in constraints **only**.*/
-unsigned int NLFile::lvciCount() const { return vname_nliv_cons.size(); }
+unsigned int NLFile::lvciCount() const { return static_cast<unsigned int>(vname_nliv_cons.size()); }
 
 /** Number of integer variables appearing nonlinearly in objectives **only**.*/
-unsigned int NLFile::lvoiCount() const { return vname_nliv_obj.size(); }
+unsigned int NLFile::lvoiCount() const { return static_cast<unsigned int>(vname_nliv_obj.size()); }
 
 /** Number of linear arcs. Network nor implemented, so always 0.*/
-unsigned int NLFile::wvCount() const { return vname_larc_all.size(); }
+unsigned int NLFile::wvCount() const { return static_cast<unsigned int>(vname_larc_all.size()); }
 
 /** Number of "other" integer variables.*/
-unsigned int NLFile::ivCount() const { return vname_liv_all.size(); }
+unsigned int NLFile::ivCount() const { return static_cast<unsigned int>(vname_liv_all.size()); }
 
 /** Number of binary variables.*/
-unsigned int NLFile::bvCount() const { return vname_bv_all.size(); }
+unsigned int NLFile::bvCount() const { return static_cast<unsigned int>(vname_bv_all.size()); }
 
 /** *** *** *** Printable *** *** *** **/
 // Note:  * empty line not allowed
 //        * comment only not allowed
 ostream& NLFile::printToStream(ostream& os) const {
   // Print the header
-  {
-    NLHeader header;
-    NLHeader::printToStream(os, *this);
-  }
+  NLHeader::printToStream(os, *this);
   os << endl;
 
   // Print the unique segments about the variables
@@ -1502,7 +1501,7 @@ ostream& NLFile::printToStream(ostream& os) const {
        << "   # Cumulative Sum of non-zero in the jacobian matrix's (nbvar-1) columns." << endl;
     unsigned int acc = 0;
     // Note stop before the last var. Total jacobian count is in the header.
-    for (int i = 0; i < varCount() - 1; ++i) {
+    for (unsigned int i = 0; i < varCount() - 1; ++i) {
       string name = vnames[i];
       acc += variables.at(name).jacobianCount;
       os << acc << "   # " << name << endl;

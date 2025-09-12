@@ -53,7 +53,7 @@
 <output-item> ::= "output" [ <string-annotation> ] <expr>
 
 % Annotation items
-<annotation-item> ::= "annotation" <ident> <params>
+<annotation-item> ::= "annotation" <ident> <params> [ "=" <expr> ]
 
 % Predicate, test and function items
 <predicate-item> ::= "predicate" <operation-item-tail>
@@ -90,8 +90,7 @@
                       | <tuple-ti-expr-tail>
                       | <record-ti-expr-tail>
                       | "ann"
-                      | "{" <expr> "," ... "}"
-                      | <num-expr> ".." <num-expr>
+                      | <expr>
 
 % Type-inst variables
 <ti-variable-expr-tail> ::= $[A-Za-z$][A-Za-z0-9_]*
@@ -247,7 +246,7 @@
 <ann-literal> ::= <ident> [ "(" <expr> "," ... ")" ]
 
 % If-then-else expressions
-<if-then-else-expr> ::= "if" <expr> "then" <expr> [ "elseif" <expr> "then" <expr> ]* "else" <expr> "endif"
+<if-then-else-expr> ::= "if" <expr> "then" <expr> [ "elseif" <expr> "then" <expr> ]* [ "else" <expr> ] "endif"
 
 % Call expressions
 <call-expr> ::= <ident-or-quoted-op> [ "(" <expr> "," ... ")" ]

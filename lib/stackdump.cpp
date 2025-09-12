@@ -11,12 +11,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/ast.hh>
+#include <minizinc/builtins.hh>
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/stackdump.hh>
 #include <minizinc/typecheck.hh>
 
 namespace MiniZinc {
-StackDump::StackDump(EnvI& env) {
+StackDump::StackDump(EnvI& env) : _env(&env) {
   // Make sure the call stack items are kept alive
   for (auto it = env.callStack.rbegin(); it != env.callStack.rend(); it++) {
     bool isCompIter = it->tag;
@@ -50,10 +51,8 @@ void StackDump::print(std::ostream& os) const {
   long long int curloc_l = -1;
 
   for (auto it = _stack.rbegin(); it != _stack.rend(); it++) {
-    EnvI::CallStackEntry entry(it->first, it->second);
-
-    Expression* e = entry.e;
-    bool isCompIter = entry.tag;
+    Expression* e = it->first;
+    bool isCompIter = it->second;
     ASTString newloc_f = Expression::loc(e).filename();
     if (Expression::loc(e).isIntroduced()) {
       continue;
@@ -89,7 +88,10 @@ void StackDump::print(std::ostream& os) const {
         if (isCompIter) {
           if ((Expression::cast<Id>(e)->decl()->e() != nullptr) &&
               Expression::type(Expression::cast<Id>(e)->decl()->e()).isPar()) {
-            os << *e << " = " << *Expression::cast<Id>(e)->decl()->e() << std::endl;
+            os << *e << " = "
+               << show_with_type(*_env, Expression::cast<Id>(e)->decl()->e(), Expression::type(e),
+                                 false)
+               << std::endl;
           } else {
             os << *e << " = <expression>" << std::endl;
           }
@@ -179,10 +181,8 @@ void StackDump::json(std::ostream& os) const {
   os << "[";
 
   for (auto it = _stack.rbegin(); it != _stack.rend(); it++) {
-    EnvI::CallStackEntry entry(it->first, it->second);
-
-    Expression* e = entry.e;
-    bool isCompIter = entry.tag;
+    Expression* e = it->first;
+    bool isCompIter = it->second;
     ASTString newloc_f = Expression::loc(e).filename();
     if (Expression::loc(e).isIntroduced()) {
       continue;
@@ -215,7 +215,9 @@ void StackDump::json(std::ostream& os) const {
         if (isCompIter) {
           if ((Expression::cast<Id>(e)->decl()->e() != nullptr) &&
               Expression::type(Expression::cast<Id>(e)->decl()->e()).isPar()) {
-            ss << *e << " = " << *Expression::cast<Id>(e)->decl()->e();
+            ss << *e << " = "
+               << show_with_type(*_env, Expression::cast<Id>(e)->decl()->e(), Expression::type(e),
+                                 false);
           } else {
             ss << *e << " = <expression>";
           }

@@ -33,7 +33,7 @@ Expression* create_dummy_value(EnvI& env, const Type& t) {
   if (t.istuple() || t.isrecord()) {
     StructType* st = env.getStructType(t);
     std::vector<Expression*> fields(st->size());
-    for (size_t i = 0; i < st->size(); ++i) {
+    for (unsigned int i = 0; i < st->size(); ++i) {
       fields[i] = create_dummy_value(env, (*st)[i]);
     }
     Expression* ret = ArrayLit::constructTuple(Location().introduce(), fields);

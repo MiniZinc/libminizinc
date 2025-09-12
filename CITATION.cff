@@ -50,12 +50,12 @@ authors:
   - given-names: Guido
     family-names: Tack
     email: guido.tack@monash.edu
-    affiliation: Monash University
+    affiliation: 'Monash University & OPTIMA ARC Training Centre'
     orcid: 'https://orcid.org/0000-0003-3357-6498'
   - given-names: Jip J.
     family-names: Dekker
     email: jip.dekker@monash.edu
-    affiliation: Monash University
+    affiliation: 'Monash University & OPTIMA ARC Training Centre'
     orcid: 'https://orcid.org/0000-0002-0053-6724'
   - given-names: Kevin
     family-names: Leo
@@ -69,18 +69,18 @@ authors:
   - given-names: Jason
     family-names: Nguyen
     email: jason.nguyen@monash.edu
-    affiliation: Monash University
+    affiliation: 'Monash University & OPTIMA ARC Training Centre'
     orcid: 'https://orcid.org/0009-0002-1038-8961'
   - given-names: Maria
     family-names: Garcia de la Banda
     email: maria.garciadelabanda@monash.edu
-    affiliation: Monash University
+    affiliation: 'Monash University & OPTIMA ARC Training Centre'
     orcid: 'https://orcid.org/0000-0002-6666-514X'
   - given-names: Peter J.
     family-names: Stuckey
     email: peter.stuckey@monash.edu
     orcid: 'https://orcid.org/0000-0003-2186-0459'
-    affiliation: Monash University
+    affiliation: 'Monash University & OPTIMA ARC Training Centre'
 repository-code: 'https://github.com/MiniZinc/libminizinc'
 url: 'https://www.minizinc.org/'
 abstract: >-

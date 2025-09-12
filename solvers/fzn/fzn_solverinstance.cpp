@@ -230,6 +230,9 @@ SolverInstance::Status FZNSolverInstance::solve() {
   if (opt.fznSolver.empty()) {
     throw Error("No FlatZinc solver specified");
   }
+  if (_fzn->solveItem() == nullptr) {
+    throw Error("FlatZinc does not contain a solve item");
+  }
   /// Passing options to solver
   vector<string> cmd_line;
   cmd_line.push_back(opt.fznSolver);

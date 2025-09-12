@@ -22,12 +22,9 @@ FznSpace::FznSpace(FznSpace& f) : Space(f) {
   for (unsigned int i = 0; i < iv.size(); i++) {
     iv[i].update(*this, f.iv[i]);
   }
-  for (auto&& i : f.ivIntroduced) {
-    ivIntroduced.push_back(i);
-  }
-  for (auto&& i : f.ivDefined) {
-    ivDefined.push_back(i);
-  }
+  ivIntroduced = f.ivIntroduced;
+  ivDefined = f.ivDefined;
+
   if (f.copyAuxVars) {
     IntVarArgs iva;
     for (auto& i : f.ivAux) {
@@ -54,9 +51,7 @@ FznSpace::FznSpace(FznSpace& f) : Space(f) {
     }
     bvAux = BoolVarArray(*this, bva);
   }
-  for (auto&& i : f.bvIntroduced) {
-    bvIntroduced.push_back(i);
-  }
+  bvIntroduced = f.bvIntroduced;
 
 #ifdef GECODE_HAS_SET_VARS
   sv.resize(f.sv.size());
@@ -73,9 +68,7 @@ FznSpace::FznSpace(FznSpace& f) : Space(f) {
     }
     svAux = SetVarArray(*this, sva);
   }
-  for (auto&& i : f.svIntroduced) {
-    svIntroduced.push_back(i);
-  }
+  svIntroduced = f.svIntroduced;
 #endif
 
 #ifdef GECODE_HAS_FLOAT_VARS

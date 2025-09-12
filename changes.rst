@@ -4,6 +4,193 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
+.. _v2.9.3:
+
+`Version 2.9.3 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.9.3>`__
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(released 23 May 2025)
+
+Changes:
+^^^^^^^^
+-  Add ``mzn_max_version_required`` to enable models to speficy the maximum
+   version of MiniZinc required to run the model (:bugref:`872`).
+-  Replace use of ``ptrdiff_t`` with appropriate unsigned integer type.
+-  Clarify documentation example use of boolean extra flags in solver
+   configuration files.
+-  Warnings produced in solution checkers are now output as part of the
+   ``checker`` message when running in ``--json-stream`` mode.
+
+Bug fixes:
+^^^^^^^^^^
+-  Fix the rewriting of the multidimensional search annotations to ensure
+   correct coercion of arguments (:bugref:`897`).
+-  Output location of some errors where the problematic expression previously
+   did not have a location (:bugref:`899`).
+-  Fix domain computation to avoid variables being moved to the output model
+   when they are constrained (:bugref:`911`).
+-  Fix output processing to also respect the ``-o`` flag when flattening already
+   detects unsatisfiability (:bugref:`908`).
+-  Report an error when solving a FlatZinc file that does not contain a solve
+   item (:bugref:`907`).
+-  Pass command line options to the compiler phases earlier to avoid problems
+   with e.g. the ``--disable-warnings`` flag (:bugref:`893`).
+-  Fix incorrect generation of par versions of functions referencing top-level
+   tuples/records containing var fields (:bugref:`919`).
+-  Fix problem where using an iterator of variable tuple or record types could
+   result in a segfault (:bugref:`901`).
+-  Fix a problem where an operator such as ``<=`` on an optional type would
+   sometimes lead to an internal compiler error (:bugref:`898`).
+-  Print enum values in stack traces (:bugref:`912`).
+-  Fix a bug where incompatible overloads could be used when dispatching to more
+   specific versions of functions (:bugref:`905`).
+-  Fix internal error when constraining the domain of ``var opt bool``
+   variables.
+-  Fix record merge operator when evaluated via a field access (:bugref:`892`).
+-  Update documentation to indicate that the  ``float_ceil``, ``float_floor``,
+   and ``float_round`` FlatZinc builtins need to be placed in
+   ``redefinitions-2.7.1.mzn`` (:bugref:`914`).
+-  Fix handling of basic standard flags when running ``.fzn`` files
+   (:bugref:`920`).
+-  Fix return type computation for generic functions called with tuple or record
+   types (:bugref:`902`).
+-  Fix type computation for arrays of tuples/records containing ``$T`` members.
+-  Fix flattening of anonymous variables of enum type to be correctly bounded.
+-  Emit type errors for unsupported usage of anonymous variables in tuples and
+   records. 
+-  Fix incorrect flattening of ``in`` for tuples/records containing optional
+   values (:bugref:`900`).
+
+Changes in the IDE:
+^^^^^^^^^^^^^^^^^^^
+-  Suppress warnings generated when running compiled solution checkers.
+
+.. _v2.9.2:
+
+`Version 2.9.2 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.9.2>`__
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(released 6 March 2025)
+
+Bug fixes:
+^^^^^^^^^^
+-  Prevent output of and emit warning for invalid statistics in JSON streaming
+   mode.
+-  Fix crash in string interpolation (:bugref:`891`).
+-  Fix ``row`` and ``col`` functions to use enumerated types instead of
+   ``int`` (:bugref:`888`).
+
+.. _v2.9.1:
+
+`Version 2.9.1 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.9.1>`__
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(released 3 March 2025)
+
+Changes:
+^^^^^^^^
+-  Don't include empty stack traces in JSON stream errors or warnings
+   (:bugref:`880`, :idebugref:`212`).
+-  Wait 1 second between sending ``SIGTERM`` and ``SIGKILL`` signals to solvers
+   to allow more time for cleanup (:bugref:`882`).
+
+Bug fixes:
+^^^^^^^^^^
+-  Fix a bug where calls to ``enum2int`` weren't correctly removed in
+   comprehensions, leading to an internal error (:bugref:`879`).
+-  Fix false-positive implicit enum coercion warnings when calling ``card`` and
+   some inequality operators.
+-  Fix false-positive implicit enum coercion warnings for calls with
+   comprehension arguments (:bugref:`887`).
+-  Recursively type check type-insts of variable declarations and function
+   items.
+
+   -  This enables enum constructors and other functions to be used on the
+      left hand side of declarations, and allows overloading of functions
+      with identifiers in type-insts to be correctly resolved.
+
+-  Fix type error in flexible job shop documentation example caused by change
+   of signature of ``cumulative`` to enum-safe version in 2.9.0.
+-  Accept enum types for the two argument ``regular`` constraint to avoid
+   false-positive warnings about implicit enum to int coercion.
+-  Disallow multiple comma-separated arguments in string interpolations,
+   which previously caused unexpected behaviour.
+-  Fix incorrect output of non-improving solutions when using HiGHS.
+
+Changes in the IDE:
+^^^^^^^^^^^^^^^^^^^
+-  Use scroll buttons when the tab bar overflows to ensure the side panels can
+   be resized (:idebugref:`213`).
+
+.. _v2.9.0:
+
+`Version 2.9.0 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.9.0>`__
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(released 11 February 2025)
+
+Changes:
+^^^^^^^^
+-  Add support for ``elseif`` in ``if then elseif endif`` expressions without an
+   `else` branch.
+-  Make ``sort`` functions return array of enum when input is array of
+   enum (:bugref:`853`).
+-  Make the ``mzn_in_root_context`` function (which is used only internally and
+   should not be used in user models) more flexible in where it can be called.
+-  Update packaged version of the HiGHS solver to version 1.8.1.
+-  Update Gurobi interface to be compatible with Gurobi 12.0.0.
+-  Address compiler warnings concerning unsafe signed/unsigned comparisons and
+   implicit casts between different integer types.
+-  **BREAKING**: The usage of ``--compile`` (or ``-c``) flag now requires the
+   user to explicitly specify the solver for which the MiniZinc instance is being
+   compiled, using ``--solver``. To select the default solver (and keep the
+   previous behaviour) you can use ``--solver default``.
+-  Add the ``--fzn-format`` flag to influence whether the generated FlatZinc from
+   ``--compile`` or ``--fzn`` is given in the traditional FlatZinc format or the
+   new JSON-based format. (:bugref:`868`)
+-  Comments regarding the compilation invocation are now included in user-facing
+   FlatZinc (``.fzn``) files, created by the ``--compile`` or ``--fzn`` flags.
+-  Add ``par`` version of the ``among`` function.
+-  Add support for arrays containing arrays (which only support access using
+   ``par`` indices).
+-  Add ``diversity.mzn`` library to be used with the diverse solutions toolchain
+   included in MiniZinc Python.
+-  Ensure the MiniZinc directory is added to the DLL search path when running
+   child processes on Windows (:idebugref:`206`).
+-  Add ``par`` implementations for the ``arg_val`` and ``arg_val_weak`` functions.
+-  Add support for calling enum constructors without arguments to return the set
+   of all constructed values.
+-  Deprecate and emit warning for implicit coercion of enums to integers. The
+   ``enum2int`` function should be used to perform the coercion where required.
+
+Bug fixes:
+^^^^^^^^^^
+-  Fix boolean context when flattening tuple or record literals containing
+   booleans.
+-  Fix memory leak in overflow handler.
+-  Fix crash when calling ``outputJSON`` (:bugref:`856`).
+-  Fix incorrect typing of arrays in assignment generators (:bugref:`858`).
+-  Fix bug in flattening of implication with optional right hand side.
+-  Fix flattening of ``exists`` and ``forall`` with optional arguments.
+-  Fix handling of absent values when removing unused code (:bugref:`864`).
+-  Fix compilation of empty arrays with empty domains (:bugref:`860`).
+-  Fix evaluation of ``dom_array`` on par arrays (:bugref:`851`).
+-  Fix flattening of array slices inside tuples and records (:bugref:`859`).
+-  Fix defines_var annotation for cyclic and missing definitions (:bugref:`863`).
+-  Fix assertion failures when using arrays as argument to bin packing constraints
+   (:bugref:`865`).
+-  Fix operator precedences for ``intersect`` and unary plus/minus.
+-  Fix crash when type instance concatenation is performed on invalid types
+   (:bugref:`867`).
+-  Fix a segfault caused by an internal `float_times` variant not correctly being
+   handled during output processing (:bugref:`870`).
+-  Fix incorrect non-uniform if-then-else type error when one branch is an empty
+   array and another branch is an array of tuples or records.
+-  Fix type checking for `any`` in `let` expressions with tuple types.
+-  Fix pretty printing of variable declarations with `any` type.
+-  Fix bug where the JSON parser would not add absent literals for known optional
+	 types that are missing from the JSON objects.
+
 .. _v2.8.7:
 
 `Version 2.8.7 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.8.7>`__
@@ -41,7 +228,7 @@ Changes:
 -  Enforce strict enum type correctness for set operations (:bugref:`828`).
 -  Add ``par opt`` overloads of ``min`` / ``max`` and return enum values instead
    of coercing to integers.
--  Use half-reification only when there isn't a reification that is a more 
+-  Use half-reification only when there isn't a reification that is a more
    specific match.
 -  Add multidimensional overloads for the ``++`` array concatenation operator.
 
@@ -120,7 +307,7 @@ Bug fixes:
 -  Fix bug in computation of common type of incompatible record types.
 -  Fix crash when type checking nested arrays of tuples or records.
 -  Fix incorrect unification of flattened tuple/record fields with paths
-   enabled. 
+   enabled.
 
 Changes:
 ^^^^^^^^
@@ -199,7 +386,7 @@ Bug fixes:
    (:bugref:`798`).
 -  Fix crash when resolving type aliases for function parameters with ``$T``
    array dimensions (:bugref:`806`).
--  Fix ``default`` operator for ``par opt set`` parameters (:bugref:`809`). 
+-  Fix ``default`` operator for ``par opt set`` parameters (:bugref:`809`).
 -  Fix output of ``par opt set`` enumerated types.
 -  Fix pretty printing of records when using the document printer.
 -  Fix internal error when binding numeric literals to declarations with

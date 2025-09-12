@@ -35,7 +35,7 @@ public:
 class AtlantisSolverInstance : public SolverInstanceBase2<true> {
 public:
   AtlantisSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
-  ~AtlantisSolverInstance() override{};
+  ~AtlantisSolverInstance() override {};
   void processFlatZinc() override;
 
   Status solve() override;

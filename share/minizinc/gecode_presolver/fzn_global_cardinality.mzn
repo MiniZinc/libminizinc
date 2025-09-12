@@ -34,10 +34,11 @@
 %
 %
 
-predicate fzn_global_cardinality(array[int] of var int: x,
-                                 array[int] of int: cover,
-                                 array[int] of var int: counts);
+predicate fzn_global_cardinality(
+  array [int] of var int: x,
+  array [int] of int: cover,
+  array [int] of var int: counts,
+);
 
-predicate global_cardinality_old(array[int] of var int: x,
-                                 array[int] of var int: c) =
-    global_cardinality(x,[i|i in index_set(c)],c);
+predicate global_cardinality_old(array [int] of var int: x, array [int] of var int: c) =
+  global_cardinality(x, [i | i in index_set(c)], c);

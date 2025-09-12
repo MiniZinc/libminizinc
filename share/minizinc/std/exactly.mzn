@@ -8,12 +8,11 @@ include "fzn_exactly_set_reif.mzn";
 
   This constraint is deprecated. Use count(i in x)(i=v) = n instead.
 */
-predicate exactly(int: n, array[$X] of var $$E: x, $$E: v) =
-	fzn_exactly_int(n, array1d(x), v);
+predicate exactly(int: n, array [$X] of var $$E: x, $$E: v) =
+  fzn_exactly_int(n, enum2int(array1d(x)), enum2int(v));
 
 /** @group globals.counting
   Requires exactly \a n variables in \a x to take the value \a v.
 */
-predicate exactly(int: n, array[$X] of var set of $$E: x, set of $$E: v) =
-	fzn_exactly_set(n, array1d(x), v);
-
+predicate exactly(int: n, array [$X] of var set of $$E: x, set of $$E: v) =
+  fzn_exactly_set(n, enum2int(array1d(x)), enum2int(v));

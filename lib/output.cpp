@@ -25,7 +25,7 @@ namespace {
 bool is_completely_par(EnvI& env, FunctionI* fi, const std::vector<Type>& tv) {
   if (fi->e() != nullptr) {
     // This is not a builtin, so check parameters
-    for (int i = 0; i < fi->paramCount(); i++) {
+    for (unsigned int i = 0; i < fi->paramCount(); i++) {
       if (fi->param(i)->type().isvar() && !fi->param(i)->type().any()) {
         return false;
       }
@@ -223,7 +223,7 @@ bool rhs_contains_var_comp(EnvI& env, Expression* e) {
     void vArrayAccess(const ArrayAccess* /*aa*/) {}
     /// Visit array comprehension
     void vComprehension(const Comprehension* c) {
-      for (int i = 0; i < c->numberOfGenerators(); i++) {
+      for (unsigned int i = 0; i < c->numberOfGenerators(); i++) {
         const auto* g_in = c->in(i);
         if (g_in != nullptr) {
           const Type& ty_in = Expression::type(g_in);
@@ -441,12 +441,18 @@ Call* generate_show(EnvI& env, Expression* e, Expression* w, Expression* p, bool
 
   if (t.bt() == Type::BT_TUPLE) {
     auto* tt = env.getTupleType(t);
+    if (tt->size() == 2 && (*tt)[1].isunknown()) {
+      auto field_type = (*tt)[0];
+      auto* field_access = new FieldAccess(Location().introduce(), e, IntLit::a(1LL));
+      Expression::type(field_access, field_type);
+      return generate_show(env, field_access, w, p, show_dzn, is_json);
+    }
     std::vector<Expression*> shown_fields(tt->size() == 1 && !is_json ? 4 : tt->size() * 2 + 1,
                                           tt->size() == 1
                                               ? new StringLit(Location().introduce(), ",")
                                               : new StringLit(Location().introduce(), ", "));
     bool canUseBuiltin = true;
-    for (size_t i = 0; i < tt->size(); i++) {
+    for (unsigned int i = 0; i < tt->size(); i++) {
       auto field_type = (*tt)[i];
       auto* field_access =
           new FieldAccess(Location().introduce(), e, IntLit::a(static_cast<long long int>(i + 1)));
@@ -483,7 +489,7 @@ Call* generate_show(EnvI& env, Expression* e, Expression* w, Expression* p, bool
     auto* rt = env.getRecordType(t);
     std::vector<Expression*> shown_fields(rt->size() * 2 + 2);
     bool canUseBuiltin = true;
-    for (size_t i = 0; i < rt->size(); i++) {
+    for (unsigned int i = 0; i < rt->size(); i++) {
       auto field_name = rt->fieldName(i);
       auto field_type = (*rt)[i];
       auto* field_access =
@@ -759,7 +765,7 @@ public:
         case Expression::E_ITE: {
           ITE* ite = Expression::cast<ITE>(e);
           stack.push_back(ite->elseExpr());
-          for (int i = 0; i < ite->size(); i++) {
+          for (unsigned int i = 0; i < ite->size(); i++) {
             stack.push_back(ite->ifExpr(i));
             stack.push_back(ite->thenExpr(i));
           }
@@ -833,9 +839,9 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e) {
         ClearAnnotations::run(nvi->e());
         nvi->e()->introduced(false);
         if (reallyFlat != nullptr) {
-          env.outputFlatVarOccurrences.addIndex(reallyFlat, static_cast<int>(env.output->size()));
+          env.outputFlatVarOccurrences.addIndex(reallyFlat, env.output->size());
         }
-        env.outputVarOccurrences.addIndex(nvi, static_cast<int>(env.output->size()));
+        env.outputVarOccurrences.addIndex(nvi, env.output->size());
         env.outputVarOccurrences.add(nvi->e(), ci);
         env.output->addItem(nvi);
 
@@ -1384,8 +1390,7 @@ ArrayLit* create_json_output(EnvI& e, bool includeObjective, bool includeOutputI
     } else {
       s << ",\n";
     }
-    s << "  \"" << Printer::escapeStringLit(vd->id()->str()) << "\""
-      << " : ";
+    s << "  \"" << Printer::escapeStringLit(vd->id()->str()) << "\"" << " : ";
     auto* sl = new StringLit(Location().introduce(), s.str());
     outputVars.push_back(sl);
 
@@ -1408,8 +1413,7 @@ ArrayLit* create_json_output(EnvI& e, bool includeObjective, bool includeOutputI
       } else {
         s << ",\n";
       }
-      s << "  \"_output\""
-        << " : ";
+      s << "  \"_output\"" << " : ";
       auto* sl = new StringLit(Location().introduce(), s.str());
       outputVars.push_back(sl);
       Call* concat = Call::a(Location().introduce(), ASTString("concat"), {oi->e()});
@@ -1435,8 +1439,7 @@ ArrayLit* create_json_output(EnvI& e, bool includeObjective, bool includeOutputI
     } else {
       s << ",\n";
     }
-    s << "  \"_checker\""
-      << " : ";
+    s << "  \"_checker\"" << " : ";
     auto* sl = new StringLit(Location().introduce(), s.str());
     outputVars.push_back(sl);
     Call* checker_output = Call::a(Location().introduce(), ASTString("showCheckerOutput"), {});
@@ -1514,7 +1517,7 @@ void process_toplevel_output_vars(EnvI& e) {
                      e.model->filename().endsWith(".mzc.mzn")) {}
 
     bool hasAddToOutput = false;
-    std::vector<std::pair<int, VarDecl*>> todo;
+    std::vector<std::pair<size_t, VarDecl*>> todo;
 
     void vVarDeclI(VarDeclI* vdi) {
       auto* vd = vdi->e();
@@ -1546,7 +1549,7 @@ void process_toplevel_output_vars(EnvI& e) {
     // Insert implicit output variables
     int inserted = 0;
     for (auto& it : ovv.todo) {
-      auto idx = it.first;
+      int idx = static_cast<int>(it.first);
       auto* vd = it.second;
       if (Expression::ann(vd).contains(e.constants.ann.no_output) || Expression::type(vd).isPar()) {
         continue;
@@ -1882,8 +1885,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
               }
             }
             if ((reallyFlat != nullptr) && env.outputFlatVarOccurrences.find(reallyFlat) == -1) {
-              env.outputFlatVarOccurrences.addIndex(reallyFlat,
-                                                    static_cast<int>(env.output->size()));
+              env.outputFlatVarOccurrences.addIndex(reallyFlat, env.output->size());
             }
           }
         } else {
@@ -1896,7 +1898,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
           }
         }
         make_par(env, vdi_copy->e());
-        env.outputVarOccurrences.addIndex(vdi_copy, static_cast<int>(env.output->size()));
+        env.outputVarOccurrences.addIndex(vdi_copy, env.output->size());
         CollectOccurrencesE ce(env, env.outputVarOccurrences, vdi_copy);
         top_down(ce, vdi_copy->e());
         env.output->addItem(vdi_copy);
@@ -2125,7 +2127,7 @@ void finalise_output(EnvI& e) {
             vd->type(vdt);
             vd->ti()->type(vdt);
           }
-          e.outputVarOccurrences.addIndex(item->cast<VarDeclI>(), static_cast<int>(i));
+          e.outputVarOccurrences.addIndex(item->cast<VarDeclI>(), i);
           CollectOccurrencesE ce(e, e.outputVarOccurrences, item);
           top_down(ce, vd);
         } break;

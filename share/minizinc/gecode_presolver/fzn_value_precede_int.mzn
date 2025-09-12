@@ -34,7 +34,7 @@
 %
 %
 
-predicate gecode_precede(array[int] of var int: x, int: s, int: t);
+predicate gecode_precede(array [int] of var int: x, int: s, int: t);
 
-predicate fzn_value_precede_int(int: s, int: t, array[int] of var int: x) =
-  gecode_precede(x,s,t);
+predicate fzn_value_precede_int(int: s, int: t, array [int] of var int: x) =
+   gecode_precede(x, s, t);

@@ -137,6 +137,10 @@ public:
   int(__stdcall* dll_GRBloadenv)(GRBenv** envP, const char* logfilename);
 
   // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBloadenvinternal)(GRBenv** envP, const char* logfilename, int major,
+                                         int minor, int tech);
+
+  // NOLINTNEXTLINE(readability-identifier-naming)
   GRBenv*(__stdcall* dll_GRBgetconcurrentenv)(GRBmodel* model, int num);
 
   // NOLINTNEXTLINE(readability-identifier-naming)
@@ -199,6 +203,9 @@ public:
 
   // NOLINTNEXTLINE(readability-identifier-naming)
   int(__stdcall* dll_GRBemptyenv)(GRBenv** envP);
+
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(__stdcall* dll_GRBemptyenvinternal)(GRBenv** envP, int major, int minor, int tech);
 
   // NOLINTNEXTLINE(readability-identifier-naming)
   int(__stdcall* dll_GRBgetnumparams)(GRBenv* env);

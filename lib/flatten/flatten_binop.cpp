@@ -25,8 +25,6 @@
 namespace MiniZinc {
 
 ASTString op_to_builtin(EnvI& env, Expression* op_lhs, Expression* op_rhs, BinOpType bot) {
-  std::string builtin;
-
   if (Expression::type(op_rhs).st() == Type::ST_SET) {
     switch (bot) {
       case BOT_LE:
@@ -1075,7 +1073,7 @@ bool check_struct_table(EnvI& env, Type elem_t, Type arr_t) {
     // Par LHS, can be checked directly
     return false;
   }
-  std::vector<std::pair<StructType*, size_t>> stack{{env.getStructType(elem_t), 0}};
+  std::vector<std::pair<StructType*, unsigned int>> stack{{env.getStructType(elem_t), 0}};
   // Doing this doesn't make sense on singular structs
   if (stack.back().first->size() <= 1) {
     return false;
@@ -1114,6 +1112,10 @@ bool check_struct_table(EnvI& env, Type elem_t, Type arr_t) {
       // TODO: Can be filtered if float (because it must be par) or interned if int.
       return false;
     }
+    if (t.isOpt()) {
+      // TODO: Absent can be interned
+      return false;
+    }
   }
   return true;
 }
@@ -1122,7 +1124,7 @@ bool check_struct_table(EnvI& env, Type elem_t, Type arr_t) {
 /// be converted to an lex_less(eq) constraint as an optimization.
 bool check_struct_lex(EnvI& env, Type t) {
   assert(t.structBT());  // No need to check otherwise
-  std::vector<std::pair<StructType*, size_t>> stack{{env.getStructType(t), 0}};
+  std::vector<std::pair<StructType*, unsigned int>> stack{{env.getStructType(t), 0}};
   // Doing this doesn't make sense on singular structs
   if (stack.back().first->size() <= 1) {
     return false;
@@ -1338,7 +1340,7 @@ EE rewrite_struct_op(EnvI& env, Ctx& ctx, Expression* lhs, BinOpType bot, Expres
       assert(tupLHS->isTuple() == tupRHS->isTuple());
       assert(tupLHS->size() == tupRHS->size());
       std::vector<Expression*> comps(tupLHS->size());
-      for (size_t i = 0; i < tupLHS->size(); ++i) {
+      for (unsigned int i = 0; i < tupLHS->size(); ++i) {
         comps[i] = new_binop((*tupLHS)[i], BOT_EQ, (*tupRHS)[i]);
       }
       auto* al = new ArrayLit(Location().introduce(), comps);
@@ -1354,7 +1356,7 @@ EE rewrite_struct_op(EnvI& env, Ctx& ctx, Expression* lhs, BinOpType bot, Expres
       assert(tupLHS->isTuple() == tupRHS->isTuple());
       assert(tupLHS->size() == tupRHS->size());
       std::vector<Expression*> comps(tupLHS->size());
-      for (size_t i = 0; i < tupLHS->size(); ++i) {
+      for (unsigned int i = 0; i < tupLHS->size(); ++i) {
         comps[i] = new_binop((*tupLHS)[i], BOT_NQ, (*tupRHS)[i]);
       }
       auto* al = new ArrayLit(Location().introduce(), comps);
@@ -1389,13 +1391,13 @@ EE rewrite_struct_op(EnvI& env, Ctx& ctx, Expression* lhs, BinOpType bot, Expres
         auto* b_decl = new VarDecl(Location().introduce(), bool_ti, env.genId());
         b_decl->type(Type::varbool(1));
         std::vector<Expression*> b(tupLHS->size());
-        for (int i = 0; i < tupLHS->size(); ++i) {
+        for (unsigned int i = 0; i < tupLHS->size(); ++i) {
           b[i] = new ArrayAccess(Location().introduce(), b_decl->id(), {IntLit::a(i + 1)});
           Expression::type(b[i], Type::varbool());
         }
         // Create the implications
         std::vector<Expression*> impls(tupLHS->size());
-        for (int i = 0; i < tupLHS->size(); ++i) {
+        for (unsigned int i = 0; i < tupLHS->size(); ++i) {
           auto* lq = new_binop((*tupLHS)[i], BOT_LQ, (*tupRHS)[i]);
           auto* le = new_binop((*tupLHS)[i], BOT_LE, (*tupRHS)[i]);
           if (i < tupLHS->size() - 1) {
@@ -1984,7 +1986,7 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
         break;
       }
       if (ctx.b == C_ROOT && r == env.constants.varTrue && Expression::type(boe1).isPar() &&
-          !Expression::type(boe0).isOpt()) {
+          !Expression::type(boe1).isOpt()) {
         bool bval;
         {
           GCLock lock;

@@ -64,9 +64,9 @@ start_flatten_arrayaccess:
       std::vector<IntVal> idx(aa->idx().size());
       std::vector<std::pair<int, int>> dims;
       std::vector<Expression*> newaccess;
-      std::vector<int> nonpar;
-      std::vector<int> stack;
-      for (int j = 0; j < aa->idx().size(); j++) {
+      std::vector<unsigned int> nonpar;
+      std::vector<size_t> stack;
+      for (unsigned int j = 0; j < aa->idx().size(); j++) {
         Expression* tmp = follow_id_to_decl(aa->idx()[j]);
         if (auto* vd = Expression::dynamicCast<VarDecl>(tmp)) {
           tmp = vd->id();
@@ -84,7 +84,7 @@ start_flatten_arrayaccess:
         } else {
           allAbsent = false;
           idx[j] = al->min(j);
-          stack.push_back(static_cast<int>(nonpar.size()));
+          stack.push_back(nonpar.size());
           nonpar.push_back(j);
           dims.emplace_back(al->min(j), al->max(j));
           newaccess.push_back(aa->idx()[j]);
@@ -118,7 +118,7 @@ start_flatten_arrayaccess:
         return ret;
       }
       while (!stack.empty()) {
-        int cur = stack.back();
+        auto cur = stack.back();
         if (cur == nonpar.size() - 1) {
           stack.pop_back();
           for (int i = al->min(nonpar[cur]); i <= al->max(nonpar[cur]); i++) {
@@ -150,7 +150,7 @@ start_flatten_arrayaccess:
             stack.pop_back();
           } else {
             idx[nonpar[cur]]++;
-            for (int j = cur + 1; j < nonpar.size(); j++) {
+            for (size_t j = cur + 1; j < nonpar.size(); j++) {
               stack.push_back(j);
             }
           }
@@ -202,7 +202,7 @@ start_flatten_arrayaccess:
         composed_e[i] = (*al)[static_cast<int>(inner_idx.toInt()) - al->min(0)];
       }
       std::vector<std::pair<int, int>> dims(al_inner->dims());
-      for (int i = 0; i < al_inner->dims(); i++) {
+      for (unsigned int i = 0; i < al_inner->dims(); i++) {
         dims[i] = std::make_pair(al_inner->min(i), al_inner->max(i));
       }
       {
@@ -311,7 +311,7 @@ flatten_arrayaccess:
       GCLock lock;
       std::vector<Expression*> field_al = field_slices(env, eev.r());
       assert(res_st->size() == field_al.size());
-      for (int i = 0; i < res_st->size(); ++i) {
+      for (unsigned int i = 0; i < res_st->size(); ++i) {
         field_aa[i] = new ArrayAccess(Expression::loc(aa).introduce(), field_al[i], idx);
         Expression::type(field_aa[i](), (*res_st)[i]);
       }
@@ -319,7 +319,7 @@ flatten_arrayaccess:
     // Flatten field based array access expressions
     // WARNING: Expressions stored in field_res, rely on being also in ees to be kept alive
     std::vector<Expression*> field_res(res_st->size());
-    for (int i = 0; i < res_st->size(); ++i) {
+    for (unsigned int i = 0; i < res_st->size(); ++i) {
       // TODO: Does the context need to be changed? Are 'r' and 'b' correct?
       CallStackItem _csi(env, IntLit::a(i));
       EE ee = flat_exp(env, ctx, field_aa[i](), nullptr, b);

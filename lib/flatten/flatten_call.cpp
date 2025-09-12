@@ -365,7 +365,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
   Ctx nctx = ctx;
   nctx.neg = false;
   ASTString cid = c->id();
-  CallStackItem _csi(env, e);
+  CallStackItem _csi(env, e, input_ctx);
 
   if (cid == env.constants.ids.bool2int && c->type().dim() == 0) {
     if (ctx.neg) {
@@ -648,8 +648,10 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
           for (unsigned int i = 0; i < al->size(); i++) {
             EE res = flat_exp(env, argctx, (*al)[i], nullptr, env.constants.varTrue);
             if (Expression::type(res.r()).isPar()) {
-              if (eval_bool(env, res.r()) == is_conj) {
-                // this element is irrelevant
+              if ((Expression::type(res.r()).isOpt() &&
+                   eval_par(env, res.r()) == env.constants.absent) ||
+                  eval_bool(env, res.r()) == is_conj) {
+                // this element is irrelevant, ignore
               } else {
                 // this element subsumes all other elements
                 flat_args = {res.r()};
@@ -662,7 +664,9 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
           {
             GCLock lock;
             al_new = new ArrayLit(Expression::loc(al), to_exp_vec(flat_args));
-            Expression::type(al_new(), Type::varbool(1));
+            Type al_new_t = Type::varbool(1);
+            al_new_t.ot((Expression::type(c->arg(0)).ot()));
+            Expression::type(al_new(), al_new_t);
             Expression::cast<ArrayLit>(al_new())->flat(true);
           }
         }
@@ -967,7 +971,9 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
       if (cid == c->id()) {
         try {
           auto* cr_d = env.model->matchFn(env, cr_c, false);
-          if (cr_d != nullptr) {
+          if (cr_d != nullptr &&
+              !cr_d->ann().contains(env.constants.ann.mzn_internal_representation) &&
+              cr_d->rtype(env, e_args, cr_c, false).isSubtypeOf(env, c->type(), false)) {
             decl = cr_d;
           }
         } catch (TypeError&) { /* NOLINT(bugprone-empty-catch) */

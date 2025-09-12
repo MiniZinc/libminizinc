@@ -33,21 +33,18 @@
 %  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 %
 %
-predicate gecode_inverse_set(array[int] of var set of int: f,
-    array[int] of var set of int: invf, int: xoff, int: yoff);
+predicate gecode_inverse_set(
+  array [int] of var set of int: f,
+  array [int] of var set of int: invf,
+  int: xoff,
+  int: yoff,
+);
 
-predicate fzn_inverse_set(array[int] of var set of int: f,
-                          array[int] of var set of int: invf) =
-    forall(i in index_set(f)) (
-           f[i] subset index_set(invf)
-    ) /\
-    forall(j in index_set(invf)) (
-        invf[j] subset index_set(f)
-    ) /\
+predicate fzn_inverse_set(array [int] of var set of int: f, array [int] of var set of int: invf) =
+  forall (i in index_set(f)) (f[i] subset index_set(invf)) /\
+    forall (j in index_set(invf)) (invf[j] subset index_set(f)) /\
     if (min(index_set(f)) >= 0 /\ min(index_set(invf)) >= 0) then
-        gecode_inverse_set(f,invf,min(index_set(f)),min(index_set(invf)))
+      gecode_inverse_set(f, invf, min(index_set(f)), min(index_set(invf)))
     else
-        forall(i in index_set(f), j in index_set(invf)) (
-            (j in f[i] <-> i in invf[j])
-        )
+      forall (i in index_set(f), j in index_set(invf)) ((j in f[i] <-> i in invf[j]))
     endif;

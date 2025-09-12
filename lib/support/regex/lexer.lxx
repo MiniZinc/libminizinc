@@ -13,6 +13,10 @@
 
 %option prefix="regex_yy"
 
+%top{
+#include <cstdint>
+}
+
 %{
 #include <cstdlib>
 

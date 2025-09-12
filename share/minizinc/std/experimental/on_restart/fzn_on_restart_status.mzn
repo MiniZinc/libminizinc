@@ -9,4 +9,5 @@
 	 - 5 (OPT) -> The (provably) optimal solution for the search space was found
      since the last restart
 */
-predicate fzn_on_restart_status(var int: s) = abort("experimental on_restart feature `status' not supported by target solver");
+predicate fzn_on_restart_status(var int: s) =
+  abort("experimental on_restart feature `status' not supported by target solver");

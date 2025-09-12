@@ -332,7 +332,7 @@ public:
     auto* al = Expression::cast<ArrayLit>(struct_ti->domain());
     assert(al->size() == tt->size() ||
            al->size() + 1 == tt->size());  // May have added concrete type for reification
-    for (size_t i = 0; i < al->size(); i++) {
+    for (unsigned int i = 0; i < al->size(); i++) {
       auto* ti = Expression::cast<TypeInst>((*al)[i]);
       Type curType = ti->type();
       Type concrete_type = (*tt)[i];
@@ -413,7 +413,7 @@ public:
             ti_map.emplace(tiid->v(), Type::parint(curType.dim()));
             // add concrete number of ranges
             std::vector<TypeInst*> newRanges(curType.dim());
-            for (unsigned int k = 0; k < curType.dim(); k++) {
+            for (int k = 0; k < curType.dim(); k++) {
               newRanges[k] = new TypeInst(Location().introduce(), Type::parint());
             }
             ti->setRanges(newRanges);
@@ -502,7 +502,7 @@ public:
         } else {
           // add concrete number of ranges
           std::vector<TypeInst*> newRanges(ret_type.dim());
-          for (unsigned int k = 0; k < ret_type.dim(); k++) {
+          for (int k = 0; k < ret_type.dim(); k++) {
             newRanges[k] = new TypeInst(Location().introduce(), Type::parint());
           }
           auto t = ti->type();
@@ -698,6 +698,9 @@ public:
      - keep a registry of (name,concrete type) -> instantiated function
  */
 void type_specialise(Env& env, Model* model, TyperFn& typer) {
+  // Don't warn about enum2int emitted from specialised functions
+  env.envi().warnImplicitEnum2Int = false;
+
   ConcreteCallAgenda agenda;
 
   CollectConcreteCallsFromItems cci(agenda);

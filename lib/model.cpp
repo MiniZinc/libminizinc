@@ -46,7 +46,7 @@ bool Model::FnEntry::checkPoly(const EnvI& env, const Type& t) {
   }
   if (t.structBT()) {
     StructType* st = env.getStructType(t);
-    for (size_t i = 0; i < st->size(); ++i) {
+    for (unsigned int i = 0; i < st->size(); ++i) {
       if (checkPoly(env, (*st)[i])) {
         return true;
       }
@@ -298,7 +298,7 @@ struct TIIDInfo {
 void TypeInst::collectTypeIds(std::unordered_map<ASTString, size_t>& seen_tiids,
                               std::vector<TIIDInfo>& type_ids) const {
   auto* al = Expression::cast<ArrayLit>(domain());
-  for (size_t i = 0; i < al->size(); i++) {
+  for (unsigned int i = 0; i < al->size(); i++) {
     auto* ti = Expression::cast<TypeInst>((*al)[i]);
     if (ti->type().bt() == Type::BT_TOP) {
       // If type is top, either this is a TIId, or it is caused by <>
@@ -398,7 +398,7 @@ void Model::addPolymorphicInstances(EnvI& env, Model::FnEntry& fe, std::vector<F
         // New complete instance
         // First, update cur types
         auto* tis = Expression::cast<ArrayLit>(paramtuple->domain());
-        for (size_t i = 0; i < tis->size(); ++i) {
+        for (unsigned int i = 0; i < tis->size(); ++i) {
           cur.t[i] = Expression::type((*tis)[i]);
           if (cur.t[i].bt() == Type::BT_TUPLE && cur.t[i].typeId() == 0) {
             env.registerTupleType(Expression::cast<TypeInst>((*tis)[i]));
@@ -674,6 +674,19 @@ void Model::mergeStdLib(EnvI& env, Model* m) const {
   m->sortFn(env);
 }
 
+void Model::sortFn(const EnvI& env, FunctionI* fi) {
+  Model* m = this;
+  while (m->_parent != nullptr) {
+    m = m->_parent;
+  }
+  auto& it = *m->_fnmap.find(fi->id());
+  // Sort all functions by type
+  std::sort(it.second.begin(), it.second.end(),
+            [&env](const Model::FnEntry& e1, const Model::FnEntry& e2) {
+              return Model::FnEntry::compare(env, e1, e2);
+            });
+}
+
 void Model::sortFn(const EnvI& env) {
   Model* m = this;
   while (m->_parent != nullptr) {
@@ -688,13 +701,15 @@ void Model::sortFn(const EnvI& env) {
   }
 }
 
-void Model::fixFnMap() {
+void Model::fixFnMap(FunctionI* fi) {
   Model* m = this;
   while (m->_parent != nullptr) {
     m = m->_parent;
   }
-  for (auto& it : m->_fnmap) {
-    for (auto& i : it.second) {
+
+  auto& it = *m->_fnmap.find(fi->id());
+  for (auto& i : it.second) {
+    if (i.fi == fi) {
       for (unsigned int j = 0; j < i.t.size(); j++) {
         if (i.t[j].isunknown() || i.t[j].structBT()) {
           i.t[j] = i.fi->param(j)->type();
@@ -724,7 +739,7 @@ void Model::checkFnValid(EnvI& env, std::vector<TypeError>& errors) {
       }
       if (fi->ann().contains(env.constants.ann.output_only)) {
         std::vector<Type> tys(fi->paramCount());
-        for (int i = 0; i < fi->paramCount(); ++i) {
+        for (unsigned int i = 0; i < fi->paramCount(); ++i) {
           tys[i] = fi->param(i)->type();
           tys[i].mkPar(env);
         }
@@ -749,7 +764,7 @@ void Model::checkFnValid(EnvI& env, std::vector<TypeError>& errors) {
             "FlatZinc builtin functions must be predicates (i.e., have `var bool` return type)");
         continue;
       }
-      for (int i = 0; i < fi->paramCount(); ++i) {
+      for (unsigned int i = 0; i < fi->paramCount(); ++i) {
         const Type& t = fi->param(i)->type();
         if (t.isOpt() || t.structBT() || t.bt() == Type::BT_TOP) {
           errors.emplace_back(
@@ -873,7 +888,7 @@ FunctionI* Model::matchReification(EnvI& env, const ASTString& id, const std::ve
       // is at least as specific as the reification. That is the parameters of the matching
       // half-reification declaration should be the same or subtypes of the matching reification.
       assert(imp_decl->paramCount() == reif_decl->paramCount());
-      for (size_t i = 0; i < imp_decl->paramCount(); ++i) {
+      for (unsigned int i = 0; i < imp_decl->paramCount(); ++i) {
         Type a = imp_decl->param(i)->ti()->type();
         Type b = reif_decl->param(i)->ti()->type();
         if (!env.isSubtype(a, b, strictEnums)) {
@@ -1040,6 +1055,61 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
   return matched[0];
 }
 
+std::vector<FunctionI*> Model::potentialOverloads(EnvI& env, Call* c) const {
+  if (c->id() == env.constants.varRedef->id()) {
+    return {env.constants.varRedef};
+  }
+  const Model* m = this;
+  while (m->_parent != nullptr) {
+    m = m->_parent;
+  }
+  auto it = m->_fnmap.find(c->id());
+  if (it == m->_fnmap.end()) {
+    std::ostringstream oss;
+    oss << "no function or predicate with name `";
+    oss << c->id() << "' found";
+
+    ASTString mostSimilar;
+    int minEdits = 3;
+    for (const auto& decls : m->_fnmap) {
+      if (std::abs(static_cast<int>(c->id().size()) - static_cast<int>(decls.first.size())) <= 3) {
+        int edits = c->id().levenshteinDistance(decls.first);
+        if (edits < minEdits && edits < std::min(c->id().size(), decls.first.size())) {
+          minEdits = edits;
+          mostSimilar = decls.first;
+        }
+      }
+    }
+    if (!mostSimilar.empty()) {
+      oss << ", did you mean `" << mostSimilar << "'?";
+    }
+    throw TypeError(env, Expression::loc(c), oss.str());
+  }
+
+  const std::vector<FnEntry>& v = it->second;
+  std::vector<FunctionI*> matched;
+  for (const auto& i : v) {
+    if (i.t.size() == c->argCount()) {
+      matched.push_back(i.fi);
+    }
+  }
+  if (matched.empty()) {
+    std::ostringstream oss;
+    oss << "no function or predicate with this signature found: `";
+    oss << c->id() << "(";
+    for (unsigned int i = 0; i < c->argCount(); i++) {
+      oss << Expression::type(c->arg(i)).toString(env);
+      if (i < c->argCount() - 1) {
+        oss << ",";
+      }
+    }
+    oss << ")'\n";
+    throw TypeError(env, Expression::loc(c), oss.str());
+  }
+
+  return matched;
+}
+
 namespace {
 int first_overloaded(EnvI& env, const std::vector<Model::FnEntry>& v_f, int i_f) {
   int first_i_f = i_f;
@@ -1065,7 +1135,8 @@ int first_overloaded(EnvI& env, const std::vector<Model::FnEntry>& v_f, int i_f)
 
 bool Model::sameOverloading(EnvI& env, const std::vector<Expression*>& args, FunctionI* f,
                             FunctionI* g) const {
-  if (f->id() == env.constants.varRedef->id() || g->id() == env.constants.varRedef->id()) {
+  if (f->isMonomorphised() || g->isMonomorphised() || f->id() == env.constants.varRedef->id() ||
+      g->id() == env.constants.varRedef->id()) {
     return false;
   }
   const Model* m = this;
@@ -1097,7 +1168,7 @@ bool Model::sameOverloading(EnvI& env, const std::vector<Expression*>& args, Fun
     // not the same number of overloaded versions
     return false;
   }
-  for (; first_i_f <= i_f; first_i_f++, first_i_g++) {
+  for (; first_i_f <= static_cast<unsigned int>(i_f); first_i_f++, first_i_g++) {
     if (!(v_f[first_i_f].t == v_g[first_i_g].t)) {
       // one of the overloaded versions does not agree in the types
       return false;

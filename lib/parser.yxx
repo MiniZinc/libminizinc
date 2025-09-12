@@ -307,7 +307,8 @@ void parseFieldTail(const ParserLocation& loc, std::vector<Expression*>& parsed,
 %left MZN_AND
 %nonassoc MZN_LE MZN_GR MZN_LQ MZN_GQ MZN_EQ MZN_NQ MZN_WEAK_EQ MZN_WEAK_NQ
 %nonassoc MZN_IN MZN_SUBSET MZN_SUPERSET
-%left MZN_UNION MZN_DIFF MZN_SYMDIFF MZN_INTERSECT
+%left MZN_UNION MZN_DIFF MZN_SYMDIFF
+%left MZN_INTERSECT
 %nonassoc MZN_DOTDOT MZN_DOTDOT_LE MZN_LE_DOTDOT MZN_LE_DOTDOT_LE
 %left MZN_PLUS MZN_MINUS MZN_WEAK_PLUS MZN_WEAK_MINUS
 %left MZN_MULT MZN_DIV MZN_IDIV MZN_MOD MZN_WEAK_MULT MZN_WEAK_DIV MZN_WEAK_IDIV
@@ -876,9 +877,13 @@ ti_expr_list_head :
 
 ti_expr :
       base_ti_expr
-    | MZN_ARRAY MZN_LEFT_BRACKET ti_expr_list MZN_RIGHT_BRACKET MZN_OF base_ti_expr
+    | MZN_ARRAY MZN_LEFT_BRACKET ti_expr_list MZN_RIGHT_BRACKET MZN_OF ti_expr  %prec MZN_NOT
       {
-        $$ = $6;
+        if ($6 != nullptr && $6->isarray()) {
+          $$ = new TypeInst(@$, Type::tuple(), $6);
+        } else {
+          $$ = $6;
+        }
         if ($$ != nullptr && $3 != nullptr) {
           $$->setRanges(*$3);
         }
@@ -1212,7 +1217,7 @@ set_expr :
         }
       }
     | MZN_MINUS MZN_MAX_NEGATIVE_INTEGER_LITERAL %prec MZN_NOT
-      { $$ = IntLit::a(-9223372036854775808ull); }
+      { $$ = IntLit::a((-9223372036854775807ll)-1); }
 
 ///
 
@@ -1376,14 +1381,14 @@ expr :
       }
     | MZN_NOT expr %prec MZN_NOT
       { $$=new UnOp(@$, UOT_NOT, $2); }
-    | MZN_PLUS expr %prec MZN_NOT
+    | MZN_PLUS expr %prec MZN_MULT
       { if (($2 && Expression::isa<IntLit>($2)) || ($2 && Expression::isa<FloatLit>($2))) {
           $$ = $2;
         } else {
           $$=new UnOp(@$, UOT_PLUS, $2);
         }
       }
-    | MZN_MINUS expr %prec MZN_NOT
+    | MZN_MINUS expr %prec MZN_MULT
       { if ($2 && Expression::isa<IntLit>($2)) {
           $$ = IntLit::a(-IntLit::v(Expression::cast<IntLit>($2)));
         } else if ($2 && Expression::isa<FloatLit>($2)) {
@@ -1393,7 +1398,7 @@ expr :
         }
       }
     | MZN_MINUS MZN_MAX_NEGATIVE_INTEGER_LITERAL %prec MZN_NOT
-      { $$ = IntLit::a(-9223372036854775808ull); }
+      { $$ = IntLit::a((-9223372036854775807ll)-1); }
 
 
 expr_atom_head :
@@ -1544,16 +1549,18 @@ string_expr:
       }
 
 string_quote_rest:
-      expr_list_head MZN_STRING_QUOTE_END
-      { if ($1) $$=new BinOp(@$, Call::a(@$, ASTString("format"), *$1), BOT_PLUSPLUS, new StringLit(@$,$2));
+      expr MZN_STRING_QUOTE_END
+      { if ($1) {
+          $$=new BinOp(@$, Call::a(@$, ASTString("format"), {$1}), BOT_PLUSPLUS, new StringLit(@$,$2));
+        }
         free($2);
-        delete $1;
       }
-    | expr_list_head MZN_STRING_QUOTE_MID string_quote_rest
-      { if ($1) $$=new BinOp(@$, Call::a(@$, ASTString("format"), *$1), BOT_PLUSPLUS,
-                             new BinOp(@$, new StringLit(@$,$2), BOT_PLUSPLUS, $3));
+    | expr MZN_STRING_QUOTE_MID string_quote_rest
+      { if ($1) {
+          $$=new BinOp(@$, Call::a(@$, ASTString("format"), {$1}), BOT_PLUSPLUS,
+                       new BinOp(@$, new StringLit(@$,$2), BOT_PLUSPLUS, $3));
+        }
         free($2);
-        delete $1;
       }
 
 access_tail :
@@ -1656,7 +1663,7 @@ generator_list_head :
     | generator_eq MZN_WHERE expr
       { $$=new std::vector<Generator>;
         if ($1) $$->push_back(*$1);
-        if ($1 && $3) $$->push_back(Generator($$->size(),$3));
+        if ($1 && $3) $$->push_back(Generator(static_cast<int>($$->size()),$3));
         delete $1;
       }
     | generator_list_head ',' generator
@@ -1666,7 +1673,7 @@ generator_list_head :
     | generator_list_head ',' generator_eq MZN_WHERE expr
       { $$=$1;
         if ($$ && $3) $$->push_back(*$3);
-        if ($$ && $3 && $5) $$->push_back(Generator($$->size(),$5));
+        if ($$ && $3 && $5) $$->push_back(Generator(static_cast<int>($$->size()),$5));
         delete $3;
       }
 
@@ -1765,10 +1772,10 @@ simple_array_literal_2d :
                 yyerror(&@2, parm, "syntax error, all sub-arrays of 2d array literal must have the same length");
               }
             }
-            if (i > hadHeaderRow && (*$2)[i].first.size() != (*$2)[i-1].first.size()) {
+            if (i > static_cast<unsigned int>(hadHeaderRow) && (*$2)[i].first.size() != (*$2)[i-1].first.size()) {
               yyerror(&@2, parm, "syntax error, mixing indexed and non-indexed sub-arrays in 2d array literal");
             }
-            if (i >= hadHeaderRow && !(*$2)[i].first.empty()) {
+            if (i >= static_cast<unsigned int>(hadHeaderRow) && !(*$2)[i].first.empty()) {
               rowHeader.push_back((*$2)[i].first[0]);
             }
             for (unsigned int j = 0; j < (*$2)[i].second.size(); j++) {
@@ -2000,14 +2007,7 @@ comp_expr_list_head :
 /***********************************************/
 
 if_then_else_expr :
-      MZN_IF expr MZN_THEN expr MZN_ENDIF
-      {
-        std::vector<Expression*> iexps;
-        iexps.push_back($2);
-        iexps.push_back($4);
-        $$=new ITE(@$, iexps, nullptr);
-      }
-    | MZN_IF expr MZN_THEN expr elseif_list MZN_ELSE expr MZN_ENDIF
+      MZN_IF expr MZN_THEN expr elseif_list MZN_ELSE expr MZN_ENDIF
       {
         std::vector<Expression*> iexps;
         iexps.push_back($2);
@@ -2021,6 +2021,20 @@ if_then_else_expr :
         $$=new ITE(@$, iexps,$7);
         delete $5;
       }
+  | MZN_IF expr MZN_THEN expr elseif_list MZN_ENDIF
+    {
+      std::vector<Expression*> iexps;
+      iexps.push_back($2);
+      iexps.push_back($4);
+      if ($5) {
+        for (unsigned int i=0; i<$5->size(); i+=2) {
+          iexps.push_back((*$5)[i]);
+          iexps.push_back((*$5)[i+1]);
+        }
+      }
+      $$=new ITE(@$, iexps, nullptr);
+      delete $5;
+    }
 
 elseif_list :
       { $$=new std::vector<MiniZinc::Expression*>; }
@@ -2175,7 +2189,7 @@ call_expr :
                     ids.push_back(id);
                     gens.push_back(Generator(ids,nullptr,boe->rhs()));
                     if ((*$3)[i].second) {
-                      gens.push_back(Generator(gens.size(),(*$3)[i].second));
+                      gens.push_back(Generator(static_cast<int>(gens.size()),(*$3)[i].second));
                     }
                     ids = vector<Id*>();
                   } else {
@@ -2249,7 +2263,7 @@ call_expr :
                     ids.push_back(id);
                     gens.push_back(Generator(ids,nullptr,boe->rhs()));
                     if ((*$4)[i].second) {
-                      gens.push_back(Generator(gens.size(),(*$4)[i].second));
+                      gens.push_back(Generator(static_cast<int>(gens.size()),(*$4)[i].second));
                     }
                     ids = vector<Id*>();
                   } else {

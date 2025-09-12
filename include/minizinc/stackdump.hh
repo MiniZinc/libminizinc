@@ -25,18 +25,19 @@ class Expression;
 class StackDump {
 public:
   StackDump(EnvI& env);
-  StackDump() {}
+  StackDump() : _env(nullptr) {}
   void print(std::ostream& os) const;
   void json(std::ostream& os) const;
   bool empty() const { return _stack.empty(); }
 
-  inline void mark() {
+  void mark() {
     for (auto pair : _stack) {
       Expression::mark(pair.first);
     }
   }
 
 private:
+  EnvI* _env;
   std::vector<std::pair<Expression*, bool>> _stack;
 };
 

@@ -175,7 +175,7 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
     throw Error("warnings treated as errors.");
   }
 
-  new_env->dumpWarnings(_fopts.encapsulateJSON ? std::cout : log, _compflags.werror,
+  new_env->dumpWarnings(_fopts.encapsulateJSON ? new_env->envi().outstream : log, _compflags.werror,
                         _fopts.encapsulateJSON);
   new_env->clearWarnings();
 
@@ -200,6 +200,6 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
   return new_env;
 }
 
-CompilePass::~CompilePass(){};
+CompilePass::~CompilePass() {};
 
 }  // namespace MiniZinc

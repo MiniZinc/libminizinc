@@ -1,2 +1,3 @@
-int: X_INTRODUCED_1_ = 2;
-solve :: int_search([2],input_order,indomain_min,complete) minimize X_INTRODUCED_1_;
+int: X_INTRODUCED_2_ = 2;
+array [1..1] of var int: X_INTRODUCED_1_ ::var_is_introduced  = [2];
+solve :: int_search(X_INTRODUCED_1_,input_order,indomain_min,complete) minimize X_INTRODUCED_2_;

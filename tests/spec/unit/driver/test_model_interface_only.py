@@ -7,7 +7,7 @@ import json
 def test_model_interface_only_1():
     assert isinstance(default_driver, Driver)
     p = subprocess.Popen(
-        [default_driver._executable, "-", "--model-interface-only", "-c"],
+        [default_driver._executable, "-", "--model-interface-only",],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -31,7 +31,7 @@ def test_model_interface_only_1():
 def test_model_interface_only_2():
     assert isinstance(default_driver, Driver)
     p = subprocess.Popen(
-        [default_driver._executable, "-", "--model-interface-only", "-c"],
+        [default_driver._executable, "-", "--model-interface-only"],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -53,7 +53,7 @@ def test_model_interface_only_2():
 def test_model_interface_only_3():
     assert isinstance(default_driver, Driver)
     p = subprocess.Popen(
-        [default_driver._executable, "-", "--model-interface-only", "-c"],
+        [default_driver._executable, "-", "--model-interface-only"],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

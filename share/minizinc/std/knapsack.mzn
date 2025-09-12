@@ -16,17 +16,22 @@ include "fzn_knapsack_reif.mzn";
 @param P: sum of profits of all items in the knapsack
 */
 predicate knapsack(
-	array[$$I] of int: w,
-	array[$$I] of int:p, 
-	array[$$I] of var int: x,
-	var int: W,
-	var int: P
-) = 
-	assert(index_set(w) = index_set(p) /\ index_set(w) = index_set(x),
-		"index set of weights must be equal to index set of profits and index set of items",
-	assert(lb_array(w) >= 0,
-		"weights must be non-negative",
-	assert(lb_array(p) >= 0,
-		"profits must be non-negative",
-    fzn_knapsack(w, p, x, W, P)
-	)));
+  array [$$I] of int: w,
+  array [$$I] of int: p,
+  array [$$I] of var int: x,
+  var int: W,
+  var int: P,
+) =
+  assert(
+    index_set(w) = index_set(p) /\ index_set(w) = index_set(x),
+    "index set of weights must be equal to index set of profits and index set of items",
+    assert(
+      lb_array(w) >= 0,
+      "weights must be non-negative",
+      assert(
+        lb_array(p) >= 0,
+        "profits must be non-negative",
+        fzn_knapsack(index2int(w), index2int(p), index2int(x), W, P),
+      ),
+    ),
+  );

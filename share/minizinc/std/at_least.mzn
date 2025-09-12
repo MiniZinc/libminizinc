@@ -8,19 +8,17 @@ include "fzn_at_least_set_reif.mzn";
 
   This constraint is deprecated. Use count(i in x)(i=v) >= n instead.
 */
-predicate at_least(int: n, array[$X] of var $$E: x, $$E: v) =
-	fzn_at_least_int(n, array1d(x), v);
+predicate at_least(int: n, array [$X] of var $$E: x, $$E: v) =
+  fzn_at_least_int(n, enum2int(array1d(x)), enum2int(v));
 
 /**  @group globals.counting
   Requires at least \a n variables in \a x to take the value \a v.
 */
-predicate at_least(int: n, array[$X] of var set of $$E: x, set of $$E: v) =
-	fzn_at_least_set(n, array1d(x), v);
+predicate at_least(int: n, array [$X] of var set of $$E: x, set of $$E: v) =
+  fzn_at_least_set(n, enum2int(array1d(x)), enum2int(v));
 
 % Synonyms for the above.
 
-predicate atleast(int: n, array[$X] of var $$E: x, $$E: v) =
-  at_least(n, x, v);
+predicate atleast(int: n, array [$X] of var $$E: x, $$E: v) = at_least(n, x, v);
 
-predicate atleast(int: n, array[$X] of var set of $$E: x, set of $$E: v) =
-  at_least(n, x, v);
+predicate atleast(int: n, array [$X] of var set of $$E: x, set of $$E: v) = at_least(n, x, v);

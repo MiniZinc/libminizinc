@@ -34,7 +34,7 @@ void Registry::add(const ASTString name, poster p) { _registry.insert(std::make_
 void Registry::add(const std::string& name, poster p) {
   GCLock lock;
   ASTString str(name);
-  return add(str, p);
+  add(str, p);
 }
 void Registry::post(Call* c) {
   auto it = _registry.find(c->id());
@@ -149,7 +149,7 @@ void SolverInstanceBase2<AsgArray>::assignSolutionToOutput() {
           throw -1;
         }
         std::vector<std::pair<int, int> > dims_v;
-        for (int i = 0; i < dims->length(); i++) {
+        for (unsigned int i = 0; i < dims->length(); i++) {
           IntSetVal* isv = eval_intset(getEnv()->envi(), (*dims)[i]);
           if (isv->empty()) {
             dims_v.emplace_back(1, 0);

@@ -130,7 +130,8 @@ atom:
     { $$ = new REG($1); }
   | "."
     {
-      IntArgs range = IntArgs::create(ctx.dom.max().toInt() - ctx.dom.min().toInt() + 1, ctx.dom.min().toInt());
+      IntArgs range = IntArgs::create(static_cast<int>(ctx.dom.max().toInt() - ctx.dom.min().toInt()) + 1,
+                                      static_cast<int>(ctx.dom.min().toInt()));
       $$ = new REG(range);
     }
   | "[" set_items "]"
@@ -147,8 +148,8 @@ atom:
     {
       std::vector<int> diff;
       std::set<int> domain;
-      for(int i = ctx.dom.min().toInt(); i<=ctx.dom.max().toInt(); ++i) {
-        domain.insert(i);
+      for(auto i = ctx.dom.min().toInt(); i<=ctx.dom.max().toInt(); ++i) {
+        domain.insert(static_cast<int>(i));
       }
       std::set_difference(
         domain.begin(), domain.end(),

@@ -104,16 +104,16 @@ class CLOParser {
 public:
   CLOParser(int& ii, std::vector<std::string>& av) : _i(ii), _argv(av) {}
   template <class Value = int>
-  inline bool get(const char* names,           // space-separated option list
-                  Value* pResult = nullptr,    // pointer to value storage
-                  bool fValueOptional = false  // if pResult, for non-string values
+  bool get(const char* names,           // space-separated option list
+           Value* pResult = nullptr,    // pointer to value storage
+           bool fValueOptional = false  // if pResult, for non-string values
   ) {
     return getOption(names, pResult, fValueOptional);
   }
   template <class Value = int>
-  inline bool getOption(const char* names,           // space-separated option list
-                        Value* pResult = nullptr,    // pointer to value storage
-                        bool fValueOptional = false  // if pResult, for non-string values
+  bool getOption(const char* names,           // space-separated option list
+                 Value* pResult = nullptr,    // pointer to value storage
+                 bool fValueOptional = false  // if pResult, for non-string values
   ) {
     assert(nullptr == strchr(names, ','));
     assert(nullptr == strchr(names, ';'));
@@ -249,7 +249,11 @@ public:
       version.append("0");
     }
     // Parse version number
+#ifdef _WIN32
+    sscanf_s(version.c_str(), "%d.%d.%d", &major, &minor, &patch);
+#else
     sscanf(version.c_str(), "%d.%d.%d", &major, &minor, &patch);
+#endif
   }
   bool operator<(const SemanticVersion& other) const {
     if (major < other.major) {

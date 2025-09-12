@@ -9,7 +9,6 @@
  @groupdef MAIN The MiniZinc library
 */
 
-
 /***
  @groupdef annotations.multiobj-experimental Multiobjective annotations
 */
@@ -24,7 +23,7 @@
   \endcode
 
   */
-annotation goal_hierarchy(array[int] of ann);
+annotation goal_hierarchy(array [int] of ann);
 
 /** @group annotations.multiobj-experimental Possible arguments of the \a goal_hierarchy annotation */
 annotation min_goal(var int: x);
@@ -36,4 +35,3 @@ annotation max_goal(var float: x);
 annotation int_max_goal(var int: x);
 annotation float_max_goal(var float: x);
 annotation sat_goal(var bool: b);
-

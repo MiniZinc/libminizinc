@@ -1141,7 +1141,7 @@ Here is a list of all configuration options recognised by the configuration file
 
   - ``"int:n:m"`` where ``n`` and ``m`` are integers, gives lower and upper bounds for the supported values
   - ``"float:n:m"`` where ``n`` and ``m`` are floating point numbers, gives lower and upper bounds for the supported values
-  - ``"bool:onstring:offstring"`` specifies strings to add to the command line flag to turn it on (``onstring``) and off (``offstring``). E.g., ``["-interrupt","whether to catch Ctrl-C","bool:false:true","true"]`` specifies a command line option that can be called as ``-interrupt true`` or ``-interrupt false``. The standard behaviour (just ``"bool"``) means that the option is either added to the command line or not.
+  - ``"bool:onstring:offstring"`` specifies strings to add to the command line flag to turn it on (``onstring``) and off (``offstring``). E.g., ``["-interrupt","whether to catch Ctrl-C","bool:yes:no","yes"]`` specifies a command line option that can be called as ``-interrupt yes`` or ``-interrupt no``. The standard behaviour (just ``"bool"``) means that the option is either added to the command line or not.
   - ``"opt:first option:second option:...:last option"`` specifies a list of possible values for the option
 - ``inputType`` (string, default ``FZN``, options ``MZN``, ``FZN``, ``NL``, ``JSON``): The type of input expected by the solver.
 - ``supportsMzn`` (bool, default ``false``): Whether the solver can run MiniZinc directly (i.e., it implements its own compilation or interpretation of the model). [Deprecated, use ``inputType``]

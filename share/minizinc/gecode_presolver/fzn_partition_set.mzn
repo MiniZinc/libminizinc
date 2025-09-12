@@ -34,9 +34,7 @@
 %
 %
 
-predicate gecode_array_set_partition(array[int] of var set of int: S,
-                                     set of int: universe);
+predicate gecode_array_set_partition(array [int] of var set of int: S, set of int: universe);
 
-predicate fzn_partition_set(array[int] of var set of int: S,
-                            set of int: universe) =
-    gecode_array_set_partition(S, universe);
+predicate fzn_partition_set(array [int] of var set of int: S, set of int: universe) =
+  gecode_array_set_partition(S, universe);

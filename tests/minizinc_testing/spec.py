@@ -326,7 +326,7 @@ class FlatZinc:
                 count=1,
             )
             for line in fzn.split("\n")
-            if len(line.strip()) > 0
+            if len(line.strip()) > 0 and not line.strip().startswith("%")
         ]
         return "\n".join(sorted(lines))  # Sort the FlatZinc lines
 

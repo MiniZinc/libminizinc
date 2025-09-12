@@ -50,7 +50,7 @@ void ReadPipePrint(HANDLE g_hCh, bool* _done, std::ostream* pOs,
     BOOL bSuccess = ReadFile(g_hCh, buffer, sizeof(buffer) - 1, &count, NULL);
     if (bSuccess && count > 0) {
       int nl_count = 0;
-      for (int i = 0; i < count; i++) {
+      for (DWORD i = 0; i < count; i++) {
         if (buffer[i] != 13) {
           nl_buffer[nl_count++] = buffer[i];
         }
@@ -182,6 +182,7 @@ public:
 
     HANDLE hJobObject = CreateJobObject(NULL, NULL);
 
+    SetDllDirectoryW(FileUtils::utf8_to_wide(FileUtils::progpath()).c_str());
     BOOL processStarted = CreateProcessW(NULL,
                                          cmdstr,        // command line
                                          NULL,          // process security attributes
@@ -245,9 +246,9 @@ public:
       }
       // At this point the child should be stopped/stopping
       if (!doneStderr || !doneStdout) {
-        if (!_interruptCondition.wait_for(lck, std::chrono::milliseconds(200),
+        if (!_interruptCondition.wait_for(lck, std::chrono::seconds(1),
                                           [&] { return doneStderr && doneStdout; })) {
-          // Force terminate the child after 200ms
+          // Force terminate the child after 1s
           TerminateJobObject(hJobObject, 0);
         };
       }
@@ -295,6 +296,7 @@ public:
     CloseHandle(piProcInfo.hProcess);
 
     SetConsoleCtrlHandler(handleInterrupt, FALSE);
+    SetDllDirectoryW(L"");
     if (hadInterrupt) {
       // Re-trigger signal if it was not caused by our own timeout
       throw SignalRaised(CTRL_C_EVENT);
@@ -408,8 +410,8 @@ public:
               // Fallback to killing the child if killing the process group fails
               kill(childPID, signal);
             }
-            timeout.tv_sec = 0;
-            timeout.tv_usec = 200000;
+            timeout.tv_sec = 1;
+            timeout.tv_usec = 0;
             timeout_orig = timeout;
             starttime = currentTime;
             // Upgrade signal for next attempt

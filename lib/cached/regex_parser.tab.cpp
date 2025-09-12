@@ -539,8 +539,8 @@ static const yytype_int8 yytranslate[] =
 static const yytype_uint8 yyrline[] =
 {
        0,    71,    71,    78,    79,    87,    88,    96,    97,   102,
-     107,   112,   117,   122,   129,   131,   136,   146,   161,   165,
-     166,   176,   180
+     107,   112,   117,   122,   129,   131,   137,   147,   162,   166,
+     167,   177,   181
 };
 #endif
 
@@ -1188,7 +1188,8 @@ yyreduce:
 
   case 15: /* atom: "."  */
     {
-      IntArgs range = IntArgs::create(ctx.dom.max().toInt() - ctx.dom.min().toInt() + 1, ctx.dom.min().toInt());
+      IntArgs range = IntArgs::create(static_cast<int>(ctx.dom.max().toInt() - ctx.dom.min().toInt()) + 1,
+                                      static_cast<int>(ctx.dom.min().toInt()));
       (yyval.rValue) = new REG(range);
     }
     break;
@@ -1209,8 +1210,8 @@ yyreduce:
     {
       std::vector<int> diff;
       std::set<int> domain;
-      for(int i = ctx.dom.min().toInt(); i<=ctx.dom.max().toInt(); ++i) {
-        domain.insert(i);
+      for(auto i = ctx.dom.min().toInt(); i<=ctx.dom.max().toInt(); ++i) {
+        domain.insert(static_cast<int>(i));
       }
       std::set_difference(
         domain.begin(), domain.end(),

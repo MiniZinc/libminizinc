@@ -300,6 +300,8 @@ public:
   /// Returns whether the decrement operation was succesful (false when type is already par)
   bool decrement(EnvI& env);
 
+  /// Return true if this type is varifiable
+  bool isVarifiable(const EnvI& env) const;
   /// Return true if the predicate holds for this type or any nested type for structs
   bool contains(const EnvI& env, std::function<bool(const Type)> p) const;
 
@@ -316,6 +318,9 @@ public:
 
   /// Check if \a bt0 is a subtype of \a bt1
   static bool btSubtype(const EnvI& env, const Type& t0, const Type& t1, bool strictEnums);
+
+  /// Get the most specific supertype of the given types, or unknown if there is none
+  static Type commonType(EnvI& env, Type t1, Type t2);
 
   /// Check if this type is a subtype of \a t
   bool isSubtypeOf(const EnvI& env, const Type& t, bool strictEnums) const {

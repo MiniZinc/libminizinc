@@ -72,6 +72,7 @@ public:
   void setFlagOutputJSON(bool f) {
     _flags.fznFormat = f ? FlattenerFlags::FF_JSON : FlattenerFlags::FF_FZN;
   }
+  void setCmdLineStr(std::string&& cmdline) { _cmdlineStr = std::move(cmdline); }
   Env* getEnv() const {
     assert(_pEnv.get());
     return _pEnv.get();
@@ -133,6 +134,7 @@ private:
 
   std::string _stdLibDir;
   std::string _globalsDir;
+  std::string _cmdlineStr;
 
   std::string _flagOutputBase;
   std::string _flagOutputFzn;

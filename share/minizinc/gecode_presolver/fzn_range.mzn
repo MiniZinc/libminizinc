@@ -33,19 +33,16 @@
 %  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 %
 %
-predicate gecode_range(array[int] of var int: x, int: xoff,
-                       var set of int: s, var set of int: t);
+predicate gecode_range(array [int] of var int: x, int: xoff, var set of int: s, var set of int: t);
 
-predicate fzn_range(array[int] of var int: x, var set of int: s,
-                                              var set of int: t) =
-    assert(ub(s) subset index_set(x),
-        "range: upper bound of 's' must be a subset of the index set of 'x'",
-        if (min(index_set(x)) >= 0) then
-            gecode_range(x,min(index_set(x)),s,t)
-        else
-            forall(i in ub(s)) (i in s -> x[i] in t) /\
-            forall(i in ub(t)) (
-                i in t -> exists(j in ub(s)) ( j in s /\ x[j] == i )
-            )
-        endif
-    );
+predicate fzn_range(array [int] of var int: x, var set of int: s, var set of int: t) =
+  assert(
+    ub(s) subset index_set(x),
+    "range: upper bound of 's' must be a subset of the index set of 'x'",
+    if (min(index_set(x)) >= 0) then
+      gecode_range(x, min(index_set(x)), s, t)
+    else
+      forall (i in ub(s)) (i in s -> x[i] in t) /\
+        forall (i in ub(t)) (i in t -> exists (j in ub(s)) (j in s /\ x[j] == i))
+    endif,
+  );

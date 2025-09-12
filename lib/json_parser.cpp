@@ -572,11 +572,15 @@ Expression* JSONParser::parseObject(istream& is, TypeInst* ti) {
   std::vector<Expression*> fields;
 
   ASTStringMap<TypeInst*> fieldTIs;
+  ASTStringSet optFields;
   if (ti != nullptr && ti->type().bt() == Type::BT_RECORD) {
     auto* dom = Expression::cast<ArrayLit>(ti->domain());
-    for (size_t i = 0; i < dom->size(); ++i) {
+    for (unsigned int i = 0; i < dom->size(); ++i) {
       auto* fieldDef = Expression::cast<VarDecl>((*dom)[i]);
       fieldTIs.emplace(fieldDef->id()->str(), fieldDef->ti());
+      if (fieldDef->ti()->type().isOpt()) {
+        optFields.insert(fieldDef->id()->str());
+      }
     }
   };
 
@@ -608,10 +612,18 @@ Expression* JSONParser::parseObject(istream& is, TypeInst* ti) {
 
     fields.push_back(
         new VarDecl(Location().introduce(), new TypeInst(Location().introduce(), Type()), key, e));
+    optFields.erase(key);
     next = readToken(is);
   } while (next.t == T_COMMA);
   if (next.t != T_OBJ_CLOSE) {
     throw JSONError(_env, errLocation(), "invalid object");
+  }
+
+  // Add <> literal for known optional fields
+  for (const auto& key : optFields) {
+    fields.push_back(new VarDecl(Location().introduce(),
+                                 new TypeInst(Location().introduce(), Type()), key,
+                                 _env.constants.absent));
   }
 
   auto* record = ArrayLit::constructTuple(Location().introduce(), fields);
@@ -659,7 +671,7 @@ Expression* JSONParser::parseArray(std::istream& is, TypeInst* ti, size_t range_
           // If parsing a tuple, then retrieve field TI from domain
           auto* dom = Expression::cast<ArrayLit>(ti->domain());
           if (exps.size() < dom->size()) {
-            elTI = Expression::cast<TypeInst>((*dom)[exps.size()]);
+            elTI = Expression::cast<TypeInst>((*dom)[static_cast<unsigned int>(exps.size())]);
           }
         }
         exps.push_back(parseObject(is, elTI));
@@ -741,12 +753,12 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
     while (!it.empty()) {
       if (it.size() == ti->type().dim()) {
         for (size_t i = 0; i < it.back().second->size(); ++i) {
-          elements.push_back((*it.back().second)[i]);
+          elements.push_back((*it.back().second)[static_cast<unsigned int>(i)]);
         }
         it.pop_back();
       } else {
         if (it.back().first < it.back().second->size()) {
-          Expression* expr = (*it.back().second)[it.back().first];
+          Expression* expr = (*it.back().second)[static_cast<unsigned int>(it.back().first)];
           it.back().first++;
           if (!Expression::isa<ArrayLit>(expr)) {
             throw JSONError(_env, Expression::loc(expr),
@@ -782,7 +794,7 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
       al = ArrayLit::constructTuple(Expression::loc(al), al);
     } else {
       auto* types = Expression::cast<ArrayLit>(ti->domain());
-      for (size_t i = 0; i < al->size(); ++i) {
+      for (unsigned int i = 0; i < al->size(); ++i) {
         if (Expression::isa<ArrayLit>((*al)[i])) {
           auto* tup = ArrayLit::constructTuple(Expression::loc((*al)[i]),
                                                Expression::cast<ArrayLit>((*al)[i]));
@@ -791,7 +803,7 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
           if (tup->size() != types->size()) {
             continue;  // Error will be raised by typechecker
           }
-          for (size_t j = 0; j < tup->size(); ++j) {
+          for (unsigned int j = 0; j < tup->size(); ++j) {
             if (Expression::isa<ArrayLit>((*tup)[j])) {
               tup->set(j, coerceArray(Expression::cast<TypeInst>((*types)[j]),
                                       Expression::cast<ArrayLit>((*tup)[j])));
@@ -810,13 +822,13 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
   // Check if any indexes are missing
   int missing_index = -1;
   bool needs_call = false;
-  for (int i = 0; i < ti->ranges().size(); ++i) {
+  for (unsigned int i = 0; i < ti->ranges().size(); ++i) {
     TypeInst* nti = ti->ranges()[i];
     if (nti->domain() == nullptr || Expression::isa<AnonVar>(nti->domain())) {
       if (missing_index != -1) {
         return al;  // More than one index set is missing. Cannot compute correct index sets.
       }
-      missing_index = i;
+      missing_index = static_cast<int>(i);
       needs_call = true;
     } else {
       needs_call = true;
@@ -826,7 +838,7 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
   // Construct index set arguments for an "arrayXd" call.
   std::vector<Expression*> args(ti->ranges().size() + 1);
   Expression* missing_max = missing_index >= 0 ? IntLit::a(al->size()) : nullptr;
-  for (int i = 0; i < ti->ranges().size(); ++i) {
+  for (unsigned int i = 0; i < ti->ranges().size(); ++i) {
     if (i != missing_index) {
       assert(ti->ranges()[i]->domain() != nullptr);
       args[i] = ti->ranges()[i]->domain();

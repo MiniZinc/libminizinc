@@ -33,6 +33,15 @@ StatisticsStream::~StatisticsStream() {
   } else {
     _os << "%%%mzn-stat-end\n";
   }
+  if (!_warnings.empty()) {
+    for (auto& w : _warnings) {
+      if (_json) {
+        w->json(_os, false);
+      } else {
+        w->print(_os, false);
+      }
+    }
+  }
   _os.copyfmt(_ios);
 }
 
@@ -45,8 +54,14 @@ void StatisticsStream::precision(std::streamsize prec, bool fixed) {
   }
 }
 
-void StatisticsStream::add(const std::string& stat, const Expression& value) {
-  addInternal(stat, value);
+void StatisticsStream::add(const std::string& stat, const Expression* value) {
+  if (Expression::isa<Id>(value)) {
+    std::stringstream ss;
+    ss << "invalid statistic %%%mzn-stat: " << stat << "=" << *value << " ignored.";
+    _warnings.emplace_back(new Warning(ss.str()));
+  } else {
+    addInternal(stat, *value);
+  }
 }
 void StatisticsStream::add(const std::string& stat, int value) { addInternal(stat, value); }
 void StatisticsStream::add(const std::string& stat, unsigned int value) {

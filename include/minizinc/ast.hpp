@@ -107,7 +107,7 @@ inline unsigned int Location::LocVec::firstLine() const {
     return static_cast<unsigned int>(ui.u & mask);
   }
   auto* il = static_cast<IntLit*>(_data[1]);
-  return IntLit::v(il).toInt();
+  return static_cast<unsigned int>(IntLit::v(il).toInt());
 }
 inline unsigned int Location::LocVec::lastLine() const {
   if (_size == 2) {
@@ -125,7 +125,7 @@ inline unsigned int Location::LocVec::lastLine() const {
     return static_cast<unsigned int>((ui.u & mask) + ((ui.u >> first_line_size) & offsetmask));
   }
   auto* il = static_cast<IntLit*>(_data[2]);
-  return IntLit::v(il).toInt();
+  return static_cast<unsigned int>(IntLit::v(il).toInt());
 }
 inline unsigned int Location::LocVec::firstColumn() const {
   if (_size == 2) {
@@ -142,7 +142,7 @@ inline unsigned int Location::LocVec::firstColumn() const {
     return static_cast<unsigned int>((ui.u >> first_col_offset) & mask);
   }
   auto* il = static_cast<IntLit*>(_data[3]);
-  return IntLit::v(il).toInt();
+  return static_cast<unsigned int>(IntLit::v(il).toInt());
 }
 inline unsigned int Location::LocVec::lastColumn() const {
   if (_size == 2) {
@@ -159,7 +159,7 @@ inline unsigned int Location::LocVec::lastColumn() const {
     return static_cast<unsigned int>((ui.u >> last_col_offset) & mask);
   }
   auto* il = static_cast<IntLit*>(_data[4]);
-  return IntLit::v(il).toInt();
+  return static_cast<unsigned int>(IntLit::v(il).toInt());
 }
 
 inline FloatLit::FloatLit(const Location& loc, FloatVal v)
@@ -272,8 +272,12 @@ inline long long int Id::idn() const {
   if (hasStr()) {
     return -1;
   }
-  long long int i = reinterpret_cast<ptrdiff_t>(_vOrIdn.idn) & ~static_cast<ptrdiff_t>(1);
-  return i >> 1;
+  auto i_u = reinterpret_cast<mzn_uintptr_t>(_vOrIdn.idn) & ~static_cast<mzn_uintptr_t>(1);
+  if (static_cast<mzn_intptr_t>(i_u) < 0) {
+    auto ret = static_cast<mzn_intptr_t>(~(~i_u >> 1));
+    return static_cast<long long int>(ret);
+  }
+  return static_cast<long long int>(i_u >> 1);
 }
 
 inline TIId::TIId(const Location& loc, const std::string& v)
@@ -303,7 +307,7 @@ inline ArrayLit::ArrayLit(const Location& loc, ArrayLit* v,
     }
     int sliceOffset = static_cast<int>(dims.size()) * 2;
     unsigned int origSliceOffset = v->dims() * 2;
-    for (int i = 0; i < _u.al->dims() * 2; i++) {
+    for (unsigned int i = 0; i < _u.al->dims() * 2; i++) {
       d[sliceOffset + i] = v->_dims[origSliceOffset + i];
     }
     _dims = ASTIntVec(d);
@@ -334,7 +338,7 @@ inline ArrayLit::ArrayLit(const Location& loc, ArrayLit* v)
     d[1] = static_cast<int>(v->size());
     int sliceOffset = 2;
     unsigned int origSliceOffset = v->dims() * 2;
-    for (int i = 0; i < _u.al->dims() * 2; i++) {
+    for (unsigned int i = 0; i < _u.al->dims() * 2; i++) {
       d[sliceOffset + i] = v->_dims[origSliceOffset + i];
     }
     _dims = ASTIntVec(d);
@@ -480,7 +484,7 @@ inline UnOp::UnOp(const Location& loc, UnOpType op, Expression* e)
 }
 
 inline bool Call::hasId() const {
-  return (reinterpret_cast<ptrdiff_t>(_uId.decl) & static_cast<ptrdiff_t>(1)) == 0;
+  return (reinterpret_cast<mzn_uintptr_t>(_uId.decl) & static_cast<mzn_uintptr_t>(1)) == 0;
 }
 
 inline ASTString Call::id() const { return hasId() ? _uId.id : decl()->id(); }
@@ -493,14 +497,14 @@ inline void Call::id(const ASTString& i) {
 
 inline FunctionI* Call::decl() const {
   return hasId() ? nullptr
-                 : reinterpret_cast<FunctionI*>(reinterpret_cast<ptrdiff_t>(_uId.decl) &
-                                                ~static_cast<ptrdiff_t>(1));
+                 : reinterpret_cast<FunctionI*>(reinterpret_cast<mzn_uintptr_t>(_uId.decl) &
+                                                ~static_cast<mzn_uintptr_t>(1));
 }
 
 inline void Call::decl(FunctionI* f) {
   assert(f != nullptr);
-  _uId.decl =
-      reinterpret_cast<FunctionI*>(reinterpret_cast<ptrdiff_t>(f) | static_cast<ptrdiff_t>(1));
+  _uId.decl = reinterpret_cast<FunctionI*>(reinterpret_cast<mzn_uintptr_t>(f) |
+                                           static_cast<mzn_uintptr_t>(1));
 }
 
 inline unsigned int Call::argCount() const {
@@ -556,7 +560,7 @@ inline Call* Call::a(const Location& loc, const ASTString& id0,
                      const std::vector<Expression*>& args) {
   switch (args.size()) {
     case 0:
-      return new Call0(loc, id0);
+      return new Call1(loc, id0, {});
     case 1:
       return new Call1(loc, id0, args);
     case 2:

@@ -121,6 +121,7 @@ void NLBound::updateEq(double new_eq) {
       tag = EQ;
       lb = new_eq;
       ub = new_eq;
+      break;
     }
     // var <= UB. Update tag
     case NLBound::UB: {
@@ -128,6 +129,7 @@ void NLBound::updateEq(double new_eq) {
       tag = EQ;
       lb = new_eq;
       ub = new_eq;
+      break;
     }
     // LB <= var. Update tag
     case NLBound::LB: {
@@ -135,16 +137,19 @@ void NLBound::updateEq(double new_eq) {
       tag = EQ;
       lb = new_eq;
       ub = new_eq;
+      break;
     }
     // No bound. Update tag
     case NLBound::NONE: {
       tag = EQ;
       lb = new_eq;
       ub = new_eq;
+      break;
     }
     // LB = var = UB. Can happen only if we "update" with the same bound.
     case NLBound::EQ: {
       assert(lb == new_eq);
+      break;
     }
   }
 }
@@ -165,8 +170,7 @@ ostream& NLBound::printToStream(ostream& os, const string& vname) const {
       break;
     }
     case NONE: {
-      os << "3"
-         << "   # No constraint";
+      os << "3" << "   # No constraint";
       break;
     }
     case EQ: {
@@ -529,8 +533,7 @@ ostream& NLHeader::printToStream(ostream& os, const NLFile& nl_file) {
 
   // 6th line:
   os << nl_file.wvCount() << " "  // Nb of linear network vars
-     << "0"
-     << " "  // Nb of functions. Not Implemented
+     << "0" << " "                // Nb of functions. Not Implemented
      << "0 1 "
      << "# Nb of: linear network vars,  functions. Floating point arithmetic mode (TEXT == 0). "
         "Flag: if 1, add .sol suffixe."
@@ -551,23 +554,16 @@ ostream& NLHeader::printToStream(ostream& os, const NLFile& nl_file) {
      << "# Nb of non zeros in: jacobian, objective gradients." << endl;
 
   // 9th line: name length. Our tests always produce 0...
-  os << "0"
-     << " "  // Max constraint name length (??)
-     << "0"
-     << " "  // Max var name length (??)
+  os << "0" << " "  // Max constraint name length (??)
+     << "0" << " "  // Max var name length (??)
      << "# Longest name among: contraints' name, vars' name." << endl;
 
   // 10th line: common expressions. Not enough infor for now...
-  os << "0"
-     << " "  // Nb common exprs in both
-     << "0"
-     << " "  // Nb common exprs in constraints only
-     << "0"
-     << " "  // Nb common exprs in objectives only
-     << "0"
-     << " "  // Nb common exprs in single constraint only
-     << "0"
-     << " "  // Nb common exprs in single objectives only
+  os << "0" << " "  // Nb common exprs in both
+     << "0" << " "  // Nb common exprs in constraints only
+     << "0" << " "  // Nb common exprs in objectives only
+     << "0" << " "  // Nb common exprs in single constraint only
+     << "0" << " "  // Nb common exprs in single objectives only
      << "# Nb of common expressions in: both, constraints only, objectives only, single "
         "constraint, single objective.";
 

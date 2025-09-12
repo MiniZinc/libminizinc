@@ -71,20 +71,20 @@ public:
 
   // Variables collection, identified by name
   // Needs ordering, see phase 2
-  std::map<std::string, NLVar> variables = {};
+  std::map<std::string, NLVar> variables;
 
   // Algebraic constraints collection, identified by name
   // Needs ordering, see phase 2
-  std::map<std::string, NLAlgCons> constraints = {};
+  std::map<std::string, NLAlgCons> constraints;
 
   // Logical constraints do not need ordering:
-  std::vector<NLLogicalCons> logicalConstraints = {};
+  std::vector<NLLogicalCons> logicalConstraints;
 
   // Objective field. Only one, so we do not need ordering.
-  NLObjective objective = {};
+  NLObjective objective;
 
   // Output arrays
-  std::vector<NLArray> outputArrays = {};
+  std::vector<NLArray> outputArrays;
 
   /** Add a solve goal in the NL File. In our case, we can only have one and only one solve goal. */
   void addSolve(SolveI::SolveType st, const Expression* e);
@@ -473,49 +473,49 @@ public:
 
   /** Non Linear Continuous Variables in BOTH an objective and a constraint. */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<std::string> vname_nlcv_both = {};
+  std::vector<std::string> vname_nlcv_both;
 
   /** Non Linear Integer Variables in BOTH an objective and a constraint. */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<std::string> vname_nliv_both = {};
+  std::vector<std::string> vname_nliv_both;
 
   /** Non Linear Continuous Variables in CONStraints only. */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<std::string> vname_nlcv_cons = {};
+  std::vector<std::string> vname_nlcv_cons;
 
   /** Non Linear Integer Variables in CONStraints only. */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<std::string> vname_nliv_cons = {};
+  std::vector<std::string> vname_nliv_cons;
 
   /** Non Linear Continuous Variables in OBJectives only. */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<std::string> vname_nlcv_obj = {};
+  std::vector<std::string> vname_nlcv_obj;
 
   /** Non Linear Integer Variables in OBJectives only. */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<std::string> vname_nliv_obj = {};
+  std::vector<std::string> vname_nliv_obj;
 
   /** Linear arcs. (Network not implemented) */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<std::string> vname_larc_all = {};
+  std::vector<std::string> vname_larc_all;
 
   /** Linear Continuous Variables (ALL of them). */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<std::string> vname_lcv_all = {};
+  std::vector<std::string> vname_lcv_all;
 
   /** Binary Variables (ALL of them). */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<std::string> vname_bv_all = {};
+  std::vector<std::string> vname_bv_all;
 
   /** Linear Integer Variables (ALL of them). */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<std::string> vname_liv_all = {};
+  std::vector<std::string> vname_liv_all;
 
   /** Contained all ordered variable names. Mapping variable index -> variable name */
-  std::vector<std::string> vnames = {};
+  std::vector<std::string> vnames;
 
   /** Mapping variable name -> variable index */
-  std::map<std::string, int> variableIndexes = {};
+  std::map<std::string, int> variableIndexes;
 
   // --- --- --- Simple tests
 
@@ -579,27 +579,27 @@ public:
 
   /** Nonlinear general constraints. */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<std::string> cnames_nl_general = {};
+  std::vector<std::string> cnames_nl_general;
 
   /** Nonlinear network constraints. */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<std::string> cnames_nl_network = {};
+  std::vector<std::string> cnames_nl_network;
 
   /** Linear network constraints. */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<std::string> cnames_lin_network = {};
+  std::vector<std::string> cnames_lin_network;
 
   /** Linear general constraints. */
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<std::string> cnames_lin_general = {};
+  std::vector<std::string> cnames_lin_general;
 
   /** Contained all ordered algebraic (and network if they were implemented) constraints names.
    *  Mapping constraint index -> constraint name
    */
-  std::vector<std::string> cnames = {};
+  std::vector<std::string> cnames;
 
   /** Mapping constraint name -> contraint index */
-  std::map<std::string, int> constraintIndexes = {};
+  std::map<std::string, int> constraintIndexes;
 
   // Count of algebraic constraints:
   // The header needs to know how many range algebraic constraints and equality algebraic

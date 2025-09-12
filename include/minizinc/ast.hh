@@ -27,6 +27,54 @@
 
 namespace MiniZinc {
 
+namespace find_pointer_type {
+
+// Functions to implement static selection of suitable integer type
+// that can hold pointer values.
+
+template <bool IsSuitable, typename T, typename... Rest>
+struct find_pointer_type;
+
+template <typename T, typename... Rest>
+struct find_pointer_type<true, T, Rest...> {
+  using type = T;
+};
+
+template <typename T, typename Next, typename... Rest>
+struct find_pointer_type<false, T, Next, Rest...> {
+  using type = typename find_pointer_type<(sizeof(Next) >= sizeof(void*)), Next, Rest...>::type;
+};
+
+template <typename T>
+struct find_pointer_type<false, T> {};
+}  // namespace find_pointer_type
+
+#ifdef UINTPTR_MAX
+// Use uintptr_t if available
+typedef uintptr_t mzn_uintptr_t;
+#else
+// Otherwise, try size_t, unsigned long, unsigned long long (in that order)
+typedef mzn_uintptr_t =
+    typename find_pointer_type::find_pointer_type<(sizeof(size_t) >= sizeof(void*)), size_t,
+                                                  unsigned long, unsigned long long>::type;
+#endif
+
+#ifdef INTPTR_MAX
+// Use intptr_t if available
+typedef intptr_t mzn_intptr_t;
+#else
+// Otherwise, try ptrdiff_t, long, long long (in that order)
+typedef mzn_intptr_t =
+    typename find_pointer_type::find_pointer_type<(sizeof(ptrdiff_t) >= sizeof(void*)), ptrdiff_t,
+                                                  long, long long>::type;
+#endif
+
+static_assert(sizeof(mzn_uintptr_t) >= sizeof(void*),
+              "No suitable unsigned integer type found to hold pointer values");
+
+static_assert(sizeof(mzn_intptr_t) >= sizeof(void*),
+              "No suitable signed integer type found to hold pointer values");
+
 class IntLit;
 class FloatLit;
 class SetLit;
@@ -142,12 +190,12 @@ protected:
 
   union LI {
     LocVec* lv;
-    ptrdiff_t t;
+    mzn_uintptr_t t;
   } _locInfo;
 
   LocVec* lv() const {
     LI li = _locInfo;
-    li.t &= ~static_cast<ptrdiff_t>(1);
+    li.t &= ~static_cast<mzn_uintptr_t>(1);
     return li.lv;
   }
 
@@ -316,6 +364,8 @@ public:
   static ExpressionId eid(const Expression* e);
 
   static const Location& loc(const Expression* e);
+  static const Location& locDefault(const Expression* e0, const Expression* e1);
+  static const Location& locDefault(const Expression* e0, const Location& ldef);
   static void loc(Expression* e, const Location& l) {
     if (!Expression::isUnboxedVal(e)) {
       e->_loc = l;
@@ -342,9 +392,9 @@ protected:
 #ifdef __EMSCRIPTEN__
   __attribute__((noinline))
 #endif
-  static ptrdiff_t
+  static mzn_uintptr_t
   asPtrDiff(const Expression* e) {
-    return reinterpret_cast<ptrdiff_t>(e);
+    return reinterpret_cast<mzn_uintptr_t>(e);
   }
 
   /// Constructor
@@ -355,15 +405,15 @@ public:
   static IntVal unboxedIntToIntVal(const Expression* e) {
     assert(Expression::isUnboxedInt(e));
     if (sizeof(double) <= sizeof(void*)) {
-      unsigned long long int i = Expression::asPtrDiff(e) & ~static_cast<ptrdiff_t>(7);
-      bool pos = ((Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(4)) == 0);
+      unsigned long long int i = Expression::asPtrDiff(e) & ~static_cast<mzn_uintptr_t>(7);
+      bool pos = ((Expression::asPtrDiff(e) & static_cast<mzn_uintptr_t>(4)) == 0);
       if (pos) {
         return static_cast<long long int>(i >> 3);
       }
       return -(static_cast<long long int>(i >> 3));
     }
-    unsigned long long int i = Expression::asPtrDiff(e) & ~static_cast<ptrdiff_t>(3);
-    bool pos = ((Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(2)) == 0);
+    unsigned long long int i = Expression::asPtrDiff(e) & ~static_cast<mzn_uintptr_t>(3);
+    bool pos = ((Expression::asPtrDiff(e) & static_cast<mzn_uintptr_t>(2)) == 0);
     if (pos) {
       return static_cast<long long int>(i >> 2);
     }
@@ -378,9 +428,9 @@ public:
         return nullptr;
       }
       long long int j = i < 0 ? -i : i;
-      ptrdiff_t ubi_p = (static_cast<ptrdiff_t>(j) << 3) | static_cast<ptrdiff_t>(2);
+      mzn_uintptr_t ubi_p = (static_cast<mzn_uintptr_t>(j) << 3) | static_cast<mzn_uintptr_t>(2);
       if (i < 0) {
-        ubi_p = ubi_p | static_cast<ptrdiff_t>(4);
+        ubi_p = ubi_p | static_cast<mzn_uintptr_t>(4);
       }
       return reinterpret_cast<IntLit*>(ubi_p);
     }
@@ -390,9 +440,9 @@ public:
       return nullptr;
     }
     long long int j = i < 0 ? -i : i;
-    ptrdiff_t ubi_p = (static_cast<ptrdiff_t>(j) << 2) | static_cast<ptrdiff_t>(1);
+    mzn_uintptr_t ubi_p = (static_cast<mzn_uintptr_t>(j) << 2) | static_cast<mzn_uintptr_t>(1);
     if (i < 0) {
-      ubi_p = ubi_p | static_cast<ptrdiff_t>(2);
+      ubi_p = ubi_p | static_cast<mzn_uintptr_t>(2);
     }
     return reinterpret_cast<IntLit*>(ubi_p);
   }
@@ -436,8 +486,7 @@ public:
     _u.bits = _u.bits &
               ~(static_cast<uint64_t>(0x7FF) << 52);  // mask out top 11 bits (previously exponent)
     _u.bits = (_u.bits << 1) | 1U;                    // shift by one bit and add tag for double
-    _u.bits =
-        _u.bits | (static_cast<uint64_t>(sign) << 63) | (static_cast<uint64_t>(exponent) << 53);
+    _u.bits = _u.bits | (static_cast<uint64_t>(sign) << 63) | (exponent << 53);
     return _u.p;
   }
 
@@ -447,26 +496,28 @@ public:
       return false;
     }
     if (sizeof(double) <= sizeof(void*)) {
-      return (Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(7)) == 4;
+      return (Expression::asPtrDiff(e) & static_cast<mzn_uintptr_t>(7)) == 4;
     }
-    return (Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(3)) == 2;
+    return (Expression::asPtrDiff(e) & static_cast<mzn_uintptr_t>(3)) == 2;
   }
 
   static Expression* tag(Expression* e) {
     assert(!Expression::isUnboxedVal(e));
     if (sizeof(double) <= sizeof(void*)) {
-      return reinterpret_cast<Expression*>(Expression::asPtrDiff(e) | static_cast<ptrdiff_t>(4));
+      return reinterpret_cast<Expression*>(Expression::asPtrDiff(e) |
+                                           static_cast<mzn_uintptr_t>(4));
     }
-    return reinterpret_cast<Expression*>(Expression::asPtrDiff(e) | static_cast<ptrdiff_t>(2));
+    return reinterpret_cast<Expression*>(Expression::asPtrDiff(e) | static_cast<mzn_uintptr_t>(2));
   }
   static Expression* untag(Expression* e) {
     if (Expression::isUnboxedVal(e)) {
       return e;
     }
     if (sizeof(double) <= sizeof(void*)) {
-      return reinterpret_cast<Expression*>(Expression::asPtrDiff(e) & ~static_cast<ptrdiff_t>(4));
+      return reinterpret_cast<Expression*>(Expression::asPtrDiff(e) &
+                                           ~static_cast<mzn_uintptr_t>(4));
     }
-    return reinterpret_cast<Expression*>(Expression::asPtrDiff(e) & ~static_cast<ptrdiff_t>(2));
+    return reinterpret_cast<Expression*>(Expression::asPtrDiff(e) & ~static_cast<mzn_uintptr_t>(2));
   }
 
   /// Test if expression is of type \a T
@@ -514,21 +565,21 @@ public:
 inline bool Expression::isUnboxedVal(const Expression* e) {
   if (sizeof(double) <= sizeof(void*)) {
     // bit 1 or bit 0 is set
-    return (Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(3)) != 0;
+    return (Expression::asPtrDiff(e) & static_cast<mzn_uintptr_t>(3)) != 0;
   }  // bit 0 is set
-  return (Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(1)) != 0;
+  return (Expression::asPtrDiff(e) & static_cast<mzn_uintptr_t>(1)) != 0;
 }
 inline bool Expression::isUnboxedInt(const Expression* e) {
   if (sizeof(double) <= sizeof(void*)) {
     // bit 1 is set, bit 0 is not set
-    return (Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(3)) == 2;
+    return (Expression::asPtrDiff(e) & static_cast<mzn_uintptr_t>(3)) == 2;
   }  // bit 0 is set
-  return (Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(1)) == 1;
+  return (Expression::asPtrDiff(e) & static_cast<mzn_uintptr_t>(1)) == 1;
 }
 inline bool Expression::isUnboxedFloatVal(const Expression* e) {
   // bit 0 is set (and doubles fit inside pointers)
   return (sizeof(double) <= sizeof(void*)) &&
-         (Expression::asPtrDiff(e) & static_cast<ptrdiff_t>(1)) == 1;
+         (Expression::asPtrDiff(e) & static_cast<mzn_uintptr_t>(1)) == 1;
 }
 inline Expression::ExpressionId Expression::eid(const Expression* e) {
   return Expression::isUnboxedInt(e)        ? E_INTLIT
@@ -537,6 +588,12 @@ inline Expression::ExpressionId Expression::eid(const Expression* e) {
 }
 inline const Location& Expression::loc(const Expression* e) {
   return Expression::isUnboxedVal(e) ? Location::nonalloc : e->_loc;
+}
+inline const Location& Expression::locDefault(const Expression* e0, const Expression* e1) {
+  return Expression::isUnboxedVal(e0) ? loc(e1) : e0->_loc;
+}
+inline const Location& Expression::locDefault(const Expression* e0, const Location& ldef) {
+  return Expression::isUnboxedVal(e0) ? ldef : e0->_loc;
 }
 inline const Type& Expression::type(const Expression* e) {
   return Expression::isUnboxedInt(e)        ? Type::unboxedint
@@ -739,8 +796,8 @@ public:
   Id(const Location& loc, long long int idn, VarDecl* decl);
   /// Access identifier
   ASTString v() const;
-  inline bool hasStr() const {
-    return (reinterpret_cast<ptrdiff_t>(_vOrIdn.idn) & static_cast<ptrdiff_t>(1)) == 0;
+  bool hasStr() const {
+    return (reinterpret_cast<mzn_uintptr_t>(_vOrIdn.idn) & static_cast<mzn_uintptr_t>(1)) == 0;
   }
   /// Set identifier
   void v(const ASTString& val) { _vOrIdn.val = val; }
@@ -748,8 +805,8 @@ public:
   long long int idn() const;
   /// Set identifier number
   void idn(long long int n) {
-    _vOrIdn.idn =
-        reinterpret_cast<void*>((static_cast<ptrdiff_t>(n) << 1) | static_cast<ptrdiff_t>(1));
+    auto n1 = static_cast<mzn_uintptr_t>(n) << 1;
+    _vOrIdn.idn = reinterpret_cast<void*>(n1 | static_cast<mzn_uintptr_t>(1));
     rehash();
   }
   /// Return identifier or X_INTRODUCED plus identifier number
@@ -1330,12 +1387,6 @@ public:
   CallArgs args() const { return CallArgs(this); }
 };
 
-class Call0 : public Call {
-  friend class Call;
-
-protected:
-  Call0(const Location& loc, const ASTString& id) : Call(loc, id, {}) {}
-};
 class Call1 : public Call {
   friend class Call;
 
@@ -1378,6 +1429,8 @@ protected:
       : Call(loc, id, args) {}
 };
 
+class VarDeclI;
+
 /// \brief A variable declaration expression
 class VarDecl : public BoxedExpression {
 protected:
@@ -1418,6 +1471,10 @@ public:
   VarDecl* flat() { return _flat; }
   /// Set flattened version
   void flat(VarDecl* vd);
+  /// Access item
+  VarDeclI* item() { return reinterpret_cast<VarDeclI*>(this); }
+  /// Access item
+  const VarDeclI* item() const { return reinterpret_cast<const VarDeclI*>(this); }
 
   /// Recompute hash value
   void rehash();
@@ -1447,7 +1504,7 @@ public:
 
 class EnvI;
 class CopyMap;
-class TIIDInfo;
+struct TIIDInfo;
 
 /// \brief %Let expression
 class Let : public BoxedExpression {
@@ -1528,7 +1585,7 @@ public:
       return;
     }
     auto* al = Expression::cast<ArrayLit>(_domain);
-    for (int i = 0; i < al->size(); ++i) {
+    for (unsigned int i = 0; i < al->size(); ++i) {
       auto* field_ti = Expression::cast<TypeInst>((*al)[i]);
       field_ti->eraseDomain();
     }
@@ -1950,7 +2007,7 @@ public:
     assert(GC::locked());
     // Create a parameter TypeInst in the format of a tuple TypeInst
     std::vector<Expression*> tis(paramCount());
-    for (size_t i = 0; i < paramCount(); ++i) {
+    for (unsigned int i = 0; i < paramCount(); ++i) {
       tis[i] = param(i)->ti();
     }
     return new TypeInst(Location().introduce(), Type::tuple(),
@@ -2055,6 +2112,9 @@ public:
     ASTString bool2int;
     ASTString int2float;
     ASTString bool2float;
+    ASTString enum2int;
+    ASTString index2int;
+    ASTString to_enum_internal;  // NOLINT(readability-identifier-naming)
     ASTString set2iter;
     ASTString assert;
     ASTString assert_dbg;  // NOLINT(readability-identifier-naming)
@@ -2307,12 +2367,19 @@ public:
     Id* mzn_evaluate_once;                   // NOLINT(readability-identifier-naming)
     Id* promise_commutative;                 // NOLINT(readability-identifier-naming)
     ASTString seq_search;                    // NOLINT(readability-identifier-naming)
+    ASTString seq_search_internal;           // NOLINT(readability-identifier-naming)
     ASTString int_search;                    // NOLINT(readability-identifier-naming)
+    ASTString int_search_internal;           // NOLINT(readability-identifier-naming)
     ASTString bool_search;                   // NOLINT(readability-identifier-naming)
+    ASTString bool_search_internal;          // NOLINT(readability-identifier-naming)
     ASTString float_search;                  // NOLINT(readability-identifier-naming)
+    ASTString float_search_internal;         // NOLINT(readability-identifier-naming)
     ASTString set_search;                    // NOLINT(readability-identifier-naming)
+    ASTString set_search_internal;           // NOLINT(readability-identifier-naming)
     ASTString warm_start;                    // NOLINT(readability-identifier-naming)
+    ASTString warm_start_internal;           // NOLINT(readability-identifier-naming)
     ASTString warm_start_array;              // NOLINT(readability-identifier-naming)
+    ASTString warm_start_array_internal;     // NOLINT(readability-identifier-naming)
     Id* computed_domain;                     // NOLINT(readability-identifier-naming)
   } ann;
 

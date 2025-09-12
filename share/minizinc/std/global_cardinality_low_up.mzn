@@ -6,8 +6,9 @@ include "global_cardinality.mzn";
 
   This constraint is deprecated. Use global_cardinality(x, cover, lbound, ubound) instead.
 */
-predicate global_cardinality_low_up(array[$X] of var int: x,
-                                    array[$Y] of int: cover,
-                                    array[$Y] of int: lbound,
-                                    array[$Y] of int: ubound) =
-  global_cardinality(x, cover, lbound, ubound);
+predicate global_cardinality_low_up(
+  array [$X] of var int: x,
+  array [$Y] of int: cover,
+  array [$Y] of int: lbound,
+  array [$Y] of int: ubound,
+) = global_cardinality(x, cover, lbound, ubound);

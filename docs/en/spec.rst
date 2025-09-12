@@ -1447,53 +1447,57 @@ Note that the last entry in the table, :mzn:`^-1`, is a combination of the binar
   ===============================  ====== ======
   Symbol(s)                        Assoc. Prec. 
   ===============================  ====== ======
-  :mzn:`<->`                       left   1200  
+  :mzn:`<->`                       left   1600  
 
-  :mzn:`->`                        left   1100  
-  :mzn:`<-`                        left   1100  
+  :mzn:`->`                        left   1500  
+  :mzn:`<-`                        left   1500  
 
-  ``\/``                           left   1000  
-  :mzn:`xor`                       left   1000  
+  ``\/``                           left   1400  
+  :mzn:`xor`                       left   1400  
 
-  ``/\``                           left   900   
+  ``/\``                           left   1300   
 
-  :mzn:`<`                         none   800   
-  :mzn:`>`                         none   800   
-  :mzn:`<=`                        none   800   
-  :mzn:`>=`                        none   800   
-  :mzn:`==`,                   
-  :mzn:`=`                         none   800   
-  :mzn:`!=`                        none   800   
+  :mzn:`<`                         none   1200   
+  :mzn:`>`                         none   1200   
+  :mzn:`<=`                        none   1200   
+  :mzn:`>=`                        none   1200   
+  
+  :mzn:`==`                        none   1100
+  :mzn:`=`                         none   1100   
+  :mzn:`!=`                        none   1100   
                              
-  :mzn:`in`                        none   700   
-  :mzn:`subset`                    none   700   
-  :mzn:`superset`                  none   700   
-                             
-  :mzn:`union`                     left   600   
-  :mzn:`diff`                      left   600   
-  :mzn:`symdiff`                   left   600   
-                             
-  :mzn:`..`                        none   500   
-  :mzn:`<..`                       none   500   
-  :mzn:`..<`                       none   500   
-  :mzn:`<..<`                      none   500   
-                             
-  :mzn:`+`                         left   400   
-  :mzn:`-`                         left   400   
-                             
-  :mzn:`*`                         left   300   
-  :mzn:`div`                       left   300   
-  :mzn:`mod`                       left   300   
-  :mzn:`/`                         left   300   
-  :mzn:`intersect`                 left   300   
+  :mzn:`in`                        none   1000   
+  :mzn:`subset`                    none   1000   
+  :mzn:`superset`                  none   1000   
 
-  :mzn:`^`                         left   200
+  :mzn:`union`                     left    900   
+  :mzn:`diff`                      left    900   
+  :mzn:`symdiff`                   left    900   
+
+  :mzn:`intersect`                 left    800
+                           
+  :mzn:`..`                        none    700   
+  :mzn:`<..`                       none    700   
+  :mzn:`..<`                       none    700   
+  :mzn:`<..<`                      none    700   
                              
-  :mzn:`++`                        right  100   
+  :mzn:`+`                         left    600   
+  :mzn:`-`                         left    600   
+                             
+  :mzn:`*`                         left    500   
+  :mzn:`div`                       left    500   
+  :mzn:`mod`                       left    500   
+  :mzn:`/`                         left    500   
+  
+  :mzn:`^`                         left    400
+                             
+  :mzn:`++`                        right   300   
 
-  :mzn:`default`                   left    70
+  :mzn:`default`                   left    200
 
-  `````  :mzndef:`<ident>` `````   left    50   
+  `````  :mzndef:`<ident>` `````   left    100
+
+  :mzn:`::`                        left      0 
   ===============================  ====== ======
 
 
@@ -1508,6 +1512,11 @@ This is a static error if the identifier is not the name of a binary
 function or predicate.
 
 The unary operators are: :mzn:`+`, :mzn:`-` and :mzn:`not`.
+Unary :mzn:`+` and :mzn:`-` have the same precedence as the binary
+multiplication operator :mzn:`*`. The logic :mzn:`not` operator
+has precedence 350, i.e., it binds more tightly than all other
+Boolean and numeric operators.
+
 User-defined unary operators are not possible.
 
 As :ref:`spec-Identifiers` explains, any built-in operator can be used as
@@ -1646,7 +1655,8 @@ concatenation.  For example:
 
 A string expression can contain an arbitrary MiniZinc expression, which will
 be converted to a string similar to the builtin :mzn:`show` function and
-inserted into the string.
+inserted into the string. This is called *string interpolation*. You need
+to use the :mzn:`\(e)` syntax to interpolate an expression `e` into a string.
 
 For example:
 
@@ -2135,6 +2145,14 @@ and then only one of the :mzn:`then` and :mzn:`else` branches are evaluated,
 depending on whether the condition succeeded or failed. 
 This is not the case if it is :mzn:`var bool`.
 
+The :mzn:`else` branch is optional if the type of the :mzn:`then` branches is
+:mzn:`bool`, :mzn:`string`, :mzn:`ann` or an :mzn:`array` type. In that case,
+the :mzn:`else` branch is taken to be the default value of the type:
+
+- :mzn:`false` for :mzn:`bool`
+- :mzn:`""` for :mzn:`string`
+- :mzn:`empty_annotation` for :mzn:`ann`
+- :mzn:`[]` for :mzn:`array`
 
 .. _spec-let-expressions:
 
@@ -2460,6 +2478,8 @@ The same enum constructor syntax also works with integer sets, for example
 
 declares an enum for nodes in a bipartite graph with :mzn:`n` left nodes and :mzn:`n` right nodes.
 
+The enum constructor can also be used without arguments to return the set of values of the particular constructor. For example, given a :mzn:`Node: n`, we can use the syntax `n in Left()` to test if :mzn:`n` is in the :mzn:`Left` set.
+
 Enum constructors can be used to map non-contiguous sets to (contiguous) enumerated types. Consider the following example:
 
 .. code-block:: minizinc
@@ -2531,6 +2551,10 @@ For each enumerated type :mzn:`T`, the following functions exist:
   function set of T: enum_of(var T: x);
   function set of T: enum_of(set of T: x);
   function set of T: enum_of(var set of T: x);
+
+  % Convert enum type x to an integer
+  function int: enum2int(T: x);
+  function var int: enum2int(var T: x);
 
   % Convert x to enum type X
   function T: to_enum(set of T: X, int: x);
