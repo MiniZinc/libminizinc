@@ -44,6 +44,10 @@
 #if YYDEBUG
 extern int mzn_yydebug;
 #endif
+/* "%code requires" blocks.  */
+
+#include <minizinc/ast.hh>
+
 
 /* Token kinds.  */
 #ifndef YYTOKENTYPE

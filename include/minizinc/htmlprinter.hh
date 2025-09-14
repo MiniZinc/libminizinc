@@ -11,11 +11,11 @@
 
 #pragma once
 
+#include <minizinc/flatten_internal.hh>
+
 #include <iostream>
 #include <utility>
 #include <vector>
-
-#include <minizinc/flatten_internal.hh>
 
 namespace MiniZinc {
 

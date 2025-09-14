@@ -16,6 +16,8 @@ Changes:
    It is never output into FlatZinc by the compiler and violated the rule that
    FlatZinc builtins are not overloaded (:bugref:`913`). Also remove
    some other duplicates and incorrect overloads from ``flatzinc_builtins.mzn``.
+-  Add includes for header files where symbols are required, in order to
+   avoid issues with some compilers.
 
 Bug fixes:
 ^^^^^^^^^^
