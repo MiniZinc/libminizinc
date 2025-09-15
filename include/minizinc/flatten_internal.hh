@@ -597,7 +597,7 @@ public:
     const bool i_is_valid_id = i_idn != -1;
     const bool j_is_valid_id = j_idn != -1;
     if (i_is_valid_id != j_is_valid_id) {
-      return i_is_valid_id > j_is_valid_id;
+      return i_is_valid_id;
     }
     if (i_is_valid_id && j_is_valid_id) {
       return i_idn < j_idn;
