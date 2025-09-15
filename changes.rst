@@ -18,6 +18,8 @@ Changes:
    some other duplicates and incorrect overloads from ``flatzinc_builtins.mzn``.
 -  Add includes for header files where symbols are required, in order to
    avoid issues with some compilers.
+-  Fix AST string allocation to avoid warnings about writing into unallocated
+   memory.
 
 Bug fixes:
 ^^^^^^^^^^
