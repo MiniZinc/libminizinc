@@ -1402,10 +1402,29 @@ namespace MiniZinc {
     return true;
   }
 
-  bool strtofloatval(const char* s, double& v) {
-    std::istringstream iss(s);
-    iss >> v;
-    return !iss.fail();
+  bool strtofloatval(void* parm, const char* s, double& val) {
+    MiniZinc::ParserState* pp =
+      static_cast<MiniZinc::ParserState*>(parm);
+#if defined(_WIN32)
+    _locale_t c_loc = pp->cLocale;
+    if (!c_loc) return false;
+    errno = 0;
+    char* end = nullptr;
+    val = _strtod_l(s, &end, c_loc);
+#else
+    locale_t c_loc = pp->cLocale;
+    if (!c_loc) return false;
+    errno = 0;
+    char* end = nullptr;
+    val = strtod_l(s, &end, c_loc);
+#endif
+    if (end == s) return false;
+    if (*end != '\0') return false;
+    if (!std::isfinite(val)) return false;
+    if (errno != 0 && errno != ERANGE) {
+      return false;
+    }
+    return true;
   }
 
   void clearBuffer(void* parm) {
@@ -2041,7 +2060,7 @@ YY_RULE_SETUP
 case 26:
 YY_RULE_SETUP
 {
-                  if (::MiniZinc::strtofloatval(yytext, yylval->dValue))
+                  if (::MiniZinc::strtofloatval(yyget_extra(yyscanner), yytext, yylval->dValue))
                   return MZN_FLOAT_LITERAL;
                   else
                   return MZN_INVALID_FLOAT_LITERAL;
@@ -2083,7 +2102,7 @@ YY_RULE_SETUP
 case 31:
 YY_RULE_SETUP
 {
-                  if (::MiniZinc::strtofloatval(yytext, yylval->dValue))
+                  if (::MiniZinc::strtofloatval(yyget_extra(yyscanner), yytext, yylval->dValue))
                   return MZN_FLOAT_LITERAL;
                   else
                   return MZN_INVALID_FLOAT_LITERAL;
@@ -2092,7 +2111,7 @@ YY_RULE_SETUP
 case 32:
 YY_RULE_SETUP
 {
-                    if (::MiniZinc::strtofloatval(yytext, yylval->dValue))
+                    if (::MiniZinc::strtofloatval(yyget_extra(yyscanner), yytext, yylval->dValue))
                       return MZN_FLOAT_LITERAL;
                     else
                       return MZN_INVALID_FLOAT_LITERAL;
@@ -2101,7 +2120,7 @@ YY_RULE_SETUP
 case 33:
 YY_RULE_SETUP
 {
-                    if (::MiniZinc::strtofloatval(yytext, yylval->dValue))
+                    if (::MiniZinc::strtofloatval(yyget_extra(yyscanner), yytext, yylval->dValue))
                       return MZN_FLOAT_LITERAL;
                     else
                       return MZN_INVALID_FLOAT_LITERAL;

@@ -20,6 +20,7 @@ Changes:
    avoid issues with some compilers.
 -  Fix AST string allocation to avoid warnings about writing into unallocated
    memory.
+-  Fix float literal parsing, making it consistent across all platforms (:bugref:`941`).
 
 Bug fixes:
 ^^^^^^^^^^

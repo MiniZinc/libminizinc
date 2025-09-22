@@ -53,6 +53,12 @@ class ParserLocation;
 #include <utility>
 #include <vector>
 
+#if defined(_WIN32)
+#include <locale.h>  // _create_locale, _free_locale
+#else
+#include <locale.h>  // newlocale, freelocale
+#endif
+
 namespace MiniZinc {
 
 struct ParseWorkItem {
@@ -95,7 +101,23 @@ public:
         isSTDLib(isSTDLib0),
         parseDocComments(parseDocComments0),
         hadError(false),
-        err(err0) {}
+        err(err0) {
+#if defined(_WIN32)
+    cLocale = _create_locale(LC_ALL, "C");
+#else
+    cLocale = newlocale(LC_ALL_MASK, "C", nullptr);
+#endif
+  }
+
+  ~ParserState() {
+    if (cLocale != nullptr) {
+#if defined(_WIN32)
+      _free_locale(cLocale);
+#else
+      freelocale(cLocale);
+#endif
+    }
+  }
 
   const char* filename;
 
@@ -121,6 +143,12 @@ public:
   std::ostream& err;
 
   std::string stringBuffer;
+
+#if defined(_WIN32)
+  _locale_t cLocale;
+#else
+  locale_t cLocale;
+#endif
 
   std::string getCurrentLine(int firstCol, int lastCol) const {
     std::stringstream ss;
