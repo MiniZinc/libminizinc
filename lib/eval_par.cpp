@@ -905,6 +905,11 @@ std::string ArrayAccessSucess::errorMessage(EnvI& env, Expression* e) const {
 }
 
 Expression* ArrayAccessSucess::dummyLiteral(EnvI& env, Type t) const {
+  if (t.dim() != 0) {
+    auto* al = new ArrayLit(Location(), std::vector<Expression*>());
+    al->type(t);
+    return al;
+  }
   if (t.isint()) {
     return IntLit::a(0);
   }
@@ -924,6 +929,13 @@ Expression* ArrayAccessSucess::dummyLiteral(EnvI& env, Type t) const {
   }
   if (t.structBT()) {
     auto* tt = env.getStructType(t);
+    if (tt->size() == 2 && (*tt)[1].isunknown()) {
+      // Nested array
+      std::vector<Expression*> fields({dummyLiteral(env, (*tt)[0])});
+      auto* al = ArrayLit::constructTuple(Location(), fields);
+      al->type(t);
+      return al;
+    }
     std::vector<Expression*> fields;
     fields.reserve(tt->size());
     for (unsigned int i = 0; i < tt->size(); i++) {

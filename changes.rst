@@ -49,6 +49,8 @@ Bug fixes:
    with empty set literals as arguments (:bugref:`875`).
 -  Fix handling of duplicate polymorphic function definitions with empty bodies
    (:bugref:`875`).
+-  Fix internal error when accessing out of bounds indices for arrays containing
+   arrays (:bugref:`954`).
 
 .. _v2.9.3:
 
