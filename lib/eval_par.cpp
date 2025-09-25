@@ -617,13 +617,6 @@ public:
   }
   static Expression* exp(Expression* e) { return e; }
 };
-class EvalCopy : public EvalBase {
-public:
-  typedef Expression* Val;
-  typedef Expression* ArrayVal;
-  static Expression* e(EnvI& env, Expression* e) { return copy(env, e, true); }
-  static Expression* exp(Expression* e) { return e; }
-};
 class EvalPar : public EvalBase {
 public:
   typedef Expression* Val;
@@ -731,7 +724,7 @@ ArrayLit* eval_array_comp(EnvI& env, Comprehension* e) {
     auto a = eval_comp<EvalStringLit>(env, e);
     ret = new ArrayLit(Expression::loc(e), a.a, a.dims);
   } else {
-    auto a = eval_comp<EvalCopy>(env, e);
+    auto a = eval_comp<EvalPar>(env, e);
     ret = new ArrayLit(Expression::loc(e), a.a, a.dims);
   }
   ret->type(e->type());

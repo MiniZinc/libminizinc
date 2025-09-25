@@ -51,6 +51,8 @@ Bug fixes:
    (:bugref:`875`).
 -  Fix internal error when accessing out of bounds indices for arrays containing
    arrays (:bugref:`954`).
+-  Fix performance of evaluating array comprehensions, which previously could lead
+   to quadratic behaviour in some cases.
 
 .. _v2.9.3:
 
