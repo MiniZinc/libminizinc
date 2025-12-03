@@ -89,7 +89,8 @@ vector<string> MIPGurobiWrapper::getStdFlags() { return {"-i", "-p", "-s", "-v"}
 
 vector<string> gurobi_dlls() {
   const vector<string> versions = {
-      "1203", "1202", "1201",  // Potential future versions which should load correctly
+      "1303", "1302", "1301", // Potential future versions which should load correctly
+      "1300", "1203", "1202", "1201",
       "1200", "1103", "1102", "1101", "1100", "1003", "1002", "1001", "1000", "952", "951",
       "950",  "912",  "911",  "910",  "903",  "902",  "901",  "900",  "811",  "810", "801",
       "800",  "752",  "751",  "750",  "702",  "701",  "700",  "652",  "651",  "650"};
