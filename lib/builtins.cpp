@@ -3775,14 +3775,17 @@ Expression* b_regular_from_string(EnvI& env, Call* call) {
   if (offset == 0) {
     args[0] = vars;  // x
   } else {
-    std::vector<Expression*> nvars(vars->size());
     IntLit* loffset = IntLit::a(IntVal(offset));
-    for (int i = 0; i < nvars.size(); ++i) {
-      nvars[i] = new BinOp(Expression::loc(call).introduce(), (*vars)[i], BOT_PLUS, loffset);
-      Expression::type(nvars[i], Type::varint());
-    }
-    args[0] = new ArrayLit(Expression::loc(call).introduce(), nvars);  // x
-    Expression::type(args[0], Type::varint(1));
+    auto* s_ti = new TypeInst(Location().introduce(), Type::varint());
+    auto* s = new VarDecl(Location().introduce(), s_ti, env.genId());
+    s->toplevel(false);
+    Generator gen({s}, vars, nullptr);
+    Generators gens;
+    gens.g = {gen};
+    auto* binop = new BinOp(Location().introduce(), s->id(), BOT_PLUS, loffset);
+    binop->type(Type::varint());
+    args[0] = new Comprehension(Location().introduce(), binop, gens, false);
+    Expression::type(args[0], Type::varint(1));  // x
   }
   args[1] = IntLit::a(IntVal(dfa.n_states()));  // Q
   Expression::type(args[1], Type::parint());
