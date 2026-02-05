@@ -1873,13 +1873,19 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
       }
     }
   }
-  if ((tii->domain() != nullptr) && Expression::isa<TIId>(tii->domain())) {
+  auto* tiid = Expression::dynamicCast<TIId>(tii->domain());
+  if (tiid != nullptr) {
     // We need to determine both the base type and whether this tiid
     // can stand for a set. It can only stand for a set if none
     // of the uses of tiid is opt. The base type has to be int
     // if any of the uses are var set.
 
     Type ty = env.getTransparentType(ta[n]);
+    if (tiid->isEnum() && ty.bt() == Type::BT_BOOL) {
+      // An enum type id stands for an integer type, not a bool type,
+      // even though bool is a subtype
+      ty.bt(Type::BT_INT);
+    }
     if (!ty.structBT()) {
       ty.st(curTiiT.st());
     }
@@ -1890,7 +1896,7 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
         ty = Type::arrType(env, dimTy, ty);
       }
     }
-    ASTString tv = Expression::cast<TIId>(tii->domain())->v();
+    ASTString tv = tiid->v();
     for (unsigned int i = 0; i < paramCount(); i++) {
       if ((param(i)->ti()->domain() != nullptr) &&
           Expression::isa<TIId>(param(i)->ti()->domain()) &&
