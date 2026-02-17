@@ -25,15 +25,35 @@
 
 struct UserSolutionCallbackData {
   MIPWrapper::CBUserInfo* info;
-  XPRBprob* problem;
-  vector<XPRBvar>* variables;
+  XPRSprob problem;
   XpressPlugin* plugin;
+  size_t nCols;
+  std::vector<double>* x;  // Pointer to wrapper's _x vector
 };
+
+// Message callback for solver output
+static void XPRS_CC xpress_message_callback(XPRSprob prob, void* context, const char* msg, int len,
+                                            int msgtype) {
+  // msgtype: 1=INFO, 3=WARNING, 4=ERROR (see XPRSaddcbmessage documentation)
+  // Check msgtype > 0 (not len > 0) because Xpress sends len == 0 messages for line breaks
+  if (msg != nullptr && msgtype > 0) {
+    std::ostream& out = (msgtype == 1) ? std::cout : std::cerr;
+    out.write(msg, len);
+    out << std::endl;  // Always write newline after each message
+  }
+}
 
 class XpressException : public runtime_error {
 public:
   XpressException(const string& msg) : runtime_error(" MIPxpressWrapper: " + msg) {}
 };
+
+// Helper to check Xpress return codes and throw on error
+static void checkXpressReturn(int rc, const char* operation) {
+  if (rc != 0) {
+    throw XpressException(std::string(operation) + " (error code: " + std::to_string(rc) + ")");
+  }
+}
 
 XpressPlugin::XpressPlugin() : _inner(XpressPlugin::dlls()) { loadDll(); }
 
@@ -44,43 +64,51 @@ void XpressPlugin::loadDll() {
   load_symbol_dynamic(_inner, XPRSfree);
   load_symbol_dynamic(_inner, XPRSgetversion);
   load_symbol_dynamic(_inner, XPRSgetlicerrmsg);
-  load_symbol_dynamic(_inner, XPRBgetXPRSprob);
-  load_symbol_dynamic(_inner, XPRBsetmsglevel);
+  load_symbol_dynamic(_inner, XPRScreateprob);
+  load_symbol_dynamic(_inner, XPRSdestroyprob);
+  load_symbol_dynamic(_inner, XPRSloadlp);
+  load_symbol_dynamic(_inner, XPRSloadmip);
+  load_symbol_dynamic(_inner, XPRSaddrows);
+  load_symbol_dynamic(_inner, XPRSaddcols);
+  load_symbol_dynamic(_inner, XPRSoptimize);
+  load_symbol_dynamic(_inner, XPRSgetsolution);
+  load_symbol_dynamic(_inner, XPRSchgobjsense);
+  load_symbol_dynamic(_inner, XPRSchgbounds);
+  load_symbol_dynamic(_inner, XPRSchgcoltype);
+  load_symbol_dynamic(_inner, XPRSwriteprob);
   load_symbol_dynamic(_inner, XPRSsetlogfile);
   load_symbol_dynamic(_inner, XPRSsetintcontrol);
   load_symbol_dynamic(_inner, XPRSsetdblcontrol);
-  load_symbol_dynamic(_inner, XPRBgetsol);
   load_symbol_dynamic(_inner, XPRSgetintattrib);
   load_symbol_dynamic(_inner, XPRSgetdblattrib);
-  load_symbol_dynamic(_inner, XPRBbegincb);
-  load_symbol_dynamic(_inner, XPRBsync);
-  load_symbol_dynamic(_inner, XPRBendcb);
-  load_symbol_dynamic(_inner, XPRBsetterm);
-  load_symbol_dynamic(_inner, XPRBnewvar);
-  load_symbol_dynamic(_inner, XPRBnewctr);
-  load_symbol_dynamic(_inner, XPRBsetctrtype);
-  load_symbol_dynamic(_inner, XPRBexportprob);
-  load_symbol_dynamic(_inner, XPRBgetbounds);
-  load_symbol_dynamic(_inner, XPRBsetobj);
-  load_symbol_dynamic(_inner, XPRBmipoptimize);
-  load_symbol_dynamic(_inner, XPRBsetsense);
-  load_symbol_dynamic(_inner, XPRSsetcbintsol);
-  load_symbol_dynamic(_inner, XPRBsetub);
-  load_symbol_dynamic(_inner, XPRBsetlb);
-  load_symbol_dynamic(_inner, XPRBsetindicator);
-  load_symbol_dynamic(_inner, XPRBnewsol);
-  load_symbol_dynamic(_inner, XPRBsetsolvar);
-  load_symbol_dynamic(_inner, XPRBaddmipsol);
-  load_symbol_dynamic(_inner, XPRBnewprob);
-  load_symbol_dynamic(_inner, XPRBdelprob);
+  load_symbol_dynamic(_inner, XPRSgetlasterror);
+  load_symbol_dynamic(_inner, XPRSaddcbintsol);
+  load_symbol_dynamic(_inner, XPRSaddcbmessage);
   load_symbol_dynamic(_inner, XPRSgetcontrolinfo);
   load_symbol_dynamic(_inner, XPRSgetintcontrol);
   load_symbol_dynamic(_inner, XPRSgetintcontrol64);
   load_symbol_dynamic(_inner, XPRSgetdblcontrol);
-  load_symbol_dynamic(_inner, XPRSgetstrcontrol);
   load_symbol_dynamic(_inner, XPRSsetintcontrol64);
   load_symbol_dynamic(_inner, XPRSgetstringcontrol);
   load_symbol_dynamic(_inner, XPRSsetstrcontrol);
+
+  // Optional functions (may not be available in all Xpress versions)
+  try {
+    load_symbol_dynamic(_inner, XPRSaddmipsol);
+  } catch (const MiniZinc::PluginError&) {
+    XPRSaddmipsol = nullptr;  // Function not available, set to nullptr
+  }
+  try {
+    load_symbol_dynamic(_inner, XPRSaddindicators);
+  } catch (const MiniZinc::PluginError&) {
+    XPRSaddindicators = nullptr;  // Function not available, set to nullptr
+  }
+  try {
+    load_symbol_dynamic(_inner, XPRSaddqmatrix);
+  } catch (const MiniZinc::PluginError&) {
+    XPRSaddqmatrix = nullptr;  // Function not available, set to nullptr
+  }
+  load_symbol_dynamic(_inner, XPRSsaveas);
 }
 
 const std::vector<std::string>& XpressPlugin::dlls() {
@@ -98,12 +126,25 @@ const std::vector<std::string>& XpressPlugin::dlls() {
 
 void MIPxpressWrapper::openXpress() {
   checkDLL();
-  _problem = _plugin->XPRBnewprob(nullptr);
-  _xpressObj = _plugin->XPRBnewctr(_problem, nullptr, XB_N);
+
+  // Call XPRSinit for each problem - Xpress reference-counts internally
+  // and only releases the license on the last XPRSfree call
+  int rc = _plugin->XPRSinit(nullptr);
+  checkXpressReturn(rc, "Failed to initialize Xpress");
+
+  rc = _plugin->XPRScreateprob(&_problem);
+  if (rc != 0) {
+    _plugin->XPRSfree();  // Undo the init on failure
+    checkXpressReturn(rc, "Failed to create Xpress problem");
+  }
 }
 
 void MIPxpressWrapper::closeXpress() {
-  _plugin->XPRBdelprob(_problem);
+  if (_problem != nullptr) {
+    _plugin->XPRSdestroyprob(_problem);
+    _problem = nullptr;
+  }
+  // Pair XPRSfree with XPRSinit - Xpress reference-counts internally
   _plugin->XPRSfree();
   delete _plugin;
 }
@@ -206,7 +247,11 @@ string MIPxpressWrapper::getId() { return "xpress"; }
 
 string MIPxpressWrapper::getName() { return "Xpress"; }
 
-vector<string> MIPxpressWrapper::getTags() { return {"mip", "float", "api"}; }
+vector<string> MIPxpressWrapper::getTags() {
+  // Quadratic constraints now supported via XPRSaddqmatrix
+  // Current C API migration supports: LP, MIP, indicator constraints, warm start, quadratic
+  return {"mip", "float", "api", "float_times"};
+}
 
 vector<string> MIPxpressWrapper::getStdFlags() { return {"-i", "-s", "-p", "-r"}; }
 
@@ -216,281 +261,90 @@ vector<MiniZinc::SolverConfig::ExtraFlag> MIPxpressWrapper::getExtraFlags(
     Options opts;
     MIPxpressWrapper p(factoryOpt, &opts);
 
-    auto* prb = p._plugin->XPRBgetXPRSprob(p._problem);
+    XPRSprob prb = p._problem;
     // Using string parameter names because there doesn't seem to be a way to recover
     // the name from a parameter ID number
     static std::vector<std::string> all_params = {
-        "algaftercrossover",
-        "algafternetwork",
-        "autoperturb",
-        "backtrack",
-        "backtracktie",
-        "baralg",
-        "barcrash",
-        "bardualstop",
-        "barfreescale",
-        "bargapstop",
-        "bargaptarget",
-        "barindeflimit",
-        "bariterlimit",
-        "barkernel",
-        "barobjscale",
-        "barorder",
-        "barorderthreads",
-        "baroutput",
-        "barpresolveops",
-        "barprimalstop",
-        "barregularize",
-        "barrhsscale",
-        "barsolution",
-        "barstart",
-        "barstartweight",
-        "barstepstop",
-        "barthreads",
-        "barcores",
-        "bigm",
-        "bigmmethod",
-        "branchchoice",
-        "branchdisj",
-        "branchstructural",
-        "breadthfirst",
-        "cachesize",
-        "callbackfrommasterthread",
-        "choleskyalg",
-        "choleskytol",
-        "conflictcuts",
-        "concurrentthreads",
-        "corespercpu",
-        "covercuts",
-        "cpuplatform",
-        "cputime",
-        "crash",
-        "crossover",
-        "crossoveraccuracytol",
-        "crossoveriterlimit",
-        "crossoverops",
-        "crossoverthreads",
-        "cstyle",
-        "cutdepth",
-        "cutfactor",
-        "cutfreq",
-        "cutstrategy",
-        "cutselect",
-        "defaultalg",
-        "densecollimit",
-        "deterministic",
-        "dualgradient",
-        "dualize",
-        "dualizeops",
-        "dualperturb",
-        "dualstrategy",
-        "dualthreads",
-        "eigenvaluetol",
-        "elimfillin",
-        "elimtol",
-        "etatol",
-        "extracols",
-        "extraelems",
-        "extramipents",
-        "extrapresolve",
-        "extraqcelements",
-        "extraqcrows",
-        "extrarows",
-        "extrasetelems",
-        "extrasets",
-        "feasibilitypump",
-        "feastol",
-        "feastoltarget",
-        "forceoutput",
-        "forceparalleldual",
-        "globalfilebias",
-        "globalfileloginterval",
-        "gomcuts",
-        "heurbeforelp",
-        "heurdepth",
-        "heurdiveiterlimit",
-        "heurdiverandomize",
-        "heurdivesoftrounding",
-        "heurdivespeedup",
-        "heurdivestrategy",
-        "heurforcespecialobj",
-        "heurfreq",
-        "heurmaxsol",
-        "heurnodes",
-        "heursearcheffort",
-        "heursearchfreq",
-        "heursearchrootcutfreq",
-        "heursearchrootselect",
-        "heursearchtreeselect",
-        "heurstrategy",
-        "heurthreads",
-        "historycosts",
-        "ifcheckconvexity",
-        "indlinbigm",
-        "indprelinbigm",
-        "invertfreq",
-        "invertmin",
-        "keepbasis",
-        "keepnrows",
-        "l1cache",
-        "linelength",
-        "lnpbest",
-        "lnpiterlimit",
-        "lpflags",
-        "lpiterlimit",
-        "lprefineiterlimit",
-        "localchoice",
-        "lpfolding",
-        "lplog",
-        "lplogdelay",
-        "lplogstyle",
-        "lpthreads",
-        "markowitztol",
-        "matrixtol",
-        "maxchecksonmaxcuttime",
-        "maxchecksonmaxtime",
-        "maxmcoeffbufferelems",
-        "maxcuttime",
-        "maxglobalfilesize",
-        "maxiis",
-        "maximpliedbound",
-        "maxlocalbacktrack",
-        "maxmemoryhard",
-        "maxmemorysoft",
-        "maxmiptasks",
-        "maxmipsol",
-        "maxnode",
-        "maxpagelines",
-        "maxscalefactor",
-        "maxtime",
-        "mipabscutoff",
-        "mipabsgapnotify",
-        "mipabsgapnotifybound",
-        "mipabsgapnotifyobj",
-        "mipabsstop",
-        "mipaddcutoff",
-        "mipdualreductions",
-        "mipfracreduce",
-        "mipkappafreq",
-        "miplog",
-        "mippresolve",
-        "miprampup",
-        "miqcpalg",
-        "miprefineiterlimit",
-        "miprelcutoff",
-        "miprelgapnotify",
-        "miprelstop",
-        "mipterminationmethod",
-        "mipthreads",
-        "miptol",
-        "miptoltarget",
-        "mps18compatible",
-        "mpsboundname",
-        "mpsecho",
-        "mpsformat",
-        "mpsobjname",
-        "mpsrangename",
-        "mpsrhsname",
-        "mutexcallbacks",
-        "netcuts",
-        "nodeselection",
-        "objscalefactor",
-        "optimalitytol",
-        "optimalitytoltarget",
-        "outputlog",
-        "outputmask",
-        "outputtol",
-        "penalty",
-        "perturb",
-        "pivottol",
-        "ppfactor",
-        "preanalyticcenter",
-        "prebasisred",
-        "prebndredcone",
-        "prebndredquad",
-        "precoefelim",
-        "precomponents",
-        "precomponentseffort",
-        "preconedecomp",
-        "preconvertseparable",
-        "predomcol",
-        "predomrow",
-        "preduprow",
-        "preelimquad",
-        "preimplications",
-        "prelindep",
-        "preobjcutdetect",
-        "prepermute",
-        "prepermuteseed",
-        "preprobing",
-        "preprotectdual",
-        "presolve",
-        "presolvemaxgrow",
-        "presolveops",
-        "presolvepasses",
-        "presort",
-        "pricingalg",
-        "primalops",
-        "primalperturb",
-        "primalunshift",
-        "pseudocost",
-        "qccuts",
-        "qcrootalg",
-        "qsimplexops",
-        "quadraticunshift",
-        //"randomseed",
-        "refactor",
-        "refineops",
-        "relaxtreememorylimit",
-        "relpivottol",
-        "repairindefiniteq",
-        "repairinfeasmaxtime",
-        "resourcestrategy",
-        "rootpresolve",
-        "sbbest",
-        "sbeffort",
-        "sbestimate",
-        "sbiterlimit",
-        "sbselect",
-        "scaling",
-        "sifting",
-        "sleeponthreadwait",
-        "sosreftol",
-        "symmetry",
-        "symselect",
-        //"threads",
-        "trace",
-        "treecompression",
-        "treecovercuts",
-        "treecutselect",
-        "treediagnostics",
-        "treegomcuts",
-        "treememorylimit",
-        "treememorysavingtarget",
-        "treepresolve",
-        "treepresolve_keepbasis",
-        "treeqccuts",
-        "tunerhistory",
-        "tunermaxtime",
-        "tunermethod",
-        "tunermethodfile",
-        "tunermode",
-        "tuneroutput",
-        "tuneroutputpath",
-        "tunerpermute",
-        "tunerrootalg",
-        "tunersessionname",
-        "tunertarget",
-        "tunerthreads",
-        "usersolheuristic",
-        "varselection",
-        //"version"
+        "algaftercrossover", "algafternetwork", "alternativeredcosts", "autocutting", "autoperturb",
+        "autoscaling", "backtrack", "backtracktie", "backgroundmaxthreads", "backgroundselect",
+        "baralg", "barcores", "barcrash", "bardualstop", "barfailiterlimit",
+        "barfreescale", "bargapstop", "bargaptarget", "barhgextrapolate", "barhggpu",
+        "barhggpublocksize", "barhgmaxrestarts", "barhgops", "barhgprecision", "barhgreltol",
+        "barindeflimit", "bariterative", "bariterlimit", "barkernel", "barlargebound",
+        "barobjperturb", "barobjscale", "barorder", "barorderthreads", "baroutput",
+        "barperturb", "barpresolveops", "barprimalstop", "barrefiter", "barregularize",
+        "barrhsscale", "barsolution", "barstart", "barstartweight", "barstepstop",
+        "barthreads", "bigm", "bigmmethod", "branchchoice", "branchdisj",
+        "branchstructural", "breadthfirst", "cachesize", "callbackchecktimedelay", "callbackchecktimeworkdelay",
+        "callbackfrommainthread", "checkinputdata", "choleskyalg", "choleskytol", "clamping",
+        "compute", "computeexecservice", "computejobpriority", "computelog", "concurrentthreads",
+        "conflictcuts", "corespercpu", "covercuts", "cpialpha", "cpuplatform",
+        "cputime", "crash", "crossover", "crossoveraccuracytol", "crossoveriterlimit",
+        "crossoverops", "crossoverthreads", "cstyle", "cutdepth", "cutfactor",
+        "cutfreq", "cutselect", "cutstrategy", "defaultalg", "densecollimit",
+        "deterministic", "deterministiclog", "dualgradient", "dualize", "dualizeops",
+        "dualperturb", "dualstrategy", "dualthreads", "eigenvaluetol", "elimfillin",
+        "elimtol", "escapenames", "etatol", "extracols", "extraelems",
+        "extramipents", "extrapresolve", "extraqcelements", "extraqcrows", "extrarows",
+        "extrasetelems", "extrasets", "feasibilityjump", "feasibilitypump", "feastol",
+        "feastolperturb", "feastoltarget", "forceoutput", "forceparalleldual", "genconsabstransformation",
+        "genconsdualreductions", "globalboundingbox", "globallsheurstrategy", "globalnlpcuts", "globalnuminitnlpcuts",
+        "globalpresolveobbt", "globalspatialbranchcuttingeffort", "globalspatialbranchifpreferorig", "globalspatialbranchpropagationeffort", "globaltreenlpcuts",
+        "gomcuts", "gpuplatform", "heurbeforelp", "heurdepth", "heurdiveiterlimit",
+        "heurdiverandomize", "heurdivesoftrounding", "heurdivespeedup", "heurdivestrategy", "heuremphasis",
+        "heurforcespecialobj", "heurfreq", "heurmaxsol", "heurnodes", "heursearchbackgroundselect",
+        "heursearchcopycontrols", "heursearcheffort", "heursearchfreq", "heursearchrootcutfreq", "heursearchrootselect",
+        "heursearchtreeselect", "heurshiftprop", "heurstrategy", "heurthreads", "historycosts",
+        "ifcheckconvexity", "iislog", "iisops", "indlinbigm", "indprelinbigm",
+        "inputtol", "invertfreq", "invertmin", "iotimeout", "keepbasis",
+        "keepnrows", "l1cache", "linelength", "lnpbest", "lnpiterlimit",
+        "localchoice", "lpflags", "lpfolding", "lpiterlimit", "lplog",
+        "lplogdelay", "lplogstyle", "lprefineiterlimit", "lpthreads", "markowitztol",
+        "matrixtol", "maxchecksonmaxcuttime", "maxchecksonmaxtime", "maxcuttime", "maxiis",
+        "maximpliedbound", "maxlocalbacktrack", "maxmcoeffbufferelems", "maxmemoryhard", "maxmemorysoft",
+        "maxmipsol", "maxmiptasks", "maxnode", "maxpagelines", "maxscalefactor",
+        "maxstalltime", "maxtime", "maxtreefilesize", "mcfcutstrategy", "mipabscutoff",
+        "mipabsgapnotify", "mipabsgapnotifybound", "mipabsgapnotifyobj", "mipabsstop", "mipaddcutoff",
+        "mipcomponents", "mipconcurrentnodes", "mipconcurrentsolves", "mipdualreductions", "mipfracreduce",
+        "mipkappafreq", "miplog", "mippresolve", "miprampup", "miprefineiterlimit",
+        "miprelcutoff", "miprelgapnotify", "miprelstop", "miprestart", "miprestartfactor",
+        "miprestartgapthreshold", "mipterminationmethod", "mipthreads", "miptol", "miptoltarget",
+        "miqcpalg", "mps18compatible", "mpsboundname", "mpsecho", "mpsformat",
+        "mpsobjname", "mpsrangename", "mpsrhsname", "multiobjlog", "multiobjops",
+        "mutexcallbacks", "netstalllimit", "nodeprobingeffort", "nodeselection", "numericalemphasis",
+        "objscalefactor", "optimalitytol", "optimalitytoltarget", "outputcontrols", "outputlog",
+        "outputmask", "outputtol", "penalty", "perturb", "pivottol",
+        "ppfactor", "preanalyticcenter", "prebasisred", "prebndredcone", "prebndredquad",
+        "precliquestrategy", "precoefelim", "precomponents", "precomponentseffort", "preconedecomp",
+        "preconfiguration", "preconvertobjtocons", "preconvertseparable", "predomcol", "predomrow",
+        "preduprow", "preelimquad", "prefolding", "preimplications", "prelindep",
+        "preobjcutdetect", "prepermute", "prepermuteseed", "preprobing", "preprotectdual",
+        "prerooteffort", "prerootthreads", "prerootworklimit", "presolve", "presolvemaxgrow",
+        "presolveops", "presolvepasses", "presort", "pricingalg", "primalops",
+        "primalperturb", "primalunshift", "pseudocost", "pwldualreductions", "pwlnonconvextransformation",
+        "qccuts", "qcrootalg", "qsimplexops", "quadraticunshift", "randomseed",
+        "refactor", "refineops", "relaxtreememorylimit", "relpivottol", "repairindefiniteq",
+        "repairinfeasmaxtime", "repairinfeastimelimit", "resourcestrategy", "rltcuts", "rootpresolve",
+        "sbbest", "sbeffort", "sbestimate", "sbiterlimit", "sbselect",
+        "scaling", "sdpcutstrategy", "serializepreintsol", "sifting", "siftpasses",
+        "siftpresolveops", "siftswitch", "sleeponthreadwait", "soltimelimit", "sosreftol",
+        "symmetry", "symselect", "threads", "timelimit", "trace",
+        "treecompression", "treecovercuts", "treecutselect", "treediagnostics", "treefileloginterval",
+        "treegomcuts", "treememorylimit", "treememorysavingtarget", "treeqccuts", "tunerhistory",
+        "tunermaxtime", "tunermethod", "tunermethodfile", "tunermode", "tuneroutput",
+        "tuneroutputpath", "tunerpermute", "tunersessionname", "tunertarget", "tunerthreads",
+        "tunerrootalg", "tunerverbose", "usersolheuristic", "varselection", "version",
+        "worklimit"
     };
     std::vector<MiniZinc::SolverConfig::ExtraFlag> res;
     for (auto param : all_params) {
       int n;
       int t;
-      p._plugin->XPRSgetcontrolinfo(prb, param.c_str(), &n, &t);
+      int rc = p._plugin->XPRSgetcontrolinfo(prb, param.c_str(), &n, &t);
+      if (rc != 0) {
+        // Skip parameters that don't exist in this Xpress version
+        continue;
+      }
       MiniZinc::SolverConfig::ExtraFlag::FlagType param_type;
       std::string param_default;
       switch (t) {
@@ -546,7 +400,7 @@ void MIPxpressWrapper::Options::printHelp(ostream& os) {
   os << "XPRESS MIP wrapper options:" << std::endl
      << "--msgLevel <n>       print solver output, default: 0" << std::endl
      << "--logFile <file>     log file" << std::endl
-     << "--solver-time-limit <N>        stop search after N milliseconds, if negative, it "
+     << "--solver-time-limit <N>        stop search after N seconds (e.g., 0.01), if negative, it "
         "will only stop if at least one solution was found"
      << std::endl
      << "-n <N>, --numSolutions <N>   stop search after N solutions" << std::endl
@@ -559,8 +413,8 @@ void MIPxpressWrapper::Options::printHelp(ostream& os) {
         "default: "
      << 0.0001 << std::endl
      << "-i                   print intermediate solution, default: false" << std::endl
-     << "-r <N>, --seed <N>, --random-seed <N>" << std::endl
-     << "    random seed, integer" << "-p <N>, --parallel <N>   use N threads" << std::endl
+     << "-r <N>, --seed <N>, --random-seed <N>   random seed, integer" << std::endl
+     << "-p <N>, --parallel <N>   use N threads" << std::endl
      << "--xpress-dll <file>      Xpress DLL file (xprs.dll/libxprs.so/libxprs.dylib)" << std::endl
      << "--xpress-password <dir>  directory where xpauth.xpr is located (optional)" << std::endl
      << std::endl;
@@ -602,43 +456,46 @@ bool MIPxpressWrapper::Options::processOption(int& i, std::vector<std::string>& 
 }
 
 void MIPxpressWrapper::setOptions() {
-  XPRSprob xprsProblem = _plugin->XPRBgetXPRSprob(_problem);
+  // Set output log level via control
+  _plugin->XPRSsetintcontrol(_problem, XPRS_OUTPUTLOG, _options->msgLevel);
 
-  _plugin->XPRBsetmsglevel(_problem, _options->msgLevel);
-
-  _plugin->XPRSsetlogfile(xprsProblem, _options->logFile.c_str());
-  if (_options->timeout > 1000 || _options->timeout < -1000) {
-    _plugin->XPRSsetintcontrol(xprsProblem, XPRS_MAXTIME, _options->timeout / 1000);
+  _plugin->XPRSsetlogfile(_problem, _options->logFile.c_str());
+  if (_options->timeout != 0) {
+    _plugin->XPRSsetdblcontrol(_problem, XPRS_TIMELIMIT, _options->timeout);
   }
-  _plugin->XPRSsetintcontrol(xprsProblem, XPRS_MAXMIPSOL, _options->numSolutions);
-  _plugin->XPRSsetdblcontrol(xprsProblem, XPRS_MIPABSSTOP, _options->absGap);
-  _plugin->XPRSsetdblcontrol(xprsProblem, XPRS_MIPRELSTOP, _options->relGap);
+  _plugin->XPRSsetintcontrol(_problem, XPRS_MAXMIPSOL, _options->numSolutions);
+  _plugin->XPRSsetdblcontrol(_problem, XPRS_MIPABSSTOP, _options->absGap);
+  _plugin->XPRSsetdblcontrol(_problem, XPRS_MIPRELSTOP, _options->relGap);
 
   if (_options->numThreads > 0) {
-    _plugin->XPRSsetintcontrol(xprsProblem, XPRS_THREADS, _options->numThreads);
+    _plugin->XPRSsetintcontrol(_problem, XPRS_THREADS, _options->numThreads);
   }
 
   if (_options->randomSeed != 0) {
-    _plugin->XPRSsetintcontrol(xprsProblem, XPRS_RANDOMSEED, _options->randomSeed);
+    _plugin->XPRSsetintcontrol(_problem, XPRS_RANDOMSEED, _options->randomSeed);
   }
 
   for (auto& it : _options->extraParams) {
     auto name = it.first.substr(9);
     int n;
     int t;
-    _plugin->XPRSgetcontrolinfo(xprsProblem, name.c_str(), &n, &t);
+    int rc = _plugin->XPRSgetcontrolinfo(_problem, name.c_str(), &n, &t);
+    if (rc != 0) {
+      // Skip parameters that don't exist in this Xpress version
+      continue;
+    }
     switch (t) {
       case XPRS_TYPE_INT:
-        _plugin->XPRSsetintcontrol(xprsProblem, n, stoi(it.second));
+        _plugin->XPRSsetintcontrol(_problem, n, stoi(it.second));
         break;
       case XPRS_TYPE_INT64:
-        _plugin->XPRSsetintcontrol64(xprsProblem, n, stoll(it.second));
+        _plugin->XPRSsetintcontrol64(_problem, n, stoll(it.second));
         break;
       case XPRS_TYPE_DOUBLE:
-        _plugin->XPRSsetdblcontrol(xprsProblem, n, stod(it.second));
+        _plugin->XPRSsetdblcontrol(_problem, n, stod(it.second));
         break;
       case XPRS_TYPE_STRING:
-        _plugin->XPRSsetstrcontrol(xprsProblem, n, it.second.c_str());
+        _plugin->XPRSsetstrcontrol(_problem, n, it.second.c_str());
         break;
       default:
         throw XpressException("Unknown type for parameter " + name);
@@ -646,79 +503,72 @@ void MIPxpressWrapper::setOptions() {
   }
 }
 
-static MIPWrapper::Status convert_status(int xpressStatus) {
-  switch (xpressStatus) {
-    case XPRB_MIP_OPTIMAL:
+static MIPWrapper::Status convert_status(int solStatus) {
+  switch (solStatus) {
+    case XPRS_SOLSTATUS_OPTIMAL:
       return MIPWrapper::Status::OPT;
-    case XPRB_MIP_INFEAS:
+    case XPRS_SOLSTATUS_FEASIBLE:
+      return MIPWrapper::Status::SAT;
+    case XPRS_SOLSTATUS_INFEASIBLE:
       return MIPWrapper::Status::UNSAT;
-    case XPRB_MIP_UNBOUNDED:
+    case XPRS_SOLSTATUS_UNBOUNDED:
       return MIPWrapper::Status::UNBND;
-    case XPRB_MIP_NO_SOL_FOUND:
-      return MIPWrapper::Status::UNKNOWN;
-    case XPRB_MIP_NOT_LOADED:
-      return MIPWrapper::Status::ERROR_STATUS;
     default:
       return MIPWrapper::Status::UNKNOWN;
   }
 }
 
-static string get_status_name(int xpressStatus) {
-  string rt = "Xpress stopped with status: ";
-  switch (xpressStatus) {
-    case XPRB_MIP_OPTIMAL:
-      return rt + "Optimal";
-    case XPRB_MIP_INFEAS:
-      return rt + "Infeasible";
-    case XPRB_MIP_UNBOUNDED:
-      return rt + "Unbounded";
-    case XPRB_MIP_NO_SOL_FOUND:
-      return rt + "No solution found";
-    case XPRB_MIP_NOT_LOADED:
-      return rt + "No problem loaded or error";
+static string get_status_name(int solStatus) {
+  switch (solStatus) {
+    case XPRS_SOLSTATUS_OPTIMAL:
+      return "optimal";
+    case XPRS_SOLSTATUS_FEASIBLE:
+      return "feasible";
+    case XPRS_SOLSTATUS_INFEASIBLE:
+      return "infeasible";
+    case XPRS_SOLSTATUS_UNBOUNDED:
+      return "unbounded";
+    case XPRS_SOLSTATUS_UNFINISHED:
+      return "unfinished";
     default:
-      return rt + "Unknown status";
+      return "unknown";
   }
 }
 
 static void set_output_variables(XpressPlugin* plugin, MIPxpressWrapper::Output* output,
-                                 vector<XPRBvar>* variables) {
-  size_t nCols = variables->size();
-  auto* x = (double*)malloc(nCols * sizeof(double));
-  for (size_t ii = 0; ii < nCols; ii++) {
-    x[ii] = plugin->XPRBgetsol((*variables)[ii]);
-  }
-  output->x = x;
+                                 XPRSprob problem, size_t nCols, std::vector<double>* x) {
+  x->resize(nCols);
+  int status;
+  plugin->XPRSgetsolution(problem, &status, x->data(), 0, static_cast<int>(nCols) - 1);
+  output->x = x->data();
 }
 
 static void set_output_attributes(XpressPlugin* plugin, MIPxpressWrapper::Output* output,
-                                  XPRSprob xprsProblem) {
-  int xpressStatus = 0;
-  plugin->XPRSgetintattrib(xprsProblem, XPRS_MIPSTATUS, &xpressStatus);
-  output->status = convert_status(xpressStatus);
-  output->statusName = get_status_name(xpressStatus);
+                                  XPRSprob _problem, int solStatus = -1) {
+  // If solStatus not provided, query it from the problem
+  if (solStatus < 0) {
+    plugin->XPRSgetintattrib(_problem, XPRS_SOLSTATUS, &solStatus);
+  }
+  output->status = convert_status(solStatus);
+  output->statusName = get_status_name(solStatus);
 
-  plugin->XPRSgetdblattrib(xprsProblem, XPRS_MIPOBJVAL, &output->objVal);
-  plugin->XPRSgetdblattrib(xprsProblem, XPRS_BESTBOUND, &output->bestBound);
+  plugin->XPRSgetdblattrib(_problem, XPRS_OBJVAL, &output->objVal);
+  plugin->XPRSgetdblattrib(_problem, XPRS_BESTBOUND, &output->bestBound);
 
-  plugin->XPRSgetintattrib(xprsProblem, XPRS_NODES, &output->nNodes);
-  plugin->XPRSgetintattrib(xprsProblem, XPRS_ACTIVENODES, &output->nOpenNodes);
+  plugin->XPRSgetintattrib(_problem, XPRS_NODES, &output->nNodes);
+  plugin->XPRSgetintattrib(_problem, XPRS_ACTIVENODES, &output->nOpenNodes);
 
   output->dWallTime =
       std::chrono::duration<double>(std::chrono::steady_clock::now() - output->dWallTime0).count();
   output->dCPUTime = double(std::clock() - output->cCPUTime0) / CLOCKS_PER_SEC;
 }
 
-static void XPRS_CC user_sol_notify_callback(XPRSprob xprsProblem, void* userData) {
+static void XPRS_CC user_sol_notify_callback(XPRSprob problem, void* userData) {
   auto* data = (UserSolutionCallbackData*)userData;
   MIPWrapper::CBUserInfo* info = data->info;
 
-  set_output_attributes(data->plugin, info->pOutput, xprsProblem);
-
-  data->plugin->XPRBbegincb(*(data->problem), xprsProblem);
-  data->plugin->XPRBsync(*(data->problem), XPRB_XPRS_SOL);
-  set_output_variables(data->plugin, info->pOutput, data->variables);
-  data->plugin->XPRBendcb(*(data->problem));
+  set_output_attributes(data->plugin, info->pOutput, problem);
+  set_output_variables(data->plugin, info->pOutput, problem, data->nCols, data->x);
 
   if (info->solcbfn != nullptr) {
     (*info->solcbfn)(*info->pOutput, info->psi);
@@ -727,80 +577,221 @@ static void XPRS_CC user_sol_notify_callback(XPRSprob xprsProblem, void* userDat
 
 void MIPxpressWrapper::doAddVars(size_t n, double* obj, double* lb, double* ub, VarType* vt,
                                  string* names) {
-  if (obj == nullptr || lb == nullptr || ub == nullptr || vt == nullptr || names == nullptr) {
+  if (_problemLoaded) {
+    throw XpressException("Cannot add variables after problem is loaded");
+  }
+  if (obj == nullptr || lb == nullptr || ub == nullptr || vt == nullptr) {
     throw XpressException("invalid input");
   }
+
   for (size_t i = 0; i < n; ++i) {
-    char* var_name = (char*)names[i].c_str();
-    int var_type = convertVariableType(vt[i]);
-    XPRBvar var = _plugin->XPRBnewvar(_problem, var_type, var_name, lb[i], ub[i]);
-    _variables.push_back(var);
-    _plugin->XPRBsetterm(_xpressObj, var, obj[i]);
+    _obj.push_back(obj[i]);
+    _lb.push_back(lb[i]);
+    _ub.push_back(ub[i]);
+
+    // Convert variable type to character
+    switch (vt[i]) {
+      case REAL:
+        _vtype.push_back('C');  // Continuous
+        break;
+      case INT:
+        _vtype.push_back('I');  // Integer
+        break;
+      case BINARY:
+        _vtype.push_back('B');  // Binary
+        break;
+      default:
+        throw XpressException("Unknown variable type");
+    }
   }
+  _nCols += n;
 }
 
 void MIPxpressWrapper::addRow(int nnz, int* rmatind, double* rmatval, LinConType sense, double rhs,
                               int mask, const string& rowName) {
-  addConstraint(nnz, rmatind, rmatval, sense, rhs, mask, rowName);
-}
-
-XPRBctr MIPxpressWrapper::addConstraint(int nnz, int* rmatind, double* rmatval, LinConType sense,
-                                        double rhs, int mask, const string& rowName) {
-  _nRows++;
-  XPRBctr constraint = _plugin->XPRBnewctr(_problem, rowName.c_str(), convertConstraintType(sense));
-  for (int i = 0; i < nnz; ++i) {
-    _plugin->XPRBsetterm(constraint, _variables[rmatind[i]], rmatval[i]);
+  if (_problemLoaded) {
+    throw XpressException("Cannot add rows after problem is loaded");
   }
-  _plugin->XPRBsetterm(constraint, nullptr, rhs);
+  // Convert constraint sense
+  char rowtype;
+  switch (sense) {
+    case LQ:
+      rowtype = 'L';  // <=
+      break;
+    case EQ:
+      rowtype = 'E';  // ==
+      break;
+    case GQ:
+      rowtype = 'G';  // >=
+      break;
+    default:
+      throw XpressException("Unknown constraint type");
+  }
 
-  return constraint;
+  _rowtype.push_back(rowtype);
+  _rhs.push_back(rhs);
+  _rng.push_back(0.0);  // No range
+  _start.push_back(static_cast<int>(_rowind.size()));
+
+  // Add constraint coefficients
+  for (int i = 0; i < nnz; ++i) {
+    _rowind.push_back(rmatind[i]);
+    _rowcoef.push_back(rmatval[i]);
+  }
+
+  _nRows++;
 }
 
 void MIPxpressWrapper::writeModelIfRequested() {
-  int format = XPRB_LP;
-  if (_options->writeModelFormat == "lp") {
-    format = XPRB_LP;
-  } else if (_options->writeModelFormat == "mps") {
-    format = XPRB_MPS;
-  }
   if (!_options->writeModelFile.empty()) {
-    _plugin->XPRBexportprob(_problem, format, _options->writeModelFile.c_str());
+    const std::string& filename = _options->writeModelFile;
+    // Use XPRSsaveas for .svf files (saves internal state), XPRSwriteprob otherwise
+    int rc;
+    if (filename.size() >= 4 && filename.substr(filename.size() - 4) == ".svf") {
+      rc = _plugin->XPRSsaveas(_problem, filename.c_str());
+      checkXpressReturn(rc, ("Failed to save problem to " + filename).c_str());
+    } else {
+      const char* flags = "";
+      rc = _plugin->XPRSwriteprob(_problem, filename.c_str(), flags);
+      checkXpressReturn(rc, ("Failed to write problem to " + filename).c_str());
+    }
   }
 }
 
-void MIPxpressWrapper::addDummyConstraint() {
-  if (getNCols() == 0) {
+void MIPxpressWrapper::loadProblem() {
+  if (_problemLoaded) {
     return;
   }
 
-  XPRBctr constraint = _plugin->XPRBnewctr(_problem, "dummy_constraint", XPRB_L);
-  _plugin->XPRBsetterm(constraint, _variables[0], 1);
-  double ub;
-  _plugin->XPRBgetbounds(_variables[0], nullptr, &ub);
-  _plugin->XPRBsetterm(constraint, nullptr, ub);
+  if (_nCols == 0) {
+    // Empty problem - nothing to load
+    _problemLoaded = true;
+    return;
+  }
+
+  // Collect MIP entities (integer and binary variables)
+  std::vector<int> entind;
+  std::vector<char> coltype;
+  for (size_t i = 0; i < _nCols; ++i) {
+    if (_vtype[i] == 'I' || _vtype[i] == 'B') {
+      entind.push_back(static_cast<int>(i));
+      coltype.push_back(_vtype[i]);
+    }
+  }
+
+  // Load problem with variables (no constraints initially)
+  std::vector<int> empty_start(_nCols + 1, 0);  // All columns start at 0 (empty)
+  int nentities = static_cast<int>(entind.size());
+
+  // Use XPRSloadmip to load variables with types in one call (avoids bound reset issue)
+  int rc = _plugin->XPRSloadmip(
+      _problem, "mzn_problem", static_cast<int>(_nCols), 0,  // 0 rows initially
+      nullptr, nullptr, nullptr,                              // No row data yet
+      _obj.data(), empty_start.data(), nullptr,               // Objective with empty matrix
+      nullptr, nullptr, _lb.data(), _ub.data(),
+      nentities, 0,                                           // nentities, nsets=0
+      nentities > 0 ? coltype.data() : nullptr,               // Entity types
+      nentities > 0 ? entind.data() : nullptr,                // Entity indices
+      nullptr, nullptr, nullptr, nullptr, nullptr);           // No limits, no SOS sets
+  checkXpressReturn(rc, "Failed to load MIP problem");
+
+  // Add all constraints (pass nullptr for range to allow quadratic equalities)
+  if (_nRows > 0) {
+    rc = _plugin->XPRSaddrows(_problem, static_cast<int>(_nRows), static_cast<int>(_rowind.size()),
+                              _rowtype.data(), _rhs.data(), nullptr, _start.data(),
+                              _rowind.data(), _rowcoef.data());
+    checkXpressReturn(rc, "Failed to add rows");
+  }
+
+  // Add indicator constraints if any
+  if (!_indicatorRows.empty()) {
+    if (_plugin->XPRSaddindicators != nullptr) {
+      rc = _plugin->XPRSaddindicators(_problem, static_cast<int>(_indicatorRows.size()),
+                                      _indicatorRows.data(), _indicatorVars.data(),
+                                      _indicatorComplements.data());
+      checkXpressReturn(rc, "Failed to add indicator constraints");
+    } else {
+      throw XpressException("Indicator constraints requested but not supported in this version of Xpress");
+    }
+  }
+
+  // Add bilinear terms using XPRSaddqmatrix
+  if (!_bilinearTerms.empty()) {
+    if (_plugin->XPRSaddqmatrix == nullptr) {
+      throw XpressException("XPRSaddqmatrix not available for bilinear constraints");
+    }
+
+    // Add each bilinear term as a quadratic matrix entry
+    // Note: Q matrix is symmetric, so x*y term needs coefficient 0.5
+    // (contribution is 0.5*Q[x,y]*x*y + 0.5*Q[y,x]*y*x = Q[x,y]*x*y when Q is symmetric)
+    for (const auto& term : _bilinearTerms) {
+      int mqcol1[] = {term.x};
+      int mqcol2[] = {term.y};
+      double dqe[] = {0.5};  // Coefficient 0.5 for symmetric Q matrix
+
+      rc = _plugin->XPRSaddqmatrix(_problem, term.row, 1, mqcol1, mqcol2, dqe);
+      checkXpressReturn(rc, "Failed to add quadratic matrix");
+    }
+  }
+
+  _problemLoaded = true;
 }
 
 void MIPxpressWrapper::solve() {
-  if (getNRows() == 0) {
-    addDummyConstraint();
+  // Set output log level and message callback for solver output
+  _plugin->XPRSsetintcontrol(_problem, XPRS_OUTPUTLOG, _options->msgLevel);
+  if (_options->msgLevel > 0) {
+    _plugin->XPRSaddcbmessage(_problem, xpress_message_callback, nullptr, 0);
   }
 
+  // Load problem if not already loaded
+  loadProblem();
+
+  // Set options
   setOptions();
+
+  // Write model if requested
   writeModelIfRequested();
+
+  // Set callback if needed
   setUserSolutionCallback();
 
-  _plugin->XPRBsetobj(_problem, _xpressObj);
+  // Set objective sense
+  int obj_rc = _plugin->XPRSchgobjsense(_problem, _objsense);
 
+  // Start timing
   cbui.pOutput->dWallTime0 = output.dWallTime0 = std::chrono::steady_clock::now();
-  cbui.pOutput->cCPUTime0 =
-      static_cast<clock_t>(output.dCPUTime = static_cast<double>(std::clock()));
+  cbui.pOutput->cCPUTime0 = output.cCPUTime0 = std::clock();
 
-  if (_plugin->XPRBmipoptimize(_problem, "c") == 1) {
-    throw XpressException("error while solving");
+  // Solve using XPRSoptimize (general optimizer that handles LP, MIP, and NLP)
+  // Signature: XPRSoptimize(prob, flags, *solvestatus, *solstatus)
+  // solvestatus = how did the optimization process go
+  // solstatus = what is the solution status (OPTIMAL, FEASIBLE, etc.)
+  int solveStatus = 0;
+  int solStatus = 0;
+  int rc = _plugin->XPRSoptimize(_problem, "", &solveStatus, &solStatus);
+
+  if (rc != 0) {
+    if (rc == 864 || rc == 862) {
+      // Error 862/864: Unexpected QCQP error (should not occur with correct implementation)
+      throw XpressException(
+          "Xpress error 862/864: Quadratic constraint error. This should not occur. "
+          "Please report this issue.");
+    }
+    char errmsg[512];
+    _plugin->XPRSgetlasterror(_problem, errmsg);
+    std::string errStr = "Error while solving (rc=" + std::to_string(rc) + "): " + errmsg;
+    throw XpressException(errStr);
   }
 
-  set_output_variables(_plugin, &output, &_variables);
-  set_output_attributes(_plugin, &output, _plugin->XPRBgetXPRSprob(_problem));
+  // Retrieve solution using XPRSgetsolution (works for LP, MIP, and NLP)
+  _x.resize(_nCols);
+  int getSolStatus;
+  _plugin->XPRSgetsolution(_problem, &getSolStatus, _x.data(), 0, static_cast<int>(_nCols) - 1);
+  output.x = _x.data();
+
+  // Get status and attributes using solution status from XPRSoptimize
+  set_output_attributes(_plugin, &output, _problem, solStatus);
 
   if (!_options->intermediateSolutions && cbui.solcbfn != nullptr) {
     cbui.solcbfn(output, cbui.psi);
@@ -812,76 +803,136 @@ void MIPxpressWrapper::setUserSolutionCallback() {
     return;
   }
 
-  auto* data = new UserSolutionCallbackData{&cbui, &_problem, &_variables, _plugin};
+  auto* data = new UserSolutionCallbackData{&cbui, _problem, _plugin, _nCols, &_x};
 
-  _plugin->XPRSsetcbintsol(_plugin->XPRBgetXPRSprob(_problem), user_sol_notify_callback, data);
+  _plugin->XPRSaddcbintsol(_problem, user_sol_notify_callback, data, 0);
 }
 
 void MIPxpressWrapper::setObjSense(int s) {
-  _plugin->XPRBsetsense(_problem, convertObjectiveSense(s));
+  _objsense = (s == 1) ? XPRS_OBJ_MAXIMIZE : XPRS_OBJ_MINIMIZE;
+  if (_problemLoaded) {
+    _plugin->XPRSchgobjsense(_problem, _objsense);
+  }
 }
 
-void MIPxpressWrapper::setVarLB(int iVar, double lb) { _plugin->XPRBsetlb(_variables[iVar], lb); }
+void MIPxpressWrapper::setVarLB(int iVar, double lb) {
+  _lb[iVar] = lb;
+  if (_problemLoaded) {
+    char btype = 'L';
+    int colind = iVar;
+    _plugin->XPRSchgbounds(_problem, 1, &colind, &btype, &lb);
+  }
+}
 
-void MIPxpressWrapper::setVarUB(int iVar, double ub) { _plugin->XPRBsetub(_variables[iVar], ub); }
+void MIPxpressWrapper::setVarUB(int iVar, double ub) {
+  _ub[iVar] = ub;
+  if (_problemLoaded) {
+    char btype = 'U';
+    int colind = iVar;
+    _plugin->XPRSchgbounds(_problem, 1, &colind, &btype, &ub);
+  }
+}
 
 void MIPxpressWrapper::setVarBounds(int iVar, double lb, double ub) {
-  setVarLB(iVar, lb);
-  setVarUB(iVar, ub);
+  _lb[iVar] = lb;
+  _ub[iVar] = ub;
+  if (_problemLoaded) {
+    char btype[2] = {'L', 'U'};
+    int colind[2] = {iVar, iVar};
+    double bval[2] = {lb, ub};
+    _plugin->XPRSchgbounds(_problem, 2, colind, btype, bval);
+  }
 }
 
 void MIPxpressWrapper::addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind,
                                               double* rmatval, LinConType sense, double rhs,
                                               const string& rowName) {
-  if (bVal != 0 && bVal != 1) {
-    throw XpressException("indicator bval not in 0/1");
+  // Check if XPRSaddindicators is available
+  if (_plugin->XPRSaddindicators == nullptr) {
+    throw XpressException("Indicator constraints not supported in this version of Xpress");
   }
-  XPRBctr constraint = addConstraint(nnz, rmatind, rmatval, sense, rhs, 0, rowName);
-  _plugin->XPRBsetindicator(constraint, 2 * bVal - 1, _variables[iBVar]);
+
+  // In Xpress, indicator constraints work as follows:
+  // 1. Add the constraint as a normal row
+  // 2. Mark it as an indicator constraint using XPRSaddindicators
+  //
+  // The indicator semantics: if binary variable iBVar == bVal, then the constraint is active
+
+  // First, add the constraint as a normal row
+  addRow(nnz, rmatind, rmatval, sense, rhs, 0, rowName);
+
+  // The row we just added is at index (_nRows - 1)
+  int rowIndex = static_cast<int>(_nRows - 1);
+
+  // Determine complement flag for XPRSaddindicators:
+  // 1 means: constraint is active if binary variable == 1
+  // -1 means: constraint is active if binary variable == 0
+  int complement = (bVal == 0) ? -1 : 1;
+
+  // If problem is already loaded, we need to add the indicator now
+  if (_problemLoaded) {
+    int rc = _plugin->XPRSaddindicators(_problem, 1, &rowIndex, &iBVar, &complement);
+    checkXpressReturn(rc, "Failed to add indicator constraint");
+  } else {
+    // Store indicator info for later when we load the problem
+    // We need to track these for when loadProblem() is called
+    _indicatorRows.push_back(rowIndex);
+    _indicatorVars.push_back(iBVar);
+    _indicatorComplements.push_back(complement);
+  }
 }
 
 bool MIPxpressWrapper::addWarmStart(const std::vector<VarId>& vars,
                                     const std::vector<double>& vals) {
-  XPRBsol warmstart = _plugin->XPRBnewsol(_problem);
-  for (size_t ii = 0; ii < vars.size(); ii++) {
-    _plugin->XPRBsetsolvar(warmstart, _variables[vars[ii]], vals[ii]);
+  assert(vars.size() == vals.size());
+  static_assert(sizeof(VarId) == sizeof(int), "VarId should be (u)int currently");
+
+  // Check if XPRSaddmipsol is available
+  if (_plugin->XPRSaddmipsol == nullptr) {
+    return false;  // Warm start not supported in this version
   }
-  return (_plugin->XPRBaddmipsol(_problem, warmstart, nullptr) == 0);
+
+  if (!_problemLoaded) {
+    // Problem must be loaded before adding MIP start
+    loadProblem();
+  }
+
+  // XPRSaddmipsol takes arrays of column indices and values
+  // ilength = number of non-default values to set
+  // mipsolcol = array of column indices
+  // mipsolval = array of values
+  // solname = name of the solution (can be nullptr)
+  int rc = _plugin->XPRSaddmipsol(_problem, static_cast<int>(vars.size()), vals.data(),
+                                  reinterpret_cast<const int*>(vars.data()), nullptr);
+  if (rc != 0) {
+    return false;  // Warm start failed, but don't throw - just indicate failure
+  }
+  return true;
 }
 
-int MIPxpressWrapper::convertConstraintType(LinConType sense) {
-  switch (sense) {
-    case MIPWrapper::LQ:
-      return XPRB_L;
-    case MIPWrapper::EQ:
-      return XPRB_E;
-    case MIPWrapper::GQ:
-      return XPRB_G;
-    default:
-      throw XpressException("unkown constraint sense");
+void MIPxpressWrapper::addTimes(int x, int y, int z, const string& rowName) {
+  // Bilinear equality constraint: z = x * y
+  // Implemented via XPRSaddqmatrix (adds x*y quadratic term to the row)
+
+  if (_plugin->XPRSaddqmatrix == nullptr) {
+    throw XpressException("Bilinear constraints require XPRSaddqmatrix, which is not available.");
   }
+
+  if (_problemLoaded) {
+    throw XpressException("Cannot add bilinear constraints after problem is loaded.");
+  }
+
+  // Add the linear row: -z = 0 (we'll add x*y quadratic term later via XPRSaddqmatrix)
+  int colind[] = {z};
+  double colval[] = {-1.0};
+  addRow(1, colind, colval, EQ, 0.0, MaskConsType_Normal, rowName);
+
+  // Store bilinear term information for later processing in loadProblem()
+  BilinearTerm term;
+  term.row = static_cast<int>(_nRows - 1);
+  term.x = x;
+  term.y = y;
+  term.z = z;
+  _bilinearTerms.push_back(term);
 }
 
-int MIPxpressWrapper::convertVariableType(VarType varType) {
-  switch (varType) {
-    case REAL:
-      return XPRB_PL;
-    case INT:
-      return XPRB_UI;
-    case BINARY:
-      return XPRB_BV;
-    default:
-      throw XpressException("unknown variable type");
-  }
-}
-
-int MIPxpressWrapper::convertObjectiveSense(int s) {
-  switch (s) {
-    case 1:
-      return XPRB_MAXIM;
-    case -1:
-      return XPRB_MINIM;
-    default:
-      throw XpressException("unknown objective sense");
-  }
-}
