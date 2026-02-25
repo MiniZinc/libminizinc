@@ -636,7 +636,8 @@ public:
         // update return type
         updateReturnTypeInst(_env, ti_map, fi_copy->ti());
 
-        if (fi_copy->e() == nullptr) {
+        bool had_rhs = fi_copy->e() != nullptr;
+        if (!had_rhs) {
           // built-in function, have to redirect to original polymorphic built-in
           std::vector<Expression*> args(fi_copy->paramCount());
           for (unsigned int i = 0; i < fi_copy->paramCount(); i++) {
@@ -649,15 +650,17 @@ public:
         } else {
           // update all types in the body
           _typer.retype(_env, fi_copy);
-          // put calls in the body on the agenda
-          CollectConcreteCalls ccc(_agenda);
-          top_down(ccc, fi_copy->e());
         }
         // TODO: Currently it's possible for us to actually be generating the same
         // concrete instance again, even though instantiated_types() gave a different
         // result. We should probably fix instantiated_types() to be more accurate.
         if (_specialised->registerFn(_env, fi_copy, true, false)) {
           _specialised->addItem(fi_copy);
+          if (had_rhs) {
+            // put calls in the body on the agenda
+            CollectConcreteCalls ccc(_agenda);
+            top_down(ccc, fi_copy->e());
+          }
           if (call->decl() == fi) {
             call->decl(fi_copy);
             call->rehash();

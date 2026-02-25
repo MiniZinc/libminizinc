@@ -15,6 +15,8 @@ Bug fixes:
    incorrectly unified when paths are enabled.
 -  Fix type checking of functions with enum type identifiers (like $$E) when
    called with bool arguments (:bugref:`991`).
+-  Fix a potential crash during type specialisation of calls where a matching
+   specialisation already existed.
 
 .. _v2.9.5:
 
