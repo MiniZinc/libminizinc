@@ -343,7 +343,7 @@ Type Type::arrType(EnvI& env, const Type& dimTy, const Type& elemTy) {
   return ret;
 }
 
-Type Type::commonType(EnvI& env, Type t1, Type t2) {
+Type Type::commonType(EnvI& env, Type t1, Type t2, bool strictEnums) {
   if (t1 == t2 && t1.typeId() == t2.typeId() || t2 == Type::bot()) {
     t1.cv(t1.cv() || t2.cv());
     return t1;
@@ -369,7 +369,7 @@ Type Type::commonType(EnvI& env, Type t1, Type t2) {
     Type e1 = env.getTransparentType(t1.elemType(env));
     Type e2 = env.getTransparentType(t2.elemType(env));
 
-    Type commonEl = Type::commonType(env, e1, e2);
+    Type commonEl = Type::commonType(env, e1, e2, strictEnums);
     if (commonEl.isunknown()) {
       return Type();
     }
@@ -406,16 +406,16 @@ Type Type::commonType(EnvI& env, Type t1, Type t2) {
   }
 
   if (t1.istuple()) {
-    return env.commonTuple(t1, t2);
+    return env.commonTuple(t1, t2, false, strictEnums);
   }
   if (t1.isrecord()) {
-    return env.commonRecord(t1, t2);
+    return env.commonRecord(t1, t2, false, strictEnums);
   }
 
   Type common;
-  if (Type::btSubtype(env, t2, t1, false)) {
+  if (Type::btSubtype(env, t2, t1, strictEnums)) {
     common = t1;
-  } else if (Type::btSubtype(env, t1, t2, false)) {
+  } else if (Type::btSubtype(env, t1, t2, strictEnums)) {
     common = t2;
   } else {
     return Type();

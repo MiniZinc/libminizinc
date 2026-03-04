@@ -1367,7 +1367,7 @@ unsigned int EnvI::registerTupleType(ArrayLit* tup) {
   return typeId;
 }
 
-Type EnvI::commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim) {
+Type EnvI::commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim, bool strictEnums) {
   if (tuple1 == tuple2) {
     return tuple1;
   }
@@ -1395,7 +1395,7 @@ Type EnvI::commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim) {
 
   std::vector<Type> common(tt1->size());
   for (unsigned int i = 0; i < tt1->size(); i++) {
-    common[i] = Type::commonType(*this, (*tt1)[i], (*tt2)[i]);
+    common[i] = Type::commonType(*this, (*tt1)[i], (*tt2)[i], strictEnums);
     if (common[i].isunknown()) {
       return Type();
     }
@@ -1424,7 +1424,7 @@ Type EnvI::commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim) {
   return tuple1;
 }
 
-Type EnvI::commonRecord(Type record1, Type record2, bool ignoreRecord1Dim) {
+Type EnvI::commonRecord(Type record1, Type record2, bool ignoreRecord1Dim, bool strictEnums) {
   if (record1 == record2) {
     return record1;
   }
@@ -1456,7 +1456,7 @@ Type EnvI::commonRecord(Type record1, Type record2, bool ignoreRecord1Dim) {
     if (name != rt2->fieldName(i)) {
       return Type();
     }
-    Type ct = Type::commonType(*this, (*rt1)[i], (*rt2)[i]);
+    Type ct = Type::commonType(*this, (*rt1)[i], (*rt2)[i], strictEnums);
     if (ct.isunknown()) {
       return Type();
     }

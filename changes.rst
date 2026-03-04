@@ -17,6 +17,8 @@ Bug fixes:
    called with bool arguments (:bugref:`991`).
 -  Fix a potential crash during type specialisation of calls where a matching
    specialisation already existed.
+-  Fix a missed type mismatches of enum types in record and tuple types during
+   type specialisation. (:bugref:`998`)
 
 .. _v2.9.5:
 

@@ -507,9 +507,11 @@ public:
     return getStructType(typeId, t.bt());
   }
   /// Returns the type of a common tuple type or bot if no such tuple type exists
-  Type commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim = false);
+  Type commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim = false,
+                   bool strictEnums = false);
   /// Returns the type of a common record type or 0b if no such tuple type exists
-  Type commonRecord(Type record1, Type record2, bool ignoreRecord1Dim = false);
+  Type commonRecord(Type record1, Type record2, bool ignoreRecord1Dim = false,
+                    bool strictEnums = false);
   /// Returns a record type that merges the fields to two record types
   /// WARNING: This method throws an error when two fields have the same name.
   Type mergeRecord(Type record1, Type record2, Location loc);

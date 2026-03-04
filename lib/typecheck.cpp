@@ -1633,7 +1633,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e0, const Location& loc_
           if (!elem.empty()) {
             auto common = Type::bot();
             for (auto* el : elem) {
-              common = Type::commonType(env, common, Expression::type(el));
+              common = Type::commonType(env, common, Expression::type(el), false);
             }
             assert(!common.isunknown());
             coercedTy = common;
@@ -1993,7 +1993,7 @@ public:
       }
       auto* av = Expression::dynamicCast<AnonVar>(vi);
       if (av == nullptr) {
-        auto common = Type::commonType(_env, elemTy, Expression::type(vi));
+        auto common = Type::commonType(_env, elemTy, Expression::type(vi), false);
         if (common.isunknown()) {
           std::stringstream ss;
           ss << "non-uniform array literal. Expected `" << elemTy.toString(_env) << "' but got `"
@@ -2644,7 +2644,7 @@ public:
       if (auto* av = Expression::dynamicCast<AnonVar>(ethen)) {
         anons.push_back(av);
       } else {
-        Type common = Type::commonType(_env, tret, Expression::type(ethen));
+        Type common = Type::commonType(_env, tret, Expression::type(ethen), false);
         if (common.isunknown()) {
           std::stringstream ss;
           ss << "incompatible branch in if-then-else. Expected `" << tret.toString(_env)
@@ -2678,7 +2678,7 @@ public:
       if (auto* av = Expression::dynamicCast<AnonVar>(ite->elseExpr())) {
         anons.push_back(av);
       } else {
-        Type common = Type::commonType(_env, tret, Expression::type(ite->elseExpr()));
+        Type common = Type::commonType(_env, tret, Expression::type(ite->elseExpr()), false);
         if (common.isunknown()) {
           std::stringstream ss;
           ss << "incompatible branch in if-then-else. Expected `" << tret.toString(_env)

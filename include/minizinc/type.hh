@@ -320,7 +320,7 @@ public:
   static bool btSubtype(const EnvI& env, const Type& t0, const Type& t1, bool strictEnums);
 
   /// Get the most specific supertype of the given types, or unknown if there is none
-  static Type commonType(EnvI& env, Type t1, Type t2);
+  static Type commonType(EnvI& env, Type t1, Type t2, bool strictEnums);
 
   /// Check if this type is a subtype of \a t
   bool isSubtypeOf(const EnvI& env, const Type& t, bool strictEnums) const {

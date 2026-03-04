@@ -1504,6 +1504,128 @@ bool isa_enum_tiid(Expression* e) {
   return false;
 }
 
+std::string detail_type_mismatch(const EnvI& env, Type a, Type b, bool strictEnums,
+                                 const std::string& path = "") {
+  const std::string p = path.empty() ? "type" : path;
+
+  if (a.dim() != b.dim()) {
+    return p + " has different dimensions";
+  }
+  if (a.st() != b.st() && !a.isbot() && !b.isbot()) {
+    return p + " has different set-ness";
+  }
+  if ((a.structBT() || b.structBT()) && a.bt() != b.bt()) {
+    return p + " has different types: `" + a.toString(env) + "` vs `" + b.toString(env) + "`";
+  }
+
+  if (a.dim() > 0) {
+    Type ae = env.getTransparentType(a.elemType(env));
+    Type be = env.getTransparentType(b.elemType(env));
+    const auto nested = detail_type_mismatch(env, ae, be, strictEnums, p + "[]");
+    if (!nested.empty()) {
+      return nested;
+    }
+    if (strictEnums && a.typeId() != 0 && b.typeId() != 0) {
+      const auto& aa = env.getArrayEnum(a.typeId());
+      const auto& ba = env.getArrayEnum(b.typeId());
+      const unsigned int n = static_cast<unsigned int>(std::min(aa.size(), ba.size()));
+      const unsigned int dims = n == 0 ? 0 : n - 1;
+      for (unsigned int i = 0; i < dims; ++i) {
+        if (aa[i] != ba[i] && (aa[i] != 0 || ba[i] != 0)) {
+          std::ostringstream oss;
+          oss << p << " index has enum mismatch: `";
+          if (aa[i] == 0) {
+            oss << "int";
+          } else {
+            oss << env.getEnum(aa[i])->e()->id()->str();
+          }
+          oss << "` vs `";
+          if (ba[i] == 0) {
+            oss << "int";
+          } else {
+            oss << env.getEnum(ba[i])->e()->id()->str();
+          }
+          oss << "`";
+          return oss.str();
+        }
+      }
+    }
+    return "";
+  }
+
+  if (a.bt() == Type::BT_INT && b.bt() == Type::BT_INT) {
+    if (strictEnums && a.typeId() != b.typeId() && (a.typeId() != 0 || b.typeId() != 0)) {
+      std::ostringstream oss;
+      oss << p << " has enum mismatch: `";
+      if (a.typeId() == 0) {
+        oss << "int";
+      } else {
+        oss << env.getEnum(a.typeId())->e()->id()->str();
+      }
+      oss << "` vs `";
+      if (b.typeId() == 0) {
+        oss << "int";
+      } else {
+        oss << env.getEnum(b.typeId())->e()->id()->str();
+      }
+      oss << "`";
+      return oss.str();
+    }
+    return "";
+  }
+
+  if (a.bt() != b.bt()) {
+    return p + " has different base types: `" + a.toString(env) + "` vs `" + b.toString(env) + "`";
+  }
+
+  if (a.bt() == Type::BT_TUPLE) {
+    if (a.typeId() == 0 || b.typeId() == 0) {
+      return p + " has incompatible tuple types";
+    }
+    auto* ta = env.getTupleType(a);
+    auto* tb = env.getTupleType(b);
+    if (ta->size() != tb->size()) {
+      return p + " has different tuple arity";
+    }
+    for (unsigned int i = 0; i < ta->size(); ++i) {
+      const auto nested = detail_type_mismatch(env, (*ta)[i], (*tb)[i], strictEnums,
+                                               p + "." + std::to_string(i + 1));
+      if (!nested.empty()) {
+        return nested;
+      }
+    }
+    return "";
+  }
+
+  if (a.bt() == Type::BT_RECORD) {
+    if (a.typeId() == 0 || b.typeId() == 0) {
+      return p + " has incompatible record types";
+    }
+    auto* ra = env.getRecordType(a);
+    auto* rb = env.getRecordType(b);
+    if (ra->size() != rb->size()) {
+      return p + " has different record arity";
+    }
+    for (unsigned int i = 0; i < ra->size(); ++i) {
+      const auto fa = ra->fieldName(i);
+      const auto fb = rb->fieldName(i);
+      if (fa != fb) {
+        return p + " has different field names: `" + fa + "` vs `" + fb + "`";
+      }
+      std::ostringstream nestedPath;
+      nestedPath << p << "." << fa;
+      const auto nested =
+          detail_type_mismatch(env, (*ra)[i], (*rb)[i], strictEnums, nestedPath.str());
+      if (!nested.empty()) {
+        return nested;
+      }
+    }
+    return "";
+  }
+
+  return "";
+}
+
 // Compute return type of function \a fi given argument types \ta
 template <class T>
 Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression* call,
@@ -1548,11 +1670,16 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
             throw TypeError(env, get_loc(tiit, call, fi), ss.str());
           }
 
-          auto common = Type::commonType(env, it->second.first, tiit);
+          auto common = Type::commonType(env, it->second.first, tiit, strictEnum);
           if (common.isunknown()) {
             std::ostringstream ss;
             ss << "type-inst variable $" << tiid << " instantiated with incompatible types ("
                << tiit.toString(env) << " vs " << it->second.first.toString(env) << ")";
+            const auto detail = detail_type_mismatch(env, it->second.first, tiit, strictEnum,
+                                                     std::string("$") + std::string(tiid.c_str()));
+            if (!detail.empty()) {
+              ss << " (" << detail << ")";
+            }
             throw TypeError(env, get_loc(tiit, call, fi), ss.str());
           }
 
