@@ -7,7 +7,7 @@
   <solve-item>
 
 % Predicate items
-<predicate-item> ::= "predicate" <identifier> "(" [ <pred-param-type> : <identifier> "," ... ] ")" ";"
+<predicate-item> ::= "predicate" <identifier> "(" [ <pred-param-type> ":" <identifier> "," ... ] ")" ";"
 
 % Identifiers
 <identifier> ::= [A-Za-z][A-Za-z0-9_]*
