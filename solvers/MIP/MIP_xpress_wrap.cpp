@@ -400,7 +400,7 @@ void MIPxpressWrapper::Options::printHelp(ostream& os) {
   os << "XPRESS MIP wrapper options:" << std::endl
      << "--msgLevel <n>       print solver output, default: 0" << std::endl
      << "--logFile <file>     log file" << std::endl
-     << "--solver-time-limit <N>        stop search after N seconds (e.g., 0.01), if negative, it "
+     << "--solver-time-limit <N>        stop search after N milliseconds wall time, if negative, it "
         "will only stop if at least one solution was found"
      << std::endl
      << "-n <N>, --numSolutions <N>   stop search after N solutions" << std::endl
@@ -438,7 +438,7 @@ bool MIPxpressWrapper::Options::processOption(int& i, std::vector<std::string>& 
   if (cop.get("--msgLevel", &msgLevel)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--logFile", &buffer)) {
     logFile = MiniZinc::FileUtils::file_path(buffer, workingDir);
-  } else if (cop.get("--solver-time-limit", &timeout)) {     // NOLINT: Allow repeated empty if
+  } else if (cop.get("--solver-time-limit", &nTimeout)) {     // NOLINT: Allow repeated empty if
   } else if (cop.get("-n --numSolutions", &numSolutions)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--writeModel", &buffer)) {
     writeModelFile = MiniZinc::FileUtils::file_path(buffer, workingDir);
@@ -460,8 +460,9 @@ void MIPxpressWrapper::setOptions() {
   _plugin->XPRSsetintcontrol(_problem, XPRS_OUTPUTLOG, _options->msgLevel);
 
   _plugin->XPRSsetlogfile(_problem, _options->logFile.c_str());
-  if (_options->timeout != 0) {
-    _plugin->XPRSsetdblcontrol(_problem, XPRS_TIMELIMIT, _options->timeout);
+  if (_options->nTimeout > 0) {
+    double timeLimitSec = static_cast<double>(_options->nTimeout) / 1000.0;
+    _plugin->XPRSsetdblcontrol(_problem, 7158, timeLimitSec);  // 7158 = XPRS_TIMELIMIT (macro doesn't work via plugin)
   }
   _plugin->XPRSsetintcontrol(_problem, XPRS_MAXMIPSOL, _options->numSolutions);
   _plugin->XPRSsetdblcontrol(_problem, XPRS_MIPABSSTOP, _options->absGap);

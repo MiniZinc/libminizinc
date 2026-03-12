@@ -139,7 +139,7 @@ public:
   class Options : public MiniZinc::SolverInstanceBase::Options {
   public:
     int msgLevel = 0;
-    double timeout = 0;
+    int nTimeout = -1;
     int numSolutions = 0;
     std::string logFile;
     std::string writeModelFile;
