@@ -57,14 +57,15 @@ public:
                             const int start[], const int rowind[], const double rowcoef[],
                             const double lb[], const double ub[]);
   // NOLINTNEXTLINE(readability-identifier-naming)
-  int(XPRS_CC* XPRSoptimize)(XPRSprob prob, const char* flags, int* solution_status, int* objective_status);
+  int(XPRS_CC* XPRSoptimize)(XPRSprob prob, const char* flags, int* solution_status,
+                             int* objective_status);
   // NOLINTNEXTLINE(readability-identifier-naming)
   int(XPRS_CC* XPRSgetsolution)(XPRSprob prob, int* status, double x[], int first, int last);
   // NOLINTNEXTLINE(readability-identifier-naming)
   int(XPRS_CC* XPRSchgobjsense)(XPRSprob prob, int objsense);
   // NOLINTNEXTLINE(readability-identifier-naming)
-  int(XPRS_CC* XPRSchgbounds)(XPRSprob prob, int nbounds, const int colind[],
-                              const char bndtype[], const double bndval[]);
+  int(XPRS_CC* XPRSchgbounds)(XPRSprob prob, int nbounds, const int colind[], const char bndtype[],
+                              const double bndval[]);
   // NOLINTNEXTLINE(readability-identifier-naming)
   int(XPRS_CC* XPRSchgcoltype)(XPRSprob prob, int ncols, const int colind[], const char coltype[]);
   // NOLINTNEXTLINE(readability-identifier-naming)
@@ -110,8 +111,8 @@ public:
   int(XPRS_CC* XPRSaddmipsol)(XPRSprob prob, int ilength, const double mipsolval[],
                               const int mipsolcol[], const char* solname);
   // NOLINTNEXTLINE(readability-identifier-naming)
-  int(XPRS_CC* XPRSaddindicators)(XPRSprob prob, int nrows, const int rowind[],
-                                  const int colind[], const int complement[]);
+  int(XPRS_CC* XPRSaddindicators)(XPRSprob prob, int nrows, const int rowind[], const int colind[],
+                                  const int complement[]);
   // NOLINTNEXTLINE(readability-identifier-naming)
   int(XPRS_CC* XPRSaddqmatrix)(XPRSprob prob, int row, int ncoefs, const int rowqcol1[],
                                const int rowqcol2[], const double rowqcoef[]);
@@ -206,37 +207,37 @@ private:
   XPRSprob _problem{nullptr};
 
   // Solution storage:
-  std::vector<double> _x;          // Solution values
+  std::vector<double> _x;  // Solution values
 
   // Problem data (batch mode for C API):
-  std::vector<double> _obj;        // Objective coefficients
-  std::vector<double> _lb;         // Variable lower bounds
-  std::vector<double> _ub;         // Variable upper bounds
-  std::vector<char> _vtype;        // Variable types ('C', 'B', 'I')
+  std::vector<double> _obj;  // Objective coefficients
+  std::vector<double> _lb;   // Variable lower bounds
+  std::vector<double> _ub;   // Variable upper bounds
+  std::vector<char> _vtype;  // Variable types ('C', 'B', 'I')
 
   // Constraint data:
-  std::vector<char> _rowtype;      // 'L', 'E', 'G'
-  std::vector<double> _rhs;        // RHS values
-  std::vector<double> _rng;        // Range values (for ranged constraints)
-  std::vector<int> _start;         // Start indices for constraint coefficients
-  std::vector<int> _rowind;        // Column indices in constraints
-  std::vector<double> _rowcoef;    // Coefficient values
+  std::vector<char> _rowtype;    // 'L', 'E', 'G'
+  std::vector<double> _rhs;      // RHS values
+  std::vector<double> _rng;      // Range values (for ranged constraints)
+  std::vector<int> _start;       // Start indices for constraint coefficients
+  std::vector<int> _rowind;      // Column indices in constraints
+  std::vector<double> _rowcoef;  // Coefficient values
 
   // Indicator constraint data:
-  std::vector<int> _indicatorRows;       // Row indices for indicator constraints
-  std::vector<int> _indicatorVars;       // Binary variable indices
-  std::vector<int> _indicatorComplements; // Complement flags
+  std::vector<int> _indicatorRows;         // Row indices for indicator constraints
+  std::vector<int> _indicatorVars;         // Binary variable indices
+  std::vector<int> _indicatorComplements;  // Complement flags
 
   // Bilinear term data (for constraints like z = x*y, implemented via XPRSaddqmatrix):
   struct BilinearTerm {
-    int row;        // Row index where constraint is added
-    int x, y, z;    // Variables: z = x * y
+    int row;      // Row index where constraint is added
+    int x, y, z;  // Variables: z = x * y
   };
   std::vector<BilinearTerm> _bilinearTerms;
 
   size_t _nCols{0};
   size_t _nRows{0};
-  int _objsense{-1};               // Objective sense: XPRS_OBJ_MINIMIZE (-1) or XPRS_OBJ_MAXIMIZE (1)
+  int _objsense{-1};  // Objective sense: XPRS_OBJ_MINIMIZE (-1) or XPRS_OBJ_MAXIMIZE (1)
   bool _problemLoaded{false};
 
   void openXpress();

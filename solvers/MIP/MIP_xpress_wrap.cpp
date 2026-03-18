@@ -49,7 +49,7 @@ public:
 };
 
 // Helper to check Xpress return codes and throw on error
-static void checkXpressReturn(int rc, const char* operation) {
+static void check_xpress_return(int rc, const char* operation) {
   if (rc != 0) {
     throw XpressException(std::string(operation) + " (error code: " + std::to_string(rc) + ")");
   }
@@ -130,12 +130,12 @@ void MIPxpressWrapper::openXpress() {
   // Call XPRSinit for each problem - Xpress reference-counts internally
   // and only releases the license on the last XPRSfree call
   int rc = _plugin->XPRSinit(nullptr);
-  checkXpressReturn(rc, "Failed to initialize Xpress");
+  check_xpress_return(rc, "Failed to initialize Xpress");
 
   rc = _plugin->XPRScreateprob(&_problem);
   if (rc != 0) {
     _plugin->XPRSfree();  // Undo the init on failure
-    checkXpressReturn(rc, "Failed to create Xpress problem");
+    check_xpress_return(rc, "Failed to create Xpress problem");
   }
 }
 
@@ -264,78 +264,352 @@ vector<MiniZinc::SolverConfig::ExtraFlag> MIPxpressWrapper::getExtraFlags(
     XPRSprob prb = p._problem;
     // Using string parameter names because there doesn't seem to be a way to recover
     // the name from a parameter ID number
-    static std::vector<std::string> all_params = {
-        "algaftercrossover", "algafternetwork", "alternativeredcosts", "autocutting", "autoperturb",
-        "autoscaling", "backtrack", "backtracktie", "backgroundmaxthreads", "backgroundselect",
-        "baralg", "barcores", "barcrash", "bardualstop", "barfailiterlimit",
-        "barfreescale", "bargapstop", "bargaptarget", "barhgextrapolate", "barhggpu",
-        "barhggpublocksize", "barhgmaxrestarts", "barhgops", "barhgprecision", "barhgreltol",
-        "barindeflimit", "bariterative", "bariterlimit", "barkernel", "barlargebound",
-        "barobjperturb", "barobjscale", "barorder", "barorderthreads", "baroutput",
-        "barperturb", "barpresolveops", "barprimalstop", "barrefiter", "barregularize",
-        "barrhsscale", "barsolution", "barstart", "barstartweight", "barstepstop",
-        "barthreads", "bigm", "bigmmethod", "branchchoice", "branchdisj",
-        "branchstructural", "breadthfirst", "cachesize", "callbackchecktimedelay", "callbackchecktimeworkdelay",
-        "callbackfrommainthread", "checkinputdata", "choleskyalg", "choleskytol", "clamping",
-        "compute", "computeexecservice", "computejobpriority", "computelog", "concurrentthreads",
-        "conflictcuts", "corespercpu", "covercuts", "cpialpha", "cpuplatform",
-        "cputime", "crash", "crossover", "crossoveraccuracytol", "crossoveriterlimit",
-        "crossoverops", "crossoverthreads", "cstyle", "cutdepth", "cutfactor",
-        "cutfreq", "cutselect", "cutstrategy", "defaultalg", "densecollimit",
-        "deterministic", "deterministiclog", "dualgradient", "dualize", "dualizeops",
-        "dualperturb", "dualstrategy", "dualthreads", "eigenvaluetol", "elimfillin",
-        "elimtol", "escapenames", "etatol", "extracols", "extraelems",
-        "extramipents", "extrapresolve", "extraqcelements", "extraqcrows", "extrarows",
-        "extrasetelems", "extrasets", "feasibilityjump", "feasibilitypump", "feastol",
-        "feastolperturb", "feastoltarget", "forceoutput", "forceparalleldual", "genconsabstransformation",
-        "genconsdualreductions", "globalboundingbox", "globallsheurstrategy", "globalnlpcuts", "globalnuminitnlpcuts",
-        "globalpresolveobbt", "globalspatialbranchcuttingeffort", "globalspatialbranchifpreferorig", "globalspatialbranchpropagationeffort", "globaltreenlpcuts",
-        "gomcuts", "gpuplatform", "heurbeforelp", "heurdepth", "heurdiveiterlimit",
-        "heurdiverandomize", "heurdivesoftrounding", "heurdivespeedup", "heurdivestrategy", "heuremphasis",
-        "heurforcespecialobj", "heurfreq", "heurmaxsol", "heurnodes", "heursearchbackgroundselect",
-        "heursearchcopycontrols", "heursearcheffort", "heursearchfreq", "heursearchrootcutfreq", "heursearchrootselect",
-        "heursearchtreeselect", "heurshiftprop", "heurstrategy", "heurthreads", "historycosts",
-        "ifcheckconvexity", "iislog", "iisops", "indlinbigm", "indprelinbigm",
-        "inputtol", "invertfreq", "invertmin", "iotimeout", "keepbasis",
-        "keepnrows", "l1cache", "linelength", "lnpbest", "lnpiterlimit",
-        "localchoice", "lpflags", "lpfolding", "lpiterlimit", "lplog",
-        "lplogdelay", "lplogstyle", "lprefineiterlimit", "lpthreads", "markowitztol",
-        "matrixtol", "maxchecksonmaxcuttime", "maxchecksonmaxtime", "maxcuttime", "maxiis",
-        "maximpliedbound", "maxlocalbacktrack", "maxmcoeffbufferelems", "maxmemoryhard", "maxmemorysoft",
-        "maxmipsol", "maxmiptasks", "maxnode", "maxpagelines", "maxscalefactor",
-        "maxstalltime", "maxtime", "maxtreefilesize", "mcfcutstrategy", "mipabscutoff",
-        "mipabsgapnotify", "mipabsgapnotifybound", "mipabsgapnotifyobj", "mipabsstop", "mipaddcutoff",
-        "mipcomponents", "mipconcurrentnodes", "mipconcurrentsolves", "mipdualreductions", "mipfracreduce",
-        "mipkappafreq", "miplog", "mippresolve", "miprampup", "miprefineiterlimit",
-        "miprelcutoff", "miprelgapnotify", "miprelstop", "miprestart", "miprestartfactor",
-        "miprestartgapthreshold", "mipterminationmethod", "mipthreads", "miptol", "miptoltarget",
-        "miqcpalg", "mps18compatible", "mpsboundname", "mpsecho", "mpsformat",
-        "mpsobjname", "mpsrangename", "mpsrhsname", "multiobjlog", "multiobjops",
-        "mutexcallbacks", "netstalllimit", "nodeprobingeffort", "nodeselection", "numericalemphasis",
-        "objscalefactor", "optimalitytol", "optimalitytoltarget", "outputcontrols", "outputlog",
-        "outputmask", "outputtol", "penalty", "perturb", "pivottol",
-        "ppfactor", "preanalyticcenter", "prebasisred", "prebndredcone", "prebndredquad",
-        "precliquestrategy", "precoefelim", "precomponents", "precomponentseffort", "preconedecomp",
-        "preconfiguration", "preconvertobjtocons", "preconvertseparable", "predomcol", "predomrow",
-        "preduprow", "preelimquad", "prefolding", "preimplications", "prelindep",
-        "preobjcutdetect", "prepermute", "prepermuteseed", "preprobing", "preprotectdual",
-        "prerooteffort", "prerootthreads", "prerootworklimit", "presolve", "presolvemaxgrow",
-        "presolveops", "presolvepasses", "presort", "pricingalg", "primalops",
-        "primalperturb", "primalunshift", "pseudocost", "pwldualreductions", "pwlnonconvextransformation",
-        "qccuts", "qcrootalg", "qsimplexops", "quadraticunshift", "randomseed",
-        "refactor", "refineops", "relaxtreememorylimit", "relpivottol", "repairindefiniteq",
-        "repairinfeasmaxtime", "repairinfeastimelimit", "resourcestrategy", "rltcuts", "rootpresolve",
-        "sbbest", "sbeffort", "sbestimate", "sbiterlimit", "sbselect",
-        "scaling", "sdpcutstrategy", "serializepreintsol", "sifting", "siftpasses",
-        "siftpresolveops", "siftswitch", "sleeponthreadwait", "soltimelimit", "sosreftol",
-        "symmetry", "symselect", "threads", "timelimit", "trace",
-        "treecompression", "treecovercuts", "treecutselect", "treediagnostics", "treefileloginterval",
-        "treegomcuts", "treememorylimit", "treememorysavingtarget", "treeqccuts", "tunerhistory",
-        "tunermaxtime", "tunermethod", "tunermethodfile", "tunermode", "tuneroutput",
-        "tuneroutputpath", "tunerpermute", "tunersessionname", "tunertarget", "tunerthreads",
-        "tunerrootalg", "tunerverbose", "usersolheuristic", "varselection", "version",
-        "worklimit"
-    };
+    static std::vector<std::string> all_params = {"algaftercrossover",
+                                                  "algafternetwork",
+                                                  "alternativeredcosts",
+                                                  "autocutting",
+                                                  "autoperturb",
+                                                  "autoscaling",
+                                                  "backtrack",
+                                                  "backtracktie",
+                                                  "backgroundmaxthreads",
+                                                  "backgroundselect",
+                                                  "baralg",
+                                                  "barcores",
+                                                  "barcrash",
+                                                  "bardualstop",
+                                                  "barfailiterlimit",
+                                                  "barfreescale",
+                                                  "bargapstop",
+                                                  "bargaptarget",
+                                                  "barhgextrapolate",
+                                                  "barhggpu",
+                                                  "barhggpublocksize",
+                                                  "barhgmaxrestarts",
+                                                  "barhgops",
+                                                  "barhgprecision",
+                                                  "barhgreltol",
+                                                  "barindeflimit",
+                                                  "bariterative",
+                                                  "bariterlimit",
+                                                  "barkernel",
+                                                  "barlargebound",
+                                                  "barobjperturb",
+                                                  "barobjscale",
+                                                  "barorder",
+                                                  "barorderthreads",
+                                                  "baroutput",
+                                                  "barperturb",
+                                                  "barpresolveops",
+                                                  "barprimalstop",
+                                                  "barrefiter",
+                                                  "barregularize",
+                                                  "barrhsscale",
+                                                  "barsolution",
+                                                  "barstart",
+                                                  "barstartweight",
+                                                  "barstepstop",
+                                                  "barthreads",
+                                                  "bigm",
+                                                  "bigmmethod",
+                                                  "branchchoice",
+                                                  "branchdisj",
+                                                  "branchstructural",
+                                                  "breadthfirst",
+                                                  "cachesize",
+                                                  "callbackchecktimedelay",
+                                                  "callbackchecktimeworkdelay",
+                                                  "callbackfrommainthread",
+                                                  "checkinputdata",
+                                                  "choleskyalg",
+                                                  "choleskytol",
+                                                  "clamping",
+                                                  "compute",
+                                                  "computeexecservice",
+                                                  "computejobpriority",
+                                                  "computelog",
+                                                  "concurrentthreads",
+                                                  "conflictcuts",
+                                                  "corespercpu",
+                                                  "covercuts",
+                                                  "cpialpha",
+                                                  "cpuplatform",
+                                                  "cputime",
+                                                  "crash",
+                                                  "crossover",
+                                                  "crossoveraccuracytol",
+                                                  "crossoveriterlimit",
+                                                  "crossoverops",
+                                                  "crossoverthreads",
+                                                  "cstyle",
+                                                  "cutdepth",
+                                                  "cutfactor",
+                                                  "cutfreq",
+                                                  "cutselect",
+                                                  "cutstrategy",
+                                                  "defaultalg",
+                                                  "densecollimit",
+                                                  "deterministic",
+                                                  "deterministiclog",
+                                                  "dualgradient",
+                                                  "dualize",
+                                                  "dualizeops",
+                                                  "dualperturb",
+                                                  "dualstrategy",
+                                                  "dualthreads",
+                                                  "eigenvaluetol",
+                                                  "elimfillin",
+                                                  "elimtol",
+                                                  "escapenames",
+                                                  "etatol",
+                                                  "extracols",
+                                                  "extraelems",
+                                                  "extramipents",
+                                                  "extrapresolve",
+                                                  "extraqcelements",
+                                                  "extraqcrows",
+                                                  "extrarows",
+                                                  "extrasetelems",
+                                                  "extrasets",
+                                                  "feasibilityjump",
+                                                  "feasibilitypump",
+                                                  "feastol",
+                                                  "feastolperturb",
+                                                  "feastoltarget",
+                                                  "forceoutput",
+                                                  "forceparalleldual",
+                                                  "genconsabstransformation",
+                                                  "genconsdualreductions",
+                                                  "globalboundingbox",
+                                                  "globallsheurstrategy",
+                                                  "globalnlpcuts",
+                                                  "globalnuminitnlpcuts",
+                                                  "globalpresolveobbt",
+                                                  "globalspatialbranchcuttingeffort",
+                                                  "globalspatialbranchifpreferorig",
+                                                  "globalspatialbranchpropagationeffort",
+                                                  "globaltreenlpcuts",
+                                                  "gomcuts",
+                                                  "gpuplatform",
+                                                  "heurbeforelp",
+                                                  "heurdepth",
+                                                  "heurdiveiterlimit",
+                                                  "heurdiverandomize",
+                                                  "heurdivesoftrounding",
+                                                  "heurdivespeedup",
+                                                  "heurdivestrategy",
+                                                  "heuremphasis",
+                                                  "heurforcespecialobj",
+                                                  "heurfreq",
+                                                  "heurmaxsol",
+                                                  "heurnodes",
+                                                  "heursearchbackgroundselect",
+                                                  "heursearchcopycontrols",
+                                                  "heursearcheffort",
+                                                  "heursearchfreq",
+                                                  "heursearchrootcutfreq",
+                                                  "heursearchrootselect",
+                                                  "heursearchtreeselect",
+                                                  "heurshiftprop",
+                                                  "heurstrategy",
+                                                  "heurthreads",
+                                                  "historycosts",
+                                                  "ifcheckconvexity",
+                                                  "iislog",
+                                                  "iisops",
+                                                  "indlinbigm",
+                                                  "indprelinbigm",
+                                                  "inputtol",
+                                                  "invertfreq",
+                                                  "invertmin",
+                                                  "iotimeout",
+                                                  "keepbasis",
+                                                  "keepnrows",
+                                                  "l1cache",
+                                                  "linelength",
+                                                  "lnpbest",
+                                                  "lnpiterlimit",
+                                                  "localchoice",
+                                                  "lpflags",
+                                                  "lpfolding",
+                                                  "lpiterlimit",
+                                                  "lplog",
+                                                  "lplogdelay",
+                                                  "lplogstyle",
+                                                  "lprefineiterlimit",
+                                                  "lpthreads",
+                                                  "markowitztol",
+                                                  "matrixtol",
+                                                  "maxchecksonmaxcuttime",
+                                                  "maxchecksonmaxtime",
+                                                  "maxcuttime",
+                                                  "maxiis",
+                                                  "maximpliedbound",
+                                                  "maxlocalbacktrack",
+                                                  "maxmcoeffbufferelems",
+                                                  "maxmemoryhard",
+                                                  "maxmemorysoft",
+                                                  "maxmipsol",
+                                                  "maxmiptasks",
+                                                  "maxnode",
+                                                  "maxpagelines",
+                                                  "maxscalefactor",
+                                                  "maxstalltime",
+                                                  "maxtime",
+                                                  "maxtreefilesize",
+                                                  "mcfcutstrategy",
+                                                  "mipabscutoff",
+                                                  "mipabsgapnotify",
+                                                  "mipabsgapnotifybound",
+                                                  "mipabsgapnotifyobj",
+                                                  "mipabsstop",
+                                                  "mipaddcutoff",
+                                                  "mipcomponents",
+                                                  "mipconcurrentnodes",
+                                                  "mipconcurrentsolves",
+                                                  "mipdualreductions",
+                                                  "mipfracreduce",
+                                                  "mipkappafreq",
+                                                  "miplog",
+                                                  "mippresolve",
+                                                  "miprampup",
+                                                  "miprefineiterlimit",
+                                                  "miprelcutoff",
+                                                  "miprelgapnotify",
+                                                  "miprelstop",
+                                                  "miprestart",
+                                                  "miprestartfactor",
+                                                  "miprestartgapthreshold",
+                                                  "mipterminationmethod",
+                                                  "mipthreads",
+                                                  "miptol",
+                                                  "miptoltarget",
+                                                  "miqcpalg",
+                                                  "mps18compatible",
+                                                  "mpsboundname",
+                                                  "mpsecho",
+                                                  "mpsformat",
+                                                  "mpsobjname",
+                                                  "mpsrangename",
+                                                  "mpsrhsname",
+                                                  "multiobjlog",
+                                                  "multiobjops",
+                                                  "mutexcallbacks",
+                                                  "netstalllimit",
+                                                  "nodeprobingeffort",
+                                                  "nodeselection",
+                                                  "numericalemphasis",
+                                                  "objscalefactor",
+                                                  "optimalitytol",
+                                                  "optimalitytoltarget",
+                                                  "outputcontrols",
+                                                  "outputlog",
+                                                  "outputmask",
+                                                  "outputtol",
+                                                  "penalty",
+                                                  "perturb",
+                                                  "pivottol",
+                                                  "ppfactor",
+                                                  "preanalyticcenter",
+                                                  "prebasisred",
+                                                  "prebndredcone",
+                                                  "prebndredquad",
+                                                  "precliquestrategy",
+                                                  "precoefelim",
+                                                  "precomponents",
+                                                  "precomponentseffort",
+                                                  "preconedecomp",
+                                                  "preconfiguration",
+                                                  "preconvertobjtocons",
+                                                  "preconvertseparable",
+                                                  "predomcol",
+                                                  "predomrow",
+                                                  "preduprow",
+                                                  "preelimquad",
+                                                  "prefolding",
+                                                  "preimplications",
+                                                  "prelindep",
+                                                  "preobjcutdetect",
+                                                  "prepermute",
+                                                  "prepermuteseed",
+                                                  "preprobing",
+                                                  "preprotectdual",
+                                                  "prerooteffort",
+                                                  "prerootthreads",
+                                                  "prerootworklimit",
+                                                  "presolve",
+                                                  "presolvemaxgrow",
+                                                  "presolveops",
+                                                  "presolvepasses",
+                                                  "presort",
+                                                  "pricingalg",
+                                                  "primalops",
+                                                  "primalperturb",
+                                                  "primalunshift",
+                                                  "pseudocost",
+                                                  "pwldualreductions",
+                                                  "pwlnonconvextransformation",
+                                                  "qccuts",
+                                                  "qcrootalg",
+                                                  "qsimplexops",
+                                                  "quadraticunshift",
+                                                  "randomseed",
+                                                  "refactor",
+                                                  "refineops",
+                                                  "relaxtreememorylimit",
+                                                  "relpivottol",
+                                                  "repairindefiniteq",
+                                                  "repairinfeasmaxtime",
+                                                  "repairinfeastimelimit",
+                                                  "resourcestrategy",
+                                                  "rltcuts",
+                                                  "rootpresolve",
+                                                  "sbbest",
+                                                  "sbeffort",
+                                                  "sbestimate",
+                                                  "sbiterlimit",
+                                                  "sbselect",
+                                                  "scaling",
+                                                  "sdpcutstrategy",
+                                                  "serializepreintsol",
+                                                  "sifting",
+                                                  "siftpasses",
+                                                  "siftpresolveops",
+                                                  "siftswitch",
+                                                  "sleeponthreadwait",
+                                                  "soltimelimit",
+                                                  "sosreftol",
+                                                  "symmetry",
+                                                  "symselect",
+                                                  "threads",
+                                                  "timelimit",
+                                                  "trace",
+                                                  "treecompression",
+                                                  "treecovercuts",
+                                                  "treecutselect",
+                                                  "treediagnostics",
+                                                  "treefileloginterval",
+                                                  "treegomcuts",
+                                                  "treememorylimit",
+                                                  "treememorysavingtarget",
+                                                  "treeqccuts",
+                                                  "tunerhistory",
+                                                  "tunermaxtime",
+                                                  "tunermethod",
+                                                  "tunermethodfile",
+                                                  "tunermode",
+                                                  "tuneroutput",
+                                                  "tuneroutputpath",
+                                                  "tunerpermute",
+                                                  "tunersessionname",
+                                                  "tunertarget",
+                                                  "tunerthreads",
+                                                  "tunerrootalg",
+                                                  "tunerverbose",
+                                                  "usersolheuristic",
+                                                  "varselection",
+                                                  "version",
+                                                  "worklimit"};
     std::vector<MiniZinc::SolverConfig::ExtraFlag> res;
     for (auto param : all_params) {
       int n;
@@ -400,8 +674,8 @@ void MIPxpressWrapper::Options::printHelp(ostream& os) {
   os << "XPRESS MIP wrapper options:" << std::endl
      << "--msgLevel <n>       print solver output, default: 0" << std::endl
      << "--logFile <file>     log file" << std::endl
-     << "--solver-time-limit <N>        stop search after N milliseconds wall time, if negative, it "
-        "will only stop if at least one solution was found"
+     << "--solver-time-limit <N>        stop search after N milliseconds wall time, if negative, "
+        "it will only stop if at least one solution was found"
      << std::endl
      << "-n <N>, --numSolutions <N>   stop search after N solutions" << std::endl
      << "--writeModel <file>  write model to <file>" << std::endl
@@ -438,7 +712,7 @@ bool MIPxpressWrapper::Options::processOption(int& i, std::vector<std::string>& 
   if (cop.get("--msgLevel", &msgLevel)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--logFile", &buffer)) {
     logFile = MiniZinc::FileUtils::file_path(buffer, workingDir);
-  } else if (cop.get("--solver-time-limit", &nTimeout)) {     // NOLINT: Allow repeated empty if
+  } else if (cop.get("--solver-time-limit", &nTimeout)) {    // NOLINT: Allow repeated empty if
   } else if (cop.get("-n --numSolutions", &numSolutions)) {  // NOLINT: Allow repeated empty if
   } else if (cop.get("--writeModel", &buffer)) {
     writeModelFile = MiniZinc::FileUtils::file_path(buffer, workingDir);
@@ -650,11 +924,11 @@ void MIPxpressWrapper::writeModelIfRequested() {
     int rc;
     if (filename.size() >= 4 && filename.substr(filename.size() - 4) == ".svf") {
       rc = _plugin->XPRSsaveas(_problem, filename.c_str());
-      checkXpressReturn(rc, ("Failed to save problem to " + filename).c_str());
+      check_xpress_return(rc, ("Failed to save problem to " + filename).c_str());
     } else {
       const char* flags = "";
       rc = _plugin->XPRSwriteprob(_problem, filename.c_str(), flags);
-      checkXpressReturn(rc, ("Failed to write problem to " + filename).c_str());
+      check_xpress_return(rc, ("Failed to write problem to " + filename).c_str());
     }
   }
 }
@@ -686,22 +960,21 @@ void MIPxpressWrapper::loadProblem() {
 
   // Use XPRSloadmip to load variables with types in one call (avoids bound reset issue)
   int rc = _plugin->XPRSloadmip(
-      _problem, "mzn_problem", static_cast<int>(_nCols), 0,  // 0 rows initially
-      nullptr, nullptr, nullptr,                              // No row data yet
-      _obj.data(), empty_start.data(), nullptr,               // Objective with empty matrix
-      nullptr, nullptr, _lb.data(), _ub.data(),
-      nentities, 0,                                           // nentities, nsets=0
-      nentities > 0 ? coltype.data() : nullptr,               // Entity types
-      nentities > 0 ? entind.data() : nullptr,                // Entity indices
-      nullptr, nullptr, nullptr, nullptr, nullptr);           // No limits, no SOS sets
-  checkXpressReturn(rc, "Failed to load MIP problem");
+      _problem, "mzn_problem", static_cast<int>(_nCols), 0,    // 0 rows initially
+      nullptr, nullptr, nullptr,                               // No row data yet
+      _obj.data(), empty_start.data(), nullptr,                // Objective with empty matrix
+      nullptr, nullptr, _lb.data(), _ub.data(), nentities, 0,  // nentities, nsets=0
+      nentities > 0 ? coltype.data() : nullptr,                // Entity types
+      nentities > 0 ? entind.data() : nullptr,                 // Entity indices
+      nullptr, nullptr, nullptr, nullptr, nullptr);            // No limits, no SOS sets
+  check_xpress_return(rc, "Failed to load MIP problem");
 
   // Add all constraints (pass nullptr for range to allow quadratic equalities)
   if (_nRows > 0) {
     rc = _plugin->XPRSaddrows(_problem, static_cast<int>(_nRows), static_cast<int>(_rowind.size()),
-                              _rowtype.data(), _rhs.data(), nullptr, _start.data(),
-                              _rowind.data(), _rowcoef.data());
-    checkXpressReturn(rc, "Failed to add rows");
+                              _rowtype.data(), _rhs.data(), nullptr, _start.data(), _rowind.data(),
+                              _rowcoef.data());
+    check_xpress_return(rc, "Failed to add rows");
   }
 
   // Add indicator constraints if any
@@ -710,9 +983,10 @@ void MIPxpressWrapper::loadProblem() {
       rc = _plugin->XPRSaddindicators(_problem, static_cast<int>(_indicatorRows.size()),
                                       _indicatorRows.data(), _indicatorVars.data(),
                                       _indicatorComplements.data());
-      checkXpressReturn(rc, "Failed to add indicator constraints");
+      check_xpress_return(rc, "Failed to add indicator constraints");
     } else {
-      throw XpressException("Indicator constraints requested but not supported in this version of Xpress");
+      throw XpressException(
+          "Indicator constraints requested but not supported in this version of Xpress");
     }
   }
 
@@ -731,7 +1005,7 @@ void MIPxpressWrapper::loadProblem() {
       double dqe[] = {0.5};  // Coefficient 0.5 for symmetric Q matrix
 
       rc = _plugin->XPRSaddqmatrix(_problem, term.row, 1, mqcol1, mqcol2, dqe);
-      checkXpressReturn(rc, "Failed to add quadratic matrix");
+      check_xpress_return(rc, "Failed to add quadratic matrix");
     }
   }
 
@@ -873,7 +1147,7 @@ void MIPxpressWrapper::addIndicatorConstraint(int iBVar, int bVal, int nnz, int*
   // If problem is already loaded, we need to add the indicator now
   if (_problemLoaded) {
     int rc = _plugin->XPRSaddindicators(_problem, 1, &rowIndex, &iBVar, &complement);
-    checkXpressReturn(rc, "Failed to add indicator constraint");
+    check_xpress_return(rc, "Failed to add indicator constraint");
   } else {
     // Store indicator info for later when we load the problem
     // We need to track these for when loadProblem() is called
@@ -936,4 +1210,3 @@ void MIPxpressWrapper::addTimes(int x, int y, int z, const string& rowName) {
   term.z = z;
   _bilinearTerms.push_back(term);
 }
-
