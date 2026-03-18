@@ -462,7 +462,7 @@ void MIPxpressWrapper::setOptions() {
   _plugin->XPRSsetlogfile(_problem, _options->logFile.c_str());
   if (_options->nTimeout > 0) {
     double timeLimitSec = static_cast<double>(_options->nTimeout) / 1000.0;
-    _plugin->XPRSsetdblcontrol(_problem, 7158, timeLimitSec);  // 7158 = XPRS_TIMELIMIT (macro doesn't work via plugin)
+    _plugin->XPRSsetdblcontrol(_problem, XPRS_TIMELIMIT, timeLimitSec);
   }
   _plugin->XPRSsetintcontrol(_problem, XPRS_MAXMIPSOL, _options->numSolutions);
   _plugin->XPRSsetdblcontrol(_problem, XPRS_MIPABSSTOP, _options->absGap);
@@ -529,8 +529,8 @@ static string get_status_name(int solStatus) {
       return "infeasible";
     case XPRS_SOLSTATUS_UNBOUNDED:
       return "unbounded";
-    case XPRS_SOLSTATUS_UNFINISHED:
-      return "unfinished";
+    case XPRS_SOLSTATUS_NOTFOUND:
+      return "no solution found";
     default:
       return "unknown";
   }

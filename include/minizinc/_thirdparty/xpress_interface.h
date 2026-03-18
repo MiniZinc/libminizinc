@@ -18,23 +18,23 @@
 // XPRS control parameters
 #define XPRS_MIPABSSTOP                                              7019
 #define XPRS_MIPRELSTOP                                              7020
-#define XPRS_TIMELIMIT                                               7020
+#define XPRS_TIMELIMIT                                               7158
 #define XPRS_MAXMIPSOL                                               8021
-#define XPRS_OUTPUTLOG                                               8001
+#define XPRS_OUTPUTLOG                                               8035
 #define XPRS_THREADS                                                 8278
 #define XPRS_RANDOMSEED                                              8328
-#define XPRS_OBJVAL                                                  2001
+#define XPRS_OBJVAL                                                  2118
 #define XPRS_BESTBOUND                                               2004
-#define XPRS_SOLSTATUS                                               1010
+#define XPRS_SOLSTATUS                                               1053
 #define XPRS_NODES                                                   1013
 #define XPRS_ACTIVENODES                                             1015
 
 // XPRS_SOLSTATUS values
+#define XPRS_SOLSTATUS_NOTFOUND                                      0
 #define XPRS_SOLSTATUS_OPTIMAL                                       1
 #define XPRS_SOLSTATUS_FEASIBLE                                      2
 #define XPRS_SOLSTATUS_INFEASIBLE                                    3
 #define XPRS_SOLSTATUS_UNBOUNDED                                     4
-#define XPRS_SOLSTATUS_UNFINISHED                                    5
 #define XPRS_TYPE_INT                      1
 #define XPRS_TYPE_INT64                    2
 #define XPRS_TYPE_DOUBLE                   3
@@ -48,10 +48,3 @@ typedef struct xo_prob_struct* XPRSprob;
 #define XPRS_OBJ_MINIMIZE                 1
 #define XPRS_OBJ_MAXIMIZE                -1
 
-// XPRS Nonlinear (XPRSnlp) formula token types
-#define XPRS_TOK_EOF                      0
-#define XPRS_TOK_COL                      10
-#define XPRS_TOK_OP                       31
-
-// XPRS operator values for XPRS_TOK_OP
-#define XPRS_OP_MULTIPLY                  3
