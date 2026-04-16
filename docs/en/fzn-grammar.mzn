@@ -1,5 +1,5 @@
 % A FlatZinc model
-<model> ::= 
+<model> ::=
   [ <predicate-item> ]*
   [ <par-decl-item> ]*
   [ <var-decl-item> ]*
@@ -16,9 +16,6 @@
                    | "int"
                    | "float"
                    | "set of int"
-
-<par-type> ::= <basic-par-type>
-             | "array" "[" <index-set> "]" "of" <basic-par-type>
 
 <basic-var-type> ::= "var" <basic-par-type>
                    | "var" <int-literal> ".." <int-literal>
@@ -56,9 +53,6 @@
 <expr>       ::= <basic-expr>
                | <array-literal>
 
-<par-expr>   ::= <basic-literal-expr>
-               | <par-array-literal>
-
 <var-par-identifier> ::= [A-Za-z_][A-Za-z0-9_]*
 
 % Boolean literals
@@ -87,13 +81,12 @@
 
 % Parameter declarations
 
-<par-decl-item> ::= <par-type> ":" <var-par-identifier> "=" <par-expr> ";"
+<par-decl-item> ::= "array" "[" <index-set> "]" "of" <basic-par-type> ":" <var-par-identifier> "=" <par-array-literal> ";"
 
 % Variable declarations
 
 <var-decl-item> ::= <basic-var-type> ":" <var-par-identifier> <annotations> [ "=" <basic-expr> ] ";"
                   | <array-var-type> ":" <var-par-identifier> <annotations> "=" <array-literal> ";"
-                  
 
 % Constraint items
 

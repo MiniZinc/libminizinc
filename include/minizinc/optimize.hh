@@ -107,6 +107,12 @@ public:
 
 bool is_output(VarDecl* vd);
 
+/// Unify \a id0 into \a id1, updating occurrence maps and output model bookkeeping.
+void unify(EnvI& env, std::vector<VarDecl*>& deletedVarDecls, Id* id0, Id* id1);
+
+/// Remove any deleted variable declarations that have become unreachable.
+void remove_deleted_items(EnvI& env, std::vector<VarDecl*>& deletedVarDecls);
+
 /// Simplify models in \a env
 void optimize(Env& env, bool chain_compression = true);
 

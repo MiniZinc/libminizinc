@@ -198,7 +198,16 @@ void unify(EnvI& env, std::vector<VarDecl*>& deletedVarDecls, Id* id0, Id* id1) 
       std::swap(id0, id1);
     }
 
-    if (id0->decl()->e() != nullptr && !Expression::equal(id0->decl()->e(), id1->decl()->id())) {
+    // Once id0 is redirected to id1, an existing RHS alias stored from id0 to
+    // id1 would resolve as id1 = id1 after we move it across. We drop that
+    // degenerate alias instead of copying it.
+    if (auto* alias = Expression::dynamicCast<Id>(id0->decl()->e())) {
+      VarDecl* target = alias->decl();
+      if (target == id0->decl() || target == id1->decl()) {
+        id0->decl()->e(nullptr);
+      }
+    }
+    if (id0->decl()->e() != nullptr) {
       Expression* rhs = id0->decl()->e();
 
       auto* vdi1 = (*env.flat())[env.varOccurrences.find(id1->decl())] -> cast<VarDeclI>();
@@ -211,6 +220,20 @@ void unify(EnvI& env, std::vector<VarDecl*>& deletedVarDecls, Id* id0, Id* id1) 
       auto* vdi0 = (*env.flat())[env.varOccurrences.find(id0->decl())] -> cast<VarDeclI>();
       CollectDecls cd(env, env.varOccurrences, deletedVarDecls, vdi0);
       top_down(cd, rhs);
+    }
+    // If id1 already aliases id0 (or itself through an earlier redirect),
+    // redirecting id0 to id1 would make that RHS resolve as id1 = id1.
+    // Clear the alias and unsubscribe the old RHS occurrences now.
+    if (auto* alias = Expression::dynamicCast<Id>(id1->decl()->e())) {
+      VarDecl* target = alias->decl();
+      if (target == id0->decl() || target == id1->decl()) {
+        Expression* rhs = id1->decl()->e();
+        id1->decl()->e(nullptr);
+
+        auto* vdi1 = (*env.flat())[env.varOccurrences.find(id1->decl())] -> cast<VarDeclI>();
+        CollectDecls cd(env, env.varOccurrences, deletedVarDecls, vdi1);
+        top_down(cd, rhs);
+      }
     }
     if (Expression::equal(id1->decl()->e(), id0->decl()->id())) {
       auto* vdi1 = (*env.flat())[env.varOccurrences.find(id1->decl())] -> cast<VarDeclI>();
@@ -298,7 +321,7 @@ void unify(EnvI& env, std::vector<VarDecl*>& deletedVarDecls, Id* id0, Id* id1) 
       VarDecl* id1_output =
           (*env.output)[env.outputFlatVarOccurrences.find(id1->decl())]->cast<VarDeclI>()->e();
       auto* decl = Expression::cast<VarDecl>(follow_id_to_decl(id0_output));
-      if (decl->e() == nullptr) {
+      if (decl->e() == nullptr && decl != id1_output) {
         decl->e(id1_output->id());
       }
     }
@@ -1151,40 +1174,29 @@ protected:
 public:
   Expression* subst(Expression* e) {
     if (auto* vd = Expression::dynamicCast<VarDecl>(follow_id_to_decl(e))) {
-      if (vd->type().isbool() && (vd->ti()->domain() != nullptr)) {
+      if ((vd->e() != nullptr) && Expression::type(vd->e()).isPar() &&
+          Expression::type(vd->e()).dim() == 0) {
         _removed.push_back(vd);
-        return vd->ti()->domain();
+        return vd->e();
       }
-      if (vd->type().isint()) {
-        if ((vd->e() != nullptr) && Expression::isa<IntLit>(vd->e())) {
+      if (vd->ti()->domain() != nullptr) {
+        if (vd->type().isbool()) {
           _removed.push_back(vd);
-          return vd->e();
+          return vd->ti()->domain();
         }
-        if ((vd->ti()->domain() != nullptr) && Expression::isa<SetLit>(vd->ti()->domain()) &&
+        if (vd->type().isint() && Expression::isa<SetLit>(vd->ti()->domain()) &&
             Expression::cast<SetLit>(vd->ti()->domain())->isv()->size() == 1 &&
             Expression::cast<SetLit>(vd->ti()->domain())->isv()->min() ==
                 Expression::cast<SetLit>(vd->ti()->domain())->isv()->max()) {
           _removed.push_back(vd);
           return IntLit::a(Expression::cast<SetLit>(vd->ti()->domain())->isv()->min());
         }
-      }
-      if (vd->type().isfloat()) {
-        if ((vd->e() != nullptr) && Expression::isa<FloatLit>(vd->e())) {
-          _removed.push_back(vd);
-          return vd->e();
-        }
-        if ((vd->ti()->domain() != nullptr) && Expression::isa<SetLit>(vd->ti()->domain()) &&
+        if (vd->type().isfloat() && Expression::isa<SetLit>(vd->ti()->domain()) &&
             Expression::cast<SetLit>(vd->ti()->domain())->fsv()->size() == 1 &&
             Expression::cast<SetLit>(vd->ti()->domain())->fsv()->min() ==
                 Expression::cast<SetLit>(vd->ti()->domain())->fsv()->max()) {
           _removed.push_back(vd);
           return FloatLit::a(Expression::cast<SetLit>(vd->ti()->domain())->fsv()->min());
-        }
-      }
-      if (vd->type().isIntSet()) {
-        if ((vd->e() != nullptr) && Expression::isa<SetLit>(vd->e())) {
-          _removed.push_back(vd);
-          return vd->e();
         }
       }
     }

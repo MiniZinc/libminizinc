@@ -5635,29 +5635,39 @@ void oldflatzinc(Env& e) {
     }
   }
 
-  // Sort VarDecls in FlatZinc so that VarDecls are declared before use
-  std::vector<VarDeclI*> sortedVarDecls(declsWithIds.size());
-  int vdCount = 0;
+  std::vector<VarDecl*> deletedVarDecls;
   for (auto declsWithId : declsWithIds) {
-    VarDecl* cur = (*m)[declsWithId]->cast<VarDeclI>()->e();
-    std::vector<int> stack;
-    while ((cur != nullptr) && cur->payload() < 0) {
-      stack.push_back(cur->payload());
-      if (Id* id = Expression::dynamicCast<Id>(cur->e())) {
-        cur = id->decl();
-      } else {
-        cur = nullptr;
+    GCLock lock;
+    auto* item = (*m)[declsWithId];
+    if (item->removed()) {
+      continue;
+    }
+    auto* vdi = item->cast<VarDeclI>();
+    VarDecl* vd = vdi->e();
+    if (vd->e() == nullptr || !Expression::isa<Id>(vd->e())) {
+      continue;
+    }
+    std::unordered_set<VarDecl*> seen({vd});
+    auto* rhsDecl = Expression::cast<Id>(vd->e())->decl();
+    while (rhsDecl->e() != nullptr && Expression::isa<Id>(rhsDecl->e())) {
+      auto* nextDecl = Expression::cast<Id>(rhsDecl->e())->decl();
+      if (!seen.insert(rhsDecl).second || seen.count(nextDecl) != 0U) {
+        rhsDecl->e(nullptr);
+        break;
       }
+      rhsDecl = nextDecl;
     }
-    for (auto i = static_cast<unsigned int>(stack.size()); (i--) != 0U;) {
-      auto* vdi = (*m)[-stack[i] - 1]->cast<VarDeclI>();
-      vdi->e()->payload(-vdi->e()->payload() - 1);
-      sortedVarDecls[vdCount++] = vdi;
+    if (rhsDecl != vd) {
+      unify(env, deletedVarDecls, vd->id(), rhsDecl->id());
     }
   }
-  for (unsigned int i = 0; i < declsWithIds.size(); i++) {
-    (*m)[declsWithIds[i]] = sortedVarDecls[i];
+  {
+    GCLock lock;
+    remove_deleted_items(env, deletedVarDecls);
   }
+  assert(std::all_of(m->vardecls().begin(), m->vardecls().end(), [](const VarDeclI& vdi) {
+    return vdi.e()->e() == nullptr || Expression::isa<ArrayLit>(vdi.e()->e());
+  }));
 
   // Remove marked items
   m->compact();

@@ -14,6 +14,9 @@ Changes:
 -  Xpress solver migration from BCL to C API with support for Xpress 9.8
    parameters. Add support for indicator constraints, warm start, and
    convex quadratic inequalities.
+-  The compiler now removes all non-array right-hand sides from variable
+   declarations in FlatZinc. This minimizes the effort required when
+   parsing `.fzn` or FlatZinc JSON files.
 
 Bug fixes:
 ^^^^^^^^^^

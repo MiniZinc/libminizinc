@@ -98,7 +98,6 @@
                ]
             },
             "domain": { "$ref" : "#/$defs/domain" },
-            "rhs": { "$ref" : "#/$defs/literal" },
             "introduced": {
               "type": "boolean"
             },

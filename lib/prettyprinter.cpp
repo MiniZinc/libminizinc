@@ -2571,10 +2571,6 @@ void FznJSONPrinter::print(MiniZinc::Model* m) {
         }
         _os << "]";
       }
-      if (vd->e() != nullptr) {
-        _os << ", \"rhs\" : ";
-        printBasicElement(_os, vd->e());
-      }
       if (vd->introduced()) {
         _os << ", \"introduced\": true";
       }
