@@ -26,6 +26,7 @@
 #include <minizinc/typecheck.hh>
 
 #include <fstream>
+#include <functional>
 #include <utility>
 
 namespace MiniZinc {
@@ -34,6 +35,11 @@ using std::string;
 using std::vector;
 
 ASTString strip_stdlib_path(const vector<string>& includePaths, const ASTString& fs) {
+  // Some synthetic includes, such as models assembled from stdin input, do not have
+  // a backing filepath. Leave those unchanged instead of dereferencing a null ASTString.
+  if (fs.empty()) {
+    return fs;
+  }
   std::string f(fs.c_str());
   for (const auto& p : includePaths) {
     if (f.size() > p.size() && f.substr(0, p.size()) == p) {
@@ -65,16 +71,32 @@ Env* change_library(Env& e, vector<string>& includePaths, const string& globals_
 
   // Collect include items
   vector<ASTString> include_names;
-  for (Item* item : *m) {
+  std::function<void(Item*)> collect_item = [&](Item* item) {
     if (auto* inc = item->dynamicCast<IncludeI>()) {
-      if (FileUtils::is_absolute(inc->f().c_str())) {
+      // The optimization pipeline rebuilds the model against a different library.
+      // Includes that came from in-memory text cannot be re-emitted as `include "..."`,
+      // so copy their expanded contents into the synthetic model instead.
+      if (inc->m() != nullptr && inc->m()->filepath().empty() && !inc->m()->empty()) {
+        for (Item* nested : *inc->m()) {
+          collect_item(nested);
+        }
+        return;
+      }
+      if (!inc->f().empty() && FileUtils::is_absolute(inc->f().c_str())) {
         include_names.push_back(inc->f());
       } else {
-        include_names.push_back(strip_stdlib_path(new_includePaths, inc->m()->filepath()));
+        ASTString include_path = inc->m()->filepath();
+        if (include_path.empty()) {
+          include_path = inc->f();
+        }
+        include_names.push_back(strip_stdlib_path(new_includePaths, include_path));
       }
     } else {
       new_mod->addItem(copy(e.envi(), cm, item));
     }
+  };
+  for (Item* item : *m) {
+    collect_item(item);
   }
 
   std::stringstream ss;

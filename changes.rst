@@ -31,6 +31,9 @@ Bug fixes:
 -  Fix syntax for ``predicate-item`` in the FlatZinc grammar specification.
 -  Add missing type checking that ensure concatenation of tuples and records
    is only allowed for basic tuple and record types.
+-  Fix a crash when using ``--input-from-stdin`` together with optimisation
+   passes such as ``-O2``, caused by in-memory model fragments being treated as
+   file-backed includes during library rewriting.
 
 .. _v2.9.5:
 
