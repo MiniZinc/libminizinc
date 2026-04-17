@@ -263,7 +263,7 @@ public:
   typedef std::forward_iterator_tag iterator_category;
 
   VarDeclIterator() {}
-  VarDeclIterator(const VarDeclIterator& vi) : _it(vi._it) {}
+  VarDeclIterator(const VarDeclIterator& vi) : _model(vi._model), _it(vi._it) {}
   VarDeclIterator(Model* model, const Model::iterator& it) : _model(model), _it(it) {
     while (_it != _model->end() && (!(*_it)->isa<VarDeclI>() || (*_it)->removed())) {
       ++_it;
@@ -302,7 +302,7 @@ public:
   typedef std::forward_iterator_tag iterator_category;
 
   ConstraintIterator() {}
-  ConstraintIterator(const ConstraintIterator& vi) : _it(vi._it) {}
+  ConstraintIterator(const ConstraintIterator& vi) : _model(vi._model), _it(vi._it) {}
   ConstraintIterator(Model* model, const Model::iterator& it) : _model(model), _it(it) {
     while (_it != _model->end() && (!(*_it)->isa<ConstraintI>() || (*_it)->removed())) {
       ++_it;
@@ -341,7 +341,7 @@ public:
   typedef std::forward_iterator_tag iterator_category;
 
   FunctionIterator() {}
-  FunctionIterator(const FunctionIterator& vi) : _it(vi._it) {}
+  FunctionIterator(const FunctionIterator& vi) : _model(vi._model), _it(vi._it) {}
   FunctionIterator(Model* model, const Model::iterator& it) : _model(model), _it(it) {
     while (_it != _model->end() && (!(*_it)->isa<FunctionI>() || (*_it)->removed())) {
       ++_it;
