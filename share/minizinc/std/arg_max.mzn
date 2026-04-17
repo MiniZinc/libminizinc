@@ -225,7 +225,7 @@ function var int: arg_max_total(array [int] of var opt float: x) :: promise_tota
 	Assumption: |\a x| > 0
 */
 predicate maximum_arg(array [$$E] of var $$T: x, var $$E: i) =
-  fzn_maximum_arg_int(index2int(enum2int(x)), enum2int(i));
+  arg_max(x) = i;
 
 /** @group globals.math
 	Constrain \a i to be the index of the maximum value in the array \a x.
@@ -234,7 +234,7 @@ predicate maximum_arg(array [$$E] of var $$T: x, var $$E: i) =
 	Assumption: |\a x| > 0
 */
 predicate maximum_arg(array [$$E] of var bool: x, var $$E: i) =
-  fzn_maximum_arg_bool(index2int(x), enum2int(i));
+  arg_max(x) = i;
 
 /** @group globals.math
 	Constrain \a i to be the index of the maximum value in the array \a x.
@@ -243,4 +243,4 @@ predicate maximum_arg(array [$$E] of var bool: x, var $$E: i) =
 	Assumption: |\a x| > 0
 */
 predicate maximum_arg(array [$$E] of var float: x, var $$E: i) =
-  fzn_maximum_arg_float(index2int(x), enum2int(i));
+  arg_max(x) = i;

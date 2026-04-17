@@ -34,6 +34,9 @@ Bug fixes:
 -  Fix a crash when using ``--input-from-stdin`` together with optimisation
    passes such as ``-O2``, caused by in-memory model fragments being treated as
    file-backed includes during library rewriting.
+-  Fix the definitions of ``maximum_arg`` and ``minimum_arg`` to allow them to
+   be used in reified contexts when only the non-reified version is natively
+   supported by the solver (:bugref:`997`).
 
 .. _v2.9.5:
 
