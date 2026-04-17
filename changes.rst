@@ -29,6 +29,8 @@ Bug fixes:
 -  Fix missed type mismatches of enum types in record and tuple types during
    type specialisation. (:bugref:`998`)
 -  Fix syntax for ``predicate-item`` in the FlatZinc grammar specification.
+-  Add missing type checking that ensure concatenation of tuples and records
+   is only allowed for basic tuple and record types.
 
 .. _v2.9.5:
 

@@ -1364,6 +1364,13 @@ bool TypeInst::resolveAlias(EnvI& env) {
          << "' and is an array type";
       throw TypeError(env, Expression::loc(this), ss.str());
     }
+    if (ntype.structBT()) {
+      std::stringstream ss;
+      ss << "Unable to create a `set of' the type aliased by `" << *domain()
+         << "', which has been resolved to `" << alias->type().toString(env)
+         << "' and is a tuple or record type";
+      throw TypeError(env, Expression::loc(this), ss.str());
+    }
     ntype.st(Type::ST_SET);
   }
   assert(type().dim() == -1 || type().dim() == ranges().size() &&
