@@ -39,33 +39,34 @@ ScipPlugin::ScipPlugin()
           {
               "libscip",
               "scip",
+              "C:\\Program Files\\SCIPOptSuite 10.2.4\\bin\\libscip.dll",
+              "C:\\Program Files\\SCIPOptSuite 10.2.3\\bin\\libscip.dll",
+              "C:\\Program Files\\SCIPOptSuite 10.2.2\\bin\\libscip.dll",
+              "C:\\Program Files\\SCIPOptSuite 10.2.1\\bin\\libscip.dll",
+              "C:\\Program Files\\SCIPOptSuite 10.2.0\\bin\\libscip.dll",
+              "C:\\Program Files\\SCIPOptSuite 10.1.4\\bin\\libscip.dll",
+              "C:\\Program Files\\SCIPOptSuite 10.1.3\\bin\\libscip.dll",
+              "C:\\Program Files\\SCIPOptSuite 10.1.2\\bin\\libscip.dll",
+              "C:\\Program Files\\SCIPOptSuite 10.1.1\\bin\\libscip.dll",
+              "C:\\Program Files\\SCIPOptSuite 10.1.0\\bin\\libscip.dll",
+              "C:\\Program Files\\SCIPOptSuite 10.0.4\\bin\\libscip.dll",
+              "C:\\Program Files\\SCIPOptSuite 10.0.3\\bin\\libscip.dll",
+              "C:\\Program Files\\SCIPOptSuite 10.0.2\\bin\\libscip.dll",
+              "C:\\Program Files\\SCIPOptSuite 10.0.1\\bin\\libscip.dll",
+              "C:\\Program Files\\SCIPOptSuite 10.0.0\\bin\\libscip.dll",
               "C:\\Program Files\\SCIPOptSuite 9.2.4\\bin\\libscip.dll",
               "C:\\Program Files\\SCIPOptSuite 9.2.3\\bin\\libscip.dll",
               "C:\\Program Files\\SCIPOptSuite 9.2.2\\bin\\libscip.dll",
               "C:\\Program Files\\SCIPOptSuite 9.2.1\\bin\\libscip.dll",
               "C:\\Program Files\\SCIPOptSuite 9.2.0\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 9.1.4\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 9.1.3\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 9.1.2\\bin\\libscip.dll",
               "C:\\Program Files\\SCIPOptSuite 9.1.1\\bin\\libscip.dll",
               "C:\\Program Files\\SCIPOptSuite 9.1.0\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 9.0.4\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 9.0.3\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 9.0.2\\bin\\libscip.dll",
               "C:\\Program Files\\SCIPOptSuite 9.0.1\\bin\\libscip.dll",
               "C:\\Program Files\\SCIPOptSuite 9.0.0\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 8.1.0\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 8.0.4\\bin\\libscip.dll",
               "C:\\Program Files\\SCIPOptSuite 8.0.3\\bin\\libscip.dll",
               "C:\\Program Files\\SCIPOptSuite 8.0.2\\bin\\libscip.dll",
               "C:\\Program Files\\SCIPOptSuite 8.0.1\\bin\\libscip.dll",
               "C:\\Program Files\\SCIPOptSuite 8.0.0\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 7.0.3\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 7.0.2\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 7.0.1\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 7.0.0\\bin\\libscip.dll",
-              "C:\\Program Files (x86)\\SCIPOptSuite 7.0.1\\bin\\scip.dll",
-              "C:\\Program Files (x86)\\SCIPOptSuite 7.0.0\\bin\\scip.dll",
           }
 #else
           std::vector<std::string>({
@@ -93,7 +94,7 @@ void ScipPlugin::load() {
   load_symbol_dynamic(_inner, SCIPreleaseVar);
   load_symbol_dynamic(_inner, SCIPinfinity);
   load_symbol_dynamic(_inner, SCIPcreateConsBasicLinear);
-  load_symbol_dynamic(_inner, SCIPcreateConsBasicQuadratic);
+  load_symbol_dynamic(_inner, SCIPcreateConsBasicQuadraticNonlinear);
   load_symbol_dynamic(_inner, SCIPaddCons);
   load_symbol_dynamic(_inner, SCIPreleaseCons);
   load_symbol_dynamic(_inner, SCIPchgVarLbGlobal);
@@ -628,9 +629,9 @@ void MIPScipWrapper::addTimes(int x, int y, int z, const string& rowName) {
   SCIP_CONS* cons;
   std::array<SCIP_VAR*, 3> zxy = {_scipVars[z], _scipVars[x], _scipVars[y]};
 
-  SCIP_PLUGIN_CALL(_plugin->SCIPcreateConsBasicQuadratic(_scip, &cons, rowName.c_str(), 1,
-                                                         zxy.data(), &zCoef, 1, &zxy[1], &zxy[2],
-                                                         &xyCoef, 0.0, 0.0));
+  SCIP_PLUGIN_CALL(_plugin->SCIPcreateConsBasicQuadraticNonlinear(_scip, &cons, rowName.c_str(), 1,
+                                                                  zxy.data(), &zCoef, 1, &zxy[1],
+                                                                  &zxy[2], &xyCoef, 0.0, 0.0));
   SCIP_PLUGIN_CALL(_plugin->SCIPaddCons(_scip, cons));
   SCIP_PLUGIN_CALL(_plugin->SCIPreleaseCons(_scip, &cons));
 }

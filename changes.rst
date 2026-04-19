@@ -17,6 +17,8 @@ Changes:
 -  The compiler now removes all non-array right-hand sides from variable
    declarations in FlatZinc. This minimizes the effort required when
    parsing `.fzn` or FlatZinc JSON files.
+-  Add support for SCIP 10, and remove support for SCIP 7 and earlier
+   (:bugref:`999`).
 
 Bug fixes:
 ^^^^^^^^^^

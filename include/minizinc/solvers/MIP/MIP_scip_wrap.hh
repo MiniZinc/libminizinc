@@ -62,7 +62,7 @@ public:
   (SCIP* scip, SCIP_CONS** cons, const char* name, int nvars, SCIP_VAR** vars, SCIP_Real* vals,
    SCIP_Real lhs, SCIP_Real rhs);
   // NOLINTNEXTLINE(readability-identifier-naming)
-  SCIP_RETCODE(__stdcall* SCIPcreateConsBasicQuadratic)
+  SCIP_RETCODE(__stdcall* SCIPcreateConsBasicQuadraticNonlinear)
   (SCIP* scip,           /**< SCIP data structure */
    SCIP_CONS** cons,     /**< pointer to hold the created constraint */
    const char* name,     /**< name of constraint */
