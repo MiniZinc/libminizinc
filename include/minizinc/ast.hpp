@@ -30,7 +30,7 @@ inline bool Expression::equal(const Expression* e0, const Expression* e1) {
   if (static_cast<ExpressionId>(e0->_id) != static_cast<ExpressionId>(e1->_id)) {
     return false;
   }
-  if (Expression::type(e0) != Expression::type(e1)) {
+  if (Expression::type(e0).toInt() != Expression::type(e1).toInt()) {
     return false;
   }
   if (Expression::hash(e0) != Expression::hash(e1)) {

@@ -39,6 +39,8 @@ Bug fixes:
 -  Fix the definitions of ``maximum_arg`` and ``minimum_arg`` to allow them to
    be used in reified contexts when only the non-reified version is natively
    supported by the solver (:bugref:`997`).
+-  Fix array literal compression bug causing incorrect implicit enum coercion
+   warnings (:bugref:`1008`).
 
 .. _v2.9.5:
 
