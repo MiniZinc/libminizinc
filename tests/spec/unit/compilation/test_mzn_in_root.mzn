@@ -7,7 +7,7 @@ expected: !FlatZinc test_mzn_in_root.fzn
 
 predicate pred(var int: x) =
   if false \/ mzn_in_root_context() then
-    x = 3
+    x in 2..3
   else
     x = 20
   endif;

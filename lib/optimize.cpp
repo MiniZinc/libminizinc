@@ -154,7 +154,7 @@ void CollectOccurrencesI::vConstraintI(ConstraintI* ci) {
 void CollectOccurrencesI::vSolveI(SolveI* si) {
   CollectOccurrencesE ce(env, vo, si);
   top_down(ce, si->e());
-  for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++si) {
+  for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it) {
     top_down(ce, *it);
   }
 }
@@ -190,6 +190,54 @@ bool is_output(VarDecl* vd) {
     }
   }
   return false;
+}
+
+Expression* fixed_output_value(VarDecl* vd) {
+  if (vd->type().isbool() && (vd->ti()->domain() != nullptr)) {
+    return vd->ti()->domain();
+  }
+  if (vd->type().isint()) {
+    if ((vd->e() != nullptr) && Expression::isa<IntLit>(vd->e())) {
+      return vd->e();
+    }
+    if ((vd->ti()->domain() != nullptr) && Expression::isa<SetLit>(vd->ti()->domain()) &&
+        Expression::cast<SetLit>(vd->ti()->domain())->isv()->size() == 1 &&
+        Expression::cast<SetLit>(vd->ti()->domain())->isv()->min() ==
+            Expression::cast<SetLit>(vd->ti()->domain())->isv()->max()) {
+      return IntLit::a(Expression::cast<SetLit>(vd->ti()->domain())->isv()->min());
+    }
+    return nullptr;
+  }
+  if (vd->type().isfloat()) {
+    if ((vd->e() != nullptr) && Expression::isa<FloatLit>(vd->e())) {
+      return vd->e();
+    }
+    if ((vd->ti()->domain() != nullptr) && Expression::isa<SetLit>(vd->ti()->domain()) &&
+        Expression::cast<SetLit>(vd->ti()->domain())->fsv()->size() == 1 &&
+        Expression::cast<SetLit>(vd->ti()->domain())->fsv()->min() ==
+            Expression::cast<SetLit>(vd->ti()->domain())->fsv()->max()) {
+      return FloatLit::a(Expression::cast<SetLit>(vd->ti()->domain())->fsv()->min());
+    }
+    return nullptr;
+  }
+  if (vd->type().isIntSet()) {
+    return vd->e() != nullptr && Expression::isa<SetLit>(vd->e()) ? vd->e() : nullptr;
+  }
+  if (vd->type().dim() > 0 && vd->type().isPar()) {
+    return vd->e() != nullptr && Expression::isa<ArrayLit>(vd->e()) ? vd->e() : nullptr;
+  }
+  return nullptr;
+}
+
+bool can_remove_fzn_vardecl(EnvI& env, VarDecl* vd) {
+  if (env.varOccurrences.occurrences(vd) != 0) {
+    return false;
+  }
+  if (vd->ti()->domain() != nullptr && !vd->ti()->computedDomain() && vd->e() != nullptr &&
+      Expression::isa<Call>(vd->e())) {
+    return false;
+  }
+  return !is_output(vd) || fixed_output_value(vd) != nullptr;
 }
 
 void unify(EnvI& env, std::vector<VarDecl*>& deletedVarDecls, Id* id0, Id* id1) {
@@ -382,45 +430,14 @@ void remove_deleted_items(EnvI& envi, std::vector<VarDecl*>& deletedVarDecls) {
     envi.checkCancel();
     VarDecl* cur = deletedVarDecls.back();
     deletedVarDecls.pop_back();
-    if (envi.varOccurrences.occurrences(cur) == 0) {
+    if (can_remove_fzn_vardecl(envi, cur)) {
       auto cur_idx = envi.varOccurrences.idx.find(cur->id());
       if (cur_idx.first && !m[*cur_idx.second]->removed()) {
         auto* vdi = m[*cur_idx.second]->cast<VarDeclI>();
         cur = vdi->e();
         if (is_output(cur)) {
           // We have to change the output model if we remove this variable
-          Expression* val = nullptr;
-          if (cur->type().isbool() && (cur->ti()->domain() != nullptr)) {
-            val = cur->ti()->domain();
-          } else if (cur->type().isint()) {
-            if ((cur->e() != nullptr) && Expression::isa<IntLit>(cur->e())) {
-              val = cur->e();
-            } else if ((cur->ti()->domain() != nullptr) &&
-                       Expression::isa<SetLit>(cur->ti()->domain()) &&
-                       Expression::cast<SetLit>(cur->ti()->domain())->isv()->size() == 1 &&
-                       Expression::cast<SetLit>(cur->ti()->domain())->isv()->min() ==
-                           Expression::cast<SetLit>(cur->ti()->domain())->isv()->max()) {
-              val = IntLit::a(Expression::cast<SetLit>(cur->ti()->domain())->isv()->min());
-            }
-          } else if (cur->type().isfloat()) {
-            if ((cur->e() != nullptr) && Expression::isa<FloatLit>(cur->e())) {
-              val = cur->e();
-            } else if ((cur->ti()->domain() != nullptr) &&
-                       Expression::isa<SetLit>(cur->ti()->domain()) &&
-                       Expression::cast<SetLit>(cur->ti()->domain())->fsv()->size() == 1 &&
-                       Expression::cast<SetLit>(cur->ti()->domain())->fsv()->min() ==
-                           Expression::cast<SetLit>(cur->ti()->domain())->fsv()->max()) {
-              val = FloatLit::a(Expression::cast<SetLit>(cur->ti()->domain())->fsv()->min());
-            }
-          } else if (cur->type().isIntSet()) {
-            if (cur->e() != nullptr && Expression::isa<SetLit>(cur->e())) {
-              val = cur->e();
-            }
-          } else if (cur->type().dim() > 0 && cur->type().isPar()) {
-            if (cur->e() != nullptr && Expression::isa<ArrayLit>(cur->e())) {
-              val = cur->e();
-            }
-          }
+          Expression* val = fixed_output_value(cur);
           if (val != nullptr) {
             // Find corresponding variable in output model and fix it
             VarDecl* vd_out =
@@ -1128,20 +1145,14 @@ void optimize(Env& env, bool chain_compression) {
 
       for (auto& removedVarDecl : removedVarDecls) {
         if (env.envi().varOccurrences.remove(removedVarDecl, bi) == 0) {
-          if ((removedVarDecl->e() == nullptr || removedVarDecl->ti()->domain() == nullptr ||
-               removedVarDecl->ti()->computedDomain()) &&
-              !is_output(removedVarDecl)) {
+          if (can_remove_fzn_vardecl(envi, removedVarDecl)) {
             deletedVarDecls.push_back(removedVarDecl);
           }
         }
       }
       if (auto* vdi = bi->dynamicCast<VarDeclI>()) {
-        if (envi.varOccurrences.occurrences(vdi->e()) == 0) {
-          if ((vdi->e()->e() == nullptr || vdi->e()->ti()->domain() == nullptr ||
-               vdi->e()->ti()->computedDomain()) &&
-              !is_output(vdi->e())) {
-            deletedVarDecls.push_back(vdi->e());
-          }
+        if (can_remove_fzn_vardecl(envi, vdi->e())) {
+          deletedVarDecls.push_back(vdi->e());
         }
       }
     }
@@ -1220,8 +1231,7 @@ public:
     for (auto& i : _removed) {
       Expression::ann(i).remove(env.constants.ann.is_defined_var);
       if (env.varOccurrences.remove(i, item) == 0) {
-        if ((i->e() == nullptr || i->ti()->domain() == nullptr || i->ti()->computedDomain()) &&
-            !is_output(i)) {
+        if (can_remove_fzn_vardecl(env, i)) {
           deletedVarDecls.push_back(i);
         }
       }
@@ -2133,12 +2143,34 @@ void substitute_fixed_vars(Env& env) {
   try {
     EnvI& envi = env.envi();
     Model& m = *envi.flat();
+
     std::vector<VarDecl*> deletedVarDecls;
+    VarOccurrences rebuilt;
+    CollectOccurrencesI coi(envi, rebuilt);
+
+    for (unsigned int i = 0; i < m.size(); i++) {
+      if (auto* vdi = m[i]->dynamicCast<VarDeclI>()) {
+        if (!vdi->removed()) {
+          rebuilt.addIndex(vdi, i);
+        }
+      }
+    }
+
     for (auto* item : m) {
       if (!item->removed()) {
         substitute_fixed_vars(envi, item, deletedVarDecls);
+
+        // Update the occurrences
+        if (auto* vdi = item->dynamicCast<VarDeclI>()) {
+          coi.vVarDeclI(vdi);
+        } else if (auto* ci = item->dynamicCast<ConstraintI>()) {
+          coi.vConstraintI(ci);
+        } else if (auto* si = item->dynamicCast<SolveI>()) {
+          coi.vSolveI(si);
+        }
       }
     }
+    env.envi().varOccurrences = std::move(rebuilt);
     remove_deleted_items(envi, deletedVarDecls);
   } catch (ModelInconsistent&) { /* NOLINT(bugprone-empty-catch) */
   }

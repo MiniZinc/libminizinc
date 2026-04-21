@@ -23,6 +23,7 @@
 #include <minizinc/iter.hh>
 #include <minizinc/optimize.hh>
 #include <minizinc/output.hh>
+#include <minizinc/prettyprinter.hh>
 #include <minizinc/statistics.hh>
 #include <minizinc/type.hh>
 #include <minizinc/typecheck.hh>
@@ -5454,6 +5455,7 @@ void oldflatzinc(Env& e) {
 
   // Record indices of VarDeclIs with Id RHS for sorting & unification
   std::vector<unsigned int> declsWithIds;
+  std::vector<VarDecl*> deletedVarDecls;
 
   // Important: items are being added to m while iterating over it.
   // The loop therefore needs to check the size in each iteration to make
@@ -5463,6 +5465,10 @@ void oldflatzinc(Env& e) {
       continue;
     }
     if (auto* vdi = (*m)[i]->dynamicCast<VarDeclI>()) {
+      if (can_remove_fzn_vardecl(env, vdi->e())) {
+        deletedVarDecls.push_back(vdi->e());
+        continue;
+      }
       GCLock lock;
       VarDecl* vd = vdi->e();
       std::vector<Expression*> added_constraints =
@@ -5539,9 +5545,21 @@ void oldflatzinc(Env& e) {
       if ((si->e() != nullptr) && Expression::type(si->e()).isPar()) {
         // Introduce VarDecl if objective expression is par
         GCLock lock;
-        auto* ti = new TypeInst(Location().introduce(), Expression::type(si->e()), nullptr);
-        auto* constantobj = new VarDecl(Location().introduce(), ti, e.envi().genId(), si->e());
+        Type obj_t = Expression::type(si->e());
+        Expression* dom = nullptr;
+        if (obj_t.isint()) {
+          IntVal v = eval_int(e.envi(), si->e());
+          obj_t = Type::varint();
+          dom = new SetLit(Location().introduce(), IntSetVal::a(v, v));
+        } else if (obj_t.isfloat()) {
+          FloatVal v = eval_float(e.envi(), si->e());
+          obj_t = Type::varfloat();
+          dom = new SetLit(Location().introduce(), FloatSetVal::a(v, v));
+        }
+        auto* ti = new TypeInst(Location().introduce(), obj_t, dom);
+        auto* constantobj = new VarDecl(Location().introduce(), ti, e.envi().genId(), nullptr);
         si->e(constantobj->id());
+        env.varOccurrences.add(constantobj, si);
         e.envi().flatAddItem(VarDeclI::a(Location().introduce(), constantobj));
       }
     }
@@ -5635,7 +5653,6 @@ void oldflatzinc(Env& e) {
     }
   }
 
-  std::vector<VarDecl*> deletedVarDecls;
   for (auto declsWithId : declsWithIds) {
     GCLock lock;
     auto* item = (*m)[declsWithId];

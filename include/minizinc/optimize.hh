@@ -110,6 +110,9 @@ bool is_output(VarDecl* vd);
 /// Unify \a id0 into \a id1, updating occurrence maps and output model bookkeeping.
 void unify(EnvI& env, std::vector<VarDecl*>& deletedVarDecls, Id* id0, Id* id1);
 
+/// Return whether \a vd is unused and can be removed from the FlatZinc model.
+bool can_remove_fzn_vardecl(EnvI& env, VarDecl* vd);
+
 /// Remove any deleted variable declarations that have become unreachable.
 void remove_deleted_items(EnvI& env, std::vector<VarDecl*>& deletedVarDecls);
 
