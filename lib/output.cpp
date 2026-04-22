@@ -2207,7 +2207,7 @@ void finalise_output(EnvI& e) {
     public:
       RemapOutputRHS(Model& m, VarOccurrences& occ) : _m(m), _occ(occ) {}
       void vId(Id* ident) {
-        if (ident->decl() == nullptr) {
+        if (ident->decl() == nullptr || !ident->decl()->toplevel()) {
           return;
         }
         auto find = _occ.find(ident->decl());

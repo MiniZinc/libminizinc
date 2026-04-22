@@ -41,6 +41,8 @@ Bug fixes:
    supported by the solver (:bugref:`997`).
 -  Fix array literal compression bug causing incorrect implicit enum coercion
    warnings (:bugref:`1008`).
+-  Fix bug in output processing which caused shadowed nested identifiers to be
+   mapped to top-level declarations.
 
 .. _v2.9.5:
 
