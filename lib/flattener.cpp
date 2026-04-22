@@ -962,7 +962,14 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
               a.removeCall(Constants::constants().ann.mzn_path);
             }
             static void vVarDeclI(VarDeclI* vdi) { removePath(Expression::ann(vdi->e())); }
-            static void vConstraintI(ConstraintI* ci) { removePath(Expression::ann(ci->e())); }
+            static void vConstraintI(ConstraintI* ci) {
+              removePath(Expression::ann(ci->e()));
+              if (auto* c = Expression::dynamicCast<Call>(ci->e())) {
+                for (int i = 0; i < c->argCount(); i++) {
+                  removePath(Expression::ann(c->arg(i)));
+                }
+              }
+            }
             static void vSolveI(SolveI* si) {
               removePath(si->ann());
               if (Expression* e = si->e()) {

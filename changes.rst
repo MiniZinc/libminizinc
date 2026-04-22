@@ -43,6 +43,8 @@ Bug fixes:
    warnings (:bugref:`1008`).
 -  Fix bug in output processing which caused shadowed nested identifiers to be
    mapped to top-level declarations.
+-  Add filtering of `mzn_path` annotations for the arguments of constraints in
+   the FlatZinc output (:bugref:`1011`).
 -  Fix internal error when equating tuples of optional values to absent
    using multipass compilation (:bugref:`1012`).
 
