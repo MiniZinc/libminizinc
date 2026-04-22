@@ -655,8 +655,8 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
   // Is this vardecl already in the FlatZinc (for unification)
   bool hasBeenAdded = false;
 
-  // Don't use paths for arrays or annotations
-  if (ti->type().dim() == 0 && !ti->type().isAnn()) {
+  // Don't use paths for arrays, structs, or annotations
+  if (ti->type().dim() == 0 && !ti->type().structBT() && !ti->type().isAnn()) {
     std::string path = get_path(env);
     if (!path.empty()) {
       VarPathStore::ReversePathMap& reversePathMap = env.varPathStore.getReversePathMap();

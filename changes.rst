@@ -43,6 +43,8 @@ Bug fixes:
    warnings (:bugref:`1008`).
 -  Fix bug in output processing which caused shadowed nested identifiers to be
    mapped to top-level declarations.
+-  Fix internal error when equating tuples of optional values to absent
+   using multipass compilation (:bugref:`1012`).
 
 .. _v2.9.5:
 
