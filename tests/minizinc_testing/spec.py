@@ -328,6 +328,25 @@ class FlatZinc:
             for line in fzn.split("\n")
             if len(line.strip()) > 0 and not line.strip().startswith("%")
         ]
+
+        # Sort array elements in specific constraints
+        for constraint_name in ["array_bool_and", "array_bool_or", "bool_clause"]:
+            lines = [
+                (
+                    re.sub(
+                        rf"(\[)([^\]]+)(\])",
+                        lambda m: m.group(1)
+                        + ", ".join(sorted([x.strip() for x in m.group(2).split(",")]))
+                        + m.group(3),
+                        line,
+                        count=0,
+                    )
+                    if line.startswith(f"constraint {constraint_name}(")
+                    else line
+                )
+                for line in lines
+            ]
+
         return "\n".join(sorted(lines))  # Sort the FlatZinc lines
 
     def get_value(self):

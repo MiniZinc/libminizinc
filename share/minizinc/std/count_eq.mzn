@@ -1,13 +1,43 @@
 include "fzn_count_eq.mzn";
-include "fzn_count_eq_par.mzn";
 include "fzn_count_eq_reif.mzn";
+include "fzn_count_eq_bool.mzn";
+include "fzn_count_eq_bool_reif.mzn";
+include "fzn_count_eq_float.mzn";
+include "fzn_count_eq_float_reif.mzn";
+include "fzn_count_eq_set.mzn";
+include "fzn_count_eq_set_reif.mzn";
+include "fzn_count_eq_par.mzn";
 include "fzn_count_eq_par_reif.mzn";
+include "fzn_count_eq_bool_par.mzn";
+include "fzn_count_eq_bool_par_reif.mzn";
+include "fzn_count_eq_float_par.mzn";
+include "fzn_count_eq_float_par_reif.mzn";
+include "fzn_count_eq_set_par.mzn";
+include "fzn_count_eq_set_par_reif.mzn";
 
 /** @group globals.counting
   Constrains \a c to be the number of occurrences of \a y in \a x. 
 */
 predicate count_eq(array [$X] of var $$E: x, var $$E: y, var int: c) =
   fzn_count_eq(enum2int(array1d(x)), enum2int(y), c);
+
+/** @group globals.counting
+  Constrains \a c to be the number of occurrences of \a y in \a x.
+*/
+predicate count_eq(array [$X] of var bool: x, var bool: y, var int: c) =
+  fzn_count_eq_bool(array1d(x), y, c);
+
+/** @group globals.counting
+  Constrains \a c to be the number of occurrences of \a y in \a x.
+*/
+predicate count_eq(array [$X] of var float: x, var float: y, var int: c) =
+  fzn_count_eq_float(array1d(x), y, c);
+
+/** @group globals.counting
+  Constrains \a c to be the number of occurrences of \a y in \a x.
+*/
+predicate count_eq(array [$X] of var set of $$E: x, var set of $$E: y, var int: c) =
+  fzn_count_eq_set(enum2int(array1d(x)), enum2int(y), c);
 
 /** @group globals.counting
   Constrains \a c to be the number of occurrences of \a y in \a x. 
@@ -28,6 +58,24 @@ predicate count_eq(array [$X] of var opt $$E: x, var $$E: y, var int: c) =
 */
 predicate count_eq(array [$X] of var $$E: x, $$E: y, int: c) =
   fzn_count_eq_par(enum2int(array1d(x)), enum2int(y), c);
+
+/** @group globals.counting
+  Constrains \a c to be the number of occurrences of \a y in \a x.
+*/
+predicate count_eq(array [$X] of var bool: x, bool: y, int: c) =
+  fzn_count_eq_bool_par(array1d(x), y, c);
+
+/** @group globals.counting
+  Constrains \a c to be the number of occurrences of \a y in \a x.
+*/
+predicate count_eq(array [$X] of var float: x, float: y, int: c) =
+  fzn_count_eq_float_par(array1d(x), y, c);
+
+/** @group globals.counting
+  Constrains \a c to be the number of occurrences of \a y in \a x.
+*/
+predicate count_eq(array [$X] of var set of $$E: x, set of $$E: y, int: c) =
+  fzn_count_eq_set_par(enum2int(array1d(x)), enum2int(y), c);
 
 test count_eq(array [$X] of $$E: x, $$E: y, int: c) = c = count_eq(x, y);
 

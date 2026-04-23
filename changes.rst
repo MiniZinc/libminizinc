@@ -19,6 +19,8 @@ Changes:
    parsing `.fzn` or FlatZinc JSON files.
 -  Add support for SCIP 10, and remove support for SCIP 7 and earlier
    (:bugref:`999`).
+-  Add versions of ``count_*`` constraints for booleans, floats and sets of
+   integers to allow solvers to support them natively (:bugref:`1005`).
 
 Bug fixes:
 ^^^^^^^^^^
