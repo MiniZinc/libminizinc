@@ -1,7 +1,6 @@
-int: jobs;                                    % no of jobs
-set of int: JOB = 1..jobs;
-int: tasks;                                   % no of tasks per job
-set of int: TASK = 1..tasks;
+enum JOB;
+enum TASK;
+TASK: last = max(TASK);
 array [JOB,TASK] of int: d;                   % task durations
 int: total = sum(i in JOB, j in TASK)(d[i,j]);% total duration
 int: digs = ceil(log(10.0,total));            % digits for output
@@ -14,9 +13,9 @@ predicate no_overlap(var int:s1, int:d1, var int:s2, int:d2) =
 
 constraint %% ensure the tasks occur in sequence
     forall(i in JOB) (
-        forall(j in 1..tasks-1) 
-            (s[i,j] + d[i,j] <= s[i,j+1]) /\
-        s[i,tasks] + d[i,tasks] <= end
+        forall(j in TASK where j < last) 
+            (s[i,j] + d[i,j] <= s[i,enum_next(j)]) /\
+        s[i,last] + d[i,last] <= end
     );
 
 constraint %% ensure no overlap of tasks
@@ -30,5 +29,5 @@ solve minimize end;
 
 output ["end = \(end)\n"] ++
        [ show_int(digs,s[i,j]) ++ " " ++ 
-         if j == tasks then "\n" else "" endif |
+         if j == last then "\n" else "" endif |
          i in JOB, j in TASK ];

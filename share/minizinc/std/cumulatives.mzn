@@ -6,7 +6,7 @@ include "fzn_cumulatives.mzn";
   machines given by resource bounds \a b.  Finally, we have a Boolean
   flag \a upper.  The constraint requires that forall \p i, \a m[\p i]
   is in the index set of \a b and that for each machine \p j and time
-  instant \p t, either no task assigned to \p j executes at \p \t, or
+  instant \p t, either no task assigned to \p j executes at \p t, or
   the total resource requirement of such tasks is not greater
   than, if \a upper is true, or not less than, if \a upper is false,
   the given bound \a b[\a j].  Resource requirements can be positive

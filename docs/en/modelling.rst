@@ -237,14 +237,14 @@ print when the model has been run and a :index:`solution` is found.
   
   ::
   
-    "Invalid datafile: Amount of flour is non-negative"
+    "Invalid datafile: Amount of flour must be non-negative"
 
   is equivalent to the string literal expression  
 
   ::
 
     "Invalid datafile: " ++
-    "Amount of flour is non-negative"
+    "Amount of flour must be non-negative"
 
   MiniZinc supports 
   :index:`interpolated strings <string; literal; interpolated>`.
@@ -342,7 +342,7 @@ The first new feature is the use of *arithmetic expressions*.
   Integer modulus is defined to give a result :math:`a` :mzn:`mod` :math:`b`
   that has the same sign as the 
   dividend :math:`a`. Integer division is defined so that
-  :math:`a = b ` ``*`` :math:`(a` :mzn:`div` :math:`b) + (a` :mzn:`mod` :math:`b)`.
+  :math:`a = b` ``*`` :math:`(a` :mzn:`div` :math:`b) + (a` :mzn:`mod` :math:`b)`.
 
   MiniZinc provides standard integer functions for 
   absolute value (:mzn:`abs`) and power function (:mzn:`pow`).
@@ -509,7 +509,7 @@ can simply add the line
 
 ::
 
-  constraint assert(flour >= 0,"Amount of flour is non-negative");
+  constraint assert(flour >= 0,"Amount of flour must be non-negative");
 
 to our model. Notice that the :mzn:`assert` expression is a Boolean
 expression and so is regarded as a type of constraint. We can add similar
@@ -650,12 +650,12 @@ is
   natural logarithm (``ln``),
   logarithm base 2 (``log2``), 
   logarithm base 10 (``log10``),
-  exponentiation of $e$ (``exp``), 
+  exponentiation of :math:`e` (``exp``), 
   sine (``sin``), 
   cosine (``cos``), 
   tangent (``tan``),
   arcsine (``asin``), 
-  arc\-cosine (``acos``), 
+  arccosine (``acos``), 
   arctangent (``atan``), 
   hyperbolic sine (``sinh``),
   hyperbolic cosine (``cosh``),
@@ -713,7 +713,7 @@ There are 8 kinds of :index:`items <item>`.
 
   .. code-block:: minizincdef
 
-    <type inst expr>: <variable> [ = ] <expression>;
+    <type inst expr>: <variable> [ = <expression> ] ;
 
   The :mzndef:`<type-inst expr>`
   gives the instantiation and type of the

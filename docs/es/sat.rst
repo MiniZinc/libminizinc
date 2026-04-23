@@ -30,7 +30,7 @@ Hay tres formas comunes de modelar variables enteras: :math:`I` en el rango de :
 
     array[1..m]  of var bool: i;
     constraint forall(j in 2..m)(i[j] -> i[j-1]);
-    var 0..m: I = sum(j in 1..m)(bool2int(i[j]);
+    var 0..m: I = sum(j in 1..m)(bool2int(i[j]));
 
 - Value: donde :math:`I` es representado por :math:`m+1` variables binarias :math:`i_0, \ldots, i_m` donde :math:`i = k \Leftrightarrow i_k`, y como máximo uno de :math:`i_0, \ldots, i_m` es verdadero.
 
@@ -39,7 +39,7 @@ Hay tres formas comunes de modelar variables enteras: :math:`I` en el rango de :
   .. code-block:: minizinc
 
     array[0..m] of var bool: i;
-    constraint sum(j in 0..m)(bool2int(i[j]) == 1;
+    constraint sum(j in 0..m)(bool2int(i[j]) == 1);
     var 0..m: I;
     constraint foall(j in 0..m)(I == j <-> i[j]);
 
@@ -151,7 +151,7 @@ Si la lista :mzn:`x` es impar, el último bit se guarda para usar como un comple
 
 Podemos implementar :mzn:`bool_sum_eq` utilizando redes de clasificación unaria utilizando el código que se muestra en :numref:` ex-uboolsum`.
 La restricción de cardinalidad se define expandiendo la entrada :mzn:`x` para tener una longitud de una potencia de 2 y clasificar los bits resultantes utilizando una red de clasificación de combinación de pares impares.
-El clasificador de combinación impar-par que se muestra en :mzn:`ex-oesort` funciona recursivamente mediante la divición de la lista de entrada en 2, ordenando cada lista y combinando las dos listas ya ordenadas.
+El clasificador de combinación impar-par que se muestra en :numref:`ex-oesort` funciona recursivamente mediante la divición de la lista de entrada en 2, ordenando cada lista y combinando las dos listas ya ordenadas.
 
 .. \pjs{Add much more stuff on sorting networks}
 
@@ -164,7 +164,7 @@ El clasificador de combinación impar-par que se muestra en :mzn:`ex-oesort` fun
   :name: ex-bddsum
   :caption: Restricciones de cardinalidad por diagramas de decisión binarios (:download:`bddsum.mzn <examples/bddsum/bddsum.mzn>`).
 
-Nosotros podemos implementar :mzn:`bool_sum_eq` usando diagramas de decición binaria usando el codigo que se muestra en :mzn:`ex:bddsum`.
+Nosotros podemos implementar :mzn:`bool_sum_eq` usando diagramas de decición binaria usando el codigo que se muestra en :numref:`ex-bddsum`.
 La restricción de cardinalidad se divide en dos casos: ya sea en el primer elemento :mzn:`x[1]` es :mzn:`true`, y la suma de los bits restantes es :mzn:`s-1`, o :mzn:`x[1]` es :mzn:`false` y la suma de los bits restantes es :mzn:`s`. Por eficiencia, esto se basa en la eliminación de la subexpresión común para evitar crear muchas restricciones equivalentes.
 
 .. \pjs{Add a picture of a bdd network network}

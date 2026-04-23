@@ -49,6 +49,8 @@ Bug fixes:
    the FlatZinc output (:bugref:`1011`).
 -  Fix internal error when equating tuples of optional values to absent
    using multipass compilation (:bugref:`1012`).
+-  Fix various documentation typos and formatting issues (:bugref:`995` and
+   :bugref:`1000`).
 
 .. _v2.9.5:
 

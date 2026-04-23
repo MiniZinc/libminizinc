@@ -39,7 +39,7 @@ variables.
 
     array[1..m]  of var bool: i;
     constraint forall(j in 2..m)(i[j] -> i[j-1]);
-    var 0..m: I = sum(j in 1..m)(bool2int(i[j]);
+    var 0..m: I = sum(j in 1..m)(bool2int(i[j]));
 
 - Value: where :math:`I` is represented by :math:`m+1` binary variables
   :math:`i_0, \ldots, i_m` where
@@ -49,7 +49,7 @@ variables.
   .. code-block:: minizinc
 
     array[0..m]  of var bool: i;
-    constraint sum(j in 0..m)(bool2int(i[j]) == 1;
+    constraint sum(j in 0..m)(bool2int(i[j]) == 1);
     var 0..m: I;
     constraint forall(j in 0..m)(I == j <-> i[j]);
 
@@ -192,7 +192,7 @@ using the code shown in :numref:`ex-uboolsum`.
 The cardinality constraint is defined by expanding the input
 :mzn:`x` to have length a power of 2, and sorting the resulting bits
 using an odd-even merge sorting network. 
-The odd-even merge sorter shown in :mzn:`ex-oesort` works 
+The odd-even merge sorter shown in :numref:`ex-oesort` works 
 recursively by splitting
 the input list in 2, sorting each list and merging the two
 sorted lists.  
@@ -209,7 +209,7 @@ sorted lists.
   :caption: Cardinality constraints by binary decision diagrams (:download:`bddsum.mzn <examples/bddsum/bddsum.mzn>`). :playground:`bddsum`
 
 We can implement :mzn:`bool_sum_eq` using binary decision diagrams
-using the code shown in :mzn:`ex:bddsum`.
+using the code shown in :numref:`ex-bddsum`.
 The cardinality constraint is broken into two cases:
 either the first element :mzn:`x[1]` is :mzn:`true`, 
 and the sum of the remaining bits

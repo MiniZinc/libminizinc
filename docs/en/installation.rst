@@ -34,7 +34,7 @@ The MiniZinc bundled binary distribution for Linux is provided using three diffe
 Snap
 ~~~~
 
-The MiniZinc Snap is the easiest way to install the MiniZinc bundle if Snap (https://snapcraft.io/) is available on your system. The installation will provide the ``minizinc`` command within terminal environments and will add an application entry for the MiniZincIDE. The IDE can be started from the command line using ``minizinc.ide``. The following command will commence the installation the MiniZinc snap:
+The MiniZinc Snap is the easiest way to install the MiniZinc bundle if Snap (https://snapcraft.io/) is available on your system. The installation will provide the ``minizinc`` command within terminal environments and will add an application entry for the MiniZinc IDE. The IDE can be started from the command line using ``minizinc.ide``. The following command will commence the installation the MiniZinc snap:
 
 .. code-block:: bash
 
@@ -68,7 +68,7 @@ AppImages have no standard integration with the desktop environment. A script ha
   $ mv ./MiniZincIDE-|release|-x86_64.AppImage /opt/Applications/
   $ /opt/Applications/MiniZincIDE-|release|-x86_64.AppImage install
 
-**Note:** to change the installation locations can be changed using the environmental variables ``$BIN_LOCATION`` and ``$DESKTOP_LOCATION``. The default behaviour can be achieved using the following command:
+**Note:** The installation locations can be changed using the environmental variables ``$BIN_LOCATION`` and ``$DESKTOP_LOCATION``. The default behaviour can be achieved using the following command:
 
 .. parsed-literal::
 

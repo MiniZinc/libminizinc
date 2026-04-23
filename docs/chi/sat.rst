@@ -25,14 +25,14 @@ MiniZinc 可以被用来给布尔可满足性问题建模，这种问题的变�
 
     array[1..m]  of var bool: i;
     constraint forall(j in 2..m)(i[j] -> i[j-1]);
-    var 0..m: I = sum(j in 1..m)(bool2int(i[j]);
+    var 0..m: I = sum(j in 1..m)(bool2int(i[j]));
 
 - 值: 其中 :math:`I` 被表示为 :math:`m+1` 个二元变量 :math:`i_0, \ldots, i_m` ，其中 :math:`i = k \Leftrightarrow i_k` 并且 :math:`i_0, \ldots, i_m` 中最多有一个为真。在MiniZinc中，这可表示为
 
   .. code-block:: minizinc
 
     array[0..m]  of var bool: i;
-    constraint sum(j in 0..m)(bool2int(i[j]) == 1;
+    constraint sum(j in 0..m)(bool2int(i[j]) == 1);
     var 0..m: I;
     constraint foall(j in 0..m)(I == j <-> i[j]);
 

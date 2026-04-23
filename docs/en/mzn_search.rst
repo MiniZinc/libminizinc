@@ -91,7 +91,7 @@ A search strategy determines which choices to make. The decisions we have
 made so far follow the simple strategy of picking the
 first variable which is not fixed yet, and try to set it to its least
 possible value.  Following this strategy the next decision would be
-:mzn:`q[4] = 7`.
+:mzn:`q[4] = 2`.
 An alternate strategy for variable selection is to choose the variable whose
 current set of possible values (*domain*) is smallest.
 Under this so called *first-fail*
@@ -104,7 +104,7 @@ possible value for :mzn:`q[7]` and :mzn:`q[9]`, that is 2. Hence a constraint mu
 violated. We have detected unsatisfiability, and the solver must backtrack
 undoing the last decision :mzn:`q[6] = 4` and adding its negation :mzn:`q[6] != 4`
 (leading us to state (c) in the tree in :numref:`fig-9q-a`)
-which forces :mzn:`q[6] = 8`. This removes some values from the domain
+which forces :mzn:`q[6] = 9`. This removes some values from the domain
 and then we again reinvoke the search strategy to decide what to do.
 
 Many finite domain searches are defined in this way:
@@ -188,9 +188,9 @@ value selection).
 
   Example variable choice annotations are:
 
-  - :mzn:`input_order`: choose in order from the array
-  - :mzn:`first_fail`: choose the variable with the smallest domain size, and
-  - :mzn:`smallest`: choose the variable with the smallest value in its domain.
+  - :mzn:`input_order`: choose in order from the array,
+  - :mzn:`first_fail`: choose the variable with the smallest domain size,
+  - :mzn:`smallest`: choose the variable with the smallest value in its domain, and
   - :mzn:`dom_w_deg`: choose the variable with the smallest value of domain 
     size divided by weighted degree, which is the number of times it has been
     in a constraint that caused failure earlier in the search.
@@ -318,12 +318,13 @@ we imagine each line is in a separate data file)
   search_ann = int_search(q, first_fail, indomain_median);
   search_ann = int_search(q, input_order, indomain_random);
 
-The first just tries the queens in order setting them to the
+The first just tries the queens in order, setting them to the
 minimum value, the second tries the queens variables in order, but sets
 them to their median value, the third tries the queen variable with smallest
-domain and sets it to the minimum value, and the final strategy
-tries the queens variable with smallest domain setting it to its median
-value.
+domain and sets it to the minimum value, the fourth strategy
+tries the queens variable with smallest domain, setting it to its median
+value, anbd the last strategy tries the queens in order, setting them to a
+random value in the domain.
 
 Different search strategies can make a significant difference in
 how easy it is to find solutions.
@@ -490,7 +491,7 @@ search annotations.
   
   - :mzndef:`warm_start(<vars>,<vals>)` where :mzndef:`<vars>` is a one 
     dimensional array of integer variables, and :mzndef:`<vals>` is a 
-    one dimensional array of integer of the same length giving the warm start values
+    one dimensional array of integers of the same length giving the warm start values
     for each integer variable in :mzn:`<vars>`.
   - :mzndef:`warm_start(<vars>,<vals>)` where :mzndef:`<vars>` is a one 
     dimensional array of float variables, and :mzndef:`<vals>` is a 

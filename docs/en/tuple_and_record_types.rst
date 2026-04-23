@@ -5,7 +5,7 @@ Tuple and record types
 
 In MiniZinc models we often deal with multiple points of data and multiple
 decisions that all concern the same thing, an “object”. There are multiple ways
-to modelling this. It is common practice in MiniZinc to have different arrays
+of modelling this. It is common practice in MiniZinc to have different arrays
 for different types of data points or decisions. These arrays will then share a
 common index mapping to which object each data point belongs.
 
@@ -117,16 +117,17 @@ For example, in the following MiniZinc fragment we declare two synonyms,
   type Number = int;
 
 In a model that contains these definitions, we can now declare a variable
-:mzn:`array[1..10] of Coord: placement;` or a function :mzn:`function Number:
-add(Number: x, Number: y) = x + y;`
+:mzn:`array[1..10] of Coord: placement;` or a function
+:mzn:`function Number: add(Number: x, Number: y) = x + y;`
 
 Similar to record and tuple types, the :mzn:`var` keyword can be used before the
 identifier of a type-inst synonym to varify the type-inst. For instance, given
 the synonym :mzn:`type OnOff = bool;` and the variable declaration
-:mzn:`var OnOff: choice;`, the type-inst of :mzndef:`choice` would be :mzn:`var
-bool`. Different from records and tuple, the reverse is also possible using the
-:mzn:`par` keyword. For instance, the given the synonym :mzn:`type Choice = var
-bool;` and the variable declaration :mzn:`par Choice: check = fix(choice);` the
+:mzn:`var OnOff: choice;`, the type-inst of :mzndef:`choice` would be
+:mzn:`var bool`. Different from records and tuple, the reverse is also possible
+using the :mzn:`par` keyword. For instance, the given the synonym
+:mzn:`type Choice = var bool;` and the variable declaration
+:mzn:`par Choice: check = fix(choice);` the
 type-inst of :mzndef:`check` would be :mzn:`bool`.
 
 Types with both var and par members

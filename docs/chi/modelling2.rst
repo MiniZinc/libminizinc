@@ -618,8 +618,8 @@ MiniZinc提供了一个条件表达式 *if-then-else-endif* 。
 
 .. code-block:: minizinc
 
-  global_cardinality_low_up([wa,nt,sa,q,nsw,v,t],
-                            [red,yellow,blue],[2,2,2],[2,2,3]);
+  global_cardinality([wa,nt,sa,q,nsw,v,t],
+                     [red,yellow,blue],[2,2,2],[2,2,3]);
 
 要求每种颜色至少有两个州涂上并且有三个州被涂了蓝色。
 
@@ -788,7 +788,7 @@ MiniZinc中的另外一个强大的建模特征是决策变量可以被用来访
   var 0..2: x;
   var 2..3: y;
 
-约束 :mzn:`a[x] = y` 会在 :math:`x=1 \wedge y=2` 和 :math:`x=2 \wedge y=3` 时得到满足。约束 :mzn:`not a[x] = y` 会在 :math:`x=0 \wedge y=2`，:math:`x=0 \wedge y=3` , :math:`x=1 \wedge y=3` 和 :math:`x=2 \wedge y=2` 时得到满足。
+约束 :mzn:`a[x] = y` 会在 :math:`x=1 \wedge y=2` 和 :math:`x=2 \wedge y=3` 时得到满足。约束 :mzn:`not (a[x] = y)` 会在 :math:`x=0 \wedge y=2`，:math:`x=0 \wedge y=3` , :math:`x=1 \wedge y=3` 和 :math:`x=2 \wedge y=2` 时得到满足。
 
 当参数无效访问数组时，正式的MiniZinc语义会把此情况看成失败来确保参数和决策变量
 的处理方式是一致的，但是会发出警告，因为这种情况下几乎总是会有错误出现。
@@ -883,7 +883,7 @@ MiniZinc另外一个强大的建模特征是它允许包含整数的集合是决
 我们来看一个更复杂的关于集合约束的例子， :numref:`ex-social-golfers` 中给出的高尔夫联谊问题。
 这个问题的目的是给 :mzn:`groups` :math:`\times` :mzn:`size` 个高尔夫手在 :mzn:`weeks` 时间内安排一个高尔夫联赛。每一周我们需要安排 :mzn:`groups` 个大小为 :mzn:`size` 的不同的组。任何一对高尔夫手都不能一起出现于两个组中进行比赛。
 
-模型中的变量是第 :math:`i^{th}` 周第 :mzn:`j^{th}` 组的高尔夫手:mzn:`Sched[i,j]` 组成的集合。
+模型中的变量是第 :math:`i^{th}` 周第 :math:`j^{th}` 组的高尔夫手:mzn:`Sched[i,j]` 组成的集合。
 
 11-32行中的约束首先对每一周的第一个集合进行一个排序来去除掉周之间可以互相调换的对称。
 然后它对每一周内的集合进行了一个排序，同时使得每一个集合的势为 :mzn:`size` 。

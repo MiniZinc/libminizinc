@@ -657,8 +657,8 @@ Un comportamiento clave de los tipos enumerados es que son coercionados automát
 
 .. code-block:: minizinc
 
-  global_cardinality_low_up([wa,nt,sa,q,nsw,v,t],
-                            [red,yellow,blue],[2,2,2],[2,2,3]);
+  global_cardinality([wa,nt,sa,q,nsw,v,t],
+                     [red,yellow,blue],[2,2,2],[2,2,3]);
 
 Esto requiere al menos dos estados para colorear cada color y tres para ser de color azul.
 
@@ -825,7 +825,7 @@ Por lo tanto, por ejemplo, considere las declaraciones de variables
   var 0..2: x;
   var 2..3: y;
 
-La restricción :mzn:`a[x] = y` tendrá éxito con :math:`x=1 \wedge y=2` y :math:`x=2 \wedge y=3`. Y la restricción :mzn:`not a[x] = y` tendrá éxito con :math:`x=0 \wedge y=2`, :math:`x=0 \wedge y=3`, :math:`x=1 \wedge y=3` y :math:`x=2 \wedge y=2`.
+La restricción :mzn:`a[x] = y` tendrá éxito con :math:`x=1 \wedge y=2` y :math:`x=2 \wedge y=3`. Y la restricción :mzn:`not (a[x] = y)` tendrá éxito con :math:`x=0 \wedge y=2`, :math:`x=0 \wedge y=3`, :math:`x=1 \wedge y=3` y :math:`x=2 \wedge y=2`.
 
 En el caso de los accesos de matriz no válida por un parámetro, la semántica formal de MiniZinc trata esto como un fallo para garantizar que el tratamiento de los parámetros y las variables de decisión sea coherente, pero se emite una advertencia ya que casi siempre es un error.
 
@@ -907,7 +907,7 @@ Esto contrasta con una matriz en la que la palabra clave :mzn:`var` califica los
 
 Como un ejemplo más complejo de restricción de conjuntos, considere el problema de los golfistas sociales que se muestra en :numref:`ex-social-golfers`. El objetivo es programar un torneo de golf sobre :mzn:`weeks` usando :mzn:`groups` :math:`\times` :mzn:`size` de golfistas. Cada semana tenemos que programar :mzn:`groups` diferentes grupos cada uno de tamaño :mzn:`size`. No hay dos pares de golfistas que jueguen en dos grupos
 
-Las variables en el modelo son conjuntos de golfistas :mzn:`Sched[i,j]` para el grupo de la semana :math:`i^{th}` del grupo :mzn:`j^{th}`.
+Las variables en el modelo son conjuntos de golfistas :mzn:`Sched[i,j]` para el grupo de la semana :math:`i^{th}` del grupo :math:`j^{th}`.
 
 
 Las restricciones que se muestran en las líneas 11-32 primero imponen un orden en el primer conjunto de cada semana para eliminar la simetría en el intercambio de semanas. A continuación, imponen un orden en los conjuntos en cada semana y hacen que cada conjunto tenga una cardinalidad de :mzn:`size`. Luego se aseguran de que cada semana sea una partición del conjunto de golfistas que utilizan la restricción global :mzn:`partition_set`. Finalmente, la última restricción asegura que no hay dos jugadores que jueguen en dos grupos juntos (ya que la cardinalidad de la intersección de dos grupos es como máximo 1).

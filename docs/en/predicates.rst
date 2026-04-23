@@ -658,10 +658,10 @@ contexts. The following is legal
   constraint not even(z);
 
 Note that the meaning of :mzn:`even` is correct, since if :mzn:`x` is even
-then :math:`x = 2 * (x ~\mbox{div}~ 2)`. Note that for this definition
+then :math:`x = 2` ``*`` :math:`(x` ``div`` :math:`2)`. Note that for this definition
 :math:`\neg \mathit{even}(z)` is equivalent to
-:math:`\neg \exists y. y = z ~\mbox{div}~ 2 \wedge z = 2y` which is equivalent to
-:math:`\exists y. y = z ~\mbox{div}~ 2 \wedge \neg z \neq 2y`, because :math:`y` is
+:math:`\neg \exists y. y = z` ``div`` :math:`2 \wedge z = 2y` which is equivalent to
+:math:`\exists y. y = z` ``div`` :math:`2 \wedge \neg z \neq 2y`, because :math:`y` is
 functionally defined by :math:`z`.
 
 

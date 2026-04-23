@@ -54,14 +54,14 @@ El estado del tablero de ajedrez después de estas tres decisiones se muestra en
 
   La propagación inicial al agregar más ``q[6] = 4``
 
-Una estrategia de búsqueda determina qué opciones tomar. Las decisiones que hemos tomado hasta ahora siguen la simple estrategia de elegir la primera variable que aún no se ha solucionado e intentar establecerla en su menor valor posible. Siguiendo esta estrategia, la siguiente decisión sería :mzn:`q[4] = 7`.
+Una estrategia de búsqueda determina qué opciones tomar. Las decisiones que hemos tomado hasta ahora siguen la simple estrategia de elegir la primera variable que aún no se ha solucionado e intentar establecerla en su menor valor posible. Siguiendo esta estrategia, la siguiente decisión sería :mzn:`q[4] = 2`.
 
 Una estrategia alternativa para la selección de variables es elegir la variable cuyo conjunto actual de valores posibles (*dominio*) sea más pequeño.
 
 En virtud de la llamada estrategia de selección de variables *first-fail*, la siguiente decisión sería :mzn:`q[6] = 4`.
 
 
-Si tomamos esta decisión, inicialmente la propagación elimina los valores adicionales que se muestran en :numref:`fig-9q-c`. Pero esto deja solo un valor para :mzn:`q[8]`, :mzn:`q[8] = 7`, entonces esto es forzado, pero esto deja solo un valor posible para :mzn:`q[7]` y :mzn:`q[9]`, eso es 2. Por lo tanto, se debe violar una restricción. Hemos detectado insatisfacción, y el solucionador debe retroceder deshaciendo la última decisión :mzn:`q[6] = 4` y agregando su negación :mzn:`q[6]! = 4` (llevándonos al estado (c) en el árbol en :numref:`fig-9q-a`) que fuerza :mzn:`q[6] = 8`. Esto elimina algunos valores del dominio y luego reinvocamos la estrategia de búsqueda para decidir qué hacer.
+Si tomamos esta decisión, inicialmente la propagación elimina los valores adicionales que se muestran en :numref:`fig-9q-c`. Pero esto deja solo un valor para :mzn:`q[8]`, :mzn:`q[8] = 7`, entonces esto es forzado, pero esto deja solo un valor posible para :mzn:`q[7]` y :mzn:`q[9]`, eso es 2. Por lo tanto, se debe violar una restricción. Hemos detectado insatisfacción, y el solucionador debe retroceder deshaciendo la última decisión :mzn:`q[6] = 4` y agregando su negación :mzn:`q[6]! = 4` (llevándonos al estado (c) en el árbol en :numref:`fig-9q-a`) que fuerza :mzn:`q[6] = 9`. Esto elimina algunos valores del dominio y luego reinvocamos la estrategia de búsqueda para decidir qué hacer.
 
 Muchas búsquedas de dominio finito se definen de esta manera: elija una variable para restringir aún más, y luego elija cómo restringirla aún más.
 

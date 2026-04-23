@@ -307,7 +307,7 @@ Notice how the delimiter ``|`` is used to separate rows. As for one-dimensional 
   :mzn:`[|1, 2 |3, 4 |5, 6|]`.
 
   Array elements are :index:`accessed <array; access>` using bracket syntax: :mzn:`a[i,j]` gives the
-  element at row index :math:`i^{th}` and column index :math:`j^{th}`.
+  element at row index :math:`i` and column index :math:`j`.
 
   .. \pjs{New array functions!}
 
@@ -757,7 +757,7 @@ Enumerated Types
 Enumerated types allows us to build models that depend on a set of objects
 which are part of the data, or are named in the model, and hence make models
 easier to understand and debug.
-We have introduce enumerated types or enums briefly, in this subsection we
+We have introduced enumerated types or enums briefly, in this subsection we
 will explore how we can use them more fully, and show some of the built in
 functions for dealing with enumerated types.
 
@@ -826,8 +826,8 @@ such as
 
 .. code-block:: minizinc
 
-  global_cardinality_low_up([wa,nt,sa,q,nsw,v,t],
-                            [red,yellow,blue],[2,2,2],[2,2,3]);
+  global_cardinality([wa,nt,sa,q,nsw,v,t],
+                     [red,yellow,blue],[2,2,2],[2,2,3]);
 
 This requires at least two states to be colored each color and three to be
 colored blue.
@@ -1106,7 +1106,7 @@ Thus for example, consider the variable declarations
 
 The constraint :mzn:`a[x] = y`
 will succeed with :math:`x=1 \wedge y=2` and :math:`x=2 \wedge y=3`.
-And the constraint :mzn:`not a[x] = y` will succeed with 
+And the constraint :mzn:`not (a[x] = y)` will succeed with 
 :math:`x=0 \wedge y=2`, :math:`x=0 \wedge y=3`, :math:`x=1 \wedge y=3` and :math:`x=2 \wedge y=2`.
 
 In the case of invalid array accesses by a parameter, the formal semantics
@@ -1272,7 +1272,7 @@ schedule :mzn:`groups` different groups each of size :mzn:`size`.
 No two pairs of golfers should ever play in two groups.
 
 The variables in the model are sets of golfers :mzn:`Sched[i,j]`
-for the :math:`i^{th}` week and :mzn:`j^{th}` group.
+for the :math:`i^{th}` week and :math:`j^{th}` group.
 
 The constraints shown in lines 11-32
 first enforces an ordering on the first

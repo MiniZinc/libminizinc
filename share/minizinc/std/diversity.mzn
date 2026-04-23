@@ -139,7 +139,7 @@ function var int: hamming_distance(array [$A] of var opt $T: x, array [$A] of va
   );
 
 /** @group diversity.distance
-  Returns the Hamming distance between \a x and \a y.
+  Returns the Manhattan distance between \a x and \a y.
 */
 function int: manhattan_distance(array [$A] of $$T: x, array [$A] of $$T: y) =
   assert(
@@ -152,7 +152,7 @@ function int: manhattan_distance(array [$A] of $$T: x, array [$A] of $$T: y) =
   );
 
 /** @group diversity.distance
-  Returns the Hamming distance between \a x and \a y.
+  Returns the Manhattan distance between \a x and \a y.
 */
 function var int: manhattan_distance(array [$A] of var $$T: x, array [$A] of var $$T: y) =
   assert(
@@ -165,7 +165,7 @@ function var int: manhattan_distance(array [$A] of var $$T: x, array [$A] of var
   );
 
 /** @group diversity.distance
-  Returns the Hamming distance between \a x and \a y.
+  Returns the Manhattan distance between \a x and \a y.
 */
 function float: manhattan_distance(array [$A] of float: x, array [$A] of float: y) =
   assert(
@@ -178,7 +178,7 @@ function float: manhattan_distance(array [$A] of float: x, array [$A] of float: 
   );
 
 /** @group diversity.distance
-  Returns the Hamming distance between \a x and \a y.
+  Returns the Manhattan distance between \a x and \a y.
 */
 function var float: manhattan_distance(array [$A] of var float: x, array [$A] of var float: y) =
   assert(

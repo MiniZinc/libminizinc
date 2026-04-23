@@ -443,8 +443,8 @@ Reifying a constraint :math:`c` creates a new constraint equivalent to :math:`b 
 where the Boolean variable :math:`b` is :mzn:`true`
 if the constraint holds and :mzn:`false` if it doesn't hold. 
 
-Once we have the capability to *reify* constraints the treatment of
-complex formulae is not different from arithmetic expressions. We create a
+Once we have the capability to *reify* constraints, the treatment of
+complex formulae is no different from arithmetic expressions. We create a
 name for each subexpression and a flat constraint to constrain the name to
 take the value of its subexpression.
 

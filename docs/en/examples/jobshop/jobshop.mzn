@@ -11,7 +11,7 @@ var 0..total: end;                            % total end time
 constraint %% ensure the tasks occur in sequence
     forall(i in JOB) (
         forall(j in TASK where j < last) 
-            (s[i,j] + d[i,j] <= s[i,enum_next(TASK,j)]) /\
+            (s[i,j] + d[i,j] <= s[i,enum_next(j)]) /\
         s[i,last] + d[i,last] <= end
     );
 
