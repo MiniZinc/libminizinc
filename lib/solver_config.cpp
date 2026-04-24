@@ -308,16 +308,8 @@ SolverConfig SolverConfig::load(const string& filename) {
             }
             sc._executable = exePath;
             std::string exe = FileUtils::find_executable(exePath, basePath);
-            int nr_found = (int)(!exe.empty());
-            std::string tmp = FileUtils::find_executable(exePath);
-            nr_found += (int)((!tmp.empty()) && tmp != exe);
-            exe = exe.empty() ? tmp : exe;
-            if (nr_found > 0) {
+            if (!exe.empty()) {
               sc._executableResolved = exe;
-              if (nr_found > 1) {
-                std::cerr << "Warning: multiple executables '" << exePath
-                          << "' found on the system, using '" << exe << "'" << std::endl;
-              }
             }
           } else if (ai->id() == "mznlib") {
             std::string libPath = get_string(ai);

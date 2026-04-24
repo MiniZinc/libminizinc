@@ -242,6 +242,7 @@ std::string find_executable(const std::string& filename, const std::string& base
   std::vector<std::string> exeSuffixes = {""};
 #endif
   if (is_absolute(filename)) {
+    // If the path is absolute, use it
     for (const auto& suffix : exeSuffixes) {
       if (file_exists(filename + suffix)) {
         return file_path(filename + suffix);
@@ -250,13 +251,15 @@ std::string find_executable(const std::string& filename, const std::string& base
     return "";
   }
 
-  std::vector<std::string> searchDirs = {basePath};
+  std::vector<std::string> searchDirs = {};
   if (base_name(filename) == filename) {
-    // Filename only, so search PATH as well
+    // Filename only, so search PATH
     auto path_dirs = get_env_list("PATH");
     searchDirs.insert(searchDirs.end(), path_dirs.begin(), path_dirs.end());
+  } else {
+    // Relative path, so search relative to base path
+    searchDirs.push_back(basePath);
   }
-  searchDirs.push_back(progpath());
 
   for (const auto& path : searchDirs) {
     auto fileWithPath = file_path(path + "/" + filename);

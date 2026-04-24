@@ -53,6 +53,8 @@ Bug fixes:
    using multipass compilation (:bugref:`1012`).
 -  Fix various documentation typos and formatting issues (:bugref:`995` and
    :bugref:`1000`).
+-  Fix solver executable resolution to match the behaviour described in the
+   specification (:bugref:`979`).
 
 .. _v2.9.5:
 
