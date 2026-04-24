@@ -22,8 +22,8 @@ public:
   int numSols = 1;
   bool allSols = false;
   std::string parallel;
-  int mznTimeLimitMilliseconds = 0;
   int solverTimeLimitMilliseconds = 0;
+  int cleanupTimeLimitMilliseconds = 1000;
   bool mznSigint = false;
   bool supportsT = false;
   std::vector<MZNFZNSolverFlag> mznSolverFlags;

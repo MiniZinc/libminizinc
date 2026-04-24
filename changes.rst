@@ -21,6 +21,8 @@ Changes:
    (:bugref:`999`).
 -  Add versions of ``count_*`` constraints for booleans, floats and sets of
    integers to allow solvers to support them natively (:bugref:`1005`).
+-  Add the ``--cleanup-time-limit`` option for configuring the grace period for
+   solver cleanup before forced termination (:bugref:`994`).
 
 Bug fixes:
 ^^^^^^^^^^

@@ -64,6 +64,8 @@ void FZNSolverFactory::printHelp(ostream& os) {
         "     As above, but for a single option string that need to be quoted in a shell.\n"
      << "  -t <ms>, --solver-time-limit <ms>, --fzn-time-limit <ms>\n     Set time limit (in "
         "milliseconds) for solving.\n"
+     << "  --cleanup-time-limit <ms>\n"
+        "     Set grace period for solver cleanup before forced termination (default 1000)\n"
      << "  --fzn-sigint\n     Send SIGINT instead of SIGTERM.\n"
      << "  -n <n>, --num-solutions <n>\n"
      << "    An upper bound on the number of solutions to output for satisfaction problems. The "
@@ -116,11 +118,9 @@ bool FZNSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
       _opt.fznFlags.push_back(s);
     }
   } else if (cop.getOption("-t --solver-time-limit", &nn)) {
-    _opt.fznTimeLimitMilliseconds = nn;
-    if (_opt.supportsT) {
-      _opt.solverTimeLimitMilliseconds = nn;
-      _opt.fznTimeLimitMilliseconds += 1000;  // kill 1 second after solver should have stopped
-    }
+    _opt.solverTimeLimitMilliseconds = nn;
+  } else if (cop.getOption("--cleanup-time-limit", &nn)) {
+    _opt.cleanupTimeLimitMilliseconds = nn;
   } else if (cop.getOption("--fzn-sigint")) {
     _opt.fznSigint = true;
   } else if (cop.getOption("--fzn-needs-paths")) {
@@ -269,11 +269,19 @@ SolverInstance::Status FZNSolverInstance::solve() {
   if (opt.printStatistics) {
     cmd_line.emplace_back("-s");
   }
+  int timelimit = 0;
   if (opt.solverTimeLimitMilliseconds != 0) {
-    cmd_line.emplace_back("-t");
-    std::ostringstream oss;
-    oss << opt.solverTimeLimitMilliseconds;
-    cmd_line.push_back(oss.str());
+    if (opt.supportsT) {
+      cmd_line.emplace_back("-t");
+      std::ostringstream oss;
+      oss << opt.solverTimeLimitMilliseconds;
+      cmd_line.push_back(oss.str());
+      // Wait for solver to stop itself, then force termination after cleanup time lapses
+      timelimit = opt.solverTimeLimitMilliseconds + opt.cleanupTimeLimitMilliseconds;
+    } else {
+      // Solver won't stop itself, so have to interrupt it
+      timelimit = opt.solverTimeLimitMilliseconds;
+    }
   }
   if (opt.verbose) {
     if (opt.supportsV) {
@@ -285,8 +293,9 @@ SolverInstance::Status FZNSolverInstance::solve() {
     }
     cerr << std::endl;
   }
-  int timelimit = opt.fznTimeLimitMilliseconds;
+
   bool sigint = opt.fznSigint;
+  int cleanupTime = opt.cleanupTimeLimitMilliseconds;
 
   std::unique_ptr<FileUtils::TmpFile> fznFile;
   if (opt.fznFormat == FZNSolverOptions::FF_FZN) {
@@ -336,12 +345,12 @@ SolverInstance::Status FZNSolverInstance::solve() {
   }
 
   if (!opt.fznOutputPassthrough) {
-    Process<Solns2Out> proc(cmd_line, getSolns2Out(), timelimit, sigint);
+    Process<Solns2Out> proc(cmd_line, getSolns2Out(), timelimit, sigint, cleanupTime);
     int exitStatus = proc.run();
     return exitStatus == 0 ? getSolns2Out()->status : SolverInstance::ERROR;
   }
   Solns2Log s2l(getSolns2Out()->getOutput(), _log);
-  Process<Solns2Log> proc(cmd_line, &s2l, timelimit, sigint);
+  Process<Solns2Log> proc(cmd_line, &s2l, timelimit, sigint, cleanupTime);
   int exitStatus = proc.run();
   return exitStatus == 0 ? SolverInstance::NONE : SolverInstance::ERROR;
 }

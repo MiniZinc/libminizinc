@@ -57,6 +57,8 @@ void MZNSolverFactory::printHelp(ostream& os) {
         "     As above, but for a single option string that need to be quoted in a shell.\n"
      << "  -t <ms>, --solver-time-limit <ms>, --mzn-time-limit <ms>\n"
         "     Set time limit for solving.\n"
+     << "  --cleanup-time-limit <ms>\n"
+        "     Set grace period for solver cleanup before forced termination (default 1000)\n"
      << "  --mzn-sigint\n     Send SIGINT instead of SIGTERM.\n";
 }
 
@@ -96,11 +98,9 @@ bool MZNSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
       _opt.mznFlags.push_back(s);
     }
   } else if (cop.getOption("-t --solver-time-limit --mzn-time-limit", &nn)) {
-    _opt.mznTimeLimitMilliseconds = nn;
-    if (_opt.supportsT) {
-      _opt.solverTimeLimitMilliseconds = nn;
-      _opt.mznTimeLimitMilliseconds += 1000;  // kill 1 second after solver should have stopped
-    }
+    _opt.solverTimeLimitMilliseconds = nn;
+  } else if (cop.getOption("--cleanup-time-limit", &nn)) {
+    _opt.cleanupTimeLimitMilliseconds = nn;
   } else if (cop.getOption("--mzn-sigint")) {
     _opt.mznSigint = true;
   } else if (cop.getOption("--mzn-flag --minizinc-flag --backend-flag", &buffer)) {
@@ -168,16 +168,24 @@ SolverInstance::Status MZNSolverInstance::solve() {
     }
     _log << std::endl;
   }
+  int timelimit = 0;
   if (opt.solverTimeLimitMilliseconds != 0) {
-    cmd_line.emplace_back("-t");
-    std::ostringstream oss;
-    oss << opt.solverTimeLimitMilliseconds;
-    cmd_line.push_back(oss.str());
+    if (opt.supportsT) {
+      cmd_line.emplace_back("-t");
+      std::ostringstream oss;
+      oss << opt.solverTimeLimitMilliseconds;
+      cmd_line.push_back(oss.str());
+      // Wait for solver to stop itself, then force termination after cleanup time lapses
+      timelimit = opt.solverTimeLimitMilliseconds + opt.cleanupTimeLimitMilliseconds;
+    } else {
+      // Solver won't stop itself, so have to interrupt it
+      timelimit = opt.solverTimeLimitMilliseconds;
+    }
   }
-  int timelimit = opt.mznTimeLimitMilliseconds;
   bool sigint = opt.mznSigint;
+  int cleanupTime = opt.cleanupTimeLimitMilliseconds;
   Solns2Log s2l(getSolns2Out()->getOutput(), _log);
-  Process<Solns2Log> proc(cmd_line, &s2l, timelimit, sigint);
+  Process<Solns2Log> proc(cmd_line, &s2l, timelimit, sigint, cleanupTime);
   int exitCode = proc.run();
 
   return exitCode == 0 ? SolverInstance::UNKNOWN : SolverInstance::ERROR;

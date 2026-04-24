@@ -92,6 +92,7 @@ protected:
   S2O* _pS2Out;
   int _timelimit;
   bool _sigint;
+  int _cleanupTime;
 #ifdef _WIN32
   static BOOL WINAPI handleInterrupt(DWORD fdwCtrlType) {
     switch (fdwCtrlType) {
@@ -120,8 +121,8 @@ protected:
   static bool hadInterrupt;
 
 public:
-  Process(std::vector<std::string>& fzncmd, S2O* pso, int tl, bool si)
-      : _fzncmd(fzncmd), _pS2Out(pso), _timelimit(tl), _sigint(si) {
+  Process(std::vector<std::string>& fzncmd, S2O* pso, int tl, bool si, int cleanupTime = 1000)
+      : _fzncmd(fzncmd), _pS2Out(pso), _timelimit(tl), _sigint(si), _cleanupTime(cleanupTime) {
     assert(nullptr != _pS2Out);
   }
   int run() {
@@ -246,7 +247,7 @@ public:
       }
       // At this point the child should be stopped/stopping
       if (!doneStderr || !doneStdout) {
-        if (!_interruptCondition.wait_for(lck, std::chrono::seconds(1),
+        if (!_interruptCondition.wait_for(lck, std::chrono::milliseconds(_cleanupTime),
                                           [&] { return doneStderr && doneStdout; })) {
           // Force terminate the child after 1s
           TerminateJobObject(hJobObject, 0);
@@ -410,8 +411,8 @@ public:
               // Fallback to killing the child if killing the process group fails
               kill(childPID, signal);
             }
-            timeout.tv_sec = 1;
-            timeout.tv_usec = 0;
+            timeout.tv_sec = _cleanupTime / 1000;
+            timeout.tv_usec = (static_cast<suseconds_t>(_cleanupTime) % 1000) * 1000;
             timeout_orig = timeout;
             starttime = currentTime;
             // Upgrade signal for next attempt

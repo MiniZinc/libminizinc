@@ -23,8 +23,8 @@ public:
   std::vector<std::string> fznFlags;
   int numSols = 1;
   std::string parallel;
-  int fznTimeLimitMilliseconds = 0;
   int solverTimeLimitMilliseconds = 0;
+  int cleanupTimeLimitMilliseconds = 1000;
   bool fznSigint = false;
   /// Number of (optimal) solutions to output
   bool numOptimal = true;
