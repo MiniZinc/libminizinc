@@ -1665,11 +1665,11 @@ unsigned int EnvI::registerRecordType(ArrayLit* rec) {
   ty.typeId(0);  // Reset any current TypeId
   std::vector<VarDecl*> fields(rec->size());
   bool cv = false;
-  bool var = true;
+  bool var = false;
   for (unsigned int i = 0; i < rec->size(); i++) {
     fields[i] = Expression::cast<VarDecl>((*rec)[i]);
     cv = cv || fields[i]->type().isvar() || fields[i]->type().cv();
-    var = var && fields[i]->type().isvar();
+    var = var || fields[i]->type().isvar();
     assert(!fields[i]->type().structBT() || fields[i]->type().typeId() != 0);
   }
 

@@ -17,6 +17,9 @@ Bug fixes:
 -  Fix generation of par versions of functions referencing top-level model
    variables for use in the output model (:bugref:`1016`).
 -  Fix crash during type checking of enum constructors (:bugref:`1017`). 
+-  Fix incorrect typing of record literals containing both decision variables
+   and parameter values, affecting the automatic generation of table
+   constraints. (:bugref:`1014`).
 
 .. _v2.9.6:
 
