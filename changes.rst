@@ -20,6 +20,9 @@ Bug fixes:
 -  Fix incorrect typing of record literals containing both decision variables
    and parameter values, affecting the automatic generation of table
    constraints. (:bugref:`1014`).
+-  Fix output aliasing during multipass compilation when multiple output
+   variables map to the same FlatZinc variable, which could produce invalid
+   ``.ozn`` output under optimisation (:bugref:`1018`).
 
 .. _v2.9.6:
 
