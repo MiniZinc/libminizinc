@@ -1182,11 +1182,23 @@ class SubstitutionVisitor : public EVisitor {
 protected:
   std::vector<VarDecl*> _removed;
 
+  static bool inlineLiteral(Expression* e) {
+    switch (Expression::eid(e)) {
+      case BoxedExpression::E_BOOLLIT:
+      case BoxedExpression::E_INTLIT:
+      case BoxedExpression::E_FLOATLIT:
+      case BoxedExpression::E_SETLIT:
+      case BoxedExpression::E_STRINGLIT:
+        return true;
+      default:
+        return false;
+    }
+  }
+
 public:
   Expression* subst(Expression* e) {
     if (auto* vd = Expression::dynamicCast<VarDecl>(follow_id_to_decl(e))) {
-      if ((vd->e() != nullptr) && Expression::type(vd->e()).isPar() &&
-          Expression::type(vd->e()).dim() == 0) {
+      if ((vd->e() != nullptr) && inlineLiteral(vd->e())) {
         _removed.push_back(vd);
         return vd->e();
       }

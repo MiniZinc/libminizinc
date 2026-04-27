@@ -4,6 +4,14 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
+Unreleased
+~~~~~~~~~~
+
+Bug fixes:
+^^^^^^^^^^
+-  Fix invalid FlatZinc output caused by inlining non-literal variable
+   right-hand sides that were incorrectly marked as par (:bugref:`1015`).
+
 .. _v2.9.6:
 
 `Version 2.9.6 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.9.6>`__
