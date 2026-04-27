@@ -4,13 +4,18 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
-Unreleased
-~~~~~~~~~~
+
+.. _upcoming:
+
+Upcoming Release
+~~~~~~~~~~~~~~~~
 
 Bug fixes:
 ^^^^^^^^^^
 -  Fix invalid FlatZinc output caused by inlining non-literal variable
    right-hand sides that were incorrectly marked as par (:bugref:`1015`).
+-  Fix generation of par versions of functions referencing top-level model
+   variables for use in the output model (:bugref:`1016`).
 
 .. _v2.9.6:
 

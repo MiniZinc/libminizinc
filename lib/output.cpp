@@ -166,9 +166,13 @@ bool cannot_use_rhs_for_output(EnvI& env, Expression* e,
             if (origdecl->e() != nullptr && !origdecl->fromStdLib()) {
               decl = copy(env, env.cmap, origdecl)->cast<FunctionI>();
               // We can use RHS for output, so this has to be able to be par
-              auto rt = decl->ti()->type();
-              rt.mkPar(env);
-              decl->ti()->type(rt);
+              auto* rt = decl->ti();
+              rt->mkPar(env);
+
+              for (unsigned int i = 0; i < decl->paramCount(); i++) {
+                auto* ti = decl->param(i)->ti();
+                ti->mkPar(env);
+              }
 
               class MakeBodyPar : public EVisitor {
               public:

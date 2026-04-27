@@ -1,0 +1,5 @@
+output ["\"output\": {","\"dzn\": ",showJSON(concat(["x = ",showDzn(x),";\n","y = ",showDzn(y),";\n","z = ",showDzn(z),";\n"])),"}, \"sections\": [\"dzn\"]"];
+int: y;
+function int : foo(int: v) = v*x;
+int: x;
+int: z = foo(y);
