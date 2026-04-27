@@ -159,7 +159,8 @@ public:
 // Create all required mapping functions for a new enum
 // (mapping enum identifiers to strings, and mapping between different enums)
 void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Model* enumItems,
-                        IdMap<bool>& needToString, std::vector<Call*>& enumConstructorSetTypes) {
+                        IdMap<bool>& needToString,
+                        std::vector<KeepAlive>& enumConstructorSetTypes) {
   GCLock lock;
 
   Id* ident = vd->id();
@@ -360,7 +361,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
                                fi_params, ite);
       enumItems->addItem(fi);
     } else if (Call* c = Expression::dynamicCast<Call>(parts[p])) {
-      enumConstructorSetTypes.push_back(c);
+      enumConstructorSetTypes.emplace_back(c);
       if (c->id() == env.constants.ids.anon_enum || c->id() == env.constants.ids.anon_enum_set) {
         Type tx = Type::parint();
         tx.ot(Type::OT_OPTIONAL);
@@ -3781,7 +3782,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
   // Topological sorting
   IdMap<bool> needToString;
-  std::vector<Call*> enumConstructorSetTypes;
+  std::vector<KeepAlive> enumConstructorSetTypes;
   TopoSorter ts(m, needToString, enumConstructorSetTypes);
 
   std::vector<FunctionI*> functionItems;
@@ -4332,7 +4333,9 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
   {
     BottomUpIterator<Typer<true>> bottomUpTyper(ty);
 
-    for (auto* c : enumConstructorSetTypes) {
+    while (!enumConstructorSetTypes.empty()) {
+      auto* c = Expression::cast<Call>(enumConstructorSetTypes.back()());
+      enumConstructorSetTypes.pop_back();
       bottomUpTyper.run(c->arg(0));
       if (c->id() == env.envi().constants.ids.anon_enum) {
         if (Expression::type(c->arg(0)) != Type::parint()) {

@@ -75,10 +75,10 @@ public:
   /// A set of identifiers that require a toString function (for enums)
   IdMap<bool>& needToString;
   /// A list of enum constructors that require type checking
-  std::vector<Call*>& enumConstructorSetTypes;
+  std::vector<KeepAlive>& enumConstructorSetTypes;
 
   TopoSorter(Model* model0, IdMap<bool>& needToString0,
-             std::vector<Call*>& enumConstructorSetTypes0)
+             std::vector<KeepAlive>& enumConstructorSetTypes0)
       : model(model0),
         needToString(needToString0),
         enumConstructorSetTypes(enumConstructorSetTypes0) {}

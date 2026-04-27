@@ -16,6 +16,7 @@ Bug fixes:
    right-hand sides that were incorrectly marked as par (:bugref:`1015`).
 -  Fix generation of par versions of functions referencing top-level model
    variables for use in the output model (:bugref:`1016`).
+-  Fix crash during type checking of enum constructors (:bugref:`1017`). 
 
 .. _v2.9.6:
 
