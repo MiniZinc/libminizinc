@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.5.0)
 #  -- Project information and versioning.
 
 project(libminizinc
-        VERSION 2.9.7
+        VERSION 2.9.8
         LANGUAGES CXX C)
 
 if(NOT BUILD_REF)
