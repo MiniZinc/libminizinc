@@ -12,6 +12,7 @@ build/
 res/
 vendor/
 CMakeCache.txt
+CMakeSettings.json
 CMakeFiles
 CMakeScripts
 cmake_install.cmake
@@ -24,6 +25,7 @@ CMakeLists.txt.user
 *.err
 .vscode/c_cpp_properties.json
 .vscode/ipch
+.vs/
 tests/output
 tests/env
 tests/.pytest_cache

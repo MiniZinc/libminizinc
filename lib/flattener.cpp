@@ -20,6 +20,7 @@
 #include <minizinc/flattener.hh>
 #include <minizinc/pathfileprinter.hh>
 #include <minizinc/statistics.hh>
+#include <minizinc/feature_extraction.hh>
 
 #include <fstream>
 
@@ -909,6 +910,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           if (stats.n_lin_del != 0) {
             ss.add("eliminatedLinearConstraints", stats.n_lin_del);
           }
+          
 
           /// Objective / SAT. These messages are used by mzn-test.py.
           SolveI* solveItem = env->flat()->solveItem();
@@ -923,6 +925,48 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           }
 
           ss.add("flatTime", flatten_time.s());
+        }
+
+        if (_flags.featureVector != nullptr) {
+          StatisticsStream ss(_os, _flags.encapsulateJSON, "feature_vector",
+                              "%%%mzn-fvec: ", "%%%mzn-fvec-end");
+          FlatModelFeatureVector features = extract_feature_vector(*env, *_flags.featureVector);
+
+           if (!_flags.encapsulateJSON) {
+            _os << "% Generated FlatZinc Feature Vector:\n";
+          }
+
+          ss.add("flatBoolVars", features.n_bool_vars);
+          ss.add("flatIntVars", features.n_int_vars);
+          ss.add("flatSetVars", features.n_set_vars);
+          
+          ss.addMap("idToVarNameMap", features.customIdToVarNameMap);
+          ss.addMap("idToConstraintNameMap", features.customIdToConstraintNameMap);
+
+          ss.addArray("domainWidths", features.domain_widths);
+          ss.add("stdDeviationDomain", features.std_dev_domain_size);
+          ss.add("averageDomainSize", features.avg_domain_size);
+          ss.add("medianDomainSize", features.median_domain_size);
+          ss.add("averageDomainOverlap", features.avg_domain_overlap);
+          ss.add("numberOfDisjointPairs", features.n_disjoint_domain_pairs);
+          ss.add("metaConstraints", features.n_meta_ct);
+          ss.add("totalConstraints", features.n_total_ct);
+          ss.add("avgDecisionVarsInConstraints", features.avg_decision_vars_in_cts);
+
+          ss.add("constraintGraph", features.constraint_graph);
+          ss.addMap("constraintHistogram", features.ct_histogram);
+          ss.addMap("annotationHistogram", features.ann_histogram);
+
+          SolveI* solveItem = env->flat()->solveItem();
+          if (solveItem->st() != SolveI::SolveType::ST_SAT) {
+            if (solveItem->st() == SolveI::SolveType::ST_MAX) {
+              ss.add("method", "maximize");
+            } else {
+              ss.add("method", "minimize");
+            }
+          } else {
+            ss.add("method", "satisfy");
+          }
         }
 
         if (_flags.outputPathsStdout) {

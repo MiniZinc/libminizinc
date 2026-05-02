@@ -5772,6 +5772,7 @@ FlatModelStatistics statistics(Env& m) {
   stats.n_imp_ct = m.envi().counters.impConstraints;
   stats.n_imp_del = m.envi().counters.impDel;
   stats.n_lin_del = m.envi().counters.linDel;
+
   for (auto& i : *flat) {
     if (!i->removed()) {
       if (auto* vdi = i->dynamicCast<VarDeclI>()) {

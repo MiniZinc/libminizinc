@@ -15,15 +15,22 @@
 #include <cmath>
 #include <iostream>
 #include <limits>
+#include <map>
 #include <unordered_set>
+#include <sstream>
 
 namespace MiniZinc {
 
-StatisticsStream::StatisticsStream(std::ostream& os, bool json)
-    : _os(os), _json(json), _ios(nullptr) {
+StatisticsStream::StatisticsStream(std::ostream& os, bool json, std::string jsonType, std::string linePrefix, std::string outputEndMarker)
+    : _os(os),
+      _json(json),
+      _jsonType(jsonType) /*currently in use: statistics, feature_vector*/,
+      _ios(nullptr),
+      _prefix(linePrefix),
+      _endMarker(outputEndMarker) {
   _ios.copyfmt(os);
   if (_json) {
-    _os << "{\"type\": \"statistics\", \"statistics\": {";
+    _os << "{\"type\": \"" << _jsonType << "\", \"" << _jsonType << "\": {";
   }
 }
 
@@ -31,7 +38,7 @@ StatisticsStream::~StatisticsStream() {
   if (_json) {
     _os << "}}\n";
   } else {
-    _os << "%%%mzn-stat-end\n";
+    _os << _endMarker << std::endl;
   }
   if (!_warnings.empty()) {
     for (auto& w : _warnings) {
@@ -63,18 +70,25 @@ void StatisticsStream::add(const std::string& stat, const Expression* value) {
     addInternal(stat, *value);
   }
 }
+
 void StatisticsStream::add(const std::string& stat, int value) { addInternal(stat, value); }
+
 void StatisticsStream::add(const std::string& stat, unsigned int value) {
   addInternal(stat, value);
 }
+
 void StatisticsStream::add(const std::string& stat, long value) { addInternal(stat, value); }
+
 void StatisticsStream::add(const std::string& stat, unsigned long value) {
   addInternal(stat, value);
 }
+
 void StatisticsStream::add(const std::string& stat, long long value) { addInternal(stat, value); }
+
 void StatisticsStream::add(const std::string& stat, unsigned long long value) {
   addInternal(stat, value);
 }
+
 void StatisticsStream::add(const std::string& stat, double value) {
   if (std::isfinite(value)) {
     addInternal(stat, value);
@@ -87,9 +101,11 @@ void StatisticsStream::add(const std::string& stat, double value) {
     }
   }
 }
+
 void StatisticsStream::add(const std::string& stat, const std::string& value) {
   addInternal(stat, "\"" + Printer::escapeStringLit(value) + "\"");
 }
+
 void StatisticsStream::addRaw(const std::string& stat, const std::string& value) {
   addInternal(stat, value);
 }

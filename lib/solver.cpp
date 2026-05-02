@@ -25,6 +25,7 @@
 
 #include <minizinc/param_config.hh>
 #include <minizinc/solver.hh>
+#include <minizinc/feature_extraction.hh>
 
 #include <chrono>
 #include <cstdlib>
@@ -35,6 +36,7 @@
 #include <iostream>
 #include <ratio>
 #include <sstream>
+
 
 #ifdef HAS_OSICBC
 #include <minizinc/solvers/MIP/MIP_osicbc_solverfactory.hh>
@@ -269,6 +271,7 @@ void MznSolver::printHelp(std::ostream& os, const std::string& selectedSolver) {
      << "  --verbose-compilation\n    Print progress/log statements for compilation." << std::endl
      << "  -s, --statistics\n    Print statistics." << std::endl
      << "  --compiler-statistics\n    Print statistics for compilation." << std::endl
+     << "  --feature-vector, --feature-vector <(\\d*v)?(\\d*c)?(f)?>\n    Extracts and prints feature vector of the FlatZinc model.\n    Allows configuration of the feature-extraction process.\n    [0-9]+v limits variables in constraint graph, [0-9]+c limits constraints in constraint graph, f ignores floats.\n    By default uses \"0v0cf\" which will not apply padding / cropping to the constraint graph and will ignore floats." << std::endl
      << "  -c, --compile\n    Compile only (do not run solver)." << std::endl
      << "  --config-dirs\n    Output configuration directories." << std::endl
      << "  --param-file <file>\n    Load parameters from the given JSON file." << std::endl
@@ -627,6 +630,13 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       randomSeed = atoi(argv[i].c_str());
     } else if (argv[i] == "--compiler-statistics") {
       flagCompilerStatistics = true;
+    } else if (argv[i] == "--feature-vector") {
+      int j = i + 1;
+      if (j < argc && FlatModelFeatureVector::Options::is_valid_options_regex(argv[j])) {
+        featureVectorOptions = FlatModelFeatureVector::Options::parse_from_string(argv[j]);
+        ++i;
+      }
+      flagFeatureVector = true;
     } else if (argv[i] == "--json-stream") {
       flagEncapsulateJSON = true;
       s2out.opt.checkerArgs.emplace_back("--json-stream");
@@ -969,6 +979,9 @@ void MznSolver::flatten(const std::string& modelString, const std::string& model
   _flt.setFlagEncapsulateJSON(flagEncapsulateJSON);
   if (flagRandomSeed) {
     _flt.setRandomSeed(randomSeed);
+  }
+  if (flagFeatureVector) {
+    _flt.setFlagFeatureVector(&featureVectorOptions);
   }
 
 #ifndef __EMSCRIPTEN__

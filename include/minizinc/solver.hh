@@ -15,12 +15,14 @@
 #include <minizinc/flattener.hh>
 #include <minizinc/solver_config.hh>
 #include <minizinc/solver_instance_base.hh>
+#include <minizinc/feature_extraction.hh>
 
 #include <iostream>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
+
 
 namespace MiniZinc {
 
@@ -164,6 +166,8 @@ public:
   bool flagStatistics = false;
   bool flagCompilerVerbose = false;
   bool flagCompilerStatistics = false;
+  bool flagFeatureVector = false;
+  FlatModelFeatureVector::Options featureVectorOptions;
   bool flagEncapsulateJSON = false;
   bool flagIsSolns2out = false;
   std::chrono::milliseconds flagOverallTimeLimit = std::chrono::milliseconds(0);

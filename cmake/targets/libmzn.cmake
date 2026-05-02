@@ -18,6 +18,7 @@ add_library(mzn
   lib/copy.cpp
   lib/exception.cpp
   lib/eval_par.cpp
+  lib/feature_extraction.cpp
   lib/file_utils.cpp
   lib/flatten.cpp
   lib/flatten/flat_exp.cpp
@@ -81,6 +82,7 @@ add_library(mzn
   include/minizinc/copy.hh
   include/minizinc/eval_par.hh
   include/minizinc/exception.hh
+  include/minizinc/feature_extraction.hh
   include/minizinc/file_utils.hh
   include/minizinc/flat_exp.hh
   include/minizinc/flatten.hh
