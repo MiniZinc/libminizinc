@@ -1017,6 +1017,18 @@ base_ti_expr :
           $$->type(tt);
         }
       }
+    | MZN_SET '(' expr ')' MZN_OF base_ti_expr_tail
+      { if ($6 != nullptr && $3 != nullptr) {
+          Type tt = Expression::type($6);
+          tt.st(Type::ST_SET);
+          ArrayLit* card_marker =
+            ArrayLit::constructTuple(@$, std::vector<Expression*>({$3, $6}));
+          $$ = new TypeInst(@$, tt, card_marker);
+          $$->setIsEnum($6->isEnum());
+        } else {
+          $$ = nullptr;
+        }
+      }
     | MZN_OPT MZN_SET MZN_OF base_ti_expr_tail
       { $$ = $4;
         if ($$ != nullptr) {
@@ -1052,6 +1064,24 @@ base_ti_expr :
             tt.otExplicit(true);
           }
           $$->type(tt);
+        }
+      }
+    | MZN_VAR opt_opt MZN_SET '(' expr ')' MZN_OF base_ti_expr_tail
+      { if ($8 != nullptr && $5 != nullptr) {
+          Type tt = Expression::type($8);
+          tt.ti(Type::TI_VAR);
+          tt.tiExplicit(true);
+          tt.st(Type::ST_SET);
+          if ($2) {
+            tt.ot(Type::OT_OPTIONAL);
+            tt.otExplicit(true);
+          }
+          ArrayLit* card_marker =
+            ArrayLit::constructTuple(@$, std::vector<Expression*>({$5, $8}));
+          $$ = new TypeInst(@$, tt, card_marker);
+          $$->setIsEnum($8->isEnum());
+        } else {
+          $$ = nullptr;
         }
       }
     | MZN_ANY MZN_TI_IDENTIFIER

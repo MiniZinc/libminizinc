@@ -3822,6 +3822,198 @@ void create_par_versions(Env& env, Model* m, BottomUpIterator<Typer<true>>& bott
   }
 }
 
+namespace {
+
+/// Test whether \a dom is a set-cardinality marker: a 2-tuple {cardExpr,
+/// T_typeinst} where the cardinality expression is a regular expression and the
+/// element type is a TypeInst.  A genuine `tuple(A, B)` type stores a 2-tuple of
+/// TypeInsts and a `record` stores a tuple of VarDecls, so requiring element 0
+/// to be a non-TypeInst and element 1 to be a TypeInst keeps this unambiguous.
+bool is_set_card_marker(Expression* dom) {
+  auto* al = Expression::dynamicCast<ArrayLit>(dom);
+  return al != nullptr && al->isTuple() && al->size() == 2 &&
+         !Expression::isa<TypeInst>((*al)[0]) && Expression::isa<TypeInst>((*al)[1]);
+}
+
+/// Find the TypeInst within \a ti's domain chain that carries a cardinality
+/// marker (descending through array-of-array wrappers), or nullptr.
+TypeInst* find_set_card_carrier(TypeInst* ti) {
+  while (ti != nullptr) {
+    if (is_set_card_marker(ti->domain())) {
+      return ti;
+    }
+    if (ti->domain() != nullptr && Expression::isa<TypeInst>(ti->domain())) {
+      ti = Expression::cast<TypeInst>(ti->domain());
+    } else {
+      return nullptr;
+    }
+  }
+  return nullptr;
+}
+
+/// Strip the cardinality marker from \a carrier, restoring the real element-type
+/// domain, and return the cardinality expression.
+Expression* strip_set_card_marker(TypeInst* carrier) {
+  auto* al = Expression::cast<ArrayLit>(carrier->domain());
+  Expression* card_expr = (*al)[0];
+  auto* elem_ti = Expression::cast<TypeInst>((*al)[1]);
+  carrier->domain(elem_ti->domain());
+  carrier->setIsEnum(elem_ti->isEnum());
+  return card_expr;
+}
+
+/// Build the cardinality constraint for the declared variable \a vd, whose
+/// TypeInst carried a marker with cardinality expression \a card_expr.  For
+/// scalars this is `card(x) in e`, for arrays `forall(_g in array1d(x))(card(_g)
+/// in e)`.
+Expression* build_set_card_constraint(EnvI& env, VarDecl* vd, Expression* card_expr) {
+  Location loc = Expression::loc(vd).introduce();
+  if (vd->ti()->isarray()) {
+    auto* gen_ti = new TypeInst(loc, Type());
+    auto* gen_vd = new VarDecl(loc, gen_ti, env.genId());
+    gen_vd->toplevel(false);
+    Call* a1d = Call::a(loc, env.constants.ids.array1d, {vd->id()});
+    Generators gens;
+    gens.g.push_back(Generator({gen_vd}, a1d, nullptr));
+    Call* card_call = Call::a(loc, env.constants.ids.card, {gen_vd->id()});
+    auto* body = new BinOp(loc, card_call, BOT_IN, card_expr);
+    auto* comp = new Comprehension(loc, body, gens, false);
+    return Call::a(loc, env.constants.ids.forall, {comp});
+  }
+  Call* card_call = Call::a(loc, env.constants.ids.card, {vd->id()});
+  return new BinOp(loc, card_call, BOT_IN, card_expr);
+}
+
+/// Process a top-level or let-bound variable declaration: if its TypeInst
+/// carries a set-cardinality marker, strip it and return the generated
+/// constraint, or nullptr if there is no marker.  The marker is always
+/// stripped (so type checking can proceed) but the unsupported nested
+/// `array of array' case is reported and produces no constraint.
+Expression* process_set_card_decl(EnvI& env, VarDecl* vd, std::vector<TypeError>& typeErrors) {
+  TypeInst* carrier = find_set_card_carrier(vd->ti());
+  if (carrier == nullptr) {
+    return nullptr;
+  }
+  Expression* card_expr = strip_set_card_marker(carrier);
+  if (carrier != vd->ti()) {
+    // The marker was reached by descending through an `array of array' wrapper.
+    typeErrors.emplace_back(
+        env, Expression::loc(vd),
+        "set cardinality `set(...)' is not supported for nested `array of array' types");
+    return nullptr;
+  }
+  return build_set_card_constraint(env, vd, card_expr);
+}
+
+/// Expression visitor that desugars set-cardinality markers on let-bound
+/// declarations and reports markers found in any other (illegal) position.
+class SetCardExprVisitor : public EVisitor {
+public:
+  EnvI& env;
+  std::vector<TypeError>& typeErrors;
+  SetCardExprVisitor(EnvI& env0, std::vector<TypeError>& typeErrors0)
+      : env(env0), typeErrors(typeErrors0) {}
+  /// Desugar markers on let-bound declarations, appending the generated
+  /// constraints to the let.  Runs before the iterator descends into the let
+  /// items, so their (now stripped) TypeInsts are not flagged by vTypeInst.
+  void vLet(Let* let) {
+    GCLock lock;
+    std::vector<Expression*> items;
+    std::vector<Expression*> constraints;
+    for (unsigned int i = 0; i < let->let().size(); i++) {
+      Expression* li = let->let()[i];
+      items.push_back(li);
+      if (auto* vd = Expression::dynamicCast<VarDecl>(li)) {
+        if (Expression* c = process_set_card_decl(env, vd, typeErrors)) {
+          constraints.push_back(c);
+        }
+      }
+    }
+    if (!constraints.empty()) {
+      for (auto* c : constraints) {
+        items.push_back(c);
+      }
+      let->setLet(ASTExprVec<Expression>(items));
+      let->rehash();
+    }
+  }
+  /// Any marker reaching here was not stripped at a declaration site, so it
+  /// occurs in an illegal position (function parameter, record/tuple field, ...).
+  void vTypeInst(TypeInst* ti) {
+    if (is_set_card_marker(ti->domain())) {
+      typeErrors.emplace_back(
+          env, Expression::loc(ti),
+          "set cardinality `set(...)' is only allowed in variable declarations");
+      // Downgrade to a plain set type-inst to avoid cascading errors.
+      auto* al = Expression::cast<ArrayLit>(ti->domain());
+      ti->domain(Expression::cast<TypeInst>((*al)[1])->domain());
+    }
+  }
+};
+
+/// Item visitor that desugars set-cardinality markers on top-level variable
+/// declarations and walks every item's expressions for nested lets / illegal
+/// markers.
+class SetCardItemVisitor : public ItemVisitor {
+public:
+  EnvI& env;
+  std::vector<ConstraintI*>& toAdd;
+  SetCardExprVisitor& ev;
+  SetCardItemVisitor(EnvI& env0, std::vector<ConstraintI*>& toAdd0, SetCardExprVisitor& ev0)
+      : env(env0), toAdd(toAdd0), ev(ev0) {}
+  void run(Expression* e) {
+    if (e != nullptr) {
+      TopDownIterator<SetCardExprVisitor>(ev).run(e);
+    }
+  }
+  void vVarDeclI(VarDeclI* vdi) {
+    VarDecl* vd = vdi->e();
+    {
+      GCLock lock;
+      if (Expression* c = process_set_card_decl(env, vd, ev.typeErrors)) {
+        toAdd.push_back(new ConstraintI(Expression::loc(vd).introduce(), c));
+      }
+    }
+    run(vd);
+  }
+  void vConstraintI(ConstraintI* ci) { run(ci->e()); }
+  void vSolveI(SolveI* si) {
+    for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it) {
+      run(*it);
+    }
+    run(si->e());
+  }
+  void vOutputI(OutputI* oi) { run(oi->e()); }
+  void vAssignI(AssignI* ai) { run(ai->e()); }
+  void vFunctionI(FunctionI* fi) {
+    if (fi->fromStdLib()) {
+      return;
+    }
+    for (unsigned int i = 0; i < fi->paramCount(); i++) {
+      run(fi->param(i));
+    }
+    run(fi->ti());
+    run(fi->e());
+  }
+};
+
+/// Desugar `set(e) of T` cardinality declarations.  Replaces the marker carried
+/// in a set TypeInst's domain with the real element type, and generates a
+/// `card(x) in e` constraint (or a `forall` over the array elements) for every
+/// top-level or let-bound variable declaration.  Markers found in any other
+/// position are reported as type errors.
+void desugar_set_cardinality(EnvI& env, Model* m, std::vector<TypeError>& typeErrors) {
+  std::vector<ConstraintI*> toAdd;
+  SetCardExprVisitor ev(env, typeErrors);
+  SetCardItemVisitor iv(env, toAdd, ev);
+  iter_items(iv, m);
+  for (auto* ci : toAdd) {
+    m->addItem(ci);
+  }
+}
+
+}  // namespace
+
 void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
                bool ignoreUndefinedParameters, bool allowMultiAssignment, bool isFlatZinc) {
   auto isChecker =
@@ -3849,6 +4041,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
   } else {
     m = origModel;
   }
+
+  desugar_set_cardinality(env.envi(), m, typeErrors);
 
   // Topological sorting
   IdMap<bool> needToString;

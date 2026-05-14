@@ -1540,6 +1540,8 @@ public:
 
   /// Access local declarations
   ASTExprVec<Expression> let() const { return _let; }
+  /// Set local declarations
+  void setLet(const ASTExprVec<Expression>& let) { _let = let; }
   /// Access local declarations
   ASTExprVec<Expression> letOrig() const { return _letOrig; }
   /// Set local declarations
