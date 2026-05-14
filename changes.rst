@@ -9,6 +9,12 @@ https://github.com/MiniZinc/libminizinc/issues.
 `Upcoming Release <https://github.com/MiniZinc/MiniZincIDE/releases/tag/edge>`__
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Bug fixes:
+^^^^^^^^^^
+-  Fix x=infinity and x=-infinity being incorrectly translated when used
+   in reified positions.
+
+
 .. _v2.9.7:
 
 `Version 2.9.7 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.9.7>`__

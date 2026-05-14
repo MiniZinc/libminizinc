@@ -499,6 +499,9 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
           case BOT_GQ:
             result = v0.isPlusInfinity();
             break;
+          case BOT_EQ:
+            result = false;
+            break;
           default:
             assert(false);
         }
@@ -524,6 +527,9 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
           case BOT_GR:
           case BOT_GQ:
             result = v1.isMinusInfinity();
+            break;
+          case BOT_EQ:
+            result = false;
             break;
           default:
             assert(false);
