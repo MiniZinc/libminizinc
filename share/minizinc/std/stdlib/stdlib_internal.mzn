@@ -3072,3 +3072,8 @@ function ann: mzn_internal_warm_start(array [$X] of var set of $$E: x, array [$X
 function ann: mzn_internal_seq_search(array [int] of ann: s) = seq_search(array1d(s)) :: mzn_internal_representation;
 
 function ann: mzn_internal_warm_start_array(array [int] of ann: w) = warm_start_array(array1d(w)) :: mzn_internal_representation;
+
+predicate mzn_internal_set_card(var set of $$E: s, set of int: e) :: mzn_internal_representation = card(s) in e;
+predicate mzn_internal_set_card(var set of $$E: s, var set of int: e) :: mzn_internal_representation = card(s) in e;
+predicate mzn_internal_set_card(var set of $$E: s, int: e) :: mzn_internal_representation = card(s) = e;
+predicate mzn_internal_set_card(var set of $$E: s, var int: e) :: mzn_internal_representation = card(s) = e;

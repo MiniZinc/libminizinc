@@ -2618,6 +2618,7 @@ Constants::Constants() {
   ids.abs = addString("abs");
 
   ids.mzn_alias_eq = addString("mzn_alias_eq");
+  ids.mzn_internal_set_card = addString("mzn_internal_set_card");
 
   ids.symmetry_breaking_constraint = addString("symmetry_breaking_constraint");
   ids.redundant_constraint = addString("redundant_constraint");

@@ -3022,6 +3022,27 @@ public:
     for (auto i = static_cast<unsigned int>(args.size()); (i--) != 0U;) {
       args[i] = call->arg(i);
     }
+    // Validate set-cardinality desugar calls up front: emit a user-friendly
+    // error instead of the generic "no matching declaration" overload report.
+    // The identifier `mzn_internal_set_card' never appears in user code, so
+    // any call here was introduced by `desugar_set_cardinality'.
+    if (call->id() == _env.constants.ids.mzn_internal_set_card && call->argCount() == 2) {
+      Type t = Expression::type(call->arg(1));
+      bool ok = t.dim() == 0 && t.bt() == Type::BT_INT &&
+                (t.st() == Type::ST_PLAIN || t.st() == Type::ST_SET);
+      if (!ok) {
+        std::ostringstream ss;
+        ss << "set cardinality expression must have type `int', `var int', "
+           << "`set of int' or `var set of int', but got `" << t.toString(_env) << "'";
+        // Interned literals (int, float, bool) carry no source location; fall
+        // back to the (desugar-synthesised) call location.
+        Location loc = Expression::loc(call->arg(1));
+        if (loc.filename().empty()) {
+          loc = Expression::loc(call);
+        }
+        throw TypeError(_env, loc, ss.str());
+      }
+    }
     FunctionI* fi = _model->matchFn(_env, call, true, true);
 
     if (fi != nullptr && fi->id() == _env.constants.ids.symmetry_breaking_constraint &&
@@ -3952,8 +3973,7 @@ Expression* build_set_card_constraint_from_path(EnvI& env, VarDecl* vd, const Ca
       }
     }
   }
-  Call* card_call = Call::a(loc, env.constants.ids.card, {cur});
-  auto* body = new BinOp(loc, card_call, BOT_IN, card_expr);
+  Expression* body = Call::a(loc, env.constants.ids.mzn_internal_set_card, {cur, card_expr});
   if (gens.g.empty()) {
     return body;
   }
@@ -4071,8 +4091,8 @@ public:
 
 /// Desugar `set(e) of T` cardinality declarations.  Replaces the marker carried
 /// in a set TypeInst's domain with the real element type, and generates a
-/// `card(x) in e` constraint (or a `forall` over the array elements) for every
-/// top-level or let-bound variable declaration.  Markers found in any other
+/// `mzn_internal_set_card(x, e)` call (or a `forall` over the array elements) for
+/// every top-level or let-bound variable declaration.  Markers found in any other
 /// position are reported as type errors.
 void desugar_set_cardinality(EnvI& env, Model* m, std::vector<TypeError>& typeErrors) {
   std::vector<ConstraintI*> toAdd;
