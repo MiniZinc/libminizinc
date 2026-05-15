@@ -3835,20 +3835,78 @@ bool is_set_card_marker(Expression* dom) {
          !Expression::isa<TypeInst>((*al)[0]) && Expression::isa<TypeInst>((*al)[1]);
 }
 
-/// Find the TypeInst within \a ti's domain chain that carries a cardinality
-/// marker (descending through array-of-array wrappers), or nullptr.
-TypeInst* find_set_card_carrier(TypeInst* ti) {
-  while (ti != nullptr) {
-    if (is_set_card_marker(ti->domain())) {
-      return ti;
-    }
-    if (ti->domain() != nullptr && Expression::isa<TypeInst>(ti->domain())) {
-      ti = Expression::cast<TypeInst>(ti->domain());
-    } else {
-      return nullptr;
-    }
+/// One step along the path from a (top-level or let-bound) variable to a
+/// set-cardinality leaf inside its TypeInst tree.
+struct CardPathStep {
+  enum Kind { Array, TupleField, RecordField } kind;
+  unsigned int tupleIdx;  // 1-based index, when kind == TupleField
+  ASTString recordName;   // field name, when kind == RecordField
+};
+
+/// A single set-cardinality leaf reached from the declared variable along
+/// \a path; the marker lives on \a carrier's domain.
+struct CardLeaf {
+  std::vector<CardPathStep> path;
+  TypeInst* carrier;
+};
+
+/// Recursively walk \a ti, collecting every set-cardinality leaf found, with
+/// the path of array peelings and tuple/record projections needed to reach it.
+/// Composite domains may contain TypeInsts (tuples) or VarDecls (records).
+void collect_set_card_leaves(TypeInst* ti, std::vector<CardPathStep>& prefix,
+                             std::vector<CardLeaf>& out) {
+  if (ti == nullptr) {
+    return;
   }
-  return nullptr;
+  bool has_marker = is_set_card_marker(ti->domain());
+  bool is_array = ti->isarray();
+
+  if (has_marker) {
+    if (is_array) {
+      prefix.push_back({CardPathStep::Array, 0, ASTString()});
+      out.push_back({prefix, ti});
+      prefix.pop_back();
+    } else {
+      out.push_back({prefix, ti});
+    }
+    return;
+  }
+
+  if (is_array) {
+    prefix.push_back({CardPathStep::Array, 0, ASTString()});
+  }
+
+  Expression* dom = ti->domain();
+  if (is_array && dom != nullptr && Expression::isa<TypeInst>(dom)) {
+    // Array-of-array wrapper: descend into the inner array TypeInst.
+    collect_set_card_leaves(Expression::cast<TypeInst>(dom), prefix, out);
+  } else if (dom != nullptr && Expression::isa<ArrayLit>(dom)) {
+    auto* al = Expression::cast<ArrayLit>(dom);
+    Type::BaseType bt = ti->type().bt();
+    if (bt == Type::BT_TUPLE) {
+      for (unsigned int i = 0; i < al->size(); ++i) {
+        if (auto* field_ti = Expression::dynamicCast<TypeInst>((*al)[i])) {
+          prefix.push_back({CardPathStep::TupleField, i + 1, ASTString()});
+          collect_set_card_leaves(field_ti, prefix, out);
+          prefix.pop_back();
+        }
+      }
+    } else if (bt == Type::BT_RECORD) {
+      for (unsigned int i = 0; i < al->size(); ++i) {
+        if (auto* vd_field = Expression::dynamicCast<VarDecl>((*al)[i])) {
+          prefix.push_back({CardPathStep::RecordField, 0, vd_field->id()->v()});
+          collect_set_card_leaves(vd_field->ti(), prefix, out);
+          prefix.pop_back();
+        }
+      }
+    }
+    // else: composite domain we don't recurse through (no markers possible).
+  }
+  // else: scalar without marker, nothing more to do.
+
+  if (is_array) {
+    prefix.pop_back();
+  }
 }
 
 /// Strip the cardinality marker from \a carrier, restoring the real element-type
@@ -3862,47 +3920,61 @@ Expression* strip_set_card_marker(TypeInst* carrier) {
   return card_expr;
 }
 
-/// Build the cardinality constraint for the declared variable \a vd, whose
-/// TypeInst carried a marker with cardinality expression \a card_expr.  For
-/// scalars this is `card(x) in e`, for arrays `forall(_g in array1d(x))(card(_g)
-/// in e)`.
-Expression* build_set_card_constraint(EnvI& env, VarDecl* vd, Expression* card_expr) {
+/// Build the cardinality constraint for the leaf \a leaf reached from
+/// declared variable \a vd, with \a card_expr being the cardinality expression
+/// extracted from the leaf's marker.  Each \c Array step introduces a fresh
+/// generator over `array1d(...)`; each \c TupleField/RecordField step appends
+/// a `.i` / `.name` field-access.  The body is `card(<path>) in card_expr`,
+/// wrapped in `forall(... )` if any generators were introduced.
+Expression* build_set_card_constraint_from_path(EnvI& env, VarDecl* vd, const CardLeaf& leaf,
+                                                Expression* card_expr) {
   Location loc = Expression::loc(vd).introduce();
-  if (vd->ti()->isarray()) {
-    auto* gen_ti = new TypeInst(loc, Type());
-    auto* gen_vd = new VarDecl(loc, gen_ti, env.genId());
-    gen_vd->toplevel(false);
-    Call* a1d = Call::a(loc, env.constants.ids.array1d, {vd->id()});
-    Generators gens;
-    gens.g.push_back(Generator({gen_vd}, a1d, nullptr));
-    Call* card_call = Call::a(loc, env.constants.ids.card, {gen_vd->id()});
-    auto* body = new BinOp(loc, card_call, BOT_IN, card_expr);
-    auto* comp = new Comprehension(loc, body, gens, false);
-    return Call::a(loc, env.constants.ids.forall, {comp});
+  Expression* cur = vd->id();
+  Generators gens;
+  for (const auto& step : leaf.path) {
+    switch (step.kind) {
+      case CardPathStep::Array: {
+        auto* gen_ti = new TypeInst(loc, Type());
+        auto* gen_vd = new VarDecl(loc, gen_ti, env.genId());
+        gen_vd->toplevel(false);
+        Call* a1d = Call::a(loc, env.constants.ids.array1d, {cur});
+        gens.g.push_back(Generator({gen_vd}, a1d, nullptr));
+        cur = gen_vd->id();
+        break;
+      }
+      case CardPathStep::TupleField: {
+        cur = new FieldAccess(loc, cur, IntLit::a(IntVal(step.tupleIdx)));
+        break;
+      }
+      case CardPathStep::RecordField: {
+        cur = new FieldAccess(loc, cur, new Id(loc, step.recordName, nullptr));
+        break;
+      }
+    }
   }
-  Call* card_call = Call::a(loc, env.constants.ids.card, {vd->id()});
-  return new BinOp(loc, card_call, BOT_IN, card_expr);
+  Call* card_call = Call::a(loc, env.constants.ids.card, {cur});
+  auto* body = new BinOp(loc, card_call, BOT_IN, card_expr);
+  if (gens.g.empty()) {
+    return body;
+  }
+  auto* comp = new Comprehension(loc, body, gens, false);
+  return Call::a(loc, env.constants.ids.forall, {comp});
 }
 
-/// Process a top-level or let-bound variable declaration: if its TypeInst
-/// carries a set-cardinality marker, strip it and return the generated
-/// constraint, or nullptr if there is no marker.  The marker is always
-/// stripped (so type checking can proceed) but the unsupported nested
-/// `array of array' case is reported and produces no constraint.
-Expression* process_set_card_decl(EnvI& env, VarDecl* vd, std::vector<TypeError>& typeErrors) {
-  TypeInst* carrier = find_set_card_carrier(vd->ti());
-  if (carrier == nullptr) {
-    return nullptr;
+/// Process a top-level or let-bound variable declaration: collect every
+/// set-cardinality leaf inside its TypeInst tree (arbitrary nesting of arrays,
+/// tuples and records), strip the markers and return one constraint per leaf.
+std::vector<Expression*> process_set_card_decl(EnvI& env, VarDecl* vd) {
+  std::vector<CardLeaf> leaves;
+  std::vector<CardPathStep> prefix;
+  collect_set_card_leaves(vd->ti(), prefix, leaves);
+  std::vector<Expression*> constraints;
+  constraints.reserve(leaves.size());
+  for (const auto& leaf : leaves) {
+    Expression* card_expr = strip_set_card_marker(leaf.carrier);
+    constraints.push_back(build_set_card_constraint_from_path(env, vd, leaf, card_expr));
   }
-  Expression* card_expr = strip_set_card_marker(carrier);
-  if (carrier != vd->ti()) {
-    // The marker was reached by descending through an `array of array' wrapper.
-    typeErrors.emplace_back(
-        env, Expression::loc(vd),
-        "set cardinality `set(...)' is not supported for nested `array of array' types");
-    return nullptr;
-  }
-  return build_set_card_constraint(env, vd, card_expr);
+  return constraints;
 }
 
 /// Expression visitor that desugars set-cardinality markers on let-bound
@@ -3924,7 +3996,7 @@ public:
       Expression* li = let->let()[i];
       items.push_back(li);
       if (auto* vd = Expression::dynamicCast<VarDecl>(li)) {
-        if (Expression* c = process_set_card_decl(env, vd, typeErrors)) {
+        for (Expression* c : process_set_card_decl(env, vd)) {
           constraints.push_back(c);
         }
       }
@@ -3970,7 +4042,7 @@ public:
     VarDecl* vd = vdi->e();
     {
       GCLock lock;
-      if (Expression* c = process_set_card_decl(env, vd, ev.typeErrors)) {
+      for (Expression* c : process_set_card_decl(env, vd)) {
         toAdd.push_back(new ConstraintI(Expression::loc(vd).introduce(), c));
       }
     }
