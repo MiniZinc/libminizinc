@@ -345,7 +345,8 @@ keywords are:
 :mzn:`array`, 
 :mzn:`bool`, 
 :mzn:`case`,
-:mzn:`constraint`, 
+:mzn:`constraint`,
+:mzn:`default`,
 :mzn:`diff`,
 :mzn:`div`,
 :mzn:`else`,
@@ -358,6 +359,7 @@ keywords are:
 :mzn:`if`,
 :mzn:`in`,
 :mzn:`include`,
+:mzn:`infinity`,
 :mzn:`int`,
 :mzn:`intersect`,
 :mzn:`let`,
@@ -367,7 +369,6 @@ keywords are:
 :mzn:`mod`,
 :mzn:`not`,
 :mzn:`of`,
-:mzn:`op`,
 :mzn:`opt`,
 :mzn:`output`,
 :mzn:`par`,
@@ -387,6 +388,7 @@ keywords are:
 :mzn:`type`,
 :mzn:`union`,
 :mzn:`var`,
+:mzn:`variant_record`,
 :mzn:`where`,
 :mzn:`xor`.
 
@@ -548,8 +550,8 @@ The following list introduces some general properties of MiniZinc types.
   as range types (see :ref:`spec-Set-Expression-Type-insts`), as well as
   sets and arrays, composed of finite types. Types that are not finite types
   are unconstrained integers, unconstrained floats, unconstrained strings,
-  and :mzn:`ann`. Finite types are relevant to sets (:mzn:`spec-Sets`) and
-  array indices (:mzn:`spec-Arrays`). Every finite type has a *domain*,
+  and :mzn:`ann`. Finite types are relevant to sets (:ref:`spec-sets`) and
+  array indices (:ref:`spec-arrays`). Every finite type has a *domain*,
   which is a set value that holds all the possible values represented by the
   type.
 - Every first-order type (this excludes :mzn:`ann`) has a built-in total
@@ -926,14 +928,15 @@ set variable need not be.
 :mzn:`var set of TI` |coerce| :mzn:`var set of UI`, if
 :mzn:`TI` |coerce| :mzn:`UI`.
 
+.. _spec-arrays:
+
 Arrays
 ++++++
 
 |TyOverview|
-MiniZinc arrays are maps from fixed integers to values.  
-Values can be of any type.  
-The values can only have base type-insts.  
-Arrays-of-arrays are not allowed.
+MiniZinc arrays are maps from fixed integers to values.
+Values can be of any first-order type, including tuples, records and
+other arrays (so arrays of arrays are permitted).
 Arrays can be multi-dimensional.
 
 MiniZinc arrays can be declared in two different ways.
@@ -1763,7 +1766,7 @@ Float literals have the following form:
   :start-after: % Float literals
   :end-before: %
 
-For example: :mzn:`1.05`, :mzn:`1.3e-5`, :mzn:`1.3+e5`;  but not
+For example: :mzn:`1.05`, :mzn:`1.3e-5`, :mzn:`1.3e+5`;  but not
 :mzn:`1.`, :mzn:`.5`, :mzn:`1.e5`, :mzn:`.1e5`, :mzn:`-1.0`,
 :mzn:`-1E05`.
 A :mzn:`-` symbol preceding an integer or float literal is parsed as a
@@ -1791,7 +1794,7 @@ This includes the following C-style escape sequences:
 - :mzn:`\n` for newline
 - :mzn:`\t` for tab
 - :mzn:`\x[0-9a-fA-F][0-9a-fA-F]?` for an arbitrary 8-bit character specified by the given hexadecimal number
-- :mzn:`\x[0-7][0-7]?[0-7]?` for an arbitrary 8-bit character specified by the given octal number
+- :mzn:`\[0-7][0-7]?[0-7]?` for an arbitrary 8-bit character specified by the given octal number
 
 For example: :mzn:`"Hello, world!\n"`.
 
@@ -4065,7 +4068,7 @@ function :mzn:`deopt`
 
 .. code-block:: minizinc
 
-  par $T: deopt{par opt $T);
+  par $T: deopt(par opt $T);
   var $T: deopt(var opt $T);
 
 

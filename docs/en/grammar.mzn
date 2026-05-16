@@ -32,8 +32,7 @@
 
 <enum-cases> ::= "{" <ident> "," ... "}"
                | "_" "(" <expr> ")"
-               | <ident> "(" <ident> ")"
-               | "anon_enum" "(" <expr> ")"
+               | <ident> "(" <expr> ")"
 
 % Type-inst synonym items
 <type-inst-syn-item> ::= "type" <ident> <annotations> "=" <ti-expr>
@@ -50,7 +49,11 @@
                | "solve" <annotations> "maximize" <expr>
 
 % Output items
-<output-item> ::= "output" [ <string-annotation> ] <expr>
+<output-item> ::= "output" [ "::" <output-annotation> ] <expr>
+
+<output-annotation> ::= <string-literal>
+                      | <ident> "(" [ <expr> "," ... ] ")"
+                      | "(" <expr> ")"
 
 % Annotation items
 <annotation-item> ::= "annotation" <ident> <params> [ "=" <expr> ]
@@ -73,8 +76,9 @@
 
 <param-ti-expr> ::= <param-base-ti-expr>
                   | <param-array-ti-expr>
+                  | <param-ti-expr> "++" <param-base-ti-expr>
 
-<param-base-ti-expr> ::= <var-par> <opt-ti> <param-set-ti> <param-base-ti-expr-tail> ["++" <param-base-ti-expr>]
+<param-base-ti-expr> ::= <var-par> <opt-ti> <param-set-ti> <param-base-ti-expr-tail>
                        | "any" <ti-variable-expr-tail>
 
 <param-set-ti> ::= "set" "of" | ε
@@ -93,8 +97,9 @@
 % Type-inst expressions
 <ti-expr> ::= <base-ti-expr>
             | <array-ti-expr>
+            | <ti-expr> "++" <base-ti-expr>
 
-<base-ti-expr> ::= <var-par> <opt-ti> <set-ti> <base-ti-expr-tail> ["++" <base-ti-expr>]
+<base-ti-expr> ::= <var-par> <opt-ti> <set-ti> <base-ti-expr-tail>
                  | "any" <ti-variable-expr-tail>
 
 <var-par> ::= "var" | "par" | ε
@@ -187,7 +192,7 @@
 % Built-in operators
 <builtin-op> ::= <builtin-bin-op> | <builtin-un-op>
 
-<bin-op> ::= <builtin-bin-op> | ‘<ident>‘
+<bin-op> ::= <builtin-bin-op> | `<ident>`
 
 <builtin-bin-op> ::= "<->" | "->" | "<-" | "\/" | "xor" | "/\"
                    | "<" | ">" | "<=" | ">=" | "==" | "=" | "!="
@@ -198,7 +203,7 @@
 <builtin-un-op> ::= "not" | <builtin-num-un-op>
 
 % Built-in numeric operators
-<num-bin-op> ::= <builtin-num-bin-op> | ‘<ident>‘
+<num-bin-op> ::= <builtin-num-bin-op> | `<ident>`
 
 <builtin-num-bin-op> ::= "+" | "-" | "*" | "/" | "div" | "mod" | "^"
                        | "~+" | "~-" | "~*" | "~/" | "~div"
@@ -221,7 +226,7 @@
                   | (0[xX][0-9a-fA-F]+[pP][+-]?[0-9]+)
 
 % String literals
-<string-contents> ::= ([^"\n\] |  \[0-7][0-7?][0-7]? | \x[0-9a-fA-F][0-9a-fA-F]? | \n | \t | \" | \\)*
+<string-contents> ::= ([^"\n\] |  \[0-7][0-7]?[0-7]? | \x[0-9a-fA-F][0-9a-fA-F]? | \n | \t | \" | \\)*
 
 <string-literal> ::= """ <string-contents> """
                    | """ <string-contents> "\(" <string-interpolate-tail>
@@ -238,6 +243,7 @@
 <comp-tail> ::= <generator> [ "where" <expr> ] "," ...
 
 <generator> ::= ( <ident> | "_" ) "," ... "in" <expr>
+              | ( <ident> | "_" ) "=" <expr>
 
 % Array literals
 <array-literal> ::= "[" [ <expr> "," ... ] "]"
@@ -283,7 +289,7 @@
 <call-expr> ::= <ident-or-quoted-op> [ "(" <expr> "," ... ")" ]
 
 % Let expressions
-<let-expr> ::= "let" "{" <let-item> ";" ... "}" "in" <expr>
+<let-expr> ::= "let" "{" <let-item> ( ";" | "," ) ... "}" "in" <expr>
 
 <let-item> ::= <var-decl-item>
              | <constraint-item>
@@ -294,11 +300,11 @@
 % Miscellaneous
 
 % Identifiers
-<ident> ::= _?[A-Za-z][A-Za-z0-9_]* | ’[^’\xa\xd\x0]+’
+<ident> ::= _?[A-Za-z][A-Za-z0-9_]* | '[^'\xa\xd\x0]+'
 
 % Identifiers and quoted operators
 <ident-or-quoted-op> ::= <ident>
-                       | ’<builtin-op>’
+                       | '<builtin-op>'
 
 % Annotations
 <annotations> ::= [ "::" <annotation> ]*
