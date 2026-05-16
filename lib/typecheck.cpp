@@ -13,6 +13,7 @@
 #include <minizinc/astexception.hh>
 #include <minizinc/astiterator.hh>
 #include <minizinc/aststring.hh>
+#include <minizinc/copy.hh>
 #include <minizinc/file_utils.hh>
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/hash.hh>
@@ -3867,8 +3868,8 @@ bool is_set_card_marker(Expression* dom) {
 /// slot 1.
 bool is_index_binder_marker(Expression* dom) {
   auto* al = Expression::dynamicCast<ArrayLit>(dom);
-  return al != nullptr && al->isTuple() && al->size() == 2 &&
-         Expression::isa<TypeInst>((*al)[0]) && Expression::isa<Id>((*al)[1]);
+  return al != nullptr && al->isTuple() && al->size() == 2 && Expression::isa<TypeInst>((*al)[0]) &&
+         Expression::isa<Id>((*al)[1]);
 }
 
 /// Per-dimension binder info for an indexed array declaration.  When
@@ -3877,7 +3878,7 @@ bool is_index_binder_marker(Expression* dom) {
 /// (the `C` after the `in`).
 struct ArrayBinder {
   VarDecl* vd;
-  Expression* range_in;
+  Expression* rangeIn;
 };
 
 /// One step along the path from a (top-level or let-bound) variable to a leaf
@@ -3916,8 +3917,7 @@ std::vector<ArrayBinder> strip_index_binders(TypeInst* ti) {
   std::vector<TypeInst*> new_ranges;
   new_ranges.reserve(ranges.size());
   bool any = false;
-  for (unsigned int i = 0; i < ranges.size(); i++) {
-    TypeInst* r = ranges[i];
+  for (auto* r : ranges) {
     if (r != nullptr && is_index_binder_marker(r->domain())) {
       auto* marker = Expression::cast<ArrayLit>(r->domain());
       auto* orig_range = Expression::cast<TypeInst>((*marker)[0]);
@@ -4032,67 +4032,40 @@ void collect_decl_leaves(TypeInst* ti, std::vector<CardPathStep>& prefix,
   }
 }
 
-/// Best-effort syntactic inference of the base type of a per-element domain
-/// expression.  Walks the expression looking for a numeric literal to
-/// disambiguate `int` vs `float`; falls back to `BT_INT` for the common case
-/// when no literal is reachable (e.g. when the domain is a set-valued
-/// identifier or function call).  This is only used to seed the base type
-/// when stripping a per-element domain from a TypeInst that the type checker
-/// would otherwise be unable to type — so a wrong guess for unusual cases
-/// (e.g. an all-identifier float domain) gets surfaced as a downstream type
-/// error on the synthesised constraint, which is correct as far as the user
-/// is concerned.
-Type::BaseType infer_elem_domain_bt(Expression* e) {
-  if (e == nullptr) {
-    return Type::BT_INT;
-  }
-  if (Expression::isa<IntLit>(e)) {
-    return Type::BT_INT;
-  }
-  if (Expression::isa<FloatLit>(e)) {
-    return Type::BT_FLOAT;
-  }
-  if (Expression::isa<BoolLit>(e)) {
-    return Type::BT_BOOL;
-  }
-  if (Expression::isa<SetLit>(e)) {
-    auto* sl = Expression::cast<SetLit>(e);
-    if (sl->isv() != nullptr) {
-      return Type::BT_INT;
+/// Wrap a per-element domain expression in
+/// `array_union([ <copy of dom> | c1 in R1, c2 in R2, ... ])` introducing a
+/// generator binder for each user binder reachable from \a prefix.  The
+/// comprehension body is a deep copy of \a original_domain so its identifier
+/// references resolve to these generators rather than to the comprehension
+/// generators that will appear in the synthesised constraint.  This lets
+/// `vTypeInst` derive the leaf's base type from a properly-typed sub-
+/// expression — phase 2 then strips this wrap from the leaf, leaving the
+/// inferred type in place.  Comprehension generators (unlike let-bound
+/// VarDecls) don't require an initialiser, which is what makes this shape
+/// work as a wrapper.
+Expression* wrap_elem_domain_with_binders(EnvI& env, const std::vector<CardPathStep>& prefix,
+                                          Expression* original_domain) {
+  Location loc = Expression::loc(original_domain).introduce();
+  Generators gens;
+  for (const auto& step : prefix) {
+    if (step.kind != CardPathStep::Array) {
+      continue;
     }
-    if (sl->fsv() != nullptr) {
-      return Type::BT_FLOAT;
+    for (const auto& b : step.binders) {
+      if (b.vd == nullptr) {
+        continue;
+      }
+      Location bloc = Expression::loc(b.vd).introduce();
+      auto* gen_ti = new TypeInst(bloc, Type());
+      auto* fresh_id = new Id(bloc, b.vd->id()->v(), nullptr);
+      auto* fresh_vd = new VarDecl(bloc, gen_ti, fresh_id);
+      fresh_vd->toplevel(false);
+      gens.g.push_back(Generator({fresh_vd}, b.rangeIn, nullptr));
     }
-    if (!sl->v().empty()) {
-      return infer_elem_domain_bt(sl->v()[0]);
-    }
-    return Type::BT_INT;
   }
-  if (Expression::isa<BinOp>(e)) {
-    auto* bop = Expression::cast<BinOp>(e);
-    Type::BaseType lhs_t = infer_elem_domain_bt(bop->lhs());
-    if (lhs_t != Type::BT_INT) {
-      return lhs_t;
-    }
-    return infer_elem_domain_bt(bop->rhs());
-  }
-  return Type::BT_INT;
-}
-
-/// Strip a per-element domain from \a carrier, returning the original domain
-/// expression.  Before clearing the domain field, this also seeds the
-/// carrier's base type (when unknown) using `infer_elem_domain_bt` so that
-/// the subsequent type checker can finish typing the declaration without the
-/// domain.
-Expression* strip_elem_domain(TypeInst* carrier) {
-  Expression* dom = carrier->domain();
-  Type tt = carrier->type();
-  if (tt.bt() == Type::BT_UNKNOWN) {
-    tt.bt(infer_elem_domain_bt(dom));
-    carrier->type(tt);
-  }
-  carrier->domain(nullptr);
-  return dom;
+  Expression* body = copy(env, original_domain);
+  auto* comp = new Comprehension(loc, body, gens, false);
+  return Call::a(loc, ASTString("array_union"), {comp});
 }
 
 /// Strip the cardinality marker from \a carrier, restoring the real element-type
@@ -4135,7 +4108,7 @@ Expression* build_constraint_from_path(EnvI& env, VarDecl* vd, const CardLeaf& l
           idx.reserve(step.binders.size());
           for (const auto& b : step.binders) {
             if (b.vd != nullptr) {
-              gens.g.push_back(Generator({b.vd}, b.range_in, nullptr));
+              gens.g.push_back(Generator({b.vd}, b.rangeIn, nullptr));
               idx.push_back(b.vd->id());
             } else {
               // Mixed dimension with no binder: fall back to a fresh generator
@@ -4192,7 +4165,12 @@ Expression* build_constraint_from_path(EnvI& env, VarDecl* vd, const CardLeaf& l
 /// Process a top-level or let-bound variable declaration: collect every
 /// marker leaf inside its TypeInst tree (arbitrary nesting of arrays, tuples
 /// and records), strip the markers and return one constraint per leaf.
-std::vector<Expression*> process_decl_markers(EnvI& env, VarDecl* vd) {
+/// Per-element domain leaves are not stripped — instead the domain is wrapped
+/// in a `let` introducing the in-scope binders.  Phase 2
+/// (`finalize_indexed_decl_leaves`) strips those wraps after typechecking has
+/// derived the leaf's base type.
+std::vector<Expression*> process_decl_markers(EnvI& env, VarDecl* vd,
+                                              std::vector<TypeInst*>& letWrappedLeaves) {
   std::vector<CardLeaf> leaves;
   std::vector<CardPathStep> prefix;
   collect_decl_leaves(vd->ti(), prefix, leaves);
@@ -4203,7 +4181,9 @@ std::vector<Expression*> process_decl_markers(EnvI& env, VarDecl* vd) {
     if (leaf.kind == CardLeaf::SetCard) {
       body_expr = strip_set_card_marker(leaf.carrier);
     } else {
-      body_expr = strip_elem_domain(leaf.carrier);
+      body_expr = leaf.carrier->domain();
+      leaf.carrier->domain(wrap_elem_domain_with_binders(env, leaf.path, body_expr));
+      letWrappedLeaves.push_back(leaf.carrier);
     }
     constraints.push_back(build_constraint_from_path(env, vd, leaf, body_expr));
   }
@@ -4217,8 +4197,10 @@ class IndexedDeclExprVisitor : public EVisitor {
 public:
   EnvI& env;
   std::vector<TypeError>& typeErrors;
-  IndexedDeclExprVisitor(EnvI& env0, std::vector<TypeError>& typeErrors0)
-      : env(env0), typeErrors(typeErrors0) {}
+  std::vector<TypeInst*>& letWrappedLeaves;
+  IndexedDeclExprVisitor(EnvI& env0, std::vector<TypeError>& typeErrors0,
+                         std::vector<TypeInst*>& letWrappedLeaves0)
+      : env(env0), typeErrors(typeErrors0), letWrappedLeaves(letWrappedLeaves0) {}
   /// Desugar markers on let-bound declarations, appending the generated
   /// constraints to the let.  Runs before the iterator descends into the let
   /// items, so their (now stripped) TypeInsts are not flagged by vTypeInst.
@@ -4230,7 +4212,7 @@ public:
       Expression* li = let->let()[i];
       items.push_back(li);
       if (auto* vd = Expression::dynamicCast<VarDecl>(li)) {
-        for (Expression* c : process_decl_markers(env, vd)) {
+        for (Expression* c : process_decl_markers(env, vd, letWrappedLeaves)) {
           constraints.push_back(c);
         }
       }
@@ -4266,17 +4248,15 @@ public:
       std::vector<TypeInst*> new_ranges;
       bool any = false;
       bool reported = false;
-      for (unsigned int i = 0; i < ranges.size(); ++i) {
-        TypeInst* r = ranges[i];
+      for (auto* r : ranges) {
         if (r != nullptr && is_index_binder_marker(r->domain())) {
           auto* marker = Expression::cast<ArrayLit>(r->domain());
           new_ranges.push_back(Expression::cast<TypeInst>((*marker)[0]));
           any = true;
           if (!reported) {
-            typeErrors.emplace_back(
-                env, Expression::loc(ti),
-                "indexed array declarations `array[c in S] of ...' are only "
-                "allowed in top-level or let-bound variable declarations");
+            typeErrors.emplace_back(env, Expression::loc(ti),
+                                    "indexed array declarations `array[c in S] of ...' are only "
+                                    "allowed in top-level or let-bound variable declarations");
             reported = true;
           }
         } else {
@@ -4286,13 +4266,14 @@ public:
       if (any) {
         ti->setRanges(new_ranges);
         // Suppress cascading errors from any binder reference left in the
-        // element type's domain expression.  Seed the base type if unknown
-        // so type checking can still complete.
+        // element type's domain expression.  Seed the base type to int so
+        // type checking can still complete (the position-check error has
+        // already been reported, so the seeded type is never user-visible).
         if (ti->domain() != nullptr && !Expression::isa<TypeInst>(ti->domain()) &&
             !Expression::isa<ArrayLit>(ti->domain())) {
           Type tt = ti->type();
           if (tt.bt() == Type::BT_UNKNOWN) {
-            tt.bt(infer_elem_domain_bt(ti->domain()));
+            tt.bt(Type::BT_INT);
             ti->type(tt);
           }
           ti->domain(nullptr);
@@ -4308,10 +4289,11 @@ class IndexedDeclItemVisitor : public ItemVisitor {
 public:
   EnvI& env;
   std::vector<ConstraintI*>& toAdd;
+  std::vector<TypeInst*>& letWrappedLeaves;
   IndexedDeclExprVisitor& ev;
   IndexedDeclItemVisitor(EnvI& env0, std::vector<ConstraintI*>& toAdd0,
-                         IndexedDeclExprVisitor& ev0)
-      : env(env0), toAdd(toAdd0), ev(ev0) {}
+                         std::vector<TypeInst*>& letWrappedLeaves0, IndexedDeclExprVisitor& ev0)
+      : env(env0), toAdd(toAdd0), letWrappedLeaves(letWrappedLeaves0), ev(ev0) {}
   void run(Expression* e) {
     if (e != nullptr) {
       TopDownIterator<IndexedDeclExprVisitor>(ev).run(e);
@@ -4321,7 +4303,7 @@ public:
     VarDecl* vd = vdi->e();
     {
       GCLock lock;
-      for (Expression* c : process_decl_markers(env, vd)) {
+      for (Expression* c : process_decl_markers(env, vd, letWrappedLeaves)) {
         toAdd.push_back(new ConstraintI(Expression::loc(vd).introduce(), c));
       }
     }
@@ -4355,13 +4337,24 @@ public:
 /// over the user binders plus `mzn_internal_array_elem_in` for per-element
 /// domains).  Markers found in any other position are reported as type
 /// errors.
-void desugar_indexed_declarations(EnvI& env, Model* m, std::vector<TypeError>& typeErrors) {
+void desugar_indexed_declarations(EnvI& env, Model* m, std::vector<TypeError>& typeErrors,
+                                  std::vector<TypeInst*>& letWrappedLeaves) {
   std::vector<ConstraintI*> toAdd;
-  IndexedDeclExprVisitor ev(env, typeErrors);
-  IndexedDeclItemVisitor iv(env, toAdd, ev);
+  IndexedDeclExprVisitor ev(env, typeErrors, letWrappedLeaves);
+  IndexedDeclItemVisitor iv(env, toAdd, letWrappedLeaves, ev);
   iter_items(iv, m);
   for (auto* ci : toAdd) {
     m->addItem(ci);
+  }
+}
+
+/// Phase 2: after typechecking has set the base type on each let-wrapped
+/// leaf TypeInst, strip the let-wrap.  The leaf retains its inferred type
+/// and the (now stripped) domain matches the no-domain shape that the rest
+/// of the pipeline expects for these decls.
+void finalize_indexed_decl_leaves(const std::vector<TypeInst*>& letWrappedLeaves) {
+  for (auto* ti : letWrappedLeaves) {
+    ti->domain(nullptr);
   }
 }
 
@@ -4395,7 +4388,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     m = origModel;
   }
 
-  desugar_indexed_declarations(env.envi(), m, typeErrors);
+  std::vector<TypeInst*> letWrappedLeaves;
+  desugar_indexed_declarations(env.envi(), m, typeErrors, letWrappedLeaves);
 
   // Topological sorting
   IdMap<bool> needToString;
@@ -5345,6 +5339,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       it->remove();
     }
   }
+
+  finalize_indexed_decl_leaves(letWrappedLeaves);
 }
 
 void typecheck(Env& env, Model* m, AssignI* ai) {
