@@ -13,7 +13,8 @@ Bug fixes:
 ^^^^^^^^^^
 -  Fix x=infinity and x=-infinity being incorrectly translated when used
    in reified positions.
-
+-  Fix a bug in type specialisation that could produce incorrect internal
+   type representations for tuples.
 
 .. _v2.9.7:
 

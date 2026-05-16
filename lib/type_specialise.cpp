@@ -357,7 +357,13 @@ public:
       curType.typeId(concrete_type.typeId());
       ti->type(curType);
       if (TIId* tiid = Expression::dynamicCast<TIId>(ti->domain())) {
-        ti_map.emplace(tiid->v(), ti->ranges().empty() ? curType : curType.elemType(env));
+        // The TIId `$T` binds to the underlying type without the parameter-level
+        // var modifier (the `var` in `var $T` decorates the parameter, not $T).
+        // Store the par form so later uses of $T (in other parameters or the
+        // return type) don't inherit a stray TI_VAR.
+        Type ti_map_type = ti->ranges().empty() ? curType : curType.elemType(env);
+        ti_map_type.mkPar(env);
+        ti_map.emplace(tiid->v(), ti_map_type);
         if (curType.typeId() == 0) {
           // replace tiid with empty domain
           ti->domain(nullptr);
@@ -367,6 +373,15 @@ public:
           ti->setStructDomain(env, curType, true);
           if (!walkTIMap(env, ti_map, ti, ctt)) {
             return false;
+          }
+          // setStructDomain populates the leaves from the (par) registered struct
+          // type, and the recursive walkTIMap above resolves their `any` flag by
+          // pulling in the concrete (par) TI. So a `var $T` instantiated with a
+          // par struct ends up with a TI_VAR wrapper over par leaves. Push var
+          // down to match the canonical form enforced by canonicaliseStruct
+          // before the parameter type is registered below.
+          if (curType.isvar()) {
+            ti->mkVar(env);
           }
         } else {
           auto enumId = curType.typeId();
