@@ -139,6 +139,24 @@ gives the output
   has the type of the elements in the set and the variable is implicitly
   constrained to be a member of the set.
 
+  A set declaration may also include a *cardinality expression* between the
+  :mzn:`set` keyword and :mzn:`of`:
+
+  .. code-block:: minizincdef
+
+    <var-par> set "(" <expr> ")" of <type-inst> : <var-name> ;
+
+  This is a shorthand for declaring the set as usual together with an
+  implicit constraint on its cardinality.  When the cardinality expression
+  is an integer, the cardinality is constrained to be equal to it; when it
+  is a set of integers, the cardinality is constrained to lie in that set.
+  For example, :mzn:`var set(2) of 1..5: a;` declares a variable set whose
+  cardinality is exactly two, and is equivalent to
+  :mzn:`var set of 1..5: a; constraint card(a) = 2;`.  The form
+  :mzn:`var set(1..3) of 1..10: b;` declares a variable set whose
+  cardinality is between one and three.  See
+  :ref:`spec-set-cardinality` for the precise rules.
+
 
 Our cake baking problem is an example of a very simple kind of production
 planning problem.  In this kind of problem we wish to determine how much of
@@ -317,9 +335,26 @@ Notice how the delimiter ``|`` is used to separate rows. As for one-dimensional 
   one-dimensional arrays together. The result is a list, i.e. a
   one-dimensional array whose elements are indexed from 1.  For instance
   :mzn:`[4000, 6] ++ [2000, 500, 500]` evaluates to :mzn:`[4000, 6, 2000, 500, 500]`.
-  The built-in function 
+  The built-in function
   :mzn:`length` returns the length
   of a one-dimensional array.
+
+  An index list entry of an array type can also take the form
+  :mzndef:`<ident> in <index-set>`, which binds the identifier to the
+  element's index and makes it available in the element type.  This is
+  useful when the domain of each element depends on its position, e.g. to
+  give each decision variable a domain that depends on per-element data:
+
+  .. code-block:: minizinc
+
+    enum Task;
+    array[Task] of int: deadline;
+    array[t in Task] of var 0..deadline[t]: end;
+
+  Here ``end[t]`` is declared with its own upper bound, taken from the
+  corresponding entry of ``deadline``.  Multiple dimensions may each
+  introduce their own binder.  See :ref:`spec-index-dependent-array-declarations`
+  for the full rules.
 
 The next item in the model defines the parameter :mzn:`mproducts`. This is
 set to an upper-bound on the number of products of any type that can be

@@ -42,16 +42,18 @@ Changes:
 
 Language changes:
 ^^^^^^^^^^^^^^^^^
--  Add support for cardinality declarations as part of set declarations,
-   using the syntax ``set(e) of T: s;``.  This is desugared into an
-   additional constraint and works for tuple- and record-typed sets as well as
-   arrays of sets.
--  Add support for indexed array declarations, where an index list entry of
-   the form ``c in S`` binds the name ``c`` in the element type's domain
-   expression — for example ``array[c in 1..n] of var 1..f(c): x;``.  The
-   per-element domain is desugared into an additional constraint and works
-   for tuple- and record-typed elements as well as arrays of arrays; it also
-   composes with the ``set(e) of T`` cardinality syntax.
+-  Add support for set cardinality declarations using the syntax
+   ``set(e) of T: s;``.  When ``e`` has type ``int`` or ``var int``, this
+   desugars to an additional ``card(s) = e`` constraint; when ``e`` has type
+   ``set of int`` or ``var set of int``, it desugars to ``card(s) in e``.
+   The syntax works for tuple- and record-typed sets as well as arrays
+   (and arrays of arrays) of sets.
+-  Add support for index-dependent array declarations, where an index list
+   entry of the form ``c in S`` binds the name ``c`` in the element type's
+   domain expression — for example ``array[c in 1..n] of var 1..f(c): x;``.
+   The per-element domain is desugared into an additional constraint and
+   works for tuple- and record-typed elements as well as arrays of arrays;
+   it also composes with the ``set(e) of T`` cardinality syntax.
 
 Bug fixes:
 ^^^^^^^^^^

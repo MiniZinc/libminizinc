@@ -856,7 +856,7 @@ A set base type-inst expression is a special case of the base type-inst rule:
 
 .. code-block:: minizincdef
 
-  <base-ti-expr> ::= <var-par> <opt-ti> "set" "of" <base-ti-expr-tail>
+  <base-ti-expr> ::= <var-par> <opt-ti> "set" [ "(" <expr> ")" ] "of" <base-ti-expr-tail>
 
 Some example set type-inst expressions:
 
@@ -864,6 +864,40 @@ Some example set type-inst expressions:
 
   set of int
   var set of bool
+  var set(2) of 1..5
+  var set(1..3) of 1..10
+
+.. _spec-set-cardinality:
+
+The optional :mzn:`(<expr>)` is a *set cardinality declaration*: it
+constrains the cardinality of the declared set without requiring a separate
+:mzn:`card` constraint.  The cardinality expression :mzn:`e` must have type
+:mzn:`int`, :mzn:`var int`, :mzn:`set of int` or :mzn:`var set of int` (also
+their enum-typed equivalents); any other type is a type error.
+
+The declaration :mzn:`var set(e) of T: s;` is equivalent to the plain
+declaration :mzn:`var set of T: s;` together with an additional implicit
+constraint that depends on the type of :mzn:`e`:
+
+- if :mzn:`e` has type :mzn:`int` or :mzn:`var int`,
+  the implicit constraint is :mzn:`card(s) = e`;
+- if :mzn:`e` has type :mzn:`set of int` or :mzn:`var set of int`,
+  the implicit constraint is :mzn:`card(s) in e`.
+
+For example, :mzn:`var set(2) of 1..5: a;` declares a variable set whose
+cardinality is fixed to two, while :mzn:`var set(1..3) of 1..10: b;`
+declares a variable set whose cardinality is anywhere from one to three.
+
+Set cardinality declarations are allowed in variable declaration items at
+the top level of a model and in :mzn:`let` expressions, and may also appear
+on the set leaves of composite type-insts — tuples, records, and arrays
+(including arrays of arrays) of sets.  In that case the cardinality
+constraint applies element-wise to every leaf set of the composite value.
+The syntax is *not* allowed in function or predicate parameter type-insts
+(neither directly nor nested inside composite parameter types).
+*Rationale: this restriction is reflected syntactically in the parameter
+grammar; implementations may choose to accept the looser form at parse time
+in order to report a clearer error during type-checking.*
 
 |TyFiniteType|
 Yes, if the set elements are finite types.  Otherwise, no.
@@ -1043,6 +1077,71 @@ so that its length and index set is known.
 |TyCoercions|
 :mzn:`array[TI0] of TI` |coerce| :mzn:`array[UI0] of UI` if
 :mzn:`TI0` |coerce| :mzn:`UI0` and :mzn:`TI` |coerce| :mzn:`UI`.
+
+.. _spec-index-dependent-array-declarations:
+
+Index-dependent array declarations
+++++++++++++++++++++++++++++++++++
+
+In an ordinary array declaration each index list entry is just a type-inst
+that specifies the index set of a dimension.  An index list entry may also
+take the form
+
+.. code-block:: minizincdef
+
+  <ident> "in" <ti-expr>
+
+which binds the identifier to the index of each element of that dimension
+and makes it available in the element type-inst.  The element type then
+becomes an *index-dependent element type*: it can depend on the per-element
+index through one or more such binders.  For example:
+
+.. code-block:: minizinc
+
+  array[c in 1..n] of var 1..f(c): a;
+
+declares an array whose element :mzn:`a[c]` has the per-element domain
+:mzn:`1..f(c)`.  This is equivalent to declaring an array with element
+type :mzn:`var int` together with an implicit constraint
+:mzn:`forall(c in 1..n)(a[c] in 1..f(c))`.
+
+Multiple dimensions may each introduce their own binder, and binders from
+outer dimensions are in scope in inner ones.  Mixing binder entries with
+plain index-set entries within the same index list is allowed.  Binders
+also nest through arrays of arrays.  For example:
+
+.. code-block:: minizinc
+
+  array[i in 1..3, j in 1..3] of var 1..(i+j): b;
+  array[i in 1..3] of array[j in 1..2] of var 1..h(i,j): aoa;
+
+Each binder entry must consist of exactly one identifier in front of
+:mzn:`in`, and ``where`` clauses are not allowed in the index list.
+*Rationale: index-dependent declarations introduce one implicit binder per
+dimension; multi-identifier generators and filters belong to comprehension
+syntax, not type-inst syntax.*
+
+The static type of an element is determined from the *type* of the domain
+expression rather than from its syntactic form: for instance,
+:mzn:`array[c in 1..n] of var dom_of(c): a;` where :mzn:`dom_of` returns
+:mzn:`set of float` declares an array of :mzn:`var float` elements.
+
+The binder is in scope in the element type-inst, which includes the leaves
+of composite type-insts.  An index-dependent declaration therefore composes
+with tuple, record, array-of-array element types, and with the
+:ref:`set cardinality syntax <spec-set-cardinality>`:
+
+.. code-block:: minizinc
+
+  array[c in 1..n] of tuple(var 1..f(c), int): t;
+  array[c in 1..n] of var set(f(c)) of 1..10: s;
+
+Index-dependent array declarations are allowed in variable declaration
+items at the top level of a model and in :mzn:`let` expressions.  They are
+*not* allowed in function or predicate parameter type-insts.
+*Rationale: this restriction is reflected syntactically in the parameter
+grammar; implementations may choose to accept the looser form at parse time
+in order to report a clearer error during type-checking.*
 
 .. _spec-option-types:
 

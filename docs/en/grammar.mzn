@@ -64,7 +64,31 @@
 
 <operation-item-tail> ::= <ident> <params> <annotations> [ "=" <expr> ]
 
-<params> ::= [ ( <ti-expr-and-id> "," ... ) ]
+<params> ::= [ ( <param-ti-expr-and-id> "," ... ) ]
+
+% Parameter type-insts: same as <ti-expr>, but the set-cardinality form
+% (`set "(" <expr> ")" of ...`) and the index-dependent array form
+% (`<ident> "in" <ti-expr>` in the index list) are not allowed.
+<param-ti-expr-and-id> ::= <param-ti-expr> ":" <ident>
+
+<param-ti-expr> ::= <param-base-ti-expr>
+                  | <param-array-ti-expr>
+
+<param-base-ti-expr> ::= <var-par> <opt-ti> <param-set-ti> <param-base-ti-expr-tail> ["++" <param-base-ti-expr>]
+                       | "any" <ti-variable-expr-tail>
+
+<param-set-ti> ::= "set" "of" | ε
+
+<param-array-ti-expr> ::= "array" "[" <ti-expr> "," ... "]" "of" <param-base-ti-expr>
+                        | "list" "of" <param-base-ti-expr>
+
+<param-base-ti-expr-tail> ::= <ident>
+                            | <base-type>
+                            | <ti-variable-expr-tail>
+                            | "tuple" "(" <param-ti-expr> "," ... ")"
+                            | "record" "(" <param-ti-expr-and-id> "," ... ")"
+                            | "ann"
+                            | <expr>
 
 % Type-inst expressions
 <ti-expr> ::= <base-ti-expr>
@@ -77,7 +101,7 @@
 
 <opt-ti> ::= "opt" | ε
 
-<set-ti> ::= "set" "of" | ε
+<set-ti> ::= "set" [ "(" <expr> ")" ] "of" | ε
 
 <base-type> ::= "bool"
               | "int"
@@ -96,8 +120,11 @@
 <ti-variable-expr-tail> ::= $[A-Za-z$][A-Za-z0-9_]*
 
 % Array type-inst expressions
-<array-ti-expr> ::= "array" [ <ti-expr> "," ... ] "of" <base-ti-expr>
+<array-ti-expr> ::= "array" "[" <array-index> "," ... "]" "of" <base-ti-expr>
                   | "list" "of" <base-ti-expr>
+
+<array-index> ::= <ti-expr>
+                | <ident> "in" <ti-expr>
 
 % Tuple type-inst expressions
 <tuple-ti-expr-tail> ::= "tuple" ( <ti-expr> "," ... )
