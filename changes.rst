@@ -40,6 +40,13 @@ Changes:
 -  Improve compilation of comprehensions with complex variable generators
    by moving the generator expression into a generator alias.
 
+Language changes:
+^^^^^^^^^^^^^^^^^
+-  Add support for cardinality declarations as part of set declarations,
+   using the syntax ``set(e) of T: s;``.  This is desugared into an
+   additional constraint and works for tuple- and record-typed sets as well as
+   arrays of sets.
+
 Bug fixes:
 ^^^^^^^^^^
 -  Fix a crash (segmentation fault) when a non-optional variable is
