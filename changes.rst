@@ -46,6 +46,12 @@ Language changes:
    using the syntax ``set(e) of T: s;``.  This is desugared into an
    additional constraint and works for tuple- and record-typed sets as well as
    arrays of sets.
+-  Add support for indexed array declarations, where an index list entry of
+   the form ``c in S`` binds the name ``c`` in the element type's domain
+   expression — for example ``array[c in 1..n] of var 1..f(c): x;``.  The
+   per-element domain is desugared into an additional constraint and works
+   for tuple- and record-typed elements as well as arrays of arrays; it also
+   composes with the ``set(e) of T`` cardinality syntax.
 
 Bug fixes:
 ^^^^^^^^^^

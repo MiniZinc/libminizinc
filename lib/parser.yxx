@@ -341,8 +341,8 @@ void parseFieldTail(const ParserLocation& loc, std::vector<Expression*>& parsed,
 
 %type <vardeclexpr> ti_expr_and_id ti_expr_and_id_or_anon let_vardecl_item ann_param  record_field
 %type <vardeclexprs> params params_list params_list_head
-%type <tiexpr> ti_expr base_ti_expr base_ti_expr_tail
-%type <tiexprs> ti_expr_list ti_expr_list_head
+%type <tiexpr> ti_expr base_ti_expr base_ti_expr_tail array_index_entry
+%type <tiexprs> ti_expr_list ti_expr_list_head array_index_list array_index_list_head
 %type <vardeclexprs> ti_expr_and_id_list ti_expr_and_id_list_head
 
 %type <expression> expr expr_atom_head expr_atom_head_nonstring array_access_expr
@@ -924,9 +924,37 @@ ti_expr_list_head :
     | ti_expr_list_head ',' ti_expr
       { $$=$1; if ($1 && $3) $1->push_back($3); }
 
+array_index_list : array_index_list_head comma_or_none
+      { $$=$1; }
+
+array_index_list_head :
+      array_index_entry
+      { $$=new vector<TypeInst*>(); $$->push_back($1); }
+    | array_index_list_head ',' array_index_entry
+      { $$=$1; if ($1 && $3) $1->push_back($3); }
+
+array_index_entry :
+      ti_expr
+      { $$=$1; }
+    | MZN_IDENTIFIER MZN_IN ti_expr
+      {
+        if ($3 != nullptr) {
+          Id* binder = new Id(@1, $1, nullptr);
+          // Index-binder marker: 2-tuple ($3, binder).  Distinguishable
+          // from a set-cardinality marker (which has a TypeInst at index 1)
+          // by carrying the TypeInst at index 0 and the binder Id at index 1.
+          ArrayLit* marker =
+            ArrayLit::constructTuple(@$, std::vector<Expression*>({$3, binder}));
+          $$ = new TypeInst(@$, Type(), marker);
+        } else {
+          $$ = nullptr;
+        }
+        free($1);
+      }
+
 ti_expr :
       base_ti_expr
-    | MZN_ARRAY MZN_LEFT_BRACKET ti_expr_list MZN_RIGHT_BRACKET MZN_OF ti_expr  %prec MZN_NOT
+    | MZN_ARRAY MZN_LEFT_BRACKET array_index_list MZN_RIGHT_BRACKET MZN_OF ti_expr  %prec MZN_NOT
       {
         if ($6 != nullptr && $6->isarray()) {
           $$ = new TypeInst(@$, Type::tuple(), $6);

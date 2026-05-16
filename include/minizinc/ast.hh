@@ -2139,8 +2139,9 @@ public:
     ASTString occurs;
     ASTString card;
     ASTString abs;
-    ASTString mzn_alias_eq;           // NOLINT(readability-identifier-naming)
-    ASTString mzn_internal_set_card;  // NOLINT(readability-identifier-naming)
+    ASTString mzn_alias_eq;                // NOLINT(readability-identifier-naming)
+    ASTString mzn_internal_set_card;       // NOLINT(readability-identifier-naming)
+    ASTString mzn_internal_array_elem_in;  // NOLINT(readability-identifier-naming)
 
     ASTString symmetry_breaking_constraint;      // NOLINT(readability-identifier-naming)
     ASTString redundant_constraint;              // NOLINT(readability-identifier-naming)

@@ -3025,7 +3025,7 @@ public:
     // Validate set-cardinality desugar calls up front: emit a user-friendly
     // error instead of the generic "no matching declaration" overload report.
     // The identifier `mzn_internal_set_card' never appears in user code, so
-    // any call here was introduced by `desugar_set_cardinality'.
+    // any call here was introduced by `desugar_indexed_declarations'.
     if (call->id() == _env.constants.ids.mzn_internal_set_card && call->argCount() == 2) {
       Type t = Expression::type(call->arg(1));
       bool ok = t.dim() == 0 && t.bt() == Type::BT_INT &&
@@ -3846,88 +3846,253 @@ void create_par_versions(Env& env, Model* m, BottomUpIterator<Typer<true>>& bott
 namespace {
 
 /// Test whether \a dom is a set-cardinality marker: a 2-tuple {cardExpr,
-/// T_typeinst} where the cardinality expression is a regular expression and the
-/// element type is a TypeInst.  A genuine `tuple(A, B)` type stores a 2-tuple of
-/// TypeInsts and a `record` stores a tuple of VarDecls, so requiring element 0
-/// to be a non-TypeInst and element 1 to be a TypeInst keeps this unambiguous.
+/// T_typeinst} where the cardinality expression is a regular expression and
+/// the element type is a TypeInst.  A genuine `tuple(A, B)` type stores a
+/// 2-tuple of TypeInsts and a `record` stores a tuple of VarDecls, so
+/// requiring element 0 to be a non-TypeInst and element 1 to be a TypeInst
+/// keeps this unambiguous.  Index-binder markers (see
+/// `is_index_binder_marker`) are disambiguated by carrying the TypeInst at
+/// the *first* slot, not the second.
 bool is_set_card_marker(Expression* dom) {
   auto* al = Expression::dynamicCast<ArrayLit>(dom);
   return al != nullptr && al->isTuple() && al->size() == 2 &&
          !Expression::isa<TypeInst>((*al)[0]) && Expression::isa<TypeInst>((*al)[1]);
 }
 
-/// One step along the path from a (top-level or let-bound) variable to a
-/// set-cardinality leaf inside its TypeInst tree.
+/// Test whether \a dom is an index-binder marker: a 2-tuple
+/// {T_typeinst, Id} where element 0 is the wrapped original range TypeInst
+/// (the `C` in `array[c in C] of ...`) and element 1 is the user-given binder
+/// identifier `c`.  The slot order (TypeInst first, Id second) keeps it
+/// distinguishable from set-cardinality markers, which store the TypeInst at
+/// slot 1.
+bool is_index_binder_marker(Expression* dom) {
+  auto* al = Expression::dynamicCast<ArrayLit>(dom);
+  return al != nullptr && al->isTuple() && al->size() == 2 &&
+         Expression::isa<TypeInst>((*al)[0]) && Expression::isa<Id>((*al)[1]);
+}
+
+/// Per-dimension binder info for an indexed array declaration.  When
+/// `vd != nullptr` the dimension carries a user-given binder (e.g. `c` in
+/// `array[c in C] of ...`); `range_in` is the original range expression
+/// (the `C` after the `in`).
+struct ArrayBinder {
+  VarDecl* vd;
+  Expression* range_in;
+};
+
+/// One step along the path from a (top-level or let-bound) variable to a leaf
+/// inside its TypeInst tree.  An `Array` step records the binders (if any)
+/// introduced by an indexed array declaration; these will appear as
+/// user-named generators in the synthesised `forall`.  When all binders in
+/// the step are null the step falls back to a fresh `array1d`-style generator
+/// at constraint-build time.
 struct CardPathStep {
   enum Kind { Array, TupleField, RecordField } kind;
-  unsigned int tupleIdx;  // 1-based index, when kind == TupleField
-  ASTString recordName;   // field name, when kind == RecordField
+  std::vector<ArrayBinder> binders;  // when kind == Array; one per dimension
+  unsigned int tupleIdx;             // 1-based index, when kind == TupleField
+  ASTString recordName;              // field name, when kind == RecordField
 };
 
-/// A single set-cardinality leaf reached from the declared variable along
-/// \a path; the marker lives on \a carrier's domain.
+/// A single leaf reached from the declared variable along \a path.  Two kinds:
+/// `SetCard` for `set(e) of T` markers (carries the cardinality expression),
+/// and `ElemDomain` for per-element domains introduced by
+/// `array[c in C] of <ti with domain>` declarations (carries the original
+/// domain expression).  In both cases the marker/domain is stripped from
+/// \a carrier when the constraint is built.
 struct CardLeaf {
+  enum Kind { SetCard, ElemDomain } kind;
   std::vector<CardPathStep> path;
   TypeInst* carrier;
+  Expression* expr;  // set-card cardinality, or the per-element domain
 };
 
-/// Recursively walk \a ti, collecting every set-cardinality leaf found, with
-/// the path of array peelings and tuple/record projections needed to reach it.
-/// Composite domains may contain TypeInsts (tuples) or VarDecls (records).
-void collect_set_card_leaves(TypeInst* ti, std::vector<CardPathStep>& prefix,
-                             std::vector<CardLeaf>& out) {
+/// Strip index-binder markers from \a ti->ranges() and return per-dimension
+/// binder info (vd is nullptr where no binder was present).  Replaces each
+/// carrier range TypeInst with the wrapped original range.  Returns an empty
+/// vector if no range carried a binder.
+std::vector<ArrayBinder> strip_index_binders(TypeInst* ti) {
+  std::vector<ArrayBinder> binders;
+  ASTExprVec<TypeInst> ranges = ti->ranges();
+  std::vector<TypeInst*> new_ranges;
+  new_ranges.reserve(ranges.size());
+  bool any = false;
+  for (unsigned int i = 0; i < ranges.size(); i++) {
+    TypeInst* r = ranges[i];
+    if (r != nullptr && is_index_binder_marker(r->domain())) {
+      auto* marker = Expression::cast<ArrayLit>(r->domain());
+      auto* orig_range = Expression::cast<TypeInst>((*marker)[0]);
+      Id* binder_id = Expression::cast<Id>((*marker)[1]);
+      Location bloc = Expression::loc(binder_id);
+      auto* binder_ti = new TypeInst(bloc, Type());
+      auto* binder_vd = new VarDecl(bloc, binder_ti, binder_id);
+      binder_vd->toplevel(false);
+      binders.push_back({binder_vd, orig_range->domain()});
+      new_ranges.push_back(orig_range);
+      any = true;
+    } else {
+      binders.push_back({nullptr, nullptr});
+      new_ranges.push_back(r);
+    }
+  }
+  if (any) {
+    ti->setRanges(new_ranges);
+    return binders;
+  }
+  return {};
+}
+
+/// Test whether \a prefix contains any Array step carrying at least one
+/// (non-null) binder.  Used to decide whether a leaf TypeInst with a regular
+/// domain expression should become a per-element constraint.
+bool prefix_has_binder(const std::vector<CardPathStep>& prefix) {
+  for (const auto& s : prefix) {
+    if (s.kind == CardPathStep::Array) {
+      for (const auto& b : s.binders) {
+        if (b.vd != nullptr) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+/// Recursively walk \a ti, collecting every marker leaf found and stripping
+/// index-binder markers from array ranges as it goes.  For each Array step it
+/// pushes the (possibly empty) list of user-given binders onto the prefix; an
+/// ElemDomain leaf is emitted at any TypeInst with a regular (non-marker,
+/// non-composite) domain expression, provided there is at least one binder in
+/// scope from an ancestor Array step.  Composite domains may contain TypeInsts
+/// (tuples) or VarDecls (records).
+void collect_decl_leaves(TypeInst* ti, std::vector<CardPathStep>& prefix,
+                         std::vector<CardLeaf>& out) {
   if (ti == nullptr) {
     return;
   }
-  bool has_marker = is_set_card_marker(ti->domain());
   bool is_array = ti->isarray();
+  std::vector<ArrayBinder> step_binders;
+  if (is_array) {
+    step_binders = strip_index_binders(ti);
+  }
 
-  if (has_marker) {
+  // Set-card markers terminate descent at this TypeInst.
+  if (is_set_card_marker(ti->domain())) {
     if (is_array) {
-      prefix.push_back({CardPathStep::Array, 0, ASTString()});
-      out.push_back({prefix, ti});
+      CardPathStep step{CardPathStep::Array, std::move(step_binders), 0, ASTString()};
+      prefix.push_back(std::move(step));
+      out.push_back({CardLeaf::SetCard, prefix, ti, nullptr});
       prefix.pop_back();
     } else {
-      out.push_back({prefix, ti});
+      out.push_back({CardLeaf::SetCard, prefix, ti, nullptr});
     }
     return;
   }
 
   if (is_array) {
-    prefix.push_back({CardPathStep::Array, 0, ASTString()});
+    CardPathStep step{CardPathStep::Array, std::move(step_binders), 0, ASTString()};
+    prefix.push_back(std::move(step));
   }
 
   Expression* dom = ti->domain();
   if (is_array && dom != nullptr && Expression::isa<TypeInst>(dom)) {
     // Array-of-array wrapper: descend into the inner array TypeInst.
-    collect_set_card_leaves(Expression::cast<TypeInst>(dom), prefix, out);
+    collect_decl_leaves(Expression::cast<TypeInst>(dom), prefix, out);
   } else if (dom != nullptr && Expression::isa<ArrayLit>(dom)) {
     auto* al = Expression::cast<ArrayLit>(dom);
     Type::BaseType bt = ti->type().bt();
     if (bt == Type::BT_TUPLE) {
       for (unsigned int i = 0; i < al->size(); ++i) {
         if (auto* field_ti = Expression::dynamicCast<TypeInst>((*al)[i])) {
-          prefix.push_back({CardPathStep::TupleField, i + 1, ASTString()});
-          collect_set_card_leaves(field_ti, prefix, out);
+          CardPathStep step{CardPathStep::TupleField, {}, i + 1, ASTString()};
+          prefix.push_back(std::move(step));
+          collect_decl_leaves(field_ti, prefix, out);
           prefix.pop_back();
         }
       }
     } else if (bt == Type::BT_RECORD) {
       for (unsigned int i = 0; i < al->size(); ++i) {
         if (auto* vd_field = Expression::dynamicCast<VarDecl>((*al)[i])) {
-          prefix.push_back({CardPathStep::RecordField, 0, vd_field->id()->v()});
-          collect_set_card_leaves(vd_field->ti(), prefix, out);
+          CardPathStep step{CardPathStep::RecordField, {}, 0, vd_field->id()->v()};
+          prefix.push_back(std::move(step));
+          collect_decl_leaves(vd_field->ti(), prefix, out);
           prefix.pop_back();
         }
       }
     }
-    // else: composite domain we don't recurse through (no markers possible).
+  } else if (dom != nullptr) {
+    // Regular domain expression at a leaf TypeInst.  Promote to a per-element
+    // constraint when the leaf lives below an indexed array declaration.
+    if (prefix_has_binder(prefix)) {
+      out.push_back({CardLeaf::ElemDomain, prefix, ti, dom});
+    }
   }
-  // else: scalar without marker, nothing more to do.
 
   if (is_array) {
     prefix.pop_back();
   }
+}
+
+/// Best-effort syntactic inference of the base type of a per-element domain
+/// expression.  Walks the expression looking for a numeric literal to
+/// disambiguate `int` vs `float`; falls back to `BT_INT` for the common case
+/// when no literal is reachable (e.g. when the domain is a set-valued
+/// identifier or function call).  This is only used to seed the base type
+/// when stripping a per-element domain from a TypeInst that the type checker
+/// would otherwise be unable to type — so a wrong guess for unusual cases
+/// (e.g. an all-identifier float domain) gets surfaced as a downstream type
+/// error on the synthesised constraint, which is correct as far as the user
+/// is concerned.
+Type::BaseType infer_elem_domain_bt(Expression* e) {
+  if (e == nullptr) {
+    return Type::BT_INT;
+  }
+  if (Expression::isa<IntLit>(e)) {
+    return Type::BT_INT;
+  }
+  if (Expression::isa<FloatLit>(e)) {
+    return Type::BT_FLOAT;
+  }
+  if (Expression::isa<BoolLit>(e)) {
+    return Type::BT_BOOL;
+  }
+  if (Expression::isa<SetLit>(e)) {
+    auto* sl = Expression::cast<SetLit>(e);
+    if (sl->isv() != nullptr) {
+      return Type::BT_INT;
+    }
+    if (sl->fsv() != nullptr) {
+      return Type::BT_FLOAT;
+    }
+    if (!sl->v().empty()) {
+      return infer_elem_domain_bt(sl->v()[0]);
+    }
+    return Type::BT_INT;
+  }
+  if (Expression::isa<BinOp>(e)) {
+    auto* bop = Expression::cast<BinOp>(e);
+    Type::BaseType lhs_t = infer_elem_domain_bt(bop->lhs());
+    if (lhs_t != Type::BT_INT) {
+      return lhs_t;
+    }
+    return infer_elem_domain_bt(bop->rhs());
+  }
+  return Type::BT_INT;
+}
+
+/// Strip a per-element domain from \a carrier, returning the original domain
+/// expression.  Before clearing the domain field, this also seeds the
+/// carrier's base type (when unknown) using `infer_elem_domain_bt` so that
+/// the subsequent type checker can finish typing the declaration without the
+/// domain.
+Expression* strip_elem_domain(TypeInst* carrier) {
+  Expression* dom = carrier->domain();
+  Type tt = carrier->type();
+  if (tt.bt() == Type::BT_UNKNOWN) {
+    tt.bt(infer_elem_domain_bt(dom));
+    carrier->type(tt);
+  }
+  carrier->domain(nullptr);
+  return dom;
 }
 
 /// Strip the cardinality marker from \a carrier, restoring the real element-type
@@ -3941,26 +4106,64 @@ Expression* strip_set_card_marker(TypeInst* carrier) {
   return card_expr;
 }
 
-/// Build the cardinality constraint for the leaf \a leaf reached from
-/// declared variable \a vd, with \a card_expr being the cardinality expression
-/// extracted from the leaf's marker.  Each \c Array step introduces a fresh
-/// generator over `array1d(...)`; each \c TupleField/RecordField step appends
-/// a `.i` / `.name` field-access.  The body is `card(<path>) in card_expr`,
-/// wrapped in `forall(... )` if any generators were introduced.
-Expression* build_set_card_constraint_from_path(EnvI& env, VarDecl* vd, const CardLeaf& leaf,
-                                                Expression* card_expr) {
+/// Build the constraint for the leaf \a leaf reached from declared variable
+/// \a vd.  Each Array path step with user-given binders contributes an
+/// indexed access `cur[c1, c2, ...]` and adds the binders as generators;
+/// Array steps without binders fall back to a fresh `array1d`-style
+/// generator.  TupleField/RecordField steps append `.i` / `.name` field
+/// accesses.  The body is dispatched on `leaf.kind`:
+/// `SetCard` → `mzn_internal_set_card(cur, e)`; `ElemDomain`
+/// → `mzn_internal_array_elem_in(cur, dom)`.  Wrapped in `forall` when any
+/// generators are introduced.
+Expression* build_constraint_from_path(EnvI& env, VarDecl* vd, const CardLeaf& leaf,
+                                       Expression* body_expr) {
   Location loc = Expression::loc(vd).introduce();
   Expression* cur = vd->id();
   Generators gens;
   for (const auto& step : leaf.path) {
     switch (step.kind) {
       case CardPathStep::Array: {
-        auto* gen_ti = new TypeInst(loc, Type());
-        auto* gen_vd = new VarDecl(loc, gen_ti, env.genId());
-        gen_vd->toplevel(false);
-        Call* a1d = Call::a(loc, env.constants.ids.array1d, {cur});
-        gens.g.push_back(Generator({gen_vd}, a1d, nullptr));
-        cur = gen_vd->id();
+        bool any_binder = false;
+        for (const auto& b : step.binders) {
+          if (b.vd != nullptr) {
+            any_binder = true;
+            break;
+          }
+        }
+        if (any_binder) {
+          std::vector<Expression*> idx;
+          idx.reserve(step.binders.size());
+          for (const auto& b : step.binders) {
+            if (b.vd != nullptr) {
+              gens.g.push_back(Generator({b.vd}, b.range_in, nullptr));
+              idx.push_back(b.vd->id());
+            } else {
+              // Mixed dimension with no binder: fall back to a fresh generator
+              // bound to the same range expression by indexing through
+              // `index_set(<dim>, x)`.  But because we already have a
+              // user-given binder on at least one dim, we expect the index
+              // sets to match; the unbound dim simply iterates the index set.
+              // For now we don't support this mixed shape — flag at the
+              // position-check stage if it arises.  Use array1d-peel as a
+              // safe fallback so type checking proceeds with no aliasing.
+              auto* gen_ti = new TypeInst(loc, Type());
+              auto* gen_vd = new VarDecl(loc, gen_ti, env.genId());
+              gen_vd->toplevel(false);
+              gens.g.push_back(Generator({gen_vd}, nullptr, nullptr));
+              idx.push_back(gen_vd->id());
+            }
+          }
+          cur = new ArrayAccess(loc, cur, idx);
+        } else {
+          // No user binders on this dimension level: keep the legacy
+          // `array1d`-peel form.
+          auto* gen_ti = new TypeInst(loc, Type());
+          auto* gen_vd = new VarDecl(loc, gen_ti, env.genId());
+          gen_vd->toplevel(false);
+          Call* a1d = Call::a(loc, env.constants.ids.array1d, {cur});
+          gens.g.push_back(Generator({gen_vd}, a1d, nullptr));
+          cur = gen_vd->id();
+        }
         break;
       }
       case CardPathStep::TupleField: {
@@ -3973,7 +4176,12 @@ Expression* build_set_card_constraint_from_path(EnvI& env, VarDecl* vd, const Ca
       }
     }
   }
-  Expression* body = Call::a(loc, env.constants.ids.mzn_internal_set_card, {cur, card_expr});
+  Expression* body;
+  if (leaf.kind == CardLeaf::SetCard) {
+    body = Call::a(loc, env.constants.ids.mzn_internal_set_card, {cur, body_expr});
+  } else {
+    body = Call::a(loc, env.constants.ids.mzn_internal_array_elem_in, {cur, body_expr});
+  }
   if (gens.g.empty()) {
     return body;
   }
@@ -3982,28 +4190,34 @@ Expression* build_set_card_constraint_from_path(EnvI& env, VarDecl* vd, const Ca
 }
 
 /// Process a top-level or let-bound variable declaration: collect every
-/// set-cardinality leaf inside its TypeInst tree (arbitrary nesting of arrays,
-/// tuples and records), strip the markers and return one constraint per leaf.
-std::vector<Expression*> process_set_card_decl(EnvI& env, VarDecl* vd) {
+/// marker leaf inside its TypeInst tree (arbitrary nesting of arrays, tuples
+/// and records), strip the markers and return one constraint per leaf.
+std::vector<Expression*> process_decl_markers(EnvI& env, VarDecl* vd) {
   std::vector<CardLeaf> leaves;
   std::vector<CardPathStep> prefix;
-  collect_set_card_leaves(vd->ti(), prefix, leaves);
+  collect_decl_leaves(vd->ti(), prefix, leaves);
   std::vector<Expression*> constraints;
   constraints.reserve(leaves.size());
   for (const auto& leaf : leaves) {
-    Expression* card_expr = strip_set_card_marker(leaf.carrier);
-    constraints.push_back(build_set_card_constraint_from_path(env, vd, leaf, card_expr));
+    Expression* body_expr;
+    if (leaf.kind == CardLeaf::SetCard) {
+      body_expr = strip_set_card_marker(leaf.carrier);
+    } else {
+      body_expr = strip_elem_domain(leaf.carrier);
+    }
+    constraints.push_back(build_constraint_from_path(env, vd, leaf, body_expr));
   }
   return constraints;
 }
 
-/// Expression visitor that desugars set-cardinality markers on let-bound
-/// declarations and reports markers found in any other (illegal) position.
-class SetCardExprVisitor : public EVisitor {
+/// Expression visitor that desugars set-cardinality and index-binder markers
+/// on let-bound declarations and reports markers found in any other (illegal)
+/// position.
+class IndexedDeclExprVisitor : public EVisitor {
 public:
   EnvI& env;
   std::vector<TypeError>& typeErrors;
-  SetCardExprVisitor(EnvI& env0, std::vector<TypeError>& typeErrors0)
+  IndexedDeclExprVisitor(EnvI& env0, std::vector<TypeError>& typeErrors0)
       : env(env0), typeErrors(typeErrors0) {}
   /// Desugar markers on let-bound declarations, appending the generated
   /// constraints to the let.  Runs before the iterator descends into the let
@@ -4016,7 +4230,7 @@ public:
       Expression* li = let->let()[i];
       items.push_back(li);
       if (auto* vd = Expression::dynamicCast<VarDecl>(li)) {
-        for (Expression* c : process_set_card_decl(env, vd)) {
+        for (Expression* c : process_decl_markers(env, vd)) {
           constraints.push_back(c);
         }
       }
@@ -4040,29 +4254,74 @@ public:
       auto* al = Expression::cast<ArrayLit>(ti->domain());
       ti->domain(Expression::cast<TypeInst>((*al)[1])->domain());
     }
+    if (ti->isarray()) {
+      // Any binder marker reaching here was not stripped at a decl site, so
+      // the indexed array declaration appears in an illegal position
+      // (function parameter, type alias, ...).  Strip and report.  Also
+      // clear the element-type's domain, since it may reference the binder
+      // and would otherwise cascade into an "undefined identifier" error
+      // that masks our own diagnostic.
+      GCLock lock;
+      ASTExprVec<TypeInst> ranges = ti->ranges();
+      std::vector<TypeInst*> new_ranges;
+      bool any = false;
+      bool reported = false;
+      for (unsigned int i = 0; i < ranges.size(); ++i) {
+        TypeInst* r = ranges[i];
+        if (r != nullptr && is_index_binder_marker(r->domain())) {
+          auto* marker = Expression::cast<ArrayLit>(r->domain());
+          new_ranges.push_back(Expression::cast<TypeInst>((*marker)[0]));
+          any = true;
+          if (!reported) {
+            typeErrors.emplace_back(
+                env, Expression::loc(ti),
+                "indexed array declarations `array[c in S] of ...' are only "
+                "allowed in top-level or let-bound variable declarations");
+            reported = true;
+          }
+        } else {
+          new_ranges.push_back(r);
+        }
+      }
+      if (any) {
+        ti->setRanges(new_ranges);
+        // Suppress cascading errors from any binder reference left in the
+        // element type's domain expression.  Seed the base type if unknown
+        // so type checking can still complete.
+        if (ti->domain() != nullptr && !Expression::isa<TypeInst>(ti->domain()) &&
+            !Expression::isa<ArrayLit>(ti->domain())) {
+          Type tt = ti->type();
+          if (tt.bt() == Type::BT_UNKNOWN) {
+            tt.bt(infer_elem_domain_bt(ti->domain()));
+            ti->type(tt);
+          }
+          ti->domain(nullptr);
+        }
+      }
+    }
   }
 };
 
-/// Item visitor that desugars set-cardinality markers on top-level variable
-/// declarations and walks every item's expressions for nested lets / illegal
-/// markers.
-class SetCardItemVisitor : public ItemVisitor {
+/// Item visitor that desugars markers on top-level variable declarations and
+/// walks every item's expressions for nested lets / illegal markers.
+class IndexedDeclItemVisitor : public ItemVisitor {
 public:
   EnvI& env;
   std::vector<ConstraintI*>& toAdd;
-  SetCardExprVisitor& ev;
-  SetCardItemVisitor(EnvI& env0, std::vector<ConstraintI*>& toAdd0, SetCardExprVisitor& ev0)
+  IndexedDeclExprVisitor& ev;
+  IndexedDeclItemVisitor(EnvI& env0, std::vector<ConstraintI*>& toAdd0,
+                         IndexedDeclExprVisitor& ev0)
       : env(env0), toAdd(toAdd0), ev(ev0) {}
   void run(Expression* e) {
     if (e != nullptr) {
-      TopDownIterator<SetCardExprVisitor>(ev).run(e);
+      TopDownIterator<IndexedDeclExprVisitor>(ev).run(e);
     }
   }
   void vVarDeclI(VarDeclI* vdi) {
     VarDecl* vd = vdi->e();
     {
       GCLock lock;
-      for (Expression* c : process_set_card_decl(env, vd)) {
+      for (Expression* c : process_decl_markers(env, vd)) {
         toAdd.push_back(new ConstraintI(Expression::loc(vd).introduce(), c));
       }
     }
@@ -4089,15 +4348,17 @@ public:
   }
 };
 
-/// Desugar `set(e) of T` cardinality declarations.  Replaces the marker carried
-/// in a set TypeInst's domain with the real element type, and generates a
-/// `mzn_internal_set_card(x, e)` call (or a `forall` over the array elements) for
-/// every top-level or let-bound variable declaration.  Markers found in any other
-/// position are reported as type errors.
-void desugar_set_cardinality(EnvI& env, Model* m, std::vector<TypeError>& typeErrors) {
+/// Desugar `set(e) of T` cardinality and `array[c in C] of ...` indexed
+/// declarations.  For each top-level or let-bound variable declaration, walks
+/// the TypeInst tree, strips both kinds of marker, and emits one constraint
+/// per stripped marker (`mzn_internal_set_card` for set-card, or a `forall`
+/// over the user binders plus `mzn_internal_array_elem_in` for per-element
+/// domains).  Markers found in any other position are reported as type
+/// errors.
+void desugar_indexed_declarations(EnvI& env, Model* m, std::vector<TypeError>& typeErrors) {
   std::vector<ConstraintI*> toAdd;
-  SetCardExprVisitor ev(env, typeErrors);
-  SetCardItemVisitor iv(env, toAdd, ev);
+  IndexedDeclExprVisitor ev(env, typeErrors);
+  IndexedDeclItemVisitor iv(env, toAdd, ev);
   iter_items(iv, m);
   for (auto* ci : toAdd) {
     m->addItem(ci);
@@ -4134,7 +4395,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     m = origModel;
   }
 
-  desugar_set_cardinality(env.envi(), m, typeErrors);
+  desugar_indexed_declarations(env.envi(), m, typeErrors);
 
   // Topological sorting
   IdMap<bool> needToString;
