@@ -15,6 +15,11 @@ Bug fixes:
    in reified positions.
 -  Fix a bug in type specialisation that could produce incorrect internal
    type representations for tuples.
+-  Fix spurious ``UNSATISFIABLE`` results under ``-O1`` for half-reified
+   constraints whose right-hand side uses a pinned ``var float`` as a
+   coefficient operand. The LE chain compressor was incorrectly adding the
+   folded-in constant offset to the RHS instead of subtracting it
+   (:bugref:`1020`).
 
 .. _v2.9.7:
 
