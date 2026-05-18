@@ -576,14 +576,20 @@ void LECompressor::leReplaceVar(Item* i, VarDecl* oldVar, VarDecl* newVar) {
       x[j] = (*al_x)[j];
     }
   }
-  Val d = LinearTraits<Lit>::eval(_env, call->arg(2));
+  Val rhs = LinearTraits<Lit>::eval(_env, call->arg(2));
+  Val d = 0;
 
   simplify_lin<Lit>(coeffs, x, d);
   if (coeffs.empty()) {
-    i->remove();
-    _env.counters.linDel++;
+    if (d > rhs) {
+      _env.fail();
+    } else {
+      i->remove();
+      _env.counters.linDel++;
+    }
     return;
   }
+  rhs -= d;
   std::vector<Expression*> coeffs_e(coeffs.size());
   std::vector<Expression*> x_e(coeffs.size());
   for (unsigned int j = 0; j < coeffs.size(); j++) {
@@ -603,7 +609,7 @@ void LECompressor::leReplaceVar(Item* i, VarDecl* oldVar, VarDecl* newVar) {
   al_x_new->type(al_x->type());
   call->arg(1, al_x_new);
 
-  call->arg(2, Lit::a(d));
+  call->arg(2, Lit::a(rhs));
 
   // Add new occurences
   CollectOccurrencesE ce(_env, _env.varOccurrences, i);
