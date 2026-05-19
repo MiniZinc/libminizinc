@@ -936,15 +936,18 @@ array_index_list_head :
 array_index_entry :
       ti_expr
       { $$=$1; }
-    | MZN_IDENTIFIER MZN_IN ti_expr
+    | MZN_IDENTIFIER MZN_IN set_expr
       {
         if ($3 != nullptr) {
           Id* binder = new Id(@1, $1, nullptr);
-          // Index-binder marker: 2-tuple ($3, binder).  Distinguishable
+          // Wrap the set expression in a TypeInst so the marker carries the
+          // same shape as it did when this production accepted a ti_expr.
+          TypeInst* range_ti = new TypeInst(@3, Type(), $3);
+          // Index-binder marker: 2-tuple (range_ti, binder).  Distinguishable
           // from a set-cardinality marker (which has a TypeInst at index 1)
           // by carrying the TypeInst at index 0 and the binder Id at index 1.
           ArrayLit* marker =
-            ArrayLit::constructTuple(@$, std::vector<Expression*>({$3, binder}));
+            ArrayLit::constructTuple(@$, std::vector<Expression*>({range_ti, binder}));
           $$ = new TypeInst(@$, Type(), marker);
         } else {
           $$ = nullptr;
