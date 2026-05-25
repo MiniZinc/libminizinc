@@ -12,6 +12,7 @@
 #pragma once
 
 #include <minizinc/astexception.hh>
+#include <minizinc/astmap.hh>
 #include <minizinc/model.hh>
 
 #include <fstream>
@@ -49,6 +50,12 @@ protected:
   int _line;
   int _column;
   std::string _filename;
+  /// Map from type alias name to the aliased TypeInst, populated in parseModel
+  ASTStringMap<TypeInst*> _aliases;
+  /// If \a ti's domain references a known type alias, return a fresh TypeInst that
+  /// merges the alias's base type/domain with \a ti's ranges. Follows alias chains.
+  /// Returns \a ti unchanged when no alias applies.
+  TypeInst* resolveAlias(TypeInst* ti);
   Location errLocation() const;
   Token readToken(std::istream& is);
   Token readTokenInternal(std::istream& is);

@@ -93,6 +93,48 @@ Location JSONParser::errLocation() const {
   return loc;
 }
 
+TypeInst* JSONParser::resolveAlias(TypeInst* ti) {
+  if (ti == nullptr || _aliases.empty()) {
+    return ti;
+  }
+  ASTStringSet visited;
+  while (ti != nullptr && ti->domain() != nullptr && Expression::isa<Id>(ti->domain())) {
+    auto* id = Expression::cast<Id>(ti->domain());
+    auto it = _aliases.find(id->str());
+    if (it == _aliases.end()) {
+      break;
+    }
+    if (!visited.insert(id->str()).second) {
+      break;  // cycle guard
+    }
+    TypeInst* alias = it->second;
+    GCLock lock;
+    // Compose: take alias's base type and domain, but preserve outer's ranges if present.
+    Type t = alias->type();
+    bool outerIsArray = ti->isarray();
+    if (outerIsArray) {
+      t.dim(static_cast<int>(ti->ranges().size()));
+    }
+    auto* newTi = new TypeInst(Location().introduce(), t, alias->domain());
+    newTi->setIsEnum(alias->isEnum());
+    if (outerIsArray) {
+      std::vector<TypeInst*> rs(ti->ranges().size());
+      for (unsigned int i = 0; i < ti->ranges().size(); ++i) {
+        rs[i] = ti->ranges()[i];
+      }
+      newTi->setRanges(rs);
+    } else if (alias->isarray()) {
+      std::vector<TypeInst*> rs(alias->ranges().size());
+      for (unsigned int i = 0; i < alias->ranges().size(); ++i) {
+        rs[i] = alias->ranges()[i];
+      }
+      newTi->setRanges(rs);
+    }
+    ti = newTi;
+  }
+  return ti;
+}
+
 JSONParser::Token JSONParser::readToken(istream& is) {
   string result;
   char buf[1];
@@ -538,6 +580,7 @@ Expression* JSONParser::parseEnumObject(std::istream& is, const std::string& see
 }
 
 Expression* JSONParser::parseSet(istream& is, TypeInst* ti) {
+  ti = resolveAlias(ti);
   expectToken(is, T_LIST_OPEN);
   vector<Expression*> exprs;
   vector<pair<Token, Token>> ranges;
@@ -659,6 +702,7 @@ Expression* JSONParser::parseSet(istream& is, TypeInst* ti) {
 
 Expression* JSONParser::parseObject(istream& is, TypeInst* ti) {
   // precondition: found T_OBJ_OPEN
+  ti = resolveAlias(ti);
   std::vector<Expression*> fields;
 
   ASTStringMap<TypeInst*> fieldTIs;
@@ -723,6 +767,7 @@ Expression* JSONParser::parseObject(istream& is, TypeInst* ti) {
 
 Expression* JSONParser::parseArray(std::istream& is, TypeInst* ti, size_t range_index) {
   // precondition: opening parenthesis has been read
+  ti = resolveAlias(ti);
   vector<Expression*> exps;
   Token next = readToken(is);
 
@@ -800,6 +845,7 @@ Expression* JSONParser::parseArray(std::istream& is, TypeInst* ti, size_t range_
 }
 
 Expression* JSONParser::parseExp(std::istream& is, bool parseObjects, TypeInst* ti) {
+  ti = resolveAlias(ti);
   Token next = readToken(is);
   switch (next.t) {
     case T_INT:
@@ -830,6 +876,7 @@ Expression* JSONParser::parseExp(std::istream& is, bool parseObjects, TypeInst* 
 }
 
 Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
+  ti = resolveAlias(ti);
   assert(al != nullptr);
   const Location& loc = Expression::loc(al);
 
@@ -958,18 +1005,24 @@ void JSONParser::parseModel(Model* m, std::istream& is, bool isData) {
   // precondition: found T_OBJ_OPEN
   ASTStringMap<TypeInst*> knownIds;
   if (isData) {
-    // Collect known VarDecl ids from model and includes
+    // Collect known VarDecl ids and type aliases from model and includes
     class VarDeclVisitor : public ItemVisitor {
     private:
       ASTStringMap<TypeInst*>& _knownIds;
+      ASTStringMap<TypeInst*>& _aliasesRef;
 
     public:
-      VarDeclVisitor(ASTStringMap<TypeInst*>& knownIds) : _knownIds(knownIds) {}
+      VarDeclVisitor(ASTStringMap<TypeInst*>& knownIds, ASTStringMap<TypeInst*>& aliases)
+          : _knownIds(knownIds), _aliasesRef(aliases) {}
       void vVarDeclI(VarDeclI* vdi) {
         VarDecl* vd = vdi->e();
-        _knownIds.emplace(vd->id()->str(), vd->ti());
+        if (vd->isTypeAlias()) {
+          _aliasesRef.emplace(vd->id()->str(), Expression::cast<TypeInst>(vd->e()));
+        } else {
+          _knownIds.emplace(vd->id()->str(), vd->ti());
+        }
       }
-    } _varDecls(knownIds);
+    } _varDecls(knownIds, _aliases);
     iter_items(_varDecls, m);
   }
   for (;;) {

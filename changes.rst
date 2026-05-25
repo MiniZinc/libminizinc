@@ -20,6 +20,8 @@ Bug fixes:
    coefficient operand. The LE chain compressor was incorrectly adding the
    folded-in constant offset to the RHS instead of subtracting it
    (:bugref:`1020`).
+-  Fix parsing of JSON data files with enumerated or record types where
+   the model contains a type alias for the type of the parameter.
 
 .. _v2.9.7:
 

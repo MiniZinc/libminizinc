@@ -1,0 +1,4 @@
+{
+  "Unit" : {"set":[{"e":"LCORE"}, {"e":"MCORE"}]},
+  "us" : {"set":[{"e":"LCORE"}, {"e":"MCORE"}]}
+}

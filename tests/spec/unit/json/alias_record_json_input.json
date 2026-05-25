@@ -1,0 +1,4 @@
+{
+  "Unit" : {"set":[{"e":"LCORE"}, {"e":"MCORE"}]},
+  "ports" : [{"x": {"e":"LCORE"}}, {"x": {"e":"MCORE"}}]
+}
