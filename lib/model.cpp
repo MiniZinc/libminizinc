@@ -430,6 +430,23 @@ void Model::addPolymorphicInstances(EnvI& env, Model::FnEntry& fe, std::vector<F
   }
 }
 
+namespace {
+// Two decls with identical parameter types but different parameter names are
+// intentionally distinct overloads under named-arguments (e.g.
+// interval(start:, duration:) vs interval(start:, end:)). Anonymous
+// parameters get an empty-string id (lib/parser.yxx ti_expr_and_id_or_anon),
+// so anon-vs-anon compares equal.
+bool sameParameterNames(FunctionI* a, FunctionI* b) {
+  assert(a->paramCount() == b->paramCount());
+  for (unsigned int i = 0; i < a->paramCount(); i++) {
+    if (a->param(i)->id()->v() != b->param(i)->id()->v()) {
+      return false;
+    }
+  }
+  return true;
+}
+}  // namespace
+
 bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDuplicate) {
   Model* m = this;
   while (m->_parent != nullptr) {
@@ -467,6 +484,13 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
         }
         if (alleq) {
           if ((i.fi->e() != nullptr) && (fi->e() != nullptr) && !i.isPolymorphic) {
+            if (!sameParameterNames(i.fi, fi)) {
+              // Identical types but different parameter names: a distinct overload
+              // under named-arguments. Fall through to addPolymorphicInstances so
+              // this decl is inserted as its own entry rather than treated as a
+              // duplicate of the existing one.
+              continue;
+            }
             if (throwIfDuplicate) {
               throw TypeError(
                   env, fi->loc(),
@@ -737,7 +761,7 @@ void Model::checkFnOverloading(EnvI& env) {
             break;
           }
         }
-        if (allEqual) {
+        if (allEqual && sameParameterNames(cur, cmp)) {
           throw TypeError(env, cur->loc(),
                           "unsupported type of overloading. \nFunction/predicate with equivalent "
                           "signature defined in " +
