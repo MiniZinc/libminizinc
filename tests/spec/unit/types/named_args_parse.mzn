@@ -1,19 +1,17 @@
 /***
 !Test
 solvers: [gecode]
-expected: !Error
-  type: TypeError
-  regex: 'named arguments are not yet supported'
-type: compile
+expected: !Result
+  status: SATISFIED
+  solution: !Solution {}
 ***/
 
-% Named-argument call syntax must parse (step 5 of the named-args feature) but
-% is rejected by a typechecker guard until step 6 implements proper unwrapping.
-% Before the parser change, the colon would be a syntax error; afterwards, the
-% guard catches the VarDecl sentinel and reports a clear message. Step 6 will
-% replace the guard with real name resolution and tighten this test.
+% Named-argument call syntax must parse and resolve to the matching decl
+% (step 6 of the named-args feature). Before step 6 the typechecker raised
+% "named arguments are not yet supported"; this test pins that the call
+% now reaches the solver and reports SATISFIED.
 
-predicate foo(int: x, int: y);
+predicate foo(int: x, int: y) = true;
 constraint foo(x: 1, y: 2);
 
 solve satisfy;

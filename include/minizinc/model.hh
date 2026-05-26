@@ -191,6 +191,29 @@ public:
                      bool strictEnums) const;
   /// Return function declaration matching call \a c
   FunctionI* matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotFound = false) const;
+  /// Resolve a call with named-argument bindings against \a c->id()'s plain
+  /// bucket. \a positional are the arguments supplied by position, in source
+  /// order; \a named are (parameter-name, expression) pairs supplied by name
+  /// (caller is responsible for rejecting duplicate names). Candidate
+  /// FunctionIs must have paramCount == positional.size() + named.size(),
+  /// must contain each supplied name in their parameter list at index
+  /// >= positional.size(), and must not have any positional-prefix parameter
+  /// whose name collides with a supplied named name. Subtyping is applied
+  /// per parameter; ordering follows the existing bucket sort (more-specific
+  /// first). Returns nullptr if no candidate matches and \a throwIfNotFound
+  /// is false; throws TypeError otherwise.
+  FunctionI* matchFnNamed(EnvI& env, Call* c, const std::vector<Expression*>& positional,
+                          const std::vector<std::pair<ASTString, Expression*>>& named,
+                          bool strictEnums, bool throwIfNotFound) const;
+  /// Find the reified (or half-reified) sibling of the function bound to
+  /// \a c->decl() whose first \a c->decl()->paramCount() parameter names
+  /// match \a c->decl()'s. Used at flatten-time reification to propagate
+  /// the named-argument disambiguation into the reif/imp Call so that
+  /// matchFn(Call*) can later pick the correct sibling when two name-only-
+  /// different overloads both have reif/imp companions. Returns nullptr if
+  /// \a c->decl() is null or no name-matched sibling exists; callers
+  /// should fall back to the type-only matchReification in that case.
+  FunctionI* matchReifByNames(EnvI& env, const Call* c, bool canHalfReify, bool strictEnums) const;
   /// Return function declarations that are potential overloads for call \a c (same identifier and
   /// same number of arguments)
   std::vector<FunctionI*> potentialOverloads(EnvI& env, Call* c) const;

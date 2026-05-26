@@ -323,10 +323,45 @@ void TypeInst::collectTypeIds(std::unordered_map<ASTString, size_t>& seen_tiids,
   }
 }
 
+namespace {
+// Two decls with identical parameter types but different parameter names are
+// intentionally distinct overloads under named-arguments (e.g.
+// interval(start:, duration:) vs interval(start:, end:)). Anonymous
+// parameters get an empty-string id (lib/parser.yxx ti_expr_and_id_or_anon),
+// so anon-vs-anon compares equal.
+bool sameParameterNames(FunctionI* a, FunctionI* b) {
+  assert(a->paramCount() == b->paramCount());
+  for (unsigned int i = 0; i < a->paramCount(); i++) {
+    Id* ai = a->param(i)->id();
+    Id* bi = b->param(i)->id();
+    if (!ai->hasStr() || !bi->hasStr()) {
+      // Synthetic param ids (e.g. monomorphic copies use numeric idns).
+      // Defer to caller's other discrimination — treat as same.
+      continue;
+    }
+    if (ai->v() != bi->v()) {
+      return false;
+    }
+  }
+  return true;
+}
+}  // namespace
+
 void Model::addPolymorphicInstances(EnvI& env, Model::FnEntry& fe, std::vector<FnEntry>& entries) {
   auto addEntry = [&](Model::FnEntry& toAdd) {
     for (auto& entry : entries) {
       if (entry.t == toAdd.t) {
+        // Identical types with different parameter names define distinct
+        // named-arguments overloads (e.g. interval(start:, end:) vs
+        // interval(start:, duration:)). Skip past such siblings rather
+        // than collapsing them; they must coexist for named-argument
+        // resolution to disambiguate. Polymorphic variants are excluded —
+        // they share parameter names with their polymorphic source by
+        // construction.
+        if (!entry.isPolymorphicVariant && !toAdd.isPolymorphicVariant &&
+            !sameParameterNames(entry.fi, toAdd.fi)) {
+          continue;
+        }
         bool more_specific = true;
         for (unsigned int i = 0; i < toAdd.fi->paramCount(); i++) {
           // If all parameters of the entry we are adding are subtypes of an
@@ -429,23 +464,6 @@ void Model::addPolymorphicInstances(EnvI& env, Model::FnEntry& fe, std::vector<F
     }
   }
 }
-
-namespace {
-// Two decls with identical parameter types but different parameter names are
-// intentionally distinct overloads under named-arguments (e.g.
-// interval(start:, duration:) vs interval(start:, end:)). Anonymous
-// parameters get an empty-string id (lib/parser.yxx ti_expr_and_id_or_anon),
-// so anon-vs-anon compares equal.
-bool sameParameterNames(FunctionI* a, FunctionI* b) {
-  assert(a->paramCount() == b->paramCount());
-  for (unsigned int i = 0; i < a->paramCount(); i++) {
-    if (a->param(i)->id()->v() != b->param(i)->id()->v()) {
-      return false;
-    }
-  }
-  return true;
-}
-}  // namespace
 
 bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDuplicate) {
   Model* m = this;
@@ -849,6 +867,81 @@ FunctionI* Model::matchReification(EnvI& env, const ASTString& id, const std::ve
   return reif_decl;
 }
 
+FunctionI* Model::matchReifByNames(EnvI& env, const Call* c, bool canHalfReify,
+                                   bool strictEnums) const {
+  if (c->decl() == nullptr) {
+    return nullptr;
+  }
+  const Model* m = this;
+  while (m->_parent != nullptr) {
+    m = m->_parent;
+  }
+  FunctionI* baseDecl = c->decl();
+  unsigned int baseArity = baseDecl->paramCount();
+  auto pickNameMatch = [&](const ASTString& bucket_id) -> FunctionI* {
+    auto it = m->_fnmap.find(bucket_id);
+    if (it == m->_fnmap.end()) {
+      return nullptr;
+    }
+    FunctionI* fallback = nullptr;
+    for (const auto& fe : it->second) {
+      if (fe.fi->paramCount() != baseArity + 1) {
+        continue;
+      }
+      bool nameMatch = true;
+      for (unsigned int i = 0; i < baseArity; i++) {
+        Id* a = fe.fi->param(i)->id();
+        Id* b = baseDecl->param(i)->id();
+        if (!a->hasStr() || !b->hasStr()) {
+          continue;
+        }
+        if (a->v() != b->v()) {
+          nameMatch = false;
+          break;
+        }
+      }
+      if (!nameMatch) {
+        continue;
+      }
+      bool typeMatch = true;
+      for (unsigned int i = 0; i < baseArity; i++) {
+        if (!env.isSubtype(Expression::type(c->arg(i)), fe.t[i], strictEnums)) {
+          typeMatch = false;
+          break;
+        }
+      }
+      if (!typeMatch) {
+        if (fallback == nullptr) {
+          fallback = fe.fi;
+        }
+        continue;
+      }
+      return fe.fi;
+    }
+    return fallback;
+  };
+  ASTString reif_id = env.reifyId(c->id());
+  FunctionI* reif_decl = pickNameMatch(reif_id);
+  if (canHalfReify) {
+    ASTString imp_id = EnvI::halfReifyId(c->id());
+    if (FunctionI* imp_decl = pickNameMatch(imp_id)) {
+      if (reif_decl == nullptr) {
+        return imp_decl;
+      }
+      assert(imp_decl->paramCount() == reif_decl->paramCount());
+      for (unsigned int i = 0; i < imp_decl->paramCount(); ++i) {
+        Type a = imp_decl->param(i)->ti()->type();
+        Type b = reif_decl->param(i)->ti()->type();
+        if (!env.isSubtype(a, b, strictEnums)) {
+          return reif_decl;
+        }
+      }
+      return imp_decl;
+    }
+  }
+  return reif_decl;
+}
+
 FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Expression*>& args,
                           bool strictEnums) const {
   if (id == env.constants.varRedef->id()) {
@@ -925,6 +1018,20 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
   std::vector<FunctionI*> matched;
   Expression* botarg = nullptr;
   for (const auto& i : v) {
+    if (c->decl() != nullptr && i.fi != c->decl() &&
+        i.fi->paramCount() == c->decl()->paramCount() &&
+        !sameParameterNames(i.fi, c->decl())) {
+      bool sameTypes = true;
+      for (unsigned int j = 0; j < i.fi->paramCount(); j++) {
+        if (i.fi->param(j)->type() != c->decl()->param(j)->type()) {
+          sameTypes = false;
+          break;
+        }
+      }
+      if (sameTypes) {
+        continue;
+      }
+    }
     const std::vector<Type>& fi_t = i.t;
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
     std::cerr << "try " << *i.fi;
@@ -1001,6 +1108,153 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
   for (unsigned int i = 1; i < matched.size(); i++) {
     if (!env.isSubtype(t, matched[i]->ti()->type(), strictEnums)) {
       throw TypeError(env, Expression::loc(botarg),
+                      "ambiguous overloading on return type of function");
+    }
+  }
+  return matched[0];
+}
+
+namespace {
+// Find the index of the parameter named \a name in \a fi at positions
+// [from, fi->paramCount()). Returns -1 if not found.
+int find_param_named(FunctionI* fi, const ASTString& name, unsigned int from) {
+  for (unsigned int i = from; i < fi->paramCount(); i++) {
+    if (fi->param(i)->id()->v() == name) {
+      return static_cast<int>(i);
+    }
+  }
+  return -1;
+}
+// Check whether any parameter in \a fi at positions [0, until) is named
+// \a name.
+bool positional_prefix_has_name(FunctionI* fi, const ASTString& name, unsigned int until) {
+  for (unsigned int i = 0; i < until; i++) {
+    if (fi->param(i)->id()->v() == name) {
+      return true;
+    }
+  }
+  return false;
+}
+}  // namespace
+
+FunctionI* Model::matchFnNamed(EnvI& env, Call* c, const std::vector<Expression*>& positional,
+                               const std::vector<std::pair<ASTString, Expression*>>& named,
+                               bool strictEnums, bool throwIfNotFound) const {
+  const Model* m = this;
+  while (m->_parent != nullptr) {
+    m = m->_parent;
+  }
+  auto it = m->_fnmap.find(c->id());
+  if (it == m->_fnmap.end()) {
+    if (throwIfNotFound) {
+      std::ostringstream oss;
+      oss << "no function or predicate with name `" << c->id() << "' found";
+      throw TypeError(env, Expression::loc(c), oss.str());
+    }
+    return nullptr;
+  }
+  const std::vector<FnEntry>& v = it->second;
+  const unsigned int k = static_cast<unsigned int>(positional.size());
+  const unsigned int total = k + static_cast<unsigned int>(named.size());
+
+  std::vector<FunctionI*> matched;
+  Expression* botarg = nullptr;
+  bool anyNameCompatible = false;
+  for (const auto& fe : v) {
+    FunctionI* fi = fe.fi;
+    if (fi->paramCount() != total) {
+      continue;
+    }
+    // Name compatibility: each supplied named name is at some index >= k,
+    // and no name collides with the positional prefix.
+    bool nameOk = true;
+    for (const auto& np : named) {
+      if (positional_prefix_has_name(fi, np.first, k)) {
+        nameOk = false;
+        break;
+      }
+      if (find_param_named(fi, np.first, k) < 0) {
+        nameOk = false;
+        break;
+      }
+    }
+    if (!nameOk) {
+      continue;
+    }
+    anyNameCompatible = true;
+    // Subtyping: positional[i] against fe.t[i]; named[(n, e)] against
+    // fe.t[idx_of(n)].
+    bool subOk = true;
+    Expression* localBotarg = nullptr;
+    for (unsigned int i = 0; i < k; i++) {
+      if (!env.isSubtype(Expression::type(positional[i]), fe.t[i], strictEnums)) {
+        subOk = false;
+        break;
+      }
+      if (Expression::type(positional[i]).isbot() && fe.t[i].bt() != Type::BT_TOP) {
+        localBotarg = positional[i];
+      }
+    }
+    if (!subOk) {
+      continue;
+    }
+    for (const auto& np : named) {
+      int idx = find_param_named(fi, np.first, k);
+      assert(idx >= 0);
+      if (!env.isSubtype(Expression::type(np.second), fe.t[idx], strictEnums)) {
+        subOk = false;
+        break;
+      }
+      if (Expression::type(np.second).isbot() && fe.t[idx].bt() != Type::BT_TOP) {
+        localBotarg = np.second;
+      }
+    }
+    if (!subOk) {
+      continue;
+    }
+    if (localBotarg == nullptr) {
+      return fi;
+    }
+    botarg = localBotarg;
+    matched.push_back(fi);
+  }
+  if (matched.empty()) {
+    if (throwIfNotFound) {
+      std::ostringstream oss;
+      oss << "no function or predicate with this signature found: `"
+          << c->id() << "(";
+      bool first = true;
+      for (unsigned int i = 0; i < k; i++) {
+        if (!first) {
+          oss << ",";
+        }
+        oss << Expression::type(positional[i]).toString(env);
+        first = false;
+      }
+      for (const auto& np : named) {
+        if (!first) {
+          oss << ",";
+        }
+        oss << np.first << ": " << Expression::type(np.second).toString(env);
+        first = false;
+      }
+      oss << ")'";
+      if (!anyNameCompatible) {
+        oss << "\nNo overload of `" << c->id()
+            << "' has parameters matching the supplied named arguments.";
+      }
+      throw TypeError(env, Expression::loc(c), oss.str());
+    }
+    return nullptr;
+  }
+  if (matched.size() == 1) {
+    return matched[0];
+  }
+  Type t = matched[0]->ti()->type();
+  t.mkPar(env);
+  for (unsigned int i = 1; i < matched.size(); i++) {
+    if (!env.isSubtype(t, matched[i]->ti()->type(), strictEnums)) {
+      throw TypeError(env, Expression::loc(botarg != nullptr ? botarg : static_cast<Expression*>(c)),
                       "ambiguous overloading on return type of function");
     }
   }

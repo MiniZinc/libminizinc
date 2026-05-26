@@ -3530,7 +3530,10 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
           } else if (vd->type().isbool()) {
             bool canHalfReify = env.fopts.enableHalfReification &&
                                 Expression::ann(vd).contains(env.constants.ctx.pos);
-            nc_decl = env.model->matchReification(env, c->id(), args, canHalfReify, false);
+            nc_decl = env.model->matchReifByNames(env, c, canHalfReify, false);
+            if (nc_decl == nullptr) {
+              nc_decl = env.model->matchReification(env, c->id(), args, canHalfReify, false);
+            }
             nid = (nc_decl != nullptr) ? nc_decl->id() : env.reifyId(c->id());
           }
           nc = Call::a(Expression::loc(c).introduce(), nid, args);
@@ -4952,7 +4955,10 @@ void flatten(Env& e, FlatteningOptions opt) {
                   if (c->type().isbool() && vd->type().isbool()) {
                     bool canHalfReify = env.fopts.enableHalfReification &&
                                         Expression::ann(vd).contains(env.constants.ctx.pos);
-                    decl = env.model->matchReification(env, c->id(), args, canHalfReify, false);
+                    decl = env.model->matchReifByNames(env, c, canHalfReify, false);
+                    if (decl == nullptr) {
+                      decl = env.model->matchReification(env, c->id(), args, canHalfReify, false);
+                    }
 
                     if (decl == nullptr) {
                       std::ostringstream ss;
@@ -5357,7 +5363,10 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd,
           } else {
             bool canHalfReify = env.fopts.enableHalfReification &&
                                 Expression::ann(vd).contains(env.constants.ctx.pos);
-            decl = env.model->matchReification(env, c->id(), args, canHalfReify, false);
+            decl = env.model->matchReifByNames(env, c, canHalfReify, false);
+            if (decl == nullptr) {
+              decl = env.model->matchReification(env, c->id(), args, canHalfReify, false);
+            }
             cid = (decl != nullptr) ? decl->id() : env.reifyId(c->id());
           }
           Call* nc = Call::a(Expression::loc(c).introduce(), cid, args);

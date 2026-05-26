@@ -26,6 +26,7 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
 namespace MiniZinc {
@@ -3020,14 +3021,71 @@ public:
 
   /// Visit call
   void vCall(Call* call) {
-    for (unsigned int i = 0; i < call->argCount(); i++) {
-      if (VarDecl* vd = Expression::dynamicCast<VarDecl>(call->arg(i))) {
-        std::ostringstream ss;
-        ss << "named arguments are not yet supported (`" << vd->id()->str()
-           << ":` in call to `" << call->id() << "`)";
-        throw TypeError(_env, Expression::loc(call), ss.str());
+    // Named-argument resolution. The parser wraps each named argument in a
+    // VarDecl sentinel of the form `VarDecl(loc, TypeInst(loc, Type()),
+    // IDENT, expr)`; positional arguments are unchanged. Source layout must
+    // be: zero or more positional args, then zero or more named args. We
+    // resolve the candidate against the plain-id bucket here, then reorder
+    // and unwrap into matched-decl parameter order so the rest of vCall
+    // sees a positional argument list. Mangling of `call->id()` happens at
+    // the very end of vCall so that special-case rewrites in this function
+    // (which compare `call->id()` against plain id constants) still work.
+    FunctionI* fi = nullptr;
+    bool sawNamed = false;
+    {
+      std::vector<Expression*> positional;
+      std::vector<std::pair<ASTString, Expression*>> named;
+      std::unordered_set<ASTString> namedSeen;
+      for (unsigned int i = 0; i < call->argCount(); i++) {
+        Expression* a = call->arg(i);
+        auto* vd = Expression::dynamicCast<VarDecl>(a);
+        if (vd != nullptr) {
+          sawNamed = true;
+          if (!Expression::ann(vd).isEmpty()) {
+            std::ostringstream ss;
+            ss << "annotations are not allowed on named arguments (`" << vd->id()->str()
+               << ":` in call to `" << call->id() << "`)";
+            throw TypeError(_env, Expression::loc(call), ss.str());
+          }
+          ASTString name = vd->id()->v();
+          if (!namedSeen.insert(name).second) {
+            std::ostringstream ss;
+            ss << "named argument `" << name << ":` given more than once in call to `"
+               << call->id() << "`";
+            throw TypeError(_env, Expression::loc(call), ss.str());
+          }
+          named.emplace_back(name, vd->e());
+        } else {
+          if (sawNamed) {
+            std::ostringstream ss;
+            ss << "positional argument after named argument in call to `"
+               << call->id() << "`";
+            throw TypeError(_env, Expression::loc(call), ss.str());
+          }
+          positional.push_back(a);
+        }
+      }
+      if (sawNamed) {
+        fi = _model->matchFnNamed(_env, call, positional, named, true, true);
+        assert(fi != nullptr);
+        const unsigned int k = static_cast<unsigned int>(positional.size());
+        std::vector<Expression*> newArgs(fi->paramCount());
+        for (unsigned int i = 0; i < k; i++) {
+          newArgs[i] = positional[i];
+        }
+        for (unsigned int i = k; i < fi->paramCount(); i++) {
+          ASTString pname = fi->param(i)->id()->v();
+          for (const auto& np : named) {
+            if (np.first == pname) {
+              newArgs[i] = np.second;
+              break;
+            }
+          }
+        }
+        call->args(newArgs);
       }
     }
+
     std::vector<Expression*> args(call->argCount());
     for (auto i = static_cast<unsigned int>(args.size()); (i--) != 0U;) {
       args[i] = call->arg(i);
@@ -3053,7 +3111,9 @@ public:
         throw TypeError(_env, loc, ss.str());
       }
     }
-    FunctionI* fi = _model->matchFn(_env, call, true, true);
+    if (fi == nullptr) {
+      fi = _model->matchFn(_env, call, true, true);
+    }
 
     if (fi != nullptr && fi->id() == _env.constants.ids.symmetry_breaking_constraint &&
         fi->paramCount() == 1 && fi->param(0)->type().isbool()) {

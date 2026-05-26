@@ -1041,6 +1041,11 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
       std::vector<Expression*> e_args = to_exp_vec(args);
       Call* cr_c = Call::a(Expression::loc(c).introduce(), cid, e_args);
       if (cid == c->id()) {
+        // Propagate the originally-bound decl so matchFn's param-name
+        // filter can restrict candidates to name-compatible overloads.
+        if (c->decl() != nullptr) {
+          cr_c->decl(c->decl());
+        }
         try {
           auto* cr_d = env.model->matchFn(env, cr_c, false);
           if (cr_d != nullptr &&
@@ -1144,8 +1149,13 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
         }
         argtypes.push_back(Type::varbool());
         GCLock lock;
-        FunctionI* reif_decl = env.model->matchReification(
-            env, cid, argtypes, env.fopts.enableHalfReification && ctx.b == C_POS, false);
+        FunctionI* reif_decl =
+            env.model->matchReifByNames(env, c, env.fopts.enableHalfReification && ctx.b == C_POS,
+                                        false);
+        if (reif_decl == nullptr) {
+          reif_decl = env.model->matchReification(
+              env, cid, argtypes, env.fopts.enableHalfReification && ctx.b == C_POS, false);
+        }
         if ((reif_decl != nullptr) && (reif_decl->e() != nullptr)) {
           add_path_annotation(env, reif_decl->e());
           VarDecl* reif_b;
