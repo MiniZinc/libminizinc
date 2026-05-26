@@ -1,0 +1,3 @@
+predicate foo(int: x,int: y);
+constraint foo(11,99);
+solve  satisfy;

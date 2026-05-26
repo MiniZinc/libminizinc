@@ -1,0 +1,9 @@
+array [1..2] of int: X_INTRODUCED_0_ = [1,1];
+var 1..10: a:: output_var;
+var 1..10: bb:: output_var;
+var 1..200: c:: output_var;
+var bool: r:: is_defined_var:: output_var;
+var bool: s:: is_defined_var:: output_var;
+constraint int_lin_eq_reif(X_INTRODUCED_0_,[a,bb],11,r):: defines_var(r);
+constraint int_lin_eq_reif(X_INTRODUCED_0_,[a,c],99,s):: defines_var(s);
+solve  satisfy;
