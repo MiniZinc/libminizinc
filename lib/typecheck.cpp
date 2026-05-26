@@ -3020,6 +3020,14 @@ public:
 
   /// Visit call
   void vCall(Call* call) {
+    for (unsigned int i = 0; i < call->argCount(); i++) {
+      if (VarDecl* vd = Expression::dynamicCast<VarDecl>(call->arg(i))) {
+        std::ostringstream ss;
+        ss << "named arguments are not yet supported (`" << vd->id()->str()
+           << ":` in call to `" << call->id() << "`)";
+        throw TypeError(_env, Expression::loc(call), ss.str());
+      }
+    }
     std::vector<Expression*> args(call->argCount());
     for (auto i = static_cast<unsigned int>(args.size()); (i--) != 0U;) {
       args[i] = call->arg(i);
