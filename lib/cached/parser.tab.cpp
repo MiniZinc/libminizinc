@@ -952,12 +952,12 @@ static const yytype_int16 yyrline[] =
     2316,  2318,  2320,  2322,  2324,  2326,  2328,  2330,  2332,  2334,
     2336,  2338,  2340,  2342,  2344,  2346,  2348,  2350,  2352,  2354,
     2356,  2360,  2368,  2400,  2402,  2404,  2405,  2427,  2483,  2505,
-    2562,  2565,  2571,  2577,  2585,  2587,  2589,  2599,  2601,  2608,
-    2617,  2619,  2627,  2629,  2638,  2638,  2641,  2649,  2660,  2661,
-    2664,  2666,  2668,  2672,  2676,  2680,  2682,  2684,  2686,  2688,
-    2690,  2692,  2694,  2696,  2698,  2700,  2702,  2704,  2706,  2708,
-    2710,  2712,  2714,  2716,  2718,  2720,  2722,  2724,  2726,  2728,
-    2730,  2732,  2734,  2736,  2738,  2740,  2742,  2744,  2746
+    2562,  2565,  2571,  2577,  2591,  2593,  2595,  2611,  2613,  2620,
+    2629,  2631,  2639,  2641,  2650,  2650,  2653,  2661,  2672,  2673,
+    2676,  2678,  2680,  2684,  2688,  2692,  2694,  2696,  2698,  2700,
+    2702,  2704,  2706,  2708,  2710,  2712,  2714,  2716,  2718,  2720,
+    2722,  2724,  2726,  2728,  2730,  2732,  2734,  2736,  2738,  2740,
+    2742,  2744,  2746,  2748,  2750,  2752,  2754,  2756,  2758
 };
 #endif
 
@@ -6934,7 +6934,13 @@ yyreduce:
     break;
 
   case 413: /* comp_or_expr_head: "identifier" ':' expr  */
-      { (yyval.expressionPairs)=new vector<pair<Expression*,Expression*> >;
+      { if ((yyvsp[-2].sValue) && (yyvsp[-2].sValue)[0]=='_') {
+          std::ostringstream oss;
+          oss << "parameter `" << std::string((yyvsp[-2].sValue)) << "' starts with '_' ";
+          oss << "and cannot be used as a named argument (pass it positionally)";
+          yyerror(&(yylsp[-2]), parm, oss.str());
+        }
+        (yyval.expressionPairs)=new vector<pair<Expression*,Expression*> >;
         if ((yyvsp[0].expression)) {
           VarDecl* vd = new VarDecl((yyloc), new TypeInst((yyloc), Type()), (yyvsp[-2].sValue), (yyvsp[0].expression));
           (yyval.expressionPairs)->push_back(pair<Expression*,Expression*>(vd,nullptr));
@@ -6952,7 +6958,13 @@ yyreduce:
     break;
 
   case 416: /* comp_or_expr_head: comp_or_expr_head ',' "identifier" ':' expr  */
-      { (yyval.expressionPairs)=(yyvsp[-4].expressionPairs);
+      { if ((yyvsp[-2].sValue) && (yyvsp[-2].sValue)[0]=='_') {
+          std::ostringstream oss;
+          oss << "parameter `" << std::string((yyvsp[-2].sValue)) << "' starts with '_' ";
+          oss << "and cannot be used as a named argument (pass it positionally)";
+          yyerror(&(yylsp[-2]), parm, oss.str());
+        }
+        (yyval.expressionPairs)=(yyvsp[-4].expressionPairs);
         if ((yyval.expressionPairs) && (yyvsp[0].expression)) {
           VarDecl* vd = new VarDecl((yyloc), new TypeInst((yyloc), Type()), (yyvsp[-2].sValue), (yyvsp[0].expression));
           (yyval.expressionPairs)->push_back(pair<Expression*,Expression*>(vd,nullptr));

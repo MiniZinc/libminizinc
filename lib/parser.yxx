@@ -2575,7 +2575,13 @@ comp_or_expr_head :
         }
       }
     | MZN_IDENTIFIER ':' expr
-      { $$=new vector<pair<Expression*,Expression*> >;
+      { if ($1 && $1[0]=='_') {
+          std::ostringstream oss;
+          oss << "parameter `" << std::string($1) << "' starts with '_' ";
+          oss << "and cannot be used as a named argument (pass it positionally)";
+          yyerror(&@1, parm, oss.str());
+        }
+        $$=new vector<pair<Expression*,Expression*> >;
         if ($3) {
           VarDecl* vd = new VarDecl(@$, new TypeInst(@$, Type()), $1, $3);
           $$->push_back(pair<Expression*,Expression*>(vd,nullptr));
@@ -2587,7 +2593,13 @@ comp_or_expr_head :
     | comp_or_expr_head ',' expr MZN_WHERE expr
       { $$=$1; if ($$ && $3 && $5) $$->push_back(pair<Expression*,Expression*>($3,$5)); }
     | comp_or_expr_head ',' MZN_IDENTIFIER ':' expr
-      { $$=$1;
+      { if ($3 && $3[0]=='_') {
+          std::ostringstream oss;
+          oss << "parameter `" << std::string($3) << "' starts with '_' ";
+          oss << "and cannot be used as a named argument (pass it positionally)";
+          yyerror(&@3, parm, oss.str());
+        }
+        $$=$1;
         if ($$ && $5) {
           VarDecl* vd = new VarDecl(@$, new TypeInst(@$, Type()), $3, $5);
           $$->push_back(pair<Expression*,Expression*>(vd,nullptr));
