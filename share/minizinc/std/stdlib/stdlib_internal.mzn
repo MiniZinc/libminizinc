@@ -86,33 +86,33 @@ predicate float_le(float: s, array [$T] of var float: X) = forall (x in array1d(
 
 function float: float_times(float: x, float: y) = x * y;
 
-predicate array_var_int_element(var int: x, array [int] of int: y, var int: z) =
-  array_int_element(x, y, z);
-predicate array_var_bool_element(var int: x, array [int] of bool: y, var bool: z) =
-  array_bool_element(x, y, z);
-predicate array_var_float_element(var int: x, array [int] of float: y, var float: z) =
-  array_float_element(x, y, z);
-predicate array_var_set_element(var int: x, array [int] of set of int: y, var set of int: z) =
-  array_set_element(x, y, z);
+predicate array_var_int_element(var int: idx, array [int] of int: xs, var int: y) =
+  array_int_element(idx, xs, y);
+predicate array_var_bool_element(var int: idx, array [int] of bool: xs, var bool: y) =
+  array_bool_element(idx, xs, y);
+predicate array_var_float_element(var int: idx, array [int] of float: xs, var float: y) =
+  array_float_element(idx, xs, y);
+predicate array_var_set_element(var int: idx, array [int] of set of int: xs, var set of int: y) =
+  array_set_element(idx, xs, y);
 
 predicate mzn_alias_eq(var bool: x, var bool: y) = bool_eq(x, y);
 predicate mzn_alias_eq(var opt bool: x, var opt bool: y) =
   deopt(x) = deopt(y) /\ occurs(x) = occurs(y);
-/* True iff both \a b0 and \a b1 are absent or
+/* True iff both \a x and \a y are absent or
   both are present and have the same value. */
-predicate bool_eq(var opt bool: b0, var opt bool: b1) =
-  (absent(b0) /\ absent(b1)) \/ (occurs(b0) /\ occurs(b1) /\ deopt(b0) = deopt(b1));
-/* True iff \a b0 occurs and is equal to \a b1 */
-predicate bool_eq(var opt bool: b0, var bool: b1) = occurs(b0) /\ deopt(b0) = b1;
-/* True iff \a b1 occurs and is equal to \a b0 */
-predicate bool_eq(var bool: b0, var opt bool: b1) = occurs(b1) /\ deopt(b1) = b0;
+predicate bool_eq(var opt bool: x, var opt bool: y) =
+  (absent(x) /\ absent(y)) \/ (occurs(x) /\ occurs(y) /\ deopt(x) = deopt(y));
+/* True iff \a x occurs and is equal to \a y */
+predicate bool_eq(var opt bool: x, var bool: y) = occurs(x) /\ deopt(x) = y;
+/* True iff \a y occurs and is equal to \a x */
+predicate bool_eq(var bool: x, var opt bool: y) = occurs(y) /\ deopt(y) = x;
 
 predicate bool_xor_reif(var bool: a, var bool: b, var bool: c) = bool_xor(a, b, c);
 
 predicate bool_xor(var opt bool: x, var opt bool: y) =
   absent(x) \/ absent(y) \/ (deopt(x) xor deopt(y));
 
-predicate bool_xor(var bool: a, var bool: b) :: promise_commutative;
+predicate bool_xor(var bool: x, var bool: y) :: promise_commutative;
 
 predicate mzn_alias_eq(var int: x, var int: y) = int_eq(x, y);
 predicate mzn_alias_eq(var opt int: x, var opt int: y) =
@@ -125,10 +125,10 @@ predicate int_eq(var opt int: x, var opt int: y) :: promise_commutative =
   both are present and have different values. */
 predicate int_ne(var opt int: x, var opt int: y) :: promise_commutative =
   (absent(x) != absent(y)) \/ (occurs(x) /\ occurs(y) /\ (deopt(x) != deopt(y)) :: maybe_partial);
-/* Constrains \a x \( \in \) \a S */
-predicate set_in(var opt int: x, set of int: S) = if occurs(x) then deopt(x) in S endif;
-/* Constrains \a x \( \in \) \a S */
-predicate set_in(var opt int: x, var set of int: S) = if occurs(x) then deopt(x) in S endif;
+/* Constrains \a x \( \in \) \a s */
+predicate set_in(var opt int: x, set of int: s) = if occurs(x) then deopt(x) in s endif;
+/* Constrains \a x \( \in \) \a s */
+predicate set_in(var opt int: x, var set of int: s) = if occurs(x) then deopt(x) in s endif;
 
 % :NOTE: does it apply to float?
 

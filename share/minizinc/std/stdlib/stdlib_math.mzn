@@ -434,8 +434,8 @@ function var opt float: min_weak(array [$X] of var opt float: x) :: promise_comm
     float: xub = max(0.0, ub_array(x));
   } in if exists (xi in x) (occurs(xi)) then min (xi in x) (xi default xub) else <> endif;
 
-/** @group stdlib.builtins.arithmetic Return minimum of elements in set \a x */
-function $$E: min(set of $$E: x);
+/** @group stdlib.builtins.arithmetic Return minimum of elements in set \a s */
+function $$E: min(set of $$E: s);
 
 /** @group stdlib.builtins.arithmetic Return maximum of \a x and \a y */
 function $T: max($T: x, $T: y) :: promise_commutative;
@@ -534,8 +534,8 @@ function var opt float: max_weak(array [$X] of var opt float: x) :: promise_comm
     float: xlb = min(0.0, lb_array(x));
   } in if exists (xi in x) (occurs(xi)) then max (xi in x) (xi default xlb) else <> endif;
 
-/** @group stdlib.builtins.arithmetic Return maximum of elements in set \a x */
-function $$E: max(set of $$E: x);
+/** @group stdlib.builtins.arithmetic Return maximum of elements in set \a s */
+function $$E: max(set of $$E: s);
 
 % Floating point min and max
 % TODO: add bounds reasoning

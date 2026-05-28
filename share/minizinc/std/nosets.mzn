@@ -409,57 +409,57 @@ predicate set_card(var set of int: x, var int: c) =
     array [int] of var bool: bx = set2bools(x);
   } in bool_lin_eq([1 | i in index_set(bx)], [bx[i] | i in index_set(bx)], c);
 
-predicate set_in(int: x, var set of int: y) :: promise_total =
-  let { array [int] of var bool: by = set2bools(y) } in by[x];
-predicate set_in(var int: x, var set of int: y) :: promise_total =
-  let { array [int] of var bool: by = set2bools(y) } in by[x];
+predicate set_in(int: x, var set of int: s) :: promise_total =
+  let { array [int] of var bool: by = set2bools(s) } in by[x];
+predicate set_in(var int: x, var set of int: s) :: promise_total =
+  let { array [int] of var bool: by = set2bools(s) } in by[x];
 
-predicate set_in_reif(int: x, var set of int: y, var bool: b) :: promise_total =
-  if x in ub(y) then b <-> set2bools(y)[x] else not b endif;
-predicate set_in_reif(var int: x, var set of int: y, var bool: b) :: promise_total =
-  b <-> set2bools(y)[x];
+predicate set_in_reif(int: x, var set of int: s, var bool: b) :: promise_total =
+  if x in ub(s) then b <-> set2bools(s)[x] else not b endif;
+predicate set_in_reif(var int: x, var set of int: s, var bool: b) :: promise_total =
+  b <-> set2bools(s)[x];
 
-predicate set_in_imp(int: x, var set of int: y, var bool: b) =
-  if x in ub(y) then b -> set2bools(y)[x] else not b endif;
-predicate set_in_imp(var int: x, var set of int: y, var bool: b) = b -> set2bools(y)[x];
+predicate set_in_imp(int: x, var set of int: s, var bool: b) =
+  if x in ub(s) then b -> set2bools(s)[x] else not b endif;
+predicate set_in_imp(var int: x, var set of int: s, var bool: b) = b -> set2bools(s)[x];
 
 function array [int] of var bool: setarray2bools(array [int] of var set of int: x) =
   if length(x) = 0 then [] else set2bools(x[1]) ++ setarray2bools([x[i] | i in 2..length(x)]) endif;
 %% Par version no sense
 
-predicate array_var_set_element(var int: x, array [int] of var set of int: y, var set of int: z)
+predicate array_var_set_element(var int: idx, array [int] of var set of int: xs, var set of int: y)
   :: promise_total =
   let {
-    constraint x in {i | i in index_set(y) where lb(y[i]) subset ub(z) /\ lb(z) subset ub(y[i])};
-    set of int: sUB = array_union([ub(y[i]) | i in dom(x)]);
-    set of int: sLB = array_intersect([lb(y[i]) | i in dom(x)]);
-    constraint z subset sUB;
-    constraint sLB subset z;
-  } in forall (k in ub(z)) (
-    set2bools(z)[k] ==
+    constraint idx in {i | i in index_set(xs) where lb(xs[i]) subset ub(y) /\ lb(y) subset ub(xs[i])};
+    set of int: sUB = array_union([ub(xs[i]) | i in dom(idx)]);
+    set of int: sLB = array_intersect([lb(xs[i]) | i in dom(idx)]);
+    constraint y subset sUB;
+    constraint sLB subset y;
+  } in forall (k in ub(y)) (
+    set2bools(y)[k] ==
       if k in sUB then
         if k in sLB then
           true
         else
           array1d(
-            lb(x)..ub(x),
-            [if k in ub(y[i]) then set2bools(y[i])[k] else false endif | i in lb(x)..ub(x)],
-          )[x]
+            lb(idx)..ub(idx),
+            [if k in ub(xs[i]) then set2bools(xs[i])[k] else false endif | i in lb(idx)..ub(idx)],
+          )[idx]
         endif
       else
         false
       endif
   ) /\
     forall (
-      k in sUB diff ub(z),
+      k in sUB diff ub(y),
     ) (
       if k in sLB then
         false %% fail the constraint
       else
         not array1d(
-          lb(x)..ub(x),
-          [if k in ub(y[i]) then set2bools(y[i])[k] else false endif | i in lb(x)..ub(x)],
-        )[x]
+          lb(idx)..ub(idx),
+          [if k in ub(xs[i]) then set2bools(xs[i])[k] else false endif | i in lb(idx)..ub(idx)],
+        )[idx]
       endif
     );
 

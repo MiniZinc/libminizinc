@@ -66,11 +66,11 @@ predicate bool_xor(var bool: x, var bool: y, var bool: r) =
     bool_clause([x, r], [y]) /\
     bool_clause([y, r], [x]);
 
-predicate set_in_reif(var int: x, set of int: s, var bool: r) =
+predicate set_in_reif(var int: x, set of int: s, var bool: b) =
   if card(s) = max(s) - min(s) + 1 then
-    r <-> (x >= min(s) /\ x <= max(s))
+    b <-> (x >= min(s) /\ x <= max(s))
   else
-    bool_clause([x = k | k in s], [r]) /\ forall (k in s) (x = k -> r)
+    bool_clause([x = k | k in s], [b]) /\ forall (k in s) (x = k -> b)
   endif;
 
 predicate int_pow(var int: x, var int: y, var int: z) =

@@ -2,12 +2,13 @@
 % that can be overridden by solvers.
 
 function var $$E: min(
-  var set of $$E: xs,
+  var set of $$E: s,
 ) =
   let {
-    var set of int: s = enum2int(xs);
-    var min(ub(s))..max(ub(s)): m = min([e + (max(ub(s)) + 1 - e) * (1 - (e in s)) | e in ub(s)]);
-  } in to_enum_internal(enum_of(xs), m);
+    var set of int: si = enum2int(s);
+    var min(ub(si))..max(ub(si)): m =
+      min([e + (max(ub(si)) + 1 - e) * (1 - (e in si)) | e in ub(si)]);
+  } in to_enum_internal(enum_of(s), m);
 
 %% The following can be used as an alternative if the solver supports
 %% a FlatZinc builtin set_min:
@@ -34,12 +35,13 @@ function var $$E: min(
 %   } in min_t(x);
 
 function var $$E: max(
-  var set of $$E: xs,
+  var set of $$E: s,
 ) =
   let {
-    var set of int: s = enum2int(xs);
-    var min(ub(s))..max(ub(s)): m = max([e + (min(ub(s)) - 1 - e) * (1 - (e in s)) | e in ub(s)]);
-  } in to_enum_internal(enum_of(xs), m);
+    var set of int: si = enum2int(s);
+    var min(ub(si))..max(ub(si)): m =
+      max([e + (min(ub(si)) - 1 - e) * (1 - (e in si)) | e in ub(si)]);
+  } in to_enum_internal(enum_of(s), m);
 
 %% The following can be used as an alternative if the solver supports
 %% a FlatZinc builtin set_max:

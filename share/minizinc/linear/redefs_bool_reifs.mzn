@@ -48,7 +48,7 @@ predicate bool_or(var bool: p, var bool: q, var bool: r) =
       y <= z % strong
   endif;
 
-predicate bool_xor(var bool: p, var bool: q) = 1 == p + q;
+predicate bool_xor(var bool: x, var bool: y) = 1 == x + y;
 
 predicate bool_xor(var bool: p, var bool: q, var bool: r) =
   if false then

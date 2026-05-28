@@ -11,7 +11,7 @@
 function var bool: reverse_map(var int: x) = (x == 1);
 function bool: reverse_map(int: x) = (x == 1);
 
-predicate mzn_reverse_map_var(var bool: b) = let { var int: x = bool2int(b) } in true;
+predicate mzn_reverse_map_var(var bool: x) = let { var int: xi = bool2int(x) } in true;
 
 function var int: bool2int(
   var bool: x,
@@ -379,8 +379,8 @@ predicate int_pow_float(var int: x, var int: y, var float: r) =
 predicate array_bool_element(var int: x, array [int] of bool: a, var bool: z) =
   array_int_element(x, arrayXd(a, [bool2int(a[i]) | i in index_set(a)]), bool2int(z));
 
-predicate array_var_bool_element(var int: x, array [int] of var bool: a, var bool: z) =
-  array_var_int_element(x, arrayXd(a, [bool2int(a[i]) | i in index_set(a)]), bool2int(z));
+predicate array_var_bool_element(var int: idx, array [int] of var bool: xs, var bool: y) =
+  array_var_int_element(idx, arrayXd(xs, [bool2int(xs[i]) | i in index_set(xs)]), bool2int(y));
 
 predicate array_int_element(var int: i00, array [int] of int: a, var int: z) =
   let {
@@ -414,28 +414,28 @@ predicate array_int_element(var int: i00, array [int] of int: a, var int: z) =
       )
   endif;
 
-predicate array_var_int_element(var int: i00, array [int] of var int: a, var int: z) =
+predicate array_var_int_element(var int: idx, array [int] of var int: xs, var int: y) =
   let {
-    constraint i00 in {i | i in index_set(a) where 0 < card(dom(a[i]) intersect dom(z))};
+    constraint idx in {i | i in index_set(xs) where 0 < card(dom(xs[i]) intersect dom(y))};
   } in %% finish domain first
   let {
-    int: minLB = min (i in dom(i00)) (lb(a[i]));
-    int: maxUB = max (i in dom(i00)) (ub(a[i]));
+    int: minLB = min (i in dom(idx)) (lb(xs[i]));
+    int: maxUB = max (i in dom(idx)) (ub(xs[i]));
   } in if minLB ==
     maxUB then
-    z ==
+    y ==
       minLB
   else
-    z >= minLB /\
-      z <= maxUB /\
-      if {0, 1} == dom(i00) then /*ub(i00)-lb(i00)==1*/ /*2==card( dom( i00 ) )*/
-        aux_int_eq_if_1(z, a[lb(i00)], (ub(i00) - i00)) /\
-          aux_int_eq_if_1(z, a[ub(i00)], (i00 - lb(i00)))
+    y >= minLB /\
+      y <= maxUB /\
+      if {0, 1} == dom(idx) then /*ub(idx)-lb(idx)==1*/ /*2==card( dom( idx ) )*/
+        aux_int_eq_if_1(y, xs[lb(idx)], (ub(idx) - idx)) /\
+          aux_int_eq_if_1(y, xs[ub(idx)], (idx - lb(idx)))
       else
         let {
-          array [int] of var int: p = eq_encode(i00); %% this needs i00 in ix
-        } in %% Faster flattening than (i==i00) @2a9df1f7
-        forall (i in dom(i00)) (aux_int_eq_if_1(z, a[i], p[i]))
+          array [int] of var int: p = eq_encode(idx); %% this needs idx in ix
+        } in %% Faster flattening than (i==idx) @2a9df1f7
+        forall (i in dom(idx)) (aux_int_eq_if_1(y, xs[i], p[i]))
       endif
   endif;
 
@@ -471,43 +471,43 @@ predicate array_float_element(var int: i00, array [int] of float: a, var float: 
       )
   endif;
 
-predicate array_var_float_element(var int: i00, array [int] of var float: a, var float: z) =
+predicate array_var_float_element(var int: idx, array [int] of var float: xs, var float: y) =
   let {
-    set of int: ix = index_set(a);
-    constraint i00 in {i | i in ix where lb(a[i]) <= ub(z) /\ ub(a[i]) >= lb(z)};
+    set of int: ix = index_set(xs);
+    constraint idx in {i | i in ix where lb(xs[i]) <= ub(y) /\ ub(xs[i]) >= lb(y)};
   } in %% finish domain first
   let {
-    float: minLB = min (i in dom(i00)) (lb(a[i]));
-    float: maxUB = max (i in dom(i00)) (ub(a[i]));
+    float: minLB = min (i in dom(idx)) (lb(xs[i]));
+    float: maxUB = max (i in dom(idx)) (ub(xs[i]));
   } in if minLB ==
     maxUB then
-    z ==
+    y ==
       minLB
   else
-    z >= minLB /\
-      z <= maxUB /\
-      if {0, 1} == dom(i00) then /*ub(i00)-lb(i00)==1*/ /*2==card( dom( i00 ) )*/
-        aux_float_eq_if_1(z, a[lb(i00)], (ub(i00) - i00)) /\
-          aux_float_eq_if_1(z, a[ub(i00)], (i00 - lb(i00)))
+    y >= minLB /\
+      y <= maxUB /\
+      if {0, 1} == dom(idx) then /*ub(idx)-lb(idx)==1*/ /*2==card( dom( idx ) )*/
+        aux_float_eq_if_1(y, xs[lb(idx)], (ub(idx) - idx)) /\
+          aux_float_eq_if_1(y, xs[ub(idx)], (idx - lb(idx)))
       else
         %%% The convexified bounds seem slow for ^2 and ^3 equations:
-        %    sum(i in dom(i01))( lb(a[i]) * (i==i00) ) <= z /\    %% convexify lower bounds
-        %    sum(i in dom(i01))( ub(a[i]) * (i==i00) ) >= z /\    %% convexify upper bounds
+        %    sum(i in dom(i01))( lb(xs[i]) * (i==idx) ) <= y /\    %% convexify lower bounds
+        %    sum(i in dom(i01))( ub(xs[i]) * (i==idx) ) >= y /\    %% convexify upper bounds
         let {
-          array [int] of var int: p = eq_encode(i00); %% this needs i00 in ix
-        } in %% Faster flattening than (i==i00) @2a9df1f7
-        forall (i in dom(i00)) (aux_float_eq_if_1(z, a[i], p[i])) /\
+          array [int] of var int: p = eq_encode(idx); %% this needs idx in ix
+        } in %% Faster flattening than (i==idx) @2a9df1f7
+        forall (i in dom(idx)) (aux_float_eq_if_1(y, xs[i], p[i])) /\
           %% Cuts:
           if fElementCutsXZ then
-            array_var_float_element__ROOF([a[i] | i in dom(i00)], z) :: MIP_cut /\ %% these 2 as user cuts - too slow
-              array_var_float_element__ROOF([-a[i] | i in dom(i00)], -z) :: MIP_cut %% or even skip them
+            array_var_float_element__ROOF([xs[i] | i in dom(idx)], y) :: MIP_cut /\ %% these 2 as user cuts - too slow
+              array_var_float_element__ROOF([-xs[i] | i in dom(idx)], -y) :: MIP_cut %% or even skip them
           else
             true
           endif /\
           if fElementCutsXZB then
-            array_var_float_element__XBZ_lb([a[i] | i in dom(i00)], [p[i] | i in dom(i00)], z)
+            array_var_float_element__XBZ_lb([xs[i] | i in dom(idx)], [p[i] | i in dom(idx)], y)
               :: MIP_cut /\
-              array_var_float_element__XBZ_lb([-a[i] | i in dom(i00)], [p[i] | i in dom(i00)], -z)
+              array_var_float_element__XBZ_lb([-xs[i] | i in dom(idx)], [p[i] | i in dom(idx)], -y)
                 :: MIP_cut
           else
             true
@@ -581,23 +581,23 @@ predicate array_var_float_element__XBZ_lb(
 % XXX  only for a fixed set here,  general see below.
 % Normally not called because all plugged into the domain.
 % Might be called instead of set_in(x, var set of int s) if s gets fixed?
-predicate set_in(var int: x, set of int: s__) =
+predicate set_in(var int: x, set of int: s) =
   let {
-    set of int: s = if has_bounds(x) then s__ intersect dom(x) else s__ endif;
-    constraint min(s) <= x;
-    constraint x <= max(s);
-  } in if s = min(s)..max(s) then
+    set of int: si = if has_bounds(x) then s intersect dom(x) else s endif;
+    constraint min(si) <= x;
+    constraint x <= max(si);
+  } in if si = min(si)..max(si) then
     true
   elseif fPostprocessDomains then
-    set_in__POST(x, s)
+    set_in__POST(x, si)
   else
     %% Update eq_encode 
     let {
       array [int] of var int: p = eq_encode(x);
-    } in forall (i in index_set(p) diff s) (p[i] == 0)
+    } in forall (i in index_set(p) diff si) (p[i] == 0)
     %      let {
-    %        array[int] of int: sL = [ e | e in s where not (e - 1 in s) ];
-    %        array[int] of int: sR = [ e | e in s where not (e + 1 in s) ];
+    %        array[int] of int: sL = [ e | e in si where not (e - 1 in si) ];
+    %        array[int] of int: sR = [ e | e in si where not (e + 1 in si) ];
     %        array [index_set(sR)] of var 0..1: B;
     %        constraint assert(length(sR)==length(sL), "N of lb and ub of sub-intervals of a set should be equal");
     %      } in    
@@ -609,30 +609,30 @@ predicate set_in(var int: x, set of int: s__) =
   endif;
 
 %%% for a fixed set
-predicate set_in_reif(var int: x, set of int: s__, var bool: b) =
+predicate set_in_reif(var int: x, set of int: s, var bool: b) =
   if is_fixed(b) then
-    if fix(b) then x in s__ else x in dom(x) diff s__ endif
-  elseif has_bounds(x) /\ not (s__ subset dom(x)) then
-    b <-> x in s__ intersect dom(x) %% Use CSE
+    if fix(b) then x in s else x in dom(x) diff s endif
+  elseif has_bounds(x) /\ not (s subset dom(x)) then
+    b <-> x in s intersect dom(x) %% Use CSE
   else
     let {
-      set of int: s = if has_bounds(x) then s__ intersect dom(x) else s__ endif;
+      set of int: si = if has_bounds(x) then s intersect dom(x) else s endif;
     } in (
-      if dom(x) subset s then
+      if dom(x) subset si then
         b == true
-      elseif card(dom(x) intersect s) == 0 then
+      elseif card(dom(x) intersect si) == 0 then
         b == false
       elseif fPostprocessDomains then
-        set_in_reif__POST(x, s, b)
+        set_in_reif__POST(x, si, b)
       else
-        %% Bad. Very much so for CBC. 27.06.2019:     elseif s == min(s)..max(s) then
-        %%         b <-> (min(s) <= x /\ x <= max(s))
+        %% Bad. Very much so for CBC. 27.06.2019:     elseif si == min(si)..max(si) then
+        %%         b <-> (min(si) <= x /\ x <= max(si))
         if card(dom(x)) <= nMZN__UnaryLenMax_setInReif then %% PARAM TODO
           let {
             array [int] of var int: p = eq_encode(x);
-          } in sum (i in s intersect dom(x)) (p[i]) == bool2int(b)
+          } in sum (i in si intersect dom(x)) (p[i]) == bool2int(b)
         else
-          bool2int(b) == fVarInBigSetOfInt(x, s)
+          bool2int(b) == fVarInBigSetOfInt(x, si)
         endif
       endif
     )
@@ -649,28 +649,28 @@ predicate alt_set_in_reif(var int: x, set of int: s, var bool: b) =
     );
 
 %%% for a fixed set
-predicate set_in_imp(var int: x, set of int: s__, var bool: b) =
+predicate set_in_imp(var int: x, set of int: s, var bool: b) =
   if is_fixed(b) then
-    if fix(b) then x in s__ else true endif
-  elseif has_bounds(x) /\ not (s__ subset dom(x)) then
-    b -> x in s__ intersect dom(x) %% Use CSE
+    if fix(b) then x in s else true endif
+  elseif has_bounds(x) /\ not (s subset dom(x)) then
+    b -> x in s intersect dom(x) %% Use CSE
   else
     let {
-      set of int: s = if has_bounds(x) then s__ intersect dom(x) else s__ endif;
+      set of int: si = if has_bounds(x) then s intersect dom(x) else s endif;
     } in (
-      if dom(x) subset s then
+      if dom(x) subset si then
         true
-      elseif card(dom(x) intersect s) == 0 then
+      elseif card(dom(x) intersect si) == 0 then
         b == false
-      elseif s == min(s)..max(s) then
-        (b -> min(s) <= x) /\ (b -> x <= max(s))
+      elseif si == min(si)..max(si) then
+        (b -> min(si) <= x) /\ (b -> x <= max(si))
       else
         if card(dom(x)) <= nMZN__UnaryLenMax_setInReif then %% PARAM TODO
           let {
             array [int] of var int: p = eq_encode(x);
-          } in sum (i in s intersect dom(x)) (p[i]) >= bool2int(b)
+          } in sum (i in si intersect dom(x)) (p[i]) >= bool2int(b)
         else
-          bool2int(b) <= fVarInBigSetOfInt(x, s)
+          bool2int(b) <= fVarInBigSetOfInt(x, si)
         endif
       endif
     )

@@ -41,11 +41,11 @@ function var int: round(
     constraint float_round(x, r);
   } in r;
 
-/** @group stdlib.builtins.coercion Return Boolean \a b coerced to an integer  */
-function int: bool2int(bool: b);
+/** @group stdlib.builtins.coercion Return Boolean \a x coerced to an integer  */
+function int: bool2int(bool: x);
 
-/** @group stdlib.builtins.coercion Return Boolean \a b coerced to an integer  */
-function opt int: bool2int(opt bool: b) = if occurs(b) then bool2int(deopt(b)) else <> endif;
+/** @group stdlib.builtins.coercion Return Boolean \a x coerced to an integer  */
+function opt int: bool2int(opt bool: x) = if occurs(x) then bool2int(deopt(x)) else <> endif;
 
 /** @group stdlib.builtins.coercion Return optional 0/1 integer that is absent iff \a x
   is absent, and 1 iff \a x occurs and is true. */
@@ -59,10 +59,10 @@ function var opt int: bool2int(
     constraint deopt(xi) = bool2int(deopt(x));
   } in xi;
 
-/** @group stdlib.builtins.coercion Return Boolean \a b coerced to a float  */
-function float: bool2float(bool: b) = if b then 1.0 else 0.0 endif;
-/** @group stdlib.builtins.coercion Return Boolean \a b coerced to a float  */
-function opt float: bool2float(opt bool: b) = if occurs(b) then bool2float(deopt(b)) else <> endif;
+/** @group stdlib.builtins.coercion Return Boolean \a x coerced to a float  */
+function float: bool2float(bool: x) = if x then 1.0 else 0.0 endif;
+/** @group stdlib.builtins.coercion Return Boolean \a x coerced to a float  */
+function opt float: bool2float(opt bool: x) = if occurs(x) then bool2float(deopt(x)) else <> endif;
 
 /** @group stdlib.builtins.coercion Return array of Booleans \a x coerced to an array of floats  */
 function array [$T] of float: bool2float(array [$T] of bool: x) :: promise_total =
@@ -74,12 +74,12 @@ function array [$T] of var float: bool2float(array [$T] of var bool: x) :: promi
   let {
     array [int] of var bool: xx = array1d(x);
   } in arrayXd(x, [bool2float(xx[i]) | i in index_set(xx)]);
-/** @group stdlib.builtins.coercion Return Boolean \a b coerced to an integer  */
-function var int: bool2int(var bool: b) :: mzn_internal_representation;
-/** @group stdlib.builtins.coercion Return array of Booleans \a b coerced to an array of integers  */
-function array [$T] of var int: bool2int(array [$T] of var bool: b);
-/** @group stdlib.builtins.coercion Return Boolean \a b coerced to a float  */
-function var float: bool2float(var bool: b) = int2float(bool2int(b));
+/** @group stdlib.builtins.coercion Return Boolean \a x coerced to an integer  */
+function var int: bool2int(var bool: x) :: mzn_internal_representation;
+/** @group stdlib.builtins.coercion Return array of Booleans \a x coerced to an array of integers  */
+function array [$T] of var int: bool2int(array [$T] of var bool: x);
+/** @group stdlib.builtins.coercion Return Boolean \a x coerced to a float  */
+function var float: bool2float(var bool: x) = int2float(bool2int(x));
 /** @group stdlib.builtins.coercion Return integer \a x coerced to a float  */
 function float: int2float(int: x);
 /** @group stdlib.builtins.coercion Return integer \a x coerced to a float  */

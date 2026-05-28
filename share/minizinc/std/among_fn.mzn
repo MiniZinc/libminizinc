@@ -10,6 +10,6 @@ function var int: among(array [$X] of var $$E: x, set of $$E: v) :: promise_tota
   } in n;
 
 /**  @group globals.counting
-  Returns the number of variables in \a xi that take one of the values in \a v.
+  Returns the number of variables in \a x that take one of the values in \a v.
 */
-function int: among(array [$X] of $$E: xi, set of $$E: v) = count (x in xi) (x in v);
+function int: among(array [$X] of $$E: x, set of $$E: v) = count (xi in x) (xi in v);

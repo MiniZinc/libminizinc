@@ -267,5 +267,5 @@ predicate mzn_reverse_map_var(
   } in true;
 
 function var opt $T: reverse_map_var_opt(var bool: b, var $T: dx) :: output_only;
-function opt $T: reverse_map_var_opt(bool: occ, $T: dx) :: promise_total =
-  if occ then dx else <> endif;
+function opt $T: reverse_map_var_opt(bool: b, $T: dx) :: promise_total =
+  if b then dx else <> endif;
