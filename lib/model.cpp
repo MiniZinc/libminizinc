@@ -1367,6 +1367,88 @@ FunctionI* Model::matchFnNamed(EnvI& env, Call* c, const std::vector<Expression*
   return matched[0];
 }
 
+void Model::checkSiblingParameterNames(EnvI& env) const {
+  const Model* m = this;
+  while (m->_parent != nullptr) {
+    m = m->_parent;
+  }
+  for (const auto& bucket : m->_fnmap) {
+    // Compare only the source declarations, skipping generated polymorphic
+    // instances (which would duplicate warnings and point at synthetic decls).
+    std::vector<FunctionI*> decls;
+    for (const auto& fe : bucket.second) {
+      if (!fe.isPolymorphicVariant && !fe.fi->isMonomorphised()) {
+        decls.push_back(fe.fi);
+      }
+    }
+    for (unsigned int a = 0; a < decls.size(); a++) {
+      for (unsigned int b = a + 1; b < decls.size(); b++) {
+        FunctionI* fa = decls[a];
+        FunctionI* fb = decls[b];
+        if (fa->paramCount() != fb->paramCount()) {
+          continue;
+        }
+        // Coercion siblings: equal up to inst (var/par) and optionality, but
+        // not identical (identical-type / name-only-different overloads are an
+        // intentional named-arguments feature and handled elsewhere).
+        bool alleq = true;
+        bool eqExceptInstOpt = true;
+        for (unsigned int j = 0; j < fa->paramCount(); j++) {
+          Type t1 = fa->param(j)->type();
+          Type t2 = fb->param(j)->type();
+          if (t1 != t2) {
+            alleq = false;
+          }
+          t1.mkPar(env);
+          t2.mkPar(env);
+          t1.mkPresentDeep(env);
+          t2.mkPresentDeep(env);
+          // Normalise away enum / type-inst-variable identity: each decl's
+          // `$$E`/`$T`/enum carries a distinct typeId, which is not an inst or
+          // optionality difference. Clearing it lets polymorphic siblings
+          // (e.g. `min(set of $$E)` par vs var) compare equal.
+          t1.typeId(0);
+          t2.typeId(0);
+          if (t1 != t2) {
+            eqExceptInstOpt = false;
+          }
+        }
+        if (alleq || !eqExceptInstOpt) {
+          continue;
+        }
+        std::ostringstream mism;
+        bool any = false;
+        for (unsigned int j = 0; j < fa->paramCount(); j++) {
+          const Id* ida = fa->param(j)->id();
+          const Id* idb = fb->param(j)->id();
+          // Anonymous / integer-id parameters cannot be passed by name, so a
+          // name disagreement on them is irrelevant.
+          if (!ida->hasStr() || !idb->hasStr()) {
+            continue;
+          }
+          if (ida->v() != idb->v()) {
+            if (any) {
+              mism << ", ";
+            }
+            mism << (j + 1) << " (`" << ida->v() << "' vs `" << idb->v() << "')";
+            any = true;
+          }
+        }
+        if (any) {
+          std::ostringstream oss;
+          oss << "overloads of `" << fa->id()
+              << "' that differ only in var/par or optionality disagree on parameter name(s): "
+              << mism.str() << ". Defined at " << fa->loc().toString() << " and "
+              << fb->loc().toString()
+              << ". Named-argument and defaulted calls may fail to re-resolve at flatten time "
+                 "because these overloads are dispatched between when argument types tighten.";
+          env.addWarning(fa->loc(), oss.str(), false);
+        }
+      }
+    }
+  }
+}
+
 std::vector<FunctionI*> Model::potentialOverloads(EnvI& env, Call* c) const {
   if (c->id() == env.constants.varRedef->id()) {
     return {env.constants.varRedef};

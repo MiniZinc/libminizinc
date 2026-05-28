@@ -5482,6 +5482,10 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     }
   }
 
+  if (!isFlatZinc) {
+    m->checkSiblingParameterNames(env.envi());
+  }
+
   if (isFlatZinc) {
     for (auto* it : *annotatedExpressionItems) {
       // We needed these to do typechecking but we can't keep them because this is a FlatZinc file
