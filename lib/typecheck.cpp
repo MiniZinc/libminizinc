@@ -3075,21 +3075,25 @@ public:
         }
         for (unsigned int i = k; i < fi->paramCount(); i++) {
           ASTString pname = fi->param(i)->id()->v();
+          newArgs[i] = nullptr;
           for (const auto& np : named) {
             if (np.first == pname) {
               newArgs[i] = np.second;
               break;
             }
           }
+          if (newArgs[i] == nullptr) {
+            // Unbound parameter: fill from its default. matchFnNamed
+            // guarantees a default exists for every unbound parameter.
+            newArgs[i] = fi->param(i)->e();
+            assert(newArgs[i] != nullptr);
+          }
         }
+        GCLock lock;
         call->args(newArgs);
       }
     }
 
-    std::vector<Expression*> args(call->argCount());
-    for (auto i = static_cast<unsigned int>(args.size()); (i--) != 0U;) {
-      args[i] = call->arg(i);
-    }
     // Validate set-cardinality desugar calls up front: emit a user-friendly
     // error instead of the generic "no matching declaration" overload report.
     // The identifier `mzn_internal_set_card' never appears in user code, so
@@ -3113,6 +3117,26 @@ public:
     }
     if (fi == nullptr) {
       fi = _model->matchFn(_env, call, true, true);
+    }
+    // Purely positional call whose matched decl has a defaulted tail: splice
+    // the defaults into the call so the argument list is complete. matchFn
+    // guarantees every parameter beyond the supplied arguments has a default.
+    if (!sawNamed && fi != nullptr && call->argCount() < fi->paramCount()) {
+      std::vector<Expression*> newArgs(fi->paramCount());
+      for (unsigned int i = 0; i < call->argCount(); i++) {
+        newArgs[i] = call->arg(i);
+      }
+      for (unsigned int i = call->argCount(); i < fi->paramCount(); i++) {
+        newArgs[i] = fi->param(i)->e();
+        assert(newArgs[i] != nullptr);
+      }
+      GCLock lock;
+      call->args(newArgs);
+    }
+
+    std::vector<Expression*> args(call->argCount());
+    for (auto i = static_cast<unsigned int>(args.size()); (i--) != 0U;) {
+      args[i] = call->arg(i);
     }
 
     if (fi != nullptr && fi->id() == _env.constants.ids.symmetry_breaking_constraint &&
@@ -4676,6 +4700,57 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     } else if (auto* fi = i->dynamicCast<FunctionI>()) {
       functionItems.push_back(fi);
     }
+  }
+
+  // Parameter defaults: once a parameter has a default, every following
+  // parameter must also have one. A default in a non-trailing position can
+  // never be omitted at a call, so it would be pointlessly confusing.
+  ASTStringMap<std::vector<FunctionI*>> defaultCheckSeen;
+  for (auto* functionItem : functionItems) {
+    bool sawDefault = false;
+    for (unsigned int i = 0; i < functionItem->paramCount(); i++) {
+      if (functionItem->param(i)->e() != nullptr) {
+        sawDefault = true;
+      } else if (sawDefault) {
+        std::ostringstream ss;
+        ss << "parameter `" << functionItem->param(i)->id()->str()
+           << "' without a default follows a parameter with a default; defaults are only "
+              "allowed on trailing parameters";
+        typeErrors.emplace_back(env.envi(), functionItem->loc(), ss.str());
+        break;
+      }
+    }
+    // Default-extension ambiguity: within an overload set, a call may match
+    // both `f(a)` and `f(a, b default ...)`. Forbid declaring such a pair, as
+    // a call `f(x)` could silently pick either body.
+    auto& seen = defaultCheckSeen[functionItem->id()];
+    for (auto* other : seen) {
+      FunctionI* shorter = other->paramCount() <= functionItem->paramCount() ? other : functionItem;
+      FunctionI* longer = other->paramCount() <= functionItem->paramCount() ? functionItem : other;
+      if (shorter->paramCount() == longer->paramCount()) {
+        continue;
+      }
+      bool extension = true;
+      for (unsigned int i = 0; i < shorter->paramCount(); i++) {
+        if (shorter->param(i)->type() != longer->param(i)->type()) {
+          extension = false;
+          break;
+        }
+      }
+      for (unsigned int i = shorter->paramCount(); extension && i < longer->paramCount(); i++) {
+        if (longer->param(i)->e() == nullptr) {
+          extension = false;
+        }
+      }
+      if (extension) {
+        std::ostringstream ss;
+        ss << "ambiguous overloading: a call could match both this declaration and the one at "
+           << other->loc().toString()
+           << " because the extra parameters all have defaults; give them different names";
+        typeErrors.emplace_back(env.envi(), functionItem->loc(), ss.str());
+      }
+    }
+    seen.push_back(functionItem);
   }
 
   ASTStringMap<std::vector<FunctionI*>> overload_map;

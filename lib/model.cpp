@@ -345,6 +345,20 @@ bool sameParameterNames(FunctionI* a, FunctionI* b) {
   }
   return true;
 }
+
+// Is \a a at least as specific as \a b on the first \a n parameters? Only the
+// parameters an actual call supplies are compared; a defaulted tail is not part
+// of the ranking, so gaining a defaulted parameter never makes an overload a
+// worse match for the calls it already served.
+bool at_least_as_specific(const EnvI& env, const std::vector<Type>& a, const std::vector<Type>& b,
+                          unsigned int n) {
+  for (unsigned int j = 0; j < n; j++) {
+    if (a[j] != b[j] && !a[j].isSubtypeOf(env, b[j], true)) {
+      return false;
+    }
+  }
+  return true;
+}
 }  // namespace
 
 void Model::addPolymorphicInstances(EnvI& env, Model::FnEntry& fe, std::vector<FnEntry>& entries) {
@@ -1016,6 +1030,20 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
     return c->decl();
   }
   std::vector<FunctionI*> matched;
+  // Most specific viable candidate so far, ranked on the supplied arguments
+  // only. The bucket is sorted by FnEntry::compare, whose primary key is arity,
+  // so bucket order alone would let a more general overload with exactly the
+  // call's arity win over a more specific one whose trailing parameters have
+  // defaults. Arity decides viability; specificity decides the winner.
+  const FnEntry* best = nullptr;
+  // Ranking only has to look past the first match when some overload can absorb
+  // extra arguments through defaults, i.e. when one declares more parameters
+  // than the call supplies. Arity is the sort's primary key, so the last entry
+  // has the largest one and this settles it in O(1). Without such an overload
+  // every viable candidate has exactly the call's arity, and the bucket already
+  // orders those most-concrete-first, so the first match is the most specific
+  // and the scan can stop there as it always did.
+  const bool mayDefaultFill = !v.empty() && v.back().t.size() > c->argCount();
   Expression* botarg = nullptr;
   for (const auto& i : v) {
     if (c->decl() != nullptr && i.fi != c->decl() &&
@@ -1036,7 +1064,18 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
     std::cerr << "try " << *i.fi;
 #endif
-    if (fi_t.size() == c->argCount()) {
+    // A candidate matches when it has at least as many parameters as the call
+    // has arguments, and every parameter beyond the supplied arguments has a
+    // default. Defaults are spliced into the call by the typechecker (vCall),
+    // so re-resolution after flattening sees a full-arity call and takes the
+    // exact-arity path.
+    bool defaultedTail = fi_t.size() >= c->argCount();
+    for (unsigned int j = c->argCount(); defaultedTail && j < i.fi->paramCount(); j++) {
+      if (i.fi->param(j)->e() == nullptr) {
+        defaultedTail = false;
+      }
+    }
+    if (defaultedTail) {
       bool match = true;
       for (unsigned int j = 0; j < c->argCount(); j++) {
         if (!env.isSubtype(Expression::type(c->arg(j)), fi_t[j], strictEnums)) {
@@ -1055,11 +1094,23 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
       if (match) {
         if (botarg != nullptr) {
           matched.push_back(i.fi);
-        } else {
-          return i.fi;
+        } else if (best == nullptr) {
+          best = &i;
+          if (!mayDefaultFill) {
+            break;
+          }
+        } else if (at_least_as_specific(env, i.t, best->t, c->argCount()) &&
+                   !at_least_as_specific(env, best->t, i.t, c->argCount())) {
+          // Strictly more specific than the incumbent on the supplied
+          // arguments. Incomparable candidates leave the incumbent in place, so
+          // bucket order still breaks ties exactly as it used to.
+          best = &i;
         }
       }
     }
+  }
+  if (best != nullptr) {
+    return best->fi;
   }
   if (matched.empty()) {
     if (throwIfNotFound) {
@@ -1160,9 +1211,35 @@ FunctionI* Model::matchFnNamed(EnvI& env, Call* c, const std::vector<Expression*
   std::vector<FunctionI*> matched;
   Expression* botarg = nullptr;
   bool anyNameCompatible = false;
+  // Is \a a at least as specific as \a b on the arguments this call supplies?
+  // Mirrors the positional matchFn's ranking, but a named argument may sit at a
+  // different index in each candidate, so each is asked where the name binds.
+  // Parameters left to their defaults are not part of the ranking.
+  auto atLeastAsSpecific = [&](const FnEntry& a, const FnEntry& b) -> bool {
+    for (unsigned int i = 0; i < k; i++) {
+      if (a.t[i] != b.t[i] && !a.t[i].isSubtypeOf(env, b.t[i], true)) {
+        return false;
+      }
+    }
+    for (const auto& np : named) {
+      const int ia = find_param_named(a.fi, np.first, k);
+      const int ib = find_param_named(b.fi, np.first, k);
+      if (ia < 0 || ib < 0) {
+        return false;
+      }
+      if (a.t[ia] != b.t[ib] && !a.t[ia].isSubtypeOf(env, b.t[ib], true)) {
+        return false;
+      }
+    }
+    return true;
+  };
+  // Most specific name-compatible candidate so far; see the positional matchFn
+  // for why bucket order alone is not a ranking, and for the O(1) guard.
+  const FnEntry* best = nullptr;
+  const bool mayDefaultFill = !v.empty() && v.back().t.size() > total;
   for (const auto& fe : v) {
     FunctionI* fi = fe.fi;
-    if (fi->paramCount() != total) {
+    if (fi->paramCount() < total) {
       continue;
     }
     // Name compatibility: each supplied named name is at some index >= k,
@@ -1179,6 +1256,24 @@ FunctionI* Model::matchFnNamed(EnvI& env, Call* c, const std::vector<Expression*
       }
     }
     if (!nameOk) {
+      continue;
+    }
+    // Every parameter not bound by position or name must have a default;
+    // the typechecker (vCall) splices those defaults into the call.
+    bool defaultedTail = true;
+    for (unsigned int j = k; defaultedTail && j < fi->paramCount(); j++) {
+      bool boundByName = false;
+      for (const auto& np : named) {
+        if (fi->param(j)->id()->v() == np.first) {
+          boundByName = true;
+          break;
+        }
+      }
+      if (!boundByName && fi->param(j)->e() == nullptr) {
+        defaultedTail = false;
+      }
+    }
+    if (!defaultedTail) {
       continue;
     }
     anyNameCompatible = true;
@@ -1213,10 +1308,21 @@ FunctionI* Model::matchFnNamed(EnvI& env, Call* c, const std::vector<Expression*
       continue;
     }
     if (localBotarg == nullptr) {
-      return fi;
+      if (best == nullptr) {
+        best = &fe;
+        if (!mayDefaultFill) {
+          break;
+        }
+      } else if (atLeastAsSpecific(fe, *best) && !atLeastAsSpecific(*best, fe)) {
+        best = &fe;
+      }
+      continue;
     }
     botarg = localBotarg;
     matched.push_back(fi);
+  }
+  if (best != nullptr) {
+    return best->fi;
   }
   if (matched.empty()) {
     if (throwIfNotFound) {

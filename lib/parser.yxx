@@ -885,6 +885,12 @@ pipe_or_none : | '|'
 ti_expr_and_id_or_anon :
       ti_expr_and_id
       { $$=$1; }
+    | ti_expr_and_id MZN_EQ expr
+      { $$ = $1;
+        if ($$ != nullptr && $3 != nullptr) {
+          $$->e($3);
+        }
+      }
     | ti_expr
       { if ($1) {
           $$=new VarDecl(@$, $1, "");
