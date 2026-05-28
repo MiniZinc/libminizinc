@@ -3,6 +3,14 @@ include "fzn_regular_reif.mzn";
 include "fzn_regular_set.mzn";
 include "fzn_regular_set_reif.mzn";
 
+% Feature-detection flags. The standard library decompositions of fzn_regular and
+% fzn_regular_set assign these to true; a solver that provides a native propagator
+% redefines those files without the assignment, so the flag stays absent. The reified
+% versions test this to choose between a direct decomposition (flag present) and an
+% augmented-DFA construction that reuses the native propagator (flag absent).
+opt bool: fzn_regular_is_decomposed;
+opt bool: fzn_regular_set_is_decomposed;
+
 /** @group globals.extensional
   The sequence of values in array \a x
   is accepted by the DFA with transition function \a d, initial state \a q0

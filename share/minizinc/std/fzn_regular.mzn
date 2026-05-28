@@ -1,3 +1,7 @@
+% Signals to fzn_regular_reif that fzn_regular is the library decomposition rather
+% than a native propagator.
+fzn_regular_is_decomposed = true;
+
 predicate fzn_regular(
   array [int] of var int: x,
   int: Q,

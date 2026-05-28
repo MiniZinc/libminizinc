@@ -1,3 +1,7 @@
+% Signals to fzn_regular_reif that fzn_regular_set is the library decomposition
+% rather than a native propagator.
+fzn_regular_set_is_decomposed = true;
+
 predicate fzn_regular_set(
   array [int] of var int: x,
   int: Q,

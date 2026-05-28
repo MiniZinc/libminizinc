@@ -9,6 +9,12 @@ https://github.com/MiniZinc/libminizinc/issues.
 `Upcoming Release <https://github.com/MiniZinc/MiniZincIDE/releases/tag/edge>`__
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Changes:
+^^^^^^^^
+-  Add reified regular constraint decompositions. Rewrite to direct
+   decomposition if non-reified regular is also a decomposition, or
+   to an augmented automaton if a native regular constraint is available.
+
 Bug fixes:
 ^^^^^^^^^^
 -  Fix x=infinity and x=-infinity being incorrectly translated when used
