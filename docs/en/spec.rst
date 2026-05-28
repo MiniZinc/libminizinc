@@ -2475,6 +2475,30 @@ The type-insts of the expressions passed as arguments must match the
 argument types of the called predicate/function.  The return type of the
 predicate/function must also be appropriate for the calling context.
 
+Arguments may be passed by position, as above, or by name using the syntax
+:mzn:`name: expr`, where ``name`` is a parameter name of the called
+operation.  For example, given the declaration
+:mzn:`predicate foo(int: x, int: y)`, the following calls are equivalent:
+
+.. code-block:: minizinc
+
+    foo(1, 2);
+    foo(x: 1, y: 2);
+    foo(y: 2, x: 1);
+
+Named arguments may be given in any order.  Positional and named arguments
+can be mixed in a single call, but all positional arguments must come before
+any named argument; a positional argument binds to the parameter in the
+corresponding position, and the named arguments bind the remaining
+parameters.  Each parameter must be bound exactly once, so a named argument
+may not refer to a parameter that has already been bound positionally, and
+no parameter name may appear more than once.
+
+Parameter names that start with an underscore (``_``) are not part of the
+public interface of an operation: they may be used inside the body but
+cannot be supplied as a named argument at a call site.  This lets a
+declaration leave such parameter names unspecified for callers.
+
 Note that a call to a function or predicate with no arguments is
 syntactically indistinguishable from the use of a variable, and so must be
 determined during type-inst checking.
@@ -2990,6 +3014,21 @@ types (for instance, multi-dimensional and non-1-based arrays are
 forbidden).
 
 .. % \pjs{need to fix this if we allow2d arrays in FlatZinc!}
+
+A parameter can be given a default value using the syntax
+:mzn:`ti: name = expr`.  When the corresponding argument is omitted at a call
+site, the default expression is used in its place.  For example:
+
+.. code-block:: minizinc
+
+    function int: inc(int: x, int: step = 1) =
+        x + step;
+
+Here :mzn:`inc(5)` evaluates to ``6`` and :mzn:`inc(5, 10)` to ``15``.  A
+default expression is evaluated in the scope enclosing the declaration and
+must not refer to the operation's other parameters.  A parameter without a
+default value may not follow one that has a default, so that the omitted
+arguments are always a suffix of the parameter list.
 
 Declarations for user-defined operations can be annotated.
 :ref:`spec-Annotations` has more details on annotations.

@@ -67,7 +67,7 @@
 
 <operation-item-tail> ::= <ident> <params> <annotations> [ "=" <expr> ]
 
-<params> ::= [ ( <param-ti-expr-and-id> "," ... ) ]
+<params> ::= [ ( <param-ti-expr-and-id> [ "=" <expr> ] "," ... ) ]
 
 % Parameter type-insts: same as <ti-expr>, but the set-cardinality form
 % (`set "(" <expr> ")" of ...`) and the index-dependent array form
@@ -286,7 +286,9 @@
 <if-then-else-expr> ::= "if" <expr> "then" <expr> [ "elseif" <expr> "then" <expr> ]* [ "else" <expr> ] "endif"
 
 % Call expressions
-<call-expr> ::= <ident-or-quoted-op> [ "(" <expr> "," ... ")" ]
+<call-expr> ::= <ident-or-quoted-op> [ "(" <call-arg> "," ... ")" ]
+
+<call-arg> ::= <expr> | <ident> ":" <expr>
 
 % Let expressions
 <let-expr> ::= "let" "{" <let-item> ( ";" | "," ) ... "}" "in" <expr>
