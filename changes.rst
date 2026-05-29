@@ -42,6 +42,12 @@ Changes:
    from standard input while running, and output both solutions and
    messages.
 -  Add support for warm starts to HiGHS and SCIP interfaces.
+-  The parameter names of the global constraints in the standard library have
+   been revised so that they read well as named arguments (now that named
+   arguments make them part of the public interface). As part of this,
+   ``all_different`` gains an optional ``except`` set parameter (defaulting to
+   the empty set), unifying it with ``all_different_except`` and
+   ``all_different_except_0``, which are now deprecated.
 
 Language changes:
 ^^^^^^^^^^^^^^^^^
