@@ -8,13 +8,13 @@ include "fzn_dtree_enum.mzn";
 include "fzn_dtree_enum_reif.mzn";
 
 /** @group globals.graph
-    Constrains the subgraph \a ns and \a es of a given directed graph to be a tree rooted at \a r.
+    Constrains the subgraph \a ns and \a es of a given directed graph to be a tree rooted at \a root.
 
     @param N: the number of nodes in the given graph
     @param E: the number of edges in the given graph
     @param from: the leaving node 1..\a N for each edge
     @param to: the entering node 1..\a N for each edge
-    @param r: the root node (which may be variable)
+    @param root: the root node (which may be variable)
     @param ns: a Boolean for each node whether it is in the subgraph
     @param es: a Boolean for each edge whether it is in the subgraph
 */
@@ -23,7 +23,7 @@ predicate dtree(
   int: E,
   array [int] of int: from,
   array [int] of int: to,
-  var int: r,
+  var int: root,
   array [int] of var bool: ns,
   array [int] of var bool: es,
 ) =
@@ -31,21 +31,21 @@ predicate dtree(
     assert(index_set(to) = 1..E, "dtree: index set of to must be 1..\(E)") /\
     assert(index_set(ns) = 1..N, "dtree: index set of ns must be 1..\(N)") /\
     assert(index_set(es) = 1..E, "dtree: index set of es must be 1..\(E)") /\
-    fzn_dtree(N, E, from, to, r, ns, es);
+    fzn_dtree(N, E, from, to, root, ns, es);
 
 /** @group globals.graph
-    Constrains the subgraph \a ns and \a es of a given directed graph to be at tree rooted at \a r.
+    Constrains the subgraph \a ns and \a es of a given directed graph to be at tree rooted at \a root.
 
     @param from: the leaving node for each edge
     @param to: the entering node for each edge
-    @param r: the root node (which may be variable)
+    @param root: the root node (which may be variable)
     @param ns: a Boolean for each node whether it is in the subgraph
     @param es: a Boolean for each edge whether it is in the subgraph
 */
 predicate dtree(
   array [$$E] of $$N: from,
   array [$$E] of $$N: to,
-  var $$N: r,
+  var $$N: root,
   array [$$N] of var bool: ns,
   array [$$E] of var bool: es,
 ) =
@@ -68,7 +68,7 @@ predicate dtree(
     fzn_dtree(
       index2int(enum2int(from)),
       index2int(enum2int(to)),
-      enum2int(r),
+      enum2int(root),
       index2int(ns),
       index2int(es),
     );
@@ -76,13 +76,13 @@ predicate dtree(
 %-----------------------------------------------------------------------------%
 
 /** @group globals.graph
-    Constrains the subgraph \a ns and \a es of a given undirected graph to be a tree rooted at \a r.
+    Constrains the subgraph \a ns and \a es of a given undirected graph to be a tree rooted at \a root.
 
     @param N: the number of nodes in the given graph
     @param E: the number of edges in the given graph
     @param from: the leaving node 1..\a N for each edge
     @param to: the entering node 1..\a N for each edge
-    @param r: the root node (which may be variable)
+    @param root: the root node (which may be variable)
     @param ns: a Boolean for each node whether it is in the subgraph
     @param es: a Boolean for each edge whether it is in the subgraph
 */
@@ -91,7 +91,7 @@ predicate tree(
   int: E,
   array [int] of int: from,
   array [int] of int: to,
-  var int: r,
+  var int: root,
   array [int] of var bool: ns,
   array [int] of var bool: es,
 ) =
@@ -99,21 +99,21 @@ predicate tree(
     assert(index_set(to) = 1..E, "tree: index set of to must be 1..\(E)") /\
     assert(index_set(ns) = 1..N, "tree: index set of ns must be 1..\(N)") /\
     assert(index_set(es) = 1..E, "tree: index set of es must be 1..\(E)") /\
-    fzn_tree(N, E, from, to, r, ns, es);
+    fzn_tree(N, E, from, to, root, ns, es);
 
 /** @group globals.graph
-    Constrains the subgraph \a ns and \a es of a given undirected graph to be at tree rooted at \a r.
+    Constrains the subgraph \a ns and \a es of a given undirected graph to be at tree rooted at \a root.
 
     @param from: the leaving node for each edge
     @param to: the entering node for each edge
-    @param r: the root node (which may be variable)
+    @param root: the root node (which may be variable)
     @param ns: a Boolean for each node whether it is in the subgraph
     @param es: a Boolean for each edge whether it is in the subgraph
 */
 predicate tree(
   array [$$E] of $$N: from,
   array [$$E] of $$N: to,
-  var $$N: r,
+  var $$N: root,
   array [$$N] of var bool: ns,
   array [$$E] of var bool: es,
 ) =
@@ -136,7 +136,7 @@ predicate tree(
     fzn_tree(
       index2int(enum2int(from)),
       index2int(enum2int(to)),
-      enum2int(r),
+      enum2int(root),
       index2int(ns),
       index2int(es),
     );
