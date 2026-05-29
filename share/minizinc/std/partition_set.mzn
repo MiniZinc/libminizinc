@@ -2,7 +2,7 @@ include "fzn_partition_set.mzn";
 include "fzn_partition_set_reif.mzn";
 
 /** @group globals.set
-  Constrains the sets in array \a S to partition the \a universe.
+  Constrains the sets in array \a xs to partition the \a universe.
 */
-predicate partition_set(array [$X] of var set of $$E: S, set of $$E: universe) =
-  fzn_partition_set(array1d(enum2int(S)), enum2int(universe));
+predicate partition_set(array [$X] of var set of $$E: xs, set of $$E: universe) =
+  fzn_partition_set(array1d(enum2int(xs)), enum2int(universe));
