@@ -5,38 +5,38 @@ include "fzn_table_int_reif.mzn";
 include "fzn_table_int_opt.mzn";
 
 /** @group globals.extensional
-  Represents the constraint \a x in \a t where we
-  consider each row in \a t to be a tuple and \a t as a set of tuples.
+  Represents the constraint \a xs in \a tuples where we
+  consider each row in \a tuples to be a tuple and \a tuples as a set of tuples.
 */
-predicate table(array [$$E] of var bool: x, array [$$X, $$E] of bool: t) =
+predicate table(array [$$E] of var bool: xs, array [$$X, $$E] of bool: tuples) =
   assert(
-    index_set_2of2(t) == index_set(x),
+    index_set_2of2(tuples) == index_set(xs),
     "The second dimension of the table must equal the number of variables " ++
       "in the first argument",
   ) /\
-    fzn_table_bool(index2int(x), index2int(t));
+    fzn_table_bool(index2int(xs), index2int(tuples));
 
 /** @group globals.extensional
-  Represents the constraint \a x in \a t where we
-  consider each row in \a t to be a tuple and \a t as a set of tuples.
+  Represents the constraint \a xs in \a tuples where we
+  consider each row in \a tuples to be a tuple and \a tuples as a set of tuples.
 */
-predicate table(array [$$E] of var int: x, array [$$X, $$E] of int: t) =
+predicate table(array [$$E] of var int: xs, array [$$X, $$E] of int: tuples) =
   assert(
-    index_set_2of2(t) == index_set(x),
+    index_set_2of2(tuples) == index_set(xs),
     "The second dimension of the table must equal the number of variables " ++
       "in the first argument",
   ) /\
-    fzn_table_int(index2int(x), index2int(t));
+    fzn_table_int(index2int(xs), index2int(tuples));
 
 /** @group globals.extensional
-  Represents the constraint \a x in \a t if the variable \a x_i and the value
-  \a t_i occur where we consider each row in \a t to be a tuple and \a t as a
+  Represents the constraint \a xs in \a tuples if the variable \a x_i and the value
+  \a t_i occur where we consider each row in \a tuples to be a tuple and \a tuples as a
   set of tuples.
 */
-predicate table(array [$$E] of var opt int: x, array [$$X, $$E] of opt int: t) =
+predicate table(array [$$E] of var opt int: xs, array [$$X, $$E] of opt int: tuples) =
   assert(
-    index_set_2of2(t) == index_set(x),
+    index_set_2of2(tuples) == index_set(xs),
     "The second dimension of the table must equal the number of variables " ++
       "in the first argument",
   ) /\
-    fzn_table_int_opt(index2int(x), index2int(t));
+    fzn_table_int_opt(index2int(xs), index2int(tuples));

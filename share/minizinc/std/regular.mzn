@@ -12,7 +12,7 @@ opt bool: fzn_regular_is_decomposed;
 opt bool: fzn_regular_set_is_decomposed;
 
 /** @group globals.extensional
-  The sequence of values in array \a x
+  The sequence of values in array \a xs
   is accepted by the DFA with transition function \a d, initial state \a q0
   and accepting states \a F.
   The transition function maps states (from enumerated type \a State) and
@@ -20,7 +20,7 @@ opt bool: fzn_regular_set_is_decomposed;
   is not possible.
 */
 predicate regular(
-  array [$$X] of var $$Val: x,
+  array [$$X] of var $$Val: xs,
   array [$$State, $$Val] of opt $$State: d,
   $$State: q0,
   set of $$State: F,
@@ -38,18 +38,18 @@ predicate regular(
     any: qq0 = enum2int(q0) - q_off;
     any: FF = {enum2int(i) - q_off | i in F};
   } in
-  if min(Val) = 1 then fzn_regular(index2int(enum2int(x)), card(State), max(Val), dd, qq0, FF)
-  else fzn_regular_set(index2int(enum2int(x)), card(State), Val, dd, qq0, FF) endif;
+  if min(Val) = 1 then fzn_regular(index2int(enum2int(xs)), card(State), max(Val), dd, qq0, FF)
+  else fzn_regular_set(index2int(enum2int(xs)), card(State), Val, dd, qq0, FF) endif;
 
 /** @group globals.extensional
-  The sequence of values in array \a x (which must all be in the range 1..\a S)
+  The sequence of values in array \a xs (which must all be in the range 1..\a S)
   is accepted by the DFA of \a Q states with input 1..\a S and transition
   function \a d (which maps (1..\a Q, 1..\a S) -> 0..\a Q)) and initial state \a q0
   (which must be in 1..\a Q) and accepting states \a F (which all must be in
   1..\a Q).  We reserve state 0 to be an always failing state.
 */
 predicate regular(
-  array [int] of var int: x,
+  array [int] of var int: xs,
   int: Q,
   int: S,
   array [int, int] of int: d,
@@ -75,17 +75,17 @@ predicate regular(
       "regular: start state 'q0' not in 1..Q",
     ) /\
     assert(F subset 1..Q, "regular: final states in 'F' contain states outside 1..Q") /\
-    fzn_regular(x, Q, S, d, q0, F);
+    fzn_regular(xs, Q, S, d, q0, F);
 
 /** @group globals.extensional
-  The sequence of values in array \a x (which must all be in the set \a S)
+  The sequence of values in array \a xs (which must all be in the set \a S)
   is accepted by the DFA of \a Q states with input \a S and transition
   function \a d (which maps (1..\a Q, \a S) -> 0..\a Q)) and initial state \a q0
   (which must be in 1..\a Q) and accepting states \a F (which all must be in
   1..\a Q).  We reserve state 0 to be an always failing state.
 */
 predicate regular(
-  array [int] of var int: x,
+  array [int] of var int: xs,
   int: Q,
   set of int: S,
   array [int, int] of int: d,
@@ -111,5 +111,5 @@ predicate regular(
       "regular: start state 'q0' not in 1..Q",
     ) /\
     assert(F subset 1..Q, "regular: final states in 'F' contain states outside 1..Q") /\
-    if min(S) = 1 then fzn_regular(x, Q, max(S), d, q0, F)
-    else fzn_regular_set(x, Q, S, d, q0, F) endif;
+    if min(S) = 1 then fzn_regular(xs, Q, max(S), d, q0, F)
+    else fzn_regular_set(xs, Q, S, d, q0, F) endif;

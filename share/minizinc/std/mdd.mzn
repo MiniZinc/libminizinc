@@ -2,23 +2,23 @@ include "fzn_mdd.mzn";
 include "fzn_mdd_reif.mzn";
 
 /** @group globals.extensional
-  Requires that \a x defines a path from root to true node T through the (deterministic)
+  Requires that \a xs defines a path from root to true node T through the (deterministic)
   Multivalued Decision Diagram (MDD) defined by the parameters.
 
    @param N: the number of nodes, the root node is node 1
-   @param level: the level of each node, the root is level 1, T is level \a length(x)+1
+   @param level: the level of each node, the root is level 1, T is level \a length(xs)+1
    @param E: the number of edges
    @param from: the leaving node (1..\a N)for each edge
-   @param label: the set of values of the \a x variable for each edge
+   @param label: the set of values of the \a xs variable for each edge
    @param to: the entering node for each edge, where 0 = T node
    
   The MDD must be deterministic, i.e., there cannot be two edges
   with the same label leaving the same node.
 */
 predicate mdd(
-  array [int] of var int: x, % variables constrained by MDD
+  array [int] of var int: xs, % variables constrained by MDD
   int: N, % number of nodes    root is node 1
-  array [int] of int: level, % level of each node root is level 1, T is level length(x)+1
+  array [int] of int: level, % level of each node root is level 1, T is level length(xs)+1
   int: E, % number of edges
   array [int] of int: from, % edge leaving node  1..N
   array [int] of set of int: label, % possible values of variable
@@ -27,7 +27,7 @@ predicate mdd(
   let {
     set of int: NODE = 1..N;
     set of int: EDGE = 1..E;
-    int: L = length(x);
+    int: L = length(xs);
     array [0..N] of int: levele = array1d(0..N, [L + 1] ++ level);
   } in assert(index_set(level) = NODE, "mdd: third argument must be of length N = \(N)") /\
     assert(index_set(from) = EDGE, "mdd: 5th argument must be of length E = \(E)") /\
@@ -47,7 +47,7 @@ predicate mdd(
         "mdd: Two edges \(e1) and \(e2) leaving node \(from[e1]) with overlapping labels",
       )
     ) /\
-    fzn_mdd(x, N, level, E, from, label, to);
+    fzn_mdd(xs, N, level, E, from, label, to);
 
 % Example consider an MDD over 3 variables
 % 5 nodes and 12 edges

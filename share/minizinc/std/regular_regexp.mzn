@@ -2,8 +2,8 @@ include "fzn_regular_regexp.mzn";
 include "regular.mzn";
 
 /** @group globals.extensional
-  The sequence of values in array \a x  is accepted by the regular
-  expression \a r. This constraint generates its DFA equivalent.
+  The sequence of values in array \a xs  is accepted by the regular
+  expression \a regexp. This constraint generates its DFA equivalent.
 
   Regular expressions can use the following syntax:
 
@@ -30,4 +30,4 @@ include "regular.mzn";
   Members of enumerated types can be used in place of any integer (e.g., "A B",
   A followed by B). Enumerated identifiers still use whitespace for concatenation.
 */
-predicate regular(array [int] of var $$E: x, string: r) = fzn_regular(enum2int(x), r);
+predicate regular(array [int] of var $$E: xs, string: regexp) = fzn_regular(enum2int(xs), regexp);
