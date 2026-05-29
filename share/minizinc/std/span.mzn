@@ -2,17 +2,17 @@ include "fzn_span.mzn";
 include "fzn_span_reif.mzn";
 
 /** @group globals.scheduling
-  Span constraint for optional tasks. Task (\a s0,\a d0) spans the optional
-  tasks (\a s[\p i],\a d[\p i]) in the array arguments.
+  Span constraint for optional tasks. Task (\a span_start,\a span_duration) spans the optional
+  tasks (\a starts[\p i],\a durations[\p i]) in the array arguments.
 */
 predicate span(
-  var opt int: s0,
-  var int: d0,
-  array [$$E] of var opt int: s,
-  array [$$E] of var int: d,
+  var opt int: span_start,
+  var int: span_duration,
+  array [$$E] of var opt int: starts,
+  array [$$E] of var int: durations,
 ) =
   assert(
-    index_sets_agree(s, d),
+    index_sets_agree(starts, durations),
     "span: index sets of third and fourth argument must be identical",
   ) /\
-    fzn_span(s0, d0, index2int(s), index2int(d));
+    fzn_span(span_start, span_duration, index2int(starts), index2int(durations));
