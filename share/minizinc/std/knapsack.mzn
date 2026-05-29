@@ -6,32 +6,32 @@ include "fzn_knapsack_reif.mzn";
 
   Assumptions:
 
-  - Weights \a w and profits \a p must be non-negative
-  - \a w, \a p and \a x must have the same index sets
+  - Weights \a weights and profits \a profits must be non-negative
+  - \a weights, \a profits and \a xs must have the same index sets
 
-@param w: weight of each type of item
-@param p: profit of each type of item
-@param x: number of items of each type that are packed
-@param W: sum of sizes of all items in the knapsack
-@param P: sum of profits of all items in the knapsack
+@param weights: weight of each type of item
+@param profits: profit of each type of item
+@param xs: number of items of each type that are packed
+@param total_weight: sum of sizes of all items in the knapsack
+@param total_profit: sum of profits of all items in the knapsack
 */
 predicate knapsack(
-  array [$$I] of int: w,
-  array [$$I] of int: p,
-  array [$$I] of var int: x,
-  var int: W,
-  var int: P,
+  array [$$I] of int: weights,
+  array [$$I] of int: profits,
+  array [$$I] of var int: xs,
+  var int: total_weight,
+  var int: total_profit,
 ) =
   assert(
-    index_set(w) = index_set(p) /\ index_set(w) = index_set(x),
+    index_set(weights) = index_set(profits) /\ index_set(weights) = index_set(xs),
     "index set of weights must be equal to index set of profits and index set of items",
     assert(
-      lb_array(w) >= 0,
+      lb_array(weights) >= 0,
       "weights must be non-negative",
       assert(
-        lb_array(p) >= 0,
+        lb_array(profits) >= 0,
         "profits must be non-negative",
-        fzn_knapsack(index2int(w), index2int(p), index2int(x), W, P),
+        fzn_knapsack(index2int(weights), index2int(profits), index2int(xs), total_weight, total_profit),
       ),
     ),
   );

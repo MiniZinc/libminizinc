@@ -3,54 +3,54 @@ include "fzn_bin_packing_reif.mzn";
 include "fzn_bin_packing_opt.mzn";
 
 /**  @group globals.packing
-  Requires that each item \p i with weight \a w[\p i], be put into \a bin[\p i] such
-  that the sum of the weights of the items in each bin does not exceed the
-  capacity \a c.
+  Requires that each item \p i with weight \a weights[\p i], be put into \a bins[\p i] such
+  that the sum of the weights of the items in each bins does not exceed the
+  capacity \a capacity.
 
   Assumptions:
 
-  - forall \p i, \a w[\p i] >=0
-  - \a c >=0
+  - forall \p i, \a weights[\p i] >=0
+  - \a capacity >=0
 
 */
-predicate bin_packing(int: c, array [$$I] of var $$B: bin, array [$$I] of int: w) =
+predicate bin_packing(int: capacity, array [$$I] of var $$B: bins, array [$$I] of int: weights) =
   assert(
-    index_set(bin) == index_set(w),
-    "bin_packing: the bin and weight arrays must have identical index sets",
+    index_set(bins) == index_set(weights),
+    "bin_packing: the bins and weight arrays must have identical index sets",
     assert(
-      length(w) == 0 \/ lb_array(w) >= 0,
+      length(weights) == 0 \/ lb_array(weights) >= 0,
       "bin_packing: the weights must be non-negative",
       assert(
-        c >= 0,
+        capacity >= 0,
         "bin_packing: capacity must be non-negative",
-        fzn_bin_packing(c, index2int(enum2int(bin)), index2int(w)),
+        fzn_bin_packing(capacity, index2int(enum2int(bins)), index2int(weights)),
       ),
     ),
   );
 
 /**  @group globals.packing
-  Requires that each item \p i with weight \a w[\p i], be put into \a bin[\p i] such
-  that the sum of the weights of the items in each bin does not exceed the
-  capacity \a c. An item may not be put into any bin, in which case \a bin[\p i] is
+  Requires that each item \p i with weight \a weights[\p i], be put into \a bins[\p i] such
+  that the sum of the weights of the items in each bins does not exceed the
+  capacity \a capacity. An item may not be put into any bins, in which case \a bins[\p i] is
   absent.
 
   Assumptions:
 
-  - forall \p i, \a w[\p i] >=0
-  - \a c >=0
+  - forall \p i, \a weights[\p i] >=0
+  - \a capacity >=0
 
 */
-predicate bin_packing(int: c, array [$$I] of var opt $$B: bin, array [$$I] of int: w) =
+predicate bin_packing(int: capacity, array [$$I] of var opt $$B: bins, array [$$I] of int: weights) =
   assert(
-    index_set(bin) == index_set(w),
-    "bin_packing: the bin and weight arrays must have identical index sets",
+    index_set(bins) == index_set(weights),
+    "bin_packing: the bins and weight arrays must have identical index sets",
     assert(
-      length(w) == 0 \/ lb_array(w) >= 0,
+      length(weights) == 0 \/ lb_array(weights) >= 0,
       "bin_packing: the weights must be non-negative",
       assert(
-        c >= 0,
+        capacity >= 0,
         "bin_packing: capacity must be non-negative",
-        fzn_bin_packing_opt(c, index2int(enum2int(bin)), index2int(w)),
+        fzn_bin_packing_opt(capacity, index2int(enum2int(bins)), index2int(weights)),
       ),
     ),
   );

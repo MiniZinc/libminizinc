@@ -5,52 +5,52 @@ include "fzn_bin_packing_load_opt.mzn";
 include "fzn_bin_packing_load_reif.mzn";
 
 /**  @group globals.packing
-  Requires that each item \p i with weight \a w[\p i], be put into \a bin[\p i] such
-  that the sum of the weights of the items in each bin \p b is equal to
-  \a load[\p b].
+  Requires that each item \p i with weight \a weights[\p i], be put into \a bins[\p i] such
+  that the sum of the weights of the items in each bins \p b is equal to
+  \a loads[\p b].
 
   Assumptions:
 
-  - forall \p i, \a w[\p i] >=0
+  - forall \p i, \a weights[\p i] >=0
 
 */
 predicate bin_packing_load(
-  array [$$B] of var int: load,
-  array [$$I] of var $$B: bin,
-  array [$$I] of int: w,
+  array [$$B] of var int: loads,
+  array [$$I] of var $$B: bins,
+  array [$$I] of int: weights,
 ) =
   assert(
-    index_set(bin) == index_set(w),
-    "bin_packing_load: the bin and weight arrays must have identical index sets",
+    index_set(bins) == index_set(weights),
+    "bin_packing_load: the bins and weight arrays must have identical index sets",
     assert(
-      length(w) == 0 \/ lb_array(w) >= 0,
+      length(weights) == 0 \/ lb_array(weights) >= 0,
       "bin_packing_load: the weights must be non-negative",
-      fzn_bin_packing_load(index2int(load), index2int(enum2int(bin)), index2int(w)),
+      fzn_bin_packing_load(index2int(loads), index2int(enum2int(bins)), index2int(weights)),
     ),
   );
 
 /**  @group globals.packing
-  Requires that each item \p i with weight \a w[\p i], be put into \a bin[\p i] such
-  that the sum of the weights of the items in each bin \p b is equal to
-  \a load[\p b]. An item may not be put into any bin, in which case \a bin[\p i] is
+  Requires that each item \p i with weight \a weights[\p i], be put into \a bins[\p i] such
+  that the sum of the weights of the items in each bins \p b is equal to
+  \a loads[\p b]. An item may not be put into any bins, in which case \a bins[\p i] is
   absent.
 
   Assumptions:
 
-  - forall \p i, \a w[\p i] >=0
+  - forall \p i, \a weights[\p i] >=0
 
 */
 predicate bin_packing_load(
-  array [$$B] of var int: load,
-  array [$$I] of var opt $$B: bin,
-  array [$$I] of int: w,
+  array [$$B] of var int: loads,
+  array [$$I] of var opt $$B: bins,
+  array [$$I] of int: weights,
 ) =
   assert(
-    index_set(bin) == index_set(w),
-    "bin_packing_load: the bin and weight arrays must have identical index sets",
+    index_set(bins) == index_set(weights),
+    "bin_packing_load: the bins and weight arrays must have identical index sets",
     assert(
-      length(w) == 0 \/ lb_array(w) >= 0,
+      length(weights) == 0 \/ lb_array(weights) >= 0,
       "bin_packing_load: the weights must be non-negative",
-      fzn_bin_packing_load_opt(index2int(load), index2int(enum2int(bin)), index2int(w)),
+      fzn_bin_packing_load_opt(index2int(loads), index2int(enum2int(bins)), index2int(weights)),
     ),
   );
