@@ -3733,6 +3733,30 @@ void create_par_versions(Env& env, Model* m, BottomUpIterator<Typer<true>>& bott
     }
     // check if specialised par version of function already exists
     FunctionI* fi_par = nonPolyFns->matchFn(env.envi(), f->id(), tv, false);
+    // matchFn resolves by type only. For functions overloaded purely on
+    // parameter names it can return a sibling that shares f's parameter types
+    // but binds different names (and has a different body). Such a sibling is
+    // not a valid par version of f: each name-only overload needs its own par
+    // copy, built from its own body. Detect this and fall back to f itself, so
+    // both siblings are entered into fnsToMakePar (keyed by the source
+    // function) instead of collapsing onto one shared par version.
+    if (fi_par != f && fi_par->paramCount() == f->paramCount()) {
+      bool sameTypes = true;
+      bool sameNames = true;
+      for (unsigned int i = 0; i < f->paramCount(); i++) {
+        if (fi_par->param(i)->type() != f->param(i)->type()) {
+          sameTypes = false;
+        }
+        Id* a = fi_par->param(i)->id();
+        Id* b = f->param(i)->id();
+        if (a->hasStr() && b->hasStr() && a->v() != b->v()) {
+          sameNames = false;
+        }
+      }
+      if (sameTypes && !sameNames) {
+        fi_par = f;
+      }
+    }
     alreadyPar = fi_par->ti()->type().isPar();
     if (alreadyPar) {
       for (unsigned int i = 0; i < fi_par->paramCount(); i++) {

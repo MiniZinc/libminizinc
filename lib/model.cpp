@@ -1048,6 +1048,12 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
   for (const auto& i : v) {
     if (c->decl() != nullptr && i.fi != c->decl() &&
         i.fi->paramCount() == c->decl()->paramCount() && !sameParameterNames(i.fi, c->decl())) {
+      // Skip a candidate that is a genuine name-only sibling of the call's
+      // resolved decl (identical parameter types, different parameter names):
+      // re-resolution by type must not silently switch to it. (Candidates that
+      // differ in var/par or optionality - e.g. the auto-generated par copy of
+      // a sibling - are not skipped here but tie-broken by name on the return
+      // path below.)
       bool sameTypes = true;
       for (unsigned int j = 0; j < i.fi->paramCount(); j++) {
         if (i.fi->param(j)->type() != c->decl()->param(j)->type()) {
@@ -1109,6 +1115,28 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
     }
   }
   if (best != nullptr) {
+    const auto& i = *best;
+    // Tie-break by parameter name among identically-typed candidates: if the
+    // chosen (most specific) match has different parameter names than the
+    // call's resolved decl, prefer an equally-typed sibling whose names match
+    // decl. These are name-only overloads and their auto-generated par/present
+    // copies (e.g. two par copies, both `(par int)`, differing only in a
+    // parameter name); the chosen match could otherwise run the wrong sibling's
+    // body. The alternative must have identical registered types, so
+    // concreteness is never overridden; if none exists the chosen match is
+    // returned unchanged, leaving genuinely name-disagreeing overloads
+    // untouched.
+    if (c->decl() != nullptr && i.fi != c->decl() &&
+        i.fi->paramCount() == c->decl()->paramCount() &&
+        !sameParameterNames(i.fi, c->decl())) {
+      for (const auto& i2 : v) {
+        if (i2.fi != i.fi && i2.t == i.t &&
+            i2.fi->paramCount() == c->decl()->paramCount() &&
+            sameParameterNames(i2.fi, c->decl())) {
+          return i2.fi;
+        }
+      }
+    }
     return best->fi;
   }
   if (matched.empty()) {
