@@ -2,8 +2,8 @@ include "fzn_sum_set.mzn";
 include "fzn_sum_set_reif.mzn";
 
 /** @group globals.math
-  Requires that the sum of the weights \a ws[\p i1]..\a ws[\p iN] equals \a s, 
-  where \a vs[\p i1]..\a vs[\p iN] are the elements appearing in set \a x
+  Requires that the sum of the weights \a weights[\p i1]..\a weights[\p iN] equals \a total, 
+  where \a values[\p i1]..\a values[\p iN] are the elements appearing in set \a selected
 */
-predicate sum_set(array [$$X] of $$Y: vs, array [$$X] of int: ws, var set of $$Y: x, var int: s) =
-  fzn_sum_set(index2int(enum2int(vs)), index2int(ws), enum2int(x), s);
+predicate sum_set(array [$$X] of $$Y: values, array [$$X] of int: weights, var set of $$Y: selected, var int: total) =
+  fzn_sum_set(index2int(enum2int(values)), index2int(weights), enum2int(selected), total);

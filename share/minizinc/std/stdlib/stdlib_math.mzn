@@ -541,35 +541,35 @@ function $$E: max(set of $$E: s);
 % TODO: add bounds reasoning
 
 /** @group stdlib.builtins.arithmetic
-    Returns the index of the minimum value in the array \a x.
+    Returns the index of the minimum value in the array \a xs.
     When breaking ties the least index is returned.
 */
-function $$E: arg_min(array [$$E] of bool: x);
+function $$E: arg_min(array [$$E] of bool: xs);
 /** @group stdlib.builtins.arithmetic
-    Returns the index of the minimum value in the array \a x.
+    Returns the index of the minimum value in the array \a xs.
     When breaking ties the least index is returned.
 */
-function $$E: arg_min(array [$$E] of $$T: x);
+function $$E: arg_min(array [$$E] of $$T: xs);
 /** @group stdlib.builtins.arithmetic
-    Returns the index of the minimum value in the array \a x.
+    Returns the index of the minimum value in the array \a xs.
     When breaking ties the least index is returned.
 */
-function $$E: arg_min(array [$$E] of float: x);
+function $$E: arg_min(array [$$E] of float: xs);
 /** @group stdlib.builtins.arithmetic
-    Returns the index of the maximum value in the array \a x.
+    Returns the index of the maximum value in the array \a xs.
     When breaking ties the least index is returned.
 */
-function $$E: arg_max(array [$$E] of bool: x);
+function $$E: arg_max(array [$$E] of bool: xs);
 /** @group stdlib.builtins.arithmetic
-    Returns the index of the maximum value in the array \a x.
+    Returns the index of the maximum value in the array \a xs.
     When breaking ties the least index is returned.
 */
-function $$E: arg_max(array [$$E] of $$T: x);
+function $$E: arg_max(array [$$E] of $$T: xs);
 /** @group stdlib.builtins.arithmetic
-    Returns the index of the maximum value in the array \a x.
+    Returns the index of the maximum value in the array \a xs.
     When breaking ties the least index is returned.
 */
-function $$E: arg_max(array [$$E] of float: x);
+function $$E: arg_max(array [$$E] of float: xs);
 
 /** @group stdlib.builtins.arithmetic Return absolute value of \a x */
 function int: abs(int: x);

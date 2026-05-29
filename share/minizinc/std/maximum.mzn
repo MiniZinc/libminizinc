@@ -1,12 +1,12 @@
-/** @group globals.math Constrains \a m to be the maximum of the values in \a x.
+/** @group globals.math Constrains \a max_value to be the maximum of the values in \a xs.
 
-  Assumptions: |\a x| > 0.
+  Assumptions: |\a xs| > 0.
 */
-predicate maximum(var $$E: m, array [$X] of var $$E: x) =
-  array_int_maximum(enum2int(m), enum2int(array1d(x)));
+predicate maximum(var $$E: max_value, array [$X] of var $$E: xs) =
+  array_int_maximum(enum2int(max_value), enum2int(array1d(xs)));
 
-/** @group globals.math Constrains \a m to be the maximum of the values in \a x.
+/** @group globals.math Constrains \a max_value to be the maximum of the values in \a xs.
 
-  Assumptions: |\a x| > 0.
+  Assumptions: |\a xs| > 0.
 */
-predicate maximum(var float: m, array [$X] of var float: x) = array_float_maximum(m, array1d(x));
+predicate maximum(var float: max_value, array [$X] of var float: xs) = array_float_maximum(max_value, array1d(xs));

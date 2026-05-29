@@ -6,241 +6,241 @@ include "fzn_arg_min_float.mzn";
 include "fzn_arg_min_float_opt.mzn";
 
 /** @group globals.math
-	Returns the index of the minimum value in the array \a x.
+	Returns the index of the minimum value in the array \a xs.
 	When breaking ties the least index is returned.
 */
-function var $$E: arg_min(array [$$E] of var $$T: x) =
+function var $$E: arg_min(array [$$E] of var $$T: xs) =
   let {
-    constraint length(x) > 0;
-  } in to_enum_internal(enum_of(index_set(x)), arg_min_total(index2int(enum2int(x))));
+    constraint length(xs) > 0;
+  } in to_enum_internal(enum_of(index_set(xs)), arg_min_total(index2int(enum2int(xs))));
 
 /** @group globals.math
-	Returns the index of the minimum value in the array \a x.
+	Returns the index of the minimum value in the array \a xs.
 	When breaking ties the least index is returned.
 */
-function var $$E: arg_min(array [$$E] of var bool: x) =
+function var $$E: arg_min(array [$$E] of var bool: xs) =
   let {
-    constraint length(x) > 0;
-  } in to_enum_internal(enum_of(index_set(x)), arg_min_total(index2int(x)));
+    constraint length(xs) > 0;
+  } in to_enum_internal(enum_of(index_set(xs)), arg_min_total(index2int(xs)));
 
 /** @group globals.math
-	Returns the index of the minimum value in the array \a x.
+	Returns the index of the minimum value in the array \a xs.
 	When breaking ties the least index is returned.
 */
-function var $$E: arg_min(array [$$E] of var float: x) =
+function var $$E: arg_min(array [$$E] of var float: xs) =
   let {
-    constraint length(x) > 0;
-  } in to_enum_internal(enum_of(index_set(x)), arg_min_total(index2int(x)));
+    constraint length(xs) > 0;
+  } in to_enum_internal(enum_of(index_set(xs)), arg_min_total(index2int(xs)));
 
 /** @group globals.math
-	Returns the index of the minimum non-absent value in the array \a x.
+	Returns the index of the minimum non-absent value in the array \a xs.
 	When breaking ties the least index is returned.
 */
-function var $$E: arg_min(array [$$E] of var opt $$T: x) =
+function var $$E: arg_min(array [$$E] of var opt $$T: xs) =
   let {
-    constraint length(x) > 0;
-  } in to_enum_internal(enum_of(index_set(x)), arg_min_total(index2int(enum2int(x))));
+    constraint length(xs) > 0;
+  } in to_enum_internal(enum_of(index_set(xs)), arg_min_total(index2int(enum2int(xs))));
 
 /** @group globals.math
-	Returns the index of the minimum non-absent value in the array \a x.
+	Returns the index of the minimum non-absent value in the array \a xs.
 	When breaking ties the least index is returned.
 	Returns absent when all elements are absent.
 */
-function var opt $$E: arg_min_weak(array [$$E] of var opt $$T: x) =
-  to_enum_internal(enum_of(index_set(x)), arg_min_weak_int(index2int(enum2int(x))));
-function var opt int: arg_min_weak_int(array [int] of var opt int: x) :: promise_total =
-  if length(x) = 0 then
+function var opt $$E: arg_min_weak(array [$$E] of var opt $$T: xs) =
+  to_enum_internal(enum_of(index_set(xs)), arg_min_weak_int(index2int(enum2int(xs))));
+function var opt int: arg_min_weak_int(array [int] of var opt int: xs) :: promise_total =
+  if length(xs) = 0 then
     <>
-  elseif exists (xi in x) (is_fixed(occurs(xi)) /\ (fix(occurs(xi)))) then
+  elseif exists (xi in xs) (is_fixed(occurs(xi)) /\ (fix(occurs(xi)))) then
     let {
-      var index_set(x): i;
-      constraint fzn_minimum_arg_int_opt(x, i);
+      var index_set(xs): i;
+      constraint fzn_minimum_arg_int_opt(xs, i);
     } in i
   else
     let {
-      set of int: idx = min(index_set(x))..max(index_set(x)) + 1;
-      any: xx = array1d(idx, x ++ [ub_array(x)]);
+      set of int: idx = min(index_set(xs))..max(index_set(xs)) + 1;
+      any: xx = array1d(idx, xs ++ [ub_array(xs)]);
       var idx: i;
-      var opt index_set(x): ii = if i in index_set(x) then i else <> endif;
+      var opt index_set(xs): ii = if i in index_set(xs) then i else <> endif;
       constraint fzn_minimum_arg_int_opt(xx, i);
     } in ii
   endif;
 
 /** @group globals.math
-	Returns the index of the minimum non-absent value in the array \a x.
+	Returns the index of the minimum non-absent value in the array \a xs.
 	When breaking ties the least index is returned.
 */
-function var $$E: arg_min(array [$$E] of var opt bool: x) =
+function var $$E: arg_min(array [$$E] of var opt bool: xs) =
   let {
-    constraint length(x) > 0;
-  } in to_enum_internal(enum_of(index_set(x)), arg_min_total(index2int(x)));
+    constraint length(xs) > 0;
+  } in to_enum_internal(enum_of(index_set(xs)), arg_min_total(index2int(xs)));
 
 /** @group globals.math
-	Returns the index of the minimum non-absent value in the array \a x.
+	Returns the index of the minimum non-absent value in the array \a xs.
 	When breaking ties the least index is returned.
 	Returns absent when all elements are absent.
 */
-function var opt $$E: arg_min_weak(array [$$E] of var opt bool: x) =
-  to_enum_internal(enum_of(index_set(x)), arg_min_weak_bool(index2int(x)));
-function var opt int: arg_min_weak_bool(array [int] of var opt bool: x) :: promise_total =
-  if length(x) = 0 then
+function var opt $$E: arg_min_weak(array [$$E] of var opt bool: xs) =
+  to_enum_internal(enum_of(index_set(xs)), arg_min_weak_bool(index2int(xs)));
+function var opt int: arg_min_weak_bool(array [int] of var opt bool: xs) :: promise_total =
+  if length(xs) = 0 then
     <>
-  elseif exists (xi in x) (is_fixed(occurs(xi)) /\ (fix(occurs(xi)))) then
+  elseif exists (xi in xs) (is_fixed(occurs(xi)) /\ (fix(occurs(xi)))) then
     let {
-      var index_set(x): i;
-      constraint fzn_minimum_arg_bool_opt(x, i);
+      var index_set(xs): i;
+      constraint fzn_minimum_arg_bool_opt(xs, i);
     } in i
   else
     let {
-      set of int: idx = min(index_set(x))..max(index_set(x)) + 1;
-      any: xx = array1d(idx, x ++ [true]);
+      set of int: idx = min(index_set(xs))..max(index_set(xs)) + 1;
+      any: xx = array1d(idx, xs ++ [true]);
       var idx: i;
-      var opt index_set(x): ii = if i in index_set(x) then i else <> endif;
+      var opt index_set(xs): ii = if i in index_set(xs) then i else <> endif;
       constraint fzn_minimum_arg_bool_opt(xx, i);
     } in ii
   endif;
 
 /** @group globals.math
-	Returns the index of the minimum non-absent value in the array \a x.
+	Returns the index of the minimum non-absent value in the array \a xs.
 	When breaking ties the least index is returned.
 */
-function var $$E: arg_min(array [$$E] of var opt float: x) =
+function var $$E: arg_min(array [$$E] of var opt float: xs) =
   let {
-    constraint length(x) > 0;
-  } in to_enum_internal(enum_of(index_set(x)), arg_min_total(index2int(x)));
+    constraint length(xs) > 0;
+  } in to_enum_internal(enum_of(index_set(xs)), arg_min_total(index2int(xs)));
 
 /** @group globals.math
-	Returns the index of the minimum non-absent value in the array \a x.
+	Returns the index of the minimum non-absent value in the array \a xs.
 	When breaking ties the least index is returned.
 	Returns absent when all elements are absent.
 */
-function var opt $$E: arg_min_weak(array [$$E] of var opt float: x) =
-  to_enum_internal(enum_of(index_set(x)), arg_min_weak_float(index2int(x)));
-function var opt int: arg_min_weak_float(array [int] of var opt float: x) :: promise_total =
-  if length(x) = 0 then
+function var opt $$E: arg_min_weak(array [$$E] of var opt float: xs) =
+  to_enum_internal(enum_of(index_set(xs)), arg_min_weak_float(index2int(xs)));
+function var opt int: arg_min_weak_float(array [int] of var opt float: xs) :: promise_total =
+  if length(xs) = 0 then
     <>
-  elseif exists (xi in x) (is_fixed(occurs(xi)) /\ (fix(occurs(xi)))) then
+  elseif exists (xi in xs) (is_fixed(occurs(xi)) /\ (fix(occurs(xi)))) then
     let {
-      var index_set(x): i;
-      constraint fzn_minimum_arg_float_opt(x, i);
+      var index_set(xs): i;
+      constraint fzn_minimum_arg_float_opt(xs, i);
     } in i
   else
     let {
-      set of int: idx = min(index_set(x))..max(index_set(x)) + 1;
-      any: xx = array1d(idx, x ++ [ub_array(x)]);
+      set of int: idx = min(index_set(xs))..max(index_set(xs)) + 1;
+      any: xx = array1d(idx, xs ++ [ub_array(xs)]);
       var idx: i;
-      var opt index_set(x): ii = if i in index_set(x) then i else <> endif;
+      var opt index_set(xs): ii = if i in index_set(xs) then i else <> endif;
       constraint fzn_minimum_arg_float_opt(xx, i);
     } in ii
   endif;
 
-function var int: arg_min_total(array [int] of var int: x) :: promise_total =
-  if length(x) = 0 then
+function var int: arg_min_total(array [int] of var int: xs) :: promise_total =
+  if length(xs) = 0 then
     0
   else
     let {
-      var index_set(x): i;
-      constraint fzn_minimum_arg_int(x, i);
+      var index_set(xs): i;
+      constraint fzn_minimum_arg_int(xs, i);
     } in i
   endif;
 
-function var int: arg_min_total(array [int] of var bool: x) :: promise_total =
-  if length(x) = 0 then
+function var int: arg_min_total(array [int] of var bool: xs) :: promise_total =
+  if length(xs) = 0 then
     0
   else
     let {
-      var index_set(x): i;
-      constraint fzn_minimum_arg_bool(x, i);
+      var index_set(xs): i;
+      constraint fzn_minimum_arg_bool(xs, i);
     } in i
   endif;
 
-function var int: arg_min_total(array [int] of var float: x) :: promise_total =
-  if length(x) = 0 then
+function var int: arg_min_total(array [int] of var float: xs) :: promise_total =
+  if length(xs) = 0 then
     0
   else
     let {
-      var index_set(x): i;
-      constraint fzn_minimum_arg_float(x, i);
+      var index_set(xs): i;
+      constraint fzn_minimum_arg_float(xs, i);
     } in i
   endif;
 
-function var int: arg_min_total(array [int] of var opt int: x) :: promise_total =
-  if length(x) = 0 then
-    min(index_set(x))
-  elseif exists (xi in x) (is_fixed(occurs(xi)) /\ (fix(occurs(xi)))) then
+function var int: arg_min_total(array [int] of var opt int: xs) :: promise_total =
+  if length(xs) = 0 then
+    min(index_set(xs))
+  elseif exists (xi in xs) (is_fixed(occurs(xi)) /\ (fix(occurs(xi)))) then
     let {
-      var index_set(x): i;
-      constraint fzn_minimum_arg_int_opt(x, i);
+      var index_set(xs): i;
+      constraint fzn_minimum_arg_int_opt(xs, i);
     } in i
   else
     let {
-      set of int: idx = min(index_set(x))..max(index_set(x)) + 1;
-      any: xx = array1d(idx, x ++ [ub_array(x)]);
+      set of int: idx = min(index_set(xs))..max(index_set(xs)) + 1;
+      any: xx = array1d(idx, xs ++ [ub_array(xs)]);
       var idx: i;
-      var index_set(x): ii = if i in index_set(x) then i else min(index_set(x)) endif;
+      var index_set(xs): ii = if i in index_set(xs) then i else min(index_set(xs)) endif;
       constraint fzn_minimum_arg_int_opt(xx, i);
     } in ii
   endif;
 
-function var int: arg_min_total(array [int] of var opt bool: x) :: promise_total =
-  if length(x) = 0 then
+function var int: arg_min_total(array [int] of var opt bool: xs) :: promise_total =
+  if length(xs) = 0 then
     0
-  elseif exists (xi in x) (is_fixed(occurs(xi)) /\ (fix(occurs(xi)))) then
+  elseif exists (xi in xs) (is_fixed(occurs(xi)) /\ (fix(occurs(xi)))) then
     let {
-      var index_set(x): i;
-      constraint fzn_minimum_arg_bool_opt(x, i);
+      var index_set(xs): i;
+      constraint fzn_minimum_arg_bool_opt(xs, i);
     } in i
   else
     let {
-      set of int: idx = min(index_set(x))..max(index_set(x)) + 1;
-      any: xx = array1d(idx, x ++ [true]);
+      set of int: idx = min(index_set(xs))..max(index_set(xs)) + 1;
+      any: xx = array1d(idx, xs ++ [true]);
       var idx: i;
-      var index_set(x): ii = if i in index_set(x) then i else min(index_set(x)) endif;
+      var index_set(xs): ii = if i in index_set(xs) then i else min(index_set(xs)) endif;
       constraint fzn_minimum_arg_bool_opt(xx, i);
     } in ii
   endif;
 
-function var int: arg_min_total(array [int] of var opt float: x) :: promise_total =
-  if length(x) = 0 then
+function var int: arg_min_total(array [int] of var opt float: xs) :: promise_total =
+  if length(xs) = 0 then
     0
-  elseif exists (xi in x) (is_fixed(occurs(xi)) /\ (fix(occurs(xi)))) then
+  elseif exists (xi in xs) (is_fixed(occurs(xi)) /\ (fix(occurs(xi)))) then
     let {
-      var index_set(x): i;
-      constraint fzn_minimum_arg_float_opt(x, i);
+      var index_set(xs): i;
+      constraint fzn_minimum_arg_float_opt(xs, i);
     } in i
   else
     let {
-      set of int: idx = min(index_set(x))..max(index_set(x)) + 1;
-      any: xx = array1d(idx, x ++ [ub_array(x)]);
+      set of int: idx = min(index_set(xs))..max(index_set(xs)) + 1;
+      any: xx = array1d(idx, xs ++ [ub_array(xs)]);
       var idx: i;
-      var index_set(x): ii = if i in index_set(x) then i else min(index_set(x)) endif;
+      var index_set(xs): ii = if i in index_set(xs) then i else min(index_set(xs)) endif;
       constraint fzn_minimum_arg_float_opt(xx, i);
     } in ii
   endif;
 
 /** @group globals.math
-	Constrain \a i to be the index of the minimum value in the array \a x.
+	Constrain \a idx to be the index of the minimum value in the array \a xs.
 	When breaking ties the least index is returned.
 
-	Assumption: |\a x| > 0
+	Assumption: |\a xs| > 0
 */
-predicate minimum_arg(array [$$E] of var $$T: x, var $$E: i) =
-  arg_min(x) = i;
+predicate minimum_arg(array [$$E] of var $$T: xs, var $$E: idx) =
+  arg_min(xs) = idx;
 
 /** @group globals.math
-	Constrain \a i to be the index of the minimum value in the array \a x.
+	Constrain \a idx to be the index of the minimum value in the array \a xs.
 	When breaking ties the least index is returned.
 
-	Assumption: |\a x| > 0
+	Assumption: |\a xs| > 0
 */
-predicate minimum_arg(array [$$E] of var bool: x, var $$E: i) =
-  arg_min(x) = i;
+predicate minimum_arg(array [$$E] of var bool: xs, var $$E: idx) =
+  arg_min(xs) = idx;
 
 /** @group globals.math
-	Constrain \a i to be the index of the minimum value in the array \a x.
+	Constrain \a idx to be the index of the minimum value in the array \a xs.
 	When breaking ties the least index is returned.
 	
-	Assumption: |\a x| > 0
+	Assumption: |\a xs| > 0
 */
-predicate minimum_arg(array [$$E] of var float: x, var $$E: i) =
-  arg_min(x) = i;
+predicate minimum_arg(array [$$E] of var float: xs, var $$E: idx) =
+  arg_min(xs) = idx;

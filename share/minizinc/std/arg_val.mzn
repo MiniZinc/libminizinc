@@ -6,267 +6,267 @@ include "fzn_arg_val_int.mzn";
 include "fzn_arg_val_int_opt.mzn";
 
 /** @group globals.math
-	Returns the index of the value \a v in the array \a x.
+	Returns the index of the value \a value in the array \a xs.
 	When breaking ties the least index is returned.
-	Note that this function forces the value \a v to occur in \a x.
+	Note that this function forces the value \a value to occur in \a xs.
 */
-function $$E: arg_val(array [$$E] of $T: x, $T: v) =
-  let { any: matches = [i | i in index_set(x) where x[i] = v] } in matches[1];
+function $$E: arg_val(array [$$E] of $T: xs, $T: value) =
+  let { any: matches = [i | i in index_set(xs) where xs[i] = value] } in matches[1];
 
 /** @group globals.math
-	Returns the index of the value \a v in the array \a x when \a v.
+	Returns the index of the value \a value in the array \a xs when \a value.
 	When breaking ties the least index is returned.
-	Returns absent when \a v does not occur in \a x.
+	Returns absent when \a value does not occur in \a xs.
 */
-function opt $$E: arg_val_weak(array [$$E] of $T: x, $T: v) =
+function opt $$E: arg_val_weak(array [$$E] of $T: xs, $T: value) =
   let {
-    any: matches = [i | i in index_set(x) where x[i] = v];
+    any: matches = [i | i in index_set(xs) where xs[i] = value];
   } in if length(matches) = 0 then <> else matches[1] endif;
 
 /** @group globals.math
-	Returns the index of the value \a v in the array \a x.
+	Returns the index of the value \a value in the array \a xs.
 	When breaking ties the least index is returned.
-	Note that this function forces the value \a v to occur in \a x.
+	Note that this function forces the value \a value to occur in \a xs.
 */
-function var $$E: arg_val(array [$$E] of var bool: x, var bool: v) =
+function var $$E: arg_val(array [$$E] of var bool: xs, var bool: value) =
   let {
-    constraint length(x) > 0;
-  } in to_enum_internal(enum_of(index_set(x)), arg_val_total(index2int(x), v));
+    constraint length(xs) > 0;
+  } in to_enum_internal(enum_of(index_set(xs)), arg_val_total(index2int(xs), value));
 
-function var int: arg_val_total(array [int] of var bool: x, var bool: v) :: promise_total =
-  if length(x) = 0 then
-    min(index_set(x))
+function var int: arg_val_total(array [int] of var bool: xs, var bool: value) :: promise_total =
+  if length(xs) = 0 then
+    min(index_set(xs))
   else
     let {
-      var index_set(x): i;
-      constraint fzn_arg_val_bool(x, v, i);
+      var index_set(xs): i;
+      constraint fzn_arg_val_bool(xs, value, i);
     } in i
   endif;
 
 /** @group globals.math
-	Returns the index of the value \a v in the array \a x when \a v.
+	Returns the index of the value \a value in the array \a xs when \a value.
 	When breaking ties the least index is returned.
-	Returns absent when \a v does not occur in \a x.
+	Returns absent when \a value does not occur in \a xs.
 */
-function var opt $$E: arg_val_weak(array [$$E] of var bool: x, var bool: v) =
-  to_enum_internal(enum_of(index_set(x)), arg_val_weak_bool(index2int(x), v));
-function var opt int: arg_val_weak_bool(array [int] of var bool: x, var bool: v) :: promise_total =
-  if length(x) = 0 then
+function var opt $$E: arg_val_weak(array [$$E] of var bool: xs, var bool: value) =
+  to_enum_internal(enum_of(index_set(xs)), arg_val_weak_bool(index2int(xs), value));
+function var opt int: arg_val_weak_bool(array [int] of var bool: xs, var bool: value) :: promise_total =
+  if length(xs) = 0 then
     <>
   else
     let {
-      set of int: idx = min(index_set(x))..max(index_set(x)) + 1;
-      any: xx = array1d(idx, x ++ [v]);
+      set of int: idx = min(index_set(xs))..max(index_set(xs)) + 1;
+      any: xx = array1d(idx, xs ++ [value]);
       var idx: i;
-      var opt index_set(x): ii = if i in index_set(x) then i else <> endif;
-      constraint fzn_arg_val_bool(xx, v, i);
+      var opt index_set(xs): ii = if i in index_set(xs) then i else <> endif;
+      constraint fzn_arg_val_bool(xx, value, i);
     } in ii
   endif;
 
 /** @group globals.math
-	Returns the index of the value \a v in the array \a x.
+	Returns the index of the value \a value in the array \a xs.
 	When breaking ties the least index is returned.
-	Note that this function forces the value \a v to occur in \a x.
+	Note that this function forces the value \a value to occur in \a xs.
 */
-function var $$E: arg_val(array [$$E] of var opt bool: x, var opt bool: v) =
+function var $$E: arg_val(array [$$E] of var opt bool: xs, var opt bool: value) =
   let {
-    constraint length(x) > 0;
-  } in to_enum_internal(enum_of(index_set(x)), arg_val_total(index2int(x), v));
+    constraint length(xs) > 0;
+  } in to_enum_internal(enum_of(index_set(xs)), arg_val_total(index2int(xs), value));
 
-function var int: arg_val_total(array [int] of var opt bool: x, var opt bool: v) :: promise_total =
-  if length(x) = 0 then
-    min(index_set(x))
+function var int: arg_val_total(array [int] of var opt bool: xs, var opt bool: value) :: promise_total =
+  if length(xs) = 0 then
+    min(index_set(xs))
   else
     let {
-      var index_set(x): i;
-      constraint fzn_arg_val_bool_opt(x, v, i);
+      var index_set(xs): i;
+      constraint fzn_arg_val_bool_opt(xs, value, i);
     } in i
   endif;
 
 /** @group globals.math
-	Returns the index of the value \a v in the array \a x when \a v.
+	Returns the index of the value \a value in the array \a xs when \a value.
 	When breaking ties the least index is returned.
-	Returns absent when \a v does not occur in \a x.
+	Returns absent when \a value does not occur in \a xs.
 */
-function var opt $$E: arg_val_weak(array [$$E] of var opt bool: x, var opt bool: v) =
-  to_enum_internal(enum_of(index_set(x)), arg_val_weak_opt_bool(index2int(x), v));
-function var opt int: arg_val_weak_opt_bool(array [int] of var opt bool: x, var opt bool: v)
+function var opt $$E: arg_val_weak(array [$$E] of var opt bool: xs, var opt bool: value) =
+  to_enum_internal(enum_of(index_set(xs)), arg_val_weak_opt_bool(index2int(xs), value));
+function var opt int: arg_val_weak_opt_bool(array [int] of var opt bool: xs, var opt bool: value)
   :: promise_total =
-  if length(x) = 0 then
+  if length(xs) = 0 then
     <>
   else
     let {
-      set of int: idx = min(index_set(x))..max(index_set(x)) + 1;
-      any: xx = array1d(idx, x ++ [v]);
+      set of int: idx = min(index_set(xs))..max(index_set(xs)) + 1;
+      any: xx = array1d(idx, xs ++ [value]);
       var idx: i;
-      var opt index_set(x): ii = if i in index_set(x) then i else <> endif;
-      constraint fzn_arg_val_bool_opt(xx, v, i);
+      var opt index_set(xs): ii = if i in index_set(xs) then i else <> endif;
+      constraint fzn_arg_val_bool_opt(xx, value, i);
     } in ii
   endif;
 
 /** @group globals.math
-	Returns the index of the value \a v in the array \a x.
+	Returns the index of the value \a value in the array \a xs.
 	When breaking ties the least index is returned.
-	Note that this function forces the value \a v to occur in \a x.
+	Note that this function forces the value \a value to occur in \a xs.
 */
-function var $$E: arg_val(array [$$E] of var float: x, var float: v) =
+function var $$E: arg_val(array [$$E] of var float: xs, var float: value) =
   let {
-    constraint length(x) > 0;
-  } in to_enum_internal(enum_of(index_set(x)), arg_val_total(index2int(x), v));
+    constraint length(xs) > 0;
+  } in to_enum_internal(enum_of(index_set(xs)), arg_val_total(index2int(xs), value));
 
-function var int: arg_val_total(array [int] of var float: x, var float: v) :: promise_total =
-  if length(x) = 0 then
-    min(index_set(x))
+function var int: arg_val_total(array [int] of var float: xs, var float: value) :: promise_total =
+  if length(xs) = 0 then
+    min(index_set(xs))
   else
     let {
-      var index_set(x): i;
-      constraint fzn_arg_val_float(x, v, i);
+      var index_set(xs): i;
+      constraint fzn_arg_val_float(xs, value, i);
     } in i
   endif;
 
 /** @group globals.math
-	Returns the index of the value \a v in the array \a x when \a v.
+	Returns the index of the value \a value in the array \a xs when \a value.
 	When breaking ties the least index is returned.
-	Returns absent when \a v does not occur in \a x.
+	Returns absent when \a value does not occur in \a xs.
 */
-function var opt $$E: arg_val_weak(array [$$E] of var float: x, var float: v) =
-  to_enum_internal(enum_of(index_set(x)), arg_val_weak_float(index2int(x), v));
-function var opt int: arg_val_weak_float(array [int] of var float: x, var float: v)
+function var opt $$E: arg_val_weak(array [$$E] of var float: xs, var float: value) =
+  to_enum_internal(enum_of(index_set(xs)), arg_val_weak_float(index2int(xs), value));
+function var opt int: arg_val_weak_float(array [int] of var float: xs, var float: value)
    :: promise_total =
-  if length(x) = 0 then
+  if length(xs) = 0 then
     <>
   else
     let {
-      set of int: idx = min(index_set(x))..max(index_set(x)) + 1;
-      any: xx = array1d(idx, x ++ [v]);
+      set of int: idx = min(index_set(xs))..max(index_set(xs)) + 1;
+      any: xx = array1d(idx, xs ++ [value]);
       var idx: i;
-      var opt index_set(x): ii = if i in index_set(x) then i else <> endif;
-      constraint fzn_arg_val_float(xx, v, i);
+      var opt index_set(xs): ii = if i in index_set(xs) then i else <> endif;
+      constraint fzn_arg_val_float(xx, value, i);
     } in ii
   endif;
 
 /** @group globals.math
-	Returns the index of the value \a v in the array \a x.
+	Returns the index of the value \a value in the array \a xs.
 	When breaking ties the least index is returned.
-	Note that this function forces the value \a v to occur in \a x.
+	Note that this function forces the value \a value to occur in \a xs.
 */
-function var $$E: arg_val(array [$$E] of var opt float: x, var float: v) =
+function var $$E: arg_val(array [$$E] of var opt float: xs, var float: value) =
   let {
-    constraint length(x) > 0;
-  } in to_enum_internal(enum_of(index_set(x)), arg_val_total(index2int(x), v));
+    constraint length(xs) > 0;
+  } in to_enum_internal(enum_of(index_set(xs)), arg_val_total(index2int(xs), value));
 
-function var int: arg_val_total(array [int] of var opt float: x, var opt float: v)
+function var int: arg_val_total(array [int] of var opt float: xs, var opt float: value)
   :: promise_total =
-  if length(x) = 0 then
-    min(index_set(x))
+  if length(xs) = 0 then
+    min(index_set(xs))
   else
     let {
-      var index_set(x): i;
-      constraint fzn_arg_val_float_opt(x, v, i);
+      var index_set(xs): i;
+      constraint fzn_arg_val_float_opt(xs, value, i);
     } in i
   endif;
 
 /** @group globals.math
-	Returns the index of the value \a v in the array \a x when \a v.
+	Returns the index of the value \a value in the array \a xs when \a value.
 	When breaking ties the least index is returned.
-	Returns absent when \a v does not occur in \a x.
+	Returns absent when \a value does not occur in \a xs.
 */
-function var opt $$E: arg_val_weak(array [$$E] of var opt float: x, var opt float: v) =
-  to_enum_internal(enum_of(index_set(x)), arg_val_weak_opt_float(index2int(x), v));
-function var opt int: arg_val_weak_opt_float(array [int] of var opt float: x, var opt float: v)
+function var opt $$E: arg_val_weak(array [$$E] of var opt float: xs, var opt float: value) =
+  to_enum_internal(enum_of(index_set(xs)), arg_val_weak_opt_float(index2int(xs), value));
+function var opt int: arg_val_weak_opt_float(array [int] of var opt float: xs, var opt float: value)
   :: promise_total =
-  if length(x) = 0 then
+  if length(xs) = 0 then
     <>
   else
     let {
-      set of int: idx = min(index_set(x))..max(index_set(x)) + 1;
-      any: xx = array1d(idx, x ++ [v]);
+      set of int: idx = min(index_set(xs))..max(index_set(xs)) + 1;
+      any: xx = array1d(idx, xs ++ [value]);
       var idx: i;
-      var opt index_set(x): ii = if i in index_set(x) then i else <> endif;
-      constraint fzn_arg_val_float_opt(xx, v, i);
+      var opt index_set(xs): ii = if i in index_set(xs) then i else <> endif;
+      constraint fzn_arg_val_float_opt(xx, value, i);
     } in ii
   endif;
 
 /** @group globals.math
-	Returns the index of the value \a v in the array \a x.
+	Returns the index of the value \a value in the array \a xs.
 	When breaking ties the least index is returned.
-	Note that this function forces the value \a v to occur in \a x.
+	Note that this function forces the value \a value to occur in \a xs.
 */
-function var $$E: arg_val(array [$$E] of var $$V: x, var $$V: v) =
+function var $$E: arg_val(array [$$E] of var $$V: xs, var $$V: value) =
   let {
-    constraint length(x) > 0;
-  } in to_enum_internal(enum_of(index_set(x)), arg_val_total(index2int(enum2int(x)), enum2int(v)));
+    constraint length(xs) > 0;
+  } in to_enum_internal(enum_of(index_set(xs)), arg_val_total(index2int(enum2int(xs)), enum2int(value)));
 
-function var int: arg_val_total(array [int] of var int: x, var int: v) :: promise_total =
-  if length(x) = 0 then
-    min(index_set(x))
+function var int: arg_val_total(array [int] of var int: xs, var int: value) :: promise_total =
+  if length(xs) = 0 then
+    min(index_set(xs))
   else
     let {
-      var index_set(x): i;
-      constraint fzn_arg_val_int(x, v, i);
+      var index_set(xs): i;
+      constraint fzn_arg_val_int(xs, value, i);
     } in i
   endif;
 
 /** @group globals.math
-	Returns the index of the value \a v in the array \a x when \a v.
+	Returns the index of the value \a value in the array \a xs when \a value.
 	When breaking ties the least index is returned.
-	Returns absent when \a v does not occur in \a x.
+	Returns absent when \a value does not occur in \a xs.
 */
-function var opt $$E: arg_val_weak(array [$$E] of var $$V: x, var $$V: v) =
-  to_enum_internal(enum_of(index_set(x)), arg_val_weak_int(index2int(enum2int(x)), enum2int(v)));
-function var opt int: arg_val_weak_int(array [int] of var int: x, var int: v) :: promise_total =
-  if length(x) = 0 then
+function var opt $$E: arg_val_weak(array [$$E] of var $$V: xs, var $$V: value) =
+  to_enum_internal(enum_of(index_set(xs)), arg_val_weak_int(index2int(enum2int(xs)), enum2int(value)));
+function var opt int: arg_val_weak_int(array [int] of var int: xs, var int: value) :: promise_total =
+  if length(xs) = 0 then
     <>
   else
     let {
-      set of int: idx = min(index_set(x))..max(index_set(x)) + 1;
-      any: xx = array1d(idx, x ++ [v]);
+      set of int: idx = min(index_set(xs))..max(index_set(xs)) + 1;
+      any: xx = array1d(idx, xs ++ [value]);
       var idx: i;
-      var opt index_set(x): ii = if i in index_set(x) then i else <> endif;
-      constraint fzn_arg_val_int(xx, v, i);
+      var opt index_set(xs): ii = if i in index_set(xs) then i else <> endif;
+      constraint fzn_arg_val_int(xx, value, i);
     } in ii
   endif;
 
 /** @group globals.math
-	Returns the index of the value \a v in the array \a x.
+	Returns the index of the value \a value in the array \a xs.
 	When breaking ties the least index is returned.
-	Note that this function forces the value \a v to occur in \a x.
+	Note that this function forces the value \a value to occur in \a xs.
 */
-function var $$E: arg_val(array [$$E] of var opt $$V: x, var opt $$V: v) =
+function var $$E: arg_val(array [$$E] of var opt $$V: xs, var opt $$V: value) =
   let {
-    constraint length(x) > 0;
-  } in to_enum_internal(enum_of(index_set(x)), arg_val_total(index2int(enum2int(x)), enum2int(v)));
+    constraint length(xs) > 0;
+  } in to_enum_internal(enum_of(index_set(xs)), arg_val_total(index2int(enum2int(xs)), enum2int(value)));
 
-function var int: arg_val_total(array [int] of var opt int: x, var opt int: v) :: promise_total =
-  if length(x) = 0 then
-    min(index_set(x))
+function var int: arg_val_total(array [int] of var opt int: xs, var opt int: value) :: promise_total =
+  if length(xs) = 0 then
+    min(index_set(xs))
   else
     let {
-      var index_set(x): i;
-      constraint fzn_arg_val_int_opt(x, v, i);
+      var index_set(xs): i;
+      constraint fzn_arg_val_int_opt(xs, value, i);
     } in i
   endif;
 
 /** @group globals.math
-	Returns the index of the value \a v in the array \a x when \a v.
+	Returns the index of the value \a value in the array \a xs when \a value.
 	When breaking ties the least index is returned.
-	Returns absent when \a v does not occur in \a x.
+	Returns absent when \a value does not occur in \a xs.
 */
-function var opt $$E: arg_val_weak(array [$$E] of var opt $$V: x, var opt $$V: v) =
+function var opt $$E: arg_val_weak(array [$$E] of var opt $$V: xs, var opt $$V: value) =
   to_enum_internal(
-    enum_of(index_set(x)),
-    arg_val_weak_opt_int(index2int(enum2int(x)), enum2int(v)),
+    enum_of(index_set(xs)),
+    arg_val_weak_opt_int(index2int(enum2int(xs)), enum2int(value)),
   );
-function var opt int: arg_val_weak_opt_int(array [int] of var opt int: x, var opt int: v)
+function var opt int: arg_val_weak_opt_int(array [int] of var opt int: xs, var opt int: value)
   :: promise_total =
-  if length(x) = 0 then
+  if length(xs) = 0 then
     <>
   else
     let {
-      set of int: idx = min(index_set(x))..max(index_set(x)) + 1;
-      any: xx = array1d(idx, x ++ [v]);
+      set of int: idx = min(index_set(xs))..max(index_set(xs)) + 1;
+      any: xx = array1d(idx, xs ++ [value]);
       var idx: i;
-      var opt index_set(x): ii = if i in index_set(x) then i else <> endif;
-      constraint fzn_arg_val_int_opt(xx, v, i);
+      var opt index_set(xs): ii = if i in index_set(xs) then i else <> endif;
+      constraint fzn_arg_val_int_opt(xx, value, i);
     } in ii
   endif;
