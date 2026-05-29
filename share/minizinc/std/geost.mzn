@@ -15,7 +15,7 @@ include "fzn_geost_nonoverlap_k_reif.mzn";
  
 @param shape:        the set of rectangles defining the \p i-th shape. 
 
-@param x:       the base position of each object. \a x[\p i,\p j] is the position of object \p i in. dimension \p j.
+@param xs:       the base position of each object. \a xs[\p i,\p j] is the position of object \p i in. dimension \p j.
 @param kind:      the shape used by each object.
 */
 
@@ -23,7 +23,7 @@ predicate geost(
   array [$$R, $$K] of int: rect_size,
   array [$$R, $$K] of int: rect_offset,
   array [$$S] of set of $$R: shape,
-  array [$$O, $$K] of var int: x,
+  array [$$O, $$K] of var int: xs,
   array [$$O] of var $$S: kind,
 ) =
   let {
@@ -34,8 +34,8 @@ predicate geost(
       );
     constraint
       assert(
-        index_set_2of2(rect_size) = index_set_2of2(x),
-        "geost: rectangles must have same number of dimensions as x",
+        index_set_2of2(rect_size) = index_set_2of2(xs),
+        "geost: rectangles must have same number of dimensions as xs",
       );
     constraint
       assert(
@@ -44,8 +44,8 @@ predicate geost(
       );
     constraint
       assert(
-        index_set_1of2(x) = index_set(kind),
-        "geost: index set of kind must match first index set of x",
+        index_set_1of2(xs) = index_set(kind),
+        "geost: index set of kind must match first index set of xs",
       );
     constraint assert(forall (s in shape) (card(s) > 0), "geost: shapes must not be empty");
     int: k = card(index_set_2of2(rect_size));
@@ -56,7 +56,7 @@ predicate geost(
     array2d(RECT, 1..k, rect_size),
     array2d(RECT, 1..k, rect_offset),
     index2int(enum2int(shape)),
-    array2d(OBJ, 1..k, x),
+    array2d(OBJ, 1..k, xs),
     index2int(enum2int(kind)),
   );
 
@@ -69,7 +69,7 @@ predicate geost(
  
 @param shape:        the set of rectangles defining the \p i-th shape. 
 
-@param x:       the base position of each object. \a x[\p i,\p j] is the position of object \p i in. dimension \p j.
+@param xs:       the base position of each object. \a xs[\p i,\p j] is the position of object \p i in. dimension \p j.
 @param kind:      the shape used by each object.
 */
 
@@ -78,7 +78,7 @@ predicate geost(
   array [$$R, $$K] of int: rect_size,
   array [$$R, $$K] of int: rect_offset,
   array [$$S] of set of $$R: shape,
-  array [$$O, $$K] of var int: x,
+  array [$$O, $$K] of var int: xs,
   array [$$O] of var $$S: kind,
 ) =
   let {
@@ -87,7 +87,7 @@ predicate geost(
         k = card(index_set_2of2(rect_size)),
         "geost: k must match second index set of rect_size",
       );
-  } in geost(rect_size, rect_offset, shape, x, kind);
+  } in geost(rect_size, rect_offset, shape, xs, kind);
 
 /** @group globals.packing
  A global non-overlap constraint for \a k dimensional objects. It enforces that no two objects overlap, and that all objects fit within a global \a k dimensional bounding box.
@@ -98,20 +98,20 @@ predicate geost(
  
 @param shape:        the set of rectangles defining the \p i-th shape. 
 
-@param x:       the base position of each object. \a x[\p i,\p j] is the position of object \p i in dimension \p j.
+@param xs:       the base position of each object. \a xs[\p i,\p j] is the position of object \p i in dimension \p j.
 @param kind:      the shape used by each object.
 
-@param l:            is an array of lower bounds, \a l[\p i] is the minimum bounding box for all objects in dimension \p i.
-@param u:            is an array of upper bounds, \a u[\p i] is the maximum bounding box for all objects in dimension \p i.
+@param lower_bounds:            is an array of lower bounds, \a lower_bounds[\p i] is the minimum bounding box for all objects in dimension \p i.
+@param upper_bounds:            is an array of upper bounds, \a upper_bounds[\p i] is the maximum bounding box for all objects in dimension \p i.
 */
 predicate geost_bb(
   array [$$R, $$K] of int: rect_size,
   array [$$R, $$K] of int: rect_offset,
   array [$$S] of set of $$R: shape,
-  array [$$O, $$K] of var int: x,
+  array [$$O, $$K] of var int: xs,
   array [$$O] of var $$S: kind,
-  array [$$K] of var int: l,
-  array [$$K] of var int: u,
+  array [$$K] of var int: lower_bounds,
+  array [$$K] of var int: upper_bounds,
 ) =
   let {
     constraint
@@ -121,8 +121,8 @@ predicate geost_bb(
       );
     constraint
       assert(
-        index_set_2of2(rect_size) = index_set_2of2(x),
-        "geost_bb: rectangles must have same number of dimensions as x",
+        index_set_2of2(rect_size) = index_set_2of2(xs),
+        "geost_bb: rectangles must have same number of dimensions as xs",
       );
     constraint
       assert(
@@ -131,14 +131,14 @@ predicate geost_bb(
       );
     constraint
       assert(
-        index_set_1of2(x) = index_set(kind),
-        "geost_bb: index set of kind must match first index set of x",
+        index_set_1of2(xs) = index_set(kind),
+        "geost_bb: index set of kind must match first index set of xs",
       );
     constraint assert(forall (s in shape) (card(s) > 0), "geost_bb: shapes must not be empty");
-    constraint assert(index_sets_agree(l, u), "geost_bb: l must have the same index set as u");
+    constraint assert(index_sets_agree(lower_bounds, upper_bounds), "geost_bb: lower_bounds must have the same index set as upper_bounds");
     constraint
       assert(
-        index_set_2of2(rect_size) = index_set(l),
+        index_set_2of2(rect_size) = index_set(lower_bounds),
         "geost_bb: rectangles must have same number of dimensions as bounds",
       );
     int: k = card(index_set_2of2(rect_size));
@@ -149,10 +149,10 @@ predicate geost_bb(
     array2d(RECT, 1..k, rect_size),
     array2d(RECT, 1..k, rect_offset),
     index2int(enum2int(shape)),
-    array2d(OBJ, 1..k, x),
+    array2d(OBJ, 1..k, xs),
     index2int(enum2int(kind)),
-    array1d(l),
-    array1d(u),
+    array1d(lower_bounds),
+    array1d(upper_bounds),
   );
 
 /** @group globals.packing
@@ -164,11 +164,11 @@ predicate geost_bb(
  
 @param shape:        the set of rectangles defining the \p i-th shape. 
 
-@param x:       the base position of each object. \a x[\p i,\p j] is the position of object \p i in dimension \p j.
+@param xs:       the base position of each object. \a xs[\p i,\p j] is the position of object \p i in dimension \p j.
 @param kind:      the shape used by each object.
 
-@param l:            is an array of lower bounds, \a l[\p i] is the minimum bounding box for all objects in dimension \p i.
-@param u:            is an array of upper bounds, \a u[\p i] is the maximum bounding box for all objects in dimension \p i.
+@param lower_bounds:            is an array of lower bounds, \a lower_bounds[\p i] is the minimum bounding box for all objects in dimension \p i.
+@param upper_bounds:            is an array of upper bounds, \a upper_bounds[\p i] is the maximum bounding box for all objects in dimension \p i.
 */
 
 predicate geost_bb(
@@ -176,10 +176,10 @@ predicate geost_bb(
   array [$$R, $$K] of int: rect_size,
   array [$$R, $$K] of int: rect_offset,
   array [$$S] of set of $$R: shape,
-  array [$$O, $$K] of var int: x,
+  array [$$O, $$K] of var int: xs,
   array [$$O] of var $$S: kind,
-  array [$$K] of var int: l,
-  array [$$K] of var int: u,
+  array [$$K] of var int: lower_bounds,
+  array [$$K] of var int: upper_bounds,
 ) =
   let {
     constraint
@@ -187,7 +187,7 @@ predicate geost_bb(
         k = card(index_set_2of2(rect_size)),
         "geost_bb: k must match second index set of rect_size",
       );
-  } in geost_bb(rect_size, rect_offset, shape, x, kind, l, u);
+  } in geost_bb(rect_size, rect_offset, shape, xs, kind, lower_bounds, upper_bounds);
 
 /** @group globals.packing
  A global non-overlap constraint for \a k dimensional objects. It enforces that no two objects overlap, and that all objects fit within a global \a k dimensional bounding box. In addition, it enforces that the bounding box is the smallest one containing all objects, i.e., each of the \a 2k boundaries is touched by at least by one object.
@@ -197,21 +197,21 @@ predicate geost_bb(
  
 @param shape:        the set of rectangles defining the \p i-th shape. 
 
-@param x:       the base position of each object. \a x[\p i,\p j] is the position of object \p i in dimension \p j.
+@param xs:       the base position of each object. \a xs[\p i,\p j] is the position of object \p i in dimension \p j.
 @param kind:      the shape used by each object.
 
-@param l:            is an array of lower bounds, \a l[\p i] is the minimum bounding box for all objects in dimension \p i.
-@param u:            is an array of upper bounds, \a u[\p i] is the maximum bounding box for all objects in dimension \p i.
+@param lower_bounds:            is an array of lower bounds, \a lower_bounds[\p i] is the minimum bounding box for all objects in dimension \p i.
+@param upper_bounds:            is an array of upper bounds, \a upper_bounds[\p i] is the maximum bounding box for all objects in dimension \p i.
 */
 
 predicate geost_smallest_bb(
   array [$$R, $$K] of int: rect_size,
   array [$$R, $$K] of int: rect_offset,
   array [$$S] of set of $$R: shape,
-  array [$$O, $$K] of var int: x,
+  array [$$O, $$K] of var int: xs,
   array [$$O] of var $$S: kind,
-  array [$$K] of var int: l,
-  array [$$K] of var int: u,
+  array [$$K] of var int: lower_bounds,
+  array [$$K] of var int: upper_bounds,
 ) =
   let {
     constraint
@@ -221,8 +221,8 @@ predicate geost_smallest_bb(
       );
     constraint
       assert(
-        index_set_2of2(rect_size) = index_set_2of2(x),
-        "geost_smallest_bb: rectangles must have same number of dimensions as x",
+        index_set_2of2(rect_size) = index_set_2of2(xs),
+        "geost_smallest_bb: rectangles must have same number of dimensions as xs",
       );
     constraint
       assert(
@@ -231,16 +231,16 @@ predicate geost_smallest_bb(
       );
     constraint
       assert(
-        index_set_1of2(x) = index_set(kind),
-        "geost_smallest_bb: index set of kind must match first index set of x",
+        index_set_1of2(xs) = index_set(kind),
+        "geost_smallest_bb: index set of kind must match first index set of xs",
       );
     constraint
       assert(forall (s in shape) (card(s) > 0), "geost_smallest_bb: shapes must not be empty");
     constraint
-      assert(index_sets_agree(l, u), "geost_smallest_bb: l must have the same index set as u");
+      assert(index_sets_agree(lower_bounds, upper_bounds), "geost_smallest_bb: lower_bounds must have the same index set as upper_bounds");
     constraint
       assert(
-        index_set_2of2(rect_size) = index_set(l),
+        index_set_2of2(rect_size) = index_set(lower_bounds),
         "geost_smallest_bb: rectangles must have same number of dimensions as bounds",
       );
     int: k = card(index_set_2of2(rect_size));
@@ -251,10 +251,10 @@ predicate geost_smallest_bb(
     array2d(RECT, 1..k, rect_size),
     array2d(RECT, 1..k, rect_offset),
     index2int(enum2int(shape)),
-    array2d(OBJ, 1..k, x),
+    array2d(OBJ, 1..k, xs),
     index2int(enum2int(kind)),
-    array1d(l),
-    array1d(u),
+    array1d(lower_bounds),
+    array1d(upper_bounds),
   );
 
 /** @group globals.packing
@@ -266,11 +266,11 @@ predicate geost_smallest_bb(
  
 @param shape:        the set of rectangles defining the \p i-th shape. 
 
-@param x:       the base position of each object. \a x[\p i,\p j] is the position of object \p i in dimension \p j.
+@param xs:       the base position of each object. \a xs[\p i,\p j] is the position of object \p i in dimension \p j.
 @param kind:      the shape used by each object.
 
-@param l:            is an array of lower bounds, \a l[\p i] is the minimum bounding box for all objects in dimension \p i.
-@param u:            is an array of upper bounds, \a u[\p i] is the maximum bounding box for all objects in dimension \p i.
+@param lower_bounds:            is an array of lower bounds, \a lower_bounds[\p i] is the minimum bounding box for all objects in dimension \p i.
+@param upper_bounds:            is an array of upper bounds, \a upper_bounds[\p i] is the maximum bounding box for all objects in dimension \p i.
 */
 
 predicate geost_smallest_bb(
@@ -278,10 +278,10 @@ predicate geost_smallest_bb(
   array [$$R, $$K] of int: rect_size,
   array [$$R, $$K] of int: rect_offset,
   array [$$S] of set of $$R: shape,
-  array [$$O, $$K] of var int: x,
+  array [$$O, $$K] of var int: xs,
   array [$$O] of var $$S: kind,
-  array [$$K] of var int: l,
-  array [$$K] of var int: u,
+  array [$$K] of var int: lower_bounds,
+  array [$$K] of var int: upper_bounds,
 ) =
   let {
     constraint
@@ -289,7 +289,7 @@ predicate geost_smallest_bb(
         k = card(index_set_2of2(rect_size)),
         "geost_smallest_bb: k must match second index set of rect_size",
       );
-  } in geost_smallest_bb(rect_size, rect_offset, shape, x, kind, l, u);
+  } in geost_smallest_bb(rect_size, rect_offset, shape, xs, kind, lower_bounds, upper_bounds);
 
 /** @group globals.packing
  A non-overlap constraint for two \a k dimensional objects. It enforces that
