@@ -10,10 +10,10 @@ enum NEURON_TYPE = {NT_RELU, NT_STEP, NT_LINEAR, NT_SOFTPLUS};
   @param input_ids: array[int] of node
   @param outputs: an array of float variables
   @param output_ids: array[int] of node
-  @param bias: array[node] of float
-  @param edge_weight: array[edge] of float
-  @param edge_parent: array[edge] of neuron (start neuron for edge)
-  @param first_edge: array[node] of 1..m+1
+  @param biases: array[node] of float
+  @param edge_weights: array[edge] of float
+  @param edge_parents: array[edge] of neuron (start neuron for edge)
+  @param first_edges: array[node] of 1..m+1
   @param neuron_type: { NT_RELU, NT_STEP, NT_LINEAR, NT_SOFTPLUS }
 */
 predicate neural_net(
@@ -21,10 +21,10 @@ predicate neural_net(
   array [int] of int: input_ids,
   array [int] of var float: outputs,
   array [int] of int: output_ids,
-  array [int] of float: bias,
-  array [int] of float: edge_weight,
-  array [int] of int: edge_parent,
-  array [int] of int: first_edge,
+  array [int] of float: biases,
+  array [int] of float: edge_weights,
+  array [int] of int: edge_parents,
+  array [int] of int: first_edges,
   NEURON_TYPE: neuron_type,
 ) =
   assert(
@@ -37,16 +37,16 @@ predicate neural_net(
     ) /\
     (
       let {
-        set of int: node = index_set(bias);
+        set of int: node = index_set(biases);
       } in let {
-        set of int: edge = index_set(edge_weight);
+        set of int: edge = index_set(edge_weights);
       } in assert(
-        index_set(edge_parent) == edge,
-        "neural_net: index sets of edge_weight and edge_parent do not agree",
+        index_set(edge_parents) == edge,
+        "neural_net: index sets of edge_weights and edge_parents do not agree",
       ) /\
         assert(
-          index_set(first_edge) == node,
-          "neural_new: index sets of bias and first_edge do not agree",
+          index_set(first_edges) == node,
+          "neural_new: index sets of biases and first_edges do not agree",
         ) /\
         forall (i in index_set(input_ids)) (
           assert(
@@ -60,31 +60,31 @@ predicate neural_net(
             "neural_net: output_ids\(i) = \(output_ids[i]) not a correct node number",
           )
         ) /\
-        forall (i in index_set(first_edge)) (
+        forall (i in index_set(first_edges)) (
           assert(
-            first_edge[i] in edge,
-            "neural_net: first_edge\(i) = \(first_edge[i]) not a correct edge number",
+            first_edges[i] in edge,
+            "neural_net: first_edges\(i) = \(first_edges[i]) not a correct edge number",
           )
         ) /\
-        forall (i in index_set(edge_parent)) (
+        forall (i in index_set(edge_parents)) (
           assert(
-            edge_parent[i] in edge,
-            "neural_net: edge_parent\(i) = \(edge_parent[i]) not a correct node number",
+            edge_parents[i] in edge,
+            "neural_net: edge_parents\(i) = \(edge_parents[i]) not a correct node number",
           )
         ) /\
         assert(
-          mincreasing(first_edge),
-          "neural_net: first_edge array is not in increasing order",
+          mincreasing(first_edges),
+          "neural_net: first_edges array is not in increasing order",
         ) /\
         fzn_neural_net(
           inputs,
           input_ids,
           outputs,
           output_ids,
-          bias,
-          edge_weight,
-          edge_parent,
-          first_edge,
+          biases,
+          edge_weights,
+          edge_parents,
+          first_edges,
           neuron_type,
         )
     );
@@ -97,20 +97,20 @@ predicate neural_net(
   array [int] of int: input_ids,
   array [int] of var float: outputs,
   array [int] of int: output_ids,
-  array [int] of float: bias,
-  array [int] of float: edge_weight,
-  array [int] of int: edge_parent,
-  array [int] of int: first_edge,
+  array [int] of float: biases,
+  array [int] of float: edge_weights,
+  array [int] of int: edge_parents,
+  array [int] of int: first_edges,
 ) =
   neural_net(
     inputs,
     input_ids,
     outputs,
     output_ids,
-    bias,
-    edge_weight,
-    edge_parent,
-    first_edge,
+    biases,
+    edge_weights,
+    edge_parents,
+    first_edges,
     NT_RELU,
   );
 
