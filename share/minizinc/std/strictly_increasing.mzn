@@ -11,31 +11,31 @@ include "fzn_strictly_increasing_set_reif.mzn";
 include "analyse_all_different.mzn";
 
 %-----------------------------------------------------------------------------%
-% Requires that the array 'x' is in strict increasing order
+% Requires that the array 'xs' is in strict increasing order
 %-----------------------------------------------------------------------------%
 
-predicate strictly_increasing(array [$X] of var bool: x) =
+predicate strictly_increasing(array [$X] of var bool: xs) =
   let {
-    array [int] of var bool: xx = array1d(x);
+    array [int] of var bool: xx = array1d(xs);
   } in analyse_all_different(xx) /\
     if length(xx) >= 3 then false elseif length(xx) = 2 then xx = [false, true] else true endif;
 
-/** @group globals.sort Requires that the array \a x is in a strictly increasing order (duplicates are *not* allowed). */
-predicate strictly_increasing(array [$X] of var $$E: x) =
-  analyse_all_different(array1d(x)) /\ fzn_strictly_increasing_int(enum2int(array1d(x)));
+/** @group globals.sort Requires that the array \a xs is in a strictly increasing order (duplicates are *not* allowed). */
+predicate strictly_increasing(array [$X] of var $$E: xs) =
+  analyse_all_different(array1d(xs)) /\ fzn_strictly_increasing_int(enum2int(array1d(xs)));
 
-/** @group globals.sort Requires that the array \a x is in a strictly increasing order (duplicates are *not* allowed). */
-predicate strictly_increasing(array [$X] of var opt $$E: x) =
-  analyse_all_different(array1d(x)) /\ fzn_strictly_increasing_int_opt(enum2int(array1d(x)));
+/** @group globals.sort Requires that the array \a xs is in a strictly increasing order (duplicates are *not* allowed). */
+predicate strictly_increasing(array [$X] of var opt $$E: xs) =
+  analyse_all_different(array1d(xs)) /\ fzn_strictly_increasing_int_opt(enum2int(array1d(xs)));
 
-/** @group globals.sort Requires that the array \a x is in increasing order (duplicates are allowed). */
-predicate strictly_increasing(array [$X] of var float: x) =
-  fzn_strictly_increasing_float(array1d(x));
+/** @group globals.sort Requires that the array \a xs is in increasing order (duplicates are allowed). */
+predicate strictly_increasing(array [$X] of var float: xs) =
+  fzn_strictly_increasing_float(array1d(xs));
 
-/** @group globals.sort Requires that the array \a x is in increasing order (duplicates are allowed). */
-predicate strictly_increasing(array [$X] of var opt float: x) =
-  fzn_strictly_increasing_float_opt(array1d(x));
+/** @group globals.sort Requires that the array \a xs is in increasing order (duplicates are allowed). */
+predicate strictly_increasing(array [$X] of var opt float: xs) =
+  fzn_strictly_increasing_float_opt(array1d(xs));
 
-/** @group globals.sort Requires that the array \a x is in increasing order (duplicates are allowed). */
-predicate strictly_increasing(array [$X] of var set of $$E: x) =
-  fzn_strictly_increasing_set(enum2int(array1d(x)));
+/** @group globals.sort Requires that the array \a xs is in increasing order (duplicates are allowed). */
+predicate strictly_increasing(array [$X] of var set of $$E: xs) =
+  fzn_strictly_increasing_set(enum2int(array1d(xs)));
