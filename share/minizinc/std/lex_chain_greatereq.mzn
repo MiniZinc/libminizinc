@@ -1,13 +1,13 @@
 include "lex_chain_lesseq.mzn";
 
 /** @group globals.lexicographic
-  Requires that the columns of matrix \a a are lexicographically sorted,
+  Requires that the columns of matrix \a xs are lexicographically sorted,
   non-increasing.
 */
-predicate lex_chain_greatereq(array [$$E, $$F] of var bool: a) =
-  if card(index_set_2of2(a)) > 1 then
+predicate lex_chain_greatereq(array [$$E, $$F] of var bool: xs) =
+  if card(index_set_2of2(xs)) > 1 then
     let {
-      any: aa = index2int(a);
+      any: aa = index2int(xs);
     } in lex_chain_lesseq(
       array2d(
         index_set_1of2(aa),
@@ -22,13 +22,13 @@ predicate lex_chain_greatereq(array [$$E, $$F] of var bool: a) =
   endif;
 
 /** @group globals.lexicographic
-  Requires that the columns of matrix \a a are lexicographically sorted,
+  Requires that the columns of matrix \a xs are lexicographically sorted,
   non-increasing.
 */
-predicate lex_chain_greatereq(array [$$E, $$F] of var $$T: a) =
-  if card(index_set_2of2(a)) > 1 then
+predicate lex_chain_greatereq(array [$$E, $$F] of var $$T: xs) =
+  if card(index_set_2of2(xs)) > 1 then
     let {
-      any: aa = index2int(a);
+      any: aa = index2int(xs);
     } in lex_chain_lesseq(
       array2d(
         index_set_1of2(aa),

@@ -1,16 +1,16 @@
 include "lex_chain_lesseq_orbitope.mzn";
 
 /** @group globals.lexicographic
-  Requires that the columns of binary matrix \a a are
+  Requires that the columns of binary matrix \a xs are
   lexicographically sorted, non-increasing.
-  Moreover, the second parameter \a kind has the following meaning:
+  Moreover, the second parameter \a _kind has the following meaning:
   0: no further constraints, 1: set-partitioning orbitope,
   2: set-packing orbitope
 */
-predicate lex_chain_greatereq_orbitope(array [$$E, $$F] of var int: a, int: kind) =
-  if card(index_set_2of2(a)) > 1 then
+predicate lex_chain_greatereq_orbitope(array [$$E, $$F] of var int: xs, int: _kind) =
+  if card(index_set_2of2(xs)) > 1 then
     let {
-      any: aa = index2int(a);
+      any: aa = index2int(xs);
     } in lex_chain_lesseq_orbitope(
       array2d(
         index_set_1of2(aa),
@@ -21,6 +21,6 @@ predicate lex_chain_greatereq_orbitope(array [$$E, $$F] of var int: a, int: kind
             j in index_set_2of2(aa),
         ],
       ),
-      kind,
+      _kind,
     )
   endif;

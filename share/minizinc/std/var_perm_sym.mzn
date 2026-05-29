@@ -1,7 +1,7 @@
 include "fzn_var_perm_sym.mzn";
 
 /** @group globals.lexicographic
-  Requires that the array \a x is lex least under the given list of permutations \a p
+  Requires that the array \a xs is lex least under the given list of permutations \a permutations
 */
-predicate var_perm_sym(array [$$X] of var $$Y: x, array [$$Z, $$X] of $$X: p) =
-  fzn_var_perm_sym(index2int(enum2int(x)), index2int(enum2int(p)));
+predicate var_perm_sym(array [$$X] of var $$Y: xs, array [$$Z, $$X] of $$X: permutations) =
+  fzn_var_perm_sym(index2int(enum2int(xs)), index2int(enum2int(permutations)));
