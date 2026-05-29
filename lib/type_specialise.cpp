@@ -164,13 +164,22 @@ std::vector<Type> instantiated_types(EnvI& env, Call* call) {
 struct InstantiatedItem {
   ASTString ident;
   std::vector<Type> argTypes;
+  // Parameter names of the resolved decl. Two declarations may share the same
+  // identifier and the same concrete argument types yet still be distinct
+  // "name-only" overloads (dispatched via named arguments). Such siblings must
+  // map to separate specialised instances, so the parameter-name signature is
+  // part of the key. For every other overload kind (var/par, optionality, enum
+  // instantiations) the signature is identical, leaving behaviour unchanged.
+  std::vector<ASTString> paramNames;
 
   InstantiatedItem() {}
-  InstantiatedItem(EnvI& env, ASTString ident0, std::vector<Type> argTypes0)
-      : ident(ident0), argTypes(std::move(argTypes0)) {}
+  InstantiatedItem(EnvI& env, ASTString ident0, std::vector<Type> argTypes0,
+                   std::vector<ASTString> paramNames0 = {})
+      : ident(ident0), argTypes(std::move(argTypes0)), paramNames(std::move(paramNames0)) {}
 
   bool operator==(const InstantiatedItem& ia) const {
-    if (ident != ia.ident || argTypes.size() != ia.argTypes.size()) {
+    if (ident != ia.ident || argTypes.size() != ia.argTypes.size() ||
+        paramNames.size() != ia.paramNames.size()) {
       return false;
     }
     for (unsigned int i = 0; i < argTypes.size(); i++) {
@@ -178,6 +187,11 @@ struct InstantiatedItem {
         return false;
       }
       if (argTypes[i].typeId() != ia.argTypes[i].typeId()) {
+        return false;
+      }
+    }
+    for (unsigned int i = 0; i < paramNames.size(); i++) {
+      if (paramNames[i] != ia.paramNames[i]) {
         return false;
       }
     }
@@ -222,6 +236,17 @@ public:
     for (const auto& t : argTypes) {
       assert(t.dim() >= 0);
     }
+    // Capture the parameter names of the resolved declaration so that
+    // "name-only" overloads (same identifier and types, different parameter
+    // names) are kept as separate specialised instances. See InstantiatedItem.
+    std::vector<ASTString> paramNames;
+    if (call->decl() != nullptr) {
+      paramNames.reserve(call->decl()->paramCount());
+      for (unsigned int i = 0; i < call->decl()->paramCount(); i++) {
+        Id* pid = call->decl()->param(i)->id();
+        paramNames.push_back(pid->hasStr() ? pid->v() : ASTString());
+      }
+    }
     auto baseName = call->id();
     if (baseName.endsWith("_reif")) {
       std::string reifName(baseName.c_str());
@@ -241,14 +266,14 @@ public:
       t.mkPresentDeep(env);
     }
     auto baseInstance =
-        _map.emplace(InstantiatedItem(env, call->id(), baseArgTypes), _instanceCount);
+        _map.emplace(InstantiatedItem(env, call->id(), baseArgTypes, paramNames), _instanceCount);
     if (baseInstance.second) {
       // Base instance not created yet, so use new instance ID
       _instanceCount++;
     }
     auto instanceId = baseInstance.first->second;
-    auto concreteInstance = _instances.emplace(env, call->id(), argTypes);
-    auto parInstance = _instances.emplace(env, call->id(), parTypes);
+    auto concreteInstance = _instances.emplace(env, call->id(), argTypes, paramNames);
+    auto parInstance = _instances.emplace(env, call->id(), parTypes, paramNames);
 
     return {baseName, !concreteInstance.second, instanceId,
             argTypes, !parInstance.second,      parTypes};
@@ -600,6 +625,20 @@ public:
           _env.model->matchFn(_env, _env.reifyId(lookup.baseName), concrete_types, false);
       auto* halfReif =
           _env.model->matchFn(_env, EnvI::halfReifyId(lookup.baseName), concrete_types, false);
+      // matchFn() above resolves purely by argument type and therefore cannot
+      // distinguish "name-only" overloads (declarations that differ only in
+      // their parameter names, dispatched via named arguments). The call's
+      // resolved decl is authoritative, so snap the entry matching the call's
+      // role (non-reified / _reif / _imp) to it. This ensures the call is later
+      // redirected to the correct specialised copy via the pointer-equality
+      // check (call->decl() == fi) below.
+      if (call->id().endsWith("_reif")) {
+        reified = call->decl();
+      } else if (call->id().endsWith("_imp")) {
+        halfReif = call->decl();
+      } else {
+        nonReif = call->decl();
+      }
       assert(call->decl() == nonReif || call->decl() == reified || call->decl() == halfReif);
       std::vector<std::pair<FunctionI*, std::vector<Type>>> matches(
           {{nonReif, lookup.argTypes}, {reified, concrete_types}, {halfReif, concrete_types}});

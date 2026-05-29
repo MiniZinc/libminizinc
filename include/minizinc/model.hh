@@ -217,14 +217,10 @@ public:
   /// Return function declarations that are potential overloads for call \a c (same identifier and
   /// same number of arguments)
   std::vector<FunctionI*> potentialOverloads(EnvI& env, Call* c) const;
-  /// Warn about overload sets where two declarations differ only in inst
-  /// (var/par) and/or optionality but disagree on parameter names. Such
-  /// "coercion siblings" are re-resolved against each other at flatten time
-  /// (args may tighten var->par or opt->non-opt); if their parameter names
-  /// differ, named-argument and defaulted calls can silently fail to
-  /// re-resolve. Walks the final function table once, so it is deterministic
-  /// and reports each offending pair exactly once. Intended to be promoted to
-  /// an error once the standard library is clean (named-arguments step 9).
+  /// Warn about overload sets in which narrowing a call's arguments during
+  /// flattening (var->par or opt->present) would re-resolve it by type to a
+  /// sibling declaration with different parameter names, with no
+  /// name-compatible sibling to rewrite to instead.
   void checkSiblingParameterNames(EnvI& env) const;
   /// Return function declaration for reverse mapper for type \a t
   FunctionI* matchRevMap(EnvI& env, const Type& t) const;

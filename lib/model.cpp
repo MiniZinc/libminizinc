@@ -490,7 +490,7 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
     std::vector<FnEntry> v;
     FnEntry fe(env, fi);
     addPolymorphicInstances(env, fe, v);
-    m->_fnmap.insert(std::pair<ASTString, std::vector<FnEntry> >(fi->id(), v));
+    m->_fnmap.insert(std::pair<ASTString, std::vector<FnEntry>>(fi->id(), v));
   } else {
     // add to list of existing elements
     std::vector<FnEntry>& v = i_id->second;
@@ -1047,8 +1047,7 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
   Expression* botarg = nullptr;
   for (const auto& i : v) {
     if (c->decl() != nullptr && i.fi != c->decl() &&
-        i.fi->paramCount() == c->decl()->paramCount() &&
-        !sameParameterNames(i.fi, c->decl())) {
+        i.fi->paramCount() == c->decl()->paramCount() && !sameParameterNames(i.fi, c->decl())) {
       bool sameTypes = true;
       for (unsigned int j = 0; j < i.fi->paramCount(); j++) {
         if (i.fi->param(j)->type() != c->decl()->param(j)->type()) {
@@ -1327,8 +1326,7 @@ FunctionI* Model::matchFnNamed(EnvI& env, Call* c, const std::vector<Expression*
   if (matched.empty()) {
     if (throwIfNotFound) {
       std::ostringstream oss;
-      oss << "no function or predicate with this signature found: `"
-          << c->id() << "(";
+      oss << "no function or predicate with this signature found: `" << c->id() << "(";
       bool first = true;
       for (unsigned int i = 0; i < k; i++) {
         if (!first) {
@@ -1360,7 +1358,8 @@ FunctionI* Model::matchFnNamed(EnvI& env, Call* c, const std::vector<Expression*
   t.mkPar(env);
   for (unsigned int i = 1; i < matched.size(); i++) {
     if (!env.isSubtype(t, matched[i]->ti()->type(), strictEnums)) {
-      throw TypeError(env, Expression::loc(botarg != nullptr ? botarg : static_cast<Expression*>(c)),
+      throw TypeError(env,
+                      Expression::loc(botarg != nullptr ? botarg : static_cast<Expression*>(c)),
                       "ambiguous overloading on return type of function");
     }
   }
@@ -1372,78 +1371,134 @@ void Model::checkSiblingParameterNames(EnvI& env) const {
   while (m->_parent != nullptr) {
     m = m->_parent;
   }
+
+  // Do two equal-arity decls disagree on any name-passable parameter?
+  auto namesDisagree = [](const FunctionI* fa, const FunctionI* fb) {
+    for (unsigned int j = 0; j < fa->paramCount(); j++) {
+      const Id* a = fa->param(j)->id();
+      const Id* b = fb->param(j)->id();
+      // Anonymous / integer-id parameters cannot be passed by name, so a
+      // name disagreement on them is irrelevant.
+      if (a->hasStr() && b->hasStr() && a->v() != b->v()) {
+        return true;
+      }
+    }
+    return false;
+  };
+  // Exact per-parameter type equality (inst/opt/enum included, names ignored).
+  auto typesEqual = [](const FunctionI* fa, const FunctionI* fb) {
+    for (unsigned int j = 0; j < fa->paramCount(); j++) {
+      if (fa->param(j)->type() != fb->param(j)->type()) {
+        return false;
+      }
+    }
+    return true;
+  };
+  // Is `y` a *strict narrowing* of `x`, i.e. are they coercion siblings (equal
+  // up to inst/opt and enum/type-inst identity) with `y` everywhere at least as
+  // fixed as `x` (var->par, opt->present), strictly so in at least one
+  // parameter? Such a `y` is what a call to `x` is re-resolved to when its
+  // arguments are narrowed during flattening. Precondition: equal paramCount.
+  auto isStrictNarrowing = [&env](const FunctionI* x, const FunctionI* y) {
+    bool strict = false;
+    for (unsigned int j = 0; j < x->paramCount(); j++) {
+      Type tx = x->param(j)->type();
+      Type ty = y->param(j)->type();
+      Type nx = tx;
+      Type ny = ty;
+      nx.mkPar(env);
+      ny.mkPar(env);
+      nx.mkPresentDeep(env);
+      ny.mkPresentDeep(env);
+      // Normalise away enum / type-inst-variable identity: each decl's
+      // `$$E`/`$T`/enum carries a distinct typeId, which is not an inst or
+      // optionality difference. Clearing it lets polymorphic siblings
+      // (e.g. `min(set of $$E)` par vs var) compare equal.
+      nx.typeId(0);
+      ny.typeId(0);
+      if (nx != ny) {
+        return false;  // not a coercion sibling
+      }
+      if (tx.isPar() && ty.isvar()) {
+        return false;  // y less fixed -> not a narrowing
+      }
+      if (!tx.isOpt() && ty.isOpt()) {
+        return false;  // y less present -> not a narrowing
+      }
+      if ((tx.isvar() && ty.isPar()) || (tx.isOpt() && !ty.isOpt())) {
+        strict = true;
+      }
+    }
+    return strict;
+  };
+
   for (const auto& bucket : m->_fnmap) {
     // Compare only the source declarations, skipping generated polymorphic
     // instances (which would duplicate warnings and point at synthetic decls).
+    // The bucket is sorted by FnEntry::compare: arity ascending (primary key),
+    // then more-concrete-types-first. Filtering preserves that order.
     std::vector<FunctionI*> decls;
     for (const auto& fe : bucket.second) {
       if (!fe.isPolymorphicVariant && !fe.fi->isMonomorphised()) {
         decls.push_back(fe.fi);
       }
     }
-    for (unsigned int a = 0; a < decls.size(); a++) {
-      for (unsigned int b = a + 1; b < decls.size(); b++) {
-        FunctionI* fa = decls[a];
-        FunctionI* fb = decls[b];
-        if (fa->paramCount() != fb->paramCount()) {
+    for (unsigned int xi = 0; xi < decls.size(); xi++) {
+      FunctionI* x = decls[xi];
+      const unsigned int arity = x->paramCount();
+      // A strict narrowing `y` of `x` is more concrete than `x`, so it sorts
+      // before `x`; so does any name-compatible rewrite target `z` (which
+      // shares `y`'s types). Both therefore lie in the contiguous run of
+      // equal-arity decls immediately preceding `x`. Find its start `lo`.
+      unsigned int lo = xi;
+      while (lo > 0 && decls[lo - 1]->paramCount() == arity) {
+        lo--;
+      }
+      for (unsigned int yi = lo; yi < xi; yi++) {
+        FunctionI* y = decls[yi];
+        // Narrowing `x` to `y`'s types is only a hazard if their parameter
+        // names disagree (otherwise the rewrite binds the same names).
+        if (!isStrictNarrowing(x, y) || !namesDisagree(x, y)) {
           continue;
         }
-        // Coercion siblings: equal up to inst (var/par) and optionality, but
-        // not identical (identical-type / name-only-different overloads are an
-        // intentional named-arguments feature and handled elsewhere).
-        bool alleq = true;
-        bool eqExceptInstOpt = true;
-        for (unsigned int j = 0; j < fa->paramCount(); j++) {
-          Type t1 = fa->param(j)->type();
-          Type t2 = fb->param(j)->type();
-          if (t1 != t2) {
-            alleq = false;
-          }
-          t1.mkPar(env);
-          t2.mkPar(env);
-          t1.mkPresentDeep(env);
-          t2.mkPresentDeep(env);
-          // Normalise away enum / type-inst-variable identity: each decl's
-          // `$$E`/`$T`/enum carries a distinct typeId, which is not an inst or
-          // optionality difference. Clearing it lets polymorphic siblings
-          // (e.g. `min(set of $$E)` par vs var) compare equal.
-          t1.typeId(0);
-          t2.typeId(0);
-          if (t1 != t2) {
-            eqExceptInstOpt = false;
+        // Safe iff a name-compatible target exists: a decl with `y`'s exact
+        // types but `x`'s parameter names, which the type-and-name-aware
+        // matcher picks instead. It shares `y`'s types, so it is in this window
+        // too. (For e.g. `cumulatives` that is the same-bound-name sibling.)
+        bool hasNameCompatibleTarget = false;
+        for (unsigned int zi = lo; zi < xi; zi++) {
+          FunctionI* z = decls[zi];
+          if (z != y && typesEqual(z, y) && !namesDisagree(z, x)) {
+            hasNameCompatibleTarget = true;
+            break;
           }
         }
-        if (alleq || !eqExceptInstOpt) {
+        if (hasNameCompatibleTarget) {
           continue;
         }
         std::ostringstream mism;
         bool any = false;
-        for (unsigned int j = 0; j < fa->paramCount(); j++) {
-          const Id* ida = fa->param(j)->id();
-          const Id* idb = fb->param(j)->id();
-          // Anonymous / integer-id parameters cannot be passed by name, so a
-          // name disagreement on them is irrelevant.
-          if (!ida->hasStr() || !idb->hasStr()) {
+        for (unsigned int j = 0; j < arity; j++) {
+          const Id* a = x->param(j)->id();
+          const Id* b = y->param(j)->id();
+          if (!a->hasStr() || !b->hasStr() || a->v() == b->v()) {
             continue;
           }
-          if (ida->v() != idb->v()) {
-            if (any) {
-              mism << ", ";
-            }
-            mism << (j + 1) << " (`" << ida->v() << "' vs `" << idb->v() << "')";
-            any = true;
+          if (any) {
+            mism << ", ";
           }
+          mism << (j + 1) << " (`" << a->v() << "' vs `" << b->v() << "')";
+          any = true;
         }
-        if (any) {
-          std::ostringstream oss;
-          oss << "overloads of `" << fa->id()
-              << "' that differ only in var/par or optionality disagree on parameter name(s): "
-              << mism.str() << ". Defined at " << fa->loc().toString() << " and "
-              << fb->loc().toString()
-              << ". Named-argument and defaulted calls may fail to re-resolve at flatten time "
-                 "because these overloads are dispatched between when argument types tighten.";
-          env.addWarning(fa->loc(), oss.str(), false);
-        }
+        std::ostringstream oss;
+        oss << "overloads of `" << x->id()
+            << "' that differ only in var/par or optionality disagree on parameter name(s): "
+            << mism.str() << ". Defined at " << x->loc().toString() << " and "
+            << y->loc().toString()
+            << ". When an argument is narrowed (var to par, or opt to present) during flattening "
+               "the call is re-resolved by type, and with no name-compatible sibling it cannot "
+               "rewrite to the equivalent declaration.";
+        env.addWarning(x->loc(), oss.str(), false);
       }
     }
   }
