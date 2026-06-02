@@ -17,6 +17,9 @@ Changes:
 
 Bug fixes:
 ^^^^^^^^^^
+-  Fix a crash (segmentation fault) when a non-optional variable is
+   constrained to be equal to an absent optional value. The model is now
+   correctly detected as unsatisfiable (:bugref:`1023`).
 -  Fix a crash when finalising FlatZinc for models containing chains of
    equality constraints between output variables. Depending on the order,
    the alias chain could collapse into a cyclic right-hand side

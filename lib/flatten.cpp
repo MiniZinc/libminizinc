@@ -3132,6 +3132,10 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
           return vd->id();
         }
       } else {
+        if (e == env.constants.absent && !vd->type().isOpt()) {
+          env.fail();
+          return vd->id();
+        }
         check_index_sets(env, vd, e);
 
         KeepAlive combinedDom = compute_combined_domain(env, vd->ti(), e);
