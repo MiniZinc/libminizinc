@@ -5675,6 +5675,13 @@ void oldflatzinc(Env& e) {
       rhsDecl = nextDecl;
     }
     if (rhsDecl != vd) {
+      // The whole chain vd -> ... -> rhsDecl is being collapsed into a single
+      // variable. Drop vd's RHS first because unify() keeps the output variable
+      // as the survivor, and the RHS chain might become self-referential.
+      Expression* rhs = vd->e();
+      vd->e(nullptr);
+      CollectDecls cd(env, env.varOccurrences, deletedVarDecls, vdi);
+      top_down(cd, rhs);
       unify(env, deletedVarDecls, vd->id(), rhsDecl->id());
     }
   }

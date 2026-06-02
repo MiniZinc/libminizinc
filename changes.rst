@@ -17,6 +17,10 @@ Changes:
 
 Bug fixes:
 ^^^^^^^^^^
+-  Fix a crash when finalising FlatZinc for models containing chains of
+   equality constraints between output variables. Depending on the order,
+   the alias chain could collapse into a cyclic right-hand side
+   (:bugref:`1022`).
 -  Fix x=infinity and x=-infinity being incorrectly translated when used
    in reified positions.
 -  Fix a bug in type specialisation that could produce incorrect internal
@@ -42,7 +46,7 @@ Bug fixes:
    right-hand sides that were incorrectly marked as par (:bugref:`1015`).
 -  Fix generation of par versions of functions referencing top-level model
    variables for use in the output model (:bugref:`1016`).
--  Fix crash during type checking of enum constructors (:bugref:`1017`). 
+-  Fix crash during type checking of enum constructors (:bugref:`1017`).
 -  Fix incorrect typing of record literals containing both decision variables
    and parameter values, affecting the automatic generation of table
    constraints. (:bugref:`1014`).
