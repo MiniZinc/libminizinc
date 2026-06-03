@@ -185,7 +185,8 @@ void Solns2Out::restoreDefaults() {
   for (auto& i : *getModel()) {
     if (auto* vdi = i->dynamicCast<VarDeclI>()) {
       if (vdi->e()->id()->idn() != -1 || (vdi->e()->id()->v() != "_mzn_solution_checker" &&
-                                          vdi->e()->id()->v() != "_mzn_stats_checker")) {
+                                          vdi->e()->id()->v() != "_mzn_stats_checker" &&
+                                          vdi->e()->id()->v() != "_mzn_assumption_map")) {
         GCLock lock;
         auto& de = findOutputVar(vdi->e()->id()->str());
         vdi->e()->e(de.second());
@@ -562,6 +563,7 @@ bool Solns2Out::evalStatusMsg(SolverInstance::Status status) {
 
 void Solns2Out::init() {
   _declmap.clear();
+  _assumptionMap.clear();
   for (auto& i : *getModel()) {
     if (auto* oi = i->dynamicCast<OutputI>()) {
       _outputExpr = oi->e();
@@ -577,6 +579,15 @@ void Solns2Out::init() {
         if (!_statisticsCheckerModel.empty() && _statisticsCheckerModel[0] == '@') {
           _statisticsCheckerModel = FileUtils::decode_base64(_statisticsCheckerModel);
           FileUtils::inflate_string(_statisticsCheckerModel);
+        }
+      } else if (vdi->e()->id()->idn() == -1 && vdi->e()->id()->v() == "_mzn_assumption_map") {
+        // A `list of tuple(string, string)` of `(variable name, expression)` pairs.
+        GCLock lock;
+        ArrayLit* al = eval_array_lit(getEnv()->envi(), vdi->e()->e());
+        for (unsigned int k = 0; k < al->size(); k++) {
+          ArrayLit* tuple = eval_array_lit(getEnv()->envi(), (*al)[k]);
+          _assumptionMap[eval_string(getEnv()->envi(), (*tuple)[0])] =
+              eval_string(getEnv()->envi(), (*tuple)[1]);
         }
       } else {
         _declmap.insert(make_pair(vdi->e()->id()->str(), DE(vdi->e(), vdi->e()->e())));
@@ -670,8 +681,30 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
         iss >> skipws >> c;
         if (iss.good() && '%' == c) {
           bool is_statistic = line.substr(0, 13) == "%%%mzn-stat: ";
+          bool is_core = line.substr(0, 13) == "%%%mzn-core: ";
           std::ostringstream message;
-          if (opt.flagEncapsulateJSON) {
+          if (is_core) {
+            // Resolve the FlatZinc variable names in the unsatisfiable core back to the
+            // original `assume` expressions and report them.
+            std::vector<std::string> resolved = resolveAssumptionCore(line.substr(13));
+            if (opt.flagEncapsulateJSON) {
+              message << "{\"type\": \"core\", \"core\": [";
+              for (size_t i = 0; i < resolved.size(); ++i) {
+                message << (i == 0 ? "" : ", ") << "\"" << Printer::escapeStringLit(resolved[i])
+                        << "\"";
+              }
+              message << "]}\n";
+            } else {
+              message << "%%%mzn-core: [";
+              for (size_t i = 0; i < resolved.size(); ++i) {
+                if (i > 0) {
+                  message << ", ";
+                }
+                message << resolved[i];
+              }
+              message << "]\n";
+            }
+          } else if (opt.flagEncapsulateJSON) {
             if (is_statistic) {
               _stats += line.substr(13) + ";";
             } else if (line == "%%%mzn-stat-end") {
@@ -719,6 +752,65 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
     }
   }
   return true;
+}
+
+std::vector<std::string> Solns2Out::resolveAssumptionCore(const std::string& payload) const {
+  std::vector<std::string> result;
+  // Trim and strip a surrounding pair of square brackets.
+  size_t begin = payload.find_first_not_of(" \t\r\n");
+  size_t end = payload.find_last_not_of(" \t\r\n");
+  if (begin == std::string::npos) {
+    return result;
+  }
+  std::string body = payload.substr(begin, end - begin + 1);
+  if (!body.empty() && body.front() == '[' && body.back() == ']') {
+    body = body.substr(1, body.size() - 2);
+  }
+  auto is_ident_start = [](char ch) {
+    return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_';
+  };
+  auto is_ident_char = [&](char ch) { return is_ident_start(ch) || (ch >= '0' && ch <= '9'); };
+  // Split on commas (the solver emits FlatZinc names/literals, which contain no commas) and
+  // resolve each. A resolvable entry is either a known variable name (a Boolean assumption) or a
+  // comparison `<objective> <op> <const>`; in both cases the variable is the leading identifier.
+  // Only that leading identifier is substituted: any entry whose leading identifier is unknown is
+  // kept verbatim.
+  size_t pos = 0;
+  while (pos <= body.size()) {
+    size_t comma = body.find(',', pos);
+    std::string token =
+        body.substr(pos, comma == std::string::npos ? std::string::npos : comma - pos);
+    size_t nb = token.find_first_not_of(" \t\r\n");
+    size_t ne = token.find_last_not_of(" \t\r\n");
+    if (nb != std::string::npos) {
+      token = token.substr(nb, ne - nb + 1);
+      // Extract the leading identifier (if any).
+      size_t idEnd = 0;
+      if (is_ident_start(token[0])) {
+        idEnd = 1;
+        while (idEnd < token.size() && is_ident_char(token[idEnd])) {
+          idEnd++;
+        }
+      }
+      auto it = idEnd > 0 ? _assumptionMap.find(token.substr(0, idEnd)) : _assumptionMap.end();
+      if (it == _assumptionMap.end()) {
+        // Unknown entry: keep it verbatim.
+        result.push_back(token);
+      } else if (idEnd == token.size()) {
+        // The whole entry is a known variable: report its expression as-is.
+        result.push_back(it->second);
+      } else {
+        // A known variable followed by a comparison (e.g. an objective bound): substitute the
+        // variable, parenthesising it so the surrounding operator still reads correctly.
+        result.push_back("(" + it->second + ")" + token.substr(idEnd));
+      }
+    }
+    if (comma == std::string::npos) {
+      break;
+    }
+    pos = comma + 1;
+  }
+  return result;
 }
 
 void Solns2Out::createInputMap() {

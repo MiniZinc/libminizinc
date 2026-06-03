@@ -49,6 +49,9 @@ protected:
   std::string _statisticsCheckerModel;
   bool _fNewSol2Print = false;  // should be set for evalOutput to work
   std::string _stats;
+  // Mapping from FlatZinc variable name to the original `assume` expression text, used to
+  // report unsatisfiable cores (`%%%mzn-core:`) in terms of the user's expressions.
+  std::unordered_map<std::string, std::string> _assumptionMap;
 
 public:
   std::string solution;
@@ -173,6 +176,10 @@ protected:
   std::unordered_map<std::string, SolverInstance::Status> _mapInputStatus;
   void createInputMap();
   void restoreDefaults();
+  /// Resolve the FlatZinc variable names in an unsatisfiable core (the bracketed payload of a
+  /// `%%%mzn-core:` line) back to the original `assume` expressions. Names without a recorded
+  /// mapping are returned unchanged.
+  std::vector<std::string> resolveAssumptionCore(const std::string& payload) const;
   /// Parsing fznsolver's complete raw text output
   void parseAssignments(std::string& solution);
   /// Checking solution against checker model

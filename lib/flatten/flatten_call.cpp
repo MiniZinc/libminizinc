@@ -367,6 +367,62 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
   ASTString cid = c->id();
   CallStackItem _csi(env, e, input_ctx);
 
+  if (cid == env.constants.ids.assume && c->argCount() == 1) {
+    // Assumptions are a global, top-level directive; they are meaningless when reified or
+    // negated, so `assume` may only appear in a root context.
+    if (ctx.b != C_ROOT) {
+      throw FlatteningError(env, Expression::loc(c),
+                            "the `assume` predicate can only be used in a root context");
+    }
+    // Record, for each FlatZinc variable an assumption flattens to, the expression it should
+    // be reported as in an unsatisfiable core (`%%%mzn-core:`). The whole argument is
+    // flattened here to obtain the element variables; the library `assume` decomposition
+    // re-flattens the same argument, reusing these variables via common subexpression
+    // elimination. This does not alter the call: normal (library-driven) flattening proceeds
+    // afterwards.
+    env.assumptionsUsed = true;
+    Expression* arg = c->arg(0);
+
+    // The individual assumption expressions are recoverable when the argument is (or is an
+    // identifier bound to) an array literal. Otherwise (e.g. a function call returning an
+    // array) we fall back to a synthesised indexed access into the argument, e.g. `asmp(x)[1]`.
+    ArrayLit* litElems = nullptr;
+    if (Expression::isa<ArrayLit>(arg)) {
+      litElems = Expression::cast<ArrayLit>(arg);
+    } else if (auto* vd = Expression::dynamicCast<VarDecl>(follow_id_to_decl(arg))) {
+      if (vd->e() != nullptr && Expression::isa<ArrayLit>(vd->e())) {
+        litElems = Expression::cast<ArrayLit>(vd->e());
+      }
+    }
+
+    // Flatten in a positive context, matching the monotone context the library `assume`
+    // decomposition uses for its `promise_ctx_monotone` argument (`+C_ROOT == C_POS`). This
+    // reifies each assumption to a variable while enabling half-reification, and ensures the
+    // variables recorded here are the same ones the decomposition reuses (via CSE).
+    Ctx ectx;
+    ectx.b = +ctx.b;
+    EE ee = flat_exp(env, ectx, arg, nullptr, env.constants.varTrue);
+    {
+      GCLock lock;
+      ArrayLit* flatArr = eval_array_lit(env, ee.r());
+      int lo = flatArr->dims() >= 1 ? flatArr->min(0) : 1;
+      for (unsigned int k = 0; k < flatArr->size(); k++) {
+        auto* vd = Expression::dynamicCast<VarDecl>(follow_id_to_decl((*flatArr)[k]));
+        if (vd == nullptr || env.assumptionExprs.count(vd->id()->str()) != 0) {
+          continue;
+        }
+        Expression* src;
+        if (litElems != nullptr && k < litElems->size()) {
+          src = (*litElems)[k];
+        } else {
+          src = new ArrayAccess(Location().introduce(), arg,
+                                {IntLit::a(IntVal(lo + static_cast<int>(k)))});
+        }
+        env.assumptionExprs.insert({vd->id()->str(), src});
+      }
+    }
+  }
+
   if (cid == env.constants.ids.bool2int && c->type().dim() == 0) {
     if (ctx.neg) {
       ctx.neg = false;

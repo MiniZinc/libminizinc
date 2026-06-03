@@ -292,3 +292,19 @@ The optional ``stack`` field contains a stack trace (see :ref:`ch-json-stream-st
 The ``message`` field contains the warning message as a string.
 
 Note that if ``-Werror`` is used then ``error`` messages are produced instead.
+
+Core messages
+-------------
+
+.. code-block:: json
+
+  {
+    "type": "core",
+    "core": ["x + y < 5", "x > 8"]
+  }
+
+This message is produced (in place of the ``%%%mzn-core`` comment line) when a solver reports an unsatisfiable core for a model that uses the experimental :ref:`assumption interface <ch-assumptions>`.
+The ``core`` field contains the assumptions in the core, as strings, in terms of the original MiniZinc expressions.
+
+A solver may also produce this message to justify that a solution is optimal.
+

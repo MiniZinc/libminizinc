@@ -5,4 +5,5 @@
 	in future versions of MiniZinc.
 */
 
+include "experimental/assume.mzn";
 include "experimental/on_restart.mzn";

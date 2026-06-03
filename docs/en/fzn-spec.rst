@@ -908,6 +908,32 @@ Name                     Type   Explanation
 ``solveTime``            float  Solving time (in seconds)
 ======================== ====== ================================================
 
+.. _fzn-mzn-core:
+
+Unsatisfiable core output (experimental)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. note::
+
+  Unsatisfiable core output is part of the **experimental** assumption interface (see :numref:`ch-assumptions`) and may change in future versions of MiniZinc.
+
+A solver that can solve under assumptions (see :numref:`ch-assumptions`) can report an *unsatisfiable core*: a subset of the assumptions that is by itself sufficient to make the model unsatisfiable.
+Supporting this requires the solver to override the ``fzn_assume`` predicate in its solver-specific library.
+The core should be printed to the standard output stream as a FlatZinc comment of the following form:
+
+.. code-block:: minizincdef
+
+  %%%mzn-core: [<entry>, <entry>, ...]
+
+The MiniZinc driver translates each :mzndef:`<entry>` back into the original MiniZinc expression before presenting the core to the user.
+For this translation to succeed, each :mzndef:`<entry>` must take one of the following two forms:
+
+- An *identifier* that was passed as an element of the array argument of an ``fzn_assume`` call (i.e. one of the assumption variables).
+- An expression of the form :mzndef:`<objective> <op> <const>`, where :mzndef:`<objective>` is the identifier of the objective variable, :mzndef:`<op>` is a comparison operator and :mzndef:`<const>` is a constant.
+  This is used when optimising, to justify that the reported solution is optimal (the objective is bounded by :mzndef:`<const>`).
+
+An entry of any other form (for example an arbitrary auxiliary variable, or a comparison over a non-objective variable) cannot be mapped back to a MiniZinc expression and is reported verbatim.
+
 Error and warning output
 ~~~~~~~~~~~~~~~~~~~~~~~~
 

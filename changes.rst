@@ -14,6 +14,14 @@ Changes:
 -  Add reified regular constraint decompositions. Rewrite to direct
    decomposition if non-reified regular is also a decomposition, or
    to an augmented automaton if a native regular constraint is available.
+-  Add an experimental assumption interface. The new ``assume`` predicate
+   (in ``experimental/assume.mzn``) records a set of Boolean assumptions and
+   lowers them to a solver-overridable ``fzn_assume``. Solvers that support
+   solving under assumptions can report an unsatisfiable core, which is
+   translated back into the original MiniZinc expressions and printed as a
+   ``%%%mzn-core`` comment (or a ``core`` message in the ``--json-stream``
+   output). Solvers without native support post the assumptions as hard
+   constraints and issue a warning.
 
 Bug fixes:
 ^^^^^^^^^^

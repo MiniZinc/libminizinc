@@ -374,6 +374,16 @@ void unify(EnvI& env, std::vector<VarDecl*>& deletedVarDecls, Id* id0, Id* id1) 
       }
     }
 
+    // If `id0` is an assumption variable being unified away, move its entry in the
+    // unsatisfiable-core reverse map (see `assume`) to the surviving variable `id1`, so the
+    // core can still be reported in terms of the original expression.
+    auto assumeIt = env.assumptionExprs.find(id0->decl()->id()->str());
+    if (assumeIt != env.assumptionExprs.end()) {
+      Expression* assumeExpr = assumeIt->second;
+      env.assumptionExprs.erase(assumeIt);
+      env.assumptionExprs.emplace(id1->decl()->id()->str(), assumeExpr);
+    }
+
     env.varOccurrences.unify(env, env.flat(), id0, id1);
   }
 }

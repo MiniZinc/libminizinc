@@ -2336,6 +2336,7 @@ Constants::Constants() {
   ids.set2iter = addString("set2iter");
   ids.assert = addString("assert");
   ids.assert_dbg = addString("assert_dbg");
+  ids.assume = addString("assume");
 
   ids.deopt = addString("deopt");
   ids.absent = addString("absent");

@@ -12,6 +12,7 @@
 #pragma once
 
 #include <minizinc/ast.hh>
+#include <minizinc/astmap.hh>
 #include <minizinc/aststring.hh>
 #include <minizinc/copy.hh>
 #include <minizinc/eval_par.hh>
@@ -375,6 +376,13 @@ public:
   std::vector<KeepAlive> outputVars;
   OutputSectionStore outputSections;
   std::unordered_map<std::string, int> keyCounters;
+  // Maps each FlatZinc variable name originating from an `assume` argument (or the objective)
+  // to the expression it should be reported as in an unsatisfiable core (`%%%mzn-core:`): the
+  // original assumption expression, a synthesised indexed access (e.g. `asmp(x)[1]`) when the
+  // elements are not individually recoverable, or the objective expression. Rendered into the
+  // output model only when `assumptionsUsed` is set (i.e. the model contains an `assume`).
+  ManagedASTStringMap<Expression*> assumptionExprs;
+  bool assumptionsUsed = false;
 
   // General multipass information
   MultiPassInfo multiPassInfo;

@@ -2118,6 +2118,7 @@ public:
     ASTString set2iter;
     ASTString assert;
     ASTString assert_dbg;  // NOLINT(readability-identifier-naming)
+    ASTString assume;
     ASTString deopt;
     ASTString absent;
     ASTString occurs;

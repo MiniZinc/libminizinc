@@ -3958,6 +3958,32 @@ private:
 
 namespace {
 
+// Record the objective variable's source text for unsatisfiable-core reporting. A solver
+// that reports a core for an optimal solution (e.g. Huub) may include the objective's
+// boundary literal (such as `X_INTRODUCED_0_ >= 7`); recording the mapping lets that be
+// reported in terms of the user's objective expression. Only recorded when the objective
+// flattened to a variable whose name differs from its source text (i.e. an introduced
+// variable), since a user-named objective already reads meaningfully.
+void record_objective_assumption_expr(EnvI& env, Expression* objExpr, Expression* flatObj) {
+  auto* vd = Expression::dynamicCast<VarDecl>(follow_id_to_decl(flatObj));
+  if (vd == nullptr) {
+    return;
+  }
+  // The solve item's expression is a compiler-introduced `_objective` variable; the user's
+  // objective expression is its defining right-hand side.
+  Expression* src = objExpr;
+  if (auto* id = Expression::dynamicCast<Id>(objExpr)) {
+    if (id->decl() != nullptr && id->decl()->e() != nullptr) {
+      src = id->decl()->e();
+    }
+  }
+  // A plain variable objective already reads meaningfully by its own name, so only record
+  // compound objectives (which flatten to an introduced variable).
+  if (!Expression::isa<Id>(src) && env.assumptionExprs.count(vd->id()->str()) == 0) {
+    env.assumptionExprs.insert({vd->id()->str(), src});
+  }
+}
+
 class FlattenModelVisitor : public ItemVisitor {
 public:
   EnvI& env;
@@ -4078,14 +4104,16 @@ public:
       case SolveI::ST_MIN: {
         Ctx ctx;
         ctx.i = C_NEG;
-        nsi = SolveI::min(Location().introduce(),
-                          flat_exp(env, ctx, si->e(), nullptr, env.constants.varTrue).r());
+        Expression* obj = flat_exp(env, ctx, si->e(), nullptr, env.constants.varTrue).r();
+        record_objective_assumption_expr(env, si->e(), obj);
+        nsi = SolveI::min(Location().introduce(), obj);
       } break;
       case SolveI::ST_MAX: {
         Ctx ctx;
         ctx.i = C_POS;
-        nsi = SolveI::max(Location().introduce(),
-                          flat_exp(env, ctx, si->e(), nullptr, env.constants.varTrue).r());
+        Expression* obj = flat_exp(env, ctx, si->e(), nullptr, env.constants.varTrue).r();
+        record_objective_assumption_expr(env, si->e(), obj);
+        nsi = SolveI::max(Location().introduce(), obj);
       } break;
     }
     for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it) {

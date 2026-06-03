@@ -6,6 +6,7 @@
    cpprofiler
    solvers
    checkers
+   assumptions
    globalizer
    find_mus
    mzn-analyse

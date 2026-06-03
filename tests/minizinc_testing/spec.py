@@ -4,7 +4,8 @@ import minizinc as mzn
 from minizinc.helpers import check_result
 import pathlib
 import re
-from json import load, dumps
+import subprocess
+from json import load, loads, dumps
 import jsonschema
 import warnings
 
@@ -48,6 +49,7 @@ class Test:
         options = {k: v for k, v in default_options.items()}
         options.update(self.options)
         file = pathlib.Path(mzn_file)
+        solver_name = solver
         extra_files = [file.parent.joinpath(other) for other in self.extra_files]
 
         try:
@@ -58,7 +60,12 @@ class Test:
             else:
                 solver = mzn.Solver.lookup(solver)
             instance = mzn.Instance(solver, model)
-            if self.type == "solve":
+            if self.type == "core":
+                # The `core` message is not surfaced by the minizinc Python driver, so run the
+                # executable directly and parse the unsatisfiable core(s) from the JSON stream.
+                obtained = CoreResult.from_solve(solver_name, file, extra_files, options)
+                result = obtained
+            elif self.type == "solve":
                 result = instance.solve(**options)
                 obtained = Result.from_mzn(result)
             elif self.type == "compile":
@@ -103,6 +110,7 @@ class Result:
     def __init__(self, **kwargs):
         self.status = yaml.Undefined
         self.solution = yaml.Undefined
+        self.core = yaml.Undefined
 
         for k, v in kwargs.items():
             setattr(self, k, v)
@@ -111,6 +119,14 @@ class Result:
         """
         Returns whether this result and the given result match.
         """
+        if isinstance(actual, CoreResult):
+            if self.status is not yaml.Undefined and actual.status != self.status:
+                return False
+            if self.core is not yaml.Undefined and self.core is not None:
+                # The order of entries in a core is solver dependent, so compare as a multiset.
+                return any(sorted(self.core) == sorted(c) for c in actual.cores)
+            return True
+
         if not isinstance(actual, mzn.Result):
             return False
 
@@ -140,6 +156,57 @@ class Result:
         instance.status = str(result.status)
         instance.solution = result.solution
         return instance
+
+
+@yaml.mapping("!CoreResult")
+class CoreResult:
+    """
+    Represents the unsatisfiable core(s) reported by a solver via ``%%%mzn-core``.
+
+    The minizinc Python driver does not surface ``core`` messages, so for ``core`` test
+    cases the executable is run directly and this object is constructed from its JSON stream.
+    It is compared against an expected ``!Result`` with a ``core`` field.
+    """
+
+    def __init__(self, **kwargs):
+        self.status = kwargs.get("status")
+        self.cores = kwargs.get("cores", [])
+
+    @staticmethod
+    def from_solve(solver_name, file, extra_files, options):
+        executable = str(mzn.default_driver._executable)
+        if solver_name.endswith(".msc"):
+            solver_arg = str(pathlib.Path(file).parent.joinpath(solver_name))
+        else:
+            solver_arg = solver_name
+        cmd = [executable, "--solver", solver_arg, "--json-stream"]
+        for key, value in options.items():
+            flag = "--" + str(key).replace("_", "-")
+            if value is True:
+                cmd.append(flag)
+            elif value is False:
+                continue
+            else:
+                cmd += [flag, str(value)]
+        cmd.append(str(file))
+        cmd += [str(f) for f in extra_files]
+
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        status = None
+        cores = []
+        for line in proc.stdout.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                obj = loads(line)
+            except ValueError:
+                continue
+            if obj.get("type") == "status":
+                status = obj.get("status")
+            elif obj.get("type") == "core":
+                cores.append(list(obj.get("core", [])))
+        return CoreResult(status=status, cores=cores)
 
 
 @yaml.sequence("!SolutionSet")

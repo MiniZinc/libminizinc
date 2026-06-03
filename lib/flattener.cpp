@@ -21,6 +21,7 @@
 #include <minizinc/pathfileprinter.hh>
 #include <minizinc/statistics.hh>
 
+#include <algorithm>
 #include <fstream>
 
 #ifdef HAS_GECODE
@@ -483,7 +484,7 @@ Flattener::~Flattener() {
   }
 }
 
-Env* Flattener::multiPassFlatten(const vector<unique_ptr<Pass> >& passes) {
+Env* Flattener::multiPassFlatten(const vector<unique_ptr<Pass>>& passes) {
   Env& e = *getEnv();
 
   Env* pre_env = &e;
@@ -829,7 +830,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           cfs.modelInterfaceOnly = _flags.modelInterfaceOnly;
           cfs.allowMultiAssign = _flags.allowMultiAssign;
 
-          std::vector<unique_ptr<Pass> > managed_passes;
+          std::vector<unique_ptr<Pass>> managed_passes;
 
           if (_flags.twoPass) {
             std::string library = _stdLibDir + (_flags.gecode ? "/gecode_presolver/" : "/std/");
@@ -858,6 +859,48 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             _log << " done (" << _starttime.stoptime() << ")," << " max stack depth "
                  << env->maxCallStack() << std::endl;
           }
+        }
+
+        // Embed the assumption mapping into the output model as a
+        // `list of tuple(string, string)` of `(variable name, expression)` pairs, so that an
+        // unsatisfiable core reported by the solver can be mapped back to the user's
+        // expressions (also across a separate solns2out invocation). Entries are sorted by
+        // variable name so the output is deterministic.
+        if (env->envi().assumptionsUsed && !env->envi().assumptionExprs.empty()) {
+          GCLock lock;
+          std::vector<std::pair<ASTString, std::string>> entries;
+          for (auto& entry : env->envi().assumptionExprs) {
+            std::ostringstream oss;
+            Printer p(oss, 0, false, &env->envi());
+            p.print(entry.second);
+            entries.emplace_back(entry.first, oss.str());
+          }
+          std::sort(entries.begin(), entries.end(),
+                    [](const std::pair<ASTString, std::string>& a,
+                       const std::pair<ASTString, std::string>& b) { return a.first < b.first; });
+          std::vector<Expression*> tuples;
+          tuples.reserve(entries.size());
+          for (const auto& e : entries) {
+            std::vector<Expression*> fields(2);
+            fields[0] = new StringLit(Location().introduce(), e.first);
+            fields[1] = new StringLit(Location().introduce(), ASTString(e.second));
+            auto* tuple = ArrayLit::constructTuple(Location().introduce(), fields);
+            env->envi().registerTupleType(tuple);  // sets the tuple's `tuple(string, string)` type
+            tuples.push_back(tuple);
+          }
+          // Declared type: `array[int] of tuple(string, string)`.
+          std::vector<Expression*> fieldTis(2);
+          fieldTis[0] = new TypeInst(Location().introduce(), Type::parstring());
+          fieldTis[1] = new TypeInst(Location().introduce(), Type::parstring());
+          auto* ti = new TypeInst(Location().introduce(), Type::tuple(),
+                                  ArrayLit::constructTuple(Location().introduce(), fieldTis));
+          ti->setRanges({new TypeInst(Location().introduce(), Type::parint())});
+          env->envi().registerTupleType(ti);
+          auto* al = new ArrayLit(Location().introduce(), tuples);
+          al->type(ti->type());
+          auto* mapVd =
+              new VarDecl(Location().introduce(), ti, ASTString("_mzn_assumption_map"), al);
+          env->output()->addItem(VarDeclI::a(Location().introduce(), mapVd));
         }
 
         if (_flags.statistics) {
