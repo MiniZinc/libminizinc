@@ -499,7 +499,7 @@ predicate array_set_element(var int: x, array [int] of set of int: y, var set of
       endif
     );
 
-function ann: set_search(array [int] of var set of int: x, ann: a1, ann: a2, ann: a3) =
+function ann: set_search(array [int] of var set of $$E: x, ann: a1, ann: a2, ann: a3) =
   let {
     ann: cc =
       if a2 == indomain_min then

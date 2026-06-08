@@ -325,14 +325,14 @@ annotation set_search(array [int] of var set of int: x, ann: select, ann: choice
   If \a x is a multi-dimensional array, it is coerced to one-dimensional
   in row-major order (as with the array1d function).
 */
-function ann: set_search(array [$X] of var set of int: x, ann: select, ann: choice, ann: explore);
+function ann: set_search(array [$X] of var set of $$E: x, ann: select, ann: choice, ann: explore);
 
 /** @group stdlib.annotations.search Specify search on variables \a x, with variable selection
   strategy \a select, and value choice strategy \a choice.
   If \a x is a multi-dimensional array, it is coerced to one-dimensional
   in row-major order (as with the array1d function).
 */
-function ann: set_search(array [$X] of var set of int: x, ann: select, ann: choice) =
+function ann: set_search(array [$X] of var set of $$E: x, ann: select, ann: choice) =
   set_search(x, select, choice, complete);
 
 /***

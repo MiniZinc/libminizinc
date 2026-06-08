@@ -35,6 +35,8 @@ Bug fixes:
    (:bugref:`1020`).
 -  Fix parsing of JSON data files with enumerated or record types where
    the model contains a type alias for the type of the parameter.
+-  Fix the type signature of ``set_search`` to allow sets of enums without
+   warning about ``enum2int`` conversion (:bugref:`1024`).
 
 .. _v2.9.7:
 
