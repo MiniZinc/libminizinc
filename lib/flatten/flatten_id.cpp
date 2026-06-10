@@ -226,11 +226,20 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
             // Do not create names for empty arrays but return array literal directly
             rete = vdea;
           } else {
-            VarDecl* nvd = new_vardecl(env, ctx, eval_typeinst(env, ctx, vd), nullptr, vd, nullptr);
+            VarDecl* nvd =
+                new_vardecl(env, ctx, eval_typeinst(env, ctx, vd), nullptr, vd, nullptr, false);
 
             if (vd->e() != nullptr) {
               (void)flat_exp(env, Ctx(), vd->e(), nvd, env.constants.varTrue);
             }
+            // Flatten the annotations only now that the RHS has been bound (same
+            // deferral as flatten_vardecl): an annotation capturing the
+            // annotated expression (::annotated_expression) would otherwise
+            // flatten the captured array/struct variable and materialise element
+            // variables as nvd's RHS before the real RHS is bound.
+            auto* nvdi = (*env.flat())[env.varOccurrences.find(nvd)] -> cast<VarDeclI>();
+            flatten_vardecl_annotations(env, vd, nvdi, nvd);
+
             vd = nvd;
             EE ee(vd, nullptr);
             if (vd->e() != nullptr) {

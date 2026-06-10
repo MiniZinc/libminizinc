@@ -649,7 +649,7 @@ void flatten_vardecl_annotations(EnvI& env, VarDecl* origVd, VarDeclI* vdi, VarD
 }
 
 VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDecl* origVd,
-                     Expression* rhs) {
+                     Expression* rhs, bool flattenAnnotations) {
   VarDecl* vd = nullptr;
 
   // Is this vardecl already in the FlatZinc (for unification)
@@ -740,8 +740,13 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
     env.flatAddItem(vdi);
   }
 
-  // Copy annotations from origVd
-  if (origVd != nullptr) {
+  // Copy annotations from origVd.
+  // Callers that flatten the variable's RHS separately (flatten_vardecl) defer
+  // this until the RHS has been bound: an annotation that captures the
+  // annotated expression (::annotated_expression) would otherwise flatten the
+  // captured array/struct variable and materialise element variables as its
+  // RHS before the real RHS is bound (see flatten_vardecl).
+  if (flattenAnnotations && origVd != nullptr) {
     flatten_vardecl_annotations(env, origVd, vdi, vd);
   }
 

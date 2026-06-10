@@ -57,7 +57,7 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
         reuseVarId = false;
       }
     }
-    VarDecl* vd = new_vardecl(env, Ctx(), ti, reuseVarId ? v->id() : nullptr, v, nullptr);
+    VarDecl* vd = new_vardecl(env, Ctx(), ti, reuseVarId ? v->id() : nullptr, v, nullptr, false);
     v->flat(vd);
     if (v->e() != nullptr) {
       Ctx nctx;
@@ -89,6 +89,14 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
         vd->type(t);
       }
     }
+
+    // Flatten the annotations now that the RHS has been bound. This is deferred
+    // from new_vardecl (hence the `false` argument above) because an annotation
+    // capturing the annotated expression (::annotated_expression) would
+    // otherwise flatten the captured array/struct variable and materialise
+    // element variables as its RHS before the real RHS is bound.
+    auto* vdi = (*env.flat())[env.varOccurrences.find(vd)] -> cast<VarDeclI>();
+    flatten_vardecl_annotations(env, v, vdi, vd);
 
     ret.r = bind(env, Ctx(), r, vd->id());
   } else {

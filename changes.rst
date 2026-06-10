@@ -45,6 +45,8 @@ Bug fixes:
    the model contains a type alias for the type of the parameter.
 -  Fix the type signature of ``set_search`` to allow sets of enums without
    warning about ``enum2int`` conversion (:bugref:`1024`).
+-  Fix flattening of annotated array declarations that have a right-hand
+   side, which could previously crash.
 
 .. _v2.9.7:
 
