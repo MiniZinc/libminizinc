@@ -3602,7 +3602,13 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
                   GCLock lock;
                   auto* nc = Call::a(Expression::loc(c), c->id(), args);
                   nc->type(Type::varbool());
-                  decl = env.model->matchFn(env, nc, false);
+                  // Resolve the relational (arity+1) form by the original
+                  // call's parameter names so a name-only sibling is not
+                  // substituted; fall back to the type-only match.
+                  decl = env.model->matchFnByNames(env, c->id(), c->decl(), args, false);
+                  if (decl == nullptr) {
+                    decl = env.model->matchFn(env, nc, false);
+                  }
                   ka = nc;
                 }
                 if (decl != nullptr) {
@@ -4968,7 +4974,13 @@ void flatten(Env& e, FlatteningOptions opt) {
                       throw FlatteningError(env, Expression::loc(c), ss.str());
                     }
                   } else {
-                    decl = env.model->matchFn(env, c->id(), args, false);
+                    // Resolve the relational (arity+1) form by the original
+                    // call's parameter names so a name-only sibling is not
+                    // substituted; fall back to the type-only match.
+                    decl = env.model->matchFnByNames(env, c->id(), c->decl(), args, false);
+                    if (decl == nullptr) {
+                      decl = env.model->matchFn(env, c->id(), args, false);
+                    }
                   }
                   if ((decl != nullptr) && (decl->e() != nullptr)) {
                     add_path_annotation(env, decl->e());

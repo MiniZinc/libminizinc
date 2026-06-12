@@ -616,29 +616,35 @@ public:
     auto lookup = _instanceMap.getOrInsert(_env, call);
     auto instanceId = lookup.instanceId;
     if (!lookup.exists) {
-      // new instance: create copies of non-reif, _reif and _imp function
+      // new instance: create copies of non-reif, _reif and _imp function.
+      // Resolve each role by the call's parameter NAMES, keyed on the
+      // authoritative call->decl(): a plain matchFn resolves purely by argument
+      // type and therefore cannot distinguish "name-only" overloads
+      // (declarations that differ only in their parameter names, dispatched via
+      // named arguments), which would collapse them onto a single specialised
+      // copy. matchFnByNames matches the leading parameter names of call->decl()
+      // (the trailing reification bool is matched on type), falling back to the
+      // type-only match only when no name-compatible candidate exists (e.g. an
+      // empty reif bucket, or a genuine coercion sibling with differing names).
+      auto matchRole = [&](const ASTString& id, const std::vector<Type>& types) -> FunctionI* {
+        FunctionI* byName = _env.model->matchFnByNames(_env, id, call->decl(), types, false);
+        if (byName != nullptr) {
+          return byName;
+        }
+        return _env.model->matchFn(_env, id, types, false);
+      };
+      const bool callIsReif = call->id().endsWith("_reif");
+      const bool callIsImp = call->id().endsWith("_imp");
       std::vector<Type> concrete_types = lookup.argTypes;
-      auto* nonReif = _env.model->matchFn(_env, lookup.baseName, concrete_types, false);
+      // The call's own role is authoritative; sibling roles are resolved by name.
+      auto* nonReif = callIsReif || callIsImp ? matchRole(lookup.baseName, concrete_types)
+                                              : call->decl();
       // Push additional var bool for reified versions
       concrete_types.push_back(Type::varbool());
-      auto* reified =
-          _env.model->matchFn(_env, _env.reifyId(lookup.baseName), concrete_types, false);
-      auto* halfReif =
-          _env.model->matchFn(_env, EnvI::halfReifyId(lookup.baseName), concrete_types, false);
-      // matchFn() above resolves purely by argument type and therefore cannot
-      // distinguish "name-only" overloads (declarations that differ only in
-      // their parameter names, dispatched via named arguments). The call's
-      // resolved decl is authoritative, so snap the entry matching the call's
-      // role (non-reified / _reif / _imp) to it. This ensures the call is later
-      // redirected to the correct specialised copy via the pointer-equality
-      // check (call->decl() == fi) below.
-      if (call->id().endsWith("_reif")) {
-        reified = call->decl();
-      } else if (call->id().endsWith("_imp")) {
-        halfReif = call->decl();
-      } else {
-        nonReif = call->decl();
-      }
+      auto* reified = callIsReif ? call->decl()
+                                 : matchRole(_env.reifyId(lookup.baseName), concrete_types);
+      auto* halfReif = callIsImp ? call->decl()
+                                 : matchRole(EnvI::halfReifyId(lookup.baseName), concrete_types);
       assert(call->decl() == nonReif || call->decl() == reified || call->decl() == halfReif);
       std::vector<std::pair<FunctionI*, std::vector<Type>>> matches(
           {{nonReif, lookup.argTypes}, {reified, concrete_types}, {halfReif, concrete_types}});
@@ -647,18 +653,16 @@ public:
         // This is needed since if this instance can't be made par by the type checker,
         // but we actually have a par version of the polymorphic function, we should use it.
         std::vector<Type> concrete_types = lookup.parTypes;
-        auto* parNonReif = _env.model->matchFn(_env, lookup.baseName, concrete_types, false);
+        auto* parNonReif = matchRole(lookup.baseName, concrete_types);
         if (nonReif != nullptr && (nonReif != parNonReif || nonReif->isPolymorphic())) {
           matches.emplace_back(parNonReif, concrete_types);
         }
         concrete_types.push_back(Type::parbool());
-        auto* parReified =
-            _env.model->matchFn(_env, _env.reifyId(lookup.baseName), concrete_types, false);
+        auto* parReified = matchRole(_env.reifyId(lookup.baseName), concrete_types);
         if (parReified != nullptr && reified != parReified) {
           matches.emplace_back(parReified, concrete_types);
         }
-        auto* parHalfReif =
-            _env.model->matchFn(_env, EnvI::halfReifyId(lookup.baseName), concrete_types, false);
+        auto* parHalfReif = matchRole(EnvI::halfReifyId(lookup.baseName), concrete_types);
         if (parHalfReif != nullptr && halfReif != parHalfReif) {
           matches.emplace_back(parHalfReif, concrete_types);
         }

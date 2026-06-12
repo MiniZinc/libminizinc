@@ -214,6 +214,30 @@ public:
   /// \a c->decl() is null or no name-matched sibling exists; callers
   /// should fall back to the type-only matchReification in that case.
   FunctionI* matchReifByNames(EnvI& env, const Call* c, bool canHalfReify, bool strictEnums) const;
+  /// Re-resolve a call by parameter NAMES rather than by type alone. Given the
+  /// call's resolved \a baseDecl, find the overload registered under \a id whose
+  /// leading \a baseDecl->paramCount() parameter names match \a baseDecl's and
+  /// whose registered types accept \a args. This is the name-aware counterpart
+  /// of matchFn(id, args), used when a call is rewritten into a wider form
+  /// (function->relation conversion appends a result argument; par-version
+  /// construction keeps the arity) and the originating decl must be honoured so
+  /// a name-only sibling is not silently substituted. \a args may be longer than
+  /// \a baseDecl; the trailing positions are matched on type only. Names are read
+  /// directly off \a baseDecl. Returns nullptr if \a baseDecl is null or nothing
+  /// matches.
+  FunctionI* matchFnByNames(EnvI& env, const ASTString& id, FunctionI* baseDecl,
+                            const std::vector<Type>& t, bool strictEnums) const;
+  /// As above, taking argument expressions whose types are matched.
+  FunctionI* matchFnByNames(EnvI& env, const ASTString& id, FunctionI* baseDecl,
+                            const std::vector<Expression*>& args, bool strictEnums) const;
+  /// Find the par version of \a f: the overload under f's identifier accepting
+  /// the par-coerced types \a tv. Unlike matchFnByNames this matches a genuine
+  /// coercion par sibling even when its parameter names differ from f, but
+  /// redirects a name-only sibling (identical parameter types, different names,
+  /// different body) back to \a f so each gets its own par copy. Always returns
+  /// non-null (at worst \a f itself). Used by the par-version generation pass.
+  FunctionI* matchParVersion(EnvI& env, FunctionI* f, const std::vector<Type>& tv,
+                             bool strictEnums) const;
   /// Return function declarations that are potential overloads for call \a c (same identifier and
   /// same number of arguments)
   std::vector<FunctionI*> potentialOverloads(EnvI& env, Call* c) const;

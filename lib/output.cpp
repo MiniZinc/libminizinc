@@ -42,9 +42,17 @@ void check_output_par_fn(EnvI& env, Call* rhs) {
     tv[i] = Expression::type(rhs->arg(i));
     tv[i].mkPar(env);
   }
-  FunctionI* decl = env.output->matchFn(env, rhs->id(), tv, false);
+  // Match the par version by the call's parameter names so a name-only sibling
+  // is not substituted; fall back to the type-only match when there is no decl.
+  FunctionI* decl = env.output->matchFnByNames(env, rhs->id(), rhs->decl(), tv, false);
   if (decl == nullptr) {
-    FunctionI* origdecl = env.model->matchFn(env, rhs->id(), tv, false);
+    decl = env.output->matchFn(env, rhs->id(), tv, false);
+  }
+  if (decl == nullptr) {
+    FunctionI* origdecl = env.model->matchFnByNames(env, rhs->id(), rhs->decl(), tv, false);
+    if (origdecl == nullptr) {
+      origdecl = env.model->matchFn(env, rhs->id(), tv, false);
+    }
     if (origdecl == nullptr || !is_completely_par(env, origdecl, tv)) {
       std::ostringstream ss;
       ss << "function " << demonomorphise_identifier(rhs->id())
@@ -100,7 +108,7 @@ bool cannot_use_rhs_for_output(EnvI& env, Expression* e,
         auto t2 = Expression::type(bo->rhs());
         t2.mkPar(env);
         std::vector<Type> tv({t1, t2});
-        auto* decl = checkFunction(Expression::loc(bo), bo->decl()->id(), tv);
+        auto* decl = checkFunction(Expression::loc(bo), bo->decl()->id(), tv, bo->decl());
         if (decl != nullptr) {
           bo->decl(decl);
         }
@@ -112,7 +120,7 @@ bool cannot_use_rhs_for_output(EnvI& env, Expression* e,
         auto t = Expression::type(uo->e());
         t.mkPar(env);
         std::vector<Type> tv({t});
-        auto* decl = checkFunction(Expression::loc(uo), uo->decl()->id(), tv);
+        auto* decl = checkFunction(Expression::loc(uo), uo->decl()->id(), tv, uo->decl());
         if (decl != nullptr) {
           uo->decl(decl);
         }
@@ -125,7 +133,7 @@ bool cannot_use_rhs_for_output(EnvI& env, Expression* e,
         tv[i] = Expression::type(c->arg(i));
         tv[i].mkPar(env);
       }
-      auto* decl = checkFunction(Expression::loc(c), c->id(), tv);
+      auto* decl = checkFunction(Expression::loc(c), c->id(), tv, c->decl());
       if (decl != nullptr) {
         c->decl(decl);
       }
@@ -143,11 +151,21 @@ bool cannot_use_rhs_for_output(EnvI& env, Expression* e,
     bool enter(Expression* /*e*/) const { return success; }
 
   private:
-    FunctionI* checkFunction(const Location& loc, const ASTString& name, std::vector<Type>& tv) {
-      FunctionI* decl = env.output->matchFn(env, name, tv, false);
+    FunctionI* checkFunction(const Location& loc, const ASTString& name, std::vector<Type>& tv,
+                             FunctionI* baseDecl) {
+      // Match by the originating call's parameter names so a name-only sibling
+      // is not substituted; fall back to the type-only match when there is no
+      // decl (e.g. a freshly built call).
+      FunctionI* decl = env.output->matchFnByNames(env, name, baseDecl, tv, false);
+      if (decl == nullptr) {
+        decl = env.output->matchFn(env, name, tv, false);
+      }
       Type t;
       if (decl == nullptr) {
-        FunctionI* origdecl = env.model->matchFn(env, name, tv, false);
+        FunctionI* origdecl = env.model->matchFnByNames(env, name, baseDecl, tv, false);
+        if (origdecl == nullptr) {
+          origdecl = env.model->matchFn(env, name, tv, false);
+        }
         if (origdecl == nullptr) {
           std::ostringstream ss;
           ss << "function " << demonomorphise_identifier(name)
@@ -1725,14 +1743,30 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
         tv[i] = Expression::type(c->arg(i));
         tv[i].mkPar(env);
       }
-      FunctionI* decl = env.output->matchFn(env, c->id(), tv, false);
-      FunctionI* origdecl = env.model->matchFn(env, c->id(), tv, false);
+      // Match by the call's parameter names so a name-only sibling is not
+      // substituted; fall back to the type-only match when there is no decl.
+      FunctionI* decl = env.output->matchFnByNames(env, c->id(), c->decl(), tv, false);
+      if (decl == nullptr) {
+        decl = env.output->matchFn(env, c->id(), tv, false);
+      }
+      FunctionI* origdecl = env.model->matchFnByNames(env, c->id(), c->decl(), tv, false);
+      if (origdecl == nullptr) {
+        origdecl = env.model->matchFn(env, c->id(), tv, false);
+      }
       bool canReuseDecl = (decl != nullptr);
       if (canReuseDecl && (origdecl != nullptr)) {
-        // Check if this is the exact same overloaded declaration as in the model
+        // Check if this is the exact same overloaded declaration as in the
+        // model - same parameter types and (for name-only overloads) same
+        // parameter names.
         for (unsigned int i = 0; i < decl->paramCount(); i++) {
           if (decl->param(i)->type() != origdecl->param(i)->type()) {
             // no, the types don't match, so we have to copy the original decl
+            canReuseDecl = false;
+            break;
+          }
+          Id* a = decl->param(i)->id();
+          Id* b = origdecl->param(i)->id();
+          if (a->hasStr() && b->hasStr() && a->v() != b->v()) {
             canReuseDecl = false;
             break;
           }

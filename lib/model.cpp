@@ -346,6 +346,33 @@ bool sameParameterNames(FunctionI* a, FunctionI* b) {
   return true;
 }
 
+#ifndef NDEBUG
+// Does \a fi share its bucket \a v with a name-only sibling - another overload
+// with identical parameter types but at least one differing (name-passable)
+// parameter name? Such overloads can only be told apart by named arguments, so
+// resolving \a fi through a type-only matchFn (which ignores names) is a latent
+// bug: the caller should use the name-aware matchFn(Call*) / matchFnByNames /
+// matchReifByNames instead. Used only by debug-build guardrail asserts.
+bool has_name_only_sibling(const std::vector<Model::FnEntry>& v, FunctionI* fi) {
+  for (const auto& fe : v) {
+    if (fe.fi == fi || fe.fi->paramCount() != fi->paramCount()) {
+      continue;
+    }
+    bool sameTypes = true;
+    for (unsigned int i = 0; i < fi->paramCount(); i++) {
+      if (fe.fi->param(i)->type() != fi->param(i)->type()) {
+        sameTypes = false;
+        break;
+      }
+    }
+    if (sameTypes && !sameParameterNames(fe.fi, fi)) {
+      return true;
+    }
+  }
+  return false;
+}
+#endif
+
 // Is \a a at least as specific as \a b on the first \a n parameters? Only the
 // parameters an actual call supplies are compared; a defaulted tail is not part
 // of the ranking, so gaining a defaulted parameter never makes an overload a
@@ -605,6 +632,13 @@ bool Model::fnExists(EnvI& env, const ASTString& id) const {
   return i_id != m->_fnmap.end();
 }
 
+// NOTE: this type-only overload ignores parameter names. It is for resolving
+// FRESH/internal calls only (compiler-minted builtins, registration). To
+// re-resolve an EXISTING user call - which carries a decl whose parameter names
+// matter under named-argument overloading - use matchFn(Call*), matchFnNamed,
+// matchReifByNames or matchFnByNames instead, otherwise a name-only sibling can
+// be silently substituted. The debug-build assert below trips if this overload
+// ever lands on a name-only-overloaded function.
 FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Type>& t,
                           bool strictEnums) const {
   if (id == env.constants.varRedef->id()) {
@@ -636,6 +670,9 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Type
         }
       }
       if (match) {
+        assert(!has_name_only_sibling(v, i.fi) &&
+               "type-only matchFn(id, types) resolved a name-only-overloaded function; an "
+               "existing-call re-match must go through a name-aware matcher");
         return i.fi;
       }
     }
@@ -956,6 +993,137 @@ FunctionI* Model::matchReifByNames(EnvI& env, const Call* c, bool canHalfReify,
   return reif_decl;
 }
 
+FunctionI* Model::matchFnByNames(EnvI& env, const ASTString& id, FunctionI* baseDecl,
+                                 const std::vector<Type>& t, bool strictEnums) const {
+  // Re-resolve an existing call by parameter NAMES, not by type alone. Given the
+  // call's resolved \a baseDecl, find the overload registered under \a id whose
+  // leading baseDecl->paramCount() parameter names match baseDecl's and whose
+  // registered types accept \a t. This is the name-aware counterpart of the
+  // type-only matchFn(id, t) used when a call is rewritten into a wider form
+  // (function->relation conversion appends a result argument; par-version
+  // construction keeps the arity) and the original decl must be honoured so a
+  // name-only sibling is not silently substituted. Names are read directly off
+  // baseDecl - no name vector is materialised. \a t may be longer than baseDecl
+  // (the trailing positions, e.g. an appended result, are matched on type only).
+  // Returns nullptr if baseDecl is null or nothing matches; falls back to a
+  // name-matching-but-not-type-matching candidate only as a last resort,
+  // mirroring matchReifByNames.
+  if (baseDecl == nullptr) {
+    return nullptr;
+  }
+  const Model* m = this;
+  while (m->_parent != nullptr) {
+    m = m->_parent;
+  }
+  auto it = m->_fnmap.find(id);
+  if (it == m->_fnmap.end()) {
+    return nullptr;
+  }
+  const unsigned int baseArity = baseDecl->paramCount();
+  FunctionI* fallback = nullptr;
+  for (const auto& fe : it->second) {
+    if (fe.fi->paramCount() != t.size() || fe.fi->paramCount() < baseArity) {
+      continue;
+    }
+    bool nameMatch = true;
+    for (unsigned int i = 0; i < baseArity; i++) {
+      Id* a = fe.fi->param(i)->id();
+      Id* b = baseDecl->param(i)->id();
+      if (!a->hasStr() || !b->hasStr()) {
+        // Anonymous / synthetic ids cannot be passed by name; defer.
+        continue;
+      }
+      if (a->v() != b->v()) {
+        nameMatch = false;
+        break;
+      }
+    }
+    if (!nameMatch) {
+      continue;
+    }
+    bool typeMatch = true;
+    for (unsigned int i = 0; i < t.size(); i++) {
+      if (!env.isSubtype(t[i], fe.t[i], strictEnums)) {
+        typeMatch = false;
+        break;
+      }
+    }
+    if (!typeMatch) {
+      if (fallback == nullptr) {
+        fallback = fe.fi;
+      }
+      continue;
+    }
+    return fe.fi;
+  }
+  return fallback;
+}
+
+FunctionI* Model::matchFnByNames(EnvI& env, const ASTString& id, FunctionI* baseDecl,
+                                 const std::vector<Expression*>& args, bool strictEnums) const {
+  std::vector<Type> t;
+  t.reserve(args.size());
+  for (const auto* e : args) {
+    t.push_back(Expression::type(e));
+  }
+  return this->matchFnByNames(env, id, baseDecl, t, strictEnums);
+}
+
+FunctionI* Model::matchParVersion(EnvI& env, FunctionI* f, const std::vector<Type>& tv,
+                                  bool strictEnums) const {
+  // Find the par version of \a f - the overload under f's identifier whose
+  // (par-coerced) types \a tv accept. This is a type match (so f's genuine
+  // coercion par sibling, which differs in inst and may even differ in
+  // parameter names, is found) with one correction: a candidate that has
+  // *identical* parameter types to f but different parameter names is a
+  // name-only sibling - a distinct overload with its own body, dispatched via
+  // named arguments - not a par version of f, so it is redirected to f. That
+  // keeps name-only siblings keyed separately in the par-version pass instead
+  // of collapsing onto one shared copy. Always returns a non-null result (at
+  // worst f itself, which accepts its own par-coerced types).
+  const Model* m = this;
+  while (m->_parent != nullptr) {
+    m = m->_parent;
+  }
+  auto it = m->_fnmap.find(f->id());
+  if (it == m->_fnmap.end()) {
+    return f;
+  }
+  for (const auto& fe : it->second) {
+    if (fe.t.size() != tv.size()) {
+      continue;
+    }
+    bool match = true;
+    for (unsigned int j = 0; j < tv.size(); j++) {
+      if (!env.isSubtype(tv[j], fe.t[j], strictEnums)) {
+        match = false;
+        break;
+      }
+    }
+    if (!match) {
+      continue;
+    }
+    FunctionI* fi_par = fe.fi;
+    if (fi_par != f && fi_par->paramCount() == f->paramCount()) {
+      bool sameTypes = true;
+      for (unsigned int j = 0; j < f->paramCount(); j++) {
+        if (fi_par->param(j)->type() != f->param(j)->type()) {
+          sameTypes = false;
+          break;
+        }
+      }
+      if (sameTypes && !sameParameterNames(fi_par, f)) {
+        fi_par = f;
+      }
+    }
+    return fi_par;
+  }
+  return f;
+}
+
+// NOTE: type-only overload - see the matchFn(id, types) note above. For
+// FRESH/internal calls only; existing-call re-matches must use a name-aware
+// matcher. The debug-build assert trips on a name-only-overloaded resolution.
 FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Expression*>& args,
                           bool strictEnums) const {
   if (id == env.constants.varRedef->id()) {
@@ -976,6 +1144,9 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Expr
   if (matched.empty()) {
     return nullptr;
   }
+  assert(!has_name_only_sibling(v, matched[0]) &&
+         "type-only matchFn(id, args) resolved a name-only-overloaded function; an existing-call "
+         "re-match must go through a name-aware matcher");
   if (matched.size() == 1) {
     return matched[0];
   }
@@ -1116,28 +1287,48 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
   }
   if (best != nullptr) {
     const auto& i = *best;
-    // Tie-break by parameter name among identically-typed candidates: if the
-    // chosen (most specific) match has different parameter names than the
-    // call's resolved decl, prefer an equally-typed sibling whose names match
-    // decl. These are name-only overloads and their auto-generated par/present
-    // copies (e.g. two par copies, both `(par int)`, differing only in a
-    // parameter name); the chosen match could otherwise run the wrong sibling's
-    // body. The alternative must have identical registered types, so
-    // concreteness is never overridden; if none exists the chosen match is
-    // returned unchanged, leaving genuinely name-disagreeing overloads
-    // untouched.
-    if (c->decl() != nullptr && i.fi != c->decl() &&
-        i.fi->paramCount() == c->decl()->paramCount() &&
-        !sameParameterNames(i.fi, c->decl())) {
-      for (const auto& i2 : v) {
-        if (i2.fi != i.fi && i2.t == i.t &&
-            i2.fi->paramCount() == c->decl()->paramCount() &&
-            sameParameterNames(i2.fi, c->decl())) {
-          return i2.fi;
+        // Tie-break by parameter name among identically-typed candidates: if
+        // the first (most concrete) match has different parameter names than
+        // the call's resolved decl, prefer an equally-typed sibling whose
+        // names match decl. These are name-only overloads and their
+        // auto-generated par/present copies (e.g. two par copies, both
+        // `(par int)`, differing only in a parameter name); the bucket-order
+        // first match could otherwise run the wrong sibling's body. The
+        // alternative must have identical registered types, so concreteness
+        // is never overridden; if none exists the first match is returned
+        // unchanged, leaving genuinely name-disagreeing overloads untouched.
+        if (c->decl() != nullptr && i.fi != c->decl() &&
+            i.fi->paramCount() == c->decl()->paramCount() &&
+            !sameParameterNames(i.fi, c->decl())) {
+          for (const auto& i2 : v) {
+            if (i2.fi != i.fi && i2.t == i.t &&
+                i2.fi->paramCount() == c->decl()->paramCount() &&
+                sameParameterNames(i2.fi, c->decl())) {
+              return i2.fi;
+            }
+          }
         }
-      }
-    }
-    return best->fi;
+        if (throwIfNotFound && c->decl() == nullptr) {
+          // Fresh resolution of a positional call that did not name enough
+          // arguments to be unambiguous: if another overload has identical
+          // parameter types but different parameter names (a name-only
+          // sibling), the call could run either body and the choice would
+          // depend on registration order. Such overloads are only
+          // distinguishable through named arguments, so require them rather
+          // than silently picking one.
+          for (const auto& i2 : v) {
+            if (i2.fi != i.fi && i2.t == i.t && !sameParameterNames(i2.fi, i.fi)) {
+              std::ostringstream oss;
+              oss << "call to `" << c->id()
+                  << "' is ambiguous: it matches overloads that differ only in "
+                     "parameter names (defined in "
+                  << i.fi->loc().toString() << " and " << i2.fi->loc().toString()
+                  << "). Use named arguments to select one.";
+              throw TypeError(env, Expression::loc(c), oss.str());
+            }
+          }
+        }
+    return i.fi;
   }
   if (matched.empty()) {
     if (throwIfNotFound) {
@@ -1238,6 +1429,38 @@ FunctionI* Model::matchFnNamed(EnvI& env, Call* c, const std::vector<Expression*
   std::vector<FunctionI*> matched;
   Expression* botarg = nullptr;
   bool anyNameCompatible = false;
+  // A candidate is name-compatible when (a) it has at least as many parameters
+  // as the call supplies, (b) every supplied named name is at some index >= k
+  // and does not collide with the positional prefix, and (c) every parameter
+  // not bound by position or name has a default (the typechecker's vCall
+  // splices those defaults into the call). This depends only on names/arity,
+  // not argument types, so name-only siblings differ on it.
+  auto nameCompatible = [&](FunctionI* fi) -> bool {
+    if (fi->paramCount() < total) {
+      return false;
+    }
+    for (const auto& np : named) {
+      if (positional_prefix_has_name(fi, np.first, k)) {
+        return false;
+      }
+      if (find_param_named(fi, np.first, k) < 0) {
+        return false;
+      }
+    }
+    for (unsigned int j = k; j < fi->paramCount(); j++) {
+      bool boundByName = false;
+      for (const auto& np : named) {
+        if (fi->param(j)->id()->v() == np.first) {
+          boundByName = true;
+          break;
+        }
+      }
+      if (!boundByName && fi->param(j)->e() == nullptr) {
+        return false;
+      }
+    }
+    return true;
+  };
   // Is \a a at least as specific as \a b on the arguments this call supplies?
   // Mirrors the positional matchFn's ranking, but a named argument may sit at a
   // different index in each candidate, so each is asked where the name binds.
@@ -1266,41 +1489,7 @@ FunctionI* Model::matchFnNamed(EnvI& env, Call* c, const std::vector<Expression*
   const bool mayDefaultFill = !v.empty() && v.back().t.size() > total;
   for (const auto& fe : v) {
     FunctionI* fi = fe.fi;
-    if (fi->paramCount() < total) {
-      continue;
-    }
-    // Name compatibility: each supplied named name is at some index >= k,
-    // and no name collides with the positional prefix.
-    bool nameOk = true;
-    for (const auto& np : named) {
-      if (positional_prefix_has_name(fi, np.first, k)) {
-        nameOk = false;
-        break;
-      }
-      if (find_param_named(fi, np.first, k) < 0) {
-        nameOk = false;
-        break;
-      }
-    }
-    if (!nameOk) {
-      continue;
-    }
-    // Every parameter not bound by position or name must have a default;
-    // the typechecker (vCall) splices those defaults into the call.
-    bool defaultedTail = true;
-    for (unsigned int j = k; defaultedTail && j < fi->paramCount(); j++) {
-      bool boundByName = false;
-      for (const auto& np : named) {
-        if (fi->param(j)->id()->v() == np.first) {
-          boundByName = true;
-          break;
-        }
-      }
-      if (!boundByName && fi->param(j)->e() == nullptr) {
-        defaultedTail = false;
-      }
-    }
-    if (!defaultedTail) {
+    if (!nameCompatible(fi)) {
       continue;
     }
     anyNameCompatible = true;
@@ -1349,7 +1538,30 @@ FunctionI* Model::matchFnNamed(EnvI& env, Call* c, const std::vector<Expression*
     matched.push_back(fi);
   }
   if (best != nullptr) {
-    return best->fi;
+    FunctionI* fi = best->fi;
+    const auto& fe = *best;
+      if (throwIfNotFound) {
+        // The supplied named arguments did not pin down a unique overload: if
+        // another candidate has identical parameter types but different names
+        // (a name-only sibling) and is equally name-compatible with this call,
+        // the choice between them depends only on registration order. Require
+        // enough named arguments to disambiguate instead of silently picking
+        // one. (Identical types make the subtype check above redundant for the
+        // sibling, so only its name-compatibility needs re-checking.)
+        for (const auto& fe2 : v) {
+          if (fe2.fi != fi && fe2.t == fe.t && !sameParameterNames(fe2.fi, fi) &&
+              nameCompatible(fe2.fi)) {
+            std::ostringstream oss;
+            oss << "call to `" << c->id()
+                << "' is ambiguous: it matches overloads that differ only in "
+                   "parameter names (defined in "
+                << fi->loc().toString() << " and " << fe2.fi->loc().toString()
+                << "). Name more arguments to select one.";
+            throw TypeError(env, Expression::loc(c), oss.str());
+          }
+        }
+      }
+    return fi;
   }
   if (matched.empty()) {
     if (throwIfNotFound) {

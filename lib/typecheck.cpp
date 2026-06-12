@@ -3731,32 +3731,14 @@ void create_par_versions(Env& env, Model* m, BottomUpIterator<Typer<true>>& bott
       t.cv(false);
       tv[i] = t;
     }
-    // check if specialised par version of function already exists
-    FunctionI* fi_par = nonPolyFns->matchFn(env.envi(), f->id(), tv, false);
-    // matchFn resolves by type only. For functions overloaded purely on
-    // parameter names it can return a sibling that shares f's parameter types
-    // but binds different names (and has a different body). Such a sibling is
-    // not a valid par version of f: each name-only overload needs its own par
-    // copy, built from its own body. Detect this and fall back to f itself, so
-    // both siblings are entered into fnsToMakePar (keyed by the source
-    // function) instead of collapsing onto one shared par version.
-    if (fi_par != f && fi_par->paramCount() == f->paramCount()) {
-      bool sameTypes = true;
-      bool sameNames = true;
-      for (unsigned int i = 0; i < f->paramCount(); i++) {
-        if (fi_par->param(i)->type() != f->param(i)->type()) {
-          sameTypes = false;
-        }
-        Id* a = fi_par->param(i)->id();
-        Id* b = f->param(i)->id();
-        if (a->hasStr() && b->hasStr() && a->v() != b->v()) {
-          sameNames = false;
-        }
-      }
-      if (sameTypes && !sameNames) {
-        fi_par = f;
-      }
-    }
+    // check if specialised par version of function already exists. This matches
+    // by type but redirects a name-only sibling (same parameter types as f,
+    // different parameter names, different body - dispatched via named
+    // arguments) back to f, so each such overload gets its own par copy built
+    // from its own body instead of collapsing onto one shared par version. A
+    // genuine coercion par version (different inst, possibly different names) is
+    // still matched, so this is not the same as a pure name match.
+    FunctionI* fi_par = nonPolyFns->matchParVersion(env.envi(), f, tv, false);
     alreadyPar = fi_par->ti()->type().isPar();
     if (alreadyPar) {
       for (unsigned int i = 0; i < fi_par->paramCount(); i++) {
@@ -3814,7 +3796,10 @@ void create_par_versions(Env& env, Model* m, BottomUpIterator<Typer<true>>& bott
             t.mkPar(env);
             tv.push_back(t);
           }
-          FunctionI* decl_par = m->matchFn(env, decl->id(), tv, false);
+          // Track the par version of the *same* overload: match by parameter
+          // names so a name-only sibling's par copy is not picked up as the
+          // dependency (mirrors the name-aware guard in create_par_versions).
+          FunctionI* decl_par = m->matchParVersion(env, decl, tv, false);
           if (decl_par == nullptr) {
             isPar = false;
             return;
