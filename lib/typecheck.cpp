@@ -1883,8 +1883,7 @@ static bool ti_contains_list(TypeInst* ti) {
     return true;
   }
   // A struct domain is an ArrayLit of field TypeInsts (tuple) / VarDecls (record).
-  if (ti->type().structBT() && ti->domain() != nullptr &&
-      Expression::isa<ArrayLit>(ti->domain())) {
+  if (ti->type().structBT() && ti->domain() != nullptr && Expression::isa<ArrayLit>(ti->domain())) {
     auto* fields = Expression::cast<ArrayLit>(ti->domain());
     for (unsigned int i = 0; i < fields->size(); i++) {
       if (ti_contains_list(struct_field_ti((*fields)[i]))) {
@@ -1925,8 +1924,8 @@ static KeepAlive add_list_coercion(EnvI& env, Model* m, Expression* e, TypeInst*
     std::vector<Expression*> let_bindings;
     Expression* ident = e;
     if (!Expression::isa<Id>(ident)) {
-      auto* vd = new VarDecl(Expression::loc(e),
-                             new TypeInst(Expression::loc(e).introduce(), et), 1, e);
+      auto* vd =
+          new VarDecl(Expression::loc(e), new TypeInst(Expression::loc(e).introduce(), et), 1, e);
       vd->ti()->setStructDomain(env, et);
       vd->toplevel(false);
       vd->type(et);
@@ -1938,8 +1937,8 @@ static KeepAlive add_list_coercion(EnvI& env, Model* m, Expression* e, TypeInst*
     auto* a1d = Call::a(Expression::loc(e).introduce(), env.constants.ids.array1d, {ident});
     a1d->type(ty1d);
     a1d->decl(m->matchFn(env, a1d, false, true));
-    auto* vd_a1d = new VarDecl(Expression::loc(e),
-                               new TypeInst(Expression::loc(e).introduce(), ty1d), 2, a1d);
+    auto* vd_a1d =
+        new VarDecl(Expression::loc(e), new TypeInst(Expression::loc(e).introduce(), ty1d), 2, a1d);
     vd_a1d->ti()->setStructDomain(env, ty1d);
     vd_a1d->toplevel(false);
     let_bindings.push_back(vd_a1d);
@@ -1958,8 +1957,8 @@ static KeepAlive add_list_coercion(EnvI& env, Model* m, Expression* e, TypeInst*
     if (isList) {
       ret = comp;
     } else {
-      auto* arrayXd = Call::a(Expression::loc(e).introduce(), env.constants.ids.arrayXd,
-                              {ident, comp});
+      auto* arrayXd =
+          Call::a(Expression::loc(e).introduce(), env.constants.ids.arrayXd, {ident, comp});
       arrayXd->type(Type::arrType(env, et, Expression::type(elem)));
       arrayXd->decl(m->matchFn(env, arrayXd, false, true));
       ret = arrayXd;
@@ -1982,8 +1981,8 @@ static KeepAlive add_list_coercion(EnvI& env, Model* m, Expression* e, TypeInst*
     std::vector<Expression*> let_bindings;
     Expression* ident = e;
     if (!Expression::isa<Id>(ident)) {
-      auto* vd = new VarDecl(Expression::loc(e),
-                             new TypeInst(Expression::loc(e).introduce(), et), 1, e);
+      auto* vd =
+          new VarDecl(Expression::loc(e), new TypeInst(Expression::loc(e).introduce(), et), 1, e);
       vd->ti()->setStructDomain(env, et);
       vd->toplevel(false);
       vd->type(et);

@@ -2340,11 +2340,10 @@ void check_index_sets(EnvI& env, VarDecl* vd, Expression* e, bool isArg) {
               assert(isv->size() <= 1);
               // `1..infinity' marks a `list': require the actual to be 1-based, any length.
               bool listIdx = !isv->empty() && isv->min(0) == 1 && isv->max(0).isPlusInfinity();
-              bool mismatch =
-                  listIdx ? (al->min(i) != 1)
-                          : ((isv->empty() && al->min(i) <= al->max(i)) ||
-                             (!isv->empty() &&
-                              (isv->min(0) != al->min(i) || isv->max(0) != al->max(i))));
+              bool mismatch = listIdx ? (al->min(i) != 1)
+                                      : ((isv->empty() && al->min(i) <= al->max(i)) ||
+                                         (!isv->empty() && (isv->min(0) != al->min(i) ||
+                                                            isv->max(0) != al->max(i))));
               if (mismatch) {
                 if (item.accessor != nullptr) {
                   std::ostringstream oss;
