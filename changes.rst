@@ -52,6 +52,8 @@ Bug fixes:
    warning about ``enum2int`` conversion (:bugref:`1024`).
 -  Fix flattening of annotated array declarations that have a right-hand
    side, which could previously crash.
+-  Make ``list of list of T`` work correctly (was previously rejected with
+   a type error).
 
 .. _v2.9.7:
 
