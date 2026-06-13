@@ -175,6 +175,9 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
           if (isv->size() != 1) {
             throw FlatteningError(env, Expression::loc(ti), "invalid array index set");
           }
+          if (!isv->min(0).isFinite() || !isv->max(0).isFinite()) {
+            throw FlatteningError(env, Expression::loc(ti), "invalid array index set with infinite bounds");
+          }
           asize *= (isv->max(0) - isv->min(0) + 1);
           dims.emplace_back(static_cast<int>(isv->min(0).toInt()),
                             static_cast<int>(isv->max(0).toInt()));
