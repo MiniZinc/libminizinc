@@ -1906,22 +1906,77 @@ static KeepAlive add_list_coercion(EnvI& env, Model* m, Expression* e, TypeInst*
   GCLock lock;
   Type et = Expression::type(e);
   if (et.dim() >= 1) {
-    // Array position. A top-level `list` is rebased with array1d (the identity on already
-    // 1-based arrays). Coercing `list`s that are *elements* of an array (e.g.
-    // `array[int] of tuple(.., list ..)`) is not supported here — those keep flowing and are
-    // caught by the runtime index-set check; array-of-array values are barely constructible in
-    // MiniZinc in the first place.
-    if (is_list_ti(ti)) {
-      Call* a1d = Call::a(Expression::loc(e).introduce(), env.constants.ids.array1d, {e});
-      a1d->decl(m->matchFn(env, a1d, false, true));
-      a1d->type(a1d->decl()->rtype(env, {e}, nullptr, false));
-      return a1d;
+    // Array position. If the elements contain no nested `list`, a top-level `list` just needs
+    // rebasing with array1d (the identity on already 1-based arrays). Otherwise map over the
+    // elements, coercing each, and either keep the 1-based comprehension (for a `list`) or
+    // reshape back to the original index set (for a sized array).
+    auto* elemTi = new TypeInst(Expression::loc(e).introduce(), et.elemType(env), ti->domain());
+    bool elemHasList = ti_contains_list(elemTi);
+    bool isList = is_list_ti(ti);
+    if (!elemHasList) {
+      if (isList) {
+        Call* a1d = Call::a(Expression::loc(e).introduce(), env.constants.ids.array1d, {e});
+        a1d->decl(m->matchFn(env, a1d, false, true));
+        a1d->type(a1d->decl()->rtype(env, {e}, nullptr, false));
+        return a1d;
+      }
+      return e;
     }
-    return e;
+    std::vector<Expression*> let_bindings;
+    Expression* ident = e;
+    if (!Expression::isa<Id>(ident)) {
+      auto* vd = new VarDecl(Expression::loc(e),
+                             new TypeInst(Expression::loc(e).introduce(), et), 1, e);
+      vd->ti()->setStructDomain(env, et);
+      vd->toplevel(false);
+      vd->type(et);
+      let_bindings.push_back(vd);
+      ident = vd->id();
+    }
+    Type tyElem = et.elemType(env);
+    Type ty1d = Type::arrType(env, Type::partop(1), et);
+    auto* a1d = Call::a(Expression::loc(e).introduce(), env.constants.ids.array1d, {ident});
+    a1d->type(ty1d);
+    a1d->decl(m->matchFn(env, a1d, false, true));
+    auto* vd_a1d = new VarDecl(Expression::loc(e),
+                               new TypeInst(Expression::loc(e).introduce(), ty1d), 2, a1d);
+    vd_a1d->ti()->setStructDomain(env, ty1d);
+    vd_a1d->toplevel(false);
+    let_bindings.push_back(vd_a1d);
+
+    auto* vd_it = new VarDecl(Location().introduce(),
+                              new TypeInst(Expression::loc(e).introduce(), tyElem), 3);
+    vd_it->toplevel(false);
+    Generator gen({vd_it}, vd_a1d->id(), nullptr);
+    Generators gens;
+    gens.g = {gen};
+    Expression* elem = add_list_coercion(env, m, vd_it->id(), elemTi)();
+    auto* comp = new Comprehension(Location().introduce(), elem, gens, false);
+    comp->type(Type::arrType(env, Type::partop(1), Expression::type(elem)));
+
+    Expression* ret;
+    if (isList) {
+      ret = comp;
+    } else {
+      auto* arrayXd = Call::a(Expression::loc(e).introduce(), env.constants.ids.arrayXd,
+                              {ident, comp});
+      arrayXd->type(Type::arrType(env, et, Expression::type(elem)));
+      arrayXd->decl(m->matchFn(env, arrayXd, false, true));
+      ret = arrayXd;
+    }
+    if (!let_bindings.empty()) {
+      auto* let = new Let(Expression::loc(e).introduce(), let_bindings, ret);
+      let->type(Expression::type(ret));
+      ret = let;
+    }
+    return ret;
   }
   if (et.structBT() && ti->domain() != nullptr && Expression::isa<ArrayLit>(ti->domain())) {
     // Tuple/record: coerce the `list` fields. array1d preserves field types, so the
-    // reconstructed struct keeps type `et`.
+    // reconstructed struct keeps type `et`. Note the number of *value* fields is the size of
+    // the TypeInst domain, not of the StructType: an array-of-array is encoded as a 2-field
+    // tuple whose second field is unknown padding (see TypeInst::canonicaliseStruct), but its
+    // value (and domain) has only the single real field.
     auto* fields = Expression::cast<ArrayLit>(ti->domain());
     StructType* st = env.getStructType(et);
     std::vector<Expression*> let_bindings;
@@ -1935,8 +1990,8 @@ static KeepAlive add_list_coercion(EnvI& env, Model* m, Expression* e, TypeInst*
       let_bindings.push_back(vd);
       ident = vd->id();
     }
-    std::vector<Expression*> collect(st->size());
-    for (unsigned int i = 0; i < st->size(); i++) {
+    std::vector<Expression*> collect(fields->size());
+    for (unsigned int i = 0; i < fields->size(); i++) {
       auto* fa = new FieldAccess(Expression::loc(e).introduce(), ident, IntLit::a(i + 1));
       Expression::type(fa, (*st)[i]);
       collect[i] = add_list_coercion(env, m, fa, struct_field_ti((*fields)[i]))();
@@ -3210,9 +3265,9 @@ public:
         args[i] = add_coercion(_env, _model, call->arg(i), call, fi->argtype(_env, args, i))();
         call->arg(i, args[i]);
         // A `list' parameter (array[1..infinity]) requires a 1-based argument: coerce it with
-        // array1d, recursing through tuple/record fields. array1d is the identity on already
-        // 1-based arrays, so this is essentially free, but it guarantees the index set inside the
-        // callee starts at 1.
+        // array1d, recursing through tuple/record fields and arrays of structs. array1d is the
+        // identity on already 1-based arrays, so this is essentially free, but it guarantees the
+        // index set inside the callee starts at 1.
         if (i < fi->paramCount()) {
           args[i] = add_list_coercion(_env, _model, args[i], fi->param(i)->ti())();
           call->arg(i, args[i]);
