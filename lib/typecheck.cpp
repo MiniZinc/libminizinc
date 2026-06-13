@@ -1412,6 +1412,42 @@ void TopoSorter::run(EnvI& env, Expression* e) {
   }
 }
 
+/// If \a dom is an array index-set domain of the form `lb..infinity' (the marker for a `list'),
+/// set \a lb and return true. Handles both the BinOp (`lb..infinity') and SetLit forms.
+static bool unbounded_above_index(Expression* dom, IntVal& lb) {
+  if (dom == nullptr) {
+    return false;
+  }
+  if (auto* bo = Expression::dynamicCast<BinOp>(dom)) {
+    auto* l = Expression::dynamicCast<IntLit>(bo->lhs());
+    auto* u = Expression::dynamicCast<IntLit>(bo->rhs());
+    if (bo->op() != BOT_DOTDOT || l == nullptr || u == nullptr || !IntLit::v(u).isPlusInfinity()) {
+      return false;
+    }
+    lb = IntLit::v(l);
+    return true;
+  }
+  if (auto* sl = Expression::dynamicCast<SetLit>(dom)) {
+    if (sl->isv() == nullptr || sl->isv()->size() != 1 || !sl->isv()->max(0).isPlusInfinity()) {
+      return false;
+    }
+    lb = sl->isv()->min(0);
+    return true;
+  }
+  return false;
+}
+
+/// True if \a ti is a `list` type, i.e. an array whose single index set is `1..infinity`.
+/// `list of T` is sugar for `array[1..infinity] of T`; arguments bound to such a parameter
+/// are coerced 1-based with array1d (see vCall).
+static bool is_list_ti(TypeInst* ti) {
+  if (ti == nullptr || ti->ranges().size() != 1 || ti->ranges()[0] == nullptr) {
+    return false;
+  }
+  IntVal lb;
+  return unbounded_above_index(ti->ranges()[0]->domain(), lb) && lb == 1;
+}
+
 KeepAlive add_coercion(EnvI& env, Model* m, Expression* e0, const Location& loc_default,
                        const Type& funarg_t) {
   GCLock lock;
@@ -3083,6 +3119,19 @@ public:
       } else {
         args[i] = add_coercion(_env, _model, call->arg(i), call, fi->argtype(_env, args, i))();
         call->arg(i, args[i]);
+        // A `list' parameter (array[1..infinity]) requires a 1-based argument: coerce it
+        // with array1d. array1d is the identity on arrays that are already 1-based, so this
+        // is essentially free, but it guarantees the index set inside the callee starts at 1.
+        if (i < fi->paramCount() && is_list_ti(fi->param(i)->ti()) &&
+            Expression::type(args[i]).dim() == 1) {
+          GCLock lock;
+          Call* a1d = Call::a(Expression::loc(args[i]).introduce(), _env.constants.ids.array1d,
+                              {args[i]});
+          a1d->decl(_model->matchFn(_env, a1d, false, true));
+          a1d->type(a1d->decl()->rtype(_env, {args[i]}, nullptr, false));
+          args[i] = a1d;
+          call->arg(i, args[i]);
+        }
       }
       cv = cv || Expression::type(args[i]).cv();
     }
@@ -3371,6 +3420,15 @@ public:
       for (unsigned int i = 0; i < ti->ranges().size(); i++) {
         TypeInst* ri = ti->ranges()[i];
         assert(ri != nullptr);
+        // An unbounded-above index set (`lb..infinity', the marker for a `list') must be
+        // 1-based. `list of T' always produces `1..infinity'; reject a hand-written
+        // `array[lb..infinity]' with lb != 1.
+        IntVal lb;
+        if (unbounded_above_index(ri->domain(), lb) && lb != 1) {
+          throw TypeError(_env, Expression::loc(ri),
+                          "an unbounded array index set must start at 1 (write `1..infinity', or "
+                          "`list of' for a 1-based array)");
+        }
         if (ri->type().cv()) {
           tt.cv(true);
         }

@@ -22,6 +22,11 @@ Changes:
    ``%%%mzn-core`` comment (or a ``core`` message in the ``--json-stream``
    output). Solvers without native support post the assumptions as hard
    constraints and issue a warning.
+-  Make the ``list`` type behave like a real 1-based array type. It is now
+   syntactic sugar for ``array [1..infinity] of T``. Actual arguments to
+   functions declared with ``list`` parameters are automatically coerced
+   using ``array1d`` calls. Other checks ensure that only 1-based arrays
+   match the ``list`` type.
 
 Bug fixes:
 ^^^^^^^^^^

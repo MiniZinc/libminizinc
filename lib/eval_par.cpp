@@ -211,6 +211,19 @@ void check_par_declaration(EnvI& env, VarDecl* vd) {
   check_par_domain(env, vd, vd->e());
 }
 
+/// True if an array with bounds [\a lo, \a hi] is incompatible with declared index set \a isv.
+/// An index set `1..infinity' marks a `list': only the lower bound (1) is fixed, the length is
+/// arbitrary, so for it only the lower bound is checked (an empty array is always allowed).
+static bool index_set_violation(IntSetVal* isv, IntVal lo, IntVal hi) {
+  if (isv->empty()) {
+    return false;
+  }
+  if (isv->min() == 1 && isv->max().isPlusInfinity()) {
+    return lo <= hi && lo != 1;
+  }
+  return lo != isv->min() || hi != isv->max();
+}
+
 void check_struct_retval(EnvI& env, Expression* v, FunctionI* fi) {
   // TODO: more specific error messages
   std::vector<std::pair<Expression*, TypeInst*>> todo({{v, fi->ti()}});
@@ -224,9 +237,7 @@ void check_struct_retval(EnvI& env, Expression* v, FunctionI* fi) {
         if ((entry.second->ranges()[i]->domain() != nullptr) &&
             !Expression::isa<TIId>(entry.second->ranges()[i]->domain())) {
           IntSetVal* isv = eval_intset(env, entry.second->ranges()[i]->domain());
-          bool bothEmpty = isv->empty() && al->min(i) > al->max(i);
-          if (!bothEmpty && !isv->empty() &&
-              (al->min(i) != isv->min() || al->max(i) != isv->max())) {
+          if (index_set_violation(isv, al->min(i), al->max(i))) {
             throw ResultUndefinedError(env, Expression::loc(fi->e()),
                                        "function result violates function type-inst");
           }
@@ -472,8 +483,7 @@ public:
       if ((fi->ti()->ranges()[i]->domain() != nullptr) &&
           !Expression::isa<TIId>(fi->ti()->ranges()[i]->domain())) {
         IntSetVal* isv = eval_intset(env, fi->ti()->ranges()[i]->domain());
-        bool bothEmpty = isv->empty() && v->min(i) > v->max(i);
-        if (!bothEmpty && !isv->empty() && (v->min(i) != isv->min() || v->max(i) != isv->max())) {
+        if (index_set_violation(isv, v->min(i), v->max(i))) {
           std::ostringstream oss;
           oss << "array index set " << (i + 1) << " of function result violates function type-inst";
           throw ResultUndefinedError(env, Expression::loc(fi->e()), oss.str());

@@ -940,9 +940,16 @@ ti_expr :
       }
     | MZN_LIST MZN_OF base_ti_expr
       {
+        // `list of T` is sugar for `array[1..infinity] of T`: a 1-based array of
+        // arbitrary length. The 1..infinity index set is what marks a `list`; it is
+        // accepted only in declarations and is replaced by the actual (finite) index
+        // set when a value is bound to it (see check_index_sets), while call arguments
+        // are coerced 1-based with array1d during type-checking.
         $$ = $3;
         std::vector<TypeInst*> ti(1);
-        ti[0] = new TypeInst(@$,Type::parint());
+        ti[0] = new TypeInst(@$, Type(),
+                             new BinOp(@$, IntLit::a(1), BOT_DOTDOT,
+                                       IntLit::a(IntVal::infinity())));
         if ($$ != nullptr){
           $$->setRanges(ti);
         }

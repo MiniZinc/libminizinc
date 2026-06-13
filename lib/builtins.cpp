@@ -794,7 +794,18 @@ IntSetVal* b_index_set(EnvI& env, Expression* e, unsigned int i) {
   if (static_cast<int>(id->decl()->ti()->ranges().size()) < i) {
     throw EvalError(env, Expression::loc(id), "index_set: wrong dimension");
   }
-  return eval_intset(env, id->decl()->ti()->ranges()[i - 1]->domain());
+  IntSetVal* declIsv = eval_intset(env, id->decl()->ti()->ranges()[i - 1]->domain());
+  if (!declIsv->empty() && declIsv->max(0).isPlusInfinity()) {
+    // `1..infinity' marks a `list': the length is not known from the declaration, so the
+    // actual index set has to be read from the value (as for an `array[int]' index set).
+    GCLock lock;
+    ArrayLit* al = eval_array_lit(env, id);
+    if (al->dims() < i) {
+      throw EvalError(env, Expression::loc(id), "index_set: wrong dimension");
+    }
+    return IntSetVal::a(al->min(i - 1), al->max(i - 1));
+  }
+  return declIsv;
 }
 bool b_index_sets_agree(EnvI& env, Call* call) {
   if (call->argCount() != 2) {

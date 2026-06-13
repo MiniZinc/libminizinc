@@ -2273,7 +2273,17 @@ void check_index_sets(EnvI& env, VarDecl* vd, Expression* e, bool isArg) {
             } else if (!Expression::isa<TIId>(tis[i]->domain())) {
               IntSetVal* isv0 = eval_intset(env, tis[i]->domain());
               IntSetVal* isv1 = eval_intset(env, e_tis[i]->domain());
-              if (!isv0->equal(isv1)) {
+              // An index set `1..infinity' marks a `list': only the lower bound (1) is
+              // fixed, the length is arbitrary. Require the actual to be 1-based and adopt
+              // its concrete index set (so index_set etc. see the real set).
+              bool listIdx = !isv0->empty() && isv0->min(0) == 1 && isv0->max(0).isPlusInfinity();
+              bool mismatch = listIdx ? (!isv1->empty() && isv1->min(0) != 1) : !isv0->equal(isv1);
+              if (listIdx && !mismatch) {
+                if (!isArg) {
+                  cm.insert(tis[i], e_tis[i]);
+                  needNewTypeInst = true;
+                }
+              } else if (mismatch) {
                 if (item.accessor != nullptr) {
                   std::ostringstream oss;
                   oss << "Index set mismatch. Declared index "
@@ -2328,8 +2338,14 @@ void check_index_sets(EnvI& env, VarDecl* vd, Expression* e, bool isArg) {
             } else if ((i == 0 || !al->empty()) && !Expression::isa<TIId>(tis[i]->domain())) {
               IntSetVal* isv = eval_intset(env, tis[i]->domain());
               assert(isv->size() <= 1);
-              if ((isv->empty() && al->min(i) <= al->max(i)) ||
-                  (!isv->empty() && (isv->min(0) != al->min(i) || isv->max(0) != al->max(i)))) {
+              // `1..infinity' marks a `list': require the actual to be 1-based, any length.
+              bool listIdx = !isv->empty() && isv->min(0) == 1 && isv->max(0).isPlusInfinity();
+              bool mismatch =
+                  listIdx ? (al->min(i) != 1)
+                          : ((isv->empty() && al->min(i) <= al->max(i)) ||
+                             (!isv->empty() &&
+                              (isv->min(0) != al->min(i) || isv->max(0) != al->max(i))));
+              if (mismatch) {
                 if (item.accessor != nullptr) {
                   std::ostringstream oss;
                   oss << "Index set mismatch. Declared index "
@@ -2376,6 +2392,13 @@ void check_index_sets(EnvI& env, VarDecl* vd, Expression* e, bool isArg) {
                                              env.constants.ids.unnamedArgument, nullptr);
                 todo.emplace_back(ident, e, vd->ti());
               } else {
+                if (listIdx && !isArg) {
+                  // Replace the `1..infinity' index set with the actual (finite) one.
+                  cm.insert(tis[i], new TypeInst(Location().introduce(), Type::parint(),
+                                                 new SetLit(Location().introduce(),
+                                                            IntSetVal::a(al->min(i), al->max(i)))));
+                  needNewTypeInst = true;
+                }
                 unsigned int enumId = item.ti->type().typeId();
                 for (unsigned int i = 0; i < al->size(); i++) {
                   Expression* access = nullptr;
