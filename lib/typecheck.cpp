@@ -1864,6 +1864,96 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Location& loc_d
   return add_coercion(env, m, e, loc_default, Expression::type(funarg));
 }
 
+/// The declared TypeInst of field \a i of a struct domain (tuple fields are TypeInsts, record
+/// fields are VarDecls).
+static TypeInst* struct_field_ti(Expression* field) {
+  if (auto* vd = Expression::dynamicCast<VarDecl>(field)) {
+    return vd->ti();
+  }
+  return Expression::dynamicCast<TypeInst>(field);
+}
+
+/// True if \a ti is, or structurally contains, a `list` (an `array[1..infinity]` position).
+/// Such positions need 1-based coercion of the bound value (see add_list_coercion).
+static bool ti_contains_list(TypeInst* ti) {
+  if (ti == nullptr) {
+    return false;
+  }
+  if (is_list_ti(ti)) {
+    return true;
+  }
+  // A struct domain is an ArrayLit of field TypeInsts (tuple) / VarDecls (record).
+  if (ti->type().structBT() && ti->domain() != nullptr &&
+      Expression::isa<ArrayLit>(ti->domain())) {
+    auto* fields = Expression::cast<ArrayLit>(ti->domain());
+    for (unsigned int i = 0; i < fields->size(); i++) {
+      if (ti_contains_list(struct_field_ti((*fields)[i]))) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/// Coerce \a e to be 1-based wherever the declared parameter TypeInst \a ti is a `list`
+/// (`array[1..infinity]`), recursing through tuples/records and arrays of such. Index-set
+/// coercion is orthogonal to type coercion: array1d preserves the element type, so reconstructed
+/// structs keep their type. Leaves all non-`list` positions untouched.
+static KeepAlive add_list_coercion(EnvI& env, Model* m, Expression* e, TypeInst* ti) {
+  if (!ti_contains_list(ti)) {
+    return e;
+  }
+  GCLock lock;
+  Type et = Expression::type(e);
+  if (et.dim() >= 1) {
+    // Array position. A top-level `list` is rebased with array1d (the identity on already
+    // 1-based arrays). Coercing `list`s that are *elements* of an array (e.g.
+    // `array[int] of tuple(.., list ..)`) is not supported here — those keep flowing and are
+    // caught by the runtime index-set check; array-of-array values are barely constructible in
+    // MiniZinc in the first place.
+    if (is_list_ti(ti)) {
+      Call* a1d = Call::a(Expression::loc(e).introduce(), env.constants.ids.array1d, {e});
+      a1d->decl(m->matchFn(env, a1d, false, true));
+      a1d->type(a1d->decl()->rtype(env, {e}, nullptr, false));
+      return a1d;
+    }
+    return e;
+  }
+  if (et.structBT() && ti->domain() != nullptr && Expression::isa<ArrayLit>(ti->domain())) {
+    // Tuple/record: coerce the `list` fields. array1d preserves field types, so the
+    // reconstructed struct keeps type `et`.
+    auto* fields = Expression::cast<ArrayLit>(ti->domain());
+    StructType* st = env.getStructType(et);
+    std::vector<Expression*> let_bindings;
+    Expression* ident = e;
+    if (!Expression::isa<Id>(ident)) {
+      auto* vd = new VarDecl(Expression::loc(e),
+                             new TypeInst(Expression::loc(e).introduce(), et), 1, e);
+      vd->ti()->setStructDomain(env, et);
+      vd->toplevel(false);
+      vd->type(et);
+      let_bindings.push_back(vd);
+      ident = vd->id();
+    }
+    std::vector<Expression*> collect(st->size());
+    for (unsigned int i = 0; i < st->size(); i++) {
+      auto* fa = new FieldAccess(Expression::loc(e).introduce(), ident, IntLit::a(i + 1));
+      Expression::type(fa, (*st)[i]);
+      collect[i] = add_list_coercion(env, m, fa, struct_field_ti((*fields)[i]))();
+    }
+    auto* c_al = ArrayLit::constructTuple(Expression::loc(e).introduce(), collect);
+    c_al->type(et);
+    Expression* ret = c_al;
+    if (!let_bindings.empty()) {
+      auto* let = new Let(Expression::loc(e).introduce(), let_bindings, ret);
+      let->type(Expression::type(ret));
+      ret = let;
+    }
+    return ret;
+  }
+  return e;
+}
+
 template <bool ignoreVarDecl>
 class Typer {
 private:
@@ -3119,17 +3209,12 @@ public:
       } else {
         args[i] = add_coercion(_env, _model, call->arg(i), call, fi->argtype(_env, args, i))();
         call->arg(i, args[i]);
-        // A `list' parameter (array[1..infinity]) requires a 1-based argument: coerce it
-        // with array1d. array1d is the identity on arrays that are already 1-based, so this
-        // is essentially free, but it guarantees the index set inside the callee starts at 1.
-        if (i < fi->paramCount() && is_list_ti(fi->param(i)->ti()) &&
-            Expression::type(args[i]).dim() == 1) {
-          GCLock lock;
-          Call* a1d = Call::a(Expression::loc(args[i]).introduce(), _env.constants.ids.array1d,
-                              {args[i]});
-          a1d->decl(_model->matchFn(_env, a1d, false, true));
-          a1d->type(a1d->decl()->rtype(_env, {args[i]}, nullptr, false));
-          args[i] = a1d;
+        // A `list' parameter (array[1..infinity]) requires a 1-based argument: coerce it with
+        // array1d, recursing through tuple/record fields. array1d is the identity on already
+        // 1-based arrays, so this is essentially free, but it guarantees the index set inside the
+        // callee starts at 1.
+        if (i < fi->paramCount()) {
+          args[i] = add_list_coercion(_env, _model, args[i], fi->param(i)->ti())();
           call->arg(i, args[i]);
         }
       }

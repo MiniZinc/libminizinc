@@ -986,11 +986,22 @@ Some example array type-inst expressions:
   array[1..10] of int
   list of var int
 
-Note that :mzndef:`list of <T>` is just syntactic sugar for
-:mzndef:`array[int] of <T>`.  *Rationale: Integer-indexed arrays of this form
-are very common, and so worthy of special support to make things easier for
-modellers.  Implementing it using syntactic sugar avoids adding an extra
-type to the language, which keeps things simple for implementers.*
+Note that :mzndef:`list of <T>` is sugar for
+:mzndef:`array[1..infinity] of <T>`: a one-dimensional array whose index set
+starts at ``1`` but whose length is arbitrary.  This is *not* the same as
+:mzndef:`array[int] of <T>`, which permits any integer index set.  When a value
+is passed as an argument to a :mzn:`list` parameter (including a :mzn:`list`
+field of a tuple or record), it is automatically coerced to be 1-based using
+:mzn:`array1d`, so inside the function the array is guaranteed to be indexed from
+``1``.  *Rationale: 1-based integer-indexed arrays are very common, and a
+predicate that iterates over a parameter using* :mzn:`1..length(x)` *is only
+correct if the argument is 1-based.  Implementing* :mzn:`list` *as sugar for an
+unbounded index set avoids adding an extra type to the language while still
+expressing the 1-based guarantee.*
+
+An unbounded array index set is only permitted if its lower bound is ``1`` (that
+is, :mzn:`1..infinity`, which is what :mzn:`list of` produces); any other lower
+bound, such as :mzn:`array[3..infinity] of int`, is a type error.
 
 Because arrays must be fixed-size it is a type-inst error to precede an
 array type-inst expression with :mzn:`var`.
