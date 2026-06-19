@@ -2337,11 +2337,17 @@ Expression* eval_par(EnvI& env, Expression* e) {
       ArrayLit* al = eval_array_lit(env, e);
       std::vector<Expression*> args(al->size());
       bool allFlat = true;
+      // Tuple/record literals can mix par and var fields. A var field cannot
+      // (and need not) be evaluated to a par value, so it is kept as-is.
+      bool isStruct = al->type().structBT();
       for (unsigned int i = 0; i < al->size(); i++) {
         Expression* ali = (*al)[i];
-        if (!Expression::isa<IntLit>(ali) && !Expression::isa<FloatLit>(ali) &&
-            !Expression::isa<BoolLit>(ali) &&
-            !(Expression::isa<SetLit>(ali) && Expression::cast<SetLit>(ali)->evaluated())) {
+        if (isStruct && !Expression::type(ali).isPar()) {
+          allFlat = false;
+          args[i] = ali;
+        } else if (!Expression::isa<IntLit>(ali) && !Expression::isa<FloatLit>(ali) &&
+                   !Expression::isa<BoolLit>(ali) &&
+                   !(Expression::isa<SetLit>(ali) && Expression::cast<SetLit>(ali)->evaluated())) {
           allFlat = false;
           args[i] = eval_par(env, ali);
         } else {

@@ -54,6 +54,8 @@ Bug fixes:
    side, which could previously crash.
 -  Make ``list of list of T`` work correctly (was previously rejected with
    a type error).
+-  Fix eval_par abort when projecting a par field of a polymorphic any $T
+   result instantiated at a record/tuple with mixed par and var fields.
 
 .. _v2.9.7:
 
