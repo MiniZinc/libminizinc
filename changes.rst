@@ -79,6 +79,9 @@ Bug fixes:
 -  Fix incorrect double-negation of certain operators in negative contexts.
 -  Fix a bug in the handling of set variables assigned to set constants,
    which would ignore the variable's domain under certain conditions.
+-  Fix false positive index set mismatch when passing a tuple/record containing
+   and array as an argument to a function and calling it multiple times with
+   different array index sets.
 
 .. _v2.9.7:
 

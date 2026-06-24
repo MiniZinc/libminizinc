@@ -1048,7 +1048,7 @@ Call* Call::commutativeNormalized(EnvI& env, const Call* orig) {
 
 void VarDecl::trail() {
   GC::trail(&_e, e());
-  if (!_ti->ranges().empty()) {
+  if (!_ti->ranges().empty() || _ti->type().structBT()) {
     GC::trail(reinterpret_cast<Expression**>(&_ti), _ti);
   }
 }
