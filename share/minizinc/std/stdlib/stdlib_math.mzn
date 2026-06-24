@@ -549,7 +549,7 @@ function $$E: arg_min(array [$$E] of bool: x);
     Returns the index of the minimum value in the array \a x.
     When breaking ties the least index is returned.
 */
-function $$E: arg_min(array [$$E] of int: x);
+function $$E: arg_min(array [$$E] of $$T: x);
 /** @group stdlib.builtins.arithmetic
     Returns the index of the minimum value in the array \a x.
     When breaking ties the least index is returned.
@@ -564,7 +564,7 @@ function $$E: arg_max(array [$$E] of bool: x);
     Returns the index of the maximum value in the array \a x.
     When breaking ties the least index is returned.
 */
-function $$E: arg_max(array [$$E] of int: x);
+function $$E: arg_max(array [$$E] of $$T: x);
 /** @group stdlib.builtins.arithmetic
     Returns the index of the maximum value in the array \a x.
     When breaking ties the least index is returned.

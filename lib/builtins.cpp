@@ -4361,12 +4361,14 @@ void register_builtins(Env& e) {
   {
     std::vector<Type> t(1);
     t[0] = Type::varint(-1);
+    rb(env, m, ASTString("lb_array"), t, b_array_lb_int);
     t[0].ot(Type::OT_OPTIONAL);
     rb(env, m, ASTString("lb_array"), t, b_array_lb_int);
   }
   {
     std::vector<Type> t(1);
     t[0] = Type::varint(-1);
+    rb(env, m, ASTString("ub_array"), t, b_array_ub_int);
     t[0].ot(Type::OT_OPTIONAL);
     rb(env, m, ASTString("ub_array"), t, b_array_ub_int);
   }
@@ -4395,12 +4397,14 @@ void register_builtins(Env& e) {
   {
     std::vector<Type> t(1);
     t[0] = Type::varfloat(-1);
+    rb(env, m, ASTString("lb_array"), t, b_array_lb_float);
     t[0].ot(Type::OT_OPTIONAL);
     rb(env, m, ASTString("lb_array"), t, b_array_lb_float);
   }
   {
     std::vector<Type> t(1);
     t[0] = Type::varfloat(-1);
+    rb(env, m, ASTString("ub_array"), t, b_array_ub_float);
     t[0].ot(Type::OT_OPTIONAL);
     rb(env, m, ASTString("ub_array"), t, b_array_ub_float);
   }

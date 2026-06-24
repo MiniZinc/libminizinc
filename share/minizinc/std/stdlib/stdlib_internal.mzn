@@ -3069,6 +3069,6 @@ function ann: mzn_internal_warm_start(array [$X] of var set of $$E: x, array [$X
     warm_start(array1d(enum2int(x)), array1d(enum2int(v))) :: mzn_internal_representation
   );
 
-annotation mzn_internal_seq_search(array [int] of ann: s) = seq_search(array1d(s)) :: mzn_internal_representation;
+function ann: mzn_internal_seq_search(array [int] of ann: s) = seq_search(array1d(s)) :: mzn_internal_representation;
 
-annotation mzn_internal_warm_start_array(array [int] of ann: w) = warm_start_array(array1d(w)) :: mzn_internal_representation;
+function ann: mzn_internal_warm_start_array(array [int] of ann: w) = warm_start_array(array1d(w)) :: mzn_internal_representation;

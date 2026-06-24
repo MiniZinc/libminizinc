@@ -84,11 +84,11 @@ annotation computed_domain;
 annotation var_is_introduced;
 /** @group stdlib.annotations.general Declare variable: \a c as being functionally defined
   by the annotated constraint. This annotation is introduced into FlatZinc code by the compiler. */
-function ann: defines_var(var opt $T: c) :: mzn_internal_representation;
+function ann: defines_var(any $T: c) :: mzn_internal_representation;
 /** @group stdlib.annotations.general Declare an array of variables \a arr as being
   functionally defined by the annotated constraint. This annotation is introduced into FlatZinc
   code by the compiler. */
-function ann: defines_var(array [$U] of var opt $T: arr) :: mzn_internal_representation;
+function ann: defines_var(array [$U] of any $T: arr) :: mzn_internal_representation;
 /** @group stdlib.annotations.general Declare that the annotated array should be printed by
   the solver with the given index sets \a a. This annotation is introduced into FlatZinc code by
   the compiler. */
@@ -203,7 +203,7 @@ function ann: int_search(array [$X] of var $$E: x, ann: select, ann: choice) =
 */
 function ann: int_search(array [$X] of var opt $$E: x, ann: select, ann: choice, ann: explore) =
   int_search(
-    [if occurs(xi) then enum2int(deopt(xi)) else 0 endif | xi in x],
+    [enum2int(xi) default 0 | xi in x],
     select,
     choice,
     explore,
@@ -216,7 +216,7 @@ function ann: int_search(array [$X] of var opt $$E: x, ann: select, ann: choice,
   in row-major order (as with the array1d function).
 */
 function ann: int_search(array [$X] of var opt $$E: x, ann: select, ann: choice) =
-  int_search([if occurs(xi) then enum2int(deopt(xi)) else 0 endif | xi in x], select, choice);
+  int_search([enum2int(xi) default 0 | xi in x], select, choice);
 
 annotation bool_search(array [int] of var bool: x, ann: select, ann: choice, ann: explore);
 /** @group stdlib.annotations.search Specify search on variables \a x, with variable selection
@@ -243,7 +243,7 @@ function ann: bool_search(array [$X] of var bool: x, ann: select, ann: choice) =
   in row-major order (as with the array1d function).
  */
 function ann: bool_search(array [$X] of var opt bool: x, ann: select, ann: choice, ann: explore) =
-  bool_search([if occurs(xi) then deopt(xi) else false endif | xi in x], select, choice, explore);
+  bool_search([xi default false | xi in x], select, choice, explore);
 
 /** @group stdlib.annotations.search Search annotation for optional Boolean variables.
   Specify search on variables \a x, with variable selection
@@ -252,7 +252,7 @@ function ann: bool_search(array [$X] of var opt bool: x, ann: select, ann: choic
   in row-major order (as with the array1d function).
  */
 function ann: bool_search(array [$X] of var opt bool: x, ann: select, ann: choice) =
-  bool_search([if occurs(xi) then deopt(xi) else false endif | xi in x], select, choice);
+  bool_search([xi default false | xi in x], select, choice);
 
 annotation float_search(
   array [int] of var float: x,
@@ -301,7 +301,7 @@ function ann: float_search(
   ann: explore,
 ) =
   float_search(
-    [if occurs(xi) then deopt(xi) else 0.0 endif | xi in x],
+    [xi default 0.0 | xi in x],
     prec,
     select,
     choice,
@@ -316,7 +316,7 @@ function ann: float_search(
   in row-major order (as with the array1d function).
 */
 function ann: float_search(array [$X] of var opt float: x, float: prec, ann: select, ann: choice) =
-  float_search([if occurs(xi) then deopt(xi) else 0.0 endif | xi in x], prec, select, choice);
+  float_search([xi default 0.0 | xi in x], prec, select, choice);
 
 annotation set_search(array [int] of var set of int: x, ann: select, ann: choice, ann: explore);
 /** @group stdlib.annotations.search Specify search on variables \a x, with variable selection

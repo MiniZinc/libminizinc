@@ -56,6 +56,12 @@ predicate count_eq(array [$X] of var opt $$E: x, var $$E: y, var int: c) =
 /** @group globals.counting
   Constrains \a c to be the number of occurrences of \a y in \a x. 
 */
+predicate count_eq(array [$X] of var opt bool: x, var bool: y, var int: c) =
+	count_eq([i default 2 | i in x], y, c);
+
+/** @group globals.counting
+  Constrains \a c to be the number of occurrences of \a y in \a x. 
+*/
 predicate count_eq(array [$X] of var $$E: x, $$E: y, int: c) =
   fzn_count_eq_par(enum2int(array1d(x)), enum2int(y), c);
 

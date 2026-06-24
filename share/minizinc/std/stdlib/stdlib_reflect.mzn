@@ -42,11 +42,19 @@ function array [$U] of set of $$E: lb(array [$U] of var set of $$E: x) =
 function array [$U] of set of $$E: ub(array [$U] of var set of $$E: x) =
   arrayXd(x, [ub(xx) | xx in array1d(x)]);
 /** @group stdlib.reflect Return minimum of all lower bounds of the elements in array \a x */
+function $$E: lb_array(array [$U] of var $$E: x);
+/** @group stdlib.reflect Return minimum of all lower bounds of the elements in array \a x */
 function $$E: lb_array(array [$U] of var opt $$E: x);
+/** @group stdlib.reflect Return maximum of all upper bounds of the elements in array \a x */
+function $$E: ub_array(array [$U] of var $$E: x);
 /** @group stdlib.reflect Return maximum of all upper bounds of the elements in array \a x */
 function $$E: ub_array(array [$U] of var opt $$E: x);
 /** @group stdlib.reflect Return minimum of all lower bounds of the elements in array \a x */
+function float: lb_array(array [$U] of var float: x);
+/** @group stdlib.reflect Return minimum of all lower bounds of the elements in array \a x */
 function float: lb_array(array [$U] of var opt float: x);
+/** @group stdlib.reflect Return maximum of all upper bounds of the elements in array \a x */
+function float: ub_array(array [$U] of var float: x);
 /** @group stdlib.reflect Return maximum of all upper bounds of the elements in array \a x */
 function float: ub_array(array [$U] of var opt float: x);
 /** @group stdlib.reflect Return intersection of all lower bounds of the elements in array \a x */
