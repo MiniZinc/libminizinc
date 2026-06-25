@@ -82,6 +82,8 @@ Bug fixes:
 -  Fix false positive index set mismatch when passing a tuple/record containing
    and array as an argument to a function and calling it multiple times with
    different array index sets.
+-  Fix boolean context for call arguments and local declaration right-hand sides
+   of type ``array [_] of var bool``.
 
 .. _v2.9.7:
 

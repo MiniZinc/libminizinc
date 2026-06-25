@@ -19,8 +19,12 @@ EE flatten_setlit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl*
   auto* sl = Expression::cast<SetLit>(e);
   assert(sl->isv() == nullptr && sl->fsv() == nullptr);
   std::vector<EE> elems_ee(sl->v().size());
+  Ctx nctx = ctx;
+  if (ctx.b == C_ROOT && Expression::type(e).bt() == Type::BT_BOOL) {
+    nctx.b = C_MIX;
+  }
   for (unsigned int i = sl->v().size(); (i--) != 0U;) {
-    elems_ee[i] = flat_exp(env, ctx, sl->v()[i], nullptr, ctx.partialityVar(env));
+    elems_ee[i] = flat_exp(env, nctx, sl->v()[i], nullptr, ctx.partialityVar(env));
   }
   std::vector<Expression*> elems(elems_ee.size());
   bool allPar = true;

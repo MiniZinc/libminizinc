@@ -61,7 +61,7 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
     v->flat(vd);
     if (v->e() != nullptr) {
       Ctx nctx;
-      if (Expression::type(v->e()).bt() == Type::BT_BOOL && Expression::type(v->e()).dim() == 0) {
+      if (Expression::type(v->e()).isbool()) {
         nctx.b = C_MIX;
       }
       (void)flat_exp(env, nctx, v->e(), vd, env.constants.varTrue);
@@ -95,7 +95,7 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
     // capturing the annotated expression (::annotated_expression) would
     // otherwise flatten the captured array/struct variable and materialise
     // element variables as its RHS before the real RHS is bound.
-    auto* vdi = (*env.flat())[env.varOccurrences.find(vd)] -> cast<VarDeclI>();
+    auto* vdi = (*env.flat())[env.varOccurrences.find(vd)]->cast<VarDeclI>();
     flatten_vardecl_annotations(env, v, vdi, vd);
 
     ret.r = bind(env, Ctx(), r, vd->id());

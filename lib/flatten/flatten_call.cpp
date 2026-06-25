@@ -758,7 +758,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
                          Expression::ann(c->decl()->param(i))
                              .contains(env.constants.ctx.promise_antitone)) {
                 argctx.b = -transfer_ctx;
-              } else {
+              } else if (Expression::type(c->arg(i)).isbool()) {
                 argctx.b = C_MIX;
               }
             } else if (Expression::type(c->arg(i)).bt() == Type::BT_INT) {
@@ -769,7 +769,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
                          Expression::ann(c->decl()->param(i))
                              .contains(env.constants.ctx.promise_antitone)) {
                 argctx.i = -transfer_ctx;
-              } else {
+              } else if (Expression::type(c->arg(i)).isbool()) {
                 argctx.i = C_MIX;
               }
             }

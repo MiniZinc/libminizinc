@@ -41,7 +41,7 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
             } else {
               nctx.i = -transfer_ctx;
             }
-          } else if (Expression::type(vd->e()).bt() == Type::BT_BOOL) {
+          } else if (Expression::type(vd->e()).isbool()) {
             nctx.b = C_MIX;
           }
 
