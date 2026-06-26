@@ -56,6 +56,7 @@ Bug fixes:
    a type error).
 -  Fix eval_par abort when projecting a par field of a polymorphic any $T
    result instantiated at a record/tuple with mixed par and var fields.
+-  Add missing defines_var/is_defined_var annotations for ``mod``.
 
 .. _v2.9.7:
 

@@ -2767,9 +2767,9 @@ function var float: fldiv_mt(var float: x, var float: y) :: promise_total =
 
 function var int: mod_t(var int: x, var int: y) :: promise_total =
   let {
-    var (compute_mod_bounds(x, y)): z;
+    var (compute_mod_bounds(x, y)): z :: is_defined_var;
     constraint y != 0;
-    constraint int_mod(x, y, z);
+    constraint int_mod(x, y, z) :: defines_var(z);
   } in z;
 
 function var int: mod_mt(var int: x, var int: y) :: promise_total =
