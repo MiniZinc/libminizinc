@@ -27,6 +27,7 @@ Changes:
    functions declared with ``list`` parameters are automatically coerced
    using ``array1d`` calls. Other checks ensure that only 1-based arrays
    match the ``list`` type.
+-  The SCIP interface is now only compatible with SCIP 10 and later.
 
 Bug fixes:
 ^^^^^^^^^^
@@ -57,6 +58,8 @@ Bug fixes:
 -  Fix eval_par abort when projecting a par field of a polymorphic any $T
    result instantiated at a record/tuple with mixed par and var fields.
 -  Add missing defines_var/is_defined_var annotations for ``mod``.
+-  Fix SCIP interface to be compatible with SCIP 10, which is not binary
+   compatible with previous releases due to changed enum values in the C API.
 
 .. _v2.9.7:
 

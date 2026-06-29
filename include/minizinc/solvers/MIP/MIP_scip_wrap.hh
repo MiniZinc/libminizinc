@@ -111,10 +111,11 @@ public:
    const char* name,               /**< name of constraint */
    SCIP_VAR*** vars,               /**< matrix of variables on which the symmetry acts */
    SCIP_ORBITOPETYPE orbitopetype, /**< type of orbitope constraint */
-   int nspcons,                    /**< number of set partitioning/packing constraints  <=> p */
-   int nblocks,                    /**< number of symmetric variable blocks             <=> q */
+   int nrows,                      /**< number of rows of variable matrix */
+   int ncols,                      /**< number of columns of variable matrix */
    SCIP_Bool resolveprop,          /**< should propagation be resolved? */
-   SCIP_Bool ismodelcons           /**< whether the orbitope is a model constraint */
+   SCIP_Bool ismodelcons,          /**< whether the orbitope is a model constraint */
+   SCIP_Bool checkpporbitope       /**< check if full orbitopes can be upgraded */
   );
 
   // NOLINTNEXTLINE(readability-identifier-naming)
@@ -178,6 +179,8 @@ public:
    int filterpos);
   // NOLINTNEXTLINE(readability-identifier-naming)
   SCIP_EVENTTYPE(__stdcall* SCIPeventGetType)(SCIP_EVENT* event);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_SOL*(__stdcall* SCIPeventGetSol)(SCIP_EVENT* event);
   // NOLINTNEXTLINE(readability-identifier-naming)
   SCIP_Real(__stdcall* SCIPgetSolOrigObj)(SCIP* scip, SCIP_SOL* sol);
   // NOLINTNEXTLINE(readability-identifier-naming)

@@ -54,19 +54,6 @@ ScipPlugin::ScipPlugin()
               "C:\\Program Files\\SCIPOptSuite 10.0.2\\bin\\libscip.dll",
               "C:\\Program Files\\SCIPOptSuite 10.0.1\\bin\\libscip.dll",
               "C:\\Program Files\\SCIPOptSuite 10.0.0\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 9.2.4\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 9.2.3\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 9.2.2\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 9.2.1\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 9.2.0\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 9.1.1\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 9.1.0\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 9.0.1\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 9.0.0\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 8.0.3\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 8.0.2\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 8.0.1\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 8.0.0\\bin\\libscip.dll",
           }
 #else
           std::vector<std::string>({
@@ -130,6 +117,7 @@ void ScipPlugin::load() {
   load_symbol_dynamic(_inner, SCIPcatchEvent);
   load_symbol_dynamic(_inner, SCIPdropEvent);
   load_symbol_dynamic(_inner, SCIPeventGetType);
+  load_symbol_dynamic(_inner, SCIPeventGetSol);
   load_symbol_dynamic(_inner, SCIPgetSolOrigObj);
   load_symbol_dynamic(_inner, SCIPincludeEventhdlrBasic);
   load_symbol_dynamic(_inner, SCIPsetEventhdlrInit);
@@ -617,7 +605,7 @@ void MIPScipWrapper::addLexChainLesseq(int m, int n, int* rmatind, int nOrbitope
 
   SCIP_PLUGIN_CALL(_plugin->SCIPcreateConsBasicOrbitope(
       _scip, &cons, rowName.c_str(), vars_data.data(), (SCIP_ORBITOPETYPE)nOrbitopeType, m, n,
-      (SCIP_Bool)resolveprop, (SCIP_Bool)isModelCons));
+      (SCIP_Bool)resolveprop, (SCIP_Bool)isModelCons, FALSE));
   SCIP_PLUGIN_CALL(_plugin->SCIPaddCons(_scip, cons));
   SCIP_PLUGIN_CALL(_plugin->SCIPreleaseCons(_scip, &cons));
 }
@@ -690,7 +678,7 @@ static SCIP_DECL_EVENTEXEC(event_exec_best_sol) { /*lint --e{715}*/
 
   SCIPdebugMessage("exec method of event handler for best solution found\n");
 
-  bestsol = _cb_plugin->SCIPgetBestSol(scip);
+  bestsol = _cb_plugin->SCIPeventGetSol(event);
   assert(bestsol != nullptr);
   objVal = _cb_plugin->SCIPgetSolOrigObj(scip, bestsol);
 
