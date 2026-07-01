@@ -522,6 +522,8 @@ void GC::Heap::sweep() {
   toFree.reserve(1000);
   while (p != nullptr) {
     size_t off = 0;
+    // wholepage: this page contains no genuinely live node (only dead nodes and/or
+    // free-list nodes), so the whole page can be returned to the allocator.
     bool wholepage = true;
     struct NodeInfo {
       ASTNode* n;
@@ -574,8 +576,12 @@ void GC::Heap::sweep() {
 #ifdef MINIZINC_GC_STATS
         stats.second++;
 #endif
-        wholepage = false;
+        // Live node. A FreeListNode (NID_FL) counts as marked, but it does NOT pin the
+        // page: an all-free page is still reclaimable (its free-list nodes are unlinked
+        // from the free lists when the page is freed below). Only a genuine node keeps
+        // the page alive.
         if (n->_id != static_cast<unsigned int>(ASTNode::NID_FL)) {
+          wholepage = false;
           n->_gcMark = 0;
           if (n->_id == static_cast<unsigned int>(Expression::E_VARDECL)) {
             auto* vd = static_cast<VarDecl*>(n);
@@ -602,6 +608,22 @@ void GC::Heap::sweep() {
       if (pf->size - pf->used >= _fl_size[0]) {
         _freeMem -= (pf->size - pf->used);
       }
+      // The page holds only dead nodes and/or free-list nodes. Its free-list nodes are
+      // still linked into the _fl[] chains, so mark each one (_gcMark = 0) to be unlinked
+      // in the cleanup pass below, and reclaim its bytes from _freeMem now that the whole
+      // page is being returned to the allocator.
+      {
+        size_t o = 0;
+        while (o < pf->used) {
+          auto* fn = reinterpret_cast<ASTNode*>(pf->data + o);
+          size_t fns = nodesize(fn);
+          if (fn->_id == static_cast<unsigned int>(ASTNode::NID_FL)) {
+            fn->_gcMark = 0;
+            _freeMem -= fns;
+          }
+          o += fns;
+        }
+      }
       assert(_allocedMem >= _freeMem);
       // Can't call free() yet because we might free a VarDecl which is the flat version of one in
       // another page
@@ -623,6 +645,18 @@ void GC::Heap::sweep() {
   }
   for (auto* vd : fixVDGCMarks) {
     vd->_vdGcMark = 0U;
+  }
+  if (!toFree.empty()) {
+    for (int s = 0; s <= _max_fl; s++) {
+      FreeListNode** link = &_fl[s];
+      while (*link != nullptr) {
+        if ((*link)->_gcMark == 0U) {
+          *link = (*link)->next;
+        } else {
+          link = &(*link)->next;
+        }
+      }
+    }
   }
   for (auto* pf : toFree) {
 #ifndef NDEBUG

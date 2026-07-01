@@ -63,6 +63,8 @@ Bug fixes:
 -  Fix freelist allocation in garbage collector to use proper alignment.
    This fixes an issue on 32-bit platforms where freelist entries were not
    being reused.
+-  Fix garbage collector handling of free pages. Release them when they only
+   contain freelist entries.
 
 .. _v2.9.7:
 
