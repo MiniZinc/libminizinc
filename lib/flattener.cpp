@@ -1072,13 +1072,13 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
               _log << "Printing .ozn to stdout ..." << std::endl;
             }
             Printer p(_os, 0, true, &env->envi());
-            Model* ozn;
+            std::unique_ptr<Model> ozn;
             {
               GCLock lock;
-              ozn = copy(env->envi(), env->output());
+              ozn.reset(copy(env->envi(), env->output()));
             }
-            type_demonomorphise_library(*env, ozn);
-            p.print(ozn);
+            type_demonomorphise_library(*env, ozn.get());
+            p.print(ozn.get());
             if (_flags.verbose) {
               _log << " done (" << _starttime.stoptime() << ")" << std::endl;
             }
@@ -1089,13 +1089,13 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             std::ofstream ofs(FILE_PATH(_flagOutputOzn), std::ios::out);
             check_io_status(ofs.good(), " I/O error: cannot open ozn output file. ");
             Printer p(ofs, 0, true, &env->envi());
-            Model* ozn;
+            std::unique_ptr<Model> ozn;
             {
               GCLock lock;
-              ozn = copy(env->envi(), env->output());
+              ozn.reset(copy(env->envi(), env->output()));
             }
-            type_demonomorphise_library(*env, ozn);
-            p.print(ozn);
+            type_demonomorphise_library(*env, ozn.get());
+            p.print(ozn.get());
             check_io_status(ofs.good(), " I/O error: cannot write ozn output file. ");
             ofs.close();
             if (_flags.verbose) {

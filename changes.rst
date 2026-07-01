@@ -65,6 +65,8 @@ Bug fixes:
    being reused.
 -  Fix garbage collector handling of free pages. Release them when they only
    contain freelist entries.
+-  Fix memory leaks in SolverConfig and the flattener, which leaked model
+   objects in every run.
 
 .. _v2.9.7:
 

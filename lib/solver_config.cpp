@@ -261,23 +261,21 @@ SolverConfig SolverConfig::load(const string& filename) {
   ostringstream errstream;
   try {
     Env confenv;
-    Model* m = nullptr;
+    std::unique_ptr<Model> m;
     if (JSONParser::fileIsJSON(filename)) {
       JSONParser jp(confenv.envi());
       try {
-        m = new Model;
+        m.reset(new Model);
         GCLock lock;
-        jp.parse(m, filename, false);
-        json_coerce_assignments_2d(jp, m, {"extraFlags"});
+        jp.parse(m.get(), filename, false);
+        json_coerce_assignments_2d(jp, m.get(), {"extraFlags"});
       } catch (JSONError& e) {
-        delete m;
-        m = nullptr;
         throw ConfigException(e.msg());
       }
     } else {
       vector<string> filenames;
       filenames.push_back(filename);
-      m = parse(confenv, filenames, {}, "", "", {}, {}, false, true, false, false, errstream);
+      m.reset(parse(confenv, filenames, {}, "", "", {}, {}, false, true, false, false, errstream));
     }
     if (m != nullptr) {
       bool hadId = false;
