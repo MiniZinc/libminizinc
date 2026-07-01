@@ -60,6 +60,9 @@ Bug fixes:
 -  Add missing defines_var/is_defined_var annotations for ``mod``.
 -  Fix SCIP interface to be compatible with SCIP 10, which is not binary
    compatible with previous releases due to changed enum values in the C API.
+-  Fix freelist allocation in garbage collector to use proper alignment.
+   This fixes an issue on 32-bit platforms where freelist entries were not
+   being reused.
 
 .. _v2.9.7:
 

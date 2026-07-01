@@ -424,6 +424,7 @@ void GC::remove(GCMarker* m) {
 
 void* GC::alloc(size_t size) {
   assert(locked());
+  size += ((8 - (size & 7)) & 7);
   void* ret;
   size_t maxSize = GC::Heap::_fl_size[GC::Heap::_max_fl];
   if (size < GC::Heap::_fl_size[0] || size > maxSize) {
