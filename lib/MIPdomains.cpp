@@ -26,6 +26,7 @@
 #include <minizinc/prettyprinter.hh>
 
 #include <map>
+#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -1128,14 +1129,18 @@ private:
       // Find a best main variable according to:
       // 1. isInt 2. hasEqEncode 3. abs linFactor to ref0
       varRef1 = leg.begin()->first;
-      std::array<double, 3> aCrit = {
-          {(double)_mipd._vVarDescr[varRef1->payload()].fInt,
-           static_cast<double>(_mipd._vVarDescr[varRef1->payload()].pEqEncoding != nullptr), 1.0}};
+      // NOTE: the 4th criterion (-payload) is a deterministic tiebreak. Without it, ties in the
+      // first three criteria were resolved by mRef0's iteration order (unordered_map<VarDecl*,
+      // ...>, i.e. pointer-address order), which made the choice of clique reference variable
+      // non-deterministic across runs (ASLR) and hence the whole flattening non-reproducible.
+      std::tuple<VarDescr::boolShort, bool, double, int> aCrit = {
+          _mipd._vVarDescr[varRef1->payload()].fInt,
+          _mipd._vVarDescr[varRef1->payload()].pEqEncoding != nullptr, 1.0, -(varRef1->payload())};
       for (auto& it2 : mRef0) {
         VarDescr& vard = _mipd._vVarDescr[it2.first->payload()];
-        std::array<double, 3> aCrit1 = {{(double)vard.fInt,
-                                         static_cast<double>(vard.pEqEncoding != nullptr),
-                                         std::fabs(it2.second.first)}};
+        std::tuple<VarDescr::boolShort, bool, double, int> aCrit1 = {
+            vard.fInt, vard.pEqEncoding != nullptr, std::fabs(it2.second.first),
+            -(it2.first->payload())};
         if (aCrit1 > aCrit) {
           varRef1 = it2.first;
           aCrit = aCrit1;

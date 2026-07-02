@@ -80,7 +80,7 @@ public:
     if (Expression::equal(i(), j())) {
       return false;
     }
-    return i() < j();
+    return Expression::compare(i(), j()) < 0;
   }
 };
 
@@ -118,7 +118,7 @@ bool contains_dups(std::vector<KeepAlive>& x, std::vector<KeepAlive>& y) {
     if (x[ix]() == y[iy]()) {
       return true;
     }
-    if (x[ix]() < y[iy]()) {
+    if (Expression::compare(x[ix](), y[iy]()) < 0) {
       ix++;
     } else {
       iy++;

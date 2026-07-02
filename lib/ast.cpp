@@ -922,8 +922,9 @@ ASTString UnOp::opToString() const {
 void Call::rehash() {
   initHash();
   combineHash(id().hash());
-  std::hash<FunctionI*> hf;
-  combineHash(hf(decl()));
+  // NOTE: decl() (a FunctionI*) is deliberately NOT hashed: it is an address, which would
+  // make Expression::hash non-deterministic across runs (ASLR). equal() still compares decl(),
+  // and equal calls have equal id()+args, so the equal=>same-hash invariant is preserved.
   std::hash<unsigned int> hu;
   combineHash(hu(argCount()));
   for (unsigned int i = 0; i < argCount(); i++) {
@@ -1015,7 +1016,7 @@ Call* Call::commutativeNormalized(EnvI& env, const Call* orig) {
         return false;  // equal
       }
       default: {
-        return x < y;
+        return Expression::compare(x, y) < 0;
       }
     }
   };
@@ -2065,6 +2066,284 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
     return ty;
   }
   return curTiiT;
+}
+
+static int cmp_astr(const ASTString& a, const ASTString& b) {
+  return a == b ? 0 : (a < b ? -1 : 1);
+}
+
+int Expression::compare(const Expression* e0, const Expression* e1) {
+  if (e0 == e1) {
+    return 0;
+  }
+  if (e0 == nullptr) {
+    return -1;
+  }
+  if (e1 == nullptr) {
+    return 1;
+  }
+  ExpressionId eid0 = Expression::eid(e0);
+  ExpressionId eid1 = Expression::eid(e1);
+  if (eid0 != eid1) {
+    return eid0 < eid1 ? -1 : 1;
+  }
+  switch (eid0) {
+    case E_INTLIT: {
+      IntVal a = IntLit::v(Expression::cast<IntLit>(e0));
+      IntVal b = IntLit::v(Expression::cast<IntLit>(e1));
+      return a < b ? -1 : (a == b ? 0 : 1);
+    }
+    case E_FLOATLIT: {
+      FloatVal a = FloatLit::v(Expression::cast<FloatLit>(e0));
+      FloatVal b = FloatLit::v(Expression::cast<FloatLit>(e1));
+      return a < b ? -1 : (a == b ? 0 : 1);
+    }
+    case E_BOOLLIT: {
+      int a = static_cast<int>(Expression::cast<BoolLit>(e0)->v());
+      int b = static_cast<int>(Expression::cast<BoolLit>(e1)->v());
+      return a < b ? -1 : (a == b ? 0 : 1);
+    }
+    case E_STRINGLIT:
+      return cmp_astr(Expression::cast<StringLit>(e0)->v(), Expression::cast<StringLit>(e1)->v());
+    case E_SETLIT: {
+      const auto* s0 = Expression::cast<SetLit>(e0);
+      const auto* s1 = Expression::cast<SetLit>(e1);
+      IntSetVal* i0 = s0->isv();
+      IntSetVal* i1 = s1->isv();
+      if ((i0 != nullptr) && (i1 != nullptr)) {
+        if (i0->size() != i1->size()) {
+          return i0->size() < i1->size() ? -1 : 1;
+        }
+        for (unsigned int i = 0; i < i0->size(); ++i) {
+          if (i0->min(i) != i1->min(i)) {
+            return i0->min(i) < i1->min(i) ? -1 : 1;
+          }
+          if (i0->max(i) != i1->max(i)) {
+            return i0->max(i) < i1->max(i) ? -1 : 1;
+          }
+        }
+        return 0;
+      }
+      FloatSetVal* f0 = s0->fsv();
+      FloatSetVal* f1 = s1->fsv();
+      if ((f0 != nullptr) && (f1 != nullptr)) {
+        if (f0->size() != f1->size()) {
+          return f0->size() < f1->size() ? -1 : 1;
+        }
+        for (unsigned int i = 0; i < f0->size(); ++i) {
+          if (f0->min(i) != f1->min(i)) {
+            return f0->min(i) < f1->min(i) ? -1 : 1;
+          }
+          if (f0->max(i) != f1->max(i)) {
+            return f0->max(i) < f1->max(i) ? -1 : 1;
+          }
+        }
+        return 0;
+      }
+      ASTExprVec<Expression> v0 = s0->v();
+      ASTExprVec<Expression> v1 = s1->v();
+      if (v0.size() != v1.size()) {
+        return v0.size() < v1.size() ? -1 : 1;
+      }
+      for (unsigned int i = 0; i < v0.size(); ++i) {
+        int c = Expression::compare(v0[i], v1[i]);
+        if (c != 0) {
+          return c;
+        }
+      }
+      return 0;
+    }
+    case E_ID: {
+      const auto* i0 = Expression::cast<Id>(e0);
+      const auto* i1 = Expression::cast<Id>(e1);
+      long long int n0 = i0->idn();
+      long long int n1 = i1->idn();
+      if (n0 != n1) {
+        return n0 < n1 ? -1 : 1;
+      }
+      if (n0 == -1) {
+        return cmp_astr(i0->v(), i1->v());
+      }
+      return 0;
+    }
+    case E_ARRAYLIT: {
+      const auto* a0 = Expression::cast<ArrayLit>(e0);
+      const auto* a1 = Expression::cast<ArrayLit>(e1);
+      if (a0->size() != a1->size()) {
+        return a0->size() < a1->size() ? -1 : 1;
+      }
+      for (unsigned int i = 0; i < a0->size(); ++i) {
+        int c = Expression::compare((*a0)[i], (*a1)[i]);
+        if (c != 0) {
+          return c;
+        }
+      }
+      return 0;
+    }
+    case E_ARRAYACCESS: {
+      const auto* a0 = Expression::cast<ArrayAccess>(e0);
+      const auto* a1 = Expression::cast<ArrayAccess>(e1);
+      int c = Expression::compare(a0->v(), a1->v());
+      if (c != 0) {
+        return c;
+      }
+      ASTExprVec<Expression> x0 = a0->idx();
+      ASTExprVec<Expression> x1 = a1->idx();
+      if (x0.size() != x1.size()) {
+        return x0.size() < x1.size() ? -1 : 1;
+      }
+      for (unsigned int i = 0; i < x0.size(); ++i) {
+        c = Expression::compare(x0[i], x1[i]);
+        if (c != 0) {
+          return c;
+        }
+      }
+      return 0;
+    }
+    case E_CALL: {
+      const auto* c0 = Expression::cast<Call>(e0);
+      const auto* c1 = Expression::cast<Call>(e1);
+      int c = cmp_astr(c0->id(), c1->id());
+      if (c != 0) {
+        return c;
+      }
+      if (c0->argCount() != c1->argCount()) {
+        return c0->argCount() < c1->argCount() ? -1 : 1;
+      }
+      for (unsigned int i = 0; i < c0->argCount(); ++i) {
+        c = Expression::compare(c0->arg(i), c1->arg(i));
+        if (c != 0) {
+          return c;
+        }
+      }
+      return 0;
+    }
+    case E_BINOP: {
+      const auto* b0 = Expression::cast<BinOp>(e0);
+      const auto* b1 = Expression::cast<BinOp>(e1);
+      if (b0->op() != b1->op()) {
+        return b0->op() < b1->op() ? -1 : 1;
+      }
+      int c = Expression::compare(b0->lhs(), b1->lhs());
+      if (c != 0) {
+        return c;
+      }
+      return Expression::compare(b0->rhs(), b1->rhs());
+    }
+    case E_UNOP: {
+      const auto* u0 = Expression::cast<UnOp>(e0);
+      const auto* u1 = Expression::cast<UnOp>(e1);
+      if (u0->op() != u1->op()) {
+        return u0->op() < u1->op() ? -1 : 1;
+      }
+      return Expression::compare(u0->e(), u1->e());
+    }
+    case E_FIELDACCESS: {
+      const auto* f0 = Expression::cast<FieldAccess>(e0);
+      const auto* f1 = Expression::cast<FieldAccess>(e1);
+      int c = Expression::compare(f0->field(), f1->field());
+      if (c != 0) {
+        return c;
+      }
+      return Expression::compare(f0->v(), f1->v());
+    }
+    case E_COMP: {
+      const auto* c0 = Expression::cast<Comprehension>(e0);
+      const auto* c1 = Expression::cast<Comprehension>(e1);
+      if (c0->set() != c1->set()) {
+        return static_cast<int>(c0->set()) < static_cast<int>(c1->set()) ? -1 : 1;
+      }
+      int c = Expression::compare(c0->_e, c1->_e);
+      if (c != 0) {
+        return c;
+      }
+      if (c0->_g.size() != c1->_g.size()) {
+        return c0->_g.size() < c1->_g.size() ? -1 : 1;
+      }
+      for (unsigned int i = 0; i < c0->_g.size(); ++i) {
+        c = Expression::compare(c0->_g[i], c1->_g[i]);
+        if (c != 0) {
+          return c;
+        }
+      }
+      if (c0->_gIndex.size() != c1->_gIndex.size()) {
+        return c0->_gIndex.size() < c1->_gIndex.size() ? -1 : 1;
+      }
+      for (unsigned int i = 0; i < c0->_gIndex.size(); ++i) {
+        if (c0->_gIndex[i] != c1->_gIndex[i]) {
+          return c0->_gIndex[i] < c1->_gIndex[i] ? -1 : 1;
+        }
+      }
+      return 0;
+    }
+    case E_ITE: {
+      const auto* i0 = Expression::cast<ITE>(e0);
+      const auto* i1 = Expression::cast<ITE>(e1);
+      if (i0->_eIfThen.size() != i1->_eIfThen.size()) {
+        return i0->_eIfThen.size() < i1->_eIfThen.size() ? -1 : 1;
+      }
+      for (unsigned int i = 0; i < i0->_eIfThen.size(); ++i) {
+        int c = Expression::compare(i0->_eIfThen[i], i1->_eIfThen[i]);
+        if (c != 0) {
+          return c;
+        }
+      }
+      return Expression::compare(i0->elseExpr(), i1->elseExpr());
+    }
+    case E_VARDECL: {
+      const auto* v0 = Expression::cast<VarDecl>(e0);
+      const auto* v1 = Expression::cast<VarDecl>(e1);
+      int c = Expression::compare(v0->id(), v1->id());
+      if (c != 0) {
+        return c;
+      }
+      c = Expression::compare(v0->ti(), v1->ti());
+      if (c != 0) {
+        return c;
+      }
+      return Expression::compare(v0->e(), v1->e());
+    }
+    case E_LET: {
+      const auto* l0 = Expression::cast<Let>(e0);
+      const auto* l1 = Expression::cast<Let>(e1);
+      int c = Expression::compare(l0->in(), l1->in());
+      if (c != 0) {
+        return c;
+      }
+      if (l0->let().size() != l1->let().size()) {
+        return l0->let().size() < l1->let().size() ? -1 : 1;
+      }
+      for (unsigned int i = 0; i < l0->let().size(); ++i) {
+        c = Expression::compare(l0->let()[i], l1->let()[i]);
+        if (c != 0) {
+          return c;
+        }
+      }
+      return 0;
+    }
+    case E_TI: {
+      const auto* t0 = Expression::cast<TypeInst>(e0);
+      const auto* t1 = Expression::cast<TypeInst>(e1);
+      if (t0->ranges().size() != t1->ranges().size()) {
+        return t0->ranges().size() < t1->ranges().size() ? -1 : 1;
+      }
+      for (unsigned int i = 0; i < t0->ranges().size(); ++i) {
+        int c = Expression::compare(t0->ranges()[i], t1->ranges()[i]);
+        if (c != 0) {
+          return c;
+        }
+      }
+      return Expression::compare(t0->domain(), t1->domain());
+    }
+    case E_TIID:
+      return cmp_astr(Expression::cast<TIId>(e0)->v(), Expression::cast<TIId>(e1)->v());
+    // case E_ANON:
+    // AnonVar carries no orderable content (equal() likewise treats each as distinct);
+    // it never occurs as a flattened term, so order all AnonVars as equivalent.
+    // Fall through to default.
+    default:
+      return 0;
+  }
 }
 
 bool Expression::equalInternal(const Expression* e0, const Expression* e1) {

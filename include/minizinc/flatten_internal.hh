@@ -612,7 +612,7 @@ public:
     if (i_is_valid_id && j_is_valid_id) {
       return i_idn < j_idn;
     }
-    return x[i]() < x[j]();
+    return Expression::compare(x[i](), x[j]()) < 0;
   }
 };
 

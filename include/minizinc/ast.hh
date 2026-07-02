@@ -555,6 +555,10 @@ public:
   /// Check if \a e0 and \a e1 are equal
   static bool equal(const Expression* e0, const Expression* e1);
 
+  /// Deterministic, content-based total order over expressions (never uses pointer
+  /// addresses, so it is stable across runs). compare(a,b)==0 whenever equal(a,b).
+  static int compare(const Expression* e0, const Expression* e1);
+
   /// Mark \a e as alive for garbage collection
   static void mark(Expression* e);
   /// Check if \e is marked as alive for garbage collection

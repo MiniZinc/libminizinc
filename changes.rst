@@ -67,6 +67,9 @@ Bug fixes:
    contain freelist entries.
 -  Fix memory leaks in SolverConfig and the flattener, which leaked model
    objects in every run.
+-  Fixed some flattening non-determinism. Several sorting and comparison
+   operations still relied on pointer comparisons and have been replaced
+   with deterministic alternatives.
 
 .. _v2.9.7:
 
