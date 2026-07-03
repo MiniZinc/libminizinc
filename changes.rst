@@ -28,6 +28,8 @@ Changes:
    using ``array1d`` calls. Other checks ensure that only 1-based arrays
    match the ``list`` type.
 -  The SCIP interface is now only compatible with SCIP 10 and later.
+-  Some performance improvements through better inlining and reducing
+   allocation in hot paths of the compiler.
 
 Bug fixes:
 ^^^^^^^^^^
