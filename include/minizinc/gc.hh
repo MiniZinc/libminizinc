@@ -159,6 +159,9 @@ private:
 
   static void addKeepAlive(KeepAlive* e);
   static void removeKeepAlive(KeepAlive* e);
+  /// Fix up the root list after a KeepAlive has been moved into \a e's slot
+  /// (its _p/_n already point at the new neighbours).
+  static void relocateKeepAlive(KeepAlive* e);
   static void addWeakRef(WeakRef* e);
   static void removeWeakRef(WeakRef* e);
   static void addNodeWeakMap(ASTNodeWeakMap* m);
@@ -252,6 +255,7 @@ public:
   KeepAlive(Expression* e = nullptr);
   ~KeepAlive();
   KeepAlive(const KeepAlive& e);
+  KeepAlive(KeepAlive&& e) noexcept;
   KeepAlive& operator=(const KeepAlive& e);
   Expression* operator()() { return _e; }
   Expression* operator()() const { return _e; }

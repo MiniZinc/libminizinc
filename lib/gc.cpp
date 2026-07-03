@@ -736,6 +736,16 @@ void GC::removeKeepAlive(KeepAlive* e) {
     e->_n->_p = e->_p;
   }
 }
+void GC::relocateKeepAlive(KeepAlive* e) {
+  if (e->_p != nullptr) {
+    e->_p->_n = e;
+  } else {
+    GC::gc()->_heap->_roots = e;
+  }
+  if (e->_n != nullptr) {
+    e->_n->_p = e;
+  }
+}
 
 KeepAlive::KeepAlive(Expression* e) : _e(e), _p(nullptr), _n(nullptr) {
   if ((_e != nullptr) && !Expression::isUnboxedVal(_e)) {
@@ -751,6 +761,18 @@ KeepAlive::KeepAlive(const KeepAlive& e) : _e(e._e), _p(nullptr), _n(nullptr) {
   if ((_e != nullptr) && !Expression::isUnboxedVal(_e)) {
     GC::addKeepAlive(this);
   }
+}
+KeepAlive::KeepAlive(KeepAlive&& e) noexcept : _e(e._e), _p(e._p), _n(e._n) {
+  if ((_e != nullptr) && !Expression::isUnboxedVal(_e)) {
+    // Take over e's slot in the root list rather than adding a new root and
+    // later removing e's. This makes moving a KeepAlive (e.g. when a
+    // std::vector<KeepAlive> or std::vector<EE> reallocates) about half as
+    // expensive as a copy followed by the moved-from element's destruction.
+    GC::relocateKeepAlive(this);
+  }
+  e._e = nullptr;
+  e._p = nullptr;
+  e._n = nullptr;
 }
 KeepAlive& KeepAlive::operator=(const KeepAlive& e) {
   if (this != &e) {
