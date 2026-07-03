@@ -2999,7 +2999,7 @@ Constants& Constants::constants() {
 
 Annotation::~Annotation() { delete _s; }
 
-bool Annotation::contains(Expression* e) const { return (_s != nullptr) && _s->contains(e); }
+bool Annotation::containsImpl(Expression* e) const { return _s->contains(e); }
 
 bool Annotation::isEmpty() const { return _s == nullptr || _s->isEmpty(); }
 

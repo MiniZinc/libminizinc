@@ -292,10 +292,16 @@ private:
   /// Delete
   Annotation& operator=(const Annotation&);
 
+  /// Out-of-line slow path of \a contains for the rare non-empty case
+  /// (ExpressionSet is an incomplete type here, so the lookup can't be inlined)
+  bool containsImpl(Expression* e) const;
+
 public:
   Annotation() : _s(nullptr) {}
   ~Annotation();
-  bool contains(Expression* e) const;
+  /// Whether this annotation set contains \a e. The overwhelmingly common case
+  /// is an empty set (\a _s null), which is inlined into the caller.
+  bool contains(Expression* e) const { return (_s != nullptr) && containsImpl(e); }
   bool containsCall(const ASTString& id) const;
   bool isEmpty() const;
   unsigned int size() const;
