@@ -3773,11 +3773,12 @@ Expression* follow_id(Expression* e) {
 }
 
 Expression* follow_id_to_decl(Expression* e) {
+  Expression* absent = Constants::constants().absent;
   for (;;) {
     if (e == nullptr) {
       return nullptr;
     }
-    if (e == Constants::constants().absent) {
+    if (e == absent) {
       return e;
     }
     switch (Expression::eid(e)) {
@@ -3791,7 +3792,7 @@ Expression* follow_id_to_decl(Expression* e) {
       }
       case Expression::E_VARDECL: {
         Expression* vd_e = Expression::cast<VarDecl>(e)->e();
-        if (vd_e != nullptr && Expression::isa<Id>(vd_e) && vd_e != Constants::constants().absent &&
+        if (vd_e != nullptr && Expression::isa<Id>(vd_e) && vd_e != absent &&
             !(Expression::type(vd_e).isAnn() && Expression::cast<Id>(vd_e)->decl() == nullptr)) {
           e = vd_e;
         } else {

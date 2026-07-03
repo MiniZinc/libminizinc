@@ -1916,17 +1916,26 @@ CallStackItem::CallStackItem(EnvI& env0, Expression* e, const Ctx& ctx)
 
   env0.checkCancel();
 
-  if (Expression::isa<VarDecl>(e)) {
-    _env.idStack.push_back(static_cast<int>(_env.callStack.size()));
-    _csiType = CSI_VD;
-  } else if (Expression::isa<Call>(e)) {
-    if (Expression::cast<Call>(e)->id() == _env.constants.ids.redundant_constraint) {
-      _env.inRedundantConstraint++;
-      _csiType = CSI_REDUNDANT;
-    } else if (Expression::cast<Call>(e)->id() == _env.constants.ids.symmetry_breaking_constraint) {
-      _env.inSymmetryBreakingConstraint++;
-      _csiType = CSI_SYMMETRY;
+  // Single type dispatch on the expression kind (avoids two separate isa<>
+  // checks, each of which repeats the unboxed-value tests, on every step).
+  switch (Expression::eid(e)) {
+    case Expression::E_VARDECL:
+      _env.idStack.push_back(static_cast<int>(_env.callStack.size()));
+      _csiType = CSI_VD;
+      break;
+    case Expression::E_CALL: {
+      auto cid = Expression::cast<Call>(e)->id();
+      if (cid == _env.constants.ids.redundant_constraint) {
+        _env.inRedundantConstraint++;
+        _csiType = CSI_REDUNDANT;
+      } else if (cid == _env.constants.ids.symmetry_breaking_constraint) {
+        _env.inSymmetryBreakingConstraint++;
+        _csiType = CSI_SYMMETRY;
+      }
+      break;
     }
+    default:
+      break;
   }
   if (Expression::ann(e).contains(_env.constants.ann.maybe_partial)) {
     _env.inMaybePartial++;
