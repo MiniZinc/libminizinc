@@ -991,33 +991,40 @@ void EnvI::cseMapInsert(Expression* e, const EE& ee) {
   }
 }
 EnvI::CSEMap::iterator EnvI::cseMapFind(Expression* e) {
-  GCLock lock;
-  Call* c = Expression::dynamicCast<Call>(e);
-  if ((c != nullptr) && c->decl() != nullptr) {
-    if (c->decl()->ann().contains(constants.ann.promise_commutative)) {
-      e = Call::commutativeNormalized(*this, c);
-    }
-  }
-
-  auto it = _cseMap.find(e);
-  if (it != _cseMap.end()) {
-    if (it->second.r != nullptr) {
-      VarDecl* it_vd = Expression::isa<Id>(it->second.r)
-                           ? Expression::cast<Id>(it->second.r)->decl()
-                           : Expression::dynamicCast<VarDecl>(it->second.r);
-      if (it_vd != nullptr) {
-        int idx = varOccurrences.find(it_vd);
-        if (idx == -1 || (*_flat)[idx]->removed()) {
-          _cseMap.remove(e);
-          return _cseMap.end();
+  // The lookup itself (hash/equality on expression content, map find/remove,
+  // varOccurrences.find) never allocates, so it cannot trigger a GC and needs
+  // no GC lock. Only the commutative-normalisation branch below allocates.
+  auto lookup = [&](Expression* key) -> CSEMap::iterator {
+    auto it = _cseMap.find(key);
+    if (it != _cseMap.end()) {
+      if (it->second.r != nullptr) {
+        VarDecl* it_vd = Expression::isa<Id>(it->second.r)
+                             ? Expression::cast<Id>(it->second.r)->decl()
+                             : Expression::dynamicCast<VarDecl>(it->second.r);
+        if (it_vd != nullptr) {
+          int idx = varOccurrences.find(it_vd);
+          if (idx == -1 || (*_flat)[idx]->removed()) {
+            _cseMap.remove(key);
+            return _cseMap.end();
+          }
         }
+      } else {
+        _cseMap.remove(key);
+        return _cseMap.end();
       }
-    } else {
-      _cseMap.remove(e);
-      return _cseMap.end();
     }
+    return it;
+  };
+
+  Call* c = Expression::dynamicCast<Call>(e);
+  if ((c != nullptr) && c->decl() != nullptr &&
+      c->decl()->ann().contains(constants.ann.promise_commutative)) {
+    // commutativeNormalized allocates a fresh, unrooted Call; keep the GC
+    // locked across the whole lookup so it cannot be collected mid-find.
+    GCLock lock;
+    return lookup(Call::commutativeNormalized(*this, c));
   }
-  return it;
+  return lookup(e);
 }
 void EnvI::cseMapRemove(Expression* e) { _cseMap.remove(e); }
 EnvI::CSEMap::iterator EnvI::cseMapEnd() { return _cseMap.end(); }
