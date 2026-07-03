@@ -199,6 +199,37 @@ public:
 #endif
 };
 
+/// Return thread-local GC object.
+/// Defined inline (rather than out-of-line in gc.cpp) so that the very hot
+/// allocation and root-management paths pay a single, CSE-able thread-local
+/// load instead of a cross-TU function call. The function-local `static
+/// __thread` still resolves to one instance per thread across all TUs.
+inline GC*& GC::gc() {
+#ifdef HAS_DECLSPEC_THREAD
+  __declspec(thread) static GC* gc = nullptr;
+#elif defined(HAS_ATTR_THREAD)
+  static __thread GC* gc = nullptr;
+#else
+#error Need thread-local storage
+#endif
+  return gc;
+}
+
+/// Allocate node (inlined; see GC::gc above)
+inline void* ASTNode::operator new(size_t size) { return GC::gc()->alloc(size); }
+
+inline void* ASTVec::alloc(size_t size) {
+  size_t s = sizeof(ASTVec) + (size <= 2 ? 0 : size - 2) * sizeof(void*);
+  s += ((8 - (s & 7)) & 7);
+  return GC::gc()->alloc(s);
+}
+
+inline void* ASTChunk::alloc(size_t size) {
+  size_t s = sizeof(ASTChunk) + (size <= 4 ? 0 : size - 4) * sizeof(char);
+  s += ((8 - (s & 7)) & 7);
+  return GC::gc()->alloc(s);
+}
+
 /// Automatic garbage collection lock
 class GCLock {
 public:

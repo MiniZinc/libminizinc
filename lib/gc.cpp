@@ -21,16 +21,7 @@
 
 namespace MiniZinc {
 
-GC*& GC::gc() {
-#ifdef HAS_DECLSPEC_THREAD
-  __declspec(thread) static GC* gc = nullptr;
-#elif defined(HAS_ATTR_THREAD)
-  static __thread GC* gc = nullptr;
-#else
-#error Need thread-local storage
-#endif
-  return gc;
-}
+// GC::gc() is defined inline in gc.hh (hot path).
 
 bool GC::locked() {
   assert(gc());
@@ -358,19 +349,21 @@ const char* GC::Heap::_nodeid[] = {
 #endif
 
 void GC::lock() {
-  if (gc() == nullptr) {
-    gc() = new GC();
+  GC*& g = gc();
+  if (g == nullptr) {
+    g = new GC();
   }
-  if (gc()->_lockCount == 0) {
-    gc()->_heap->rungc();
+  if (g->_lockCount == 0) {
+    g->_heap->rungc();
   }
-  gc()->_lockCount++;
+  g->_lockCount++;
 }
 void GC::lockNoGC() {
-  if (gc() == nullptr) {
-    gc() = new GC();
+  GC*& g = gc();
+  if (g == nullptr) {
+    g = new GC();
   }
-  gc()->_lockCount++;
+  g->_lockCount++;
 }
 void GC::unlock() {
   assert(locked());
@@ -683,18 +676,10 @@ void GC::Heap::sweep() {
 }
 
 ASTVec::ASTVec(size_t size) : ASTNode(NID_VEC), _size(size) {}
-void* ASTVec::alloc(size_t size) {
-  size_t s = sizeof(ASTVec) + (size <= 2 ? 0 : size - 2) * sizeof(void*);
-  s += ((8 - (s & 7)) & 7);
-  return GC::gc()->alloc(s);
-}
+// ASTVec::alloc is defined inline in gc.hh (hot path).
 
 ASTChunk::ASTChunk(size_t size, unsigned int id) : ASTNode(id), _size(size) {}
-void* ASTChunk::alloc(size_t size) {
-  size_t s = sizeof(ASTChunk) + (size <= 4 ? 0 : size - 4) * sizeof(char);
-  s += ((8 - (s & 7)) & 7);
-  return GC::gc()->alloc(s);
-}
+// ASTChunk::alloc is defined inline in gc.hh (hot path).
 
 void GC::mark() {
   GC* gc = GC::gc();
@@ -727,23 +712,25 @@ std::map<int, GCStat>& GC::stats() {
 }
 #endif
 
-void* ASTNode::operator new(size_t size) { return GC::gc()->alloc(size); }
+// ASTNode::operator new is defined inline in gc.hh (hot path).
 
 void GC::addKeepAlive(KeepAlive* e) {
   assert(e->_p == nullptr);
   assert(e->_n == nullptr);
-  e->_n = GC::gc()->_heap->_roots;
-  if (GC::gc()->_heap->_roots != nullptr) {
-    GC::gc()->_heap->_roots->_p = e;
+  Heap* heap = GC::gc()->_heap;
+  e->_n = heap->_roots;
+  if (heap->_roots != nullptr) {
+    heap->_roots->_p = e;
   }
-  GC::gc()->_heap->_roots = e;
+  heap->_roots = e;
 }
 void GC::removeKeepAlive(KeepAlive* e) {
   if (e->_p != nullptr) {
     e->_p->_n = e->_n;
   } else {
-    assert(GC::gc()->_heap->_roots == e);
-    GC::gc()->_heap->_roots = e->_n;
+    Heap* heap = GC::gc()->_heap;
+    assert(heap->_roots == e);
+    heap->_roots = e->_n;
   }
   if (e->_n != nullptr) {
     e->_n->_p = e->_p;
