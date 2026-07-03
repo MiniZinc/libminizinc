@@ -18,9 +18,19 @@
 
 namespace MiniZinc {
 
-std::vector<Expression*> get_conjuncts(Expression* start) {
+// Collect the top-level conjuncts of \a start into \a conjuncts (cleared first).
+// The caller passes a reusable buffer so that repeated calls (e.g. once per
+// if-then-else branch) do not each allocate a fresh vector.
+void get_conjuncts(Expression* start, std::vector<Expression*>& conjuncts) {
+  conjuncts.clear();
+  auto* startBo = Expression::dynamicCast<BinOp>(start);
+  if (startBo == nullptr || startBo->op() != BOT_AND) {
+    // Common case: not a conjunction, so `start` is the single conjunct.
+    // Avoids allocating the traversal stack entirely.
+    conjuncts.push_back(start);
+    return;
+  }
   std::vector<Expression*> conj_stack;
-  std::vector<Expression*> conjuncts;
   conj_stack.push_back(start);
   while (!conj_stack.empty()) {
     Expression* e = conj_stack.back();
@@ -36,7 +46,6 @@ std::vector<Expression*> get_conjuncts(Expression* start) {
       conjuncts.push_back(e);
     }
   }
-  return conjuncts;
 }
 
 void classify_conjunct(EnvI& env, Expression* e, IdMap<int>& eq_occurrences,
@@ -165,15 +174,16 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     IdMap<int> eq_occurrences;
     std::vector<IdMap<std::pair<Expression*, Expression*>>> eq_branches(ite->size() + 1);
     std::vector<std::vector<Expression*>> other_branches(ite->size() + 1);
+    std::vector<Expression*> conjuncts;  // reused across all branches
     for (unsigned int i = 0; i < ite->size(); i++) {
-      auto conjuncts = get_conjuncts(ite->thenExpr(i));
+      get_conjuncts(ite->thenExpr(i), conjuncts);
       for (auto* c : conjuncts) {
         classify_conjunct(env, c, eq_occurrences, eq_branches[i], other_branches[i]);
       }
       noOtherBranches = noOtherBranches && other_branches[i].empty();
     }
     {
-      auto conjuncts = get_conjuncts(ite->elseExpr());
+      get_conjuncts(ite->elseExpr(), conjuncts);
       for (auto* c : conjuncts) {
         classify_conjunct(env, c, eq_occurrences, eq_branches[ite->size()],
                           other_branches[ite->size()]);
