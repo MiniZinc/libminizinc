@@ -30,6 +30,8 @@ Changes:
 -  The SCIP interface is now only compatible with SCIP 10 and later.
 -  Some performance improvements through better inlining and reducing
    allocation in hot paths of the compiler.
+-  Compile root forall constraints with variable generators or where
+   clauses in root context instead of reified context.
 
 Bug fixes:
 ^^^^^^^^^^

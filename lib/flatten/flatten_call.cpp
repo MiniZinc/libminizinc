@@ -482,8 +482,24 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
     }
   }
 
-  if (ctx.b == C_ROOT && decl->e() == nullptr && cid == env.constants.ids.forall &&
-      r == env.constants.varTrue) {
+  // A `forall` over a comprehension that iterates a var set is typed `var opt
+  // bool` and would normally be reified through the `forall(var opt bool)`
+  // predicate. But flatten_comp de-opts such a comprehension (whose body is
+  // itself non-optional) into `[ s in S -> e | s in ub(S) ]`, a plain Boolean
+  // comprehension. At root we can therefore assert it directly, exactly like
+  // the builtin `forall(var bool)`, avoiding the reification of every element.
+  bool deoptableForall = false;
+  if (cid == env.constants.ids.forall && decl->e() != nullptr) {
+    if (auto* comp = Expression::dynamicCast<Comprehension>(c->arg(0))) {
+      if (comp->type().isOpt() && !Expression::isa<ArrayLit>(comp->e()) &&
+          !Expression::type(comp->e()).isOpt()) {
+        deoptableForall = true;
+      }
+    }
+  }
+
+  if (ctx.b == C_ROOT && (decl->e() == nullptr || deoptableForall) &&
+      cid == env.constants.ids.forall && r == env.constants.varTrue) {
     ret.b = bind(env, ctx, b, env.constants.literalTrue);
     KeepAlive ka;
     ArrayLit* al;
