@@ -72,6 +72,7 @@ Bug fixes:
 -  Fixed some flattening non-determinism. Several sorting and comparison
    operations still relied on pointer comparisons and have been replaced
    with deterministic alternatives.
+-  Fix incorrect double-negation of certain operators in negative contexts.
 
 .. _v2.9.7:
 

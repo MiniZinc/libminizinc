@@ -1693,7 +1693,19 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
       if (singleExp) {
         ret.r = flat_exp(env, ccCtx, cc, r, ctx.partialityVar(env)).r;
       } else {
-        ees[2].b = flat_exp(env, ccCtx, cc, nullptr, env.constants.varTrue).r;
+        // conj() below negates every element of ees uniformly when ctx.neg is
+        // set, so ees[2].b must hold the *positive* reification of cc (just like
+        // the operand definedness terms and the CSE-hit branch above). For the
+        // doubleNeg operators ccCtx was already un-negated above; operators that
+        // are not rewritten to a complement (in/subset/superset) still carry
+        // ctx.neg here, so un-negate the reification context to avoid reifying
+        // cc negatively and then negating it a second time in conj().
+        Ctx reifCtx = ccCtx;
+        if (reifCtx.neg) {
+          reifCtx.b = -reifCtx.b;
+          reifCtx.neg = false;
+        }
+        ees[2].b = flat_exp(env, reifCtx, cc, nullptr, env.constants.varTrue).r;
         if (doubleNeg) {
           GCLock lock;
           Type t = Expression::type(ees[2].b());
