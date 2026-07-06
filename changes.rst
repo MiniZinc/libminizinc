@@ -77,6 +77,8 @@ Bug fixes:
    operations still relied on pointer comparisons and have been replaced
    with deterministic alternatives.
 -  Fix incorrect double-negation of certain operators in negative contexts.
+-  Fix a bug in the handling of set variables assigned to set constants,
+   which would ignore the variable's domain under certain conditions.
 
 .. _v2.9.7:
 

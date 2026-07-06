@@ -3179,6 +3179,27 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
           env.fail();
           return vd->id();
         }
+        // A fixed set value can only be assigned if it is contained in the
+        // variable's declared universe. Unlike an integer/float point value
+        // (whose combined domain is either empty or a singleton equal to the
+        // value, and hence always consistent with the assignment), a set value
+        // may have elements outside the universe while still having a non-empty
+        // intersection with it, so the containment has to be checked explicitly.
+        if (Expression::type(e).isPar() && Expression::type(e).isSet() &&
+            Expression::type(e).bt() == Type::BT_INT && vd->ti()->domain() != nullptr &&
+            !Expression::isa<TIId>(vd->ti()->domain())) {
+          GCLock lock;
+          IntSetVal* valueSet = eval_intset(env, e);
+          IntSetVal* universe = eval_intset(env, vd->ti()->domain());
+          IntSetRanges valueRanges(valueSet);
+          IntSetRanges universeRanges(universe);
+          Ranges::Diff<IntVal, IntSetRanges, IntSetRanges> outOfUniverse(valueRanges,
+                                                                         universeRanges);
+          if (IntSetVal::ai(outOfUniverse)->card() != 0) {
+            env.fail();
+            return vd->id();
+          }
+        }
         check_index_sets(env, vd, e);
 
         KeepAlive combinedDom = compute_combined_domain(env, vd->ti(), e);
