@@ -94,14 +94,31 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
             handled_gen = true;
 
           } else {
-            Call* ub = Call::a(Location().introduce(), "ub", {c->in(i)});
+            // The set expression S is referenced twice below (in `ub(S)` and in
+            // every `s in S` membership guard). If S is a compound expression,
+            // bind it to a fresh alias variable via an assignment generator
+            // (`tmp = S`) so that it is evaluated and flattened only once. If S
+            // is already an identifier, referencing it twice is free, so no
+            // hoisting is needed.
+            Expression* set_expr = c->in(i);
+            if (!Expression::isa<Id>(set_expr)) {
+              auto* tmp = new VarDecl(
+                  Location().introduce(),
+                  new TypeInst(Location().introduce(), Expression::type(set_expr)), env.genId());
+              tmp->toplevel(false);
+              // Assignment generator: in == nullptr, the value lives in the where slot.
+              gs.g.emplace_back(std::vector<VarDecl*>{tmp}, nullptr, set_expr);
+              set_expr = tmp->id();
+            }
+
+            Call* ub = Call::a(Location().introduce(), "ub", {set_expr});
             Type t = Type::parsetint();
             t.cv(true);
             ub->type(t);
             ub->decl(env.model->matchFn(env, ub, false));
             in[i] = ub;
             for (unsigned int j = 0; j < c->numberOfDecls(i); j++) {
-              auto* bo = new BinOp(Location().introduce(), c->decl(i, j)->id(), BOT_IN, c->in(i));
+              auto* bo = new BinOp(Location().introduce(), c->decl(i, j)->id(), BOT_IN, set_expr);
               bo->type(Type::varbool());
               where.push_back(bo);
             }

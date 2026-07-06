@@ -32,6 +32,8 @@ Changes:
    allocation in hot paths of the compiler.
 -  Compile root forall constraints with variable generators or where
    clauses in root context instead of reified context.
+-  Improve compilation of comprehensions with complex variable generators
+   by moving the generator expression into a generator alias.
 
 Bug fixes:
 ^^^^^^^^^^
