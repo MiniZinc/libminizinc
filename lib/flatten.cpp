@@ -734,7 +734,7 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
 
   VarDeclI* vdi;
   if (hasBeenAdded) {
-    vdi = (*env.flat())[env.varOccurrences.find(vd)] -> cast<VarDeclI>();
+    vdi = (*env.flat())[env.varOccurrences.find(vd)]->cast<VarDeclI>();
   } else {
     vdi = VarDeclI::a(Location().introduce(), vd);
     env.flatAddItem(vdi);

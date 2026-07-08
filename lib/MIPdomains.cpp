@@ -1806,8 +1806,10 @@ private:
       MZN_MIPD_assert_hard(CMPT_EQ == nCmpType || CMPT_LE == nCmpType);
       DBGOUT_MIPD_SELF(  // LinEq leq; leq.coefs=coefs; leq.vd=vars; leq.rhs=rhs;
           DBGOUT_MIPD_FLUSH(" ADDING " << (CMPT_EQ == nCmpType ? "LIN_EQ" : "LIN_LE") << ": [ ");
-          for (auto c : coefs) DBGOUT_MIPD_FLUSH(c << ','); DBGOUT_MIPD_FLUSH(" ] * [ ");
-          for (auto v : vars) {
+          for (auto c
+               : coefs) DBGOUT_MIPD_FLUSH(c << ',');
+          DBGOUT_MIPD_FLUSH(" ] * [ "); for (auto v
+                                             : vars) {
             MZN_MIPD_assert_hard(!v->isa<VarDecl>());
             if (v->isa<Id>()) DBGOUT_MIPD_FLUSH(v->dynamicCast<Id>()->str() << ',');
             //             else if ( v->isa<VarDecl>() )

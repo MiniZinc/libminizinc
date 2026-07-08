@@ -241,7 +241,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
             // annotated expression (::annotated_expression) would otherwise
             // flatten the captured array/struct variable and materialise element
             // variables as nvd's RHS before the real RHS is bound.
-            auto* nvdi = (*env.flat())[env.varOccurrences.find(nvd)] -> cast<VarDeclI>();
+            auto* nvdi = (*env.flat())[env.varOccurrences.find(nvd)]->cast<VarDeclI>();
             flatten_vardecl_annotations(env, vd, nvdi, nvd);
 
             vd = nvd;

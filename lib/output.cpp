@@ -2069,7 +2069,7 @@ void finalise_output(EnvI& e) {
                 if (e.varOccurrences.occurrences(reallyFlat) == 0 && reallyFlat->e() == nullptr) {
                   auto it = e.varOccurrences.idx.find(reallyFlat->id());
                   assert(it.first);
-                  e.flatRemoveItem((*e.flat())[*it.second] -> cast<VarDeclI>());
+                  e.flatRemoveItem((*e.flat())[*it.second]->cast<VarDeclI>());
                 }
               } else {
                 // If the VarDecl does not have a usable right hand side, it needs to be
@@ -2096,7 +2096,7 @@ void finalise_output(EnvI& e) {
                     if (e.varOccurrences.occurrences(reallyFlat) == 0) {
                       auto it = e.varOccurrences.idx.find(reallyFlat->id());
                       assert(it.first);
-                      e.flatRemoveItem((*e.flat())[*it.second] -> cast<VarDeclI>());
+                      e.flatRemoveItem((*e.flat())[*it.second]->cast<VarDeclI>());
                     }
                   }
                 } else if (auto* al = Expression::dynamicCast<ArrayLit>(reallyFlat->e())) {
@@ -2115,7 +2115,7 @@ void finalise_output(EnvI& e) {
                     if (e.varOccurrences.occurrences(reallyFlat) == 0) {
                       auto it = e.varOccurrences.idx.find(reallyFlat->id());
                       assert(it.first);
-                      e.flatRemoveItem((*e.flat())[*it.second] -> cast<VarDeclI>());
+                      e.flatRemoveItem((*e.flat())[*it.second]->cast<VarDeclI>());
                     }
                     vd->e(copy(e, e.cmap, al));
                     Type al_t(Expression::type(vd->e()));

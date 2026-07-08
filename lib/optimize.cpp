@@ -74,7 +74,7 @@ void VarOccurrences::unify(EnvI& env, Model* m, Id* id0_0, Id* id1_0) {
 
   int v0idx = find(v0);
   assert(v0idx != -1);
-  (*env.flat())[v0idx] -> remove();
+  (*env.flat())[v0idx]->remove();
 
   auto vi0 = itemMap.find(v0->id());
   if (vi0.first) {
@@ -258,14 +258,14 @@ void unify(EnvI& env, std::vector<VarDecl*>& deletedVarDecls, Id* id0, Id* id1) 
     if (id0->decl()->e() != nullptr) {
       Expression* rhs = id0->decl()->e();
 
-      auto* vdi1 = (*env.flat())[env.varOccurrences.find(id1->decl())] -> cast<VarDeclI>();
+      auto* vdi1 = (*env.flat())[env.varOccurrences.find(id1->decl())]->cast<VarDeclI>();
       CollectOccurrencesE ce(env, env.varOccurrences, vdi1);
       top_down(ce, rhs);
 
       id1->decl()->e(rhs);
       id0->decl()->e(nullptr);
 
-      auto* vdi0 = (*env.flat())[env.varOccurrences.find(id0->decl())] -> cast<VarDeclI>();
+      auto* vdi0 = (*env.flat())[env.varOccurrences.find(id0->decl())]->cast<VarDeclI>();
       CollectDecls cd(env, env.varOccurrences, deletedVarDecls, vdi0);
       top_down(cd, rhs);
     }
@@ -278,13 +278,13 @@ void unify(EnvI& env, std::vector<VarDecl*>& deletedVarDecls, Id* id0, Id* id1) 
         Expression* rhs = id1->decl()->e();
         id1->decl()->e(nullptr);
 
-        auto* vdi1 = (*env.flat())[env.varOccurrences.find(id1->decl())] -> cast<VarDeclI>();
+        auto* vdi1 = (*env.flat())[env.varOccurrences.find(id1->decl())]->cast<VarDeclI>();
         CollectDecls cd(env, env.varOccurrences, deletedVarDecls, vdi1);
         top_down(cd, rhs);
       }
     }
     if (Expression::equal(id1->decl()->e(), id0->decl()->id())) {
-      auto* vdi1 = (*env.flat())[env.varOccurrences.find(id1->decl())] -> cast<VarDeclI>();
+      auto* vdi1 = (*env.flat())[env.varOccurrences.find(id1->decl())]->cast<VarDeclI>();
       CollectDecls cd(env, env.varOccurrences, deletedVarDecls, vdi1);
       Expression* rhs = id1->decl()->e();
       top_down(cd, rhs);
@@ -407,7 +407,7 @@ void push_vardecl(EnvI& env, VarDeclI* vdi, unsigned int vd_idx, std::deque<unsi
   }
 }
 void push_vardecl(EnvI& env, unsigned int vd_idx, std::deque<unsigned int>& q) {
-  push_vardecl(env, (*env.flat())[vd_idx] -> cast<VarDeclI>(), vd_idx, q);
+  push_vardecl(env, (*env.flat())[vd_idx]->cast<VarDeclI>(), vd_idx, q);
 }
 
 void push_dependent_constraints(EnvI& env, Id* id, std::deque<Item*>& q) {
@@ -421,7 +421,7 @@ void push_dependent_constraints(EnvI& env, Id* id, std::deque<Item*>& q) {
         }
       } else if (auto* vdi = item->dynamicCast<VarDeclI>()) {
         if (vdi->e()->id()->decl() != vdi->e()) {
-          vdi = (*env.flat())[env.varOccurrences.find(vdi->e()->id()->decl())] -> cast<VarDeclI>();
+          vdi = (*env.flat())[env.varOccurrences.find(vdi->e()->id()->decl())]->cast<VarDeclI>();
         }
         if (!vdi->removed() && !vdi->flag() && (vdi->e()->e() != nullptr)) {
           vdi->flag(true);
