@@ -1987,6 +1987,9 @@ public:
   /// Return whether function is defined in the standard library
   bool fromStdLib() const { return _fromStdLib; };
 
+  /// Set whether function is defined in the standard library
+  void fromStdLib(bool b) { _fromStdLib = b; };
+
   /// Return whether function is a monomorphised version of another function
   bool isMonomorphised() const { return _flag2; }
 

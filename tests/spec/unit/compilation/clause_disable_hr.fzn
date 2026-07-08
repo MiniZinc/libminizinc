@@ -1,5 +1,4 @@
 predicate int_le_imp(var int: a,var int: b,var bool: r);
-predicate bool_clause_reif(array [int] of var bool: as,array [int] of var bool: bs,var bool: b);
 var -10..10: x:: output_var;
 var bool: c:: output_var;
 var bool: d:: output_var;

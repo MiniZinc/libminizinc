@@ -495,6 +495,9 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
           } else if (Call* deprecated = fi->ann().getCall(env.constants.ann.mzn_deprecated)) {
             i.fi->ann().add(deprecated);
           }
+          bool fromStdLib = i.fi->fromStdLib() || fi->fromStdLib();
+          i.fi->fromStdLib(fromStdLib);
+          fi->fromStdLib(fromStdLib);
           return true;
         }
         if (eqExceptInst) {
