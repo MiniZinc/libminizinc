@@ -16,9 +16,11 @@
 #include <minizinc/solvers/gecode/gecode_constraints.hh>
 #include <minizinc/solvers/gecode_solverinstance.hh>
 #include <minizinc/statistics.hh>
+#include <minizinc/utils.hh>
 
 #include "aux_brancher.hh"
 
+#include <cstdlib>
 #include <utility>
 
 using namespace std;
@@ -86,7 +88,7 @@ bool GecodeSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i
     if (++i == argv.size()) {
       return false;
     }
-    int passes = atoi(argv[i].c_str());
+    const int passes = parse_int_option(argv[i], "--pre-passes");
     if (passes >= 0) {
       _opt.prePasses = passes;
     }
@@ -96,7 +98,7 @@ bool GecodeSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i
     if (++i == argv.size()) {
       return false;
     }
-    int n = atoi(argv[i].c_str());
+    const int n = parse_int_option(argv[i], "--num-solutions");
     if (n >= 0) {
       _opt.nSolutions = n;
     }
@@ -104,7 +106,7 @@ bool GecodeSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i
     if (++i == argv.size()) {
       return false;
     }
-    int nodes = atoi(argv[i].c_str());
+    const int nodes = parse_int_option(argv[i], "--node");
     if (nodes >= 0) {
       _opt.nodes = nodes;
     }
@@ -112,7 +114,7 @@ bool GecodeSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i
     if (++i == argv.size()) {
       return false;
     }
-    int c_d = atoi(argv[i].c_str());
+    const int c_d = parse_int_option(argv[i], "--c_d");
     if (c_d >= 0) {
       _opt.c_d = static_cast<unsigned int>(c_d);
     }
@@ -120,7 +122,7 @@ bool GecodeSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i
     if (++i == argv.size()) {
       return false;
     }
-    int a_d = atoi(argv[i].c_str());
+    const int a_d = parse_int_option(argv[i], "--a_d");
     if (a_d >= 0) {
       _opt.a_d = static_cast<unsigned int>(a_d);
     }
@@ -129,7 +131,7 @@ bool GecodeSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i
     if (++i == argv.size()) {
       return false;
     }
-    int restarts = atoi(argv[i].c_str());
+    const int restarts = parse_int_option(argv[i], "--restart-limit");
     if (restarts >= 0) {
       _opt.restarts = restarts;
     }
@@ -138,7 +140,7 @@ bool GecodeSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i
     if (++i == argv.size()) {
       return false;
     }
-    int fails = atoi(argv[i].c_str());
+    const int fails = parse_int_option(argv[i], "--fail");
     if (fails >= 0) {
       _opt.fails = fails;
     }
@@ -146,7 +148,7 @@ bool GecodeSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i
     if (++i == argv.size()) {
       return false;
     }
-    int time = atoi(argv[i].c_str());
+    const int time = parse_int_option(argv[i], "--solver-time-limit");
     if (time >= 0) {
       _opt.time = time;
     }
@@ -158,7 +160,7 @@ bool GecodeSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i
     if (++i == argv.size()) {
       return false;
     }
-    int threads = atoi(argv[i].c_str());
+    const int threads = parse_int_option(argv[i], "-p");
     if (threads >= 1) {
       _opt.threads = threads;
     }
@@ -1632,7 +1634,7 @@ bool GecodeSolverInstance::presolve(Model* originalModel) {
       if (vd->ti()->domain() != nullptr) {
         if (vd->type().isint()) {
           IntBounds old_bounds = compute_int_bounds(_env.envi(), vd->id());
-          long long int old_rangesize = abs(old_bounds.u.toInt() - old_bounds.l.toInt());
+          long long int old_rangesize = std::llabs(old_bounds.u.toInt() - old_bounds.l.toInt());
           if (Expression::isa<SetLit>(vd->ti()->domain())) {
             old_domsize = arg2intset(_env.envi(), vd->ti()->domain()).size();
           } else {

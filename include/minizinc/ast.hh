@@ -398,8 +398,7 @@ protected:
 #ifdef __EMSCRIPTEN__
   __attribute__((noinline))
 #endif
-  static mzn_uintptr_t
-  asPtrDiff(const Expression* e) {
+  static mzn_uintptr_t asPtrDiff(const Expression* e) {
     return reinterpret_cast<mzn_uintptr_t>(e);
   }
 

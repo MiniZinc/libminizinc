@@ -38,7 +38,7 @@ public:
   /// Constructor
   explicit ASTString(const std::string& s);
   /// Constructor
-  ASTString(ASTStringData* s) : _s(s){};
+  ASTString(ASTStringData* s) : _s(s) {};
   /// Copy constructor
   ASTString(const ASTString& s) = default;
   /// Assignment operator
@@ -251,8 +251,8 @@ inline bool operator!=(const std::string& s0, const ASTString& s1) {
 }
 
 inline bool ASTString::operator<(const ASTString& s) const {
-  if (size() == 0) {
-    return 0 < s.size();
+  if (empty()) {
+    return !s.empty();
   }
   unsigned int size = static_cast<unsigned int>(std::min(_s->size(), s.size()));
   int cmp = strncmp(_s->c_str(), s.c_str(), size);
@@ -263,10 +263,10 @@ inline bool ASTString::operator<(const ASTString& s) const {
 }
 inline bool ASTString::endsWith(const std::string& s) const {
   return size() >= s.size() &&
-         (size() == 0 || strncmp(_s->c_str() + size() - s.size(), s.c_str(), s.size()) == 0);
+         (empty() || strncmp(_s->c_str() + size() - s.size(), s.c_str(), s.size()) == 0);
 }
 inline bool ASTString::beginsWith(const std::string& s) const {
-  return size() >= s.size() && (size() == 0 || strncmp(_s->c_str(), s.c_str(), s.size()) == 0);
+  return size() >= s.size() && (empty() || strncmp(_s->c_str(), s.c_str(), s.size()) == 0);
 }
 
 inline std::string ASTString::substr(size_t pos, size_t count) const {

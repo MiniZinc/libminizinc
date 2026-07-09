@@ -154,7 +154,7 @@ void SECCutGen::generate(const MIPWrapper::Output& slvOut, MIPWrapper::CutInput&
           -1e-4 < xij && 1.0 + 1e-4 > xij,  // adjusted from 1e-6 to 1e-4 for CBC. 7.8.19
           "circuit: X[" << (i + 1) << ", " << (j + 1) << "]==" << xij);
       if (1e-4 <= xij) {
-        mapFlow[make_pair(min(i, j), max(i, j))] += xij;
+        mapFlow[make_pair(std::min(i, j), std::max(i, j))] += xij;
       }
     }
   }

@@ -271,12 +271,12 @@ IntVal b_arg_max_float(EnvI& env, Call* call) {
 
 IntVal b_abs_int(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
-  return std::abs(eval_int(env, call->arg(0)));
+  return abs(eval_int(env, call->arg(0)));
 }
 
 FloatVal b_abs_float(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
-  return std::abs(eval_float(env, call->arg(0)));
+  return abs(eval_float(env, call->arg(0)));
 }
 
 bool b_has_bounds_int(EnvI& env, Call* call) {
@@ -1810,10 +1810,10 @@ bool b_annotate(EnvI& env, Call* call) {
 
 FloatVal b_int2float(EnvI& env, Call* call) { return eval_int(env, call->arg(0)); }
 IntVal b_ceil(EnvI& env, Call* call) {
-  return static_cast<IntVal>(std::ceil(eval_float(env, call->arg(0))));
+  return static_cast<IntVal>(ceil(eval_float(env, call->arg(0))));
 }
 IntVal b_floor(EnvI& env, Call* call) {
-  return static_cast<IntVal>(std::floor(eval_float(env, call->arg(0))));
+  return static_cast<IntVal>(floor(eval_float(env, call->arg(0))));
 }
 IntVal b_round(EnvI& env, Call* call) {
   /// Cast to int truncates, so cannot just add 0.5 and cast
@@ -1978,7 +1978,7 @@ Expression* b_default(EnvI& env, Call* call) {
         return arg0.r();
       }
 
-      if (def_t.isPar() && ((def_t.isint() && eval_int(env, call->arg(1)) == 0))) {
+      if (def_t.isPar() && def_t.isint() && eval_int(env, call->arg(1)) == 0) {
         // Default value is 0, may be able to use deopt directly
         auto* hzc = Call::a(Location().introduce(), "had_zero", {arg0.r()});
         hzc->decl(env.model->matchFn(env, hzc, false));
@@ -2013,8 +2013,8 @@ Expression* b_default(EnvI& env, Call* call) {
     return arg0.r();
   }
   if (Expression::type(call->arg(0)).isOpt() && Expression::type(call->arg(0)).dim() == 0) {
-    if (Expression::type(arg0.r()).isvar() && def_t.isPar() &&
-        ((def_t.isint() && eval_int(env, call->arg(1)) == 0))) {
+    if (Expression::type(arg0.r()).isvar() && def_t.isPar() && def_t.isint() &&
+        eval_int(env, call->arg(1)) == 0) {
       // Default value is 0, may be able to use deopt directly
       auto* hzc = Call::a(Location().introduce(), "had_zero", {arg0.r()});
       hzc->decl(env.model->matchFn(env, hzc, false));
@@ -3598,7 +3598,9 @@ IntVal b_enum_prev(EnvI& env, Call* call) {
 }
 
 IntVal b_mzn_compiler_version(EnvI& /*env*/, Call* /*call*/) {
-  return atoi(MZN_VERSION_MAJOR) * 10000 + atoi(MZN_VERSION_MINOR) * 1000 + atoi(MZN_VERSION_PATCH);
+  return parse_int(std::string(MZN_VERSION_MAJOR)) * 10000 +
+         parse_int(std::string(MZN_VERSION_MINOR)) * 1000 +
+         parse_int(std::string(MZN_VERSION_PATCH));
 }
 
 Expression* b_slice(EnvI& env, Call* call) {
@@ -3935,7 +3937,9 @@ void register_builtins(Env& e) {
     rb(env, m, ASTString("index_set_5of6"), t_anyarray6, b_index_set5);
     rb(env, m, ASTString("index_set_6of6"), t_anyarray6, b_index_set6);
   }
-  { rb(env, m, env.constants.ids.array1d, {Type::optvartop(-1)}, b_array1d_list); }
+  {
+    rb(env, m, env.constants.ids.array1d, {Type::optvartop(-1)}, b_array1d_list);
+  }
   {
     std::vector<Type> t_anyarray(2);
     t_anyarray[0] = Type::optvartop(1);
@@ -4283,7 +4287,9 @@ void register_builtins(Env& e) {
     rb(env, m, ASTString("xorall"), t, b_xorall_par);
     rb(env, m, ASTString("iffall"), t, b_iffall_par);
   }
-  { rb(env, m, env.constants.ids.bool_.not_, {Type::parbool()}, b_not_par); }
+  {
+    rb(env, m, env.constants.ids.bool_.not_, {Type::parbool()}, b_not_par);
+  }
   {
     std::vector<Type> t(2);
     t[0] = Type::parbool(-1);
@@ -4569,7 +4575,9 @@ void register_builtins(Env& e) {
     t[1] = Type::parstring();
     rb(env, m, ASTString("string_split"), t, b_string_split);
   }
-  { rb(env, m, ASTString("file_path"), std::vector<Type>(), b_file_path); }
+  {
+    rb(env, m, ASTString("file_path"), std::vector<Type>(), b_file_path);
+  }
   {
     std::vector<Type> t(1);
     t[0] = Type::vartop();
@@ -4860,15 +4868,21 @@ void register_builtins(Env& e) {
     rb(env, m, ASTString("enum_next"), t, b_enum_next);
     rb(env, m, ASTString("enum_prev"), t, b_enum_prev);
   }
-  { rb(env, m, ASTString("mzn_compiler_version"), std::vector<Type>(), b_mzn_compiler_version); }
+  {
+    rb(env, m, ASTString("mzn_compiler_version"), std::vector<Type>(), b_mzn_compiler_version);
+  }
   {
     std::vector<Type> t(2);
     t[0] = Type::varint(1);
     t[1] = Type::parstring();
     rb(env, m, ASTString("fzn_regular"), t, b_regular_from_string, true);
   }
-  { rb(env, m, ASTString("showCheckerOutput"), {}, b_show_checker_output); }
-  { rb(env, m, ASTString("mzn_internal_check_debug_mode"), {}, b_check_debug_mode); }
+  {
+    rb(env, m, ASTString("showCheckerOutput"), {}, b_show_checker_output);
+  }
+  {
+    rb(env, m, ASTString("mzn_internal_check_debug_mode"), {}, b_check_debug_mode);
+  }
   {
     std::vector<Type> t(1);
     t[0] = Type::parstring();

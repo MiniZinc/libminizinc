@@ -42,9 +42,9 @@ protected:
   };
 
 public:
-  explicit GeasVariable(const geas::patom_t& bv0) : _t(BOOL_TYPE), bv(bv0){};
-  explicit GeasVariable(const geas::fp::fpvar& fv0) : _t(FLOAT_TYPE), fv(fv0){};
-  explicit GeasVariable(const geas::intvar& iv0) : _t(INT_TYPE), iv(iv0){};
+  explicit GeasVariable(const geas::patom_t& bv0) : _t(BOOL_TYPE), bv(bv0) {};
+  explicit GeasVariable(const geas::fp::fpvar& fv0) : _t(FLOAT_TYPE), fv(fv0) {};
+  explicit GeasVariable(const geas::intvar& iv0) : _t(INT_TYPE), iv(iv0) {};
 
   GeasVariable(const GeasVariable& gv) : _t(gv._t) {
     switch (_t) {

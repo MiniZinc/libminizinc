@@ -84,8 +84,9 @@ struct FlatteningOptions {
         supressWarnings(false),
         encapsulateJSON(false),
         ignoreStdlib(false) {
-    // Initialise random number generator seed.
-    // Try random_device, if that doesn't work, use time.
+    randomSeed = generateRandomSeed();
+  }
+  static long unsigned int generateRandomSeed() {
     std::vector<long unsigned int> seeds;
     try {
       std::random_device rdev("/dev/urandom");
@@ -104,15 +105,15 @@ struct FlatteningOptions {
     seeds.push_back(time_seed);
     std::seed_seq seq(seeds.begin(), seeds.end());
     std::mt19937 eng(seq);
-    randomSeed = eng();
+    return eng();
   }
 };
 
 class Pass {
 public:
-  Pass(){};
+  Pass() {};
   virtual Env* run(Env* env, std::ostream& log) = 0;
-  virtual ~Pass(){};
+  virtual ~Pass() {};
 };
 
 /// Flatten model in environment \a e

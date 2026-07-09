@@ -8,6 +8,7 @@
 
 #include <exception>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -38,8 +39,8 @@ public:
   const char* expression;
   const char* file;
   int line;
-  std::string message;
-  std::string report;
+  std::shared_ptr<const std::string> message;
+  std::shared_ptr<const std::string> report;
 
   /** Exception constructor. Use with the macro assert/should_not_happen.
    * If not, WARNING: stream must be a std::ostringstream&
@@ -47,14 +48,14 @@ public:
    */
   NLException(const char* expression, const char* file, int line, std::ostream& stream)
       : expression(expression), file(file), line(line) {
-    message = static_cast<std::ostringstream&>(stream).str();
+    message = std::make_shared<const std::string>(static_cast<std::ostringstream&>(stream).str());
     std::ostringstream outputStream;
 
     if (expression == nullptr) {
       outputStream << "Something should not have happen in file '" << file << "' line " << line
                    << ". Message:" << std::endl;
-      if (!message.empty()) {
-        outputStream << message << std::endl;
+      if (!message->empty()) {
+        outputStream << *message << std::endl;
       } else {
         outputStream << "No message provided..." << std::endl;
       }
@@ -68,11 +69,11 @@ public:
       outputStream << " failed in file '" << file << "' line " << line << std::endl;
     }
     outputStream << "Note: the NL component is still in development!" << std::endl;
-    report = outputStream.str();
+    report = std::make_shared<const std::string>(outputStream.str());
   }
 
   /** Exception interface */
-  const char* what() const noexcept override { return report.c_str(); }
+  const char* what() const noexcept override { return report->c_str(); }
 
   ~NLException() noexcept override = default;
 };

@@ -2968,8 +2968,8 @@ public:
         bounds.emplace_back(m, n);
       }
     } else if (c->id() == env.constants.ids.bool2int) {
-      bounds.back().first = std::max(0, bounds.back().first);
-      bounds.back().second = std::min(1, bounds.back().second);
+      bounds.back().first = std::max(IntVal(0), bounds.back().first);
+      bounds.back().second = std::min(IntVal(1), bounds.back().second);
     } else if (c->id() == env.constants.ids.abs) {
       Bounds b0 = bounds.back();
       if (b0.first < 0) {

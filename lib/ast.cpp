@@ -59,8 +59,8 @@ Location::LocVec* Location::LocVec::a(const ASTString& filename, unsigned int fi
         last_column < (1 << 7)) {
       long long int combined = first_line;
       combined |= (last_line - first_line) << 8;
-      combined |= (first_column) << (8 + 7);
-      combined |= (last_column) << (8 + 7 + 6);
+      combined |= first_column << (8 + 7);
+      combined |= last_column << (8 + 7 + 6);
       auto* v = static_cast<LocVec*>(alloc(2));
       new (v) LocVec(filename, combined);
       return v;
@@ -99,12 +99,12 @@ Location::LocVec::LocVec(const ASTString& filename, unsigned int first_line,
   *(_data + 4) = IntLit::a(last_column);
 }
 
-Location Location::nonalloc;
+Location Location::nonalloc;  // NOLINT(bugprone-throwing-static-initialization)
 
-Type Type::unboxedint = Type::parint();
-Type Type::unboxedfloat = Type::parfloat();
+Type Type::unboxedint = Type::parint();      // NOLINT(bugprone-throwing-static-initialization)
+Type Type::unboxedfloat = Type::parfloat();  // NOLINT(bugprone-throwing-static-initialization)
 
-Annotation Annotation::empty;
+Annotation Annotation::empty;  // NOLINT(bugprone-throwing-static-initialization)
 
 std::string Location::toString() const {
   std::ostringstream os;

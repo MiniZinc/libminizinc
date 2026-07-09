@@ -15,12 +15,12 @@
 namespace MiniZinc {
 
 void SyntaxError::print(std::ostream& os) const {
-  for (const auto& filename : _includeStack) {
+  for (const auto& filename : *_includeStack) {
     os << "(included from file '" << filename << "')\n";
   }
   os << loc() << ":\n";
-  if (!_currentLine.empty()) {
-    os << _currentLine << "\n";
+  if (!_currentLine->empty()) {
+    os << *_currentLine << "\n";
   }
   os << "Error: " << msg() << std::endl;
 }
@@ -28,10 +28,10 @@ void SyntaxError::print(std::ostream& os) const {
 void SyntaxError::json(std::ostream& os) const {
   os << "{\"type\": \"error\", \"what\": \"" << Printer::escapeStringLit(std::string(what()))
      << "\", \"location\": " << loc().toJSON() << ", ";
-  if (!_includeStack.empty()) {
+  if (!_includeStack->empty()) {
     os << "\"includedFrom\": [";
     bool first = true;
-    for (const auto& filename : _includeStack) {
+    for (const auto& filename : *_includeStack) {
       if (first) {
         first = false;
       } else {
@@ -46,7 +46,7 @@ void SyntaxError::json(std::ostream& os) const {
 
 void CyclicIncludeError::print(std::ostream& os) const {
   Exception::print(os);
-  for (const auto& filename : _cycle) {
+  for (const auto& filename : *_cycle) {
     os << "  " << filename << "\n";
   }
 }
@@ -55,7 +55,7 @@ void CyclicIncludeError::json(std::ostream& os) const {
   os << "{\"type\": \"error\", \"what\": \"" << Printer::escapeStringLit(std::string(what()))
      << "\", \"cycle\": [";
   bool first = true;
-  for (const auto& filename : _cycle) {
+  for (const auto& filename : *_cycle) {
     if (first) {
       first = false;
     } else {
@@ -67,15 +67,15 @@ void CyclicIncludeError::json(std::ostream& os) const {
 }
 
 LocationException::LocationException(EnvI& env, const Location& loc, const std::string& msg)
-    : Exception(msg), _stack(env), _loc(loc) {}
+    : Exception(msg), _stack(std::make_shared<StackDump>(env)), _loc(loc) {}
 
 LocationException::LocationException(const Location& loc, const std::string& msg)
-    : Exception(msg), _loc(loc) {}
+    : Exception(msg), _stack(std::make_shared<StackDump>()), _loc(loc) {}
 
 void LocationException::print(std::ostream& os) const {
   Exception::print(os);
-  if (_dumpStack && !_stack.empty()) {
-    _stack.print(os);
+  if (_dumpStack && !_stack->empty()) {
+    _stack->print(os);
   } else {
     os << loc() << "\n";
   }
@@ -85,9 +85,9 @@ void LocationException::json(std::ostream& os) const {
   os << "{\"type\": \"error\", \"what\": \"" << Printer::escapeStringLit(std::string(what()))
      << "\", \"location\": " << loc().toJSON() << ", \"message\": \""
      << Printer::escapeStringLit(msg()) << "\"";
-  if (_dumpStack && !_stack.empty()) {
+  if (_dumpStack && !_stack->empty()) {
     os << ", \"stack\": ";
-    _stack.json(os);
+    _stack->json(os);
   }
   os << "}" << std::endl;
 }

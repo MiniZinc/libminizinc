@@ -15,6 +15,7 @@
 #include <minizinc/timer.hh>
 
 #include <cassert>
+#include <cerrno>
 #include <chrono>
 #include <cstring>
 #include <ctime>
@@ -41,6 +42,14 @@ inline long long int round_to_longlong(double v) {
 #endif
 
 namespace MiniZinc {
+
+int parse_int(const std::string& value);
+long parse_long(const std::string& value);
+unsigned long parse_unsigned_long(const std::string& value);
+unsigned int parse_unsigned_int(const std::string& value);
+int parse_int_option(const std::string& value, const std::string& option);
+long parse_long_option(const std::string& value, const std::string& option);
+unsigned long parse_unsigned_long_option(const std::string& value, const std::string& option);
 
 // #define MZN_PRINTATONCE_
 #ifdef MZN_PRINTATONCE_
@@ -241,19 +250,31 @@ public:
   SemanticVersion(unsigned int major, unsigned int minor, unsigned int patch)
       : major{major}, minor{minor}, patch{patch} {};
   SemanticVersion(std::string version) {
-    // Deal with versions starting/ending with .
-    if (version.compare(0, 1, ".") == 0) {
-      version = "0" + version;
+    auto parseComponent = [](const std::string& component) {
+      if (component.empty()) {
+        return 0U;
+      }
+      try {
+        return parse_unsigned_int(component);
+      } catch (const std::exception&) {
+        return 0U;
+      }
+    };
+    size_t begin = 0;
+    size_t end = version.find('.');
+    major = parseComponent(version.substr(begin, end - begin));
+    if (end == std::string::npos) {
+      return;
     }
-    if (version.compare(version.size() - 1, 1, ".") == 0) {
-      version.append("0");
+    begin = end + 1;
+    end = version.find('.', begin);
+    minor = parseComponent(version.substr(begin, end - begin));
+    if (end == std::string::npos) {
+      return;
     }
-    // Parse version number
-#ifdef _WIN32
-    sscanf_s(version.c_str(), "%d.%d.%d", &major, &minor, &patch);
-#else
-    sscanf(version.c_str(), "%d.%d.%d", &major, &minor, &patch);
-#endif
+    begin = end + 1;
+    end = version.find('.', begin);
+    patch = parseComponent(version.substr(begin, end - begin));
   }
   bool operator<(const SemanticVersion& other) const {
     if (major < other.major) {

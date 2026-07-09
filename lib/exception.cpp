@@ -35,12 +35,12 @@ void Exception::print(std::ostream& os) const {
   if (!std::string(what()).empty()) {
     os << what() << ": ";
   }
-  os << _msg << std::endl;
+  os << msg() << std::endl;
 }
 
 void Exception::json(std::ostream& os) const {
   os << "{\"type\": \"error\", \"what\": \"" << Printer::escapeStringLit(std::string(what()))
-     << "\", \"message\": \"" << Printer::escapeStringLit(_msg) << "\"}" << std::endl;
+     << "\", \"message\": \"" << Printer::escapeStringLit(msg()) << "\"}" << std::endl;
 }
 
 void InternalError::print(std::ostream& os) const {
@@ -52,8 +52,8 @@ void InternalError::print(std::ostream& os) const {
 
 void BadOption::print(std::ostream& os) const {
   os << msg() << std::endl;
-  if (!_usage.empty()) {
-    os << _usage << std::endl;
+  if (!usage().empty()) {
+    os << usage() << std::endl;
   }
 }
 

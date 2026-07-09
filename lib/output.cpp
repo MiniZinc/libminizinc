@@ -1570,8 +1570,7 @@ void process_toplevel_output_vars(EnvI& e) {
           _e.outputVars.emplace_back(vd);
         } else if (Expression::ann(vd).contains(_e.constants.ann.output) ||
                    (!_isChecker && vd->id()->idn() == -1 && vd->id()->v() == "_objective") ||
-                   ((_isChecker && vd->id()->idn() == -1 &&
-                     vd->id()->v() == "_checker_objective"))) {
+                   (_isChecker && vd->id()->idn() == -1 && vd->id()->v() == "_checker_objective")) {
           // Whether or not to actually include will be determined later
           _e.outputVars.emplace_back(vd);
         } else if (!hasAddToOutput) {

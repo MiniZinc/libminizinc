@@ -48,9 +48,9 @@ std::string get_file_contents(std::ifstream& in) {
       contents = MiniZinc::FileUtils::decode_base64(contents);
       MiniZinc::FileUtils::inflate_string(contents);
     }
-    return (contents);
+    return contents;
   }
-  throw(errno);
+  throw errno;
 }
 }  // namespace
 

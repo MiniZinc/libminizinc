@@ -23,12 +23,8 @@
 
 namespace MiniZinc {
 class IntVal;
-}
-namespace std {
-MiniZinc::IntVal abs(const MiniZinc::IntVal& x);
-}
 
-namespace MiniZinc {
+IntVal abs(const IntVal& x);
 
 class FloatVal;
 
@@ -38,7 +34,6 @@ class IntVal {
   friend IntVal operator*(const IntVal& x, const IntVal& y);
   friend IntVal operator/(const IntVal& x, const IntVal& y);
   friend IntVal operator%(const IntVal& x, const IntVal& y);
-  friend IntVal std::abs(const MiniZinc::IntVal& x);
   friend bool operator==(const IntVal& x, const IntVal& y);
   friend class FloatVal;
 
@@ -304,31 +299,20 @@ std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& o
   }
   return os << s.toInt();
 }
-
+inline IntVal abs(const IntVal& x) {
+  if (!x.isFinite()) {
+    return IntVal::infinity();
+  }
+  return x < 0 ? -x : x;
+}
 }  // namespace MiniZinc
 
 namespace std {
-inline MiniZinc::IntVal abs(const MiniZinc::IntVal& x) {
-  if (!x.isFinite()) {
-    return MiniZinc::IntVal::infinity();
-  }
-  return x < 0 ? MiniZinc::IntVal::safeMinus(0, x._v) : x;
-}
-
-inline MiniZinc::IntVal min(const MiniZinc::IntVal& x, const MiniZinc::IntVal& y) {
-  return x <= y ? x : y;
-}
-inline MiniZinc::IntVal max(const MiniZinc::IntVal& x, const MiniZinc::IntVal& y) {
-  return x >= y ? x : y;
-}
-
 template <>
 struct equal_to<MiniZinc::IntVal> {
 public:
   bool operator()(const MiniZinc::IntVal& s0, const MiniZinc::IntVal& s1) const { return s0 == s1; }
 };
-
-inline MiniZinc::FloatVal abs(const MiniZinc::FloatVal& x);
 }  // namespace std
 
 namespace std {
@@ -346,7 +330,6 @@ class FloatVal {
   friend FloatVal operator-(const FloatVal& x, const FloatVal& y);
   friend FloatVal operator*(const FloatVal& x, const FloatVal& y);
   friend FloatVal operator/(const FloatVal& x, const FloatVal& y);
-  friend FloatVal std::abs(const MiniZinc::FloatVal& x);
   friend bool operator==(const FloatVal& x, const FloatVal& y);
   friend class IntVal;
 
@@ -533,36 +516,28 @@ std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& o
 inline IntVal::IntVal(const FloatVal& v)
     : _v(static_cast<long long int>(v._v)), _infinity(!v.isFinite()) {}
 
+inline FloatVal abs(const FloatVal& x) {
+  if (!x.isFinite()) {
+    return FloatVal::infinity();
+  }
+  return x.toDouble() < 0 ? FloatVal(-x.toDouble()) : x;
+}
+inline FloatVal floor(const FloatVal& x) {
+  if (!x.isFinite()) {
+    return x;
+  }
+  return std::floor(x.toDouble());
+}
+inline FloatVal ceil(const FloatVal& x) {
+  if (!x.isFinite()) {
+    return x;
+  }
+  return std::ceil(x.toDouble());
+}
+
 }  // namespace MiniZinc
 
 namespace std {
-inline MiniZinc::FloatVal abs(const MiniZinc::FloatVal& x) {
-  if (!x.isFinite()) {
-    return MiniZinc::FloatVal::infinity();
-  }
-  return x.toDouble() < 0 ? MiniZinc::FloatVal(-x.toDouble()) : x;
-}
-
-inline MiniZinc::FloatVal min(const MiniZinc::FloatVal& x, const MiniZinc::FloatVal& y) {
-  return x <= y ? x : y;
-}
-inline MiniZinc::FloatVal max(const MiniZinc::FloatVal& x, const MiniZinc::FloatVal& y) {
-  return x >= y ? x : y;
-}
-
-inline MiniZinc::FloatVal floor(const MiniZinc::FloatVal& x) {
-  if (!x.isFinite()) {
-    return x;
-  }
-  return floor(x.toDouble());
-}
-inline MiniZinc::FloatVal ceil(const MiniZinc::FloatVal& x) {
-  if (!x.isFinite()) {
-    return x;
-  }
-  return ceil(x.toDouble());
-}
-
 template <>
 struct equal_to<MiniZinc::FloatVal> {
 public:

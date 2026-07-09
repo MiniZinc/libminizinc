@@ -87,9 +87,9 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expres
       return OptimizeRegistry::CS_FAILED;
     }
     if (c->id() == env.constants.ids.int_.lin_le) {
-      IntVal ac = std::abs(coeffs[0]);
+      IntVal ac = abs(coeffs[0]);
       IntVal rd = eval_int(env, c->arg(2)) - d;
-      IntVal ad = std::abs(rd);
+      IntVal ad = abs(rd);
       IntVal nd;
       if (ad % ac == 0) {
         nd = rd / coeffs[0];
@@ -550,7 +550,7 @@ public:
     OptimizeRegistry::registry().reg(Constants::constants().ids.int_.le, o_int_le);
   }
   ~Register() { delete _keepAliveModel; }
-} _r;
+} _r;  // NOLINT(bugprone-throwing-static-initialization)
 
 }  // namespace Optimizers
 

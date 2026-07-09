@@ -12,6 +12,9 @@
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/utils.hh>
 
+#include <limits>
+#include <stdexcept>
+
 #if _WIN32
 #include <Windows.h>
 #include <io.h>
@@ -23,6 +26,69 @@
 #endif
 
 namespace MiniZinc {
+
+int parse_int(const std::string& value) {
+  size_t parsed = 0;
+  const int result = std::stoi(value, &parsed, 10);
+  if (parsed != value.size()) {
+    throw std::invalid_argument("Invalid integer");
+  }
+  return result;
+}
+
+long parse_long(const std::string& value) {
+  size_t parsed = 0;
+  const long result = std::stol(value, &parsed, 10);
+  if (parsed != value.size()) {
+    throw std::invalid_argument("Invalid integer");
+  }
+  return result;
+}
+
+unsigned long parse_unsigned_long(const std::string& value) {
+  const size_t first = value.find_first_not_of(" \t\n\r\f\v");
+  if (first != std::string::npos && value[first] == '-') {
+    throw std::out_of_range("Invalid unsigned integer");
+  }
+  size_t parsed = 0;
+  const unsigned long result = std::stoul(value, &parsed, 10);
+  if (parsed != value.size()) {
+    throw std::invalid_argument("Invalid unsigned integer");
+  }
+  return result;
+}
+
+unsigned int parse_unsigned_int(const std::string& value) {
+  const unsigned long parsed = parse_unsigned_long(value);
+  if (parsed > std::numeric_limits<unsigned int>::max()) {
+    throw std::out_of_range("Invalid unsigned integer");
+  }
+  return static_cast<unsigned int>(parsed);
+}
+
+int parse_int_option(const std::string& value, const std::string& option) {
+  try {
+    return parse_int(value);
+  } catch (const std::exception&) {
+    throw BadOption("Invalid integer argument for " + option);
+  }
+}
+
+long parse_long_option(const std::string& value, const std::string& option) {
+  try {
+    return parse_long(value);
+  } catch (const std::exception&) {
+    throw BadOption("Invalid integer argument for " + option);
+  }
+}
+
+unsigned long parse_unsigned_long_option(const std::string& value, const std::string& option) {
+  try {
+    return parse_unsigned_long(value);
+  } catch (const std::exception&) {
+    throw BadOption("Invalid integer argument for " + option);
+  }
+}
 
 OverflowHandler::OverflowHandler() {}
 

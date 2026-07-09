@@ -27,7 +27,6 @@
 #include <minizinc/solver.hh>
 
 #include <chrono>
-#include <cstdlib>
 #include <ctime>
 #include <fstream>
 #include <future>
@@ -73,6 +72,7 @@
 #include <minizinc/solvers/mzn_solverinstance.hh>
 #include <minizinc/solvers/nl/nl_solverfactory.hh>
 #include <minizinc/solvers/nl/nl_solverinstance.hh>
+#include <minizinc/utils.hh>
 
 using namespace std;
 using namespace MiniZinc;
@@ -589,14 +589,15 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       if (i == argc) {
         throw BadOption("Argument required for --time-limit");
       }
-      flagOverallTimeLimit = std::chrono::milliseconds(atoi(argv[i].c_str()));
+      flagOverallTimeLimit = std::chrono::milliseconds(parse_long_option(argv[i], "--time-limit"));
     } else if (argv[i] == "-t" || argv[i] == "--solver-time-limit" ||
                argv[i] == "--fzn-time-limit") {
       ++i;
       if (i == argc) {
         throw BadOption("Argument required for --solver-time-limit");
       }
-      flagSolverTimeLimit = std::chrono::milliseconds(atoi(argv[i].c_str()));
+      flagSolverTimeLimit =
+          std::chrono::milliseconds(parse_long_option(argv[i], "--solver-time-limit"));
     } else if (argv[i] == "--solver") {
       ++i;
       if (i == argc) {
@@ -624,7 +625,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
         throw BadOption("Argument required for --random-seed");
       }
       flagRandomSeed = true;
-      randomSeed = atoi(argv[i].c_str());
+      randomSeed = parse_unsigned_long_option(argv[i], "--random-seed");
     } else if (argv[i] == "--compiler-statistics") {
       flagCompilerStatistics = true;
     } else if (argv[i] == "--json-stream") {

@@ -285,7 +285,7 @@ public:
 
 struct TypeList : public StructType {
   const std::vector<Type>& tt;
-  TypeList(const std::vector<Type>& ts) : tt(ts){};
+  TypeList(const std::vector<Type>& ts) : tt(ts) {};
   unsigned int size() const override { return static_cast<unsigned int>(tt.size()); }
   Type operator[](unsigned int i) const override { return tt[i]; };
 };
@@ -754,11 +754,11 @@ public:
   }
   static Val floorDiv(Val v0, Val v1) {
     return static_cast<long long int>(
-        floor(static_cast<double>(v0.toInt()) / static_cast<double>(v1.toInt())));
+        std::floor(static_cast<double>(v0.toInt()) / static_cast<double>(v1.toInt())));
   }
   static Val ceilDiv(Val v0, Val v1) {
     return static_cast<long long int>(
-        ceil(static_cast<double>(v0.toInt()) / static_cast<double>(v1.toInt())));
+        std::ceil(static_cast<double>(v0.toInt()) / static_cast<double>(v1.toInt())));
   }
   static IntLit* newLit(Val v) { return IntLit::a(v); }
   static IntVal v(const IntLit* il) { return IntLit::v(il); }

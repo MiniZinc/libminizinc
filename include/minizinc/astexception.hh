@@ -17,22 +17,24 @@
 #include <minizinc/model.hh>
 #include <minizinc/stackdump.hh>
 
+#include <memory>
 #include <string>
 
 namespace MiniZinc {
 
 class CyclicIncludeError : public Exception, public GCMarker {
 protected:
-  std::vector<ASTString> _cycle;
+  std::shared_ptr<const std::vector<ASTString>> _cycle;
 
   void mark() override {
-    for (auto s : _cycle) {
+    for (auto s : *_cycle) {
       s.mark();
     }
   }
 
 public:
-  CyclicIncludeError(std::vector<ASTString> cycle) : Exception(""), _cycle(std::move(cycle)) {}
+  CyclicIncludeError(std::vector<ASTString> cycle)
+      : Exception(""), _cycle(std::make_shared<const std::vector<ASTString>>(std::move(cycle))) {}
   ~CyclicIncludeError() throw() override {}
   const char* what() const throw() override { return "cyclic include error"; }
 
@@ -42,13 +44,13 @@ public:
 
 class LocationException : public Exception, public GCMarker {
 protected:
-  StackDump _stack;
+  std::shared_ptr<StackDump> _stack;
   Location _loc;
   bool _dumpStack = false;
 
   void mark() override {
     _loc.mark();
-    _stack.mark();
+    _stack->mark();
   }
 
 public:
@@ -66,23 +68,26 @@ public:
 
 class SyntaxError : public LocationException {
 protected:
-  std::string _currentLine;
-  std::vector<ASTString> _includeStack;
+  std::shared_ptr<const std::string> _currentLine;
+  std::shared_ptr<const std::vector<ASTString>> _includeStack;
 
   void mark() override {
     LocationException::mark();
-    for (auto s : _includeStack) {
+    for (auto s : *_includeStack) {
       s.mark();
     }
   }
 
 public:
-  SyntaxError(const Location& loc, const std::string& msg) : LocationException(loc, msg) {}
+  SyntaxError(const Location& loc, const std::string& msg)
+      : LocationException(loc, msg),
+        _currentLine(std::make_shared<const std::string>()),
+        _includeStack(std::make_shared<const std::vector<ASTString>>()) {}
   SyntaxError(const Location& loc, std::string currentLine, std::vector<ASTString> includeStack,
               const std::string& msg)
       : LocationException(loc, msg),
-        _currentLine(std::move(currentLine)),
-        _includeStack(std::move(includeStack)) {}
+        _currentLine(std::make_shared<const std::string>(std::move(currentLine))),
+        _includeStack(std::make_shared<const std::vector<ASTString>>(std::move(includeStack))) {}
   ~SyntaxError() throw() override {}
   const char* what() const throw() override { return "syntax error"; }
 
@@ -114,7 +119,7 @@ public:
       : LocationException(env, loc, "") {
     std::ostringstream ss;
     ss << msg << " '" << name << "'";
-    _msg = ss.str();
+    setMsg(ss.str());
   }
   ~EvalError() throw() override {}
   const char* what() const throw() override { return "evaluation error"; }

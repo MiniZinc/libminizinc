@@ -21,15 +21,15 @@
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/solver_config.hh>
 #include <minizinc/typecheck.hh>
+#include <minizinc/utils.hh>
 
+#include <cstdlib>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 
 using namespace MiniZinc;
 using namespace std;
-
-bool beginswith(const string& s, const string& t) { return s.compare(0, t.length(), t) == 0; }
 
 int main(int argc, char** argv) {
   string filename;
@@ -99,7 +99,7 @@ int main(int argc, char** argv) {
         if (i == argc) {
           goto error;
         }
-        toplevel_groups = atoi(argv[i]);
+        toplevel_groups = parse_int_option(argv[i], "--toplevel-groups");
       } else if (string(argv[i]) == "--html-header" || string(argv[i]) == "--rst-header") {
         i++;
         if (i == argc) {
@@ -303,6 +303,9 @@ int main(int argc, char** argv) {
       std::cerr << "Done." << std::endl;
     }
     return 0;
+  } catch (Exception& e) {
+    std::cerr << e.what() << ": " << e.msg() << std::endl;
+    exit(EXIT_FAILURE);
   } catch (...) {
     std::cerr << "  UNHANDLED EXCEPTION." << std::endl;
     exit(EXIT_FAILURE);

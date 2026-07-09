@@ -15,11 +15,10 @@
 
 %top{
 #include <cstdint>
+#include <string>
 }
 
 %{
-#include <cstdlib>
-
 #define YY_DECL int yylex()
 
 #include <minizinc/support/regex.hh>
@@ -29,7 +28,7 @@
 %%
 
 [ \t\n] { /* ignore white space */ }
-[0-9]+  { regex_yylval.iValue = std::atoi(regex_yytext); return R_INTEGER; }
+[0-9]+  { regex_yylval.iValue = std::stoi(std::string(regex_yytext)); return R_INTEGER; }
 "|"     { return R_UNION; }
 "+"     { return R_PLUS; }
 "*"     { return R_STAR; }

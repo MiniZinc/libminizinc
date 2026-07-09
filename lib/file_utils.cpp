@@ -668,37 +668,37 @@ void inflate_string(std::string& s) {
       if ((cc[3] & 0x4) != 0) {
         dataStart += 2;
         if (dataStart >= cc + s.size()) {
-          throw(-1);
+          throw -1;
         }
       }
       if ((cc[3] & 0x8) != 0) {
         while (*dataStart != '\0') {
           dataStart++;
           if (dataStart >= cc + s.size()) {
-            throw(-1);
+            throw -1;
           }
         }
         dataStart++;
         if (dataStart >= cc + s.size()) {
-          throw(-1);
+          throw -1;
         }
       }
       if ((cc[3] & 0x10) != 0) {
         while (*dataStart != '\0') {
           dataStart++;
           if (dataStart >= cc + s.size()) {
-            throw(-1);
+            throw -1;
           }
         }
         dataStart++;
         if (dataStart >= cc + s.size()) {
-          throw(-1);
+          throw -1;
         }
       }
       if ((cc[3] & 0x2) != 0) {
         dataStart += 2;
         if (dataStart >= cc + s.size()) {
-          throw(-1);
+          throw -1;
         }
       }
       dataLen = s.size() - (dataStart - cc);
@@ -713,7 +713,7 @@ void inflate_string(std::string& s) {
     stream.avail_out = BUF_SIZE;
     int status = inflateInit2(&stream, windowBits);
     if (status != Z_OK) {
-      throw(status);
+      throw status;
     }
     std::ostringstream oss;
     while (true) {
@@ -728,12 +728,12 @@ void inflate_string(std::string& s) {
         break;
       }
       if (status != Z_OK) {
-        throw(status);
+        throw status;
       }
     }
     status = inflateEnd(&stream);
     if (status != Z_OK) {
-      throw(status);
+      throw status;
     }
     s = oss.str();
   }
@@ -746,7 +746,7 @@ std::string deflate_string(const std::string& s) {
                         static_cast<mz_ulong>(s.size()));
   if (status != Z_OK) {
     ::free(cmpr);
-    throw(status);
+    throw status;
   }
   std::string ret(reinterpret_cast<const char*>(cmpr), compressedLength);
   ::free(cmpr);

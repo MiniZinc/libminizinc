@@ -917,7 +917,9 @@ EnvI::EnvI(Model* model0, std::ostream& outstream0, std::ostream& errstream0)
       _flat(new Model),
       _failed(false),
       _ids(0),
-      _collectVardecls(false) {
+      _collectVardecls(false),
+      _g(static_cast<std::default_random_engine::result_type>(
+          FlatteningOptions::generateRandomSeed())) {
   MZN_FILL_REIFY_MAP(int_, lin_eq);
   MZN_FILL_REIFY_MAP(int_, lin_le);
   MZN_FILL_REIFY_MAP(int_, lin_ne);

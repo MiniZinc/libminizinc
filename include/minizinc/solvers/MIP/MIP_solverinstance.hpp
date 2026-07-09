@@ -774,8 +774,8 @@ void p_lin(SolverInstanceBase& si, const Call* call, typename MIPWrapper::LinCon
   /// Check feas-ty
   if (coefs.empty()) {
     if ((MIPWrapper::LinConType::EQ == lt && 1e-5 < fabs(rhs)) ||
-        (MIPWrapper::LinConType::LQ == lt && -1e-5 > (rhs)) ||
-        (MIPWrapper::LinConType::GQ == lt && 1e-5 < (rhs))) {
+        (MIPWrapper::LinConType::LQ == lt && -1e-5 > rhs) ||
+        (MIPWrapper::LinConType::GQ == lt && 1e-5 < rhs)) {
       si.setStatus(SolverInstance::UNSAT);
       if (gi.getMIPWrapper()->fVerbose) {
         std::cerr << "  Constraint '" << *call << "' seems infeasible: simplified to 0 (rel) "
@@ -831,8 +831,8 @@ void p_non_lin(SolverInstanceBase& si, const Call* call, typename MIPWrapper::Li
   /// Check feas-ty
   if (coefs.empty()) {
     if ((MIPWrapper::LinConType::EQ == nCmp && 1e-5 < fabs(rhs)) ||
-        (MIPWrapper::LinConType::LQ == nCmp && -1e-5 > (rhs)) ||
-        (MIPWrapper::LinConType::GQ == nCmp && 1e-5 < (rhs))) {
+        (MIPWrapper::LinConType::LQ == nCmp && -1e-5 > rhs) ||
+        (MIPWrapper::LinConType::GQ == nCmp && 1e-5 < rhs)) {
       si.setStatus(SolverInstance::UNSAT);
       if (gi.getMIPWrapper()->fVerbose) {
         std::cerr << "  Constraint '" << *call << "' seems infeasible: simplified to 0 (rel) "

@@ -149,12 +149,12 @@ struct Interval {
   N left = infMinus(), right = infPlus();
   mutable VarDecl* varFlag = nullptr;
   /*constexpr*/ static N infMinus() {
-    return (std::numeric_limits<N>::has_infinity) ? -std::numeric_limits<N>::infinity()
-                                                  : std::numeric_limits<N>::lowest();
+    return std::numeric_limits<N>::has_infinity ? -std::numeric_limits<N>::infinity()
+                                                : std::numeric_limits<N>::lowest();
   }
   /*constexpr*/ static N infPlus() {
-    return (std::numeric_limits<N>::has_infinity) ? std::numeric_limits<N>::infinity()
-                                                  : std::numeric_limits<N>::max();
+    return std::numeric_limits<N>::has_infinity ? std::numeric_limits<N>::infinity()
+                                                : std::numeric_limits<N>::max();
   }
   Interval(N a = infMinus(), N b = infPlus()) : left(a), right(b) {}
   bool operator<(const Interval& intv) const { return left < intv.left; }
@@ -266,7 +266,7 @@ typedef LinEqHelper<std::vector<double>, std::vector<VarDecl*> > LinEq;
 //       double rhs;
 //     };
 
-std::vector<double> MIPD_stats(N_POSTs_size);
+std::vector<double> MIPD_stats(N_POSTs_size);  // NOLINT(bugprone-throwing-static-initialization)
 
 template <class T>
 static std::vector<T> make_vec(T t1, T t2) {
@@ -1706,9 +1706,9 @@ private:
         MZN_MIPD_assert_hard(pp.size() >= bnds.right - bnds.left + 1);
         MZN_MIPD_assert_hard(iMin <= bnds.left);
         for (const auto& intv : SS) {
-          for (long long vv = static_cast<long long>(std::max(double(iMin), ceil(intv.left)));
-               vv <= static_cast<long long>(
-                         std::min(static_cast<double>(iMin + pp.size() - 1), floor(intv.right)));
+          for (long long vv = static_cast<long long>(std::max(double(iMin), std::ceil(intv.left)));
+               vv <= static_cast<long long>(std::min(static_cast<double>(iMin + pp.size() - 1),
+                                                     std::floor(intv.right)));
                ++vv) {
             vIntvFlags.push_back(pp[vv - iMin]);
           }
@@ -1806,10 +1806,8 @@ private:
       MZN_MIPD_assert_hard(CMPT_EQ == nCmpType || CMPT_LE == nCmpType);
       DBGOUT_MIPD_SELF(  // LinEq leq; leq.coefs=coefs; leq.vd=vars; leq.rhs=rhs;
           DBGOUT_MIPD_FLUSH(" ADDING " << (CMPT_EQ == nCmpType ? "LIN_EQ" : "LIN_LE") << ": [ ");
-          for (auto c
-               : coefs) DBGOUT_MIPD_FLUSH(c << ',');
-          DBGOUT_MIPD_FLUSH(" ] * [ "); for (auto v
-                                             : vars) {
+          for (auto c : coefs) DBGOUT_MIPD_FLUSH(c << ','); DBGOUT_MIPD_FLUSH(" ] * [ ");
+          for (auto v : vars) {
             MZN_MIPD_assert_hard(!v->isa<VarDecl>());
             if (v->isa<Id>()) DBGOUT_MIPD_FLUSH(v->dynamicCast<Id>()->str() << ',');
             //             else if ( v->isa<VarDecl>() )

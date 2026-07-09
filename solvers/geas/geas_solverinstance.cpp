@@ -11,8 +11,10 @@
 
 #include <minizinc/solvers/geas/geas_constraints.hh>
 #include <minizinc/solvers/geas_solverinstance.hh>
+#include <minizinc/utils.hh>
 
 namespace MiniZinc {
+
 GeasSolverInstance::GeasSolverInstance(Env& env, std::ostream& log,
                                        SolverInstanceBase::Options* opt)
     : SolverInstanceImpl<GeasTypes>(env, log, opt), _flat(env.flat()) {
@@ -726,7 +728,7 @@ bool GeasSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
     if (++i == argv.size()) {
       return false;
     }
-    int nodes = atoi(argv[i].c_str());
+    const int nodes = parse_int_option(argv[i], "--conflicts");
     if (nodes >= 0) {
       _opt->conflicts = nodes;
     }
@@ -736,7 +738,7 @@ bool GeasSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
     if (++i == argv.size()) {
       return false;
     }
-    int n = atoi(argv[i].c_str());
+    const int n = parse_int_option(argv[i], "-n");
     if (n >= 0) {
       _opt->nrSolutions = n;
     }
@@ -744,7 +746,7 @@ bool GeasSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
     if (++i == argv.size()) {
       return false;
     }
-    int limit = atoi(argv[i].c_str());
+    const int limit = parse_int_option(argv[i], "--obj-probe");
     if (limit >= 0) {
       _opt->objProbeLimit = limit;
     }
@@ -754,7 +756,7 @@ bool GeasSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
     if (++i == argv.size()) {
       return false;
     }
-    int time = atoi(argv[i].c_str());
+    const int time = parse_int_option(argv[i], "--solver-time-limit");
     if (time >= 0) {
       _opt->time = std::chrono::milliseconds(time);
     }

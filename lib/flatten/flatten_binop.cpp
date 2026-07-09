@@ -607,7 +607,7 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
     ret.r = conj(env, r, ctx, ees);
     return;
   }
-  if (coeffv.size() == 1 && std::abs(coeffv[0]) == 1) {
+  if (coeffv.size() == 1 && abs(coeffv[0]) == 1) {
     if (coeffv[0] == -1) {
       switch (bot) {
         case BOT_LE:

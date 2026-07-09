@@ -323,10 +323,10 @@ protected:
 
 public:
   GCMarker() { GC::add(this); }
-  GCMarker(const GCMarker& marker) { GC::add(this); }
+  GCMarker(const GCMarker& /*marker*/) noexcept { GC::add(this); }
   // NOLINTNEXTLINE(bugprone-unhandled-self-assignment)
-  GCMarker& operator=(const GCMarker& marker) { return *this; }
-  virtual ~GCMarker() { GC::remove(this); }
+  GCMarker& operator=(const GCMarker& /*marker*/) noexcept { return *this; }
+  virtual ~GCMarker() noexcept { GC::remove(this); }
 };
 
 }  // namespace MiniZinc

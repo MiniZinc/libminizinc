@@ -861,7 +861,7 @@ static int CPXPUBLIC solcallback(CPXCENVptr env, void* cbdata, int wherefrom, vo
   }
 
 TERMINATE:
-  return (status);
+  return status;
 
 } /* END logcallback */
 // end SolutionCallback ---------------------------------------------------------------------
@@ -1036,7 +1036,7 @@ static int CPXPUBLIC myusercutcallback(CPXCENVptr env, void* cbdata, int wherefr
 
 TERMINATE:
 
-  return (status);
+  return status;
 
 } /* END myusercutcallback */
 

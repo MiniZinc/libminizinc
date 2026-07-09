@@ -13,6 +13,7 @@
 
 #include <exception>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -34,13 +35,17 @@ public:
 
 class Exception : public std::exception {
 protected:
-  std::string _msg;
+  std::shared_ptr<const std::string> _msg;
+
+  void setMsg(std::string msg) { _msg = std::make_shared<const std::string>(std::move(msg)); }
 
 public:
-  Exception(std::string msg) : _msg(std::move(msg)) {}
+  Exception(std::string msg) { setMsg(std::move(msg)); }
+  Exception(const Exception&) noexcept = default;
+  Exception& operator=(const Exception&) noexcept = default;
   ~Exception() throw() override {}
   const char* what() const throw() override = 0;
-  const std::string& msg() const { return _msg; }
+  const std::string& msg() const { return *_msg; }
   /// Print human-readable error message
   virtual void print(std::ostream& os) const;
   /// Print JSON stream formatted error message
@@ -78,7 +83,7 @@ public:
 
 class BadOption : public Exception {
 protected:
-  std::string _usage;
+  std::shared_ptr<const std::string> _usage;
 
 public:
   BadOption(const std::string& msg = "") : Exception(msg) {}
@@ -86,8 +91,11 @@ public:
   const char* what() const throw() override { return "argument parsing error"; }
   void print(std::ostream& os) const override;
 
-  void usage(const std::string& usage) { _usage = usage; }
-  const std::string& usage() const { return _usage; }
+  void usage(const std::string& usage) { _usage = std::make_shared<const std::string>(usage); }
+  const std::string& usage() const {
+    static const std::string empty;
+    return _usage == nullptr ? empty : *_usage;
+  }
 };
 
 class ArithmeticError : public Exception {
@@ -102,19 +110,20 @@ public:
 template <class T>
 class MultipleErrors : public Exception {
 protected:
-  std::vector<T> _errors;
+  std::shared_ptr<const std::vector<T>> _errors;
 
 public:
-  MultipleErrors(std::vector<T> errors) : Exception(""), _errors(std::move(errors)) {}
+  MultipleErrors(std::vector<T> errors)
+      : Exception(""), _errors(std::make_shared<const std::vector<T>>(std::move(errors))) {}
   ~MultipleErrors() throw() override {}
   const char* what() const throw() override { return "multiple errors"; }
 
   void print(std::ostream& os) const override {
-    if (_errors.size() > 1) {
-      os << "Multiple " << _errors[0].what() << "s:\n";
+    if (_errors->size() > 1) {
+      os << "Multiple " << (*_errors)[0].what() << "s:\n";
     }
     bool first = true;
-    for (const auto& error : _errors) {
+    for (const auto& error : *_errors) {
       if (first) {
         first = false;
       } else {
@@ -125,7 +134,7 @@ public:
   }
 
   void json(std::ostream& os) const override {
-    for (const auto& error : _errors) {
+    for (const auto& error : *_errors) {
       error.json(os);
     }
   }

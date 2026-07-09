@@ -1,5 +1,6 @@
 #line 17 "/Users/guidot/Programming/MiniZinc/libmzn/lib/support/regex/lexer.lxx"
 #include <cstdint>
+#include <string>
 
 
 
@@ -857,8 +858,6 @@ char *yytext;
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include <cstdlib>
-
 #define YY_DECL int yylex()
 
 #include <minizinc/support/regex.hh>
@@ -1233,7 +1232,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-{ regex_yylval.iValue = std::atoi(regex_yytext); return R_INTEGER; }
+{ regex_yylval.iValue = std::stoi(std::string(regex_yytext)); return R_INTEGER; }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP

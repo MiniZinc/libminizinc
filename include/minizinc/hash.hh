@@ -133,7 +133,7 @@ public:
     typename string_map::iterator _smiEnd;
     typename std::vector<T>::iterator _imi;
     typename std::vector<T>::iterator _imiEnd;
-    typename std::vector<bool>::iterator _ipi;
+    std::vector<bool>::iterator _ipi;
 
   public:
     DenseIdMapIterator(typename string_map::iterator smi, typename string_map::iterator smiEnd,
