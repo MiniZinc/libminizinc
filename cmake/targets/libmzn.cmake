@@ -127,6 +127,11 @@ add_library(mzn
   $<TARGET_OBJECTS:minizinc_mip>
   $<TARGET_OBJECTS:minizinc_nl>
 )
+
+if(WIN32)
+  target_compile_definitions(mzn PUBLIC NOMINMAX)
+endif()
+
 target_link_libraries(mzn ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
 
 ### Add Solver Interfaces to the MiniZinc library when available

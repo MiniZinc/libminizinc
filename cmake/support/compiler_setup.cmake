@@ -1,5 +1,9 @@
 set(CMAKE_CXX_STANDARD 11)
 
+if(WIN32)
+  add_definitions(-DNOMINMAX)
+endif()
+
 option(USE_ADDRESS_SANITIZER "Use GCC Address Sanitizer" OFF)
 if(USE_ADDRESS_SANITIZER)
   set(CMAKE_CXX_FLAGS

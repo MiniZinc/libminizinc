@@ -14,7 +14,6 @@
 #include <minizinc/solver.hh>
 
 #ifdef _WIN32
-#define NOMINMAX
 #include <Windows.h>
 #include <tchar.h>
 #undef ERROR

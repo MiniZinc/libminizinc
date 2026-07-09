@@ -13,7 +13,6 @@
 
 #ifdef _WIN32
 
-#define NOMINMAX  // Ensure the words min/max remain available
 #include <Windows.h>
 #undef ERROR
 #include <sstream>
