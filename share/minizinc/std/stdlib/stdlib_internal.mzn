@@ -109,7 +109,7 @@ predicate bool_eq(var opt bool: x, var bool: y) = occurs(x) /\ deopt(x) = y;
 /* True iff \a y occurs and is equal to \a x */
 predicate bool_eq(var bool: x, var opt bool: y) = occurs(y) /\ deopt(y) = x;
 
-predicate bool_xor_reif(var bool: a, var bool: b, var bool: c) = bool_xor(a, b, c);
+predicate bool_xor_reif(var bool: x, var bool: y, var bool: c) = bool_xor(x, y, c);
 
 predicate bool_xor(var opt bool: x, var opt bool: y) =
   absent(x) \/ absent(y) \/ (deopt(x) xor deopt(y));
@@ -166,10 +166,10 @@ predicate float_eq(var opt float: x, var opt float: y) =
 predicate float_ne(var opt float: x, var opt float: y) =
   (absent(x) != absent(y)) \/ (occurs(x) /\ occurs(y) /\ (deopt(x) != deopt(y)) :: maybe_partial);
 
-predicate xorall_reif(array [$T] of var bool: b, var bool: c) =
+predicate xorall_reif(array [$T] of var bool: x, var bool: c) =
   let {
     var bool: nc :: is_defined_var;
-    constraint xorall([nc] ++ array1d(b)) :: defines_var(nc);
+    constraint xorall([nc] ++ array1d(x)) :: defines_var(nc);
   } in c = not nc;
 
 function var int: lin_exp(array [int] of int, array [int] of var int, int)

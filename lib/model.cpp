@@ -1018,12 +1018,16 @@ FunctionI* Model::matchReifByNames(EnvI& env, const Call* c, bool canHalfReify,
   }
   FunctionI* baseDecl = c->decl();
   unsigned int baseArity = baseDecl->paramCount();
+  // A reif/imp variant is chosen only when it matches the base declaration on BOTH the
+  // leading parameter names and the argument types. The name match keeps name-only sibling
+  // overloads apart (a differently-named variant belongs to a different sibling); the type
+  // match must also hold, otherwise a same-named but type-incompatible variant would be
+  // returned and later fail to resolve (e.g. a non-opt `int_eq_imp` picked for an opt call).
   auto pickNameMatch = [&](const ASTString& bucket_id) -> FunctionI* {
     auto it = m->_fnmap.find(bucket_id);
     if (it == m->_fnmap.end()) {
       return nullptr;
     }
-    FunctionI* fallback = nullptr;
     for (const auto& fe : it->second) {
       if (fe.fi->paramCount() != baseArity + 1) {
         continue;
@@ -1051,14 +1055,11 @@ FunctionI* Model::matchReifByNames(EnvI& env, const Call* c, bool canHalfReify,
         }
       }
       if (!typeMatch) {
-        if (fallback == nullptr) {
-          fallback = fe.fi;
-        }
         continue;
       }
       return fe.fi;
     }
-    return fallback;
+    return nullptr;
   };
   ASTString reif_id = env.reifyId(c->id());
   FunctionI* reif_decl = pickNameMatch(reif_id);
@@ -1109,7 +1110,10 @@ FunctionI* Model::matchFnByNames(EnvI& env, const ASTString& id, FunctionI* base
     return nullptr;
   }
   const unsigned int baseArity = baseDecl->paramCount();
-  FunctionI* fallback = nullptr;
+  // A candidate is chosen only when it matches the base declaration on BOTH the leading
+  // parameter names and the argument types. The name match keeps name-only sibling
+  // overloads apart; the type match must also hold, otherwise a same-named but
+  // type-incompatible candidate would be returned and later fail to resolve.
   for (const auto& fe : it->second) {
     if (fe.fi->paramCount() != t.size() || fe.fi->paramCount() < baseArity) {
       continue;
@@ -1138,14 +1142,11 @@ FunctionI* Model::matchFnByNames(EnvI& env, const ASTString& id, FunctionI* base
       }
     }
     if (!typeMatch) {
-      if (fallback == nullptr) {
-        fallback = fe.fi;
-      }
       continue;
     }
     return fe.fi;
   }
-  return fallback;
+  return nullptr;
 }
 
 FunctionI* Model::matchFnByNames(EnvI& env, const ASTString& id, FunctionI* baseDecl,
@@ -1829,6 +1830,112 @@ void Model::checkSiblingParameterNames(EnvI& env) const {
                "rewrite to the equivalent declaration.";
         env.addWarning(x->loc(), oss.str(), false);
       }
+    }
+  }
+}
+
+void Model::checkReifParameterNames(EnvI& env) const {
+  const Model* m = this;
+  while (m->_parent != nullptr) {
+    m = m->_parent;
+  }
+  // Deriving the base id (ASTString) and emitting warnings allocates GC objects.
+  GCLock lock;
+
+  // Exact per-parameter type equality over the leading `n` parameters (names ignored).
+  auto leadingTypesEqual = [](const FunctionI* rf, const FunctionI* bf, unsigned int n) {
+    for (unsigned int j = 0; j < n; j++) {
+      if (rf->param(j)->type() != bf->param(j)->type()) {
+        return false;
+      }
+    }
+    return true;
+  };
+  // Do the leading `n` name-passable parameters agree? (Anonymous / synthetic ids cannot
+  // be passed by name, so a disagreement on them does not matter.)
+  auto leadingNamesMatch = [](const FunctionI* rf, const FunctionI* bf, unsigned int n) {
+    for (unsigned int j = 0; j < n; j++) {
+      const Id* a = rf->param(j)->id();
+      const Id* b = bf->param(j)->id();
+      if (a->hasStr() && b->hasStr() && a->v() != b->v()) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  for (const auto& bucket : m->_fnmap) {
+    const ASTString& rid = bucket.first;
+    size_t suffixLen = 0;
+    if (rid.endsWith("_reif")) {
+      suffixLen = 5;
+    } else if (rid.endsWith("_imp")) {
+      suffixLen = 4;
+    } else {
+      continue;
+    }
+    auto bit = m->_fnmap.find(ASTString(rid.substr(0, rid.size() - suffixLen)));
+    if (bit == m->_fnmap.end()) {
+      continue;
+    }
+    const ASTString& baseId = bit->first;
+    for (const auto& rfe : bucket.second) {
+      // Skip generated instances, which would duplicate warnings and point at synthetic decls.
+      if (rfe.isPolymorphicVariant || rfe.fi->isMonomorphised()) {
+        continue;
+      }
+      FunctionI* rf = rfe.fi;
+      if (rf->paramCount() == 0) {
+        continue;
+      }
+      const unsigned int lead = rf->paramCount() - 1;  // trailing parameter is the reif bool
+      // A call is re-resolved to its reified/half-reified version by matching the base
+      // declaration's leading parameter names (see matchReifByNames). The base a reif/imp
+      // corresponds to is the one with exactly the same leading parameter types. If such a
+      // base exists but none of them shares this reif/imp's leading names, the reification
+      // can never be found by name. Subtyping is allowed at match time, but the name check
+      // is only meaningful against an exact-type base, so we require exact type equality here.
+      FunctionI* exactBase = nullptr;
+      bool nameCompatibleBaseExists = false;
+      for (const auto& bfe : bit->second) {
+        if (bfe.isPolymorphicVariant || bfe.fi->isMonomorphised()) {
+          continue;
+        }
+        FunctionI* bf = bfe.fi;
+        if (bf->paramCount() != lead || !leadingTypesEqual(rf, bf, lead)) {
+          continue;
+        }
+        exactBase = bf;
+        if (leadingNamesMatch(rf, bf, lead)) {
+          nameCompatibleBaseExists = true;
+          break;
+        }
+      }
+      if (exactBase == nullptr || nameCompatibleBaseExists) {
+        continue;
+      }
+      std::ostringstream mism;
+      bool any = false;
+      for (unsigned int j = 0; j < lead; j++) {
+        const Id* a = rf->param(j)->id();
+        const Id* b = exactBase->param(j)->id();
+        if (!a->hasStr() || !b->hasStr() || a->v() == b->v()) {
+          continue;
+        }
+        if (any) {
+          mism << ", ";
+        }
+        mism << (j + 1) << " (`" << a->v() << "' vs `" << b->v() << "')";
+        any = true;
+      }
+      std::ostringstream oss;
+      oss << "reified/half-reified predicate `" << rid << "' disagrees with its base predicate `"
+          << baseId << "' on parameter name(s): " << mism.str() << ". Defined at "
+          << rf->loc().toString() << " and " << exactBase->loc().toString()
+          << ". A call is re-resolved to its reified or half-reified version by matching the base "
+             "predicate's parameter names, so the names must agree or the reification cannot be "
+             "found.";
+      env.addWarning(rf->loc(), oss.str(), false);
     }
   }
 }

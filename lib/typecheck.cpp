@@ -5493,6 +5493,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
   if (!isFlatZinc) {
     m->checkSiblingParameterNames(env.envi());
+    m->checkReifParameterNames(env.envi());
   }
 
   if (isFlatZinc) {

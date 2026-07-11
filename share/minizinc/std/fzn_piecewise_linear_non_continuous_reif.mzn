@@ -1,10 +1,10 @@
 predicate fzn_piecewise_linear_non_continuous_reif(
   var float: x,
   var float: y,
-  array [int] of float: xi1,
-  array [int] of float: xi2,
-  array [int] of float: vi1,
-  array [int] of float: vi2,
+  array [int] of float: x_start,
+  array [int] of float: x_end,
+  array [int] of float: v_start,
+  array [int] of float: v_end,
   var bool: b,
 ) = abort("Reified piecewise_linear (non_continuous) constraint is not supported");
 

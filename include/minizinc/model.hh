@@ -246,6 +246,11 @@ public:
   /// sibling declaration with different parameter names, with no
   /// name-compatible sibling to rewrite to instead.
   void checkSiblingParameterNames(EnvI& env) const;
+  /// Warn about `_reif`/`_imp` predicates whose leading parameter names disagree
+  /// with the base predicate that has exactly the same leading parameter types.
+  /// A call is re-resolved to its reification by matching the base's parameter
+  /// names, so a disagreement means the reification cannot be found by name.
+  void checkReifParameterNames(EnvI& env) const;
   /// Return function declaration for reverse mapper for type \a t
   FunctionI* matchRevMap(EnvI& env, const Type& t) const;
   /// Check if function with this name exists
