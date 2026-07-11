@@ -1220,6 +1220,7 @@ void EnvI::flatRemoveItem(VarDeclI* vdi) {
 
 void EnvI::fail(const std::string& msg, const Location& loc) {
   if (!_failed) {
+    GCLock lock;
     addWarning(loc, std::string("model inconsistency detected") +
                         (msg.empty() ? std::string() : (": " + msg)));
     _failed = true;

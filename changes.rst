@@ -84,6 +84,7 @@ Bug fixes:
    different array index sets.
 -  Fix boolean context for call arguments and local declaration right-hand sides
    of type ``array [_] of var bool``.
+-  Add missing GC lock to EnvI::fail().
 
 .. _v2.9.7:
 
