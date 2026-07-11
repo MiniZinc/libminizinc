@@ -58,6 +58,16 @@ Changes:
 
 Language changes:
 ^^^^^^^^^^^^^^^^^
+-  Add support for named arguments. Function calls can now refer to
+   arguments by name, in addition to the usual positional arguments.
+   The parameter names of the global constraints in the standard library have
+   been revised so that they read well as named arguments (now that named
+   arguments make them part of the public interface).
+   It is now a type error to declare two overloads of a function or predicate
+   that a call supplying all of its arguments by name could not tell apart,
+   i.e. two overloads that give the same name and type to every parameter
+   that has to be supplied.
+-  Add support for default values for function and parameter arguments.
 -  Add support for set cardinality declarations using the syntax
    ``set(e) of T: s;``.  When ``e`` has type ``int`` or ``var int``, this
    desugars to an additional ``card(s) = e`` constraint; when ``e`` has type
