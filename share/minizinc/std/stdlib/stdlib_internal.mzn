@@ -79,10 +79,12 @@ test var_dom(array [$T] of float: x, set of float: d) =
 predicate set_in(array [$T] of var int: X, set of int: s) = forall (x in array1d(X)) (x in s);
 predicate int_eq(array [$T] of var int: X, int: s) = forall (x in array1d(X)) (x = s);
 predicate float_eq(array [$T] of var int: X, float: s) = forall (x in array1d(X)) (x = s);
-predicate int_le(array [$T] of var int: X, int: s) = forall (x in array1d(X)) (x <= s);
-predicate int_le(int: s, array [$T] of var int: X) = forall (x in array1d(X)) (x >= s);
-predicate float_le(array [$T] of var float: X, float: s) = forall (x in array1d(X)) (x <= s);
-predicate float_le(float: s, array [$T] of var float: X) = forall (x in array1d(X)) (x >= s);
+predicate int_le(array [$T] of var int: xs, int: ub) = forall (x in array1d(xs)) (x <= ub);
+predicate int_le(int: lb, array [$T] of var int: xs) = forall (x in array1d(xs)) (x >= lb);
+predicate float_le(array [$T] of var float: xs, float: ub) =
+  forall (x in array1d(xs)) (x <= ub);
+predicate float_le(float: lb, array [$T] of var float: xs) =
+  forall (x in array1d(xs)) (x >= lb);
 
 function float: float_times(float: x, float: y) = x * y;
 

@@ -42,6 +42,13 @@ Changes:
    from standard input while running, and output both solutions and
    messages.
 -  Add support for warm starts to HiGHS and SCIP interfaces.
+-  It is now a type error to declare two overloads of a function or predicate
+   that a call supplying all of its arguments by name could not tell apart,
+   i.e. two overloads that give the same name and type to every parameter that
+   has to be supplied. Previously such a call silently resolved to whichever
+   overload was declared first. Parameter order is irrelevant here, and
+   parameters with a default value are exempt, since a call need not supply
+   them.
 -  The parameter names of the global constraints in the standard library have
    been revised so that they read well as named arguments (now that named
    arguments make them part of the public interface). As part of this,

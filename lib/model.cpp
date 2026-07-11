@@ -346,6 +346,79 @@ bool sameParameterNames(FunctionI* a, FunctionI* b) {
   return true;
 }
 
+// Test whether functions \a a and \a b have the exact same sequence of parameters
+// (both in terms of types and names).
+bool exact_redeclaration(FunctionI* a, FunctionI* b) {
+  if (a->paramCount() != b->paramCount()) {
+    return false;
+  }
+  for (unsigned int i = 0; i < a->paramCount(); i++) {
+    if (a->param(i)->type() != b->param(i)->type()) {
+      return false;
+    }
+  }
+  return sameParameterNames(a, b);
+}
+
+// A parameter can be supplied by name at a call site iff it has a real identifier that
+// does not start with "_" (lib/parser.yxx rejects `_x: e` as a named argument).
+bool is_nameable(VarDecl* p) { return p->id()->hasStr() && !p->id()->v().beginsWith("_"); }
+
+// Map every nameable parameter of \a fi to its declaration. Returns false if \a fi cannot
+// be the target of a call that supplies all of its arguments by name, either because a
+// parameter that must be supplied cannot be named, or because two parameters share a name.
+bool nameable_params(FunctionI* fi, ASTStringMap<VarDecl*>& byName) {
+  for (unsigned int i = 0; i < fi->paramCount(); i++) {
+    VarDecl* p = fi->param(i);
+    if (!is_nameable(p)) {
+      // A parameter with a default never has to be supplied, so it can stay unnameable.
+      if (p->e() == nullptr) {
+        return false;
+      }
+      continue;
+    }
+    if (!byName.insert({p->id()->v(), p}).second) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// Named arguments identify an overload by the names a call supplies, not by their
+// position. A call that supplies every argument by name, using the name set K, selects a
+// declaration D iff required(D) <= K <= nameable(D) and the type of every name in K
+// matches. Two declarations are indistinguishable by such a call iff some K is accepted by
+// both with the same type for every name in K.
+//
+// It suffices to test the smallest candidate, K* = required(a) + required(b): every common
+// K contains K*, and enlarging K only adds names, hence only adds type constraints. So if
+// the types agree on K* then the call K* is ambiguous, and if they disagree on some name in
+// K* then so does every larger K.
+bool ambiguous_named_call(FunctionI* a, FunctionI* b) {
+  ASTStringMap<VarDecl*> pa;
+  ASTStringMap<VarDecl*> pb;
+  if (!nameable_params(a, pa) || !nameable_params(b, pb)) {
+    return false;
+  }
+  for (FunctionI* fi : {a, b}) {
+    for (unsigned int i = 0; i < fi->paramCount(); i++) {
+      VarDecl* p = fi->param(i);
+      if (p->e() != nullptr) {
+        continue;  // has a default, so it is not in K*
+      }
+      auto ia = pa.find(p->id()->v());
+      auto ib = pb.find(p->id()->v());
+      if (ia == pa.end() || ib == pb.end()) {
+        return false;  // K* is not nameable in both declarations
+      }
+      if (ia->second->type() != ib->second->type()) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 #ifndef NDEBUG
 // Does \a fi share its bucket \a v with a name-only sibling - another overload
 // with identical parameter types but at least one differing (name-passable)
@@ -525,6 +598,22 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
     for (auto& i : v) {
       if (i.fi == fi) {
         return true;
+      }
+      // Reject overloads that no call using named arguments could tell apart. Not guarded
+      // by equal arity: parameter defaults let two such declarations differ in length.
+      // Polymorphic variant entries share their FunctionI with the polymorphic declaration
+      // they were generated from, which is in the bucket as well, so skipping them loses no
+      // coverage. A par version registered by create_par_versions shares the parameter
+      // names of the function it was copied from, hence the throwIfDuplicate guard.
+      if (throwIfDuplicate && !i.isPolymorphicVariant && !exact_redeclaration(i.fi, fi) &&
+          ambiguous_named_call(i.fi, fi)) {
+        throw TypeError(
+            env, fi->loc(),
+            "ambiguous overloading: a call that supplies its arguments by name could match "
+            "both this declaration and the one at " +
+                i.fi->loc().toString() +
+                ", because they agree on the name and type of every parameter that must be "
+                "supplied");
       }
       if (i.fi->paramCount() == fi->paramCount()) {
         bool alleq = true;

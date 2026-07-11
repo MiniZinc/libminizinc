@@ -3074,6 +3074,33 @@ in a model.  For example:
     predicate p(1..5: x) = false;       % ok:     first definition
     predicate p(1..5: x) = true;        % error:  repeated definition
 
+Because arguments may be passed by name, overloadings are distinguished by the
+*names* of their parameters as well as by their types.  Two overloadings of an
+operation may therefore share their parameter types provided they do not share
+their parameter names:
+
+.. code-block:: minizinc
+
+    predicate interval(var int: start, var int: end);
+    predicate interval(var int: start, var int: duration);   % ok
+
+Conversely, it is a type-inst error to declare two overloadings that a call
+supplying all of its arguments by name could not tell apart, that is, two
+overloadings that give the same name and the same type to every parameter that
+must be supplied.  Parameter order does not enter into this, and neither do
+parameters that have a default value, since a call need not supply them:
+
+.. code-block:: minizinc
+
+    predicate q(var float: y, var int: x);
+    predicate q(var int: x, var float: y);      % error: q(x: a, y: b) matches both
+
+    predicate r(int: x);
+    predicate r(int: x, int: z = 0);            % error: r(x: 1) matches both
+
+This restriction does not apply to parameters whose names start with an
+underscore, as those cannot be supplied by name at all.
+
 The combination of overloading and coercions can cause problems.
 Two overloadings of an operation are said to *overlap* if they could match
 the same arguments.  For example, the following overloadings of :mzn:`p`
