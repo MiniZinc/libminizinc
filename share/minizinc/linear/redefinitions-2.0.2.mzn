@@ -11,20 +11,20 @@ predicate redundant_constraint(var bool: b) = (b); %:: MIP_cut
 % true   %% To omit all redundant_constraint's
 
 %% Linearized element: just call without shifting
-predicate array_var_bool_element_nonshifted(var int: idx, array [int] of var bool: x, var bool: c) =
-  array_var_bool_element(idx, x, c);
+predicate array_var_bool_element_nonshifted(var int: idx, array [int] of var bool: xs, var bool: y) =
+  array_var_bool_element(idx, xs, y);
 
-predicate array_var_int_element_nonshifted(var int: idx, array [int] of var int: x, var int: c) =
-  array_var_int_element(idx, x, c);
+predicate array_var_int_element_nonshifted(var int: idx, array [int] of var int: xs, var int: y) =
+  array_var_int_element(idx, xs, y);
 
 predicate array_var_float_element_nonshifted(
   var int: idx,
-  array [int] of var float: x,
-  var float: c,
-) = array_var_float_element(idx, x, c);
+  array [int] of var float: xs,
+  var float: y,
+) = array_var_float_element(idx, xs, y);
 
 predicate array_var_set_element_nonshifted(
   var int: idx,
-  array [int] of var set of int: x,
-  var set of int: c,
-) = array_var_set_element(idx, x, c);
+  array [int] of var set of int: xs,
+  var set of int: y,
+) = array_var_set_element(idx, xs, y);

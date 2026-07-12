@@ -53,58 +53,58 @@ predicate float_lt(var float: x :: promise_ctx_antitone, var float: y :: promise
   %     (x - y) <= (-float_lt_EPS_coef__)*max(abs(ub(x - y)), abs(ub(y-x)));
   x <= y - float_lt_EPS;
 
-predicate float_lin_lt(array [int] of float: c, array [int] of var float: x, float: d) =
-  float_lt(sum (i in index_set(x)) (c[i] * x[i]), d);
+predicate float_lin_lt(array [int] of float: as, array [int] of var float: xs, float: y) =
+  float_lt(sum (i in index_set(xs)) (as[i] * xs[i]), y);
 
 %-----------------------------------------------------------------------------%
 % Minimum, maximum, absolute value
 % Use unary as well? TODO
 
-predicate int_abs(var int: x, var int: z) =
+predicate int_abs(var int: x, var int: y) =
   %% The simplifications seem worse on   league.mzn	model90-18-20.dzn:
   %% but the .lp seem to differ just by order...?? TODO
   if lb(x) >= 0 then
-    z == x
+    y == x
   elseif ub(x) <= 0 then
-    z == -x
+    y == -x
   else
     let {
       var bool: p;
-    } in z >= x /\
-      z >= -x /\
-      z >= 0 /\ % This is just for preprocessor
-      z <= max([ub(x), -lb(x)]) /\ % And this
-      % z <= x \/ z <= -x      %% simple
-      aux_int_le_if_1(z, x, p) /\ %% even simpler
-      aux_int_le_if_0(z, -x, p) /\
+    } in y >= x /\
+      y >= -x /\
+      y >= 0 /\ % This is just for preprocessor
+      y <= max([ub(x), -lb(x)]) /\ % And this
+      % y <= x \/ y <= -x      %% simple
+      aux_int_le_if_1(y, x, p) /\ %% even simpler
+      aux_int_le_if_0(y, -x, p) /\
       int_le_reif(0, x, p) % with reifs
-    %int_eq_reif(z, x, p) /\
-    %int_eq_reif(z, -x, not p)
+    %int_eq_reif(y, x, p) /\
+    %int_eq_reif(y, -x, not p)
   endif;
 
 predicate int_min(var int: x, var int: y, var int: z) = array_int_minimum(z, [x, y]);
 
 predicate int_max(var int: x, var int: y, var int: z) = array_int_maximum(z, [x, y]);
 
-predicate float_abs(var float: x, var float: z) =
+predicate float_abs(var float: x, var float: y) =
   if lb(x) >= 0.0 then
-    z == x
+    y == x
   elseif ub(x) <= 0.0 then
-    z == -x
+    y == -x
   else
     let {
       var bool: p;
-    } in z >= x /\
-      z >= -x /\
-      z >= 0.0 /\ % This is just for preprocessor
-      z <= max([ub(x), -lb(x)]) /\ % And this
-      % z <= x \/ z <= -x
-      aux_float_le_if_1(z, x, (p)) /\
-      aux_float_le_if_0(z, -x, (p))
+    } in y >= x /\
+      y >= -x /\
+      y >= 0.0 /\ % This is just for preprocessor
+      y <= max([ub(x), -lb(x)]) /\ % And this
+      % y <= x \/ y <= -x
+      aux_float_le_if_1(y, x, (p)) /\
+      aux_float_le_if_0(y, -x, (p))
     % /\
     % float_le_reif(0.0, x, p)            % with reifs - no point for floats?  TODO
-    % float_eq_reif(z, x, p) /\
-    % float_eq_reif(z, -x, not p)
+    % float_eq_reif(y, x, p) /\
+    % float_eq_reif(y, -x, not p)
   endif;
 
 predicate float_min(var float: x, var float: y, var float: z) = array_float_minimum(z, [x, y]);
@@ -213,9 +213,9 @@ predicate array_float_minimum_I(var float: m, array [int] of var float: x) =
 %-----------------------------------------------------------------------------%
 % Multiplication and division
 
-predicate int_div(var int: x, var int: y, var int: q) = q == aux_int_division_modulo_fn(x, y)[1];
+predicate int_div(var int: x, var int: y, var int: z) = z == aux_int_division_modulo_fn(x, y)[1];
 
-predicate int_mod(var int: x, var int: y, var int: r) = r == aux_int_division_modulo_fn(x, y)[2];
+predicate int_mod(var int: x, var int: y, var int: z) = z == aux_int_division_modulo_fn(x, y)[2];
 
 function array [int] of var int: aux_int_division_modulo_fn(var int: x, var int: y) =
   let {
@@ -242,7 +242,7 @@ function array [int] of var int: aux_int_division_modulo_fn(var int: x, var int:
 %% Can also have int_times(var float, var int) ......... TODO
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-predicate float_div(var float: x, var float: y, var float: q) = x == y * q;
+predicate float_div(var float: x, var float: y, var float: z) = x == y * z;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 predicate int_times(
@@ -345,11 +345,11 @@ predicate float_times(var float: x, var float: y, var float: z) =
   endif;
 
 %%%Define int_pow
-predicate int_pow(var int: x, var int: y, var int: r) =
+predicate int_pow(var int: x, var int: y, var int: z) =
   let {
     array [int, int] of int: x2y =
       array2d(lb(x)..ub(x), lb(y)..ub(y), [pow(X, Y) | X in lb(x)..ub(x), Y in lb(y)..ub(y)]);
-  } in r == x2y[x, y];
+  } in z == x2y[x, y];
 
 %%% Adding a version returning float for efficiency
 /** @group builtins.arithmetic Return \(\a x ^ {\a y}\) */
@@ -376,40 +376,40 @@ predicate int_pow_float(var int: x, var int: y, var float: r) =
 %-----------------------------------------------------------------------------%
 % Array 'element' constraints
 
-predicate array_bool_element(var int: x, array [int] of bool: a, var bool: z) =
-  array_int_element(x, arrayXd(a, [bool2int(a[i]) | i in index_set(a)]), bool2int(z));
+predicate array_bool_element(var int: idx, array [int] of bool: xs, var bool: y) =
+  array_int_element(idx, arrayXd(xs, [bool2int(xs[i]) | i in index_set(xs)]), bool2int(y));
 
 predicate array_var_bool_element(var int: idx, array [int] of var bool: xs, var bool: y) =
   array_var_int_element(idx, arrayXd(xs, [bool2int(xs[i]) | i in index_set(xs)]), bool2int(y));
 
-predicate array_int_element(var int: i00, array [int] of int: a, var int: z) =
+predicate array_int_element(var int: idx, array [int] of int: xs, var int: y) =
   let {
-    set of int: ix = index_set(a);
-    constraint i00 in {i | i in ix where a[i] in dom(z)};
-  } in %%% Tighten domain of i00 before dMin/dMax
+    set of int: ix = index_set(xs);
+    constraint idx in {i | i in ix where xs[i] in dom(y)};
+  } in %%% Tighten domain of idx before dMin/dMax
   let {
-    int: dMin = min (i in dom(i00)) (a[i]);
-    int: dMax = max (i in dom(i00)) (a[i]);
+    int: dMin = min (i in dom(idx)) (xs[i]);
+    int: dMax = max (i in dom(idx)) (xs[i]);
   } in if dMin == dMax then
-    z == dMin
+    y == dMin
   else
-    z >=
+    y >=
       dMin /\
-      z <=
+      y <=
         dMax /\
       (
         let {
-          int: nUBi00 = max(dom(i00));
-          int: nLBi00 = min(dom(i00));
-          int: nMinDist = min (i in nLBi00..nUBi00 - 1) (a[i + 1] - a[i]);
-          int: nMaxDist = max (i in nLBi00..nUBi00 - 1) (a[i + 1] - a[i]);
+          int: nUBi00 = max(dom(idx));
+          int: nLBi00 = min(dom(idx));
+          int: nMinDist = min (i in nLBi00..nUBi00 - 1) (xs[i + 1] - xs[i]);
+          int: nMaxDist = max (i in nLBi00..nUBi00 - 1) (xs[i + 1] - xs[i]);
         } in if nMinDist == nMaxDist then %% The linear case
-          z == a[nLBi00] + nMinDist * (i00 - nLBi00)
+          y == xs[nLBi00] + nMinDist * (idx - nLBi00)
         else
           let {
-            array [int] of var int: p = eq_encode(i00); %% this needs i00 in ix
-          } in %% Faster flattening than (i==i00) @2a9df1f7
-          sum (i in dom(i00)) (a[i] * p[i]) == z
+            array [int] of var int: p = eq_encode(idx); %% this needs idx in ix
+          } in %% Faster flattening than (i==idx) @2a9df1f7
+          sum (i in dom(idx)) (xs[i] * p[i]) == y
         endif
       )
   endif;
@@ -439,34 +439,34 @@ predicate array_var_int_element(var int: idx, array [int] of var int: xs, var in
       endif
   endif;
 
-predicate array_float_element(var int: i00, array [int] of float: a, var float: z) =
+predicate array_float_element(var int: idx, array [int] of float: xs, var float: y) =
   let {
-    set of int: ix = index_set(a);
-    constraint i00 in {i | i in ix where a[i] >= lb(z) /\ a[i] <= ub(z)};
-  } in %%% Tighten domain of i00 before dMin/dMax
+    set of int: ix = index_set(xs);
+    constraint idx in {i | i in ix where xs[i] >= lb(y) /\ xs[i] <= ub(y)};
+  } in %%% Tighten domain of idx before dMin/dMax
   let {
-    float: dMin = min (i in dom(i00)) (a[i]);
-    float: dMax = max (i in dom(i00)) (a[i]);
+    float: dMin = min (i in dom(idx)) (xs[i]);
+    float: dMax = max (i in dom(idx)) (xs[i]);
   } in if dMin == dMax then
-    z == dMin
+    y == dMin
   else
-    z >=
+    y >=
       dMin /\
-      z <=
+      y <=
         dMax /\
       (
         let {
-          int: nUBi00 = max(dom(i00));
-          int: nLBi00 = min(dom(i00));
-          float: nMinDist = min (i in nLBi00..nUBi00 - 1) (a[i + 1] - a[i]);
-          float: nMaxDist = max (i in nLBi00..nUBi00 - 1) (a[i + 1] - a[i]);
+          int: nUBi00 = max(dom(idx));
+          int: nLBi00 = min(dom(idx));
+          float: nMinDist = min (i in nLBi00..nUBi00 - 1) (xs[i + 1] - xs[i]);
+          float: nMaxDist = max (i in nLBi00..nUBi00 - 1) (xs[i + 1] - xs[i]);
         } in if nMinDist == nMaxDist then %% The linear case
-          z == a[nLBi00] + nMinDist * (i00 - nLBi00)
+          y == xs[nLBi00] + nMinDist * (idx - nLBi00)
         else
           let {
-            array [int] of var int: p = eq_encode(i00); %% this needs i00 in ix
-          } in %% Faster flattening than (i==i00) @2a9df1f7
-          sum (i in dom(i00)) (a[i] * p[i]) == z
+            array [int] of var int: p = eq_encode(idx); %% this needs idx in ix
+          } in %% Faster flattening than (i==idx) @2a9df1f7
+          sum (i in dom(idx)) (xs[i] * p[i]) == y
         endif
       )
   endif;

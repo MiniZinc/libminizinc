@@ -184,48 +184,48 @@ function var float: sum2float(array [int] of int: c, array [int] of var int: x) 
   } in sum (i in index_set(xF)) (cF[i] * xF[i]);
 
 %% lin_expr, const
-predicate int_lin_le_reif(array [int] of int: c, array [int] of var int: x, int: d, var bool: b) =
+predicate int_lin_le_reif(array [int] of int: as, array [int] of var int: xs, int: y, var bool: b) =
   if fPostprocessDomains /\ fPostproDom_DIFF then
-    int_le_reif(sum (i in index_set(x)) (c[i] * x[i]), d, b)
+    int_le_reif(sum (i in index_set(xs)) (as[i] * xs[i]), y, b)
   elseif fAvoidNI then
-    aux_float_le_if_1(sum2float(c, x), d, b) /\ aux_float_ge_if_0(sum2float(c, x), d + 1, b)
+    aux_float_le_if_1(sum2float(as, xs), y, b) /\ aux_float_ge_if_0(sum2float(as, xs), y + 1, b)
   else
-    int_le_reif__NOPOST(sum (i in index_set(x)) (c[i] * x[i]), d, b)
+    int_le_reif__NOPOST(sum (i in index_set(xs)) (as[i] * xs[i]), y, b)
   endif;
 
-predicate int_lin_lt_reif(array [int] of int: c, array [int] of var int: x, int: d, var bool: b) =
+predicate int_lin_lt_reif(array [int] of int: as, array [int] of var int: xs, int: y, var bool: b) =
   if true then
     abort("int_lin_lt_reif not supposed to be called")
   else
-    int_lin_le_reif(c, x, d - 1, b)
+    int_lin_le_reif(as, xs, y - 1, b)
   endif;
 
 %% lin_expr, const
-predicate int_lin_eq_reif(array [int] of int: c, array [int] of var int: x, int: d, var bool: b) =
+predicate int_lin_eq_reif(array [int] of int: as, array [int] of var int: xs, int: y, var bool: b) =
   if fPostprocessDomains /\ fPostproDom_DIFF then
-    int_eq_reif(sum (i in index_set(x)) (c[i] * x[i]), d, b)
+    int_eq_reif(sum (i in index_set(xs)) (as[i] * xs[i]), y, b)
   elseif fAvoidNI /\ fAuxIntEqOLD00 then
-    aux_int_eq_iff_1__float(sum2float(c, x), d, b)
+    aux_int_eq_iff_1__float(sum2float(as, xs), y, b)
   else
-    aux_int_eq_iff_1(sum (i in index_set(x)) (c[i] * x[i]), d, b)
+    aux_int_eq_iff_1(sum (i in index_set(xs)) (as[i] * xs[i]), y, b)
   endif;
 
 %% lin_expr, const
-predicate int_lin_ne(array [int] of int: c, array [int] of var int: x, int: d) =
+predicate int_lin_ne(array [int] of int: as, array [int] of var int: xs, int: y) =
   if fPostprocessDomains /\ fPostproDom_DIFF then
-    int_ne(sum (i in index_set(x)) (c[i] * x[i]), d)
+    int_ne(sum (i in index_set(xs)) (as[i] * xs[i]), y)
   elseif fAvoidNI then
-    int_lin_eq_reif(c, x, d, false)
+    int_lin_eq_reif(as, xs, y, false)
   else
-    int_ne__SIMPLE(sum (i in index_set(x)) (c[i] * x[i]), d)
+    int_ne__SIMPLE(sum (i in index_set(xs)) (as[i] * xs[i]), y)
   endif;
 
 %% lin_expr, const
-predicate int_lin_ne_reif(array [int] of int: c, array [int] of var int: x, int: d, var bool: b) =
+predicate int_lin_ne_reif(array [int] of int: as, array [int] of var int: xs, int: y, var bool: b) =
   if fPostprocessDomains /\ fPostproDom_DIFF then
-    int_ne_reif(sum (i in index_set(x)) (c[i] * x[i]), d, b)
+    int_ne_reif(sum (i in index_set(xs)) (as[i] * xs[i]), y, b)
   else
-    int_lin_eq_reif(c, x, d, not (b))
+    int_lin_eq_reif(as, xs, y, not (b))
   endif;
 
 %-----------------------------------------------------------------------------%
@@ -334,47 +334,47 @@ predicate float_ne_reif(var float: x, var float: y, var bool: b) = float_eq_reif
 %-----------------------------------------------------------------------------%
 
 predicate float_lin_eq_reif(
-  array [int] of float: c,
-  array [int] of var float: x,
-  float: d,
+  array [int] of float: as,
+  array [int] of var float: xs,
+  float: y,
   var bool: b,
 ) =
   if fPostprocessDomains /\ fPostproDom_DIFF then
-    float_eq_reif(sum (i in index_set(x)) (c[i] * x[i]), d, b)
+    float_eq_reif(sum (i in index_set(xs)) (as[i] * xs[i]), y, b)
   else
-    aux_float_eq_iff_1(sum (i in index_set(x)) (c[i] * x[i]), d, b)
+    aux_float_eq_iff_1(sum (i in index_set(xs)) (as[i] * xs[i]), y, b)
   endif;
 
 predicate float_lin_ne_reif(
-  array [int] of float: c,
-  array [int] of var float: x,
-  float: d,
+  array [int] of float: as,
+  array [int] of var float: xs,
+  float: y,
   var bool: b,
 ) =
   if fPostprocessDomains /\ fPostproDom_DIFF then
-    float_ne_reif(sum (i in index_set(x)) (c[i] * x[i]), d, not b)
+    float_ne_reif(sum (i in index_set(xs)) (as[i] * xs[i]), y, not b)
   else
-    aux_float_eq_iff_1(sum (i in index_set(x)) (c[i] * x[i]), d, not b)
+    aux_float_eq_iff_1(sum (i in index_set(xs)) (as[i] * xs[i]), y, not b)
   endif;
 
 predicate float_lin_le_reif(
-  array [int] of float: c,
-  array [int] of var float: x,
-  float: d,
+  array [int] of float: as,
+  array [int] of var float: xs,
+  float: y,
   var bool: b,
 ) =
   if fPostprocessDomains /\ fPostproDom_DIFF then
-    float_le_reif(sum (i in index_set(x)) (c[i] * x[i]), d, b)
+    float_le_reif(sum (i in index_set(xs)) (as[i] * xs[i]), y, b)
   else
-    float_le_reif__NOPOST(sum (i in index_set(x)) (c[i] * x[i]), d, b)
+    float_le_reif__NOPOST(sum (i in index_set(xs)) (as[i] * xs[i]), y, b)
   endif;
 
 predicate float_lin_lt_reif(
-  array [int] of float: c,
-  array [int] of var float: x,
-  float: d,
+  array [int] of float: as,
+  array [int] of var float: xs,
+  float: y,
   var bool: b,
-) = float_lt_reif(sum (i in index_set(x)) (c[i] * x[i]), d, b);
+) = float_lt_reif(sum (i in index_set(xs)) (as[i] * xs[i]), y, b);
 
 %-----------------------------------------------------------------------------%
 % Auxiliary: equality reified onto a 0/1 variable

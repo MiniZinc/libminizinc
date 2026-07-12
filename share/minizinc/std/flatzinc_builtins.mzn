@@ -488,7 +488,7 @@ predicate float_round(var float: x, var int: y);
 
 */
 
-/** @group flatzinc.deprecated Constrains \( \a b \leftrightarrow \bigvee_i \a as[i]\)
+/** @group flatzinc.deprecated Constrains \( \a b \leftrightarrow \bigvee_i \a xs[i]\)
 */
-predicate array_bool_or(array [int] of var bool: as, var bool: b)
+predicate array_bool_or(array [int] of var bool: xs, var bool: b)
   :: mzn_deprecated("2.7.0", "https://www.minizinc.org/doc-2.7.0/en/lib-flatzinc-deprecated.html");
