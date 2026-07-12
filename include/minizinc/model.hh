@@ -78,6 +78,15 @@ public:
     static bool compare(const EnvI& env, const FnEntry& e1, const FnEntry& e2);
   };
 
+  /// A body-less declaration recorded as the name-authority anchor for its
+  /// overload family (see checkAuthoritativeParameterNames). Captured in
+  /// registerFn before the override merge can consume the body-less
+  /// declaration.
+  struct FnAnchor {
+    FunctionI* fi;    ///< the body-less declaration (source of canonical names)
+    bool fromStdLib;  ///< source rank captured before any par/var merge alters it
+  };
+
 protected:
   /// Add all instances of polymorphic entry \a fe to \a entries
   static void addPolymorphicInstances(EnvI& env, Model::FnEntry& fe, std::vector<FnEntry>& entries);
@@ -94,6 +103,14 @@ protected:
   using FnMap = ASTStringMap<std::vector<FnEntry>>;
   /// Map from identifiers to function declarations
   FnMap _fnmap;
+
+  /// Type of map from identifiers to their name-authority anchors
+  using FnAnchorMap = ASTStringMap<std::vector<FnAnchor>>;
+  /// Body-less declarations that fix the canonical parameter names for their
+  /// overload family, captured in registerFn keyed by identifier. Populated
+  /// eagerly because the override merge in registerFn replaces a body-less
+  /// declaration with a bodied one of the same type, discarding its names.
+  FnAnchorMap _fnAnchors;
 
   /// Type of map from Type (represented as int) to reverse mapper functions
   using RevMapperMap = std::unordered_map<int, FunctionI*>;
@@ -251,6 +268,14 @@ public:
   /// A call is re-resolved to its reification by matching the base's parameter
   /// names, so a disagreement means the reification cannot be found by name.
   void checkReifParameterNames(EnvI& env) const;
+  /// Warn about declarations whose parameter names disagree with the body-less
+  /// declaration that anchors their overload family (same identifier, same
+  /// parameter types up to var/par and optionality). A body-less declaration is
+  /// a callable builtin, so it fixes the parameter names by which its family can
+  /// be called; a divergent sibling cannot be reached by those names. Arbitrated
+  /// by source rank: a solver library divergence warns against the standard
+  /// library anchor, never the other way around.
+  void checkAuthoritativeParameterNames(EnvI& env) const;
   /// Return function declaration for reverse mapper for type \a t
   FunctionI* matchRevMap(EnvI& env, const Type& t) const;
   /// Check if function with this name exists
