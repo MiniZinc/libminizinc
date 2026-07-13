@@ -181,7 +181,7 @@ void Type::mkPresent(EnvI& env) {
   for (unsigned int i = 0; i < st->size(); ++i) {
     pt[i] = (*st)[i];
     if (pt[i].structBT()) {
-      pt[i].mkOpt(env);
+      pt[i].mkPresent(env);
       changed = changed || (*st)[i].typeId() != pt[i].typeId();
     } else {
       changed = changed || pt[i].ot() != OT_PRESENT;
