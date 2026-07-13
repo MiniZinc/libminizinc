@@ -1057,11 +1057,46 @@ Haskell implicitly adding a new value :mzn:`<>` to the type.
 
 |TyInsts|
 The argument of an option type must be one of the base types
-:mzn:`bool`, :mzn:`int` or :mzn:`float`.
+:mzn:`bool`, :mzn:`int` or :mzn:`float`, or a par
+:ref:`tuple <spec-tuple-types>` or :ref:`record <spec-record-types>` type.
+A :mzn:`var opt` tuple or record is not supported; since a tuple or record
+containing any :mzn:`var` field is itself :mzn:`var`, an optional tuple or
+record may not have :mzn:`var` fields either.
 
 |TySyntax|
 The option type is written :mzndef:`opt <T>` where :mzndef:`<T>` if one of
 the three base types, or one of their constrained instances.
+
+For a tuple or record, :mzn:`opt` makes it optional as a *whole*: a value
+of type :mzn:`opt T` is either a complete value of type :mzn:`T`, or :mzn:`<>`.
+The fields keep their declared types; :mzn:`opt` does **not** distribute into
+them. An optional record and a record of optional fields are therefore two
+different types:
+
+.. code-block:: minizinc
+
+  opt record(int: a, int: b): p = <>;         % the whole record is absent
+  record(opt int: a, opt int: b): q = (a: 1, b: <>);  % individual fields absent
+
+:mzn:`p` has only the states "some :mzn:`(a: .., b: ..)`" and "absent", so
+:mzn:`absent(p)` holds exactly when :mzn:`p = <>`. :mzn:`q` additionally has the
+mixed states in which some fields are present and others are not. Neither type is
+a subtype of the other.
+
+Accessing a field of an optional tuple or record yields an optional value: if the
+tuple or record is absent, so is the field. For example, if :mzn:`r` has type
+:mzn:`opt record(int: x)` then :mzn:`r.x` has type :mzn:`opt int`, and it is
+:mzn:`<>` whenever :mzn:`r` is.
+
+An optional tuple or record may have array-typed fields, but such a field cannot be
+accessed this way, since there is no absent array to stand for it when the tuple or
+record is absent. Strip the optionality with :mzn:`deopt` instead, guarding it with
+:mzn:`occurs`:
+
+.. code-block:: minizinc
+
+  opt record(array [1..2] of int: a): r;
+  array [int] of int: v = if occurs(r) then deopt(r).a else [] endif;
 
 |TyFiniteType|
 Yes if the underlying type is finite, otherwise no.
@@ -1092,7 +1127,8 @@ Tuples are fixed-size, heterogeneous collections. They must contain at least two
 elements; unary tuples are not allowed.
 
 |TyInsts|
-Tuples may contain unfixed elements.
+Tuples may contain unfixed elements. A par tuple may be optional; see
+:ref:`spec-option-types`.
 
 |TySyntax|
 A tuple base type-inst expression tail has this syntax:
@@ -1145,7 +1181,8 @@ The order in which a record's field are specified is irrelevant; the following t
   record(var int: y, var int: x)
 
 |TyInsts|
-Records may contain unfixed elements.
+Records may contain unfixed elements. A par record may be optional; see
+:ref:`spec-option-types`.
 
 |TySyntax|
 A record base type-inst expression tail has this syntax:

@@ -723,7 +723,15 @@ typename Eval::Val eval_call(EnvI& env, CallClass* ce) {
 Expression* eval_fieldaccess(EnvI& env, FieldAccess* fa) {
   assert(Expression::type(fa->v()).istuple() ||
          Expression::type(fa->v()).isrecord());  // TODO: Support for Records
-  auto* al = Expression::dynamicCast<ArrayLit>(eval_array_lit(env, fa->v()));
+  Expression* v = fa->v();
+  if (Expression::type(v).isOpt()) {
+    // A field of an absent struct is itself absent
+    v = eval_par(env, v);
+    if (v == env.constants.absent) {
+      return env.constants.absent;
+    }
+  }
+  auto* al = Expression::dynamicCast<ArrayLit>(eval_array_lit(env, v));
   if (al == nullptr) {
     throw EvalError(env, Expression::loc(fa), "Internal error: could not evaluate structural type");
   }

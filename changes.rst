@@ -25,6 +25,13 @@ Changes:
 -  Make the ``list`` type behave like a real 1-based array type. It is now
    syntactic sugar for ``array [1..infinity] of T``. Checks ensure that only
    1-based arrays match the ``list`` type.
+-  Allow par tuples and records to be optional. ``opt`` makes the tuple or
+   record optional as a whole (it is either a complete value or ``<>``); it does
+   not distribute into the fields, so ``opt record(int: a)`` remains a different
+   type from ``record(opt int: a)``. Accessing a field of an optional tuple or
+   record yields an optional value. ``var opt`` tuples and records remain type
+   errors, including when the ``var`` comes from a field, since a tuple or
+   record with any ``var`` field is itself ``var``.
 -  The SCIP interface is now only compatible with SCIP 10 and later.
 -  Some performance improvements through better inlining and reducing
    allocation in hot paths of the compiler.

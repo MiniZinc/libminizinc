@@ -2321,6 +2321,33 @@ public:
     assert((!new_fa_t.cv()) || fa_v_t.cv());
     new_fa_t.cv(fa_v_t.cv());
 
+    if (fa_v_t.isOpt()) {
+      // Accessing a field of an optional struct yields an optional value: if the struct is
+      // absent, so is the field. An array field has no such optional counterpart, because there
+      // is no absent array; the access has to be guarded by `occurs' and go through `deopt'.
+      if (new_fa_t.dim() != 0) {
+        // By now the field is an IntLit for both tuples and records
+        auto idx =
+            static_cast<unsigned int>(IntLit::v(Expression::cast<IntLit>(fa->field())).toInt());
+        std::ostringstream field;
+        if (fa_v_t.isrecord()) {
+          field << Printer::quoteId(_env.getRecordType(fa_v_t)->fieldName(idx - 1));
+        } else {
+          field << idx;
+        }
+        std::ostringstream oss;
+        oss << "cannot access field `" << field.str() << "' of an optional "
+            << (fa_v_t.istuple() ? "tuple" : "record") << ": the field has array type `"
+            << new_fa_t.toString(_env)
+            << "', and there is no absent array to stand for it when the "
+            << (fa_v_t.istuple() ? "tuple" : "record")
+            << " is absent. Guard the access instead, as in `if occurs(x) then deopt(x)."
+            << field.str() << " else ... endif'.";
+        throw TypeError(_env, Expression::loc(fa), oss.str());
+      }
+      new_fa_t.mkOpt();
+    }
+
     if (!arrayEnumIds.empty()) {
       // make array type, since this is a projection
       auto dim = arrayEnumIds.size() - 1;
@@ -3449,21 +3476,30 @@ public:
         // Concat domain has now added a typeId when combining domains
         needsArrayType = needsArrayType || !ti->ranges().empty();
       } else if (ti->type().bt() == Type::BT_TUPLE) {
-        if (tt.isOpt()) {
-          throw TypeError(_env, Expression::loc(ti), "opt tuples are not allowed");
+        // An `opt' tuple is the whole tuple or absent; it must not be var. Check before
+        // canonicalisation (which would spread the `var' into the fields), and again after,
+        // because a tuple with any var field is itself var.
+        if (tt.isvar() && tt.isOpt()) {
+          throw TypeError(_env, Expression::loc(ti), "var opt tuples are not allowed");
         }
         needsArrayType = false;  // will be registered by registerTupleType
         // Register and cononicalise tuple type
         ti->canonicaliseStruct(_env);
         tt = ti->type();
+        if (tt.isvar() && tt.isOpt()) {
+          throw TypeError(_env, Expression::loc(ti), "opt tuples with var fields are not allowed");
+        }
       } else if (ti->type().bt() == Type::BT_RECORD) {
-        if (tt.isOpt()) {
-          throw TypeError(_env, Expression::loc(ti), "opt records are not allowed");
+        if (tt.isvar() && tt.isOpt()) {
+          throw TypeError(_env, Expression::loc(ti), "var opt records are not allowed");
         }
         needsArrayType = false;  // will be registered by registerRecordType
         // Register and cononicalise record type
         ti->canonicaliseStruct(_env);
         tt = ti->type();
+        if (tt.isvar() && tt.isOpt()) {
+          throw TypeError(_env, Expression::loc(ti), "opt records with var fields are not allowed");
+        }
       } else if (TIId* tiid = Expression::dynamicCast<TIId>(ti->domain())) {
         if (tiid->isEnum()) {
           tt.bt(Type::BT_INT);

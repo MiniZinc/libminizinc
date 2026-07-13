@@ -118,8 +118,11 @@ public:
   OptType ot() const { return static_cast<OptType>(_ot); }
   /// Set opt type
   void ot(const OptType& o) {
-    assert(o == OT_PRESENT || !structBT() ||
-           typeId() == 0);  // Cannot create "opt tuple" after typechecking
+    // A struct type may be optional ("the whole struct, or absent"), but a var struct may not:
+    // `var opt' structs are not supported. Types that have not been registered yet (typeId 0)
+    // are exempt, because the parser builds `var opt tuple(...)' before the type checker
+    // rejects it.
+    assert(o == OT_PRESENT || !structBT() || typeId() == 0 || isPar());
     _ot = o;
   }
   bool otExplicit() const { return static_cast<ExplicitType>(_otExplicit) == EXPL_YES; }
@@ -229,8 +232,13 @@ public:
   bool isfloat() const { return dim() == 0 && st() == ST_PLAIN && bt() == BT_FLOAT; }
   bool isbool() const { return dim() == 0 && st() == ST_PLAIN && bt() == BT_BOOL; }
   bool isstring() const { return isplain() && bt() == BT_STRING; }
-  bool istuple() const { return isplain() && bt() == BT_TUPLE; }
-  bool isrecord() const { return isplain() && bt() == BT_RECORD; }
+  /// A tuple value (not an array of tuples). An `opt' tuple is still a tuple: `opt t' means
+  /// "the whole struct, or absent", so the fields keep their declared types and every site that
+  /// dispatches on the shape of the value must take the tuple path. Use `istuple() && isPresent()'
+  /// where the absent case genuinely has to be excluded.
+  bool istuple() const { return dim() == 0 && st() == ST_PLAIN && bt() == BT_TUPLE; }
+  /// A record value (not an array of records). See istuple().
+  bool isrecord() const { return dim() == 0 && st() == ST_PLAIN && bt() == BT_RECORD; }
   bool isvar() const { return ti() != TI_PAR; }
   bool isvarbool() const {
     return ti() == TI_VAR && dim() == 0 && st() == ST_PLAIN && bt() == BT_BOOL &&
@@ -292,10 +300,16 @@ public:
   void mkPar(EnvI& env);
   /// Turn type or all fields of a tuple type into a parameter types
   void mkVar(EnvI& env);
-  /// Turn type or all fields of a tuple type into a optional types
-  void mkOpt(EnvI& env);
-  /// Turn type or all fields of a tuple type into a present types
-  void mkPresent(EnvI& env);
+  /// Turn this type into an optional type.
+  /// For a struct, this makes the struct as a whole optional (it is either the whole struct or
+  /// absent); the field types are left alone. `opt record(int: a)' is therefore a different type
+  /// from `record(opt int: a)'.
+  void mkOpt();
+  /// Turn this type into a present type (the inverse of mkOpt)
+  void mkPresent();
+  /// Remove optionality from this type and, for structs, recursively from all field types.
+  /// This is a normalisation for comparing types modulo optionality, not a type constructor.
+  void mkPresentDeep(EnvI& env);
 
   /// Return true if this type is varifiable
   bool isVarifiable(const EnvI& env) const;

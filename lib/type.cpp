@@ -126,47 +126,13 @@ void Type::mkVar(EnvI& env) {
   }
 }
 
-void Type::mkOpt(EnvI& env) {
-  assert(st() == Type::ST_PLAIN);
-  if (!structBT()) {
-    ot(OT_OPTIONAL);
-    return;
-  }
-  std::vector<unsigned int> arrayEnumIds;
-  unsigned int tId = typeId();
-  if (dim() != 0) {
-    arrayEnumIds = env.getArrayEnum(tId);
-    tId = arrayEnumIds[arrayEnumIds.size() - 1];
-  }
-  StructType* strt = env.getStructType(tId, bt());
-  std::vector<Type> pt(strt->size());
-  bool changed = false;
-  for (unsigned int i = 0; i < strt->size(); ++i) {
-    pt[i] = (*strt)[i];
-    if (pt[i].structBT()) {
-      pt[i].mkOpt(env);
-      changed = changed || (*strt)[i].typeId() != pt[i].typeId();
-    } else if (st() == Type::ST_PLAIN) {
-      changed = changed || pt[i].ot() != OT_OPTIONAL;
-      pt[i].ot(OT_OPTIONAL);
-    }
-  }
-  if (changed) {
-    unsigned int regId = bt() == BT_TUPLE
-                             ? env.registerTupleType(pt)
-                             : env.registerRecordType(static_cast<RecordType*>(strt), pt);
-    if (dim() != 0) {
-      arrayEnumIds[arrayEnumIds.size() - 1] = regId;
-      typeId(env.registerArrayEnum(arrayEnumIds));
-    } else {
-      typeId(regId);
-    }
-  }
-}
+void Type::mkOpt() { ot(OT_OPTIONAL); }
 
-void Type::mkPresent(EnvI& env) {
+void Type::mkPresent() { ot(OT_PRESENT); }
+
+void Type::mkPresentDeep(EnvI& env) {
+  ot(OT_PRESENT);
   if (!structBT()) {
-    ot(OT_PRESENT);
     return;
   }
   std::vector<unsigned int> arrayEnumIds;
@@ -181,8 +147,8 @@ void Type::mkPresent(EnvI& env) {
   for (unsigned int i = 0; i < st->size(); ++i) {
     pt[i] = (*st)[i];
     if (pt[i].structBT()) {
-      pt[i].mkPresent(env);
-      changed = changed || (*st)[i].typeId() != pt[i].typeId();
+      pt[i].mkPresentDeep(env);
+      changed = changed || (*st)[i] != pt[i];
     } else {
       changed = changed || pt[i].ot() != OT_PRESENT;
       pt[i].ot(OT_PRESENT);
@@ -336,14 +302,25 @@ Type Type::commonType(EnvI& env, Type t1, Type t2, bool strictEnums) {
     return Type::arrType(env, Type::parint(t1.dim()), commonEl);
   }
 
+  // The common supertype of a struct and `<>' is the optional struct. (A var struct has no
+  // common supertype with `<>', because `var opt' structs are not supported.)
+  if (t1.structBT() && t1.isPar() && t2.isOptBot()) {
+    t1.mkOpt();
+    return t1;
+  }
+  if (t2.structBT() && t2.isPar() && t1.isOptBot()) {
+    t2.mkOpt();
+    return t2;
+  }
+
   if ((t1.structBT() || t2.structBT()) && t1.bt() != t2.bt()) {
     return Type();
   }
 
-  if (t1.istuple()) {
+  if (t1.bt() == BT_TUPLE) {
     return env.commonTuple(t1, t2, false, strictEnums);
   }
-  if (t1.isrecord()) {
+  if (t1.bt() == BT_RECORD) {
     return env.commonRecord(t1, t2, false, strictEnums);
   }
 

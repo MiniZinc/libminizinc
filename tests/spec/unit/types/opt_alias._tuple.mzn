@@ -1,10 +1,14 @@
 /***
 !Test
 solvers: [gecode]
-expected: !Error
-  type: TypeError
-type: compile
+expected: !Result
+  status: SATISFIED
+  solution: !Solution
+    x: null
+    y: [1]
 ***/
 
+% `opt Foo' where Foo is a tuple alias makes the tuple as a whole optional.
 type Foo = tuple(int);
-opt Foo: x;
+opt Foo: x :: output = <>;
+opt Foo: y :: output = (1,);

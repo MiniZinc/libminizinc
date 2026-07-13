@@ -238,7 +238,7 @@ public:
     }
     auto baseArgTypes = parTypes;
     for (auto& t : baseArgTypes) {
-      t.mkPresent(env);
+      t.mkPresentDeep(env);
     }
     auto baseInstance =
         _map.emplace(InstantiatedItem(env, call->id(), baseArgTypes), _instanceCount);
@@ -344,12 +344,16 @@ public:
       }
       if (curType.any()) {
         curType.any(false);
+        curType.ot(concrete_type.ot());
         if (curType.structBT()) {
-          curType.ot(Type::OT_PRESENT);
+          // A struct's ti and cv are recomputed from its field types when the struct type is
+          // registered below, so the wrapper's own ti/cv are not meaningful here. Its `ot' is
+          // not recomputed, though: `opt' applies to the struct as a whole, so it has to be
+          // carried over from the concrete type or the specialised parameter would not match
+          // the call.
           curType.ti(Type::TI_PAR);
           curType.cv(false);
         } else {
-          curType.ot(concrete_type.ot());
           curType.ti(concrete_type.ti());
           curType.cv(concrete_type.cv());
         }

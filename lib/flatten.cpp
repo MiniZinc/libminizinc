@@ -1436,6 +1436,13 @@ Type EnvI::commonTuple(Type tuple1, Type tuple2, bool ignoreTuple1Dim, bool stri
   }
   tuple1.typeId(typeId);
   tuple1.cv(tuple1.cv() || tuple2.cv());
+  if (tuple1.isOpt() || tuple2.isOpt()) {
+    if (tuple1.isvar() || tuple2.isvar()) {
+      // `var opt' tuples are not supported, so there is no common type
+      return Type();
+    }
+    tuple1.mkOpt();
+  }
   assert(tuple1.bt() != Type::BT_TUPLE || tuple1.typeId() != 0);
   return tuple1;
 }
@@ -1499,6 +1506,13 @@ Type EnvI::commonRecord(Type record1, Type record2, bool ignoreRecord1Dim, bool 
   }
   record1.typeId(typeId);
   record1.cv(record1.cv() || record2.cv());
+  if (record1.isOpt() || record2.isOpt()) {
+    if (record1.isvar() || record2.isvar()) {
+      // `var opt' records are not supported, so there is no common type
+      return Type();
+    }
+    record1.mkOpt();
+  }
   return record1;
 }
 

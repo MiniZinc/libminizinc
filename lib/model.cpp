@@ -504,8 +504,8 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
           Type t2 = fi->ti()->type();
           t1.mkPar(env);
           t2.mkPar(env);
-          t1.mkPresent(env);
-          t2.mkPresent(env);
+          t1.mkPresentDeep(env);
+          t2.mkPresentDeep(env);
           if (t1.bt() == Type::BT_INT) {
             t1.typeId(0);
           }

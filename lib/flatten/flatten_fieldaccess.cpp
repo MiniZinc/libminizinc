@@ -16,6 +16,13 @@ namespace MiniZinc {
 EE flatten_fieldaccess(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   auto* fa = Expression::cast<FieldAccess>(e);
   assert(Expression::type(fa->v()).istuple() || Expression::type(fa->v()).isrecord());
+  // An optional struct never reaches the flattener, so the absent case does not have to be
+  // handled here (eval_fieldaccess handles it). An optional struct is always par, and flat_exp
+  // dispatches par expressions to flatten_par before they get here. The two escapes from that
+  // check are both closed by the type checker: a field of an optional struct has an `opt' type,
+  // and `opt ann' is rejected in an annotation position (the `BT_ANN' escape) while `opt bool' is
+  // rejected in a constraint or `where' clause (the root-bool-with-cv escape).
+  assert(Expression::type(fa->v()).isPresent());
 
   // Resolve tuple
   Ctx nctx = ctx;
