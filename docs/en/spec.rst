@@ -989,15 +989,25 @@ Some example array type-inst expressions:
 Note that :mzndef:`list of <T>` is sugar for
 :mzndef:`array[1..infinity] of <T>`: a one-dimensional array whose index set
 starts at ``1`` but whose length is arbitrary.  This is *not* the same as
-:mzndef:`array[int] of <T>`, which permits any integer index set.  When a value
-is passed as an argument to a :mzn:`list` parameter (including a :mzn:`list`
-field of a tuple or record), it is automatically coerced to be 1-based using
-:mzn:`array1d`, so inside the function the array is guaranteed to be indexed from
-``1``.  *Rationale: 1-based integer-indexed arrays are very common, and a
+:mzndef:`array[int] of <T>`, which permits any integer index set.  A value bound
+to a :mzn:`list` — as a function argument, in a variable declaration, or as a
+function result — must have an index set that starts at ``1``; otherwise it is an
+index set mismatch, and the value has to be rebased explicitly using
+:mzn:`array1d`.  This holds for every :mzn:`list` position, including a
+:mzn:`list` field of a tuple or record and a :mzn:`list` nested in the elements
+of an array.  Inside a function, the array is therefore guaranteed to be indexed
+from ``1``.  *Rationale: 1-based integer-indexed arrays are very common, and a
 predicate that iterates over a parameter using* :mzn:`1..length(x)` *is only
 correct if the argument is 1-based.  Implementing* :mzn:`list` *as sugar for an
 unbounded index set avoids adding an extra type to the language while still
-expressing the 1-based guarantee.*
+expressing the 1-based guarantee.  Rebasing is not applied implicitly, because
+silently renumbering the caller's array would make* :mzn:`list` *parameters
+behave differently from* :mzn:`array[int] of <T>` *parameters, which preserve the
+index set, in a way that is invisible at the call site.*
+
+Note that most arrays are 1-based already, and so can be passed to a :mzn:`list`
+without any rebasing: array literals, comprehensions, array slices, and
+enum-indexed arrays all have index sets that start at ``1``.
 
 An unbounded array index set is only permitted if its lower bound is ``1`` (that
 is, :mzn:`1..infinity`, which is what :mzn:`list of` produces); any other lower

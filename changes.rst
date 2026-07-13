@@ -23,10 +23,8 @@ Changes:
    output). Solvers without native support post the assumptions as hard
    constraints and issue a warning.
 -  Make the ``list`` type behave like a real 1-based array type. It is now
-   syntactic sugar for ``array [1..infinity] of T``. Actual arguments to
-   functions declared with ``list`` parameters are automatically coerced
-   using ``array1d`` calls. Other checks ensure that only 1-based arrays
-   match the ``list`` type.
+   syntactic sugar for ``array [1..infinity] of T``. Checks ensure that only
+   1-based arrays match the ``list`` type.
 -  The SCIP interface is now only compatible with SCIP 10 and later.
 -  Some performance improvements through better inlining and reducing
    allocation in hot paths of the compiler.
@@ -85,6 +83,9 @@ Bug fixes:
 -  Fix boolean context for call arguments and local declaration right-hand sides
    of type ``array [_] of var bool``.
 -  Add missing GC lock to EnvI::fail().
+-  Fix index-set checking for arrays nested inside other arrays, where
+   an outer array does not have a declared index set but the inner array
+   does.
 
 .. _v2.9.7:
 

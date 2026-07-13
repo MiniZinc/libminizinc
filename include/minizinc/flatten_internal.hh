@@ -586,6 +586,12 @@ inline VarDecl* Ctx::partialityVar(EnvI& env) const {
   return b == C_ROOT ? env.constants.varTrue : nullptr;
 }
 
+/// True if \a isv is the index set `1..infinity`, which marks a `list`: only the lower bound is
+/// fixed, the length is arbitrary. Actual index sets are only required to be 1-based.
+inline bool is_list_index_set(IntSetVal* isv) {
+  return isv->size() == 1 && isv->min(0) == 1 && isv->max(0).isPlusInfinity();
+}
+
 void set_computed_domain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_computed);
 EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
 EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,

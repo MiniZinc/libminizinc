@@ -2254,6 +2254,61 @@ void Env::clearWarnings() { envi().warnings.clear(); }
 
 unsigned int Env::maxCallStack() const { return envi().maxCallStack; }
 
+/// The declared TypeInst of field \a i of a struct domain (tuple fields are TypeInsts, record
+/// fields are VarDecls).
+static TypeInst* struct_field_ti(Expression* field) {
+  if (auto* vd = Expression::dynamicCast<VarDecl>(field)) {
+    return vd->ti();
+  }
+  return Expression::dynamicCast<TypeInst>(field);
+}
+
+/// True if \a ti is, or structurally contains, an array with a declared index set (either a
+/// fixed one like `array[3..6]' or the `1..infinity' of a `list'). Only those positions have
+/// anything to check against the actual value. A position that leaves the index set open has
+/// not: `array[int]' has no range domain, while `array[_]' and a generic `array[$T]' have the
+/// placeholders AnonVar and TIId.
+///
+/// This is a purely structural test: it must not evaluate any domain, because the TypeInsts
+/// walked here can belong to models that have not been processed yet (the parser gives a `list'
+/// range an unknown type, see parser.yxx).
+static bool ti_has_declared_index_set(TypeInst* ti) {
+  if (ti == nullptr) {
+    return false;
+  }
+  for (unsigned int i = 0; i < ti->ranges().size(); i++) {
+    TypeInst* r = ti->ranges()[i];
+    if (r != nullptr && r->domain() != nullptr && !Expression::isa<TIId>(r->domain()) &&
+        !Expression::isa<AnonVar>(r->domain())) {
+      return true;
+    }
+  }
+  // A struct domain is an ArrayLit of field TypeInsts (tuple) / VarDecls (record).
+  if (auto* fields = Expression::dynamicCast<ArrayLit>(ti->domain())) {
+    for (unsigned int i = 0; i < fields->size(); i++) {
+      if (ti_has_declared_index_set(struct_field_ti((*fields)[i]))) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/// True if the *elements* of an array declared as \a ti contain an array with a declared index
+/// set, so that the index sets inside the elements have to be checked against the actual value.
+static bool elements_have_declared_index_set(TypeInst* ti) {
+  auto* fields = Expression::dynamicCast<ArrayLit>(ti->domain());
+  if (fields == nullptr) {
+    return false;
+  }
+  for (unsigned int i = 0; i < fields->size(); i++) {
+    if (ti_has_declared_index_set(struct_field_ti((*fields)[i]))) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void check_index_sets(EnvI& env, VarDecl* vd, Expression* e, bool isArg) {
   struct ToCheck {
     Expression* accessor;
@@ -2270,6 +2325,42 @@ void check_index_sets(EnvI& env, VarDecl* vd, Expression* e, bool isArg) {
   // Firstly just walks through checking index sets, then if we encounter an error,
   // starts again recording what field accessors are needed to generate the error message.
   bool hadError = false;
+
+  // Queue the elements of \a al for checking against the element TypeInst described by \a ti's
+  // struct domain. Only elements that declare an index set somewhere need this: index sets are
+  // not part of the type, so they can only be checked against the actual value. Elements that
+  // declare none have nothing to check, and must not be touched here: evaluating them can fail
+  // (they may be unflattened var comprehensions, e.g. in an output item).
+  auto push_elements = [&](Expression* accessor, ArrayLit* al, TypeInst* ti) {
+    if (!elements_have_declared_index_set(ti)) {
+      return;
+    }
+    unsigned int enumId = ti->type().typeId();
+    for (unsigned int i = 0; i < al->size(); i++) {
+      Expression* access = nullptr;
+      if (hadError && accessor != nullptr) {
+        std::vector<int> indexes(al->dims());
+        int remDim = static_cast<int>(i);
+        for (unsigned int j = al->dims(); (j--) != 0U;) {
+          indexes[j] = (remDim % (al->max(j) - al->min(j) + 1)) + al->min(j);
+          remDim = remDim / (al->max(j) - al->min(j) + 1);
+        }
+        std::vector<Expression*> indexes_s(indexes.size());
+        for (unsigned int j = 0; j < indexes.size(); j++) {
+          const unsigned int idxEnumId = enumId != 0 ? env.getArrayEnum(enumId)[j] : 0;
+          if (idxEnumId != 0) {
+            indexes_s[j] =
+                new Id(Location().introduce(), env.enumToString(idxEnumId, indexes[j]), nullptr);
+          } else {
+            indexes_s[j] = IntLit::a(indexes[j]);
+          }
+        }
+        access = new ArrayAccess(Location().introduce(), accessor, indexes_s);
+      }
+      todo.emplace_back(access, (*al)[i], ti);
+    }
+  };
+
   while (!todo.empty()) {
     auto item = todo.back();
     todo.pop_back();
@@ -2283,7 +2374,8 @@ void check_index_sets(EnvI& env, VarDecl* vd, Expression* e, bool isArg) {
           if (tis.size() != e_tis.size()) {
             continue;
           }
-          for (unsigned int i = 0; i < e_tis.size(); i++) {
+          bool mismatchFound = false;
+          for (unsigned int i = 0; i < e_tis.size() && !mismatchFound; i++) {
             if (tis[i]->domain() == nullptr) {
               if (!isArg) {
                 cm.insert(tis[i], e_tis[i]);
@@ -2292,10 +2384,9 @@ void check_index_sets(EnvI& env, VarDecl* vd, Expression* e, bool isArg) {
             } else if (!Expression::isa<TIId>(tis[i]->domain())) {
               IntSetVal* isv0 = eval_intset(env, tis[i]->domain());
               IntSetVal* isv1 = eval_intset(env, e_tis[i]->domain());
-              // An index set `1..infinity' marks a `list': only the lower bound (1) is
-              // fixed, the length is arbitrary. Require the actual to be 1-based and adopt
-              // its concrete index set (so index_set etc. see the real set).
-              bool listIdx = !isv0->empty() && isv0->min(0) == 1 && isv0->max(0).isPlusInfinity();
+              // For a `list', require the actual to be 1-based and adopt its concrete index
+              // set (so index_set etc. see the real set).
+              bool listIdx = is_list_index_set(isv0);
               bool mismatch = listIdx ? (!isv1->empty() && isv1->min(0) != 1) : !isv0->equal(isv1);
               if (listIdx && !mismatch) {
                 if (!isArg) {
@@ -2332,6 +2423,7 @@ void check_index_sets(EnvI& env, VarDecl* vd, Expression* e, bool isArg) {
                   throw EvalError(env, Expression::loc(e), oss.str());
                 }
                 hadError = true;
+                mismatchFound = true;
                 todo.clear();
                 Id* ident = hasName ? vd->id()
                                     : new Id(Location().introduce(),
@@ -2340,13 +2432,23 @@ void check_index_sets(EnvI& env, VarDecl* vd, Expression* e, bool isArg) {
               }
             }
           }
+          if (!mismatchFound && elements_have_declared_index_set(item.ti)) {
+            // The element index sets are not part of the type, so an index set declared inside
+            // the elements has to be checked against the actual value.
+            // Invariant: check_index_sets is only called on fully evaluated/flattened values, so
+            // an array whose elements need checking always has an ArrayLit as its value here.
+            // Anything else is a bug, and must fail loudly rather than skip the check.
+            auto* al = Expression::cast<ArrayLit>(id->decl()->e());
+            push_elements(item.accessor, al, item.ti);
+          }
         } break;
         case Expression::E_ARRAYLIT: {
           auto* al = Expression::cast<ArrayLit>(item.e);
           if (tis.size() != al->dims()) {
             continue;
           }
-          for (unsigned int i = 0; i < tis.size(); i++) {
+          bool mismatchFound = false;
+          for (unsigned int i = 0; i < tis.size() && !mismatchFound; i++) {
             if (tis[i]->domain() == nullptr) {
               if (!isArg) {
                 cm.insert(tis[i], new TypeInst(Location().introduce(), Type::parint(),
@@ -2357,8 +2459,8 @@ void check_index_sets(EnvI& env, VarDecl* vd, Expression* e, bool isArg) {
             } else if ((i == 0 || !al->empty()) && !Expression::isa<TIId>(tis[i]->domain())) {
               IntSetVal* isv = eval_intset(env, tis[i]->domain());
               assert(isv->size() <= 1);
-              // `1..infinity' marks a `list': require the actual to be 1-based, any length.
-              bool listIdx = !isv->empty() && isv->min(0) == 1 && isv->max(0).isPlusInfinity();
+              // For a `list', require the actual to be 1-based, any length.
+              bool listIdx = is_list_index_set(isv);
               bool mismatch = listIdx ? (al->min(i) != 1)
                                       : ((isv->empty() && al->min(i) <= al->max(i)) ||
                                          (!isv->empty() && (isv->min(0) != al->min(i) ||
@@ -2404,52 +2506,23 @@ void check_index_sets(EnvI& env, VarDecl* vd, Expression* e, bool isArg) {
                   throw EvalError(env, Expression::loc(e), oss.str());
                 }
                 hadError = true;
+                mismatchFound = true;
                 todo.clear();
                 Id* ident = hasName ? vd->id()
                                     : new Id(Location().introduce(),
                                              env.constants.ids.unnamedArgument, nullptr);
                 todo.emplace_back(ident, e, vd->ti());
-              } else {
-                if (listIdx && !isArg) {
-                  // Replace the `1..infinity' index set with the actual (finite) one.
-                  cm.insert(tis[i], new TypeInst(Location().introduce(), Type::parint(),
-                                                 new SetLit(Location().introduce(),
-                                                            IntSetVal::a(al->min(i), al->max(i)))));
-                  needNewTypeInst = true;
-                }
-                unsigned int enumId = item.ti->type().typeId();
-                for (unsigned int i = 0; i < al->size(); i++) {
-                  Expression* access = nullptr;
-                  if (hadError) {
-                    std::vector<int> indexes(al->dims());
-                    int remDim = static_cast<int>(i);
-                    for (unsigned int j = al->dims(); (j--) != 0U;) {
-                      indexes[j] = (remDim % (al->max(j) - al->min(j) + 1)) + al->min(j);
-                      remDim = remDim / (al->max(j) - al->min(j) + 1);
-                    }
-                    std::vector<Expression*> indexes_s(indexes.size());
-                    if (enumId != 0) {
-                      const auto& enumIds = env.getArrayEnum(enumId);
-                      for (unsigned int j = 0; j < indexes.size(); j++) {
-                        std::ostringstream index_oss;
-                        if (enumIds[j] != 0) {
-                          auto name = env.enumToString(enumIds[j], indexes[j]);
-                          indexes_s[j] = new Id(Location().introduce(), name, nullptr);
-                        } else {
-                          indexes_s[j] = IntLit::a(indexes[j]);
-                        }
-                      }
-                    } else {
-                      for (unsigned int j = 0; j < indexes.size(); j++) {
-                        indexes_s[j] = IntLit::a(indexes[j]);
-                      }
-                    }
-                    access = new ArrayAccess(Location().introduce(), item.accessor, indexes_s);
-                  }
-                  todo.emplace_back(access, (*al)[i], item.ti);
-                }
+              } else if (listIdx && !isArg) {
+                // Replace the `1..infinity' index set with the actual (finite) one.
+                cm.insert(tis[i], new TypeInst(Location().introduce(), Type::parint(),
+                                               new SetLit(Location().introduce(),
+                                                          IntSetVal::a(al->min(i), al->max(i)))));
+                needNewTypeInst = true;
               }
             }
+          }
+          if (!mismatchFound) {
+            push_elements(item.accessor, al, item.ti);
           }
         } break;
         default:
@@ -2459,10 +2532,18 @@ void check_index_sets(EnvI& env, VarDecl* vd, Expression* e, bool isArg) {
       auto* domains = Expression::dynamicCast<ArrayLit>(item.ti->domain());
       if (domains != nullptr) {
         auto* al = eval_array_lit(env, item.e);
+        // An array of arrays is encoded as an array of tuples with a single real field plus an
+        // unknown padding field (see TypeInst::canonicaliseStruct). That field is the array the
+        // user wrote, so it must not show up as a tuple field access in an error message.
+        StructType* st = env.getStructType(Expression::type(item.e));
+        bool isArrayOfArray = domains->size() == 1 && st->size() == 2;
         for (unsigned int i = 0; i < al->size(); i++) {
-          auto* access =
-              hadError ? new FieldAccess(Location().introduce(), item.accessor, IntLit::a(i + 1))
-                       : nullptr;
+          Expression* access = nullptr;
+          if (hadError) {
+            access = isArrayOfArray
+                         ? item.accessor
+                         : new FieldAccess(Location().introduce(), item.accessor, IntLit::a(i + 1));
+          }
           todo.emplace_back(access, (*al)[i], Expression::cast<TypeInst>((*domains)[i]));
         }
       }

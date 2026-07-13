@@ -1300,7 +1300,10 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
                     !Expression::isa<TIId>(decl->ti()->ranges()[i]->domain())) {
                   GCLock lock;
                   IntSetVal* isv = eval_intset(env, decl->ti()->ranges()[i]->domain());
-                  if (al->min(i) != isv->min() || al->max(i) != isv->max()) {
+                  bool mismatch = is_list_index_set(isv)
+                                      ? al->min(i) != 1
+                                      : (al->min(i) != isv->min() || al->max(i) != isv->max());
+                  if (mismatch) {
                     EE ee;
                     ee.b = env.constants.literalFalse;
                     args_ee.push_back(ee);
