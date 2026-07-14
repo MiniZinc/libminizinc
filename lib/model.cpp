@@ -437,13 +437,14 @@ bool ambiguous_named_call(FunctionI* a, FunctionI* b) {
   return true;
 }
 
-#ifndef NDEBUG
 // Does \a fi share its bucket \a v with a name-only sibling - another overload
 // with identical parameter types but at least one differing (name-passable)
 // parameter name? Such overloads can only be told apart by named arguments, so
 // resolving \a fi through a type-only matchFn (which ignores names) is a latent
 // bug: the caller should use the name-aware matchFn(Call*) / matchFnByNames /
-// matchReifByNames instead. Used only by debug-build guardrail asserts.
+// matchReifByNames instead. The type-only matchers throw a clear error rather
+// than silently returning \a fi if this ever holds (it cannot for a library
+// that passes the name-consistency checks).
 bool has_name_only_sibling(const std::vector<Model::FnEntry>& v, FunctionI* fi) {
   for (const auto& fe : v) {
     if (fe.fi == fi || fe.fi->paramCount() != fi->paramCount()) {
@@ -462,7 +463,6 @@ bool has_name_only_sibling(const std::vector<Model::FnEntry>& v, FunctionI* fi) 
   }
   return false;
 }
-#endif
 
 // Is \a a at least as specific as \a b on the first \a n parameters? Only the
 // parameters an actual call supplies are compared; a defaulted tail is not part
@@ -604,8 +604,7 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
   }
   // A body-less declaration is the name-authority anchor for its overload family.
   // Record it now, before the merge below can replace it with a bodied override of
-  // the same type (which would discard its parameter names). Its source rank is
-  // captured here too, before the par/var merge can raise it.
+  // the same type (which would discard its parameter names).
   if (fi->e() == nullptr && !fi->isMonomorphised()) {
     std::vector<FnAnchor>& anchors = m->_fnAnchors[fi->id()];
     bool alreadyRecorded = false;
@@ -616,7 +615,7 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
       }
     }
     if (!alreadyRecorded) {
-      anchors.push_back({fi, fi->fromStdLib()});
+      anchors.push_back({fi});
     }
   }
   auto i_id = m->_fnmap.find(fi->id());
@@ -756,13 +755,61 @@ bool Model::fnExists(EnvI& env, const ASTString& id) const {
   return i_id != m->_fnmap.end();
 }
 
+bool Model::isFnAnchored(EnvI& env, const FunctionI* fi) const {
+  const Model* m = this;
+  while (m->_parent != nullptr) {
+    m = m->_parent;
+  }
+  auto it = m->_fnAnchors.find(fi->id());
+  if (it == m->_fnAnchors.end()) {
+    return false;
+  }
+  std::vector<Type> sig = normalized_param_sig(env, fi);
+  for (const auto& a : it->second) {
+    if (a.fi->paramCount() == fi->paramCount() && normalized_param_sig(env, a.fi) == sig) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool Model::hasAnchoredArityMatch(const ASTString& id, unsigned int nArgs) const {
+  const Model* m = this;
+  while (m->_parent != nullptr) {
+    m = m->_parent;
+  }
+  auto it = m->_fnAnchors.find(id);
+  if (it == m->_fnAnchors.end()) {
+    return false;
+  }
+  for (const auto& a : it->second) {
+    if (a.fi->paramCount() < nArgs) {
+      continue;
+    }
+    // Any parameter past the supplied arguments must be defaulted for the call
+    // to target this overload by arity.
+    bool tailDefaulted = true;
+    for (unsigned int j = nArgs; j < a.fi->paramCount(); j++) {
+      if (a.fi->param(j)->e() == nullptr) {
+        tailDefaulted = false;
+        break;
+      }
+    }
+    if (tailDefaulted) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // NOTE: this type-only overload ignores parameter names. It is for resolving
 // FRESH/internal calls only (compiler-minted builtins, registration). To
 // re-resolve an EXISTING user call - which carries a decl whose parameter names
 // matter under named-argument overloading - use matchFn(Call*), matchFnNamed,
 // matchReifByNames or matchFnByNames instead, otherwise a name-only sibling can
-// be silently substituted. The debug-build assert below trips if this overload
-// ever lands on a name-only-overloaded function.
+// be silently substituted. The guard below throws if this overload ever lands
+// on a name-only-overloaded function (a malformed library); see the note at
+// has_name_only_sibling.
 FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Type>& t,
                           bool strictEnums) const {
   if (id == env.constants.varRedef->id()) {
@@ -794,9 +841,14 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Type
         }
       }
       if (match) {
-        assert(!has_name_only_sibling(v, i.fi) &&
-               "type-only matchFn(id, types) resolved a name-only-overloaded function; an "
-               "existing-call re-match must go through a name-aware matcher");
+        if (has_name_only_sibling(v, i.fi)) {
+          throw InternalError(
+              "type-only matchFn(id, types) resolved a name-only-overloaded function `" +
+              std::string(id.c_str()) +
+              "'; an existing-call re-match must go through a name-aware matcher. This indicates "
+              "a library with name-only overloads that fail the parameter-name consistency "
+              "checks.");
+        }
         return i.fi;
       }
     }
@@ -1047,6 +1099,13 @@ FunctionI* Model::matchReifByNames(EnvI& env, const Call* c, bool canHalfReify,
   if (c->decl() == nullptr) {
     return nullptr;
   }
+  // An anchored (builtin) family is positional-only: its reif/imp variants are
+  // resolved by type alone. Return null so the caller's type-only
+  // matchReification fallback takes over, reproducing the pre-named-args
+  // behaviour regardless of any solver-library renaming.
+  if (isFnAnchored(env, c->decl())) {
+    return nullptr;
+  }
   const Model* m = this;
   while (m->_parent != nullptr) {
     m = m->_parent;
@@ -1134,6 +1193,13 @@ FunctionI* Model::matchFnByNames(EnvI& env, const ASTString& id, FunctionI* base
   // name-matching-but-not-type-matching candidate only as a last resort,
   // mirroring matchReifByNames.
   if (baseDecl == nullptr) {
+    return nullptr;
+  }
+  // An anchored (builtin) family is positional-only: its wider (relational or
+  // par) forms are resolved by type alone. Return null so the caller's
+  // type-only matchFn fallback takes over, reproducing the pre-named-args
+  // behaviour regardless of any solver-library renaming.
+  if (isFnAnchored(env, baseDecl)) {
     return nullptr;
   }
   const Model* m = this;
@@ -1269,9 +1335,13 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Expr
   if (matched.empty()) {
     return nullptr;
   }
-  assert(!has_name_only_sibling(v, matched[0]) &&
-         "type-only matchFn(id, args) resolved a name-only-overloaded function; an existing-call "
-         "re-match must go through a name-aware matcher");
+  if (has_name_only_sibling(v, matched[0])) {
+    throw InternalError(
+        "type-only matchFn(id, args) resolved a name-only-overloaded function `" +
+        std::string(id.c_str()) +
+        "'; an existing-call re-match must go through a name-aware matcher. This indicates a "
+        "library with name-only overloads that fail the parameter-name consistency checks.");
+  }
   if (matched.size() == 1) {
     return matched[0];
   }
@@ -1325,6 +1395,12 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
   if (v.size() == 1 && v[0].fi == c->decl()) {
     return c->decl();
   }
+  // An anchored (builtin) family is positional-only: re-resolve it by type
+  // alone. Such a family has no name-only siblings (the checks forbid them), so
+  // the name-skip and name-tie-break branches below are already inert for it;
+  // the guard states that invariant explicitly and keeps a solver-library
+  // renaming resolving exactly as it did before named arguments existed.
+  const bool anchored = c->decl() != nullptr && isFnAnchored(env, c->decl());
   std::vector<FunctionI*> matched;
   // Most specific viable candidate so far, ranked on the supplied arguments
   // only. The bucket is sorted by FnEntry::compare, whose primary key is arity,
@@ -1342,7 +1418,7 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
   const bool mayDefaultFill = !v.empty() && v.back().t.size() > c->argCount();
   Expression* botarg = nullptr;
   for (const auto& i : v) {
-    if (c->decl() != nullptr && i.fi != c->decl() &&
+    if (!anchored && c->decl() != nullptr && i.fi != c->decl() &&
         i.fi->paramCount() == c->decl()->paramCount() && !sameParameterNames(i.fi, c->decl())) {
       // Skip a candidate that is a genuine name-only sibling of the call's
       // resolved decl (identical parameter types, different parameter names):
@@ -1422,7 +1498,7 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
         // alternative must have identical registered types, so concreteness
         // is never overridden; if none exists the first match is returned
         // unchanged, leaving genuinely name-disagreeing overloads untouched.
-        if (c->decl() != nullptr && i.fi != c->decl() &&
+        if (!anchored && c->decl() != nullptr && i.fi != c->decl() &&
             i.fi->paramCount() == c->decl()->paramCount() &&
             !sameParameterNames(i.fi, c->decl())) {
           for (const auto& i2 : v) {
@@ -1533,7 +1609,7 @@ bool positional_prefix_has_name(FunctionI* fi, const ASTString& name, unsigned i
 
 FunctionI* Model::matchFnNamed(EnvI& env, Call* c, const std::vector<Expression*>& positional,
                                const std::vector<std::pair<ASTString, Expression*>>& named,
-                               bool strictEnums, bool throwIfNotFound) const {
+                               bool strictEnums, bool throwIfNotFound, bool skipAnchored) const {
   const Model* m = this;
   while (m->_parent != nullptr) {
     m = m->_parent;
@@ -1614,6 +1690,13 @@ FunctionI* Model::matchFnNamed(EnvI& env, Call* c, const std::vector<Expression*
   const bool mayDefaultFill = !v.empty() && v.back().t.size() > total;
   for (const auto& fe : v) {
     FunctionI* fi = fe.fi;
+    // Builtins (body-less-anchored families) are positional-only: skip them so
+    // the call resolves only among user and bodied-library overloads. The
+    // front-end gate rejects the call with a clear message if nothing else
+    // matches.
+    if (skipAnchored && isFnAnchored(env, fi)) {
+      continue;
+    }
     if (!nameCompatible(fi)) {
       continue;
     }
@@ -1665,25 +1748,27 @@ FunctionI* Model::matchFnNamed(EnvI& env, Call* c, const std::vector<Expression*
   if (best != nullptr) {
     FunctionI* fi = best->fi;
     const auto& fe = *best;
-      if (throwIfNotFound) {
-        // The supplied named arguments did not pin down a unique overload: if
-        // another candidate has identical parameter types but different names
-        // (a name-only sibling) and is equally name-compatible with this call,
-        // the choice between them depends only on registration order. Require
-        // enough named arguments to disambiguate instead of silently picking
-        // one. (Identical types make the subtype check above redundant for the
-        // sibling, so only its name-compatibility needs re-checking.)
-        for (const auto& fe2 : v) {
-          if (fe2.fi != fi && fe2.t == fe.t && !sameParameterNames(fe2.fi, fi) &&
-              nameCompatible(fe2.fi)) {
-            std::ostringstream oss;
-            oss << "call to `" << c->id()
-                << "' is ambiguous: it matches overloads that differ only in "
-                   "parameter names (defined in "
-                << fi->loc().toString() << " and " << fe2.fi->loc().toString()
-                << "). Name more arguments to select one.";
-            throw TypeError(env, Expression::loc(c), oss.str());
-          }
+      // An ambiguous named call is always a hard error, independent of
+      // throwIfNotFound: if another candidate has identical parameter types but
+      // different names (a name-only sibling) and is equally name-compatible
+      // with this call, the choice between them depends only on registration
+      // order. Require enough named arguments to disambiguate instead of
+      // silently picking one. (Identical types make the subtype check above
+      // redundant for the sibling, so only its name-compatibility needs
+      // re-checking.) This must not be gated by throwIfNotFound: the front-end
+      // gate probes with throwIfNotFound=false, and an ambiguous call must still
+      // fail rather than resolve to whichever sibling comes first. A skipAnchored
+      // probe ignores builtin siblings, which cannot be named anyway.
+      for (const auto& fe2 : v) {
+        if (fe2.fi != fi && fe2.t == fe.t && !sameParameterNames(fe2.fi, fi) &&
+            nameCompatible(fe2.fi) && !(skipAnchored && isFnAnchored(env, fe2.fi))) {
+          std::ostringstream oss;
+          oss << "call to `" << c->id()
+              << "' is ambiguous: it matches overloads that differ only in "
+                 "parameter names (defined in "
+              << fi->loc().toString() << " and " << fe2.fi->loc().toString()
+              << "). Name more arguments to select one.";
+          throw TypeError(env, Expression::loc(c), oss.str());
         }
       }
     return fi;
@@ -2028,31 +2113,21 @@ void Model::checkAuthoritativeParameterNames(EnvI& env) const {
       std::vector<Type> dsig = normalized_param_sig(env, d);
 
       // The authoritative anchor for `d` is the body-less declaration in `d`'s signature
-      // class with the highest source rank (standard library beats solver library). Ties
-      // are broken by source location so the choice - and thus the warning - is
-      // deterministic regardless of registration order.
+      // class. The override contract makes source rank irrelevant: a solver may declare
+      // body-less only what the standard library already declared body-less, so every
+      // anchor of a signature class carries the same canonical names. Ties are broken by
+      // source location so the choice - and thus the warning - is deterministic regardless
+      // of registration order.
       const FnAnchor* best = nullptr;
       for (size_t k = 0; k < anchors.size(); k++) {
         if (anchors[k].fi->paramCount() != d->paramCount() || anchorSig[k] != dsig) {
           continue;
         }
-        if (best == nullptr) {
-          best = &anchors[k];
-        } else if (anchors[k].fromStdLib != best->fromStdLib) {
-          if (anchors[k].fromStdLib) {
-            best = &anchors[k];
-          }
-        } else if (anchors[k].fi->loc().toString() < best->fi->loc().toString()) {
+        if (best == nullptr || anchors[k].fi->loc().toString() < best->fi->loc().toString()) {
           best = &anchors[k];
         }
       }
       if (best == nullptr || best->fi == d) {
-        continue;
-      }
-      // Source-rank arbitration: an anchor never overrules a declaration from a
-      // higher-ranked layer. A standard-library declaration is not forced to match a
-      // solver-library anchor, only the reverse.
-      if (d->fromStdLib() && !best->fromStdLib) {
         continue;
       }
 

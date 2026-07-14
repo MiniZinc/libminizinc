@@ -99,6 +99,7 @@ private:
     bool optimize = true;
     bool chainCompression = true;
     bool werror = false;
+    bool warnNonAuthoritativeNames = false;
     bool onlyRangeDomains = false;
     bool allowUnboundedVars = false;
     bool noMIPdomains = false;

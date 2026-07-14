@@ -168,6 +168,10 @@ void Flattener::printHelp(ostream& os) const {
      << "  --not-sections <section_1,...section_n>" << std::endl
      << "    Disable the given comma-separated output sections." << std::endl
      << "  -Werror\n    Turn warnings into errors" << std::endl
+     << "  --warn-non-authoritative-names\n    Warn when a library's parameter names diverge "
+        "from the canonical (body-less builtin) names for their overload family. Off by "
+        "default; intended for solver-library implementers."
+     << std::endl
      << "  -w --disable-warnings\n    Supress all warnings" << std::endl;
 }
 
@@ -311,6 +315,8 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv,
     // Parsed by reference
   } else if (cop.getOption("-Werror")) {
     _flags.werror = true;
+  } else if (cop.getOption("--warn-non-authoritative-names")) {
+    _flags.warnNonAuthoritativeNames = true;
   } else if (cop.getOption("-w --disable-warnings")) {
     _fopts.supressWarnings = true;
   } else if (cop.getOption("--use-gecode")) {
@@ -598,6 +604,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
     Model* m;
     _pEnv.reset(new Env(nullptr, _os, _log));
     Env* env = getEnv();
+    env->envi().warnNonAuthoritativeNames = _flags.warnNonAuthoritativeNames;
     if (!_flags.compileSolutionCheckModel && !_flagSolutionCheckModel.empty()) {
       // Extract variables to check from solution check model
       if (_flags.verbose) {

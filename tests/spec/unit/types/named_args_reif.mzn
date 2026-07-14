@@ -5,15 +5,13 @@ type: compile
 expected: !FlatZinc named_args_reif.fzn
 ***/
 
-% Named-argument call in a reified context. The non-reif predicate is
-% bodyless (a primitive); the user provides a hand-written _reif
-% companion whose body the flattener should inline. The named-args
-% disambiguation has to compose with reifyId so that the reif call
-% gets bound to the matching _reif decl.
+% Named-argument call in a reified context. `p` is a user-defined (bodied)
+% predicate, so named arguments are available for it; a body-less primitive
+% would be positional-only and the named call rejected. The named-args
+% disambiguation has to compose with reification so that the reified call
+% flattens to the body of the selected overload.
 
-predicate p(var int: x, var int: y);
-predicate p_reif(var int: x, var int: y, var bool: b) =
-  b <-> (x + y = 7);
+predicate p(var int: x, var int: y) = (x + y = 7);
 
 var 1..10: a;
 var 1..10: bb;

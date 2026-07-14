@@ -913,6 +913,7 @@ EnvI::EnvI(Model* model0, std::ostream& outstream0, std::ostream& errstream0)
       inTraceExp(false),
       inReverseMapVar(false),
       warnImplicitEnum2Int(true),
+      warnNonAuthoritativeNames(false),
       counters({0, 0, 0, 0}),
       _flat(new Model),
       _failed(false),

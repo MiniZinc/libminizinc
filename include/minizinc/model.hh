@@ -83,8 +83,7 @@ public:
   /// registerFn before the override merge can consume the body-less
   /// declaration.
   struct FnAnchor {
-    FunctionI* fi;    ///< the body-less declaration (source of canonical names)
-    bool fromStdLib;  ///< source rank captured before any par/var merge alters it
+    FunctionI* fi;  ///< the body-less declaration (source of canonical names)
   };
 
 protected:
@@ -218,10 +217,13 @@ public:
   /// whose name collides with a supplied named name. Subtyping is applied
   /// per parameter; ordering follows the existing bucket sort (more-specific
   /// first). Returns nullptr if no candidate matches and \a throwIfNotFound
-  /// is false; throws TypeError otherwise.
+  /// is false; throws TypeError otherwise. When \a skipAnchored is true,
+  /// body-less-anchored (builtin) overloads are ignored, so the call resolves
+  /// only among user and bodied-library overloads; the front-end gate uses this
+  /// to keep builtins positional-only.
   FunctionI* matchFnNamed(EnvI& env, Call* c, const std::vector<Expression*>& positional,
                           const std::vector<std::pair<ASTString, Expression*>>& named,
-                          bool strictEnums, bool throwIfNotFound) const;
+                          bool strictEnums, bool throwIfNotFound, bool skipAnchored = false) const;
   /// Find the reified (or half-reified) sibling of the function bound to
   /// \a c->decl() whose first \a c->decl()->paramCount() parameter names
   /// match \a c->decl()'s. Used at flatten-time reification to propagate
@@ -272,10 +274,21 @@ public:
   /// declaration that anchors their overload family (same identifier, same
   /// parameter types up to var/par and optionality). A body-less declaration is
   /// a callable builtin, so it fixes the parameter names by which its family can
-  /// be called; a divergent sibling cannot be reached by those names. Arbitrated
-  /// by source rank: a solver library divergence warns against the standard
-  /// library anchor, never the other way around.
+  /// be called; a divergent sibling cannot be reached by those names. Opt-in
+  /// (see EnvI::warnNonAuthoritativeNames): only run when explicitly requested.
   void checkAuthoritativeParameterNames(EnvI& env) const;
+  /// True if the overload family of \a fi - identified by \a fi's identifier and
+  /// its signature class (parameter types up to var/par and optionality) - is
+  /// governed by a body-less anchor, i.e. contains a callable builtin. Such
+  /// families are positional-only: named calls to them are rejected by the
+  /// front-end gate, and they are re-matched by type alone during flattening.
+  bool isFnAnchored(EnvI& env, const FunctionI* fi) const;
+  /// True if identifier \a id has a body-less anchored overload that a call
+  /// supplying \a nArgs arguments could target by arity (any parameter beyond
+  /// \a nArgs is defaulted). The front-end gate uses this to reject a named call
+  /// to a builtin with a clear message even when the supplied names match no
+  /// overload (e.g. a solver library renamed the parameters).
+  bool hasAnchoredArityMatch(const ASTString& id, unsigned int nArgs) const;
   /// Return function declaration for reverse mapper for type \a t
   FunctionI* matchRevMap(EnvI& env, const Type& t) const;
   /// Check if function with this name exists

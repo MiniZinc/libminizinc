@@ -370,6 +370,12 @@ public:
   } counters;
   bool inReverseMapVar;
   bool warnImplicitEnum2Int;
+  /// Opt-in: run checkAuthoritativeParameterNames, which warns when a solver
+  /// library's parameter names diverge from the body-less builtin anchors.
+  /// Off by default (builtins are positional-only, so users never see it);
+  /// enabled via the --warn-non-authoritative-names command-line option so
+  /// solver implementers can audit their libraries.
+  bool warnNonAuthoritativeNames;
   FlatteningOptions fopts;
   ASTStringMap<Item*> reverseEnum;
   std::vector<KeepAlive> checkVars;

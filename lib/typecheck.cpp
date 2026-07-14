@@ -3066,7 +3066,29 @@ public:
         }
       }
       if (sawNamed) {
-        fi = _model->matchFnNamed(_env, call, positional, named, true, true);
+        // Named arguments are supported for user-defined functions and bodied
+        // library functions, but not (yet) for low-level builtins, whose
+        // overload families are anchored by a body-less declaration. Resolve
+        // among the non-anchored overloads first: a user's own overload of a
+        // builtin name, or a bodied global, still works by name.
+        const unsigned int total =
+            static_cast<unsigned int>(positional.size() + named.size());
+        fi = _model->matchFnNamed(_env, call, positional, named, true, false, true);
+        if (fi == nullptr) {
+          // Nothing non-anchored matched. If a builtin overload of matching
+          // arity exists, the call is a named call to a builtin: reject it with
+          // a clear message rather than a confusing "no parameter named ..."
+          // (which a solver-library renaming would otherwise produce).
+          if (_model->hasAnchoredArityMatch(call->id(), total)) {
+            std::ostringstream ss;
+            ss << "named arguments are not (yet) supported for builtin `" << call->id()
+               << "'; pass its arguments positionally";
+            throw TypeError(_env, Expression::loc(call), ss.str());
+          }
+          // No builtin of matching arity either: fall through to the usual
+          // "no matching overload" error.
+          fi = _model->matchFnNamed(_env, call, positional, named, true, true, false);
+        }
         assert(fi != nullptr);
         const unsigned int k = static_cast<unsigned int>(positional.size());
         std::vector<Expression*> newArgs(fi->paramCount());
@@ -5494,7 +5516,13 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
   if (!isFlatZinc) {
     m->checkSiblingParameterNames(env.envi());
     m->checkReifParameterNames(env.envi());
-    m->checkAuthoritativeParameterNames(env.envi());
+    // Opt-in (default off): builtins are positional-only this release, so users
+    // never call them by name and need not see divergences from the canonical
+    // builtin parameter names. Solver implementers enable it to audit their
+    // libraries against the transition.
+    if (env.envi().warnNonAuthoritativeNames) {
+      m->checkAuthoritativeParameterNames(env.envi());
+    }
   }
 
   if (isFlatZinc) {
